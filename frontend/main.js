@@ -41,28 +41,79 @@ let sortState   = { col: 'activityScore', dir: 'asc' };
 // Default tags per mode
 const DEFAULT_TAGS = { player: '#YRGJGR8R', clan: '#LRQP20V9' };
 
-// Set initial default
-searchInput.value = DEFAULT_TAGS.player;
+// ── URL helpers ──────────────────────────────────────────────
+
+// When true, the next syncUrlState call uses replaceState (no new history entry)
+let _replaceNextPush = false;
+
+function syncUrlState(mode, tag) {
+  const params = new URLSearchParams({ mode, tag });
+  const url = `?${params}`;
+  if (_replaceNextPush) {
+    history.replaceState({ mode, tag }, '', url);
+    _replaceNextPush = false;
+  } else {
+    history.pushState({ mode, tag }, '', url);
+  }
+}
+
+function applyUrlState(mode, tag) {
+  currentMode = mode;
+  modeBtns.forEach((b) => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+  searchInput.placeholder =
+    mode === 'player'
+      ? 'Enter player tag (e.g. #ABC123) …'
+      : 'Enter clan tag (e.g. #2Y2LJJ) …';
+  searchHint.textContent =
+    mode === 'player'
+      ? "Tags must start with #. You can omit it and we'll add it automatically."
+      : "Clan tags must start with #. You can omit it and we'll add it automatically.";
+  searchInput.value = tag;
+}
+
+// Restore state on browser back/forward
+window.addEventListener('popstate', (e) => {
+  const { mode, tag } = e.state ?? {};
+  if (mode && tag) {
+    applyUrlState(mode, tag);
+    _replaceNextPush = true; // don't push a new entry when restoring history
+    handleSearch();
+  } else {
+    applyUrlState('player', DEFAULT_TAGS.player);
+    hideResults();
+    hideError();
+  }
+});
 
 // ── Mode selector ────────────────────────────────────────────
 modeBtns.forEach((btn) => {
   btn.addEventListener('click', () => {
-    currentMode = btn.dataset.mode;
-    modeBtns.forEach((b) => b.classList.remove('active'));
-    btn.classList.add('active');
-    searchInput.value = DEFAULT_TAGS[currentMode];
-    searchInput.placeholder =
-      currentMode === 'player'
-        ? 'Enter player tag (e.g. #ABC123) …'
-        : 'Enter clan tag (e.g. #2Y2LJJ) …';
-    searchHint.textContent =
-      currentMode === 'player'
-        ? 'Tags must start with #. You can omit it and we\'ll add it automatically.'
-        : 'Clan tags must start with #. You can omit it and we\'ll add it automatically.';
+    applyUrlState(btn.dataset.mode, DEFAULT_TAGS[btn.dataset.mode]);
+    history.replaceState(null, '', location.pathname);
     hideResults();
     hideError();
   });
 });
+
+// ── Init from URL ─────────────────────────────────────────────
+{
+  const params  = new URLSearchParams(location.search);
+  const urlMode = params.get('mode');
+  const urlTag  = params.get('tag');
+  if (urlTag) {
+    const mode = urlMode === 'clan' ? 'clan' : 'player';
+    applyUrlState(mode, urlTag);
+    // Replace the current history entry so that pushState later works cleanly
+    history.replaceState({ mode, tag: urlTag }, '', location.search);
+    // Auto-search on load
+    _replaceNextPush = true;
+    handleSearch();
+  } else {
+    applyUrlState('player', DEFAULT_TAGS.player);
+  }
+}
 
 // ── Search trigger ───────────────────────────────────────────
 searchBtn.addEventListener('click', handleSearch);
@@ -87,6 +138,7 @@ async function handleSearch() {
       const data = await apiFetch(`/api/clan/${encodeURIComponent(tag)}/analysis`);
       renderClanResults(data);
     }
+    syncUrlState(currentMode, tag);
   } catch (err) {
     showError(err.message);
   } finally {
@@ -158,12 +210,12 @@ function renderPlayerResults(data) {
     // Fallback battlelog : répartition des 30 entrées par type
     const bd = activityIndicators.battleLogBreakdown ?? {};
     statsGrid.innerHTML = statCards([
-      { label: '⚔️ Combats GDC',     value: fmt(activityIndicators.totalWarBattles) },
-      { label: '🏆 Win Rate GDC',   value: `${activityIndicators.winRate}%` },
-      { label: '🔀 Ladder / Ranked', value: fmt(bd.ladder ?? 0) },
-      { label: '🎯 Défis / Tournois', value: fmt(bd.challenge ?? 0) },
-      { label: '📦 Donations',       value: fmt(activityIndicators.donations) },
-      { label: '📊 Log (sur 30)',    value: `${bd.total ?? '?'} entrées` },
+      { label: '⚔️ War Battles',      value: fmt(activityIndicators.totalWarBattles) },
+      { label: '🏆 Win Rate (War)',   value: `${activityIndicators.winRate}%` },
+      { label: '🔀 Ladder / Ranked',  value: fmt(bd.ladder ?? 0) },
+      { label: '🎯 Challenges',        value: fmt(bd.challenge ?? 0) },
+      { label: '📦 Donations',         value: fmt(activityIndicators.donations) },
+      { label: '📊 Battle Log',        value: `${bd.total ?? '?'} entries` },
     ]);
   }
 
@@ -180,30 +232,30 @@ function renderPlayerResults(data) {
     } else {
       const bd = activityIndicators.battleLogBreakdown ?? {};
       const parts = [
-        bd.gdc      != null ? `${activityIndicators.totalWarBattles} GDC` : null,
-        bd.ladder   != null ? `${bd.ladder} Ladder`       : null,
-        bd.challenge != null ? `${bd.challenge} Défis`    : null,
-        bd.friendly != null && bd.friendly > 0 ? `${bd.friendly} Amical` : null,
+        bd.gdc      != null ? `${activityIndicators.totalWarBattles} War` : null,
+        bd.ladder   != null ? `${bd.ladder} Ladder`           : null,
+        bd.challenge != null ? `${bd.challenge} Challenges`  : null,
+        bd.friendly != null && bd.friendly > 0 ? `${bd.friendly} Friendly` : null,
       ].filter(Boolean).join(' · ');
       if (titleEl) titleEl.textContent = '📅 River Race History – 10 weeks';
       renderWarHistoryChart([]);
       if (noteEl) noteEl.textContent =
-        `⚠️ Aucune River Race dans l’historique du clan pour ce joueur (membre récent). `
-        + `Log API (${bd.total ?? 30} entrées) : ${parts || 'aucune donnée'}.`;
+        `⚠️ No River Race history found for this player (recent member). `
+        + `API log (${bd.total ?? 30} entries): ${parts || 'no data'}.`;
     }
   } else {
     const bd = activityIndicators.battleLogBreakdown ?? {};
     const parts = [
-      bd.gdc      != null ? `${activityIndicators.totalWarBattles} GDC` : null,
-      bd.ladder   != null ? `${bd.ladder} Ladder`     : null,
-      bd.challenge != null ? `${bd.challenge} Défis`  : null,
-      bd.friendly != null && bd.friendly > 0 ? `${bd.friendly} Amical` : null,
+      bd.gdc      != null ? `${activityIndicators.totalWarBattles} War` : null,
+      bd.ladder   != null ? `${bd.ladder} Ladder`           : null,
+      bd.challenge != null ? `${bd.challenge} Challenges`  : null,
+      bd.friendly != null && bd.friendly > 0 ? `${bd.friendly} Friendly` : null,
     ].filter(Boolean).join(' · ');
     if (titleEl) titleEl.textContent = '📅 Clan War Activity – Last 7 days';
     renderActivityChart(recentActivity.dailyActivity);
     if (noteEl) noteEl.textContent =
-      `⚠️ Pas de clan — historique GDC indisponible. `
-      + `Log API (${bd.total ?? 30} entrées) : ${parts || 'aucune donnée'}.`;
+      `⚠️ No clan — war history unavailable. `
+      + `API log (${bd.total ?? 30} entries): ${parts || 'no data'}.`;
   }
 
   // 4. War Reliability Score avec breakdown
@@ -211,7 +263,7 @@ function renderPlayerResults(data) {
 
   const icon = { green: '✅', yellow: '⚠️', red: '🔴' }[ws.color] ?? '❓';
   const fallbackBadge = ws.isFallback
-    ? `<div class="fallback-badge">⚠️ Estimation basée sur le log API (≤ 30 batailles) — pas d'historique GDC disponible</div>`
+    ? `<div class="fallback-badge">⚠️ Estimate based on API battle log (≤ 30 entries) — no war history available</div>`
     : '';
   verdictBox.innerHTML = `
     <div class="verdict-box ${ws.color}">

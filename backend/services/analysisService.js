@@ -128,6 +128,20 @@ export function isWarWin(b) {
   return (b.team?.[0]?.crowns ?? 0) > (b.opponent?.[0]?.crowns ?? 0);
 }
 
+/** Whether an (optionally expanded) battle entry is a loss. */
+export function isWarLoss(b) {
+  if (b._roundIndex !== undefined) {
+    return (b._roundCrownsMe ?? 0) < (b._roundCrownsOpp ?? 0);
+  }
+  return (b.team?.[0]?.crowns ?? 0) < (b.opponent?.[0]?.crowns ?? 0);
+}
+
+/** Number of crowns scored by the player in an (optionally expanded) battle. */
+export function getMyBattleCrowns(b) {
+  if (b._roundIndex !== undefined) return b._roundCrownsMe ?? 0;
+  return b.team?.[0]?.crowns ?? 0;
+}
+
 /**
  * Count battles that occurred within the last `days` calendar days.
  * @param {object[]} battleLog
@@ -170,15 +184,15 @@ function describeGdcTiming(warLog) {
   // Build natural-language segments for the 2 most recent days
   const segments = days.slice(0, 2).map(([key, count]) => {
     const label =
-      key === todayKey     ? `aujourd'hui` :
-      key === yesterdayKey ? `hier` :
+      key === todayKey     ? 'today' :
+      key === yesterdayKey ? 'yesterday' :
       key; // fallback: ISO date
     return `${count} ${label}`;
   });
 
   // If there are more than 2 active days, append a summary
   if (days.length > 2) {
-    return `${warLog.length} combats sur ${days.length} jours (${segments[0]})`;
+    return `${warLog.length} battles over ${days.length} days (${segments[0]})`;
   }
 
   return segments.join(' · ');
@@ -268,58 +282,58 @@ export function computeWarScore(player, warHistory, warWinRate = null) {
   const pct      = Math.round((total / maxScore) * 100);
 
   let verdict, color;
-  if (pct >= 80)      { verdict = 'Fiabilité très élevée en guerre de clans'; color = 'green'; }
-  else if (pct >= 55) { verdict = 'Fiabilité correcte — à surveiller';          color = 'yellow'; }
-  else                { verdict = 'Risque élevé d\'inactivité en GDC';          color = 'red'; }
+  if (pct >= 80)      { verdict = 'Very high war reliability';             color = 'green'; }
+  else if (pct >= 55) { verdict = 'Adequate reliability — keep an eye on'; color = 'yellow'; }
+  else                { verdict = 'High risk of inactivity in Clan War';   color = 'red'; }
 
   const breakdown = [
     {
-      label:  'Régularité',
+      label:  'Regularity',
       score:  regularite,
       max:    10,
       detail: (() => {
-        if (!warHistory.totalWeeks) return 'Aucune donnée';
+        if (!warHistory.totalWeeks) return 'No data';
         const suffix = weeksInClan < totalWeeks
-          ? ` (membre depuis ${weeksInClan} semaine${weeksInClan > 1 ? 's' : ''})`
+          ? ` (member for ${weeksInClan} week${weeksInClan > 1 ? 's' : ''})`
           : '';
-        return `${playedWeeks} / ${weeksInClan} semaines jouées${suffix}`;
+        return `${playedWeeks} / ${weeksInClan} weeks played${suffix}`;
       })(),
     },
     {
-      label:  'Score moyen',
+      label:  'Avg Score',
       score:  scoreMoyen,
       max:    10,
       detail: warHistory.avgFame
-        ? `${warHistory.avgFame.toLocaleString('fr-FR')} fame / semaine (max 3 000)`
-        : 'Aucune donnée',
+        ? `${warHistory.avgFame.toLocaleString('en-US')} fame / week (max 3,000)`
+        : 'No data',
     },
     {
-      label:  'Stabilité',
+      label:  'Stability',
       score:  stabilite,
       max:    5,
       detail: (() => {
         const s = warHistory.streakInCurrentClan;
-        const base = `${s} semaine${s > 1 ? 's' : ''} consécutive${s > 1 ? 's' : ''} dans ce clan`;
-        return s < 5 ? `${base} (score complet à 5 sem.)` : base;
+        const base = `${s} consecutive week${s > 1 ? 's' : ''} in this clan`;
+        return s < 5 ? `${base} (full score at 5 wks)` : base;
       })(),
     },
     {
-      label:  'Expérience',
+      label:  'Experience',
       score:  experience,
       max:    3,
-      detail: `${(player.bestTrophies ?? 0).toLocaleString('fr-FR')} trophées max (cap 12 000)`,
+      detail: `${(player.bestTrophies ?? 0).toLocaleString('en-US')} best trophies (cap 12,000)`,
     },
     {
-      label:  'Dons',
+      label:  'Donations',
       score:  dons,
       max:    2,
-      detail: `${(player.donations ?? 0).toLocaleString('fr-FR')} cartes données (cap 500)`,
+      detail: `${(player.donations ?? 0).toLocaleString('en-US')} cards donated (cap 500)`,
     },
     ...(winRateGDC !== null ? [{
-      label:  'Win Rate GDC',
+      label:  'Win Rate (War)',
       score:  winRateGDC,
       max:    5,
-      detail: `${Math.round(warWinRate * 100)}% de victoires en River Race`,
+      detail: `${Math.round(warWinRate * 100)}% victories in River Race`,
     }] : []),
   ];
 
@@ -376,50 +390,50 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
   const pct      = Math.round((total / maxScore) * 100);
 
   let verdict, color;
-  if (pct >= 80)      { verdict = 'Fiabilité très élevée en guerre de clans'; color = 'green'; }
-  else if (pct >= 55) { verdict = 'Fiabilité correcte — à surveiller';          color = 'yellow'; }
-  else                { verdict = 'Risque élevé d\'inactivité en GDC';          color = 'red'; }
+  if (pct >= 80)      { verdict = 'Very high war reliability';             color = 'green'; }
+  else if (pct >= 55) { verdict = 'Adequate reliability — keep an eye on'; color = 'yellow'; }
+  else                { verdict = 'High risk of inactivity in Clan War';   color = 'red'; }
 
   return {
     total, maxScore, pct, verdict, color,
     isFallback: true,
     breakdown: [
       {
-        label:  'Activité GDC',
+        label:  'War Activity',
         score:  activiteGDC,
         max:    10,
         detail: (() => {
-          if (gdcCount === 0) return 'Aucun combat GDC dans le log';
+          if (gdcCount === 0) return 'No war battles in battle log';
           const timing = describeGdcTiming(warLog);
-          const suffix = `(sur les 30 dernières entrées)`;
-          return timing ? `${timing} ${suffix}` : `${gdcCount} combat${gdcCount > 1 ? 's' : ''} GDC ${suffix}`;
+          const suffix = `(out of last 30 entries)`;
+          return timing ? `${timing} ${suffix}` : `${gdcCount} war battle${gdcCount > 1 ? 's' : ''} ${suffix}`;
         })(),
       },
       {
-        label:  'Win Rate GDC',
+        label:  'Win Rate (War)',
         score:  winRateGDC,
         max:    10,
         detail: gdcCount > 0
-          ? `${Math.round(gdcWinRate * 100)}% de victoires (${gdcWins}V / ${gdcCount - gdcWins}D)`
-          : 'Pas de donnée — aucun combat GDC',
+          ? `${Math.round(gdcWinRate * 100)}% wins (${gdcWins}W / ${gdcCount - gdcWins}L)`
+          : 'No data — no war battles found',
       },
       {
-        label:  'Activité générale',
+        label:  'General Activity',
         score:  activiteGen,
         max:    5,
-        detail: `${competitive} combats compétitifs (${gdcCount} GDC + ${bd.ladder} Ladder + ${bd.challenge} Défis)`,
+        detail: `${competitive} competitive battles (${gdcCount} War + ${bd.ladder} Ladder + ${bd.challenge} Challenges)`,
       },
       {
-        label:  'Expérience',
+        label:  'Experience',
         score:  experience,
         max:    3,
-        detail: `${(player.bestTrophies ?? 0).toLocaleString('fr-FR')} trophées max (cap 12 000)`,
+        detail: `${(player.bestTrophies ?? 0).toLocaleString('en-US')} best trophies (cap 12,000)`,
       },
       {
-        label:  'Dons',
+        label:  'Donations',
         score:  dons,
         max:    2,
-        detail: `${(player.donations ?? 0).toLocaleString('fr-FR')} cartes données (cap 500)`,
+        detail: `${(player.donations ?? 0).toLocaleString('en-US')} cards donated (cap 500)`,
       },
     ],
   };
@@ -511,9 +525,9 @@ export function analyzePlayer(player, battleLog) {
   const reliability = computeWarReliabilityFallback(player, warLog, battleLogBreakdown);
   const dailyActivity = buildDailyActivity(warLog, 7);
 
-  const wins            = warLog.filter((b) => b.team?.[0]?.crowns > (b.opponent?.[0]?.crowns ?? 0)).length;
-  const losses          = warLog.filter((b) => b.team?.[0]?.crowns < (b.opponent?.[0]?.crowns ?? 0)).length;
-  const threeCrowns     = warLog.filter((b) => b.team?.[0]?.crowns === 3).length;
+  const wins            = warLog.filter(isWarWin).length;
+  const losses          = warLog.filter(isWarLoss).length;
+  const threeCrowns     = warLog.filter((b) => getMyBattleCrowns(b) === 3).length;
   const totalBattlesInLog = warLog.length;
   const winRate         = totalBattlesInLog > 0 ? Math.round((wins / totalBattlesInLog) * 100) : 0;
 
