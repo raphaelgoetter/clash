@@ -584,6 +584,54 @@ td.member-link:hover div:first-child {
 .verdict-badge.red    { background: var(--red-bg);    color: var(--red);    border: 1px solid rgba(239,68,68,.4); }
 
 
+/* ── API limit note + inline disclosure ───────────────────── */
+.api-limit-note {
+  margin-top: 10px;
+  font-size: .8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.note-disclosure {
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.note-disclosure summary {
+  padding: 6px 12px;
+  font-size: .78rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color var(--transition);
+}
+
+.note-disclosure summary::-webkit-details-marker { display: none; }
+
+.note-disclosure summary::before {
+  content: '▶';
+  font-size: .55rem;
+  transition: transform var(--transition);
+  flex-shrink: 0;
+}
+
+.note-disclosure[open] summary::before { transform: rotate(90deg); }
+.note-disclosure summary:hover { color: var(--text-primary); }
+
+.note-disclosure p {
+  padding: 0 12px 10px;
+  font-size: .78rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+.note-disclosure strong { color: var(--text-primary); font-weight: 600; }
+
 /* ── Score explainer (details/summary) ─────────────────────── */
 .score-explainer {
   margin-bottom: 16px;

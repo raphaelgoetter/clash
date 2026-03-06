@@ -246,9 +246,16 @@ function renderPlayerResults(data) {
       ].filter(Boolean).join(' · ');
       if (titleEl) titleEl.textContent = '📅 River Race History – 10 weeks';
       renderWarHistoryChart([]);
-      if (noteEl) noteEl.textContent =
-        `⚠️ No River Race history found for this player (recent member). `
-        + `API log (${bd.total ?? 30} entries): ${parts || 'no data'}.`;
+      if (noteEl) noteEl.innerHTML =
+        `<span>⚠️ No River Race history found for this player (recent member). `
+        + `API log (${bd.total ?? 30} entries): ${parts || 'no data'}.</span>`
+        + `<details class="note-disclosure">`
+        + `<summary>Why might this score be less accurate?</summary>`
+        + `<p>The RoyaleAPI battle log covers at most 30 entries (war or non-war). `
+        + `For a long-standing member this is reliable, but for a <strong>recent recruit</strong> `
+        + `who just joined a clan, their previous clan's war history is lost — only these last 30 battles carry over. `
+        + `The reliability estimate may therefore be less precise than for an established member.</p>`
+        + `</details>`;
     }
   } else {
     const bd = activityIndicators.battleLogBreakdown ?? {};
