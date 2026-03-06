@@ -4,7 +4,10 @@
 
 import { Router } from 'express';
 import { fetchPlayer, fetchBattleLog, fetchRaceLog } from '../services/clashApi.js';
-import { analyzePlayer, buildWarHistory, computeWarScore } from '../services/analysisService.js';
+import {
+  analyzePlayer, buildWarHistory, computeWarScore,
+  filterWarBattles, expandDuelRounds,
+} from '../services/analysisService.js';
 
 const router = Router();
 
@@ -42,9 +45,14 @@ router.get('/:tag/analysis', async (req, res) => {
         const raceLog = await fetchRaceLog(player.clan.tag);
         analysis.warHistory = buildWarHistory(player.tag, raceLog, player.clan.tag);
 
+        // Compute GDC win rate from battle log (available for all players)
+        const rawWarLog = expandDuelRounds(filterWarBattles(battleLog));
+        const gdcWins   = rawWarLog.filter((b) => (b.team?.[0]?.crowns ?? 0) > (b.opponent?.[0]?.crowns ?? 0)).length;
+        const warWinRate = rawWarLog.length > 0 ? gdcWins / rawWarLog.length : null;
+
         if (analysis.warHistory.weeks.length > 0) {
-          // Historical data available → score from river race history
-          analysis.warScore = computeWarScore(player, analysis.warHistory);
+          // Historical data available → score from river race history + win rate
+          analysis.warScore = computeWarScore(player, analysis.warHistory, warWinRate);
         } else {
           // New member: no completed races found → use battle log fallback
           analysis.warScore = analysis.reliability;

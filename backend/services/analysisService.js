@@ -211,9 +211,11 @@ export function buildDailyActivity(battleLog, days = 30) {
  *
  * @param {object} player      - Player profile from Clash API
  * @param {object} warHistory  - Output of buildWarHistory()
+ * @param {number|null} [warWinRate=null]  - Win rate on GDC battles (0-1). When provided,
+ *                                           adds a 6th criterion /5 and maxScore becomes 35.
  * @returns {{ total:number; maxScore:number; pct:number; verdict:string; color:string; breakdown:object[] }}
  */
-export function computeWarScore(player, warHistory) {
+export function computeWarScore(player, warHistory, warWinRate = null) {
   const r = (v) => Math.round(v * 10) / 10; // round to 1 decimal
 
   // 1. Régularité (0-10)
@@ -240,8 +242,11 @@ export function computeWarScore(player, warHistory) {
   const DONATION_CAP = 500;
   const dons         = r(Math.min(2, ((player.donations ?? 0) / DONATION_CAP) * 2));
 
-  const total    = r(regularite + scoreMoyen + stabilite + experience + dons);
-  const maxScore = 30;
+  // 6. Win Rate GDC (0-5) — optionnel, uniquement quand battlelog disponible
+  const winRateGDC   = warWinRate !== null ? r(Math.min(5, warWinRate * 5)) : null;
+
+  const total    = r(regularite + scoreMoyen + stabilite + experience + dons + (winRateGDC ?? 0));
+  const maxScore = winRateGDC !== null ? 35 : 30;
   const pct      = Math.round((total / maxScore) * 100);
 
   let verdict, color;
@@ -292,6 +297,12 @@ export function computeWarScore(player, warHistory) {
       max:    2,
       detail: `${(player.donations ?? 0).toLocaleString('fr-FR')} cartes données (cap 500)`,
     },
+    ...(winRateGDC !== null ? [{
+      label:  'Win Rate GDC',
+      score:  winRateGDC,
+      max:    5,
+      detail: `${Math.round(warWinRate * 100)}% de victoires en River Race`,
+    }] : []),
   ];
 
   return { total, maxScore, pct, verdict, color, breakdown };
