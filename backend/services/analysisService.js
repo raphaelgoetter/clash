@@ -530,6 +530,22 @@ export function computeStabilityScore(player) {
 // ── River Race history ────────────────────────────────────────
 
 /**
+ * Estime le nombre de victoires PvP depuis les données de fame.
+ * PvP loss = 100 fame, PvP win = 200 fame.
+ * Boat attacks : on suppose 200 fame chacun (valeur standard CW2).
+ * @returns {{ wins: number, pvpDecks: number }}
+ */
+function estimateWinsFromFame(fame, decksUsed, boatAttacks) {
+  const pvpDecks = decksUsed - boatAttacks;
+  if (pvpDecks <= 0) return { wins: 0, pvpDecks: 0 };
+  const pvpFame = fame - boatAttacks * 200;
+  // wins × 200 + losses × 100 = pvpFame, wins + losses = pvpDecks
+  // → wins = (pvpFame − 100 × pvpDecks) / 100
+  const wins = Math.max(0, Math.min(pvpDecks, Math.round((pvpFame - 100 * pvpDecks) / 100)));
+  return { wins, pvpDecks };
+}
+
+/**
  * Extract a player's week-by-week river race history from a clan race log.
  *
  * @param {string}   playerTag       Player tag (with or without #)
@@ -595,7 +611,17 @@ export function buildWarHistory(playerTag, raceLog, currentClanTag = null, curre
   const avgFame      = participation ? Math.round(totalFame / participation) : 0;
   const maxFame      = weeksPlayed.reduce((m, w) => Math.max(m, w.fame), 0);
 
-  return { weeks, totalFame, avgFame, maxFame, participation, totalWeeks, streakInCurrentClan };
+  // Win rate historique estimé depuis la fame (semaines terminées uniquement, pas isCurrent)
+  const completedWeeks = weeksPlayed.filter((w) => !w.isCurrent);
+  let totalPvpDecks = 0, totalEstimatedWins = 0;
+  for (const w of completedWeeks) {
+    const { wins: wWins, pvpDecks: wPvp } = estimateWinsFromFame(w.fame, w.decksUsed, w.boatAttacks);
+    totalPvpDecks      += wPvp;
+    totalEstimatedWins += wWins;
+  }
+  const historicalWinRate = totalPvpDecks > 0 ? totalEstimatedWins / totalPvpDecks : null;
+
+  return { weeks, totalFame, avgFame, maxFame, participation, totalWeeks, streakInCurrentClan, historicalWinRate };
 }
 
 // ── Player full analysis ──────────────────────────────────────

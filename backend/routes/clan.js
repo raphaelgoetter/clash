@@ -121,8 +121,9 @@ async function buildClanAnalysis(clanTag) {
         }
 
         if (wh.streakInCurrentClan >= 2) {
-          // Historical data — computeWarScore + win rate as 6th criterion
-          const ws = computeWarScore(playerProxy, wh, warWinRate);
+          // Historical data — computeWarScore + win rate historique (race log) en priorité
+          const effectiveWinRate = wh.historicalWinRate ?? warWinRate;
+          const ws = computeWarScore(playerProxy, wh, effectiveWinRate);
           activityScore = ws.pct; verdict = ws.verdict; color = ws.color;
         } else if (battleLog) {
           // New member — full fallback with battle log

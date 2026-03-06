@@ -71,10 +71,14 @@ async function buildPlayerAnalysis(tag) {
         const gdcWins   = rawWarLog.filter(isWarWin).length;
         const warWinRate = rawWarLog.length > 0 ? gdcWins / rawWarLog.length : null;
 
+        // Préférer le win rate historique (estimé depuis la fame du race log) quand disponible :
+        // plus cohérent avec la fame moyenne, car calculé sur la même fenêtre temporelle.
+        const effectiveWinRate = analysis.warHistory.historicalWinRate ?? warWinRate;
+
         // Nécessite au moins 2 semaines dans le clan (race courante comprise) pour un score fiable.
         // En dessous de ce seuil, un seul point de donnée ne suffit pas → fallback battle log.
         if (analysis.warHistory.streakInCurrentClan >= 2) {
-          analysis.warScore = computeWarScore(player, analysis.warHistory, warWinRate);
+          analysis.warScore = computeWarScore(player, analysis.warHistory, effectiveWinRate);
         } else {
           // Historique insuffisant → fallback battle log
           analysis.warScore = analysis.reliability;
