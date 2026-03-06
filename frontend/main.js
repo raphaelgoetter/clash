@@ -29,7 +29,6 @@ const reasonsList     = document.getElementById('reasons-list');
 
 const clanOverviewGrid= document.getElementById('clan-overview-grid');
 const membersTbody    = document.getElementById('members-tbody');
-const exportBtn       = document.getElementById('export-btn');
 const filterName      = document.getElementById('filter-name');
 const filterVerdict   = document.getElementById('filter-verdict');
 
@@ -428,31 +427,6 @@ function sortMembers(arr, col, dir) {
   });
 }
 
-// ── CSV export ────────────────────────────────────────────────
-
-exportBtn.addEventListener('click', () => {
-  if (!allMembers.length) return;
-
-  const headers = ['Name', 'Tag', 'Trophies', 'Donations', 'Activity Score', 'Verdict'];
-  const rows = allMembers.map((m) => [
-    csvEscape(m.name),
-    csvEscape(m.tag),
-    m.trophies,
-    m.donations,
-    m.activityScore,
-    csvEscape(m.verdict),
-  ]);
-
-  const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = `clan-reliability-report-${Date.now()}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-});
-
 // ── Template helpers ─────────────────────────────────────────
 
 function overviewItems(items) {
@@ -515,9 +489,3 @@ function escHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
-function csvEscape(v) {
-  const s = String(v);
-  return s.includes(',') || s.includes('"') || s.includes('\n')
-    ? `"${s.replace(/"/g, '""')}"`
-    : s;
-}

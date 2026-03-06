@@ -188,9 +188,6 @@ async function buildClanAnalysis(clanTag) {
       members: analyzedMembers,
       summary: { green, yellow, orange, red, avgScore, total: analyzedMembers.length },
     };
-  } catch (err) {
-    throw err;
-  }
 }
 
 export default router;
