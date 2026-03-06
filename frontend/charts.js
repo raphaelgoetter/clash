@@ -264,9 +264,10 @@ export function renderClanBarChart(members) {
   const labels = ['0–9','10–19','20–29','30–39','40–49','50–59','60–69','70–79','80–89','90–100'];
 
   const colors = labels.map((_, i) => {
-    if (i >= 7) return 'rgba(34, 197, 94, 0.7)';
-    if (i >= 4) return 'rgba(234, 179, 8, 0.7)';
-    return 'rgba(239, 68, 68, 0.7)';
+    if (i >= 8) return 'rgba(34, 197, 94, 0.7)';    // 80–100 → High reliability
+    if (i >= 6) return 'rgba(234, 179, 8, 0.7)';    // 60–79  → Moderate risk
+    if (i >= 3) return 'rgba(249, 115, 22, 0.7)';   // 30–59  → High risk
+    return 'rgba(239, 68, 68, 0.7)';                 // 0–29   → Extreme risk
   });
 
   new Chart(ctx, {
