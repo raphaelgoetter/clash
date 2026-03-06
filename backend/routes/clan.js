@@ -3,7 +3,7 @@
 // ============================================================
 
 import { Router } from 'express';
-import { fetchClan, fetchClanMembers, fetchRaceLog, fetchBattleLog, fetchPlayer } from '../services/clashApi.js';
+import { fetchClan, fetchClanMembers, fetchRaceLog, fetchBattleLog, fetchPlayer, fetchCurrentRace } from '../services/clashApi.js';
 import {
   analyzeClanMembers, buildWarHistory, computeWarScore,
   computeWarReliabilityFallback, categorizeBattleLog,
@@ -79,7 +79,13 @@ async function buildClanAnalysis(clanTag) {
     // Fetch race log once and compute war-based scores for every member.
     // Fall back to the legacy activity score for members absent from the log.
     let raceLog = null;
-    try { raceLog = await fetchRaceLog(clanTag); } catch (_) { /* silent */ }
+    let currentRace = null;
+    try {
+      [raceLog, currentRace] = await Promise.all([
+        fetchRaceLog(clanTag),
+        fetchCurrentRace(clanTag).catch(() => null),
+      ]);
+    } catch (_) { /* silent */ }
 
     // Fetch full player profiles + battle logs for ALL members with capped concurrency
     // (avoids RoyaleAPI rate-limiting that caused non-deterministic scores on reload)
@@ -102,7 +108,7 @@ async function buildClanAnalysis(clanTag) {
       const playerProxy = fullPlayer ?? { bestTrophies: m.trophies ?? 0, donations: m.donations ?? 0 };
 
       if (raceLog) {
-        const wh = buildWarHistory(m.tag, raceLog, clan.tag);
+        const wh = buildWarHistory(m.tag, raceLog, clan.tag, currentRace);
 
         // Compute GDC win rate from battle log when available
         let warWinRate = null;
@@ -114,7 +120,7 @@ async function buildClanAnalysis(clanTag) {
           }
         }
 
-        if (wh.weeks.length > 0) {
+        if (wh.streakInCurrentClan >= 2) {
           // Historical data — computeWarScore + win rate as 6th criterion
           const ws = computeWarScore(playerProxy, wh, warWinRate);
           activityScore = ws.pct; verdict = ws.verdict; color = ws.color;

@@ -3,7 +3,7 @@
 // ============================================================
 
 import { Router } from 'express';
-import { fetchPlayer, fetchBattleLog, fetchRaceLog } from '../services/clashApi.js';
+import { fetchPlayer, fetchBattleLog, fetchRaceLog, fetchCurrentRace } from '../services/clashApi.js';
 import {
   analyzePlayer, buildWarHistory, computeWarScore,
   filterWarBattles, expandDuelRounds, isWarWin,
@@ -60,19 +60,23 @@ async function buildPlayerAnalysis(tag) {
     // We silently ignore failures so a missing/private war log doesn't block the response.
     if (player.clan?.tag) {
       try {
-        const raceLog = await fetchRaceLog(player.clan.tag);
-        analysis.warHistory = buildWarHistory(player.tag, raceLog, player.clan.tag);
+        const [raceLog, currentRace] = await Promise.all([
+          fetchRaceLog(player.clan.tag),
+          fetchCurrentRace(player.clan.tag).catch(() => null),
+        ]);
+        analysis.warHistory = buildWarHistory(player.tag, raceLog, player.clan.tag, currentRace);
 
         // Compute GDC win rate from battle log (available for all players)
         const rawWarLog = expandDuelRounds(filterWarBattles(battleLog));
         const gdcWins   = rawWarLog.filter(isWarWin).length;
         const warWinRate = rawWarLog.length > 0 ? gdcWins / rawWarLog.length : null;
 
-        if (analysis.warHistory.weeks.length > 0) {
-          // Historical data available → score from river race history + win rate
+        // Nécessite au moins 2 semaines dans le clan (race courante comprise) pour un score fiable.
+        // En dessous de ce seuil, un seul point de donnée ne suffit pas → fallback battle log.
+        if (analysis.warHistory.streakInCurrentClan >= 2) {
           analysis.warScore = computeWarScore(player, analysis.warHistory, warWinRate);
         } else {
-          // New member: no completed races found → use battle log fallback
+          // Historique insuffisant → fallback battle log
           analysis.warScore = analysis.reliability;
         }
       } catch (_) {

@@ -525,7 +525,7 @@ export function computeStabilityScore(player) {
  * @param {object[]} raceLog         Array returned by /clans/{tag}/riverracelog
  * @param {string}   [currentClanTag] Tag of the player's current clan (to compute streak)
  */
-export function buildWarHistory(playerTag, raceLog, currentClanTag = null) {
+export function buildWarHistory(playerTag, raceLog, currentClanTag = null, currentRace = null) {
   const normalized = playerTag.startsWith('#') ? playerTag : `#${playerTag}`;
   const normClan   = currentClanTag
     ? (currentClanTag.startsWith('#') ? currentClanTag : `#${currentClanTag}`)
@@ -550,7 +550,25 @@ export function buildWarHistory(playerTag, raceLog, currentClanTag = null) {
     }
   }
 
-  // Consecutive weeks (most-recent first) the player was in their current clan
+  // Prépend la race en cours si le joueur y figure.
+  // /currentriverrace expose .clan.participants[] directement (pas standings[]).
+  if (currentRace?.clan?.participants) {
+    const p = currentRace.clan.participants.find((x) => x.tag === normalized);
+    if (p) {
+      weeks.unshift({
+        label:        `S${currentRace.seasonId ?? '?'}·W${(currentRace.sectionIndex ?? 0) + 1} (live)`,
+        seasonId:     currentRace.seasonId,
+        sectionIndex: currentRace.sectionIndex ?? 0,
+        fame:         p.fame        ?? 0,
+        decksUsed:    p.decksUsed   ?? 0,
+        boatAttacks:  p.boatAttacks ?? 0,
+        clanTag:      currentRace.clan.tag,
+        isCurrent:    true,
+      });
+    }
+  }
+
+  // Semaines consécutives en cours dans le clan actuel (du plus récent vers le plus ancien)
   let streakInCurrentClan = 0;
   if (normClan) {
     for (const w of weeks) {

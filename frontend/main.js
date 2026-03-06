@@ -356,9 +356,11 @@ function renderMembersTable(members) {
     .map(
       (m) => `
       <tr>
-        <td class="member-link" data-tag="${escHtml(m.tag)}" title="Analyze ${escHtml(m.name)}">
-          <div style="font-weight:600">${escHtml(m.name)}${m.isNew ? ' <span class="new-badge">new</span>' : ''}</div>
-          <div style="font-size:.75rem;color:var(--text-muted)">${escHtml(m.tag)}</div>
+        <td>
+          <a class="member-link" href="?${new URLSearchParams({ mode: 'player', tag: m.tag })}" title="Analyze ${escHtml(m.name)}">
+            <div style="font-weight:600">${escHtml(m.name)}${m.isNew ? ' <span class="new-badge">new</span>' : ''}</div>
+            <div style="font-size:.75rem;color:var(--text-muted)">${escHtml(m.tag)}</div>
+          </a>
         </td>
         <td><span class="role-badge ${m.role}">${capitalize(m.role)}</span></td>
         <td>🏆 ${fmt(m.trophies)}</td>
@@ -377,11 +379,13 @@ function renderMembersTable(members) {
     .join('');
 }
 
-// Click on a member name → switch to player mode
+// Click on a member name → switch to player mode (SPA)
 membersTbody.addEventListener('click', (e) => {
-  const cell = e.target.closest('td.member-link');
-  if (!cell) return;
-  const tag = cell.dataset.tag;
+  const link = e.target.closest('a.member-link');
+  if (!link) return;
+  e.preventDefault();
+  const params = new URLSearchParams(link.search);
+  const tag = params.get('tag');
   if (!tag) return;
   applyUrlState('player', tag);
   _replaceNextPush = false;

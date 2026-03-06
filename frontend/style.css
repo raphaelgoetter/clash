@@ -549,10 +549,13 @@ code {
 
 .members-table tbody tr:hover { background: rgba(255,255,255,.03); }
 
-td.member-link {
+a.member-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
   cursor: pointer;
 }
-td.member-link:hover div:first-child {
+a.member-link:hover div:first-child {
   color: var(--purple-light);
   text-decoration: underline;
   text-underline-offset: 3px;
