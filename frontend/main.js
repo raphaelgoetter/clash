@@ -24,7 +24,6 @@ const modeBtns        = document.querySelectorAll('.mode-btn');
 
 const overviewGrid    = document.getElementById('overview-grid');
 const statsGrid       = document.getElementById('stats-grid');
-const stabilityContent= document.getElementById('stability-content');
 const verdictBox      = document.getElementById('verdict-box');
 const reasonsList     = document.getElementById('reasons-list');
 
@@ -133,7 +132,8 @@ function hideResults() {
 // ── Player rendering ──────────────────────────────────────────
 
 function renderPlayerResults(data) {
-  const { overview, activityIndicators, recentActivity, stability, reliability, warHistory } = data;
+  const { overview, activityIndicators, recentActivity, warHistory, warScore } = data;
+  const ws = warScore ?? data.reliability; // fallback si pas de race log
 
   // 1. Overview (Clan & Role removed)
   overviewGrid.innerHTML = overviewItems([
@@ -181,37 +181,35 @@ function renderPlayerResults(data) {
     if (noteEl) noteEl.textContent = '⚠️ The Clash Royale API returns at most 30 battles. For active players who also play regular PvP, older war battles may not appear here.';
   }
 
-  // 4. Stability
-  const stabPct = Math.min(100, stability.score);
-  stabilityContent.innerHTML = `
-    <div class="stability-meter">
-      <div class="stability-bar-bg">
-        <div class="stability-bar" style="width: ${stabPct}%"></div>
-      </div>
-      <div class="stability-meta">Raw score: <strong>${stability.score}</strong> / 100</div>
-    </div>
-    <div>
-      <div class="stability-label">${stabilityIcon(stability.label)} ${stability.label}</div>
-    </div>
-  `;
+  // 4. War Reliability Score avec breakdown
+  renderGaugeChart(ws.pct, ws.color);
 
-  // 5 & 6. Verdict + gauge
-  renderGaugeChart(reliability.score, reliability.color);
-
-  const icon = { green: '✅', yellow: '⚠️', red: '🔴' }[reliability.color] ?? '❓';
+  const icon = { green: '✅', yellow: '⚠️', red: '🔴' }[ws.color] ?? '❓';
   verdictBox.innerHTML = `
-    <div class="verdict-box ${reliability.color}">
+    <div class="verdict-box ${ws.color}">
       <div class="verdict-icon">${icon}</div>
       <div class="verdict-text-wrap">
-        <div class="verdict-score">${reliability.score}<span style="font-size:1rem;opacity:.6">/100</span></div>
-        <div class="verdict-text">${reliability.verdict}</div>
+        <div class="verdict-score">${ws.total}<span style="font-size:1rem;opacity:.6"> / ${ws.maxScore} pts</span></div>
+        <div class="verdict-text">${ws.verdict}</div>
       </div>
     </div>
   `;
 
-  reasonsList.innerHTML = reliability.reasons
-    .map((r) => `<li>${r}</li>`)
-    .join('');
+  reasonsList.innerHTML = (ws.breakdown ?? []).map((b) => {
+    const pct   = Math.round((b.score / b.max) * 100);
+    const color = pct >= 70 ? 'var(--green)' : pct >= 40 ? 'var(--yellow)' : 'var(--red)';
+    return `
+      <li class="score-row">
+        <div class="sr-header">
+          <span class="sr-label">${escHtml(b.label)}</span>
+          <span class="sr-score-val">${b.score}<span class="sr-max"> / ${b.max}</span></span>
+        </div>
+        <div class="sr-bar-bg">
+          <div class="sr-bar-fill" style="width:${pct}%;background:${color}"></div>
+        </div>
+        <div class="sr-detail">${escHtml(b.detail)}</div>
+      </li>`;
+  }).join('');
 
   playerResults.classList.remove('hidden');
   playerResults.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -382,12 +380,6 @@ function badge(text, type) {
 
 function scoreBarColor(color) {
   return { green: '#22c55e', yellow: '#eab308', red: '#ef4444' }[color] ?? '#7c3aed';
-}
-
-function stabilityIcon(label) {
-  if (label.includes('High')) return '🟢';
-  if (label.includes('Medium')) return '🟡';
-  return '🔴';
 }
 
 // ── Utility ──────────────────────────────────────────────────

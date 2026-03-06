@@ -395,27 +395,66 @@ code {
 .verdict-box.red    .verdict-score,
 .verdict-box.red    .verdict-text  { color: var(--red); }
 
-/* ── Reasons ─────────────────────────────────────────────────── */
+/* ── Score breakdown (War Reliability criteria) ─────────────── */
 .reasons-list {
   list-style: none;
   display: flex;
   flex-direction: column;
+  gap: 10px;
+}
+
+.score-row {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,.04);
+  border-left: 3px solid var(--purple-light);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.sr-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
   gap: 8px;
 }
 
-.reasons-list li {
-  padding: 8px 14px;
-  border-radius: var(--radius-sm);
-  font-size: .88rem;
-  background: rgba(255,255,255,.04);
-  border-left: 3px solid var(--purple-light);
-  color: var(--text-secondary);
+.sr-label {
+  font-weight: 600;
+  font-size: .9rem;
+  color: var(--text-primary);
 }
 
-.reasons-list li::before {
-  content: '▸ ';
-  color: var(--purple-light);
+.sr-score-val {
   font-weight: 700;
+  font-size: .9rem;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.sr-max {
+  font-weight: 400;
+  font-size: .8rem;
+  opacity: .55;
+}
+
+.sr-bar-bg {
+  height: 6px;
+  background: rgba(255,255,255,.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.sr-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width .4s ease;
+}
+
+.sr-detail {
+  font-size: .78rem;
+  color: var(--text-muted);
 }
 
 /* ── Table ───────────────────────────────────────────────────── */

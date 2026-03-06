@@ -119,116 +119,141 @@ export function buildDailyActivity(battleLog, days = 30) {
   return Object.entries(map).map(([date, count]) => ({ date, count }));
 }
 
-// ── Stability score ───────────────────────────────────────────
+// ── War score (5 criteria) ────────────────────────────────────
 
 /**
- * Estimate how "stable" a player account is based on donations,
- * battle count and experience level.
+ * Compute the War Reliability Score from 5 weighted criteria.
+ * Total max = 30 pts  (10 + 10 + 5 + 3 + 2)
  *
- * Formula:
- *   stabilityScore = (donations / 1000) * (battleCount / 2000) * (expLevel * 1.5)
+ * Criteria:
+ *  1. Régularité  /10 — participation rate (no 0-deck weeks)
+ *  2. Score moyen /10 — average fame per played week (cap 3 000)
+ *  3. Stabilité   / 5 — consecutive weeks in current clan (cap = totalWeeks)
+ *  4. Expérience  / 3 — best-trophy road score (≥ 12 000 = 3/3)
+ *  5. Dons        / 2 — cards donated this season (≥ 500 = 2/2)
  *
- * The result is then clamped to [0, 100].
- *
- * @param {object} player  - Player profile from the Clash API
- * @returns {{ score: number; label: string }}
+ * @param {object} player      - Player profile from Clash API
+ * @param {object} warHistory  - Output of buildWarHistory()
+ * @returns {{ total:number; maxScore:number; pct:number; verdict:string; color:string; breakdown:object[] }}
  */
+export function computeWarScore(player, warHistory) {
+  const r = (v) => Math.round(v * 10) / 10; // round to 1 decimal
+
+  // 1. Régularité (0-10)
+  const playedWeeks  = warHistory.weeks.filter((w) => w.decksUsed > 0).length;
+  const totalWeeks   = warHistory.totalWeeks || 1;
+  const regularite   = r(Math.min(10, (playedWeeks / totalWeeks) * 10));
+
+  // 2. Score moyen (0-10) — 3 000 fame = perfect
+  const FAME_CAP     = 3000;
+  const scoreMoyen   = r(Math.min(10, (warHistory.avgFame / FAME_CAP) * 10));
+
+  // 3. Stabilité (0-5) — semaines consécutives dans le clan actuel
+  const stabilite    = r(Math.min(5, (warHistory.streakInCurrentClan / totalWeeks) * 5));
+
+  // 4. Expérience trophées (0-3) — ≥ 12 000 best trophies = 3/3
+  const TROPHY_CAP   = 12000;
+  const experience   = r(Math.min(3, ((player.bestTrophies ?? 0) / TROPHY_CAP) * 3));
+
+  // 5. Dons (0-2) — ≥ 500 cartes données cette saison = 2/2
+  const DONATION_CAP = 500;
+  const dons         = r(Math.min(2, ((player.donations ?? 0) / DONATION_CAP) * 2));
+
+  const total    = r(regularite + scoreMoyen + stabilite + experience + dons);
+  const maxScore = 30;
+  const pct      = Math.round((total / maxScore) * 100);
+
+  let verdict, color;
+  if (pct >= 80)      { verdict = 'Fiabilité très élevée en guerre de clans'; color = 'green'; }
+  else if (pct >= 55) { verdict = 'Fiabilité correcte — à surveiller';          color = 'yellow'; }
+  else                { verdict = 'Risque élevé d\'inactivité en GDC';          color = 'red'; }
+
+  const breakdown = [
+    {
+      label:  'Régularité',
+      score:  regularite,
+      max:    10,
+      detail: warHistory.totalWeeks
+        ? `${playedWeeks} / ${warHistory.totalWeeks} semaines jouées`
+        : 'Aucune donnée',
+    },
+    {
+      label:  'Score moyen',
+      score:  scoreMoyen,
+      max:    10,
+      detail: warHistory.avgFame
+        ? `${warHistory.avgFame.toLocaleString('fr-FR')} fame / semaine (max 3 000)`
+        : 'Aucune donnée',
+    },
+    {
+      label:  'Stabilité',
+      score:  stabilite,
+      max:    5,
+      detail: `${warHistory.streakInCurrentClan} semaine${warHistory.streakInCurrentClan > 1 ? 's' : ''} consécutive${warHistory.streakInCurrentClan > 1 ? 's' : ''} dans ce clan`,
+    },
+    {
+      label:  'Expérience',
+      score:  experience,
+      max:    3,
+      detail: `${(player.bestTrophies ?? 0).toLocaleString('fr-FR')} trophées max (cap 12 000)`,
+    },
+    {
+      label:  'Dons',
+      score:  dons,
+      max:    2,
+      detail: `${(player.donations ?? 0).toLocaleString('fr-FR')} cartes données (cap 500)`,
+    },
+  ];
+
+  return { total, maxScore, pct, verdict, color, breakdown };
+}
+
+/**
+ * Legacy reliability from battle log only (fallback when no race log available).
+ * @param {object}   player
+ * @param {object[]} battleLog
+ */
+function computeWarReliabilityFallback(player, battleLog) {
+  const recentBattles7d = battlesInLastDays(battleLog, 7);
+  const donations = player.donations ?? 0;
+  const battleCount = player.battleCount ?? 0;
+  const expLevel = player.expLevel ?? 1;
+
+  const raw = recentBattles7d * 2 + donations / 200 + battleCount / 500 + expLevel * 3;
+  const pct = Math.min(100, Math.round((raw / 200) * 100));
+
+  let verdict, color;
+  if (pct >= 70)      { verdict = 'Fiabilité très élevée en guerre de clans'; color = 'green'; }
+  else if (pct >= 40) { verdict = 'Fiabilité correcte — à surveiller';          color = 'yellow'; }
+  else                { verdict = 'Risque élevé d\'inactivité en GDC';          color = 'red'; }
+
+  return {
+    total:    pct,
+    maxScore: 100,
+    pct,
+    verdict,
+    color,
+    breakdown: [
+      { label: 'Combats GDC (7j)',  score: Math.min(10, recentBattles7d), max: 10, detail: `${recentBattles7d} combats` },
+      { label: 'Dons',              score: Math.min(2, r(donations / 250)), max: 2, detail: `${donations} cartes` },
+      { label: 'Expérience',        score: Math.min(3, r(expLevel / 20)), max: 3, detail: `Niv. ${expLevel}` },
+    ],
+  };
+  function r(v) { return Math.round(v * 10) / 10; }
+}
+
+// Legacy stability (kept for potential reuse)
 export function computeStabilityScore(player) {
   const donations = player.donations ?? 0;
   const battleCount = player.battleCount ?? 0;
   const expLevel = player.expLevel ?? 1;
-
   const raw = (donations / 1000) * (battleCount / 2000) * (expLevel * 1.5);
   const score = Math.min(100, Math.round(raw * 10) / 10);
-
   let label;
   if (score >= 40) label = 'High stability';
   else if (score >= 15) label = 'Medium stability';
   else label = 'Low stability';
-
   return { score, label };
-}
-
-// ── War reliability score ─────────────────────────────────────
-
-/**
- * Predict war participation probability from weighted indicators.
- *
- * Formula (raw):
- *   warReliabilityScore =
- *       (recentBattles7d * 2)
- *     + (donations / 200)
- *     + (battleCount / 500)
- *     + (expLevel * 3)
- *
- * Max theoretical value used for normalisation: 200
- * Normalised score: raw / 200 * 100, clamped to [0, 100].
- *
- * @param {object}   player    - Player profile
- * @param {object[]} battleLog - Battle log array
- * @returns {{ score: number; verdict: string; color: string; reasons: string[] }}
- */
-export function computeWarReliability(player, battleLog) {
-  const recentBattles7d = battlesInLastDays(battleLog, 7);
-  const recentBattles24h = battlesInLastDays(battleLog, 1);
-  const recentBattles30d = battlesInLastDays(battleLog, 30);
-  const donations = player.donations ?? 0;
-  const battleCount = player.battleCount ?? 0;
-  const expLevel = player.expLevel ?? 1;
-
-  const raw =
-    recentBattles7d * 2 +
-    donations / 200 +
-    battleCount / 500 +
-    expLevel * 3;
-
-  // Normalise against a reasonable maximum (200) then cap at 100
-  const score = Math.min(100, Math.round((raw / 200) * 100));
-
-  // ── Verdict ───────────────────────────────────────────────
-  let verdict, color;
-  if (score >= 70) {
-    verdict = 'Highly reliable for clan wars';
-    color = 'green';
-  } else if (score >= 40) {
-    verdict = 'Moderate reliability – monitor participation';
-    color = 'yellow';
-  } else {
-    verdict = 'High risk of inactivity in clan wars';
-    color = 'red';
-  }
-
-  // ── Reasons ───────────────────────────────────────────────
-  const reasons = [];
-  if (recentBattles7d >= 10) reasons.push('High clan war activity this week');
-  else if (recentBattles7d >= 5) reasons.push('Moderate clan war activity this week');
-  else reasons.push('Low clan war activity this week');
-
-  if (donations >= 500) reasons.push('Strong donation history');
-  else if (donations >= 100) reasons.push('Regular donations');
-  else reasons.push('Few or no donations recorded');
-
-  if (expLevel >= 40) reasons.push('Experienced account (high exp level)');
-  else if (expLevel >= 20) reasons.push('Moderately experienced account');
-  else reasons.push('New or low-level account');
-
-  if (recentBattles24h >= 3) reasons.push('Very active in clan wars in the last 24 hours');
-  if (recentBattles30d >= 30) reasons.push('Consistently active in clan wars over the last 30 days');
-
-  return {
-    score,
-    verdict,
-    color,
-    reasons,
-    metrics: {
-      recentBattles24h,
-      recentBattles7d,
-      recentBattles30d,
-      donations,
-      battleCount,
-      expLevel,
-    },
-  };
 }
 
 // ── River Race history ────────────────────────────────────────
@@ -236,19 +261,15 @@ export function computeWarReliability(player, battleLog) {
 /**
  * Extract a player's week-by-week river race history from a clan race log.
  *
- * @param {string}   playerTag  Player tag (with or without #)
- * @param {object[]} raceLog    Array returned by /clans/{tag}/riverracelog
- * @returns {{
- *   weeks: { label:string; seasonId:number; sectionIndex:number; fame:number; decksUsed:number; boatAttacks:number }[];
- *   totalFame: number;
- *   avgFame: number;
- *   maxFame: number;
- *   participation: number;
- *   totalWeeks: number;
- * }}
+ * @param {string}   playerTag       Player tag (with or without #)
+ * @param {object[]} raceLog         Array returned by /clans/{tag}/riverracelog
+ * @param {string}   [currentClanTag] Tag of the player's current clan (to compute streak)
  */
-export function buildWarHistory(playerTag, raceLog) {
+export function buildWarHistory(playerTag, raceLog, currentClanTag = null) {
   const normalized = playerTag.startsWith('#') ? playerTag : `#${playerTag}`;
+  const normClan   = currentClanTag
+    ? (currentClanTag.startsWith('#') ? currentClanTag : `#${currentClanTag}`)
+    : null;
   const weeks = [];
 
   for (const race of raceLog) {
@@ -256,25 +277,36 @@ export function buildWarHistory(playerTag, raceLog) {
       const p = standing.clan?.participants?.find((x) => x.tag === normalized);
       if (p) {
         weeks.push({
-          label: `S${race.seasonId}·W${race.sectionIndex + 1}`,
-          seasonId: race.seasonId,
+          label:       `S${race.seasonId}·W${race.sectionIndex + 1}`,
+          seasonId:    race.seasonId,
           sectionIndex: race.sectionIndex,
-          fame: p.fame ?? 0,
-          decksUsed: p.decksUsed ?? 0,
+          fame:        p.fame      ?? 0,
+          decksUsed:   p.decksUsed ?? 0,
           boatAttacks: p.boatAttacks ?? 0,
+          clanTag:     standing.clan.tag,
         });
-        break; // player found for this race — move to next
+        break;
       }
     }
   }
 
-  const totalFame = weeks.reduce((s, w) => s + w.fame, 0);
-  const participation = weeks.length;
-  const totalWeeks = raceLog.length;
-  const avgFame = participation ? Math.round(totalFame / participation) : 0;
-  const maxFame = weeks.reduce((m, w) => Math.max(m, w.fame), 0);
+  // Consecutive weeks (most-recent first) the player was in their current clan
+  let streakInCurrentClan = 0;
+  if (normClan) {
+    for (const w of weeks) {
+      if (w.clanTag === normClan) streakInCurrentClan++;
+      else break;
+    }
+  }
 
-  return { weeks, totalFame, avgFame, maxFame, participation, totalWeeks };
+  const weeksPlayed  = weeks.filter((w) => w.decksUsed > 0);
+  const totalFame    = weeksPlayed.reduce((s, w) => s + w.fame, 0);
+  const participation = weeksPlayed.length;
+  const totalWeeks   = raceLog.length;
+  const avgFame      = participation ? Math.round(totalFame / participation) : 0;
+  const maxFame      = weeksPlayed.reduce((m, w) => Math.max(m, w.fame), 0);
+
+  return { weeks, totalFame, avgFame, maxFame, participation, totalWeeks, streakInCurrentClan };
 }
 
 // ── Player full analysis ──────────────────────────────────────
@@ -289,49 +321,39 @@ export function analyzePlayer(player, battleLog) {
   // Filter to war battles only, then expand duel rounds into individual entries
   const warLog = expandDuelRounds(filterWarBattles(battleLog));
 
-  const stability = computeStabilityScore(player);
-  const reliability = computeWarReliability(player, warLog);
-  // Limit chart to 7 days: the API returns only 30 battles total, and a player
-  // who also plays regular PvP matches will quickly exhaust that window.
+  // Fallback reliability (battle log only) — overridden in the route when race log is available
+  const reliability = computeWarReliabilityFallback(player, warLog);
   const dailyActivity = buildDailyActivity(warLog, 7);
 
-  const wins = warLog.filter((b) => b.team?.[0]?.crowns > (b.opponent?.[0]?.crowns ?? 0)).length;
-  const losses = warLog.filter((b) => b.team?.[0]?.crowns < (b.opponent?.[0]?.crowns ?? 0)).length;
-  const threeCrowns = warLog.filter((b) => b.team?.[0]?.crowns === 3).length;
+  const wins            = warLog.filter((b) => b.team?.[0]?.crowns > (b.opponent?.[0]?.crowns ?? 0)).length;
+  const losses          = warLog.filter((b) => b.team?.[0]?.crowns < (b.opponent?.[0]?.crowns ?? 0)).length;
+  const threeCrowns     = warLog.filter((b) => b.team?.[0]?.crowns === 3).length;
   const totalBattlesInLog = warLog.length;
-  const winRate = totalBattlesInLog > 0 ? Math.round((wins / totalBattlesInLog) * 100) : 0;
+  const winRate         = totalBattlesInLog > 0 ? Math.round((wins / totalBattlesInLog) * 100) : 0;
 
   return {
     overview: {
-      name: player.name,
-      tag: player.tag,
-      trophies: player.trophies,
+      name:         player.name,
+      tag:          player.tag,
+      trophies:     player.trophies,
       bestTrophies: player.bestTrophies,
-      expLevel: player.expLevel,
-      clan: player.clan
-        ? { name: player.clan.name, tag: player.clan.tag }
-        : null,
-      role: player.role ?? null,
+      expLevel:     player.expLevel,
+      clan:         player.clan ? { name: player.clan.name, tag: player.clan.tag } : null,
+      role:         player.role ?? null,
     },
     activityIndicators: {
       totalWarBattles: totalBattlesInLog,
       wins,
       losses,
       winRate,
-      donations: player.donations ?? 0,
+      donations:    player.donations ?? 0,
       threeCrowns,
     },
     recentActivity: {
-      last7d: reliability.metrics.recentBattles7d,
-      last30d: reliability.metrics.recentBattles30d,
       dailyActivity,
-      // The Clash Royale API returns at most 30 battles. For players who
-      // also play regular PvP, war battles older than a few days may
-      // not appear in the log.
       apiLimitNote: 'Battle log capped at 30 entries by the Clash Royale API.',
     },
-    stability,
-    reliability,
+    reliability, // fallback — replaced by warScore when race log available
   };
 }
 

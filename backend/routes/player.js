@@ -4,7 +4,7 @@
 
 import { Router } from 'express';
 import { fetchPlayer, fetchBattleLog, fetchRaceLog } from '../services/clashApi.js';
-import { analyzePlayer, buildWarHistory } from '../services/analysisService.js';
+import { analyzePlayer, buildWarHistory, computeWarScore } from '../services/analysisService.js';
 
 const router = Router();
 
@@ -40,12 +40,15 @@ router.get('/:tag/analysis', async (req, res) => {
     if (player.clan?.tag) {
       try {
         const raceLog = await fetchRaceLog(player.clan.tag);
-        analysis.warHistory = buildWarHistory(player.tag, raceLog);
+        analysis.warHistory = buildWarHistory(player.tag, raceLog, player.clan.tag);
+        analysis.warScore   = computeWarScore(player, analysis.warHistory);
       } catch (_) {
         analysis.warHistory = null;
+        analysis.warScore   = analysis.reliability; // fallback
       }
     } else {
       analysis.warHistory = null;
+      analysis.warScore   = analysis.reliability; // fallback
     }
 
     res.json(analysis);
