@@ -4,12 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "cd frontend && npm install && npm run build"
+    "dev":   "concurrently --names \"backend,frontend\" --prefix-colors \"cyan,magenta\" \"cd backend && node server.js\" \"cd frontend && npx vite\"",
+    "build": "cd frontend && npm run build && cd .. && vercel --prod"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }
