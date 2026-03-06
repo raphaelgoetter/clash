@@ -47,6 +47,38 @@ export function filterWarBattles(battleLog) {
   return battleLog.filter((b) => WAR_BATTLE_TYPES.has(b.type));
 }
 
+/** Battle types considered as regular Ladder / Path of Legend. */
+const LADDER_TYPES = new Set(['pvp', 'pathOfLegend', 'ranked']);
+
+/** Battle types considered as challenge / tournament. */
+const CHALLENGE_TYPES = new Set([
+  'challenge', 'grandChallenge', 'classicChallenge',
+  'challengeTournament', 'tournament',
+]);
+
+/** Battle types considered as friendly / training (not competitive). */
+const FRIENDLY_TYPES = new Set(['training', 'friendly', 'clanMate', 'casual2v2', '2v2']);
+
+/**
+ * Categorise all entries of a raw battle log into 4 buckets.
+ * Returns counts per category + total entries.
+ *
+ * @param {object[]} rawBattleLog
+ * @returns {{ total:number; gdc:number; ladder:number; challenge:number; friendly:number; other:number }}
+ */
+function categorizeBattleLog(rawBattleLog) {
+  let gdc = 0, ladder = 0, challenge = 0, friendly = 0, other = 0;
+  for (const b of rawBattleLog) {
+    const t = b.type ?? '';
+    if (WAR_BATTLE_TYPES.has(t))  gdc++;
+    else if (LADDER_TYPES.has(t)) ladder++;
+    else if (CHALLENGE_TYPES.has(t)) challenge++;
+    else if (FRIENDLY_TYPES.has(t))  friendly++;
+    else other++;
+  }
+  return { total: rawBattleLog.length, gdc, ladder, challenge, friendly, other };
+}
+
 /**
  * Flatten a war battle log so that duel entries are expanded into
  * individual rounds. Each round gets the timestamp of the parent duel.
@@ -209,37 +241,95 @@ export function computeWarScore(player, warHistory) {
 }
 
 /**
- * Legacy reliability from battle log only (fallback when no race log available).
+ * Fallback reliability from battle log only (used when no race log history available).
+ * Applies the same /30-pt scale as computeWarScore for consistency.
+ *
+ * Criteria (total /30):
+ *  1. Activité GDC    /10 — nb combats GDC dans les 30 entrées du log (cap 10)
+ *  2. Win Rate GDC    /10 — % victoires sur combats GDC (0 if no GDC battles)
+ *  3. Activité générale /5 — combats compétitifs dans le log (cap 20)
+ *  4. Expérience       /3 — bestTrophies (cap 12 000) — même critère que warScore
+ *  5. Dons             /2 — donations (cap 500)         — même critère que warScore
+ *
  * @param {object}   player
- * @param {object[]} battleLog
+ * @param {object[]} warLog       - Filtered war battles (expanded duels)
+ * @param {object}   battleLogBreakdown - Output of categorizeBattleLog()
  */
-function computeWarReliabilityFallback(player, battleLog) {
-  const recentBattles7d = battlesInLastDays(battleLog, 7);
-  const donations = player.donations ?? 0;
-  const battleCount = player.battleCount ?? 0;
-  const expLevel = player.expLevel ?? 1;
+function computeWarReliabilityFallback(player, warLog, battleLogBreakdown) {
+  const r = (v) => Math.round(v * 10) / 10;
 
-  const raw = recentBattles7d * 2 + donations / 200 + battleCount / 500 + expLevel * 3;
-  const pct = Math.min(100, Math.round((raw / 200) * 100));
+  const bd        = battleLogBreakdown ?? { total: warLog.length, gdc: warLog.length, ladder: 0, challenge: 0 };
+  const gdcCount  = bd.gdc;
+  const gdcWins   = warLog.filter((b) => (b.team?.[0]?.crowns ?? 0) > (b.opponent?.[0]?.crowns ?? 0)).length;
+  const gdcWinRate = gdcCount > 0 ? gdcWins / gdcCount : 0;
+  const competitive = bd.gdc + bd.ladder + bd.challenge;
+
+  // 1. Activité GDC (0-10)
+  const activiteGDC = r(Math.min(10, gdcCount));
+
+  // 2. Win Rate GDC (0-10)
+  const winRateGDC = gdcCount > 0 ? r(gdcWinRate * 10) : 0;
+
+  // 3. Activité générale (0-5)
+  const activiteGen = r(Math.min(5, (competitive / 20) * 5));
+
+  // 4. Expérience (0-3) — bestTrophies cap 12 000
+  const TROPHY_CAP = 12000;
+  const experience = r(Math.min(3, ((player.bestTrophies ?? 0) / TROPHY_CAP) * 3));
+
+  // 5. Dons (0-2) — cap 500
+  const DONATION_CAP = 500;
+  const dons = r(Math.min(2, ((player.donations ?? 0) / DONATION_CAP) * 2));
+
+  const total    = r(activiteGDC + winRateGDC + activiteGen + experience + dons);
+  const maxScore = 30;
+  const pct      = Math.round((total / maxScore) * 100);
 
   let verdict, color;
-  if (pct >= 70)      { verdict = 'Fiabilité très élevée en guerre de clans'; color = 'green'; }
-  else if (pct >= 40) { verdict = 'Fiabilité correcte — à surveiller';          color = 'yellow'; }
+  if (pct >= 80)      { verdict = 'Fiabilité très élevée en guerre de clans'; color = 'green'; }
+  else if (pct >= 55) { verdict = 'Fiabilité correcte — à surveiller';          color = 'yellow'; }
   else                { verdict = 'Risque élevé d\'inactivité en GDC';          color = 'red'; }
 
   return {
-    total:    pct,
-    maxScore: 100,
-    pct,
-    verdict,
-    color,
+    total, maxScore, pct, verdict, color,
+    isFallback: true,
     breakdown: [
-      { label: 'Combats GDC (7j)',  score: Math.min(10, recentBattles7d), max: 10, detail: `${recentBattles7d} combats` },
-      { label: 'Dons',              score: Math.min(2, r(donations / 250)), max: 2, detail: `${donations} cartes` },
-      { label: 'Expérience',        score: Math.min(3, r(expLevel / 20)), max: 3, detail: `Niv. ${expLevel}` },
+      {
+        label:  'Activité GDC',
+        score:  activiteGDC,
+        max:    10,
+        detail: gdcCount > 0
+          ? `${gdcCount} combat${gdcCount > 1 ? 's' : ''} GDC dans les 30 dernières entrées`
+          : 'Aucun combat GDC dans le log',
+      },
+      {
+        label:  'Win Rate GDC',
+        score:  winRateGDC,
+        max:    10,
+        detail: gdcCount > 0
+          ? `${Math.round(gdcWinRate * 100)}% de victoires (${gdcWins}V / ${gdcCount - gdcWins}D)`
+          : 'Pas de donnée — aucun combat GDC',
+      },
+      {
+        label:  'Activité générale',
+        score:  activiteGen,
+        max:    5,
+        detail: `${competitive} combats compétitifs (${bd.gdc} GDC + ${bd.ladder} Ladder + ${bd.challenge} Défis)`,
+      },
+      {
+        label:  'Expérience',
+        score:  experience,
+        max:    3,
+        detail: `${(player.bestTrophies ?? 0).toLocaleString('fr-FR')} trophées max (cap 12 000)`,
+      },
+      {
+        label:  'Dons',
+        score:  dons,
+        max:    2,
+        detail: `${(player.donations ?? 0).toLocaleString('fr-FR')} cartes données (cap 500)`,
+      },
     ],
   };
-  function r(v) { return Math.round(v * 10) / 10; }
 }
 
 // Legacy stability (kept for potential reuse)
@@ -318,11 +408,14 @@ export function buildWarHistory(playerTag, raceLog, currentClanTag = null) {
  * @returns {object}
  */
 export function analyzePlayer(player, battleLog) {
+  // Categorise all raw entries before filtering
+  const battleLogBreakdown = categorizeBattleLog(battleLog);
+
   // Filter to war battles only, then expand duel rounds into individual entries
   const warLog = expandDuelRounds(filterWarBattles(battleLog));
 
   // Fallback reliability (battle log only) — overridden in the route when race log is available
-  const reliability = computeWarReliabilityFallback(player, warLog);
+  const reliability = computeWarReliabilityFallback(player, warLog, battleLogBreakdown);
   const dailyActivity = buildDailyActivity(warLog, 7);
 
   const wins            = warLog.filter((b) => b.team?.[0]?.crowns > (b.opponent?.[0]?.crowns ?? 0)).length;
@@ -348,6 +441,7 @@ export function analyzePlayer(player, battleLog) {
       winRate,
       donations:    player.donations ?? 0,
       threeCrowns,
+      battleLogBreakdown,   // counts per category across all 30 entries
     },
     recentActivity: {
       dailyActivity,

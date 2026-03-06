@@ -144,8 +144,8 @@ function renderPlayerResults(data) {
     { label: 'Exp Level',     value: `⭐ ${overview.expLevel}` },
   ]);
 
-  // 2. Stats — race log when available, battle log fallback
-  if (warHistory) {
+  // 2. Stats — race log quand il y a des semaines, sinon battlelog breakdown
+  if (warHistory && warHistory.weeks.length > 0) {
     statsGrid.innerHTML = statCards([
       { label: 'Participation',  value: `${warHistory.participation} / ${warHistory.totalWeeks}` },
       { label: 'Total Fame',     value: fmt(warHistory.totalFame) },
@@ -155,14 +155,15 @@ function renderPlayerResults(data) {
       { label: 'Donations',      value: fmt(activityIndicators.donations) },
     ]);
   } else {
-    // Fallback: display battle-log based stats
+    // Fallback battlelog : répartition des 30 entrées par type
+    const bd = activityIndicators.battleLogBreakdown ?? {};
     statsGrid.innerHTML = statCards([
-      { label: 'War Battles (log)', value: fmt(activityIndicators.totalWarBattles) },
-      { label: 'Wins',              value: fmt(activityIndicators.wins) },
-      { label: 'Losses',            value: fmt(activityIndicators.losses) },
-      { label: 'Win Rate',          value: `${activityIndicators.winRate}%` },
-      { label: 'Donations',         value: fmt(activityIndicators.donations) },
-      { label: '3-Crown Wins',      value: fmt(activityIndicators.threeCrowns) },
+      { label: '⚔️ Combats GDC',     value: fmt(bd.gdc ?? activityIndicators.totalWarBattles) },
+      { label: '🏆 Win Rate GDC',   value: `${activityIndicators.winRate}%` },
+      { label: '🔀 Ladder / Ranked', value: fmt(bd.ladder ?? 0) },
+      { label: '🎯 Défis / Tournois', value: fmt(bd.challenge ?? 0) },
+      { label: '📦 Donations',       value: fmt(activityIndicators.donations) },
+      { label: '📊 Log (sur 30)',    value: `${bd.total ?? '?'} entrées` },
     ]);
   }
 
@@ -177,20 +178,41 @@ function renderPlayerResults(data) {
       if (noteEl) noteEl.textContent =
         `ℹ️ Data from ${warHistory.weeks.length} completed river races. Indigo = above average, red = below average. Dashed line = average (${fmt(warHistory.avgFame)} fame).`;
     } else {
+      const bd = activityIndicators.battleLogBreakdown ?? {};
+      const parts = [
+        bd.gdc      != null ? `${bd.gdc} GDC`            : null,
+        bd.ladder   != null ? `${bd.ladder} Ladder`       : null,
+        bd.challenge != null ? `${bd.challenge} Défis`    : null,
+        bd.friendly != null && bd.friendly > 0 ? `${bd.friendly} Amical` : null,
+      ].filter(Boolean).join(' · ');
       if (titleEl) titleEl.textContent = '📅 River Race History – 10 weeks';
       renderWarHistoryChart([]);
-      if (noteEl) noteEl.textContent = '⚠️ Ce joueur n\'a participé à aucune River Race dans l\'historique disponible (10 dernières semaines).';
+      if (noteEl) noteEl.textContent =
+        `⚠️ Aucune River Race dans l’historique du clan pour ce joueur (membre récent). `
+        + `Log API (${bd.total ?? 30} entrées) : ${parts || 'aucune donnée'}.`;
     }
   } else {
+    const bd = activityIndicators.battleLogBreakdown ?? {};
+    const parts = [
+      bd.gdc      != null ? `${bd.gdc} GDC`          : null,
+      bd.ladder   != null ? `${bd.ladder} Ladder`     : null,
+      bd.challenge != null ? `${bd.challenge} Défis`  : null,
+      bd.friendly != null && bd.friendly > 0 ? `${bd.friendly} Amical` : null,
+    ].filter(Boolean).join(' · ');
     if (titleEl) titleEl.textContent = '📅 Clan War Activity – Last 7 days';
     renderActivityChart(recentActivity.dailyActivity);
-    if (noteEl) noteEl.textContent = '⚠️ The Clash Royale API returns at most 30 battles. For active players who also play regular PvP, older war battles may not appear here.';
+    if (noteEl) noteEl.textContent =
+      `⚠️ Pas de clan — historique GDC indisponible. `
+      + `Log API (${bd.total ?? 30} entrées) : ${parts || 'aucune donnée'}.`;
   }
 
   // 4. War Reliability Score avec breakdown
   renderGaugeChart(ws.pct, ws.color);
 
   const icon = { green: '✅', yellow: '⚠️', red: '🔴' }[ws.color] ?? '❓';
+  const fallbackBadge = ws.isFallback
+    ? `<div class="fallback-badge">⚠️ Estimation basée sur le log API (≤ 30 batailles) — pas d'historique GDC disponible</div>`
+    : '';
   verdictBox.innerHTML = `
     <div class="verdict-box ${ws.color}">
       <div class="verdict-icon">${icon}</div>
@@ -199,6 +221,7 @@ function renderPlayerResults(data) {
         <div class="verdict-text">${ws.verdict}</div>
       </div>
     </div>
+    ${fallbackBadge}
   `;
 
   reasonsList.innerHTML = (ws.breakdown ?? []).map((b) => {
