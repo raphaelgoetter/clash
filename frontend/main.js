@@ -23,7 +23,6 @@ const modeBtns        = document.querySelectorAll('.mode-btn');
 
 const overviewGrid    = document.getElementById('overview-grid');
 const statsGrid       = document.getElementById('stats-grid');
-const recentBadges    = document.getElementById('recent-badges');
 const stabilityContent= document.getElementById('stability-content');
 const verdictBox      = document.getElementById('verdict-box');
 const reasonsList     = document.getElementById('reasons-list');
@@ -39,12 +38,19 @@ let currentMode = 'player';   // 'player' | 'clan'
 let allMembers  = [];          // cache for table filtering / sorting
 let sortState   = { col: null, dir: 'asc' };
 
+// Default tags per mode
+const DEFAULT_TAGS = { player: '#YRGJGR8R', clan: '#LRQP20V9' };
+
+// Set initial default
+searchInput.value = DEFAULT_TAGS.player;
+
 // ── Mode selector ────────────────────────────────────────────
 modeBtns.forEach((btn) => {
   btn.addEventListener('click', () => {
     currentMode = btn.dataset.mode;
     modeBtns.forEach((b) => b.classList.remove('active'));
     btn.classList.add('active');
+    searchInput.value = DEFAULT_TAGS[currentMode];
     searchInput.placeholder =
       currentMode === 'player'
         ? 'Enter player tag (e.g. #ABC123) …'
@@ -128,35 +134,26 @@ function hideResults() {
 function renderPlayerResults(data) {
   const { overview, activityIndicators, recentActivity, stability, reliability } = data;
 
-  // 1. Overview
+  // 1. Overview (Clan & Role removed)
   overviewGrid.innerHTML = overviewItems([
     { label: 'Name',          value: overview.name, cls: 'gold' },
     { label: 'Tag',           value: overview.tag },
     { label: 'Trophies',      value: `🏆 ${fmt(overview.trophies)}` },
     { label: 'Best Trophies', value: `🏆 ${fmt(overview.bestTrophies)}` },
     { label: 'Exp Level',     value: `⭐ ${overview.expLevel}` },
-    { label: 'Clan',          value: overview.clan?.name ?? '—' },
-    { label: 'Role',          value: capitalize(overview.role ?? '—') },
   ]);
 
-  // 2. Activity indicators
+  // 2. Clan Wars Indicators (war battles only)
   statsGrid.innerHTML = statCards([
-    { label: 'Total Battles',  value: fmt(activityIndicators.totalBattles) },
-    { label: 'Wins',           value: fmt(activityIndicators.wins) },
-    { label: 'Losses',         value: fmt(activityIndicators.losses) },
-    { label: 'Win Rate',       value: `${activityIndicators.winRate}%` },
-    { label: 'Donations',      value: fmt(activityIndicators.donations) },
-    { label: '3-Crown Wins',   value: fmt(activityIndicators.threeCrowns) },
+    { label: 'War Battles (log)', value: fmt(activityIndicators.totalWarBattles) },
+    { label: 'Wins',              value: fmt(activityIndicators.wins) },
+    { label: 'Losses',            value: fmt(activityIndicators.losses) },
+    { label: 'Win Rate',          value: `${activityIndicators.winRate}%` },
+    { label: 'Donations',         value: fmt(activityIndicators.donations) },
+    { label: '3-Crown Wins',      value: fmt(activityIndicators.threeCrowns) },
   ]);
 
-  // 3. Recent activity badges
-  recentBadges.innerHTML = [
-    badge(`${recentActivity.last24h} battle${pl(recentActivity.last24h)} (24h)`, 'blue'),
-    badge(`${recentActivity.last7d} battles (7d)`, 'green'),
-    badge(`${recentActivity.last30d} battles (30d)`, 'gold'),
-  ].join('');
-
-  // Render activity chart
+  // 3. Clan War Activity chart (war battles only)
   renderActivityChart(recentActivity.dailyActivity);
 
   // 4. Stability

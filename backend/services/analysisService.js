@@ -27,6 +27,27 @@ function parseClashDate(ts) {
 }
 
 /**
+ * Clan War battle types in the Clash Royale API.
+ * Covers both current River Race format and legacy war format.
+ */
+const WAR_BATTLE_TYPES = new Set([
+  'riverRacePvP',
+  'riverRaceDuel',
+  'riverRaceDuelColosseum',
+  'riverRaceBoat',
+  'clanWarBattle',
+]);
+
+/**
+ * Filter a battle log to keep only Clan War battles.
+ * @param {object[]} battleLog
+ * @returns {object[]}
+ */
+export function filterWarBattles(battleLog) {
+  return battleLog.filter((b) => WAR_BATTLE_TYPES.has(b.type));
+}
+
+/**
  * Count battles that occurred within the last `days` calendar days.
  * @param {object[]} battleLog
  * @param {number} days
@@ -148,9 +169,9 @@ export function computeWarReliability(player, battleLog) {
 
   // ── Reasons ───────────────────────────────────────────────
   const reasons = [];
-  if (recentBattles7d >= 10) reasons.push('High battle activity this week');
-  else if (recentBattles7d >= 5) reasons.push('Moderate battle activity this week');
-  else reasons.push('Low battle activity this week');
+  if (recentBattles7d >= 10) reasons.push('High clan war activity this week');
+  else if (recentBattles7d >= 5) reasons.push('Moderate clan war activity this week');
+  else reasons.push('Low clan war activity this week');
 
   if (donations >= 500) reasons.push('Strong donation history');
   else if (donations >= 100) reasons.push('Regular donations');
@@ -160,8 +181,8 @@ export function computeWarReliability(player, battleLog) {
   else if (expLevel >= 20) reasons.push('Moderately experienced account');
   else reasons.push('New or low-level account');
 
-  if (recentBattles24h >= 3) reasons.push('Very active in the last 24 hours');
-  if (recentBattles30d >= 30) reasons.push('Consistently active over the last 30 days');
+  if (recentBattles24h >= 3) reasons.push('Very active in clan wars in the last 24 hours');
+  if (recentBattles30d >= 30) reasons.push('Consistently active in clan wars over the last 30 days');
 
   return {
     score,
@@ -188,14 +209,17 @@ export function computeWarReliability(player, battleLog) {
  * @returns {object}
  */
 export function analyzePlayer(player, battleLog) {
-  const stability = computeStabilityScore(player);
-  const reliability = computeWarReliability(player, battleLog);
-  const dailyActivity = buildDailyActivity(battleLog, 30);
+  // Work only on Clan War battles for activity & indicators
+  const warLog = filterWarBattles(battleLog);
 
-  const wins = battleLog.filter((b) => b.team?.[0]?.crowns > (b.opponent?.[0]?.crowns ?? 0)).length;
-  const losses = battleLog.filter((b) => b.team?.[0]?.crowns < (b.opponent?.[0]?.crowns ?? 0)).length;
-  const threeCrowns = battleLog.filter((b) => b.team?.[0]?.crowns === 3).length;
-  const totalBattlesInLog = battleLog.length;
+  const stability = computeStabilityScore(player);
+  const reliability = computeWarReliability(player, warLog);
+  const dailyActivity = buildDailyActivity(warLog, 30);
+
+  const wins = warLog.filter((b) => b.team?.[0]?.crowns > (b.opponent?.[0]?.crowns ?? 0)).length;
+  const losses = warLog.filter((b) => b.team?.[0]?.crowns < (b.opponent?.[0]?.crowns ?? 0)).length;
+  const threeCrowns = warLog.filter((b) => b.team?.[0]?.crowns === 3).length;
+  const totalBattlesInLog = warLog.length;
   const winRate = totalBattlesInLog > 0 ? Math.round((wins / totalBattlesInLog) * 100) : 0;
 
   return {
@@ -211,16 +235,14 @@ export function analyzePlayer(player, battleLog) {
       role: player.role ?? null,
     },
     activityIndicators: {
-      totalBattles: player.battleCount ?? 0,
+      totalWarBattles: totalBattlesInLog,
       wins,
       losses,
       winRate,
       donations: player.donations ?? 0,
-      donationsReceived: player.donationsReceived ?? 0,
       threeCrowns,
     },
     recentActivity: {
-      last24h: reliability.metrics.recentBattles24h,
       last7d: reliability.metrics.recentBattles7d,
       last30d: reliability.metrics.recentBattles30d,
       dailyActivity,
