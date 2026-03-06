@@ -10,7 +10,7 @@ A full-stack web tool that helps clan leaders evaluate whether a player is likel
 |---|---|
 | **Player analysis** | Overview, activity indicators, battle log chart, war reliability score (/45 or /40), colour-coded verdict + breakdown |
 | **Clan analysis** | Member table with sorting & filtering, score distribution chart, reliable-vs-risky pie chart |
-| **Response cache** | In-memory cache (5 min TTL) to avoid hammering the Clash Royale API |
+| **Response cache** | In-memory cache (15 min TTL) to avoid hammering the Clash Royale API |
 | **Responsive UI** | Clash Royale-inspired dark theme, works on mobile |
 
 ---
@@ -28,7 +28,7 @@ clash/
 │   └── services/
 │       ├── clashApi.js        # Clash Royale API wrapper
 │       ├── analysisService.js # Scoring formulas
-│       └── cache.js           # In-memory cache (5 min TTL)
+│       └── cache.js           # In-memory cache (15 min TTL)
 ├── frontend/
 │   ├── index.html
 │   ├── main.js                # UI orchestration

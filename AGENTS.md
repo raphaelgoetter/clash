@@ -9,7 +9,7 @@ Analyseur de fiabilité de guerre de clan Clash Royale — backend Express + fro
 - **Backend** : Node.js ESM, Express 4, `node-fetch`, port 3000 en dev
 - **Frontend** : Vite 5, Vanilla JS, Chart.js 4, pas de framework
 - **Déploiement** : Vercel (`vercel --prod` depuis la racine), `api/index.js` comme entrée serverless
-- **Cache** : in-memory, TTL 5 min (`backend/services/cache.js`)
+- **Cache** : in-memory, TTL 15 min (`backend/services/cache.js`)
 
 ## Commandes essentielles
 

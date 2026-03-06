@@ -9,10 +9,10 @@ const store = new Map(); // key → { value, expiresAt }
  *
  * @param {string}   key
  * @param {Function} fn       - async factory: () => Promise<value>
- * @param {number}   ttlMs    - time-to-live in milliseconds (default: 5 min)
+ * @param {number}   ttlMs    - time-to-live in milliseconds (default: 15 min)
  * @returns {Promise<{ value: any, fromCache: boolean }>}
  */
-export async function getOrSet(key, fn, ttlMs = 5 * 60 * 1000) {
+export async function getOrSet(key, fn, ttlMs = 15 * 60 * 1000) {
   const now = Date.now();
   const hit = store.get(key);
   if (hit && hit.expiresAt > now) {

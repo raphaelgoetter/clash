@@ -239,6 +239,14 @@ code {
   font-weight: 600;
 }
 
+.cache-note {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-align: right;
+  margin-bottom: 12px;
+  opacity: 0.7;
+}
+
 /* ── Overview grid ──────────────────────────────────────────── */
 .overview-grid {
   display: grid;

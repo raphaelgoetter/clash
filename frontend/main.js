@@ -18,6 +18,7 @@ const searchBtnLabel  = document.getElementById('search-btn-label');
 const searchSpinner   = document.getElementById('search-spinner');
 const searchHint      = document.getElementById('search-hint');
 const errorBanner     = document.getElementById('error-banner');
+const cacheNote       = document.getElementById('cache-note');
 const playerResults   = document.getElementById('player-results');
 const clanResults     = document.getElementById('clan-results');
 const modeBtns        = document.querySelectorAll('.mode-btn');
@@ -131,11 +132,13 @@ async function handleSearch() {
 
   try {
     if (currentMode === 'player') {
-      const data = await apiFetch(`/api/player/${encodeURIComponent(tag)}/analysis`);
+      const { data, fromCache } = await apiFetch(`/api/player/${encodeURIComponent(tag)}/analysis`);
       renderPlayerResults(data);
+      showCacheNote(fromCache);
     } else {
-      const data = await apiFetch(`/api/clan/${encodeURIComponent(tag)}/analysis`);
+      const { data, fromCache } = await apiFetch(`/api/clan/${encodeURIComponent(tag)}/analysis`);
       renderClanResults(data);
+      showCacheNote(fromCache);
     }
     syncUrlState(currentMode, tag);
   } catch (err) {
@@ -156,7 +159,9 @@ async function apiFetch(path) {
     } catch (_) { /* ignore */ }
     throw new Error(msg);
   }
-  return res.json();
+  const fromCache = res.headers.get('X-Cache') === 'HIT';
+  const data = await res.json();
+  return { data, fromCache };
 }
 
 // ── UI helpers ───────────────────────────────────────────────
@@ -178,6 +183,14 @@ function hideError() {
 function hideResults() {
   playerResults.classList.add('hidden');
   clanResults.classList.add('hidden');
+  cacheNote.classList.add('hidden');
+}
+
+function showCacheNote(fromCache) {
+  cacheNote.classList.remove('hidden');
+  cacheNote.textContent = fromCache
+    ? '🔃 Cached result — refreshes every 15 min'
+    : '✅ Live data';
 }
 
 // ── Player rendering ──────────────────────────────────────────
