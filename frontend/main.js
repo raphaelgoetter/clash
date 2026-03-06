@@ -194,6 +194,7 @@ function renderPlayerResults(data) {
     { label: 'Trophies',      value: `🏆 ${fmt(overview.trophies)}` },
     { label: 'Best Trophies', value: `🏆 ${fmt(overview.bestTrophies)}` },
     { label: 'Exp Level',     value: `⭐ ${overview.expLevel}` },
+    { label: 'CW2 Wins',      value: `⚔️ ${fmt(overview.clanWarWins ?? 0)}` },
   ]);
 
   // 2. Stats — race log quand il y a des semaines, sinon battlelog breakdown

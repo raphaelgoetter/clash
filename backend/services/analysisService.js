@@ -322,8 +322,13 @@ export function computeWarScore(player, warHistory, warWinRate = null) {
   // 6. Win Rate GDC (0-5) — optionnel, uniquement quand battlelog disponible
   const winRateGDC   = warWinRate !== null ? r(Math.min(5, warWinRate * 5)) : null;
 
-  const total    = r(regularite + scoreMoyen + stabilite + experience + dons + (winRateGDC ?? 0));
-  const maxScore = winRateGDC !== null ? 35 : 30;
+  // 7. CW2 Battle Wins (0-10) — from ClanWarWins badge
+  const CW2_CAP     = 250;
+  const cw2Wins     = player.badges?.find((b) => b.name === 'ClanWarWins')?.progress ?? 0;
+  const cw2Score    = r(Math.min(10, (cw2Wins / CW2_CAP) * 10));
+
+  const total    = r(regularite + scoreMoyen + stabilite + experience + dons + (winRateGDC ?? 0) + cw2Score);
+  const maxScore = winRateGDC !== null ? 45 : 40;
   const pct      = Math.round((total / maxScore) * 100);
 
   let verdict, color;
@@ -381,6 +386,12 @@ export function computeWarScore(player, warHistory, warWinRate = null) {
       max:    5,
       detail: `${Math.round(warWinRate * 100)}% victories in River Race`,
     }] : []),
+    {
+      label:  'CW2 Battle Wins',
+      score:  cw2Score,
+      max:    10,
+      detail: `${cw2Wins.toLocaleString('en-US')} total CW2 wins (cap 250)`,
+    },
   ];
 
   return { total, maxScore, pct, verdict, color, breakdown };
@@ -430,8 +441,13 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
   const DONATION_CAP = 500;
   const dons = r(Math.min(2, ((player.donations ?? 0) / DONATION_CAP) * 2));
 
-  const total    = r(activiteGDC + winRateGDC + activiteGen + experience + dons);
-  const maxScore = 30;
+  // 6. CW2 Battle Wins (0-10) — from ClanWarWins badge
+  const CW2_CAP  = 250;
+  const cw2Wins  = player.badges?.find((b) => b.name === 'ClanWarWins')?.progress ?? 0;
+  const cw2Score = r(Math.min(10, (cw2Wins / CW2_CAP) * 10));
+
+  const total    = r(activiteGDC + winRateGDC + activiteGen + experience + dons + cw2Score);
+  const maxScore = 40;
   const pct      = Math.round((total / maxScore) * 100);
 
   let verdict, color;
@@ -475,6 +491,12 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
         score:  dons,
         max:    2,
         detail: `${(player.donations ?? 0).toLocaleString('en-US')} cards donated (cap 500)`,
+      },
+      {
+        label:  'CW2 Battle Wins',
+        score:  cw2Score,
+        max:    10,
+        detail: `${cw2Wins.toLocaleString('en-US')} total CW2 wins (cap 250)`,
       },
     ],
   };
@@ -581,6 +603,7 @@ export function analyzePlayer(player, battleLog) {
       expLevel:     player.expLevel,
       clan:         player.clan ? { name: player.clan.name, tag: player.clan.tag } : null,
       role:         player.role ?? null,
+      clanWarWins:  player.badges?.find((b) => b.name === 'ClanWarWins')?.progress ?? 0,
     },
     activityIndicators: {
       totalWarBattles: totalBattlesInLog,
