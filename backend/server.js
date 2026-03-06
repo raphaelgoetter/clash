@@ -46,6 +46,12 @@ app.use((err, _req, res, _next) => {
 });
 
 // ── Start ─────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`✅  Backend running at http://localhost:${PORT}`);
-});
+// Export app for Vercel serverless (handler is the Express app itself)
+export default app;
+
+// Only bind a TCP port when running locally (Vercel sets VERCEL=1)
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`✅  Backend running at http://localhost:${PORT}`);
+  });
+}
