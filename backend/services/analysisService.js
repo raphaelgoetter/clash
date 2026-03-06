@@ -723,6 +723,48 @@ export function computeMemberActivityScore(member) {
   return { score, verdict, color };
 }
 
+// ── Current war week ──────────────────────────────────────────────────────────
+
+/**
+ * Calcule le nombre de combats GDC par jour pour la semaine de guerre en cours (jeu–dim).
+ * Retourne null si on est hors période de guerre (lun–mer).
+ *
+ * @param {object[]} battleLog  Journal de batailles brut
+ * @returns {Array<{ key:string, label:string, count:number, isPast:boolean, isToday:boolean, isFuture:boolean }>|null}
+ */
+export function buildCurrentWarDays(battleLog) {
+  // Le jour GDC commence à 10h40 UTC : on décale pour aligner les batailles correctement
+  const nowGdcDate = new Date(Date.now() - WAR_DAY_RESET_MS);
+  const dow = nowGdcDate.getUTCDay(); // 0=Dim, 1=Lun … 4=Jeu, 5=Ven, 6=Sam
+
+  // Période de guerre : Jeu(4), Ven(5), Sam(6), Dim(0)
+  const isWarPeriod = dow === 0 || dow >= 4;
+  if (!isWarPeriod) return null;
+
+  // Jours écoulés depuis le jeudi de cette semaine GDC
+  const daysFromThu = dow === 4 ? 0 : dow === 5 ? 1 : dow === 6 ? 2 : 3;
+  const thuGdcMs = nowGdcDate.getTime() - daysFromThu * MS_PER_DAY;
+
+  const DAY_LABELS = ['Thu', 'Fri', 'Sat', 'Sun'];
+  const days = DAY_LABELS.map((label, i) => ({
+    key:      new Date(thuGdcMs + i * MS_PER_DAY).toISOString().slice(0, 10),
+    label,
+    count:    0,
+    isPast:   i < daysFromThu,
+    isToday:  i === daysFromThu,
+    isFuture: i > daysFromThu,
+  }));
+
+  // Compte les combats GDC par jour (correction reset 10h40 incluse)
+  for (const b of filterWarBattles(battleLog)) {
+    const key = warDayKey(b.battleTime);
+    const day = days.find((d) => d.key === key);
+    if (day) day.count++;
+  }
+
+  return days;
+}
+
 /**
  * Enrich an array of clan members with activity scores.
  * @param {object[]} members

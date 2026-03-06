@@ -93,6 +93,12 @@
           <div class="api-limit-note" id="api-limit-note"></div>
         </div>
 
+        <!-- 3b. Actual Clan War (visible jeudi–dimanche uniquement) -->
+        <div class="card hidden" id="card-current-war">
+          <h2 class="card-title">⚔️ Actual Clan War</h2>
+          <div class="war-days-grid" id="war-days-grid"></div>
+        </div>
+
         <!-- 4 & 5. War reliability + verdict -->
         <div class="card" id="card-verdict">
           <h2 class="card-title">⚔️ War Reliability Score</h2>
@@ -185,8 +191,7 @@
                   <th class="sortable" data-col="role">Role <span class="sort-icon">↕</span></th>
                   <th class="sortable" data-col="trophies">Trophies <span class="sort-icon">↕</span></th>
                   <th class="sortable" data-col="donations">Donations <span class="sort-icon">↕</span></th>
-                  <th class="sortable" data-col="activityScore">Activity Score <span class="sort-icon">↕</span></th>
-                  <th>Verdict</th>
+                  <th class="sortable" data-col="activityScore">Activity Score <span class="sort-icon">↕</span></th>                  <th id="th-this-war" class="hidden">This War</th>                  <th>Verdict</th>
                 </tr>
               </thead>
               <tbody id="members-tbody"></tbody>

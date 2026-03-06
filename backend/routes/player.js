@@ -6,7 +6,7 @@ import { Router } from 'express';
 import { fetchPlayer, fetchBattleLog, fetchRaceLog, fetchCurrentRace } from '../services/clashApi.js';
 import {
   analyzePlayer, buildWarHistory, computeWarScore,
-  filterWarBattles, expandDuelRounds, isWarWin,
+  filterWarBattles, expandDuelRounds, isWarWin, buildCurrentWarDays,
 } from '../services/analysisService.js';
 import { getOrSet } from '../services/cache.js';
 
@@ -55,6 +55,9 @@ async function buildPlayerAnalysis(tag) {
     ]);
 
     const analysis = analyzePlayer(player, battleLog);
+
+    // Combats GDC par jour pour la semaine en cours (null hors période jeu–dim)
+    analysis.currentWarDays = buildCurrentWarDays(battleLog);
 
     // Enrich with river race history if the player is currently in a clan.
     // We silently ignore failures so a missing/private war log doesn't block the response.

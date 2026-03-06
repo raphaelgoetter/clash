@@ -7,7 +7,7 @@ import { fetchClan, fetchClanMembers, fetchRaceLog, fetchBattleLog, fetchPlayer,
 import {
   analyzeClanMembers, buildWarHistory, computeWarScore,
   computeWarReliabilityFallback, categorizeBattleLog,
-  filterWarBattles, expandDuelRounds, isWarWin,
+  filterWarBattles, expandDuelRounds, isWarWin, buildCurrentWarDays,
 } from '../services/analysisService.js';
 import { getOrSet } from '../services/cache.js';
 
@@ -166,6 +166,7 @@ async function buildClanAnalysis(clanTag) {
         verdict,
         color,
         isNew,
+        warDays: battleLog !== null ? buildCurrentWarDays(battleLog) : null,
       };
     });
 
@@ -199,6 +200,7 @@ async function buildClanAnalysis(clanTag) {
       },
       members: analyzedMembers,
       summary: { green, yellow, orange, red, avgScore, total: analyzedMembers.length },
+      isWarPeriod: analyzedMembers.some((m) => m.warDays !== null),
     };
 }
 

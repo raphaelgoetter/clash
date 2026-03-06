@@ -27,6 +27,8 @@ const overviewGrid    = document.getElementById('overview-grid');
 const statsGrid       = document.getElementById('stats-grid');
 const verdictBox      = document.getElementById('verdict-box');
 const reasonsList     = document.getElementById('reasons-list');
+const cardCurrentWar  = document.getElementById('card-current-war');
+const warDaysGrid     = document.getElementById('war-days-grid');
 
 const clanOverviewGrid= document.getElementById('clan-overview-grid');
 const membersTbody    = document.getElementById('members-tbody');
@@ -37,6 +39,7 @@ const filterVerdict   = document.getElementById('filter-verdict');
 let currentMode = 'player';   // 'player' | 'clan'
 let allMembers  = [];          // cache for table filtering / sorting
 let sortState   = { col: 'activityScore', dir: 'asc' };
+let isWarActive = false;       // true jeu–dim : colonne "This War" visible dans le tableau clan
 
 // Default tags per mode
 const DEFAULT_TAGS = { player: '#YRGJGR8R', clan: '#LRQP20V9' };
@@ -184,6 +187,7 @@ function hideResults() {
   playerResults.classList.add('hidden');
   clanResults.classList.add('hidden');
   cacheNote.classList.add('hidden');
+  cardCurrentWar.classList.add('hidden');
 }
 
 function showCacheNote(fromCache) {
@@ -287,6 +291,9 @@ function renderPlayerResults(data) {
       + `API log (${bd.total ?? 30} entries): ${parts || 'no data'}.`;
   }
 
+  // 3b. Actual Clan War (visible jeudi–dimanche)
+  renderCurrentWarCard(data.currentWarDays ?? null);
+
   // 4. War Reliability Score avec breakdown
   renderGaugeChart(ws.pct, ws.color);
 
@@ -325,10 +332,55 @@ function renderPlayerResults(data) {
   playerResults.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// ── Clan rendering ────────────────────────────────────────────
+// ── Actual Clan War card (player view) ────────────────────────────
+
+function renderCurrentWarCard(days) {
+  if (!days) { cardCurrentWar.classList.add('hidden'); return; }
+  cardCurrentWar.classList.remove('hidden');
+  warDaysGrid.innerHTML = days.map((d) => {
+    const isFull  = d.count >= 4;
+    const isEmpty = d.count === 0;
+    const dotColor = d.isFuture ? 'future' : isFull ? 'good' : isEmpty ? 'bad' : 'partial';
+    let status = '·';
+    if (d.isPast)       status = isFull ? '✅' : isEmpty ? '🔴' : '⚠️';
+    else if (d.isToday) status = isFull ? '✅' : '⏳';
+    const dots = Array.from({ length: 4 }, (_, i) =>
+      `<span class="war-day__dot${i < d.count ? ` filled ${dotColor}` : ''}"></span>`
+    ).join('');
+    return `<div class="war-day${d.isToday ? ' is-today' : ''}">` +
+      `<span class="war-day__label">${d.label}</span>` +
+      `<div class="war-day__dots">${dots}</div>` +
+      `<span class="war-day__count">${d.isFuture ? '—' : `${d.count}/4`}</span>` +
+      `<span class="war-day__status">${status}</span>` +
+      `</div>`;
+  }).join('');
+}
+
+// ── Clan war mini-bars (clan table) ─────────────────────────────────
+
+function warMiniBarHtml(warDays) {
+  if (!warDays) return '<span style="color:var(--text-muted);font-size:.75rem">—</span>';
+  return '<div class="war-mini-bars">' +
+    warDays.map((d) => {
+      const px  = d.count === 0 && d.isFuture ? 2 : Math.max(2, Math.round((d.count / 4) * 20));
+      const cls = (d.isFuture && d.count === 0) ? 'future'
+                : d.count >= 4                  ? 'good'
+                : d.count  > 0                  ? 'partial'
+                : d.isPast                      ? 'bad'
+                :                                 'future';
+      return `<div class="war-mini-bar ${cls}" style="height:${px}px" title="${d.label}: ${d.count}/4"></div>`;
+    }).join('') +
+  '</div>';
+}
+
+// ── Clan rendering ──────────────────────────────────────────
 
 function renderClanResults(data) {
   const { clan, members, summary } = data;
+
+  // Colonne "This War" visible uniquement en période de guerre (jeu–dim)
+  isWarActive = !!data.isWarPeriod;
+  document.getElementById('th-this-war').classList.toggle('hidden', !isWarActive);
 
   // Clan overview card
   clanOverviewGrid.innerHTML = overviewItems([
@@ -363,7 +415,7 @@ function renderClanResults(data) {
 
 function renderMembersTable(members) {
   if (members.length === 0) {
-    membersTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">No members found.</td></tr>';
+    membersTbody.innerHTML = `<tr><td colspan="${isWarActive ? 7 : 6}" style="text-align:center;color:var(--text-muted)">No members found.</td></tr>`;
     return;
   }
 
@@ -388,6 +440,7 @@ function renderMembersTable(members) {
             <span style="font-weight:700;font-size:.88rem">${m.activityScore}</span>
           </div>
         </td>
+        ${isWarActive ? `<td class="war-col">${warMiniBarHtml(m.warDays)}</td>` : ''}
         <td><span class="verdict-badge ${m.color}">${escHtml(m.verdict)}</span></td>
       </tr>`
     )

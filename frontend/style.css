@@ -750,6 +750,84 @@ a.member-link:hover div:first-child {
   margin-left: 5px;
 }
 
+/* ── Actual Clan War card ────────────────────────────────────── */
+.war-days-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.war-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px;
+  background: rgba(255,255,255,.04);
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+}
+
+.war-day.is-today {
+  border-color: var(--gold);
+  background: rgba(244,197,66,.06);
+}
+
+.war-day__label {
+  font-size: .7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--text-muted);
+}
+
+.war-day__dots {
+  display: flex;
+  gap: 4px;
+}
+
+.war-day__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.12);
+}
+
+.war-day__dot.filled.good    { background: var(--green); }
+.war-day__dot.filled.partial { background: var(--yellow); }
+.war-day__dot.filled.bad     { background: var(--red); }
+.war-day__dot.filled.future  { background: var(--text-muted); }
+
+.war-day__count {
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.war-day__status {
+  font-size: .85rem;
+}
+
+/* ── Clan war mini-bars (table column) ───────────────────────── */
+.war-col { white-space: nowrap; }
+
+.war-mini-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 22px;
+}
+
+.war-mini-bar {
+  width: 7px;
+  border-radius: 2px 2px 0 0;
+}
+
+.war-mini-bar.good    { background: var(--green); }
+.war-mini-bar.partial { background: var(--yellow); }
+.war-mini-bar.bad     { background: var(--red); }
+.war-mini-bar.future  { background: rgba(255,255,255,.12); }
+
 /* ── Footer ──────────────────────────────────────────────────── */
 .site-footer {
   text-align: center;
