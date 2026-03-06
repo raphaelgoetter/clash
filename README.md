@@ -102,31 +102,31 @@ Tags should include the `#` prefix (URL-encoded as `%23`).
 
 ## 🧮 Score formulas
 
-### War reliability score — full mode (0–45 pts)
+### War reliability score — full mode (0–41 pts)
 
 Used when the war race log is available. Seven weighted criteria:
 
 | # | Criterion | Max | Cap / rule |
 |---|---|---|---|
-| 1 | Regularity | 10 | `playedWeeks / weeksInClan × 10` |
+| 1 | Regularity | 10 | avg fame/wk vs 1,600 target over completed weeks |
 | 2 | Avg fame | 10 | 3,000 fame/week = full score |
-| 3 | CW2 battle wins | 10 | 250 total CW2 wins = full score |
-| 4 | Win rate (River Race) | 5 | 100% win rate = full score |
-| 5 | Clan stability | 5 | 5+ consecutive weeks in clan = full score |
+| 3 | CW2 battle wins | 8 | 250 total CW2 wins = full score |
+| 4 | Clan stability | 5 | 5+ consecutive weeks in clan = full score |
+| 5 | Win rate (River Race) | 3 | 100% win rate = full score |
 | 6 | Experience (best trophies) | 3 | 12,000 trophies = full score |
 | 7 | Donations | 2 | 500 cards donated = full score |
 
-Without battle log (criteria 4 absent): max = **40 pts**.
+Without battle log (criterion 5 absent): max = **38 pts**.
 
-### War reliability score — fallback mode (0–40 pts)
+### War reliability score — fallback mode (0–36 pts)
 
 Used when no race log history is available (battle log only):
 
 | # | Criterion | Max | Cap / rule |
 |---|---|---|---|
 | 1 | War activity | 10 | Avg battles/day over 14-day window (4/day = full) |
-| 2 | Win rate (war) | 10 | From battle log war battles |
-| 3 | CW2 battle wins | 10 | 250 total CW2 wins = full score |
+| 2 | Win rate (war) | 8 | From battle log war battles |
+| 3 | CW2 battle wins | 8 | 250 total CW2 wins = full score |
 | 4 | General activity | 5 | 20 competitive battles = full score |
 | 5 | Experience | 3 | 12,000 best trophies = full score |
 | 6 | Donations | 2 | 500 cards donated = full score |

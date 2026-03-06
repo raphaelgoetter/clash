@@ -192,6 +192,7 @@ export function renderGaugeChart(score, color) {
   const colorMap = {
     green:  '#22c55e',
     yellow: '#eab308',
+    orange: '#f97316',
     red:    '#ef4444',
   };
   const fillColor = colorMap[color] ?? '#7c3aed';
