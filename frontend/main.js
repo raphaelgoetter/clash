@@ -189,7 +189,7 @@ function renderPlayerResults(data) {
   // 1. Overview (Clan & Role removed)
   const cw2 = overview.clanWarWins ?? 0;
   overviewGrid.innerHTML = overviewItems([
-    { label: 'Name',          value: overview.name, cls: 'gold' },
+    { label: 'Name',          value: overview.name, cls: 'gold', badge: ws.isFallback ? 'new' : null },
     { label: 'Tag',           value: overview.tag },
     { label: 'Trophies',      value: `🏆 ${fmt(overview.trophies)}`,
       risk: overview.trophies < 3000 ? 'bad' : overview.trophies < 5000 ? 'warn' : null },
@@ -357,7 +357,7 @@ function renderMembersTable(members) {
       (m) => `
       <tr>
         <td class="member-link" data-tag="${escHtml(m.tag)}" title="Analyze ${escHtml(m.name)}">
-          <div style="font-weight:600">${escHtml(m.name)}</div>
+          <div style="font-weight:600">${escHtml(m.name)}${m.isNew ? ' <span class="new-badge">new</span>' : ''}</div>
           <div style="font-size:.75rem;color:var(--text-muted)">${escHtml(m.tag)}</div>
         </td>
         <td><span class="role-badge ${m.role}">${capitalize(m.role)}</span></td>
@@ -439,14 +439,15 @@ function sortMembers(arr, col, dir) {
 function overviewItems(items) {
   return items
     .map(
-      ({ label, value, cls = '', risk = null }) => {
+      ({ label, value, cls = '', risk = null, badge = null }) => {
         const sym = risk === 'bad'  ? ' <span class="risk-bad">&#10007;</span>'
                   : risk === 'warn' ? ' <span class="risk-warn">&#9888;</span>'
                   : '';
+        const bdg = badge ? ` <span class="new-badge">${escHtml(badge)}</span>` : '';
         return `
         <div class="overview-item">
           <div class="oi-label">${label}</div>
-          <div class="oi-value ${cls}">${escHtml(String(value))}${sym}</div>
+          <div class="oi-value ${cls}">${escHtml(String(value))}${sym}${bdg}</div>
         </div>`;
       }
     )

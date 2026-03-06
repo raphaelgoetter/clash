@@ -724,6 +724,21 @@ td.member-link:hover div:first-child {
 .c-orange { color: var(--orange); }
 .c-red    { color: var(--red); }
 
+.new-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: .68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  background: rgba(167, 139, 250, .15);
+  color: var(--purple-light);
+  border: 1px solid rgba(167, 139, 250, .35);
+  vertical-align: middle;
+  margin-left: 5px;
+}
+
 /* ── Footer ──────────────────────────────────────────────────── */
 .site-footer {
   text-align: center;

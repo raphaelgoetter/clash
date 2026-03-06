@@ -91,7 +91,7 @@ async function buildClanAnalysis(clanTag) {
 
     // First pass: compute war scores for all members
     const analyzedMembers = members.map((m, idx) => {
-      let activityScore, verdict, color;
+      let activityScore, verdict, color, isNew = false;
 
       // Resolve full player profile (for badges) and battle log
       const mdResult    = memberDataResults[idx];
@@ -124,10 +124,12 @@ async function buildClanAnalysis(clanTag) {
           const warLog = expandDuelRounds(filterWarBattles(battleLog));
           const ws     = computeWarReliabilityFallback(playerProxy, warLog, bd);
           activityScore = ws.pct; verdict = ws.verdict; color = ws.color;
+          isNew = true;
         } else {
           // Battle log unavailable — minimal estimate
           const pct = Math.round((Math.min(2, ((playerProxy.donations ?? 0) / 500) * 2) / 40) * 100);
           activityScore = pct; verdict = 'Extreme risk'; color = 'red';
+          isNew = true;
         }
       } else {
         // No race log at all — legacy trophies-based estimate
@@ -154,6 +156,7 @@ async function buildClanAnalysis(clanTag) {
         activityScore,
         verdict,
         color,
+        isNew,
       };
     });
 
