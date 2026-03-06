@@ -13,8 +13,8 @@
   --border-light:   #3a3a60;
 
   --text-primary:   #f0f0fc;
-  --text-secondary: #9090b8;
-  --text-muted:     #9999c0;
+  --text-secondary: #a0a0c8;
+  --text-muted:     #a8a8c8;
 
   --gold:           #f4c542;
   --gold-dark:      #c9961c;
@@ -80,10 +80,10 @@ code {
 
 /* ── Header ─────────────────────────────────────────────────── */
 .site-header {
-  background: linear-gradient(135deg, #12122a 0%, #1e1340 50%, #12122a 100%);
-  border-bottom: 2px solid var(--gold-dark);
+  background: #12122a;
+  border-bottom: 2px solid var(--border-light);
   padding: 20px 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
 }
 
 .header-inner {
@@ -100,10 +100,7 @@ code {
   font-size: clamp(1.2rem, 3vw, 1.8rem);
   font-weight: 800;
   letter-spacing: 0.02em;
-  background: linear-gradient(90deg, var(--gold) 0%, #fff 60%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--gold);
 }
 
 .header-subtitle {
@@ -136,8 +133,8 @@ code {
 
 /* ── Search panel ───────────────────────────────────────────── */
 .search-panel {
-  background: linear-gradient(145deg, #1a1a2e, #1e1a40);
-  border-color: var(--purple);
+  background: var(--bg-card);
+  border-color: var(--border-light);
 }
 
 .mode-selector {
@@ -197,7 +194,7 @@ code {
   padding: 12px 28px;
   border-radius: var(--radius-md);
   border: none;
-  background: linear-gradient(135deg, var(--purple), #4f2aad);
+  background: var(--purple);
   color: #fff;
   font-size: 1rem;
   font-weight: 700;
@@ -257,9 +254,9 @@ code {
 }
 
 .overview-item .oi-label {
-  font-size: .72rem;
+  font-size: .75rem;
   text-transform: uppercase;
-  letter-spacing: .06em;
+  letter-spacing: .05em;
   color: var(--text-secondary);
   margin-bottom: 4px;
 }
@@ -363,7 +360,7 @@ code {
 .stability-bar {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--purple), var(--gold));
+  background: var(--purple-light);
   transition: width 1s cubic-bezier(.4,0,.2,1);
 }
 
@@ -445,7 +442,7 @@ code {
 .sr-max {
   font-weight: 400;
   font-size: .8rem;
-  opacity: .55;
+  opacity: .7;
 }
 
 .sr-bar-bg {
@@ -535,9 +532,9 @@ code {
 
 .members-table th {
   color: var(--text-secondary);
-  font-size: .75rem;
+  font-size: .78rem;
   text-transform: uppercase;
-  letter-spacing: .06em;
+  letter-spacing: .05em;
 }
 
 .members-table th.sortable {
@@ -564,7 +561,7 @@ td.member-link:hover div:first-child {
 .role-badge {
   padding: 2px 8px;
   border-radius: 999px;
-  font-size: .72rem;
+  font-size: .75rem;
   font-weight: 700;
   text-transform: capitalize;
 }
@@ -577,7 +574,7 @@ td.member-link:hover div:first-child {
 .verdict-badge {
   padding: 3px 10px;
   border-radius: 999px;
-  font-size: .74rem;
+  font-size: .77rem;
   font-weight: 700;
 }
 
