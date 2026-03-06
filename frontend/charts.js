@@ -313,16 +313,17 @@ export function renderClanPieChart(summary) {
   new Chart(ctx, {
     type: 'pie',
     data: {
-      labels: ['Highly reliable', 'Moderate', 'High risk'],
+      labels: ['High reliability', 'Moderate risk', 'High risk', 'Extreme risk'],
       datasets: [
         {
-          data: [summary.green, summary.yellow, summary.red],
+          data: [summary.green, summary.yellow, summary.orange, summary.red],
           backgroundColor: [
             'rgba(34, 197, 94, 0.8)',
             'rgba(234, 179, 8, 0.8)',
+            'rgba(249, 115, 22, 0.8)',
             'rgba(239, 68, 68, 0.8)',
           ],
-          borderColor: ['#0e0e1a', '#0e0e1a', '#0e0e1a'],
+          borderColor: ['#0e0e1a', '#0e0e1a', '#0e0e1a', '#0e0e1a'],
           borderWidth: 2,
         },
       ],

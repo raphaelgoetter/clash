@@ -261,7 +261,7 @@ function renderPlayerResults(data) {
   // 4. War Reliability Score avec breakdown
   renderGaugeChart(ws.pct, ws.color);
 
-  const icon = { green: '✅', yellow: '⚠️', red: '🔴' }[ws.color] ?? '❓';
+  const icon = { green: '✅', yellow: '⚠️', orange: '🟠', red: '🔴' }[ws.color] ?? '❓';
   const fallbackBadge = ws.isFallback
     ? `<div class="fallback-badge">⚠️ Estimate based on API battle log (≤ 30 entries) — no war history available</div>`
     : '';
@@ -278,7 +278,7 @@ function renderPlayerResults(data) {
 
   reasonsList.innerHTML = (ws.breakdown ?? []).map((b) => {
     const pct   = Math.round((b.score / b.max) * 100);
-    const color = pct >= 70 ? 'var(--green)' : pct >= 40 ? 'var(--yellow)' : 'var(--red)';
+    const color = pct >= 76 ? 'var(--green)' : pct >= 61 ? 'var(--yellow)' : pct >= 31 ? 'var(--orange)' : 'var(--red)';
     return `
       <li class="score-row">
         <div class="sr-header">
@@ -476,7 +476,7 @@ function badge(text, type) {
 }
 
 function scoreBarColor(color) {
-  return { green: '#22c55e', yellow: '#eab308', red: '#ef4444' }[color] ?? '#7c3aed';
+  return { green: '#22c55e', yellow: '#eab308', orange: '#f97316', red: '#ef4444' }[color] ?? '#7c3aed';
 }
 
 // ── Utility ──────────────────────────────────────────────────

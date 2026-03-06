@@ -9,6 +9,10 @@
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
+// Clan War day resets at 10:40 UTC every day.
+// Shifting timestamps back by this offset lets us floor to the correct war day.
+const WAR_DAY_RESET_MS = (10 * 60 + 40) * 60 * 1000; // 640 minutes in ms
+
 // ── Date utilities ────────────────────────────────────────────
 
 /**
@@ -154,48 +158,89 @@ function battlesInLastDays(battleLog, days) {
 }
 
 /**
- * Describe the temporal spread of GDC battles in natural language.
- * Groups by calendar day (UTC), shows the last few active days.
- *
- * Examples:
- *   "4 aujourd'hui"
- *   "4 aujourd'hui · 3 hier"
- *   "8 combats sur 3 jours"
- *
- * @param {object[]} warLog - Expanded, filtered GDC battle log
+ * Return the war-day key (YYYY-MM-DD) for a timestamp, accounting for the
+ * 10:40 UTC daily reset. Any battle before 10:40 UTC belongs to the previous war day.
+ * @param {Date|string} dateOrTs
  * @returns {string}
  */
-function describeGdcTiming(warLog) {
-  if (warLog.length === 0) return '';
+function warDayKey(dateOrTs) {
+  const ms = (dateOrTs instanceof Date ? dateOrTs : parseClashDate(dateOrTs)).getTime();
+  return new Date(ms - WAR_DAY_RESET_MS).toISOString().slice(0, 10);
+}
 
-  // Build a day → count map using local calendar date keys (YYYY-MM-DD)
-  const todayKey     = new Date().toISOString().slice(0, 10);
-  const yesterdayKey = new Date(Date.now() - MS_PER_DAY).toISOString().slice(0, 10);
+/**
+ * Compute a 0-10 War Activity score that rewards doing all 4 daily battles.
+ *
+ * Algorithm:
+ *  - Use a sliding window of up to 14 war days, anchored at today.
+ *  - The window shrinks to the number of days since the player's first GDC battle
+ *    in the log, so new members are not penalised for days before they joined.
+ *  - Each war day scores min(battles, 4) / 4  (0 = skipped, 1 = all 4 done).
+ *  - Linear recency weighting: today gets weight=W, oldest gets weight=1.
+ *  - Final score = (weighted sum / max weighted sum) × 10.
+ *
+ * @param {object[]} warLog - Expanded, filtered GDC battle log
+ * @returns {{ score: number, detail: string, byDay: Object<string,number> }}
+ */
+function dailyWarActivityScore(warLog) {
+  const MAX_WINDOW = 14;
 
+  // Build war-day → battle count map
   const byDay = {};
   for (const b of warLog) {
-    const key = parseClashDate(b.battleTime).toISOString().slice(0, 10);
+    const key = warDayKey(b.battleTime);
     byDay[key] = (byDay[key] ?? 0) + 1;
   }
 
-  // Sort days most-recent first
-  const days = Object.entries(byDay).sort((a, b) => b[0].localeCompare(a[0]));
+  if (Object.keys(byDay).length === 0) return { score: 0, detail: 'No war battles in battle log', byDay };
 
-  // Build natural-language segments for the 2 most recent days
-  const segments = days.slice(0, 2).map(([key, count]) => {
-    const label =
-      key === todayKey     ? 'today' :
-      key === yesterdayKey ? 'yesterday' :
-      key; // fallback: ISO date
-    return `${count} ${label}`;
-  });
+  // Determine effective window anchored at the most recent active war day.
+  // We do NOT include today in the window if there are no battles yet today,
+  // because the current war day is still in progress (reset at 10:40 UTC).
+  const todayWarDay      = warDayKey(new Date());
+  const yesterdayWarDay  = new Date(new Date(todayWarDay).getTime() - MS_PER_DAY).toISOString().slice(0, 10);
+  const hasActivityToday = (byDay[todayWarDay] ?? 0) > 0;
+  const anchorDay        = hasActivityToday ? todayWarDay : yesterdayWarDay;
 
-  // If there are more than 2 active days, append a summary
-  if (days.length > 2) {
-    return `${warLog.length} battles over ${days.length} days (${segments[0]})`;
+  const sortedDays  = Object.keys(byDay).sort();
+  const firstDay    = sortedDays[0];
+
+  // Days from firstDay up to and including anchorDay
+  const daysSinceFirst = Math.max(0, Math.round(
+    (new Date(anchorDay).getTime() - new Date(firstDay).getTime()) / MS_PER_DAY
+  ));
+  const window = Math.min(MAX_WINDOW, daysSinceFirst + 1);
+
+  // Weighted sum over the window (anchorDay = index 0, oldest = index window-1)
+  let weightedSum = 0;
+  let weightTotal = 0;
+  for (let i = 0; i < window; i++) {
+    const d   = new Date(new Date(anchorDay).getTime() - i * MS_PER_DAY);
+    const key = d.toISOString().slice(0, 10);
+    const battles = byDay[key] ?? 0;
+    const daily   = Math.min(4, battles) / 4;
+    const weight  = window - i; // today = window, oldest = 1
+    weightedSum  += daily * weight;
+    weightTotal  += weight;
   }
 
-  return segments.join(' · ');
+  const avg   = weightedSum / weightTotal; // 0-1
+  const score = Math.round(avg * 100) / 10; // 0-10, 1 decimal
+
+  // Build detail string
+  const recentDays = Object.entries(byDay)
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .slice(0, 3);
+  const yesterdayKey  = new Date(new Date(todayWarDay).getTime() - MS_PER_DAY).toISOString().slice(0, 10);
+  const parts = recentDays.map(([k, n]) => {
+    const label = k === todayWarDay ? 'today' : k === yesterdayKey ? 'yesterday' : k;
+    return `${n} ${label}`;
+  });
+  const totalBattles = Object.values(byDay).reduce((s, n) => s + n, 0);
+  const activeDays   = sortedDays.length;
+  const detail = `${parts.join(' · ')} — avg ${(avg * 4).toFixed(1)}/4 battles/day over ${window}-day window (${activeDays} active day${activeDays !== 1 ? 's' : ''}, ${totalBattles} total)`;
+
+  return { score, detail, byDay };
 }
 
 /**
@@ -282,9 +327,10 @@ export function computeWarScore(player, warHistory, warWinRate = null) {
   const pct      = Math.round((total / maxScore) * 100);
 
   let verdict, color;
-  if (pct >= 80)      { verdict = 'Very high war reliability';             color = 'green'; }
-  else if (pct >= 55) { verdict = 'Adequate reliability — keep an eye on'; color = 'yellow'; }
-  else                { verdict = 'High risk of inactivity in Clan War';   color = 'red'; }
+  if (pct >= 76)      { verdict = 'High reliability';  color = 'green'; }
+  else if (pct >= 61) { verdict = 'Moderate risk';     color = 'yellow'; }
+  else if (pct >= 31) { verdict = 'High risk';         color = 'orange'; }
+  else                { verdict = 'Extreme risk';      color = 'red'; }
 
   const breakdown = [
     {
@@ -361,15 +407,14 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
   const bd = battleLogBreakdown ?? { total: warLog.length, gdc: warLog.length, ladder: 0, challenge: 0 };
 
   // Use warLog.length as GDC count: it's the expanded set (rounds from duels included)
-  // so that gdcWins / gdcCount is computed on the same denominator as activityIndicators.winRate.
   const gdcCount   = warLog.length;
   const gdcWins    = warLog.filter(isWarWin).length;
   const gdcWinRate = gdcCount > 0 ? gdcWins / gdcCount : 0;
-  // For 'activité générale' we add non-GDC modes from the raw breakdown
   const competitive = gdcCount + bd.ladder + bd.challenge;
 
-  // 1. Activité GDC (0-10)
-  const activiteGDC = r(Math.min(10, gdcCount));
+  // 1. War Activity (0-10) — daily-based: rewards doing all 4 battles/day
+  const activityResult = dailyWarActivityScore(warLog);
+  const activiteGDC    = r(Math.min(10, activityResult.score));
 
   // 2. Win Rate GDC (0-10)
   const winRateGDC = gdcCount > 0 ? r(gdcWinRate * 10) : 0;
@@ -390,9 +435,10 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
   const pct      = Math.round((total / maxScore) * 100);
 
   let verdict, color;
-  if (pct >= 80)      { verdict = 'Very high war reliability';             color = 'green'; }
-  else if (pct >= 55) { verdict = 'Adequate reliability — keep an eye on'; color = 'yellow'; }
-  else                { verdict = 'High risk of inactivity in Clan War';   color = 'red'; }
+  if (pct >= 76)      { verdict = 'High reliability';  color = 'green'; }
+  else if (pct >= 61) { verdict = 'Moderate risk';     color = 'yellow'; }
+  else if (pct >= 31) { verdict = 'High risk';         color = 'orange'; }
+  else                { verdict = 'Extreme risk';      color = 'red'; }
 
   return {
     total, maxScore, pct, verdict, color,
@@ -402,12 +448,7 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
         label:  'War Activity',
         score:  activiteGDC,
         max:    10,
-        detail: (() => {
-          if (gdcCount === 0) return 'No war battles in battle log';
-          const timing = describeGdcTiming(warLog);
-          const suffix = `(out of last 30 entries)`;
-          return timing ? `${timing} ${suffix}` : `${gdcCount} war battle${gdcCount > 1 ? 's' : ''} ${suffix}`;
-        })(),
+        detail: activityResult.detail,
       },
       {
         label:  'Win Rate (War)',
@@ -582,14 +623,17 @@ export function computeMemberActivityScore(member) {
   const score = Math.round(donationPart + trophyPart + expPart);
 
   let verdict, color;
-  if (score >= 70) {
-    verdict = 'Highly reliable';
+  if (score >= 76) {
+    verdict = 'High reliability';
     color = 'green';
-  } else if (score >= 40) {
-    verdict = 'Moderate reliability';
+  } else if (score >= 61) {
+    verdict = 'Moderate risk';
     color = 'yellow';
-  } else {
+  } else if (score >= 31) {
     verdict = 'High risk';
+    color = 'orange';
+  } else {
+    verdict = 'Extreme risk';
     color = 'red';
   }
 

@@ -82,7 +82,7 @@ router.get('/:tag/analysis', async (req, res) => {
         } else {
           // Battle log unavailable — minimal estimate
           const pct = Math.round((Math.min(2, (playerProxy.donations / 500) * 2) / 30) * 100);
-          activityScore = pct; verdict = 'Risque élevé d\'inactivité en GDC'; color = 'red';
+          activityScore = pct; verdict = 'Extreme risk'; color = 'red';
         }
       } else {
         // No race log at all — legacy trophies-based estimate
@@ -91,10 +91,11 @@ router.get('/:tag/analysis', async (req, res) => {
         const expPart = Math.min(20, ((m.expLevel ?? 1) / 60) * 20);
         const score   = Math.round(donPart + trPart + expPart);
         activityScore = score;
-        verdict = score >= 70 ? 'Fiabilité très élevée en guerre de clans'
-                : score >= 40 ? 'Fiabilité correcte — à surveiller'
-                :               'Risque élevé d\'inactivité en GDC';
-        color = score >= 70 ? 'green' : score >= 40 ? 'yellow' : 'red';
+        verdict = score >= 76 ? 'High reliability'
+                : score >= 61 ? 'Moderate risk'
+                : score >= 31 ? 'High risk'
+                :               'Extreme risk';
+        color = score >= 76 ? 'green' : score >= 61 ? 'yellow' : score >= 31 ? 'orange' : 'red';
       }
 
       return {
@@ -115,9 +116,10 @@ router.get('/:tag/analysis', async (req, res) => {
     analyzedMembers.sort((a, b) => a.activityScore - b.activityScore);
 
     // Aggregate stats for chart data
-    const green = analyzedMembers.filter((m) => m.color === 'green').length;
-    const yellow = analyzedMembers.filter((m) => m.color === 'yellow').length;
-    const red = analyzedMembers.filter((m) => m.color === 'red').length;
+    const green  = analyzedMembers.filter((m) => m.color === 'green').length;
+    const yellow  = analyzedMembers.filter((m) => m.color === 'yellow').length;
+    const orange  = analyzedMembers.filter((m) => m.color === 'orange').length;
+    const red     = analyzedMembers.filter((m) => m.color === 'red').length;
     const avgScore =
       analyzedMembers.length > 0
         ? Math.round(
@@ -139,7 +141,7 @@ router.get('/:tag/analysis', async (req, res) => {
         badge: clan.badgeId,
       },
       members: analyzedMembers,
-      summary: { green, yellow, red, avgScore, total: analyzedMembers.length },
+      summary: { green, yellow, orange, red, avgScore, total: analyzedMembers.length },
     });
   } catch (err) {
     const status = err.message.includes('404') ? 404 : 500;
