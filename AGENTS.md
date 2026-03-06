@@ -14,13 +14,8 @@ Analyseur de fiabilité de guerre de clan Clash Royale — backend Express + fro
 ## Commandes essentielles
 
 ```bash
-# Dev
-cd backend && npm run dev        # Express sur :3000 (nodemon)
-cd frontend && npm run dev       # Vite sur :5173, proxy /api → :3000
-
-# Build + deploy
-cd frontend && npx vite build
-vercel --prod                    # depuis la racine
+npm run dev      # backend :3000 + frontend :5173 (concurrently)
+npm run build    # vite build + vercel --prod
 ```
 
 ## Conventions critiques du projet

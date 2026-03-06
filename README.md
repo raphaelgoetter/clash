@@ -76,25 +76,13 @@ CLASH_API_KEY=eyJ0eXAiOiJKV1Qi...
 
 > **Important:** the API key must be whitelisted for your current public IP address on the developer portal.
 
-### 3 — Run the backend
+### 3 — Start the dev servers
 
 ```bash
-cd backend
-npm run dev          # uses nodemon for auto-reload
-# or
-npm start            # plain node
-```
-
-The Express server starts at **<http://localhost:3000>**.
-
-### 4 — Run the frontend
-
-```bash
-cd frontend
 npm run dev
 ```
 
-Vite starts at **<http://localhost:5173>** and proxies `/api` → `http://localhost:3000`.
+Lance backend (**<http://localhost:3000>**) et frontend (**<http://localhost:5173>**) simultanément via `concurrently`. Le frontend proxie `/api` → `:3000`.
 
 ---
 
@@ -188,17 +176,13 @@ The `vercel.json` at the root maps all `/api/*` requests to the Express server.
 #### Vercel
 
 ```bash
-cd frontend
-vercel
+npm run build    # build + vercel --prod (depuis la racine)
 ```
-
-Update the API base URL in `vite.config.js` → replace the proxy target with your deployed backend URL, or use `VITE_API_BASE` environment variable.
 
 #### GitHub Pages
 
 ```bash
-cd frontend
-npm run build
+cd frontend && npx vite build
 # Then push the dist/ folder to the gh-pages branch
 ```
 
