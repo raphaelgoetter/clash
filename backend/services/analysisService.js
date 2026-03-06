@@ -295,13 +295,23 @@ export function buildDailyActivity(battleLog, days = 30) {
 export function computeWarScore(player, warHistory, warWinRate = null) {
   const r = (v) => Math.round(v * 10) / 10; // round to 1 decimal
 
-  // 1. Régularité (0-10)
-  // Dénominateur = semaines passées dans le clan actuel, pas le total historique
-  // → un joueur arrivé il y a 1 semaine et ayant joué cette semaine obtient 10/10
-  const playedWeeks    = warHistory.weeks.filter((w) => w.decksUsed > 0).length;
+  // 1. Régularité (0-10) — proportionnelle à la fame, semaines TERMINÉES uniquement
+  // On exclut la semaine en cours (isCurrent) car elle n'est pas encore complète.
+  // Cible de participation pleine : 1 600 fame (4 jours × 4 combats × 100 fame min).
+  const REGULARITY_FAME_TARGET = 1600;
   const totalWeeks     = warHistory.totalWeeks || 1;
   const weeksInClan    = Math.max(1, warHistory.streakInCurrentClan);
-  const regularite     = r(Math.min(10, (playedWeeks / weeksInClan) * 10));
+  // Semaines terminées dans le streak clan actuel (les N premières du tableau)
+  const completedInClan = warHistory.weeks
+    .slice(0, weeksInClan)
+    .filter((w) => !w.isCurrent);
+  const completedCount = completedInClan.length;
+  const participationSum = completedInClan.reduce(
+    (s, w) => s + Math.min(1, w.fame / REGULARITY_FAME_TARGET), 0
+  );
+  const regularite = completedCount > 0
+    ? r(Math.min(10, (participationSum / completedCount) * 10))
+    : 0;
 
   // 2. Score moyen (0-10) — 3 000 fame = perfect
   const FAME_CAP       = 3000;
@@ -343,11 +353,12 @@ export function computeWarScore(player, warHistory, warWinRate = null) {
       score:  regularite,
       max:    10,
       detail: (() => {
-        if (!warHistory.totalWeeks) return 'No data';
+        if (completedCount === 0) return 'No completed week in this clan yet';
+        const avgPct = Math.round((participationSum / completedCount) * 100);
         const suffix = weeksInClan < totalWeeks
-          ? ` (member for ${weeksInClan} week${weeksInClan > 1 ? 's' : ''})`
+          ? ` — member for ${weeksInClan} week${weeksInClan > 1 ? 's' : ''}`
           : '';
-        return `${playedWeeks} / ${weeksInClan} weeks played${suffix}`;
+        return `avg ${avgPct}% participation over ${completedCount} completed week${completedCount > 1 ? 's' : ''} (target: 1,600 fame/wk)${suffix}`;
       })(),
     },
     {
