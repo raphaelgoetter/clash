@@ -77,3 +77,19 @@ export async function fetchClanMembers(tag) {
   const data = await get(`/clans/${encodeTag(tag)}/members`);
   return Array.isArray(data) ? data : data.items ?? [];
 }
+
+/**
+ * Fetch the river race log for a clan (last ~10 completed seasons).
+ * Each entry contains standings and per-player fame/decks data.
+ */
+export async function fetchRaceLog(tag) {
+  const data = await get(`/clans/${encodeTag(tag)}/riverracelog`);
+  return Array.isArray(data) ? data : data.items ?? [];
+}
+
+/**
+ * Fetch the current ongoing river race for a clan.
+ */
+export async function fetchCurrentRace(tag) {
+  return get(`/clans/${encodeTag(tag)}/currentriverrace`);
+}

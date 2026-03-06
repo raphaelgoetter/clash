@@ -3,8 +3,8 @@
 // ============================================================
 
 import { Router } from 'express';
-import { fetchPlayer, fetchBattleLog } from '../services/clashApi.js';
-import { analyzePlayer } from '../services/analysisService.js';
+import { fetchPlayer, fetchBattleLog, fetchRaceLog } from '../services/clashApi.js';
+import { analyzePlayer, buildWarHistory } from '../services/analysisService.js';
 
 const router = Router();
 
@@ -34,6 +34,20 @@ router.get('/:tag/analysis', async (req, res) => {
     ]);
 
     const analysis = analyzePlayer(player, battleLog);
+
+    // Enrich with river race history if the player is currently in a clan.
+    // We silently ignore failures so a missing/private war log doesn't block the response.
+    if (player.clan?.tag) {
+      try {
+        const raceLog = await fetchRaceLog(player.clan.tag);
+        analysis.warHistory = buildWarHistory(player.tag, raceLog);
+      } catch (_) {
+        analysis.warHistory = null;
+      }
+    } else {
+      analysis.warHistory = null;
+    }
+
     res.json(analysis);
   } catch (err) {
     const status = err.message.includes('404') ? 404 : 500;

@@ -231,6 +231,52 @@ export function computeWarReliability(player, battleLog) {
   };
 }
 
+// ── River Race history ────────────────────────────────────────
+
+/**
+ * Extract a player's week-by-week river race history from a clan race log.
+ *
+ * @param {string}   playerTag  Player tag (with or without #)
+ * @param {object[]} raceLog    Array returned by /clans/{tag}/riverracelog
+ * @returns {{
+ *   weeks: { label:string; seasonId:number; sectionIndex:number; fame:number; decksUsed:number; boatAttacks:number }[];
+ *   totalFame: number;
+ *   avgFame: number;
+ *   maxFame: number;
+ *   participation: number;
+ *   totalWeeks: number;
+ * }}
+ */
+export function buildWarHistory(playerTag, raceLog) {
+  const normalized = playerTag.startsWith('#') ? playerTag : `#${playerTag}`;
+  const weeks = [];
+
+  for (const race of raceLog) {
+    for (const standing of race.standings ?? []) {
+      const p = standing.clan?.participants?.find((x) => x.tag === normalized);
+      if (p) {
+        weeks.push({
+          label: `S${race.seasonId}·W${race.sectionIndex}`,
+          seasonId: race.seasonId,
+          sectionIndex: race.sectionIndex,
+          fame: p.fame ?? 0,
+          decksUsed: p.decksUsed ?? 0,
+          boatAttacks: p.boatAttacks ?? 0,
+        });
+        break; // player found for this race — move to next
+      }
+    }
+  }
+
+  const totalFame = weeks.reduce((s, w) => s + w.fame, 0);
+  const participation = weeks.length;
+  const totalWeeks = raceLog.length;
+  const avgFame = participation ? Math.round(totalFame / participation) : 0;
+  const maxFame = weeks.reduce((m, w) => Math.max(m, w.fame), 0);
+
+  return { weeks, totalFame, avgFame, maxFame, participation, totalWeeks };
+}
+
 // ── Player full analysis ──────────────────────────────────────
 
 /**

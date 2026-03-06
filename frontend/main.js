@@ -5,6 +5,7 @@
 
 import {
   renderActivityChart,
+  renderWarHistoryChart,
   renderGaugeChart,
   renderClanBarChart,
   renderClanPieChart,
@@ -132,7 +133,7 @@ function hideResults() {
 // ── Player rendering ──────────────────────────────────────────
 
 function renderPlayerResults(data) {
-  const { overview, activityIndicators, recentActivity, stability, reliability } = data;
+  const { overview, activityIndicators, recentActivity, stability, reliability, warHistory } = data;
 
   // 1. Overview (Clan & Role removed)
   overviewGrid.innerHTML = overviewItems([
@@ -143,20 +144,42 @@ function renderPlayerResults(data) {
     { label: 'Exp Level',     value: `⭐ ${overview.expLevel}` },
   ]);
 
-  // 2. Clan Wars Indicators (war battles only)
-  statsGrid.innerHTML = statCards([
-    { label: 'War Battles (log)', value: fmt(activityIndicators.totalWarBattles) },
-    { label: 'Wins',              value: fmt(activityIndicators.wins) },
-    { label: 'Losses',            value: fmt(activityIndicators.losses) },
-    { label: 'Win Rate',          value: `${activityIndicators.winRate}%` },
-    { label: 'Donations',         value: fmt(activityIndicators.donations) },
-    { label: '3-Crown Wins',      value: fmt(activityIndicators.threeCrowns) },
-  ]);
+  // 2. Stats — race log when available, battle log fallback
+  if (warHistory && warHistory.weeks.length > 0) {
+    statsGrid.innerHTML = statCards([
+      { label: 'Participation',  value: `${warHistory.participation} / ${warHistory.totalWeeks}` },
+      { label: 'Total Fame',     value: fmt(warHistory.totalFame) },
+      { label: 'Avg Fame / Week', value: fmt(warHistory.avgFame) },
+      { label: 'Best Week',      value: fmt(warHistory.maxFame) },
+      { label: 'Win Rate',       value: `${activityIndicators.winRate}%` },
+      { label: 'Donations',      value: fmt(activityIndicators.donations) },
+    ]);
+  } else {
+    // Fallback: display battle-log based stats
+    statsGrid.innerHTML = statCards([
+      { label: 'War Battles (log)', value: fmt(activityIndicators.totalWarBattles) },
+      { label: 'Wins',              value: fmt(activityIndicators.wins) },
+      { label: 'Losses',            value: fmt(activityIndicators.losses) },
+      { label: 'Win Rate',          value: `${activityIndicators.winRate}%` },
+      { label: 'Donations',         value: fmt(activityIndicators.donations) },
+      { label: '3-Crown Wins',      value: fmt(activityIndicators.threeCrowns) },
+    ]);
+  }
 
-  // 3. Clan War Activity chart (war battles only, rounds expanded)
-  renderActivityChart(recentActivity.dailyActivity);
-  const noteEl = document.getElementById('api-limit-note');
-  if (noteEl) noteEl.textContent = '⚠️ The Clash Royale API returns at most 30 battles. For active players who also play regular PvP, older war battles may not appear here.';
+  // 3. Race history chart or fallback daily activity
+  const titleEl = document.getElementById('history-card-title');
+  const noteEl  = document.getElementById('api-limit-note');
+
+  if (warHistory && warHistory.weeks.length > 0) {
+    if (titleEl) titleEl.textContent = `📅 River Race History – ${warHistory.weeks.length} week${warHistory.weeks.length !== 1 ? 's' : ''}`;
+    renderWarHistoryChart(warHistory.weeks);
+    if (noteEl) noteEl.textContent =
+      `ℹ️ Data from ${warHistory.weeks.length} completed river races. Indigo = above average, red = below average. Dashed line = average (${fmt(warHistory.avgFame)} fame).`;
+  } else {
+    if (titleEl) titleEl.textContent = '📅 Clan War Activity – Last 7 days';
+    renderActivityChart(recentActivity.dailyActivity);
+    if (noteEl) noteEl.textContent = '⚠️ The Clash Royale API returns at most 30 battles. For active players who also play regular PvP, older war battles may not appear here.';
+  }
 
   // 4. Stability
   const stabPct = Math.min(100, stability.score);

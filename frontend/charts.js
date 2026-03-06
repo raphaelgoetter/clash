@@ -105,6 +105,79 @@ export function renderActivityChart(dailyActivity) {
   });
 }
 
+// ── 1b. War history bar chart (fame per river-race week) ──────
+
+/**
+ * Render a fame-per-week bar chart on #chart-activity (reuses same canvas).
+ * Bars above the average are indigo; below are red.
+ * A dashed yellow line shows the average.
+ *
+ * @param {{ label:string; fame:number }[]} weeks  Most-recent-first array
+ */
+export function renderWarHistoryChart(weeks) {
+  destroyIfExists('chart-activity');
+  const el = document.getElementById('chart-activity');
+  if (!el) return;
+
+  // Display oldest → newest (left → right)
+  const ordered = [...weeks].reverse();
+  const labels   = ordered.map((w) => w.label);
+  const fameData = ordered.map((w) => w.fame);
+  const avg      = fameData.reduce((a, b) => a + b, 0) / (fameData.length || 1);
+
+  new Chart(el.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Fame',
+          data: fameData,
+          backgroundColor: fameData.map((f) =>
+            f >= avg ? 'rgba(99,102,241,0.85)' : 'rgba(239,68,68,0.65)'
+          ),
+          borderRadius: 6,
+          order: 2,
+        },
+        {
+          label: 'Average',
+          type: 'line',
+          data: fameData.map(() => Math.round(avg)),
+          borderColor: 'rgba(234,179,8,0.8)',
+          borderDash: [6, 3],
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false,
+          order: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: '#94a3b8', font: { size: 11 }, maxRotation: 45 },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+        y: {
+          beginAtZero: false,
+          ticks: { color: '#94a3b8' },
+          grid: { color: 'rgba(255,255,255,.06)' },
+        },
+      },
+    },
+  });
+}
+
 // ── 2. War reliability gauge (doughnut) ───────────────────────
 
 /**
