@@ -80,6 +80,9 @@ router.get('/:tag/analysis', async (req, res) => {
       };
     });
 
+    // Sort by activityScore ascending (most at-risk first)
+    analyzedMembers.sort((a, b) => a.activityScore - b.activityScore);
+
     // Aggregate stats for chart data
     const green = analyzedMembers.filter((m) => m.color === 'green').length;
     const yellow = analyzedMembers.filter((m) => m.color === 'yellow').length;

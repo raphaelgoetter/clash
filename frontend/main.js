@@ -36,7 +36,7 @@ const filterVerdict   = document.getElementById('filter-verdict');
 // ── State ────────────────────────────────────────────────────
 let currentMode = 'player';   // 'player' | 'clan'
 let allMembers  = [];          // cache for table filtering / sorting
-let sortState   = { col: null, dir: 'asc' };
+let sortState   = { col: 'activityScore', dir: 'asc' };
 
 // Default tags per mode
 const DEFAULT_TAGS = { player: '#YRGJGR8R', clan: '#LRQP20V9' };
@@ -236,9 +236,14 @@ function renderClanResults(data) {
   renderClanBarChart(members);
   renderClanPieChart(summary);
 
-  // Table
+  // Table — apply default sort (activityScore asc = most at-risk first)
   allMembers = members;
-  renderMembersTable(members);
+  // Reflect default sort on header
+  document.querySelectorAll('.members-table th.sortable').forEach((h) => {
+    h.classList.remove('sort-asc', 'sort-desc');
+    if (h.dataset.col === 'activityScore') h.classList.add('sort-asc');
+  });
+  renderMembersTable(sortMembers(members, 'activityScore', 'asc'));
 
   clanResults.classList.remove('hidden');
   clanResults.scrollIntoView({ behavior: 'smooth', block: 'start' });
