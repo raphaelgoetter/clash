@@ -169,7 +169,7 @@ export function renderWarHistoryChart(weeks) {
           grid: { color: 'rgba(255,255,255,.04)' },
         },
         y: {
-          beginAtZero: false,
+          beginAtZero: true,
           ticks: { color: '#94a3b8' },
           grid: { color: 'rgba(255,255,255,.06)' },
         },

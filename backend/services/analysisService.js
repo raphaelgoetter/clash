@@ -256,7 +256,7 @@ export function buildWarHistory(playerTag, raceLog) {
       const p = standing.clan?.participants?.find((x) => x.tag === normalized);
       if (p) {
         weeks.push({
-          label: `S${race.seasonId}·W${race.sectionIndex}`,
+          label: `S${race.seasonId}·W${race.sectionIndex + 1}`,
           seasonId: race.seasonId,
           sectionIndex: race.sectionIndex,
           fame: p.fame ?? 0,
