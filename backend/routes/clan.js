@@ -3,8 +3,12 @@
 // ============================================================
 
 import { Router } from 'express';
-import { fetchClan, fetchClanMembers, fetchRaceLog } from '../services/clashApi.js';
-import { analyzeClanMembers, buildWarHistory, computeWarScore } from '../services/analysisService.js';
+import { fetchClan, fetchClanMembers, fetchRaceLog, fetchBattleLog } from '../services/clashApi.js';
+import {
+  analyzeClanMembers, buildWarHistory, computeWarScore,
+  computeWarReliabilityFallback, categorizeBattleLog,
+  filterWarBattles, expandDuelRounds,
+} from '../services/analysisService.js';
 
 const router = Router();
 
@@ -39,46 +43,80 @@ router.get('/:tag/analysis', async (req, res) => {
     let raceLog = null;
     try { raceLog = await fetchRaceLog(clanTag); } catch (_) { /* silent */ }
 
-    const analyzedMembers = members.map((m) => {
-      let activityScore, verdict, color;
+    // First pass: compute war scores for all members from race log
+    const firstPass = members.map((m) => {
+      const playerProxy = { bestTrophies: m.trophies ?? 0, donations: m.donations ?? 0 };
 
       if (raceLog) {
-        // Reuse the same scoring as the player tab
         const wh = buildWarHistory(m.tag, raceLog, clan.tag);
-        // bestTrophies not available from /members — use current trophies as proxy
-        const playerProxy = { bestTrophies: m.trophies ?? 0, donations: m.donations ?? 0 };
-        const ws = computeWarScore(playerProxy, wh);
-        activityScore = ws.pct;
-        verdict       = ws.verdict;
-        color         = ws.color;
-      } else {
-        // Legacy fallback (no race log)
-        const base = m.donations ?? 0;
-        const trophies = m.trophies ?? 0;
-        const expLevel = m.expLevel ?? 1;
-        const donPart = Math.min(40, (base / 300) * 40);
-        const trPart  = Math.min(40, (trophies / 10000) * 40);
-        const expPart = Math.min(20, (expLevel / 60) * 20);
-        activityScore = Math.round(donPart + trPart + expPart);
-        verdict = activityScore >= 70 ? 'Fiabilité très élevée en guerre de clans'
-                : activityScore >= 40 ? 'Fiabilité correcte — à surveiller'
-                :                       'Risque élevé d\'inactivité en GDC';
-        color = activityScore >= 70 ? 'green' : activityScore >= 40 ? 'yellow' : 'red';
+        if (wh.weeks.length > 0) {
+          // Historical data available — same scoring as player tab
+          const ws = computeWarScore(playerProxy, wh);
+          return { m, activityScore: ws.pct, verdict: ws.verdict, color: ws.color, needsBattleLog: false };
+        }
+        // New member: no weeks in the last 10 races → will need battle log
+        return { m, activityScore: null, verdict: null, color: null, needsBattleLog: true };
       }
 
+      // No race log at all — legacy trophies-based estimate
+      const donPart = Math.min(40, ((m.donations ?? 0) / 300) * 40);
+      const trPart  = Math.min(40, ((m.trophies ?? 0) / 10000) * 40);
+      const expPart = Math.min(20, ((m.expLevel ?? 1) / 60) * 20);
+      const score   = Math.round(donPart + trPart + expPart);
       return {
-        name:               m.name,
-        tag:                m.tag,
-        role:               m.role,
-        trophies:           m.trophies ?? 0,
-        donations:          m.donations ?? 0,
-        donationsReceived:  m.donationsReceived ?? 0,
-        expLevel:           m.expLevel ?? 1,
-        activityScore,
-        verdict,
-        color,
+        m, activityScore: score,
+        verdict: score >= 70 ? 'Fiabilité très élevée en guerre de clans'
+               : score >= 40 ? 'Fiabilité correcte — à surveiller'
+               :               'Risque élevé d\'inactivité en GDC',
+        color: score >= 70 ? 'green' : score >= 40 ? 'yellow' : 'red',
+        needsBattleLog: false,
       };
     });
+
+    // Second pass: fetch battle logs in parallel for new members
+    const newMemberIndices = firstPass.reduce((acc, entry, i) => {
+      if (entry.needsBattleLog) acc.push(i);
+      return acc;
+    }, []);
+
+    if (newMemberIndices.length > 0) {
+      const battleLogResults = await Promise.allSettled(
+        newMemberIndices.map((i) => fetchBattleLog(firstPass[i].m.tag))
+      );
+      battleLogResults.forEach((result, idx) => {
+        const i = newMemberIndices[idx];
+        const { m } = firstPass[i];
+        const playerProxy = { bestTrophies: m.trophies ?? 0, donations: m.donations ?? 0 };
+        if (result.status === 'fulfilled') {
+          const rawBattleLog  = result.value;
+          const bd            = categorizeBattleLog(rawBattleLog);
+          const warLog        = expandDuelRounds(filterWarBattles(rawBattleLog));
+          const ws            = computeWarReliabilityFallback(playerProxy, warLog, bd);
+          firstPass[i].activityScore = ws.pct;
+          firstPass[i].verdict       = ws.verdict;
+          firstPass[i].color         = ws.color;
+        } else {
+          // Battle log fetch failed: minimal score from trophies+donations only
+          const pct = Math.round((Math.min(5, (playerProxy.donations / 500) * 5) / 30) * 100);
+          firstPass[i].activityScore = pct;
+          firstPass[i].verdict       = 'Risque élevé d\'inactivité en GDC';
+          firstPass[i].color         = 'red';
+        }
+      });
+    }
+
+    const analyzedMembers = firstPass.map(({ m, activityScore, verdict, color }) => ({
+      name:               m.name,
+      tag:                m.tag,
+      role:               m.role,
+      trophies:           m.trophies ?? 0,
+      donations:          m.donations ?? 0,
+      donationsReceived:  m.donationsReceived ?? 0,
+      expLevel:           m.expLevel ?? 1,
+      activityScore,
+      verdict,
+      color,
+    }));
 
     // Sort by activityScore ascending (most at-risk first)
     analyzedMembers.sort((a, b) => a.activityScore - b.activityScore);

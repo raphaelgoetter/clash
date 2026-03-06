@@ -66,7 +66,7 @@ const FRIENDLY_TYPES = new Set(['training', 'friendly', 'clanMate', 'casual2v2',
  * @param {object[]} rawBattleLog
  * @returns {{ total:number; gdc:number; ladder:number; challenge:number; friendly:number; other:number }}
  */
-function categorizeBattleLog(rawBattleLog) {
+export function categorizeBattleLog(rawBattleLog) {
   let gdc = 0, ladder = 0, challenge = 0, friendly = 0, other = 0;
   for (const b of rawBattleLog) {
     const t = b.type ?? '';
@@ -90,7 +90,7 @@ function categorizeBattleLog(rawBattleLog) {
  * @param {object[]} warLog
  * @returns {object[]}
  */
-function expandDuelRounds(warLog) {
+export function expandDuelRounds(warLog) {
   const expanded = [];
   for (const battle of warLog) {
     if (battle.type === 'riverRaceDuel' && Array.isArray(battle.team?.[0]?.rounds)) {
@@ -119,6 +119,51 @@ function expandDuelRounds(warLog) {
 function battlesInLastDays(battleLog, days) {
   const cutoff = Date.now() - days * MS_PER_DAY;
   return battleLog.filter((b) => parseClashDate(b.battleTime).getTime() >= cutoff).length;
+}
+
+/**
+ * Describe the temporal spread of GDC battles in natural language.
+ * Groups by calendar day (UTC), shows the last few active days.
+ *
+ * Examples:
+ *   "4 aujourd'hui"
+ *   "4 aujourd'hui · 3 hier"
+ *   "8 combats sur 3 jours"
+ *
+ * @param {object[]} warLog - Expanded, filtered GDC battle log
+ * @returns {string}
+ */
+function describeGdcTiming(warLog) {
+  if (warLog.length === 0) return '';
+
+  // Build a day → count map using local calendar date keys (YYYY-MM-DD)
+  const todayKey     = new Date().toISOString().slice(0, 10);
+  const yesterdayKey = new Date(Date.now() - MS_PER_DAY).toISOString().slice(0, 10);
+
+  const byDay = {};
+  for (const b of warLog) {
+    const key = parseClashDate(b.battleTime).toISOString().slice(0, 10);
+    byDay[key] = (byDay[key] ?? 0) + 1;
+  }
+
+  // Sort days most-recent first
+  const days = Object.entries(byDay).sort((a, b) => b[0].localeCompare(a[0]));
+
+  // Build natural-language segments for the 2 most recent days
+  const segments = days.slice(0, 2).map(([key, count]) => {
+    const label =
+      key === todayKey     ? `aujourd'hui` :
+      key === yesterdayKey ? `hier` :
+      key; // fallback: ISO date
+    return `${count} ${label}`;
+  });
+
+  // If there are more than 2 active days, append a summary
+  if (days.length > 2) {
+    return `${warLog.length} combats sur ${days.length} jours (${segments[0]})`;
+  }
+
+  return segments.join(' · ');
 }
 
 /**
@@ -172,16 +217,20 @@ export function computeWarScore(player, warHistory) {
   const r = (v) => Math.round(v * 10) / 10; // round to 1 decimal
 
   // 1. Régularité (0-10)
-  const playedWeeks  = warHistory.weeks.filter((w) => w.decksUsed > 0).length;
-  const totalWeeks   = warHistory.totalWeeks || 1;
-  const regularite   = r(Math.min(10, (playedWeeks / totalWeeks) * 10));
+  // Dénominateur = semaines passées dans le clan actuel, pas le total historique
+  // → un joueur arrivé il y a 1 semaine et ayant joué cette semaine obtient 10/10
+  const playedWeeks    = warHistory.weeks.filter((w) => w.decksUsed > 0).length;
+  const totalWeeks     = warHistory.totalWeeks || 1;
+  const weeksInClan    = Math.max(1, warHistory.streakInCurrentClan);
+  const regularite     = r(Math.min(10, (playedWeeks / weeksInClan) * 10));
 
   // 2. Score moyen (0-10) — 3 000 fame = perfect
-  const FAME_CAP     = 3000;
-  const scoreMoyen   = r(Math.min(10, (warHistory.avgFame / FAME_CAP) * 10));
+  const FAME_CAP       = 3000;
+  const scoreMoyen     = r(Math.min(10, (warHistory.avgFame / FAME_CAP) * 10));
 
-  // 3. Stabilité (0-5) — semaines consécutives dans le clan actuel
-  const stabilite    = r(Math.min(5, (warHistory.streakInCurrentClan / totalWeeks) * 5));
+  // 3. Stabilité (0-5) — courbe doublée : 5 semaines consécutives = 5/5
+  // (au lieu de 10 semaines), pour ne pas trop pénaliser les membres récents
+  const stabilite      = r(Math.min(5, (warHistory.streakInCurrentClan / totalWeeks) * 10));
 
   // 4. Expérience trophées (0-3) — ≥ 12 000 best trophies = 3/3
   const TROPHY_CAP   = 12000;
@@ -205,9 +254,13 @@ export function computeWarScore(player, warHistory) {
       label:  'Régularité',
       score:  regularite,
       max:    10,
-      detail: warHistory.totalWeeks
-        ? `${playedWeeks} / ${warHistory.totalWeeks} semaines jouées`
-        : 'Aucune donnée',
+      detail: (() => {
+        if (!warHistory.totalWeeks) return 'Aucune donnée';
+        const suffix = weeksInClan < totalWeeks
+          ? ` (membre depuis ${weeksInClan} semaine${weeksInClan > 1 ? 's' : ''})`
+          : '';
+        return `${playedWeeks} / ${weeksInClan} semaines jouées${suffix}`;
+      })(),
     },
     {
       label:  'Score moyen',
@@ -221,7 +274,11 @@ export function computeWarScore(player, warHistory) {
       label:  'Stabilité',
       score:  stabilite,
       max:    5,
-      detail: `${warHistory.streakInCurrentClan} semaine${warHistory.streakInCurrentClan > 1 ? 's' : ''} consécutive${warHistory.streakInCurrentClan > 1 ? 's' : ''} dans ce clan`,
+      detail: (() => {
+        const s = warHistory.streakInCurrentClan;
+        const base = `${s} semaine${s > 1 ? 's' : ''} consécutive${s > 1 ? 's' : ''} dans ce clan`;
+        return s < 5 ? `${base} (score complet à 5 sem.)` : base;
+      })(),
     },
     {
       label:  'Expérience',
@@ -255,7 +312,7 @@ export function computeWarScore(player, warHistory) {
  * @param {object[]} warLog       - Filtered war battles (expanded duels)
  * @param {object}   battleLogBreakdown - Output of categorizeBattleLog()
  */
-function computeWarReliabilityFallback(player, warLog, battleLogBreakdown) {
+export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown) {
   const r = (v) => Math.round(v * 10) / 10;
 
   const bd = battleLogBreakdown ?? { total: warLog.length, gdc: warLog.length, ladder: 0, challenge: 0 };
@@ -302,9 +359,12 @@ function computeWarReliabilityFallback(player, warLog, battleLogBreakdown) {
         label:  'Activité GDC',
         score:  activiteGDC,
         max:    10,
-        detail: gdcCount > 0
-          ? `${gdcCount} combat${gdcCount > 1 ? 's' : ''} GDC dans les 30 dernières entrées`
-          : 'Aucun combat GDC dans le log',
+        detail: (() => {
+          if (gdcCount === 0) return 'Aucun combat GDC dans le log';
+          const timing = describeGdcTiming(warLog);
+          const suffix = `(sur les 30 dernières entrées)`;
+          return timing ? `${timing} ${suffix}` : `${gdcCount} combat${gdcCount > 1 ? 's' : ''} GDC ${suffix}`;
+        })(),
       },
       {
         label:  'Win Rate GDC',

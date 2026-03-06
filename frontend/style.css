@@ -458,7 +458,7 @@ code {
 }
 
 .fallback-badge {
-  margin-top: 10px;
+  margin-block: 10px;
   padding: 7px 12px;
   background: rgba(234,179,8,.12);
   border: 1px solid rgba(234,179,8,.35);
