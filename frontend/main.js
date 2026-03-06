@@ -153,8 +153,10 @@ function renderPlayerResults(data) {
     { label: '3-Crown Wins',      value: fmt(activityIndicators.threeCrowns) },
   ]);
 
-  // 3. Clan War Activity chart (war battles only)
+  // 3. Clan War Activity chart (war battles only, rounds expanded)
   renderActivityChart(recentActivity.dailyActivity);
+  const noteEl = document.getElementById('api-limit-note');
+  if (noteEl) noteEl.textContent = '⚠️ The Clash Royale API returns at most 30 battles. For active players who also play regular PvP, older war battles may not appear here.';
 
   // 4. Stability
   const stabPct = Math.min(100, stability.score);

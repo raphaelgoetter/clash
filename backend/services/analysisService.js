@@ -48,6 +48,37 @@ export function filterWarBattles(battleLog) {
 }
 
 /**
+ * Flatten a war battle log so that duel entries are expanded into
+ * individual rounds. Each round gets the timestamp of the parent duel.
+ *
+ * Rationale: a riverRaceDuel entry in the API represents a best-of-3
+ * series but physically counts as multiple battles played. Expanding
+ * rounds gives a more accurate per-day count.
+ *
+ * @param {object[]} warLog
+ * @returns {object[]}
+ */
+function expandDuelRounds(warLog) {
+  const expanded = [];
+  for (const battle of warLog) {
+    if (battle.type === 'riverRaceDuel' && Array.isArray(battle.team?.[0]?.rounds)) {
+      // One synthetic entry per round, keeping the parent battleTime
+      const rounds = battle.team[0].rounds;
+      rounds.forEach((round, i) => {
+        expanded.push({
+          ...battle,
+          _roundIndex: i,
+          // Keep parent timestamp (rounds don't have individual timestamps)
+        });
+      });
+    } else {
+      expanded.push(battle);
+    }
+  }
+  return expanded;
+}
+
+/**
  * Count battles that occurred within the last `days` calendar days.
  * @param {object[]} battleLog
  * @param {number} days
@@ -209,12 +240,14 @@ export function computeWarReliability(player, battleLog) {
  * @returns {object}
  */
 export function analyzePlayer(player, battleLog) {
-  // Work only on Clan War battles for activity & indicators
-  const warLog = filterWarBattles(battleLog);
+  // Filter to war battles only, then expand duel rounds into individual entries
+  const warLog = expandDuelRounds(filterWarBattles(battleLog));
 
   const stability = computeStabilityScore(player);
   const reliability = computeWarReliability(player, warLog);
-  const dailyActivity = buildDailyActivity(warLog, 30);
+  // Limit chart to 7 days: the API returns only 30 battles total, and a player
+  // who also plays regular PvP matches will quickly exhaust that window.
+  const dailyActivity = buildDailyActivity(warLog, 7);
 
   const wins = warLog.filter((b) => b.team?.[0]?.crowns > (b.opponent?.[0]?.crowns ?? 0)).length;
   const losses = warLog.filter((b) => b.team?.[0]?.crowns < (b.opponent?.[0]?.crowns ?? 0)).length;
@@ -246,6 +279,10 @@ export function analyzePlayer(player, battleLog) {
       last7d: reliability.metrics.recentBattles7d,
       last30d: reliability.metrics.recentBattles30d,
       dailyActivity,
+      // The Clash Royale API returns at most 30 battles. For players who
+      // also play regular PvP, war battles older than a few days may
+      // not appear in the log.
+      apiLimitNote: 'Battle log capped at 30 entries by the Clash Royale API.',
     },
     stability,
     reliability,
