@@ -335,20 +335,47 @@ function renderPlayerResults(data) {
 
 // ── Actual Clan War card (player view) ────────────────────────────
 
+const DAY_NAMES = ['Thu', 'Fri', 'Sat', 'Sun'];
+
 function renderCurrentWarCard(warData) {
   if (!warData) { cardCurrentWar.classList.add('hidden'); return; }
   cardCurrentWar.classList.remove('hidden');
 
-  const { totalDecksUsed, maxDecksElapsed, maxDecksWeek, isReliableTotal, days } = warData;
+  const { totalDecksUsed, maxDecksElapsed, maxDecksWeek, isReliableTotal, days, arrivedMidWar, arrivedOnDay } = warData;
   const dayNum   = days.findIndex((d) => d.isToday) + 1;
+
+  // Cas spécial : joueur arrivé pendant la GDC
+  if (arrivedMidWar) {
+    const arrivalDayName = DAY_NAMES[(arrivedOnDay ?? 1) - 1] ?? `day ${arrivedOnDay}`;
+    const chipsHtml = days.map((d) => {
+      const cls  = d.isFuture ? 'future' : d.isToday ? 'today' : 'past';
+      const icon = d.isFuture ? '—' : d.isToday ? '▶' : '✔';
+      return `<span class="war-day-chip ${cls}">${d.label} ${icon}</span>`;
+    }).join('');
+    warDaysGrid.innerHTML =
+      `<div class="war-summary">` +
+        `<div class="war-progress-row">` +
+          `<span class="war-decks-count">0 <span class="war-decks-max">/ ${maxDecksWeek}</span></span>` +
+          `<span class="war-decks-label">decks this week</span>` +
+          `<span class="war-data-source arrived">Arrived ${arrivalDayName} ⚠️</span>` +
+        `</div>` +
+        `<div class="war-progress-track"><div class="war-progress-fill bad" style="width:0%"></div></div>` +
+        `<div class="war-progress-meta war-arrived-note">` +
+          `Joined during the war week — can't participate in PvP battles this week` +
+        `</div>` +
+        `<div class="war-day-chips">${chipsHtml}</div>` +
+      `</div>`;
+    return;
+  }
+
   const pctFill  = Math.round((totalDecksUsed / maxDecksWeek) * 100);
   const pctMark  = Math.round((maxDecksElapsed / maxDecksWeek) * 100);
 
   // Statut par rapport aux combats attendus jusqu'à aujourd'hui inclus
   let statusIcon, statusText, statusCls;
-  if (totalDecksUsed >= maxDecksElapsed)                { statusIcon = '✅'; statusText = 'On track';       statusCls = 'good'; }
+  if (totalDecksUsed >= maxDecksElapsed)                     { statusIcon = '✅'; statusText = 'On track';          statusCls = 'good'; }
   else if (totalDecksUsed >= Math.ceil(maxDecksElapsed / 2)) { statusIcon = '⚠️'; statusText = 'Behind schedule'; statusCls = 'partial'; }
-  else                                                  { statusIcon = '🔴'; statusText = 'Very behind';    statusCls = 'bad'; }
+  else                                                       { statusIcon = '🔴'; statusText = 'Very behind';       statusCls = 'bad'; }
 
   const sourceNote = isReliableTotal
     ? '<span class="war-data-source reliable">Race log ✓</span>'
@@ -382,7 +409,12 @@ function renderCurrentWarCard(warData) {
 
 function warMiniBarHtml(warData) {
   if (!warData) return '<span class="war-mini-na">—</span>';
-  const { totalDecksUsed, maxDecksWeek, maxDecksElapsed } = warData;
+  const { totalDecksUsed, maxDecksWeek, maxDecksElapsed, arrivedMidWar, arrivedOnDay } = warData;
+  // Joueur arrivé en cours de semaine : icône distincte
+  if (arrivedMidWar) {
+    const dayName = DAY_NAMES[(arrivedOnDay ?? 1) - 1] ?? `day ${arrivedOnDay}`;
+    return `<span class="war-mini-arrived" title="Arrived ${dayName} — can't participate this week">~</span>`;
+  }
   const pct = Math.round((totalDecksUsed / maxDecksWeek) * 100);
   const cls = totalDecksUsed >= maxDecksElapsed                   ? 'good'
             : totalDecksUsed >= Math.ceil(maxDecksElapsed / 2)   ? 'partial'

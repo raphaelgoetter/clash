@@ -770,7 +770,7 @@ export function buildCurrentWarDays(battleLog, raceTotalDecks = null) {
   const isReliableTotal  = raceTotalDecks !== null;
   const totalDecksUsed   = isReliableTotal ? raceTotalDecks : days.reduce((s, d) => s + d.count, 0);
 
-  return { days, totalDecksUsed, maxDecksElapsed, maxDecksWeek, isReliableTotal };
+  return { days, totalDecksUsed, maxDecksElapsed, maxDecksWeek, isReliableTotal, daysFromThu };
 }
 
 /**

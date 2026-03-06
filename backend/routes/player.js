@@ -96,8 +96,17 @@ async function buildPlayerAnalysis(tag) {
     }
 
     // Résumé GDC semaine courante — calculé après warHistory pour utiliser la source fiable
-    const raceTotalDecks = analysis.warHistory?.weeks?.[0]?.decksUsed ?? null;
-    analysis.currentWarDays = buildCurrentWarDays(battleLog, raceTotalDecks);
+    const currentWeek   = analysis.warHistory?.weeks?.find((w) => w.isCurrent) ?? null;
+    const raceTotalDecks = currentWeek?.decksUsed ?? null;
+    const warSummary    = buildCurrentWarDays(battleLog, raceTotalDecks);
+    // Joueur arrivé pendant la GDC : pas de semaine courante dans le race log
+    if (warSummary && !currentWeek) {
+      warSummary.arrivedMidWar  = true;
+      warSummary.arrivedOnDay   = warSummary.daysFromThu + 1; // 1=jeu, 2=ven, 3=sam, 4=dim
+      warSummary.totalDecksUsed = 0;
+      warSummary.isReliableTotal = true;
+    }
+    analysis.currentWarDays = warSummary;
 
     return analysis;
 }

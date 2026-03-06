@@ -817,6 +817,17 @@ a.member-link:hover div:first-child {
   border: 1px solid rgba(251,191,36,.3);
 }
 
+.war-data-source.arrived {
+  background: rgba(167,139,250,.15);
+  color: var(--purple-light);
+  border: 1px solid rgba(167,139,250,.3);
+}
+
+.war-arrived-note {
+  color: var(--purple-light);
+  font-style: italic;
+}
+
 /* Barre de progression */
 .war-progress-track {
   position: relative;
@@ -877,6 +888,14 @@ a.member-link:hover div:first-child {
 .war-col { white-space: nowrap; }
 
 .war-mini-na { color: var(--text-muted); font-size: .75rem; }
+
+.war-mini-arrived {
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--purple-light);
+  cursor: default;
+  letter-spacing: .05em;
+}
 
 .war-mini-total {
   display: flex;

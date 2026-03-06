@@ -167,7 +167,18 @@ async function buildClanAnalysis(clanTag) {
         verdict,
         color,
         isNew,
-        warDays: battleLog !== null ? buildCurrentWarDays(battleLog, warHistory?.weeks?.[0]?.decksUsed ?? null) : null,
+        warDays: (() => {
+          if (battleLog === null) return null;
+          const currentWeek  = warHistory?.weeks?.find((w) => w.isCurrent) ?? null;
+          const summary       = buildCurrentWarDays(battleLog, currentWeek?.decksUsed ?? null);
+          if (summary && !currentWeek) {
+            summary.arrivedMidWar  = true;
+            summary.arrivedOnDay   = summary.daysFromThu + 1;
+            summary.totalDecksUsed = 0;
+            summary.isReliableTotal = true;
+          }
+          return summary;
+        })(),
       };
     });
 
