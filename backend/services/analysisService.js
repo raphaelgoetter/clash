@@ -617,6 +617,7 @@ export function buildWarHistory(playerTag, raceLog, currentClanTag = null, curre
   // Exige au moins 5 decks PvP pour être statistiquement significatif
   const MIN_PVP_DECKS = 5;
   const completedWeeks = weeksPlayed.filter((w) => !w.isCurrent);
+  const completedParticipation = completedWeeks.length;
   let totalPvpDecks = 0, totalEstimatedWins = 0;
   for (const w of completedWeeks) {
     const { wins: wWins, pvpDecks: wPvp } = estimateWinsFromFame(w.fame, w.decksUsed, w.boatAttacks);
@@ -625,7 +626,7 @@ export function buildWarHistory(playerTag, raceLog, currentClanTag = null, curre
   }
   const historicalWinRate = totalPvpDecks >= MIN_PVP_DECKS ? totalEstimatedWins / totalPvpDecks : null;
 
-  return { weeks, totalFame, avgFame, maxFame, participation, totalWeeks, streakInCurrentClan, historicalWinRate };
+  return { weeks, totalFame, avgFame, maxFame, participation, completedParticipation, totalWeeks, streakInCurrentClan, historicalWinRate };
 }
 
 // ── Player full analysis ──────────────────────────────────────

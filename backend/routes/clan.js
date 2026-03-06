@@ -120,7 +120,9 @@ async function buildClanAnalysis(clanTag) {
           }
         }
 
-        if (wh.streakInCurrentClan >= 2) {
+        // Nécessite streak >= 2 et au moins 2 semaines terminées jouées.
+        const hasEnoughHistory = wh.streakInCurrentClan >= 2 && wh.completedParticipation >= 2;
+        if (hasEnoughHistory) {
           // Historical data — computeWarScore + win rate historique (race log) en priorité
           const effectiveWinRate = wh.historicalWinRate ?? warWinRate;
           const ws = computeWarScore(playerProxy, wh, effectiveWinRate);

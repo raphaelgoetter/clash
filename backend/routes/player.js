@@ -75,9 +75,12 @@ async function buildPlayerAnalysis(tag) {
         // plus cohérent avec la fame moyenne, car calculé sur la même fenêtre temporelle.
         const effectiveWinRate = analysis.warHistory.historicalWinRate ?? warWinRate;
 
-        // Nécessite au moins 2 semaines dans le clan (race courante comprise) pour un score fiable.
-        // En dessous de ce seuil, un seul point de donnée ne suffit pas → fallback battle log.
-        if (analysis.warHistory.streakInCurrentClan >= 2) {
+        // Nécessite au moins 2 semaines dans le clan (race courante comprise) pour un score fiable,
+        // dont au minimum 2 semaines terminées avec des decks joués.
+        // En dessous de ce seuil → fallback battle log (membre considéré comme "new").
+        const hasEnoughHistory = analysis.warHistory.streakInCurrentClan >= 2
+          && analysis.warHistory.completedParticipation >= 2;
+        if (hasEnoughHistory) {
           analysis.warScore = computeWarScore(player, analysis.warHistory, effectiveWinRate);
         } else {
           // Historique insuffisant → fallback battle log
