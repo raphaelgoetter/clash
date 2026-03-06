@@ -193,7 +193,6 @@ function renderPlayerResults(data) {
     { label: 'Tag',           value: overview.tag },
     { label: 'Trophies',      value: `🏆 ${fmt(overview.trophies)}` },
     { label: 'Best Trophies', value: `🏆 ${fmt(overview.bestTrophies)}` },
-    { label: 'Exp Level',     value: `⭐ ${overview.expLevel}` },
     { label: 'CW2 Wins',      value: `⚔️ ${fmt(overview.clanWarWins ?? 0)}` },
   ]);
 
