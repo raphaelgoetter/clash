@@ -8,9 +8,9 @@ A full-stack web tool that helps clan leaders evaluate whether a player is likel
 
 | Feature | Details |
 |---|---|
-| **Player analysis** | Overview, activity indicators, battle log chart, stability score, war reliability score, colour-coded verdict + reasons |
+| **Player analysis** | Overview, activity indicators, battle log chart, war reliability score (/45 or /40), colour-coded verdict + breakdown |
 | **Clan analysis** | Member table with sorting & filtering, score distribution chart, reliable-vs-risky pie chart |
-| **CSV export** | One-click recruitment report download |
+| **Response cache** | In-memory cache (5 min TTL) to avoid hammering the Clash Royale API |
 | **Responsive UI** | Clash Royale-inspired dark theme, works on mobile |
 
 ---
@@ -27,7 +27,8 @@ clash/
 │   │   └── clan.js            # GET /api/clan/:tag[/analysis]
 │   └── services/
 │       ├── clashApi.js        # Clash Royale API wrapper
-│       └── analysisService.js # Scoring formulas
+│       ├── analysisService.js # Scoring formulas
+│       └── cache.js           # In-memory cache (5 min TTL)
 ├── frontend/
 │   ├── index.html
 │   ├── main.js                # UI orchestration
@@ -84,7 +85,7 @@ npm run dev          # uses nodemon for auto-reload
 npm start            # plain node
 ```
 
-The Express server starts at **http://localhost:3000**.
+The Express server starts at **<http://localhost:3000>**.
 
 ### 4 — Run the frontend
 
@@ -93,7 +94,7 @@ cd frontend
 npm run dev
 ```
 
-Vite starts at **http://localhost:5173** and proxies `/api` → `http://localhost:3000`.
+Vite starts at **<http://localhost:5173>** and proxies `/api` → `http://localhost:3000`.
 
 ---
 
@@ -113,30 +114,43 @@ Tags should include the `#` prefix (URL-encoded as `%23`).
 
 ## 🧮 Score formulas
 
-### Stability score (0–100)
+### War reliability score — full mode (0–45 pts)
 
-```
-stabilityScore = (donations / 1000) × (battleCount / 2000) × (expLevel × 1.5)
-```
+Used when the war race log is available. Seven weighted criteria:
 
-- **< 15** → Low stability
-- **15–39** → Medium stability
-- **≥ 40** → High stability
+| # | Criterion | Max | Cap / rule |
+|---|---|---|---|
+| 1 | Regularity | 10 | `playedWeeks / weeksInClan × 10` |
+| 2 | Avg fame | 10 | 3,000 fame/week = full score |
+| 3 | CW2 battle wins | 10 | 250 total CW2 wins = full score |
+| 4 | Win rate (River Race) | 5 | 100% win rate = full score |
+| 5 | Clan stability | 5 | 5+ consecutive weeks in clan = full score |
+| 6 | Experience (best trophies) | 3 | 12,000 trophies = full score |
+| 7 | Donations | 2 | 500 cards donated = full score |
 
-### War reliability score (0–100)
+Without battle log (criteria 4 absent): max = **40 pts**.
 
-```
-raw = (recentBattles7d × 2)
-    + (donations / 200)
-    + (battleCount / 500)
-    + (expLevel × 3)
+### War reliability score — fallback mode (0–40 pts)
 
-normalised = min(100, raw / 200 × 100)
-```
+Used when no race log history is available (battle log only):
 
-- **70–100** 🟢 Highly reliable
-- **40–69**  🟡 Moderate reliability
-- **0–39**   🔴 High risk
+| # | Criterion | Max | Cap / rule |
+|---|---|---|---|
+| 1 | War activity | 10 | Avg battles/day over 14-day window (4/day = full) |
+| 2 | Win rate (war) | 10 | From battle log war battles |
+| 3 | CW2 battle wins | 10 | 250 total CW2 wins = full score |
+| 4 | General activity | 5 | 20 competitive battles = full score |
+| 5 | Experience | 3 | 12,000 best trophies = full score |
+| 6 | Donations | 2 | 500 cards donated = full score |
+
+### Verdict thresholds (both scoring modes)
+
+| % of max score | Verdict | Colour |
+|---|---|---|
+| ≥ 76 % | High reliability | 🟢 Green |
+| 61–75 % | Moderate risk | 🟡 Yellow |
+| 31–60 % | High risk | 🟠 Orange |
+| 0–30 % | Extreme risk | 🔴 Red |
 
 ### Member activity score (clan view, 0–100)
 
@@ -147,6 +161,8 @@ score = min(40, donations / 300 × 40)
       + min(40, trophies  / 10000 × 40)
       + min(20, expLevel  / 60 × 20)
 ```
+
+Same 4-tier verdict thresholds apply (76 / 61 / 31).
 
 ---
 
