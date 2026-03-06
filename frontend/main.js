@@ -207,7 +207,8 @@ function renderPlayerResults(data) {
   const cw2 = overview.clanWarWins ?? 0;
   overviewGrid.innerHTML = overviewItems([
     { label: 'Name',          value: overview.name, cls: 'gold', badge: ws.isFallback ? 'new' : null },
-    { label: 'Tag',           value: overview.tag },
+    { label: 'Tag',           value: overview.tag,
+      link: `https://royaleapi.com/player/${overview.tag.replace('#', '')}` },
     { label: 'Trophies',      value: `🏆 ${fmt(overview.trophies)}`,
       risk: overview.trophies < 3000 ? 'bad' : overview.trophies < 5000 ? 'warn' : null },
     { label: 'Best Trophies', value: `🏆 ${fmt(overview.bestTrophies)}` },
@@ -334,43 +335,62 @@ function renderPlayerResults(data) {
 
 // ── Actual Clan War card (player view) ────────────────────────────
 
-function renderCurrentWarCard(days) {
-  if (!days) { cardCurrentWar.classList.add('hidden'); return; }
+function renderCurrentWarCard(warData) {
+  if (!warData) { cardCurrentWar.classList.add('hidden'); return; }
   cardCurrentWar.classList.remove('hidden');
-  warDaysGrid.innerHTML = days.map((d) => {
-    const isFull  = d.count >= 4;
-    const isEmpty = d.count === 0;
-    const dotColor = d.isFuture ? 'future' : isFull ? 'good' : isEmpty ? 'bad' : 'partial';
-    let status = '·';
-    if (d.isPast)       status = isFull ? '✅' : isEmpty ? '🔴' : '⚠️';
-    else if (d.isToday) status = isFull ? '✅' : '⏳';
-    const dots = Array.from({ length: 4 }, (_, i) =>
-      `<span class="war-day__dot${i < d.count ? ` filled ${dotColor}` : ''}"></span>`
-    ).join('');
-    return `<div class="war-day${d.isToday ? ' is-today' : ''}">` +
-      `<span class="war-day__label">${d.label}</span>` +
-      `<div class="war-day__dots">${dots}</div>` +
-      `<span class="war-day__count">${d.isFuture ? '—' : `${d.count}/4`}</span>` +
-      `<span class="war-day__status">${status}</span>` +
-      `</div>`;
+
+  const { totalDecksUsed, maxDecksElapsed, maxDecksWeek, isReliableTotal, days } = warData;
+  const dayNum   = days.findIndex((d) => d.isToday) + 1;
+  const pctFill  = Math.round((totalDecksUsed / maxDecksWeek) * 100);
+  const pctMark  = Math.round((maxDecksElapsed / maxDecksWeek) * 100);
+
+  // Statut par rapport aux combats attendus jusqu'à aujourd'hui inclus
+  let statusIcon, statusText, statusCls;
+  if (totalDecksUsed >= maxDecksElapsed)                { statusIcon = '✅'; statusText = 'On track';       statusCls = 'good'; }
+  else if (totalDecksUsed >= Math.ceil(maxDecksElapsed / 2)) { statusIcon = '⚠️'; statusText = 'Behind schedule'; statusCls = 'partial'; }
+  else                                                  { statusIcon = '🔴'; statusText = 'Very behind';    statusCls = 'bad'; }
+
+  const sourceNote = isReliableTotal
+    ? '<span class="war-data-source reliable">Race log ✓</span>'
+    : '<span class="war-data-source fallback">Battle log (approx.)</span>';
+
+  const chipsHtml = days.map((d) => {
+    const cls  = d.isFuture ? 'future' : d.isToday ? 'today' : 'past';
+    const icon = d.isFuture ? '—' : d.isToday ? '▶' : '✔';
+    return `<span class="war-day-chip ${cls}">${d.label} ${icon}</span>`;
   }).join('');
+
+  warDaysGrid.innerHTML =
+    `<div class="war-summary">` +
+      `<div class="war-progress-row">` +
+        `<span class="war-decks-count">${totalDecksUsed} <span class="war-decks-max">/ ${maxDecksWeek}</span></span>` +
+        `<span class="war-decks-label">decks this week</span>` +
+        sourceNote +
+      `</div>` +
+      `<div class="war-progress-track">` +
+        `<div class="war-progress-fill ${statusCls}" style="width:${pctFill}%"></div>` +
+        `<div class="war-progress-marker" style="left:${pctMark}%" title="Expected so far: ${maxDecksElapsed}"></div>` +
+      `</div>` +
+      `<div class="war-progress-meta">` +
+        `Day ${dayNum} of 4 · Expected so far: ${maxDecksElapsed} · ${statusIcon} ${statusText}` +
+      `</div>` +
+      `<div class="war-day-chips">${chipsHtml}</div>` +
+    `</div>`;
 }
 
-// ── Clan war mini-bars (clan table) ─────────────────────────────────
+// ── Clan war mini-colonne (clan table) ───────────────────────────────
 
-function warMiniBarHtml(warDays) {
-  if (!warDays) return '<span style="color:var(--text-muted);font-size:.75rem">—</span>';
-  return '<div class="war-mini-bars">' +
-    warDays.map((d) => {
-      const px  = d.count === 0 && d.isFuture ? 2 : Math.max(2, Math.round((d.count / 4) * 20));
-      const cls = (d.isFuture && d.count === 0) ? 'future'
-                : d.count >= 4                  ? 'good'
-                : d.count  > 0                  ? 'partial'
-                : d.isPast                      ? 'bad'
-                :                                 'future';
-      return `<div class="war-mini-bar ${cls}" style="height:${px}px" title="${d.label}: ${d.count}/4"></div>`;
-    }).join('') +
-  '</div>';
+function warMiniBarHtml(warData) {
+  if (!warData) return '<span class="war-mini-na">—</span>';
+  const { totalDecksUsed, maxDecksWeek, maxDecksElapsed } = warData;
+  const pct = Math.round((totalDecksUsed / maxDecksWeek) * 100);
+  const cls = totalDecksUsed >= maxDecksElapsed                   ? 'good'
+            : totalDecksUsed >= Math.ceil(maxDecksElapsed / 2)   ? 'partial'
+            :                                                        'bad';
+  return `<div class="war-mini-total" title="${totalDecksUsed}/${maxDecksWeek} decks">` +
+    `<div class="war-mini-track"><div class="war-mini-fill ${cls}" style="width:${pct}%"></div></div>` +
+    `<span class="war-mini-text ${cls}">${totalDecksUsed}/${maxDecksWeek}</span>` +
+  `</div>`;
 }
 
 // ── Clan rendering ──────────────────────────────────────────
@@ -511,15 +531,17 @@ function sortMembers(arr, col, dir) {
 function overviewItems(items) {
   return items
     .map(
-      ({ label, value, cls = '', risk = null, badge = null }) => {
+      ({ label, value, cls = '', risk = null, badge = null, link = null }) => {
         const sym = risk === 'bad'  ? ' <span class="risk-bad">&#10007;</span>'
                   : risk === 'warn' ? ' <span class="risk-warn">&#9888;</span>'
                   : '';
         const bdg = badge ? ` <span class="new-badge">${escHtml(badge)}</span>` : '';
+        const val = escHtml(String(value));
+        const inner = link ? `<a href="${link}" target="_blank" rel="noopener" class="oi-ext-link">${val}</a>` : val;
         return `
         <div class="overview-item">
           <div class="oi-label">${label}</div>
-          <div class="oi-value ${cls}">${escHtml(String(value))}${sym}${bdg}</div>
+          <div class="oi-value ${cls}">${inner}${sym}${bdg}</div>
         </div>`;
       }
     )

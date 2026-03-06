@@ -56,9 +56,6 @@ async function buildPlayerAnalysis(tag) {
 
     const analysis = analyzePlayer(player, battleLog);
 
-    // Combats GDC par jour pour la semaine en cours (null hors période jeu–dim)
-    analysis.currentWarDays = buildCurrentWarDays(battleLog);
-
     // Enrich with river race history if the player is currently in a clan.
     // We silently ignore failures so a missing/private war log doesn't block the response.
     if (player.clan?.tag) {
@@ -97,6 +94,10 @@ async function buildPlayerAnalysis(tag) {
       analysis.warHistory = null;
       analysis.warScore   = analysis.reliability; // fallback
     }
+
+    // Résumé GDC semaine courante — calculé après warHistory pour utiliser la source fiable
+    const raceTotalDecks = analysis.warHistory?.weeks?.[0]?.decksUsed ?? null;
+    analysis.currentWarDays = buildCurrentWarDays(battleLog, raceTotalDecks);
 
     return analysis;
 }

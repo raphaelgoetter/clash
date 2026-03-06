@@ -278,6 +278,19 @@ code {
 
 .oi-value.gold { color: var(--gold); }
 
+.oi-ext-link {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(255,255,255,.25);
+  transition: color .15s, text-decoration-color .15s;
+}
+
+.oi-ext-link:hover {
+  color: var(--gold);
+  text-decoration-color: var(--gold);
+}
+
 /* ── Stats grid ─────────────────────────────────────────────── */
 .stats-grid {
   display: grid;
@@ -751,82 +764,154 @@ a.member-link:hover div:first-child {
 }
 
 /* ── Actual Clan War card ────────────────────────────────────── */
-.war-days-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+.war-summary {
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 
-.war-day {
+.war-progress-row {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 12px 8px;
-  background: rgba(255,255,255,.04);
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.war-day.is-today {
-  border-color: var(--gold);
-  background: rgba(244,197,66,.06);
-}
-
-.war-day__label {
-  font-size: .7rem;
+.war-decks-count {
+  font-size: 1.6rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .05em;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.war-decks-max {
+  font-size: 1rem;
+  font-weight: 500;
   color: var(--text-muted);
 }
 
-.war-day__dots {
-  display: flex;
-  gap: 4px;
+.war-decks-label {
+  font-size: .82rem;
+  color: var(--text-muted);
+  flex: 1;
 }
 
-.war-day__dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: rgba(255,255,255,.12);
-}
-
-.war-day__dot.filled.good    { background: var(--green); }
-.war-day__dot.filled.partial { background: var(--yellow); }
-.war-day__dot.filled.bad     { background: var(--red); }
-.war-day__dot.filled.future  { background: var(--text-muted); }
-
-.war-day__count {
-  font-size: .85rem;
+.war-data-source {
+  font-size: .7rem;
   font-weight: 700;
-  color: var(--text-primary);
+  padding: 2px 7px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
 }
 
-.war-day__status {
-  font-size: .85rem;
+.war-data-source.reliable {
+  background: rgba(74,222,128,.15);
+  color: var(--green);
+  border: 1px solid rgba(74,222,128,.3);
 }
 
-/* ── Clan war mini-bars (table column) ───────────────────────── */
+.war-data-source.fallback {
+  background: rgba(251,191,36,.15);
+  color: var(--yellow);
+  border: 1px solid rgba(251,191,36,.3);
+}
+
+/* Barre de progression */
+.war-progress-track {
+  position: relative;
+  height: 12px;
+  background: rgba(255,255,255,.08);
+  border-radius: 6px;
+  overflow: visible;
+}
+
+.war-progress-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width .4s ease;
+}
+
+.war-progress-fill.good    { background: var(--green); }
+.war-progress-fill.partial { background: var(--yellow); }
+.war-progress-fill.bad     { background: var(--red); }
+
+/* Repère "attendu jusqu'à aujourd'hui" */
+.war-progress-marker {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 18px;
+  background: rgba(255,255,255,.45);
+  border-radius: 1px;
+  transform: translateX(-50%);
+}
+
+.war-progress-meta {
+  font-size: .82rem;
+  color: var(--text-muted);
+}
+
+/* Étiquettes de jours */
+.war-day-chips {
+  display: flex;
+  gap: 8px;
+}
+
+.war-day-chip {
+  flex: 1;
+  text-align: center;
+  padding: 6px 4px;
+  border-radius: var(--radius-sm);
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.war-day-chip.past   { background: rgba(255,255,255,.06); color: var(--text-muted); }
+.war-day-chip.today  { background: rgba(244,197,66,.12); color: var(--gold); border: 1px solid rgba(244,197,66,.35); }
+.war-day-chip.future { background: rgba(255,255,255,.03); color: rgba(255,255,255,.2); }
+
+/* ── Clan war mini-colonne (table) ───────────────────────────── */
 .war-col { white-space: nowrap; }
 
-.war-mini-bars {
+.war-mini-na { color: var(--text-muted); font-size: .75rem; }
+
+.war-mini-total {
   display: flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 22px;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 48px;
 }
 
-.war-mini-bar {
-  width: 7px;
-  border-radius: 2px 2px 0 0;
+.war-mini-track {
+  width: 48px;
+  height: 5px;
+  background: rgba(255,255,255,.1);
+  border-radius: 3px;
+  overflow: hidden;
 }
 
-.war-mini-bar.good    { background: var(--green); }
-.war-mini-bar.partial { background: var(--yellow); }
-.war-mini-bar.bad     { background: var(--red); }
-.war-mini-bar.future  { background: rgba(255,255,255,.12); }
+.war-mini-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .3s ease;
+}
+
+.war-mini-fill.good    { background: var(--green); }
+.war-mini-fill.partial { background: var(--yellow); }
+.war-mini-fill.bad     { background: var(--red); }
+
+.war-mini-text {
+  font-size: .68rem;
+  font-weight: 700;
+}
+
+.war-mini-text.good    { color: var(--green); }
+.war-mini-text.partial { color: var(--yellow); }
+.war-mini-text.bad     { color: var(--red); }
 
 /* ── Footer ──────────────────────────────────────────────────── */
 .site-footer {

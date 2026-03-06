@@ -726,13 +726,14 @@ export function computeMemberActivityScore(member) {
 // ── Current war week ──────────────────────────────────────────────────────────
 
 /**
- * Calcule le nombre de combats GDC par jour pour la semaine de guerre en cours (jeu–dim).
+ * Calcule les données de la semaine de guerre en cours (jeu–dim).
  * Retourne null si on est hors période de guerre (lun–mer).
  *
- * @param {object[]} battleLog  Journal de batailles brut
- * @returns {Array<{ key:string, label:string, count:number, isPast:boolean, isToday:boolean, isFuture:boolean }>|null}
+ * @param {object[]} battleLog          Journal de batailles brut
+ * @param {number|null} raceTotalDecks  decksUsed depuis currentriverrace (source fiable), ou null
+ * @returns {{ days, totalDecksUsed, maxDecksElapsed, maxDecksWeek, isReliableTotal }|null}
  */
-export function buildCurrentWarDays(battleLog) {
+export function buildCurrentWarDays(battleLog, raceTotalDecks = null) {
   // Le jour GDC commence à 10h40 UTC : on décale pour aligner les batailles correctement
   const nowGdcDate = new Date(Date.now() - WAR_DAY_RESET_MS);
   const dow = nowGdcDate.getUTCDay(); // 0=Dim, 1=Lun … 4=Jeu, 5=Ven, 6=Sam
@@ -741,7 +742,7 @@ export function buildCurrentWarDays(battleLog) {
   const isWarPeriod = dow === 0 || dow >= 4;
   if (!isWarPeriod) return null;
 
-  // Jours écoulés depuis le jeudi de cette semaine GDC
+  // Jours écoulés depuis le jeudi de cette semaine GDC (aujourd'hui inclus)
   const daysFromThu = dow === 4 ? 0 : dow === 5 ? 1 : dow === 6 ? 2 : 3;
   const thuGdcMs = nowGdcDate.getTime() - daysFromThu * MS_PER_DAY;
 
@@ -755,14 +756,21 @@ export function buildCurrentWarDays(battleLog) {
     isFuture: i > daysFromThu,
   }));
 
-  // Compte les combats GDC par jour (correction reset 10h40 incluse)
+  // Compte les combats GDC par jour depuis le battle log (peut être tronqué)
   for (const b of filterWarBattles(battleLog)) {
     const key = warDayKey(b.battleTime);
     const day = days.find((d) => d.key === key);
     if (day) day.count++;
   }
 
-  return days;
+  const maxDecksElapsed = (daysFromThu + 1) * 4; // combats attendus jusqu'à aujourd'hui inclus
+  const maxDecksWeek    = 16;                     // 4 jours × 4 combats
+
+  // Source fiable : currentriverrace. Sinon : somme du battle log (potentiellement tronqué)
+  const isReliableTotal  = raceTotalDecks !== null;
+  const totalDecksUsed   = isReliableTotal ? raceTotalDecks : days.reduce((s, d) => s + d.count, 0);
+
+  return { days, totalDecksUsed, maxDecksElapsed, maxDecksWeek, isReliableTotal };
 }
 
 /**

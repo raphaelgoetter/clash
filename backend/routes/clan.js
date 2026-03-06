@@ -97,7 +97,7 @@ async function buildClanAnalysis(clanTag) {
 
     // First pass: compute war scores for all members
     const analyzedMembers = members.map((m, idx) => {
-      let activityScore, verdict, color, isNew = false;
+      let activityScore, verdict, color, isNew = false, warHistory = null;
 
       // Resolve full player profile (for badges) and battle log
       const mdResult    = memberDataResults[idx];
@@ -109,6 +109,7 @@ async function buildClanAnalysis(clanTag) {
 
       if (raceLog) {
         const wh = buildWarHistory(m.tag, raceLog, clan.tag, currentRace);
+        warHistory = wh;
 
         // Compute GDC win rate from battle log when available
         let warWinRate = null;
@@ -166,7 +167,7 @@ async function buildClanAnalysis(clanTag) {
         verdict,
         color,
         isNew,
-        warDays: battleLog !== null ? buildCurrentWarDays(battleLog) : null,
+        warDays: battleLog !== null ? buildCurrentWarDays(battleLog, warHistory?.weeks?.[0]?.decksUsed ?? null) : null,
       };
     });
 
