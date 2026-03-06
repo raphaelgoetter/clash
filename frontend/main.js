@@ -145,7 +145,7 @@ function renderPlayerResults(data) {
   ]);
 
   // 2. Stats — race log when available, battle log fallback
-  if (warHistory && warHistory.weeks.length > 0) {
+  if (warHistory) {
     statsGrid.innerHTML = statCards([
       { label: 'Participation',  value: `${warHistory.participation} / ${warHistory.totalWeeks}` },
       { label: 'Total Fame',     value: fmt(warHistory.totalFame) },
@@ -170,11 +170,17 @@ function renderPlayerResults(data) {
   const titleEl = document.getElementById('history-card-title');
   const noteEl  = document.getElementById('api-limit-note');
 
-  if (warHistory && warHistory.weeks.length > 0) {
-    if (titleEl) titleEl.textContent = `📅 River Race History – ${warHistory.weeks.length} week${warHistory.weeks.length !== 1 ? 's' : ''}`;
-    renderWarHistoryChart(warHistory.weeks);
-    if (noteEl) noteEl.textContent =
-      `ℹ️ Data from ${warHistory.weeks.length} completed river races. Indigo = above average, red = below average. Dashed line = average (${fmt(warHistory.avgFame)} fame).`;
+  if (warHistory) {
+    if (warHistory.weeks.length > 0) {
+      if (titleEl) titleEl.textContent = `📅 River Race History – ${warHistory.weeks.length} week${warHistory.weeks.length !== 1 ? 's' : ''}`;
+      renderWarHistoryChart(warHistory.weeks);
+      if (noteEl) noteEl.textContent =
+        `ℹ️ Data from ${warHistory.weeks.length} completed river races. Indigo = above average, red = below average. Dashed line = average (${fmt(warHistory.avgFame)} fame).`;
+    } else {
+      if (titleEl) titleEl.textContent = '📅 River Race History – 10 weeks';
+      renderWarHistoryChart([]);
+      if (noteEl) noteEl.textContent = '⚠️ Ce joueur n\'a participé à aucune River Race dans l\'historique disponible (10 dernières semaines).';
+    }
   } else {
     if (titleEl) titleEl.textContent = '📅 Clan War Activity – Last 7 days';
     renderActivityChart(recentActivity.dailyActivity);
