@@ -543,6 +543,15 @@ code {
 
 .members-table tbody tr:hover { background: rgba(255,255,255,.03); }
 
+td.member-link {
+  cursor: pointer;
+}
+td.member-link:hover div:first-child {
+  color: var(--purple-light);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .role-badge {
   padding: 2px 8px;
   border-radius: 999px;
