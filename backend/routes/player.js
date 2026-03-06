@@ -8,6 +8,9 @@ import {
   analyzePlayer, buildWarHistory, computeWarScore,
   filterWarBattles, expandDuelRounds, isWarWin,
 } from '../services/analysisService.js';
+import { getOrSet } from '../services/cache.js';
+
+const PLAYER_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 const router = Router();
 
@@ -31,9 +34,24 @@ router.get('/:tag', async (req, res) => {
  */
 router.get('/:tag/analysis', async (req, res) => {
   try {
+    const tag = req.params.tag;
+    const { value: analysis, fromCache } = await getOrSet(
+      `player:analysis:${tag}`,
+      () => buildPlayerAnalysis(tag),
+      PLAYER_CACHE_TTL,
+    );
+    res.set('X-Cache', fromCache ? 'HIT' : 'MISS');
+    res.json(analysis);
+  } catch (err) {
+    const status = err.message.includes('404') ? 404 : 500;
+    res.status(status).json({ error: err.message });
+  }
+});
+
+async function buildPlayerAnalysis(tag) {
     const [player, battleLog] = await Promise.all([
-      fetchPlayer(req.params.tag),
-      fetchBattleLog(req.params.tag),
+      fetchPlayer(tag),
+      fetchBattleLog(tag),
     ]);
 
     const analysis = analyzePlayer(player, battleLog);
@@ -66,11 +84,7 @@ router.get('/:tag/analysis', async (req, res) => {
       analysis.warScore   = analysis.reliability; // fallback
     }
 
-    res.json(analysis);
-  } catch (err) {
-    const status = err.message.includes('404') ? 404 : 500;
-    res.status(status).json({ error: err.message });
-  }
-});
+    return analysis;
+}
 
 export default router;

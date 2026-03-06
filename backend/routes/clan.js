@@ -9,8 +9,32 @@ import {
   computeWarReliabilityFallback, categorizeBattleLog,
   filterWarBattles, expandDuelRounds, isWarWin,
 } from '../services/analysisService.js';
+import { getOrSet } from '../services/cache.js';
+
+const CLAN_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 const router = Router();
+
+/**
+ * Run async tasks with limited concurrency to avoid rate-limiting.
+ * Returns an array of { status, value } | { status, reason } mirroring Promise.allSettled.
+ */
+async function pooledAllSettled(tasks, concurrency = 8) {
+  const results = new Array(tasks.length);
+  let idx = 0;
+  async function worker() {
+    while (idx < tasks.length) {
+      const i = idx++;
+      try {
+        results[i] = { status: 'fulfilled', value: await tasks[i]() };
+      } catch (err) {
+        results[i] = { status: 'rejected', reason: err };
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, tasks.length) }, worker));
+  return results;
+}
 
 /**
  * GET /api/clan/:tag
@@ -33,6 +57,20 @@ router.get('/:tag', async (req, res) => {
 router.get('/:tag/analysis', async (req, res) => {
   try {
     const clanTag = req.params.tag;
+    const { value: payload, fromCache } = await getOrSet(
+      `clan:analysis:${clanTag}`,
+      () => buildClanAnalysis(clanTag),
+      CLAN_CACHE_TTL,
+    );
+    res.set('X-Cache', fromCache ? 'HIT' : 'MISS');
+    res.json(payload);
+  } catch (err) {
+    const status = err.message.includes('404') ? 404 : 500;
+    res.status(status).json({ error: err.message });
+  }
+});
+
+async function buildClanAnalysis(clanTag) {
     const [clan, members] = await Promise.all([
       fetchClan(clanTag),
       fetchClanMembers(clanTag),
@@ -43,11 +81,11 @@ router.get('/:tag/analysis', async (req, res) => {
     let raceLog = null;
     try { raceLog = await fetchRaceLog(clanTag); } catch (_) { /* silent */ }
 
-    // Fetch full player profiles + battle logs for ALL members in parallel
-    // (player profiles needed for CW2 badge; battle logs for win rate & fallback scoring)
+    // Fetch full player profiles + battle logs for ALL members with capped concurrency
+    // (avoids RoyaleAPI rate-limiting that caused non-deterministic scores on reload)
     const memberDataResults = raceLog
-      ? await Promise.allSettled(
-          members.map((m) => Promise.all([fetchPlayer(m.tag), fetchBattleLog(m.tag)]))
+      ? await pooledAllSettled(
+          members.map((m) => () => Promise.all([fetchPlayer(m.tag), fetchBattleLog(m.tag)]))
         )
       : [];
 
@@ -135,7 +173,7 @@ router.get('/:tag/analysis', async (req, res) => {
           )
         : 0;
 
-    res.json({
+    return {
       clan: {
         name: clan.name,
         tag: clan.tag,
@@ -149,11 +187,10 @@ router.get('/:tag/analysis', async (req, res) => {
       },
       members: analyzedMembers,
       summary: { green, yellow, orange, red, avgScore, total: analyzedMembers.length },
-    });
+    };
   } catch (err) {
-    const status = err.message.includes('404') ? 404 : 500;
-    res.status(status).json({ error: err.message });
+    throw err;
   }
-});
+}
 
 export default router;

@@ -14,7 +14,7 @@
 
   --text-primary:   #f0f0fc;
   --text-secondary: #9090b8;
-  --text-muted:     #5a5a80;
+  --text-muted:     #9999c0;
 
   --gold:           #f4c542;
   --gold-dark:      #c9961c;
@@ -399,6 +399,10 @@ code {
 .verdict-box.orange .verdict-text  { color: var(--orange); }
 .verdict-box.red    .verdict-score,
 .verdict-box.red    .verdict-text  { color: var(--red); }
+
+/* ── Risk symbols on overview / stat cards ──────────────────── */
+.risk-warn { color: var(--orange); font-size: .8em; margin-left: 4px; vertical-align: middle; }
+.risk-bad  { color: var(--red);    font-size: .8em; margin-left: 4px; vertical-align: middle; }
 
 /* ── Score breakdown (War Reliability criteria) ─────────────── */
 .reasons-list {

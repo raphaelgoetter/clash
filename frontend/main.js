@@ -188,23 +188,31 @@ function renderPlayerResults(data) {
   const ws = warScore ?? data.reliability; // fallback si pas de race log
 
   // 1. Overview (Clan & Role removed)
+  const cw2 = overview.clanWarWins ?? 0;
   overviewGrid.innerHTML = overviewItems([
     { label: 'Name',          value: overview.name, cls: 'gold' },
     { label: 'Tag',           value: overview.tag },
-    { label: 'Trophies',      value: `🏆 ${fmt(overview.trophies)}` },
+    { label: 'Trophies',      value: `🏆 ${fmt(overview.trophies)}`,
+      risk: overview.trophies < 3000 ? 'bad' : overview.trophies < 5000 ? 'warn' : null },
     { label: 'Best Trophies', value: `🏆 ${fmt(overview.bestTrophies)}` },
-    { label: 'CW2 Wins',      value: `⚔️ ${fmt(overview.clanWarWins ?? 0)}` },
+    { label: 'CW2 Wins',      value: `⚔️ ${fmt(cw2)}`,
+      risk: cw2 < 50 ? 'bad' : cw2 < 150 ? 'warn' : null },
   ]);
 
   // 2. Stats — race log quand il y a des semaines, sinon battlelog breakdown
   if (warHistory && warHistory.weeks.length > 0) {
+    const partRatio = warHistory.totalWeeks > 0 ? warHistory.participation / warHistory.totalWeeks : 0;
     statsGrid.innerHTML = statCards([
-      { label: 'Participation',  value: `${warHistory.participation} / ${warHistory.totalWeeks}` },
-      { label: 'Total Fame',     value: fmt(warHistory.totalFame) },
-      { label: 'Avg Fame / Week', value: fmt(warHistory.avgFame) },
-      { label: 'Best Week',      value: fmt(warHistory.maxFame) },
-      { label: 'Win Rate',       value: `${activityIndicators.winRate}%` },
-      { label: 'Donations',      value: fmt(activityIndicators.donations) },
+      { label: 'Participation',   value: `${warHistory.participation} / ${warHistory.totalWeeks}`,
+        risk: partRatio < 0.4 ? 'bad' : partRatio < 0.7 ? 'warn' : null },
+      { label: 'Total Fame',      value: fmt(warHistory.totalFame) },
+      { label: 'Avg Fame / Week', value: fmt(warHistory.avgFame),
+        risk: warHistory.avgFame < 800 ? 'bad' : warHistory.avgFame < 1500 ? 'warn' : null },
+      { label: 'Best Week',       value: fmt(warHistory.maxFame) },
+      { label: 'Win Rate',        value: `${activityIndicators.winRate}%`,
+        risk: activityIndicators.winRate < 30 ? 'bad' : activityIndicators.winRate < 50 ? 'warn' : null },
+      { label: 'Donations',       value: fmt(activityIndicators.donations),
+        risk: activityIndicators.donations < 50 ? 'bad' : activityIndicators.donations < 200 ? 'warn' : null },
     ]);
   } else {
     // Fallback battlelog : répartition des 30 entrées par type
@@ -450,11 +458,16 @@ exportBtn.addEventListener('click', () => {
 function overviewItems(items) {
   return items
     .map(
-      ({ label, value, cls = '' }) => `
+      ({ label, value, cls = '', risk = null }) => {
+        const sym = risk === 'bad'  ? ' <span class="risk-bad">&#10007;</span>'
+                  : risk === 'warn' ? ' <span class="risk-warn">&#9888;</span>'
+                  : '';
+        return `
         <div class="overview-item">
           <div class="oi-label">${label}</div>
-          <div class="oi-value ${cls}">${escHtml(String(value))}</div>
-        </div>`
+          <div class="oi-value ${cls}">${escHtml(String(value))}${sym}</div>
+        </div>`;
+      }
     )
     .join('');
 }
@@ -462,11 +475,16 @@ function overviewItems(items) {
 function statCards(items) {
   return items
     .map(
-      ({ label, value }) => `
+      ({ label, value, risk = null }) => {
+        const sym = risk === 'bad'  ? ' <span class="risk-bad">&#10007;</span>'
+                  : risk === 'warn' ? ' <span class="risk-warn">&#9888;</span>'
+                  : '';
+        return `
         <div class="stat-card">
-          <div class="sc-value">${escHtml(String(value))}</div>
+          <div class="sc-value">${escHtml(String(value))}${sym}</div>
           <div class="sc-label">${label}</div>
-        </div>`
+        </div>`;
+      }
     )
     .join('');
 }

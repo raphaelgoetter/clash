@@ -359,6 +359,18 @@ export function computeWarScore(player, warHistory, warWinRate = null) {
         : 'No data',
     },
     {
+      label:  'CW2 Battle Wins',
+      score:  cw2Score,
+      max:    10,
+      detail: `${cw2Wins.toLocaleString('en-US')} total CW2 wins (cap 250)`,
+    },
+    ...(winRateGDC !== null ? [{
+      label:  'Win Rate (War)',
+      score:  winRateGDC,
+      max:    5,
+      detail: `${Math.round(warWinRate * 100)}% victories in River Race`,
+    }] : []),
+    {
       label:  'Stability',
       score:  stabilite,
       max:    5,
@@ -379,18 +391,6 @@ export function computeWarScore(player, warHistory, warWinRate = null) {
       score:  dons,
       max:    2,
       detail: `${(player.donations ?? 0).toLocaleString('en-US')} cards donated (cap 500)`,
-    },
-    ...(winRateGDC !== null ? [{
-      label:  'Win Rate (War)',
-      score:  winRateGDC,
-      max:    5,
-      detail: `${Math.round(warWinRate * 100)}% victories in River Race`,
-    }] : []),
-    {
-      label:  'CW2 Battle Wins',
-      score:  cw2Score,
-      max:    10,
-      detail: `${cw2Wins.toLocaleString('en-US')} total CW2 wins (cap 250)`,
     },
   ];
 
@@ -475,6 +475,12 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
           : 'No data — no war battles found',
       },
       {
+        label:  'CW2 Battle Wins',
+        score:  cw2Score,
+        max:    10,
+        detail: `${cw2Wins.toLocaleString('en-US')} total CW2 wins (cap 250)`,
+      },
+      {
         label:  'General Activity',
         score:  activiteGen,
         max:    5,
@@ -491,12 +497,6 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
         score:  dons,
         max:    2,
         detail: `${(player.donations ?? 0).toLocaleString('en-US')} cards donated (cap 500)`,
-      },
-      {
-        label:  'CW2 Battle Wins',
-        score:  cw2Score,
-        max:    10,
-        detail: `${cw2Wins.toLocaleString('en-US')} total CW2 wins (cap 250)`,
       },
     ],
   };
