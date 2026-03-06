@@ -6,7 +6,7 @@ import { Router } from 'express';
 import { fetchPlayer, fetchBattleLog, fetchRaceLog } from '../services/clashApi.js';
 import {
   analyzePlayer, buildWarHistory, computeWarScore,
-  filterWarBattles, expandDuelRounds,
+  filterWarBattles, expandDuelRounds, isWarWin,
 } from '../services/analysisService.js';
 
 const router = Router();
@@ -47,7 +47,7 @@ router.get('/:tag/analysis', async (req, res) => {
 
         // Compute GDC win rate from battle log (available for all players)
         const rawWarLog = expandDuelRounds(filterWarBattles(battleLog));
-        const gdcWins   = rawWarLog.filter((b) => (b.team?.[0]?.crowns ?? 0) > (b.opponent?.[0]?.crowns ?? 0)).length;
+        const gdcWins   = rawWarLog.filter(isWarWin).length;
         const warWinRate = rawWarLog.length > 0 ? gdcWins / rawWarLog.length : null;
 
         if (analysis.warHistory.weeks.length > 0) {

@@ -7,7 +7,7 @@ import { fetchClan, fetchClanMembers, fetchRaceLog, fetchBattleLog } from '../se
 import {
   analyzeClanMembers, buildWarHistory, computeWarScore,
   computeWarReliabilityFallback, categorizeBattleLog,
-  filterWarBattles, expandDuelRounds,
+  filterWarBattles, expandDuelRounds, isWarWin,
 } from '../services/analysisService.js';
 
 const router = Router();
@@ -63,7 +63,7 @@ router.get('/:tag/analysis', async (req, res) => {
         if (blResult?.status === 'fulfilled') {
           const rawWarLog = expandDuelRounds(filterWarBattles(blResult.value));
           if (rawWarLog.length > 0) {
-            const wins = rawWarLog.filter((b) => (b.team?.[0]?.crowns ?? 0) > (b.opponent?.[0]?.crowns ?? 0)).length;
+            const wins = rawWarLog.filter(isWarWin).length;
             warWinRate = wins / rawWarLog.length;
           }
         }

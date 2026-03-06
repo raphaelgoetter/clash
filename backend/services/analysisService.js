@@ -93,14 +93,18 @@ export function categorizeBattleLog(rawBattleLog) {
 export function expandDuelRounds(warLog) {
   const expanded = [];
   for (const battle of warLog) {
-    if (battle.type === 'riverRaceDuel' && Array.isArray(battle.team?.[0]?.rounds)) {
-      // One synthetic entry per round, keeping the parent battleTime
-      const rounds = battle.team[0].rounds;
-      rounds.forEach((round, i) => {
+    const myEntry  = battle.team?.[0];
+    const oppEntry = battle.opponent?.[0];
+    if (battle.type === 'riverRaceDuel' && Array.isArray(myEntry?.rounds)) {
+      // One synthetic entry per round — store per-round crowns so win detection is accurate.
+      // The parent crowns represent the duel total and must NOT be used per-round.
+      myEntry.rounds.forEach((round, i) => {
+        const oppRound = oppEntry?.rounds?.[i] ?? {};
         expanded.push({
           ...battle,
-          _roundIndex: i,
-          // Keep parent timestamp (rounds don't have individual timestamps)
+          _roundIndex:    i,
+          _roundCrownsMe:  round.crowns   ?? 0,
+          _roundCrownsOpp: oppRound.crowns ?? 0,
         });
       });
     } else {
@@ -108,6 +112,20 @@ export function expandDuelRounds(warLog) {
     }
   }
   return expanded;
+}
+
+/**
+ * Determine whether an (optionally expanded) battle entry is a win.
+ * For rounds expanded from a riverRaceDuel, uses the per-round crowns
+ * stored by expandDuelRounds rather than the parent duel total.
+ * @param {object} b
+ * @returns {boolean}
+ */
+export function isWarWin(b) {
+  if (b._roundIndex !== undefined) {
+    return (b._roundCrownsMe ?? 0) > (b._roundCrownsOpp ?? 0);
+  }
+  return (b.team?.[0]?.crowns ?? 0) > (b.opponent?.[0]?.crowns ?? 0);
 }
 
 /**
@@ -331,7 +349,7 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
   // Use warLog.length as GDC count: it's the expanded set (rounds from duels included)
   // so that gdcWins / gdcCount is computed on the same denominator as activityIndicators.winRate.
   const gdcCount   = warLog.length;
-  const gdcWins    = warLog.filter((b) => (b.team?.[0]?.crowns ?? 0) > (b.opponent?.[0]?.crowns ?? 0)).length;
+  const gdcWins    = warLog.filter(isWarWin).length;
   const gdcWinRate = gdcCount > 0 ? gdcWins / gdcCount : 0;
   // For 'activité générale' we add non-GDC modes from the raw breakdown
   const competitive = gdcCount + bd.ladder + bd.challenge;
