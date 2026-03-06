@@ -14,7 +14,7 @@ const BASE_URL = 'https://proxy.royaleapi.dev/v1';
  * Build authorization headers using the API key stored in env.
  */
 function buildHeaders() {
-  const key = process.env.CLASH_API_KEY;
+  const key = process.env.CLASH_API_KEY?.trim();
   if (!key) {
     throw new Error('CLASH_API_KEY environment variable is not set.');
   }
