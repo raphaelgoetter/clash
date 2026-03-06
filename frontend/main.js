@@ -413,7 +413,7 @@ function warMiniBarHtml(warData) {
   // Joueur arrivé en cours de semaine : icône distincte
   if (arrivedMidWar) {
     const dayName = DAY_NAMES[(arrivedOnDay ?? 1) - 1] ?? `day ${arrivedOnDay}`;
-    return `<span class="war-mini-arrived" title="Arrived ${dayName} — can't participate this week">~</span>`;
+    return `<div class="war-mini-arrived" title="Arrived ${dayName} — can't participate this week">⚠</div>`;
   }
   const pct = Math.round((totalDecksUsed / maxDecksWeek) * 100);
   const cls = totalDecksUsed >= maxDecksElapsed                   ? 'good'

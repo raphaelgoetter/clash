@@ -11,7 +11,7 @@ import {
 } from '../services/analysisService.js';
 import { getOrSet } from '../services/cache.js';
 
-const CLAN_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CLAN_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
 
 const router = Router();
 
@@ -169,12 +169,17 @@ async function buildClanAnalysis(clanTag) {
         isNew,
         warDays: (() => {
           if (battleLog === null) return null;
-          const currentWeek  = warHistory?.weeks?.find((w) => w.isCurrent) ?? null;
-          const summary       = buildCurrentWarDays(battleLog, currentWeek?.decksUsed ?? null);
-          if (summary && !currentWeek) {
-            summary.arrivedMidWar  = true;
-            summary.arrivedOnDay   = summary.daysFromThu + 1;
-            summary.totalDecksUsed = 0;
+          const currentWeek = warHistory?.weeks?.find((w) => w.isCurrent) ?? null;
+          const summary      = buildCurrentWarDays(battleLog, currentWeek?.decksUsed ?? null);
+          if (
+            summary &&
+            summary.daysFromThu > 0 &&
+            (warHistory?.streakInCurrentClan ?? 0) === 1 &&
+            (currentWeek?.decksUsed ?? 0) === 0
+          ) {
+            summary.arrivedMidWar   = true;
+            summary.arrivedOnDay    = summary.daysFromThu + 1;
+            summary.totalDecksUsed  = 0;
             summary.isReliableTotal = true;
           }
           return summary;

@@ -10,7 +10,7 @@ import {
 } from '../services/analysisService.js';
 import { getOrSet } from '../services/cache.js';
 
-const PLAYER_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const PLAYER_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
 
 const router = Router();
 
@@ -96,14 +96,22 @@ async function buildPlayerAnalysis(tag) {
     }
 
     // Résumé GDC semaine courante — calculé après warHistory pour utiliser la source fiable
-    const currentWeek   = analysis.warHistory?.weeks?.find((w) => w.isCurrent) ?? null;
+    const currentWeek    = analysis.warHistory?.weeks?.find((w) => w.isCurrent) ?? null;
     const raceTotalDecks = currentWeek?.decksUsed ?? null;
-    const warSummary    = buildCurrentWarDays(battleLog, raceTotalDecks);
-    // Joueur arrivé pendant la GDC : pas de semaine courante dans le race log
-    if (warSummary && !currentWeek) {
-      warSummary.arrivedMidWar  = true;
-      warSummary.arrivedOnDay   = warSummary.daysFromThu + 1; // 1=jeu, 2=ven, 3=sam, 4=dim
-      warSummary.totalDecksUsed = 0;
+    const warSummary     = buildCurrentWarDays(battleLog, raceTotalDecks);
+    // Joueur arrivé pendant la GDC :
+    //  - première semaine dans ce clan (streakInCurrentClan === 1 = pas de race log passé ici)
+    //  - aucun deck joué dans la race courante
+    //  - on est après le jeudi (sinon le joueur a pu jouer normalement depuis le début)
+    if (
+      warSummary &&
+      warSummary.daysFromThu > 0 &&
+      (analysis.warHistory?.streakInCurrentClan ?? 0) === 1 &&
+      (currentWeek?.decksUsed ?? 0) === 0
+    ) {
+      warSummary.arrivedMidWar   = true;
+      warSummary.arrivedOnDay    = warSummary.daysFromThu + 1; // 1=jeu, 2=ven, 3=sam, 4=dim
+      warSummary.totalDecksUsed  = 0;
       warSummary.isReliableTotal = true;
     }
     analysis.currentWarDays = warSummary;

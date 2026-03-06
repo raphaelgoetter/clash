@@ -14,6 +14,7 @@ import express from 'express';
 import cors from 'cors';
 import playerRoutes from './routes/player.js';
 import clanRoutes from './routes/clan.js';
+import { clearAll } from './services/cache.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -48,6 +49,12 @@ app.get('/api/ip', async (_req, res) => {
 // ── API routes ────────────────────────────────────────────────
 app.use('/api/player', playerRoutes);
 app.use('/api/clan', clanRoutes);
+
+// ── Cache flush (dev) ─────────────────────────────────────────
+app.post('/api/cache/flush', (_req, res) => {
+  clearAll();
+  res.json({ ok: true, message: 'Cache vidé.' });
+});
 
 // ── 404 handler ───────────────────────────────────────────────
 app.use((_req, res) => res.status(404).json({ error: 'Route not found' }));

@@ -885,16 +885,18 @@ a.member-link:hover div:first-child {
 .war-day-chip.future { background: rgba(255,255,255,.03); color: rgba(255,255,255,.2); }
 
 /* ── Clan war mini-colonne (table) ───────────────────────────── */
-.war-col { white-space: nowrap; }
+.war-col { white-space: nowrap; text-align: center; }
 
 .war-mini-na { color: var(--text-muted); font-size: .75rem; }
 
 .war-mini-arrived {
-  font-size: .85rem;
-  font-weight: 700;
+  display: block;
+  text-align: center;
+  border-radius: 50%;
+  font-size: 1rem;
   color: var(--purple-light);
   cursor: default;
-  letter-spacing: .05em;
+  line-height: 1;
 }
 
 .war-mini-total {
@@ -903,6 +905,7 @@ a.member-link:hover div:first-child {
   align-items: center;
   gap: 3px;
   min-width: 48px;
+  margin: 0 auto;
 }
 
 .war-mini-track {

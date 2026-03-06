@@ -28,6 +28,11 @@ export function invalidate(key) {
   store.delete(key);
 }
 
+/** Vide intégralement le cache (utile en dev pour forcer un refresh). */
+export function clearAll() {
+  store.clear();
+}
+
 /** Purge all expired entries (call periodically to avoid memory leak). */
 export function purgeExpired() {
   const now = Date.now();
