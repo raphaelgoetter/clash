@@ -3,7 +3,7 @@
 // ============================================================
 
 import { Router } from 'express';
-import { fetchClan, fetchClanMembers, fetchRaceLog, fetchBattleLog } from '../services/clashApi.js';
+import { fetchClan, fetchClanMembers, fetchRaceLog, fetchBattleLog, fetchPlayer } from '../services/clashApi.js';
 import {
   analyzeClanMembers, buildWarHistory, computeWarScore,
   computeWarReliabilityFallback, categorizeBattleLog,
@@ -43,25 +43,33 @@ router.get('/:tag/analysis', async (req, res) => {
     let raceLog = null;
     try { raceLog = await fetchRaceLog(clanTag); } catch (_) { /* silent */ }
 
-    // Fetch battle logs for ALL members in parallel to get GDC win rates
-    // (used both for established members' win rate criterion and fallback scoring for new members)
-    const battleLogResults = raceLog
-      ? await Promise.allSettled(members.map((m) => fetchBattleLog(m.tag)))
+    // Fetch full player profiles + battle logs for ALL members in parallel
+    // (player profiles needed for CW2 badge; battle logs for win rate & fallback scoring)
+    const memberDataResults = raceLog
+      ? await Promise.allSettled(
+          members.map((m) => Promise.all([fetchPlayer(m.tag), fetchBattleLog(m.tag)]))
+        )
       : [];
 
     // First pass: compute war scores for all members
     const analyzedMembers = members.map((m, idx) => {
-      const playerProxy = { bestTrophies: m.trophies ?? 0, donations: m.donations ?? 0 };
       let activityScore, verdict, color;
+
+      // Resolve full player profile (for badges) and battle log
+      const mdResult    = memberDataResults[idx];
+      const fullPlayer  = mdResult?.status === 'fulfilled' ? mdResult.value[0] : null;
+      const battleLog   = mdResult?.status === 'fulfilled' ? mdResult.value[1] : null;
+
+      // Player proxy: prefer full profile (has badges), fall back to member data
+      const playerProxy = fullPlayer ?? { bestTrophies: m.trophies ?? 0, donations: m.donations ?? 0 };
 
       if (raceLog) {
         const wh = buildWarHistory(m.tag, raceLog, clan.tag);
 
         // Compute GDC win rate from battle log when available
         let warWinRate = null;
-        const blResult = battleLogResults[idx];
-        if (blResult?.status === 'fulfilled') {
-          const rawWarLog = expandDuelRounds(filterWarBattles(blResult.value));
+        if (battleLog) {
+          const rawWarLog = expandDuelRounds(filterWarBattles(battleLog));
           if (rawWarLog.length > 0) {
             const wins = rawWarLog.filter(isWarWin).length;
             warWinRate = wins / rawWarLog.length;
@@ -72,16 +80,15 @@ router.get('/:tag/analysis', async (req, res) => {
           // Historical data — computeWarScore + win rate as 6th criterion
           const ws = computeWarScore(playerProxy, wh, warWinRate);
           activityScore = ws.pct; verdict = ws.verdict; color = ws.color;
-        } else if (blResult?.status === 'fulfilled') {
+        } else if (battleLog) {
           // New member — full fallback with battle log
-          const rawBattleLog = blResult.value;
-          const bd           = categorizeBattleLog(rawBattleLog);
-          const warLog       = expandDuelRounds(filterWarBattles(rawBattleLog));
-          const ws           = computeWarReliabilityFallback(playerProxy, warLog, bd);
+          const bd     = categorizeBattleLog(battleLog);
+          const warLog = expandDuelRounds(filterWarBattles(battleLog));
+          const ws     = computeWarReliabilityFallback(playerProxy, warLog, bd);
           activityScore = ws.pct; verdict = ws.verdict; color = ws.color;
         } else {
           // Battle log unavailable — minimal estimate
-          const pct = Math.round((Math.min(2, (playerProxy.donations / 500) * 2) / 30) * 100);
+          const pct = Math.round((Math.min(2, ((playerProxy.donations ?? 0) / 500) * 2) / 40) * 100);
           activityScore = pct; verdict = 'Extreme risk'; color = 'red';
         }
       } else {
