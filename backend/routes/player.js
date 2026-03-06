@@ -41,7 +41,14 @@ router.get('/:tag/analysis', async (req, res) => {
       try {
         const raceLog = await fetchRaceLog(player.clan.tag);
         analysis.warHistory = buildWarHistory(player.tag, raceLog, player.clan.tag);
-        analysis.warScore   = computeWarScore(player, analysis.warHistory);
+
+        if (analysis.warHistory.weeks.length > 0) {
+          // Historical data available → score from river race history
+          analysis.warScore = computeWarScore(player, analysis.warHistory);
+        } else {
+          // New member: no completed races found → use battle log fallback
+          analysis.warScore = analysis.reliability;
+        }
       } catch (_) {
         analysis.warHistory = null;
         analysis.warScore   = analysis.reliability; // fallback

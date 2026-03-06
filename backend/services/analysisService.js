@@ -258,11 +258,15 @@ export function computeWarScore(player, warHistory) {
 function computeWarReliabilityFallback(player, warLog, battleLogBreakdown) {
   const r = (v) => Math.round(v * 10) / 10;
 
-  const bd        = battleLogBreakdown ?? { total: warLog.length, gdc: warLog.length, ladder: 0, challenge: 0 };
-  const gdcCount  = bd.gdc;
-  const gdcWins   = warLog.filter((b) => (b.team?.[0]?.crowns ?? 0) > (b.opponent?.[0]?.crowns ?? 0)).length;
+  const bd = battleLogBreakdown ?? { total: warLog.length, gdc: warLog.length, ladder: 0, challenge: 0 };
+
+  // Use warLog.length as GDC count: it's the expanded set (rounds from duels included)
+  // so that gdcWins / gdcCount is computed on the same denominator as activityIndicators.winRate.
+  const gdcCount   = warLog.length;
+  const gdcWins    = warLog.filter((b) => (b.team?.[0]?.crowns ?? 0) > (b.opponent?.[0]?.crowns ?? 0)).length;
   const gdcWinRate = gdcCount > 0 ? gdcWins / gdcCount : 0;
-  const competitive = bd.gdc + bd.ladder + bd.challenge;
+  // For 'activité générale' we add non-GDC modes from the raw breakdown
+  const competitive = gdcCount + bd.ladder + bd.challenge;
 
   // 1. Activité GDC (0-10)
   const activiteGDC = r(Math.min(10, gdcCount));
@@ -314,7 +318,7 @@ function computeWarReliabilityFallback(player, warLog, battleLogBreakdown) {
         label:  'Activité générale',
         score:  activiteGen,
         max:    5,
-        detail: `${competitive} combats compétitifs (${bd.gdc} GDC + ${bd.ladder} Ladder + ${bd.challenge} Défis)`,
+        detail: `${competitive} combats compétitifs (${gdcCount} GDC + ${bd.ladder} Ladder + ${bd.challenge} Défis)`,
       },
       {
         label:  'Expérience',

@@ -158,7 +158,7 @@ function renderPlayerResults(data) {
     // Fallback battlelog : répartition des 30 entrées par type
     const bd = activityIndicators.battleLogBreakdown ?? {};
     statsGrid.innerHTML = statCards([
-      { label: '⚔️ Combats GDC',     value: fmt(bd.gdc ?? activityIndicators.totalWarBattles) },
+      { label: '⚔️ Combats GDC',     value: fmt(activityIndicators.totalWarBattles) },
       { label: '🏆 Win Rate GDC',   value: `${activityIndicators.winRate}%` },
       { label: '🔀 Ladder / Ranked', value: fmt(bd.ladder ?? 0) },
       { label: '🎯 Défis / Tournois', value: fmt(bd.challenge ?? 0) },
@@ -180,7 +180,7 @@ function renderPlayerResults(data) {
     } else {
       const bd = activityIndicators.battleLogBreakdown ?? {};
       const parts = [
-        bd.gdc      != null ? `${bd.gdc} GDC`            : null,
+        bd.gdc      != null ? `${activityIndicators.totalWarBattles} GDC` : null,
         bd.ladder   != null ? `${bd.ladder} Ladder`       : null,
         bd.challenge != null ? `${bd.challenge} Défis`    : null,
         bd.friendly != null && bd.friendly > 0 ? `${bd.friendly} Amical` : null,
@@ -194,7 +194,7 @@ function renderPlayerResults(data) {
   } else {
     const bd = activityIndicators.battleLogBreakdown ?? {};
     const parts = [
-      bd.gdc      != null ? `${bd.gdc} GDC`          : null,
+      bd.gdc      != null ? `${activityIndicators.totalWarBattles} GDC` : null,
       bd.ladder   != null ? `${bd.ladder} Ladder`     : null,
       bd.challenge != null ? `${bd.challenge} Défis`  : null,
       bd.friendly != null && bd.friendly > 0 ? `${bd.friendly} Amical` : null,
