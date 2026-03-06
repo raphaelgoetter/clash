@@ -31,6 +31,20 @@ app.use((req, _res, next) => {
 // ── Health check ──────────────────────────────────────────────
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
+// ── Server public IP (useful to whitelist on developer.clashroyale.com) ──
+app.get('/api/ip', async (_req, res) => {
+  try {
+    const r = await (await import('node-fetch')).default('https://api.ipify.org?format=json');
+    const data = await r.json();
+    res.json({
+      ip: data.ip,
+      hint: `Add this IP to your Clash Royale API key at https://developer.clashroyale.com/`,
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── API routes ────────────────────────────────────────────────
 app.use('/api/player', playerRoutes);
 app.use('/api/clan', clanRoutes);

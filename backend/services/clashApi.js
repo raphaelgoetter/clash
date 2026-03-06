@@ -33,6 +33,19 @@ async function get(path) {
 
   if (!res.ok) {
     const body = await res.text();
+    // Surface IP whitelist errors with a clear, actionable message
+    if (res.status === 403) {
+      let serverIp = 'unknown';
+      try {
+        const ipRes = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipRes.json();
+        serverIp = ipData.ip;
+      } catch (_) { /* ignore */ }
+      throw new Error(
+        `API key not authorised for this server IP (${serverIp}). ` +
+        `Go to https://developer.clashroyale.com/, edit your key and add ${serverIp} to the allowed IPs.`
+      );
+    }
     throw new Error(`Clash API error ${res.status} on ${path}: ${body}`);
   }
 
