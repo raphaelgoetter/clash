@@ -221,8 +221,10 @@ function renderPlayerResults(data) {
       { label: 'Avg Fame / Week', value: fmt(warHistory.avgFame),
         risk: warHistory.avgFame < 800 ? 'bad' : warHistory.avgFame < 1500 ? 'warn' : null },
       { label: 'Best Week',       value: fmt(warHistory.maxFame) },
-      { label: 'Win Rate',        value: `${activityIndicators.winRate}%`,
-        risk: activityIndicators.winRate < 30 ? 'bad' : activityIndicators.winRate < 50 ? 'warn' : null },
+      { label: 'Win Rate',        value: warHistory.historicalWinRate !== null && warHistory.historicalWinRate !== undefined
+          ? `${Math.round(warHistory.historicalWinRate * 100)}%`
+          : `${activityIndicators.winRate}%`,
+        risk: (() => { const wr = warHistory.historicalWinRate !== null && warHistory.historicalWinRate !== undefined ? Math.round(warHistory.historicalWinRate * 100) : activityIndicators.winRate; return wr < 30 ? 'bad' : wr < 50 ? 'warn' : null; })() },
       { label: 'Donations',       value: fmt(activityIndicators.donations),
         risk: activityIndicators.donations < 50 ? 'bad' : activityIndicators.donations < 200 ? 'warn' : null },
     ]);

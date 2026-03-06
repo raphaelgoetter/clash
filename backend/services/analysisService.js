@@ -536,9 +536,11 @@ export function computeStabilityScore(player) {
  * @returns {{ wins: number, pvpDecks: number }}
  */
 function estimateWinsFromFame(fame, decksUsed, boatAttacks) {
-  const pvpDecks = decksUsed - boatAttacks;
+  // Dans l'API Supercell : decksUsed = batailles PvP uniquement, boatAttacks = attaques bateau (compteur séparé).
+  const pvpDecks = decksUsed;
   if (pvpDecks <= 0) return { wins: 0, pvpDecks: 0 };
-  const pvpFame = fame - boatAttacks * 200;
+  const pvpFame = Math.max(0, fame - boatAttacks * 200);
+  // loss = 100 fame, win = 200 fame
   // wins × 200 + losses × 100 = pvpFame, wins + losses = pvpDecks
   // → wins = (pvpFame − 100 × pvpDecks) / 100
   const wins = Math.max(0, Math.min(pvpDecks, Math.round((pvpFame - 100 * pvpDecks) / 100)));
@@ -612,6 +614,8 @@ export function buildWarHistory(playerTag, raceLog, currentClanTag = null, curre
   const maxFame      = weeksPlayed.reduce((m, w) => Math.max(m, w.fame), 0);
 
   // Win rate historique estimé depuis la fame (semaines terminées uniquement, pas isCurrent)
+  // Exige au moins 5 decks PvP pour être statistiquement significatif
+  const MIN_PVP_DECKS = 5;
   const completedWeeks = weeksPlayed.filter((w) => !w.isCurrent);
   let totalPvpDecks = 0, totalEstimatedWins = 0;
   for (const w of completedWeeks) {
@@ -619,7 +623,7 @@ export function buildWarHistory(playerTag, raceLog, currentClanTag = null, curre
     totalPvpDecks      += wPvp;
     totalEstimatedWins += wWins;
   }
-  const historicalWinRate = totalPvpDecks > 0 ? totalEstimatedWins / totalPvpDecks : null;
+  const historicalWinRate = totalPvpDecks >= MIN_PVP_DECKS ? totalEstimatedWins / totalPvpDecks : null;
 
   return { weeks, totalFame, avgFame, maxFame, participation, totalWeeks, streakInCurrentClan, historicalWinRate };
 }
