@@ -66,7 +66,7 @@ router.post(
 
     // Application command
     if (body.type === 2 && body.data?.name === 'trust') {
-      console.error('[discord] command body', JSON.stringify(body));
+      console.log('[discord] command body', JSON.stringify(body));
       const startTs = Date.now();
       const tagOption = body.data.options?.find((o) => o.name === 'tag');
       const tag = tagOption?.value;
@@ -80,7 +80,7 @@ router.post(
       // acknowledge quickly and defer the actual message
       res.json({ type: 5 });
       const ackTs = Date.now();
-      console.error('[discord] ack latency', ackTs - startTs, 'ms');
+      console.log('[discord] ack latency', ackTs - startTs, 'ms');
 
       // perform the analysis and webhook call asynchronously so that we
       // return from the handler immediately and avoid Discord timing out.
@@ -123,7 +123,7 @@ router.post(
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ embeds: [embed] }),
           });
-          console.error('[discord] webhook status', resp.status);
+          console.log('[discord] webhook status', resp.status);
         } catch (err) {
           const webhookUrl =
             `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
