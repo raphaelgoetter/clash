@@ -934,7 +934,6 @@ a.member-link:hover div:first-child {
 .war-mini-text.good    { color: var(--green); }
 .war-mini-text.partial { color: var(--yellow); }
 .war-mini-text.bad     { color: var(--red); }
-
 /* ── Footer ──────────────────────────────────────────────────── */
 .site-footer {
   text-align: center;

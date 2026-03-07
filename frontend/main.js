@@ -424,7 +424,6 @@ function warMiniBarHtml(warData) {
     `<span class="war-mini-text ${cls}">${totalDecksUsed}/${maxDecksElapsed}</span>` +
   `</div>`;
 }
-
 // ── Clan rendering ──────────────────────────────────────────
 
 function renderClanResults(data) {
@@ -446,6 +445,8 @@ function renderClanResults(data) {
     { label: 'Type',          value: capitalize(clan.type ?? '—') },
     { label: 'Avg Score',     value: `${summary.avgScore} / 100` },
   ]);
+
+  // Current Clan War card (jeu–dim)
 
   // Charts
   renderClanBarChart(members);
