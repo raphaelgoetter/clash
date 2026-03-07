@@ -218,9 +218,16 @@ function renderPlayerResults(data) {
 
   // 2. Stats — race log quand il y a des semaines, sinon battlelog breakdown
   if (warHistory && warHistory.weeks.length > 0) {
-    const partRatio = warHistory.totalWeeks > 0 ? warHistory.participation / warHistory.totalWeeks : 0;
+    // For display we prefer completed weeks only; current (possibly partial) week is excluded
+    const hasCurrent = warHistory.weeks.some((w) => w.isCurrent);
+    const totalVisible = warHistory.totalWeeks + (hasCurrent ? 1 : 0); // include current week if present
+    // cap to 10 weeks for display
+    const displayDen = Math.min(totalVisible, 10);
+    // numerator is simply participation, clamped not to exceed displayDen
+    let dispPart = Math.min(warHistory.participation, displayDen);
+    const partRatio = displayDen > 0 ? dispPart / displayDen : 0;
     statsGrid.innerHTML = statCards([
-      { label: 'Participation',   value: `${warHistory.participation} / ${warHistory.totalWeeks}`,
+      { label: 'Participation',   value: `${dispPart} / ${displayDen}`,
         risk: partRatio < 0.4 ? 'bad' : partRatio < 0.7 ? 'warn' : null },
       { label: 'Total Fame',      value: fmt(warHistory.totalFame) },
       { label: 'Avg Fame / Week', value: fmt(warHistory.avgFame),
