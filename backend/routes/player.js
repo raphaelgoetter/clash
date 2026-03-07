@@ -3,7 +3,7 @@
 // ============================================================
 
 import { Router } from 'express';
-import { fetchPlayer, fetchBattleLog, fetchRaceLog, fetchCurrentRace } from '../services/clashApi.js';
+import { fetchPlayer, fetchBattleLog, fetchRaceLog, fetchCurrentRace, fetchClanMembers } from '../services/clashApi.js';
 import {
   analyzePlayer, buildWarHistory, computeWarScore,
   filterWarBattles, expandDuelRounds, isWarWin, buildCurrentWarDays,
@@ -54,16 +54,28 @@ async function buildPlayerAnalysis(tag) {
       fetchBattleLog(tag),
     ]);
 
-    const analysis = analyzePlayer(player, battleLog);
+    // Récupère lastSeen depuis le roster du clan (non disponible sur le profil joueur)
+    let lastSeen = null;
+    if (player.clan?.tag) {
+      try {
+        const members = await fetchClanMembers(player.clan.tag);
+        const entry   = members?.find((m) => m.tag === player.tag);
+        lastSeen = entry?.lastSeen ?? null;
+      } catch (_) { /* lastSeen reste null */ }
+    }
+
+    const analysis = analyzePlayer(player, battleLog, lastSeen);
 
     // Enrich with river race history if the player is currently in a clan.
     // We silently ignore failures so a missing/private war log doesn't block the response.
+    let currentRaceMeta = null;
     if (player.clan?.tag) {
       try {
         const [raceLog, currentRace] = await Promise.all([
           fetchRaceLog(player.clan.tag),
           fetchCurrentRace(player.clan.tag).catch(() => null),
         ]);
+        currentRaceMeta = { state: currentRace?.state ?? null, periodIndex: currentRace?.periodIndex ?? null };
         analysis.warHistory = buildWarHistory(player.tag, raceLog, player.clan.tag, currentRace);
 
         // Compute GDC win rate from battle log (available for all players)
@@ -81,7 +93,7 @@ async function buildPlayerAnalysis(tag) {
         const hasEnoughHistory = analysis.warHistory.streakInCurrentClan >= 2
           && analysis.warHistory.completedParticipation >= 2;
         if (hasEnoughHistory) {
-          analysis.warScore = computeWarScore(player, analysis.warHistory, effectiveWinRate);
+          analysis.warScore = computeWarScore(player, analysis.warHistory, effectiveWinRate, lastSeen);
         } else {
           // Historique insuffisant → fallback battle log
           analysis.warScore = analysis.reliability;
@@ -98,7 +110,7 @@ async function buildPlayerAnalysis(tag) {
     // Résumé GDC semaine courante — calculé après warHistory pour utiliser la source fiable
     const currentWeek    = analysis.warHistory?.weeks?.find((w) => w.isCurrent) ?? null;
     const raceTotalDecks = currentWeek?.decksUsed ?? null;
-    const warSummary     = buildCurrentWarDays(battleLog, raceTotalDecks);
+    const warSummary     = buildCurrentWarDays(battleLog, raceTotalDecks, currentRaceMeta);
     // Joueur arrivé pendant la GDC :
     //  - première semaine dans ce clan (streakInCurrentClan === 1 = pas de race log passé ici)
     //  - aucun deck joué dans la race courante

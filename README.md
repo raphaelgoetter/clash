@@ -102,7 +102,7 @@ Tags should include the `#` prefix (URL-encoded as `%23`).
 
 ## 🧮 Score formulas
 
-### War reliability score — full mode (0–41 pts)
+### War reliability score — full mode (0–44 pts)
 
 Used when the war race log is available. Seven weighted criteria:
 
@@ -111,12 +111,13 @@ Used when the war race log is available. Seven weighted criteria:
 | 1 | Regularity | 10 | avg fame/wk vs 1,600 target over completed weeks |
 | 2 | Avg fame | 10 | 3,000 fame/week = full score |
 | 3 | CW2 battle wins | 8 | 250 total CW2 wins = full score |
-| 4 | Clan stability | 5 | 5+ consecutive weeks in clan = full score |
-| 5 | Win rate (River Race) | 3 | 100% win rate = full score |
-| 6 | Experience (best trophies) | 3 | 12,000 trophies = full score |
-| 7 | Donations | 2 | 500 cards donated = full score |
+| 4 | Clan stability | 8 | 5+ consecutive weeks in clan = full score |
+| 5 | Last seen | +5 | active within 24 h = +5; ≤3 d = +3; ≤7 d = +1 |
+| 6 | Win rate (River Race) | 3 | 100% win rate = full score |
+| 7 | Experience (best trophies) | 3 | 12,000 trophies = full score |
+| 8 | Donations | 2 | 500 cards donated = full score |
 
-Without battle log (criterion 5 absent): max = **38 pts**.
+Without battle log (criterion 6 absent): max = **46 pts**. With last seen and win rate: **49 pts** maximum.
 
 ### War reliability score — fallback mode (0–36 pts)
 
@@ -127,17 +128,18 @@ Used when no race log history is available (battle log only):
 | 1 | War activity | 10 | Avg battles/day over 14-day window (4/day = full) |
 | 2 | Win rate (war) | 8 | From battle log war battles |
 | 3 | CW2 battle wins | 8 | 250 total CW2 wins = full score |
-| 4 | General activity | 5 | 20 competitive battles = full score |
-| 5 | Experience | 3 | 12,000 best trophies = full score |
-| 6 | Donations | 2 | 500 cards donated = full score |
+| 4 | Last seen | +5 | active within 24 h = +5; ≤3 d = +3; ≤7 d = +1 |
+| 5 | General activity | 5 | 20 competitive battles = full score |
+| 6 | Experience | 3 | 12,000 best trophies = full score |
+| 7 | Donations | 2 | 500 cards donated = full score |
 
 ### Verdict thresholds (both scoring modes)
 
 | % of max score | Verdict | Colour |
 |---|---|---|
 | ≥ 76 % | High reliability | 🟢 Green |
-| 61–75 % | Moderate risk | 🟡 Yellow |
-| 31–60 % | High risk | 🟠 Orange |
+| 56–75 % | Moderate risk | 🟡 Yellow |
+| 31–55 % | High risk | 🟠 Orange |
 | 0–30 % | Extreme risk | 🔴 Red |
 
 ### Member activity score (clan view, 0–100)

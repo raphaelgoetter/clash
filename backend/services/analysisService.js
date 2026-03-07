@@ -303,7 +303,7 @@ export function buildDailyActivity(battleLog, days = 30) {
  *                                           adds a 6th criterion /5 and maxScore becomes 35.
  * @returns {{ total:number; maxScore:number; pct:number; verdict:string; color:string; breakdown:object[] }}
  */
-export function computeWarScore(player, warHistory, warWinRate = null) {
+export function computeWarScore(player, warHistory, warWinRate = null, lastSeen = null) {
   const r = (v) => Math.round(v * 10) / 10; // round to 1 decimal
 
   // 1. Régularité (0-10) — proportionnelle à la fame, semaines TERMINÉES uniquement
@@ -348,8 +348,16 @@ export function computeWarScore(player, warHistory, warWinRate = null) {
   const cw2Wins     = player.badges?.find((b) => b.name === 'ClanWarWins')?.progress ?? 0;
   const cw2Score    = r(Math.min(8, (cw2Wins / CW2_CAP) * 8));
 
-  const total    = r(regularite + scoreMoyen + stabilite + experience + dons + (winRateGDC ?? 0) + cw2Score);
-  const maxScore = winRateGDC !== null ? 44 : 41;
+  // 8. Last seen (0-3) — uniquement en contexte clan (lastSeen fourni depuis /members)
+  let lastSeenScore = null;
+  let lastSeenDays  = null;
+  if (lastSeen) {
+    lastSeenDays  = (Date.now() - parseClashDate(lastSeen).getTime()) / MS_PER_DAY;
+    lastSeenScore = lastSeenDays <= 1 ? 5 : lastSeenDays <= 3 ? 3 : lastSeenDays <= 7 ? 1 : 0;
+  }
+
+  const total    = r(regularite + scoreMoyen + stabilite + experience + dons + (winRateGDC ?? 0) + cw2Score + (lastSeenScore ?? 0));
+  const maxScore = (winRateGDC !== null ? 44 : 41) + (lastSeenScore !== null ? 5 : 0);
   const pct      = Math.round((total / maxScore) * 100);
 
   let verdict, color;
@@ -396,6 +404,15 @@ export function computeWarScore(player, warHistory, warWinRate = null) {
         return s < 5 ? `${base} (full score at 5 wks)` : base;
       })(),
     },
+    ...(lastSeenScore !== null ? [{
+      label:  'Last Seen',
+      score:  lastSeenScore,
+      max:    5,
+      detail: lastSeenDays < 1 ? 'Active in the last 24 h'
+            : lastSeenDays < 3 ? `Active ${(Math.round(lastSeenDays * 10) / 10).toFixed(1)} day(s) ago`
+            : lastSeenDays < 7 ? `Active ${Math.round(lastSeenDays)} days ago`
+            : `Last seen ${Math.round(lastSeenDays)} days ago ⚠️`,
+    }] : []),
     ...(winRateGDC !== null ? [{
       label:  'Win Rate (War)',
       score:  winRateGDC,
@@ -434,7 +451,7 @@ export function computeWarScore(player, warHistory, warWinRate = null) {
  * @param {object[]} warLog       - Filtered war battles (expanded duels)
  * @param {object}   battleLogBreakdown - Output of categorizeBattleLog()
  */
-export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown) {
+export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown, lastSeen = null) {
   const r = (v) => Math.round(v * 10) / 10;
 
   const bd = battleLogBreakdown ?? { total: warLog.length, gdc: warLog.length, ladder: 0, challenge: 0 };
@@ -468,8 +485,16 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
   const cw2Wins  = player.badges?.find((b) => b.name === 'ClanWarWins')?.progress ?? 0;
   const cw2Score = r(Math.min(8, (cw2Wins / CW2_CAP) * 8));
 
-  const total    = r(activiteGDC + winRateGDC + activiteGen + experience + dons + cw2Score);
-  const maxScore = 36;
+  // 7. Last seen (0-3) — uniquement en contexte clan (lastSeen fourni depuis /members)
+  let lastSeenScore = null;
+  let lastSeenDays  = null;
+  if (lastSeen) {
+    lastSeenDays  = (Date.now() - parseClashDate(lastSeen).getTime()) / MS_PER_DAY;
+    lastSeenScore = lastSeenDays <= 1 ? 5 : lastSeenDays <= 3 ? 3 : lastSeenDays <= 7 ? 1 : 0;
+  }
+
+  const total    = r(activiteGDC + winRateGDC + activiteGen + experience + dons + cw2Score + (lastSeenScore ?? 0));
+  const maxScore = 36 + (lastSeenScore !== null ? 5 : 0);
   const pct      = Math.round((total / maxScore) * 100);
 
   let verdict, color;
@@ -502,6 +527,15 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
         max:    8,
         detail: `${cw2Wins.toLocaleString('en-US')} total CW2 wins (cap 250)`,
       },
+      ...(lastSeenScore !== null ? [{
+        label:  'Last Seen',
+        score:  lastSeenScore,
+        max:    5,
+        detail: lastSeenDays < 1 ? 'Active in the last 24 h'
+              : lastSeenDays < 3 ? `Active ${(Math.round(lastSeenDays * 10) / 10).toFixed(1)} day(s) ago`
+              : lastSeenDays < 7 ? `Active ${Math.round(lastSeenDays)} days ago`
+              : `Last seen ${Math.round(lastSeenDays)} days ago ⚠️`,
+      }] : []),
       {
         label:  'General Activity',
         score:  activiteGen,
@@ -648,7 +682,7 @@ export function buildWarHistory(playerTag, raceLog, currentClanTag = null, curre
  * @param {object[]} battleLog
  * @returns {object}
  */
-export function analyzePlayer(player, battleLog) {
+export function analyzePlayer(player, battleLog, lastSeen = null) {
   // Categorise all raw entries before filtering
   const battleLogBreakdown = categorizeBattleLog(battleLog);
 
@@ -656,7 +690,7 @@ export function analyzePlayer(player, battleLog) {
   const warLog = expandDuelRounds(filterWarBattles(battleLog));
 
   // Fallback reliability (battle log only) — overridden in the route when race log is available
-  const reliability = computeWarReliabilityFallback(player, warLog, battleLogBreakdown);
+  const reliability = computeWarReliabilityFallback(player, warLog, battleLogBreakdown, lastSeen);
   const dailyActivity = buildDailyActivity(warLog, 7);
 
   const wins            = warLog.filter(isWarWin).length;
@@ -744,18 +778,34 @@ export function computeMemberActivityScore(member) {
  * @param {number|null} raceTotalDecks  decksUsed depuis currentriverrace (source fiable), ou null
  * @returns {{ days, totalDecksUsed, maxDecksElapsed, maxDecksWeek, isReliableTotal }|null}
  */
-export function buildCurrentWarDays(battleLog, raceTotalDecks = null) {
+export function buildCurrentWarDays(battleLog, raceTotalDecks = null, raceMeta = null) {
   // Le jour GDC commence à 10h40 heure de Paris : on décale pour aligner sur le cycle GDC
   const now = new Date();
   const nowGdcDate = new Date(now.getTime() - warResetOffsetMs(now));
-  const dow = nowGdcDate.getUTCDay(); // 0=Dim, 1=Lun … 4=Jeu, 5=Ven, 6=Sam
 
-  // Période de guerre : Jeu(4), Ven(5), Sam(6), Dim(0)
-  const isWarPeriod = dow === 0 || dow >= 4;
-  if (!isWarPeriod) return null;
+  // Déterminer le jour GDC courant
+  // Priorité 1 : état de course depuis l'API /currentriverrace (source autoritaire)
+  let daysFromThu;
+  if (raceMeta?.state) {
+    const { state, periodIndex } = raceMeta;
+    // Journée d'entraînement → pas de période de guerre active
+    if (state === 'trainingDay' || state === 'preparation') return null;
+    // warDay / overtime / full → période active
+    if (typeof periodIndex === 'number' && periodIndex >= 0 && periodIndex <= 3) {
+      daysFromThu = periodIndex; // 0=Jeu, 1=Ven, 2=Sam, 3=Dim
+    } else if (state === 'overtime') {
+      daysFromThu = 3; // overtime se joue en dernier jour (dimanche)
+    }
+  }
 
-  // Jours écoulés depuis le jeudi de cette semaine GDC (aujourd'hui inclus)
-  const daysFromThu = dow === 4 ? 0 : dow === 5 ? 1 : dow === 6 ? 2 : 3;
+  // Priorité 2 : calcul calendaire (fallback si currentRace non disponible)
+  if (daysFromThu === undefined) {
+    const dow = nowGdcDate.getUTCDay(); // 0=Dim, 1=Lun … 4=Jeu, 5=Ven, 6=Sam
+    const isWarPeriod = dow === 0 || dow >= 4;
+    if (!isWarPeriod) return null;
+    daysFromThu = dow === 4 ? 0 : dow === 5 ? 1 : dow === 6 ? 2 : 3;
+  }
+
   const thuGdcMs = nowGdcDate.getTime() - daysFromThu * MS_PER_DAY;
 
   const DAY_LABELS = ['Thu', 'Fri', 'Sat', 'Sun'];

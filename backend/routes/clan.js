@@ -126,13 +126,13 @@ async function buildClanAnalysis(clanTag) {
         if (hasEnoughHistory) {
           // Historical data — computeWarScore + win rate historique (race log) en priorité
           const effectiveWinRate = wh.historicalWinRate ?? warWinRate;
-          const ws = computeWarScore(playerProxy, wh, effectiveWinRate);
+          const ws = computeWarScore(playerProxy, wh, effectiveWinRate, m.lastSeen ?? null);
           activityScore = ws.pct; verdict = ws.verdict; color = ws.color;
         } else if (battleLog) {
           // New member — full fallback with battle log
           const bd     = categorizeBattleLog(battleLog);
           const warLog = expandDuelRounds(filterWarBattles(battleLog));
-          const ws     = computeWarReliabilityFallback(playerProxy, warLog, bd);
+          const ws     = computeWarReliabilityFallback(playerProxy, warLog, bd, m.lastSeen ?? null);
           activityScore = ws.pct; verdict = ws.verdict; color = ws.color;
           isNew = true;
         } else {
@@ -158,7 +158,10 @@ async function buildClanAnalysis(clanTag) {
       const warDays = (() => {
           if (battleLog === null) return null;
           const currentWeek = warHistory?.weeks?.find((w) => w.isCurrent) ?? null;
-          const summary      = buildCurrentWarDays(battleLog, currentWeek?.decksUsed ?? null);
+          const summary      = buildCurrentWarDays(battleLog, currentWeek?.decksUsed ?? null, {
+            state:       currentRace?.state       ?? null,
+            periodIndex: currentRace?.periodIndex ?? null,
+          });
           if (
             summary &&
             summary.daysFromThu > 0 &&
@@ -188,7 +191,8 @@ async function buildClanAnalysis(clanTag) {
         warDays,
         // Valeur numérique pour le tri de la colonne "This War"
         // -1 = arrivé en cours de semaine, null = hors période de guerre
-        warDecks: warDays === null ? null : (warDays.arrivedMidWar ? -1 : (warDays.totalDecksUsed ?? 0)),
+        warDecks:  warDays === null ? null : (warDays.arrivedMidWar ? -1 : (warDays.totalDecksUsed ?? 0)),
+        lastSeen:  m.lastSeen ?? null,
       };
     });
 

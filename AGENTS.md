@@ -21,7 +21,8 @@ npm run build    # vite build + vercel --prod
 ## Conventions critiques du projet
 
 - **ESM obligatoire** : `"type": "module"` dans le backend — pas de `require()`
-- **Verdicts** : 4 paliers stricts — vert ≥ 76 %, jaune 61–75 %, orange 31–60 %, rouge 0–30 %
+- **Verdicts** : 4 paliers stricts — vert ≥ 76 %, jaune 56–75 %, orange 31–55 %, rouge 0–30 %
+- **maxScore** : mode principal 49 pts (avec win rate) / 46 pts (sans) ; fallback 41 pts
 
 ## Conventions générales critiques
 

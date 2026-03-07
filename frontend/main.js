@@ -469,13 +469,27 @@ function renderClanResults(data) {
 
 function renderMembersTable(members) {
   if (members.length === 0) {
-    membersTbody.innerHTML = `<tr><td colspan="${isWarActive ? 7 : 6}" style="text-align:center;color:var(--text-muted)">No members found.</td></tr>`;
+    membersTbody.innerHTML = `<tr><td colspan="${isWarActive ? 8 : 7}" style="text-align:center;color:var(--text-muted)">No members found.</td></tr>`;
     return;
   }
 
   membersTbody.innerHTML = members
     .map(
-      (m) => `
+      (m) => {
+        // Indicateur de dernière connexion dans sa propre cellule
+        let lastSeenCell = '<td class="last-seen-col">—</td>';
+        if (m.lastSeen) {
+          const days = (Date.now() - new Date(m.lastSeen.replace(
+            /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})\.(\d{3})Z$/,
+            '$1-$2-$3T$4:$5:$6.$7Z'
+          )).getTime()) / (1000 * 60 * 60 * 24);
+          const cls  = days <= 1 ? 'c-green' : days <= 3 ? 'c-yellow' : days <= 7 ? '' : 'c-red';
+          const label = days < 1 ? 'Today'
+                      : days < 2 ? '1d ago'
+                      : `${Math.round(days)}d ago`;
+          lastSeenCell = `<td class="last-seen-col"><span class="last-seen-badge ${cls}">${label}</span></td>`;
+        }
+        return `
       <tr>
         <td>
           <a class="member-link" href="?${new URLSearchParams({ mode: 'player', tag: m.tag })}" title="Analyze ${escHtml(m.name)}">
@@ -494,14 +508,17 @@ function renderMembersTable(members) {
             <span style="font-weight:700;font-size:.88rem">${m.activityScore}</span>
           </div>
         </td>
+        ${lastSeenCell}
         ${isWarActive ? `<td class="war-col">${warMiniBarHtml(m.warDays)}</td>` : ''}
         <td><span class="verdict-badge ${m.color}">${escHtml(m.verdict)}</span></td>
-      </tr>`
+      </tr>`;
+      }
     )
     .join('');
 }
 
-// Click on a member name → switch to player mode (SPA)
+// Injecte la cellule Last Seen juste avant la colonne This War / Verdict
+// (template string dans renderMembersTable — injection via replace)
 membersTbody.addEventListener('click', (e) => {
   const link = e.target.closest('a.member-link');
   if (!link) return;
