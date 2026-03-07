@@ -82,56 +82,60 @@ router.post(
       const ackTs = Date.now();
       console.error('[discord] ack latency', ackTs - startTs, 'ms');
 
-      try {
-        const analysis = await getPlayerAnalysis(tag);
-        const scoreObj = analysis.warScore || analysis.reliability;
-        const total = scoreObj.total;
-        const maxScore = scoreObj.maxScore;
-        const pct = scoreObj.pct;
-        const colorName = scoreObj.color ?? 'grey';
-        const embedColor = hexColor(colorName);
+      // perform the analysis and webhook call asynchronously so that we
+      // return from the handler immediately and avoid Discord timing out.
+      (async () => {
+        try {
+          const analysis = await getPlayerAnalysis(tag);
+          const scoreObj = analysis.warScore || analysis.reliability;
+          const total = scoreObj.total;
+          const maxScore = scoreObj.maxScore;
+          const pct = scoreObj.pct;
+          const colorName = scoreObj.color ?? 'grey';
+          const embedColor = hexColor(colorName);
 
-        const lastSeen = analysis.overview.lastSeen
-          ? new Date(analysis.overview.lastSeen).toLocaleString()
-          : 'N/A';
-        const stability = analysis.warHistory
-          ? `${analysis.warHistory.streakInCurrentClan} semaines`
-          : 'N/A';
-        const donations = analysis.activityIndicators?.donations ?? 0;
+          const lastSeen = analysis.overview.lastSeen
+            ? new Date(analysis.overview.lastSeen).toLocaleString()
+            : 'N/A';
+          const stability = analysis.warHistory
+            ? `${analysis.warHistory.streakInCurrentClan} semaines`
+            : 'N/A';
+          const donations = analysis.activityIndicators?.donations ?? 0;
 
-        const embed = {
-          title: `Analyse de ${analysis.overview.name}`,
-          description: `${total}/${maxScore} pts (${pct}%) ${colorEmoji(colorName)}`,
-          color: embedColor,
-          fields: [
-            { name: 'Derniers dons', value: `${donations}`, inline: true },
-            { name: 'Stabilité dans le clan', value: stability, inline: true },
-            { name: 'Dernière activité', value: lastSeen, inline: true },
-          ],
-          url: `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(
-            tag,
-          )}`,
-        };
+          const embed = {
+            title: `Analyse de ${analysis.overview.name}`,
+            description: `${total}/${maxScore} pts (${pct}%) ${colorEmoji(colorName)}`,
+            color: embedColor,
+            fields: [
+              { name: 'Derniers dons', value: `${donations}`, inline: true },
+              { name: 'Stabilité dans le clan', value: stability, inline: true },
+              { name: 'Dernière activité', value: lastSeen, inline: true },
+            ],
+            url: `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(
+              tag,
+            )}`,
+          };
 
-        const webhookUrl =
-          `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
-        await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ embeds: [embed] }),
-        });
-      } catch (err) {
-        const webhookUrl =
-          `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
-        await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            content: `Erreur lors de l'analyse : ${err.message}`,
-            flags: 64,
-          }),
-        });
-      }
+          const webhookUrl =
+            `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+          await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ embeds: [embed] }),
+          });
+        } catch (err) {
+          const webhookUrl =
+            `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+          await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              content: `Erreur lors de l'analyse : ${err.message}`,
+              flags: 64,
+            }),
+          });
+        }
+      })();
       return;
     }
 
