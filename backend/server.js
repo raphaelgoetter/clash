@@ -49,11 +49,11 @@ app.get('/api/ip', async (_req, res) => {
 
 // ── Debug helper (remove before production) ─────────────────────
 app.get('/api/debug', (_req, res) => {
-  // show which critical env vars are set (not the actual secret values)
+  // show which critical env vars are set; public key/app id are safe to print
   res.json({
-    hasClashKey: !!process.env.CLASH_API_KEY,
-    hasDiscordPub: !!process.env.DISCORD_PUBLIC_KEY,
-    hasDiscordAppId: !!process.env.DISCORD_APP_ID,
+    clashKey: process.env.CLASH_API_KEY ? 'present' : null,
+    discordPublicKey: process.env.DISCORD_PUBLIC_KEY || null,
+    discordAppId: process.env.DISCORD_APP_ID || null,
   });
 });
 
