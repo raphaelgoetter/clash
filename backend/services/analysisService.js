@@ -9,9 +9,20 @@
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
-// Clan War day resets at 10:40 UTC every day.
-// Shifting timestamps back by this offset lets us floor to the correct war day.
-const WAR_DAY_RESET_MS = (10 * 60 + 40) * 60 * 1000; // 640 minutes in ms
+// Clan War day resets at 10:40 heure de Paris (UTC+1 hiver, UTC+2 été).
+// Le décalage UTC est calculé dynamiquement pour gérer le DST.
+
+/** Décalage UTC→Paris en ms pour une date donnée (+3 600 000 hiver, +7 200 000 été) */
+function parisOffsetMs(date = new Date()) {
+  const p = new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+  const u = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+  return p - u;
+}
+
+/** Nombre de ms à soustraire à un timestamp UTC pour obtenir le « jour GDC » (reset 10h40 Paris) */
+function warResetOffsetMs(date = new Date()) {
+  return (10 * 60 + 40) * 60 * 1000 - parisOffsetMs(date);
+}
 
 // ── Date utilities ────────────────────────────────────────────
 
@@ -164,8 +175,8 @@ function battlesInLastDays(battleLog, days) {
  * @returns {string}
  */
 function warDayKey(dateOrTs) {
-  const ms = (dateOrTs instanceof Date ? dateOrTs : parseClashDate(dateOrTs)).getTime();
-  return new Date(ms - WAR_DAY_RESET_MS).toISOString().slice(0, 10);
+  const d = dateOrTs instanceof Date ? dateOrTs : parseClashDate(dateOrTs);
+  return new Date(d.getTime() - warResetOffsetMs(d)).toISOString().slice(0, 10);
 }
 
 /**
@@ -317,9 +328,9 @@ export function computeWarScore(player, warHistory, warWinRate = null) {
   const FAME_CAP       = 3000;
   const scoreMoyen     = r(Math.min(10, (warHistory.avgFame / FAME_CAP) * 10));
 
-  // 3. Stabilité (0-5) — courbe doublée : 5 semaines consécutives = 5/5
+  // 3. Stabilité (0-8) — courbe doublée : 5 semaines consécutives = 8/8
   // (au lieu de 10 semaines), pour ne pas trop pénaliser les membres récents
-  const stabilite      = r(Math.min(5, (warHistory.streakInCurrentClan / totalWeeks) * 10));
+  const stabilite      = r(Math.min(8, (warHistory.streakInCurrentClan / totalWeeks) * 16));
 
   // 4. Expérience trophées (0-3) — ≥ 12 000 best trophies = 3/3
   const TROPHY_CAP   = 12000;
@@ -338,12 +349,12 @@ export function computeWarScore(player, warHistory, warWinRate = null) {
   const cw2Score    = r(Math.min(8, (cw2Wins / CW2_CAP) * 8));
 
   const total    = r(regularite + scoreMoyen + stabilite + experience + dons + (winRateGDC ?? 0) + cw2Score);
-  const maxScore = winRateGDC !== null ? 41 : 38;
+  const maxScore = winRateGDC !== null ? 44 : 41;
   const pct      = Math.round((total / maxScore) * 100);
 
   let verdict, color;
   if (pct >= 76)      { verdict = 'High reliability';  color = 'green'; }
-  else if (pct >= 61) { verdict = 'Moderate risk';     color = 'yellow'; }
+  else if (pct >= 56) { verdict = 'Moderate risk';     color = 'yellow'; }
   else if (pct >= 31) { verdict = 'High risk';         color = 'orange'; }
   else                { verdict = 'Extreme risk';      color = 'red'; }
 
@@ -375,22 +386,22 @@ export function computeWarScore(player, warHistory, warWinRate = null) {
       max:    8,
       detail: `${cw2Wins.toLocaleString('en-US')} total CW2 wins (cap 250)`,
     },
-    ...(winRateGDC !== null ? [{
-      label:  'Win Rate (War)',
-      score:  winRateGDC,
-      max:    3,
-      detail: `${Math.round(warWinRate * 100)}% victories in River Race`,
-    }] : []),
     {
       label:  'Stability',
       score:  stabilite,
-      max:    5,
+      max:    8,
       detail: (() => {
         const s = warHistory.streakInCurrentClan;
         const base = `${s} consecutive week${s > 1 ? 's' : ''} in this clan`;
         return s < 5 ? `${base} (full score at 5 wks)` : base;
       })(),
     },
+    ...(winRateGDC !== null ? [{
+      label:  'Win Rate (War)',
+      score:  winRateGDC,
+      max:    3,
+      detail: `${Math.round(warWinRate * 100)}% victories in River Race`,
+    }] : []),
     {
       label:  'Experience',
       score:  experience,
@@ -463,7 +474,7 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
 
   let verdict, color;
   if (pct >= 76)      { verdict = 'High reliability';  color = 'green'; }
-  else if (pct >= 61) { verdict = 'Moderate risk';     color = 'yellow'; }
+  else if (pct >= 56) { verdict = 'Moderate risk';     color = 'yellow'; }
   else if (pct >= 31) { verdict = 'High risk';         color = 'orange'; }
   else                { verdict = 'Extreme risk';      color = 'red'; }
 
@@ -734,8 +745,9 @@ export function computeMemberActivityScore(member) {
  * @returns {{ days, totalDecksUsed, maxDecksElapsed, maxDecksWeek, isReliableTotal }|null}
  */
 export function buildCurrentWarDays(battleLog, raceTotalDecks = null) {
-  // Le jour GDC commence à 10h40 UTC : on décale pour aligner les batailles correctement
-  const nowGdcDate = new Date(Date.now() - WAR_DAY_RESET_MS);
+  // Le jour GDC commence à 10h40 heure de Paris : on décale pour aligner sur le cycle GDC
+  const now = new Date();
+  const nowGdcDate = new Date(now.getTime() - warResetOffsetMs(now));
   const dow = nowGdcDate.getUTCDay(); // 0=Dim, 1=Lun … 4=Jeu, 5=Ven, 6=Sam
 
   // Période de guerre : Jeu(4), Ven(5), Sam(6), Dim(0)

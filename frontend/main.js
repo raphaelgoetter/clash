@@ -315,7 +315,7 @@ function renderPlayerResults(data) {
 
   reasonsList.innerHTML = (ws.breakdown ?? []).map((b) => {
     const pct   = Math.round((b.score / b.max) * 100);
-    const color = pct >= 76 ? 'var(--green)' : pct >= 61 ? 'var(--yellow)' : pct >= 31 ? 'var(--orange)' : 'var(--red)';
+    const color = pct >= 76 ? 'var(--green)' : pct >= 56 ? 'var(--yellow)' : pct >= 31 ? 'var(--orange)' : 'var(--red)';
     return `
       <li class="score-row">
         <div class="sr-header">
@@ -419,9 +419,9 @@ function warMiniBarHtml(warData) {
   const cls = totalDecksUsed >= maxDecksElapsed                   ? 'good'
             : totalDecksUsed >= Math.ceil(maxDecksElapsed / 2)   ? 'partial'
             :                                                        'bad';
-  return `<div class="war-mini-total" title="${totalDecksUsed}/${maxDecksWeek} decks">` +
+  return `<div class="war-mini-total" title="${totalDecksUsed}/${maxDecksElapsed} decks">` +
     `<div class="war-mini-track"><div class="war-mini-fill ${cls}" style="width:${pct}%"></div></div>` +
-    `<span class="war-mini-text ${cls}">${totalDecksUsed}/${maxDecksWeek}</span>` +
+    `<span class="war-mini-text ${cls}">${totalDecksUsed}/${maxDecksElapsed}</span>` +
   `</div>`;
 }
 
