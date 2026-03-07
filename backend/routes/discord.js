@@ -66,6 +66,7 @@ router.post(
 
     // Application command
     if (body.type === 2 && body.data?.name === 'trust') {
+      const startTs = Date.now();
       const tagOption = body.data.options?.find((o) => o.name === 'tag');
       const tag = tagOption?.value;
       if (!tag) {
@@ -77,6 +78,8 @@ router.post(
 
       // acknowledge quickly and defer the actual message
       res.json({ type: 5 });
+      const ackTs = Date.now();
+      console.error('[discord] ack latency', ackTs - startTs, 'ms');
 
       try {
         const analysis = await getPlayerAnalysis(tag);
