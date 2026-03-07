@@ -68,7 +68,7 @@ router.post(
     if (body.type === 2 && body.data?.name === 'trust') {
       console.log('[discord] command body', JSON.stringify(body));
       // proof-of-working mode: always respond with hello for testing
-      return res.json({ type: 4, data: { content: 'Hello world proof!', flags: 64 } });
+      return res.json({ type: 4, data: { content: 'Hello world proof! (public)' } });
       const startTs = Date.now();
       const tagOption = body.data.options?.find((o) => o.name === 'tag');
       const tag = tagOption?.value;
