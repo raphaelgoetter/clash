@@ -1,7 +1,7 @@
 {
-  "name": "clash-analyzer-backend",
+  "name": "trustroyale-backend",
   "version": "1.0.0",
-  "description": "Clash Royale Clan War Reliability Analyzer - Backend",
+  "description": "TrustRoyale – Clash Royale Clan War Reliability Analyzer (Backend)",
   "type": "module",
   "main": "server.js",
   "scripts": {

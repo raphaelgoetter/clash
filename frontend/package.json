@@ -1,7 +1,7 @@
 {
-  "name": "clash-analyzer-frontend",
+  "name": "trustroyale-frontend",
   "version": "1.0.0",
-  "description": "Clash Royale Clan War Reliability Analyzer - Frontend",
+  "description": "TrustRoyale – Clash Royale Clan War Reliability Analyzer (Frontend)",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -2,7 +2,7 @@
 
 ## Projet
 
-Analyseur de fiabilité de guerre de clan Clash Royale — backend Express + frontend Vite, déployé sur Vercel.
+**TrustRoyale** — Analyseur de fiabilité de guerre de clan Clash Royale — backend Express + frontend Vite, déployé sur Vercel.
 
 ## Stack technique
 

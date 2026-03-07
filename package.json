@@ -1,9 +1,10 @@
 {
-  "name": "clash-analyzer",
+  "name": "trustroyale",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "lsof -ti:3000 | xargs kill -9 2>/dev/null; true",
     "dev":   "concurrently --names \"backend,frontend\" --prefix-colors \"cyan,magenta\" \"cd backend && npx nodemon server.js\" \"cd frontend && npx vite\"",
     "build": "cd frontend && npm run build && cd .. && vercel --prod"
   },

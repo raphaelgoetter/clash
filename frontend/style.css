@@ -94,7 +94,7 @@ code {
   gap: 16px;
 }
 
-.header-logo { font-size: 2.6rem; line-height: 1; }
+.header-logo { width: 3.4rem; height: 3.4rem; display: block; }
 
 .header-title {
   font-size: clamp(1.2rem, 3vw, 1.8rem);

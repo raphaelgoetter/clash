@@ -1,4 +1,4 @@
-# ⚔️ Clash Royale — Clan War Reliability Analyzer
+# ⚔️ TrustRoyale — Clan War Reliability Analyzer
 
 A full-stack web tool that helps clan leaders evaluate whether a player is likely to participate consistently in clan wars.
 
