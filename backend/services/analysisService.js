@@ -243,8 +243,17 @@ function dailyWarActivityScore(warLog) {
     .sort((a, b) => b[0].localeCompare(a[0]))
     .slice(0, 3);
   const yesterdayKey  = new Date(new Date(todayWarDay).getTime() - MS_PER_DAY).toISOString().slice(0, 10);
+  function fmtDate(iso) {
+    const d = new Date(iso);
+    const opts = { month: 'short', day: 'numeric' };
+    if (d.getFullYear() !== new Date().getFullYear()) opts.year = 'numeric';
+    return d.toLocaleDateString(undefined, opts);
+  }
   const parts = recentDays.map(([k, n]) => {
-    const label = k === todayWarDay ? 'today' : k === yesterdayKey ? 'yesterday' : k;
+    let label;
+    if (k === todayWarDay) label = 'today';
+    else if (k === yesterdayKey) label = 'yesterday';
+    else label = fmtDate(k);
     return `${n} ${label}`;
   });
   const totalBattles = Object.values(byDay).reduce((s, n) => s + n, 0);
