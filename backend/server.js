@@ -22,7 +22,12 @@ const PORT = process.env.PORT || 3000;
 
 // ── Middleware ────────────────────────────────────────────────
 app.use(cors());
-app.use(express.json());
+// We need raw body for Discord interaction signature verification, so
+// skip the global JSON parser for the /api/discord route.
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/discord')) return next();
+  express.json()(req, res, next);
+});
 
 // ── Request logger (development) ──────────────────────────────
 app.use((req, _res, next) => {
