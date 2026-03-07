@@ -39,22 +39,28 @@ router.post(
     const timestamp = req.headers['x-signature-timestamp'];
     const rawBody = req.body.toString('utf8');
 
+    let body;
+    console.log('[discord] rawBody=', rawBody);
+    try {
+      body = JSON.parse(rawBody);
+      console.log('[discord] parsed body=', body);
+    } catch (e) {
+      console.error('[discord] json parse error', e.message);
+      return res.status(400).send('invalid json');
+    }
+
+    // Discord PING (required for endpoint verification) – handle before
+    // signature check so that validation requests are accepted even if Discord
+    // omits headers or uses an unexpected time window.
+    if (body.type === 1) {
+      return res.json({ type: 1 });
+    }
+
+    // For all other interaction types, verify the request signature.
     if (
       !verifyKey(rawBody, signature, timestamp, process.env.DISCORD_PUBLIC_KEY)
     ) {
       return res.status(401).send('invalid request signature');
-    }
-
-    let body;
-    try {
-      body = JSON.parse(rawBody);
-    } catch {
-      return res.status(400).send('invalid json');
-    }
-
-    // Discord PING (required for endpoint verification)
-    if (body.type === 1) {
-      return res.json({ type: 1 });
     }
 
     // Application command
