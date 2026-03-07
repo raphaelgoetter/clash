@@ -361,7 +361,7 @@ function renderCurrentWarCard(warData) {
         `</div>` +
         `<div class="war-progress-track"><div class="war-progress-fill bad" style="width:0%"></div></div>` +
         `<div class="war-progress-meta war-arrived-note">` +
-          `Joined during the war week — can't count war battles this week` +
+          `Joined during the war week — can't count battles this week` +
         `</div>` +
         `<div class="war-day-chips">${chipsHtml}</div>` +
       `</div>`;
@@ -413,7 +413,7 @@ function warMiniBarHtml(warData) {
   // Joueur arrivé en cours de semaine : icône distincte
   if (arrivedMidWar) {
     const dayName = DAY_NAMES[(arrivedOnDay ?? 1) - 1] ?? `day ${arrivedOnDay}`;
-    return `<div class="war-mini-arrived" title="Arrived ${dayName} — can't count war this week">⚠</div>`;
+    return `<div class="war-mini-arrived" title="Arrived ${dayName} — can't count battles this week">⚠</div>`;
   }
   const pct = Math.round((totalDecksUsed / maxDecksWeek) * 100);
   const cls = totalDecksUsed >= maxDecksElapsed                   ? 'good'
