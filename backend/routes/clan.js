@@ -155,19 +155,7 @@ async function buildClanAnalysis(clanTag) {
         color = score >= 76 ? 'green' : score >= 61 ? 'yellow' : score >= 31 ? 'orange' : 'red';
       }
 
-      return {
-        name:               m.name,
-        tag:                m.tag,
-        role:               m.role,
-        trophies:           m.trophies ?? 0,
-        donations:          m.donations ?? 0,
-        donationsReceived:  m.donationsReceived ?? 0,
-        expLevel:           m.expLevel ?? 1,
-        activityScore,
-        verdict,
-        color,
-        isNew,
-        warDays: (() => {
+      const warDays = (() => {
           if (battleLog === null) return null;
           const currentWeek = warHistory?.weeks?.find((w) => w.isCurrent) ?? null;
           const summary      = buildCurrentWarDays(battleLog, currentWeek?.decksUsed ?? null);
@@ -183,7 +171,24 @@ async function buildClanAnalysis(clanTag) {
             summary.isReliableTotal = true;
           }
           return summary;
-        })(),
+        })();
+
+      return {
+        name:               m.name,
+        tag:                m.tag,
+        role:               m.role,
+        trophies:           m.trophies ?? 0,
+        donations:          m.donations ?? 0,
+        donationsReceived:  m.donationsReceived ?? 0,
+        expLevel:           m.expLevel ?? 1,
+        activityScore,
+        verdict,
+        color,
+        isNew,
+        warDays,
+        // Valeur numérique pour le tri de la colonne "This War"
+        // -1 = arrivé en cours de semaine, null = hors période de guerre
+        warDecks: warDays === null ? null : (warDays.arrivedMidWar ? -1 : (warDays.totalDecksUsed ?? 0)),
       };
     });
 

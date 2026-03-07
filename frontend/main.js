@@ -551,6 +551,10 @@ document.querySelectorAll('.members-table th.sortable').forEach((th) => {
 function sortMembers(arr, col, dir) {
   return [...arr].sort((a, b) => {
     let va = a[col], vb = b[col];
+    // Les valeurs null vont toujours en dernier, quel que soit le sens du tri
+    if (va === null && vb === null) return 0;
+    if (va === null) return 1;
+    if (vb === null) return -1;
     if (typeof va === 'string') va = va.toLowerCase();
     if (typeof vb === 'string') vb = vb.toLowerCase();
     if (va < vb) return dir === 'asc' ? -1 : 1;
