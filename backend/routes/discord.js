@@ -57,9 +57,10 @@ router.post(
     }
 
     // For all other interaction types, verify the request signature.
-    if (
-      !verifyKey(rawBody, signature, timestamp, process.env.DISCORD_PUBLIC_KEY)
-    ) {
+    const verified = verifyKey(rawBody, signature, timestamp, process.env.DISCORD_PUBLIC_KEY);
+    console.log('[discord] sig', signature, 'ts', timestamp, 'verified', verified);
+    if (!verified) {
+      console.warn('[discord] signature verification failed');
       return res.status(401).send('invalid request signature');
     }
 
