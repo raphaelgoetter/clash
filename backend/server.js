@@ -14,6 +14,7 @@ import express from 'express';
 import cors from 'cors';
 import playerRoutes from './routes/player.js';
 import clanRoutes from './routes/clan.js';
+import discordRoutes from './routes/discord.js';
 import { clearAll } from './services/cache.js';
 
 const app = express();
@@ -49,6 +50,8 @@ app.get('/api/ip', async (_req, res) => {
 // ── API routes ────────────────────────────────────────────────
 app.use('/api/player', playerRoutes);
 app.use('/api/clan', clanRoutes);
+// Discord interactions endpoint (slash commands)
+app.use('/api/discord', discordRoutes);
 
 // ── Cache flush (dev) ─────────────────────────────────────────
 app.post('/api/cache/flush', (_req, res) => {
