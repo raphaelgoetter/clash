@@ -47,6 +47,16 @@ app.get('/api/ip', async (_req, res) => {
   }
 });
 
+// ── Debug helper (remove before production) ─────────────────────
+app.get('/api/debug', (_req, res) => {
+  // show which critical env vars are set (not the actual secret values)
+  res.json({
+    hasClashKey: !!process.env.CLASH_API_KEY,
+    hasDiscordPub: !!process.env.DISCORD_PUBLIC_KEY,
+    hasDiscordAppId: !!process.env.DISCORD_APP_ID,
+  });
+});
+
 // ── API routes ────────────────────────────────────────────────
 app.use('/api/player', playerRoutes);
 app.use('/api/clan', clanRoutes);
