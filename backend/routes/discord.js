@@ -118,11 +118,12 @@ router.post(
 
           const webhookUrl =
             `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
-          await fetch(webhookUrl, {
+          const resp = await fetch(webhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ embeds: [embed] }),
           });
+          console.error('[discord] webhook status', resp.status);
         } catch (err) {
           const webhookUrl =
             `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
