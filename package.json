@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev":   "concurrently --names \"backend,frontend\" --prefix-colors \"cyan,magenta\" \"cd backend && node server.js\" \"cd frontend && npx vite\"",
+    "dev":   "concurrently --names \"backend,frontend\" --prefix-colors \"cyan,magenta\" \"cd backend && npx nodemon server.js\" \"cd frontend && npx vite\"",
     "build": "cd frontend && npm run build && cd .. && vercel --prod"
   },
   "dependencies": {

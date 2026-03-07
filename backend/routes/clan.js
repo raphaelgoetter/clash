@@ -152,7 +152,7 @@ async function buildClanAnalysis(clanTag) {
                 : score >= 61 ? 'Moderate risk'
                 : score >= 31 ? 'High risk'
                 :               'Extreme risk';
-        color = score >= 76 ? 'green' : score >= 61 ? 'yellow' : score >= 31 ? 'orange' : 'red';
+        color = score >= 76 ? 'green' : score >= 56 ? 'yellow' : score >= 31 ? 'orange' : 'red';
       }
 
       const warDays = (() => {
