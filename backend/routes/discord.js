@@ -66,6 +66,7 @@ router.post(
 
     // Application command
     if (body.type === 2 && body.data?.name === 'trust') {
+      console.error('[discord] command body', JSON.stringify(body));
       const startTs = Date.now();
       const tagOption = body.data.options?.find((o) => o.name === 'tag');
       const tag = tagOption?.value;
