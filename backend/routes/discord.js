@@ -40,10 +40,10 @@ router.post(
     const rawBody = req.body.toString('utf8');
 
     let body;
-    console.log('[discord] rawBody=', rawBody);
+    console.error('[discord] rawBody=', rawBody);
     try {
       body = JSON.parse(rawBody);
-      console.log('[discord] parsed body=', body);
+      console.error('[discord] parsed body=', body);
     } catch (e) {
       console.error('[discord] json parse error', e.message);
       return res.status(400).send('invalid json');
@@ -58,9 +58,9 @@ router.post(
 
     // For all other interaction types, verify the request signature.
     const verified = verifyKey(rawBody, signature, timestamp, process.env.DISCORD_PUBLIC_KEY);
-    console.log('[discord] sig', signature, 'ts', timestamp, 'verified', verified);
+    console.error('[discord] sig', signature, 'ts', timestamp, 'verified', verified);
     if (!verified) {
-      console.warn('[discord] signature verification failed');
+      console.error('[discord] signature verification failed');
       return res.status(401).send('invalid request signature');
     }
 
