@@ -36,9 +36,21 @@ function criterionIcon(score, max) {
 }
 
 // Convertit un critère de breakdown en field Discord (inline)
+// et effectue la traduction française des libellés.
+const LABEL_FR = {
+  'War Activity': 'Activité de guerre',
+  'Win Rate (War)': 'Taux de victoire (guerre)',
+  'CW2 Battle Wins': 'Victoires CW2',
+  'Last Seen': 'Dernière connexion',
+  'General Activity': 'Activité générale',
+  'Experience': 'Expérience',
+  'Donations': 'Dons',
+  // fallback: other labels can be added if needed
+};
 function breakdownField(item) {
   const icon = criterionIcon(item.score, item.max);
-  return { name: `${icon} ${item.label}`, value: `${item.score}/${item.max}`, inline: true };
+  const label = LABEL_FR[item.label] || item.label;
+  return { name: `${icon} ${label}`, value: `${item.score}/${item.max}`, inline: true };
 }
 
 export default async function handler(req, res) {
