@@ -242,19 +242,19 @@ function renderFavorites() {
   html += '<h3>Players</h3><ul>';
   playerKeys.forEach((tag) => {
     const nm = favs.player[tag];
+    const display = (nm && nm !== tag) ? `${escHtml(nm)} (${tag})` : escHtml(tag);
     html += `<li><a class="fav-item" href="?mode=player&tag=${encodeURIComponent(tag)}" ` +
-            `data-mode="player" data-tag="${tag}">` +
-            `${escHtml(nm)} (${tag})</a></li>`;
+            `data-mode="player" data-tag="${tag}">${display}</a></li>`;
   });
   html += '</ul></div>';
-  
+
   html += '<div class="fav-column" data-mode="clan">';
   html += '<h3>Clans</h3><ul>';
   clanKeys.forEach((tag) => {
     const nm = favs.clan[tag];
+    const display = (nm && nm !== tag) ? `${escHtml(nm)} (${tag})` : escHtml(tag);
     html += `<li><a class="fav-item" href="?mode=clan&tag=${encodeURIComponent(tag)}" ` +
-            `data-mode="clan" data-tag="${tag}">` +
-            `${escHtml(nm)} (${tag})</a></li>`;
+            `data-mode="clan" data-tag="${tag}">${display}</a></li>`;
   });
   html += '</ul></div>';
   favoritesContainer.innerHTML = html;
@@ -273,18 +273,28 @@ function updateFavBtnState(tag) {
   favBtn.classList.remove('hidden');
 }
 
+// Récupère uniquement le nom d'un tag via l'API, sans déclencher l'analyse complète.
+async function fetchTagName(mode, tag) {
+  try {
+    const path = mode === 'player'
+      ? `/api/player/${encodeURIComponent(tag)}/analysis`
+      : `/api/clan/${encodeURIComponent(tag)}/analysis`;
+    const { data } = await apiFetch(path);
+    return (mode === 'player' ? data.overview?.name : data.clan?.name) || tag;
+  } catch {
+    return tag; // utiliser le tag comme nom de secours
+  }
+}
+
 async function toggleFavorite() {
   const raw = searchInput.value.trim();
   if (!raw) return;
   const tag = raw.startsWith('#') ? raw : `#${raw}`;
   if (isFavorite(currentMode, tag)) {
-    // toujours possible de retirer (le nom est déjà dans la liste)
     removeFavorite(currentMode, tag);
   } else {
-    // si pas encore de résultat, lancer la recherche d'abord pour obtenir le nom
-    if (!lastResultName) await handleSearch();
-    if (!lastResultName) return; // recherche échouée
-    addFavorite(currentMode, tag, lastResultName);
+    const name = lastResultName || await fetchTagName(currentMode, tag);
+    addFavorite(currentMode, tag, name);
   }
   updateFavBtnState(tag);
   renderFavorites();
