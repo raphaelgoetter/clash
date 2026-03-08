@@ -156,6 +156,67 @@ Same 4-tier verdict thresholds apply (76 / 61 / 31).
 
 ---
 
+## 🤖 Commande Discord `/trust`
+
+Le bot Discord expose une slash command `/trust <tag>` qui affiche l'analyse de fiabilité d'un joueur directement dans un serveur Discord.
+
+### Architecture
+
+```
+Discord → POST /api/discord/interactions   (api/discord/interactions.js)
+              │
+              ├─ type 1 (PING)   → { type: 1 }   (validation endpoint)
+              │
+              └─ type 2 /trust   → { type: 5 }   (deferred, <3 s)
+                                     waitUntil(
+                                       fetch /api/player/:tag/analysis
+                                       → webhook follow-up Discord
+                                     )
+```
+
+La fonction Discord est **séparée** de l'app Express (`api/index.js`) pour garantir un cold start minimal (< 1 s au lieu de 3-4 s), impératif pour respecter la fenêtre de 3 s imposée par Discord.
+
+### Points techniques clés
+
+| Problème | Solution |
+|---|---|
+| Validation endpoint Discord échoue | La vérification de signature Ed25519 doit se faire **avant** de répondre au PING, pas après |
+| Cold start > 3 s → "application did not respond" | Fonction Vercel dédiée (`api/discord/interactions.js`) sans Express, uniquement `node:crypto` natif |
+| Fonction tuée après `res.end()` | `waitUntil()` de `@vercel/functions` maintient la fonction active après l'envoi du `type: 5` |
+| Vérification de signature | Reconstruit la clé publique Ed25519 depuis hex → SPKI DER via `node:crypto` (pas de dépendance npm) |
+
+### Variables d'environnement requises
+
+```
+DISCORD_PUBLIC_KEY=   # Clé publique du bot (onglet "General Information")
+DISCORD_APP_ID=       # Application ID du bot
+DISCORD_TOKEN=        # Token du bot (pour le script d'enregistrement)
+```
+
+### Enregistrement de la commande
+
+```bash
+node registerCommands.js
+```
+
+Lance ce script une seule fois (ou après modification de la commande) pour enregistrer `/trust` auprès de l'API Discord.
+
+### Format de la réponse
+
+```
+🟢 NomJoueur ⤑ 93 % (High reliability)
+✅ Regularity   10/10    ✅ Avg Score     8.4/10
+✅ CW2 Wins      8/8     ✅ Stability       8/8
+⚠️ Win Rate      1.9/3   ✅ Experience      3/3
+✅ Donations     2/2
+
+Tag : #YRGJGR8R  [lien vers trustroyale.vercel.app]
+```
+
+Icônes : ✅ ≥ 75 % du max · ⚠️ entre 40 % et 74 % · ❌ < 40 %
+
+---
+
 ## ☁️ Deployment
 
 ### Backend → Vercel
