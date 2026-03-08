@@ -253,6 +253,7 @@ function renderFavorites() {
     html += `<li><a class="fav-item" href="?mode=clan&tag=${encodeURIComponent(tag)}" ` +
             `data-mode="clan" data-tag="${tag}">` +
             `${escHtml(nm)} (${tag})</a></li>`;
+  });
 }
 
 function updateFavBtnState(tag) {
