@@ -27,6 +27,20 @@ function verifyDiscordSignature(signature, timestamp, rawBody) {
 const COLOR_MAP = { green: 0x2ecc71, yellow: 0xf1c40f, orange: 0xe67e22, red: 0xe74c3c };
 const EMOJI_MAP = { green: '🟢', yellow: '🟡', orange: '🟠', red: '🔴' };
 
+// Icône selon le ratio score/max : ✅ ≥ 75 %, ⚠️ ≥ 40 %, ❌ sinon
+function criterionIcon(score, max) {
+  const r = max > 0 ? score / max : 0;
+  if (r >= 0.75) return '✅';
+  if (r >= 0.4)  return '⚠️';
+  return '❌';
+}
+
+// Convertit un critère de breakdown en field Discord (inline)
+function breakdownField(item) {
+  const icon = criterionIcon(item.score, item.max);
+  return { name: `${icon} ${item.label}`, value: `${item.score}/${item.max}`, inline: true };
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
@@ -100,24 +114,25 @@ export default async function handler(req, res) {
         const analysis = await apiResp.json();
         const score = analysis.warScore ?? analysis.reliability;
         const { total, maxScore, pct, color, verdict } = score;
-        const emoji  = EMOJI_MAP[color]  ?? '⚪';
+        const emoji      = EMOJI_MAP[color]  ?? '⚪';
         const embedColor = COLOR_MAP[color] ?? 0x808080;
 
-        const wh = analysis.warHistory;
-        const donations = analysis.activityIndicators?.donations ?? 0;
-        const stability = wh ? `${wh.streakInCurrentClan} sem. dans ce clan` : 'N/A';
-        const avgFame   = wh ? `${wh.avgFame.toLocaleString('fr-FR')} fame/sem.` : 'N/A';
+        // Grille 2 colonnes : 2 critères inline + 1 spacer invisible = 1 ligne
+        const breakdown = score.breakdown ?? [];
+        const gridFields = [];
+        for (let i = 0; i < breakdown.length; i += 2) {
+          gridFields.push(breakdownField(breakdown[i]));
+          if (breakdown[i + 1]) gridFields.push(breakdownField(breakdown[i + 1]));
+          // spacer Discord pour forcer un saut de ligne après 2 colonnes
+          gridFields.push({ name: '\u200b', value: '\u200b', inline: true });
+        }
 
         const embed = {
-          title: `${emoji} ${analysis.overview.name} — ${verdict}`,
+          title: `${emoji} ${analysis.overview.name} ⤑ ${pct} % (${verdict})`,
           url: `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(tag)}`,
           color: embedColor,
-          description: `**${total} / ${maxScore} pts (${pct} %)**`,
-          fields: [
-            { name: 'Fame moyen', value: avgFame, inline: true },
-            { name: 'Stabilité',  value: stability, inline: true },
-            { name: 'Dons',       value: `${donations}`, inline: true },
-          ],
+          description: `**${total} / ${maxScore} pts**`,
+          fields: gridFields,
           footer: { text: `Tag : ${tag}` },
         };
 
