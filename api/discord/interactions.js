@@ -131,7 +131,6 @@ export default async function handler(req, res) {
           title: `${emoji} ${analysis.overview.name} ⤑ ${pct} % (${verdict})`,
           url: `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(tag)}`,
           color: embedColor,
-          description: `**${total} / ${maxScore} pts**`,
           fields: gridFields,
           footer: { text: `Tag : ${tag}` },
         };
