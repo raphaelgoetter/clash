@@ -1,6 +1,6 @@
 # ⚔️ TrustRoyale — analyseur de fiabilité des guerres de clan
 
-TrustRoyale aide les chefs de clan Clash Royale à évaluer rapidement la
+TrustRoyale est un outil Clash Royale servant à évaluer rapidement la
 fiabilité des joueurs et clans avant les recrutements ou les guerres.
 
 Le service se compose :
