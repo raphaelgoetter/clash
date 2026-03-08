@@ -1,7 +1,8 @@
 // Fonction Vercel dédiée pour les interactions Discord.
-// Volontairement sans Express ni aucune dépendance npm afin de minimiser
-// le cold start et répondre dans la fenêtre de 3 s imposée par Discord.
+// Utilise waitUntil de @vercel/functions pour exécuter l'appel à l'API
+// Clash en arrière-plan APRÈS avoir répondu type:5 à Discord (deferred).
 import { createPublicKey, verify } from 'node:crypto';
+import { waitUntil } from '@vercel/functions';
 
 // Vérifie la signature Ed25519 envoyée par Discord.
 function verifyDiscordSignature(signature, timestamp, rawBody) {
@@ -69,71 +70,73 @@ export default async function handler(req, res) {
     }
 
     // Réponse différée immédiate — satisfait la fenêtre de 3 s de Discord.
-    // La fonction Vercel reste active jusqu'à son retour (maxDuration: 10 s).
+    // waitUntil garantit que Vercel maintient la fonction active jusqu'à la fin de l'analyse.
     res.status(200).json({ type: 5 });
 
     const tag = rawTag.startsWith('#') ? rawTag : `#${rawTag}`;
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
 
-    try {
-      // Appel interne à notre propre endpoint d'analyse (évite de redupliquer la logique)
-      // On utilise l'URL canonique pour éviter les redirections vers une instance froide
-      const apiResp = await fetch(
-        `https://trustroyale.vercel.app/api/player/${encodeURIComponent(tag)}/analysis`,
-        { headers: { Accept: 'application/json' } },
-      );
+    waitUntil((async () => {
+      try {
+        // Appel interne à notre propre endpoint d'analyse (évite de redupliquer la logique)
+        // On utilise l'URL canonique pour éviter les redirections vers une instance froide
+        const apiResp = await fetch(
+          `https://trustroyale.vercel.app/api/player/${encodeURIComponent(tag)}/analysis`,
+          { headers: { Accept: 'application/json' } },
+        );
 
-      if (!apiResp.ok) {
-        const msg = apiResp.status === 404
-          ? `Joueur \`${tag}\` introuvable.`
-          : `Erreur API (${apiResp.status}).`;
+        if (!apiResp.ok) {
+          const msg = apiResp.status === 404
+            ? `Joueur \`${tag}\` introuvable.`
+            : `Erreur API (${apiResp.status}).`;
+          await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: msg, flags: 64 }),
+          });
+          return;
+        }
+
+        const analysis = await apiResp.json();
+        const score = analysis.warScore ?? analysis.reliability;
+        const { total, maxScore, pct, color, verdict } = score;
+        const emoji  = EMOJI_MAP[color]  ?? '⚪';
+        const embedColor = COLOR_MAP[color] ?? 0x808080;
+
+        const wh = analysis.warHistory;
+        const donations = analysis.activityIndicators?.donations ?? 0;
+        const stability = wh ? `${wh.streakInCurrentClan} sem. dans ce clan` : 'N/A';
+        const avgFame   = wh ? `${wh.avgFame.toLocaleString('fr-FR')} fame/sem.` : 'N/A';
+
+        const embed = {
+          title: `${emoji} ${analysis.overview.name} — ${verdict}`,
+          url: `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(tag)}`,
+          color: embedColor,
+          description: `**${total} / ${maxScore} pts (${pct} %)**`,
+          fields: [
+            { name: 'Fame moyen', value: avgFame, inline: true },
+            { name: 'Stabilité',  value: stability, inline: true },
+            { name: 'Dons',       value: `${donations}`, inline: true },
+          ],
+          footer: { text: `Tag : ${tag}` },
+        };
+
         await fetch(webhookUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: msg, flags: 64 }),
+          body: JSON.stringify({ embeds: [embed] }),
         });
-        return;
+      } catch (err) {
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: `Erreur lors de l'analyse : ${err.message}`,
+            flags: 64,
+          }),
+        });
       }
-
-      const analysis = await apiResp.json();
-      const score = analysis.warScore ?? analysis.reliability;
-      const { total, maxScore, pct, color, verdict } = score;
-      const emoji  = EMOJI_MAP[color]  ?? '⚪';
-      const embedColor = COLOR_MAP[color] ?? 0x808080;
-
-      const wh = analysis.warHistory;
-      const donations = analysis.activityIndicators?.donations ?? 0;
-      const stability = wh ? `${wh.streakInCurrentClan} sem. dans ce clan` : 'N/A';
-      const avgFame   = wh ? `${wh.avgFame.toLocaleString('fr-FR')} fame/sem.` : 'N/A';
-
-      const embed = {
-        title: `${emoji} ${analysis.overview.name} — ${verdict}`,
-        url: `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(tag)}`,
-        color: embedColor,
-        description: `**${total} / ${maxScore} pts (${pct} %)**`,
-        fields: [
-          { name: 'Fame moyen', value: avgFame, inline: true },
-          { name: 'Stabilité',  value: stability, inline: true },
-          { name: 'Dons',       value: `${donations}`, inline: true },
-        ],
-        footer: { text: `Tag : ${tag}` },
-      };
-
-      await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ embeds: [embed] }),
-      });
-    } catch (err) {
-      await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: `Erreur lors de l'analyse : ${err.message}`,
-          flags: 64,
-        }),
-      });
-    }
+    })());
     return;
   }
 
