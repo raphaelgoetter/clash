@@ -332,7 +332,6 @@ export function renderClanPieChart(summary) {
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false,
       plugins: {
         legend: {
           position: 'bottom',
