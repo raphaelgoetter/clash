@@ -51,6 +51,9 @@ let lastResultName = null;
 // Default tags per mode
 const DEFAULT_TAGS = { player: '#YRGJGR8R', clan: '#LRQP20V9' };
 
+// Clé de stockage des favoris
+const FAV_STORAGE_KEY = 'trustroyaleFavs';
+
 // ── URL helpers ──────────────────────────────────────────────
 
 // When true, the next syncUrlState call uses replaceState (no new history entry)
@@ -192,8 +195,6 @@ async function apiFetch(path) {
 }
 
 // ── Favorites helpers ───────────────────────────────────────
-const FAV_STORAGE_KEY = 'trustroyaleFavs';
-
 function getFavorites() {
   try {
     const raw = localStorage.getItem(FAV_STORAGE_KEY);
