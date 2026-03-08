@@ -23,6 +23,10 @@ const playerResults   = document.getElementById('player-results');
 const clanResults     = document.getElementById('clan-results');
 const modeBtns        = document.querySelectorAll('.mode-btn');
 
+// favourites UI elements
+const favBtn           = document.getElementById('fav-btn');
+const favoritesContainer = document.getElementById('favorites-container');
+
 const overviewGrid    = document.getElementById('overview-grid');
 const statsGrid       = document.getElementById('stats-grid');
 const verdictBox      = document.getElementById('verdict-box');
@@ -40,6 +44,9 @@ let currentMode = 'player';   // 'player' | 'clan'
 let allMembers  = [];          // cache for table filtering / sorting
 let sortState   = { col: 'activityScore', dir: 'asc' };
 let isWarActive = false;       // true jeu–dim : colonne "This War" visible dans le tableau clan
+
+// Name of the last-result returned by API (used when saving favourite)
+let lastResultName = null;
 
 // Default tags per mode
 const DEFAULT_TAGS = { player: '#YRGJGR8R', clan: '#LRQP20V9' };
@@ -74,6 +81,11 @@ function applyUrlState(mode, tag) {
       ? "Tags must start with #. You can omit it and we'll add it automatically."
       : "Clan tags must start with #. You can omit it and we'll add it automatically.";
   searchInput.value = tag;
+  // hide favourite button until we have a real result
+  favBtn.classList.add('hidden');
+  lastResultName = null;
+  // refresh list (mode switch may emphasise a different section)
+  renderFavorites();
 }
 
 // Restore state on browser back/forward
@@ -118,6 +130,9 @@ modeBtns.forEach((btn) => {
   }
 }
 
+// populate favourites list immediately (may be empty)
+renderFavorites();
+
 // ── Search trigger ───────────────────────────────────────────
 searchBtn.addEventListener('click', handleSearch);
 searchInput.addEventListener('keydown', (e) => {
@@ -136,14 +151,21 @@ async function handleSearch() {
   try {
     if (currentMode === 'player') {
       const { data, fromCache } = await apiFetch(`/api/player/${encodeURIComponent(tag)}/analysis`);
+      // store name for favourites
+      lastResultName = data.overview?.name || null;
       renderPlayerResults(data);
+      updateFavBtnState(tag);
       showCacheNote(fromCache);
     } else {
       const { data, fromCache } = await apiFetch(`/api/clan/${encodeURIComponent(tag)}/analysis`);
+      lastResultName = data.clan?.name || null;
       renderClanResults(data);
+      updateFavBtnState(tag);
       showCacheNote(fromCache);
     }
     syncUrlState(currentMode, tag);
+    // make star available
+    favBtn.classList.remove('hidden');
   } catch (err) {
     showError(err.message);
   } finally {
@@ -166,6 +188,104 @@ async function apiFetch(path) {
   const data = await res.json();
   return { data, fromCache };
 }
+
+// ── Favourites helpers ───────────────────────────────────────
+const FAV_STORAGE_KEY = 'trustroyaleFavs';
+
+function getFavorites() {
+  try {
+    const raw = localStorage.getItem(FAV_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : { player: {}, clan: {} };
+  } catch (_) {
+    return { player: {}, clan: {} };
+  }
+}
+
+function saveFavorites(obj) {
+  localStorage.setItem(FAV_STORAGE_KEY, JSON.stringify(obj));
+}
+
+function addFavorite(mode, tag, name) {
+  const favs = getFavorites();
+  favs[mode] = favs[mode] || {};
+  favs[mode][tag] = name;
+  saveFavorites(favs);
+}
+
+function removeFavorite(mode, tag) {
+  const favs = getFavorites();
+  if (favs[mode] && favs[mode][tag]) {
+    delete favs[mode][tag];
+    saveFavorites(favs);
+  }
+}
+
+function isFavorite(mode, tag) {
+  const favs = getFavorites();
+  return !!(favs[mode] && favs[mode][tag]);
+}
+
+function renderFavorites() {
+  const favs = getFavorites();
+  const parts = [];
+  ['player', 'clan'].forEach((m) => {
+    const keys = Object.keys(favs[m] || {});
+    if (keys.length === 0) return;
+    parts.push(`<h3>${m === 'player' ? 'Players' : 'Clans'}</h3><ul>`);
+    keys.forEach((tag) => {
+      const nm = favs[m][tag];
+      parts.push(
+        `<li><button class="fav-item" data-mode="${m}" data-tag="${tag}">` +
+        `${escHtml(nm)} (${tag})</button></li>`
+      );
+    });
+    parts.push(`</ul>`);
+  });
+  if (parts.length === 0) {
+    favoritesContainer.innerHTML = '<p class="text-muted">No favourites yet.</p>';
+  } else {
+    favoritesContainer.innerHTML = parts.join('');
+  }
+}
+
+function updateFavBtnState(tag) {
+  if (isFavorite(currentMode, tag)) {
+    favBtn.textContent = '★';
+    favBtn.classList.add('faved');
+    favBtn.title = 'Remove from favourites';
+  } else {
+    favBtn.textContent = '☆';
+    favBtn.classList.remove('faved');
+    favBtn.title = 'Add to favourites';
+  }
+}
+
+function toggleFavorite() {
+  const raw = searchInput.value.trim();
+  if (!raw) return;
+  const tag = raw.startsWith('#') ? raw : `#${raw}`;
+  if (!lastResultName) return; // shouldn't happen
+  if (isFavorite(currentMode, tag)) {
+    removeFavorite(currentMode, tag);
+  } else {
+    addFavorite(currentMode, tag, lastResultName);
+  }
+  updateFavBtnState(tag);
+  renderFavorites();
+}
+
+// attach handlers for favourite UI
+favBtn.addEventListener('click', toggleFavorite);
+favoritesContainer.addEventListener('click', (e) => {
+  if (!e.target.matches('.fav-item')) return;
+  const mode = e.target.dataset.mode;
+  const tag = e.target.dataset.tag;
+  if (mode && tag) {
+    applyUrlState(mode, tag);
+    searchInput.value = tag;
+    handleSearch();
+  }
+});
 
 // ── UI helpers ───────────────────────────────────────────────
 function setLoading(on) {

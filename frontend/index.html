@@ -34,10 +34,10 @@
         <!-- Mode selector -->
         <div class="mode-selector" role="group" aria-label="Analysis mode">
           <button class="mode-btn active" data-mode="player" id="btn-player">
-            👤 Player Analysis
+            👤 Player
           </button>
           <button class="mode-btn" data-mode="clan" id="btn-clan">
-            🏰 Clan Analysis
+            👥 Clan
           </button>
         </div>
 
@@ -52,6 +52,7 @@
             autocomplete="off"
             spellcheck="false"
           />
+          <button id="fav-btn" class="fav-btn hidden" title="Add to favourites">☆</button>
           <button id="search-btn" class="search-btn">
             <span id="search-btn-label">🔍 Analyze</span>
             <span id="search-spinner" class="spinner hidden" aria-hidden="true"></span>
@@ -60,6 +61,8 @@
         <p class="search-hint" id="search-hint">
           Tags must start with <code>#</code>. You can omit it and we'll add it automatically.
         </p>
+        <!-- Favourites list -->
+        <div id="favorites-container" class="favorites-container"></div>
       </section>
 
       <!-- ── Error banner ─────────────────────────────────── -->
