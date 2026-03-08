@@ -36,6 +36,12 @@ export default async function handler(req, res) {
   }
   const rawBody = Buffer.concat(chunks).toString('utf8');
 
+  // Vérification de signature obligatoire *avant tout*, y compris pour les PINGs.
+  // Discord teste explicitement que le endpoint rejette les requêtes sans signature valide.
+  if (!verifyDiscordSignature(signature, timestamp, rawBody)) {
+    return res.status(401).end('invalid request signature');
+  }
+
   let body;
   try {
     body = JSON.parse(rawBody);
@@ -43,14 +49,9 @@ export default async function handler(req, res) {
     return res.status(400).end('invalid json');
   }
 
-  // Discord PING — répond avant la vérification de signature (requis pour la validation de l'endpoint)
+  // Discord PING — répond après vérification de signature (requis par Discord pour valider l'endpoint)
   if (body.type === 1) {
     return res.status(200).json({ type: 1 });
-  }
-
-  // Vérification obligatoire pour toutes les autres interactions
-  if (!verifyDiscordSignature(signature, timestamp, rawBody)) {
-    return res.status(401).end('invalid request signature');
   }
 
   // Commande /trust
