@@ -240,21 +240,19 @@ function renderFavorites() {
   html += '<h3>Players</h3><ul>';
   playerKeys.forEach((tag) => {
     const nm = favs.player[tag];
-    html += `<li><button class="fav-item" data-mode="player" data-tag="${tag}">` +
-            `${escHtml(nm)} (${tag})</button></li>`;
+    html += `<li><a class="fav-item" href="?mode=player&tag=${encodeURIComponent(tag)}" ` +
+            `data-mode="player" data-tag="${tag}">` +
+            `${escHtml(nm)} (${tag})</a></li>`;
   });
   html += '</ul></div>';
-
+  
   html += '<div class="fav-column" data-mode="clan">';
   html += '<h3>Clans</h3><ul>';
   clanKeys.forEach((tag) => {
     const nm = favs.clan[tag];
-    html += `<li><button class="fav-item" data-mode="clan" data-tag="${tag}">` +
-            `${escHtml(nm)} (${tag})</button></li>`;
-  });
-  html += '</ul></div>';
-
-  favoritesContainer.innerHTML = html;
+    html += `<li><a class="fav-item" href="?mode=clan&tag=${encodeURIComponent(tag)}" ` +
+            `data-mode="clan" data-tag="${tag}">` +
+            `${escHtml(nm)} (${tag})</a></li>`;
 }
 
 function updateFavBtnState(tag) {
@@ -285,11 +283,15 @@ function toggleFavorite() {
 
 // attach handlers for favorite UI
 favBtn.addEventListener('click', toggleFavorite);
+// The links already have href so normal navigation works; we still intercept to
+// avoid full page reload and keep single‑page app behavior when clicked normally.
 favoritesContainer.addEventListener('click', (e) => {
-  if (!e.target.matches('.fav-item')) return;
-  const mode = e.target.dataset.mode;
-  const tag = e.target.dataset.tag;
+  const link = e.target.closest('.fav-item');
+  if (!link) return;
+  const mode = link.dataset.mode;
+  const tag = link.dataset.tag;
   if (mode && tag) {
+    e.preventDefault();
     applyUrlState(mode, tag);
     searchInput.value = tag;
     handleSearch();
