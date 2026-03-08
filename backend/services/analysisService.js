@@ -263,7 +263,8 @@ function dailyWarActivityScore(warLog) {
     if (k === todayWarDay) label = 'today';
     else if (k === yesterdayKey) label = 'yesterday';
     else label = fmtDate(k);
-    return `${n} ${label}`;
+    // human‑friendly, e.g. "4× on Mar 5" or "1× yesterday"
+    return `${n}× on ${label}`;
   });
   const totalBattles = Object.values(byDay).reduce((s, n) => s + n, 0);
   const activeDays   = sortedDays.length;
