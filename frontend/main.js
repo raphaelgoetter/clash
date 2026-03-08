@@ -596,12 +596,14 @@ function renderClanResults(data) {
     { label: 'Name',          value: clan.name, cls: 'gold' },
     { label: 'Tag',           value: clan.tag,
       link: `https://royaleapi.com/clan/${clan.tag.replace('#', '')}/` },
-    { label: 'Members',       value: `${clan.members} / 50` },
+    { label: 'Members',       value: `${clan.members} / 50`,
+      cls: clan.members < 45 ? 'c-red' : clan.members < 48 ? 'c-orange' : clan.members < 50 ? 'c-yellow' : '' },
     { label: 'Clan Score',    value: fmt(clan.clanScore) },
     { label: 'War Trophies',  value: `⚔️ ${fmt(clan.clanWarTrophies ?? 0)}` },
     { label: 'Required',      value: `🏆 ${fmt(clan.requiredTrophies)}` },
     { label: 'Type',          value: capitalize(clan.type ?? '—') },
-    { label: 'Avg Score',     value: `${summary.avgScore} / 100` },
+    { label: 'Avg Score',     value: `${summary.avgScore} / 100`,
+      cls: summary.avgScore < 60 ? 'c-red' : summary.avgScore < 70 ? 'c-orange' : summary.avgScore < 80 ? 'c-yellow' : '' },
   ]);
 
   // Current Clan War card (jeu–dim)

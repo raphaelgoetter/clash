@@ -820,6 +820,7 @@ a.member-link:hover div:first-child {
 .c-yellow { color: var(--yellow); }
 .c-orange { color: var(--orange); }
 .c-red    { color: var(--red); }
+.c-red    { color: var(--red); }
 
 .new-badge {
   display: inline-block;
