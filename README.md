@@ -4,10 +4,9 @@ TrustRoyale aide les chefs de clan Clash Royale à évaluer rapidement la
 fiabilité des joueurs et clans avant les recrutements ou les guerres.
 
 Le service se compose :
-- d'une application web responsive (frontend Vite) accessible sur
+
+- d'une application web accessible sur
   `https://trustroyale.vercel.app` ;
-- d'une API backend Node/Express qui interroge l'API officielle de Clash et
-  calcule des scores.
 - d'un bot Discord (commande `/trust`) permettant de lancer une analyse
   depuis un serveur Discord.
 
@@ -15,14 +14,14 @@ Le service se compose :
 
 ## 🚀 Utilisation de l'application web
 
-1. Rendez-vous sur https://trustroyale.vercel.app.
+1. Rendez-vous sur <https://trustroyale.vercel.app>.
 2. Choisissez le mode `Player` ou `Clan` en haut.
 3. Saisissez le tag du joueur ou du clan (le `#` est ajouté automatiquement)
    puis cliquez sur **Analyze**.
 4. L'interface affiche :
    - fiche d'aperçu (nom, tag, trophées, etc.) ;
    - indicateurs d'activité et graphiques (logs de bataille/guerre) ;
-   - score de fiabilité sur 44 / 40 ou 36 pts suivant les données disponibles ;
+   - score de fiabilité en pourcentage suivant les données disponibles ;
    - verdict couleur (vert, jaune, orange, rouge).
 
 Un bouton étoile permet d'enregistrer le tag en « favori » ; la liste des
@@ -32,8 +31,7 @@ favoris se retrouve sous la barre de recherche.
 
 ## 🤖 Bot Discord `/trust`
 
-Invite le bot sur votre serveur (permissions `Send Messages` uniquement),
-puis tapez :
+Tapez :
 
 ```
 /trust tag: #ABC123
@@ -43,9 +41,7 @@ Le bot répond avec l'analyse du joueur, formatée et colorée directement dans
 le canal. L'analyse est différée — vous voyez « Processing… » puis le résultat
 quelques secondes plus tard.
 
-> Remarque : la commande ne fonctionne que dans les serveurs autorisés ;
-> si le serveur n'est pas sur la liste blanche, vous obtiendrez un message
-> éphémère « Ce serveur n'est pas autorisé à utiliser l'instance officielle ». 
+> Remarque : l'installation de ce bot n'est réalisable que par displaynone.
 
 ---
 

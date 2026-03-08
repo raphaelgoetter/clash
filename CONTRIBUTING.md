@@ -86,7 +86,7 @@ CLASH_API_KEY=eyJ0eXAiOiJKV1Qi...
 npm run dev
 ```
 
-This launches both backend (**http://localhost:3000**) and frontend (**http://localhost:5173**) simultaneously via `concurrently`. The frontend proxies `/api` → `:3000`.
+This launches both backend (**<http://localhost:3000>**) and frontend (**<http://localhost:5173>**) simultaneously via `concurrently`. The frontend proxies `/api` → `:3000`.
 
 ---
 
@@ -276,4 +276,3 @@ cd frontend && npx vite build
 ## 📜 License
 
 MIT — Not affiliated with or endorsed by Supercell.
-
