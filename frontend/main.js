@@ -125,8 +125,7 @@ modeBtns.forEach((btn) => {
     // Auto-search on load
     _replaceNextPush = true;
     handleSearch();
-favBtn.classList.remove('hidden');
-    } else {
+  } else {
     applyUrlState('player', DEFAULT_TAGS.player);
   }
 }
@@ -167,6 +166,8 @@ async function handleSearch() {
     syncUrlState(currentMode, tag);
     // make star available
     favBtn.classList.remove('hidden');
+    // rafraîchir la liste des favoris après chaque recherche
+    renderFavorites();
   } catch (err) {
     showError(err.message);
   } finally {
