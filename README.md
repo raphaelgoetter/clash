@@ -10,7 +10,8 @@ Le service se compose :
 - d'un bot Discord (commande `/trust`) permettant de lancer une analyse
   depuis un serveur Discord.
 
----
+<img width="612" height="100" alt="image" src="https://github.com/user-attachments/assets/9c05c90d-7890-4e32-aa8c-550909837c58" />
+
 
 ## 🚀 Utilisation de l'application web
 
@@ -43,6 +44,9 @@ quelques secondes plus tard.
 
 > Remarque : l'installation de ce bot n'est réalisable que par displaynone.
 
+<img width="802" height="656" alt="image" src="https://github.com/user-attachments/assets/7b0409be-0518-424f-a959-3c4a1fbb22b5" />
+
+
 ---
 
 ## 📌 Astuces
@@ -62,6 +66,24 @@ le setup local et les formules de calcul.
 
 ---
 
-## 📝 Licence
+## 📝 Captures
 
-MIT — Ce projet n'est pas affilié à Supercell.
+Vue Clan générale :
+
+<img width="1188" height="758" alt="image" src="https://github.com/user-attachments/assets/8689d747-d0a3-4d9c-9b45-17c66b2b202d" />
+
+Vue Clan section membres : 
+
+<img width="1148" height="847" alt="image" src="https://github.com/user-attachments/assets/c0d6c3bc-0710-4f10-9aec-9a5b8538b892" />
+
+Vue Joueur générale : 
+
+<img width="1184" height="935" alt="image" src="https://github.com/user-attachments/assets/dc56e2cb-5f1c-4432-b84d-ba7f67618f0e" />
+
+Vue Joueur score : 
+
+<img width="1149" height="943" alt="image" src="https://github.com/user-attachments/assets/d5f2815d-a07a-4373-8b48-f82458ffb0fd" />
+
+
+
+
