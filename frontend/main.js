@@ -81,9 +81,9 @@ function applyUrlState(mode, tag) {
       ? "Tags must start with #. You can omit it and we'll add it automatically."
       : "Clan tags must start with #. You can omit it and we'll add it automatically.";
   searchInput.value = tag;
-  // hide favorite button until we have a real result
-  favBtn.classList.add('hidden');
+  // mettre à jour l'état de l'étoile dès qu'on connaît le tag (même sans recherche)
   lastResultName = null;
+  updateFavBtnState(tag);
   // refresh list (mode switch may emphasise a different section)
   renderFavorites();
 }
@@ -125,7 +125,8 @@ modeBtns.forEach((btn) => {
     // Auto-search on load
     _replaceNextPush = true;
     handleSearch();
-  } else {
+favBtn.classList.remove('hidden');
+    } else {
     applyUrlState('player', DEFAULT_TAGS.player);
   }
 }
@@ -254,6 +255,8 @@ function renderFavorites() {
             `data-mode="clan" data-tag="${tag}">` +
             `${escHtml(nm)} (${tag})</a></li>`;
   });
+  html += '</ul></div>';
+  favoritesContainer.innerHTML = html;
 }
 
 function updateFavBtnState(tag) {
@@ -266,16 +269,19 @@ function updateFavBtnState(tag) {
     favBtn.classList.remove('faved');
     favBtn.title = 'Add to favorites';
   }
+  favBtn.classList.remove('hidden');
 }
 
 function toggleFavorite() {
   const raw = searchInput.value.trim();
   if (!raw) return;
   const tag = raw.startsWith('#') ? raw : `#${raw}`;
-  if (!lastResultName) return; // shouldn't happen
   if (isFavorite(currentMode, tag)) {
+    // toujours possible de retirer (le nom est déjà dans la liste)
     removeFavorite(currentMode, tag);
   } else {
+    // on a besoin du nom pour ajouter : disponible après une recherche
+    if (!lastResultName) return;
     addFavorite(currentMode, tag, lastResultName);
   }
   updateFavBtnState(tag);
