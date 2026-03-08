@@ -411,7 +411,7 @@ code {
 }
 
 .chart-half canvas { width: 100% !important; }
-#chart-clan-pie { height: 300px !important; }
+.chart-half:has(#chart-clan-pie) canvas { height: 300px !important; }
 
 /* ── Recent badges ──────────────────────────────────────────── */
 .recent-badges {
