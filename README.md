@@ -12,7 +12,7 @@ A full-stack web tool that helps clan leaders evaluate whether a player is likel
 | **Clan analysis** | Member table with sorting & filtering, score distribution chart, reliable-vs-risky pie chart |
 | **Response cache** | In-memory cache (15 min TTL) to avoid hammering the Clash Royale API |
 | **Responsive UI** | Clash Royale-inspired dark theme, works on mobile |
-| **Favourites** | Save player or clan tags (with names) locally and recall them with one click |
+| **Favorites** | Save player or clan tags (with names) locally and recall them with one click |
 
 ---
 

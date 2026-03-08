@@ -136,7 +136,7 @@ code {
   border-color: var(--border-light);
 }
 
-/* favourite button shown near search bar */
+/* favorite button shown near search bar */
 .fav-btn {
   background: transparent;
   border: none;
@@ -151,9 +151,11 @@ code {
   color: var(--purple);
 }
 
-/* favourites list under search panel */
+/* favorites list under search panel */
 .favorites-container {
   margin-top: 12px;
+  display: grid;
+  gap: 1rem 2rem;
 }
 .favorites-container h3 {
   margin: 0 0 4px;
@@ -179,6 +181,13 @@ code {
 }
 .fav-item:hover {
   text-decoration: underline;
+}
+
+/* two-column layout on larger screens */
+@media (min-width: 600px) {
+  .favorites-container {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .mode-selector {

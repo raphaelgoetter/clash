@@ -23,7 +23,7 @@ const playerResults   = document.getElementById('player-results');
 const clanResults     = document.getElementById('clan-results');
 const modeBtns        = document.querySelectorAll('.mode-btn');
 
-// favourites UI elements
+// favorites UI elements
 const favBtn           = document.getElementById('fav-btn');
 const favoritesContainer = document.getElementById('favorites-container');
 
@@ -45,7 +45,7 @@ let allMembers  = [];          // cache for table filtering / sorting
 let sortState   = { col: 'activityScore', dir: 'asc' };
 let isWarActive = false;       // true jeu–dim : colonne "This War" visible dans le tableau clan
 
-// Name of the last-result returned by API (used when saving favourite)
+// Name of the last-result returned by API (used when saving favorite)
 let lastResultName = null;
 
 // Default tags per mode
@@ -81,7 +81,7 @@ function applyUrlState(mode, tag) {
       ? "Tags must start with #. You can omit it and we'll add it automatically."
       : "Clan tags must start with #. You can omit it and we'll add it automatically.";
   searchInput.value = tag;
-  // hide favourite button until we have a real result
+  // hide favorite button until we have a real result
   favBtn.classList.add('hidden');
   lastResultName = null;
   // refresh list (mode switch may emphasise a different section)
@@ -130,7 +130,7 @@ modeBtns.forEach((btn) => {
   }
 }
 
-// populate favourites list immediately (may be empty)
+// populate favorites list immediately (may be empty)
 renderFavorites();
 
 // ── Search trigger ───────────────────────────────────────────
@@ -151,7 +151,7 @@ async function handleSearch() {
   try {
     if (currentMode === 'player') {
       const { data, fromCache } = await apiFetch(`/api/player/${encodeURIComponent(tag)}/analysis`);
-      // store name for favourites
+      // store name for favorites
       lastResultName = data.overview?.name || null;
       renderPlayerResults(data);
       updateFavBtnState(tag);
@@ -189,7 +189,7 @@ async function apiFetch(path) {
   return { data, fromCache };
 }
 
-// ── Favourites helpers ───────────────────────────────────────
+// ── Favorites helpers ───────────────────────────────────────
 const FAV_STORAGE_KEY = 'trustroyaleFavs';
 
 function getFavorites() {
@@ -242,7 +242,7 @@ function renderFavorites() {
     parts.push(`</ul>`);
   });
   if (parts.length === 0) {
-    favoritesContainer.innerHTML = '<p class="text-muted">No favourites yet.</p>';
+    favoritesContainer.innerHTML = '<p class="text-muted">No favorites yet.</p>';
   } else {
     favoritesContainer.innerHTML = parts.join('');
   }
@@ -252,11 +252,11 @@ function updateFavBtnState(tag) {
   if (isFavorite(currentMode, tag)) {
     favBtn.textContent = '★';
     favBtn.classList.add('faved');
-    favBtn.title = 'Remove from favourites';
+    favBtn.title = 'Remove from favorites';
   } else {
     favBtn.textContent = '☆';
     favBtn.classList.remove('faved');
-    favBtn.title = 'Add to favourites';
+    favBtn.title = 'Add to favorites';
   }
 }
 
@@ -274,7 +274,7 @@ function toggleFavorite() {
   renderFavorites();
 }
 
-// attach handlers for favourite UI
+// attach handlers for favorite UI
 favBtn.addEventListener('click', toggleFavorite);
 favoritesContainer.addEventListener('click', (e) => {
   if (!e.target.matches('.fav-item')) return;
