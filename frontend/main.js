@@ -593,7 +593,7 @@ function renderClanResults(data) {
 
   // Clan overview card
   clanOverviewGrid.innerHTML = overviewItems([
-    { label: 'Name',          value: clan.name, cls: 'gold' },
+    { label: 'Name',          value: clan.name },
     { label: 'Tag',           value: clan.tag,
       link: `https://royaleapi.com/clan/${clan.tag.replace('#', '')}/` },
     { label: 'Members',       value: `${clan.members} / 50`,

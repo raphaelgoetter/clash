@@ -344,7 +344,10 @@ code {
   word-break: break-word;
 }
 
-.oi-value.gold { color: var(--gold); }
+.oi-value.gold     { color: var(--gold); }
+.oi-value.c-yellow { color: var(--yellow); }
+.oi-value.c-orange { color: var(--orange); }
+.oi-value.c-red    { color: var(--red); }
 
 .oi-ext-link {
   color: inherit;
