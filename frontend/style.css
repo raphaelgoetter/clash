@@ -148,12 +148,14 @@ code {
   line-height: 1;
 }
 .fav-btn.faved {
-  color: var(--purple);
+  /* color: var(--purple); */
 }
 
 /* favorites list under search panel */
 .favorites-container {
   margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-light);
   display: grid;
   gap: 1rem 2rem;
 }
@@ -161,6 +163,12 @@ code {
   margin: 0 0 4px;
   font-size: .9rem;
   color: var(--text-secondary);
+}
+
+/* each column wrapper */
+.fav-column {
+  display: flex;
+  flex-direction: column;
 }
 .favorites-container ul {
   list-style: none;
@@ -187,6 +195,13 @@ code {
 @media (min-width: 600px) {
   .favorites-container {
     grid-template-columns: 1fr 1fr;
+  }
+  .fav-column:first-child {
+    /* ensure players on left */
+    order: 1;
+  }
+  .fav-column:last-child {
+    order: 2;
   }
 }
 

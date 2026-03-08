@@ -227,25 +227,34 @@ function isFavorite(mode, tag) {
 
 function renderFavorites() {
   const favs = getFavorites();
-  const parts = [];
-  ['player', 'clan'].forEach((m) => {
-    const keys = Object.keys(favs[m] || {});
-    if (keys.length === 0) return;
-    parts.push(`<h3>${m === 'player' ? 'Players' : 'Clans'}</h3><ul>`);
-    keys.forEach((tag) => {
-      const nm = favs[m][tag];
-      parts.push(
-        `<li><button class="fav-item" data-mode="${m}" data-tag="${tag}">` +
-        `${escHtml(nm)} (${tag})</button></li>`
-      );
-    });
-    parts.push(`</ul>`);
-  });
-  if (parts.length === 0) {
+  const playerKeys = Object.keys(favs.player || {});
+  const clanKeys   = Object.keys(favs.clan || {});
+  if (playerKeys.length === 0 && clanKeys.length === 0) {
     favoritesContainer.innerHTML = '<p class="text-muted">No favorites yet.</p>';
-  } else {
-    favoritesContainer.innerHTML = parts.join('');
+    return;
   }
+
+  // build two columns explicitly for players and clans
+  let html = '';
+  html += '<div class="fav-column" data-mode="player">';
+  html += '<h3>Players</h3><ul>';
+  playerKeys.forEach((tag) => {
+    const nm = favs.player[tag];
+    html += `<li><button class="fav-item" data-mode="player" data-tag="${tag}">` +
+            `${escHtml(nm)} (${tag})</button></li>`;
+  });
+  html += '</ul></div>';
+
+  html += '<div class="fav-column" data-mode="clan">';
+  html += '<h3>Clans</h3><ul>';
+  clanKeys.forEach((tag) => {
+    const nm = favs.clan[tag];
+    html += `<li><button class="fav-item" data-mode="clan" data-tag="${tag}">` +
+            `${escHtml(nm)} (${tag})</button></li>`;
+  });
+  html += '</ul></div>';
+
+  favoritesContainer.innerHTML = html;
 }
 
 function updateFavBtnState(tag) {
