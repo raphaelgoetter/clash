@@ -72,6 +72,24 @@ export default async function handler(req, res) {
     return res.status(200).json({ type: 1 });
   }
 
+  // Vérification de la liste blanche des serveurs autorisés.
+  // Effectuée en premier, avant tout traitement métier, pour minimiser le temps d'exécution.
+  const authorizedGuilds = (process.env.AUTHORIZED_GUILD_IDS || '')
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean);
+
+  if (authorizedGuilds.length > 0 && !authorizedGuilds.includes(body.guild_id)) {
+    return res.status(200).json({
+      type: 4,
+      data: {
+        content:
+          "🚫 Ce serveur n'est pas autorisé à utiliser l'instance officielle de TrustRoyale. Contactez l'administrateur pour enregistrer votre guilde.",
+        flags: 64,
+      },
+    });
+  }
+
   // Commande /trust
   if (body.type === 2 && body.data?.name === 'trust') {
     const tagOption = body.data.options?.find((o) => o.name === 'tag');

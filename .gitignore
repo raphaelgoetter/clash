@@ -12,7 +12,7 @@ dist
 dist-ssr
 *.local
 .env
-.env.example
+# .env.example est commité intentionnellement (template sans valeurs sensibles)
 
 # Editor directories and files
 .vscode/*
