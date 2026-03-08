@@ -193,6 +193,16 @@ DISCORD_APP_ID=       # Application ID du bot
 DISCORD_TOKEN=        # Token du bot (pour le script d'enregistrement)
 ```
 
+### Invitation du bot sur un serveur Discord
+
+1. Aller sur le [Discord Developer Portal](https://discord.com/developers/applications) → sélectionner l'application
+2. Onglet **OAuth2 → URL Generator**
+3. Cocher les scopes : `bot` + `applications.commands`
+4. Dans les permissions bot, cocher au minimum : `Send Messages`
+5. Copier l'URL générée et l'ouvrir dans un navigateur → choisir le serveur cible → Autoriser
+
+> Sans le scope `applications.commands`, la slash command `/trust` n'apparaîtra pas dans le serveur.
+
 ### Enregistrement de la commande
 
 ```bash
