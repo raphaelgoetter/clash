@@ -93,7 +93,7 @@ code {
   gap: 16px;
 }
 
-.header-logo { width: 3.4rem; height: 3.4rem; display: block; }
+.header-logo { width: 4.4rem; height: 4.4rem; display: block; }
 
 .header-title {
   font-size: clamp(1.2rem, 3vw, 1.85rem);
