@@ -272,7 +272,7 @@ function updateFavBtnState(tag) {
   favBtn.classList.remove('hidden');
 }
 
-function toggleFavorite() {
+async function toggleFavorite() {
   const raw = searchInput.value.trim();
   if (!raw) return;
   const tag = raw.startsWith('#') ? raw : `#${raw}`;
@@ -280,8 +280,9 @@ function toggleFavorite() {
     // toujours possible de retirer (le nom est déjà dans la liste)
     removeFavorite(currentMode, tag);
   } else {
-    // on a besoin du nom pour ajouter : disponible après une recherche
-    if (!lastResultName) return;
+    // si pas encore de résultat, lancer la recherche d'abord pour obtenir le nom
+    if (!lastResultName) await handleSearch();
+    if (!lastResultName) return; // recherche échouée
     addFavorite(currentMode, tag, lastResultName);
   }
   updateFavBtnState(tag);
