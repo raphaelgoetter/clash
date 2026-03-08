@@ -134,6 +134,14 @@ export default async function handler(req, res) {
         const { total, maxScore, pct, color, verdict } = score;
         const emoji      = EMOJI_MAP[color]  ?? '⚪';
         const embedColor = COLOR_MAP[color] ?? 0x808080;
+        // verdict en français
+        const FR_VERDICTS = {
+          'High reliability': 'Fiabilité élevée',
+          'Moderate risk': 'Risque modéré',
+          'High risk': 'Risque élevé',
+          'Extreme risk': 'Risque extrême',
+        };
+        const verdictFr = FR_VERDICTS[verdict] || verdict;
 
         // Grille 2 colonnes : 2 critères inline + 1 spacer invisible = 1 ligne
         const breakdown = score.breakdown ?? [];
@@ -146,11 +154,11 @@ export default async function handler(req, res) {
         }
 
         const embed = {
-          title: `${emoji} ${analysis.overview.name} ⤑ ${pct} % (${verdict})`,
+          title: `${emoji} ${analysis.overview.name} ⤑ ${pct} % (${verdictFr})`,
           url: `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(tag)}`,
           color: embedColor,
           fields: gridFields,
-          footer: { text: `Tag : ${tag}` },
+          footer: { text: `Tag : ${tag}` },
         };
 
         await fetch(webhookUrl, {
