@@ -161,14 +161,18 @@ export default async function handler(req, res) {
         // Grille 2 colonnes : 2 critères inline + 1 spacer invisible = 1 ligne
         const breakdown = score.breakdown ?? [];
 
-        // embed description formatted as a single column of lines; this
-        // renders much more cleanly on mobile clients (avoids huge fonts and
-        // extra spacing that appear when Discord stacks inline fields).
-        const description = breakdown.map((item) => {
+        // embed description formatted as a markdown table.  Using a table
+        // fixes alignment on both desktop and mobile: three cells per row
+        // (icon, label, score) and no unpredictable line breaks.
+        const descriptionLines = [];
+        descriptionLines.push('| | Critère | Note |');
+        descriptionLines.push('|:-:|:-|:-:|');
+        for (const item of breakdown) {
           const icon = criterionIcon(item.score, item.max);
           const label = LABEL_FR[item.label] || item.label;
-          return `${icon} ${label} ${item.score}/${item.max}`;
-        }).join('\n');
+          descriptionLines.push(`| ${icon} | ${label} | ${item.score}/${item.max} |`);
+        }
+        const description = descriptionLines.join('\n');
 
         const embed = {
           title: `${emoji} ${analysis.overview.name} ⤑ ${pct} % (${verdictFr})`,
