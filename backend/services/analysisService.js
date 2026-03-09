@@ -800,10 +800,6 @@ export async function getPlayerAnalysis(tag) {
       const gdcWins = rawWarLog.filter(isWarWin).length;
       const warWinRate = rawWarLog.length > 0 ? gdcWins / rawWarLog.length : null;
 
-      // Préférer le win rate historique (estimé depuis la fame du race log) quand disponible :
-      // plus cohérent avec la fame moyenne, car calculé sur la même fenêtre temporelle.
-      const effectiveWinRate = analysis.warHistory.historicalWinRate ?? warWinRate;
-
       // Build list of *prior* weeks (exclude live/current one) for history rules
       const prevWeeks = analysis.warHistory.weeks.filter((w) => !w.isCurrent);
 
@@ -834,8 +830,20 @@ export async function getPlayerAnalysis(tag) {
           analysis.warHistory.avgFame = kept.length ? Math.round(totalFame / kept.length) : 0;
           analysis.warHistory.maxFame = kept.reduce((m, w) => Math.max(m, w.fame || 0), 0);
           analysis.warHistory.completedParticipation = kept.filter((w) => !w.isCurrent).length;
+          // and recompute historical win rate from the same kept weeks
+          const MIN_PVP_DECKS = 5;
+          let totalPvpDecks = 0, totalEstimatedWins = 0;
+          for (const w of kept.filter((w) => !w.isCurrent)) {
+            const { wins: wWins, pvpDecks: wPvp } = estimateWinsFromFame(w.fame, w.decksUsed, w.boatAttacks);
+            totalPvpDecks      += wPvp;
+            totalEstimatedWins += wWins;
+          }
+          analysis.warHistory.historicalWinRate = totalPvpDecks >= MIN_PVP_DECKS ? totalEstimatedWins / totalPvpDecks : null;
         }
       }
+
+      // after any ignored-week adjustments the historical win rate may have changed
+      const effectiveWinRate = analysis.warHistory.historicalWinRate ?? warWinRate;
 
       if (hasEnoughHistory) {
         analysis.warScore = computeWarScore(player, analysis.warHistory, effectiveWinRate, lastSeen);
