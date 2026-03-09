@@ -161,18 +161,21 @@ export default async function handler(req, res) {
         // Grille 2 colonnes : 2 critères inline + 1 spacer invisible = 1 ligne
         const breakdown = score.breakdown ?? [];
 
-        // embed description formatted as a markdown table.  Using a table
-        // fixes alignment on both desktop and mobile: three cells per row
-        // (icon, label, score) and no unpredictable line breaks.
-        const descriptionLines = [];
-        descriptionLines.push('| | Critère | Note |');
-        descriptionLines.push('|:-:|:-|:-:|');
+        // Table markdown isn't rendered by Discord; instead build a
+        // monospaced code block with padded columns so values align nicely.
+        const rows = [];
+        let maxLabel = 0;
+        for (const item of breakdown) {
+          const label = LABEL_FR[item.label] || item.label;
+          if (label.length > maxLabel) maxLabel = label.length;
+        }
         for (const item of breakdown) {
           const icon = criterionIcon(item.score, item.max);
           const label = LABEL_FR[item.label] || item.label;
-          descriptionLines.push(`| ${icon} | ${label} | ${item.score}/${item.max} |`);
+          const scoreStr = `${item.score}/${item.max}`;
+          rows.push(`${icon} ${label.padEnd(maxLabel)} ${scoreStr}`);
         }
-        const description = descriptionLines.join('\n');
+        const description = '```\n' + rows.join('\n') + '\n```';
 
         const embed = {
           title: `${emoji} ${analysis.overview.name} ⤑ ${pct} % (${verdictFr})`,
