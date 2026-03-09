@@ -343,9 +343,15 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
   // nombre total de decks joués dans ces semaines
   const deckSum = completedInClan.reduce((s, w) => s + (w.decksUsed || 0), 0);
   const idealDecks = completedCount * 16;
-  const regularite = completedCount > 0
-    ? r(Math.min(12, (deckSum / (idealDecks || 1)) * 12))
-    : 0;
+  // count how many weeks didn't hit 16 decks
+  const incompleteWeeks = completedInClan.filter((w) => (w.decksUsed || 0) < 16).length;
+  // base ratio = total decks / ideal decks. then convert to 12-point scale.
+  // apply a penalty of 0.5 point per incomplete week to discourage partial
+  // weeks; this ensures a player who regularly quits early loses more than
+  // one who simply has uneven deck counts.
+  // the result is clamped between 0 and 12.
+  const baseScore = completedCount > 0 ? (deckSum / (idealDecks || 1)) * 12 : 0;
+  const regularite = r(Math.max(0, Math.min(12, baseScore - incompleteWeeks * 0.5)));
 
   // 2. Score moyen (0-10) — 3 000 fame = perfect
   const FAME_CAP       = 3000;
@@ -401,7 +407,11 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
         const suffix = weeksInClan < totalWeeks
           ? ` — member for ${weeksInClan} week${weeksInClan > 1 ? 's' : ''}`
           : '';
-        return `${deckSum}/${idealDecks} decks across ${completedCount} week${completedCount > 1 ? 's' : ''} (${pct}%)${suffix}`;
+        let txt = `${deckSum}/${idealDecks} decks across ${completedCount} week${completedCount > 1 ? 's' : ''} (${pct}%)`;
+        if (incompleteWeeks > 0) {
+          txt += ` — ${incompleteWeeks} incomplete week${incompleteWeeks > 1 ? 's' : ''} (-${(incompleteWeeks * 0.5).toFixed(1)} pts)`;
+        }
+        return txt + suffix;
       })(),
     },
     {

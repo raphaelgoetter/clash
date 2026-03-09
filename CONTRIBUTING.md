@@ -121,7 +121,7 @@ Seven weighted criteria:
 
 | # | Criterion | Max | Cap / rule |
 |---|---|---|---|
-| 1 | Regularity | 12 | decks used / (16 × completed weeks) |
+| 1 | Regularity | 12 | decks used / (16 × completed weeks); –0.5 pt per incomplete week |
 | 2 | Avg fame | 10 | 3,000 fame/week = full score |
 | 3 | CW2 battle wins | 8 | 250 total CW2 wins = full score |
 | 4 | Clan stability | 8 | 5+ consecutive weeks in clan = full score |
