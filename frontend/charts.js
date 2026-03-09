@@ -123,7 +123,15 @@ export function renderWarHistoryChart(weeks) {
   const ordered = [...weeks].reverse();
   const labels   = ordered.map((w) => {
     const deckInfo = typeof w.decksUsed === 'number' ? ` (${w.decksUsed}/16)` : '';
-    return `${w.label}${deckInfo}`;
+    // choose a badge emoji like a coloured pastille
+    let badge = '';
+    if (typeof w.decksUsed === 'number') {
+      badge = w.decksUsed >= 16 ? '✅'
+            : w.decksUsed >= 8  ? '⚠️'
+            : '❌';
+      badge += ' ';
+    }
+    return `${badge}${w.label}${deckInfo}`;
   });
   const fameData = ordered.map((w) => w.fame);
   const avg      = fameData.reduce((a, b) => a + b, 0) / (fameData.length || 1);
