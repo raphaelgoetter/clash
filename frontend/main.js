@@ -412,8 +412,13 @@ function renderPlayerResults(data) {
     if (warHistory.weeks.length > 0) {
       if (titleEl) titleEl.textContent = `📅 River Race History – ${warHistory.weeks.length} week${warHistory.weeks.length !== 1 ? 's' : ''}`;
       renderWarHistoryChart(warHistory.weeks);
-      if (noteEl) noteEl.textContent =
-        `ℹ️ Data from ${warHistory.weeks.length} completed river races. Indigo = above average, red = below average. Dashed line = average (${fmt(warHistory.avgFame)} fame).`;
+      if (noteEl) {
+        let note = `ℹ️ Data from ${warHistory.weeks.length} completed river races. Indigo = above average, red = below average. Dashed line = average (${fmt(warHistory.avgFame)} fame).`;
+        if (warHistory.weeks.some((w) => w.ignored)) {
+          note += ' Grey bar indicates a week ignored for scoring (likely joined mid‑race).';
+        }
+        noteEl.textContent = note;
+      }
     } else {
       const bd = activityIndicators.battleLogBreakdown ?? {};
       const parts = [

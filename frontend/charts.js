@@ -125,7 +125,9 @@ export function renderWarHistoryChart(weeks) {
     const deckInfo = typeof w.decksUsed === 'number' ? ` (${w.decksUsed}/16)` : '';
     // choose a badge emoji like a coloured pastille
     let badge = '';
-    if (typeof w.decksUsed === 'number') {
+    if (w.ignored) {
+      badge = '⚪ '; // ignored weeks get a neutral white circle
+    } else if (typeof w.decksUsed === 'number') {
       badge = w.decksUsed >= 16 ? '✅'
             : w.decksUsed >= 8  ? '⚠️'
             : '❌';
@@ -145,7 +147,9 @@ export function renderWarHistoryChart(weeks) {
           label: 'Fame',
           data: fameData,
           backgroundColor: fameData.map((f) =>
-            f >= avg ? 'rgba(99,102,241,0.85)' : 'rgba(239,68,68,0.65)'
+            // grey out ignored weeks
+          ordered[idx].ignored ? 'rgba(128,128,128,0.5)'
+            : f >= avg ? 'rgba(99,102,241,0.85)' : 'rgba(239,68,68,0.65)'
           ),
           borderRadius: 6,
           order: 2,
@@ -173,7 +177,8 @@ export function renderWarHistoryChart(weeks) {
             label: (ctx) => {
               const row = ordered[ctx.dataIndex];
               const deckInfo = row && row.decksUsed != null ? ` — ${row.decksUsed}/16 decks` : '';
-              return ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}${deckInfo}`;
+              const ignoreNote = row && row.ignored ? ' (ignored)' : '';
+              return ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}${deckInfo}${ignoreNote}`;
             },
           },
         },

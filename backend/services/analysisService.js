@@ -325,6 +325,10 @@ export function buildDailyActivity(battleLog, days = 30) {
 export function computeWarScore(player, warHistory, warWinRate = null, lastSeen = null) {
   const r = (v) => Math.round(v * 10) / 10; // round to 1 decimal
 
+  // filter out weeks that were explicitly ignored by earlier rules; keeping the
+  // flag lets the UI still display them greyed-out
+  const weeks = warHistory.weeks.filter((w) => !w.ignored);
+
   // 1. Régularité (0-10) — proportionnelle à la fame, semaines TERMINÉES uniquement
   // On exclut la semaine en cours (isCurrent) car elle n'est pas encore complète.
   // Cible de participation pleine : 1 600 fame (4 jours × 4 combats × 100 fame min).
@@ -332,7 +336,7 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
   const totalWeeks     = warHistory.totalWeeks || 1;
   const weeksInClan    = Math.max(1, warHistory.streakInCurrentClan);
   // Semaines terminées dans le streak clan actuel (les N premières du tableau)
-  const completedInClan = warHistory.weeks
+  const completedInClan = weeks
     .slice(0, weeksInClan)
     .filter((w) => !w.isCurrent);
   const completedCount = completedInClan.length;
@@ -800,15 +804,38 @@ export async function getPlayerAnalysis(tag) {
       // plus cohérent avec la fame moyenne, car calculé sur la même fenêtre temporelle.
       const effectiveWinRate = analysis.warHistory.historicalWinRate ?? warWinRate;
 
-      // Determine if any week contains a full set of 16 decks; if so we consider
-      // the war history sufficient regardless of tenure.
-      const hasFullWeek = analysis.warHistory.weeks.some((w) => (w.decksUsed ?? 0) >= 16);
+      // Build list of *prior* weeks (exclude live/current one) for history rules
+      const prevWeeks = analysis.warHistory.weeks.filter((w) => !w.isCurrent);
 
-      // Ancienne règle : au moins deux semaines dans le clan et deux semaines achevées
+      // if any previous week shows 16 or more decks, history is reliable
+      const hasFullWeek = prevWeeks.some((w) => (w.decksUsed ?? 0) >= 16);
+
+      // old rule remains as fallback: at least two completed weeks in clan
       const oldRule = analysis.warHistory.streakInCurrentClan >= 2
         && analysis.warHistory.completedParticipation >= 2;
 
-      const hasEnoughHistory = hasFullWeek || oldRule;
+      let hasEnoughHistory = hasFullWeek || oldRule;
+
+      // additional handling: when player has ≥2 prior weeks and the *oldest*
+      // one is incomplete (<16), treat it as a mid‑race arrival and **ignore it**
+      // in all score computations. We keep the week in the history array so the
+      // UI can render it greyed out, but mark it with an `ignored` flag and
+      // recalc summary stats accordingly.
+      if (prevWeeks.length >= 2) {
+        const oldest = prevWeeks[prevWeeks.length - 1];
+        if ((oldest.decksUsed ?? 0) < 16) {
+          oldest.ignored = true;
+
+          // recompute summary metrics excluding the ignored week
+          const kept = analysis.warHistory.weeks.filter((w) => !w.ignored && (w.decksUsed ?? 0) > 0);
+          const totalFame = kept.reduce((s, w) => s + (w.fame || 0), 0);
+          analysis.warHistory.totalFame = totalFame;
+          analysis.warHistory.participation = kept.length;
+          analysis.warHistory.avgFame = kept.length ? Math.round(totalFame / kept.length) : 0;
+          analysis.warHistory.maxFame = kept.reduce((m, w) => Math.max(m, w.fame || 0), 0);
+          analysis.warHistory.completedParticipation = kept.filter((w) => !w.isCurrent).length;
+        }
+      }
 
       if (hasEnoughHistory) {
         analysis.warScore = computeWarScore(player, analysis.warHistory, effectiveWinRate, lastSeen);

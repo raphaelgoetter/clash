@@ -110,6 +110,15 @@ Tags should include the `#` prefix (URL‑encoded as `%23`).
 
 Used when the war race log is available. Seven weighted criteria:
 
+> **Note on history sanitisation.** When a player has at least two prior weeks
+> in the clan and the **oldest** of those weeks shows fewer than 16 decks, that
+> week is treated as a potential mid‑race arrival and **ignored** for scoring
+> purposes. It remains in the returned history (a grey bar in the chart) but
+> does not count toward fame averages or participation. This prevents a recent
+> recruit’s first partial week from artificially dragging down their score.
+
+Seven weighted criteria:
+
 | # | Criterion | Max | Cap / rule |
 |---|---|---|---|
 | 1 | Regularity | 10 | avg fame/wk vs 1,600 target over completed weeks |
