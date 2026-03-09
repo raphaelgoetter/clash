@@ -39,7 +39,7 @@ function criterionIcon(score, max) {
 // et effectue la traduction française des libellés.
 const LABEL_FR = {
   'War Activity': 'Activité de guerre',
-  'Win Rate (War)': 'Taux de victoire (guerre)',
+  'Win Rate (War)': 'Winrate (guerre)',
   'CW2 Battle Wins': 'Victoires CW2',
   'Last Seen': 'Dernière connexion',
   'General Activity': 'Activité générale',
