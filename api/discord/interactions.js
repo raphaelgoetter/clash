@@ -160,19 +160,21 @@ export default async function handler(req, res) {
 
         // Grille 2 colonnes : 2 critères inline + 1 spacer invisible = 1 ligne
         const breakdown = score.breakdown ?? [];
-        const gridFields = [];
-        for (let i = 0; i < breakdown.length; i += 2) {
-          gridFields.push(breakdownField(breakdown[i]));
-          if (breakdown[i + 1]) gridFields.push(breakdownField(breakdown[i + 1]));
-          // spacer Discord pour forcer un saut de ligne après 2 colonnes
-          gridFields.push({ name: '\u200b', value: '\u200b', inline: true });
-        }
+
+        // embed description formatted as a single column of lines; this
+        // renders much more cleanly on mobile clients (avoids huge fonts and
+        // extra spacing that appear when Discord stacks inline fields).
+        const description = breakdown.map((item) => {
+          const icon = criterionIcon(item.score, item.max);
+          const label = LABEL_FR[item.label] || item.label;
+          return `${icon} ${label} ${item.score}/${item.max}`;
+        }).join('\n');
 
         const embed = {
           title: `${emoji} ${analysis.overview.name} ⤑ ${pct} % (${verdictFr})`,
           url: `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(tag)}`,
           color: embedColor,
-          fields: gridFields,
+          description,
           footer: { text: `Tag : ${tag}` },
         };
 
