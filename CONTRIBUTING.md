@@ -138,7 +138,7 @@ Used when no race log history is available (battle log only):
 
 | # | Criterion | Max | Cap / rule |
 |---|---|---|---|
-| 1 | War activity | 10 | Decks/day over sliding window; bonus +0.2 pt per 4‑deck day, penalty ‑0.1 pt per short day |
+| 1 | War activity | 12 | Decks/day over sliding window; bonus +0.2 pt per 4‑deck day, penalty ‑0.1 pt per short day |
 | 2 | Win rate (war) | 8 | From battle log war battles |
 | 3 | CW2 battle wins | 8 | 250 total CW2 wins = full score |
 | 4 | Last seen | +5 | same as above but only awarded after ≥16 war decks in log |
