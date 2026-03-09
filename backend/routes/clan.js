@@ -121,8 +121,20 @@ async function buildClanAnalysis(clanTag) {
           }
         }
 
-        // Nécessite streak >= 2 et au moins 2 semaines terminées jouées.
-        const hasEnoughHistory = wh.streakInCurrentClan >= 2 && wh.completedParticipation >= 2;
+        // Determine whether warHistory alone is sufficient. We want to
+        // grant full scores when the player has either a full 16-deck week
+        // in the past or the old rule of ≥2 completed weeks in the clan.
+        const prevWeeks = wh.weeks.filter((w) => !w.isCurrent);
+        const hasFullWeek = prevWeeks.some((w) => (w.decksUsed ?? 0) >= 16);
+        const oldRule = wh.streakInCurrentClan >= 2 && wh.completedParticipation >= 2;
+        let hasEnoughHistory = hasFullWeek || oldRule;
+
+        // same mid‑race arrival handling as player view (ignore oldest incomplete)
+        if (!hasFullWeek && prevWeeks.length >= 2 && (prevWeeks[0].decksUsed ?? 0) < 16) {
+          wh.weeks = wh.weeks.slice(1);
+          hasEnoughHistory = true;
+        }
+
         if (hasEnoughHistory) {
           // Historical data — computeWarScore + win rate historique (race log) en priorité
           const effectiveWinRate = wh.historicalWinRate ?? warWinRate;
