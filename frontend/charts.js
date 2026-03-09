@@ -276,19 +276,26 @@ export function renderClanBarChart(members) {
   destroyIfExists('chart-clan-bar');
   const ctx = document.getElementById('chart-clan-bar').getContext('2d');
 
-  // Build score buckets (0-9, 10-19, … 90-100)
+  // Build score buckets (0-9, 10-19, … 90-100) and determine worst colour
   const buckets = Array(10).fill(0);
+  const bucketWorst = Array(10).fill(null); // will store 'green'|'yellow'|'orange'|'red'
+  function worsen(current, incoming) {
+    const order = ['green','yellow','orange','red'];
+    if (!current) return incoming;
+    return order.indexOf(incoming) > order.indexOf(current) ? incoming : current;
+  }
   members.forEach((m) => {
     const i = Math.min(9, Math.floor(m.activityScore / 10));
     buckets[i]++;
+    bucketWorst[i] = worsen(bucketWorst[i], m.color);
   });
   const labels = ['0–9','10–19','20–29','30–39','40–49','50–59','60–69','70–79','80–89','90–100'];
 
-  const colors = labels.map((_, i) => {
-    if (i >= 8) return 'rgba(34, 197, 94, 0.7)';    // 80–100 → High reliability
-    if (i >= 6) return 'rgba(234, 179, 8, 0.7)';    // 60–79  → Moderate risk
-    if (i >= 3) return 'rgba(249, 115, 22, 0.7)';   // 30–59  → High risk
-    return 'rgba(239, 68, 68, 0.7)';                 // 0–29   → Extreme risk
+  const colors = bucketWorst.map((c, i) => {
+    if (c === 'red') return 'rgba(239, 68, 68, 0.7)';       // any extreme risk in bucket
+    if (c === 'orange') return 'rgba(249, 115, 22, 0.7)';    // else high risk
+    if (c === 'yellow') return 'rgba(234, 179, 8, 0.7)';     // else moderate
+    return 'rgba(34, 197, 94, 0.7)';                        // all green or empty
   });
 
   new Chart(ctx, {
