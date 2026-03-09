@@ -639,14 +639,15 @@ function renderMembersTable(members) {
         // Indicateur de dernière connexion dans sa propre cellule
         let lastSeenCell = '<td class="last-seen-col">—</td>';
         if (m.lastSeen) {
-          const days = (Date.now() - new Date(m.lastSeen.replace(
+          const daysFrac = (Date.now() - new Date(m.lastSeen.replace(
             /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})\.(\d{3})Z$/,
             '$1-$2-$3T$4:$5:$6.$7Z'
           )).getTime()) / (1000 * 60 * 60 * 24);
-          const cls  = days <= 1 ? 'c-green' : days <= 3 ? 'c-yellow' : days <= 7 ? '' : 'c-red';
-          const label = days < 1 ? 'Today'
+          const days = Math.round(daysFrac);
+          const cls  = days <= 1 ? 'c-green' : days <= 3 ? 'c-yellow' : days <= 7 ? 'c-red' : 'c-red';
+          const label = daysFrac < 1 ? 'Today'
                       : days < 2 ? '1d ago'
-                      : `${Math.round(days)}d ago`;
+                      : `${days}d ago`;
           lastSeenCell = `<td class="last-seen-col"><span class="last-seen-badge ${cls}">${label}</span></td>`;
         }
         return `
