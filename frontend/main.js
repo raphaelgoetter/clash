@@ -648,8 +648,9 @@ function renderMembersTable(members) {
       (m) => {
         // Indicateur de dernière connexion dans sa propre cellule
         let lastSeenCell = '<td class="last-seen-col">—</td>';
+        let daysFrac = Infinity;
         if (m.lastSeen) {
-          const daysFrac = (Date.now() - new Date(m.lastSeen.replace(
+          daysFrac = (Date.now() - new Date(m.lastSeen.replace(
             /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})\.(\d{3})Z$/,
             '$1-$2-$3T$4:$5:$6.$7Z'
           )).getTime()) / (1000 * 60 * 60 * 24);
@@ -660,11 +661,12 @@ function renderMembersTable(members) {
                       : `${days}d ago`;
           lastSeenCell = `<td class="last-seen-col"><span class="last-seen-badge ${cls}">${label}</span></td>`;
         }
+        const displayNew = m.isNew && daysFrac <= 7;
         return `
       <tr>
         <td>
           <a class="member-link" href="?${new URLSearchParams({ mode: 'player', tag: m.tag })}" title="Analyze ${escHtml(m.name)}">
-            <div style="font-weight:600">${escHtml(m.name)}${m.isNew ? ' <span class="new-badge">new</span>' : ''}</div>
+            <div style="font-weight:600">${escHtml(m.name)}${displayNew ? ' <span class="new-badge">new</span>' : ''}</div>
             <div style="font-size:.75rem;color:var(--text-muted)">${escHtml(m.tag)}</div>
           </a>
         </td>

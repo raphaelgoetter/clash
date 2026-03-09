@@ -53,6 +53,10 @@ quelques secondes plus tard.
   partagés entre appareils.
 - Le lien de partage de l'analyse (`https://trustroyale.vercel.app/?mode=...`) peut
   être copié et envoyé à d'autres membres du clan.
+- Sur la vue clan, le badge **new** indique seulement que l'analyse n'a pas
+  pu s'appuyer sur un historique de guerre complet. Il n'apparait plus si le
+  membre n'a pas été vu dans le jeu depuis plus d'une semaine (pour éviter de
+  considérer comme « nouveau » un ancien membre rentré sans jouer).
 - Pour analyser rapidement un tag sans recharger, collez-le dans l'URL.
 
 ---

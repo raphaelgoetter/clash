@@ -153,6 +153,22 @@ async function buildClanAnalysis(clanTag) {
           activityScore = pct; verdict = 'Extreme risk'; color = 'red';
           isNew = true;
         }
+
+        // Ensure we don't flag long‑inactive members as "new" just because
+        // they lack sufficient war history. 117d‑ago Mat proved that the
+        // badge was misleading: require a recent login (≤7 days) before
+        // showing the label. This threshold is intentionally simple – the
+        // front‑end only renders the field supplied by the API.
+        if (isNew && m.lastSeen) {
+          const lastSeenDate = new Date(m.lastSeen.replace(
+            /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})\.(\d{3})Z$/,
+            '$1-$2-$3T$4:$5:$6.$7Z'
+          ));
+          const lastSeenDays = (Date.now() - lastSeenDate.getTime()) / (1000 * 60 * 60 * 24);
+          if (lastSeenDays > 7) {
+            isNew = false;
+          }
+        }
       } else {
         // No race log at all — legacy trophies-based estimate
         const donPart = Math.min(40, ((m.donations ?? 0) / 300) * 40);
