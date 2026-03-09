@@ -146,10 +146,10 @@ export function renderWarHistoryChart(weeks) {
         {
           label: 'Fame',
           data: fameData,
-          backgroundColor: fameData.map((f) =>
+          backgroundColor: fameData.map((f, idx) =>
             // grey out ignored weeks
-          ordered[idx].ignored ? 'rgba(128,128,128,0.5)'
-            : f >= avg ? 'rgba(99,102,241,0.85)' : 'rgba(239,68,68,0.65)'
+            ordered[idx].ignored ? 'rgba(128,128,128,0.5)'
+              : f >= avg ? 'rgba(99,102,241,0.85)' : 'rgba(239,68,68,0.65)'
           ),
           borderRadius: 6,
           order: 2,
