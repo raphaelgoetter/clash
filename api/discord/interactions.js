@@ -45,6 +45,9 @@ const LABEL_FR = {
   'General Activity': 'Activité générale',
   'Experience': 'Expérience',
   'Donations': 'Dons',
+  'Regularity': 'Régularité',
+  'Avg Score': 'Score moyen',
+  'Stability': 'Stabilité',
   // fallback: other labels can be added if needed
 };
 function breakdownField(item) {
