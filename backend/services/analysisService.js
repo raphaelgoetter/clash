@@ -472,14 +472,17 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
 
 /**
  * Fallback reliability from battle log only (used when no race log history available).
- * Applies the same /30-pt scale as computeWarScore for consistency.
+ * Applies the same /38‑pt scale as computeWarScore for consistency.
  *
- * Criteria (total /30):
- *  1. Activité GDC    /10 — nb combats GDC dans les 30 entrées du log (cap 10)
- *  2. Win Rate GDC    /10 — % victoires sur combats GDC (0 if no GDC battles)
- *  3. Activité générale /5 — combats compétitifs dans le log (cap 20)
- *  4. Expérience       /3 — bestTrophies (cap 12 000) — même critère que warScore
- *  5. Dons             /2 — donations (cap 500)         — même critère que warScore
+ * Criteria (total /38):
+ *  1. Activité GDC    /12 — decks/day (bonuses for 4‑deck days, penalties for <4)
+ *  2. Activité générale /8 — combats compétitifs dans le log (cap 20)
+ *  3. CW2 Wins        /8 — badge progress (cap 250)
+ *  4. Win Rate GDC    /5 — % victoires sur combats GDC (0 if no GDC battles)
+ *  5. Expérience      /3 — bestTrophies (cap 12 000)
+ *  6. Dons            /2 — donations (cap 500)
+ *
+ * (+5 bonus pts possible for Last Seen when ≥16 war decks observed)
  *
  * @param {object}   player
  * @param {object[]} warLog       - Filtered war battles (expanded duels)
@@ -496,15 +499,24 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
   const gdcWinRate = gdcCount > 0 ? gdcWins / gdcCount : 0;
   const competitive = gdcCount + bd.ladder + bd.challenge;
 
-  // 1. War Activity (0-10) — daily-based: rewards doing all 4 battles/day
+  // 1. War Activity (0-10) — based on decks/day, with bonuses/penalties
+  // We still use dailyWarActivityScore to compute a baseline, but then
+  // apply an extra boost for full 4‑deck days and a small penalty for each
+  // day with <4 decks.  This rewards players who prioritise GDC battles.
   const activityResult = dailyWarActivityScore(warLog);
-  const activiteGDC    = r(Math.min(10, activityResult.score));
+  // count perfect and short days within window used by score
+  const perfectDays = Object.values(activityResult.byDay).filter((d) => d >= 4).length;
+  const shortDays   = Object.values(activityResult.byDay).filter((d) => d > 0 && d < 4).length;
+  let activiteGDC = activityResult.score;
+  activiteGDC += perfectDays * 0.2;    // +0.2 point per perfect day
+  activiteGDC -= shortDays * 0.1;      // -0.1 point per short day
+  activiteGDC = r(Math.min(12, Math.max(0, activiteGDC)));
 
-  // 2. Win Rate GDC (0-8)
-  const winRateGDC = gdcCount > 0 ? r(gdcWinRate * 8) : 0;
+  // 2. Win Rate GDC (0-5)
+  const winRateGDC = gdcCount > 0 ? r(gdcWinRate * 5) : 0;
 
-  // 3. Activité générale (0-5)
-  const activiteGen = r(Math.min(5, (competitive / 20) * 5));
+  // 3. Activité générale (0-8)
+  const activiteGen = r(Math.min(8, (competitive / 20) * 8));
 
   // 4. Expérience (0-3) — bestTrophies cap 12 000
   const TROPHY_CAP = 12000;
@@ -519,16 +531,18 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
   const cw2Wins  = player.badges?.find((b) => b.name === 'ClanWarWins')?.progress ?? 0;
   const cw2Score = r(Math.min(8, (cw2Wins / CW2_CAP) * 8));
 
-  // 7. Last seen (0-3) — uniquement en contexte clan (lastSeen fourni depuis /members)
+  // 7. Last seen (0-3) — only meaningful if we've seen several war days.
   let lastSeenScore = null;
   let lastSeenDays  = null;
-  if (lastSeen) {
+  if (lastSeen && warLog.length >= 16) {
+    // require about two weeks worth of war decks before counting this
     lastSeenDays  = (Date.now() - parseClashDate(lastSeen).getTime()) / MS_PER_DAY;
     lastSeenScore = lastSeenDays <= 1 ? 5 : lastSeenDays <= 3 ? 3 : lastSeenDays <= 7 ? 1 : 0;
   }
 
-  const total    = r(activiteGDC + winRateGDC + activiteGen + experience + dons + cw2Score + (lastSeenScore ?? 0));
-  const maxScore = 36 + (lastSeenScore !== null ? 5 : 0);
+  const total    = r(activiteGDC + activiteGen + cw2Score + winRateGDC + experience + dons + (lastSeenScore ?? 0));
+  // base max: 12 + 8 + 8 + 5 + 3 + 2 = 38
+  const maxScore = 38 + (lastSeenScore !== null ? 5 : 0);
   const pct      = Math.round((total / maxScore) * 100);
 
   let verdict, color;
@@ -544,22 +558,33 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
       {
         label:  'War Activity',
         score:  activiteGDC,
-        max:    10,
-        detail: activityResult.detail,
+        max:    12,
+        detail: (() => {
+          const parts = Object.entries(activityResult.byDay)
+            .sort((a, b) => b[0].localeCompare(a[0]))
+            .map(([k, n]) => `${n}× ${k}`);
+          return parts.join(' · ');
+        })(),
       },
       {
-        label:  'Win Rate (War)',
-        score:  winRateGDC,
+        label:  'General Activity',
+        score:  activiteGen,
         max:    8,
-        detail: gdcCount > 0
-          ? `${Math.round(gdcWinRate * 100)}% wins (${gdcWins}W / ${gdcCount - gdcWins}L)`
-          : 'No data — no war battles found',
+        detail: `${competitive} competitive battles (${gdcCount} War + ${bd.ladder} Ladder + ${bd.challenge} Challenges)`,
       },
       {
         label:  'CW2 Battle Wins',
         score:  cw2Score,
         max:    8,
         detail: `${cw2Wins.toLocaleString('en-US')} total CW2 wins (cap 250)`,
+      },
+      {
+        label:  'Win Rate (War)',
+        score:  winRateGDC,
+        max:    5,
+        detail: gdcCount > 0
+          ? `${Math.round(gdcWinRate * 100)}% wins (${gdcWins}W / ${gdcCount - gdcWins}L)`
+          : 'No data — no war battles found',
       },
       ...(lastSeenScore !== null ? [{
         label:  'Last Seen',
@@ -570,12 +595,6 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
               : lastSeenDays < 7 ? `Active ${Math.round(lastSeenDays)} days ago`
               : `Last seen ${Math.round(lastSeenDays)} days ago ⚠️`,
       }] : []),
-      {
-        label:  'General Activity',
-        score:  activiteGen,
-        max:    5,
-        detail: `${competitive} competitive battles (${gdcCount} War + ${bd.ladder} Ladder + ${bd.challenge} Challenges)`,
-      },
       {
         label:  'Experience',
         score:  experience,
