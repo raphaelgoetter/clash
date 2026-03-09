@@ -307,10 +307,10 @@ export function buildDailyActivity(battleLog, days = 30) {
 
 /**
  * Compute the War Reliability Score from 5 weighted criteria.
- * Total max = 30 pts  (10 + 10 + 5 + 3 + 2)
+ * Total max = 32 pts  (12 + 10 + 5 + 3 + 2)
  *
  * Criteria:
- *  1. Régularité  /10 — participation rate (no 0-deck weeks)
+ *  1. Régularité  /12 — decks used relative to ideal 16/week
  *  2. Score moyen /10 — average fame per played week (cap 3 000)
  *  3. Stabilité   / 5 — consecutive weeks in current clan (cap = totalWeeks)
  *  4. Expérience  / 3 — best-trophy road score (≥ 12 000 = 3/3)
@@ -329,10 +329,10 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
   // flag lets the UI still display them greyed-out
   const weeks = warHistory.weeks.filter((w) => !w.ignored);
 
-  // 1. Régularité (0-10) — proportionnelle à la fame, semaines TERMINÉES uniquement
-  // On exclut la semaine en cours (isCurrent) car elle n'est pas encore complète.
-  // Cible de participation pleine : 1 600 fame (4 jours × 4 combats × 100 fame min).
-  const REGULARITY_FAME_TARGET = 1600;
+  // 1. Régularité (0-12) — proportionnelle au nombre de decks joués
+  // pendant les semaines terminées. On exclut la semaine en cours (isCurrent)
+  // car elle n'est pas forcément complète. Une semaine parfaite vaut 16 decks.
+  // le score est normalisé sur 12 points (équivalent à 100 % de decks complets).
   const totalWeeks     = warHistory.totalWeeks || 1;
   const weeksInClan    = Math.max(1, warHistory.streakInCurrentClan);
   // Semaines terminées dans le streak clan actuel (les N premières du tableau)
@@ -340,11 +340,11 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
     .slice(0, weeksInClan)
     .filter((w) => !w.isCurrent);
   const completedCount = completedInClan.length;
-  const participationSum = completedInClan.reduce(
-    (s, w) => s + Math.min(1, w.fame / REGULARITY_FAME_TARGET), 0
-  );
+  // nombre total de decks joués dans ces semaines
+  const deckSum = completedInClan.reduce((s, w) => s + (w.decksUsed || 0), 0);
+  const idealDecks = completedCount * 16;
   const regularite = completedCount > 0
-    ? r(Math.min(10, (participationSum / completedCount) * 10))
+    ? r(Math.min(12, (deckSum / (idealDecks || 1)) * 12))
     : 0;
 
   // 2. Score moyen (0-10) — 3 000 fame = perfect
@@ -380,7 +380,8 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
   }
 
   const total    = r(regularite + scoreMoyen + stabilite + experience + dons + (winRateGDC ?? 0) + cw2Score + (lastSeenScore ?? 0));
-  const maxScore = (winRateGDC !== null ? 44 : 41) + (lastSeenScore !== null ? 5 : 0);
+  // Regularity now max 12 → base totals bump by +2
+  const maxScore = (winRateGDC !== null ? 46 : 43) + (lastSeenScore !== null ? 5 : 0);
   const pct      = Math.round((total / maxScore) * 100);
 
   let verdict, color;
@@ -393,14 +394,14 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
     {
       label:  'Regularity',
       score:  regularite,
-      max:    10,
+      max:    12,
       detail: (() => {
         if (completedCount === 0) return 'No completed week in this clan yet';
-        const avgPct = Math.round((participationSum / completedCount) * 100);
+        const pct = Math.round((deckSum / (idealDecks || 1)) * 100);
         const suffix = weeksInClan < totalWeeks
           ? ` — member for ${weeksInClan} week${weeksInClan > 1 ? 's' : ''}`
           : '';
-        return `avg ${avgPct}% participation over ${completedCount} completed week${completedCount > 1 ? 's' : ''} (target: 1,600 fame/wk)${suffix}`;
+        return `${deckSum}/${idealDecks} decks across ${completedCount} week${completedCount > 1 ? 's' : ''} (${pct}%)${suffix}`;
       })(),
     },
     {

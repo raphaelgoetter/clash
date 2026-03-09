@@ -106,9 +106,9 @@ Tags should include the `#` prefix (URL‑encoded as `%23`).
 
 ## 🧮 Score formulas
 
-### War reliability score — full mode (0–44 pts)
+### War reliability score — full mode (0–46 pts)
 
-Used when the war race log is available. Seven weighted criteria:
+Used when the war race log is available. Eight weighted criteria:
 
 > **Note on history sanitisation.** When a player has at least two prior weeks
 > in the clan and the **oldest** of those weeks shows fewer than 16 decks, that
@@ -121,7 +121,7 @@ Seven weighted criteria:
 
 | # | Criterion | Max | Cap / rule |
 |---|---|---|---|
-| 1 | Regularity | 10 | avg fame/wk vs 1,600 target over completed weeks |
+| 1 | Regularity | 12 | decks used / (16 × completed weeks) |
 | 2 | Avg fame | 10 | 3,000 fame/week = full score |
 | 3 | CW2 battle wins | 8 | 250 total CW2 wins = full score |
 | 4 | Clan stability | 8 | 5+ consecutive weeks in clan = full score |
@@ -130,7 +130,7 @@ Seven weighted criteria:
 | 7 | Experience (best trophies) | 3 | 12,000 trophies = full score |
 | 8 | Donations | 2 | 500 cards donated = full score |
 
-Without battle log (criterion 6 absent): max = **46 pts**. With last seen and win rate: **49 pts** maximum.
+Without battle log (criterion 6 absent): max = **43 pts**. With last seen and win rate: **51 pts** maximum.
 
 ### War reliability score — fallback mode (0–36 pts)
 
