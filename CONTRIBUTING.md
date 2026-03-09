@@ -116,6 +116,10 @@ Used when the war race log is available. Eight weighted criteria:
 > purposes. It remains in the returned history (a grey bar in the chart) but
 > does not count toward fame averages or participation. This prevents a recent
 > recruit’s first partial week from artificially dragging down their score.
+> 
+> These same rules are applied across both the player and clan analysis
+> endpoints, ensuring the percentages shown in the clan member list match the
+> individual player view.
 
 Seven weighted criteria:
 
