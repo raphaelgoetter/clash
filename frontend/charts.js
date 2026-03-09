@@ -121,7 +121,10 @@ export function renderWarHistoryChart(weeks) {
 
   // Display oldest → newest (left → right)
   const ordered = [...weeks].reverse();
-  const labels   = ordered.map((w) => w.label);
+  const labels   = ordered.map((w) => {
+    const deckInfo = typeof w.decksUsed === 'number' ? ` (${w.decksUsed}/16)` : '';
+    return `${w.label}${deckInfo}`;
+  });
   const fameData = ordered.map((w) => w.fame);
   const avg      = fameData.reduce((a, b) => a + b, 0) / (fameData.length || 1);
 
@@ -159,7 +162,11 @@ export function renderWarHistoryChart(weeks) {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}`,
+            label: (ctx) => {
+              const row = ordered[ctx.dataIndex];
+              const deckInfo = row && row.decksUsed != null ? ` — ${row.decksUsed}/16 decks` : '';
+              return ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}${deckInfo}`;
+            },
           },
         },
       },
