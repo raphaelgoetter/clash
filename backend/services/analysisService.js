@@ -800,11 +800,16 @@ export async function getPlayerAnalysis(tag) {
       // plus cohérent avec la fame moyenne, car calculé sur la même fenêtre temporelle.
       const effectiveWinRate = analysis.warHistory.historicalWinRate ?? warWinRate;
 
-      // Nécessite au moins 2 semaines dans le clan (race courante comprise) pour un score fiable,
-      // dont au minimum 2 semaines terminées avec des decks joués.
-      // En dessous de ce seuil → fallback battle log (membre considéré comme "new").
-      const hasEnoughHistory = analysis.warHistory.streakInCurrentClan >= 2
+      // Determine if any week contains a full set of 16 decks; if so we consider
+      // the war history sufficient regardless of tenure.
+      const hasFullWeek = analysis.warHistory.weeks.some((w) => (w.decksUsed ?? 0) >= 16);
+
+      // Ancienne règle : au moins deux semaines dans le clan et deux semaines achevées
+      const oldRule = analysis.warHistory.streakInCurrentClan >= 2
         && analysis.warHistory.completedParticipation >= 2;
+
+      const hasEnoughHistory = hasFullWeek || oldRule;
+
       if (hasEnoughHistory) {
         analysis.warScore = computeWarScore(player, analysis.warHistory, effectiveWinRate, lastSeen);
       } else {
