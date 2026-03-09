@@ -356,13 +356,18 @@ function renderPlayerResults(data) {
 
   // 1. Overview (Clan & Role removed)
   const cw2 = overview.clanWarWins ?? 0;
+  // build clan link if available (internal navigation to clan view)
+  const clanTag = overview.clan?.tag ?? null;
+  const clanLink = clanTag ? `?mode=clan&tag=${encodeURIComponent(clanTag)}` : null;
+  const clanValue = clanTag ? clanTag : 'No clan';
   overviewGrid.innerHTML = overviewItems([
     { label: 'Name',          value: overview.name, cls: 'gold', badge: ws.isFallback ? 'new' : null },
     { label: 'Tag',           value: overview.tag,
       link: `https://royaleapi.com/player/${overview.tag.replace('#', '')}` },
+    { label: 'Clan',          value: clanValue,
+      link: clanLink },
     { label: 'Trophies',      value: `🏆 ${fmt(overview.trophies)}`,
       risk: overview.trophies < 3000 ? 'bad' : overview.trophies < 5000 ? 'warn' : null },
-    { label: 'Best Trophies', value: `🏆 ${fmt(overview.bestTrophies)}` },
     { label: 'CW2 Wins',      value: `⚔️ ${fmt(cw2)}`,
       risk: cw2 < 50 ? 'bad' : cw2 < 150 ? 'warn' : null },
   ]);
