@@ -138,10 +138,10 @@ Used when no race log history is available (battle log only):
 
 | # | Criterion | Max | Cap / rule |
 |---|---|---|---|
-| 1 | War activity | 10 | Avg battles/day over 14-day window (4/day = full) |
+| 1 | War activity | 10 | Decks/day over sliding window; bonus +0.2 pt per 4‑deck day, penalty ‑0.1 pt per short day |
 | 2 | Win rate (war) | 8 | From battle log war battles |
 | 3 | CW2 battle wins | 8 | 250 total CW2 wins = full score |
-| 4 | Last seen | +5 | active within 24 h = +5; ≤3 d = +3; ≤7 d = +1 |
+| 4 | Last seen | +5 | same as above but only awarded after ≥16 war decks in log |
 | 5 | General activity | 5 | 20 competitive battles = full score |
 | 6 | Experience | 3 | 12,000 best trophies = full score |
 | 7 | Donations | 2 | 500 cards donated = full score |
