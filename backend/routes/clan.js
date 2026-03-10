@@ -354,15 +354,7 @@ export async function buildClanAnalysis(clanTag) {
     const { hasSnapshotForToday, getLastSnapshotDate } = await import('../services/snapshot.js');
     const snapshotToday = await hasSnapshotForToday(clanTag);
     const snapshotDate  = await getLastSnapshotDate(clanTag);
-    // debug output: list snapshot directory and date
-    try {
-      const { SNAP_DIR_PATH } = await import('../services/snapshot.js');
-      const files = await fs.readdir(SNAP_DIR_PATH);
-      console.log(`snapshot files for route: ${files.join(', ')}`);
-    } catch (e) {
-      console.log('snapshot dir read error', e.message);
-    }
-    console.log('snapshotDate computed =', snapshotDate);
+
 
     return {
       clan: {
