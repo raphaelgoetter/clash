@@ -20,7 +20,13 @@ import { filterWarBattles, expandDuelRounds, warDayKey } from './analysisService
  * @returns {Promise<{ players: {name:string,tag:string,role:string,decks:number,inClan:boolean,daily?:object}[] }>} 
  */
 export async function computeUncomplete(clanTag, members, battleLogsByTag = {}) {
-  const races = await fetchRaceLog(clanTag);
+  let races;
+  try {
+    races = await fetchRaceLog(clanTag);
+  } catch (err) {
+    console.warn(`uncomplete: failed to fetch race log for ${clanTag}:`, err.message);
+    return { players: [] };
+  }
   if (!Array.isArray(races) || races.length === 0) {
     return { players: [] };
   }

@@ -31,7 +31,13 @@ import { fetchRaceLog } from './clashApi.js';
  */
 export async function computeTopPlayers(clanTag, members, quotas = [2400, 2600, 2800]) {
   // normalise tag for API
-  const races = await fetchRaceLog(clanTag);
+  let races;
+  try {
+    races = await fetchRaceLog(clanTag);
+  } catch (err) {
+    console.warn(`topPlayers: failed to fetch race log for ${clanTag}:`, err.message);
+    return { quotas, playersByQuota: {} };
+  }
   if (!Array.isArray(races) || races.length === 0) {
     return { quotas, playersByQuota: {} };
   }
