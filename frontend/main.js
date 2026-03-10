@@ -416,7 +416,12 @@ document.addEventListener('click', (e) => {
     link.style.pointerEvents = 'none';
     setLoading(true);
     fetch('/api/cache/refresh', { method: 'POST' })
-      .then((r) => r.json())
+      .then((r) => r.json().then((body) => {
+        if (!r.ok) {
+          throw new Error(body.error || `status ${r.status}`);
+        }
+        return body;
+      }))
       .then(() => {
         link.textContent = 'refresh cache (done ✅)';
         setTimeout(() => {
@@ -425,6 +430,7 @@ document.addEventListener('click', (e) => {
         }, 3000);
       })
       .catch((err) => {
+        console.error('cache refresh failed', err);
         link.textContent = 'refresh cache (failed ❌)';
         setTimeout(() => {
           link.textContent = 'refresh cache';
