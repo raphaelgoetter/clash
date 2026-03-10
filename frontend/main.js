@@ -638,6 +638,32 @@ function renderTopPlayersCard(topPlayers) {
   card.classList.remove('hidden');
 }
 
+// ── Uncomplete decks card renderer ───────────────────────────
+
+function renderUncompleteCard(uncomplete) {
+  const card = document.getElementById('card-uncomplete');
+  const listEl = document.getElementById('uncomplete-list');
+  if (!uncomplete || !Array.isArray(uncomplete.players)) {
+    card.classList.add('hidden');
+    return;
+  }
+  const players = uncomplete.players.slice().sort((a,b)=> b.decks - a.decks);
+  if (players.length === 0) {
+    listEl.innerHTML = '<li class="text-muted">Everyone completed 16 decks 👍</li>';
+  } else {
+    listEl.innerHTML = players
+      .map(p =>
+        `<li><span class="tp-name">${escHtml(p.name)}</span>` +
+        `<span class="tp-meta">` +
+          `<span class="role-badge ${p.role}">${capitalize(p.role)}</span>` +
+          `<span class="tp-fame">${fmt(p.decks)} decks</span>` +
+        `</span></li>`
+      )
+      .join('');
+  }
+  card.classList.remove('hidden');
+}
+
 // ── Clan rendering ──────────────────────────────────────────
 
 function renderClanResults(data) {
@@ -647,6 +673,8 @@ function renderClanResults(data) {
   isWarActive = !!data.isWarPeriod;
   // render top players card if data provided
   renderTopPlayersCard(data.topPlayers);
+  // render uncomplete deck card
+  renderUncompleteCard(data.uncomplete);
   document.getElementById('th-this-war').classList.toggle('hidden', !isWarActive);
 
   // Clan overview card

@@ -10,6 +10,7 @@ import {
   filterWarBattles, expandDuelRounds, isWarWin, buildCurrentWarDays,
 } from '../services/analysisService.js';
 import { computeTopPlayers } from '../services/topplayers.js';
+import { computeUncomplete } from '../services/uncomplete.js';
 import { getOrSet } from '../services/cache.js';
 
 const CLAN_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
@@ -92,6 +93,8 @@ export async function buildClanAnalysis(clanTag) {
     // can render the "Last War Best Players" card without additional
     // network requests. the helper gracefully handles missing logs.
     const topPlayers = await computeTopPlayers(clanTag, members);
+    // compute list of players who didn't do the full 16 decks last week
+    const uncomplete = await computeUncomplete(clanTag, members);
 
     // Fetch full player profiles + battle logs for ALL members with capped concurrency
     // (avoids RoyaleAPI rate-limiting that caused non-deterministic scores on reload)
@@ -262,6 +265,7 @@ export async function buildClanAnalysis(clanTag) {
       summary: { green, yellow, orange, red, avgScore, total: analyzedMembers.length },
       isWarPeriod: analyzedMembers.some((m) => m.warDays !== null),
       topPlayers,                    // added by computeTopPlayers
+      uncomplete,                    // new list of incomplete deck players
     };
 }
 

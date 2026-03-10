@@ -188,21 +188,35 @@ summary .card-title {
 }
 
 /* collapsible card styles */
-#card-top-players details {
+#card-top-players details,
+#card-uncomplete details {
   cursor: pointer;
 }
-#card-top-players summary {
+#card-top-players summary,
+#card-uncomplete summary {
   display: flex;
   align-items: center;
   font-weight: 700;
+  position: relative;
 }
-#card-top-players summary::-webkit-details-marker {
-  display: none;
+/* custom arrow marker using ::before */
+#card-top-players summary::before,
+#card-uncomplete summary::before {
+  content: '►';
+  margin-right: 8px;
+  font-size: 0.9em;
+  transition: transform 0.2s;
 }
-#card-top-players details[open] .card-desc {
+#card-top-players details[open] summary::before,
+#card-uncomplete details[open] summary::before {
+  content: '▼';
+}
+#card-top-players details[open] .card-desc,
+#card-uncomplete details[open] .card-desc {
   display: block;
 }
-#card-top-players details:not([open]) .card-desc {
+#card-top-players details:not([open]) .card-desc,
+#card-uncomplete details:not([open]) .card-desc {
   display: none;
 }
 
