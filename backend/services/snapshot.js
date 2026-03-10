@@ -6,7 +6,9 @@
 import fs from 'fs/promises';
 import path from 'path';
 
-const SNAP_DIR = path.resolve(new URL('../../data/snapshots', import.meta.url));
+import { fileURLToPath } from 'url';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const SNAP_DIR = path.resolve(__dirname, '..', '..', 'data', 'snapshots');
 const RETENTION_DAYS = 60;
 
 async function ensureDirectory() {
@@ -44,7 +46,7 @@ async function saveSnapshots(clanTag, arr) {
  * @param {{tag:string,decksUsed:number}[]} participantData
  *        array of objects (e.g. from raceLog.standings[0].clan.participants)
  */
-export async function recordSnapshot(clanTag, participantData) {
+export async function recordSnapshot(clanTag, participantData, week = null) {
   if (!participantData || participantData.length === 0) return;
   const today = new Date().toISOString().slice(0, 10);
   const map = {};
@@ -56,8 +58,11 @@ export async function recordSnapshot(clanTag, participantData) {
   // if last entry has same date, replace it
   if (history.length && history[history.length - 1].date === today) {
     history[history.length - 1].decks = map;
+    if (week) history[history.length - 1].week = week;
   } else {
-    history.push({ date: today, decks: map });
+    const entry = { date: today, decks: map };
+    if (week) entry.week = week;
+    history.push(entry);
   }
 
   // purge old (>RETENTION_DAYS)
@@ -67,9 +72,32 @@ export async function recordSnapshot(clanTag, participantData) {
 }
 
 /**
+ * Return snapshot entries matching a particular week identifier (or all if
+ * week is null). Returned array is sorted ascending by date.
+ */
+export async function getSnapshotsForWeek(clanTag, week = null) {
+  const history = await loadSnapshots(clanTag);
+  if (week == null) return history;
+  return history.filter((h) => h.week === week);
+}
+
+/**
  * Return saved snapshot history for a clan, oldest first.
  */
 export async function getSnapshots(clanTag) {
   const history = await loadSnapshots(clanTag);
   return history;
 }
+
+/**
+ * Return true if we already recorded a snapshot for today (UTC).
+ */
+export async function hasSnapshotForToday(clanTag) {
+  const history = await loadSnapshots(clanTag);
+  if (!history.length) return false;
+  const today = new Date().toISOString().slice(0, 10);
+  return history[history.length - 1].date === today;
+}
+
+// expose the directory path so callers can inspect or do manual operations
+export const SNAP_DIR_PATH = SNAP_DIR; // absolute path used internally

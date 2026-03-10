@@ -13,9 +13,10 @@ dotenv.config({ path: resolve(__dirname, '../.env') });
 import express from 'express';
 import cors from 'cors';
 import playerRoutes from './routes/player.js';
-import clanRoutes from './routes/clan.js';
+import clanRoutes, { ALLOWED_CLANS } from './routes/clan.js';
 import discordRoutes from './routes/discord.js';
 import { clearAll } from './services/cache.js';
+import { fetchRaceLog } from './services/clashApi.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -32,6 +33,40 @@ app.use((req, res, next) => {
 // ── Request logger (development) ──────────────────────────────
 app.use((req, _res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
+
+// ── Snapshot middleware ───────────────────────────────────────
+// Trigger a decksUsed snapshot for each allowed clan on *any* page
+// visit, but only once per UTC day per clan.  Uses fire‑and‑forget calls
+// so it doesn't delay the response.  The cache is in‑memory and reset on
+// server restart, which is fine for low‑traffic use; a more persistent
+// store could be added later if needed.
+const lastSnapshotDate = {}; // tag (upper, no #) -> 'YYYY-MM-DD'
+app.use((req, res, next) => {
+  const today = new Date().toISOString().slice(0, 10);
+  if (req.path.startsWith('/api/discord')) return next();
+
+  ALLOWED_CLANS.forEach((clanTag) => {
+    if (lastSnapshotDate[clanTag] === today) return;
+    lastSnapshotDate[clanTag] = today;
+
+    fetchRaceLog(clanTag)
+      .then((log) => {
+        if (Array.isArray(log) && log.length) {
+          const standing = log[0].standings.find(
+            (s) => s.clan?.tag?.toUpperCase() === `#${clanTag}`
+          );
+          const participants = standing?.clan?.participants || [];
+          const weekId = `S${log[0].seasonId}W${log[0].sectionIndex}`;
+          import('./services/snapshot.js').then(({ recordSnapshot }) => {
+            recordSnapshot(clanTag, participants, weekId).catch(() => {});
+          });
+        }
+      })
+      .catch(() => {}); // ignore API failure, will retry next request
+  });
+
   next();
 });
 

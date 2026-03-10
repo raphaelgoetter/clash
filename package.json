@@ -6,6 +6,7 @@
   "scripts": {
     "predev": "lsof -ti:3000 | xargs kill -9 2>/dev/null; true",
     "dev": "concurrently --names \"backend,frontend\" --prefix-colors \"cyan,magenta\" \"cd backend && npx nodemon server.js\" \"cd frontend && npx vite\"",
+    "snapshot": "node scripts/collectSnapshots.js",
     "build": "cd frontend && npm run build && cd .. && vercel --prod"
   },
   "dependencies": {

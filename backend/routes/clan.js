@@ -58,10 +58,15 @@ router.get('/:tag', async (req, res) => {
  */
 router.get('/:tag/analysis', async (req, res) => {
   try {
-    const clanTag = req.params.tag;
-    if (!ALLOWED_CLANS.includes(clanTag.toUpperCase())) {
+    // normalize: strip leading # and uppercase so it matches ALLOWED_CLANS
+    let clanTag = req.params.tag;
+    if (clanTag.startsWith('#')) clanTag = clanTag.slice(1);
+    clanTag = clanTag.toUpperCase();
+
+    if (!ALLOWED_CLANS.includes(clanTag)) {
       return res.status(400).json({ error: 'Clan not in allowed list' });
     }
+
     const { value: payload, fromCache } = await getOrSet(
       `clan:analysis:${clanTag}`,
       () => buildClanAnalysis(clanTag),
@@ -75,15 +80,21 @@ router.get('/:tag/analysis', async (req, res) => {
   }
 });
 
-// list of clans the UI is allowed to query (uppercase normalized)
+// list of clans the UI is allowed to query (uppercase normalized, without '#')
+// Removing the leading hash simplifies comparisons both in the router
+// and when callers invoke `buildClanAnalysis` programmatically.
 export const ALLOWED_CLANS = [
-  '#Y8JUPC9C', // La Resistance
-  '#LRQP20V9', // Les Resistants
-  '#QU9UQJRL', // Les Revoltes
+  'Y8JUPC9C', // La Resistance
+  'LRQP20V9', // Les Resistants
+  'QU9UQJRL', // Les Revoltes
 ];
 
 export async function buildClanAnalysis(clanTag) {
-    if (!ALLOWED_CLANS.includes(clanTag.toUpperCase())) {
+    // sanitiZe input exactly as the route does
+    if (clanTag.startsWith('#')) clanTag = clanTag.slice(1);
+    clanTag = clanTag.toUpperCase();
+
+    if (!ALLOWED_CLANS.includes(clanTag)) {
       throw new Error('Clan not allowed');
     }
     const [clan, members] = await Promise.all([
@@ -114,8 +125,9 @@ export async function buildClanAnalysis(clanTag) {
       const normalized = clanTag.startsWith('#') ? clanTag : `#${clanTag}`;
       const standing = raceLog[0].standings.find((s) => s.clan?.tag === normalized);
       const participants = standing?.clan?.participants || [];
+      const weekId = `S${raceLog[0].seasonId}W${raceLog[0].sectionIndex}`;
       import('../services/snapshot.js').then(({ recordSnapshot }) => {
-        recordSnapshot(clanTag, participants).catch(()=>{/* silent */});
+        recordSnapshot(clanTag, participants, weekId).catch(()=>{/* silent */});
       });
     }
 
@@ -139,7 +151,29 @@ export async function buildClanAnalysis(clanTag) {
     }
 
     // compute list of players who didn't do the full 16 decks last week (with breakdown)
-    const uncomplete = await computeUncomplete(clanTag, members, battleLogsByTag);
+    let uncomplete = await computeUncomplete(clanTag, members, battleLogsByTag);
+
+    // override/update daily breakdown using snapshots if available and race log exists
+    if (raceLog && raceLog.length > 0) {
+      const weekId = `S${raceLog[0].seasonId}W${raceLog[0].sectionIndex}`;
+      const { getSnapshotsForWeek } = await import('../services/snapshot.js');
+      const snaps = await getSnapshotsForWeek(clanTag, weekId);
+      if (snaps.length > 1 && uncomplete && Array.isArray(uncomplete.players)) {
+        uncomplete.players = uncomplete.players.map((p) => {
+          const arr = [];
+          for (let i = 1; i < snaps.length; i++) {
+            const prev = snaps[i-1].decks[p.tag] || 0;
+            const curr = snaps[i].decks[p.tag] || 0;
+            arr.push(curr - prev);
+          }
+          const sliced = arr.slice(-4); // keep last up to 4
+          p.daily = sliced;
+          p.dailySource = 'snapshot';
+          p.dailySnapshotComplete = sliced.length >= 4;
+          return p;
+        });
+      }
+    }
 
 
     // First pass: compute war scores for all members
@@ -287,6 +321,11 @@ export async function buildClanAnalysis(clanTag) {
           )
         : 0;
 
+    // determine whether a snapshot already exists for today; this lets the
+    // frontend display an informative note beside "Live data"
+    const { hasSnapshotForToday } = await import('../services/snapshot.js');
+    const snapshotToday = raceLog ? await hasSnapshotForToday(clanTag) : false;
+
     return {
       clan: {
         name: clan.name,
@@ -304,6 +343,7 @@ export async function buildClanAnalysis(clanTag) {
       isWarPeriod: analyzedMembers.some((m) => m.warDays !== null),
       topPlayers,                    // added by computeTopPlayers
       uncomplete,                    // new list of incomplete deck players
+      snapshotToday,                 // added for UI indicator
     };
 }
 

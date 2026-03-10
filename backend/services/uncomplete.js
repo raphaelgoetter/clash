@@ -48,23 +48,12 @@ export async function computeUncomplete(clanTag, members, battleLogsByTag = {}) 
         role: member ? member.role || 'member' : 'member',
         inClan: !!member,
       };
-      // compute per-day counts if battle log available
-      const log = battleLogsByTag[p.tag];
-      if (log && Array.isArray(log)) {
-        const warLog = expandDuelRounds(filterWarBattles(log));
-        const counts = {};
-        for (const b of warLog) {
-          const key = warDayKey(b.battleTime);
-          counts[key] = (counts[key] || 0) + 1;
-        }
-        // keep only 4 most recent war days and cap at 4 decks per day
-        const keys = Object.keys(counts).sort((a,b)=> b.localeCompare(a));
-        const kept = {};
-        keys.slice(0,4).forEach((k) => {
-          kept[k] = Math.min(counts[k], 4);
-        });
-        base.daily = kept;
-      }
+      // NOTE: daily breakdown is now provided exclusively by snapshots.
+      // we intentionally ignore any battle log data to avoid misleading
+      // figures. the snapshot override step in routes/clan.js will later
+      // fill in `daily` when records are available (and mark
+      // `dailySource` accordingly).
+      // (battleLog argument is kept for compatibility but not used.)
       return base;
     });
 

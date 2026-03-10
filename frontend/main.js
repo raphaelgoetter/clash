@@ -131,6 +131,14 @@ modeBtns.forEach((btn) => {
     hideError();
   });
 });
+// populate clan select options
+function initClanSelect() {
+  if (!searchSelect) return;
+  searchSelect.innerHTML = CLAN_OPTIONS
+    .map(o => `<option value="${o.tag}">${escHtml(o.name)} (${o.tag})</option>`)
+    .join('');
+}
+initClanSelect();
 
 // ── Init from URL ─────────────────────────────────────────────
 {
@@ -149,15 +157,6 @@ modeBtns.forEach((btn) => {
     applyUrlState('player', DEFAULT_TAGS.player);
   }
 }
-
-// populate clan select options
-function initClanSelect() {
-  if (!searchSelect) return;
-  searchSelect.innerHTML = CLAN_OPTIONS
-    .map(o => `<option value="${o.tag}">${escHtml(o.name)} (${o.tag})</option>`)
-    .join('');
-}
-initClanSelect();
 
 // populate favorites list immediately (may be empty)
 renderFavorites();
@@ -179,13 +178,13 @@ async function handleSearch() {
       lastResultName = data.overview?.name || null;
       renderPlayerResults(data);
       updateFavBtnState(tag);
-      showCacheNote(fromCache);
+      showCacheNote(fromCache, data?.snapshotToday);
     } else {
       const { data, fromCache } = await apiFetch(`/api/clan/${encodeURIComponent(tag)}/analysis`);
       lastResultName = data.clan?.name || null;
       renderClanResults(data);
       updateFavBtnState(tag);
-      showCacheNote(fromCache);
+      showCacheNote(fromCache, data.snapshotToday);
     }
     syncUrlState(currentMode, tag);
     // make star available
@@ -375,11 +374,15 @@ function hideResults() {
   cardCurrentWar.classList.add('hidden');
 }
 
-function showCacheNote(fromCache) {
+function showCacheNote(fromCache, snapshotDone = false) {
   cacheNote.classList.remove('hidden');
-  cacheNote.textContent = fromCache
-    ? '🔃 Cached result — refreshes every 15 min'
-    : '✅ Live data';
+  if (fromCache) {
+    cacheNote.textContent =
+      '🔃 Cached result — refreshes every 15 min' +
+      (snapshotDone ? ' (snapshot done)' : '');
+  } else {
+    cacheNote.textContent = '✅ Live data' + (snapshotDone ? ' (snapshot done)' : '');
+  }
 }
 
 // ── Player rendering ──────────────────────────────────────────
@@ -683,13 +686,44 @@ function renderUncompleteCard(uncomplete) {
   }
   const players = uncomplete.players.slice().sort((a,b)=> b.decks - a.decks);
 
+  // show a global warning if any player is still using warlog data (not snapshot),
+  // or if a snapshot exists but is incomplete (<4 days)
+  const needWarning = players.some(p => p.dailySource !== 'snapshot' || (p.dailySource === 'snapshot' && !p.dailySnapshotComplete));
+  const existing = card.querySelector('.uncomplete-warning');
+  if (needWarning) {
+    if (!existing) {
+      const desc = card.querySelector('.card-desc');
+      const html = '<div class="uncomplete-warning">⚠ Some GDC data has not yet been collected</div>';
+      if (desc) {
+        desc.insertAdjacentHTML('afterend', html);
+      } else {
+        card.insertAdjacentHTML('afterbegin', html);
+      }
+    }
+  } else if (existing) {
+    existing.remove();
+  }
+
   function formatDaily(counts) {
     if (!counts) return '';
+    if (Array.isArray(counts)) {
+      // filter out zeros to avoid misleading "0× sun" etc.
+      const filtered = counts.map((n,i)=>({n,i})).filter(item=>item.n>0);
+      if (filtered.length === 0) return '';
+      const labels = ['thu','fri','sat','sun'].slice(-filtered.length);
+      return filtered.map((item,j)=>{
+        const num = item.n;
+        const cls = num>=4 ? 'daily-green' : num>=3 ? 'daily-orange' : 'daily-red';
+        return `<span class="${cls}">${num}× ${labels[j]}</span>`;
+      }).join(' - ');
+    }
     const keys = Object.keys(counts).sort();
-    const n = keys.length;
+    const entries = keys.map(k=>({k,num:counts[k]})).filter(e=>e.num>0);
+    if (entries.length === 0) return '';
+    const n = entries.length;
     const labels = ['Thu','Fri','Sat','Sun'].slice(-n);
-    return keys.map((k,i) => {
-      const num = counts[k];
+    return entries.map((e,i) => {
+      const num = e.num;
       const cls = num>=4 ? 'daily-green' : num>=3 ? 'daily-orange' : 'daily-red';
       return `<span class="${cls}">${num}× ${labels[i].toLowerCase()}</span>`;
     }).join(' - ');
@@ -701,10 +735,16 @@ function renderUncompleteCard(uncomplete) {
     listEl.innerHTML = players
       .map(p => {
         const dailyStr = formatDaily(p.daily);
+        let warnAfter = '';
+        if (p.dailySource !== 'snapshot') {
+          warnAfter = ' ⚠';
+        } else if (p.dailySource === 'snapshot' && !p.dailySnapshotComplete) {
+          warnAfter = ' ⚠';
+        }
         return `<li class="${p.inClan ? '' : 'absent'}"><span class="tp-name">${escHtml(p.name)}</span>` +
           `<span class="tp-meta">` +
             `<span class="role-badge ${p.role}">${capitalize(p.role)}</span>` +
-            `<span class="tp-fame">${fmt(p.decks)} decks${dailyStr ? ' - ' + dailyStr : ''}</span>` +
+            `<span class="tp-fame">${fmt(p.decks)} decks${dailyStr ? ' - ' + dailyStr : ''}${warnAfter}</span>` +
           `</span></li>`;
       })
       .join('');

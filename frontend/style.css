@@ -197,6 +197,22 @@ summary .card-title {
 .daily-orange { color: var(--orange); }
 .daily-red { color: var(--red); }
 
+/* warning message displayed at top of uncomplete card */
+.uncomplete-warning {
+  background: var(--orange-bg);
+  color: var(--orange);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+}
+
+/* per‑player warning marker */
+.tp-fame .warning {
+  margin-left: 4px;
+  color: var(--orange);
+}
+
 /* collapsible card styles */
 #card-top-players summary,
 #card-uncomplete summary {
