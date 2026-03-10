@@ -9,6 +9,7 @@ import {
   computeWarReliabilityFallback, categorizeBattleLog,
   filterWarBattles, expandDuelRounds, isWarWin, buildCurrentWarDays,
 } from '../services/analysisService.js';
+import { computeTopPlayers } from '../services/topplayers.js';
 import { getOrSet } from '../services/cache.js';
 
 const CLAN_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
@@ -70,7 +71,7 @@ router.get('/:tag/analysis', async (req, res) => {
   }
 });
 
-async function buildClanAnalysis(clanTag) {
+export async function buildClanAnalysis(clanTag) {
     const [clan, members] = await Promise.all([
       fetchClan(clanTag),
       fetchClanMembers(clanTag),
@@ -86,6 +87,11 @@ async function buildClanAnalysis(clanTag) {
         fetchCurrentRace(clanTag).catch(() => null),
       ]);
     } catch (_) { /* silent */ }
+
+    // compute top players for a few predefined fame quotas so the frontend
+    // can render the "Last War Best Players" card without additional
+    // network requests. the helper gracefully handles missing logs.
+    const topPlayers = await computeTopPlayers(clanTag, members);
 
     // Fetch full player profiles + battle logs for ALL members with capped concurrency
     // (avoids RoyaleAPI rate-limiting that caused non-deterministic scores on reload)
@@ -255,7 +261,8 @@ async function buildClanAnalysis(clanTag) {
       members: analyzedMembers,
       summary: { green, yellow, orange, red, avgScore, total: analyzedMembers.length },
       isWarPeriod: analyzedMembers.some((m) => m.warDays !== null),
+      topPlayers,                    // added by computeTopPlayers
     };
 }
 
-export default router;
+export { router as default };

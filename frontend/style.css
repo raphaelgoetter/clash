@@ -130,6 +130,82 @@ code {
   letter-spacing: .06em;
 }
 
+summary .card-title {
+  margin-bottom: 0;
+}
+
+/* description text shown under some card titles */
+.card-desc {
+  margin-bottom: 12px;
+  color: var(--text-secondary);
+  font-size: .9rem;
+}
+
+/* quotas radio / select row in top players card */
+.quota-selector {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.quota-selector label {
+  cursor: pointer;
+  font-size: .9rem;
+}
+
+.top-players-list {
+  counter-reset: tp-counter;
+  padding-left: 0;
+  margin: 0;
+}
+.top-players-list li {
+  counter-increment: tp-counter;
+  position: relative;
+  margin-bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0 6px 2.5rem; /* space for number */
+  border-bottom: 1px solid var(--border);
+}
+.top-players-list li:last-child { border-bottom: none; }
+.top-players-list li::before {
+  content: counter(tp-counter) ".";
+  position: absolute;
+  left: 0;
+  width: 2rem;
+  text-align: right;
+  color: var(--text-secondary);
+}
+.top-players-list .role-badge {
+  margin-left: 8px;
+  font-size: .85rem;
+}
+.top-players-list .tp-fame {
+  margin-left: 12px;
+  color: var(--text-muted);
+  font-size: .9rem;
+}
+
+/* collapsible card styles */
+#card-top-players details {
+  cursor: pointer;
+}
+#card-top-players summary {
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+}
+#card-top-players summary::-webkit-details-marker {
+  display: none;
+}
+#card-top-players details[open] .card-desc {
+  display: block;
+}
+#card-top-players details:not([open]) .card-desc {
+  display: none;
+}
+
 /* ── Search panel ───────────────────────────────────────────── */
 .search-panel {
   background: var(--bg-card);

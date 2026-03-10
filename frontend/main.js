@@ -592,6 +592,52 @@ function warMiniBarHtml(warData) {
     `<span class="war-mini-text ${cls}">${totalDecksUsed}/${maxDecksElapsed}</span>` +
   `</div>`;
 }
+// ── Top players card renderer ─────────────────────────────────
+
+function renderTopPlayersCard(topPlayers) {
+  const card = document.getElementById('card-top-players');
+  const listEl = document.getElementById('top-players-list');
+  if (!topPlayers || !topPlayers.quotas) {
+    card.classList.add('hidden');
+    return;
+  }
+
+  // ensure quotas match the radio buttons; if dynamic, we'd rebuild them
+  // but here we assume the static 2400/2600/2800 set.
+  const quotas = topPlayers.quotas.map(String);
+
+  function updateList(quota) {
+    let players = topPlayers.playersByQuota[quota] || [];
+    // sort by fame descending
+    players = players.slice().sort((a, b) => b.fame - a.fame);
+    if (players.length === 0) {
+      listEl.innerHTML = '<li class="text-muted">No players reached this quota.</li>';
+    } else {
+      listEl.innerHTML = players
+        .map((p) =>
+          `<li>` +
+            `<span class="tp-name">${escHtml(p.name)}</span>` +
+            `<span class="tp-meta">` +
+              `<span class="role-badge ${p.role}">${capitalize(p.role)}</span>` +
+              `<span class="tp-fame">${fmt(p.fame)} fame</span>` +
+            `</span>` +
+          `</li>`
+        )
+        .join('');
+    }
+  }
+
+  const radios = card.querySelectorAll('input[name="quota"]');
+  radios.forEach((r) => {
+    r.addEventListener('change', () => updateList(r.value));
+  });
+  // initialize list with default checked radio
+  const checked = card.querySelector('input[name="quota"]:checked');
+  updateList(checked ? checked.value : quotas[0]);
+
+  card.classList.remove('hidden');
+}
+
 // ── Clan rendering ──────────────────────────────────────────
 
 function renderClanResults(data) {
@@ -599,6 +645,8 @@ function renderClanResults(data) {
 
   // Colonne "This War" visible uniquement en période de guerre (jeu–dim)
   isWarActive = !!data.isWarPeriod;
+  // render top players card if data provided
+  renderTopPlayersCard(data.topPlayers);
   document.getElementById('th-this-war').classList.toggle('hidden', !isWarActive);
 
   // Clan overview card
