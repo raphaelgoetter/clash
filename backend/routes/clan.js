@@ -341,8 +341,9 @@ export async function buildClanAnalysis(clanTag) {
 
     // determine whether a snapshot already exists for today; this lets the
     // frontend display an informative note beside "Live data"
-    const { hasSnapshotForToday } = await import('../services/snapshot.js');
+    const { hasSnapshotForToday, getLastSnapshotDate } = await import('../services/snapshot.js');
     const snapshotToday = raceLog ? await hasSnapshotForToday(clanTag) : false;
+    const snapshotDate  = raceLog ? await getLastSnapshotDate(clanTag) : null;
 
     return {
       clan: {
@@ -361,7 +362,8 @@ export async function buildClanAnalysis(clanTag) {
       isWarPeriod: analyzedMembers.some((m) => m.warDays !== null),
       topPlayers,                    // added by computeTopPlayers
       uncomplete,                    // new list of incomplete deck players
-      snapshotToday,                 // added for UI indicator
+      snapshotToday,                 // boolean for backwards compatibility
+      snapshotDate,                  // ISO date or null, used by frontend for message
     };
 }
 

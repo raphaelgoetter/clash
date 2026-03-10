@@ -99,5 +99,16 @@ export async function hasSnapshotForToday(clanTag) {
   return history[history.length - 1].date === today;
 }
 
+/**
+ * Return the date string of the most recent snapshot, or null if none exists.
+ * The format is ISO (YYYY-MM-DD) which is convenient for comparison on the
+ * frontend.
+ */
+export async function getLastSnapshotDate(clanTag) {
+  const history = await loadSnapshots(clanTag);
+  if (!history.length) return null;
+  return history[history.length - 1].date;
+}
+
 // expose the directory path so callers can inspect or do manual operations
 export const SNAP_DIR_PATH = SNAP_DIR; // absolute path used internally

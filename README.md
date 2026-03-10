@@ -54,7 +54,12 @@ quelques secondes plus tard.
 - Le lien de partage de l'analyse (`https://trustroyale.vercel.app/?mode=...`) peut
   être copié et envoyé à d'autres membres du clan.
 - Sur la fiche joueur, le tag du clan renvoie désormais vers la page RoyaleAPI du
-  clan (les analyses directes ne sont possibles que pour les 3 clans autorisés). 
+  clan (les analyses directes ne sont possibles que pour les 3 clans autorisés).
+- La note jaune/verte en haut à droite indique si les données provenaient du cache
+  (`Cached content 🔃`) ou non (`Live data`).
+  Elle affiche aussi l'âge du dernier snapshot de decks&nbsp;: "Snapshot : today ✅",
+  "Snapshot : yesterday ⚠️" ou une date plus ancienne (⚠️/❌ selon le jour). Les
+  snapshots sont pris automatiquement lorsque des logs de guerre sont disponibles.
 - Sur la vue clan, le badge **new** indique seulement que l'analyse n'a pas
   pu s'appuyer sur un historique de guerre complet. Il n'apparait plus si le
   membre n'a pas été vu dans le jeu depuis plus d'une semaine (pour éviter de

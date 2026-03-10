@@ -178,13 +178,14 @@ async function handleSearch() {
       lastResultName = data.overview?.name || null;
       renderPlayerResults(data);
       updateFavBtnState(tag);
-      showCacheNote(fromCache, data?.snapshotToday);
+      // snapshotDate comes from backend; may be null for players
+      showCacheNote(fromCache, data?.snapshotDate);
     } else {
       const { data, fromCache } = await apiFetch(`/api/clan/${encodeURIComponent(tag)}/analysis`);
       lastResultName = data.clan?.name || null;
       renderClanResults(data);
       updateFavBtnState(tag);
-      showCacheNote(fromCache, data.snapshotToday);
+      showCacheNote(fromCache, data.snapshotDate);
     }
     syncUrlState(currentMode, tag);
     // make star available
@@ -375,15 +376,32 @@ function hideResults() {
   cardCurrentWar.classList.add('hidden');
 }
 
-function showCacheNote(fromCache, snapshotDone = false) {
+function showCacheNote(fromCache, snapshotDate = null) {
   cacheNote.classList.remove('hidden');
+
+  // decide human‑friendly snapshot text
+  let snapshotText;
+  if (!snapshotDate) {
+    snapshotText = 'none ❌';
+  } else {
+    const today = new Date().toISOString().slice(0, 10);
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    if (snapshotDate === today) {
+      snapshotText = 'today ✅';
+    } else if (snapshotDate === yesterday) {
+      snapshotText = 'yesterday ⚠️';
+    } else {
+      const d = new Date(snapshotDate);
+      const opts = { month: 'long', day: 'numeric' };
+      snapshotText = `${d.toLocaleDateString(undefined, opts)} ❌`;
+    }
+  }
+
   if (fromCache) {
     cacheNote.innerHTML =
-      '🔃 Cached result' +
-      (snapshotDone ? ' (snapshot done)' : '') +
-      ' — <a href="#" id="refresh-cache">refresh cache</a>';
+      `Cached content 🔃  (<a href="#" id="refresh-cache">refresh cache</a>) · Snapshot : ${snapshotText}`;
   } else {
-    cacheNote.textContent = '✅ Live data' + (snapshotDone ? ' (snapshot done)' : '');
+    cacheNote.textContent = `✅ Live data · Snapshot : ${snapshotText}`;
   }
 }
 

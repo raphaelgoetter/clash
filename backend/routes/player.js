@@ -42,7 +42,8 @@ router.get('/:tag/analysis', async (req, res) => {
       PLAYER_CACHE_TTL,
     );
     res.set('X-Cache', fromCache ? 'HIT' : 'MISS');
-    res.json(analysis);
+    // keep API shape consistent with clan route
+    res.json({ ...analysis, snapshotDate: null });
   } catch (err) {
     const status = err.message.includes('404') ? 404 : 500;
     res.status(status).json({ error: err.message });
