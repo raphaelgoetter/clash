@@ -229,7 +229,8 @@ searchSelect.addEventListener('change', () => {
 
 // ── API fetch helper ──────────────────────────────────────────
 async function apiFetch(path) {
-  const res = await fetch(path);
+  // always bypass browser cache
+  const res = await fetch(path, { cache: 'no-store' });
   if (!res.ok) {
     let msg = `Error ${res.status}`;
     try {
