@@ -70,35 +70,12 @@ router.get('/:tag/analysis', async (req, res) => {
       return res.status(400).json({ error: 'Clan not in allowed list' });
     }
 
-    // try persistent file cache first (backend/data)
-    let payload = await loadCache(clanTag);
-    let fromCache = false;
-    if (payload) {
-      fromCache = true;
-      // even if we're serving from cache, refresh the snapshot informations
-      const { hasSnapshotForToday, getLastSnapshotDate } = await import('../services/snapshot.js');
-      payload.snapshotToday = await hasSnapshotForToday(clanTag);
-      payload.snapshotDate = await getLastSnapshotDate(clanTag);
-    } else {
-      // if not found, maybe we shipped a pre‑built file under frontend/public
-      const clean = clanTag.replace(/[^A-Za-z0-9]/g, '');
-      try {
-        const txt = await fs.readFile(path.resolve(__dirname, '..', '..', 'frontend', 'public', 'clan-cache', `${clean}.json`), 'utf-8');
-        payload = JSON.parse(txt);
-        fromCache = true; // static cache
-        // attach snapshot info here as well
-        const { hasSnapshotForToday, getLastSnapshotDate } = await import('../services/snapshot.js');
-        payload.snapshotToday = await hasSnapshotForToday(clanTag);
-        payload.snapshotDate = await getLastSnapshotDate(clanTag);
-      } catch (_) {
-        // fallback: compute and persist
-        const result = await buildClanAnalysis(clanTag);
-        payload = result;
-        fromCache = false;
-        saveCache(clanTag, payload).catch(()=>{});
-      }
-    }
-    res.set('X-Cache', fromCache ? 'HIT' : 'MISS');
+    // no caching in production - always compute fresh analysis
+    const fromCache = false;
+    const payload = await buildClanAnalysis(clanTag);
+    // optionally persist to disk for debugging, but ignore on read
+    saveCache(clanTag, payload).catch(()=>{});
+    res.set('X-Cache', 'MISS');
     res.json(payload);
   } catch (err) {
     const status = err.message.includes('404') ? 404 : 500;
