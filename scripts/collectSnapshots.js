@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 // Script to fetch race log for permitted clans and update snapshot files.
 
+// read .env when run locally (GitHub action will supply KEY via env)
+import dotenv from 'dotenv';
+dotenv.config({ path: './.env' });
+
 import { ALLOWED_CLANS } from '../backend/routes/clan.js';
 import { fetchRaceLog } from '../backend/services/clashApi.js';
 import { recordSnapshot } from '../backend/services/snapshot.js';

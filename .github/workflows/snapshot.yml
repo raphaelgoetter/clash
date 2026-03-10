@@ -9,6 +9,9 @@ on:
 jobs:
   take-snapshots:
     runs-on: ubuntu-latest
+    # provide Clash API key from repository secrets so the script can fetch logs
+    env:
+      CLASH_API_KEY: ${{ secrets.CLASH_API_KEY }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
