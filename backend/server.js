@@ -116,6 +116,19 @@ app.post('/api/cache/flush', (_req, res) => {
   res.json({ ok: true, message: 'Cache vidé.' });
 });
 
+// ── Manual analysis cache refresh (triggered by frontend button) ──
+app.post('/api/cache/refresh', async (req, res) => {
+  try {
+    const { refreshAllClans } = await import('./services/analysisCache.js');
+    const { ALLOWED_CLANS, buildClanAnalysis } = await import('./routes/clan.js');
+    await refreshAllClans(ALLOWED_CLANS, buildClanAnalysis);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('cache refresh endpoint failure', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── 404 handler ───────────────────────────────────────────────
 app.use((_req, res) => res.status(404).json({ error: 'Route not found' }));
 

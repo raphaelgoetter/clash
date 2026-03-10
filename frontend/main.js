@@ -377,13 +377,43 @@ function hideResults() {
 function showCacheNote(fromCache, snapshotDone = false) {
   cacheNote.classList.remove('hidden');
   if (fromCache) {
-    cacheNote.textContent =
-      '🔃 Cached result — refreshes every 15 min' +
-      (snapshotDone ? ' (snapshot done)' : '');
+    cacheNote.innerHTML =
+      '🔃 Cached result' +
+      (snapshotDone ? ' (snapshot done)' : '') +
+      ' — <a href="#" id="refresh-cache">refresh cache</a>';
   } else {
     cacheNote.textContent = '✅ Live data' + (snapshotDone ? ' (snapshot done)' : '');
   }
 }
+
+// attach listener once
+document.addEventListener('click', (e) => {
+  if (e.target && e.target.id === 'refresh-cache') {
+    e.preventDefault();
+    const link = e.target;
+    // update link text while running and disable temporarily
+    link.textContent = 'refresh cache (working… 🔄)';
+    link.style.pointerEvents = 'none';
+    setLoading(true);
+    fetch('/api/cache/refresh', { method: 'POST' })
+      .then((r) => r.json())
+      .then(() => {
+        link.textContent = 'refresh cache (done ✅)';
+        setTimeout(() => {
+          link.textContent = 'refresh cache';
+          link.style.pointerEvents = '';
+        }, 3000);
+      })
+      .catch((err) => {
+        link.textContent = 'refresh cache (failed ❌)';
+        setTimeout(() => {
+          link.textContent = 'refresh cache';
+          link.style.pointerEvents = '';
+        }, 3000);
+      })
+      .finally(() => setLoading(false));
+  }
+});
 
 // ── Player rendering ──────────────────────────────────────────
 
