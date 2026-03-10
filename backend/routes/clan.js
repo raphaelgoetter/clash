@@ -76,6 +76,8 @@ router.get('/:tag/analysis', async (req, res) => {
     const { value:payload, fromCache } = await getOrSet(cacheKey, () => buildClanAnalysis(clanTag), 30 * 1000);
     // persist to disk separately for debugging/historic purposes
     saveCache(clanTag, payload).catch(()=>{});
+    // prevent Vercel/edge from caching this response
+    res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
     res.set('X-Cache', fromCache ? 'HIT' : 'MISS');
     res.json(payload);
   } catch (err) {
