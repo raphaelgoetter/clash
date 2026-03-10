@@ -196,7 +196,8 @@ async function handleSearch() {
         lastResultName = staticData.clan?.name || null;
         renderClanResults(staticData);
         updateFavBtnState(tag);
-        showCacheNote(false, staticData.snapshotDate);
+        // we are displaying pre-generated JSON, mark as cached
+        showCacheNote(true, staticData.snapshotDate);
       }
 
       const { data, fromCache } = await apiFetch(`/api/clan/${encodeURIComponent(tag)}/analysis`);
@@ -206,6 +207,7 @@ async function handleSearch() {
         renderClanResults(data);
       }
       updateFavBtnState(tag);
+      // if the live response itself was cached the header sets fromCache true
       showCacheNote(fromCache, data.snapshotDate);
     }
     syncUrlState(currentMode, tag);
