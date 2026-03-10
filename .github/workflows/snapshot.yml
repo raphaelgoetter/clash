@@ -32,7 +32,8 @@ jobs:
           echo ">>> env export contains:"
           env | grep CLASH_API_KEY || true
           echo ">>> explicit check: single-quoted value:'$CLASH_API_KEY'"
-          echo ">>> length="$(echo -n "$CLASH_API_KEY" | wc -c)"  # masked in logs
+          len=$(echo -n "$CLASH_API_KEY" | wc -c)
+          echo ">>> length=$len"  # masked in logs
 
       - name: Run snapshot script
         run: npm run snapshot
