@@ -26,6 +26,14 @@ jobs:
       - name: Install deps
         run: npm ci
 
+      # debug: ensure the key is being injected
+      - name: Debug CLASH_API_KEY
+        run: |
+          echo ">>> env export contains:"
+          env | grep CLASH_API_KEY || true
+          echo ">>> explicit check: single-quoted value:'$CLASH_API_KEY'"
+          echo ">>> length="$(echo -n "$CLASH_API_KEY" | wc -c)"  # masked in logs
+
       - name: Run snapshot script
         run: npm run snapshot
 
