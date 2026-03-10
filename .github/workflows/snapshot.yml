@@ -38,11 +38,13 @@ jobs:
       - name: Run snapshot script
         run: npm run snapshot
 
-      - name: Commit snapshot result
+      - name: Build static clan cache
+        run: npm run cache
+
+      - name: Commit snapshot result and static cache
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/snapshots/*.json || true
-          # always commit so we have a record of each run
-          git commit --allow-empty -m "chore: update daily snapshots"
+          git add data/snapshots/*.json frontend/public/clan-cache/*.json || true
+          git commit --allow-empty -m "chore: update daily snapshots & clan cache"
           git push

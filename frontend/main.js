@@ -162,6 +162,17 @@ initClanSelect();
 renderFavorites();
 
 // ── Search trigger ───────────────────────────────────────────
+async function loadStaticClan(tag) {
+  try {
+    const clean = tag.replace(/[^A-Za-z0-9]/g, '');
+    const res = await fetch(`/clan-cache/${clean}.json`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (_) {
+    return null;
+  }
+}
+
 async function handleSearch() {
   const raw = currentMode === 'clan' ? searchSelect.value.trim() : searchInput.value.trim();
   if (!raw) return showError('Please enter a tag.');
@@ -174,23 +185,31 @@ async function handleSearch() {
   try {
     if (currentMode === 'player') {
       const { data, fromCache } = await apiFetch(`/api/player/${encodeURIComponent(tag)}/analysis`);
-      // store name for favorites
       lastResultName = data.overview?.name || null;
       renderPlayerResults(data);
       updateFavBtnState(tag);
-      // snapshotDate comes from backend; may be null for players
       showCacheNote(fromCache, data?.snapshotDate);
     } else {
+      // clan mode: try static file first
+      const staticData = await loadStaticClan(tag);
+      if (staticData) {
+        lastResultName = staticData.clan?.name || null;
+        renderClanResults(staticData);
+        updateFavBtnState(tag);
+        showCacheNote(false, staticData.snapshotDate);
+      }
+
       const { data, fromCache } = await apiFetch(`/api/clan/${encodeURIComponent(tag)}/analysis`);
       lastResultName = data.clan?.name || null;
-      renderClanResults(data);
+      // if static existed and differs, overwrite
+      if (staticData && JSON.stringify(staticData) !== JSON.stringify(data)) {
+        renderClanResults(data);
+      }
       updateFavBtnState(tag);
       showCacheNote(fromCache, data.snapshotDate);
     }
     syncUrlState(currentMode, tag);
-    // make star available
     favBtn.classList.remove('hidden');
-    // rafraîchir la liste des favoris après chaque recherche
     renderFavorites();
   } catch (err) {
     showError(err.message);

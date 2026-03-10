@@ -62,6 +62,16 @@ quelques secondes plus tard.
   Si aucun snapshot n'a encore été enregistré pour le clan, la mention devient
   "Snapshot : none (no data) ❌". Les snapshots sont pris automatiquement
   lorsque des logs de guerre sont disponibles.
+
+- Les pages de clan utilisent en priorité des données pré‑calculées
+  (fichiers JSON issus de `npm run cache` et embarqués dans
+  `frontend/public/clan-cache`) afin d'afficher instantanément un aperçu
+  (< 200 ms). Une requête live est ensuite effectuée en arrière-plan pour
+  mettre à jour l'analyse si nécessaire.
+- Le serveur garde également un petit cache mémoire (TTL ≈ 30 s) pour
+  accélérer les navigations répétées sur la même instance. Ce dernier ne
+  persiste pas entre redémarrages, mais évite des recomputations trop
+  fréquentes lors d'un simple retour arrière dans le navigateur.
 - Sur la vue clan, le badge **new** indique seulement que l'analyse n'a pas
   pu s'appuyer sur un historique de guerre complet. Il n'apparait plus si le
   membre n'a pas été vu dans le jeu depuis plus d'une semaine (pour éviter de

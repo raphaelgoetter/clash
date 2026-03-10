@@ -70,12 +70,13 @@ router.get('/:tag/analysis', async (req, res) => {
       return res.status(400).json({ error: 'Clan not in allowed list' });
     }
 
-    // no caching in production - always compute fresh analysis
-    const fromCache = false;
-    const payload = await buildClanAnalysis(clanTag);
-    // optionally persist to disk for debugging, but ignore on read
+    // short-lived in-memory cache to speed up back/forward and repeated
+    // clicks on the same instance.  TTL is small so stale issues are rare.
+    const cacheKey = `clan:${clanTag}`;
+    const { value:payload, fromCache } = await getOrSet(cacheKey, () => buildClanAnalysis(clanTag), 30 * 1000);
+    // persist to disk separately for debugging/historic purposes
     saveCache(clanTag, payload).catch(()=>{});
-    res.set('X-Cache', 'MISS');
+    res.set('X-Cache', fromCache ? 'HIT' : 'MISS');
     res.json(payload);
   } catch (err) {
     const status = err.message.includes('404') ? 404 : 500;
