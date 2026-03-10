@@ -368,6 +368,20 @@ summary .card-title {
   outline: none;
 }
 
+/* custom arrow and spacing for selects */
+select.search-input {
+  /* hide native arrow */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  /* add custom arrow icon (simple down‑triangle) */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath fill='%23f0f0fc' d='M0 0l4 5 4-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 8px 5px;
+  padding-right: 2.5rem; /* space for arrow */
+}
+
 .search-input:focus { border-color: var(--purple-light); }
 .search-input::placeholder { color: var(--text-muted); }
 
