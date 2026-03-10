@@ -187,17 +187,24 @@ summary .card-title {
   font-size: .9rem;
 }
 
-/* collapsible card styles */
-#card-top-players details,
-#card-uncomplete details {
-  cursor: pointer;
+/* dim players no longer in the clan */
+.top-players-list li.absent {
+  opacity: 0.4;
 }
+
+/* daily breakdown colour coding */
+.daily-green { color: var(--green); }
+.daily-orange { color: var(--orange); }
+.daily-red { color: var(--red); }
+
+/* collapsible card styles */
 #card-top-players summary,
 #card-uncomplete summary {
   display: flex;
   align-items: center;
   font-weight: 700;
   position: relative;
+  cursor: pointer; /* only summary clickable */
 }
 /* custom arrow marker using ::before */
 #card-top-players summary::before,

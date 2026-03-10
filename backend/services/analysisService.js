@@ -183,7 +183,7 @@ function battlesInLastDays(battleLog, days) {
  * @param {Date|string} dateOrTs
  * @returns {string}
  */
-function warDayKey(dateOrTs) {
+export function warDayKey(dateOrTs) {
   const d = dateOrTs instanceof Date ? dateOrTs : parseClashDate(dateOrTs);
   return new Date(d.getTime() - warResetOffsetMs(d)).toISOString().slice(0, 10);
 }

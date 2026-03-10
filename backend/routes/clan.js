@@ -59,6 +59,9 @@ router.get('/:tag', async (req, res) => {
 router.get('/:tag/analysis', async (req, res) => {
   try {
     const clanTag = req.params.tag;
+    if (!ALLOWED_CLANS.includes(clanTag.toUpperCase())) {
+      return res.status(400).json({ error: 'Clan not in allowed list' });
+    }
     const { value: payload, fromCache } = await getOrSet(
       `clan:analysis:${clanTag}`,
       () => buildClanAnalysis(clanTag),
@@ -72,7 +75,17 @@ router.get('/:tag/analysis', async (req, res) => {
   }
 });
 
+// list of clans the UI is allowed to query (uppercase normalized)
+export const ALLOWED_CLANS = [
+  '#Y8JUPC9C', // La Resistance
+  '#LRQP20V9', // Les Resistants
+  '#QU9UQJRL', // Les Revoltes
+];
+
 export async function buildClanAnalysis(clanTag) {
+    if (!ALLOWED_CLANS.includes(clanTag.toUpperCase())) {
+      throw new Error('Clan not allowed');
+    }
     const [clan, members] = await Promise.all([
       fetchClan(clanTag),
       fetchClanMembers(clanTag),
@@ -93,16 +106,41 @@ export async function buildClanAnalysis(clanTag) {
     // can render the "Last War Best Players" card without additional
     // network requests. the helper gracefully handles missing logs.
     const topPlayers = await computeTopPlayers(clanTag, members);
-    // compute list of players who didn't do the full 16 decks last week
-    const uncomplete = await computeUncomplete(clanTag, members);
 
-    // Fetch full player profiles + battle logs for ALL members with capped concurrency
+    // record snapshot of decksUsed if we have a race log (used later for
+    // accurate day-by-day breakdowns); run asynchronously so it doesn't
+    // delay the API response.
+    if (raceLog && Array.isArray(raceLog) && raceLog.length > 0) {
+      const normalized = clanTag.startsWith('#') ? clanTag : `#${clanTag}`;
+      const standing = raceLog[0].standings.find((s) => s.clan?.tag === normalized);
+      const participants = standing?.clan?.participants || [];
+      import('../services/snapshot.js').then(({ recordSnapshot }) => {
+        recordSnapshot(clanTag, participants).catch(()=>{/* silent */});
+      });
+    }
+
+    // fetch full player profiles + battle logs for ALL members with capped concurrency
     // (avoids RoyaleAPI rate-limiting that caused non-deterministic scores on reload)
     const memberDataResults = raceLog
       ? await pooledAllSettled(
           members.map((m) => () => Promise.all([fetchPlayer(m.tag), fetchBattleLog(m.tag)]))
         )
       : [];
+
+    // build map of battle logs by tag for later use
+    const battleLogsByTag = {};
+    if (memberDataResults.length) {
+      memberDataResults.forEach((res, idx) => {
+        if (res.status === 'fulfilled') {
+          const tag = members[idx].tag;
+          battleLogsByTag[tag] = res.value[1];
+        }
+      });
+    }
+
+    // compute list of players who didn't do the full 16 decks last week (with breakdown)
+    const uncomplete = await computeUncomplete(clanTag, members, battleLogsByTag);
+
 
     // First pass: compute war scores for all members
     const analyzedMembers = members.map((m, idx) => {

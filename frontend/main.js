@@ -13,6 +13,7 @@ import {
 
 // ── DOM references ───────────────────────────────────────────
 const searchInput     = document.getElementById('search-input');
+const searchSelect    = document.getElementById('search-select');
 const searchBtn       = document.getElementById('search-btn');
 const searchBtnLabel  = document.getElementById('search-btn-label');
 const searchSpinner   = document.getElementById('search-spinner');
@@ -49,7 +50,13 @@ let isWarActive = false;       // true jeu–dim : colonne "This War" visible da
 let lastResultName = null;
 
 // Default tags per mode
-const DEFAULT_TAGS = { player: '#YRGJGR8R', clan: '#LRQP20V9' };
+// list of permitted clans; keeps parallel with backend ALLOWED_CLANS
+const CLAN_OPTIONS = [
+  { tag: '#Y8JUPC9C', name: 'La Resistance' },
+  { tag: '#LRQP20V9', name: 'Les Resistants' },
+  { tag: '#QU9UQJRL', name: 'Les Revoltes' },
+];
+const DEFAULT_TAGS = { player: '#YRGJGR8R', clan: CLAN_OPTIONS[0].tag };
 
 // Clé de stockage des favoris
 const FAV_STORAGE_KEY = 'trustroyaleFavs';
@@ -71,19 +78,29 @@ function syncUrlState(mode, tag) {
 }
 
 function applyUrlState(mode, tag) {
+  if (mode === 'clan') {
+    // ensure tag is in our allowed list
+    if (!CLAN_OPTIONS.some((o) => o.tag === tag)) {
+      tag = CLAN_OPTIONS[0].tag;
+    }
+  }
   currentMode = mode;
   modeBtns.forEach((b) => {
     b.classList.toggle('active', b.dataset.mode === mode);
   });
-  searchInput.placeholder =
-    mode === 'player'
-      ? 'Enter player tag (e.g. #ABC123) …'
-      : 'Enter clan tag (e.g. #2Y2LJJ) …';
-  searchHint.textContent =
-    mode === 'player'
-      ? "Tags must start with #. You can omit it and we'll add it automatically."
-      : "Clan tags must start with #. You can omit it and we'll add it automatically.";
-  searchInput.value = tag;
+  if (mode === 'player') {
+    searchInput.classList.remove('hidden');
+    searchSelect.classList.add('hidden');
+    searchInput.placeholder = 'Enter player tag (e.g. #ABC123) …';
+    searchHint.textContent = "Tags must start with #. You can omit it and we'll add it automatically.";
+    searchInput.value = tag;
+  } else {
+    searchInput.classList.add('hidden');
+    searchSelect.classList.remove('hidden');
+    searchHint.textContent = "Select a clan from the dropdown.";
+    // set select value
+    searchSelect.value = tag;
+  }
   // mettre à jour l'état de l'étoile dès qu'on connaît le tag (même sans recherche)
   lastResultName = null;
   updateFavBtnState(tag);
@@ -133,17 +150,21 @@ modeBtns.forEach((btn) => {
   }
 }
 
+// populate clan select options
+function initClanSelect() {
+  if (!searchSelect) return;
+  searchSelect.innerHTML = CLAN_OPTIONS
+    .map(o => `<option value="${o.tag}">${escHtml(o.name)} (${o.tag})</option>`)
+    .join('');
+}
+initClanSelect();
+
 // populate favorites list immediately (may be empty)
 renderFavorites();
 
 // ── Search trigger ───────────────────────────────────────────
-searchBtn.addEventListener('click', handleSearch);
-searchInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') handleSearch();
-});
-
 async function handleSearch() {
-  const raw = searchInput.value.trim();
+  const raw = currentMode === 'clan' ? searchSelect.value.trim() : searchInput.value.trim();
   if (!raw) return showError('Please enter a tag.');
 
   const tag = raw.startsWith('#') ? raw : `#${raw}`;
@@ -177,6 +198,15 @@ async function handleSearch() {
     setLoading(false);
   }
 }
+
+searchBtn.addEventListener('click', handleSearch);
+searchInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') handleSearch();
+});
+searchSelect.addEventListener('change', () => {
+  // immediately search when user picks a clan
+  if (currentMode === 'clan') handleSearch();
+});
 
 // ── API fetch helper ──────────────────────────────────────────
 async function apiFetch(path) {
@@ -231,7 +261,8 @@ function isFavorite(mode, tag) {
 function renderFavorites() {
   const favs = getFavorites();
   const playerKeys = Object.keys(favs.player || {});
-  const clanKeys   = Object.keys(favs.clan || {});
+  const clanKeys   = (Object.keys(favs.clan || {}) || [])
+    .filter((tag) => CLAN_OPTIONS.some((o) => o.tag === tag));
   if (playerKeys.length === 0 && clanKeys.length === 0) {
     favoritesContainer.innerHTML = '<p class="text-muted">No favorites yet.</p>';
     return;
@@ -288,9 +319,12 @@ async function fetchTagName(mode, tag) {
 }
 
 async function toggleFavorite() {
-  const raw = searchInput.value.trim();
+  const raw = currentMode === 'clan' ? searchSelect.value.trim() : searchInput.value.trim();
   if (!raw) return;
-  const tag = raw.startsWith('#') ? raw : `#${raw}`;
+  let tag = raw.startsWith('#') ? raw : `#${raw}`;
+  if (currentMode === 'clan' && !CLAN_OPTIONS.some((o) => o.tag === tag)) {
+    return; // not allowed
+  }
   if (isFavorite(currentMode, tag)) {
     removeFavorite(currentMode, tag);
   } else {
@@ -648,17 +682,31 @@ function renderUncompleteCard(uncomplete) {
     return;
   }
   const players = uncomplete.players.slice().sort((a,b)=> b.decks - a.decks);
+
+  function formatDaily(counts) {
+    if (!counts) return '';
+    const keys = Object.keys(counts).sort();
+    const n = keys.length;
+    const labels = ['Thu','Fri','Sat','Sun'].slice(-n);
+    return keys.map((k,i) => {
+      const num = counts[k];
+      const cls = num>=4 ? 'daily-green' : num>=3 ? 'daily-orange' : 'daily-red';
+      return `<span class="${cls}">${num}× ${labels[i].toLowerCase()}</span>`;
+    }).join(' - ');
+  }
+
   if (players.length === 0) {
     listEl.innerHTML = '<li class="text-muted">Everyone completed 16 decks 👍</li>';
   } else {
     listEl.innerHTML = players
-      .map(p =>
-        `<li><span class="tp-name">${escHtml(p.name)}</span>` +
-        `<span class="tp-meta">` +
-          `<span class="role-badge ${p.role}">${capitalize(p.role)}</span>` +
-          `<span class="tp-fame">${fmt(p.decks)} decks</span>` +
-        `</span></li>`
-      )
+      .map(p => {
+        const dailyStr = formatDaily(p.daily);
+        return `<li class="${p.inClan ? '' : 'absent'}"><span class="tp-name">${escHtml(p.name)}</span>` +
+          `<span class="tp-meta">` +
+            `<span class="role-badge ${p.role}">${capitalize(p.role)}</span>` +
+            `<span class="tp-fame">${fmt(p.decks)} decks${dailyStr ? ' - ' + dailyStr : ''}</span>` +
+          `</span></li>`;
+      })
       .join('');
   }
   card.classList.remove('hidden');
