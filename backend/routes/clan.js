@@ -340,10 +340,12 @@ export async function buildClanAnalysis(clanTag) {
         : 0;
 
     // determine whether a snapshot already exists for today; this lets the
-    // frontend display an informative note beside "Live data"
+    // frontend display an informative note beside "Live data".  we also
+    // compute the date even when `raceLog` is missing so the UI can still
+    // report "Snapshot : …" while outside war period.
     const { hasSnapshotForToday, getLastSnapshotDate } = await import('../services/snapshot.js');
-    const snapshotToday = raceLog ? await hasSnapshotForToday(clanTag) : false;
-    const snapshotDate  = raceLog ? await getLastSnapshotDate(clanTag) : null;
+    const snapshotToday = await hasSnapshotForToday(clanTag);
+    const snapshotDate  = await getLastSnapshotDate(clanTag);
 
     return {
       clan: {
