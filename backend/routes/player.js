@@ -41,6 +41,7 @@ router.get('/:tag/analysis', async (req, res) => {
       () => getPlayerAnalysis(tag),
       PLAYER_CACHE_TTL,
     );
+    res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
     res.set('X-Cache', fromCache ? 'HIT' : 'MISS');
     // keep API shape consistent with clan route
     res.json({ ...analysis, snapshotDate: null });
