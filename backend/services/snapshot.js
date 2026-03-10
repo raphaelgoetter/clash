@@ -30,6 +30,8 @@ async function loadSnapshots(clanTag) {
     const txt = await fs.readFile(file, 'utf-8');
     return JSON.parse(txt);
   } catch (err) {
+    // log failure so we can diagnose production issues
+    console.warn(`snapshot: cannot read file ${file} (${err.code || err.message})`);
     return [];
   }
 }
