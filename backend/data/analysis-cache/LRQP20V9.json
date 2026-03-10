@@ -161,7 +161,7 @@
       "role": "member",
       "trophies": 8659,
       "donations": 81,
-      "donationsReceived": 90,
+      "donationsReceived": 100,
       "expLevel": 53,
       "activityScore": 69,
       "verdict": "Moderate risk",
@@ -305,7 +305,7 @@
       "role": "member",
       "trophies": 12118,
       "donations": 37,
-      "donationsReceived": 110,
+      "donationsReceived": 120,
       "expLevel": 71,
       "activityScore": 81,
       "verdict": "High reliability",
@@ -561,7 +561,7 @@
       "role": "elder",
       "trophies": 9391,
       "donations": 46,
-      "donationsReceived": 20,
+      "donationsReceived": 30,
       "expLevel": 67,
       "activityScore": 89,
       "verdict": "High reliability",
@@ -780,22 +780,6 @@
       "lastSeen": "20260310T143836.000Z"
     },
     {
-      "name": "guill4um3",
-      "tag": "#VGJ9LL8VC",
-      "role": "coLeader",
-      "trophies": 12295,
-      "donations": 288,
-      "donationsReceived": 200,
-      "expLevel": 64,
-      "activityScore": 95,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260310T184708.000Z"
-    },
-    {
       "name": "☆. Électron",
       "tag": "#82UPUGYP",
       "role": "leader",
@@ -810,6 +794,22 @@
       "warDays": null,
       "warDecks": null,
       "lastSeen": "20260310T182946.000Z"
+    },
+    {
+      "name": "guill4um3",
+      "tag": "#VGJ9LL8VC",
+      "role": "coLeader",
+      "trophies": 12295,
+      "donations": 318,
+      "donationsReceived": 200,
+      "expLevel": 64,
+      "activityScore": 96,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260310T192911.000Z"
     }
   ],
   "summary": {
