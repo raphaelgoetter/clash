@@ -132,6 +132,30 @@ export default async function handler(req, res) {
           { headers: { Accept: 'application/json' } },
         );
 
+        // --- déclencher snapshots pour tous les clans autorisés ---
+        // c'est léger (3 appels à RoyaleAPI) et fait gagner un cycle aux visiteurs.
+        // Si l'un d'eux échoue, on s'en fiche.
+        import('../backend/routes/clan.js').then(({ ALLOWED_CLANS }) => {
+          import('../backend/services/clashApi.js').then(({ fetchRaceLog }) => {
+            import('../backend/services/snapshot.js').then(({ recordSnapshot }) => {
+              ALLOWED_CLANS.forEach((clanTag) => {
+                fetchRaceLog(clanTag)
+                  .then((log) => {
+                    if (Array.isArray(log) && log.length) {
+                      const standing = log[0].standings.find(
+                        (s) => s.clan?.tag?.toUpperCase() === `#${clanTag}`
+                      );
+                      const participants = standing?.clan?.participants || [];
+                      const weekId = `S${log[0].seasonId}W${log[0].sectionIndex}`;
+                      recordSnapshot(clanTag, participants, weekId).catch(()=>{});
+                    }
+                  })
+                  .catch(()=>{});
+              });
+            });
+          });
+        });
+
         if (!apiResp.ok) {
           const msg = apiResp.status === 404
             ? `Joueur \`${tag}\` introuvable.`
