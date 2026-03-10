@@ -1,0 +1,39 @@
+name: Daily snapshots
+
+on:
+  schedule:
+    # every day at 01:00 UTC
+    - cron: '0 1 * * *'
+  workflow_dispatch:            # permet un déclenchement manuel
+
+jobs:
+  take-snapshots:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true   # pour pouvoir pousser plus tard
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'        # ou la version de votre projet
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Run snapshot script
+        run: npm run snapshot
+
+      - name: Commit any changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/snapshots/*.json || true
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: update daily snapshots"
+            git push
+          else
+            echo "No changes to commit"
+          fi
