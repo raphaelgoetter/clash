@@ -46,7 +46,8 @@ export async function refreshAllClans(clanTags, buildFn) {
   await ensureDir();
   for (const tag of clanTags) {
     try {
-      const { result } = await buildFn(tag);
+      // buildFn returns the analysis payload directly
+      const result = await buildFn(tag);
       await saveCache(tag, result);
     } catch (err) {
       console.error('cache refresh failed for', tag, err.message);

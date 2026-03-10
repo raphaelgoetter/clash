@@ -119,6 +119,11 @@ app.post('/api/cache/flush', (_req, res) => {
 // ── Manual analysis cache refresh (triggered by frontend button) ──
 app.post('/api/cache/refresh', async (req, res) => {
   try {
+    // wipe in-memory TTL cache too, otherwise subsequent requests will still
+    // hit the old value until their entries expire.
+    const { clearAll } = await import('./services/cache.js');
+    clearAll();
+
     const { refreshAllClans } = await import('./services/analysisCache.js');
     const { ALLOWED_CLANS, buildClanAnalysis } = await import('./routes/clan.js');
     await refreshAllClans(ALLOWED_CLANS, buildClanAnalysis);
