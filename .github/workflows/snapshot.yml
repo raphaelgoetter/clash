@@ -38,14 +38,11 @@ jobs:
       - name: Run snapshot script
         run: npm run snapshot
 
-      - name: Commit any changes
+      - name: Commit snapshot result
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/snapshots/*.json || true
-          if ! git diff --staged --quiet; then
-            git commit -m "chore: update daily snapshots"
-            git push
-          else
-            echo "No changes to commit"
-          fi
+          # always commit so we have a record of each run
+          git commit --allow-empty -m "chore: update daily snapshots"
+          git push
