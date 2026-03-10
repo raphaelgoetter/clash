@@ -137,11 +137,18 @@ export async function buildClanAnalysis(clanTag) {
 
     // fetch full player profiles + battle logs for ALL members with capped concurrency
     // (avoids RoyaleAPI rate-limiting that caused non-deterministic scores on reload)
-    const memberDataResults = raceLog
-      ? await pooledAllSettled(
-          members.map((m) => () => Promise.all([fetchPlayer(m.tag), fetchBattleLog(m.tag)]))
-        )
-      : [];
+    let memberDataResults = [];
+    if (raceLog) {
+      memberDataResults = await pooledAllSettled(
+        members.map((m) => () => Promise.all([fetchPlayer(m.tag), fetchBattleLog(m.tag)]))
+      );
+      // debug: log any failures
+      memberDataResults.forEach((res, idx) => {
+        if (res.status === 'rejected') {
+          console.warn(`member fetch failed for ${members[idx].tag}:`, res.reason?.message || res.reason);
+        }
+      });
+    }
 
     // build map of battle logs by tag for later use
     const battleLogsByTag = {};
