@@ -382,7 +382,8 @@ function showCacheNote(fromCache, snapshotDate = null) {
   // decide human‑friendly snapshot text
   let snapshotText;
   if (!snapshotDate) {
-    snapshotText = 'none ❌';
+    // no snapshot file could be found/loaded for this clan
+    snapshotText = 'none (no data) ❌';
   } else {
     const today = new Date().toISOString().slice(0, 10);
     const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
