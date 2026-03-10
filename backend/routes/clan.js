@@ -75,6 +75,10 @@ router.get('/:tag/analysis', async (req, res) => {
     let fromCache = false;
     if (payload) {
       fromCache = true;
+      // even if we're serving from cache, refresh the snapshot informations
+      const { hasSnapshotForToday, getLastSnapshotDate } = await import('../services/snapshot.js');
+      payload.snapshotToday = await hasSnapshotForToday(clanTag);
+      payload.snapshotDate = await getLastSnapshotDate(clanTag);
     } else {
       // if not found, maybe we shipped a pre‑built file under frontend/public
       const clean = clanTag.replace(/[^A-Za-z0-9]/g, '');
@@ -82,6 +86,10 @@ router.get('/:tag/analysis', async (req, res) => {
         const txt = await fs.readFile(path.resolve(__dirname, '..', '..', 'frontend', 'public', 'clan-cache', `${clean}.json`), 'utf-8');
         payload = JSON.parse(txt);
         fromCache = true; // static cache
+        // attach snapshot info here as well
+        const { hasSnapshotForToday, getLastSnapshotDate } = await import('../services/snapshot.js');
+        payload.snapshotToday = await hasSnapshotForToday(clanTag);
+        payload.snapshotDate = await getLastSnapshotDate(clanTag);
       } catch (_) {
         // fallback: compute and persist
         const result = await buildClanAnalysis(clanTag);
