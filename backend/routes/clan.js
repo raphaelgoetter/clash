@@ -11,7 +11,10 @@ import {
 } from '../services/analysisService.js';
 import { computeTopPlayers } from '../services/topplayers.js';
 import { computeUncomplete } from '../services/uncomplete.js';
+import { loadCache, saveCache } from '../services/analysisCache.js';
 import { getOrSet } from '../services/cache.js';
+import fs from 'fs/promises';
+import path from 'path';
 
 const CLAN_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
 
@@ -67,11 +70,26 @@ router.get('/:tag/analysis', async (req, res) => {
       return res.status(400).json({ error: 'Clan not in allowed list' });
     }
 
-    const { value: payload, fromCache } = await getOrSet(
-      `clan:analysis:${clanTag}`,
-      () => buildClanAnalysis(clanTag),
-      CLAN_CACHE_TTL,
-    );
+    // try persistent file cache first (backend/data)
+    let payload = await loadCache(clanTag);
+    let fromCache = false;
+    if (payload) {
+      fromCache = true;
+    } else {
+      // if not found, maybe we shipped a pre‑built file under frontend/public
+      const clean = clanTag.replace(/[^A-Za-z0-9]/g, '');
+      try {
+        const txt = await fs.readFile(path.resolve(__dirname, '..', '..', 'frontend', 'public', 'clan-cache', `${clean}.json`), 'utf-8');
+        payload = JSON.parse(txt);
+        fromCache = true; // static cache
+      } catch (_) {
+        // fallback: compute and persist
+        const result = await buildClanAnalysis(clanTag);
+        payload = result;
+        fromCache = false;
+        saveCache(clanTag, payload).catch(()=>{});
+      }
+    }
     res.set('X-Cache', fromCache ? 'HIT' : 'MISS');
     res.json(payload);
   } catch (err) {

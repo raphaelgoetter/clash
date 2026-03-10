@@ -67,6 +67,13 @@ app.use((req, res, next) => {
       .catch(() => {}); // ignore API failure, will retry next request
   });
 
+  // also refresh persistent analysis cache asynchronously
+  import('./routes/clan.js').then(({ buildClanAnalysis }) => {
+    import('./services/analysisCache.js').then(({ refreshAllClans }) => {
+      refreshAllClans(ALLOWED_CLANS, buildClanAnalysis).catch(() => {});
+    });
+  });
+
   next();
 });
 
