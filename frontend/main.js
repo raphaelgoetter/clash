@@ -284,7 +284,8 @@ function renderFavorites() {
   clanKeys.forEach((tag) => {
     const nm = favs.clan[tag];
     const display = (nm && nm !== tag) ? `${escHtml(nm)} (${tag})` : escHtml(tag);
-    html += `<li><a class="fav-item" href="?mode=clan&tag=${encodeURIComponent(tag)}" ` +
+    // clan favorites now link externally because we no longer support clan analysis for arbitrary tags
+    html += `<li><a class="fav-item" href="https://royaleapi.com/clan/${tag.replace('#', '')}/" ` +
             `data-mode="clan" data-tag="${tag}">${display}</a></li>`;
   });
   html += '</ul></div>';
@@ -423,9 +424,11 @@ function renderPlayerResults(data) {
 
   // 1. Overview (Clan & Role removed)
   const cw2 = overview.clanWarWins ?? 0;
-  // build clan link if available (internal navigation to clan view)
+  // build clan link if available (external RoyaleAPI page)
   const clanTag = overview.clan?.tag ?? null;
-  const clanLink = clanTag ? `?mode=clan&tag=${encodeURIComponent(clanTag)}` : null;
+  const clanLink = clanTag
+    ? `https://royaleapi.com/clan/${clanTag.replace('#', '')}/`
+    : null;
   const clanValue = clanTag ? clanTag : 'No clan';
   overviewGrid.innerHTML = overviewItems([
     { label: 'Name',          value: overview.name, cls: 'gold', badge: ws.isFallback ? 'new' : null },
