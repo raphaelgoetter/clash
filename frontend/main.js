@@ -402,7 +402,7 @@ function showCacheNote(fromCache, snapshotDate = null) {
     cacheNote.innerHTML =
       `Cached content 🔃  (<a href="#" id="refresh-cache">refresh cache</a>) · Snapshot : ${snapshotText}`;
   } else {
-    cacheNote.textContent = `✅ Live data · Snapshot : ${snapshotText}`;
+    cacheNote.textContent = `Live data ✅ · Snapshot : ${snapshotText}`;
   }
 }
 
