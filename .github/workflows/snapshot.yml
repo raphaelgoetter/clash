@@ -1,5 +1,9 @@
 name: Daily snapshots
 
+# allow workflow to push updates to repository (snapshot and static cache)
+permissions:
+  contents: write
+
 on:
   schedule:
     # every day at 01:00 UTC
