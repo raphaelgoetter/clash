@@ -529,7 +529,7 @@ export default async function handler(req, res) {
           title: `📋 Présence Discord — ${resolved.name}`,
           color: 0x5865f2,
           description: lines.join('\n\n') || 'Aucun membre trouvé.',
-          footer: { text: `${clanMembers.length} membres · ${Object.keys(links).length} liens enregistrés` },
+          footer: { text: `${clanMembers.length} membres · ${new Set(Object.values(links)).size} comptes Discord liés` },
         };
 
         await fetch(webhookUrl, {
