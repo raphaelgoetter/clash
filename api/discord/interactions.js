@@ -94,6 +94,55 @@ function padEndDisplay(str, width) {
   return str + ' '.repeat(Math.max(0, width - dw));
 }
 
+// ── Discord Links — stockage GitHub ─────────────────────────────────────────
+// Les liens Clash tag → Discord user ID sont persistés dans data/discord-links.json
+// via l'API GitHub Contents pour survivre aux redéploiements Vercel.
+
+async function readDiscordLinks() {
+  const repo  = process.env.GITHUB_REPO;
+  const token = process.env.GITHUB_TOKEN;
+  if (!repo || !token) return { links: {}, sha: null };
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${repo}/contents/data/discord-links.json`,
+      { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github+json' } },
+    );
+    if (!res.ok) return { links: {}, sha: null };
+    const data = await res.json();
+    const links = JSON.parse(Buffer.from(data.content, 'base64').toString('utf8'));
+    return { links, sha: data.sha };
+  } catch {
+    return { links: {}, sha: null };
+  }
+}
+
+async function writeDiscordLinks(links, sha, message) {
+  const repo  = process.env.GITHUB_REPO;
+  const token = process.env.GITHUB_TOKEN;
+  if (!repo || !token || !sha) return false;
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${repo}/contents/data/discord-links.json`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github+json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message,
+          content: Buffer.from(JSON.stringify(links, null, 2) + '\n').toString('base64'),
+          sha,
+        }),
+      },
+    );
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
@@ -323,6 +372,136 @@ export default async function handler(req, res) {
           color: 0x5865f2,
           description,
           footer: { text: `Quota : ${min} · Clan : ${clanName}` },
+        };
+
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ embeds: [embed] }),
+        });
+      } catch (err) {
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
+        });
+      }
+    })());
+    return;
+  }
+
+  // Commande /discord-link
+  if (body.type === 2 && body.data?.name === 'discord-link') {
+    const tagOption = body.data.options?.find((o) => o.name === 'tag');
+    const rawTag = tagOption?.value?.trim();
+    if (!rawTag) {
+      return res.status(200).json({
+        type: 4,
+        data: { content: 'Veuillez fournir un tag de joueur (ex: `#ABC123`).', flags: 64 },
+      });
+    }
+    // Réponse éphémère différée (visible uniquement par l'utilisateur)
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+    const discordUserId = body.member?.user?.id ?? body.user?.id;
+    const tag = rawTag.startsWith('#') ? rawTag.toUpperCase() : `#${rawTag.toUpperCase()}`;
+
+    waitUntil((async () => {
+      try {
+        const { fetchPlayer } = await import('../../backend/services/clashApi.js');
+        let player;
+        try {
+          player = await fetchPlayer(tag);
+        } catch {
+          await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: `❌ Tag \`${tag}\` introuvable dans Clash Royale.`, flags: 64 }),
+          });
+          return;
+        }
+
+        const { links, sha } = await readDiscordLinks();
+        // Supprimer tout lien précédent de cet utilisateur Discord
+        for (const [t, id] of Object.entries(links)) {
+          if (id === discordUserId) delete links[t];
+        }
+        links[tag] = discordUserId;
+
+        const ok = await writeDiscordLinks(
+          links, sha,
+          `discord: lien Discord ${discordUserId} → Clash ${tag}`,
+        );
+        const msg = ok
+          ? `✅ Ton compte Discord est maintenant lié à **${player.name}** (\`${tag}\`).`
+          : `⚠️ Lien enregistré mais la sauvegarde GitHub a échoué — contacte un admin.`;
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: msg, flags: 64 }),
+        });
+      } catch (err) {
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
+        });
+      }
+    })());
+    return;
+  }
+
+  // Commande /discord-check
+  if (body.type === 2 && body.data?.name === 'discord-check') {
+    const clanOpt = body.data.options?.find((o) => o.name === 'clan');
+    const clanVal = (clanOpt?.value || '1').toString().trim();
+    const CLAN_MAP = {
+      '1': { name: 'La Resistance',  tag: 'Y8JUPC9C' },
+      '2': { name: 'Les Resistants', tag: 'LRQP20V9' },
+      '3': { name: 'Les Revoltes',   tag: 'QU9UQJRL' },
+    };
+    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP['1'];
+
+    res.status(200).json({ type: 5 });
+    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+
+    waitUntil((async () => {
+      try {
+        const { fetchClanMembers } = await import('../../backend/services/clashApi.js');
+        const [clanMembers, { links }] = await Promise.all([
+          fetchClanMembers(`#${resolved.tag}`),
+          readDiscordLinks(),
+        ]);
+
+        // Récupère tous les membres du serveur Discord (max 1 000)
+        const guildId   = process.env.DISCORD_GUILD_ID;
+        const botToken  = process.env.DISCORD_TOKEN;
+        const guildRes  = await fetch(
+          `https://discord.com/api/v10/guilds/${guildId}/members?limit=1000`,
+          { headers: { Authorization: `Bot ${botToken}` } },
+        );
+        const guildMembers   = guildRes.ok ? await guildRes.json() : [];
+        const guildMemberIds = new Set(guildMembers.map((m) => m.user?.id).filter(Boolean));
+
+        const present = [], absent = [], unlinked = [];
+        for (const m of clanMembers) {
+          const normTag    = m.tag.startsWith('#') ? m.tag : `#${m.tag}`;
+          const discordId  = links[normTag];
+          if (!discordId)                    unlinked.push(m.name);
+          else if (guildMemberIds.has(discordId)) present.push(m.name);
+          else                               absent.push(m.name);
+        }
+
+        const lines = [];
+        if (present.length)  lines.push(`✅ **Présents** (${present.length}) : ${present.join(', ')}`);
+        if (absent.length)   lines.push(`❌ **Liés mais absents du serveur** (${absent.length}) : ${absent.join(', ')}`);
+        if (unlinked.length) lines.push(`❓ **Non liés** (${unlinked.length}) : ${unlinked.join(', ')}`);
+
+        const embed = {
+          title: `📋 Présence Discord — ${resolved.name}`,
+          color: 0x5865f2,
+          description: lines.join('\n\n') || 'Aucun membre trouvé.',
+          footer: { text: `${clanMembers.length} membres · ${Object.keys(links).length} liens enregistrés` },
         };
 
         await fetch(webhookUrl, {

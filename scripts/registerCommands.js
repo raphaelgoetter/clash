@@ -31,6 +31,35 @@ const commands = [
     ],
   },
   {
+    name: 'discord-link',
+    description: 'Lie ton compte Clash Royale à ton compte Discord.',
+    options: [
+      {
+        type: 3, // STRING
+        name: 'tag',
+        description: 'Ton tag Clash Royale (ex : #ABC123)',
+        required: true,
+      },
+    ],
+  },
+  {
+    name: 'discord-check',
+    description: 'Vérifie quels membres d\'un clan sont présents sur ce serveur Discord.',
+    options: [
+      {
+        type: 3, // STRING
+        name: 'clan',
+        description: '1=La Resistance, 2=Les Resistants, 3=Les Revoltes (défaut : 1)',
+        required: false,
+        choices: [
+          { name: 'La Resistance',  value: '1' },
+          { name: 'Les Resistants', value: '2' },
+          { name: 'Les Revoltes',   value: '3' },
+        ],
+      },
+    ],
+  },
+  {
     name: 'promote',
     description: "Liste les joueurs éligibles à la promotion (quota minimum)",
     options: [
