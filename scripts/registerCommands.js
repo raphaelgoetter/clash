@@ -37,7 +37,7 @@ const commands = [
       {
         type: 4, // INTEGER
         name: 'min',
-        description: 'Quota minimale (ex: 2400 à 2800)',
+        description: 'Quota minimal (ex: 2400 à 2800)',
         required: false,
         choices: [
           { name: '2400', value: 2400 },

@@ -61,6 +61,39 @@ function capitalize(str) {
   return str && str.length ? str[0].toUpperCase() + str.slice(1) : '';
 }
 
+// Calcule la largeur visuelle d'une chaîne en monospace :
+// les symboles Misc, CJK et emoji comptent pour 2 colonnes,
+// les caractères ASCII normaux pour 1.
+function displayWidth(str) {
+  let w = 0;
+  for (const ch of str) {
+    const cp = ch.codePointAt(0);
+    if (
+      (cp >= 0x1100 && cp <= 0x115F) ||
+      (cp >= 0x2E80 && cp <= 0x9FFF) ||
+      (cp >= 0xA000 && cp <= 0xA4CF) ||
+      (cp >= 0xAC00 && cp <= 0xD7AF) ||
+      (cp >= 0xF900 && cp <= 0xFAFF) ||
+      (cp >= 0xFE10 && cp <= 0xFE6F) ||
+      (cp >= 0xFF00 && cp <= 0xFF60) ||
+      (cp >= 0xFFE0 && cp <= 0xFFE6) ||
+      (cp >= 0x1F004 && cp <= 0x1FFFF) ||
+      (cp >= 0x2600 && cp <= 0x27BF)   // Misc Symbols : ♠♦♥♣☆ etc.
+    ) {
+      w += 2;
+    } else {
+      w += 1;
+    }
+  }
+  return w;
+}
+
+// Équivalent de padEnd mais qui tient compte de la largeur visuelle.
+function padEndDisplay(str, width) {
+  const dw = displayWidth(str);
+  return str + ' '.repeat(Math.max(0, width - dw));
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
@@ -274,11 +307,11 @@ export default async function handler(req, res) {
           description = `Aucun joueur n'atteint ${min} fame.`;
         } else {
           // bloc monospace aligné comme /trust
-          let maxName = 0;
-          for (const p of players) if (p.name.length > maxName) maxName = p.name.length;
+          let maxWidth = 0;
+          for (const p of players) if (displayWidth(p.name) > maxWidth) maxWidth = displayWidth(p.name);
           const rows = players.map((p, i) => {
             const num   = String(i + 1).padStart(2);
-            const name  = p.name.padEnd(maxName);
+            const name  = padEndDisplay(p.name, maxWidth);
             const role  = capitalize(p.role || 'member');
             return `${num}. ${name}  ${p.fame} fame  [${role}]`;
           });
