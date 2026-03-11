@@ -140,9 +140,9 @@ export default async function handler(req, res) {
         // --- déclencher snapshots pour tous les clans autorisés ---
         // c'est léger (3 appels à RoyaleAPI) et fait gagner un cycle aux visiteurs.
         // Si l'un d'eux échoue, on s'en fiche.
-        import('../backend/routes/clan.js').then(({ ALLOWED_CLANS }) => {
-          import('../backend/services/clashApi.js').then(({ fetchRaceLog }) => {
-            import('../backend/services/snapshot.js').then(({ recordSnapshot }) => {
+        import('../../backend/routes/clan.js').then(({ ALLOWED_CLANS }) => {
+          import('../../backend/services/clashApi.js').then(({ fetchRaceLog }) => {
+            import('../../backend/services/snapshot.js').then(({ recordSnapshot }) => {
               ALLOWED_CLANS.forEach((clanTag) => {
                 fetchRaceLog(clanTag)
                   .then((log) => {
@@ -261,8 +261,8 @@ export default async function handler(req, res) {
 
     waitUntil((async () => {
       try {
-        const { fetchClanMembers } = await import('../backend/services/clashApi.js');
-        const { computeTopPlayers } = await import('../backend/services/topplayers.js');
+        const { fetchClanMembers } = await import('../../backend/services/clashApi.js');
+        const { computeTopPlayers } = await import('../../backend/services/topplayers.js');
         // fetch clan members to get roles
         const members = await fetchClanMembers(`#${clanTag}`);
         const top = await computeTopPlayers(clanTag, members, [min]);
