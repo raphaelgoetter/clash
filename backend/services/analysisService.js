@@ -473,7 +473,7 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
       label:  'Discord',
       score:  discordScore,
       max:    2,
-      detail: discordLinked ? 'Compte Discord lié au serveur' : 'Compte Discord non lié (/discord-link)',
+      detail: discordLinked ? 'Discord account linked to the server' : 'Discord account not linked (/discord-link)',
     },
   ];
 
@@ -609,7 +609,7 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
         label:  'Discord',
         score:  discordScore,
         max:    2,
-        detail: discordLinked ? 'Compte Discord lié au serveur' : 'Compte Discord non lié (/discord-link)',
+        detail: discordLinked ? 'Discord account linked to the server' : 'Discord account not linked (/discord-link)',
       },
       ...(lastSeenScore !== null ? [{
         label:  'Last Seen',

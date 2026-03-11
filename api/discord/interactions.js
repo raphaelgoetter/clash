@@ -52,7 +52,8 @@ const LABEL_FR = {
 };
 function breakdownField(item) {
   const icon = criterionIcon(item.score, item.max);
-  const label = LABEL_FR[item.label] || item.label;
+  let label = LABEL_FR[item.label] || item.label;
+  if (item.label === 'Discord') label = `Discord (${item.score > 0 ? 'oui' : 'non'})`;
   return { name: `${icon} ${label}`, value: `${item.score}/${item.max}`, inline: true };
 }
 
