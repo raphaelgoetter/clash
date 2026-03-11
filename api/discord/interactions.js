@@ -400,10 +400,24 @@ export default async function handler(req, res) {
         data: { content: 'Veuillez fournir un tag de joueur (ex: `#ABC123`).', flags: 64 },
       });
     }
+    // Vérification admin si l'option utilisateur est fournie
+    const userOpt = body.data.options?.find((o) => o.name === 'utilisateur');
+    if (userOpt) {
+      const perms = BigInt(body.member?.permissions ?? '0');
+      const isAdmin = (perms & 0x8n) !== 0n || (perms & 0x20n) !== 0n;
+      if (!isAdmin) {
+        return res.status(200).json({
+          type: 4,
+          data: { content: '❌ L\'option `utilisateur` est réservée aux administrateurs et gestionnaires du serveur.', flags: 64 },
+        });
+      }
+    }
+
     // Réponse éphémère différée (visible uniquement par l'utilisateur)
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
-    const discordUserId = body.member?.user?.id ?? body.user?.id;
+    const invokerId = body.member?.user?.id ?? body.user?.id;
+    const discordUserId = userOpt ? userOpt.value : invokerId;
     const tag = rawTag.startsWith('#') ? rawTag.toUpperCase() : `#${rawTag.toUpperCase()}`;
 
     waitUntil((async () => {
@@ -428,12 +442,17 @@ export default async function handler(req, res) {
         }
         links[tag] = discordUserId;
 
+        const byAdmin = userOpt != null;
         const ok = await writeDiscordLinks(
           links, sha,
-          `discord: lien Discord ${discordUserId} → Clash ${tag}`,
+          byAdmin
+            ? `discord: (admin ${invokerId}) lien Discord ${discordUserId} → Clash ${tag}`
+            : `discord: lien Discord ${discordUserId} → Clash ${tag}`,
         );
         const msg = ok
-          ? `✅ Ton compte Discord est maintenant lié à **${player.name}** (\`${tag}\`).`
+          ? byAdmin
+            ? `✅ <@${discordUserId}> est maintenant lié à **${player.name}** (\`${tag}\`).`
+            : `✅ Ton compte Discord est maintenant lié à **${player.name}** (\`${tag}\`).`
           : `⚠️ Lien enregistré mais la sauvegarde GitHub a échoué — contacte un admin.`;
         await fetch(webhookUrl, {
           method: 'POST',

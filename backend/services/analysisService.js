@@ -322,7 +322,7 @@ export function buildDailyActivity(battleLog, days = 30) {
  *                                           adds a 6th criterion /5 and maxScore becomes 35.
  * @returns {{ total:number; maxScore:number; pct:number; verdict:string; color:string; breakdown:object[] }}
  */
-export function computeWarScore(player, warHistory, warWinRate = null, lastSeen = null) {
+export function computeWarScore(player, warHistory, warWinRate = null, lastSeen = null, discordLinked = false) {
   const r = (v) => Math.round(v * 10) / 10; // round to 1 decimal
 
   // filter out weeks that were explicitly ignored by earlier rules; keeping the
@@ -386,9 +386,12 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
     lastSeenScore = lastSeenDays <= 1 ? 5 : lastSeenDays <= 3 ? 3 : lastSeenDays <= 7 ? 1 : 0;
   }
 
-  const total    = r(regularite + scoreMoyen + stabilite + experience + dons + (winRateGDC ?? 0) + cw2Score + (lastSeenScore ?? 0));
-  // Regularity now max 12 → base totals bump by +2
-  const maxScore = (winRateGDC !== null ? 46 : 43) + (lastSeenScore !== null ? 5 : 0);
+  // 9. Discord (0-2) — lié au serveur Discord du clan
+  const discordScore = discordLinked ? 2 : 0;
+
+  const total    = r(regularite + scoreMoyen + stabilite + experience + dons + (winRateGDC ?? 0) + cw2Score + (lastSeenScore ?? 0) + discordScore);
+  // Regularity now max 12 → base totals bump by +2; Discord always adds 2
+  const maxScore = (winRateGDC !== null ? 46 : 43) + (lastSeenScore !== null ? 5 : 0) + 2;
   const pct      = Math.round((total / maxScore) * 100);
 
   let verdict, color;
@@ -466,6 +469,12 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
       max:    2,
       detail: `${(player.donations ?? 0).toLocaleString('en-US')} cards donated (cap 500)`,
     },
+    {
+      label:  'Discord',
+      score:  discordScore,
+      max:    2,
+      detail: discordLinked ? 'Compte Discord lié au serveur' : 'Compte Discord non lié (/discord-link)',
+    },
   ];
 
   return { total, maxScore, pct, verdict, color, breakdown };
@@ -489,7 +498,7 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
  * @param {object[]} warLog       - Filtered war battles (expanded duels)
  * @param {object}   battleLogBreakdown - Output of categorizeBattleLog()
  */
-export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown, lastSeen = null) {
+export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown, lastSeen = null, discordLinked = false) {
   const r = (v) => Math.round(v * 10) / 10;
 
   const bd = battleLogBreakdown ?? { total: warLog.length, gdc: warLog.length, ladder: 0, challenge: 0 };
@@ -543,10 +552,13 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
     lastSeenScore = lastSeenDays <= 1 ? 5 : lastSeenDays <= 3 ? 3 : lastSeenDays <= 7 ? 1 : 0;
   }
 
-  const total    = r(activiteGDC + activiteGen + cw2Score + winRateGDC + experience + dons + (lastSeenScore ?? 0));
-  // base max: 12+8+8+5+3+2=38, réduit à 33 si win rate exclu (<10 combats)
+  // Discord (0-2) — lié au serveur Discord du clan
+  const discordScore = discordLinked ? 2 : 0;
+
+  const total    = r(activiteGDC + activiteGen + cw2Score + winRateGDC + experience + dons + (lastSeenScore ?? 0) + discordScore);
+  // base max: 12+8+8+5+3+2=38, réduit à 33 si win rate exclu (<10 combats); Discord toujours +2
   const maxBase  = winRateExcluded ? 33 : 38;
-  const maxScore = maxBase + (lastSeenScore !== null ? 5 : 0);
+  const maxScore = maxBase + (lastSeenScore !== null ? 5 : 0) + 2;
   const pct      = Math.round((total / maxScore) * 100);
 
   let verdict, color;
@@ -592,6 +604,12 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
           : winRateExcluded
             ? `${Math.round(gdcWinRate * 100)}% wins (${gdcWins}W / ${gdcCount - gdcWins}L) — not counted (10 battles required)`
             : `${Math.round(gdcWinRate * 100)}% wins (${gdcWins}W / ${gdcCount - gdcWins}L)`,
+      },
+      {
+        label:  'Discord',
+        score:  discordScore,
+        max:    2,
+        detail: discordLinked ? 'Compte Discord lié au serveur' : 'Compte Discord non lié (/discord-link)',
       },
       ...(lastSeenScore !== null ? [{
         label:  'Last Seen',
@@ -742,7 +760,7 @@ export function buildWarHistory(playerTag, raceLog, currentClanTag = null, curre
  * @param {object[]} battleLog
  * @returns {object}
  */
-export function analyzePlayer(player, battleLog, lastSeen = null) {
+export function analyzePlayer(player, battleLog, lastSeen = null, discordLinked = false) {
   // Categorise all raw entries before filtering
   const battleLogBreakdown = categorizeBattleLog(battleLog);
 
@@ -750,7 +768,7 @@ export function analyzePlayer(player, battleLog, lastSeen = null) {
   const warLog = expandDuelRounds(filterWarBattles(battleLog));
 
   // Fallback reliability (battle log only) — overridden in the route when race log is available
-  const reliability = computeWarReliabilityFallback(player, warLog, battleLogBreakdown, lastSeen);
+  const reliability = computeWarReliabilityFallback(player, warLog, battleLogBreakdown, lastSeen, discordLinked);
   const dailyActivity = buildDailyActivity(warLog, 7);
 
   const wins            = warLog.filter(isWarWin).length;
@@ -800,7 +818,7 @@ export function analyzePlayer(player, battleLog, lastSeen = null) {
  * @param {string} tag - player tag (with or without leading '#')
  * @returns {Promise<object>} analysis payload
  */
-export async function getPlayerAnalysis(tag) {
+export async function getPlayerAnalysis(tag, discordLinked = false) {
   const [player, battleLog] = await Promise.all([
     fetchPlayer(tag),
     fetchBattleLog(tag),
@@ -818,7 +836,7 @@ export async function getPlayerAnalysis(tag) {
     }
   }
 
-  const analysis = analyzePlayer(player, battleLog, lastSeen);
+  const analysis = analyzePlayer(player, battleLog, lastSeen, discordLinked);
 
   // Enrich with river race history if the player is currently in a clan.
   // We silently ignore failures so a missing/private war log doesn't block the response.
@@ -885,7 +903,7 @@ export async function getPlayerAnalysis(tag) {
       const effectiveWinRate = analysis.warHistory.historicalWinRate ?? warWinRate;
 
       if (hasEnoughHistory) {
-        analysis.warScore = computeWarScore(player, analysis.warHistory, effectiveWinRate, lastSeen);
+        analysis.warScore = computeWarScore(player, analysis.warHistory, effectiveWinRate, lastSeen, discordLinked);
         // si win rate exclu (< 10 batailles), ajouter une entrée informative marquée excluded
         if (effectiveWinRate === null && rawWarLog.length > 0) {
           const rawRate = gdcWins / rawWarLog.length;
@@ -933,8 +951,9 @@ export async function getPlayerAnalysis(tag) {
   }
   analysis.currentWarDays = warSummary;
 
-  // expose lastSeen for external callers
+  // expose lastSeen et discord pour les appelants externes
   analysis.overview.lastSeen = lastSeen;
+  analysis.overview.discord = discordLinked;
   return analysis;
 }
 

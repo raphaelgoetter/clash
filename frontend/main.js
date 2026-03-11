@@ -487,6 +487,8 @@ function renderPlayerResults(data) {
       risk: overview.trophies < 3000 ? 'bad' : overview.trophies < 5000 ? 'warn' : null },
     { label: 'CW2 Wins',      value: `⚔️ ${fmt(cw2)}`,
       risk: cw2 < 50 ? 'bad' : cw2 < 150 ? 'warn' : null },
+    { label: 'Discord',       value: data.overview?.discord ? '✅ Lié' : '❓ Non lié',
+      cls: data.overview?.discord ? 'c-green' : 'c-red' },
   ]);
 
   // 2. Stats — race log quand il y a des semaines, sinon battlelog breakdown
@@ -892,7 +894,7 @@ function renderClanResults(data) {
 
 function renderMembersTable(members) {
   if (members.length === 0) {
-    membersTbody.innerHTML = `<tr><td colspan="${isWarActive ? 8 : 7}" style="text-align:center;color:var(--text-muted)">No members found.</td></tr>`;
+    membersTbody.innerHTML = `<tr><td colspan="${isWarActive ? 9 : 8}" style="text-align:center;color:var(--text-muted)">No members found.</td></tr>`;
     return;
   }
 
@@ -926,6 +928,7 @@ function renderMembersTable(members) {
         <td><span class="role-badge ${m.role}">${capitalize(m.role)}</span></td>
         <td>🏆 ${fmt(m.trophies)}</td>
         <td>${fmt(m.donations)}</td>
+        <td class="discord-col">${m.discord ? '✅' : '❓'}</td>
         <td>
           <div style="display:flex;align-items:center;gap:8px">
             <div style="flex:1;height:6px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden;min-width:60px">

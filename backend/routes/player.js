@@ -10,6 +10,7 @@ import {
   getPlayerAnalysis,
 } from '../services/analysisService.js';
 import { getOrSet } from '../services/cache.js';
+import { getDiscordLinks } from '../services/discordLinks.js';
 
 // short TTL so we don't keep erroneous scores for long
 const PLAYER_CACHE_TTL = 30 * 1000; // 30 seconds
@@ -37,22 +38,27 @@ router.get('/:tag', async (req, res) => {
 router.get('/:tag/analysis', async (req, res) => {
   try {
     const tag = req.params.tag;
+    // Récupère le statut Discord (lié ou non) avant l'analyse
+    const discordLinks  = await getDiscordLinks().catch(() => ({}));
+    const discordLinked = Object.prototype.hasOwnProperty.call(discordLinks, tag);
     // attempt memory cache but force rebuild if warHistory seems missing
     let analysis, fromCache;
     ({ value: analysis, fromCache } = await getOrSet(
       `player:analysis:${tag}`,
-      () => getPlayerAnalysis(tag),
+      () => getPlayerAnalysis(tag, discordLinked),
       PLAYER_CACHE_TTL,
     ));
     // if cached result has warHistory but no weeks and player isn't fallback,
     // refresh synchronously to avoid blank cards
     if (fromCache && analysis.warHistory && analysis.warHistory.weeks.length === 0 && !analysis.reliability) {
       // recompute immediately ignoring cache
-      analysis = await getPlayerAnalysis(tag);
+      analysis = await getPlayerAnalysis(tag, discordLinked);
       fromCache = false;
     }
     res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
     res.set('X-Cache', fromCache ? 'HIT' : 'MISS');
+    // S'assure que le statut Discord est toujours à jour (indépendamment du cache d'analyse)
+    if (analysis.overview) analysis.overview.discord = discordLinked;
     // keep API shape consistent with clan route
     res.json({ ...analysis, snapshotDate: null });
   } catch (err) {

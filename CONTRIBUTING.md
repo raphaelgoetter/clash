@@ -133,8 +133,9 @@ Seven weighted criteria:
 | 6 | Win rate (River Race) | 3 | 100% win rate = full score · **min. 10 GDC battles** (absent otherwise) |
 | 7 | Experience (best trophies) | 3 | 12,000 trophies = full score |
 | 8 | Donations | 2 | 500 cards donated = full score |
+| 9 | Discord | 2 | compte lié via `/discord-link` = full score |
 
-Without battle log (criterion 6 absent): max = **43 pts**. With last seen and win rate: **51 pts** maximum.
+Without battle log (criterion 6 absent): max = **45 pts**. With last seen and win rate: **53 pts** maximum.
 
 ### War reliability score — fallback mode (0–36 pts)
 
@@ -149,6 +150,7 @@ Used when no race log history is available (battle log only):
 | 5 | General activity | 8 | 20 competitive battles = full score |
 | 6 | Experience | 3 | 12,000 best trophies = full score |
 | 7 | Donations | 2 | 500 cards donated = full score |
+| 8 | Discord | 2 | compte lié via `/discord-link` = full score |
 
 ### Verdict thresholds (both scoring modes)
 

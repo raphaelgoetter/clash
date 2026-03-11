@@ -40,6 +40,12 @@ const commands = [
         description: 'Ton tag Clash Royale (ex : #ABC123)',
         required: true,
       },
+      {
+        type: 6, // USER
+        name: 'utilisateur',
+        description: 'Membre Discord à lier (réservé aux admins / officiers)',
+        required: false,
+      },
     ],
   },
   {

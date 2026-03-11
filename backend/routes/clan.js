@@ -13,6 +13,7 @@ import { computeTopPlayers } from '../services/topplayers.js';
 import { computeUncomplete } from '../services/uncomplete.js';
 import { loadCache, saveCache } from '../services/analysisCache.js';
 import { getOrSet } from '../services/cache.js';
+import { getDiscordLinks } from '../services/discordLinks.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -108,6 +109,9 @@ export async function buildClanAnalysis(clanTag) {
       fetchClanMembers(clanTag),
     ]);
 
+    // Chargement des liens Discord (tag → discord_user_id) — cache 5 min
+    const discordLinks = await getDiscordLinks().catch(() => ({}));
+
     // Fetch race log once and compute war-based scores for every member.
     // Fall back to the legacy activity score for members absent from the log.
     let raceLog = null;
@@ -200,6 +204,8 @@ export async function buildClanAnalysis(clanTag) {
 
       // Player proxy: prefer full profile (has badges), fall back to member data
       const playerProxy = fullPlayer ?? { bestTrophies: m.trophies ?? 0, donations: m.donations ?? 0 };
+      // Présence Discord : le tag du membre est-il dans discord-links.json ?
+      const discordLinked = Object.prototype.hasOwnProperty.call(discordLinks, m.tag);
 
       if (raceLog) {
         const wh = buildWarHistory(m.tag, raceLog, clan.tag, currentRace);
@@ -232,13 +238,13 @@ export async function buildClanAnalysis(clanTag) {
         if (hasEnoughHistory) {
           // Historical data — computeWarScore + win rate historique (race log) en priorité
           const effectiveWinRate = wh.historicalWinRate ?? warWinRate;
-          const ws = computeWarScore(playerProxy, wh, effectiveWinRate, m.lastSeen ?? null);
+          const ws = computeWarScore(playerProxy, wh, effectiveWinRate, m.lastSeen ?? null, discordLinked);
           activityScore = ws.pct; verdict = ws.verdict; color = ws.color;
         } else if (battleLog) {
           // New member — full fallback with battle log
           const bd     = categorizeBattleLog(battleLog);
           const warLog = expandDuelRounds(filterWarBattles(battleLog));
-          const ws     = computeWarReliabilityFallback(playerProxy, warLog, bd, m.lastSeen ?? null);
+          const ws     = computeWarReliabilityFallback(playerProxy, warLog, bd, m.lastSeen ?? null, discordLinked);
           activityScore = ws.pct; verdict = ws.verdict; color = ws.color;
           isNew = true;
         } else {
@@ -310,6 +316,7 @@ export async function buildClanAnalysis(clanTag) {
         verdict,
         color,
         isNew,
+        discord:            discordLinked,
         warDays,
         // Valeur numérique pour le tri de la colonne "This War"
         // -1 = arrivé en cours de semaine, null = hors période de guerre

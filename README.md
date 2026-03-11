@@ -29,17 +29,14 @@ favoris se retrouve sous la barre de recherche.
 
 ---
 
-## 🤖 Bot Discord `/trust`
+## 🤖 Bot Discord
 
-Tapez :
+Quatre commandes disponibles :
 
-```
-/trust tag: #ABC123
-```
-
-Le bot répond avec l'analyse du joueur, formatée et colorée directement dans
-le canal. L'analyse est différée — vous voyez « Processing… » puis le résultat
-quelques secondes plus tard.
+- **`/trust tag:#TAG`** — analyse la fiabilité d'un joueur
+- **`/discord-link tag:#TAG`** — lie ton compte Clash à ton Discord (option `utilisateur` pour les admins)
+- **`/discord-check`** — vérifie quels membres d'un clan sont présents sur le serveur Discord
+- **`/promote`** — liste les joueurs éligibles à la promotion
 
 > Remarque : l'installation de ce bot n'est réalisable que par displaynone.
 
