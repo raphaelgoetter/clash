@@ -56,6 +56,11 @@ function breakdownField(item) {
   return { name: `${icon} ${label}`, value: `${item.score}/${item.max}`, inline: true };
 }
 
+// simple utility used by promote handler
+function capitalize(str) {
+  return str && str.length ? str[0].toUpperCase() + str.slice(1) : '';
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
@@ -222,6 +227,77 @@ export default async function handler(req, res) {
             content: `Erreur lors de l'analyse : ${err.message}`,
             flags: 64,
           }),
+        });
+      }
+    })());
+    return;
+  }
+
+  // Commande /promote
+  if (body.type === 2 && body.data?.name === 'promote') {
+    // parse options
+    const minOpt = body.data.options?.find((o) => o.name === 'min');
+    const clanOpt = body.data.options?.find((o) => o.name === 'clan');
+    let min = 2800;
+    if (minOpt && !isNaN(parseInt(minOpt.value))) {
+      min = parseInt(minOpt.value, 10);
+    }
+    let clanVal = (clanOpt?.value || '1').toString().trim().toLowerCase();
+    // resolve clan index/name/tag
+    const { ALLOWED_CLANS } = await import('../backend/routes/clan.js');
+    let clanIndex;
+    let clanName;
+    if (['1','la','laresistance'].includes(clanVal)) {
+      clanIndex = 0;
+      clanName = 'La Resistance';
+    } else if (['2','les','lesresistants'].includes(clanVal)) {
+      clanIndex = 1;
+      clanName = 'Les Resistants';
+    } else if (['3','lesrevoltes'].includes(clanVal)) {
+      clanIndex = 2;
+      clanName = 'Les Revoltes';
+    } else {
+      // unknown input -> default to first clan
+      clanIndex = 0;
+      clanName = 'La Resistance';
+    }
+    const clanTag = ALLOWED_CLANS[clanIndex];
+
+    // defer response
+    res.status(200).json({ type: 5 });
+    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+
+    waitUntil((async () => {
+      try {
+        const { fetchClanMembers } = await import('../backend/services/clashApi.js');
+        const { computeTopPlayers } = await import('../backend/services/topplayers.js');
+        // fetch clan members to get roles
+        const members = await fetchClanMembers(`#${clanTag}`);
+        const top = await computeTopPlayers(clanTag, members, [min]);
+        let players = top.playersByQuota[min] || [];
+        players = players.slice().sort((a, b) => b.fame - a.fame);
+
+        let content;
+        if (players.length === 0) {
+          content = `SEMAINE DE GDC PRÉCÉDENTE :\nAucun joueur ne dépasse ${min} fame pour **${clanName}**.`;
+        } else {
+          content = `SEMAINE DE GDC PRÉCÉDENTE :\nJoueurs ≥ ${min} fame pour **${clanName}** :\n` +
+            players.map(p => {
+              const role = p.role ? ` [${capitalize(p.role)}]` : '';
+              return `${p.name} (${p.tag}) – ${p.fame} fame${role}`;
+            }).join('\n');
+        }
+
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content }),
+        });
+      } catch (err) {
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
         });
       }
     })());

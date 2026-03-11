@@ -30,6 +30,34 @@ const commands = [
       },
     ],
   },
+  {
+    name: 'promote',
+    description: "Liste les joueurs éligibles à la promotion (quota minimum)",
+    options: [
+      {
+        type: 4, // INTEGER
+        name: 'min',
+        description: 'Quota minimale (ex: 2400 à 2800)',
+        required: false,
+        choices: [
+          { name: '2400', value: 2400 },
+          { name: '2600', value: 2600 },
+          { name: '2800', value: 2800 },
+        ],
+      },
+      {
+        type: 3, // STRING
+        name: 'clan',
+        description: '1/2/3 ou la/les (1=La Resistance, 2=Les Resistants, 3=Les Revoltes)',
+        required: false,
+        choices: [
+          { name: 'La Resistance', value: '1' },
+          { name: 'Les Resistants', value: '2' },
+          { name: 'Les Revoltes', value: '3' },
+        ],
+      },
+    ],
+  },
 ];
 
 (async () => {
