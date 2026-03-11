@@ -32,13 +32,25 @@ const commands = [
   },
   {
     name: 'discord-link',
-    description: 'Lie ton compte Clash Royale à ton compte Discord.',
+    description: 'Lie un ou plusieurs tags Clash Royale à ton compte Discord.',
     options: [
       {
         type: 3, // STRING
         name: 'tag',
-        description: 'Ton tag Clash Royale (ex : #ABC123)',
+        description: 'Ton tag Clash Royale principal (ex : #ABC123)',
         required: true,
+      },
+      {
+        type: 3, // STRING
+        name: 'tag2',
+        description: 'Deuxième tag Clash Royale (optionnel)',
+        required: false,
+      },
+      {
+        type: 3, // STRING
+        name: 'tag3',
+        description: 'Troisième tag Clash Royale (optionnel)',
+        required: false,
       },
       {
         type: 6, // USER

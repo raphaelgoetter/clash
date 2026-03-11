@@ -393,16 +393,18 @@ export default async function handler(req, res) {
 
   // Commande /discord-link
   if (body.type === 2 && body.data?.name === 'discord-link') {
-    const tagOption = body.data.options?.find((o) => o.name === 'tag');
-    const rawTag = tagOption?.value?.trim();
-    if (!rawTag) {
+    const opts = body.data.options ?? [];
+    const rawTags = ['tag', 'tag2', 'tag3']
+      .map((n) => opts.find((o) => o.name === n)?.value?.trim())
+      .filter(Boolean);
+    if (rawTags.length === 0) {
       return res.status(200).json({
         type: 4,
-        data: { content: 'Veuillez fournir un tag de joueur (ex: `#ABC123`).', flags: 64 },
+        data: { content: 'Veuillez fournir au moins un tag de joueur (ex: `#ABC123`).', flags: 64 },
       });
     }
     // Vérification admin si l'option utilisateur est fournie
-    const userOpt = body.data.options?.find((o) => o.name === 'utilisateur');
+    const userOpt = opts.find((o) => o.name === 'utilisateur');
     if (userOpt) {
       const perms = BigInt(body.member?.permissions ?? '0');
       const isAdmin = (perms & 0x8n) !== 0n || (perms & 0x20n) !== 0n;
@@ -419,46 +421,66 @@ export default async function handler(req, res) {
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
     const invokerId = body.member?.user?.id ?? body.user?.id;
     const discordUserId = userOpt ? userOpt.value : invokerId;
-    const tag = rawTag.startsWith('#') ? rawTag.toUpperCase() : `#${rawTag.toUpperCase()}`;
+    const tags = rawTags.map((t) => t.startsWith('#') ? t.toUpperCase() : `#${t.toUpperCase()}`);
 
     waitUntil((async () => {
       try {
         const { fetchPlayer } = await import('../../backend/services/clashApi.js');
-        let player;
-        try {
-          player = await fetchPlayer(tag);
-        } catch {
+        // Valider tous les tags en parallèle
+        const results = await Promise.all(tags.map(async (tag) => {
+          try {
+            const player = await fetchPlayer(tag);
+            return { tag, player, ok: true };
+          } catch {
+            return { tag, ok: false };
+          }
+        }));
+
+        const failed  = results.filter((r) => !r.ok);
+        const success = results.filter((r) => r.ok);
+
+        if (failed.length > 0 && success.length === 0) {
           await fetch(webhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: `❌ Tag \`${tag}\` introuvable dans Clash Royale.`, flags: 64 }),
+            body: JSON.stringify({
+              content: failed.map((r) => `❌ Tag \`${r.tag}\` introuvable dans Clash Royale.`).join('\n'),
+              flags: 64,
+            }),
           });
           return;
         }
 
         const { links, sha } = await readDiscordLinks();
-        // Supprimer tout lien précédent de cet utilisateur Discord
-        for (const [t, id] of Object.entries(links)) {
-          if (id === discordUserId) delete links[t];
+        // Ajouter les nouveaux liens (sans supprimer les liens existants de cet utilisateur)
+        for (const { tag } of success) {
+          links[tag] = discordUserId;
         }
-        links[tag] = discordUserId;
 
         const byAdmin = userOpt != null;
+        const tagList = success.map((r) => r.tag).join(', ');
         const ok = await writeDiscordLinks(
           links, sha,
           byAdmin
-            ? `discord: (admin ${invokerId}) lien Discord ${discordUserId} → Clash ${tag}`
-            : `discord: lien Discord ${discordUserId} → Clash ${tag}`,
+            ? `discord: (admin ${invokerId}) lien Discord ${discordUserId} → Clash ${tagList}`
+            : `discord: lien Discord ${discordUserId} → Clash ${tagList}`,
         );
-        const msg = ok
-          ? byAdmin
-            ? `✅ <@${discordUserId}> est maintenant lié à **${player.name}** (\`${tag}\`).`
-            : `✅ Ton compte Discord est maintenant lié à **${player.name}** (\`${tag}\`).`
-          : `⚠️ Lien enregistré mais la sauvegarde GitHub a échoué — contacte un admin.`;
+
+        const lines = [];
+        for (const { tag, player } of success) {
+          lines.push(byAdmin
+            ? `✅ <@${discordUserId}> lié à **${player.name}** (\`${tag}\`).`
+            : `✅ Lié à **${player.name}** (\`${tag}\`).`);
+        }
+        for (const { tag } of failed) {
+          lines.push(`❌ Tag \`${tag}\` introuvable — ignoré.`);
+        }
+        if (!ok) lines.push('⚠️ Sauvegarde GitHub échouée — contacte un admin.');
+
         await fetch(webhookUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: msg, flags: 64 }),
+          body: JSON.stringify({ content: lines.join('\n'), flags: 64 }),
         });
       } catch (err) {
         await fetch(webhookUrl, {
