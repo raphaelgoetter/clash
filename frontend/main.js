@@ -599,6 +599,17 @@ function renderPlayerResults(data) {
   `;
 
   reasonsList.innerHTML = (ws.breakdown ?? []).map((b) => {
+    if (b.excluded) {
+      return `
+      <li class="score-row score-row-excluded">
+        <div class="sr-header">
+          <span class="sr-label">${escHtml(b.label)}</span>
+          <span class="sr-excluded-badge">not counted</span>
+        </div>
+        <div class="sr-bar-bg"></div>
+        <div class="sr-detail">${escHtml(b.detail)}</div>
+      </li>`;
+    }
     const pct   = Math.round((b.score / b.max) * 100);
     const color = pct >= 76 ? 'var(--green)' : pct >= 56 ? 'var(--yellow)' : pct >= 31 ? 'var(--orange)' : 'var(--red)';
     return `

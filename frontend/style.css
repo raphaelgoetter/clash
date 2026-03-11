@@ -683,6 +683,16 @@ select.search-input {
   color: var(--text-muted);
 }
 
+.score-row-excluded { opacity: .75; }
+
+.sr-excluded-badge {
+  font-size: .75rem;
+  color: var(--text-muted);
+  border: 1px solid var(--text-muted);
+  border-radius: 4px;
+  padding: 1px 7px;
+}
+
 .fallback-badge {
   margin-block: 10px;
   padding: 7px 12px;

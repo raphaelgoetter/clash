@@ -361,9 +361,10 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
   // (au lieu de 10 semaines), pour ne pas trop pénaliser les membres récents
   const stabilite      = r(Math.min(8, (warHistory.streakInCurrentClan / totalWeeks) * 16));
 
-  // 4. Expérience trophées (0-3) — ≥ 12 000 best trophies = 3/3
-  const TROPHY_CAP   = 12000;
-  const experience   = r(Math.min(3, ((player.bestTrophies ?? 0) / TROPHY_CAP) * 3));
+  // 4. Expérience trophées (0-3) — [4 000, 14 000] trophées actuels
+  const TROPHY_MIN   = 4000;
+  const TROPHY_CAP   = 14000;
+  const experience   = r(Math.max(0, Math.min(3, (((player.trophies ?? 0) - TROPHY_MIN) / (TROPHY_CAP - TROPHY_MIN)) * 3)));
 
   // 5. Dons (0-2) — ≥ 500 cartes données cette saison = 2/2
   const DONATION_CAP = 500;
@@ -457,7 +458,7 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
       label:  'Experience',
       score:  experience,
       max:    3,
-      detail: `${(player.bestTrophies ?? 0).toLocaleString('en-US')} best trophies (cap 12,000)`,
+      detail: `${(player.trophies ?? 0).toLocaleString('en-US')} trophies (range 4,000–14,000)`,
     },
     {
       label:  'Donations',
@@ -512,15 +513,17 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
   activiteGDC -= shortDays * 0.1;      // -0.1 point per short day
   activiteGDC = r(Math.min(12, Math.max(0, activiteGDC)));
 
-  // 2. Win Rate GDC (0-5) — minimum 10 combats requis, sinon non compté (0)
-  const winRateGDC = gdcCount >= 10 ? r(gdcWinRate * 5) : 0;
+  // 2. Win Rate GDC (0-5) — minimum 10 combats requis, sinon exclu du score ET du max
+  const winRateExcluded = gdcCount < 10;
+  const winRateGDC = winRateExcluded ? 0 : r(gdcWinRate * 5);
 
   // 3. Activité générale (0-8)
   const activiteGen = r(Math.min(8, (competitive / 20) * 8));
 
-  // 4. Expérience (0-3) — bestTrophies cap 12 000
-  const TROPHY_CAP = 12000;
-  const experience = r(Math.min(3, ((player.bestTrophies ?? 0) / TROPHY_CAP) * 3));
+  // 4. Expérience (0-3) — trophées actuels, plage [4 000, 14 000]
+  const TROPHY_MIN = 4000;
+  const TROPHY_CAP = 14000;
+  const experience = r(Math.max(0, Math.min(3, (((player.trophies ?? 0) - TROPHY_MIN) / (TROPHY_CAP - TROPHY_MIN)) * 3)));
 
   // 5. Dons (0-2) — cap 500
   const DONATION_CAP = 500;
@@ -541,8 +544,9 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
   }
 
   const total    = r(activiteGDC + activiteGen + cw2Score + winRateGDC + experience + dons + (lastSeenScore ?? 0));
-  // base max: 12 + 8 + 8 + 5 + 3 + 2 = 38
-  const maxScore = 38 + (lastSeenScore !== null ? 5 : 0);
+  // base max: 12+8+8+5+3+2=38, réduit à 33 si win rate exclu (<10 combats)
+  const maxBase  = winRateExcluded ? 33 : 38;
+  const maxScore = maxBase + (lastSeenScore !== null ? 5 : 0);
   const pct      = Math.round((total / maxScore) * 100);
 
   let verdict, color;
@@ -580,11 +584,14 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
       },
       {
         label:  'Win Rate (War)',
-        score:  winRateGDC,
+        score:  gdcCount > 0 ? r(Math.min(5, gdcWinRate * 5)) : 0,
         max:    5,
-        detail: gdcCount > 0
-          ? `${Math.round(gdcWinRate * 100)}% wins (${gdcWins}W / ${gdcCount - gdcWins}L)`
-          : 'No data — no war battles found',
+        excluded: winRateExcluded,
+        detail: gdcCount === 0
+          ? 'No data — no war battles found'
+          : winRateExcluded
+            ? `${Math.round(gdcWinRate * 100)}% wins (${gdcWins}W / ${gdcCount - gdcWins}L) — not counted (10 battles required)`
+            : `${Math.round(gdcWinRate * 100)}% wins (${gdcWins}W / ${gdcCount - gdcWins}L)`,
       },
       ...(lastSeenScore !== null ? [{
         label:  'Last Seen',
@@ -599,7 +606,7 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
         label:  'Experience',
         score:  experience,
         max:    3,
-        detail: `${(player.bestTrophies ?? 0).toLocaleString('en-US')} best trophies (cap 12,000)`,
+        detail: `${(player.trophies ?? 0).toLocaleString('en-US')} trophies (range 4,000–14,000)`,
       },
       {
         label:  'Donations',
@@ -879,6 +886,18 @@ export async function getPlayerAnalysis(tag) {
 
       if (hasEnoughHistory) {
         analysis.warScore = computeWarScore(player, analysis.warHistory, effectiveWinRate, lastSeen);
+        // si win rate exclu (< 10 batailles), ajouter une entrée informative marquée excluded
+        if (effectiveWinRate === null && rawWarLog.length > 0) {
+          const rawRate = gdcWins / rawWarLog.length;
+          const rr = (v) => Math.round(v * 10) / 10;
+          analysis.warScore.breakdown.push({
+            label:    'Win Rate (War)',
+            score:    rr(Math.min(3, rawRate * 3)),
+            max:      3,
+            excluded: true,
+            detail:   `${Math.round(rawRate * 100)}% wins (${gdcWins}W / ${rawWarLog.length - gdcWins}L) — not counted (10 battles required)`,
+          });
+        }
       } else {
         // Historique insuffisant → fallback battle log
         analysis.warScore = analysis.reliability;

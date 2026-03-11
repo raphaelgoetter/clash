@@ -3,7 +3,7 @@
     "name": "Les Resistants",
     "tag": "#LRQP20V9",
     "description": "☆. #2 Resistance (top 🌍) Bonne humeur et GDC obligatoire ⚔️ 4 combats/jour 👉 Discord demandé : kPdQN8zfjM ▪️ code: RoyaleAPI",
-    "clanScore": 117433,
+    "clanScore": 117557,
     "clanWarTrophies": 3797,
     "members": 50,
     "type": "open",
@@ -12,68 +12,84 @@
   },
   "members": [
     {
-      "name": "J2L",
-      "tag": "#GQGC92QUL",
+      "name": "Clasheur",
+      "tag": "#LYYJUVYVG",
       "role": "member",
-      "trophies": 9186,
-      "donations": 44,
-      "donationsReceived": 0,
-      "expLevel": 46,
-      "activityScore": 27,
+      "trophies": 10417,
+      "donations": 0,
+      "donationsReceived": 32,
+      "expLevel": 58,
+      "activityScore": 8,
       "verdict": "Extreme risk",
       "color": "red",
       "isNew": true,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T164928.000Z"
+      "lastSeen": "20260311T130235.000Z"
+    },
+    {
+      "name": "J2L",
+      "tag": "#GQGC92QUL",
+      "role": "member",
+      "trophies": 9213,
+      "donations": 44,
+      "donationsReceived": 40,
+      "expLevel": 46,
+      "activityScore": 14,
+      "verdict": "Extreme risk",
+      "color": "red",
+      "isNew": true,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260311T101758.000Z"
+    },
+    {
+      "name": "Louis le kiki",
+      "tag": "#P9JQC00P9",
+      "role": "member",
+      "trophies": 10940,
+      "donations": 44,
+      "donationsReceived": 40,
+      "expLevel": 57,
+      "activityScore": 40,
+      "verdict": "High risk",
+      "color": "orange",
+      "isNew": true,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260311T072158.000Z"
+    },
+    {
+      "name": "Aubin",
+      "tag": "#PGRJC00G9",
+      "role": "member",
+      "trophies": 12326,
+      "donations": 90,
+      "donationsReceived": 160,
+      "expLevel": 67,
+      "activityScore": 43,
+      "verdict": "High risk",
+      "color": "orange",
+      "isNew": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260311T132741.000Z"
     },
     {
       "name": "greg",
       "tag": "#8GGQLU28",
       "role": "member",
       "trophies": 10030,
-      "donations": 34,
+      "donations": 58,
       "donationsReceived": 40,
       "expLevel": 71,
-      "activityScore": 34,
+      "activityScore": 45,
       "verdict": "High risk",
       "color": "orange",
       "isNew": true,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T182411.000Z"
-    },
-    {
-      "name": "Aubin",
-      "tag": "#PGRJC00G9",
-      "role": "member",
-      "trophies": 12217,
-      "donations": 72,
-      "donationsReceived": 120,
-      "expLevel": 66,
-      "activityScore": 44,
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260310T160948.000Z"
-    },
-    {
-      "name": "Louis le kiki",
-      "tag": "#P9JQC00P9",
-      "role": "member",
-      "trophies": 10885,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 57,
-      "activityScore": 48,
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": true,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260310T090023.000Z"
+      "lastSeen": "20260310T213113.000Z"
     },
     {
       "name": "Titan",
@@ -83,29 +99,13 @@
       "donations": 16,
       "donationsReceived": 40,
       "expLevel": 67,
-      "activityScore": 51,
+      "activityScore": 49,
       "verdict": "High risk",
       "color": "orange",
       "isNew": true,
       "warDays": null,
       "warDecks": null,
       "lastSeen": "20260310T001619.000Z"
-    },
-    {
-      "name": "melv",
-      "tag": "#U0LVUQRCJ",
-      "role": "member",
-      "trophies": 10162,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 58,
-      "activityScore": 64,
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260310T174325.000Z"
     },
     {
       "name": "Vicky",
@@ -115,7 +115,7 @@
       "donations": 0,
       "donationsReceived": 40,
       "expLevel": 64,
-      "activityScore": 64,
+      "activityScore": 61,
       "verdict": "Moderate risk",
       "color": "yellow",
       "isNew": true,
@@ -124,20 +124,36 @@
       "lastSeen": "20260309T181502.000Z"
     },
     {
-      "name": "headless",
-      "tag": "#J008G9CLJ",
+      "name": "melv",
+      "tag": "#U0LVUQRCJ",
       "role": "member",
-      "trophies": 4289,
+      "trophies": 10162,
       "donations": 0,
-      "donationsReceived": 200,
-      "expLevel": 31,
-      "activityScore": 65,
+      "donationsReceived": 0,
+      "expLevel": 58,
+      "activityScore": 62,
       "verdict": "Moderate risk",
       "color": "yellow",
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T115254.000Z"
+      "lastSeen": "20260310T174325.000Z"
+    },
+    {
+      "name": "headless",
+      "tag": "#J008G9CLJ",
+      "role": "member",
+      "trophies": 4295,
+      "donations": 0,
+      "donationsReceived": 320,
+      "expLevel": 31,
+      "activityScore": 63,
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260311T123234.000Z"
     },
     {
       "name": "maxim",
@@ -147,7 +163,7 @@
       "donations": 0,
       "donationsReceived": 40,
       "expLevel": 55,
-      "activityScore": 69,
+      "activityScore": 64,
       "verdict": "Moderate risk",
       "color": "yellow",
       "isNew": false,
@@ -163,7 +179,7 @@
       "donations": 81,
       "donationsReceived": 120,
       "expLevel": 53,
-      "activityScore": 69,
+      "activityScore": 68,
       "verdict": "Moderate risk",
       "color": "yellow",
       "isNew": false,
@@ -172,12 +188,28 @@
       "lastSeen": "20260310T190131.000Z"
     },
     {
+      "name": "Tibbz",
+      "tag": "#LPU0Q29",
+      "role": "member",
+      "trophies": 12000,
+      "donations": 307,
+      "donationsReceived": 0,
+      "expLevel": 67,
+      "activityScore": 73,
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260311T142230.000Z"
+    },
+    {
       "name": "Nova",
       "tag": "#QQUCRGQP8",
       "role": "member",
-      "trophies": 12415,
-      "donations": 62,
-      "donationsReceived": 20,
+      "trophies": 12532,
+      "donations": 114,
+      "donationsReceived": 40,
       "expLevel": 69,
       "activityScore": 74,
       "verdict": "Moderate risk",
@@ -185,103 +217,23 @@
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T191559.000Z"
-    },
-    {
-      "name": "Tibbz",
-      "tag": "#LPU0Q29",
-      "role": "member",
-      "trophies": 12000,
-      "donations": 243,
-      "donationsReceived": 0,
-      "expLevel": 66,
-      "activityScore": 74,
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260310T155633.000Z"
+      "lastSeen": "20260311T132248.000Z"
     },
     {
       "name": "T0T0L0$T0n€",
       "tag": "#PCLLULJ9V",
       "role": "member",
       "trophies": 12000,
-      "donations": 126,
-      "donationsReceived": 40,
+      "donations": 166,
+      "donationsReceived": 80,
       "expLevel": 77,
-      "activityScore": 75,
+      "activityScore": 74,
       "verdict": "Moderate risk",
       "color": "yellow",
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T073141.000Z"
-    },
-    {
-      "name": "Pepito94",
-      "tag": "#Y9P9GGL89",
-      "role": "elder",
-      "trophies": 12268,
-      "donations": 8,
-      "donationsReceived": 160,
-      "expLevel": 65,
-      "activityScore": 77,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260310T191823.000Z"
-    },
-    {
-      "name": "julito",
-      "tag": "#PCGJQ8JL2",
-      "role": "member",
-      "trophies": 12157,
-      "donations": 23,
-      "donationsReceived": 130,
-      "expLevel": 76,
-      "activityScore": 78,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260310T182526.000Z"
-    },
-    {
-      "name": "Pico!!",
-      "tag": "#U09CUCYL2",
-      "role": "elder",
-      "trophies": 11107,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 60,
-      "activityScore": 79,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260310T161808.000Z"
-    },
-    {
-      "name": "☆. Inuk",
-      "tag": "#8R0LR8GYC",
-      "role": "member",
-      "trophies": 8281,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 58,
-      "activityScore": 79,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260309T085113.000Z"
+      "lastSeen": "20260311T142457.000Z"
     },
     {
       "name": "☆. Mini Aurel",
@@ -291,45 +243,77 @@
       "donations": 0,
       "donationsReceived": 0,
       "expLevel": 57,
-      "activityScore": 80,
-      "verdict": "High reliability",
-      "color": "green",
+      "activityScore": 75,
+      "verdict": "Moderate risk",
+      "color": "yellow",
       "isNew": false,
       "warDays": null,
       "warDecks": null,
       "lastSeen": "20260310T133955.000Z"
     },
     {
-      "name": "Pépin le Bref",
-      "tag": "#98UULQY8",
-      "role": "member",
-      "trophies": 12118,
-      "donations": 37,
-      "donationsReceived": 120,
-      "expLevel": 71,
-      "activityScore": 81,
+      "name": "Pepito94",
+      "tag": "#Y9P9GGL89",
+      "role": "elder",
+      "trophies": 12267,
+      "donations": 8,
+      "donationsReceived": 272,
+      "expLevel": 65,
+      "activityScore": 76,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T184942.000Z"
+      "lastSeen": "20260311T134100.000Z"
     },
     {
-      "name": "mathis",
-      "tag": "#2YP2V2G0R",
+      "name": "☆. Inuk",
+      "tag": "#8R0LR8GYC",
       "role": "member",
-      "trophies": 12030,
-      "donations": 492,
-      "donationsReceived": 160,
-      "expLevel": 66,
-      "activityScore": 81,
+      "trophies": 8281,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 58,
+      "activityScore": 77,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T191417.000Z"
+      "lastSeen": "20260309T085113.000Z"
+    },
+    {
+      "name": "julito",
+      "tag": "#PCGJQ8JL2",
+      "role": "member",
+      "trophies": 12183,
+      "donations": 85,
+      "donationsReceived": 210,
+      "expLevel": 77,
+      "activityScore": 78,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260311T114825.000Z"
+    },
+    {
+      "name": "Pico!!",
+      "tag": "#U09CUCYL2",
+      "role": "elder",
+      "trophies": 11195,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 60,
+      "activityScore": 78,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260311T142211.000Z"
     },
     {
       "name": "Jaakuboy",
@@ -339,29 +323,45 @@
       "donations": 0,
       "donationsReceived": 0,
       "expLevel": 64,
-      "activityScore": 81,
+      "activityScore": 79,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T061134.000Z"
+      "lastSeen": "20260311T140546.000Z"
     },
     {
-      "name": "Peater",
-      "tag": "#V0VLJQCJU",
+      "name": "Pépin le Bref",
+      "tag": "#98UULQY8",
       "role": "member",
-      "trophies": 11797,
-      "donations": 114,
-      "donationsReceived": 80,
-      "expLevel": 69,
-      "activityScore": 82,
+      "trophies": 12121,
+      "donations": 117,
+      "donationsReceived": 160,
+      "expLevel": 71,
+      "activityScore": 80,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T145342.000Z"
+      "lastSeen": "20260311T123217.000Z"
+    },
+    {
+      "name": "mathis",
+      "tag": "#2YP2V2G0R",
+      "role": "member",
+      "trophies": 12030,
+      "donations": 692,
+      "donationsReceived": 210,
+      "expLevel": 66,
+      "activityScore": 80,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260311T142203.000Z"
     },
     {
       "name": "koko aka thanos",
@@ -371,7 +371,7 @@
       "donations": 0,
       "donationsReceived": 0,
       "expLevel": 55,
-      "activityScore": 82,
+      "activityScore": 80,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
@@ -387,7 +387,7 @@
       "donations": 0,
       "donationsReceived": 0,
       "expLevel": 54,
-      "activityScore": 82,
+      "activityScore": 80,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
@@ -396,132 +396,100 @@
       "lastSeen": "20260309T093152.000Z"
     },
     {
-      "name": "drumer3.6",
-      "tag": "#20992UQU82",
+      "name": "Peater",
+      "tag": "#V0VLJQCJU",
       "role": "member",
-      "trophies": 11831,
-      "donations": 0,
-      "donationsReceived": 40,
-      "expLevel": 67,
-      "activityScore": 84,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": true,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260310T162219.000Z"
-    },
-    {
-      "name": "pacstar",
-      "tag": "#GC20UCLL",
-      "role": "elder",
-      "trophies": 11345,
-      "donations": 18,
+      "trophies": 11797,
+      "donations": 158,
       "donationsReceived": 120,
-      "expLevel": 68,
-      "activityScore": 84,
+      "expLevel": 69,
+      "activityScore": 81,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T181536.000Z"
+      "lastSeen": "20260311T135144.000Z"
     },
     {
       "name": "hardchaos76",
       "tag": "#8UL8JRCJ",
       "role": "elder",
       "trophies": 10336,
-      "donations": 9,
-      "donationsReceived": 160,
+      "donations": 29,
+      "donationsReceived": 200,
       "expLevel": 62,
+      "activityScore": 82,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260311T135417.000Z"
+    },
+    {
+      "name": "pacstar",
+      "tag": "#GC20UCLL",
+      "role": "elder",
+      "trophies": 11312,
+      "donations": 18,
+      "donationsReceived": 160,
+      "expLevel": 68,
+      "activityScore": 83,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260311T093914.000Z"
+    },
+    {
+      "name": "Fidel",
+      "tag": "#GLV9Q2P09",
+      "role": "elder",
+      "trophies": 12158,
+      "donations": 30,
+      "donationsReceived": 200,
+      "expLevel": 66,
       "activityScore": 84,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T194332.000Z"
-    },
-    {
-      "name": "Fidel",
-      "tag": "#GLV9Q2P09",
-      "role": "elder",
-      "trophies": 12159,
-      "donations": 20,
-      "donationsReceived": 120,
-      "expLevel": 66,
-      "activityScore": 85,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260310T172833.000Z"
+      "lastSeen": "20260311T135233.000Z"
     },
     {
       "name": "Monkey D. SkUul",
       "tag": "#UY00GJG2",
       "role": "elder",
       "trophies": 12334,
-      "donations": 246,
-      "donationsReceived": 160,
-      "expLevel": 64,
-      "activityScore": 86,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260310T194430.000Z"
-    },
-    {
-      "name": "Slicork",
-      "tag": "#CJVUJ8U9C",
-      "role": "elder",
-      "trophies": 12061,
-      "donations": 148,
+      "donations": 298,
       "donationsReceived": 200,
-      "expLevel": 75,
-      "activityScore": 88,
+      "expLevel": 65,
+      "activityScore": 85,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T175439.000Z"
+      "lastSeen": "20260311T142602.000Z"
     },
     {
-      "name": "hyène",
-      "tag": "#82JPJ9J98",
+      "name": "grooliv",
+      "tag": "#822GLVL00",
       "role": "elder",
-      "trophies": 10114,
-      "donations": 36,
-      "donationsReceived": 200,
-      "expLevel": 73,
-      "activityScore": 88,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260310T195519.000Z"
-    },
-    {
-      "name": "Adolphe en Tmax",
-      "tag": "#RJY2R282V",
-      "role": "member",
-      "trophies": 11610,
-      "donations": 32,
+      "trophies": 9581,
+      "donations": 89,
       "donationsReceived": 0,
-      "expLevel": 67,
-      "activityScore": 89,
+      "expLevel": 65,
+      "activityScore": 85,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T185819.000Z"
+      "lastSeen": "20260310T060116.000Z"
     },
     {
       "name": "Benoit du 28",
@@ -531,7 +499,7 @@
       "donations": 114,
       "donationsReceived": 40,
       "expLevel": 58,
-      "activityScore": 89,
+      "activityScore": 87,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
@@ -545,15 +513,31 @@
       "role": "elder",
       "trophies": 10239,
       "donations": 8,
-      "donationsReceived": 200,
+      "donationsReceived": 280,
       "expLevel": 72,
-      "activityScore": 89,
+      "activityScore": 87,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T141800.000Z"
+      "lastSeen": "20260311T123648.000Z"
+    },
+    {
+      "name": "hyène",
+      "tag": "#82JPJ9J98",
+      "role": "elder",
+      "trophies": 10114,
+      "donations": 36,
+      "donationsReceived": 280,
+      "expLevel": 73,
+      "activityScore": 87,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260311T125816.000Z"
     },
     {
       "name": "Zapata86",
@@ -561,47 +545,63 @@
       "role": "elder",
       "trophies": 9391,
       "donations": 46,
-      "donationsReceived": 40,
+      "donationsReceived": 80,
       "expLevel": 67,
-      "activityScore": 89,
+      "activityScore": 87,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T182705.000Z"
+      "lastSeen": "20260311T095809.000Z"
+    },
+    {
+      "name": "Slicork",
+      "tag": "#CJVUJ8U9C",
+      "role": "elder",
+      "trophies": 12061,
+      "donations": 288,
+      "donationsReceived": 280,
+      "expLevel": 75,
+      "activityScore": 88,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260311T140704.000Z"
+    },
+    {
+      "name": "Adolphe en Tmax",
+      "tag": "#RJY2R282V",
+      "role": "member",
+      "trophies": 11610,
+      "donations": 58,
+      "donationsReceived": 0,
+      "expLevel": 67,
+      "activityScore": 88,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260311T121838.000Z"
     },
     {
       "name": "kayes(2)",
       "tag": "#8QVRJYVYU",
       "role": "elder",
       "trophies": 11653,
-      "donations": 56,
-      "donationsReceived": 80,
-      "expLevel": 77,
-      "activityScore": 90,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260310T135123.000Z"
-    },
-    {
-      "name": "☆. Kikootz",
-      "tag": "#8G00908LP",
-      "role": "elder",
-      "trophies": 11237,
-      "donations": 250,
+      "donations": 84,
       "donationsReceived": 120,
-      "expLevel": 74,
-      "activityScore": 90,
+      "expLevel": 77,
+      "activityScore": 89,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T173913.000Z"
+      "lastSeen": "20260311T130222.000Z"
     },
     {
       "name": "Ryamèche",
@@ -609,55 +609,55 @@
       "role": "elder",
       "trophies": 11150,
       "donations": 20,
-      "donationsReceived": 200,
+      "donationsReceived": 280,
       "expLevel": 61,
-      "activityScore": 90,
+      "activityScore": 89,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T194520.000Z"
+      "lastSeen": "20260311T134250.000Z"
     },
     {
       "name": "le roi king",
       "tag": "#YGP000RP8",
       "role": "elder",
       "trophies": 10444,
-      "donations": 170,
-      "donationsReceived": 240,
+      "donations": 234,
+      "donationsReceived": 320,
       "expLevel": 64,
-      "activityScore": 90,
+      "activityScore": 89,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T183448.000Z"
+      "lastSeen": "20260311T112036.000Z"
     },
     {
-      "name": "grooliv",
-      "tag": "#822GLVL00",
+      "name": "☆. Kikootz",
+      "tag": "#8G00908LP",
       "role": "elder",
-      "trophies": 9581,
-      "donations": 89,
-      "donationsReceived": 0,
-      "expLevel": 65,
+      "trophies": 11325,
+      "donations": 340,
+      "donationsReceived": 160,
+      "expLevel": 74,
       "activityScore": 90,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T060116.000Z"
+      "lastSeen": "20260311T060906.000Z"
     },
     {
       "name": "lequent",
       "tag": "#8V2PJGL2",
       "role": "elder",
       "trophies": 12226,
-      "donations": 196,
-      "donationsReceived": 120,
+      "donations": 316,
+      "donationsReceived": 240,
       "expLevel": 64,
       "activityScore": 91,
       "verdict": "High reliability",
@@ -665,31 +665,63 @@
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T113342.000Z"
+      "lastSeen": "20260311T103430.000Z"
     },
     {
       "name": "flo",
       "tag": "#LUGP2RYY",
       "role": "elder",
-      "trophies": 11796,
-      "donations": 70,
-      "donationsReceived": 80,
+      "trophies": 11914,
+      "donations": 106,
+      "donationsReceived": 120,
       "expLevel": 78,
+      "activityScore": 91,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260311T095125.000Z"
+    },
+    {
+      "name": "displaynone",
+      "tag": "#YRGJGR8R",
+      "role": "coLeader",
+      "trophies": 9044,
+      "donations": 604,
+      "donationsReceived": 320,
+      "expLevel": 69,
       "activityScore": 92,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T055322.000Z"
+      "lastSeen": "20260311T141720.000Z"
+    },
+    {
+      "name": "dclik77",
+      "tag": "#99VY0090",
+      "role": "elder",
+      "trophies": 12337,
+      "donations": 78,
+      "donationsReceived": 120,
+      "expLevel": 76,
+      "activityScore": 93,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260311T132254.000Z"
     },
     {
       "name": "Totto698",
       "tag": "#88QP9CJU",
       "role": "elder",
       "trophies": 12150,
-      "donations": 160,
-      "donationsReceived": 120,
+      "donations": 384,
+      "donationsReceived": 200,
       "expLevel": 73,
       "activityScore": 93,
       "verdict": "High reliability",
@@ -697,15 +729,15 @@
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T062013.000Z"
+      "lastSeen": "20260311T131722.000Z"
     },
     {
       "name": "derrick",
       "tag": "#8YGY2RPCC",
       "role": "elder",
-      "trophies": 11926,
-      "donations": 126,
-      "donationsReceived": 120,
+      "trophies": 12137,
+      "donations": 170,
+      "donationsReceived": 200,
       "expLevel": 80,
       "activityScore": 93,
       "verdict": "High reliability",
@@ -713,15 +745,15 @@
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T193713.000Z"
+      "lastSeen": "20260311T105354.000Z"
     },
     {
       "name": "Plugpourlefion",
       "tag": "#GGVQJLG9",
       "role": "elder",
-      "trophies": 10963,
-      "donations": 267,
-      "donationsReceived": 160,
+      "trophies": 11048,
+      "donations": 361,
+      "donationsReceived": 240,
       "expLevel": 70,
       "activityScore": 93,
       "verdict": "High reliability",
@@ -729,63 +761,31 @@
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T182823.000Z"
+      "lastSeen": "20260311T131246.000Z"
     },
     {
-      "name": "displaynone",
-      "tag": "#YRGJGR8R",
-      "role": "coLeader",
-      "trophies": 9031,
-      "donations": 400,
-      "donationsReceived": 200,
-      "expLevel": 69,
+      "name": "Flo 2",
+      "tag": "#QVG90PQVG",
+      "role": "elder",
+      "trophies": 10659,
+      "donations": 156,
+      "donationsReceived": 160,
+      "expLevel": 57,
       "activityScore": 93,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T193247.000Z"
-    },
-    {
-      "name": "dclik77",
-      "tag": "#99VY0090",
-      "role": "elder",
-      "trophies": 12271,
-      "donations": 32,
-      "donationsReceived": 80,
-      "expLevel": 75,
-      "activityScore": 94,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260310T171825.000Z"
-    },
-    {
-      "name": "Flo 2",
-      "tag": "#QVG90PQVG",
-      "role": "elder",
-      "trophies": 10629,
-      "donations": 124,
-      "donationsReceived": 120,
-      "expLevel": 57,
-      "activityScore": 94,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260310T143836.000Z"
+      "lastSeen": "20260311T102022.000Z"
     },
     {
       "name": "☆. Électron",
       "tag": "#82UPUGYP",
       "role": "leader",
-      "trophies": 11899,
-      "donations": 267,
-      "donationsReceived": 160,
+      "trophies": 12017,
+      "donations": 295,
+      "donationsReceived": 200,
       "expLevel": 70,
       "activityScore": 95,
       "verdict": "High reliability",
@@ -793,15 +793,15 @@
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T182946.000Z"
+      "lastSeen": "20260311T115340.000Z"
     },
     {
       "name": "guill4um3",
       "tag": "#VGJ9LL8VC",
       "role": "coLeader",
       "trophies": 12295,
-      "donations": 318,
-      "donationsReceived": 232,
+      "donations": 492,
+      "donationsReceived": 280,
       "expLevel": 64,
       "activityScore": 96,
       "verdict": "High reliability",
@@ -809,15 +809,15 @@
       "isNew": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260310T194333.000Z"
+      "lastSeen": "20260311T135909.000Z"
     }
   ],
   "summary": {
-    "green": 37,
-    "yellow": 8,
+    "green": 35,
+    "yellow": 9,
     "orange": 4,
-    "red": 1,
-    "avgScore": 80,
+    "red": 2,
+    "avgScore": 77,
     "total": 50
   },
   "isWarPeriod": false,
@@ -1143,234 +1143,399 @@
         "tag": "#2P8UQUY80",
         "decks": 4,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "zgég80",
         "tag": "#9PQVGCVRU",
         "decks": 12,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "Nova",
         "tag": "#QQUCRGQP8",
         "decks": 4,
         "role": "member",
-        "inClan": true
+        "inClan": true,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "hochi",
         "tag": "#8P9CL92LC",
         "decks": 0,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "yaniss_18",
         "tag": "#J8RLG09VR",
         "decks": 8,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "empic7",
         "tag": "#8PP9JQCLY",
         "decks": 0,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "mathis",
         "tag": "#2YP2V2G0R",
         "decks": 11,
         "role": "member",
-        "inClan": true
+        "inClan": true,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "Pepito94",
         "tag": "#Y9P9GGL89",
         "decks": 15,
         "role": "elder",
-        "inClan": true
+        "inClan": true,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "julito",
         "tag": "#PCGJQ8JL2",
         "decks": 13,
         "role": "member",
-        "inClan": true
+        "inClan": true,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "maxim",
         "tag": "#LRJ2YRJG",
         "decks": 13,
         "role": "member",
-        "inClan": true
+        "inClan": true,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "Aubin",
         "tag": "#PGRJC00G9",
         "decks": 4,
         "role": "member",
-        "inClan": true
+        "inClan": true,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "Peater",
         "tag": "#V0VLJQCJU",
         "decks": 8,
         "role": "member",
-        "inClan": true
+        "inClan": true,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "Tibbz",
         "tag": "#LPU0Q29",
         "decks": 11,
         "role": "member",
-        "inClan": true
+        "inClan": true,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "T0T0L0$T0n€",
         "tag": "#PCLLULJ9V",
         "decks": 12,
         "role": "member",
-        "inClan": true
+        "inClan": true,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "tartaros",
         "tag": "#LCQ2J0VGC",
         "decks": 0,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "melv",
         "tag": "#U0LVUQRCJ",
         "decks": 8,
         "role": "member",
-        "inClan": true
+        "inClan": true,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "Pépin le Bref",
         "tag": "#98UULQY8",
         "decks": 15,
         "role": "member",
-        "inClan": true
+        "inClan": true,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "☆krxl☆",
         "tag": "#CQV8U0Y2Y",
         "decks": 0,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "Amer",
         "tag": "#UVPV9GYR0",
         "decks": 4,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "MFS valentin",
         "tag": "#J0PUCL2VG",
         "decks": 0,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "everybodysays",
         "tag": "#9GQ2YPRL0",
         "decks": 0,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "☆. Inuk",
         "tag": "#8R0LR8GYC",
         "decks": 13,
         "role": "member",
-        "inClan": true
+        "inClan": true,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "zainox",
         "tag": "#CCYCQYGRV",
         "decks": 0,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "☆. Proton",
         "tag": "#UPC0Y0LRQ",
         "decks": 8,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "ᖇᖴ7❤️",
         "tag": "#YRJUU0CLR",
         "decks": 4,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "Ouss_951",
         "tag": "#RL202808",
         "decks": 0,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "spooner",
         "tag": "#CQV9LQRG",
         "decks": 2,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "titi",
         "tag": "#LQVC8PVV0",
         "decks": 3,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "le s",
         "tag": "#U9R0GR98L",
         "decks": 0,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "Louis le kiki",
         "tag": "#P9JQC00P9",
         "decks": 8,
         "role": "member",
-        "inClan": true
+        "inClan": true,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "✮VS✨️Brook✮6",
         "tag": "#U8Q8VQ9LV",
         "decks": 4,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "Pink❣️Pikachu",
         "tag": "#UQYPGLR2U",
         "decks": 4,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       },
       {
         "name": "Sae",
         "tag": "#PLVJLU92",
         "decks": 7,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false
       }
     ]
   },
   "snapshotToday": true,
-  "snapshotDate": "2026-03-10"
+  "snapshotDate": "2026-03-11"
 }
