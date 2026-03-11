@@ -8,6 +8,8 @@ on:
   schedule:
     # every day at 01:00 UTC
     - cron: '0 1 * * *'
+    # also run every 15 minutes for testing (temporary)
+    - cron: '*/15 * * * *'
   workflow_dispatch:            # permet un déclenchement manuel
 
 jobs:
