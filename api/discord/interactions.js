@@ -306,13 +306,13 @@ export default async function handler(req, res) {
         if (players.length === 0) {
           description = `Aucun joueur n'atteint ${min} fame.`;
         } else {
-          // bloc monospace aligné comme /trust
-          let maxWidth = 0;
-          for (const p of players) if (displayWidth(p.name) > maxWidth) maxWidth = displayWidth(p.name);
+          // Discord rend tous les caractères en largeur 1 dans les blocs de code
+          let maxName = 0;
+          for (const p of players) if (p.name.length > maxName) maxName = p.name.length;
           const rows = players.map((p, i) => {
-            const num   = String(i + 1).padStart(2);
-            const name  = padEndDisplay(p.name, maxWidth);
-            const role  = capitalize(p.role || 'member');
+            const num  = String(i + 1).padStart(2);
+            const name = p.name.padEnd(maxName);
+            const role = capitalize(p.role || 'member');
             return `${num}. ${name}  ${p.fame} fame  [${role}]`;
           });
           description = '```\n' + rows.join('\n') + '\n```';
