@@ -605,12 +605,6 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
             ? `${Math.round(gdcWinRate * 100)}% wins (${gdcWins}W / ${gdcCount - gdcWins}L) — not counted (10 battles required)`
             : `${Math.round(gdcWinRate * 100)}% wins (${gdcWins}W / ${gdcCount - gdcWins}L)`,
       },
-      {
-        label:  'Discord',
-        score:  discordScore,
-        max:    2,
-        detail: discordLinked ? 'Discord account linked to the server' : 'Discord account not linked (/discord-link)',
-      },
       ...(lastSeenScore !== null ? [{
         label:  'Last Seen',
         score:  lastSeenScore,
@@ -631,6 +625,12 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
         score:  dons,
         max:    2,
         detail: `${(player.donations ?? 0).toLocaleString('en-US')} cards donated (cap 500)`,
+      },
+      {
+        label:  'Discord',
+        score:  discordScore,
+        max:    2,
+        detail: discordLinked ? 'Discord account linked to the server' : 'Discord account not linked (/discord-link)',
       },
     ],
   };
