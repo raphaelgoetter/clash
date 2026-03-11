@@ -52,12 +52,6 @@ const commands = [
         description: 'Troisième tag Clash Royale (optionnel)',
         required: false,
       },
-      {
-        type: 6, // USER
-        name: 'utilisateur',
-        description: 'Membre Discord à lier (réservé aux admins / officiers)',
-        required: false,
-      },
     ],
   },
   {

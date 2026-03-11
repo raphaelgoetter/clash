@@ -34,7 +34,7 @@ favoris se retrouve sous la barre de recherche.
 Quatre commandes disponibles :
 
 - **`/trust tag:#TAG`** — analyse la fiabilité d'un joueur
-- **`/discord-link tag:#TAG`** — lie ton compte Clash à ton Discord (option `utilisateur` pour les admins)
+- **`/discord-link tag:#TAG`** — lie ton compte Clash à ton Discord (tag2 et tag3 optionnels pour comptes multiples)
 - **`/discord-check`** — vérifie quels membres d'un clan sont présents sur le serveur Discord
 - **`/promote`** — liste les joueurs éligibles à la promotion
 

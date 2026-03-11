@@ -403,24 +403,11 @@ export default async function handler(req, res) {
         data: { content: 'Veuillez fournir au moins un tag de joueur (ex: `#ABC123`).', flags: 64 },
       });
     }
-    // Vérification admin si l'option utilisateur est fournie
-    const userOpt = opts.find((o) => o.name === 'utilisateur');
-    if (userOpt) {
-      const perms = BigInt(body.member?.permissions ?? '0');
-      const isAdmin = (perms & 0x8n) !== 0n || (perms & 0x20n) !== 0n;
-      if (!isAdmin) {
-        return res.status(200).json({
-          type: 4,
-          data: { content: '❌ L\'option `utilisateur` est réservée aux administrateurs et gestionnaires du serveur.', flags: 64 },
-        });
-      }
-    }
 
     // Réponse éphémère différée (visible uniquement par l'utilisateur)
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
-    const invokerId = body.member?.user?.id ?? body.user?.id;
-    const discordUserId = userOpt ? userOpt.value : invokerId;
+    const discordUserId = body.member?.user?.id ?? body.user?.id;
     const tags = rawTags.map((t) => t.startsWith('#') ? t.toUpperCase() : `#${t.toUpperCase()}`);
 
     waitUntil((async () => {
@@ -457,20 +444,15 @@ export default async function handler(req, res) {
           links[tag] = discordUserId;
         }
 
-        const byAdmin = userOpt != null;
         const tagList = success.map((r) => r.tag).join(', ');
         const ok = await writeDiscordLinks(
           links, sha,
-          byAdmin
-            ? `discord: (admin ${invokerId}) lien Discord ${discordUserId} → Clash ${tagList}`
-            : `discord: lien Discord ${discordUserId} → Clash ${tagList}`,
+          `discord: lien Discord ${discordUserId} → Clash ${tagList}`,
         );
 
         const lines = [];
         for (const { tag, player } of success) {
-          lines.push(byAdmin
-            ? `✅ <@${discordUserId}> lié à **${player.name}** (\`${tag}\`).`
-            : `✅ Lié à **${player.name}** (\`${tag}\`).`);
+          lines.push(`✅ Lié à **${player.name}** (\`${tag}\`).`);
         }
         for (const { tag } of failed) {
           lines.push(`❌ Tag \`${tag}\` introuvable — ignoré.`);
