@@ -480,7 +480,11 @@ export default async function handler(req, res) {
           `https://discord.com/api/v10/guilds/${guildId}/members?limit=1000`,
           { headers: { Authorization: `Bot ${botToken}` } },
         );
-        const guildMembers   = guildRes.ok ? await guildRes.json() : [];
+        if (!guildRes.ok) {
+          const errBody = await guildRes.text();
+          throw new Error(`Discord Guild Members API: ${guildRes.status} — ${errBody}`);
+        }
+        const guildMembers   = await guildRes.json();
         const guildMemberIds = new Set(guildMembers.map((m) => m.user?.id).filter(Boolean));
 
         const present = [], absent = [], unlinked = [];
