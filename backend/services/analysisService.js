@@ -512,8 +512,8 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
   activiteGDC -= shortDays * 0.1;      // -0.1 point per short day
   activiteGDC = r(Math.min(12, Math.max(0, activiteGDC)));
 
-  // 2. Win Rate GDC (0-5)
-  const winRateGDC = gdcCount > 0 ? r(gdcWinRate * 5) : 0;
+  // 2. Win Rate GDC (0-5) — minimum 10 combats requis, sinon non compté (0)
+  const winRateGDC = gdcCount >= 10 ? r(gdcWinRate * 5) : 0;
 
   // 3. Activité générale (0-8)
   const activiteGen = r(Math.min(8, (competitive / 20) * 8));
@@ -826,9 +826,11 @@ export async function getPlayerAnalysis(tag) {
       analysis.warHistory = buildWarHistory(player.tag, raceLog, player.clan.tag, currentRace);
 
       // Compute GDC win rate from battle log (available for all players)
+      // Minimum 10 battles required for a meaningful sample — below that, return null
+      // so the criterion is excluded from the score breakdown.
       const rawWarLog = expandDuelRounds(filterWarBattles(battleLog));
       const gdcWins = rawWarLog.filter(isWarWin).length;
-      const warWinRate = rawWarLog.length > 0 ? gdcWins / rawWarLog.length : null;
+      const warWinRate = rawWarLog.length >= 10 ? gdcWins / rawWarLog.length : null;
 
       // Build list of *prior* weeks (exclude live/current one) for history rules
       const prevWeeks = analysis.warHistory.weeks.filter((w) => !w.isCurrent);

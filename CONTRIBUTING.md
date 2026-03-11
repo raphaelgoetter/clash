@@ -130,7 +130,7 @@ Seven weighted criteria:
 | 3 | CW2 battle wins | 8 | 250 total CW2 wins = full score |
 | 4 | Clan stability | 8 | 5+ consecutive weeks in clan = full score |
 | 5 | Last seen | +5 | active within 24 h = +5; ≤3 d = +3; ≤7 d = +1 |
-| 6 | Win rate (River Race) | 3 | 100% win rate = full score |
+| 6 | Win rate (River Race) | 3 | 100% win rate = full score · **min. 10 GDC battles** (absent otherwise) |
 | 7 | Experience (best trophies) | 3 | 12,000 trophies = full score |
 | 8 | Donations | 2 | 500 cards donated = full score |
 
@@ -143,7 +143,7 @@ Used when no race log history is available (battle log only):
 | # | Criterion | Max | Cap / rule |
 |---|---|---|---|
 | 1 | War activity | 12 | Decks/day over sliding window; bonus +0.2 pt per 4‑deck day, penalty ‑0.1 pt per short day |
-| 2 | Win rate (war) | 5 | From battle log war battles |
+| 2 | Win rate (war) | 5 | From battle log war battles · **min. 10 GDC battles** (scores 0 otherwise) |
 | 3 | CW2 battle wins | 8 | 250 total CW2 wins = full score |
 | 4 | Last seen | +5 | same as above but only awarded after ≥16 war decks in log |
 | 5 | General activity | 8 | 20 competitive battles = full score |
