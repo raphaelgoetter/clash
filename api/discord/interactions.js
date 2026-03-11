@@ -243,27 +243,19 @@ export default async function handler(req, res) {
       min = parseInt(minOpt.value, 10);
     }
     let clanVal = (clanOpt?.value || '1').toString().trim().toLowerCase();
-    // resolve clan index/name/tag
-    const { ALLOWED_CLANS } = await import('../backend/routes/clan.js');
-    let clanIndex;
-    let clanName;
-    if (['1','la','laresistance'].includes(clanVal)) {
-      clanIndex = 0;
-      clanName = 'La Resistance';
-    } else if (['2','les','lesresistants'].includes(clanVal)) {
-      clanIndex = 1;
-      clanName = 'Les Resistants';
-    } else if (['3','lesrevoltes'].includes(clanVal)) {
-      clanIndex = 2;
-      clanName = 'Les Revoltes';
-    } else {
-      // unknown input -> default to first clan
-      clanIndex = 0;
-      clanName = 'La Resistance';
-    }
-    const clanTag = ALLOWED_CLANS[clanIndex];
+    // Résoudre clan de façon synchrone (pas d'await) avant le type:5
+    const CLAN_MAP = {
+      '1': { index: 0, name: 'La Resistance',  tag: 'Y8JUPC9C' },
+      'la': { index: 0, name: 'La Resistance', tag: 'Y8JUPC9C' },
+      '2': { index: 1, name: 'Les Resistants', tag: 'LRQP20V9' },
+      'les': { index: 1, name: 'Les Resistants', tag: 'LRQP20V9' },
+      '3': { index: 2, name: 'Les Revoltes',   tag: 'QU9UQJRL' },
+    };
+    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP['1'];
+    const clanName = resolved.name;
+    const clanTag  = resolved.tag;
 
-    // defer response
+    // defer response IMMÉDIATEMENT — avant tout await
     res.status(200).json({ type: 5 });
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
 
