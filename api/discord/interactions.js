@@ -269,21 +269,33 @@ export default async function handler(req, res) {
         let players = top.playersByQuota[min] || [];
         players = players.slice().sort((a, b) => b.fame - a.fame);
 
-        let content;
+        let description;
         if (players.length === 0) {
-          content = `SEMAINE DE GDC PRÉCÉDENTE :\nAucun joueur ne dépasse ${min} fame pour **${clanName}**.`;
+          description = `Aucun joueur n'atteint ${min} fame.`;
         } else {
-          content = `SEMAINE DE GDC PRÉCÉDENTE :\nJoueurs ≥ ${min} fame pour **${clanName}** :\n` +
-            players.map(p => {
-              const role = p.role ? ` [${capitalize(p.role)}]` : '';
-              return `${p.name} (${p.tag}) – ${p.fame} fame${role}`;
-            }).join('\n');
+          // bloc monospace aligné comme /trust
+          let maxName = 0;
+          for (const p of players) if (p.name.length > maxName) maxName = p.name.length;
+          const rows = players.map((p, i) => {
+            const num   = String(i + 1).padStart(2);
+            const name  = p.name.padEnd(maxName);
+            const role  = capitalize(p.role || 'member');
+            return `${num}. ${name}  ${p.fame} fame  [${role}]`;
+          });
+          description = '```\n' + rows.join('\n') + '\n```';
         }
+
+        const embed = {
+          title: `🏅 Semaine de GDC précédente — ${clanName} (≥ ${min} fame)`,
+          color: 0x5865f2,
+          description,
+          footer: { text: `Quota : ${min} · Clan : ${clanName}` },
+        };
 
         await fetch(webhookUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content }),
+          body: JSON.stringify({ embeds: [embed] }),
         });
       } catch (err) {
         await fetch(webhookUrl, {
