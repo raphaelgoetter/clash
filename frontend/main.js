@@ -615,7 +615,6 @@ function renderPlayerResults(data) {
   }).join('');
 
   playerResults.classList.remove('hidden');
-  playerResults.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ── Actual Clan War card (player view) ────────────────────────────
@@ -876,7 +875,6 @@ function renderClanResults(data) {
   renderMembersTable(sortMembers(members, 'activityScore', 'asc'));
 
   clanResults.classList.remove('hidden');
-  clanResults.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ── Members table ────────────────────────────────────────────
