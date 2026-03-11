@@ -487,7 +487,7 @@ function renderPlayerResults(data) {
       risk: overview.trophies < 3000 ? 'bad' : overview.trophies < 5000 ? 'warn' : null },
     { label: 'CW2 Wins',      value: `⚔️ ${fmt(cw2)}`,
       risk: cw2 < 50 ? 'bad' : cw2 < 150 ? 'warn' : null },
-    { label: 'Discord',       value: data.overview?.discord ? '✅ Lié' : '❓ Non lié',
+    { label: 'Discord',       value: data.overview?.discord ? 'Linked' : 'Not linked',
       cls: data.overview?.discord ? 'c-green' : 'c-red' },
   ]);
 
@@ -614,10 +614,13 @@ function renderPlayerResults(data) {
     }
     const pct   = Math.round((b.score / b.max) * 100);
     const color = pct >= 76 ? 'var(--green)' : pct >= 56 ? 'var(--yellow)' : pct >= 31 ? 'var(--orange)' : 'var(--red)';
+    const label = b.label === 'Discord'
+      ? `${b.score > 0 ? '✅' : '❌'} Discord (${b.score > 0 ? 'oui' : 'non'})`
+      : escHtml(b.label);
     return `
       <li class="score-row">
         <div class="sr-header">
-          <span class="sr-label">${escHtml(b.label)}</span>
+          <span class="sr-label">${label}</span>
           <span class="sr-score-val">${b.score}<span class="sr-max"> / ${b.max}</span></span>
         </div>
         <div class="sr-bar-bg">
