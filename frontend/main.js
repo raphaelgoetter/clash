@@ -572,7 +572,7 @@ function renderPlayerResults(data) {
       </li>`;
     }
     const pct   = Math.round((b.score / b.max) * 100);
-    const color = pct >= 76 ? 'var(--green)' : pct >= 56 ? 'var(--yellow)' : pct >= 31 ? 'var(--orange)' : 'var(--red)';
+    const color = pct >= 75 ? 'var(--green)' : pct >= 56 ? 'var(--yellow)' : pct >= 31 ? 'var(--orange)' : 'var(--red)';
     const label = b.label === 'Discord'
       ? `Discord (${b.score > 0 ? 'yes' : 'no'})`
       : escHtml(b.label);

@@ -210,7 +210,7 @@ export async function buildClanAnalysis(clanTag) {
         let warWinRate = null;
         if (battleLog) {
           const rawWarLog = expandDuelRounds(filterWarBattles(battleLog));
-          if (rawWarLog.length > 0) {
+          if (rawWarLog.length >= 10) { // même seuil que la route player
             const wins = rawWarLog.filter(isWarWin).length;
             warWinRate = wins / rawWarLog.length;
           }
@@ -271,11 +271,11 @@ export async function buildClanAnalysis(clanTag) {
         const expPart = Math.min(20, ((m.expLevel ?? 1) / 60) * 20);
         const score   = Math.round(donPart + trPart + expPart);
         activityScore = score;
-        verdict = score >= 76 ? 'High reliability'
+        verdict = score >= 75 ? 'High reliability'
                 : score >= 61 ? 'Moderate risk'
                 : score >= 31 ? 'High risk'
                 :               'Extreme risk';
-        color = score >= 76 ? 'green' : score >= 56 ? 'yellow' : score >= 31 ? 'orange' : 'red';
+        color = score >= 75 ? 'green' : score >= 56 ? 'yellow' : score >= 31 ? 'orange' : 'red';
       }
 
       const warDays = (() => {

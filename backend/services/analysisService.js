@@ -395,7 +395,7 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
   const pct      = Math.round((total / maxScore) * 100);
 
   let verdict, color;
-  if (pct >= 76)      { verdict = 'High reliability';  color = 'green'; }
+  if (pct >= 75)      { verdict = 'High reliability';  color = 'green'; }
   else if (pct >= 56) { verdict = 'Moderate risk';     color = 'yellow'; }
   else if (pct >= 31) { verdict = 'High risk';         color = 'orange'; }
   else                { verdict = 'Extreme risk';      color = 'red'; }
@@ -562,7 +562,7 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
   const pct      = Math.round((total / maxScore) * 100);
 
   let verdict, color;
-  if (pct >= 76)      { verdict = 'High reliability';  color = 'green'; }
+  if (pct >= 75)      { verdict = 'High reliability';  color = 'green'; }
   else if (pct >= 56) { verdict = 'Moderate risk';     color = 'yellow'; }
   else if (pct >= 31) { verdict = 'High risk';         color = 'orange'; }
   else                { verdict = 'Extreme risk';      color = 'red'; }
@@ -981,7 +981,7 @@ export function computeMemberActivityScore(member) {
   const score = Math.round(donationPart + trophyPart + expPart);
 
   let verdict, color;
-  if (score >= 76) {
+  if (score >= 75) {
     verdict = 'High reliability';
     color = 'green';
   } else if (score >= 61) {
