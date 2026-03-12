@@ -285,12 +285,16 @@ export async function buildClanAnalysis(clanTag) {
 
       const warDays = (() => {
           const currentWeek = warHistory?.weeks?.find((w) => w.isCurrent) ?? null;
-          // Si le battleLog est indisponible mais que la race fournit decksUsed,
-          // on utilise un tableau vide pour le détail jour par jour — le total
-          // restera exact car isReliableTotal = true (source : /currentriverrace).
-          if (battleLog === null && (currentWeek?.decksUsed ?? null) === null) return null;
+          // Source fiable 1 : semaine courante depuis warHistory (déjà issu de currentRace)
+          // Source fiable 2 : currentRace.clan.participants en direct (fallback si warHistory
+          //   n'a pas pu intégrer ce joueur, ex. fetch battleLog raté + race log partiel)
+          const normalizedTag = m.tag.startsWith('#') ? m.tag : `#${m.tag}`;
+          const raceParticipant = currentRace?.clan?.participants?.find((p) => p.tag === normalizedTag) ?? null;
+          const raceTotalDecks = currentWeek?.decksUsed ?? raceParticipant?.decksUsed ?? null;
+          // On ne peut rien calculer si ni battleLog ni données de race ne sont disponibles
+          if (battleLog === null && raceTotalDecks === null) return null;
           const effectiveBattleLog = battleLog ?? [];
-          const summary      = buildCurrentWarDays(effectiveBattleLog, currentWeek?.decksUsed ?? null, {
+          const summary      = buildCurrentWarDays(effectiveBattleLog, raceTotalDecks, {
             state:       currentRace?.state       ?? null,
             periodIndex: currentRace?.periodIndex ?? null,
           });
