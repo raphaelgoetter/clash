@@ -11,13 +11,10 @@ import {
 } from '../services/analysisService.js';
 import { computeTopPlayers } from '../services/topplayers.js';
 import { computeUncomplete } from '../services/uncomplete.js';
-import { loadCache, saveCache } from '../services/analysisCache.js';
 import { getOrSet } from '../services/cache.js';
 import { getDiscordLinks } from '../services/discordLinks.js';
 import fs from 'fs/promises';
 import path from 'path';
-
-const CLAN_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
 
 const router = Router();
 
@@ -75,8 +72,6 @@ router.get('/:tag/analysis', async (req, res) => {
     // clicks on the same instance.  TTL is small so stale issues are rare.
     const cacheKey = `clan:${clanTag}`;
     const { value:payload, fromCache } = await getOrSet(cacheKey, () => buildClanAnalysis(clanTag), 30 * 1000);
-    // persist to disk separately for debugging/historic purposes
-    saveCache(clanTag, payload).catch(()=>{});
     // prevent Vercel/edge from caching this response
     res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
     res.set('X-Cache', fromCache ? 'HIT' : 'MISS');

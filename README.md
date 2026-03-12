@@ -63,8 +63,9 @@ Quatre commandes disponibles :
 - Les pages de clan utilisent en priorité des données pré‑calculées
   (fichiers JSON issus de `npm run cache` et embarqués dans
   `frontend/public/clan-cache`) afin d'afficher instantanément un aperçu
-  (< 200 ms). Une requête live est ensuite effectuée en arrière-plan pour
-  mettre à jour l'analyse si nécessaire.
+  (< 200 ms, pattern *stale-while-revalidate*). Les données live arrivent
+  ensuite et écrasent systématiquement l'affichage, garantissant que les
+  valeurs finales sont toujours à jour.
 - Le serveur garde également un petit cache mémoire (TTL ≈ 30 s) pour
   accélérer les navigations répétées sur la même instance. Ce dernier ne
   persiste pas entre redémarrages, mais évite des recomputations trop

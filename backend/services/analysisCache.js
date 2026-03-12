@@ -40,17 +40,4 @@ export async function saveCache(clanTag, data) {
   } catch (_) {}
 }
 
-// Refresh all clans by invoking buildClanAnalysis and saving results.
-// Caller should provide the list of tags and the build function.
-export async function refreshAllClans(clanTags, buildFn) {
-  await ensureDir();
-  for (const tag of clanTags) {
-    try {
-      // buildFn returns the analysis payload directly
-      const result = await buildFn(tag);
-      await saveCache(tag, result);
-    } catch (err) {
-      console.error('cache refresh failed for', tag, err.message);
-    }
-  }
-}
+

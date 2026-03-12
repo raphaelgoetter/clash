@@ -202,12 +202,9 @@ async function handleSearch() {
 
       const { data, fromCache } = await apiFetch(`/api/clan/${encodeURIComponent(tag)}/analysis`);
       lastResultName = data.clan?.name || null;
-      // if static existed and differs, overwrite
-      if (staticData && JSON.stringify(staticData) !== JSON.stringify(data)) {
-        renderClanResults(data);
-      }
+      // Toujours écraser avec les données live (pattern stale-while-revalidate)
+      renderClanResults(data);
       updateFavBtnState(tag);
-      // if the live response itself was cached the header sets fromCache true
       showCacheNote(fromCache, data.snapshotDate);
     }
     syncUrlState(currentMode, tag);
@@ -420,48 +417,10 @@ function showCacheNote(fromCache, snapshotDate = null) {
     }
   }
 
-  if (fromCache) {
-    cacheNote.innerHTML =
-      `Cached content 🔃  (<a href="#" id="refresh-cache">refresh cache</a>) · Snapshot : ${snapshotText}`;
-  } else {
-    cacheNote.textContent = `Live data ✅ · Snapshot : ${snapshotText}`;
-  }
+  cacheNote.textContent = fromCache
+    ? `Cached content 🔃 · Snapshot : ${snapshotText}`
+    : `Live data ✅ · Snapshot : ${snapshotText}`;
 }
-
-// attach listener once
-document.addEventListener('click', (e) => {
-  if (e.target && e.target.id === 'refresh-cache') {
-    e.preventDefault();
-    const link = e.target;
-    // update link text while running and disable temporarily
-    link.textContent = 'refresh cache (working… 🔄)';
-    link.style.pointerEvents = 'none';
-    setLoading(true);
-    fetch('/api/cache/refresh', { method: 'POST' })
-      .then((r) => r.json().then((body) => {
-        if (!r.ok) {
-          throw new Error(body.error || `status ${r.status}`);
-        }
-        return body;
-      }))
-      .then(() => {
-        link.textContent = 'refresh cache (done ✅)';
-        setTimeout(() => {
-          link.textContent = 'refresh cache';
-          link.style.pointerEvents = '';
-        }, 3000);
-      })
-      .catch((err) => {
-        console.error('cache refresh failed', err);
-        link.textContent = 'refresh cache (failed ❌)';
-        setTimeout(() => {
-          link.textContent = 'refresh cache';
-          link.style.pointerEvents = '';
-        }, 3000);
-      })
-      .finally(() => setLoading(false));
-  }
-});
 
 // ── Player rendering ──────────────────────────────────────────
 

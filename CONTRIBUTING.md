@@ -13,7 +13,7 @@ vers `README.md` (en français).
 |---|---|
 | **Player analysis** | Overview, activity indicators, battle log chart, war reliability score (/45 or /40), colour-coded verdict + breakdown |
 | **Clan analysis** | Member table with sorting & filtering, score distribution chart, reliable-vs-risky pie chart |
-| **Response cache** | In-memory cache (15 min TTL) to avoid hammering the Clash Royale API |
+| **Response cache** | In-memory cache (30 s TTL) to avoid hammering the Clash Royale API on repeated navigations |
 | **Responsive UI** | Clash Royale-inspired dark theme, works on mobile |
 | **Favorites** | Save player or clan tags (with names) locally and recall them with one click |
 
@@ -32,7 +32,8 @@ clash/
 │   └── services/
 │       ├── clashApi.js        # Clash Royale API wrapper
 │       ├── analysisService.js # Scoring formulas
-│       └── cache.js           # In-memory cache (15 min TTL)
+│       ├── analysisCache.js   # Lecture/écriture du cache JSON (utilisé par scripts/cacheAll.js)
+│       └── cache.js           # In-memory cache (30 s TTL)
 ├── frontend/
 │   ├── index.html
 │   ├── main.js                # UI orchestration
@@ -99,6 +100,7 @@ This launches both backend (**<http://localhost:3000>**) and frontend (**<http:/
 | `GET` | `/api/player/:tag/analysis` | Full player analysis |
 | `GET` | `/api/clan/:tag` | Raw clan profile |
 | `GET` | `/api/clan/:tag/analysis` | Clan + member analysis |
+| `POST` | `/api/cache/flush` | Vide le cache mémoire (dev uniquement) |
 
 Tags should include the `#` prefix (URL‑encoded as `%23`).
 

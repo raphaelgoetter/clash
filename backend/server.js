@@ -67,13 +67,6 @@ app.use((req, res, next) => {
       .catch(() => {}); // ignore API failure, will retry next request
   });
 
-  // also refresh persistent analysis cache asynchronously
-  import('./routes/clan.js').then(({ buildClanAnalysis }) => {
-    import('./services/analysisCache.js').then(({ refreshAllClans }) => {
-      refreshAllClans(ALLOWED_CLANS, buildClanAnalysis).catch(() => {});
-    });
-  });
-
   next();
 });
 
@@ -114,24 +107,6 @@ app.use('/api/discord', discordRoutes);
 app.post('/api/cache/flush', (_req, res) => {
   clearAll();
   res.json({ ok: true, message: 'Cache vidé.' });
-});
-
-// ── Manual analysis cache refresh (triggered by frontend button) ──
-app.post('/api/cache/refresh', async (req, res) => {
-  try {
-    // wipe in-memory TTL cache too, otherwise subsequent requests will still
-    // hit the old value until their entries expire.
-    const { clearAll } = await import('./services/cache.js');
-    clearAll();
-
-    const { refreshAllClans } = await import('./services/analysisCache.js');
-    const { ALLOWED_CLANS, buildClanAnalysis } = await import('./routes/clan.js');
-    await refreshAllClans(ALLOWED_CLANS, buildClanAnalysis);
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('cache refresh endpoint failure', err);
-    res.status(500).json({ error: err.message });
-  }
 });
 
 // ── 404 handler ───────────────────────────────────────────────
