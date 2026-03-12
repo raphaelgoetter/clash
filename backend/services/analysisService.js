@@ -509,7 +509,7 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
   const gdcWinRate = gdcCount > 0 ? gdcWins / gdcCount : 0;
   const competitive = gdcCount + bd.ladder + bd.challenge;
 
-  // 1. War Activity (0-10) — based on decks/day, with bonuses/penalties
+  // 1. War Activity (0-12) — based on decks/day, with bonuses/penalties
   // We still use dailyWarActivityScore to compute a baseline, but then
   // apply an extra boost for full 4‑deck days and a small penalty for each
   // day with <4 decks.  This rewards players who prioritise GDC battles.
@@ -521,6 +521,12 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
   activiteGDC += perfectDays * 0.2;    // +0.2 point per perfect day
   activiteGDC -= shortDays * 0.1;      // -0.1 point per short day
   activiteGDC = r(Math.min(12, Math.max(0, activiteGDC)));
+  // Plafond de confiance : proportionnel aux batailles GDC observées dans le log.
+  // Un joueur avec peu de données ne peut pas atteindre le score d'un vétéran,
+  // quelle que soit la proportion faite — on manque de recul pour l'évaluer.
+  // 16 batailles (1 semaine complète) = plafond entièrement levé.
+  const confidenceCap = r(Math.min(12, (gdcCount / 16) * 12));
+  activiteGDC = r(Math.min(activiteGDC, confidenceCap));
 
   // 2. Win Rate GDC (0-5) — minimum 10 combats requis, sinon exclu du score ET du max
   const winRateExcluded = gdcCount < 10;
@@ -918,7 +924,9 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
         }
       } else {
         // Historique insuffisant → fallback battle log
-        analysis.warScore = analysis.reliability;
+        const warLogFb = expandDuelRounds(filterWarBattles(battleLog));
+        const bdFb = categorizeBattleLog(battleLog);
+        analysis.warScore = computeWarReliabilityFallback(player, warLogFb, bdFb, lastSeen, discordLinked);
       }
     } catch (_) {
       analysis.warHistory = null;
