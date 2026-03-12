@@ -423,7 +423,7 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
       score:  scoreMoyen,
       max:    10,
       detail: warHistory.avgFame
-        ? `${warHistory.avgFame.toLocaleString('en-US')} fame / week (max 3,000)`
+        ? `${warHistory.avgFame.toLocaleString('en-US')} fame / week (cap 3,000)`
         : 'No data',
     },
     {
@@ -658,7 +658,7 @@ export function computeStabilityScore(player) {
  * Boat attacks : on suppose 200 fame chacun (valeur standard CW2).
  * @returns {{ wins: number, pvpDecks: number }}
  */
-function estimateWinsFromFame(fame, decksUsed, boatAttacks) {
+export function estimateWinsFromFame(fame, decksUsed, boatAttacks) {
   // Dans l'API Supercell : decksUsed = batailles PvP uniquement, boatAttacks = attaques bateau (compteur séparé).
   const pvpDecks = decksUsed;
   if (pvpDecks <= 0) return { wins: 0, pvpDecks: 0 };

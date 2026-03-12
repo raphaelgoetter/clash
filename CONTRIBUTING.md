@@ -118,7 +118,7 @@ Used when the war race log is available. Eight weighted criteria:
 > purposes. It remains in the returned history (a grey bar in the chart) but
 > does not count toward fame averages or participation. This prevents a recent
 > recruit’s first partial week from artificially dragging down their score.
-> 
+>
 > These same rules are applied across both the player and clan analysis
 > endpoints, ensuring the percentages shown in the clan member list match the
 > individual player view.
@@ -127,7 +127,7 @@ Seven weighted criteria:
 
 | # | Criterion | Max | Cap / rule |
 |---|---|---|---|
-| 1 | Regularity | 12 | decks used / (16 × completed weeks); –0.5 pt per incomplete week |
+| 1 | Regularity | 12 | war decks used / (16 × completed weeks); –0.5 pt per incomplete week |
 | 2 | Avg fame | 10 | 3,000 fame/week = full score |
 | 3 | CW2 battle wins | 8 | 250 total CW2 wins = full score |
 | 4 | Clan stability | 8 | 5+ consecutive weeks in clan = full score |

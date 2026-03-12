@@ -8,6 +8,7 @@ import {
   analyzeClanMembers, buildWarHistory, computeWarScore,
   computeWarReliabilityFallback, categorizeBattleLog,
   filterWarBattles, expandDuelRounds, isWarWin, buildCurrentWarDays,
+  estimateWinsFromFame,
 } from '../services/analysisService.js';
 import { computeTopPlayers } from '../services/topplayers.js';
 import { computeUncomplete } from '../services/uncomplete.js';
@@ -198,7 +199,7 @@ export async function buildClanAnalysis(clanTag) {
       const battleLog   = mdResult?.status === 'fulfilled' ? mdResult.value[1] : null;
 
       // Player proxy: prefer full profile (has badges), fall back to member data
-      const playerProxy = fullPlayer ?? { bestTrophies: m.trophies ?? 0, donations: m.donations ?? 0 };
+      const playerProxy = fullPlayer ?? { trophies: m.trophies ?? 0, bestTrophies: m.trophies ?? 0, donations: m.donations ?? 0 };
       // Présence Discord : le tag du membre est-il dans discord-links.json ?
       const discordLinked = Object.prototype.hasOwnProperty.call(discordLinks, m.tag);
 
@@ -225,9 +226,31 @@ export async function buildClanAnalysis(clanTag) {
         let hasEnoughHistory = hasFullWeek || oldRule;
 
         // same mid‑race arrival handling as player view (ignore oldest incomplete)
-        if (!hasFullWeek && prevWeeks.length >= 2 && (prevWeeks[0].decksUsed ?? 0) < 16) {
-          wh.weeks = wh.weeks.slice(1);
-          hasEnoughHistory = true;
+        if (prevWeeks.length >= 2) {
+          const oldest = prevWeeks[prevWeeks.length - 1];
+          if ((oldest.decksUsed ?? 0) < 16) {
+            oldest.ignored = true;
+
+            // recalcul des métriques résumées en excluant la semaine ignorée
+            const kept = wh.weeks.filter((w) => !w.ignored && (w.decksUsed ?? 0) > 0);
+            const totalFame = kept.reduce((s, w) => s + (w.fame || 0), 0);
+            wh.totalFame = totalFame;
+            wh.participation = kept.length;
+            wh.avgFame = kept.length ? Math.round(totalFame / kept.length) : 0;
+            wh.maxFame = kept.reduce((mx, w) => Math.max(mx, w.fame || 0), 0);
+            wh.completedParticipation = kept.filter((w) => !w.isCurrent).length;
+            // recalcul du taux de victoire historique sur les semaines conservées
+            const MIN_PVP_DECKS = 5;
+            let totalPvpDecks = 0, totalEstimatedWins = 0;
+            for (const w of kept.filter((w) => !w.isCurrent)) {
+              const { wins: wWins, pvpDecks: wPvp } = estimateWinsFromFame(w.fame, w.decksUsed, w.boatAttacks);
+              totalPvpDecks      += wPvp;
+              totalEstimatedWins += wWins;
+            }
+            wh.historicalWinRate = totalPvpDecks >= MIN_PVP_DECKS ? totalEstimatedWins / totalPvpDecks : null;
+            // réévaluer après le recalcul (completedParticipation peut avoir changé)
+            hasEnoughHistory = hasFullWeek || (wh.streakInCurrentClan >= 2 && wh.completedParticipation >= 2);
+          }
         }
 
         if (hasEnoughHistory) {
