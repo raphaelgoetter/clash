@@ -284,9 +284,13 @@ export async function buildClanAnalysis(clanTag) {
       }
 
       const warDays = (() => {
-          if (battleLog === null) return null;
           const currentWeek = warHistory?.weeks?.find((w) => w.isCurrent) ?? null;
-          const summary      = buildCurrentWarDays(battleLog, currentWeek?.decksUsed ?? null, {
+          // Si le battleLog est indisponible mais que la race fournit decksUsed,
+          // on utilise un tableau vide pour le détail jour par jour — le total
+          // restera exact car isReliableTotal = true (source : /currentriverrace).
+          if (battleLog === null && (currentWeek?.decksUsed ?? null) === null) return null;
+          const effectiveBattleLog = battleLog ?? [];
+          const summary      = buildCurrentWarDays(effectiveBattleLog, currentWeek?.decksUsed ?? null, {
             state:       currentRace?.state       ?? null,
             periodIndex: currentRace?.periodIndex ?? null,
           });
