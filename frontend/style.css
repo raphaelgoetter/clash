@@ -1079,12 +1079,12 @@ a.member-link:hover div:first-child {
 /* Repère "attendu jusqu'à aujourd'hui" */
 .war-progress-marker {
   position: absolute;
-  top: -3px;
-  width: 2px;
-  height: 18px;
-  background: rgba(255,255,255,.45);
+  top: -5px;
+  width: 4px;
+  height: 23px;
+  background: var(--gold);
   border-radius: 1px;
-  transform: translateX(-50%);
+  transform: translate(-50%);
 }
 
 .war-progress-meta {
