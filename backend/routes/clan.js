@@ -23,7 +23,7 @@ const router = Router();
  * Run async tasks with limited concurrency to avoid rate-limiting.
  * Returns an array of { status, value } | { status, reason } mirroring Promise.allSettled.
  */
-async function pooledAllSettled(tasks, concurrency = 20) {
+async function pooledAllSettled(tasks, concurrency = 10) {
   const results = new Array(tasks.length);
   let idx = 0;
   async function worker() {
