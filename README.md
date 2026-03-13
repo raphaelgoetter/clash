@@ -62,10 +62,12 @@ Quatre commandes disponibles :
 
 - Les pages de clan utilisent en priorité des données pré‑calculées
   (fichiers JSON issus de `npm run cache` et embarqués dans
-  `frontend/public/clan-cache`) afin d'afficher instantanément un aperçu
-  (< 200 ms, pattern *stale-while-revalidate*). Les données live arrivent
-  ensuite et écrasent systématiquement l'affichage, garantissant que les
-  valeurs finales sont toujours à jour.
+  `frontend/public/clan-cache`) afin d'afficher instantanément l'aperçu
+  et les graphiques (< 200 ms). Pendant ce temps, la liste des membres
+  affiche un indicateur de chargement. Les données live arrivent ensuite
+  (~3 s) et remplacent la liste des membres une seule fois, sans décalage
+  visuel (*skeleton pattern*). L'aperçu et les graphiques sont également
+  mis à jour silencieusement avec les valeurs fraîches.
 - Le serveur garde également un petit cache mémoire (TTL ≈ 30 s) pour
   accélérer les navigations répétées sur la même instance. Ce dernier ne
   persiste pas entre redémarrages, mais évite des recomputations trop

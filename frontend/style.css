@@ -779,6 +779,13 @@ select.search-input {
 
 .members-table tbody tr:hover { background: rgba(255,255,255,.03); }
 
+.members-skeleton {
+  text-align: center;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 2rem 0;
+}
+
 a.member-link {
   display: block;
   color: inherit;

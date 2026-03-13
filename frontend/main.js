@@ -191,19 +191,22 @@ async function handleSearch() {
       showCacheNote(fromCache, data?.snapshotDate);
     } else {
       // clan mode: try static file first
+      // Afficher overview + charts depuis le cache statique instantanément
       const staticData = await loadStaticClan(tag);
       if (staticData) {
         lastResultName = staticData.clan?.name || null;
-        renderClanResults(staticData);
+        renderClanOverview(staticData);
+        renderMembersSkeleton();
         updateFavBtnState(tag);
-        // we are displaying pre-generated JSON, mark as cached
         showCacheNote(true, staticData.snapshotDate);
       }
 
       const { data, fromCache } = await apiFetch(`/api/clan/${encodeURIComponent(tag)}/analysis`);
       lastResultName = data.clan?.name || null;
-      // Toujours écraser avec les données live (pattern stale-while-revalidate)
-      renderClanResults(data);
+      // Mettre à jour l'overview avec les données fraîches
+      renderClanOverview(data);
+      // Afficher les membres uniquement depuis les données live (une seule fois)
+      renderClanMembers(data);
       updateFavBtnState(tag);
       showCacheNote(fromCache, data.snapshotDate);
     }
@@ -808,14 +811,14 @@ function renderUncompleteCard(uncomplete) {
 
 // ── Clan rendering ──────────────────────────────────────────
 
-function renderClanResults(data) {
+// Affiche l'overview du clan, les charts et les cards top/uncomplete.
+// Peut être appelé depuis le cache statique ET depuis les données live.
+function renderClanOverview(data) {
   const { clan, members, summary } = data;
 
   // Colonne "This War" visible uniquement en période de guerre (jeu–dim)
   isWarActive = !!data.isWarPeriod;
-  // render top players card if data provided
   renderTopPlayersCard(data.topPlayers);
-  // render uncomplete deck card
   renderUncompleteCard(data.uncomplete);
   document.getElementById('th-this-war').classList.toggle('hidden', !isWarActive);
 
@@ -834,22 +837,32 @@ function renderClanResults(data) {
       cls: summary.avgScore < 60 ? 'c-red' : summary.avgScore < 70 ? 'c-orange' : summary.avgScore < 80 ? 'c-yellow' : '' },
   ]);
 
-  // Current Clan War card (jeu–dim)
-
   // Charts
   renderClanBarChart(members);
   renderClanPieChart(summary);
 
-  // Table — apply default sort (activityScore asc = most at-risk first)
+  clanResults.classList.remove('hidden');
+}
+
+// Affiche la liste des membres — appelé uniquement depuis les données live.
+function renderClanMembers(data) {
+  const { members } = data;
   allMembers = members;
-  // Reflect default sort on header
+  // Réinitialiser les filtres et le tri par défaut
+  filterName.value = '';
+  filterVerdict.value = '';
   document.querySelectorAll('.members-table th.sortable').forEach((h) => {
     h.classList.remove('sort-asc', 'sort-desc');
     if (h.dataset.col === 'activityScore') h.classList.add('sort-asc');
   });
   renderMembersTable(sortMembers(members, 'activityScore', 'asc'));
+}
 
-  clanResults.classList.remove('hidden');
+// Affiche un skeleton dans le tableau membres pendant le chargement live.
+function renderMembersSkeleton() {
+  const cols = isWarActive ? 9 : 8;
+  membersTbody.innerHTML =
+    `<tr><td colspan="${cols}" class="members-skeleton">Chargement des membres…</td></tr>`;
 }
 
 // ── Members table ────────────────────────────────────────────
