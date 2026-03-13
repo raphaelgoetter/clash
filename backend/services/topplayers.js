@@ -29,14 +29,16 @@ import { fetchRaceLog } from './clashApi.js';
  *                            [2400,2600,2800]).
  * @returns {Promise<{quotas:number[],playersByQuota:Record<string,object[]>}>}
  */
-export async function computeTopPlayers(clanTag, members, quotas = [2400, 2600, 2800]) {
-  // normalise tag for API
-  let races;
-  try {
-    races = await fetchRaceLog(clanTag);
-  } catch (err) {
-    console.warn(`topPlayers: failed to fetch race log for ${clanTag}:`, err.message);
-    return { quotas, playersByQuota: {} };
+export async function computeTopPlayers(clanTag, members, quotas = [2400, 2600, 2800], raceLog = null) {
+  // utilise le raceLog fourni si disponible, sinon le charge (compatibilité)
+  let races = raceLog;
+  if (!races) {
+    try {
+      races = await fetchRaceLog(clanTag);
+    } catch (err) {
+      console.warn(`topPlayers: failed to fetch race log for ${clanTag}:`, err.message);
+      return { quotas, playersByQuota: {} };
+    }
   }
   if (!Array.isArray(races) || races.length === 0) {
     return { quotas, playersByQuota: {} };

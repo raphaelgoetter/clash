@@ -19,13 +19,16 @@ import { filterWarBattles, expandDuelRounds, warDayKey } from './analysisService
  *                            total decks count will be included.
  * @returns {Promise<{ players: {name:string,tag:string,role:string,decks:number,inClan:boolean,daily?:object}[] }>} 
  */
-export async function computeUncomplete(clanTag, members, battleLogsByTag = {}) {
-  let races;
-  try {
-    races = await fetchRaceLog(clanTag);
-  } catch (err) {
-    console.warn(`uncomplete: failed to fetch race log for ${clanTag}:`, err.message);
-    return { players: [] };
+export async function computeUncomplete(clanTag, members, battleLogsByTag = {}, raceLog = null) {
+  // utilise le raceLog fourni si disponible, sinon le charge (compatibilité)
+  let races = raceLog;
+  if (!races) {
+    try {
+      races = await fetchRaceLog(clanTag);
+    } catch (err) {
+      console.warn(`uncomplete: failed to fetch race log for ${clanTag}:`, err.message);
+      return { players: [] };
+    }
   }
   if (!Array.isArray(races) || races.length === 0) {
     return { players: [] };

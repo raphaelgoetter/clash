@@ -23,7 +23,7 @@ const router = Router();
  * Run async tasks with limited concurrency to avoid rate-limiting.
  * Returns an array of { status, value } | { status, reason } mirroring Promise.allSettled.
  */
-async function pooledAllSettled(tasks, concurrency = 8) {
+async function pooledAllSettled(tasks, concurrency = 20) {
   const results = new Array(tasks.length);
   let idx = 0;
   async function worker() {
@@ -122,7 +122,7 @@ export async function buildClanAnalysis(clanTag) {
     // compute top players for a few predefined fame quotas so the frontend
     // can render the "Last War Best Players" card without additional
     // network requests. the helper gracefully handles missing logs.
-    const topPlayers = await computeTopPlayers(clanTag, members);
+    const topPlayers = await computeTopPlayers(clanTag, members, [2400, 2600, 2800], raceLog);
 
     // Enregistre le snapshot journalier depuis la course EN COURS (currentRace),
     // pas depuis le race log terminé. decksUsed = cumul depuis jeudi → le delta
@@ -172,7 +172,7 @@ export async function buildClanAnalysis(clanTag) {
     }
 
     // compute list of players who didn't do the full 16 decks last week (with breakdown)
-    let uncomplete = await computeUncomplete(clanTag, members, battleLogsByTag);
+    let uncomplete = await computeUncomplete(clanTag, members, battleLogsByTag, raceLog);
 
     // override/update daily breakdown using snapshots if available and race log exists
     if (raceLog && raceLog.length > 0) {
