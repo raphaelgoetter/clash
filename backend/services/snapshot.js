@@ -61,25 +61,31 @@ export async function recordSnapshot(clanTag, participantData, week = null) {
 
   const history = await loadSnapshots(clanTag);
 
-  // Dernier snapshot de la même semaine (hors aujourd'hui) pour calculer le delta
-  const prevForWeek = history
-    .filter((h) => h.week === week && h.date !== today)
+  // Entrée existante pour aujourd'hui (même semaine) — peut être null si premier appel du jour
+  const existingToday = history.find((h) => h.week === week && h.date === today) ?? null;
+
+  // Baseline stable du jour :
+  //  - Si une entrée existe déjà aujourd'hui → on conserve son _baseCumul (figé au 1er appel)
+  //  - Sinon → cumul du dernier snapshot de la même semaine (jour précédent)
+  const prevDayEntry = history
+    .filter((h) => h.week === week && h.date < today)
     .sort((a, b) => a.date.localeCompare(b.date))
     .pop() ?? null;
+  const baseCumul = existingToday?._baseCumul ?? prevDayEntry?._cumul ?? {};
 
-  // Combats du jour = cumul actuel − cumul au dernier snapshot de cette semaine
+  // Combats du jour = cumul actuel − baseline du début de journée, plafonné à 4
   const daily = {};
   for (const tag of Object.keys(currentCumul)) {
-    const prevCumul = prevForWeek?._cumul?.[tag] ?? 0;
-    daily[tag] = Math.max(0, currentCumul[tag] - prevCumul);
+    daily[tag] = Math.min(4, Math.max(0, currentCumul[tag] - (baseCumul[tag] ?? 0)));
   }
 
-  const entry = { date: today, decks: daily, _cumul: currentCumul };
+  const entry = { date: today, decks: daily, _cumul: currentCumul, _baseCumul: baseCumul };
   if (week) entry.week = week;
 
   // Remplacer l'entrée du jour si elle existe déjà (mise à jour en cours de journée)
-  if (history.length && history[history.length - 1].date === today) {
-    history[history.length - 1] = entry;
+  const todayIdx = history.findIndex((h) => h.week === week && h.date === today);
+  if (todayIdx !== -1) {
+    history[todayIdx] = entry;
   } else {
     history.push(entry);
   }

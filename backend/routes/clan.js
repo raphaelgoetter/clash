@@ -176,7 +176,8 @@ export async function buildClanAnalysis(clanTag) {
 
     // override/update daily breakdown using snapshots if available and race log exists
     if (raceLog && raceLog.length > 0) {
-      const weekId = `S${raceLog[0].seasonId}W${raceLog[0].sectionIndex}`;
+      // sectionIndex 0-based côté API → +1 pour correspondre à la clé écrite par recordSnapshot
+      const weekId = `S${raceLog[0].seasonId}W${raceLog[0].sectionIndex + 1}`;
       const { getSnapshotsForWeek } = await import('../services/snapshot.js');
       const snaps = await getSnapshotsForWeek(clanTag, weekId);
       // decks contient désormais les combats du jour directement (plus de diff nécessaire)
@@ -266,7 +267,9 @@ export async function buildClanAnalysis(clanTag) {
           // New member — full fallback with battle log
           const bd     = categorizeBattleLog(battleLog);
           const warLog = expandDuelRounds(filterWarBattles(battleLog));
-          const ws     = computeWarReliabilityFallback(playerProxy, warLog, bd, m.lastSeen ?? null, discordLinked);
+          const normalizedTagFb = m.tag.startsWith('#') ? m.tag : `#${m.tag}`;
+          const racePartFb = currentRace?.clan?.participants?.find((p) => p.tag === normalizedTagFb);
+          const ws     = computeWarReliabilityFallback(playerProxy, warLog, bd, m.lastSeen ?? null, discordLinked, racePartFb?.decksUsed ?? 0);
           activityScore = ws.pct; verdict = ws.verdict; color = ws.color;
           isNew = true;
         } else {

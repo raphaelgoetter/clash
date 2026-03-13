@@ -54,12 +54,13 @@ function parseClashDate(ts) {
  * Clan War battle types in the Clash Royale API.
  * Covers both current River Race format and legacy war format.
  */
+// Tous les types en minuscules — la comparaison normalise b.type avec .toLowerCase()
 const WAR_BATTLE_TYPES = new Set([
-  'riverRacePvP',
-  'riverRaceDuel',
-  'riverRaceDuelColosseum',
-  'riverRaceBoat',
-  'clanWarBattle',
+  'riverracepvp',
+  'riverraceduel',
+  'riverraceduelscolosseum',
+  'riverraceboat',
+  'clanwarbattle',
 ]);
 
 /**
@@ -68,20 +69,20 @@ const WAR_BATTLE_TYPES = new Set([
  * @returns {object[]}
  */
 export function filterWarBattles(battleLog) {
-  return battleLog.filter((b) => WAR_BATTLE_TYPES.has(b.type));
+  return battleLog.filter((b) => WAR_BATTLE_TYPES.has((b.type ?? '').toLowerCase()));
 }
 
 /** Battle types considered as regular Ladder / Path of Legend. */
-const LADDER_TYPES = new Set(['pvp', 'pathOfLegend', 'ranked']);
+const LADDER_TYPES = new Set(['pvp', 'pathoflegend', 'ranked']);
 
 /** Battle types considered as challenge / tournament. */
 const CHALLENGE_TYPES = new Set([
-  'challenge', 'grandChallenge', 'classicChallenge',
-  'challengeTournament', 'tournament',
+  'challenge', 'grandchallenge', 'classicchallenge',
+  'challengetournament', 'tournament',
 ]);
 
 /** Battle types considered as friendly / training (not competitive). */
-const FRIENDLY_TYPES = new Set(['training', 'friendly', 'clanMate', 'casual2v2', '2v2']);
+const FRIENDLY_TYPES = new Set(['training', 'friendly', 'clanmate', 'casual2v2', '2v2']);
 
 /**
  * Categorise all entries of a raw battle log into 4 buckets.
@@ -93,7 +94,7 @@ const FRIENDLY_TYPES = new Set(['training', 'friendly', 'clanMate', 'casual2v2',
 export function categorizeBattleLog(rawBattleLog) {
   let gdc = 0, ladder = 0, challenge = 0, friendly = 0, other = 0;
   for (const b of rawBattleLog) {
-    const t = b.type ?? '';
+    const t = (b.type ?? '').toLowerCase();
     if (WAR_BATTLE_TYPES.has(t))  gdc++;
     else if (LADDER_TYPES.has(t)) ladder++;
     else if (CHALLENGE_TYPES.has(t)) challenge++;
@@ -498,13 +499,20 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
  * @param {object[]} warLog       - Filtered war battles (expanded duels)
  * @param {object}   battleLogBreakdown - Output of categorizeBattleLog()
  */
-export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown, lastSeen = null, discordLinked = false) {
+export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown, lastSeen = null, discordLinked = false, currentRaceDecks = 0) {
   const r = (v) => Math.round(v * 10) / 10;
 
   const bd = battleLogBreakdown ?? { total: warLog.length, gdc: warLog.length, ladder: 0, challenge: 0 };
 
-  // Use warLog.length as GDC count: it's the expanded set (rounds from duels included)
-  const gdcCount   = warLog.length;
+  // Quand le battle log ne contient plus de combats GDC (ex. écrasés par des parties ladder),
+  // on synthétise une entrée "aujourd'hui" à partir de decksUsed de la course en cours.
+  const syntheticLog = warLog.length === 0 && currentRaceDecks > 0
+    ? Array.from({ length: Math.min(4, currentRaceDecks) }, () => ({ battleTime: new Date().toISOString() }))
+    : null;
+  const effectiveLog = syntheticLog ?? warLog;
+
+  // gdcCount = batailles réelles si disponibles, sinon total hebdo de la course (proxy)
+  const gdcCount   = warLog.length > 0 ? warLog.length : currentRaceDecks;
   const gdcWins    = warLog.filter(isWarWin).length;
   const gdcWinRate = gdcCount > 0 ? gdcWins / gdcCount : 0;
   const competitive = gdcCount + bd.ladder + bd.challenge;
@@ -513,7 +521,7 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
   // We still use dailyWarActivityScore to compute a baseline, but then
   // apply an extra boost for full 4‑deck days and a small penalty for each
   // day with <4 decks.  This rewards players who prioritise GDC battles.
-  const activityResult = dailyWarActivityScore(warLog);
+  const activityResult = dailyWarActivityScore(effectiveLog);
   // count perfect and short days within window used by score
   const perfectDays = Object.values(activityResult.byDay).filter((d) => d >= 4).length;
   const shortDays   = Object.values(activityResult.byDay).filter((d) => d > 0 && d < 4).length;
@@ -926,7 +934,10 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
         // Historique insuffisant → fallback battle log
         const warLogFb = expandDuelRounds(filterWarBattles(battleLog));
         const bdFb = categorizeBattleLog(battleLog);
-        analysis.warScore = computeWarReliabilityFallback(player, warLogFb, bdFb, lastSeen, discordLinked);
+        // Si les combats GDC ont été chassés du battle log (fenêtre 30) par des parties ladder,
+        // on passe decksUsed de la course en cours pour reconstituer l'activité.
+        const racePartFb = currentRace?.clan?.participants?.find((p) => p.tag === player.tag);
+        analysis.warScore = computeWarReliabilityFallback(player, warLogFb, bdFb, lastSeen, discordLinked, racePartFb?.decksUsed ?? 0);
       }
     } catch (_) {
       analysis.warHistory = null;
