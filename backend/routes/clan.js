@@ -124,14 +124,22 @@ export async function buildClanAnalysis(clanTag) {
     // network requests. the helper gracefully handles missing logs.
     const topPlayers = await computeTopPlayers(clanTag, members);
 
-    // record snapshot of decksUsed if we have a race log (used later for
-    // accurate day-by-day breakdowns); run asynchronously so it doesn't
-    // delay the API response.
-    if (raceLog && Array.isArray(raceLog) && raceLog.length > 0) {
-      const normalized = clanTag.startsWith('#') ? clanTag : `#${clanTag}`;
-      const standing = raceLog[0].standings.find((s) => s.clan?.tag === normalized);
-      const participants = standing?.clan?.participants || [];
-      const weekId = `S${raceLog[0].seasonId}W${raceLog[0].sectionIndex}`;
+    // Enregistre le snapshot journalier depuis la course EN COURS (currentRace),
+    // pas depuis le race log terminé. decksUsed = cumul depuis jeudi → le delta
+    // inter-snapshots donne les combats du jour.
+    // On n'enregistre que pendant 'warDay' : en période training, decksUsed
+    // reflète la guerre précédente terminée et produirait des valeurs erronées.
+    // On utilise periodType (et non state qui peut valoir 'full' quand le clan
+    // a atteint 10 000 fame) pour distinguer guerre vs entraînement.
+    if (currentRace?.periodType === 'warDay' && currentRace?.clan?.participants?.length > 0) {
+      const participants = currentRace.clan.participants;
+      // seasonId absent de currentriverrace → on le prend dans le race log terminé.
+      // sectionIndex est 0-based côté API ; RoyaleAPI affiche en 1-based (S130W1 = sectionIndex 0).
+      // Si sectionIndex courant ≤ sectionIndex du dernier log, on est passé à la saison suivante.
+      const currSection = currentRace.sectionIndex ?? 0;
+      let seasonId = raceLog?.[0]?.seasonId;
+      if (seasonId !== undefined && currSection <= (raceLog[0]?.sectionIndex ?? -1)) seasonId += 1;
+      const weekId = seasonId != null ? `S${seasonId}W${currSection + 1}` : `W${currSection + 1}`;
       import('../services/snapshot.js').then(({ recordSnapshot }) => {
         recordSnapshot(clanTag, participants, weekId).catch(()=>{/* silent */});
       });
@@ -171,14 +179,10 @@ export async function buildClanAnalysis(clanTag) {
       const weekId = `S${raceLog[0].seasonId}W${raceLog[0].sectionIndex}`;
       const { getSnapshotsForWeek } = await import('../services/snapshot.js');
       const snaps = await getSnapshotsForWeek(clanTag, weekId);
-      if (snaps.length > 1 && uncomplete && Array.isArray(uncomplete.players)) {
+      // decks contient désormais les combats du jour directement (plus de diff nécessaire)
+      if (snaps.length > 0 && uncomplete && Array.isArray(uncomplete.players)) {
         uncomplete.players = uncomplete.players.map((p) => {
-          const arr = [];
-          for (let i = 1; i < snaps.length; i++) {
-            const prev = snaps[i-1].decks[p.tag] || 0;
-            const curr = snaps[i].decks[p.tag] || 0;
-            arr.push(curr - prev);
-          }
+          const arr = snaps.map((s) => s.decks[p.tag] || 0);
           const sliced = arr.slice(-4); // keep last up to 4
           p.daily = sliced;
           p.dailySource = 'snapshot';

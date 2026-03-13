@@ -41,27 +41,46 @@ async function saveSnapshots(clanTag, arr) {
 }
 
 /**
- * Record today's decksUsed values for the given clan.
+ * Enregistre les combats GDC du jour pour chaque participant.
+ * `decks` = combats effectués aujourd'hui seulement (0–4 par joueur).
+ * `_cumul` = total hebdo depuis l'API (conservé pour calculer le delta du jour suivant).
+ *
  * @param {string} clanTag
  * @param {{tag:string,decksUsed:number}[]} participantData
- *        array of objects (e.g. from raceLog.standings[0].clan.participants)
+ *        participants de /currentriverrace (decksUsed = cumul depuis jeudi)
  */
 export async function recordSnapshot(clanTag, participantData, week = null) {
   if (!participantData || participantData.length === 0) return;
   const today = new Date().toISOString().slice(0, 10);
-  const map = {};
+
+  // Cumul hebdomadaire actuel depuis l'API currentriverrace
+  const currentCumul = {};
   participantData.forEach((p) => {
-    map[p.tag] = p.decksUsed || 0;
+    currentCumul[p.tag] = p.decksUsed || 0;
   });
 
   const history = await loadSnapshots(clanTag);
-  // if last entry has same date, replace it
+
+  // Dernier snapshot de la même semaine (hors aujourd'hui) pour calculer le delta
+  const prevForWeek = history
+    .filter((h) => h.week === week && h.date !== today)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .pop() ?? null;
+
+  // Combats du jour = cumul actuel − cumul au dernier snapshot de cette semaine
+  const daily = {};
+  for (const tag of Object.keys(currentCumul)) {
+    const prevCumul = prevForWeek?._cumul?.[tag] ?? 0;
+    daily[tag] = Math.max(0, currentCumul[tag] - prevCumul);
+  }
+
+  const entry = { date: today, decks: daily, _cumul: currentCumul };
+  if (week) entry.week = week;
+
+  // Remplacer l'entrée du jour si elle existe déjà (mise à jour en cours de journée)
   if (history.length && history[history.length - 1].date === today) {
-    history[history.length - 1].decks = map;
-    if (week) history[history.length - 1].week = week;
+    history[history.length - 1] = entry;
   } else {
-    const entry = { date: today, decks: map };
-    if (week) entry.week = week;
     history.push(entry);
   }
 

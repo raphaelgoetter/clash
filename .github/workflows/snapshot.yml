@@ -6,8 +6,8 @@ permissions:
 
 on:
   schedule:
-    # every day at 01:00 UTC
-    - cron: '0 1 * * *'
+    # Snapshot juste avant le reset GDC (10h40 Paris) — 08h30 UTC couvre CET et CEST
+    - cron: '30 8 * * *'
   workflow_dispatch:            # permet un déclenchement manuel
 
 jobs:

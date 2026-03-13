@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: './.env' });
 
 import { ALLOWED_CLANS } from '../backend/routes/clan.js';
-import { fetchRaceLog } from '../backend/services/clashApi.js';
+import { fetchCurrentRace, fetchRaceLog } from '../backend/services/clashApi.js';
 import { recordSnapshot } from '../backend/services/snapshot.js';
 
 (async() => {
@@ -18,15 +18,23 @@ import { recordSnapshot } from '../backend/services/snapshot.js';
 
   for (const clanTag of ALLOWED_CLANS) {
     try {
-      console.log('Fetching race log for', clanTag);
-      const races = await fetchRaceLog(clanTag);
-      if (Array.isArray(races) && races.length > 0) {
-        const standing = races[0].standings.find((s) => s.clan?.tag === clanTag);
-        const participants = standing?.clan?.participants || [];
-        await recordSnapshot(clanTag, participants);
-        console.log(`Recorded snapshot for ${clanTag} (${participants.length} players)`);
+      console.log('Fetching current race for', clanTag);
+      const [race, raceLog] = await Promise.all([fetchCurrentRace(clanTag), fetchRaceLog(clanTag)]);
+      if (race?.periodType !== 'warDay') {
+        console.log(`Skipping snapshot for ${clanTag} (periodType: ${race?.periodType ?? 'unknown'})`);
+        continue;
+      }
+      const participants = race.clan?.participants || [];
+      if (participants.length > 0) {
+        // seasonId absent de currentriverrace → dérivé depuis le race log
+        const currSection = race.sectionIndex ?? 0;
+        let seasonId = raceLog?.[0]?.seasonId;
+        if (seasonId !== undefined && currSection <= (raceLog[0]?.sectionIndex ?? -1)) seasonId += 1;
+        const weekId = seasonId != null ? `S${seasonId}W${currSection + 1}` : `W${currSection + 1}`;
+        await recordSnapshot(clanTag, participants, weekId);
+        console.log(`Recorded snapshot for ${clanTag} week ${weekId} (${participants.length} players)`);
       } else {
-        console.log('No race log entries for', clanTag);
+        console.log('No participants for', clanTag);
       }
     } catch (err) {
       console.error('Error processing', clanTag, err.message || err);
