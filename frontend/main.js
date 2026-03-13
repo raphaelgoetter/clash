@@ -630,8 +630,7 @@ function renderCurrentWarCard(warData, warSnapshotDays = null) {
     return;
   }
 
-  const pctFill  = Math.round((totalDecksUsed / maxDecksWeek) * 100);
-  const pctMark  = Math.round((maxDecksElapsed / maxDecksWeek) * 100);
+  const pctFill  = Math.min(100, Math.round((totalDecksUsed / maxDecksElapsed) * 100));
 
   // Statut par rapport aux combats attendus jusqu'à aujourd'hui inclus
   let statusIcon, statusText, statusCls;
@@ -659,16 +658,15 @@ function renderCurrentWarCard(warData, warSnapshotDays = null) {
   warDaysGrid.innerHTML =
     `<div class="war-summary">` +
       `<div class="war-progress-row">` +
-        `<span class="war-decks-count">${totalDecksUsed} <span class="war-decks-max">/ ${maxDecksWeek}</span></span>` +
-        `<span class="war-decks-label">decks this week</span>` +
+        `<span class="war-decks-count">${totalDecksUsed} <span class="war-decks-max">/ ${maxDecksElapsed}</span></span>` +
+        `<span class="war-decks-label">decks so far</span>` +
         sourceNote +
       `</div>` +
       `<div class="war-progress-track">` +
         `<div class="war-progress-fill ${statusCls}" style="width:${pctFill}%"></div>` +
-        `<div class="war-progress-marker" style="left:${pctMark}%" title="Expected so far: ${maxDecksElapsed}"></div>` +
       `</div>` +
       `<div class="war-progress-meta">` +
-        `Day ${dayNum} of 4 · Expected so far: ${maxDecksElapsed} · ${statusIcon} ${statusText}` +
+        `Day ${dayNum} of 4 · ${statusIcon} ${statusText}` +
       `</div>` +
       `<div class="war-day-chips">${chipsHtml}</div>` +
     `</div>`;
