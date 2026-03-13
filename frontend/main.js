@@ -542,7 +542,7 @@ function renderPlayerResults(data) {
   }
 
   // 3b. Actual Clan War (visible jeudi–dimanche)
-  renderCurrentWarCard(data.currentWarDays ?? null);
+  renderCurrentWarCard(data.currentWarDays ?? null, data.warSnapshotDays ?? null);
 
   // 4. War Reliability Score avec breakdown
   renderGaugeChart(ws.pct, ws.color);
@@ -599,7 +599,7 @@ function renderPlayerResults(data) {
 
 const DAY_NAMES = ['Thu', 'Fri', 'Sat', 'Sun'];
 
-function renderCurrentWarCard(warData) {
+function renderCurrentWarCard(warData, warSnapshotDays = null) {
   if (!warData) { cardCurrentWar.classList.add('hidden'); return; }
   cardCurrentWar.classList.remove('hidden');
 
@@ -643,10 +643,17 @@ function renderCurrentWarCard(warData) {
     ? '<span class="war-data-source reliable">Race log ✓</span>'
     : '<span class="war-data-source fallback">Battle log (approx.)</span>';
 
-  const chipsHtml = days.map((d) => {
+  const chipsHtml = days.map((d, i) => {
     const cls  = d.isFuture ? 'future' : d.isToday ? 'today' : 'past';
-    const icon = d.isFuture ? '—' : d.isToday ? '▶' : '✔';
-    return `<span class="war-day-chip ${cls}">${d.label} ${icon}</span>`;
+    const icon = d.isFuture ? ' —' : d.isToday ? ' ▶' : '';
+    let snap = '';
+    if (d.isPast && warSnapshotDays?.[i] != null) {
+      const n = warSnapshotDays[i];
+      const warn = n < 4 ? ' ⚠️' : '';
+      const snapCls = n <= 1 ? 'chip-snap chip-snap-red' : n <= 3 ? 'chip-snap chip-snap-orange' : 'chip-snap';
+      snap = ` <span class="${snapCls}">${n}/4${warn}</span>`;
+    }
+    return `<span class="war-day-chip ${cls}">${d.label}${icon}${snap}</span>`;
   }).join('');
 
   warDaysGrid.innerHTML =

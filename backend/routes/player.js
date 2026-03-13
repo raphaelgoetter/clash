@@ -59,8 +59,26 @@ router.get('/:tag/analysis', async (req, res) => {
     res.set('X-Cache', fromCache ? 'HIT' : 'MISS');
     // S'assure que le statut Discord est toujours à jour (indépendamment du cache d'analyse)
     if (analysis.overview) analysis.overview.discord = discordLinked;
+
+    // Enrichir les jours passés de la GDC avec les snapshots du clan si disponibles
+    let warSnapshotDays = null;
+    const clanTag = analysis.overview?.clan?.tag ?? null;
+    if (analysis.currentWarDays && clanTag) {
+      try {
+        const { getSnapshots } = await import('../services/snapshot.js');
+        const allSnaps = await getSnapshots(clanTag);
+        const currentWeek = allSnaps.length > 0 ? allSnaps[allSnaps.length - 1].week : null;
+        if (currentWeek) {
+          const weekSnaps = allSnaps.filter((s) => s.week === currentWeek);
+          const playerTag = analysis.overview?.tag ?? tag;
+          // weekSnaps[0] = jeudi, [1] = vendredi, etc.
+          warSnapshotDays = weekSnaps.map((s) => s.decks[playerTag] ?? null);
+        }
+      } catch (_) { /* silencieux */ }
+    }
+
     // keep API shape consistent with clan route
-    res.json({ ...analysis, snapshotDate: null });
+    res.json({ ...analysis, snapshotDate: null, warSnapshotDays });
   } catch (err) {
     const status = err.message.includes('404') ? 404 : 500;
     res.status(status).json({ error: err.message });
