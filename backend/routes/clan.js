@@ -175,11 +175,17 @@ export async function buildClanAnalysis(clanTag) {
     let uncomplete = await computeUncomplete(clanTag, members, battleLogsByTag, raceLog);
 
     // override/update daily breakdown using snapshots if available and race log exists
+    let weekSnaps = [];
     if (raceLog && raceLog.length > 0) {
-      // sectionIndex 0-based côté API → +1 pour correspondre à la clé écrite par recordSnapshot
-      const weekId = `S${raceLog[0].seasonId}W${raceLog[0].sectionIndex + 1}`;
+      // Même logique que l'écriture (recordSnapshot) : utilise currentRace.sectionIndex comme référence.
+      // raceLog[0] contient la semaine TERMINÉE (sectionIndex = n-1), currentRace est la semaine COURANTE.
+      const currSection = currentRace?.sectionIndex ?? (raceLog[0].sectionIndex + 1);
+      let seasonId = raceLog[0].seasonId;
+      if (currentRace && currSection <= (raceLog[0]?.sectionIndex ?? -1)) seasonId += 1;
+      const weekId = `S${seasonId}W${currSection + 1}`;
       const { getSnapshotsForWeek } = await import('../services/snapshot.js');
       const snaps = await getSnapshotsForWeek(clanTag, weekId);
+      weekSnaps = snaps;
       // decks contient désormais les combats du jour directement (plus de diff nécessaire)
       if (snaps.length > 0 && uncomplete && Array.isArray(uncomplete.players)) {
         uncomplete.players = uncomplete.players.map((p) => {
@@ -383,6 +389,41 @@ export async function buildClanAnalysis(clanTag) {
     const snapshotDate  = await getLastSnapshotDate(clanTag);
 
 
+    // Synthèse des combats GDC pour l'ensemble du clan (sans requête supplémentaire)
+    let clanWarSummary = null;
+    if (currentRace?.periodType === 'warDay' && currentRace?.clan?.participants?.length > 0) {
+      const sampleWarDays = analyzedMembers.find((m) => m.warDays && !m.warDays.arrivedMidWar)?.warDays ?? null;
+      if (sampleWarDays) {
+        const { daysFromThu } = sampleWarDays;
+        const participants = currentRace.clan.participants;
+        // Total fiable depuis currentRace (cumul hebdo par participant)
+        const totalDecksUsed = participants.reduce((s, p) => s + (p.decksUsed ?? 0), 0);
+        // Taille fixe du clan (50) : le nombre de membres peut fluctuer en cours de journée
+        const n = 50;
+        const maxDecksElapsed = n * (daysFromThu + 1) * 4;
+        const maxDecksWeek    = n * 16;
+        // Détail par jour depuis les snapshots (source fiable)
+        // weekSnaps[0] = snapshot du vendredi matin → données du jeudi, etc.
+        const DAY_LABELS = ['Thu', 'Fri', 'Sat', 'Sun'];
+        const days = DAY_LABELS.map((label, i) => {
+          // Le snapshot d'index i correspond au jour i (jeudi=0, vendredi=1, ...)
+          const snap = weekSnaps[i] ?? null;
+          const totalCount = snap
+            ? Object.values(snap.decks).reduce((s, v) => s + v, 0)
+            : null; // null = pas encore de snapshot pour ce jour
+          return {
+            label,
+            totalCount,
+            maxCount: 200,
+            isPast:   i < daysFromThu,
+            isToday:  i === daysFromThu,
+            isFuture: i > daysFromThu,
+          };
+        });
+        clanWarSummary = { totalDecksUsed, maxDecksElapsed, maxDecksWeek, participantCount: n, daysFromThu, days };
+      }
+    }
+
     return {
       clan: {
         name: clan.name,
@@ -400,6 +441,7 @@ export async function buildClanAnalysis(clanTag) {
       isWarPeriod: analyzedMembers.some((m) => m.warDays !== null),
       topPlayers,                    // added by computeTopPlayers
       uncomplete,                    // new list of incomplete deck players
+      clanWarSummary,                // synthèse GDC clan (null hors période de guerre)
       snapshotToday,                 // boolean for backwards compatibility
       snapshotDate,                  // ISO date or null, used by frontend for message
     };

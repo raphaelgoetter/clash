@@ -816,6 +816,51 @@ function renderUncompleteCard(uncomplete) {
   card.classList.remove('hidden');
 }
 
+// ── Clan war card (vue clan) ──────────────────────────────────────────
+
+function renderClanWarCard(clanWarSummary) {
+  const card = document.getElementById('card-clan-war');
+  if (!clanWarSummary) { card.classList.add('hidden'); return; }
+  card.classList.remove('hidden');
+
+  const { totalDecksUsed, maxDecksElapsed, maxDecksWeek, participantCount, daysFromThu, days } = clanWarSummary;
+  const dayNum   = daysFromThu + 1;
+  const pctFill  = Math.min(100, Math.round((totalDecksUsed / maxDecksElapsed) * 100));
+
+  let statusIcon, statusText, statusCls;
+  if (totalDecksUsed >= maxDecksElapsed)                     { statusIcon = '✅'; statusText = 'On track';          statusCls = 'good'; }
+  else if (totalDecksUsed >= Math.ceil(maxDecksElapsed / 2)) { statusIcon = '⚠️'; statusText = 'Behind schedule'; statusCls = 'partial'; }
+  else                                                       { statusIcon = '🔴'; statusText = 'Very behind';       statusCls = 'bad'; }
+
+  const chipsHtml = days.map((d) => {
+    const cls  = d.isFuture ? 'future' : d.isToday ? 'today' : 'past';
+    const icon = d.isFuture ? ' —' : d.isToday ? ' ▶' : '';
+    let detail = '';
+    if (!d.isFuture && d.totalCount !== null) {
+      const ratio = d.maxCount > 0 ? d.totalCount / d.maxCount : 0;
+      const snapCls = ratio >= 1 ? '' : ratio >= 0.75 ? 'chip-snap chip-snap-orange' : 'chip-snap chip-snap-red';
+      detail = ` <span class="${snapCls || 'chip-snap'}">${d.totalCount}/${d.maxCount}</span>`;
+    }
+    return `<span class="war-day-chip ${cls}">${d.label}${icon}${detail}</span>`;
+  }).join('');
+
+  document.getElementById('clan-war-grid').innerHTML =
+    `<div class="war-summary">` +
+      `<div class="war-progress-row">` +
+        `<span class="war-decks-count">${totalDecksUsed} <span class="war-decks-max">/ ${maxDecksElapsed}</span></span>` +
+        `<span class="war-decks-label">decks so far</span>` +
+        `<span class="war-data-source reliable">Race log ✓</span>` +
+      `</div>` +
+      `<div class="war-progress-track">` +
+        `<div class="war-progress-fill ${statusCls}" style="width:${pctFill}%"></div>` +
+      `</div>` +
+      `<div class="war-progress-meta">` +
+        `Day ${dayNum} of 4 · ${statusIcon} ${statusText}` +
+      `</div>` +
+      `<div class="war-day-chips">${chipsHtml}</div>` +
+    `</div>`;
+}
+
 // ── Clan rendering ──────────────────────────────────────────
 
 // Affiche l'overview du clan, les charts et les cards top/uncomplete.
@@ -847,6 +892,8 @@ function renderClanOverview(data) {
   // Charts
   renderClanBarChart(members);
   renderClanPieChart(summary);
+  // Card guerre courante clan
+  renderClanWarCard(data.clanWarSummary ?? null);
 
   clanResults.classList.remove('hidden');
 }
