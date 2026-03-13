@@ -862,7 +862,7 @@ function renderClanMembers(data) {
 function renderMembersSkeleton() {
   const cols = isWarActive ? 9 : 8;
   membersTbody.innerHTML =
-    `<tr><td colspan="${cols}" class="members-skeleton">Chargement des membres…</td></tr>`;
+    `<tr><td colspan="${cols}" class="members-skeleton">Members list loading…</td></tr>`;
 }
 
 // ── Members table ────────────────────────────────────────────
