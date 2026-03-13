@@ -542,7 +542,7 @@ function renderPlayerResults(data) {
   }
 
   // 3b. Actual Clan War (visible jeudi–dimanche)
-  renderCurrentWarCard(data.currentWarDays ?? null, data.warSnapshotDays ?? null);
+  renderCurrentWarCard(data.currentWarDays ?? null, data.warSnapshotDays ?? null, data.warCurrentWeekId ?? null);
 
   // 4. War Reliability Score avec breakdown
   renderGaugeChart(ws.pct, ws.color);
@@ -599,9 +599,12 @@ function renderPlayerResults(data) {
 
 const DAY_NAMES = ['Thu', 'Fri', 'Sat', 'Sun'];
 
-function renderCurrentWarCard(warData, warSnapshotDays = null) {
+function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null) {
   if (!warData) { cardCurrentWar.classList.add('hidden'); return; }
   cardCurrentWar.classList.remove('hidden');
+
+  const weekLabel = weekId ? ` <span class="card-week-id">(${weekId.toLowerCase()})</span>` : '';
+  cardCurrentWar.querySelector('.card-title').innerHTML = `⚔️ Current Clan War${weekLabel}`;
 
   const { totalDecksUsed, maxDecksElapsed, maxDecksWeek, isReliableTotal, days, arrivedMidWar, arrivedOnDay } = warData;
   const dayNum   = days.findIndex((d) => d.isToday) + 1;
@@ -693,13 +696,15 @@ function warMiniBarHtml(warData) {
 }
 // ── Top players card renderer ─────────────────────────────────
 
-function renderTopPlayersCard(topPlayers) {
+function renderTopPlayersCard(topPlayers, prevWeekId = null) {
   const card = document.getElementById('card-top-players');
   const listEl = document.getElementById('top-players-list');
   if (!topPlayers || !topPlayers.quotas) {
     card.classList.add('hidden');
     return;
   }
+  const weekLabel = prevWeekId ? ` <span class="card-week-id">(${prevWeekId.toLowerCase()})</span>` : '';
+  card.querySelector('.card-title').innerHTML = `🏅 Last War Best${weekLabel}`;
 
   // ensure quotas match the radio buttons; if dynamic, we'd rebuild them
   // but here we assume the static 2400/2600/2800 set.
@@ -739,13 +744,15 @@ function renderTopPlayersCard(topPlayers) {
 
 // ── Uncomplete decks card renderer ───────────────────────────
 
-function renderUncompleteCard(uncomplete) {
+function renderUncompleteCard(uncomplete, prevWeekId = null) {
   const card = document.getElementById('card-uncomplete');
   const listEl = document.getElementById('uncomplete-list');
   if (!uncomplete || !Array.isArray(uncomplete.players)) {
     card.classList.add('hidden');
     return;
   }
+  const weekLabel = prevWeekId ? ` <span class="card-week-id">(${prevWeekId.toLowerCase()})</span>` : '';
+  card.querySelector('.card-title').innerHTML = `🤷 Last War fails${weekLabel}`;
   const players = uncomplete.players.slice().sort((a,b)=> b.decks - a.decks);
 
   // show a global warning if any player is still using warlog data (not snapshot),
@@ -821,7 +828,9 @@ function renderClanWarCard(clanWarSummary) {
   if (!clanWarSummary) { card.classList.add('hidden'); return; }
   card.classList.remove('hidden');
 
-  const { totalDecksUsed, maxDecksElapsed, maxDecksWeek, participantCount, daysFromThu, days } = clanWarSummary;
+  const { totalDecksUsed, maxDecksElapsed, maxDecksWeek, participantCount, daysFromThu, days, weekId } = clanWarSummary;
+  const weekLabel = weekId ? ` <span class="card-week-id">(${weekId.toLowerCase()})</span>` : '';
+  card.querySelector('.card-title').innerHTML = `⚔️ Current Clan War${weekLabel}`;
   const dayNum   = daysFromThu + 1;
   const pctFill  = Math.min(100, Math.round((totalDecksUsed / maxDecksElapsed) * 100));
 
@@ -868,8 +877,8 @@ function renderClanOverview(data) {
 
   // Colonne "This War" visible uniquement en période de guerre (jeu–dim)
   isWarActive = !!data.isWarPeriod;
-  renderTopPlayersCard(data.topPlayers);
-  renderUncompleteCard(data.uncomplete);
+  renderTopPlayersCard(data.topPlayers, data.prevWeekId ?? null);
+  renderUncompleteCard(data.uncomplete, data.prevWeekId ?? null);
   document.getElementById('th-this-war').classList.toggle('hidden', !isWarActive);
 
   // Clan overview card

@@ -62,6 +62,7 @@ router.get('/:tag/analysis', async (req, res) => {
 
     // Enrichir les jours passés de la GDC avec les snapshots du clan si disponibles
     let warSnapshotDays = null;
+    let warCurrentWeekId = null;
     const clanTag = analysis.overview?.clan?.tag ?? null;
     if (analysis.currentWarDays && clanTag) {
       try {
@@ -69,6 +70,7 @@ router.get('/:tag/analysis', async (req, res) => {
         const allSnaps = await getSnapshots(clanTag);
         const currentWeek = allSnaps.length > 0 ? allSnaps[allSnaps.length - 1].week : null;
         if (currentWeek) {
+          warCurrentWeekId = currentWeek;
           const weekSnaps = allSnaps.filter((s) => s.week === currentWeek);
           const playerTag = analysis.overview?.tag ?? tag;
           // weekSnaps[0] = jeudi, [1] = vendredi, etc.
@@ -78,7 +80,7 @@ router.get('/:tag/analysis', async (req, res) => {
     }
 
     // keep API shape consistent with clan route
-    res.json({ ...analysis, snapshotDate: null, warSnapshotDays });
+    res.json({ ...analysis, snapshotDate: null, warSnapshotDays, warCurrentWeekId });
   } catch (err) {
     const status = err.message.includes('404') ? 404 : 500;
     res.status(status).json({ error: err.message });

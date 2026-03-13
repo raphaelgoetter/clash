@@ -134,6 +134,15 @@ summary .card-title {
   margin-bottom: 0;
 }
 
+.card-week-id {
+  font-size: .7rem;
+  font-weight: 400;
+  opacity: .55;
+  letter-spacing: .03em;
+  text-transform: lowercase;
+  margin-left: 4px;
+}
+
 /* description text shown under some card titles */
 .card-desc {
   margin-bottom: 12px;

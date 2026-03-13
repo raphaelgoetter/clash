@@ -176,20 +176,18 @@ export async function buildClanAnalysis(clanTag) {
 
     // override/update daily breakdown using snapshots if available and race log exists
     let weekSnaps = [];
+    let prevWeekId = null;
+    let currWeekId = null;
     if (raceLog && raceLog.length > 0) {
-      // Même logique que l'écriture (recordSnapshot) : utilise currentRace.sectionIndex comme référence.
-      // raceLog[0] contient la semaine TERMINÉE (sectionIndex = n-1), currentRace est la semaine COURANTE.
-      const currSection = currentRace?.sectionIndex ?? (raceLog[0].sectionIndex + 1);
-      let seasonId = raceLog[0].seasonId;
-      if (currentRace && currSection <= (raceLog[0]?.sectionIndex ?? -1)) seasonId += 1;
-      const weekId = `S${seasonId}W${currSection + 1}`;
       const { getSnapshotsForWeek } = await import('../services/snapshot.js');
-      const snaps = await getSnapshotsForWeek(clanTag, weekId);
-      weekSnaps = snaps;
-      // decks contient désormais les combats du jour directement (plus de diff nécessaire)
-      if (snaps.length > 0 && uncomplete && Array.isArray(uncomplete.players)) {
+
+      // --- Snapshots semaine PRÉCÉDENTE → enrichissement uncomplete ---
+      // raceLog[0] est la semaine terminée : sectionIndex=0 → "S130W1"
+      prevWeekId = `S${raceLog[0].seasonId}W${raceLog[0].sectionIndex + 1}`;
+      const prevSnaps = await getSnapshotsForWeek(clanTag, prevWeekId);
+      if (prevSnaps.length > 0 && uncomplete && Array.isArray(uncomplete.players)) {
         uncomplete.players = uncomplete.players.map((p) => {
-          const arr = snaps.map((s) => s.decks[p.tag] || 0);
+          const arr = prevSnaps.map((s) => s.decks[p.tag] || 0);
           const sliced = arr.slice(-4); // keep last up to 4
           p.daily = sliced;
           p.dailySource = 'snapshot';
@@ -197,6 +195,14 @@ export async function buildClanAnalysis(clanTag) {
           return p;
         });
       }
+
+      // --- Snapshots semaine COURANTE → chips clanWarSummary ---
+      // Même logique que l'écriture (recordSnapshot) : utilise currentRace.sectionIndex.
+      const currSection = currentRace?.sectionIndex ?? (raceLog[0].sectionIndex + 1);
+      let seasonId = raceLog[0].seasonId;
+      if (currentRace && currSection <= (raceLog[0]?.sectionIndex ?? -1)) seasonId += 1;
+      currWeekId = `S${seasonId}W${currSection + 1}`;
+      weekSnaps = await getSnapshotsForWeek(clanTag, currWeekId);
     }
 
 
@@ -420,7 +426,7 @@ export async function buildClanAnalysis(clanTag) {
             isFuture: i > daysFromThu,
           };
         });
-        clanWarSummary = { totalDecksUsed, maxDecksElapsed, maxDecksWeek, participantCount: n, daysFromThu, days };
+        clanWarSummary = { totalDecksUsed, maxDecksElapsed, maxDecksWeek, participantCount: n, daysFromThu, days, weekId: currWeekId };
       }
     }
 
@@ -442,6 +448,7 @@ export async function buildClanAnalysis(clanTag) {
       topPlayers,                    // added by computeTopPlayers
       uncomplete,                    // new list of incomplete deck players
       clanWarSummary,                // synthèse GDC clan (null hors période de guerre)
+      prevWeekId,                    // identifiant semaine précédente (pour Last War cards)
       snapshotToday,                 // boolean for backwards compatibility
       snapshotDate,                  // ISO date or null, used by frontend for message
     };
