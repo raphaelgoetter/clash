@@ -219,6 +219,7 @@ export async function buildClanAnalysis(clanTag) {
     let prevWeekId = null;
     let currWeekId = null;
     let warSnapshotDays = null;
+    let warSnapshotTakenAt = null;
     if (raceLog && raceLog.length > 0) {
       const { getSnapshotsForWeek } = await import('../services/snapshot.js');
 
@@ -244,6 +245,14 @@ export async function buildClanAnalysis(clanTag) {
       if (currentRace && currSection <= (raceLog[0]?.sectionIndex ?? -1)) seasonId += 1;
       currWeekId = `S${seasonId}W${currSection + 1}`;
       weekSnaps = await getSnapshotsForWeek(clanTag, currWeekId);
+
+      // Track when the latest snapshot was taken (useful for debug/analysis)
+      const latestSnap = weekSnaps
+        .map((s) => s._snapshotTakenAt || s._generatedAt || null)
+        .filter(Boolean)
+        .sort()
+        .pop();
+      warSnapshotTakenAt = latestSnap ?? null;
 
       if (weekSnaps.length) {
         warSnapshotDays = weekSnaps.map((snap) => {
