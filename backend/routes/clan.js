@@ -466,11 +466,12 @@ export async function buildClanAnalysis(clanTag) {
         // Total fiable depuis currentRace (cumul hebdo par participant)
         let totalDecksUsed = participants.reduce((s, p) => s + (p.decksUsed ?? 0), 0);
         // If we have cwstats data, use it as a sanity check (it tends to be more stable).
-        // Use actual clan size (member count) rather than the current race participant array.
-        // The RoyaleAPI race endpoint may pad to 50 slots, even if the clan is smaller.
-        const n = Math.max(1, members.length);
-        const maxDecksElapsed = n * (daysFromThu + 1) * 4;
-        const maxDecksWeek    = n * 16;
+        // Use fixed max values based on a full 50-member clan for reporting purposes.
+        // This keeps the UI consistent with the 600/800 max legends even if the
+        // current member count is slightly lower (e.g. due to in-progress recruitment).
+        const MAX_MEMBERS = 50;
+        const maxDecksElapsed = MAX_MEMBERS * (daysFromThu + 1) * 4; // 600 at day 3
+        const maxDecksWeek    = MAX_MEMBERS * 16;                     // 800 for full week
         // Détail par jour : on combine snapshot (source fiable) et une estimation live
         // basée sur les cumul d'API (currentRace) pour limiter l'écart en cas de lag.
         const currentCumul = {};
