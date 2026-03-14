@@ -79,13 +79,28 @@ export async function recordSnapshot(clanTag, participantData, week = null) {
     daily[tag] = Math.min(4, Math.max(0, currentCumul[tag] - (baseCumul[tag] ?? 0)));
   }
 
+  // When called multiple times in the same day, keep the most up-to-date values.
+  // RoyaleAPI can lag; we merge by taking the maximum seen per player.
+  const mergeMaps = (a = {}, b = {}) => {
+    const out = { ...a };
+    for (const [k, v] of Object.entries(b)) {
+      out[k] = Math.max(out[k] ?? 0, v);
+    }
+    return out;
+  };
+
   const entry = { date: today, decks: daily, _cumul: currentCumul, _baseCumul: baseCumul };
   if (week) entry.week = week;
 
-  // Remplacer l'entrée du jour si elle existe déjà (mise à jour en cours de journée)
   const todayIdx = history.findIndex((h) => h.week === week && h.date === today);
   if (todayIdx !== -1) {
-    history[todayIdx] = entry;
+    const existing = history[todayIdx];
+    history[todayIdx] = {
+      ...existing,
+      decks: mergeMaps(existing.decks, entry.decks),
+      _cumul: mergeMaps(existing._cumul, entry._cumul),
+      _baseCumul: mergeMaps(existing._baseCumul, entry._baseCumul),
+    };
   } else {
     history.push(entry);
   }
@@ -103,7 +118,10 @@ export async function recordSnapshot(clanTag, participantData, week = null) {
 export async function getSnapshotsForWeek(clanTag, week = null) {
   const history = await loadSnapshots(clanTag);
   if (week == null) return history;
-  return history.filter((h) => h.week === week);
+  return history
+    .filter((h) => h.week === week)
+    .slice()
+    .sort((a, b) => a.date.localeCompare(b.date));
 }
 
 /**

@@ -14,6 +14,7 @@ import { computeTopPlayers } from '../services/topplayers.js';
 import { computeUncomplete } from '../services/uncomplete.js';
 import { getOrSet } from '../services/cache.js';
 import { getDiscordLinks } from '../services/discordLinks.js';
+import { recordSnapshot } from '../services/snapshot.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -77,6 +78,42 @@ router.get('/:tag/analysis', async (req, res) => {
     res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
     res.set('X-Cache', fromCache ? 'HIT' : 'MISS');
     res.json(payload);
+  } catch (err) {
+    const status = err.message.includes('404') ? 404 : 500;
+    res.status(status).json({ error: err.message });
+  }
+});
+
+// Force a snapshot generation for the given clan (useful for debugging / manual refresh).
+// This runs the same logic as the nightly cron but is triggered on demand.
+router.post('/:tag/snapshot', async (req, res) => {
+  try {
+    let clanTag = req.params.tag;
+    if (clanTag.startsWith('#')) clanTag = clanTag.slice(1);
+    clanTag = clanTag.toUpperCase();
+
+    if (!ALLOWED_CLANS.includes(clanTag)) {
+      return res.status(400).json({ error: 'Clan not in allowed list' });
+    }
+
+    // Fetch the current race (live) and race log (to compute week id).
+    const [raceLog, currentRace] = await Promise.all([
+      fetchRaceLog(clanTag).catch(() => null),
+      fetchCurrentRace(clanTag).catch(() => null),
+    ]);
+
+    if (!currentRace || currentRace.periodType !== 'warDay') {
+      return res.status(400).json({ error: 'No active war in progress' });
+    }
+
+    // Determine week identifier (same logic as in buildClanAnalysis)
+    const currSection = currentRace.sectionIndex ?? 0;
+    let seasonId = raceLog?.[0]?.seasonId;
+    if (seasonId !== undefined && currSection <= (raceLog[0]?.sectionIndex ?? -1)) seasonId += 1;
+    const weekId = seasonId != null ? `S${seasonId}W${currSection + 1}` : `W${currSection + 1}`;
+
+    await recordSnapshot(clanTag, currentRace.clan.participants, weekId);
+    res.json({ ok: true, weekId });
   } catch (err) {
     const status = err.message.includes('404') ? 404 : 500;
     res.status(status).json({ error: err.message });
@@ -415,19 +452,35 @@ export async function buildClanAnalysis(clanTag) {
         const currentCumulTotal = Object.values(currentCumul).reduce((s, v) => s + v, 0);
 
         const DAY_LABELS = ['Thu', 'Fri', 'Sat', 'Sun'];
+        // used to infer day totals when snapshot appears to undercount
+        const dayTotals = Array(DAY_LABELS.length).fill(0);
         const days = DAY_LABELS.map((label, i) => {
-          // Le snapshot d'index i correspond au jour i (jeudi=0, vendredi=1, ...)
           const snap = weekSnaps[i] ?? null;
           const prevSnap = weekSnaps[i - 1] ?? null;
 
-          const snapshotCount = snap ? Object.values(snap.decks).reduce((s, v) => s + v, 0) : null;
-          const prevDayCount = prevSnap ? Object.values(prevSnap.decks).reduce((s, v) => s + v, 0) : 0;
+          // Prefer the _cumul delta (most reliable), fallback to decks sum.
+          const cumul = snap?._cumul ?? null;
+          const prevCumul = prevSnap?._cumul ?? null;
+          const cumulDelta = cumul && prevCumul
+            ? Math.max(0, Object.values(cumul).reduce((s,v)=>s+v,0) - Object.values(prevCumul).reduce((s,v)=>s+v,0))
+            : null;
 
-          // Pour le jour courant, on calcule le total en utilisant le cumul live - cumul journée précédente.
-          // Cela évite que la valeur du jour actuel soit faussée par un snapshot qui n'est pas à jour.
-          const totalCount = i === daysFromThu
-            ? (snapshotCount !== null ? snapshotCount : null)
-            : (snapshotCount !== null ? snapshotCount : null);
+          const snapshotCount = cumulDelta !== null
+            ? cumulDelta
+            : snap ? Object.values(snap.decks).reduce((s, v) => s + v, 0) : null;
+
+          // Infer daily total from live cumulative if snapshot seems too low.
+          const knownPrevDaysTotal = dayTotals.reduce((s,v)=>s+v,0);
+          const inferredFromLive = totalDecksUsed > knownPrevDaysTotal
+            ? Math.min(200, Math.max(0, totalDecksUsed - knownPrevDaysTotal))
+            : null;
+
+          const totalCount = snapshotCount !== null
+            ? Math.min(200, snapshotCount)
+            : inferredFromLive;
+
+          // keep track of what we used to compute subsequent days
+          dayTotals[i] = totalCount ?? 0;
 
           return {
             label,
