@@ -215,6 +215,7 @@ export async function buildClanAnalysis(clanTag) {
     let weekSnaps = [];
     let prevWeekId = null;
     let currWeekId = null;
+    let warSnapshotDays = null;
     if (raceLog && raceLog.length > 0) {
       const { getSnapshotsForWeek } = await import('../services/snapshot.js');
 
@@ -240,6 +241,14 @@ export async function buildClanAnalysis(clanTag) {
       if (currentRace && currSection <= (raceLog[0]?.sectionIndex ?? -1)) seasonId += 1;
       currWeekId = `S${seasonId}W${currSection + 1}`;
       weekSnaps = await getSnapshotsForWeek(clanTag, currWeekId);
+
+      if (weekSnaps.length) {
+        warSnapshotDays = weekSnaps.map((snap) => {
+          if (!snap || !snap.decks) return null;
+          const total = Object.values(snap.decks).reduce((s, v) => s + (typeof v === 'number' ? v : 0), 0);
+          return total > 0 ? Math.min(200, total) : 0;
+        });
+      }
 
     // Note: CWStats scraping was previously used to sanity-check deck totals
     // but it is currently disabled (not used in the analysis output).
@@ -499,6 +508,22 @@ export async function buildClanAnalysis(clanTag) {
       }
     }
 
+    // build helper data for frontend debug display
+    let currentWarDays = null;
+    if (clanWarSummary && clanWarSummary.days) {
+      const now = new Date();
+      const nowGdcDate = new Date(now.getTime() - warResetOffsetMs(now));
+      const thuGdcMs = nowGdcDate.getTime() - (clanWarSummary.daysFromThu ?? 0) * MS_PER_DAY;
+      currentWarDays = clanWarSummary.days.map((d, i) => ({
+        key: new Date(thuGdcMs + i * MS_PER_DAY).toISOString().slice(0, 10),
+        label: d.label,
+        count: d.totalCount,
+        isPast: d.isPast,
+        isToday: d.isToday,
+        isFuture: d.isFuture,
+      }));
+    }
+
     return {
       clan: {
         name: clan.name,
@@ -521,6 +546,8 @@ export async function buildClanAnalysis(clanTag) {
       snapshotToday,                 // boolean for backwards compatibility
       snapshotDate,                  // ISO date or null, used by frontend for message
       warCurrentWeekId: clanWarSummary?.weekId ?? null,
+      warSnapshotDays,               // derived from snapshot files (null if missing)
+      currentWarDays,                // derived from clanWarSummary (or null outside war)
     };
 }
 
