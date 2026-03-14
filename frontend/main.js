@@ -674,8 +674,13 @@ function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null, sn
     ? ` (snapshot ${new Date(snapshotTakenAt).toISOString().slice(11,16)} UTC)`
     : '';
 
+  const snapshotMismatch = snapHasData && days.some((d, i) => {
+    const snap = snapDays?.[i];
+    return snap != null && snap !== d.count;
+  });
+
   const sourceNote = snapHasData
-    ? `<span class="war-data-source reliable">Snapshot ✓${snapshotTakenAtLabel}</span>`
+    ? `<span class="war-data-source reliable">Snapshot ✓${snapshotTakenAtLabel}${snapshotMismatch ? ' ⚠️' : ''}</span>`
     : isReliableTotal
       ? '<span class="war-data-source reliable">Race log ✓</span>'
       : '<span class="war-data-source fallback">Battle log (approx.)</span>';
