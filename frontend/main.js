@@ -309,8 +309,8 @@ function renderFavorites() {
   clanKeys.forEach((tag) => {
     const nm = favs.clan[tag];
     const display = (nm && nm !== tag) ? `${escHtml(nm)} (${tag})` : escHtml(tag);
-    // clan favorites now link externally because we no longer support clan analysis for arbitrary tags
-    html += `<li><a class="fav-item" href="https://royaleapi.com/clan/${tag.replace('#', '')}/" ` +
+    // clan favorites now link to the app (clan view) instead of RoyaleAPI
+    html += `<li><a class="fav-item" href="?mode=clan&tag=${encodeURIComponent(tag)}" ` +
             `data-mode="clan" data-tag="${tag}">${display}</a></li>`;
   });
   html += '</ul></div>';
