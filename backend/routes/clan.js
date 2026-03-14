@@ -408,15 +408,27 @@ export async function buildClanAnalysis(clanTag) {
         const n = 50;
         const maxDecksElapsed = n * (daysFromThu + 1) * 4;
         const maxDecksWeek    = n * 16;
-        // Détail par jour depuis les snapshots (source fiable)
-        // weekSnaps[0] = snapshot du vendredi matin → données du jeudi, etc.
+        // Détail par jour : on combine snapshot (source fiable) et une estimation live
+        // basée sur les cumul d'API (currentRace) pour limiter l'écart en cas de lag.
+        const currentCumul = {};
+        participants.forEach((p) => { currentCumul[p.tag] = p.decksUsed ?? 0; });
+        const currentCumulTotal = Object.values(currentCumul).reduce((s, v) => s + v, 0);
+
         const DAY_LABELS = ['Thu', 'Fri', 'Sat', 'Sun'];
         const days = DAY_LABELS.map((label, i) => {
           // Le snapshot d'index i correspond au jour i (jeudi=0, vendredi=1, ...)
           const snap = weekSnaps[i] ?? null;
-          const totalCount = snap
-            ? Object.values(snap.decks).reduce((s, v) => s + v, 0)
-            : null; // null = pas encore de snapshot pour ce jour
+          const prevSnap = weekSnaps[i - 1] ?? null;
+
+          const snapshotCount = snap ? Object.values(snap.decks).reduce((s, v) => s + v, 0) : null;
+          const prevDayCount = prevSnap ? Object.values(prevSnap.decks).reduce((s, v) => s + v, 0) : 0;
+
+          // Pour le jour courant, on calcule le total en utilisant le cumul live - cumul journée précédente.
+          // Cela évite que la valeur du jour actuel soit faussée par un snapshot qui n'est pas à jour.
+          const totalCount = i === daysFromThu
+            ? (snapshotCount !== null ? snapshotCount : null)
+            : (snapshotCount !== null ? snapshotCount : null);
+
           return {
             label,
             totalCount,
