@@ -525,7 +525,7 @@ export async function buildClanAnalysis(clanTag) {
             isFuture: i > daysFromThu,
           };
         });
-        clanWarSummary = { totalDecksUsed, maxDecksElapsed, maxDecksWeek, participantCount: n, daysFromThu, days, weekId: currWeekId };
+        clanWarSummary = { totalDecksUsed, maxDecksElapsed, maxDecksWeek, participantCount: MAX_MEMBERS, daysFromThu, days, weekId: currWeekId };
       }
     }
 
