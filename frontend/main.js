@@ -189,6 +189,7 @@ async function handleSearch() {
       renderPlayerResults(data);
       updateFavBtnState(tag);
       showCacheNote(fromCache, data?.snapshotDate);
+      updateDebugPanel(data, 'player');
     } else {
       // clan mode: try static file first
       // Afficher overview + charts depuis le cache statique instantanément
@@ -207,6 +208,7 @@ async function handleSearch() {
       renderClanOverview(data);
       // Afficher les membres uniquement depuis les données live (une seule fois)
       renderClanMembers(data);
+      updateDebugPanel(data, 'clan');
       updateFavBtnState(tag);
       showCacheNote(fromCache, data.snapshotDate);
     }
@@ -917,6 +919,7 @@ function renderClanMembers(data) {
     if (h.dataset.col === 'activityScore') h.classList.add('sort-asc');
   });
   renderMembersTable(sortMembers(members, 'activityScore', 'asc'));
+  updateDebugPanel(data, 'clan');
 }
 
 // Affiche un skeleton dans le tableau membres pendant le chargement live.
@@ -1110,4 +1113,63 @@ function escHtml(s) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+
+// ── Debug / log panel (dev mode) ──────────────────────────────────
+const DEBUG_STORAGE_KEY = 'trustroyale-debug';
+let debugEnabled = localStorage.getItem(DEBUG_STORAGE_KEY) === 'true';
+
+function initDebugUI() {
+  const toggle = document.getElementById('debug-toggle');
+  const panel  = document.getElementById('debug-panel');
+  if (!toggle || !panel) return;
+
+  toggle.addEventListener('click', () => {
+    debugEnabled = !debugEnabled;
+    localStorage.setItem(DEBUG_STORAGE_KEY, debugEnabled ? 'true' : 'false');
+    setDebugPanelVisible(debugEnabled);
+    updateDebugPanel(null, 'none');
+  });
+
+  setDebugPanelVisible(debugEnabled);
+  updateDebugPanel(null, 'none');
+}
+
+function setDebugPanelVisible(on) {
+  const panel = document.getElementById('debug-panel');
+  const toggle = document.getElementById('debug-toggle');
+  if (!panel || !toggle) return;
+  panel.classList.toggle('hidden', !on);
+  toggle.classList.toggle('active', on);
+}
+
+function updateDebugPanel(data, mode) {
+  const panel = document.getElementById('debug-panel');
+  if (!panel) return;
+
+  if (!debugEnabled) {
+    panel.innerHTML = `
+      <h3>Debug mode</h3>
+      <p style="margin:0;opacity:.8">Click the 🐞 button to enable debug output.</p>
+    `;
+    return;
+  }
+
+  const payload = {
+    mode,
+    now: new Date().toISOString(),
+    snapshotDate: data?.snapshotDate ?? null,
+    warCurrentWeekId: data?.warCurrentWeekId ?? null,
+    warSnapshotDays: data?.warSnapshotDays ?? null,
+    currentWarDays: data?.currentWarDays?.days ?? null,
+  };
+
+  const text = JSON.stringify(payload, null, 2);
+  panel.innerHTML = `
+    <h3>Debug info (${mode})</h3>
+    <pre>${escHtml(text)}</pre>
+  `;
+}
+
+// Initialize debug UI once the DOM is ready
+window.addEventListener('DOMContentLoaded', () => initDebugUI());
 

@@ -41,6 +41,31 @@ async function saveSnapshots(clanTag, arr) {
 }
 
 /**
+ * Offset en ms entre UTC et heure de Paris pour une date donnée.
+ */
+function parisOffsetMs(date = new Date()) {
+  const p = new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+  const u = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+  return p - u;
+}
+
+/**
+ * Retourne la clé jour (YYYY-MM-DD) correspondant au jour de guerre (reset à 10h40 Paris).
+ */
+function getWarDayKey(date = new Date()) {
+  const warResetMs = (10 * 60 + 40) * 60 * 1000 - parisOffsetMs(date);
+  return new Date(date.getTime() - warResetMs).toISOString().slice(0, 10);
+}
+
+function getWarDayName(warDayKey) {
+  // warDayKey is already adjusted for the GDC reset (10:40 Paris), so the
+  // day-of-week aligns with the war day.
+  const dow = new Date(warDayKey).getUTCDay(); // 0=Sun, 1=Mon, ..., 4=Thu
+  const names = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  return names[dow] ?? null;
+}
+
+/**
  * Enregistre les combats GDC du jour pour chaque participant.
  * `decks` = combats effectués aujourd'hui seulement (0–4 par joueur).
  * `_cumul` = total hebdo depuis l'API (conservé pour calculer le delta du jour suivant).
@@ -51,7 +76,7 @@ async function saveSnapshots(clanTag, arr) {
  */
 export async function recordSnapshot(clanTag, participantData, week = null) {
   if (!participantData || participantData.length === 0) return;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getWarDayKey();
 
   // Cumul hebdomadaire actuel depuis l'API currentriverrace
   const currentCumul = {};
@@ -89,7 +114,14 @@ export async function recordSnapshot(clanTag, participantData, week = null) {
     return out;
   };
 
-  const entry = { date: today, decks: daily, _cumul: currentCumul, _baseCumul: baseCumul };
+  const entry = {
+    date: today,
+    warDay: getWarDayName(today),
+    decks: daily,
+    _cumul: currentCumul,
+    _baseCumul: baseCumul,
+    _generatedAt: new Date().toISOString(),
+  };
   if (week) entry.week = week;
 
   const todayIdx = history.findIndex((h) => h.week === week && h.date === today);
@@ -97,9 +129,11 @@ export async function recordSnapshot(clanTag, participantData, week = null) {
     const existing = history[todayIdx];
     history[todayIdx] = {
       ...existing,
+      warDay: entry.warDay,
       decks: mergeMaps(existing.decks, entry.decks),
       _cumul: mergeMaps(existing._cumul, entry._cumul),
       _baseCumul: mergeMaps(existing._baseCumul, entry._baseCumul),
+      _generatedAt: new Date().toISOString(),
     };
   } else {
     history.push(entry);

@@ -75,6 +75,62 @@ code {
   flex: 1;
 }
 
+/* ── Debug UI ───────────────────────────────────────────────── */
+.debug-toggle {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 999;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.debug-toggle:hover {
+  transform: scale(1.08);
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.debug-panel {
+  position: fixed;
+  right: 18px;
+  bottom: 74px;
+  width: 360px;
+  max-height: 55vh;
+  overflow: auto;
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(10, 10, 20, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+  z-index: 999;
+  color: #f0f0fc;
+  font-size: 0.83rem;
+  line-height: 1.4;
+}
+
+.debug-panel h3 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+}
+
+.debug-panel pre {
+  margin: 0;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.35);
+  max-height: 45vh;
+  overflow: auto;
+  font-size: 0.82rem;
+}
+
 .hidden { display: none !important; }
 
 /* ── Header ─────────────────────────────────────────────────── */

@@ -86,12 +86,14 @@ router.get('/:tag/analysis', async (req, res) => {
 
           warSnapshotDays = battleDays.map((d) => {
             const snap = snapByDate[d.key] ?? null;
-            // if snapshot is missing or zero, let battle log (count) fill it
             const count = d.count ?? 0;
-            if ((snap === null || snap === 0) && count > 0) {
-              return Math.min(4, count);
+            // If snapshot is missing, keep null (no data).
+            // Otherwise, prefer the higher of snapshot vs. battle-log count to reflect
+            // combat played after the snapshot was taken.
+            if (snap === null) {
+              return count > 0 ? Math.min(4, count) : null;
             }
-            return snap;
+            return Math.min(4, Math.max(snap, count));
           });
         }
       } catch (_) { /* silencieux */ }
