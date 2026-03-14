@@ -24,6 +24,7 @@ async function ensurePublicDir() {
       const clean = tag.replace(/[^A-Za-z0-9]/g,'');
       const file = path.join(PUBLIC_DIR, `${clean}.json`);
       await fs.writeFile(file, JSON.stringify(payload, null, 2));
+
       console.log(`  ✓ cached ${tag}`);
     } catch (err) {
       console.error(`  ✗ failed ${tag}:`, err.message);

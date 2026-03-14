@@ -240,7 +240,10 @@ export async function buildClanAnalysis(clanTag) {
       if (currentRace && currSection <= (raceLog[0]?.sectionIndex ?? -1)) seasonId += 1;
       currWeekId = `S${seasonId}W${currSection + 1}`;
       weekSnaps = await getSnapshotsForWeek(clanTag, currWeekId);
-    }
+
+    // Note: CWStats scraping was previously used to sanity-check deck totals
+    // but it is currently disabled (not used in the analysis output).
+  }
 
 
     // First pass: compute war scores for all members
@@ -440,7 +443,8 @@ export async function buildClanAnalysis(clanTag) {
         const { daysFromThu } = sampleWarDays;
         const participants = currentRace.clan.participants;
         // Total fiable depuis currentRace (cumul hebdo par participant)
-        const totalDecksUsed = participants.reduce((s, p) => s + (p.decksUsed ?? 0), 0);
+        let totalDecksUsed = participants.reduce((s, p) => s + (p.decksUsed ?? 0), 0);
+        // If we have cwstats data, use it as a sanity check (it tends to be more stable).
         // Taille fixe du clan (50) : le nombre de membres peut fluctuer en cours de journée
         const n = 50;
         const maxDecksElapsed = n * (daysFromThu + 1) * 4;
