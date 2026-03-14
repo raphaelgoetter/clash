@@ -8,8 +8,8 @@ on:
   schedule:
     # Snapshot principal : juste avant le reset GDC (10h40 Paris) — 08h30 UTC couvre CET et CEST
     - cron: '30 8 * * *'
-    # Backup : minuit UTC (permet de rattraper l'arc du jour précédent si le run principal n'a pas pu réussir)
-    - cron: '0 0 * * *'
+    # Snapshot de rattrapage : juste après le reset (10h40 Paris / 08h40 UTC)
+    - cron: '50 10 * * *'
   workflow_dispatch:            # permet un déclenchement manuel
 
 jobs:

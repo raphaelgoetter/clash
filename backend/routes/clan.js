@@ -20,6 +20,9 @@ import path from 'path';
 
 const router = Router();
 
+// One day in milliseconds (used for war day calculations)
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 /**
  * Run async tasks with limited concurrency to avoid rate-limiting.
  * Returns an array of { status, value } | { status, reason } mirroring Promise.allSettled.
@@ -454,8 +457,9 @@ export async function buildClanAnalysis(clanTag) {
         // Total fiable depuis currentRace (cumul hebdo par participant)
         let totalDecksUsed = participants.reduce((s, p) => s + (p.decksUsed ?? 0), 0);
         // If we have cwstats data, use it as a sanity check (it tends to be more stable).
-        // Taille fixe du clan (50) : le nombre de membres peut fluctuer en cours de journée
-        const n = 50;
+        // Use actual clan size (member count) rather than the current race participant array.
+        // The RoyaleAPI race endpoint may pad to 50 slots, even if the clan is smaller.
+        const n = Math.max(1, members.length);
         const maxDecksElapsed = n * (daysFromThu + 1) * 4;
         const maxDecksWeek    = n * 16;
         // Détail par jour : on combine snapshot (source fiable) et une estimation live
@@ -471,16 +475,23 @@ export async function buildClanAnalysis(clanTag) {
           const snap = weekSnaps[i] ?? null;
           const prevSnap = weekSnaps[i - 1] ?? null;
 
-          // Prefer the _cumul delta (most reliable), fallback to decks sum.
+          // Prefer the decks sum from the snapshot (matches warSnapshotDays),
+          // fallback to the _cumul delta if decks are missing.
+          const snapshotCountFromDecks = snap?.decks
+            ? Object.values(snap.decks).reduce((s, v) => s + v, 0)
+            : null;
+
           const cumul = snap?._cumul ?? null;
           const prevCumul = prevSnap?._cumul ?? null;
           const cumulDelta = cumul && prevCumul
             ? Math.max(0, Object.values(cumul).reduce((s,v)=>s+v,0) - Object.values(prevCumul).reduce((s,v)=>s+v,0))
             : null;
 
-          const snapshotCount = cumulDelta !== null
-            ? cumulDelta
-            : snap ? Object.values(snap.decks).reduce((s, v) => s + v, 0) : null;
+          const snapshotCount = snapshotCountFromDecks !== null
+            ? snapshotCountFromDecks
+            : cumulDelta !== null
+              ? cumulDelta
+              : null;
 
           // Infer daily total from live cumulative if snapshot seems too low.
           const knownPrevDaysTotal = dayTotals.reduce((s,v)=>s+v,0);
@@ -547,7 +558,8 @@ export async function buildClanAnalysis(clanTag) {
       snapshotDate,                  // ISO date or null, used by frontend for message
       warCurrentWeekId: clanWarSummary?.weekId ?? null,
       warSnapshotDays,               // derived from snapshot files (null if missing)
-      currentWarDays,                // derived from clanWarSummary (or null outside war)
+      snapshotTakenAt: warSnapshotTakenAt,
+      currentWarDays: clanWarSummary?.days ?? null, // expose the per-day summary for debug/insights
     };
 }
 

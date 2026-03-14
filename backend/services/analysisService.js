@@ -29,7 +29,7 @@ function parisOffsetMs(date = new Date()) {
 }
 
 /** Nombre de ms à soustraire à un timestamp UTC pour obtenir le « jour GDC » (reset 10h40 Paris) */
-function warResetOffsetMs(date = new Date()) {
+export function warResetOffsetMs(date = new Date()) {
   return (10 * 60 + 40) * 60 * 1000 - parisOffsetMs(date);
 }
 

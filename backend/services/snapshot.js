@@ -121,6 +121,7 @@ export async function recordSnapshot(clanTag, participantData, week = null) {
     _cumul: currentCumul,
     _baseCumul: baseCumul,
     _generatedAt: new Date().toISOString(),
+    _snapshotTakenAt: new Date().toISOString(),
   };
   if (week) entry.week = week;
 

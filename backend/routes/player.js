@@ -62,6 +62,7 @@ router.get('/:tag/analysis', async (req, res) => {
 
     // Enrichir les jours passés de la GDC avec les snapshots du clan si disponibles
     let warSnapshotDays = null;
+    let warSnapshotTakenAt = null;
     let warCurrentWeekId = null;
     const clanTag = analysis.overview?.clan?.tag ?? null;
     if (analysis.currentWarDays?.days && clanTag) {
@@ -73,6 +74,14 @@ router.get('/:tag/analysis', async (req, res) => {
           warCurrentWeekId = currentWeek;
           const weekSnaps = allSnaps.filter((s) => s.week === currentWeek);
           const playerTag = analysis.overview?.tag ?? tag;
+
+          // Capture when the most recent snapshot was taken
+          const lastSnap = weekSnaps
+            .map((s) => s._snapshotTakenAt || s._generatedAt || null)
+            .filter(Boolean)
+            .sort()
+            .pop();
+          warSnapshotTakenAt = lastSnap ?? null;
 
           // Ensure we match days by date, not by array index (snapshot array order
           // can’t be relied upon). Use the day key (YYYY-MM-DD) from currentWarDays.
@@ -100,7 +109,7 @@ router.get('/:tag/analysis', async (req, res) => {
     }
 
     // keep API shape consistent with clan route
-    res.json({ ...analysis, snapshotDate: null, warSnapshotDays, warCurrentWeekId });
+    res.json({ ...analysis, snapshotDate: null, warSnapshotDays, warCurrentWeekId, warSnapshotTakenAt });
   } catch (err) {
     const status = err.message.includes('404') ? 404 : 500;
     res.status(status).json({ error: err.message });

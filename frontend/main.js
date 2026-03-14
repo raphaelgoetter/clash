@@ -544,7 +544,12 @@ function renderPlayerResults(data) {
   }
 
   // 3b. Actual Clan War (visible jeudi–dimanche)
-  renderCurrentWarCard(data.currentWarDays ?? null, data.warSnapshotDays ?? null, data.warCurrentWeekId ?? null);
+  renderCurrentWarCard(
+    data.currentWarDays ?? null,
+    data.warSnapshotDays ?? null,
+    data.warCurrentWeekId ?? null,
+    data.snapshotTakenAt ?? null,
+  );
 
   // 4. War Reliability Score avec breakdown
   renderGaugeChart(ws.pct, ws.color);
@@ -601,28 +606,52 @@ function renderPlayerResults(data) {
 
 const DAY_NAMES = ['Thu', 'Fri', 'Sat', 'Sun'];
 
-function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null) {
+function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null, snapshotTakenAt = null) {
   if (!warData) { cardCurrentWar.classList.add('hidden'); return; }
   cardCurrentWar.classList.remove('hidden');
 
   const weekLabel = weekId ? ` <span class="card-week-id">(${weekId.toLowerCase()})</span>` : '';
   cardCurrentWar.querySelector('.card-title').innerHTML = `⚔️ Current Clan War${weekLabel}`;
 
-  const { totalDecksUsed, maxDecksElapsed, maxDecksWeek, isReliableTotal, days, arrivedMidWar, arrivedOnDay } = warData;
-  const dayNum   = days.findIndex((d) => d.isToday) + 1;
+  // If we have snapshot data, prefer it for totals/daily counts (because battle log can be incomplete).
+  const snapDays = Array.isArray(warSnapshotDays) ? warSnapshotDays : null;
+  const snapHasData = snapDays && snapDays.some((v) => v !== null && v !== undefined);
 
-  // Cas spécial : joueur arrivé pendant la GDC
+  const {
+    totalDecksUsed: rawTotal,
+    maxDecksElapsed: rawMaxElapsed,
+    maxDecksWeek: rawMaxWeek,
+    isReliableTotal,
+    days,
+    arrivedMidWar,
+    arrivedOnDay,
+  } = warData;
+
+  // Determine current war day index (0=Thu, 1=Fri, 2=Sat, 3=Sun)
+  const daysFromThu = days.findIndex((d) => d.isToday);
+  const dayNum = daysFromThu + 1;
+
+  // Total decks used: prefer battle/race log total (rawTotal), but still show
+  // per-day snapshot when available.
+  const totalDecksUsed = rawTotal;
+
+  const computedMaxElapsed = (daysFromThu + 1) * 4;
+  const computedMaxWeek = 16;
+
+  const pctFill = Math.min(100, Math.round((totalDecksUsed / computedMaxElapsed) * 100));
+
+  // Special case: player joined mid-war
   if (arrivedMidWar) {
     const arrivalDayName = DAY_NAMES[(arrivedOnDay ?? 1) - 1] ?? `day ${arrivedOnDay}`;
     const chipsHtml = days.map((d) => {
-      const cls  = d.isFuture ? 'future' : d.isToday ? 'today' : 'past';
+      const cls = d.isFuture ? 'future' : d.isToday ? 'today' : 'past';
       const icon = d.isFuture ? '—' : d.isToday ? '▶' : '✔';
       return `<span class="war-day-chip ${cls}">${d.label} ${icon}</span>`;
     }).join('');
     warDaysGrid.innerHTML =
       `<div class="war-summary">` +
         `<div class="war-progress-row">` +
-          `<span class="war-decks-count">0 <span class="war-decks-max">/ ${maxDecksWeek}</span></span>` +
+          `<span class="war-decks-count">0 <span class="war-decks-max">/ ${computedMaxWeek}</span></span>` +
           `<span class="war-decks-label">decks this week</span>` +
           `<span class="war-data-source arrived">Arrived ${arrivalDayName} ⚠️</span>` +
         `</div>` +
@@ -635,35 +664,38 @@ function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null) {
     return;
   }
 
-  const pctFill  = Math.min(100, Math.round((totalDecksUsed / maxDecksElapsed) * 100));
-
-  // Statut par rapport aux combats attendus jusqu'à aujourd'hui inclus
+  // Status based on expected vs actual decks
   let statusIcon, statusText, statusCls;
-  if (totalDecksUsed >= maxDecksElapsed)                     { statusIcon = '✅'; statusText = 'On track';          statusCls = 'good'; }
-  else if (totalDecksUsed >= Math.ceil(maxDecksElapsed / 2)) { statusIcon = '⚠️'; statusText = 'Behind schedule'; statusCls = 'partial'; }
-  else                                                       { statusIcon = '🔴'; statusText = 'Very behind';       statusCls = 'bad'; }
+  if (totalDecksUsed >= computedMaxElapsed)                     { statusIcon = '✅'; statusText = 'On track';          statusCls = 'good'; }
+  else if (totalDecksUsed >= Math.ceil(computedMaxElapsed / 2)) { statusIcon = '⚠️'; statusText = 'Behind schedule'; statusCls = 'partial'; }
+  else                                                         { statusIcon = '🔴'; statusText = 'Very behind';       statusCls = 'bad'; }
 
-  const sourceNote = isReliableTotal
-    ? '<span class="war-data-source reliable">Race log ✓</span>'
-    : '<span class="war-data-source fallback">Battle log (approx.)</span>';
+  const snapshotTakenAtLabel = snapshotTakenAt
+    ? ` (snapshot ${new Date(snapshotTakenAt).toISOString().slice(11,16)} UTC)`
+    : '';
+
+  const sourceNote = snapHasData
+    ? `<span class="war-data-source reliable">Snapshot ✓${snapshotTakenAtLabel}</span>`
+    : isReliableTotal
+      ? '<span class="war-data-source reliable">Race log ✓</span>'
+      : '<span class="war-data-source fallback">Battle log (approx.)</span>';
 
   const chipsHtml = days.map((d, i) => {
     const cls  = d.isFuture ? 'future' : d.isToday ? 'today' : 'past';
     const icon = d.isFuture ? ' —' : d.isToday ? ' ▶' : '';
 
+    const snapshotVal = snapDays?.[i];
+    const battleVal = d.count;
+
     let label = d.label;
     let snap = '';
-
-    // If we have no snapshot for a past day, show an explicit 'no data' indicator.
-    if (d.isPast && warSnapshotDays?.[i] == null) {
+    if (snapshotVal != null) {
+      const warn = snapshotVal < 4 ? ' ⚠️' : '';
+      const snapCls = snapshotVal <= 1 ? 'chip-snap chip-snap-red' : snapshotVal <= 3 ? 'chip-snap chip-snap-orange' : 'chip-snap';
+      snap = ` <span class="${snapCls}">${snapshotVal}/4${warn}</span>`;
+    } else if (d.isPast) {
+      // no snapshot: mark as missing rather than guessing based on incomplete log
       label += ' (no data)';
-    }
-
-    if (d.isPast && warSnapshotDays?.[i] != null) {
-      const n = warSnapshotDays[i];
-      const warn = n < 4 ? ' ⚠️' : '';
-      const snapCls = n <= 1 ? 'chip-snap chip-snap-red' : n <= 3 ? 'chip-snap chip-snap-orange' : 'chip-snap';
-      snap = ` <span class="${snapCls}">${n}/4${warn}</span>`;
     }
 
     return `<span class="war-day-chip ${cls}">${label}${icon}${snap}</span>`;
@@ -672,7 +704,7 @@ function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null) {
   warDaysGrid.innerHTML =
     `<div class="war-summary">` +
       `<div class="war-progress-row">` +
-        `<span class="war-decks-count">${totalDecksUsed} <span class="war-decks-max">/ ${maxDecksElapsed}</span></span>` +
+        `<span class="war-decks-count">${totalDecksUsed} <span class="war-decks-max">/ ${computedMaxElapsed}</span></span>` +
         `<span class="war-decks-label">decks so far</span>` +
         sourceNote +
       `</div>` +
@@ -685,6 +717,7 @@ function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null) {
       `<div class="war-day-chips">${chipsHtml}</div>` +
     `</div>`;
 }
+
 
 // ── Clan war mini-colonne (clan table) ───────────────────────────────
 
@@ -1167,9 +1200,10 @@ function updateDebugPanel(data, mode) {
     mode,
     now: new Date().toISOString(),
     snapshotDate: data?.snapshotDate ?? null,
+    snapshotTakenAt: data?.snapshotTakenAt ?? null,
     warCurrentWeekId: data?.warCurrentWeekId ?? null,
     warSnapshotDays: data?.warSnapshotDays ?? null,
-    currentWarDays: data?.currentWarDays?.days ?? null,
+    currentWarDays: data?.currentWarDays ?? null,
   };
 
   const text = JSON.stringify(payload, null, 2);
