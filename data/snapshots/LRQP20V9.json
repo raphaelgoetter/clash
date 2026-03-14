@@ -243,8 +243,8 @@
       "#U0LVUQRCJ": 0,
       "#8R0LR8GYC": 4,
       "#8PP820G9G": 4,
-      "#99VY0090": 3,
-      "#LRJ2YRJG": 0,
+      "#99VY0090": 4,
+      "#LRJ2YRJG": 1,
       "#98UULQY8": 4,
       "#8GGQLU28": 0,
       "#GGVQJLG9": 4,
@@ -274,7 +274,7 @@
       "#8V2PJGL2": 4,
       "#2YP2V2G0R": 4,
       "#UY00GJG2": 4,
-      "#8YGY2RPCC": 0,
+      "#8YGY2RPCC": 3,
       "#CGJP0YYUJ": 4,
       "#LPU0Q29": 0,
       "#8G00908LP": 4,
@@ -287,7 +287,10 @@
       "#R22R08Y9J": 0,
       "#U9PP0CJRL": 0,
       "#GVLLGUL92": 0,
-      "#VUY2CPPQ2": 1
+      "#VUY2CPPQ2": 1,
+      "#YR0YUYLLU": 0,
+      "#U2PU92U2C": 0,
+      "#RUJLYLJ82": 1
     },
     "_cumul": {
       "#PVLJ2CVL": 0,
@@ -336,7 +339,7 @@
       "#GGLCLQ82L": 1,
       "#UP9YJV080": 3,
       "#VVYRRQCY": 3,
-      "#UPC0Y0LRQ": 4,
+      "#UPC0Y0LRQ": 8,
       "#LPGPRRQYR": 4,
       "#Q2PY2LJY8": 4,
       "#QQUCRGQP8": 8,
@@ -344,8 +347,8 @@
       "#U0LVUQRCJ": 4,
       "#8R0LR8GYC": 4,
       "#8PP820G9G": 7,
-      "#99VY0090": 7,
-      "#LRJ2YRJG": 6,
+      "#99VY0090": 8,
+      "#LRJ2YRJG": 7,
       "#98UULQY8": 8,
       "#8GGQLU28": 8,
       "#GGVQJLG9": 12,
@@ -362,7 +365,7 @@
       "#9YQ8RVU2P": 12,
       "#U09CUCYL2": 12,
       "#J008G9CLJ": 12,
-      "#VGJ9LL8VC": 8,
+      "#VGJ9LL8VC": 12,
       "#PCGJQ8JL2": 12,
       "#CJVUJ8U9C": 9,
       "#J8LUJQGY0": 8,
@@ -375,8 +378,8 @@
       "#8V2PJGL2": 11,
       "#2YP2V2G0R": 12,
       "#UY00GJG2": 12,
-      "#8YGY2RPCC": 8,
-      "#CGJP0YYUJ": 8,
+      "#8YGY2RPCC": 11,
+      "#CGJP0YYUJ": 9,
       "#LPU0Q29": 8,
       "#8G00908LP": 8,
       "#QVG90PQVG": 12,
@@ -388,7 +391,10 @@
       "#R22R08Y9J": 0,
       "#U9PP0CJRL": 0,
       "#GVLLGUL92": 0,
-      "#VUY2CPPQ2": 1
+      "#VUY2CPPQ2": 1,
+      "#YR0YUYLLU": 0,
+      "#U2PU92U2C": 0,
+      "#RUJLYLJ82": 1
     },
     "_baseCumul": {
       "#PVLJ2CVL": 0,
@@ -482,7 +488,7 @@
       "#GC20UCLL": 8
     },
     "week": "S130W2",
-    "_generatedAt": "2026-03-14T18:43:33.904Z",
+    "_generatedAt": "2026-03-14T19:53:26.204Z",
     "warDay": "saturday"
   }
 ]
