@@ -64,7 +64,7 @@ router.get('/:tag/analysis', async (req, res) => {
     let warSnapshotDays = null;
     let warCurrentWeekId = null;
     const clanTag = analysis.overview?.clan?.tag ?? null;
-    if (analysis.currentWarDays && clanTag) {
+    if (analysis.currentWarDays?.days && clanTag) {
       try {
         const { getSnapshots } = await import('../services/snapshot.js');
         const allSnaps = await getSnapshots(clanTag);
@@ -73,25 +73,26 @@ router.get('/:tag/analysis', async (req, res) => {
           warCurrentWeekId = currentWeek;
           const weekSnaps = allSnaps.filter((s) => s.week === currentWeek);
           const playerTag = analysis.overview?.tag ?? tag;
-          // weekSnaps[0] = jeudi, [1] = vendredi, etc.
-          warSnapshotDays = weekSnaps.map((s) => s.decks[playerTag] ?? null);
 
-          // If the snapshot for a day is missing or zero, fall back to the
-          // player's battle-log-derived count for that day (if any).
-          // This avoids showing “0/4” when the player did play but the snapshot
-          // was taken before their games were recorded in the cumulative total.
-          if (Array.isArray(warSnapshotDays)) {
-            const battleDays = analysis.currentWarDays;
-            if (Array.isArray(battleDays)) {
-              warSnapshotDays = warSnapshotDays.map((snap, idx) => {
-                const count = battleDays[idx]?.count;
-                if ((snap === null || snap === 0) && typeof count === 'number' && count > 0) {
-                  return Math.min(4, count);
-                }
-                return snap;
-              });
+          // Ensure we match days by date, not by array index (snapshot array order
+          // can’t be relied upon). Use the day key (YYYY-MM-DD) from currentWarDays.
+          const snapByDate = Object.fromEntries(
+            weekSnaps.map((s) => [s.date, s.decks[playerTag] ?? null])
+          );
+
+          const battleDays = Array.isArray(analysis.currentWarDays?.days)
+            ? analysis.currentWarDays.days
+            : [];
+
+          warSnapshotDays = battleDays.map((d) => {
+            const snap = snapByDate[d.key] ?? null;
+            // if snapshot is missing or zero, let battle log (count) fill it
+            const count = d.count ?? 0;
+            if ((snap === null || snap === 0) && count > 0) {
+              return Math.min(4, count);
             }
-          }
+            return snap;
+          });
         }
       } catch (_) { /* silencieux */ }
     }
