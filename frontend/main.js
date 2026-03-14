@@ -650,14 +650,23 @@ function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null) {
   const chipsHtml = days.map((d, i) => {
     const cls  = d.isFuture ? 'future' : d.isToday ? 'today' : 'past';
     const icon = d.isFuture ? ' —' : d.isToday ? ' ▶' : '';
+
+    let label = d.label;
     let snap = '';
+
+    // If we have no snapshot for a past day, show an explicit 'no data' indicator.
+    if (d.isPast && warSnapshotDays?.[i] == null) {
+      label += ' (no data)';
+    }
+
     if (d.isPast && warSnapshotDays?.[i] != null) {
       const n = warSnapshotDays[i];
       const warn = n < 4 ? ' ⚠️' : '';
       const snapCls = n <= 1 ? 'chip-snap chip-snap-red' : n <= 3 ? 'chip-snap chip-snap-orange' : 'chip-snap';
       snap = ` <span class="${snapCls}">${n}/4${warn}</span>`;
     }
-    return `<span class="war-day-chip ${cls}">${d.label}${icon}${snap}</span>`;
+
+    return `<span class="war-day-chip ${cls}">${label}${icon}${snap}</span>`;
   }).join('');
 
   warDaysGrid.innerHTML =
