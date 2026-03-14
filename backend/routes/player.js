@@ -75,6 +75,23 @@ router.get('/:tag/analysis', async (req, res) => {
           const playerTag = analysis.overview?.tag ?? tag;
           // weekSnaps[0] = jeudi, [1] = vendredi, etc.
           warSnapshotDays = weekSnaps.map((s) => s.decks[playerTag] ?? null);
+
+          // If the snapshot for a day is missing or zero, fall back to the
+          // player's battle-log-derived count for that day (if any).
+          // This avoids showing “0/4” when the player did play but the snapshot
+          // was taken before their games were recorded in the cumulative total.
+          if (Array.isArray(warSnapshotDays)) {
+            const battleDays = analysis.currentWarDays;
+            if (Array.isArray(battleDays)) {
+              warSnapshotDays = warSnapshotDays.map((snap, idx) => {
+                const count = battleDays[idx]?.count;
+                if ((snap === null || snap === 0) && typeof count === 'number' && count > 0) {
+                  return Math.min(4, count);
+                }
+                return snap;
+              });
+            }
+          }
         }
       } catch (_) { /* silencieux */ }
     }
