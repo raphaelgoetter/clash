@@ -520,6 +520,7 @@ export async function buildClanAnalysis(clanTag) {
       prevWeekId,                    // identifiant semaine précédente (pour Last War cards)
       snapshotToday,                 // boolean for backwards compatibility
       snapshotDate,                  // ISO date or null, used by frontend for message
+      warCurrentWeekId: clanWarSummary?.weekId ?? null,
     };
 }
 
