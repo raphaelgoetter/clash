@@ -566,6 +566,18 @@ export default async function handler(req, res) {
 
         const fullTags = intersection ? [...intersection] : [];
 
+        // Noms depuis le raceLog en priorité (couvre les joueurs qui ont quitté le clan depuis).
+        // On parcourt toutes les semaines de la saison ciblée pour construire le dictionnaire.
+        const nameFromLog = {};
+        for (const w of weeks) {
+          const standing = (w.standings || []).find((s) =>
+            s.clan?.tag?.toUpperCase() === `#${resolved.tag}`
+          );
+          for (const p of standing?.clan?.participants ?? []) {
+            if (p.tag && p.name) nameFromLog[p.tag.toUpperCase()] = p.name;
+          }
+        }
+
         const clanMembers = await fetchClanMembers(`#${resolved.tag}`);
         const memberByTag = Object.fromEntries(clanMembers.map((m) => [m.tag.toUpperCase(), m]));
 
@@ -574,11 +586,15 @@ export default async function handler(req, res) {
         const players = fullTags
           .map((tag) => {
             const m = memberByTag[tag];
-            return { tag, name: m?.name ?? tag, role: ROLE_FR[m?.role] ?? 'Membre' };
+            // Nom depuis le raceLog si disponible, sinon depuis le roster actuel
+            const name = nameFromLog[tag] ?? m?.name ?? tag;
+            const role = m ? (ROLE_FR[m.role] ?? 'Membre') : '(parti)';
+            return { tag, name, role };
           })
           .sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
 
-        const totalDecks = players.length * weeks.length * 16;
+        // 16 decks/semaine × nombre de semaines de la saison = decks attendus par joueur
+        const decksPerPlayer = weeks.length * 16;
 
         let description;
         if (players.length === 0) {
@@ -592,7 +608,7 @@ export default async function handler(req, res) {
           title: `🏆 ${resolved.name} — saison ${seasonId}`,
           color: 0x5865f2,
           description,
-          footer: { text: `${players.length} joueur(s) ont joué 100% des decks (${totalDecks} decks)` },
+          footer: { text: `${players.length} joueur(s) ont joué 100% des decks (${decksPerPlayer} decks)` },
         };
 
         await fetch(webhookUrl, {
