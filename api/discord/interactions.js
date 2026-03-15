@@ -391,6 +391,82 @@ export default async function handler(req, res) {
     return;
   }
 
+  // Commande /trust-clan
+  if (body.type === 2 && body.data?.name === 'trust-clan') {
+    const clanOpt = body.data.options?.find((o) => o.name === 'clan');
+    const clanVal = (clanOpt?.value || '1').toString().trim().toLowerCase();
+    const CLAN_MAP = {
+      '1': { name: 'La Resistance',  tag: 'Y8JUPC9C' },
+      '2': { name: 'Les Resistants', tag: 'LRQP20V9' },
+      '3': { name: 'Les Revoltes',   tag: 'QU9UQJRL' },
+    };
+    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP['1'];
+
+    res.status(200).json({ type: 5 });
+    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+
+    waitUntil((async () => {
+      try {
+        const { buildClanAnalysis } = await import('../../backend/routes/clan.js');
+        const analysis = await buildClanAnalysis(resolved.tag);
+        const members = analysis.members || [];
+
+        const filtered = members
+          .filter((m) => m.verdict === 'High risk' || m.verdict === 'Extreme risk')
+          .sort((a, b) => {
+            const score = { 'Extreme risk': 0, 'High risk': 1 };
+            return (score[a.verdict] - score[b.verdict]) || (b.activityScore - a.activityScore);
+          });
+
+        if (filtered.length === 0) {
+          await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              content: `✅ Aucun membre en High/Extreme risk trouvé dans ${resolved.name}.`,
+              flags: 64,
+            }),
+          });
+          return;
+        }
+
+        const maxName = Math.max(...filtered.map((m) => m.name.length));
+        const rows = filtered.slice(0, 25).map((m, i) => {
+          const num = String(i + 1).padStart(2);
+          const name = m.name.padEnd(maxName);
+          const newTag = m.isNew ? ' (new)' : '';
+          const role = capitalize(m.role || 'member');
+          const badge = m.color ? capitalize(m.color) : 'unknown';
+          const pct = Math.round(m.activityScore ?? 0);
+          return `${num}. ${name}${newTag} ${m.tag} [${role}] ${m.verdict} (${pct}%) (badge ${badge})`;
+        });
+
+        const description = '```
+' + rows.join('\n') + (filtered.length > 25 ? `\n...and ${filtered.length - 25} more` : '') + '\n```';
+
+        const embed = {
+          title: `⚠️ ${resolved.name} — High/Extreme Risk (${filtered.length} players)`,
+          color: 0xe67e22,
+          description,
+          footer: { text: `Clan : ${resolved.name}` },
+        };
+
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ embeds: [embed] }),
+        });
+      } catch (err) {
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
+        });
+      }
+    })());
+    return;
+  }
+
   // Commande /discord-link
   if (body.type === 2 && body.data?.name === 'discord-link') {
     const opts = body.data.options ?? [];
