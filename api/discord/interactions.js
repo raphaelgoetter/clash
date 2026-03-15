@@ -1,12 +1,12 @@
 // Fonction Vercel dédiée pour les interactions Discord.
-// Utilise waitUntil de @vercel/functions pour exécuter l'appel à l'API
-// Clash en arrière-plan APRÈS avoir répondu type:5 à Discord (deferred).
+// Utilise waitUntil de @vercel/functions pour maintenir la fonction active
+// après avoir répondu type:5 à Discord (deferred).
 import { createPublicKey, verify } from 'node:crypto';
+import { waitUntil } from '@vercel/functions';
 
-// In Vercel, `waitUntil` may not always behave as expected; use a lightweight
-// background task helper that doesn't block the response.
+// Maintient la fonction Vercel active le temps de l'exécution asynchrone.
 function runBackground(fn) {
-  Promise.resolve().then(fn).catch(() => {});
+  waitUntil(fn());
 }
 
 // Vérifie la signature Ed25519 envoyée par Discord.
