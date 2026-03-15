@@ -8,17 +8,15 @@ Trustroyale fournit des "critères de fiabilité" objectifs et orientés spécif
 
 Trustroyale analyse plusieurs critères pour évaluer la fiabilité d’un joueur ou d’un clan. Le score final est un pourcentage calculé à partir de ces critères.
 
-| Critère | Coeff | Règle / Cap |
-| --- | --- | --- |
-| Regularité | 12 | decks de GDC joués / (16 × semaine) — malus par semaine incomplète |
-| Score moyenne | 10 | score moyen /semaine (max = 3000) |
-| Victoires CW2 | 8 | victoires totales en GDC (max = 250) |
-| Stabilité clan | 8 | semaines consécutives dans le clan (max = 5+) |
-| Dernière connexion | 5 | 5 pts si connecté ce jour (moins si plus vieux) |
-| Win rate | 3 | pourcentage de victoires en GDC (max = 100% win rate) |
-| Expérience (trophées) | 3 | nombre de trophées (max = 14 000) |
-| Dons | 2 | nombre de cartes données (max = 500) |
-| Discord lié | 2 | 2pts si compte lié via `/discord-link` |
+- **Regularité** (coeff 12) : decks de GDC joués / (16 × semaine) — malus par semaine incomplète
+- **Score moyenne** (coeff 10) : score moyen / semaine (max = 3000)
+- **Victoires CW2** (coeff 8) : victoires totales en GDC (max = 250)
+- **Stabilité clan** (coeff 8) : semaines consécutives dans le clan (max = 5+)
+- **Dernière connexion** (coeff 5) : 5 pts si connecté ce jour (moins si plus vieux)
+- **Win rate** (coeff 3) : pourcentage de victoires en GDC (max = 100% win rate)
+- **Expérience (trophées)** (coeff 3) : nombre de trophées (max = 14 000)
+- **Dons** (coeff 2) : nombre de cartes données (max = 500)
+- **Discord lié** (coeff 2) : 2 pts si compte lié via `/discord-link`
 
 L’algorithme est conçu pour que le score reflète à la fois l’investissement **individuel** et la **contribution au clan**, tout en restant transparent et explicable.
 
