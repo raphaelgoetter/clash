@@ -66,7 +66,18 @@ C’est un outil conçu pour être **proactif** : on détecte les membres à ris
 /trust-clan clan:2
 ```
 
-### 3) `/discord-link tag:#TAG`
+### 3) `/chelem clan:N [season:X]`
+
+➡️ Liste les joueurs ayant fait **16/16 decks** chaque semaine de la saison spécifiée (par défaut : la dernière saison terminée).
+
+**Usage** :
+
+```text
+/chelem clan:1
+/chelem clan:1 season:129
+```
+
+### 4) `/discord-link tag:#TAG`
 
 ➡️ Lie ton compte Clash à ton compte Discord.
 

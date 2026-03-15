@@ -484,6 +484,118 @@ export default async function handler(req, res) {
     return;
   }
 
+  // Commande /chelem
+  if (body.type === 2 && body.data?.name === 'chelem') {
+    const clanOpt = body.data.options?.find((o) => o.name === 'clan');
+    const seasonOpt = body.data.options?.find((o) => o.name === 'season');
+
+    const clanVal = (clanOpt?.value || '1').toString().trim().toLowerCase();
+    const CLAN_MAP = {
+      '1': { name: 'La Resistance',  tag: 'Y8JUPC9C' },
+      '2': { name: 'Les Resistants', tag: 'LRQP20V9' },
+      '3': { name: 'Les Revoltes',   tag: 'QU9UQJRL' },
+    };
+    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP['1'];
+
+    const requestedSeason = seasonOpt && !Number.isNaN(parseInt(seasonOpt.value, 10))
+      ? parseInt(seasonOpt.value, 10)
+      : null;
+
+    // Réponse différée obligatoire (sinon Discord timeout)
+    res.status(200).json({ type: 5 });
+    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+
+    runBackground(async () => {
+      try {
+        const { fetchRaceLog, fetchClanMembers } = await import('../../backend/services/clashApi.js');
+        const raceLog = await fetchRaceLog(`#${resolved.tag}`);
+        if (!Array.isArray(raceLog) || raceLog.length === 0) {
+          await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: 'Impossible de récupérer le race log du clan.', flags: 64 }),
+          });
+          return;
+        }
+
+        const seasonId = requestedSeason ?? raceLog[0].seasonId;
+        if (!seasonId) {
+          await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: 'Impossible de déterminer la saison cible.', flags: 64 }),
+          });
+          return;
+        }
+
+        const weeks = raceLog.filter((r) => r.seasonId === seasonId);
+        if (weeks.length === 0) {
+          await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: `Aucune donnée trouvée pour la saison ${seasonId}.`, flags: 64 }),
+          });
+          return;
+        }
+
+        const fullSets = weeks.map((w) => {
+          const standing = (w.standings || []).find((s) =>
+            s.clan?.tag?.toUpperCase() === `#${resolved.tag}`
+          );
+          const participants = standing?.clan?.participants ?? [];
+          return new Set(
+            participants
+              .filter((p) => (p.decksUsed ?? 0) >= 16)
+              .map((p) => p.tag.toUpperCase()),
+          );
+        });
+
+        const intersection = fullSets.reduce((acc, set) => {
+          if (!acc) return set;
+          return new Set([...acc].filter((t) => set.has(t)));
+        }, null);
+
+        const fullTags = intersection ? [...intersection] : [];
+
+        const clanMembers = await fetchClanMembers(`#${resolved.tag}`);
+        const nameByTag = Object.fromEntries(clanMembers.map((m) => [m.tag.toUpperCase(), m.name]));
+
+        const players = fullTags
+          .map((tag) => ({ tag, name: nameByTag[tag] ?? tag }))
+          .sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+
+        let description;
+        if (players.length === 0) {
+          description = `Aucun joueur n'a fait 16/16 decks toutes les semaines de la saison ${seasonId}.`;
+        } else {
+          const rows = players.slice(0, 25).map((p, idx) => `${String(idx + 1).padStart(2)}. ${p.name} ${p.tag}`);
+          description = '```
+' + rows.join('\n') + (players.length > 25 ? `\n...et ${players.length - 25} autres` : '') + '\n```';
+        }
+
+        const embed = {
+          title: `🏆 Chelem saison ${seasonId} — ${resolved.name}`,
+          color: 0x5865f2,
+          description,
+          footer: { text: `Saison ${seasonId} · ${players.length} joueur(s)` },
+        };
+
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ embeds: [embed] }),
+        });
+      } catch (err) {
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
+        });
+      }
+    });
+    return;
+  }
+
   // Commande /discord-link
   if (body.type === 2 && body.data?.name === 'discord-link') {
     const opts = body.data.options ?? [];

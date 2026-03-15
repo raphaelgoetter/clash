@@ -116,6 +116,29 @@ const commands = [
       },
     ],
   },
+  {
+    name: 'chelem',
+    description: 'Liste les joueurs ayant fait 16/16 decks chaque semaine d’une saison donnée.',
+    options: [
+      {
+        type: 3, // STRING
+        name: 'clan',
+        description: '1=La Resistance, 2=Les Resistants, 3=Les Revoltes',
+        required: true,
+        choices: [
+          { name: 'La Resistance', value: '1' },
+          { name: 'Les Resistants', value: '2' },
+          { name: 'Les Revoltes', value: '3' },
+        ],
+      },
+      {
+        type: 4, // INTEGER
+        name: 'season',
+        description: 'Numéro de saison (ex: 129). Par défaut, la dernière saison terminée.',
+        required: false,
+      },
+    ],
+  },
 ];
 
 (async () => {
