@@ -457,8 +457,7 @@ export default async function handler(req, res) {
           return `${num}. ${name}${newTag} ${m.tag} [${role}] ${m.verdict} (${pct}%) (badge ${badge})`;
         });
 
-        const description = '```
-' + rows.join('\n') + (filtered.length > 25 ? `\n...and ${filtered.length - 25} more` : '') + '\n```';
+        const description = '```\n' + rows.join('\n') + (filtered.length > 25 ? `\n...and ${filtered.length - 25} more` : '') + '\n```';
 
         const embed = {
           title: `⚠️ ${resolved.name} — High/Extreme Risk (${filtered.length} players)`,
