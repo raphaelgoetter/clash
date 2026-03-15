@@ -430,8 +430,11 @@ export default async function handler(req, res) {
         const filtered = members
           .filter((m) => m.verdict === 'High risk' || m.verdict === 'Extreme risk')
           .sort((a, b) => {
-            const score = { 'Extreme risk': 0, 'High risk': 1 };
-            return (score[a.verdict] - score[b.verdict]) || (b.activityScore - a.activityScore);
+            // Risque le plus élevé en premier (score le plus bas = plus risqué)
+            if (a.activityScore !== b.activityScore) return a.activityScore - b.activityScore;
+            // En cas d'égalité, trier par verdict (extrême avant high)
+            const severity = { 'Extreme risk': 0, 'High risk': 1 };
+            return (severity[a.verdict] || 0) - (severity[b.verdict] || 0);
           });
 
         if (filtered.length === 0) {
