@@ -507,8 +507,11 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
-        const { fetchRaceLog, fetchClanMembers } = await import('../../backend/services/clashApi.js');
-        const raceLog = await fetchRaceLog(`#${resolved.tag}`);
+        const { fetchRaceLog, fetchClanMembers, fetchCurrentRace } = await import('../../backend/services/clashApi.js');
+        const [raceLog, currentRace] = await Promise.all([
+          fetchRaceLog(`#${resolved.tag}`),
+          fetchCurrentRace(`#${resolved.tag}`).catch(() => null),
+        ]);
         if (!Array.isArray(raceLog) || raceLog.length === 0) {
           await fetch(webhookUrl, {
             method: 'POST',
@@ -518,7 +521,22 @@ export default async function handler(req, res) {
           return;
         }
 
-        const seasonId = requestedSeason ?? raceLog[0].seasonId;
+        // Saison précédente = dernière saison *totalement terminée*.
+        // Si la saison en cours (currentRace) est encore active, raceLog[0].seasonId peut
+        // correspondre à une semaine déjà complétée de cette même saison courante.
+        // On cherche donc le premier seasonId du raceLog qui diffère du seasonId courant.
+        let defaultSeason;
+        const currentSeasonId = currentRace?.seasonId ?? null;
+        if (currentSeasonId != null && raceLog[0].seasonId === currentSeasonId) {
+          // S130 encore en cours → la saison précédente est la première différente dans le log
+          const prev = raceLog.find((r) => r.seasonId !== currentSeasonId);
+          defaultSeason = prev?.seasonId ?? raceLog[0].seasonId;
+        } else {
+          // Saison courante terminée → raceLog[0] est déjà la plus récente complète
+          defaultSeason = raceLog[0].seasonId;
+        }
+
+        const seasonId = requestedSeason ?? defaultSeason;
         if (!seasonId) {
           await fetch(webhookUrl, {
             method: 'POST',
@@ -558,25 +576,32 @@ export default async function handler(req, res) {
         const fullTags = intersection ? [...intersection] : [];
 
         const clanMembers = await fetchClanMembers(`#${resolved.tag}`);
-        const nameByTag = Object.fromEntries(clanMembers.map((m) => [m.tag.toUpperCase(), m.name]));
+        const memberByTag = Object.fromEntries(clanMembers.map((m) => [m.tag.toUpperCase(), m]));
+
+        const ROLE_FR = { leader: 'Leader', coLeader: 'Co-leader', elder: 'Aîné', member: 'Membre' };
 
         const players = fullTags
-          .map((tag) => ({ tag, name: nameByTag[tag] ?? tag }))
+          .map((tag) => {
+            const m = memberByTag[tag];
+            return { tag, name: m?.name ?? tag, role: ROLE_FR[m?.role] ?? 'Membre' };
+          })
           .sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+
+        const totalDecks = players.length * weeks.length * 16;
 
         let description;
         if (players.length === 0) {
-          description = `Aucun joueur n'a fait 16/16 decks toutes les semaines de la saison ${seasonId}.`;
+          description = `Aucun joueur n'a joué 100% des decks toutes les semaines de la saison ${seasonId}.`;
         } else {
-          const rows = players.slice(0, 25).map((p, idx) => `${String(idx + 1).padStart(2)}. ${p.name} ${p.tag}`);
-          description = '```\n' + rows.join('\n') + (players.length > 25 ? `\n...et ${players.length - 25} autres` : '') + '\n```';
+          const rows = players.map((p, idx) => `${String(idx + 1).padStart(2)}. ${p.name} ${p.tag} [${p.role}]`);
+          description = '```\n' + rows.join('\n') + '\n```';
         }
 
         const embed = {
-          title: `🏆 Chelem saison ${seasonId} — ${resolved.name}`,
+          title: `🏆 ${resolved.name} — saison ${seasonId}`,
           color: 0x5865f2,
           description,
-          footer: { text: `Saison ${seasonId} · ${players.length} joueur(s)` },
+          footer: { text: `${players.length} joueur(s) ont joué 100% des decks (${totalDecks} decks)` },
         };
 
         await fetch(webhookUrl, {
