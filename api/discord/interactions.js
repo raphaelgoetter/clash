@@ -507,11 +507,8 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
-        const { fetchRaceLog, fetchClanMembers, fetchCurrentRace } = await import('../../backend/services/clashApi.js');
-        const [raceLog, currentRace] = await Promise.all([
-          fetchRaceLog(`#${resolved.tag}`),
-          fetchCurrentRace(`#${resolved.tag}`).catch(() => null),
-        ]);
+        const { fetchRaceLog, fetchClanMembers } = await import('../../backend/services/clashApi.js');
+        const raceLog = await fetchRaceLog(`#${resolved.tag}`);
         if (!Array.isArray(raceLog) || raceLog.length === 0) {
           await fetch(webhookUrl, {
             method: 'POST',
@@ -521,20 +518,14 @@ export default async function handler(req, res) {
           return;
         }
 
-        // Saison précédente = dernière saison *totalement terminée*.
-        // Si la saison en cours (currentRace) est encore active, raceLog[0].seasonId peut
-        // correspondre à une semaine déjà complétée de cette même saison courante.
-        // On cherche donc le premier seasonId du raceLog qui diffère du seasonId courant.
-        let defaultSeason;
-        const currentSeasonId = currentRace?.seasonId ?? null;
-        if (currentSeasonId != null && raceLog[0].seasonId === currentSeasonId) {
-          // S130 encore en cours → la saison précédente est la première différente dans le log
-          const prev = raceLog.find((r) => r.seasonId !== currentSeasonId);
-          defaultSeason = prev?.seasonId ?? raceLog[0].seasonId;
-        } else {
-          // Saison courante terminée → raceLog[0] est déjà la plus récente complète
-          defaultSeason = raceLog[0].seasonId;
+        // Saison précédente = la plus récente saison ayant 4 semaines complètes dans le log.
+        // Une saison en cours n'a pas encore ses 4 semaines → elle est ignorée.
+        const seasonCounts = {};
+        for (const r of raceLog) {
+          seasonCounts[r.seasonId] = (seasonCounts[r.seasonId] || 0) + 1;
         }
+        const sortedSeasons = Object.keys(seasonCounts).map(Number).sort((a, b) => b - a);
+        const defaultSeason = sortedSeasons.find((sid) => seasonCounts[sid] >= 4) ?? sortedSeasons[0];
 
         const seasonId = requestedSeason ?? defaultSeason;
         if (!seasonId) {
