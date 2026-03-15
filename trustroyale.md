@@ -77,7 +77,7 @@ C’est un outil conçu pour être **proactif** : on détecte les membres à ris
 /chelem clan:1 season:129
 ```
 
-### 4) `/discord-link tag:#TAG`
+### 5) `/discord-link tag:#TAG`
 
 ➡️ Lie ton compte Clash à ton compte Discord.
 
@@ -91,13 +91,13 @@ C’est un outil conçu pour être **proactif** : on détecte les membres à ris
 
 Plusieurs tags peuvent être liés (ex : pour les comptes secondaires) en ajoutant `tag2:#TAG` et `tag3:#TAG` dans la commande.
 
-### 4) `/discord-check clan:N` (surtout pour chefs de clan)
+### 6) `/discord-check clan:N` (surtout pour chefs de clan)
 
 ➡️ Vérifie qui du clan est présent sur le serveur Discord (liés / non liés / absents).
 
 Pratique pour les recrutements et pour s’assurer que tout le monde est bien connecté.
 
-### 4) `/promote min:X clan:N` (pour chefs de clan)
+### 7) `/promote min:X clan:N` (pour chefs de clan)
 
 ➡️ Affiche les joueurs qui ont atteint un minimum de fame (par ex. 2400, 2600, 2800) la semaine précédente.
 
