@@ -177,34 +177,76 @@ Same 4-tier verdict thresholds apply (76 / 61 / 31).
 
 ---
 
-## 🤖 Commande Discord `/trust`
+## 🤖 Bot Discord
 
-Le bot Discord expose une slash command `/trust <tag>` qui affiche l'analyse de fiabilité d'un joueur directement dans un serveur Discord.
+Le bot Discord expose des slash commands qui affichent les analyses directement dans un serveur Discord.
+
+### Commandes disponibles
+
+| Commande | Description |
+|---|---|
+| `/trust tag:#TAG` | Analyse la fiabilité d'un joueur |
+| `/trust-clan clan:N` | Liste les membres High/Extreme risk d'un clan (N = 1/2/3) |
+| `/promote clan:N min:X` | Liste les joueurs ≥ X fame la semaine précédente |
+| `/discord-link tag:#TAG` | Lie un compte Clash à un Discord |
+| `/discord-check clan:N` | Vérifie la présence Discord des membres d'un clan |
 
 ### Architecture
 
 ```
 Discord → POST /api/discord/interactions   (api/discord/interactions.js)
               │
-              ├─ type 1 (PING)   → { type: 1 }   (validation endpoint)
+              ├─ type 1 (PING)      → { type: 1 }   (validation endpoint)
               │
-              └─ type 2 /trust   → { type: 5 }   (deferred, <3 s)
-                                     waitUntil(
-                                       fetch /api/player/:tag/analysis
-                                       → webhook follow-up Discord
-                                     )
+              └─ type 2 (commande)  → { type: 5 }   (deferred, <3 s)
+                                       runBackground(
+                                         fetch /api/.../analysis
+                                         → webhook follow-up Discord
+                                       )
 ```
 
-La fonction Discord est **séparée** de l'app Express (`api/index.js`) pour garantir un cold start minimal (< 1 s au lieu de 3‑4 s), impératif pour respecter la fenêtre de 3 s imposée par Discord.
+La fonction Discord est **séparée** de l'app Express (`api/index.js`) pour garantir un cold start minimal (< 1 s au lieu de 3‑4 s), impératif pour respecter la fenêtre de 3 s imposée par Discord.
 
 ### Points techniques clés
 
 | Problème | Solution |
 |---|---|
 | Validation endpoint Discord échoue | La vérification de signature Ed25519 doit se faire **avant** de répondre au PING, pas après |
-| Cold start > 3 s → “application did not respond” | Fonction Vercel dédiée (`api/discord/interactions.js`) sans Express, uniquement `node:crypto` natif |
-| Fonction tuée après `res.end()` | `waitUntil()` de `@vercel/functions` maintient la fonction active après l'envoi du `type: 5` |
-| Vérification de signature | Reconstruit la clé publique Ed25519 depuis hex → SPKI DER via `node:crypto` (pas de dépendance npm) |
+| Cold start > 3 s → "application did not respond" | Fonction Vercel dédiée (`api/discord/interactions.js`) sans Express, uniquement `node:crypto` natif |
+| Fonction tuée après `res.end()` | `runBackground(fn)` appelle `waitUntil(fn())` de `@vercel/functions` — maintient la fonction active |
+| `Promise.resolve().then(fn)` sans waitUntil | Vercel coupe la VM dès que `res.json()` est envoyé — utiliser `runBackground` **uniquement** |
+| Syntaxe cassée → module entier planté | Ne jamais écrire de saut de ligne littéral dans `'...'`. Utiliser `'\`\`\`\n'` |
+| Import direct de services backend | Ne jamais `import('../../backend/routes/clan.js')` dans un handler — appeler l'endpoint HTTP |
+| Vérification de signature | Reconstruit la clé publique Ed25519 depuis hex → SPKI DER via `node:crypto` |
+
+### Patron obligatoire pour toute nouvelle commande
+
+```js
+if (body.type === 2 && body.data?.name === 'ma-commande') {
+  // 1. Parser les options SYNCHRONEMENT (pas d'await)
+  const opt = body.data.options?.find((o) => o.name === 'mon-option');
+
+  // 2. Répondre IMMÉDIATEMENT — avant tout await
+  res.status(200).json({ type: 5 });
+  const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+
+  // 3. Travail lourd dans runBackground (maintient Vercel actif via waitUntil)
+  runBackground(async () => {
+    try {
+      // Toujours appeler les endpoints HTTP, jamais les services directement
+      const resp = await fetch('https://trustroyale.vercel.app/api/...');
+      await fetch(webhookUrl, { method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ embeds: [embed] }) });
+    } catch (err) {
+      await fetch(webhookUrl, { method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }) });
+    }
+  });
+  return;
+}
+```
 
 ### Variables d'environnement requises
 
@@ -214,38 +256,51 @@ DISCORD_APP_ID=       # Application ID du bot
 DISCORD_TOKEN=        # Token du bot (pour le script d'enregistrement)
 ```
 
+### Enregistrement des commandes
+
+```bash
+node scripts/registerCommands.js
+```
+
+À relancer après tout ajout ou modification de commande.
+
 ### Invitation du bot sur un serveur Discord
 
 1. Aller sur le [Discord Developer Portal](https://discord.com/developers/applications) → sélectionner l'application
 2. Onglet **OAuth2 → URL Generator**
-3. Cocher les scopes : `bot` + `applications.commands`
-4. Dans les permissions bot, cocher au minimum : `Send Messages`
+3. Cocher les scopes : `bot` + `applications.commands`
+4. Dans les permissions bot, cocher au minimum : `Send Messages`
 5. Copier l'URL générée et l'ouvrir dans un navigateur → choisir le serveur cible → Autoriser
 
-> Sans le scope `applications.commands`, la slash command `/trust` n'apparaîtra pas dans le serveur.
+### Format des réponses
 
-### Enregistrement de la commande
-
-```bash
-node registerCommands.js
-```
-
-Lance ce script une seule fois (ou après modification de la commande) pour enregistrer `/trust` auprès de l'API Discord.
-
-### Format de la réponse
+**`/trust`**
 
 ```
-🟢 NomJoueur ⤑ 93 % (High reliability)
-✅ Regularity   10/10    ✅ Avg Score     8.4/10
-✅ CW2 Wins     8/8      ✅ Stability      8/8
-⚠️ Win Rate     1.9/3    ✅ Experience     3/3
-✅ Donations    2/2
-
-Tag : #YRGJGR8R  [lien vers trustroyale.vercel.app]
+🟢 NomJoueur ⤑ 93 % (Fiabilité élevée)
+✅ Activité de guerre  10/12    ✅ Victoires CW2  8/8
+⚠️ Winrate (guerre)    1.9/3   ✅ Expérience     3/3
+✅ Dons                2/2
+Tag : #YRGJGR8R
 ```
 
-Icônes : ✅ ≥ 75 % du max · ⚠️ entre 40 % et 74 % · ❌ < 40 %
+**`/trust-clan`**
 
+```
+⚠️  Les Resistants (4 joueurs à risque)
+- NomJoueur   (new) #TAG [Co-Leader] 🔴 Extreme risk (28%)
+- AutreJoueur       #TAG [Member]    🟠 High risk    (45%)
+```
+
+**`/promote`**
+
+```
+🏅 Semaine de GDC précédente — La Resistance (≥ 2800 fame)
+ 1. NomJoueur   3200 fame  [Co-Leader]
+ 2. AutreJoueur 3000 fame  [Member]
+```
+
+Icônes : ✅ ≥ 75 % du max · ⚠️ entre 40 % et 74 % · ❌ < 40 %
 ---
 
 ## ☁️ Deployment

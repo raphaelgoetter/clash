@@ -30,6 +30,59 @@ npm run build    # vite build + vercel --prod
 - **Commits** : Conventional Commits — type en anglais, description en français ex : `feat(clan): ajoute filtre par verdict`
 - **Commentaires** : en français
 
+## Bot Discord — règles critiques
+
+### Architecture de chaque commande
+
+Toute commande Discord qui fait un appel réseau **doit** suivre ce patron exact, sans exception :
+
+```js
+// 1. Répondre IMMÉDIATEMENT avec type:5 (deferred) — avant tout await
+res.status(200).json({ type: 5 });
+
+// 2. Construire l'URL du webhook AVANT runBackground
+const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+
+// 3. Lancer le travail lourd dans runBackground (maintient Vercel actif via waitUntil)
+runBackground(async () => {
+  try {
+    // ... appels API, construction de la réponse ...
+    await fetch(webhookUrl, { method: 'POST', ... });
+  } catch (err) {
+    await fetch(webhookUrl, { method: 'POST',
+      body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }) });
+  }
+});
+return;
+```
+
+### Règles absolues
+
+- **`runBackground` uniquement** — ne jamais appeler `Promise.resolve().then(fn)` directement (Vercel tue la fonction). `runBackground` est défini dans `interactions.js` et appelle `waitUntil(fn())`.
+- **Ne jamais importer `buildClanAnalysis` ou des services backend directement** dans un handler Discord — la fonction surchargerait et expirerait. Toujours passer par l'endpoint HTTP :
+  - Joueur : `https://trustroyale.vercel.app/api/player/:tag/analysis`
+  - Clan : `https://trustroyale.vercel.app/api/clan/:tag/analysis`
+- **Pas de backtick littéral multiligne dans une string** (`` '```\n' `` est correct, un vrai saut de ligne dans `'...'` est une SyntaxError qui crashe tout le module).
+- **`res.status(200).json({ type: 5 })` avant tout `await`** — si un await précède, Discord timeout car la réponse arrive trop tard.
+
+### Enregistrement des commandes
+
+```bash
+node scripts/registerCommands.js
+```
+
+À relancer après tout ajout ou modification de commande.
+
+### Commandes disponibles
+
+| Commande | Description |
+|---|---|
+| `/trust tag:#TAG` | Analyse la fiabilité d'un joueur |
+| `/promote clan:N min:X` | Liste les joueurs ≥ X fame de la semaine précédente |
+| `/trust-clan clan:N` | Liste les membres High/Extreme risk d'un clan |
+| `/discord-link tag:#TAG` | Lie un compte Clash à un Discord |
+| `/discord-check clan:N` | Vérifie la présence Discord des membres d'un clan |
+
 ## Sous-agents
 
 Utiliser des **sous-agents** (Task tool) par défaut pour toute opération dont seul le résumé compte : exploration de code, recherche, revue, investigation. Ne pas encombrer la conversation principale.

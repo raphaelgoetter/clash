@@ -31,12 +31,13 @@ favoris se retrouve sous la barre de recherche.
 
 ## 🤖 Bot Discord
 
-Quatre commandes disponibles :
+Cinq commandes disponibles :
 
 - **`/trust tag:#TAG`** — analyse la fiabilité d'un joueur
+- **`/trust-clan clan:N`** — liste tous les membres High risk / Extreme risk d'un clan (N = 1, 2 ou 3)
+- **`/promote clan:N min:X`** — liste les joueurs ayant atteint ≥ X fame la semaine précédente
 - **`/discord-link tag:#TAG`** — lie ton compte Clash à ton Discord (tag2 et tag3 optionnels pour comptes multiples)
-- **`/discord-check`** — vérifie quels membres d'un clan sont présents sur le serveur Discord
-- **`/promote`** — liste les joueurs éligibles à la promotion
+- **`/discord-check clan:N`** — vérifie quels membres d'un clan sont présents sur le serveur Discord
 
 > Remarque : l'installation de ce bot n'est réalisable que par displaynone.
 

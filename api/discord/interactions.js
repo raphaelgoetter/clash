@@ -446,21 +446,21 @@ export default async function handler(req, res) {
           return;
         }
 
+        const VERDICT_EMOJI = { 'Extreme risk': '🔴', 'High risk': '🟠' };
         const maxName = Math.max(...filtered.map((m) => m.name.length));
-        const rows = filtered.slice(0, 25).map((m, i) => {
-          const num = String(i + 1).padStart(2);
+        const rows = filtered.slice(0, 25).map((m) => {
           const name = m.name.padEnd(maxName);
           const newTag = m.isNew ? ' (new)' : '';
           const role = capitalize(m.role || 'member');
-          const badge = m.color ? capitalize(m.color) : 'unknown';
+          const emoji = VERDICT_EMOJI[m.verdict] ?? '⚠️';
           const pct = Math.round(m.activityScore ?? 0);
-          return `${num}. ${name}${newTag} ${m.tag} [${role}] ${m.verdict} (${pct}%) (badge ${badge})`;
+          return `- ${name}${newTag} ${m.tag} [${role}] ${emoji} ${m.verdict} (${pct}%)`;
         });
 
         const description = '```\n' + rows.join('\n') + (filtered.length > 25 ? `\n...and ${filtered.length - 25} more` : '') + '\n```';
 
         const embed = {
-          title: `⚠️ ${resolved.name} — High/Extreme Risk (${filtered.length} players)`,
+          title: `⚠️  ${resolved.name} (${filtered.length} joueurs à risque)`,
           color: 0xe67e22,
           description,
           footer: { text: `Clan : ${resolved.name}` },
