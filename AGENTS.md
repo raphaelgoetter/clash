@@ -80,6 +80,7 @@ node scripts/registerCommands.js
 | `/trust tag:#TAG` | Analyse la fiabilité d'un joueur |
 | `/promote clan:N min:X` | Liste les joueurs ≥ X fame de la semaine précédente |
 | `/trust-clan clan:N` | Liste les membres High/Extreme risk d'un clan |
+| `/chelem clan:N [season:X]` | Liste les joueurs 16/16 decks chaque semaine d'une saison |
 | `/discord-link tag:#TAG` | Lie un compte Clash à un Discord |
 | `/discord-check clan:N` | Vérifie la présence Discord des membres d'un clan |
 

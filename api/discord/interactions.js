@@ -569,8 +569,7 @@ export default async function handler(req, res) {
           description = `Aucun joueur n'a fait 16/16 decks toutes les semaines de la saison ${seasonId}.`;
         } else {
           const rows = players.slice(0, 25).map((p, idx) => `${String(idx + 1).padStart(2)}. ${p.name} ${p.tag}`);
-          description = '```
-' + rows.join('\n') + (players.length > 25 ? `\n...et ${players.length - 25} autres` : '') + '\n```';
+          description = '```\n' + rows.join('\n') + (players.length > 25 ? `\n...et ${players.length - 25} autres` : '') + '\n```';
         }
 
         const embed = {
