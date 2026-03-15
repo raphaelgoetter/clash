@@ -2,7 +2,12 @@
 // Utilise waitUntil de @vercel/functions pour exécuter l'appel à l'API
 // Clash en arrière-plan APRÈS avoir répondu type:5 à Discord (deferred).
 import { createPublicKey, verify } from 'node:crypto';
-import { waitUntil } from '@vercel/functions';
+
+// In Vercel, `waitUntil` may not always behave as expected; use a lightweight
+// background task helper that doesn't block the response.
+function runBackground(fn) {
+  Promise.resolve().then(fn).catch(() => {});
+}
 
 // Vérifie la signature Ed25519 envoyée par Discord.
 function verifyDiscordSignature(signature, timestamp, rawBody) {
@@ -211,7 +216,7 @@ export default async function handler(req, res) {
     const tag = rawTag.startsWith('#') ? rawTag : `#${rawTag}`;
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
 
-    waitUntil((async () => {
+    runBackground(async () => {
       try {
         // Appel interne à notre propre endpoint d'analyse (évite de redupliquer la logique)
         // On utilise l'URL canonique pour éviter les redirections vers une instance froide
@@ -235,10 +240,10 @@ export default async function handler(req, res) {
                       );
                       const participants = standing?.clan?.participants || [];
                       const weekId = `S${log[0].seasonId}W${log[0].sectionIndex}`;
-                      recordSnapshot(clanTag, participants, weekId).catch(()=>{});
+                      recordSnapshot(clanTag, participants, weekId).catch(() => {});
                     }
                   })
-                  .catch(()=>{});
+                  .catch(() => {});
               });
             });
           });
@@ -312,7 +317,7 @@ export default async function handler(req, res) {
           }),
         });
       }
-    })());
+    });
     return;
   }
 
@@ -565,7 +570,7 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5 });
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
 
-    waitUntil((async () => {
+    runBackground(async () => {
       try {
         const { fetchClanMembers } = await import('../../backend/services/clashApi.js');
         const [clanMembers, { links }] = await Promise.all([
@@ -620,7 +625,7 @@ export default async function handler(req, res) {
           body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
         });
       }
-    })());
+    });
     return;
   }
 
