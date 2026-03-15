@@ -347,7 +347,7 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5 });
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
 
-    waitUntil((async () => {
+    runBackground(async () => {
       try {
         const { fetchClanMembers } = await import('../../backend/services/clashApi.js');
         const { computeTopPlayers } = await import('../../backend/services/topplayers.js');
@@ -392,7 +392,7 @@ export default async function handler(req, res) {
           body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
         });
       }
-    })());
+    });
     return;
   }
 
@@ -412,8 +412,19 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
-        const { buildClanAnalysis } = await import('../../backend/routes/clan.js');
-        const analysis = await buildClanAnalysis(resolved.tag);
+        const apiResp = await fetch(
+          `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis`,
+          { headers: { Accept: 'application/json' } },
+        );
+        if (!apiResp.ok) {
+          await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: `Erreur API clan (${apiResp.status}).`, flags: 64 }),
+          });
+          return;
+        }
+        const analysis = await apiResp.json();
         const members = analysis.members || [];
 
         const filtered = members
@@ -491,7 +502,7 @@ export default async function handler(req, res) {
     const discordUserId = body.member?.user?.id ?? body.user?.id;
     const tags = rawTags.map((t) => t.startsWith('#') ? t.toUpperCase() : `#${t.toUpperCase()}`);
 
-    waitUntil((async () => {
+    runBackground(async () => {
       try {
         const { fetchPlayer } = await import('../../backend/services/clashApi.js');
         // Valider tous les tags en parallèle
@@ -552,7 +563,7 @@ export default async function handler(req, res) {
           body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
         });
       }
-    })());
+    });
     return;
   }
 
