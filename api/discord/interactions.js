@@ -410,7 +410,7 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5 });
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
 
-    waitUntil((async () => {
+    runBackground(async () => {
       try {
         const { buildClanAnalysis } = await import('../../backend/routes/clan.js');
         const analysis = await buildClanAnalysis(resolved.tag);
@@ -468,7 +468,7 @@ export default async function handler(req, res) {
           body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
         });
       }
-    })());
+    });
     return;
   }
 
