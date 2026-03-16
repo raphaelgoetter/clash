@@ -766,17 +766,18 @@ export default async function handler(req, res) {
 
           const user = guildMember.user;
           const displayName = guildMember.nick || user.global_name || user.username || 'unknown';
-          const discrim = user.discriminator?.padStart(4, '0');
-          const discordTag = discrim && discrim !== '0'
-            ? `${displayName}#${discrim}`
-            : displayName;
-          present.push({ clash: m.name, tag: normTag, discord: discordTag });
+          present.push({ clash: m.name, tag: normTag, discord: displayName });
         }
+
+        // Tri alphabétique (utile pour lisibilité sur de grands clans)
+        present.sort((a, b) => a.clash.localeCompare(b.clash, 'fr', { sensitivity: 'base' }));
+        absent.sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
+        unlinked.sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
 
         const lines = [];
         if (present.length) {
           const list = present
-            .map((p) => `• **${p.discord}** (${p.clash} ${p.tag})`)
+            .map((p) => `• \`${p.discord}\` (${p.clash} ${p.tag})`)
             .join('\n');
           lines.push(`✅ **Liés** (${present.length}) :\n${list}`);
         }
