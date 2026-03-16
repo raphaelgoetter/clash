@@ -749,39 +749,69 @@ export default async function handler(req, res) {
 
         const memberById = new Map(guildMembers.map((m) => [m.user?.id, m]));
 
-        const present = [], absent = [], unlinked = [];
+        const presentByDiscord = new Map();
+        const absentByDiscord  = new Map();
+        const unlinked = [];
+
         for (const m of clanMembers) {
-          const normTag    = m.tag.startsWith('#') ? m.tag : `#${m.tag}`;
-          const discordId  = links[normTag];
+          const normTag   = m.tag.startsWith('#') ? m.tag : `#${m.tag}`;
+          const discordId = links[normTag];
           if (!discordId) {
-            unlinked.push(m.name);
+            unlinked.push({ clash: m.name, tag: normTag });
             continue;
           }
 
           const guildMember = memberById.get(discordId);
+          const entry = { clash: m.name, tag: normTag };
+
           if (!guildMember) {
-            absent.push(m.name);
+            const list = absentByDiscord.get(discordId) || [];
+            list.push(entry);
+            absentByDiscord.set(discordId, list);
             continue;
           }
 
           const user = guildMember.user;
           const displayName = guildMember.nick || user.global_name || user.username || 'unknown';
-          const cleaned = displayName.replace(/^[^a-zA-Z0-9]+/, '').toLowerCase();
-          const sortKey = `${displayName.startsWith('☆') ? '0' : '1'}:${cleaned}`;
-          present.push({ clash: m.name, tag: normTag, discord: displayName, sortKey });
+          const key = `${displayName.startsWith('☆') ? '0' : '1'}:${displayName.toLowerCase()}`;
+
+          const existing = presentByDiscord.get(discordId);
+          if (existing) {
+            existing.entries.push(entry);
+          } else {
+            presentByDiscord.set(discordId, { discord: displayName, key, entries: [entry] });
+          }
         }
 
-        // Tri alphabétique (utile pour lisibilité sur de grands clans)
-        present.sort((a, b) => a.sortKey.localeCompare(b.sortKey, 'fr', { numeric: true, sensitivity: 'base' }));
-        absent.sort((a, b) => a.localeCompare(b, 'fr', { numeric: true, sensitivity: 'base' }));
-        unlinked.sort((a, b) => a.localeCompare(b, 'fr', { numeric: true, sensitivity: 'base' }));
+        const present = Array.from(presentByDiscord.values());
+        present.sort((a, b) => a.key.localeCompare(b.key, 'fr', { numeric: true, sensitivity: 'base' }));
+
+        const absent = Array.from(absentByDiscord.values())
+          .flat()
+          .sort((a, b) => a.clash.localeCompare(b.clash, 'fr', { numeric: true, sensitivity: 'base' }));
+
+        unlinked.sort((a, b) => a.clash.localeCompare(b.clash, 'fr', { numeric: true, sensitivity: 'base' }));
 
         const lines = [];
         if (present.length) {
-          const list = present
-            .map((p) => `• ${p.discord} (${p.clash} ${p.tag})`)
-            .join('\n');
-          lines.push(`✅ Liés (${present.length}) :\n${list}`);
+          const rows = present.map((p) => {
+            const clashes = p.entries.map((e) => `${e.clash} ${e.tag}`).join(', ');
+            return { discord: p.discord, clashes };
+          });
+
+          const maxDiscord = Math.max(...rows.map((r) => r.discord.length), 'Discord'.length);
+          const pad = (s) => s.padEnd(maxDiscord, ' ');
+
+          const table = [
+            `Discord${' '.repeat(maxDiscord - 7)} | Clash (tag)`,
+            `${'-'.repeat(maxDiscord)} | ---------`,
+            ...rows.map((r) => `${pad(r.discord)} | ${r.clashes}`),
+          ].join('\n');
+
+          lines.push('✅ Liés (présents sur le serveur) :');
+          lines.push('```');
+          lines.push(table);
+          lines.push('```');
         }
         if (absent.length)   lines.push(`❌ **Liés mais absents du serveur** (${absent.length}) : ${absent.join(', ')}`);
         if (unlinked.length) lines.push(`❓ **Non liés** (${unlinked.length}) : ${unlinked.join(', ')}`);
