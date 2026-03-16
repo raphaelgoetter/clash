@@ -434,6 +434,15 @@ export async function buildClanAnalysis(clanTag) {
     // Sort by activityScore ascending (most at-risk first)
     analyzedMembers.sort((a, b) => a.activityScore - b.activityScore);
 
+    // Enrichir uncomplete avec isNew (calculé via l'historique de guerre de chaque membre)
+    if (uncomplete && Array.isArray(uncomplete.players)) {
+      const memberMap = new Map(analyzedMembers.map((m) => [m.tag, m]));
+      uncomplete.players = uncomplete.players.map((p) => ({
+        ...p,
+        isNew: memberMap.get(p.tag)?.isNew ?? false,
+      }));
+    }
+
     // Aggregate stats for chart data
     const green  = analyzedMembers.filter((m) => m.color === 'green').length;
     const yellow  = analyzedMembers.filter((m) => m.color === 'yellow').length;

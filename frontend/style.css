@@ -257,6 +257,26 @@ summary .card-title {
   opacity: 0.4;
 }
 
+/* section des joueurs qui ont quitté le clan (Last War fails) */
+.uncomplete-departed {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.uncomplete-departed-title {
+  font-size: .8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-muted);
+  margin: 0 0 8px;
+}
+
+.uncomplete-departed-list li {
+  opacity: 0.45;
+}
+
 /* daily breakdown colour coding */
 .daily-green { color: var(--green); }
 .daily-orange { color: var(--orange); }

@@ -850,26 +850,49 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
     }).join(' - ');
   }
 
-  if (players.length === 0) {
+  // Supprimer l'éventuelle section "partis" précédente pour éviter les doublons
+  const existingDeparted = card.querySelector('.uncomplete-departed');
+  if (existingDeparted) existingDeparted.remove();
+
+  function renderPlayerItem(p) {
+    const dailyStr = formatDaily(p.daily);
+    let warnAfter = '';
+    if (p.dailySource !== 'snapshot') {
+      warnAfter = ' ⚠';
+    } else if (p.dailySource === 'snapshot' && !p.dailySnapshotComplete) {
+      warnAfter = ' ⚠';
+    }
+    const newBadge = p.isNew ? '<span class="new-badge">new</span>' : '';
+    return `<li><span class="tp-name">${escHtml(p.name)}${newBadge}</span>` +
+      `<span class="tp-meta">` +
+        `<span class="role-badge ${p.role}">${capitalize(p.role)}</span>` +
+        `<span class="tp-fame">${fmt(p.decks)} decks${dailyStr ? ' - ' + dailyStr : ''}${warnAfter}</span>` +
+      `</span></li>`;
+  }
+
+  const present  = players.filter(p => p.inClan);
+  const departed = players.filter(p => !p.inClan);
+
+  if (present.length === 0 && departed.length === 0) {
     listEl.innerHTML = '<li class="text-muted">Everyone completed 16 decks 👍</li>';
   } else {
-    listEl.innerHTML = players
-      .map(p => {
-        const dailyStr = formatDaily(p.daily);
-        let warnAfter = '';
-        if (p.dailySource !== 'snapshot') {
-          warnAfter = ' ⚠';
-        } else if (p.dailySource === 'snapshot' && !p.dailySnapshotComplete) {
-          warnAfter = ' ⚠';
-        }
-        return `<li class="${p.inClan ? '' : 'absent'}"><span class="tp-name">${escHtml(p.name)}</span>` +
-          `<span class="tp-meta">` +
-            `<span class="role-badge ${p.role}">${capitalize(p.role)}</span>` +
-            `<span class="tp-fame">${fmt(p.decks)} decks${dailyStr ? ' - ' + dailyStr : ''}${warnAfter}</span>` +
-          `</span></li>`;
-      })
-      .join('');
+    listEl.innerHTML = present.length > 0
+      ? present.map(renderPlayerItem).join('')
+      : '<li class="text-muted">Everyone still in clan completed 16 decks 👍</li>';
   }
+
+  // Section séparée pour les joueurs qui ont quitté le clan
+  if (departed.length > 0) {
+    const departedHtml =
+      `<div class="uncomplete-departed">` +
+        `<p class="uncomplete-departed-title">🚪 Left the clan</p>` +
+        `<ol class="top-players-list uncomplete-departed-list">` +
+          departed.map(renderPlayerItem).join('') +
+        `</ol>` +
+      `</div>`;
+    listEl.insertAdjacentHTML('afterend', departedHtml);
+  }
+
   card.classList.remove('hidden');
 }
 
