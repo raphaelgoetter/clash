@@ -77,9 +77,18 @@ async function loadSnapshots(clanTag) {
 }
 
 async function saveSnapshots(clanTag, weeks) {
+  // Strip internal-only fields (_cumul) before writing to disk.
+  const sanitized = (weeks || []).map((w) => ({
+    ...w,
+    days: (w.days || []).map((d) => {
+      const { _cumul, ...rest } = d;
+      return rest;
+    }),
+  }));
+
   await ensureDirectory();
   const file = snapshotFilename(clanTag);
-  await fs.writeFile(file, JSON.stringify(weeks, null, 2));
+  await fs.writeFile(file, JSON.stringify(sanitized, null, 2));
 }
 
 /**
@@ -104,10 +113,10 @@ function getWarDayInfo(date = new Date()) {
   const resetMs = (10 * 60 + 40) * 60 * 1000;
   const msOfDay = paris.getHours() * 3600000 + paris.getMinutes() * 60000 + paris.getSeconds() * 1000 + paris.getMilliseconds();
 
-  // If we're before reset, the war day label is the previous day, except
-  // on Thursday (the first war day) where we still want to label it Thursday.
-  if (msOfDay < resetMs && paris.getDay() !== 4) {
-    paris.setDate(paris.getDate() - 1);
+  // Before reset (10:40 Paris), we are still in the current war day.
+  // After reset, the war day increments.
+  if (msOfDay >= resetMs) {
+    paris.setDate(paris.getDate() + 1);
   }
 
   const dow = paris.getDay(); // 0=Sun..6=Sat
@@ -146,7 +155,6 @@ function makeEmptyDay(warDay, realDay = null) {
     snapshotTime: null,
     snapshotBackupTime: null,
     decks: {},
-    _cumul: {},
   };
 }
 

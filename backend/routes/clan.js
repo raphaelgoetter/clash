@@ -234,7 +234,10 @@ export async function buildClanAnalysis(clanTag) {
         const snapshotDays = new Set();
         for (const snap of prevSnaps) {
           const warDay = snap.warDay ?? getWarDayName(getWarDayKey(new Date(`${snap.date}T12:00:00Z`)));
-          if (warDay) snapshotDays.add(warDay);
+          const hasData =
+            snap.decks &&
+            Object.values(snap.decks).some((v) => typeof v === 'number' && v > 0);
+          if (warDay && hasData) snapshotDays.add(warDay);
         }
         const ALL_WAR_DAYS = ['thursday', 'friday', 'saturday', 'sunday'];
         uncomplete.snapshotComplete = ALL_WAR_DAYS.every((d) => snapshotDays.has(d));
@@ -247,7 +250,12 @@ export async function buildClanAnalysis(clanTag) {
             const warDay = snap.warDay ?? getWarDayName(getWarDayKey(new Date(`${snap.date}T12:00:00Z`)));
             const idx = dayIndex[warDay];
             if (idx === undefined) continue;
-            daily[idx] = snap.decks?.[p.tag] ?? 0;
+            const hasData =
+              snap.decks &&
+              Object.values(snap.decks).some((v) => typeof v === 'number' && v > 0);
+            if (!hasData) continue;
+            const val = snap.decks ? snap.decks[p.tag] : null;
+            daily[idx] = val == null ? null : val;
           }
           p.daily = daily;
           p.dailySource = 'snapshot';
