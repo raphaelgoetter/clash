@@ -747,17 +747,33 @@ export default async function handler(req, res) {
         const guildMembers   = await guildRes.json();
         const guildMemberIds = new Set(guildMembers.map((m) => m.user?.id).filter(Boolean));
 
+        const memberById = new Map(guildMembers.map((m) => [m.user?.id, m]));
+
         const present = [], absent = [], unlinked = [];
         for (const m of clanMembers) {
           const normTag    = m.tag.startsWith('#') ? m.tag : `#${m.tag}`;
           const discordId  = links[normTag];
-          if (!discordId)                    unlinked.push(m.name);
-          else if (guildMemberIds.has(discordId)) present.push(m.name);
-          else                               absent.push(m.name);
+          if (!discordId) {
+            unlinked.push(m.name);
+            continue;
+          }
+
+          const guildMember = memberById.get(discordId);
+          if (!guildMember) {
+            absent.push(m.name);
+            continue;
+          }
+
+          const user = guildMember.user;
+          const discordTag = user.discriminator ? `${user.username}#${user.discriminator}` : user.username;
+          present.push({ clash: m.name, discord: discordTag });
         }
 
         const lines = [];
-        if (present.length)  lines.push(`✅ **Présents** (${present.length}) : ${present.join(', ')}`);
+        if (present.length) {
+          const list = present.map((p) => `• \`${p.discord}\` — \`${p.clash}\``).join('\n');
+          lines.push(`✅ **Liés** (${present.length}) :\n${list}`);
+        }
         if (absent.length)   lines.push(`❌ **Liés mais absents du serveur** (${absent.length}) : ${absent.join(', ')}`);
         if (unlinked.length) lines.push(`❓ **Non liés** (${unlinked.length}) : ${unlinked.join(', ')}`);
 
