@@ -6,10 +6,14 @@ permissions:
 
 on:
   schedule:
-    # Snapshot principal : juste avant le reset GDC (10h40 Paris) — 08h30 UTC couvre CET et CEST
+    # Snapshot principal : juste avant le reset GDC (10h40 Paris)
+    # - En été (CEST, UTC+2) : 10h30/10h40 Paris = 08h30/08h40 UTC
+    # - En hiver (CET, UTC+1) : 10h30/10h40 Paris = 09h30/09h40 UTC
+    # On déclenche donc sur les deux heures UTC pour couvrir les deux saisons.
     - cron: '30 8 * * *'
-    # Snapshot de rattrapage : juste après le reset (10h40 Paris / 08h40 UTC)
-    - cron: '50 10 * * *'
+    - cron: '40 8 * * *'
+    - cron: '30 9 * * *'
+    - cron: '40 9 * * *'
   workflow_dispatch:            # permet un déclenchement manuel
 
 jobs:

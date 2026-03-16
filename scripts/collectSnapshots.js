@@ -16,26 +16,36 @@ import { recordSnapshot } from '../backend/services/snapshot.js';
     process.exit(1);
   }
 
+  const snapshotType = process.env.SNAPSHOT_TYPE || 'auto';
   for (const clanTag of ALLOWED_CLANS) {
     try {
       console.log('Fetching current race for', clanTag);
       const [race, raceLog] = await Promise.all([fetchCurrentRace(clanTag), fetchRaceLog(clanTag)]);
-      if (race?.periodType !== 'warDay') {
-        console.log(`Skipping snapshot for ${clanTag} (periodType: ${race?.periodType ?? 'unknown'})`);
+      const participants = race.clan?.participants || [];
+      if (participants.length === 0) {
+        console.log('No participants for', clanTag);
         continue;
       }
-      const participants = race.clan?.participants || [];
-      if (participants.length > 0) {
+
+      // Determine the week id to record the snapshot for.
+      // If the race is already in training mode, we want the *previous* completed week,
+      // because the API has already rolled over to the next week.
+      let weekId = null;
+      if (race?.periodType !== 'warDay') {
+        const prev = raceLog?.[0];
+        if (prev) {
+          weekId = `S${prev.seasonId}W${prev.sectionIndex + 1}`;
+        }
+      } else {
         // seasonId absent de currentriverrace → dérivé depuis le race log
         const currSection = race.sectionIndex ?? 0;
         let seasonId = raceLog?.[0]?.seasonId;
         if (seasonId !== undefined && currSection <= (raceLog[0]?.sectionIndex ?? -1)) seasonId += 1;
-        const weekId = seasonId != null ? `S${seasonId}W${currSection + 1}` : `W${currSection + 1}`;
-        await recordSnapshot(clanTag, participants, weekId);
-        console.log(`Recorded snapshot for ${clanTag} week ${weekId} (${participants.length} players)`);
-      } else {
-        console.log('No participants for', clanTag);
+        weekId = seasonId != null ? `S${seasonId}W${currSection + 1}` : `W${currSection + 1}`;
       }
+
+      await recordSnapshot(clanTag, participants, weekId, { snapshotType });
+      console.log(`Recorded snapshot for ${clanTag} week ${weekId} (${participants.length} players) [type=${snapshotType}]`);
     } catch (err) {
       console.error('Error processing', clanTag, err.message || err);
     }

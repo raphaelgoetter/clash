@@ -23,46 +23,177 @@ function snapshotFilename(clanTag) {
   return path.join(SNAP_DIR, `${clean}.json`);
 }
 
+function convertLegacySnapshots(raw) {
+  // Legacy format: array of { week, date, warDay, decks, _cumul, ... }
+  // Convert to new format: [{ week, days: [{ warDay, realDay, snapshots:[...], decks: {...} }] }]
+  const byWeek = new Map();
+  for (const entry of Array.isArray(raw) ? raw : []) {
+    const week = entry.week ?? 'unknown';
+    const dayKey = entry.date;
+    const warDay = entry.warDay ?? getWarDayName(dayKey);
+    const takenAt = entry._snapshotTakenAt ?? entry._generatedAt ?? `${dayKey}T12:00:00Z`;
+    const weekObj = byWeek.get(week) ?? { week, days: [] };
+    weekObj.days.push({
+      warDay,
+      realDay: dayKey,
+      snapshots: [{ type: 'legacy', takenAt, decks: entry.decks ?? {} }],
+      decks: { ...(entry.decks ?? {}) },
+    });
+    byWeek.set(week, weekObj);
+  }
+  return Array.from(byWeek.values()).map((w) => {
+    const week = {
+      week: w.week,
+      days: w.days,
+    };
+    return fillWeekDays(week);
+  });
+}
+
+function normalizeSnapshots(raw) {
+  if (!raw) return [];
+  if (!Array.isArray(raw)) return [];
+  if (raw.length === 0) return [];
+
+  // Already new format (weeks with days array)
+  if (raw[0].week && Array.isArray(raw[0].days)) {
+    return raw;
+  }
+
+  // Legacy format (flat list) -> convert
+  return convertLegacySnapshots(raw);
+}
+
 async function loadSnapshots(clanTag) {
   await ensureDirectory();
   const file = snapshotFilename(clanTag);
   try {
     const txt = await fs.readFile(file, 'utf-8');
-    return JSON.parse(txt);
+    const raw = JSON.parse(txt);
+    return normalizeSnapshots(raw);
   } catch (err) {
     return [];
   }
 }
 
-async function saveSnapshots(clanTag, arr) {
+async function saveSnapshots(clanTag, weeks) {
   await ensureDirectory();
   const file = snapshotFilename(clanTag);
-  await fs.writeFile(file, JSON.stringify(arr, null, 2));
+  await fs.writeFile(file, JSON.stringify(weeks, null, 2));
 }
 
 /**
- * Offset en ms entre UTC et heure de Paris pour une date donnée.
+ * Return a (Paris-local) date string YYYY-MM-DD for a given Date.
  */
-function parisOffsetMs(date = new Date()) {
+function parisDateKey(date = new Date()) {
   const p = new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
-  const u = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
-  return p - u;
+  const y = p.getFullYear();
+  const m = String(p.getMonth() + 1).padStart(2, '0');
+  const d = String(p.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 /**
- * Retourne la clé jour (YYYY-MM-DD) correspondant au jour de guerre (reset à 10h40 Paris).
+ * For a given timestamp, return the war day (thu/fri/sat/sun) and the corresponding
+ * local calendar date (Paris) for that war day.
+ *
+ * A war day runs from 10:40 Paris until the next day 10:40 Paris.
  */
-function getWarDayKey(date = new Date()) {
-  const warResetMs = (10 * 60 + 40) * 60 * 1000 - parisOffsetMs(date);
-  return new Date(date.getTime() - warResetMs).toISOString().slice(0, 10);
+function getWarDayInfo(date = new Date()) {
+  const paris = new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+  const resetMs = (10 * 60 + 40) * 60 * 1000;
+  const msOfDay = paris.getHours() * 3600000 + paris.getMinutes() * 60000 + paris.getSeconds() * 1000 + paris.getMilliseconds();
+
+  // If we're before reset, the war day label is the previous day, except
+  // on Thursday (the first war day) where we still want to label it Thursday.
+  if (msOfDay < resetMs && paris.getDay() !== 4) {
+    paris.setDate(paris.getDate() - 1);
+  }
+
+  const dow = paris.getDay(); // 0=Sun..6=Sat
+  const names = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const warDay = names[dow];
+  const warDays = ['thursday', 'friday', 'saturday', 'sunday'];
+  if (!warDays.includes(warDay)) return null;
+
+  return {
+    warDay,
+    realDay: parisDateKey(paris),
+  };
 }
 
 function getWarDayName(warDayKey) {
-  // warDayKey is already adjusted for the GDC reset (10:40 Paris), so the
-  // day-of-week aligns with the war day.
-  const dow = new Date(warDayKey).getUTCDay(); // 0=Sun, 1=Mon, ..., 4=Thu
   const names = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  return names[dow] ?? null;
+  const d = new Date(`${warDayKey}T12:00:00Z`);
+  return names[d.getUTCDay()] ?? null;
+}
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+const WAR_DAYS = ['thursday', 'friday', 'saturday', 'sunday'];
+
+function mergeMaps(a = {}, b = {}) {
+  const out = { ...a };
+  for (const [k, v] of Object.entries(b)) {
+    out[k] = Math.max(out[k] ?? 0, v ?? 0);
+  }
+  return out;
+}
+
+function makeEmptyDay(warDay, realDay = null) {
+  return {
+    warDay,
+    realDay,
+    snapshotTime: null,
+    snapshotBackupTime: null,
+    decks: {},
+    _cumul: {},
+  };
+}
+
+function fillWeekDays(week) {
+  // Ensure week.days contains exactly one entry per war day (thu→sun), ordered.
+  const byWarDay = new Map((week.days ?? []).map((d) => [d.warDay, d]));
+
+  // Try to infer a reference date if any day has a realDay.
+  let refWarDay = null;
+  let refRealDay = null;
+  for (const wd of WAR_DAYS) {
+    const d = byWarDay.get(wd);
+    if (d?.realDay) {
+      refWarDay = wd;
+      refRealDay = d.realDay;
+      break;
+    }
+  }
+
+  const refIndex = refWarDay ? WAR_DAYS.indexOf(refWarDay) : -1;
+  const refDate = refRealDay ? new Date(`${refRealDay}T12:00:00Z`) : null;
+
+  const days = WAR_DAYS.map((wd, idx) => {
+    const existing = byWarDay.get(wd);
+    let realDay = existing?.realDay ?? null;
+    if (!realDay && refDate && refIndex !== -1) {
+      const delta = idx - refIndex;
+      realDay = new Date(refDate.getTime() + delta * MS_PER_DAY)
+        .toISOString()
+        .slice(0, 10);
+    }
+
+    const day = existing ? { ...existing } : makeEmptyDay(wd, realDay);
+    day.warDay = wd;
+    day.realDay = realDay;
+
+    // Ensure mandatory fields exist
+    day.snapshotTime = day.snapshotTime ?? null;
+    day.snapshotBackupTime = day.snapshotBackupTime ?? null;
+    day.decks = day.decks ?? {};
+    day._cumul = day._cumul ?? {};
+
+    return day;
+  });
+
+  week.days = days;
+  return week;
 }
 
 /**
@@ -74,11 +205,28 @@ function getWarDayName(warDayKey) {
  * @param {{tag:string,decksUsed:number}[]} participantData
  *        participants de /currentriverrace (decksUsed = cumul depuis jeudi)
  */
-export async function recordSnapshot(clanTag, participantData, week = null) {
+export async function recordSnapshot(clanTag, participantData, week = null, options = {}) {
   if (!participantData || participantData.length === 0) return;
-  const today = getWarDayKey();
 
-  // Cumul hebdomadaire actuel depuis l'API currentriverrace
+  const now = options.now ? new Date(options.now) : new Date();
+  const paris = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+
+  const resetMs = (10 * 60 + 40) * 60 * 1000;
+  const msOfDay =
+    paris.getHours() * 3600000 +
+    paris.getMinutes() * 60000 +
+    paris.getSeconds() * 1000 +
+    paris.getMilliseconds();
+  // Before reset → primary snapshot (captures the final decks of the day)
+  // After reset  → backup snapshot (should be empty/zeroed)
+  const snapshotType = msOfDay < resetMs ? 'primary' : 'backup';
+
+  const warInfo = getWarDayInfo(now);
+  if (!warInfo) return; // outside of war period (mon-wed after reset)
+
+  const { warDay, realDay } = warInfo;
+
+  // weekly cumulative totals from currentriverrace
   const currentCumul = {};
   participantData.forEach((p) => {
     currentCumul[p.tag] = p.decksUsed || 0;
@@ -86,63 +234,72 @@ export async function recordSnapshot(clanTag, participantData, week = null) {
 
   const history = await loadSnapshots(clanTag);
 
-  // Entrée existante pour aujourd'hui (même semaine) — peut être null si premier appel du jour
-  const existingToday = history.find((h) => h.week === week && h.date === today) ?? null;
+  const weekId = week ?? 'unknown';
+  let weekEntry = history.find((w) => w.week === weekId);
+  if (!weekEntry) {
+    weekEntry = { week: weekId, days: [] };
+    history.push(weekEntry);
+  }
 
-  // Baseline stable du jour :
-  //  - Si une entrée existe déjà aujourd'hui → on conserve son _baseCumul (figé au 1er appel)
-  //  - Sinon → cumul du dernier snapshot de la même semaine (jour précédent)
-  const prevDayEntry = history
-    .filter((h) => h.week === week && h.date < today)
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .pop() ?? null;
-  const baseCumul = existingToday?._baseCumul ?? prevDayEntry?._cumul ?? {};
+  // Ensure we have exactly four ordered war days (thu→sun).
+  const existing = new Map((weekEntry.days ?? []).map((d) => [d.warDay, d]));
+  const baseDate = new Date(`${realDay}T12:00:00Z`);
+  const baseIndex = WAR_DAYS.indexOf(warDay);
 
-  // Combats du jour = cumul actuel − baseline du début de journée, plafonné à 4
+  weekEntry.days = WAR_DAYS.map((wd, idx) => {
+    const existingDay = existing.get(wd);
+    const day = existingDay
+      ? { ...existingDay }
+      : makeEmptyDay(wd, null);
+
+    // Infer the real calendar date for each war day based on the current war day.
+    if (baseIndex !== -1) {
+      day.realDay = new Date(baseDate.getTime() + (idx - baseIndex) * MS_PER_DAY)
+        .toISOString()
+        .slice(0, 10);
+    }
+
+    // Ensure required fields exist
+    day.snapshotTime = day.snapshotTime ?? null;
+    day.snapshotBackupTime = day.snapshotBackupTime ?? null;
+    day.decks = day.decks ?? {};
+    day._cumul = day._cumul ?? {};
+
+    return day;
+  });
+
+  const dayEntry = weekEntry.days[baseIndex];
+  if (!dayEntry) return; // should not happen
+
+  // Ensure the real day matches the computed one (Paris date of the war day)
+  dayEntry.realDay = realDay;
+
+  // Determine decks for this snapshot (delta since yesterday)
+  const prevDay = weekEntry.days[WAR_DAYS.indexOf(warDay) - 1];
+  const baseCumul = prevDay?._cumul ?? {};
+
   const daily = {};
   for (const tag of Object.keys(currentCumul)) {
     daily[tag] = Math.min(4, Math.max(0, currentCumul[tag] - (baseCumul[tag] ?? 0)));
   }
 
-  // When called multiple times in the same day, keep the most up-to-date values.
-  // RoyaleAPI can lag; we merge by taking the maximum seen per player.
-  const mergeMaps = (a = {}, b = {}) => {
-    const out = { ...a };
-    for (const [k, v] of Object.entries(b)) {
-      out[k] = Math.max(out[k] ?? 0, v);
-    }
-    return out;
-  };
+  dayEntry.decks = mergeMaps(dayEntry.decks, daily);
 
-  const entry = {
-    date: today,
-    warDay: getWarDayName(today),
-    decks: daily,
-    _cumul: currentCumul,
-    _baseCumul: baseCumul,
-    _generatedAt: new Date().toISOString(),
-    _snapshotTakenAt: new Date().toISOString(),
-  };
-  if (week) entry.week = week;
-
-  const todayIdx = history.findIndex((h) => h.week === week && h.date === today);
-  if (todayIdx !== -1) {
-    const existing = history[todayIdx];
-    history[todayIdx] = {
-      ...existing,
-      warDay: entry.warDay,
-      decks: mergeMaps(existing.decks, entry.decks),
-      _cumul: mergeMaps(existing._cumul, entry._cumul),
-      _baseCumul: mergeMaps(existing._baseCumul, entry._baseCumul),
-      _generatedAt: new Date().toISOString(),
-    };
+  if (snapshotType === 'primary') {
+    dayEntry.snapshotTime = now.toISOString();
   } else {
-    history.push(entry);
+    dayEntry.snapshotBackupTime = now.toISOString();
   }
+
+  dayEntry._cumul = mergeMaps(dayEntry._cumul ?? {}, currentCumul);
+
 
   // purge old (>RETENTION_DAYS)
   const cutoff = Date.now() - RETENTION_DAYS * 24 * 3600 * 1000;
-  const filtered = history.filter((h) => new Date(h.date).getTime() >= cutoff);
+  const filtered = history.filter((w) =>
+    w.days.some((d) => d.realDay && new Date(d.realDay).getTime() >= cutoff)
+  );
+
   await saveSnapshots(clanTag, filtered);
 }
 
@@ -152,19 +309,32 @@ export async function recordSnapshot(clanTag, participantData, week = null) {
  */
 export async function getSnapshotsForWeek(clanTag, week = null) {
   const history = await loadSnapshots(clanTag);
-  if (week == null) return history;
-  return history
-    .filter((h) => h.week === week)
-    .slice()
-    .sort((a, b) => a.date.localeCompare(b.date));
+  if (!history.length) return [];
+
+  const formatDay = (weekId, d) => ({
+    week: weekId,
+    date: d.realDay,
+    warDay: d.warDay,
+    decks: d.decks,
+    snapshotTime: d.snapshotTime ?? null,
+    snapshotBackupTime: d.snapshotBackupTime ?? null,
+  });
+
+  if (week == null) {
+    return history
+      .flatMap((w) => (w.days ?? []).map((d) => formatDay(w.week, d)))
+      .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''));
+  }
+
+  const weekEntry = history.find((w) => w.week === week);
+  if (!weekEntry) return [];
+  return (weekEntry.days ?? [])
+    .map((d) => formatDay(weekEntry.week, d))
+    .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''));
 }
 
-/**
- * Return saved snapshot history for a clan, oldest first.
- */
 export async function getSnapshots(clanTag) {
-  const history = await loadSnapshots(clanTag);
-  return history;
+  return getSnapshotsForWeek(clanTag, null);
 }
 
 /**
@@ -174,7 +344,7 @@ export async function hasSnapshotForToday(clanTag) {
   const history = await loadSnapshots(clanTag);
   if (!history.length) return false;
   const today = new Date().toISOString().slice(0, 10);
-  return history[history.length - 1].date === today;
+  return history.some((w) => (w.days ?? []).some((d) => d.realDay === today));
 }
 
 /**
@@ -185,7 +355,12 @@ export async function hasSnapshotForToday(clanTag) {
 export async function getLastSnapshotDate(clanTag) {
   const history = await loadSnapshots(clanTag);
   if (!history.length) return null;
-  return history[history.length - 1].date;
+  const allDays = history.flatMap((w) => w.days ?? []);
+  const dates = allDays
+    .map((d) => d.realDay)
+    .filter(Boolean)
+    .sort();
+  return dates.length ? dates[dates.length - 1] : null;
 }
 
 // expose the directory path so callers can inspect or do manual operations
@@ -203,4 +378,4 @@ function warDayNameFromKey(warDayKey) {
 }
 
 // Expose helpers for computing the war day label (used by UI summaries)
-export { getWarDayKey, getWarDayName, warDayNameFromKey };
+export { getWarDayInfo, getWarDayName, warDayNameFromKey };

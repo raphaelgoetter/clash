@@ -1,0 +1,37 @@
+[
+  {
+    "week": "S0W0",
+    "days": [
+      {
+        "warDay": "thursday",
+        "realDay": null,
+        "snapshotTime": null,
+        "snapshotBackupTime": null,
+        "decks": {}
+      },
+      {
+        "warDay": "friday",
+        "realDay": null,
+        "snapshotTime": null,
+        "snapshotBackupTime": null,
+        "decks": {}
+      },
+      {
+        "warDay": "sunday",
+        "realDay": null,
+        "snapshotTime": null,
+        "snapshotBackupTime": null,
+        "decks": {}
+      },
+      {
+        "warDay": "saturday",
+        "realDay": "2026-03-14",
+        "snapshotTime": "2026-03-15T08:30:00.000Z",
+        "snapshotBackupTime": null,
+        "decks": {
+          "#ABC": 2
+        }
+      }
+    ]
+  }
+]

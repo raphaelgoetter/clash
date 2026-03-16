@@ -233,8 +233,7 @@ export async function buildClanAnalysis(clanTag) {
         // Determine whether we have snapshots for all 4 GDC days (thu→sun).
         const snapshotDays = new Set();
         for (const snap of prevSnaps) {
-          const snapshotDate = new Date(`${snap.date}T12:00:00Z`);
-          const warDay = getWarDayName(getWarDayKey(snapshotDate));
+          const warDay = snap.warDay ?? getWarDayName(getWarDayKey(new Date(`${snap.date}T12:00:00Z`)));
           if (warDay) snapshotDays.add(warDay);
         }
         const ALL_WAR_DAYS = ['thursday', 'friday', 'saturday', 'sunday'];
@@ -245,12 +244,7 @@ export async function buildClanAnalysis(clanTag) {
           // Build a fixed 4‑day array (thu→sun). Missing days stay null.
           const daily = [null, null, null, null];
           for (const snap of prevSnaps) {
-            // Compute the GDC war day from the snapshot date (calendar date). The stored
-            // `warDay` field has historically been unreliable, so we ignore it.
-            // Interpret the snapshot date as local day; use midday UTC to avoid
-            // timezone-induced day shifts around midnight.
-            const snapshotDate = new Date(`${snap.date}T12:00:00Z`);
-            const warDay = getWarDayName(getWarDayKey(snapshotDate));
+            const warDay = snap.warDay ?? getWarDayName(getWarDayKey(new Date(`${snap.date}T12:00:00Z`)));
             const idx = dayIndex[warDay];
             if (idx === undefined) continue;
             daily[idx] = snap.decks?.[p.tag] ?? 0;
@@ -279,6 +273,8 @@ export async function buildClanAnalysis(clanTag) {
       warSnapshotTakenAt = latestSnap ?? null;
 
       if (weekSnaps.length) {
+        // weekSnaps is expected to be an array of day entries for the current week
+        // (thu→sun). Build an array of total decks per day.
         warSnapshotDays = weekSnaps.map((snap) => {
           if (!snap || !snap.decks) return null;
           const total = Object.values(snap.decks).reduce((s, v) => s + (typeof v === 'number' ? v : 0), 0);
