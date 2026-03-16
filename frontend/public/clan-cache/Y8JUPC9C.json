@@ -3,71 +3,14 @@
     "name": "La Resistance",
     "tag": "#Y8JUPC9C",
     "description": "☆. #1 Resistance - GDC obligatoire ⚔️ objectif top 🌍 tournoi hebdomadaire 🗡️ Discord exigé: kPdQN8zfjM▪️code: RoyaleAPI",
-    "clanScore": 121073,
-    "clanWarTrophies": 4167,
-    "members": 48,
+    "clanScore": 121360,
+    "clanWarTrophies": 4177,
+    "members": 49,
     "type": "inviteOnly",
     "requiredTrophies": 7000,
     "badge": 16000036
   },
   "members": [
-    {
-      "name": "FLO-LE-ZERO",
-      "tag": "#9Y28LR22",
-      "role": "member",
-      "trophies": 7183,
-      "donations": 0,
-      "donationsReceived": 40,
-      "expLevel": 52,
-      "activityScore": 46,
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": false,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 3,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 8,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 8,
-      "lastSeen": "20260316T063741.000Z"
-    },
     {
       "name": "Y4ZID",
       "tag": "#LGG2LYU2Q",
@@ -81,163 +24,60 @@
       "color": "orange",
       "isNew": true,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 2,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 14,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 14,
+      "warDays": null,
+      "warDecks": null,
       "lastSeen": "20260316T055201.000Z"
     },
     {
-      "name": "Ghost",
-      "tag": "#809G8YC8",
-      "role": "elder",
-      "trophies": 12090,
+      "name": "FLO-LE-ZERO",
+      "tag": "#9Y28LR22",
+      "role": "member",
+      "trophies": 7183,
       "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 70,
-      "activityScore": 71,
-      "verdict": "Moderate risk",
-      "color": "yellow",
+      "donationsReceived": 40,
+      "expLevel": 52,
+      "activityScore": 47,
+      "verdict": "High risk",
+      "color": "orange",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 3,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260315T180314.000Z"
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T063741.000Z"
+    },
+    {
+      "name": "Ryamèche",
+      "tag": "#9YQ8RVU2P",
+      "role": "member",
+      "trophies": 11150,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 61,
+      "activityScore": 49,
+      "verdict": "High risk",
+      "color": "orange",
+      "isNew": true,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T104045.000Z"
     },
     {
       "name": "!!!!!ETP!!!!!!",
       "tag": "#9YQ0P0L0",
       "role": "elder",
-      "trophies": 12714,
+      "trophies": 12685,
       "donations": 0,
       "donationsReceived": 40,
       "expLevel": 74,
-      "activityScore": 72,
+      "activityScore": 71,
       "verdict": "Moderate risk",
       "color": "yellow",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 3,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260316T073019.000Z"
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T091751.000Z"
     },
     {
       "name": "PacouTV",
@@ -252,220 +92,60 @@
       "color": "yellow",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 3,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
+      "warDays": null,
+      "warDecks": null,
       "lastSeen": "20260315T155909.000Z"
+    },
+    {
+      "name": "Ghost",
+      "tag": "#809G8YC8",
+      "role": "elder",
+      "trophies": 12090,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 70,
+      "activityScore": 75,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260315T180314.000Z"
     },
     {
       "name": "empic7",
       "tag": "#8PP9JQCLY",
       "role": "member",
-      "trophies": 11126,
-      "donations": 60,
+      "trophies": 11094,
+      "donations": 76,
       "donationsReceived": 0,
       "expLevel": 74,
-      "activityScore": 73,
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": false,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 4,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260316T073345.000Z"
-    },
-    {
-      "name": "Juan",
-      "tag": "#YGLL08Y8C",
-      "role": "member",
-      "trophies": 12089,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 61,
       "activityScore": 76,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 2,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260315T231921.000Z"
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T103420.000Z"
     },
     {
-      "name": "Cleͥϻsͣrͫ๏ψal⚔",
-      "tag": "#P9R8Y90P8",
-      "role": "member",
-      "trophies": 12028,
-      "donations": 0,
+      "name": "bararaq saiqa",
+      "tag": "#2R9QUYQ2C",
+      "role": "elder",
+      "trophies": 12285,
+      "donations": 8,
       "donationsReceived": 0,
-      "expLevel": 63,
-      "activityScore": 78,
+      "expLevel": 77,
+      "activityScore": 77,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 2,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260315T230336.000Z"
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T093504.000Z"
     },
     {
       "name": "yeyonrv",
@@ -480,48 +160,8 @@
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 2,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
+      "warDays": null,
+      "warDecks": null,
       "lastSeen": "20260316T060355.000Z"
     },
     {
@@ -529,114 +169,34 @@
       "tag": "#J9ULCGJYU",
       "role": "member",
       "trophies": 10799,
-      "donations": 0,
-      "donationsReceived": 0,
+      "donations": 20,
+      "donationsReceived": 40,
       "expLevel": 60,
-      "activityScore": 78,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 2,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260316T061645.000Z"
-    },
-    {
-      "name": "bararaq saiqa",
-      "tag": "#2R9QUYQ2C",
-      "role": "elder",
-      "trophies": 12285,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 77,
       "activityScore": 79,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 12,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 12,
-      "lastSeen": "20260316T071021.000Z"
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T102840.000Z"
+    },
+    {
+      "name": "Juan",
+      "tag": "#YGLL08Y8C",
+      "role": "member",
+      "trophies": 12089,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 61,
+      "activityScore": 80,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260315T231921.000Z"
     },
     {
       "name": "Nadir712",
@@ -646,53 +206,13 @@
       "donations": 0,
       "donationsReceived": 0,
       "expLevel": 68,
-      "activityScore": 79,
+      "activityScore": 80,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 3,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 12,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 12,
+      "warDays": null,
+      "warDecks": null,
       "lastSeen": "20260315T221339.000Z"
     },
     {
@@ -708,163 +228,9 @@
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 2,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260316T014600.000Z"
-    },
-    {
-      "name": "maxime",
-      "tag": "#9YG9Q8V0U",
-      "role": "member",
-      "trophies": 10119,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 69,
-      "activityScore": 80,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 4,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260316T044721.000Z"
-    },
-    {
-      "name": "tartaros",
-      "tag": "#LCQ2J0VGC",
-      "role": "elder",
-      "trophies": 11650,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 64,
-      "activityScore": 81,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 3,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260315T210607.000Z"
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T103842.000Z"
     },
     {
       "name": "☆. Apoplexy",
@@ -874,54 +240,65 @@
       "donations": 0,
       "donationsReceived": 0,
       "expLevel": 66,
+      "activityScore": 80,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T092511.000Z"
+    },
+    {
+      "name": "PEACE",
+      "tag": "#L2VGUVL2",
+      "role": "member",
+      "trophies": 12616,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 75,
       "activityScore": 81,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 1,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 10,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 10,
-      "lastSeen": "20260316T074840.000Z"
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260315T182301.000Z"
+    },
+    {
+      "name": "Cleͥϻsͣrͫ๏ψal⚔",
+      "tag": "#P9R8Y90P8",
+      "role": "member",
+      "trophies": 12028,
+      "donations": 34,
+      "donationsReceived": 0,
+      "expLevel": 63,
+      "activityScore": 81,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T094704.000Z"
+    },
+    {
+      "name": "maxime",
+      "tag": "#9YG9Q8V0U",
+      "role": "member",
+      "trophies": 10119,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 69,
+      "activityScore": 81,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T044721.000Z"
     },
     {
       "name": "farshyyt",
@@ -936,48 +313,8 @@
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 2,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
+      "warDays": null,
+      "warDecks": null,
       "lastSeen": "20260315T145006.000Z"
     },
     {
@@ -985,171 +322,34 @@
       "tag": "#C2RL8UVYV",
       "role": "member",
       "trophies": 12745,
-      "donations": 8,
-      "donationsReceived": 32,
+      "donations": 16,
+      "donationsReceived": 40,
       "expLevel": 80,
       "activityScore": 83,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 1,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 3,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260316T073831.000Z"
-    },
-    {
-      "name": "PEACE",
-      "tag": "#L2VGUVL2",
-      "role": "member",
-      "trophies": 12616,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 75,
-      "activityScore": 83,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 4,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 13,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 13,
-      "lastSeen": "20260315T182301.000Z"
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T101604.000Z"
     },
     {
       "name": "Galaxy",
       "tag": "#J8RU2RJ8C",
       "role": "member",
       "trophies": 12416,
-      "donations": 0,
-      "donationsReceived": 0,
+      "donations": 60,
+      "donationsReceived": 40,
       "expLevel": 76,
       "activityScore": 83,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 2,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 15,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 15,
-      "lastSeen": "20260315T181307.000Z"
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T101014.000Z"
     },
     {
       "name": "black gunz♠️",
@@ -1157,56 +357,50 @@
       "role": "member",
       "trophies": 12000,
       "donations": 0,
-      "donationsReceived": 0,
+      "donationsReceived": 24,
       "expLevel": 69,
       "activityScore": 83,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 4,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260316T080841.000Z"
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T102834.000Z"
+    },
+    {
+      "name": "tartaros",
+      "tag": "#LCQ2J0VGC",
+      "role": "elder",
+      "trophies": 11650,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 64,
+      "activityScore": 83,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260315T210607.000Z"
+    },
+    {
+      "name": "Calfai Ka",
+      "tag": "#2GUPJ99G2",
+      "role": "member",
+      "trophies": 11439,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 78,
+      "activityScore": 83,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260315T212234.000Z"
     },
     {
       "name": "Pibeee10",
@@ -1221,106 +415,9 @@
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 1,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 2,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
+      "warDays": null,
+      "warDecks": null,
       "lastSeen": "20260316T031445.000Z"
-    },
-    {
-      "name": "Calfai Ka",
-      "tag": "#2GUPJ99G2",
-      "role": "member",
-      "trophies": 11439,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 78,
-      "activityScore": 84,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 1,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 2,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 15,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 15,
-      "lastSeen": "20260315T212234.000Z"
     },
     {
       "name": "tedort",
@@ -1335,48 +432,8 @@
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 4,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
+      "warDays": null,
+      "warDecks": null,
       "lastSeen": "20260316T040526.000Z"
     },
     {
@@ -1384,114 +441,17 @@
       "tag": "#8CCCQYV99",
       "role": "elder",
       "trophies": 12274,
-      "donations": 30,
-      "donationsReceived": 0,
+      "donations": 48,
+      "donationsReceived": 40,
       "expLevel": 79,
       "activityScore": 85,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 3,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260316T040309.000Z"
-    },
-    {
-      "name": "Ivax Jeanpierre",
-      "tag": "#8P29RRU2",
-      "role": "elder",
-      "trophies": 12129,
-      "donations": 34,
-      "donationsReceived": 40,
-      "expLevel": 81,
-      "activityScore": 85,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 3,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260316T064702.000Z"
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T100857.000Z"
     },
     {
       "name": "xavir21",
@@ -1506,106 +466,26 @@
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 3,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260316T050110.000Z"
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T095602.000Z"
     },
     {
       "name": "K-ribou",
       "tag": "#80CCLY20L",
       "role": "elder",
       "trophies": 10800,
-      "donations": 0,
-      "donationsReceived": 0,
+      "donations": 42,
+      "donationsReceived": 40,
       "expLevel": 73,
       "activityScore": 85,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 4,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260315T192637.000Z"
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T100737.000Z"
     },
     {
       "name": "karukera",
@@ -1620,48 +500,8 @@
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 2,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
+      "warDays": null,
+      "warDecks": null,
       "lastSeen": "20260316T061546.000Z"
     },
     {
@@ -1677,48 +517,8 @@
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 2,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
+      "warDays": null,
+      "warDecks": null,
       "lastSeen": "20260316T063522.000Z"
     },
     {
@@ -1726,57 +526,17 @@
       "tag": "#2CL028C80",
       "role": "elder",
       "trophies": 10172,
-      "donations": 42,
-      "donationsReceived": 10,
+      "donations": 76,
+      "donationsReceived": 50,
       "expLevel": 69,
       "activityScore": 85,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 4,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260316T071717.000Z"
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T085003.000Z"
     },
     {
       "name": "Louka",
@@ -1791,48 +551,8 @@
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 4,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
+      "warDays": null,
+      "warDecks": null,
       "lastSeen": "20260316T063858.000Z"
     },
     {
@@ -1848,106 +568,26 @@
       "color": "green",
       "isNew": false,
       "discord": true,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 3,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260316T083703.000Z"
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T101542.000Z"
     },
     {
       "name": "dalys213",
       "tag": "#9GG9GRC0G",
       "role": "elder",
-      "trophies": 12001,
+      "trophies": 12000,
       "donations": 0,
-      "donationsReceived": 0,
+      "donationsReceived": 40,
       "expLevel": 74,
       "activityScore": 86,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 3,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260315T185012.000Z"
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T095550.000Z"
     },
     {
       "name": "zlatanNRV",
@@ -1955,55 +595,15 @@
       "role": "elder",
       "trophies": 11593,
       "donations": 26,
-      "donationsReceived": 30,
+      "donationsReceived": 40,
       "expLevel": 70,
       "activityScore": 86,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 2,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
+      "warDays": null,
+      "warDecks": null,
       "lastSeen": "20260316T075100.000Z"
     },
     {
@@ -2019,48 +619,8 @@
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 3,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
+      "warDays": null,
+      "warDecks": null,
       "lastSeen": "20260316T062646.000Z"
     },
     {
@@ -2068,114 +628,17 @@
       "tag": "#PGJPJG9QQ",
       "role": "elder",
       "trophies": 12000,
-      "donations": 0,
-      "donationsReceived": 0,
+      "donations": 32,
+      "donationsReceived": 10,
       "expLevel": 80,
       "activityScore": 87,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 1,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 2,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260315T182729.000Z"
-    },
-    {
-      "name": "Ebah",
-      "tag": "#PG0Q0YYGY",
-      "role": "elder",
-      "trophies": 11734,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 68,
-      "activityScore": 87,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 2,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260315T232710.000Z"
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T104028.000Z"
     },
     {
       "name": "Phiz",
@@ -2190,48 +653,8 @@
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 3,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
+      "warDays": null,
+      "warDecks": null,
       "lastSeen": "20260316T070503.000Z"
     },
     {
@@ -2247,106 +670,9 @@
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 2,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
+      "warDays": null,
+      "warDecks": null,
       "lastSeen": "20260316T065749.000Z"
-    },
-    {
-      "name": "SlayZen",
-      "tag": "#8V98QYY8V",
-      "role": "elder",
-      "trophies": 12170,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 67,
-      "activityScore": 88,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 3,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260315T175253.000Z"
     },
     {
       "name": "✩. Père Fouras",
@@ -2361,49 +687,9 @@
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 12,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 12,
-      "lastSeen": "20260316T084637.000Z"
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T092236.000Z"
     },
     {
       "name": "stecurioso",
@@ -2418,220 +704,60 @@
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 2,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
+      "warDays": null,
+      "warDecks": null,
       "lastSeen": "20260316T054935.000Z"
     },
     {
-      "name": "Aïden",
-      "tag": "#G9LPGQUG",
+      "name": "Ebah",
+      "tag": "#PG0Q0YYGY",
       "role": "elder",
-      "trophies": 12538,
-      "donations": 26,
-      "donationsReceived": 24,
+      "trophies": 11734,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 68,
+      "activityScore": 88,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260315T232710.000Z"
+    },
+    {
+      "name": "SlayZen",
+      "tag": "#8V98QYY8V",
+      "role": "elder",
+      "trophies": 12170,
+      "donations": 0,
+      "donationsReceived": 0,
       "expLevel": 67,
       "activityScore": 89,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 3,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260316T075941.000Z"
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T100205.000Z"
     },
     {
-      "name": "Steve69620",
-      "tag": "#9CQC0YUR8",
+      "name": "Ivax Jeanpierre",
+      "tag": "#8P29RRU2",
       "role": "elder",
-      "trophies": 12011,
-      "donations": 18,
+      "trophies": 12129,
+      "donations": 42,
       "donationsReceived": 40,
-      "expLevel": 80,
+      "expLevel": 81,
       "activityScore": 89,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 2,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260316T072113.000Z"
-    },
-    {
-      "name": "BRIZURE",
-      "tag": "#VVJ8RURL9",
-      "role": "elder",
-      "trophies": 12010,
-      "donations": 54,
-      "donationsReceived": 40,
-      "expLevel": 67,
-      "activityScore": 89,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 3,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260316T063139.000Z"
+      "discord": true,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T102252.000Z"
     },
     {
       "name": "Hakuna Matata",
@@ -2646,117 +772,88 @@
       "color": "green",
       "isNew": false,
       "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 2,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
+      "warDays": null,
+      "warDecks": null,
       "lastSeen": "20260316T083642.000Z"
+    },
+    {
+      "name": "Aïden",
+      "tag": "#G9LPGQUG",
+      "role": "elder",
+      "trophies": 12535,
+      "donations": 86,
+      "donationsReceived": 40,
+      "expLevel": 67,
+      "activityScore": 90,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T102415.000Z"
+    },
+    {
+      "name": "BRIZURE",
+      "tag": "#VVJ8RURL9",
+      "role": "elder",
+      "trophies": 12010,
+      "donations": 54,
+      "donationsReceived": 40,
+      "expLevel": 67,
+      "activityScore": 90,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T063139.000Z"
+    },
+    {
+      "name": "Steve69620",
+      "tag": "#9CQC0YUR8",
+      "role": "elder",
+      "trophies": 12011,
+      "donations": 18,
+      "donationsReceived": 40,
+      "expLevel": 80,
+      "activityScore": 93,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "discord": true,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T103359.000Z"
     },
     {
       "name": "Jules ❤️ mortar",
       "tag": "#GGRLYR8PL",
       "role": "coLeader",
-      "trophies": 13191,
-      "donations": 26,
-      "donationsReceived": 24,
+      "trophies": 13075,
+      "donations": 42,
+      "donationsReceived": 40,
       "expLevel": 80,
       "activityScore": 95,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
       "discord": true,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-12",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-13",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-14",
-            "label": "Sat",
-            "count": 1,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-15",
-            "label": "Sun",
-            "count": 2,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260316T075830.000Z"
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260316T093624.000Z"
     }
   ],
   "summary": {
-    "green": 42,
-    "yellow": 4,
-    "orange": 2,
+    "green": 44,
+    "yellow": 2,
+    "orange": 3,
     "red": 0,
     "avgScore": 82,
-    "total": 48
+    "total": 49
   },
-  "isWarPeriod": true,
+  "isWarPeriod": false,
   "topPlayers": {
     "quotas": [
       2400,
@@ -2766,9 +863,15 @@
     "playersByQuota": {
       "2400": [
         {
+          "name": "Durlutte",
+          "tag": "#82URJC8CR",
+          "fame": 2450,
+          "role": "member"
+        },
+        {
           "name": "✩. Père Fouras",
           "tag": "#VQP8PU2V",
-          "fame": 2450,
+          "fame": 2700,
           "role": "coLeader"
         },
         {
@@ -2780,79 +883,97 @@
         {
           "name": "19Benji",
           "tag": "#2CL028C80",
-          "fame": 2500,
+          "fame": 2600,
           "role": "elder"
         },
         {
           "name": "Steve69620",
           "tag": "#9CQC0YUR8",
-          "fame": 2850,
+          "fame": 2900,
           "role": "elder"
         },
         {
           "name": "GoOz_2b",
           "tag": "#C2RL8UVYV",
-          "fame": 2850,
+          "fame": 2550,
           "role": "member"
+        },
+        {
+          "name": "xavir21",
+          "tag": "#888Y29GY",
+          "fame": 2700,
+          "role": "elder"
+        },
+        {
+          "name": "Ivax Jeanpierre",
+          "tag": "#8P29RRU2",
+          "fame": 2600,
+          "role": "elder"
+        },
+        {
+          "name": "dalys213",
+          "tag": "#9GG9GRC0G",
+          "fame": 2400,
+          "role": "elder"
+        },
+        {
+          "name": "tedort",
+          "tag": "#YRYPUR822",
+          "fame": 2400,
+          "role": "elder"
+        },
+        {
+          "name": "Juan",
+          "tag": "#YGLL08Y8C",
+          "fame": 2750,
+          "role": "member"
+        },
+        {
+          "name": "Aïden",
+          "tag": "#G9LPGQUG",
+          "fame": 2750,
+          "role": "elder"
         },
         {
           "name": "Ebah",
           "tag": "#PG0Q0YYGY",
-          "fame": 2400,
+          "fame": 2450,
           "role": "elder"
         },
         {
           "name": "zlatanNRV",
           "tag": "#U008V0PQ8",
-          "fame": 2400,
-          "role": "elder"
-        },
-        {
-          "name": "!!!!!ETP!!!!!!",
-          "tag": "#9YQ0P0L0",
-          "fame": 2400,
+          "fame": 2700,
           "role": "elder"
         },
         {
           "name": "yeyonrv",
           "tag": "#UJ89GUUUY",
-          "fame": 2400,
+          "fame": 2650,
           "role": "elder"
         },
         {
           "name": "vin's",
           "tag": "#C0VQRUP2",
-          "fame": 2400,
+          "fame": 3050,
           "role": "elder"
-        },
-        {
-          "name": "Cleͥϻsͣrͫ๏ψal⚔",
-          "tag": "#P9R8Y90P8",
-          "fame": 2400,
-          "role": "member"
         },
         {
           "name": "Nadir712",
           "tag": "#802YQPVQ",
-          "fame": 2450,
+          "fame": 2400,
           "role": "member"
         },
         {
           "name": "FLO-LE-HERO",
           "tag": "#9CYUGPQ0C",
-          "fame": 3100,
+          "fame": 2900,
           "role": "coLeader"
-        },
-        {
-          "name": "Phiz",
-          "tag": "#2UQQJJ98Y",
-          "fame": 2500,
-          "role": "elder"
         },
         {
           "name": "BRIZURE",
           "tag": "#VVJ8RURL9",
-          "fame": 2500,
+          "fame": 3200,
           "role": "elder"
         },
         {
@@ -2864,257 +985,245 @@
         {
           "name": "SlayZen",
           "tag": "#8V98QYY8V",
-          "fame": 2600,
+          "fame": 2950,
           "role": "elder"
         },
         {
           "name": "Louka",
           "tag": "#28PQVJ2V",
-          "fame": 2600,
+          "fame": 2400,
           "role": "elder"
         },
         {
           "name": "K-ribou",
           "tag": "#80CCLY20L",
-          "fame": 2600,
+          "fame": 2400,
           "role": "elder"
         },
         {
           "name": "black gunz♠️",
           "tag": "#8PVPJ8LCR",
-          "fame": 2650,
+          "fame": 2700,
           "role": "member"
         },
         {
           "name": "Jules ❤️ mortar",
           "tag": "#GGRLYR8PL",
-          "fame": 2650,
+          "fame": 2750,
           "role": "coLeader"
         },
         {
           "name": "steeeph",
           "tag": "#9VQ0J29Y",
-          "fame": 2700,
+          "fame": 2650,
           "role": "member"
         },
         {
           "name": "Calfai Ka",
           "tag": "#2GUPJ99G2",
-          "fame": 2700,
-          "role": "member"
-        },
-        {
-          "name": "Galaxy",
-          "tag": "#J8RU2RJ8C",
-          "fame": 2700,
+          "fame": 2600,
           "role": "member"
         },
         {
           "name": "farshyyt",
           "tag": "#GVGVR0J2U",
-          "fame": 2750,
+          "fame": 3050,
           "role": "member"
-        },
-        {
-          "name": "☆. Aurel",
-          "tag": "#8QL2J8PQ",
-          "fame": 2800,
-          "role": "leader"
         },
         {
           "name": "Hakuna Matata",
           "tag": "#CQ0GQ0JRU",
-          "fame": 2800,
+          "fame": 3100,
           "role": "elder"
         },
         {
           "name": "Pibeee10",
           "tag": "#PVQ2QRLJQ",
-          "fame": 2850,
-          "role": "elder"
-        },
-        {
-          "name": "♠️♦️GIO♥️♣️",
-          "tag": "#8CCCQYV99",
-          "fame": 2900,
-          "role": "elder"
-        },
-        {
-          "name": "SpyMays",
-          "tag": "#PGJPJG9QQ",
-          "fame": 2950,
+          "fame": 2400,
           "role": "elder"
         },
         {
           "name": "tartaros",
           "tag": "#LCQ2J0VGC",
-          "fame": 3050,
+          "fame": 2700,
           "role": "elder"
+        },
+        {
+          "name": "clash legendary",
+          "tag": "#U0G9RRC2L",
+          "fame": 2600,
+          "role": "member"
         }
       ],
       "2600": [
         {
-          "name": "Steve69620",
-          "tag": "#9CQC0YUR8",
-          "fame": 2850,
+          "name": "✩. Père Fouras",
+          "tag": "#VQP8PU2V",
+          "fame": 2700,
+          "role": "coLeader"
+        },
+        {
+          "name": "19Benji",
+          "tag": "#2CL028C80",
+          "fame": 2600,
           "role": "elder"
         },
         {
-          "name": "GoOz_2b",
-          "tag": "#C2RL8UVYV",
-          "fame": 2850,
+          "name": "Steve69620",
+          "tag": "#9CQC0YUR8",
+          "fame": 2900,
+          "role": "elder"
+        },
+        {
+          "name": "xavir21",
+          "tag": "#888Y29GY",
+          "fame": 2700,
+          "role": "elder"
+        },
+        {
+          "name": "Ivax Jeanpierre",
+          "tag": "#8P29RRU2",
+          "fame": 2600,
+          "role": "elder"
+        },
+        {
+          "name": "Juan",
+          "tag": "#YGLL08Y8C",
+          "fame": 2750,
           "role": "member"
+        },
+        {
+          "name": "Aïden",
+          "tag": "#G9LPGQUG",
+          "fame": 2750,
+          "role": "elder"
+        },
+        {
+          "name": "zlatanNRV",
+          "tag": "#U008V0PQ8",
+          "fame": 2700,
+          "role": "elder"
+        },
+        {
+          "name": "yeyonrv",
+          "tag": "#UJ89GUUUY",
+          "fame": 2650,
+          "role": "elder"
+        },
+        {
+          "name": "vin's",
+          "tag": "#C0VQRUP2",
+          "fame": 3050,
+          "role": "elder"
         },
         {
           "name": "FLO-LE-HERO",
           "tag": "#9CYUGPQ0C",
-          "fame": 3100,
+          "fame": 2900,
           "role": "coLeader"
+        },
+        {
+          "name": "BRIZURE",
+          "tag": "#VVJ8RURL9",
+          "fame": 3200,
+          "role": "elder"
         },
         {
           "name": "SlayZen",
           "tag": "#8V98QYY8V",
-          "fame": 2600,
-          "role": "elder"
-        },
-        {
-          "name": "Louka",
-          "tag": "#28PQVJ2V",
-          "fame": 2600,
-          "role": "elder"
-        },
-        {
-          "name": "K-ribou",
-          "tag": "#80CCLY20L",
-          "fame": 2600,
+          "fame": 2950,
           "role": "elder"
         },
         {
           "name": "black gunz♠️",
           "tag": "#8PVPJ8LCR",
-          "fame": 2650,
+          "fame": 2700,
           "role": "member"
         },
         {
           "name": "Jules ❤️ mortar",
           "tag": "#GGRLYR8PL",
-          "fame": 2650,
+          "fame": 2750,
           "role": "coLeader"
         },
         {
           "name": "steeeph",
           "tag": "#9VQ0J29Y",
-          "fame": 2700,
+          "fame": 2650,
           "role": "member"
         },
         {
           "name": "Calfai Ka",
           "tag": "#2GUPJ99G2",
-          "fame": 2700,
-          "role": "member"
-        },
-        {
-          "name": "Galaxy",
-          "tag": "#J8RU2RJ8C",
-          "fame": 2700,
+          "fame": 2600,
           "role": "member"
         },
         {
           "name": "farshyyt",
           "tag": "#GVGVR0J2U",
-          "fame": 2750,
+          "fame": 3050,
           "role": "member"
-        },
-        {
-          "name": "☆. Aurel",
-          "tag": "#8QL2J8PQ",
-          "fame": 2800,
-          "role": "leader"
         },
         {
           "name": "Hakuna Matata",
           "tag": "#CQ0GQ0JRU",
-          "fame": 2800,
-          "role": "elder"
-        },
-        {
-          "name": "Pibeee10",
-          "tag": "#PVQ2QRLJQ",
-          "fame": 2850,
-          "role": "elder"
-        },
-        {
-          "name": "♠️♦️GIO♥️♣️",
-          "tag": "#8CCCQYV99",
-          "fame": 2900,
-          "role": "elder"
-        },
-        {
-          "name": "SpyMays",
-          "tag": "#PGJPJG9QQ",
-          "fame": 2950,
+          "fame": 3100,
           "role": "elder"
         },
         {
           "name": "tartaros",
           "tag": "#LCQ2J0VGC",
-          "fame": 3050,
+          "fame": 2700,
           "role": "elder"
+        },
+        {
+          "name": "clash legendary",
+          "tag": "#U0G9RRC2L",
+          "fame": 2600,
+          "role": "member"
         }
       ],
       "2800": [
         {
           "name": "Steve69620",
           "tag": "#9CQC0YUR8",
-          "fame": 2850,
-          "role": "elder"
-        },
-        {
-          "name": "GoOz_2b",
-          "tag": "#C2RL8UVYV",
-          "fame": 2850,
-          "role": "member"
-        },
-        {
-          "name": "FLO-LE-HERO",
-          "tag": "#9CYUGPQ0C",
-          "fame": 3100,
-          "role": "coLeader"
-        },
-        {
-          "name": "☆. Aurel",
-          "tag": "#8QL2J8PQ",
-          "fame": 2800,
-          "role": "leader"
-        },
-        {
-          "name": "Hakuna Matata",
-          "tag": "#CQ0GQ0JRU",
-          "fame": 2800,
-          "role": "elder"
-        },
-        {
-          "name": "Pibeee10",
-          "tag": "#PVQ2QRLJQ",
-          "fame": 2850,
-          "role": "elder"
-        },
-        {
-          "name": "♠️♦️GIO♥️♣️",
-          "tag": "#8CCCQYV99",
           "fame": 2900,
           "role": "elder"
         },
         {
-          "name": "SpyMays",
-          "tag": "#PGJPJG9QQ",
+          "name": "vin's",
+          "tag": "#C0VQRUP2",
+          "fame": 3050,
+          "role": "elder"
+        },
+        {
+          "name": "FLO-LE-HERO",
+          "tag": "#9CYUGPQ0C",
+          "fame": 2900,
+          "role": "coLeader"
+        },
+        {
+          "name": "BRIZURE",
+          "tag": "#VVJ8RURL9",
+          "fame": 3200,
+          "role": "elder"
+        },
+        {
+          "name": "SlayZen",
+          "tag": "#8V98QYY8V",
           "fame": 2950,
           "role": "elder"
         },
         {
-          "name": "tartaros",
-          "tag": "#LCQ2J0VGC",
+          "name": "farshyyt",
+          "tag": "#GVGVR0J2U",
           "fame": 3050,
+          "role": "member"
+        },
+        {
+          "name": "Hakuna Matata",
+          "tag": "#CQ0GQ0JRU",
+          "fame": 3100,
           "role": "elder"
         }
       ]
@@ -3127,164 +1236,335 @@
         "tag": "#20PQ2Q20L",
         "decks": 0,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          null,
+          0,
+          0,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "isNew": false
       },
       {
         "name": "hochi",
         "tag": "#8P9CL92LC",
         "decks": 0,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          null,
+          0,
+          0,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "isNew": false
       },
       {
         "name": "ZarDrox",
         "tag": "#YJ0YQU0UJ",
         "decks": 0,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          null,
+          0,
+          0,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "isNew": false
       },
       {
         "name": "FLO-LE-ZERO",
         "tag": "#9Y28LR22",
-        "decks": 4,
+        "decks": 8,
         "role": "member",
-        "inClan": true
+        "inClan": true,
+        "daily": [
+          null,
+          0,
+          0,
+          4
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "isNew": false
       },
       {
         "name": "Martinou",
         "tag": "#YGRP90QV8",
-        "decks": 4,
+        "decks": 10,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          null,
+          4,
+          4,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "isNew": false
       },
       {
         "name": "☆. Aurel Mini",
         "tag": "#UGU9JG2QC",
         "decks": 8,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          null,
+          0,
+          4,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "isNew": false
       },
       {
         "name": "Albatros",
         "tag": "#8PVYYYQ8C",
-        "decks": 10,
+        "decks": 0,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          null,
+          0,
+          0,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "isNew": false
       },
       {
         "name": "Sakila",
         "tag": "#JRUG8VV80",
-        "decks": 8,
+        "decks": 0,
         "role": "member",
-        "inClan": false
+        "inClan": false,
+        "daily": [
+          null,
+          0,
+          0,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "isNew": false
       },
       {
         "name": "PEACE",
         "tag": "#L2VGUVL2",
         "decks": 13,
         "role": "member",
-        "inClan": true
+        "inClan": true,
+        "daily": [
+          null,
+          1,
+          4,
+          4
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "isNew": false
       },
       {
         "name": "Performant",
         "tag": "#LJYGJYCYC",
+        "decks": 0,
+        "role": "member",
+        "inClan": false,
+        "daily": [
+          null,
+          0,
+          0,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "isNew": false
+      },
+      {
+        "name": "☆. Apoplexy",
+        "tag": "#UYP0YCQ9",
+        "decks": 12,
+        "role": "coLeader",
+        "inClan": true,
+        "daily": [
+          null,
+          4,
+          4,
+          2
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "isNew": false
+      },
+      {
+        "name": "bararaq saiqa",
+        "tag": "#2R9QUYQ2C",
+        "decks": 12,
+        "role": "elder",
+        "inClan": true,
+        "daily": [
+          null,
+          4,
+          4,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "isNew": false
+      },
+      {
+        "name": "Nadir712",
+        "tag": "#802YQPVQ",
         "decks": 12,
         "role": "member",
-        "inClan": false
+        "inClan": true,
+        "daily": [
+          null,
+          3,
+          4,
+          4
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "isNew": false
+      },
+      {
+        "name": "Calfai Ka",
+        "tag": "#2GUPJ99G2",
+        "decks": 15,
+        "role": "member",
+        "inClan": true,
+        "daily": [
+          null,
+          4,
+          4,
+          4
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "isNew": false
       },
       {
         "name": "☆. Aurel #4",
         "tag": "#U0Q0P2YGU",
         "decks": 0,
         "role": "member",
-        "inClan": false
-      }
-    ]
-  },
-  "clanWarSummary": {
-    "totalDecksUsed": 769,
-    "maxDecksElapsed": 800,
-    "maxDecksWeek": 800,
-    "participantCount": 50,
-    "daysFromThu": 3,
-    "days": [
-      {
-        "label": "Thu",
-        "totalCount": 191,
-        "maxCount": 200,
-        "isPast": true,
-        "isToday": false,
-        "isFuture": false
+        "inClan": false,
+        "daily": [
+          null,
+          0,
+          0,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "isNew": false
       },
       {
-        "label": "Fri",
-        "totalCount": 200,
-        "maxCount": 200,
-        "isPast": true,
-        "isToday": false,
-        "isFuture": false
+        "name": "Enysterz",
+        "tag": "#UC2L9J88Q",
+        "decks": 0,
+        "role": "member",
+        "inClan": false,
+        "daily": [
+          null,
+          0,
+          0,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "isNew": false
       },
       {
-        "label": "Sat",
-        "totalCount": 184,
-        "maxCount": 200,
-        "isPast": true,
-        "isToday": false,
-        "isFuture": false
+        "name": "Y4ZID",
+        "tag": "#LGG2LYU2Q",
+        "decks": 14,
+        "role": "member",
+        "inClan": true,
+        "daily": [
+          null,
+          3,
+          4,
+          3
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "isNew": true
       },
       {
-        "label": "Sun",
-        "totalCount": 194,
-        "maxCount": 200,
-        "isPast": false,
-        "isToday": true,
-        "isFuture": false
+        "name": "momox921",
+        "tag": "#2VVRP0LCJ",
+        "decks": 0,
+        "role": "member",
+        "inClan": false,
+        "daily": [
+          null,
+          0,
+          0,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "isNew": false
+      },
+      {
+        "name": "Sae",
+        "tag": "#PLVJLU92",
+        "decks": 4,
+        "role": "member",
+        "inClan": false,
+        "daily": [
+          null,
+          0,
+          4,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "isNew": false
+      },
+      {
+        "name": "☆. Rĭcø",
+        "tag": "#2LQQJVLCG",
+        "decks": 4,
+        "role": "member",
+        "inClan": false,
+        "daily": [
+          null,
+          0,
+          0,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "isNew": false
       }
     ],
-    "weekId": "S130W2"
+    "snapshotComplete": false,
+    "snapshotDays": [
+      "friday",
+      "saturday",
+      "sunday"
+    ]
   },
-  "prevWeekId": "S130W1",
+  "clanWarSummary": null,
+  "prevWeekId": "S130W2",
   "snapshotToday": false,
   "snapshotDate": "2026-03-15",
-  "warCurrentWeekId": "S130W2",
-  "warSnapshotDays": [
-    191,
-    200,
-    184
-  ],
-  "snapshotTakenAt": "2026-03-15T10:58:34.339Z",
-  "currentWarDays": [
-    {
-      "label": "Thu",
-      "totalCount": 191,
-      "maxCount": 200,
-      "isPast": true,
-      "isToday": false,
-      "isFuture": false
-    },
-    {
-      "label": "Fri",
-      "totalCount": 200,
-      "maxCount": 200,
-      "isPast": true,
-      "isToday": false,
-      "isFuture": false
-    },
-    {
-      "label": "Sat",
-      "totalCount": 184,
-      "maxCount": 200,
-      "isPast": true,
-      "isToday": false,
-      "isFuture": false
-    },
-    {
-      "label": "Sun",
-      "totalCount": 194,
-      "maxCount": 200,
-      "isPast": false,
-      "isToday": true,
-      "isFuture": false
-    }
-  ]
+  "warCurrentWeekId": null,
+  "warSnapshotDays": null,
+  "snapshotTakenAt": null,
+  "currentWarDays": null
 }
