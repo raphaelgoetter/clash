@@ -796,8 +796,8 @@ export default async function handler(req, res) {
         if (present.length) {
           const list = present
             .map((p) => {
-              const clashes = p.entries.map((e) => `${e.clash} ${e.tag}`).join(', ');
-              return `• ${p.discord} : ${clashes}`;
+              const clashes = p.entries.map((e) => `${e.clash} ${e.tag}`).join(' + ');
+              return `• ${p.discord} ⤑ ${clashes}`;
             })
             .join('\n');
 
@@ -805,7 +805,7 @@ export default async function handler(req, res) {
           lines.push(list);
         }
         if (absent.length)   lines.push(`❌ **Liés mais absents du serveur** (${absent.length}) : ${absent.map((e) => `${e.clash} ${e.tag}`).join(', ')}`);
-        if (unlinked.length) lines.push(`❓ **Non liés** (${unlinked.length}) : ${unlinked.map((e) => `${e.clash} ${e.tag}`).join(', ')}`);
+        if (unlinked.length) lines.push(`❓ **Non liés** (${unlinked.length}) : ${unlinked.map((e) => e.clash).join(', ')}`);
 
         const embed = {
           title: `📋 Présence Discord — ${resolved.name}`,
