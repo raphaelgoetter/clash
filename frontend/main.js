@@ -809,9 +809,10 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
   card.querySelector('.card-title').innerHTML = `🤷 Last War fails${weekLabel}`;
   const players = uncomplete.players.slice().sort((a,b)=> b.decks - a.decks);
 
-  // show a global warning if any player is still using warlog data (not snapshot),
-  // or if a snapshot exists but is incomplete (<4 days)
-  const needWarning = players.some(p => p.dailySource !== 'snapshot' || (p.dailySource === 'snapshot' && !p.dailySnapshotComplete));
+  // show a global warning if any player is still using warlog data (not snapshot)
+  // or if snapshots do not cover all 4 GDC days.
+  const missingDays = uncomplete.snapshotComplete === false;
+  const needWarning = missingDays || players.some(p => p.dailySource !== 'snapshot' || (p.dailySource === 'snapshot' && !p.dailySnapshotComplete));
   const existing = card.querySelector('.uncomplete-warning');
   if (needWarning) {
     if (!existing) {
@@ -830,26 +831,32 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
   function formatDaily(counts) {
     if (!counts) return '';
     if (Array.isArray(counts)) {
-      // filter out zeros to avoid misleading "0× sun" etc.
-      const filtered = counts.map((n,i)=>({n,i})).filter(item=>item.n>0);
-      if (filtered.length === 0) return '';
-      const labels = ['thu','fri','sat','sun'].slice(-filtered.length);
-      return filtered.map((item,j)=>{
-        const num = item.n;
-        const cls = num>=4 ? 'daily-green' : num>=3 ? 'daily-orange' : 'daily-red';
-        return `<span class="${cls}">${num}× ${labels[j]}</span>`;
-      }).join(' - ');
+      const labels = ['thu', 'fri', 'sat', 'sun'];
+      const parts = [];
+      for (let i = 0; i < labels.length; i += 1) {
+        const val = counts[i];
+        if (val == null) {
+          // missing snapshot (we don't know if the player played or not)
+          parts.push(`<span class="daily-missing">❓× ${labels[i]}</span>`);
+          continue;
+        }
+        const cls = val >= 4 ? 'daily-green' : val >= 3 ? 'daily-orange' : 'daily-red';
+        parts.push(`<span class="${cls}">${val}× ${labels[i]}</span>`);
+      }
+      return parts.join(' - ');
     }
     const keys = Object.keys(counts).sort();
-    const entries = keys.map(k=>({k,num:counts[k]})).filter(e=>e.num>0);
+    const entries = keys.map((k) => ({ k, num: counts[k] })).filter((e) => e.num > 0);
     if (entries.length === 0) return '';
     const n = entries.length;
-    const labels = ['Thu','Fri','Sat','Sun'].slice(-n);
-    return entries.map((e,i) => {
-      const num = e.num;
-      const cls = num>=4 ? 'daily-green' : num>=3 ? 'daily-orange' : 'daily-red';
-      return `<span class="${cls}">${num}× ${labels[i].toLowerCase()}</span>`;
-    }).join(' - ');
+    const labels = ['Thu', 'Fri', 'Sat', 'Sun'].slice(-n);
+    return entries
+      .map((e, i) => {
+        const num = e.num;
+        const cls = num >= 4 ? 'daily-green' : num >= 3 ? 'daily-orange' : 'daily-red';
+        return `<span class="${cls}">${num}× ${labels[i].toLowerCase()}</span>`;
+      })
+      .join(' - ');
   }
 
   // Supprimer l'éventuelle section "partis" précédente pour éviter les doublons
@@ -869,7 +876,7 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
       `<span class="tp-tag">${escHtml(p.tag)}</span>${newBadge}</span>` +
       `<span class="tp-meta">` +
         `<span class="role-badge ${p.role}">${capitalize(p.role)}</span>` +
-        `<span class="tp-fame">${fmt(p.decks)} decks${dailyStr ? ' - ' + dailyStr : ''}${warnAfter}</span>` +
+        `<span class="tp-fame">${fmt(p.decks)} decks${dailyStr ? ' (' + dailyStr + ')' : ''}${warnAfter}</span>` +
       `</span></li>`;
   }
 

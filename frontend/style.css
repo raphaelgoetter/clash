@@ -248,7 +248,7 @@ summary .card-title {
 }
 .top-players-list .tp-fame {
   margin-left: 12px;
-  color: var(--text-muted);
+  color: var(--text-primary);
   font-size: .9rem;
 }
 
@@ -289,7 +289,8 @@ summary .card-title {
 .daily-green { color: var(--green); }
 .daily-orange { color: var(--orange); }
 .daily-red { color: var(--red); }
-
+.daily-missing { color: var(--text-muted); }
+.daily-none { color: var(--text-muted); }
 /* warning message displayed at top of uncomplete card */
 .uncomplete-warning {
   background: var(--orange-bg);

@@ -221,19 +221,43 @@ export async function buildClanAnalysis(clanTag) {
     let warSnapshotDays = null;
     let warSnapshotTakenAt = null;
     if (raceLog && raceLog.length > 0) {
-      const { getSnapshotsForWeek } = await import('../services/snapshot.js');
+      const { getSnapshotsForWeek, getWarDayName, getWarDayKey } = await import('../services/snapshot.js');
 
       // --- Snapshots semaine PRÉCÉDENTE → enrichissement uncomplete ---
       // raceLog[0] est la semaine terminée : sectionIndex=0 → "S130W1"
       prevWeekId = `S${raceLog[0].seasonId}W${raceLog[0].sectionIndex + 1}`;
       const prevSnaps = await getSnapshotsForWeek(clanTag, prevWeekId);
       if (prevSnaps.length > 0 && uncomplete && Array.isArray(uncomplete.players)) {
+        const dayIndex = { thursday: 0, friday: 1, saturday: 2, sunday: 3 };
+
+        // Determine whether we have snapshots for all 4 GDC days (thu→sun).
+        const snapshotDays = new Set();
+        for (const snap of prevSnaps) {
+          const snapshotDate = new Date(`${snap.date}T12:00:00Z`);
+          const warDay = getWarDayName(getWarDayKey(snapshotDate));
+          if (warDay) snapshotDays.add(warDay);
+        }
+        const ALL_WAR_DAYS = ['thursday', 'friday', 'saturday', 'sunday'];
+        uncomplete.snapshotComplete = ALL_WAR_DAYS.every((d) => snapshotDays.has(d));
+        uncomplete.snapshotDays = Array.from(snapshotDays).sort();
+
         uncomplete.players = uncomplete.players.map((p) => {
-          const arr = prevSnaps.map((s) => s.decks[p.tag] || 0);
-          const sliced = arr.slice(-4); // keep last up to 4
-          p.daily = sliced;
+          // Build a fixed 4‑day array (thu→sun). Missing days stay null.
+          const daily = [null, null, null, null];
+          for (const snap of prevSnaps) {
+            // Compute the GDC war day from the snapshot date (calendar date). The stored
+            // `warDay` field has historically been unreliable, so we ignore it.
+            // Interpret the snapshot date as local day; use midday UTC to avoid
+            // timezone-induced day shifts around midnight.
+            const snapshotDate = new Date(`${snap.date}T12:00:00Z`);
+            const warDay = getWarDayName(getWarDayKey(snapshotDate));
+            const idx = dayIndex[warDay];
+            if (idx === undefined) continue;
+            daily[idx] = snap.decks?.[p.tag] ?? 0;
+          }
+          p.daily = daily;
           p.dailySource = 'snapshot';
-          p.dailySnapshotComplete = sliced.length >= 4;
+          p.dailySnapshotComplete = daily.every((v) => v !== null);
           return p;
         });
       }

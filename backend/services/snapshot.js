@@ -190,3 +190,17 @@ export async function getLastSnapshotDate(clanTag) {
 
 // expose the directory path so callers can inspect or do manual operations
 export const SNAP_DIR_PATH = SNAP_DIR; // absolute path used internally
+
+function warDayNameFromKey(warDayKey) {
+  if (!warDayKey) return null;
+  const [y, m, d] = warDayKey.split('-').map(Number);
+  if (!y || !m || !d) return null;
+  // Interpret the key as a local date (Paris) and compute weekday.
+  // Using UTC noon avoids DST issues and ensures day-of-week matches local date.
+  const dow = new Date(Date.UTC(y, m - 1, d, 12)).getUTCDay();
+  const names = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  return names[dow] ?? null;
+}
+
+// Expose helpers for computing the war day label (used by UI summaries)
+export { getWarDayKey, getWarDayName, warDayNameFromKey };
