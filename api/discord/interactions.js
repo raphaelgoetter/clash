@@ -818,7 +818,10 @@ export default async function handler(req, res) {
         await fetch(webhookUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ embeds: [embed] }),
+          body: JSON.stringify({
+            embeds: [embed],
+            allowed_mentions: { parse: [] },
+          }),
         });
       } catch (err) {
         await fetch(webhookUrl, {
