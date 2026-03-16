@@ -772,7 +772,9 @@ function renderTopPlayersCard(topPlayers, prevWeekId = null) {
       listEl.innerHTML = players
         .map((p) =>
           `<li>` +
-            `<span class="tp-name">${escHtml(p.name)}</span>` +
+            `<span class="tp-name">${escHtml(p.name)} ` +
+              `<span class="tp-tag">${escHtml(p.tag)}</span>` +
+            `</span>` +
             `<span class="tp-meta">` +
               `<span class="role-badge ${p.role}">${capitalize(p.role)}</span>` +
               `<span class="tp-fame">${fmt(p.fame)} fame</span>` +
@@ -863,7 +865,8 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
       warnAfter = ' ⚠';
     }
     const newBadge = p.isNew ? '<span class="new-badge">new</span>' : '';
-    return `<li><span class="tp-name">${escHtml(p.name)}${newBadge}</span>` +
+    return `<li><span class="tp-name">${escHtml(p.name)} ` +
+      `<span class="tp-tag">${escHtml(p.tag)}</span>${newBadge}</span>` +
       `<span class="tp-meta">` +
         `<span class="role-badge ${p.role}">${capitalize(p.role)}</span>` +
         `<span class="tp-fame">${fmt(p.decks)} decks${dailyStr ? ' - ' + dailyStr : ''}${warnAfter}</span>` +

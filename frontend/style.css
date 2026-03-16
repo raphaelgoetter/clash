@@ -257,6 +257,14 @@ summary .card-title {
   opacity: 0.4;
 }
 
+/* CR tag displayed next to player names */
+.tp-tag {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-left: 6px;
+  font-weight: 400;
+}
+
 /* section des joueurs qui ont quitté le clan (Last War fails) */
 .uncomplete-departed {
   margin-top: 16px;
