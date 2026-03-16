@@ -766,20 +766,22 @@ export default async function handler(req, res) {
 
           const user = guildMember.user;
           const displayName = guildMember.nick || user.global_name || user.username || 'unknown';
-          present.push({ clash: m.name, tag: normTag, discord: displayName });
+          const cleaned = displayName.replace(/^[^a-zA-Z0-9]+/, '').toLowerCase();
+          const sortKey = `${displayName.startsWith('☆') ? '0' : '1'}:${cleaned}`;
+          present.push({ clash: m.name, tag: normTag, discord: displayName, sortKey });
         }
 
         // Tri alphabétique (utile pour lisibilité sur de grands clans)
-        present.sort((a, b) => a.clash.localeCompare(b.clash, 'fr', { sensitivity: 'base' }));
-        absent.sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
-        unlinked.sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
+        present.sort((a, b) => a.sortKey.localeCompare(b.sortKey, 'fr', { numeric: true, sensitivity: 'base' }));
+        absent.sort((a, b) => a.localeCompare(b, 'fr', { numeric: true, sensitivity: 'base' }));
+        unlinked.sort((a, b) => a.localeCompare(b, 'fr', { numeric: true, sensitivity: 'base' }));
 
         const lines = [];
         if (present.length) {
           const list = present
-            .map((p) => `• \`${p.discord}\` (${p.clash} ${p.tag})`)
+            .map((p) => `• ${p.discord} (${p.clash} ${p.tag})`)
             .join('\n');
-          lines.push(`✅ **Liés** (${present.length}) :\n${list}`);
+          lines.push(`✅ Liés (${present.length}) :\n${list}`);
         }
         if (absent.length)   lines.push(`❌ **Liés mais absents du serveur** (${absent.length}) : ${absent.join(', ')}`);
         if (unlinked.length) lines.push(`❓ **Non liés** (${unlinked.length}) : ${unlinked.join(', ')}`);
