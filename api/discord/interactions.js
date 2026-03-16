@@ -794,27 +794,18 @@ export default async function handler(req, res) {
 
         const lines = [];
         if (present.length) {
-          const rows = present.map((p) => {
-            const clashes = p.entries.map((e) => `${e.clash} ${e.tag}`).join(', ');
-            return { discord: p.discord, clashes };
-          });
-
-          const maxDiscord = Math.max(...rows.map((r) => r.discord.length), 'Discord'.length);
-          const pad = (s) => s.padEnd(maxDiscord, ' ');
-
-          const table = [
-            `Discord${' '.repeat(maxDiscord - 7)} | Clash (tag)`,
-            `${'-'.repeat(maxDiscord)} | ---------`,
-            ...rows.map((r) => `${pad(r.discord)} | ${r.clashes}`),
-          ].join('\n');
+          const list = present
+            .map((p) => {
+              const clashes = p.entries.map((e) => `${e.clash} ${e.tag}`).join(', ');
+              return `• ${p.discord} : ${clashes}`;
+            })
+            .join('\n');
 
           lines.push('✅ Liés (présents sur le serveur) :');
-          lines.push('```');
-          lines.push(table);
-          lines.push('```');
+          lines.push(list);
         }
-        if (absent.length)   lines.push(`❌ **Liés mais absents du serveur** (${absent.length}) : ${absent.join(', ')}`);
-        if (unlinked.length) lines.push(`❓ **Non liés** (${unlinked.length}) : ${unlinked.join(', ')}`);
+        if (absent.length)   lines.push(`❌ **Liés mais absents du serveur** (${absent.length}) : ${absent.map((e) => `${e.clash} ${e.tag}`).join(', ')}`);
+        if (unlinked.length) lines.push(`❓ **Non liés** (${unlinked.length}) : ${unlinked.map((e) => `${e.clash} ${e.tag}`).join(', ')}`);
 
         const embed = {
           title: `📋 Présence Discord — ${resolved.name}`,
