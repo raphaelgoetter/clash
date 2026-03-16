@@ -797,8 +797,8 @@ export default async function handler(req, res) {
           const list = present
             .map((p) => {
               const clashes = p.entries.map((e) => `${e.clash} ${e.tag}`).join(' + ');
-              const profileLink = `https://discord.com/users/${p.discordId}`;
-              return `• [${p.discord}](${profileLink}) ⤑ ${clashes}`;
+              const mention = `<@${p.discordId}>`;
+              return `• ${mention} (${p.discord}) ⤑ ${clashes}`;
             })
             .join('\n');
 
