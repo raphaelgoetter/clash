@@ -291,6 +291,45 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
     daily[tag] = Math.min(4, Math.max(0, currentCumul[tag] - (baseCumul[tag] ?? 0)));
   }
 
+  // If we already have a primary snapshot for this war day, do not overwrite the
+  // recorded decks when running after reset (backup snapshot). This ensures we
+  // keep the last pre-reset state even if the workflow completes after 09:40 UTC.
+  const cutoff = Date.now() - RETENTION_DAYS * 24 * 3600 * 1000;
+  const filtered = history.filter((w) =>
+    w.days.some((d) => d.realDay && new Date(d.realDay).getTime() >= cutoff)
+  );
+
+  if (snapshotType === 'backup' && dayEntry.snapshotTime) {
+    dayEntry.snapshotBackupTime = now.toISOString();
+
+    // If we see >4 decks in the backup snapshot, it means some of those decks must
+    // belong to the previous war day (combats joués dans les derniers instants).
+    const prevIndex = (baseIndex + WAR_DAYS.length - 1) % WAR_DAYS.length;
+    const prevDayEntry = weekEntry.days[prevIndex];
+    if (prevDayEntry) {
+      for (const tag of Object.keys(daily)) {
+        const overflow = Math.max(0, daily[tag] - 4);
+        if (overflow <= 0) continue;
+
+        console.log(
+          `[snapshot] overflow for ${clanTag} ${warDay} (${realDay})` +
+            ` player=${tag} overflow=${overflow} (attributed to previous day)`
+        );
+
+        // Transfer overflow to previous day (but clamp to 4)
+        prevDayEntry.decks = mergeMaps(prevDayEntry.decks, {
+          [tag]: Math.min(4, (prevDayEntry.decks?.[tag] ?? 0) + overflow),
+        });
+
+        // Keep max 4 for the current day (the rest is considered previous day)
+        daily[tag] = 4;
+      }
+    }
+
+    await saveSnapshots(clanTag, filtered);
+    return;
+  }
+
   dayEntry.decks = mergeMaps(dayEntry.decks, daily);
 
   if (snapshotType === 'primary') {
@@ -300,13 +339,6 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
   }
 
   dayEntry._cumul = mergeMaps(dayEntry._cumul ?? {}, currentCumul);
-
-
-  // purge old (>RETENTION_DAYS)
-  const cutoff = Date.now() - RETENTION_DAYS * 24 * 3600 * 1000;
-  const filtered = history.filter((w) =>
-    w.days.some((d) => d.realDay && new Date(d.realDay).getTime() >= cutoff)
-  );
 
   await saveSnapshots(clanTag, filtered);
 }
