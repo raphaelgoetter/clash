@@ -276,26 +276,36 @@ export function renderClanBarChart(members) {
   destroyIfExists('chart-clan-bar');
   const ctx = document.getElementById('chart-clan-bar').getContext('2d');
 
-  // Build score buckets (0-9, 10-19, … 90-100) and determine worst colour
+  // Build score buckets (0-9, 10-19, … 90-100) and determine worst colour per bucket.
   const buckets = Array(10).fill(0);
-  const bucketWorst = Array(10).fill(null); // will store 'green'|'yellow'|'orange'|'red'
+  const bucketsByColor = {
+    green: Array(10).fill(0),
+    yellow: Array(10).fill(0),
+    orange: Array(10).fill(0),
+    red: Array(10).fill(0),
+  };
   function worsen(current, incoming) {
-    const order = ['green','yellow','orange','red'];
+    const order = ['green', 'yellow', 'orange', 'red'];
     if (!current) return incoming;
     return order.indexOf(incoming) > order.indexOf(current) ? incoming : current;
   }
+  const bucketWorst = Array(10).fill(null);
+
   members.forEach((m) => {
     const i = Math.min(9, Math.floor(m.activityScore / 10));
     buckets[i]++;
-    bucketWorst[i] = worsen(bucketWorst[i], m.color);
+    const c = m.color || 'green';
+    if (bucketsByColor[c]) bucketsByColor[c][i]++;
+    bucketWorst[i] = worsen(bucketWorst[i], c);
   });
+
   const labels = ['0–9','10–19','20–29','30–39','40–49','50–59','60–69','70–79','80–89','90–100'];
 
-  const colors = bucketWorst.map((c, i) => {
-    if (c === 'red') return 'rgba(239, 68, 68, 0.7)';       // any extreme risk in bucket
-    if (c === 'orange') return 'rgba(249, 115, 22, 0.7)';    // else high risk
-    if (c === 'yellow') return 'rgba(234, 179, 8, 0.7)';     // else moderate
-    return 'rgba(34, 197, 94, 0.7)';                        // all green or empty
+  const barColors = bucketWorst.map((c) => {
+    if (c === 'red') return 'rgba(239, 68, 68, 0.7)';
+    if (c === 'orange') return 'rgba(249, 115, 22, 0.7)';
+    if (c === 'yellow') return 'rgba(234, 179, 8, 0.7)';
+    return 'rgba(34, 197, 94, 0.7)';
   });
 
   new Chart(ctx, {
@@ -306,7 +316,7 @@ export function renderClanBarChart(members) {
         {
           label: 'Members',
           data: buckets,
-          backgroundColor: colors,
+          backgroundColor: barColors,
           borderRadius: 5,
         },
       ],
@@ -317,7 +327,21 @@ export function renderClanBarChart(members) {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: (ctx) => ` ${ctx.parsed.y} member${ctx.parsed.y !== 1 ? 's' : ''}`,
+            label: (ctx) => {
+              const i = ctx.dataIndex;
+              const total = buckets[i] || 0;
+              const g = bucketsByColor.green[i] || 0;
+              const y = bucketsByColor.yellow[i] || 0;
+              const o = bucketsByColor.orange[i] || 0;
+              const r = bucketsByColor.red[i] || 0;
+              const parts = [];
+              if (g) parts.push(`${g} high reliability`);
+              if (y) parts.push(`${y} moderate`);
+              if (o) parts.push(`${o} high risk`);
+              if (r) parts.push(`${r} extreme`);
+              const breakdown = parts.length ? ` (${parts.join(', ')})` : '';
+              return ` ${total} member${total !== 1 ? 's' : ''}${breakdown}`;
+            },
           },
         },
       },
