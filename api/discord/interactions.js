@@ -290,8 +290,7 @@ export default async function handler(req, res) {
           const icon = criterionIcon(item.score, item.max);
           const label = LABEL_FR[item.label] || item.label;
           const scoreStr = `${item.score}/${item.max}`;
-          const detail = item.detail ? ` ${item.detail}` : '';
-          rows.push(`${icon} ${label.padEnd(maxLabel)} ${scoreStr}${detail}`);
+          rows.push(`${icon} ${label.padEnd(maxLabel)} ${scoreStr}`);
         }
         const description = '```\n' + rows.join('\n') + '\n```';
 
