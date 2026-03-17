@@ -325,9 +325,9 @@
       "donations": 87,
       "donationsReceived": 40,
       "expLevel": 53,
-      "activityScore": 75,
-      "verdict": "High reliability",
-      "color": "green",
+      "activityScore": 71,
+      "verdict": "Moderate risk",
+      "color": "yellow",
       "isNew": false,
       "discord": false,
       "warDays": null,
@@ -404,8 +404,8 @@
     }
   ],
   "summary": {
-    "green": 5,
-    "yellow": 5,
+    "green": 4,
+    "yellow": 6,
     "orange": 11,
     "red": 2,
     "avgScore": 54,
