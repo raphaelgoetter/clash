@@ -49,7 +49,7 @@ const LABEL_FR = {
   'Last Seen': 'Dernière connexion',
   'General Activity': 'Activité générale',
   'Experience': 'Expérience',
-  'Donations': 'Dons',
+  'Donations': 'Dons totaux',
   'Regularity': 'Régularité',
   'Avg Score': 'Score moyen',
   'Stability': 'Stabilité',
@@ -290,7 +290,8 @@ export default async function handler(req, res) {
           const icon = criterionIcon(item.score, item.max);
           const label = LABEL_FR[item.label] || item.label;
           const scoreStr = `${item.score}/${item.max}`;
-          rows.push(`${icon} ${label.padEnd(maxLabel)} ${scoreStr}`);
+          const detail = item.detail ? ` ${item.detail}` : '';
+          rows.push(`${icon} ${label.padEnd(maxLabel)} ${scoreStr}${detail}`);
         }
         const description = '```\n' + rows.join('\n') + '\n```';
 

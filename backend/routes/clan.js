@@ -8,7 +8,7 @@ import {
   analyzeClanMembers, buildWarHistory, computeWarScore,
   computeWarReliabilityFallback, categorizeBattleLog,
   filterWarBattles, expandDuelRounds, isWarWin, buildCurrentWarDays,
-  estimateWinsFromFame, warResetOffsetMs,
+  estimateWinsFromFame, warResetOffsetMs, scoreTotalDonations,
 } from '../services/analysisService.js';
 import { computeTopPlayers } from '../services/topplayers.js';
 import { computeUncomplete } from '../services/uncomplete.js';
@@ -305,7 +305,12 @@ export async function buildClanAnalysis(clanTag) {
       const battleLog   = mdResult?.status === 'fulfilled' ? mdResult.value[1] : null;
 
       // Player proxy: prefer full profile (has badges), fall back to member data
-      const playerProxy = fullPlayer ?? { trophies: m.trophies ?? 0, bestTrophies: m.trophies ?? 0, donations: m.donations ?? 0 };
+      const playerProxy = fullPlayer ?? {
+        trophies:     m.trophies ?? 0,
+        bestTrophies: m.trophies ?? 0,
+        totalDonations: m.donations ?? 0,
+        donations:    m.donations ?? 0,
+      };
       // Présence Discord : le tag du membre est-il dans discord-links.json ?
       const discordLinked = Object.prototype.hasOwnProperty.call(discordLinks, m.tag);
 
@@ -375,7 +380,9 @@ export async function buildClanAnalysis(clanTag) {
           isNew = true;
         } else {
           // Battle log unavailable — minimal estimate
-          const pct = Math.round((Math.min(2, ((playerProxy.donations ?? 0) / 500) * 2) / 40) * 100);
+          const totalDonations = playerProxy.totalDonations ?? playerProxy.donations ?? 0;
+          const donationPts = scoreTotalDonations(totalDonations, 2);
+          const pct = Math.round((donationPts / 40) * 100);
           activityScore = pct; verdict = 'Extreme risk'; color = 'red';
           isNew = true;
         }

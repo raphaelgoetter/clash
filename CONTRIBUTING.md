@@ -134,7 +134,7 @@ Seven weighted criteria:
 | 5 | Last seen | +5 | active within 24 h = +5; ≤3 d = +3; ≤7 d = +1 |
 | 6 | Win rate (River Race) | 3 | 100% win rate = full score · **min. 10 GDC battles** (absent otherwise) |
 | 7 | Experience (best trophies) | 3 | 12,000 trophies = full score |
-| 8 | Donations | 2 | 500 cards donated = full score |
+| 8 | Donations | 2 | 100 000 total cards donated = full score (≤ 2 000 = minimum score) |
 | 9 | Discord | 2 | compte lié via `/discord-link` = full score |
 
 Without battle log (criterion 6 absent): max = **45 pts**. With last seen and win rate: **53 pts** maximum.
@@ -151,7 +151,7 @@ Used when no race log history is available (battle log only):
 | 4 | Last seen | +5 | same as above but only awarded after ≥16 war decks in log |
 | 5 | General activity | 8 | 20 competitive battles = full score |
 | 6 | Experience | 3 | 12,000 best trophies = full score |
-| 7 | Donations | 2 | 500 cards donated = full score |
+| 7 | Donations | 2 | 100 000 total cards donated = full score (≤ 2 000 = minimum score) |
 | 8 | Discord | 2 | compte lié via `/discord-link` = full score |
 
 ### Verdict thresholds (both scoring modes)
@@ -168,7 +168,7 @@ Used when no race log history is available (battle log only):
 Computed from the `/members` endpoint only (no battle log required):
 
 ```
-score = min(40, donations / 300 × 40)
+score = min(40, totalDonations / 100000 × 40)
       + min(40, trophies  / 10000 × 40)
       + min(20, expLevel  / 60 × 20)
 ```

@@ -97,7 +97,7 @@ function applyUrlState(mode, tag) {
   } else {
     searchInput.classList.add('hidden');
     searchSelect.classList.remove('hidden');
-    searchHint.textContent = "Select a clan from the dropdown.";
+    searchHint.textContent = "Select a clan (restricted to Resistance family clans)";
     // set select value
     searchSelect.value = tag;
   }
@@ -476,8 +476,8 @@ function renderPlayerResults(data) {
           ? `${Math.round(warHistory.historicalWinRate * 100)}%`
           : `${activityIndicators.winRate}%`,
         risk: (() => { const wr = warHistory.historicalWinRate !== null && warHistory.historicalWinRate !== undefined ? Math.round(warHistory.historicalWinRate * 100) : activityIndicators.winRate; return wr < 30 ? 'bad' : wr < 50 ? 'warn' : null; })() },
-      { label: 'Donations',       value: fmt(activityIndicators.donations),
-        risk: activityIndicators.donations < 50 ? 'bad' : activityIndicators.donations < 200 ? 'warn' : null },
+      { label: 'Donations', value: fmt(activityIndicators.donations),
+        risk: activityIndicators.donations < 2000 ? 'bad' : activityIndicators.donations < 30000 ? 'warn' : null },
     ]);
   } else {
     // Fallback battlelog : répartition des 30 entrées par type
@@ -487,7 +487,7 @@ function renderPlayerResults(data) {
       { label: '🏆 Win Rate (War)',   value: `${activityIndicators.winRate}%` },
       { label: '🔀 Ladder / Ranked',  value: fmt(bd.ladder ?? 0) },
       { label: '🎯 Challenges',        value: fmt(bd.challenge ?? 0) },
-      { label: '📦 Donations',         value: fmt(activityIndicators.donations) },
+      { label: '📦 Total Donations',   value: fmt(activityIndicators.donations) },
       { label: '📊 Battle Log',        value: `${bd.total ?? '?'} entries` },
     ]);
   }
@@ -1049,7 +1049,7 @@ function renderMembersTable(members) {
         </td>
         <td><span class="role-badge ${m.role}">${capitalize(m.role)}</span></td>
         <td>🏆 ${fmt(m.trophies)}</td>
-        <td>${fmt(m.donations)}</td>
+        <td>${fmt(m.totalDonations ?? m.donations)}</td>
         <td class="discord-col">${m.discord ? '✅' : '❓'}</td>
         <td>
           <div style="display:flex;align-items:center;gap:8px">

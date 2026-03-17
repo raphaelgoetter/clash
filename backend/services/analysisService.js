@@ -50,6 +50,20 @@ function parseClashDate(ts) {
   return new Date(iso);
 }
 
+// ── Donation scoring utilities ─────────────────────────────────
+
+// Total donations is a stable cumulative metric (unlike weekly donations).
+// We map it to a small, bounded score to keep it comparable with other criteria.
+const DONATION_TOTAL_MIN = 2000;
+const DONATION_TOTAL_MAX = 100000;
+
+export function scoreTotalDonations(totalDonations, maxPoints = 2) {
+  const effective = Math.max(0, (totalDonations ?? 0) - DONATION_TOTAL_MIN);
+  const scale = DONATION_TOTAL_MAX - DONATION_TOTAL_MIN;
+  if (scale <= 0) return 0;
+  return Math.min(maxPoints, (effective / scale) * maxPoints);
+}
+
 /**
  * Clan War battle types in the Clash Royale API.
  * Covers both current River Race format and legacy war format.
@@ -367,9 +381,17 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
   const TROPHY_CAP   = 14000;
   const experience   = r(Math.max(0, Math.min(3, (((player.trophies ?? 0) - TROPHY_MIN) / (TROPHY_CAP - TROPHY_MIN)) * 3)));
 
-  // 5. Dons (0-2) — ≥ 500 cartes données cette saison = 2/2
-  const DONATION_CAP = 500;
-  const dons         = r(Math.min(2, ((player.donations ?? 0) / DONATION_CAP) * 2));
+  // 5. Dons (0-2) — basé sur les donations cumulées (totalDonations).
+  //    Le nombre de donations hebdomadaires se remet à zéro, donc ce critère
+  //    doit utiliser une donnée stable (totalDonations) pour être pertinent.
+  //
+  //    Échelle proposée :
+  //      • < 2 000    = score minimum (0)
+  //      • ~30 000    = score < 1 (sous la moyenne)
+  //      • ~60 000    = score ≈ 1 (au-dessus de la moyenne)
+  //      • ≥ 100 000 = score max (2)
+  const totalDonations = player.totalDonations ?? player.donations ?? 0;
+  const dons = r(scoreTotalDonations(totalDonations, 2));
 
   // 6. Win Rate GDC (0-3) — optionnel, uniquement quand battlelog disponible
   const winRateGDC   = warWinRate !== null ? r(Math.min(3, warWinRate * 3)) : null;
@@ -462,13 +484,13 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
       label:  'Experience',
       score:  experience,
       max:    3,
-      detail: `${(player.trophies ?? 0).toLocaleString('en-US')} trophies (range 4,000–14,000)`,
+      detail: `${(player.trophies ?? 0).toLocaleString('en-US')} trophies (range 4000–14000)`,
     },
     {
       label:  'Donations',
       score:  dons,
       max:    2,
-      detail: `${(player.donations ?? 0).toLocaleString('en-US')} cards donated (cap 500)`,
+      detail: `${totalDonations.toLocaleString('en-US')} total cards donated (cap 100000)`,
     },
     {
       label:  'Discord',
@@ -491,7 +513,7 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
  *  3. CW2 Wins        /8 — badge progress (cap 250)
  *  4. Win Rate GDC    /5 — % victoires sur combats GDC (0 if no GDC battles)
  *  5. Expérience      /3 — bestTrophies (cap 12 000)
- *  6. Dons            /2 — donations (cap 500)
+ *  6. Dons            /2 — totalDonations (stable cumulative metric)
  *
  * (+5 bonus pts possible for Last Seen when ≥16 war decks observed)
  *
@@ -548,9 +570,9 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
   const TROPHY_CAP = 14000;
   const experience = r(Math.max(0, Math.min(3, (((player.trophies ?? 0) - TROPHY_MIN) / (TROPHY_CAP - TROPHY_MIN)) * 3)));
 
-  // 5. Dons (0-2) — cap 500
-  const DONATION_CAP = 500;
-  const dons = r(Math.min(2, ((player.donations ?? 0) / DONATION_CAP) * 2));
+  // 5. Dons (0-2) — based on totalDonations (stable cumulative metric)
+  const totalDonations = player.totalDonations ?? player.donations ?? 0;
+  const dons = r(scoreTotalDonations(totalDonations, 2));
 
   // 6. CW2 Battle Wins (0-8) — from ClanWarWins badge
   const CW2_CAP  = 250;
@@ -638,7 +660,7 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
         label:  'Donations',
         score:  dons,
         max:    2,
-        detail: `${(player.donations ?? 0).toLocaleString('en-US')} cards donated (cap 500)`,
+        detail: `${totalDonations.toLocaleString('en-US')} total cards donated (cap 100000)`,
       },
       {
         label:  'Discord',
@@ -652,10 +674,10 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
 
 // Legacy stability (kept for potential reuse)
 export function computeStabilityScore(player) {
-  const donations = player.donations ?? 0;
+  const totalDonations = player.totalDonations ?? player.donations ?? 0;
   const battleCount = player.battleCount ?? 0;
   const expLevel = player.expLevel ?? 1;
-  const raw = (donations / 1000) * (battleCount / 2000) * (expLevel * 1.5);
+  const raw = (totalDonations / 1000) * (battleCount / 2000) * (expLevel * 1.5);
   const score = Math.min(100, Math.round(raw * 10) / 10);
   let label;
   if (score >= 40) label = 'High stability';
@@ -807,7 +829,7 @@ export function analyzePlayer(player, battleLog, lastSeen = null, discordLinked 
       wins,
       losses,
       winRate,
-      donations:    player.donations ?? 0,
+      donations:    player.totalDonations ?? player.donations ?? 0,
       threeCrowns,
       battleLogBreakdown,   // counts per category across all 30 entries
     },
@@ -989,11 +1011,11 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
  * @returns {{ score: number; verdict: string; color: string }}
  */
 export function computeMemberActivityScore(member) {
-  const donations = member.donations ?? 0;
+  const totalDonations = member.totalDonations ?? member.donations ?? 0;
   const trophies = member.trophies ?? 0;
   const expLevel = member.expLevel ?? 1;
 
-  const donationPart = Math.min(40, (donations / 300) * 40);
+  const donationPart = Math.min(40, scoreTotalDonations(totalDonations, 40));
   const trophyPart = Math.min(40, (trophies / 10000) * 40);
   const expPart = Math.min(20, (expLevel / 60) * 20);
 
@@ -1097,6 +1119,7 @@ export function analyzeClanMembers(members) {
       tag: m.tag,
       role: m.role,
       trophies: m.trophies ?? 0,
+      totalDonations: m.totalDonations ?? m.donations ?? 0,
       donations: m.donations ?? 0,
       donationsReceived: m.donationsReceived ?? 0,
       expLevel: m.expLevel ?? 1,
