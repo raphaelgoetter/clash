@@ -327,7 +327,8 @@ summary .card-title {
 
 /* collapsible card styles */
 #card-top-players summary,
-#card-uncomplete summary {
+#card-uncomplete summary,
+#card-left summary {
   display: flex;
   align-items: center;
   font-weight: 700;
