@@ -918,12 +918,9 @@ export default async function handler(req, res) {
           for (const pl of group) {
             totalMissing += count;
             const tag = pl.tag.startsWith('#') ? pl.tag : `#${pl.tag}`;
-            const discordId    = links[tag];
-            const guildMember  = discordId ? memberById.get(discordId) : null;
-            const discordName  = guildMember
-              ? (guildMember.nick || guildMember.user?.global_name || guildMember.user?.username)
-              : null;
-            const discordPart  = discordName ? ` @${discordName}` : '';
+            const discordId   = links[tag];
+            const guildMember = discordId ? memberById.get(discordId) : null;
+            const discordPart = guildMember ? ` <@${discordId}>` : '';
             descLines.push(`• ${pl.name}${discordPart} ${tag}`);
           }
         }
@@ -938,7 +935,7 @@ export default async function handler(req, res) {
         await fetch(webhookUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ embeds: [embed] }),
+          body: JSON.stringify({ embeds: [embed], allowed_mentions: { parse: [] } }),
         });
       } catch (err) {
         await fetch(webhookUrl, {
