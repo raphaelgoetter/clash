@@ -78,6 +78,10 @@ Cinq commandes disponibles :
   pu s'appuyer sur un historique de guerre complet. Il n'apparait plus si le
   membre n'a pas été vu dans le jeu depuis plus d'une semaine (pour éviter de
   considérer comme « nouveau » un ancien membre rentré sans jouer).
+- **Transferts familiaux** : si un joueur passe d'un clan de la famille
+  (`Y8JUPC9C`, `LRQP20V9`, `QU9UQJRL`) à un autre et qu'il a joué au moins 13 decks
+  la semaine précédente, son historique est automatiquement fusionné et il
+  est marqué **transfer** (score calé sur le vrai war log, pas sur le battle log).
 - Pour analyser rapidement un tag sans recharger, collez-le dans l'URL.
 
 ---

@@ -13,6 +13,7 @@ vers `README.md` (en français).
 |---|---|
 | **Player analysis** | Overview, activity indicators, battle log chart, war reliability score (/45 or /40), colour-coded verdict + breakdown |
 | **Clan analysis** | Member table with sorting & filtering, score distribution chart, reliable-vs-risky pie chart |
+| **Family transfers** | Detects when a player moves between the 3 allowed clans and merges last week history to compute a proper score |
 | **Response cache** | In-memory cache (30 s TTL) to avoid hammering the Clash Royale API on repeated navigations |
 | **Responsive UI** | Clash Royale-inspired dark theme, works on mobile |
 | **Favorites** | Save player or clan tags (with names) locally and recall them with one click |
@@ -89,6 +90,11 @@ npm run dev
 
 This launches both backend (**<http://localhost:3000>**) and frontend (**<http://localhost:5173>**) simultaneously via `concurrently`. The frontend proxies `/api` → `:3000`.
 
+### Scripts utiles
+
+- `npm run cache` — pré-génère `frontend/public/clan-cache/*.json` (utilisé pour le rendu instantané en vue clan)
+- `npm run transfers -- --out=transfers.json` — liste les joueurs détectés comme **transferts familiaux** (voir la section "Transferts familiaux" ci-dessous)
+
 ---
 
 ## 📡 Backend API reference
@@ -107,6 +113,44 @@ Tags should include the `#` prefix (URL‑encoded as `%23`).
 ---
 
 ## 🧮 Score formulas
+## Transferts familiaux
+
+Les clans autorisés sont :
+
+- `Y8JUPC9C` (La Resistance)
+- `LRQP20V9` (Les Resistants)
+- `QU9UQJRL` (Les Revoltes)
+
+Lorsqu'un joueur passe d'un clan à un autre dans cette famille, l'historique de la
+semaine précédente est **fusionné** (si le joueur a joué au moins 13 decks) afin
+d'éviter de le pénaliser (et de basculer sur le mode `battle log` moins fiable).
+
+Le marquage `transfer` est exposé dans l'API (champ `isFamilyTransfer`) et est
+utilisé dans les UI/commandes Discord pour remplacer le badge `new`.
+
+Le script `npm run transfers -- --out=transfers.json` permet de générer une
+liste (locale) des transferts détectés.
+
+### Script de test (transferts)
+
+Ce script est utile en local pour vérifier rapidement :
+
+```bash
+npm run transfers -- --out=transfers.json
+```
+
+Il utilise `buildClanAnalysis()` et regarde les champs exposés sur chaque membre :
+`isFamilyTransfer`, `transferFromClan` et `transferWeek`.
+
+### 🚨 Note sur le cache statique
+
+La vue clan charge un cache JSON statique (`frontend/public/clan-cache/*.json`) en
+priorité pour un rendu instantané. Si vous modifiez le code de scoring ou de
+détection de transfert, relancez :
+
+```bash
+npm run cache
+```
 
 ### War reliability score — full mode (0–46 pts)
 

@@ -380,21 +380,22 @@ export async function buildClanAnalysis(clanTag) {
         const oldRule = wh.streakInCurrentClan >= 2 && wh.completedParticipation >= 2;
         let hasEnoughHistory = hasFullWeek || oldRule;
 
-        // Transfer detection (family clan): if the player has a recent full week
-        // in another family clan, we can compute a proper war score instead of
-        // falling back to the battle log.
-        if (!hasEnoughHistory) {
-          const transfer = findRecentFamilyTransfer(m.tag);
-          if (transfer) {
+        // Transfer detection (family clan) — on veut afficher "transfer" même
+        // si l'historique est déjà jugé suffisant.
+        const transfer = findRecentFamilyTransfer(m.tag);
+        if (transfer) {
+          // Si l'historique n'était pas suffisant, fusionne pour calculer un
+          // vrai war score uniquement avec des données fiables.
+          if (!hasEnoughHistory) {
             const merged = mergeWarHistoryWithTransfer(wh, transfer.transferWeek, transfer.fromClanTag);
             wh = merged;
             warHistory = merged;
             prevWeeks = wh.weeks.filter((w) => !w.isCurrent);
             hasFullWeek = prevWeeks.some((w) => (w.decksUsed ?? 0) >= 16);
             hasEnoughHistory = hasFullWeek || oldRule;
-            // disambiguate new vs transfer in the UI
-            isNew = false;
           }
+          // Toujours marquer comme transfert (même si l'historique était suffisant)
+          isNew = false;
         }
 
         // same mid‑race arrival handling as player view (ignore oldest incomplete)

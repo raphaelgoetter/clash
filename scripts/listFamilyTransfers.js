@@ -6,8 +6,12 @@
  * Usage:
  *   node scripts/listFamilyTransfers.js
  *   node scripts/listFamilyTransfers.js --out=transfers.json
+ *
+ * Note : ce script charge automatiquement le fichier `.env` (via dotenv)
+ * afin que CLASH_API_KEY soit disponible en local.
  */
 
+import 'dotenv/config';
 import fs from 'fs/promises';
 import path from 'path';
 import { ALLOWED_CLANS, buildClanAnalysis } from '../backend/routes/clan.js';
@@ -24,12 +28,12 @@ async function main() {
     try {
       const analysis = await buildClanAnalysis(clanTag);
       const clanTransfers = (analysis.members ?? [])
-        .filter((m) => m.warHistory?.isFamilyTransfer)
+        .filter((m) => m.isFamilyTransfer)
         .map((m) => ({
           tag: m.tag,
           name: m.name,
-          fromClan: m.warHistory.transferFromClan,
-          transferWeek: m.warHistory.transferWeek?.label ?? null,
+          fromClan: m.transferFromClan ?? null,
+          transferWeek: m.transferWeek ?? null,
           score: m.activityScore ?? null,
           verdict: m.verdict ?? null,
         }));
