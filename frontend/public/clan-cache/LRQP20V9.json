@@ -3,7 +3,7 @@
     "name": "Les Resistants",
     "tag": "#LRQP20V9",
     "description": "☆. #2 Resistance (top 🌍) Bonne humeur et GDC obligatoire ⚔️ 4 combats/jour 👉 Discord demandé : kPdQN8zfjM ▪️ code: RoyaleAPI",
-    "clanScore": 118694,
+    "clanScore": 118629,
     "clanWarTrophies": 3777,
     "members": 50,
     "type": "open",
@@ -12,40 +12,6 @@
   },
   "members": [
     {
-      "name": "ValeraiX05",
-      "tag": "#VGR8RV2RY",
-      "role": "member",
-      "trophies": 11116,
-      "donations": 0,
-      "donationsReceived": 160,
-      "expLevel": 58,
-      "activityScore": 37,
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": true,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260318T070831.000Z"
-    },
-    {
-      "name": "VTLX.KING",
-      "tag": "#89L8J9YV9",
-      "role": "member",
-      "trophies": 12801,
-      "donations": 26,
-      "donationsReceived": 0,
-      "expLevel": 70,
-      "activityScore": 39,
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": true,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260318T085548.000Z"
-    },
-    {
       "name": "dayyan",
       "tag": "#RULQG8998",
       "role": "member",
@@ -53,99 +19,77 @@
       "donations": 0,
       "donationsReceived": 40,
       "expLevel": 58,
-      "activityScore": 42,
-      "verdict": "High risk",
-      "color": "orange",
+      "activityScore": 26,
+      "verdict": "Extreme risk",
+      "color": "red",
       "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260317T155050.000Z"
+      "lastSeen": "20260319T002408.000Z"
+    },
+    {
+      "name": "ValeraiX05",
+      "tag": "#VGR8RV2RY",
+      "role": "member",
+      "trophies": 11142,
+      "donations": 0,
+      "donationsReceived": 184,
+      "expLevel": 58,
+      "activityScore": 35,
+      "verdict": "High risk",
+      "color": "orange",
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260319T071306.000Z"
+    },
+    {
+      "name": "VTLX.KING",
+      "tag": "#89L8J9YV9",
+      "role": "member",
+      "trophies": 12684,
+      "donations": 42,
+      "donationsReceived": 0,
+      "expLevel": 70,
+      "activityScore": 39,
+      "verdict": "High risk",
+      "color": "orange",
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260319T054121.000Z"
     },
     {
       "name": "Aubin",
       "tag": "#PGRJC00G9",
       "role": "member",
-      "trophies": 12244,
-      "donations": 34,
-      "donationsReceived": 80,
+      "trophies": 12298,
+      "donations": 50,
+      "donationsReceived": 120,
       "expLevel": 67,
       "activityScore": 55,
       "verdict": "High risk",
       "color": "orange",
       "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260317T123237.000Z"
-    },
-    {
-      "name": "melv",
-      "tag": "#U0LVUQRCJ",
-      "role": "member",
-      "trophies": 10201,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 58,
-      "activityScore": 56,
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": false,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260317T071919.000Z"
-    },
-    {
-      "name": "Legends",
-      "tag": "#8VQLJLR0",
-      "role": "member",
-      "trophies": 12088,
-      "donations": 160,
-      "donationsReceived": 80,
-      "expLevel": 62,
-      "activityScore": 59,
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": true,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260318T080002.000Z"
-    },
-    {
-      "name": "TT_Mérik",
-      "tag": "#RL89CL8QJ",
-      "role": "member",
-      "trophies": 11338,
-      "donations": 38,
-      "donationsReceived": 160,
-      "expLevel": 62,
-      "activityScore": 60,
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": true,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260318T091631.000Z"
-    },
-    {
-      "name": "NATALOX",
-      "tag": "#C8U9LYL09",
-      "role": "member",
-      "trophies": 10672,
-      "donations": 78,
-      "donationsReceived": 80,
-      "expLevel": 57,
-      "activityScore": 61,
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": true,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260317T234557.000Z"
+      "lastSeen": "20260318T171830.000Z"
     },
     {
       "name": "maxim",
@@ -155,14 +99,37 @@
       "donations": 0,
       "donationsReceived": 0,
       "expLevel": 55,
-      "activityScore": 61,
+      "activityScore": 57,
       "verdict": "Moderate risk",
       "color": "yellow",
       "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": false,
       "warDays": null,
       "warDecks": null,
       "lastSeen": "20260316T065606.000Z"
+    },
+    {
+      "name": "TT_Mérik",
+      "tag": "#RL89CL8QJ",
+      "role": "member",
+      "trophies": 11338,
+      "donations": 38,
+      "donationsReceived": 160,
+      "expLevel": 62,
+      "activityScore": 59,
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260318T091631.000Z"
     },
     {
       "name": "arll2.0",
@@ -172,31 +139,97 @@
       "donations": 80,
       "donationsReceived": 80,
       "expLevel": 59,
-      "activityScore": 64,
+      "activityScore": 59,
       "verdict": "Moderate risk",
       "color": "yellow",
       "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": false,
       "warDays": null,
       "warDecks": null,
       "lastSeen": "20260317T221303.000Z"
     },
     {
-      "name": "flavie_09",
-      "tag": "#80GVRPGPY",
+      "name": "NATALOX",
+      "tag": "#C8U9LYL09",
       "role": "member",
-      "trophies": 8885,
-      "donations": 24,
-      "donationsReceived": 80,
-      "expLevel": 53,
-      "activityScore": 68,
+      "trophies": 10790,
+      "donations": 104,
+      "donationsReceived": 120,
+      "expLevel": 57,
+      "activityScore": 60,
       "verdict": "Moderate risk",
       "color": "yellow",
-      "isNew": false,
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260317T121952.000Z"
+      "lastSeen": "20260318T203645.000Z"
+    },
+    {
+      "name": "melv",
+      "tag": "#U0LVUQRCJ",
+      "role": "member",
+      "trophies": 10199,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 58,
+      "activityScore": 60,
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260319T000349.000Z"
+    },
+    {
+      "name": "greg",
+      "tag": "#8GGQLU28",
+      "role": "member",
+      "trophies": 10151,
+      "donations": 126,
+      "donationsReceived": 120,
+      "expLevel": 72,
+      "activityScore": 64,
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260318T193458.000Z"
+    },
+    {
+      "name": "Legends",
+      "tag": "#8VQLJLR0",
+      "role": "member",
+      "trophies": 12114,
+      "donations": 214,
+      "donationsReceived": 80,
+      "expLevel": 62,
+      "activityScore": 65,
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260318T143839.000Z"
     },
     {
       "name": "Tii-Brune",
@@ -206,14 +239,37 @@
       "donations": 26,
       "donationsReceived": 0,
       "expLevel": 62,
-      "activityScore": 69,
+      "activityScore": 65,
       "verdict": "Moderate risk",
       "color": "yellow",
       "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": false,
       "warDays": null,
       "warDecks": null,
       "lastSeen": "20260316T183739.000Z"
+    },
+    {
+      "name": "flavie_09",
+      "tag": "#80GVRPGPY",
+      "role": "member",
+      "trophies": 8855,
+      "donations": 58,
+      "donationsReceived": 120,
+      "expLevel": 53,
+      "activityScore": 68,
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260318T144115.000Z"
     },
     {
       "name": "koko aka thanos",
@@ -227,6 +283,9 @@
       "verdict": "Moderate risk",
       "color": "yellow",
       "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": false,
       "warDays": null,
       "warDecks": null,
@@ -236,7 +295,7 @@
       "name": "Nova",
       "tag": "#QQUCRGQP8",
       "role": "member",
-      "trophies": 12500,
+      "trophies": 12564,
       "donations": 120,
       "donationsReceived": 120,
       "expLevel": 70,
@@ -244,78 +303,13 @@
       "verdict": "Moderate risk",
       "color": "yellow",
       "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260318T083330.000Z"
-    },
-    {
-      "name": "headless",
-      "tag": "#J008G9CLJ",
-      "role": "member",
-      "trophies": 4293,
-      "donations": 8,
-      "donationsReceived": 280,
-      "expLevel": 32,
-      "activityScore": 71,
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": false,
-      "discord": true,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260318T075802.000Z"
-    },
-    {
-      "name": "greg",
-      "tag": "#8GGQLU28",
-      "role": "member",
-      "trophies": 10151,
-      "donations": 78,
-      "donationsReceived": 80,
-      "expLevel": 72,
-      "activityScore": 72,
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": true,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260317T200844.000Z"
-    },
-    {
-      "name": "imad9591",
-      "tag": "#CGJP0YYUJ",
-      "role": "member",
-      "trophies": 11527,
-      "donations": 10,
-      "donationsReceived": 200,
-      "expLevel": 61,
-      "activityScore": 73,
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": false,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260318T072735.000Z"
-    },
-    {
-      "name": "Peater",
-      "tag": "#V0VLJQCJU",
-      "role": "member",
-      "trophies": 11797,
-      "donations": 38,
-      "donationsReceived": 80,
-      "expLevel": 69,
-      "activityScore": 74,
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": false,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260316T205515.000Z"
+      "lastSeen": "20260318T121928.000Z"
     },
     {
       "name": "☆. Inuk",
@@ -325,48 +319,97 @@
       "donations": 0,
       "donationsReceived": 0,
       "expLevel": 58,
-      "activityScore": 74,
+      "activityScore": 70,
       "verdict": "Moderate risk",
       "color": "yellow",
       "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": false,
       "warDays": null,
       "warDecks": null,
       "lastSeen": "20260316T053751.000Z"
     },
     {
+      "name": "headless",
+      "tag": "#J008G9CLJ",
+      "role": "member",
+      "trophies": 4266,
+      "donations": 8,
+      "donationsReceived": 400,
+      "expLevel": 32,
+      "activityScore": 71,
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": true,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260319T063212.000Z"
+    },
+    {
+      "name": "imad9591",
+      "tag": "#CGJP0YYUJ",
+      "role": "member",
+      "trophies": 11646,
+      "donations": 20,
+      "donationsReceived": 280,
+      "expLevel": 61,
+      "activityScore": 73,
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260319T083139.000Z"
+    },
+    {
       "name": "Pepito94",
       "tag": "#Y9P9GGL89",
       "role": "elder",
-      "trophies": 12386,
+      "trophies": 12358,
       "donations": 0,
-      "donationsReceived": 160,
+      "donationsReceived": 200,
       "expLevel": 65,
       "activityScore": 75,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260317T222746.000Z"
+      "lastSeen": "20260319T083200.000Z"
     },
     {
       "name": "T0T0L0$T0n€",
       "tag": "#PCLLULJ9V",
       "role": "member",
       "trophies": 12000,
-      "donations": 46,
-      "donationsReceived": 8,
+      "donations": 74,
+      "donationsReceived": 40,
       "expLevel": 78,
       "activityScore": 76,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260318T085942.000Z"
+      "lastSeen": "20260319T030512.000Z"
     },
     {
       "name": "☆. Apocalm",
@@ -380,6 +423,9 @@
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": false,
       "warDays": null,
       "warDecks": null,
@@ -389,24 +435,47 @@
       "name": "mathis",
       "tag": "#2YP2V2G0R",
       "role": "member",
-      "trophies": 12060,
-      "donations": 483,
-      "donationsReceived": 160,
+      "trophies": 12089,
+      "donations": 647,
+      "donationsReceived": 240,
       "expLevel": 66,
       "activityScore": 77,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260318T084821.000Z"
+      "lastSeen": "20260319T064025.000Z"
+    },
+    {
+      "name": "Peater",
+      "tag": "#V0VLJQCJU",
+      "role": "member",
+      "trophies": 11826,
+      "donations": 82,
+      "donationsReceived": 160,
+      "expLevel": 69,
+      "activityScore": 78,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260318T211844.000Z"
     },
     {
       "name": "julito",
       "tag": "#PCGJQ8JL2",
       "role": "member",
-      "trophies": 12557,
+      "trophies": 12590,
       "donations": 28,
       "donationsReceived": 80,
       "expLevel": 78,
@@ -414,78 +483,73 @@
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260318T002130.000Z"
+      "lastSeen": "20260319T055326.000Z"
     },
     {
       "name": "Pépin le Bref",
       "tag": "#98UULQY8",
       "role": "member",
-      "trophies": 12302,
-      "donations": 188,
-      "donationsReceived": 150,
+      "trophies": 12098,
+      "donations": 266,
+      "donationsReceived": 230,
       "expLevel": 72,
       "activityScore": 82,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260318T084236.000Z"
-    },
-    {
-      "name": "grooliv",
-      "tag": "#822GLVL00",
-      "role": "elder",
-      "trophies": 9611,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 66,
-      "activityScore": 82,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260316T054404.000Z"
+      "lastSeen": "20260319T081352.000Z"
     },
     {
       "name": "Pico!!",
       "tag": "#U09CUCYL2",
       "role": "elder",
-      "trophies": 11314,
-      "donations": 0,
+      "trophies": 11376,
+      "donations": 10,
       "donationsReceived": 0,
       "expLevel": 60,
       "activityScore": 83,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260318T054531.000Z"
+      "lastSeen": "20260319T074245.000Z"
     },
     {
       "name": "hardchaos76",
       "tag": "#8UL8JRCJ",
       "role": "elder",
       "trophies": 10708,
-      "donations": 21,
-      "donationsReceived": 240,
+      "donations": 31,
+      "donationsReceived": 288,
       "expLevel": 62,
       "activityScore": 84,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260318T082706.000Z"
+      "lastSeen": "20260318T205531.000Z"
     },
     {
       "name": "☆. Mini Aurel",
@@ -499,27 +563,33 @@
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": true,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260318T061609.000Z"
+      "lastSeen": "20260318T192450.000Z"
     },
     {
       "name": "Fidel",
       "tag": "#GLV9Q2P09",
       "role": "elder",
       "trophies": 12240,
-      "donations": 64,
-      "donationsReceived": 184,
-      "expLevel": 67,
+      "donations": 90,
+      "donationsReceived": 304,
+      "expLevel": 68,
       "activityScore": 85,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260318T055721.000Z"
+      "lastSeen": "20260319T081047.000Z"
     },
     {
       "name": "laurentsom",
@@ -527,186 +597,19 @@
       "role": "elder",
       "trophies": 10211,
       "donations": 40,
-      "donationsReceived": 200,
+      "donationsReceived": 320,
       "expLevel": 72,
       "activityScore": 85,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260318T063742.000Z"
-    },
-    {
-      "name": "Slicork",
-      "tag": "#CJVUJ8U9C",
-      "role": "elder",
-      "trophies": 12091,
-      "donations": 254,
-      "donationsReceived": 200,
-      "expLevel": 76,
-      "activityScore": 86,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260318T075937.000Z"
-    },
-    {
-      "name": "☆. Kikootz",
-      "tag": "#8G00908LP",
-      "role": "member",
-      "trophies": 11805,
-      "donations": 370,
-      "donationsReceived": 0,
-      "expLevel": 74,
-      "activityScore": 86,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260318T064656.000Z"
-    },
-    {
-      "name": "pacstar",
-      "tag": "#GC20UCLL",
-      "role": "elder",
-      "trophies": 11342,
-      "donations": 17,
-      "donationsReceived": 200,
-      "expLevel": 69,
-      "activityScore": 86,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260318T082529.000Z"
-    },
-    {
-      "name": "Zapata86",
-      "tag": "#8Y90VQYP9",
-      "role": "elder",
-      "trophies": 9391,
-      "donations": 26,
-      "donationsReceived": 40,
-      "expLevel": 67,
-      "activityScore": 86,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260317T153943.000Z"
-    },
-    {
-      "name": "lequent",
-      "tag": "#8V2PJGL2",
-      "role": "elder",
-      "trophies": 12226,
-      "donations": 147,
-      "donationsReceived": 160,
-      "expLevel": 64,
-      "activityScore": 88,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260317T183505.000Z"
-    },
-    {
-      "name": "Adolphe en Tmax",
-      "tag": "#RJY2R282V",
-      "role": "elder",
-      "trophies": 11754,
-      "donations": 40,
-      "donationsReceived": 0,
-      "expLevel": 67,
-      "activityScore": 88,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260317T191455.000Z"
-    },
-    {
-      "name": "kayes(2)",
-      "tag": "#8QVRJYVYU",
-      "role": "elder",
-      "trophies": 11653,
-      "donations": 94,
-      "donationsReceived": 40,
-      "expLevel": 77,
-      "activityScore": 88,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260317T192833.000Z"
-    },
-    {
-      "name": "Flo 2",
-      "tag": "#QVG90PQVG",
-      "role": "elder",
-      "trophies": 10721,
-      "donations": 58,
-      "donationsReceived": 80,
-      "expLevel": 59,
-      "activityScore": 88,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260318T073706.000Z"
-    },
-    {
-      "name": "le roi king",
-      "tag": "#YGP000RP8",
-      "role": "elder",
-      "trophies": 10502,
-      "donations": 328,
-      "donationsReceived": 280,
-      "expLevel": 64,
-      "activityScore": 88,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260318T032810.000Z"
-    },
-    {
-      "name": "hyène",
-      "tag": "#82JPJ9J98",
-      "role": "elder",
-      "trophies": 10236,
-      "donations": 68,
-      "donationsReceived": 240,
-      "expLevel": 74,
-      "activityScore": 88,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260318T050301.000Z"
+      "lastSeen": "20260319T051445.000Z"
     },
     {
       "name": "Benoit du 28",
@@ -716,158 +619,405 @@
       "donations": 148,
       "donationsReceived": 80,
       "expLevel": 60,
-      "activityScore": 88,
+      "activityScore": 85,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": false,
       "warDays": null,
       "warDecks": null,
       "lastSeen": "20260318T062013.000Z"
     },
     {
+      "name": "grooliv",
+      "tag": "#822GLVL00",
+      "role": "elder",
+      "trophies": 9606,
+      "donations": 50,
+      "donationsReceived": 0,
+      "expLevel": 66,
+      "activityScore": 85,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260319T060003.000Z"
+    },
+    {
+      "name": "Slicork",
+      "tag": "#CJVUJ8U9C",
+      "role": "elder",
+      "trophies": 12091,
+      "donations": 336,
+      "donationsReceived": 280,
+      "expLevel": 76,
+      "activityScore": 86,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260319T062429.000Z"
+    },
+    {
+      "name": "☆. Kikootz",
+      "tag": "#8G00908LP",
+      "role": "member",
+      "trophies": 11838,
+      "donations": 422,
+      "donationsReceived": 0,
+      "expLevel": 74,
+      "activityScore": 86,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260319T064319.000Z"
+    },
+    {
+      "name": "pacstar",
+      "tag": "#GC20UCLL",
+      "role": "elder",
+      "trophies": 11314,
+      "donations": 25,
+      "donationsReceived": 240,
+      "expLevel": 69,
+      "activityScore": 86,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260318T191320.000Z"
+    },
+    {
+      "name": "Zapata86",
+      "tag": "#8Y90VQYP9",
+      "role": "elder",
+      "trophies": 9391,
+      "donations": 26,
+      "donationsReceived": 80,
+      "expLevel": 68,
+      "activityScore": 86,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260318T170153.000Z"
+    },
+    {
+      "name": "lequent",
+      "tag": "#8V2PJGL2",
+      "role": "elder",
+      "trophies": 12226,
+      "donations": 365,
+      "donationsReceived": 240,
+      "expLevel": 64,
+      "activityScore": 88,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260319T012828.000Z"
+    },
+    {
+      "name": "Adolphe en Tmax",
+      "tag": "#RJY2R282V",
+      "role": "elder",
+      "trophies": 11754,
+      "donations": 48,
+      "donationsReceived": 0,
+      "expLevel": 67,
+      "activityScore": 88,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260318T214946.000Z"
+    },
+    {
+      "name": "kayes(2)",
+      "tag": "#8QVRJYVYU",
+      "role": "elder",
+      "trophies": 11653,
+      "donations": 120,
+      "donationsReceived": 120,
+      "expLevel": 77,
+      "activityScore": 88,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260319T070015.000Z"
+    },
+    {
+      "name": "Flo 2",
+      "tag": "#QVG90PQVG",
+      "role": "elder",
+      "trophies": 10721,
+      "donations": 92,
+      "donationsReceived": 80,
+      "expLevel": 59,
+      "activityScore": 88,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260319T053128.000Z"
+    },
+    {
+      "name": "le roi king",
+      "tag": "#YGP000RP8",
+      "role": "elder",
+      "trophies": 10502,
+      "donations": 456,
+      "donationsReceived": 400,
+      "expLevel": 64,
+      "activityScore": 88,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260319T034226.000Z"
+    },
+    {
+      "name": "hyène",
+      "tag": "#82JPJ9J98",
+      "role": "elder",
+      "trophies": 10236,
+      "donations": 108,
+      "donationsReceived": 296,
+      "expLevel": 74,
+      "activityScore": 88,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260319T075939.000Z"
+    },
+    {
       "name": "flo",
       "tag": "#LUGP2RYY",
       "role": "elder",
-      "trophies": 11964,
-      "donations": 132,
-      "donationsReceived": 80,
+      "trophies": 11786,
+      "donations": 204,
+      "donationsReceived": 120,
       "expLevel": 78,
       "activityScore": 90,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260318T062712.000Z"
+      "lastSeen": "20260319T082052.000Z"
     },
     {
       "name": "Plugpourlefion",
       "tag": "#GGVQJLG9",
       "role": "elder",
       "trophies": 11000,
-      "donations": 244,
-      "donationsReceived": 200,
+      "donations": 366,
+      "donationsReceived": 280,
       "expLevel": 70,
       "activityScore": 90,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260318T060347.000Z"
-    },
-    {
-      "name": "Totto698",
-      "tag": "#88QP9CJU",
-      "role": "elder",
-      "trophies": 12150,
-      "donations": 96,
-      "donationsReceived": 88,
-      "expLevel": 74,
-      "activityScore": 91,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "discord": true,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260317T003618.000Z"
+      "lastSeen": "20260319T054620.000Z"
     },
     {
       "name": "derrick",
       "tag": "#8YGY2RPCC",
       "role": "elder",
       "trophies": 12051,
-      "donations": 202,
-      "donationsReceived": 160,
-      "expLevel": 80,
+      "donations": 304,
+      "donationsReceived": 240,
+      "expLevel": 81,
       "activityScore": 92,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260318T021546.000Z"
+      "lastSeen": "20260319T060651.000Z"
     },
     {
       "name": "displaynone",
       "tag": "#YRGJGR8R",
       "role": "coLeader",
-      "trophies": 9051,
-      "donations": 630,
-      "donationsReceived": 296,
+      "trophies": 9049,
+      "donations": 834,
+      "donationsReceived": 416,
       "expLevel": 71,
       "activityScore": 93,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": true,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260318T072302.000Z"
+      "lastSeen": "20260319T084417.000Z"
     },
     {
       "name": "guill4um3",
       "tag": "#VGJ9LL8VC",
       "role": "coLeader",
       "trophies": 12561,
-      "donations": 476,
-      "donationsReceived": 280,
-      "expLevel": 64,
+      "donations": 650,
+      "donationsReceived": 392,
+      "expLevel": 65,
       "activityScore": 94,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": true,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260318T083905.000Z"
+      "lastSeen": "20260319T071804.000Z"
     },
     {
       "name": "dclik77",
       "tag": "#99VY0090",
       "role": "elder",
-      "trophies": 12403,
-      "donations": 168,
-      "donationsReceived": 180,
+      "trophies": 12406,
+      "donations": 238,
+      "donationsReceived": 220,
       "expLevel": 76,
       "activityScore": 94,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": true,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260318T070138.000Z"
+      "lastSeen": "20260318T202547.000Z"
+    },
+    {
+      "name": "Totto698",
+      "tag": "#88QP9CJU",
+      "role": "elder",
+      "trophies": 12150,
+      "donations": 142,
+      "donationsReceived": 168,
+      "expLevel": 74,
+      "activityScore": 95,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": true,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260318T223722.000Z"
     },
     {
       "name": "☆. Électron",
       "tag": "#82UPUGYP",
       "role": "leader",
-      "trophies": 12233,
-      "donations": 346,
-      "donationsReceived": 160,
+      "trophies": 12202,
+      "donations": 474,
+      "donationsReceived": 256,
       "expLevel": 71,
       "activityScore": 96,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
       "discord": true,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260317T181332.000Z"
+      "lastSeen": "20260319T075420.000Z"
     }
   ],
   "summary": {
-    "green": 31,
-    "yellow": 15,
-    "orange": 4,
-    "red": 0,
-    "avgScore": 77,
+    "green": 32,
+    "yellow": 14,
+    "orange": 3,
+    "red": 1,
+    "avgScore": 76,
     "total": 50
   },
   "isWarPeriod": false,
@@ -1104,6 +1254,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1112,6 +1270,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1120,6 +1286,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1128,6 +1302,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1136,6 +1318,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1144,6 +1334,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1152,6 +1350,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1160,6 +1366,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1168,6 +1382,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1176,6 +1398,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1184,6 +1414,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1192,6 +1430,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1200,6 +1446,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1208,6 +1462,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1216,6 +1478,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1224,6 +1494,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1232,6 +1510,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1240,6 +1526,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1248,6 +1542,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1256,6 +1558,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1264,6 +1574,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1272,6 +1590,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1280,6 +1606,14 @@
         "decks": 4,
         "role": "member",
         "inClan": true,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": true
       },
       {
@@ -1288,6 +1622,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1296,6 +1638,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1304,6 +1654,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1312,6 +1670,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1320,6 +1686,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1328,6 +1702,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1336,6 +1718,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1344,6 +1734,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1352,6 +1750,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1360,6 +1766,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1368,6 +1782,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1376,6 +1798,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1384,6 +1814,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1392,6 +1830,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1400,6 +1846,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1408,6 +1862,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1416,6 +1878,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1424,6 +1894,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1432,6 +1910,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1440,6 +1926,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1448,6 +1942,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1456,6 +1958,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1464,6 +1974,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1472,6 +1990,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1480,6 +2006,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1488,6 +2022,14 @@
         "decks": 1,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1496,6 +2038,14 @@
         "decks": 1,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1504,6 +2054,14 @@
         "decks": 1,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1512,6 +2070,14 @@
         "decks": 1,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1520,6 +2086,14 @@
         "decks": 11,
         "role": "coLeader",
         "inClan": true,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1528,6 +2102,14 @@
         "decks": 3,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1536,6 +2118,14 @@
         "decks": 4,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1544,6 +2134,14 @@
         "decks": 4,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1552,6 +2150,14 @@
         "decks": 4,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1560,6 +2166,14 @@
         "decks": 10,
         "role": "member",
         "inClan": true,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1568,6 +2182,14 @@
         "decks": 8,
         "role": "member",
         "inClan": true,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": true
       },
       {
@@ -1576,6 +2198,14 @@
         "decks": 8,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1584,6 +2214,14 @@
         "decks": 12,
         "role": "member",
         "inClan": true,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1592,6 +2230,14 @@
         "decks": 8,
         "role": "member",
         "inClan": true,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1600,6 +2246,14 @@
         "decks": 15,
         "role": "member",
         "inClan": true,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": true
       },
       {
@@ -1608,6 +2262,14 @@
         "decks": 9,
         "role": "member",
         "inClan": true,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": true
       },
       {
@@ -1616,6 +2278,14 @@
         "decks": 8,
         "role": "member",
         "inClan": true,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1624,6 +2294,14 @@
         "decks": 8,
         "role": "member",
         "inClan": true,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1632,6 +2310,14 @@
         "decks": 8,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1640,6 +2326,14 @@
         "decks": 12,
         "role": "member",
         "inClan": true,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1648,6 +2342,14 @@
         "decks": 12,
         "role": "member",
         "inClan": true,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1656,6 +2358,14 @@
         "decks": 12,
         "role": "elder",
         "inClan": true,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1664,6 +2374,14 @@
         "decks": 12,
         "role": "member",
         "inClan": true,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1672,6 +2390,14 @@
         "decks": 15,
         "role": "elder",
         "inClan": true,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1680,6 +2406,14 @@
         "decks": 11,
         "role": "member",
         "inClan": true,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1688,6 +2422,14 @@
         "decks": 14,
         "role": "member",
         "inClan": true,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1696,6 +2438,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1704,6 +2454,14 @@
         "decks": 4,
         "role": "member",
         "inClan": true,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": true
       },
       {
@@ -1712,6 +2470,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1720,6 +2486,14 @@
         "decks": 2,
         "role": "member",
         "inClan": true,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": true
       },
       {
@@ -1728,6 +2502,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1736,6 +2518,14 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       },
       {
@@ -1744,14 +2534,24 @@
         "decks": 0,
         "role": "member",
         "inClan": false,
+        "daily": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
         "isNew": false
       }
-    ]
+    ],
+    "snapshotComplete": false,
+    "snapshotDays": []
   },
   "clanWarSummary": null,
   "prevWeekId": "S130W2",
-  "snapshotToday": false,
-  "snapshotDate": null,
+  "snapshotToday": true,
+  "snapshotDate": "2026-03-22",
   "warCurrentWeekId": null,
   "warSnapshotDays": null,
   "snapshotTakenAt": null,
