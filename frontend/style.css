@@ -337,14 +337,16 @@ summary .card-title {
 }
 /* custom arrow marker using ::before */
 #card-top-players summary::before,
-#card-uncomplete summary::before {
+#card-uncomplete summary::before,
+#card-left summary::before {
   content: '►';
   margin-right: 8px;
   font-size: 0.9em;
   transition: transform 0.2s;
 }
 #card-top-players details[open] summary::before,
-#card-uncomplete details[open] summary::before {
+#card-uncomplete details[open] summary::before,
+#card-left details[open] summary::before {
   content: '▼';
 }
 #card-top-players details[open] .card-desc,

@@ -176,14 +176,17 @@
           "start": "2026-03-19T09:40:00.000Z",
           "end": "2026-03-20T09:39:59.999Z"
         },
-        "snapshotTime": "2026-03-19T16:03:59.173Z",
-        "snapshotBackupTime": "2026-03-19T16:03:59.173Z",
+        "snapshotTime": "2026-03-19T16:12:40.459Z",
+        "snapshotBackupTime": "2026-03-19T16:12:40.459Z",
         "decks": {}
       },
       {
         "warDay": "friday",
         "realDay": "2026-03-20",
-        "gdcPeriod": null,
+        "gdcPeriod": {
+          "start": "2026-03-20T09:40:00.000Z",
+          "end": "2026-03-21T09:39:59.999Z"
+        },
         "snapshotTime": null,
         "snapshotBackupTime": null,
         "decks": {}
@@ -191,7 +194,10 @@
       {
         "warDay": "saturday",
         "realDay": "2026-03-21",
-        "gdcPeriod": null,
+        "gdcPeriod": {
+          "start": "2026-03-21T09:40:00.000Z",
+          "end": "2026-03-22T09:39:59.999Z"
+        },
         "snapshotTime": null,
         "snapshotBackupTime": null,
         "decks": {}
@@ -199,7 +205,10 @@
       {
         "warDay": "sunday",
         "realDay": "2026-03-22",
-        "gdcPeriod": null,
+        "gdcPeriod": {
+          "start": "2026-03-22T09:40:00.000Z",
+          "end": "2026-03-23T09:39:59.999Z"
+        },
         "snapshotTime": null,
         "snapshotBackupTime": null,
         "decks": {}
