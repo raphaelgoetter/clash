@@ -854,18 +854,22 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
-        const { fetchCurrentRace } = await import('../../backend/services/clashApi.js');
+        const { fetchCurrentRace, fetchClanMembers } = await import('../../backend/services/clashApi.js');
 
-        const [race, { links }] = await Promise.all([
+        const [race, currentMembers, { links }] = await Promise.all([
           fetchCurrentRace(`#${resolved.tag}`),
+          fetchClanMembers(`#${resolved.tag}`),
           readDiscordLinks(),
         ]);
 
         const participants = race?.clan?.participants ?? [];
 
-        // Joueurs en retard : ceux qui n'ont pas encore joué leurs 4 decks du jour
+        // Seuls les membres actuellement dans le clan (les anciens membres ex-participants sont exclus)
+        const currentMemberTags = new Set(currentMembers.map((m) => m.tag));
+
+        // Joueurs en retard : membres actuels qui n'ont pas encore joué leurs 4 decks du jour
         const late = participants
-          .filter((p) => (p.decksUsedToday ?? 0) < 4)
+          .filter((p) => currentMemberTags.has(p.tag) && (p.decksUsedToday ?? 0) < 4)
           .map((p) => ({ ...p, missing: 4 - (p.decksUsedToday ?? 0) }))
           .sort((a, b) => b.missing - a.missing || a.name.localeCompare(b.name, 'fr'));
 
