@@ -59,8 +59,10 @@ Cinq commandes disponibles :
   Elle affiche aussi l'âge du dernier snapshot de decks&nbsp;: "Snapshot : today ✅",
   "Snapshot : yesterday ⚠️" ou une date plus ancienne (⚠️/❌ selon le jour).
   Si aucun snapshot n'a encore été enregistré pour le clan, la mention devient
-  "Snapshot : none (no data) ❌". Les snapshots sont pris automatiquement
-  lorsque des logs de guerre sont disponibles.
+  "Snapshot : none (no data) ❌".
+  Les snapshots sont pris automatiquement lorsque des logs de guerre sont disponibles.
+  Chaque snapshot contient désormais un champ `gdcPeriod` (UTC) qui indique
+  précisément l'intervalle couvert par ce snapshot (par ex. "Sat 10:40 → Sun 10:40").
 
 - Les pages de clan utilisent en priorité des données pré‑calculées
   (fichiers JSON issus de `npm run cache` et embarqués dans

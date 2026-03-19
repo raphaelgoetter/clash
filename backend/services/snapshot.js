@@ -57,7 +57,8 @@ function normalizeSnapshots(raw) {
 
   // Already new format (weeks with days array)
   if (raw[0].week && Array.isArray(raw[0].days)) {
-    return raw;
+    // Ensure each week has a full set of days + computed metadata (gdcPeriod, etc.)
+    return raw.map((w) => fillWeekDays(w));
   }
 
   // Legacy format (flat list) -> convert
@@ -103,6 +104,27 @@ function parisDateKey(date = new Date()) {
 }
 
 /**
+ * Compute the UTC offset (ms) between Paris and UTC for a given date.
+ */
+function parisOffsetMs(date = new Date()) {
+  const p = new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+  const u = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+  return p.getTime() - u.getTime();
+}
+
+/**
+ * Build a UTC timestamp representing `YYYY-MM-DD` at `hh:mm` in Paris local time.
+ */
+function parisTimeUtcMs(dateKey, hour = 0, minute = 0) {
+  const [y, m, d] = (dateKey ?? '').split('-').map(Number);
+  if (!y || !m || !d) return null;
+  const utcMs = Date.UTC(y, m - 1, d, hour, minute);
+  // Compute offset for midday to avoid DST boundary issues
+  const offset = parisOffsetMs(new Date(`${dateKey}T12:00:00Z`));
+  return utcMs - offset;
+}
+
+/**
  * For a given timestamp, return the war day (thu/fri/sat/sun) and the corresponding
  * local calendar date (Paris) for that war day.
  *
@@ -113,10 +135,10 @@ function getWarDayInfo(date = new Date()) {
   const resetMs = (10 * 60 + 40) * 60 * 1000;
   const msOfDay = paris.getHours() * 3600000 + paris.getMinutes() * 60000 + paris.getSeconds() * 1000 + paris.getMilliseconds();
 
-  // Before reset (10:40 Paris), we are still in the current war day.
-  // After reset, the war day increments.
-  if (msOfDay >= resetMs) {
-    paris.setDate(paris.getDate() + 1);
+  // Before reset (10:40 Paris), we are still in the *previous* war day.
+  // After reset, the new war day begins (increment date by 1).
+  if (msOfDay < resetMs) {
+    paris.setDate(paris.getDate() - 1);
   }
 
   const dow = paris.getDay(); // 0=Sun..6=Sat
@@ -149,9 +171,17 @@ function mergeMaps(a = {}, b = {}) {
 }
 
 function makeEmptyDay(warDay, realDay = null) {
+  const gdcPeriod = realDay
+    ? {
+        start: new Date(parisTimeUtcMs(realDay, 10, 40) - MS_PER_DAY).toISOString(),
+        end:   new Date(parisTimeUtcMs(realDay, 10, 40)).toISOString(),
+      }
+    : null;
+
   return {
     warDay,
     realDay,
+    gdcPeriod,
     snapshotTime: null,
     snapshotBackupTime: null,
     decks: {},
@@ -190,6 +220,20 @@ function fillWeekDays(week) {
     const day = existing ? { ...existing } : makeEmptyDay(wd, realDay);
     day.warDay = wd;
     day.realDay = realDay;
+
+    // Attach an explicit time window for the war day, in Paris local time.
+    // This makes it clear which calendar range is being captured (e.g. "Sunday
+    // war day" is the period from Saturday 10:40 → Sunday 10:40).
+    if (realDay) {
+      const endMs = parisTimeUtcMs(realDay, 10, 40);
+      const startMs = endMs ? endMs - MS_PER_DAY : null;
+      // The GDC period runs from 10:40 Paris (inclusive) to the next day 10:40 Paris (exclusive).
+      // We store the inclusive end instant at 1ms before the next period begins, to make the
+      // covered interval explicit (e.g. 09:39:59.999Z for an end at 09:40Z).
+      day.gdcPeriod = startMs && endMs
+        ? { start: new Date(startMs).toISOString(), end: new Date(endMs - 1).toISOString() }
+        : null;
+    }
 
     // Ensure mandatory fields exist
     day.snapshotTime = day.snapshotTime ?? null;
@@ -282,6 +326,17 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
   // Ensure the real day matches the computed one (Paris date of the war day)
   dayEntry.realDay = realDay;
 
+  // Always store the exact GDC interval this snapshot corresponds to.
+  // (This makes it clear that "warDay" is a Clash label, not necessarily the
+  // calendar day on which decks were played.)
+  if (realDay) {
+    const endMs = parisTimeUtcMs(realDay, 10, 40);
+    const startMs = endMs ? endMs - MS_PER_DAY : null;
+    dayEntry.gdcPeriod = startMs && endMs
+      ? { start: new Date(startMs).toISOString(), end: new Date(endMs - 1).toISOString() }
+      : null;
+  }
+
   // Determine decks for this snapshot (delta since yesterday)
   const prevDay = weekEntry.days[WAR_DAYS.indexOf(warDay) - 1];
   const baseCumul = prevDay?._cumul ?? {};
@@ -299,7 +354,11 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
     w.days.some((d) => d.realDay && new Date(d.realDay).getTime() >= cutoff)
   );
 
-  if (snapshotType === 'backup' && dayEntry.snapshotTime) {
+  // Always record the time the snapshot script ran (helps debugging / ensures
+  // the file is updated even if no deck changes occur).
+  dayEntry.snapshotTime = now.toISOString();
+
+  if (snapshotType === 'backup') {
     dayEntry.snapshotBackupTime = now.toISOString();
 
     // If we see >4 decks in the backup snapshot, it means some of those decks must
@@ -369,7 +428,10 @@ export async function getSnapshotsForWeek(clanTag, week = null) {
   const weekEntry = history.find((w) => w.week === week);
   if (!weekEntry) return [];
   return (weekEntry.days ?? [])
-    .map((d) => formatDay(weekEntry.week, d))
+    .map((d) => ({
+      ...formatDay(weekEntry.week, d),
+      gdcPeriod: d.gdcPeriod ?? null,
+    }))
     .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''));
 }
 
