@@ -173,8 +173,8 @@ function mergeMaps(a = {}, b = {}) {
 function makeEmptyDay(warDay, realDay = null) {
   const gdcPeriod = realDay
     ? {
-        start: new Date(parisTimeUtcMs(realDay, 10, 40) - MS_PER_DAY).toISOString(),
-        end:   new Date(parisTimeUtcMs(realDay, 10, 40)).toISOString(),
+        start: new Date(parisTimeUtcMs(realDay, 10, 40)).toISOString(),
+        end:   new Date(parisTimeUtcMs(realDay, 10, 40) + MS_PER_DAY - 1).toISOString(),
       }
     : null;
 
@@ -225,13 +225,11 @@ function fillWeekDays(week) {
     // This makes it clear which calendar range is being captured (e.g. "Sunday
     // war day" is the period from Saturday 10:40 → Sunday 10:40).
     if (realDay) {
-      const endMs = parisTimeUtcMs(realDay, 10, 40);
-      const startMs = endMs ? endMs - MS_PER_DAY : null;
-      // The GDC period runs from 10:40 Paris (inclusive) to the next day 10:40 Paris (exclusive).
-      // We store the inclusive end instant at 1ms before the next period begins, to make the
-      // covered interval explicit (e.g. 09:39:59.999Z for an end at 09:40Z).
+      const startMs = parisTimeUtcMs(realDay, 10, 40);
+      const endMs = startMs ? startMs + MS_PER_DAY - 1 : null;
+      // La période GDC commence le jour J à 10h40 Paris et se termine le lendemain J+1 à 10h39:59.
       day.gdcPeriod = startMs && endMs
-        ? { start: new Date(startMs).toISOString(), end: new Date(endMs - 1).toISOString() }
+        ? { start: new Date(startMs).toISOString(), end: new Date(endMs).toISOString() }
         : null;
     }
 
@@ -330,10 +328,10 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
   // (This makes it clear that "warDay" is a Clash label, not necessarily the
   // calendar day on which decks were played.)
   if (realDay) {
-    const endMs = parisTimeUtcMs(realDay, 10, 40);
-    const startMs = endMs ? endMs - MS_PER_DAY : null;
+    const startMs = parisTimeUtcMs(realDay, 10, 40);
+    const endMs = startMs ? startMs + MS_PER_DAY - 1 : null;
     dayEntry.gdcPeriod = startMs && endMs
-      ? { start: new Date(startMs).toISOString(), end: new Date(endMs - 1).toISOString() }
+      ? { start: new Date(startMs).toISOString(), end: new Date(endMs).toISOString() }
       : null;
   }
 
