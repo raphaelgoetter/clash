@@ -906,6 +906,10 @@ export default async function handler(req, res) {
         const WAR_DAY_LABELS = { 4: 'Jeudi (J1)', 5: 'Vendredi (J2)', 6: 'Samedi (J3)', 0: 'Dimanche (J4)' };
         const warDayLabel = WAR_DAY_LABELS[p.getDay()] ?? 'Jour de GDC';
 
+        // Decks déjà joués aujourd'hui par les membres actuels
+        const currentParticipants = participants.filter((p) => currentMemberTags.has(p.tag));
+        const totalPlayed = currentParticipants.reduce((sum, pl) => sum + (pl.decksUsedToday ?? 0), 0);
+
         // Construction de la liste par groupe
         let totalMissing = 0;
         const descLines = [`*${late.length} joueur${late.length > 1 ? 's' : ''} en retard à ${parisTime}*`];
@@ -921,7 +925,7 @@ export default async function handler(req, res) {
             const discordId   = links[tag];
             const guildMember = discordId ? memberById.get(discordId) : null;
             const discordPart = guildMember ? ` <@${discordId}>` : '';
-            descLines.push(`• ${pl.name}${discordPart} ${tag}`);
+            descLines.push(`• ${pl.name}${discordPart} (${tag})`);
           }
         }
 
@@ -929,7 +933,7 @@ export default async function handler(req, res) {
           title: `⏳  ${resolved.name}, retardataires de ${warDayLabel}`,
           description: descLines.join('\n'),
           color: 0xe67e22,
-          footer: { text: `Il reste ${totalMissing} deck${totalMissing > 1 ? 's' : ''} à jouer au total` },
+          footer: { text: `${totalPlayed} deck${totalPlayed > 1 ? 's' : ''} joué${totalPlayed > 1 ? 's' : ''}. Il reste encore ${totalMissing} deck${totalMissing > 1 ? 's' : ''} à jouer` },
         };
 
         await fetch(webhookUrl, {
