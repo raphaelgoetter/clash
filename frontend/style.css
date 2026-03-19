@@ -285,6 +285,24 @@ summary .card-title {
   opacity: 0.45;
 }
 
+/* Left clan members (legacy) */
+.left-members {
+  columns: 2;
+  column-gap: 24px;
+  margin-top: 12px;
+}
+
+@media (min-width: 1024px) {
+  .left-members {
+    columns: 4;
+  }
+}
+
+.left-members div {
+  break-inside: avoid;
+  padding: 2px 0;
+}
+
 /* daily breakdown colour coding */
 .daily-green { color: var(--green); }
 .daily-orange { color: var(--orange); }

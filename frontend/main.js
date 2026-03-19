@@ -893,16 +893,23 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
       : '<li class="text-muted">Everyone still in clan completed 16 decks 👍</li>';
   }
 
-  // Section séparée pour les joueurs qui ont quitté le clan
-  if (departed.length > 0) {
-    const departedHtml =
-      `<div class="uncomplete-departed">` +
-        `<p class="uncomplete-departed-title">🚪 Left the clan</p>` +
-        `<ol class="top-players-list uncomplete-departed-list">` +
-          departed.map(renderPlayerItem).join('') +
-        `</ol>` +
-      `</div>`;
-    listEl.insertAdjacentHTML('afterend', departedHtml);
+  // Affiche la liste des joueurs qui ont quitté le clan dans une carte séparée
+  const leftCard = document.getElementById('card-left');
+  const leftContainer = document.getElementById('left-members');
+  if (leftCard && leftContainer) {
+    if (departed.length === 0) {
+      leftCard.classList.add('hidden');
+      leftContainer.innerHTML = '';
+    } else {
+      leftCard.classList.remove('hidden');
+      // Simple liste multi-colonnes sans full détails
+      leftContainer.innerHTML = departed
+        .map((p) => {
+          const tag = p.tag.startsWith('#') ? p.tag : `#${p.tag}`;
+          return `<div>${escHtml(p.name)} (${escHtml(tag)})</div>`;
+        })
+        .join('');
+    }
   }
 
   card.classList.remove('hidden');
