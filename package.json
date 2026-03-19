@@ -8,6 +8,7 @@
     "dev": "concurrently --names \"backend,frontend\" --prefix-colors \"cyan,magenta\" \"cd backend && npx nodemon server.js\" \"cd frontend && npx vite\"",
     "snapshot": "node scripts/collectSnapshots.js",
     "cache": "node scripts/cacheAll.js",
+    "transfers": "node scripts/listFamilyTransfers.js",
     "prebuild": "npm run cache",
     "build": "cd frontend && npm run build && cd .. && vercel --prod"
   },

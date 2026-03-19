@@ -9,6 +9,7 @@ import {
   computeWarReliabilityFallback, categorizeBattleLog,
   filterWarBattles, expandDuelRounds, isWarWin, buildCurrentWarDays,
   estimateWinsFromFame, warResetOffsetMs, scoreTotalDonations,
+  mergeWarHistoryWithTransfer,
 } from '../services/analysisService.js';
 import { computeTopPlayers } from '../services/topplayers.js';
 import { computeUncomplete } from '../services/uncomplete.js';
@@ -22,6 +23,17 @@ const router = Router();
 
 // One day in milliseconds (used for war day calculations)
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/**
+ * When a player appears in another family clan, we consider them a transfer
+ * if they played at least this many decks in the most recent completed week.
+ */
+const FAMILY_TRANSFER_DECKS_THRESHOLD = 13;
+
+/**
+ * Only consider the most recent completed week for transfer detection.
+ */
+const FAMILY_TRANSFER_WINDOW_WEEKS = 1;
 
 /**
  * Run async tasks with limited concurrency to avoid rate-limiting.
@@ -164,6 +176,37 @@ export async function buildClanAnalysis(clanTag) {
     // network requests. the helper gracefully handles missing logs.
     const topPlayers = await computeTopPlayers(clanTag, members, [2400, 2600, 2800], raceLog);
 
+    // Preload family clan race logs to detect recent transfers between clans.
+    // This avoids querying the API repeatedly for each member.
+    const familyRaceLogs = {};
+    await Promise.all(
+      ALLOWED_CLANS.filter((t) => t !== clanTag).map(async (tag) => {
+        try {
+          familyRaceLogs[tag] = await fetchRaceLog(tag);
+        } catch (_) {
+          familyRaceLogs[tag] = null;
+        }
+      })
+    );
+
+    const findRecentFamilyTransfer = (playerTag) => {
+      if (!playerTag) return null;
+      const normalizedTag = playerTag.startsWith('#') ? playerTag : `#${playerTag}`;
+
+      for (const [otherTag, otherRaceLog] of Object.entries(familyRaceLogs)) {
+        if (!otherRaceLog || otherRaceLog.length === 0) continue;
+        const otherHistory = buildWarHistory(playerTag, otherRaceLog, otherTag, null);
+        if (!otherHistory?.weeks?.length) continue;
+
+        const week = otherHistory.weeks[0];
+        if ((week.decksUsed ?? 0) >= FAMILY_TRANSFER_DECKS_THRESHOLD) {
+          return { transferWeek: week, fromClanTag: otherTag };
+        }
+      }
+
+      return null;
+    };
+
     // Enregistre le snapshot journalier depuis la course EN COURS (currentRace),
     // pas depuis le race log terminé. decksUsed = cumul depuis jeudi → le delta
     // inter-snapshots donne les combats du jour.
@@ -296,8 +339,9 @@ export async function buildClanAnalysis(clanTag) {
 
 
     // First pass: compute war scores for all members
-    const analyzedMembers = members.map((m, idx) => {
-      let activityScore, verdict, color, isNew = false, warHistory = null;
+    const analyzedMembers = await Promise.all(
+      members.map(async (m, idx) => {
+        let activityScore, verdict, color, isNew = false, warHistory = null;
 
       // Resolve full player profile (for badges) and battle log
       const mdResult    = memberDataResults[idx];
@@ -315,7 +359,7 @@ export async function buildClanAnalysis(clanTag) {
       const discordLinked = Object.prototype.hasOwnProperty.call(discordLinks, m.tag);
 
       if (raceLog) {
-        const wh = buildWarHistory(m.tag, raceLog, clan.tag, currentRace);
+        let wh = buildWarHistory(m.tag, raceLog, clan.tag, currentRace);
         warHistory = wh;
 
         // Compute GDC win rate from battle log when available
@@ -331,10 +375,27 @@ export async function buildClanAnalysis(clanTag) {
         // Determine whether warHistory alone is sufficient. We want to
         // grant full scores when the player has either a full 16-deck week
         // in the past or the old rule of ≥2 completed weeks in the clan.
-        const prevWeeks = wh.weeks.filter((w) => !w.isCurrent);
-        const hasFullWeek = prevWeeks.some((w) => (w.decksUsed ?? 0) >= 16);
+        let prevWeeks = wh.weeks.filter((w) => !w.isCurrent);
+        let hasFullWeek = prevWeeks.some((w) => (w.decksUsed ?? 0) >= 16);
         const oldRule = wh.streakInCurrentClan >= 2 && wh.completedParticipation >= 2;
         let hasEnoughHistory = hasFullWeek || oldRule;
+
+        // Transfer detection (family clan): if the player has a recent full week
+        // in another family clan, we can compute a proper war score instead of
+        // falling back to the battle log.
+        if (!hasEnoughHistory) {
+          const transfer = findRecentFamilyTransfer(m.tag);
+          if (transfer) {
+            const merged = mergeWarHistoryWithTransfer(wh, transfer.transferWeek, transfer.fromClanTag);
+            wh = merged;
+            warHistory = merged;
+            prevWeeks = wh.weeks.filter((w) => !w.isCurrent);
+            hasFullWeek = prevWeeks.some((w) => (w.decksUsed ?? 0) >= 16);
+            hasEnoughHistory = hasFullWeek || oldRule;
+            // disambiguate new vs transfer in the UI
+            isNew = false;
+          }
+        }
 
         // same mid‑race arrival handling as player view (ignore oldest incomplete)
         if (prevWeeks.length >= 2) {
@@ -457,6 +518,9 @@ export async function buildClanAnalysis(clanTag) {
         verdict,
         color,
         isNew,
+        isFamilyTransfer:    warHistory?.isFamilyTransfer ?? false,
+        transferFromClan:    warHistory?.transferFromClan ?? null,
+        transferWeek:        warHistory?.transferWeek?.label ?? null,
         discord:            discordLinked,
         warDays,
         // Valeur numérique pour le tri de la colonne "This War"
@@ -464,7 +528,7 @@ export async function buildClanAnalysis(clanTag) {
         warDecks:  warDays === null ? null : (warDays.arrivedMidWar ? -1 : (warDays.totalDecksUsed ?? 0)),
         lastSeen:  m.lastSeen ?? null,
       };
-    });
+    }));
 
     // Sort by activityScore ascending (most at-risk first)
     analyzedMembers.sort((a, b) => a.activityScore - b.activityScore);

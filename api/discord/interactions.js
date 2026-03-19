@@ -452,13 +452,14 @@ export default async function handler(req, res) {
         const VERDICT_EMOJI = { 'Extreme risk': '🔴', 'High risk': '🟠' };
         const clanUrl = `https://trustroyale.vercel.app/?mode=clan&tag=%23${resolved.tag}`;
         const rows = filtered.slice(0, 25).map((m) => {
-          const newTag = m.isNew ? ' (new)' : '';
+          const transferTag = m.isFamilyTransfer ? ' (transfer)' : '';
+          const newTag = !m.isFamilyTransfer && m.isNew ? ' (new)' : '';
           const role = capitalize(m.role || 'member');
           const emoji = VERDICT_EMOJI[m.verdict] ?? '⚠️';
           const pct = Math.round(m.activityScore ?? 0);
           const verdict = (m.verdict || '').replace(/\s*risk$/i, '');
           const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(m.tag)}`;
-          return `- [${m.name}](${playerUrl})${newTag} ${m.tag} [${role}] ${emoji} ${verdict} (${pct}%)`;
+          return `- [${m.name}](${playerUrl})${transferTag}${newTag} ${m.tag} [${role}] ${emoji} ${verdict} (${pct}%)`;
         });
 
         const description = rows.join('\n') + (filtered.length > 25 ? `\n...and ${filtered.length - 25} more` : '');

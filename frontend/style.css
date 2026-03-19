@@ -1078,6 +1078,21 @@ a.member-link:hover div:first-child {
   margin-left: 5px;
 }
 
+.transfer-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: .68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  background: rgba(34, 197, 94, .12);
+  color: var(--green);
+  border: 1px solid rgba(34, 197, 94, .35);
+  vertical-align: middle;
+  margin-left: 5px;
+}
+
 .last-seen-badge {
   display: inline-block;
   padding: 2px 8px;

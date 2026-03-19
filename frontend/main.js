@@ -441,8 +441,9 @@ function renderPlayerResults(data) {
     ? `https://royaleapi.com/clan/${clanTag.replace('#', '')}/`
     : null;
   const clanValue = clanTag ? clanTag : 'No clan';
+  const playerBadge = warHistory?.isFamilyTransfer ? 'transfer' : (ws.isFallback ? 'new' : null);
   overviewGrid.innerHTML = overviewItems([
-    { label: 'Name',          value: overview.name, cls: 'gold', badge: ws.isFallback ? 'new' : null },
+    { label: 'Name',          value: overview.name, cls: 'gold', badge: playerBadge },
     { label: 'Tag',           value: overview.tag,
       link: `https://royaleapi.com/player/${overview.tag.replace('#', '')}` },
     { label: 'Clan',          value: clanValue,
@@ -871,9 +872,10 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
     } else if (p.dailySource === 'snapshot' && !p.dailySnapshotComplete) {
       warnAfter = ' ⚠';
     }
-    const newBadge = p.isNew ? '<span class="new-badge">new</span>' : '';
+    const transferBadge = p.isFamilyTransfer ? '<span class="transfer-badge">transfer</span>' : '';
+    const newBadge = !p.isFamilyTransfer && p.isNew ? '<span class="new-badge">new</span>' : '';
     return `<li><span class="tp-name">${escHtml(p.name)} ` +
-      `<span class="tp-tag">${escHtml(p.tag)}</span>${newBadge}</span>` +
+      `<span class="tp-tag">${escHtml(p.tag)}</span>${transferBadge}${newBadge}</span>` +
       `<span class="tp-meta">` +
         `<span class="role-badge ${p.role}">${capitalize(p.role)}</span>` +
         `<span class="tp-fame">${fmt(p.decks)} decks${dailyStr ? ' (' + dailyStr + ')' : ''}${warnAfter}</span>` +
@@ -1038,12 +1040,13 @@ function renderMembersTable(members) {
                       : `${days}d ago`;
           lastSeenCell = `<td class="last-seen-col"><span class="last-seen-badge ${cls}">${label}</span></td>`;
         }
-        const displayNew = m.isNew && daysFrac <= 7;
+        const displayTransfer = m.isFamilyTransfer;
+        const displayNew = !displayTransfer && m.isNew && daysFrac <= 7;
         return `
       <tr>
         <td>
           <a class="member-link" href="?${new URLSearchParams({ mode: 'player', tag: m.tag })}" title="Analyze ${escHtml(m.name)}">
-            <div style="font-weight:600">${escHtml(m.name)}${displayNew ? ' <span class="new-badge">new</span>' : ''}</div>
+            <div style="font-weight:600">${escHtml(m.name)}${displayTransfer ? ' <span class="transfer-badge">transfer</span>' : ''}${displayNew ? ' <span class="new-badge">new</span>' : ''}</div>
             <div style="font-size:.75rem;color:var(--text-muted)">${escHtml(m.tag)}</div>
           </a>
         </td>

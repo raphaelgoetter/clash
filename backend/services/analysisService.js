@@ -18,6 +18,19 @@ import {
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
+/**
+ * Clans considérés comme une « famille » (transferts autorisés entre eux).
+ * Tags sans '#', en majuscules.
+ */
+const FAMILY_CLAN_TAGS = ['Y8JUPC9C', 'LRQP20V9', 'QU9UQJRL'];
+
+/**
+ * Si un joueur est détecté dans un autre clan de la famille au cours de la
+ * dernière semaine (dernier River Race complété), on le traite comme un
+ * transfert, ce qui permet de fusionner l'historique et d'utiliser le racelog.
+ */
+const FAMILY_TRANSFER_WINDOW_WEEKS = 1;
+
 // Clan War day resets at 10:40 heure de Paris (UTC+1 hiver, UTC+2 été).
 // Le décalage UTC est calculé dynamiquement pour gérer le DST.
 
@@ -788,6 +801,90 @@ export function buildWarHistory(playerTag, raceLog, currentClanTag = null, curre
   return { weeks, totalFame, avgFame, maxFame, participation, completedParticipation, totalWeeks, streakInCurrentClan, historicalWinRate };
 }
 
+/**
+ * Search the family clans to detect a recent transfer.
+ *
+ * A transfer is assumed when the player appears in another family clan's most
+ * recent completed River Race week with a solid participation (>= 13 decks).
+ * Only the very latest completed week(s) are considered so transfers are not
+ * remembered indefinitely.
+ *
+ * @param {string} playerTag - player tag (with or without leading '#')
+ * @param {string} currentClanTag - current clan tag (with or without '#')
+ * @returns {Promise<{ transferWeek: object, fromClanTag: string }|null>}
+ */
+async function findRecentFamilyTransfer(playerTag, currentClanTag) {
+  if (!playerTag) return null;
+  const normalizedTag = playerTag.startsWith('#') ? playerTag : `#${playerTag}`;
+  const normalizedCurrent = currentClanTag ? currentClanTag.replace(/^#/, '').toUpperCase() : null;
+  const candidates = FAMILY_CLAN_TAGS.filter((t) => t !== normalizedCurrent);
+  if (!candidates.length) return null;
+
+  const results = await Promise.allSettled(
+    candidates.map((tag) => fetchRaceLog(tag).then((raceLog) => ({ tag, raceLog })))
+  );
+
+  for (const res of results) {
+    if (res.status !== 'fulfilled') continue;
+    const { tag: clanTag, raceLog } = res.value;
+    const otherHistory = buildWarHistory(playerTag, raceLog, clanTag, null);
+    if (!otherHistory?.weeks?.length) continue;
+
+    for (let i = 0; i < Math.min(FAMILY_TRANSFER_WINDOW_WEEKS, otherHistory.weeks.length); i += 1) {
+      const week = otherHistory.weeks[i];
+      if ((week.decksUsed ?? 0) >= 13) {
+        return { transferWeek: week, fromClanTag: clanTag };
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Merge a transfer week into an existing war history object.
+ * The transfer week is appended after the current clan's history so that
+ * streak calculations remain based on the current clan only.
+ */
+function mergeWarHistoryWithTransfer(currentWarHistory, transferWeek, fromClanTag) {
+  const weeks = [
+    ...currentWarHistory.weeks,
+    { ...transferWeek, transferFromClan: fromClanTag },
+  ];
+
+  const weeksPlayed = weeks.filter((w) => (w.decksUsed ?? 0) > 0);
+  const totalFame = weeksPlayed.reduce((s, w) => s + w.fame, 0);
+  const participation = weeksPlayed.length;
+  const avgFame = participation ? Math.round(totalFame / participation) : 0;
+  const maxFame = weeksPlayed.reduce((m, w) => Math.max(m, w.fame), 0);
+
+  const completedWeeks = weeksPlayed.filter((w) => !w.isCurrent);
+  const completedParticipation = completedWeeks.length;
+
+  const MIN_PVP_DECKS = 5;
+  let totalPvpDecks = 0, totalEstimatedWins = 0;
+  for (const w of completedWeeks) {
+    const { wins: wWins, pvpDecks: wPvp } = estimateWinsFromFame(w.fame, w.decksUsed, w.boatAttacks);
+    totalPvpDecks += wPvp;
+    totalEstimatedWins += wWins;
+  }
+  const historicalWinRate = totalPvpDecks >= MIN_PVP_DECKS ? totalEstimatedWins / totalPvpDecks : null;
+
+  return {
+    ...currentWarHistory,
+    weeks,
+    totalFame,
+    avgFame,
+    maxFame,
+    participation,
+    completedParticipation,
+    historicalWinRate,
+    isFamilyTransfer: true,
+    transferFromClan: fromClanTag,
+    transferWeek,
+  };
+}
+
 // ── Player full analysis ──────────────────────────────────────
 
 /**
@@ -894,16 +991,34 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
       const warWinRate = rawWarLog.length >= 10 ? gdcWins / rawWarLog.length : null;
 
       // Build list of *prior* weeks (exclude live/current one) for history rules
-      const prevWeeks = analysis.warHistory.weeks.filter((w) => !w.isCurrent);
+      let prevWeeks = analysis.warHistory.weeks.filter((w) => !w.isCurrent);
 
       // if any previous week shows 16 or more decks, history is reliable
-      const hasFullWeek = prevWeeks.some((w) => (w.decksUsed ?? 0) >= 16);
+      let hasFullWeek = prevWeeks.some((w) => (w.decksUsed ?? 0) >= 16);
 
       // old rule remains as fallback: at least two completed weeks in clan
       const oldRule = analysis.warHistory.streakInCurrentClan >= 2
         && analysis.warHistory.completedParticipation >= 2;
 
       let hasEnoughHistory = hasFullWeek || oldRule;
+
+      // If the player just switched clan within the family, we can include a
+      // recent full week from the previous clan to avoid falling back to battlelog.
+      if (!hasEnoughHistory) {
+        const transfer = await findRecentFamilyTransfer(player.tag, player.clan.tag);
+        if (transfer) {
+          analysis.warHistory = mergeWarHistoryWithTransfer(
+            analysis.warHistory,
+            transfer.transferWeek,
+            transfer.fromClanTag
+          );
+
+          // recompute history-based rules with the merged data
+          prevWeeks = analysis.warHistory.weeks.filter((w) => !w.isCurrent);
+          hasFullWeek = prevWeeks.some((w) => (w.decksUsed ?? 0) >= 16);
+          hasEnoughHistory = hasFullWeek || oldRule;
+        }
+      }
 
       // additional handling: when player has ≥2 prior weeks and the *oldest*
       // one is incomplete (<16), treat it as a mid‑race arrival and **ignore it**
@@ -1129,3 +1244,5 @@ export function analyzeClanMembers(members) {
     };
   });
 }
+
+export { mergeWarHistoryWithTransfer };
