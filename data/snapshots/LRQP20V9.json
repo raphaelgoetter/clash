@@ -165,5 +165,45 @@
         "decks": {}
       }
     ]
+  },
+  {
+    "week": "S130W3",
+    "days": [
+      {
+        "warDay": "thursday",
+        "realDay": "2026-03-19",
+        "gdcPeriod": {
+          "start": "2026-03-19T09:40:00.000Z",
+          "end": "2026-03-20T09:39:59.999Z"
+        },
+        "snapshotTime": "2026-03-19T16:03:59.173Z",
+        "snapshotBackupTime": "2026-03-19T16:03:59.173Z",
+        "decks": {}
+      },
+      {
+        "warDay": "friday",
+        "realDay": "2026-03-20",
+        "gdcPeriod": null,
+        "snapshotTime": null,
+        "snapshotBackupTime": null,
+        "decks": {}
+      },
+      {
+        "warDay": "saturday",
+        "realDay": "2026-03-21",
+        "gdcPeriod": null,
+        "snapshotTime": null,
+        "snapshotBackupTime": null,
+        "decks": {}
+      },
+      {
+        "warDay": "sunday",
+        "realDay": "2026-03-22",
+        "gdcPeriod": null,
+        "snapshotTime": null,
+        "snapshotBackupTime": null,
+        "decks": {}
+      }
+    ]
   }
 ]
