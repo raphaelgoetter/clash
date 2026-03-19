@@ -838,5 +838,114 @@ export default async function handler(req, res) {
     return;
   }
 
+  // Commande /late
+  if (body.type === 2 && body.data?.name === 'late') {
+    const clanOpt = body.data.options?.find((o) => o.name === 'clan');
+    const clanVal = (clanOpt?.value || '1').toString().trim();
+    const CLAN_MAP = {
+      '1': { name: 'La Resistance',  tag: 'Y8JUPC9C' },
+      '2': { name: 'Les Resistants', tag: 'LRQP20V9' },
+      '3': { name: 'Les Revoltes',   tag: 'QU9UQJRL' },
+    };
+    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP['1'];
+
+    res.status(200).json({ type: 5 });
+    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+
+    runBackground(async () => {
+      try {
+        const { fetchCurrentRace } = await import('../../backend/services/clashApi.js');
+
+        const [race, { links }] = await Promise.all([
+          fetchCurrentRace(`#${resolved.tag}`),
+          readDiscordLinks(),
+        ]);
+
+        const participants = race?.clan?.participants ?? [];
+
+        // Joueurs en retard : ceux qui n'ont pas encore joué leurs 4 decks du jour
+        const late = participants
+          .filter((p) => (p.decksUsedToday ?? 0) < 4)
+          .map((p) => ({ ...p, missing: 4 - (p.decksUsedToday ?? 0) }))
+          .sort((a, b) => b.missing - a.missing || a.name.localeCompare(b.name, 'fr'));
+
+        if (late.length === 0) {
+          await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              content: `✅ Tous les joueurs de **${resolved.name}** ont joué leurs 4 decks aujourd'hui !`,
+            }),
+          });
+          return;
+        }
+
+        // Pseudos Discord
+        const guildId  = process.env.DISCORD_GUILD_ID;
+        const botToken = process.env.DISCORD_TOKEN;
+        const guildRes = await fetch(
+          `https://discord.com/api/v10/guilds/${guildId}/members?limit=1000`,
+          { headers: { Authorization: `Bot ${botToken}` } },
+        );
+        const guildMembers = guildRes.ok ? await guildRes.json() : [];
+        const memberById = new Map(guildMembers.map((m) => [m.user?.id, m]));
+
+        // Heure de Paris au moment de la commande
+        const now = new Date();
+        const p = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+        const parisTime = `${String(p.getHours()).padStart(2, '0')}h${String(p.getMinutes()).padStart(2, '0')}`;
+
+        // Jour de GDC courant (avant 10:40 Paris → encore le jour précédent)
+        const resetMs = (10 * 60 + 40) * 60 * 1000;
+        const msOfDay = p.getHours() * 3600000 + p.getMinutes() * 60000;
+        if (msOfDay < resetMs) p.setDate(p.getDate() - 1);
+        const WAR_DAY_LABELS = { 4: 'Jeudi (J1)', 5: 'Vendredi (J2)', 6: 'Samedi (J3)', 0: 'Dimanche (J4)' };
+        const warDayLabel = WAR_DAY_LABELS[p.getDay()] ?? 'Jour de GDC';
+
+        // Construction de la liste par groupe
+        let totalMissing = 0;
+        const descLines = [`*${late.length} joueur${late.length > 1 ? 's' : ''} en retard à ${parisTime}*`];
+
+        for (const count of [4, 3, 2, 1]) {
+          const group = late.filter((pl) => pl.missing === count);
+          if (!group.length) continue;
+          descLines.push('');
+          descLines.push(`**Manque ${count} deck${count > 1 ? 's' : ''}**`);
+          for (const pl of group) {
+            totalMissing += count;
+            const tag = pl.tag.startsWith('#') ? pl.tag : `#${pl.tag}`;
+            const discordId    = links[tag];
+            const guildMember  = discordId ? memberById.get(discordId) : null;
+            const discordName  = guildMember
+              ? (guildMember.nick || guildMember.user?.global_name || guildMember.user?.username)
+              : null;
+            const discordPart  = discordName ? ` @${discordName}` : '';
+            descLines.push(`• ${pl.name}${discordPart} ${tag}`);
+          }
+        }
+
+        const embed = {
+          title: `⏳  ${resolved.name}, retardataires de ${warDayLabel}`,
+          description: descLines.join('\n'),
+          color: 0xe67e22,
+          footer: { text: `Il reste ${totalMissing} deck${totalMissing > 1 ? 's' : ''} à jouer au total` },
+        };
+
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ embeds: [embed] }),
+        });
+      } catch (err) {
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
+        });
+      }
+    });
+    return;
+  }
+
   return res.status(400).json({ error: 'Unsupported interaction type' });
 }

@@ -117,8 +117,26 @@ const commands = [
     ],
   },
   {
+    name: 'late',
+    description: 'Liste les joueurs en retard dans leurs combats GDC avant le reset.',
+    options: [
+      {
+        type: 3, // STRING
+        name: 'clan',
+        description: '1=La Resistance, 2=Les Resistants, 3=Les Revoltes',
+        required: true,
+        choices: [
+          { name: 'La Resistance',  value: '1' },
+          { name: 'Les Resistants', value: '2' },
+          { name: 'Les Revoltes',   value: '3' },
+        ],
+      },
+    ],
+  },
+  {
     name: 'chelem',
     description: 'Liste les joueurs ayant fait 16/16 decks chaque semaine d’une saison donnée.',
+    
     options: [
       {
         type: 3, // STRING
