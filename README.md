@@ -35,6 +35,7 @@ Cinq commandes disponibles :
 
 - **`/trust tag:#TAG`** — analyse la fiabilité d'un joueur
 - **`/trust-clan clan:N`** — liste tous les membres High risk / Extreme risk d'un clan (N = 1, 2 ou 3)
+- **`/late clan:N`** — liste les joueurs en retard sur leurs decks de la journée (avant le reset)
 - **`/chelem clan:N [season:X]`** — liste les joueurs ayant fait 16/16 decks chaque semaine d'une saison (par défaut : la dernière saison terminée)
 - **`/promote clan:N min:X`** — liste les joueurs ayant atteint ≥ X fame la semaine précédente
 - **`/discord-link tag:#TAG`** — lie ton compte Clash à ton Discord (tag2 et tag3 optionnels pour comptes multiples)

@@ -82,6 +82,7 @@ node scripts/registerCommands.js
 | `/chelem clan:N [season:X]` | Liste les joueurs 16/16 decks chaque semaine d'une saison |
 | `/discord-link tag:#TAG` | Lie un compte Clash à un Discord |
 | `/discord-check clan:N` | Vérifie la présence Discord des membres d'un clan |
+| `/late clan:N` | Liste les retardataires de la journée de GDC (avant reset) |
 
 ## Sous-agents
 

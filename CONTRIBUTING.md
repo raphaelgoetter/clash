@@ -234,6 +234,7 @@ Le bot Discord expose des slash commands qui affichent les analyses directement 
 | `/promote clan:N min:X` | Liste les joueurs ≥ X fame la semaine précédente |
 | `/discord-link tag:#TAG` | Lie un compte Clash à un Discord |
 | `/discord-check clan:N` | Vérifie la présence Discord des membres d'un clan |
+| `/late clan:N` | Liste les joueurs en retard sur leurs decks de la journée (avant reset) |
 
 ### Architecture
 
