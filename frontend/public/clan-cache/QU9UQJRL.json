@@ -77,7 +77,7 @@
       "role": "member",
       "trophies": 8811,
       "donations": 106,
-      "donationsReceived": 30,
+      "donationsReceived": 40,
       "expLevel": 43,
       "activityScore": 10,
       "verdict": "Extreme risk",
@@ -377,7 +377,7 @@
       "role": "member",
       "trophies": 4238,
       "donations": 0,
-      "donationsReceived": 30,
+      "donationsReceived": 40,
       "expLevel": 26,
       "activityScore": 32,
       "verdict": "High risk",
@@ -617,7 +617,7 @@
       "role": "member",
       "trophies": 10756,
       "donations": 10,
-      "donationsReceived": 208,
+      "donationsReceived": 216,
       "expLevel": 62,
       "activityScore": 44,
       "verdict": "High risk",
@@ -977,7 +977,7 @@
       "role": "elder",
       "trophies": 10185,
       "donations": 360,
-      "donationsReceived": 16,
+      "donationsReceived": 24,
       "expLevel": 56,
       "activityScore": 58,
       "verdict": "Moderate risk",
@@ -1097,7 +1097,7 @@
       "role": "elder",
       "trophies": 6464,
       "donations": 18,
-      "donationsReceived": 50,
+      "donationsReceived": 60,
       "expLevel": 35,
       "activityScore": 64,
       "verdict": "Moderate risk",
@@ -1150,66 +1150,6 @@
       },
       "warDecks": 4,
       "lastSeen": "20260319T180146.000Z"
-    },
-    {
-      "name": "☆.",
-      "tag": "#CVYLYLC8V",
-      "role": "leader",
-      "trophies": 8343,
-      "donations": 87,
-      "donationsReceived": 40,
-      "expLevel": 53,
-      "activityScore": 68,
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 4,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 0
-      },
-      "warDecks": 0,
-      "lastSeen": "20260316T085800.000Z"
     },
     {
       "name": "La Juliasse",
@@ -1276,10 +1216,10 @@
       "tag": "#8JGU9UUJJ",
       "role": "elder",
       "trophies": 9003,
-      "donations": 193,
+      "donations": 248,
       "donationsReceived": 160,
       "expLevel": 60,
-      "activityScore": 70,
+      "activityScore": 73,
       "verdict": "Moderate risk",
       "color": "yellow",
       "isNew": false,
@@ -1292,7 +1232,7 @@
           {
             "key": "2026-03-19",
             "label": "Thu",
-            "count": 0,
+            "count": 4,
             "isPast": false,
             "isToday": true,
             "isFuture": false
@@ -1322,14 +1262,74 @@
             "isFuture": true
           }
         ],
-        "totalDecksUsed": 0,
+        "totalDecksUsed": 4,
         "maxDecksElapsed": 4,
         "maxDecksWeek": 16,
         "isReliableTotal": true,
         "daysFromThu": 0
       },
-      "warDecks": 0,
-      "lastSeen": "20260318T175402.000Z"
+      "warDecks": 4,
+      "lastSeen": "20260320T085306.000Z"
+    },
+    {
+      "name": "☆.",
+      "tag": "#CVYLYLC8V",
+      "role": "leader",
+      "trophies": 8343,
+      "donations": 87,
+      "donationsReceived": 40,
+      "expLevel": 53,
+      "activityScore": 74,
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": {
+        "days": [
+          {
+            "key": "2026-03-19",
+            "label": "Thu",
+            "count": 2,
+            "isPast": false,
+            "isToday": true,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-20",
+            "label": "Fri",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-21",
+            "label": "Sat",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-22",
+            "label": "Sun",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          }
+        ],
+        "totalDecksUsed": 3,
+        "maxDecksElapsed": 4,
+        "maxDecksWeek": 16,
+        "isReliableTotal": true,
+        "daysFromThu": 0
+      },
+      "warDecks": 3,
+      "lastSeen": "20260320T091547.000Z"
     },
     {
       "name": "luky",
@@ -1337,7 +1337,7 @@
       "role": "member",
       "trophies": 10027,
       "donations": 244,
-      "donationsReceived": 232,
+      "donationsReceived": 240,
       "expLevel": 61,
       "activityScore": 76,
       "verdict": "High reliability",
@@ -1517,7 +1517,7 @@
       "role": "coLeader",
       "trophies": 11345,
       "donations": 272,
-      "donationsReceived": 288,
+      "donationsReceived": 289,
       "expLevel": 61,
       "activityScore": 85,
       "verdict": "High reliability",
@@ -1907,7 +1907,7 @@
     "snapshotDays": []
   },
   "clanWarSummary": {
-    "totalDecksUsed": 36,
+    "totalDecksUsed": 43,
     "maxDecksElapsed": 200,
     "maxDecksWeek": 800,
     "participantCount": 50,
@@ -1915,7 +1915,7 @@
     "days": [
       {
         "label": "Thu",
-        "totalCount": 36,
+        "totalCount": 43,
         "maxCount": 200,
         "isPast": false,
         "isToday": true,
@@ -1953,7 +1953,7 @@
   "snapshotDate": "2026-03-22",
   "warCurrentWeekId": "S130W3",
   "warSnapshotDays": [
-    36,
+    43,
     0,
     0,
     0
@@ -1962,7 +1962,7 @@
   "currentWarDays": [
     {
       "label": "Thu",
-      "totalCount": 36,
+      "totalCount": 43,
       "maxCount": 200,
       "isPast": false,
       "isToday": true,

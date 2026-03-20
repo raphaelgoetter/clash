@@ -3,7 +3,7 @@
     "name": "La Resistance",
     "tag": "#Y8JUPC9C",
     "description": "☆. #1 Resistance - GDC obligatoire ⚔️ objectif top 🌍 tournoi hebdomadaire 🗡️ Discord exigé: kPdQN8zfjM▪️code: RoyaleAPI",
-    "clanScore": 123942,
+    "clanScore": 123944,
     "clanWarTrophies": 4177,
     "members": 50,
     "type": "inviteOnly",
@@ -129,7 +129,7 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260320T084039.000Z"
+      "lastSeen": "20260320T090857.000Z"
     },
     {
       "name": "Monkey D. SkUul",
@@ -309,7 +309,7 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260320T084650.000Z"
+      "lastSeen": "20260320T091035.000Z"
     },
     {
       "name": "Ghost",
@@ -555,9 +555,9 @@
       "name": "emilien.jnx",
       "tag": "#J9ULCGJYU",
       "role": "member",
-      "trophies": 10956,
+      "trophies": 10921,
       "donations": 118,
-      "donationsReceived": 304,
+      "donationsReceived": 320,
       "expLevel": 60,
       "activityScore": 78,
       "verdict": "High reliability",
@@ -609,7 +609,7 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260320T084730.000Z"
+      "lastSeen": "20260320T085840.000Z"
     },
     {
       "name": "PEACE",
@@ -856,7 +856,7 @@
       "tag": "#P9R8Y90P8",
       "role": "member",
       "trophies": 12300,
-      "donations": 618,
+      "donations": 634,
       "donationsReceived": 160,
       "expLevel": 63,
       "activityScore": 82,
@@ -909,7 +909,7 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260319T214650.000Z"
+      "lastSeen": "20260320T091449.000Z"
     },
     {
       "name": "Nadir712",
@@ -1092,66 +1092,6 @@
       "lastSeen": "20260319T201538.000Z"
     },
     {
-      "name": "tartaros",
-      "tag": "#LCQ2J0VGC",
-      "role": "elder",
-      "trophies": 11629,
-      "donations": 210,
-      "donationsReceived": 160,
-      "expLevel": 64,
-      "activityScore": 83,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": true,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 1,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          }
-        ],
-        "totalDecksUsed": 2,
-        "maxDecksElapsed": 4,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 0
-      },
-      "warDecks": 2,
-      "lastSeen": "20260320T084128.000Z"
-    },
-    {
       "name": "maxime",
       "tag": "#9YG9Q8V0U",
       "role": "member",
@@ -1332,12 +1272,72 @@
       "lastSeen": "20260320T022553.000Z"
     },
     {
+      "name": "tartaros",
+      "tag": "#LCQ2J0VGC",
+      "role": "elder",
+      "trophies": 11659,
+      "donations": 210,
+      "donationsReceived": 160,
+      "expLevel": 64,
+      "activityScore": 84,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": true,
+      "warDays": {
+        "days": [
+          {
+            "key": "2026-03-19",
+            "label": "Thu",
+            "count": 3,
+            "isPast": false,
+            "isToday": true,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-20",
+            "label": "Fri",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-21",
+            "label": "Sat",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-22",
+            "label": "Sun",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          }
+        ],
+        "totalDecksUsed": 4,
+        "maxDecksElapsed": 4,
+        "maxDecksWeek": 16,
+        "isReliableTotal": true,
+        "daysFromThu": 0
+      },
+      "warDecks": 4,
+      "lastSeen": "20260320T091625.000Z"
+    },
+    {
       "name": "Galaxy",
       "tag": "#J8RU2RJ8C",
       "role": "member",
       "trophies": 12444,
-      "donations": 349,
-      "donationsReceived": 280,
+      "donations": 365,
+      "donationsReceived": 304,
       "expLevel": 76,
       "activityScore": 85,
       "verdict": "High reliability",
@@ -1389,7 +1389,7 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260319T155650.000Z"
+      "lastSeen": "20260320T092408.000Z"
     },
     {
       "name": "zlatanNRV",
@@ -1815,8 +1815,8 @@
       "name": "19Benji",
       "tag": "#2CL028C80",
       "role": "elder",
-      "trophies": 10262,
-      "donations": 456,
+      "trophies": 10234,
+      "donations": 480,
       "donationsReceived": 290,
       "expLevel": 69,
       "activityScore": 87,
@@ -1869,7 +1869,7 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260320T081953.000Z"
+      "lastSeen": "20260320T090428.000Z"
     },
     {
       "name": "vin's",
@@ -1877,7 +1877,7 @@
       "role": "elder",
       "trophies": 10180,
       "donations": 498,
-      "donationsReceived": 200,
+      "donationsReceived": 240,
       "expLevel": 72,
       "activityScore": 87,
       "verdict": "High reliability",
@@ -1936,7 +1936,7 @@
       "tag": "#8CCCQYV99",
       "role": "elder",
       "trophies": 12294,
-      "donations": 563,
+      "donations": 571,
       "donationsReceived": 280,
       "expLevel": 79,
       "activityScore": 88,
@@ -2055,7 +2055,7 @@
       "name": "Ebah",
       "tag": "#PG0Q0YYGY",
       "role": "elder",
-      "trophies": 11796,
+      "trophies": 11826,
       "donations": 10,
       "donationsReceived": 0,
       "expLevel": 68,
@@ -2235,7 +2235,7 @@
       "name": "steeeph",
       "tag": "#9VQ0J29Y",
       "role": "member",
-      "trophies": 12590,
+      "trophies": 12589,
       "donations": 657,
       "donationsReceived": 360,
       "expLevel": 68,
@@ -2289,7 +2289,7 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260320T084423.000Z"
+      "lastSeen": "20260320T092549.000Z"
     },
     {
       "name": "dalys213",
@@ -2716,7 +2716,7 @@
       "tag": "#VQP8PU2V",
       "role": "coLeader",
       "trophies": 12032,
-      "donations": 486,
+      "donations": 502,
       "donationsReceived": 520,
       "expLevel": 82,
       "activityScore": 90,
@@ -2769,7 +2769,7 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260320T080808.000Z"
+      "lastSeen": "20260320T092455.000Z"
     },
     {
       "name": "Ivax Jeanpierre",
@@ -3723,7 +3723,7 @@
     "snapshotDays": []
   },
   "clanWarSummary": {
-    "totalDecksUsed": 183,
+    "totalDecksUsed": 185,
     "maxDecksElapsed": 200,
     "maxDecksWeek": 800,
     "participantCount": 50,
@@ -3731,7 +3731,7 @@
     "days": [
       {
         "label": "Thu",
-        "totalCount": 183,
+        "totalCount": 185,
         "maxCount": 200,
         "isPast": false,
         "isToday": true,
@@ -3769,7 +3769,7 @@
   "snapshotDate": "2026-03-22",
   "warCurrentWeekId": "S130W3",
   "warSnapshotDays": [
-    183,
+    185,
     0,
     0,
     0
@@ -3778,7 +3778,7 @@
   "currentWarDays": [
     {
       "label": "Thu",
-      "totalCount": 183,
+      "totalCount": 185,
       "maxCount": 200,
       "isPast": false,
       "isToday": true,
