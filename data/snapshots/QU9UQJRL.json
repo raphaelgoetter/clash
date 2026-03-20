@@ -73,5 +73,81 @@
         "decks": {}
       }
     ]
+  },
+  {
+    "week": "S130W3",
+    "days": [
+      {
+        "warDay": "thursday",
+        "realDay": "2026-03-19",
+        "gdcPeriod": {
+          "start": "2026-03-19T09:40:00.000Z",
+          "end": "2026-03-20T09:39:59.999Z"
+        },
+        "snapshotTime": "2026-03-20T08:47:43.163Z",
+        "snapshotBackupTime": null,
+        "decks": {
+          "#JC28YVLPG": 0,
+          "#V22VCQV9V": 0,
+          "#YRURQJV28": 0,
+          "#V2P2LCYRJ": 0,
+          "#CVJPCU09C": 0,
+          "#VPR8G992P": 0,
+          "#UU02RYV0C": 0,
+          "#8JGU9UUJJ": 0,
+          "#98VCJLG92": 0,
+          "#RRCRJ8QJJ": 0,
+          "#CRLR0P92J": 0,
+          "#2YLYG9V92": 0,
+          "#J222JVRUQ": 0,
+          "#CLVU02QLP": 0,
+          "#CLQ2RYYJQ": 0,
+          "#VY0LYQQVJ": 0,
+          "#CVYLYLC8V": 0,
+          "#VPGCQPR9U": 4,
+          "#2V20JP28Q": 4,
+          "#8VP9UJV9L": 4,
+          "#QPU0U2C9": 4,
+          "#UVGPPVQ8Q": 4,
+          "#2200UQ9P08": 4,
+          "#9VQYC9GJQ": 4,
+          "#2U9QL8Q89": 4,
+          "#VU8UGJ0R2": 4
+        }
+      },
+      {
+        "warDay": "friday",
+        "realDay": "2026-03-20",
+        "gdcPeriod": {
+          "start": "2026-03-20T09:40:00.000Z",
+          "end": "2026-03-21T09:39:59.999Z"
+        },
+        "snapshotTime": null,
+        "snapshotBackupTime": null,
+        "decks": {}
+      },
+      {
+        "warDay": "saturday",
+        "realDay": "2026-03-21",
+        "gdcPeriod": {
+          "start": "2026-03-21T09:40:00.000Z",
+          "end": "2026-03-22T09:39:59.999Z"
+        },
+        "snapshotTime": null,
+        "snapshotBackupTime": null,
+        "decks": {}
+      },
+      {
+        "warDay": "sunday",
+        "realDay": "2026-03-22",
+        "gdcPeriod": {
+          "start": "2026-03-22T09:40:00.000Z",
+          "end": "2026-03-23T09:39:59.999Z"
+        },
+        "snapshotTime": null,
+        "snapshotBackupTime": null,
+        "decks": {}
+      }
+    ]
   }
 ]
