@@ -3,7 +3,7 @@
     "name": "Les Revoltes",
     "tag": "#QU9UQJRL",
     "description": "☆. #3 Resistance (top 🌍) Bonne humeur et entraînement GDC ⚔️ au programme 👉 Discord demandé : kPdQN8zfjM ▪️code : RoyaleAPI",
-    "clanScore": 86031,
+    "clanScore": 86046,
     "clanWarTrophies": 2190,
     "members": 27,
     "type": "open",
@@ -497,7 +497,7 @@
       "role": "member",
       "trophies": 4414,
       "donations": 81,
-      "donationsReceived": 60,
+      "donationsReceived": 70,
       "expLevel": 27,
       "activityScore": 34,
       "verdict": "High risk",
@@ -557,7 +557,7 @@
       "role": "member",
       "trophies": 7865,
       "donations": 64,
-      "donationsReceived": 9,
+      "donationsReceived": 17,
       "expLevel": 36,
       "activityScore": 36,
       "verdict": "High risk",
@@ -737,7 +737,7 @@
       "role": "member",
       "trophies": 10786,
       "donations": 40,
-      "donationsReceived": 272,
+      "donationsReceived": 288,
       "expLevel": 62,
       "activityScore": 44,
       "verdict": "High risk",
@@ -789,7 +789,7 @@
         "daysFromThu": 1
       },
       "warDecks": 0,
-      "lastSeen": "20260320T183250.000Z"
+      "lastSeen": "20260321T085108.000Z"
     },
     {
       "name": "Sadz",
@@ -797,7 +797,7 @@
       "role": "member",
       "trophies": 12120,
       "donations": 0,
-      "donationsReceived": 300,
+      "donationsReceived": 310,
       "expLevel": 63,
       "activityScore": 48,
       "verdict": "High risk",
@@ -1095,7 +1095,7 @@
       "name": "Kansass",
       "tag": "#JC28YVLPG",
       "role": "member",
-      "trophies": 12151,
+      "trophies": 12181,
       "donations": 0,
       "donationsReceived": 0,
       "expLevel": 65,
@@ -1157,7 +1157,7 @@
       "role": "elder",
       "trophies": 6523,
       "donations": 28,
-      "donationsReceived": 94,
+      "donationsReceived": 102,
       "expLevel": 35,
       "activityScore": 65,
       "verdict": "Moderate risk",
@@ -1336,12 +1336,12 @@
       "tag": "#CVYLYLC8V",
       "role": "leader",
       "trophies": 8343,
-      "donations": 129,
+      "donations": 183,
       "donationsReceived": 80,
       "expLevel": 53,
-      "activityScore": 74,
-      "verdict": "Moderate risk",
-      "color": "yellow",
+      "activityScore": 75,
+      "verdict": "High reliability",
+      "color": "green",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -1360,7 +1360,7 @@
           {
             "key": "2026-03-20",
             "label": "Fri",
-            "count": 0,
+            "count": 2,
             "isPast": false,
             "isToday": true,
             "isFuture": false
@@ -1382,14 +1382,14 @@
             "isFuture": true
           }
         ],
-        "totalDecksUsed": 4,
+        "totalDecksUsed": 7,
         "maxDecksElapsed": 8,
         "maxDecksWeek": 16,
         "isReliableTotal": true,
         "daysFromThu": 1
       },
-      "warDecks": 4,
-      "lastSeen": "20260320T091547.000Z"
+      "warDecks": 7,
+      "lastSeen": "20260321T090703.000Z"
     },
     {
       "name": "luky",
@@ -1576,8 +1576,8 @@
       "tag": "#UVGPPVQ8Q",
       "role": "coLeader",
       "trophies": 11345,
-      "donations": 324,
-      "donationsReceived": 370,
+      "donations": 332,
+      "donationsReceived": 380,
       "expLevel": 61,
       "activityScore": 86,
       "verdict": "High reliability",
@@ -1600,7 +1600,7 @@
           {
             "key": "2026-03-20",
             "label": "Fri",
-            "count": 1,
+            "count": 0,
             "isPast": false,
             "isToday": true,
             "isFuture": false
@@ -1629,12 +1629,12 @@
         "daysFromThu": 1
       },
       "warDecks": 8,
-      "lastSeen": "20260321T082200.000Z"
+      "lastSeen": "20260321T090240.000Z"
     }
   ],
   "summary": {
-    "green": 4,
-    "yellow": 5,
+    "green": 5,
+    "yellow": 4,
     "orange": 12,
     "red": 6,
     "avgScore": 48,
@@ -1967,7 +1967,7 @@
     "snapshotDays": []
   },
   "clanWarSummary": {
-    "totalDecksUsed": 82,
+    "totalDecksUsed": 85,
     "maxDecksElapsed": 400,
     "maxDecksWeek": 800,
     "participantCount": 50,
