@@ -3,7 +3,7 @@
     "name": "Les Resistants",
     "tag": "#LRQP20V9",
     "description": "☆. #2 Resistance (top 🌍) Bonne humeur et GDC obligatoire ⚔️ 4 combats/jour 👉 Discord demandé : kPdQN8zfjM ▪️ code: RoyaleAPI",
-    "clanScore": 118863,
+    "clanScore": 118848,
     "clanWarTrophies": 3777,
     "members": 50,
     "type": "open",
@@ -249,7 +249,7 @@
         "daysFromThu": 2
       },
       "warDecks": 8,
-      "lastSeen": "20260322T002323.000Z"
+      "lastSeen": "20260322T092228.000Z"
     },
     {
       "name": "Aubin",
@@ -552,66 +552,6 @@
       "lastSeen": "20260320T184955.000Z"
     },
     {
-      "name": "arll2.0",
-      "tag": "#U9PP0CJRL",
-      "role": "member",
-      "trophies": 11057,
-      "donations": 140,
-      "donationsReceived": 160,
-      "expLevel": 59,
-      "activityScore": 67,
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": true,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 1,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          }
-        ],
-        "totalDecksUsed": 7,
-        "maxDecksElapsed": 12,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 2
-      },
-      "warDecks": 7,
-      "lastSeen": "20260321T085948.000Z"
-    },
-    {
       "name": "flavie_09",
       "tag": "#80GVRPGPY",
       "role": "member",
@@ -732,13 +672,13 @@
       "lastSeen": "20260321T215704.000Z"
     },
     {
-      "name": "greg",
-      "tag": "#8GGQLU28",
+      "name": "arll2.0",
+      "tag": "#U9PP0CJRL",
       "role": "member",
-      "trophies": 10151,
-      "donations": 258,
-      "donationsReceived": 240,
-      "expLevel": 72,
+      "trophies": 11029,
+      "donations": 180,
+      "donationsReceived": 180,
+      "expLevel": 59,
       "activityScore": 69,
       "verdict": "Moderate risk",
       "color": "yellow",
@@ -752,7 +692,7 @@
           {
             "key": "2026-03-19",
             "label": "Thu",
-            "count": 3,
+            "count": 1,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -760,7 +700,7 @@
           {
             "key": "2026-03-20",
             "label": "Fri",
-            "count": 2,
+            "count": 3,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -782,14 +722,14 @@
             "isFuture": true
           }
         ],
-        "totalDecksUsed": 9,
+        "totalDecksUsed": 11,
         "maxDecksElapsed": 12,
         "maxDecksWeek": 16,
         "isReliableTotal": true,
         "daysFromThu": 2
       },
-      "warDecks": 9,
-      "lastSeen": "20260322T084247.000Z"
+      "warDecks": 11,
+      "lastSeen": "20260322T085912.000Z"
     },
     {
       "name": "Nova",
@@ -910,6 +850,66 @@
       },
       "warDecks": 12,
       "lastSeen": "20260322T060128.000Z"
+    },
+    {
+      "name": "greg",
+      "tag": "#8GGQLU28",
+      "role": "member",
+      "trophies": 10151,
+      "donations": 318,
+      "donationsReceived": 260,
+      "expLevel": 72,
+      "activityScore": 72,
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": {
+        "days": [
+          {
+            "key": "2026-03-19",
+            "label": "Thu",
+            "count": 3,
+            "isPast": true,
+            "isToday": false,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-20",
+            "label": "Fri",
+            "count": 2,
+            "isPast": true,
+            "isToday": false,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-21",
+            "label": "Sat",
+            "count": 4,
+            "isPast": false,
+            "isToday": true,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-22",
+            "label": "Sun",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          }
+        ],
+        "totalDecksUsed": 11,
+        "maxDecksElapsed": 12,
+        "maxDecksWeek": 16,
+        "isReliableTotal": true,
+        "daysFromThu": 2
+      },
+      "warDecks": 11,
+      "lastSeen": "20260322T084247.000Z"
     },
     {
       "name": "T0T0L0$T0n€",
@@ -1277,7 +1277,7 @@
       "role": "member",
       "trophies": 8311,
       "donations": 0,
-      "donationsReceived": 30,
+      "donationsReceived": 40,
       "expLevel": 58,
       "activityScore": 78,
       "verdict": "High reliability",
@@ -1569,13 +1569,13 @@
         "daysFromThu": 2
       },
       "warDecks": 12,
-      "lastSeen": "20260322T073634.000Z"
+      "lastSeen": "20260322T092158.000Z"
     },
     {
       "name": "hardchaos76",
       "tag": "#8UL8JRCJ",
       "role": "elder",
-      "trophies": 10707,
+      "trophies": 10618,
       "donations": 63,
       "donationsReceived": 568,
       "expLevel": 62,
@@ -1637,7 +1637,7 @@
       "role": "coLeader",
       "trophies": 7340,
       "donations": 174,
-      "donationsReceived": 220,
+      "donationsReceived": 240,
       "expLevel": 67,
       "activityScore": 84,
       "verdict": "High reliability",
@@ -1757,7 +1757,7 @@
       "role": "member",
       "trophies": 12011,
       "donations": 800,
-      "donationsReceived": 40,
+      "donationsReceived": 50,
       "expLevel": 75,
       "activityScore": 85,
       "verdict": "High reliability",
@@ -1877,7 +1877,7 @@
       "role": "elder",
       "trophies": 10245,
       "donations": 88,
-      "donationsReceived": 500,
+      "donationsReceived": 520,
       "expLevel": 72,
       "activityScore": 85,
       "verdict": "High reliability",
@@ -2716,7 +2716,7 @@
       "tag": "#YRGJGR8R",
       "role": "coLeader",
       "trophies": 9088,
-      "donations": 1334,
+      "donations": 1364,
       "donationsReceived": 776,
       "expLevel": 71,
       "activityScore": 92,
@@ -2769,7 +2769,7 @@
         "daysFromThu": 2
       },
       "warDecks": 12,
-      "lastSeen": "20260322T074724.000Z"
+      "lastSeen": "20260322T091634.000Z"
     },
     {
       "name": "guill4um3",
@@ -2777,7 +2777,7 @@
       "role": "coLeader",
       "trophies": 12591,
       "donations": 1038,
-      "donationsReceived": 712,
+      "donationsReceived": 742,
       "expLevel": 65,
       "activityScore": 93,
       "verdict": "High reliability",
@@ -4549,7 +4549,7 @@
     "snapshotDays": []
   },
   "clanWarSummary": {
-    "totalDecksUsed": 513,
+    "totalDecksUsed": 519,
     "maxDecksElapsed": 600,
     "maxDecksWeek": 800,
     "participantCount": 50,

@@ -3,7 +3,7 @@
     "name": "Les Revoltes",
     "tag": "#QU9UQJRL",
     "description": "☆. #3 Resistance (top 🌍) Bonne humeur et entraînement GDC ⚔️ au programme 👉 Discord demandé : kPdQN8zfjM ▪️code : RoyaleAPI",
-    "clanScore": 86175,
+    "clanScore": 86168,
     "clanWarTrophies": 2190,
     "members": 27,
     "type": "open",
@@ -257,7 +257,7 @@
       "role": "member",
       "trophies": 7952,
       "donations": 100,
-      "donationsReceived": 70,
+      "donationsReceived": 80,
       "expLevel": 36,
       "activityScore": 32,
       "verdict": "High risk",
@@ -677,7 +677,7 @@
       "role": "member",
       "trophies": 4415,
       "donations": 145,
-      "donationsReceived": 130,
+      "donationsReceived": 140,
       "expLevel": 27,
       "activityScore": 43,
       "verdict": "High risk",
@@ -737,7 +737,7 @@
       "role": "member",
       "trophies": 10786,
       "donations": 40,
-      "donationsReceived": 336,
+      "donationsReceived": 352,
       "expLevel": 62,
       "activityScore": 44,
       "verdict": "High risk",
@@ -855,9 +855,9 @@
       "name": "berlingot",
       "tag": "#2V20JP28Q",
       "role": "elder",
-      "trophies": 8799,
-      "donations": 312,
-      "donationsReceived": 216,
+      "trophies": 8770,
+      "donations": 330,
+      "donationsReceived": 246,
       "expLevel": 42,
       "activityScore": 48,
       "verdict": "High risk",
@@ -909,7 +909,7 @@
         "daysFromThu": 2
       },
       "warDecks": 12,
-      "lastSeen": "20260322T084615.000Z"
+      "lastSeen": "20260322T090902.000Z"
     },
     {
       "name": "Nightmare_YMD",
@@ -1099,7 +1099,7 @@
       "donations": 0,
       "donationsReceived": 0,
       "expLevel": 65,
-      "activityScore": 58,
+      "activityScore": 62,
       "verdict": "Moderate risk",
       "color": "yellow",
       "isNew": false,
@@ -1149,7 +1149,7 @@
         "daysFromThu": 2
       },
       "warDecks": 0,
-      "lastSeen": "20260321T083550.000Z"
+      "lastSeen": "20260322T091400.000Z"
     },
     {
       "name": "epi",
@@ -1217,7 +1217,7 @@
       "role": "elder",
       "trophies": 9183,
       "donations": 322,
-      "donationsReceived": 300,
+      "donationsReceived": 310,
       "expLevel": 51,
       "activityScore": 70,
       "verdict": "Moderate risk",
@@ -1272,11 +1272,71 @@
       "lastSeen": "20260322T064448.000Z"
     },
     {
+      "name": "☆.",
+      "tag": "#CVYLYLC8V",
+      "role": "leader",
+      "trophies": 8400,
+      "donations": 191,
+      "donationsReceived": 120,
+      "expLevel": 53,
+      "activityScore": 71,
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": {
+        "days": [
+          {
+            "key": "2026-03-19",
+            "label": "Thu",
+            "count": 3,
+            "isPast": true,
+            "isToday": false,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-20",
+            "label": "Fri",
+            "count": 3,
+            "isPast": true,
+            "isToday": false,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-21",
+            "label": "Sat",
+            "count": 0,
+            "isPast": false,
+            "isToday": true,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-22",
+            "label": "Sun",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          }
+        ],
+        "totalDecksUsed": 8,
+        "maxDecksElapsed": 12,
+        "maxDecksWeek": 16,
+        "isReliableTotal": true,
+        "daysFromThu": 2
+      },
+      "warDecks": 8,
+      "lastSeen": "20260321T090703.000Z"
+    },
+    {
       "name": "rotk",
       "tag": "#8JGU9UUJJ",
       "role": "elder",
       "trophies": 9003,
-      "donations": 316,
+      "donations": 400,
       "donationsReceived": 240,
       "expLevel": 60,
       "activityScore": 73,
@@ -1329,67 +1389,7 @@
         "daysFromThu": 2
       },
       "warDecks": 7,
-      "lastSeen": "20260321T101159.000Z"
-    },
-    {
-      "name": "☆.",
-      "tag": "#CVYLYLC8V",
-      "role": "leader",
-      "trophies": 8400,
-      "donations": 191,
-      "donationsReceived": 120,
-      "expLevel": 53,
-      "activityScore": 75,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          }
-        ],
-        "totalDecksUsed": 8,
-        "maxDecksElapsed": 12,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 2
-      },
-      "warDecks": 8,
-      "lastSeen": "20260321T090703.000Z"
+      "lastSeen": "20260322T091911.000Z"
     },
     {
       "name": "luky",
@@ -1397,7 +1397,7 @@
       "role": "member",
       "trophies": 10089,
       "donations": 347,
-      "donationsReceived": 304,
+      "donationsReceived": 312,
       "expLevel": 61,
       "activityScore": 78,
       "verdict": "High reliability",
@@ -1456,8 +1456,8 @@
       "tag": "#QPU0U2C9",
       "role": "elder",
       "trophies": 10394,
-      "donations": 180,
-      "donationsReceived": 410,
+      "donations": 190,
+      "donationsReceived": 440,
       "expLevel": 61,
       "activityScore": 81,
       "verdict": "High reliability",
@@ -1509,7 +1509,7 @@
         "daysFromThu": 2
       },
       "warDecks": 12,
-      "lastSeen": "20260321T212246.000Z"
+      "lastSeen": "20260322T090816.000Z"
     },
     {
       "name": "sebiboss2",
@@ -1517,7 +1517,7 @@
       "role": "elder",
       "trophies": 12595,
       "donations": 587,
-      "donationsReceived": 384,
+      "donationsReceived": 392,
       "expLevel": 71,
       "activityScore": 85,
       "verdict": "High reliability",
@@ -1576,8 +1576,8 @@
       "tag": "#UVGPPVQ8Q",
       "role": "coLeader",
       "trophies": 11345,
-      "donations": 378,
-      "donationsReceived": 480,
+      "donations": 398,
+      "donationsReceived": 490,
       "expLevel": 61,
       "activityScore": 86,
       "verdict": "High reliability",
@@ -1629,12 +1629,12 @@
         "daysFromThu": 2
       },
       "warDecks": 12,
-      "lastSeen": "20260322T082647.000Z"
+      "lastSeen": "20260322T085748.000Z"
     }
   ],
   "summary": {
-    "green": 5,
-    "yellow": 4,
+    "green": 4,
+    "yellow": 5,
     "orange": 14,
     "red": 4,
     "avgScore": 50,
