@@ -372,11 +372,12 @@ export default async function handler(req, res) {
           description = rows.join('\n');
         }
 
+        const weekId = analysis.prevWeekId || analysis.clanWarSummary?.weekId || 'S?';
         const embed = {
           title: `🏅 Semaine de GDC précédente — ${clanName} (≥ ${min} fame)`,
           color: 0x5865f2,
           description,
-          footer: { text: `Quota : ${min} · Clan : ${clanName}` },
+          footer: { text: `Clan : ${clanName} · Quota : ${min} · Semaine : ${weekId}` },
         };
 
         await fetch(webhookUrl, {
@@ -539,7 +540,7 @@ export default async function handler(req, res) {
           const isNew = p.isNew ? ' (new)' : '';
           const transfer = p.isFamilyTransfer ? ' (transfer)' : '';
           const role = capitalize(p.role || 'member');
-          return `${i + 1}. [${p.name}](${playerUrl})${isNew}${transfer} ${p.tag} [${role}] ${p.decks} decks`;
+          return `${i + 1}. [${p.name}](${playerUrl})${isNew}${transfer} • ${p.tag} • [${role}] • ${p.decks} decks`;
         });
 
         const more = uncomplete.length > MAX_ROWS ? `\n...and ${uncomplete.length - MAX_ROWS} de plus` : '';
@@ -558,12 +559,13 @@ export default async function handler(req, res) {
         }
         const clanUrl = `https://trustroyale.vercel.app/?mode=clan&tag=%23${resolved.tag}`;
 
+        const weekId = analysis.prevWeekId || analysis.clanWarSummary?.weekId || 'S?';
         const embed = {
           title: `🤷 Semaine de GDC précédente — ${resolved.name}`,
           url: clanUrl,
           color: 0xf1c40f,
           description,
-          footer: { text: `Clan : ${resolved.name} (${uncomplete.length} joueurs)` },
+          footer: { text: `Clan : ${resolved.name} · Semaine : ${weekId}` },
         };
 
         await fetch(webhookUrl, {
