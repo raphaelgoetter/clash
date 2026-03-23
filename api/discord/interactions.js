@@ -361,16 +361,14 @@ export default async function handler(req, res) {
         if (players.length === 0) {
           description = `Aucun joueur n'atteint ${min} fame.`;
         } else {
-          // Discord rend tous les caractères en largeur 1 dans les blocs de code
-          let maxName = 0;
-          for (const p of players) if (p.name.length > maxName) maxName = p.name.length;
           const rows = players.map((p, i) => {
-            const num  = String(i + 1).padStart(2);
-            const name = p.name.padEnd(maxName);
+            const num = String(i + 1).padStart(2);
+            const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
             const role = capitalize(p.role || 'member');
-            return `${num}. ${name}  ${p.fame} fame  [${role}]`;
+            // Inclut le lien vers la page joueur et le tag CR
+            return `${num}. [${p.name}](${playerUrl}) ${p.tag} • ${p.fame} fame • [${role}]`;
           });
-          description = '```\n' + rows.join('\n') + '\n```';
+          description = rows.join('\n');
         }
 
         const embed = {
