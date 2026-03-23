@@ -941,10 +941,11 @@ function renderClanWarCard(clanWarSummary) {
   if (!clanWarSummary) { card.classList.add('hidden'); return; }
   card.classList.remove('hidden');
 
-  const { totalDecksUsed, maxDecksElapsed, maxDecksWeek, participantCount, daysFromThu, days, weekId } = clanWarSummary;
+  const { totalDecksUsed, maxDecksElapsed, maxDecksWeek, participantCount, daysFromThu, days, weekId, ended } = clanWarSummary;
   const weekLabel = weekId ? ` <span class="card-week-id">(${weekId.toLowerCase()})</span>` : '';
-  card.querySelector('.card-title').innerHTML = `⚔️ Current Clan War${weekLabel}`;
-  const dayNum   = daysFromThu + 1;
+  const endedLabel = ended ? ' (ended)' : '';
+  card.querySelector('.card-title').innerHTML = `⚔️ Current Clan War${weekLabel}${endedLabel}`;
+  const dayNum   = ended ? 4 : (daysFromThu + 1);
   const pctFill  = Math.min(100, Math.round((totalDecksUsed / maxDecksElapsed) * 100));
 
   let statusIcon, statusText, statusCls;
@@ -1013,7 +1014,7 @@ function renderClanOverview(data) {
   renderClanBarChart(members);
   renderClanPieChart(summary);
   // Card guerre courante clan
-  renderClanWarCard(data.clanWarSummary ?? null);
+  renderClanWarCard(data.clanWarSummary ?? data.lastWarSummary ?? null);
 
   clanResults.classList.remove('hidden');
 }

@@ -567,6 +567,8 @@ export async function buildClanAnalysis(clanTag) {
 
     // Synthèse des combats GDC pour l'ensemble du clan (sans requête supplémentaire)
     let clanWarSummary = null;
+    let lastWarSummary = null;
+
     if (currentRace?.periodType === 'warDay' && currentRace?.clan?.participants?.length > 0) {
       const sampleWarDays = analyzedMembers.find((m) => m.warDays && !m.warDays.arrivedMidWar)?.warDays ?? null;
       if (sampleWarDays) {
@@ -709,8 +711,45 @@ export async function buildClanAnalysis(clanTag) {
           // fallback: garder totalDecksUsed comme source principale
           // et ne plus toucher si impossible de faire concorder proprement.
         }
-        clanWarSummary = { totalDecksUsed, maxDecksElapsed, maxDecksWeek, participantCount: MAX_MEMBERS, daysFromThu, days, weekId: currWeekId };
+        clanWarSummary = { totalDecksUsed, maxDecksElapsed, maxDecksWeek, participantCount: MAX_MEMBERS, daysFromThu, days, weekId: currWeekId, ended: false };
       }
+    }
+
+    // If there is no current war summary (GDC ended), fall back to last available week snapshot.
+    if (!clanWarSummary && Array.isArray(weekSnaps) && weekSnaps.length > 0) {
+      const DAY_LABELS = ['Thu', 'Fri', 'Sat', 'Sun'];
+      const days = DAY_LABELS.map((label, i) => {
+        const snap = weekSnaps[i] ?? null;
+        const totalCount = snap?.decks
+          ? Object.values(snap.decks).reduce((acc, v) => acc + (typeof v === 'number' ? v : 0), 0)
+          : null;
+        return {
+          label,
+          totalCount,
+          maxCount: 200,
+          isPast: true,
+          isToday: false,
+          isFuture: false,
+          source: totalCount != null ? 'snapshot' : 'unknown',
+          snapshotCount: totalCount,
+          liveCount: null,
+        };
+      });
+
+      const totalDecksUsed = days.reduce((sum, d) => sum + (d.totalCount ?? 0), 0);
+      const MAX_MEMBERS = 50;
+      const maxDecksElapsed = MAX_MEMBERS * 16;
+      const maxDecksWeek = MAX_MEMBERS * 16;
+      clanWarSummary = {
+        totalDecksUsed,
+        maxDecksElapsed,
+        maxDecksWeek,
+        participantCount: members.length,
+        daysFromThu: 4,
+        days,
+        weekId: currWeekId,
+        ended: true,
+      };
     }
 
     // build helper data for frontend debug display
@@ -732,7 +771,12 @@ export async function buildClanAnalysis(clanTag) {
       }));
     }
 
+    const computedLastWarSummary = clanWarSummary
+      ? { ...clanWarSummary, ended: clanWarSummary.ended ?? true, snapshotAsOf: snapshotDate ?? null }
+      : null;
+
     return {
+      lastWarSummary: computedLastWarSummary,
       clan: {
         name: clan.name,
         tag: clan.tag,
