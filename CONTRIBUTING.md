@@ -341,8 +341,18 @@ Tag : #YRGJGR8R
 
 ```
 🏅 Semaine de GDC précédente — La Resistance (≥ 2800 fame)
- 1. NomJoueur   3200 fame  [Co-Leader]
- 2. AutreJoueur 3000 fame  [Member]
+• 2024-03 ?
+ 1. NomJoueur   3200 fame  [Co-Leader] ⬆️
+ 2. AutreJoueur 3000 fame  [Member] ⬆️
+```
+
+**`/demote`**
+
+```
+🤷 Semaine de GDC précédente — Les Resistants (S130-W3)
+1. NomJoueur (#TAG) [Member] • 15 decks
+2. AutreJoueur (#TAG) [Elder] • 13 decks
+...and 18 de plus
 ```
 
 Icônes : ✅ ≥ 75 % du max · ⚠️ entre 40 % et 74 % · ❌ < 40 %

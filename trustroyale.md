@@ -109,6 +109,20 @@ Utile pour les campagnes de promotion et pour savoir qui soutenir pour monter da
 /promote min:2600 clan:1
 ```
 
+### 8) `/demote clan:N` (pour chefs de clan)
+
+➡️ Affiche les joueurs qui n’ont pas réalisé 16/16 decks la semaine précédente (identique à la carte "🤷 Last War fails").
+
+- inclut le week ID (`Sxxx-Wx`) dans le titre
+- joue en priorité sur les membres encore présents dans le clan
+- affiche un maximum de 25 joueurs puis `...and N de plus`
+
+**Usage** :
+
+```text
+/demote clan:2
+```
+
 ---
 
 ## 💡 Pourquoi utiliser ces outils ?
