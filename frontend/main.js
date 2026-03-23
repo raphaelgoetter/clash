@@ -875,46 +875,58 @@ function renderPlayerResults(data) {
     if (!text) return text;
     if (currentLang !== 'fr') return text;
 
-    if (label === 'Regularity') {
-      // 160/160 decks across 10 weeks (100%)
+    // Generic phrase-level FR translation when the source detail is still in English.
+    let normalized = text
+      .replace(/decks across/gi, 'decks sur')
+      .replace(/incomplete weeks?/gi, (m) => m.toLowerCase().startsWith('incomplete') ? m.replace(/incomplete/i, 'incomplète') : m)
+      .replace(/member for\s*(\d+)\s*weeks?/i, (_, n) => `membre depuis ${n} ${Number(n) > 1 ? 'semaines' : 'semaine'}`)
+      .replace(/([0-9.,]+)\s*weeks?/gi, (_, n) => `${n} ${Number(n) > 1 ? 'semaines' : 'semaine'}`)
+      .replace(/consecutive weeks in this clan/gi, 'semaines consécutives dans le clan')
+      .replace(/fame \/ week \(cap 3,000\)/gi, t('avgFameCap'))
+      .replace(/total cw2 wins \(cap 250\)/gi, t('cw2BattleWinsCap'))
+      .replace(/victories in river race/gi, 'victoires en River Race')
+      .replace(/trophies \(range 4000–14000\)/gi, 'trophées (plage 4000–14000)')
+      .replace(/total cards donated \(cap 100000\)/gi, 'cartes totales données (cap 100000)');
+
+    if (normalized !== text) {
+      text = normalized;
+    }
+
+    const lowercaseLabel = label.toLowerCase();
+    if (lowercaseLabel.includes('regularity') || lowercaseLabel.includes('régularité')) {
+      return text;
+    }
+    if (lowercaseLabel.includes('avg')) {
+      return text;
+    }
+    if (lowercaseLabel.includes('cw2')) {
+      return text;
+    }
+    if (lowercaseLabel.includes('stability') || lowercaseLabel.includes('stabilité')) {
+      return text;
+    }
+    if (lowercaseLabel.includes('last seen') || lowercaseLabel.includes('dernière connexion')) {
       return text
-        .replace(/decks across/, 'decks sur')
-        .replace(/incomplete weeks?/gi, (m) => m.toLowerCase().startsWith('incomplete') ? m.replace(/incomplete/i, 'incomplète') : m)
-        .replace(/member for\s*(\d+)\s*weeks?/i, (_, n) => `membre depuis ${n} ${Number(n) > 1 ? 'semaines' : 'semaine'}`)
-        .replace(/([0-9.,]+)\s*weeks?/gi, (_, n) => `${n} ${Number(n) > 1 ? 'semaines' : 'semaine'}`)
-        .replace(/week(s?)/gi, 'semaine$1');
+        .replace(/Active in the last 24 h/i, 'Actif dans les 24 h')
+        .replace(/Active (\d+\.?\d*) day\(s\) ago/i, 'Actif il y a $1 jour(s)')
+        .replace(/Active (\d+) days ago/i, 'Actif il y a $1 jours');
     }
-    if (label === 'Avg Score') {
-      return text.replace('fame / week (cap 3,000)', t('avgFameCap'));
+    if (lowercaseLabel.includes('win rate')) {
+      return text;
     }
-    if (label === 'CW2 Battle Wins') {
-      return text.replace('total CW2 wins (cap 250)', t('cw2BattleWinsCap'));
+    if (lowercaseLabel.includes('experience') || lowercaseLabel.includes('expérience')) {
+      return text;
     }
-    if (label === 'Stability') {
-      return text.replace('consecutive weeks in this clan', t('clanStabilityCap')); // approximated
+    if (lowercaseLabel.includes('donations') || lowercaseLabel.includes('dons')) {
+      return text;
     }
-    if (label === 'Last Seen') {
+    if (lowercaseLabel.includes('discord')) {
       return text
-        .replace('Active in the last 24 h', 'Actif dans les 24 h')
-        .replace(/Active (\d+\.?\d*) day\(s\) ago/, 'Actif il y a $1 jour(s)')
-        .replace(/Active (\d+) days ago/, 'Actif il y a $1 jours');
-    }
-    if (label === 'Win Rate (War)') {
-      return text.replace('victories in River Race', 'victoires en River Race');
-    }
-    if (label === 'Experience') {
-      return text.replace('trophies (range 4000–14000)', 'trophées (plage 4000–14000)');
-    }
-    if (label === 'Donations') {
-      return text.replace('total cards donated (cap 100000)', 'cartes totales données (cap 100000)');
-    }
-    if (label === 'Discord') {
-      return text.replace('Discord account linked to the server', 'Compte Discord lié au serveur')
+        .replace('Discord account linked to the server', 'Compte Discord lié au serveur')
         .replace('Discord account not linked (/discord-link)', 'Compte Discord non lié (/discord-link)');
     }
     return text;
   }
-
   reasonsList.innerHTML = (ws.breakdown ?? []).map((b) => {
     const labelText = scoreLabelMap[b.label] || b.label;
     const detailText = translateDetail(b.label, b.detail);
