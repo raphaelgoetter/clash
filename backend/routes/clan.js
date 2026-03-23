@@ -263,8 +263,13 @@ export async function buildClanAnalysis(clanTag) {
     let currWeekId = null;
     let warSnapshotDays = null;
     let warSnapshotTakenAt = null;
+
+    let getSnapshotsForWeek = null;
+    let getWarDayName = null;
+    let getWarDayKey = null;
+
     if (raceLog && raceLog.length > 0) {
-      const { getSnapshotsForWeek, getWarDayName, getWarDayKey } = await import('../services/snapshot.js');
+      ({ getSnapshotsForWeek, getWarDayName, getWarDayKey } = await import('../services/snapshot.js'));
 
       // --- Snapshots semaine PRÉCÉDENTE → enrichissement uncomplete ---
       // raceLog[0] est la semaine terminée : sectionIndex=0 → "S130W1"
@@ -715,14 +720,27 @@ export async function buildClanAnalysis(clanTag) {
       }
     }
 
+    // If we are outside an active war and no current-week snapshot exists,
+    // fall back to the previous completed week snapshot (prevWeekId).
+    if (!clanWarSummary && getSnapshotsForWeek && (!weekSnaps || weekSnaps.length === 0) && prevWeekId) {
+      const prevWeekSnaps = await getSnapshotsForWeek(clanTag, prevWeekId);
+      if (prevWeekSnaps.length > 0) {
+        weekSnaps = prevWeekSnaps;
+        currWeekId = prevWeekId;
+      }
+    }
+
     // If there is no current war summary (GDC ended), fall back to last available week snapshot.
     if (!clanWarSummary && Array.isArray(weekSnaps) && weekSnaps.length > 0) {
       const DAY_LABELS = ['Thu', 'Fri', 'Sat', 'Sun'];
       const days = DAY_LABELS.map((label, i) => {
         const snap = weekSnaps[i] ?? null;
-        const totalCount = snap?.decks
+        let totalCount = snap?.decks
           ? Object.values(snap.decks).reduce((acc, v) => acc + (typeof v === 'number' ? v : 0), 0)
           : null;
+        if (totalCount != null) {
+          totalCount = Math.min(200, Math.max(0, totalCount));
+        }
         return {
           label,
           totalCount,
@@ -736,10 +754,11 @@ export async function buildClanAnalysis(clanTag) {
         };
       });
 
-      const totalDecksUsed = days.reduce((sum, d) => sum + (d.totalCount ?? 0), 0);
+      let totalDecksUsed = days.reduce((sum, d) => sum + (d.totalCount ?? 0), 0);
       const MAX_MEMBERS = 50;
       const maxDecksElapsed = MAX_MEMBERS * 16;
       const maxDecksWeek = MAX_MEMBERS * 16;
+      totalDecksUsed = Math.min(totalDecksUsed, maxDecksWeek);
       clanWarSummary = {
         totalDecksUsed,
         maxDecksElapsed,

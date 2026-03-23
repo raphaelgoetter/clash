@@ -990,7 +990,7 @@ function renderClanOverview(data) {
   const { clan, members, summary } = data;
 
   // Colonne "This War" visible uniquement en période de guerre (jeu–dim)
-  isWarActive = !!data.isWarPeriod;
+  isWarActive = !!data.isWarPeriod || !!data.lastWarSummary;
   renderTopPlayersCard(data.topPlayers, data.prevWeekId ?? null);
   renderUncompleteCard(data.uncomplete, data.prevWeekId ?? null);
   document.getElementById('th-this-war').classList.toggle('hidden', !isWarActive);
@@ -1275,6 +1275,8 @@ function updateDebugPanel(data, mode) {
     warCurrentWeekId: data?.warCurrentWeekId ?? null,
     warSnapshotDays: data?.warSnapshotDays ?? null,
     currentWarDays: data?.currentWarDays ?? null,
+    clanWarSummary: data?.clanWarSummary ?? null,
+    lastWarSummary: data?.lastWarSummary ?? null,
   };
 
   const text = JSON.stringify(payload, null, 2);
