@@ -49,6 +49,129 @@ let isWarActive = false;       // true jeu–dim : colonne "This War" visible da
 // Name of the last-result returned by API (used when saving favorite)
 let lastResultName = null;
 
+// Multi-language support
+const LANG_STORAGE_KEY = 'trustroyaleLang';
+const SUPPORTED_LANGS = ['en', 'fr'];
+const DEFAULT_LANG = 'en';
+let currentLang = DEFAULT_LANG;
+let translations = {};
+
+function getBasePath() {
+  return `/${currentLang}`;
+}
+
+function getI18nLangFromPath() {
+  const seg = window.location.pathname.replace(/\/+$/, '').split('/')[1];
+  if (SUPPORTED_LANGS.includes(seg)) return seg;
+  return null;
+}
+
+function setLangInUrl(lang, replace = false) {
+  const params = new URLSearchParams({ mode: currentMode, tag: (currentMode === 'clan' ? searchSelect.value.trim() : searchInput.value.trim()) || '' });
+  const target = `/${lang}/?${params.toString()}`;
+  if (replace) {
+    history.replaceState({ mode: currentMode, tag: params.get('tag'), lang }, '', target);
+  } else {
+    history.pushState({ mode: currentMode, tag: params.get('tag'), lang }, '', target);
+  }
+}
+
+function loadLanguage(lang) {
+  if (!SUPPORTED_LANGS.includes(lang)) lang = DEFAULT_LANG;
+  currentLang = lang;
+  localStorage.setItem(LANG_STORAGE_KEY, lang);
+  document.documentElement.lang = lang;
+  return fetch(`/lang/${lang}.json`)
+    .then((res) => res.ok ? res.json() : Promise.reject(new Error('Language file not found')))
+    .then((obj) => {
+      translations = obj;
+      translateUI();
+      updateLangButtonUI();
+      setLangInUrl(lang, true);
+    });
+}
+
+function t(key, vars) {
+  let val = (translations && translations[key]) ? translations[key] : key;
+  if (!vars || typeof vars !== 'object') return val;
+  Object.entries(vars).forEach(([k, v]) => {
+    if (k === 'plural') {
+      const suffix = Number(v) > 1 ? 's' : '';
+      val = val.replace('{{plural}}', suffix);
+    } else {
+      val = val.replace(new RegExp(`{{${k}}}`, 'g'), v);
+    }
+  });
+  // if plural placeholder left over, replace with empty
+  val = val.replace('{{plural}}', '');
+  return val;
+}
+
+function initialLang() {
+  const pathLang = getI18nLangFromPath();
+  const saved = localStorage.getItem(LANG_STORAGE_KEY);
+  return SUPPORTED_LANGS.includes(pathLang) ? pathLang
+    : SUPPORTED_LANGS.includes(saved) ? saved
+    : DEFAULT_LANG;
+}
+
+function translateUI() {
+  document.querySelector('.header-title').textContent = t('headerTitle');
+  document.querySelector('.header-subtitle').innerHTML = t('headerSubtitle');
+  document.getElementById('btn-player').textContent = `👤 ${t('modePlayer')}`;
+  document.getElementById('btn-clan').textContent = `👥 ${t('modeClan')}`;
+  searchInput.placeholder = t('searchPlaceholder');
+  searchHint.textContent = t('searchHint');
+  document.getElementById('search-btn-label').textContent = t('searchButton');
+  favBtn.title = t('favButton');
+  document.getElementById('card-overview').querySelector('.card-title').textContent = `👤 ${t('playerOverview')}`;
+  document.getElementById('card-activity').querySelector('.card-title').textContent = `📊 ${t('activityIndicators')}`;
+  document.getElementById('history-card-title').textContent = `📅 ${t('riverRaceHistory')}`;
+  document.getElementById('card-current-war').querySelector('.card-title').textContent = `⚔️ ${t('currentClanWar')}`;
+  document.getElementById('card-verdict').querySelector('.card-title').textContent = `⚔️ ${t('warReliabilityScore')}`;
+  document.querySelector('.score-explainer summary').textContent = t('scoreExplainer');
+  document.getElementById('card-clan-overview').querySelector('.card-title').textContent = `🏰 ${t('clanOverview')}`;
+  const cardTop = document.querySelector('#card-top-players .card-title');
+  if (cardTop) cardTop.textContent = `🏅 ${t('lastWarBest')}`;
+  const cardTopDesc = document.querySelector('#card-top-players .card-desc');
+  if (cardTopDesc) cardTopDesc.textContent = t('lastWarBestDesc') || '';
+
+  const scoreExplainerBody = document.querySelector('.score-explainer-body');
+  if (scoreExplainerBody) {
+    scoreExplainerBody.innerHTML = `
+      <p>${t('scoreExplainerFull')}</p>
+      <table class="explainer-table">
+        <thead>
+          <tr><th>${t('criterion')}</th><th>${t('max')}</th><th>${t('cap')}</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>${t('regularity')}</td><td>12</td><td>${t('regularityCap')}</td></tr>
+          <tr><td>${t('avgFame')}</td><td>10</td><td>${t('avgFameCap')}</td></tr>
+          <tr><td>${t('cw2BattleWins')}</td><td>8</td><td>${t('cw2BattleWinsCap')}</td></tr>
+          <tr><td>${t('clanStability')}</td><td>8</td><td>${t('clanStabilityCap')}</td></tr>
+          <tr><td>${t('lastSeen')}</td><td>5</td><td>${t('lastSeenCap')}</td></tr>
+          <tr><td>${t('winRateFullMode')}</td><td>3</td><td>${t('winRateFullModeCap')}</td></tr>
+          <tr><td>${t('experience')}</td><td>3</td><td>${t('experienceCap')}</td></tr>
+          <tr><td>${t('donations')}</td><td>2</td><td>${t('donationsCap')}</td></tr>
+          <tr><td>${t('discord')}</td><td>2</td><td>${t('discordCap')}</td></tr>
+        </tbody>
+      </table>
+      <p class="explainer-thresholds">${t('thresholds')}</p>
+      <p class="explainer-note"><em>${t('fallbackFormulaTitle')}</em>: ${t('fallbackFormulaBody')}</p>
+    `;
+  }
+  const cardUncomplete = document.querySelector('#card-uncomplete .card-title');
+  if (cardUncomplete) cardUncomplete.textContent = `🤷 ${t('lastWarFails')}`;
+  const cardUncompleteDesc = document.querySelector('#card-uncomplete .card-desc');
+  if (cardUncompleteDesc) cardUncompleteDesc.textContent = t('lastWarFailsDesc') || '';
+  const cardLeft = document.querySelector('#card-left .card-title');
+  if (cardLeft) cardLeft.textContent = `🚪 ${t('leftClan')}`;
+  const cardLeftDesc = document.querySelector('#card-left .card-desc');
+  if (cardLeftDesc) cardLeftDesc.textContent = t('leftClanDesc') || '';
+  const tabTitleEl = document.querySelector('.tab-title');
+  if (tabTitleEl) tabTitleEl.textContent = t('memberList');
+}
+
 // Default tags per mode
 // list of permitted clans; keeps parallel with backend ALLOWED_CLANS
 const CLAN_OPTIONS = [
@@ -68,12 +191,13 @@ let _replaceNextPush = false;
 
 function syncUrlState(mode, tag) {
   const params = new URLSearchParams({ mode, tag });
-  const url = `?${params}`;
+  const base = getBasePath();
+  const url = `${base}/?${params}`;
   if (_replaceNextPush) {
-    history.replaceState({ mode, tag }, '', url);
+    history.replaceState({ mode, tag, lang: currentLang }, '', url);
     _replaceNextPush = false;
   } else {
-    history.pushState({ mode, tag }, '', url);
+    history.pushState({ mode, tag, lang: currentLang }, '', url);
   }
 }
 
@@ -110,7 +234,13 @@ function applyUrlState(mode, tag) {
 
 // Restore state on browser back/forward
 window.addEventListener('popstate', (e) => {
-  const { mode, tag } = e.state ?? {};
+  const { mode, tag, lang } = e.state ?? {};
+  const pathLang = getI18nLangFromPath();
+  const selectedLang = lang || pathLang || currentLang;
+  if (selectedLang !== currentLang) {
+    loadLanguage(selectedLang).catch(() => {});
+  }
+
   if (mode && tag) {
     applyUrlState(mode, tag);
     _replaceNextPush = true; // don't push a new entry when restoring history
@@ -131,6 +261,20 @@ modeBtns.forEach((btn) => {
     hideError();
   });
 });
+
+function updateLangButtonUI() {
+  const btnEn = document.getElementById('btn-lang-en');
+  const btnFr = document.getElementById('btn-lang-fr');
+  if (!btnEn || !btnFr) return;
+  btnEn.classList.toggle('active', currentLang === 'en');
+  btnFr.classList.toggle('active', currentLang === 'fr');
+}
+
+const btnLangEn = document.getElementById('btn-lang-en');
+const btnLangFr = document.getElementById('btn-lang-fr');
+if (btnLangEn) btnLangEn.addEventListener('click', () => { loadLanguage('en').then(() => updateLangButtonUI()); });
+if (btnLangFr) btnLangFr.addEventListener('click', () => { loadLanguage('fr').then(() => updateLangButtonUI()); });
+
 // populate clan select options
 function initClanSelect() {
   if (!searchSelect) return;
@@ -141,25 +285,27 @@ function initClanSelect() {
 initClanSelect();
 
 // ── Init from URL ─────────────────────────────────────────────
-{
-  const params  = new URLSearchParams(location.search);
+async function initApp() {
+  const lang = initialLang();
+  await loadLanguage(lang);
+
+  const params = new URLSearchParams(window.location.search);
   const urlMode = params.get('mode');
   const urlTag  = params.get('tag');
   if (urlTag) {
     const mode = urlMode === 'clan' ? 'clan' : 'player';
     applyUrlState(mode, urlTag);
-    // Replace the current history entry so that pushState later works cleanly
-    history.replaceState({ mode, tag: urlTag }, '', location.search);
-    // Auto-search on load
+    history.replaceState({ mode, tag: urlTag, lang: currentLang }, '', `/${currentLang}/?${params.toString()}`);
     _replaceNextPush = true;
-    handleSearch();
+    await handleSearch();
   } else {
     applyUrlState('player', DEFAULT_TAGS.player);
   }
-}
 
-// populate favorites list immediately (may be empty)
-renderFavorites();
+  // populate favorites list immediately (may be empty)
+  renderFavorites();
+}
+initApp();
 
 // ── Search trigger ───────────────────────────────────────────
 async function loadStaticClan(tag) {
@@ -299,7 +445,7 @@ function renderFavorites() {
   playerKeys.forEach((tag) => {
     const nm = favs.player[tag];
     const display = (nm && nm !== tag) ? `${escHtml(nm)} (${tag})` : escHtml(tag);
-    html += `<li><a class="fav-item" href="?mode=player&tag=${encodeURIComponent(tag)}" ` +
+    html += `<li><a class="fav-item" href="${getBasePath()}/?mode=player&tag=${encodeURIComponent(tag)}" ` +
             `data-mode="player" data-tag="${tag}">${display}</a></li>`;
   });
   html += '</ul></div>';
@@ -310,7 +456,7 @@ function renderFavorites() {
     const nm = favs.clan[tag];
     const display = (nm && nm !== tag) ? `${escHtml(nm)} (${tag})` : escHtml(tag);
     // clan favorites now link to the app (clan view) instead of RoyaleAPI
-    html += `<li><a class="fav-item" href="?mode=clan&tag=${encodeURIComponent(tag)}" ` +
+    html += `<li><a class="fav-item" href="${getBasePath()}/?mode=clan&tag=${encodeURIComponent(tag)}" ` +
             `data-mode="clan" data-tag="${tag}">${display}</a></li>`;
   });
   html += '</ul></div>';
@@ -406,15 +552,14 @@ function showCacheNote(fromCache, snapshotDate = null) {
   // decide human‑friendly snapshot text
   let snapshotText;
   if (!snapshotDate) {
-    // no snapshot file could be found/loaded for this clan
-    snapshotText = 'none (no data) ❌';
+    snapshotText = t('snapshotNone');
   } else {
     const today = new Date().toISOString().slice(0, 10);
     const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
     if (snapshotDate === today) {
-      snapshotText = 'today ✅';
+      snapshotText = t('snapshotToday');
     } else if (snapshotDate === yesterday) {
-      snapshotText = 'yesterday ⚠️';
+      snapshotText = t('snapshotYesterday');
     } else {
       const d = new Date(snapshotDate);
       const opts = { month: 'long', day: 'numeric' };
@@ -423,8 +568,8 @@ function showCacheNote(fromCache, snapshotDate = null) {
   }
 
   cacheNote.textContent = fromCache
-    ? `Cached content 🔃 · Snapshot : ${snapshotText}`
-    : `Live data ✅ · Snapshot : ${snapshotText}`;
+    ? `${t('searchHintCached')} ${snapshotText}`
+    : `${t('searchHintNoDate')} ${snapshotText}`;
 }
 
 // ── Player rendering ──────────────────────────────────────────
@@ -432,6 +577,33 @@ function showCacheNote(fromCache, snapshotDate = null) {
 function renderPlayerResults(data) {
   const { overview, activityIndicators, recentActivity, warHistory, warScore } = data;
   const ws = warScore ?? data.reliability; // fallback si pas de race log
+
+  // Forcer la traduction des labels de breakdown si reçus en anglais
+  if (ws && Array.isArray(ws.breakdown)) {
+    const scoreLabelMap = {
+      Regularity: t('regularity'),
+      'Avg Score': t('avgScore'),
+      'Avg fame': t('avgFame'),
+      'CW2 Battle Wins': t('cw2BattleWins'),
+      'CW2 battle wins': t('cw2BattleWins'),
+      'Clan stability': t('clanStability'),
+      Stability: t('clanStability'),
+      'Last seen': t('lastSeen'),
+      'Win Rate (War)': t('winRateFullMode'),
+      'Win rate full mode': t('winRateFullMode'),
+      Experience: t('experience'),
+      Donations: t('donations'),
+      Discord: t('discord'),
+      'High reliability': t('highReliability'),
+      'Moderate risk': t('moderateRisk'),
+      'High risk': t('highRisk'),
+      'Extreme risk': t('extremeRisk'),
+    };
+    ws.breakdown = ws.breakdown.map((item) => ({
+      ...item,
+      label: scoreLabelMap[item.label] || item.label,
+    }));
+  }
 
   // 1. Overview (Clan & Role removed)
   const cw2 = overview.clanWarWins ?? 0;
@@ -443,16 +615,16 @@ function renderPlayerResults(data) {
   const clanValue = clanTag ? clanTag : 'No clan';
   const playerBadge = warHistory?.isFamilyTransfer ? 'transfer' : (ws.isFallback ? 'new' : null);
   overviewGrid.innerHTML = overviewItems([
-    { label: 'Name',          value: overview.name, cls: 'gold', badge: playerBadge },
-    { label: 'Tag',           value: overview.tag,
+    { label: t('labelName'),          value: overview.name, cls: 'gold', badge: playerBadge },
+    { label: t('labelTag'),           value: overview.tag,
       link: `https://royaleapi.com/player/${overview.tag.replace('#', '')}` },
-    { label: 'Clan',          value: clanValue,
+    { label: t('labelClan'),          value: clanValue,
       link: clanLink },
-    { label: 'Trophies',      value: `🏆 ${fmt(overview.trophies)}`,
+    { label: t('labelTrophies'),      value: `🏆 ${fmt(overview.trophies)}`,
       risk: overview.trophies < 3000 ? 'bad' : overview.trophies < 5000 ? 'warn' : null },
-    { label: 'CW2 Wins',      value: `⚔️ ${fmt(cw2)}`,
+    { label: t('labelCW2Wins'),      value: `⚔️ ${fmt(cw2)}`,
       risk: cw2 < 50 ? 'bad' : cw2 < 150 ? 'warn' : null },
-    { label: 'Discord',       value: data.overview?.discord ? 'Linked' : 'Not linked',
+    { label: t('labelDiscord'),       value: data.overview?.discord ? t('discordLinked') : t('discordNotLinked'),
       cls: data.overview?.discord ? 'c-green' : 'c-red' },
   ]);
 
@@ -467,29 +639,29 @@ function renderPlayerResults(data) {
     let dispPart = Math.min(warHistory.participation, displayDen);
     const partRatio = displayDen > 0 ? dispPart / displayDen : 0;
     statsGrid.innerHTML = statCards([
-      { label: 'Participation',   value: `${dispPart} / ${displayDen}`,
+      { label: t('statParticipation'),   value: `${dispPart} / ${displayDen}`,
         risk: partRatio < 0.4 ? 'bad' : partRatio < 0.7 ? 'warn' : null },
-      { label: 'Total Fame',      value: fmt(warHistory.totalFame) },
-      { label: 'Avg Fame / Week', value: fmt(warHistory.avgFame),
+      { label: t('statTotalFame'),      value: fmt(warHistory.totalFame) },
+      { label: t('statAvgFame'), value: fmt(warHistory.avgFame),
         risk: warHistory.avgFame < 800 ? 'bad' : warHistory.avgFame < 1500 ? 'warn' : null },
-      { label: 'Best Week',       value: fmt(warHistory.maxFame) },
-      { label: 'Win Rate',        value: warHistory.historicalWinRate !== null && warHistory.historicalWinRate !== undefined
+      { label: t('statBestWeek'),       value: fmt(warHistory.maxFame) },
+      { label: t('statWinRate'),        value: warHistory.historicalWinRate !== null && warHistory.historicalWinRate !== undefined
           ? `${Math.round(warHistory.historicalWinRate * 100)}%`
           : `${activityIndicators.winRate}%`,
         risk: (() => { const wr = warHistory.historicalWinRate !== null && warHistory.historicalWinRate !== undefined ? Math.round(warHistory.historicalWinRate * 100) : activityIndicators.winRate; return wr < 30 ? 'bad' : wr < 50 ? 'warn' : null; })() },
-      { label: 'Donations', value: fmt(activityIndicators.donations),
+      { label: t('statDonations'), value: fmt(activityIndicators.donations),
         risk: activityIndicators.donations < 2000 ? 'bad' : activityIndicators.donations < 30000 ? 'warn' : null },
     ]);
   } else {
     // Fallback battlelog : répartition des 30 entrées par type
     const bd = activityIndicators.battleLogBreakdown ?? {};
     statsGrid.innerHTML = statCards([
-      { label: '⚔️ War Battles',      value: fmt(activityIndicators.totalWarBattles) },
-      { label: '🏆 Win Rate (War)',   value: `${activityIndicators.winRate}%` },
-      { label: '🔀 Ladder / Ranked',  value: fmt(bd.ladder ?? 0) },
-      { label: '🎯 Challenges',        value: fmt(bd.challenge ?? 0) },
-      { label: '📦 Total Donations',   value: fmt(activityIndicators.donations) },
-      { label: '📊 Battle Log',        value: `${bd.total ?? '?'} entries` },
+      { label: t('statWarBattles'),      value: fmt(activityIndicators.totalWarBattles) },
+      { label: t('statWinRateWar'),   value: `${activityIndicators.winRate}%` },
+      { label: t('statLadder'),  value: fmt(bd.ladder ?? 0) },
+      { label: t('statChallenges'),        value: fmt(bd.challenge ?? 0) },
+      { label: t('statTotalDonations'),   value: fmt(activityIndicators.donations) },
+      { label: t('statBattleLog'),        value: `${bd.total ?? '?'} ${t('entries')}` },
     ]);
   }
 
@@ -499,12 +671,15 @@ function renderPlayerResults(data) {
 
   if (warHistory) {
     if (warHistory.weeks.length > 0) {
-      if (titleEl) titleEl.textContent = `📅 River Race History – ${warHistory.weeks.length} week${warHistory.weeks.length !== 1 ? 's' : ''}`;
+      if (titleEl) titleEl.textContent = t('riverRaceHistoryTitle', { count: warHistory.weeks.length });
       renderWarHistoryChart(warHistory.weeks);
       if (noteEl) {
-        let note = `ℹ️ Data from ${warHistory.weeks.length} completed river races. Indigo = above average, red = below average. Dashed line = average (${fmt(warHistory.avgFame)} fame).`;
+        let note = t('riverRaceHistoryNote', {
+          count: warHistory.weeks.length,
+          avgFame: fmt(warHistory.avgFame)
+        });
         if (warHistory.weeks.some((w) => w.ignored)) {
-          note += ' Grey bar indicates a week ignored for scoring (likely joined mid‑race).';
+          note += ` ${t('riverRaceHistoryIgnored')}`;
         }
         noteEl.textContent = note;
       }
@@ -556,30 +731,96 @@ function renderPlayerResults(data) {
   renderGaugeChart(ws.pct, ws.color);
 
   const icon = { green: '✅', yellow: '⚠️', orange: '🟠', red: '🔴' }[ws.color] ?? '❓';
+  const verdictMap = {
+    'High reliability': t('highReliability'),
+    'Moderate risk': t('moderateRisk'),
+    'High risk': t('highRisk'),
+    'Extreme risk': t('extremeRisk'),
+  };
+  const verdictText = verdictMap[ws.verdict] || ws.verdict;
+  ws.verdict = verdictText; // override to use translation everywhere
+
   const fallbackBadge = ws.isFallback
-    ? `<div class="fallback-badge">⚠️ Estimate based on API battle log (≤ 30 entries) — no war history available</div>`
+    ? `<div class="fallback-badge">⚠️ ${t('fallbackBadge')}</div>`
     : '';
   verdictBox.innerHTML = `
     <div class="verdict-box ${ws.color}">
       <div class="verdict-icon">${icon}</div>
       <div class="verdict-text-wrap">
         <div class="verdict-score">${ws.total}<span style="font-size:1rem;opacity:.6"> / ${ws.maxScore} pts</span></div>
-        <div class="verdict-text">${ws.verdict}</div>
+        <div class="verdict-text">${verdictText}</div>
       </div>
     </div>
     ${fallbackBadge}
   `;
 
+  const scoreLabelMap = {
+    Regularity: t('regularity'),
+    'Avg Score': t('avgScore'),
+    'Avg fame': t('avgFame'),
+    'CW2 Battle Wins': t('cw2BattleWins'),
+    'CW2 battle wins': t('cw2BattleWins'),
+    'Clan stability': t('clanStability'),
+    Stability: t('clanStability'),
+    'Last seen': t('lastSeen'),
+    'Win Rate (War)': t('winRateFullMode'),
+    'Win rate full mode': t('winRateFullMode'),
+    Experience: t('experience'),
+    Donations: t('donations'),
+    Discord: t('discord'),
+  };
+
+  function translateDetail(label, text) {
+    if (!text) return text;
+    if (label === 'Regularity') {
+      // 160/160 decks across 10 weeks (100%)
+      return text
+        .replace(/decks across/, 'decks sur')
+        .replace(/week(s?)/, 'semaine$1');
+    }
+    if (label === 'Avg Score') {
+      return text.replace('fame / week (cap 3,000)', t('avgFameCap'));
+    }
+    if (label === 'CW2 Battle Wins') {
+      return text.replace('total CW2 wins (cap 250)', t('cw2BattleWinsCap'));
+    }
+    if (label === 'Stability') {
+      return text.replace('consecutive weeks in this clan', t('clanStabilityCap')); // approximated
+    }
+    if (label === 'Last Seen') {
+      return text
+        .replace('Active in the last 24 h', 'Actif dans les 24 h')
+        .replace(/Active (\d+\.?\d*) day\(s\) ago/, 'Actif il y a $1 jour(s)')
+        .replace(/Active (\d+) days ago/, 'Actif il y a $1 jours');
+    }
+    if (label === 'Win Rate (War)') {
+      return text.replace('victories in River Race', 'victoires en River Race');
+    }
+    if (label === 'Experience') {
+      return text.replace('trophies (range 4000–14000)', 'trophées (plage 4000–14000)');
+    }
+    if (label === 'Donations') {
+      return text.replace('total cards donated (cap 100000)', 'cartes totales données (cap 100000)');
+    }
+    if (label === 'Discord') {
+      return text.replace('Discord account linked to the server', 'Compte Discord lié au serveur')
+        .replace('Discord account not linked (/discord-link)', 'Compte Discord non lié (/discord-link)');
+    }
+    return text;
+  }
+
   reasonsList.innerHTML = (ws.breakdown ?? []).map((b) => {
+    const labelText = scoreLabelMap[b.label] || b.label;
+    const detailText = translateDetail(b.label, b.detail);
     if (b.excluded) {
       return `
       <li class="score-row score-row-excluded">
         <div class="sr-header">
-          <span class="sr-label">${escHtml(b.label)}</span>
-          <span class="sr-excluded-badge">not counted</span>
+          <span class="sr-label">${escHtml(labelText)}</span>
+          <span class="sr-excluded-badge">${t('notCounted') || 'not counted'}</span>
         </div>
         <div class="sr-bar-bg"></div>
-        <div class="sr-detail">${escHtml(b.detail)}</div>
+        <div class="sr-detail">${escHtml(detailText)}</div>
       </li>`;
     }
     const pct   = Math.round((b.score / b.max) * 100);
@@ -686,7 +927,7 @@ function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null, sn
       ? '<span class="war-data-source reliable">Race log ✓</span>'
       : '<span class="war-data-source fallback">Battle log (approx.)</span>';
 
-  const sourceHint = 'ℹ️ Live currentriverrace data is used for today, snapshots for past days';
+  const sourceHint = t('sourceHint');
 
   const chipsHtml = days.map((d, i) => {
     const cls  = d.isFuture ? 'future' : d.isToday ? 'today' : 'past';
@@ -776,7 +1017,7 @@ function renderTopPlayersCard(topPlayers, prevWeekId = null) {
     return;
   }
   const weekLabel = prevWeekId ? ` <span class="card-week-id">(${prevWeekId.toLowerCase()})</span>` : '';
-  card.querySelector('.card-title').innerHTML = `🏅 Last War Best${weekLabel}`;
+  card.querySelector('.card-title').innerHTML = `🏅 ${t('lastWarBest')}${weekLabel}`;
 
   // ensure quotas match the radio buttons; if dynamic, we'd rebuild them
   // but here we assume the static 2400/2600/2800 set.
@@ -787,7 +1028,7 @@ function renderTopPlayersCard(topPlayers, prevWeekId = null) {
     // sort by fame descending
     players = players.slice().sort((a, b) => b.fame - a.fame);
     if (players.length === 0) {
-      listEl.innerHTML = '<li class="text-muted">No players reached this quota.</li>';
+      listEl.innerHTML = `<li class="text-muted">${t('noPlayersReachedQuota')}</li>`;
     } else {
       listEl.innerHTML = players
         .map((p) =>
@@ -826,7 +1067,7 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
     return;
   }
   const weekLabel = prevWeekId ? ` <span class="card-week-id">(${prevWeekId.toLowerCase()})</span>` : '';
-  card.querySelector('.card-title').innerHTML = `🤷 Last War fails${weekLabel}`;
+  card.querySelector('.card-title').innerHTML = `🤷 ${t('lastWarFails')}${weekLabel}`;
   const players = uncomplete.players.slice().sort((a,b)=> b.decks - a.decks);
 
   // show a global warning if any player is still using warlog data (not snapshot)
@@ -915,11 +1156,11 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
   const departed = players.filter(p => !p.inClan);
 
   if (present.length === 0 && departed.length === 0) {
-    listEl.innerHTML = '<li class="text-muted">Everyone completed 16 decks 👍</li>';
+    listEl.innerHTML = `<li class="text-muted">${t('everyoneCompleted16')}</li>`;
   } else {
     listEl.innerHTML = present.length > 0
       ? present.map(renderPlayerItem).join('')
-      : '<li class="text-muted">Everyone still in clan completed 16 decks 👍</li>';
+      : `<li class="text-muted">${t('everyoneInClanCompleted16')}</li>`;
   }
 
   // Affiche la liste des joueurs qui ont quitté le clan dans une carte séparée
@@ -1055,7 +1296,7 @@ function renderMembersSkeleton() {
 
 function renderMembersTable(members) {
   if (members.length === 0) {
-    membersTbody.innerHTML = `<tr><td colspan="${isWarActive ? 9 : 8}" style="text-align:center;color:var(--text-muted)">No members found.</td></tr>`;
+    membersTbody.innerHTML = `<tr><td colspan="${isWarActive ? 9 : 8}" style="text-align:center;color:var(--text-muted)">${t('noMembersFound')}</td></tr>`;
     return;
   }
 
