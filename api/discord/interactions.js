@@ -517,7 +517,8 @@ export default async function handler(req, res) {
         }
 
         const analysis = await apiResp.json();
-        const uncomplete = analysis.uncomplete?.players || [];
+        const uncompleteAll = analysis.uncomplete?.players || [];
+        const uncomplete = uncompleteAll.filter((p) => p.inClan);
 
         if (uncomplete.length === 0) {
           await fetch(webhookUrl, {
