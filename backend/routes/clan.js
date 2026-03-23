@@ -574,6 +574,11 @@ export async function buildClanAnalysis(clanTag) {
     let clanWarSummary = null;
     let lastWarSummary = null;
 
+    const clampDeckTotal = (value) => {
+      if (value == null || Number.isNaN(value)) return null;
+      return Math.min(200, Math.max(0, Math.round(value)));
+    };
+
     if (currentRace?.periodType === 'warDay' && currentRace?.clan?.participants?.length > 0) {
       const sampleWarDays = analyzedMembers.find((m) => m.warDays && !m.warDays.arrivedMidWar)?.warDays ?? null;
       if (sampleWarDays) {
@@ -588,6 +593,7 @@ export async function buildClanAnalysis(clanTag) {
         const MAX_MEMBERS = 50;
         const maxDecksElapsed = MAX_MEMBERS * (daysFromThu + 1) * 4; // 600 at day 3
         const maxDecksWeek    = MAX_MEMBERS * 16;                     // 800 for full week
+        totalDecksUsed = Math.min(maxDecksWeek, Math.max(0, totalDecksUsed));
         // Détail par jour : on combine snapshot (source fiable) et une estimation live
         // basée sur les cumul d'API (currentRace) pour limiter l'écart en cas de lag.
         const currentCumul = {};
@@ -614,14 +620,14 @@ export async function buildClanAnalysis(clanTag) {
             : null;
 
           const snapshotCount = snapshotCountFromDecks !== null
-            ? snapshotCountFromDecks
+            ? clampDeckTotal(snapshotCountFromDecks)
             : cumulDelta !== null
-              ? cumulDelta
+              ? clampDeckTotal(cumulDelta)
               : null;
 
           const knownPrevDaysTotal = dayTotals.reduce((s, v) => s + v, 0);
           const inferredFromLive = totalDecksUsed > knownPrevDaysTotal
-            ? Math.min(200, Math.max(0, totalDecksUsed - knownPrevDaysTotal))
+            ? clampDeckTotal(totalDecksUsed - knownPrevDaysTotal)
             : null;
 
           let totalCount = null;
@@ -716,7 +722,8 @@ export async function buildClanAnalysis(clanTag) {
           // fallback: garder totalDecksUsed comme source principale
           // et ne plus toucher si impossible de faire concorder proprement.
         }
-        clanWarSummary = { totalDecksUsed, maxDecksElapsed, maxDecksWeek, participantCount: MAX_MEMBERS, daysFromThu, days, weekId: currWeekId, ended: false };
+        const finalTotalDecksUsed = Math.min(maxDecksWeek, Math.max(0, days.reduce((sum, d) => sum + (d.totalCount ?? 0), 0)));
+        clanWarSummary = { totalDecksUsed: finalTotalDecksUsed, maxDecksElapsed, maxDecksWeek, participantCount: MAX_MEMBERS, daysFromThu, days, weekId: currWeekId, ended: false };
       }
     }
 
