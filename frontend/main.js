@@ -879,7 +879,10 @@ function renderPlayerResults(data) {
       // 160/160 decks across 10 weeks (100%)
       return text
         .replace(/decks across/, 'decks sur')
-        .replace(/week(s?)/, 'semaine$1');
+        .replace(/incomplete weeks?/gi, (m) => m.toLowerCase().startsWith('incomplete') ? m.replace(/incomplete/i, 'incomplète') : m)
+        .replace(/member for\s*(\d+)\s*weeks?/i, (_, n) => `membre depuis ${n} ${Number(n) > 1 ? 'semaines' : 'semaine'}`)
+        .replace(/([0-9.,]+)\s*weeks?/gi, (_, n) => `${n} ${Number(n) > 1 ? 'semaines' : 'semaine'}`)
+        .replace(/week(s?)/gi, 'semaine$1');
     }
     if (label === 'Avg Score') {
       return text.replace('fame / week (cap 3,000)', t('avgFameCap'));
