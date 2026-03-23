@@ -366,7 +366,9 @@ async function initApp() {
 
   if (!getI18nLangFromPath()) {
     // no explicit locale path, normalize to selected language (path from localStorage or default)
-    history.replaceState(null, '', `/${lang}/`);
+    const params = new URLSearchParams(window.location.search);
+    const suffix = params.toString() ? `/?${params.toString()}` : '/';
+    history.replaceState(null, '', `/${lang}${suffix}`);
   }
 
   await loadLanguage(lang);
