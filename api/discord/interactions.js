@@ -374,7 +374,7 @@ export default async function handler(req, res) {
             const role = capitalize(p.role || 'member');
             const promoteArrow = role.toLowerCase() === 'member' ? ' ⬆️' : '';
             // Inclut le lien vers la page joueur et le tag CR
-            return `${num}. [${p.name}](${playerUrl}) ${p.tag} • ${p.fame} fame • [${role}]${promoteArrow}`;
+            return `${num}. [${p.name}](${playerUrl}) • ${p.fame} fame • [${role}]${promoteArrow}`;
           });
           description = rows.join('\n');
         }
@@ -546,7 +546,7 @@ export default async function handler(req, res) {
           const isNew = p.isNew ? ' (new)' : '';
           const transfer = p.isFamilyTransfer ? ' (transfer)' : '';
           const role = capitalize(p.role || 'member');
-          return `${i + 1}. [${p.name}](${playerUrl})${isNew}${transfer} • ${p.tag} • [${role}] • ${p.decks} decks`;
+          return `${i + 1}. [${p.name}](${playerUrl})${isNew}${transfer} • [${role}] • ${p.decks} decks`;
         });
 
         const more = uncomplete.length > MAX_ROWS ? `\n...and ${uncomplete.length - MAX_ROWS} de plus` : '';
