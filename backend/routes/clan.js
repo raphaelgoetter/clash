@@ -621,21 +621,20 @@ export async function buildClanAnalysis(clanTag) {
           let source = 'unknown';
           let liveCount = null;
 
-          // Prefer live aggregate for the current day (most accurate at query time).
-          if (i === daysFromThu && typeof currentCumulTotal === 'number') {
-            const currentDayLive = Math.max(0, Math.min(200, currentCumulTotal - knownPrevDaysTotal));
-            liveCount = currentDayLive;
+          // Prefer live `decksUsedToday` for the current day (most authoritative from currentriverrace).
+          if (i === daysFromThu) {
+            const currentDayLive = participants.reduce((sum, p) => sum + (p.decksUsedToday ?? 0), 0);
+            liveCount = Math.max(0, Math.min(200, currentDayLive));
             if (snapshotCount !== null) {
-              // If difference exists, prefer live for current day and mark source.
-              if (Math.abs(snapshotCount - currentDayLive) > 0) {
-                totalCount = currentDayLive;
+              if (liveCount !== snapshotCount) {
+                totalCount = liveCount;
                 source = 'live';
               } else {
                 totalCount = Math.min(200, snapshotCount);
                 source = 'snapshot';
               }
             } else {
-              totalCount = currentDayLive;
+              totalCount = liveCount;
               source = 'live';
             }
           }
@@ -666,6 +665,50 @@ export async function buildClanAnalysis(clanTag) {
             liveCount,
           };
         });
+
+        // Ensure consistency : totalDecksUsed = somme des jours (today live + jours précédents)
+        const todayIdx = daysFromThu;
+        const todayLiveSum = participants.reduce((sum, p) => sum + (p.decksUsedToday ?? 0), 0);
+        if (days[todayIdx]) {
+          days[todayIdx].totalCount = Math.min(200, Math.max(0, todayLiveSum));
+          days[todayIdx].source = 'live';
+          days[todayIdx].liveCount = todayLiveSum;
+        }
+
+        const desiredPastTotal = Math.max(0, totalDecksUsed - todayLiveSum);
+        const currentPastTotal = days.slice(0, todayIdx).reduce((sum, d) => sum + (d.totalCount ?? 0), 0);
+        const pastDiff = currentPastTotal - desiredPastTotal;
+
+        if (pastDiff !== 0 && todayIdx > 0) {
+          // Ajustements au plus proche jour passé (dernière journée non-future).
+          for (let i = todayIdx - 1; i >= 0 && pastDiff !== 0; i--) {
+            const day = days[i];
+            if (!day || typeof day.totalCount !== 'number') continue;
+            const maxAdjust = Math.min(day.totalCount, Math.abs(pastDiff));
+            if (maxAdjust <= 0) continue;
+            if (pastDiff > 0) {
+              // on est trop haut, on réduit
+              day.totalCount -= maxAdjust;
+              day.source = 'snapshot';
+              pastDiff -= maxAdjust;
+            } else {
+              // on est trop bas, on augmente (dans la limite de 200)
+              const freeSlot = 200 - day.totalCount;
+              const add = Math.min(freeSlot, Math.abs(pastDiff));
+              day.totalCount += add;
+              day.source = 'snapshot';
+              pastDiff += add;
+            }
+          }
+        }
+
+        // Recalc des prix à jour après adjustement de cohérence
+        const finalPastTotal = days.slice(0, todayIdx).reduce((sum, d) => sum + (d.totalCount ?? 0), 0);
+        // si rien ne colle (gros écart), on tolère ; on ne modifie plus.
+        if (finalPastTotal + todayLiveSum !== totalDecksUsed) {
+          // fallback: garder totalDecksUsed comme source principale
+          // et ne plus toucher si impossible de faire concorder proprement.
+        }
         clanWarSummary = { totalDecksUsed, maxDecksElapsed, maxDecksWeek, participantCount: MAX_MEMBERS, daysFromThu, days, weekId: currWeekId };
       }
     }
