@@ -170,6 +170,19 @@ function mergeMaps(a = {}, b = {}) {
   return out;
 }
 
+function clampDeckValues(decks = {}) {
+  const normalized = Object.entries(decks)
+    .filter(([, v]) => Number.isFinite(v) && v >= 0)
+    .map(([k, v]) => [k, Math.min(4, Math.max(0, Math.round(v)))]);
+
+  // Keep top 50 contributors to avoid impossible sums (>200) and membership overflow.
+  const prioritized = normalized
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, 50);
+
+  return Object.fromEntries(prioritized);
+}
+
 function makeEmptyDay(warDay, realDay = null) {
   const gdcPeriod = realDay
     ? {
@@ -383,11 +396,13 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
       }
     }
 
+    // Ensure `decks` does not grow beyond 50 players and remains inside 0-4 per player.
+    prevDayEntry.decks = clampDeckValues(prevDayEntry.decks);
     await saveSnapshots(clanTag, filtered);
     return;
   }
 
-  dayEntry.decks = mergeMaps(dayEntry.decks, daily);
+  dayEntry.decks = clampDeckValues(mergeMaps(dayEntry.decks, daily));
 
   if (snapshotType === 'primary') {
     dayEntry.snapshotTime = now.toISOString();

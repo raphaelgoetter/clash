@@ -1114,6 +1114,24 @@ a.member-link:hover div:first-child {
   margin-left: 5px;
 }
 
+.daily-tooltip {
+  display: inline-block;
+  margin-left: 6px;
+  color: var(--text-secondary);
+  border: 1px solid rgba(255,255,255,.18);
+  background: rgba(255,255,255,.08);
+  border-radius: 4px;
+  font-size: .8rem;
+  line-height: 1;
+  padding: 1px 4px;
+  cursor: help;
+}
+.daily-tooltip:hover {
+  color: var(--text-primary);
+  background: rgba(255,255,255,.14);
+  border-color: rgba(255,255,255,.32);
+}
+
 .last-seen-badge {
   display: inline-block;
   padding: 2px 8px;

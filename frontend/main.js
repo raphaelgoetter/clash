@@ -832,7 +832,8 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
   // show a global warning if any player is still using warlog data (not snapshot)
   // or if snapshots do not cover all 4 GDC days.
   const missingDays = uncomplete.snapshotComplete === false;
-  const needWarning = missingDays || players.some(p => p.dailySource !== 'snapshot' || (p.dailySource === 'snapshot' && !p.dailySnapshotComplete));
+  const mismatchedDays = players.some(p => p.dailyMismatch === true);
+  const needWarning = missingDays || mismatchedDays || players.some(p => p.dailySource !== 'snapshot' || (p.dailySource === 'snapshot' && !p.dailySnapshotComplete));
   const existing = card.querySelector('.uncomplete-warning');
   if (needWarning) {
     if (!existing) {
@@ -883,21 +884,30 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
   const existingDeparted = card.querySelector('.uncomplete-departed');
   if (existingDeparted) existingDeparted.remove();
 
+  function formatDailyTooltip(counts) {
+    if (!counts || !Array.isArray(counts)) return '';
+    const labels = ['thu', 'fri', 'sat', 'sun'];
+    return counts
+      .map((val, i) => (val == null ? `?× ${labels[i]}` : `${val}× ${labels[i]}`))
+      .join(' - ');
+  }
+
   function renderPlayerItem(p) {
     const dailyStr = formatDaily(p.daily);
-    let warnAfter = '';
-    if (p.dailySource !== 'snapshot') {
-      warnAfter = ' ⚠';
-    } else if (p.dailySource === 'snapshot' && !p.dailySnapshotComplete) {
-      warnAfter = ' ⚠';
-    }
+    const dailyPlain = formatDailyTooltip(p.daily);
+    const mismatchText = p.dailyMismatch ? '⚠ snapshot mismatch' : '';
+    const tooltipText = [dailyPlain || 'no daily data', mismatchText].filter(Boolean).join(' · ');
+
     const transferBadge = p.isFamilyTransfer ? '<span class="transfer-badge">transfer</span>' : '';
     const newBadge = !p.isFamilyTransfer && p.isNew ? '<span class="new-badge">new</span>' : '';
+
+    const dailyBadge = `<span class="daily-tooltip" title="${escHtml(tooltipText)}">📅</span>`;
+
     return `<li><span class="tp-name">${escHtml(p.name)} ` +
       `<span class="tp-tag">${escHtml(p.tag)}</span>${transferBadge}${newBadge}</span>` +
       `<span class="tp-meta">` +
         `<span class="role-badge ${p.role}">${capitalize(p.role)}</span>` +
-        `<span class="tp-fame">${fmt(p.decks)} decks${dailyStr ? ' (' + dailyStr + ')' : ''}${warnAfter}</span>` +
+        `<span class="tp-fame">${fmt(p.decks)} decks ${dailyBadge}</span>` +
       `</span></li>`;
   }
 
@@ -938,7 +948,7 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
 
 function renderClanWarCard(clanWarSummary) {
   const card = document.getElementById('card-clan-war');
-  if (!clanWarSummary) { card.classList.add('hidden'); return; }
+  if (!clanWarSummary || clanWarSummary.ended) { card.classList.add('hidden'); return; }
   card.classList.remove('hidden');
 
   const { totalDecksUsed, maxDecksElapsed, maxDecksWeek, participantCount, daysFromThu, days, weekId, ended } = clanWarSummary;

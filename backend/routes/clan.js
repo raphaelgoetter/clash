@@ -308,6 +308,16 @@ export async function buildClanAnalysis(clanTag) {
           p.daily = daily;
           p.dailySource = 'snapshot';
           p.dailySnapshotComplete = daily.every((v) => v !== null);
+          if (p.dailySnapshotComplete) {
+            const dailyTotal = daily.reduce((sum, v) => sum + (typeof v === 'number' ? v : 0), 0);
+            // Keep the official count from race standings (p.decks) as source of truth.
+            // Snapshot can be used for breakdown/diagnostic, but may be trailing or noisy.
+            p.dailyMismatch = p.decks !== dailyTotal;
+            p.dailyTotalFromSnapshot = dailyTotal;
+          } else {
+            p.dailyMismatch = false;
+            p.dailyTotalFromSnapshot = null;
+          }
           return p;
         });
       }
@@ -734,6 +744,20 @@ export async function buildClanAnalysis(clanTag) {
       if (prevWeekSnaps.length > 0) {
         weekSnaps = prevWeekSnaps;
         currWeekId = prevWeekId;
+
+        // Keep the same derived debug fields as in war-week processing.
+        warSnapshotDays = weekSnaps.map((s) => {
+          if (!s || !s.decks) return null;
+          const total = Object.values(s.decks).reduce((acc, v) => acc + (typeof v === 'number' ? v : 0), 0);
+          return total > 0 ? Math.min(200, total) : 0;
+        });
+
+        const latestSnap = weekSnaps
+          .map((s) => s.snapshotTime || s.snapshotBackupTime || null)
+          .filter(Boolean)
+          .sort()
+          .pop();
+        warSnapshotTakenAt = latestSnap ?? null;
       }
     }
 
@@ -766,6 +790,15 @@ export async function buildClanAnalysis(clanTag) {
       const maxDecksElapsed = MAX_MEMBERS * 16;
       const maxDecksWeek = MAX_MEMBERS * 16;
       totalDecksUsed = Math.min(totalDecksUsed, maxDecksWeek);
+
+      // Ensure debug stats available even hors course (fallback via snapshot)
+      warSnapshotDays = days.map((d) => (d.totalCount != null ? d.totalCount : null));
+      warSnapshotTakenAt = weekSnaps
+        .map((s) => s.snapshotTime || s.snapshotBackupTime || null)
+        .filter(Boolean)
+        .sort()
+        .pop() ?? warSnapshotTakenAt;
+
       clanWarSummary = {
         totalDecksUsed,
         maxDecksElapsed,
