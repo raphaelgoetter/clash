@@ -691,7 +691,7 @@ function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null, sn
     const icon = d.isFuture ? ' —' : d.isToday ? ' ▶' : '';
 
     const snapshotVal = snapDays?.[i];
-    const battleVal = d.count;
+    const battleVal = snapshotVal != null ? snapshotVal : d.count;
 
     let label = d.label;
     let snap = '';
@@ -699,7 +699,7 @@ function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null, sn
     if (snapshotVal != null) {
       const warn = snapshotVal < 4 ? ' ⚠️' : '';
       const snapCls = snapshotVal <= 1 ? 'chip-snap chip-snap-red' : snapshotVal <= 3 ? 'chip-snap chip-snap-orange' : 'chip-snap';
-      const note = snapshotVal !== battleVal ? ` (snap ${snapshotVal}/4)` : '';
+      const note = snapshotVal !== d.count ? ` (snap ${snapshotVal}/4)` : '';
       snap = ` <span class="${snapCls}">${battleVal}/4${warn}${note}</span>`;
     } else {
       // no snapshot: mark as missing rather than guessing based on incomplete log
