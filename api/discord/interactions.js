@@ -365,8 +365,9 @@ export default async function handler(req, res) {
             const num = String(i + 1).padStart(2);
             const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
             const role = capitalize(p.role || 'member');
+            const promoteArrow = role.toLowerCase() === 'member' ? ' ⬆️' : '';
             // Inclut le lien vers la page joueur et le tag CR
-            return `${num}. [${p.name}](${playerUrl}) ${p.tag} • ${p.fame} fame • [${role}]`;
+            return `${num}. [${p.name}](${playerUrl}) ${p.tag} • ${p.fame} fame • [${role}]${promoteArrow}`;
           });
           description = rows.join('\n');
         }
