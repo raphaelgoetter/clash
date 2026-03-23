@@ -437,8 +437,8 @@
       "name": "chloe_lpb",
       "tag": "#UYRR99RL8",
       "role": "member",
-      "trophies": 8699,
-      "donations": 0,
+      "trophies": 8698,
+      "donations": 21,
       "donationsReceived": 0,
       "expLevel": 38,
       "activityScore": 37,
@@ -491,7 +491,7 @@
         "daysFromThu": 3
       },
       "warDecks": 8,
-      "lastSeen": "20260322T222419.000Z"
+      "lastSeen": "20260323T093727.000Z"
     },
     {
       "name": "Clasher",
@@ -679,7 +679,7 @@
       "role": "member",
       "trophies": 4540,
       "donations": 0,
-      "donationsReceived": 0,
+      "donationsReceived": 20,
       "expLevel": 27,
       "activityScore": 43,
       "verdict": "High risk",
@@ -739,7 +739,7 @@
       "role": "member",
       "trophies": 10786,
       "donations": 0,
-      "donationsReceived": 0,
+      "donationsReceived": 9,
       "expLevel": 62,
       "activityScore": 44,
       "verdict": "High risk",
@@ -792,66 +792,6 @@
       },
       "warDecks": 0,
       "lastSeen": "20260323T084848.000Z"
-    },
-    {
-      "name": "Nightmare_YMD",
-      "tag": "#CVJPCU09C",
-      "role": "elder",
-      "trophies": 12236,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 65,
-      "activityScore": 47,
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 0,
-      "lastSeen": "20260316T070020.000Z"
     },
     {
       "name": "KO93",
@@ -971,7 +911,7 @@
         "daysFromThu": 3
       },
       "warDecks": 0,
-      "lastSeen": "20260322T193803.000Z"
+      "lastSeen": "20260323T093019.000Z"
     },
     {
       "name": "berlingot",
@@ -979,7 +919,7 @@
       "role": "elder",
       "trophies": 8770,
       "donations": 0,
-      "donationsReceived": 0,
+      "donationsReceived": 8,
       "expLevel": 42,
       "activityScore": 49,
       "verdict": "High risk",
@@ -1152,6 +1092,66 @@
       },
       "warDecks": 0,
       "lastSeen": "20260322T141357.000Z"
+    },
+    {
+      "name": "Nightmare_YMD",
+      "tag": "#CVJPCU09C",
+      "role": "elder",
+      "trophies": 12236,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 65,
+      "activityScore": 57,
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": {
+        "days": [
+          {
+            "key": "2026-03-19",
+            "label": "Thu",
+            "count": 0,
+            "isPast": true,
+            "isToday": false,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-20",
+            "label": "Fri",
+            "count": 0,
+            "isPast": true,
+            "isToday": false,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-21",
+            "label": "Sat",
+            "count": 0,
+            "isPast": true,
+            "isToday": false,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-22",
+            "label": "Sun",
+            "count": 0,
+            "isPast": false,
+            "isToday": true,
+            "isFuture": false
+          }
+        ],
+        "totalDecksUsed": 0,
+        "maxDecksElapsed": 16,
+        "maxDecksWeek": 16,
+        "isReliableTotal": true,
+        "daysFromThu": 3
+      },
+      "warDecks": 0,
+      "lastSeen": "20260323T092244.000Z"
     },
     {
       "name": "Performant",
@@ -1338,8 +1338,8 @@
       "tag": "#8VP9UJV9L",
       "role": "elder",
       "trophies": 9183,
-      "donations": 0,
-      "donationsReceived": 10,
+      "donations": 8,
+      "donationsReceived": 30,
       "expLevel": 51,
       "activityScore": 70,
       "verdict": "Moderate risk",
@@ -1391,7 +1391,7 @@
         "daysFromThu": 3
       },
       "warDecks": 13,
-      "lastSeen": "20260323T083801.000Z"
+      "lastSeen": "20260323T093116.000Z"
     },
     {
       "name": "luky",
@@ -1457,9 +1457,9 @@
       "name": "rotk",
       "tag": "#8JGU9UUJJ",
       "role": "elder",
-      "trophies": 9003,
-      "donations": 0,
-      "donationsReceived": 0,
+      "trophies": 9000,
+      "donations": 44,
+      "donationsReceived": 8,
       "expLevel": 60,
       "activityScore": 74,
       "verdict": "Moderate risk",
@@ -1511,7 +1511,7 @@
         "daysFromThu": 3
       },
       "warDecks": 11,
-      "lastSeen": "20260323T034011.000Z"
+      "lastSeen": "20260323T092752.000Z"
     },
     {
       "name": "☆.",
@@ -1639,7 +1639,7 @@
       "role": "elder",
       "trophies": 12632,
       "donations": 0,
-      "donationsReceived": 0,
+      "donationsReceived": 8,
       "expLevel": 71,
       "activityScore": 85,
       "verdict": "High reliability",
@@ -1756,10 +1756,10 @@
   ],
   "summary": {
     "green": 4,
-    "yellow": 6,
-    "orange": 14,
+    "yellow": 7,
+    "orange": 13,
     "red": 5,
-    "avgScore": 49,
+    "avgScore": 50,
     "total": 29
   },
   "isWarPeriod": true,
@@ -2101,7 +2101,10 @@
         "maxCount": 200,
         "isPast": true,
         "isToday": false,
-        "isFuture": false
+        "isFuture": false,
+        "source": "snapshot",
+        "snapshotCount": 43,
+        "liveCount": null
       },
       {
         "label": "Fri",
@@ -2109,7 +2112,10 @@
         "maxCount": 200,
         "isPast": true,
         "isToday": false,
-        "isFuture": false
+        "isFuture": false,
+        "source": "snapshot",
+        "snapshotCount": 60,
+        "liveCount": null
       },
       {
         "label": "Sat",
@@ -2117,15 +2123,21 @@
         "maxCount": 200,
         "isPast": true,
         "isToday": false,
-        "isFuture": false
+        "isFuture": false,
+        "source": "snapshot",
+        "snapshotCount": 66,
+        "liveCount": null
       },
       {
         "label": "Sun",
-        "totalCount": 66,
+        "totalCount": 7,
         "maxCount": 200,
         "isPast": false,
         "isToday": true,
-        "isFuture": false
+        "isFuture": false,
+        "source": "live",
+        "snapshotCount": 66,
+        "liveCount": 7
       }
     ],
     "weekId": "S130W3"
@@ -2148,7 +2160,10 @@
       "maxCount": 200,
       "isPast": true,
       "isToday": false,
-      "isFuture": false
+      "isFuture": false,
+      "source": "snapshot",
+      "snapshotCount": 43,
+      "liveCount": null
     },
     {
       "label": "Fri",
@@ -2156,7 +2171,10 @@
       "maxCount": 200,
       "isPast": true,
       "isToday": false,
-      "isFuture": false
+      "isFuture": false,
+      "source": "snapshot",
+      "snapshotCount": 60,
+      "liveCount": null
     },
     {
       "label": "Sat",
@@ -2164,15 +2182,21 @@
       "maxCount": 200,
       "isPast": true,
       "isToday": false,
-      "isFuture": false
+      "isFuture": false,
+      "source": "snapshot",
+      "snapshotCount": 66,
+      "liveCount": null
     },
     {
       "label": "Sun",
-      "totalCount": 66,
+      "totalCount": 7,
       "maxCount": 200,
       "isPast": false,
       "isToday": true,
-      "isFuture": false
+      "isFuture": false,
+      "source": "live",
+      "snapshotCount": 66,
+      "liveCount": 7
     }
   ]
 }
