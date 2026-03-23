@@ -603,7 +603,7 @@ export async function buildClanAnalysis(clanTag) {
           const cumul = snap?._cumul ?? null;
           const prevCumul = prevSnap?._cumul ?? null;
           const cumulDelta = cumul && prevCumul
-            ? Math.max(0, Object.values(cumul).reduce((s,v)=>s+v,0) - Object.values(prevCumul).reduce((s,v)=>s+v,0))
+            ? Math.max(0, Object.values(cumul).reduce((s, v) => s + v, 0) - Object.values(prevCumul).reduce((s, v) => s + v, 0))
             : null;
 
           const snapshotCount = snapshotCountFromDecks !== null
@@ -612,15 +612,44 @@ export async function buildClanAnalysis(clanTag) {
               ? cumulDelta
               : null;
 
-          // Infer daily total from live cumulative if snapshot seems too low.
-          const knownPrevDaysTotal = dayTotals.reduce((s,v)=>s+v,0);
+          const knownPrevDaysTotal = dayTotals.reduce((s, v) => s + v, 0);
           const inferredFromLive = totalDecksUsed > knownPrevDaysTotal
             ? Math.min(200, Math.max(0, totalDecksUsed - knownPrevDaysTotal))
             : null;
 
-          const totalCount = snapshotCount !== null
-            ? Math.min(200, snapshotCount)
-            : inferredFromLive;
+          let totalCount = null;
+          let source = 'unknown';
+          let liveCount = null;
+
+          // Prefer live aggregate for the current day (most accurate at query time).
+          if (i === daysFromThu && typeof currentCumulTotal === 'number') {
+            const currentDayLive = Math.max(0, Math.min(200, currentCumulTotal - knownPrevDaysTotal));
+            liveCount = currentDayLive;
+            if (snapshotCount !== null) {
+              // If difference exists, prefer live for current day and mark source.
+              if (Math.abs(snapshotCount - currentDayLive) > 0) {
+                totalCount = currentDayLive;
+                source = 'live';
+              } else {
+                totalCount = Math.min(200, snapshotCount);
+                source = 'snapshot';
+              }
+            } else {
+              totalCount = currentDayLive;
+              source = 'live';
+            }
+          }
+
+          // Past days: use snapshot if available, else fallback to inferred live.
+          if (totalCount === null) {
+            if (snapshotCount !== null) {
+              totalCount = Math.min(200, snapshotCount);
+              source = 'snapshot';
+            } else if (inferredFromLive !== null) {
+              totalCount = inferredFromLive;
+              source = 'live';
+            }
+          }
 
           // keep track of what we used to compute subsequent days
           dayTotals[i] = totalCount ?? 0;
@@ -629,9 +658,12 @@ export async function buildClanAnalysis(clanTag) {
             label,
             totalCount,
             maxCount: 200,
-            isPast:   i < daysFromThu,
-            isToday:  i === daysFromThu,
+            isPast: i < daysFromThu,
+            isToday: i === daysFromThu,
             isFuture: i > daysFromThu,
+            source,
+            snapshotCount: snapshotCount !== null ? Math.min(200, snapshotCount) : null,
+            liveCount,
           };
         });
         clanWarSummary = { totalDecksUsed, maxDecksElapsed, maxDecksWeek, participantCount: MAX_MEMBERS, daysFromThu, days, weekId: currWeekId };
@@ -651,6 +683,9 @@ export async function buildClanAnalysis(clanTag) {
         isPast: d.isPast,
         isToday: d.isToday,
         isFuture: d.isFuture,
+        source: d.source || 'unknown',
+        snapshotCount: d.snapshotCount ?? null,
+        liveCount: d.liveCount ?? null,
       }));
     }
 

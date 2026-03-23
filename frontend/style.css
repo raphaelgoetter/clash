@@ -1250,9 +1250,12 @@ a.member-link:hover div:first-child {
 .war-day-chip.today  { background: rgba(244,197,66,.12); color: var(--gold); border: 1px solid rgba(244,197,66,.35); }
 .war-day-chip.future { background: rgba(255,255,255,.03); color: rgba(255,255,255,.2); }
 
+.war-progress-source { font-size: .8rem; color: var(--text-muted); margin-top: 4px; }
+
 .chip-snap { font-size: .7rem; font-weight: 400; opacity: .8; margin-left: 2px; }
 .chip-snap-orange { color: var(--orange); opacity: 1; }
 .chip-snap-red    { color: var(--red);    opacity: 1; }
+.chip-snap-live   { color: var(--green); opacity: 1; }
 
 /* ── Clan war mini-colonne (table) ───────────────────────────── */
 .war-col { white-space: nowrap; text-align: center; }

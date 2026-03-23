@@ -686,20 +686,38 @@ function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null, sn
       ? '<span class="war-data-source reliable">Race log ✓</span>'
       : '<span class="war-data-source fallback">Battle log (approx.)</span>';
 
+  const sourceHint = 'ℹ️ Live currentriverrace data is used for today, snapshots for past days';
+
   const chipsHtml = days.map((d, i) => {
     const cls  = d.isFuture ? 'future' : d.isToday ? 'today' : 'past';
     const icon = d.isFuture ? ' —' : d.isToday ? ' ▶' : '';
 
     const snapshotVal = snapDays?.[i];
-    const battleVal = snapshotVal != null ? snapshotVal : d.count;
+    const liveVal = d.liveCount ?? null;
+    let battleVal;
+    let daySource;
+
+    if (d.source === 'live') {
+      battleVal = d.count;
+      daySource = 'live';
+    } else if (snapshotVal != null) {
+      battleVal = snapshotVal;
+      daySource = 'snapshot';
+    } else {
+      battleVal = d.count;
+      daySource = d.source || 'fallback';
+    }
 
     let label = d.label;
     let snap = '';
 
-    if (snapshotVal != null) {
-      const warn = snapshotVal < 4 ? ' ⚠️' : '';
-      const snapCls = snapshotVal <= 1 ? 'chip-snap chip-snap-red' : snapshotVal <= 3 ? 'chip-snap chip-snap-orange' : 'chip-snap';
-      const note = snapshotVal !== d.count ? ` (snap ${snapshotVal}/4)` : '';
+    if (daySource === 'live') {
+      const note = `[live ${liveVal ?? d.count}/4]`;
+      snap = ` <span class="chip-snap chip-snap-live">${battleVal}/4 ${note}</span>`;
+    } else if (daySource === 'snapshot') {
+      const warn = battleVal < 4 ? ' ⚠️' : '';
+      const snapCls = battleVal <= 1 ? 'chip-snap chip-snap-red' : battleVal <= 3 ? 'chip-snap chip-snap-orange' : 'chip-snap';
+      const note = battleVal !== d.count ? ` (snap ${battleVal}/4)` : '';
       snap = ` <span class="${snapCls}">${battleVal}/4${warn}${note}</span>`;
     } else {
       // no snapshot: mark as missing rather than guessing based on incomplete log
@@ -723,6 +741,7 @@ function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null, sn
       `<div class="war-progress-meta">` +
         `Day ${dayNum} of 4 · ${statusIcon} ${statusText}` +
       `</div>` +
+      `<div class="war-progress-source">${sourceHint}</div>` +
       `<div class="war-day-chips">${chipsHtml}</div>` +
     `</div>`;
 }
