@@ -66,13 +66,27 @@ function getI18nLangFromPath() {
   return null;
 }
 
+function getUrlState() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    mode: params.get('mode'),
+    tag: params.get('tag'),
+  };
+}
+
 function setLangInUrl(lang, replace = false) {
-  const params = new URLSearchParams({ mode: currentMode, tag: (currentMode === 'clan' ? searchSelect.value.trim() : searchInput.value.trim()) || '' });
-  const target = `/${lang}/?${params.toString()}`;
+  const { mode, tag } = getUrlState();
+  const params = new URLSearchParams();
+
+  if (mode) params.set('mode', mode);
+  if (tag) params.set('tag', tag);
+
+  const target = params.toString() ? `/${lang}/?${params.toString()}` : `/${lang}/`;
+
   if (replace) {
-    history.replaceState({ mode: currentMode, tag: params.get('tag'), lang }, '', target);
+    history.replaceState({ mode: mode || currentMode, tag: tag || '', lang }, '', target);
   } else {
-    history.pushState({ mode: currentMode, tag: params.get('tag'), lang }, '', target);
+    history.pushState({ mode: mode || currentMode, tag: tag || '', lang }, '', target);
   }
 }
 
@@ -81,13 +95,14 @@ function loadLanguage(lang) {
   currentLang = lang;
   localStorage.setItem(LANG_STORAGE_KEY, lang);
   document.documentElement.lang = lang;
+  // push URL quickly to avoid stuck state when fetch is delayed/fails
+  setLangInUrl(lang, true);
   return fetch(`/lang/${lang}.json`)
     .then((res) => res.ok ? res.json() : Promise.reject(new Error('Language file not found')))
     .then((obj) => {
       translations = obj;
       translateUI();
       updateLangButtonUI();
-      setLangInUrl(lang, true);
     });
 }
 
@@ -109,10 +124,8 @@ function t(key, vars) {
 
 function initialLang() {
   const pathLang = getI18nLangFromPath();
-  const saved = localStorage.getItem(LANG_STORAGE_KEY);
-  return SUPPORTED_LANGS.includes(pathLang) ? pathLang
-    : SUPPORTED_LANGS.includes(saved) ? saved
-    : DEFAULT_LANG;
+  // default to path like /en or /fr, otherwise force default EN
+  return SUPPORTED_LANGS.includes(pathLang) ? pathLang : DEFAULT_LANG;
 }
 
 function translateUI() {
@@ -129,12 +142,30 @@ function translateUI() {
   document.getElementById('history-card-title').textContent = `📅 ${t('riverRaceHistory')}`;
   document.getElementById('card-current-war').querySelector('.card-title').textContent = `⚔️ ${t('currentClanWar')}`;
   document.getElementById('card-verdict').querySelector('.card-title').textContent = `⚔️ ${t('warReliabilityScore')}`;
+
+  // traductions dynamiques du clan
+  translateClanTableHeaders();
+  const filterInput = document.getElementById('filter-name');
+  if (filterInput) filterInput.placeholder = t('filterByNameTag');
+  const filterSelect = document.getElementById('filter-verdict');
+  if (filterSelect) {
+    filterSelect.innerHTML = `
+      <option value="">${t('allVerdicts')}</option>
+      <option value="green">✅ ${t('highReliability')}</option>
+      <option value="yellow">⚠️ ${t('moderateRisk')}</option>
+      <option value="orange">🟠 ${t('highRisk')}</option>
+      <option value="red">🔴 ${t('extremeRisk')}</option>
+    `;
+  }
   document.querySelector('.score-explainer summary').textContent = t('scoreExplainer');
   document.getElementById('card-clan-overview').querySelector('.card-title').textContent = `🏰 ${t('clanOverview')}`;
   const cardTop = document.querySelector('#card-top-players .card-title');
   if (cardTop) cardTop.textContent = `🏅 ${t('lastWarBest')}`;
   const cardTopDesc = document.querySelector('#card-top-players .card-desc');
   if (cardTopDesc) cardTopDesc.textContent = t('lastWarBestDesc') || '';
+
+  const clusterTitle = document.querySelector('#card-clan-table .card-title');
+  if (clusterTitle) clusterTitle.textContent = `👥 ${t('memberList')}`;
 
   const scoreExplainerBody = document.querySelector('.score-explainer-body');
   if (scoreExplainerBody) {
@@ -170,6 +201,30 @@ function translateUI() {
   if (cardLeftDesc) cardLeftDesc.textContent = t('leftClanDesc') || '';
   const tabTitleEl = document.querySelector('.tab-title');
   if (tabTitleEl) tabTitleEl.textContent = t('memberList');
+}
+
+function translateClanTableHeaders() {
+  const headerMap = {
+    name: t('memberPlayer'),
+    role: t('memberRole'),
+    trophies: t('memberTrophies'),
+    donations: t('memberDonations'),
+    discord: t('memberDiscord'),
+    lastSeen: t('memberLastSeen'),
+    activityScore: t('memberReliability'),
+    warDecks: t('memberThisWar'),
+    verdict: t('memberVerdict'),
+  };
+  document.querySelectorAll('#card-clan-table thead th').forEach((th) => {
+    const col = th.dataset.col;
+    if (!col || !headerMap[col]) return;
+    const icon = th.querySelector('.sort-icon');
+    if (icon) {
+      th.innerHTML = `${headerMap[col]} <span class="sort-icon">${escHtml(icon.textContent)}</span>`;
+    } else {
+      th.textContent = headerMap[col];
+    }
+  });
 }
 
 // Default tags per mode
@@ -215,8 +270,8 @@ function applyUrlState(mode, tag) {
   if (mode === 'player') {
     searchInput.classList.remove('hidden');
     searchSelect.classList.add('hidden');
-    searchInput.placeholder = 'Enter player tag (e.g. #ABC123) …';
-    searchHint.textContent = "Tags must start with #. You can omit it and we'll add it automatically.";
+    searchInput.placeholder = t('searchPlaceholder');
+    searchHint.textContent = t('searchHint');
     searchInput.value = tag;
   } else {
     searchInput.classList.add('hidden');
@@ -270,10 +325,28 @@ function updateLangButtonUI() {
   btnFr.classList.toggle('active', currentLang === 'fr');
 }
 
+async function switchLanguage(lang) {
+  if (currentLang === lang) return;
+
+  // Keep existing mode/tag context when switching language
+  const { mode, tag } = getUrlState();
+  const params = new URLSearchParams();
+  if (mode) params.set('mode', mode);
+  if (tag) params.set('tag', tag);
+  const newUrl = params.toString() ? `/${lang}/?${params.toString()}` : `/${lang}/`;
+
+  // Force full reload to avoid inconsistent state leftovers
+  window.location.replace(newUrl);
+}
+
 const btnLangEn = document.getElementById('btn-lang-en');
 const btnLangFr = document.getElementById('btn-lang-fr');
-if (btnLangEn) btnLangEn.addEventListener('click', () => { loadLanguage('en').then(() => updateLangButtonUI()); });
-if (btnLangFr) btnLangFr.addEventListener('click', () => { loadLanguage('fr').then(() => updateLangButtonUI()); });
+if (btnLangEn) btnLangEn.addEventListener('click', async () => {
+  await switchLanguage('en');
+});
+if (btnLangFr) btnLangFr.addEventListener('click', async () => {
+  await switchLanguage('fr');
+});
 
 // populate clan select options
 function initClanSelect() {
@@ -287,6 +360,10 @@ initClanSelect();
 // ── Init from URL ─────────────────────────────────────────────
 async function initApp() {
   const lang = initialLang();
+  if (!getI18nLangFromPath()) {
+    // no explicit locale path, we normalize to default EN
+    history.replaceState(null, '', `/${DEFAULT_LANG}/`);
+  }
   await loadLanguage(lang);
 
   const params = new URLSearchParams(window.location.search);
@@ -434,14 +511,14 @@ function renderFavorites() {
   const clanKeys   = (Object.keys(favs.clan || {}) || [])
     .filter((tag) => CLAN_OPTIONS.some((o) => o.tag === tag));
   if (playerKeys.length === 0 && clanKeys.length === 0) {
-    favoritesContainer.innerHTML = '<p class="text-muted">No favorites yet.</p>';
+    favoritesContainer.innerHTML = `<p class="text-muted">${t('favoritesNone')}</p>`;
     return;
   }
 
   // build two columns explicitly for players and clans
   let html = '';
   html += '<div class="fav-column" data-mode="player">';
-  html += '<h3>Players</h3><ul>';
+  html += `<h3>${t('favoritesPlayers')}</h3><ul>`;
   playerKeys.forEach((tag) => {
     const nm = favs.player[tag];
     const display = (nm && nm !== tag) ? `${escHtml(nm)} (${tag})` : escHtml(tag);
@@ -451,7 +528,7 @@ function renderFavorites() {
   html += '</ul></div>';
 
   html += '<div class="fav-column" data-mode="clan">';
-  html += '<h3>Clans</h3><ul>';
+  html += `<h3>${t('favoritesClans')}</h3><ul>`;
   clanKeys.forEach((tag) => {
     const nm = favs.clan[tag];
     const display = (nm && nm !== tag) ? `${escHtml(nm)} (${tag})` : escHtml(tag);
@@ -841,6 +918,9 @@ function renderPlayerResults(data) {
       </li>`;
   }).join('');
 
+  // Ensure any rendered labels are updated after player content is rendered
+  translateUI();
+  updateLangButtonUI();
   playerResults.classList.remove('hidden');
 }
 
@@ -1274,22 +1354,11 @@ function renderClanOverview(data) {
   if (reliableRisky) reliableRisky.textContent = `🥧 ${t('reliableVsRisky')}`;
 
   // members table headers
-  const headerMap = {
-    'Player': t('memberPlayer'),
-    'Role': t('memberRole'),
-    'Trophies': t('memberTrophies'),
-    'Dons': t('memberDonations'),
-    'Discord': t('memberDiscord'),
-    'Last Seen': t('memberLastSeen'),
-    'Reliability': t('memberReliability'),
-    'This War': t('memberThisWar'),
-    'Verdict': t('memberVerdict'),
-  };
-  document.querySelectorAll('#card-clan-table thead th').forEach((th) => {
-    const key = th.textContent.trim();
-    if (headerMap[key]) th.textContent = headerMap[key];
-  });
+  translateClanTableHeaders();
 
+  // Ensure any rendered labels are updated after dynamic clan content is rendered
+  translateUI();
+  updateLangButtonUI();
   clanResults.classList.remove('hidden');
 }
 
@@ -1312,7 +1381,7 @@ function renderClanMembers(data) {
 function renderMembersSkeleton() {
   const cols = isWarActive ? 9 : 8;
   membersTbody.innerHTML =
-    `<tr><td colspan="${cols}" class="members-skeleton">Members list loading…</td></tr>`;
+    `<tr><td colspan="${cols}" class="members-skeleton">${t('membersLoading')}</td></tr>`;
 }
 
 // ── Members table ────────────────────────────────────────────
@@ -1323,22 +1392,8 @@ function renderMembersTable(members) {
     return;
   }
 
-  // translate member table headers on each render to avoid English sticky labels
-  const headerMap = {
-    'Player': t('memberPlayer'),
-    'Role': t('memberRole'),
-    'Trophies': t('memberTrophies'),
-    'Dons': t('memberDonations'),
-    'Discord': t('memberDiscord'),
-    'Last Seen': t('memberLastSeen'),
-    'Reliability': t('memberReliability'),
-    'This War': t('memberThisWar'),
-    'Verdict': t('memberVerdict'),
-  };
-  document.querySelectorAll('#card-clan-table thead th').forEach((th) => {
-    const key = th.textContent.trim();
-    if (headerMap[key]) th.textContent = headerMap[key];
-  });
+  // translate member table headers on each render to avoid sticky labels across language switch
+  translateClanTableHeaders();
 
   membersTbody.innerHTML = members
     .map(
@@ -1353,18 +1408,24 @@ function renderMembersTable(members) {
           )).getTime()) / (1000 * 60 * 60 * 24);
           const days = Math.round(daysFrac);
           const cls  = days <= 1 ? 'c-green' : days <= 3 ? 'c-yellow' : days <= 7 ? 'c-red' : 'c-red';
-          const label = daysFrac < 1 ? 'Today'
-                      : days < 2 ? '1d ago'
-                      : `${days}d ago`;
+          const label = daysFrac < 1 ? t('today')
+                      : days < 2 ? t('oneDayAgo')
+                      : `${days}d ${t('ago')}`;
           lastSeenCell = `<td class="last-seen-col"><span class="last-seen-badge ${cls}">${label}</span></td>`;
         }
         const displayTransfer = m.isFamilyTransfer;
         const displayNew = !displayTransfer && m.isNew && daysFrac <= 7;
+        const memberVerdict = {
+          'High reliability': t('highReliability'),
+          'Moderate risk': t('moderateRisk'),
+          'High risk': t('highRisk'),
+          'Extreme risk': t('extremeRisk'),
+        }[m.verdict] || m.verdict;
         return `
       <tr>
         <td>
-          <a class="member-link" href="?${new URLSearchParams({ mode: 'player', tag: m.tag })}" title="Analyze ${escHtml(m.name)}">
-            <div style="font-weight:600">${escHtml(m.name)}${displayTransfer ? ' <span class="transfer-badge">transfer</span>' : ''}${displayNew ? ' <span class="new-badge">new</span>' : ''}</div>
+          <a class="member-link" href="?${new URLSearchParams({ mode: 'player', tag: m.tag })}" title="${t('analyze')} ${escHtml(m.name)}">
+            <div style="font-weight:600">${escHtml(m.name)}${displayTransfer ? ` <span class="transfer-badge">${t('transfer')}</span>` : ''}${displayNew ? ` <span class="new-badge">${t('newBadge')}</span>` : ''}</div>
             <div style="font-size:.75rem;color:var(--text-muted)">${escHtml(m.tag)}</div>
           </a>
         </td>
@@ -1382,7 +1443,7 @@ function renderMembersTable(members) {
           </div>
         </td>
         ${isWarActive ? `<td class="war-col">${warMiniBarHtml(m.warDays)}</td>` : ''}
-        <td><span class="verdict-badge ${m.color}">${escHtml(m.verdict)}</span></td>
+        <td><span class="verdict-badge ${m.color}">${escHtml(memberVerdict)}</span></td>
       </tr>`;
       }
     )
