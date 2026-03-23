@@ -221,7 +221,7 @@ function applyUrlState(mode, tag) {
   } else {
     searchInput.classList.add('hidden');
     searchSelect.classList.remove('hidden');
-    searchHint.textContent = "Select a clan (restricted to Resistance family clans)";
+    searchHint.textContent = t('selectClanHint');
     // set select value
     searchSelect.value = tag;
   }
@@ -1248,16 +1248,16 @@ function renderClanOverview(data) {
 
   // Clan overview card
   clanOverviewGrid.innerHTML = overviewItems([
-    { label: 'Name',          value: clan.name },
-    { label: 'Tag',           value: clan.tag,
+    { label: t('labelName'),          value: clan.name },
+    { label: t('labelTag'),           value: clan.tag,
       link: `https://royaleapi.com/clan/${clan.tag.replace('#', '')}/` },
-    { label: 'Members',       value: `${clan.members} / 50`,
+    { label: t('labelMembers'),       value: `${clan.members} / 50`,
       cls: clan.members < 45 ? 'c-red' : clan.members < 48 ? 'c-orange' : clan.members < 50 ? 'c-yellow' : '' },
-    { label: 'Clan Score',    value: fmt(clan.clanScore) },
-    { label: 'War Trophies',  value: `⚔️ ${fmt(clan.clanWarTrophies ?? 0)}` },
-    { label: 'Required',      value: `🏆 ${fmt(clan.requiredTrophies)}` },
-    { label: 'Type',          value: capitalize(clan.type ?? '—') },
-    { label: 'Avg Score',     value: `${summary.avgScore} / 100`,
+    { label: t('labelClanScore'),    value: fmt(clan.clanScore) },
+    { label: t('labelWarTrophies'),  value: `⚔️ ${fmt(clan.clanWarTrophies ?? 0)}` },
+    { label: t('labelRequired'),      value: `🏆 ${fmt(clan.requiredTrophies)}` },
+    { label: t('labelType'),          value: capitalize(clan.type ?? '—') },
+    { label: t('labelAvgScore'),     value: `${summary.avgScore} / 100`,
       cls: summary.avgScore < 60 ? 'c-red' : summary.avgScore < 70 ? 'c-orange' : summary.avgScore < 80 ? 'c-yellow' : '' },
   ]);
 
@@ -1266,6 +1266,29 @@ function renderClanOverview(data) {
   renderClanPieChart(summary);
   // Card guerre courante clan
   renderClanWarCard(data.clanWarSummary ?? data.lastWarSummary ?? null);
+
+  // card titles (chart labels)
+  const scoreDist = document.querySelector('#card-score-distribution .card-title');
+  if (scoreDist) scoreDist.textContent = `📊 ${t('scoreDistribution')}`;
+  const reliableRisky = document.querySelector('#card-reliable-risky .card-title');
+  if (reliableRisky) reliableRisky.textContent = `🥧 ${t('reliableVsRisky')}`;
+
+  // members table headers
+  const headerMap = {
+    'Player': t('memberPlayer'),
+    'Role': t('memberRole'),
+    'Trophies': t('memberTrophies'),
+    'Dons': t('memberDonations'),
+    'Discord': t('memberDiscord'),
+    'Last Seen': t('memberLastSeen'),
+    'Reliability': t('memberReliability'),
+    'This War': t('memberThisWar'),
+    'Verdict': t('memberVerdict'),
+  };
+  document.querySelectorAll('#card-clan-table thead th').forEach((th) => {
+    const key = th.textContent.trim();
+    if (headerMap[key]) th.textContent = headerMap[key];
+  });
 
   clanResults.classList.remove('hidden');
 }
