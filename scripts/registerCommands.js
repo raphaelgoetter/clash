@@ -100,6 +100,23 @@ const commands = [
     ],
   },
   {
+    name: 'demote',
+    description: 'Liste les joueurs n’ayant pas fait 16/16 decks lors de la dernière semaine GDC',
+    options: [
+      {
+        type: 3, // STRING
+        name: 'clan',
+        description: '1=La Resistance, 2=Les Resistants, 3=Les Revoltes',
+        required: true,
+        choices: [
+          { name: 'La Resistance', value: '1' },
+          { name: 'Les Resistants', value: '2' },
+          { name: 'Les Revoltes', value: '3' },
+        ],
+      },
+    ],
+  },
+  {
     name: 'trust-clan',
     description: "Liste les membres en High Risk / Extreme Risk d'un clan",
     options: [

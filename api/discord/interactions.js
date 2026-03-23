@@ -487,6 +487,85 @@ export default async function handler(req, res) {
     return;
   }
 
+  // Commande /demote
+  if (body.type === 2 && body.data?.name === 'demote') {
+    const clanOpt = body.data.options?.find((o) => o.name === 'clan');
+    const clanVal = (clanOpt?.value || '1').toString().trim().toLowerCase();
+    const CLAN_MAP = {
+      '1': { name: 'La Resistance',  tag: 'Y8JUPC9C' },
+      '2': { name: 'Les Resistants', tag: 'LRQP20V9' },
+      '3': { name: 'Les Revoltes',   tag: 'QU9UQJRL' },
+    };
+    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP['1'];
+
+    res.status(200).json({ type: 5 });
+    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+
+    runBackground(async () => {
+      try {
+        const apiResp = await fetch(
+          `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis`,
+          { headers: { Accept: 'application/json' } },
+        );
+        if (!apiResp.ok) {
+          await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: `Erreur API clan (${apiResp.status}).`, flags: 64 }),
+          });
+          return;
+        }
+
+        const analysis = await apiResp.json();
+        const uncomplete = analysis.uncomplete?.players || [];
+
+        if (uncomplete.length === 0) {
+          await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: `✅ Aucun joueur en fail 16/16 dans ${resolved.name}.`, flags: 64 }),
+          });
+          return;
+        }
+
+        const rows = uncomplete
+          .slice()
+          .sort((a, b) => a.decks - b.decks || a.name.localeCompare(b.name))
+          .map((p, i) => {
+            const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
+            const isNew = p.isNew ? ' (new)' : '';
+            const transfer = p.isFamilyTransfer ? ' (transfer)' : '';
+            const role = capitalize(p.role || 'member');
+            return `${i + 1}. [${p.name}](${playerUrl})${isNew}${transfer} ${p.tag} [${role}] ${p.decks} decks`;
+          });
+
+        const description = `Joueurs n'ayant pas joué 16/16 decks\n${rows.join('\n')}`;
+        const clanUrl = `https://trustroyale.vercel.app/?mode=clan&tag=%23${resolved.tag}`;
+
+        const embed = {
+          title: `🤷 Semaine de GDC précédente — ${resolved.name}`,
+          url: clanUrl,
+          color: 0xf1c40f,
+          description,
+          footer: { text: `Clan : ${resolved.name} (${uncomplete.length} joueurs)` },
+        };
+
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ embeds: [embed] }),
+        });
+      } catch (err) {
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
+        });
+      }
+    });
+    return;
+  }
+
   // Commande /chelem
   if (body.type === 2 && body.data?.name === 'chelem') {
     const clanOpt = body.data.options?.find((o) => o.name === 'clan');
