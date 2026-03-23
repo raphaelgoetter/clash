@@ -528,18 +528,33 @@ export default async function handler(req, res) {
           return;
         }
 
-        const rows = uncomplete
+        const MAX_ROWS = 25;
+        const sorted = uncomplete
           .slice()
-          .sort((a, b) => a.decks - b.decks || a.name.localeCompare(b.name))
-          .map((p, i) => {
-            const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
-            const isNew = p.isNew ? ' (new)' : '';
-            const transfer = p.isFamilyTransfer ? ' (transfer)' : '';
-            const role = capitalize(p.role || 'member');
-            return `${i + 1}. [${p.name}](${playerUrl})${isNew}${transfer} ${p.tag} [${role}] ${p.decks} decks`;
-          });
+          .sort((a, b) => a.decks - b.decks || a.name.localeCompare(b.name));
 
-        const description = `Joueurs n'ayant pas joué 16/16 decks\n${rows.join('\n')}`;
+        const rows = sorted.slice(0, MAX_ROWS).map((p, i) => {
+          const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
+          const isNew = p.isNew ? ' (new)' : '';
+          const transfer = p.isFamilyTransfer ? ' (transfer)' : '';
+          const role = capitalize(p.role || 'member');
+          return `${i + 1}. [${p.name}](${playerUrl})${isNew}${transfer} ${p.tag} [${role}] ${p.decks} decks`;
+        });
+
+        const more = uncomplete.length > MAX_ROWS ? `\n...and ${uncomplete.length - MAX_ROWS} de plus` : '';
+        let description = `Joueurs n'ayant pas joué 16/16 decks\n${rows.join('\n')}${more}`;
+
+        // Discord limite les embeds à 4096 caractères pour description
+        if (description.length > 4090) {
+          const trimmed = rows
+            .map((row) => row)
+            .join('\n')
+            .slice(0, 4000)
+            .split('\n')
+            .slice(0, -1)
+            .join('\n');
+          description = `Joueurs n'ayant pas joué 16/16 decks\n${trimmed}\n...liste tronquée`;
+        }
         const clanUrl = `https://trustroyale.vercel.app/?mode=clan&tag=%23${resolved.tag}`;
 
         const embed = {
