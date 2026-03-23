@@ -873,6 +873,8 @@ function renderPlayerResults(data) {
 
   function translateDetail(label, text) {
     if (!text) return text;
+    if (currentLang !== 'fr') return text;
+
     if (label === 'Regularity') {
       // 160/160 decks across 10 weeks (100%)
       return text
