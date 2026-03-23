@@ -831,13 +831,13 @@ function renderPlayerResults(data) {
     return `
       <li class="score-row">
         <div class="sr-header">
-          <span class="sr-label">${label}</span>
+          <span class="sr-label">${escHtml(labelText)}</span>
           <span class="sr-score-val">${b.score}<span class="sr-max"> / ${b.max}</span></span>
         </div>
         <div class="sr-bar-bg">
           <div class="sr-bar-fill" style="width:${pct}%;background:${color}"></div>
         </div>
-        <div class="sr-detail">${escHtml(b.detail)}</div>
+        <div class="sr-detail">${escHtml(detailText)}</div>
       </li>`;
   }).join('');
 
@@ -1241,7 +1241,7 @@ function renderClanOverview(data) {
   const { clan, members, summary } = data;
 
   // Colonne "This War" visible uniquement en période de guerre (jeu–dim)
-  isWarActive = !!data.isWarPeriod || !!data.lastWarSummary;
+  isWarActive = !!data.isWarPeriod; // ne pas afficher pour lastWarSummary seul
   renderTopPlayersCard(data.topPlayers, data.prevWeekId ?? null);
   renderUncompleteCard(data.uncomplete, data.prevWeekId ?? null);
   document.getElementById('th-this-war').classList.toggle('hidden', !isWarActive);
@@ -1322,6 +1322,23 @@ function renderMembersTable(members) {
     membersTbody.innerHTML = `<tr><td colspan="${isWarActive ? 9 : 8}" style="text-align:center;color:var(--text-muted)">${t('noMembersFound')}</td></tr>`;
     return;
   }
+
+  // translate member table headers on each render to avoid English sticky labels
+  const headerMap = {
+    'Player': t('memberPlayer'),
+    'Role': t('memberRole'),
+    'Trophies': t('memberTrophies'),
+    'Dons': t('memberDonations'),
+    'Discord': t('memberDiscord'),
+    'Last Seen': t('memberLastSeen'),
+    'Reliability': t('memberReliability'),
+    'This War': t('memberThisWar'),
+    'Verdict': t('memberVerdict'),
+  };
+  document.querySelectorAll('#card-clan-table thead th').forEach((th) => {
+    const key = th.textContent.trim();
+    if (headerMap[key]) th.textContent = headerMap[key];
+  });
 
   membersTbody.innerHTML = members
     .map(
