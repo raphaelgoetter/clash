@@ -367,12 +367,22 @@ async function initApp() {
   await loadLanguage(lang);
 
   const params = new URLSearchParams(window.location.search);
-  const urlMode = params.get('mode');
-  const urlTag  = params.get('tag');
+  let urlMode = params.get('mode');
+  let urlTag  = params.get('tag');
+
+  // Fallback for unescaped # in URL like /en/?mode=clan&tag=#LRQP20V9
+  if (!urlTag && window.location.hash) {
+    const hashVal = window.location.hash.replace(/^#/, '');
+    if (hashVal) {
+      urlTag = hashVal.startsWith('#') ? hashVal : `#${hashVal}`;
+    }
+  }
+
   if (urlTag) {
     const mode = urlMode === 'clan' ? 'clan' : 'player';
     applyUrlState(mode, urlTag);
-    history.replaceState({ mode, tag: urlTag, lang: currentLang }, '', `/${currentLang}/?${params.toString()}`);
+    const newParams = new URLSearchParams({ mode, tag: urlTag });
+    history.replaceState({ mode, tag: urlTag, lang: currentLang }, '', `/${currentLang}/?${newParams.toString()}`);
     _replaceNextPush = true;
     await handleSearch();
   } else {
