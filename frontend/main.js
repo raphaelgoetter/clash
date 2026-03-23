@@ -330,15 +330,14 @@ function updateLangButtonUI() {
 async function switchLanguage(lang) {
   if (currentLang === lang) return;
 
-  // Keep existing mode/tag context when switching language
-  const { mode, tag } = getUrlState();
-  const params = new URLSearchParams();
-  if (mode) params.set('mode', mode);
-  if (tag) params.set('tag', tag);
-  const newUrl = params.toString() ? `/${lang}/?${params.toString()}` : `/${lang}/`;
+  await loadLanguage(lang);
 
-  // Force full reload to avoid inconsistent state leftovers
-  window.location.replace(newUrl);
+  // Keep search context when changing language.
+  const { mode, tag } = getUrlState();
+  if (mode && tag) {
+    applyUrlState(mode, tag);
+    await handleSearch();
+  }
 }
 
 const btnLangEn = document.getElementById('btn-lang-en');
