@@ -330,14 +330,16 @@ function updateLangButtonUI() {
 async function switchLanguage(lang) {
   if (currentLang === lang) return;
 
-  await loadLanguage(lang);
+  if (!SUPPORTED_LANGS.includes(lang)) lang = DEFAULT_LANG;
+  localStorage.setItem(LANG_STORAGE_KEY, lang);
 
-  // Keep search context when changing language.
   const { mode, tag } = getUrlState();
-  if (mode && tag) {
-    applyUrlState(mode, tag);
-    await handleSearch();
-  }
+  const params = new URLSearchParams();
+  if (mode) params.set('mode', mode);
+  if (tag) params.set('tag', tag);
+
+  const newUrl = params.toString() ? `/${lang}/?${params.toString()}` : `/${lang}/`;
+  window.location.href = newUrl;
 }
 
 const btnLangEn = document.getElementById('btn-lang-en');
