@@ -172,7 +172,11 @@ function translateUI() {
   document.querySelector('.score-explainer summary').textContent = t('scoreExplainer');
   document.getElementById('card-clan-overview').querySelector('.card-title').textContent = `🏰 ${t('clanOverview')}`;
   const cardTop = document.querySelector('#card-top-players .card-title');
-  if (cardTop) cardTop.textContent = `🏅 ${t('lastWarBest')}`;
+  if (cardTop) {
+    const weekSpan = cardTop.querySelector('.card-week-id');
+    cardTop.innerHTML = `🏅 ${t('lastWarBest')}`;
+    if (weekSpan) cardTop.appendChild(weekSpan);
+  }
   const cardTopDesc = document.querySelector('#card-top-players .card-desc');
   if (cardTopDesc) cardTopDesc.textContent = t('lastWarBestDesc') || '';
 
@@ -204,7 +208,11 @@ function translateUI() {
     `;
   }
   const cardUncomplete = document.querySelector('#card-uncomplete .card-title');
-  if (cardUncomplete) cardUncomplete.textContent = `🤷 ${t('lastWarFails')}`;
+  if (cardUncomplete) {
+    const weekSpan = cardUncomplete.querySelector('.card-week-id');
+    cardUncomplete.innerHTML = `🤷 ${t('lastWarFails')}`;
+    if (weekSpan) cardUncomplete.appendChild(weekSpan);
+  }
   const cardUncompleteDesc = document.querySelector('#card-uncomplete .card-desc');
   if (cardUncompleteDesc) cardUncompleteDesc.textContent = t('lastWarFailsDesc') || '';
   const cardLeft = document.querySelector('#card-left .card-title');
@@ -1363,7 +1371,12 @@ function renderClanOverview(data) {
 
   // Colonne "This War" visible uniquement en période de guerre (jeu–dim)
   isWarActive = !!data.isWarPeriod; // ne pas afficher pour lastWarSummary seul
-  const weekId = data.prevWeekId || data.clanWarSummary?.weekId || null;
+  const weekId =
+    data.prevWeekId ||
+    data.clanWarSummary?.weekId ||
+    data.lastWarSummary?.weekId ||
+    (data.lastWarSummary?.weekId && data.lastWarSummary?.weekId.toUpperCase()) ||
+    null;
   renderTopPlayersCard(data.topPlayers, weekId);
   renderUncompleteCard(data.uncomplete, weekId);
   document.getElementById('th-this-war').classList.toggle('hidden', !isWarActive);

@@ -353,9 +353,16 @@ export default async function handler(req, res) {
         const { computeTopPlayers } = await import('../../backend/services/topplayers.js');
         // fetch clan members to get roles
         const members = await fetchClanMembers(`#${clanTag}`);
-        const top = await computeTopPlayers(clanTag, members, [min]);
+        const { fetchRaceLog } = await import('../../backend/services/clashApi.js');
+        const raceLog = await fetchRaceLog(`#${clanTag}`);
+        const top = await computeTopPlayers(clanTag, members, [min], raceLog);
         let players = top.playersByQuota[min] || [];
         players = players.slice().sort((a, b) => b.fame - a.fame);
+
+        // Déduire le weekId depuis le raceLog (première entrée = semaine précédente)
+        const weekId = raceLog?.[0]
+          ? `S${raceLog[0].seasonId}W${raceLog[0].sectionIndex + 1}`
+          : 'S?';
 
         let description;
         if (players.length === 0) {
@@ -372,7 +379,6 @@ export default async function handler(req, res) {
           description = rows.join('\n');
         }
 
-        const weekId = analysis.prevWeekId || analysis.clanWarSummary?.weekId || 'S?';
         const embed = {
           title: `🏅 Semaine de GDC précédente — ${clanName} (≥ ${min} fame)`,
           color: 0x5865f2,
