@@ -9,6 +9,7 @@ import {
   renderGaugeChart,
   renderClanBarChart,
   renderClanPieChart,
+  setChartTranslations,
 } from './charts.js';
 
 // ── DOM references ───────────────────────────────────────────
@@ -102,6 +103,15 @@ function loadLanguage(lang) {
     .then((obj) => {
       translations = obj;
       translateUI();
+      setChartTranslations({
+        members: t('labelMembers'),
+        memberPlural: t('entries'),
+        memberSingular: t('memberPlayer'),
+        highReliability: t('highReliability'),
+        moderateRisk: t('moderateRisk'),
+        highRisk: t('highRisk'),
+        extremeRisk: t('extremeRisk'),
+      });
       updateLangButtonUI();
     });
 }
@@ -780,37 +790,34 @@ function renderPlayerResults(data) {
     } else {
       const bd = activityIndicators.battleLogBreakdown ?? {};
       const parts = [
-        bd.gdc      != null ? `${activityIndicators.totalWarBattles} War` : null,
-        bd.ladder   != null ? `${bd.ladder} Ladder`           : null,
-        bd.challenge != null ? `${bd.challenge} Challenges`  : null,
-        bd.friendly != null && bd.friendly > 0 ? `${bd.friendly} Friendly` : null,
+        bd.gdc      != null ? `${activityIndicators.totalWarBattles} ${t('statWarBattles')}` : null,
+        bd.ladder   != null ? `${bd.ladder} ${t('statLadder')}`           : null,
+        bd.challenge != null ? `${bd.challenge} ${t('statChallenges')}`  : null,
+        bd.friendly != null && bd.friendly > 0 ? `${bd.friendly} ${t('friendly') || 'Friendly'}` : null,
       ].filter(Boolean).join(' · ');
-      if (titleEl) titleEl.textContent = '📅 River Race History – 10 weeks';
+      if (titleEl) titleEl.textContent = t('noRiverRaceHistoryTitle');
       renderWarHistoryChart([]);
       if (noteEl) noteEl.innerHTML =
-        `<span>⚠️ No River Race history found for this player (recent member). `
-        + `API log (${bd.total ?? 30} entries): ${parts || 'no data'}.</span>`
+        `<span>⚠️ ${t('noRiverRaceHistoryNote1')} `
+        + `${t('apiLogEntries', { count: bd.total ?? 30 })}: ${parts || t('noData')}.</span>`
         + `<details class="note-disclosure">`
-        + `<summary>Why might this score be less accurate?</summary>`
-        + `<p>The RoyaleAPI battle log covers at most 30 entries (war or non-war). `
-        + `For a long-standing member this is reliable, but for a <strong>recent recruit</strong> `
-        + `who just joined a clan, their previous clan's war history is lost — only these last 30 battles carry over. `
-        + `The reliability estimate may therefore be less precise than for an established member.</p>`
+        + `<summary>${t('noRiverRaceHistoryWhySummary')}</summary>`
+        + `<p>${t('noRiverRaceHistoryWhyDetail')}</p>`
         + `</details>`;
     }
   } else {
     const bd = activityIndicators.battleLogBreakdown ?? {};
     const parts = [
-      bd.gdc      != null ? `${activityIndicators.totalWarBattles} War` : null,
-      bd.ladder   != null ? `${bd.ladder} Ladder`           : null,
-      bd.challenge != null ? `${bd.challenge} Challenges`  : null,
-      bd.friendly != null && bd.friendly > 0 ? `${bd.friendly} Friendly` : null,
+      bd.gdc      != null ? `${activityIndicators.totalWarBattles} ${t('statWarBattles')}` : null,
+      bd.ladder   != null ? `${bd.ladder} ${t('statLadder')}`           : null,
+      bd.challenge != null ? `${bd.challenge} ${t('statChallenges')}`  : null,
+      bd.friendly != null && bd.friendly > 0 ? `${bd.friendly} ${t('friendly') || 'Friendly'}` : null,
     ].filter(Boolean).join(' · ');
-    if (titleEl) titleEl.textContent = '📅 Clan War Activity – Last 7 days';
+    if (titleEl) titleEl.textContent = t('clanWarActivityTitle');
     renderActivityChart(recentActivity.dailyActivity);
     if (noteEl) noteEl.textContent =
-      `⚠️ No clan — war history unavailable. `
-      + `API log (${bd.total ?? 30} entries): ${parts || 'no data'}.`;
+      `⚠️ ${t('noClanWarHistoryWarning')} `
+      + `${t('apiLogEntries', { count: bd.total ?? 30 })}: ${parts || t('noData')}.`;
   }
 
   // 3b. Actual Clan War (visible jeudi–dimanche)
@@ -920,7 +927,7 @@ function renderPlayerResults(data) {
     const pct   = Math.round((b.score / b.max) * 100);
     const color = pct >= 75 ? 'var(--green)' : pct >= 56 ? 'var(--yellow)' : pct >= 31 ? 'var(--orange)' : 'var(--red)';
     const label = b.label === 'Discord'
-      ? `Discord (${b.score > 0 ? 'yes' : 'no'})`
+      ? `${t('discord')} (${b.score > 0 ? t('yes') : t('no')})`
       : escHtml(b.label);
     return `
       <li class="score-row">

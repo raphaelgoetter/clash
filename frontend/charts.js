@@ -41,6 +41,20 @@ function destroyIfExists(canvasId) {
   if (existing) existing.destroy();
 }
 
+let chartTranslations = {
+  members: 'Members',
+  memberPlural: 'members',
+  memberSingular: 'member',
+  highReliability: 'High reliability',
+  moderateRisk: 'Moderate risk',
+  highRisk: 'High risk',
+  extremeRisk: 'Extreme risk',
+};
+
+export function setChartTranslations(trans) {
+  chartTranslations = { ...chartTranslations, ...trans };
+}
+
 // ── 1. Activity line chart (battles per day) ──────────────────
 
 /**
@@ -314,7 +328,7 @@ export function renderClanBarChart(members) {
       labels,
       datasets: [
         {
-          label: 'Members',
+          label: chartTranslations.members,
           data: buckets,
           backgroundColor: barColors,
           borderRadius: 5,
@@ -335,12 +349,13 @@ export function renderClanBarChart(members) {
               const o = bucketsByColor.orange[i] || 0;
               const r = bucketsByColor.red[i] || 0;
               const parts = [];
-              if (g) parts.push(`${g} high reliability`);
-              if (y) parts.push(`${y} moderate`);
-              if (o) parts.push(`${o} high risk`);
-              if (r) parts.push(`${r} extreme`);
+              if (g) parts.push(`${g} ${chartTranslations.highReliability}`);
+              if (y) parts.push(`${y} ${chartTranslations.moderateRisk}`);
+              if (o) parts.push(`${o} ${chartTranslations.highRisk}`);
+              if (r) parts.push(`${r} ${chartTranslations.extremeRisk}`);
               const breakdown = parts.length ? ` (${parts.join(', ')})` : '';
-              return ` ${total} member${total !== 1 ? 's' : ''}${breakdown}`;
+              const memberWord = total === 1 ? chartTranslations.memberSingular : chartTranslations.memberPlural;
+              return ` ${total} ${memberWord}${breakdown}`;
             },
           },
         },
@@ -366,7 +381,12 @@ export function renderClanPieChart(summary) {
   new Chart(ctx, {
     type: 'pie',
     data: {
-      labels: ['High reliability', 'Moderate risk', 'High risk', 'Extreme risk'],
+      labels: [
+        chartTranslations.highReliability,
+        chartTranslations.moderateRisk,
+        chartTranslations.highRisk,
+        chartTranslations.extremeRisk,
+      ],
       datasets: [
         {
           data: [summary.green, summary.yellow, summary.orange, summary.red],
@@ -390,7 +410,10 @@ export function renderClanPieChart(summary) {
         },
         tooltip: {
           callbacks: {
-            label: (ctx) => ` ${ctx.label}: ${ctx.parsed} member${ctx.parsed !== 1 ? 's' : ''}`,
+            label: (ctx) => {
+              const memberWord = ctx.parsed === 1 ? chartTranslations.memberSingular : chartTranslations.memberPlural;
+              return ` ${ctx.label}: ${ctx.parsed} ${memberWord}`;
+            },
           },
         },
       },
