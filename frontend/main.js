@@ -124,8 +124,10 @@ function t(key, vars) {
 
 function initialLang() {
   const pathLang = getI18nLangFromPath();
-  // default to path like /en or /fr, otherwise force default EN
-  return SUPPORTED_LANGS.includes(pathLang) ? pathLang : DEFAULT_LANG;
+  const saved = localStorage.getItem(LANG_STORAGE_KEY);
+  if (SUPPORTED_LANGS.includes(pathLang)) return pathLang;
+  if (SUPPORTED_LANGS.includes(saved)) return saved;
+  return DEFAULT_LANG;
 }
 
 function translateUI() {
@@ -360,10 +362,12 @@ initClanSelect();
 // ── Init from URL ─────────────────────────────────────────────
 async function initApp() {
   const lang = initialLang();
+
   if (!getI18nLangFromPath()) {
-    // no explicit locale path, we normalize to default EN
-    history.replaceState(null, '', `/${DEFAULT_LANG}/`);
+    // no explicit locale path, normalize to selected language (path from localStorage or default)
+    history.replaceState(null, '', `/${lang}/`);
   }
+
   await loadLanguage(lang);
 
   const params = new URLSearchParams(window.location.search);
