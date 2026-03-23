@@ -1,6 +1,6 @@
 {
   "headerTitle": "TrustRoyale",
-  "headerSubtitle": "Clash Royale reliability checker · Made by <a href=\"https://royaleapi.com/player/YRGJGR8R/\" target=\"_blank\">displaynone</a> · Powered by RoyaleAPI",
+  "headerSubtitle": "Clash Royale reliability checker · Made by <a href=\"https://royaleapi.com/player/YRGJGR8R/\" target=\"_blank\">displaynone</a> · Powered by Clash Royale API",
   "modePlayer": "Player",
   "modeClan": "Clan",
   "searchPlaceholder": "Enter player tag (e.g. #ABC123) …",
@@ -129,7 +129,7 @@
   "noRiverRaceHistoryTitle": "📅 River Race History – 10 weeks",
   "noRiverRaceHistoryNote1": "No River Race history found for this player (recent member).",
   "noRiverRaceHistoryWhySummary": "Why might this score be less accurate?",
-  "noRiverRaceHistoryWhyDetail": "The RoyaleAPI battle log covers at most 30 entries (war or non-war). For a long-standing member this is reliable, but for a recent recruit who just joined a clan, their previous clan's war history is lost — only these last 30 battles carry over. The reliability estimate may therefore be less precise than for an established member.",
+  "noRiverRaceHistoryWhyDetail": "The API battle log covers at most 30 entries (war or non-war). For a long-standing member this is reliable, but for a recent recruit who just joined a clan, their previous clan's war history is lost — only these last 30 battles carry over. The reliability estimate may therefore be less precise than for an established member.",
   "clanWarActivityTitle": "📅 Clan War Activity – Last 7 days",
   "noClanWarHistoryWarning": "No clan — war history unavailable.",
   "apiLogEntries": "API log ({{count}} entries)",

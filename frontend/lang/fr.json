@@ -1,6 +1,6 @@
 {
   "headerTitle": "TrustRoyale",
-  "headerSubtitle": "Analyseur de fiabilité Clash Royale · Créé par <a href=\"https://royaleapi.com/player/YRGJGR8R/\" target=\"_blank\">displaynone</a> · Propulsé par RoyaleAPI",
+  "headerSubtitle": "Analyseur de fiabilité Clash Royale · Créé par <a href=\"https://royaleapi.com/player/YRGJGR8R/\" target=\"_blank\">displaynone</a> · Propulsé par Clash Royale API",
   "modePlayer": "Joueur",
   "modeClan": "Clan",
   "searchPlaceholder": "Entrez un tag joueur (ex : #ABC123) …",
@@ -129,7 +129,7 @@
   "noRiverRaceHistoryTitle": "📅 Historique Guerre de clans – 10 semaines",
   "noRiverRaceHistoryNote1": "Aucun historique de River Race trouvé pour ce joueur (membre récent).",
   "noRiverRaceHistoryWhySummary": "Pourquoi ce score peut-il être moins précis ?",
-  "noRiverRaceHistoryWhyDetail": "Le journal de bataille RoyaleAPI couvre au maximum 30 entrées (guerre ou non-guerre). Pour un membre ancien, c’est fiable, mais pour un recrue récente qui vient juste de rejoindre un clan, l’historique de guerre du clan précédent est perdu — seules ces 30 dernières batailles sont prises en compte. L’estimation de fiabilité peut donc être moins précise qu’un membre établi.",
+  "noRiverRaceHistoryWhyDetail": "Le journal de bataille couvre au maximum 30 entrées (guerre ou non-guerre). Pour un membre ancien, c’est fiable, mais pour un recrue récente qui vient juste de rejoindre un clan, l’historique de guerre du clan précédent est perdu — seules ces 30 dernières batailles sont prises en compte. L’estimation de fiabilité peut donc être moins précise qu’un membre établi.",
   "clanWarActivityTitle": "📅 Activité de guerre de clan – 7 derniers jours",
   "noClanWarHistoryWarning": "Aucun clan — historique de guerre indisponible.",
   "apiLogEntries": "Journal API ({{count}} entrées)",
