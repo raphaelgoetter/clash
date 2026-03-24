@@ -828,6 +828,34 @@ function renderPlayerResults(data) {
       + `${t('apiLogEntries', { count: bd.total ?? 30 })}: ${parts || t('noData')}.`;
   }
 
+  // 3xx. CW2 archive details (new)
+  const archiveDetails = document.getElementById('card-cw2-archive');
+  const archiveTbody = document.getElementById('cw2-archive-tbody');
+  const archiveNote = document.getElementById('cw2-archive-note');
+
+  if (archiveDetails && archiveTbody && archiveNote && warHistory && Array.isArray(warHistory.weeks) && warHistory.weeks.length > 0) {
+    const completedWeeks = warHistory.weeks.filter((w) => !w.isCurrent && (w.decksUsed ?? 0) > 0);
+    archiveDetails.classList.remove('hidden');
+
+    if (completedWeeks.length === 0) {
+      archiveNote.textContent = 'Aucun historique finalisé disponible (seule la semaine en cours est présente).';
+    } else {
+      archiveNote.textContent = '';
+    }
+
+    archiveTbody.innerHTML = warHistory.weeks.map((w) => `
+      <tr>
+        <td>${w.label ?? (w.seasonId ? `S${w.seasonId} W${(w.sectionIndex ?? 0) + 1}` : '–')}</td>
+        <td>${w.clanTag ?? '–'}</td>
+        <td>${w.decksUsed ?? 0}</td>
+        <td>${w.fame ?? 0}</td>
+      </tr>
+    `).join('');
+  } else {
+    archiveDetails.classList.add('hidden');
+    archiveNote.textContent = '';
+  }
+
   // 3b. Actual Clan War (visible jeudi–dimanche)
   renderCurrentWarCard(
     data.currentWarDays ?? null,

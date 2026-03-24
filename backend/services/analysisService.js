@@ -5,6 +5,8 @@
 // tweaked as new data becomes available.
 // ============================================================
 
+import fetch from 'node-fetch';
+
 // helper API wrappers needed by getPlayerAnalysis
 import {
   fetchPlayer,
@@ -61,6 +63,72 @@ function parseClashDate(ts) {
     '$1-$2-$3T$4:$5:$6.$7Z'
   );
   return new Date(iso);
+}
+
+function parseNumberFromString(text) {
+  if (text === undefined || text === null) return null;
+  const candidate = String(text).replace(/[^0-9,.-]/g, '').replace(',', '.');
+  const n = Number(candidate);
+  return Number.isFinite(n) ? n : null;
+}
+
+function normalizeText(text) {
+  if (text === undefined || text === null) return '';
+  return String(text).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function summarizeRoyaleApiWarHistory(weeks, currentClanTag = null) {
+  const sortedWeeks = [...weeks].sort((a, b) => {
+    if (a.isCurrent && !b.isCurrent) return -1;
+    if (b.isCurrent && !a.isCurrent) return 1;
+    const seasonA = Number(a.seasonId) || 0;
+    const seasonB = Number(b.seasonId) || 0;
+    if (seasonA !== seasonB) return seasonB - seasonA;
+    const secA = Number(a.sectionIndex) || 0;
+    const secB = Number(b.sectionIndex) || 0;
+    return secB - secA;
+  });
+
+  const playedWeeks = sortedWeeks.filter((w) => (w.decksUsed || 0) > 0);
+  const totalFame = playedWeeks.reduce((s, w) => s + (w.fame || 0), 0);
+  const participation = playedWeeks.length;
+  const completedParticipation = sortedWeeks.filter((w) => !w.isCurrent && (w.decksUsed || 0) > 0).length;
+  const totalWeeks = sortedWeeks.length;
+
+  let streakInCurrentClan = 0;
+  const currentTag = currentClanTag ? currentClanTag.replace(/^#/, '').toUpperCase() : null;
+  for (const w of sortedWeeks) {
+    if (!currentTag || (w.clanTag && w.clanTag.toUpperCase().replace(/^#/, '') === currentTag)) {
+      streakInCurrentClan += 1;
+    } else {
+      break;
+    }
+  }
+
+  const avgFame = participation ? Math.round(totalFame / participation) : 0;
+  const maxFame = playedWeeks.reduce((m, w) => Math.max(m, w.fame || 0), 0);
+
+  const MIN_PVP_DECKS = 5;
+  let totalPvpDecks = 0;
+  let totalEstimatedWins = 0;
+  for (const w of sortedWeeks.filter((w) => !w.isCurrent && (w.decksUsed || 0) > 0)) {
+    const { wins, pvpDecks } = estimateWinsFromFame(w.fame, w.decksUsed, w.boatAttacks || 0);
+    totalPvpDecks += pvpDecks;
+    totalEstimatedWins += wins;
+  }
+  const historicalWinRate = totalPvpDecks >= MIN_PVP_DECKS ? totalEstimatedWins / totalPvpDecks : null;
+
+  return {
+    weeks: sortedWeeks,
+    totalFame,
+    avgFame,
+    maxFame,
+    participation,
+    completedParticipation,
+    totalWeeks,
+    streakInCurrentClan,
+    historicalWinRate,
+  };
 }
 
 // ── Donation scoring utilities ─────────────────────────────────
@@ -802,6 +870,210 @@ export function buildWarHistory(playerTag, raceLog, currentClanTag = null, curre
 }
 
 /**
+ * Build a merged war history from the family clan logs, including current clan.
+ * This allows showing weeks from previous clan(s) for transferred players.
+ */
+export async function buildFamilyWarHistory(playerTag, currentClanTag, currentRace = null) {
+  const normalizedCurrent = currentClanTag ? currentClanTag.replace(/^#/, '').toUpperCase() : null;
+  const clanTags = new Set(FAMILY_CLAN_TAGS.map((t) => t.replace(/^#/, '').toUpperCase()));
+  if (normalizedCurrent) clanTags.add(normalizedCurrent);
+
+  const weekMap = new Map();
+
+  const promises = [...clanTags].map(async (clanTag) => {
+    try {
+      const raceLog = await fetchRaceLog(clanTag);
+      const history = buildWarHistory(playerTag, raceLog, `#${clanTag}`, normalizedCurrent === clanTag ? currentRace : null);
+      return history.weeks;
+    } catch (_) {
+      return [];
+    }
+  });
+
+  const results = await Promise.all(promises);
+  for (const weeks of results) {
+    for (const week of weeks) {
+      const key = `${week.seasonId ?? 'unknown'}_${week.sectionIndex ?? 'unknown'}_${week.clanTag ?? 'unknown'}_${week.isCurrent ? 'current' : 'past'}`;
+      if (!weekMap.has(key)) {
+        weekMap.set(key, week);
+      }
+    }
+  }
+
+  let mergedWeeks = [...weekMap.values()];
+
+  mergedWeeks.sort((a, b) => {
+    if (a.isCurrent && !b.isCurrent) return -1;
+    if (b.isCurrent && !a.isCurrent) return 1;
+    const seasonA = Number(a.seasonId) || 0;
+    const seasonB = Number(b.seasonId) || 0;
+    if (seasonA !== seasonB) return seasonB - seasonA;
+    const secA = Number(a.sectionIndex) || 0;
+    const secB = Number(b.sectionIndex) || 0;
+    return secB - secA;
+  });
+
+  const playedWeeks = mergedWeeks.filter((w) => w.decksUsed > 0);
+  const totalFame = playedWeeks.reduce((sum, w) => sum + (w.fame || 0), 0);
+  const participation = playedWeeks.length;
+  const completedParticipation = mergedWeeks.filter((w) => !w.isCurrent && (w.decksUsed || 0) > 0).length;
+  const totalWeeks = mergedWeeks.length;
+
+  let streakInCurrentClan = 0;
+  const currentTag = normalizedCurrent ? `#${normalizedCurrent}` : null;
+  for (const w of mergedWeeks) {
+    if (w.clanTag === currentTag) streakInCurrentClan += 1;
+    else break;
+  }
+
+  const avgFame = participation ? Math.round(totalFame / participation) : 0;
+  const maxFame = playedWeeks.reduce((m, w) => Math.max(m, w.fame || 0), 0);
+
+  const MIN_PVP_DECKS = 5;
+  let totalPvpDecks = 0;
+  let totalEstimatedWins = 0;
+  for (const w of mergedWeeks.filter((w) => !w.isCurrent && (w.decksUsed || 0) > 0)) {
+    const { wins, pvpDecks } = estimateWinsFromFame(w.fame, w.decksUsed, w.boatAttacks);
+    totalPvpDecks += pvpDecks;
+    totalEstimatedWins += wins;
+  }
+  const historicalWinRate = totalPvpDecks >= MIN_PVP_DECKS ? totalEstimatedWins / totalPvpDecks : null;
+
+  return {
+    weeks: mergedWeeks,
+    totalFame,
+    avgFame,
+    maxFame,
+    participation,
+    completedParticipation,
+    totalWeeks,
+    streakInCurrentClan,
+    historicalWinRate,
+  };
+}
+
+export async function fetchRoyaleApiPlayerCw2History(tag) {
+  const cleanTag = (tag || '').replace(/^#/, '').toUpperCase();
+  if (!cleanTag) return null;
+
+  const endpoints = [
+    `https://royaleapi.com/player/${cleanTag}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://royaleapi.com/player/${cleanTag}`)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(`https://royaleapi.com/player/${cleanTag}`)}`,
+    `https://thingproxy.freeboard.io/fetch/https://royaleapi.com/player/${cleanTag}`,
+    `https://corsproxy.io/?https://royaleapi.com/player/${cleanTag}`,
+  ];
+
+  let html = null;
+  let usedEndpoint = null;
+
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+        timeout: 15000,
+      });
+      if (!res.ok) continue;
+
+      const text = await res.text();
+      if (!text || text.length < 1000) continue;
+
+      if (text.includes('cw2-history-chart-container') || text.includes('player__cw2_history_table')) {
+        html = text;
+        usedEndpoint = url;
+        break;
+      }
+
+      if (!html) {
+        html = text;
+        usedEndpoint = url;
+      }
+    } catch (_) {
+      continue;
+    }
+  }
+
+  if (!html) return null;
+
+  const containerMatch = /<div[^>]*class="[^"]*cw2-history-chart-container[^"]*"[^>]*>([\s\S]*?)<\/div>/.exec(html);
+  if (!containerMatch) return null;
+
+  const tableMatch = /<table[^>]*class="[^"]*player__cw2_history_table[^"]*"[^>]*>([\s\S]*?)<\/table>/.exec(containerMatch[1]);
+  if (!tableMatch) return null;
+
+  const tableHtml = tableMatch[1];
+  const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/g;
+  const rows = [];
+  let rowMatch;
+  while ((rowMatch = rowRegex.exec(tableHtml))) {
+    rows.push(rowMatch[1]);
+  }
+  if (rows.length <= 1) return null;
+
+  const entries = [];
+  for (let i = 1; i < rows.length; i += 1) {
+    const row = rows[i];
+    const cellRegex = /<(?:td|th)[^>]*>([\s\S]*?)<\/(?:td|th)>/g;
+    const cells = [];
+    let cellMatch;
+    while ((cellMatch = cellRegex.exec(row))) {
+      cells.push(normalizeText(cellMatch[1]));
+    }
+    if (cells.length < 6) continue;
+
+    const seasonId = cells[0] || '??';
+    const clanName = cells[4] || 'Unknown';
+
+    const numericValues = cells
+      .map((c) => parseNumberFromString(c))
+      .filter((n) => n !== null);
+
+    let decksUsed = null;
+    let fame = null;
+    for (let j = 0; j < numericValues.length; j += 1) {
+      const n = numericValues[j];
+      if (n >= 0 && n <= 16 && decksUsed === null) {
+        decksUsed = n;
+      } else if (decksUsed !== null && n >= 0 && fame === null) {
+        fame = n;
+      }
+    }
+
+    if (decksUsed === null || fame === null) continue;
+
+    const [seasonPart, sectionPart] = String(seasonId).split('-');
+    const season = Number(seasonPart) || null;
+    const section = sectionPart ? Number(sectionPart) - 1 : null;
+
+    entries.push({
+      label: seasonId,
+      seasonId: season,
+      sectionIndex: section,
+      clanTag: clanName,
+      decksUsed,
+      fame,
+      boatAttacks: 0,
+      isCurrent: false,
+    });
+  }
+
+  return { entries, source: usedEndpoint || 'unknown' };
+}
+      decksUsed,
+      fame,
+      boatAttacks: 0,
+      isCurrent: false,
+    });
+  }
+
+  return entries;
+}
+
+/**
  * Search the family clans to detect a recent transfer.
  *
  * A transfer is assumed when the player appears in another family clan's most
@@ -981,7 +1253,19 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
         fetchCurrentRace(player.clan.tag).catch(() => null),
       ]);
       currentRaceMeta = { state: currentRace?.state ?? null, periodIndex: currentRace?.periodIndex ?? null };
-      analysis.warHistory = buildWarHistory(player.tag, raceLog, player.clan.tag, currentRace);
+      analysis.warHistory = await buildFamilyWarHistory(player.tag, player.clan.tag, currentRace);
+
+      if (!analysis.warHistory?.weeks || analysis.warHistory.weeks.length <= 1) {
+        try {
+          const royaleHistory = await fetchRoyaleApiPlayerCw2History(player.tag);
+          if (royaleHistory?.entries?.length > 0) {
+            analysis.warHistory = summarizeRoyaleApiWarHistory(royaleHistory.entries, player.clan.tag);
+            analysis.warHistory.source = royaleHistory.source || 'royaleapi';
+          }
+        } catch (_) {
+          // ignore and keep current history
+        }
+      }
 
       // Compute GDC win rate from battle log (available for all players)
       // Minimum 10 battles required for a meaningful sample — below that, return null
