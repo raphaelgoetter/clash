@@ -498,9 +498,11 @@ export default async function handler(req, res) {
   if (body.type === 2 && body.data?.name === 'top-players') {
     const numberOpt = body.data.options?.find((o) => o.name === 'number');
     const periodOpt = body.data.options?.find((o) => o.name === 'period');
+    const scopeOpt  = body.data.options?.find((o) => o.name === 'scope');
 
     const limit = Math.min(Math.max(1, Number(numberOpt?.value ?? 5) || 5), 30);
     const period = (periodOpt?.value || 'week').toString().toLowerCase();
+    const scope  = (scopeOpt?.value || 'previous').toString().toLowerCase();
 
     res.status(200).json({ type: 5 });
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
@@ -518,21 +520,34 @@ export default async function handler(req, res) {
         const allMembers = new Map(); // tag -> { name, role, clan }
         const allTeams = [];
 
-        const seasonCounts = {};
         let currentSeason = null;
+        let defaultSeason = null; // determined from first clan race log, same logic as /chelem
+        const clanRaceLogs = {};
+        const currentRaceByClan = {};
 
         for (const clan of CLANS) {
-          const [raceLog, members] = await Promise.all([
+          const [raceLog, members, currentRace] = await Promise.all([
             fetchRaceLog(`#${clan.tag}`),
             fetchClanMembers(`#${clan.tag}`),
+            fetchCurrentRace(`#${clan.tag}`).catch(() => null),
           ]);
 
+          currentRaceByClan[clan.tag] = currentRace;
+
           if (Array.isArray(raceLog) && raceLog.length > 0) {
+            clanRaceLogs[clan.tag] = raceLog;
             if (currentSeason === null) currentSeason = raceLog[0]?.seasonId;
-            for (const week of raceLog) {
-              const sid = week?.seasonId;
-              if (sid == null) continue;
-              seasonCounts[sid] = (seasonCounts[sid] || 0) + 1;
+
+            if (defaultSeason === null) {
+              const localSeasonCounts = {};
+              for (const week of raceLog) {
+                const sid = week?.seasonId;
+                if (sid == null) continue;
+                localSeasonCounts[sid] = (localSeasonCounts[sid] || 0) + 1;
+              }
+
+              const sortedSeasons = Object.keys(localSeasonCounts).map(Number).sort((a, b) => b - a);
+              defaultSeason = sortedSeasons.find((sid) => localSeasonCounts[sid] >= 4) ?? sortedSeasons[0];
             }
 
             const lastWeek = raceLog[0];
@@ -541,19 +556,7 @@ export default async function handler(req, res) {
               : null;
             const participants = standing?.clan?.participants ?? [];
 
-            if (period === 'week') {
-              for (const p of participants) {
-                const tag = p.tag?.toUpperCase?.() || '';
-                const role = (members.find((m) => m.tag === p.tag)?.role) || 'member';
-                allTeams.push({
-                  tag,
-                  name: p.name || '',
-                  clan: clan.name,
-                  role,
-                  fame: p.fame || 0,
-                });
-              }
-            }
+            // we will populate `allTeams` after accumulations depending on scope
 
             members.forEach((m) => {
               const normalized = m.tag?.toUpperCase?.() || '';
@@ -565,31 +568,78 @@ export default async function handler(req, res) {
           }
         }
 
+        // Build record for week mode based on requested scope.
+        if (period === 'week') {
+          if (scope === 'actual') {
+            for (const clan of CLANS) {
+              const currentRace = currentRaceByClan[clan.tag];
+              const participants = currentRace?.clan?.participants ?? [];
+              if (Array.isArray(participants) && participants.length > 0) {
+                for (const p of participants) {
+                  const tag = p.tag?.toUpperCase?.() || '';
+                  const role = (allMembers.get(tag)?.role) || 'member';
+                  allTeams.push({
+                    tag,
+                    name: p.name || '',
+                    clan: clan.name,
+                    role,
+                    fame: p.fame || 0,
+                  });
+                }
+              }
+            }
+          }
+
+          // fallback to previous (last completed week) when no actual data available
+          if (scope === 'previous' || allTeams.length === 0) {
+            for (const clan of CLANS) {
+              const raceLog = clanRaceLogs[clan.tag];
+              const lastWeek = Array.isArray(raceLog) && raceLog.length > 0 ? raceLog[0] : null;
+              const standing = Array.isArray(lastWeek?.standings)
+                ? lastWeek.standings.find((s) => s.clan?.tag?.toUpperCase() === `#${clan.tag}`)
+                : null;
+              const participants = standing?.clan?.participants ?? [];
+              for (const p of participants) {
+                const tag = p.tag?.toUpperCase?.() || '';
+                const role = (allMembers.get(tag)?.role) || 'member';
+                allTeams.push({
+                  tag,
+                  name: p.name || '',
+                  clan: clan.name,
+                  role,
+                  fame: p.fame || 0,
+                });
+              }
+            }
+          }
+        }
+
         let title;
         let footer;
         let players = [];
 
         if (period === 'season') {
-          const completeSeasons = Object.keys(seasonCounts)
-            .map(Number)
-            .sort((a, b) => b - a)
-            .filter((sid) => seasonCounts[sid] >= 4);
-
-          if (completeSeasons.length === 0) {
-            throw new Error('Impossible de trouver une saison complète dans les logs.');
+          if (defaultSeason == null && currentSeason == null) {
+            throw new Error('Impossible de trouver une saison dans les logs.');
           }
 
-          const selectedSeason = completeSeasons[0];
-          title = `🏅Meilleurs joueurs de la famille - saison précédente`;
+          const selectedSeason = (scope === 'actual' ? (currentSeason || defaultSeason) : defaultSeason);
+          if (selectedSeason == null) {
+            throw new Error('Impossible de déterminer la saison cible.');
+          }
+
+          title = `🏅Meilleurs joueurs de la famille - saison ${scope === 'actual' ? 'actuelle' : 'précédente'}`;
           footer = `Famille Resistance · Saison : S${selectedSeason}`;
-          if (currentSeason != null && currentSeason !== selectedSeason) {
+          if (scope === 'previous' && currentSeason != null && currentSeason !== selectedSeason) {
             footer += ` (la S${currentSeason} n'est pas terminée)`;
+          } else if (scope === 'actual' && currentSeason != null && currentSeason !== selectedSeason) {
+            footer += ` (la S${currentSeason} est celle en cours)`;
           }
 
           const seasonTotals = new Map();
 
           for (const clan of CLANS) {
-            const raceLog = await fetchRaceLog(`#${clan.tag}`);
+            const raceLog = clanRaceLogs[clan.tag];
             if (!Array.isArray(raceLog)) continue;
             const weeks = raceLog.filter((w) => w.seasonId === selectedSeason);
             for (const week of weeks) {
@@ -616,20 +666,31 @@ export default async function handler(req, res) {
             .slice(0, limit);
 
         } else {
-          title = `🏅Meilleurs joueurs de la famille - semaine précédente`;
-          const weekRef = await (async () => {
-            for (const clan of CLANS) {
-              const raceLog = await fetchRaceLog(`#${clan.tag}`);
-              if (Array.isArray(raceLog) && raceLog.length > 0) {
-                const week = raceLog[0];
-                if (week?.seasonId != null && week?.sectionIndex != null) {
-                  return `S${week.seasonId}-W${week.sectionIndex + 1}`;
+          title = `🏅Meilleurs joueurs de la famille - semaine ${scope === 'actual' ? 'actuelle' : 'précédente'}`;
+          const weekRef = (scope === 'actual')
+            ? (function () {
+                for (const clan of CLANS) {
+                  const currentRace = currentRaceByClan[clan.tag];
+                  if (currentRace?.seasonId != null && currentRace?.sectionIndex != null) {
+                    return `S${currentRace.seasonId}-W${currentRace.sectionIndex + 1}`;
+                  }
                 }
-              }
-            }
-            return 'S?-W?';
-          })();
-          footer = `Famille Resistance · Semaine : ${weekRef}`;
+                return null;
+              })()
+            : (function () {
+                for (const clan of CLANS) {
+                  const raceLog = clanRaceLogs[clan.tag];
+                  if (Array.isArray(raceLog) && raceLog.length > 0) {
+                    const week = raceLog[0];
+                    if (week?.seasonId != null && week?.sectionIndex != null) {
+                      return `S${week.seasonId}-W${week.sectionIndex + 1}`;
+                    }
+                  }
+                }
+                return null;
+              })();
+
+          footer = `Famille Resistance · Semaine : ${weekRef ?? 'S?-W?'}`;
 
           players = allTeams
             .sort((a, b) => b.fame - a.fame || a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }))
