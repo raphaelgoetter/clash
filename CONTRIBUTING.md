@@ -232,6 +232,7 @@ Le bot Discord expose des slash commands qui affichent les analyses directement 
 | `/trust tag:#TAG` | Analyse la fiabilité d'un joueur |
 | `/trust-clan clan:N` | Liste les membres High/Extreme risk d'un clan (N = 1/2/3) |
 | `/promote clan:N min:X` | Liste les joueurs ≥ X fame la semaine précédente |
+| `/top-players number:X period:[week|season] scope:[previous|actual]` | Liste les meilleurs joueurs de la famille sur la période demandée |
 | `/discord-link tag:#TAG` | Lie un compte Clash à un Discord |
 | `/discord-check clan:N` | Vérifie la présence Discord des membres d'un clan |
 | `/late clan:N` | Liste les joueurs en retard sur leurs decks de la journée (avant reset) |

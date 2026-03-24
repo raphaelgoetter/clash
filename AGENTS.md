@@ -80,6 +80,7 @@ node scripts/registerCommands.js
 | `/promote clan:N min:X` | Liste les joueurs ≥ X fame de la semaine précédente |
 | `/trust-clan clan:N` | Liste les membres High/Extreme risk d'un clan |
 | `/chelem clan:N [season:X]` | Liste les joueurs 16/16 decks chaque semaine d'une saison |
+| `/top-players number:X period:[week|season] scope:[previous|actual]` | Liste les meilleurs joueurs de la famille pour la période demandée |
 | `/discord-link tag:#TAG` | Lie un compte Clash à un Discord |
 | `/discord-check clan:N` | Vérifie la présence Discord des membres d'un clan |
 | `/late clan:N` | Liste les retardataires de la journée de GDC (avant reset) |

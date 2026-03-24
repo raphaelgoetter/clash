@@ -74,6 +74,22 @@ C’est un outil conçu pour être **proactif** : on détecte les membres à ris
 
 ```text
 /chelem clan:1
+```
+
+### 4) `/top-players number:X period:[week|season] scope:[previous|actual]`
+
+➡️ Liste les top X joueurs (tous clans) sur la période demandée.
+
+- `period=week` : fame de la semaine précédente (`scope=previous`) ou courant (`scope=actual`)
+- `period=season` : total fame de la saison précédente (`scope=previous`) ou saison en cours (`scope=actual`)
+
+**Usage** :
+
+```text
+/top-players number:5 period:week scope:previous
+/top-players number:10 period:season scope:previous
+/top-players number:5 period:season scope:actual
+```
 /chelem clan:1 season:129
 ```
 
