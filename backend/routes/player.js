@@ -7,7 +7,7 @@ import { fetchPlayer, fetchBattleLog, fetchRaceLog, fetchCurrentRace, fetchClanM
 import {
   analyzePlayer, buildWarHistory, computeWarScore,
   filterWarBattles, expandDuelRounds, isWarWin, buildCurrentWarDays,
-  getPlayerAnalysis, fetchRoyaleApiPlayerCw2History,
+  getPlayerAnalysis,
 } from '../services/analysisService.js';
 import { getOrSet } from '../services/cache.js';
 import { getDiscordLinks } from '../services/discordLinks.js';
@@ -25,23 +25,6 @@ router.get('/:tag', async (req, res) => {
   try {
     const player = await fetchPlayer(req.params.tag);
     res.json(player);
-  } catch (err) {
-    const status = err.message.includes('404') ? 404 : 500;
-    res.status(status).json({ error: err.message });
-  }
-});
-
-/**
- * GET /api/player/royaleapi/:tag
- * Scrape RoyaleAPI page for player CW2 history.
- */
-router.get('/royaleapi/:tag', async (req, res) => {
-  try {
-    const result = await fetchRoyaleApiPlayerCw2History(req.params.tag);
-    if (!result || !Array.isArray(result.entries) || result.entries.length === 0) {
-      return res.status(404).json({ error: 'No RoyaleAPI CW2 history data found' });
-    }
-    res.json(result);
   } catch (err) {
     const status = err.message.includes('404') ? 404 : 500;
     res.status(status).json({ error: err.message });
