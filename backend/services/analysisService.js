@@ -1063,15 +1063,6 @@ export async function fetchRoyaleApiPlayerCw2History(tag) {
 
   return { entries, source: usedEndpoint || 'unknown' };
 }
-      decksUsed,
-      fame,
-      boatAttacks: 0,
-      isCurrent: false,
-    });
-  }
-
-  return entries;
-}
 
 /**
  * Search the family clans to detect a recent transfer.
