@@ -749,11 +749,10 @@ export default async function handler(req, res) {
         const rows = players.map((p, idx) => {
           const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
           const name = p.name || p.tag;
-          const role = p.role || 'member';
           const clan = p.clan || '?';
           const fame = p.fame || 0;
           const fameStr = fame.toLocaleString('fr-FR');
-          return `${idx + 1}. [${name}](${playerUrl}) (${clan}) · [${role}] · ${fameStr} fame`;
+          return `${idx + 1}. [${name}](${playerUrl}) (${clan}) · **${fameStr} fame**`;
         }).join('\n');
 
         const embed = {
