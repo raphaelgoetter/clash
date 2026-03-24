@@ -1,2099 +1,10 @@
 {
-  "clan": {
-    "name": "Les Revoltes",
-    "tag": "#QU9UQJRL",
-    "description": "☆. #3 Resistance (top 🌍) Bonne humeur et entraînement GDC ⚔️ au programme 👉 Discord demandé : kPdQN8zfjM ▪️code : RoyaleAPI",
-    "clanScore": 88362,
-    "clanWarTrophies": 2190,
-    "members": 29,
-    "type": "open",
-    "requiredTrophies": 4000,
-    "badge": 16000036
-  },
-  "members": [
-    {
-      "name": "azerox",
-      "tag": "#VPR8G992P",
-      "role": "member",
-      "trophies": 5597,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 31,
-      "activityScore": 7,
-      "verdict": "Extreme risk",
-      "color": "red",
-      "isNew": true,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 0,
-      "lastSeen": "20260318T140623.000Z"
-    },
-    {
-      "name": "Sylvetta",
-      "tag": "#VR0LV90YP",
-      "role": "member",
-      "trophies": 213,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 4,
-      "activityScore": 8,
-      "verdict": "Extreme risk",
-      "color": "red",
-      "isNew": true,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3,
-        "arrivedMidWar": true,
-        "arrivedOnDay": 4
-      },
-      "warDecks": -1,
-      "lastSeen": "20260322T182913.000Z"
-    },
-    {
-      "name": "Chikumo",
-      "tag": "#98VCJLG92",
-      "role": "member",
-      "trophies": 7796,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 46,
-      "activityScore": 18,
-      "verdict": "Extreme risk",
-      "color": "red",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 0,
-      "lastSeen": "20260303T064532.000Z"
-    },
-    {
-      "name": "fkamote",
-      "tag": "#V9GUUPYUQ",
-      "role": "member",
-      "trophies": 4114,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 28,
-      "activityScore": 24,
-      "verdict": "Extreme risk",
-      "color": "red",
-      "isNew": true,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 1,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 1,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 1,
-      "lastSeen": "20260321T065008.000Z"
-    },
-    {
-      "name": "Hunter lord",
-      "tag": "#J222JVRUQ",
-      "role": "member",
-      "trophies": 10187,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 55,
-      "activityScore": 28,
-      "verdict": "Extreme risk",
-      "color": "red",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 0,
-      "lastSeen": "20260314T234517.000Z"
-    },
-    {
-      "name": "bob",
-      "tag": "#YRURQJV28",
-      "role": "member",
-      "trophies": 8264,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 50,
-      "activityScore": 32,
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 0,
-      "lastSeen": "20260315T181134.000Z"
-    },
-    {
-      "name": "luks",
-      "tag": "#V2P2LCYRJ",
-      "role": "member",
-      "trophies": 10161,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 53,
-      "activityScore": 35,
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 0,
-      "lastSeen": "20260323T064130.000Z"
-    },
-    {
-      "name": "chloe_lpb",
-      "tag": "#UYRR99RL8",
-      "role": "member",
-      "trophies": 8698,
-      "donations": 21,
-      "donationsReceived": 0,
-      "expLevel": 38,
-      "activityScore": 37,
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": true,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 4,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 8,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 8,
-      "lastSeen": "20260323T093727.000Z"
-    },
-    {
-      "name": "Clasher",
-      "tag": "#CLQ2RYYJQ",
-      "role": "member",
-      "trophies": 11596,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 64,
-      "activityScore": 41,
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 0,
-      "lastSeen": "20260318T081750.000Z"
-    },
-    {
-      "name": "Nino Owns U",
-      "tag": "#CRLR0P92J",
-      "role": "member",
-      "trophies": 7598,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 40,
-      "activityScore": 42,
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": true,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 1,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 6,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 6,
-      "lastSeen": "20260321T103136.000Z"
-    },
-    {
-      "name": "Alex",
-      "tag": "#2JUVG2P9",
-      "role": "elder",
-      "trophies": 10630,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 51,
-      "activityScore": 43,
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": false,
-        "daysFromThu": 3
-      },
-      "warDecks": 0,
-      "lastSeen": "20260302T015406.000Z"
-    },
-    {
-      "name": "Specteeerdima",
-      "tag": "#2200UQ9P08",
-      "role": "member",
-      "trophies": 4540,
-      "donations": 0,
-      "donationsReceived": 20,
-      "expLevel": 27,
-      "activityScore": 43,
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": true,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 1,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 3,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 12,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 12,
-      "lastSeen": "20260323T054935.000Z"
-    },
-    {
-      "name": "Wimix❤",
-      "tag": "#RRCRJ8QJJ",
-      "role": "member",
-      "trophies": 10786,
-      "donations": 0,
-      "donationsReceived": 9,
-      "expLevel": 62,
-      "activityScore": 44,
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 0,
-      "lastSeen": "20260323T084848.000Z"
-    },
-    {
-      "name": "KO93",
-      "tag": "#PGQ98JVJ8",
-      "role": "member",
-      "trophies": 7956,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 36,
-      "activityScore": 47,
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": true,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 9,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 9,
-      "lastSeen": "20260323T031001.000Z"
-    },
-    {
-      "name": "Sadz",
-      "tag": "#VY0LYQQVJ",
-      "role": "member",
-      "trophies": 12141,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 64,
-      "activityScore": 48,
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 0,
-      "lastSeen": "20260323T093019.000Z"
-    },
-    {
-      "name": "berlingot",
-      "tag": "#2V20JP28Q",
-      "role": "elder",
-      "trophies": 8770,
-      "donations": 0,
-      "donationsReceived": 8,
-      "expLevel": 42,
-      "activityScore": 49,
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 4,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260322T202659.000Z"
-    },
-    {
-      "name": "Shinzo",
-      "tag": "#V22VCQV9V",
-      "role": "elder",
-      "trophies": 9124,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 51,
-      "activityScore": 53,
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 4,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 12,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 12,
-      "lastSeen": "20260322T190014.000Z"
-    },
-    {
-      "name": "NINJA 31",
-      "tag": "#CLVU02QLP",
-      "role": "member",
-      "trophies": 12072,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 62,
-      "activityScore": 54,
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 0,
-      "lastSeen": "20260322T141357.000Z"
-    },
-    {
-      "name": "Nightmare_YMD",
-      "tag": "#CVJPCU09C",
-      "role": "elder",
-      "trophies": 12236,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 65,
-      "activityScore": 57,
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 0,
-      "lastSeen": "20260323T092244.000Z"
-    },
-    {
-      "name": "Performant",
-      "tag": "#LJYGJYCYC",
-      "role": "member",
-      "trophies": 11500,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 74,
-      "activityScore": 58,
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": true,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 1,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 0,
-      "lastSeen": "20260322T210215.000Z"
-    },
-    {
-      "name": "Kansass",
-      "tag": "#JC28YVLPG",
-      "role": "member",
-      "trophies": 12181,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 65,
-      "activityScore": 62,
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 0,
-      "lastSeen": "20260322T212142.000Z"
-    },
-    {
-      "name": "epi",
-      "tag": "#VPGCQPR9U",
-      "role": "elder",
-      "trophies": 6523,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 35,
-      "activityScore": 65,
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 3,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 11,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 11,
-      "lastSeen": "20260322T200134.000Z"
-    },
-    {
-      "name": "La Juliasse",
-      "tag": "#8VP9UJV9L",
-      "role": "elder",
-      "trophies": 9183,
-      "donations": 8,
-      "donationsReceived": 30,
-      "expLevel": 51,
-      "activityScore": 70,
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 1,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 13,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 13,
-      "lastSeen": "20260323T093116.000Z"
-    },
-    {
-      "name": "luky",
-      "tag": "#2U9QL8Q89",
-      "role": "member",
-      "trophies": 10089,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 61,
-      "activityScore": 74,
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 12,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 12,
-      "lastSeen": "20260321T153816.000Z"
-    },
-    {
-      "name": "rotk",
-      "tag": "#8JGU9UUJJ",
-      "role": "elder",
-      "trophies": 9000,
-      "donations": 44,
-      "donationsReceived": 8,
-      "expLevel": 60,
-      "activityScore": 74,
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 4,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 11,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 11,
-      "lastSeen": "20260323T092752.000Z"
-    },
-    {
-      "name": "☆.",
-      "tag": "#CVYLYLC8V",
-      "role": "leader",
-      "trophies": 8400,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 53,
-      "activityScore": 75,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 3,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 3,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 12,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 12,
-      "lastSeen": "20260322T093827.000Z"
-    },
-    {
-      "name": "TedX22",
-      "tag": "#QPU0U2C9",
-      "role": "elder",
-      "trophies": 10394,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 61,
-      "activityScore": 81,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 4,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 4,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260322T194001.000Z"
-    },
-    {
-      "name": "sebiboss2",
-      "tag": "#2YLYG9V92",
-      "role": "elder",
-      "trophies": 12632,
-      "donations": 0,
-      "donationsReceived": 8,
-      "expLevel": 71,
-      "activityScore": 85,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 4,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 12,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 12,
-      "lastSeen": "20260322T230248.000Z"
-    },
-    {
-      "name": "Gazyr2",
-      "tag": "#UVGPPVQ8Q",
-      "role": "coLeader",
-      "trophies": 11345,
-      "donations": 10,
-      "donationsReceived": 0,
-      "expLevel": 61,
-      "activityScore": 87,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-19",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-20",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-21",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-22",
-            "label": "Sun",
-            "count": 2,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 16,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 16,
-      "lastSeen": "20260323T072201.000Z"
-    }
-  ],
-  "summary": {
-    "green": 4,
-    "yellow": 7,
-    "orange": 13,
-    "red": 5,
-    "avgScore": 50,
-    "total": 29
-  },
-  "isWarPeriod": true,
-  "topPlayers": {
-    "quotas": [
-      2400,
-      2600,
-      2800
-    ],
-    "playersByQuota": {
-      "2400": [
-        {
-          "name": "luky",
-          "tag": "#2U9QL8Q89",
-          "fame": 2600,
-          "role": "member"
-        },
-        {
-          "name": "TedX22",
-          "tag": "#QPU0U2C9",
-          "fame": 2500,
-          "role": "elder"
-        },
-        {
-          "name": "Gazyr2",
-          "tag": "#UVGPPVQ8Q",
-          "fame": 2800,
-          "role": "coLeader"
-        },
-        {
-          "name": "☆.",
-          "tag": "#CVYLYLC8V",
-          "fame": 2750,
-          "role": "leader"
-        }
-      ],
-      "2600": [
-        {
-          "name": "luky",
-          "tag": "#2U9QL8Q89",
-          "fame": 2600,
-          "role": "member"
-        },
-        {
-          "name": "Gazyr2",
-          "tag": "#UVGPPVQ8Q",
-          "fame": 2800,
-          "role": "coLeader"
-        },
-        {
-          "name": "☆.",
-          "tag": "#CVYLYLC8V",
-          "fame": 2750,
-          "role": "leader"
-        }
-      ],
-      "2800": [
-        {
-          "name": "Gazyr2",
-          "tag": "#UVGPPVQ8Q",
-          "fame": 2800,
-          "role": "coLeader"
-        }
-      ]
-    }
-  },
-  "uncomplete": {
-    "players": [
-      {
-        "name": "Kansass",
-        "tag": "#JC28YVLPG",
-        "decks": 2,
-        "role": "member",
-        "inClan": true,
-        "daily": [
-          null,
-          null,
-          null,
-          null
-        ],
-        "dailySource": "snapshot",
-        "dailySnapshotComplete": false,
-        "isNew": false
-      },
-      {
-        "name": "bob",
-        "tag": "#YRURQJV28",
-        "decks": 0,
-        "role": "member",
-        "inClan": true,
-        "daily": [
-          null,
-          null,
-          null,
-          null
-        ],
-        "dailySource": "snapshot",
-        "dailySnapshotComplete": false,
-        "isNew": false
-      },
-      {
-        "name": "luks",
-        "tag": "#V2P2LCYRJ",
-        "decks": 0,
-        "role": "member",
-        "inClan": true,
-        "daily": [
-          null,
-          null,
-          null,
-          null
-        ],
-        "dailySource": "snapshot",
-        "dailySnapshotComplete": false,
-        "isNew": false
-      },
-      {
-        "name": "Chikumo",
-        "tag": "#98VCJLG92",
-        "decks": 0,
-        "role": "member",
-        "inClan": true,
-        "daily": [
-          null,
-          null,
-          null,
-          null
-        ],
-        "dailySource": "snapshot",
-        "dailySnapshotComplete": false,
-        "isNew": false
-      },
-      {
-        "name": "Wimix❤",
-        "tag": "#RRCRJ8QJJ",
-        "decks": 2,
-        "role": "member",
-        "inClan": true,
-        "daily": [
-          null,
-          null,
-          null,
-          null
-        ],
-        "dailySource": "snapshot",
-        "dailySnapshotComplete": false,
-        "isNew": false
-      },
-      {
-        "name": "Nino Owns U",
-        "tag": "#CRLR0P92J",
-        "decks": 1,
-        "role": "member",
-        "inClan": true,
-        "daily": [
-          null,
-          null,
-          null,
-          null
-        ],
-        "dailySource": "snapshot",
-        "dailySnapshotComplete": false,
-        "isNew": true
-      },
-      {
-        "name": "Hunter lord",
-        "tag": "#J222JVRUQ",
-        "decks": 0,
-        "role": "member",
-        "inClan": true,
-        "daily": [
-          null,
-          null,
-          null,
-          null
-        ],
-        "dailySource": "snapshot",
-        "dailySnapshotComplete": false,
-        "isNew": false
-      },
-      {
-        "name": "NINJA 31",
-        "tag": "#CLVU02QLP",
-        "decks": 0,
-        "role": "member",
-        "inClan": true,
-        "daily": [
-          null,
-          null,
-          null,
-          null
-        ],
-        "dailySource": "snapshot",
-        "dailySnapshotComplete": false,
-        "isNew": false
-      },
-      {
-        "name": "Clasher",
-        "tag": "#CLQ2RYYJQ",
-        "decks": 0,
-        "role": "member",
-        "inClan": true,
-        "daily": [
-          null,
-          null,
-          null,
-          null
-        ],
-        "dailySource": "snapshot",
-        "dailySnapshotComplete": false,
-        "isNew": false
-      },
-      {
-        "name": "am",
-        "tag": "#VU8UGJ0R2",
-        "decks": 12,
-        "role": "member",
-        "inClan": false,
-        "daily": [
-          null,
-          null,
-          null,
-          null
-        ],
-        "dailySource": "snapshot",
-        "dailySnapshotComplete": false,
-        "isNew": false
-      },
-      {
-        "name": "Sadz",
-        "tag": "#VY0LYQQVJ",
-        "decks": 4,
-        "role": "member",
-        "inClan": true,
-        "daily": [
-          null,
-          null,
-          null,
-          null
-        ],
-        "dailySource": "snapshot",
-        "dailySnapshotComplete": false,
-        "isNew": false
-      },
-      {
-        "name": "epi",
-        "tag": "#VPGCQPR9U",
-        "decks": 12,
-        "role": "elder",
-        "inClan": true,
-        "daily": [
-          null,
-          null,
-          null,
-          null
-        ],
-        "dailySource": "snapshot",
-        "dailySnapshotComplete": false,
-        "isNew": false
-      },
-      {
-        "name": "sebiboss2",
-        "tag": "#2YLYG9V92",
-        "decks": 12,
-        "role": "elder",
-        "inClan": true,
-        "daily": [
-          null,
-          null,
-          null,
-          null
-        ],
-        "dailySource": "snapshot",
-        "dailySnapshotComplete": false,
-        "isNew": false
-      },
-      {
-        "name": "Shinzo",
-        "tag": "#V22VCQV9V",
-        "decks": 12,
-        "role": "elder",
-        "inClan": true,
-        "daily": [
-          null,
-          null,
-          null,
-          null
-        ],
-        "dailySource": "snapshot",
-        "dailySnapshotComplete": false,
-        "isNew": false
-      },
-      {
-        "name": "Nightmare_YMD",
-        "tag": "#CVJPCU09C",
-        "decks": 8,
-        "role": "elder",
-        "inClan": true,
-        "daily": [
-          null,
-          null,
-          null,
-          null
-        ],
-        "dailySource": "snapshot",
-        "dailySnapshotComplete": false,
-        "isNew": false
-      },
-      {
-        "name": "rotk",
-        "tag": "#8JGU9UUJJ",
-        "decks": 12,
-        "role": "elder",
-        "inClan": true,
-        "daily": [
-          null,
-          null,
-          null,
-          null
-        ],
-        "dailySource": "snapshot",
-        "dailySnapshotComplete": false,
-        "isNew": false
-      }
-    ],
-    "snapshotComplete": false,
-    "snapshotDays": []
-  },
-  "clanWarSummary": {
-    "totalDecksUsed": 176,
+  "lastWarSummary": {
+    "totalDecksUsed": 235,
     "maxDecksElapsed": 800,
     "maxDecksWeek": 800,
-    "participantCount": 50,
-    "daysFromThu": 3,
+    "participantCount": 29,
+    "daysFromThu": 4,
     "days": [
       {
         "label": "Thu",
@@ -2130,19 +41,1219 @@
       },
       {
         "label": "Sun",
-        "totalCount": 7,
+        "totalCount": 66,
         "maxCount": 200,
-        "isPast": false,
-        "isToday": true,
+        "isPast": true,
+        "isToday": false,
         "isFuture": false,
-        "source": "live",
+        "source": "snapshot",
         "snapshotCount": 66,
-        "liveCount": 7
+        "liveCount": null
       }
     ],
-    "weekId": "S130W3"
+    "weekId": "S130W3",
+    "ended": true,
+    "snapshotAsOf": "2026-03-22"
   },
-  "prevWeekId": "S130W2",
+  "clan": {
+    "name": "Les Revoltes",
+    "tag": "#QU9UQJRL",
+    "description": "☆. #3 Resistance (top 🌍) Bonne humeur et entraînement GDC ⚔️ au programme 👉 Discord demandé : kPdQN8zfjM ▪️code : RoyaleAPI",
+    "clanScore": 88335,
+    "clanWarTrophies": 2185,
+    "members": 29,
+    "type": "open",
+    "requiredTrophies": 4000,
+    "badge": 16000036
+  },
+  "members": [
+    {
+      "name": "azerox",
+      "tag": "#VPR8G992P",
+      "role": "member",
+      "trophies": 5597,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 31,
+      "activityScore": 7,
+      "verdict": "Extreme risk",
+      "color": "red",
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260318T140623.000Z"
+    },
+    {
+      "name": "Sylvetta",
+      "tag": "#VR0LV90YP",
+      "role": "member",
+      "trophies": 213,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 4,
+      "activityScore": 8,
+      "verdict": "Extreme risk",
+      "color": "red",
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260322T182913.000Z"
+    },
+    {
+      "name": "Chikumo",
+      "tag": "#98VCJLG92",
+      "role": "member",
+      "trophies": 7796,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 46,
+      "activityScore": 18,
+      "verdict": "Extreme risk",
+      "color": "red",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260303T064532.000Z"
+    },
+    {
+      "name": "fkamote",
+      "tag": "#V9GUUPYUQ",
+      "role": "member",
+      "trophies": 4114,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 28,
+      "activityScore": 24,
+      "verdict": "Extreme risk",
+      "color": "red",
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260321T065008.000Z"
+    },
+    {
+      "name": "KO93",
+      "tag": "#PGQ98JVJ8",
+      "role": "member",
+      "trophies": 7813,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 36,
+      "activityScore": 27,
+      "verdict": "Extreme risk",
+      "color": "red",
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260324T021426.000Z"
+    },
+    {
+      "name": "Hunter lord",
+      "tag": "#J222JVRUQ",
+      "role": "member",
+      "trophies": 10187,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 55,
+      "activityScore": 28,
+      "verdict": "Extreme risk",
+      "color": "red",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260314T234517.000Z"
+    },
+    {
+      "name": "chloe_lpb",
+      "tag": "#UYRR99RL8",
+      "role": "member",
+      "trophies": 8562,
+      "donations": 75,
+      "donationsReceived": 0,
+      "expLevel": 38,
+      "activityScore": 28,
+      "verdict": "Extreme risk",
+      "color": "red",
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260324T065328.000Z"
+    },
+    {
+      "name": "luks",
+      "tag": "#V2P2LCYRJ",
+      "role": "member",
+      "trophies": 10161,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 53,
+      "activityScore": 31,
+      "verdict": "High risk",
+      "color": "orange",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260323T064130.000Z"
+    },
+    {
+      "name": "Nino Owns U",
+      "tag": "#CRLR0P92J",
+      "role": "member",
+      "trophies": 7598,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 40,
+      "activityScore": 32,
+      "verdict": "High risk",
+      "color": "orange",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260321T103136.000Z"
+    },
+    {
+      "name": "Wimix❤",
+      "tag": "#RRCRJ8QJJ",
+      "role": "member",
+      "trophies": 10786,
+      "donations": 0,
+      "donationsReceived": 40,
+      "expLevel": 62,
+      "activityScore": 40,
+      "verdict": "High risk",
+      "color": "orange",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260323T084848.000Z"
+    },
+    {
+      "name": "Specteeerdima",
+      "tag": "#2200UQ9P08",
+      "role": "member",
+      "trophies": 4590,
+      "donations": 36,
+      "donationsReceived": 80,
+      "expLevel": 27,
+      "activityScore": 40,
+      "verdict": "High risk",
+      "color": "orange",
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260324T055839.000Z"
+    },
+    {
+      "name": "Clasher",
+      "tag": "#CLQ2RYYJQ",
+      "role": "member",
+      "trophies": 11596,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 64,
+      "activityScore": 41,
+      "verdict": "High risk",
+      "color": "orange",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260318T081750.000Z"
+    },
+    {
+      "name": "bob",
+      "tag": "#YRURQJV28",
+      "role": "member",
+      "trophies": 8264,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 50,
+      "activityScore": 41,
+      "verdict": "High risk",
+      "color": "orange",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260323T201638.000Z"
+    },
+    {
+      "name": "Alex",
+      "tag": "#2JUVG2P9",
+      "role": "elder",
+      "trophies": 10630,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 51,
+      "activityScore": 43,
+      "verdict": "High risk",
+      "color": "orange",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260302T015406.000Z"
+    },
+    {
+      "name": "Sadz",
+      "tag": "#VY0LYQQVJ",
+      "role": "member",
+      "trophies": 12142,
+      "donations": 0,
+      "donationsReceived": 10,
+      "expLevel": 64,
+      "activityScore": 48,
+      "verdict": "High risk",
+      "color": "orange",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260323T112450.000Z"
+    },
+    {
+      "name": "NINJA 31",
+      "tag": "#CLVU02QLP",
+      "role": "member",
+      "trophies": 12072,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 62,
+      "activityScore": 51,
+      "verdict": "High risk",
+      "color": "orange",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260322T141357.000Z"
+    },
+    {
+      "name": "Shinzo",
+      "tag": "#V22VCQV9V",
+      "role": "elder",
+      "trophies": 9124,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 51,
+      "activityScore": 51,
+      "verdict": "High risk",
+      "color": "orange",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260322T190014.000Z"
+    },
+    {
+      "name": "berlingot",
+      "tag": "#2V20JP28Q",
+      "role": "elder",
+      "trophies": 8835,
+      "donations": 64,
+      "donationsReceived": 88,
+      "expLevel": 42,
+      "activityScore": 53,
+      "verdict": "High risk",
+      "color": "orange",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260323T203430.000Z"
+    },
+    {
+      "name": "Nightmare_YMD",
+      "tag": "#CVJPCU09C",
+      "role": "elder",
+      "trophies": 12236,
+      "donations": 12,
+      "donationsReceived": 0,
+      "expLevel": 65,
+      "activityScore": 55,
+      "verdict": "High risk",
+      "color": "orange",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260323T161327.000Z"
+    },
+    {
+      "name": "Kansass",
+      "tag": "#JC28YVLPG",
+      "role": "member",
+      "trophies": 12181,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 65,
+      "activityScore": 56,
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260322T212142.000Z"
+    },
+    {
+      "name": "epi",
+      "tag": "#VPGCQPR9U",
+      "role": "elder",
+      "trophies": 6523,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 35,
+      "activityScore": 60,
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260322T200134.000Z"
+    },
+    {
+      "name": "Performant",
+      "tag": "#LJYGJYCYC",
+      "role": "member",
+      "trophies": 11505,
+      "donations": 24,
+      "donationsReceived": 80,
+      "expLevel": 74,
+      "activityScore": 65,
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260324T081944.000Z"
+    },
+    {
+      "name": "☆.",
+      "tag": "#CVYLYLC8V",
+      "role": "leader",
+      "trophies": 8400,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 53,
+      "activityScore": 71,
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260322T093827.000Z"
+    },
+    {
+      "name": "La Juliasse",
+      "tag": "#8VP9UJV9L",
+      "role": "elder",
+      "trophies": 9183,
+      "donations": 68,
+      "donationsReceived": 80,
+      "expLevel": 51,
+      "activityScore": 72,
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260324T065009.000Z"
+    },
+    {
+      "name": "rotk",
+      "tag": "#8JGU9UUJJ",
+      "role": "elder",
+      "trophies": 9000,
+      "donations": 44,
+      "donationsReceived": 40,
+      "expLevel": 60,
+      "activityScore": 74,
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260323T175003.000Z"
+    },
+    {
+      "name": "luky",
+      "tag": "#2U9QL8Q89",
+      "role": "member",
+      "trophies": 10084,
+      "donations": 78,
+      "donationsReceived": 25,
+      "expLevel": 62,
+      "activityScore": 79,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260323T181657.000Z"
+    },
+    {
+      "name": "TedX22",
+      "tag": "#QPU0U2C9",
+      "role": "elder",
+      "trophies": 10394,
+      "donations": 8,
+      "donationsReceived": 40,
+      "expLevel": 61,
+      "activityScore": 81,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260323T183858.000Z"
+    },
+    {
+      "name": "sebiboss2",
+      "tag": "#2YLYG9V92",
+      "role": "elder",
+      "trophies": 12632,
+      "donations": 83,
+      "donationsReceived": 58,
+      "expLevel": 71,
+      "activityScore": 83,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260324T045103.000Z"
+    },
+    {
+      "name": "Gazyr2",
+      "tag": "#UVGPPVQ8Q",
+      "role": "coLeader",
+      "trophies": 11345,
+      "donations": 99,
+      "donationsReceived": 50,
+      "expLevel": 61,
+      "activityScore": 87,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260324T064513.000Z"
+    }
+  ],
+  "summary": {
+    "green": 4,
+    "yellow": 6,
+    "orange": 12,
+    "red": 7,
+    "avgScore": 48,
+    "total": 29
+  },
+  "isWarPeriod": false,
+  "topPlayers": {
+    "quotas": [
+      2400,
+      2600,
+      2800
+    ],
+    "playersByQuota": {
+      "2400": [
+        {
+          "name": "Gazyr2",
+          "tag": "#UVGPPVQ8Q",
+          "fame": 2600,
+          "role": "coLeader"
+        }
+      ],
+      "2600": [
+        {
+          "name": "Gazyr2",
+          "tag": "#UVGPPVQ8Q",
+          "fame": 2600,
+          "role": "coLeader"
+        }
+      ],
+      "2800": []
+    }
+  },
+  "uncomplete": {
+    "players": [
+      {
+        "name": "Kansass",
+        "tag": "#JC28YVLPG",
+        "decks": 0,
+        "role": "member",
+        "inClan": true,
+        "daily": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": true,
+        "dailyMismatch": false,
+        "dailyTotalFromSnapshot": 0,
+        "isNew": false
+      },
+      {
+        "name": "bob",
+        "tag": "#YRURQJV28",
+        "decks": 0,
+        "role": "member",
+        "inClan": true,
+        "daily": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": true,
+        "dailyMismatch": false,
+        "dailyTotalFromSnapshot": 0,
+        "isNew": false
+      },
+      {
+        "name": "luks",
+        "tag": "#V2P2LCYRJ",
+        "decks": 0,
+        "role": "member",
+        "inClan": true,
+        "daily": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": true,
+        "dailyMismatch": false,
+        "dailyTotalFromSnapshot": 0,
+        "isNew": false
+      },
+      {
+        "name": "Nightmare_YMD",
+        "tag": "#CVJPCU09C",
+        "decks": 0,
+        "role": "elder",
+        "inClan": true,
+        "daily": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": true,
+        "dailyMismatch": false,
+        "dailyTotalFromSnapshot": 0,
+        "isNew": false
+      },
+      {
+        "name": "azerox",
+        "tag": "#VPR8G992P",
+        "decks": 0,
+        "role": "member",
+        "inClan": true,
+        "daily": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": true,
+        "dailyMismatch": false,
+        "dailyTotalFromSnapshot": 0,
+        "isNew": true
+      },
+      {
+        "name": "Chikumo",
+        "tag": "#98VCJLG92",
+        "decks": 0,
+        "role": "member",
+        "inClan": true,
+        "daily": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": true,
+        "dailyMismatch": false,
+        "dailyTotalFromSnapshot": 0,
+        "isNew": false
+      },
+      {
+        "name": "Wimix❤",
+        "tag": "#RRCRJ8QJJ",
+        "decks": 0,
+        "role": "member",
+        "inClan": true,
+        "daily": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": true,
+        "dailyMismatch": false,
+        "dailyTotalFromSnapshot": 0,
+        "isNew": false
+      },
+      {
+        "name": "Hunter lord",
+        "tag": "#J222JVRUQ",
+        "decks": 0,
+        "role": "member",
+        "inClan": true,
+        "daily": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": true,
+        "dailyMismatch": false,
+        "dailyTotalFromSnapshot": 0,
+        "isNew": false
+      },
+      {
+        "name": "NINJA 31",
+        "tag": "#CLVU02QLP",
+        "decks": 0,
+        "role": "member",
+        "inClan": true,
+        "daily": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": true,
+        "dailyMismatch": false,
+        "dailyTotalFromSnapshot": 0,
+        "isNew": false
+      },
+      {
+        "name": "Clasher",
+        "tag": "#CLQ2RYYJQ",
+        "decks": 0,
+        "role": "member",
+        "inClan": true,
+        "daily": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": true,
+        "dailyMismatch": false,
+        "dailyTotalFromSnapshot": 0,
+        "isNew": false
+      },
+      {
+        "name": "Sadz",
+        "tag": "#VY0LYQQVJ",
+        "decks": 0,
+        "role": "member",
+        "inClan": true,
+        "daily": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": true,
+        "dailyMismatch": false,
+        "dailyTotalFromSnapshot": 0,
+        "isNew": false
+      },
+      {
+        "name": "povtesgay",
+        "tag": "#UU02RYV0C",
+        "decks": 1,
+        "role": "member",
+        "inClan": false,
+        "daily": [
+          0,
+          1,
+          1,
+          1
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": true,
+        "dailyMismatch": true,
+        "dailyTotalFromSnapshot": 3,
+        "isNew": false
+      },
+      {
+        "name": "fkamote",
+        "tag": "#V9GUUPYUQ",
+        "decks": 1,
+        "role": "member",
+        "inClan": true,
+        "daily": [
+          null,
+          1,
+          1,
+          1
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "dailyMismatch": false,
+        "dailyTotalFromSnapshot": null,
+        "isNew": true
+      },
+      {
+        "name": "chloe_lpb",
+        "tag": "#UYRR99RL8",
+        "decks": 8,
+        "role": "member",
+        "inClan": true,
+        "daily": [
+          null,
+          null,
+          4,
+          4
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "dailyMismatch": false,
+        "dailyTotalFromSnapshot": null,
+        "isNew": true
+      },
+      {
+        "name": "☆. Mariechou",
+        "tag": "#9VQYC9GJQ",
+        "decks": 4,
+        "role": "member",
+        "inClan": false,
+        "daily": [
+          4,
+          4,
+          4,
+          4
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": true,
+        "dailyMismatch": true,
+        "dailyTotalFromSnapshot": 16,
+        "isNew": false
+      },
+      {
+        "name": "am",
+        "tag": "#VU8UGJ0R2",
+        "decks": 4,
+        "role": "member",
+        "inClan": false,
+        "daily": [
+          4,
+          4,
+          4,
+          4
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": true,
+        "dailyMismatch": true,
+        "dailyTotalFromSnapshot": 16,
+        "isNew": false
+      },
+      {
+        "name": "rotk",
+        "tag": "#8JGU9UUJJ",
+        "decks": 11,
+        "role": "elder",
+        "inClan": true,
+        "daily": [
+          4,
+          4,
+          4,
+          4
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": true,
+        "dailyMismatch": true,
+        "dailyTotalFromSnapshot": 16,
+        "isNew": false
+      },
+      {
+        "name": "Nino Owns U",
+        "tag": "#CRLR0P92J",
+        "decks": 6,
+        "role": "member",
+        "inClan": true,
+        "daily": [
+          0,
+          2,
+          4,
+          4
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": true,
+        "dailyMismatch": true,
+        "dailyTotalFromSnapshot": 10,
+        "isNew": false
+      },
+      {
+        "name": "La Juliasse",
+        "tag": "#8VP9UJV9L",
+        "decks": 13,
+        "role": "elder",
+        "inClan": true,
+        "daily": [
+          4,
+          4,
+          4,
+          4
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": true,
+        "dailyMismatch": true,
+        "dailyTotalFromSnapshot": 16,
+        "isNew": false
+      },
+      {
+        "name": "epi",
+        "tag": "#VPGCQPR9U",
+        "decks": 11,
+        "role": "elder",
+        "inClan": true,
+        "daily": [
+          4,
+          4,
+          4,
+          4
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": true,
+        "dailyMismatch": true,
+        "dailyTotalFromSnapshot": 16,
+        "isNew": false
+      },
+      {
+        "name": "sebiboss2",
+        "tag": "#2YLYG9V92",
+        "decks": 12,
+        "role": "elder",
+        "inClan": true,
+        "daily": [
+          0,
+          4,
+          4,
+          4
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": true,
+        "dailyMismatch": false,
+        "dailyTotalFromSnapshot": 12,
+        "isNew": false
+      },
+      {
+        "name": "KO93",
+        "tag": "#PGQ98JVJ8",
+        "decks": 9,
+        "role": "member",
+        "inClan": true,
+        "daily": [
+          null,
+          4,
+          4,
+          4
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "dailyMismatch": false,
+        "dailyTotalFromSnapshot": null,
+        "isNew": true
+      },
+      {
+        "name": "☆.",
+        "tag": "#CVYLYLC8V",
+        "decks": 12,
+        "role": "leader",
+        "inClan": true,
+        "daily": [
+          3,
+          4,
+          4,
+          4
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": true,
+        "dailyMismatch": true,
+        "dailyTotalFromSnapshot": 15,
+        "isNew": false
+      },
+      {
+        "name": "Specteeerdima",
+        "tag": "#2200UQ9P08",
+        "decks": 12,
+        "role": "member",
+        "inClan": true,
+        "daily": [
+          4,
+          4,
+          4,
+          4
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": true,
+        "dailyMismatch": true,
+        "dailyTotalFromSnapshot": 16,
+        "isNew": true
+      },
+      {
+        "name": "Shinzo",
+        "tag": "#V22VCQV9V",
+        "decks": 12,
+        "role": "elder",
+        "inClan": true,
+        "daily": [
+          0,
+          4,
+          4,
+          4
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": true,
+        "dailyMismatch": false,
+        "dailyTotalFromSnapshot": 12,
+        "isNew": false
+      },
+      {
+        "name": "luky",
+        "tag": "#2U9QL8Q89",
+        "decks": 12,
+        "role": "member",
+        "inClan": true,
+        "daily": [
+          4,
+          4,
+          4,
+          4
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": true,
+        "dailyMismatch": true,
+        "dailyTotalFromSnapshot": 16,
+        "isNew": false
+      },
+      {
+        "name": "Sylvetta",
+        "tag": "#VR0LV90YP",
+        "decks": 0,
+        "role": "member",
+        "inClan": true,
+        "daily": [
+          null,
+          null,
+          null,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "dailyMismatch": false,
+        "dailyTotalFromSnapshot": null,
+        "isNew": true
+      },
+      {
+        "name": "Performant",
+        "tag": "#LJYGJYCYC",
+        "decks": 0,
+        "role": "member",
+        "inClan": true,
+        "daily": [
+          null,
+          null,
+          null,
+          0
+        ],
+        "dailySource": "snapshot",
+        "dailySnapshotComplete": false,
+        "dailyMismatch": false,
+        "dailyTotalFromSnapshot": null,
+        "isNew": true
+      }
+    ],
+    "snapshotComplete": true,
+    "snapshotDays": [
+      "friday",
+      "saturday",
+      "sunday",
+      "thursday"
+    ]
+  },
+  "clanWarSummary": {
+    "totalDecksUsed": 235,
+    "maxDecksElapsed": 800,
+    "maxDecksWeek": 800,
+    "participantCount": 29,
+    "daysFromThu": 4,
+    "days": [
+      {
+        "label": "Thu",
+        "totalCount": 43,
+        "maxCount": 200,
+        "isPast": true,
+        "isToday": false,
+        "isFuture": false,
+        "source": "snapshot",
+        "snapshotCount": 43,
+        "liveCount": null
+      },
+      {
+        "label": "Fri",
+        "totalCount": 60,
+        "maxCount": 200,
+        "isPast": true,
+        "isToday": false,
+        "isFuture": false,
+        "source": "snapshot",
+        "snapshotCount": 60,
+        "liveCount": null
+      },
+      {
+        "label": "Sat",
+        "totalCount": 66,
+        "maxCount": 200,
+        "isPast": true,
+        "isToday": false,
+        "isFuture": false,
+        "source": "snapshot",
+        "snapshotCount": 66,
+        "liveCount": null
+      },
+      {
+        "label": "Sun",
+        "totalCount": 66,
+        "maxCount": 200,
+        "isPast": true,
+        "isToday": false,
+        "isFuture": false,
+        "source": "snapshot",
+        "snapshotCount": 66,
+        "liveCount": null
+      }
+    ],
+    "weekId": "S130W3",
+    "ended": true
+  },
+  "prevWeekId": "S130W3",
   "snapshotToday": false,
   "snapshotDate": "2026-03-22",
   "warCurrentWeekId": "S130W3",
@@ -2152,7 +1263,7 @@
     66,
     66
   ],
-  "snapshotTakenAt": null,
+  "snapshotTakenAt": "2026-03-23T09:37:28.275Z",
   "currentWarDays": [
     {
       "label": "Thu",
@@ -2189,14 +1300,14 @@
     },
     {
       "label": "Sun",
-      "totalCount": 7,
+      "totalCount": 66,
       "maxCount": 200,
-      "isPast": false,
-      "isToday": true,
+      "isPast": true,
+      "isToday": false,
       "isFuture": false,
-      "source": "live",
+      "source": "snapshot",
       "snapshotCount": 66,
-      "liveCount": 7
+      "liveCount": null
     }
   ]
 }
