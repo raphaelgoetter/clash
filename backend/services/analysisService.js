@@ -1079,14 +1079,18 @@ export async function fetchRoyaleApiPlayerCw2History(tag) {
   }
 
   try {
-    return await scrapeRoyaleApi();
+    const result = await scrapeRoyaleApi();
+    console.log(`[CW2 HISTORY] royaleapi scrape success for ${cleanTag} source=${result.source}`);
+    return result;
   } catch (err) {
+    console.warn(`[CW2 HISTORY] royaleapi scrape failed for ${cleanTag}: ${err.message}`);
     // Cloudflare block or parsing issue; fallback to reliable Clash API data.
   }
 
   try {
     const player = await fetchPlayer(cleanTag);
     const clanTag = player?.clan?.tag;
+    console.log(`[CW2 HISTORY] using clashapi fallback for ${cleanTag} clan=${clanTag || 'none'}`);
 
     if (clanTag) {
       const [raceLog, currentRace] = await Promise.all([
