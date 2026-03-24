@@ -1679,20 +1679,42 @@ function updateDebugPanel(data, mode) {
     now: new Date().toISOString(),
     snapshotDate: data?.snapshotDate ?? null,
     snapshotTakenAt: data?.snapshotTakenAt ?? null,
-    warCurrentWeekId: data?.warCurrentWeekId ?? null,
+    warCurrentWeekId: data?.warCurrentWeekId ?? data?.clanWarSummary?.weekId ?? null,
+    source: data?.fromCache != null ? (data.fromCache ? 'cache' : 'api') : 'live',
     warSnapshotDays: data?.warSnapshotDays ?? null,
     currentWarDays: data?.currentWarDays ?? null,
     clanWarSummary: data?.clanWarSummary ?? null,
-    lastWarSummary: data?.lastWarSummary ?? null,
   };
 
   const text = JSON.stringify(payload, null, 2);
   panel.innerHTML = `
     <h3>Debug info (${mode})</h3>
-    <pre>${escHtml(text)}</pre>
+    <div style="font-size:.88rem;line-height:1.35;">
+      <div><strong>mode :</strong> ${escHtml(payload.mode)}</div>
+      <div><strong>source :</strong> ${escHtml(payload.source)}</div>
+      <div><strong>now :</strong> ${escHtml(payload.now)}</div>
+      <div><strong>snapshotDate :</strong> ${escHtml(payload.snapshotDate ?? '—')}</div>
+      <div><strong>warCurrentWeekId :</strong> ${escHtml(payload.warCurrentWeekId ?? '—')}</div>
+      <div><strong>warSnapshotDays :</strong> ${payload.warSnapshotDays ? JSON.stringify(payload.warSnapshotDays) : '—'}</div>
+      <div><strong>currentWarDays :</strong> ${payload.currentWarDays ? payload.currentWarDays.length + ' jours' : '—'}</div>
+      <div><strong>clanWarSummary :</strong> ${payload.clanWarSummary ? 'ok' : '—'}</div>
+    </div>
+    <details style="margin-top:.75rem;">
+      <summary>Full debug payload</summary>
+      <pre>${escHtml(text)}</pre>
+    </details>
   `;
 }
 
 // Initialize debug UI once the DOM is ready
-window.addEventListener('DOMContentLoaded', () => initDebugUI());
+window.addEventListener('DOMContentLoaded', () => {
+  initDebugUI();
+
+  // If the page has a query tag/mode, run search immediately to populate debug and data.
+  const { mode, tag } = getUrlState();
+  if (mode && tag) {
+    applyUrlState(mode, tag);
+    handleSearch();
+  }
+});
 
