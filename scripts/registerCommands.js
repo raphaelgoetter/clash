@@ -15,7 +15,11 @@ if (!appId || !token) {
   process.exit(1);
 }
 
-const url = `https://discord.com/api/v10/applications/${appId}/commands`;
+const globalUrl = `https://discord.com/api/v10/applications/${appId}/commands`;
+const guildId = process.env.DISCORD_GUILD_ID;
+const guildUrl = guildId
+  ? `https://discord.com/api/v10/applications/${appId}/guilds/${guildId}/commands`
+  : null;
 
 const commands = [
   {
@@ -198,23 +202,32 @@ const commands = [
   },
 ];
 
+async function registerAtUrl(url) {
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bot ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(commands),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    console.error(`Failed to register commands at ${url}`, data);
+    process.exit(1);
+  }
+  console.log(`Commands registered at ${url}:`);
+  console.dir(data, { depth: 2 });
+}
+
 (async () => {
   try {
-    const res = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bot ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(commands),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      console.error('Failed to register commands', data);
-      process.exit(1);
+    if (guildUrl) {
+      await registerAtUrl(guildUrl);
+      console.log('Guild command registration done (immediate availability).');
     }
-    console.log('Commands registered:');
-    console.dir(data, { depth: 2 });
+    await registerAtUrl(globalUrl);
+    console.log('Global command registration done (may take up to 1 hour to propagate).');
   } catch (err) {
     console.error('Request failed', err);
     process.exit(1);
