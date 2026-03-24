@@ -187,6 +187,11 @@ const commands = [
     ],
   },
   {
+    name: 'help',
+    description: 'Affiche l’aide détaillée de toutes les commandes du bot.',
+    options: [],
+  },
+  {
     name: 'chelem',
     description: 'Liste les joueurs ayant fait 16/16 decks chaque semaine d’une saison donnée.',
     
