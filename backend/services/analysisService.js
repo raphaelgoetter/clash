@@ -983,96 +983,132 @@ export async function fetchRoyaleApiPlayerCw2History(tag) {
     },
   };
 
-  async function loadFrom(url) {
-    const res = await fetchWithTimeout(url, options, 6000);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const text = await res.text();
-    if (!text || text.length < 1000) throw new Error('empty payload');
-    if (!text.includes('cw2-history-chart-container') && !text.includes('player__cw2_history_table')) {
-      throw new Error('no cw2 history container');
+  async function scrapeRoyaleApi() {
+    async function loadFrom(url) {
+      const res = await fetchWithTimeout(url, options, 6000);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      if (!text || text.length < 1000) throw new Error('empty payload');
+      if (!text.includes('cw2-history-chart-container') && !text.includes('player__cw2_history_table')) {
+        throw new Error('no cw2 history container');
+      }
+      return { url, text };
     }
-    return { url, text };
+
+    const promises = endpoints.map((url) => loadFrom(url));
+    let result;
+    try {
+      result = await Promise.any(promises);
+    } catch (err) {
+      const settled = await Promise.allSettled(promises);
+      const succ = settled.find((r) => r.status === 'fulfilled');
+      if (!succ) throw new Error('all royaleapi scrapers failed');
+      result = succ.value;
+    }
+
+    if (!result || !result.text) throw new Error('no royaleapi body');
+
+    let html = result.text;
+    const usedEndpoint = result.url || 'unknown';
+
+    const containerMatch = /<div[^>]*class="[^\"]*cw2-history-chart-container[^\"]*"[^>]*>([\s\S]*?)<\/div>/.exec(html);
+    if (!containerMatch) throw new Error('no container');
+
+    const tableMatch = /<table[^>]*class="[^\"]*player__cw2_history_table[^\"]*"[^>]*>([\s\S]*?)<\/table>/.exec(containerMatch[1]);
+    if (!tableMatch) throw new Error('no table');
+
+    const tableHtml = tableMatch[1];
+    const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/g;
+    const rows = [];
+    let rowMatch;
+    while ((rowMatch = rowRegex.exec(tableHtml))) {
+      rows.push(rowMatch[1]);
+    }
+    if (rows.length <= 1) throw new Error('no rows');
+
+    const entries = [];
+    for (let i = 1; i < rows.length; i += 1) {
+      const row = rows[i];
+      const cellRegex = /<(?:td|th)[^>]*>([\s\S]*?)<\/(?:td|th)>/g;
+      const cells = [];
+      let cellMatch;
+      while ((cellMatch = cellRegex.exec(row))) {
+        cells.push(normalizeText(cellMatch[1]));
+      }
+      if (cells.length < 6) continue;
+
+      const seasonId = cells[0] || '??';
+      const clanName = cells[4] || 'Unknown';
+
+      const numericValues = cells
+        .map((c) => parseNumberFromString(c))
+        .filter((n) => n !== null);
+
+      let decksUsed = null;
+      let fame = null;
+      for (let j = 0; j < numericValues.length; j += 1) {
+        const n = numericValues[j];
+        if (n >= 0 && n <= 16 && decksUsed === null) {
+          decksUsed = n;
+        } else if (decksUsed !== null && n >= 0 && fame === null) {
+          fame = n;
+        }
+      }
+
+      if (decksUsed === null || fame === null) continue;
+
+      const [seasonPart, sectionPart] = String(seasonId).split('-');
+      const season = Number(seasonPart) || null;
+      const section = sectionPart ? Number(sectionPart) - 1 : null;
+
+      entries.push({
+        label: seasonId,
+        seasonId: season,
+        sectionIndex: section,
+        clanTag: clanName,
+        decksUsed,
+        fame,
+        boatAttacks: 0,
+        isCurrent: false,
+      });
+    }
+
+    if (!entries.length) throw new Error('no parsed entries');
+
+    return { entries, source: `royaleapi-scrape:${usedEndpoint}` };
   }
 
-  const promises = endpoints.map((url) => loadFrom(url));
-  let result;
   try {
-    result = await Promise.any(promises);
+    return await scrapeRoyaleApi();
   } catch (err) {
-    const settled = await Promise.allSettled(promises);
-    const succ = settled.find((r) => r.status === 'fulfilled');
-    if (!succ) return null;
-    result = succ.value;
+    // Cloudflare block or parsing issue; fallback to reliable Clash API data.
   }
 
-  if (!result || !result.text) return null;
+  try {
+    const player = await fetchPlayer(cleanTag);
+    const clanTag = player?.clan?.tag;
 
-  let html = result.text;
-  let usedEndpoint = result.url || 'unknown';
-
-  const containerMatch = /<div[^>]*class="[^"]*cw2-history-chart-container[^"]*"[^>]*>([\s\S]*?)<\/div>/.exec(html);
-  if (!containerMatch) return null;
-
-  const tableMatch = /<table[^>]*class="[^"]*player__cw2_history_table[^"]*"[^>]*>([\s\S]*?)<\/table>/.exec(containerMatch[1]);
-  if (!tableMatch) return null;
-
-  const tableHtml = tableMatch[1];
-  const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/g;
-  const rows = [];
-  let rowMatch;
-  while ((rowMatch = rowRegex.exec(tableHtml))) {
-    rows.push(rowMatch[1]);
-  }
-  if (rows.length <= 1) return null;
-
-  const entries = [];
-  for (let i = 1; i < rows.length; i += 1) {
-    const row = rows[i];
-    const cellRegex = /<(?:td|th)[^>]*>([\s\S]*?)<\/(?:td|th)>/g;
-    const cells = [];
-    let cellMatch;
-    while ((cellMatch = cellRegex.exec(row))) {
-      cells.push(normalizeText(cellMatch[1]));
-    }
-    if (cells.length < 6) continue;
-
-    const seasonId = cells[0] || '??';
-    const clanName = cells[4] || 'Unknown';
-
-    const numericValues = cells
-      .map((c) => parseNumberFromString(c))
-      .filter((n) => n !== null);
-
-    let decksUsed = null;
-    let fame = null;
-    for (let j = 0; j < numericValues.length; j += 1) {
-      const n = numericValues[j];
-      if (n >= 0 && n <= 16 && decksUsed === null) {
-        decksUsed = n;
-      } else if (decksUsed !== null && n >= 0 && fame === null) {
-        fame = n;
+    if (clanTag) {
+      const [raceLog, currentRace] = await Promise.all([
+        fetchRaceLog(clanTag).catch(() => []),
+        fetchCurrentRace(clanTag).catch(() => null),
+      ]);
+      const history = buildWarHistory(cleanTag, raceLog, clanTag, currentRace);
+      if (history?.weeks?.length) {
+        return { entries: history.weeks, source: `clashapi:clan:${clanTag}` };
       }
     }
 
-    if (decksUsed === null || fame === null) continue;
-
-    const [seasonPart, sectionPart] = String(seasonId).split('-');
-    const season = Number(seasonPart) || null;
-    const section = sectionPart ? Number(sectionPart) - 1 : null;
-
-    entries.push({
-      label: seasonId,
-      seasonId: season,
-      sectionIndex: section,
-      clanTag: clanName,
-      decksUsed,
-      fame,
-      boatAttacks: 0,
-      isCurrent: false,
-    });
+    // if no current clan or the current clan history is empty, try family fallback
+    const familyHistory = await buildFamilyWarHistory(cleanTag, clanTag || null, null);
+    if (familyHistory?.weeks?.length) {
+      return { entries: familyHistory.weeks, source: 'clashapi:family' };
+    }
+  } catch (err) {
+    // final fallback, silent: no available data
   }
 
-  return { entries, source: usedEndpoint || 'unknown' };
+  return null;
 }
 
 /**
