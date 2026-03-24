@@ -333,13 +333,13 @@ export default async function handler(req, res) {
           color: 0x5865f2,
           description:
             '- `/trust tag:#TAG` : analyse la fiabilité d\'un joueur\n' +
-            '- `/trust-clan clan:N` : liste les membres High/Extreme risk du clan\n' +
+            '- `/trust-clan clan:N` : liste les membres risqué du clan\n' +
             '- `/promote clan:N min:X` : liste les joueurs ≥ X fame semaine précédente\n' +
-            '- `/demote clan:N` : liste les joueurs failli 16/16 decks (semaine précédente)\n' +
-            '- `/late clan:N` : liste les retardataires du jour\n' +
-            '- `/chelem clan:N [season:X]` : 16/16 decks toutes semaines d\'une saison\n' +
-            '- `/top-players number:X period:[week|season] scope:[previous|actual]` : meilleurs joueurs-famille\n' +
-            '- `/discord-link tag:#TAG [tag2] [tag3]` : lie ton Clash à Discord\n' +
+            '- `/demote clan:N` : liste les joueurs n\'ayant pas joué 16/16 decks (semaine précédente)\n' +
+            '- `/late clan:N` : liste les retardataires GDC du jour\n' +
+            '- `/chelem clan:N [season:X]` : 16/16 decks toutes semaines d\'une saison entière\n' +
+            '- `/top-players number:X period:[week|season] scope:[previous|actual]` : meilleurs joueurs de toute la famille\n' +
+            '- `/discord-link tag:#TAG [tag2] [tag3]` : lie ton tag Clash à Discord\n' +
             '- `/discord-check clan:N` : vérifie la présence Discord\n' +
             '- `/help` : affiche cette fenêtre',
           footer: { text: 'Utilise /help pour réafficher ce menu.' },
