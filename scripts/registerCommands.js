@@ -122,7 +122,7 @@ const commands = [
   },
   {
     name: 'trust-clan',
-    description: "Liste les membres en High Risk / Extreme Risk d'un clan",
+    description: "Liste les membres risqués d'un clan",
     options: [
       {
         type: 3, // STRING
@@ -237,10 +237,8 @@ async function registerAtUrl(url) {
 
 (async () => {
   try {
-    if (guildUrl) {
-      await registerAtUrl(guildUrl);
-      console.log('Guild command registration done (immediate availability).');
-    }
+    // Utiliser uniquement l'enregistrement global (pour éviter les doublons de commandes). 
+    // Ne pas enregistrer en guilde même si DISCORD_GUILD_ID est défini.
     await registerAtUrl(globalUrl);
     console.log('Global command registration done (may take up to 1 hour to propagate).');
   } catch (err) {
