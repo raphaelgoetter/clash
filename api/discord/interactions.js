@@ -333,7 +333,7 @@ export default async function handler(req, res) {
           color: 0x5865f2,
           description:
             '- `/trust tag:#TAG` : analyse la fiabilité d\'un joueur\n' +
-            '- `/trust-clan clan:N` : liste les membres risqué du clan\n' +
+            '- `/trust-clan clan:N` : liste les membres risqués du clan\n' +
             '- `/promote clan:N min:X` : liste les joueurs ≥ X fame semaine précédente\n' +
             '- `/demote clan:N` : liste les joueurs n\'ayant pas joué 16/16 decks (semaine précédente)\n' +
             '- `/late clan:N` : liste les retardataires GDC du jour\n' +
