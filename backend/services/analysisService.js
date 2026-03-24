@@ -958,6 +958,7 @@ export async function fetchRoyaleApiPlayerCw2History(tag) {
 
   const endpoints = [
     `https://royaleapi.com/player/${cleanTag}`,
+    `https://trustroyale.vercel.app/api/player/royaleapi/${cleanTag}`,
     `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://royaleapi.com/player/${cleanTag}`)}`,
     `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(`https://royaleapi.com/player/${cleanTag}`)}`,
     `https://thingproxy.freeboard.io/fetch/https://royaleapi.com/player/${cleanTag}`,
