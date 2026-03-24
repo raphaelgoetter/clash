@@ -509,7 +509,7 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
-        const { fetchRaceLog, fetchClanMembers } = await import('../../backend/services/clashApi.js');
+        const { fetchRaceLog, fetchClanMembers, fetchCurrentRace } = await import('../../backend/services/clashApi.js');
 
         const CLANS = [
           { name: 'La Resistance',  tag: 'Y8JUPC9C' },
