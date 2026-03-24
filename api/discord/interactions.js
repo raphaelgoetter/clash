@@ -494,6 +494,190 @@ export default async function handler(req, res) {
     return;
   }
 
+  // Commande /top-players
+  if (body.type === 2 && body.data?.name === 'top-players') {
+    const numberOpt = body.data.options?.find((o) => o.name === 'number');
+    const periodOpt = body.data.options?.find((o) => o.name === 'period');
+
+    const limit = Math.min(Math.max(1, Number(numberOpt?.value ?? 5) || 5), 30);
+    const period = (periodOpt?.value || 'week').toString().toLowerCase();
+
+    res.status(200).json({ type: 5 });
+    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+
+    runBackground(async () => {
+      try {
+        const { fetchRaceLog, fetchClanMembers } = await import('../../backend/services/clashApi.js');
+
+        const CLANS = [
+          { name: 'La Resistance',  tag: 'Y8JUPC9C' },
+          { name: 'Les Resistants', tag: 'LRQP20V9' },
+          { name: 'Les Revoltes',   tag: 'QU9UQJRL' },
+        ];
+
+        const allMembers = new Map(); // tag -> { name, role, clan }
+        const allTeams = [];
+
+        const seasonCounts = {};
+        let currentSeason = null;
+
+        for (const clan of CLANS) {
+          const [raceLog, members] = await Promise.all([
+            fetchRaceLog(`#${clan.tag}`),
+            fetchClanMembers(`#${clan.tag}`),
+          ]);
+
+          if (Array.isArray(raceLog) && raceLog.length > 0) {
+            if (currentSeason === null) currentSeason = raceLog[0]?.seasonId;
+            for (const week of raceLog) {
+              const sid = week?.seasonId;
+              if (sid == null) continue;
+              seasonCounts[sid] = (seasonCounts[sid] || 0) + 1;
+            }
+
+            const lastWeek = raceLog[0];
+            const standing = Array.isArray(lastWeek?.standings)
+              ? lastWeek.standings.find((s) => s.clan?.tag?.toUpperCase() === `#${clan.tag}`)
+              : null;
+            const participants = standing?.clan?.participants ?? [];
+
+            if (period === 'week') {
+              for (const p of participants) {
+                const tag = p.tag?.toUpperCase?.() || '';
+                const role = (members.find((m) => m.tag === p.tag)?.role) || 'member';
+                allTeams.push({
+                  tag,
+                  name: p.name || '',
+                  clan: clan.name,
+                  role,
+                  fame: p.fame || 0,
+                });
+              }
+            }
+
+            members.forEach((m) => {
+              const normalized = m.tag?.toUpperCase?.() || '';
+              if (!normalized) return;
+              if (!allMembers.has(normalized) || allMembers.get(normalized).clan === 'La Resistance') {
+                allMembers.set(normalized, { name: m.name, role: m.role || 'member', clan: clan.name });
+              }
+            });
+          }
+        }
+
+        let title;
+        let footer;
+        let players = [];
+
+        if (period === 'season') {
+          const completeSeasons = Object.keys(seasonCounts)
+            .map(Number)
+            .sort((a, b) => b - a)
+            .filter((sid) => seasonCounts[sid] >= 4);
+
+          if (completeSeasons.length === 0) {
+            throw new Error('Impossible de trouver une saison complète dans les logs.');
+          }
+
+          const selectedSeason = completeSeasons[0];
+          title = `🏅Meilleurs joueurs de la famille - saison précédente`;
+          footer = `Famille Resistance · Saison : S${selectedSeason}`;
+          if (currentSeason != null && currentSeason !== selectedSeason) {
+            footer += ` (la S${currentSeason} n'est pas terminée)`;
+          }
+
+          const seasonTotals = new Map();
+
+          for (const clan of CLANS) {
+            const raceLog = await fetchRaceLog(`#${clan.tag}`);
+            if (!Array.isArray(raceLog)) continue;
+            const weeks = raceLog.filter((w) => w.seasonId === selectedSeason);
+            for (const week of weeks) {
+              const standing = Array.isArray(week.standings)
+                ? week.standings.find((s) => s.clan?.tag?.toUpperCase() === `#${clan.tag}`)
+                : null;
+              const participants = standing?.clan?.participants ?? [];
+              for (const p of participants) {
+                const tag = p.tag?.toUpperCase?.() || '';
+                if (!tag) continue;
+                const existing = seasonTotals.get(tag) || { name: p.name || '', fame: 0 };
+                existing.name = existing.name || p.name || '';
+                existing.fame += p.fame || 0;
+                existing.clan = allMembers.get(tag)?.clan || clan.name;
+                existing.role = allMembers.get(tag)?.role || 'member';
+                seasonTotals.set(tag, existing);
+              }
+            }
+          }
+
+          players = Array.from(seasonTotals.entries())
+            .map(([tag, data]) => ({ tag, ...data }))
+            .sort((a, b) => b.fame - a.fame || a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }))
+            .slice(0, limit);
+
+        } else {
+          title = `🏅Meilleurs joueurs de la famille - semaine précédente`;
+          const weekRef = await (async () => {
+            for (const clan of CLANS) {
+              const raceLog = await fetchRaceLog(`#${clan.tag}`);
+              if (Array.isArray(raceLog) && raceLog.length > 0) {
+                const week = raceLog[0];
+                if (week?.seasonId != null && week?.sectionIndex != null) {
+                  return `S${week.seasonId}-W${week.sectionIndex + 1}`;
+                }
+              }
+            }
+            return 'S?-W?';
+          })();
+          footer = `Famille Resistance · Semaine : ${weekRef}`;
+
+          players = allTeams
+            .sort((a, b) => b.fame - a.fame || a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }))
+            .slice(0, limit);
+        }
+
+        if (players.length === 0) {
+          await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: 'Aucun joueur trouvé pour la période demandée.', flags: 64 }),
+          });
+          return;
+        }
+
+        const rows = players.map((p, idx) => {
+          const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
+          const name = p.name || p.tag;
+          const role = p.role || 'member';
+          const clan = p.clan || '?';
+          const fame = p.fame || 0;
+          const fameStr = fame.toLocaleString('fr-FR');
+          return `${idx + 1}. [${name}](${playerUrl}) (${clan}) · [${role}] · ${fameStr} fame`;
+        }).join('\n');
+
+        const embed = {
+          title,
+          color: 0x5865f2,
+          description: rows,
+          footer: { text: footer },
+        };
+
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ embeds: [embed], allowed_mentions: { parse: [] } }),
+        });
+      } catch (err) {
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
+        });
+      }
+    });
+    return;
+  }
+
   // Commande /demote
   if (body.type === 2 && body.data?.name === 'demote') {
     const clanOpt = body.data.options?.find((o) => o.name === 'clan');

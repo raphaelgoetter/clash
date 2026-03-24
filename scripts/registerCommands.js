@@ -151,6 +151,28 @@ const commands = [
     ],
   },
   {
+    name: 'top-players',
+    description: 'Liste les meilleurs joueurs de la famille dans la semaine ou saison précédente.',
+    options: [
+      {
+        type: 4, // INTEGER
+        name: 'number',
+        description: 'Nombre de joueurs à afficher (par défaut 5).',
+        required: false,
+      },
+      {
+        type: 3, // STRING
+        name: 'period',
+        description: 'Période : week (par défaut) ou season.',
+        required: false,
+        choices: [
+          { name: 'week', value: 'week' },
+          { name: 'season', value: 'season' },
+        ],
+      },
+    ],
+  },
+  {
     name: 'chelem',
     description: 'Liste les joueurs ayant fait 16/16 decks chaque semaine d’une saison donnée.',
     
