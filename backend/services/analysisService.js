@@ -77,6 +77,17 @@ function normalizeText(text) {
   return String(text).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
 }
 
+async function fetchWithTimeout(url, options = {}, ms = 5000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ms);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function summarizeRoyaleApiWarHistory(weeks, currentClanTag = null) {
   const sortedWeeks = [...weeks].sort((a, b) => {
     if (a.isCurrent && !b.isCurrent) return -1;
@@ -958,47 +969,46 @@ export async function fetchRoyaleApiPlayerCw2History(tag) {
 
   const endpoints = [
     `https://royaleapi.com/player/${cleanTag}`,
-    `https://trustroyale.vercel.app/api/player/royaleapi/${cleanTag}`,
     `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://royaleapi.com/player/${cleanTag}`)}`,
     `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(`https://royaleapi.com/player/${cleanTag}`)}`,
     `https://thingproxy.freeboard.io/fetch/https://royaleapi.com/player/${cleanTag}`,
     `https://corsproxy.io/?https://royaleapi.com/player/${cleanTag}`,
   ];
 
-  let html = null;
-  let usedEndpoint = null;
+  const options = {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9',
+    },
+  };
 
-  for (const url of endpoints) {
-    try {
-      const res = await fetch(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.9',
-        },
-        timeout: 15000,
-      });
-      if (!res.ok) continue;
-
-      const text = await res.text();
-      if (!text || text.length < 1000) continue;
-
-      if (text.includes('cw2-history-chart-container') || text.includes('player__cw2_history_table')) {
-        html = text;
-        usedEndpoint = url;
-        break;
-      }
-
-      if (!html) {
-        html = text;
-        usedEndpoint = url;
-      }
-    } catch (_) {
-      continue;
+  async function loadFrom(url) {
+    const res = await fetchWithTimeout(url, options, 6000);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    if (!text || text.length < 1000) throw new Error('empty payload');
+    if (!text.includes('cw2-history-chart-container') && !text.includes('player__cw2_history_table')) {
+      throw new Error('no cw2 history container');
     }
+    return { url, text };
   }
 
-  if (!html) return null;
+  const promises = endpoints.map((url) => loadFrom(url));
+  let result;
+  try {
+    result = await Promise.any(promises);
+  } catch (err) {
+    const settled = await Promise.allSettled(promises);
+    const succ = settled.find((r) => r.status === 'fulfilled');
+    if (!succ) return null;
+    result = succ.value;
+  }
+
+  if (!result || !result.text) return null;
+
+  let html = result.text;
+  let usedEndpoint = result.url || 'unknown';
 
   const containerMatch = /<div[^>]*class="[^"]*cw2-history-chart-container[^"]*"[^>]*>([\s\S]*?)<\/div>/.exec(html);
   if (!containerMatch) return null;
