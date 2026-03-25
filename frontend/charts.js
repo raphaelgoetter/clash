@@ -229,39 +229,51 @@ export function renderBattleLogBreakdownChart(breakdown) {
   const values = keys.map((k) => breakdown?.[k] ?? 0);
   const total = values.reduce((s, v) => s + v, 0);
 
+  // River Race mis en valeur, les autres en gris
   const colors = [
     'rgba(99,102,241,0.9)',
-    'rgba(34,197,94,0.8)',
-    'rgba(251,191,36,0.8)',
-    'rgba(34,211,238,0.8)',
-    'rgba(148,163,184,0.6)',
+    'rgba(148,163,184,0.35)',
+    'rgba(148,163,184,0.35)',
+    'rgba(148,163,184,0.35)',
+    'rgba(148,163,184,0.35)',
   ];
 
   new Chart(el.getContext('2d'), {
-    type: 'doughnut',
+    type: 'bar',
     data: {
       labels,
       datasets: [{
         data: values,
         backgroundColor: colors,
-        borderColor: 'rgba(255,255,255,0.06)',
+        borderColor: colors.map((c, i) => i === 0 ? 'rgba(99,102,241,1)' : 'rgba(148,163,184,0.5)'),
         borderWidth: 1,
+        borderRadius: 4,
       }],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      indexAxis: 'y',
       plugins: {
-        legend: { position: 'bottom', labels: { color: '#cbd5e1' } },
+        legend: { display: false },
         tooltip: {
           callbacks: {
             label(context) {
-              const idx = context.dataIndex;
-              const val = values[idx] ?? 0;
+              const val = context.parsed.x ?? 0;
               const pct = total ? Math.round((val / total) * 100) : 0;
-              return `${labels[idx]}: ${val} (${pct}%)`;
+              return `${val} combats (${pct}%)`;
             },
           },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: '#94a3b8', stepSize: 1 },
+          grid: { color: 'rgba(255,255,255,0.05)' },
+        },
+        y: {
+          ticks: { color: '#cbd5e1' },
+          grid: { display: false },
         },
       },
     },
