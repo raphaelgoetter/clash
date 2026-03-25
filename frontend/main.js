@@ -1717,7 +1717,7 @@ function renderMembersTable(members) {
           const cls  = days <= 1 ? 'c-green' : days <= 3 ? 'c-yellow' : days <= 7 ? 'c-red' : 'c-red';
           const label = daysFrac < 1 ? t('today')
                       : days < 2 ? t('oneDayAgo')
-                      : `${days}d ${t('ago')}`;
+                      : `${days} ${t('days')} ${t('ago')}`;
           lastSeenCell = `<td class="last-seen-col"><span class="last-seen-badge ${cls}">${label}</span></td>`;
         }
         const displayTransfer = m.isFamilyTransfer;
