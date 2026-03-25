@@ -471,12 +471,13 @@ export async function buildClanAnalysis(clanTag) {
           }
         }
 
+        const isNewClanArrivee = (wh?.streakInCurrentClan ?? 0) <= 2 && (wh?.totalWeeks ?? 0) > 1;
+
         if (hasEnoughHistory) {
           // Historical data — computeWarScore + win rate historique (race log) en priorité
           const effectiveWinRate = wh.historicalWinRate ?? warWinRate;
           const ws = computeWarScore(playerProxy, wh, effectiveWinRate, m.lastSeen ?? null, discordLinked);
           activityScore = ws.pct; verdict = ws.verdict; color = ws.color;
-          isNew = false;
         } else if (battleLog) {
           // New member — full fallback with battle log
           const bd     = categorizeBattleLog(battleLog);
@@ -485,7 +486,6 @@ export async function buildClanAnalysis(clanTag) {
           const racePartFb = currentRace?.clan?.participants?.find((p) => p.tag === normalizedTagFb);
           const ws     = computeWarReliabilityFallback(playerProxy, warLog, bd, m.lastSeen ?? null, discordLinked, racePartFb?.decksUsed ?? 0);
           activityScore = ws.pct; verdict = ws.verdict; color = ws.color;
-          isNew = isBattleLogMode && !transfer;
         } else {
           // Battle log unavailable — minimal estimate
           const totalDonations = playerProxy.totalDonations ?? playerProxy.donations ?? 0;
@@ -494,17 +494,12 @@ export async function buildClanAnalysis(clanTag) {
           activityScore = pct; verdict = 'Extreme risk'; color = 'red';
           // If we have no race log, we cannot safely mark someone as "new".
           // Keep their existing status to avoid false positives for clan / Discord.
-          isNew = false;
-          if (wh && wh.weeks && wh.weeks.filter((w) => !w.isCurrent && (w.decksUsed ?? 0) > 0).length >= 3) {
-            isNew = false;
-          }
         }
 
-        // At this point, isNew is true only for fallback battleLog players.
-        // It should stay true for players in BattleLog mode, regardless of last seen.
+        isNew = !transfer && (isNewClanArrivee || isBattleLogMode);
 
         // Ensure we don't flag long‑inactive members as "new" for non BattleLog players.
-        if (isNew && hasEnoughHistory === true && m.lastSeen) {
+        if (isNew && m.lastSeen) {
           const lastSeenDate = new Date(m.lastSeen.replace(
             /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})\.(\d{3})Z$/,
             '$1-$2-$3T$4:$5:$6.$7Z'
