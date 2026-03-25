@@ -824,6 +824,7 @@ export function buildWarHistory(playerTag, raceLog, currentClanTag = null, curre
           decksUsed:   p.decksUsed ?? 0,
           boatAttacks: p.boatAttacks ?? 0,
           clanTag:     standing.clan.tag,
+          clanName:    standing.clan.name ?? standing.clan.tag,
         });
         break;
       }
@@ -843,6 +844,7 @@ export function buildWarHistory(playerTag, raceLog, currentClanTag = null, curre
         decksUsed:    p.decksUsed   ?? 0,
         boatAttacks:  p.boatAttacks ?? 0,
         clanTag:      currentRace.clan.tag,
+        clanName:     currentRace.clan.name ?? currentRace.clan.tag,
         isCurrent:    true,
       });
     }
@@ -881,13 +883,22 @@ export function buildWarHistory(playerTag, raceLog, currentClanTag = null, curre
 }
 
 /**
- * Build a merged war history from the family clan logs, including current clan.
+ * Build a merged war history from known clan logs, including current clan, family clans,
+ * and recent clans seen in the 30-entry battle log.
  * This allows showing weeks from previous clan(s) for transferred players.
  */
-export async function buildFamilyWarHistory(playerTag, currentClanTag, currentRace = null) {
+export async function buildFamilyWarHistory(playerTag, currentClanTag, currentRace = null, battleLog = []) {
   const normalizedCurrent = currentClanTag ? currentClanTag.replace(/^#/, '').toUpperCase() : null;
   const clanTags = new Set(FAMILY_CLAN_TAGS.map((t) => t.replace(/^#/, '').toUpperCase()));
   if (normalizedCurrent) clanTags.add(normalizedCurrent);
+
+  for (const b of battleLog) {
+    const clanTag = b?.team?.[0]?.clan?.tag;
+    if (clanTag) {
+      const clean = clanTag.replace(/^#/, '').toUpperCase();
+      if (clean) clanTags.add(clean);
+    }
+  }
 
   const weekMap = new Map();
 
@@ -923,6 +934,40 @@ export async function buildFamilyWarHistory(playerTag, currentClanTag, currentRa
     const secB = Number(b.sectionIndex) || 0;
     return secB - secA;
   });
+
+  // Deduplicate by week (season+section or label) to avoid showing multiple clans
+  // for the same week. Keep the row with highest deck usage, and prefer non-current
+  // clans when active status is ambiguous, so the reported history matches RoyaleAPI.
+  const weekSelector = new Map();
+  for (const week of mergedWeeks) {
+    const weekKey = `${week.seasonId ?? week.label ?? ''}:${week.sectionIndex ?? ''}`;
+    const existing = weekSelector.get(weekKey);
+    if (!existing) {
+      weekSelector.set(weekKey, week);
+      continue;
+    }
+
+    const existingDecks = Number(existing.decksUsed) || 0;
+    const candidateDecks = Number(week.decksUsed) || 0;
+
+    let winner = existing;
+    // Prefer current row when explicitly current.
+    if (week.isCurrent && !existing.isCurrent) winner = week;
+    else if (!week.isCurrent && existing.isCurrent) winner = existing;
+    else if (candidateDecks > existingDecks) winner = week;
+    else if (candidateDecks < existingDecks) winner = existing;
+    else {
+      const existingTag = (existing.clanTag || '').replace(/^#/, '').toUpperCase();
+      const candidateTag = (week.clanTag || '').replace(/^#/, '').toUpperCase();
+      // Prefer clan that is not the current clan when we have conflicting zero-deck entries.
+      if (existingTag === normalizedCurrent && candidateTag !== normalizedCurrent) winner = week;
+      else if (candidateTag === normalizedCurrent && existingTag !== normalizedCurrent) winner = existing;
+    }
+
+    weekSelector.set(weekKey, winner);
+  }
+
+  mergedWeeks = [...weekSelector.values()];
 
   const playedWeeks = mergedWeeks.filter((w) => w.decksUsed > 0);
   const totalFame = playedWeeks.reduce((sum, w) => sum + (w.fame || 0), 0);
@@ -1162,7 +1207,7 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
         fetchCurrentRace(player.clan.tag).catch(() => null),
       ]);
       currentRaceMeta = { state: currentRace?.state ?? null, periodIndex: currentRace?.periodIndex ?? null };
-      analysis.warHistory = await buildFamilyWarHistory(player.tag, player.clan.tag, currentRace);
+      analysis.warHistory = await buildFamilyWarHistory(player.tag, player.clan.tag, currentRace, battleLog);
 
       // Compute GDC win rate from battle log (available for all players)
       // Minimum 10 battles required for a meaningful sample — below that, return null

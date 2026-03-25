@@ -746,8 +746,11 @@ function renderPlayerResults(data) {
   // Ce calcul doit rester synchronisé avec la card historique BattleLog/RaceHistory.
   const hasCompletedWarWeeks = warHistory?.weeks?.some((w) => !(w.isCurrent) && (w.decksUsed ?? 0) > 0);
   const hasOnlyCurrentWeek = warHistory?.weeks?.length === 1 && warHistory?.weeks?.[0]?.isCurrent;
-  const isBattleLogMode = ws?.isFallback === true || !hasCompletedWarWeeks || hasOnlyCurrentWeek;
-  const playerBadge = warHistory?.isFamilyTransfer ? 'transfer' : (isBattleLogMode ? 'new' : null);
+  const isNewClanArrivee = (warHistory?.streakInCurrentClan ?? 0) <= 2 && (warHistory?.totalWeeks ?? 0) > 1;
+  const isBattleLogMode = ws?.isFallback === true || !hasCompletedWarWeeks || hasOnlyCurrentWeek || isNewClanArrivee;
+  const playerBadge = warHistory?.isFamilyTransfer
+    ? 'transfer'
+    : (isNewClanArrivee ? 'new' : (isBattleLogMode ? 'new' : null));
 
   overviewGrid.innerHTML = overviewItems([
     { label: t('labelName'),          value: overview.name, cls: 'gold', badge: playerBadge },
@@ -879,52 +882,77 @@ function renderPlayerResults(data) {
     }
 
     const currentClanName = overview.clan?.name || 'No Clan';
-    const currentClanTag = overview.clan?.tag || null;
+    const currentClanTag = (overview.clan?.tag || '').replace('#', '').toLowerCase();
 
-    const clansWeeks = new Map();
-    (warHistory?.weeks ?? []).forEach((w) => {
-      if (w.clanTag) {
-        const normalizedTag = w.clanTag.replace('#', '').toLowerCase();
-        if (!clansWeeks.has(normalizedTag)) {
-          clansWeeks.set(normalizedTag, w.label);
-        }
-      }
-    });
-
-    const currentWarWeek = (warHistory?.weeks ?? []).find((w) => w.isCurrent && w.clanTag?.toLowerCase() === (currentClanTag || '').replace('#', '').toLowerCase());
+    const currentWarWeek = (warHistory?.weeks ?? []).find((w) => w.isCurrent && (w.clanTag || '').replace('#', '').toLowerCase() === currentClanTag);
     const currentWeekLabel = currentWarWeek
       ? currentWarWeek.label
       : (t('battleLogCurrentWeek') !== 'battleLogCurrentWeek' ? t('battleLogCurrentWeek') : defaultCurrentWeekLabel);
 
-    const rows = battleLogSummary.map((item) => {
-      const normalizedItemClanTag = item.clanTag ? item.clanTag.replace('#', '').toLowerCase() : null;
-      const normalizedItemClanName = item.clan.replace('#', '').toLowerCase();
-      const itemWeekLabel = normalizedItemClanTag && clansWeeks.has(normalizedItemClanTag)
-        ? clansWeeks.get(normalizedItemClanTag)
-        : (clansWeeks.has(normalizedItemClanName) ? clansWeeks.get(normalizedItemClanName) : 'S?·W?');
-      const isCurrentClan = item.clan === currentClanName;
-      const weekLabel = isCurrentClan ? currentWeekLabel : itemWeekLabel;
-      const gdcCount = Number(item.gdc) || 0;
-      return {
-        week: weekLabel,
-        clan: item.clan,
-        gdc: gdcCount,
-        style: gdcCount === 0 ? 'empty-week' : gdcCount < 16 ? 'quasi-empty-week' : gdcCount > 16 ? 'overfull-week' : '',
-        isCurrentClan,
-      };
-    });
+    let rows = [];
+    if (Array.isArray(warHistory?.weeks) && warHistory.weeks.length > 0) {
+      let prevIndex = 0;
+      rows = warHistory.weeks.map((w) => {
+        const isCurrentRow = !!w.isCurrent;
+        const weekIndex = isCurrentRow ? 0 : ++prevIndex;
+        const clanName = w.clanName || w.clanTag || 'No Clan';
+        const gdcCount = Number(w.decksUsed) || 0;
+        const weekLabel = w.label || (isCurrentRow ? currentWeekLabel : `semaine -${weekIndex}`);
 
-    const currentRows = rows.filter((r) => r.isCurrentClan);
-    const prevRows = rows.filter((r) => !r.isCurrentClan);
+        return {
+          week: weekLabel,
+          clan: clanName,
+          gdc: gdcCount,
+          style: gdcCount === 0 ? 'empty-week' : gdcCount < 16 ? 'quasi-empty-week' : gdcCount > 16 ? 'overfull-week' : '',
+          isCurrentClan: isCurrentRow,
+          weekIndex,
+        };
+      });
+    } else {
+      const clansWeeks = new Map();
+      (warHistory?.weeks ?? []).forEach((w) => {
+        if (w.clanTag) {
+          const normalizedTag = w.clanTag.replace('#', '').toLowerCase();
+          if (!clansWeeks.has(normalizedTag)) {
+            clansWeeks.set(normalizedTag, w.label);
+          }
+        }
+      });
 
-    const orderedPrevRows = prevRows
-      .sort((a, b) => (b.gdc || 0) - (a.gdc || 0))
-      .map((r, idx) => ({ ...r, weekIndex: idx + 1 }));
+      rows = battleLogSummary.map((item) => {
+        const normalizedItemClanTag = item.clanTag ? item.clanTag.replace('#', '').toLowerCase() : null;
+        const normalizedItemClanName = item.clan.replace('#', '').toLowerCase();
+        const itemWeekLabel = normalizedItemClanTag && clansWeeks.has(normalizedItemClanTag)
+          ? clansWeeks.get(normalizedItemClanTag)
+          : (clansWeeks.has(normalizedItemClanName) ? clansWeeks.get(normalizedItemClanName) : 'S?·W?');
+        const isCurrentClan = item.clan === currentClanName;
+        const weekLabel = isCurrentClan ? currentWeekLabel : itemWeekLabel;
+        const gdcCount = Number(item.gdc) || 0;
+        return {
+          week: weekLabel,
+          clan: item.clan,
+          gdc: gdcCount,
+          firstBattleTime: item.firstBattleTime,
+          style: gdcCount === 0 ? 'empty-week' : gdcCount < 16 ? 'quasi-empty-week' : gdcCount > 16 ? 'overfull-week' : '',
+          isCurrentClan,
+        };
+      });
 
-    const sortedRows = [
-      ...currentRows.map((r) => ({ ...r, weekIndex: 0 })),
-      ...orderedPrevRows,
-    ];
+      rows.sort((a, b) => {
+        const aTime = a.firstBattleTime ? new Date(a.firstBattleTime).getTime() : 0;
+        const bTime = b.firstBattleTime ? new Date(b.firstBattleTime).getTime() : 0;
+        return bTime - aTime;
+      });
+
+      rows = rows.map((r, idx) => ({ ...r, weekIndex: idx + 1 }));
+    }
+
+    const sortedRows = rows
+      .sort((a, b) => {
+        if (a.isCurrentClan && !b.isCurrentClan) return -1;
+        if (b.isCurrentClan && !a.isCurrentClan) return 1;
+        return (a.weekIndex || 0) - (b.weekIndex || 0);
+      });
 
     // Split any row with gdc > 16 into multiple weeks
     const expandedRows = [];
@@ -962,13 +990,13 @@ function renderPlayerResults(data) {
 
     const finalRows = expandedRows.length
       ? expandedRows
-      : [{ weekIndex: 1, clan: currentClanName, gdc: 0, style: 'empty-week' }];
+      : [{ week: currentWeekLabel, clan: currentClanName, gdc: 0, style: 'empty-week' }];
 
     const tbody = document.getElementById('battlelog-table-body');
     if (tbody) {
       tbody.innerHTML = finalRows.map((r, idx) => {
         const rawGdc = Number(r.gdc) || 0;
-        const weekLabel = r.weekIndex === 0 ? currentWeekLabel : `semaine -${r.weekIndex}`;
+        const weekLabel = r.week || currentWeekLabel;
         let badge = rawGdc === 0 ? '❌' : rawGdc < 16 ? '⚠️' : '✅';
         if (idx === finalRows.length - 1) {
           badge = '❓';

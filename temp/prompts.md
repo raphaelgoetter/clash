@@ -57,3 +57,122 @@ Par exemple pour le joueur lauramarin1 <https://trustroyale.vercel.app/en/?mode=
 
 Dans un premier temps, comment expliques-tu cette incohérence ?
 Puis, peux-tu corriger le problème pour que l'historique des clans affiché dans le tableau de la card "📅 Données Battle Log" soit rigoureusement correct ?
+
+Données TrustRoyale (fausses) :
+
+```
+week  Clan  riverRaceBattles
+semaine -1  AGS™  5 ⚠️
+semaine -2  Clan #GRC8QYL2  0 ❌
+semaine -3  ClubeDoPrensado  0 ❌
+semaine -4  Cocbros  0 ❌
+semaine -5  dan saco duro  0 ❌
+semaine -6  EPIC PANAMÁ  0 ❌
+semaine -7  Hao The God  0 ❌
+semaine -8  kings of death  0 ❌
+semaine -9  Ledjero  0 ❌
+semaine -10  Los Pochoclos  0 ❌
+semaine -11  Los Special  0 ❌
+semaine -12  No Clan  0 ❌
+semaine -13  Os Patetas  0 ❌
+semaine -14  pelones  0 ❌
+semaine -15  TeTus Klan  0 ❌
+```
+
+Données Royaleapi (correctes) :
+
+```
+S   R  L  C      
+130-3  2026-03-23  2  legendary-1  AGS™  0  0  0  0  0
+130-2  2026-03-16  2  legendary-1  AGS™  12  1600  0  0  1600
+130-1  2026-03-09  2  legendary-1  AGS™  15  2400  0  0  2400
+129-1  2026-02-09  3  gold-3  EPIC PANAMÁ  16  2400  0  0  2400
+128-4  2026-02-02  1  gold-3  EPIC PANAMÁ  13  1900  0  0  1900
+128-3  2026-01-26  5  gold-3  Panamá+507  16  2400  0  0  2400
+128-2  2026-01-19  5  gold-3  Panamá+507  8  1200  0  0  1200
+128-1  2026-01-12  5  gold-3  Panamá+507  16  2700  0  0  2700
+127-5  2026-01-05  5  gold-3  Panamá+507  12  1700  0  0  1700
+127-4  2025-12-29  5  legendary-1  Panamá+507  8  1000  0  0  1000
+127-3  2025-12-22  5  legendary-1  Panamá+507  8  1100  0  0  1100
+127-2  2025-12-15  5  legendary-1  Panamá+507  12  1600  0  0  1600
+127-1  2025-12-08  2  legendary-1  Panamá+507  14  2100  0  0  2100
+126-1  2025-11-10  1  gold-3  Panamá+507  4  500  0  0  500
+125-4  2025-11-03  2  gold-3  Panamá+507  14  2300  0  0  2300
+125-3  2025-10-27  2  gold-3  Panamá+507  12  2100  0  0  2100
+125-2  2025-10-20  2  gold-3  Panamá+507  12  1800  0  0  1800
+125-1  2025-10-13  2  gold-3  Panamá+507  13  1750  0  0  1750
+124-5  2025-10-06  2  gold-3  Panamá+507  8  1100  0  0  1100
+124-4  2025-09-29  2  gold-3  Panamá+507  16  2650  0  0  2650
+124-3  2025-09-22  2  gold-3  Panamá+507  12  1700  0  0  1700
+124-2  2025-09-15  1  gold-3  Panamá+507  12  1900  0  0  1900
+124-1  2025-09-08  1  gold-3  Panamá+507  12  1800  0  0  1800
+```
+
+---
+
+J'ai toujours les mêmes données affichées pour lauramarin1 (screenshot)
+
+- il est nouveau dans le clan, il doit avoir un tag "nouveau"
+- la card "River Race History – 13 week" est OK pour moi si les valeurs sont correctes. Mais la question est : ces valeurs ne proviennent forcément pas du Battle Log, d'où viennent-elles ?
+- il n'y a pas le tableau des semaines passées clan par clan
+
+Le tableau s'affiche pour <http://localhost:5174/en/?mode=player&tag=%23P2YYR29QU> mais les donnnées ne sont toujours pas identiques à celles de Royaleapi : l'ordre des clans est différent, les combats également.
+
+Données affichées :
+
+```
+week Clan riverRaceBattles
+S?·W4 (live) Les Resistants 0 ❌
+semaine -1 Les Resistants 0 ❌
+semaine -2 AGS™ 0 ❌
+semaine -3 EPIC PANAMÁ 0 ❌
+semaine -4 AGS™ 12 ⚠️
+semaine -5 EPIC PANAMÁ 0 ❌
+semaine -6 AGS™ 15 ⚠️
+semaine -7 EPIC PANAMÁ 0 ❌
+semaine -8 EPIC PANAMÁ 12 ⚠️
+semaine -9 EPIC PANAMÁ 16 ✅
+semaine -10 EPIC PANAMÁ 16 ✅
+semaine -11 EPIC PANAMÁ 16 ✅
+semaine -12 EPIC PANAMÁ 13 ❓
+```
+
+Données Réelles :
+
+```
+S   R  L  C      
+130-3  2026-03-23  2  legendary-1  AGS™  0  0  0  0  0
+130-2  2026-03-16  2  legendary-1  AGS™  12  1600  0  0  1600
+130-1  2026-03-09  2  legendary-1  AGS™  15  2400  0  0  2400
+129-1  2026-02-09  3  gold-3  EPIC PANAMÁ  16  2400  0  0  2400
+128-4  2026-02-02  1  gold-3  EPIC PANAMÁ  13  1900  0  0  1900
+128-3  2026-01-26  5  gold-3  Panamá+507  16  2400  0  0  2400
+128-2  2026-01-19  5  gold-3  Panamá+507  8  1200  0  0  1200
+128-1  2026-01-12  5  gold-3  Panamá+507  16  2700  0  0  2700
+127-5  2026-01-05  5  gold-3  Panamá+507  12  1700  0  0  1700
+127-4  2025-12-29  5  legendary-1  Panamá+507  8  1000  0  0  1000
+127-3  2025-12-22  5  legendary-1  Panamá+507  8  1100  0  0  1100
+127-2  2025-12-15  5  legendary-1  Panamá+507  12  1600  0  0  1600
+127-1  2025-12-08  2  legendary-1  Panamá+507  14  2100  0  0  2100
+126-1  2025-11-10  1  gold-3  Panamá+507  4  500  0  0  500
+125-4  2025-11-03  2  gold-3  Panamá+507  14  2300  0  0  2300
+125-3  2025-10-27  2  gold-3  Panamá+507  12  2100  0  0  2100
+```
+
+1. Si tu as accès au numéro correct des semaines (130-3, 130-2, ...), peut-être peux-tu les afficher pour qu'on puisse mieux comparer avec Royaleapi ? (au lieu de "semaine -1", "semaine -2", etc.)
+2. Comment expliques-tu ces différences ?
+
+---
+
+Les valeurs ne sont toujours pas identiques :
+
+- Les semaines sont encore exprimées en "semaine -1", etc. donc on ne peut pas comparer :
+  - la série correcte des semaines est : 130-3, 130-2, 130-1, 129-1, 128-4, 128-3, 128-2, 128-1, 127-5, 127-4, 127-3, 127-2
+  - la série affichée : S?·W4 (live, c'est OK), semaine -1, semaine -2, semaine -3, semaine -4, semaine -5, semaine -6, etc.
+- Les nombres de decks ne sont pas exactement identiques :
+  - la série correcte des decks est  : 0, 12, 15, 16, 13, 16, 8, 18
+  - la série affichée est : 0 (live, c'est OK), 0, 12, 15, 12, 16, 16, 16, 13
+
+---
+
+Pourquoi certains nouveaux joueurs ont plusieurs semaines d'historique de clans dans la card "📅 Données Battle Log" alors que d'autres n'en ont aucune ? Par exemple, le joueur lauramarin1 (<http://localhost:5174/en/?mode=player&tag=%23P2YYR29QU>) a un historique de 9 semaines, alors que le joueur darren (<http://localhost:5174/en/?mode=player&tag=%2388Y9Q8UPQ>) n'a aucune semaine d'historique de clan à part la semaine-live (screenshot) ?
