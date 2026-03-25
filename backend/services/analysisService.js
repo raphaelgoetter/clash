@@ -136,6 +136,8 @@ function summarizeRoyaleApiWarHistory(weeks, currentClanTag = null) {
   let streakInCurrentClan = 0;
   const currentTag = currentClanTag ? currentClanTag.replace(/^#/, '').toUpperCase() : null;
   for (const w of sortedWeeks) {
+    // Ne pas compter la semaine en cours (incomplète) dans le streak
+    if (w.isCurrent) continue;
     if (!currentTag || (w.clanTag && w.clanTag.toUpperCase().replace(/^#/, '') === currentTag)) {
       streakInCurrentClan += 1;
     } else {
@@ -492,8 +494,11 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
   const scoreMoyen     = r(Math.min(10, (warHistory.avgFame / FAME_CAP) * 10));
 
   // 3. Stabilité (0-8) — courbe doublée : 5 semaines consécutives = 8/8
-  // (au lieu de 10 semaines), pour ne pas trop pénaliser les membres récents
-  const stabilite      = r(Math.min(8, (warHistory.streakInCurrentClan / totalWeeks) * 16));
+  // (au lieu de 10 semaines), pour ne pas trop pénaliser les membres récents.
+  // On utilise uniquement les semaines terminées pour éviter que la semaine en
+  // cours (isCurrent) ne gonfle artificiellement le ratio streak/total.
+  const completedTotalWeeks = weeks.filter((w) => !w.isCurrent && !w.ignored).length || 1;
+  const stabilite      = r(Math.min(8, (warHistory.streakInCurrentClan / completedTotalWeeks) * 16));
 
   // 4. Expérience trophées (0-3) — [4 000, 14 000] trophées actuels
   const TROPHY_MIN   = 4000;
@@ -883,9 +888,11 @@ export function buildWarHistory(playerTag, raceLog, currentClanTag = null, curre
   }
 
   // Semaines consécutives en cours dans le clan actuel (du plus récent vers le plus ancien)
+  // La semaine en cours (isCurrent) est exclue car incomplète
   let streakInCurrentClan = 0;
   if (normClan) {
     for (const w of weeks) {
+      if (w.isCurrent) continue;
       if (w.clanTag === normClan) streakInCurrentClan++;
       else break;
     }
