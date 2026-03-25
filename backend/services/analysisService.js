@@ -473,12 +473,18 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
   const completedInClan = weeks
     .slice(0, weeksInClan)
     .filter((w) => !w.isCurrent);
-  const completedCount = completedInClan.length;
+  // Si aucune semaine terminée dans le clan actuel (joueur venant d'arriver),
+  // on utilise les semaines terminées de l'historique complet (clans précédents)
+  // pour ne pas pénaliser injustement un joueur actif qui vient de changer de clan.
+  const allPrevCompleted = weeks.filter((w) => !w.isCurrent);
+  const usingPrevClanWeeks = completedInClan.length === 0 && allPrevCompleted.length > 0;
+  const weeksForRegularity = usingPrevClanWeeks ? allPrevCompleted : completedInClan;
+  const completedCount = weeksForRegularity.length;
   // nombre total de decks joués dans ces semaines
-  const deckSum = completedInClan.reduce((s, w) => s + (w.decksUsed || 0), 0);
+  const deckSum = weeksForRegularity.reduce((s, w) => s + (w.decksUsed || 0), 0);
   const idealDecks = completedCount * 16;
   // count how many weeks didn't hit 16 decks
-  const incompleteWeeks = completedInClan.filter((w) => (w.decksUsed || 0) < 16).length;
+  const incompleteWeeks = weeksForRegularity.filter((w) => (w.decksUsed || 0) < 16).length;
   // base ratio = total decks / ideal decks. then convert to 12-point scale.
   // apply a penalty of 0.5 point per incomplete week to discourage partial
   // weeks; this ensures a player who regularly quits early loses more than
@@ -550,10 +556,11 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
       detail: (() => {
         if (completedCount === 0) return 'No completed week in this clan yet';
         const pct = Math.round((deckSum / (idealDecks || 1)) * 100);
-        const suffix = weeksInClan < totalWeeks
+        const suffix = !usingPrevClanWeeks && weeksInClan < totalWeeks
           ? ` — member for ${weeksInClan} week${weeksInClan > 1 ? 's' : ''}`
           : '';
-        let txt = `${deckSum}/${idealDecks} decks across ${completedCount} week${completedCount > 1 ? 's' : ''} (${pct}%)`;
+        const source = usingPrevClanWeeks ? ' (previous clan)' : '';
+        let txt = `${deckSum}/${idealDecks} decks across ${completedCount} week${completedCount > 1 ? 's' : ''} (${pct}%)${source}`;
         if (incompleteWeeks > 0) {
           txt += ` — ${incompleteWeeks} incomplete week${incompleteWeeks > 1 ? 's' : ''} (-${(incompleteWeeks * 0.5).toFixed(1)} pts)`;
         }

@@ -203,3 +203,31 @@ S  R L C
 
 - J'ai besoin de comprendre EXACTEMENT pourquoi lauramarin1 a un historique sur plusieurs semaines alors que darren non.
 - Comment procéder EXACTEMENT pour corriger ce problème.
+
+---
+
+Pour le joueur Hafid (<http://localhost:5173/fr/?mode=player&tag=%23YQVP9P0Y>), le tableau des semaines passées de Battle Log montre qu'il est très actif dans son clan précédent :
+
+```
+Semaine en cours Les Resistants 0
+S130·W3 adulte french 16 ✅
+S130·W2 adulte french 16 ✅
+S130·W1 adulte french 16 ✅
+S129·W4 adulte french 16 ❓
+```
+
+Pourtant son score de fiabilité total n'est que de 58%. Et sont critère de "Régularité" est de 0/12 :
+
+```
+Régularité
+0 / 12
+No completed week in this clan yet
+```
+
+Pour les joueurs qui ont un Battle Log sur plusieurs semaines, il faudrait que le critère de "Régularité" prenne en compte les semaines passées et pas seulement la semaine en cours. Par exemple, pour Hafid, il devrait être de 12/12 et pas de 0/12, puisqu'il a fait le maximum de decks (16) pendant les 3 semaines passées dans son clan précédent.
+
+Peux-tu corriger ce problème pour que le critère de "Régularité" prenne en compte les semaines passées dans le Battle Log, si les infos existent et pas seulement la semaine en cours ? Si les infos n'existent pas, alors on peut laisser "0/12" comme c'est le cas actuellement car cela signifie effectivement que le joueur n'était pas actif dans son clan précédent.
+
+Le score de fiabilité total de Hafid et des joueurs dans le même cas devrait également être corrigé pour refléter cette régularité passée.
+
+Attention à toujours vérifier que le score en vue Player est synchronisé avec la vue Clan.
