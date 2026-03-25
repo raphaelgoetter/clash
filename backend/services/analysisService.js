@@ -493,12 +493,11 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
   const FAME_CAP       = 3000;
   const scoreMoyen     = r(Math.min(10, (warHistory.avgFame / FAME_CAP) * 10));
 
-  // 3. Stabilité (0-8) — courbe doublée : 5 semaines consécutives = 8/8
-  // (au lieu de 10 semaines), pour ne pas trop pénaliser les membres récents.
-  // On utilise uniquement les semaines terminées pour éviter que la semaine en
-  // cours (isCurrent) ne gonfle artificiellement le ratio streak/total.
-  const completedTotalWeeks = weeks.filter((w) => !w.isCurrent && !w.ignored).length || 1;
-  const stabilite      = r(Math.min(8, (warHistory.streakInCurrentClan / completedTotalWeeks) * 16));
+  // 3. Stabilité (0-8) — échelle absolue : 5 semaines consécutives = 8/8
+  // (8/5 = 1.6 pt par semaine). Formule absolue pour que "2 semaines consécutives"
+  // ne puisse jamais donner 8/8, quelle que soit la taille de l'historique.
+  // streak=0→0, 1→1.6, 2→3.2, 3→4.8, 4→6.4, 5+→8.0
+  const stabilite      = r(Math.min(8, warHistory.streakInCurrentClan * 1.6));
 
   // 4. Expérience trophées (0-3) — [4 000, 14 000] trophées actuels
   const TROPHY_MIN   = 4000;
