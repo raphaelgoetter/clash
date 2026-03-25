@@ -243,6 +243,11 @@ export async function buildClanAnalysis(clanTag) {
       });
     }
 
+    // detect API rate limiting in member fetches
+    const memberRateLimited = memberDataResults.some((res) =>
+      res.status === 'rejected' && res.reason?.isRateLimit
+    );
+
     // build map of battle logs by tag for later use
     const battleLogsByTag = {};
     if (memberDataResults.length) {
@@ -393,6 +398,7 @@ export async function buildClanAnalysis(clanTag) {
         let prevWeeks = wh.weeks.filter((w) => !w.isCurrent);
         let hasFullWeek = prevWeeks.some((w) => (w.decksUsed ?? 0) >= 16);
         const oldRule = wh.streakInCurrentClan >= 2 && wh.completedParticipation >= 2;
+        // Strict mapping with Player view : only full week or old rule counts.
         let hasEnoughHistory = hasFullWeek || oldRule;
 
         // Transfer detection (family clan) — on veut afficher "transfer" même
@@ -446,6 +452,7 @@ export async function buildClanAnalysis(clanTag) {
           const effectiveWinRate = wh.historicalWinRate ?? warWinRate;
           const ws = computeWarScore(playerProxy, wh, effectiveWinRate, m.lastSeen ?? null, discordLinked);
           activityScore = ws.pct; verdict = ws.verdict; color = ws.color;
+          isNew = false;
         } else if (battleLog) {
           // New member — full fallback with battle log
           const bd     = categorizeBattleLog(battleLog);
@@ -461,15 +468,23 @@ export async function buildClanAnalysis(clanTag) {
           const donationPts = scoreTotalDonations(totalDonations, 2);
           const pct = Math.round((donationPts / 40) * 100);
           activityScore = pct; verdict = 'Extreme risk'; color = 'red';
+          // If we have no race log, we cannot safely mark someone as "new".
+          // Keep their existing status to avoid false positives for clan / Discord.
+          isNew = false;
+          if (wh && wh.weeks && wh.weeks.filter((w) => !w.isCurrent && (w.decksUsed ?? 0) > 0).length >= 3) {
+            isNew = false;
+          }
+        }
+
+        // At this point, isNew is true only for fallback battleLog players.
+        // It should stay true for players in BattleLog mode, regardless of last seen.
+
+        if (!isNew && !hasEnoughHistory) {
           isNew = true;
         }
 
-        // Ensure we don't flag long‑inactive members as "new" just because
-        // they lack sufficient war history. 117d‑ago Mat proved that the
-        // badge was misleading: require a recent login (≤7 days) before
-        // showing the label. This threshold is intentionally simple – the
-        // front‑end only renders the field supplied by the API.
-        if (isNew && m.lastSeen) {
+        // Ensure we don't flag long‑inactive members as "new" for non BattleLog players.
+        if (isNew && hasEnoughHistory === true && m.lastSeen) {
           const lastSeenDate = new Date(m.lastSeen.replace(
             /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})\.(\d{3})Z$/,
             '$1-$2-$3T$4:$5:$6.$7Z'
@@ -860,6 +875,7 @@ export async function buildClanAnalysis(clanTag) {
       warSnapshotDays,               // derived from snapshot files (null if missing)
       snapshotTakenAt: warSnapshotTakenAt,
       currentWarDays: clanWarSummary?.days ?? null, // expose the per-day summary for debug/insights
+      rateLimited: memberRateLimited,
     };
 }
 

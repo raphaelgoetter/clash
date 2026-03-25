@@ -118,7 +118,13 @@ function loadLanguage(lang) {
 }
 
 function t(key, vars) {
-  let val = (translations && translations[key]) ? translations[key] : key;
+  const fallback = {
+    rateLimitedWarning: currentLang === 'fr'
+      ? 'Limite de requêtes Clash API dépassée — données partielles affichées, réessayez dans quelques secondes.'
+      : 'Clash API rate limit exceeded — partial data may be displayed, retry in a few seconds.',
+  };
+
+  let val = (translations && translations[key]) ? translations[key] : fallback[key] || key;
   if (!vars || typeof vars !== 'object') return val;
   Object.entries(vars).forEach(([k, v]) => {
     if (k === 'plural') {
@@ -476,6 +482,7 @@ async function handleSearch() {
       renderClanOverview(data);
       // Afficher les membres uniquement depuis les données live (une seule fois)
       renderClanMembers(data);
+      if (data.rateLimited) showError(t('rateLimitedWarning'));
       updateDebugPanel(data, 'clan');
       updateFavBtnState(tag);
       showCacheNote(fromCache, data.snapshotDate);
@@ -735,7 +742,13 @@ function renderPlayerResults(data) {
     ? `https://royaleapi.com/clan/${clanTag.replace('#', '')}/`
     : null;
   const clanValue = clanTag ? clanTag : 'No clan';
-  const playerBadge = warHistory?.isFamilyTransfer ? 'transfer' : (ws.isFallback ? 'new' : null);
+
+  // Ce calcul doit rester synchronisé avec la card historique BattleLog/RaceHistory.
+  const hasCompletedWarWeeks = warHistory?.weeks?.some((w) => !(w.isCurrent) && (w.decksUsed ?? 0) > 0);
+  const hasOnlyCurrentWeek = warHistory?.weeks?.length === 1 && warHistory?.weeks?.[0]?.isCurrent;
+  const isBattleLogMode = ws?.isFallback === true || !hasCompletedWarWeeks || hasOnlyCurrentWeek;
+  const playerBadge = warHistory?.isFamilyTransfer ? 'transfer' : (isBattleLogMode ? 'new' : null);
+
   overviewGrid.innerHTML = overviewItems([
     { label: t('labelName'),          value: overview.name, cls: 'gold', badge: playerBadge },
     { label: t('labelTag'),           value: overview.tag,
@@ -792,10 +805,6 @@ function renderPlayerResults(data) {
   const noteEl  = document.getElementById('api-limit-note');
   const battlelogSection = document.getElementById('battlelog-table-section');
   const battlelogDesc    = document.getElementById('battlelog-description');
-
-  const hasCompletedWarWeeks = warHistory?.weeks?.some((w) => !(w.isCurrent) && (w.decksUsed ?? 0) > 0);
-  const hasOnlyCurrentWeek = warHistory?.weeks?.length === 1 && warHistory?.weeks?.[0]?.isCurrent;
-  const isBattleLogMode = !hasCompletedWarWeeks || hasOnlyCurrentWeek;
 
   const defaultCurrentWeekLabel = currentLang === 'fr' ? 'Semaine en cours' : 'Current week';
 
@@ -1667,7 +1676,9 @@ function renderMembersTable(members) {
           lastSeenCell = `<td class="last-seen-col"><span class="last-seen-badge ${cls}">${label}</span></td>`;
         }
         const displayTransfer = m.isFamilyTransfer;
-        const displayNew = !displayTransfer && m.isNew && daysFrac <= 7;
+        // New players are marked via backend war history/fallback analysis,
+        // not contingent on last-seen freshness in the player listing.
+        const displayNew = !displayTransfer && m.isNew;
         const memberVerdict = {
           'High reliability': t('highReliability'),
           'Moderate risk': t('moderateRisk'),
