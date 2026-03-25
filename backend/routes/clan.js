@@ -401,6 +401,11 @@ export async function buildClanAnalysis(clanTag) {
         // Strict mapping with Player view : only full week or old rule counts.
         let hasEnoughHistory = hasFullWeek || oldRule;
 
+        // Define BattleLog mode the same way as in frontend player view:
+        const hasCompletedWarWeeks = wh.weeks.some((w) => !w.isCurrent && (w.decksUsed ?? 0) > 0);
+        const hasOnlyCurrentWeek = wh.weeks.length === 1 && wh.weeks[0]?.isCurrent;
+        const isBattleLogMode = !hasCompletedWarWeeks || hasOnlyCurrentWeek;
+
         // Transfer detection (family clan) — on veut afficher "transfer" même
         // si l'historique est déjà jugé suffisant.
         const transfer = findRecentFamilyTransfer(m.tag);
@@ -461,7 +466,7 @@ export async function buildClanAnalysis(clanTag) {
           const racePartFb = currentRace?.clan?.participants?.find((p) => p.tag === normalizedTagFb);
           const ws     = computeWarReliabilityFallback(playerProxy, warLog, bd, m.lastSeen ?? null, discordLinked, racePartFb?.decksUsed ?? 0);
           activityScore = ws.pct; verdict = ws.verdict; color = ws.color;
-          isNew = true;
+          isNew = isBattleLogMode && !transfer;
         } else {
           // Battle log unavailable — minimal estimate
           const totalDonations = playerProxy.totalDonations ?? playerProxy.donations ?? 0;
@@ -478,10 +483,6 @@ export async function buildClanAnalysis(clanTag) {
 
         // At this point, isNew is true only for fallback battleLog players.
         // It should stay true for players in BattleLog mode, regardless of last seen.
-
-        if (!isNew && !hasEnoughHistory) {
-          isNew = true;
-        }
 
         // Ensure we don't flag long‑inactive members as "new" for non BattleLog players.
         if (isNew && hasEnoughHistory === true && m.lastSeen) {

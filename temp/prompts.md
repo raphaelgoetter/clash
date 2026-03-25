@@ -56,4 +56,4 @@ Par exemple pour le joueur lauramarin1 <https://trustroyale.vercel.app/en/?mode=
 - C'est absolument crucial parce que le tableau actuel laisse croire qu'elle change de clan toutes les semaines alors que c'est totalement faux !
 
 Dans un premier temps, comment expliques-tu cette incohérence ?
-Puis, peux-tu corriger le problème pour que l'historique des clans affiché dans le tableau de la card "📅 Données Battle Log" soit rigoureusement correct et à jour ?
+Puis, peux-tu corriger le problème pour que l'historique des clans affiché dans le tableau de la card "📅 Données Battle Log" soit rigoureusement correct ?
