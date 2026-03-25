@@ -594,10 +594,9 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
       label:  'Last Seen',
       score:  lastSeenScore,
       max:    5,
-      detail: lastSeenDays < 1 ? 'Active in the last 24 h'
-            : lastSeenDays < 3 ? `Active ${(Math.round(lastSeenDays * 10) / 10).toFixed(1)} day(s) ago`
-            : lastSeenDays < 7 ? `Active ${Math.round(lastSeenDays)} days ago`
-            : `Last seen ${Math.round(lastSeenDays)} days ago ⚠️`,
+      detail: lastSeenDays < 1 ? 'today'
+            : lastSeenDays < 2 ? '1 day'
+            : `${Math.round(lastSeenDays)} days`,
     }] : []),
     ...(winRateGDC !== null ? [{
       label:  'Win Rate (War)',

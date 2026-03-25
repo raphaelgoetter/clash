@@ -1207,9 +1207,9 @@ function renderPlayerResults(data) {
     }
     if (lowercaseLabel.includes('last seen') || lowercaseLabel.includes('dernière connexion')) {
       return text
-        .replace(/Active in the last 24 h/i, 'Actif dans les 24 h')
-        .replace(/Active (\d+\.?\d*) day\(s\) ago/i, 'Actif il y a $1 jour(s)')
-        .replace(/Active (\d+) days ago/i, 'Actif il y a $1 jours');
+        .replace(/today/i, t('today'))
+        .replace(/1 day/i, t('oneDayAgo'))
+        .replace(/(\d+) days?/i, (_, n) => `${n} ${t('days')}`);
     }
     if (lowercaseLabel.includes('win rate')) {
       return text;
@@ -1760,7 +1760,9 @@ function renderMembersTable(members) {
           const cls  = days <= 1 ? 'c-green' : days <= 3 ? 'c-yellow' : days <= 7 ? 'c-red' : 'c-red';
           const label = daysFrac < 1 ? t('today')
                       : days < 2 ? t('oneDayAgo')
-                      : `${days} ${t('days')}`;
+                      : currentLang === 'fr'
+                        ? `${t('ago')} ${days} ${t('days')}`
+                        : `${days} ${t('days')} ${t('ago')}`;
           lastSeenCell = `<td class="last-seen-col"><span class="last-seen-badge ${cls}">${label}</span></td>`;
         }
         const displayTransfer = m.isFamilyTransfer;
