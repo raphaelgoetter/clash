@@ -8,7 +8,6 @@ import {
   analyzeClanMembers, buildWarHistory, buildFamilyWarHistory, computeWarScore,
   computeWarReliabilityFallback, categorizeBattleLog,
   filterWarBattles, expandDuelRounds, isWarWin, buildCurrentWarDays,
-  getPlayerAnalysis,
   estimateWinsFromFame, warResetOffsetMs, scoreTotalDonations,
   mergeWarHistoryWithTransfer,
 } from '../services/analysisService.js';
@@ -21,10 +20,6 @@ import fs from 'fs/promises';
 import path from 'path';
 
 const router = Router();
-
-// Because clan analysis can call getPlayerAnalysis for 50 members, we keep the
-// same short cache key as the player route to avoid repeating heavy operations.
-const PLAYER_ANALYSIS_CACHE_TTL = 30 * 1000; // 30 secondes
 
 // One day in milliseconds (used for war day calculations)
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -93,7 +88,7 @@ router.get('/:tag/analysis', async (req, res) => {
     // short-lived in-memory cache to speed up back/forward and repeated
     // clicks on the same instance.  TTL is small so stale issues are rare.
     const cacheKey = `clan:${clanTag}`;
-    const { value:payload, fromCache } = await getOrSet(cacheKey, () => buildClanAnalysis(clanTag), 30 * 1000);
+    const { value:payload, fromCache } = await getOrSet(cacheKey, () => buildClanAnalysis(clanTag), 5 * 60 * 1000);
     // prevent Vercel/edge from caching this response
     res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
     res.set('X-Cache', fromCache ? 'HIT' : 'MISS');
@@ -256,36 +251,8 @@ export async function buildClanAnalysis(clanTag) {
       });
     }
 
-    async function getPlayerAnalysisCached(tag, discordLinked) {
-      const cacheKey = `player:analysis:${tag}`;
-      try {
-        const { value } = await getOrSet(
-          cacheKey,
-          () => getPlayerAnalysis(tag, discordLinked),
-          PLAYER_ANALYSIS_CACHE_TTL,
-        );
-        return value;
-      } catch (err) {
-        // If the cache generation fails, propagate so pooledAllSettled can track.
-        throw err;
-      }
-    }
-
-    // Fetch player-level analysis using limited concurrency to avoid hitting
-    // Clash API rate limits and to keep clan scores aligned with player view.
-    const playerAnalysisResults = await pooledAllSettled(
-      members.map((m) => {
-        const isDiscordLinked = Object.prototype.hasOwnProperty.call(discordLinks, m.tag);
-        return () => getPlayerAnalysisCached(m.tag, isDiscordLinked);
-      }),
-      6
-    );
-
-    // detect API rate limiting in member fetches and player analysis pulls
-    let memberRateLimited = memberDataResults.some((res) =>
-      res.status === 'rejected' && res.reason?.isRateLimit
-    );
-    memberRateLimited = memberRateLimited || playerAnalysisResults.some((res) =>
+    // detect API rate limiting in member fetches
+    const memberRateLimited = memberDataResults.some((res) =>
       res.status === 'rejected' && res.reason?.isRateLimit
     );
 
@@ -419,29 +386,9 @@ export async function buildClanAnalysis(clanTag) {
       // Présence Discord : le tag du membre est-il dans discord-links.json ?
       const discordLinked = Object.prototype.hasOwnProperty.call(discordLinks, m.tag);
 
-      // Try to sync with player endpoint score first, if available.
-      const paResult = playerAnalysisResults[idx];
-      const playerAnalysis = paResult?.status === 'fulfilled' ? paResult.value : null;
-      const lastSeenCandidate = playerAnalysis?.overview?.lastSeen ?? m.lastSeen;
-
-      if (paResult?.status === 'rejected' && paResult?.reason?.isRateLimit) {
-        // Keep rateLimit info so caller can display warning.
-        // We do not throw here; we will fallback to raceLog/local computations.
-        // memberRateLimited remains as total indicator.
-      }
-
-      if (playerAnalysis?.warScore?.pct != null) {
-        activityScore = playerAnalysis.warScore.pct;
-        verdict = playerAnalysis.warScore.verdict;
-        color = playerAnalysis.warScore.color;
-      }
-
       if (raceLog) {
         const memberBattleLog = battleLogsByTag[m.tag] || [];
-        const hasPlayerHist = !!playerAnalysis?.warHistory;
-        let wh = hasPlayerHist
-          ? playerAnalysis.warHistory
-          : await buildFamilyWarHistory(m.tag, clan.tag, currentRace, memberBattleLog);
+        let wh = await buildFamilyWarHistory(m.tag, clan.tag, currentRace, memberBattleLog);
         warHistory = wh;
 
         // Compute GDC win rate from battle log when available
@@ -471,7 +418,7 @@ export async function buildClanAnalysis(clanTag) {
         // Transfer detection (family clan) — on veut afficher "transfer" même
         // si l'historique est déjà jugé suffisant.
         let transfer = false;
-        if (!playerAnalysis?.warHistory) {
+        {
           const transferCandidate = await findRecentFamilyTransfer(m.tag);
           if (transferCandidate) {
             transfer = transferCandidate;
@@ -527,7 +474,7 @@ export async function buildClanAnalysis(clanTag) {
         if (hasEnoughHistory) {
           // Historical data — computeWarScore + win rate historique (race log) en priorité
           const effectiveWinRate = wh.historicalWinRate ?? warWinRate;
-          const ws = computeWarScore(playerProxy, wh, effectiveWinRate, lastSeenCandidate ?? null, discordLinked);
+          const ws = computeWarScore(playerProxy, wh, effectiveWinRate, m.lastSeen ?? null, discordLinked);
           activityScore = ws.pct; verdict = ws.verdict; color = ws.color;
           isNew = false;
         } else if (battleLog) {
@@ -536,7 +483,7 @@ export async function buildClanAnalysis(clanTag) {
           const warLog = expandDuelRounds(filterWarBattles(battleLog));
           const normalizedTagFb = m.tag.startsWith('#') ? m.tag : `#${m.tag}`;
           const racePartFb = currentRace?.clan?.participants?.find((p) => p.tag === normalizedTagFb);
-          const ws     = computeWarReliabilityFallback(playerProxy, warLog, bd, lastSeenCandidate ?? null, discordLinked, racePartFb?.decksUsed ?? 0);
+          const ws     = computeWarReliabilityFallback(playerProxy, warLog, bd, m.lastSeen ?? null, discordLinked, racePartFb?.decksUsed ?? 0);
           activityScore = ws.pct; verdict = ws.verdict; color = ws.color;
           isNew = isBattleLogMode && !transfer;
         } else {
@@ -557,8 +504,8 @@ export async function buildClanAnalysis(clanTag) {
         // It should stay true for players in BattleLog mode, regardless of last seen.
 
         // Ensure we don't flag long‑inactive members as "new" for non BattleLog players.
-        if (isNew && hasEnoughHistory === true && lastSeenCandidate) {
-          const lastSeenDate = new Date(lastSeenCandidate.replace(
+        if (isNew && hasEnoughHistory === true && m.lastSeen) {
+          const lastSeenDate = new Date(m.lastSeen.replace(
             /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})\.(\d{3})Z$/,
             '$1-$2-$3T$4:$5:$6.$7Z'
           ));
@@ -581,19 +528,7 @@ export async function buildClanAnalysis(clanTag) {
         color = score >= 75 ? 'green' : score >= 56 ? 'yellow' : score >= 31 ? 'orange' : 'red';
       }
 
-      // Override with player endpoint score when available; keep parity with /player.
-      if (playerAnalysis?.warScore?.pct != null) {
-        activityScore = playerAnalysis.warScore.pct;
-        verdict = playerAnalysis.warScore.verdict;
-        color = playerAnalysis.warScore.color;
-        isNew = false;
-      }
-
-      if (playerAnalysis?.warHistory) {
-        warHistory = playerAnalysis.warHistory;
-      }
-
-      // Sync with Player analysis when available: to keep behavior aligned between /player and /clan.
+      // Calcul des jours GDC de la semaine courante
       const warDays = (() => {
           const currentWeek = warHistory?.weeks?.find((w) => w.isCurrent) ?? null;
           // Source fiable 1 : semaine courante depuis warHistory (déjà issu de currentRace)
@@ -643,7 +578,7 @@ export async function buildClanAnalysis(clanTag) {
         // Valeur numérique pour le tri de la colonne "This War"
         // -1 = arrivé en cours de semaine, null = hors période de guerre
         warDecks:  warDays === null ? null : (warDays.arrivedMidWar ? -1 : (warDays.totalDecksUsed ?? 0)),
-        lastSeen:  lastSeenCandidate ?? null,
+        lastSeen:  m.lastSeen ?? null,
       };
     }));
 

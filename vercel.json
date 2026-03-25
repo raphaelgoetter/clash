@@ -6,10 +6,10 @@
   "framework": null,
   "functions": {
     "api/index.js": {
-      "maxDuration": 30
+      "maxDuration": 60
     },
     "api/discord/interactions.js": {
-      "maxDuration": 30
+      "maxDuration": 60
     }
   },
   "rewrites": [

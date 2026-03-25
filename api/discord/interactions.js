@@ -458,15 +458,28 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
-        const apiResp = await fetch(
-          `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis`,
-          { headers: { Accept: 'application/json' } },
-        );
+        const abortCtrl = new AbortController();
+        const abortTimer = setTimeout(() => abortCtrl.abort(), 50000);
+        let apiResp;
+        try {
+          apiResp = await fetch(
+            `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis`,
+            { headers: { Accept: 'application/json' }, signal: abortCtrl.signal },
+          );
+        } catch (fetchErr) {
+          clearTimeout(abortTimer);
+          const msg = fetchErr.name === 'AbortError'
+            ? `⏱️ L'analyse du clan a pris trop longtemps. Réessayez dans 30 secondes (le cache est en cours de préchauffage).`
+            : `Erreur réseau : ${fetchErr.message}`;
+          await fetch(webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: msg, flags: 64 }) });
+          return;
+        }
+        clearTimeout(abortTimer);
         if (!apiResp.ok) {
           await fetch(webhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: `Erreur API clan (${apiResp.status}).`, flags: 64 }),
+            body: JSON.stringify({ content: `Erreur API clan (${apiResp.status}). Réessayez dans quelques instants.`, flags: 64 }),
           });
           return;
         }
