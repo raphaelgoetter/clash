@@ -6,6 +6,7 @@
 import {
   renderActivityChart,
   renderWarHistoryChart,
+  renderBattleLogBreakdownChart,
   renderGaugeChart,
   renderClanBarChart,
   renderClanPieChart,
@@ -151,7 +152,6 @@ function translateUI() {
   favBtn.title = t('favButton');
   document.getElementById('card-overview').querySelector('.card-title').textContent = `👤 ${t('playerOverview')}`;
   document.getElementById('card-activity').querySelector('.card-title').textContent = `📊 ${t('activityIndicators')}`;
-  document.getElementById('history-card-title').textContent = `📅 ${t('riverRaceHistory')}`;
   document.getElementById('card-current-war').querySelector('.card-title').textContent = `⚔️ ${t('currentClanWar')}`;
   document.getElementById('card-verdict').querySelector('.card-title').textContent = `⚔️ ${t('warReliabilityScore')}`;
 
@@ -182,6 +182,13 @@ function translateUI() {
 
   const clusterTitle = document.querySelector('#card-clan-table .card-title');
   if (clusterTitle) clusterTitle.textContent = `👥 ${t('memberList')}`;
+
+  const battlelogWeekHeader = document.getElementById('battlelog-week-header');
+  const battlelogClanHeader = document.getElementById('battlelog-clan-header');
+  const battlelogGdcHeader = document.getElementById('battlelog-gdc-header');
+  if (battlelogWeekHeader) battlelogWeekHeader.textContent = currentLang === 'fr' ? 'Semaines' : t('week');
+  if (battlelogClanHeader) battlelogClanHeader.textContent = t('labelClan');
+  if (battlelogGdcHeader) battlelogGdcHeader.textContent = currentLang === 'fr' ? 'Decks GDC' : t('riverRaceBattles');
 
   const scoreExplainerBody = document.querySelector('.score-explainer-body');
   if (scoreExplainerBody) {
@@ -445,6 +452,9 @@ async function handleSearch() {
       const { data, fromCache } = await apiFetch(`/api/player/${encodeURIComponent(tag)}/analysis`);
       lastResultName = data.overview?.name || null;
       renderPlayerResults(data);
+      if (data.rateLimited) {
+        showError(t('rateLimitedWarning'));
+      }
       updateFavBtnState(tag);
       showCacheNote(fromCache, data?.snapshotDate);
       updateDebugPanel(data, 'player');
@@ -687,7 +697,7 @@ function showCacheNote(fromCache, snapshotDate = null) {
 // ── Player rendering ──────────────────────────────────────────
 
 function renderPlayerResults(data) {
-  const { overview, activityIndicators, recentActivity, warHistory, warScore } = data;
+  const { overview, activityIndicators, recentActivity, warHistory, warScore, battleLog = [] } = data;
   const ws = warScore ?? data.reliability; // fallback si pas de race log
 
   // Forcer la traduction des labels de breakdown si reçus en anglais
@@ -777,23 +787,228 @@ function renderPlayerResults(data) {
     ]);
   }
 
-  // 3. Race history chart or fallback daily activity
+  // 3. Battle Log card for new arrivals or River Race chart for historical players
   const titleEl = document.getElementById('history-card-title');
   const noteEl  = document.getElementById('api-limit-note');
+  const battlelogSection = document.getElementById('battlelog-table-section');
+  const battlelogDesc    = document.getElementById('battlelog-description');
 
-  if (warHistory) {
-    if (warHistory.weeks.length > 0) {
-      if (titleEl) titleEl.textContent = t('riverRaceHistoryTitle', { count: warHistory.weeks.length });
-      renderWarHistoryChart(warHistory.weeks);
-      if (noteEl) {
-        let note = t('riverRaceHistoryNote', {
-          count: warHistory.weeks.length,
-          avgFame: fmt(warHistory.avgFame)
-        });
-        if (warHistory.weeks.some((w) => w.ignored)) {
-          note += ` ${t('riverRaceHistoryIgnored')}`;
+  const hasCompletedWarWeeks = warHistory?.weeks?.some((w) => !(w.isCurrent) && (w.decksUsed ?? 0) > 0);
+  const hasOnlyCurrentWeek = warHistory?.weeks?.length === 1 && warHistory?.weeks?.[0]?.isCurrent;
+  const isBattleLogMode = !hasCompletedWarWeeks || hasOnlyCurrentWeek;
+
+  const defaultCurrentWeekLabel = currentLang === 'fr' ? 'Semaine en cours' : 'Current week';
+
+  function isRiverRaceBattle(type) {
+    const t = (type ?? '').toLowerCase();
+    return ['riverracepvp', 'riverraceduel', 'riverraceduelscolosseum', 'riverraceboat', 'clanwarbattle'].includes(t);
+  }
+
+  function formatBattleLogWeekLabel(timestamp) {
+    // on ne peut pas déduire précisément la saison/section depuis battleTime seul,
+    // donc on retourne un texte générique lisible.
+    return 'Semaine en cours';
+  }
+
+  function parseBattleTimestamp(value) {
+    if (!value) return null;
+    const d = new Date(value);
+    if (!Number.isNaN(d.getTime())) return d;
+    // Try clash format fallback: 20240315T123456.000Z
+    const m = /^(.{8}T.{6}\.\d{3}Z)$/.exec(value);
+    if (m) {
+      const iso = `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}T${value.slice(9, 11)}:${value.slice(11, 13)}:${value.slice(13, 15)}.${value.slice(16, 19)}Z`;
+      const d2 = new Date(iso);
+      if (!Number.isNaN(d2.getTime())) return d2;
+    }
+    return null;
+  }
+
+  function aggregateBattleLogByWeek(entries) {
+    const map = new Map();
+    entries.forEach((b) => {
+      const clanName = b.team?.[0]?.clan?.name || b.team?.[0]?.clan?.tag || 'No Clan';
+      const clanTag = b.team?.[0]?.clan?.tag?.toLowerCase() || null;
+      const isGdc = isRiverRaceBattle(b.type);
+      const parsed = parseBattleTimestamp(b.battleTime || b.battleTimeStamp || b.battle_time || b.battleTimeStampLocal);
+      const weekLabel = parsed ? formatBattleLogWeekLabel(parsed.toISOString()) : 'S?·W?';
+      const key = `${weekLabel}::${clanName}`;
+
+      if (!map.has(key)) {
+        map.set(key, { week: weekLabel, clan: clanName, clanTag, gdc: 0, total: 0, firstBattleTime: parsed?.toISOString() });
+      }
+      const entry = map.get(key);
+      entry.total += 1;
+      if (isGdc) entry.gdc += 1;
+
+      if (parsed) {
+        const existing = entry.firstBattleTime ? new Date(entry.firstBattleTime) : null;
+        if (!existing || parsed < existing) {
+          entry.firstBattleTime = parsed.toISOString();
         }
-        noteEl.textContent = note;
+      }
+    });
+
+    return [...map.values()].sort((a, b) => {
+      if (a.week === b.week) return a.clan.localeCompare(b.clan);
+      return a.week.localeCompare(b.week);
+    });
+  }
+
+  const battleLogSummary = aggregateBattleLogByWeek(battleLog);
+
+  if (isBattleLogMode) {
+    if (titleEl) titleEl.textContent = currentLang === 'fr' ? '📅 Données Battle Log' : `📅 ${t('battleLogDataTitle')}`;
+    if (noteEl) noteEl.textContent = t('battleLogDataDescription');
+
+    const bd = activityIndicators.battleLogBreakdown ?? {};
+    renderBattleLogBreakdownChart(bd);
+
+    if (battlelogSection) battlelogSection.classList.remove('hidden');
+    if (battlelogDesc) {
+      battlelogDesc.textContent = t('battleLogDataTableDesc');
+    }
+
+    const currentClanName = overview.clan?.name || 'No Clan';
+    const currentClanTag = overview.clan?.tag || null;
+
+    const clansWeeks = new Map();
+    (warHistory?.weeks ?? []).forEach((w) => {
+      if (w.clanTag) {
+        const normalizedTag = w.clanTag.replace('#', '').toLowerCase();
+        if (!clansWeeks.has(normalizedTag)) {
+          clansWeeks.set(normalizedTag, w.label);
+        }
+      }
+    });
+
+    const currentWarWeek = (warHistory?.weeks ?? []).find((w) => w.isCurrent && w.clanTag?.toLowerCase() === (currentClanTag || '').replace('#', '').toLowerCase());
+    const currentWeekLabel = currentWarWeek
+      ? currentWarWeek.label
+      : (t('battleLogCurrentWeek') !== 'battleLogCurrentWeek' ? t('battleLogCurrentWeek') : defaultCurrentWeekLabel);
+
+    const rows = battleLogSummary.map((item) => {
+      const normalizedItemClanTag = item.clanTag ? item.clanTag.replace('#', '').toLowerCase() : null;
+      const normalizedItemClanName = item.clan.replace('#', '').toLowerCase();
+      const itemWeekLabel = normalizedItemClanTag && clansWeeks.has(normalizedItemClanTag)
+        ? clansWeeks.get(normalizedItemClanTag)
+        : (clansWeeks.has(normalizedItemClanName) ? clansWeeks.get(normalizedItemClanName) : 'S?·W?');
+      const isCurrentClan = item.clan === currentClanName;
+      const weekLabel = isCurrentClan ? currentWeekLabel : itemWeekLabel;
+      const gdcCount = Number(item.gdc) || 0;
+      return {
+        week: weekLabel,
+        clan: item.clan,
+        gdc: gdcCount,
+        style: gdcCount === 0 ? 'empty-week' : gdcCount < 16 ? 'quasi-empty-week' : gdcCount > 16 ? 'overfull-week' : '',
+        isCurrentClan,
+      };
+    });
+
+    const currentRows = rows.filter((r) => r.isCurrentClan);
+    const prevRows = rows.filter((r) => !r.isCurrentClan);
+
+    const orderedPrevRows = prevRows
+      .sort((a, b) => (b.gdc || 0) - (a.gdc || 0))
+      .map((r, idx) => ({ ...r, weekIndex: idx + 1 }));
+
+    const sortedRows = [
+      ...currentRows.map((r) => ({ ...r, weekIndex: 0 })),
+      ...orderedPrevRows,
+    ];
+
+    // Split any row with gdc > 16 into multiple weeks
+    const expandedRows = [];
+    let weekOffset = 0; // additional weeks inserted due overflow
+
+    sortedRows.forEach((row) => {
+      const adjustedWeekIndex = (row.weekIndex ?? 0) + weekOffset;
+      const rowClone = { ...row, weekIndex: adjustedWeekIndex };
+
+      let remaining = Number(rowClone.gdc) || 0;
+      if (remaining <= 16) {
+        expandedRows.push({ ...rowClone, gdc: remaining });
+        return;
+      }
+
+      // first week capped
+      expandedRows.push({ ...rowClone, gdc: 16, style: rowClone.style || '' });
+      remaining -= 16;
+      weekOffset += 1;
+
+      // subsequent weeks from overflow
+      while (remaining > 0) {
+        const overflowValue = Math.min(16, remaining);
+        expandedRows.push({
+          weekIndex: adjustedWeekIndex + weekOffset,
+          clan: rowClone.clan,
+          gdc: overflowValue,
+          style: 'overfull-week',
+          isCurrentClan: false,
+        });
+        remaining -= overflowValue;
+        if (remaining > 0) weekOffset += 1;
+      }
+    });
+
+    const finalRows = expandedRows.length
+      ? expandedRows
+      : [{ weekIndex: 1, clan: currentClanName, gdc: 0, style: 'empty-week' }];
+
+    const tbody = document.getElementById('battlelog-table-body');
+    if (tbody) {
+      tbody.innerHTML = finalRows.map((r, idx) => {
+        const rawGdc = Number(r.gdc) || 0;
+        const weekLabel = r.weekIndex === 0 ? currentWeekLabel : `semaine -${r.weekIndex}`;
+        let badge = rawGdc === 0 ? '❌' : rawGdc < 16 ? '⚠️' : '✅';
+        if (idx === finalRows.length - 1) {
+          badge = '❓';
+        }
+        const extraNote = rawGdc > 16 ? ` (+${rawGdc - 16})` : '';
+
+        return `
+          <tr class="${r.style}">
+            <td>${weekLabel}</td>
+            <td>${r.clan}</td>
+            <td>${rawGdc}${extraNote} ${badge}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+  } else {
+    if (battlelogSection) battlelogSection.classList.add('hidden');
+
+    if (warHistory) {
+      if (warHistory.weeks.length > 0) {
+        if (titleEl) titleEl.textContent = t('riverRaceHistoryTitle', { count: warHistory.weeks.length });
+        renderWarHistoryChart(warHistory.weeks);
+        if (noteEl) {
+          let note = t('riverRaceHistoryNote', {
+            count: warHistory.weeks.length,
+            avgFame: fmt(warHistory.avgFame),
+          });
+          if (warHistory.weeks.some((w) => w.ignored)) {
+            note += ` ${t('riverRaceHistoryIgnored')}`;
+          }
+          noteEl.textContent = note;
+        }
+      } else {
+        const bd = activityIndicators.battleLogBreakdown ?? {};
+        const parts = [
+          bd.gdc      != null ? `${activityIndicators.totalWarBattles} ${t('statWarBattles')}` : null,
+          bd.ladder   != null ? `${bd.ladder} ${t('statLadder')}`           : null,
+          bd.challenge != null ? `${bd.challenge} ${t('statChallenges')}`  : null,
+          bd.friendly != null && bd.friendly > 0 ? `${bd.friendly} ${t('friendly') || 'Friendly'}` : null,
+        ].filter(Boolean).join(' · ');
+        if (titleEl) titleEl.textContent = t('noRiverRaceHistoryTitle');
+        renderWarHistoryChart([]);
+        if (noteEl) noteEl.innerHTML =
+          `<span>⚠️ ${t('noRiverRaceHistoryNote1')} `
+          + `${t('apiLogEntries', { count: bd.total ?? 30 })}: ${parts || t('noData')}.</span>`
+          + `<details class="note-disclosure">`
+          + `<summary>${t('noRiverRaceHistoryWhySummary')}</summary>`
+          + `<p>${t('noRiverRaceHistoryWhyDetail')}</p>`
+          + `</details>`;
       }
     } else {
       const bd = activityIndicators.battleLogBreakdown ?? {};
@@ -803,29 +1018,12 @@ function renderPlayerResults(data) {
         bd.challenge != null ? `${bd.challenge} ${t('statChallenges')}`  : null,
         bd.friendly != null && bd.friendly > 0 ? `${bd.friendly} ${t('friendly') || 'Friendly'}` : null,
       ].filter(Boolean).join(' · ');
-      if (titleEl) titleEl.textContent = t('noRiverRaceHistoryTitle');
-      renderWarHistoryChart([]);
-      if (noteEl) noteEl.innerHTML =
-        `<span>⚠️ ${t('noRiverRaceHistoryNote1')} `
-        + `${t('apiLogEntries', { count: bd.total ?? 30 })}: ${parts || t('noData')}.</span>`
-        + `<details class="note-disclosure">`
-        + `<summary>${t('noRiverRaceHistoryWhySummary')}</summary>`
-        + `<p>${t('noRiverRaceHistoryWhyDetail')}</p>`
-        + `</details>`;
+      if (titleEl) titleEl.textContent = t('clanWarActivityTitle');
+      renderActivityChart(recentActivity.dailyActivity);
+      if (noteEl) noteEl.textContent =
+        `⚠️ ${t('noClanWarHistoryWarning')} `
+        + `${t('apiLogEntries', { count: bd.total ?? 30 })}: ${parts || t('noData')}.`;
     }
-  } else {
-    const bd = activityIndicators.battleLogBreakdown ?? {};
-    const parts = [
-      bd.gdc      != null ? `${activityIndicators.totalWarBattles} ${t('statWarBattles')}` : null,
-      bd.ladder   != null ? `${bd.ladder} ${t('statLadder')}`           : null,
-      bd.challenge != null ? `${bd.challenge} ${t('statChallenges')}`  : null,
-      bd.friendly != null && bd.friendly > 0 ? `${bd.friendly} ${t('friendly') || 'Friendly'}` : null,
-    ].filter(Boolean).join(' · ');
-    if (titleEl) titleEl.textContent = t('clanWarActivityTitle');
-    renderActivityChart(recentActivity.dailyActivity);
-    if (noteEl) noteEl.textContent =
-      `⚠️ ${t('noClanWarHistoryWarning')} `
-      + `${t('apiLogEntries', { count: bd.total ?? 30 })}: ${parts || t('noData')}.`;
   }
 
   // 3b. Actual Clan War (visible jeudi–dimanche)

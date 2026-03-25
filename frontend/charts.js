@@ -219,6 +219,55 @@ export function renderWarHistoryChart(weeks) {
  * @param {number} score  0–100
  * @param {string} color  'green' | 'yellow' | 'red'
  */
+export function renderBattleLogBreakdownChart(breakdown) {
+  destroyIfExists('chart-activity');
+  const el = document.getElementById('chart-activity');
+  if (!el) return;
+
+  const keys = ['gdc', 'ladder', 'challenge', 'friendly', 'other'];
+  const labels = ['River Race', 'Ladder', 'Challenges', 'Friendly', 'Other'];
+  const values = keys.map((k) => breakdown?.[k] ?? 0);
+  const total = values.reduce((s, v) => s + v, 0);
+
+  const colors = [
+    'rgba(99,102,241,0.9)',
+    'rgba(34,197,94,0.8)',
+    'rgba(251,191,36,0.8)',
+    'rgba(34,211,238,0.8)',
+    'rgba(148,163,184,0.6)',
+  ];
+
+  new Chart(el.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: colors,
+        borderColor: 'rgba(255,255,255,0.06)',
+        borderWidth: 1,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#cbd5e1' } },
+        tooltip: {
+          callbacks: {
+            label(context) {
+              const idx = context.dataIndex;
+              const val = values[idx] ?? 0;
+              const pct = total ? Math.round((val / total) * 100) : 0;
+              return `${labels[idx]}: ${val} (${pct}%)`;
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
 export function renderGaugeChart(score, color) {
   destroyIfExists('chart-gauge');
   const ctx = document.getElementById('chart-gauge').getContext('2d');

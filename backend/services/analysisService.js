@@ -1098,6 +1098,7 @@ export function analyzePlayer(player, battleLog, lastSeen = null, discordLinked 
       apiLimitNote: 'Battle log capped at 30 entries by the Clash Royale API.',
     },
     reliability, // fallback — replaced by warScore when race log available
+    battleLog, // raw battle log used by the BattleLog data card
   };
 }
 
@@ -1115,9 +1116,23 @@ export function analyzePlayer(player, battleLog, lastSeen = null, discordLinked 
  * @returns {Promise<object>} analysis payload
  */
 export async function getPlayerAnalysis(tag, discordLinked = false) {
+  let rateLimited = false;
+
+  async function safeFetch(fn) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (err.isRateLimit) {
+        rateLimited = true;
+        return null;
+      }
+      throw err;
+    }
+  }
+
   const [player, battleLog] = await Promise.all([
-    fetchPlayer(tag),
-    fetchBattleLog(tag),
+    safeFetch(() => fetchPlayer(tag)),
+    safeFetch(() => fetchBattleLog(tag)),
   ]);
 
   // Récupère lastSeen depuis le roster du clan (non disponible sur le profil joueur)
@@ -1132,7 +1147,10 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
     }
   }
 
-  const analysis = analyzePlayer(player, battleLog, lastSeen, discordLinked);
+  const analysis = analyzePlayer(player, battleLog || [], lastSeen, discordLinked);
+  if (rateLimited) {
+    analysis.rateLimited = true;
+  }
 
   // Enrich with river race history if the player is currently in a clan.
   // We silently ignore failures so a missing/private war log doesn't block the response.

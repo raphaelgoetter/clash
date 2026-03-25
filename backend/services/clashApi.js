@@ -35,7 +35,12 @@ async function get(path) {
 
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`Clash API error ${res.status} on ${path}: ${body}`);
+    const err = new Error(`Clash API error ${res.status} on ${path}: ${body}`);
+    if (res.status === 429) {
+      err.isRateLimit = true;
+      err.retryAfter = res.headers.get('retry-after');
+    }
+    throw err;
   }
 
   return res.json();

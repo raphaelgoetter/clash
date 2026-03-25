@@ -918,6 +918,17 @@ select.search-input {
 }
 
 .members-table th.sortable:hover { color: var(--gold); }
+
+.battlelog-table-section { margin-top: 1rem; }
+.battlelog-desc { margin-bottom: 0.75rem; color: #cbd5e1; font-size: 0.92rem; }
+.battlelog-table-wrapper { overflow-x: auto; }
+.battlelog-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.battlelog-table th, .battlelog-table td { padding: 8px 10px; border: 1px solid var(--border); text-align: left; }
+.battlelog-table thead tr { background: rgba(255,255,255,.04); }
+.battlelog-table th { color: var(--text-secondary); }
+.battlelog-table td.empty-week { background: rgba(239,68,68,0.15); }
+.battlelog-table td.quasi-empty-week { background: rgba(251,191,36,0.15); }
+
 .members-table th.sort-asc  .sort-icon::after { content: ' ↑'; }
 .members-table th.sort-desc .sort-icon::after { content: ' ↓'; }
 

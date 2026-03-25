@@ -90,7 +90,9 @@ C’est un outil conçu pour être **proactif** : on détecte les membres à ris
 /top-players number:10 period:season scope:previous
 /top-players number:5 period:season scope:actual
 ```
+
 /chelem clan:1 season:129
+
 ```
 
 ### 5) `/discord-link tag:#TAG`
