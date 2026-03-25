@@ -270,7 +270,9 @@ export function renderBattleLogBreakdownChart(breakdown) {
 
 export function renderGaugeChart(score, color) {
   destroyIfExists('chart-gauge');
-  const ctx = document.getElementById('chart-gauge').getContext('2d');
+  const el = document.getElementById('chart-gauge');
+  if (!el) return;
+  const ctx = el.getContext('2d');
 
   const colorMap = {
     green:  '#22c55e',

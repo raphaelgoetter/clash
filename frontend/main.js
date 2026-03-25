@@ -1088,7 +1088,7 @@ function renderPlayerResults(data) {
   );
 
   // 4. War Reliability Score avec breakdown
-  renderGaugeChart(ws.pct, ws.color);
+  // gauge supprimé — plus de canvas chart-gauge dans le DOM
 
   const icon = { green: '✅', yellow: '⚠️', orange: '🟠', red: '🔴' }[ws.color] ?? '❓';
   const verdictMap = {
