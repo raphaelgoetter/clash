@@ -471,7 +471,7 @@ export async function buildClanAnalysis(clanTag) {
           }
         }
 
-        const isNewClanArrivee = (wh?.streakInCurrentClan ?? 0) <= 2 && (wh?.totalWeeks ?? 0) > 1;
+        const isNewClanArrivee = (wh?.streakInCurrentClan ?? 0) < 2 && (wh?.totalWeeks ?? 0) > 1;
 
         if (hasEnoughHistory) {
           // Historical data — computeWarScore + win rate historique (race log) en priorité

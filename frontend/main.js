@@ -752,7 +752,7 @@ function renderPlayerResults(data) {
   // Ce calcul doit rester synchronisé avec la card historique BattleLog/RaceHistory.
   const hasCompletedWarWeeks = warHistory?.weeks?.some((w) => !(w.isCurrent) && (w.decksUsed ?? 0) > 0);
   const hasOnlyCurrentWeek = warHistory?.weeks?.length === 1 && warHistory?.weeks?.[0]?.isCurrent;
-  const isNewClanArrivee = (warHistory?.streakInCurrentClan ?? 0) <= 2 && (warHistory?.totalWeeks ?? 0) > 1;
+  const isNewClanArrivee = (warHistory?.streakInCurrentClan ?? 0) < 2 && (warHistory?.totalWeeks ?? 0) > 1;
   const isBattleLogMode = ws?.isFallback === true || !hasCompletedWarWeeks || hasOnlyCurrentWeek || isNewClanArrivee;
   const playerBadge = warHistory?.isFamilyTransfer
     ? 'transfer'
