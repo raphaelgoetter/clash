@@ -22,6 +22,10 @@ import path from 'path';
 
 const router = Router();
 
+// Because clan analysis can call getPlayerAnalysis for 50 members, we keep the
+// same short cache key as the player route to avoid repeating heavy operations.
+const PLAYER_ANALYSIS_CACHE_TTL = 30 * 1000; // 30 secondes
+
 // One day in milliseconds (used for war day calculations)
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -252,12 +256,27 @@ export async function buildClanAnalysis(clanTag) {
       });
     }
 
+    async function getPlayerAnalysisCached(tag, discordLinked) {
+      const cacheKey = `player:analysis:${tag}`;
+      try {
+        const { value } = await getOrSet(
+          cacheKey,
+          () => getPlayerAnalysis(tag, discordLinked),
+          PLAYER_ANALYSIS_CACHE_TTL,
+        );
+        return value;
+      } catch (err) {
+        // If the cache generation fails, propagate so pooledAllSettled can track.
+        throw err;
+      }
+    }
+
     // Fetch player-level analysis using limited concurrency to avoid hitting
     // Clash API rate limits and to keep clan scores aligned with player view.
     const playerAnalysisResults = await pooledAllSettled(
       members.map((m) => {
         const isDiscordLinked = Object.prototype.hasOwnProperty.call(discordLinks, m.tag);
-        return () => getPlayerAnalysis(m.tag, isDiscordLinked);
+        return () => getPlayerAnalysisCached(m.tag, isDiscordLinked);
       }),
       6
     );
