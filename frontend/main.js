@@ -1107,7 +1107,7 @@ function renderPlayerResults(data) {
     <div class="verdict-box ${ws.color}">
       <div class="verdict-icon">${icon}</div>
       <div class="verdict-text-wrap">
-        <div class="verdict-score">${ws.total}<span style="font-size:1rem;opacity:.6"> / ${ws.maxScore} pts</span></div>
+        <div class="verdict-score">${ws.pct}%<span class="verdict-score-detail"> (${ws.total} / ${ws.maxScore} pts)</span></div>
         <div class="verdict-text">${verdictText}</div>
       </div>
     </div>

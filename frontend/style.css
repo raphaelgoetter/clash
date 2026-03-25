@@ -748,6 +748,7 @@ select.search-input {
 
 .verdict-text-wrap {}
 .verdict-score { font-size: 2rem; font-weight: 900; line-height: 1; }
+.verdict-score-detail { font-size: 1rem; font-weight: 600; opacity: .6; }
 .verdict-text  { font-size: .95rem; font-weight: 600; margin-top: 4px; }
 
 .verdict-box.green  .verdict-score,
