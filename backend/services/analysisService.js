@@ -635,7 +635,7 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
  *
  * Criteria (total /38):
  *  1. Activité GDC    /12 — decks/day (bonuses for 4‑deck days, penalties for <4)
- *  2. Activité générale /8 — combats compétitifs dans le log (cap 20)
+ *  2. Activité générale /8 — combats compétitifs dans le log (cap 30)
  *  3. CW2 Wins        /8 — badge progress (cap 250)
  *  4. Win Rate GDC    /5 — % victoires sur combats GDC (0 if no GDC battles)
  *  5. Expérience      /3 — bestTrophies (cap 12 000)
@@ -689,7 +689,8 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
   const winRateGDC = winRateExcluded ? 0 : r(gdcWinRate * 5);
 
   // 3. Activité générale (0-8)
-  const activiteGen = r(Math.min(8, (competitive / 20) * 8));
+  // 30 combats compétitifs requis pour score max (War + Ladder + Challenges)
+  const activiteGen = r(Math.min(8, (competitive / 30) * 8));
 
   // 4. Expérience (0-3) — trophées actuels, plage [4 000, 14 000]
   const TROPHY_MIN = 4000;
