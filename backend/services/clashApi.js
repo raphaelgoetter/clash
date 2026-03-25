@@ -29,21 +29,37 @@ function buildHeaders() {
  * @param {string} path - API path, e.g. /players/%23ABC123
  * @returns {Promise<object>} Parsed JSON response
  */
-async function get(path) {
-  const url = `${BASE_URL}${path}`;
-  const res = await fetch(url, { headers: buildHeaders() });
+async function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
-  if (!res.ok) {
+async function get(path, retries = 3, delayMs = 500) {
+  const url = `${BASE_URL}${path}`;
+  let attempt = 0;
+
+  while (true) {
+    const res = await fetch(url, { headers: buildHeaders() });
+
+    if (res.ok) {
+      return res.json();
+    }
+
     const body = await res.text();
     const err = new Error(`Clash API error ${res.status} on ${path}: ${body}`);
     if (res.status === 429) {
       err.isRateLimit = true;
       err.retryAfter = res.headers.get('retry-after');
     }
+
+    if ((res.status === 429 || [502, 503, 504].includes(res.status)) && attempt < retries) {
+      const backoff = delayMs * Math.pow(2, attempt);
+      attempt += 1;
+      await sleep(backoff);
+      continue;
+    }
+
     throw err;
   }
-
-  return res.json();
 }
 
 /**

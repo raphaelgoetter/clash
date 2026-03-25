@@ -6,6 +6,9 @@
 // ============================================================
 
 import fetch from 'node-fetch';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // helper API wrappers needed by getPlayerAnalysis
 import {
@@ -15,6 +18,28 @@ import {
   fetchRaceLog,
   fetchCurrentRace,
 } from './clashApi.js';
+import { getOrSet } from './cache.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+async function getTransferClanTagsForPlayer(playerTag) {
+  if (!playerTag) return new Set();
+  const normalized = playerTag.replace(/^#/, '').toUpperCase();
+  const filePath = path.join(__dirname, '..', '..', 'transfers.json');
+  try {
+    const payload = await fs.readFile(filePath, 'utf8');
+    const transfers = JSON.parse(payload);
+    return new Set(
+      transfers
+        .filter((t) => (t.tag || '').replace(/^#/, '').toUpperCase() === normalized)
+        .map((t) => (t.fromClan || '').replace(/^#/, '').toUpperCase())
+        .filter(Boolean)
+    );
+  } catch (_) {
+    return new Set();
+  }
+}
+
 
 // ── Constants ─────────────────────────────────────────────────
 
@@ -25,6 +50,8 @@ const MS_PER_DAY = 1000 * 60 * 60 * 24;
  * Tags sans '#', en majuscules.
  */
 const FAMILY_CLAN_TAGS = ['Y8JUPC9C', 'LRQP20V9', 'QU9UQJRL'];
+const CLAN_RACELOG_CONCURRENCY = 3;
+const CLAN_RACELOG_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
  * Si un joueur est détecté dans un autre clan de la famille au cours de la
@@ -817,14 +844,15 @@ export function buildWarHistory(playerTag, raceLog, currentClanTag = null, curre
       const p = standing.clan?.participants?.find((x) => x.tag === normalized);
       if (p) {
         weeks.push({
-          label:       `S${race.seasonId}·W${race.sectionIndex + 1}`,
-          seasonId:    race.seasonId,
+          label:        `S${race.seasonId}·W${race.sectionIndex + 1}`,
+          seasonId:     race.seasonId,
           sectionIndex: race.sectionIndex,
-          fame:        p.fame      ?? 0,
-          decksUsed:   p.decksUsed ?? 0,
-          boatAttacks: p.boatAttacks ?? 0,
-          clanTag:     standing.clan.tag,
-          clanName:    standing.clan.name ?? standing.clan.tag,
+          fame:         p.fame      ?? 0,
+          decksUsed:    p.decksUsed ?? 0,
+          boatAttacks:  p.boatAttacks ?? 0,
+          clanTag:      standing.clan.tag,
+          clanName:     standing.clan.name ?? standing.clan.tag,
+          sourceKind:   'clanRaceLog',
         });
         break;
       }
@@ -846,6 +874,7 @@ export function buildWarHistory(playerTag, raceLog, currentClanTag = null, curre
         clanTag:      currentRace.clan.tag,
         clanName:     currentRace.clan.name ?? currentRace.clan.tag,
         isCurrent:    true,
+        sourceKind:   'currentRaceLog',
       });
     }
   }
@@ -887,6 +916,40 @@ export function buildWarHistory(playerTag, raceLog, currentClanTag = null, curre
  * and recent clans seen in the 30-entry battle log.
  * This allows showing weeks from previous clan(s) for transferred players.
  */
+async function fetchRaceLogCached(clanTag) {
+  if (!clanTag) throw new Error('clanTag is required');
+  const normalized = clanTag.replace(/^#/, '').toUpperCase();
+  const key = `raceLog:${normalized}`;
+  const { value } = await getOrSet(key, () => fetchRaceLog(normalized), CLAN_RACELOG_CACHE_TTL_MS);
+  return value;
+}
+
+async function fetchRaceLogsForClans(clanTags) {
+  const normalizedTags = [...new Set(
+    (Array.isArray(clanTags) ? clanTags : [...(clanTags || [])])
+      .map((t) => (t || '').replace(/^#/, '').toUpperCase())
+      .filter(Boolean)
+  )];
+
+  const queue = normalizedTags.slice();
+  const results = [];
+
+  const workers = Array.from({ length: Math.min(CLAN_RACELOG_CONCURRENCY, queue.length) }, async () => {
+    while (queue.length > 0) {
+      const clanTag = queue.shift();
+      try {
+        const raceLog = await fetchRaceLogCached(clanTag);
+        results.push({ clanTag, raceLog });
+      } catch (err) {
+        results.push({ clanTag, raceLog: null, error: err });
+      }
+    }
+  });
+
+  await Promise.all(workers);
+  return results;
+}
+
 export async function buildFamilyWarHistory(playerTag, currentClanTag, currentRace = null, battleLog = []) {
   const normalizedCurrent = currentClanTag ? currentClanTag.replace(/^#/, '').toUpperCase() : null;
   const clanTags = new Set(FAMILY_CLAN_TAGS.map((t) => t.replace(/^#/, '').toUpperCase()));
@@ -900,21 +963,18 @@ export async function buildFamilyWarHistory(playerTag, currentClanTag, currentRa
     }
   }
 
+  const transferClanTags = await getTransferClanTagsForPlayer(playerTag);
+  for (const tag of transferClanTags) {
+    if (tag) clanTags.add(tag.replace(/^#/, '').toUpperCase());
+  }
+
   const weekMap = new Map();
 
-  const promises = [...clanTags].map(async (clanTag) => {
-    try {
-      const raceLog = await fetchRaceLog(clanTag);
-      const history = buildWarHistory(playerTag, raceLog, `#${clanTag}`, normalizedCurrent === clanTag ? currentRace : null);
-      return history.weeks;
-    } catch (_) {
-      return [];
-    }
-  });
-
-  const results = await Promise.all(promises);
-  for (const weeks of results) {
-    for (const week of weeks) {
+  const results = await fetchRaceLogsForClans(clanTags);
+  for (const entry of results) {
+    if (!entry.raceLog) continue;
+    const history = buildWarHistory(playerTag, entry.raceLog, `#${entry.clanTag}`, normalizedCurrent === entry.clanTag ? currentRace : null);
+    for (const week of history.weeks) {
       const key = `${week.seasonId ?? 'unknown'}_${week.sectionIndex ?? 'unknown'}_${week.clanTag ?? 'unknown'}_${week.isCurrent ? 'current' : 'past'}`;
       if (!weekMap.has(key)) {
         weekMap.set(key, week);
@@ -995,6 +1055,8 @@ export async function buildFamilyWarHistory(playerTag, currentClanTag, currentRa
   }
   const historicalWinRate = totalPvpDecks >= MIN_PVP_DECKS ? totalEstimatedWins / totalPvpDecks : null;
 
+  const noFurtherData = mergedWeeks.length === 1 && mergedWeeks[0]?.isCurrent;
+
   return {
     weeks: mergedWeeks,
     totalFame,
@@ -1005,6 +1067,7 @@ export async function buildFamilyWarHistory(playerTag, currentClanTag, currentRa
     totalWeeks,
     streakInCurrentClan,
     historicalWinRate,
+    noFurtherData,
   };
 }
 
@@ -1028,21 +1091,19 @@ async function findRecentFamilyTransfer(playerTag, currentClanTag) {
   const candidates = FAMILY_CLAN_TAGS.filter((t) => t !== normalizedCurrent);
   if (!candidates.length) return null;
 
-  const results = await Promise.allSettled(
-    candidates.map((tag) => fetchRaceLog(tag).then((raceLog) => ({ tag, raceLog })))
-  );
-
-  for (const res of results) {
-    if (res.status !== 'fulfilled') continue;
-    const { tag: clanTag, raceLog } = res.value;
-    const otherHistory = buildWarHistory(playerTag, raceLog, clanTag, null);
-    if (!otherHistory?.weeks?.length) continue;
-
-    for (let i = 0; i < Math.min(FAMILY_TRANSFER_WINDOW_WEEKS, otherHistory.weeks.length); i += 1) {
-      const week = otherHistory.weeks[i];
-      if ((week.decksUsed ?? 0) >= 13) {
-        return { transferWeek: week, fromClanTag: clanTag };
+  for (const clanTag of candidates) {
+    try {
+      const raceLog = await fetchRaceLogCached(clanTag);
+      const otherHistory = buildWarHistory(playerTag, raceLog, clanTag, null);
+      if (!otherHistory?.weeks?.length) continue;
+      for (let i = 0; i < Math.min(FAMILY_TRANSFER_WINDOW_WEEKS, otherHistory.weeks.length); i += 1) {
+        const week = otherHistory.weeks[i];
+        if ((week.decksUsed ?? 0) >= 13) {
+          return { transferWeek: week, fromClanTag: clanTag };
+        }
       }
+    } catch (_) {
+      continue;
     }
   }
 
@@ -1179,6 +1240,10 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
     safeFetch(() => fetchPlayer(tag)),
     safeFetch(() => fetchBattleLog(tag)),
   ]);
+
+  if (!player) {
+    throw new Error(`Player data not available for tag ${tag}`);
+  }
 
   // Récupère lastSeen depuis le roster du clan (non disponible sur le profil joueur)
   let lastSeen = null;

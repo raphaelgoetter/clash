@@ -176,3 +176,30 @@ Les valeurs ne sont toujours pas identiques :
 ---
 
 Pourquoi certains nouveaux joueurs ont plusieurs semaines d'historique de clans dans la card "📅 Données Battle Log" alors que d'autres n'en ont aucune ? Par exemple, le joueur lauramarin1 (<http://localhost:5174/en/?mode=player&tag=%23P2YYR29QU>) a un historique de 9 semaines, alors que le joueur darren (<http://localhost:5174/en/?mode=player&tag=%2388Y9Q8UPQ>) n'a aucune semaine d'historique de clan à part la semaine-live (screenshot) ?
+
+Pour le joueur darren (<http://localhost:5174/en/?mode=player&tag=%2388Y9Q8UPQ>), les données affichées sont les suivantes :
+
+```
+S?·W4 (live) Les Resistants 0 ❓
+```
+
+Les données de decks (<https://royaleapi.com/player/88Y9Q8UPQ>) réelles sont :
+
+```
+
+S  R L C     
+130-3 2026-03-23 4 legendary-1 Empire du Goret 0 0 0 0 0
+130-2 2026-03-16 4 legendary-1 Empire du Goret 0 0 0 0 0
+130-1 2026-03-09 5 legendary-1 Empire du Goret 8 1100 0 0 1100
+129-4 2026-03-02 3 legendary-1 Empire du Goret 9 1200 0 0 1200
+129-3 2026-02-23 1 legendary-1 Larichouette 4 600 0 0 600
+129-2 2026-02-16 3 legendary-1 OM 0 0 0 0 0
+129-1 2026-02-09 3 legendary-1 OM 1 100 0 0 100
+128-4 2026-02-02 1 legendary-1 Gob-Trotteurs 0 0 0 0 0
+128-3 2026-01-26 2 legendary-1 Gob-Trotteurs 0 0 0 0 0
+128-2 2026-01-19 3 legendary-1 Gob-Trotteurs 2 200 0 0 200
+128-1 2026-01-12 3 legendary-1 Gob-Trotteurs 6 800 0 0 800
+```
+
+- J'ai besoin de comprendre EXACTEMENT pourquoi lauramarin1 a un historique sur plusieurs semaines alors que darren non.
+- Comment procéder EXACTEMENT pour corriger ce problème.

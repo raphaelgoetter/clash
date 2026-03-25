@@ -122,6 +122,9 @@ function t(key, vars) {
     rateLimitedWarning: currentLang === 'fr'
       ? 'Limite de requêtes Clash API dépassée — données partielles affichées, réessayez dans quelques secondes.'
       : 'Clash API rate limit exceeded — partial data may be displayed, retry in a few seconds.',
+    battleLogNoFurtherData: currentLang === 'fr'
+      ? 'Aucun historique de clan supplémentaire disponible (Battle Log uniquement).'
+      : 'No further clan history available (Battle Log only).',
   };
 
   let val = (translations && translations[key]) ? translations[key] : fallback[key] || key;
@@ -465,27 +468,30 @@ async function handleSearch() {
       showCacheNote(fromCache, data?.snapshotDate);
       updateDebugPanel(data, 'player');
     } else {
-      // clan mode: try static file first
-      // Afficher overview + charts depuis le cache statique instantanément
+      // clan mode: try static file first but always refresh from live API.
       const staticData = await loadStaticClan(tag);
       if (staticData) {
         lastResultName = staticData.clan?.name || null;
+        // Display skeleton while live data is fetched, to avoid stale score flicker.
         renderClanOverview(staticData);
         renderMembersSkeleton();
         updateFavBtnState(tag);
         showCacheNote(true, staticData.snapshotDate);
+      } else {
+        renderClanOverview({ clan: { name: t('loading') }, summary: { green:0,yellow:0,orange:0,red:0,avgScore:0,total:0 }, members: [] });
+        renderMembersSkeleton();
       }
 
       const { data, fromCache } = await apiFetch(`/api/clan/${encodeURIComponent(tag)}/analysis`);
       lastResultName = data.clan?.name || null;
       // Mettre à jour l'overview avec les données fraîches
       renderClanOverview(data);
-      // Afficher les membres uniquement depuis les données live (une seule fois)
+      // Afficher les membres live à jour (synchronisation clan / player)
       renderClanMembers(data);
       if (data.rateLimited) showError(t('rateLimitedWarning'));
       updateDebugPanel(data, 'clan');
       updateFavBtnState(tag);
-      showCacheNote(fromCache, data.snapshotDate);
+      showCacheNote(false, data.snapshotDate);
     }
     syncUrlState(currentMode, tag);
     favBtn.classList.remove('hidden');
@@ -885,9 +891,9 @@ function renderPlayerResults(data) {
     const currentClanTag = (overview.clan?.tag || '').replace('#', '').toLowerCase();
 
     const currentWarWeek = (warHistory?.weeks ?? []).find((w) => w.isCurrent && (w.clanTag || '').replace('#', '').toLowerCase() === currentClanTag);
-    const currentWeekLabel = currentWarWeek
-      ? currentWarWeek.label
-      : (t('battleLogCurrentWeek') !== 'battleLogCurrentWeek' ? t('battleLogCurrentWeek') : defaultCurrentWeekLabel);
+    const currentWeekLabel = (t('battleLogCurrentWeek') !== 'battleLogCurrentWeek')
+      ? t('battleLogCurrentWeek')
+      : defaultCurrentWeekLabel;
 
     let rows = [];
     if (Array.isArray(warHistory?.weeks) && warHistory.weeks.length > 0) {
@@ -897,7 +903,7 @@ function renderPlayerResults(data) {
         const weekIndex = isCurrentRow ? 0 : ++prevIndex;
         const clanName = w.clanName || w.clanTag || 'No Clan';
         const gdcCount = Number(w.decksUsed) || 0;
-        const weekLabel = w.label || (isCurrentRow ? currentWeekLabel : `semaine -${weekIndex}`);
+        const weekLabel = isCurrentRow ? currentWeekLabel : (w.label || `S?·W?`);
 
         return {
           week: weekLabel,
@@ -1011,6 +1017,14 @@ function renderPlayerResults(data) {
           </tr>
         `;
       }).join('');
+    }
+
+    const noDataNote = document.getElementById('battlelog-no-data-note');
+    const hasNoFurtherData = warHistory?.noFurtherData === true
+      || (isBattleLogMode && (warHistory?.weeks?.length || 0) === 1 && warHistory?.weeks?.[0]?.isCurrent);
+    if (noDataNote) {
+      noDataNote.textContent = hasNoFurtherData ? t('battleLogNoFurtherData') : '';
+      noDataNote.classList.toggle('hidden', !hasNoFurtherData);
     }
   } else {
     if (battlelogSection) battlelogSection.classList.add('hidden');
@@ -1691,6 +1705,9 @@ function renderMembersTable(members) {
         // Indicateur de dernière connexion dans sa propre cellule
         let lastSeenCell = '<td class="last-seen-col">—</td>';
         let daysFrac = Infinity;
+        m.activityScore = Number(m.activityScore) || 0;
+        if (m.activityScore > 100) m.activityScore = 100;
+        if (m.activityScore < 0) m.activityScore = 0;
         if (m.lastSeen) {
           daysFrac = (Date.now() - new Date(m.lastSeen.replace(
             /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})\.(\d{3})Z$/,
@@ -1729,9 +1746,9 @@ function renderMembersTable(members) {
         <td>
           <div style="display:flex;align-items:center;gap:8px">
             <div style="flex:1;height:6px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden;min-width:60px">
-              <div style="width:${m.activityScore}%;height:100%;background:${scoreBarColor(m.color)};border-radius:999px"></div>
+              <div style="width:${Math.max(0, Math.min(100, m.activityScore))}%;height:100%;background:${scoreBarColor(m.color)};border-radius:999px"></div>
             </div>
-            <span style="font-weight:700;font-size:.88rem">${m.activityScore}%</span>
+            <span style="font-weight:700;font-size:.88rem">${Math.round(Math.max(0, Math.min(100, m.activityScore)))}%</span>
           </div>
         </td>
         ${isWarActive ? `<td class="war-col">${warMiniBarHtml(m.warDays)}</td>` : ''}
