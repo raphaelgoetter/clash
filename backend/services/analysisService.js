@@ -468,7 +468,7 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
   // car elle n'est pas forcément complète. Une semaine parfaite vaut 16 decks.
   // le score est normalisé sur 12 points (équivalent à 100 % de decks complets).
   const totalWeeks     = warHistory.totalWeeks || 1;
-  const weeksInClan    = Math.max(1, warHistory.streakInCurrentClan);
+  const weeksInClan    = warHistory.streakInCurrentClan;
   // Toutes les semaines terminées (hors semaine en cours et semaines ignorées)
   const completedRegularityWeeks = weeks.filter((w) => !w.isCurrent && !w.ignored);
   const completedInClan = completedRegularityWeeks.filter((w) => w.clanTag === warHistory.clanTag);
@@ -551,7 +551,9 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
         if (completedCount === 0) return 'No completed week in this clan yet';
         const pct = Math.round((deckSum / (idealDecks || 1)) * 100);
         const suffix = weeksInClan < totalWeeks
-          ? ` — member for ${weeksInClan} week${weeksInClan > 1 ? 's' : ''}`
+          ? (weeksInClan === 0
+            ? ` — joined recently (< 1 week in this clan)`
+            : ` — member for ${weeksInClan} week${weeksInClan > 1 ? 's' : ''}`)
           : '';
         let txt = `${deckSum}/${idealDecks} decks across ${completedCount} week${completedCount > 1 ? 's' : ''} (${pct}%)`;
         if (incompleteWeeks > 0) {
@@ -580,7 +582,7 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
       max:    8,
       detail: (() => {
         const s = warHistory.streakInCurrentClan;
-        const base = `${s} consecutive week${s > 1 ? 's' : ''} in this clan`;
+        const base = `${s} consecutive week${s !== 1 ? 's' : ''} in this clan`;
         return s < 5 ? `${base} (full score at 5 wks)` : base;
       })(),
     },
@@ -1039,6 +1041,8 @@ export async function buildFamilyWarHistory(playerTag, currentClanTag, currentRa
   let streakInCurrentClan = 0;
   const currentTag = normalizedCurrent ? `#${normalizedCurrent}` : null;
   for (const w of mergedWeeks) {
+    // Ne pas compter la semaine en cours (incomplète) dans le streak
+    if (w.isCurrent) continue;
     if (w.clanTag === currentTag) streakInCurrentClan += 1;
     else break;
   }
