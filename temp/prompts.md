@@ -231,3 +231,14 @@ Peux-tu corriger ce problème pour que le critère de "Régularité" prenne en c
 Le score de fiabilité total de Hafid et des joueurs dans le même cas devrait également être corrigé pour refléter cette régularité passée.
 
 Attention à toujours vérifier que le score en vue Player est synchronisé avec la vue Clan.
+
+---
+
+Dans la vue Player des joueurs en Battle Log, la card "📊 Clan Wars Indicators" n'est pas fiable. Il faut la remplacer par une autre card 📊 Battle logs Indicators" avec les indicateurs suivants :
+
+- "Total Battles" (ex. 30) signe ⚠ si moins de 20 / signe ✗ si moins de 10
+- "River Race ratio" (ex. 17/30) signe ⚠ si moins de 50% / signe ✗ si moins de 25%
+- Win Rate (comme actuellement dans la card)
+- Supprimer l'indicateur "Donations" qui n'est pas pertinent pour les joueurs en Battle Log
+
+Tous ces textes sont à traduire dans les deux langues.

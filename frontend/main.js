@@ -758,6 +758,11 @@ function renderPlayerResults(data) {
     ? 'transfer'
     : (isNewClanArrivee ? 'new' : (isBattleLogMode ? 'new' : null));
 
+  const activityTitleEl = document.getElementById('card-activity')?.querySelector('.card-title');
+  if (activityTitleEl) {
+    activityTitleEl.textContent = `📊 ${isBattleLogMode ? t('battleLogIndicators') : t('activityIndicators')}`;
+  }
+
   overviewGrid.innerHTML = overviewItems([
     { label: t('labelName'),          value: overview.name, cls: 'gold', badge: playerBadge },
     { label: t('labelTag'),           value: overview.tag,
@@ -772,8 +777,31 @@ function renderPlayerResults(data) {
       cls: data.overview?.discord ? 'c-green' : 'c-red' },
   ]);
 
-  // 2. Stats — race log quand il y a des semaines, sinon battlelog breakdown
-  if (warHistory && warHistory.weeks.length > 0) {
+  // 2. Stats — Battle Log indicators for battle log mode, else river race history
+  if (isBattleLogMode) {
+    const bd = activityIndicators?.battleLogBreakdown ?? {};
+    const total = activityIndicators?.totalBattles ?? activityIndicators?.totalWarBattles ?? 0;
+    const gdc = bd.gdc || 0;
+    const ratioPercent = total > 0 ? Math.round((gdc / total) * 100) : 0;
+
+    statsGrid.innerHTML = statCards([
+      {
+        label: t('statTotalBattles'),
+        value: fmt(total),
+        risk: total < 10 ? 'bad' : total < 20 ? 'warn' : null,
+      },
+      {
+        label: t('statRiverRaceRatio'),
+        value: `${gdc}/${total} (${ratioPercent}%)`,
+        risk: ratioPercent < 25 ? 'bad' : ratioPercent < 50 ? 'warn' : null,
+      },
+      {
+        label: t('statWinRateWar'),
+        value: `${activityIndicators.winRate}%`,
+        risk: activityIndicators.winRate < 30 ? 'bad' : activityIndicators.winRate < 50 ? 'warn' : null,
+      },
+    ]);
+  } else if (warHistory && warHistory.weeks.length > 0) {
     // For display we prefer completed weeks only; current (possibly partial) week is excluded
     const hasCurrent = warHistory.weeks.some((w) => w.isCurrent);
     const totalVisible = warHistory.totalWeeks + (hasCurrent ? 1 : 0); // include current week if present
@@ -798,14 +826,27 @@ function renderPlayerResults(data) {
     ]);
   } else {
     // Fallback battlelog : répartition des 30 entrées par type
-    const bd = activityIndicators.battleLogBreakdown ?? {};
+    const bd = activityIndicators?.battleLogBreakdown ?? {};
+    const total = activityIndicators?.totalBattles ?? activityIndicators?.totalWarBattles ?? 0;
+    const gdc = bd.gdc || 0;
+    const ratioPercent = total > 0 ? Math.round((gdc / total) * 100) : 0;
+
     statsGrid.innerHTML = statCards([
-      { label: t('statWarBattles'),      value: fmt(activityIndicators.totalWarBattles) },
-      { label: t('statWinRateWar'),   value: `${activityIndicators.winRate}%` },
-      { label: t('statLadder'),  value: fmt(bd.ladder ?? 0) },
-      { label: t('statChallenges'),        value: fmt(bd.challenge ?? 0) },
-      { label: t('statTotalDonations'),   value: fmt(activityIndicators.donations) },
-      { label: t('statBattleLog'),        value: `${bd.total ?? '?'} ${t('entries')}` },
+      {
+        label: t('statTotalBattles'),
+        value: fmt(total),
+        risk: total < 10 ? 'bad' : total < 20 ? 'warn' : null,
+      },
+      {
+        label: t('statRiverRaceRatio'),
+        value: `${gdc}/${total} (${ratioPercent}%)`,
+        risk: ratioPercent < 25 ? 'bad' : ratioPercent < 50 ? 'warn' : null,
+      },
+      {
+        label: t('statWinRateWar'),
+        value: `${activityIndicators?.winRate ?? 0}%`,
+        risk: (activityIndicators?.winRate ?? 0) < 30 ? 'bad' : (activityIndicators?.winRate ?? 0) < 50 ? 'warn' : null,
+      },
     ]);
   }
 

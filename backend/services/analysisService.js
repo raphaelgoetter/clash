@@ -1200,6 +1200,7 @@ export function analyzePlayer(player, battleLog, lastSeen = null, discordLinked 
     },
     activityIndicators: {
       totalWarBattles: totalBattlesInLog,
+      totalBattles: battleLog.length,
       wins,
       losses,
       winRate,
