@@ -3,7 +3,7 @@
     "totalDecksUsed": 761,
     "maxDecksElapsed": 800,
     "maxDecksWeek": 800,
-    "participantCount": 48,
+    "participantCount": 50,
     "daysFromThu": 4,
     "days": [
       {
@@ -59,10 +59,10 @@
     "name": "Les Resistants",
     "tag": "#LRQP20V9",
     "description": "☆. #2 Resistance (top 🌍) Bonne humeur et GDC obligatoire ⚔️ 4 combats/jour 👉 Discord demandé : kPdQN8zfjM ▪️ code: RoyaleAPI",
-    "clanScore": 117483,
+    "clanScore": 118714,
     "clanWarTrophies": 3757,
-    "members": 48,
-    "type": "open",
+    "members": 50,
+    "type": "inviteOnly",
     "requiredTrophies": 9000,
     "badge": 16000036
   },
@@ -72,8 +72,8 @@
       "tag": "#88Y9Q8UPQ",
       "role": "member",
       "trophies": 9191,
-      "donations": 36,
-      "donationsReceived": 40,
+      "donations": 118,
+      "donationsReceived": 120,
       "expLevel": 62,
       "activityScore": 26,
       "verdict": "Extreme risk",
@@ -85,15 +85,15 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T035330.000Z"
+      "lastSeen": "20260325T013510.000Z"
     },
     {
       "name": "Remi-ni-one",
       "tag": "#8QLCU9QG",
       "role": "member",
-      "trophies": 9861,
-      "donations": 0,
-      "donationsReceived": 0,
+      "trophies": 9823,
+      "donations": 54,
+      "donationsReceived": 40,
       "expLevel": 44,
       "activityScore": 32,
       "verdict": "High risk",
@@ -105,7 +105,27 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T092805.000Z"
+      "lastSeen": "20260324T205544.000Z"
+    },
+    {
+      "name": "VTLX.KING",
+      "tag": "#89L8J9YV9",
+      "role": "member",
+      "trophies": 12880,
+      "donations": 10,
+      "donationsReceived": 0,
+      "expLevel": 71,
+      "activityScore": 40,
+      "verdict": "High risk",
+      "color": "orange",
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260325T082707.000Z"
     },
     {
       "name": "lauramarin1",
@@ -126,26 +146,6 @@
       "warDays": null,
       "warDecks": null,
       "lastSeen": "20260323T031139.000Z"
-    },
-    {
-      "name": "VTLX.KING",
-      "tag": "#89L8J9YV9",
-      "role": "member",
-      "trophies": 12795,
-      "donations": 10,
-      "donationsReceived": 0,
-      "expLevel": 71,
-      "activityScore": 48,
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": true,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260324T091231.000Z"
     },
     {
       "name": "maxim",
@@ -185,13 +185,13 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260323T190028.000Z"
+      "lastSeen": "20260324T121147.000Z"
     },
     {
       "name": "melv",
       "tag": "#U0LVUQRCJ",
       "role": "member",
-      "trophies": 10266,
+      "trophies": 10327,
       "donations": 0,
       "donationsReceived": 40,
       "expLevel": 60,
@@ -205,15 +205,35 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T080516.000Z"
+      "lastSeen": "20260325T071543.000Z"
+    },
+    {
+      "name": "Cop's II MJ7",
+      "tag": "#J290800UU",
+      "role": "member",
+      "trophies": 11182,
+      "donations": 47,
+      "donationsReceived": 88,
+      "expLevel": 63,
+      "activityScore": 64,
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260325T082541.000Z"
     },
     {
       "name": "ylanMRtebz",
       "tag": "#PRGCCRUJP",
       "role": "member",
-      "trophies": 10909,
-      "donations": 42,
-      "donationsReceived": 72,
+      "trophies": 11000,
+      "donations": 76,
+      "donationsReceived": 112,
       "expLevel": 58,
       "activityScore": 64,
       "verdict": "Moderate risk",
@@ -225,16 +245,16 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260323T152348.000Z"
+      "lastSeen": "20260324T154633.000Z"
     },
     {
-      "name": "Legends",
-      "tag": "#8VQLJLR0",
+      "name": "Pepito94",
+      "tag": "#Y9P9GGL89",
       "role": "member",
-      "trophies": 12236,
-      "donations": 218,
+      "trophies": 12357,
+      "donations": 0,
       "donationsReceived": 120,
-      "expLevel": 62,
+      "expLevel": 65,
       "activityScore": 68,
       "verdict": "Moderate risk",
       "color": "yellow",
@@ -245,17 +265,37 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260323T234835.000Z"
+      "lastSeen": "20260323T182953.000Z"
     },
     {
-      "name": "arll2.0",
-      "tag": "#U9PP0CJRL",
-      "role": "elder",
-      "trophies": 11029,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 59,
+      "name": "Legends",
+      "tag": "#8VQLJLR0",
+      "role": "member",
+      "trophies": 12207,
+      "donations": 302,
+      "donationsReceived": 200,
+      "expLevel": 63,
       "activityScore": 68,
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260324T232131.000Z"
+    },
+    {
+      "name": "greg",
+      "tag": "#8GGQLU28",
+      "role": "member",
+      "trophies": 10151,
+      "donations": 84,
+      "donationsReceived": 120,
+      "expLevel": 72,
+      "activityScore": 69,
       "verdict": "Moderate risk",
       "color": "yellow",
       "isNew": true,
@@ -265,15 +305,15 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260322T163047.000Z"
+      "lastSeen": "20260325T060206.000Z"
     },
     {
       "name": "flavie_09",
       "tag": "#80GVRPGPY",
       "role": "member",
       "trophies": 9000,
-      "donations": 38,
-      "donationsReceived": 40,
+      "donations": 56,
+      "donationsReceived": 80,
       "expLevel": 54,
       "activityScore": 69,
       "verdict": "Moderate risk",
@@ -285,7 +325,7 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260323T191250.000Z"
+      "lastSeen": "20260324T121948.000Z"
     },
     {
       "name": "Nova",
@@ -305,55 +345,35 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260323T221719.000Z"
+      "lastSeen": "20260324T222620.000Z"
     },
     {
-      "name": "Pepito94",
-      "tag": "#Y9P9GGL89",
-      "role": "member",
-      "trophies": 12357,
-      "donations": 0,
-      "donationsReceived": 120,
-      "expLevel": 65,
-      "activityScore": 72,
+      "name": "arll2.0",
+      "tag": "#U9PP0CJRL",
+      "role": "elder",
+      "trophies": 11034,
+      "donations": 54,
+      "donationsReceived": 70,
+      "expLevel": 59,
+      "activityScore": 71,
       "verdict": "Moderate risk",
       "color": "yellow",
-      "isNew": false,
+      "isNew": true,
       "isFamilyTransfer": false,
       "transferFromClan": null,
       "transferWeek": null,
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260323T182953.000Z"
-    },
-    {
-      "name": "Peater",
-      "tag": "#V0VLJQCJU",
-      "role": "member",
-      "trophies": 11825,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 69,
-      "activityScore": 72,
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260322T120104.000Z"
+      "lastSeen": "20260325T080853.000Z"
     },
     {
       "name": "imad9591",
       "tag": "#CGJP0YYUJ",
       "role": "member",
-      "trophies": 11757,
+      "trophies": 11728,
       "donations": 0,
-      "donationsReceived": 120,
+      "donationsReceived": 200,
       "expLevel": 61,
       "activityScore": 72,
       "verdict": "Moderate risk",
@@ -365,15 +385,15 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T072759.000Z"
+      "lastSeen": "20260325T071147.000Z"
     },
     {
       "name": "headless",
       "tag": "#J008G9CLJ",
       "role": "member",
-      "trophies": 4295,
-      "donations": 0,
-      "donationsReceived": 160,
+      "trophies": 4270,
+      "donations": 28,
+      "donationsReceived": 280,
       "expLevel": 32,
       "activityScore": 72,
       "verdict": "Moderate risk",
@@ -385,7 +405,7 @@
       "discord": true,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T090153.000Z"
+      "lastSeen": "20260325T064830.000Z"
     },
     {
       "name": "T0T0L0$T0n€",
@@ -405,7 +425,7 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T031051.000Z"
+      "lastSeen": "20260325T031711.000Z"
     },
     {
       "name": "☆. Inuk",
@@ -428,13 +448,33 @@
       "lastSeen": "20260322T172712.000Z"
     },
     {
-      "name": "greg",
-      "tag": "#8GGQLU28",
+      "name": "Peater",
+      "tag": "#V0VLJQCJU",
       "role": "member",
-      "trophies": 10151,
-      "donations": 38,
-      "donationsReceived": 40,
-      "expLevel": 72,
+      "trophies": 11825,
+      "donations": 15,
+      "donationsReceived": 32,
+      "expLevel": 69,
+      "activityScore": 76,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260324T181407.000Z"
+    },
+    {
+      "name": "Hafid",
+      "tag": "#YQVP9P0Y",
+      "role": "member",
+      "trophies": 11726,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 66,
       "activityScore": 77,
       "verdict": "High reliability",
       "color": "green",
@@ -445,7 +485,7 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260323T181003.000Z"
+      "lastSeen": "20260324T181144.000Z"
     },
     {
       "name": "koko aka thanos",
@@ -465,15 +505,35 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260323T173155.000Z"
+      "lastSeen": "20260324T193113.000Z"
+    },
+    {
+      "name": "☆. Apocalm",
+      "tag": "#UP9YJV080",
+      "role": "coLeader",
+      "trophies": 6893,
+      "donations": 34,
+      "donationsReceived": 0,
+      "expLevel": 54,
+      "activityScore": 77,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260323T125811.000Z"
     },
     {
       "name": "mathis",
       "tag": "#2YP2V2G0R",
       "role": "elder",
       "trophies": 12120,
-      "donations": 324,
-      "donationsReceived": 130,
+      "donations": 486,
+      "donationsReceived": 190,
       "expLevel": 66,
       "activityScore": 79,
       "verdict": "High reliability",
@@ -485,15 +545,15 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T082610.000Z"
+      "lastSeen": "20260325T083005.000Z"
     },
     {
       "name": "Pépin le Bref",
       "tag": "#98UULQY8",
       "role": "member",
-      "trophies": 12267,
-      "donations": 99,
-      "donationsReceived": 120,
+      "trophies": 12329,
+      "donations": 221,
+      "donationsReceived": 160,
       "expLevel": 73,
       "activityScore": 81,
       "verdict": "High reliability",
@@ -505,27 +565,7 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T073137.000Z"
-    },
-    {
-      "name": "☆. Apocalm",
-      "tag": "#UP9YJV080",
-      "role": "coLeader",
-      "trophies": 6893,
-      "donations": 34,
-      "donationsReceived": 0,
-      "expLevel": 54,
-      "activityScore": 81,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260323T125811.000Z"
+      "lastSeen": "20260324T210020.000Z"
     },
     {
       "name": "grooliv",
@@ -552,8 +592,8 @@
       "tag": "#9VQYC9GJQ",
       "role": "coLeader",
       "trophies": 7340,
-      "donations": 103,
-      "donationsReceived": 120,
+      "donations": 171,
+      "donationsReceived": 200,
       "expLevel": 67,
       "activityScore": 83,
       "verdict": "High reliability",
@@ -565,15 +605,15 @@
       "discord": true,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T083505.000Z"
+      "lastSeen": "20260325T081056.000Z"
     },
     {
       "name": "Fidel",
       "tag": "#GLV9Q2P09",
       "role": "elder",
-      "trophies": 12213,
-      "donations": 44,
-      "donationsReceived": 160,
+      "trophies": 12332,
+      "donations": 62,
+      "donationsReceived": 240,
       "expLevel": 68,
       "activityScore": 84,
       "verdict": "High reliability",
@@ -585,13 +625,13 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T071217.000Z"
+      "lastSeen": "20260325T082246.000Z"
     },
     {
       "name": "Pico!!",
       "tag": "#U09CUCYL2",
       "role": "elder",
-      "trophies": 11345,
+      "trophies": 11344,
       "donations": 0,
       "donationsReceived": 0,
       "expLevel": 60,
@@ -605,15 +645,15 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T074326.000Z"
+      "lastSeen": "20260325T065031.000Z"
     },
     {
       "name": "hardchaos76",
       "tag": "#8UL8JRCJ",
       "role": "elder",
       "trophies": 10682,
-      "donations": 25,
-      "donationsReceived": 120,
+      "donations": 54,
+      "donationsReceived": 240,
       "expLevel": 63,
       "activityScore": 84,
       "verdict": "High reliability",
@@ -625,15 +665,15 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T090513.000Z"
+      "lastSeen": "20260325T040521.000Z"
     },
     {
       "name": "pacstar",
       "tag": "#GC20UCLL",
       "role": "elder",
-      "trophies": 11317,
-      "donations": 26,
-      "donationsReceived": 120,
+      "trophies": 11379,
+      "donations": 40,
+      "donationsReceived": 200,
       "expLevel": 69,
       "activityScore": 85,
       "verdict": "High reliability",
@@ -645,15 +685,15 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T093047.000Z"
+      "lastSeen": "20260325T064805.000Z"
     },
     {
       "name": "laurentsom",
       "tag": "#RJJ99Y9J",
       "role": "elder",
       "trophies": 10272,
-      "donations": 8,
-      "donationsReceived": 120,
+      "donations": 24,
+      "donationsReceived": 240,
       "expLevel": 73,
       "activityScore": 85,
       "verdict": "High reliability",
@@ -665,14 +705,14 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T064854.000Z"
+      "lastSeen": "20260325T062942.000Z"
     },
     {
       "name": "Zapata86",
       "tag": "#8Y90VQYP9",
       "role": "elder",
       "trophies": 9391,
-      "donations": 18,
+      "donations": 38,
       "donationsReceived": 40,
       "expLevel": 68,
       "activityScore": 85,
@@ -685,34 +725,14 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260323T162738.000Z"
-    },
-    {
-      "name": "Slicork",
-      "tag": "#CJVUJ8U9C",
-      "role": "elder",
-      "trophies": 12089,
-      "donations": 121,
-      "donationsReceived": 120,
-      "expLevel": 77,
-      "activityScore": 86,
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260324T090837.000Z"
+      "lastSeen": "20260324T203517.000Z"
     },
     {
       "name": "☆. Kikootz",
       "tag": "#8G00908LP",
       "role": "elder",
       "trophies": 12011,
-      "donations": 196,
+      "donations": 282,
       "donationsReceived": 0,
       "expLevel": 75,
       "activityScore": 86,
@@ -725,15 +745,35 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T090757.000Z"
+      "lastSeen": "20260325T063644.000Z"
+    },
+    {
+      "name": "Slicork",
+      "tag": "#CJVUJ8U9C",
+      "role": "elder",
+      "trophies": 12089,
+      "donations": 173,
+      "donationsReceived": 200,
+      "expLevel": 77,
+      "activityScore": 87,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260325T072703.000Z"
     },
     {
       "name": "kayes(2)",
       "tag": "#8QVRJYVYU",
       "role": "elder",
       "trophies": 11653,
-      "donations": 0,
-      "donationsReceived": 40,
+      "donations": 36,
+      "donationsReceived": 80,
       "expLevel": 78,
       "activityScore": 87,
       "verdict": "High reliability",
@@ -745,7 +785,7 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260323T154153.000Z"
+      "lastSeen": "20260325T045036.000Z"
     },
     {
       "name": "☆. Mini Aurel",
@@ -765,7 +805,7 @@
       "discord": true,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260323T210907.000Z"
+      "lastSeen": "20260324T185716.000Z"
     },
     {
       "name": "Adolphe en Tmax",
@@ -785,15 +825,15 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260323T223251.000Z"
+      "lastSeen": "20260324T214830.000Z"
     },
     {
       "name": "Flo 2",
       "tag": "#QVG90PQVG",
       "role": "elder",
-      "trophies": 10751,
-      "donations": 44,
-      "donationsReceived": 80,
+      "trophies": 10726,
+      "donations": 130,
+      "donationsReceived": 160,
       "expLevel": 59,
       "activityScore": 88,
       "verdict": "High reliability",
@@ -805,15 +845,15 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T055404.000Z"
+      "lastSeen": "20260325T070355.000Z"
     },
     {
       "name": "le roi king",
       "tag": "#YGP000RP8",
       "role": "elder",
       "trophies": 10502,
-      "donations": 186,
-      "donationsReceived": 120,
+      "donations": 346,
+      "donationsReceived": 200,
       "expLevel": 64,
       "activityScore": 88,
       "verdict": "High reliability",
@@ -825,13 +865,13 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T033048.000Z"
+      "lastSeen": "20260325T042755.000Z"
     },
     {
       "name": "Benoit du 28",
       "tag": "#2L8RPQRJ9",
       "role": "elder",
-      "trophies": 10123,
+      "trophies": 10154,
       "donations": 108,
       "donationsReceived": 40,
       "expLevel": 60,
@@ -845,14 +885,14 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T075648.000Z"
+      "lastSeen": "20260325T041206.000Z"
     },
     {
       "name": "flo",
       "tag": "#LUGP2RYY",
       "role": "elder",
-      "trophies": 12017,
-      "donations": 78,
+      "trophies": 12102,
+      "donations": 138,
       "donationsReceived": 80,
       "expLevel": 78,
       "activityScore": 89,
@@ -865,15 +905,15 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T090304.000Z"
+      "lastSeen": "20260325T070335.000Z"
     },
     {
       "name": "Plugpourlefion",
       "tag": "#GGVQJLG9",
       "role": "elder",
       "trophies": 11093,
-      "donations": 206,
-      "donationsReceived": 120,
+      "donations": 232,
+      "donationsReceived": 200,
       "expLevel": 70,
       "activityScore": 89,
       "verdict": "High reliability",
@@ -885,15 +925,15 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T060603.000Z"
+      "lastSeen": "20260325T032752.000Z"
     },
     {
       "name": "hyène",
       "tag": "#82JPJ9J98",
       "role": "elder",
       "trophies": 10263,
-      "donations": 68,
-      "donationsReceived": 160,
+      "donations": 98,
+      "donationsReceived": 240,
       "expLevel": 74,
       "activityScore": 89,
       "verdict": "High reliability",
@@ -905,15 +945,15 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T075221.000Z"
+      "lastSeen": "20260325T074106.000Z"
     },
     {
       "name": "derrick",
       "tag": "#8YGY2RPCC",
       "role": "elder",
-      "trophies": 12051,
-      "donations": 170,
-      "donationsReceived": 120,
+      "trophies": 12203,
+      "donations": 340,
+      "donationsReceived": 240,
       "expLevel": 81,
       "activityScore": 92,
       "verdict": "High reliability",
@@ -925,16 +965,16 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T035148.000Z"
+      "lastSeen": "20260325T060108.000Z"
     },
     {
       "name": "displaynone",
       "tag": "#YRGJGR8R",
       "role": "coLeader",
-      "trophies": 9068,
-      "donations": 266,
-      "donationsReceived": 176,
-      "expLevel": 71,
+      "trophies": 9040,
+      "donations": 550,
+      "donationsReceived": 296,
+      "expLevel": 72,
       "activityScore": 93,
       "verdict": "High reliability",
       "color": "green",
@@ -945,15 +985,15 @@
       "discord": true,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T090030.000Z"
+      "lastSeen": "20260325T083845.000Z"
     },
     {
       "name": "guill4um3",
       "tag": "#VGJ9LL8VC",
       "role": "coLeader",
-      "trophies": 12539,
-      "donations": 94,
-      "donationsReceived": 160,
+      "trophies": 12565,
+      "donations": 161,
+      "donationsReceived": 240,
       "expLevel": 65,
       "activityScore": 94,
       "verdict": "High reliability",
@@ -965,15 +1005,15 @@
       "discord": true,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T051040.000Z"
+      "lastSeen": "20260325T070711.000Z"
     },
     {
       "name": "Totto698",
       "tag": "#88QP9CJU",
       "role": "elder",
       "trophies": 12150,
-      "donations": 117,
-      "donationsReceived": 80,
+      "donations": 179,
+      "donationsReceived": 120,
       "expLevel": 74,
       "activityScore": 94,
       "verdict": "High reliability",
@@ -985,15 +1025,15 @@
       "discord": true,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T055224.000Z"
+      "lastSeen": "20260325T044338.000Z"
     },
     {
       "name": "dclik77",
       "tag": "#99VY0090",
       "role": "elder",
-      "trophies": 12587,
-      "donations": 92,
-      "donationsReceived": 80,
+      "trophies": 12645,
+      "donations": 148,
+      "donationsReceived": 100,
       "expLevel": 76,
       "activityScore": 95,
       "verdict": "High reliability",
@@ -1005,15 +1045,15 @@
       "discord": true,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T073749.000Z"
+      "lastSeen": "20260325T083559.000Z"
     },
     {
       "name": "☆. Électron",
       "tag": "#82UPUGYP",
       "role": "leader",
       "trophies": 12373,
-      "donations": 196,
-      "donationsReceived": 120,
+      "donations": 340,
+      "donationsReceived": 200,
       "expLevel": 71,
       "activityScore": 96,
       "verdict": "High reliability",
@@ -1025,16 +1065,16 @@
       "discord": true,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T064218.000Z"
+      "lastSeen": "20260325T082812.000Z"
     }
   ],
   "summary": {
-    "green": 32,
-    "yellow": 12,
+    "green": 33,
+    "yellow": 13,
     "orange": 3,
     "red": 1,
-    "avgScore": 77,
-    "total": 48
+    "avgScore": 76,
+    "total": 50
   },
   "isWarPeriod": false,
   "topPlayers": {
@@ -3059,7 +3099,7 @@
     "totalDecksUsed": 761,
     "maxDecksElapsed": 800,
     "maxDecksWeek": 800,
-    "participantCount": 48,
+    "participantCount": 50,
     "daysFromThu": 4,
     "days": [
       {
