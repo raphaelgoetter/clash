@@ -1004,16 +1004,18 @@ function renderPlayerResults(data) {
         const rawGdc = Number(r.gdc) || 0;
         const weekLabel = r.week || currentWeekLabel;
         let badge = rawGdc === 0 ? '❌' : rawGdc < 16 ? '⚠️' : '✅';
-        if (idx === finalRows.length - 1) {
+        if (r.isCurrentClan) {
+          badge = '';
+        } else if (idx === finalRows.length - 1) {
           badge = '❓';
         }
         const extraNote = rawGdc > 16 ? ` (+${rawGdc - 16})` : '';
 
         return `
-          <tr class="${r.style}">
+          <tr class="${r.style}${r.isCurrentClan ? ' current-week' : ''}">
             <td>${weekLabel}</td>
             <td>${r.clan}</td>
-            <td>${rawGdc}${extraNote} ${badge}</td>
+            <td>${rawGdc}${extraNote}${badge ? ' ' + badge : ''}</td>
           </tr>
         `;
       }).join('');

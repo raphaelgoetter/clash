@@ -930,6 +930,8 @@ select.search-input {
 .battlelog-table th { color: var(--text-secondary); }
 .battlelog-table td.empty-week { background: rgba(239,68,68,0.15); }
 .battlelog-table td.quasi-empty-week { background: rgba(251,191,36,0.15); }
+.battlelog-table tr.current-week td { background: rgba(148,163,184,0.15); color: var(--text-muted); }
+.battlelog-table tr.current-week td:last-child { color: var(--text-muted); }
 
 .members-table th.sort-asc  .sort-icon::after { content: ' ↑'; }
 .members-table th.sort-desc .sort-icon::after { content: ' ↓'; }
