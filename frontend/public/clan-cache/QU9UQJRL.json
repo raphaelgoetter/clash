@@ -3,7 +3,7 @@
     "totalDecksUsed": 235,
     "maxDecksElapsed": 800,
     "maxDecksWeek": 800,
-    "participantCount": 29,
+    "participantCount": 30,
     "daysFromThu": 4,
     "days": [
       {
@@ -59,9 +59,9 @@
     "name": "Les Revoltes",
     "tag": "#QU9UQJRL",
     "description": "☆. #3 Resistance (top 🌍) Bonne humeur et entraînement GDC ⚔️ au programme 👉 Discord demandé : kPdQN8zfjM ▪️code : RoyaleAPI",
-    "clanScore": 88469,
+    "clanScore": 90067,
     "clanWarTrophies": 2185,
-    "members": 29,
+    "members": 30,
     "type": "open",
     "requiredTrophies": 4000,
     "badge": 16000036
@@ -75,10 +75,10 @@
       "donations": 0,
       "donationsReceived": 0,
       "expLevel": 31,
-      "activityScore": 7,
+      "activityScore": 5,
       "verdict": "Extreme risk",
       "color": "red",
-      "isNew": true,
+      "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
       "transferWeek": null,
@@ -95,7 +95,7 @@
       "donations": 0,
       "donationsReceived": 0,
       "expLevel": 4,
-      "activityScore": 8,
+      "activityScore": 5,
       "verdict": "Extreme risk",
       "color": "red",
       "isNew": true,
@@ -135,7 +135,7 @@
       "donations": 0,
       "donationsReceived": 0,
       "expLevel": 28,
-      "activityScore": 24,
+      "activityScore": 19,
       "verdict": "Extreme risk",
       "color": "red",
       "isNew": true,
@@ -146,26 +146,6 @@
       "warDays": null,
       "warDecks": null,
       "lastSeen": "20260321T065008.000Z"
-    },
-    {
-      "name": "KO93",
-      "tag": "#PGQ98JVJ8",
-      "role": "member",
-      "trophies": 7810,
-      "donations": 28,
-      "donationsReceived": 40,
-      "expLevel": 36,
-      "activityScore": 27,
-      "verdict": "Extreme risk",
-      "color": "red",
-      "isNew": true,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260325T024211.000Z"
     },
     {
       "name": "Hunter lord",
@@ -191,9 +171,9 @@
       "name": "chloe_lpb",
       "tag": "#UYRR99RL8",
       "role": "member",
-      "trophies": 8605,
-      "donations": 127,
-      "donationsReceived": 10,
+      "trophies": 8670,
+      "donations": 137,
+      "donationsReceived": 80,
       "expLevel": 41,
       "activityScore": 28,
       "verdict": "Extreme risk",
@@ -205,7 +185,67 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260325T064941.000Z"
+      "lastSeen": "20260325T231532.000Z"
+    },
+    {
+      "name": "KO93",
+      "tag": "#PGQ98JVJ8",
+      "role": "member",
+      "trophies": 7839,
+      "donations": 108,
+      "donationsReceived": 72,
+      "expLevel": 36,
+      "activityScore": 28,
+      "verdict": "Extreme risk",
+      "color": "red",
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260326T005101.000Z"
+    },
+    {
+      "name": "Specteeerdima",
+      "tag": "#2200UQ9P08",
+      "role": "member",
+      "trophies": 4780,
+      "donations": 110,
+      "donationsReceived": 250,
+      "expLevel": 28,
+      "activityScore": 31,
+      "verdict": "High risk",
+      "color": "orange",
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260326T055516.000Z"
+    },
+    {
+      "name": "Nino Owns U",
+      "tag": "#CRLR0P92J",
+      "role": "member",
+      "trophies": 7542,
+      "donations": 0,
+      "donationsReceived": 0,
+      "expLevel": 40,
+      "activityScore": 32,
+      "verdict": "High risk",
+      "color": "orange",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260325T222736.000Z"
     },
     {
       "name": "luks",
@@ -215,7 +255,7 @@
       "donations": 0,
       "donationsReceived": 0,
       "expLevel": 53,
-      "activityScore": 31,
+      "activityScore": 35,
       "verdict": "High risk",
       "color": "orange",
       "isNew": false,
@@ -225,27 +265,7 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260323T064130.000Z"
-    },
-    {
-      "name": "Nino Owns U",
-      "tag": "#CRLR0P92J",
-      "role": "member",
-      "trophies": 7537,
-      "donations": 0,
-      "donationsReceived": 0,
-      "expLevel": 40,
-      "activityScore": 36,
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260324T222802.000Z"
+      "lastSeen": "20260326T073859.000Z"
     },
     {
       "name": "bob",
@@ -288,32 +308,12 @@
       "lastSeen": "20260302T015406.000Z"
     },
     {
-      "name": "Specteeerdima",
-      "tag": "#2200UQ9P08",
-      "role": "member",
-      "trophies": 4600,
-      "donations": 86,
-      "donationsReceived": 180,
-      "expLevel": 27,
-      "activityScore": 43,
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": true,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260325T060824.000Z"
-    },
-    {
       "name": "Wimix❤",
       "tag": "#RRCRJ8QJJ",
       "role": "member",
-      "trophies": 10786,
+      "trophies": 10756,
       "donations": 0,
-      "donationsReceived": 72,
+      "donationsReceived": 160,
       "expLevel": 62,
       "activityScore": 44,
       "verdict": "High risk",
@@ -325,7 +325,7 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260325T003651.000Z"
+      "lastSeen": "20260325T201836.000Z"
     },
     {
       "name": "Sadz",
@@ -333,7 +333,7 @@
       "role": "member",
       "trophies": 12200,
       "donations": 0,
-      "donationsReceived": 80,
+      "donationsReceived": 90,
       "expLevel": 64,
       "activityScore": 48,
       "verdict": "High risk",
@@ -345,15 +345,15 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260325T082157.000Z"
+      "lastSeen": "20260325T114934.000Z"
     },
     {
       "name": "Clasher",
       "tag": "#CLQ2RYYJQ",
       "role": "member",
-      "trophies": 11778,
-      "donations": 102,
-      "donationsReceived": 0,
+      "trophies": 11748,
+      "donations": 138,
+      "donationsReceived": 32,
       "expLevel": 64,
       "activityScore": 48,
       "verdict": "High risk",
@@ -365,7 +365,7 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T192400.000Z"
+      "lastSeen": "20260325T175343.000Z"
     },
     {
       "name": "Shinzo",
@@ -375,7 +375,7 @@
       "donations": 0,
       "donationsReceived": 0,
       "expLevel": 51,
-      "activityScore": 51,
+      "activityScore": 48,
       "verdict": "High risk",
       "color": "orange",
       "isNew": false,
@@ -392,8 +392,8 @@
       "tag": "#2V20JP28Q",
       "role": "elder",
       "trophies": 8806,
-      "donations": 112,
-      "donationsReceived": 128,
+      "donations": 189,
+      "donationsReceived": 168,
       "expLevel": 42,
       "activityScore": 52,
       "verdict": "High risk",
@@ -405,7 +405,7 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T164700.000Z"
+      "lastSeen": "20260326T083358.000Z"
     },
     {
       "name": "Nightmare_YMD",
@@ -425,7 +425,7 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260325T071235.000Z"
+      "lastSeen": "20260326T070458.000Z"
     },
     {
       "name": "NINJA 31",
@@ -445,7 +445,27 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260325T091818.000Z"
+      "lastSeen": "20260325T101753.000Z"
+    },
+    {
+      "name": "Performant",
+      "tag": "#LJYGJYCYC",
+      "role": "member",
+      "trophies": 11506,
+      "donations": 80,
+      "donationsReceived": 250,
+      "expLevel": 74,
+      "activityScore": 56,
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260326T073734.000Z"
     },
     {
       "name": "Kansass",
@@ -465,14 +485,14 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T193529.000Z"
+      "lastSeen": "20260325T190752.000Z"
     },
     {
       "name": "epi",
       "tag": "#VPGCQPR9U",
       "role": "elder",
       "trophies": 6523,
-      "donations": 0,
+      "donations": 8,
       "donationsReceived": 0,
       "expLevel": 35,
       "activityScore": 64,
@@ -485,27 +505,7 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T145905.000Z"
-    },
-    {
-      "name": "Performant",
-      "tag": "#LJYGJYCYC",
-      "role": "member",
-      "trophies": 11504,
-      "donations": 48,
-      "donationsReceived": 180,
-      "expLevel": 74,
-      "activityScore": 65,
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": true,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": null,
-      "warDecks": null,
-      "lastSeen": "20260325T064910.000Z"
+      "lastSeen": "20260325T155950.000Z"
     },
     {
       "name": "☆.",
@@ -515,7 +515,7 @@
       "donations": 0,
       "donationsReceived": 0,
       "expLevel": 53,
-      "activityScore": 71,
+      "activityScore": 67,
       "verdict": "Moderate risk",
       "color": "yellow",
       "isNew": false,
@@ -528,12 +528,32 @@
       "lastSeen": "20260322T093827.000Z"
     },
     {
+      "name": "☆. Eloise",
+      "tag": "#QY0LG0R0P",
+      "role": "member",
+      "trophies": 10659,
+      "donations": 77,
+      "donationsReceived": 0,
+      "expLevel": 68,
+      "activityScore": 71,
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": null,
+      "warDecks": null,
+      "lastSeen": "20260326T013958.000Z"
+    },
+    {
       "name": "La Juliasse",
       "tag": "#8VP9UJV9L",
       "role": "elder",
       "trophies": 9183,
-      "donations": 184,
-      "donationsReceived": 160,
+      "donations": 240,
+      "donationsReceived": 240,
       "expLevel": 51,
       "activityScore": 72,
       "verdict": "Moderate risk",
@@ -545,15 +565,15 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260325T091947.000Z"
+      "lastSeen": "20260326T063205.000Z"
     },
     {
       "name": "rotk",
       "tag": "#8JGU9UUJJ",
       "role": "elder",
-      "trophies": 9000,
-      "donations": 118,
-      "donationsReceived": 48,
+      "trophies": 9030,
+      "donations": 146,
+      "donationsReceived": 80,
       "expLevel": 60,
       "activityScore": 74,
       "verdict": "Moderate risk",
@@ -565,17 +585,17 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260325T085922.000Z"
+      "lastSeen": "20260325T174324.000Z"
     },
     {
       "name": "luky",
       "tag": "#2U9QL8Q89",
       "role": "member",
       "trophies": 10084,
-      "donations": 154,
-      "donationsReceived": 73,
+      "donations": 198,
+      "donationsReceived": 113,
       "expLevel": 62,
-      "activityScore": 79,
+      "activityScore": 76,
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
@@ -585,7 +605,7 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T222634.000Z"
+      "lastSeen": "20260325T153225.000Z"
     },
     {
       "name": "TedX22",
@@ -593,7 +613,7 @@
       "role": "elder",
       "trophies": 10394,
       "donations": 8,
-      "donationsReceived": 80,
+      "donationsReceived": 110,
       "expLevel": 61,
       "activityScore": 81,
       "verdict": "High reliability",
@@ -605,15 +625,15 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T222259.000Z"
+      "lastSeen": "20260326T061911.000Z"
     },
     {
       "name": "sebiboss2",
       "tag": "#2YLYG9V92",
       "role": "elder",
       "trophies": 12632,
-      "donations": 149,
-      "donationsReceived": 138,
+      "donations": 307,
+      "donationsReceived": 210,
       "expLevel": 71,
       "activityScore": 83,
       "verdict": "High reliability",
@@ -625,16 +645,16 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260324T231921.000Z"
+      "lastSeen": "20260325T230843.000Z"
     },
     {
       "name": "Gazyr2",
       "tag": "#UVGPPVQ8Q",
       "role": "coLeader",
       "trophies": 11375,
-      "donations": 201,
-      "donationsReceived": 150,
-      "expLevel": 61,
+      "donations": 287,
+      "donationsReceived": 200,
+      "expLevel": 62,
       "activityScore": 87,
       "verdict": "High reliability",
       "color": "green",
@@ -645,16 +665,16 @@
       "discord": false,
       "warDays": null,
       "warDecks": null,
-      "lastSeen": "20260325T090527.000Z"
+      "lastSeen": "20260326T082231.000Z"
     }
   ],
   "summary": {
     "green": 4,
-    "yellow": 6,
+    "yellow": 7,
     "orange": 12,
     "red": 7,
-    "avgScore": 49,
-    "total": 29
+    "avgScore": 48,
+    "total": 30
   },
   "isWarPeriod": false,
   "topPlayers": {
@@ -773,7 +793,7 @@
         "dailySnapshotComplete": true,
         "dailyMismatch": false,
         "dailyTotalFromSnapshot": 0,
-        "isNew": true
+        "isNew": false
       },
       {
         "name": "Chikumo",
@@ -1202,7 +1222,7 @@
     "totalDecksUsed": 235,
     "maxDecksElapsed": 800,
     "maxDecksWeek": 800,
-    "participantCount": 29,
+    "participantCount": 30,
     "daysFromThu": 4,
     "days": [
       {
@@ -1309,5 +1329,6 @@
       "snapshotCount": 66,
       "liveCount": null
     }
-  ]
+  ],
+  "rateLimited": false
 }
