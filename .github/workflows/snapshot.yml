@@ -6,11 +6,8 @@ permissions:
 
 on:
   schedule:
-    # Snapshot principal : juste avant le reset GDC (09:40 UTC constant)
-    # → 10:40 Paris en hiver (CET), 11:40 Paris en été (CEST)
-    # On exécute deux runs : un ~1h avant, et un proche du reset.
-    - cron: '30 8 * * *'   # 09:30 CEST / 08:30 CET  (≈1h avant reset)
-    - cron: '15 9 * * *'   # 10:15 CEST / 09:15 CET  (proche du reset)
+    # Snapshot + cache refresh : toutes les 60 minutes
+    - cron: '0 * * * *'
   workflow_dispatch:            # permet un déclenchement manuel
 
 jobs:
@@ -44,6 +41,9 @@ jobs:
 
       - name: Run snapshot script
         run: npm run snapshot
+
+      - name: Refresh persistent clan analysis cache
+        run: npm run refresh-cache
 
       - name: Build static clan cache
         run: npm run cache

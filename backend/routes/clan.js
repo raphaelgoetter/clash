@@ -16,6 +16,7 @@ import { computeUncomplete } from '../services/uncomplete.js';
 import { getOrSet } from '../services/cache.js';
 import { getDiscordLinks } from '../services/discordLinks.js';
 import { recordSnapshot } from '../services/snapshot.js';
+import { loadCache, saveCache } from '../services/analysisCache.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -89,6 +90,12 @@ router.get('/:tag/analysis', async (req, res) => {
     // clicks on the same instance.  TTL is small so stale issues are rare.
     const cacheKey = `clan:${clanTag}`;
     const { value:payload, fromCache } = await getOrSet(cacheKey, () => buildClanAnalysis(clanTag), 5 * 60 * 1000);
+
+    // Keep a persistent fallback cache on disk, to survive cold starts and rate-limit incidents.
+    if (!fromCache) {
+      await saveCache(clanTag, payload).catch(() => null);
+    }
+
     // prevent Vercel/edge from caching this response
     res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
     res.set('X-Cache', fromCache ? 'HIT' : 'MISS');
@@ -97,19 +104,32 @@ router.get('/:tag/analysis', async (req, res) => {
     const status = err.message.includes('404') ? 404 : 500;
 
     // If we are temporarily rate-limited, serve prebuilt static cache to avoid total failure.
-    if ((err.isRateLimit || err.message.includes('429')) && clanTag) {
+    if ((err.isRateLimit || err.message.includes('429') || err.status >= 500) && clanTag) {
+      try {
+        const cached = await loadCache(clanTag);
+        if (cached) {
+          cached.fallbackReason = 'diskCache';
+          cached.rateLimited = true;
+          res.set('X-Cache', 'STALE');
+          res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
+          return res.status(200).json(cached);
+        }
+      } catch (loadErr) {
+        console.warn(`[clan] persistent fallback load failed for ${clanTag}:`, loadErr.message);
+      }
+
       try {
         const clean = clanTag.replace(/[^A-Za-z0-9]/g, '');
         const staticPath = path.join(process.cwd(), 'frontend', 'public', 'clan-cache', `${clean}.json`);
         const raw = await fs.readFile(staticPath, 'utf-8');
         const fallbackData = JSON.parse(raw);
-        fallbackData.fallbackReason = 'rateLimited';
+        fallbackData.fallbackReason = 'publicCache';
         fallbackData.rateLimited = true;
         res.set('X-Cache', 'STALE');
         res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
         return res.status(200).json(fallbackData);
       } catch (fallbackErr) {
-        console.warn(`[clan] rate-limited fallback failed for ${clanTag}:`, fallbackErr.message);
+        console.warn(`[clan] rate-limited public fallback failed for ${clanTag}:`, fallbackErr.message);
       }
     }
 
