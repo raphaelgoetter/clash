@@ -52,6 +52,9 @@ function slimPlayerProfile(fullPlayer) {
 
   const cw2 = (fullPlayer.badges || []).find((b) => b.name === 'ClanWarWins');
 
+  const totalDonations = fullPlayer.totalDonations ?? null;
+  const donations = fullPlayer.donations ?? null;
+
   return {
     tag: fullPlayer.tag,
     name: fullPlayer.name,
@@ -59,8 +62,8 @@ function slimPlayerProfile(fullPlayer) {
     trophies: fullPlayer.trophies ?? null,
     bestTrophies: fullPlayer.bestTrophies ?? null,
     expLevel: fullPlayer.expLevel ?? null,
-    totalDonations: fullPlayer.totalDonations ?? fullPlayer.donations ?? null,
-    donations: fullPlayer.donations ?? null,
+    totalDonations,
+    donations,
     warDayWins: fullPlayer.warDayWins ?? null,
     cw2Progress: cw2?.progress ?? null,
     clan,
@@ -424,6 +427,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         }
 
         const [profile, battleLog] = res.value;
+        const existingRaw = membersRaw[tag];
         membersRaw[tag] = {
           profile: slimPlayerProfile(profile) || {
             tag: profile?.tag || tag,
@@ -431,7 +435,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             role: profile?.role || membersToFetch[idx].role,
             trophies: profile?.trophies ?? membersToFetch[idx].trophies,
             donations: profile?.donations ?? membersToFetch[idx].donations,
-            totalDonations: profile?.totalDonations ?? membersToFetch[idx].donations,
+            totalDonations: profile?.totalDonations ?? existingRaw?.profile?.totalDonations ?? null,
           },
           battleLogSummary: {
             totalBattles: Array.isArray(battleLog) ? battleLog.length : 0,
@@ -606,14 +610,15 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       const battleLog = memberData.battleLog || [];
 
       // Keep trimmed data as warm cache for instant UI hydration.
+      const existingRaw = membersRaw[m.tag];
       membersRaw[m.tag] = {
-        profile: slimPlayerProfile(fullPlayer) || {
+        profile: slimPlayerProfile(fullPlayer) || existingRaw?.profile || {
           tag: m.tag,
           name: m.name,
           role: m.role,
           trophies: m.trophies ?? null,
           donations: m.donations ?? null,
-          totalDonations: m.donations ?? null,
+          totalDonations: existingRaw?.profile?.totalDonations ?? null,
         },
         battleLogSummary: {
           totalBattles: Array.isArray(battleLog) ? battleLog.length : 0,
@@ -851,12 +856,15 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           return summary;
         })();
 
+      const totalDonations = playerProxy.totalDonations ?? m.totalDonations ?? null;
+
       return {
         name:               m.name,
         tag:                m.tag,
         role:               m.role,
         trophies:           m.trophies ?? 0,
         donations:          m.donations ?? 0,
+        totalDonations,
         donationsReceived:  m.donationsReceived ?? 0,
         expLevel:           m.expLevel ?? 1,
         activityScore,

@@ -1538,7 +1538,7 @@ export function analyzeClanMembers(members) {
       tag: m.tag,
       role: m.role,
       trophies: m.trophies ?? 0,
-      totalDonations: m.totalDonations ?? m.donations ?? 0,
+      totalDonations: m.totalDonations ?? null,
       donations: m.donations ?? 0,
       donationsReceived: m.donationsReceived ?? 0,
       expLevel: m.expLevel ?? 1,
