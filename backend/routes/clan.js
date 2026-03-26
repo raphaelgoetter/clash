@@ -6,7 +6,7 @@ import { Router } from 'express';
 import { fetchClan, fetchClanMembers, fetchRaceLog, fetchBattleLog, fetchPlayer, fetchCurrentRace } from '../services/clashApi.js';
 import {
   analyzeClanMembers, buildWarHistory, buildFamilyWarHistory, computeWarScore,
-  computeWarReliabilityFallback, categorizeBattleLog,
+  computeWarReliabilityFallback, categorizeBattleLog, getPlayerAnalysis,
   filterWarBattles, expandDuelRounds, isWarWin, buildCurrentWarDays,
   estimateWinsFromFame, warResetOffsetMs, scoreTotalDonations,
   mergeWarHistoryWithTransfer,
@@ -167,11 +167,21 @@ router.get('/:tag/analysis', async (req, res) => {
     // clicks on the same instance.  TTL is small so stale issues are rare.
     const cacheKey = `clan:${clanTag}`;
     try {
-      const { value:payload, fromCache } = await getOrSet(cacheKey, () => buildClanAnalysis(clanTag), 5 * 60 * 1000);
-
-      // Keep a persistent fallback cache on disk, to survive cold starts and rate-limit incidents.
-      if (!fromCache) {
+      let payload;
+      let fromCache = false;
+      if (forceRefresh) {
+        payload = await buildClanAnalysis(clanTag, { forceRefresh: true });
+        // force refresh is a strong intent, also update disk cache
         await saveCache(clanTag, payload).catch(() => null);
+      } else {
+        const cached = await getOrSet(cacheKey, () => buildClanAnalysis(clanTag), 5 * 60 * 1000);
+        payload = cached.value;
+        fromCache = cached.fromCache;
+
+        // Keep a persistent fallback cache on disk, to survive cold starts and rate-limit incidents.
+        if (!fromCache) {
+          await saveCache(clanTag, payload).catch(() => null);
+        }
       }
 
       // prevent Vercel/edge from caching this response
@@ -275,7 +285,9 @@ export const FAMILY_CLAN_TAGS = ALLOWED_CLANS;
 
 const MEMBER_DATA_TTL_MS = 30 * 60 * 1000; // 30 min
 
-export async function buildClanAnalysis(clanTag) {
+export async function buildClanAnalysis(clanTag, options = {}) {
+    const forceRefresh = !!options.forceRefresh;
+
     // sanitiZe input exactly as the route does
     if (clanTag.startsWith('#')) clanTag = clanTag.slice(1);
     clanTag = clanTag.toUpperCase();
@@ -289,11 +301,12 @@ export async function buildClanAnalysis(clanTag) {
     ]);
 
     // Reuse existing persisted analysis cache to avoid refetching players on every call.
-    const existingCache = await loadCache(clanTag).catch(() => null);
+    const existingCache = forceRefresh ? null : await loadCache(clanTag).catch(() => null);
     const membersRaw = existingCache?.membersRaw ? { ...existingCache.membersRaw } : {};
 
     const nowMs = Date.now();
     const membersToFetch = members.filter((m) => {
+      if (forceRefresh) return true;
       const existing = membersRaw[m.tag];
       if (!existing || !existing.fetchedAt) return true;
       const ageMs = nowMs - Date.parse(existing.fetchedAt);
@@ -746,8 +759,29 @@ export async function buildClanAnalysis(clanTag) {
           const warLog = expandDuelRounds(filterWarBattles(battleLog));
           const normalizedTagFb = m.tag.startsWith('#') ? m.tag : `#${m.tag}`;
           const racePartFb = currentRace?.clan?.participants?.find((p) => p.tag === normalizedTagFb);
-          const ws     = computeWarReliabilityFallback(playerProxy, warLog, bd, m.lastSeen ?? null, discordLinked, racePartFb?.decksUsed ?? 0);
-          activityScore = ws.pct; verdict = ws.verdict; color = ws.color;
+          const wsFallback = computeWarReliabilityFallback(playerProxy, warLog, bd, m.lastSeen ?? null, discordLinked, racePartFb?.decksUsed ?? 0);
+
+          // Mirror player route as much as possible: if player-level analysis exists,
+          // prefer it for consistency (same score logic and transfer calculations).
+          let playerAnalysisFallback = null;
+          try {
+            playerAnalysisFallback = await getPlayerAnalysis(m.tag, discordLinked);
+          } catch (e) {
+            // ignore; we keep the internal fallback if player analysis fails
+            console.warn(`[clan] debug getPlayerAnalysis fallback failed for ${m.tag}: ${e.message}`);
+          }
+
+          if (playerAnalysisFallback?.warScore && typeof playerAnalysisFallback.warScore.pct === 'number') {
+            activityScore = playerAnalysisFallback.warScore.pct;
+            verdict = playerAnalysisFallback.warScore.verdict;
+            color = playerAnalysisFallback.warScore.color;
+            // preserve the warHistory object if available from player analysis
+            if (playerAnalysisFallback.warHistory) warHistory = playerAnalysisFallback.warHistory;
+          } else {
+            activityScore = wsFallback.pct;
+            verdict = wsFallback.verdict;
+            color = wsFallback.color;
+          }
         } else {
           // Battle log unavailable — minimal estimate
           const totalDonations = playerProxy.totalDonations ?? playerProxy.donations ?? 0;
