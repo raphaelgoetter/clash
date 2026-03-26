@@ -118,7 +118,7 @@ router.get('/:tag/analysis', async (req, res) => {
       return res.status(400).json({ error: 'Clan not in allowed list' });
     }
 
-    const DISK_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+    const DISK_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes (keep aggressive for live accuracy)
     const nowMs = Date.now();
     let diskCached = null;
     let staleCache = null;
