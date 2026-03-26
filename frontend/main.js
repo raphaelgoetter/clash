@@ -447,7 +447,7 @@ async function loadStaticClan(tag) {
   }
 }
 
-async function handleSearch() {
+async function handleSearch(force = false) {
   const raw = currentMode === 'clan' ? searchSelect.value.trim() : searchInput.value.trim();
   if (!raw) return showError('Please enter a tag.');
 
@@ -458,7 +458,8 @@ async function handleSearch() {
 
   try {
     if (currentMode === 'player') {
-      const { data, fromCache } = await apiFetch(`/api/player/${encodeURIComponent(tag)}/analysis`);
+      const query = force ? '?force=true' : '';
+      const { data, fromCache } = await apiFetch(`/api/player/${encodeURIComponent(tag)}/analysis${query}`);
       lastResultName = data.overview?.name || null;
       renderPlayerResults(data);
       if (data.rateLimited) {
@@ -485,7 +486,8 @@ async function handleSearch() {
         renderMembersSkeleton();
       }
 
-      const { data, fromCache } = await apiFetch(`/api/clan/${encodeURIComponent(tag)}/analysis`);
+      const query = force ? '?force=true' : '';
+      const { data, fromCache } = await apiFetch(`/api/clan/${encodeURIComponent(tag)}/analysis${query}`);
       lastResultName = data.clan?.name || null;
       // Mettre à jour l'overview avec les données fraîches
       renderClanOverview(data);
@@ -2011,6 +2013,7 @@ function updateDebugPanel(data, mode) {
   const text = JSON.stringify(payload, null, 2);
   panel.innerHTML = `
     <h3>Debug info (${mode})</h3>
+    <button id="debug-refresh-now" class="btn btn-small" style="margin-bottom:.5rem;">🔄 ${t('refreshNow') || 'Refresh now'}</button>
     <div style="font-size:.88rem;line-height:1.35;">
       <div><strong>mode :</strong> ${escHtml(payload.mode)}</div>
       <div><strong>source :</strong> ${escHtml(payload.source)}</div>
@@ -2026,6 +2029,13 @@ function updateDebugPanel(data, mode) {
       <pre>${escHtml(text)}</pre>
     </details>
   `;
+
+  const refreshBtn = document.getElementById('debug-refresh-now');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', () => {
+      handleSearch(true);
+    });
+  }
 }
 
 // Initialize debug UI once the DOM is ready
