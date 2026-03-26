@@ -1,6 +1,6 @@
 {
   "lastWarSummary": {
-    "totalDecksUsed": 31,
+    "totalDecksUsed": 32,
     "maxDecksElapsed": 200,
     "maxDecksWeek": 800,
     "participantCount": 50,
@@ -8,14 +8,14 @@
     "days": [
       {
         "label": "Thu",
-        "totalCount": 31,
+        "totalCount": 32,
         "maxCount": 200,
         "isPast": false,
         "isToday": true,
         "isFuture": false,
         "source": "live",
         "snapshotCount": null,
-        "liveCount": 31
+        "liveCount": 32
       },
       {
         "label": "Fri",
@@ -59,7 +59,7 @@
     "name": "Les Revoltes",
     "tag": "#QU9UQJRL",
     "description": "☆. #3 Resistance (top 🌍) Bonne humeur et entraînement GDC ⚔️ au programme 👉 Discord demandé : kPdQN8zfjM ▪️code : RoyaleAPI",
-    "clanScore": 90090,
+    "clanScore": 90109,
     "clanWarTrophies": 2185,
     "members": 30,
     "type": "open",
@@ -93,9 +93,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#CVJPCU09C": {
       "profile": {
@@ -123,9 +121,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#JC28YVLPG": {
       "profile": {
@@ -153,9 +149,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#VY0LYQQVJ": {
       "profile": {
@@ -183,9 +177,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#CLVU02QLP": {
       "profile": {
@@ -213,9 +205,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#CLQ2RYYJQ": {
       "profile": {
@@ -243,20 +233,18 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#LJYGJYCYC": {
       "profile": {
         "tag": "#LJYGJYCYC",
         "name": "Performant",
         "role": "member",
-        "trophies": 11506,
+        "trophies": 11530,
         "bestTrophies": 11590,
         "expLevel": 74,
-        "totalDonations": 81796,
-        "donations": 96,
+        "totalDonations": 81806,
+        "donations": 106,
         "warDayWins": 40,
         "cw2Progress": null,
         "clan": {
@@ -273,9 +261,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#UVGPPVQ8Q": {
       "profile": {
@@ -285,8 +271,8 @@
         "trophies": 11405,
         "bestTrophies": 11406,
         "expLevel": 63,
-        "totalDonations": 15477,
-        "donations": 331,
+        "totalDonations": 15485,
+        "donations": 339,
         "warDayWins": 0,
         "cw2Progress": null,
         "clan": {
@@ -303,9 +289,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#RRCRJ8QJJ": {
       "profile": {
@@ -333,9 +317,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#QY0LG0R0P": {
       "profile": {
@@ -363,9 +345,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#2JUVG2P9": {
       "profile": {
@@ -393,9 +373,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#QPU0U2C9": {
       "profile": {
@@ -423,9 +401,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#J222JVRUQ": {
       "profile": {
@@ -453,9 +429,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#V2P2LCYRJ": {
       "profile": {
@@ -483,9 +457,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#2U9QL8Q89": {
       "profile": {
@@ -513,9 +485,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#8VP9UJV9L": {
       "profile": {
@@ -543,9 +513,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#V22VCQV9V": {
       "profile": {
@@ -573,9 +541,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#8JGU9UUJJ": {
       "profile": {
@@ -603,9 +569,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#2V20JP28Q": {
       "profile": {
@@ -615,8 +579,8 @@
         "trophies": 8806,
         "bestTrophies": 8835,
         "expLevel": 42,
-        "totalDonations": 45888,
-        "donations": 189,
+        "totalDonations": 45926,
+        "donations": 227,
         "warDayWins": 23,
         "cw2Progress": null,
         "clan": {
@@ -633,16 +597,14 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#UYRR99RL8": {
       "profile": {
         "tag": "#UYRR99RL8",
         "name": "chloe_lpb",
         "role": "member",
-        "trophies": 8641,
+        "trophies": 8671,
         "bestTrophies": 8754,
         "expLevel": 41,
         "totalDonations": 1398,
@@ -663,9 +625,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#CVYLYLC8V": {
       "profile": {
@@ -693,9 +653,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#YRURQJV28": {
       "profile": {
@@ -723,9 +681,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#PGQ98JVJ8": {
       "profile": {
@@ -753,9 +709,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#98VCJLG92": {
       "profile": {
@@ -783,9 +737,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#CRLR0P92J": {
       "profile": {
@@ -813,9 +765,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#VPGCQPR9U": {
       "profile": {
@@ -843,9 +793,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.265Z"
     },
     "#VPR8G992P": {
       "profile": {
@@ -873,9 +821,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.266Z"
     },
     "#2200UQ9P08": {
       "profile": {
@@ -903,9 +849,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.266Z"
     },
     "#V9GUUPYUQ": {
       "profile": {
@@ -933,9 +877,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.266Z"
     },
     "#VR0LV90YP": {
       "profile": {
@@ -963,9 +905,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:13.045Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:22.266Z"
     }
   },
   "members": [
@@ -1417,13 +1357,11 @@
       "trophies": 7577,
       "donations": 0,
       "totalDonations": 1607,
-      "donationsReceived": 10,
+      "donationsReceived": 30,
       "expLevel": 40,
       "activityScore": 33,
-
       "reliability": 33,
       "reliabilitySource": "history",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
       "verdict": "High risk",
       "color": "orange",
       "isNew": false,
@@ -1542,7 +1480,7 @@
       "name": "chloe_lpb",
       "tag": "#UYRR99RL8",
       "role": "member",
-      "trophies": 8641,
+      "trophies": 8671,
       "donations": 149,
       "totalDonations": 1398,
       "donationsReceived": 80,
@@ -1914,7 +1852,7 @@
         "daysFromThu": 0
       },
       "warDecks": 0,
-      "lastSeen": "20260326T141444.000Z"
+      "lastSeen": "20260326T195408.000Z"
     },
     {
       "name": "NINJA 31",
@@ -1984,9 +1922,9 @@
       "tag": "#2V20JP28Q",
       "role": "elder",
       "trophies": 8806,
-      "donations": 189,
-      "totalDonations": 45888,
-      "donationsReceived": 208,
+      "donations": 227,
+      "totalDonations": 45926,
+      "donationsReceived": 216,
       "expLevel": 42,
       "activityScore": 52,
       "reliability": 52,
@@ -2033,22 +1971,22 @@
             "isFuture": true
           }
         ],
-        "totalDecksUsed": 0,
+        "totalDecksUsed": 1,
         "maxDecksElapsed": 4,
         "maxDecksWeek": 16,
         "isReliableTotal": true,
         "daysFromThu": 0
       },
-      "warDecks": 0,
-      "lastSeen": "20260326T083358.000Z"
+      "warDecks": 1,
+      "lastSeen": "20260326T195230.000Z"
     },
     {
       "name": "Performant",
       "tag": "#LJYGJYCYC",
       "role": "member",
-      "trophies": 11506,
-      "donations": 96,
-      "totalDonations": 81796,
+      "trophies": 11530,
+      "donations": 106,
+      "totalDonations": 81806,
       "donationsReceived": 280,
       "expLevel": 74,
       "activityScore": 54,
@@ -2103,7 +2041,7 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260326T134226.000Z"
+      "lastSeen": "20260326T195206.000Z"
     },
     {
       "name": "Shinzo",
@@ -2241,10 +2179,8 @@
       "donationsReceived": 0,
       "expLevel": 65,
       "activityScore": 56,
-
       "reliability": 56,
       "reliabilitySource": "history",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
       "verdict": "Moderate risk",
       "color": "yellow",
       "isNew": false,
@@ -2554,10 +2490,8 @@
       "role": "elder",
       "trophies": 9183,
       "donations": 304,
-
-      "totalDonations": 32123,
- 42d2d64 (Refactor code structure for improved readability and maintainability)
-      "donationsReceived": 280,
+      "totalDonations": 32141,
+      "donationsReceived": 290,
       "expLevel": 51,
       "activityScore": 72,
       "reliability": 72,
@@ -2620,7 +2554,7 @@
       "trophies": 10112,
       "donations": 252,
       "totalDonations": 43710,
-      "donationsReceived": 145,
+      "donationsReceived": 153,
       "expLevel": 62,
       "activityScore": 74,
       "reliability": 74,
@@ -2807,9 +2741,9 @@
       "tag": "#UVGPPVQ8Q",
       "role": "coLeader",
       "trophies": 11405,
-      "donations": 331,
-      "totalDonations": 15477,
-      "donationsReceived": 250,
+      "donations": 339,
+      "totalDonations": 15485,
+      "donationsReceived": 260,
       "expLevel": 63,
       "activityScore": 85,
       "reliability": 85,
@@ -2863,7 +2797,7 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260326T170329.000Z"
+      "lastSeen": "20260326T200124.000Z"
     }
   ],
   "summary": {
@@ -3417,7 +3351,7 @@
     ]
   },
   "clanWarSummary": {
-    "totalDecksUsed": 31,
+    "totalDecksUsed": 32,
     "maxDecksElapsed": 200,
     "maxDecksWeek": 800,
     "participantCount": 50,
@@ -3425,14 +3359,14 @@
     "days": [
       {
         "label": "Thu",
-        "totalCount": 31,
+        "totalCount": 32,
         "maxCount": 200,
         "isPast": false,
         "isToday": true,
         "isFuture": false,
         "source": "live",
         "snapshotCount": null,
-        "liveCount": 31
+        "liveCount": 32
       },
       {
         "label": "Fri",
@@ -3480,14 +3414,14 @@
   "currentWarDays": [
     {
       "label": "Thu",
-      "totalCount": 31,
+      "totalCount": 32,
       "maxCount": 200,
       "isPast": false,
       "isToday": true,
       "isFuture": false,
       "source": "live",
       "snapshotCount": null,
-      "liveCount": 31
+      "liveCount": 32
     },
     {
       "label": "Fri",
@@ -3525,7 +3459,5 @@
   ],
   "rateLimited": false,
   "raceLogUnavailable": false,
-
-  "analysisCacheUpdatedAt": "2026-03-26T19:21:15.356Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+  "analysisCacheUpdatedAt": "2026-03-26T20:10:24.102Z"
 }

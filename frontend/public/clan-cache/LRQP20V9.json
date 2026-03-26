@@ -1,6 +1,6 @@
 {
   "lastWarSummary": {
-    "totalDecksUsed": 105,
+    "totalDecksUsed": 114,
     "maxDecksElapsed": 200,
     "maxDecksWeek": 800,
     "participantCount": 50,
@@ -8,14 +8,14 @@
     "days": [
       {
         "label": "Thu",
-        "totalCount": 105,
+        "totalCount": 114,
         "maxCount": 200,
         "isPast": false,
         "isToday": true,
         "isFuture": false,
         "source": "live",
         "snapshotCount": null,
-        "liveCount": 105
+        "liveCount": 114
       },
       {
         "label": "Fri",
@@ -59,7 +59,7 @@
     "name": "Les Resistants",
     "tag": "#LRQP20V9",
     "description": "☆. #2 Resistance (top 🌍) Bonne humeur et GDC obligatoire ⚔️ 4 combats/jour 👉 Discord demandé : kPdQN8zfjM ▪️ code: RoyaleAPI",
-    "clanScore": 118668,
+    "clanScore": 118714,
     "clanWarTrophies": 3757,
     "members": 50,
     "type": "open",
@@ -93,18 +93,16 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.908Z"
     },
     "#89L8J9YV9": {
       "profile": {
         "tag": "#89L8J9YV9",
         "name": "VTLX.KING",
         "role": "member",
-        "trophies": 12856,
+        "trophies": 12948,
         "bestTrophies": 12966,
-        "expLevel": 71,
+        "expLevel": 72,
         "totalDonations": 52312,
         "donations": 10,
         "warDayWins": 42,
@@ -123,9 +121,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.908Z"
     },
     "#99VY0090": {
       "profile": {
@@ -153,9 +149,35 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.908Z"
+    },
+    "#VGJ9LL8VC": {
+      "profile": {
+        "tag": "#VGJ9LL8VC",
+        "name": "guill4um3",
+        "role": "coLeader",
+        "trophies": 12565,
+        "bestTrophies": 12653,
+        "expLevel": 66,
+        "totalDonations": 31419,
+        "donations": 275,
+        "warDayWins": 0,
+        "cw2Progress": null,
+        "clan": {
+          "tag": "#LRQP20V9",
+          "name": "Les Resistants"
+        },
+        "arena": null,
+        "stats": {
+          "battleCount": null,
+          "threeCrownWins": null
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 0,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-03-26T20:10:17.908Z"
     },
     "#PGRJC00G9": {
       "profile": {
@@ -183,39 +205,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
-    },
-    "#VGJ9LL8VC": {
-      "profile": {
-        "tag": "#VGJ9LL8VC",
-        "name": "guill4um3",
-        "role": "coLeader",
-        "trophies": 12565,
-        "bestTrophies": 12653,
-        "expLevel": 65,
-        "totalDonations": 31419,
-        "donations": 275,
-        "warDayWins": 0,
-        "cw2Progress": null,
-        "clan": {
-          "tag": "#LRQP20V9",
-          "name": "Les Resistants"
-        },
-        "arena": null,
-        "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
-      },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.908Z"
     },
     "#82UPUGYP": {
       "profile": {
@@ -243,9 +233,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.908Z"
     },
     "#Y9P9GGL89": {
       "profile": {
@@ -273,9 +261,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.908Z"
     },
     "#GLV9Q2P09": {
       "profile": {
@@ -303,9 +289,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.908Z"
     },
     "#98UULQY8": {
       "profile": {
@@ -333,9 +317,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.908Z"
     },
     "#8YGY2RPCC": {
       "profile": {
@@ -363,9 +345,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.908Z"
     },
     "#8VQLJLR0": {
       "profile": {
@@ -393,9 +373,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.908Z"
     },
     "#LUGP2RYY": {
       "profile": {
@@ -423,9 +401,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.908Z"
     },
     "#2YP2V2G0R": {
       "profile": {
@@ -453,9 +429,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.908Z"
     },
     "#CJVUJ8U9C": {
       "profile": {
@@ -465,8 +439,8 @@
         "trophies": 12089,
         "bestTrophies": 12121,
         "expLevel": 77,
-        "totalDonations": 73141,
-        "donations": 261,
+        "totalDonations": 73157,
+        "donations": 277,
         "warDayWins": 0,
         "cw2Progress": null,
         "clan": {
@@ -483,9 +457,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.908Z"
     },
     "#PCLLULJ9V": {
       "profile": {
@@ -513,9 +485,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.908Z"
     },
     "#8G00908LP": {
       "profile": {
@@ -543,9 +513,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.908Z"
     },
     "#V0VLJQCJU": {
       "profile": {
@@ -573,9 +541,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.908Z"
     },
     "#RJY2R282V": {
       "profile": {
@@ -603,9 +569,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.908Z"
     },
     "#YQVP9P0Y": {
       "profile": {
@@ -633,9 +597,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.908Z"
     },
     "#CGJP0YYUJ": {
       "profile": {
@@ -663,9 +625,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.908Z"
     },
     "#8QVRJYVYU": {
       "profile": {
@@ -693,9 +653,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.908Z"
     },
     "#GC20UCLL": {
       "profile": {
@@ -723,9 +681,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.908Z"
     },
     "#U09CUCYL2": {
       "profile": {
@@ -753,9 +709,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.908Z"
     },
     "#J290800UU": {
       "profile": {
@@ -783,9 +737,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.908Z"
     },
     "#GGVQJLG9": {
       "profile": {
@@ -813,9 +765,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     },
     "#U9PP0CJRL": {
       "profile": {
@@ -825,8 +775,8 @@
         "trophies": 11034,
         "bestTrophies": 11171,
         "expLevel": 59,
-        "totalDonations": 26155,
-        "donations": 54,
+        "totalDonations": 26163,
+        "donations": 62,
         "warDayWins": 0,
         "cw2Progress": null,
         "clan": {
@@ -843,9 +793,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     },
     "#PRGCCRUJP": {
       "profile": {
@@ -873,39 +821,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
-    },
-    "#VJUGLG8RR": {
-      "profile": {
-        "tag": "#VJUGLG8RR",
-        "name": "✨️エース • サボ✨️",
-        "role": "member",
-        "trophies": 10722,
-        "bestTrophies": 10781,
-        "expLevel": 49,
-        "totalDonations": 8284,
-        "donations": 16,
-        "warDayWins": 0,
-        "cw2Progress": null,
-        "clan": {
-          "tag": "#LRQP20V9",
-          "name": "Les Resistants"
-        },
-        "arena": null,
-        "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
-      },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     },
     "#QVG90PQVG": {
       "profile": {
@@ -933,9 +849,35 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
+    },
+    "#VJUGLG8RR": {
+      "profile": {
+        "tag": "#VJUGLG8RR",
+        "name": "✨️エース • サボ✨️",
+        "role": "member",
+        "trophies": 10722,
+        "bestTrophies": 10781,
+        "expLevel": 49,
+        "totalDonations": 8284,
+        "donations": 16,
+        "warDayWins": 0,
+        "cw2Progress": null,
+        "clan": {
+          "tag": "#LRQP20V9",
+          "name": "Les Resistants"
+        },
+        "arena": null,
+        "stats": {
+          "battleCount": null,
+          "threeCrownWins": null
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 0,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     },
     "#8UL8JRCJ": {
       "profile": {
@@ -963,9 +905,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     },
     "#UVV8CULJV": {
       "profile": {
@@ -993,9 +933,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     },
     "#YGP000RP8": {
       "profile": {
@@ -1023,9 +961,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     },
     "#LRJ2YRJG": {
       "profile": {
@@ -1053,9 +989,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     },
     "#P2YYR29QU": {
       "profile": {
@@ -1083,9 +1017,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     },
     "#U0LVUQRCJ": {
       "profile": {
@@ -1113,9 +1045,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     },
     "#82JPJ9J98": {
       "profile": {
@@ -1143,9 +1073,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     },
     "#RJJ99Y9J": {
       "profile": {
@@ -1173,9 +1101,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     },
     "#8GGQLU28": {
       "profile": {
@@ -1203,9 +1129,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     },
     "#2L8RPQRJ9": {
       "profile": {
@@ -1233,9 +1157,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     },
     "#G2R0VRYYQ": {
       "profile": {
@@ -1263,9 +1185,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     },
     "#8QLCU9QG": {
       "profile": {
@@ -1293,9 +1213,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     },
     "#822GLVL00": {
       "profile": {
@@ -1323,9 +1241,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     },
     "#8Y90VQYP9": {
       "profile": {
@@ -1353,9 +1269,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     },
     "#88Y9Q8UPQ": {
       "profile": {
@@ -1383,9 +1297,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     },
     "#YRGJGR8R": {
       "profile": {
@@ -1413,9 +1325,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     },
     "#80GVRPGPY": {
       "profile": {
@@ -1443,9 +1353,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     },
     "#8R0LR8GYC": {
       "profile": {
@@ -1473,9 +1381,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     },
     "#9VQYC9GJQ": {
       "profile": {
@@ -1503,9 +1409,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     },
     "#UP9YJV080": {
       "profile": {
@@ -1533,9 +1437,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     },
     "#J008G9CLJ": {
       "profile": {
@@ -1563,9 +1465,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-
-      "fetchedAt": "2026-03-26T19:21:07.820Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "fetchedAt": "2026-03-26T20:10:17.909Z"
     }
   },
   "members": [
@@ -1696,7 +1596,69 @@
       "lastSeen": "20260325T194007.000Z"
     },
     {
-
+      "name": "VTLX.KING",
+      "tag": "#89L8J9YV9",
+      "role": "member",
+      "trophies": 12948,
+      "donations": 10,
+      "totalDonations": 52312,
+      "donationsReceived": 0,
+      "expLevel": 72,
+      "activityScore": 49,
+      "reliability": 49,
+      "reliabilitySource": "player",
+      "verdict": "High risk",
+      "color": "orange",
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": {
+        "days": [
+          {
+            "key": "2026-03-26",
+            "label": "Thu",
+            "count": 0,
+            "isPast": false,
+            "isToday": true,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-27",
+            "label": "Fri",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-28",
+            "label": "Sat",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-29",
+            "label": "Sun",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          }
+        ],
+        "totalDecksUsed": 4,
+        "maxDecksElapsed": 4,
+        "maxDecksWeek": 16,
+        "isReliableTotal": true,
+        "daysFromThu": 0
+      },
+      "warDecks": 4,
+      "lastSeen": "20260326T195541.000Z"
+    },
+    {
       "name": "91100",
       "tag": "#UVV8CULJV",
       "role": "member",
@@ -1705,8 +1667,8 @@
       "totalDonations": 9297,
       "donationsReceived": 80,
       "expLevel": 59,
-      "activityScore": 36,
-      "reliability": 36,
+      "activityScore": 51,
+      "reliability": 51,
       "reliabilitySource": "history",
       "verdict": "High risk",
       "color": "orange",
@@ -1757,24 +1719,23 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260326T185619.000Z"
+      "lastSeen": "20260326T194807.000Z"
     },
     {
- 42d2d64 (Refactor code structure for improved readability and maintainability)
-      "name": "VTLX.KING",
-      "tag": "#89L8J9YV9",
+      "name": "Aubin",
+      "tag": "#PGRJC00G9",
       "role": "member",
-      "trophies": 12856,
-      "donations": 10,
-      "totalDonations": 52312,
-      "donationsReceived": 0,
-      "expLevel": 71,
-      "activityScore": 40,
-      "reliability": 40,
-      "reliabilitySource": "player",
+      "trophies": 12559,
+      "donations": 200,
+      "totalDonations": 30638,
+      "donationsReceived": 160,
+      "expLevel": 67,
+      "activityScore": 55,
+      "reliability": 55,
+      "reliabilitySource": "history",
       "verdict": "High risk",
       "color": "orange",
-      "isNew": true,
+      "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
       "transferWeek": null,
@@ -1814,16 +1775,14 @@
             "isFuture": true
           }
         ],
-        "totalDecksUsed": 0,
+        "totalDecksUsed": 4,
         "maxDecksElapsed": 4,
         "maxDecksWeek": 16,
         "isReliableTotal": true,
         "daysFromThu": 0
       },
-      "warDecks": 0,
-      "lastSeen": "20260326T190148.000Z"
-
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "warDecks": 4,
+      "lastSeen": "20260326T183050.000Z"
     },
     {
       "name": "maxim",
@@ -1834,11 +1793,9 @@
       "totalDonations": 13683,
       "donationsReceived": 0,
       "expLevel": 55,
-
-      "activityScore": 43,
-      "reliability": 43,
+      "activityScore": 55,
+      "reliability": 55,
       "reliabilitySource": "history",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
       "verdict": "High risk",
       "color": "orange",
       "isNew": false,
@@ -1899,13 +1856,11 @@
       "totalDonations": 42447,
       "donationsReceived": 0,
       "expLevel": 65,
-
-      "activityScore": 43,
-      "reliability": 43,
+      "activityScore": 58,
+      "reliability": 58,
       "reliabilitySource": "history",
-      "verdict": "High risk",
-      "color": "orange",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "Moderate risk",
+      "color": "yellow",
       "isNew": true,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -1956,71 +1911,6 @@
       "lastSeen": "20260326T174446.000Z"
     },
     {
-
-      "name": "Aubin",
-      "tag": "#PGRJC00G9",
-      "role": "member",
-      "trophies": 12559,
-      "donations": 200,
-      "totalDonations": 30618,
-      "donationsReceived": 160,
-      "expLevel": 67,
-      "activityScore": 48,
-      "reliability": 48,
-      "reliabilitySource": "history",
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-26",
-            "label": "Thu",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-27",
-            "label": "Fri",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-28",
-            "label": "Sat",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-29",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          }
-        ],
-        "totalDecksUsed": 4,
-        "maxDecksElapsed": 4,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 0
-      },
-      "warDecks": 4,
-      "lastSeen": "20260326T183050.000Z"
-    },
-    {
- 42d2d64 (Refactor code structure for improved readability and maintainability)
       "name": "ylanMRtebz",
       "tag": "#PRGCCRUJP",
       "role": "member",
@@ -2029,13 +1919,11 @@
       "totalDonations": 27246,
       "donationsReceived": 192,
       "expLevel": 58,
-
-      "activityScore": 48,
-      "reliability": 48,
+      "activityScore": 59,
+      "reliability": 59,
       "reliabilitySource": "history",
-      "verdict": "High risk",
-      "color": "orange",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "Moderate risk",
+      "color": "yellow",
       "isNew": true,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -2095,6 +1983,8 @@
       "donationsReceived": 310,
       "expLevel": 63,
       "activityScore": 60,
+      "reliability": 60,
+      "reliabilitySource": "history",
       "verdict": "Moderate risk",
       "color": "yellow",
       "isNew": true,
@@ -2156,6 +2046,8 @@
       "donationsReceived": 40,
       "expLevel": 60,
       "activityScore": 61,
+      "reliability": 61,
+      "reliabilitySource": "history",
       "verdict": "Moderate risk",
       "color": "yellow",
       "isNew": false,
@@ -2216,13 +2108,11 @@
       "totalDonations": 8284,
       "donationsReceived": 40,
       "expLevel": 49,
-
-      "activityScore": 48,
-      "reliability": 48,
+      "activityScore": 63,
+      "reliability": 63,
       "reliabilitySource": "history",
-      "verdict": "High risk",
-      "color": "orange",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "Moderate risk",
+      "color": "yellow",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -2281,13 +2171,11 @@
       "totalDonations": 14830,
       "donationsReceived": 120,
       "expLevel": 65,
-
-      "activityScore": 50,
-      "reliability": 50,
+      "activityScore": 65,
+      "reliability": 65,
       "reliabilitySource": "history",
-      "verdict": "High risk",
-      "color": "orange",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "Moderate risk",
+      "color": "yellow",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -2338,197 +2226,6 @@
       "lastSeen": "20260323T182953.000Z"
     },
     {
-
-      "name": "melv",
-      "tag": "#U0LVUQRCJ",
-      "role": "member",
-      "trophies": 10326,
-      "donations": 0,
-      "totalDonations": 4464,
-      "donationsReceived": 40,
-      "expLevel": 60,
-      "activityScore": 51,
-      "reliability": 51,
-      "reliabilitySource": "history",
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-26",
-            "label": "Thu",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-27",
-            "label": "Fri",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-28",
-            "label": "Sat",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-29",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 4,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 0
-      },
-      "warDecks": 0,
-      "lastSeen": "20260326T124857.000Z"
-    },
-    {
-      "name": "Legends",
-      "tag": "#8VQLJLR0",
-      "role": "member",
-      "trophies": 12208,
-      "donations": 516,
-      "totalDonations": 42047,
-      "donationsReceived": 310,
-      "expLevel": 63,
-      "activityScore": 53,
-      "reliability": 53,
-      "reliabilitySource": "history",
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": true,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-26",
-            "label": "Thu",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-27",
-            "label": "Fri",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-28",
-            "label": "Sat",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-29",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          }
-        ],
-        "totalDecksUsed": 4,
-        "maxDecksElapsed": 4,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 0
-      },
-      "warDecks": 4,
-      "lastSeen": "20260326T161201.000Z"
-    },
-    {
-      "name": "Nova",
-      "tag": "#QQUCRGQP8",
-      "role": "member",
-      "trophies": 13061,
-      "donations": 36,
-      "totalDonations": 44101,
-      "donationsReceived": 0,
-      "expLevel": 71,
-      "activityScore": 54,
-      "reliability": 54,
-      "reliabilitySource": "history",
-      "verdict": "High risk",
-      "color": "orange",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-26",
-            "label": "Thu",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-27",
-            "label": "Fri",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-28",
-            "label": "Sat",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-29",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          }
-        ],
-        "totalDecksUsed": 4,
-        "maxDecksElapsed": 4,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 0
-      },
-      "warDecks": 4,
-      "lastSeen": "20260326T155733.000Z"
-    },
-    {
- 42d2d64 (Refactor code structure for improved readability and maintainability)
       "name": "imad9591",
       "tag": "#CGJP0YYUJ",
       "role": "member",
@@ -2537,13 +2234,11 @@
       "totalDonations": 1987,
       "donationsReceived": 320,
       "expLevel": 62,
-
-      "activityScore": 54,
-      "reliability": 54,
+      "activityScore": 65,
+      "reliability": 65,
       "reliabilitySource": "history",
-      "verdict": "High risk",
-      "color": "orange",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "Moderate risk",
+      "color": "yellow",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -2594,8 +2289,258 @@
       "lastSeen": "20260326T155827.000Z"
     },
     {
-
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "name": "Cop's II MJ7",
+      "tag": "#J290800UU",
+      "role": "member",
+      "trophies": 11182,
+      "donations": 183,
+      "totalDonations": 44469,
+      "donationsReceived": 192,
+      "expLevel": 63,
+      "activityScore": 65,
+      "reliability": 65,
+      "reliabilitySource": "player",
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": {
+        "days": [
+          {
+            "key": "2026-03-26",
+            "label": "Thu",
+            "count": 0,
+            "isPast": false,
+            "isToday": true,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-27",
+            "label": "Fri",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-28",
+            "label": "Sat",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-29",
+            "label": "Sun",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          }
+        ],
+        "totalDecksUsed": 4,
+        "maxDecksElapsed": 4,
+        "maxDecksWeek": 16,
+        "isReliableTotal": true,
+        "daysFromThu": 0
+      },
+      "warDecks": 4,
+      "lastSeen": "20260326T191335.000Z"
+    },
+    {
+      "name": "flavie_09",
+      "tag": "#80GVRPGPY",
+      "role": "member",
+      "trophies": 9000,
+      "donations": 108,
+      "totalDonations": 13434,
+      "donationsReceived": 160,
+      "expLevel": 54,
+      "activityScore": 68,
+      "reliability": 68,
+      "reliabilitySource": "history",
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": {
+        "days": [
+          {
+            "key": "2026-03-26",
+            "label": "Thu",
+            "count": 0,
+            "isPast": false,
+            "isToday": true,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-27",
+            "label": "Fri",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-28",
+            "label": "Sat",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-29",
+            "label": "Sun",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          }
+        ],
+        "totalDecksUsed": 4,
+        "maxDecksElapsed": 4,
+        "maxDecksWeek": 16,
+        "isReliableTotal": true,
+        "daysFromThu": 0
+      },
+      "warDecks": 4,
+      "lastSeen": "20260326T115550.000Z"
+    },
+    {
+      "name": "Nova",
+      "tag": "#QQUCRGQP8",
+      "role": "member",
+      "trophies": 13061,
+      "donations": 36,
+      "totalDonations": 44101,
+      "donationsReceived": 0,
+      "expLevel": 71,
+      "activityScore": 69,
+      "reliability": 69,
+      "reliabilitySource": "history",
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": {
+        "days": [
+          {
+            "key": "2026-03-26",
+            "label": "Thu",
+            "count": 0,
+            "isPast": false,
+            "isToday": true,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-27",
+            "label": "Fri",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-28",
+            "label": "Sat",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-29",
+            "label": "Sun",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          }
+        ],
+        "totalDecksUsed": 4,
+        "maxDecksElapsed": 4,
+        "maxDecksWeek": 16,
+        "isReliableTotal": true,
+        "daysFromThu": 0
+      },
+      "warDecks": 4,
+      "lastSeen": "20260326T195419.000Z"
+    },
+    {
+      "name": "headless",
+      "tag": "#J008G9CLJ",
+      "role": "member",
+      "trophies": 4269,
+      "donations": 28,
+      "totalDonations": 2029,
+      "donationsReceived": 440,
+      "expLevel": 32,
+      "activityScore": 70,
+      "reliability": 70,
+      "reliabilitySource": "history",
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": true,
+      "warDays": {
+        "days": [
+          {
+            "key": "2026-03-26",
+            "label": "Thu",
+            "count": 0,
+            "isPast": false,
+            "isToday": true,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-27",
+            "label": "Fri",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-28",
+            "label": "Sat",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-29",
+            "label": "Sun",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          }
+        ],
+        "totalDecksUsed": 4,
+        "maxDecksElapsed": 4,
+        "maxDecksWeek": 16,
+        "isReliableTotal": true,
+        "daysFromThu": 0
+      },
+      "warDecks": 4,
+      "lastSeen": "20260326T160956.000Z"
+    },
+    {
       "name": "☆. Inuk",
       "tag": "#8R0LR8GYC",
       "role": "elder",
@@ -2604,11 +2549,9 @@
       "totalDonations": 59551,
       "donationsReceived": 0,
       "expLevel": 58,
-
-      "activityScore": 56,
-      "reliability": 56,
+      "activityScore": 71,
+      "reliability": 71,
       "reliabilitySource": "history",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
       "verdict": "Moderate risk",
       "color": "yellow",
       "isNew": false,
@@ -2669,11 +2612,9 @@
       "totalDonations": 51817,
       "donationsReceived": 40,
       "expLevel": 78,
-
-      "activityScore": 57,
-      "reliability": 57,
+      "activityScore": 72,
+      "reliability": 72,
       "reliabilitySource": "history",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
       "verdict": "Moderate risk",
       "color": "yellow",
       "isNew": false,
@@ -2734,11 +2675,9 @@
       "totalDonations": 51322,
       "donationsReceived": 0,
       "expLevel": 66,
-
-      "activityScore": 57,
-      "reliability": 57,
+      "activityScore": 72,
+      "reliability": 72,
       "reliabilitySource": "history",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
       "verdict": "Moderate risk",
       "color": "yellow",
       "isNew": true,
@@ -2797,13 +2736,11 @@
       "trophies": 10151,
       "donations": 183,
       "totalDonations": 95416,
-      "donationsReceived": 200,
+      "donationsReceived": 216,
       "expLevel": 72,
-
-      "activityScore": 59,
-      "reliability": 59,
+      "activityScore": 74,
+      "reliability": 74,
       "reliabilitySource": "history",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
       "verdict": "Moderate risk",
       "color": "yellow",
       "isNew": false,
@@ -2853,7 +2790,7 @@
         "daysFromThu": 0
       },
       "warDecks": 0,
-      "lastSeen": "20260326T055620.000Z"
+      "lastSeen": "20260326T200613.000Z"
     },
     {
       "name": "Peater",
@@ -2862,15 +2799,13 @@
       "trophies": 11825,
       "donations": 25,
       "totalDonations": 45982,
-      "donationsReceived": 72,
+      "donationsReceived": 80,
       "expLevel": 69,
-
-      "activityScore": 60,
-      "reliability": 60,
+      "activityScore": 75,
+      "reliability": 75,
       "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "High reliability",
+      "color": "green",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -2911,14 +2846,14 @@
             "isFuture": true
           }
         ],
-        "totalDecksUsed": 2,
+        "totalDecksUsed": 3,
         "maxDecksElapsed": 4,
         "maxDecksWeek": 16,
         "isReliableTotal": true,
         "daysFromThu": 0
       },
-      "warDecks": 2,
-      "lastSeen": "20260326T110417.000Z"
+      "warDecks": 3,
+      "lastSeen": "20260326T193551.000Z"
     },
     {
       "name": "koko aka thanos",
@@ -2929,13 +2864,11 @@
       "totalDonations": 22471,
       "donationsReceived": 0,
       "expLevel": 55,
-
-      "activityScore": 61,
-      "reliability": 61,
+      "activityScore": 76,
+      "reliability": 76,
       "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "High reliability",
+      "color": "green",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -2990,17 +2923,15 @@
       "tag": "#U9PP0CJRL",
       "role": "elder",
       "trophies": 11034,
-      "donations": 54,
-      "totalDonations": 26155,
+      "donations": 62,
+      "totalDonations": 26163,
       "donationsReceived": 80,
       "expLevel": 59,
-
-      "activityScore": 62,
-      "reliability": 62,
+      "activityScore": 77,
+      "reliability": 77,
       "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "High reliability",
+      "color": "green",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -3048,7 +2979,7 @@
         "daysFromThu": 0
       },
       "warDecks": 0,
-      "lastSeen": "20260326T172549.000Z"
+      "lastSeen": "20260326T200534.000Z"
     },
     {
       "name": "mathis",
@@ -3059,13 +2990,11 @@
       "totalDonations": 32016,
       "donationsReceived": 330,
       "expLevel": 66,
-
-      "activityScore": 63,
-      "reliability": 63,
+      "activityScore": 78,
+      "reliability": 78,
       "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "High reliability",
+      "color": "green",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -3113,72 +3042,7 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-
-      "lastSeen": "20260326T182852.000Z"
-    },
-    {
-      "name": "flavie_09",
-      "tag": "#80GVRPGPY",
-      "role": "member",
-      "trophies": 9000,
-      "donations": 108,
-      "totalDonations": 13434,
-      "donationsReceived": 160,
-      "expLevel": 54,
-      "activityScore": 63,
-      "reliability": 63,
-      "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-26",
-            "label": "Thu",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-27",
-            "label": "Fri",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-28",
-            "label": "Sat",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-29",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          }
-        ],
-        "totalDecksUsed": 4,
-        "maxDecksElapsed": 4,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 0
-      },
-      "warDecks": 4,
-      "lastSeen": "20260326T115550.000Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "lastSeen": "20260326T192224.000Z"
     },
     {
       "name": "Pépin le Bref",
@@ -3189,13 +3053,11 @@
       "totalDonations": 120022,
       "donationsReceived": 280,
       "expLevel": 73,
-
-      "activityScore": 65,
-      "reliability": 65,
+      "activityScore": 80,
+      "reliability": 80,
       "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "High reliability",
+      "color": "green",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -3246,69 +3108,6 @@
       "lastSeen": "20260326T174916.000Z"
     },
     {
-      "name": "Cop's II MJ7",
-      "tag": "#J290800UU",
-      "role": "member",
-      "trophies": 11182,
-      "donations": 183,
-      "totalDonations": 44461,
-      "donationsReceived": 192,
-      "expLevel": 63,
-      "activityScore": 65,
-      "reliability": 65,
-      "reliabilitySource": "player",
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": true,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-26",
-            "label": "Thu",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-27",
-            "label": "Fri",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-28",
-            "label": "Sat",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-29",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          }
-        ],
-        "totalDecksUsed": 4,
-        "maxDecksElapsed": 4,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 0
-      },
-      "warDecks": 4,
-      "lastSeen": "20260326T191335.000Z"
-    },
-    {
       "name": "☆. Apocalm",
       "tag": "#UP9YJV080",
       "role": "coLeader",
@@ -3317,13 +3116,11 @@
       "totalDonations": 14037,
       "donationsReceived": 0,
       "expLevel": 54,
-
-      "activityScore": 65,
-      "reliability": 65,
+      "activityScore": 80,
+      "reliability": 80,
       "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "High reliability",
+      "color": "green",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -3382,13 +3179,11 @@
       "totalDonations": 98295,
       "donationsReceived": 280,
       "expLevel": 67,
-
-      "activityScore": 67,
-      "reliability": 67,
+      "activityScore": 82,
+      "reliability": 82,
       "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "High reliability",
+      "color": "green",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -3437,71 +3232,6 @@
       },
       "warDecks": 4,
       "lastSeen": "20260326T191835.000Z"
-
-    },
-    {
-      "name": "headless",
-      "tag": "#J008G9CLJ",
-      "role": "member",
-      "trophies": 4269,
-      "donations": 28,
-      "totalDonations": 2029,
-      "donationsReceived": 440,
-      "expLevel": 32,
-      "activityScore": 67,
-      "reliability": 67,
-      "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": true,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-26",
-            "label": "Thu",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-27",
-            "label": "Fri",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-28",
-            "label": "Sat",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-29",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          }
-        ],
-        "totalDecksUsed": 4,
-        "maxDecksElapsed": 4,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 0
-      },
-      "warDecks": 4,
-      "lastSeen": "20260326T160956.000Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
     },
     {
       "name": "Fidel",
@@ -3512,13 +3242,11 @@
       "totalDonations": 58099,
       "donationsReceived": 360,
       "expLevel": 68,
-
-      "activityScore": 68,
-      "reliability": 68,
+      "activityScore": 83,
+      "reliability": 83,
       "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "High reliability",
+      "color": "green",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -3576,14 +3304,12 @@
       "donations": 0,
       "totalDonations": 8308,
       "donationsReceived": 0,
-
-      "expLevel": 75,
-      "activityScore": 69,
-      "reliability": 69,
+      "expLevel": 60,
+      "activityScore": 84,
+      "reliability": 84,
       "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "High reliability",
+      "color": "green",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -3643,6 +3369,8 @@
       "donationsReceived": 392,
       "expLevel": 63,
       "activityScore": 84,
+      "reliability": 84,
+      "reliabilitySource": "history",
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
@@ -3703,13 +3431,11 @@
       "totalDonations": 58973,
       "donationsReceived": 400,
       "expLevel": 73,
-
-      "activityScore": 69,
-      "reliability": 69,
+      "activityScore": 84,
+      "reliability": 84,
       "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "High reliability",
+      "color": "green",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -3768,13 +3494,11 @@
       "totalDonations": 56329,
       "donationsReceived": 120,
       "expLevel": 68,
-
-      "activityScore": 69,
-      "reliability": 69,
+      "activityScore": 84,
+      "reliability": 84,
       "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "High reliability",
+      "color": "green",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -3829,17 +3553,15 @@
       "tag": "#CJVUJ8U9C",
       "role": "elder",
       "trophies": 12089,
-      "donations": 261,
-      "totalDonations": 73141,
+      "donations": 277,
+      "totalDonations": 73157,
       "donationsReceived": 360,
       "expLevel": 77,
-
-      "activityScore": 70,
-      "reliability": 70,
+      "activityScore": 85,
+      "reliability": 85,
       "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "High reliability",
+      "color": "green",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -3887,7 +3609,7 @@
         "daysFromThu": 0
       },
       "warDecks": 1,
-      "lastSeen": "20260326T153112.000Z"
+      "lastSeen": "20260326T200740.000Z"
     },
     {
       "name": "☆. Kikootz",
@@ -3899,6 +3621,8 @@
       "donationsReceived": 0,
       "expLevel": 75,
       "activityScore": 85,
+      "reliability": 85,
+      "reliabilitySource": "history",
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
@@ -3959,13 +3683,11 @@
       "totalDonations": 134130,
       "donationsReceived": 280,
       "expLevel": 69,
-
-      "activityScore": 70,
-      "reliability": 70,
+      "activityScore": 85,
+      "reliability": 85,
       "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "High reliability",
+      "color": "green",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -4024,13 +3746,11 @@
       "totalDonations": 32979,
       "donationsReceived": 0,
       "expLevel": 66,
-
-      "activityScore": 70,
-      "reliability": 70,
+      "activityScore": 85,
+      "reliability": 85,
       "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "High reliability",
+      "color": "green",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -4089,13 +3809,11 @@
       "totalDonations": 84028,
       "donationsReceived": 80,
       "expLevel": 78,
-
-      "activityScore": 71,
-      "reliability": 71,
+      "activityScore": 86,
+      "reliability": 86,
       "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "High reliability",
+      "color": "green",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -4146,71 +3864,6 @@
       "lastSeen": "20260326T164422.000Z"
     },
     {
-
-      "name": "Pico!!",
-      "tag": "#U09CUCYL2",
-      "role": "elder",
-      "trophies": 11315,
-      "donations": 0,
-      "totalDonations": 8308,
-      "donationsReceived": 0,
-      "expLevel": 60,
-      "activityScore": 72,
-      "reliability": 72,
-      "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-26",
-            "label": "Thu",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-27",
-            "label": "Fri",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-28",
-            "label": "Sat",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-29",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 4,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 0
-      },
-      "warDecks": 0,
-      "lastSeen": "20260326T181826.000Z"
-    },
-    {
- 42d2d64 (Refactor code structure for improved readability and maintainability)
       "name": "Flo 2",
       "tag": "#QVG90PQVG",
       "role": "elder",
@@ -4219,13 +3872,11 @@
       "totalDonations": 12582,
       "donationsReceived": 200,
       "expLevel": 59,
-
-      "activityScore": 72,
-      "reliability": 72,
+      "activityScore": 87,
+      "reliability": 87,
       "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "High reliability",
+      "color": "green",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -4284,13 +3935,11 @@
       "totalDonations": 103105,
       "donationsReceived": 320,
       "expLevel": 64,
-
-      "activityScore": 72,
-      "reliability": 72,
+      "activityScore": 87,
+      "reliability": 87,
       "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "High reliability",
+      "color": "green",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -4349,13 +3998,11 @@
       "totalDonations": 255484,
       "donationsReceived": 120,
       "expLevel": 78,
-
-      "activityScore": 73,
-      "reliability": 73,
+      "activityScore": 88,
+      "reliability": 88,
       "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "High reliability",
+      "color": "green",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -4414,13 +4061,11 @@
       "totalDonations": 45772,
       "donationsReceived": 0,
       "expLevel": 70,
-
-      "activityScore": 73,
-      "reliability": 73,
+      "activityScore": 88,
+      "reliability": 88,
       "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "High reliability",
+      "color": "green",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -4468,7 +4113,7 @@
         "daysFromThu": 0
       },
       "warDecks": 0,
-      "lastSeen": "20260326T184849.000Z"
+      "lastSeen": "20260326T195128.000Z"
     },
     {
       "name": "Plugpourlefion",
@@ -4476,16 +4121,14 @@
       "role": "elder",
       "trophies": 11093,
       "donations": 256,
-
-      "totalDonations": 291505,
+      "totalDonations": 291513,
       "donationsReceived": 280,
       "expLevel": 70,
-      "activityScore": 73,
-      "reliability": 73,
+      "activityScore": 88,
+      "reliability": 88,
       "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "High reliability",
+      "color": "green",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -4534,71 +4177,6 @@
       },
       "warDecks": 3,
       "lastSeen": "20260326T190824.000Z"
-
-    },
-    {
-      "name": "hardchaos76",
-      "tag": "#8UL8JRCJ",
-      "role": "elder",
-      "trophies": 10682,
-      "donations": 82,
-      "totalDonations": 87511,
-      "donationsReceived": 392,
-      "expLevel": 63,
-      "activityScore": 73,
-      "reliability": 73,
-      "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-26",
-            "label": "Thu",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-27",
-            "label": "Fri",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-28",
-            "label": "Sat",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-29",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 4,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 0
-      },
-      "warDecks": 0,
-      "lastSeen": "20260326T183233.000Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
     },
     {
       "name": "hyène",
@@ -4609,13 +4187,11 @@
       "totalDonations": 215310,
       "donationsReceived": 400,
       "expLevel": 74,
-
-      "activityScore": 73,
-      "reliability": 73,
+      "activityScore": 88,
+      "reliability": 88,
       "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "High reliability",
+      "color": "green",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -4674,13 +4250,11 @@
       "totalDonations": 61036,
       "donationsReceived": 40,
       "expLevel": 60,
-
-      "activityScore": 73,
-      "reliability": 73,
+      "activityScore": 88,
+      "reliability": 88,
       "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+      "verdict": "High reliability",
+      "color": "green",
       "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
@@ -4739,11 +4313,9 @@
       "totalDonations": 324298,
       "donationsReceived": 360,
       "expLevel": 81,
-
-      "activityScore": 77,
-      "reliability": 77,
+      "activityScore": 92,
+      "reliability": 92,
       "reliabilitySource": "history",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
@@ -4796,19 +4368,17 @@
       "lastSeen": "20260326T182615.000Z"
     },
     {
-      "name": "guill4um3",
-      "tag": "#VGJ9LL8VC",
+      "name": "displaynone",
+      "tag": "#YRGJGR8R",
       "role": "coLeader",
-      "trophies": 12565,
-      "donations": 275,
-      "totalDonations": 31419,
-      "donationsReceived": 400,
-      "expLevel": 65,
-
-      "activityScore": 78,
-      "reliability": 78,
+      "trophies": 9072,
+      "donations": 920,
+      "totalDonations": 135798,
+      "donationsReceived": 456,
+      "expLevel": 72,
+      "activityScore": 92,
+      "reliability": 92,
       "reliabilitySource": "history",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
@@ -4858,22 +4428,20 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260326T180322.000Z"
+      "lastSeen": "20260326T191635.000Z"
     },
     {
-      "name": "displaynone",
-      "tag": "#YRGJGR8R",
+      "name": "guill4um3",
+      "tag": "#VGJ9LL8VC",
       "role": "coLeader",
-      "trophies": 9072,
-      "donations": 920,
-      "totalDonations": 135798,
-      "donationsReceived": 456,
-      "expLevel": 72,
-
-      "activityScore": 78,
-      "reliability": 78,
+      "trophies": 12565,
+      "donations": 275,
+      "totalDonations": 31419,
+      "donationsReceived": 400,
+      "expLevel": 65,
+      "activityScore": 93,
+      "reliability": 93,
       "reliabilitySource": "history",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
@@ -4916,14 +4484,14 @@
             "isFuture": true
           }
         ],
-        "totalDecksUsed": 0,
+        "totalDecksUsed": 4,
         "maxDecksElapsed": 4,
         "maxDecksWeek": 16,
         "isReliableTotal": true,
         "daysFromThu": 0
       },
-      "warDecks": 0,
-      "lastSeen": "20260326T191635.000Z"
+      "warDecks": 4,
+      "lastSeen": "20260326T200522.000Z"
     },
     {
       "name": "dclik77",
@@ -4934,11 +4502,9 @@
       "totalDonations": 109308,
       "donationsReceived": 160,
       "expLevel": 76,
-
-      "activityScore": 80,
-      "reliability": 80,
+      "activityScore": 95,
+      "reliability": 95,
       "reliabilitySource": "history",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
@@ -4999,11 +4565,9 @@
       "totalDonations": 119501,
       "donationsReceived": 320,
       "expLevel": 72,
-
-      "activityScore": 80,
-      "reliability": 80,
+      "activityScore": 95,
+      "reliability": 95,
       "reliabilitySource": "history",
- 42d2d64 (Refactor code structure for improved readability and maintainability)
       "verdict": "High reliability",
       "color": "green",
       "isNew": false,
@@ -5057,13 +4621,11 @@
     }
   ],
   "summary": {
-
-    "green": 5,
-    "yellow": 31,
-    "orange": 12,
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+    "green": 29,
+    "yellow": 15,
+    "orange": 4,
     "red": 2,
-    "avgScore": 74,
+    "avgScore": 75,
     "total": 50
   },
   "isWarPeriod": true,
@@ -6129,7 +5691,7 @@
     ]
   },
   "clanWarSummary": {
-    "totalDecksUsed": 105,
+    "totalDecksUsed": 114,
     "maxDecksElapsed": 200,
     "maxDecksWeek": 800,
     "participantCount": 50,
@@ -6137,14 +5699,14 @@
     "days": [
       {
         "label": "Thu",
-        "totalCount": 105,
+        "totalCount": 114,
         "maxCount": 200,
         "isPast": false,
         "isToday": true,
         "isFuture": false,
         "source": "live",
         "snapshotCount": null,
-        "liveCount": 105
+        "liveCount": 114
       },
       {
         "label": "Fri",
@@ -6192,14 +5754,14 @@
   "currentWarDays": [
     {
       "label": "Thu",
-      "totalCount": 105,
+      "totalCount": 114,
       "maxCount": 200,
       "isPast": false,
       "isToday": true,
       "isFuture": false,
       "source": "live",
       "snapshotCount": null,
-      "liveCount": 105
+      "liveCount": 114
     },
     {
       "label": "Fri",
@@ -6237,7 +5799,5 @@
   ],
   "rateLimited": false,
   "raceLogUnavailable": false,
-
-  "analysisCacheUpdatedAt": "2026-03-26T19:21:11.117Z"
- 42d2d64 (Refactor code structure for improved readability and maintainability)
+  "analysisCacheUpdatedAt": "2026-03-26T20:10:20.640Z"
 }
