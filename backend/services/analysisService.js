@@ -1350,6 +1350,8 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
           }
           analysis.warHistory.historicalWinRate = totalPvpDecks >= MIN_PVP_DECKS ? totalEstimatedWins / totalPvpDecks : null;
         }
+        // Preserve true history status when a previous full week was found
+        hasEnoughHistory = hasEnoughHistory || hasFullWeek || (analysis.warHistory.streakInCurrentClan >= 2 && analysis.warHistory.completedParticipation >= 2);
       }
 
       // after any ignored-week adjustments the historical win rate may have changed
