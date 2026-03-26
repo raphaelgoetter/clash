@@ -121,15 +121,34 @@ router.get('/:tag/analysis', async (req, res) => {
     const DISK_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
     const nowMs = Date.now();
     let diskCached = null;
+    const forceRefresh = req.query.force === 'true';
+
     try {
       diskCached = await loadCache(clanTag);
-      if (diskCached && diskCached.analysisCacheUpdatedAt) {
-        const age = nowMs - new Date(diskCached.analysisCacheUpdatedAt).getTime();
-        if (age <= DISK_CACHE_TTL_MS) {
-          diskCached.fallbackReason = 'diskCacheFresh';
+      if (diskCached) {
+        const age = diskCached.analysisCacheUpdatedAt
+          ? nowMs - new Date(diskCached.analysisCacheUpdatedAt).getTime()
+          : Number.MAX_SAFE_INTEGER;
+
+        // If we have cached data, serve it immediately to avoid any 429 risk.
+        if (!forceRefresh) {
+          diskCached.fallbackReason = age <= DISK_CACHE_TTL_MS ? 'diskCacheFresh' : 'diskCacheStale';
           diskCached.rateLimited = false;
           res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
-          res.set('X-Cache', 'HIT');
+          res.set('X-Cache', age <= DISK_CACHE_TTL_MS ? 'HIT' : 'STALE');
+
+          // If stale, trigger async refresh in background without blocking client.
+          if (age > DISK_CACHE_TTL_MS) {
+            setTimeout(async () => {
+              try {
+                const fresh = await buildClanAnalysis(clanTag);
+                await saveCache(clanTag, fresh).catch(() => null);
+              } catch (err) {
+                console.warn(`[clan] background refresh failed for ${clanTag}:`, err.message);
+              }
+            }, 0);
+          }
+
           return res.json(diskCached);
         }
       }
