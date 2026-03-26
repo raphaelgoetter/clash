@@ -240,5 +240,54 @@
         }
       }
     ]
+  },
+  {
+    "week": "S130W4",
+    "days": [
+      {
+        "warDay": "thursday",
+        "realDay": "2026-03-26",
+        "gdcPeriod": {
+          "start": "2026-03-26T09:40:00.000Z",
+          "end": "2026-03-27T09:39:59.999Z"
+        },
+        "snapshotTime": "2026-03-26T11:19:51.401Z",
+        "snapshotBackupTime": "2026-03-26T11:19:51.401Z",
+        "decks": {}
+      },
+      {
+        "warDay": "friday",
+        "realDay": "2026-03-27",
+        "gdcPeriod": {
+          "start": "2026-03-27T09:40:00.000Z",
+          "end": "2026-03-28T09:39:59.999Z"
+        },
+        "snapshotTime": null,
+        "snapshotBackupTime": null,
+        "decks": {}
+      },
+      {
+        "warDay": "saturday",
+        "realDay": "2026-03-28",
+        "gdcPeriod": {
+          "start": "2026-03-28T09:40:00.000Z",
+          "end": "2026-03-29T09:39:59.999Z"
+        },
+        "snapshotTime": null,
+        "snapshotBackupTime": null,
+        "decks": {}
+      },
+      {
+        "warDay": "sunday",
+        "realDay": "2026-03-29",
+        "gdcPeriod": {
+          "start": "2026-03-29T08:40:00.000Z",
+          "end": "2026-03-30T08:39:59.999Z"
+        },
+        "snapshotTime": null,
+        "snapshotBackupTime": null,
+        "decks": {}
+      }
+    ]
   }
 ]
