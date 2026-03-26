@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 // refreshClanCache.js — update persisted clan analysis cache (data/analysis-cache + frontend/public/clan-cache)
 
+import dotenv from 'dotenv';
+import path from 'path';
 import { ALLOWED_CLANS, buildClanAnalysis } from '../backend/routes/clan.js';
 import { saveCache } from '../backend/services/analysisCache.js';
 import fs from 'fs/promises';
-import path from 'path';
+
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 const PUBLIC_DIR = path.resolve(process.cwd(), 'frontend', 'public', 'clan-cache');
 

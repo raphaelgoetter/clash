@@ -304,24 +304,35 @@ export async function buildClanAnalysis(clanTag) {
     const discordLinks = await getDiscordLinks().catch(() => ({}));
 
     // Fetch race log once and compute war-based scores for every member.
-    // Fall back to the legacy activity score for members absent from the log.
+    // Fall back to the legacy activity score when race log is temporarily unavailable.
     let raceLog = null;
     let currentRace = null;
     let raceLogUnavailable = false;
+
+    // fetch current race and race log independently so one failure doesn't discard the other.
     try {
-      [raceLog, currentRace] = await Promise.all([
-        fetchRaceLog(clanTag),
-        fetchCurrentRace(clanTag).catch(() => null),
-      ]);
+      raceLog = await fetchRaceLog(clanTag);
     } catch (err) {
       if (err.isRateLimit || (err.message && err.message.includes('429'))) {
-        console.warn(`[clan] raceLog throttled for ${clanTag}, fallback to partial data`, err.message);
-        raceLog = null;
-        currentRace = null;
+        console.warn(`[clan] raceLog throttled for ${clanTag}, partial fallback`, err.message);
         raceLogUnavailable = true;
       } else {
-        throw err;
+        console.warn(`[clan] raceLog failed for ${clanTag}, partial fallback`, err.message);
+        raceLogUnavailable = true;
       }
+      raceLog = null;
+    }
+
+    try {
+      currentRace = await fetchCurrentRace(clanTag);
+    } catch (err) {
+      console.warn(`[clan] currentRace failed for ${clanTag}`, err.message);
+      currentRace = null;
+    }
+
+    // If both are missing, we are in degraded mode.
+    if (!raceLog && !currentRace) {
+      raceLogUnavailable = true;
     }
 
     // compute top players for a few predefined fame quotas so the frontend
@@ -687,7 +698,8 @@ export async function buildClanAnalysis(clanTag) {
             }
             wh.historicalWinRate = totalPvpDecks >= MIN_PVP_DECKS ? totalEstimatedWins / totalPvpDecks : null;
             // réévaluer après le recalcul (completedParticipation peut avoir changé)
-            hasEnoughHistory = hasFullWeek || (wh.streakInCurrentClan >= 2 && wh.completedParticipation >= 2);
+            // conserver true si on avait déjà suffisamment d'historique avant l'ajustement.
+            hasEnoughHistory = hasEnoughHistory || hasFullWeek || (wh.streakInCurrentClan >= 2 && wh.completedParticipation >= 2);
           }
         }
 
