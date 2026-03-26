@@ -87,7 +87,7 @@ router.get('/:tag/analysis', async (req, res) => {
 
           // Capture when the most recent snapshot was taken
           const lastSnap = weekSnaps
-            .map((s) => s._snapshotTakenAt || s._generatedAt || null)
+            .map((s) => s.snapshotTime || s.snapshotBackupTime || null)
             .filter(Boolean)
             .sort()
             .pop();

@@ -574,7 +574,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
       // Track when the latest snapshot was taken (useful for debug/analysis)
       const latestSnap = weekSnaps
-        .map((s) => s._snapshotTakenAt || s._generatedAt || null)
+        .map((s) => s.snapshotTime || s.snapshotBackupTime || null)
         .filter(Boolean)
         .sort()
         .pop();

@@ -466,7 +466,11 @@ async function handleSearch(force = false) {
         showError(t('rateLimitedWarning'));
       }
       updateFavBtnState(tag);
-      showCacheNote(fromCache, data?.snapshotDate);
+      showCacheNote(fromCache, data?.snapshotDate, {
+        source: fromCache ? 'cached' : 'live',
+        updatedAt: data.analysisCacheUpdatedAt || new Date().toISOString(),
+        snapshotTakenAt: data.snapshotTakenAt ?? data.warSnapshotTakenAt ?? null,
+      });
       updateDebugPanel(data, 'player');
     } else {
       // clan mode: try static file first but always refresh from live API.
@@ -480,6 +484,7 @@ async function handleSearch(force = false) {
         showCacheNote(true, staticData.snapshotDate, {
           source: 'cached',
           updatedAt: staticData.analysisCacheUpdatedAt || 'unknown',
+          snapshotTakenAt: staticData.snapshotTakenAt ?? staticData.warSnapshotTakenAt ?? null,
         });
       } else {
         renderClanOverview({ clan: { name: t('loading') }, summary: { green:0,yellow:0,orange:0,red:0,avgScore:0,total:0 }, members: [] });
@@ -500,6 +505,7 @@ async function handleSearch(force = false) {
       showCacheNote(false, data.snapshotDate, {
         source: data.rateLimited ? 'live (degraded)' : 'live',
         updatedAt: data.analysisCacheUpdatedAt || new Date().toISOString(),
+        snapshotTakenAt: data.snapshotTakenAt ?? null,
       });
     }
     syncUrlState(currentMode, tag);
@@ -708,6 +714,17 @@ function showCacheNote(fromCache, snapshotDate = null, sourceMeta = null) {
       const d = new Date(snapshotDate);
       const opts = { month: 'long', day: 'numeric' };
       snapshotText = `${d.toLocaleDateString(undefined, opts)} ❌`;
+    }
+  }
+
+  const takenAt = (sourceMeta && (sourceMeta.snapshotTakenAt || sourceMeta.warSnapshotTakenAt || sourceMeta.analysisCacheUpdatedAt))
+    ? (sourceMeta.snapshotTakenAt || sourceMeta.warSnapshotTakenAt || sourceMeta.analysisCacheUpdatedAt)
+    : null;
+  if (takenAt) {
+    const taken = new Date(takenAt);
+    if (!Number.isNaN(taken.getTime())) {
+      const time = taken.toISOString().slice(11, 16);
+      snapshotText = `${snapshotText} @ ${time} UTC`;
     }
   }
 
