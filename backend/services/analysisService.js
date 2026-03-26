@@ -521,7 +521,7 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
 
   // 7. CW2 Battle Wins (0-8) — from ClanWarWins badge
   const CW2_CAP     = 250;
-  const cw2Wins     = player.badges?.find((b) => b.name === 'ClanWarWins')?.progress ?? 0;
+  const cw2Wins     = player.badges?.find((b) => b.name === 'ClanWarWins')?.progress ?? player.cw2Progress ?? 0;
   const cw2Score    = r(Math.min(8, (cw2Wins / CW2_CAP) * 8));
 
   // 8. Last seen (0-3) — uniquement en contexte clan (lastSeen fourni depuis /members)

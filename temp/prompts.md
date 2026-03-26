@@ -242,3 +242,20 @@ Dans la vue Player des joueurs en Battle Log, la card "📊 Clan Wars Indicators
 - Supprimer l'indicateur "Donations" qui n'est pas pertinent pour les joueurs en Battle Log
 
 Tous ces textes sont à traduire dans les deux langues.
+
+---
+
+les données de Reliability et tout ce qui en découle sont encore et toujours erronées en local et en prod.
+
+En local (<http://localhost:5173/en/?mode=clan&tag=%23LRQP20V9>)
+
+- "Avg Score 55 / 100" au-lieu de environ 73
+- Joueur Hafid (#YQVP9P0Y) score 18% (au-lieu de 72% = valeur réelle observée en vue Player <http://localhost:5173/en/?mode=player&tag=%23YQVP9P0Y>)
+- Live data ✅ · Snapshot : today ✅ · live · fresh 0s
+
+En prod (<https://trustroyale.vercel.app/en/?mode=clan&tag=%23LRQP20V9>)
+
+- "Avg Score 55 / 100" au-lieu de environ 73
+- Joueur Hafid (#YQVP9P0Y) score 18% (au-lieu de 72% = valeur réelle observée en vue Player <http://localhost:5173/en/?mode=player&tag=%23YQVP9P0Y>)
+- Live data ✅ · Snapshot : today ✅ · live · fresh 18s
+Il faut VRAIMENT trouver un moyen de récupérer la bonne valeur Player de chacun des joueurs dans la vue Clan

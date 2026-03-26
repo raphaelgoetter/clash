@@ -445,6 +445,18 @@ export async function buildClanAnalysis(clanTag) {
     // build map of raw fetched data by tag for later use
     const memberDataByTag = {};
     const battleLogsByTag = {};
+
+    // Use fresh data for members we fetched now, otherwise fall back to cached data where available.
+    members.forEach((m) => {
+      const existingRaw = membersRaw[m.tag];
+      memberDataByTag[m.tag] = {
+        profile: existingRaw?.profile ?? null,
+        battleLog: [],
+      };
+      // Keep an explicit battle log container for each member; may remain empty until fetched.
+      battleLogsByTag[m.tag] = [];
+    });
+
     if (memberDataResults.length) {
       memberDataResults.forEach((res, idx) => {
         const tag = membersToFetch[idx]?.tag;
@@ -456,18 +468,10 @@ export async function buildClanAnalysis(clanTag) {
             battleLog: res.value[1] || [],
           };
           battleLogsByTag[tag] = res.value[1] || [];
-        } else if (membersRaw[tag]) {
-          memberDataByTag[tag] = {
-            profile: membersRaw[tag].profile,
-            battleLog: [],
-          };
-          battleLogsByTag[tag] = [];
         } else {
-          memberDataByTag[tag] = {
-            profile: null,
-            battleLog: [],
-          };
-          battleLogsByTag[tag] = [];
+          // Keep cached data from membersRaw where available, or null otherwise
+          memberDataByTag[tag] = memberDataByTag[tag] || { profile: null, battleLog: [] };
+          battleLogsByTag[tag] = battleLogsByTag[tag] || [];
         }
       });
     }
@@ -618,7 +622,7 @@ export async function buildClanAnalysis(clanTag) {
       const discordLinked = Object.prototype.hasOwnProperty.call(discordLinks, m.tag);
 
       if (raceLog) {
-        const memberBattleLog = battleLogsByTag[m.tag] || [];
+        let memberBattleLog = battleLogsByTag[m.tag] || [];
         let wh = await buildFamilyWarHistory(m.tag, clan.tag, currentRace, memberBattleLog);
         warHistory = wh;
 
@@ -705,10 +709,36 @@ export async function buildClanAnalysis(clanTag) {
 
         const isNewClanArrivee = (wh?.streakInCurrentClan ?? 0) < 2 && (wh?.totalWeeks ?? 0) > 1;
 
+        // For transfer players, we first evaluate using available family/current clan history.
+        // If still insufficient, try fetching the member-specific battle log to recover non-family transfer history.
+        if (!hasEnoughHistory && (!Array.isArray(memberBattleLog) || memberBattleLog.length === 0)) {
+          console.warn(`[clan] debug fetchBattleLog for ${m.tag} because no history from family clues`);
+          try {
+            const fallbackBattleLog = await fetchBattleLog(m.tag);
+            console.warn(`[clan] debug ${m.tag} battleLog len ${Array.isArray(fallbackBattleLog) ? fallbackBattleLog.length : '??'}`);
+            if (Array.isArray(fallbackBattleLog) && fallbackBattleLog.length > 0) {
+              memberBattleLog = fallbackBattleLog;
+              battleLogsByTag[m.tag] = fallbackBattleLog;
+              wh = await buildFamilyWarHistory(m.tag, clan.tag, currentRace, memberBattleLog);
+
+              prevWeeks = wh.weeks.filter((w) => !w.isCurrent);
+              hasFullWeek = prevWeeks.some((w) => (w.decksUsed ?? 0) >= 16);
+              // old rule : 2 completed weeks in clan
+              const oldRuleRefetch = wh.streakInCurrentClan >= 2 && wh.completedParticipation >= 2;
+              hasEnoughHistory = hasFullWeek || oldRuleRefetch;
+              console.warn(`[clan] debug ${m.tag} after refetch hasEnoughHistory=${hasEnoughHistory}, prevWeeks=${JSON.stringify(prevWeeks.map(w=>({label:w.label,clanTag:w.clanTag,decks:w.decksUsed})))}`);
+            }
+          } catch (e) {
+            console.warn(`[clan] debug ${m.tag} fallback fetchBattleLog failed`, e.message, e.stack);
+            // ignore and keep fallback behavior
+          }
+        }
+
         if (hasEnoughHistory) {
           // Historical data — computeWarScore + win rate historique (race log) en priorité
           const effectiveWinRate = wh.historicalWinRate ?? warWinRate;
           const ws = computeWarScore(playerProxy, wh, effectiveWinRate, m.lastSeen ?? null, discordLinked);
+          console.warn(`[clan] debug ${m.tag} computed wtich hasEnoughHistory with pct=${ws.pct}, verdict=${ws.verdict}`);
           activityScore = ws.pct; verdict = ws.verdict; color = ws.color;
         } else if (battleLog) {
           // New member — full fallback with battle log
