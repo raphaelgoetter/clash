@@ -488,7 +488,7 @@ async function handleSearch() {
       renderClanOverview(data);
       // Afficher les membres live à jour (synchronisation clan / player)
       renderClanMembers(data);
-      if (data.rateLimited) showError(t('rateLimitedWarning'));
+      if (data.rateLimited || data.fallbackReason || data.raceLogUnavailable) showError(t('rateLimitedWarning'));
       updateDebugPanel(data, 'clan');
       updateFavBtnState(tag);
       showCacheNote(false, data.snapshotDate);

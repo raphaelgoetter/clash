@@ -95,6 +95,24 @@ router.get('/:tag/analysis', async (req, res) => {
     res.json(payload);
   } catch (err) {
     const status = err.message.includes('404') ? 404 : 500;
+
+    // If we are temporarily rate-limited, serve prebuilt static cache to avoid total failure.
+    if ((err.isRateLimit || err.message.includes('429')) && clanTag) {
+      try {
+        const clean = clanTag.replace(/[^A-Za-z0-9]/g, '');
+        const staticPath = path.join(process.cwd(), 'frontend', 'public', 'clan-cache', `${clean}.json`);
+        const raw = await fs.readFile(staticPath, 'utf-8');
+        const fallbackData = JSON.parse(raw);
+        fallbackData.fallbackReason = 'rateLimited';
+        fallbackData.rateLimited = true;
+        res.set('X-Cache', 'STALE');
+        res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
+        return res.status(200).json(fallbackData);
+      } catch (fallbackErr) {
+        console.warn(`[clan] rate-limited fallback failed for ${clanTag}:`, fallbackErr.message);
+      }
+    }
+
     res.status(status).json({ error: err.message });
   }
 });
@@ -164,6 +182,7 @@ export async function buildClanAnalysis(clanTag) {
     // Fall back to the legacy activity score for members absent from the log.
     let raceLog = null;
     let currentRace = null;
+    let raceLogUnavailable = false;
     try {
       [raceLog, currentRace] = await Promise.all([
         fetchRaceLog(clanTag),
@@ -174,6 +193,7 @@ export async function buildClanAnalysis(clanTag) {
         console.warn(`[clan] raceLog throttled for ${clanTag}, fallback to partial data`, err.message);
         raceLog = null;
         currentRace = null;
+        raceLogUnavailable = true;
       } else {
         throw err;
       }
@@ -239,7 +259,7 @@ export async function buildClanAnalysis(clanTag) {
     // fetch full player profiles + battle logs for ALL members with capped concurrency
     // (avoids RoyaleAPI rate-limiting that caused non-deterministic scores on reload)
     let memberDataResults = [];
-    if (raceLog) {
+    if (members.length > 0) {
       memberDataResults = await pooledAllSettled(
         members.map((m) => () => Promise.all([fetchPlayer(m.tag), fetchBattleLog(m.tag)]))
       );
@@ -510,17 +530,19 @@ export async function buildClanAnalysis(clanTag) {
           }
         }
       } else {
-        // No race log at all — legacy trophies-based estimate
-        const donPart = Math.min(40, ((m.donations ?? 0) / 300) * 40);
-        const trPart  = Math.min(40, ((m.trophies ?? 0) / 10000) * 40);
-        const expPart = Math.min(20, ((m.expLevel ?? 1) / 60) * 20);
-        const score   = Math.round(donPart + trPart + expPart);
-        activityScore = score;
-        verdict = score >= 75 ? 'High reliability'
-                : score >= 61 ? 'Moderate risk'
-                : score >= 31 ? 'High risk'
-                :               'Extreme risk';
-        color = score >= 75 ? 'green' : score >= 56 ? 'yellow' : score >= 31 ? 'orange' : 'red';
+        // No river race log available (rate-limited or missing data) — use battle logs / player profile fallback.
+        const memberBattleLog = battleLogsByTag[m.tag] || [];
+        const bd = categorizeBattleLog(memberBattleLog);
+        const warLog = expandDuelRounds(filterWarBattles(memberBattleLog));
+        const normalizedTagFb = m.tag.startsWith('#') ? m.tag : `#${m.tag}`;
+        const racePartFb = currentRace?.clan?.participants?.find((p) => p.tag === normalizedTagFb);
+        const ws = computeWarReliabilityFallback(playerProxy, warLog, bd, m.lastSeen ?? null, discordLinked, racePartFb?.decksUsed ?? 0);
+        activityScore = ws.pct;
+        verdict = ws.verdict;
+        color = ws.color;
+
+        // In this mode we cannot robustly determine clan-age newness from raceLog history.
+        isNew = false;
       }
 
       // Calcul des jours GDC de la semaine courante
@@ -892,6 +914,7 @@ export async function buildClanAnalysis(clanTag) {
       snapshotTakenAt: warSnapshotTakenAt,
       currentWarDays: clanWarSummary?.days ?? null, // expose the per-day summary for debug/insights
       rateLimited: memberRateLimited,
+      raceLogUnavailable,
     };
 }
 
