@@ -602,7 +602,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     // First pass: compute war scores for all members
     const analyzedMembers = await Promise.all(
       members.map(async (m, idx) => {
-        let activityScore, verdict, color, isNew = false, warHistory = null;
+        let activityScore, verdict, color, isNew = false, warHistory = null, scoreSource = 'clan', playerAnalysisFallback = null;
 
       // Resolve full player profile (for badges) and battle log from fetch results or existing cache.
       const memberData = memberDataByTag[m.tag] || { profile: null, battleLog: [] };
@@ -758,6 +758,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           const ws = computeWarScore(playerProxy, wh, effectiveWinRate, m.lastSeen ?? null, discordLinked);
           console.warn(`[clan] debug ${m.tag} computed wtich hasEnoughHistory with pct=${ws.pct}, verdict=${ws.verdict}`);
           activityScore = ws.pct; verdict = ws.verdict; color = ws.color;
+          scoreSource = 'history';
         } else if (battleLog) {
           // New member — full fallback with battle log
           const bd     = categorizeBattleLog(battleLog);
@@ -777,15 +778,26 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           }
 
           if (playerAnalysisFallback?.warScore && typeof playerAnalysisFallback.warScore.pct === 'number') {
-            activityScore = playerAnalysisFallback.warScore.pct;
-            verdict = playerAnalysisFallback.warScore.verdict;
-            color = playerAnalysisFallback.warScore.color;
+            const pa = playerAnalysisFallback.warScore;
+            // Use the player analysis score when it is better than clan fallback.
+            if (pa.pct >= wsFallback.pct) {
+              activityScore = pa.pct;
+              verdict = pa.verdict;
+              color = pa.color;
+              scoreSource = 'player';
+            } else {
+              activityScore = wsFallback.pct;
+              verdict = wsFallback.verdict;
+              color = wsFallback.color;
+              scoreSource = 'fallback';
+            }
             // preserve the warHistory object if available from player analysis
             if (playerAnalysisFallback.warHistory) warHistory = playerAnalysisFallback.warHistory;
           } else {
             activityScore = wsFallback.pct;
             verdict = wsFallback.verdict;
             color = wsFallback.color;
+            scoreSource = 'fallback';
           }
         } else {
           // Battle log unavailable — minimal estimate
@@ -821,6 +833,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         activityScore = ws.pct;
         verdict = ws.verdict;
         color = ws.color;
+        scoreSource = 'fallback';
 
         // In this mode we cannot robustly determine clan-age newness from raceLog history.
         isNew = false;
@@ -868,6 +881,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         donationsReceived:  m.donationsReceived ?? 0,
         expLevel:           m.expLevel ?? 1,
         activityScore,
+        reliability:        activityScore,
+        reliabilitySource:  scoreSource,
         verdict,
         color,
         isNew,
