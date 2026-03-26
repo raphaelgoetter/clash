@@ -459,23 +459,36 @@ export async function hasSnapshotForToday(clanTag) {
   const history = await loadSnapshots(clanTag);
   if (!history.length) return false;
   const today = new Date().toISOString().slice(0, 10);
-  return history.some((w) => (w.days ?? []).some((d) => d.realDay === today));
+  return history.some((w) =>
+    (w.days ?? []).some((d) =>
+      d.realDay === today && (d.snapshotTime || d.snapshotBackupTime)
+    )
+  );
 }
 
 /**
- * Return the date string of the most recent snapshot, or null if none exists.
- * The format is ISO (YYYY-MM-DD) which is convenient for comparison on the
- * frontend.
+ * Return the date string of the most recent snapshot written, or null if none exists.
+ * The format is ISO (YYYY-MM-DD) which is convenient for comparison on the frontend.
  */
 export async function getLastSnapshotDate(clanTag) {
   const history = await loadSnapshots(clanTag);
   if (!history.length) return null;
+
   const allDays = history.flatMap((w) => w.days ?? []);
+
+  // Prefer the most recent day where a snapshot was taken (primary or backup),
+  // not the inferred realDay range for the entire war week.
   const dates = allDays
+    .filter((d) => d.realDay && (d.snapshotTime || d.snapshotBackupTime))
     .map((d) => d.realDay)
     .filter(Boolean)
     .sort();
-  return dates.length ? dates[dates.length - 1] : null;
+
+  if (dates.length) return dates[dates.length - 1];
+
+  // Fallback: if no day has a timestamp (shouldn't happen), use any realDay.
+  const allRealDays = allDays.map((d) => d.realDay).filter(Boolean).sort();
+  return allRealDays.length ? allRealDays[allRealDays.length - 1] : null;
 }
 
 // expose the directory path so callers can inspect or do manual operations

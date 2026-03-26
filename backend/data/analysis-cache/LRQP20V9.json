@@ -53,7 +53,7 @@
     ],
     "weekId": "S130W4",
     "ended": false,
-    "snapshotAsOf": "2026-03-29"
+    "snapshotAsOf": "2026-03-26"
   },
   "clan": {
     "name": "Les Resistants",
@@ -425,7 +425,7 @@
         "daysFromThu": 0
       },
       "warDecks": 0,
-      "lastSeen": "20260326T093936.000Z"
+      "lastSeen": "20260326T103532.000Z"
     },
     {
       "name": "Cop's II MJ7",
@@ -966,66 +966,6 @@
       },
       "warDecks": 0,
       "lastSeen": "20260324T222620.000Z"
-    },
-    {
-      "name": "hardchaos76",
-      "tag": "#8UL8JRCJ",
-      "role": "elder",
-      "trophies": 10682,
-      "donations": 72,
-      "donationsReceived": 352,
-      "expLevel": 63,
-      "activityScore": 66,
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": true,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-26",
-            "label": "Thu",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-27",
-            "label": "Fri",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-28",
-            "label": "Sat",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-29",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 4,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 0
-      },
-      "warDecks": 0,
-      "lastSeen": "20260326T063440.000Z"
     },
     {
       "name": "T0T0L0$T0n€",
@@ -1625,7 +1565,7 @@
         "daysFromThu": 0
       },
       "warDecks": 0,
-      "lastSeen": "20260326T100001.000Z"
+      "lastSeen": "20260326T103547.000Z"
     },
     {
       "name": "☆. Apocalm",
@@ -1926,6 +1866,66 @@
       },
       "warDecks": 0,
       "lastSeen": "20260325T115330.000Z"
+    },
+    {
+      "name": "hardchaos76",
+      "tag": "#8UL8JRCJ",
+      "role": "elder",
+      "trophies": 10682,
+      "donations": 72,
+      "donationsReceived": 352,
+      "expLevel": 63,
+      "activityScore": 84,
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": {
+        "days": [
+          {
+            "key": "2026-03-26",
+            "label": "Thu",
+            "count": 0,
+            "isPast": false,
+            "isToday": true,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-27",
+            "label": "Fri",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-28",
+            "label": "Sat",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-29",
+            "label": "Sun",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          }
+        ],
+        "totalDecksUsed": 0,
+        "maxDecksElapsed": 4,
+        "maxDecksWeek": 16,
+        "isReliableTotal": true,
+        "daysFromThu": 0
+      },
+      "warDecks": 0,
+      "lastSeen": "20260326T063440.000Z"
     },
     {
       "name": "pacstar",
@@ -3069,11 +3069,11 @@
     }
   ],
   "summary": {
-    "green": 26,
-    "yellow": 15,
+    "green": 27,
+    "yellow": 14,
     "orange": 7,
     "red": 2,
-    "avgScore": 73,
+    "avgScore": 74,
     "total": 50
   },
   "isWarPeriod": true,
@@ -5152,7 +5152,7 @@
   },
   "prevWeekId": "S130W3",
   "snapshotToday": true,
-  "snapshotDate": "2026-03-29",
+  "snapshotDate": "2026-03-26",
   "warCurrentWeekId": "S130W4",
   "warSnapshotDays": [
     0,
