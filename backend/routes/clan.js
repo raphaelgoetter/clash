@@ -40,6 +40,38 @@ const FAMILY_TRANSFER_WINDOW_WEEKS = 1;
  * Run async tasks with limited concurrency to avoid rate-limiting.
  * Returns an array of { status, value } | { status, reason } mirroring Promise.allSettled.
  */
+function slimPlayerProfile(fullPlayer) {
+  if (!fullPlayer || typeof fullPlayer !== 'object') return null;
+
+  const clan = fullPlayer.clan ? {
+    tag: fullPlayer.clan.tag,
+    name: fullPlayer.clan.name,
+    clanScore: fullPlayer.clan.clanScore,
+    clanWarTrophies: fullPlayer.clan.clanWarTrophies,
+  } : null;
+
+  const cw2 = (fullPlayer.badges || []).find((b) => b.name === 'ClanWarWins');
+
+  return {
+    tag: fullPlayer.tag,
+    name: fullPlayer.name,
+    role: fullPlayer.role || null,
+    trophies: fullPlayer.trophies ?? null,
+    bestTrophies: fullPlayer.bestTrophies ?? null,
+    expLevel: fullPlayer.expLevel ?? null,
+    totalDonations: fullPlayer.totalDonations ?? fullPlayer.donations ?? null,
+    donations: fullPlayer.donations ?? null,
+    warDayWins: fullPlayer.warDayWins ?? null,
+    cw2Progress: cw2?.progress ?? null,
+    clan,
+    arena: fullPlayer.arena?.name ?? null,
+    stats: {
+      battleCount: fullPlayer.battleCount ?? null,
+      threeCrownWins: fullPlayer.threeCrownWins ?? null,
+    },
+  };
+}
+
 async function pooledAllSettled(tasks, concurrency = 10) {
   const results = new Array(tasks.length);
   let idx = 0;
@@ -84,6 +116,25 @@ router.get('/:tag/analysis', async (req, res) => {
 
     if (!ALLOWED_CLANS.includes(clanTag)) {
       return res.status(400).json({ error: 'Clan not in allowed list' });
+    }
+
+    const DISK_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+    const nowMs = Date.now();
+    let diskCached = null;
+    try {
+      diskCached = await loadCache(clanTag);
+      if (diskCached && diskCached.analysisCacheUpdatedAt) {
+        const age = nowMs - new Date(diskCached.analysisCacheUpdatedAt).getTime();
+        if (age <= DISK_CACHE_TTL_MS) {
+          diskCached.fallbackReason = 'diskCacheFresh';
+          diskCached.rateLimited = false;
+          res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
+          res.set('X-Cache', 'HIT');
+          return res.json(diskCached);
+        }
+      }
+    } catch (err) {
+      // ignore disk cache read errors and continue to live build
     }
 
     // short-lived in-memory cache to speed up back/forward and repeated
@@ -182,6 +233,11 @@ export const ALLOWED_CLANS = [
   'QU9UQJRL', // Les Revoltes
 ];
 
+// family clans used for transfer detection. Keep in sync with ALLOWED_CLANS.
+export const FAMILY_CLAN_TAGS = ALLOWED_CLANS;
+
+const MEMBER_DATA_TTL_MS = 30 * 60 * 1000; // 30 min
+
 export async function buildClanAnalysis(clanTag) {
     // sanitiZe input exactly as the route does
     if (clanTag.startsWith('#')) clanTag = clanTag.slice(1);
@@ -194,6 +250,18 @@ export async function buildClanAnalysis(clanTag) {
       fetchClan(clanTag),
       fetchClanMembers(clanTag),
     ]);
+
+    // Reuse existing persisted analysis cache to avoid refetching players on every call.
+    const existingCache = await loadCache(clanTag).catch(() => null);
+    const membersRaw = existingCache?.membersRaw ? { ...existingCache.membersRaw } : {};
+
+    const nowMs = Date.now();
+    const membersToFetch = members.filter((m) => {
+      const existing = membersRaw[m.tag];
+      if (!existing || !existing.fetchedAt) return true;
+      const ageMs = nowMs - Date.parse(existing.fetchedAt);
+      return Number.isNaN(ageMs) || ageMs > MEMBER_DATA_TTL_MS;
+    });
 
     // Chargement des liens Discord (tag → discord_user_id) — cache 5 min
     const discordLinks = await getDiscordLinks().catch(() => ({}));
@@ -276,36 +344,92 @@ export async function buildClanAnalysis(clanTag) {
       });
     }
 
-    // fetch full player profiles + battle logs for ALL members with capped concurrency
-    // (avoids RoyaleAPI rate-limiting that caused non-deterministic scores on reload)
+    // fetch full player profiles + battle logs for members requiring refresh
     let memberDataResults = [];
-    if (members.length > 0) {
+    if (membersToFetch.length > 0) {
       memberDataResults = await pooledAllSettled(
-        members.map((m) => () => Promise.all([fetchPlayer(m.tag), fetchBattleLog(m.tag)]))
+        membersToFetch.map((m) => () => Promise.all([fetchPlayer(m.tag), fetchBattleLog(m.tag)]))
       );
-      // debug: log any failures
+
       memberDataResults.forEach((res, idx) => {
+        const tag = membersToFetch[idx].tag;
         if (res.status === 'rejected') {
-          console.warn(`member fetch failed for ${members[idx].tag}:`, res.reason?.message || res.reason);
+          if (res.reason?.isRateLimit) {
+            console.warn(`member fetch rate-limited for ${tag}:`, res.reason.message || res.reason);
+          } else {
+            console.warn(`member fetch failed for ${tag}:`, res.reason?.message || res.reason);
+          }
+          return;
         }
+
+        const [profile, battleLog] = res.value;
+        membersRaw[tag] = {
+          profile: slimPlayerProfile(profile) || {
+            tag: profile?.tag || tag,
+            name: profile?.name || membersToFetch[idx].name,
+            role: profile?.role || membersToFetch[idx].role,
+            trophies: profile?.trophies ?? membersToFetch[idx].trophies,
+            donations: profile?.donations ?? membersToFetch[idx].donations,
+            totalDonations: profile?.totalDonations ?? membersToFetch[idx].donations,
+          },
+          battleLogSummary: {
+            totalBattles: Array.isArray(battleLog) ? battleLog.length : 0,
+            warBattles: Array.isArray(battleLog)
+              ? expandDuelRounds(filterWarBattles(battleLog)).length
+              : 0,
+          },
+          fetchedAt: new Date().toISOString(),
+        };
       });
     }
+
+    // Remove old members who are no longer in clan.
+    const currentMemberTags = new Set(members.map((m) => m.tag));
+    Object.keys(membersRaw).forEach((tag) => {
+      if (!currentMemberTags.has(tag)) delete membersRaw[tag];
+    });
 
     // detect API rate limiting in member fetches
     const memberRateLimited = memberDataResults.some((res) =>
       res.status === 'rejected' && res.reason?.isRateLimit
     );
 
-    // build map of battle logs by tag for later use
+    // build map of raw fetched data by tag for later use
+    const memberDataByTag = {};
     const battleLogsByTag = {};
     if (memberDataResults.length) {
       memberDataResults.forEach((res, idx) => {
+        const tag = membersToFetch[idx]?.tag;
+        if (!tag) return;
+
         if (res.status === 'fulfilled') {
-          const tag = members[idx].tag;
-          battleLogsByTag[tag] = res.value[1];
+          memberDataByTag[tag] = {
+            profile: res.value[0],
+            battleLog: res.value[1] || [],
+          };
+          battleLogsByTag[tag] = res.value[1] || [];
+        } else if (membersRaw[tag]) {
+          memberDataByTag[tag] = {
+            profile: membersRaw[tag].profile,
+            battleLog: [],
+          };
+          battleLogsByTag[tag] = [];
+        } else {
+          memberDataByTag[tag] = {
+            profile: null,
+            battleLog: [],
+          };
+          battleLogsByTag[tag] = [];
         }
       });
     }
+
+    // For members not fetched now but cached memberRaw exists, include cached battle logs as summary is not actual logs.
+    members.forEach((m) => {
+      if (!battleLogsByTag[m.tag] && membersRaw[m.tag]?.battleLogSummary) {
+        battleLogsByTag[m.tag] = [];
+      }
+    });
 
     // compute list of players who didn't do the full 16 decks last week (with breakdown)
     let uncomplete = await computeUncomplete(clanTag, members, battleLogsByTag, raceLog);
@@ -411,10 +535,29 @@ export async function buildClanAnalysis(clanTag) {
       members.map(async (m, idx) => {
         let activityScore, verdict, color, isNew = false, warHistory = null;
 
-      // Resolve full player profile (for badges) and battle log
-      const mdResult    = memberDataResults[idx];
-      const fullPlayer  = mdResult?.status === 'fulfilled' ? mdResult.value[0] : null;
-      const battleLog   = mdResult?.status === 'fulfilled' ? mdResult.value[1] : null;
+      // Resolve full player profile (for badges) and battle log from fetch results or existing cache.
+      const memberData = memberDataByTag[m.tag] || { profile: null, battleLog: [] };
+      const fullPlayer = memberData.profile;
+      const battleLog = memberData.battleLog || [];
+
+      // Keep trimmed data as warm cache for instant UI hydration.
+      membersRaw[m.tag] = {
+        profile: slimPlayerProfile(fullPlayer) || {
+          tag: m.tag,
+          name: m.name,
+          role: m.role,
+          trophies: m.trophies ?? null,
+          donations: m.donations ?? null,
+          totalDonations: m.donations ?? null,
+        },
+        battleLogSummary: {
+          totalBattles: Array.isArray(battleLog) ? battleLog.length : 0,
+          warBattles: Array.isArray(battleLog)
+            ? expandDuelRounds(filterWarBattles(battleLog)).length
+            : 0,
+        },
+        fetchedAt: new Date().toISOString(),
+      };
 
       // Player proxy: prefer full profile (has badges), fall back to member data
       const playerProxy = fullPlayer ?? {
@@ -920,6 +1063,7 @@ export async function buildClanAnalysis(clanTag) {
         requiredTrophies: clan.requiredTrophies,
         badge: clan.badgeId,
       },
+      membersRaw,
       members: analyzedMembers,
       summary: { green, yellow, orange, red, avgScore, total: analyzedMembers.length },
       isWarPeriod: analyzedMembers.some((m) => m.warDays !== null),
@@ -935,6 +1079,7 @@ export async function buildClanAnalysis(clanTag) {
       currentWarDays: clanWarSummary?.days ?? null, // expose the per-day summary for debug/insights
       rateLimited: memberRateLimited,
       raceLogUnavailable,
+      analysisCacheUpdatedAt: new Date().toISOString(),
     };
 }
 

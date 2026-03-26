@@ -472,11 +472,14 @@ async function handleSearch() {
       const staticData = await loadStaticClan(tag);
       if (staticData) {
         lastResultName = staticData.clan?.name || null;
-        // Display skeleton while live data is fetched, to avoid stale score flicker.
+        // Display cached clan data instantly, then refresh from live API.
         renderClanOverview(staticData);
-        renderMembersSkeleton();
+        renderClanMembers(staticData);
         updateFavBtnState(tag);
-        showCacheNote(true, staticData.snapshotDate);
+        showCacheNote(true, staticData.snapshotDate, {
+          source: 'cached',
+          updatedAt: staticData.analysisCacheUpdatedAt || 'unknown',
+        });
       } else {
         renderClanOverview({ clan: { name: t('loading') }, summary: { green:0,yellow:0,orange:0,red:0,avgScore:0,total:0 }, members: [] });
         renderMembersSkeleton();
@@ -491,7 +494,10 @@ async function handleSearch() {
       if (data.rateLimited || data.fallbackReason || data.raceLogUnavailable) showError(t('rateLimitedWarning'));
       updateDebugPanel(data, 'clan');
       updateFavBtnState(tag);
-      showCacheNote(false, data.snapshotDate);
+      showCacheNote(false, data.snapshotDate, {
+        source: data.rateLimited ? 'live (degraded)' : 'live',
+        updatedAt: data.analysisCacheUpdatedAt || new Date().toISOString(),
+      });
     }
     syncUrlState(currentMode, tag);
     favBtn.classList.remove('hidden');
@@ -681,7 +687,7 @@ function hideResults() {
   cardCurrentWar.classList.add('hidden');
 }
 
-function showCacheNote(fromCache, snapshotDate = null) {
+function showCacheNote(fromCache, snapshotDate = null, sourceMeta = null) {
   cacheNote.classList.remove('hidden');
 
   // decide human‑friendly snapshot text
@@ -702,9 +708,25 @@ function showCacheNote(fromCache, snapshotDate = null) {
     }
   }
 
+  const sourceInfo = (sourceMeta && sourceMeta.source)
+    ? ` · ${sourceMeta.source}`
+    : '';
+
+  const ageInfo = (sourceMeta && sourceMeta.updatedAt)
+    ? (() => {
+      const now = Date.now();
+      const updated = Date.parse(sourceMeta.updatedAt);
+      if (Number.isNaN(updated)) return '';
+      const diffSec = Math.max(0, Math.round((now - updated) / 1000));
+      if (diffSec < 60) return ` · fresh ${diffSec}s`;
+      const diffMin = Math.round(diffSec / 60);
+      return ` · cached ${diffMin}m`;
+    })()
+    : '';
+
   cacheNote.textContent = fromCache
-    ? `${t('searchHintCached')} ${snapshotText}`
-    : `${t('searchHintNoDate')} ${snapshotText}`;
+    ? `${t('searchHintCached')} ${snapshotText}${sourceInfo}${ageInfo}`
+    : `${t('searchHintNoDate')} ${snapshotText}${sourceInfo}${ageInfo}`;
 }
 
 // ── Player rendering ──────────────────────────────────────────
