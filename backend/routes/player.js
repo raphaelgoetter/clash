@@ -38,23 +38,33 @@ router.get('/:tag', async (req, res) => {
 router.get('/:tag/analysis', async (req, res) => {
   try {
     const tag = req.params.tag;
+    const forceRefresh = req.query.force === 'true';
+
     // Récupère le statut Discord (lié ou non) avant l'analyse
     const discordLinks  = await getDiscordLinks().catch(() => ({}));
     const discordLinked = Object.prototype.hasOwnProperty.call(discordLinks, tag);
-    // attempt memory cache but force rebuild if warHistory seems missing
+
+    // attempt memory cache but obey force parameter
     let analysis, fromCache;
-    ({ value: analysis, fromCache } = await getOrSet(
-      `player:analysis:${tag}`,
-      () => getPlayerAnalysis(tag, discordLinked),
-      PLAYER_CACHE_TTL,
-    ));
+    if (forceRefresh) {
+      analysis = await getPlayerAnalysis(tag, discordLinked);
+      fromCache = false;
+    } else {
+      ({ value: analysis, fromCache } = await getOrSet(
+        `player:analysis:${tag}`,
+        () => getPlayerAnalysis(tag, discordLinked),
+        PLAYER_CACHE_TTL,
+      ));
+    }
+
     // if cached result has warHistory but no weeks and player isn't fallback,
     // refresh synchronously to avoid blank cards
-    if (fromCache && analysis.warHistory && analysis.warHistory.weeks.length === 0 && !analysis.reliability) {
+    if (!forceRefresh && fromCache && analysis.warHistory && analysis.warHistory.weeks.length === 0 && !analysis.reliability) {
       // recompute immediately ignoring cache
       analysis = await getPlayerAnalysis(tag, discordLinked);
       fromCache = false;
     }
+
     res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
     res.set('X-Cache', fromCache ? 'HIT' : 'MISS');
     // S'assure que le statut Discord est toujours à jour (indépendamment du cache d'analyse)

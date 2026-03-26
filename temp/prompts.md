@@ -259,3 +259,25 @@ En prod (<https://trustroyale.vercel.app/en/?mode=clan&tag=%23LRQP20V9>)
 - Joueur Hafid (#YQVP9P0Y) score 18% (au-lieu de 72% = valeur réelle observée en vue Player <http://localhost:5173/en/?mode=player&tag=%23YQVP9P0Y>)
 - Live data ✅ · Snapshot : today ✅ · live · fresh 18s
 Il faut VRAIMENT trouver un moyen de récupérer la bonne valeur Player de chacun des joueurs dans la vue Clan
+
+---
+
+Attends. NON. Les données en prod (déployée) ne sont toujours pas bonnes !
+
+En local (<http://localhost:5173/en/?mode=clan&tag=%23LRQP20V9>)
+
+- "Avg Score 73 / 100" √
+- Joueur Hafid (#YQVP9P0Y) score 72% √
+- Joueur darren (#88Y9Q8UPQ) score 26% √
+- Joueur Remi-ni-one (#8QLCU9QG) score 29% √
+- etc.
+- `Live data ✅ · Snapshot : today ✅ · live · cached 4m`
+
+En prod (<https://trustroyale.vercel.app/en/?mode=clan&tag=%23LRQP20V9>)
+
+- "Avg Score 72 / 100" au-lieu 73 ❌
+- Joueur Hafid (#YQVP9P0Y) score 72% √
+- Joueur darren (#88Y9Q8UPQ) score 7% ❌ (au-lieu de 26% = valeur réelle observée en vue Player <https://trustroyale.vercel.app/en/?mode=player&tag=%2388Y9Q8UPQ>)
+- Joueur Remi-ni-one (#8QLCU9QG) score 7% ❌ (au-lieu de 29% = valeur réelle observée en vue Player <https://trustroyale.vercel.app/en/?mode=player&tag=%238QLCU9QG>)
+-etc.
+- `Live data ✅ · Snapshot : today ✅ · live · cached 4m`
