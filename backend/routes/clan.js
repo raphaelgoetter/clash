@@ -121,6 +121,7 @@ router.get('/:tag/analysis', async (req, res) => {
     const DISK_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
     const nowMs = Date.now();
     let diskCached = null;
+    let staleCache = null;
     const forceRefresh = req.query.force === 'true';
 
     try {
@@ -130,26 +131,32 @@ router.get('/:tag/analysis', async (req, res) => {
           ? nowMs - new Date(diskCached.analysisCacheUpdatedAt).getTime()
           : Number.MAX_SAFE_INTEGER;
 
-        // If we have cached data, serve it immediately to avoid any 429 risk.
-        if (!forceRefresh) {
-          diskCached.fallbackReason = age <= DISK_CACHE_TTL_MS ? 'diskCacheFresh' : 'diskCacheStale';
+        if (!forceRefresh && age <= DISK_CACHE_TTL_MS) {
+          // Fresh cache: safe to return directly.
+          diskCached.fallbackReason = 'diskCacheFresh';
           diskCached.rateLimited = false;
           res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
-          res.set('X-Cache', age <= DISK_CACHE_TTL_MS ? 'HIT' : 'STALE');
-
-          // If stale, trigger async refresh in background without blocking client.
-          if (age > DISK_CACHE_TTL_MS) {
-            setTimeout(async () => {
-              try {
-                const fresh = await buildClanAnalysis(clanTag);
-                await saveCache(clanTag, fresh).catch(() => null);
-              } catch (err) {
-                console.warn(`[clan] background refresh failed for ${clanTag}:`, err.message);
-              }
-            }, 0);
-          }
-
+          res.set('X-Cache', 'HIT');
           return res.json(diskCached);
+        }
+
+        if (!forceRefresh && age > DISK_CACHE_TTL_MS) {
+          // Keep stale payload as fallback if live fetch fails.
+          staleCache = {
+            ...diskCached,
+            fallbackReason: 'diskCacheStale',
+            rateLimited: false,
+          };
+
+          // Trigger asynchronous update in background as a best-effort refresh.
+          setTimeout(async () => {
+            try {
+              const fresh = await buildClanAnalysis(clanTag);
+              await saveCache(clanTag, fresh).catch(() => null);
+            } catch (err) {
+              console.warn(`[clan] background refresh failed for ${clanTag}:`, err.message);
+            }
+          }, 0);
         }
       }
     } catch (err) {
@@ -159,17 +166,28 @@ router.get('/:tag/analysis', async (req, res) => {
     // short-lived in-memory cache to speed up back/forward and repeated
     // clicks on the same instance.  TTL is small so stale issues are rare.
     const cacheKey = `clan:${clanTag}`;
-    const { value:payload, fromCache } = await getOrSet(cacheKey, () => buildClanAnalysis(clanTag), 5 * 60 * 1000);
+    try {
+      const { value:payload, fromCache } = await getOrSet(cacheKey, () => buildClanAnalysis(clanTag), 5 * 60 * 1000);
 
-    // Keep a persistent fallback cache on disk, to survive cold starts and rate-limit incidents.
-    if (!fromCache) {
-      await saveCache(clanTag, payload).catch(() => null);
+      // Keep a persistent fallback cache on disk, to survive cold starts and rate-limit incidents.
+      if (!fromCache) {
+        await saveCache(clanTag, payload).catch(() => null);
+      }
+
+      // prevent Vercel/edge from caching this response
+      res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
+      res.set('X-Cache', fromCache ? 'HIT' : 'MISS');
+      return res.json(payload);
+    } catch (err) {
+      if (staleCache && (err.isRateLimit || err.message.includes('429') || err.status >= 500)) {
+        staleCache.rateLimited = true;
+        staleCache.fallbackReason = 'diskCacheRateLimited';
+        res.set('X-Cache', 'STALE');
+        res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
+        return res.status(200).json(staleCache);
+      }
+      throw err;
     }
-
-    // prevent Vercel/edge from caching this response
-    res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
-    res.set('X-Cache', fromCache ? 'HIT' : 'MISS');
-    res.json(payload);
   } catch (err) {
     const status = err.message.includes('404') ? 404 : 500;
 
