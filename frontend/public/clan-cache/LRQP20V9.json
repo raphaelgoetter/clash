@@ -1,6 +1,6 @@
 {
   "lastWarSummary": {
-    "totalDecksUsed": 243,
+    "totalDecksUsed": 248,
     "maxDecksElapsed": 400,
     "maxDecksWeek": 800,
     "participantCount": 50,
@@ -14,40 +14,40 @@
         "isToday": false,
         "isFuture": false,
         "source": "snapshot",
-        "snapshotCount": 188,
+        "snapshotCount": 80,
         "liveCount": null
       },
       {
         "label": "Fri",
-        "totalCount": 55,
+        "totalCount": 60,
         "maxCount": 200,
         "isPast": false,
         "isToday": true,
         "isFuture": false,
         "source": "live",
-        "snapshotCount": null,
-        "liveCount": 55
+        "snapshotCount": 186,
+        "liveCount": 60
       },
       {
         "label": "Sat",
-        "totalCount": null,
+        "totalCount": 0,
         "maxCount": 200,
         "isPast": false,
         "isToday": false,
         "isFuture": true,
-        "source": "unknown",
-        "snapshotCount": null,
+        "source": "snapshot",
+        "snapshotCount": 0,
         "liveCount": null
       },
       {
         "label": "Sun",
-        "totalCount": null,
+        "totalCount": 0,
         "maxCount": 200,
         "isPast": false,
         "isToday": false,
         "isFuture": true,
-        "source": "unknown",
-        "snapshotCount": null,
+        "source": "snapshot",
+        "snapshotCount": 0,
         "liveCount": null
       }
     ],
@@ -59,7 +59,7 @@
     "name": "Les Resistants",
     "tag": "#LRQP20V9",
     "description": "☆. #2 Resistance (top 🌍) Bonne humeur et GDC obligatoire ⚔️ 4 combats/jour 👉 Discord demandé : kPdQN8zfjM ▪️ code: RoyaleAPI",
-    "clanScore": 118403,
+    "clanScore": 118406,
     "clanWarTrophies": 3757,
     "members": 49,
     "type": "open",
@@ -93,7 +93,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.849Z"
+      "fetchedAt": "2026-03-27T15:18:46.291Z"
     },
     "#89L8J9YV9": {
       "profile": {
@@ -121,7 +121,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.849Z"
+      "fetchedAt": "2026-03-27T15:18:46.291Z"
     },
     "#99VY0090": {
       "profile": {
@@ -149,7 +149,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.849Z"
+      "fetchedAt": "2026-03-27T15:18:46.291Z"
     },
     "#VGJ9LL8VC": {
       "profile": {
@@ -159,8 +159,8 @@
         "trophies": 12565,
         "bestTrophies": 12653,
         "expLevel": 66,
-        "totalDonations": 31563,
-        "donations": 419,
+        "totalDonations": 31599,
+        "donations": 455,
         "warDayWins": 0,
         "cw2Progress": null,
         "clan": {
@@ -177,7 +177,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.850Z"
+      "fetchedAt": "2026-03-27T15:18:46.292Z"
     },
     "#PGRJC00G9": {
       "profile": {
@@ -205,7 +205,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.852Z"
+      "fetchedAt": "2026-03-27T15:18:46.292Z"
     },
     "#82UPUGYP": {
       "profile": {
@@ -233,7 +233,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.854Z"
+      "fetchedAt": "2026-03-27T15:18:46.292Z"
     },
     "#Y9P9GGL89": {
       "profile": {
@@ -261,7 +261,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.856Z"
+      "fetchedAt": "2026-03-27T15:18:46.293Z"
     },
     "#GLV9Q2P09": {
       "profile": {
@@ -289,7 +289,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.858Z"
+      "fetchedAt": "2026-03-27T15:18:46.293Z"
     },
     "#98UULQY8": {
       "profile": {
@@ -317,7 +317,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.860Z"
+      "fetchedAt": "2026-03-27T15:18:46.293Z"
     },
     "#8YGY2RPCC": {
       "profile": {
@@ -345,7 +345,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.863Z"
+      "fetchedAt": "2026-03-27T15:18:46.293Z"
     },
     "#8VQLJLR0": {
       "profile": {
@@ -373,7 +373,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.861Z"
+      "fetchedAt": "2026-03-27T15:18:46.293Z"
     },
     "#LUGP2RYY": {
       "profile": {
@@ -401,7 +401,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.864Z"
+      "fetchedAt": "2026-03-27T15:18:46.294Z"
     },
     "#2YP2V2G0R": {
       "profile": {
@@ -411,8 +411,8 @@
         "trophies": 12120,
         "bestTrophies": 12150,
         "expLevel": 66,
-        "totalDonations": 32192,
-        "donations": 1060,
+        "totalDonations": 32236,
+        "donations": 1104,
         "warDayWins": 0,
         "cw2Progress": null,
         "clan": {
@@ -429,7 +429,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.865Z"
+      "fetchedAt": "2026-03-27T15:18:46.294Z"
     },
     "#CJVUJ8U9C": {
       "profile": {
@@ -439,8 +439,8 @@
         "trophies": 12089,
         "bestTrophies": 12121,
         "expLevel": 78,
-        "totalDonations": 73283,
-        "donations": 403,
+        "totalDonations": 73321,
+        "donations": 441,
         "warDayWins": 0,
         "cw2Progress": null,
         "clan": {
@@ -457,7 +457,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.866Z"
+      "fetchedAt": "2026-03-27T15:18:46.294Z"
     },
     "#PCLLULJ9V": {
       "profile": {
@@ -485,7 +485,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.868Z"
+      "fetchedAt": "2026-03-27T15:18:46.294Z"
     },
     "#8G00908LP": {
       "profile": {
@@ -513,7 +513,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.869Z"
+      "fetchedAt": "2026-03-27T15:18:46.294Z"
     },
     "#RJY2R282V": {
       "profile": {
@@ -541,7 +541,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.870Z"
+      "fetchedAt": "2026-03-27T15:18:46.295Z"
     },
     "#V0VLJQCJU": {
       "profile": {
@@ -569,7 +569,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.871Z"
+      "fetchedAt": "2026-03-27T15:18:46.295Z"
     },
     "#YQVP9P0Y": {
       "profile": {
@@ -597,7 +597,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.872Z"
+      "fetchedAt": "2026-03-27T15:18:46.295Z"
     },
     "#CGJP0YYUJ": {
       "profile": {
@@ -625,7 +625,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.874Z"
+      "fetchedAt": "2026-03-27T15:18:46.296Z"
     },
     "#8QVRJYVYU": {
       "profile": {
@@ -653,7 +653,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.875Z"
+      "fetchedAt": "2026-03-27T15:18:46.296Z"
     },
     "#GC20UCLL": {
       "profile": {
@@ -681,7 +681,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.876Z"
+      "fetchedAt": "2026-03-27T15:18:46.296Z"
     },
     "#U09CUCYL2": {
       "profile": {
@@ -709,7 +709,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.877Z"
+      "fetchedAt": "2026-03-27T15:18:46.296Z"
     },
     "#J290800UU": {
       "profile": {
@@ -737,7 +737,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.878Z"
+      "fetchedAt": "2026-03-27T15:18:46.299Z"
     },
     "#GGVQJLG9": {
       "profile": {
@@ -765,7 +765,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.879Z"
+      "fetchedAt": "2026-03-27T15:18:46.301Z"
     },
     "#PRGCCRUJP": {
       "profile": {
@@ -793,7 +793,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.880Z"
+      "fetchedAt": "2026-03-27T15:18:46.303Z"
     },
     "#U9PP0CJRL": {
       "profile": {
@@ -821,7 +821,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.882Z"
+      "fetchedAt": "2026-03-27T15:18:46.305Z"
     },
     "#VJUGLG8RR": {
       "profile": {
@@ -849,18 +849,18 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.883Z"
+      "fetchedAt": "2026-03-27T15:18:46.309Z"
     },
     "#QVG90PQVG": {
       "profile": {
         "tag": "#QVG90PQVG",
         "name": "Flo 2",
         "role": "elder",
-        "trophies": 10726,
-        "bestTrophies": 10751,
+        "trophies": 10756,
+        "bestTrophies": 10756,
         "expLevel": 60,
-        "totalDonations": 12598,
-        "donations": 156,
+        "totalDonations": 12606,
+        "donations": 164,
         "warDayWins": 0,
         "cw2Progress": null,
         "clan": {
@@ -877,7 +877,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.884Z"
+      "fetchedAt": "2026-03-27T15:18:46.307Z"
     },
     "#8UL8JRCJ": {
       "profile": {
@@ -905,7 +905,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.884Z"
+      "fetchedAt": "2026-03-27T15:18:46.311Z"
     },
     "#UVV8CULJV": {
       "profile": {
@@ -915,8 +915,8 @@
         "trophies": 10526,
         "bestTrophies": 10526,
         "expLevel": 59,
-        "totalDonations": 9353,
-        "donations": 202,
+        "totalDonations": 9369,
+        "donations": 218,
         "warDayWins": 0,
         "cw2Progress": null,
         "clan": {
@@ -933,7 +933,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.885Z"
+      "fetchedAt": "2026-03-27T15:18:46.313Z"
     },
     "#YGP000RP8": {
       "profile": {
@@ -961,7 +961,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.886Z"
+      "fetchedAt": "2026-03-27T15:18:46.315Z"
     },
     "#P2YYR29QU": {
       "profile": {
@@ -989,7 +989,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.887Z"
+      "fetchedAt": "2026-03-27T15:18:46.317Z"
     },
     "#U0LVUQRCJ": {
       "profile": {
@@ -1017,7 +1017,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.888Z"
+      "fetchedAt": "2026-03-27T15:18:46.320Z"
     },
     "#82JPJ9J98": {
       "profile": {
@@ -1045,7 +1045,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.889Z"
+      "fetchedAt": "2026-03-27T15:18:46.322Z"
     },
     "#RJJ99Y9J": {
       "profile": {
@@ -1073,7 +1073,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.890Z"
+      "fetchedAt": "2026-03-27T15:18:46.324Z"
     },
     "#8GGQLU28": {
       "profile": {
@@ -1082,9 +1082,9 @@
         "role": "member",
         "trophies": 10151,
         "bestTrophies": 10238,
-        "expLevel": 72,
-        "totalDonations": 95476,
-        "donations": 243,
+        "expLevel": 73,
+        "totalDonations": 95510,
+        "donations": 277,
         "warDayWins": 140,
         "cw2Progress": null,
         "clan": {
@@ -1101,7 +1101,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.891Z"
+      "fetchedAt": "2026-03-27T15:18:46.326Z"
     },
     "#2L8RPQRJ9": {
       "profile": {
@@ -1129,7 +1129,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.892Z"
+      "fetchedAt": "2026-03-27T15:18:46.328Z"
     },
     "#G2R0VRYYQ": {
       "profile": {
@@ -1157,7 +1157,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.893Z"
+      "fetchedAt": "2026-03-27T15:18:46.330Z"
     },
     "#8QLCU9QG": {
       "profile": {
@@ -1185,7 +1185,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.894Z"
+      "fetchedAt": "2026-03-27T15:18:46.332Z"
     },
     "#822GLVL00": {
       "profile": {
@@ -1213,7 +1213,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.895Z"
+      "fetchedAt": "2026-03-27T15:18:46.334Z"
     },
     "#8Y90VQYP9": {
       "profile": {
@@ -1241,7 +1241,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.895Z"
+      "fetchedAt": "2026-03-27T15:18:46.336Z"
     },
     "#88Y9Q8UPQ": {
       "profile": {
@@ -1269,7 +1269,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.896Z"
+      "fetchedAt": "2026-03-27T15:18:46.338Z"
     },
     "#YRGJGR8R": {
       "profile": {
@@ -1279,8 +1279,8 @@
         "trophies": 9072,
         "bestTrophies": 9483,
         "expLevel": 72,
-        "totalDonations": 136026,
-        "donations": 1148,
+        "totalDonations": 136060,
+        "donations": 1182,
         "warDayWins": 32,
         "cw2Progress": null,
         "clan": {
@@ -1297,7 +1297,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.897Z"
+      "fetchedAt": "2026-03-27T15:18:46.340Z"
     },
     "#80GVRPGPY": {
       "profile": {
@@ -1325,7 +1325,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.898Z"
+      "fetchedAt": "2026-03-27T15:18:46.342Z"
     },
     "#8R0LR8GYC": {
       "profile": {
@@ -1353,7 +1353,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.899Z"
+      "fetchedAt": "2026-03-27T15:18:46.344Z"
     },
     "#9VQYC9GJQ": {
       "profile": {
@@ -1381,7 +1381,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.900Z"
+      "fetchedAt": "2026-03-27T15:18:46.346Z"
     },
     "#UP9YJV080": {
       "profile": {
@@ -1409,7 +1409,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.900Z"
+      "fetchedAt": "2026-03-27T15:18:46.348Z"
     },
     "#J008G9CLJ": {
       "profile": {
@@ -1437,7 +1437,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T14:34:44.901Z"
+      "fetchedAt": "2026-03-27T15:18:46.350Z"
     }
   },
   "members": [
@@ -1454,7 +1454,7 @@
       "reliabilitySource": "player",
       "verdict": "High risk",
       "color": "orange",
-      "isNew": true,
+      "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
       "transferWeek": null,
@@ -1578,7 +1578,7 @@
       "reliabilitySource": "player",
       "verdict": "High risk",
       "color": "orange",
-      "isNew": true,
+      "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
       "transferWeek": null,
@@ -1702,7 +1702,7 @@
       "reliabilitySource": "player",
       "verdict": "High risk",
       "color": "orange",
-      "isNew": true,
+      "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
       "transferWeek": null,
@@ -1757,14 +1757,14 @@
       "role": "member",
       "trophies": 10526,
       "donations": 218,
-      "totalDonations": 9353,
-      "donationsReceived": 128,
+      "totalDonations": 9369,
+      "donationsReceived": 152,
       "expLevel": 59,
       "reliability": 52,
       "reliabilitySource": "player",
       "verdict": "High risk",
       "color": "orange",
-      "isNew": true,
+      "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
       "transferWeek": null,
@@ -1804,13 +1804,13 @@
             "isFuture": true
           }
         ],
-        "totalDecksUsed": 4,
+        "totalDecksUsed": 5,
         "maxDecksElapsed": 8,
         "maxDecksWeek": 16,
         "isReliableTotal": true,
         "daysFromThu": 1
       },
-      "warDecks": 4,
+      "warDecks": 5,
       "lastSeen": "20260327T143211.000Z"
     },
     {
@@ -1888,7 +1888,7 @@
       "reliabilitySource": "player",
       "verdict": "Moderate risk",
       "color": "yellow",
-      "isNew": true,
+      "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
       "transferWeek": null,
@@ -1942,9 +1942,9 @@
       "tag": "#8GGQLU28",
       "role": "member",
       "trophies": 10151,
-      "donations": 243,
-      "totalDonations": 95476,
-      "donationsReceived": 280,
+      "donations": 277,
+      "totalDonations": 95510,
+      "donationsReceived": 296,
       "expLevel": 72,
       "reliability": 60,
       "reliabilitySource": "player",
@@ -1997,7 +1997,7 @@
         "daysFromThu": 1
       },
       "warDecks": 3,
-      "lastSeen": "20260327T141849.000Z"
+      "lastSeen": "20260327T144241.000Z"
     },
     {
       "name": "melv",
@@ -2074,7 +2074,7 @@
       "reliabilitySource": "player",
       "verdict": "Moderate risk",
       "color": "yellow",
-      "isNew": true,
+      "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
       "transferWeek": null,
@@ -2198,7 +2198,7 @@
       "reliabilitySource": "player",
       "verdict": "Moderate risk",
       "color": "yellow",
-      "isNew": true,
+      "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
       "transferWeek": null,
@@ -2322,7 +2322,7 @@
       "reliabilitySource": "player",
       "verdict": "Moderate risk",
       "color": "yellow",
-      "isNew": true,
+      "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
       "transferWeek": null,
@@ -2632,7 +2632,7 @@
       "reliabilitySource": "player",
       "verdict": "Moderate risk",
       "color": "yellow",
-      "isNew": true,
+      "isNew": false,
       "isFamilyTransfer": false,
       "transferFromClan": null,
       "transferWeek": null,
@@ -2872,8 +2872,8 @@
       "tag": "#2YP2V2G0R",
       "role": "elder",
       "trophies": 12120,
-      "donations": 1080,
-      "totalDonations": 32192,
+      "donations": 1104,
+      "totalDonations": 32236,
       "donationsReceived": 410,
       "expLevel": 66,
       "reliability": 78,
@@ -2927,7 +2927,7 @@
         "daysFromThu": 1
       },
       "warDecks": 8,
-      "lastSeen": "20260327T141143.000Z"
+      "lastSeen": "20260327T150614.000Z"
     },
     {
       "name": "☆. Inuk",
@@ -3184,7 +3184,7 @@
       "trophies": 12333,
       "donations": 80,
       "totalDonations": 58109,
-      "donationsReceived": 376,
+      "donationsReceived": 392,
       "expLevel": 68,
       "reliability": 83,
       "reliabilitySource": "player",
@@ -3230,14 +3230,14 @@
             "isFuture": true
           }
         ],
-        "totalDecksUsed": 4,
+        "totalDecksUsed": 6,
         "maxDecksElapsed": 8,
         "maxDecksWeek": 16,
         "isReliableTotal": true,
         "daysFromThu": 1
       },
-      "warDecks": 4,
-      "lastSeen": "20260327T135815.000Z"
+      "warDecks": 6,
+      "lastSeen": "20260327T144952.000Z"
     },
     {
       "name": "hardchaos76",
@@ -3616,9 +3616,9 @@
       "tag": "#CJVUJ8U9C",
       "role": "elder",
       "trophies": 12089,
-      "donations": 433,
-      "totalDonations": 73283,
-      "donationsReceived": 456,
+      "donations": 441,
+      "totalDonations": 73321,
+      "donationsReceived": 480,
       "expLevel": 78,
       "reliability": 86,
       "reliabilitySource": "player",
@@ -3671,7 +3671,7 @@
         "daysFromThu": 1
       },
       "warDecks": 4,
-      "lastSeen": "20260327T142614.000Z"
+      "lastSeen": "20260327T151345.000Z"
     },
     {
       "name": "kayes(2)",
@@ -3739,9 +3739,9 @@
       "name": "Flo 2",
       "tag": "#QVG90PQVG",
       "role": "elder",
-      "trophies": 10726,
-      "donations": 156,
-      "totalDonations": 12598,
+      "trophies": 10756,
+      "donations": 164,
+      "totalDonations": 12606,
       "donationsReceived": 240,
       "expLevel": 60,
       "reliability": 87,
@@ -3795,7 +3795,7 @@
         "daysFromThu": 1
       },
       "warDecks": 8,
-      "lastSeen": "20260327T134523.000Z"
+      "lastSeen": "20260327T151209.000Z"
     },
     {
       "name": "le roi king",
@@ -3981,7 +3981,7 @@
         "daysFromThu": 1
       },
       "warDecks": 7,
-      "lastSeen": "20260327T133035.000Z"
+      "lastSeen": "20260327T151633.000Z"
     },
     {
       "name": "Adolphe en Tmax",
@@ -4098,14 +4098,14 @@
             "isFuture": true
           }
         ],
-        "totalDecksUsed": 6,
+        "totalDecksUsed": 8,
         "maxDecksElapsed": 8,
         "maxDecksWeek": 16,
         "isReliableTotal": true,
         "daysFromThu": 1
       },
-      "warDecks": 6,
-      "lastSeen": "20260327T135805.000Z"
+      "warDecks": 8,
+      "lastSeen": "20260327T144043.000Z"
     },
     {
       "name": "hyène",
@@ -4237,7 +4237,7 @@
       "role": "coLeader",
       "trophies": 9072,
       "donations": 1182,
-      "totalDonations": 136026,
+      "totalDonations": 136060,
       "donationsReceived": 536,
       "expLevel": 72,
       "reliability": 92,
@@ -4298,9 +4298,9 @@
       "tag": "#VGJ9LL8VC",
       "role": "coLeader",
       "trophies": 12565,
-      "donations": 439,
-      "totalDonations": 31563,
-      "donationsReceived": 510,
+      "donations": 455,
+      "totalDonations": 31599,
+      "donationsReceived": 520,
       "expLevel": 66,
       "reliability": 93,
       "reliabilitySource": "player",
@@ -5434,7 +5434,7 @@
         "decks": 12,
         "role": "member",
         "inClan": true,
-        "isNew": true
+        "isNew": false
       },
       {
         "name": "Nova",
@@ -5514,7 +5514,7 @@
         "decks": 12,
         "role": "member",
         "inClan": true,
-        "isNew": true
+        "isNew": false
       },
       {
         "name": "sei",
@@ -5546,12 +5546,12 @@
         "decks": 0,
         "role": "member",
         "inClan": true,
-        "isNew": true
+        "isNew": false
       }
     ]
   },
   "clanWarSummary": {
-    "totalDecksUsed": 243,
+    "totalDecksUsed": 248,
     "maxDecksElapsed": 400,
     "maxDecksWeek": 800,
     "participantCount": 50,
@@ -5565,40 +5565,40 @@
         "isToday": false,
         "isFuture": false,
         "source": "snapshot",
-        "snapshotCount": 188,
+        "snapshotCount": 80,
         "liveCount": null
       },
       {
         "label": "Fri",
-        "totalCount": 55,
+        "totalCount": 60,
         "maxCount": 200,
         "isPast": false,
         "isToday": true,
         "isFuture": false,
         "source": "live",
-        "snapshotCount": null,
-        "liveCount": 55
+        "snapshotCount": 186,
+        "liveCount": 60
       },
       {
         "label": "Sat",
-        "totalCount": null,
+        "totalCount": 0,
         "maxCount": 200,
         "isPast": false,
         "isToday": false,
         "isFuture": true,
-        "source": "unknown",
-        "snapshotCount": null,
+        "source": "snapshot",
+        "snapshotCount": 0,
         "liveCount": null
       },
       {
         "label": "Sun",
-        "totalCount": null,
+        "totalCount": 0,
         "maxCount": 200,
         "isPast": false,
         "isToday": false,
         "isFuture": true,
-        "source": "unknown",
-        "snapshotCount": null,
+        "source": "snapshot",
+        "snapshotCount": 0,
         "liveCount": null
       }
     ],
@@ -5609,8 +5609,13 @@
   "snapshotToday": true,
   "snapshotDate": "2026-03-27",
   "warCurrentWeekId": "S130W4",
-  "warSnapshotDays": null,
-  "snapshotTakenAt": null,
+  "warSnapshotDays": [
+    80,
+    186,
+    0,
+    0
+  ],
+  "snapshotTakenAt": "2026-03-27T15:18:46.279Z",
   "currentWarDays": [
     {
       "label": "Thu",
@@ -5620,44 +5625,44 @@
       "isToday": false,
       "isFuture": false,
       "source": "snapshot",
-      "snapshotCount": 188,
+      "snapshotCount": 80,
       "liveCount": null
     },
     {
       "label": "Fri",
-      "totalCount": 55,
+      "totalCount": 60,
       "maxCount": 200,
       "isPast": false,
       "isToday": true,
       "isFuture": false,
       "source": "live",
-      "snapshotCount": null,
-      "liveCount": 55
+      "snapshotCount": 186,
+      "liveCount": 60
     },
     {
       "label": "Sat",
-      "totalCount": null,
+      "totalCount": 0,
       "maxCount": 200,
       "isPast": false,
       "isToday": false,
       "isFuture": true,
-      "source": "unknown",
-      "snapshotCount": null,
+      "source": "snapshot",
+      "snapshotCount": 0,
       "liveCount": null
     },
     {
       "label": "Sun",
-      "totalCount": null,
+      "totalCount": 0,
       "maxCount": 200,
       "isPast": false,
       "isToday": false,
       "isFuture": true,
-      "source": "unknown",
-      "snapshotCount": null,
+      "source": "snapshot",
+      "snapshotCount": 0,
       "liveCount": null
     }
   ],
   "rateLimited": false,
   "raceLogUnavailable": false,
-  "analysisCacheUpdatedAt": "2026-03-27T14:34:51.217Z"
+  "analysisCacheUpdatedAt": "2026-03-27T15:18:51.057Z"
 }
