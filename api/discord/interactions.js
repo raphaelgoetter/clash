@@ -46,7 +46,7 @@ const LABEL_FR = {
   'War Activity': 'Activité de guerre',
   'Win Rate (War)': 'Winrate (guerre)',
   'CW2 Battle Wins': 'Victoires CW2',
-  'Last Seen': 'Dernière connexion',
+  'Last Seen': 'Connexion',
   'General Activity': 'Activité générale',
   'Experience': 'Expérience',
   'Donations': 'Dons totaux',
