@@ -659,7 +659,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         console.log(`[clan] playerAnalysis override for ${m.tag}: ${reliabilityScore} (${verdict})`);
       }
 
-      if (raceLog) {
+      if (!playerScoreOverride && raceLog) {
         let memberBattleLog = battleLogsByTag[m.tag] || [];
         let wh = await buildFamilyWarHistory(m.tag, clan.tag, currentRace, memberBattleLog);
         warHistory = wh;
@@ -806,7 +806,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             color = wsFallback.color;
             scoreSource = 'fallback';
           }
-        } else {
+        } else if (!playerScoreOverride) {
           // Battle log unavailable — minimal estimate
           const totalDonations = playerProxy.totalDonations ?? playerProxy.donations ?? 0;
           const donationPts = scoreTotalDonations(totalDonations, 2);
@@ -814,16 +814,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           reliabilityScore = pct; verdict = 'Extreme risk'; color = 'red';
           // If we have no race log, we cannot safely mark someone as "new".
           // Keep their existing status to avoid false positives for clan / Discord.
-        }
-
-        // Ensure player view score is authoritative when available.
-        if (playerAnalysis?.warScore && Number.isFinite(playerAnalysis.warScore.pct)) {
-          const pa = playerAnalysis.warScore;
-          reliabilityScore = pa.pct;
-          verdict = pa.verdict ?? verdict;
-          color = pa.color ?? color;
-          scoreSource = 'player';
-          if (playerAnalysis.warHistory) warHistory = playerAnalysis.warHistory;
         }
 
         isNew = !transfer && (isNewClanArrivee || isBattleLogMode);
@@ -839,7 +829,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             isNew = false;
           }
         }
-      } else {
+      } else if (!playerScoreOverride) {
         // No river race log available (rate-limited or missing data) — use battle logs / player profile fallback.
         const memberBattleLog = battleLogsByTag[m.tag] || [];
         const bd = categorizeBattleLog(memberBattleLog);
@@ -854,6 +844,16 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
         // In this mode we cannot robustly determine clan-age newness from raceLog history.
         isNew = false;
+      }
+
+      // Ensure player view score is authoritative when available (global override).
+      if (playerAnalysis?.warScore && Number.isFinite(playerAnalysis.warScore.pct)) {
+        const pa = playerAnalysis.warScore;
+        reliabilityScore = pa.pct;
+        verdict = pa.verdict ?? verdict;
+        color = pa.color ?? color;
+        scoreSource = 'player';
+        if (playerAnalysis.warHistory) warHistory = playerAnalysis.warHistory;
       }
 
       // Calcul des jours GDC de la semaine courante
