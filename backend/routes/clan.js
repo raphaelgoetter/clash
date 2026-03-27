@@ -640,11 +640,23 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       const discordLinked = Object.prototype.hasOwnProperty.call(discordLinks, m.tag);
 
       // Source de vérité : préférer l'analyse « player » si disponible.
+      let playerScoreOverride = false;
       try {
         playerAnalysis = await getPlayerAnalysis(m.tag, discordLinked);
       } catch (e) {
         console.warn(`[clan] debug getPlayerAnalysis for ${m.tag} failed: ${e.message}`);
         playerAnalysis = null;
+      }
+
+      if (playerAnalysis?.warScore && Number.isFinite(playerAnalysis.warScore.pct)) {
+        const pa = playerAnalysis.warScore;
+        reliabilityScore = pa.pct;
+        verdict = pa.verdict ?? 'Unknown';
+        color = pa.color ?? 'orange';
+        scoreSource = 'player';
+        if (playerAnalysis.warHistory) warHistory = playerAnalysis.warHistory;
+        playerScoreOverride = true;
+        console.log(`[clan] playerAnalysis override for ${m.tag}: ${reliabilityScore} (${verdict})`);
       }
 
       if (raceLog) {
