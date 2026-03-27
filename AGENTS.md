@@ -18,6 +18,12 @@ npm run dev      # backend :3000 + frontend :5173 (concurrently)
 npm run build    # vite build + vercel --prod
 ```
 
+## Conventions de génération de scripts temporaires
+
+- scripts de debug/test d’exploration rapide (CJS, Node scripts ad-hoc) doivent être placés dans `/temp`.
+- ne pas laisser de fichiers `findconst*` dans la racine du repo.
+- ces scripts sont conçus pour usage local, pas pour production.
+
 ## Conventions critiques du projet
 
 - **ESM obligatoire** : `"type": "module"` dans le backend — pas de `require()`

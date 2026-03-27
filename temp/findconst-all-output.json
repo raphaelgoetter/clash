@@ -1,0 +1,17 @@
+[
+  {
+    "file": "/Users/raphael/Git/clash/backend/routes/clan.js",
+    "violations": [
+      {
+        "name": "pastDiff",
+        "line": 1068,
+        "code": "pastDiff -= maxAdjust;"
+      },
+      {
+        "name": "pastDiff",
+        "line": 1075,
+        "code": "pastDiff += add;"
+      }
+    ]
+  }
+]

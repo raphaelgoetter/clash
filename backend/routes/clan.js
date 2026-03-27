@@ -1052,7 +1052,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
         const desiredPastTotal = Math.max(0, totalDecksUsed - todayLiveSum);
         const currentPastTotal = days.slice(0, todayIdx).reduce((sum, d) => sum + (d.totalCount ?? 0), 0);
-        const pastDiff = currentPastTotal - desiredPastTotal;
+        let pastDiff = currentPastTotal - desiredPastTotal;
 
         if (pastDiff !== 0 && todayIdx > 0) {
           // Ajustements au plus proche jour passé (dernière journée non-future).
