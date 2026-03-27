@@ -357,6 +357,11 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
     daily[tag] = Math.min(4, Math.max(0, currentCumul[tag] - (baseCumul[tag] ?? 0)));
   }
 
+  // Ensure we always merge the computed daily deck snapshot into the current day.
+  // This fixes a bug where backup snapshots override an otherwise empty day entry.
+  dayEntry.decks = clampDeckValues(mergeMaps(dayEntry.decks, daily));
+  dayEntry._cumul = mergeMaps(dayEntry._cumul ?? {}, currentCumul);
+
   // If we already have a primary snapshot for this war day, do not overwrite the
   // recorded decks when running after reset (backup snapshot). This ensures we
   // keep the last pre-reset state even if the workflow completes after 09:40 UTC.
