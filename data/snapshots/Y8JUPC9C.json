@@ -5,29 +5,34 @@
       {
         "warDay": "thursday",
         "realDay": "2026-03-26",
-        "gdcPeriod": null,
+        "gdcPeriod": {
+          "start": "2026-03-26T09:40:00.000Z",
+          "end": "2026-03-27T09:39:59.999Z"
+        },
         "snapshotTime": null,
         "snapshotBackupTime": null,
         "decks": {
+          "#28PQVJ2V": 4,
           "#80CCLY20L": 4,
           "#8CCCQYV99": 4,
           "#9CQC0YUR8": 4,
+          "#9CYUGPQ0C": 4,
+          "#9VQ0J29Y": 4,
+          "#9YQ8RVU2P": 4,
+          "#C0VQRUP2": 4,
           "#CQ0GQ0JRU": 4,
+          "#CYRGPVGVG": 4,
+          "#G9LPGQUG": 4,
           "#GGRLYR8PL": 4,
+          "#GVGVR0J2U": 4,
           "#J9ULCGJYU": 4,
           "#JLU88JR28": 4,
           "#P9R8Y90P8": 4,
           "#PGJPJG9QQ": 4,
           "#PVQ2QRLJQ": 4,
           "#UY00GJG2": 4,
-          "#CYRGPVGVG": 3,
-          "#G9LPGQUG": 3,
-          "#GVGVR0J2U": 3,
-          "#C0VQRUP2": 2,
-          "#9CYUGPQ0C": 1,
-          "#9VQ0J29Y": 1,
-          "#9YQ8RVU2P": 1,
-          "#YRYPUR822": 1
+          "#YRYPUR822": 4,
+          "#8PP9JQCLY": 3
         }
       },
       {
@@ -37,8 +42,8 @@
           "start": "2026-03-27T09:40:00.000Z",
           "end": "2026-03-28T09:39:59.999Z"
         },
-        "snapshotTime": "2026-03-27T13:22:26.697Z",
-        "snapshotBackupTime": "2026-03-27T13:22:26.697Z",
+        "snapshotTime": "2026-03-27T13:30:18.058Z",
+        "snapshotBackupTime": "2026-03-27T13:30:18.058Z",
         "decks": {
           "#28PQVJ2V": 4,
           "#2902YQRQL": 4,
@@ -95,7 +100,10 @@
       {
         "warDay": "saturday",
         "realDay": "2026-03-28",
-        "gdcPeriod": null,
+        "gdcPeriod": {
+          "start": "2026-03-28T09:40:00.000Z",
+          "end": "2026-03-29T09:39:59.999Z"
+        },
         "snapshotTime": null,
         "snapshotBackupTime": null,
         "decks": {}
@@ -103,7 +111,10 @@
       {
         "warDay": "sunday",
         "realDay": "2026-03-29",
-        "gdcPeriod": null,
+        "gdcPeriod": {
+          "start": "2026-03-29T08:40:00.000Z",
+          "end": "2026-03-30T08:39:59.999Z"
+        },
         "snapshotTime": null,
         "snapshotBackupTime": null,
         "decks": {}
