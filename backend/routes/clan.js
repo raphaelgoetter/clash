@@ -1211,6 +1211,33 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       }));
     }
 
+    // Merge in persisted cache fallback when current war summary has unset/zero past days.
+    // This prevents losing pre-existing snapshot values (e.g. Thu count) during partial live updates.
+    const fallbackWarSummary = existingCache?.clanWarSummary ?? existingCache?.lastWarSummary ?? null;
+    const mergeWarSummariesBackend = (current, backup) => {
+      if (!current) return backup || null;
+      if (!backup) return current;
+      const days = (current.days ?? []).map((day, idx) => {
+        if (!day || typeof day !== 'object') return day;
+        const backupDay = (backup.days ?? [])[idx] ?? null;
+        const hasDayValue = typeof day.totalCount === 'number' && day.totalCount > 0;
+        const backupValue = backupDay?.totalCount ?? null;
+        if (!hasDayValue && backupValue != null && backupValue > 0 && day.isPast) {
+          return {
+            ...day,
+            totalCount: backupValue,
+            snapshotCount: backupValue,
+            source: 'snapshot',
+          };
+        }
+        return day;
+      });
+      const totalDecksUsed = days.reduce((sum, d) => sum + (d?.totalCount ?? 0), 0);
+      return { ...current, totalDecksUsed, days };
+    };
+
+    clanWarSummary = mergeWarSummariesBackend(clanWarSummary, fallbackWarSummary);
+
     const computedLastWarSummary = clanWarSummary
       ? { ...clanWarSummary, ended: clanWarSummary.ended ?? true, snapshotAsOf: snapshotDate ?? null }
       : null;
