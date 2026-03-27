@@ -281,3 +281,13 @@ En prod (<https://trustroyale.vercel.app/en/?mode=clan&tag=%23LRQP20V9>)
 - Joueur Remi-ni-one (#8QLCU9QG) score 7% ❌ (au-lieu de 29% = valeur réelle observée en vue Player <https://trustroyale.vercel.app/en/?mode=player&tag=%238QLCU9QG>)
 -etc.
 - `Live data ✅ · Snapshot : today ✅ · live · cached 4m`
+
+---
+
+Nouvelle fonctionnalité à implémenter (si cela est réalisable assez facilement): dans la vue Player, il faudrait ajouter une Card "⏰ River Race Time" (ou mieux si tu as une meilleure idée) qui affiche en abscisse les heures d'une journée de GDC (entre 8:40UTC et 8:39UTC le lendemain) et en ordonnée le nombre de decks joués par heure. Cela permettrait de visualiser à quelle heure les joueurs jouent leurs decks, et d'identifier les joueurs qui jouent à la dernière minute (ex. entre 8:30 et 8:39 UTC) ou au contraire les joueurs qui jouent très tôt (ex. entre 8:40 et 10:00 UTC).
+
+Ce serait une simple indication qui ne sera **pas** prise en compte dans le calcul de leur score de fiabilité global.
+
+Ce graphe pourrait être affiché uniquement pour les joueurs qui ont un historique de Battle Log sur plusieurs semaines, afin d'avoir suffisamment de données pour que le graphe soit pertinent. Par exemple, on pourrait afficher ce graphe uniquement pour les joueurs qui ont au moins 2 semaines d'historique de Battle Log dans leur clan actuel ou précédent.
+
+Je suppose que tu peux récupérer les heures de jeu des decks à partir du Battle Log / Race Log ou des snapshots, mais dis-moi si ce n'est pas le cas ou si tu as besoin d'aide pour trouver comment faire.
