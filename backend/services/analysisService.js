@@ -338,7 +338,7 @@ export function warDayKey(dateOrTs) {
  * @param {object[]} warLog - Expanded, filtered GDC battle log
  * @returns {{ score: number, detail: string, byDay: Object<string,number> }}
  */
-function dailyWarActivityScore(warLog) {
+function dailyWarReliabilityScore(warLog) {
   const MAX_WINDOW = 14;
 
   // Build war-day → battle count map
@@ -664,10 +664,10 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
   const competitive = gdcCount + bd.ladder + bd.challenge;
 
   // 1. War Activity (0-12) — based on decks/day, with bonuses/penalties
-  // We still use dailyWarActivityScore to compute a baseline, but then
+  // We still use dailyWarReliabilityScore to compute a baseline, but then
   // apply an extra boost for full 4‑deck days and a small penalty for each
   // day with <4 decks.  This rewards players who prioritise GDC battles.
-  const activityResult = dailyWarActivityScore(effectiveLog);
+  const activityResult = dailyWarReliabilityScore(effectiveLog);
   // count perfect and short days within window used by score
   const perfectDays = Object.values(activityResult.byDay).filter((d) => d >= 4).length;
   const shortDays   = Object.values(activityResult.byDay).filter((d) => d > 0 && d < 4).length;
