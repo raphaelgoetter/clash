@@ -4,10 +4,10 @@
     "days": [
       {
         "warDay": "thursday",
-        "realDay": "2026-03-26",
+        "realDay": "2026-03-27",
         "gdcPeriod": {
-          "start": "2026-03-26T09:40:00.000Z",
-          "end": "2026-03-27T09:39:59.999Z"
+          "start": "2026-03-27T09:40:00.000Z",
+          "end": "2026-03-28T09:39:59.999Z"
         },
         "snapshotTime": null,
         "snapshotBackupTime": null,
@@ -26,6 +26,7 @@
           "#8CCCQYV99": 4,
           "#8P29RRU2": 4,
           "#8PP9JQCLY": 4,
+          "#8QL2J8PQ": 4,
           "#9CQC0YUR8": 4,
           "#9CYUGPQ0C": 4,
           "#9GG9GRC0G": 4,
@@ -56,13 +57,13 @@
       },
       {
         "warDay": "friday",
-        "realDay": "2026-03-27",
+        "realDay": "2026-03-28",
         "gdcPeriod": {
-          "start": "2026-03-27T09:40:00.000Z",
-          "end": "2026-03-28T09:39:59.999Z"
+          "start": "2026-03-28T09:40:00.000Z",
+          "end": "2026-03-29T09:39:59.999Z"
         },
-        "snapshotTime": "2026-03-27T21:11:28.329Z",
-        "snapshotBackupTime": "2026-03-27T21:11:28.329Z",
+        "snapshotTime": "2026-03-27T22:07:44.572Z",
+        "snapshotBackupTime": "2026-03-27T22:07:44.572Z",
         "decks": {
           "#28PQVJ2V": 4,
           "#2902YQRQL": 4,
@@ -118,10 +119,10 @@
       },
       {
         "warDay": "saturday",
-        "realDay": "2026-03-28",
+        "realDay": "2026-03-29",
         "gdcPeriod": {
-          "start": "2026-03-28T09:40:00.000Z",
-          "end": "2026-03-29T09:39:59.999Z"
+          "start": "2026-03-29T08:40:00.000Z",
+          "end": "2026-03-30T08:39:59.999Z"
         },
         "snapshotTime": null,
         "snapshotBackupTime": null,
@@ -129,10 +130,10 @@
       },
       {
         "warDay": "sunday",
-        "realDay": "2026-03-29",
+        "realDay": "2026-03-30",
         "gdcPeriod": {
-          "start": "2026-03-29T08:40:00.000Z",
-          "end": "2026-03-30T08:39:59.999Z"
+          "start": "2026-03-30T08:40:00.000Z",
+          "end": "2026-03-31T08:39:59.999Z"
         },
         "snapshotTime": null,
         "snapshotBackupTime": null,
