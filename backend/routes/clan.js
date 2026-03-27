@@ -1050,11 +1050,21 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           days[todayIdx].liveCount = todayLiveSum;
         }
 
-        const desiredPastTotal = Math.max(0, totalDecksUsed - todayLiveSum);
-        const currentPastTotal = days.slice(0, todayIdx).reduce((sum, d) => sum + (d.totalCount ?? 0), 0);
-        let pastDiff = currentPastTotal - desiredPastTotal;
+        const pastTotal = days.slice(0, todayIdx).reduce((sum, d) => sum + (d.totalCount ?? 0), 0);
+        const hasPastSnapshotData = pastTotal > 0;
+        const totalLooksLikeTodayOnly = totalDecksUsed <= todayLiveSum;
 
-        if (pastDiff !== 0 && todayIdx > 0) {
+        if (hasPastSnapshotData && totalLooksLikeTodayOnly) {
+          // L'API currentRace renvoie parfois uniquement le total du jour (decksUsedToday),
+          // mais on dispose déjà des valeurs de jours précédents via snapshot.
+          // Ne pas écraser Thu/Fri anciens avec une remise à zéro forcée.
+          // On conservera les valeurs historiques et on re-finance le total ci-dessous.
+        } else {
+          const desiredPastTotal = Math.max(0, totalDecksUsed - todayLiveSum);
+          const currentPastTotal = pastTotal;
+          let pastDiff = currentPastTotal - desiredPastTotal;
+
+          if (pastDiff !== 0 && todayIdx > 0) {
           // Ajustements au plus proche jour passé (dernière journée non-future).
           for (let i = todayIdx - 1; i >= 0 && pastDiff !== 0; i--) {
             const day = days[i];
@@ -1217,6 +1227,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       raceLogUnavailable,
       analysisCacheUpdatedAt: new Date().toISOString(),
     };
+  }
 }
 
 export { router as default };
