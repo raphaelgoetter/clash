@@ -1261,6 +1261,7 @@ export default async function handler(req, res) {
 
         // Seuls les membres actuellement dans le clan (les anciens membres ex-participants sont exclus)
         const currentMemberTags = new Set(currentMembers.map((m) => m.tag));
+        const currentMemberByTag = new Map(currentMembers.map((m) => [(m.tag || '').toUpperCase(), m]));
 
         // Joueurs en retard : membres actuels qui n'ont pas encore joué leurs 4 decks du jour
         const late = participants
@@ -1317,10 +1318,14 @@ export default async function handler(req, res) {
           for (const pl of group) {
             totalMissing += count;
             const tag = pl.tag.startsWith('#') ? pl.tag : `#${pl.tag}`;
+            const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(tag)}`;
+            const memberInfo = currentMemberByTag.get(tag.toUpperCase());
+            const role = (memberInfo?.role || 'member').toLowerCase();
+            const roleText = `[${role}]`;
             const discordId   = links[tag];
             const guildMember = discordId ? memberById.get(discordId) : null;
             const discordPart = guildMember ? ` <@${discordId}>` : '';
-            descLines.push(`• ${pl.name}${discordPart} (${tag})`);
+            descLines.push(`• [${pl.name}](${playerUrl}) ${roleText}${discordPart}`);
           }
         }
 
