@@ -222,9 +222,13 @@ export function renderRaceTimeChart(buckets) {
   if (!el) return;
 
   const labels = Array.from({ length: 24 }, (_, i) => {
-    const h = (8 + i + 1) % 24; // 08:40..07:40 labels
-    const hour = String(h).padStart(2, '0');
-    return `${hour}:40`;
+    const utcBase = new Date(Date.UTC(1970, 0, 1, 9 + i, 40, 0)); // 09:40 UTC base
+    return utcBase.toLocaleTimeString('fr-FR', {
+      timeZone: 'Europe/Paris',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
   });
 
   new Chart(el.getContext('2d'), {

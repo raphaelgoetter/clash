@@ -971,7 +971,7 @@ function renderPlayerResults(data) {
       if (!parsed || Number.isNaN(parsed.getTime())) return;
 
       const minutes = parsed.getUTCHours() * 60 + parsed.getUTCMinutes();
-      const start = 8 * 60 + 40; // 08:40 UTC
+      const start = 9 * 60 + 40; // 09:40 UTC (GDC start time)
       const offset = ((minutes - start) % 1440 + 1440) % 1440;
       const bin = Math.floor(offset / 60);
       counts[bin] += 1;
@@ -1194,12 +1194,16 @@ function renderPlayerResults(data) {
 
   if (showRaceTimeGraph) {
     const { counts, totalGdc } = buildRaceTimeHistogram(battleLog || []);
+    if (cardRaceTime) {
+      cardRaceTime.classList.remove('hidden');
+      const cardTitle = cardRaceTime.querySelector('.card-title');
+      if (cardTitle) cardTitle.textContent = t('raceTimeTitle');
+    }
+
     if (totalGdc > 0) {
-      if (cardRaceTime) cardRaceTime.classList.remove('hidden');
       if (raceTimeNote) raceTimeNote.textContent = t('raceTimeDesc');
       renderRaceTimeChart(counts);
     } else {
-      if (cardRaceTime) cardRaceTime.classList.remove('hidden');
       if (raceTimeNote) raceTimeNote.textContent = t('raceTimeNoGdc');
       renderRaceTimeChart(counts); // show empty chart optionally
     }
