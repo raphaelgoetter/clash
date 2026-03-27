@@ -602,7 +602,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     // First pass: compute war scores for all members
     const analyzedMembers = await Promise.all(
       members.map(async (m, idx) => {
-        let reliabilityScore, verdict, color, isNew = false, warHistory = null, scoreSource = 'clan', playerAnalysisFallback = null;
+        let reliabilityScore, verdict, color, isNew = false, warHistory = null, scoreSource = 'clan', playerAnalysis = null;
 
       // Resolve full player profile (for badges) and battle log from fetch results or existing cache.
       const memberData = memberDataByTag[m.tag] || { profile: null, battleLog: [] };
@@ -638,6 +638,14 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       };
       // Présence Discord : le tag du membre est-il dans discord-links.json ?
       const discordLinked = Object.prototype.hasOwnProperty.call(discordLinks, m.tag);
+
+      // Source de vérité : préférer l'analyse « player » si disponible.
+      try {
+        playerAnalysis = await getPlayerAnalysis(m.tag, discordLinked);
+      } catch (e) {
+        console.warn(`[clan] debug getPlayerAnalysis for ${m.tag} failed: ${e.message}`);
+        playerAnalysis = null;
+      }
 
       if (raceLog) {
         let memberBattleLog = battleLogsByTag[m.tag] || [];
@@ -767,32 +775,19 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           const racePartFb = currentRace?.clan?.participants?.find((p) => p.tag === normalizedTagFb);
           const wsFallback = computeWarReliabilityFallback(playerProxy, warLog, bd, m.lastSeen ?? null, discordLinked, racePartFb?.decksUsed ?? 0);
 
-          // Mirror player route as much as possible: if player-level analysis exists,
-          // prefer it for consistency (same score logic and transfer calculations).
-          let playerAnalysisFallback = null;
-          try {
-            playerAnalysisFallback = await getPlayerAnalysis(m.tag, discordLinked);
-          } catch (e) {
-            // ignore; we keep the internal fallback if player analysis fails
-            console.warn(`[clan] debug getPlayerAnalysis fallback failed for ${m.tag}: ${e.message}`);
-          }
-
-          if (playerAnalysisFallback?.warScore && typeof playerAnalysisFallback.warScore.pct === 'number') {
-            const pa = playerAnalysisFallback.warScore;
-            // Use the player analysis score when it is better than clan fallback.
-            if (pa.pct >= wsFallback.pct) {
-              reliabilityScore = pa.pct;
-              verdict = pa.verdict;
-              color = pa.color;
-              scoreSource = 'player';
-            } else {
-              reliabilityScore = wsFallback.pct;
-              verdict = wsFallback.verdict;
-              color = wsFallback.color;
-              scoreSource = 'fallback';
-            }
-            // preserve the warHistory object if available from player analysis
-            if (playerAnalysisFallback.warHistory) warHistory = playerAnalysisFallback.warHistory;
+          // If we already have a player-level analysis, use it to align the score.
+          if (playerAnalysis?.warScore && typeof playerAnalysis.warScore.pct === 'number') {
+            const pa = playerAnalysis.warScore;
+            reliabilityScore = pa.pct;
+            verdict = pa.verdict ?? wsFallback.verdict;
+            color = pa.color ?? wsFallback.color;
+            scoreSource = 'player';
+            if (playerAnalysis.warHistory) warHistory = playerAnalysis.warHistory;
+          } else if (playerAnalysis && !playerAnalysis.warScore) {
+            reliabilityScore = wsFallback.pct;
+            verdict = wsFallback.verdict;
+            color = wsFallback.color;
+            scoreSource = 'fallback';
           } else {
             reliabilityScore = wsFallback.pct;
             verdict = wsFallback.verdict;
@@ -807,6 +802,16 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           reliabilityScore = pct; verdict = 'Extreme risk'; color = 'red';
           // If we have no race log, we cannot safely mark someone as "new".
           // Keep their existing status to avoid false positives for clan / Discord.
+        }
+
+        // Ensure player view score is authoritative when available.
+        if (playerAnalysis?.warScore && Number.isFinite(playerAnalysis.warScore.pct)) {
+          const pa = playerAnalysis.warScore;
+          reliabilityScore = pa.pct;
+          verdict = pa.verdict ?? verdict;
+          color = pa.color ?? color;
+          scoreSource = 'player';
+          if (playerAnalysis.warHistory) warHistory = playerAnalysis.warHistory;
         }
 
         isNew = !transfer && (isNewClanArrivee || isBattleLogMode);
