@@ -9,7 +9,7 @@ import {
   computeWarReliabilityFallback, categorizeBattleLog, getPlayerAnalysis,
   filterWarBattles, expandDuelRounds, isWarWin, buildCurrentWarDays,
   estimateWinsFromFame, warResetOffsetMs, scoreTotalDonations,
-  mergeWarHistoryWithTransfer,
+  mergeWarHistoryWithTransfer, findRecentFamilyTransfer,
 } from '../services/analysisService.js';
 import { computeTopPlayers } from '../services/topplayers.js';
 import { computeUncomplete } from '../services/uncomplete.js';
@@ -369,24 +369,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       })
     );
 
-    const findRecentFamilyTransfer = (playerTag) => {
-      if (!playerTag) return null;
-      const normalizedTag = playerTag.startsWith('#') ? playerTag : `#${playerTag}`;
-
-      for (const [otherTag, otherRaceLog] of Object.entries(familyRaceLogs)) {
-        if (!otherRaceLog || otherRaceLog.length === 0) continue;
-        const otherHistory = buildWarHistory(playerTag, otherRaceLog, otherTag, null);
-        if (!otherHistory?.weeks?.length) continue;
-
-        const week = otherHistory.weeks[0];
-        if ((week.decksUsed ?? 0) >= FAMILY_TRANSFER_DECKS_THRESHOLD) {
-          return { transferWeek: week, fromClanTag: otherTag };
-        }
-      }
-
-      return null;
-    };
-
     // Enregistre le snapshot journalier depuis la course EN COURS (currentRace),
     // pas depuis le race log terminé. decksUsed = cumul depuis jeudi → le delta
     // inter-snapshots donne les combats du jour.
@@ -692,14 +674,14 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         // si l'historique est déjà jugé suffisant.
         let transfer = false;
         {
-          const transferCandidate = await findRecentFamilyTransfer(m.tag);
+          const transferCandidate = await findRecentFamilyTransfer(m.tag, clan.tag);
           if (transferCandidate) {
             transfer = transferCandidate;
             // Seul un transfert explicite depuis un clan famille est considéré.
             const normalizedFrom = (transfer.fromClanTag || '').replace(/^#/, '').toUpperCase();
             const isFromFamily = FAMILY_CLAN_TAGS.includes(normalizedFrom);
             if (isFromFamily) {
-              if (!hasEnoughHistory) {
+              if (!hasEnoughHistory && transfer.transferWeek) {
                 const merged = mergeWarHistoryWithTransfer(wh, transfer.transferWeek, transfer.fromClanTag);
                 wh = merged;
                 warHistory = merged;
@@ -708,6 +690,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 hasEnoughHistory = hasFullWeek || oldRule;
               }
               wh.isFamilyTransfer = true;
+              wh.transferFromClan = transfer.fromClanTag;
+              wh.transferWeek = transfer.transferWeek;
               isNew = false;
             } else {
               // Si la tranche trouvée n'est pas dans la famille, ne pas signaler transfer.

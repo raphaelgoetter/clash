@@ -40,6 +40,34 @@ async function getTransferClanTagsForPlayer(playerTag) {
   }
 }
 
+async function getManualFamilyTransfer(playerTag, currentClanTag) {
+  if (!playerTag) return null;
+
+  const normalized = playerTag.replace(/^#/, '').toUpperCase();
+  const normalizedCurrent = currentClanTag ? currentClanTag.replace(/^#/, '').toUpperCase() : null;
+  const filePath = path.join(__dirname, '..', '..', 'transfers.json');
+
+  try {
+    const payload = await fs.readFile(filePath, 'utf8');
+    const transfers = JSON.parse(payload);
+    const entry = transfers.find(
+      (t) => (t.tag || '').replace(/^#/, '').toUpperCase() === normalized
+    );
+    if (!entry || !entry.fromClan) return null;
+
+    const fromClan = entry.fromClan.replace(/^#/, '').toUpperCase();
+    if (!FAMILY_CLAN_TAGS.includes(fromClan)) return null;
+    if (fromClan === normalizedCurrent) return null;
+
+    return {
+      fromClanTag: `#${fromClan}`,
+      transferWeek: entry.transferWeek ? { label: entry.transferWeek } : null,
+    };
+  } catch (_) {
+    return null;
+  }
+}
+
 
 // ── Constants ─────────────────────────────────────────────────
 
@@ -1096,8 +1124,34 @@ export async function buildFamilyWarHistory(playerTag, currentClanTag, currentRa
  */
 async function findRecentFamilyTransfer(playerTag, currentClanTag) {
   if (!playerTag) return null;
+
   const normalizedTag = playerTag.startsWith('#') ? playerTag : `#${playerTag}`;
   const normalizedCurrent = currentClanTag ? currentClanTag.replace(/^#/, '').toUpperCase() : null;
+
+  // 1) Manual transfer override via transfers.json (if available)
+  const manual = await getManualFamilyTransfer(playerTag, currentClanTag);
+  if (manual) {
+    // Attempt to resolve a full race week from the source clan log if possible.
+    try {
+      const rawRaceLog = await fetchRaceLogCached(manual.fromClanTag.replace(/^#/, ''));
+      if (rawRaceLog && rawRaceLog.length > 0) {
+        const otherHistory = buildWarHistory(playerTag, rawRaceLog, manual.fromClanTag, null);
+        const candidate = otherHistory.weeks.find((w) => (w.decksUsed ?? 0) >= 13);
+        if (candidate) {
+          return { transferWeek: candidate, fromClanTag: manual.fromClanTag };
+        }
+      }
+    } catch (_) {
+      // Fallback to manual metadata only.
+    }
+
+    return {
+      transferWeek: manual.transferWeek || null,
+      fromClanTag: manual.fromClanTag,
+    };
+  }
+
+  // 2) Automated detection using family race logs. Window increased for robustness.
   const candidates = FAMILY_CLAN_TAGS.filter((t) => t !== normalizedCurrent);
   if (!candidates.length) return null;
 
@@ -1106,7 +1160,7 @@ async function findRecentFamilyTransfer(playerTag, currentClanTag) {
       const raceLog = await fetchRaceLogCached(clanTag);
       const otherHistory = buildWarHistory(playerTag, raceLog, clanTag, null);
       if (!otherHistory?.weeks?.length) continue;
-      for (let i = 0; i < Math.min(FAMILY_TRANSFER_WINDOW_WEEKS, otherHistory.weeks.length); i += 1) {
+      for (let i = 0; i < Math.min(FAMILY_TRANSFER_WINDOW_WEEKS + 1, otherHistory.weeks.length); i += 1) {
         const week = otherHistory.weeks[i];
         if ((week.decksUsed ?? 0) >= 13) {
           return { transferWeek: week, fromClanTag: clanTag };
@@ -1276,6 +1330,7 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
   // Enrich with river race history if the player is currently in a clan.
   // We silently ignore failures so a missing/private war log doesn't block the response.
   let currentRaceMeta = null;
+  let isNew = false;
   if (player.clan?.tag) {
     try {
       const [raceLog, currentRace] = await Promise.all([
@@ -1304,11 +1359,11 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
 
       let hasEnoughHistory = hasFullWeek || oldRule;
 
-      // If the player just switched clan within the family, we can include a
-      // recent full week from the previous clan to avoid falling back to battlelog.
-      if (!hasEnoughHistory) {
-        const transfer = await findRecentFamilyTransfer(player.tag, player.clan.tag);
-        if (transfer) {
+      // Detect transfer from family clan (automatic/rules + manual fallback) and keep the flag even when history is already sufficient.
+      const transfer = await findRecentFamilyTransfer(player.tag, player.clan.tag);
+      if (transfer) {
+        // Merge the transfer week only when history is not sufficient yet.
+        if (!hasEnoughHistory && transfer.transferWeek) {
           analysis.warHistory = mergeWarHistoryWithTransfer(
             analysis.warHistory,
             transfer.transferWeek,
@@ -1320,6 +1375,12 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
           hasFullWeek = prevWeeks.some((w) => (w.decksUsed ?? 0) >= 16);
           hasEnoughHistory = hasFullWeek || oldRule;
         }
+
+        // Always annotate transfer metadata.
+        analysis.warHistory.isFamilyTransfer = true;
+        analysis.warHistory.transferFromClan = transfer.fromClanTag;
+        analysis.warHistory.transferWeek = transfer.transferWeek;
+        isNew = false;
       }
 
       // additional handling: when player has ≥2 prior weeks and the *oldest*
@@ -1549,4 +1610,4 @@ export function analyzeClanMembers(members) {
   });
 }
 
-export { mergeWarHistoryWithTransfer };
+export { mergeWarHistoryWithTransfer, findRecentFamilyTransfer };

@@ -25,29 +25,29 @@
         "isToday": true,
         "isFuture": false,
         "source": "live",
-        "snapshotCount": null,
+        "snapshotCount": 54,
         "liveCount": 20
       },
       {
         "label": "Sat",
-        "totalCount": null,
+        "totalCount": 0,
         "maxCount": 200,
         "isPast": false,
         "isToday": false,
         "isFuture": true,
-        "source": "unknown",
-        "snapshotCount": null,
+        "source": "snapshot",
+        "snapshotCount": 0,
         "liveCount": null
       },
       {
         "label": "Sun",
-        "totalCount": null,
+        "totalCount": 0,
         "maxCount": 200,
         "isPast": false,
         "isToday": false,
         "isFuture": true,
-        "source": "unknown",
-        "snapshotCount": null,
+        "source": "snapshot",
+        "snapshotCount": 0,
         "liveCount": null
       }
     ],
@@ -59,7 +59,7 @@
     "name": "Les Revoltes",
     "tag": "#QU9UQJRL",
     "description": "☆. #3 Resistance (top 🌍) Bonne humeur et entraînement GDC ⚔️ au programme 👉 Discord demandé : kPdQN8zfjM ▪️code : RoyaleAPI",
-    "clanScore": 91025,
+    "clanScore": 91032,
     "clanWarTrophies": 2185,
     "members": 31,
     "type": "open",
@@ -78,22 +78,22 @@
         "totalDonations": 83993,
         "donations": 371,
         "warDayWins": 14,
-        "cw2Progress": null,
+        "cw2Progress": 299,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Ultimate Clash Pit",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 6665,
+          "threeCrownWins": 1645
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
+        "totalBattles": 34,
+        "warBattles": 4
       },
-      "fetchedAt": "2026-03-27T15:18:52.729Z"
+      "fetchedAt": "2026-03-27T15:35:22.023Z"
     },
     "#CVJPCU09C": {
       "profile": {
@@ -106,22 +106,22 @@
         "totalDonations": 7646,
         "donations": 22,
         "warDayWins": 0,
-        "cw2Progress": null,
+        "cw2Progress": 358,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Magic Academy",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 7130,
+          "threeCrownWins": 703
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
+        "totalBattles": 40,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T15:18:52.730Z"
+      "fetchedAt": "2026-03-27T15:35:22.024Z"
     },
     "#JC28YVLPG": {
       "profile": {
@@ -134,22 +134,22 @@
         "totalDonations": 7900,
         "donations": 0,
         "warDayWins": 0,
-        "cw2Progress": null,
+        "cw2Progress": 267,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Magic Academy",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 6288,
+          "threeCrownWins": 1280
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
+        "totalBattles": 40,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T15:18:52.730Z"
+      "fetchedAt": "2026-03-27T15:35:22.024Z"
     },
     "#VY0LYQQVJ": {
       "profile": {
@@ -162,22 +162,22 @@
         "totalDonations": 13389,
         "donations": 0,
         "warDayWins": 0,
-        "cw2Progress": null,
+        "cw2Progress": 147,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Magic Academy",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 4028,
+          "threeCrownWins": 673
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
+        "totalBattles": 38,
+        "warBattles": 1
       },
-      "fetchedAt": "2026-03-27T15:18:52.730Z"
+      "fetchedAt": "2026-03-27T15:35:22.024Z"
     },
     "#CLVU02QLP": {
       "profile": {
@@ -190,22 +190,22 @@
         "totalDonations": 10038,
         "donations": 0,
         "warDayWins": 0,
-        "cw2Progress": null,
+        "cw2Progress": 389,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Magic Academy",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 4474,
+          "threeCrownWins": 1470
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
+        "totalBattles": 35,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T15:18:52.730Z"
+      "fetchedAt": "2026-03-27T15:35:22.025Z"
     },
     "#CLQ2RYYJQ": {
       "profile": {
@@ -218,22 +218,22 @@
         "totalDonations": 15256,
         "donations": 138,
         "warDayWins": 0,
-        "cw2Progress": null,
+        "cw2Progress": 161,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Summit of Heroes",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 3786,
+          "threeCrownWins": 1107
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
+        "totalBattles": 30,
+        "warBattles": 8
       },
-      "fetchedAt": "2026-03-27T15:18:52.731Z"
+      "fetchedAt": "2026-03-27T15:35:22.025Z"
     },
     "#LJYGJYCYC": {
       "profile": {
@@ -246,22 +246,22 @@
         "totalDonations": 81814,
         "donations": 114,
         "warDayWins": 40,
-        "cw2Progress": null,
+        "cw2Progress": 891,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Summit of Heroes",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 6090,
+          "threeCrownWins": 1973
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
+        "totalBattles": 31,
+        "warBattles": 6
       },
-      "fetchedAt": "2026-03-27T15:18:52.731Z"
+      "fetchedAt": "2026-03-27T15:35:22.025Z"
     },
     "#UVGPPVQ8Q": {
       "profile": {
@@ -274,22 +274,22 @@
         "totalDonations": 15511,
         "donations": 365,
         "warDayWins": 0,
-        "cw2Progress": null,
+        "cw2Progress": 426,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Musketeer Street",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 10268,
+          "threeCrownWins": 2495
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
+        "totalBattles": 40,
+        "warBattles": 2
       },
-      "fetchedAt": "2026-03-27T15:18:52.731Z"
+      "fetchedAt": "2026-03-27T15:35:22.025Z"
     },
     "#RRCRJ8QJJ": {
       "profile": {
@@ -302,22 +302,22 @@
         "totalDonations": 21661,
         "donations": 0,
         "warDayWins": 0,
-        "cw2Progress": null,
+        "cw2Progress": 72,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Royal Road",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 4275,
+          "threeCrownWins": 1062
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
+        "totalBattles": 30,
+        "warBattles": 25
       },
-      "fetchedAt": "2026-03-27T15:18:52.731Z"
+      "fetchedAt": "2026-03-27T15:35:22.025Z"
     },
     "#QY0LG0R0P": {
       "profile": {
@@ -330,22 +330,22 @@
         "totalDonations": 195020,
         "donations": 283,
         "warDayWins": 6,
-        "cw2Progress": null,
+        "cw2Progress": 1429,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Royal Road",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 11033,
+          "threeCrownWins": 3358
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
+        "totalBattles": 30,
+        "warBattles": 20
       },
-      "fetchedAt": "2026-03-27T15:18:52.731Z"
+      "fetchedAt": "2026-03-27T15:35:22.026Z"
     },
     "#2JUVG2P9": {
       "profile": {
@@ -358,22 +358,22 @@
         "totalDonations": 40177,
         "donations": 0,
         "warDayWins": 30,
-        "cw2Progress": null,
+        "cw2Progress": 63,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Royal Road",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 5594,
+          "threeCrownWins": 1136
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
+        "totalBattles": 39,
+        "warBattles": 7
       },
-      "fetchedAt": "2026-03-27T15:18:52.732Z"
+      "fetchedAt": "2026-03-27T15:35:22.026Z"
     },
     "#QPU0U2C9": {
       "profile": {
@@ -386,22 +386,22 @@
         "totalDonations": 8037,
         "donations": 24,
         "warDayWins": 0,
-        "cw2Progress": null,
+        "cw2Progress": 389,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Lumberlove Cabin",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 6379,
+          "threeCrownWins": 2517
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
+        "totalBattles": 40,
+        "warBattles": 25
       },
-      "fetchedAt": "2026-03-27T15:18:52.732Z"
+      "fetchedAt": "2026-03-27T15:35:22.029Z"
     },
     "#J222JVRUQ": {
       "profile": {
@@ -414,22 +414,22 @@
         "totalDonations": 4382,
         "donations": 0,
         "warDayWins": 0,
-        "cw2Progress": null,
+        "cw2Progress": 92,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Lumberlove Cabin",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 1714,
+          "threeCrownWins": 239
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
+        "totalBattles": 41,
+        "warBattles": 1
       },
-      "fetchedAt": "2026-03-27T15:18:52.732Z"
+      "fetchedAt": "2026-03-27T15:35:22.031Z"
     },
     "#V2P2LCYRJ": {
       "profile": {
@@ -442,22 +442,22 @@
         "totalDonations": 9749,
         "donations": 0,
         "warDayWins": 0,
-        "cw2Progress": null,
+        "cw2Progress": 30,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Lumberlove Cabin",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 1810,
+          "threeCrownWins": 526
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
+        "totalBattles": 34,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T15:18:52.732Z"
+      "fetchedAt": "2026-03-27T15:35:22.033Z"
     },
     "#2U9QL8Q89": {
       "profile": {
@@ -470,22 +470,22 @@
         "totalDonations": 43710,
         "donations": 252,
         "warDayWins": 0,
-        "cw2Progress": null,
+        "cw2Progress": 656,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Lumberlove Cabin",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 3694,
+          "threeCrownWins": 1285
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
+        "totalBattles": 40,
+        "warBattles": 21
       },
-      "fetchedAt": "2026-03-27T15:18:52.733Z"
+      "fetchedAt": "2026-03-27T15:35:22.034Z"
     },
     "#8VP9UJV9L": {
       "profile": {
@@ -498,22 +498,22 @@
         "totalDonations": 32207,
         "donations": 370,
         "warDayWins": 7,
-        "cw2Progress": null,
+        "cw2Progress": 313,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Valkalla",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 2076,
+          "threeCrownWins": 924
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
+        "totalBattles": 40,
+        "warBattles": 7
       },
-      "fetchedAt": "2026-03-27T15:18:52.733Z"
+      "fetchedAt": "2026-03-27T15:35:22.036Z"
     },
     "#V22VCQV9V": {
       "profile": {
@@ -526,22 +526,22 @@
         "totalDonations": 761,
         "donations": 0,
         "warDayWins": 0,
-        "cw2Progress": null,
+        "cw2Progress": 151,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Valkalla",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 1956,
+          "threeCrownWins": 451
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
+        "totalBattles": 30,
+        "warBattles": 28
       },
-      "fetchedAt": "2026-03-27T15:18:52.733Z"
+      "fetchedAt": "2026-03-27T15:35:22.037Z"
     },
     "#8JGU9UUJJ": {
       "profile": {
@@ -554,22 +554,22 @@
         "totalDonations": 179816,
         "donations": 240,
         "warDayWins": 105,
-        "cw2Progress": null,
+        "cw2Progress": 378,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Valkalla",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 30384,
+          "threeCrownWins": 4321
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
+        "totalBattles": 30,
+        "warBattles": 15
       },
-      "fetchedAt": "2026-03-27T15:18:52.733Z"
+      "fetchedAt": "2026-03-27T15:35:22.039Z"
     },
     "#2V20JP28Q": {
       "profile": {
@@ -582,50 +582,50 @@
         "totalDonations": 45962,
         "donations": 263,
         "warDayWins": 23,
-        "cw2Progress": null,
+        "cw2Progress": 37,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "PANCAKES!",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 3559,
+          "threeCrownWins": 726
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
+        "totalBattles": 35,
+        "warBattles": 12
       },
-      "fetchedAt": "2026-03-27T15:18:52.734Z"
+      "fetchedAt": "2026-03-27T15:35:22.040Z"
     },
     "#UYRR99RL8": {
       "profile": {
         "tag": "#UYRR99RL8",
         "name": "chloe_lpb",
         "role": "member",
-        "trophies": 8597,
+        "trophies": 8626,
         "bestTrophies": 8754,
         "expLevel": 41,
         "totalDonations": 1458,
         "donations": 209,
         "warDayWins": 0,
-        "cw2Progress": null,
+        "cw2Progress": 15,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "PANCAKES!",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 2088,
+          "threeCrownWins": 327
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
+        "totalBattles": 34,
+        "warBattles": 4
       },
-      "fetchedAt": "2026-03-27T15:18:52.734Z"
+      "fetchedAt": "2026-03-27T15:35:22.042Z"
     },
     "#CVYLYLC8V": {
       "profile": {
@@ -638,22 +638,22 @@
         "totalDonations": 33289,
         "donations": 76,
         "warDayWins": 0,
-        "cw2Progress": null,
+        "cw2Progress": 1124,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Clash Fest",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 2073,
+          "threeCrownWins": 519
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
+        "totalBattles": 40,
+        "warBattles": 32
       },
-      "fetchedAt": "2026-03-27T15:18:52.734Z"
+      "fetchedAt": "2026-03-27T15:35:22.043Z"
     },
     "#YRURQJV28": {
       "profile": {
@@ -666,22 +666,22 @@
         "totalDonations": 8417,
         "donations": 0,
         "warDayWins": 2,
-        "cw2Progress": null,
+        "cw2Progress": 114,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Clash Fest",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 1340,
+          "threeCrownWins": 699
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
+        "totalBattles": 9,
+        "warBattles": 7
       },
-      "fetchedAt": "2026-03-27T15:18:52.734Z"
+      "fetchedAt": "2026-03-27T15:35:22.044Z"
     },
     "#PGQ98JVJ8": {
       "profile": {
@@ -694,22 +694,22 @@
         "totalDonations": 1845,
         "donations": 108,
         "warDayWins": 0,
-        "cw2Progress": null,
+        "cw2Progress": 17,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Boot Camp",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 2573,
+          "threeCrownWins": 417
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
+        "totalBattles": 38,
+        "warBattles": 2
       },
-      "fetchedAt": "2026-03-27T15:18:52.736Z"
+      "fetchedAt": "2026-03-27T15:35:22.046Z"
     },
     "#98VCJLG92": {
       "profile": {
@@ -722,22 +722,22 @@
         "totalDonations": 10257,
         "donations": 0,
         "warDayWins": 0,
-        "cw2Progress": null,
+        "cw2Progress": 158,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Boot Camp",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 1430,
+          "threeCrownWins": 893
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
+        "totalBattles": 3,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T15:18:52.738Z"
+      "fetchedAt": "2026-03-27T15:35:22.047Z"
     },
     "#CRLR0P92J": {
       "profile": {
@@ -750,22 +750,22 @@
         "totalDonations": 1607,
         "donations": 0,
         "warDayWins": 0,
-        "cw2Progress": null,
+        "cw2Progress": 58,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Boot Camp",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 1787,
+          "threeCrownWins": 326
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
+        "totalBattles": 32,
+        "warBattles": 8
       },
-      "fetchedAt": "2026-03-27T15:18:52.742Z"
+      "fetchedAt": "2026-03-27T15:35:22.049Z"
     },
     "#VPGCQPR9U": {
       "profile": {
@@ -778,22 +778,22 @@
         "totalDonations": 2001,
         "donations": 8,
         "warDayWins": 0,
-        "cw2Progress": null,
+        "cw2Progress": 144,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Silent Sanctuary",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 852,
+          "threeCrownWins": 239
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
+        "totalBattles": 30,
+        "warBattles": 12
       },
-      "fetchedAt": "2026-03-27T15:18:52.744Z"
+      "fetchedAt": "2026-03-27T15:35:22.050Z"
     },
     "#VPR8G992P": {
       "profile": {
@@ -811,17 +811,17 @@
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Executioner's Kitchen",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 806,
+          "threeCrownWins": 271
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
+        "totalBattles": 30,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T15:18:52.746Z"
+      "fetchedAt": "2026-03-27T15:35:22.051Z"
     },
     "#2200UQ9P08": {
       "profile": {
@@ -839,17 +839,17 @@
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Serenity Peak",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 344,
+          "threeCrownWins": 111
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
+        "totalBattles": 30,
+        "warBattles": 3
       },
-      "fetchedAt": "2026-03-27T15:18:52.748Z"
+      "fetchedAt": "2026-03-27T15:35:22.053Z"
     },
     "#V9GUUPYUQ": {
       "profile": {
@@ -862,22 +862,22 @@
         "totalDonations": 42,
         "donations": 0,
         "warDayWins": 0,
-        "cw2Progress": null,
+        "cw2Progress": 12,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Spooky Town",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 318,
+          "threeCrownWins": 147
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
+        "totalBattles": 25,
+        "warBattles": 3
       },
-      "fetchedAt": "2026-03-27T15:18:52.750Z"
+      "fetchedAt": "2026-03-27T15:35:22.054Z"
     },
     "#VR0LV90YP": {
       "profile": {
@@ -895,17 +895,17 @@
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Goblin Stadium",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 7,
+          "threeCrownWins": 7
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
+        "totalBattles": 8,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T15:18:52.751Z"
+      "fetchedAt": "2026-03-27T15:35:22.055Z"
     },
     "#RJJGJ8PRC": {
       "profile": {
@@ -918,22 +918,22 @@
         "totalDonations": 6377,
         "donations": 0,
         "warDayWins": 0,
-        "cw2Progress": null,
+        "cw2Progress": 38,
         "clan": {
           "tag": "#QU9UQJRL",
           "name": "Les Revoltes"
         },
-        "arena": null,
+        "arena": "Boot Camp",
         "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
+          "battleCount": 880,
+          "threeCrownWins": 266
         }
       },
       "battleLogSummary": {
-        "totalBattles": 0,
+        "totalBattles": 30,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-27T15:18:52.740Z"
+      "fetchedAt": "2026-03-27T15:35:22.048Z"
     }
   },
   "members": [
@@ -1282,7 +1282,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 0,
+            "count": 1,
             "isPast": false,
             "isToday": true,
             "isFuture": false
@@ -1460,7 +1460,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 0,
+            "count": 2,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -1522,7 +1522,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 0,
+            "count": 1,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -1565,7 +1565,7 @@
       "name": "chloe_lpb",
       "tag": "#UYRR99RL8",
       "role": "member",
-      "trophies": 8597,
+      "trophies": 8626,
       "donations": 209,
       "totalDonations": 1458,
       "donationsReceived": 80,
@@ -1584,7 +1584,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 0,
+            "count": 4,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -1770,7 +1770,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 0,
+            "count": 3,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -1894,7 +1894,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 0,
+            "count": 1,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -1956,7 +1956,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 0,
+            "count": 3,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -1964,7 +1964,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 0,
+            "count": 1,
             "isPast": false,
             "isToday": true,
             "isFuture": false
@@ -2018,7 +2018,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 0,
+            "count": 4,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2204,7 +2204,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 0,
+            "count": 3,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2212,7 +2212,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 0,
+            "count": 1,
             "isPast": false,
             "isToday": true,
             "isFuture": false
@@ -2381,16 +2381,16 @@
       "verdict": "Moderate risk",
       "color": "yellow",
       "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
+      "isFamilyTransfer": true,
+      "transferFromClan": "Y8JUPC9C",
+      "transferWeek": "S129·W3",
       "discord": false,
       "warDays": {
         "days": [
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 0,
+            "count": 3,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2452,7 +2452,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 0,
+            "count": 1,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2522,7 +2522,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 0,
+            "count": 4,
             "isPast": false,
             "isToday": true,
             "isFuture": false
@@ -2576,7 +2576,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 0,
+            "count": 2,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2638,7 +2638,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 0,
+            "count": 2,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2762,7 +2762,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 0,
+            "count": 4,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2770,7 +2770,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 0,
+            "count": 4,
             "isPast": false,
             "isToday": true,
             "isFuture": false
@@ -2832,7 +2832,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 0,
+            "count": 2,
             "isPast": false,
             "isToday": true,
             "isFuture": false
@@ -3440,29 +3440,29 @@
         "isToday": true,
         "isFuture": false,
         "source": "live",
-        "snapshotCount": null,
+        "snapshotCount": 54,
         "liveCount": 20
       },
       {
         "label": "Sat",
-        "totalCount": null,
+        "totalCount": 0,
         "maxCount": 200,
         "isPast": false,
         "isToday": false,
         "isFuture": true,
-        "source": "unknown",
-        "snapshotCount": null,
+        "source": "snapshot",
+        "snapshotCount": 0,
         "liveCount": null
       },
       {
         "label": "Sun",
-        "totalCount": null,
+        "totalCount": 0,
         "maxCount": 200,
         "isPast": false,
         "isToday": false,
         "isFuture": true,
-        "source": "unknown",
-        "snapshotCount": null,
+        "source": "snapshot",
+        "snapshotCount": 0,
         "liveCount": null
       }
     ],
@@ -3473,8 +3473,13 @@
   "snapshotToday": true,
   "snapshotDate": "2026-03-27",
   "warCurrentWeekId": "S130W4",
-  "warSnapshotDays": null,
-  "snapshotTakenAt": null,
+  "warSnapshotDays": [
+    49,
+    54,
+    0,
+    0
+  ],
+  "snapshotTakenAt": "2026-03-27T15:35:20.215Z",
   "currentWarDays": [
     {
       "label": "Thu",
@@ -3495,33 +3500,33 @@
       "isToday": true,
       "isFuture": false,
       "source": "live",
-      "snapshotCount": null,
+      "snapshotCount": 54,
       "liveCount": 20
     },
     {
       "label": "Sat",
-      "totalCount": null,
+      "totalCount": 0,
       "maxCount": 200,
       "isPast": false,
       "isToday": false,
       "isFuture": true,
-      "source": "unknown",
-      "snapshotCount": null,
+      "source": "snapshot",
+      "snapshotCount": 0,
       "liveCount": null
     },
     {
       "label": "Sun",
-      "totalCount": null,
+      "totalCount": 0,
       "maxCount": 200,
       "isPast": false,
       "isToday": false,
       "isFuture": true,
-      "source": "unknown",
-      "snapshotCount": null,
+      "source": "snapshot",
+      "snapshotCount": 0,
       "liveCount": null
     }
   ],
   "rateLimited": false,
   "raceLogUnavailable": false,
-  "analysisCacheUpdatedAt": "2026-03-27T15:18:55.317Z"
+  "analysisCacheUpdatedAt": "2026-03-27T15:35:24.810Z"
 }
