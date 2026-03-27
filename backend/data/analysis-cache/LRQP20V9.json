@@ -1,6 +1,6 @@
 {
   "lastWarSummary": {
-    "totalDecksUsed": 108,
+    "totalDecksUsed": 174,
     "maxDecksElapsed": 200,
     "maxDecksWeek": 800,
     "participantCount": 50,
@@ -8,14 +8,14 @@
     "days": [
       {
         "label": "Thu",
-        "totalCount": 108,
+        "totalCount": 174,
         "maxCount": 200,
         "isPast": false,
         "isToday": true,
         "isFuture": false,
         "source": "live",
-        "snapshotCount": 0,
-        "liveCount": 108
+        "snapshotCount": 174,
+        "liveCount": 174
       },
       {
         "label": "Fri",
@@ -59,7 +59,7 @@
     "name": "Les Resistants",
     "tag": "#LRQP20V9",
     "description": "☆. #2 Resistance (top 🌍) Bonne humeur et GDC obligatoire ⚔️ 4 combats/jour 👉 Discord demandé : kPdQN8zfjM ▪️ code: RoyaleAPI",
-    "clanScore": 118668,
+    "clanScore": 118721,
     "clanWarTrophies": 3757,
     "members": 50,
     "type": "open",
@@ -85,43 +85,43 @@
         },
         "arena": "Little Prince's Tavern",
         "stats": {
-          "battleCount": 25356,
-          "threeCrownWins": 9869
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 7
-      },
-      "fetchedAt": "2026-03-26T19:32:01.257Z"
-    },
-    "#89L8J9YV9": {
-      "profile": {
-        "tag": "#89L8J9YV9",
-        "name": "VTLX.KING",
-        "role": "member",
-        "trophies": 12856,
-        "bestTrophies": 12966,
-        "expLevel": 71,
-        "totalDonations": 52312,
-        "donations": 10,
-        "warDayWins": 42,
-        "cw2Progress": 71,
-        "clan": {
-          "tag": "#LRQP20V9",
-          "name": "Les Resistants"
-        },
-        "arena": "Ultimate Clash Pit",
-        "stats": {
-          "battleCount": 13829,
-          "threeCrownWins": 2811
+          "battleCount": 25375,
+          "threeCrownWins": 9873
         }
       },
       "battleLogSummary": {
         "totalBattles": 30,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-26T19:32:01.257Z"
+      "fetchedAt": "2026-03-27T08:47:08.351Z"
+    },
+    "#89L8J9YV9": {
+      "profile": {
+        "tag": "#89L8J9YV9",
+        "name": "VTLX.KING",
+        "role": "member",
+        "trophies": 12952,
+        "bestTrophies": 12983,
+        "expLevel": 72,
+        "totalDonations": 52312,
+        "donations": 10,
+        "warDayWins": 42,
+        "cw2Progress": 72,
+        "clan": {
+          "tag": "#LRQP20V9",
+          "name": "Les Resistants"
+        },
+        "arena": "Ultimate Clash Pit",
+        "stats": {
+          "battleCount": 13843,
+          "threeCrownWins": 2811
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 30,
+        "warBattles": 4
+      },
+      "fetchedAt": "2026-03-27T08:47:08.352Z"
     },
     "#99VY0090": {
       "profile": {
@@ -131,25 +131,25 @@
         "trophies": 12706,
         "bestTrophies": 12706,
         "expLevel": 76,
-        "totalDonations": 109308,
-        "donations": 240,
+        "totalDonations": 109350,
+        "donations": 308,
         "warDayWins": 55,
-        "cw2Progress": 892,
+        "cw2Progress": 896,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
         "arena": "Ultimate Clash Pit",
         "stats": {
-          "battleCount": 10264,
-          "threeCrownWins": 2795
+          "battleCount": 10267,
+          "threeCrownWins": 2797
         }
       },
       "battleLogSummary": {
         "totalBattles": 30,
         "warBattles": 12
       },
-      "fetchedAt": "2026-03-26T19:32:01.257Z"
+      "fetchedAt": "2026-03-27T08:47:08.352Z"
     },
     "#VGJ9LL8VC": {
       "profile": {
@@ -158,9 +158,9 @@
         "role": "coLeader",
         "trophies": 12565,
         "bestTrophies": 12653,
-        "expLevel": 65,
-        "totalDonations": 31419,
-        "donations": 275,
+        "expLevel": 66,
+        "totalDonations": 31473,
+        "donations": 329,
         "warDayWins": 0,
         "cw2Progress": 318,
         "clan": {
@@ -177,7 +177,7 @@
         "totalBattles": 30,
         "warBattles": 4
       },
-      "fetchedAt": "2026-03-26T19:32:01.257Z"
+      "fetchedAt": "2026-03-27T08:47:08.352Z"
     },
     "#PGRJC00G9": {
       "profile": {
@@ -205,7 +205,7 @@
         "totalBattles": 36,
         "warBattles": 14
       },
-      "fetchedAt": "2026-03-26T19:32:01.257Z"
+      "fetchedAt": "2026-03-27T08:47:08.352Z"
     },
     "#82UPUGYP": {
       "profile": {
@@ -215,8 +215,8 @@
         "trophies": 12373,
         "bestTrophies": 12402,
         "expLevel": 72,
-        "totalDonations": 119501,
-        "donations": 514,
+        "totalDonations": 119559,
+        "donations": 572,
         "warDayWins": 1,
         "cw2Progress": 1346,
         "clan": {
@@ -233,35 +233,35 @@
         "totalBattles": 30,
         "warBattles": 4
       },
-      "fetchedAt": "2026-03-26T19:32:01.258Z"
+      "fetchedAt": "2026-03-27T08:47:08.352Z"
     },
     "#Y9P9GGL89": {
       "profile": {
         "tag": "#Y9P9GGL89",
         "name": "Pepito94",
         "role": "member",
-        "trophies": 12357,
+        "trophies": 12359,
         "bestTrophies": 12417,
         "expLevel": 65,
-        "totalDonations": 14830,
-        "donations": 0,
+        "totalDonations": 14838,
+        "donations": 8,
         "warDayWins": 0,
-        "cw2Progress": 293,
+        "cw2Progress": 295,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
         "arena": "Magic Academy",
         "stats": {
-          "battleCount": 8475,
+          "battleCount": 8479,
           "threeCrownWins": 1321
         }
       },
       "battleLogSummary": {
-        "totalBattles": 32,
+        "totalBattles": 30,
         "warBattles": 25
       },
-      "fetchedAt": "2026-03-26T19:32:01.258Z"
+      "fetchedAt": "2026-03-27T08:47:08.352Z"
     },
     "#GLV9Q2P09": {
       "profile": {
@@ -274,22 +274,22 @@
         "totalDonations": 58099,
         "donations": 70,
         "warDayWins": 0,
-        "cw2Progress": 787,
+        "cw2Progress": 788,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
         "arena": "Magic Academy",
         "stats": {
-          "battleCount": 7690,
-          "threeCrownWins": 3633
+          "battleCount": 7692,
+          "threeCrownWins": 3634
         }
       },
       "battleLogSummary": {
         "totalBattles": 32,
-        "warBattles": 5
+        "warBattles": 7
       },
-      "fetchedAt": "2026-03-26T19:32:01.258Z"
+      "fetchedAt": "2026-03-27T08:47:08.352Z"
     },
     "#98UULQY8": {
       "profile": {
@@ -317,7 +317,7 @@
         "totalBattles": 30,
         "warBattles": 3
       },
-      "fetchedAt": "2026-03-26T19:32:01.258Z"
+      "fetchedAt": "2026-03-27T08:47:08.352Z"
     },
     "#8YGY2RPCC": {
       "profile": {
@@ -327,25 +327,25 @@
         "trophies": 12231,
         "bestTrophies": 12262,
         "expLevel": 81,
-        "totalDonations": 324298,
-        "donations": 412,
+        "totalDonations": 324314,
+        "donations": 428,
         "warDayWins": 265,
-        "cw2Progress": 1494,
+        "cw2Progress": 1495,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
         "arena": "Magic Academy",
         "stats": {
-          "battleCount": 22185,
+          "battleCount": 22187,
           "threeCrownWins": 7780
         }
       },
       "battleLogSummary": {
         "totalBattles": 30,
-        "warBattles": 20
+        "warBattles": 21
       },
-      "fetchedAt": "2026-03-26T19:32:01.258Z"
+      "fetchedAt": "2026-03-27T08:47:08.352Z"
     },
     "#8VQLJLR0": {
       "profile": {
@@ -373,18 +373,18 @@
         "totalBattles": 34,
         "warBattles": 11
       },
-      "fetchedAt": "2026-03-26T19:32:01.258Z"
+      "fetchedAt": "2026-03-27T08:47:08.352Z"
     },
     "#LUGP2RYY": {
       "profile": {
         "tag": "#LUGP2RYY",
         "name": "flo",
         "role": "elder",
-        "trophies": 12131,
-        "bestTrophies": 12131,
+        "trophies": 12162,
+        "bestTrophies": 12162,
         "expLevel": 79,
-        "totalDonations": 255484,
-        "donations": 174,
+        "totalDonations": 255542,
+        "donations": 232,
         "warDayWins": 191,
         "cw2Progress": 1521,
         "clan": {
@@ -393,15 +393,15 @@
         },
         "arena": "Magic Academy",
         "stats": {
-          "battleCount": 22103,
+          "battleCount": 22106,
           "threeCrownWins": 6079
         }
       },
       "battleLogSummary": {
         "totalBattles": 30,
-        "warBattles": 12
+        "warBattles": 11
       },
-      "fetchedAt": "2026-03-26T19:32:01.258Z"
+      "fetchedAt": "2026-03-27T08:47:08.352Z"
     },
     "#2YP2V2G0R": {
       "profile": {
@@ -411,8 +411,8 @@
         "trophies": 12120,
         "bestTrophies": 12150,
         "expLevel": 66,
-        "totalDonations": 32016,
-        "donations": 884,
+        "totalDonations": 32142,
+        "donations": 1010,
         "warDayWins": 0,
         "cw2Progress": 261,
         "clan": {
@@ -421,7 +421,7 @@
         },
         "arena": "Magic Academy",
         "stats": {
-          "battleCount": 6021,
+          "battleCount": 6022,
           "threeCrownWins": 1736
         }
       },
@@ -429,7 +429,7 @@
         "totalBattles": 30,
         "warBattles": 9
       },
-      "fetchedAt": "2026-03-26T19:32:01.258Z"
+      "fetchedAt": "2026-03-27T08:47:08.352Z"
     },
     "#CJVUJ8U9C": {
       "profile": {
@@ -439,25 +439,25 @@
         "trophies": 12089,
         "bestTrophies": 12121,
         "expLevel": 77,
-        "totalDonations": 73141,
-        "donations": 261,
+        "totalDonations": 73275,
+        "donations": 395,
         "warDayWins": 0,
-        "cw2Progress": 1544,
+        "cw2Progress": 1546,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
         "arena": "Magic Academy",
         "stats": {
-          "battleCount": 12336,
-          "threeCrownWins": 3569
+          "battleCount": 12344,
+          "threeCrownWins": 3571
         }
       },
       "battleLogSummary": {
-        "totalBattles": 31,
+        "totalBattles": 30,
         "warBattles": 7
       },
-      "fetchedAt": "2026-03-26T19:32:01.258Z"
+      "fetchedAt": "2026-03-27T08:47:08.352Z"
     },
     "#PCLLULJ9V": {
       "profile": {
@@ -477,15 +477,15 @@
         },
         "arena": "Magic Academy",
         "stats": {
-          "battleCount": 22995,
-          "threeCrownWins": 5235
+          "battleCount": 22997,
+          "threeCrownWins": 5236
         }
       },
       "battleLogSummary": {
         "totalBattles": 33,
         "warBattles": 4
       },
-      "fetchedAt": "2026-03-26T19:32:01.258Z"
+      "fetchedAt": "2026-03-27T08:47:08.352Z"
     },
     "#8G00908LP": {
       "profile": {
@@ -495,8 +495,8 @@
         "trophies": 12011,
         "bestTrophies": 12011,
         "expLevel": 75,
-        "totalDonations": 228067,
-        "donations": 476,
+        "totalDonations": 228083,
+        "donations": 492,
         "warDayWins": 235,
         "cw2Progress": 1053,
         "clan": {
@@ -505,43 +505,43 @@
         },
         "arena": "Magic Academy",
         "stats": {
-          "battleCount": 43252,
+          "battleCount": 43254,
           "threeCrownWins": 6356
         }
       },
       "battleLogSummary": {
         "totalBattles": 30,
-        "warBattles": 2
+        "warBattles": 4
       },
-      "fetchedAt": "2026-03-26T19:32:01.258Z"
+      "fetchedAt": "2026-03-27T08:47:08.352Z"
     },
     "#V0VLJQCJU": {
       "profile": {
         "tag": "#V0VLJQCJU",
         "name": "Peater",
         "role": "member",
-        "trophies": 11825,
+        "trophies": 11793,
         "bestTrophies": 11885,
         "expLevel": 69,
-        "totalDonations": 45982,
-        "donations": 25,
+        "totalDonations": 46018,
+        "donations": 61,
         "warDayWins": 0,
-        "cw2Progress": 1375,
+        "cw2Progress": 1376,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
         "arena": "Summit of Heroes",
         "stats": {
-          "battleCount": 7612,
+          "battleCount": 7615,
           "threeCrownWins": 1345
         }
       },
       "battleLogSummary": {
-        "totalBattles": 32,
-        "warBattles": 28
+        "totalBattles": 30,
+        "warBattles": 25
       },
-      "fetchedAt": "2026-03-26T19:32:01.258Z"
+      "fetchedAt": "2026-03-27T08:47:08.352Z"
     },
     "#RJY2R282V": {
       "profile": {
@@ -561,7 +561,7 @@
         },
         "arena": "Summit of Heroes",
         "stats": {
-          "battleCount": 11168,
+          "battleCount": 11169,
           "threeCrownWins": 2576
         }
       },
@@ -569,7 +569,7 @@
         "totalBattles": 33,
         "warBattles": 4
       },
-      "fetchedAt": "2026-03-26T19:32:01.258Z"
+      "fetchedAt": "2026-03-27T08:47:08.352Z"
     },
     "#YQVP9P0Y": {
       "profile": {
@@ -597,7 +597,7 @@
         "totalBattles": 30,
         "warBattles": 37
       },
-      "fetchedAt": "2026-03-26T19:32:01.258Z"
+      "fetchedAt": "2026-03-27T08:47:08.353Z"
     },
     "#CGJP0YYUJ": {
       "profile": {
@@ -625,14 +625,14 @@
         "totalBattles": 30,
         "warBattles": 4
       },
-      "fetchedAt": "2026-03-26T19:32:01.258Z"
+      "fetchedAt": "2026-03-27T08:47:08.353Z"
     },
     "#8QVRJYVYU": {
       "profile": {
         "tag": "#8QVRJYVYU",
         "name": "kayes(2)",
         "role": "elder",
-        "trophies": 11653,
+        "trophies": 11713,
         "bestTrophies": 11742,
         "expLevel": 78,
         "totalDonations": 84028,
@@ -645,7 +645,7 @@
         },
         "arena": "Summit of Heroes",
         "stats": {
-          "battleCount": 43132,
+          "battleCount": 43136,
           "threeCrownWins": 9183
         }
       },
@@ -653,18 +653,18 @@
         "totalBattles": 36,
         "warBattles": 8
       },
-      "fetchedAt": "2026-03-26T19:32:01.258Z"
+      "fetchedAt": "2026-03-27T08:47:08.353Z"
     },
     "#GC20UCLL": {
       "profile": {
         "tag": "#GC20UCLL",
         "name": "pacstar",
         "role": "elder",
-        "trophies": 11438,
+        "trophies": 11378,
         "bestTrophies": 11438,
         "expLevel": 69,
-        "totalDonations": 134130,
-        "donations": 58,
+        "totalDonations": 134140,
+        "donations": 68,
         "warDayWins": 65,
         "cw2Progress": 816,
         "clan": {
@@ -673,43 +673,43 @@
         },
         "arena": "Musketeer Street",
         "stats": {
-          "battleCount": 21780,
+          "battleCount": 21782,
           "threeCrownWins": 3747
         }
       },
       "battleLogSummary": {
-        "totalBattles": 31,
-        "warBattles": 13
+        "totalBattles": 30,
+        "warBattles": 11
       },
-      "fetchedAt": "2026-03-26T19:32:01.258Z"
+      "fetchedAt": "2026-03-27T08:47:08.353Z"
     },
     "#U09CUCYL2": {
       "profile": {
         "tag": "#U09CUCYL2",
         "name": "Pico!!",
         "role": "elder",
-        "trophies": 11315,
+        "trophies": 11343,
         "bestTrophies": 11376,
         "expLevel": 60,
         "totalDonations": 8308,
         "donations": 0,
         "warDayWins": 0,
-        "cw2Progress": 199,
+        "cw2Progress": 201,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
         "arena": "Musketeer Street",
         "stats": {
-          "battleCount": 4248,
+          "battleCount": 4251,
           "threeCrownWins": 825
         }
       },
       "battleLogSummary": {
         "totalBattles": 30,
-        "warBattles": 24
+        "warBattles": 28
       },
-      "fetchedAt": "2026-03-26T19:32:01.258Z"
+      "fetchedAt": "2026-03-27T08:47:08.353Z"
     },
     "#J290800UU": {
       "profile": {
@@ -737,7 +737,7 @@
         "totalBattles": 30,
         "warBattles": 16
       },
-      "fetchedAt": "2026-03-26T19:32:01.258Z"
+      "fetchedAt": "2026-03-27T08:47:08.353Z"
     },
     "#GGVQJLG9": {
       "profile": {
@@ -747,25 +747,25 @@
         "trophies": 11093,
         "bestTrophies": 11151,
         "expLevel": 70,
-        "totalDonations": 291513,
-        "donations": 256,
+        "totalDonations": 291539,
+        "donations": 282,
         "warDayWins": 126,
-        "cw2Progress": 1266,
+        "cw2Progress": 1267,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
         "arena": "Musketeer Street",
         "stats": {
-          "battleCount": 28737,
+          "battleCount": 28738,
           "threeCrownWins": 5456
         }
       },
       "battleLogSummary": {
         "totalBattles": 30,
-        "warBattles": 30
+        "warBattles": 31
       },
-      "fetchedAt": "2026-03-26T19:32:01.258Z"
+      "fetchedAt": "2026-03-27T08:47:08.353Z"
     },
     "#U9PP0CJRL": {
       "profile": {
@@ -775,25 +775,25 @@
         "trophies": 11034,
         "bestTrophies": 11171,
         "expLevel": 59,
-        "totalDonations": 26155,
-        "donations": 54,
+        "totalDonations": 26171,
+        "donations": 70,
         "warDayWins": 0,
-        "cw2Progress": 507,
+        "cw2Progress": 510,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
         "arena": "Musketeer Street",
         "stats": {
-          "battleCount": 3861,
-          "threeCrownWins": 1108
+          "battleCount": 3864,
+          "threeCrownWins": 1109
         }
       },
       "battleLogSummary": {
         "totalBattles": 30,
-        "warBattles": 30
+        "warBattles": 34
       },
-      "fetchedAt": "2026-03-26T19:32:01.258Z"
+      "fetchedAt": "2026-03-27T08:47:08.353Z"
     },
     "#PRGCCRUJP": {
       "profile": {
@@ -821,7 +821,7 @@
         "totalBattles": 36,
         "warBattles": 16
       },
-      "fetchedAt": "2026-03-26T19:32:01.258Z"
+      "fetchedAt": "2026-03-27T08:47:08.353Z"
     },
     "#QVG90PQVG": {
       "profile": {
@@ -830,9 +830,9 @@
         "role": "elder",
         "trophies": 10726,
         "bestTrophies": 10751,
-        "expLevel": 59,
-        "totalDonations": 12582,
-        "donations": 140,
+        "expLevel": 60,
+        "totalDonations": 12598,
+        "donations": 156,
         "warDayWins": 0,
         "cw2Progress": 495,
         "clan": {
@@ -849,35 +849,35 @@
         "totalBattles": 30,
         "warBattles": 20
       },
-      "fetchedAt": "2026-03-26T19:32:01.258Z"
+      "fetchedAt": "2026-03-27T08:47:08.353Z"
     },
     "#VJUGLG8RR": {
       "profile": {
         "tag": "#VJUGLG8RR",
         "name": "✨️エース • サボ✨️",
         "role": "member",
-        "trophies": 10722,
+        "trophies": 10749,
         "bestTrophies": 10781,
         "expLevel": 49,
         "totalDonations": 8284,
         "donations": 16,
         "warDayWins": 0,
-        "cw2Progress": 390,
+        "cw2Progress": 391,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
         "arena": "Royal Road",
         "stats": {
-          "battleCount": 1997,
+          "battleCount": 2001,
           "threeCrownWins": 341
         }
       },
       "battleLogSummary": {
         "totalBattles": 30,
-        "warBattles": 0
+        "warBattles": 4
       },
-      "fetchedAt": "2026-03-26T19:32:01.258Z"
+      "fetchedAt": "2026-03-27T08:47:08.353Z"
     },
     "#8UL8JRCJ": {
       "profile": {
@@ -905,7 +905,7 @@
         "totalBattles": 30,
         "warBattles": 16
       },
-      "fetchedAt": "2026-03-26T19:32:01.259Z"
+      "fetchedAt": "2026-03-27T08:47:08.353Z"
     },
     "#UVV8CULJV": {
       "profile": {
@@ -915,8 +915,8 @@
         "trophies": 10526,
         "bestTrophies": 10526,
         "expLevel": 59,
-        "totalDonations": 9297,
-        "donations": 146,
+        "totalDonations": 9325,
+        "donations": 174,
         "warDayWins": 0,
         "cw2Progress": 276,
         "clan": {
@@ -925,15 +925,15 @@
         },
         "arena": "Royal Road",
         "stats": {
-          "battleCount": 4815,
-          "threeCrownWins": 1262
+          "battleCount": 4818,
+          "threeCrownWins": 1264
         }
       },
       "battleLogSummary": {
         "totalBattles": 40,
         "warBattles": 4
       },
-      "fetchedAt": "2026-03-26T19:32:01.259Z"
+      "fetchedAt": "2026-03-27T08:47:08.353Z"
     },
     "#YGP000RP8": {
       "profile": {
@@ -943,25 +943,25 @@
         "trophies": 10502,
         "bestTrophies": 10502,
         "expLevel": 64,
-        "totalDonations": 103105,
-        "donations": 414,
+        "totalDonations": 103131,
+        "donations": 440,
         "warDayWins": 20,
-        "cw2Progress": 912,
+        "cw2Progress": 913,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
         "arena": "Royal Road",
         "stats": {
-          "battleCount": 4724,
+          "battleCount": 4727,
           "threeCrownWins": 1249
         }
       },
       "battleLogSummary": {
         "totalBattles": 30,
-        "warBattles": 6
+        "warBattles": 7
       },
-      "fetchedAt": "2026-03-26T19:32:01.259Z"
+      "fetchedAt": "2026-03-27T08:47:08.353Z"
     },
     "#LRJ2YRJG": {
       "profile": {
@@ -989,7 +989,7 @@
         "totalBattles": 31,
         "warBattles": 28
       },
-      "fetchedAt": "2026-03-26T19:32:01.259Z"
+      "fetchedAt": "2026-03-27T08:47:08.353Z"
     },
     "#P2YYR29QU": {
       "profile": {
@@ -999,8 +999,8 @@
         "trophies": 10419,
         "bestTrophies": 10419,
         "expLevel": 65,
-        "totalDonations": 42447,
-        "donations": 66,
+        "totalDonations": 42473,
+        "donations": 92,
         "warDayWins": 0,
         "cw2Progress": 981,
         "clan": {
@@ -1009,15 +1009,15 @@
         },
         "arena": "Lumberlove Cabin",
         "stats": {
-          "battleCount": 7252,
+          "battleCount": 7257,
           "threeCrownWins": 1124
         }
       },
       "battleLogSummary": {
         "totalBattles": 38,
-        "warBattles": 5
+        "warBattles": 4
       },
-      "fetchedAt": "2026-03-26T19:32:01.259Z"
+      "fetchedAt": "2026-03-27T08:47:08.353Z"
     },
     "#U0LVUQRCJ": {
       "profile": {
@@ -1045,7 +1045,7 @@
         "totalBattles": 30,
         "warBattles": 4
       },
-      "fetchedAt": "2026-03-26T19:32:01.259Z"
+      "fetchedAt": "2026-03-27T08:47:08.353Z"
     },
     "#82JPJ9J98": {
       "profile": {
@@ -1055,8 +1055,8 @@
         "trophies": 10262,
         "bestTrophies": 10293,
         "expLevel": 74,
-        "totalDonations": 215310,
-        "donations": 176,
+        "totalDonations": 215328,
+        "donations": 194,
         "warDayWins": 241,
         "cw2Progress": 1534,
         "clan": {
@@ -1065,7 +1065,7 @@
         },
         "arena": "Lumberlove Cabin",
         "stats": {
-          "battleCount": 12658,
+          "battleCount": 12661,
           "threeCrownWins": 3651
         }
       },
@@ -1073,7 +1073,7 @@
         "totalBattles": 35,
         "warBattles": 36
       },
-      "fetchedAt": "2026-03-26T19:32:01.259Z"
+      "fetchedAt": "2026-03-27T08:47:08.353Z"
     },
     "#RJJ99Y9J": {
       "profile": {
@@ -1083,8 +1083,8 @@
         "trophies": 10182,
         "bestTrophies": 10272,
         "expLevel": 73,
-        "totalDonations": 58973,
-        "donations": 32,
+        "totalDonations": 58981,
+        "donations": 40,
         "warDayWins": 4,
         "cw2Progress": 1426,
         "clan": {
@@ -1093,15 +1093,15 @@
         },
         "arena": "Lumberlove Cabin",
         "stats": {
-          "battleCount": 7575,
-          "threeCrownWins": 4161
+          "battleCount": 7580,
+          "threeCrownWins": 4162
         }
       },
       "battleLogSummary": {
         "totalBattles": 38,
-        "warBattles": 7
+        "warBattles": 9
       },
-      "fetchedAt": "2026-03-26T19:32:01.259Z"
+      "fetchedAt": "2026-03-27T08:47:08.353Z"
     },
     "#8GGQLU28": {
       "profile": {
@@ -1111,8 +1111,8 @@
         "trophies": 10151,
         "bestTrophies": 10238,
         "expLevel": 72,
-        "totalDonations": 95416,
-        "donations": 183,
+        "totalDonations": 95476,
+        "donations": 243,
         "warDayWins": 140,
         "cw2Progress": 757,
         "clan": {
@@ -1121,43 +1121,43 @@
         },
         "arena": "Lumberlove Cabin",
         "stats": {
-          "battleCount": 11936,
+          "battleCount": 11940,
           "threeCrownWins": 6134
         }
       },
       "battleLogSummary": {
         "totalBattles": 40,
-        "warBattles": 15
+        "warBattles": 18
       },
-      "fetchedAt": "2026-03-26T19:32:01.259Z"
+      "fetchedAt": "2026-03-27T08:47:08.354Z"
     },
     "#2L8RPQRJ9": {
       "profile": {
         "tag": "#2L8RPQRJ9",
         "name": "Benoit du 28",
         "role": "elder",
-        "trophies": 10128,
+        "trophies": 10104,
         "bestTrophies": 10297,
         "expLevel": 60,
         "totalDonations": 61036,
         "donations": 108,
         "warDayWins": 56,
-        "cw2Progress": 1389,
+        "cw2Progress": 1392,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
         "arena": "Lumberlove Cabin",
         "stats": {
-          "battleCount": 7799,
+          "battleCount": 7804,
           "threeCrownWins": 1768
         }
       },
       "battleLogSummary": {
         "totalBattles": 30,
-        "warBattles": 16
+        "warBattles": 20
       },
-      "fetchedAt": "2026-03-26T19:32:01.259Z"
+      "fetchedAt": "2026-03-27T08:47:08.354Z"
     },
     "#G2R0VRYYQ": {
       "profile": {
@@ -1185,35 +1185,35 @@
         "totalBattles": 30,
         "warBattles": 38
       },
-      "fetchedAt": "2026-03-26T19:32:01.259Z"
+      "fetchedAt": "2026-03-27T08:47:08.354Z"
     },
     "#8QLCU9QG": {
       "profile": {
         "tag": "#8QLCU9QG",
         "name": "Remi-ni-one",
         "role": "member",
-        "trophies": 9823,
+        "trophies": 9822,
         "bestTrophies": 9882,
-        "expLevel": 44,
-        "totalDonations": 46845,
-        "donations": 220,
+        "expLevel": 45,
+        "totalDonations": 46889,
+        "donations": 264,
         "warDayWins": 8,
-        "cw2Progress": 16,
+        "cw2Progress": 18,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
         "arena": "Legendary Arena",
         "stats": {
-          "battleCount": 8012,
-          "threeCrownWins": 1694
+          "battleCount": 8020,
+          "threeCrownWins": 1695
         }
       },
       "battleLogSummary": {
         "totalBattles": 30,
-        "warBattles": 0
+        "warBattles": 4
       },
-      "fetchedAt": "2026-03-26T19:32:01.259Z"
+      "fetchedAt": "2026-03-27T08:47:08.354Z"
     },
     "#822GLVL00": {
       "profile": {
@@ -1223,25 +1223,25 @@
         "trophies": 9606,
         "bestTrophies": 9637,
         "expLevel": 66,
-        "totalDonations": 32979,
-        "donations": 64,
+        "totalDonations": 33035,
+        "donations": 120,
         "warDayWins": 56,
-        "cw2Progress": 1277,
+        "cw2Progress": 1280,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
         "arena": "Legendary Arena",
         "stats": {
-          "battleCount": 11072,
+          "battleCount": 11076,
           "threeCrownWins": 3175
         }
       },
       "battleLogSummary": {
         "totalBattles": 30,
-        "warBattles": 32
+        "warBattles": 36
       },
-      "fetchedAt": "2026-03-26T19:32:01.259Z"
+      "fetchedAt": "2026-03-27T08:47:08.354Z"
     },
     "#8Y90VQYP9": {
       "profile": {
@@ -1269,7 +1269,7 @@
         "totalBattles": 33,
         "warBattles": 30
       },
-      "fetchedAt": "2026-03-26T19:32:01.259Z"
+      "fetchedAt": "2026-03-27T08:47:08.354Z"
     },
     "#88Y9Q8UPQ": {
       "profile": {
@@ -1279,25 +1279,25 @@
         "trophies": 9191,
         "bestTrophies": 9191,
         "expLevel": 62,
-        "totalDonations": 47075,
-        "donations": 188,
+        "totalDonations": 47101,
+        "donations": 214,
         "warDayWins": 16,
-        "cw2Progress": 202,
+        "cw2Progress": 203,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
         "arena": "Valkalla",
         "stats": {
-          "battleCount": 6280,
-          "threeCrownWins": 2525
+          "battleCount": 6287,
+          "threeCrownWins": 2528
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 0
+        "totalBattles": 37,
+        "warBattles": 4
       },
-      "fetchedAt": "2026-03-26T19:32:01.259Z"
+      "fetchedAt": "2026-03-27T08:47:08.354Z"
     },
     "#YRGJGR8R": {
       "profile": {
@@ -1307,8 +1307,8 @@
         "trophies": 9072,
         "bestTrophies": 9483,
         "expLevel": 72,
-        "totalDonations": 135798,
-        "donations": 920,
+        "totalDonations": 135960,
+        "donations": 1082,
         "warDayWins": 32,
         "cw2Progress": 311,
         "clan": {
@@ -1317,15 +1317,15 @@
         },
         "arena": "Valkalla",
         "stats": {
-          "battleCount": 15890,
-          "threeCrownWins": 2792
+          "battleCount": 15903,
+          "threeCrownWins": 2793
         }
       },
       "battleLogSummary": {
         "totalBattles": 30,
-        "warBattles": 3
+        "warBattles": 4
       },
-      "fetchedAt": "2026-03-26T19:32:01.259Z"
+      "fetchedAt": "2026-03-27T08:47:08.354Z"
     },
     "#80GVRPGPY": {
       "profile": {
@@ -1353,7 +1353,7 @@
         "totalBattles": 30,
         "warBattles": 19
       },
-      "fetchedAt": "2026-03-26T19:32:01.259Z"
+      "fetchedAt": "2026-03-27T08:47:08.354Z"
     },
     "#8R0LR8GYC": {
       "profile": {
@@ -1366,22 +1366,22 @@
         "totalDonations": 59551,
         "donations": 0,
         "warDayWins": 14,
-        "cw2Progress": 1211,
+        "cw2Progress": 1215,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
         "arena": "Clash Fest",
         "stats": {
-          "battleCount": 8979,
-          "threeCrownWins": 2398
+          "battleCount": 8982,
+          "threeCrownWins": 2400
         }
       },
       "battleLogSummary": {
         "totalBattles": 30,
-        "warBattles": 42
+        "warBattles": 44
       },
-      "fetchedAt": "2026-03-26T19:32:01.259Z"
+      "fetchedAt": "2026-03-27T08:47:08.354Z"
     },
     "#9VQYC9GJQ": {
       "profile": {
@@ -1391,8 +1391,8 @@
         "trophies": 7340,
         "bestTrophies": 7340,
         "expLevel": 67,
-        "totalDonations": 98295,
-        "donations": 241,
+        "totalDonations": 98303,
+        "donations": 257,
         "warDayWins": 80,
         "cw2Progress": 1360,
         "clan": {
@@ -1409,7 +1409,7 @@
         "totalBattles": 30,
         "warBattles": 8
       },
-      "fetchedAt": "2026-03-26T19:32:01.259Z"
+      "fetchedAt": "2026-03-27T08:47:08.354Z"
     },
     "#UP9YJV080": {
       "profile": {
@@ -1437,14 +1437,14 @@
         "totalBattles": 30,
         "warBattles": 39
       },
-      "fetchedAt": "2026-03-26T19:32:01.259Z"
+      "fetchedAt": "2026-03-27T08:47:08.354Z"
     },
     "#J008G9CLJ": {
       "profile": {
         "tag": "#J008G9CLJ",
         "name": "headless",
         "role": "member",
-        "trophies": 4269,
+        "trophies": 4261,
         "bestTrophies": 4560,
         "expLevel": 32,
         "totalDonations": 2029,
@@ -1457,15 +1457,15 @@
         },
         "arena": "Rascal's Hideout",
         "stats": {
-          "battleCount": 1725,
-          "threeCrownWins": 162
+          "battleCount": 1737,
+          "threeCrownWins": 164
         }
       },
       "battleLogSummary": {
         "totalBattles": 30,
         "warBattles": 4
       },
-      "fetchedAt": "2026-03-26T19:32:01.259Z"
+      "fetchedAt": "2026-03-27T08:47:08.354Z"
     }
   },
   "members": [
@@ -1474,138 +1474,12 @@
       "tag": "#88Y9Q8UPQ",
       "role": "member",
       "trophies": 9191,
-      "donations": 188,
-      "totalDonations": 47075,
-      "donationsReceived": 200,
+      "donations": 214,
+      "totalDonations": 47101,
+      "donationsReceived": 240,
       "expLevel": 62,
-      "activityScore": 26,
-      "reliability": 26,
-      "reliabilitySource": "player",
-      "verdict": "Extreme risk",
-      "color": "red",
-      "isNew": true,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-26",
-            "label": "Thu",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-27",
-            "label": "Fri",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-28",
-            "label": "Sat",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-29",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 4,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 0
-      },
-      "warDecks": 0,
-      "lastSeen": "20260326T004245.000Z"
-    },
-    {
-      "name": "Remi-ni-one",
-      "tag": "#8QLCU9QG",
-      "role": "member",
-      "trophies": 9823,
-      "donations": 220,
-      "totalDonations": 46845,
-      "donationsReceived": 120,
-      "expLevel": 44,
-      "activityScore": 29,
-      "reliability": 29,
-      "reliabilitySource": "player",
-      "verdict": "Extreme risk",
-      "color": "red",
-      "isNew": true,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-26",
-            "label": "Thu",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-27",
-            "label": "Fri",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-28",
-            "label": "Sat",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-29",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 4,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 0
-      },
-      "warDecks": 0,
-      "lastSeen": "20260325T194007.000Z"
-    },
-    {
-      "name": "VTLX.KING",
-      "tag": "#89L8J9YV9",
-      "role": "member",
-      "trophies": 12856,
-      "donations": 10,
-      "totalDonations": 52312,
-      "donationsReceived": 0,
-      "expLevel": 71,
-      "activityScore": 40,
-      "reliability": 40,
+      "activityScore": 37,
+      "reliability": 37,
       "reliabilitySource": "player",
       "verdict": "High risk",
       "color": "orange",
@@ -1619,7 +1493,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 0,
+            "count": 2,
             "isPast": false,
             "isToday": true,
             "isFuture": false
@@ -1649,14 +1523,140 @@
             "isFuture": true
           }
         ],
-        "totalDecksUsed": 0,
+        "totalDecksUsed": 4,
         "maxDecksElapsed": 4,
         "maxDecksWeek": 16,
         "isReliableTotal": true,
         "daysFromThu": 0
       },
-      "warDecks": 0,
-      "lastSeen": "20260326T193033.000Z"
+      "warDecks": 4,
+      "lastSeen": "20260327T023440.000Z"
+    },
+    {
+      "name": "Remi-ni-one",
+      "tag": "#8QLCU9QG",
+      "role": "member",
+      "trophies": 9822,
+      "donations": 264,
+      "totalDonations": 46889,
+      "donationsReceived": 160,
+      "expLevel": 44,
+      "activityScore": 41,
+      "reliability": 41,
+      "reliabilitySource": "player",
+      "verdict": "High risk",
+      "color": "orange",
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": {
+        "days": [
+          {
+            "key": "2026-03-26",
+            "label": "Thu",
+            "count": 4,
+            "isPast": false,
+            "isToday": true,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-27",
+            "label": "Fri",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-28",
+            "label": "Sat",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-29",
+            "label": "Sun",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          }
+        ],
+        "totalDecksUsed": 4,
+        "maxDecksElapsed": 4,
+        "maxDecksWeek": 16,
+        "isReliableTotal": true,
+        "daysFromThu": 0
+      },
+      "warDecks": 4,
+      "lastSeen": "20260326T220033.000Z"
+    },
+    {
+      "name": "✨️エース • サボ✨️",
+      "tag": "#VJUGLG8RR",
+      "role": "member",
+      "trophies": 10749,
+      "donations": 16,
+      "totalDonations": 8284,
+      "donationsReceived": 40,
+      "expLevel": 49,
+      "activityScore": 43,
+      "reliability": 43,
+      "reliabilitySource": "history",
+      "verdict": "High risk",
+      "color": "orange",
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": {
+        "days": [
+          {
+            "key": "2026-03-26",
+            "label": "Thu",
+            "count": 3,
+            "isPast": false,
+            "isToday": true,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-27",
+            "label": "Fri",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-28",
+            "label": "Sat",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-29",
+            "label": "Sun",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          }
+        ],
+        "totalDecksUsed": 4,
+        "maxDecksElapsed": 4,
+        "maxDecksWeek": 16,
+        "isReliableTotal": true,
+        "daysFromThu": 0
+      },
+      "warDecks": 4,
+      "lastSeen": "20260327T075653.000Z"
     },
     {
       "name": "Aubin",
@@ -1722,17 +1722,17 @@
       "lastSeen": "20260326T183050.000Z"
     },
     {
-      "name": "✨️エース • サボ✨️",
-      "tag": "#VJUGLG8RR",
+      "name": "VTLX.KING",
+      "tag": "#89L8J9YV9",
       "role": "member",
-      "trophies": 10722,
-      "donations": 16,
-      "totalDonations": 8284,
-      "donationsReceived": 40,
-      "expLevel": 49,
+      "trophies": 12952,
+      "donations": 10,
+      "totalDonations": 52312,
+      "donationsReceived": 0,
+      "expLevel": 72,
       "activityScore": 49,
       "reliability": 49,
-      "reliabilitySource": "history",
+      "reliabilitySource": "player",
       "verdict": "High risk",
       "color": "orange",
       "isNew": true,
@@ -1745,7 +1745,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 0,
+            "count": 4,
             "isPast": false,
             "isToday": true,
             "isFuture": false
@@ -1775,23 +1775,23 @@
             "isFuture": true
           }
         ],
-        "totalDecksUsed": 0,
+        "totalDecksUsed": 4,
         "maxDecksElapsed": 4,
         "maxDecksWeek": 16,
         "isReliableTotal": true,
         "daysFromThu": 0
       },
-      "warDecks": 0,
-      "lastSeen": "20260326T181323.000Z"
+      "warDecks": 4,
+      "lastSeen": "20260327T084340.000Z"
     },
     {
       "name": "91100",
       "tag": "#UVV8CULJV",
       "role": "member",
       "trophies": 10526,
-      "donations": 146,
-      "totalDonations": 9297,
-      "donationsReceived": 80,
+      "donations": 174,
+      "totalDonations": 9325,
+      "donationsReceived": 120,
       "expLevel": 59,
       "activityScore": 52,
       "reliability": 52,
@@ -1845,7 +1845,7 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260326T185619.000Z"
+      "lastSeen": "20260327T083229.000Z"
     },
     {
       "name": "maxim",
@@ -1911,12 +1911,75 @@
       "lastSeen": "20260322T172358.000Z"
     },
     {
+      "name": "arll2.0",
+      "tag": "#U9PP0CJRL",
+      "role": "elder",
+      "trophies": 11034,
+      "donations": 70,
+      "totalDonations": 26171,
+      "donationsReceived": 120,
+      "expLevel": 59,
+      "activityScore": 58,
+      "reliability": 58,
+      "reliabilitySource": "history",
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": {
+        "days": [
+          {
+            "key": "2026-03-26",
+            "label": "Thu",
+            "count": 3,
+            "isPast": false,
+            "isToday": true,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-27",
+            "label": "Fri",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-28",
+            "label": "Sat",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-29",
+            "label": "Sun",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          }
+        ],
+        "totalDecksUsed": 4,
+        "maxDecksElapsed": 4,
+        "maxDecksWeek": 16,
+        "isReliableTotal": true,
+        "daysFromThu": 0
+      },
+      "warDecks": 4,
+      "lastSeen": "20260326T202619.000Z"
+    },
+    {
       "name": "lauramarin1",
       "tag": "#P2YYR29QU",
       "role": "member",
       "trophies": 10419,
-      "donations": 66,
-      "totalDonations": 42447,
+      "donations": 92,
+      "totalDonations": 42473,
       "donationsReceived": 0,
       "expLevel": 65,
       "activityScore": 58,
@@ -1971,70 +2034,7 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260326T174446.000Z"
-    },
-    {
-      "name": "arll2.0",
-      "tag": "#U9PP0CJRL",
-      "role": "elder",
-      "trophies": 11034,
-      "donations": 54,
-      "totalDonations": 26155,
-      "donationsReceived": 80,
-      "expLevel": 59,
-      "activityScore": 59,
-      "reliability": 59,
-      "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-26",
-            "label": "Thu",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-27",
-            "label": "Fri",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-28",
-            "label": "Sat",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-29",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 4,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 0
-      },
-      "warDecks": 0,
-      "lastSeen": "20260326T172549.000Z"
+      "lastSeen": "20260327T020814.000Z"
     },
     {
       "name": "ylanMRtebz",
@@ -2098,6 +2098,69 @@
       },
       "warDecks": 4,
       "lastSeen": "20260326T121127.000Z"
+    },
+    {
+      "name": "greg",
+      "tag": "#8GGQLU28",
+      "role": "member",
+      "trophies": 10151,
+      "donations": 243,
+      "totalDonations": 95476,
+      "donationsReceived": 280,
+      "expLevel": 72,
+      "activityScore": 60,
+      "reliability": 60,
+      "reliabilitySource": "history",
+      "verdict": "Moderate risk",
+      "color": "yellow",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": {
+        "days": [
+          {
+            "key": "2026-03-26",
+            "label": "Thu",
+            "count": 2,
+            "isPast": false,
+            "isToday": true,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-27",
+            "label": "Fri",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-28",
+            "label": "Sat",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-29",
+            "label": "Sun",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          }
+        ],
+        "totalDecksUsed": 3,
+        "maxDecksElapsed": 4,
+        "maxDecksWeek": 16,
+        "isReliableTotal": true,
+        "daysFromThu": 0
+      },
+      "warDecks": 3,
+      "lastSeen": "20260327T053459.000Z"
     },
     {
       "name": "Legends",
@@ -2226,139 +2289,13 @@
       "lastSeen": "20260326T124857.000Z"
     },
     {
-      "name": "greg",
-      "tag": "#8GGQLU28",
-      "role": "member",
-      "trophies": 10151,
-      "donations": 183,
-      "totalDonations": 95416,
-      "donationsReceived": 200,
-      "expLevel": 72,
-      "activityScore": 61,
-      "reliability": 61,
-      "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-26",
-            "label": "Thu",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-27",
-            "label": "Fri",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-28",
-            "label": "Sat",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-29",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 4,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 0
-      },
-      "warDecks": 0,
-      "lastSeen": "20260326T055620.000Z"
-    },
-    {
-      "name": "Pepito94",
-      "tag": "#Y9P9GGL89",
-      "role": "member",
-      "trophies": 12357,
-      "donations": 0,
-      "totalDonations": 14830,
-      "donationsReceived": 120,
-      "expLevel": 65,
-      "activityScore": 65,
-      "reliability": 65,
-      "reliabilitySource": "history",
-      "verdict": "Moderate risk",
-      "color": "yellow",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-26",
-            "label": "Thu",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-27",
-            "label": "Fri",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-28",
-            "label": "Sat",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-29",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 4,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 0
-      },
-      "warDecks": 0,
-      "lastSeen": "20260323T182953.000Z"
-    },
-    {
       "name": "imad9591",
       "tag": "#CGJP0YYUJ",
       "role": "member",
       "trophies": 11725,
       "donations": 10,
       "totalDonations": 1987,
-      "donationsReceived": 320,
+      "donationsReceived": 400,
       "expLevel": 62,
       "activityScore": 65,
       "reliability": 65,
@@ -2412,7 +2349,7 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260326T155827.000Z"
+      "lastSeen": "20260327T082707.000Z"
     },
     {
       "name": "Cop's II MJ7",
@@ -2538,7 +2475,7 @@
         "daysFromThu": 0
       },
       "warDecks": 0,
-      "lastSeen": "20260326T031115.000Z"
+      "lastSeen": "20260327T031557.000Z"
     },
     {
       "name": "flavie_09",
@@ -2627,7 +2564,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 4,
+            "count": 0,
             "isPast": false,
             "isToday": true,
             "isFuture": false
@@ -2664,16 +2601,16 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260326T155733.000Z"
+      "lastSeen": "20260327T073816.000Z"
     },
     {
       "name": "headless",
       "tag": "#J008G9CLJ",
       "role": "member",
-      "trophies": 4269,
+      "trophies": 4261,
       "donations": 28,
       "totalDonations": 2029,
-      "donationsReceived": 440,
+      "donationsReceived": 480,
       "expLevel": 32,
       "activityScore": 70,
       "reliability": 70,
@@ -2727,19 +2664,19 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260326T160956.000Z"
+      "lastSeen": "20260327T065008.000Z"
     },
     {
-      "name": "☆. Inuk",
-      "tag": "#8R0LR8GYC",
-      "role": "elder",
-      "trophies": 8311,
-      "donations": 0,
-      "totalDonations": 59551,
-      "donationsReceived": 0,
-      "expLevel": 58,
-      "activityScore": 71,
-      "reliability": 71,
+      "name": "Pepito94",
+      "tag": "#Y9P9GGL89",
+      "role": "member",
+      "trophies": 12359,
+      "donations": 8,
+      "totalDonations": 14838,
+      "donationsReceived": 152,
+      "expLevel": 65,
+      "activityScore": 72,
+      "reliability": 72,
       "reliabilitySource": "history",
       "verdict": "Moderate risk",
       "color": "yellow",
@@ -2753,7 +2690,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 0,
+            "count": 2,
             "isPast": false,
             "isToday": true,
             "isFuture": false
@@ -2783,14 +2720,14 @@
             "isFuture": true
           }
         ],
-        "totalDecksUsed": 0,
+        "totalDecksUsed": 4,
         "maxDecksElapsed": 4,
         "maxDecksWeek": 16,
         "isReliableTotal": true,
         "daysFromThu": 0
       },
-      "warDecks": 0,
-      "lastSeen": "20260322T172712.000Z"
+      "warDecks": 4,
+      "lastSeen": "20260327T074955.000Z"
     },
     {
       "name": "Hafid",
@@ -2859,10 +2796,10 @@
       "name": "Peater",
       "tag": "#V0VLJQCJU",
       "role": "member",
-      "trophies": 11825,
-      "donations": 25,
-      "totalDonations": 45982,
-      "donationsReceived": 72,
+      "trophies": 11793,
+      "donations": 61,
+      "totalDonations": 46018,
+      "donationsReceived": 112,
       "expLevel": 69,
       "activityScore": 75,
       "reliability": 75,
@@ -2879,7 +2816,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 2,
+            "count": 4,
             "isPast": false,
             "isToday": true,
             "isFuture": false
@@ -2909,14 +2846,14 @@
             "isFuture": true
           }
         ],
-        "totalDecksUsed": 2,
+        "totalDecksUsed": 4,
         "maxDecksElapsed": 4,
         "maxDecksWeek": 16,
         "isReliableTotal": true,
         "daysFromThu": 0
       },
-      "warDecks": 2,
-      "lastSeen": "20260326T110417.000Z"
+      "warDecks": 4,
+      "lastSeen": "20260326T232056.000Z"
     },
     {
       "name": "koko aka thanos",
@@ -2986,9 +2923,9 @@
       "tag": "#2YP2V2G0R",
       "role": "elder",
       "trophies": 12120,
-      "donations": 884,
-      "totalDonations": 32016,
-      "donationsReceived": 330,
+      "donations": 1010,
+      "totalDonations": 32142,
+      "donationsReceived": 370,
       "expLevel": 66,
       "activityScore": 78,
       "reliability": 78,
@@ -3042,7 +2979,70 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260326T192224.000Z"
+      "lastSeen": "20260327T082752.000Z"
+    },
+    {
+      "name": "☆. Inuk",
+      "tag": "#8R0LR8GYC",
+      "role": "elder",
+      "trophies": 8311,
+      "donations": 0,
+      "totalDonations": 59551,
+      "donationsReceived": 0,
+      "expLevel": 59,
+      "activityScore": 78,
+      "reliability": 78,
+      "reliabilitySource": "history",
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": {
+        "days": [
+          {
+            "key": "2026-03-26",
+            "label": "Thu",
+            "count": 3,
+            "isPast": false,
+            "isToday": true,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-27",
+            "label": "Fri",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-28",
+            "label": "Sat",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-29",
+            "label": "Sun",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          }
+        ],
+        "totalDecksUsed": 4,
+        "maxDecksElapsed": 4,
+        "maxDecksWeek": 16,
+        "isReliableTotal": true,
+        "daysFromThu": 0
+      },
+      "warDecks": 4,
+      "lastSeen": "20260327T055232.000Z"
     },
     {
       "name": "Pépin le Bref",
@@ -3171,13 +3171,76 @@
       "lastSeen": "20260326T095750.000Z"
     },
     {
+      "name": "Pico!!",
+      "tag": "#U09CUCYL2",
+      "role": "elder",
+      "trophies": 11343,
+      "donations": 0,
+      "totalDonations": 8308,
+      "donationsReceived": 0,
+      "expLevel": 60,
+      "activityScore": 82,
+      "reliability": 82,
+      "reliabilitySource": "history",
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": {
+        "days": [
+          {
+            "key": "2026-03-26",
+            "label": "Thu",
+            "count": 2,
+            "isPast": false,
+            "isToday": true,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-27",
+            "label": "Fri",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-28",
+            "label": "Sat",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-29",
+            "label": "Sun",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          }
+        ],
+        "totalDecksUsed": 4,
+        "maxDecksElapsed": 4,
+        "maxDecksWeek": 16,
+        "isReliableTotal": true,
+        "daysFromThu": 0
+      },
+      "warDecks": 4,
+      "lastSeen": "20260327T083247.000Z"
+    },
+    {
       "name": "☆. Mariechou",
       "tag": "#9VQYC9GJQ",
       "role": "coLeader",
       "trophies": 7340,
-      "donations": 241,
-      "totalDonations": 98295,
-      "donationsReceived": 280,
+      "donations": 257,
+      "totalDonations": 98303,
+      "donationsReceived": 320,
       "expLevel": 67,
       "activityScore": 82,
       "reliability": 82,
@@ -3231,7 +3294,7 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260326T191835.000Z"
+      "lastSeen": "20260327T084522.000Z"
     },
     {
       "name": "Fidel",
@@ -3257,7 +3320,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 1,
+            "count": 3,
             "isPast": false,
             "isToday": true,
             "isFuture": false
@@ -3287,77 +3350,14 @@
             "isFuture": true
           }
         ],
-        "totalDecksUsed": 2,
+        "totalDecksUsed": 4,
         "maxDecksElapsed": 4,
         "maxDecksWeek": 16,
         "isReliableTotal": true,
         "daysFromThu": 0
       },
-      "warDecks": 2,
-      "lastSeen": "20260326T150607.000Z"
-    },
-    {
-      "name": "Pico!!",
-      "tag": "#U09CUCYL2",
-      "role": "elder",
-      "trophies": 11315,
-      "donations": 0,
-      "totalDonations": 8308,
-      "donationsReceived": 0,
-      "expLevel": 60,
-      "activityScore": 84,
-      "reliability": 84,
-      "reliabilitySource": "history",
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-26",
-            "label": "Thu",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-27",
-            "label": "Fri",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-28",
-            "label": "Sat",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-29",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 4,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 0
-      },
-      "warDecks": 0,
-      "lastSeen": "20260326T181826.000Z"
+      "warDecks": 4,
+      "lastSeen": "20260327T060947.000Z"
     },
     {
       "name": "hardchaos76",
@@ -3427,9 +3427,9 @@
       "tag": "#RJJ99Y9J",
       "role": "elder",
       "trophies": 10182,
-      "donations": 32,
-      "totalDonations": 58973,
-      "donationsReceived": 400,
+      "donations": 40,
+      "totalDonations": 58981,
+      "donationsReceived": 440,
       "expLevel": 73,
       "activityScore": 84,
       "reliability": 84,
@@ -3446,7 +3446,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 2,
+            "count": 4,
             "isPast": false,
             "isToday": true,
             "isFuture": false
@@ -3476,14 +3476,77 @@
             "isFuture": true
           }
         ],
-        "totalDecksUsed": 2,
+        "totalDecksUsed": 4,
         "maxDecksElapsed": 4,
         "maxDecksWeek": 16,
         "isReliableTotal": true,
         "daysFromThu": 0
       },
-      "warDecks": 2,
-      "lastSeen": "20260326T155954.000Z"
+      "warDecks": 4,
+      "lastSeen": "20260327T084449.000Z"
+    },
+    {
+      "name": "grooliv",
+      "tag": "#822GLVL00",
+      "role": "elder",
+      "trophies": 9606,
+      "donations": 120,
+      "totalDonations": 33035,
+      "donationsReceived": 0,
+      "expLevel": 66,
+      "activityScore": 84,
+      "reliability": 84,
+      "reliabilitySource": "history",
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": {
+        "days": [
+          {
+            "key": "2026-03-26",
+            "label": "Thu",
+            "count": 3,
+            "isPast": false,
+            "isToday": true,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-27",
+            "label": "Fri",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-28",
+            "label": "Sat",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-29",
+            "label": "Sun",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          }
+        ],
+        "totalDecksUsed": 4,
+        "maxDecksElapsed": 4,
+        "maxDecksWeek": 16,
+        "isReliableTotal": true,
+        "daysFromThu": 0
+      },
+      "warDecks": 4,
+      "lastSeen": "20260327T060656.000Z"
     },
     {
       "name": "Zapata86",
@@ -3549,75 +3612,12 @@
       "lastSeen": "20260326T155833.000Z"
     },
     {
-      "name": "Slicork",
-      "tag": "#CJVUJ8U9C",
-      "role": "elder",
-      "trophies": 12089,
-      "donations": 261,
-      "totalDonations": 73141,
-      "donationsReceived": 360,
-      "expLevel": 77,
-      "activityScore": 85,
-      "reliability": 85,
-      "reliabilitySource": "history",
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-26",
-            "label": "Thu",
-            "count": 1,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-27",
-            "label": "Fri",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-28",
-            "label": "Sat",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-29",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          }
-        ],
-        "totalDecksUsed": 1,
-        "maxDecksElapsed": 4,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 0
-      },
-      "warDecks": 1,
-      "lastSeen": "20260326T153112.000Z"
-    },
-    {
       "name": "☆. Kikootz",
       "tag": "#8G00908LP",
       "role": "elder",
       "trophies": 12011,
-      "donations": 476,
-      "totalDonations": 228067,
+      "donations": 492,
+      "totalDonations": 228083,
       "donationsReceived": 0,
       "expLevel": 75,
       "activityScore": 85,
@@ -3635,7 +3635,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 1,
+            "count": 3,
             "isPast": false,
             "isToday": true,
             "isFuture": false
@@ -3665,23 +3665,23 @@
             "isFuture": true
           }
         ],
-        "totalDecksUsed": 2,
+        "totalDecksUsed": 4,
         "maxDecksElapsed": 4,
         "maxDecksWeek": 16,
         "isReliableTotal": true,
         "daysFromThu": 0
       },
-      "warDecks": 2,
-      "lastSeen": "20260326T182852.000Z"
+      "warDecks": 4,
+      "lastSeen": "20260326T211209.000Z"
     },
     {
       "name": "pacstar",
       "tag": "#GC20UCLL",
       "role": "elder",
-      "trophies": 11438,
-      "donations": 58,
-      "totalDonations": 134130,
-      "donationsReceived": 280,
+      "trophies": 11378,
+      "donations": 68,
+      "totalDonations": 134140,
+      "donationsReceived": 360,
       "expLevel": 69,
       "activityScore": 85,
       "reliability": 85,
@@ -3735,19 +3735,19 @@
         "daysFromThu": 0
       },
       "warDecks": 0,
-      "lastSeen": "20260326T141503.000Z"
+      "lastSeen": "20260327T063050.000Z"
     },
     {
-      "name": "grooliv",
-      "tag": "#822GLVL00",
+      "name": "Slicork",
+      "tag": "#CJVUJ8U9C",
       "role": "elder",
-      "trophies": 9606,
-      "donations": 64,
-      "totalDonations": 32979,
-      "donationsReceived": 0,
-      "expLevel": 66,
-      "activityScore": 85,
-      "reliability": 85,
+      "trophies": 12089,
+      "donations": 395,
+      "totalDonations": 73275,
+      "donationsReceived": 440,
+      "expLevel": 77,
+      "activityScore": 86,
+      "reliability": 86,
       "reliabilitySource": "history",
       "verdict": "High reliability",
       "color": "green",
@@ -3761,7 +3761,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 0,
+            "count": 2,
             "isPast": false,
             "isToday": true,
             "isFuture": false
@@ -3791,20 +3791,20 @@
             "isFuture": true
           }
         ],
-        "totalDecksUsed": 0,
+        "totalDecksUsed": 4,
         "maxDecksElapsed": 4,
         "maxDecksWeek": 16,
         "isReliableTotal": true,
         "daysFromThu": 0
       },
-      "warDecks": 0,
-      "lastSeen": "20260326T162138.000Z"
+      "warDecks": 4,
+      "lastSeen": "20260327T065154.000Z"
     },
     {
       "name": "kayes(2)",
       "tag": "#8QVRJYVYU",
       "role": "elder",
-      "trophies": 11653,
+      "trophies": 11713,
       "donations": 64,
       "totalDonations": 84028,
       "donationsReceived": 80,
@@ -3861,16 +3861,16 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260326T164422.000Z"
+      "lastSeen": "20260327T074124.000Z"
     },
     {
       "name": "Flo 2",
       "tag": "#QVG90PQVG",
       "role": "elder",
       "trophies": 10726,
-      "donations": 140,
-      "totalDonations": 12582,
-      "donationsReceived": 200,
+      "donations": 156,
+      "totalDonations": 12598,
+      "donationsReceived": 240,
       "expLevel": 59,
       "activityScore": 87,
       "reliability": 87,
@@ -3924,16 +3924,16 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260326T144325.000Z"
+      "lastSeen": "20260327T061156.000Z"
     },
     {
       "name": "le roi king",
       "tag": "#YGP000RP8",
       "role": "elder",
       "trophies": 10502,
-      "donations": 414,
-      "totalDonations": 103105,
-      "donationsReceived": 320,
+      "donations": 440,
+      "totalDonations": 103131,
+      "donationsReceived": 360,
       "expLevel": 64,
       "activityScore": 87,
       "reliability": 87,
@@ -3950,7 +3950,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 1,
+            "count": 3,
             "isPast": false,
             "isToday": true,
             "isFuture": false
@@ -3980,24 +3980,87 @@
             "isFuture": true
           }
         ],
-        "totalDecksUsed": 2,
+        "totalDecksUsed": 4,
         "maxDecksElapsed": 4,
         "maxDecksWeek": 16,
         "isReliableTotal": true,
         "daysFromThu": 0
       },
-      "warDecks": 2,
-      "lastSeen": "20260326T173504.000Z"
+      "warDecks": 4,
+      "lastSeen": "20260327T032738.000Z"
+    },
+    {
+      "name": "Benoit du 28",
+      "tag": "#2L8RPQRJ9",
+      "role": "elder",
+      "trophies": 10104,
+      "donations": 108,
+      "totalDonations": 61036,
+      "donationsReceived": 40,
+      "expLevel": 60,
+      "activityScore": 87,
+      "reliability": 87,
+      "reliabilitySource": "history",
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": {
+        "days": [
+          {
+            "key": "2026-03-26",
+            "label": "Thu",
+            "count": 2,
+            "isPast": false,
+            "isToday": true,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-27",
+            "label": "Fri",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-28",
+            "label": "Sat",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          },
+          {
+            "key": "2026-03-29",
+            "label": "Sun",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          }
+        ],
+        "totalDecksUsed": 4,
+        "maxDecksElapsed": 4,
+        "maxDecksWeek": 16,
+        "isReliableTotal": true,
+        "daysFromThu": 0
+      },
+      "warDecks": 4,
+      "lastSeen": "20260327T042459.000Z"
     },
     {
       "name": "flo",
       "tag": "#LUGP2RYY",
       "role": "elder",
-      "trophies": 12131,
-      "donations": 174,
-      "totalDonations": 255484,
-      "donationsReceived": 120,
-      "expLevel": 78,
+      "trophies": 12162,
+      "donations": 232,
+      "totalDonations": 255542,
+      "donationsReceived": 160,
+      "expLevel": 79,
       "activityScore": 88,
       "reliability": 88,
       "reliabilitySource": "history",
@@ -4050,7 +4113,7 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260326T120728.000Z"
+      "lastSeen": "20260327T065811.000Z"
     },
     {
       "name": "Adolphe en Tmax",
@@ -4113,16 +4176,16 @@
         "daysFromThu": 0
       },
       "warDecks": 0,
-      "lastSeen": "20260326T184849.000Z"
+      "lastSeen": "20260326T201324.000Z"
     },
     {
       "name": "Plugpourlefion",
       "tag": "#GGVQJLG9",
       "role": "elder",
       "trophies": 11093,
-      "donations": 256,
-      "totalDonations": 291513,
-      "donationsReceived": 280,
+      "donations": 282,
+      "totalDonations": 291539,
+      "donationsReceived": 320,
       "expLevel": 70,
       "activityScore": 88,
       "reliability": 88,
@@ -4139,7 +4202,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 2,
+            "count": 3,
             "isPast": false,
             "isToday": true,
             "isFuture": false
@@ -4169,23 +4232,23 @@
             "isFuture": true
           }
         ],
-        "totalDecksUsed": 3,
+        "totalDecksUsed": 4,
         "maxDecksElapsed": 4,
         "maxDecksWeek": 16,
         "isReliableTotal": true,
         "daysFromThu": 0
       },
-      "warDecks": 3,
-      "lastSeen": "20260326T190824.000Z"
+      "warDecks": 4,
+      "lastSeen": "20260327T063440.000Z"
     },
     {
       "name": "hyène",
       "tag": "#82JPJ9J98",
       "role": "elder",
       "trophies": 10262,
-      "donations": 176,
-      "totalDonations": 215310,
-      "donationsReceived": 400,
+      "donations": 194,
+      "totalDonations": 215328,
+      "donationsReceived": 440,
       "expLevel": 74,
       "activityScore": 88,
       "reliability": 88,
@@ -4239,82 +4302,19 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260326T192549.000Z"
-    },
-    {
-      "name": "Benoit du 28",
-      "tag": "#2L8RPQRJ9",
-      "role": "elder",
-      "trophies": 10128,
-      "donations": 108,
-      "totalDonations": 61036,
-      "donationsReceived": 40,
-      "expLevel": 60,
-      "activityScore": 88,
-      "reliability": 88,
-      "reliabilitySource": "history",
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-26",
-            "label": "Thu",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-27",
-            "label": "Fri",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-28",
-            "label": "Sat",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          },
-          {
-            "key": "2026-03-29",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          }
-        ],
-        "totalDecksUsed": 0,
-        "maxDecksElapsed": 4,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 0
-      },
-      "warDecks": 0,
-      "lastSeen": "20260326T045639.000Z"
+      "lastSeen": "20260327T074049.000Z"
     },
     {
       "name": "derrick",
       "tag": "#8YGY2RPCC",
       "role": "elder",
       "trophies": 12231,
-      "donations": 412,
-      "totalDonations": 324298,
+      "donations": 428,
+      "totalDonations": 324314,
       "donationsReceived": 360,
       "expLevel": 81,
-      "activityScore": 92,
-      "reliability": 92,
+      "activityScore": 91,
+      "reliability": 91,
       "reliabilitySource": "history",
       "verdict": "High reliability",
       "color": "green",
@@ -4328,7 +4328,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 0,
+            "count": 2,
             "isPast": false,
             "isToday": true,
             "isFuture": false
@@ -4358,23 +4358,23 @@
             "isFuture": true
           }
         ],
-        "totalDecksUsed": 0,
+        "totalDecksUsed": 4,
         "maxDecksElapsed": 4,
         "maxDecksWeek": 16,
         "isReliableTotal": true,
         "daysFromThu": 0
       },
-      "warDecks": 0,
-      "lastSeen": "20260326T182615.000Z"
+      "warDecks": 4,
+      "lastSeen": "20260326T231131.000Z"
     },
     {
       "name": "displaynone",
       "tag": "#YRGJGR8R",
       "role": "coLeader",
       "trophies": 9072,
-      "donations": 920,
-      "totalDonations": 135798,
-      "donationsReceived": 456,
+      "donations": 1082,
+      "totalDonations": 135960,
+      "donationsReceived": 496,
       "expLevel": 72,
       "activityScore": 92,
       "reliability": 92,
@@ -4391,7 +4391,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 1,
+            "count": 2,
             "isPast": false,
             "isToday": true,
             "isFuture": false
@@ -4421,24 +4421,24 @@
             "isFuture": true
           }
         ],
-        "totalDecksUsed": 3,
+        "totalDecksUsed": 4,
         "maxDecksElapsed": 4,
         "maxDecksWeek": 16,
         "isReliableTotal": true,
         "daysFromThu": 0
       },
-      "warDecks": 3,
-      "lastSeen": "20260326T191635.000Z"
+      "warDecks": 4,
+      "lastSeen": "20260327T082744.000Z"
     },
     {
       "name": "guill4um3",
       "tag": "#VGJ9LL8VC",
       "role": "coLeader",
       "trophies": 12565,
-      "donations": 275,
-      "totalDonations": 31419,
-      "donationsReceived": 400,
-      "expLevel": 65,
+      "donations": 329,
+      "totalDonations": 31473,
+      "donationsReceived": 480,
+      "expLevel": 66,
       "activityScore": 93,
       "reliability": 93,
       "reliabilitySource": "history",
@@ -4491,19 +4491,19 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260326T180322.000Z"
+      "lastSeen": "20260327T065209.000Z"
     },
     {
       "name": "dclik77",
       "tag": "#99VY0090",
       "role": "elder",
       "trophies": 12706,
-      "donations": 240,
-      "totalDonations": 109308,
-      "donationsReceived": 160,
+      "donations": 308,
+      "totalDonations": 109350,
+      "donationsReceived": 200,
       "expLevel": 76,
-      "activityScore": 95,
-      "reliability": 95,
+      "activityScore": 94,
+      "reliability": 94,
       "reliabilitySource": "history",
       "verdict": "High reliability",
       "color": "green",
@@ -4517,7 +4517,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 0,
+            "count": 3,
             "isPast": false,
             "isToday": true,
             "isFuture": false
@@ -4547,23 +4547,23 @@
             "isFuture": true
           }
         ],
-        "totalDecksUsed": 0,
+        "totalDecksUsed": 4,
         "maxDecksElapsed": 4,
         "maxDecksWeek": 16,
         "isReliableTotal": true,
         "daysFromThu": 0
       },
-      "warDecks": 0,
-      "lastSeen": "20260326T104407.000Z"
+      "warDecks": 4,
+      "lastSeen": "20260327T084356.000Z"
     },
     {
       "name": "☆. Électron",
       "tag": "#82UPUGYP",
       "role": "leader",
       "trophies": 12373,
-      "donations": 514,
-      "totalDonations": 119501,
-      "donationsReceived": 320,
+      "donations": 572,
+      "totalDonations": 119559,
+      "donationsReceived": 360,
       "expLevel": 72,
       "activityScore": 95,
       "reliability": 95,
@@ -4617,15 +4617,15 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260326T172340.000Z"
+      "lastSeen": "20260327T083434.000Z"
     }
   ],
   "summary": {
-    "green": 28,
-    "yellow": 15,
-    "orange": 5,
-    "red": 2,
-    "avgScore": 73,
+    "green": 29,
+    "yellow": 14,
+    "orange": 7,
+    "red": 0,
+    "avgScore": 74,
     "total": 50
   },
   "isWarPeriod": true,
@@ -5691,7 +5691,7 @@
     ]
   },
   "clanWarSummary": {
-    "totalDecksUsed": 108,
+    "totalDecksUsed": 174,
     "maxDecksElapsed": 200,
     "maxDecksWeek": 800,
     "participantCount": 50,
@@ -5699,14 +5699,14 @@
     "days": [
       {
         "label": "Thu",
-        "totalCount": 108,
+        "totalCount": 174,
         "maxCount": 200,
         "isPast": false,
         "isToday": true,
         "isFuture": false,
         "source": "live",
-        "snapshotCount": 0,
-        "liveCount": 108
+        "snapshotCount": 174,
+        "liveCount": 174
       },
       {
         "label": "Fri",
@@ -5746,27 +5746,27 @@
     "ended": false
   },
   "prevWeekId": "S130W3",
-  "snapshotToday": true,
+  "snapshotToday": false,
   "snapshotDate": "2026-03-26",
   "warCurrentWeekId": "S130W4",
   "warSnapshotDays": [
-    0,
+    174,
     0,
     0,
     0
   ],
-  "snapshotTakenAt": "2026-03-26T19:31:58.927Z",
+  "snapshotTakenAt": "2026-03-27T08:47:04.117Z",
   "currentWarDays": [
     {
       "label": "Thu",
-      "totalCount": 108,
+      "totalCount": 174,
       "maxCount": 200,
       "isPast": false,
       "isToday": true,
       "isFuture": false,
       "source": "live",
-      "snapshotCount": 0,
-      "liveCount": 108
+      "snapshotCount": 174,
+      "liveCount": 174
     },
     {
       "label": "Fri",
@@ -5804,5 +5804,5 @@
   ],
   "rateLimited": false,
   "raceLogUnavailable": false,
-  "analysisCacheUpdatedAt": "2026-03-26T19:32:06.510Z"
+  "analysisCacheUpdatedAt": "2026-03-27T08:47:11.940Z"
 }

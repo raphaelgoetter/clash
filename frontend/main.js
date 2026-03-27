@@ -706,14 +706,18 @@ function showCacheNote(fromCache, snapshotDate = null, sourceMeta = null) {
   } else {
     const today = new Date().toISOString().slice(0, 10);
     const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const d = new Date(snapshotDate);
+    const dayName = Number.isNaN(d.getTime()) ? null : d.toLocaleDateString('en-US', { weekday: 'long' });
+
     if (snapshotDate === today) {
-      snapshotText = t('snapshotToday');
+      snapshotText = `war day : ${t('snapshotToday')} ${dayName ? `(${dayName})` : ''}`;
     } else if (snapshotDate === yesterday) {
-      snapshotText = t('snapshotYesterday');
+      snapshotText = `war day : ${t('snapshotYesterday')} ${dayName ? `(${dayName})` : ''}`;
+    } else if (!Number.isNaN(d.getTime())) {
+      const dateString = d.toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
+      snapshotText = `war day : ${dateString} ${dayName ? `(${dayName})` : ''}`;
     } else {
-      const d = new Date(snapshotDate);
-      const opts = { month: 'long', day: 'numeric' };
-      snapshotText = `${d.toLocaleDateString(undefined, opts)} ❌`;
+      snapshotText = `war day : ${snapshotDate}`;
     }
   }
 
@@ -724,12 +728,12 @@ function showCacheNote(fromCache, snapshotDate = null, sourceMeta = null) {
     const taken = new Date(takenAt);
     if (!Number.isNaN(taken.getTime())) {
       const time = taken.toISOString().slice(11, 16);
-      snapshotText = `${snapshotText} @ ${time} UTC`;
+      snapshotText = `time : ${time} UTC · ${snapshotText}`;
     }
   }
 
-  const sourceInfo = (sourceMeta && sourceMeta.source)
-    ? ` · ${sourceMeta.source}`
+  const sourceInfo = (sourceMeta && sourceMeta.source && sourceMeta.source !== 'cached')
+    ? ` · source: ${sourceMeta.source}`
     : '';
 
   const ageInfo = (sourceMeta && sourceMeta.updatedAt)
