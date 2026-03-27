@@ -423,7 +423,8 @@ export function renderClanBarChart(members) {
   const bucketWorst = Array(10).fill(null);
 
   members.forEach((m) => {
-    const i = Math.min(9, Math.floor(m.activityScore / 10));
+    const score = Number(m.reliability ?? 0);
+    const i = Math.min(9, Math.floor(score / 10));
     buckets[i]++;
     const c = m.color || 'green';
     if (bucketsByColor[c]) bucketsByColor[c][i]++;

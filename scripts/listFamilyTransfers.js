@@ -34,7 +34,7 @@ async function main() {
           name: m.name,
           fromClan: m.transferFromClan ?? null,
           transferWeek: m.transferWeek ?? null,
-          score: m.activityScore ?? null,
+          score: m.reliability ?? null,
           verdict: m.verdict ?? null,
         }));
 

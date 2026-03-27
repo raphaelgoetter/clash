@@ -1429,7 +1429,7 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
  * @param {object} member
  * @returns {{ score: number; verdict: string; color: string }}
  */
-export function computeMemberActivityScore(member) {
+export function computeMemberReliability(member) {
   const totalDonations = member.totalDonations ?? member.donations ?? 0;
   const trophies = member.trophies ?? 0;
   const expLevel = member.expLevel ?? 1;
@@ -1532,7 +1532,7 @@ export function buildCurrentWarDays(battleLog, raceTotalDecks = null, raceMeta =
  */
 export function analyzeClanMembers(members) {
   return members.map((m) => {
-    const { score, verdict, color } = computeMemberActivityScore(m);
+    const { score, verdict, color } = computeMemberReliability(m);
     return {
       name: m.name,
       tag: m.tag,
@@ -1542,7 +1542,7 @@ export function analyzeClanMembers(members) {
       donations: m.donations ?? 0,
       donationsReceived: m.donationsReceived ?? 0,
       expLevel: m.expLevel ?? 1,
-      activityScore: score,
+      reliability: score,
       verdict,
       color,
     };

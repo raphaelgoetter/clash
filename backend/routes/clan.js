@@ -602,7 +602,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     // First pass: compute war scores for all members
     const analyzedMembers = await Promise.all(
       members.map(async (m, idx) => {
-        let activityScore, verdict, color, isNew = false, warHistory = null, scoreSource = 'clan', playerAnalysisFallback = null;
+        let reliabilityScore, verdict, color, isNew = false, warHistory = null, scoreSource = 'clan', playerAnalysisFallback = null;
 
       // Resolve full player profile (for badges) and battle log from fetch results or existing cache.
       const memberData = memberDataByTag[m.tag] || { profile: null, battleLog: [] };
@@ -757,7 +757,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           const effectiveWinRate = wh.historicalWinRate ?? warWinRate;
           const ws = computeWarScore(playerProxy, wh, effectiveWinRate, m.lastSeen ?? null, discordLinked);
           console.warn(`[clan] debug ${m.tag} computed wtich hasEnoughHistory with pct=${ws.pct}, verdict=${ws.verdict}`);
-          activityScore = ws.pct; verdict = ws.verdict; color = ws.color;
+          reliabilityScore = ws.pct; verdict = ws.verdict; color = ws.color;
           scoreSource = 'history';
         } else if (battleLog) {
           // New member — full fallback with battle log
@@ -781,12 +781,12 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             const pa = playerAnalysisFallback.warScore;
             // Use the player analysis score when it is better than clan fallback.
             if (pa.pct >= wsFallback.pct) {
-              activityScore = pa.pct;
+              reliabilityScore = pa.pct;
               verdict = pa.verdict;
               color = pa.color;
               scoreSource = 'player';
             } else {
-              activityScore = wsFallback.pct;
+              reliabilityScore = wsFallback.pct;
               verdict = wsFallback.verdict;
               color = wsFallback.color;
               scoreSource = 'fallback';
@@ -794,7 +794,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             // preserve the warHistory object if available from player analysis
             if (playerAnalysisFallback.warHistory) warHistory = playerAnalysisFallback.warHistory;
           } else {
-            activityScore = wsFallback.pct;
+            reliabilityScore = wsFallback.pct;
             verdict = wsFallback.verdict;
             color = wsFallback.color;
             scoreSource = 'fallback';
@@ -804,7 +804,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           const totalDonations = playerProxy.totalDonations ?? playerProxy.donations ?? 0;
           const donationPts = scoreTotalDonations(totalDonations, 2);
           const pct = Math.round((donationPts / 40) * 100);
-          activityScore = pct; verdict = 'Extreme risk'; color = 'red';
+          reliabilityScore = pct; verdict = 'Extreme risk'; color = 'red';
           // If we have no race log, we cannot safely mark someone as "new".
           // Keep their existing status to avoid false positives for clan / Discord.
         }
@@ -830,7 +830,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         const normalizedTagFb = m.tag.startsWith('#') ? m.tag : `#${m.tag}`;
         const racePartFb = currentRace?.clan?.participants?.find((p) => p.tag === normalizedTagFb);
         const ws = computeWarReliabilityFallback(playerProxy, warLog, bd, m.lastSeen ?? null, discordLinked, racePartFb?.decksUsed ?? 0);
-        activityScore = ws.pct;
+        reliabilityScore = ws.pct;
         verdict = ws.verdict;
         color = ws.color;
         scoreSource = 'fallback';
@@ -880,8 +880,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         totalDonations,
         donationsReceived:  m.donationsReceived ?? 0,
         expLevel:           m.expLevel ?? 1,
-        activityScore,
-        reliability:        activityScore,
+        reliability:        reliabilityScore,
         reliabilitySource:  scoreSource,
         verdict,
         color,
@@ -898,8 +897,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       };
     }));
 
-    // Sort by activityScore ascending (most at-risk first)
-    analyzedMembers.sort((a, b) => a.activityScore - b.activityScore);
+    // Sort by reliability ascending (most at-risk first)
+    analyzedMembers.sort((a, b) => (a.reliability ?? 0) - (b.reliability ?? 0));
 
     // Enrichir uncomplete avec isNew (calculé via l'historique de guerre de chaque membre)
     if (uncomplete && Array.isArray(uncomplete.players)) {
@@ -918,7 +917,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     const avgScore =
       analyzedMembers.length > 0
         ? Math.round(
-            analyzedMembers.reduce((s, m) => s + m.activityScore, 0) /
+            analyzedMembers.reduce((s, m) => s + (m.reliability ?? 0), 0) /
               analyzedMembers.length
           )
         : 0;

@@ -490,7 +490,9 @@ export default async function handler(req, res) {
           .filter((m) => m.verdict === 'High risk' || m.verdict === 'Extreme risk')
           .sort((a, b) => {
             // Risque le plus élevé en premier (score le plus bas = plus risqué)
-            if (a.activityScore !== b.activityScore) return a.activityScore - b.activityScore;
+            const scoreA = Number(a.reliability ?? 0);
+            const scoreB = Number(b.reliability ?? 0);
+            if (scoreA !== scoreB) return scoreA - scoreB;
             // En cas d'égalité, trier par verdict (extrême avant high)
             const severity = { 'Extreme risk': 0, 'High risk': 1 };
             return (severity[a.verdict] || 0) - (severity[b.verdict] || 0);
@@ -515,7 +517,7 @@ export default async function handler(req, res) {
           const newTag = !m.isFamilyTransfer && m.isNew ? ' (new)' : '';
           const role = capitalize(m.role || 'member');
           const emoji = VERDICT_EMOJI[m.verdict] ?? '⚠️';
-          const pct = Math.round(m.activityScore ?? 0);
+          const pct = Math.round(Number(m.reliability ?? 0));
           const verdict = (m.verdict || '').replace(/\s*risk$/i, '');
           const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(m.tag)}`;
           return `- [${m.name}](${playerUrl})${transferTag}${newTag} · [${role}] · ${emoji} ${verdict} (${pct}%)`;

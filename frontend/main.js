@@ -46,7 +46,7 @@ const filterVerdict   = document.getElementById('filter-verdict');
 // ── State ────────────────────────────────────────────────────
 let currentMode = 'player';   // 'player' | 'clan'
 let allMembers  = [];          // cache for table filtering / sorting
-let sortState   = { col: 'activityScore', dir: 'asc' };
+let sortState   = { col: 'reliability', dir: 'asc' };
 let isWarActive = false;       // true jeu–dim : colonne "This War" visible dans le tableau clan
 
 // Name of the last-result returned by API (used when saving favorite)
@@ -248,7 +248,7 @@ function translateClanTableHeaders() {
     donations: t('memberDonations'),
     discord: t('memberDiscord'),
     lastSeen: t('memberLastSeen'),
-    activityScore: t('memberReliability'),
+    reliability: t('memberReliability'),
     warDecks: t('memberThisWar'),
     verdict: t('memberVerdict'),
   };
@@ -1851,9 +1851,9 @@ function renderClanMembers(data) {
   filterVerdict.value = '';
   document.querySelectorAll('.members-table th.sortable').forEach((h) => {
     h.classList.remove('sort-asc', 'sort-desc');
-    if (h.dataset.col === 'activityScore') h.classList.add('sort-asc');
+    if (h.dataset.col === 'reliability') h.classList.add('sort-asc');
   });
-  renderMembersTable(sortMembers(members, 'activityScore', 'asc'));
+  renderMembersTable(sortMembers(members, 'reliability', 'asc'));
   updateDebugPanel(data, 'clan');
 }
 
@@ -1881,9 +1881,8 @@ function renderMembersTable(members) {
         // Indicateur de dernière connexion dans sa propre cellule
         let lastSeenCell = '<td class="last-seen-col">—</td>';
         let daysFrac = Infinity;
-        m.activityScore = Number(m.activityScore) || 0;
-        if (m.activityScore > 100) m.activityScore = 100;
-        if (m.activityScore < 0) m.activityScore = 0;
+        const score = Number(m.reliability ?? 0) || 0;
+        m.reliability = Math.max(0, Math.min(100, score));
         if (m.lastSeen) {
           daysFrac = (Date.now() - new Date(m.lastSeen.replace(
             /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})\.(\d{3})Z$/,
@@ -1924,9 +1923,9 @@ function renderMembersTable(members) {
         <td>
           <div style="display:flex;align-items:center;gap:8px">
             <div style="flex:1;height:6px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden;min-width:60px">
-              <div style="width:${Math.max(0, Math.min(100, m.activityScore))}%;height:100%;background:${scoreBarColor(m.color)};border-radius:999px"></div>
+              <div style="width:${m.reliability}%;height:100%;background:${scoreBarColor(m.color)};border-radius:999px"></div>
             </div>
-            <span style="font-weight:700;font-size:.88rem">${Math.round(Math.max(0, Math.min(100, m.activityScore)))}%</span>
+            <span style="font-weight:700;font-size:.88rem">${Math.round(m.reliability)}%</span>
           </div>
         </td>
         ${isWarActive ? `<td class="war-col">${warMiniBarHtml(m.warDays)}</td>` : ''}
