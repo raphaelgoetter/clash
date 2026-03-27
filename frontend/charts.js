@@ -137,10 +137,10 @@ export function renderWarHistoryChart(weeks) {
   const ordered = [...weeks].reverse();
   const labels   = ordered.map((w) => {
     const deckInfo = typeof w.decksUsed === 'number' ? ` (${w.decksUsed}/16)` : '';
-    // choose a badge emoji like a coloured pastille
     let badge = '';
-    if (w.ignored) {
-      badge = '⚪ '; // ignored weeks get a neutral white circle
+    if (w.ignored || w.isCurrent) {
+      // ignored or live/current weeks are shown in neutral grey and do not get a red failure icon
+      badge = '⚪ ';
     } else if (typeof w.decksUsed === 'number') {
       badge = w.decksUsed >= 16 ? '✅'
             : w.decksUsed >= 8  ? '⚠️'
@@ -161,8 +161,8 @@ export function renderWarHistoryChart(weeks) {
           label: 'Fame',
           data: fameData,
           backgroundColor: fameData.map((f, idx) =>
-            // grey out ignored weeks
-            ordered[idx].ignored ? 'rgba(128,128,128,0.5)'
+            // grey out ignored or current live week
+            ordered[idx].ignored || ordered[idx].isCurrent ? 'rgba(128,128,128,0.5)'
               : f >= avg ? 'rgba(99,102,241,0.85)' : 'rgba(239,68,68,0.65)'
           ),
           borderRadius: 6,
