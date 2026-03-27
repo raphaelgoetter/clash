@@ -352,9 +352,12 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
   const prevDay = weekEntry.days[WAR_DAYS.indexOf(warDay) - 1];
   const baseCumul = prevDay?._cumul ?? {};
 
+  const rawDaily = {};
   const daily = {};
   for (const tag of Object.keys(currentCumul)) {
-    daily[tag] = Math.min(4, Math.max(0, currentCumul[tag] - (baseCumul[tag] ?? 0)));
+    const delta = Math.max(0, currentCumul[tag] - (baseCumul[tag] ?? 0));
+    rawDaily[tag] = delta;
+    daily[tag] = Math.min(4, delta);
   }
 
   // Ensure we always merge the computed daily deck snapshot into the current day.
@@ -382,8 +385,8 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
     const prevIndex = (baseIndex + WAR_DAYS.length - 1) % WAR_DAYS.length;
     const prevDayEntry = weekEntry.days[prevIndex];
     if (prevDayEntry) {
-      for (const tag of Object.keys(daily)) {
-        const overflow = Math.max(0, daily[tag] - 4);
+      for (const tag of Object.keys(rawDaily)) {
+        const overflow = Math.max(0, rawDaily[tag] - 4);
         if (overflow <= 0) continue;
 
         console.log(
@@ -397,7 +400,7 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
         });
 
         // Keep max 4 for the current day (the rest is considered previous day)
-        daily[tag] = 4;
+        daily[tag] = Math.min(4, daily[tag]);
       }
     }
 
