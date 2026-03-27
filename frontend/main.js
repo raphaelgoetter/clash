@@ -1209,12 +1209,20 @@ function renderPlayerResults(data) {
       if (cardTitle) cardTitle.textContent = t('raceTimeTitle');
     }
 
+    const rawLateBucketWarning = t('raceTimeLateBucketWarning');
+    const defaultLateBucketWarning = currentLang === 'fr'
+      ? ' ⚠️ risque (dernier créneau)'
+      : ' ⚠️ risk (last bucket)';
+    const lateBucketWarning = (rawLateBucketWarning && rawLateBucketWarning !== 'raceTimeLateBucketWarning')
+      ? rawLateBucketWarning
+      : defaultLateBucketWarning;
+
     if (totalGdc > 0) {
       if (raceTimeNote) raceTimeNote.textContent = t('raceTimeDesc');
-      renderRaceTimeChart(counts);
+      renderRaceTimeChart(counts, lateBucketWarning);
     } else {
       if (raceTimeNote) raceTimeNote.textContent = t('raceTimeNoGdc');
-      renderRaceTimeChart(counts); // show empty chart optionally
+      renderRaceTimeChart(counts, lateBucketWarning); // show empty chart optionally
     }
   } else {
     if (cardRaceTime) cardRaceTime.classList.add('hidden');

@@ -94,3 +94,16 @@ node scripts/registerCommands.js
 ## Sous-agents
 
 Utiliser des **sous-agents** (Task tool) par défaut pour toute opération dont seul le résumé compte : exploration de code, recherche, revue, investigation. Ne pas encombrer la conversation principale.
+
+## Internationalisation (i18n) / translations
+
+- Pour toute nouvelle feature ou texte visible utilisateur,
+  - vérifier que la clé de traduction existe dans `frontend/lang/en.json` et `frontend/lang/fr.json`.
+  - si la clé n'existe pas, l'ajouter dans les deux fichiers EN/FR.
+  - utiliser `t('key')` côté JS quand possible pour charger la traduction.
+- Pour les messages de chart tooltip/label générés dynamiquement, passer un argument `t('...')` à la fonction de rendu.
+- Dans la revue de PR, demander explicitement : "Vérifié/en: `english-text`, fr: `texte-fr`?"
+- Documenter dans la PR description les traductions, p.ex. :
+  - `raceTimeLateBucketWarning`: EN/FR.
+  - `riverRaceHistoryWarn`: EN/FR.
+

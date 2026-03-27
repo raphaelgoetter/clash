@@ -216,7 +216,7 @@ export function renderWarHistoryChart(weeks) {
  * Render a 24-hour River Race time distribution chart on #chart-race-time.
  * @param {number[]} buckets Array length 24 (hours since 08:40 UTC)
  */
-export function renderRaceTimeChart(buckets) {
+export function renderRaceTimeChart(buckets, lastBucketRiskLabel = ' ⚠️ risk (last slot)') {
   destroyIfExists('chart-race-time');
   const el = document.getElementById('chart-race-time');
   if (!el) return;
@@ -238,8 +238,16 @@ export function renderRaceTimeChart(buckets) {
       datasets: [{
         label: 'GDC decks',
         data: buckets,
-        backgroundColor: buckets.map((v) => v > 0 ? 'rgba(99,102,241,0.9)' : 'rgba(148,163,184,0.26)'),
-        borderColor: 'rgba(99,102,241,0.9)',
+        backgroundColor: buckets.map((v, i) => {
+          const isLastBucket = i === buckets.length - 1;
+          if (isLastBucket && v > 0) return 'rgba(249,115,22,0.9)'; // orange for risky late decks
+          return v > 0 ? 'rgba(99,102,241,0.9)' : 'rgba(148,163,184,0.26)';
+        }),
+        borderColor: buckets.map((v, i) => {
+          const isLastBucket = i === buckets.length - 1;
+          if (isLastBucket && v > 0) return 'rgba(234,88,12,1)';
+          return v > 0 ? 'rgba(99,102,241,0.9)' : 'rgba(148,163,184,0.26)';
+        }),
         borderWidth: 1,
         borderRadius: 4,
       }],
@@ -253,7 +261,9 @@ export function renderRaceTimeChart(buckets) {
           callbacks: {
             label: (ctx) => {
               const value = ctx.parsed.y ?? 0;
-              return ` ${value} deck${value === 1 ? '' : 's'}`;
+              const isLastBucket = ctx.dataIndex === labels.length - 1;
+              const risk = isLastBucket && value > 0 ? lastBucketRiskLabel : '';
+              return ` ${value} deck${value === 1 ? '' : 's'}${risk}`;
             },
           },
         },
