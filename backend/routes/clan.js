@@ -965,9 +965,15 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         const DAY_LABELS = ['Thu', 'Fri', 'Sat', 'Sun'];
         // used to infer day totals when snapshot appears to undercount
         const dayTotals = Array(DAY_LABELS.length).fill(0);
+        const existingDays =
+          existingCache?.clanWarSummary?.days ??
+          existingCache?.lastWarSummary?.days ??
+          null;
+
         const days = DAY_LABELS.map((label, i) => {
           const snap = weekSnaps[i] ?? null;
           const prevSnap = weekSnaps[i - 1] ?? null;
+          const existingDay = existingDays?.[i] ?? null;
 
           // Prefer the decks sum from the snapshot (matches warSnapshotDays),
           // fallback to the _cumul delta if decks are missing.
@@ -981,11 +987,17 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             ? Math.max(0, Object.values(cumul).reduce((s, v) => s + v, 0) - Object.values(prevCumul).reduce((s, v) => s + v, 0))
             : null;
 
-          const snapshotCount = snapshotCountFromDecks !== null
+          let snapshotCount = snapshotCountFromDecks !== null
             ? clampDeckTotal(snapshotCountFromDecks)
             : cumulDelta !== null
               ? clampDeckTotal(cumulDelta)
               : null;
+
+          // If the current week snapshot gave 0 (or no data) for a past day, but
+          // we have a cached value from previous analysis, preserve it.
+          if (i < daysFromThu && (!snapshotCount || snapshotCount === 0) && existingDay?.totalCount > 0) {
+            snapshotCount = clampDeckTotal(existingDay.totalCount);
+          }
 
           const knownPrevDaysTotal = dayTotals.reduce((s, v) => s + v, 0);
           const inferredFromLive = totalDecksUsed > knownPrevDaysTotal
@@ -1023,6 +1035,13 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               totalCount = inferredFromLive;
               source = 'live';
             }
+          }
+
+          // Re-apply cache fallback for past days after main logic (if needed).
+          if (i < daysFromThu && totalCount === 0 && existingDay?.totalCount > 0) {
+            totalCount = clampDeckTotal(existingDay.totalCount);
+            source = 'snapshot';
+            snapshotCount = totalCount;
           }
 
           // keep track of what we used to compute subsequent days

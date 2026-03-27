@@ -495,8 +495,17 @@ async function handleSearch(force = false) {
       const query = force ? '?force=true' : '';
       const { data, fromCache } = await apiFetch(`/api/clan/${encodeURIComponent(tag)}/analysis${query}`);
       lastResultName = data.clan?.name || null;
-      // Mettre à jour l'overview avec les données fraîches
-      renderClanOverview(data);
+
+      // Conserver les valeurs historiques (p.ex. Thu total) quand le live renvoie 0 :
+      // on merge avec le cache statique initial.
+      const effectiveData = {
+        ...data,
+        clanWarSummary: mergeWarSummaries(data.clanWarSummary, staticData?.clanWarSummary ?? staticData?.lastWarSummary),
+        lastWarSummary: mergeWarSummaries(data.lastWarSummary, staticData?.lastWarSummary),
+      };
+
+      // Mettre à jour l'overview avec les données fraîches/fusées
+      renderClanOverview(effectiveData);
       // Afficher les membres live à jour (synchronisation clan / player)
       renderClanMembers(data);
       const shouldWarn = !fromCache && (data.rateLimited || data.fallbackReason === 'rateLimited' || data.raceLogUnavailable);
@@ -1700,6 +1709,37 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
 
 // ── Clan war card (vue clan) ──────────────────────────────────────────
 
+function mergeWarSummaries(clanWarSummary, lastWarSummary) {
+  if (!clanWarSummary) return lastWarSummary || null;
+  if (!lastWarSummary) return clanWarSummary;
+
+  const days = (clanWarSummary.days ?? []).map((day, idx) => {
+    if (!day || typeof day !== 'object') return day;
+
+    const backupDay = (lastWarSummary.days ?? [])[idx] ?? null;
+    const hasDayValue = day.totalCount != null && day.totalCount > 0;
+    const backupValue = backupDay?.totalCount ?? null;
+
+    if (!hasDayValue && backupValue != null && backupValue > 0 && day.isPast) {
+      return {
+        ...day,
+        totalCount: backupValue,
+        snapshotCount: backupValue,
+        source: 'snapshot',
+      };
+    }
+    return day;
+  });
+
+  const totalDecksUsed = days.reduce((sum, d) => sum + (d?.totalCount ?? 0), 0);
+
+  return {
+    ...clanWarSummary,
+    totalDecksUsed,
+    days,
+  };
+}
+
 function renderClanWarCard(clanWarSummary) {
   const card = document.getElementById('card-clan-war');
   if (!clanWarSummary || clanWarSummary.ended) { card.classList.add('hidden'); return; }
@@ -1784,7 +1824,8 @@ function renderClanOverview(data) {
   renderClanBarChart(members);
   renderClanPieChart(summary);
   // Card guerre courante clan
-  renderClanWarCard(data.clanWarSummary ?? data.lastWarSummary ?? null);
+  const effectiveClanWarSummary = mergeWarSummaries(data.clanWarSummary, data.lastWarSummary);
+  renderClanWarCard(effectiveClanWarSummary);
 
   // card titles (chart labels)
   const scoreDist = document.querySelector('#card-score-distribution .card-title');
