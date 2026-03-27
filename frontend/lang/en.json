@@ -151,5 +151,9 @@
   "noData": "no data",
   "friendly": "Friendly",
   "yes": "yes",
-  "no": "no"
+  "no": "no",
+  "raceTimeTitle": "⏰ River Race Time",
+  "raceTimeDesc": "River race GDC decks per hour (08:40 UTC → 08:39 UTC).",
+  "raceTimeNoHistory": "2 weeks of River Race history required for this view.",
+  "raceTimeNoGdc": "No GDC battles found in the BattleLog."
 }

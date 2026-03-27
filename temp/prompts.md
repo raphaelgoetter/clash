@@ -291,3 +291,18 @@ Ce serait une simple indication qui ne sera **pas** prise en compte dans le calc
 Ce graphe pourrait être affiché uniquement pour les joueurs qui ont un historique de Battle Log sur plusieurs semaines, afin d'avoir suffisamment de données pour que le graphe soit pertinent. Par exemple, on pourrait afficher ce graphe uniquement pour les joueurs qui ont au moins 2 semaines d'historique de Battle Log dans leur clan actuel ou précédent.
 
 Je suppose que tu peux récupérer les heures de jeu des decks à partir du Battle Log / Race Log ou des snapshots, mais dis-moi si ce n'est pas le cas ou si tu as besoin d'aide pour trouver comment faire.
+
+---
+
+Tu parles de BattleLog uniquement, mais cette source de donnée sera insuffisante pour de vraies statistiques puisqu'elle ne couvre que 30 combats qui ne seront même pas forcément des combats de GDC (les seuls qui nous intéressent).
+C'est problématique à long terme. Par contre je veux bien une première implémentation "BattleLog" pour tester l'utilité. Ceci dit, prépare-toi à une amélioration nécessaire vers des "vraies" valeurs de l'ensemble du RaceLog (les snapshot peuvent donner l'information en déduisant les différences d'un cron à l'autre)
+
+---
+
+Peux-tu cette fois tenir compte de **toute** la liste de mes demandes :
+
+1. Titre EN "⏰ River Race Time" -> "⏰ River Race per hour"
+2. Titre FR "⏰ River Race Time" (bug : il n'est toujours pas traduit) -> "⏰ Guerre de clan heure par heure"
+3. Sous-titre EN : "River race GDC decks per hour (08:40 UTC → 08:39 UTC)." --> Afficher les heures de Paris
+4. Sous-titre FR : "Répartition des decks GDC joués par plage horaire (08:40 UTC → 08:39 UTC)." --> Afficher les heures de Paris
+5. Graphe (horaires) : "9:40",  "10:40", etc. -> Afficher en heure de Paris

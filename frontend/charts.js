@@ -212,6 +212,56 @@ export function renderWarHistoryChart(weeks) {
   });
 }
 
+/**
+ * Render a 24-hour River Race time distribution chart on #chart-race-time.
+ * @param {number[]} buckets Array length 24 (hours since 08:40 UTC)
+ */
+export function renderRaceTimeChart(buckets) {
+  destroyIfExists('chart-race-time');
+  const el = document.getElementById('chart-race-time');
+  if (!el) return;
+
+  const labels = Array.from({ length: 24 }, (_, i) => {
+    const h = (8 + i + 1) % 24; // 08:40..07:40 labels
+    const hour = String(h).padStart(2, '0');
+    return `${hour}:40`;
+  });
+
+  new Chart(el.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'GDC decks',
+        data: buckets,
+        backgroundColor: buckets.map((v) => v > 0 ? 'rgba(99,102,241,0.9)' : 'rgba(148,163,184,0.26)'),
+        borderColor: 'rgba(99,102,241,0.9)',
+        borderWidth: 1,
+        borderRadius: 4,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const value = ctx.parsed.y ?? 0;
+              return ` ${value} deck${value === 1 ? '' : 's'}`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: { ticks: { maxRotation: 45, minRotation: 0 }, grid: { display: false } },
+        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+      },
+    },
+  });
+}
+
 // ── 2. War reliability gauge (doughnut) ───────────────────────
 
 /**

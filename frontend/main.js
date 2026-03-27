@@ -7,6 +7,7 @@ import {
   renderActivityChart,
   renderWarHistoryChart,
   renderBattleLogBreakdownChart,
+  renderRaceTimeChart,
   renderGaugeChart,
   renderClanBarChart,
   renderClanPieChart,
@@ -960,6 +961,26 @@ function renderPlayerResults(data) {
     });
   }
 
+  function buildRaceTimeHistogram(entries) {
+    const counts = Array(24).fill(0);
+    let totalGdc = 0;
+
+    entries.forEach((b) => {
+      if (!isRiverRaceBattle(b.type)) return;
+      const parsed = parseBattleTimestamp(b.battleTime || b.battleTimeStamp || b.battle_time || b.battleTimeStampLocal);
+      if (!parsed || Number.isNaN(parsed.getTime())) return;
+
+      const minutes = parsed.getUTCHours() * 60 + parsed.getUTCMinutes();
+      const start = 8 * 60 + 40; // 08:40 UTC
+      const offset = ((minutes - start) % 1440 + 1440) % 1440;
+      const bin = Math.floor(offset / 60);
+      counts[bin] += 1;
+      totalGdc += 1;
+    });
+
+    return { counts, totalGdc };
+  }
+
   const battleLogSummary = aggregateBattleLogByWeek(battleLog);
 
   if (isBattleLogMode) {
@@ -1164,6 +1185,27 @@ function renderPlayerResults(data) {
         `⚠️ ${t('noClanWarHistoryWarning')} `
         + `${t('apiLogEntries', { count: bd.total ?? 30 })}: ${parts || t('noData')}.`;
     }
+  }
+
+  // 3c. River Race Time card (BattleLog MVP)
+  const cardRaceTime = document.getElementById('card-race-time');
+  const raceTimeNote = document.getElementById('race-time-note');
+  const showRaceTimeGraph = !!(warHistory?.totalWeeks >= 2);
+
+  if (showRaceTimeGraph) {
+    const { counts, totalGdc } = buildRaceTimeHistogram(battleLog || []);
+    if (totalGdc > 0) {
+      if (cardRaceTime) cardRaceTime.classList.remove('hidden');
+      if (raceTimeNote) raceTimeNote.textContent = t('raceTimeDesc');
+      renderRaceTimeChart(counts);
+    } else {
+      if (cardRaceTime) cardRaceTime.classList.remove('hidden');
+      if (raceTimeNote) raceTimeNote.textContent = t('raceTimeNoGdc');
+      renderRaceTimeChart(counts); // show empty chart optionally
+    }
+  } else {
+    if (cardRaceTime) cardRaceTime.classList.add('hidden');
+    if (raceTimeNote) raceTimeNote.textContent = t('raceTimeNoHistory');
   }
 
   // 3b. Actual Clan War (visible jeudi–dimanche)
