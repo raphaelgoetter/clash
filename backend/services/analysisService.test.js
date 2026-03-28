@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { computeIsNewPlayer } from './analysisService.js';
+import { computeIsNewPlayer, computeWarReliabilityFallback } from './analysisService.js';
 
 console.log('Running analysisService computeIsNewPlayer tests...');
 
@@ -36,5 +36,18 @@ for (const tc of testCases) {
   assert.strictEqual(result, tc.expected, `${tc.name} failed: got ${result}, expected ${tc.expected}`);
   console.log(`✓ ${tc.name}`);
 }
+
+const fallback = computeWarReliabilityFallback(
+  { trophies: 12000, totalDonations: 10000, badges: [] },
+  [],
+  { total: 0, gdc: 0, ladder: 0, challenge: 0 },
+  null,
+  false,
+  0,
+  { streakInCurrentClan: 1, isFamilyTransfer: true, transferFromClan: '#TEST', transferWeek: { label: 'S123W4' } }
+);
+assert.ok(typeof fallback.summary === 'string' && fallback.summary.length > 0, 'fallback summary should be present');
+assert.ok(typeof fallback.breakdown[0].explanation === 'string' && fallback.breakdown[0].explanation.length > 0, 'war activity explanation should be present');
+console.log('✓ fallback warScore summary/explanation test passed.');
 
 console.log('All computeIsNewPlayer tests passed.');

@@ -1256,12 +1256,17 @@ function renderPlayerResults(data) {
   const fallbackBadge = ws.isFallback
     ? `<div class="fallback-badge">⚠️ ${t('fallbackBadge')}</div>`
     : '';
+  const summaryHtml = ws.summary
+    ? ws.summary.split('\n').map((line) => `<div>${escHtml(line)}</div>`).join('')
+    : '';
+
   verdictBox.innerHTML = `
     <div class="verdict-box ${ws.color}">
       <div class="verdict-icon">${icon}</div>
       <div class="verdict-text-wrap">
         <div class="verdict-score">${ws.pct}%<span class="verdict-score-detail"> (${ws.total} / ${ws.maxScore} pts)</span></div>
         <div class="verdict-text">${verdictText}</div>
+        ${summaryHtml ? `<div class="verdict-summary">${summaryHtml}</div>` : ''}
       </div>
     </div>
     ${fallbackBadge}
@@ -1351,6 +1356,7 @@ function renderPlayerResults(data) {
         </div>
         <div class="sr-bar-bg"></div>
         <div class="sr-detail">${escHtml(detailText)}</div>
+        ${b.explanation ? `<div class="sr-explanation">${escHtml(b.explanation)}</div>` : ''}
       </li>`;
     }
     const pct   = Math.round((b.score / b.max) * 100);
@@ -1368,6 +1374,7 @@ function renderPlayerResults(data) {
           <div class="sr-bar-fill" style="width:${pct}%;background:${color}"></div>
         </div>
         <div class="sr-detail">${escHtml(detailText)}</div>
+        ${b.explanation ? `<div class="sr-explanation">${escHtml(b.explanation)}</div>` : ''}
       </li>`;
   }).join('');
 

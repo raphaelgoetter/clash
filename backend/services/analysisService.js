@@ -98,6 +98,15 @@ function parisOffsetMs(date = new Date()) {
   return p - u;
 }
 
+function scoreQuality(score, max) {
+  if (max <= 0) return 'unknown';
+  const pct = (score / max) * 100;
+  if (pct >= 90) return 'very good';
+  if (pct >= 75) return 'good';
+  if (pct >= 50) return 'average';
+  return 'bad';
+}
+
 /** Nombre de ms à soustraire à un timestamp UTC pour obtenir le « jour GDC » (reset 10h40 Paris) */
 export function warResetOffsetMs(date = new Date()) {
   return (10 * 60 + 40) * 60 * 1000 - parisOffsetMs(date);
@@ -574,6 +583,19 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
   else if (pct >= 31) { verdict = 'High risk';         color = 'orange'; }
   else                { verdict = 'Extreme risk';      color = 'red'; }
 
+  const warHistoryWeeks = warHistory?.streakInCurrentClan ?? 0;
+  const transferDesc = warHistory?.isFamilyTransfer
+    ? `Transferred from ${warHistory.transferFromClan || 'a family clan'}${warHistory.transferWeek ? ` in ${warHistory.transferWeek.label}` : ''}.`
+    : 'No family transfer detected.';
+
+  const regularityQuality = scoreQuality(regularite, 12);
+  const cw2Remark = cw2Score >= 6 ? 'strong experience in Clan Wars' : cw2Score >= 4 ? 'solid Clan Wars experience' : cw2Score >= 2 ? 'some Clan Wars experience' : 'limited Clan Wars background';
+  const clanDurationText = warHistoryWeeks <= 0 ? 'Less than one week' : `${warHistoryWeeks} week(s)`;
+
+  const summary = `Regularity: ${regularityQuality} (${regularite}/12 from ${deckSum}/${idealDecks} decks across ${completedCount} week(s) (${incompleteWeeks} incomplete)).\n` +
+    `CW2: ${cw2Remark}.\n` +
+    `In clan: ${clanDurationText}. ${transferDesc}`;
+
   const breakdown = [
     {
       label:  'Regularity',
@@ -652,7 +674,7 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
     },
   ];
 
-  return { total, maxScore, pct, verdict, color, breakdown };
+  return { total, maxScore, pct, verdict, color, summary, breakdown };
 }
 
 /**
@@ -673,7 +695,7 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
  * @param {object[]} warLog       - Filtered war battles (expanded duels)
  * @param {object}   battleLogBreakdown - Output of categorizeBattleLog()
  */
-export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown, lastSeen = null, discordLinked = false, currentRaceDecks = 0) {
+export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown, lastSeen = null, discordLinked = false, currentRaceDecks = 0, warHistory = null) {
   const r = (v) => Math.round(v * 10) / 10;
 
   const bd = battleLogBreakdown ?? { total: warLog.length, gdc: warLog.length, ladder: 0, challenge: 0 };
@@ -756,9 +778,32 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
   else if (pct >= 31) { verdict = 'High risk';         color = 'orange'; }
   else                { verdict = 'Extreme risk';      color = 'red'; }
 
+  const warHistoryWeeks = warHistory?.streakInCurrentClan ?? 0;
+  const transferDesc = warHistory?.isFamilyTransfer
+    ? `Transferred from ${warHistory.transferFromClan || 'a family clan'}${warHistory.transferWeek ? ` in ${warHistory.transferWeek.label}`: ''}.`
+    : 'No family transfer detected.';
+
+  const warActivityQuality = scoreQuality(activiteGDC, 12);
+  const cw2Remark = cw2Score >= 6 ? 'strong experience in Clan Wars' : cw2Score >= 4 ? 'solid Clan Wars experience' : cw2Score >= 2 ? 'some Clan Wars experience' : 'limited Clan Wars background';
+  const clanDurationText = warHistoryWeeks <= 0 ? 'Less than one week' : `${warHistoryWeeks} week(s)`;
+
+  const byDayEntries = Object.entries(activityResult.byDay).sort((a, b) => a[0].localeCompare(b[0]));
+  const lastWarDay = byDayEntries.length ? byDayEntries[byDayEntries.length - 1][0] : null;
+  const daysSinceLastWar = lastWarDay
+    ? Math.floor((Date.now() - new Date(lastWarDay).getTime()) / MS_PER_DAY)
+    : null;
+  const activeDaysCount = Object.keys(activityResult.byDay).length;
+  const windowDays = 14;
+  const inactiveDays = Math.max(0, windowDays - activeDaysCount);
+
+  const summary = `War Activity: ${warActivityQuality} (${activiteGDC}/12, ${perfectDays} full days, ${shortDays} short days, ${inactiveDays} inactive days in ${windowDays}-day window).\n` +
+    `Last war battle: ${lastWarDay || 'none'}${daysSinceLastWar !== null ? ` (${daysSinceLastWar} day(s) ago)` : ''}.\n` +
+    `In clan: ${clanDurationText}. ${transferDesc} \nCW2: ${cw2Remark}.`;
+
   return {
     total, maxScore, pct, verdict, color,
     isFallback: true,
+    summary,
     breakdown: [
       {
         label:  'War Activity',
@@ -770,6 +815,7 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
             .map(([k, n]) => `${n}× ${k}`);
           return parts.join(' · ');
         })(),
+        explanation: `In recent ${windowDays}-day window: ${perfectDays} full days, ${shortDays} short days, ${inactiveDays} inactive days; last war: ${lastWarDay || 'none'}${daysSinceLastWar !== null ? ` (${daysSinceLastWar} day(s) ago)` : ''}.`,
       },
       {
         label:  'General Activity',
@@ -1439,7 +1485,7 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
         // Si les combats GDC ont été chassés du battle log (fenêtre 30) par des parties ladder,
         // on passe decksUsed de la course en cours pour reconstituer l'activité.
         const racePartFb = currentRace?.clan?.participants?.find((p) => p.tag === player.tag);
-        analysis.warScore = computeWarReliabilityFallback(player, warLogFb, bdFb, lastSeen, discordLinked, racePartFb?.decksUsed ?? 0);
+        analysis.warScore = computeWarReliabilityFallback(player, warLogFb, bdFb, lastSeen, discordLinked, racePartFb?.decksUsed ?? 0, analysis.warHistory);
       }
     } catch (_) {
       analysis.warHistory = null;
