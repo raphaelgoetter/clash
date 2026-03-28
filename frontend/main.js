@@ -1376,14 +1376,19 @@ function renderPlayerResults(data) {
 
 // ── Actual Clan War card (player view) ────────────────────────────
 
-const DAY_NAMES = ['Thu', 'Fri', 'Sat', 'Sun'];
+const DAY_NAMES = [
+  t('dayThu') || 'Thu',
+  t('dayFri') || 'Fri',
+  t('daySat') || 'Sat',
+  t('daySun') || 'Sun',
+];
 
 function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null, snapshotTakenAt = null) {
   if (!warData) { cardCurrentWar.classList.add('hidden'); return; }
   cardCurrentWar.classList.remove('hidden');
 
   const weekLabel = weekId ? ` <span class="card-week-id">(${weekId.toLowerCase()})</span>` : '';
-  cardCurrentWar.querySelector('.card-title').innerHTML = `⚔️ Current Clan War${weekLabel}`;
+  cardCurrentWar.querySelector('.card-title').innerHTML = `⚔️ ${t('currentClanWar')} ${weekLabel}`;
 
   // If we have snapshot data, prefer it for totals/daily counts (because battle log can be incomplete).
   const snapDays = Array.isArray(warSnapshotDays) ? warSnapshotDays : null;
@@ -1418,33 +1423,33 @@ function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null, sn
     const chipsHtml = days.map((d) => {
       const cls = d.isFuture ? 'future' : d.isToday ? 'today' : 'past';
       const icon = d.isFuture ? '—' : d.isToday ? '▶' : '✔';
-      return `<span class="war-day-chip ${cls}">${d.label} ${icon}</span>`;
+      return `<span class="war-day-chip ${cls}">${translateWarDayLabel(d.label)} ${icon}</span>`;
     }).join('');
     warDaysGrid.innerHTML =
       `<div class="war-summary">` +
         `<div class="war-progress-row">` +
           `<span class="war-decks-count">0 <span class="war-decks-max">/ ${computedMaxWeek}</span></span>` +
-          `<span class="war-decks-label">decks this week</span>` +
-          `<span class="war-data-source arrived">Arrived ${arrivalDayName} ⚠️</span>` +
+          `<span class="war-decks-label">${t('warDecksThisWeek') || 'decks this week'}</span>` +
+          `<span class="war-data-source arrived">${t('warArrived') || 'Arrived'} ${arrivalDayName} ⚠️</span>` +
         `</div>` +
         `<div class="war-progress-track"><div class="war-progress-fill bad" style="width:0%"></div></div>` +
         `<div class="war-progress-meta war-arrived-note">` +
-          `Joined during the war week — can't count battles this week` +
+          `${t('warJoinedDuringWeekNote') || "Joined during the war week — can't count battles this week"}` +
         `</div>` +
         `<div class="war-day-chips">${chipsHtml}</div>` +
       `</div>`;
     return;
   }
 
-  // Status based on expected vs actual decks
-  let statusIcon, statusText, statusCls;
-  if (totalDecksUsed >= computedMaxElapsed)                     { statusIcon = '✅'; statusText = 'On track';          statusCls = 'good'; }
-  else if (totalDecksUsed >= Math.ceil(computedMaxElapsed / 2)) { statusIcon = '⚠️'; statusText = 'Behind schedule'; statusCls = 'partial'; }
-  else                                                         { statusIcon = '🔴'; statusText = 'Very behind';       statusCls = 'bad'; }
-
   const snapshotTakenAtLabel = snapshotTakenAt
     ? ` (snapshot ${new Date(snapshotTakenAt).toISOString().slice(11,16)} UTC)`
     : '';
+
+  // Status based on expected vs actual decks
+  let statusIcon, statusText, statusCls;
+  if (totalDecksUsed >= computedMaxElapsed)                     { statusIcon = '✅'; statusText = t('warStatusOnTrack') || 'On track';          statusCls = 'good'; }
+  else if (totalDecksUsed >= Math.ceil(computedMaxElapsed / 2)) { statusIcon = '⚠️'; statusText = t('warStatusBehindSchedule') || 'Behind schedule'; statusCls = 'partial'; }
+  else                                                         { statusIcon = '🔴'; statusText = t('warStatusVeryBehind') || 'Very behind';       statusCls = 'bad'; }
 
   const snapshotMismatch = snapHasData && days.some((d, i) => {
     const snap = snapDays?.[i];
@@ -1498,21 +1503,21 @@ function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null, sn
       snap = ` <span class="chip-snap chip-snap-fallback">${battleVal}/4</span>`;
     }
 
-    return `<span class="war-day-chip ${cls}">${label}${icon}${snap}</span>`;
+    return `<span class="war-day-chip ${cls}">${translateWarDayLabel(label)}${icon}${snap}</span>`;
   }).join('');
 
   warDaysGrid.innerHTML =
     `<div class="war-summary">` +
       `<div class="war-progress-row">` +
         `<span class="war-decks-count">${totalDecksUsed} <span class="war-decks-max">/ ${computedMaxElapsed}</span></span>` +
-        `<span class="war-decks-label">decks so far</span>` +
+        `<span class="war-decks-label">${t('warDecksSoFar') || 'decks so far'}</span>` +
         sourceNote +
       `</div>` +
       `<div class="war-progress-track">` +
         `<div class="war-progress-fill ${statusCls}" style="width:${pctFill}%"></div>` +
       `</div>` +
       `<div class="war-progress-meta">` +
-        `Day ${dayNum} of 4 · ${statusIcon} ${statusText}` +
+        `${t('warProgressDayOf', { day: dayNum, total: 4 })} · ${statusIcon} ${statusText}` +
       `</div>` +
       `<div class="war-progress-note">⚠ ${snapshotWarning}</div>` +
       `<div class="war-progress-source">${sourceHint}</div>` +
@@ -1529,7 +1534,8 @@ function warMiniBarHtml(warData) {
   // Joueur arrivé en cours de semaine : icône distincte
   if (arrivedMidWar) {
     const dayName = DAY_NAMES[(arrivedOnDay ?? 1) - 1] ?? `day ${arrivedOnDay}`;
-    return `<div class="war-mini-arrived" title="Arrived ${dayName} — can't count battles this week">⚠</div>`;
+    const tooltip = `${t('warArrived') || 'Arrived'} ${dayName} — ${t('warCantCountBattlesThisWeek') || "can't count battles this week"}`;
+    return `<div class="war-mini-arrived" title="${tooltip}">⚠</div>`;
   }
   const pct = Math.round((totalDecksUsed / maxDecksWeek) * 100);
   const cls = totalDecksUsed >= maxDecksElapsed                   ? 'good'
@@ -1751,6 +1757,16 @@ function mergeWarSummaries(clanWarSummary, lastWarSummary) {
   };
 }
 
+function translateWarDayLabel(label) {
+  switch ((label || '').toLowerCase()) {
+    case 'thu': case 'thursday': return t('dayThu') || 'Thu';
+    case 'fri': case 'friday': return t('dayFri') || 'Fri';
+    case 'sat': case 'saturday': return t('daySat') || 'Sat';
+    case 'sun': case 'sunday': return t('daySun') || 'Sun';
+    default: return label || '';
+  }
+}
+
 function renderClanWarCard(clanWarSummary) {
   const card = document.getElementById('card-clan-war');
   if (!clanWarSummary || clanWarSummary.ended) { card.classList.add('hidden'); return; }
@@ -1758,15 +1774,15 @@ function renderClanWarCard(clanWarSummary) {
 
   const { totalDecksUsed, maxDecksElapsed, maxDecksWeek, participantCount, daysFromThu, days, weekId, ended } = clanWarSummary;
   const weekLabel = weekId ? ` <span class="card-week-id">(${weekId.toLowerCase()})</span>` : '';
-  const endedLabel = ended ? ' (ended)' : '';
-  card.querySelector('.card-title').innerHTML = `⚔️ Current Clan War${weekLabel}${endedLabel}`;
+  const endedLabel = ended ? t('warEndedSuffix') || ' (ended)' : '';
+  card.querySelector('.card-title').innerHTML = `⚔️ ${t('currentClanWar')}${weekLabel}${endedLabel}`;
   const dayNum   = ended ? 4 : (daysFromThu + 1);
   const pctFill  = Math.min(100, Math.round((totalDecksUsed / maxDecksElapsed) * 100));
 
   let statusIcon, statusText, statusCls;
-  if (totalDecksUsed >= maxDecksElapsed)                     { statusIcon = '✅'; statusText = 'On track';          statusCls = 'good'; }
-  else if (totalDecksUsed >= Math.ceil(maxDecksElapsed / 2)) { statusIcon = '⚠️'; statusText = 'Behind schedule'; statusCls = 'partial'; }
-  else                                                       { statusIcon = '🔴'; statusText = 'Very behind';       statusCls = 'bad'; }
+  if (totalDecksUsed >= maxDecksElapsed)                     { statusIcon = '✅'; statusText = t('warStatusOnTrack') || 'On track';          statusCls = 'good'; }
+  else if (totalDecksUsed >= Math.ceil(maxDecksElapsed / 2)) { statusIcon = '⚠️'; statusText = t('warStatusBehindSchedule') || 'Behind schedule'; statusCls = 'partial'; }
+  else                                                       { statusIcon = '🔴'; statusText = t('warStatusVeryBehind') || 'Very behind';       statusCls = 'bad'; }
 
   const chipsHtml = days.map((d) => {
     const cls  = d.isFuture ? 'future' : d.isToday ? 'today' : 'past';
@@ -1777,7 +1793,7 @@ function renderClanWarCard(clanWarSummary) {
       const snapCls = ratio >= 1 ? '' : ratio >= 0.75 ? 'chip-snap chip-snap-orange' : 'chip-snap chip-snap-red';
       detail = ` <span class="${snapCls || 'chip-snap'}">${d.totalCount}/${d.maxCount}</span>`;
     }
-    return `<span class="war-day-chip ${cls}">${d.label}${icon}${detail}</span>`;
+    return `<span class="war-day-chip ${cls}">${translateWarDayLabel(d.label)}${icon}${detail}</span>`;
   }).join('');
 
   let snapshotWarning = t('clanWarSnapshotNote');
@@ -1791,14 +1807,14 @@ function renderClanWarCard(clanWarSummary) {
     `<div class="war-summary">` +
       `<div class="war-progress-row">` +
         `<span class="war-decks-count">${totalDecksUsed} <span class="war-decks-max">/ ${maxDecksElapsed}</span></span>` +
-        `<span class="war-decks-label">decks so far</span>` +
+        `<span class="war-decks-label">${t('warDecksSoFar') || 'decks so far'}</span>` +
         `<span class="war-data-source reliable">Race log ✓</span>` +
       `</div>` +
       `<div class="war-progress-track">` +
         `<div class="war-progress-fill ${statusCls}" style="width:${pctFill}%"></div>` +
       `</div>` +
       `<div class="war-progress-meta">` +
-        `Day ${dayNum} of 4 · ${statusIcon} ${statusText}` +
+        `${t('warProgressDayOf', { day: dayNum, total: 4 })} · ${statusIcon} ${statusText}` +
       `</div>` +
       `<div class="war-progress-note">⚠ ${snapshotWarning}</div>` +
       `<div class="war-day-chips">${chipsHtml}</div>` +
