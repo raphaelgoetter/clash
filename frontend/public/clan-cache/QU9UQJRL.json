@@ -25,29 +25,29 @@
         "isToday": true,
         "isFuture": false,
         "source": "live",
-        "snapshotCount": 58,
+        "snapshotCount": null,
         "liveCount": 41
       },
       {
         "label": "Sat",
-        "totalCount": 0,
+        "totalCount": null,
         "maxCount": 200,
         "isPast": false,
         "isToday": false,
         "isFuture": true,
-        "source": "snapshot",
-        "snapshotCount": 0,
+        "source": "unknown",
+        "snapshotCount": null,
         "liveCount": null
       },
       {
         "label": "Sun",
-        "totalCount": 0,
+        "totalCount": null,
         "maxCount": 200,
         "isPast": false,
         "isToday": false,
         "isFuture": true,
-        "source": "snapshot",
-        "snapshotCount": 0,
+        "source": "unknown",
+        "snapshotCount": null,
         "liveCount": null
       }
     ],
@@ -93,7 +93,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.265Z"
+      "fetchedAt": "2026-03-28T04:39:02.866Z"
     },
     "#CVJPCU09C": {
       "profile": {
@@ -121,7 +121,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.265Z"
+      "fetchedAt": "2026-03-28T04:39:02.866Z"
     },
     "#JC28YVLPG": {
       "profile": {
@@ -149,7 +149,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.266Z"
+      "fetchedAt": "2026-03-28T04:39:02.867Z"
     },
     "#VY0LYQQVJ": {
       "profile": {
@@ -177,7 +177,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.266Z"
+      "fetchedAt": "2026-03-28T04:39:02.867Z"
     },
     "#CLVU02QLP": {
       "profile": {
@@ -205,7 +205,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.266Z"
+      "fetchedAt": "2026-03-28T04:39:02.867Z"
     },
     "#CLQ2RYYJQ": {
       "profile": {
@@ -233,7 +233,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.266Z"
+      "fetchedAt": "2026-03-28T04:39:02.867Z"
     },
     "#LJYGJYCYC": {
       "profile": {
@@ -261,7 +261,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.266Z"
+      "fetchedAt": "2026-03-28T04:39:02.867Z"
     },
     "#UVGPPVQ8Q": {
       "profile": {
@@ -289,7 +289,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.267Z"
+      "fetchedAt": "2026-03-28T04:39:02.867Z"
     },
     "#RRCRJ8QJJ": {
       "profile": {
@@ -317,7 +317,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.267Z"
+      "fetchedAt": "2026-03-28T04:39:02.867Z"
     },
     "#QY0LG0R0P": {
       "profile": {
@@ -345,7 +345,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.267Z"
+      "fetchedAt": "2026-03-28T04:39:02.868Z"
     },
     "#2JUVG2P9": {
       "profile": {
@@ -373,7 +373,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.267Z"
+      "fetchedAt": "2026-03-28T04:39:02.868Z"
     },
     "#QPU0U2C9": {
       "profile": {
@@ -401,7 +401,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.267Z"
+      "fetchedAt": "2026-03-28T04:39:02.868Z"
     },
     "#J222JVRUQ": {
       "profile": {
@@ -429,7 +429,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.267Z"
+      "fetchedAt": "2026-03-28T04:39:02.868Z"
     },
     "#V2P2LCYRJ": {
       "profile": {
@@ -457,7 +457,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.268Z"
+      "fetchedAt": "2026-03-28T04:39:02.868Z"
     },
     "#2U9QL8Q89": {
       "profile": {
@@ -485,7 +485,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.268Z"
+      "fetchedAt": "2026-03-28T04:39:02.869Z"
     },
     "#8VP9UJV9L": {
       "profile": {
@@ -513,7 +513,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.268Z"
+      "fetchedAt": "2026-03-28T04:39:02.869Z"
     },
     "#V22VCQV9V": {
       "profile": {
@@ -541,7 +541,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.268Z"
+      "fetchedAt": "2026-03-28T04:39:02.869Z"
     },
     "#8JGU9UUJJ": {
       "profile": {
@@ -569,7 +569,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.268Z"
+      "fetchedAt": "2026-03-28T04:39:02.869Z"
     },
     "#2V20JP28Q": {
       "profile": {
@@ -597,7 +597,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.268Z"
+      "fetchedAt": "2026-03-28T04:39:02.869Z"
     },
     "#UYRR99RL8": {
       "profile": {
@@ -625,7 +625,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.269Z"
+      "fetchedAt": "2026-03-28T04:39:02.871Z"
     },
     "#CVYLYLC8V": {
       "profile": {
@@ -653,7 +653,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.269Z"
+      "fetchedAt": "2026-03-28T04:39:02.873Z"
     },
     "#YRURQJV28": {
       "profile": {
@@ -681,7 +681,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.269Z"
+      "fetchedAt": "2026-03-28T04:39:02.875Z"
     },
     "#PGQ98JVJ8": {
       "profile": {
@@ -709,7 +709,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.270Z"
+      "fetchedAt": "2026-03-28T04:39:02.877Z"
     },
     "#98VCJLG92": {
       "profile": {
@@ -737,7 +737,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.272Z"
+      "fetchedAt": "2026-03-28T04:39:02.879Z"
     },
     "#CRLR0P92J": {
       "profile": {
@@ -765,7 +765,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.276Z"
+      "fetchedAt": "2026-03-28T04:39:02.883Z"
     },
     "#VPGCQPR9U": {
       "profile": {
@@ -793,7 +793,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.278Z"
+      "fetchedAt": "2026-03-28T04:39:02.885Z"
     },
     "#VPR8G992P": {
       "profile": {
@@ -821,7 +821,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.280Z"
+      "fetchedAt": "2026-03-28T04:39:02.887Z"
     },
     "#2200UQ9P08": {
       "profile": {
@@ -849,7 +849,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.283Z"
+      "fetchedAt": "2026-03-28T04:39:02.889Z"
     },
     "#V9GUUPYUQ": {
       "profile": {
@@ -877,7 +877,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.285Z"
+      "fetchedAt": "2026-03-28T04:39:02.891Z"
     },
     "#VR0LV90YP": {
       "profile": {
@@ -905,7 +905,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.287Z"
+      "fetchedAt": "2026-03-28T04:39:02.893Z"
     },
     "#RJJGJ8PRC": {
       "profile": {
@@ -933,7 +933,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T03:02:00.274Z"
+      "fetchedAt": "2026-03-28T04:39:02.881Z"
     }
   },
   "members": [
@@ -3440,29 +3440,29 @@
         "isToday": true,
         "isFuture": false,
         "source": "live",
-        "snapshotCount": 58,
+        "snapshotCount": null,
         "liveCount": 41
       },
       {
         "label": "Sat",
-        "totalCount": 0,
+        "totalCount": null,
         "maxCount": 200,
         "isPast": false,
         "isToday": false,
         "isFuture": true,
-        "source": "snapshot",
-        "snapshotCount": 0,
+        "source": "unknown",
+        "snapshotCount": null,
         "liveCount": null
       },
       {
         "label": "Sun",
-        "totalCount": 0,
+        "totalCount": null,
         "maxCount": 200,
         "isPast": false,
         "isToday": false,
         "isFuture": true,
-        "source": "snapshot",
-        "snapshotCount": 0,
+        "source": "unknown",
+        "snapshotCount": null,
         "liveCount": null
       }
     ],
@@ -3473,13 +3473,8 @@
   "snapshotToday": false,
   "snapshotDate": "2026-03-27",
   "warCurrentWeekId": "S130W4",
-  "warSnapshotDays": [
-    49,
-    58,
-    0,
-    0
-  ],
-  "snapshotTakenAt": "2026-03-28T03:02:00.256Z",
+  "warSnapshotDays": null,
+  "snapshotTakenAt": null,
   "currentWarDays": [
     {
       "label": "Thu",
@@ -3500,33 +3495,33 @@
       "isToday": true,
       "isFuture": false,
       "source": "live",
-      "snapshotCount": 58,
+      "snapshotCount": null,
       "liveCount": 41
     },
     {
       "label": "Sat",
-      "totalCount": 0,
+      "totalCount": null,
       "maxCount": 200,
       "isPast": false,
       "isToday": false,
       "isFuture": true,
-      "source": "snapshot",
-      "snapshotCount": 0,
+      "source": "unknown",
+      "snapshotCount": null,
       "liveCount": null
     },
     {
       "label": "Sun",
-      "totalCount": 0,
+      "totalCount": null,
       "maxCount": 200,
       "isPast": false,
       "isToday": false,
       "isFuture": true,
-      "source": "snapshot",
-      "snapshotCount": 0,
+      "source": "unknown",
+      "snapshotCount": null,
       "liveCount": null
     }
   ],
   "rateLimited": false,
   "raceLogUnavailable": false,
-  "analysisCacheUpdatedAt": "2026-03-28T03:02:02.755Z"
+  "analysisCacheUpdatedAt": "2026-03-28T04:39:05.324Z"
 }
