@@ -1475,7 +1475,32 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
   // expose lastSeen et discord pour les appelants externes
   analysis.overview.lastSeen = lastSeen;
   analysis.overview.discord = discordLinked;
+
+  // Flag for new member detection (consistent with clan view logic)
+  analysis.isNew = computeIsNewPlayer(analysis.warHistory, analysis.warScore, analysis.warHistory?.isFamilyTransfer === true);
+
   return analysis;
+}
+
+/**
+ * Determine whether a member should be flagged as "new" in the UI.
+ * This function is shared between player and clan view to ensure consistency.
+ *
+ * @param {object|null} warHistory
+ * @param {object|null} warScore
+ * @param {boolean} isFamilyTransfer
+ * @returns {boolean}
+ */
+export function computeIsNewPlayer(warHistory, warScore, isFamilyTransfer = false) {
+  if (isFamilyTransfer) return false;
+
+  const hasCompletedWarWeeks = !!warHistory?.weeks?.some((w) => !w.isCurrent && (w.decksUsed ?? 0) > 0);
+  const hasOnlyCurrentWeek = !!(warHistory?.weeks?.length === 1 && warHistory.weeks[0]?.isCurrent);
+  const isNewClanArrivee = (warHistory?.streakInCurrentClan ?? 0) < 2 && (warHistory?.totalWeeks ?? 0) > 1;
+
+  const isBattleLogMode = (warScore?.isFallback === true) || !hasCompletedWarWeeks || hasOnlyCurrentWeek || isNewClanArrivee;
+
+  return isNewClanArrivee || isBattleLogMode;
 }
 
 // ── Clan analysis ─────────────────────────────────────────────
