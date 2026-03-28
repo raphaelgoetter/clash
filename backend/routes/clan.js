@@ -1214,20 +1214,29 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       const days = (current.days ?? []).map((day, idx) => {
         if (!day || typeof day !== 'object') return day;
         const backupDay = (backup.days ?? [])[idx] ?? null;
-        const hasDayValue = typeof day.totalCount === 'number' && day.totalCount > 0;
-        const backupValue = backupDay?.totalCount ?? null;
+        const currentValue = typeof day.totalCount === 'number' ? day.totalCount : null;
+        const backupValue = typeof backupDay?.totalCount === 'number' ? backupDay.totalCount : null;
 
-        if (day.isPast && backupValue != null && backupValue > 0) {
-          // Past days are frozen from the backup (historical source truth).
-          // Once a day is past, keep the cached day value and do not overwrite.
+        if (day.isPast) {
+          const chosen = Math.max(currentValue ?? 0, backupValue ?? 0);
+          if (chosen > 0) {
+            return {
+              ...day,
+              totalCount: chosen,
+              snapshotCount: chosen,
+              source: 'snapshot',
+            };
+          }
+          // conserve zéro si aucune donnée historique
           return {
             ...day,
-            totalCount: backupValue,
-            snapshotCount: backupValue,
+            totalCount: 0,
+            snapshotCount: 0,
             source: 'snapshot',
           };
         }
 
+        // Today/future: keep current computed source state (do not override with backup)
         return day;
       });
       const totalDecksUsed = days.reduce((sum, d) => sum + (d?.totalCount ?? 0), 0);
@@ -1236,9 +1245,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
     clanWarSummary = mergeWarSummariesBackend(clanWarSummary, fallbackWarSummary);
 
-    const computedLastWarSummary = clanWarSummary
-      ? { ...clanWarSummary, ended: clanWarSummary.ended ?? true, snapshotAsOf: snapshotDate ?? null }
-      : null;
+    const computedLastWarSummary = (existingCache?.lastWarSummary || null) ??
+      (clanWarSummary
+        ? { ...clanWarSummary, ended: clanWarSummary.ended ?? true, snapshotAsOf: snapshotDate ?? null }
+        : null);
 
     return {
       lastWarSummary: computedLastWarSummary,
