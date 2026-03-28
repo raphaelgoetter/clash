@@ -1481,6 +1481,8 @@ function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null, sn
       : 'Snapshots are taken every hour; decks played at the last minute may be assigned to the previous day.';
   }
 
+  const snapshotDataInvalid = days.some((d) => d.isPast && d.totalCount === 0);
+
   const chipsHtml = days.map((d, i) => {
     const cls  = d.isFuture ? 'future' : d.isToday ? 'today' : 'past';
     const icon = d.isFuture ? ' —' : d.isToday ? ' ▶' : '';
@@ -1535,7 +1537,7 @@ function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null, sn
         `${t('warProgressDayOf', { day: dayNum, total: 4 })} · ${statusIcon} ${statusText}` +
       `</div>` +
       `<div class="war-progress-note">⚠ ${snapshotWarning}</div>` +
-      `${(clanWarSummary.snapshotWarnings?.length || 0) > 0 ? `<div class="war-progress-warning">⚠ ${t('warSnapshotDataInvalid')}</div>` : ''}` +
+      `${snapshotDataInvalid ? `<div class="war-progress-warning">⚠ ${t('warSnapshotDataInvalid')}</div>` : ''}` +
       `<div class="war-progress-source">${sourceHint}</div>` +
       `<div class="war-day-chips">${chipsHtml}</div>` +
     `</div>`;
