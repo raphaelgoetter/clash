@@ -1021,10 +1021,18 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               ? clampDeckTotal(cumulDelta)
               : null;
 
-          // If the current week snapshot gave 0 (or no data) for a past day, but
-          // we have a cached value from previous analysis, preserve it.
-          if (i < daysFromThu && (!snapshotCount || snapshotCount === 0) && existingDay?.totalCount > 0) {
-            snapshotCount = clampDeckTotal(existingDay.totalCount);
+          // Past days are immutable snapshots. If we have a previous cached past day,
+          // keep that exact value, because it is the source of truth.
+          if (i < daysFromThu) {
+            const existingSnapshot = existingDay?.snapshotCount != null
+              ? clampDeckTotal(existingDay.snapshotCount)
+              : null;
+
+            if (existingSnapshot != null && existingSnapshot > 0) {
+              snapshotCount = existingSnapshot;
+            } else if ((snapshotCount == null || snapshotCount === 0) && existingDay?.totalCount > 0) {
+              snapshotCount = clampDeckTotal(existingDay.totalCount);
+            }
           }
 
           const knownPrevDaysTotal = dayTotals.reduce((s, v) => s + v, 0);
@@ -1036,36 +1044,29 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           let source = 'unknown';
           let liveCount = null;
 
-          // Prefer live `decksUsedToday` for the current day (most authoritative from currentriverrace).
           if (i === daysFromThu) {
             const currentDayLive = participants.reduce((sum, p) => sum + (p.decksUsedToday ?? 0), 0);
             liveCount = Math.max(0, Math.min(200, currentDayLive));
-            if (snapshotCount !== null) {
-              // Keep unmodified snapshot value for the current day when available.
+            totalCount = liveCount;
+            source = 'live';
+            snapshotCount = null;
+          } else if (i < daysFromThu) {
+            if (snapshotCount != null) {
               totalCount = Math.min(200, snapshotCount);
               source = 'snapshot';
-            } else {
-              totalCount = liveCount;
-              source = 'live';
-            }
-          }
-
-          // Past days: use snapshot if available, else fallback to inferred live.
-          if (totalCount === null) {
-            if (snapshotCount !== null) {
-              totalCount = Math.min(200, snapshotCount);
-              source = 'snapshot';
-            } else if (inferredFromLive !== null) {
+            } else if (inferredFromLive != null) {
               totalCount = inferredFromLive;
               source = 'live';
+            } else {
+              totalCount = 0;
+              source = 'snapshot';
             }
-          }
-
-          // Re-apply cache fallback for past days after main logic (if needed).
-          if (i < daysFromThu && totalCount === 0 && existingDay?.totalCount > 0) {
-            totalCount = clampDeckTotal(existingDay.totalCount);
-            source = 'snapshot';
-            snapshotCount = totalCount;
+            liveCount = null;
+          } else {
+            // future day
+            totalCount = snapshotCount != null ? Math.min(200, snapshotCount) : 0;
+            source = snapshotCount != null ? 'snapshot' : 'unknown';
+            liveCount = null;
           }
 
           // keep track of what we used to compute subsequent days
