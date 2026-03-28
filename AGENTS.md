@@ -97,8 +97,10 @@ Utiliser des **sous-agents** (Task tool) par défaut pour toute opération dont 
 
 ## Internationalisation (i18n) / translations
 
+- `frontend/public/lang/en.json` et `frontend/public/lang/fr.json` sont la source unique de vérité.
+- Supprimez `frontend/lang` (doublon), gardez seulement `frontend/public/lang`.
 - Pour toute nouvelle feature ou texte visible utilisateur,
-  - vérifier que la clé de traduction existe dans `frontend/lang/en.json` et `frontend/lang/fr.json`.
+  - vérifier que la clé de traduction existe dans `frontend/public/lang/en.json` et `frontend/public/lang/fr.json`.
   - si la clé n'existe pas, l'ajouter dans les deux fichiers EN/FR.
   - utiliser `t('key')` côté JS quand possible pour charger la traduction.
 - Pour les messages de chart tooltip/label générés dynamiquement, passer un argument `t('...')` à la fonction de rendu.
