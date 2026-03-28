@@ -581,11 +581,11 @@ export async function buildClanAnalysis(clanTag, options = {}) {
   }
 
 
-    // First pass: compute war scores for all members
-    const analyzedMembers = await Promise.all(
-      members.map(async (m, idx) => {
-        let reliabilityScore, verdict, color, isNew = false, warHistory = null, scoreSource = 'clan', playerAnalysis = null;
-        let memberWarScore = null;
+    // First pass: compute war scores for all members (concurrency-limited to avoid Clash API rate pressure)
+    const MEMBER_CONCURRENCY = 8;
+    const memberTasks = members.map((m, idx) => async () => {
+      let reliabilityScore, verdict, color, isNew = false, warHistory = null, scoreSource = 'clan', playerAnalysis = null;
+      let memberWarScore = null;
 
       // Resolve full player profile (for badges) and battle log from fetch results or existing cache.
       const memberData = memberDataByTag[m.tag] || { profile: null, battleLog: [] };
@@ -906,7 +906,25 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         warDecks:  warDays === null ? null : (warDays.arrivedMidWar ? -1 : (warDays.totalDecksUsed ?? 0)),
         lastSeen:  m.lastSeen ?? null,
       };
-    }));
+    });
+
+    const memberResults = await pooledAllSettled(memberTasks, MEMBER_CONCURRENCY);
+    const analyzedMembers = memberResults.map((result, idx) => {
+      if (result.status === 'fulfilled') return result.value;
+      const fallback = analyzeClanMembers([members[idx]])[0];
+      console.warn(`[clan] member analysis failed for ${members[idx].tag}: ${result.reason?.message || result.reason}`);
+      return {
+        ...fallback,
+        reliabilitySource: 'fallback',
+        isNew: false,
+        isFamilyTransfer: false,
+        transferFromClan: null,
+        transferWeek: null,
+        warDays: null,
+        warDecks: null,
+        lastSeen: members[idx].lastSeen ?? null,
+      };
+    });
 
     // Sort by reliability ascending (most at-risk first)
     analyzedMembers.sort((a, b) => (a.reliability ?? 0) - (b.reliability ?? 0));
