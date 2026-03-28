@@ -1,4 +1,4 @@
-name: Daily snapshots
+name: Hourly snapshots
 
 # allow workflow to push updates to repository (snapshot and static cache)
 permissions:
@@ -53,5 +53,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/snapshots/*.json frontend/public/clan-cache/*.json || true
-          git commit --allow-empty -m "chore: update daily snapshots & clan cache"
+          git commit --allow-empty -m "chore: update hourly snapshots & clan cache"
           git push
