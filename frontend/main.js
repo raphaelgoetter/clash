@@ -1535,6 +1535,7 @@ function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null, sn
         `${t('warProgressDayOf', { day: dayNum, total: 4 })} · ${statusIcon} ${statusText}` +
       `</div>` +
       `<div class="war-progress-note">⚠ ${snapshotWarning}</div>` +
+      `${(clanWarSummary.snapshotWarnings?.length || 0) > 0 ? `<div class="war-progress-warning">⚠ ${t('warSnapshotDataInvalid')}</div>` : ''}` +
       `<div class="war-progress-source">${sourceHint}</div>` +
       `<div class="war-day-chips">${chipsHtml}</div>` +
     `</div>`;

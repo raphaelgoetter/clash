@@ -1245,10 +1245,18 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
     clanWarSummary = mergeWarSummariesBackend(clanWarSummary, fallbackWarSummary);
 
-    const computedLastWarSummary = (existingCache?.lastWarSummary || null) ??
-      (clanWarSummary
-        ? { ...clanWarSummary, ended: clanWarSummary.ended ?? true, snapshotAsOf: snapshotDate ?? null }
-        : null);
+    if (clanWarSummary && Array.isArray(clanWarSummary.days)) {
+      const warnings = [];
+      if (clanWarSummary.days.some((d) => d.isPast && (d.totalCount == null || d.totalCount === 0))) {
+        warnings.push('missingOrZeroPastDay');
+      }
+      if (clanWarSummary.days.some((d) => d.isPast && d.snapshotCount != null && d.snapshotCount !== d.totalCount)) {
+        warnings.push('pastDayMismatch');
+      }
+      clanWarSummary.snapshotWarnings = warnings;
+    }
+
+    const computedLastWarSummary = existingCache?.lastWarSummary || null;
 
     return {
       lastWarSummary: computedLastWarSummary,
