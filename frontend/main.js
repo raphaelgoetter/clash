@@ -126,6 +126,9 @@ function t(key, vars) {
     battleLogNoFurtherData: currentLang === 'fr'
       ? 'Aucun historique de clan supplémentaire disponible (Battle Log uniquement).'
       : 'No further clan history available (Battle Log only).',
+    clanWarSnapshotNote: currentLang === 'fr'
+      ? 'Les snapshots sont réalisés chaque heure ; les decks joués à la dernière minute peuvent être comptés sur le jour précédent.'
+      : 'Snapshots are taken every hour; decks played at the last minute may be assigned to the previous day.',
   };
 
   let val = (translations && translations[key]) ? translations[key] : fallback[key] || key;
@@ -1464,7 +1467,12 @@ function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null, sn
 
   const sourceHint = t('sourceHint');
   // Unique message : use the single snapshot note translation key.
-  const snapshotWarning = t('clanWarSnapshotNote');
+  let snapshotWarning = t('clanWarSnapshotNote');
+  if (snapshotWarning === 'clanWarSnapshotNote') {
+    snapshotWarning = currentLang === 'fr'
+      ? 'Les snapshots sont réalisés chaque heure ; les decks joués à la dernière minute peuvent être comptés sur le jour précédent.'
+      : 'Snapshots are taken every hour; decks played at the last minute may be assigned to the previous day.';
+  }
 
   const chipsHtml = days.map((d, i) => {
     const cls  = d.isFuture ? 'future' : d.isToday ? 'today' : 'past';
