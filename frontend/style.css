@@ -213,13 +213,16 @@ code {
   letter-spacing: .06em;
 }
 
-summary .card-title {
-  margin-bottom: 0;
+.war-progress-warning {
+  padding: 6px 10px;
+  margin-top: 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 135, 51, 0.35);
+  background: rgba(255, 111, 111, 0.14);
+  color: #ffb3b3;
+  font-weight: 600;
+  font-size: 0.88rem;
 }
-
-.card-week-id {
-  font-size: .7rem;
-  font-weight: 400;
   opacity: .55;
   letter-spacing: .03em;
   text-transform: lowercase;
