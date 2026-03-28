@@ -1021,8 +1021,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               ? clampDeckTotal(cumulDelta)
               : null;
 
-          // Past days are immutable snapshots: if a prior analysis has a value,
-          // it must be preserved exactly and never be lowered by later inference.
+          // Past days are treated as immutable from a user-facing POV,
+          // but we allow a later better snapshot to uplift previous values
+          // (never downgrade once we have a valid count).
           if (i < daysFromThu) {
             const existingSnapshot = existingDay?.snapshotCount != null
               ? clampDeckTotal(existingDay.snapshotCount)
@@ -1031,7 +1032,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 : null;
 
             if (existingSnapshot != null && existingSnapshot > 0) {
-              snapshotCount = existingSnapshot;
+              if (snapshotCount == null || snapshotCount === 0 || existingSnapshot > snapshotCount) {
+                snapshotCount = existingSnapshot;
+              }
             } else if ((snapshotCount == null || snapshotCount === 0) && existingDay?.totalCount > 0) {
               snapshotCount = clampDeckTotal(existingDay.totalCount);
             }
