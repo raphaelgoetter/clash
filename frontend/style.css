@@ -223,11 +223,6 @@ code {
   font-weight: 600;
   font-size: 0.88rem;
 }
-  opacity: .55;
-  letter-spacing: .03em;
-  text-transform: lowercase;
-  margin-left: 4px;
-}
 
 /* description text shown under some card titles */
 .card-desc {
