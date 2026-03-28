@@ -1041,13 +1041,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             const currentDayLive = participants.reduce((sum, p) => sum + (p.decksUsedToday ?? 0), 0);
             liveCount = Math.max(0, Math.min(200, currentDayLive));
             if (snapshotCount !== null) {
-              if (liveCount !== snapshotCount) {
-                totalCount = liveCount;
-                source = 'live';
-              } else {
-                totalCount = Math.min(200, snapshotCount);
-                source = 'snapshot';
-              }
+              // Keep unmodified snapshot value for the current day when available.
+              totalCount = Math.min(200, snapshotCount);
+              source = 'snapshot';
             } else {
               totalCount = liveCount;
               source = 'live';
@@ -1097,44 +1093,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           days[todayIdx].liveCount = todayLiveSum;
         }
 
-        const pastTotal = days.slice(0, todayIdx).reduce((sum, d) => sum + (d.totalCount ?? 0), 0);
-        const hasPastSnapshotData = pastTotal > 0;
-        const totalLooksLikeTodayOnly = totalDecksUsed <= todayLiveSum;
-
-        if (hasPastSnapshotData && totalLooksLikeTodayOnly) {
-          // L'API currentRace renvoie parfois uniquement le total du jour (decksUsedToday),
-          // mais on dispose déjà des valeurs de jours précédents via snapshot.
-          // Ne pas écraser Thu/Fri anciens avec une remise à zéro forcée.
-          // On conservera les valeurs historiques et on re-finance le total ci-dessous.
-        } else {
-          const desiredPastTotal = Math.max(0, totalDecksUsed - todayLiveSum);
-          const currentPastTotal = pastTotal;
-          let pastDiff = currentPastTotal - desiredPastTotal;
-
-          if (pastDiff !== 0 && todayIdx > 0) {
-          // Ajustements au plus proche jour passé (dernière journée non-future).
-          for (let i = todayIdx - 1; i >= 0 && pastDiff !== 0; i--) {
-            const day = days[i];
-            if (!day || typeof day.totalCount !== 'number') continue;
-            const maxAdjust = Math.min(day.totalCount, Math.abs(pastDiff));
-            if (maxAdjust <= 0) continue;
-            if (pastDiff > 0) {
-              // on est trop haut, on réduit
-              day.totalCount -= maxAdjust;
-              day.source = 'snapshot';
-              pastDiff -= maxAdjust;
-            } else {
-              // on est trop bas, on augmente (dans la limite de 200)
-              const freeSlot = 200 - day.totalCount;
-              const add = Math.min(freeSlot, Math.abs(pastDiff));
-              day.totalCount += add;
-              day.source = 'snapshot';
-              pastDiff += add;
-            }
-          }
-        }
-
-        // Recalc des prix à jour après adjustement de cohérence
+        // Keep past snapshot counts intact and do not rebalance past days to fit current total.
+        // This ensures Thu/Fri values remain authoritative (snapshot) instead of being modified.
         const finalPastTotal = days.slice(0, todayIdx).reduce((sum, d) => sum + (d.totalCount ?? 0), 0);
         // si rien ne colle (gros écart), on tolère ; on ne modifie plus.
         if (finalPastTotal + todayLiveSum !== totalDecksUsed) {
@@ -1302,6 +1262,5 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       analysisCacheUpdatedAt: new Date().toISOString(),
     };
   }
-}
 
 export { router as default };
