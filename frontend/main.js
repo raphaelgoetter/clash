@@ -1780,6 +1780,13 @@ function renderClanWarCard(clanWarSummary) {
     return `<span class="war-day-chip ${cls}">${d.label}${icon}${detail}</span>`;
   }).join('');
 
+  let snapshotWarning = t('clanWarSnapshotNote');
+  if (snapshotWarning === 'clanWarSnapshotNote') {
+    snapshotWarning = currentLang === 'fr'
+      ? 'Les snapshots sont réalisés chaque heure ; les decks joués à la dernière minute peuvent être comptés sur le jour précédent.'
+      : 'Snapshots are taken every hour; decks played at the last minute may be assigned to the previous day.';
+  }
+
   document.getElementById('clan-war-grid').innerHTML =
     `<div class="war-summary">` +
       `<div class="war-progress-row">` +
@@ -1793,6 +1800,7 @@ function renderClanWarCard(clanWarSummary) {
       `<div class="war-progress-meta">` +
         `Day ${dayNum} of 4 · ${statusIcon} ${statusText}` +
       `</div>` +
+      `<div class="war-progress-note">⚠ ${snapshotWarning}</div>` +
       `<div class="war-day-chips">${chipsHtml}</div>` +
     `</div>`;
 }

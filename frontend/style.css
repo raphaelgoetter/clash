@@ -1313,7 +1313,7 @@ a.member-link:hover div:first-child {
 .war-day-chip.today  { background: rgba(244,197,66,.12); color: var(--gold); border: 1px solid rgba(244,197,66,.35); }
 .war-day-chip.future { background: rgba(255,255,255,.03); color: rgba(255,255,255,.2); }
 
-.war-progress-note { font-size: .75rem; color: var(--text-muted); margin: 4px 0 0 0; }
+.war-progress-note { font-size: .85rem; color: var(--text); font-weight: 600; margin: 6px 0 0 0; }
 
 .war-progress-source { font-size: .8rem; color: var(--text-muted); margin-top: 4px; }
 
