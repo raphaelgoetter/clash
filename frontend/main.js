@@ -1772,6 +1772,7 @@ function mergeWarSummaries(clanWarSummary, lastWarSummary) {
     ...clanWarSummary,
     totalDecksUsed,
     days,
+    snapshotWarnings: clanWarSummary.snapshotWarnings || lastWarSummary.snapshotWarnings || [],
   };
 }
 
