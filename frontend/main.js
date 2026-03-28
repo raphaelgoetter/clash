@@ -1822,6 +1822,8 @@ function renderClanWarCard(clanWarSummary) {
       : 'Snapshots are taken every hour; decks played at the last minute may be assigned to the previous day.';
   }
 
+  const snapshotDataInvalid = days.some((d) => d.isPast && d.totalCount === 0);
+
   document.getElementById('clan-war-grid').innerHTML =
     `<div class="war-summary">` +
       `<div class="war-progress-row">` +
@@ -1836,6 +1838,7 @@ function renderClanWarCard(clanWarSummary) {
         `${t('warProgressDayOf', { day: dayNum, total: 4 })} · ${statusIcon} ${statusText}` +
       `</div>` +
       `<div class="war-progress-note">⚠ ${snapshotWarning}</div>` +
+      `${snapshotDataInvalid ? `<div class="war-progress-warning">⚠ ${t('warSnapshotDataInvalid')}</div>` : ''}` +
       `<div class="war-day-chips">${chipsHtml}</div>` +
     `</div>`;
 }
