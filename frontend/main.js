@@ -1458,6 +1458,8 @@ function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null, sn
       : '<span class="war-data-source fallback">Battle log (approx.)</span>';
 
   const sourceHint = t('sourceHint');
+  // Unique message : use the single snapshot note translation key.
+  const snapshotWarning = t('clanWarSnapshotNote');
 
   const chipsHtml = days.map((d, i) => {
     const cls  = d.isFuture ? 'future' : d.isToday ? 'today' : 'past';
@@ -1512,7 +1514,7 @@ function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null, sn
       `<div class="war-progress-meta">` +
         `Day ${dayNum} of 4 · ${statusIcon} ${statusText}` +
       `</div>` +
-      `<div class="war-progress-note">${t('clanWarSnapshotNote')}</div>` +
+      `<div class="war-progress-note">⚠ ${snapshotWarning}</div>` +
       `<div class="war-progress-source">${sourceHint}</div>` +
       `<div class="war-day-chips">${chipsHtml}</div>` +
     `</div>`;
