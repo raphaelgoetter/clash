@@ -359,6 +359,12 @@ code {
   font-weight: 700;
   position: relative;
   cursor: pointer; /* only summary clickable */
+  line-height: 1.2;
+}
+#card-top-players summary .card-title,
+#card-uncomplete summary .card-title,
+#card-left summary .card-title {
+  margin-bottom: 0;
 }
 /* custom arrow marker using ::before */
 #card-top-players summary::before,
