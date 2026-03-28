@@ -1021,12 +1021,14 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               ? clampDeckTotal(cumulDelta)
               : null;
 
-          // Past days are immutable snapshots. If we have a previous cached past day,
-          // keep that exact value, because it is the source of truth.
+          // Past days are immutable snapshots: if a prior analysis has a value,
+          // it must be preserved exactly and never be lowered by later inference.
           if (i < daysFromThu) {
             const existingSnapshot = existingDay?.snapshotCount != null
               ? clampDeckTotal(existingDay.snapshotCount)
-              : null;
+              : existingDay?.totalCount != null
+                ? clampDeckTotal(existingDay.totalCount)
+                : null;
 
             if (existingSnapshot != null && existingSnapshot > 0) {
               snapshotCount = existingSnapshot;
@@ -1211,7 +1213,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         const backupDay = (backup.days ?? [])[idx] ?? null;
         const hasDayValue = typeof day.totalCount === 'number' && day.totalCount > 0;
         const backupValue = backupDay?.totalCount ?? null;
-        if (!hasDayValue && backupValue != null && backupValue > 0 && day.isPast) {
+
+        if (day.isPast && backupValue != null && backupValue > 0) {
+          // Past days are frozen from the backup (historical source truth).
+          // Once a day is past, keep the cached day value and do not overwrite.
           return {
             ...day,
             totalCount: backupValue,
@@ -1219,6 +1224,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             source: 'snapshot',
           };
         }
+
         return day;
       });
       const totalDecksUsed = days.reduce((sum, d) => sum + (d?.totalCount ?? 0), 0);
