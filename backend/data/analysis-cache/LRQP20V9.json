@@ -1,6 +1,6 @@
 {
   "lastWarSummary": {
-    "totalDecksUsed": 332,
+    "totalDecksUsed": 338,
     "maxDecksElapsed": 600,
     "maxDecksWeek": 800,
     "participantCount": 50,
@@ -30,14 +30,14 @@
       },
       {
         "label": "Sat",
-        "totalCount": 4,
+        "totalCount": 10,
         "maxCount": 200,
         "isPast": false,
         "isToday": true,
         "isFuture": false,
         "source": "live",
-        "snapshotCount": 196,
-        "liveCount": 4
+        "snapshotCount": null,
+        "liveCount": 10
       },
       {
         "label": "Sun",
@@ -59,7 +59,7 @@
     "name": "Les Resistants",
     "tag": "#LRQP20V9",
     "description": "☆. #2 Resistance (top 🌍) Bonne humeur et GDC obligatoire ⚔️ 4 combats/jour 👉 Discord demandé : kPdQN8zfjM ▪️ code: RoyaleAPI",
-    "clanScore": 118293,
+    "clanScore": 118296,
     "clanWarTrophies": 3757,
     "members": 49,
     "type": "open",
@@ -78,22 +78,22 @@
         "totalDonations": 44137,
         "donations": 72,
         "warDayWins": 0,
-        "cw2Progress": 741,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Little Prince's Tavern",
+        "arena": null,
         "stats": {
-          "battleCount": 25388,
-          "threeCrownWins": 9873
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 4
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:22:54.958Z"
+      "fetchedAt": "2026-03-28T10:43:45.235Z"
     },
     "#89L8J9YV9": {
       "profile": {
@@ -106,22 +106,22 @@
         "totalDonations": 52338,
         "donations": 36,
         "warDayWins": 42,
-        "cw2Progress": 73,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Ultimate Clash Pit",
+        "arena": null,
         "stats": {
-          "battleCount": 13849,
-          "threeCrownWins": 2811
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 7
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:22:54.959Z"
+      "fetchedAt": "2026-03-28T10:43:45.236Z"
     },
     "#99VY0090": {
       "profile": {
@@ -134,22 +134,22 @@
         "totalDonations": 109430,
         "donations": 362,
         "warDayWins": 55,
-        "cw2Progress": 899,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Ultimate Clash Pit",
+        "arena": null,
         "stats": {
-          "battleCount": 10272,
-          "threeCrownWins": 2797
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 12
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:22:54.959Z"
+      "fetchedAt": "2026-03-28T10:43:45.237Z"
     },
     "#VGJ9LL8VC": {
       "profile": {
@@ -162,22 +162,22 @@
         "totalDonations": 31683,
         "donations": 539,
         "warDayWins": 0,
-        "cw2Progress": 322,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Ultimate Clash Pit",
+        "arena": null,
         "stats": {
-          "battleCount": 7607,
-          "threeCrownWins": 1489
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 8
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:22:54.959Z"
+      "fetchedAt": "2026-03-28T10:43:45.238Z"
     },
     "#PGRJC00G9": {
       "profile": {
@@ -190,22 +190,22 @@
         "totalDonations": 30674,
         "donations": 236,
         "warDayWins": 11,
-        "cw2Progress": 130,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Ultimate Clash Pit",
+        "arena": null,
         "stats": {
-          "battleCount": 6263,
-          "threeCrownWins": 1699
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 36,
-        "warBattles": 12
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:22:54.959Z"
+      "fetchedAt": "2026-03-28T10:43:45.239Z"
     },
     "#82UPUGYP": {
       "profile": {
@@ -218,22 +218,22 @@
         "totalDonations": 119688,
         "donations": 701,
         "warDayWins": 1,
-        "cw2Progress": 1348,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Magic Academy",
+        "arena": null,
         "stats": {
-          "battleCount": 7735,
-          "threeCrownWins": 1702
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 8
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:22:54.959Z"
+      "fetchedAt": "2026-03-28T10:43:45.240Z"
     },
     "#Y9P9GGL89": {
       "profile": {
@@ -246,22 +246,22 @@
         "totalDonations": 14838,
         "donations": 8,
         "warDayWins": 0,
-        "cw2Progress": 297,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Magic Academy",
+        "arena": null,
         "stats": {
-          "battleCount": 8482,
-          "threeCrownWins": 1321
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 33,
-        "warBattles": 29
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:22:54.959Z"
+      "fetchedAt": "2026-03-28T10:43:45.240Z"
     },
     "#GLV9Q2P09": {
       "profile": {
@@ -274,22 +274,22 @@
         "totalDonations": 58119,
         "donations": 90,
         "warDayWins": 0,
-        "cw2Progress": 790,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Magic Academy",
+        "arena": null,
         "stats": {
-          "battleCount": 7696,
-          "threeCrownWins": 3636
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 32,
-        "warBattles": 9
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:22:54.960Z"
+      "fetchedAt": "2026-03-28T10:43:45.241Z"
     },
     "#98UULQY8": {
       "profile": {
@@ -302,22 +302,22 @@
         "totalDonations": 120050,
         "donations": 378,
         "warDayWins": 73,
-        "cw2Progress": 1372,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Magic Academy",
+        "arena": null,
         "stats": {
-          "battleCount": 15876,
-          "threeCrownWins": 2461
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 7
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:22:57.004Z"
+      "fetchedAt": "2026-03-28T10:43:47.383Z"
     },
     "#8YGY2RPCC": {
       "profile": {
@@ -330,22 +330,22 @@
         "totalDonations": 324364,
         "donations": 478,
         "warDayWins": 265,
-        "cw2Progress": 1498,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Magic Academy",
+        "arena": null,
         "stats": {
-          "battleCount": 22192,
-          "threeCrownWins": 7780
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 21
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:22:57.022Z"
+      "fetchedAt": "2026-03-28T10:43:47.456Z"
     },
     "#8VQLJLR0": {
       "profile": {
@@ -358,22 +358,22 @@
         "totalDonations": 42144,
         "donations": 613,
         "warDayWins": 0,
-        "cw2Progress": 120,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Magic Academy",
+        "arena": null,
         "stats": {
-          "battleCount": 11037,
-          "threeCrownWins": 1963
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 34,
-        "warBattles": 11
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:22:57.011Z"
+      "fetchedAt": "2026-03-28T10:43:47.448Z"
     },
     "#LUGP2RYY": {
       "profile": {
@@ -386,22 +386,22 @@
         "totalDonations": 255650,
         "donations": 340,
         "warDayWins": 191,
-        "cw2Progress": 1523,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Magic Academy",
+        "arena": null,
         "stats": {
-          "battleCount": 22112,
-          "threeCrownWins": 6081
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 9
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:22:57.903Z"
+      "fetchedAt": "2026-03-28T10:43:47.502Z"
     },
     "#2YP2V2G0R": {
       "profile": {
@@ -414,22 +414,22 @@
         "totalDonations": 32446,
         "donations": 1314,
         "warDayWins": 0,
-        "cw2Progress": 263,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Magic Academy",
+        "arena": null,
         "stats": {
-          "battleCount": 6045,
-          "threeCrownWins": 1741
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 11
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:22:57.036Z"
+      "fetchedAt": "2026-03-28T10:43:47.496Z"
     },
     "#CJVUJ8U9C": {
       "profile": {
@@ -442,22 +442,22 @@
         "totalDonations": 73369,
         "donations": 489,
         "warDayWins": 0,
-        "cw2Progress": 1550,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Magic Academy",
+        "arena": null,
         "stats": {
-          "battleCount": 12352,
-          "threeCrownWins": 3573
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 34,
-        "warBattles": 8
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:22:57.927Z"
+      "fetchedAt": "2026-03-28T10:43:47.517Z"
     },
     "#PCLLULJ9V": {
       "profile": {
@@ -470,22 +470,22 @@
         "totalDonations": 51893,
         "donations": 209,
         "warDayWins": 76,
-        "cw2Progress": 736,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Magic Academy",
+        "arena": null,
         "stats": {
-          "battleCount": 23019,
-          "threeCrownWins": 5240
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 33,
-        "warBattles": 6
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:22:57.929Z"
+      "fetchedAt": "2026-03-28T10:43:47.550Z"
     },
     "#8G00908LP": {
       "profile": {
@@ -498,22 +498,22 @@
         "totalDonations": 228124,
         "donations": 533,
         "warDayWins": 235,
-        "cw2Progress": 1056,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Magic Academy",
+        "arena": null,
         "stats": {
-          "battleCount": 43257,
-          "threeCrownWins": 6356
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 8
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:22:57.940Z"
+      "fetchedAt": "2026-03-28T10:43:48.669Z"
     },
     "#RJY2R282V": {
       "profile": {
@@ -526,22 +526,22 @@
         "totalDonations": 45772,
         "donations": 52,
         "warDayWins": 0,
-        "cw2Progress": 828,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Summit of Heroes",
+        "arena": null,
         "stats": {
-          "battleCount": 11171,
-          "threeCrownWins": 2576
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 33,
-        "warBattles": 8
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:22:58.384Z"
+      "fetchedAt": "2026-03-28T10:43:49.617Z"
     },
     "#V0VLJQCJU": {
       "profile": {
@@ -554,22 +554,22 @@
         "totalDonations": 46046,
         "donations": 89,
         "warDayWins": 0,
-        "cw2Progress": 1377,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Summit of Heroes",
+        "arena": null,
         "stats": {
-          "battleCount": 7617,
-          "threeCrownWins": 1345
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 25
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:22:58.424Z"
+      "fetchedAt": "2026-03-28T10:43:49.730Z"
     },
     "#YQVP9P0Y": {
       "profile": {
@@ -582,22 +582,22 @@
         "totalDonations": 51322,
         "donations": 0,
         "warDayWins": 0,
-        "cw2Progress": 591,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Summit of Heroes",
+        "arena": null,
         "stats": {
-          "battleCount": 13487,
-          "threeCrownWins": 2875
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 36
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:22:58.467Z"
+      "fetchedAt": "2026-03-28T10:43:49.760Z"
     },
     "#CGJP0YYUJ": {
       "profile": {
@@ -610,22 +610,22 @@
         "totalDonations": 1987,
         "donations": 10,
         "warDayWins": 0,
-        "cw2Progress": 185,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Summit of Heroes",
+        "arena": null,
         "stats": {
-          "battleCount": 6184,
-          "threeCrownWins": 1164
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 4
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:22:59.360Z"
+      "fetchedAt": "2026-03-28T10:43:49.818Z"
     },
     "#8QVRJYVYU": {
       "profile": {
@@ -638,22 +638,22 @@
         "totalDonations": 84028,
         "donations": 64,
         "warDayWins": 177,
-        "cw2Progress": 1521,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Summit of Heroes",
+        "arena": null,
         "stats": {
-          "battleCount": 43154,
-          "threeCrownWins": 9188
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 36,
-        "warBattles": 12
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:22:58.889Z"
+      "fetchedAt": "2026-03-28T10:43:49.814Z"
     },
     "#GC20UCLL": {
       "profile": {
@@ -666,22 +666,22 @@
         "totalDonations": 134150,
         "donations": 78,
         "warDayWins": 65,
-        "cw2Progress": 820,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Musketeer Street",
+        "arena": null,
         "stats": {
-          "battleCount": 21785,
-          "threeCrownWins": 3747
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 33,
-        "warBattles": 15
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:22:59.809Z"
+      "fetchedAt": "2026-03-28T10:43:50.093Z"
     },
     "#U09CUCYL2": {
       "profile": {
@@ -694,22 +694,22 @@
         "totalDonations": 8308,
         "donations": 0,
         "warDayWins": 0,
-        "cw2Progress": 201,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Musketeer Street",
+        "arena": null,
         "stats": {
-          "battleCount": 4251,
-          "threeCrownWins": 825
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 28
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:00.167Z"
+      "fetchedAt": "2026-03-28T10:43:50.208Z"
     },
     "#J290800UU": {
       "profile": {
@@ -722,22 +722,22 @@
         "totalDonations": 44557,
         "donations": 271,
         "warDayWins": 0,
-        "cw2Progress": 437,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Musketeer Street",
+        "arena": null,
         "stats": {
-          "battleCount": 2788,
-          "threeCrownWins": 1314
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 20
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:00.301Z"
+      "fetchedAt": "2026-03-28T10:43:51.113Z"
     },
     "#GGVQJLG9": {
       "profile": {
@@ -750,22 +750,22 @@
         "totalDonations": 291717,
         "donations": 460,
         "warDayWins": 126,
-        "cw2Progress": 1267,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Musketeer Street",
+        "arena": null,
         "stats": {
-          "battleCount": 28746,
-          "threeCrownWins": 5457
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 27
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:00.194Z"
+      "fetchedAt": "2026-03-28T10:43:50.822Z"
     },
     "#PRGCCRUJP": {
       "profile": {
@@ -778,22 +778,22 @@
         "totalDonations": 27282,
         "donations": 166,
         "warDayWins": 0,
-        "cw2Progress": 182,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Musketeer Street",
+        "arena": null,
         "stats": {
-          "battleCount": 2055,
-          "threeCrownWins": 693
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 17
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:00.339Z"
+      "fetchedAt": "2026-03-28T10:43:51.539Z"
     },
     "#U9PP0CJRL": {
       "profile": {
@@ -806,22 +806,22 @@
         "totalDonations": 26182,
         "donations": 81,
         "warDayWins": 0,
-        "cw2Progress": 512,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Musketeer Street",
+        "arena": null,
         "stats": {
-          "battleCount": 3866,
-          "threeCrownWins": 1109
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 33
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:00.510Z"
+      "fetchedAt": "2026-03-28T10:43:52.055Z"
     },
     "#VJUGLG8RR": {
       "profile": {
@@ -834,22 +834,22 @@
         "totalDonations": 8284,
         "donations": 16,
         "warDayWins": 0,
-        "cw2Progress": 393,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Royal Road",
+        "arena": null,
         "stats": {
-          "battleCount": 2004,
-          "threeCrownWins": 341
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 8
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:01.249Z"
+      "fetchedAt": "2026-03-28T10:43:52.116Z"
     },
     "#QVG90PQVG": {
       "profile": {
@@ -862,22 +862,22 @@
         "totalDonations": 12664,
         "donations": 222,
         "warDayWins": 0,
-        "cw2Progress": 498,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Royal Road",
+        "arena": null,
         "stats": {
-          "battleCount": 3020,
-          "threeCrownWins": 722
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 20
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:00.786Z"
+      "fetchedAt": "2026-03-28T10:43:52.104Z"
     },
     "#8UL8JRCJ": {
       "profile": {
@@ -890,22 +890,22 @@
         "totalDonations": 87543,
         "donations": 104,
         "warDayWins": 37,
-        "cw2Progress": 186,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Royal Road",
+        "arena": null,
         "stats": {
-          "battleCount": 9936,
-          "threeCrownWins": 2639
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 33,
-        "warBattles": 25
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:01.616Z"
+      "fetchedAt": "2026-03-28T10:43:52.270Z"
     },
     "#UVV8CULJV": {
       "profile": {
@@ -918,22 +918,22 @@
         "totalDonations": 9475,
         "donations": 324,
         "warDayWins": 0,
-        "cw2Progress": 280,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Royal Road",
+        "arena": null,
         "stats": {
-          "battleCount": 4845,
-          "threeCrownWins": 1272
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 40,
-        "warBattles": 4
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:01.634Z"
+      "fetchedAt": "2026-03-28T10:43:52.506Z"
     },
     "#YGP000RP8": {
       "profile": {
@@ -946,22 +946,22 @@
         "totalDonations": 103267,
         "donations": 576,
         "warDayWins": 20,
-        "cw2Progress": 914,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Royal Road",
+        "arena": null,
         "stats": {
-          "battleCount": 4731,
-          "threeCrownWins": 1249
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 7
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:01.745Z"
+      "fetchedAt": "2026-03-28T10:43:53.001Z"
     },
     "#P2YYR29QU": {
       "profile": {
@@ -974,22 +974,22 @@
         "totalDonations": 42560,
         "donations": 179,
         "warDayWins": 0,
-        "cw2Progress": 982,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Lumberlove Cabin",
+        "arena": null,
         "stats": {
-          "battleCount": 7269,
-          "threeCrownWins": 1124
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 38,
-        "warBattles": 8
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:01.813Z"
+      "fetchedAt": "2026-03-28T10:43:53.560Z"
     },
     "#82JPJ9J98": {
       "profile": {
@@ -1002,22 +1002,22 @@
         "totalDonations": 215394,
         "donations": 260,
         "warDayWins": 241,
-        "cw2Progress": 1535,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Lumberlove Cabin",
+        "arena": null,
         "stats": {
-          "battleCount": 12665,
-          "threeCrownWins": 3653
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 35,
-        "warBattles": 40
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:02.268Z"
+      "fetchedAt": "2026-03-28T10:43:53.719Z"
     },
     "#RJJ99Y9J": {
       "profile": {
@@ -1030,22 +1030,22 @@
         "totalDonations": 58997,
         "donations": 56,
         "warDayWins": 4,
-        "cw2Progress": 1429,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Lumberlove Cabin",
+        "arena": null,
         "stats": {
-          "battleCount": 7585,
-          "threeCrownWins": 4162
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 38,
-        "warBattles": 13
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:02.559Z"
+      "fetchedAt": "2026-03-28T10:43:53.918Z"
     },
     "#8GGQLU28": {
       "profile": {
@@ -1058,22 +1058,22 @@
         "totalDonations": 95537,
         "donations": 304,
         "warDayWins": 140,
-        "cw2Progress": 760,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Lumberlove Cabin",
+        "arena": null,
         "stats": {
-          "battleCount": 11960,
-          "threeCrownWins": 6141
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 40,
-        "warBattles": 18
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:03.065Z"
+      "fetchedAt": "2026-03-28T10:43:53.968Z"
     },
     "#2L8RPQRJ9": {
       "profile": {
@@ -1086,22 +1086,22 @@
         "totalDonations": 61036,
         "donations": 108,
         "warDayWins": 56,
-        "cw2Progress": 1395,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Lumberlove Cabin",
+        "arena": null,
         "stats": {
-          "battleCount": 7806,
-          "threeCrownWins": 1768
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 21
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:03.229Z"
+      "fetchedAt": "2026-03-28T10:43:54.070Z"
     },
     "#G2R0VRYYQ": {
       "profile": {
@@ -1114,22 +1114,22 @@
         "totalDonations": 22471,
         "donations": 0,
         "warDayWins": 1,
-        "cw2Progress": 269,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Lumberlove Cabin",
+        "arena": null,
         "stats": {
-          "battleCount": 5680,
-          "threeCrownWins": 1270
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 40
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:03.299Z"
+      "fetchedAt": "2026-03-28T10:43:54.218Z"
     },
     "#8QLCU9QG": {
       "profile": {
@@ -1142,22 +1142,22 @@
         "totalDonations": 46975,
         "donations": 350,
         "warDayWins": 8,
-        "cw2Progress": 18,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Legendary Arena",
+        "arena": null,
         "stats": {
-          "battleCount": 8031,
-          "threeCrownWins": 1697
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 8
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:03.590Z"
+      "fetchedAt": "2026-03-28T10:43:54.458Z"
     },
     "#822GLVL00": {
       "profile": {
@@ -1170,22 +1170,22 @@
         "totalDonations": 33045,
         "donations": 130,
         "warDayWins": 56,
-        "cw2Progress": 1280,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Legendary Arena",
+        "arena": null,
         "stats": {
-          "battleCount": 11079,
-          "threeCrownWins": 3175
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 36
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:03.729Z"
+      "fetchedAt": "2026-03-28T10:43:55.245Z"
     },
     "#8Y90VQYP9": {
       "profile": {
@@ -1198,22 +1198,22 @@
         "totalDonations": 56357,
         "donations": 154,
         "warDayWins": 19,
-        "cw2Progress": 1207,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Valkalla",
+        "arena": null,
         "stats": {
-          "battleCount": 10704,
-          "threeCrownWins": 3741
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 33,
-        "warBattles": 30
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:04.594Z"
+      "fetchedAt": "2026-03-28T10:43:55.506Z"
     },
     "#88Y9Q8UPQ": {
       "profile": {
@@ -1226,22 +1226,22 @@
         "totalDonations": 47129,
         "donations": 242,
         "warDayWins": 16,
-        "cw2Progress": 204,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Valkalla",
+        "arena": null,
         "stats": {
-          "battleCount": 6288,
-          "threeCrownWins": 2528
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 7
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:04.756Z"
+      "fetchedAt": "2026-03-28T10:43:55.649Z"
     },
     "#YRGJGR8R": {
       "profile": {
@@ -1254,22 +1254,22 @@
         "totalDonations": 136284,
         "donations": 1406,
         "warDayWins": 32,
-        "cw2Progress": 313,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Valkalla",
+        "arena": null,
         "stats": {
-          "battleCount": 15915,
-          "threeCrownWins": 2794
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 8
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:05.183Z"
+      "fetchedAt": "2026-03-28T10:43:55.726Z"
     },
     "#80GVRPGPY": {
       "profile": {
@@ -1282,22 +1282,22 @@
         "totalDonations": 13470,
         "donations": 144,
         "warDayWins": 1,
-        "cw2Progress": 91,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Valkalla",
+        "arena": null,
         "stats": {
-          "battleCount": 1300,
-          "threeCrownWins": 576
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 19
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:05.370Z"
+      "fetchedAt": "2026-03-28T10:43:55.771Z"
     },
     "#8R0LR8GYC": {
       "profile": {
@@ -1310,22 +1310,22 @@
         "totalDonations": 59551,
         "donations": 0,
         "warDayWins": 14,
-        "cw2Progress": 1215,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Clash Fest",
+        "arena": null,
         "stats": {
-          "battleCount": 8983,
-          "threeCrownWins": 2400
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 45
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:05.521Z"
+      "fetchedAt": "2026-03-28T10:43:55.774Z"
     },
     "#9VQYC9GJQ": {
       "profile": {
@@ -1338,22 +1338,22 @@
         "totalDonations": 98343,
         "donations": 289,
         "warDayWins": 80,
-        "cw2Progress": 1362,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Dragon Spa",
+        "arena": null,
         "stats": {
-          "battleCount": 12556,
-          "threeCrownWins": 4282
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 8
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:05.847Z"
+      "fetchedAt": "2026-03-28T10:43:56.694Z"
     },
     "#UP9YJV080": {
       "profile": {
@@ -1366,22 +1366,22 @@
         "totalDonations": 14037,
         "donations": 34,
         "warDayWins": 0,
-        "cw2Progress": 929,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Silent Sanctuary",
+        "arena": null,
         "stats": {
-          "battleCount": 2258,
-          "threeCrownWins": 639
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 39
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:05.934Z"
+      "fetchedAt": "2026-03-28T10:43:56.886Z"
     },
     "#J008G9CLJ": {
       "profile": {
@@ -1394,22 +1394,22 @@
         "totalDonations": 2029,
         "donations": 28,
         "warDayWins": 0,
-        "cw2Progress": 59,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Rascal's Hideout",
+        "arena": null,
         "stats": {
-          "battleCount": 1749,
-          "threeCrownWins": 166
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 8
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:06.136Z"
+      "fetchedAt": "2026-03-28T10:43:57.039Z"
     },
     "#UPC0Y0LRQ": {
       "profile": {
@@ -1422,22 +1422,22 @@
         "totalDonations": 9444,
         "donations": 24,
         "warDayWins": 0,
-        "cw2Progress": 249,
+        "cw2Progress": null,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
-        "arena": "Clash Fest",
+        "arena": null,
         "stats": {
-          "battleCount": 1060,
-          "threeCrownWins": 202
+          "battleCount": null,
+          "threeCrownWins": null
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 32
+        "totalBattles": 0,
+        "warBattles": 0
       },
-      "fetchedAt": "2026-03-28T10:23:05.755Z"
+      "fetchedAt": "2026-03-28T10:43:56.219Z"
     }
   },
   "members": [
@@ -1464,7 +1464,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -1472,7 +1472,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -1526,7 +1526,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -1534,7 +1534,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 1,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -1588,7 +1588,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 4,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -1596,7 +1596,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 4,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -1650,7 +1650,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -1658,7 +1658,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -1720,7 +1720,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 4,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -1749,7 +1749,7 @@
         "daysFromThu": 2
       },
       "warDecks": 8,
-      "lastSeen": "20260328T094314.000Z"
+      "lastSeen": "20260328T103639.000Z"
     },
     {
       "name": "VTLX.KING",
@@ -1774,7 +1774,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 4,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -1782,7 +1782,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -1836,7 +1836,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -1844,7 +1844,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -1898,7 +1898,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -1906,7 +1906,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -1960,7 +1960,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 4,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -1968,7 +1968,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 4,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2022,7 +2022,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2030,7 +2030,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 4,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2084,7 +2084,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2092,7 +2092,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2146,7 +2146,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 4,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2208,7 +2208,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 1,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2216,7 +2216,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 4,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2270,7 +2270,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2278,7 +2278,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2332,7 +2332,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2340,7 +2340,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2394,7 +2394,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 4,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2402,7 +2402,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 4,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2464,7 +2464,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 4,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2518,7 +2518,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 4,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2526,7 +2526,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 4,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2580,7 +2580,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2588,7 +2588,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2642,7 +2642,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2650,7 +2650,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 4,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2704,7 +2704,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 4,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2712,7 +2712,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2766,7 +2766,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2774,7 +2774,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2828,7 +2828,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 4,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2836,7 +2836,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 4,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2890,7 +2890,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2952,7 +2952,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -2960,7 +2960,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 1,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3014,7 +3014,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3022,7 +3022,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3076,7 +3076,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3084,7 +3084,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3138,7 +3138,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 4,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3146,7 +3146,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 4,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3186,7 +3186,7 @@
       "totalDonations": 58119,
       "donationsReceived": 440,
       "expLevel": 68,
-      "reliability": 83,
+      "reliability": 84,
       "reliabilitySource": "player",
       "verdict": "High reliability",
       "color": "green",
@@ -3200,7 +3200,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3208,7 +3208,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3230,13 +3230,13 @@
             "isFuture": true
           }
         ],
-        "totalDecksUsed": 8,
+        "totalDecksUsed": 11,
         "maxDecksElapsed": 12,
         "maxDecksWeek": 16,
         "isReliableTotal": true,
         "daysFromThu": 2
       },
-      "warDecks": 8,
+      "warDecks": 11,
       "lastSeen": "20260328T101308.000Z"
     },
     {
@@ -3262,7 +3262,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3270,7 +3270,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3278,7 +3278,7 @@
           {
             "key": "2026-03-28",
             "label": "Sat",
-            "count": 3,
+            "count": 0,
             "isPast": false,
             "isToday": true,
             "isFuture": false
@@ -3324,7 +3324,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3332,7 +3332,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3394,7 +3394,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3429,7 +3429,7 @@
       "name": "laurentsom",
       "tag": "#RJJ99Y9J",
       "role": "elder",
-      "trophies": 10182,
+      "trophies": 10212,
       "donations": 56,
       "totalDonations": 58997,
       "donationsReceived": 520,
@@ -3448,7 +3448,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 4,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3456,7 +3456,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 4,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3485,7 +3485,7 @@
         "daysFromThu": 2
       },
       "warDecks": 8,
-      "lastSeen": "20260328T094441.000Z"
+      "lastSeen": "20260328T103629.000Z"
     },
     {
       "name": "grooliv",
@@ -3510,7 +3510,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3518,7 +3518,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3572,7 +3572,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 4,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3580,7 +3580,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 4,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3634,7 +3634,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3642,7 +3642,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3704,7 +3704,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3733,7 +3733,7 @@
         "daysFromThu": 2
       },
       "warDecks": 4,
-      "lastSeen": "20260327T203005.000Z"
+      "lastSeen": "20260328T102932.000Z"
     },
     {
       "name": "kayes(2)",
@@ -3758,7 +3758,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3766,7 +3766,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3795,7 +3795,7 @@
         "daysFromThu": 2
       },
       "warDecks": 8,
-      "lastSeen": "20260328T063524.000Z"
+      "lastSeen": "20260328T104101.000Z"
     },
     {
       "name": "Flo 2",
@@ -3820,7 +3820,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3828,7 +3828,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3882,7 +3882,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3890,7 +3890,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3944,7 +3944,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3952,7 +3952,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -3984,68 +3984,6 @@
       "lastSeen": "20260328T051745.000Z"
     },
     {
-      "name": "flo",
-      "tag": "#LUGP2RYY",
-      "role": "elder",
-      "trophies": 12107,
-      "donations": 340,
-      "totalDonations": 255650,
-      "donationsReceived": 240,
-      "expLevel": 79,
-      "reliability": 88,
-      "reliabilitySource": "player",
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-26",
-            "label": "Thu",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-27",
-            "label": "Fri",
-            "count": 2,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-28",
-            "label": "Sat",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-29",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": false,
-            "isFuture": true
-          }
-        ],
-        "totalDecksUsed": 7,
-        "maxDecksElapsed": 12,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 2
-      },
-      "warDecks": 7,
-      "lastSeen": "20260328T071929.000Z"
-    },
-    {
       "name": "hyène",
       "tag": "#82JPJ9J98",
       "role": "elder",
@@ -4068,7 +4006,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -4076,7 +4014,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -4108,6 +4046,68 @@
       "lastSeen": "20260328T081154.000Z"
     },
     {
+      "name": "flo",
+      "tag": "#LUGP2RYY",
+      "role": "elder",
+      "trophies": 12107,
+      "donations": 340,
+      "totalDonations": 255650,
+      "donationsReceived": 240,
+      "expLevel": 79,
+      "reliability": 89,
+      "reliabilitySource": "player",
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": {
+        "days": [
+          {
+            "key": "2026-03-26",
+            "label": "Thu",
+            "count": 0,
+            "isPast": true,
+            "isToday": false,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-27",
+            "label": "Fri",
+            "count": 0,
+            "isPast": true,
+            "isToday": false,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-28",
+            "label": "Sat",
+            "count": 0,
+            "isPast": false,
+            "isToday": true,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-29",
+            "label": "Sun",
+            "count": 0,
+            "isPast": false,
+            "isToday": false,
+            "isFuture": true
+          }
+        ],
+        "totalDecksUsed": 10,
+        "maxDecksElapsed": 12,
+        "maxDecksWeek": 16,
+        "isReliableTotal": true,
+        "daysFromThu": 2
+      },
+      "warDecks": 10,
+      "lastSeen": "20260328T102757.000Z"
+    },
+    {
       "name": "Plugpourlefion",
       "tag": "#GGVQJLG9",
       "role": "elder",
@@ -4130,7 +4130,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -4138,7 +4138,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -4167,7 +4167,7 @@
         "daysFromThu": 2
       },
       "warDecks": 8,
-      "lastSeen": "20260328T081941.000Z"
+      "lastSeen": "20260328T103507.000Z"
     },
     {
       "name": "derrick",
@@ -4192,7 +4192,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -4200,7 +4200,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -4254,7 +4254,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -4262,7 +4262,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -4316,7 +4316,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -4324,7 +4324,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -4353,7 +4353,7 @@
         "daysFromThu": 2
       },
       "warDecks": 8,
-      "lastSeen": "20260328T074336.000Z"
+      "lastSeen": "20260328T103830.000Z"
     },
     {
       "name": "dclik77",
@@ -4378,7 +4378,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -4386,7 +4386,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -4440,7 +4440,7 @@
           {
             "key": "2026-03-26",
             "label": "Thu",
-            "count": 3,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -4448,7 +4448,7 @@
           {
             "key": "2026-03-27",
             "label": "Fri",
-            "count": 2,
+            "count": 0,
             "isPast": true,
             "isToday": false,
             "isFuture": false
@@ -5551,7 +5551,7 @@
     ]
   },
   "clanWarSummary": {
-    "totalDecksUsed": 332,
+    "totalDecksUsed": 338,
     "maxDecksElapsed": 600,
     "maxDecksWeek": 800,
     "participantCount": 50,
@@ -5581,14 +5581,14 @@
       },
       {
         "label": "Sat",
-        "totalCount": 4,
+        "totalCount": 10,
         "maxCount": 200,
         "isPast": false,
         "isToday": true,
         "isFuture": false,
         "source": "live",
-        "snapshotCount": 196,
-        "liveCount": 4
+        "snapshotCount": null,
+        "liveCount": 10
       },
       {
         "label": "Sun",
@@ -5615,7 +5615,7 @@
     196,
     0
   ],
-  "snapshotTakenAt": "2026-03-28T10:22:51.050Z",
+  "snapshotTakenAt": "2026-03-28T10:43:45.221Z",
   "currentWarDays": [
     {
       "label": "Thu",
@@ -5641,14 +5641,14 @@
     },
     {
       "label": "Sat",
-      "totalCount": 4,
+      "totalCount": 10,
       "maxCount": 200,
       "isPast": false,
       "isToday": true,
       "isFuture": false,
       "source": "live",
-      "snapshotCount": 196,
-      "liveCount": 4
+      "snapshotCount": null,
+      "liveCount": 10
     },
     {
       "label": "Sun",
@@ -5664,5 +5664,5 @@
   ],
   "rateLimited": false,
   "raceLogUnavailable": false,
-  "analysisCacheUpdatedAt": "2026-03-28T10:23:09.084Z"
+  "analysisCacheUpdatedAt": "2026-03-28T10:43:59.007Z"
 }
