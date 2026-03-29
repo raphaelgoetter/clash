@@ -221,8 +221,13 @@ export function renderRaceTimeChart(buckets, lastBucketRiskLabel = ' ⚠️ risk
   const el = document.getElementById('chart-race-time');
   if (!el) return;
 
+  const nowUtc = new Date();
+  const utcYear = nowUtc.getUTCFullYear();
+  const utcMonth = nowUtc.getUTCMonth();
+  const utcDate = nowUtc.getUTCDate();
+
   const labels = Array.from({ length: 24 }, (_, i) => {
-    const utcBase = new Date(Date.UTC(1970, 0, 1, 9 + i, 40, 0)); // 09:40 UTC base
+    const utcBase = new Date(Date.UTC(utcYear, utcMonth, utcDate, 9 + i, 40, 0)); // 09:40 UTC base, current date for DST
     return utcBase.toLocaleTimeString('fr-FR', {
       timeZone: 'Europe/Paris',
       hour: '2-digit',
@@ -233,6 +238,7 @@ export function renderRaceTimeChart(buckets, lastBucketRiskLabel = ' ⚠️ risk
 
   new Chart(el.getContext('2d'), {
     type: 'bar',
+
     data: {
       labels,
       datasets: [{
