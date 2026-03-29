@@ -863,11 +863,6 @@ function renderPlayerResults(data) {
         value: `${gdc}/${total} (${ratioPercent}%)`,
         risk: ratioPercent < 25 ? 'bad' : ratioPercent < 50 ? 'warn' : null,
       },
-      {
-        label: t('statWinRateWar'),
-        value: `${activityIndicators.winRate}%`,
-        risk: activityIndicators.winRate < 30 ? 'bad' : activityIndicators.winRate < 50 ? 'warn' : null,
-      },
     ]);
   } else if (warHistory && warHistory.weeks.length > 0) {
     // For display we prefer completed weeks only; current (possibly partial) week is excluded
@@ -918,11 +913,6 @@ function renderPlayerResults(data) {
         label: t('statRiverRaceRatio'),
         value: `${gdc}/${total} (${ratioPercent}%)`,
         risk: ratioPercent < 25 ? 'bad' : ratioPercent < 50 ? 'warn' : null,
-      },
-      {
-        label: t('statWinRateWar'),
-        value: `${activityIndicators?.winRate ?? 0}%`,
-        risk: (activityIndicators?.winRate ?? 0) < 30 ? 'bad' : (activityIndicators?.winRate ?? 0) < 50 ? 'warn' : null,
       },
     ]);
   }
