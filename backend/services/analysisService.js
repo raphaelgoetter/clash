@@ -107,9 +107,10 @@ function scoreQuality(score, max) {
   return 'bad';
 }
 
-/** Nombre de ms à soustraire à un timestamp UTC pour obtenir le « jour GDC » (reset 10h40 Paris) */
-export function warResetOffsetMs(date = new Date()) {
-  return (10 * 60 + 40) * 60 * 1000 - parisOffsetMs(date);
+/** Nombre de ms à soustraire à un timestamp UTC pour obtenir le « jour GDC » (reset 9h40 UTC) */
+export function warResetOffsetMs(/* date = new Date() */) {
+  // La guerre de clan bascule à 9h40 UTC quelle que soit la saison (CET/CEST).
+  return (9 * 60 + 40) * 60 * 1000;
 }
 
 // ── Date utilities ────────────────────────────────────────────
@@ -1608,6 +1609,11 @@ export function buildCurrentWarDays(battleLog, raceTotalDecks = null, raceMeta =
   // Déterminer le jour GDC courant
   // Priorité 1 : état de course depuis l'API /currentriverrace (source autoritaire)
   let daysFromThu;
+
+  const nowDow = nowGdcDate.getUTCDay(); // 0=Dim, 1=Lun … 4=Jeu, 5=Ven, 6=Sam
+  const isWarPeriod = nowDow === 0 || nowDow >= 4;
+  const fallbackDaysFromThu = isWarPeriod ? (nowDow === 4 ? 0 : nowDow === 5 ? 1 : nowDow === 6 ? 2 : 3) : undefined;
+
   if (raceMeta?.state) {
     const { state, periodIndex } = raceMeta;
     // Journée d'entraînement → pas de période de guerre active
@@ -1615,17 +1621,22 @@ export function buildCurrentWarDays(battleLog, raceTotalDecks = null, raceMeta =
     // warDay / overtime / full → période active
     if (typeof periodIndex === 'number' && periodIndex >= 0 && periodIndex <= 3) {
       daysFromThu = periodIndex; // 0=Jeu, 1=Ven, 2=Sam, 3=Dim
+      // Byzantine protection: ne pas avancer avant le reset officiel (9:40 UTC)
+      if (fallbackDaysFromThu !== undefined && daysFromThu > fallbackDaysFromThu) {
+        daysFromThu = fallbackDaysFromThu;
+      }
     } else if (state === 'overtime') {
       daysFromThu = 3; // overtime se joue en dernier jour (dimanche)
+      if (fallbackDaysFromThu !== undefined && daysFromThu > fallbackDaysFromThu) {
+        daysFromThu = fallbackDaysFromThu;
+      }
     }
   }
 
   // Priorité 2 : calcul calendaire (fallback si currentRace non disponible)
   if (daysFromThu === undefined) {
-    const dow = nowGdcDate.getUTCDay(); // 0=Dim, 1=Lun … 4=Jeu, 5=Ven, 6=Sam
-    const isWarPeriod = dow === 0 || dow >= 4;
     if (!isWarPeriod) return null;
-    daysFromThu = dow === 4 ? 0 : dow === 5 ? 1 : dow === 6 ? 2 : 3;
+    daysFromThu = fallbackDaysFromThu;
   }
 
   const thuGdcMs = nowGdcDate.getTime() - daysFromThu * MS_PER_DAY;

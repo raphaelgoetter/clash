@@ -1,7 +1,7 @@
 import assert from 'assert';
-import { computeIsNewPlayer, computeWarReliabilityFallback } from './analysisService.js';
+import { computeIsNewPlayer, computeWarReliabilityFallback, warDayKey, warResetOffsetMs } from './analysisService.js';
 
-console.log('Running analysisService computeIsNewPlayer tests...');
+console.log('Running analysisService computeIsNewPlayer + war-day tests...');
 
 const testCases = [
   {
@@ -36,6 +36,13 @@ for (const tc of testCases) {
   assert.strictEqual(result, tc.expected, `${tc.name} failed: got ${result}, expected ${tc.expected}`);
   console.log(`✓ ${tc.name}`);
 }
+
+const t1 = new Date('2026-03-29T09:07:00.000Z'); // 11:07 Paris CEST
+assert.strictEqual(warResetOffsetMs(), 34800000, 'warResetOffsetMs should be exactly 9:40 UTC');
+assert.strictEqual(warDayKey(t1), '2026-03-28', 'warDayKey should stay on saturday before 9:40 UTC reset');
+
+const t2 = new Date('2026-03-29T09:50:00.000Z'); // 11:50 Paris CEST
+assert.strictEqual(warDayKey(t2), '2026-03-29', 'warDayKey should be sunday after 9:40 UTC reset');
 
 const fallback = computeWarReliabilityFallback(
   { trophies: 12000, totalDonations: 10000, badges: [] },

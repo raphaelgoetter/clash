@@ -132,12 +132,13 @@ function parisTimeUtcMs(dateKey, hour = 0, minute = 0) {
  */
 function getWarDayInfo(date = new Date()) {
   const paris = new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
-  const resetMs = (10 * 60 + 40) * 60 * 1000;
-  const msOfDay = paris.getHours() * 3600000 + paris.getMinutes() * 60000 + paris.getSeconds() * 1000 + paris.getMilliseconds();
+  const utc = new Date(date.toISOString());
+  const resetUtcMs = (9 * 60 + 40) * 60 * 1000;
+  const msOfDayUtc = utc.getUTCHours() * 3600000 + utc.getUTCMinutes() * 60000 + utc.getUTCSeconds() * 1000 + utc.getUTCMilliseconds();
 
-  // Before reset (10:40 Paris), we are still in the *previous* war day.
-  // After reset, the new war day begins (increment date by 1).
-  if (msOfDay < resetMs) {
+  // Before reset (9:40 UTC), on est toujours sur la journée précédente.
+  // Après reset, on passe à la journée suivante.
+  if (msOfDayUtc < resetUtcMs) {
     paris.setDate(paris.getDate() - 1);
   }
 
