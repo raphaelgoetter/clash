@@ -808,6 +808,11 @@ function renderPlayerResults(data) {
     : null;
   const clanValue = clanTag ? clanTag : 'No clan';
 
+  const playerTag = overview.tag ?? null;
+  const playerLink = playerTag
+    ? `https://royaleapi.com/player/${playerTag.replace('#', '')}`
+    : null;
+
   // Ce calcul doit rester synchronisé avec la card historique BattleLog/RaceHistory.
   const hasCompletedWarWeeks = warHistory?.weeks?.some((w) => !(w.isCurrent) && (w.decksUsed ?? 0) > 0);
   const hasOnlyCurrentWeek = warHistory?.weeks?.length === 1 && warHistory?.weeks?.[0]?.isCurrent;
@@ -850,7 +855,7 @@ function renderPlayerResults(data) {
   overviewGrid.innerHTML = overviewItems([
     { label: t('labelName'),          value: overview.name, cls: 'gold', badge: playerBadge },
     { label: t('labelTag'),           value: overview.tag,
-      link: `https://royaleapi.com/player/${overview.tag.replace('#', '')}` },
+      link: playerLink },
     { label: t('labelClan'),          value: clanValue,
       link: clanLink },
     { label: t('labelTrophies'),      value: `🏆 ${fmt(overview.trophies)}`,
