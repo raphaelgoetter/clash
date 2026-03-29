@@ -32,6 +32,14 @@ function stripClanCachePayload(payload) {
     ...rest
   } = payload;
 
+  if (Array.isArray(rest.members)) {
+    rest.members = rest.members.map((member) => {
+      if (!member || typeof member !== 'object') return member;
+      const { warDays, warDecks, ...memberRest } = member;
+      return memberRest;
+    });
+  }
+
   return rest;
 }
 
