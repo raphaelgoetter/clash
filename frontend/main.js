@@ -456,10 +456,15 @@ async function handleSearch(force = false) {
   if (!raw) return showError('Please enter a tag.');
 
   const tag = raw.startsWith('#') ? raw : `#${raw}`;
+
+  // Update URL immediately to keep navigation state consistent even if API fails.
+  syncUrlState(currentMode, tag);
+
   hideError();
   hideResults();
   setLoading(true);
 
+  let staticData = null;
   try {
     if (currentMode === 'player') {
       const query = force ? '?force=true' : '';
@@ -521,10 +526,19 @@ async function handleSearch(force = false) {
         snapshotTakenAt: data.snapshotTakenAt ?? null,
       });
     }
-    syncUrlState(currentMode, tag);
     favBtn.classList.remove('hidden');
     renderFavorites();
   } catch (err) {
+    // keep the static data if available (the first render from cache) instead of wiping UI.
+    if (staticData) {
+      renderClanOverview(staticData);
+      renderClanMembers(staticData);
+      showCacheNote(true, staticData.snapshotDate, {
+        source: 'cached',
+        updatedAt: staticData.analysisCacheUpdatedAt || 'unknown',
+        snapshotTakenAt: staticData.snapshotTakenAt ?? staticData.warSnapshotTakenAt ?? null,
+      });
+    }
     showError(err.message);
   } finally {
     setLoading(false);
@@ -681,7 +695,12 @@ favoritesContainer.addEventListener('click', (e) => {
   if (mode && tag) {
     e.preventDefault();
     applyUrlState(mode, tag);
-    searchInput.value = tag;
+    if (mode === 'clan') {
+      searchSelect.value = tag;
+    } else {
+      searchInput.value = tag;
+    }
+    syncUrlState(mode, tag);
     handleSearch();
   }
 });
