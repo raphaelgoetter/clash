@@ -1282,7 +1282,7 @@ export function analyzePlayer(player, battleLog, lastSeen = null, discordLinked 
 
   // Fallback reliability (battle log only) — overridden in the route when race log is available
   const reliability = computeWarReliabilityFallback(player, warLog, battleLogBreakdown, lastSeen, discordLinked);
-  const dailyActivity = buildDailyActivity(warLog, 7);
+  const dailyActivity = buildDailyActivity(battleLog, 7); // all battles, not war-only
 
   const wins            = warLog.filter(isWarWin).length;
   const losses          = warLog.filter(isWarLoss).length;

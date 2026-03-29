@@ -845,7 +845,7 @@ function renderPlayerResults(data) {
     const dailyActivity = recentActivity?.dailyActivity ?? [];
     const dailyTotal = dailyActivity.reduce((sum, d) => sum + (d?.count ?? 0), 0);
     const dailyCount = dailyActivity.length > 0 ? dailyActivity.length : 7;
-    const battlesPerDay = dailyCount > 0 ? Math.round(dailyTotal / dailyCount) : 0;
+    const battlesPerDay = dailyCount > 0 ? Number((dailyTotal / dailyCount).toFixed(1)) : 0;
 
     statsGrid.innerHTML = statCards([
       {
@@ -901,7 +901,7 @@ function renderPlayerResults(data) {
     const dailyActivity = recentActivity?.dailyActivity ?? [];
     const dailyTotal = dailyActivity.reduce((sum, d) => sum + (d?.count ?? 0), 0);
     const dailyCount = dailyActivity.length > 0 ? dailyActivity.length : 7;
-    const battlesPerDay = dailyCount > 0 ? Math.round(dailyTotal / dailyCount) : 0;
+    const battlesPerDay = dailyCount > 0 ? Number((dailyTotal / dailyCount).toFixed(1)) : 0;
 
     statsGrid.innerHTML = statCards([
       {

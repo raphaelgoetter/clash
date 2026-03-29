@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { computeIsNewPlayer, computeWarReliabilityFallback, warDayKey, warResetOffsetMs } from './analysisService.js';
+import { analyzePlayer, buildDailyActivity, computeIsNewPlayer, computeWarReliabilityFallback, warDayKey, warResetOffsetMs } from './analysisService.js';
 
 console.log('Running analysisService computeIsNewPlayer + war-day tests...');
 
@@ -56,5 +56,20 @@ const fallback = computeWarReliabilityFallback(
 assert.ok(typeof fallback.summary === 'string' && fallback.summary.length > 0, 'fallback summary should be present');
 assert.ok(typeof fallback.breakdown[0].explanation === 'string' && fallback.breakdown[0].explanation.length > 0, 'war activity explanation should be present');
 console.log('✓ fallback warScore summary/explanation test passed.');
+
+// New test: dailyActivity should count all battles, not only war battles
+const gameNow = new Date().toISOString();
+const sampleBattleLog = [
+  { battleTime: gameNow, type: 'pvp' },
+  { battleTime: gameNow, type: 'pathoflegend' },
+  { battleTime: gameNow, type: 'riverracepvp' },
+  { battleTime: gameNow, type: 'challenge' },
+];
+const result = analyzePlayer({ name: 'test', tag: '#TEST', clan: null, trophies: 0, bestTrophies: 0, expLevel: 1, totalDonations: 0, donations: 0, badges: [] }, sampleBattleLog);
+assert.strictEqual(result.activityIndicators.totalBattles, 4, 'totalBattles should include all fights');
+assert.strictEqual(result.activityIndicators.totalWarBattles, 1, 'totalWarBattles should include only war fights');
+const sumActivity = result.recentActivity.dailyActivity.reduce((sum, d) => sum + d.count, 0);
+assert.strictEqual(sumActivity, 4, 'dailyActivity should count all battles');
+console.log('✓ analyzePlayer dailyActivity all-battles test passed.');
 
 console.log('All computeIsNewPlayer tests passed.');
