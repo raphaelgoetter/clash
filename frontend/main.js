@@ -1898,10 +1898,15 @@ function renderClanOverview(data) {
   document.getElementById('th-this-war').classList.toggle('hidden', !isWarActive);
 
   // Clan overview card
+  const clanTag = clan.tag ?? null;
+  const clanLink = clanTag
+    ? `https://royaleapi.com/clan/${clanTag.replace('#', '')}/`
+    : null;
+
   clanOverviewGrid.innerHTML = overviewItems([
     { label: t('labelName'),          value: clan.name },
     { label: t('labelTag'),           value: clan.tag,
-      link: `https://royaleapi.com/clan/${clan.tag.replace('#', '')}/` },
+      link: clanLink },
     { label: t('labelMembers'),       value: `${clan.members} / 50`,
       cls: clan.members < 45 ? 'c-red' : clan.members < 48 ? 'c-orange' : clan.members < 50 ? 'c-yellow' : '' },
     { label: t('labelClanScore'),    value: fmt(clan.clanScore) },
