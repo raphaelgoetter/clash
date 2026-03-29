@@ -4,6 +4,17 @@
     "days": [
       {
         "warDay": "thursday",
+        "realDay": "2026-03-26",
+        "gdcPeriod": {
+          "start": "2026-03-26T09:40:00.000Z",
+          "end": "2026-03-27T09:39:59.999Z"
+        },
+        "snapshotTime": null,
+        "snapshotBackupTime": null,
+        "decks": {}
+      },
+      {
+        "warDay": "friday",
         "realDay": "2026-03-27",
         "gdcPeriod": {
           "start": "2026-03-27T09:40:00.000Z",
@@ -14,7 +25,7 @@
         "decks": {}
       },
       {
-        "warDay": "friday",
+        "warDay": "saturday",
         "realDay": "2026-03-28",
         "gdcPeriod": {
           "start": "2026-03-28T09:40:00.000Z",
@@ -74,78 +85,14 @@
         }
       },
       {
-        "warDay": "saturday",
+        "warDay": "sunday",
         "realDay": "2026-03-29",
         "gdcPeriod": {
           "start": "2026-03-29T08:40:00.000Z",
           "end": "2026-03-30T08:39:59.999Z"
         },
-        "snapshotTime": "2026-03-29T09:38:21.854Z",
-        "snapshotBackupTime": "2026-03-29T09:38:21.854Z",
-        "decks": {
-          "#2L8RPQRJ9": 4,
-          "#2YP2V2G0R": 4,
-          "#80GVRPGPY": 4,
-          "#822GLVL00": 4,
-          "#82JPJ9J98": 4,
-          "#82UPUGYP": 4,
-          "#88Y9Q8UPQ": 4,
-          "#89L8J9YV9": 4,
-          "#8G00908LP": 4,
-          "#8GGQLU28": 4,
-          "#8QLCU9QG": 4,
-          "#8QVRJYVYU": 4,
-          "#8R0LR8GYC": 4,
-          "#8UL8JRCJ": 4,
-          "#8VQLJLR0": 4,
-          "#8Y90VQYP9": 4,
-          "#8YGY2RPCC": 4,
-          "#98UULQY8": 4,
-          "#99VY0090": 4,
-          "#9VQYC9GJQ": 4,
-          "#CGJP0YYUJ": 4,
-          "#CJVUJ8U9C": 4,
-          "#G2R0VRYYQ": 4,
-          "#GC20UCLL": 4,
-          "#GGVQJLG9": 4,
-          "#GLV9Q2P09": 4,
-          "#J008G9CLJ": 4,
-          "#J290800UU": 4,
-          "#LUGP2RYY": 4,
-          "#P2YYR29QU": 4,
-          "#PCLLULJ9V": 4,
-          "#PGRJC00G9": 4,
-          "#PRGCCRUJP": 4,
-          "#QQUCRGQP8": 4,
-          "#QVG90PQVG": 4,
-          "#RJJ99Y9J": 4,
-          "#RJY2R282V": 4,
-          "#U09CUCYL2": 4,
-          "#U9PP0CJRL": 4,
-          "#UP9YJV080": 4,
-          "#UPC0Y0LRQ": 4,
-          "#UVV8CULJV": 4,
-          "#V0VLJQCJU": 4,
-          "#VGJ9LL8VC": 4,
-          "#VJUGLG8RR": 4,
-          "#Y9P9GGL89": 4,
-          "#YGP000RP8": 4,
-          "#YQVP9P0Y": 4,
-          "#YRGJGR8R": 4,
-          "#20992UQU82": 0
-        }
-      },
-      {
-        "warDay": "sunday",
-        "realDay": "2026-03-30",
-        "gdcPeriod": {
-          "start": "2026-03-30T08:40:00.000Z",
-          "end": "2026-03-31T08:39:59.999Z"
-        },
-
-        "snapshotTime": "2026-03-29T20:07:47.517Z",
-        "snapshotBackupTime": "2026-03-29T20:07:47.517Z",
- 52f49ea (Update clan data for Les Resistants: Adjust clan score, member trophies, and fetched timestamps)
+        "snapshotTime": "2026-03-29T21:01:30.402Z",
+        "snapshotBackupTime": "2026-03-29T21:01:30.402Z",
         "decks": {
           "#2L8RPQRJ9": 4,
           "#2YP2V2G0R": 4,
