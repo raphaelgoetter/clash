@@ -27,7 +27,6 @@ function stripClanCachePayload(payload) {
     lastWarSummary,
     warSnapshotDays,
     currentWarDays,
-    clanWarSummary,
     // these are war/day specific and must be kept in snapshots or live API only
     ...rest
   } = payload;
