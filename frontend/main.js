@@ -842,12 +842,21 @@ function renderPlayerResults(data) {
     const total = activityIndicators?.totalBattles ?? activityIndicators?.totalWarBattles ?? 0;
     const gdc = bd.gdc || 0;
     const ratioPercent = total > 0 ? Math.round((gdc / total) * 100) : 0;
+    const dailyActivity = recentActivity?.dailyActivity ?? [];
+    const dailyTotal = dailyActivity.reduce((sum, d) => sum + (d?.count ?? 0), 0);
+    const dailyCount = dailyActivity.length > 0 ? dailyActivity.length : 7;
+    const battlesPerDay = dailyCount > 0 ? Math.round(dailyTotal / dailyCount) : 0;
 
     statsGrid.innerHTML = statCards([
       {
         label: t('statTotalBattles'),
         value: fmt(total),
         risk: total < 10 ? 'bad' : total < 20 ? 'warn' : null,
+      },
+      {
+        label: t('statBattlesPerDay'),
+        value: fmt(battlesPerDay),
+        risk: battlesPerDay < 2 ? 'bad' : battlesPerDay < 4 ? 'warn' : null,
       },
       {
         label: t('statRiverRaceRatio'),
@@ -889,12 +898,21 @@ function renderPlayerResults(data) {
     const total = activityIndicators?.totalBattles ?? activityIndicators?.totalWarBattles ?? 0;
     const gdc = bd.gdc || 0;
     const ratioPercent = total > 0 ? Math.round((gdc / total) * 100) : 0;
+    const dailyActivity = recentActivity?.dailyActivity ?? [];
+    const dailyTotal = dailyActivity.reduce((sum, d) => sum + (d?.count ?? 0), 0);
+    const dailyCount = dailyActivity.length > 0 ? dailyActivity.length : 7;
+    const battlesPerDay = dailyCount > 0 ? Math.round(dailyTotal / dailyCount) : 0;
 
     statsGrid.innerHTML = statCards([
       {
         label: t('statTotalBattles'),
         value: fmt(total),
         risk: total < 10 ? 'bad' : total < 20 ? 'warn' : null,
+      },
+      {
+        label: t('statBattlesPerDay'),
+        value: fmt(battlesPerDay),
+        risk: battlesPerDay < 2 ? 'bad' : battlesPerDay < 4 ? 'warn' : null,
       },
       {
         label: t('statRiverRaceRatio'),
