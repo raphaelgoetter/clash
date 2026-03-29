@@ -17,6 +17,7 @@ import { getOrSet } from '../services/cache.js';
 import { getDiscordLinks } from '../services/discordLinks.js';
 import { recordSnapshot } from '../services/snapshot.js';
 import { loadClanCache, saveClanCache } from '../services/clanCache.js';
+import { loadCache, saveCache } from '../services/analysisCache.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -155,6 +156,7 @@ router.get('/:tag/analysis', async (req, res) => {
           setTimeout(async () => {
             try {
               const fresh = await buildClanAnalysis(clanTag);
+              await saveCache(clanTag, fresh).catch(() => null);
               await saveClanCache(clanTag, fresh).catch(() => null);
             } catch (err) {
               console.warn(`[clan] background refresh failed for ${clanTag}:`, err.message);
@@ -183,6 +185,7 @@ router.get('/:tag/analysis', async (req, res) => {
 
         // Keep a persistent fallback cache on disk, to survive cold starts and rate-limit incidents.
         if (!fromCache) {
+          await saveCache(clanTag, payload).catch(() => null);
           await saveClanCache(clanTag, payload).catch(() => null);
         }
       }
