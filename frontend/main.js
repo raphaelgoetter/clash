@@ -817,6 +817,31 @@ function renderPlayerResults(data) {
     ? 'transfer'
     : (isNewClanArrivee ? 'new' : (isBattleLogMode ? 'new' : null));
 
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+  const computeBattlesPerDay = () => {
+    // Baseline from battle log entries (all types, max 30 entries from API)
+    if (Array.isArray(battleLog) && battleLog.length > 0) {
+      const times = battleLog
+        .map((b) => parseBattleTimestamp(b?.battleTime))
+        .filter((d) => d instanceof Date && !Number.isNaN(d.getTime()))
+        .map((d) => d.getTime());
+      if (times.length > 0) {
+        const min = Math.min(...times);
+        const max = Math.max(...times);
+        const spanDays = Math.max(1, Math.ceil((max - min + 1) / MS_PER_DAY));
+        return activityIndicators.totalBattles > 0 ? Number((activityIndicators.totalBattles / spanDays).toFixed(1)) : 0;
+      }
+    }
+    // Fallback using recentActivity bucketed days
+    const dailyActivity = recentActivity?.dailyActivity ?? [];
+    const dailyTotal = dailyActivity.reduce((sum, d) => sum + (d?.count ?? 0), 0);
+    const dailyCount = dailyActivity.length > 0 ? dailyActivity.length : 7;
+    return dailyCount > 0 ? Number((dailyTotal / dailyCount).toFixed(1)) : 0;
+  };
+
+  const battlesPerDay = computeBattlesPerDay();
+
   const activityTitleEl = document.getElementById('card-activity')?.querySelector('.card-title');
   if (activityTitleEl) {
     activityTitleEl.textContent = `📊 ${isBattleLogMode ? t('battleLogIndicators') : t('activityIndicators')}`;
@@ -842,10 +867,6 @@ function renderPlayerResults(data) {
     const total = activityIndicators?.totalBattles ?? activityIndicators?.totalWarBattles ?? 0;
     const gdc = bd.gdc || 0;
     const ratioPercent = total > 0 ? Math.round((gdc / total) * 100) : 0;
-    const dailyActivity = recentActivity?.dailyActivity ?? [];
-    const dailyTotal = dailyActivity.reduce((sum, d) => sum + (d?.count ?? 0), 0);
-    const dailyCount = dailyActivity.length > 0 ? dailyActivity.length : 7;
-    const battlesPerDay = dailyCount > 0 ? Number((dailyTotal / dailyCount).toFixed(1)) : 0;
 
     statsGrid.innerHTML = statCards([
       {
@@ -873,10 +894,6 @@ function renderPlayerResults(data) {
     // numerator is simply participation, clamped not to exceed displayDen
     let dispPart = Math.min(warHistory.participation, displayDen);
     const partRatio = displayDen > 0 ? dispPart / displayDen : 0;
-    const dailyActivity = recentActivity?.dailyActivity ?? [];
-    const dailyTotal = dailyActivity.reduce((sum, d) => sum + (d?.count ?? 0), 0);
-    const dailyCount = dailyActivity.length > 0 ? dailyActivity.length : 7;
-    const battlesPerDay = dailyCount > 0 ? Number((dailyTotal / dailyCount).toFixed(1)) : 0;
 
     statsGrid.innerHTML = statCards([
       { label: t('statParticipation'),   value: `${dispPart} / ${displayDen}`,
