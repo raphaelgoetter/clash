@@ -847,10 +847,11 @@ export default async function handler(req, res) {
           const role = capitalize(p.role || 'member');
           return `${i + 1}. [${p.name}](${playerUrl})${isNew}${transfer} • [${role}] • **${p.decks} decks**`;
         });
+
+        let description = `Joueurs n'ayant pas joué 16/16 decks\n${rows.join('\n')}`;
         // Discord limite les embeds à 4096 caractères pour description
         if (description.length > 4090) {
           const trimmed = rows
-            .map((row) => row)
             .join('\n')
             .slice(0, 4000)
             .split('\n')
