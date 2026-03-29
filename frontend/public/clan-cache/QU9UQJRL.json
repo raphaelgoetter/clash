@@ -1,65 +1,9 @@
 {
-  "lastWarSummary": {
-    "totalDecksUsed": 104,
-    "maxDecksElapsed": 600,
-    "maxDecksWeek": 800,
-    "participantCount": 50,
-    "daysFromThu": 2,
-    "days": [
-      {
-        "label": "Thu",
-        "totalCount": 49,
-        "maxCount": 200,
-        "isPast": true,
-        "isToday": false,
-        "isFuture": false,
-        "source": "snapshot",
-        "snapshotCount": 49,
-        "liveCount": null
-      },
-      {
-        "label": "Fri",
-        "totalCount": 44,
-        "maxCount": 200,
-        "isPast": true,
-        "isToday": false,
-        "isFuture": false,
-        "source": "snapshot",
-        "snapshotCount": 44,
-        "liveCount": null
-      },
-      {
-        "label": "Sat",
-        "totalCount": 11,
-        "maxCount": 200,
-        "isPast": false,
-        "isToday": true,
-        "isFuture": false,
-        "source": "live",
-        "snapshotCount": null,
-        "liveCount": 11
-      },
-      {
-        "label": "Sun",
-        "totalCount": 0,
-        "maxCount": 200,
-        "isPast": false,
-        "isToday": false,
-        "isFuture": true,
-        "source": "snapshot",
-        "snapshotCount": 0,
-        "liveCount": null
-      }
-    ],
-    "weekId": "S130W4",
-    "ended": false,
-    "snapshotAsOf": "2026-03-28"
-  },
   "clan": {
     "name": "Les Revoltes",
     "tag": "#QU9UQJRL",
     "description": "☆. #3 Resistance (top 🌍) Bonne humeur et entraînement GDC ⚔️ au programme 👉 Discord demandé : kPdQN8zfjM ▪️code : RoyaleAPI",
-    "clanScore": 92544,
+    "clanScore": 92578,
     "clanWarTrophies": 2185,
     "members": 32,
     "type": "open",
@@ -75,8 +19,8 @@
         "trophies": 12632,
         "bestTrophies": 12661,
         "expLevel": 71,
-        "totalDonations": 84191,
-        "donations": 569,
+        "totalDonations": 84269,
+        "donations": 647,
         "warDayWins": 14,
         "cw2Progress": null,
         "clan": {
@@ -93,7 +37,35 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-29T09:13:36.805Z"
+      "fetchedAt": "2026-03-29T09:48:17.140Z"
+    },
+    "#VY0LYQQVJ": {
+      "profile": {
+        "tag": "#VY0LYQQVJ",
+        "name": "Sadz",
+        "role": "member",
+        "trophies": 12309,
+        "bestTrophies": 12309,
+        "expLevel": 64,
+        "totalDonations": 13389,
+        "donations": 0,
+        "warDayWins": 0,
+        "cw2Progress": null,
+        "clan": {
+          "tag": "#QU9UQJRL",
+          "name": "Les Revoltes"
+        },
+        "arena": null,
+        "stats": {
+          "battleCount": null,
+          "threeCrownWins": null
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 0,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-03-29T09:48:17.140Z"
     },
     "#CVJPCU09C": {
       "profile": {
@@ -121,7 +93,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-29T09:13:36.806Z"
+      "fetchedAt": "2026-03-29T09:48:17.140Z"
     },
     "#JC28YVLPG": {
       "profile": {
@@ -149,35 +121,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-29T09:13:36.806Z"
-    },
-    "#VY0LYQQVJ": {
-      "profile": {
-        "tag": "#VY0LYQQVJ",
-        "name": "Sadz",
-        "role": "member",
-        "trophies": 12254,
-        "bestTrophies": 12285,
-        "expLevel": 64,
-        "totalDonations": 13389,
-        "donations": 0,
-        "warDayWins": 0,
-        "cw2Progress": null,
-        "clan": {
-          "tag": "#QU9UQJRL",
-          "name": "Les Revoltes"
-        },
-        "arena": null,
-        "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-03-29T09:13:36.806Z"
+      "fetchedAt": "2026-03-29T09:48:17.140Z"
     },
     "#CLVU02QLP": {
       "profile": {
@@ -205,7 +149,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-29T09:13:36.806Z"
+      "fetchedAt": "2026-03-29T09:48:17.141Z"
     },
     "#CLQ2RYYJQ": {
       "profile": {
@@ -233,7 +177,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-29T09:13:36.807Z"
+      "fetchedAt": "2026-03-29T09:48:17.141Z"
     },
     "#LJYGJYCYC": {
       "profile": {
@@ -261,7 +205,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-29T09:13:36.807Z"
+      "fetchedAt": "2026-03-29T09:48:17.141Z"
     },
     "#UVGPPVQ8Q": {
       "profile": {
@@ -289,7 +233,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-29T09:13:36.807Z"
+      "fetchedAt": "2026-03-29T09:48:17.141Z"
     },
     "#RRCRJ8QJJ": {
       "profile": {
@@ -317,7 +261,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-29T09:13:37.882Z"
+      "fetchedAt": "2026-03-29T09:48:18.523Z"
     },
     "#QY0LG0R0P": {
       "profile": {
@@ -345,7 +289,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-29T09:13:37.890Z"
+      "fetchedAt": "2026-03-29T09:48:18.527Z"
     },
     "#2JUVG2P9": {
       "profile": {
@@ -373,567 +317,7 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-29T09:13:37.897Z"
-    },
-    "#QPU0U2C9": {
-      "profile": {
-        "tag": "#QPU0U2C9",
-        "name": "TedX22",
-        "role": "elder",
-        "trophies": 10394,
-        "bestTrophies": 10494,
-        "expLevel": 62,
-        "totalDonations": 8045,
-        "donations": 32,
-        "warDayWins": 0,
-        "cw2Progress": null,
-        "clan": {
-          "tag": "#QU9UQJRL",
-          "name": "Les Revoltes"
-        },
-        "arena": null,
-        "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-03-29T09:13:37.908Z"
-    },
-    "#J222JVRUQ": {
-      "profile": {
-        "tag": "#J222JVRUQ",
-        "name": "Hunter lord",
-        "role": "member",
-        "trophies": 10187,
-        "bestTrophies": 10187,
-        "expLevel": 55,
-        "totalDonations": 4382,
-        "donations": 0,
-        "warDayWins": 0,
-        "cw2Progress": null,
-        "clan": {
-          "tag": "#QU9UQJRL",
-          "name": "Les Revoltes"
-        },
-        "arena": null,
-        "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-03-29T09:13:37.910Z"
-    },
-    "#V2P2LCYRJ": {
-      "profile": {
-        "tag": "#V2P2LCYRJ",
-        "name": "luks",
-        "role": "member",
-        "trophies": 10161,
-        "bestTrophies": 10245,
-        "expLevel": 53,
-        "totalDonations": 9749,
-        "donations": 0,
-        "warDayWins": 0,
-        "cw2Progress": null,
-        "clan": {
-          "tag": "#QU9UQJRL",
-          "name": "Les Revoltes"
-        },
-        "arena": null,
-        "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-03-29T09:13:37.926Z"
-    },
-    "#2U9QL8Q89": {
-      "profile": {
-        "tag": "#2U9QL8Q89",
-        "name": "luky",
-        "role": "member",
-        "trophies": 10175,
-        "bestTrophies": 10175,
-        "expLevel": 62,
-        "totalDonations": 43814,
-        "donations": 356,
-        "warDayWins": 0,
-        "cw2Progress": null,
-        "clan": {
-          "tag": "#QU9UQJRL",
-          "name": "Les Revoltes"
-        },
-        "arena": null,
-        "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-03-29T09:13:37.915Z"
-    },
-    "#8VP9UJV9L": {
-      "profile": {
-        "tag": "#8VP9UJV9L",
-        "name": "La Juliasse",
-        "role": "elder",
-        "trophies": 9183,
-        "bestTrophies": 9269,
-        "expLevel": 51,
-        "totalDonations": 32289,
-        "donations": 452,
-        "warDayWins": 7,
-        "cw2Progress": null,
-        "clan": {
-          "tag": "#QU9UQJRL",
-          "name": "Les Revoltes"
-        },
-        "arena": null,
-        "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-03-29T09:13:38.920Z"
-    },
-    "#V22VCQV9V": {
-      "profile": {
-        "tag": "#V22VCQV9V",
-        "name": "Shinzo",
-        "role": "elder",
-        "trophies": 9124,
-        "bestTrophies": 9154,
-        "expLevel": 51,
-        "totalDonations": 761,
-        "donations": 0,
-        "warDayWins": 0,
-        "cw2Progress": null,
-        "clan": {
-          "tag": "#QU9UQJRL",
-          "name": "Les Revoltes"
-        },
-        "arena": null,
-        "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-03-29T09:13:38.949Z"
-    },
-    "#8JGU9UUJJ": {
-      "profile": {
-        "tag": "#8JGU9UUJJ",
-        "name": "rotk",
-        "role": "elder",
-        "trophies": 9004,
-        "bestTrophies": 9418,
-        "expLevel": 60,
-        "totalDonations": 179910,
-        "donations": 334,
-        "warDayWins": 105,
-        "cw2Progress": null,
-        "clan": {
-          "tag": "#QU9UQJRL",
-          "name": "Les Revoltes"
-        },
-        "arena": null,
-        "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-03-29T09:13:38.984Z"
-    },
-    "#2V20JP28Q": {
-      "profile": {
-        "tag": "#2V20JP28Q",
-        "name": "berlingot",
-        "role": "elder",
-        "trophies": 8836,
-        "bestTrophies": 8836,
-        "expLevel": 42,
-        "totalDonations": 46078,
-        "donations": 379,
-        "warDayWins": 23,
-        "cw2Progress": null,
-        "clan": {
-          "tag": "#QU9UQJRL",
-          "name": "Les Revoltes"
-        },
-        "arena": null,
-        "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-03-29T09:13:38.992Z"
-    },
-    "#UYRR99RL8": {
-      "profile": {
-        "tag": "#UYRR99RL8",
-        "name": "chloe_lpb",
-        "role": "member",
-        "trophies": 8676,
-        "bestTrophies": 8754,
-        "expLevel": 41,
-        "totalDonations": 1489,
-        "donations": 240,
-        "warDayWins": 0,
-        "cw2Progress": null,
-        "clan": {
-          "tag": "#QU9UQJRL",
-          "name": "Les Revoltes"
-        },
-        "arena": null,
-        "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-03-29T09:13:39.009Z"
-    },
-    "#CVYLYLC8V": {
-      "profile": {
-        "tag": "#CVYLYLC8V",
-        "name": "☆.",
-        "role": "leader",
-        "trophies": 8400,
-        "bestTrophies": 8400,
-        "expLevel": 53,
-        "totalDonations": 33348,
-        "donations": 135,
-        "warDayWins": 0,
-        "cw2Progress": null,
-        "clan": {
-          "tag": "#QU9UQJRL",
-          "name": "Les Revoltes"
-        },
-        "arena": null,
-        "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-03-29T09:13:39.019Z"
-    },
-    "#YRURQJV28": {
-      "profile": {
-        "tag": "#YRURQJV28",
-        "name": "bob",
-        "role": "member",
-        "trophies": 8264,
-        "bestTrophies": 8295,
-        "expLevel": 50,
-        "totalDonations": 8417,
-        "donations": 0,
-        "warDayWins": 2,
-        "cw2Progress": null,
-        "clan": {
-          "tag": "#QU9UQJRL",
-          "name": "Les Revoltes"
-        },
-        "arena": null,
-        "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-03-29T09:13:39.025Z"
-    },
-    "#PGQ98JVJ8": {
-      "profile": {
-        "tag": "#PGQ98JVJ8",
-        "name": "KO93",
-        "role": "member",
-        "trophies": 7778,
-        "bestTrophies": 7985,
-        "expLevel": 37,
-        "totalDonations": 1894,
-        "donations": 157,
-        "warDayWins": 0,
-        "cw2Progress": null,
-        "clan": {
-          "tag": "#QU9UQJRL",
-          "name": "Les Revoltes"
-        },
-        "arena": null,
-        "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-03-29T09:13:39.992Z"
-    },
-    "#98VCJLG92": {
-      "profile": {
-        "tag": "#98VCJLG92",
-        "name": "Chikumo",
-        "role": "member",
-        "trophies": 7796,
-        "bestTrophies": 7796,
-        "expLevel": 46,
-        "totalDonations": 10257,
-        "donations": 0,
-        "warDayWins": 0,
-        "cw2Progress": null,
-        "clan": {
-          "tag": "#QU9UQJRL",
-          "name": "Les Revoltes"
-        },
-        "arena": null,
-        "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-03-29T09:13:39.294Z"
-    },
-    "#CRLR0P92J": {
-      "profile": {
-        "tag": "#CRLR0P92J",
-        "name": "Nino Owns U",
-        "role": "member",
-        "trophies": 7544,
-        "bestTrophies": 7606,
-        "expLevel": 40,
-        "totalDonations": 1607,
-        "donations": 0,
-        "warDayWins": 0,
-        "cw2Progress": null,
-        "clan": {
-          "tag": "#QU9UQJRL",
-          "name": "Les Revoltes"
-        },
-        "arena": null,
-        "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-03-29T09:13:40.058Z"
-    },
-    "#VPGCQPR9U": {
-      "profile": {
-        "tag": "#VPGCQPR9U",
-        "name": "epi",
-        "role": "elder",
-        "trophies": 6523,
-        "bestTrophies": 6523,
-        "expLevel": 35,
-        "totalDonations": 2001,
-        "donations": 8,
-        "warDayWins": 0,
-        "cw2Progress": null,
-        "clan": {
-          "tag": "#QU9UQJRL",
-          "name": "Les Revoltes"
-        },
-        "arena": null,
-        "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-03-29T09:13:40.062Z"
-    },
-    "#VPR8G992P": {
-      "profile": {
-        "tag": "#VPR8G992P",
-        "name": "azerox",
-        "role": "member",
-        "trophies": 5597,
-        "bestTrophies": 5773,
-        "expLevel": 31,
-        "totalDonations": 155,
-        "donations": 0,
-        "warDayWins": 0,
-        "cw2Progress": null,
-        "clan": {
-          "tag": "#QU9UQJRL",
-          "name": "Les Revoltes"
-        },
-        "arena": null,
-        "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-03-29T09:13:40.078Z"
-    },
-    "#2200UQ9P08": {
-      "profile": {
-        "tag": "#2200UQ9P08",
-        "name": "Specteeerdima",
-        "role": "member",
-        "trophies": 4896,
-        "bestTrophies": 4930,
-        "expLevel": 28,
-        "totalDonations": 593,
-        "donations": 196,
-        "warDayWins": 0,
-        "cw2Progress": null,
-        "clan": {
-          "tag": "#QU9UQJRL",
-          "name": "Les Revoltes"
-        },
-        "arena": null,
-        "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-03-29T09:13:40.185Z"
-    },
-    "#V9GUUPYUQ": {
-      "profile": {
-        "tag": "#V9GUUPYUQ",
-        "name": "fkamote",
-        "role": "member",
-        "trophies": 4114,
-        "bestTrophies": 4168,
-        "expLevel": 28,
-        "totalDonations": 42,
-        "donations": 0,
-        "warDayWins": 0,
-        "cw2Progress": null,
-        "clan": {
-          "tag": "#QU9UQJRL",
-          "name": "Les Revoltes"
-        },
-        "arena": null,
-        "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-03-29T09:13:40.347Z"
-    },
-    "#VR0LV90YP": {
-      "profile": {
-        "tag": "#VR0LV90YP",
-        "name": "Sylvetta",
-        "role": "member",
-        "trophies": 213,
-        "bestTrophies": 213,
-        "expLevel": 4,
-        "totalDonations": 0,
-        "donations": 0,
-        "warDayWins": 0,
-        "cw2Progress": null,
-        "clan": {
-          "tag": "#QU9UQJRL",
-          "name": "Les Revoltes"
-        },
-        "arena": null,
-        "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-03-29T09:13:40.451Z"
-    },
-    "#RJJGJ8PRC": {
-      "profile": {
-        "tag": "#RJJGJ8PRC",
-        "name": "tgx",
-        "role": "member",
-        "trophies": 7705,
-        "bestTrophies": 7736,
-        "expLevel": 39,
-        "totalDonations": 6377,
-        "donations": 0,
-        "warDayWins": 0,
-        "cw2Progress": null,
-        "clan": {
-          "tag": "#QU9UQJRL",
-          "name": "Les Revoltes"
-        },
-        "arena": null,
-        "stats": {
-          "battleCount": null,
-          "threeCrownWins": null
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 0,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-03-29T09:13:40.009Z"
+      "fetchedAt": "2026-03-29T09:48:18.533Z"
     },
     "#2QUGQUJ9": {
       "profile": {
@@ -961,7 +345,567 @@
         "totalBattles": 0,
         "warBattles": 0
       },
-      "fetchedAt": "2026-03-29T09:13:37.899Z"
+      "fetchedAt": "2026-03-29T09:48:18.534Z"
+    },
+    "#QPU0U2C9": {
+      "profile": {
+        "tag": "#QPU0U2C9",
+        "name": "TedX22",
+        "role": "elder",
+        "trophies": 10394,
+        "bestTrophies": 10494,
+        "expLevel": 62,
+        "totalDonations": 8045,
+        "donations": 32,
+        "warDayWins": 0,
+        "cw2Progress": null,
+        "clan": {
+          "tag": "#QU9UQJRL",
+          "name": "Les Revoltes"
+        },
+        "arena": null,
+        "stats": {
+          "battleCount": null,
+          "threeCrownWins": null
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 0,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-03-29T09:48:18.539Z"
+    },
+    "#J222JVRUQ": {
+      "profile": {
+        "tag": "#J222JVRUQ",
+        "name": "Hunter lord",
+        "role": "member",
+        "trophies": 10187,
+        "bestTrophies": 10187,
+        "expLevel": 55,
+        "totalDonations": 4382,
+        "donations": 0,
+        "warDayWins": 0,
+        "cw2Progress": null,
+        "clan": {
+          "tag": "#QU9UQJRL",
+          "name": "Les Revoltes"
+        },
+        "arena": null,
+        "stats": {
+          "battleCount": null,
+          "threeCrownWins": null
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 0,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-03-29T09:48:18.540Z"
+    },
+    "#2U9QL8Q89": {
+      "profile": {
+        "tag": "#2U9QL8Q89",
+        "name": "luky",
+        "role": "member",
+        "trophies": 10175,
+        "bestTrophies": 10175,
+        "expLevel": 62,
+        "totalDonations": 43814,
+        "donations": 356,
+        "warDayWins": 0,
+        "cw2Progress": null,
+        "clan": {
+          "tag": "#QU9UQJRL",
+          "name": "Les Revoltes"
+        },
+        "arena": null,
+        "stats": {
+          "battleCount": null,
+          "threeCrownWins": null
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 0,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-03-29T09:48:18.545Z"
+    },
+    "#V2P2LCYRJ": {
+      "profile": {
+        "tag": "#V2P2LCYRJ",
+        "name": "luks",
+        "role": "member",
+        "trophies": 10161,
+        "bestTrophies": 10245,
+        "expLevel": 53,
+        "totalDonations": 9749,
+        "donations": 0,
+        "warDayWins": 0,
+        "cw2Progress": null,
+        "clan": {
+          "tag": "#QU9UQJRL",
+          "name": "Les Revoltes"
+        },
+        "arena": null,
+        "stats": {
+          "battleCount": null,
+          "threeCrownWins": null
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 0,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-03-29T09:48:18.545Z"
+    },
+    "#8VP9UJV9L": {
+      "profile": {
+        "tag": "#8VP9UJV9L",
+        "name": "La Juliasse",
+        "role": "elder",
+        "trophies": 9183,
+        "bestTrophies": 9269,
+        "expLevel": 51,
+        "totalDonations": 32337,
+        "donations": 500,
+        "warDayWins": 7,
+        "cw2Progress": null,
+        "clan": {
+          "tag": "#QU9UQJRL",
+          "name": "Les Revoltes"
+        },
+        "arena": null,
+        "stats": {
+          "battleCount": null,
+          "threeCrownWins": null
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 0,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-03-29T09:48:19.869Z"
+    },
+    "#V22VCQV9V": {
+      "profile": {
+        "tag": "#V22VCQV9V",
+        "name": "Shinzo",
+        "role": "elder",
+        "trophies": 9124,
+        "bestTrophies": 9154,
+        "expLevel": 51,
+        "totalDonations": 761,
+        "donations": 0,
+        "warDayWins": 0,
+        "cw2Progress": null,
+        "clan": {
+          "tag": "#QU9UQJRL",
+          "name": "Les Revoltes"
+        },
+        "arena": null,
+        "stats": {
+          "battleCount": null,
+          "threeCrownWins": null
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 0,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-03-29T09:48:19.879Z"
+    },
+    "#8JGU9UUJJ": {
+      "profile": {
+        "tag": "#8JGU9UUJJ",
+        "name": "rotk",
+        "role": "elder",
+        "trophies": 9004,
+        "bestTrophies": 9418,
+        "expLevel": 60,
+        "totalDonations": 179910,
+        "donations": 334,
+        "warDayWins": 105,
+        "cw2Progress": null,
+        "clan": {
+          "tag": "#QU9UQJRL",
+          "name": "Les Revoltes"
+        },
+        "arena": null,
+        "stats": {
+          "battleCount": null,
+          "threeCrownWins": null
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 0,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-03-29T09:48:19.882Z"
+    },
+    "#2V20JP28Q": {
+      "profile": {
+        "tag": "#2V20JP28Q",
+        "name": "berlingot",
+        "role": "elder",
+        "trophies": 8805,
+        "bestTrophies": 8836,
+        "expLevel": 42,
+        "totalDonations": 46078,
+        "donations": 379,
+        "warDayWins": 23,
+        "cw2Progress": null,
+        "clan": {
+          "tag": "#QU9UQJRL",
+          "name": "Les Revoltes"
+        },
+        "arena": null,
+        "stats": {
+          "battleCount": null,
+          "threeCrownWins": null
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 0,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-03-29T09:48:19.888Z"
+    },
+    "#UYRR99RL8": {
+      "profile": {
+        "tag": "#UYRR99RL8",
+        "name": "chloe_lpb",
+        "role": "member",
+        "trophies": 8676,
+        "bestTrophies": 8754,
+        "expLevel": 41,
+        "totalDonations": 1489,
+        "donations": 240,
+        "warDayWins": 0,
+        "cw2Progress": null,
+        "clan": {
+          "tag": "#QU9UQJRL",
+          "name": "Les Revoltes"
+        },
+        "arena": null,
+        "stats": {
+          "battleCount": null,
+          "threeCrownWins": null
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 0,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-03-29T09:48:19.889Z"
+    },
+    "#CVYLYLC8V": {
+      "profile": {
+        "tag": "#CVYLYLC8V",
+        "name": "☆.",
+        "role": "leader",
+        "trophies": 8400,
+        "bestTrophies": 8400,
+        "expLevel": 53,
+        "totalDonations": 33348,
+        "donations": 135,
+        "warDayWins": 0,
+        "cw2Progress": null,
+        "clan": {
+          "tag": "#QU9UQJRL",
+          "name": "Les Revoltes"
+        },
+        "arena": null,
+        "stats": {
+          "battleCount": null,
+          "threeCrownWins": null
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 0,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-03-29T09:48:19.892Z"
+    },
+    "#YRURQJV28": {
+      "profile": {
+        "tag": "#YRURQJV28",
+        "name": "bob",
+        "role": "member",
+        "trophies": 8264,
+        "bestTrophies": 8295,
+        "expLevel": 50,
+        "totalDonations": 8417,
+        "donations": 0,
+        "warDayWins": 2,
+        "cw2Progress": null,
+        "clan": {
+          "tag": "#QU9UQJRL",
+          "name": "Les Revoltes"
+        },
+        "arena": null,
+        "stats": {
+          "battleCount": null,
+          "threeCrownWins": null
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 0,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-03-29T09:48:19.899Z"
+    },
+    "#98VCJLG92": {
+      "profile": {
+        "tag": "#98VCJLG92",
+        "name": "Chikumo",
+        "role": "member",
+        "trophies": 7796,
+        "bestTrophies": 7796,
+        "expLevel": 46,
+        "totalDonations": 10257,
+        "donations": 0,
+        "warDayWins": 0,
+        "cw2Progress": null,
+        "clan": {
+          "tag": "#QU9UQJRL",
+          "name": "Les Revoltes"
+        },
+        "arena": null,
+        "stats": {
+          "battleCount": null,
+          "threeCrownWins": null
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 0,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-03-29T09:48:20.263Z"
+    },
+    "#PGQ98JVJ8": {
+      "profile": {
+        "tag": "#PGQ98JVJ8",
+        "name": "KO93",
+        "role": "member",
+        "trophies": 7778,
+        "bestTrophies": 7985,
+        "expLevel": 37,
+        "totalDonations": 1894,
+        "donations": 157,
+        "warDayWins": 0,
+        "cw2Progress": null,
+        "clan": {
+          "tag": "#QU9UQJRL",
+          "name": "Les Revoltes"
+        },
+        "arena": null,
+        "stats": {
+          "battleCount": null,
+          "threeCrownWins": null
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 0,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-03-29T09:48:21.180Z"
+    },
+    "#RJJGJ8PRC": {
+      "profile": {
+        "tag": "#RJJGJ8PRC",
+        "name": "tgx",
+        "role": "member",
+        "trophies": 7705,
+        "bestTrophies": 7736,
+        "expLevel": 39,
+        "totalDonations": 6377,
+        "donations": 0,
+        "warDayWins": 0,
+        "cw2Progress": null,
+        "clan": {
+          "tag": "#QU9UQJRL",
+          "name": "Les Revoltes"
+        },
+        "arena": null,
+        "stats": {
+          "battleCount": null,
+          "threeCrownWins": null
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 0,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-03-29T09:48:21.185Z"
+    },
+    "#CRLR0P92J": {
+      "profile": {
+        "tag": "#CRLR0P92J",
+        "name": "Nino Owns U",
+        "role": "member",
+        "trophies": 7544,
+        "bestTrophies": 7606,
+        "expLevel": 40,
+        "totalDonations": 1607,
+        "donations": 0,
+        "warDayWins": 0,
+        "cw2Progress": null,
+        "clan": {
+          "tag": "#QU9UQJRL",
+          "name": "Les Revoltes"
+        },
+        "arena": null,
+        "stats": {
+          "battleCount": null,
+          "threeCrownWins": null
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 0,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-03-29T09:48:21.190Z"
+    },
+    "#VPGCQPR9U": {
+      "profile": {
+        "tag": "#VPGCQPR9U",
+        "name": "epi",
+        "role": "elder",
+        "trophies": 6523,
+        "bestTrophies": 6523,
+        "expLevel": 35,
+        "totalDonations": 2001,
+        "donations": 8,
+        "warDayWins": 0,
+        "cw2Progress": null,
+        "clan": {
+          "tag": "#QU9UQJRL",
+          "name": "Les Revoltes"
+        },
+        "arena": null,
+        "stats": {
+          "battleCount": null,
+          "threeCrownWins": null
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 0,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-03-29T09:48:21.205Z"
+    },
+    "#VPR8G992P": {
+      "profile": {
+        "tag": "#VPR8G992P",
+        "name": "azerox",
+        "role": "member",
+        "trophies": 5597,
+        "bestTrophies": 5773,
+        "expLevel": 31,
+        "totalDonations": 155,
+        "donations": 0,
+        "warDayWins": 0,
+        "cw2Progress": null,
+        "clan": {
+          "tag": "#QU9UQJRL",
+          "name": "Les Revoltes"
+        },
+        "arena": null,
+        "stats": {
+          "battleCount": null,
+          "threeCrownWins": null
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 0,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-03-29T09:48:21.206Z"
+    },
+    "#2200UQ9P08": {
+      "profile": {
+        "tag": "#2200UQ9P08",
+        "name": "Specteeerdima",
+        "role": "member",
+        "trophies": 4896,
+        "bestTrophies": 4930,
+        "expLevel": 28,
+        "totalDonations": 601,
+        "donations": 204,
+        "warDayWins": 0,
+        "cw2Progress": null,
+        "clan": {
+          "tag": "#QU9UQJRL",
+          "name": "Les Revoltes"
+        },
+        "arena": null,
+        "stats": {
+          "battleCount": null,
+          "threeCrownWins": null
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 0,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-03-29T09:48:21.249Z"
+    },
+    "#V9GUUPYUQ": {
+      "profile": {
+        "tag": "#V9GUUPYUQ",
+        "name": "fkamote",
+        "role": "member",
+        "trophies": 4114,
+        "bestTrophies": 4168,
+        "expLevel": 28,
+        "totalDonations": 42,
+        "donations": 0,
+        "warDayWins": 0,
+        "cw2Progress": null,
+        "clan": {
+          "tag": "#QU9UQJRL",
+          "name": "Les Revoltes"
+        },
+        "arena": null,
+        "stats": {
+          "battleCount": null,
+          "threeCrownWins": null
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 0,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-03-29T09:48:21.589Z"
+    },
+    "#VR0LV90YP": {
+      "profile": {
+        "tag": "#VR0LV90YP",
+        "name": "Sylvetta",
+        "role": "member",
+        "trophies": 213,
+        "bestTrophies": 213,
+        "expLevel": 4,
+        "totalDonations": 0,
+        "donations": 0,
+        "warDayWins": 0,
+        "cw2Progress": null,
+        "clan": {
+          "tag": "#QU9UQJRL",
+          "name": "Les Revoltes"
+        },
+        "arena": null,
+        "stats": {
+          "battleCount": null,
+          "threeCrownWins": null
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 0,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-03-29T09:48:21.690Z"
     }
   },
   "members": [
@@ -1528,68 +1472,6 @@
       "lastSeen": "20260328T225319.000Z"
     },
     {
-      "name": "Specteeerdima",
-      "tag": "#2200UQ9P08",
-      "role": "member",
-      "trophies": 4896,
-      "donations": 196,
-      "totalDonations": 593,
-      "donationsReceived": 426,
-      "expLevel": 28,
-      "reliability": 30,
-      "reliabilitySource": "player",
-      "verdict": "Extreme risk",
-      "color": "red",
-      "isNew": true,
-      "isFamilyTransfer": false,
-      "transferFromClan": null,
-      "transferWeek": null,
-      "discord": false,
-      "warDays": {
-        "days": [
-          {
-            "key": "2026-03-26",
-            "label": "Thu",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-27",
-            "label": "Fri",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-28",
-            "label": "Sat",
-            "count": 0,
-            "isPast": true,
-            "isToday": false,
-            "isFuture": false
-          },
-          {
-            "key": "2026-03-29",
-            "label": "Sun",
-            "count": 0,
-            "isPast": false,
-            "isToday": true,
-            "isFuture": false
-          }
-        ],
-        "totalDecksUsed": 3,
-        "maxDecksElapsed": 16,
-        "maxDecksWeek": 16,
-        "isReliableTotal": true,
-        "daysFromThu": 3
-      },
-      "warDecks": 3,
-      "lastSeen": "20260329T074020.000Z"
-    },
-    {
       "name": "Nino Owns U",
       "tag": "#CRLR0P92J",
       "role": "member",
@@ -1650,6 +1532,68 @@
       },
       "warDecks": 4,
       "lastSeen": "20260328T185251.000Z"
+    },
+    {
+      "name": "Specteeerdima",
+      "tag": "#2200UQ9P08",
+      "role": "member",
+      "trophies": 4896,
+      "donations": 204,
+      "totalDonations": 601,
+      "donationsReceived": 436,
+      "expLevel": 28,
+      "reliability": 35,
+      "reliabilitySource": "player",
+      "verdict": "High risk",
+      "color": "orange",
+      "isNew": true,
+      "isFamilyTransfer": false,
+      "transferFromClan": null,
+      "transferWeek": null,
+      "discord": false,
+      "warDays": {
+        "days": [
+          {
+            "key": "2026-03-26",
+            "label": "Thu",
+            "count": 0,
+            "isPast": true,
+            "isToday": false,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-27",
+            "label": "Fri",
+            "count": 0,
+            "isPast": true,
+            "isToday": false,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-28",
+            "label": "Sat",
+            "count": 0,
+            "isPast": true,
+            "isToday": false,
+            "isFuture": false
+          },
+          {
+            "key": "2026-03-29",
+            "label": "Sun",
+            "count": 0,
+            "isPast": false,
+            "isToday": true,
+            "isFuture": false
+          }
+        ],
+        "totalDecksUsed": 5,
+        "maxDecksElapsed": 16,
+        "maxDecksWeek": 16,
+        "isReliableTotal": true,
+        "daysFromThu": 3
+      },
+      "warDecks": 5,
+      "lastSeen": "20260329T092029.000Z"
     },
     {
       "name": "chloe_lpb",
@@ -1906,7 +1850,7 @@
       "trophies": 10756,
       "donations": 0,
       "totalDonations": 21661,
-      "donationsReceived": 296,
+      "donationsReceived": 320,
       "expLevel": 62,
       "reliability": 44,
       "reliabilitySource": "player",
@@ -1965,10 +1909,10 @@
       "name": "Sadz",
       "tag": "#VY0LYQQVJ",
       "role": "member",
-      "trophies": 12254,
+      "trophies": 12340,
       "donations": 0,
       "totalDonations": 13389,
-      "donationsReceived": 170,
+      "donationsReceived": 190,
       "expLevel": 64,
       "reliability": 48,
       "reliabilitySource": "player",
@@ -2021,7 +1965,7 @@
         "daysFromThu": 3
       },
       "warDecks": 1,
-      "lastSeen": "20260328T131542.000Z"
+      "lastSeen": "20260329T092807.000Z"
     },
     {
       "name": "Shinzo",
@@ -2089,10 +2033,10 @@
       "name": "berlingot",
       "tag": "#2V20JP28Q",
       "role": "elder",
-      "trophies": 8836,
+      "trophies": 8805,
       "donations": 379,
       "totalDonations": 46078,
-      "donationsReceived": 322,
+      "donationsReceived": 342,
       "expLevel": 42,
       "reliability": 52,
       "reliabilitySource": "player",
@@ -2278,7 +2222,7 @@
       "trophies": 11560,
       "donations": 162,
       "totalDonations": 81862,
-      "donationsReceived": 460,
+      "donationsReceived": 470,
       "expLevel": 74,
       "reliability": 55,
       "reliabilitySource": "player",
@@ -2331,7 +2275,7 @@
         "daysFromThu": 3
       },
       "warDecks": 6,
-      "lastSeen": "20260329T063132.000Z"
+      "lastSeen": "20260329T093854.000Z"
     },
     {
       "name": "epi",
@@ -2524,9 +2468,9 @@
       "tag": "#8VP9UJV9L",
       "role": "elder",
       "trophies": 9183,
-      "donations": 452,
-      "totalDonations": 32289,
-      "donationsReceived": 470,
+      "donations": 500,
+      "totalDonations": 32337,
+      "donationsReceived": 480,
       "expLevel": 51,
       "reliability": 72,
       "reliabilitySource": "player",
@@ -2579,7 +2523,7 @@
         "daysFromThu": 3
       },
       "warDecks": 12,
-      "lastSeen": "20260328T183847.000Z"
+      "lastSeen": "20260329T092151.000Z"
     },
     {
       "name": "rotk",
@@ -2650,7 +2594,7 @@
       "trophies": 8400,
       "donations": 135,
       "totalDonations": 33348,
-      "donationsReceived": 70,
+      "donationsReceived": 80,
       "expLevel": 53,
       "reliability": 75,
       "reliabilitySource": "player",
@@ -2774,7 +2718,7 @@
       "trophies": 10394,
       "donations": 32,
       "totalDonations": 8045,
-      "donationsReceived": 250,
+      "donationsReceived": 270,
       "expLevel": 62,
       "reliability": 80,
       "reliabilitySource": "player",
@@ -2833,10 +2777,10 @@
       "name": "sebiboss2",
       "tag": "#2YLYG9V92",
       "role": "elder",
-      "trophies": 12632,
-      "donations": 569,
-      "totalDonations": 84191,
-      "donationsReceived": 351,
+      "trophies": 12631,
+      "donations": 647,
+      "totalDonations": 84269,
+      "donationsReceived": 361,
       "expLevel": 71,
       "reliability": 83,
       "reliabilitySource": "player",
@@ -2889,7 +2833,7 @@
         "daysFromThu": 3
       },
       "warDecks": 7,
-      "lastSeen": "20260328T215955.000Z"
+      "lastSeen": "20260329T092114.000Z"
     },
     {
       "name": "Gazyr2",
@@ -2957,9 +2901,9 @@
   "summary": {
     "green": 5,
     "yellow": 5,
-    "orange": 12,
-    "red": 10,
-    "avgScore": 46,
+    "orange": 13,
+    "red": 9,
+    "avgScore": 47,
     "total": 32
   },
   "isWarPeriod": true,
@@ -3504,115 +3448,12 @@
       "thursday"
     ]
   },
-  "clanWarSummary": {
-    "totalDecksUsed": 209,
-    "maxDecksElapsed": 800,
-    "maxDecksWeek": 800,
-    "participantCount": 50,
-    "daysFromThu": 3,
-    "days": [
-      {
-        "label": "Thu",
-        "totalCount": 49,
-        "maxCount": 200,
-        "isPast": true,
-        "isToday": false,
-        "isFuture": false,
-        "source": "snapshot",
-        "snapshotCount": 49,
-        "liveCount": null
-      },
-      {
-        "label": "Fri",
-        "totalCount": 59,
-        "maxCount": 200,
-        "isPast": true,
-        "isToday": false,
-        "isFuture": false,
-        "source": "snapshot",
-        "snapshotCount": 59,
-        "liveCount": null
-      },
-      {
-        "label": "Sat",
-        "totalCount": 62,
-        "maxCount": 200,
-        "isPast": true,
-        "isToday": false,
-        "isFuture": false,
-        "source": "snapshot",
-        "snapshotCount": 62,
-        "liveCount": null
-      },
-      {
-        "label": "Sun",
-        "totalCount": 39,
-        "maxCount": 200,
-        "isPast": false,
-        "isToday": true,
-        "isFuture": false,
-        "source": "live",
-        "snapshotCount": null,
-        "liveCount": 39
-      }
-    ],
-    "weekId": "S130W4",
-    "ended": false,
-    "snapshotWarnings": []
-  },
   "prevWeekId": "S130W3",
   "snapshotToday": true,
   "snapshotDate": "2026-03-29",
   "warCurrentWeekId": "S130W4",
-  "warSnapshotDays": null,
-  "snapshotTakenAt": null,
-  "currentWarDays": [
-    {
-      "label": "Thu",
-      "totalCount": 49,
-      "maxCount": 200,
-      "isPast": true,
-      "isToday": false,
-      "isFuture": false,
-      "source": "snapshot",
-      "snapshotCount": 49,
-      "liveCount": null
-    },
-    {
-      "label": "Fri",
-      "totalCount": 59,
-      "maxCount": 200,
-      "isPast": true,
-      "isToday": false,
-      "isFuture": false,
-      "source": "snapshot",
-      "snapshotCount": 59,
-      "liveCount": null
-    },
-    {
-      "label": "Sat",
-      "totalCount": 62,
-      "maxCount": 200,
-      "isPast": true,
-      "isToday": false,
-      "isFuture": false,
-      "source": "snapshot",
-      "snapshotCount": 62,
-      "liveCount": null
-    },
-    {
-      "label": "Sun",
-      "totalCount": 39,
-      "maxCount": 200,
-      "isPast": false,
-      "isToday": true,
-      "isFuture": false,
-      "source": "live",
-      "snapshotCount": null,
-      "liveCount": 39
-    }
-  ],
+  "snapshotTakenAt": "2026-03-29T09:48:17.130Z",
   "rateLimited": false,
   "raceLogUnavailable": false,
-  "analysisCacheUpdatedAt": "2026-03-29T09:13:41.866Z"
+  "analysisCacheUpdatedAt": "2026-03-29T09:48:23.426Z"
 }

@@ -1,18 +1,17 @@
 #!/usr/bin/env node
-// refreshClanCache.js — update persisted clan analysis cache (data/analysis-cache + frontend/public/clan-cache)
+// refreshClanCache.js — update persisted clan analysis cache (frontend/public/clan-cache)
 
 import dotenv from 'dotenv';
 import path from 'path';
 import { ALLOWED_CLANS, buildClanAnalysis } from '../backend/routes/clan.js';
 import { saveCache } from '../backend/services/analysisCache.js';
+import { saveClanCache } from '../backend/services/clanCache.js';
 import fs from 'fs/promises';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
-const PUBLIC_DIR = path.resolve(process.cwd(), 'frontend', 'public', 'clan-cache');
-
 async function ensurePublicDir() {
-  try { await fs.mkdir(PUBLIC_DIR, { recursive: true }); } catch (_) {}
+  try { await fs.mkdir(path.resolve(process.cwd(), 'frontend', 'public', 'clan-cache'), { recursive: true }); } catch (_) {}
 }
 
 async function main() {
@@ -23,8 +22,7 @@ async function main() {
     const statusTag = `#${tag}`;
     try {
       const payload = await buildClanAnalysis(statusTag);
-      await saveCache(tag, payload);
-      await fs.writeFile(path.join(PUBLIC_DIR, `${clean}.json`), JSON.stringify(payload, null, 2));
+      await saveClanCache(tag, payload);
       console.log(`✓ refreshed cache for ${tag}`);
     } catch (err) {
       console.error(`✗ failed cache for ${tag}:`, err.message || err);
