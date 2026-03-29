@@ -873,6 +873,11 @@ function renderPlayerResults(data) {
     // numerator is simply participation, clamped not to exceed displayDen
     let dispPart = Math.min(warHistory.participation, displayDen);
     const partRatio = displayDen > 0 ? dispPart / displayDen : 0;
+    const dailyActivity = recentActivity?.dailyActivity ?? [];
+    const dailyTotal = dailyActivity.reduce((sum, d) => sum + (d?.count ?? 0), 0);
+    const dailyCount = dailyActivity.length > 0 ? dailyActivity.length : 7;
+    const battlesPerDay = dailyCount > 0 ? Number((dailyTotal / dailyCount).toFixed(1)) : 0;
+
     statsGrid.innerHTML = statCards([
       { label: t('statParticipation'),   value: `${dispPart} / ${displayDen}`,
         risk: partRatio < 0.4 ? 'bad' : partRatio < 0.7 ? 'warn' : null },
@@ -884,8 +889,8 @@ function renderPlayerResults(data) {
           ? `${Math.round(warHistory.historicalWinRate * 100)}%`
           : `${activityIndicators.winRate}%`,
         risk: (() => { const wr = warHistory.historicalWinRate !== null && warHistory.historicalWinRate !== undefined ? Math.round(warHistory.historicalWinRate * 100) : activityIndicators.winRate; return wr < 30 ? 'bad' : wr < 50 ? 'warn' : null; })() },
-      { label: t('statDonations'), value: fmt(activityIndicators.donations),
-        risk: activityIndicators.donations < 2000 ? 'bad' : activityIndicators.donations < 30000 ? 'warn' : null },
+      { label: t('statBattlesPerDay'), value: fmt(battlesPerDay),
+        risk: battlesPerDay < 2 ? 'bad' : battlesPerDay < 4 ? 'warn' : null },
     ]);
   } else {
     // Fallback battlelog : répartition des 30 entrées par type
