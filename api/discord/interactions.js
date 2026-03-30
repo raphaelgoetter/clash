@@ -700,15 +700,13 @@ export default async function handler(req, res) {
         const sorted = enrichedMembers.sort((a, b) => b.battlesPerDay - a.battlesPerDay);
         const totalAvg = sorted.reduce((sum, p) => sum + p.battlesPerDay, 0) / sorted.length;
 
-        const rows = sorted.slice(0, 25).map((p, idx) => {
-          return `${idx + 1}. [${p.name}](${p.playerUrl}) · [${p.role}] · ${p.battlesPerDay}`;
+        const rows = sorted.map((p, idx) => {
+          return `${idx + 1}. [${p.name}](${p.playerUrl}) · ${p.battlesPerDay}`;
         });
 
         const description =
-          'Note: battles per day est calculé sur le Battle log Clash Royale (max 30 dernières batailles).\n' +
-          'Si 30 entrées sont toutes sur une même journée, le ratio peut atteindre 30.\n\n' +
-          rows.join('\n') +
-          (sorted.length > 25 ? `\n...et ${sorted.length - 25} autres` : '');
+          'Battles/day depuis Battle log (max 30).\n\n' +
+          rows.join('\n');
 
         const embed = {
           title: `Clan : ${resolved.name} · Combats moyens joués par jour (tout confondu)`,
