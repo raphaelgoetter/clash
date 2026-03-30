@@ -527,9 +527,13 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
   const baseScore = completedCount > 0 ? (deckSum / (idealDecks || 1)) * 12 : 0;
   const regularite = r(Math.max(0, Math.min(12, baseScore - incompleteWeeks * 0.5)));
 
-  // 2. Score moyen (0-10) — 3 000 fame = perfect
+  // 2. Score moyen (0-10) — 1 000 fame = 0, 3 000 fame = 10
+  const FAME_MIN       = 1000;
   const FAME_CAP       = 3000;
-  const scoreMoyen     = r(Math.min(10, (warHistory.avgFame / FAME_CAP) * 10));
+  const rawAvgScore    = (warHistory.avgFame <= 0 || warHistory.avgFame < FAME_MIN)
+    ? 0
+    : Math.min(10, ((warHistory.avgFame - FAME_MIN) / (FAME_CAP - FAME_MIN)) * 10);
+  const scoreMoyen     = r(rawAvgScore);
 
   // 3. Stabilité (0-8) — échelle absolue : 5 semaines consécutives = 8/8
   // (8/5 = 1.6 pt par semaine). Formule absolue pour que "2 semaines consécutives"
@@ -622,7 +626,7 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
       score:  scoreMoyen,
       max:    10,
       detail: warHistory.avgFame
-        ? `${warHistory.avgFame.toLocaleString('en-US')} fame / week (cap 3,000)`
+        ? `${warHistory.avgFame.toLocaleString('en-US')} fame / week (1000–3000)`
         : 'No data',
     },
     {

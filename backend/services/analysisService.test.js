@@ -1,7 +1,7 @@
 import assert from 'assert';
-import { analyzePlayer, buildDailyActivity, computeIsNewPlayer, computeWarReliabilityFallback, warDayKey, warResetOffsetMs } from './analysisService.js';
+import { analyzePlayer, buildDailyActivity, computeIsNewPlayer, computeWarScore, computeWarReliabilityFallback, warDayKey, warResetOffsetMs } from './analysisService.js';
 
-console.log('Running analysisService computeIsNewPlayer + war-day tests...');
+console.log('Running analysisService computeIsNewPlayer + war-score tests...');
 
 const testCases = [
   {
@@ -43,6 +43,29 @@ assert.strictEqual(warDayKey(t1), '2026-03-28', 'warDayKey should stay on saturd
 
 const t2 = new Date('2026-03-29T09:50:00.000Z'); // 11:50 Paris CEST
 assert.strictEqual(warDayKey(t2), '2026-03-29', 'warDayKey should be sunday after 9:40 UTC reset');
+
+// new Avg Score behavior (linear 1000→3000 fame) for all players
+const scoreCases = [
+  { avgFame: 0, expected: 0 },
+  { avgFame: 999, expected: 0 },
+  { avgFame: 1000, expected: 0 },
+  { avgFame: 1500, expected: 2.5 },
+  { avgFame: 3000, expected: 10 },
+  { avgFame: 4000, expected: 10 },
+];
+for (const tc of scoreCases) {
+  const warScore = computeWarScore(
+    { trophies: 5000, totalDonations: 1000, badges: [] },
+    { avgFame: tc.avgFame, streakInCurrentClan: 0, weeks: [], totalWeeks: 0 },
+    null,
+    null,
+    false
+  );
+  const avgEntry = warScore.breakdown.find((entry) => entry.label === 'Avg Score');
+  assert.ok(avgEntry, `Avg Score entry exists for avgFame ${tc.avgFame}`);
+  assert.strictEqual(avgEntry.score, tc.expected, `avgFame ${tc.avgFame} should give ${tc.expected}, got ${avgEntry.score}`);
+}
+console.log('✓ computeWarScore Avg Score thresholds test passed.');
 
 const fallback = computeWarReliabilityFallback(
   { trophies: 12000, totalDonations: 10000, badges: [] },
