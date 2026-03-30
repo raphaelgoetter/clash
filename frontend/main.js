@@ -500,8 +500,12 @@ async function handleSearch(force = false) {
         renderMembersSkeleton();
       }
 
-      const query = force ? '?force=true' : '';
-      const { data, fromCache } = await apiFetch(`/api/clan/${encodeURIComponent(tag)}/analysis${query}`);
+      const queryParams = new URLSearchParams();
+      if (force) queryParams.set('force', 'true');
+      // lazy load heavy sections (topPlayers/uncomplete) on demand
+      queryParams.set('includeTopPlayers', 'false');
+      queryParams.set('includeUncomplete', 'false');
+      const { data, fromCache } = await apiFetch(`/api/clan/${encodeURIComponent(tag)}/analysis?${queryParams.toString()}`);
       lastResultName = data.clan?.name || null;
 
       // Conserver les valeurs historiques (p.ex. Thu total) quand le live renvoie 0 :
@@ -1623,12 +1627,19 @@ function warMiniBarHtml(warData) {
 function renderTopPlayersCard(topPlayers, prevWeekId = null) {
   const card = document.getElementById('card-top-players');
   const listEl = document.getElementById('top-players-list');
-  if (!topPlayers || !topPlayers.quotas) {
-    card.classList.add('hidden');
-    return;
-  }
   const weekLabel = prevWeekId ? ` <span class="card-week-id">(${prevWeekId.toUpperCase()})</span>` : '';
   card.querySelector('.card-title').innerHTML = `🏅 ${t('lastWarBest')}${weekLabel}`;
+
+  if (!topPlayers || !topPlayers.quotas) {
+    card.classList.remove('hidden');
+    if (listEl) {
+      listEl.innerHTML = `<li class="text-muted">${t('clickToLoadTopPlayers') || 'Open the section to load data on demand.'}</li>`;
+    }
+    return;
+  }
+
+  card.classList.remove('hidden');
+  loadedClanSections.topPlayers = true;
 
   // ensure quotas match the radio buttons; if dynamic, we'd rebuild them
   // but here we assume the static 2400/2600/2800 set.
@@ -1673,12 +1684,21 @@ function renderTopPlayersCard(topPlayers, prevWeekId = null) {
 function renderUncompleteCard(uncomplete, prevWeekId = null) {
   const card = document.getElementById('card-uncomplete');
   const listEl = document.getElementById('uncomplete-list');
-  if (!uncomplete || !Array.isArray(uncomplete.players)) {
-    card.classList.add('hidden');
-    return;
-  }
   const weekLabel = prevWeekId ? ` <span class="card-week-id">(${prevWeekId.toUpperCase()})</span>` : '';
   card.querySelector('.card-title').innerHTML = `🤷 ${t('lastWarFails')}${weekLabel}`;
+
+  if (!uncomplete || !Array.isArray(uncomplete.players)) {
+    card.classList.remove('hidden');
+    if (listEl) {
+      listEl.innerHTML = `<li class="text-muted">${t('clickToLoadUncomplete') || 'Open the section to load data on demand.'}</li>`;
+    }
+    const leftCard = document.getElementById('card-left');
+    if (leftCard) leftCard.classList.add('hidden');
+    return;
+  }
+
+  card.classList.remove('hidden');
+  loadedClanSections.uncomplete = true;
   const players = uncomplete.players.slice().sort((a,b)=> a.decks - b.decks);
 
   // show a global warning if any player is still using warlog data (not snapshot)
@@ -1901,8 +1921,14 @@ function renderClanWarCard(clanWarSummary) {
 
 // Affiche l'overview du clan, les charts et les cards top/uncomplete.
 // Peut être appelé depuis le cache statique ET depuis les données live.
+let activeClanTag = null;
+let loadedClanSections = { topPlayers: false, uncomplete: false };
+
 function renderClanOverview(data) {
   const { clan, members, summary } = data;
+  activeClanTag = clan?.tag || null;
+  loadedClanSections.topPlayers = Boolean(data.topPlayers);
+  loadedClanSections.uncomplete = Boolean(data.uncomplete);
 
   // Colonne "This War" visible uniquement en période de guerre (jeu–dim)
   isWarActive = !!data.isWarPeriod; // ne pas afficher pour lastWarSummary seul
@@ -1955,7 +1981,62 @@ function renderClanOverview(data) {
   // Ensure any rendered labels are updated after dynamic clan content is rendered
   translateUI();
   updateLangButtonUI();
+  setupClanLazySectionHandlers(weekId);
   clanResults.classList.remove('hidden');
+}
+
+function setupClanLazySectionHandlers(weekId) {
+  if (!activeClanTag) return;
+
+  const topCard = document.getElementById('card-top-players');
+  if (topCard && !topCard.dataset.lazyInit) {
+    const topDetails = topCard.querySelector('details');
+    if (topDetails) {
+      topDetails.addEventListener('toggle', async () => {
+        if (!topDetails.open || loadedClanSections.topPlayers) return;
+        topCard.querySelector('#top-players-list').innerHTML = `<li class="text-muted">${t('loading') || 'Loading...'}</li>`;
+        try {
+          await loadClanSection(activeClanTag, 'topPlayers', weekId);
+        } catch (err) {
+          topCard.querySelector('#top-players-list').innerHTML = `<li class="text-muted">${t('errorLoadingSection') || 'Failed to load top players.'}</li>`;
+        }
+      });
+    }
+    topCard.dataset.lazyInit = '1';
+  }
+
+  const uncompleteCard = document.getElementById('card-uncomplete');
+  if (uncompleteCard && !uncompleteCard.dataset.lazyInit) {
+    const uncompleteDetails = uncompleteCard.querySelector('details');
+    if (uncompleteDetails) {
+      uncompleteDetails.addEventListener('toggle', async () => {
+        if (!uncompleteDetails.open || loadedClanSections.uncomplete) return;
+        uncompleteCard.querySelector('#uncomplete-list').innerHTML = `<li class="text-muted">${t('loading') || 'Loading...'}</li>`;
+        try {
+          await loadClanSection(activeClanTag, 'uncomplete', weekId);
+        } catch (err) {
+          uncompleteCard.querySelector('#uncomplete-list').innerHTML = `<li class="text-muted">${t('errorLoadingSection') || 'Failed to load uncomplete list.'}</li>`;
+        }
+      });
+    }
+    uncompleteCard.dataset.lazyInit = '1';
+  }
+}
+
+async function loadClanSection(tag, section, weekId) {
+  const params = new URLSearchParams();
+  params.set('includeTopPlayers', section === 'topPlayers' ? '1' : '0');
+  params.set('includeUncomplete', section === 'uncomplete' ? '1' : '0');
+  const { data } = await apiFetch(`/api/clan/${encodeURIComponent(tag)}/analysis?${params.toString()}`);
+
+  if (section === 'topPlayers') {
+    loadedClanSections.topPlayers = true;
+    renderTopPlayersCard(data.topPlayers, weekId);
+  }
+  if (section === 'uncomplete') {
+    loadedClanSections.uncomplete = true;
+    renderUncompleteCard(data.uncomplete, weekId);
+  }
 }
 
 // Affiche la liste des membres — appelé uniquement depuis les données live.

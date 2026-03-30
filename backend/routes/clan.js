@@ -354,10 +354,17 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       raceLogUnavailable = true;
     }
 
-    // compute top players for a few predefined fame quotas so the frontend
-    // can render the "Last War Best Players" card without additional
-    // network requests. the helper gracefully handles missing logs.
-    const topPlayers = await computeTopPlayers(clanTag, members, [2400, 2600, 2800], raceLog);
+    const includeTopPlayers = req.query.includeTopPlayers !== 'false' && req.query.includeTopPlayers !== '0';
+    const includeUncomplete = req.query.includeUncomplete !== 'false' && req.query.includeUncomplete !== '0';
+
+    // compute top players only when explicitly requested (lazy load support)
+    let topPlayers = null;
+    if (includeTopPlayers) {
+      // compute top players for a few predefined fame quotas so the frontend
+      // can render the "Last War Best Players" card without additional
+      // network requests. the helper gracefully handles missing logs.
+      topPlayers = await computeTopPlayers(clanTag, members, [2400, 2600, 2800], raceLog);
+    }
 
     // Preload family clan race logs to detect recent transfers between clans.
     // This avoids querying the API repeatedly for each member.
@@ -486,7 +493,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     });
 
     // compute list of players who didn't do the full 16 decks last week (with breakdown)
-    let uncomplete = await computeUncomplete(clanTag, members, battleLogsByTag, raceLog);
+    let uncomplete = null;
+    if (includeUncomplete) {
+      uncomplete = await computeUncomplete(clanTag, members, battleLogsByTag, raceLog);
+    }
 
     // override/update daily breakdown using snapshots if available and race log exists
     let weekSnaps = [];
