@@ -138,6 +138,23 @@ const commands = [
     ],
   },
   {
+    name: 'battles-per-day',
+    description: 'Liste les combats par jour moyen pour chaque membre d un clan (battle.log 30 dernières entrées).',
+    options: [
+      {
+        type: 3,
+        name: 'clan',
+        description: '1=La Resistance, 2=Les Resistants, 3=Les Revoltes',
+        required: true,
+        choices: [
+          { name: 'La Resistance', value: '1' },
+          { name: 'Les Resistants', value: '2' },
+          { name: 'Les Revoltes', value: '3' },
+        ],
+      },
+    ],
+  },
+  {
     name: 'late',
     description: 'Liste les joueurs en retard dans leurs combats GDC avant le reset.',
     options: [

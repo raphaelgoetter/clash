@@ -339,6 +339,7 @@ export default async function handler(req, res) {
             '- `/late clan:N` : liste les retardataires GDC du jour\n' +
             '- `/chelem clan:N [season:X]` : 16/16 decks toutes semaines d\'une saison entière\n' +
             '- `/top-players number:X period:[week|season] scope:[previous|actual]` : meilleurs joueurs de toute la famille\n' +
+            '- `/battles-per-day clan:N` : activités moyennes selon les 30 dernières batailles (Battle log)\n' +
             '- `/discord-link tag:#TAG [tag2] [tag3]` : lie ton tag Clash à Discord\n' +
             '- `/discord-check clan:N` : vérifie la présence Discord\n' +
             '- `/help` : affiche cette fenêtre',
@@ -531,6 +532,133 @@ export default async function handler(req, res) {
           color: 0xe67e22,
           description,
           footer: { text: `Clan : ${resolved.name}` },
+        };
+
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ embeds: [embed] }),
+        });
+      } catch (err) {
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
+        });
+      }
+    });
+    return;
+  }
+
+  // Commande /battles-per-day
+  if (body.type === 2 && body.data?.name === 'battles-per-day') {
+    const clanOpt = body.data.options?.find((o) => o.name === 'clan');
+    const clanVal = (clanOpt?.value || '1').toString().trim().toLowerCase();
+    const CLAN_MAP = {
+      '1': { name: 'La Resistance',  tag: 'Y8JUPC9C' },
+      '2': { name: 'Les Resistants', tag: 'LRQP20V9' },
+      '3': { name: 'Les Revoltes',   tag: 'QU9UQJRL' },
+    };
+    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP['1'];
+
+    res.status(200).json({ type: 5 });
+    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+
+    runBackground(async () => {
+      try {
+        const apiResp = await fetch(
+          `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis`,
+          { headers: { Accept: 'application/json' } },
+        );
+
+        if (!apiResp.ok) {
+          await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: `Erreur API clan (${apiResp.status}).`, flags: 64 }),
+          });
+          return;
+        }
+
+        const analysis = await apiResp.json();
+        const members = Array.isArray(analysis.members) ? analysis.members : [];
+
+        if (members.length === 0) {
+          await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: `Aucun membre trouvé pour ${resolved.name}.`, flags: 64 }),
+          });
+          return;
+        }
+
+        // Chargement des analyses joueurs en parallèle mais limitée pour éviter le throttling.
+        const BATCH_SIZE = 8;
+        const enrich = async (m) => {
+          const tag = m.tag?.startsWith('#') ? m.tag : `#${m.tag}`;
+          const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(tag)}`;
+
+          try {
+            const playerResp = await fetch(
+              `https://trustroyale.vercel.app/api/player/${encodeURIComponent(tag)}/analysis`,
+              { headers: { Accept: 'application/json' } },
+            );
+            if (!playerResp.ok) return null;
+            const player = await playerResp.json();
+
+            const dailyActivity = Array.isArray(player.recentActivity?.dailyActivity)
+              ? player.recentActivity.dailyActivity
+              : [];
+            const dailyTotal = dailyActivity.reduce((sum, d) => sum + (d?.count ?? 0), 0);
+            const dailyCount = dailyActivity.length > 0 ? dailyActivity.length : 7;
+            const battlesPerDay = dailyCount > 0 ? Number((dailyTotal / dailyCount).toFixed(1)) : 0;
+
+            return {
+              tag,
+              name: player.overview?.name || m.name || tag,
+              role: m.role || 'member',
+              battlesPerDay,
+              playerUrl,
+            };
+          } catch (_) {
+            return null;
+          }
+        };
+
+        let enrichedMembers = [];
+        for (let i = 0; i < members.length; i += BATCH_SIZE) {
+          const chunk = members.slice(i, i + BATCH_SIZE);
+          const chunkResults = await Promise.all(chunk.map(enrich));
+          enrichedMembers = enrichedMembers.concat(chunkResults.filter((x) => x));
+        }
+
+        if (enrichedMembers.length === 0) {
+          await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: `Impossible de récupérer les analyses players pour ${resolved.name}.`, flags: 64 }),
+          });
+          return;
+        }
+
+        const sorted = enrichedMembers.sort((a, b) => b.battlesPerDay - a.battlesPerDay);
+        const totalAvg = sorted.reduce((sum, p) => sum + p.battlesPerDay, 0) / sorted.length;
+
+        const rows = sorted.slice(0, 25).map((p, idx) => {
+          return `${idx + 1}. [${p.name}](${p.playerUrl}) · [${p.role}] · ${p.battlesPerDay}`;
+        });
+
+        const description =
+          'Note: battles per day est calculé sur le Battle log Clash Royale (max 30 dernières batailles).\n' +
+          'Si 30 entrées sont toutes sur une même journée, le ratio peut atteindre 30.\n\n' +
+          rows.join('\n') +
+          (sorted.length > 25 ? `\n...et ${sorted.length - 25} autres` : '');
+
+        const embed = {
+          title: `Clan : ${resolved.name} · Combats moyens joués par jour (tout confondu)`,
+          color: 0x5865f2,
+          description,
+          footer: { text: `Moyenne globale du clan : ${totalAvg.toFixed(1)}` },
         };
 
         await fetch(webhookUrl, {
