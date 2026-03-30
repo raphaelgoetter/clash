@@ -616,21 +616,32 @@ export default async function handler(req, res) {
             ? 'https://trustroyale.vercel.app'
             : 'http://localhost:3000';
 
-        const apiResp = await fetch(
-          `${baseUrl}/api/clan/${encodeURIComponent(resolved.tag)}/analysis`,
-          { headers: { Accept: 'application/json' } },
-        );
+        let analysis = null;
+        let analysisSource = null;
 
-        if (!apiResp.ok) {
-          await fetch(webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: `Erreur API clan (${apiResp.status}).`, flags: 64 }),
-          });
-          return;
+        try {
+          const { buildClanAnalysis } = await import('../../backend/routes/clan.js');
+          analysis = await buildClanAnalysis(resolved.tag);
+          analysisSource = 'local';
+        } catch (err) {
+          console.warn('[battles-per-day] buildClanAnalysis failed, fallback to API:', err.message);
+          const apiResp = await fetch(
+            `${baseUrl}/api/clan/${encodeURIComponent(resolved.tag)}/analysis`,
+            { headers: { Accept: 'application/json' } },
+          );
+          if (!apiResp.ok) {
+            const bodyText = await apiResp.text().catch(() => '(no body)');
+            await fetch(webhookUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ content: `Erreur API clan (${apiResp.status}): ${bodyText}`, flags: 64 }),
+            });
+            return;
+          }
+          analysis = await apiResp.json();
+          analysisSource = 'http';
         }
 
-        const analysis = await apiResp.json();
         const members = Array.isArray(analysis.members) ? analysis.members : [];
 
         if (members.length === 0) {
