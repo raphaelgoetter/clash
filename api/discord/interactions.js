@@ -663,17 +663,9 @@ export default async function handler(req, res) {
 
         const candidates = members
           .filter((m) => m && m.tag)
-          .map((m) => ({ tag: m.tag, name: m.name || m.tag, reliability: Number.isFinite(Number(m.reliability)) ? Number(m.reliability) : null }))
-          .sort((a, b) => {
-            const aScore = a.reliability === null ? (selectedMode === 'top' ? -Infinity : +Infinity) : a.reliability;
-            const bScore = b.reliability === null ? (selectedMode === 'top' ? -Infinity : +Infinity) : b.reliability;
-            if (aScore !== bScore) {
-              return selectedMode === 'bottom' ? aScore - bScore : bScore - aScore;
-            }
-            return a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' });
-          });
+          .map((m) => ({ tag: m.tag, name: m.name || m.tag }));
 
-        const limitedCandidates = candidates.slice(0, 25);
+        const limitedCandidates = candidates;
 
         const { fetchBattleLog } = await import('../../backend/services/clashApi.js');
         const BATCH_SIZE = 4;
@@ -714,11 +706,17 @@ export default async function handler(req, res) {
           return;
         }
 
-        const sorted = enriched.sort((a, b) => b.battlesPerDay - a.battlesPerDay);
-        const totalAvg = sorted.reduce((sum, p) => sum + p.battlesPerDay, 0) / sorted.length;
+        const sorted = enriched.sort((a, b) => {
+          return selectedMode === 'bottom'
+            ? a.battlesPerDay - b.battlesPerDay
+            : b.battlesPerDay - a.battlesPerDay;
+        });
 
-        const rows = sorted.map((p, idx) => `${idx + 1}. [${p.name}](${p.playerUrl}) · ${p.battlesPerDay}`);
-        const descriptionHeader = `Mode : ${selectedMode} | ${limitedCandidates.length} membres (limit 25)\n\n`;
+        const selectedRows = sorted.slice(0, 25);
+        const totalAvg = selectedRows.reduce((sum, p) => sum + p.battlesPerDay, 0) / selectedRows.length;
+
+        const rows = selectedRows.map((p, idx) => `${idx + 1}. [${p.name}](${p.playerUrl}) · ${p.battlesPerDay}`);
+        const descriptionHeader = `Mode : ${selectedMode} | ${selectedRows.length} membres (limit 25)\n\n`;
         let description = descriptionHeader + rows.join('\n');
 
         const maxLength = 1950;
@@ -732,7 +730,7 @@ export default async function handler(req, res) {
           }
           const remaining = rows.length - clampedRows.length;
           description = descriptionHeader + clampedRows.join('\n');
-          if (remaining > 0) description += `\n...et ${remaining} autres (troncÃ©)`;
+          if (remaining > 0) description += `\n...et ${remaining} autres (tronqué)`;
         }
 
         const embed = {
