@@ -602,7 +602,10 @@ export default async function handler(req, res) {
   // Commande /battles-per-day
   if (body.type === 2 && body.data?.name === 'battles-per-day') {
     const clanOpt = body.data.options?.find((o) => o.name === 'clan');
+    const modeOpt = body.data.options?.find((o) => o.name === 'mode');
     const clanVal = (clanOpt?.value || '1').toString().trim().toLowerCase();
+    const selectedMode = (modeOpt?.value || 'top').toString().trim().toLowerCase() === 'bottom' ? 'bottom' : 'top';
+
     const CLAN_MAP = {
       '1': { name: 'La Resistance',  tag: 'Y8JUPC9C' },
       '2': { name: 'Les Resistants', tag: 'LRQP20V9' },
@@ -658,77 +661,85 @@ export default async function handler(req, res) {
           return;
         }
 
-        const { fetchBattleLog } = await import('../../backend/services/clashApi.js');
+        const candidates = members
+          .filter((m) => m && m.tag)
+          .map((m) => ({ tag: m.tag, name: m.name || m.tag, reliability: Number.isFinite(Number(m.reliability)) ? Number(m.reliability) : null }))
+          .sort((a, b) => {
+            const aScore = a.reliability === null ? (selectedMode === 'top' ? -Infinity : +Infinity) : a.reliability;
+            const bScore = b.reliability === null ? (selectedMode === 'top' ? -Infinity : +Infinity) : b.reliability;
+            if (aScore !== bScore) {
+              return selectedMode === 'bottom' ? aScore - bScore : bScore - aScore;
+            }
+            return a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' });
+          });
 
+        const limitedCandidates = candidates.slice(0, 25);
+
+        const { fetchBattleLog } = await import('../../backend/services/clashApi.js');
+        const BATCH_SIZE = 4;
         const withTimeout = (promise, ms) =>
           Promise.race([
             promise,
             new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
           ]);
 
-        const BATCH_SIZE = 8;
-        const enrich = async (m) => {
-          const tag = m.tag?.startsWith('#') ? m.tag : `#${m.tag}`;
-          const playerUrl = `${baseUrl}/?mode=player&tag=${encodeURIComponent(tag)}`;
-
-          try {
-            const battleLog = await withTimeout(fetchBattleLog(tag), 5000);
-            const battlesPerDay = computeBattlesPerDayFromPlayer({ battleLog: Array.isArray(battleLog) ? battleLog : [] });
-            if (battlesPerDay == null || Number.isNaN(battlesPerDay)) {
+        const enriched = [];
+        for (let i = 0; i < limitedCandidates.length; i += BATCH_SIZE) {
+          const chunk = limitedCandidates.slice(i, i + BATCH_SIZE);
+          const results = await Promise.all(chunk.map(async (m) => {
+            try {
+              const tagNormalized = m.tag?.startsWith('#') ? m.tag : `#${m.tag}`;
+              const battleLog = await withTimeout(fetchBattleLog(tagNormalized), 7000);
+              const battlesPerDay = computeBattlesPerDayFromPlayer({ battleLog: Array.isArray(battleLog) ? battleLog : [] });
+              if (battlesPerDay == null || Number.isNaN(battlesPerDay)) return null;
+              return {
+                tag: tagNormalized,
+                name: m.name,
+                battlesPerDay,
+                playerUrl: `${baseUrl}/?mode=player&tag=${encodeURIComponent(tagNormalized)}`,
+              };
+            } catch {
               return null;
             }
-            return {
-              tag,
-              name: m.name || tag,
-              battlesPerDay,
-              playerUrl,
-            };
-          } catch (err) {
-            return null;
-          }
-        };
-
-        let enrichedMembers = [];
-        for (let i = 0; i < members.length; i += BATCH_SIZE) {
-          const chunk = members.slice(i, i + BATCH_SIZE);
-          const chunkResults = await Promise.all(chunk.map(enrich));
-          enrichedMembers = enrichedMembers.concat(chunkResults.filter((x) => x));
+          }));
+          enriched.push(...results.filter(Boolean));
         }
 
-        if (enrichedMembers.length === 0) {
+        if (enriched.length === 0) {
           await fetch(webhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: `Impossible de récupérer les battle logs pour ${resolved.name}.`, flags: 64 }),
+            body: JSON.stringify({ content: `Impossible de récupérer les logs Battle pour ${resolved.name}.`, flags: 64 }),
           });
           return;
         }
 
-        const sorted = enrichedMembers.sort((a, b) => b.battlesPerDay - a.battlesPerDay);
-        const totalAvg = sorted.length > 0 ? sorted.reduce((sum, p) => sum + p.battlesPerDay, 0) / sorted.length : 0;
+        const sorted = enriched.sort((a, b) => b.battlesPerDay - a.battlesPerDay);
+        const totalAvg = sorted.reduce((sum, p) => sum + p.battlesPerDay, 0) / sorted.length;
 
         const rows = sorted.map((p, idx) => `${idx + 1}. [${p.name}](${p.playerUrl}) · ${p.battlesPerDay}`);
+        const descriptionHeader = `Mode : ${selectedMode} | ${limitedCandidates.length} membres (limit 25)\n\n`;
+        let description = descriptionHeader + rows.join('\n');
 
-        let description = 'Battles/day depuis Battle log (30 dernières entrées max).\n\n' + rows.join('\n');
         const maxLength = 1950;
         if (description.length > maxLength) {
           const clampedRows = [];
-          let len = 'Battles/day depuis Battle log (30 dernières entrées max).\n\n'.length;
+          let len = descriptionHeader.length;
           for (const row of rows) {
             if (len + row.length + 1 > maxLength) break;
             clampedRows.push(row);
             len += row.length + 1;
           }
           const remaining = rows.length - clampedRows.length;
-          description = 'Battles/day depuis Battle log (30 dernières entrées max).\n\n' + clampedRows.join('\n');
-          if (remaining > 0) description += `\n...et ${remaining} autres`; 
+          description = descriptionHeader + clampedRows.join('\n');
+          if (remaining > 0) description += `\n...et ${remaining} autres (troncÃ©)`;
         }
 
         const embed = {
-          title: `Clan : ${resolved.name} · Combats moyens joués par jour (tout confondu)`,
+          title: `Clan : ${resolved.name} · Combats moyens / jour`,
           color: 0x5865f2,
           description,
-          footer: { text: `Moyenne globale du clan : ${totalAvg.toFixed(1)}` },
+          footer: { text: `Moyenne (liste) : ${totalAvg.toFixed(1)} (n=${sorted.length})` },
         };
 
         await fetch(webhookUrl, {

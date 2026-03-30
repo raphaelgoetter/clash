@@ -152,6 +152,16 @@ const commands = [
           { name: 'Les Revoltes', value: '3' },
         ],
       },
+      {
+        type: 3,
+        name: 'mode',
+        description: 'Tri: top = membre les plus actifs / bottom = membres les moins actifs',
+        required: false,
+        choices: [
+          { name: 'top', value: 'top' },
+          { name: 'bottom', value: 'bottom' },
+        ],
+      },
     ],
   },
   {
