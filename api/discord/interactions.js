@@ -715,7 +715,8 @@ export default async function handler(req, res) {
         const selectedRows = sorted.slice(0, 25);
         const totalAvg = selectedRows.reduce((sum, p) => sum + p.battlesPerDay, 0) / selectedRows.length;
 
-        const rows = selectedRows.map((p, idx) => `${idx + 1}. [${p.name}](${p.playerUrl}) · ${p.battlesPerDay}`);
+        const displayedRows = selectedMode === 'bottom' ? [...selectedRows].reverse() : selectedRows;
+        const rows = displayedRows.map((p, idx) => `${idx + 1}. [${p.name}](${p.playerUrl}) · ${p.battlesPerDay}`);
         const descriptionHeader = `Mode : ${selectedMode} | ${selectedRows.length} membres (limit 25)\n\n`;
         let description = descriptionHeader + rows.join('\n');
 
