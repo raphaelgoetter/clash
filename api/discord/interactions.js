@@ -31,6 +31,50 @@ function verifyDiscordSignature(signature, timestamp, rawBody) {
 
 const COLOR_MAP = { green: 0x2ecc71, yellow: 0xf1c40f, orange: 0xe67e22, red: 0xe74c3c };
 const EMOJI_MAP = { green: '🟢', yellow: '🟡', orange: '🟠', red: '🔴' };
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function parseBattleTimestamp(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  if (!Number.isNaN(d.getTime())) return d;
+
+  // fallback: format 20240315T123456.000Z
+  const m = /^(.{8}T.{6}\.\d{3}Z)$/.exec(value);
+  if (m) {
+    const iso = `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}T${value.slice(9, 11)}:${value.slice(11, 13)}:${value.slice(13, 15)}.${value.slice(16, 19)}Z`;
+    const d2 = new Date(iso);
+    if (!Number.isNaN(d2.getTime())) return d2;
+  }
+
+  return null;
+}
+
+function computeBattlesPerDayFromPlayer(player) {
+  if (!player) return 0;
+  const battleLog = Array.isArray(player.battleLog) ? player.battleLog : [];
+
+  if (battleLog.length > 0) {
+    const times = battleLog
+      .map((b) => parseBattleTimestamp(b?.battleTime || b?.battleTimeStamp || b?.battle_time || b?.battleTimeStampLocal))
+      .filter((d) => d instanceof Date && !Number.isNaN(d.getTime()))
+      .map((d) => d.getTime());
+
+    if (times.length > 0) {
+      const min = Math.min(...times);
+      const max = Math.max(...times);
+      const spanDays = Math.max(1, Math.ceil((max - min + 1) / MS_PER_DAY));
+      const totalBattles = Number.isFinite(player?.activityIndicators?.totalBattles)
+        ? player.activityIndicators.totalBattles
+        : battleLog.length;
+      return totalBattles > 0 ? Number((totalBattles / spanDays).toFixed(1)) : 0;
+    }
+  }
+
+  const dailyActivity = Array.isArray(player.recentActivity?.dailyActivity) ? player.recentActivity.dailyActivity : [];
+  const dailyTotal = dailyActivity.reduce((sum, d) => sum + (d?.count ?? 0), 0);
+  const dailyCount = dailyActivity.length > 0 ? dailyActivity.length : 7;
+  return dailyCount > 0 ? Number((dailyTotal / dailyCount).toFixed(1)) : 0;
+}
 
 // Icône selon le ratio score/max : ✅ ≥ 75 %, ⚠️ ≥ 40 %, ❌ sinon
 function criterionIcon(score, max) {
@@ -603,16 +647,6 @@ export default async function handler(req, res) {
             promise,
             new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
           ]);
-
-        const computeBattlesPerDayFromPlayer = (player) => {
-          if (!player) return 0;
-          const dailyActivity = Array.isArray(player.recentActivity?.dailyActivity)
-            ? player.recentActivity.dailyActivity
-            : [];
-          const dailyTotal = dailyActivity.reduce((sum, d) => sum + (d?.count ?? 0), 0);
-          const dailyCount = dailyActivity.length > 0 ? dailyActivity.length : 7;
-          return dailyCount > 0 ? Number((dailyTotal / dailyCount).toFixed(1)) : 0;
-        };
 
         const BATCH_SIZE = 8;
         const enrich = async (m) => {
