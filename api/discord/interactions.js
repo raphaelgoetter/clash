@@ -566,8 +566,12 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
+        const baseUrl = process.env.VERCEL_URL
+          ? `https://${process.env.VERCEL_URL}`
+          : 'http://localhost:3000';
+
         const apiResp = await fetch(
-          `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis`,
+          `${baseUrl}/api/clan/${encodeURIComponent(resolved.tag)}/analysis`,
           { headers: { Accept: 'application/json' } },
         );
 
@@ -592,35 +596,40 @@ export default async function handler(req, res) {
           return;
         }
 
-        // Chargement des analyses joueurs en parallèle mais limitée pour éviter le throttling.
+        const { getPlayerAnalysis } = await import('../../backend/services/analysisService.js');
+
+        const withTimeout = (promise, ms) =>
+          Promise.race([
+            promise,
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
+          ]);
+
+        const computeBattlesPerDayFromPlayer = (player) => {
+          if (!player) return 0;
+          const dailyActivity = Array.isArray(player.recentActivity?.dailyActivity)
+            ? player.recentActivity.dailyActivity
+            : [];
+          const dailyTotal = dailyActivity.reduce((sum, d) => sum + (d?.count ?? 0), 0);
+          const dailyCount = dailyActivity.length > 0 ? dailyActivity.length : 7;
+          return dailyCount > 0 ? Number((dailyTotal / dailyCount).toFixed(1)) : 0;
+        };
+
         const BATCH_SIZE = 8;
         const enrich = async (m) => {
           const tag = m.tag?.startsWith('#') ? m.tag : `#${m.tag}`;
-          const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(tag)}`;
+          const playerUrl = `${baseUrl}/?mode=player&tag=${encodeURIComponent(tag)}`;
 
           try {
-            const playerResp = await fetch(
-              `https://trustroyale.vercel.app/api/player/${encodeURIComponent(tag)}/analysis`,
-              { headers: { Accept: 'application/json' } },
-            );
-            if (!playerResp.ok) return null;
-            const player = await playerResp.json();
-
-            const dailyActivity = Array.isArray(player.recentActivity?.dailyActivity)
-              ? player.recentActivity.dailyActivity
-              : [];
-            const dailyTotal = dailyActivity.reduce((sum, d) => sum + (d?.count ?? 0), 0);
-            const dailyCount = dailyActivity.length > 0 ? dailyActivity.length : 7;
-            const battlesPerDay = dailyCount > 0 ? Number((dailyTotal / dailyCount).toFixed(1)) : 0;
-
+            const player = await withTimeout(getPlayerAnalysis(tag), 5000);
+            const battlesPerDay = computeBattlesPerDayFromPlayer(player);
             return {
               tag,
-              name: player.overview?.name || m.name || tag,
+              name: player?.overview?.name || m.name || tag,
               role: m.role || 'member',
               battlesPerDay,
               playerUrl,
             };
-          } catch (_) {
+          } catch (err) {
             return null;
           }
         };
