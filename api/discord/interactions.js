@@ -557,18 +557,23 @@ export default async function handler(req, res) {
 
         const VERDICT_EMOJI = { 'Extreme risk': '🔴', 'High risk': '🟠' };
         const clanUrl = `https://trustroyale.vercel.app/?mode=clan&tag=%23${resolved.tag}`;
-        const rows = filtered.slice(0, 25).map((m) => {
+        const allRows = filtered.map((m) => {
           const transferTag = m.isFamilyTransfer ? ' (transfer)' : '';
           const newTag = !m.isFamilyTransfer && m.isNew ? ' (new)' : '';
-          const role = capitalize(m.role || 'member');
           const emoji = VERDICT_EMOJI[m.verdict] ?? '⚠️';
           const pct = Math.round(Number(m.reliability ?? 0));
           const verdict = (m.verdict || '').replace(/\s*risk$/i, '');
           const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(m.tag)}`;
-          return `- [${m.name}](${playerUrl})${transferTag}${newTag} · [${role}] · ${emoji} ${verdict} (${pct}%)`;
+          return `- [${m.name}](${playerUrl})${transferTag}${newTag} · ${emoji} ${verdict} (${pct}%)`;
         });
 
-        const description = rows.join('\n') + (filtered.length > 25 ? `\n...and ${filtered.length - 25} more` : '');
+        let description;
+        const MAX_ROWS = 80;
+        if (allRows.length <= MAX_ROWS) {
+          description = allRows.join('\n');
+        } else {
+          description = allRows.slice(0, MAX_ROWS).join('\n') + `\n...et ${allRows.length - MAX_ROWS} autres`; 
+        }
 
         const embed = {
           title: `⚠️  ${resolved.name} (${filtered.length} joueurs à risque)`,
@@ -653,7 +658,7 @@ export default async function handler(req, res) {
           return;
         }
 
-        const { getPlayerAnalysis } = await import('../../backend/services/analysisService.js');
+        const { fetchBattleLog } = await import('../../backend/services/clashApi.js');
 
         const withTimeout = (promise, ms) =>
           Promise.race([
@@ -667,12 +672,14 @@ export default async function handler(req, res) {
           const playerUrl = `${baseUrl}/?mode=player&tag=${encodeURIComponent(tag)}`;
 
           try {
-            const player = await withTimeout(getPlayerAnalysis(tag), 5000);
-            const battlesPerDay = computeBattlesPerDayFromPlayer(player);
+            const battleLog = await withTimeout(fetchBattleLog(tag), 5000);
+            const battlesPerDay = computeBattlesPerDayFromPlayer({ battleLog: Array.isArray(battleLog) ? battleLog : [] });
+            if (battlesPerDay == null || Number.isNaN(battlesPerDay)) {
+              return null;
+            }
             return {
               tag,
-              name: player?.overview?.name || m.name || tag,
-              role: m.role || 'member',
+              name: m.name || tag,
               battlesPerDay,
               playerUrl,
             };
@@ -692,21 +699,30 @@ export default async function handler(req, res) {
           await fetch(webhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: `Impossible de récupérer les analyses players pour ${resolved.name}.`, flags: 64 }),
+            body: JSON.stringify({ content: `Impossible de récupérer les battle logs pour ${resolved.name}.`, flags: 64 }),
           });
           return;
         }
 
         const sorted = enrichedMembers.sort((a, b) => b.battlesPerDay - a.battlesPerDay);
-        const totalAvg = sorted.reduce((sum, p) => sum + p.battlesPerDay, 0) / sorted.length;
+        const totalAvg = sorted.length > 0 ? sorted.reduce((sum, p) => sum + p.battlesPerDay, 0) / sorted.length : 0;
 
-        const rows = sorted.map((p, idx) => {
-          return `${idx + 1}. [${p.name}](${p.playerUrl}) · ${p.battlesPerDay}`;
-        });
+        const rows = sorted.map((p, idx) => `${idx + 1}. [${p.name}](${p.playerUrl}) · ${p.battlesPerDay}`);
 
-        const description =
-          'Battles/day depuis Battle log (max 30).\n\n' +
-          rows.join('\n');
+        let description = 'Battles/day depuis Battle log (30 dernières entrées max).\n\n' + rows.join('\n');
+        const maxLength = 1950;
+        if (description.length > maxLength) {
+          const clampedRows = [];
+          let len = 'Battles/day depuis Battle log (30 dernières entrées max).\n\n'.length;
+          for (const row of rows) {
+            if (len + row.length + 1 > maxLength) break;
+            clampedRows.push(row);
+            len += row.length + 1;
+          }
+          const remaining = rows.length - clampedRows.length;
+          description = 'Battles/day depuis Battle log (30 dernières entrées max).\n\n' + clampedRows.join('\n');
+          if (remaining > 0) description += `\n...et ${remaining} autres`; 
+        }
 
         const embed = {
           title: `Clan : ${resolved.name} · Combats moyens joués par jour (tout confondu)`,
