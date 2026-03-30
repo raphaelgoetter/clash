@@ -558,8 +558,8 @@ export default async function handler(req, res) {
         const VERDICT_EMOJI = { 'Extreme risk': '🔴', 'High risk': '🟠' };
         const clanUrl = `https://trustroyale.vercel.app/?mode=clan&tag=%23${resolved.tag}`;
         const allRows = filtered.map((m) => {
-          const transferTag = m.isFamilyTransfer ? ' (transfer)' : '';
-          const newTag = !m.isFamilyTransfer && m.isNew ? ' (new)' : '';
+          const transferTag = m.isFamilyTransfer ? ' 🔄' : '';
+          const newTag = !m.isFamilyTransfer && m.isNew ? ' 🆕' : '';
           const emoji = VERDICT_EMOJI[m.verdict] ?? '⚠️';
           const pct = Math.round(Number(m.reliability ?? 0));
           const verdict = (m.verdict || '').replace(/\s*risk$/i, '');
@@ -1050,8 +1050,8 @@ export default async function handler(req, res) {
 
         const rows = sorted.slice(0, MAX_ROWS).map((p, i) => {
           const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
-          const isNew = p.isNew ? ' (new)' : '';
-          const transfer = p.isFamilyTransfer ? ' (transfer)' : '';
+          const isNew = p.isNew ? ' 🆕' : '';
+          const transfer = p.isFamilyTransfer ? ' 🔄' : '';
           const role = capitalize(p.role || 'member');
           return `${i + 1}. [${p.name}](${playerUrl})${isNew}${transfer} • [${role}] • **${p.decks} decks**`;
         });
