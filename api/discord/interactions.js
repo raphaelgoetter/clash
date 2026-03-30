@@ -612,7 +612,9 @@ export default async function handler(req, res) {
       try {
         const baseUrl = process.env.VERCEL_URL
           ? `https://${process.env.VERCEL_URL}`
-          : 'http://localhost:3000';
+          : process.env.NODE_ENV === 'production'
+            ? 'https://trustroyale.vercel.app'
+            : 'http://localhost:3000';
 
         const apiResp = await fetch(
           `${baseUrl}/api/clan/${encodeURIComponent(resolved.tag)}/analysis`,
