@@ -444,6 +444,26 @@ export default async function handler(req, res) {
         let players = top.playersByQuota[min] || [];
         players = players.slice().sort((a, b) => b.fame - a.fame);
 
+        // Récupérer éventuellement isNew/isFamilyTransfer via l'analyse de clan pour annoter /promote
+        const analysisMap = new Map();
+        try {
+          const abortCtrl = new AbortController();
+          const abortTimer = setTimeout(() => abortCtrl.abort(), 50000);
+          const apiResp = await fetch(
+            `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(clanTag)}/analysis`,
+            { headers: { Accept: 'application/json' }, signal: abortCtrl.signal },
+          );
+          clearTimeout(abortTimer);
+          if (apiResp.ok) {
+            const analysis = await apiResp.json();
+            (analysis.members || []).forEach((m) => {
+              if (m?.tag) analysisMap.set((m.tag || '').toUpperCase(), m);
+            });
+          }
+        } catch (err) {
+          // ignore, annotations sont facultatives
+        }
+
         // Déduire le weekId depuis le raceLog (première entrée = semaine précédente)
         const weekId = raceLog?.[0]
           ? `S${raceLog[0].seasonId}W${raceLog[0].sectionIndex + 1}`
@@ -458,8 +478,11 @@ export default async function handler(req, res) {
             const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
             const role = capitalize(p.role || 'member');
             const promoteArrow = role.toLowerCase() === 'member' ? ' ⬆️' : '';
+            const playerAnalysis = analysisMap.get((p.tag || '').toUpperCase()) || {};
+            const transferTag = playerAnalysis.isFamilyTransfer ? ' 🔄' : '';
+            const newTag = !playerAnalysis.isFamilyTransfer && playerAnalysis.isNew ? ' 🆕' : '';
             // Inclut le lien vers la page joueur et le tag CR
-            return `${num}. [${p.name}](${playerUrl}) • [${role}]${promoteArrow} • **${p.fame} fame**`;
+            return `${num}. [${p.name}](${playerUrl})${transferTag}${newTag} • [${role}]${promoteArrow} • **${p.fame} fame**`;
           });
           description = rows.join('\n');
         }
@@ -1470,6 +1493,26 @@ export default async function handler(req, res) {
 
         const participants = race?.clan?.participants ?? [];
 
+        // Récupération éventuelle des statuts isNew/isFamilyTransfer pour /late
+        const analysisMap = new Map();
+        try {
+          const abortCtrl = new AbortController();
+          const abortTimer = setTimeout(() => abortCtrl.abort(), 50000);
+          const apiResp = await fetch(
+            `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis`,
+            { headers: { Accept: 'application/json' }, signal: abortCtrl.signal },
+          );
+          clearTimeout(abortTimer);
+          if (apiResp.ok) {
+            const analysis = await apiResp.json();
+            (analysis.members || []).forEach((m) => {
+              if (m?.tag) analysisMap.set((m.tag || '').toUpperCase(), m);
+            });
+          }
+        } catch (err) {
+          // ignore, annotations sont facultatives
+        }
+
         // Seuls les membres actuellement dans le clan (les anciens membres ex-participants sont exclus)
         const currentMemberTags = new Set(currentMembers.map((m) => m.tag));
         const currentMemberByTag = new Map(currentMembers.map((m) => [(m.tag || '').toUpperCase(), m]));
@@ -1536,7 +1579,10 @@ export default async function handler(req, res) {
             const discordId   = links[tag];
             const guildMember = discordId ? memberById.get(discordId) : null;
             const discordPart = guildMember ? ` <@${discordId}>` : '';
-            descLines.push(`• [${pl.name}](${playerUrl}) ${roleText}${discordPart}`);
+            const memberAnalysis = analysisMap.get(tag.toUpperCase()) || {};
+            const transferTag = memberAnalysis.isFamilyTransfer ? ' 🔄' : '';
+            const newTag = !memberAnalysis.isFamilyTransfer && memberAnalysis.isNew ? ' 🆕' : '';
+            descLines.push(`• [${pl.name}](${playerUrl})${transferTag}${newTag} ${roleText}${discordPart}`);
           }
         }
 
