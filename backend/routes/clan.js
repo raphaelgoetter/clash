@@ -6,7 +6,7 @@ import { Router } from 'express';
 import { fetchClan, fetchClanMembers, fetchRaceLog, fetchBattleLog, fetchPlayer, fetchCurrentRace } from '../services/clashApi.js';
 import {
   analyzeClanMembers, buildWarHistory, buildFamilyWarHistory, computeWarScore,
-  computeWarReliabilityFallback, categorizeBattleLog, getPlayerAnalysis,
+  computeWarReliabilityFallback, categorizeBattleLog,
   computeIsNewPlayer, filterWarBattles, expandDuelRounds, isWarWin, buildCurrentWarDays,
   estimateWinsFromFame, warResetOffsetMs, scoreTotalDonations,
   mergeWarHistoryWithTransfer, findRecentFamilyTransfer,
@@ -346,6 +346,11 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     const existingCache = forceRefresh ? null : await loadClanCache(clanTag).catch(() => null);
     const membersRaw = existingCache?.membersRaw ? { ...existingCache.membersRaw } : {};
 
+    // Quick map of prior member results, to avoid expensive player-api fan-out for a hot cache.
+    const existingMemberAnalysis = new Map(
+      (existingCache?.members || []).map((member) => [member.tag, member])
+    );
+
     const nowMs = Date.now();
     const membersToFetch = members.filter((m) => {
       if (forceRefresh) return true;
@@ -670,25 +675,26 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       // Présence Discord : le tag du membre est-il dans discord-links.json ?
       const discordLinked = Object.prototype.hasOwnProperty.call(discordLinks, m.tag);
 
-      // Source de vérité : préférer l'analyse « player » si disponible.
+      // Source de vérité : préférer les résultats stockés en cache pour réduire le trafic API.
       let playerScoreOverride = false;
-      try {
-        playerAnalysis = await getPlayerAnalysis(m.tag, discordLinked);
-      } catch (e) {
-        console.warn(`[clan] debug getPlayerAnalysis for ${m.tag} failed: ${e.message}`);
-        playerAnalysis = null;
-      }
-
-      if (playerAnalysis?.warScore && Number.isFinite(playerAnalysis.warScore.pct)) {
-        const pa = playerAnalysis.warScore;
+      const cachedMember = existingMemberAnalysis.get(m.tag);
+      if (cachedMember && Number.isFinite(cachedMember.reliability)) {
+        const pa = {
+          pct: cachedMember.reliability,
+          verdict: cachedMember.verdict,
+          color: cachedMember.color,
+        };
+        playerAnalysis = {
+          warScore: pa,
+          warHistory: cachedMember.warHistory || null,
+        };
         reliabilityScore = pa.pct;
         verdict = pa.verdict ?? 'Unknown';
         color = pa.color ?? 'orange';
-        scoreSource = 'player';
+        scoreSource = 'cached';
         memberWarScore = pa;
-        if (playerAnalysis.warHistory) warHistory = playerAnalysis.warHistory;
+        if (cachedMember.warHistory) warHistory = cachedMember.warHistory;
         playerScoreOverride = true;
-        console.log(`[clan] playerAnalysis override for ${m.tag}: ${reliabilityScore} (${verdict})`);
       }
 
       if (!playerScoreOverride && raceLog) {
