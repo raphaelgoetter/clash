@@ -637,7 +637,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     // First pass: compute war scores for all members (concurrency-limited to avoid Clash API rate pressure)
     const MEMBER_CONCURRENCY = 8;
     const memberTasks = members.map((m, idx) => async () => {
-      let reliabilityScore, verdict, color, isNew = false, warHistory = null, scoreSource = 'clan', playerAnalysis = null;
+      let reliabilityScore, verdict, color, isNew = false, isNewFromCache = null, warHistory = null, scoreSource = 'clan', playerAnalysis = null;
       let memberWarScore = null;
 
       // Resolve full player profile (for badges) and battle log from fetch results or existing cache.
@@ -694,6 +694,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         scoreSource = 'cached';
         memberWarScore = pa;
         if (cachedMember.warHistory) warHistory = cachedMember.warHistory;
+        if (typeof cachedMember.isNew === 'boolean') {
+          isNewFromCache = cachedMember.isNew;
+        }
         playerScoreOverride = true;
       }
 
@@ -890,7 +893,11 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       }
 
       // Determine new member flag by shared policy.
-      isNew = computeIsNewPlayer(warHistory, memberWarScore, warHistory?.isFamilyTransfer === true);
+      if (isNewFromCache !== null) {
+        isNew = isNewFromCache;
+      } else {
+        isNew = computeIsNewPlayer(warHistory, memberWarScore, warHistory?.isFamilyTransfer === true);
+      }
 
       // Ensure we don't flag long‑inactive members as "new" for non BattleLog players.
       if (isNew && m.lastSeen) {
