@@ -213,6 +213,12 @@ code {
   letter-spacing: .06em;
 }
 
+.card-week-id {
+  font-size: .8em;
+  opacity: 60%;
+  margin-left: 4px;
+}
+
 .war-progress-warning {
   padding: 6px 10px;
   margin-top: 8px;

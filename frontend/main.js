@@ -1679,7 +1679,7 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
   }
   const weekLabel = prevWeekId ? ` <span class="card-week-id">(${prevWeekId.toUpperCase()})</span>` : '';
   card.querySelector('.card-title').innerHTML = `🤷 ${t('lastWarFails')}${weekLabel}`;
-  const players = uncomplete.players.slice().sort((a,b)=> b.decks - a.decks);
+  const players = uncomplete.players.slice().sort((a,b)=> a.decks - b.decks);
 
   // show a global warning if any player is still using warlog data (not snapshot)
   // or if snapshots do not cover all 4 GDC days.
