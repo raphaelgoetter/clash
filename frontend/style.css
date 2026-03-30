@@ -317,22 +317,6 @@ code {
 }
 
 /* Left clan members (legacy) */
-.left-members {
-  columns: 2;
-  column-gap: 24px;
-  margin-top: 12px;
-}
-
-@media (min-width: 1024px) {
-  .left-members {
-    columns: 4;
-  }
-}
-
-.left-members div {
-  break-inside: avoid;
-  padding: 2px 0;
-}
 
 /* daily breakdown colour coding */
 .daily-green { color: var(--green); }
@@ -358,8 +342,7 @@ code {
 
 /* collapsible card styles */
 #card-top-players summary,
-#card-uncomplete summary,
-#card-left summary {
+#card-uncomplete summary {
   display: flex;
   align-items: center;
   font-weight: 700;
@@ -368,22 +351,19 @@ code {
   line-height: 1.2;
 }
 #card-top-players summary .card-title,
-#card-uncomplete summary .card-title,
-#card-left summary .card-title {
+#card-uncomplete summary .card-title {
   margin-bottom: 0;
 }
 /* custom arrow marker using ::before */
 #card-top-players summary::before,
-#card-uncomplete summary::before,
-#card-left summary::before {
+#card-uncomplete summary::before {
   content: '►';
   margin-right: 8px;
   font-size: 0.9em;
   transition: transform 0.2s;
 }
 #card-top-players details[open] summary::before,
-#card-uncomplete details[open] summary::before,
-#card-left details[open] summary::before {
+#card-uncomplete details[open] summary::before {
   content: '▼';
 }
 #card-top-players details[open] .card-desc,

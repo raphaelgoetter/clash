@@ -235,10 +235,6 @@ function translateUI() {
   }
   const cardUncompleteDesc = document.querySelector('#card-uncomplete .card-desc');
   if (cardUncompleteDesc) cardUncompleteDesc.textContent = t('lastWarFailsDesc') || '';
-  const cardLeft = document.querySelector('#card-left .card-title');
-  if (cardLeft) cardLeft.textContent = `🚪 ${t('leftClan')}`;
-  const cardLeftDesc = document.querySelector('#card-left .card-desc');
-  if (cardLeftDesc) cardLeftDesc.textContent = t('leftClanDesc') || '';
   const tabTitleEl = document.querySelector('.tab-title');
   if (tabTitleEl) tabTitleEl.textContent = t('memberList');
 }
@@ -486,8 +482,14 @@ async function handleSearch(force = false) {
       const staticData = await loadStaticClan(tag);
       if (staticData) {
         lastResultName = staticData.clan?.name || null;
-        // Display cached clan data instantly, then refresh from live API.
-        renderClanOverview(staticData);
+        // Display cached clan overview and members instantly, but keep
+        // section-heavy parts (topPlayers / uncomplete) in lazy state.
+        const cachedOverview = {
+          ...staticData,
+          topPlayers: null,
+          uncomplete: null,
+        };
+        renderClanOverview(cachedOverview);
         renderClanMembers(staticData);
         updateFavBtnState(tag);
         showCacheNote(true, staticData.snapshotDate, {
@@ -1692,8 +1694,6 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
     if (listEl) {
       listEl.innerHTML = `<li class="text-muted">${t('clickToLoadUncomplete') || 'Open the section to load data on demand.'}</li>`;
     }
-    const leftCard = document.getElementById('card-left');
-    if (leftCard) leftCard.classList.add('hidden');
     return;
   }
 
@@ -1792,25 +1792,6 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
     listEl.innerHTML = present.length > 0
       ? present.map(renderPlayerItem).join('')
       : `<li class="text-muted">${t('everyoneInClanCompleted16')}</li>`;
-  }
-
-  // Affiche la liste des joueurs qui ont quitté le clan dans une carte séparée
-  const leftCard = document.getElementById('card-left');
-  const leftContainer = document.getElementById('left-members');
-  if (leftCard && leftContainer) {
-    if (departed.length === 0) {
-      leftCard.classList.add('hidden');
-      leftContainer.innerHTML = '';
-    } else {
-      leftCard.classList.remove('hidden');
-      // Simple liste multi-colonnes sans full détails
-      leftContainer.innerHTML = departed
-        .map((p) => {
-          const tag = p.tag.startsWith('#') ? p.tag : `#${p.tag}`;
-          return `<div>${escHtml(p.name)} (${escHtml(tag)})</div>`;
-        })
-        .join('');
-    }
   }
 
   card.classList.remove('hidden');
@@ -2021,6 +2002,7 @@ function setupClanLazySectionHandlers(weekId) {
     }
     uncompleteCard.dataset.lazyInit = '1';
   }
+
 }
 
 async function loadClanSection(tag, section, weekId) {

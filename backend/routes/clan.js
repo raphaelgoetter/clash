@@ -127,6 +127,8 @@ router.get('/:tag/analysis', async (req, res) => {
     let diskCached = null;
     let staleCache = null;
     const forceRefresh = req.query.force === 'true';
+    const includeTopPlayers = req.query.includeTopPlayers !== 'false' && req.query.includeTopPlayers !== '0';
+    const includeUncomplete = req.query.includeUncomplete !== 'false' && req.query.includeUncomplete !== '0';
 
     try {
       diskCached = await loadClanCache(clanTag);
@@ -135,13 +137,24 @@ router.get('/:tag/analysis', async (req, res) => {
           ? nowMs - new Date(diskCached.analysisCacheUpdatedAt).getTime()
           : Number.MAX_SAFE_INTEGER;
 
-        if (!forceRefresh && age <= DISK_CACHE_TTL_MS) {
+        const requiresTopPlayers = includeTopPlayers;
+        const requiresUncomplete = includeUncomplete;
+        const hasTopPlayers = !!diskCached.topPlayers;
+        const hasUncomplete = !!diskCached.uncomplete;
+
+        const canUseDiskCache = (!requiresTopPlayers || hasTopPlayers)
+          && (!requiresUncomplete || hasUncomplete);
+
+        if (!forceRefresh && age <= DISK_CACHE_TTL_MS && canUseDiskCache) {
           // Fresh cache: safe to return directly.
-          diskCached.fallbackReason = 'diskCacheFresh';
-          diskCached.rateLimited = false;
+          const responsePayload = { ...diskCached };
+          responsePayload.fallbackReason = 'diskCacheFresh';
+          responsePayload.rateLimited = false;
+          if (!includeTopPlayers) responsePayload.topPlayers = null;
+          if (!includeUncomplete) responsePayload.uncomplete = null;
           res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
           res.set('X-Cache', 'HIT');
-          return res.json(diskCached);
+          return res.json(responsePayload);
         }
 
         if (!forceRefresh && age > DISK_CACHE_TTL_MS) {
@@ -155,7 +168,10 @@ router.get('/:tag/analysis', async (req, res) => {
           // Trigger asynchronous update in background as a best-effort refresh.
           setTimeout(async () => {
             try {
-              const fresh = await buildClanAnalysis(clanTag);
+              const fresh = await buildClanAnalysis(clanTag, {
+                includeTopPlayers,
+                includeUncomplete,
+              });
               await saveCache(clanTag, fresh).catch(() => null);
               await saveClanCache(clanTag, fresh).catch(() => null);
             } catch (err) {
@@ -170,16 +186,25 @@ router.get('/:tag/analysis', async (req, res) => {
 
     // short-lived in-memory cache to speed up back/forward and repeated
     // clicks on the same instance.  TTL is small so stale issues are rare.
-    const cacheKey = `clan:${clanTag}`;
+    // Include includeTopPlayers/includeUncomplete in cache key so we don't
+    // serve a payload with excluded sections when the user explicitly requested them.
+    const cacheKey = `clan:${clanTag}:top=${includeTopPlayers ? 1 : 0}:uncomplete=${includeUncomplete ? 1 : 0}`;
     try {
       let payload;
       let fromCache = false;
       if (forceRefresh) {
-        payload = await buildClanAnalysis(clanTag, { forceRefresh: true });
+        payload = await buildClanAnalysis(clanTag, {
+          forceRefresh: true,
+          includeTopPlayers,
+          includeUncomplete,
+        });
         // force refresh est une demande forte, mettre à jour cache public clan
         await saveClanCache(clanTag, payload).catch(() => null);
       } else {
-        const cached = await getOrSet(cacheKey, () => buildClanAnalysis(clanTag), 5 * 60 * 1000);
+        const cached = await getOrSet(cacheKey, () => buildClanAnalysis(clanTag, {
+          includeTopPlayers,
+          includeUncomplete,
+        }), 5 * 60 * 1000);
         payload = cached.value;
         fromCache = cached.fromCache;
 
@@ -190,17 +215,25 @@ router.get('/:tag/analysis', async (req, res) => {
         }
       }
 
+      // optionally strip details for lazy load modes (without mutating cached payload)
+      const responsePayload = { ...payload };
+      if (!includeTopPlayers) responsePayload.topPlayers = null;
+      if (!includeUncomplete) responsePayload.uncomplete = null;
+
       // prevent Vercel/edge from caching this response
       res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
       res.set('X-Cache', fromCache ? 'HIT' : 'MISS');
-      return res.json(payload);
+      return res.json(responsePayload);
     } catch (err) {
       if (staleCache && (err.isRateLimit || err.message.includes('429') || err.status >= 500)) {
-        staleCache.rateLimited = true;
-        staleCache.fallbackReason = 'diskCacheRateLimited';
+        const responseStale = { ...staleCache };
+        responseStale.rateLimited = true;
+        responseStale.fallbackReason = 'diskCacheRateLimited';
+        if (!includeTopPlayers) responseStale.topPlayers = null;
+        if (!includeUncomplete) responseStale.uncomplete = null;
         res.set('X-Cache', 'STALE');
         res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
-        return res.status(200).json(staleCache);
+        return res.status(200).json(responseStale);
       }
       throw err;
     }
@@ -212,11 +245,14 @@ router.get('/:tag/analysis', async (req, res) => {
       try {
         const cached = await loadClanCache(clanTag);
         if (cached) {
-          cached.fallbackReason = 'diskCache';
-          cached.rateLimited = true;
+          const responseCached = { ...cached };
+          responseCached.fallbackReason = 'diskCache';
+          responseCached.rateLimited = true;
+          if (!includeTopPlayers) responseCached.topPlayers = null;
+          if (!includeUncomplete) responseCached.uncomplete = null;
           res.set('X-Cache', 'STALE');
           res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
-          return res.status(200).json(cached);
+          return res.status(200).json(responseCached);
         }
       } catch (loadErr) {
         console.warn(`[clan] persistent fallback load failed for ${clanTag}:`, loadErr.message);
@@ -354,15 +390,14 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       raceLogUnavailable = true;
     }
 
-    const includeTopPlayers = req.query.includeTopPlayers !== 'false' && req.query.includeTopPlayers !== '0';
-    const includeUncomplete = req.query.includeUncomplete !== 'false' && req.query.includeUncomplete !== '0';
+    const includeTopPlayers = options.includeTopPlayers !== false;
+    const includeUncomplete = options.includeUncomplete !== false;
 
-    // compute top players only when explicitly requested (lazy load support)
     let topPlayers = null;
     if (includeTopPlayers) {
       // compute top players for a few predefined fame quotas so the frontend
       // can render the "Last War Best Players" card without additional
-      // network requests. the helper gracefully handles missing logs.
+      // network requests. The helper gracefully handles missing logs.
       topPlayers = await computeTopPlayers(clanTag, members, [2400, 2600, 2800], raceLog);
     }
 
