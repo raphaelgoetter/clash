@@ -739,21 +739,7 @@ export default async function handler(req, res) {
         const displayedRows = selectedMode === 'bottom' ? [...selectedRows].reverse() : selectedRows;
         const rows = displayedRows.map((p, idx) => `${idx + 1}. [${p.name}](${p.playerUrl}) · ${p.battlesPerDay}`);
         const descriptionHeader = `Mode : ${selectedMode} | ${selectedRows.length} membres (limit 25)\n\n`;
-        let description = descriptionHeader + rows.join('\n');
-
-        const maxLength = 1950;
-        if (description.length > maxLength) {
-          const clampedRows = [];
-          let len = descriptionHeader.length;
-          for (const row of rows) {
-            if (len + row.length + 1 > maxLength) break;
-            clampedRows.push(row);
-            len += row.length + 1;
-          }
-          const remaining = rows.length - clampedRows.length;
-          description = descriptionHeader + clampedRows.join('\n');
-          if (remaining > 0) description += `\n...et ${remaining} autres (tronqué)`;
-        }
+        const description = descriptionHeader + rows.join('\n');
 
         const embed = {
           title: `Clan : ${resolved.name} · Combats moyens / jour`,
