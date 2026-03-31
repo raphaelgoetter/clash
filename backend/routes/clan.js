@@ -26,17 +26,6 @@ const router = Router();
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
- * When a player appears in another family clan, we consider them a transfer
- * if they played at least this many decks in the most recent completed week.
- */
-const FAMILY_TRANSFER_DECKS_THRESHOLD = 13;
-
-/**
- * Only consider the most recent completed week for transfer detection.
- */
-const FAMILY_TRANSFER_WINDOW_WEEKS = 1;
-
-/**
  * Run async tasks with limited concurrency to avoid rate-limiting.
  * Returns an array of { status, value } | { status, reason } mirroring Promise.allSettled.
  */

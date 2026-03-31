@@ -29,13 +29,6 @@ const MS_PER_DAY = 1000 * 60 * 60 * 24;
 const CLAN_RACELOG_CONCURRENCY = 3;
 const CLAN_RACELOG_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
-/**
- * Si un joueur est détecté dans un autre clan de la famille au cours de la
- * dernière semaine (dernier River Race complété), on le traite comme un
- * transfert, ce qui permet de fusionner l'historique et d'utiliser le racelog.
- */
-const FAMILY_TRANSFER_WINDOW_WEEKS = 1;
-
 // Clan War day resets at 10:40 heure de Paris (UTC+1 hiver, UTC+2 été).
 // Le décalage UTC est calculé dynamiquement pour gérer le DST.
 
@@ -979,7 +972,7 @@ async function fetchRaceLogsForClans(clanTags) {
 
 export async function buildFamilyWarHistory(playerTag, currentClanTag, currentRace = null, battleLog = []) {
   const normalizedCurrent = currentClanTag ? currentClanTag.replace(/^#/, '').toUpperCase() : null;
-  const clanTags = new Set(FAMILY_CLAN_TAGS.map((t) => t.replace(/^#/, '').toUpperCase()));
+  const clanTags = new Set();
   if (normalizedCurrent) clanTags.add(normalizedCurrent);
 
   for (const b of battleLog) {
@@ -990,10 +983,7 @@ export async function buildFamilyWarHistory(playerTag, currentClanTag, currentRa
     }
   }
 
-  const transferClanTags = await getTransferClanTagsForPlayer(playerTag);
-  for (const tag of transferClanTags) {
-    if (tag) clanTags.add(tag.replace(/^#/, '').toUpperCase());
-  }
+  // Transfert mode est désactivé : pas de recherche de clans de transfert.
 
   const weekMap = new Map();
 
