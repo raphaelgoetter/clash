@@ -843,9 +843,7 @@ function renderPlayerResults(data) {
   const hasOnlyCurrentWeek = warHistory?.weeks?.length === 1 && warHistory?.weeks?.[0]?.isCurrent;
   const isNewClanArrivee = (warHistory?.streakInCurrentClan ?? 0) < 2 && (warHistory?.totalWeeks ?? 0) > 1;
   const isBattleLogMode = ws?.isFallback === true || !hasCompletedWarWeeks || hasOnlyCurrentWeek || isNewClanArrivee;
-  const playerBadge = warHistory?.isFamilyTransfer
-    ? 'transfer'
-    : (isNewClanArrivee ? 'new' : (isBattleLogMode ? 'new' : null));
+  const playerBadge = isNewClanArrivee ? 'new' : (isBattleLogMode ? 'new' : null);
 
   const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -1770,13 +1768,12 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
     const mismatchText = p.dailyMismatch ? '⚠ snapshot mismatch' : '';
     const tooltipText = [dailyPlain || 'no daily data', mismatchText].filter(Boolean).join(' · ');
 
-    const transferBadge = p.isFamilyTransfer ? '<span class="transfer-badge">transfer</span>' : '';
-    const newBadge = !p.isFamilyTransfer && p.isNew ? '<span class="new-badge">new</span>' : '';
+    const newBadge = p.isNew ? '<span class="new-badge">new</span>' : '';
 
     const dailyBadge = `<span class="daily-tooltip" title="${escHtml(tooltipText)}">📅</span>`;
 
     return `<li><span class="tp-name">${escHtml(p.name)} ` +
-      `<span class="tp-tag">${escHtml(p.tag)}</span>${transferBadge}${newBadge}</span>` +
+      `<span class="tp-tag">${escHtml(p.tag)}</span>${newBadge}</span>` +
       `<span class="tp-meta">` +
         `<span class="role-badge ${p.role}">${capitalize(p.role)}</span>` +
         `<span class="tp-fame">${fmt(p.decks)} decks ${dailyBadge}</span>` +
@@ -2076,10 +2073,8 @@ function renderMembersTable(members) {
                         : `${days} ${t('days')} ${t('ago')}`;
           lastSeenCell = `<td class="last-seen-col"><span class="last-seen-badge ${cls}">${label}</span></td>`;
         }
-        const displayTransfer = m.isFamilyTransfer;
-        // New players are marked via backend war history/fallback analysis,
-        // not contingent on last-seen freshness in the player listing.
-        const displayNew = !displayTransfer && m.isNew;
+        // New players are marked via backend war history/fallback analysis.
+        const displayNew = m.isNew;
         const memberVerdict = {
           'High reliability': t('highReliability'),
           'Moderate risk': t('moderateRisk'),
@@ -2090,7 +2085,7 @@ function renderMembersTable(members) {
       <tr>
         <td>
           <a class="member-link" href="?${new URLSearchParams({ mode: 'player', tag: m.tag })}" title="${t('analyze')} ${escHtml(m.name)}">
-            <div style="font-weight:600">${escHtml(m.name)}${displayTransfer ? ` <span class="transfer-badge">${t('transfer')}</span>` : ''}${displayNew ? ` <span class="new-badge">${t('newBadge')}</span>` : ''}</div>
+            <div style="font-weight:600">${escHtml(m.name)}${displayNew ? ` <span class="new-badge">${t('newBadge')}</span>` : ''}</div>
             <div style="font-size:.75rem;color:var(--text-muted)">${escHtml(m.tag)}</div>
           </a>
         </td>

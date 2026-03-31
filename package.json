@@ -9,7 +9,6 @@
     "snapshot": "node scripts/collectSnapshots.js",
     "cache": "node scripts/cacheAll.js",
     "refresh-cache": "node scripts/refreshClanCache.js",
-    "transfers": "node scripts/listFamilyTransfers.js",
     "prebuild": "npm run cache",
     "cache:clear": "rm -f backend/data/analysis-cache/*.json && rm -f frontend/public/clan-cache/*.json",
     "deploy": "npm run cache:clear && npm run build && vercel --prod --confirm --force",

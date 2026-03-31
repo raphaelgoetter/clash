@@ -93,7 +93,6 @@ This launches both backend (**<http://localhost:3000>**) and frontend (**<http:/
 ### Scripts utiles
 
 - `npm run cache` — pré-génère `frontend/public/clan-cache/*.json` (utilisé pour le rendu instantané en vue clan)
-- `npm run transfers -- --out=transfers.json` — liste les joueurs détectés comme **transferts familiaux** (voir la section "Transferts familiaux" ci-dessous)
 
 ---
 
@@ -115,21 +114,9 @@ Tags should include the `#` prefix (URL‑encoded as `%23`).
 ## 🧮 Score formulas
 ## Transferts familiaux
 
-Les clans autorisés sont :
-
-- `Y8JUPC9C` (La Resistance)
-- `LRQP20V9` (Les Resistants)
-- `QU9UQJRL` (Les Revoltes)
-
-Lorsqu'un joueur passe d'un clan à un autre dans cette famille, l'historique de la
-semaine précédente est **fusionné** (si le joueur a joué au moins 13 decks) afin
-d'éviter de le pénaliser (et de basculer sur le mode `battle log` moins fiable).
-
-Le marquage `transfer` est exposé dans l'API (champ `isFamilyTransfer`) et est
-utilisé dans les UI/commandes Discord pour remplacer le badge `new`.
-
-Le script `npm run transfers -- --out=transfers.json` permet de générer une
-liste (locale) des transferts détectés.
+Ce mécanisme a été retiré : les joueurs ne sont plus marqués `transfer` et la
+fusion d'historique n'est plus appliquée. Le statut `isNew` est déterminé
+uniquement via l'historique de guerre standard.
 
 ### Script de test (transferts)
 

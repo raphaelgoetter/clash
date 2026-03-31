@@ -22,62 +22,10 @@ import { getOrSet } from './cache.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-async function getTransferClanTagsForPlayer(playerTag) {
-  if (!playerTag) return new Set();
-  const normalized = playerTag.replace(/^#/, '').toUpperCase();
-  const filePath = path.join(__dirname, '..', '..', 'transfers.json');
-  try {
-    const payload = await fs.readFile(filePath, 'utf8');
-    const transfers = JSON.parse(payload);
-    return new Set(
-      transfers
-        .filter((t) => (t.tag || '').replace(/^#/, '').toUpperCase() === normalized)
-        .map((t) => (t.fromClan || '').replace(/^#/, '').toUpperCase())
-        .filter(Boolean)
-    );
-  } catch (_) {
-    return new Set();
-  }
-}
-
-async function getManualFamilyTransfer(playerTag, currentClanTag) {
-  if (!playerTag) return null;
-
-  const normalized = playerTag.replace(/^#/, '').toUpperCase();
-  const normalizedCurrent = currentClanTag ? currentClanTag.replace(/^#/, '').toUpperCase() : null;
-  const filePath = path.join(__dirname, '..', '..', 'transfers.json');
-
-  try {
-    const payload = await fs.readFile(filePath, 'utf8');
-    const transfers = JSON.parse(payload);
-    const entry = transfers.find(
-      (t) => (t.tag || '').replace(/^#/, '').toUpperCase() === normalized
-    );
-    if (!entry || !entry.fromClan) return null;
-
-    const fromClan = entry.fromClan.replace(/^#/, '').toUpperCase();
-    if (!FAMILY_CLAN_TAGS.includes(fromClan)) return null;
-    if (fromClan === normalizedCurrent) return null;
-
-    return {
-      fromClanTag: `#${fromClan}`,
-      transferWeek: entry.transferWeek ? { label: entry.transferWeek } : null,
-    };
-  } catch (_) {
-    return null;
-  }
-}
-
-
 // ── Constants ─────────────────────────────────────────────────
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
-/**
- * Clans considérés comme une « famille » (transferts autorisés entre eux).
- * Tags sans '#', en majuscules.
- */
-const FAMILY_CLAN_TAGS = ['Y8JUPC9C', 'LRQP20V9', 'QU9UQJRL'];
 const CLAN_RACELOG_CONCURRENCY = 3;
 const CLAN_RACELOG_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -589,17 +537,13 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
   else                { verdict = 'Extreme risk';      color = 'red'; }
 
   const warHistoryWeeks = warHistory?.streakInCurrentClan ?? 0;
-  const transferDesc = warHistory?.isFamilyTransfer
-    ? `Transferred from ${warHistory.transferFromClan || 'a family clan'}${warHistory.transferWeek ? ` in ${warHistory.transferWeek.label}` : ''}.`
-    : 'No family transfer detected.';
-
   const regularityQuality = scoreQuality(regularite, 12);
   const cw2Remark = cw2Score >= 6 ? 'strong experience in Clan Wars' : cw2Score >= 4 ? 'solid Clan Wars experience' : cw2Score >= 2 ? 'some Clan Wars experience' : 'limited Clan Wars background';
   const clanDurationText = warHistoryWeeks <= 0 ? 'Less than one week' : `${warHistoryWeeks} week(s)`;
 
   const summary = `Regularity: ${regularityQuality} (${regularite}/12 from ${deckSum}/${idealDecks} decks across ${completedCount} week(s) (${incompleteWeeks} incomplete)).\n` +
     `CW2: ${cw2Remark}.\n` +
-    `In clan: ${clanDurationText}. ${transferDesc}`;
+    `In clan: ${clanDurationText}.`;
 
   const breakdown = [
     {
@@ -784,10 +728,6 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
   else                { verdict = 'Extreme risk';      color = 'red'; }
 
   const warHistoryWeeks = warHistory?.streakInCurrentClan ?? 0;
-  const transferDesc = warHistory?.isFamilyTransfer
-    ? `Transferred from ${warHistory.transferFromClan || 'a family clan'}${warHistory.transferWeek ? ` in ${warHistory.transferWeek.label}`: ''}.`
-    : 'No family transfer detected.';
-
   const warActivityQuality = scoreQuality(activiteGDC, 12);
   const cw2Remark = cw2Score >= 6 ? 'strong experience in Clan Wars' : cw2Score >= 4 ? 'solid Clan Wars experience' : cw2Score >= 2 ? 'some Clan Wars experience' : 'limited Clan Wars background';
   const clanDurationText = warHistoryWeeks <= 0 ? 'Less than one week' : `${warHistoryWeeks} week(s)`;
@@ -803,7 +743,7 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
 
   const summary = `War Activity: ${warActivityQuality} (${activiteGDC}/12, ${perfectDays} full days, ${shortDays} short days, ${inactiveDays} inactive days in ${windowDays}-day window).\n` +
     `Last war battle: ${lastWarDay || 'none'}${daysSinceLastWar !== null ? ` (${daysSinceLastWar} day(s) ago)` : ''}.\n` +
-    `In clan: ${clanDurationText}. ${transferDesc} \nCW2: ${cw2Remark}.`;
+    `In clan: ${clanDurationText}.\nCW2: ${cw2Remark}.`;
 
   return {
     total, maxScore, pct, verdict, color,
@@ -1173,101 +1113,6 @@ export async function buildFamilyWarHistory(playerTag, currentClanTag, currentRa
  * @param {string} currentClanTag - current clan tag (with or without '#')
  * @returns {Promise<{ transferWeek: object, fromClanTag: string }|null>}
  */
-async function findRecentFamilyTransfer(playerTag, currentClanTag) {
-  if (!playerTag) return null;
-
-  const normalizedTag = playerTag.startsWith('#') ? playerTag : `#${playerTag}`;
-  const normalizedCurrent = currentClanTag ? currentClanTag.replace(/^#/, '').toUpperCase() : null;
-
-  // 1) Manual transfer override via transfers.json (if available)
-  const manual = await getManualFamilyTransfer(playerTag, currentClanTag);
-  if (manual) {
-    // Attempt to resolve a full race week from the source clan log if possible.
-    try {
-      const rawRaceLog = await fetchRaceLogCached(manual.fromClanTag.replace(/^#/, ''));
-      if (rawRaceLog && rawRaceLog.length > 0) {
-        const otherHistory = buildWarHistory(playerTag, rawRaceLog, manual.fromClanTag, null);
-        const candidate = otherHistory.weeks.find((w) => (w.decksUsed ?? 0) >= 13);
-        if (candidate) {
-          return { transferWeek: candidate, fromClanTag: manual.fromClanTag };
-        }
-      }
-    } catch (_) {
-      // Fallback to manual metadata only.
-    }
-
-    return {
-      transferWeek: manual.transferWeek || null,
-      fromClanTag: manual.fromClanTag,
-    };
-  }
-
-  // 2) Automated detection using family race logs. Window increased for robustness.
-  const candidates = FAMILY_CLAN_TAGS.filter((t) => t !== normalizedCurrent);
-  if (!candidates.length) return null;
-
-  for (const clanTag of candidates) {
-    try {
-      const raceLog = await fetchRaceLogCached(clanTag);
-      const otherHistory = buildWarHistory(playerTag, raceLog, clanTag, null);
-      if (!otherHistory?.weeks?.length) continue;
-      for (let i = 0; i < Math.min(FAMILY_TRANSFER_WINDOW_WEEKS + 1, otherHistory.weeks.length); i += 1) {
-        const week = otherHistory.weeks[i];
-        if ((week.decksUsed ?? 0) >= 13) {
-          return { transferWeek: week, fromClanTag: clanTag };
-        }
-      }
-    } catch (_) {
-      continue;
-    }
-  }
-
-  return null;
-}
-
-/**
- * Merge a transfer week into an existing war history object.
- * The transfer week is appended after the current clan's history so that
- * streak calculations remain based on the current clan only.
- */
-function mergeWarHistoryWithTransfer(currentWarHistory, transferWeek, fromClanTag) {
-  const weeks = [
-    ...currentWarHistory.weeks,
-    { ...transferWeek, transferFromClan: fromClanTag },
-  ];
-
-  const weeksPlayed = weeks.filter((w) => (w.decksUsed ?? 0) > 0);
-  const totalFame = weeksPlayed.reduce((s, w) => s + w.fame, 0);
-  const participation = weeksPlayed.length;
-  const avgFame = participation ? Math.round(totalFame / participation) : 0;
-  const maxFame = weeksPlayed.reduce((m, w) => Math.max(m, w.fame), 0);
-
-  const completedWeeks = weeksPlayed.filter((w) => !w.isCurrent);
-  const completedParticipation = completedWeeks.length;
-
-  const MIN_PVP_DECKS = 5;
-  let totalPvpDecks = 0, totalEstimatedWins = 0;
-  for (const w of completedWeeks) {
-    const { wins: wWins, pvpDecks: wPvp } = estimateWinsFromFame(w.fame, w.decksUsed, w.boatAttacks);
-    totalPvpDecks += wPvp;
-    totalEstimatedWins += wWins;
-  }
-  const historicalWinRate = totalPvpDecks >= MIN_PVP_DECKS ? totalEstimatedWins / totalPvpDecks : null;
-
-  return {
-    ...currentWarHistory,
-    weeks,
-    totalFame,
-    avgFame,
-    maxFame,
-    participation,
-    completedParticipation,
-    historicalWinRate,
-    isFamilyTransfer: true,
-    transferFromClan: fromClanTag,
-    transferWeek,
-  };
-}
 
 // ── Player full analysis ──────────────────────────────────────
 
@@ -1410,30 +1255,6 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
 
       let hasEnoughHistory = hasFullWeek || oldRule;
 
-      // Detect transfer from family clan (automatic/rules + manual fallback) and keep the flag even when history is already sufficient.
-      const transfer = await findRecentFamilyTransfer(player.tag, player.clan.tag);
-      if (transfer) {
-        // Merge the transfer week only when history is not sufficient yet.
-        if (!hasEnoughHistory && transfer.transferWeek) {
-          analysis.warHistory = mergeWarHistoryWithTransfer(
-            analysis.warHistory,
-            transfer.transferWeek,
-            transfer.fromClanTag
-          );
-
-          // recompute history-based rules with the merged data
-          prevWeeks = analysis.warHistory.weeks.filter((w) => !w.isCurrent);
-          hasFullWeek = prevWeeks.some((w) => (w.decksUsed ?? 0) >= 16);
-          hasEnoughHistory = hasFullWeek || oldRule;
-        }
-
-        // Always annotate transfer metadata.
-        analysis.warHistory.isFamilyTransfer = true;
-        analysis.warHistory.transferFromClan = transfer.fromClanTag;
-        analysis.warHistory.transferWeek = transfer.transferWeek;
-        isNew = false;
-      }
-
       // additional handling: when player has ≥2 prior weeks and the *oldest*
       // one is incomplete (<16), treat it as a mid‑race arrival and **ignore it**
       // in all score computations. We keep the week in the history array so the
@@ -1528,7 +1349,7 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
   analysis.overview.discord = discordLinked;
 
   // Flag for new member detection (consistent with clan view logic)
-  analysis.isNew = computeIsNewPlayer(analysis.warHistory, analysis.warScore, analysis.warHistory?.isFamilyTransfer === true);
+  analysis.isNew = computeIsNewPlayer(analysis.warHistory, analysis.warScore);
 
   return analysis;
 }
@@ -1539,12 +1360,9 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
  *
  * @param {object|null} warHistory
  * @param {object|null} warScore
- * @param {boolean} isFamilyTransfer
  * @returns {boolean}
  */
-export function computeIsNewPlayer(warHistory, warScore, isFamilyTransfer = false) {
-  if (isFamilyTransfer) return false;
-
+export function computeIsNewPlayer(warHistory, warScore) {
   const hasCompletedWarWeeks = !!warHistory?.weeks?.some((w) => !w.isCurrent && (w.decksUsed ?? 0) > 0);
   const hasOnlyCurrentWeek = !!(warHistory?.weeks?.length === 1 && warHistory.weeks[0]?.isCurrent);
   const isNewClanArrivee = (warHistory?.streakInCurrentClan ?? 0) < 2 && (warHistory?.totalWeeks ?? 0) > 1;
@@ -1696,4 +1514,4 @@ export function analyzeClanMembers(members) {
   });
 }
 
-export { mergeWarHistoryWithTransfer, findRecentFamilyTransfer };
+export {};
