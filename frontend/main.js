@@ -1926,6 +1926,19 @@ function renderClanOverview(data) {
   renderUncompleteCard(data.uncomplete, weekId);
   document.getElementById('th-this-war').classList.toggle('hidden', !isWarActive);
 
+  // Clan basic description
+  const clanDescription = (clan.description || '').trim();
+  const clanOverviewDescription = document.getElementById('clan-overview-description');
+  if (clanOverviewDescription) {
+    if (clanDescription) {
+      clanOverviewDescription.textContent = clanDescription;
+      clanOverviewDescription.classList.remove('hidden');
+    } else {
+      clanOverviewDescription.textContent = '';
+      clanOverviewDescription.classList.add('hidden');
+    }
+  }
+
   // Clan overview card
   const clanTag = clan.tag ?? null;
   const clanLink = clanTag

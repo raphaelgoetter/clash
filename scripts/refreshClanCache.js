@@ -4,7 +4,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import { ALLOWED_CLANS, buildClanAnalysis } from '../backend/routes/clan.js';
-import { saveCache } from '../backend/services/analysisCache.js';
 import { saveClanCache } from '../backend/services/clanCache.js';
 import fs from 'fs/promises';
 

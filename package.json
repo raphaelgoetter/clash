@@ -10,7 +10,7 @@
     "cache": "node scripts/cacheAll.js",
     "refresh-cache": "node scripts/refreshClanCache.js",
     "prebuild": "npm run cache",
-    "cache:clear": "rm -f backend/data/analysis-cache/*.json && rm -f frontend/public/clan-cache/*.json",
+    "cache:clear": "rm -f frontend/public/clan-cache/*.json",
     "deploy": "npm run cache:clear && npm run build && vercel --prod --confirm --force",
     "build": "cd frontend && npm run build && cd .. && vercel --prod",
     "test": "node backend/services/analysisService.test.js"

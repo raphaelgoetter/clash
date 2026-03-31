@@ -1,4 +1,5 @@
 import assert from 'assert';
+import fs from 'fs/promises';
 import { analyzePlayer, buildDailyActivity, computeIsNewPlayer, computeWarScore, computeWarReliabilityFallback, warDayKey, warResetOffsetMs } from './analysisService.js';
 
 console.log('Running analysisService computeIsNewPlayer + war-score tests...');
@@ -89,5 +90,19 @@ assert.strictEqual(result.activityIndicators.totalWarBattles, 1, 'totalWarBattle
 const sumActivity = result.recentActivity.dailyActivity.reduce((sum, d) => sum + d.count, 0);
 assert.strictEqual(sumActivity, 4, 'dailyActivity should count all battles');
 console.log('✓ analyzePlayer dailyActivity all-battles test passed.');
+
+// New cache regression test: ensure legacy backend/data/analysis-cache folder is not used.
+(async function() {
+  try {
+    await fs.access(new URL('../data/analysis-cache', import.meta.url), fs.constants.F_OK);
+    throw new Error('Legacy backend/data/analysis-cache directory should not exist');
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      console.log('✓ legacy backend/data/analysis-cache directory not found as expected');
+    } else {
+      throw err;
+    }
+  }
+})();
 
 console.log('All computeIsNewPlayer tests passed.');
