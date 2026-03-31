@@ -741,9 +741,9 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
   const windowDays = 14;
   const inactiveDays = Math.max(0, windowDays - activeDaysCount);
 
-  const summary = `War Activity: ${warActivityQuality} (${activiteGDC}/12, ${perfectDays} full days, ${shortDays} short days, ${inactiveDays} inactive days in ${windowDays}-day window).\n` +
-    `Last war battle: ${lastWarDay || 'none'}${daysSinceLastWar !== null ? ` (${daysSinceLastWar} day(s) ago)` : ''}.\n` +
-    `In clan: ${clanDurationText}.\nCW2: ${cw2Remark}.`;
+  const summary = `<b>War Activity:</b> ${warActivityQuality} (${activiteGDC}/12, ${perfectDays} full days, ${shortDays} short days, ${inactiveDays} inactive days in ${windowDays}-day window).\n` +
+    `<b>Last war battle:</b> ${lastWarDay || 'none'}${daysSinceLastWar !== null ? ` (${daysSinceLastWar} day(s) ago)` : ''}.\n` +
+    `<b>In clan:</b> ${clanDurationText}.\n<b>CW2: ${cw2Remark}.`;
 
   return {
     total, maxScore, pct, verdict, color,
