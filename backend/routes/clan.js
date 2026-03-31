@@ -848,11 +848,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       }
 
       // Determine new member flag by shared policy.
-      if (isNewFromCache !== null) {
-        isNew = isNewFromCache;
-      } else {
-        isNew = computeIsNewPlayer(warHistory, memberWarScore);
-      }
+      // Always compute from current war history / score to avoid stale cached flags.
+      isNew = computeIsNewPlayer(warHistory, memberWarScore);
 
       // Ensure we don't flag long‑inactive members as "new" for non BattleLog players.
       if (isNew && m.lastSeen) {
