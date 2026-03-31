@@ -1315,7 +1315,13 @@ function renderPlayerResults(data) {
     ? `<div class="fallback-badge">⚠️ ${t('fallbackBadge')}</div>`
     : '';
   const summaryHtml = ws.summary
-    ? ws.summary.split('\n').map((line) => `<div>${escHtml(line)}</div>`).join('')
+    ? ws.summary.split('\n').map((line) => {
+        const m = line.match(/^([^:]+:\s*)(.*)$/);
+        if (m) {
+          return `<div><strong>${escHtml(m[1])}</strong>${escHtml(m[2])}</div>`;
+        }
+        return `<div>${escHtml(line)}</div>`;
+      }).join('')
     : '';
 
   verdictBox.innerHTML = `
