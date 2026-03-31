@@ -637,7 +637,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     // First pass: compute war scores for all members (concurrency-limited to avoid Clash API rate pressure)
     const MEMBER_CONCURRENCY = 8;
     const memberTasks = members.map((m, idx) => async () => {
-      let reliabilityScore, verdict, color, isNew = false, isNewFromCache = null, warHistory = null, scoreSource = 'clan', playerAnalysis = null;
+      let reliabilityScore, verdict, color, isNew = false, isNewFromCache = null, isFamilyTransfer = false, warHistory = null, scoreSource = 'clan', playerAnalysis = null;
       let memberWarScore = null;
 
       // Resolve full player profile (for badges) and battle log from fetch results or existing cache.
@@ -751,6 +751,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               wh.isFamilyTransfer = true;
               wh.transferFromClan = transfer.fromClanTag;
               wh.transferWeek = transfer.transferWeek;
+              isFamilyTransfer = true;
               isNew = false;
             } else {
               // Si la tranche trouvée n'est pas dans la famille, ne pas signaler transfer.
@@ -865,6 +866,20 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
       } else if (!playerScoreOverride) {
         // No river race log available (rate-limited or missing data) — use battle logs / player profile fallback.
+        // Attempt family transfer detection even when race log is unavailable.
+        try {
+          const transferCandidateFallback = await findRecentFamilyTransfer(m.tag, clan.tag);
+          if (transferCandidateFallback) {
+            const normalizedFrom = (transferCandidateFallback.fromClanTag || '').replace(/^#/, '').toUpperCase();
+            if (FAMILY_CLAN_TAGS.includes(normalizedFrom)) {
+              isFamilyTransfer = true;
+              isNew = false;
+            }
+          }
+        } catch (_) {
+          // ignore transfer detection failures
+        }
+
         const memberBattleLog = battleLogsByTag[m.tag] || [];
         const bd = categorizeBattleLog(memberBattleLog);
         const warLog = expandDuelRounds(filterWarBattles(memberBattleLog));
@@ -893,7 +908,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       }
 
       // Determine new member flag by shared policy.
-      if (isNewFromCache !== null) {
+      if (isFamilyTransfer || warHistory?.isFamilyTransfer) {
+        isNew = false;
+      } else if (isNewFromCache !== null) {
         isNew = isNewFromCache;
       } else {
         isNew = computeIsNewPlayer(warHistory, memberWarScore, warHistory?.isFamilyTransfer === true);
@@ -957,7 +974,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         verdict,
         color,
         isNew,
-        isFamilyTransfer:    warHistory?.isFamilyTransfer ?? false,
+        isFamilyTransfer:    isFamilyTransfer || (warHistory?.isFamilyTransfer ?? false),
         transferFromClan:    warHistory?.transferFromClan ?? null,
         transferWeek:        warHistory?.transferWeek?.label ?? null,
         discord:            discordLinked,
