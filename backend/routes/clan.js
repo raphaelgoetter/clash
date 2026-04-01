@@ -331,7 +331,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     const existingCache = forceRefresh ? null : await loadClanCache(clanTag).catch(() => null);
     const membersRaw = existingCache?.membersRaw ? { ...existingCache.membersRaw } : {};
 
+    const SCORE_VERSION = '2026-04-01-v2';
+
     // Quick map of prior member results, to avoid expensive player-api fan-out for a hot cache.
+    // `scoreVersion` garantit qu'une modification de l'algorithme force recalcul.
     const existingMemberAnalysis = new Map(
       (existingCache?.members || []).map((member) => [member.tag, member])
     );
@@ -663,7 +666,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       // Source de vérité : préférer les résultats stockés en cache pour réduire le trafic API.
       let playerScoreOverride = false;
       const cachedMember = existingMemberAnalysis.get(m.tag);
-      if (cachedMember && Number.isFinite(cachedMember.reliability)) {
+      if (cachedMember && Number.isFinite(cachedMember.reliability) && cachedMember.scoreVersion === SCORE_VERSION) {
         const pa = {
           pct: cachedMember.reliability,
           verdict: cachedMember.verdict,
@@ -689,6 +692,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         if (typeof cachedMember.isNew === 'boolean') {
           isNewFromCache = cachedMember.isNew;
         }
+      } else if (cachedMember && Number.isFinite(cachedMember.reliability) && cachedMember.scoreVersion !== SCORE_VERSION) {
+        // forcing refresh of outdated score logic.
+        console.warn(`[clan] cache score version mismatch for ${m.tag}, expected ${SCORE_VERSION}, got ${cachedMember.scoreVersion}. Recomputing.`);
       }
 
       if (!playerScoreOverride && raceLog) {
@@ -935,6 +941,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         // -1 = arrivé en cours de semaine, null = hors période de guerre
         warDecks:  warDays === null ? null : (warDays.arrivedMidWar ? -1 : (warDays.totalDecksUsed ?? 0)),
         lastSeen:  m.lastSeen ?? null,
+        scoreVersion:      SCORE_VERSION,
       };
     });
 
