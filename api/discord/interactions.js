@@ -585,7 +585,7 @@ export default async function handler(req, res) {
           const pct = Math.round(Number(m.reliability ?? 0));
           const verdict = (m.verdict || '').replace(/\s*risk$/i, '');
           const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(m.tag)}`;
-          return `- [${m.name}](${playerUrl})${transferTag}${newTag} · ${emoji} ${verdict} (${pct}%)`;
+          return `- [${m.name}](${playerUrl})${newTag} · ${emoji} ${verdict} (${pct}%)`;
         });
 
         let description;
