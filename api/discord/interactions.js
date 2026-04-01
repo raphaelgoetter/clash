@@ -811,6 +811,10 @@ export default async function handler(req, res) {
             if (currentSeason === null) currentSeason = raceLog[0]?.seasonId;
 
             if (defaultSeason === null) {
+              // Saison par défaut = la plus récente saison TERMINÉE.
+              // On exclut la saison active (currentRace.seasonId) car elle est encore en cours,
+              // même si elle a déjà ≥ 4 semaines dans le log (cas des saisons à 5 semaines).
+              const localCurrentSeasonId = currentRace?.seasonId ?? raceLog[0]?.seasonId;
               const localSeasonCounts = {};
               for (const week of raceLog) {
                 const sid = week?.seasonId;
@@ -819,7 +823,10 @@ export default async function handler(req, res) {
               }
 
               const sortedSeasons = Object.keys(localSeasonCounts).map(Number).sort((a, b) => b - a);
-              defaultSeason = sortedSeasons.find((sid) => localSeasonCounts[sid] >= 4) ?? sortedSeasons[0];
+              defaultSeason =
+                sortedSeasons.find((sid) => sid !== localCurrentSeasonId && localSeasonCounts[sid] >= 4) ??
+                sortedSeasons.find((sid) => sid !== localCurrentSeasonId) ??
+                sortedSeasons[0];
             }
 
             const lastWeek = raceLog[0];
@@ -1125,8 +1132,11 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
-        const { fetchRaceLog, fetchClanMembers } = await import('../../backend/services/clashApi.js');
-        const raceLog = await fetchRaceLog(`#${resolved.tag}`);
+        const { fetchRaceLog, fetchClanMembers, fetchCurrentRace } = await import('../../backend/services/clashApi.js');
+        const [raceLog, currentRace] = await Promise.all([
+          fetchRaceLog(`#${resolved.tag}`),
+          fetchCurrentRace(`#${resolved.tag}`).catch(() => null),
+        ]);
         if (!Array.isArray(raceLog) || raceLog.length === 0) {
           await fetch(webhookUrl, {
             method: 'POST',
@@ -1136,14 +1146,19 @@ export default async function handler(req, res) {
           return;
         }
 
-        // Saison précédente = la plus récente saison ayant 4 semaines complètes dans le log.
-        // Une saison en cours n'a pas encore ses 4 semaines → elle est ignorée.
+        // Saison par défaut = la plus récente saison TERMINÉE dans le log.
+        // On exclut la saison actuellement active (currentRace.seasonId) car elle est encore en cours,
+        // même si elle a déjà ≥ 4 semaines dans le log (cas des saisons à 5 semaines).
+        const currentSeasonId = currentRace?.seasonId ?? raceLog[0]?.seasonId;
         const seasonCounts = {};
         for (const r of raceLog) {
           seasonCounts[r.seasonId] = (seasonCounts[r.seasonId] || 0) + 1;
         }
         const sortedSeasons = Object.keys(seasonCounts).map(Number).sort((a, b) => b - a);
-        const defaultSeason = sortedSeasons.find((sid) => seasonCounts[sid] >= 4) ?? sortedSeasons[0];
+        const defaultSeason =
+          sortedSeasons.find((sid) => sid !== currentSeasonId && seasonCounts[sid] >= 4) ??
+          sortedSeasons.find((sid) => sid !== currentSeasonId) ??
+          sortedSeasons[0];
 
         const seasonId = requestedSeason ?? defaultSeason;
         if (!seasonId) {
