@@ -6,7 +6,17 @@ import { waitUntil } from '@vercel/functions';
 
 // Maintient la fonction Vercel active le temps de l'exécution asynchrone.
 function runBackground(fn) {
-  waitUntil(fn());
+  try {
+    if (typeof waitUntil === 'function') {
+      waitUntil(fn());
+    } else {
+      // En environnement non-Vercel (dev), on exécute quand même pour éviter le timeout.
+      fn().catch((err) => console.error('runBackground fallback error:', err));
+    }
+  } catch (err) {
+    console.error('runBackground error:', err);
+    fn().catch((err2) => console.error('runBackground fallback error:', err2));
+  }
 }
 
 // Vérifie la signature Ed25519 envoyée par Discord.
@@ -477,8 +487,7 @@ export default async function handler(req, res) {
             const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
             return `${idx + 1}. [${p.name}](${playerUrl}) · [${p.role}]`;
           });
-          description = rows.join('
-');
+          description = rows.join('\n');
         }
         const embed = {
           title: `🏅 Semaine de GDC précédente — ${clanName} (≥ ${min} fame)`,
@@ -1113,9 +1122,11 @@ export default async function handler(req, res) {
 
     // Réponse différée obligatoire (sinon Discord timeout)
     res.status(200).json({ type: 5 });
+    res.flushHeaders?.();
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
 
-    runBackground(async () => {
+    setImmediate(() => {
+      runBackground(async () => {
       try {
         const { fetchRaceLog, fetchClanMembers } = await import('../../backend/services/clashApi.js');
         const raceLog = await fetchRaceLog(`#${resolved.tag}`);
@@ -1237,6 +1248,7 @@ export default async function handler(req, res) {
         });
       }
     });
+  });
     return;
   }
 
