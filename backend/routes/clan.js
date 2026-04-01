@@ -1127,8 +1127,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
     // If we are outside an active war and no current-week snapshot exists,
     // fall back to the previous completed week snapshot (prevWeekId).
-    if (!clanWarSummary && getSnapshotsForWeek && (!weekSnaps || weekSnaps.length === 0) && prevWeekId) {
-      const prevWeekSnaps = await getSnapshotsForWeek(clanTag, prevWeekId);
+    if (!clanWarSummary && getSnapshotsForWeeks && (!weekSnaps || weekSnaps.length === 0) && prevWeekId) {
+      const fallbackByWeek = await getSnapshotsForWeeks(clanTag, [prevWeekId]);
+      const prevWeekSnaps = fallbackByWeek[prevWeekId] ?? [];
       if (prevWeekSnaps.length > 0) {
         weekSnaps = prevWeekSnaps;
         currWeekId = prevWeekId;
