@@ -30,6 +30,11 @@ const testCases = [
     input: { warHistory: { weeks: [{ isCurrent: false, decksUsed: 16 }, { isCurrent: false, decksUsed: 16 }], streakInCurrentClan: 3, totalWeeks: 3 }, warScore: { isFallback: false } },
     expected: false,
   },
+  {
+    name: 'stable history with fallback should not be new',
+    input: { warHistory: { weeks: [{ isCurrent: false, decksUsed: 16 }, { isCurrent: false, decksUsed: 16 }], streakInCurrentClan: 3, totalWeeks: 3 }, warScore: { isFallback: true } },
+    expected: false,
+  },
 ];
 
 for (const tc of testCases) {

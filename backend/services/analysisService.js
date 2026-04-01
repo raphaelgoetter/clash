@@ -1357,8 +1357,11 @@ export function computeIsNewPlayer(warHistory, warScore) {
   const hasOnlyCurrentWeek = !!(warHistory?.weeks?.length === 1 && warHistory.weeks[0]?.isCurrent);
   const isNewClanArrivee = (warHistory?.streakInCurrentClan ?? 0) < 2 && (warHistory?.totalWeeks ?? 0) > 1;
 
-  const isBattleLogMode = (warScore?.isFallback === true) || !hasCompletedWarWeeks || hasOnlyCurrentWeek || isNewClanArrivee;
+  // Battle log mode is a true 'new-like' mode when we cannot rely on sufficient war history.
+  const isBattleLogMode = !hasCompletedWarWeeks || hasOnlyCurrentWeek || isNewClanArrivee;
 
+  // If we have strong history (at least one completed war week), fallback scoring alone
+  // should not force a player to be considered new.
   return isNewClanArrivee || isBattleLogMode;
 }
 
