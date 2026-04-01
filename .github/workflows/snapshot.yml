@@ -16,6 +16,10 @@ jobs:
     # provide Clash API key from repository secrets so the script can fetch logs
     env:
       CLASH_API_KEY: ${{ secrets.CLASH_API_KEY }}
+      DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+      DISCORD_CHANNEL_MEMBERS_Y8JUPC9C: ${{ secrets.DISCORD_CHANNEL_MEMBERS_Y8JUPC9C }}
+      DISCORD_CHANNEL_MEMBERS_LRQP20V9: ${{ secrets.DISCORD_CHANNEL_MEMBERS_LRQP20V9 }}
+      DISCORD_CHANNEL_MEMBERS_QU9UQJRL: ${{ secrets.DISCORD_CHANNEL_MEMBERS_QU9UQJRL }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -41,6 +45,9 @@ jobs:
 
       - name: Run snapshot script
         run: npm run snapshot
+
+      - name: Notify member changes
+        run: npm run notify-members
 
       - name: Build static clan cache
         run: npm run cache
