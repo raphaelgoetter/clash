@@ -42,9 +42,6 @@ jobs:
       - name: Run snapshot script
         run: npm run snapshot
 
-      - name: Refresh persistent clan analysis cache
-        run: npm run refresh-cache
-
       - name: Build static clan cache
         run: npm run cache
 
