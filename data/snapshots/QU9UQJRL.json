@@ -246,12 +246,12 @@
     "days": [
       {
         "warDay": "thursday",
-        "realDay": "2026-03-26",
+        "realDay": "2026-04-02",
         "gdcPeriod": {
-          "start": "2026-03-26T09:40:00.000Z",
-          "end": "2026-03-27T09:39:59.999Z"
+          "start": "2026-04-02T08:40:00.000Z",
+          "end": "2026-04-03T08:39:59.999Z"
         },
-        "snapshotTime": "2026-03-27T09:18:52.546Z",
+        "snapshotTime": "2026-04-01T22:11:46.868Z",
         "snapshotBackupTime": "2026-03-26T22:06:20.649Z",
         "decks": {
           "#2U9QL8Q89": 4,
@@ -269,6 +269,7 @@
           "#PGQ98JVJ8": 2,
           "#VY0LYQQVJ": 1,
           "#2200UQ9P08": 0,
+          "#2QUGQUJ9": 0,
           "#2YLYG9V92": 0,
           "#8JGU9UUJJ": 0,
           "#98VCJLG92": 0,
@@ -278,6 +279,7 @@
           "#CVJPCU09C": 0,
           "#J222JVRUQ": 0,
           "#JC28YVLPG": 0,
+          "#RJJGJ8PRC": 0,
           "#UU02RYV0C": 0,
           "#V2P2LCYRJ": 0,
           "#V9GUUPYUQ": 0,
@@ -290,7 +292,7 @@
       },
       {
         "warDay": "friday",
-        "realDay": "2026-03-27",
+        "realDay": "2026-04-03",
         "gdcPeriod": {
           "start": "2026-03-27T09:40:00.000Z",
           "end": "2026-03-28T09:39:59.999Z"
@@ -335,7 +337,7 @@
       },
       {
         "warDay": "saturday",
-        "realDay": "2026-03-28",
+        "realDay": "2026-04-04",
         "gdcPeriod": {
           "start": "2026-03-28T09:40:00.000Z",
           "end": "2026-03-29T09:39:59.999Z"
@@ -381,7 +383,7 @@
       },
       {
         "warDay": "sunday",
-        "realDay": "2026-03-29",
+        "realDay": "2026-04-05",
         "gdcPeriod": {
           "start": "2026-03-29T08:40:00.000Z",
           "end": "2026-03-30T08:39:59.999Z"
