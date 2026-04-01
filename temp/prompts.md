@@ -306,3 +306,17 @@ Peux-tu cette fois tenir compte de **toute** la liste de mes demandes :
 3. Sous-titre EN : "River race GDC decks per hour (08:40 UTC → 08:39 UTC)." --> Afficher les heures de Paris
 4. Sous-titre FR : "Répartition des decks GDC joués par plage horaire (08:40 UTC → 08:39 UTC)." --> Afficher les heures de Paris
 5. Graphe (horaires) : "9:40",  "10:40", etc. -> Afficher en heure de Paris
+
+---
+
+Modularisation des scripts/fonctions + refactorisation du code pour éviter les répétitions et faciliter la maintenance.
+
+Peux-tu faire en sorte de modulariser les scripts et fonctions de ton code, en regroupant les fonctionnalités similaires et en évitant les répétitions de code ? Par exemple, tu pourrais créer des fonctions réutilisables pour le calcul des scores, la récupération des données, etc. Cela facilitera la maintenance du code et permettra d'ajouter de nouvelles fonctionnalités plus facilement à l'avenir.
+
+Dans un second temps, tu pourras également refactoriser le code pour améliorer sa lisibilité et sa structure, en utilisant des noms de variables et de fonctions plus explicites, en organisant le code en sections logiques, etc.
+
+Enfin, faire le tour des fichiers de projets devenus inutiles et les supprimer pour éviter la confusion et alléger le projet (il peut s'agir de fichiers de test, de scripts obsolètes, de fichiers dans les dossiers temporaires, etc.)
+
+Important : si tu n'es pas sûr de la pertinence de supprimer un fichier, n'hésite pas à me demander avant de le faire.
+
+Important : les scripts et fonctions peuvent avoir un impact sur la vue Clan, sur la vue Player et sur le bot Discord, il faut donc veiller à ce que les modifications soient bien répercutées dans tous les endroits concernés.
