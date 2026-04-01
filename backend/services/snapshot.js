@@ -450,6 +450,34 @@ export async function getSnapshotsForWeek(clanTag, week = null) {
     .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''));
 }
 
+/**
+ * Return snapshots for multiple week identifiers in a single file read.
+ * Retourne un objet { [weekId]: snap[] } pour chaque weekId demandé.
+ */
+export async function getSnapshotsForWeeks(clanTag, weeks) {
+  const history = await loadSnapshots(clanTag);
+  const result = Object.fromEntries(weeks.map((w) => [w, []]));
+  if (!history.length) return result;
+
+  const formatDay = (weekId, d) => ({
+    week: weekId,
+    date: d.realDay,
+    warDay: d.warDay,
+    decks: d.decks,
+    snapshotTime: d.snapshotTime ?? null,
+    snapshotBackupTime: d.snapshotBackupTime ?? null,
+    gdcPeriod: d.gdcPeriod ?? null,
+  });
+
+  for (const weekEntry of history) {
+    if (!result.hasOwnProperty(weekEntry.week)) continue;
+    result[weekEntry.week] = (weekEntry.days ?? [])
+      .map((d) => formatDay(weekEntry.week, d))
+      .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''));
+  }
+  return result;
+}
+
 export async function getSnapshots(clanTag) {
   return getSnapshotsForWeek(clanTag, null);
 }

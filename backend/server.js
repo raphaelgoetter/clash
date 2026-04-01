@@ -12,6 +12,7 @@ dotenv.config({ path: resolve(__dirname, '../.env') });
 
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import playerRoutes from './routes/player.js';
 import clanRoutes, { ALLOWED_CLANS } from './routes/clan.js';
 import discordRoutes from './routes/discord.js';
@@ -21,8 +22,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ── Middleware ────────────────────────────────────────────────
-app.use(cors());
-// We need raw body for Discord interaction signature verification, so
+app.use(cors());app.use(compression());// We need raw body for Discord interaction signature verification, so
 // skip the global JSON parser for the /api/discord route.
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/discord')) return next();

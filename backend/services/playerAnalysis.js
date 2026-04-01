@@ -27,7 +27,7 @@ import {
   computeWarReliabilityFallback,
   estimateWinsFromFame,
 } from './warScoring.js';
-import { buildFamilyWarHistory } from './warHistory.js';
+import { buildFamilyWarHistory, applyOldestWeekIgnore } from './warHistory.js';
 
 // ── Vue complète d'un joueur (score + historique) ─────────────
 
@@ -166,28 +166,7 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
       // Si la semaine la plus ancienne est incomplète (<16 decks), on la marque ignorée
       // (affichage grisé dans l'UI) pour ne pas pénaliser une arrivée en cours de race.
       if (prevWeeks.length >= 2) {
-        const oldest = prevWeeks[prevWeeks.length - 1];
-        if ((oldest.decksUsed ?? 0) < 16) {
-          oldest.ignored = true;
-
-          // Recalcule les métriques de synthèse sans la semaine ignorée
-          const kept      = analysis.warHistory.weeks.filter((w) => !w.ignored && (w.decksUsed ?? 0) > 0);
-          const totalFame = kept.reduce((s, w) => s + (w.fame || 0), 0);
-          analysis.warHistory.totalFame              = totalFame;
-          analysis.warHistory.participation          = kept.length;
-          analysis.warHistory.avgFame                = kept.length ? Math.round(totalFame / kept.length) : 0;
-          analysis.warHistory.maxFame                = kept.reduce((m, w) => Math.max(m, w.fame || 0), 0);
-          analysis.warHistory.completedParticipation = kept.filter((w) => !w.isCurrent).length;
-
-          const MIN_PVP_DECKS = 5;
-          let totalPvpDecks = 0, totalEstimatedWins = 0;
-          for (const w of kept.filter((w) => !w.isCurrent)) {
-            const { wins: wWins, pvpDecks: wPvp } = estimateWinsFromFame(w.fame, w.decksUsed, w.boatAttacks);
-            totalPvpDecks      += wPvp;
-            totalEstimatedWins += wWins;
-          }
-          analysis.warHistory.historicalWinRate = totalPvpDecks >= MIN_PVP_DECKS ? totalEstimatedWins / totalPvpDecks : null;
-        }
+        applyOldestWeekIgnore(analysis.warHistory, prevWeeks);
         hasEnoughHistory = hasEnoughHistory || hasFullWeek
           || (analysis.warHistory.streakInCurrentClan >= 2 && analysis.warHistory.completedParticipation >= 2);
       }

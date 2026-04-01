@@ -282,25 +282,24 @@ export default async function handler(req, res) {
         // --- déclencher snapshots pour tous les clans autorisés ---
         // c'est léger (3 appels à RoyaleAPI) et fait gagner un cycle aux visiteurs.
         // Si l'un d'eux échoue, on s'en fiche.
-        import('../../backend/routes/clan.js').then(({ ALLOWED_CLANS }) => {
-          import('../../backend/services/clashApi.js').then(({ fetchRaceLog }) => {
-            import('../../backend/services/snapshot.js').then(({ recordSnapshot }) => {
-              ALLOWED_CLANS.forEach((clanTag) => {
-                fetchRaceLog(clanTag)
-                  .then((log) => {
-                    if (Array.isArray(log) && log.length) {
-                      const standing = log[0].standings.find(
-                        (s) => s.clan?.tag?.toUpperCase() === `#${clanTag}`
-                      );
-                      const participants = standing?.clan?.participants || [];
-                      const weekId = `S${log[0].seasonId}W${log[0].sectionIndex}`;
-                      recordSnapshot(clanTag, participants, weekId).catch(() => {});
-                    }
-                  })
-                  .catch(() => {});
-              });
-            });
-          });
+        const [{ ALLOWED_CLANS }, { fetchRaceLog }, { recordSnapshot }] = await Promise.all([
+          import('../../backend/routes/clan.js'),
+          import('../../backend/services/clashApi.js'),
+          import('../../backend/services/snapshot.js'),
+        ]);
+        ALLOWED_CLANS.forEach((clanTag) => {
+          fetchRaceLog(clanTag)
+            .then((log) => {
+              if (Array.isArray(log) && log.length) {
+                const standing = log[0].standings.find(
+                  (s) => s.clan?.tag?.toUpperCase() === `#${clanTag}`
+                );
+                const participants = standing?.clan?.participants || [];
+                const weekId = `S${log[0].seasonId}W${log[0].sectionIndex}`;
+                recordSnapshot(clanTag, participants, weekId).catch((err) => console.warn('[snapshot] recordSnapshot failed for', clanTag, ':', err.message));
+              }
+            })
+            .catch((err) => console.warn('[snapshot] fetchRaceLog failed for', clanTag, ':', err.message));
         });
 
         if (!apiResp.ok) {

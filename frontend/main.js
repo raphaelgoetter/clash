@@ -2140,7 +2140,11 @@ membersTbody.addEventListener('click', (e) => {
 });
 
 // Filtering
-filterName.addEventListener('input', applyFilters);
+let _filterDebounceTimer = null;
+filterName.addEventListener('input', () => {
+  clearTimeout(_filterDebounceTimer);
+  _filterDebounceTimer = setTimeout(applyFilters, 150);
+});
 filterVerdict.addEventListener('change', applyFilters);
 
 function applyFilters() {

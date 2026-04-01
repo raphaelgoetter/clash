@@ -252,3 +252,39 @@ export async function buildFamilyWarHistory(playerTag, currentClanTag, currentRa
     noFurtherData,
   };
 }
+
+/**
+ * Si la semaine la plus ancienne de prevWeeks a < 16 decks, la marque ignorée
+ * et recalcule les métriques résumées de wh en excluant cette semaine.
+ * Mute wh en place. Retourne true si une semaine a été ignorée, false sinon.
+ *
+ * @param {object}   wh        Objet warHistory (muté en place)
+ * @param {object[]} prevWeeks Semaines passées (filtrées : !isCurrent)
+ * @returns {boolean}
+ */
+export function applyOldestWeekIgnore(wh, prevWeeks) {
+  if (prevWeeks.length < 2) return false;
+  const oldest = prevWeeks[prevWeeks.length - 1];
+  if ((oldest.decksUsed ?? 0) >= 16) return false;
+
+  oldest.ignored = true;
+
+  const kept      = wh.weeks.filter((w) => !w.ignored && (w.decksUsed ?? 0) > 0);
+  const totalFame = kept.reduce((s, w) => s + (w.fame || 0), 0);
+  wh.totalFame              = totalFame;
+  wh.participation          = kept.length;
+  wh.avgFame                = kept.length ? Math.round(totalFame / kept.length) : 0;
+  wh.maxFame                = kept.reduce((mx, w) => Math.max(mx, w.fame || 0), 0);
+  wh.completedParticipation = kept.filter((w) => !w.isCurrent).length;
+
+  const MIN_PVP_DECKS = 5;
+  let totalPvpDecks = 0, totalEstimatedWins = 0;
+  for (const w of kept.filter((w) => !w.isCurrent)) {
+    const { wins: wWins, pvpDecks: wPvp } = estimateWinsFromFame(w.fame, w.decksUsed, w.boatAttacks);
+    totalPvpDecks      += wPvp;
+    totalEstimatedWins += wWins;
+  }
+  wh.historicalWinRate = totalPvpDecks >= MIN_PVP_DECKS ? totalEstimatedWins / totalPvpDecks : null;
+
+  return true;
+}

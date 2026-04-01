@@ -8,7 +8,7 @@ import {
   analyzeClanMembers, buildWarHistory, buildFamilyWarHistory, computeWarScore,
   computeWarReliabilityFallback, categorizeBattleLog,
   computeIsNewPlayer, filterWarBattles, expandDuelRounds, isWarWin, buildCurrentWarDays,
-  estimateWinsFromFame, warResetOffsetMs, scoreTotalDonations,
+  estimateWinsFromFame, warResetOffsetMs, scoreTotalDonations, applyOldestWeekIgnore,
 } from '../services/analysisService.js';
 import { computeTopPlayers } from '../services/topplayers.js';
 import { computeUncomplete } from '../services/uncomplete.js';
@@ -424,7 +424,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       if (seasonId !== undefined && currSection <= (raceLog[0]?.sectionIndex ?? -1)) seasonId += 1;
       const weekId = seasonId != null ? `S${seasonId}W${currSection + 1}` : `W${currSection + 1}`;
       import('../services/snapshot.js').then(({ recordSnapshot }) => {
-        recordSnapshot(clanTag, participants, weekId).catch(()=>{/* silent */});
+        recordSnapshot(clanTag, participants, weekId).catch((err) => console.warn('[snapshot] recordSnapshot failed for', clanTag, ':', err.message));
       });
     }
 
@@ -533,17 +533,24 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     let warSnapshotDays = null;
     let warSnapshotTakenAt = null;
 
-    let getSnapshotsForWeek = null;
+    let getSnapshotsForWeeks = null;
     let getWarDayName = null;
     let getWarDayKey = null;
 
     if (raceLog && raceLog.length > 0) {
-      ({ getSnapshotsForWeek, getWarDayName, getWarDayKey } = await import('../services/snapshot.js'));
+      ({ getSnapshotsForWeeks, getWarDayName, getWarDayKey } = await import('../services/snapshot.js'));
 
-      // --- Snapshots semaine PRÉCÉDENTE → enrichissement uncomplete ---
-      // raceLog[0] est la semaine terminée : sectionIndex=0 → "S130W1"
+      // Calcul des identifiants des deux semaines avant de charger les snapshots
       prevWeekId = `S${raceLog[0].seasonId}W${raceLog[0].sectionIndex + 1}`;
-      const prevSnaps = await getSnapshotsForWeek(clanTag, prevWeekId);
+      const currSection = currentRace?.sectionIndex ?? (raceLog[0].sectionIndex + 1);
+      let seasonIdSnap = raceLog[0].seasonId;
+      if (currentRace && currSection <= (raceLog[0]?.sectionIndex ?? -1)) seasonIdSnap += 1;
+      currWeekId = `S${seasonIdSnap}W${currSection + 1}`;
+
+      // Lecture unique du fichier de snapshots pour les deux semaines
+      const snapshotsByWeek = await getSnapshotsForWeeks(clanTag, [prevWeekId, currWeekId]);
+      const prevSnaps = snapshotsByWeek[prevWeekId] ?? [];
+      weekSnaps = snapshotsByWeek[currWeekId] ?? [];
       if (prevSnaps.length > 0 && uncomplete && Array.isArray(uncomplete.players)) {
         const dayIndex = { thursday: 0, friday: 1, saturday: 2, sunday: 3 };
 
@@ -590,14 +597,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           return p;
         });
       }
-
-      // --- Snapshots semaine COURANTE → chips clanWarSummary ---
-      // Même logique que l'écriture (recordSnapshot) : utilise currentRace.sectionIndex.
-      const currSection = currentRace?.sectionIndex ?? (raceLog[0].sectionIndex + 1);
-      let seasonId = raceLog[0].seasonId;
-      if (currentRace && currSection <= (raceLog[0]?.sectionIndex ?? -1)) seasonId += 1;
-      currWeekId = `S${seasonId}W${currSection + 1}`;
-      weekSnaps = await getSnapshotsForWeek(clanTag, currWeekId);
 
       // Track when the latest snapshot was taken (useful for debug/analysis)
       const latestSnap = weekSnaps
@@ -728,27 +727,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
         // same mid‑race arrival handling as player view (ignore oldest incomplete)
         if (prevWeeks.length >= 2) {
-          const oldest = prevWeeks[prevWeeks.length - 1];
-          if ((oldest.decksUsed ?? 0) < 16) {
-            oldest.ignored = true;
-
-            // recalcul des métriques résumées en excluant la semaine ignorée
-            const kept = wh.weeks.filter((w) => !w.ignored && (w.decksUsed ?? 0) > 0);
-            const totalFame = kept.reduce((s, w) => s + (w.fame || 0), 0);
-            wh.totalFame = totalFame;
-            wh.participation = kept.length;
-            wh.avgFame = kept.length ? Math.round(totalFame / kept.length) : 0;
-            wh.maxFame = kept.reduce((mx, w) => Math.max(mx, w.fame || 0), 0);
-            wh.completedParticipation = kept.filter((w) => !w.isCurrent).length;
-            // recalcul du taux de victoire historique sur les semaines conservées
-            const MIN_PVP_DECKS = 5;
-            let totalPvpDecks = 0, totalEstimatedWins = 0;
-            for (const w of kept.filter((w) => !w.isCurrent)) {
-              const { wins: wWins, pvpDecks: wPvp } = estimateWinsFromFame(w.fame, w.decksUsed, w.boatAttacks);
-              totalPvpDecks      += wPvp;
-              totalEstimatedWins += wWins;
-            }
-            wh.historicalWinRate = totalPvpDecks >= MIN_PVP_DECKS ? totalEstimatedWins / totalPvpDecks : null;
+          if (applyOldestWeekIgnore(wh, prevWeeks)) {
             // réévaluer après le recalcul (completedParticipation peut avoir changé)
             // conserver true si on avait déjà suffisamment d'historique avant l'ajustement.
             hasEnoughHistory = hasEnoughHistory || hasFullWeek || (wh.streakInCurrentClan >= 2 && wh.completedParticipation >= 2);
