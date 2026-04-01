@@ -106,11 +106,15 @@ async function postDiscordEmbed(tag, clanName, arrivals, departures) {
     });
   }
 
+  const now = new Date();
+  const date = now.toLocaleDateString('fr-FR', { timeZone: 'UTC' }); // JJ/MM/AAAA
+  const time = now.toISOString().slice(11, 16); // HH:MM
+
   const embed = {
-    title: `${clanName} — Mouvement${arrivals.length + departures.length > 1 ? 's' : ''} de membre${arrivals.length + departures.length > 1 ? 's' : ''}`,
+    title: `${clanName} · Entrées/Sorties`,
     color,
     fields,
-    footer: { text: new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC' },
+    footer: { text: `Constat fait le : ${date} ${time} UTC` },
   };
 
   if (DRY_RUN) {
