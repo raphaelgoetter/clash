@@ -8,6 +8,8 @@
     "dev": "concurrently --names \"backend,frontend\" --prefix-colors \"cyan,magenta\" \"cd backend && npx nodemon server.js\" \"cd frontend && npx vite\"",
     "snapshot": "node scripts/collectSnapshots.js",
     "notify-members": "node scripts/notifyMemberChanges.js",
+    "notify-members:dry": "node scripts/notifyMemberChanges.js --dry-run",
+    "notify-members:sim": "node scripts/notifyMemberChanges.js --dry-run --simulate",
     "cache": "node scripts/refreshClanCache.js",
     "prebuild": "npm run cache",
     "cache:clear": "rm -f frontend/public/clan-cache/*.json",

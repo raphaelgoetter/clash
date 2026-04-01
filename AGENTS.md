@@ -46,6 +46,7 @@ npm run cache    # régénère frontend/public/clan-cache/*.json (via scripts/re
 | `scripts/refreshClanCache.js` | `npm run cache` | Précalcule et persiste l'analyse de tous les clans dans `frontend/public/clan-cache/` |
 | `scripts/collectSnapshots.js` | `node scripts/collectSnapshots.js` | Enregistre les snapshots de decksUsed quotidiens depuis le race log |
 | `scripts/registerCommands.js` | `node scripts/registerCommands.js` | Enregistre/met à jour les slash-commands Discord |
+| `scripts/notifyMemberChanges.js` | `npm run notify-members` | Diff membres clan (cache N-1 vs API actuelle) et poste un embed Discord par clan si changement. `--dry-run` affiche sans poster, `--simulate` utilise des données fictives |
 
 ## Conventions de génération de scripts temporaires
 

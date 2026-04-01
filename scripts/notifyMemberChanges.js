@@ -2,6 +2,13 @@
 // Détecte les arrivées et départs de membres dans chaque clan en comparant
 // le clan cache persisté (état précédent, ~1h) avec l'état actuel de l'API Clash Royale.
 // Doit être exécuté AVANT npm run cache pour que le fichier JSON ne soit pas encore écrasé.
+//
+// Usage :
+//   node scripts/notifyMemberChanges.js           — mode normal (poste sur Discord)
+//   node scripts/notifyMemberChanges.js --dry-run — affiche l'embed sans poster
+
+import dotenv from 'dotenv';
+dotenv.config({ path: './.env' });
 
 import { readFile } from 'fs/promises';
 import { existsSync } from 'fs';
@@ -15,6 +22,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CACHE_DIR = path.join(__dirname, '..', 'frontend', 'public', 'clan-cache');
 
 const DISCORD_API = 'https://discord.com/api/v10';
+const DRY_RUN = process.argv.includes('--dry-run');
+const SIMULATE = process.argv.includes('--simulate');
 
 /**
  * Lit le clan cache persisté pour un tag donné.
@@ -73,15 +82,6 @@ async function postDiscordEmbed(tag, clanName, arrivals, departures) {
   const channelId = process.env[`DISCORD_CHANNEL_MEMBERS_${tag}`];
   const token = process.env.DISCORD_TOKEN;
 
-  if (!channelId) {
-    console.log(`[${tag}] DISCORD_CHANNEL_MEMBERS_${tag} non configuré — notification ignorée.`);
-    return;
-  }
-  if (!token) {
-    console.log(`[${tag}] DISCORD_TOKEN non configuré — notification ignorée.`);
-    return;
-  }
-
   // Couleur : vert = arrivées uniquement, rouge = départs uniquement, bleu = mixte
   let color;
   if (arrivals.length > 0 && departures.length === 0) color = 0x57f287; // vert
@@ -113,6 +113,21 @@ async function postDiscordEmbed(tag, clanName, arrivals, departures) {
     footer: { text: new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC' },
   };
 
+  if (DRY_RUN) {
+    console.log(`\n[${tag}] ── DRY-RUN ── embed qui serait posté dans le channel ${channelId ?? '(non configuré)'} :`);
+    console.log(JSON.stringify({ embeds: [embed] }, null, 2));
+    return;
+  }
+
+  if (!channelId) {
+    console.log(`[${tag}] DISCORD_CHANNEL_MEMBERS_${tag} non configuré — notification ignorée.`);
+    return;
+  }
+  if (!token) {
+    console.log(`[${tag}] DISCORD_TOKEN non configuré — notification ignorée.`);
+    return;
+  }
+
   const res = await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
     method: 'POST',
     headers: {
@@ -131,6 +146,20 @@ async function postDiscordEmbed(tag, clanName, arrivals, departures) {
 }
 
 async function main() {
+  // Mode simulation : affiche un embed fictif pour chaque clan sans appel API
+  if (SIMULATE) {
+    for (const tag of ALLOWED_CLANS) {
+      const clanName = await readClanName(tag);
+      await postDiscordEmbed(
+        tag,
+        clanName,
+        [{ tag: '#FAKEARRIVAL1', name: 'NouveauMembre' }, { tag: '#FAKEARRIVAL2', name: 'AutreArrivée' }],
+        [{ tag: '#FAKEDEPART1', name: 'AncienMembre' }],
+      );
+    }
+    return;
+  }
+
   let hasError = false;
 
   for (const tag of ALLOWED_CLANS) {

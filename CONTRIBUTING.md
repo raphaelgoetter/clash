@@ -104,6 +104,7 @@ This launches both backend (**<http://localhost:3000>**) and frontend (**<http:/
 - `npm run cache` — pré-génère `frontend/public/clan-cache/*.json` via `scripts/refreshClanCache.js` (rendu instantané en vue clan)
 - `node scripts/collectSnapshots.js` — enregistre les snapshots de decksUsed quotidiens depuis le race log
 - `node scripts/registerCommands.js` — enregistre/met à jour les slash-commands Discord
+- `npm run notify-members` — détecte les arrivées/départs de membres (diff entre le clan cache persisté et l'API Clash actuelle) et poste un embed Discord par clan si des changements sont détectés. Modes : `--dry-run` (affiche l'embed sans poster), `--simulate` (données fictives, pas d'appel API). Exécuté automatiquement par le cron GitHub Actions entre le snapshot et le rebuild du cache. Nécessite les secrets `DISCORD_TOKEN` et `DISCORD_CHANNEL_MEMBERS_{TAG}` (un par clan).
 
 ---
 
