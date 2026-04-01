@@ -471,21 +471,15 @@ export default async function handler(req, res) {
 
         let description;
         if (players.length === 0) {
-          description = `Aucun joueur n'atteint ${min} fame.`;
+          description = `Aucun joueur n'a joué 100% des decks toutes les semaines de la saison ${seasonId}.`;
         } else {
-          const rows = players.map((p, i) => {
-            const num = String(i + 1).padStart(2);
+          const rows = players.map((p, idx) => {
             const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
-            const role = capitalize(p.role || 'member');
-            const promoteArrow = role.toLowerCase() === 'member' ? ' ⬆️' : '';
-            const playerAnalysis = analysisMap.get((p.tag || '').toUpperCase()) || {};
-            const newTag = playerAnalysis.isNew ? ' 🆕' : '';
-            // Inclut le lien vers la page joueur et le tag CR
-            return `${num}. [${p.name}](${playerUrl})${newTag} • [${role}]${promoteArrow} • **${p.fame} fame**`;
+            return `${idx + 1}. [${p.name}](${playerUrl}) · [${p.role}]`;
           });
-          description = rows.join('\n');
+          description = rows.join('
+');
         }
-
         const embed = {
           title: `🏅 Semaine de GDC précédente — ${clanName} (≥ ${min} fame)`,
           color: 0x5865f2,
@@ -1216,8 +1210,11 @@ export default async function handler(req, res) {
         if (players.length === 0) {
           description = `Aucun joueur n'a joué 100% des decks toutes les semaines de la saison ${seasonId}.`;
         } else {
-          const rows = players.map((p, idx) => `${String(idx + 1).padStart(2)}. ${p.name} ${p.tag} [${p.role}]`);
-          description = '```\n' + rows.join('\n') + '\n```';
+          const rows = players.map((p, idx) => {
+            const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
+            return `${idx + 1}. [${p.name}](${playerUrl}) · [${p.role}]`;
+          });
+          description = rows.join('\n');
         }
 
         const embed = {
