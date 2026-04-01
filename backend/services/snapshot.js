@@ -8,6 +8,8 @@ import path from 'path';
 
 import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+import { parisOffsetMs } from './dateUtils.js';
 const SNAP_DIR = path.resolve(__dirname, '..', '..', 'data', 'snapshots');
 const RETENTION_DAYS = 60;
 
@@ -101,15 +103,6 @@ function parisDateKey(date = new Date()) {
   const m = String(p.getMonth() + 1).padStart(2, '0');
   const d = String(p.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
-}
-
-/**
- * Compute the UTC offset (ms) between Paris and UTC for a given date.
- */
-function parisOffsetMs(date = new Date()) {
-  const p = new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
-  const u = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
-  return p.getTime() - u.getTime();
 }
 
 /**

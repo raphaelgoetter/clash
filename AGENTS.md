@@ -11,12 +11,41 @@
 - **Déploiement** : Vercel (`vercel --prod` depuis la racine), `api/index.js` comme entrée serverless
 - **Cache** : in-memory, TTL 15 min (`backend/services/cache.js`)
 
+## Architecture des services backend
+
+`backend/services/` est découpé en modules spécialisés. **Ne jamais réécrire dans `analysisService.js` directement** — c'est désormais un barrel de ré-exports.
+
+| Fichier | Rôle |
+|---|---|
+| `analysisService.js` | **Barrel** — re-exporte tout pour rétrocompatibilité |
+| `dateUtils.js` | `parisOffsetMs`, `warResetOffsetMs`, `warDayKey`, `parseClashDate`, `MS_PER_DAY` |
+| `battleLogUtils.js` | `filterWarBattles`, `categorizeBattleLog`, `expandDuelRounds`, `isWarWin/Loss`, `buildDailyActivity` |
+| `warScoring.js` | `computeWarScore`, `computeWarReliabilityFallback`, `scoreTotalDonations`, `estimateWinsFromFame` |
+| `warHistory.js` | `buildWarHistory`, `buildFamilyWarHistory` (avec cache course) |
+| `playerAnalysis.js` | `analyzePlayer`, `getPlayerAnalysis`, `buildCurrentWarDays`, `computeIsNewPlayer`, `computeMemberReliability` |
+| `clashApi.js` | Wrappers HTTP vers l'API Clash Royale |
+| `cache.js` | Cache mémoire générique (`getOrSet`, `invalidate`) |
+| `clanCache.js` | Lecture/écriture du cache clan persistant (JSON sur disque) |
+| `snapshot.js` | Snapshots de decksUsed quotidiens (fichiers `data/snapshots/`) |
+| `discordLinks.js` | Mapping tag joueur → Discord ID (GitHub Gist + fallback local) |
+| `topplayers.js` | `computeTopPlayers` — classement de la famille par fame |
+| `uncomplete.js` | `computeUncomplete` — liste des joueurs avec < 16 decks |
+
 ## Commandes essentielles
 
 ```bash
 npm run dev      # backend :3000 + frontend :5173 (concurrently)
 npm run build    # vite build + vercel --prod
+npm run cache    # régénère frontend/public/clan-cache/*.json (via scripts/refreshClanCache.js)
 ```
+
+## Scripts utiles
+
+| Script | Commande / usage | Rôle |
+|---|---|---|
+| `scripts/refreshClanCache.js` | `npm run cache` | Précalcule et persiste l'analyse de tous les clans dans `frontend/public/clan-cache/` |
+| `scripts/collectSnapshots.js` | `node scripts/collectSnapshots.js` | Enregistre les snapshots de decksUsed quotidiens depuis le race log |
+| `scripts/registerCommands.js` | `node scripts/registerCommands.js` | Enregistre/met à jour les slash-commands Discord |
 
 ## Conventions de génération de scripts temporaires
 

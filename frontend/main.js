@@ -59,37 +59,77 @@ const DEFAULT_LANG = 'en';
 let currentLang = DEFAULT_LANG;
 let translations = {};
 
+/**
+ * Retourne la map de traduction des labels de score breakdown.
+ * Doit être appelée après chargement de la langue car elle utilise t().
+ */
+function getScoreLabelMap() {
+  return {
+    Regularity:            t('regularity'),
+    'Avg Score':           t('avgScore'),
+    'Avg fame':            t('avgFame'),
+    'CW2 Battle Wins':     t('cw2BattleWins'),
+    'CW2 battle wins':     t('cw2BattleWins'),
+    'Clan stability':      t('clanStability'),
+    Stability:             t('clanStability'),
+    'Last seen':           t('lastSeen'),
+    'Win Rate (War)':      t('winRateFullMode'),
+    'Win rate full mode':  t('winRateFullMode'),
+    Experience:            t('experience'),
+    Donations:             t('donations'),
+    Discord:               t('discord'),
+    'High reliability':    t('highReliability'),
+    'Moderate risk':       t('moderateRisk'),
+    'High risk':           t('highRisk'),
+    'Extreme risk':        t('extremeRisk'),
+  };
+}
+
 function getBasePath() {
   return `/${currentLang}`;
 }
 
-function getI18nLangFromPath() {
-  const seg = window.location.pathname.replace(/\/+$/, '').split('/')[1];
-  if (SUPPORTED_LANGS.includes(seg)) return seg;
-  return null;
-}
-
+/**
+ * Retourne l'état courant de l'URL : { lang, mode, tag }.
+ * lang est extrait du segment de chemin, mode et tag depuis les query params.
+ */
 function getUrlState() {
+  const seg = window.location.pathname.replace(/\/+$/, '').split('/')[1];
   const params = new URLSearchParams(window.location.search);
   return {
+    lang: SUPPORTED_LANGS.includes(seg) ? seg : null,
     mode: params.get('mode'),
     tag: params.get('tag'),
   };
 }
 
-function setLangInUrl(lang, replace = false) {
-  const { mode, tag } = getUrlState();
+/**
+ * Met à jour l'URL avec les valeurs fournies. Les valeurs manquantes sont
+ * conservées depuis l'URL courante. `replace: true` évite d'ajouter une
+ * entrée dans l'historique.
+ */
+function setUrlState({ lang, mode, tag, replace = false } = {}) {
+  const current = getUrlState();
+  const finalLang = lang ?? current.lang ?? DEFAULT_LANG;
+  const finalMode = mode ?? current.mode;
+  const finalTag  = tag  ?? current.tag;
+
   const params = new URLSearchParams();
+  if (finalMode) params.set('mode', finalMode);
+  if (finalTag)  params.set('tag', finalTag);
 
-  if (mode) params.set('mode', mode);
-  if (tag) params.set('tag', tag);
+  const url = params.toString()
+    ? `/${finalLang}/?${params.toString()}`
+    : `/${finalLang}/`;
 
-  const target = params.toString() ? `/${lang}/?${params.toString()}` : `/${lang}/`;
+  const state = { mode: finalMode ?? currentMode, tag: finalTag ?? '', lang: finalLang };
+  const shouldReplace = replace || _replaceNextPush;
+  if (_replaceNextPush) _replaceNextPush = false;
 
-  if (replace) {
-    history.replaceState({ mode: mode || currentMode, tag: tag || '', lang }, '', target);
+  if (shouldReplace) {
+    history.replaceState(state, '', url);
   } else {
-    history.pushState({ mode: mode || currentMode, tag: tag || '', lang }, '', target);
+    history.pushState(state, '', url);
   }
 }
 
@@ -99,7 +139,7 @@ function loadLanguage(lang) {
   localStorage.setItem(LANG_STORAGE_KEY, lang);
   document.documentElement.lang = lang;
   // push URL quickly to avoid stuck state when fetch is delayed/fails
-  setLangInUrl(lang, true);
+  setUrlState({ lang, replace: true });
   return fetch(`/lang/${lang}.json`)
     .then((res) => res.ok ? res.json() : Promise.reject(new Error('Language file not found')))
     .then((obj) => {
@@ -147,7 +187,7 @@ function t(key, vars) {
 }
 
 function initialLang() {
-  const pathLang = getI18nLangFromPath();
+  const pathLang = getUrlState().lang;
   const saved = localStorage.getItem(LANG_STORAGE_KEY);
   if (SUPPORTED_LANGS.includes(pathLang)) return pathLang;
   if (SUPPORTED_LANGS.includes(saved)) return saved;
@@ -277,20 +317,8 @@ const FAV_STORAGE_KEY = 'trustroyaleFavs';
 
 // ── URL helpers ──────────────────────────────────────────────
 
-// When true, the next syncUrlState call uses replaceState (no new history entry)
+// When true, le prochain appel setUrlState utilise replaceState (pas de nouvel entrée dans l'historique)
 let _replaceNextPush = false;
-
-function syncUrlState(mode, tag) {
-  const params = new URLSearchParams({ mode, tag });
-  const base = getBasePath();
-  const url = `${base}/?${params}`;
-  if (_replaceNextPush) {
-    history.replaceState({ mode, tag, lang: currentLang }, '', url);
-    _replaceNextPush = false;
-  } else {
-    history.pushState({ mode, tag, lang: currentLang }, '', url);
-  }
-}
 
 function applyUrlState(mode, tag) {
   if (mode === 'clan') {
@@ -326,7 +354,7 @@ function applyUrlState(mode, tag) {
 // Restore state on browser back/forward
 window.addEventListener('popstate', (e) => {
   const { mode, tag, lang } = e.state ?? {};
-  const pathLang = getI18nLangFromPath();
+  const pathLang = getUrlState().lang;
   const selectedLang = lang || pathLang || currentLang;
   if (selectedLang !== currentLang) {
     loadLanguage(selectedLang).catch(() => {});
@@ -398,8 +426,8 @@ initClanSelect();
 async function initApp() {
   const lang = initialLang();
 
-  if (!getI18nLangFromPath()) {
-    // no explicit locale path, normalize to selected language (path from localStorage or default)
+  if (!getUrlState().lang) {
+    // Pas de locale explicite dans le chemin : normaliser vers la langue sélectionnée
     const params = new URLSearchParams(window.location.search);
     const suffix = params.toString() ? `/?${params.toString()}` : '/';
     history.replaceState(null, '', `/${lang}${suffix}`);
@@ -453,8 +481,8 @@ async function handleSearch(force = false) {
 
   const tag = raw.startsWith('#') ? raw : `#${raw}`;
 
-  // Update URL immediately to keep navigation state consistent even if API fails.
-  syncUrlState(currentMode, tag);
+  // Mise à jour immédiate de l'URL pour un état de navigation cohérent même en cas d'erreur API.
+  setUrlState({ mode: currentMode, tag });
 
   hideError();
   hideResults();
@@ -706,7 +734,7 @@ favoritesContainer.addEventListener('click', (e) => {
     } else {
       searchInput.value = tag;
     }
-    syncUrlState(mode, tag);
+    setUrlState({ mode, tag });
     handleSearch();
   }
 });
@@ -799,25 +827,7 @@ function renderPlayerResults(data) {
 
   // Forcer la traduction des labels de breakdown si reçus en anglais
   if (ws && Array.isArray(ws.breakdown)) {
-    const scoreLabelMap = {
-      Regularity: t('regularity'),
-      'Avg Score': t('avgScore'),
-      'Avg fame': t('avgFame'),
-      'CW2 Battle Wins': t('cw2BattleWins'),
-      'CW2 battle wins': t('cw2BattleWins'),
-      'Clan stability': t('clanStability'),
-      Stability: t('clanStability'),
-      'Last seen': t('lastSeen'),
-      'Win Rate (War)': t('winRateFullMode'),
-      'Win rate full mode': t('winRateFullMode'),
-      Experience: t('experience'),
-      Donations: t('donations'),
-      Discord: t('discord'),
-      'High reliability': t('highReliability'),
-      'Moderate risk': t('moderateRisk'),
-      'High risk': t('highRisk'),
-      'Extreme risk': t('extremeRisk'),
-    };
+    const scoreLabelMap = getScoreLabelMap();
     ws.breakdown = ws.breakdown.map((item) => ({
       ...item,
       label: scoreLabelMap[item.label] || item.label,
@@ -1336,21 +1346,7 @@ function renderPlayerResults(data) {
     ${fallbackBadge}
   `;
 
-  const scoreLabelMap = {
-    Regularity: t('regularity'),
-    'Avg Score': t('avgScore'),
-    'Avg fame': t('avgFame'),
-    'CW2 Battle Wins': t('cw2BattleWins'),
-    'CW2 battle wins': t('cw2BattleWins'),
-    'Clan stability': t('clanStability'),
-    Stability: t('clanStability'),
-    'Last seen': t('lastSeen'),
-    'Win Rate (War)': t('winRateFullMode'),
-    'Win rate full mode': t('winRateFullMode'),
-    Experience: t('experience'),
-    Donations: t('donations'),
-    Discord: t('discord'),
-  };
+  const scoreLabelMap = getScoreLabelMap();
 
   function translateDetail(label, text) {
     if (!text) return text;

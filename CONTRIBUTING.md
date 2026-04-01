@@ -32,9 +32,18 @@ clash/
 │   │   └── clan.js            # GET /api/clan/:tag[/analysis]
 │   └── services/
 │       ├── clashApi.js        # Clash Royale API wrapper
-│       ├── analysisService.js # Scoring formulas
-│       ├── analysisCache.js   # Lecture/écriture du cache JSON (utilisé par scripts/cacheAll.js)
-│       └── cache.js           # In-memory cache (30 s TTL)
+│       ├── analysisService.js # Barrel — re-exporte les 5 modules ci-dessous
+│       ├── dateUtils.js       # Timezone Paris, warDayKey, parseClashDate
+│       ├── battleLogUtils.js  # Filtrage/catégorisation/expansion du battle log GDC
+│       ├── warScoring.js      # computeWarScore, computeWarReliabilityFallback
+│       ├── warHistory.js      # buildWarHistory, buildFamilyWarHistory
+│       ├── playerAnalysis.js  # analyzePlayer, getPlayerAnalysis, analyzeClanMembers
+│       ├── cache.js           # In-memory cache (TTL configurable)
+│       ├── clanCache.js       # Cache clan persisté sur disque (JSON)
+│       ├── snapshot.js        # Snapshots quotidiens de decksUsed
+│       ├── discordLinks.js    # Mapping tag joueur → Discord ID
+│       ├── topplayers.js      # computeTopPlayers — classement famille par fame
+│       └── uncomplete.js      # computeUncomplete — joueurs < 16 decks
 ├── frontend/
 │   ├── index.html
 │   ├── main.js                # UI orchestration
@@ -92,7 +101,9 @@ This launches both backend (**<http://localhost:3000>**) and frontend (**<http:/
 
 ### Scripts utiles
 
-- `npm run cache` — pré-génère `frontend/public/clan-cache/*.json` (utilisé pour le rendu instantané en vue clan)
+- `npm run cache` — pré-génère `frontend/public/clan-cache/*.json` via `scripts/refreshClanCache.js` (rendu instantané en vue clan)
+- `node scripts/collectSnapshots.js` — enregistre les snapshots de decksUsed quotidiens depuis le race log
+- `node scripts/registerCommands.js` — enregistre/met à jour les slash-commands Discord
 
 ---
 
@@ -117,17 +128,6 @@ Tags should include the `#` prefix (URL‑encoded as `%23`).
 Ce mécanisme a été retiré : les joueurs ne sont plus marqués `transfer` et la
 fusion d'historique n'est plus appliquée. Le statut `isNew` est déterminé
 uniquement via l'historique de guerre standard.
-
-### Script de test (transferts)
-
-Ce script est utile en local pour vérifier rapidement :
-
-```bash
-npm run transfers -- --out=transfers.json
-```
-
-Il utilise `buildClanAnalysis()` et regarde les champs exposés sur chaque membre :
-`isFamilyTransfer`, `transferFromClan` et `transferWeek`.
 
 ### 🚨 Note sur le cache statique
 
