@@ -58,6 +58,7 @@ npm run cache    # régénère frontend/public/clan-cache/*.json (via scripts/re
 - **ESM obligatoire** : `"type": "module"` dans le backend — pas de `require()`
 - **Verdicts** : 4 paliers stricts — vert ≥ 75 %, jaune 56–74 %, orange 31–55 %, rouge 0–30 %
 - **maxScore** : mode principal 53 pts (avec win rate) / 50 pts (sans) ; fallback 40 pts (45 pts avec last seen) — Discord toujours inclus (+2)- **Transferts familiaux** : présence d'un champ `isFamilyTransfer` dans les réponses API (clan + joueur). Le score est calculé à partir du war log (pas du battle log) si le joueur a joué ≥ 13 decks la semaine précédente dans un autre clan de la famille.
+
 ## Conventions générales critiques
 
 - **CSS** : pas de styles inline (bloqués par CSP). CSS natif uniquement, pas de Tailwind/Bootstrap.
@@ -137,4 +138,3 @@ Utiliser des **sous-agents** (Task tool) par défaut pour toute opération dont 
 - Documenter dans la PR description les traductions, p.ex. :
   - `raceTimeLateBucketWarning`: EN/FR.
   - `riverRaceHistoryWarn`: EN/FR.
-
