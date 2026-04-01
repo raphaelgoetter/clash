@@ -680,7 +680,12 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
 
   // 3. Activité générale (0-8)
   // 30 combats compétitifs requis pour score max (War + Ladder + Challenges)
-  const activiteGen = r(Math.min(8, (competitive / 30) * 8));
+  // On applique un facteur de pondération en fonction du ratio War (GDC).
+  // 0% War -> max 4/8 (facteur 0.5), 100% War -> max 8/8 (facteur 1.0)
+  const warRatio = competitive > 0 ? gdcCount / competitive : 0;
+  const warFactor = 0.5 + 0.5 * warRatio;
+  const baseGeneral = (competitive / 30) * 8;
+  const activiteGen = r(Math.min(8, baseGeneral * warFactor));
 
   // 4. Expérience (0-3) — trophées actuels, plage [4 000, 14 000]
   const TROPHY_MIN = 4000;

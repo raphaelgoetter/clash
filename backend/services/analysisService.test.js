@@ -86,6 +86,34 @@ assert.ok(typeof fallback.summary === 'string' && fallback.summary.length > 0, '
 assert.ok(typeof fallback.breakdown[0].explanation === 'string' && fallback.breakdown[0].explanation.length > 0, 'war activity explanation should be present');
 console.log('✓ fallback warScore summary/explanation test passed.');
 
+// New tests: General Activity war-ratio adjustment
+const fallbackNoWar = computeWarReliabilityFallback(
+  { trophies: 12000, totalDonations: 10000, badges: [] },
+  [],
+  { total: 28, gdc: 0, ladder: 28, challenge: 0 },
+  null,
+  false,
+  0,
+  null
+);
+const gaNoWar = fallbackNoWar.breakdown.find((b) => b.label === 'General Activity');
+assert.ok(gaNoWar, 'General Activity entry exists for no-war case');
+assert.ok(gaNoWar.score <= 4, `Expected General Activity <= 4 for 0% War (got ${gaNoWar.score})`);
+
+const fallbackAllWar = computeWarReliabilityFallback(
+  { trophies: 12000, totalDonations: 10000, badges: [] },
+  Array.from({ length: 30 }, () => ({ battleTime: new Date().toISOString(), type: 'gdc' })),
+  { total: 30, gdc: 30, ladder: 0, challenge: 0 },
+  null,
+  false,
+  0,
+  null
+);
+const gaAllWar = fallbackAllWar.breakdown.find((b) => b.label === 'General Activity');
+assert.ok(gaAllWar, 'General Activity entry exists for all-war case');
+assert.strictEqual(gaAllWar.score, 8, `Expected General Activity 8 for 100% War (got ${gaAllWar.score})`);
+console.log('✓ General Activity war-ratio adjustment tests passed.');
+
 // New test: dailyActivity should count all battles, not only war battles
 const gameNow = new Date().toISOString();
 const sampleBattleLog = [
@@ -94,7 +122,10 @@ const sampleBattleLog = [
   { battleTime: gameNow, type: 'riverracepvp' },
   { battleTime: gameNow, type: 'challenge' },
 ];
-const result = analyzePlayer({ name: 'test', tag: '#TEST', clan: null, trophies: 0, bestTrophies: 0, expLevel: 1, totalDonations: 0, donations: 0, badges: [] }, sampleBattleLog);
+const result = analyzePlayer(
+  { name: 'test', tag: '#TEST', clan: null, trophies: 0, bestTrophies: 0, expLevel: 1, totalDonations: 0, donations: 0, badges: [] },
+  sampleBattleLog
+);
 assert.strictEqual(result.activityIndicators.totalBattles, 4, 'totalBattles should include all fights');
 assert.strictEqual(result.activityIndicators.totalWarBattles, 1, 'totalWarBattles should include only war fights');
 const sumActivity = result.recentActivity.dailyActivity.reduce((sum, d) => sum + d.count, 0);
