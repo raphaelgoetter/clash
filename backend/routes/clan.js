@@ -678,11 +678,17 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         color = pa.color ?? 'orange';
         scoreSource = 'cached';
         memberWarScore = pa;
-        if (cachedMember.warHistory) warHistory = cachedMember.warHistory;
+        if (cachedMember.warHistory) {
+          warHistory = cachedMember.warHistory;
+          playerScoreOverride = true;
+        } else {
+          // We have a reliability cache but no detailed war history, so we
+          // still allow fresh computation (not strict override) for isNew.
+          playerScoreOverride = false;
+        }
         if (typeof cachedMember.isNew === 'boolean') {
           isNewFromCache = cachedMember.isNew;
         }
-        playerScoreOverride = true;
       }
 
       if (!playerScoreOverride && raceLog) {
@@ -848,13 +854,17 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       }
 
       // Determine new member flag by shared policy.
-      // In degraded mode (raceLog unavailable), preserve cached isNew when possible
-      // and avoid global new status for all members.
       if (raceLogUnavailable) {
         if (typeof isNewFromCache === 'boolean') {
           isNew = isNewFromCache;
         } else {
-          // no reliable history; avoid false positives while still allowing known non-new values
+          isNew = false;
+        }
+      } else if (warHistory == null) {
+        // Avoid global false positives when war history is missing; fall back to cached state if available.
+        if (typeof isNewFromCache === 'boolean') {
+          isNew = isNewFromCache;
+        } else {
           isNew = false;
         }
       } else {
