@@ -1122,11 +1122,9 @@ export default async function handler(req, res) {
 
     // Réponse différée obligatoire (sinon Discord timeout)
     res.status(200).json({ type: 5 });
-    res.flushHeaders?.();
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
 
-    setImmediate(() => {
-      runBackground(async () => {
+    runBackground(async () => {
       try {
         const { fetchRaceLog, fetchClanMembers } = await import('../../backend/services/clashApi.js');
         const raceLog = await fetchRaceLog(`#${resolved.tag}`);
@@ -1221,11 +1219,16 @@ export default async function handler(req, res) {
         if (players.length === 0) {
           description = `Aucun joueur n'a joué 100% des decks toutes les semaines de la saison ${seasonId}.`;
         } else {
+          const MAX_ROWS = 80;
           const rows = players.map((p, idx) => {
             const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
             return `${idx + 1}. [${p.name}](${playerUrl}) · [${p.role}]`;
           });
-          description = rows.join('\n');
+          const visibleRows = rows.slice(0, MAX_ROWS);
+          description = visibleRows.join('\n');
+          if (rows.length > MAX_ROWS) {
+            description += `\n...et ${rows.length - MAX_ROWS} autres`;
+          }
         }
 
         const embed = {
@@ -1248,7 +1251,6 @@ export default async function handler(req, res) {
         });
       }
     });
-  });
     return;
   }
 
