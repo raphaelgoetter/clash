@@ -4,7 +4,7 @@
     "days": [
       {
         "warDay": "thursday",
-        "realDay": "2026-04-03",
+        "realDay": "2026-04-02",
         "gdcPeriod": {
           "start": "2026-04-03T09:40:00.000Z",
           "end": "2026-04-04T09:39:59.999Z"
@@ -66,18 +66,69 @@
       },
       {
         "warDay": "friday",
-        "realDay": "2026-04-04",
+        "realDay": "2026-04-03",
         "gdcPeriod": {
-          "start": "2026-04-04T09:40:00.000Z",
-          "end": "2026-04-05T09:39:59.999Z"
+          "start": "2026-04-03T09:40:00.000Z",
+          "end": "2026-04-04T09:39:59.999Z"
         },
-        "snapshotTime": null,
+        "snapshotTime": "2026-04-02T22:10:23.521Z",
         "snapshotBackupTime": null,
-        "decks": {}
+        "decks": {
+          "#2U9QL8Q89": 4,
+          "#2YLYG9V92": 4,
+          "#802YQPVQ": 4,
+          "#80GVRPGPY": 4,
+          "#822GLVL00": 4,
+          "#82JPJ9J98": 4,
+          "#82UPUGYP": 4,
+          "#8GGQLU28": 4,
+          "#8QLCU9QG": 4,
+          "#8QVRJYVYU": 4,
+          "#8UL8JRCJ": 4,
+          "#8VQLJLR0": 4,
+          "#8Y90VQYP9": 4,
+          "#8YGY2RPCC": 4,
+          "#98UULQY8": 4,
+          "#9VQYC9GJQ": 4,
+          "#CGJP0YYUJ": 4,
+          "#GC20UCLL": 4,
+          "#GGVQJLG9": 4,
+          "#GQ9LJ2RYU": 4,
+          "#J008G9CLJ": 4,
+          "#LUGP2RYY": 4,
+          "#PRGCCRUJP": 4,
+          "#QVG90PQVG": 4,
+          "#RJJ99Y9J": 4,
+          "#U9PP0CJRL": 4,
+          "#UP9YJV080": 4,
+          "#UVV8CULJV": 4,
+          "#VGJ9LL8VC": 4,
+          "#VQJ0Y8PLV": 4,
+          "#Y9P9GGL89": 4,
+          "#YRGJGR8R": 4,
+          "#J290800UU": 3,
+          "#R8PR99CQ0": 2,
+          "#YGP000RP8": 2,
+          "#2YP2V2G0R": 1,
+          "#QY0LG0R0P": 1,
+          "#20992UQU82": 0,
+          "#20LRPPRL88": 0,
+          "#28LG2C88": 0,
+          "#2CG22UCCU": 0,
+          "#2L8RPQRJ9": 0,
+          "#2P8UQUY80": 0,
+          "#2PJ8G2YVJ": 0,
+          "#2PJU0Q8G2": 0,
+          "#2UGCQCQV": 0,
+          "#88QP9CJU": 0,
+          "#88Y9Q8UPQ": 0,
+          "#89L8J9YV9": 0,
+          "#8G00908LP": 0
+        }
       },
       {
         "warDay": "saturday",
-        "realDay": "2026-04-05",
+        "realDay": "2026-04-04",
         "gdcPeriod": {
           "start": "2026-04-05T09:40:00.000Z",
           "end": "2026-04-06T09:39:59.999Z"
@@ -137,7 +188,7 @@
       },
       {
         "warDay": "sunday",
-        "realDay": "2026-04-06",
+        "realDay": "2026-04-05",
         "gdcPeriod": {
           "start": "2026-04-06T09:40:00.000Z",
           "end": "2026-04-07T09:39:59.999Z"

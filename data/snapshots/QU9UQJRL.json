@@ -246,7 +246,7 @@
     "days": [
       {
         "warDay": "thursday",
-        "realDay": "2026-04-03",
+        "realDay": "2026-04-02",
         "gdcPeriod": {
           "start": "2026-04-03T09:40:00.000Z",
           "end": "2026-04-04T09:39:59.999Z"
@@ -292,12 +292,12 @@
       },
       {
         "warDay": "friday",
-        "realDay": "2026-04-04",
+        "realDay": "2026-04-03",
         "gdcPeriod": {
-          "start": "2026-04-04T09:40:00.000Z",
-          "end": "2026-04-05T09:39:59.999Z"
+          "start": "2026-04-03T09:40:00.000Z",
+          "end": "2026-04-04T09:39:59.999Z"
         },
-        "snapshotTime": "2026-03-28T09:09:51.278Z",
+        "snapshotTime": "2026-04-02T22:10:23.963Z",
         "snapshotBackupTime": "2026-03-27T22:07:59.725Z",
         "decks": {
           "#2200UQ9P08": 4,
@@ -306,6 +306,7 @@
           "#2YLYG9V92": 4,
           "#8JGU9UUJJ": 4,
           "#8VP9UJV9L": 4,
+          "#CVJPCU09C": 4,
           "#CVYLYLC8V": 4,
           "#LJYGJYCYC": 4,
           "#QPU0U2C9": 4,
@@ -314,21 +315,21 @@
           "#UVGPPVQ8Q": 4,
           "#UYRR99RL8": 4,
           "#V22VCQV9V": 4,
-          "#CRLR0P92J": 2,
+          "#VPGCQPR9U": 4,
+          "#CRLR0P92J": 3,
           "#PGQ98JVJ8": 2,
           "#VY0LYQQVJ": 1,
+          "#2QUGQUJ9": 0,
           "#98VCJLG92": 0,
           "#9VQYC9GJQ": 0,
           "#CLQ2RYYJQ": 0,
           "#CLVU02QLP": 0,
-          "#CVJPCU09C": 0,
           "#J222JVRUQ": 0,
           "#JC28YVLPG": 0,
           "#RJJGJ8PRC": 0,
           "#UU02RYV0C": 0,
           "#V2P2LCYRJ": 0,
           "#V9GUUPYUQ": 0,
-          "#VPGCQPR9U": 0,
           "#VPR8G992P": 0,
           "#VR0LV90YP": 0,
           "#VU8UGJ0R2": 0,
@@ -337,7 +338,7 @@
       },
       {
         "warDay": "saturday",
-        "realDay": "2026-04-05",
+        "realDay": "2026-04-04",
         "gdcPeriod": {
           "start": "2026-04-05T09:40:00.000Z",
           "end": "2026-04-06T09:39:59.999Z"
@@ -383,7 +384,7 @@
       },
       {
         "warDay": "sunday",
-        "realDay": "2026-04-06",
+        "realDay": "2026-04-05",
         "gdcPeriod": {
           "start": "2026-04-06T09:40:00.000Z",
           "end": "2026-04-07T09:39:59.999Z"
