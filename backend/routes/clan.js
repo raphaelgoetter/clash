@@ -728,7 +728,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
         // For transfer players, we first evaluate using available family/current clan history.
         // If still insufficient, try fetching the member-specific battle log to recover non-family transfer history.
-        if (!hasEnoughHistory && (!Array.isArray(memberBattleLog) || memberBattleLog.length === 0)) {
+        // Skip si le score est déjà en cache avec la bonne version : pas besoin d'améliorer le score,
+        // et warDays peut être calculé depuis currentRace.clan.participants directement.
+        const scoreAlreadyCached = !!(cachedMember && Number.isFinite(cachedMember.reliability) && cachedMember.scoreVersion === SCORE_VERSION);
+        if (!hasEnoughHistory && (!Array.isArray(memberBattleLog) || memberBattleLog.length === 0) && !scoreAlreadyCached) {
           console.warn(`[clan] debug fetchBattleLog for ${m.tag} because no history from family clues`);
           try {
             const fallbackBattleLog = await fetchBattleLog(m.tag);

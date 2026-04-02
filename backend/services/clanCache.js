@@ -31,13 +31,10 @@ function stripClanCachePayload(payload) {
     ...rest
   } = payload;
 
-  if (Array.isArray(rest.members)) {
-    rest.members = rest.members.map((member) => {
-      if (!member || typeof member !== 'object') return member;
-      const { warDays, warDecks, ...memberRest } = member;
-      return memberRest;
-    });
-  }
+  // warDays/warDecks sont conservés dans le cache pour que le fallback statique
+  // affiche la colonne "This War" même quand l'API live échoue (données max 1h stale).
+  // Ils seront rechargés à chaque regénération de cache (cron horaire).
+
 
   return rest;
 }
