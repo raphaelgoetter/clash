@@ -118,6 +118,17 @@ function parisTimeUtcMs(dateKey, hour = 0, minute = 0) {
 }
 
 /**
+ * Retourne le timestamp UTC (ms) correspondant au début d'une journée GDC :
+ * 9h40 UTC fixe, indépendamment du DST (heure d'été / hiver Paris).
+ * L'heure de reset GDC est toujours 9h40 UTC.
+ */
+function warPeriodStartUtcMs(realDay) {
+  const [y, m, d] = (realDay ?? '').split('-').map(Number);
+  if (!y || !m || !d) return null;
+  return Date.UTC(y, m - 1, d, 9, 40, 0);
+}
+
+/**
  * For a given timestamp, return the war day (thu/fri/sat/sun) and the corresponding
  * local calendar date (Paris) for that war day.
  *
@@ -180,8 +191,8 @@ function clampDeckValues(decks = {}) {
 function makeEmptyDay(warDay, realDay = null) {
   const gdcPeriod = realDay
     ? {
-        start: new Date(parisTimeUtcMs(realDay, 10, 40)).toISOString(),
-        end:   new Date(parisTimeUtcMs(realDay, 10, 40) + MS_PER_DAY - 1).toISOString(),
+        start: new Date(warPeriodStartUtcMs(realDay)).toISOString(),
+        end:   new Date(warPeriodStartUtcMs(realDay) + MS_PER_DAY - 1).toISOString(),
       }
     : null;
 
@@ -228,13 +239,10 @@ function fillWeekDays(week) {
     day.warDay = wd;
     day.realDay = realDay;
 
-    // Attach an explicit time window for the war day, in Paris local time.
-    // This makes it clear which calendar range is being captured (e.g. "Sunday
-    // war day" is the period from Saturday 10:40 → Sunday 10:40).
+    // Fenêtre temporelle UTC de la journée GDC : 9h40 UTC → lendemain 9h39:59 UTC.
     if (realDay) {
-      const startMs = parisTimeUtcMs(realDay, 10, 40);
+      const startMs = warPeriodStartUtcMs(realDay);
       const endMs = startMs ? startMs + MS_PER_DAY - 1 : null;
-      // La période GDC commence le jour J à 10h40 Paris et se termine le lendemain J+1 à 10h39:59.
       day.gdcPeriod = startMs && endMs
         ? { start: new Date(startMs).toISOString(), end: new Date(endMs).toISOString() }
         : null;
@@ -331,11 +339,9 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
   // Ensure the real day matches the computed one (Paris date of the war day)
   dayEntry.realDay = realDay;
 
-  // Always store the exact GDC interval this snapshot corresponds to.
-  // (This makes it clear that "warDay" is a Clash label, not necessarily the
-  // calendar day on which decks were played.)
+  // Fenêtre temporelle UTC de la journée GDC : 9h40 UTC → lendemain 9h39:59 UTC.
   if (realDay) {
-    const startMs = parisTimeUtcMs(realDay, 10, 40);
+    const startMs = warPeriodStartUtcMs(realDay);
     const endMs = startMs ? startMs + MS_PER_DAY - 1 : null;
     dayEntry.gdcPeriod = startMs && endMs
       ? { start: new Date(startMs).toISOString(), end: new Date(endMs).toISOString() }
