@@ -982,11 +982,28 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       return Math.min(200, Math.max(0, Math.round(value)));
     };
 
-    if (currentRace?.periodType === 'warDay' && currentRace?.clan?.participants?.length > 0) {
+    if (currentRace?.periodType === 'warDay') {
+      // Déterminer daysFromThu : préférer sampleWarDays (calculé par membre), puis
+      // periodIndex de l'API, puis fallback calendaire. Cela permet de construire un
+      // résumé valide même si aucun participant n'a encore joué (début de jeudi).
       const sampleWarDays = analyzedMembers.find((m) => m.warDays && !m.warDays.arrivedMidWar)?.warDays ?? null;
-      if (sampleWarDays) {
-        const { daysFromThu } = sampleWarDays;
-        const participants = currentRace.clan.participants;
+
+      let daysFromThu = sampleWarDays?.daysFromThu;
+      if (daysFromThu === undefined || daysFromThu === null) {
+        if (typeof currentRace.periodIndex === 'number' && currentRace.periodIndex >= 0 && currentRace.periodIndex <= 3) {
+          daysFromThu = currentRace.periodIndex;
+        } else {
+          const now = new Date();
+          const nowGdcDate = new Date(now.getTime() - warResetOffsetMs());
+          const dow = nowGdcDate.getUTCDay();
+          if (dow === 0 || dow >= 4) {
+            daysFromThu = dow === 4 ? 0 : dow === 5 ? 1 : dow === 6 ? 2 : 3;
+          }
+        }
+      }
+
+      if (daysFromThu !== undefined && daysFromThu !== null) {
+        const participants = currentRace.clan?.participants ?? [];
         // Total fiable depuis currentRace (cumul hebdo par participant)
         let totalDecksUsed = participants.reduce((s, p) => s + (p.decksUsed ?? 0), 0);
         // If we have cwstats data, use it as a sanity check (it tends to be more stable).
@@ -1122,8 +1139,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         }
         const finalTotalDecksUsed = Math.min(maxDecksWeek, Math.max(0, days.reduce((sum, d) => sum + (d.totalCount ?? 0), 0)));
         clanWarSummary = { totalDecksUsed: finalTotalDecksUsed, maxDecksElapsed, maxDecksWeek, participantCount: MAX_MEMBERS, daysFromThu, days, weekId: currWeekId, ended: false };
-      }
-    }
+      } // end if daysFromThu
+    } // end if warDay
 
     // If we are outside an active war and no current-week snapshot exists,
     // fall back to the previous completed week snapshot (prevWeekId).
