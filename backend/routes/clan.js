@@ -982,7 +982,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       return Math.min(200, Math.max(0, Math.round(value)));
     };
 
-    if (currentRace?.periodType === 'warDay') {
+    // Source de vérité : au moins un membre a des jours GDC courants calculés.
+    // On utilise cela plutôt que periodType (peut être absent/différent selon l'API).
+    const warActiveFromMembers = analyzedMembers.some((m) => m.warDays !== null);
+    if (warActiveFromMembers || currentRace?.periodType === 'warDay') {
       // Déterminer daysFromThu : préférer sampleWarDays (calculé par membre), puis
       // periodIndex de l'API, puis fallback calendaire. Cela permet de construire un
       // résumé valide même si aucun participant n'a encore joué (début de jeudi).
@@ -990,7 +993,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
       let daysFromThu = sampleWarDays?.daysFromThu;
       if (daysFromThu === undefined || daysFromThu === null) {
-        if (typeof currentRace.periodIndex === 'number' && currentRace.periodIndex >= 0 && currentRace.periodIndex <= 3) {
+        if (currentRace && typeof currentRace.periodIndex === 'number' && currentRace.periodIndex >= 0 && currentRace.periodIndex <= 3) {
           daysFromThu = currentRace.periodIndex;
         } else {
           const now = new Date();
@@ -1003,7 +1006,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       }
 
       if (daysFromThu !== undefined && daysFromThu !== null) {
-        const participants = currentRace.clan?.participants ?? [];
+        const participants = currentRace?.clan?.participants ?? [];
         // Total fiable depuis currentRace (cumul hebdo par participant)
         let totalDecksUsed = participants.reduce((s, p) => s + (p.decksUsed ?? 0), 0);
         // If we have cwstats data, use it as a sanity check (it tends to be more stable).
@@ -1168,7 +1171,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     }
 
     // If there is no current war summary (GDC ended), fall back to last available week snapshot.
-    if (!clanWarSummary && Array.isArray(weekSnaps) && weekSnaps.length > 0) {
+    // Ne pas déclencher ce fallback si la guerre est encore active (on afficherait érronément ended:true).
+    if (!clanWarSummary && !warActiveFromMembers && Array.isArray(weekSnaps) && weekSnaps.length > 0) {
       const DAY_LABELS = ['Thu', 'Fri', 'Sat', 'Sun'];
       const days = DAY_LABELS.map((label, i) => {
         const snap = weekSnaps[i] ?? null;
