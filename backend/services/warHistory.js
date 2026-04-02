@@ -6,6 +6,7 @@
 import { getOrSet } from './cache.js';
 import { fetchRaceLog } from './clashApi.js';
 import { estimateWinsFromFame } from './warScoring.js';
+import { computeCurrentWeekId } from './dateUtils.js';
 
 const CLAN_RACELOG_CONCURRENCY  = 3;
 const CLAN_RACELOG_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -85,12 +86,20 @@ export function buildWarHistory(playerTag, raceLog, currentClanTag = null, curre
 
   // Prépend la race en cours si le joueur y figure.
   // /currentriverrace expose .clan.participants[] directement (pas standings[]).
+  // seasonId absent de currentriverrace → on le déduit via computeCurrentWeekId.
   if (currentRace?.clan?.participants) {
     const p = currentRace.clan.participants.find((x) => x.tag === normalized);
     if (p) {
+      const liveWeekId   = computeCurrentWeekId(currentRace, raceLog); // ex. "S130W5"
+      const liveLabel    = liveWeekId
+        ? `${liveWeekId.replace('W', '·W')} (live)`
+        : `S?·W${(currentRace.sectionIndex ?? 0) + 1} (live)`;
+      const liveSeasonId = liveWeekId
+        ? Number(liveWeekId.match(/^S(\d+)/)?.[1])
+        : (currentRace.seasonId ?? null);
       weeks.unshift({
-        label:        `S${currentRace.seasonId ?? '?'}·W${(currentRace.sectionIndex ?? 0) + 1} (live)`,
-        seasonId:     currentRace.seasonId,
+        label:        liveLabel,
+        seasonId:     liveSeasonId,
         sectionIndex: currentRace.sectionIndex ?? 0,
         fame:         p.fame        ?? 0,
         decksUsed:    p.decksUsed   ?? 0,
