@@ -2109,6 +2109,7 @@ function renderMembersTable(members) {
         <td>${fmt(m.totalDonations ?? m.donations)}</td>
         <td class="discord-col">${m.discord ? '✅' : '❓'}</td>
         ${lastSeenCell}
+        ${isWarActive ? `<td class="war-col">${warMiniBarHtml(m.warDays)}</td>` : ''}
         <td>
           <div style="display:flex;align-items:center;gap:8px">
             <div style="flex:1;height:6px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden;min-width:60px">
@@ -2117,7 +2118,6 @@ function renderMembersTable(members) {
             <span style="font-weight:700;font-size:.88rem">${Math.round(m.reliability)}%</span>
           </div>
         </td>
-        ${isWarActive ? `<td class="war-col">${warMiniBarHtml(m.warDays)}</td>` : ''}
         <td><span class="verdict-badge ${m.color}">${escHtml(memberVerdict)}</span></td>
       </tr>`;
       }
