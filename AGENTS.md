@@ -18,7 +18,7 @@
 | Fichier | Rôle |
 |---|---|
 | `analysisService.js` | **Barrel** — re-exporte tout pour rétrocompatibilité |
-| `dateUtils.js` | `parisOffsetMs`, `warResetOffsetMs`, `warDayKey`, `parseClashDate`, `MS_PER_DAY` |
+| `dateUtils.js` | `parisOffsetMs`, `warResetOffsetMs`, `warDayKey`, `parseClashDate`, `MS_PER_DAY`, **`computeCurrentWeekId`**, **`computePrevWeekId`** |
 | `battleLogUtils.js` | `filterWarBattles`, `categorizeBattleLog`, `expandDuelRounds`, `isWarWin/Loss`, `buildDailyActivity` |
 | `warScoring.js` | `computeWarScore`, `computeWarReliabilityFallback`, `scoreTotalDonations`, `estimateWinsFromFame` |
 | `warHistory.js` | `buildWarHistory`, `buildFamilyWarHistory` (avec cache course) |
@@ -30,6 +30,18 @@
 | `discordLinks.js` | Mapping tag joueur → Discord ID (GitHub Gist + fallback local) |
 | `topplayers.js` | `computeTopPlayers` — classement de la famille par fame |
 | `uncomplete.js` | `computeUncomplete` — liste des joueurs avec < 16 decks |
+
+## Semaine / Saison Clash Royale — source de vérité
+
+- Une saison dure environ un mois et commence toujours le **premier lundi du mois**, juste après le reset GDC (**09:40 UTC**).
+- Elle est composée de **3 à 5 semaines** selon le nombre de lundis dans le mois.
+- L'API représente les semaines avec `seasonId` (entier, ex. 130) et `sectionIndex` (0-based : W1=0, …, W5=4).
+- `/currentriverrace` **ne fournit pas de `seasonId`** — on le déduit de `raceLog[0].seasonId`.
+- **Rollover de saison** : si `currentRace.sectionIndex ≤ raceLog[0].sectionIndex`, le compteur a repassé par 0 → saison suivante (`seasonId + 1`).
+- **Fonctions canoniques** (dans `dateUtils.js`, re-exportées par `analysisService.js`) :
+  - `computeCurrentWeekId(currentRace, raceLog)` → `"S130W5"` (semaine en cours)
+  - `computePrevWeekId(raceLog)` → `"S130W4"` (dernière semaine terminée)
+- **Ne jamais recalculer weekId à la main** — toujours utiliser ces deux fonctions.
 
 ## Commandes essentielles
 

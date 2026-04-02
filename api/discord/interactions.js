@@ -295,7 +295,7 @@ export default async function handler(req, res) {
                   (s) => s.clan?.tag?.toUpperCase() === `#${clanTag}`
                 );
                 const participants = standing?.clan?.participants || [];
-                const weekId = `S${log[0].seasonId}W${log[0].sectionIndex}`;
+                const weekId = `S${log[0].seasonId}W${log[0].sectionIndex + 1}`;
                 recordSnapshot(clanTag, participants, weekId).catch((err) => console.warn('[snapshot] recordSnapshot failed for', clanTag, ':', err.message));
               }
             })

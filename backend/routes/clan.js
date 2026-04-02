@@ -9,6 +9,7 @@ import {
   computeWarReliabilityFallback, categorizeBattleLog,
   computeIsNewPlayer, filterWarBattles, expandDuelRounds, isWarWin, buildCurrentWarDays,
   estimateWinsFromFame, warResetOffsetMs, scoreTotalDonations, applyOldestWeekIgnore,
+  computeCurrentWeekId, computePrevWeekId,
 } from '../services/analysisService.js';
 import { computeTopPlayers } from '../services/topplayers.js';
 import { computeUncomplete } from '../services/uncomplete.js';
@@ -284,11 +285,8 @@ router.post('/:tag/snapshot', async (req, res) => {
       return res.status(400).json({ error: 'No active war in progress' });
     }
 
-    // Determine week identifier (same logic as in buildClanAnalysis)
-    const currSection = currentRace.sectionIndex ?? 0;
-    let seasonId = raceLog?.[0]?.seasonId;
-    if (seasonId !== undefined && currSection <= (raceLog[0]?.sectionIndex ?? -1)) seasonId += 1;
-    const weekId = seasonId != null ? `S${seasonId}W${currSection + 1}` : `W${currSection + 1}`;
+    // Calcul de l'identifiant de semaine (source de vérité : computeCurrentWeekId)
+    const weekId = computeCurrentWeekId(currentRace, raceLog) ?? `W${(currentRace.sectionIndex ?? 0) + 1}`;
 
     await recordSnapshot(clanTag, currentRace.clan.participants, weekId);
     res.json({ ok: true, weekId });
@@ -416,13 +414,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     // a atteint 10 000 fame) pour distinguer guerre vs entraînement.
     if (currentRace?.periodType === 'warDay' && currentRace?.clan?.participants?.length > 0) {
       const participants = currentRace.clan.participants;
-      // seasonId absent de currentriverrace → on le prend dans le race log terminé.
-      // sectionIndex est 0-based côté API ; RoyaleAPI affiche en 1-based (S130W1 = sectionIndex 0).
-      // Si sectionIndex courant ≤ sectionIndex du dernier log, on est passé à la saison suivante.
-      const currSection = currentRace.sectionIndex ?? 0;
-      let seasonId = raceLog?.[0]?.seasonId;
-      if (seasonId !== undefined && currSection <= (raceLog[0]?.sectionIndex ?? -1)) seasonId += 1;
-      const weekId = seasonId != null ? `S${seasonId}W${currSection + 1}` : `W${currSection + 1}`;
+      // Calcul de l'identifiant de semaine (source de vérité : computeCurrentWeekId)
+      const weekId = computeCurrentWeekId(currentRace, raceLog) ?? `W${(currentRace.sectionIndex ?? 0) + 1}`;
       import('../services/snapshot.js').then(({ recordSnapshot }) => {
         recordSnapshot(clanTag, participants, weekId).catch((err) => console.warn('[snapshot] recordSnapshot failed for', clanTag, ':', err.message));
       });
@@ -541,11 +534,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       ({ getSnapshotsForWeeks, getWarDayName, getWarDayKey } = await import('../services/snapshot.js'));
 
       // Calcul des identifiants des deux semaines avant de charger les snapshots
-      prevWeekId = `S${raceLog[0].seasonId}W${raceLog[0].sectionIndex + 1}`;
-      const currSection = currentRace?.sectionIndex ?? (raceLog[0].sectionIndex + 1);
-      let seasonIdSnap = raceLog[0].seasonId;
-      if (currentRace && currSection <= (raceLog[0]?.sectionIndex ?? -1)) seasonIdSnap += 1;
-      currWeekId = `S${seasonIdSnap}W${currSection + 1}`;
+      prevWeekId = computePrevWeekId(raceLog);
+      currWeekId = computeCurrentWeekId(currentRace, raceLog);
 
       // Lecture unique du fichier de snapshots pour les deux semaines
       const snapshotsByWeek = await getSnapshotsForWeeks(clanTag, [prevWeekId, currWeekId]);
