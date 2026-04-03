@@ -1502,10 +1502,12 @@ export default async function handler(req, res) {
         const participants = race?.clan?.participants ?? [];
 
         // Récupération éventuelle des statuts isNew/isFamilyTransfer pour /late
+        // Timeout court (10s) car ces annotations sont facultatives — le /late doit
+        // impérativement s'exécuter en moins de 60s (limite Vercel, fonction interactions.js).
         const analysisMap = new Map();
         try {
           const abortCtrl = new AbortController();
-          const abortTimer = setTimeout(() => abortCtrl.abort(), 50000);
+          const abortTimer = setTimeout(() => abortCtrl.abort(), 10000);
           const apiResp = await fetch(
             `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis`,
             { headers: { Accept: 'application/json' }, signal: abortCtrl.signal },
