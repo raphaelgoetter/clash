@@ -1490,14 +1490,26 @@ export default async function handler(req, res) {
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
 
     runBackground(async () => {
+      // Helper : race une promise contre un timeout
+      const withTimeout = (promise, ms, label) =>
+        Promise.race([
+          promise,
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error(`Timeout ${label} (${ms}ms)`)), ms)
+          ),
+        ]);
+
       try {
         const { fetchCurrentRace, fetchClanMembers } = await import('../../backend/services/clashApi.js');
 
-        const [race, currentMembers, { links }] = await Promise.all([
-          fetchCurrentRace(`#${resolved.tag}`),
-          fetchClanMembers(`#${resolved.tag}`),
-          readDiscordLinks(),
-        ]);
+        const [race, currentMembers, { links }] = await withTimeout(
+          Promise.all([
+            fetchCurrentRace(`#${resolved.tag}`),
+            fetchClanMembers(`#${resolved.tag}`),
+            readDiscordLinks(),
+          ]),
+          20000, 'fetch initial'
+        );
 
         const participants = race?.clan?.participants ?? [];
 
@@ -1544,14 +1556,22 @@ export default async function handler(req, res) {
           return;
         }
 
-        // Pseudos Discord
+        // Pseudos Discord — timeout 10s, non-bloquant (pings optionnels)
         const guildId  = process.env.DISCORD_GUILD_ID;
         const botToken = process.env.DISCORD_TOKEN;
-        const guildRes = await fetch(
-          `https://discord.com/api/v10/guilds/${guildId}/members?limit=1000`,
-          { headers: { Authorization: `Bot ${botToken}` } },
-        );
-        const guildMembers = guildRes.ok ? await guildRes.json() : [];
+        let guildMembers = [];
+        try {
+          const guildRes = await withTimeout(
+            fetch(
+              `https://discord.com/api/v10/guilds/${guildId}/members?limit=1000`,
+              { headers: { Authorization: `Bot ${botToken}` } },
+            ),
+            10000, 'guild members'
+          );
+          guildMembers = guildRes.ok ? await guildRes.json() : [];
+        } catch {
+          // pings Discord optionnels — on continue sans eux
+        }
         const memberById = new Map(guildMembers.map((m) => [m.user?.id, m]));
 
         // Heure de Paris au moment de la commande
