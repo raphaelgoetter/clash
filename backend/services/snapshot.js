@@ -132,7 +132,7 @@ function warPeriodStartUtcMs(realDay) {
  * For a given timestamp, return the war day (thu/fri/sat/sun) and the corresponding
  * local calendar date (Paris) for that war day.
  *
- * A war day runs from 10:40 Paris until the next day 10:40 Paris.
+ * A war day runs from 09:40 UTC until the next day 09:40 UTC (= 11:40 Paris en CEST, 10:40 en CET).
  */
 function getWarDayInfo(date = new Date()) {
   const paris = new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
@@ -276,15 +276,15 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
   const now = options.now ? new Date(options.now) : new Date();
   const paris = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
 
-  const resetMs = (10 * 60 + 40) * 60 * 1000;
-  const msOfDay =
-    paris.getHours() * 3600000 +
-    paris.getMinutes() * 60000 +
-    paris.getSeconds() * 1000 +
-    paris.getMilliseconds();
+  const resetUtcMs = (9 * 60 + 40) * 60 * 1000;
+  const msOfDayUtc =
+    now.getUTCHours() * 3600000 +
+    now.getUTCMinutes() * 60000 +
+    now.getUTCSeconds() * 1000 +
+    now.getUTCMilliseconds();
   // Before reset → primary snapshot (captures the final decks of the day)
   // After reset  → backup snapshot (should be empty/zeroed)
-  const snapshotType = msOfDay < resetMs ? 'primary' : 'backup';
+  const snapshotType = msOfDayUtc < resetUtcMs ? 'primary' : 'backup';
 
   const warInfo = getWarDayInfo(now);
   if (!warInfo) return; // outside of war period (mon-wed after reset)

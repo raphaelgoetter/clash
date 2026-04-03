@@ -1557,10 +1557,10 @@ export default async function handler(req, res) {
         const p = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
         const parisTime = `${String(p.getHours()).padStart(2, '0')}h${String(p.getMinutes()).padStart(2, '0')}`;
 
-        // Jour de GDC courant (avant 10:40 Paris → encore le jour précédent)
-        const resetMs = (10 * 60 + 40) * 60 * 1000;
-        const msOfDay = p.getHours() * 3600000 + p.getMinutes() * 60000;
-        if (msOfDay < resetMs) p.setDate(p.getDate() - 1);
+        // Jour de GDC courant (avant 09:40 UTC → encore le jour précédent en heure Paris)
+        const resetUtcMs = (9 * 60 + 40) * 60 * 1000;
+        const msOfDayUtc = now.getUTCHours() * 3600000 + now.getUTCMinutes() * 60000;
+        if (msOfDayUtc < resetUtcMs) p.setDate(p.getDate() - 1);
         const WAR_DAY_LABELS = { 4: 'Jeudi (J1)', 5: 'Vendredi (J2)', 6: 'Samedi (J3)', 0: 'Dimanche (J4)' };
         const warDayLabel = WAR_DAY_LABELS[p.getDay()] ?? 'Jour de GDC';
 
