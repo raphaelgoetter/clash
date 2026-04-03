@@ -4,7 +4,7 @@
     "days": [
       {
         "warDay": "thursday",
-        "realDay": "2026-04-03",
+        "realDay": "2026-04-02",
         "gdcPeriod": {
           "start": "2026-04-03T09:40:00.000Z",
           "end": "2026-04-04T09:39:59.999Z"
@@ -66,7 +66,7 @@
       },
       {
         "warDay": "friday",
-        "realDay": "2026-04-04",
+        "realDay": "2026-04-03",
         "gdcPeriod": {
           "start": "2026-04-04T09:40:00.000Z",
           "end": "2026-04-05T09:39:59.999Z"
@@ -128,13 +128,13 @@
       },
       {
         "warDay": "saturday",
-        "realDay": "2026-04-05",
+        "realDay": "2026-04-04",
         "gdcPeriod": {
-          "start": "2026-04-05T09:40:00.000Z",
-          "end": "2026-04-06T09:39:59.999Z"
+          "start": "2026-04-04T09:40:00.000Z",
+          "end": "2026-04-05T09:39:59.999Z"
         },
-        "snapshotTime": "2026-03-29T09:38:06.429Z",
-        "snapshotBackupTime": "2026-03-29T09:38:06.429Z",
+        "snapshotTime": "2026-04-03T22:08:07.008Z",
+        "snapshotBackupTime": "2026-04-03T22:08:07.008Z",
         "decks": {
           "#28PQVJ2V": 4,
           "#2902YQRQL": 4,
@@ -164,6 +164,7 @@
           "#9YQ8RVU2P": 4,
           "#C0VQRUP2": 4,
           "#C2RL8UVYV": 4,
+          "#CC29JU800": 4,
           "#CQ0GQ0JRU": 4,
           "#CYRGPVGVG": 4,
           "#G9LPGQUG": 4,
@@ -173,6 +174,7 @@
           "#J9ULCGJYU": 4,
           "#JLU88JR28": 4,
           "#LCQ2J0VGC": 4,
+          "#LQLY92CR0": 4,
           "#P9R8Y90P8": 4,
           "#PG0Q0YYGY": 4,
           "#PGJPJG9QQ": 4,
@@ -183,14 +185,12 @@
           "#UJ89GUUUY": 4,
           "#UY00GJG2": 4,
           "#UYP0YCQ9": 4,
-          "#VLUYR88Y8": 4,
-          "#VQP8PU2V": 4,
-          "#VVJ8RURL9": 4
+          "#VLUYR88Y8": 4
         }
       },
       {
         "warDay": "sunday",
-        "realDay": "2026-04-06",
+        "realDay": "2026-04-05",
         "gdcPeriod": {
           "start": "2026-04-06T09:40:00.000Z",
           "end": "2026-04-07T09:39:59.999Z"
