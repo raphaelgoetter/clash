@@ -1499,8 +1499,23 @@ export default async function handler(req, res) {
           ),
         ]);
 
+      // Envoie systématiquement quelque chose au webhook Discord (évite le freeze "thinking...")
+      const sendToWebhook = async (payload) => {
+        const r = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!r.ok) {
+          const txt = await r.text().catch(() => '');
+          console.error(`[/late] webhook Discord HTTP ${r.status}:`, txt.slice(0, 300));
+        }
+      };
+
       try {
+        console.log('[/late] start, clan:', resolved.tag);
         const { fetchCurrentRace, fetchClanMembers } = await import('../../backend/services/clashApi.js');
+        console.log('[/late] import OK');
 
         const [race, currentMembers, { links }] = await withTimeout(
           Promise.all([
@@ -1546,12 +1561,8 @@ export default async function handler(req, res) {
           .sort((a, b) => b.missing - a.missing || a.name.localeCompare(b.name, 'fr'));
 
         if (late.length === 0) {
-          await fetch(webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              content: `✅ Tous les joueurs de **${resolved.name}** ont joué leurs 4 decks aujourd'hui !`,
-            }),
+          await sendToWebhook({
+            content: `✅ Tous les joueurs de **${resolved.name}** ont joué leurs 4 decks aujourd'hui !`,
           });
           return;
         }
@@ -1615,24 +1626,25 @@ export default async function handler(req, res) {
           }
         }
 
+        // Discord limite les descriptions d'embed à 4096 caractères
+        let description = descLines.join('\n');
+        if (description.length > 4000) {
+          console.warn('[/late] description trop longue:', description.length, 'chars, troncature');
+          description = description.slice(0, 3950) + '\n…*(liste tronquée)*';
+        }
+
         const embed = {
           title: `⏳  ${resolved.name}, retardataires de ${warDayLabel}`,
-          description: descLines.join('\n'),
+          description,
           color: 0xe67e22,
           footer: { text: `${totalPlayed} deck${totalPlayed > 1 ? 's' : ''} joué${totalPlayed > 1 ? 's' : ''}. Il reste encore ${totalMissing} deck${totalMissing > 1 ? 's' : ''} à jouer` },
         };
 
-        await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ embeds: [embed], allowed_mentions: { parse: [] } }),
-        });
+        console.log('[/late] envoi embed, late:', late.length, 'descLen:', description.length);
+        await sendToWebhook({ embeds: [embed], allowed_mentions: { parse: [] } });
       } catch (err) {
-        await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
-        });
+        console.error('[/late] erreur:', err.message);
+        await sendToWebhook({ content: `Erreur : ${err.message}`, flags: 64 });
       }
     });
     return;
