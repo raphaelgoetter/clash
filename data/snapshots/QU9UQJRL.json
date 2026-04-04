@@ -303,7 +303,7 @@
     ]
   },
   {
-    "week": "S130W4",
+    "week": "S130W5",
     "days": [
       {
         "warDay": "thursday",
@@ -394,7 +394,7 @@
           "start": "2026-04-03T09:40:00.000Z",
           "end": "2026-04-04T09:39:59.999Z"
         },
-        "snapshotTime": "2026-04-04T07:22:34.006Z",
+        "snapshotTime": "2026-04-04T08:00:46.132Z",
         "snapshotBackupTime": "2026-04-03T21:09:49.488Z",
         "decks": {
           "#QPU0U2C9": 4,
@@ -561,6 +561,129 @@
           "#VU8UGJ0R2": 0,
           "#YRURQJV28": 0
         },
+        "_cumul": {}
+      }
+    ]
+  },
+  {
+    "week": "S130W4",
+    "days": [
+      {
+        "warDay": "thursday",
+        "realDay": "2026-04-02",
+        "gdcPeriod": {
+          "start": "2026-04-02T09:40:00.000Z",
+          "end": "2026-04-03T09:39:59.999Z"
+        },
+        "snapshotTime": null,
+        "snapshotBackupTime": null,
+        "decks": {},
+        "_cumul": {}
+      },
+      {
+        "warDay": "friday",
+        "realDay": "2026-04-03",
+        "gdcPeriod": {
+          "start": "2026-04-03T09:40:00.000Z",
+          "end": "2026-04-04T09:39:59.999Z"
+        },
+        "snapshotTime": "2026-04-04T07:39:00.740Z",
+        "snapshotBackupTime": null,
+        "decks": {
+          "#2200UQ9P08": 4,
+          "#2V20JP28Q": 4,
+          "#8JGU9UUJJ": 4,
+          "#8VP9UJV9L": 4,
+          "#CRLR0P92J": 4,
+          "#CVJPCU09C": 4,
+          "#QPU0U2C9": 4,
+          "#UVGPPVQ8Q": 4,
+          "#V22VCQV9V": 4,
+          "#VPGCQPR9U": 4,
+          "#LJYGJYCYC": 2,
+          "#2QUGQUJ9": 0,
+          "#2U9QL8Q89": 0,
+          "#2YLYG9V92": 0,
+          "#98VCJLG92": 0,
+          "#9VQYC9GJQ": 0,
+          "#CLQ2RYYJQ": 0,
+          "#CLVU02QLP": 0,
+          "#CVYLYLC8V": 0,
+          "#J222JVRUQ": 0,
+          "#JC28YVLPG": 0,
+          "#PGQ98JVJ8": 0,
+          "#QY0LG0R0P": 0,
+          "#RJJGJ8PRC": 0,
+          "#RRCRJ8QJJ": 0,
+          "#UU02RYV0C": 0,
+          "#UYRR99RL8": 0,
+          "#V2P2LCYRJ": 0,
+          "#V9GUUPYUQ": 0,
+          "#VPR8G992P": 0,
+          "#VR0LV90YP": 0,
+          "#VU8UGJ0R2": 0,
+          "#VY0LYQQVJ": 0,
+          "#YRURQJV28": 0
+        },
+        "_cumul": {
+          "#JC28YVLPG": 0,
+          "#VR0LV90YP": 0,
+          "#YRURQJV28": 0,
+          "#V2P2LCYRJ": 0,
+          "#VPR8G992P": 0,
+          "#2QUGQUJ9": 0,
+          "#UU02RYV0C": 0,
+          "#98VCJLG92": 0,
+          "#RRCRJ8QJJ": 0,
+          "#V9GUUPYUQ": 0,
+          "#2YLYG9V92": 0,
+          "#QY0LG0R0P": 0,
+          "#RJJGJ8PRC": 0,
+          "#2U9QL8Q89": 0,
+          "#9VQYC9GJQ": 0,
+          "#J222JVRUQ": 0,
+          "#CLVU02QLP": 0,
+          "#CLQ2RYYJQ": 0,
+          "#VU8UGJ0R2": 0,
+          "#PGQ98JVJ8": 0,
+          "#UYRR99RL8": 0,
+          "#VY0LYQQVJ": 0,
+          "#CVYLYLC8V": 0,
+          "#LJYGJYCYC": 2,
+          "#8VP9UJV9L": 4,
+          "#2V20JP28Q": 5,
+          "#CVJPCU09C": 4,
+          "#2200UQ9P08": 6,
+          "#8JGU9UUJJ": 5,
+          "#V22VCQV9V": 8,
+          "#QPU0U2C9": 8,
+          "#CRLR0P92J": 5,
+          "#VPGCQPR9U": 8,
+          "#UVGPPVQ8Q": 8
+        }
+      },
+      {
+        "warDay": "saturday",
+        "realDay": "2026-04-04",
+        "gdcPeriod": {
+          "start": "2026-04-04T09:40:00.000Z",
+          "end": "2026-04-05T09:39:59.999Z"
+        },
+        "snapshotTime": null,
+        "snapshotBackupTime": null,
+        "decks": {},
+        "_cumul": {}
+      },
+      {
+        "warDay": "sunday",
+        "realDay": "2026-04-05",
+        "gdcPeriod": {
+          "start": "2026-04-05T09:40:00.000Z",
+          "end": "2026-04-06T09:39:59.999Z"
+        },
+        "snapshotTime": null,
+        "snapshotBackupTime": null,
+        "decks": {},
         "_cumul": {}
       }
     ]

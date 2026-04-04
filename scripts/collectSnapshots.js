@@ -8,6 +8,7 @@ dotenv.config({ path: './.env' });
 import { ALLOWED_CLANS } from '../backend/routes/clan.js';
 import { fetchCurrentRace, fetchRaceLog } from '../backend/services/clashApi.js';
 import { recordSnapshot } from '../backend/services/snapshot.js';
+import { computeCurrentWeekId, computePrevWeekId } from '../backend/services/dateUtils.js';
 
 (async() => {
   const key = process.env.CLASH_API_KEY;
@@ -27,21 +28,16 @@ import { recordSnapshot } from '../backend/services/snapshot.js';
         continue;
       }
 
-      // Determine the week id to record the snapshot for.
-      // If the race is already in training mode, we want the *previous* completed week,
-      // because the API has already rolled over to the next week.
+      // Utiliser les fonctions canoniques pour calculer le weekId.
+      // 'warDay' et 'colosseum' sont des périodes GDC actives : semaine courante.
+      // En période d'entraînement (lundi→mercredi), on enregistre la semaine
+      // précédente (déjà terminée).
+      const WAR_ACTIVE_TYPES = ['warDay', 'colosseum'];
       let weekId = null;
-      if (race?.periodType !== 'warDay') {
-        const prev = raceLog?.[0];
-        if (prev) {
-          weekId = `S${prev.seasonId}W${prev.sectionIndex + 1}`;
-        }
+      if (!WAR_ACTIVE_TYPES.includes(race?.periodType)) {
+        weekId = computePrevWeekId(raceLog);
       } else {
-        // seasonId absent de currentriverrace → dérivé depuis le race log
-        const currSection = race.sectionIndex ?? 0;
-        let seasonId = raceLog?.[0]?.seasonId;
-        if (seasonId !== undefined && currSection <= (raceLog[0]?.sectionIndex ?? -1)) seasonId += 1;
-        weekId = seasonId != null ? `S${seasonId}W${currSection + 1}` : `W${currSection + 1}`;
+        weekId = computeCurrentWeekId(race, raceLog);
       }
 
       await recordSnapshot(clanTag, participants, weekId, { snapshotType });
