@@ -1047,13 +1047,15 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               ? clampDeckTotal(cumulDelta)
               : null;
 
-          // Past days are treated as immutable from a user-facing POV,
-          // but we allow a later better snapshot to uplift previous values
-          // (never downgrade once we have a valid count).
+          // Les jours passés sont immutables côté affichage.
+          // On permet à un snapshot plus récent d'améliorer la valeur (jamais de descente).
+          // ATTENTION : existingDay.source === 'live' signifie que la valeur en cache
+          // est la valeur live de fin de journée (ex. 200), pas un snapshot figé.
+          // Ne jamais l'utiliser comme plancher — elle peut écraser la vraie valeur snapshot.
           if (i < daysFromThu) {
             const existingSnapshot = existingDay?.snapshotCount != null
               ? clampDeckTotal(existingDay.snapshotCount)
-              : existingDay?.totalCount != null
+              : (existingDay?.totalCount != null && existingDay?.source !== 'live')
                 ? clampDeckTotal(existingDay.totalCount)
                 : null;
 
@@ -1061,7 +1063,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               if (snapshotCount == null || snapshotCount === 0 || existingSnapshot > snapshotCount) {
                 snapshotCount = existingSnapshot;
               }
-            } else if ((snapshotCount == null || snapshotCount === 0) && existingDay?.totalCount > 0) {
+            } else if ((snapshotCount == null || snapshotCount === 0) && existingDay?.totalCount > 0 && existingDay?.source !== 'live') {
               snapshotCount = clampDeckTotal(existingDay.totalCount);
             }
           }

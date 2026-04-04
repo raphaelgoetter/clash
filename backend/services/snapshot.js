@@ -80,18 +80,12 @@ async function loadSnapshots(clanTag) {
 }
 
 async function saveSnapshots(clanTag, weeks) {
-  // Strip internal-only fields (_cumul) before writing to disk.
-  const sanitized = (weeks || []).map((w) => ({
-    ...w,
-    days: (w.days || []).map((d) => {
-      const { _cumul, ...rest } = d;
-      return rest;
-    }),
-  }));
-
+  // _cumul est persisté sur disque : il sert à calculer le delta quotidien
+  // au run suivant (baseCumul = _cumul du jour précédent). Le stripper
+  // provoquait rawDaily = cumulatif total au lieu du vrai delta du jour.
   await ensureDirectory();
   const file = snapshotFilename(clanTag);
-  await fs.writeFile(file, JSON.stringify(sanitized, null, 2));
+  await fs.writeFile(file, JSON.stringify(weeks || [], null, 2));
 }
 
 /**
@@ -380,11 +374,16 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
   if (snapshotType === 'backup') {
     dayEntry.snapshotBackupTime = now.toISOString();
 
-    // If we see >4 decks in the backup snapshot, it means some of those decks must
-    // belong to the previous war day (combats joués dans les derniers instants).
+    // Si baseCumul est vide, rawDaily = cumulatif total de la semaine (pas le delta
+    // du jour courant). Un "overflow" calculé sur cette base serait faux et
+    // corromprait les decks du jour précédent. On saute l'attribution dans ce cas.
+    const baseCumulHasData = Object.keys(baseCumul).length > 0;
+
+    // Si on a un baseCumul valide : certains decks du backup peuvent appartenir
+    // au jour précédent (joués dans les dernières secondes avant le reset).
     const prevIndex = (baseIndex + WAR_DAYS.length - 1) % WAR_DAYS.length;
     const prevDayEntry = weekEntry.days[prevIndex];
-    if (prevDayEntry) {
+    if (baseCumulHasData && prevDayEntry) {
       for (const tag of Object.keys(rawDaily)) {
         const overflow = Math.max(0, rawDaily[tag] - 4);
         if (overflow <= 0) continue;
@@ -402,10 +401,10 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
         // Keep max 4 for the current day (the rest is considered previous day)
         daily[tag] = Math.min(4, daily[tag]);
       }
+      // Ensure `decks` does not grow beyond 50 players and remains inside 0-4 per player.
+      prevDayEntry.decks = clampDeckValues(prevDayEntry.decks);
     }
 
-    // Ensure `decks` does not grow beyond 50 players and remains inside 0-4 per player.
-    prevDayEntry.decks = clampDeckValues(prevDayEntry.decks);
     await saveSnapshots(clanTag, filtered);
     return;
   }
