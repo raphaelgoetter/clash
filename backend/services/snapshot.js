@@ -346,6 +346,8 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
   const prevDay = weekEntry.days[WAR_DAYS.indexOf(warDay) - 1];
   const baseCumul = prevDay?._cumul ?? {};
 
+  const baseCumulHasData = Object.keys(baseCumul).length > 0;
+
   const rawDaily = {};
   const daily = {};
   for (const tag of Object.keys(currentCumul)) {
@@ -354,9 +356,12 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
     daily[tag] = Math.min(4, delta);
   }
 
-  // Ensure we always merge the computed daily deck snapshot into the current day.
-  // This fixes a bug where backup snapshots override an otherwise empty day entry.
-  dayEntry.decks = clampDeckValues(mergeMaps(dayEntry.decks, daily));
+  // Si baseCumul est fiable (non vide), on utilise le delta exact comme source
+  // de vérité — cela permet de corriger des valeurs gonflées lors de runs
+  // précédents où baseCumul était absent. Sinon, on garde le max (sécurité).
+  dayEntry.decks = clampDeckValues(
+    baseCumulHasData ? daily : mergeMaps(dayEntry.decks, daily)
+  );
   dayEntry._cumul = mergeMaps(dayEntry._cumul ?? {}, currentCumul);
 
   // If we already have a primary snapshot for this war day, do not overwrite the
@@ -373,11 +378,6 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
 
   if (snapshotType === 'backup') {
     dayEntry.snapshotBackupTime = now.toISOString();
-
-    // Si baseCumul est vide, rawDaily = cumulatif total de la semaine (pas le delta
-    // du jour courant). Un "overflow" calculé sur cette base serait faux et
-    // corromprait les decks du jour précédent. On saute l'attribution dans ce cas.
-    const baseCumulHasData = Object.keys(baseCumul).length > 0;
 
     // Si on a un baseCumul valide : certains decks du backup peuvent appartenir
     // au jour précédent (joués dans les dernières secondes avant le reset).
@@ -409,7 +409,9 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
     return;
   }
 
-  dayEntry.decks = clampDeckValues(mergeMaps(dayEntry.decks, daily));
+  dayEntry.decks = clampDeckValues(
+    baseCumulHasData ? daily : mergeMaps(dayEntry.decks, daily)
+  );
 
   if (snapshotType === 'primary') {
     dayEntry.snapshotTime = now.toISOString();
@@ -430,13 +432,21 @@ export async function getSnapshotsForWeek(clanTag, week = null) {
   const history = await loadSnapshots(clanTag);
   if (!history.length) return [];
 
+  // Un snapshot est valide seulement si snapshotTime >= gdcPeriod.start.
+  // Un snapshot pris avant le début de la journée GDC contient des données
+  // d'une journée précédente et ne doit pas être utilisé.
+  const isValidSnapshot = (d) => {
+    if (!d.snapshotTime || !d.gdcPeriod?.start) return false;
+    return d.snapshotTime >= d.gdcPeriod.start;
+  };
+
   const formatDay = (weekId, d) => ({
     week: weekId,
     date: d.realDay,
     warDay: d.warDay,
-    decks: d.decks,
-    snapshotTime: d.snapshotTime ?? null,
-    snapshotBackupTime: d.snapshotBackupTime ?? null,
+    decks: isValidSnapshot(d) ? d.decks : {},
+    snapshotTime: isValidSnapshot(d) ? (d.snapshotTime ?? null) : null,
+    snapshotBackupTime: isValidSnapshot(d) ? (d.snapshotBackupTime ?? null) : null,
   });
 
   if (week == null) {
@@ -464,13 +474,19 @@ export async function getSnapshotsForWeeks(clanTag, weeks) {
   const result = Object.fromEntries(weeks.map((w) => [w, []]));
   if (!history.length) return result;
 
+  // Même validation que getSnapshotsForWeek.
+  const isValidSnapshot = (d) => {
+    if (!d.snapshotTime || !d.gdcPeriod?.start) return false;
+    return d.snapshotTime >= d.gdcPeriod.start;
+  };
+
   const formatDay = (weekId, d) => ({
     week: weekId,
     date: d.realDay,
     warDay: d.warDay,
-    decks: d.decks,
-    snapshotTime: d.snapshotTime ?? null,
-    snapshotBackupTime: d.snapshotBackupTime ?? null,
+    decks: isValidSnapshot(d) ? d.decks : {},
+    snapshotTime: isValidSnapshot(d) ? (d.snapshotTime ?? null) : null,
+    snapshotBackupTime: isValidSnapshot(d) ? (d.snapshotBackupTime ?? null) : null,
     gdcPeriod: d.gdcPeriod ?? null,
   });
 
