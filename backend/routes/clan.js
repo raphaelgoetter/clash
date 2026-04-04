@@ -999,7 +999,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       }
 
       if (daysFromThu !== undefined && daysFromThu !== null) {
-        const participants = currentRace?.clan?.participants ?? [];
+        // En mode Colossée, currentRace.clan.participants peut contenir 3 clans
+        // (150 joueurs). On filtre sur les membres actuels du clan uniquement.
+        const allParticipants = currentRace?.clan?.participants ?? [];
+        const participants = allParticipants.filter((p) => currentMemberTags.has(p.tag));
         // Total fiable depuis currentRace (cumul hebdo par participant)
         let totalDecksUsed = participants.reduce((s, p) => s + (p.decksUsed ?? 0), 0);
         // If we have cwstats data, use it as a sanity check (it tends to be more stable).
