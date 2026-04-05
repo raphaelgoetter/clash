@@ -1303,6 +1303,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         type: clan.type,
         requiredTrophies: clan.requiredTrophies,
         badge: clan.badgeId,
+        warResetUtcMinutes: warResetOffsetMs(clanTag) / 60000,
       },
       membersRaw,
       members: analyzedMembers,

@@ -5,6 +5,15 @@
 
 export const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
+/**
+ * Heures de reset GDC par clan (UTC). Les clans absents de cette table utilisent
+ * le défaut 09:40 UTC.
+ * @type {Object<string,{h:number,m:number}>}
+ */
+export const CLAN_RESET_TIMES = {
+  'Y8JUPC9C': { h: 9, m: 50 }, // La Resistance (Clan 1) — reset spécifique 09:50 UTC
+};
+
 /** Décalage UTC→Paris en ms pour une date donnée (+3 600 000 hiver, +7 200 000 été) */
 export function parisOffsetMs(date = new Date()) {
   const p = new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
@@ -13,11 +22,15 @@ export function parisOffsetMs(date = new Date()) {
 }
 
 /**
- * Nombre de ms à soustraire à un timestamp UTC pour obtenir le « jour GDC » (reset 9h40 UTC).
- * La guerre de clan bascule à 9h40 UTC quelle que soit la saison (CET/CEST).
+ * Nombre de ms à soustraire à un timestamp UTC pour obtenir le « jour GDC ».
+ * Par défaut 09:40 UTC ; certains clans ont un reset différent (voir CLAN_RESET_TIMES).
+ * @param {string|null} [clanTag]  Tag du clan sans '#' (ex. 'LRQP20V9'). Optionnel — fallback 09:40.
  */
-export function warResetOffsetMs() {
-  return (9 * 60 + 40) * 60 * 1000;
+export function warResetOffsetMs(clanTag = null) {
+  const cfg = clanTag ? CLAN_RESET_TIMES[String(clanTag).replace('#', '').toUpperCase()] : null;
+  const h = cfg?.h ?? 9;
+  const m = cfg?.m ?? 40;
+  return (h * 60 + m) * 60 * 1000;
 }
 
 /**
@@ -37,13 +50,14 @@ export function parseClashDate(ts) {
 
 /**
  * Return the war-day key (YYYY-MM-DD) for a timestamp, accounting for the
- * 09:40 UTC daily reset. Any battle before 09:40 UTC belongs to the previous war day.
+ * clan-specific daily reset (default 09:40 UTC).
  * @param {Date|string} dateOrTs
+ * @param {string|null} [clanTag]  Tag du clan (optionnel). Fallback 09:40 si absent.
  * @returns {string}
  */
-export function warDayKey(dateOrTs) {
+export function warDayKey(dateOrTs, clanTag = null) {
   const d = dateOrTs instanceof Date ? dateOrTs : parseClashDate(dateOrTs);
-  return new Date(d.getTime() - warResetOffsetMs(d)).toISOString().slice(0, 10);
+  return new Date(d.getTime() - warResetOffsetMs(clanTag)).toISOString().slice(0, 10);
 }
 
 // ============================================================

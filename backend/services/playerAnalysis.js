@@ -306,9 +306,9 @@ export function analyzeClanMembers(members) {
  * @param {object|null} raceMeta        Métadonnées de course ({ state, periodIndex })
  * @returns {{ days, totalDecksUsed, maxDecksElapsed, maxDecksWeek, isReliableTotal }|null}
  */
-export function buildCurrentWarDays(battleLog, raceTotalDecks = null, raceMeta = null) {
+export function buildCurrentWarDays(battleLog, raceTotalDecks = null, raceMeta = null, clanTag = null) {
   const now        = new Date();
-  const nowGdcDate = new Date(now.getTime() - warResetOffsetMs(now));
+  const nowGdcDate = new Date(now.getTime() - warResetOffsetMs(clanTag));
 
   let daysFromThu;
 
@@ -354,7 +354,7 @@ export function buildCurrentWarDays(battleLog, raceTotalDecks = null, raceMeta =
 
   // Compte les combats GDC par jour depuis le battle log (potentiellement tronqué)
   for (const b of filterWarBattles(battleLog)) {
-    const key = warDayKey(b.battleTime);
+    const key = warDayKey(b.battleTime, clanTag);
     const day = days.find((d) => d.key === key);
     if (day) day.count++;
   }

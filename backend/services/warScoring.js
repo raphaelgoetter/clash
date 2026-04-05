@@ -5,7 +5,7 @@
 // le battle log uniquement.
 // ============================================================
 
-import { parseClashDate, warDayKey, MS_PER_DAY } from './dateUtils.js';
+import { parseClashDate, warDayKey, warResetOffsetMs, MS_PER_DAY } from './dateUtils.js';
 import { isWarWin } from './battleLogUtils.js';
 
 // ── Helpers privés ────────────────────────────────────────────
@@ -33,13 +33,13 @@ function scoreQuality(score, max) {
  * @param {object[]} warLog - Expanded, filtered GDC battle log
  * @returns {{ score: number, detail: string, byDay: Object<string,number> }}
  */
-function dailyWarReliabilityScore(warLog) {
+function dailyWarReliabilityScore(warLog, clanTag = null) {
   const MAX_WINDOW = 14;
 
   // Construit la map jour GDC → nombre de batailles
   const byDay = {};
   for (const b of warLog) {
-    const key = warDayKey(b.battleTime);
+    const key = warDayKey(b.battleTime, clanTag);
     byDay[key] = (byDay[key] ?? 0) + 1;
   }
 
@@ -47,7 +47,7 @@ function dailyWarReliabilityScore(warLog) {
 
   // Détermine la fenêtre effective ancrée sur le dernier jour de guerre actif.
   // On n'inclut pas aujourd'hui si aucune bataille n'a encore eu lieu (journée en cours).
-  const todayWarDay     = warDayKey(new Date());
+  const todayWarDay     = warDayKey(new Date(), clanTag);
   const yesterdayWarDay = new Date(new Date(todayWarDay).getTime() - MS_PER_DAY).toISOString().slice(0, 10);
   const hasActivityToday = (byDay[todayWarDay] ?? 0) > 0;
   const anchorDay        = hasActivityToday ? todayWarDay : yesterdayWarDay;
@@ -331,7 +331,7 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
  * @param {object[]} warLog              - Filtered war battles (expanded duels)
  * @param {object}   battleLogBreakdown  - Output of categorizeBattleLog()
  */
-export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown, lastSeen = null, discordLinked = false, currentRaceDecks = 0, warHistory = null) {
+export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown, lastSeen = null, discordLinked = false, currentRaceDecks = 0, warHistory = null, clanTag = null) {
   const r = (v) => Math.round(v * 10) / 10;
 
   const bd = battleLogBreakdown ?? { total: warLog.length, gdc: warLog.length, ladder: 0, challenge: 0 };
@@ -349,7 +349,7 @@ export function computeWarReliabilityFallback(player, warLog, battleLogBreakdown
   const competitive = gdcCount + bd.ladder + bd.challenge;
 
   // 1. War Activity (0-12) — basé sur decks/jour, avec bonus/pénalités
-  const activityResult = dailyWarReliabilityScore(effectiveLog);
+  const activityResult = dailyWarReliabilityScore(effectiveLog, clanTag);
   const perfectDays = Object.values(activityResult.byDay).filter((d) => d >= 4).length;
   const shortDays   = Object.values(activityResult.byDay).filter((d) => d > 0 && d < 4).length;
   let activiteGDC = activityResult.score;

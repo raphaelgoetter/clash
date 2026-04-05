@@ -9,7 +9,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-import { parisOffsetMs } from './dateUtils.js';
+import { parisOffsetMs, warResetOffsetMs } from './dateUtils.js';
 const SNAP_DIR = path.resolve(__dirname, '..', '..', 'data', 'snapshots');
 const RETENTION_DAYS = 60;
 
@@ -112,14 +112,16 @@ function parisTimeUtcMs(dateKey, hour = 0, minute = 0) {
 }
 
 /**
- * Retourne le timestamp UTC (ms) correspondant au début d'une journée GDC :
- * 9h40 UTC fixe, indépendamment du DST (heure d'été / hiver Paris).
- * L'heure de reset GDC est toujours 9h40 UTC.
+ * Retourne le timestamp UTC (ms) correspondant au début d'une journée GDC.
+ * Par défaut 09:40 UTC ; peut être surchargé par clan (ex. Y8JUPC9C → 09:50 UTC).
  */
-function warPeriodStartUtcMs(realDay) {
+function warPeriodStartUtcMs(realDay, clanTag = null) {
   const [y, m, d] = (realDay ?? '').split('-').map(Number);
   if (!y || !m || !d) return null;
-  return Date.UTC(y, m - 1, d, 9, 40, 0);
+  const offsetMs = warResetOffsetMs(clanTag);
+  const h = Math.floor(offsetMs / 3_600_000);
+  const min = (offsetMs % 3_600_000) / 60_000;
+  return Date.UTC(y, m - 1, d, h, min, 0);
 }
 
 /**
@@ -128,10 +130,10 @@ function warPeriodStartUtcMs(realDay) {
  *
  * A war day runs from 09:40 UTC until the next day 09:40 UTC (= 11:40 Paris en CEST, 10:40 en CET).
  */
-function getWarDayInfo(date = new Date()) {
+function getWarDayInfo(date = new Date(), clanTag = null) {
   const paris = new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
   const utc = new Date(date.toISOString());
-  const resetUtcMs = (9 * 60 + 40) * 60 * 1000;
+  const resetUtcMs = warResetOffsetMs(clanTag);
   const msOfDayUtc = utc.getUTCHours() * 3600000 + utc.getUTCMinutes() * 60000 + utc.getUTCSeconds() * 1000 + utc.getUTCMilliseconds();
 
   // Before reset (9:40 UTC), on est toujours sur la journée précédente.
@@ -274,7 +276,7 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
   const now = options.now ? new Date(options.now) : new Date();
   const paris = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
 
-  const resetUtcMs = (9 * 60 + 40) * 60 * 1000;
+  const resetUtcMs = warResetOffsetMs(clanTag);
   const msOfDayUtc =
     now.getUTCHours() * 3600000 +
     now.getUTCMinutes() * 60000 +
@@ -284,7 +286,7 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
   // After reset  → backup snapshot (should be empty/zeroed)
   const snapshotType = msOfDayUtc < resetUtcMs ? 'primary' : 'backup';
 
-  const warInfo = getWarDayInfo(now);
+  const warInfo = getWarDayInfo(now, clanTag);
   if (!warInfo) return; // outside of war period (mon-wed after reset)
 
   const { warDay, realDay } = warInfo;
@@ -341,9 +343,9 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
   // Ensure the real day matches the computed one (Paris date of the war day)
   dayEntry.realDay = realDay;
 
-  // Fenêtre temporelle UTC de la journée GDC : 9h40 UTC → lendemain 9h39:59 UTC.
+  // Fenêtre temporelle UTC de la journée GDC : reset UTC → lendemain même heure.
   if (realDay) {
-    const startMs = warPeriodStartUtcMs(realDay);
+    const startMs = warPeriodStartUtcMs(realDay, clanTag);
     const endMs = startMs ? startMs + MS_PER_DAY - 1 : null;
     dayEntry.gdcPeriod = startMs && endMs
       ? { start: new Date(startMs).toISOString(), end: new Date(endMs).toISOString() }

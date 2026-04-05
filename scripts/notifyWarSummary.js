@@ -16,6 +16,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import fetch from 'node-fetch';
 import { ALLOWED_CLANS } from '../backend/routes/clan.js';
+import { warResetOffsetMs } from '../backend/services/dateUtils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SNAP_DIR = path.join(__dirname, '..', 'data', 'snapshots');
@@ -57,9 +58,9 @@ const WAR_DAY_FR = { thursday: 'jeudi', friday: 'vendredi', saturday: 'samedi', 
  *   10:05 UTC vendredi → 08:35 UTC vendredi (avant reset) → jeudi GDC (J1)
  *   10:05 UTC lundi    → 08:35 UTC lundi    (avant reset) → dimanche GDC (J4)
  */
-function getEndedWarDay(now = new Date()) {
+function getEndedWarDay(now = new Date(), clanTag = null) {
   const refTime = new Date(now.getTime() - 90 * 60_000);
-  const resetUtcMs = (9 * 60 + 40) * 60 * 1000;
+  const resetUtcMs = warResetOffsetMs(clanTag);
   const msOfDayUtc =
     refTime.getUTCHours() * 3_600_000 +
     refTime.getUTCMinutes() * 60_000 +
@@ -234,19 +235,18 @@ async function postWarSummary(tag, clanName, dayEntry, prevDayEntry, prevPrevDay
 }
 
 async function main() {
-  const endedDay = getEndedWarDay();
-  if (!endedDay) {
-    console.log('Pas de journée GDC terminée à cette heure — rien à poster.');
-    process.exit(0);
-  }
-
-  const { warDay, realDay } = endedDay;
-  console.log(`Journée GDC terminée : ${warDay} (${realDay})`);
-
+  const now = new Date();
   const log = await loadLog();
 
   for (const tag of ALLOWED_CLANS) {
     try {
+      const endedDay = getEndedWarDay(now, tag);
+      if (!endedDay) {
+        console.log(`[${tag}] Pas de journée GDC terminée à cette heure — ignoré.`);
+        continue;
+      }
+      const { warDay, realDay } = endedDay;
+
       // Vérification anti-doublon
       if (alreadyPosted(log, tag, warDay, realDay)) {
         console.log(`[${tag}] Résumé déjà posté pour ${warDay} ${realDay} — ignoré.`);

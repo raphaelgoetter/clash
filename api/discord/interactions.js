@@ -1601,8 +1601,10 @@ export default async function handler(req, res) {
         const p = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
         const parisTime = `${String(p.getHours()).padStart(2, '0')}h${String(p.getMinutes()).padStart(2, '0')}`;
 
-        // Jour de GDC courant (avant 09:40 UTC → encore le jour précédent en heure Paris)
-        const resetUtcMs = (9 * 60 + 40) * 60 * 1000;
+        // Jour de GDC courant — reset heure-spécifique selon le clan (Y8JUPC9C = 09:50 UTC, défaut 09:40)
+        const CLAN_RESET_TIMES_LOCAL = { 'Y8JUPC9C': 9 * 60 + 50 };
+        const resetUtcMinutes = CLAN_RESET_TIMES_LOCAL[resolved.tag] ?? (9 * 60 + 40);
+        const resetUtcMs = resetUtcMinutes * 60 * 1000;
         const msOfDayUtc = now.getUTCHours() * 3600000 + now.getUTCMinutes() * 60000;
         if (msOfDayUtc < resetUtcMs) p.setDate(p.getDate() - 1);
         const WAR_DAY_LABELS = { 4: 'Jeudi (J1)', 5: 'Vendredi (J2)', 6: 'Samedi (J3)', 0: 'Dimanche (J4)' };

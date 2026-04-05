@@ -1041,7 +1041,7 @@ function renderPlayerResults(data) {
     });
   }
 
-  function buildRaceTimeHistogram(entries) {
+  function buildRaceTimeHistogram(entries, resetUtcMinutes = 580) {
     const counts = Array(24).fill(0);
     let totalGdc = 0;
 
@@ -1051,8 +1051,7 @@ function renderPlayerResults(data) {
       if (!parsed || Number.isNaN(parsed.getTime())) return;
 
       const minutes = parsed.getUTCHours() * 60 + parsed.getUTCMinutes();
-      const start = 9 * 60 + 40; // 09:40 UTC (GDC start time)
-      const offset = ((minutes - start) % 1440 + 1440) % 1440;
+      const offset = ((minutes - resetUtcMinutes) % 1440 + 1440) % 1440;
       const bin = Math.floor(offset / 60);
       counts[bin] += 1;
       totalGdc += 1;
@@ -1273,7 +1272,11 @@ function renderPlayerResults(data) {
   const showRaceTimeGraph = !!(warHistory?.totalWeeks >= 2);
 
   if (showRaceTimeGraph) {
-    const { counts, totalGdc } = buildRaceTimeHistogram(battleLog || []);
+    // Reset UTC en minutes selon le clan du joueur (ex. Y8JUPC9C → 590, autres → 580)
+    const CLAN_RESETS_UTC = { 'Y8JUPC9C': 590 };
+    const cleanClanTag = (clanTag || '').replace('#', '').toUpperCase();
+    const resetUtcMinutes = CLAN_RESETS_UTC[cleanClanTag] ?? 580;
+    const { counts, totalGdc } = buildRaceTimeHistogram(battleLog || [], resetUtcMinutes);
     if (cardRaceTime) {
       cardRaceTime.classList.remove('hidden');
       const cardTitle = cardRaceTime.querySelector('.card-title');
@@ -1290,10 +1293,10 @@ function renderPlayerResults(data) {
 
     if (totalGdc > 0) {
       if (raceTimeNote) raceTimeNote.textContent = t('raceTimeDesc');
-      renderRaceTimeChart(counts, lateBucketWarning);
+      renderRaceTimeChart(counts, lateBucketWarning, resetUtcMinutes);
     } else {
       if (raceTimeNote) raceTimeNote.textContent = t('raceTimeNoGdc');
-      renderRaceTimeChart(counts, lateBucketWarning); // show empty chart optionally
+      renderRaceTimeChart(counts, lateBucketWarning, resetUtcMinutes); // show empty chart optionally
     }
   } else {
     if (cardRaceTime) cardRaceTime.classList.add('hidden');
@@ -1969,6 +1972,15 @@ function renderClanOverview(data) {
     { label: t('labelClanScore'),    value: fmt(clan.clanScore) },
     { label: t('labelWarTrophies'),  value: `⚔️ ${fmt(clan.clanWarTrophies ?? 0)}` },
     { label: t('labelLeague'),       value: computeClanLeague(clan.clanWarTrophies) || '—' },
+    { label: t('labelWarReset'),     value: (() => {
+        const utcMinutes = clan.warResetUtcMinutes ?? (9 * 60 + 40);
+        const utcMs = utcMinutes * 60 * 1000;
+        const ref = new Date(new Date().toDateString() + ' UTC');
+        const parisStr = new Date(ref.getTime() + utcMs).toLocaleTimeString('fr-FR', {
+          timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false,
+        });
+        return parisStr;
+      })() },
     { label: t('labelRequired'),      value: `🏆 ${fmt(clan.requiredTrophies)}` },
     { label: t('labelType'),          value: capitalize(clan.type ?? '—') },
     { label: t('labelAvgScore'),     value: `${summary.avgScore} / 100`,

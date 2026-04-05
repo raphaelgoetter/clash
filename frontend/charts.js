@@ -216,7 +216,7 @@ export function renderWarHistoryChart(weeks) {
  * Render a 24-hour River Race time distribution chart on #chart-race-time.
  * @param {number[]} buckets Array length 24 (hours since 08:40 UTC)
  */
-export function renderRaceTimeChart(buckets, lastBucketRiskLabel = ' ⚠️ risk (last slot)') {
+export function renderRaceTimeChart(buckets, lastBucketRiskLabel = ' ⚠️ risk (last slot)', resetUtcMinutes = 580) {
   destroyIfExists('chart-race-time');
   const el = document.getElementById('chart-race-time');
   if (!el) return;
@@ -227,7 +227,10 @@ export function renderRaceTimeChart(buckets, lastBucketRiskLabel = ' ⚠️ risk
   const utcDate = nowUtc.getUTCDate();
 
   const labels = Array.from({ length: 24 }, (_, i) => {
-    const utcBase = new Date(Date.UTC(utcYear, utcMonth, utcDate, 9 + i, 40, 0)); // 09:40 UTC base, current date for DST
+    const totalMin = resetUtcMinutes + i * 60;
+    const h = Math.floor(totalMin / 60) % 24;
+    const m = totalMin % 60;
+    const utcBase = new Date(Date.UTC(utcYear, utcMonth, utcDate, h, m, 0)); // heure reset UTC + i heures, date actuelle pour DST
     return utcBase.toLocaleTimeString('fr-FR', {
       timeZone: 'Europe/Paris',
       hour: '2-digit',
