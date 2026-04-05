@@ -104,9 +104,9 @@ function fmt(n) {
 
 /** Formate un delta signé avec émoji de tendance. */
 function fmtDelta(delta) {
-  if (delta > 0) return `+${fmt(delta)} 📈`;
-  if (delta < 0) return `${fmt(delta)} 📉`;
-  return 'stable';
+  if (delta > 0) return `(+${fmt(delta)} 📈)`;
+  if (delta < 0) return `(${fmt(delta)} 📉)`;
+  return '(stable)';
 }
 
 /**
@@ -150,13 +150,13 @@ async function postWarSummary(tag, clanName, dayEntry, prevDayEntry, prevPrevDay
 
   if (hasFameData) {
     let line = `${fmt(totalFame)} pts`;
-    if (prevFame !== null) line += ` (${fmtDelta(totalFame - prevFame)} par rapport à hier)`;
+    if (prevFame !== null) line += ` ${fmtDelta(totalFame - prevFame)}`;
     fields.push({ name: '⚔️ Points marqués', value: line, inline: false });
   }
 
   {
     let line = `${fmt(totalDecks)} decks`;
-    if (prevDecks !== null) line += ` (${fmtDelta(totalDecks - prevDecks)} par rapport à hier)`;
+    if (prevDecks !== null) line += ` ${fmtDelta(totalDecks - prevDecks)}`;
     fields.push({ name: '🃏 Decks joués', value: line, inline: false });
   }
 
