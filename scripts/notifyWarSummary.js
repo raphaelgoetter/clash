@@ -10,7 +10,7 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: './.env' });
 
-import { readFile } from 'fs/promises';
+import { readFile, writeFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
@@ -20,9 +20,31 @@ import { ALLOWED_CLANS } from '../backend/routes/clan.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SNAP_DIR = path.join(__dirname, '..', 'data', 'snapshots');
 const CACHE_DIR = path.join(__dirname, '..', 'frontend', 'public', 'clan-cache');
+const LOG_FILE = path.join(__dirname, '..', 'data', 'war-summary-log.json');
 
 const DISCORD_API = 'https://discord.com/api/v10';
 const DRY_RUN = process.argv.includes('--dry-run');
+
+// ── Déduplication ────────────────────────────────────────────
+// Format : { "LRQP20V9": "saturday:2026-04-04", ... }
+
+async function loadLog() {
+  if (!existsSync(LOG_FILE)) return {};
+  try {
+    return JSON.parse(await readFile(LOG_FILE, 'utf-8'));
+  } catch {
+    return {};
+  }
+}
+
+async function markPosted(log, tag, warDay, realDay) {
+  log[tag] = `${warDay}:${realDay}`;
+  if (!DRY_RUN) await writeFile(LOG_FILE, JSON.stringify(log, null, 2));
+}
+
+function alreadyPosted(log, tag, warDay, realDay) {
+  return log[tag] === `${warDay}:${realDay}`;
+}
 
 const WAR_DAYS = ['thursday', 'friday', 'saturday', 'sunday'];
 const WAR_DAY_NUMBER = { thursday: 1, friday: 2, saturday: 3, sunday: 4 };
@@ -221,8 +243,16 @@ async function main() {
   const { warDay, realDay } = endedDay;
   console.log(`Journée GDC terminée : ${warDay} (${realDay})`);
 
+  const log = await loadLog();
+
   for (const tag of ALLOWED_CLANS) {
     try {
+      // Vérification anti-doublon
+      if (alreadyPosted(log, tag, warDay, realDay)) {
+        console.log(`[${tag}] Résumé déjà posté pour ${warDay} ${realDay} — ignoré.`);
+        continue;
+      }
+
       const [snapshots, clanName] = await Promise.all([loadSnapshots(tag), readClanName(tag)]);
 
       if (!snapshots.length) {
@@ -258,6 +288,7 @@ async function main() {
       }
 
       await postWarSummary(tag, clanName, dayEntry, prevDayEntry, prevPrevDayEntry);
+      await markPosted(log, tag, warDay, realDay);
     } catch (err) {
       console.error(`[${tag}] Erreur : ${err.message}`);
     }

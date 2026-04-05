@@ -1,8 +1,8 @@
 name: Daily GDC Summary
 
-# Lecture seule — pas de push requis
+# Lecture + écriture pour pouvoir persister le log anti-doublon
 permissions:
-  contents: read
+  contents: write
 
 on:
   schedule:
@@ -34,3 +34,11 @@ jobs:
 
       - name: Post GDC summary
         run: node scripts/notifyWarSummary.js
+
+      - name: Commit log anti-doublon
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/war-summary-log.json || true
+          git diff --cached --quiet || git commit -m "chore: mise à jour log résumé GDC"
+          git push || true
