@@ -43,6 +43,19 @@ const COLOR_MAP = { green: 0x2ecc71, yellow: 0xf1c40f, orange: 0xe67e22, red: 0x
 const EMOJI_MAP = { green: '🟢', yellow: '🟡', orange: '🟠', red: '🔴' };
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+const ROLE_FR = {
+  leader: 'chef',
+  coleader: 'chef adjoint',
+  coLeader: 'chef adjoint',
+  elder: 'aîné',
+  member: 'membre',
+};
+
+function formatDiscordRole(role) {
+  const normalized = String(role || 'member').trim().toLowerCase();
+  return `(${ROLE_FR[normalized] ?? ROLE_FR.member})`;
+}
+
 function parseBattleTimestamp(value) {
   if (!value) return null;
   const d = new Date(value);
@@ -484,7 +497,7 @@ export default async function handler(req, res) {
         } else {
           const rows = players.map((p, idx) => {
             const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
-            return `${idx + 1}. [${p.name}](${playerUrl}) · [${p.role}]`;
+            return `${idx + 1}. [${p.name}](${playerUrl}) · ${formatDiscordRole(p.role)}`;
           });
           description = rows.join('\n');
         }
@@ -1067,8 +1080,8 @@ export default async function handler(req, res) {
         const rows = sorted.slice(0, MAX_ROWS).map((p, i) => {
           const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
           const isNew = p.isNew ? ' 🆕' : '';
-          const role = capitalize(p.role || 'member');
-          return `${i + 1}. [${p.name}](${playerUrl})${isNew} • [${role}] • **${p.decks} decks**`;
+          const role = formatDiscordRole(p.role);
+          return `${i + 1}. [${p.name}](${playerUrl})${isNew} • ${role} • **${p.decks} decks**`;
         });
 
         let description = `Joueurs n'ayant pas joué 16/16 decks\n${rows.join('\n')}`;
@@ -1214,14 +1227,12 @@ export default async function handler(req, res) {
         const clanMembers = await fetchClanMembers(`#${resolved.tag}`);
         const memberByTag = Object.fromEntries(clanMembers.map((m) => [m.tag.toUpperCase(), m]));
 
-        const ROLE_FR = { leader: 'Leader', coLeader: 'Co-leader', elder: 'Aîné', member: 'Membre' };
-
         const players = fullTags
           .map((tag) => {
             const m = memberByTag[tag];
             // Nom depuis le raceLog si disponible, sinon depuis le roster actuel
             const name = nameFromLog[tag] ?? m?.name ?? tag;
-            const role = m ? (ROLE_FR[m.role] ?? 'Membre') : '(parti)';
+            const role = m ? formatDiscordRole(m.role) : '(parti)';
             return { tag, name, role };
           })
           .sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
@@ -1236,7 +1247,7 @@ export default async function handler(req, res) {
           const MAX_ROWS = 80;
           const rows = players.map((p, idx) => {
             const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
-            return `${idx + 1}. [${p.name}](${playerUrl}) · [${p.role}]`;
+            return `${idx + 1}. [${p.name}](${playerUrl}) · ${p.role}`;
           });
           const visibleRows = rows.slice(0, MAX_ROWS);
           description = visibleRows.join('\n');
@@ -1625,7 +1636,7 @@ export default async function handler(req, res) {
             const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(tag)}`;
             const memberInfo = currentMemberByTag.get(tag.toUpperCase());
             const role = (memberInfo?.role || 'member').toLowerCase();
-            const roleText = `[${role}]`;
+            const roleText = formatDiscordRole(role);
             const discordId   = links[tag];
             const guildMember = discordId ? memberById.get(discordId) : null;
             const discordPart = guildMember ? ` <@${discordId}>` : '';
