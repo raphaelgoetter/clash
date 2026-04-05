@@ -40,8 +40,8 @@ import { computeCurrentWeekId, computePrevWeekId } from '../backend/services/dat
         weekId = computeCurrentWeekId(race, raceLog);
       }
 
-      await recordSnapshot(clanTag, participants, weekId, { snapshotType });
-      console.log(`Recorded snapshot for ${clanTag} week ${weekId} (${participants.length} players) [type=${snapshotType}]`);
+      await recordSnapshot(clanTag, participants, weekId, { snapshotType, periodType: race.periodType });
+      console.log(`Recorded snapshot for ${clanTag} week ${weekId} (${participants.length} players) [type=${snapshotType}, periodType=${race.periodType}]`);
     } catch (err) {
       console.error('Error processing', clanTag, err.message || err);
     }

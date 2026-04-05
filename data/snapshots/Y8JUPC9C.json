@@ -114,7 +114,9 @@
           "#UYP0YCQ9": 4,
           "#VLUYR88Y8": 4,
           "#VQP8PU2V": 4
-        }
+        },
+        "_cumulFame": {},
+        "periodType": null
       },
       {
         "warDay": "friday",
@@ -252,7 +254,9 @@
           "#2UQQJJ98Y": 8,
           "#C0VQRUP2": 8,
           "#GVGVR0J2U": 8
-        }
+        },
+        "_cumulFame": {},
+        "periodType": null
       },
       {
         "warDay": "saturday",
@@ -261,7 +265,7 @@
           "start": "2026-04-04T09:40:00.000Z",
           "end": "2026-04-05T09:39:59.999Z"
         },
-        "snapshotTime": "2026-04-05T09:14:45.049Z",
+        "snapshotTime": "2026-04-05T09:16:52.237Z",
         "snapshotBackupTime": "2026-04-04T21:07:54.130Z",
         "decks": {
           "#28PQVJ2V": 4,
@@ -391,7 +395,85 @@
           "#GVGVR0J2U": 12,
           "#9GG9GRC0G": 12,
           "#J8LUJQGY0": 4
-        }
+        },
+        "_cumulFame": {
+          "#9YG9Q8V0U": 0,
+          "#20PQ2Q20L": 0,
+          "#YGRP90QV8": 0,
+          "#802YQPVQ": 0,
+          "#U8Q8VQ9LV": 0,
+          "#JRUG8VV80": 0,
+          "#U0Q0P2YGU": 0,
+          "#L2VGUVL2": 0,
+          "#8P9CL92LC": 0,
+          "#8PVPJ8LCR": 0,
+          "#8PVYYYQ8C": 0,
+          "#UC2L9J88Q": 0,
+          "#P2YYCRUJU": 0,
+          "#2LQQJVLCG": 0,
+          "#8P8002JP": 0,
+          "#2VVRP0LCJ": 0,
+          "#LGG2LYU2Q": 0,
+          "#YJ0YQU0UJ": 0,
+          "#U0G9RRC2L": 0,
+          "#PLVJLU92": 0,
+          "#VLUYR88Y8": 0,
+          "#UGU9JG2QC": 0,
+          "#LJYGJYCYC": 0,
+          "#J8LUJQGY0": 800,
+          "#9Y28LR22": 900,
+          "#QGVJ2U0QJ": 1100,
+          "#J9ULCGJYU": 1200,
+          "#CC29JU800": 1400,
+          "#LCQ2J0VGC": 1450,
+          "#YRYPUR822": 1500,
+          "#J8RU2RJ8C": 1500,
+          "#8CCCQYV99": 1600,
+          "#2GUPJ99G2": 1650,
+          "#YGLL08Y8C": 1650,
+          "#VQP8PU2V": 1700,
+          "#80CCLY20L": 1700,
+          "#UYP0YCQ9": 1700,
+          "#82URJC8CR": 1750,
+          "#9CQC0YUR8": 1750,
+          "#8V98QYY8V": 1800,
+          "#8PP9JQCLY": 1800,
+          "#2GPUQY9P9": 1800,
+          "#9YQ8RVU2P": 1800,
+          "#LQLY92CR0": 1800,
+          "#C2RL8UVYV": 1850,
+          "#8P29RRU2": 1850,
+          "#VVJ8RURL9": 1850,
+          "#2R9QUYQ2C": 1850,
+          "#P9R8Y90P8": 1850,
+          "#JLU88JR28": 1900,
+          "#2CL028C80": 1900,
+          "#G9LPGQUG": 1900,
+          "#CQ0GQ0JRU": 1900,
+          "#809G8YC8": 1950,
+          "#U008V0PQ8": 1950,
+          "#9GG9GRC0G": 1950,
+          "#CYRGPVGVG": 1950,
+          "#PVQ2QRLJQ": 2000,
+          "#9VQ0J29Y": 2050,
+          "#88QP9CJU": 2050,
+          "#28PQVJ2V": 2100,
+          "#9YQ0P0L0": 2100,
+          "#C0VQRUP2": 2100,
+          "#PG0Q0YYGY": 2150,
+          "#GVGVR0J2U": 2150,
+          "#UY00GJG2": 2200,
+          "#2902YQRQL": 2250,
+          "#9CYUGPQ0C": 2250,
+          "#888Y29GY": 2250,
+          "#GGRLYR8PL": 2300,
+          "#2UQQJJ98Y": 2300,
+          "#UJ89GUUUY": 2350,
+          "#8QL2J8PQ": 2400,
+          "#PGJPJG9QQ": 2400,
+          "#99CRC8PP": 2400
+        },
+        "periodType": "colosseum"
       },
       {
         "warDay": "sunday",
@@ -529,7 +611,9 @@
           "#GGRLYR8PL": 12,
           "#2UQQJJ98Y": 12,
           "#PGJPJG9QQ": 12
-        }
+        },
+        "_cumulFame": {},
+        "periodType": null
       }
     ]
   },
@@ -546,7 +630,9 @@
         "snapshotTime": null,
         "snapshotBackupTime": null,
         "decks": {},
-        "_cumul": {}
+        "_cumul": {},
+        "_cumulFame": {},
+        "periodType": null
       },
       {
         "warDay": "friday",
@@ -684,7 +770,9 @@
           "#2UQQJJ98Y": 8,
           "#C0VQRUP2": 8,
           "#GVGVR0J2U": 8
-        }
+        },
+        "_cumulFame": {},
+        "periodType": null
       },
       {
         "warDay": "saturday",
@@ -696,7 +784,9 @@
         "snapshotTime": null,
         "snapshotBackupTime": null,
         "decks": {},
-        "_cumul": {}
+        "_cumul": {},
+        "_cumulFame": {},
+        "periodType": null
       },
       {
         "warDay": "sunday",
@@ -708,7 +798,9 @@
         "snapshotTime": null,
         "snapshotBackupTime": null,
         "decks": {},
-        "_cumul": {}
+        "_cumul": {},
+        "_cumulFame": {},
+        "periodType": null
       }
     ]
   }

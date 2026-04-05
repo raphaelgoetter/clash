@@ -197,6 +197,8 @@ function makeEmptyDay(warDay, realDay = null) {
     snapshotTime: null,
     snapshotBackupTime: null,
     decks: {},
+    _cumulFame: {},
+    periodType: null,
   };
 }
 
@@ -247,6 +249,8 @@ function fillWeekDays(week) {
     day.snapshotBackupTime = day.snapshotBackupTime ?? null;
     day.decks = day.decks ?? {};
     day._cumul = day._cumul ?? {};
+    day._cumulFame = day._cumulFame ?? {};
+    day.periodType = day.periodType ?? null;
 
     return day;
   });
@@ -287,8 +291,10 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
 
   // weekly cumulative totals from currentriverrace
   const currentCumul = {};
+  const currentCumulFame = {};
   participantData.forEach((p) => {
     currentCumul[p.tag] = p.decksUsed || 0;
+    currentCumulFame[p.tag] = p.fame || 0;
   });
 
   const history = await loadSnapshots(clanTag);
@@ -323,6 +329,8 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
     day.snapshotBackupTime = day.snapshotBackupTime ?? null;
     day.decks = day.decks ?? {};
     day._cumul = day._cumul ?? {};
+    day._cumulFame = day._cumulFame ?? {};
+    day.periodType = day.periodType ?? null;
 
     return day;
   });
@@ -363,6 +371,8 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
     baseCumulHasData ? daily : mergeMaps(dayEntry.decks, daily)
   );
   dayEntry._cumul = mergeMaps(dayEntry._cumul ?? {}, currentCumul);
+  dayEntry._cumulFame = mergeMaps(dayEntry._cumulFame ?? {}, currentCumulFame);
+  dayEntry.periodType = options.periodType ?? dayEntry.periodType ?? null;
 
   // If we already have a primary snapshot for this war day, do not overwrite the
   // recorded decks when running after reset (backup snapshot). This ensures we
@@ -420,6 +430,8 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
   }
 
   dayEntry._cumul = mergeMaps(dayEntry._cumul ?? {}, currentCumul);
+  dayEntry._cumulFame = mergeMaps(dayEntry._cumulFame ?? {}, currentCumulFame);
+  dayEntry.periodType = options.periodType ?? dayEntry.periodType ?? null;
 
   await saveSnapshots(clanTag, filtered);
 }

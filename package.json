@@ -10,6 +10,8 @@
     "notify-members": "node scripts/notifyMemberChanges.js",
     "notify-members:dry": "node scripts/notifyMemberChanges.js --dry-run",
     "notify-members:sim": "node scripts/notifyMemberChanges.js --dry-run --simulate",
+    "war-summary": "node scripts/notifyWarSummary.js",
+    "war-summary:dry": "node scripts/notifyWarSummary.js --dry-run",
     "cache": "node scripts/refreshClanCache.js",
     "prebuild": "npm run cache",
     "cache:clear": "rm -f frontend/public/clan-cache/*.json",

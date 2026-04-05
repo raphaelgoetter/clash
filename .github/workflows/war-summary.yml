@@ -1,0 +1,36 @@
+name: Daily GDC Summary
+
+# Lecture seule — pas de push requis
+permissions:
+  contents: read
+
+on:
+  schedule:
+    # 10:05 UTC — ~25 min après le reset GDC (09:40 UTC).
+    # Tourne chaque jour mais ne poste que les lendemains de GDC
+    # (ven/sam/dim/lun matin, pour J1/J2/J3/J4).
+    - cron: '5 10 * * *'
+  workflow_dispatch:
+
+jobs:
+  post-war-summary:
+    runs-on: ubuntu-latest
+    env:
+      DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+      DISCORD_CHANNEL_MEMBERS_Y8JUPC9C: ${{ secrets.DISCORD_CHANNEL_MEMBERS_Y8JUPC9C }}
+      DISCORD_CHANNEL_MEMBERS_LRQP20V9: ${{ secrets.DISCORD_CHANNEL_MEMBERS_LRQP20V9 }}
+      DISCORD_CHANNEL_MEMBERS_QU9UQJRL: ${{ secrets.DISCORD_CHANNEL_MEMBERS_QU9UQJRL }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Post GDC summary
+        run: node scripts/notifyWarSummary.js
