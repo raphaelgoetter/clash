@@ -25,7 +25,7 @@ function snapshotFilename(clanTag) {
   return path.join(SNAP_DIR, `${clean}.json`);
 }
 
-function convertLegacySnapshots(raw) {
+function convertLegacySnapshots(raw, clanTag = null) {
   // Legacy format: array of { week, date, warDay, decks, _cumul, ... }
   // Convert to new format: [{ week, days: [{ warDay, realDay, snapshots:[...], decks: {...} }] }]
   const byWeek = new Map();
@@ -48,11 +48,11 @@ function convertLegacySnapshots(raw) {
       week: w.week,
       days: w.days,
     };
-    return fillWeekDays(week);
+    return fillWeekDays(week, clanTag);
   });
 }
 
-function normalizeSnapshots(raw) {
+function normalizeSnapshots(raw, clanTag = null) {
   if (!raw) return [];
   if (!Array.isArray(raw)) return [];
   if (raw.length === 0) return [];
@@ -60,11 +60,11 @@ function normalizeSnapshots(raw) {
   // Already new format (weeks with days array)
   if (raw[0].week && Array.isArray(raw[0].days)) {
     // Ensure each week has a full set of days + computed metadata (gdcPeriod, etc.)
-    return raw.map((w) => fillWeekDays(w));
+    return raw.map((w) => fillWeekDays(w, clanTag));
   }
 
   // Legacy format (flat list) -> convert
-  return convertLegacySnapshots(raw);
+  return convertLegacySnapshots(raw, clanTag);
 }
 
 async function loadSnapshots(clanTag) {
@@ -73,7 +73,7 @@ async function loadSnapshots(clanTag) {
   try {
     const txt = await fs.readFile(file, 'utf-8');
     const raw = JSON.parse(txt);
-    return normalizeSnapshots(raw);
+    return normalizeSnapshots(raw, clanTag);
   } catch (err) {
     return [];
   }
@@ -184,11 +184,11 @@ function clampDeckValues(decks = {}) {
   return Object.fromEntries(prioritized);
 }
 
-function makeEmptyDay(warDay, realDay = null) {
+function makeEmptyDay(warDay, realDay = null, clanTag = null) {
   const gdcPeriod = realDay
     ? {
-        start: new Date(warPeriodStartUtcMs(realDay)).toISOString(),
-        end:   new Date(warPeriodStartUtcMs(realDay) + MS_PER_DAY - 1).toISOString(),
+        start: new Date(warPeriodStartUtcMs(realDay, clanTag)).toISOString(),
+        end:   new Date(warPeriodStartUtcMs(realDay, clanTag) + MS_PER_DAY - 1).toISOString(),
       }
     : null;
 
@@ -204,7 +204,7 @@ function makeEmptyDay(warDay, realDay = null) {
   };
 }
 
-function fillWeekDays(week) {
+function fillWeekDays(week, clanTag = null) {
   // Ensure week.days contains exactly one entry per war day (thu→sun), ordered.
   const byWarDay = new Map((week.days ?? []).map((d) => [d.warDay, d]));
 
@@ -233,13 +233,13 @@ function fillWeekDays(week) {
         .slice(0, 10);
     }
 
-    const day = existing ? { ...existing } : makeEmptyDay(wd, realDay);
+    const day = existing ? { ...existing } : makeEmptyDay(wd, realDay, clanTag);
     day.warDay = wd;
     day.realDay = realDay;
 
-    // Fenêtre temporelle UTC de la journée GDC : 9h40 UTC → lendemain 9h39:59 UTC.
+    // Fenêtre temporelle UTC de la journée GDC : reset UTC → lendemain même heure.
     if (realDay) {
-      const startMs = warPeriodStartUtcMs(realDay);
+      const startMs = warPeriodStartUtcMs(realDay, clanTag);
       const endMs = startMs ? startMs + MS_PER_DAY - 1 : null;
       day.gdcPeriod = startMs && endMs
         ? { start: new Date(startMs).toISOString(), end: new Date(endMs).toISOString() }
