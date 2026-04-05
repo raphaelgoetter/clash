@@ -107,14 +107,20 @@ async function postDiscordEmbed(tag, clanName, arrivals, departures) {
   }
 
   const now = new Date();
-  const date = now.toLocaleDateString('fr-FR', { timeZone: 'UTC' }); // JJ/MM/AAAA
-  const time = now.toISOString().slice(11, 16); // HH:MM
+  const paris = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+  const date = paris.toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' }); // JJ/MM/AAAA
+  const time = paris.toLocaleTimeString('fr-FR', {
+    timeZone: 'Europe/Paris',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
 
   const embed = {
     title: `${clanName} · Entrées/Sorties`,
     color,
     fields,
-    footer: { text: `Constat fait le : ${date} ${time} UTC` },
+    footer: { text: `Constat fait le : ${date} ${time}` },
   };
 
   if (DRY_RUN) {
