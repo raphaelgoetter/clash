@@ -1601,9 +1601,19 @@ export default async function handler(req, res) {
         const currentParticipants = participants.filter((p) => currentMemberTags.has(p.tag));
         const totalPlayed = currentParticipants.reduce((sum, pl) => sum + (pl.decksUsedToday ?? 0), 0);
 
+        // Fame totale du clan cette semaine (tous participants, y compris ex-membres)
+        const totalFame = participants.reduce((sum, pl) => sum + (pl.fame ?? 0), 0);
+
+        // Decks manquants (pré-calculé)
+        const totalMissing = late.reduce((sum, pl) => sum + pl.missing, 0);
+
         // Construction de la liste par groupe
-        let totalMissing = 0;
-        const descLines = [`*${late.length} joueur${late.length > 1 ? 's' : ''} en retard à ${parisTime}*`];
+        const descLines = [
+          `- ${late.length} joueur${late.length > 1 ? 's' : ''} en retard à ${parisTime}`,
+          `- ${totalFame} pts marqués`,
+          `- ${totalPlayed} deck${totalPlayed > 1 ? 's' : ''} joué${totalPlayed > 1 ? 's' : ''}`,
+          `- ${totalMissing} deck${totalMissing > 1 ? 's' : ''} manquant${totalMissing > 1 ? 's' : ''}`,
+        ];
 
         for (const count of [4, 3, 2, 1]) {
           const group = late.filter((pl) => pl.missing === count);
@@ -1611,7 +1621,6 @@ export default async function handler(req, res) {
           descLines.push('');
           descLines.push(`**Manque ${count} deck${count > 1 ? 's' : ''}**`);
           for (const pl of group) {
-            totalMissing += count;
             const tag = pl.tag.startsWith('#') ? pl.tag : `#${pl.tag}`;
             const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(tag)}`;
             const memberInfo = currentMemberByTag.get(tag.toUpperCase());
@@ -1637,7 +1646,6 @@ export default async function handler(req, res) {
           title: `⏳  ${resolved.name}, retardataires de ${warDayLabel}`,
           description,
           color: 0xe67e22,
-          footer: { text: `${totalPlayed} deck${totalPlayed > 1 ? 's' : ''} joué${totalPlayed > 1 ? 's' : ''}. Il reste encore ${totalMissing} deck${totalMissing > 1 ? 's' : ''} à jouer` },
         };
 
         console.log('[/late] envoi embed, late:', late.length, 'descLen:', description.length);
