@@ -107,9 +107,8 @@ async function postDiscordEmbed(tag, clanName, arrivals, departures) {
   }
 
   const now = new Date();
-  const paris = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
-  const date = paris.toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' }); // JJ/MM/AAAA
-  const time = paris.toLocaleTimeString('fr-FR', {
+  const date = now.toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' }); // JJ/MM/AAAA
+  const time = now.toLocaleTimeString('fr-FR', {
     timeZone: 'Europe/Paris',
     hour: '2-digit',
     minute: '2-digit',
