@@ -95,7 +95,34 @@ Cinq commandes disponibles :
 
 ---
 
-## 🛠  Pour les développeurs
+## � Notifications Discord automatiques
+
+Deux scripts permettent de publier des messages dans les channels Discord des clans :
+
+- `node scripts/notifyMemberChanges.js`
+  - détecte les entrées et sorties de membres par comparaison entre le cache
+    clan existant (`frontend/public/clan-cache/*.json`) et l’état actuel de l’API
+    Clash Royale.
+  - à exécuter avant `npm run cache` pour que le cache précédent n’ait pas encore
+    été écrasé.
+  - options :
+    - `--dry-run` : affiche l’embed qui serait posté sans appeler Discord.
+    - `--simulate` : génère un embed fictif pour tous les clans sans appel API.
+
+- `node scripts/notifyWarSummary.js`
+  - poste un résumé de la journée de GDC qui vient de se terminer dans chaque
+    channel clan.
+  - doit être exécuté après 09:40 UTC pour couvrir la journée précédente
+    (J1/J2/J3/J4 selon le reset GDC).
+  - option :
+    - `--dry-run` : affiche l’embed sans poster.
+
+Ces scripts utilisent les variables d’environnement suivantes :
+
+- `DISCORD_TOKEN` pour authentifier le bot Discord
+- `DISCORD_CHANNEL_MEMBERS_<TAG>` pour le channel de chaque clan autorisé
+
+## �🛠  Pour les développeurs
 
 Voir [`CONTRIBUTING.md`](CONTRIBUTING.md) pour la documentation technique,
 le setup local et les formules de calcul.
