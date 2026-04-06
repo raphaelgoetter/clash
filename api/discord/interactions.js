@@ -497,7 +497,8 @@ export default async function handler(req, res) {
         } else {
           const rows = players.map((p, idx) => {
             const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
-            return `${idx + 1}. [${p.name}](${playerUrl}) · ${formatDiscordRole(p.role)}`;
+            const fameStr = Number.isFinite(p.fame) ? p.fame.toLocaleString('fr-FR') : '0';
+            return `${idx + 1}. [${p.name}](${playerUrl}) · **${fameStr} fame** · ${formatDiscordRole(p.role)}`;
           });
           description = rows.join('\n');
         }
