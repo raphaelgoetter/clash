@@ -120,9 +120,46 @@ function computeDailyFame(dayEntry, prevDayEntry) {
   return todayCumul;
 }
 
+const DECKS_MAX_WEEK = 800; // 50 membres × 4 decks × 4 jours
+
 /** Formate un entier avec séparateur de milliers français : 88400 → "88 400". */
 function fmt(n) {
   return Math.round(n).toLocaleString('fr-FR');
+}
+
+/**
+ * Calcule le bilan de la semaine depuis l'ensemble des journées.
+ * Retourne { totalFameWeek, totalDecksWeek, avgDecksPerDay, isColosseum, completeDays }
+ *   - Colosseum : totalFameWeek = _cumulFame du dernier jour (cumul natif)
+ *   - warDay    : totalFameWeek = somme des _cumulFame de chaque journée
+ *   - Les journées sans snapshot sont ignorées du calcul de fame mais comptées 0 en decks.
+ */
+function computeWeeklySummary(allDays) {
+  const isColosseum = allDays.some((d) => d.periodType === 'colosseum');
+
+  // Decks : somme de chaque journée (0 si snapshot absent)
+  const decksByDay = allDays.map((d) => Object.values(d.decks ?? {}).reduce((a, b) => a + b, 0));
+  const totalDecksWeek = decksByDay.reduce((a, b) => a + b, 0);
+  const avgDecksPerDay = totalDecksWeek / allDays.length;
+
+  // Fame
+  let totalFameWeek = null;
+  const daysWithFame = allDays.filter((d) => Object.keys(d._cumulFame ?? {}).length > 0);
+
+  if (daysWithFame.length > 0) {
+    if (isColosseum) {
+      // Le dernier jour disponible contient le cumul total de la semaine
+      const lastWithFame = daysWithFame[daysWithFame.length - 1];
+      totalFameWeek = Object.values(lastWithFame._cumulFame).reduce((a, b) => a + b, 0);
+    } else {
+      // warDay : sommer le _cumulFame de chaque journée (chacune repart de 0)
+      totalFameWeek = daysWithFame.reduce((sum, d) => {
+        return sum + Object.values(d._cumulFame).reduce((a, b) => a + b, 0);
+      }, 0);
+    }
+  }
+
+  return { totalFameWeek, totalDecksWeek, avgDecksPerDay, isColosseum, completeDays: daysWithFame.length };
 }
 
 /** Formate un delta signé avec émoji de tendance. */
@@ -137,14 +174,16 @@ function fmtDelta(delta) {
  *
  * @param {string} tag
  * @param {string} clanName
- * @param {object} dayEntry       - snapshot de la journée terminée
+ * @param {object} dayEntry           - snapshot de la journée terminée
  * @param {object|null} prevDayEntry      - snapshot de la veille (J-1)
  * @param {object|null} prevPrevDayEntry  - snapshot de l'avant-veille (J-2, pour calcul delta colosseum)
+ * @param {object[]} allWeekDays      - les 4 journées de la semaine (pour le bilan J4)
  */
-async function postWarSummary(tag, clanName, dayEntry, prevDayEntry, prevPrevDayEntry) {
+async function postWarSummary(tag, clanName, dayEntry, prevDayEntry, prevPrevDayEntry, allWeekDays) {
   const channelId = process.env[`DISCORD_CHANNEL_MEMBERS_${tag}`];
   const token = process.env.DISCORD_TOKEN;
   const { warDay } = dayEntry;
+  const isLastDay = warDay === 'sunday';
 
   // Totaux du jour
   const totalDecks = Object.values(dayEntry.decks ?? {}).reduce((a, b) => a + b, 0);
@@ -161,6 +200,9 @@ async function postWarSummary(tag, clanName, dayEntry, prevDayEntry, prevPrevDay
       ? computeDailyFame(prevDayEntry, prevPrevDayEntry)
       : null;
 
+  // Bilan de semaine (J4 uniquement)
+  const weekly = isLastDay ? computeWeeklySummary(allWeekDays) : null;
+
   // Couleur selon la tendance (fame en priorité, decks en fallback)
   let color = 0x5865f2; // bleu neutre (J1 ou données insuffisantes)
   if (totalFame !== null && prevFame !== null) {
@@ -171,6 +213,7 @@ async function postWarSummary(tag, clanName, dayEntry, prevDayEntry, prevPrevDay
 
   const fields = [];
 
+  // ── Résumé du jour ──
   if (hasFameData) {
     let line = `${fmt(totalFame)} pts`;
     if (prevFame !== null) line += ` ${fmtDelta(totalFame - prevFame)}`;
@@ -181,6 +224,29 @@ async function postWarSummary(tag, clanName, dayEntry, prevDayEntry, prevPrevDay
     let line = `${fmt(totalDecks)} decks`;
     if (prevDecks !== null) line += ` ${fmtDelta(totalDecks - prevDecks)}`;
     fields.push({ name: '🃏 Decks joués', value: line, inline: false });
+  }
+
+  // ── Bilan de semaine (J4) ──
+  if (weekly) {
+    fields.push({ name: '\u200b', value: '**— Bilan de la semaine —**', inline: false });
+
+    if (weekly.totalFameWeek !== null) {
+      const fameLabel = weekly.isColosseum ? '🏆 Points totaux (Colisée)' : '🏆 Points totaux';
+      fields.push({ name: fameLabel, value: `${fmt(weekly.totalFameWeek)} pts`, inline: false });
+    }
+
+    const pct = Math.round((weekly.totalDecksWeek / DECKS_MAX_WEEK) * 100);
+    fields.push({
+      name: '🃏 Decks semaine',
+      value: `${fmt(weekly.totalDecksWeek)} / ${fmt(DECKS_MAX_WEEK)} (${pct}%)`,
+      inline: false,
+    });
+
+    fields.push({
+      name: '📊 Moyenne / jour',
+      value: `${weekly.avgDecksPerDay.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} decks`,
+      inline: false,
+    });
   }
 
   const now = new Date();
@@ -264,6 +330,7 @@ async function main() {
       let dayEntry = null;
       let prevDayEntry = null;
       let prevPrevDayEntry = null;
+      let allWeekDays = [];
 
       for (const week of snapshots) {
         const dayIdx = (week.days ?? []).findIndex((d) => d.realDay === realDay);
@@ -271,6 +338,7 @@ async function main() {
         dayEntry = week.days[dayIdx];
         prevDayEntry = dayIdx > 0 ? week.days[dayIdx - 1] : null;
         prevPrevDayEntry = dayIdx > 1 ? week.days[dayIdx - 2] : null;
+        allWeekDays = week.days ?? [];
         break;
       }
 
@@ -287,7 +355,7 @@ async function main() {
         continue;
       }
 
-      await postWarSummary(tag, clanName, dayEntry, prevDayEntry, prevPrevDayEntry);
+      await postWarSummary(tag, clanName, dayEntry, prevDayEntry, prevPrevDayEntry, allWeekDays);
       await markPosted(log, tag, warDay, realDay);
     } catch (err) {
       console.error(`[${tag}] Erreur : ${err.message}`);
