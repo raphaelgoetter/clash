@@ -323,7 +323,7 @@
     "days": [
       {
         "warDay": "thursday",
-        "realDay": "2026-04-03",
+        "realDay": "2026-04-02",
         "gdcPeriod": {
           "start": "2026-04-03T09:40:00.000Z",
           "end": "2026-04-04T09:39:59.999Z"
@@ -407,7 +407,7 @@
       },
       {
         "warDay": "friday",
-        "realDay": "2026-04-04",
+        "realDay": "2026-04-03",
         "gdcPeriod": {
           "start": "2026-04-04T09:40:00.000Z",
           "end": "2026-04-05T09:39:59.999Z"
@@ -493,7 +493,7 @@
       },
       {
         "warDay": "saturday",
-        "realDay": "2026-04-05",
+        "realDay": "2026-04-04",
         "gdcPeriod": {
           "start": "2026-04-05T09:40:00.000Z",
           "end": "2026-04-06T09:39:59.999Z"
@@ -581,12 +581,12 @@
       },
       {
         "warDay": "sunday",
-        "realDay": "2026-04-06",
+        "realDay": "2026-04-05",
         "gdcPeriod": {
-          "start": "2026-04-06T09:40:00.000Z",
-          "end": "2026-04-07T09:39:59.999Z"
+          "start": "2026-04-05T09:40:00.000Z",
+          "end": "2026-04-06T09:39:59.999Z"
         },
-        "snapshotTime": "2026-04-05T21:08:44.760Z",
+        "snapshotTime": "2026-04-06T00:22:43.608Z",
         "snapshotBackupTime": "2026-04-05T21:08:44.760Z",
         "decks": {
           "#2200UQ9P08": 4,
@@ -598,6 +598,7 @@
           "#VPGCQPR9U": 4,
           "#JC28YVLPG": 3,
           "#2QUGQUJ9": 2,
+          "#CRLR0P92J": 2,
           "#2U9QL8Q89": 0,
           "#2V20JP28Q": 0,
           "#2YLYG9V92": 0,
@@ -606,7 +607,6 @@
           "#CLQ2RYYJQ": 0,
           "#CLVU02QLP": 0,
           "#CRCL80GYG": 0,
-          "#CRLR0P92J": 0,
           "#CVJPCU09C": 0,
           "#CVYLYLC8V": 0,
           "#J222JVRUQ": 0,
@@ -655,7 +655,7 @@
           "#2V20JP28Q": 9,
           "#CVJPCU09C": 4,
           "#UYRR99RL8": 10,
-          "#CRLR0P92J": 5,
+          "#CRLR0P92J": 7,
           "#8VP9UJV9L": 12,
           "#V22VCQV9V": 12,
           "#8JGU9UUJJ": 13,
@@ -692,7 +692,7 @@
           "#LJYGJYCYC": 200,
           "#CVJPCU09C": 800,
           "#UYRR99RL8": 1300,
-          "#CRLR0P92J": 1100,
+          "#CRLR0P92J": 1300,
           "#8VP9UJV9L": 1800,
           "#2V20JP28Q": 1200,
           "#V22VCQV9V": 1500,
