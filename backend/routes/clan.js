@@ -978,7 +978,11 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     // Source de vérité : au moins un membre a des jours GDC courants calculés.
     // On utilise cela plutôt que periodType (peut être absent/différent selon l'API).
     const warActiveFromMembers = analyzedMembers.some((m) => m.warDays !== null);
-    if (warActiveFromMembers || currentRace?.periodType === 'warDay') {
+    // Garde calendaire : hors jeu–dim, on ne construit jamais de clanWarSummary,
+    // même si l'API renvoie encore periodType='warDay' après le reset du lundi.
+    const _gdcDowClan = new Date(Date.now() - warResetOffsetMs()).getUTCDay();
+    const isWarPeriodCalendar = _gdcDowClan === 0 || _gdcDowClan >= 4;
+    if (isWarPeriodCalendar && (warActiveFromMembers || currentRace?.periodType === 'warDay')) {
       // Déterminer daysFromThu : préférer sampleWarDays (calculé par membre), puis
       // periodIndex de l'API, puis fallback calendaire. Cela permet de construire un
       // résumé valide même si aucun participant n'a encore joué (début de jeudi).

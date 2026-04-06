@@ -316,6 +316,9 @@ export function buildCurrentWarDays(battleLog, raceTotalDecks = null, raceMeta =
   const isWarPeriod     = nowDow === 0 || nowDow >= 4;
   const fallbackDaysFromThu = isWarPeriod ? (nowDow === 4 ? 0 : nowDow === 5 ? 1 : nowDow === 6 ? 2 : 3) : undefined;
 
+  // Le calendrier prime sur l'API : hors jeu–dim (après reset GDC), jamais de GDC active
+  if (!isWarPeriod) return null;
+
   if (raceMeta?.state) {
     const { state, periodIndex } = raceMeta;
     // Journée d'entraînement → pas de période de guerre active
