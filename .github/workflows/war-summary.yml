@@ -16,6 +16,7 @@ jobs:
   post-war-summary:
     runs-on: ubuntu-latest
     env:
+      CLASH_API_KEY: ${{ secrets.CLASH_API_KEY }}
       DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
       DISCORD_CHANNEL_MEMBERS_Y8JUPC9C: ${{ secrets.DISCORD_CHANNEL_MEMBERS_Y8JUPC9C }}
       DISCORD_CHANNEL_MEMBERS_LRQP20V9: ${{ secrets.DISCORD_CHANNEL_MEMBERS_LRQP20V9 }}

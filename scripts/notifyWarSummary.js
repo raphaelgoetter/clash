@@ -17,6 +17,7 @@ import path from 'path';
 import fetch from 'node-fetch';
 import { ALLOWED_CLANS } from '../backend/routes/clan.js';
 import { warResetOffsetMs } from '../backend/services/dateUtils.js';
+import { fetchRaceLog } from '../backend/services/clashApi.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SNAP_DIR = path.join(__dirname, '..', 'data', 'snapshots');
@@ -169,6 +170,11 @@ function fmtDelta(delta) {
   return '(stable)';
 }
 
+/** Formate un rang en français : 1 → "1er", 2 → "2e", etc. */
+function fmtRank(n) {
+  return n === 1 ? '1er' : `${n}e`;
+}
+
 /**
  * Construit et envoie l'embed Discord du résumé GDC pour un clan.
  *
@@ -178,8 +184,9 @@ function fmtDelta(delta) {
  * @param {object|null} prevDayEntry      - snapshot de la veille (J-1)
  * @param {object|null} prevPrevDayEntry  - snapshot de l'avant-veille (J-2, pour calcul delta colosseum)
  * @param {object[]} allWeekDays      - les 4 journées de la semaine (pour le bilan J4)
+ * @param {number|null} clanRank      - classement final (GDC classique J4 uniquement)
  */
-async function postWarSummary(tag, clanName, dayEntry, prevDayEntry, prevPrevDayEntry, allWeekDays) {
+async function postWarSummary(tag, clanName, dayEntry, prevDayEntry, prevPrevDayEntry, allWeekDays, clanRank = null) {
   const channelId = process.env[`DISCORD_CHANNEL_MEMBERS_${tag}`];
   const token = process.env.DISCORD_TOKEN;
   const { warDay } = dayEntry;
@@ -214,9 +221,12 @@ async function postWarSummary(tag, clanName, dayEntry, prevDayEntry, prevPrevDay
   const fields = [];
 
   // ── Résumé du jour ──
+  const isColosseum = dayEntry.periodType === 'colosseum';
+
   if (hasFameData) {
     let line = `${fmt(totalFame)} pts`;
-    if (prevFame !== null) line += ` ${fmtDelta(totalFame - prevFame)}`;
+    // En Colisée le score journalier fluctue selon les matchs — le delta n'est pas significatif
+    if (prevFame !== null && !isColosseum) line += ` ${fmtDelta(totalFame - prevFame)}`;
     fields.push({ name: '⚔️ Points marqués', value: line, inline: false });
   }
 
@@ -247,24 +257,27 @@ async function postWarSummary(tag, clanName, dayEntry, prevDayEntry, prevPrevDay
       value: `${weekly.avgDecksPerDay.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} decks`,
       inline: false,
     });
+
+    // Classement final : J4 uniquement, standings disponibles en warDay et en Colisée
+    if (clanRank !== null) {
+      fields.push({
+        name: '🏅 Classement',
+        value: `${fmtRank(clanRank)} / 5`,
+        inline: false,
+      });
+    }
   }
 
-  const now = new Date();
-  const paris = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
-  const dateStr = paris.toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' });
-  const timeStr = paris.toLocaleTimeString('fr-FR', {
-    timeZone: 'Europe/Paris',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
+  // Footer : date de la journée GDC (indépendant de l'heure du run)
+  const [fy, fmo, fd] = (dayEntry.realDay ?? '').split('-');
+  const realDayFR = fd && fmo && fy ? `${fd}/${fmo}/${fy}` : (dayEntry.realDay ?? '');
 
   const embed = {
     title: clanName,
     description: `Résumé Journée ${WAR_DAY_NUMBER[warDay]} de GDC (${WAR_DAY_FR[warDay]})`,
     color,
     fields,
-    footer: { text: `Résumé posté le : ${dateStr} à ${timeStr}` },
+    footer: { text: `Journée du ${WAR_DAY_FR[warDay]} ${realDayFR}` },
   };
 
   if (DRY_RUN) {
@@ -355,7 +368,21 @@ async function main() {
         continue;
       }
 
-      await postWarSummary(tag, clanName, dayEntry, prevDayEntry, prevPrevDayEntry, allWeekDays);
+      // Classement final : uniquement J4, après le reset
+      let clanRank = null;
+      if (warDay === 'sunday' && process.env.CLASH_API_KEY) {
+        try {
+          const raceLog = await fetchRaceLog(tag);
+          const standing = (raceLog[0]?.standings ?? []).find(
+            (s) => s.clan?.tag === `#${tag}`
+          );
+          clanRank = standing?.rank ?? null;
+        } catch (err) {
+          console.warn(`[${tag}] Classement indisponible : ${err.message}`);
+        }
+      }
+
+      await postWarSummary(tag, clanName, dayEntry, prevDayEntry, prevPrevDayEntry, allWeekDays, clanRank);
       await markPosted(log, tag, warDay, realDay);
     } catch (err) {
       console.error(`[${tag}] Erreur : ${err.message}`);
