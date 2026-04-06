@@ -1161,18 +1161,22 @@ export default async function handler(req, res) {
         }
 
         // Saison par défaut = la plus récente saison TERMINÉE dans le log.
-        // On exclut la saison actuellement active (currentRace.seasonId) car elle est encore en cours,
-        // même si elle a déjà ≥ 4 semaines dans le log (cas des saisons à 5 semaines).
+        // Si toutes les semaines de la saison courante sont déjà dans le raceLog (>= 4),
+        // c'est que la saison est terminée (ex. Colisée fini) → on peut l'utiliser comme défaut.
         const currentSeasonId = currentRace?.seasonId ?? raceLog[0]?.seasonId;
         const seasonCounts = {};
         for (const r of raceLog) {
           seasonCounts[r.seasonId] = (seasonCounts[r.seasonId] || 0) + 1;
         }
         const sortedSeasons = Object.keys(seasonCounts).map(Number).sort((a, b) => b - a);
-        const defaultSeason =
-          sortedSeasons.find((sid) => sid !== currentSeasonId && seasonCounts[sid] >= 4) ??
-          sortedSeasons.find((sid) => sid !== currentSeasonId) ??
-          sortedSeasons[0];
+        const currentSeasonIsComplete = (seasonCounts[currentSeasonId] ?? 0) >= 4;
+        const defaultSeason = currentSeasonIsComplete
+          ? (sortedSeasons.find((sid) => seasonCounts[sid] >= 4) ?? sortedSeasons[0])
+          : (
+            sortedSeasons.find((sid) => sid !== currentSeasonId && seasonCounts[sid] >= 4) ??
+            sortedSeasons.find((sid) => sid !== currentSeasonId) ??
+            sortedSeasons[0]
+          );
 
         const seasonId = requestedSeason ?? defaultSeason;
         if (!seasonId) {
