@@ -42,7 +42,7 @@ clash/
 │       ├── clanCache.js       # Cache clan persisté sur disque (JSON)
 │       ├── snapshot.js        # Snapshots quotidiens de decksUsed
 │       ├── discordLinks.js    # Mapping tag joueur → Discord ID
-│       ├── topplayers.js      # computeTopPlayers — classement famille par fame
+│       ├── topplayers.js      # computeTopPlayers — classement famille par points
 │       └── uncomplete.js      # computeUncomplete — joueurs < 16 decks
 ├── frontend/
 │   ├── index.html
@@ -124,6 +124,7 @@ Tags should include the `#` prefix (URL‑encoded as `%23`).
 ---
 
 ## 🧮 Score formulas
+
 ## Transferts familiaux
 
 Ce mécanisme a été retiré : les joueurs ne sont plus marqués `transfer` et la
@@ -148,7 +149,7 @@ Used when the war race log is available. Eight weighted criteria:
 > in the clan and the **oldest** of those weeks shows fewer than 16 decks, that
 > week is treated as a potential mid‑race arrival and **ignored** for scoring
 > purposes. It remains in the returned history (a grey bar in the chart) but
-> does not count toward fame averages or participation. This prevents a recent
+> does not count toward points averages or participation. This prevents a recent
 > recruit’s first partial week from artificially dragging down their score.
 >
 > These same rules are applied across both the player and clan analysis
@@ -160,7 +161,7 @@ Seven weighted criteria:
 | # | Criterion | Max | Cap / rule |
 |---|---|---|---|
 | 1 | Regularity | 12 | war decks used / (16 × completed weeks); –0.5 pt per incomplete week |
-| 2 | Avg fame | 10 | 3,000 fame/week = full score |
+| 2 | Avg pts | 10 | 3,000 pts/week = full score |
 | 3 | CW2 battle wins | 8 | 250 total CW2 wins = full score |
 | 4 | Clan stability | 8 | 5+ consecutive weeks in clan = full score |
 | 5 | Last seen | +5 | active within 24 h = +5; ≤3 d = +3; ≤7 d = +1 |
@@ -219,7 +220,7 @@ Le bot Discord expose des slash commands qui affichent les analyses directement 
 |---|---|
 | `/trust tag:#TAG` | Analyse la fiabilité d'un joueur |
 | `/trust-clan clan:N` | Liste les membres High/Extreme risk d'un clan (N = 1/2/3) |
-| `/promote clan:N min:X` | Liste les joueurs ≥ X fame la semaine précédente |
+| `/promote clan:N min:X` | Liste les joueurs ≥ X pts la semaine précédente |
 | `/top-players number:X period:[week|season] scope:[previous|actual]` | Liste les meilleurs joueurs de la famille sur la période demandée |
 | `/discord-link tag:#TAG` | Lie un compte Clash à un Discord |
 | `/discord-check clan:N` | Vérifie la présence Discord des membres d'un clan |
@@ -329,10 +330,10 @@ Tag : #YRGJGR8R
 **`/promote`**
 
 ```
-🏅 Semaine de GDC précédente — La Resistance (≥ 2800 fame)
+🏅 Semaine de GDC précédente — La Resistance (≥ 2800 pts)
 • 2024-03 ?
- 1. NomJoueur   3200 fame  [Co-Leader] ⬆️
- 2. AutreJoueur 3000 fame  [Member] ⬆️
+ 1. NomJoueur   3200 pts  [Co-Leader] ⬆️
+ 2. AutreJoueur 3000 pts  [Member] ⬆️
 ```
 
 **`/demote`**

@@ -116,9 +116,9 @@ export function scoreTotalDonations(totalDonations, maxPoints = 2) {
 }
 
 /**
- * Estime le nombre de victoires PvP depuis les données de fame.
- * PvP loss = 100 fame, PvP win = 200 fame.
- * Boat attacks : on suppose 200 fame chacun (valeur standard CW2).
+ * Estime le nombre de victoires PvP depuis les données de points.
+ * PvP loss = 100 points, PvP win = 200 points.
+ * Boat attacks : on suppose 200 points chacun (valeur standard CW2).
  * @returns {{ wins: number, pvpDecks: number }}
  */
 export function estimateWinsFromFame(fame, decksUsed, boatAttacks) {
@@ -258,7 +258,7 @@ export function computeWarScore(player, warHistory, warWinRate = null, lastSeen 
       score:  scoreMoyen,
       max:    10,
       detail: warHistory.avgFame
-        ? `${warHistory.avgFame.toLocaleString('en-US')} fame / week (1000–3000)`
+        ? `${warHistory.avgFame.toLocaleString('en-US')} points / week (1000–3000)`
         : 'No data',
     },
     {

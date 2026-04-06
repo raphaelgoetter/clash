@@ -119,10 +119,10 @@ export function renderActivityChart(dailyActivity) {
   });
 }
 
-// ── 1b. War history bar chart (fame per river-race week) ──────
+// ── 1b. War history bar chart (points per river-race week) ──────
 
 /**
- * Render a fame-per-week bar chart on #chart-activity (reuses same canvas).
+ * Render a points-per-week bar chart on #chart-activity (reuses same canvas).
  * Bars above the average are indigo; below are red.
  * A dashed yellow line shows the average.
  *

@@ -28,7 +28,7 @@
 | `clanCache.js` | Lecture/écriture du cache clan persistant (JSON sur disque) |
 | `snapshot.js` | Snapshots de decksUsed quotidiens (fichiers `data/snapshots/`) |
 | `discordLinks.js` | Mapping tag joueur → Discord ID (GitHub Gist + fallback local) |
-| `topplayers.js` | `computeTopPlayers` — classement de la famille par fame |
+| `topplayers.js` | `computeTopPlayers` — classement de la famille par points |
 | `uncomplete.js` | `computeUncomplete` — liste des joueurs avec < 16 decks |
 
 ## Semaine / Saison Clash Royale — source de vérité
@@ -59,7 +59,7 @@ npm run cache    # régénère frontend/public/clan-cache/*.json (via scripts/re
 | `scripts/collectSnapshots.js` | `node scripts/collectSnapshots.js` | Enregistre les snapshots de decksUsed quotidiens depuis le race log |
 | `scripts/registerCommands.js` | `node scripts/registerCommands.js` | Enregistre/met à jour les slash-commands Discord |
 | `scripts/notifyMemberChanges.js` | `npm run notify-members` | Diff membres clan (cache N-1 vs API actuelle) et poste un embed Discord par clan si changement. `--dry-run` affiche sans poster, `--simulate` utilise des données fictives |
-| `scripts/notifyWarSummary.js` | `npm run war-summary` | **Résumé quotidien GDC** — poste un embed dans chaque channel famille après le reset (10h05 UTC). J1→J3 : points + decks du jour vs veille. J4 (dimanche) : idem + bilan de semaine (fame totale, decks / 800, moyenne/jour). Colossée : fame = cumul natif du dernier snapshot ; GDC classique : somme des journées. Déduplication via `data/war-summary-log.json`. `--dry-run` affiche sans poster. Workflow : `.github/workflows/war-summary.yml`. |
+| `scripts/notifyWarSummary.js` | `npm run war-summary` | **Résumé quotidien GDC** — poste un embed dans chaque channel famille après le reset (10h05 UTC). J1→J3 : points + decks du jour vs veille. J4 (dimanche) : idem + bilan de semaine (points totaux, decks / 800, moyenne/jour). Colossée : pts = cumul natif du dernier snapshot ; GDC classique : somme des journées. Déduplication via `data/war-summary-log.json`. `--dry-run` affiche sans poster. Workflow : `.github/workflows/war-summary.yml`. |
 
 ## Conventions de génération de scripts temporaires
 
@@ -127,7 +127,7 @@ node scripts/registerCommands.js
 | Commande | Description |
 |---|---|
 | `/trust tag:#TAG` | Analyse la fiabilité d'un joueur |
-| `/promote clan:N min:X` | Liste les joueurs ≥ X fame de la semaine précédente |
+| `/promote clan:N min:X` | Liste les joueurs ≥ X points de la semaine précédente |
 | `/trust-clan clan:N` | Liste les membres High/Extreme risk d'un clan |
 | `/chelem clan:N [season:X]` | Liste les joueurs 16/16 decks chaque semaine d'une saison |
 | `/top-players number:X period:[week|season] scope:[previous|actual]` | Liste les meilleurs joueurs de la famille pour la période demandée |

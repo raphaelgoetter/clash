@@ -106,8 +106,8 @@ async function readClanName(tag) {
 }
 
 /**
- * Calcule le total de fame d'une journée GDC depuis _cumulFame.
- * Colosseum : la fame s'accumule toute la semaine → on soustrait le cumul du jour précédent.
+ * Calcule le total de points d'une journée GDC depuis _cumulFame.
+ * Colosseum : les points s'accumulent toute la semaine → on soustrait le cumul du jour précédent.
  * warDay    : le score est remis à 0 à chaque reset → _cumulFame = total du jour uniquement.
  */
 function computeDailyFame(dayEntry, prevDayEntry) {
@@ -133,7 +133,7 @@ function fmt(n) {
  * Retourne { totalFameWeek, totalDecksWeek, avgDecksPerDay, isColosseum, completeDays }
  *   - Colosseum : totalFameWeek = _cumulFame du dernier jour (cumul natif)
  *   - warDay    : totalFameWeek = somme des _cumulFame de chaque journée
- *   - Les journées sans snapshot sont ignorées du calcul de fame mais comptées 0 en decks.
+ *   - Les journées sans snapshot sont ignorées du calcul de points mais comptées 0 en decks.
  */
 function computeWeeklySummary(allDays) {
   const isColosseum = allDays.some((d) => d.periodType === 'colosseum');
@@ -143,7 +143,7 @@ function computeWeeklySummary(allDays) {
   const totalDecksWeek = decksByDay.reduce((a, b) => a + b, 0);
   const avgDecksPerDay = totalDecksWeek / allDays.length;
 
-  // Fame
+  // Points
   let totalFameWeek = null;
   const daysWithFame = allDays.filter((d) => Object.keys(d._cumulFame ?? {}).length > 0);
 
@@ -309,7 +309,7 @@ async function postWarSummary(tag, clanName, dayEntry, prevDayEntry, prevPrevDay
     throw new Error(`Discord API ${res.status}: ${err}`);
   }
 
-  const fameStr = totalFame !== null ? `${fmt(totalFame)} pts` : 'fame N/A';
+  const fameStr = totalFame !== null ? `${fmt(totalFame)} pts` : 'pts N/A';
   console.log(`[${tag}] Résumé GDC posté — J${WAR_DAY_NUMBER[warDay]} (${fameStr}, ${fmt(totalDecks)} decks).`);
 }
 

@@ -400,7 +400,7 @@ export default async function handler(req, res) {
           description:
             '- `/trust tag:#TAG` : analyse la fiabilité d\'un joueur\n' +
             '- `/trust-clan clan:N` : liste les membres risqués du clan\n' +
-            '- `/promote clan:N min:X` : liste les joueurs ≥ X fame semaine précédente\n' +
+            '- `/promote clan:N min:X` : liste les joueurs ≥ X pts semaine précédente\n' +
             '- `/demote clan:N` : liste les joueurs n\'ayant pas joué 16/16 decks (semaine précédente)\n' +
             '- `/late clan:N` : liste les retardataires GDC du jour\n' +
             '- `/chelem clan:N [season:X]` : 16/16 decks toutes semaines d\'une saison entière\n' +
@@ -498,12 +498,12 @@ export default async function handler(req, res) {
           const rows = players.map((p, idx) => {
             const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
             const fameStr = Number.isFinite(p.fame) ? p.fame.toLocaleString('fr-FR') : '0';
-            return `${idx + 1}. [${p.name}](${playerUrl}) · **${fameStr} fame** · ${formatDiscordRole(p.role)}`;
+            return `${idx + 1}. [${p.name}](${playerUrl}) · **${fameStr} pts** · ${formatDiscordRole(p.role)}`;
           });
           description = rows.join('\n');
         }
         const embed = {
-          title: `🏅 Semaine de GDC précédente — ${clanName} (≥ ${min} fame)`,
+          title: `🏅 Semaine de GDC précédente — ${clanName} (≥ ${min} pts)`,
           color: 0x5865f2,
           description,
           footer: { text: `Clan : ${clanName} · Quota : ${min} · Semaine : ${weekId}` },
@@ -1005,7 +1005,7 @@ export default async function handler(req, res) {
           const clan = p.clan || '?';
           const fame = p.fame || 0;
           const fameStr = fame.toLocaleString('fr-FR');
-          return `${idx + 1}. [${name}](${playerUrl}) (${clan}) · **${fameStr} fame**`;
+          return `${idx + 1}. [${name}](${playerUrl}) (${clan}) · **${fameStr} pts**`;
         }).join('\n');
 
         const embed = {
@@ -1619,7 +1619,7 @@ export default async function handler(req, res) {
         const currentParticipants = participants.filter((p) => currentMemberTags.has(p.tag));
         const totalPlayed = currentParticipants.reduce((sum, pl) => sum + (pl.decksUsedToday ?? 0), 0);
 
-        // Fame totale du clan cette semaine (tous participants, y compris ex-membres)
+        // Points totaux du clan cette semaine (tous participants, y compris ex-membres)
         const totalFame = participants.reduce((sum, pl) => sum + (pl.fame ?? 0), 0);
 
         // Decks manquants (pré-calculé)

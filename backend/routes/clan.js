@@ -386,7 +386,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
     let topPlayers = null;
     if (includeTopPlayers) {
-      // compute top players for a few predefined fame quotas so the frontend
+      // compute top players for a few predefined points quotas so the frontend
       // can render the "Last War Best Players" card without additional
       // network requests. The helper gracefully handles missing logs.
       topPlayers = await computeTopPlayers(clanTag, members, [2400, 2600, 2800], raceLog);
@@ -411,7 +411,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     // On n'enregistre que pendant 'warDay' : en période training, decksUsed
     // reflète la guerre précédente terminée et produirait des valeurs erronées.
     // On utilise periodType (et non state qui peut valoir 'full' quand le clan
-    // a atteint 10 000 fame) pour distinguer guerre vs entraînement.
+    // a atteint 10 000 pts) pour distinguer guerre vs entraînement.
     if (currentRace?.periodType === 'warDay' && currentRace?.clan?.participants?.length > 0) {
       const participants = currentRace.clan.participants;
       // Calcul de l'identifiant de semaine (source de vérité : computeCurrentWeekId)

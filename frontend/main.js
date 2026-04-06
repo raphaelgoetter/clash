@@ -1652,7 +1652,7 @@ function renderTopPlayersCard(topPlayers, prevWeekId = null) {
 
   function updateList(quota) {
     let players = topPlayers.playersByQuota[quota] || [];
-    // sort by fame descending
+    // sort by points descending
     players = players.slice().sort((a, b) => b.fame - a.fame);
     if (players.length === 0) {
       listEl.innerHTML = `<li class="text-muted">${t('noPlayersReachedQuota')}</li>`;
@@ -1665,7 +1665,7 @@ function renderTopPlayersCard(topPlayers, prevWeekId = null) {
             `</span>` +
             `<span class="tp-meta">` +
               `<span class="role-badge ${p.role}">${capitalize(p.role)}</span>` +
-              `<span class="tp-fame">${fmt(p.fame)} fame</span>` +
+              `<span class="tp-fame">${fmt(p.fame)} pts</span>` +
             `</span>` +
           `</li>`
         )

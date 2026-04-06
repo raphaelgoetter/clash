@@ -80,8 +80,8 @@ C’est un outil conçu pour être **proactif** : on détecte les membres à ris
 
 ➡️ Liste les top X joueurs (tous clans) sur la période demandée.
 
-- `period=week` : fame de la semaine précédente (`scope=previous`) ou courant (`scope=actual`)
-- `period=season` : total fame de la saison précédente (`scope=previous`) ou saison en cours (`scope=actual`)
+- `period=week` : points de la semaine précédente (`scope=previous`) ou courant (`scope=actual`)
+- `period=season` : total points de la saison précédente (`scope=previous`) ou saison en cours (`scope=actual`)
 
 **Usage** :
 
@@ -117,7 +117,7 @@ Pratique pour les recrutements et pour s’assurer que tout le monde est bien co
 
 ### 7) `/promote min:X clan:N` (pour chefs de clan)
 
-➡️ Affiche les joueurs qui ont atteint un minimum de fame (par ex. 2400, 2600, 2800) la semaine précédente.
+➡️ Affiche les joueurs qui ont atteint un minimum de points (par ex. 2400, 2600, 2800) la semaine précédente.
 
 Utile pour les campagnes de promotion et pour savoir qui soutenir pour monter dans les quotas.
 

@@ -37,7 +37,7 @@ Cinq commandes disponibles :
 - **`/trust-clan clan:N`** — liste tous les membres High risk / Extreme risk d'un clan (N = 1, 2 ou 3)
 - **`/late clan:N`** — liste les joueurs en retard sur leurs decks de la journée (avant le reset)
 - **`/chelem clan:N [season:X]`** — liste les joueurs ayant fait 16/16 decks chaque semaine d'une saison (par défaut : la dernière saison terminée)
-- **`/promote clan:N min:X`** — liste les joueurs ayant atteint ≥ X fame la semaine précédente (ligne par ligne, `⬆️` pour les membres)
+- **`/promote clan:N min:X`** — liste les joueurs ayant atteint ≥ X pts la semaine précédente (ligne par ligne, `⬆️` pour les membres)
 - **`/top-players number:X period:[week|season] scope:[previous|actual]`** — liste les meilleurs joueurs de la famille en fonction de la période. Pages de membre, aka :
   - previous week -> dernière semaine complétée
   - actual week -> semaine en cours

@@ -1,19 +1,19 @@
 // ============================================================
-// topplayers.js — Helper for computing high‑fame performers in the
+// topplayers.js — Helper for computing top performers in the
 // most recent River Race. Used by the clan analysis route.
 // ============================================================
 
 import { fetchRaceLog } from './clashApi.js';
 
 /**
- * Return a map of players in the given clan who exceeded various fame
+ * Return a map of players in the given clan who exceeded various points
  * thresholds during the last completed River Race week.
  *
  * The result is an object of the shape:
  *   {
  *     quotas: [2400,2600,2800],          // copy of the thresholds array
  *     playersByQuota: {
- *        '2400': [ { name, tag, fame, role }, ... ],
+ *        '2400': [ { name, tag, points, role }, ... ],
  *        '2600': [...],
  *        '2800': [...]
  *     }
@@ -25,7 +25,7 @@ import { fetchRaceLog } from './clashApi.js';
  * @param {string} clanTag  Clan tag (with or without '#')
  * @param {object[]} members  Array of clan member objects as returned by
  *                            /clans/:tag/members endpoint (contains role).
- * @param {number[]} quotas   Fame thresholds to evaluate (defaults to
+ * @param {number[]} quotas   Points thresholds to evaluate (defaults to
  *                            [2400,2600,2800]).
  * @returns {Promise<{quotas:number[],playersByQuota:Record<string,object[]>}>}
  */
