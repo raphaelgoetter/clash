@@ -1134,6 +1134,7 @@ function renderPlayerResults(data) {
         return {
           week: weekLabel,
           clan: clanName,
+          clanTag: w.clanTag || null,
           gdc: gdcCount,
           style: gdcCount === 0 ? 'empty-week' : gdcCount < 16 ? 'quasi-empty-week' : gdcCount > 16 ? 'overfull-week' : '',
           isCurrentClan: isCurrentRow,
@@ -1237,10 +1238,15 @@ function renderPlayerResults(data) {
         }
         const extraNote = rawGdc > 16 ? ` (+${rawGdc - 16})` : '';
 
+        // Lien vers la page Clan réduite si le tag est disponible
+        const clanCell = r.clanTag
+          ? `<a class="battlelog-clan-link" href="${getBasePath()}/?${new URLSearchParams({ mode: 'clan', tag: r.clanTag.startsWith('#') ? r.clanTag : '#' + r.clanTag })}">${escHtml(r.clan)}</a>`
+          : escHtml(r.clan);
+
         return `
           <tr class="${r.style}${r.isCurrentClan ? ' current-week' : ''}">
             <td>${weekLabel}</td>
-            <td>${r.clan}</td>
+            <td>${clanCell}</td>
             <td>${rawGdc}${extraNote}${badge ? ' ' + badge : ''}</td>
           </tr>
         `;

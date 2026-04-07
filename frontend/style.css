@@ -1388,17 +1388,26 @@ a.member-link:hover div:first-child {
 }
 
 /* ── Clan hors-famille (mode lite) ──────────────────────────── */
+.battlelog-clan-link {
+  color: var(--purple-light);
+  text-decoration: none;
+}
+
+.battlelog-clan-link:hover {
+  text-decoration: underline;
+}
+
 .clan-tag-row {
   margin-top: 8px;
 }
 
 .clan-lite-notice {
   background: var(--yellow-bg);
-  border: 1px solid var(--border);
+  border: 1px solid var(--yellow);
   border-left: 4px solid var(--yellow);
   border-radius: var(--radius-sm);
   padding: 0.7rem 1rem;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-size: 0.875rem;
   margin-bottom: 0.75rem;
 }
