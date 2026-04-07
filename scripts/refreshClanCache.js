@@ -20,7 +20,7 @@ async function main() {
     const clean = tag.replace(/[^A-Za-z0-9]/g, '');
     const statusTag = `#${tag}`;
     try {
-      const payload = await buildClanAnalysis(statusTag);
+      const payload = await buildClanAnalysis(statusTag, { forceRefresh: true });
       await saveClanCache(tag, payload);
       console.log(`✓ refreshed cache for ${tag}`);
     } catch (err) {

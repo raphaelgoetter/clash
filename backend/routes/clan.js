@@ -329,7 +329,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     const existingCache = forceRefresh ? null : await loadClanCache(clanTag).catch(() => null);
     const membersRaw = existingCache?.membersRaw ? { ...existingCache.membersRaw } : {};
 
-    const SCORE_VERSION = '2026-04-01-v2';
+    const SCORE_VERSION = '2026-04-07-v1';
 
     // Quick map of prior member results, to avoid expensive player-api fan-out for a hot cache.
     // `scoreVersion` garantit qu'une modification de l'algorithme force recalcul.
@@ -345,6 +345,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       const ageMs = nowMs - Date.parse(existing.fetchedAt);
       return Number.isNaN(ageMs) || ageMs > MEMBER_DATA_TTL_MS;
     });
+    const membersToFetchSet = new Set(membersToFetch.map((m) => m.tag));
 
     // Chargement des liens Discord (tag → discord_user_id) — cache 5 min
     const discordLinks = await getDiscordLinks().catch(() => ({}));
@@ -639,7 +640,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             ? expandDuelRounds(filterWarBattles(battleLog)).length
             : 0,
         },
-        fetchedAt: new Date().toISOString(),
+        fetchedAt: membersToFetchSet.has(m.tag) ? new Date().toISOString() : (existingRaw?.fetchedAt ?? new Date().toISOString()),
       };
 
       // Player proxy: prefer full profile (has badges), fall back to member data
