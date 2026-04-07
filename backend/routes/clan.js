@@ -473,6 +473,24 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       raceLogUnavailable = true;
     }
 
+    // Fetch basic info (members, trophées, score) pour les clans rivaux du groupe de course.
+    // Effectué en parallèle, les erreurs sont silencieuses pour ne pas bloquer l'analyse.
+    const raceGroupRivalData = {};
+    if (Array.isArray(currentRace?.clans)) {
+      const ownTagNorm = `#${clanTag}`.toUpperCase();
+      const rivalClans = currentRace.clans.filter(
+        (c) => c.tag && c.tag.toUpperCase() !== ownTagNorm,
+      );
+      await Promise.allSettled(
+        rivalClans.map(async (c) => {
+          try {
+            const data = await fetchClan(c.tag);
+            raceGroupRivalData[c.tag.toUpperCase()] = data;
+          } catch (_) {}
+        }),
+      );
+    }
+
     const includeTopPlayers = options.includeTopPlayers !== false;
     const includeUncomplete = options.includeUncomplete !== false;
 
@@ -698,8 +716,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         });
       }
 
-    // Note: CWStats scraping was previously used to sanity-check deck totals
-    // but it is currently disabled (not used in the analysis output).
   }
 
 
@@ -1101,7 +1117,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         const participants = allParticipants.filter((p) => currentMemberTags.has(p.tag));
         // Total fiable depuis currentRace (cumul hebdo par participant)
         let totalDecksUsed = participants.reduce((s, p) => s + (p.decksUsed ?? 0), 0);
-        // If we have cwstats data, use it as a sanity check (it tends to be more stable).
         // Use fixed max values based on a full 50-member clan for reporting purposes.
         // This keeps the UI consistent with the 600/800 max legends even if the
         // current member count is slightly lower (e.g. due to in-progress recruitment).
@@ -1415,6 +1430,21 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       warSnapshotDays,               // derived from snapshot files (null if missing)
       snapshotTakenAt: warSnapshotTakenAt,
       currentWarDays: clanWarSummary?.days ?? null, // expose the per-day summary for debug/insights
+      raceGroup: currentRace?.clans
+        ? currentRace.clans.map((c) => {
+            const cTagNorm = (c.tag ?? '').toUpperCase();
+            const ownTagNorm = `#${clanTag}`.toUpperCase();
+            const extra = cTagNorm === ownTagNorm ? clan : (raceGroupRivalData[cTagNorm] ?? null);
+            return {
+              tag:             c.tag ?? null,
+              name:            c.name ?? null,
+              rank:            c.rank ?? null,
+              members:         extra?.members ?? null,
+              clanWarTrophies: extra?.clanWarTrophies ?? null,
+              clanScore:       extra?.clanScore ?? null,
+            };
+          })
+        : null,
       rateLimited: memberRateLimited,
       raceLogUnavailable,
       analysisCacheUpdatedAt: new Date().toISOString(),

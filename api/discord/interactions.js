@@ -403,6 +403,7 @@ export default async function handler(req, res) {
             '- `/promote clan:N min:X` : liste les joueurs ≥ X pts semaine précédente\n' +
             '- `/demote clan:N` : liste les joueurs n\'ayant pas joué 16/16 decks (semaine précédente)\n' +
             '- `/late clan:N` : liste les retardataires GDC du jour\n' +
+            '- `/compare clan:N` : affiche les clans du groupe de course GDC\n' +
             '- `/chelem clan:N [season:X]` : 16/16 decks toutes semaines d\'une saison entière\n' +
             '- `/top-players number:X period:[week|season] scope:[previous|actual]` : meilleurs joueurs de toute la famille\n' +
             '- `/battles-per-day clan:N` : activités moyennes selon les 30 dernières batailles (Battle log)\n' +
@@ -1671,6 +1672,90 @@ export default async function handler(req, res) {
       } catch (err) {
         console.error('[/late] erreur:', err.message);
         await sendToWebhook({ content: `Erreur : ${err.message}`, flags: 64 });
+      }
+    });
+    return;
+  }
+
+  // Commande /compare
+  if (body.type === 2 && body.data?.name === 'compare') {
+    const clanOpt = body.data.options?.find((o) => o.name === 'clan');
+    const clanVal = (clanOpt?.value || '1').toString().trim().toLowerCase();
+    const CLAN_MAP = {
+      '1': { name: 'La Resistance',  tag: 'Y8JUPC9C' },
+      '2': { name: 'Les Resistants', tag: 'LRQP20V9' },
+      '3': { name: 'Les Revoltes',   tag: 'QU9UQJRL' },
+    };
+    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP['1'];
+
+    res.status(200).json({ type: 5 });
+    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+
+    runBackground(async () => {
+      try {
+        const { fetchCurrentRace } = await import('../../backend/services/clashApi.js');
+        const currentRace = await fetchCurrentRace(`#${resolved.tag}`);
+
+        const clans = Array.isArray(currentRace?.clans) ? currentRace.clans : [];
+        if (clans.length === 0) {
+          await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: `Aucun groupe de course trouvé pour **${resolved.name}** (données indisponibles ou phase de préparation).`, flags: 64 }),
+          });
+          return;
+        }
+
+        const isWarPeriod = currentRace?.periodType === 'warDay' || currentRace?.periodType === 'colosseum';
+        const ownTag = `#${resolved.tag}`.toUpperCase();
+
+        // Trier : rang si disponible, sinon fame décroissant
+        const sorted = [...clans].sort((a, b) => {
+          if (a.rank != null && b.rank != null) return a.rank - b.rank;
+          return (b.fame ?? 0) - (a.fame ?? 0);
+        });
+
+        const FAMILY_TAGS = new Set(['#Y8JUPC9C', '#LRQP20V9', '#QU9UQJRL']);
+        const rows = sorted.map((clan) => {
+          const clanTag = (clan.tag ?? '').toUpperCase();
+          const isOwn = clanTag === ownTag;
+          const cleanTag = clanTag.replace('#', '');
+          const isFamilyMember = FAMILY_TAGS.has(clanTag);
+          const url = isFamilyMember
+            ? `https://trustroyale.vercel.app/?mode=clan&tag=${encodeURIComponent(clanTag)}`
+            : `https://royaleapi.com/clan/${cleanTag}/war/race`;
+          const rankStr = clan.rank != null ? `#${clan.rank} ` : '';
+          const nameStr = `[${clan.name ?? clanTag}](${url})`;
+          const boldOpen = isOwn ? '**' : '';
+          const boldClose = isOwn ? '**' : '';
+          if (isWarPeriod) {
+            const fame = typeof clan.fame === 'number' ? clan.fame.toLocaleString('fr-FR') : '—';
+            const decks = typeof clan.decksUsed === 'number' ? clan.decksUsed : '—';
+            return `${rankStr}${boldOpen}${nameStr}${boldClose} · ${fame} pts · ${decks} decks`;
+          }
+          return `${rankStr}${boldOpen}${nameStr}${boldClose}`;
+        });
+
+        const periodLabel = isWarPeriod ? '⚔️ Guerre en cours' : '🎓 Phase de formation';
+        const embed = {
+          title: `${periodLabel} — Groupe de ${resolved.name}`,
+          color: isWarPeriod ? 0xe74c3c : 0x5865f2,
+          description: rows.join('\n'),
+          footer: { text: `Clan : ${resolved.name} · ${sorted.length} clans dans le groupe` },
+        };
+
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ embeds: [embed], allowed_mentions: { parse: [] } }),
+        });
+      } catch (err) {
+        console.error('[/compare] erreur:', err.message);
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
+        });
       }
     });
     return;

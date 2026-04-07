@@ -279,6 +279,80 @@ code {
   opacity: 0.4;
 }
 
+/* ── War Group card ─────────────────────────────────────────── */
+.war-group-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.war-group-table thead th {
+  text-align: left;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  padding: 0 8px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.war-group-row {
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition);
+}
+
+.war-group-row:last-child { border-bottom: none; }
+.war-group-row:hover { background: var(--bg-card-hover); }
+
+.war-group-own {
+  background: rgba(247, 197, 66, 0.07);
+}
+.war-group-own:hover { background: rgba(247, 197, 66, 0.12); }
+
+.war-group-rank-cell {
+  width: 36px;
+  padding: 8px 4px 8px 0;
+  text-align: center;
+}
+
+.war-group-rank {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.war-group-name {
+  padding: 8px;
+  text-align: start;
+  color: var(--text-secondary);
+}
+
+.war-group-members,
+.war-group-trophies,
+.war-group-score {
+  padding: 8px;
+  text-align: right;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  width: 90px;
+}
+
+.war-group-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.war-group-family-link {
+  color: var(--gold);
+}
+.war-group-family-link:hover { text-decoration: underline; }
+
+.war-group-external-link {
+  color: var(--text-primary);
+}
+.war-group-external-link:hover { text-decoration: underline; }
+
 /* CR tag displayed next to player names */
 .tp-tag {
   font-size: 0.85rem;

@@ -14,6 +14,7 @@ import {
   setChartTranslations,
   destroyIfExists,
 } from './charts.js';
+import { renderRaceGroupCard } from './warGroup.js';
 
 // ── DOM references ───────────────────────────────────────────
 const searchInput     = document.getElementById('search-input');
@@ -2083,6 +2084,8 @@ function renderClanOverview(data) {
     // Charts
     renderClanBarChart(members);
     renderClanPieChart(summary);
+    // Card groupe de course
+    renderRaceGroupCard(data, t);
     // Card guerre courante clan
     const effectiveClanWarSummary = mergeWarSummaries(data.clanWarSummary, data.lastWarSummary);
     renderClanWarCard(effectiveClanWarSummary);

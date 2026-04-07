@@ -96,7 +96,7 @@
   "leftClanNoData": "Aucun joueur n'a quitté le clan pour le moment.",
   "errorLoadingSection": "Échec du chargement de la section. Réessayez.",
   "noPlayersReachedQuota": "Aucun joueur n'a atteint 2600 pts.",
-  "labelName": "Nom",
+  "labelName": "Nom du clan",
   "scoreExplainerFull": "Score sur 48 pts (mode complet avec battle log), 45 pts (mode complet sans), ou 40 pts (fallback, uniquement battle log). Jusqu'à 5 pts supplémentaires pour last seen → 53 pts max (45 pts en fallback).",
   "criterion": "Critère",
   "max": "Max",
@@ -183,5 +183,6 @@
   "raceTimeNoGdc": "Pas de combats GDC dans le BattleLog disponible.",
   "clanTagInputPlaceholder": "Autre clan (ex : #ABC123) …",
   "clanLiteNotice": "Ce clan n'est pas dans la famille. Les données de fiabilité ne sont pas disponibles.",
-  "clanLiteLastWarFame": "pts"
+  "clanLiteLastWarFame": "pts",
+  "warGroupTitle": "Groupe de GDC"
 }
