@@ -57,11 +57,8 @@ export function renderRaceGroupCard(data, t) {
   const titleEl = container.querySelector('.card-title');
   if (titleEl) titleEl.textContent = `⚔️ ${t('warGroupTitle')}`;
 
-  // Trier : rang si disponible, sinon clanWarTrophies décroissant
-  const sorted = [...raceGroup].sort((a, b) => {
-    if (a.rank != null && b.rank != null) return a.rank - b.rank;
-    return (b.clanWarTrophies ?? 0) - (a.clanWarTrophies ?? 0);
-  });
+  // Trier : last war fame décroissant
+  const sorted = [...raceGroup].sort((a, b) => (b.lastWarFame ?? 0) - (a.lastWarFame ?? 0));
 
   const tbody = container.querySelector('.war-group-list');
   if (!tbody) return;
@@ -78,8 +75,9 @@ export function renderRaceGroupCard(data, t) {
     const rankBadge = `<span class="war-group-rank">#${displayRank}</span>`;
 
     const membersVal = clan.members != null ? `${clan.members}/50` : '—';
-    const trophiesVal = clan.clanWarTrophies != null ? `⚔️ ${fmtNum(clan.clanWarTrophies)}` : '—';
-    const scoreVal = clan.clanScore != null ? fmtNum(clan.clanScore) : '—';
+    const trophiesVal = clan.clanWarTrophies != null ? `🏆 ${fmtNum(clan.clanWarTrophies)}` : '—';
+    const scoreVal = clan.clanScore != null ? `📊 ${fmtNum(clan.clanScore)}` : '—';
+    const lastWarVal = clan.lastWarFame != null ? `⚔️ ${fmtNum(clan.lastWarFame)}` : '—';
 
     return `<tr class="war-group-row${isOwn ? ' war-group-own' : ''}">
       <td class="war-group-rank-cell">${rankBadge}</td>
@@ -87,6 +85,7 @@ export function renderRaceGroupCard(data, t) {
       <td class="war-group-members">${membersVal}</td>
       <td class="war-group-trophies">${trophiesVal}</td>
       <td class="war-group-score">${scoreVal}</td>
+      <td class="war-group-last-war">${lastWarVal}</td>
     </tr>`;
   }).join('');
 
@@ -98,6 +97,7 @@ export function renderRaceGroupCard(data, t) {
         <th class="war-group-members">${t('labelMembers')}</th>
         <th class="war-group-trophies">${t('labelWarTrophies')}</th>
         <th class="war-group-score">${t('labelClanScore')}</th>
+        <th class="war-group-last-war">${t('warGroupLastWar')}</th>
       </tr>
     </thead>
     <tbody>${rows}</tbody>`;

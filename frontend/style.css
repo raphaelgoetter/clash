@@ -330,7 +330,8 @@ code {
 
 .war-group-members,
 .war-group-trophies,
-.war-group-score {
+.war-group-score,
+.war-group-last-war {
   padding: 8px;
   text-align: right;
   color: var(--text-secondary);

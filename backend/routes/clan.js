@@ -473,9 +473,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       raceLogUnavailable = true;
     }
 
-    // Fetch basic info (members, trophées, score) pour les clans rivaux du groupe de course.
-    // Effectué en parallèle, les erreurs sont silencieuses pour ne pas bloquer l'analyse.
+    // Fetch basic info (members, trophées, score) et race log (last war fame) pour les clans rivaux.
+    // Tout en parallèle par clan rival, les erreurs sont silencieuses pour ne pas bloquer l'analyse.
     const raceGroupRivalData = {};
+    const rivalLastWarByTag = {};
     if (Array.isArray(currentRace?.clans)) {
       const ownTagNorm = `#${clanTag}`.toUpperCase();
       const rivalClans = currentRace.clans.filter(
@@ -483,9 +484,18 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       );
       await Promise.allSettled(
         rivalClans.map(async (c) => {
+          const tagNorm = c.tag.toUpperCase();
           try {
-            const data = await fetchClan(c.tag);
-            raceGroupRivalData[c.tag.toUpperCase()] = data;
+            const [clanData, rivalLog] = await Promise.all([
+              fetchClan(c.tag),
+              fetchRaceLog(c.tag),
+            ]);
+            raceGroupRivalData[tagNorm] = clanData;
+            // Fame du dernier war terminé pour ce clan rival
+            const lastStanding = (rivalLog?.[0]?.standings ?? []).find(
+              (s) => (s.clan?.tag ?? '').toUpperCase() === tagNorm,
+            );
+            rivalLastWarByTag[tagNorm] = lastStanding?.clan?.fame ?? null;
           } catch (_) {}
         }),
       );
@@ -1431,19 +1441,29 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       snapshotTakenAt: warSnapshotTakenAt,
       currentWarDays: clanWarSummary?.days ?? null, // expose the per-day summary for debug/insights
       raceGroup: currentRace?.clans
-        ? currentRace.clans.map((c) => {
-            const cTagNorm = (c.tag ?? '').toUpperCase();
+        ? (() => {
+            // Fame du dernier war terminé pour le clan courant (depuis son propre raceLog)
             const ownTagNorm = `#${clanTag}`.toUpperCase();
-            const extra = cTagNorm === ownTagNorm ? clan : (raceGroupRivalData[cTagNorm] ?? null);
-            return {
-              tag:             c.tag ?? null,
-              name:            c.name ?? null,
-              rank:            c.rank ?? null,
-              members:         extra?.members ?? null,
-              clanWarTrophies: extra?.clanWarTrophies ?? null,
-              clanScore:       extra?.clanScore ?? null,
-            };
-          })
+            const ownLastStanding = (raceLog?.[0]?.standings ?? []).find(
+              (s) => (s.clan?.tag ?? '').toUpperCase() === ownTagNorm,
+            );
+            const ownLastWarFame = ownLastStanding?.clan?.fame ?? null;
+
+            return currentRace.clans.map((c) => {
+              const cTagNorm = (c.tag ?? '').toUpperCase();
+              const isOwn = cTagNorm === ownTagNorm;
+              const extra = isOwn ? clan : (raceGroupRivalData[cTagNorm] ?? null);
+              return {
+                tag:             c.tag ?? null,
+                name:            c.name ?? null,
+                rank:            c.rank ?? null,
+                members:         extra?.members ?? null,
+                clanWarTrophies: extra?.clanWarTrophies ?? null,
+                clanScore:       extra?.clanScore ?? null,
+                lastWarFame:     isOwn ? ownLastWarFame : (rivalLastWarByTag[cTagNorm] ?? null),
+              };
+            });
+          })()
         : null,
       rateLimited: memberRateLimited,
       raceLogUnavailable,
