@@ -145,7 +145,7 @@ router.get('/:tag/lite', async (req, res) => {
         );
         const participants = ourStanding?.clan?.participants ?? [];
         lastWarBest = participants
-          .filter((p) => (p.fame ?? 0) > 0)
+          .filter((p) => (p.fame ?? 0) >= 2600)
           .sort((a, b) => (b.fame ?? 0) - (a.fame ?? 0))
           .slice(0, 50)
           .map((p) => ({
