@@ -1739,7 +1739,7 @@ export default async function handler(req, res) {
           title: `⚔️ Groupe de GDC — ${resolved.name}`,
           color: 0xe74c3c,
           description: rows.join('\n\n'),
-          footer: { text: `${sorted.length} clans dans le groupe · trié par Dernière GDC` },
+          footer: { text: `Liste triée par Total Dernière GDC` },
         };
 
         await fetch(webhookUrl, {
