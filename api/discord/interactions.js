@@ -1693,11 +1693,13 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
-        const { fetchCurrentRace } = await import('../../backend/services/clashApi.js');
-        const currentRace = await fetchCurrentRace(`#${resolved.tag}`);
+        const apiUrl = `https://trustroyale.vercel.app/api/clan/${resolved.tag}/analysis?includeTopPlayers=false&includeUncomplete=false`;
+        const apiRes = await fetch(apiUrl);
+        if (!apiRes.ok) throw new Error(`API ${apiRes.status}`);
+        const data = await apiRes.json();
 
-        const clans = Array.isArray(currentRace?.clans) ? currentRace.clans : [];
-        if (clans.length === 0) {
+        const raceGroup = data.raceGroup;
+        if (!Array.isArray(raceGroup) || raceGroup.length === 0) {
           await fetch(webhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1706,42 +1708,38 @@ export default async function handler(req, res) {
           return;
         }
 
-        const isWarPeriod = currentRace?.periodType === 'warDay' || currentRace?.periodType === 'colosseum';
         const ownTag = `#${resolved.tag}`.toUpperCase();
-
-        // Trier : rang si disponible, sinon fame décroissant
-        const sorted = [...clans].sort((a, b) => {
-          if (a.rank != null && b.rank != null) return a.rank - b.rank;
-          return (b.fame ?? 0) - (a.fame ?? 0);
-        });
-
         const FAMILY_TAGS = new Set(['#Y8JUPC9C', '#LRQP20V9', '#QU9UQJRL']);
-        const rows = sorted.map((clan) => {
+
+        // Trier par lastWarFame décroissant
+        const sorted = [...raceGroup].sort((a, b) => (b.lastWarFame ?? 0) - (a.lastWarFame ?? 0));
+
+        const fmt = (n) => typeof n === 'number' ? n.toLocaleString('fr-FR') : '—';
+
+        const rows = sorted.map((clan, idx) => {
           const clanTag = (clan.tag ?? '').toUpperCase();
           const isOwn = clanTag === ownTag;
           const cleanTag = clanTag.replace('#', '');
           const isFamilyMember = FAMILY_TAGS.has(clanTag);
           const url = isFamilyMember
             ? `https://trustroyale.vercel.app/?mode=clan&tag=${encodeURIComponent(clanTag)}`
-            : `https://royaleapi.com/clan/${cleanTag}/war/race`;
-          const rankStr = clan.rank != null ? `#${clan.rank} ` : '';
+            : `https://trustroyale.vercel.app/?mode=clan&tag=${encodeURIComponent(clanTag)}`;
+          const rank = `**#${idx + 1}**`;
           const nameStr = `[${clan.name ?? clanTag}](${url})`;
-          const boldOpen = isOwn ? '**' : '';
-          const boldClose = isOwn ? '**' : '';
-          if (isWarPeriod) {
-            const fame = typeof clan.fame === 'number' ? clan.fame.toLocaleString('fr-FR') : '—';
-            const decks = typeof clan.decksUsed === 'number' ? clan.decksUsed : '—';
-            return `${rankStr}${boldOpen}${nameStr}${boldClose} · ${fame} pts · ${decks} decks`;
-          }
-          return `${rankStr}${boldOpen}${nameStr}${boldClose}`;
+          const bold = isOwn ? '__' : '';
+          const members   = clan.members != null ? `👥 ${clan.members}/50` : '';
+          const trophies  = clan.clanWarTrophies != null ? `🏆 ${fmt(clan.clanWarTrophies)}` : '';
+          const score     = clan.clanScore != null ? `📊 ${fmt(clan.clanScore)}` : '';
+          const lastWar   = clan.lastWarFame != null ? `⚔️ ${fmt(clan.lastWarFame)}` : '⚔️ —';
+          const extras = [members, trophies, score, lastWar].filter(Boolean).join(' · ');
+          return `${rank} ${bold}${nameStr}${bold}\n${extras}`;
         });
 
-        const periodLabel = isWarPeriod ? '⚔️ Guerre en cours' : '🎓 Phase de formation';
         const embed = {
-          title: `${periodLabel} — Groupe de ${resolved.name}`,
-          color: isWarPeriod ? 0xe74c3c : 0x5865f2,
-          description: rows.join('\n'),
-          footer: { text: `Clan : ${resolved.name} · ${sorted.length} clans dans le groupe` },
+          title: `⚔️ Groupe de GDC — ${resolved.name}`,
+          color: 0xe74c3c,
+          description: rows.join('\n\n'),
+          footer: { text: `${sorted.length} clans dans le groupe · trié par Dernière GDC` },
         };
 
         await fetch(webhookUrl, {
