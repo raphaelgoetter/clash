@@ -1327,15 +1327,6 @@ function renderPlayerResults(data) {
   const fallbackBadge = ws.isFallback
     ? `<div class="fallback-badge">⚠️ ${t('fallbackBadge')}</div>`
     : '';
-  const summaryHtml = ws.summary
-    ? ws.summary.split('\n').map((line) => {
-        const m = line.match(/^([^:]+:\s*)(.*)$/);
-        if (m) {
-          return `<div><strong>${escHtml(m[1])}</strong>${escHtml(m[2])}</div>`;
-        }
-        return `<div>${escHtml(line)}</div>`;
-      }).join('')
-    : '';
 
   verdictBox.innerHTML = `
     <div class="verdict-box ${ws.color}">
@@ -1343,7 +1334,6 @@ function renderPlayerResults(data) {
       <div class="verdict-text-wrap">
         <div class="verdict-score">${ws.pct}%<span class="verdict-score-detail"> (${ws.total} / ${ws.maxScore} pts)</span></div>
         <div class="verdict-text">${verdictText}</div>
-        ${summaryHtml ? `<div class="verdict-summary">${summaryHtml}</div>` : ''}
       </div>
     </div>
     ${fallbackBadge}
