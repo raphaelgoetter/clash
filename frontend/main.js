@@ -12,6 +12,7 @@ import {
   renderClanBarChart,
   renderClanPieChart,
   setChartTranslations,
+  destroyIfExists,
 } from './charts.js';
 
 // ── DOM references ───────────────────────────────────────────
@@ -1269,6 +1270,7 @@ function renderPlayerResults(data) {
   // 3c. River Race Time card (BattleLog MVP)
   const cardRaceTime = document.getElementById('card-race-time');
   const raceTimeNote = document.getElementById('race-time-note');
+  const raceTimeChartWrapper = cardRaceTime ? cardRaceTime.querySelector('.chart-wrapper') : null;
   const showRaceTimeGraph = !!(warHistory?.totalWeeks >= 2);
 
   if (showRaceTimeGraph) {
@@ -1293,10 +1295,12 @@ function renderPlayerResults(data) {
 
     if (totalGdc > 0) {
       if (raceTimeNote) raceTimeNote.textContent = t('raceTimeDesc');
+      if (raceTimeChartWrapper) raceTimeChartWrapper.classList.remove('hidden');
       renderRaceTimeChart(counts, lateBucketWarning, resetUtcMinutes);
     } else {
       if (raceTimeNote) raceTimeNote.textContent = t('raceTimeNoGdc');
-      renderRaceTimeChart(counts, lateBucketWarning, resetUtcMinutes); // show empty chart optionally
+      destroyIfExists('chart-race-time');
+      if (raceTimeChartWrapper) raceTimeChartWrapper.classList.add('hidden');
     }
   } else {
     if (cardRaceTime) cardRaceTime.classList.add('hidden');
