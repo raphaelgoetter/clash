@@ -1,6 +1,6 @@
 // ============================================================
 // warGroup.js — Rendu de la carte "War Group" / "Groupe de GDC"
-// Affiche les clans du groupe de course actuel (API currentriverrace.clans[])
+// Affiche les clans du groupe de GDC actuel (API currentriverrace.clans[])
 // ============================================================
 
 // Tags des clans de la famille — utilisés pour les liens TrustRoyale internes.

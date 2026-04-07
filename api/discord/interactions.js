@@ -403,7 +403,7 @@ export default async function handler(req, res) {
             '- `/promote clan:N min:X` : liste les joueurs ≥ X pts semaine précédente\n' +
             '- `/demote clan:N` : liste les joueurs n\'ayant pas joué 16/16 decks (semaine précédente)\n' +
             '- `/late clan:N` : liste les retardataires GDC du jour\n' +
-            '- `/compare clan:N` : affiche les clans du groupe de course GDC\n' +
+            '- `/compare clan:N` : affiche les clans du groupe GDC\n' +
             '- `/chelem clan:N [season:X]` : 16/16 decks toutes semaines d\'une saison entière\n' +
             '- `/top-players number:X period:[week|season] scope:[previous|actual]` : meilleurs joueurs de toute la famille\n' +
             '- `/battles-per-day clan:N` : activités moyennes selon les 30 dernières batailles (Battle log)\n' +

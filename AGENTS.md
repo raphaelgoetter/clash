@@ -134,6 +134,7 @@ node scripts/registerCommands.js
 | `/discord-link tag:#TAG` | Lie un compte Clash à un Discord |
 | `/discord-check clan:N` | Vérifie la présence Discord des membres d'un clan |
 | `/late clan:N` | Liste les retardataires de la journée de GDC (avant reset) |
+| `/compare clan:N` | Affiche les clans du groupe GDC (membres, trophées, score, dernière GDC) |
 
 ## Sous-agents
 

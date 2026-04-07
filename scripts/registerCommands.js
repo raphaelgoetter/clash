@@ -183,7 +183,7 @@ const commands = [
   },
   {
     name: 'compare',
-    description: 'Affiche les clans du groupe de course GDC (training ou warDay).',
+    description: 'Affiche les clans du groupe GDC.',
     options: [
       {
         type: 3, // STRING
