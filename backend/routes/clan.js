@@ -137,7 +137,7 @@ router.get('/:tag/lite', async (req, res) => {
 
       // Meilleures performances de la dernière guerre (top par fame brut)
       let lastWarBest = null;
-      const races = raceLog?.items ?? [];
+      const races = Array.isArray(raceLog) ? raceLog : raceLog?.items ?? [];
       if (races.length > 0) {
         const lastRace = races[0];
         const ourStanding = (lastRace.standings ?? []).find(
@@ -147,7 +147,7 @@ router.get('/:tag/lite', async (req, res) => {
         lastWarBest = participants
           .filter((p) => (p.fame ?? 0) > 0)
           .sort((a, b) => (b.fame ?? 0) - (a.fame ?? 0))
-          .slice(0, 10)
+          .slice(0, 50)
           .map((p) => ({
             tag: p.tag,
             name: p.name,
@@ -172,6 +172,7 @@ router.get('/:tag/lite', async (req, res) => {
         members,
         isWarPeriod,
         lastWarBest,
+        lastWarWeekId: computePrevWeekId(races),
         isLite: true,
       };
     }, 5 * 60 * 1000);

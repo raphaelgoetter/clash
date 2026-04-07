@@ -1667,34 +1667,40 @@ function warMiniBarHtml(warData) {
 }
 // ── Clan lite : performances dernière guerre ──────────────────
 
-function renderClanLiteBest(lastWarBest) {
+function renderClanLiteBest(lastWarBest, members, prevWeekId = null) {
   const card = document.getElementById('card-top-players');
   const listEl = document.getElementById('top-players-list');
   if (!card) return;
 
-  card.querySelector('.card-title').innerHTML = `🏅 ${t('lastWarBest')}`;
+  const weekLabel = prevWeekId ? ` <span class="card-week-id">(${prevWeekId.toUpperCase()})</span>` : '';
+  card.querySelector('.card-title').innerHTML = `🏅 ${t('lastWarBest')}${weekLabel}`;
+  card.querySelector('.card-desc').textContent = t('lastWarBestDesc') || '';
 
   if (!Array.isArray(lastWarBest) || lastWarBest.length === 0) {
     card.classList.add('hidden');
     return;
   }
 
+  const memberByTag = (members || []).reduce((acc, m) => {
+    if (m?.tag) acc[m.tag] = m;
+    return acc;
+  }, {});
+
   card.classList.remove('hidden');
-  // Masquer le sélecteur de quota (non pertinent en mode lite)
-  const quotaSelector = card.querySelector('#quota-selector');
-  if (quotaSelector) quotaSelector.classList.add('hidden');
 
   if (listEl) {
     listEl.innerHTML = lastWarBest
-      .map((p, i) =>
-        `<li class="lite-best-list-item">` +
-          `<span class="lite-best-rank">${i + 1}.</span>` +
+      .map((p) => {
+        const member = memberByTag[p.tag] || {};
+        const role = member.role ? capitalize(member.role) : null;
+        return `<li class="lite-best-list-item">` +
           `<span class="lite-best-name">` +
             `${escHtml(p.name)} <span class="lite-best-tag">${escHtml(p.tag)}</span>` +
+            `${role ? ` <span class="role-badge ${member.role}">${role}</span>` : ''}` +
           `</span>` +
           `<span class="lite-best-fame">${fmt(p.fame)} ${t('clanLiteLastWarFame')}</span>` +
-        `</li>`
-      )
+        `</li>`;
+      })
       .join('');
   }
 }
@@ -1706,8 +1712,9 @@ function renderTopPlayersCard(topPlayers, prevWeekId = null) {
   const listEl = document.getElementById('top-players-list');
   const weekLabel = prevWeekId ? ` <span class="card-week-id">(${prevWeekId.toUpperCase()})</span>` : '';
   card.querySelector('.card-title').innerHTML = `🏅 ${t('lastWarBest')}${weekLabel}`;
+  card.querySelector('.card-desc').textContent = t('lastWarBestDesc') || '';
 
-  if (!topPlayers || !topPlayers.quotas) {
+  if (!topPlayers || !topPlayers.playersByQuota) {
     card.classList.remove('hidden');
     if (listEl) {
       listEl.innerHTML = `<li class="text-muted">${t('clickToLoadTopPlayers') || 'Open the section to load data on demand.'}</li>`;
@@ -1718,42 +1725,27 @@ function renderTopPlayersCard(topPlayers, prevWeekId = null) {
   card.classList.remove('hidden');
   loadedClanSections.topPlayers = true;
 
-  // ensure quotas match the radio buttons; if dynamic, we'd rebuild them
-  // but here we assume the static 2400/2600/2800 set.
-  const quotas = topPlayers.quotas.map(String);
+  const threshold = '2600';
+  let players = topPlayers.playersByQuota[threshold] || [];
+  players = players.slice().sort((a, b) => b.fame - a.fame);
 
-  function updateList(quota) {
-    let players = topPlayers.playersByQuota[quota] || [];
-    // sort by points descending
-    players = players.slice().sort((a, b) => b.fame - a.fame);
-    if (players.length === 0) {
-      listEl.innerHTML = `<li class="text-muted">${t('noPlayersReachedQuota')}</li>`;
-    } else {
-      listEl.innerHTML = players
-        .map((p) =>
-          `<li>` +
-            `<span class="tp-name">${escHtml(p.name)} ` +
-              `<span class="tp-tag">${escHtml(p.tag)}</span>` +
-            `</span>` +
-            `<span class="tp-meta">` +
-              `<span class="role-badge ${p.role}">${capitalize(p.role)}</span>` +
-              `<span class="tp-fame">${fmt(p.fame)} pts</span>` +
-            `</span>` +
-          `</li>`
-        )
-        .join('');
-    }
+  if (players.length === 0) {
+    listEl.innerHTML = `<li class="text-muted">${t('noPlayersReachedQuota')}</li>`;
+  } else {
+    listEl.innerHTML = players
+      .map((p) =>
+        `<li>` +
+          `<span class="tp-name">${escHtml(p.name)} ` +
+            `<span class="tp-tag">${escHtml(p.tag)}</span>` +
+          `</span>` +
+          `<span class="tp-meta">` +
+            `<span class="role-badge ${p.role}">${capitalize(p.role)}</span>` +
+            `<span class="tp-fame">${fmt(p.fame)} pts</span>` +
+          `</span>` +
+        `</li>`
+      )
+      .join('');
   }
-
-  const radios = card.querySelectorAll('input[name="quota"]');
-  radios.forEach((r) => {
-    r.addEventListener('change', () => updateList(r.value));
-  });
-  // initialize list with default checked radio
-  const checked = card.querySelector('input[name="quota"]:checked');
-  updateList(checked ? checked.value : quotas[0]);
-
-  card.classList.remove('hidden');
 }
 
 // ── Uncomplete decks card renderer ───────────────────────────
@@ -2024,7 +2016,7 @@ function renderClanOverview(data) {
     // Mode lite : afficher top-fame brut de la dernière guerre, masquer uncomplete
     loadedClanSections.topPlayers = true;
     loadedClanSections.uncomplete = true;
-    renderClanLiteBest(data.lastWarBest);
+    renderClanLiteBest(data.lastWarBest, data.members, data.lastWarWeekId);
     const uncompleteCard = document.getElementById('card-uncomplete');
     if (uncompleteCard) uncompleteCard.classList.add('hidden');
   } else {

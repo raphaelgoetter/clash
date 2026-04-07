@@ -238,16 +238,7 @@ code {
 }
 
 /* quotas radio / select row in top players card */
-.quota-selector {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-}
-.quota-selector label {
-  cursor: pointer;
-  font-size: .9rem;
-}
+/* removed: fixed threshold 2600 pts, selector not used anymore */
 
 .top-players-list {
   counter-reset: tp-counter;
@@ -1436,12 +1427,6 @@ a.member-link:hover div:first-child {
   border-radius: var(--radius-sm);
 }
 
-.lite-best-rank {
-  font-size: .8rem;
-  color: var(--text-muted);
-  min-width: 1.5rem;
-}
-
 .lite-best-name {
   flex: 1;
   font-weight: 600;
@@ -1453,8 +1438,13 @@ a.member-link:hover div:first-child {
   color: var(--text-muted);
 }
 
+.lite-best-name .role-badge {
+  margin-left: 0.6rem;
+  font-size: 0.8rem;
+}
+
 .lite-best-fame {
   font-weight: 700;
-  color: var(--gold);
+  color: var(--text-primary);
   font-size: .9rem;
 }
