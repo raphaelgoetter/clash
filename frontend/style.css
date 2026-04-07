@@ -1386,3 +1386,66 @@ a.member-link:hover div:first-child {
   .stability-content { flex-direction: column; }
   .search-btn { width: 100%; justify-content: center; }
 }
+
+/* ── Clan hors-famille (mode lite) ──────────────────────────── */
+.clan-tag-row {
+  margin-top: 8px;
+}
+
+.clan-lite-notice {
+  background: var(--yellow-bg);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--yellow);
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 1rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+}
+
+.lite-hidden {
+  display: none !important;
+}
+
+/* Liste top-fame lite (dernière guerre) */
+.lite-best-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lite-best-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(255,255,255,.04);
+  border-radius: var(--radius-sm);
+}
+
+.lite-best-rank {
+  font-size: .8rem;
+  color: var(--text-muted);
+  min-width: 1.5rem;
+}
+
+.lite-best-name {
+  flex: 1;
+  font-weight: 600;
+  font-size: .9rem;
+}
+
+.lite-best-tag {
+  font-size: .75rem;
+  color: var(--text-muted);
+}
+
+.lite-best-fame {
+  font-weight: 700;
+  color: var(--gold);
+  font-size: .9rem;
+}

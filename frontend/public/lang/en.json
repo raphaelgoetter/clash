@@ -180,5 +180,8 @@
   "raceTimeDesc": "River race GDC decks per hour (09:40 UTC → 08:39 UTC) — local Europe/Paris: 10:40 CET / 11:40 CEST → 09:39 CET / 10:39 CEST.",
   "raceTimeLateBucketWarning": " ⚠️ risk (last bucket)",
   "raceTimeNoHistory": "2 weeks of River Race history required for this view.",
-  "raceTimeNoGdc": "No GDC battles found in the BattleLog."
+  "raceTimeNoGdc": "No GDC battles found in the BattleLog.",
+  "clanTagInputPlaceholder": "Other clan (e.g. #ABC123) …",
+  "clanLiteNotice": "This clan is not in the family. Reliability data is not available.",
+  "clanLiteLastWarFame": "pts"
 }

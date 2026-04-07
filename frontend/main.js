@@ -43,12 +43,16 @@ const clanOverviewGrid= document.getElementById('clan-overview-grid');
 const membersTbody    = document.getElementById('members-tbody');
 const filterName      = document.getElementById('filter-name');
 const filterVerdict   = document.getElementById('filter-verdict');
+const clanTagRow      = document.getElementById('clan-tag-row');
+const clanTagInput    = document.getElementById('clan-tag-input');
+const clanLiteNotice  = document.getElementById('clan-lite-notice');
 
 // ── State ────────────────────────────────────────────────────
 let currentMode = 'player';   // 'player' | 'clan'
 let allMembers  = [];          // cache for table filtering / sorting
 let sortState   = { col: 'reliability', dir: 'asc' };
 let isWarActive = false;       // true jeu–dim : colonne "This War" visible dans le tableau clan
+let currentClanIsLite = false; // true quand le clan affiché est hors-famille (endpoint /lite)
 
 // Name of the last-result returned by API (used when saving favorite)
 let lastResultName = null;
@@ -225,6 +229,7 @@ function translateUI() {
   }
   document.querySelector('.score-explainer summary').textContent = t('scoreExplainer');
   document.getElementById('card-clan-overview').querySelector('.card-title').textContent = `🏰 ${t('clanOverview')}`;
+  if (clanTagInput) clanTagInput.placeholder = t('clanTagInputPlaceholder');
   const cardTop = document.querySelector('#card-top-players .card-title');
   if (cardTop) {
     const weekSpan = cardTop.querySelector('.card-week-id');
@@ -322,12 +327,6 @@ const FAV_STORAGE_KEY = 'trustroyaleFavs';
 let _replaceNextPush = false;
 
 function applyUrlState(mode, tag) {
-  if (mode === 'clan') {
-    // ensure tag is in our allowed list
-    if (!CLAN_OPTIONS.some((o) => o.tag === tag)) {
-      tag = CLAN_OPTIONS[0].tag;
-    }
-  }
   currentMode = mode;
   modeBtns.forEach((b) => {
     b.classList.toggle('active', b.dataset.mode === mode);
@@ -335,15 +334,24 @@ function applyUrlState(mode, tag) {
   if (mode === 'player') {
     searchInput.classList.remove('hidden');
     searchSelect.classList.add('hidden');
+    clanTagRow.classList.add('hidden');
     searchInput.placeholder = t('searchPlaceholder');
     searchHint.textContent = t('searchHint');
     searchInput.value = tag;
   } else {
     searchInput.classList.add('hidden');
+    clanTagRow.classList.remove('hidden');
+    // Toujours afficher le select famille
     searchSelect.classList.remove('hidden');
     searchHint.textContent = t('selectClanHint');
-    // set select value
-    searchSelect.value = tag;
+    // Si tag famille : sélectionner dans le select et vider le champ manuel
+    if (CLAN_OPTIONS.some((o) => o.tag === tag)) {
+      searchSelect.value = tag;
+      clanTagInput.value = '';
+    } else if (tag) {
+      // Tag hors-famille : pré-remplir le champ manuel
+      clanTagInput.value = tag;
+    }
   }
   // mettre à jour l'état de l'étoile dès qu'on connaît le tag (même sans recherche)
   lastResultName = null;
@@ -477,10 +485,19 @@ async function loadStaticClan(tag) {
 }
 
 async function handleSearch(force = false) {
-  const raw = currentMode === 'clan' ? searchSelect.value.trim() : searchInput.value.trim();
+  // En mode clan : si le champ manuel a du contenu, il prend la priorité sur le select
+  let raw;
+  if (currentMode === 'clan') {
+    const manualVal = clanTagInput.value.trim();
+    raw = manualVal || searchSelect.value.trim();
+  } else {
+    raw = searchInput.value.trim();
+  }
   if (!raw) return showError('Please enter a tag.');
 
   const tag = raw.startsWith('#') ? raw : `#${raw}`;
+  // Détermine si ce clan est hors-famille (endpoint lite) en se basant sur CLAN_OPTIONS
+  const isLiteClan = currentMode === 'clan' && !CLAN_OPTIONS.some((o) => o.tag === tag);
 
   // Mise à jour immédiate de l'URL pour un état de navigation cohérent même en cas d'erreur API.
   setUrlState({ mode: currentMode, tag });
@@ -506,6 +523,21 @@ async function handleSearch(force = false) {
         snapshotTakenAt: data.snapshotTakenAt ?? data.warSnapshotTakenAt ?? null,
       });
       updateDebugPanel(data, 'player');
+    } else if (isLiteClan) {
+      // Clan hors-famille : endpoint lite (données natives uniquement, sans fiabilité)
+      renderClanOverview({ clan: { name: tag }, summary: { green:0,yellow:0,orange:0,red:0,avgScore:0,total:0 }, members: [], isLite: true });
+      renderMembersSkeleton();
+      const { data, fromCache } = await apiFetch(`/api/clan/${encodeURIComponent(tag)}/lite`);
+      lastResultName = data.clan?.name || null;
+      renderClanOverview(data);
+      renderClanMembers(data);
+      updateFavBtnState(tag);
+      updateDebugPanel(data, 'clan');
+      showCacheNote(fromCache, null, {
+        source: fromCache ? 'cached' : 'live',
+        updatedAt: new Date().toISOString(),
+        snapshotTakenAt: null,
+      });
     } else {
       // clan mode: try static file first but always refresh from live API.
       const staticData = await loadStaticClan(tag);
@@ -585,8 +617,14 @@ searchInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') handleSearch();
 });
 searchSelect.addEventListener('change', () => {
-  // immediately search when user picks a clan
-  if (currentMode === 'clan') handleSearch();
+  // quand l'utilisateur choisit dans le select, vider le champ manuel et chercher
+  if (currentMode === 'clan') {
+    clanTagInput.value = '';
+    handleSearch();
+  }
+});
+clanTagInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') handleSearch();
 });
 
 // ── API fetch helper ──────────────────────────────────────────
@@ -1621,6 +1659,40 @@ function warMiniBarHtml(warData) {
     `<span class="war-mini-text ${cls}">${totalDecksUsed}/${maxDecksElapsed}</span>` +
   `</div>`;
 }
+// ── Clan lite : performances dernière guerre ──────────────────
+
+function renderClanLiteBest(lastWarBest) {
+  const card = document.getElementById('card-top-players');
+  const listEl = document.getElementById('top-players-list');
+  if (!card) return;
+
+  card.querySelector('.card-title').innerHTML = `🏅 ${t('lastWarBest')}`;
+
+  if (!Array.isArray(lastWarBest) || lastWarBest.length === 0) {
+    card.classList.add('hidden');
+    return;
+  }
+
+  card.classList.remove('hidden');
+  // Masquer le sélecteur de quota (non pertinent en mode lite)
+  const quotaSelector = card.querySelector('#quota-selector');
+  if (quotaSelector) quotaSelector.classList.add('hidden');
+
+  if (listEl) {
+    listEl.innerHTML = lastWarBest
+      .map((p, i) =>
+        `<li class="lite-best-list-item">` +
+          `<span class="lite-best-rank">${i + 1}.</span>` +
+          `<span class="lite-best-name">` +
+            `${escHtml(p.name)} <span class="lite-best-tag">${escHtml(p.tag)}</span>` +
+          `</span>` +
+          `<span class="lite-best-fame">${fmt(p.fame)} ${t('clanLiteLastWarFame')}</span>` +
+        `</li>`
+      )
+      .join('');
+  }
+}
+
 // ── Top players card renderer ─────────────────────────────────
 
 function renderTopPlayersCard(topPlayers, prevWeekId = null) {
@@ -1921,22 +1993,47 @@ function computeClanLeague(clanWarTrophies) {
 }
 
 function renderClanOverview(data) {
-  const { clan, members, summary } = data;
+  const { clan, members } = data;
+  const summary = data.summary ?? { avgScore: 0, green: 0, yellow: 0, orange: 0, red: 0, total: 0 };
+  const isLite = !!data.isLite;
   activeClanTag = clan?.tag || null;
-  loadedClanSections.topPlayers = Boolean(data.topPlayers);
-  loadedClanSections.uncomplete = Boolean(data.uncomplete);
+  currentClanIsLite = isLite;
+
+  // Notice clan hors-famille
+  if (clanLiteNotice) {
+    clanLiteNotice.textContent = t('clanLiteNotice');
+    clanLiteNotice.classList.toggle('hidden', !isLite);
+  }
 
   // Colonne "This War" visible uniquement en période de guerre (jeu–dim)
-  isWarActive = !!data.isWarPeriod; // ne pas afficher pour lastWarSummary seul
+  isWarActive = !isLite && !!data.isWarPeriod; // pas de colonne This War en mode lite
   const weekId =
     data.prevWeekId ||
     data.clanWarSummary?.weekId ||
     data.lastWarSummary?.weekId ||
     (data.lastWarSummary?.weekId && data.lastWarSummary?.weekId.toUpperCase()) ||
     null;
-  renderTopPlayersCard(data.topPlayers, weekId);
-  renderUncompleteCard(data.uncomplete, weekId);
+
+  if (isLite) {
+    // Mode lite : afficher top-fame brut de la dernière guerre, masquer uncomplete
+    loadedClanSections.topPlayers = true;
+    loadedClanSections.uncomplete = true;
+    renderClanLiteBest(data.lastWarBest);
+    const uncompleteCard = document.getElementById('card-uncomplete');
+    if (uncompleteCard) uncompleteCard.classList.add('hidden');
+  } else {
+    loadedClanSections.topPlayers = Boolean(data.topPlayers);
+    loadedClanSections.uncomplete = Boolean(data.uncomplete);
+    renderTopPlayersCard(data.topPlayers, weekId);
+    renderUncompleteCard(data.uncomplete, weekId);
+    const uncompleteCard = document.getElementById('card-uncomplete');
+    if (uncompleteCard) uncompleteCard.classList.remove('hidden');
+  }
   document.getElementById('th-this-war').classList.toggle('hidden', !isWarActive);
+
+  // Masquer/afficher les charts selon le mode
+  const chartsRow = document.getElementById('card-clan-charts-row');
+  if (chartsRow) chartsRow.classList.toggle('hidden', isLite);
 
   // Clan basic description
   const clanDescription = (clan.description || '').trim();
@@ -1957,42 +2054,47 @@ function renderClanOverview(data) {
     ? `https://royaleapi.com/clan/${clanTag.replace('#', '')}/`
     : null;
 
-  clanOverviewGrid.innerHTML = overviewItems([
-    { label: t('labelName'),          value: clan.name },
-    { label: t('labelTag'),           value: clan.tag,
-      link: clanLink },
-    { label: t('labelMembers'),       value: `${clan.members} / 50`,
+  // En mode lite : pas de "Reset (Paris)" ni "Avg Score"
+  const baseItems = [
+    { label: t('labelName'),         value: clan.name },
+    { label: t('labelTag'),          value: clan.tag, link: clanLink },
+    { label: t('labelMembers'),      value: `${clan.members} / 50`,
       cls: clan.members < 45 ? 'c-red' : clan.members < 48 ? 'c-orange' : clan.members < 50 ? 'c-yellow' : '' },
     { label: t('labelClanScore'),    value: fmt(clan.clanScore) },
     { label: t('labelWarTrophies'),  value: `⚔️ ${fmt(clan.clanWarTrophies ?? 0)}` },
     { label: t('labelLeague'),       value: computeClanLeague(clan.clanWarTrophies) || '—' },
+    { label: t('labelRequired'),     value: `🏆 ${fmt(clan.requiredTrophies)}` },
+    { label: t('labelType'),         value: capitalize(clan.type ?? '—') },
+  ];
+  const fullItems = [
+    ...baseItems,
     { label: t('labelWarReset'),     value: (() => {
         const utcMinutes = clan.warResetUtcMinutes ?? (9 * 60 + 40);
         const utcMs = utcMinutes * 60 * 1000;
         const ref = new Date(new Date().toDateString() + ' UTC');
-        const parisStr = new Date(ref.getTime() + utcMs).toLocaleTimeString('fr-FR', {
+        return new Date(ref.getTime() + utcMs).toLocaleTimeString('fr-FR', {
           timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false,
         });
-        return parisStr;
       })() },
-    { label: t('labelRequired'),      value: `🏆 ${fmt(clan.requiredTrophies)}` },
-    { label: t('labelType'),          value: capitalize(clan.type ?? '—') },
     { label: t('labelAvgScore'),     value: `${summary.avgScore} / 100`,
       cls: summary.avgScore < 60 ? 'c-red' : summary.avgScore < 70 ? 'c-orange' : summary.avgScore < 80 ? 'c-yellow' : '' },
-  ]);
+  ];
+  clanOverviewGrid.innerHTML = overviewItems(isLite ? baseItems : fullItems);
 
-  // Charts
-  renderClanBarChart(members);
-  renderClanPieChart(summary);
-  // Card guerre courante clan
-  const effectiveClanWarSummary = mergeWarSummaries(data.clanWarSummary, data.lastWarSummary);
-  renderClanWarCard(effectiveClanWarSummary);
+  if (!isLite) {
+    // Charts
+    renderClanBarChart(members);
+    renderClanPieChart(summary);
+    // Card guerre courante clan
+    const effectiveClanWarSummary = mergeWarSummaries(data.clanWarSummary, data.lastWarSummary);
+    renderClanWarCard(effectiveClanWarSummary);
 
-  // card titles (chart labels)
-  const scoreDist = document.querySelector('#card-score-distribution .card-title');
-  if (scoreDist) scoreDist.textContent = `📊 ${t('scoreDistribution')}`;
-  const reliableRisky = document.querySelector('#card-reliable-risky .card-title');
-  if (reliableRisky) reliableRisky.textContent = `🥧 ${t('reliableVsRisky')}`;
+    // card titles (chart labels)
+    const scoreDist = document.querySelector('#card-score-distribution .card-title');
+    if (scoreDist) scoreDist.textContent = `📊 ${t('scoreDistribution')}`;
+    const reliableRisky = document.querySelector('#card-reliable-risky .card-title');
+    if (reliableRisky) reliableRisky.textContent = `🥧 ${t('reliableVsRisky')}`;
+  }
 
   // members table headers
   translateClanTableHeaders();
@@ -2000,7 +2102,7 @@ function renderClanOverview(data) {
   // Ensure any rendered labels are updated after dynamic clan content is rendered
   translateUI();
   updateLangButtonUI();
-  setupClanLazySectionHandlers(weekId);
+  if (!isLite) setupClanLazySectionHandlers(weekId);
   clanResults.classList.remove('hidden');
 }
 
@@ -2062,15 +2164,32 @@ async function loadClanSection(tag, section, weekId) {
 // Affiche la liste des membres — appelé uniquement depuis les données live.
 function renderClanMembers(data) {
   const { members } = data;
+  const isLite = !!data.isLite;
   allMembers = members;
+
+  // Filtre verdict : désactivé en mode lite (pas de verdict disponible)
+  if (filterVerdict) filterVerdict.classList.toggle('lite-hidden', isLite);
+
   // Réinitialiser les filtres et le tri par défaut
   filterName.value = '';
   filterVerdict.value = '';
-  document.querySelectorAll('.members-table th.sortable').forEach((h) => {
-    h.classList.remove('sort-asc', 'sort-desc');
-    if (h.dataset.col === 'reliability') h.classList.add('sort-asc');
-  });
-  renderMembersTable(sortMembers(members, 'reliability', 'asc'));
+
+  if (isLite) {
+    // Mode lite : tri par trophées décroissant
+    sortState = { col: 'trophies', dir: 'desc' };
+    document.querySelectorAll('.members-table th.sortable').forEach((h) => {
+      h.classList.remove('sort-asc', 'sort-desc');
+      if (h.dataset.col === 'trophies') h.classList.add('sort-desc');
+    });
+    renderMembersTable(sortMembers(members, 'trophies', 'desc'));
+  } else {
+    sortState = { col: 'reliability', dir: 'asc' };
+    document.querySelectorAll('.members-table th.sortable').forEach((h) => {
+      h.classList.remove('sort-asc', 'sort-desc');
+      if (h.dataset.col === 'reliability') h.classList.add('sort-asc');
+    });
+    renderMembersTable(sortMembers(members, 'reliability', 'asc'));
+  }
   updateDebugPanel(data, 'clan');
 }
 
@@ -2084,10 +2203,22 @@ function renderMembersSkeleton() {
 // ── Members table ────────────────────────────────────────────
 
 function renderMembersTable(members) {
+  // Nombre de colonnes : base 6 (name, role, trophies, donations, lastSeen + 1 variable)
+  // Full mode : +discord +reliability +verdict = 9 (+ warDecks si guerre active)
+  // Lite mode : 6 (name, role, trophies, donations, lastSeen) → pas discord/reliability/verdict
+  const liteColCount = 5;
+  const fullColCount = isWarActive ? 9 : 8;
+  const colCount = currentClanIsLite ? liteColCount : fullColCount;
+
   if (members.length === 0) {
-    membersTbody.innerHTML = `<tr><td colspan="${isWarActive ? 9 : 8}" style="text-align:center;color:var(--text-muted)">${t('noMembersFound')}</td></tr>`;
+    membersTbody.innerHTML = `<tr><td colspan="${colCount}" style="text-align:center;color:var(--text-muted)">${t('noMembersFound')}</td></tr>`;
     return;
   }
+
+  // Masquer/afficher les colonnes discord/reliability/verdict dans le header
+  document.querySelectorAll('#card-clan-table thead th[data-col="discord"], #card-clan-table thead th[data-col="reliability"], #card-clan-table thead th[data-col="verdict"]').forEach((th) => {
+    th.classList.toggle('lite-hidden', currentClanIsLite);
+  });
 
   // translate member table headers on each render to avoid sticky labels across language switch
   translateClanTableHeaders();
@@ -2122,6 +2253,18 @@ function renderMembersTable(members) {
           'High risk': t('highRisk'),
           'Extreme risk': t('extremeRisk'),
         }[m.verdict] || m.verdict;
+
+        const discordCell = currentClanIsLite ? '' : `<td class="discord-col">${m.discord ? '✅' : '❓'}</td>`;
+        const reliabilityCell = currentClanIsLite ? '' : `<td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="flex:1;height:6px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden;min-width:60px">
+              <div style="width:${m.reliability}%;height:100%;background:${scoreBarColor(m.color)};border-radius:999px"></div>
+            </div>
+            <span style="font-weight:700;font-size:.88rem">${Math.round(m.reliability)}%</span>
+          </div>
+        </td>`;
+        const verdictCell = currentClanIsLite ? '' : `<td><span class="verdict-badge ${m.color}">${escHtml(memberVerdict)}</span></td>`;
+
         return `
       <tr>
         <td>
@@ -2133,18 +2276,11 @@ function renderMembersTable(members) {
         <td><span class="role-badge ${m.role}">${capitalize(m.role)}</span></td>
         <td>🏆 ${fmt(m.trophies)}</td>
         <td>${fmt(m.totalDonations ?? m.donations)}</td>
-        <td class="discord-col">${m.discord ? '✅' : '❓'}</td>
+        ${discordCell}
         ${lastSeenCell}
         ${isWarActive ? `<td class="war-col">${warMiniBarHtml(m.warDays)}</td>` : ''}
-        <td>
-          <div style="display:flex;align-items:center;gap:8px">
-            <div style="flex:1;height:6px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden;min-width:60px">
-              <div style="width:${m.reliability}%;height:100%;background:${scoreBarColor(m.color)};border-radius:999px"></div>
-            </div>
-            <span style="font-weight:700;font-size:.88rem">${Math.round(m.reliability)}%</span>
-          </div>
-        </td>
-        <td><span class="verdict-badge ${m.color}">${escHtml(memberVerdict)}</span></td>
+        ${reliabilityCell}
+        ${verdictCell}
       </tr>`;
       }
     )

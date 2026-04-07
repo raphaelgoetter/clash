@@ -96,6 +96,96 @@ router.get('/:tag', async (req, res) => {
 });
 
 /**
+ * GET /api/clan/:tag/lite
+ * Retourne un profil clan simplifié à partir des données natives de l'API Clash Royale.
+ * Aucun calcul de fiabilité ni appel individuel par membre — 4 requêtes max.
+ */
+router.get('/:tag/lite', async (req, res) => {
+  try {
+    let clanTag = req.params.tag;
+    if (clanTag.startsWith('#')) clanTag = clanTag.slice(1);
+    clanTag = clanTag.toUpperCase();
+
+    const cacheKey = `clan:${clanTag}:lite`;
+    const cached = await getOrSet(cacheKey, async () => {
+      const [clanResult, membersResult, raceLogResult, currentRaceResult] = await Promise.allSettled([
+        fetchClan(clanTag),
+        fetchClanMembers(clanTag),
+        fetchRaceLog(clanTag),
+        fetchCurrentRace(clanTag),
+      ]);
+
+      if (clanResult.status === 'rejected') throw clanResult.reason;
+      if (membersResult.status === 'rejected') throw membersResult.reason;
+
+      const clan = clanResult.value;
+      const membersRaw = membersResult.value ?? [];
+      const raceLog = raceLogResult.status === 'fulfilled' ? raceLogResult.value : null;
+      const currentRace = currentRaceResult.status === 'fulfilled' ? currentRaceResult.value : null;
+
+      // Membres : champs natifs uniquement, sans calcul de fiabilité
+      const members = membersRaw.map((m) => ({
+        tag: m.tag,
+        name: m.name,
+        role: m.role,
+        trophies: m.trophies,
+        donations: m.donations,
+        donationsReceived: m.donationsReceived,
+        lastSeen: m.lastSeen,
+        expLevel: m.expLevel,
+      }));
+
+      // Meilleures performances de la dernière guerre (top par fame brut)
+      let lastWarBest = null;
+      const races = raceLog?.items ?? [];
+      if (races.length > 0) {
+        const lastRace = races[0];
+        const ourStanding = (lastRace.standings ?? []).find(
+          (s) => s.clan?.tag?.replace('#', '').toUpperCase() === clanTag
+        );
+        const participants = ourStanding?.clan?.participants ?? [];
+        lastWarBest = participants
+          .filter((p) => (p.fame ?? 0) > 0)
+          .sort((a, b) => (b.fame ?? 0) - (a.fame ?? 0))
+          .slice(0, 10)
+          .map((p) => ({
+            tag: p.tag,
+            name: p.name,
+            fame: p.fame ?? 0,
+            decksUsed: p.decksUsed ?? 0,
+          }));
+      }
+
+      const isWarPeriod = currentRace?.periodType === 'warDay';
+
+      return {
+        clan: {
+          name: clan.name,
+          tag: clan.tag,
+          description: clan.description ?? '',
+          members: clan.members,
+          clanScore: clan.clanScore,
+          clanWarTrophies: clan.clanWarTrophies ?? 0,
+          type: clan.type,
+          requiredTrophies: clan.requiredTrophies ?? 0,
+        },
+        members,
+        isWarPeriod,
+        lastWarBest,
+        isLite: true,
+      };
+    }, 5 * 60 * 1000);
+
+    res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
+    res.set('X-Cache', cached.fromCache ? 'HIT' : 'MISS');
+    return res.json(cached.value);
+  } catch (err) {
+    const status = err.message?.includes('404') ? 404 : 500;
+    res.status(status).json({ error: err.message });
+  }
+});
+
+/**
  * GET /api/clan/:tag/analysis
  * Returns clan profile + enriched member list with activity scores.
  */

@@ -63,6 +63,17 @@
             <span id="search-spinner" class="spinner hidden" aria-hidden="true"></span>
           </button>
         </div>
+        <!-- Champ clan hors-famille — toujours visible en mode clan -->
+        <div id="clan-tag-row" class="clan-tag-row hidden">
+          <input
+            type="text"
+            id="clan-tag-input"
+            class="search-input"
+            placeholder="Other clan (e.g. #ABC123) …"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
         <p class="search-hint" id="search-hint">
           Tags must start with <code>#</code>. You can omit it and we'll add it automatically.
         </p>
@@ -180,6 +191,9 @@
       ════════════════════════════════════════════════════ -->
       <section id="clan-results" class="results-section hidden">
 
+        <!-- Notice clan hors-famille (mode lite) -->
+        <div id="clan-lite-notice" class="clan-lite-notice hidden"></div>
+
         <!-- Clan overview -->
         <div class="card" id="card-clan-overview">
           <h2 class="card-title">🏰 Clan Overview</h2>
@@ -188,7 +202,7 @@
         </div>
 
         <!-- Distribution charts -->
-        <div class="card charts-row">
+        <div class="card charts-row" id="card-clan-charts-row">
           <div class="chart-half" id="card-score-distribution">
             <h2 class="card-title">📊 Score Distribution</h2>
             <canvas id="chart-clan-bar"></canvas>
