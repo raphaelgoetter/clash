@@ -194,28 +194,22 @@
         <!-- Notice clan hors-famille (mode lite) -->
         <div id="clan-lite-notice" class="clan-lite-notice hidden"></div>
 
-        <!-- Clan overview -->
-        <div class="card" id="card-clan-overview">
-          <h2 class="card-title">🏰 Clan Overview</h2>
-          <p id="clan-overview-description" class="card-desc"></p>
-          <div class="overview-grid" id="clan-overview-grid"></div>
-        </div>
-
-        <!-- Distribution charts -->
-        <div class="card charts-row" id="card-clan-charts-row">
-          <div class="chart-half" id="card-score-distribution">
-            <h2 class="card-title">📊 Score Distribution</h2>
-            <canvas id="chart-clan-bar"></canvas>
+        <!-- Clan overview + pie chart -->
+        <div class="clan-overview-row">
+          <div class="card" id="card-clan-overview">
+            <h2 class="card-title">🏰 Clan Overview</h2>
+            <p id="clan-overview-description" class="card-desc"></p>
+            <div class="overview-grid" id="clan-overview-grid"></div>
           </div>
-          <div class="chart-half" id="card-reliable-risky">
-            <h2 class="card-title">🥧 Reliable vs Risky</h2>
+          <div class="card" id="card-reliable-risky">
+            <h2 class="card-title">🥧 Reliability</h2>
             <canvas id="chart-clan-pie"></canvas>
           </div>
         </div>
 
-        <!-- War Group card (groupe de course) -->
+        <!-- War Group card (groupe de GDC) -->
         <div class="card hidden" id="card-war-group">
-          <h2 class="card-title">⚔️ War Group</h2>
+          <h2 class="card-title">⚔️ Current War Group</h2>
           <div class="war-group-table-wrapper">
             <table class="war-group-table"><tbody class="war-group-list"></tbody></table>
           </div>

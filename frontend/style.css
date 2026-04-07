@@ -728,18 +728,31 @@ select.search-input {
   margin: 0 auto 16px;
 }
 
-.charts-row {
-  display: flex;
+.clan-overview-row {
+  display: grid;
   gap: 20px;
-  flex-wrap: wrap;
 }
 
-.chart-half {
-  flex: 1 1 280px;
+.card#card-reliable-risky {
+  min-width: 320px;
 }
 
-.chart-half canvas { width: 100% !important; }
-.chart-half:has(#chart-clan-pie) { max-width: 360px; }
+.card#card-reliable-risky canvas {
+  width: 100% !important;
+}
+
+.clan-overview-row.lite-mode {
+  grid-template-columns: auto;
+}
+
+@media (min-width: 1000px) {
+  .clan-overview-row {
+    grid-template-columns: minmax(0, 2.5fr) minmax(280px, 1fr);
+  }
+  .clan-overview-row.lite-mode {
+    grid-template-columns: auto;
+  }
+}
 
 /* ── Recent badges ──────────────────────────────────────────── */
 .recent-badges {
@@ -1446,7 +1459,9 @@ a.member-link:hover div:first-child {
 
 /* ── Responsive adjustments ─────────────────────────────────── */
 @media (max-width: 640px) {
-  .charts-row { flex-direction: column; }
+  .clan-overview-row {
+    grid-template-columns: 1fr;
+  }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .overview-grid { grid-template-columns: repeat(2, 1fr); }
   .stability-content { flex-direction: column; }

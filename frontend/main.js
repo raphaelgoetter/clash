@@ -9,7 +9,6 @@ import {
   renderBattleLogBreakdownChart,
   renderRaceTimeChart,
   renderGaugeChart,
-  renderClanBarChart,
   renderClanPieChart,
   setChartTranslations,
   destroyIfExists,
@@ -2030,9 +2029,13 @@ function renderClanOverview(data) {
   }
   document.getElementById('th-this-war').classList.toggle('hidden', !isWarActive);
 
-  // Masquer/afficher les charts selon le mode
-  const chartsRow = document.getElementById('card-clan-charts-row');
-  if (chartsRow) chartsRow.classList.toggle('hidden', isLite);
+  // Masquer/afficher le camembert selon le mode
+  const reliableRiskyCard = document.getElementById('card-reliable-risky');
+  if (reliableRiskyCard) reliableRiskyCard.classList.toggle('hidden', isLite);
+  const clanOverviewCard = document.getElementById('card-clan-overview');
+  if (clanOverviewCard) clanOverviewCard.classList.toggle('lite-mode', isLite);
+  const clanOverviewRow = document.querySelector('.clan-overview-row');
+  if (clanOverviewRow) clanOverviewRow.classList.toggle('lite-mode', isLite);
 
   // Clan basic description
   const clanDescription = (clan.description || '').trim();
@@ -2082,7 +2085,6 @@ function renderClanOverview(data) {
 
   if (!isLite) {
     // Charts
-    renderClanBarChart(members);
     renderClanPieChart(summary);
     // Card groupe de course
     renderRaceGroupCard(data, t);
@@ -2090,11 +2092,7 @@ function renderClanOverview(data) {
     const effectiveClanWarSummary = mergeWarSummaries(data.clanWarSummary, data.lastWarSummary);
     renderClanWarCard(effectiveClanWarSummary);
 
-    // card titles (chart labels)
-    const scoreDist = document.querySelector('#card-score-distribution .card-title');
-    if (scoreDist) scoreDist.textContent = `📊 ${t('scoreDistribution')}`;
-    const reliableRisky = document.querySelector('#card-reliable-risky .card-title');
-    if (reliableRisky) reliableRisky.textContent = `🥧 ${t('reliableVsRisky')}`;
+    // card title (chart label)
   }
 
   // members table headers

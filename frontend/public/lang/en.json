@@ -149,7 +149,7 @@
   "labelType": "Type",
   "labelAvgScore": "Avg Score",
   "scoreDistribution": "Score Distribution",
-  "reliableVsRisky": "Reliable vs Risky",
+  "reliableVsRisky": "Reliability",
   "memberPlayer": "Player",
   "memberRole": "Role",
   "memberTrophies": "Trophies",
@@ -184,6 +184,6 @@
   "clanTagInputPlaceholder": "Other clan (e.g. #ABC123) …",
   "clanLiteNotice": "This clan is not in the family. Reliability data is not available.",
   "clanLiteLastWarFame": "pts",
-  "warGroupTitle": "War Group",
+  "warGroupTitle": "Current War Group",
   "warGroupLastWar": "Last War"
 }
