@@ -1738,8 +1738,8 @@ export default async function handler(req, res) {
           
           let trend = '';
           if (clan.lastWarFame != null && clan.prevWarFame != null) {
-            if (clan.lastWarFame > clan.prevWarFame) trend = ' 📈';
-            else if (clan.lastWarFame < clan.prevWarFame) trend = ' 📉';
+            if (clan.lastWarFame > clan.prevWarFame) trend = ' ⬆';
+            else if (clan.lastWarFame < clan.prevWarFame) trend = ' ⬇';
           }
           const lastWar   = clan.lastWarFame != null ? `**${fmt(clan.lastWarFame)}**${trend}` : '';
           

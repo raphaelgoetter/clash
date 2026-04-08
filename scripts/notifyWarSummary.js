@@ -165,8 +165,8 @@ function computeWeeklySummary(allDays) {
 
 /** Formate un delta signé avec émoji de tendance. */
 function fmtDelta(delta) {
-  if (delta > 0) return `(+${fmt(delta)} 📈)`;
-  if (delta < 0) return `(${fmt(delta)} 📉)`;
+  if (delta > 0) return `(+${fmt(delta)} 🟢⬆)`;
+  if (delta < 0) return `(${fmt(delta)} 🔴⬇)`;
   return '(stable)';
 }
 

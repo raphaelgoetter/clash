@@ -80,8 +80,8 @@ export function renderRaceGroupCard(data, t) {
     
     let trendIcon = '';
     if (clan.lastWarFame != null && clan.prevWarFame != null) {
-      if (clan.lastWarFame > clan.prevWarFame) trendIcon = ' 📈';
-      else if (clan.lastWarFame < clan.prevWarFame) trendIcon = ' 📉';
+      if (clan.lastWarFame > clan.prevWarFame) trendIcon = '<span style="color: mediumseagreen;"> ⬆</span>';
+      else if (clan.lastWarFame < clan.prevWarFame) trendIcon = '<span style="color: tomato;"> ⬇</span>';
     }
     const lastWarVal = clan.lastWarFame != null ? `${fmtNum(clan.lastWarFame)}${trendIcon}` : '—';
 
