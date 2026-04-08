@@ -55,7 +55,7 @@ export function renderRaceGroupCard(data, t) {
 
   // Titre
   const titleEl = container.querySelector('.card-title');
-  if (titleEl) titleEl.textContent = `⚔️ ${t('warGroupTitle')}`;
+  if (titleEl) titleEl.textContent = `${t('warGroupTitle')}`;
 
   // Trier : last war fame décroissant
   const sorted = [...raceGroup].sort((a, b) => (b.lastWarFame ?? 0) - (a.lastWarFame ?? 0));
@@ -76,16 +76,20 @@ export function renderRaceGroupCard(data, t) {
 
     const membersVal = clan.members != null ? `${clan.members}/50` : '—';
     const trophiesVal = clan.clanWarTrophies != null ? `🏆 ${fmtNum(clan.clanWarTrophies)}` : '—';
-    const scoreVal = clan.clanScore != null ? `📊 ${fmtNum(clan.clanScore)}` : '—';
-    const prevWarVal = clan.prevWarFame != null ? `⚔️ ${fmtNum(clan.prevWarFame)}` : '—';
-    const lastWarVal = clan.lastWarFame != null ? `⚔️ ${fmtNum(clan.lastWarFame)}` : '—';
+    const prevWarVal = clan.prevWarFame != null ? `${fmtNum(clan.prevWarFame)}` : '—';
+    
+    let trendIcon = '';
+    if (clan.lastWarFame != null && clan.prevWarFame != null) {
+      if (clan.lastWarFame > clan.prevWarFame) trendIcon = ' 📈';
+      else if (clan.lastWarFame < clan.prevWarFame) trendIcon = ' 📉';
+    }
+    const lastWarVal = clan.lastWarFame != null ? `${fmtNum(clan.lastWarFame)}${trendIcon}` : '—';
 
     return `<tr class="war-group-row${isOwn ? ' war-group-own' : ''}">
       <td class="war-group-rank-cell">${rankBadge}</td>
       <td class="war-group-name">${nameHtml}</td>
       <td class="war-group-members">${membersVal}</td>
       <td class="war-group-trophies">${trophiesVal}</td>
-      <td class="war-group-score">${scoreVal}</td>
       <td class="war-group-prev-war">${prevWarVal}</td>
       <td class="war-group-last-war">${lastWarVal}</td>
     </tr>`;
@@ -98,7 +102,6 @@ export function renderRaceGroupCard(data, t) {
         <th class="war-group-name">${t('labelName')}</th>
         <th class="war-group-members">${t('labelMembers')}</th>
         <th class="war-group-trophies">${t('labelWarTrophies')}</th>
-        <th class="war-group-score">${t('labelClanScore')}</th>
         <th class="war-group-prev-war">${t('warGroupPrevWar')}</th>
         <th class="war-group-last-war">${t('warGroupLastWar')}</th>
       </tr>

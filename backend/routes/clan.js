@@ -208,6 +208,7 @@ router.get('/:tag/analysis', async (req, res) => {
     const forceRefresh = req.query.force === 'true';
     const includeTopPlayers = req.query.includeTopPlayers !== 'false' && req.query.includeTopPlayers !== '0';
     const includeUncomplete = req.query.includeUncomplete !== 'false' && req.query.includeUncomplete !== '0';
+    const includeRaceGroup  = req.query.includeRaceGroup === 'true' || req.query.includeRaceGroup === '1';
 
     try {
       diskCached = await loadClanCache(clanTag);
@@ -220,9 +221,12 @@ router.get('/:tag/analysis', async (req, res) => {
         const requiresUncomplete = includeUncomplete;
         const hasTopPlayers = !!diskCached.topPlayers;
         const hasUncomplete = !!diskCached.uncomplete;
+        // The raceGroup is considered "complete" if at least one rival has war fame data.
+        const hasFullRaceGroup = includeRaceGroup && Array.isArray(diskCached.raceGroup) && diskCached.raceGroup.some(c => c.tag !== `#${clanTag}` && (c.lastWarFame !== null || c.prevWarFame !== null));
 
         const canUseDiskCache = (!requiresTopPlayers || hasTopPlayers)
-          && (!requiresUncomplete || hasUncomplete);
+          && (!requiresUncomplete || hasUncomplete)
+          && (!includeRaceGroup || hasFullRaceGroup);
 
         if (!forceRefresh && age <= DISK_CACHE_TTL_MS && canUseDiskCache) {
           // Fresh cache: safe to return directly.
@@ -250,6 +254,7 @@ router.get('/:tag/analysis', async (req, res) => {
               const fresh = await buildClanAnalysis(clanTag, {
                 includeTopPlayers,
                 includeUncomplete,
+                includeRaceGroup,
               });
               await saveClanCache(clanTag, fresh).catch(() => null);
             } catch (err) {
@@ -266,7 +271,7 @@ router.get('/:tag/analysis', async (req, res) => {
     // clicks on the same instance.  TTL is small so stale issues are rare.
     // Include includeTopPlayers/includeUncomplete in cache key so we don't
     // serve a payload with excluded sections when the user explicitly requested them.
-    const cacheKey = `clan:${clanTag}:top=${includeTopPlayers ? 1 : 0}:uncomplete=${includeUncomplete ? 1 : 0}`;
+    const cacheKey = `clan:${clanTag}:top=${includeTopPlayers ? 1 : 0}:uncomplete=${includeUncomplete ? 1 : 0}:group=${includeRaceGroup ? 1 : 0}`;
     try {
       let payload;
       let fromCache = false;
@@ -275,6 +280,7 @@ router.get('/:tag/analysis', async (req, res) => {
           forceRefresh: true,
           includeTopPlayers,
           includeUncomplete,
+          includeRaceGroup,
         });
         // force refresh est une demande forte, mettre à jour cache public clan
         await saveClanCache(clanTag, payload).catch(() => null);
@@ -282,6 +288,7 @@ router.get('/:tag/analysis', async (req, res) => {
         const cached = await getOrSet(cacheKey, () => buildClanAnalysis(clanTag, {
           includeTopPlayers,
           includeUncomplete,
+          includeRaceGroup,
         }), 5 * 60 * 1000);
         payload = cached.value;
         fromCache = cached.fromCache;
@@ -443,6 +450,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
     // Fetch race log once and compute war-based scores for every member.
     // Fall back to the legacy activity score when race log is temporarily unavailable.
+    let memberRateLimited = false;
     let raceLog = null;
     let currentRace = null;
     let raceLogUnavailable = false;
@@ -469,54 +477,66 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     }
 
     // If both are missing, we are in degraded mode.
-    if (!raceLog && !currentRace) {
-      raceLogUnavailable = true;
-    }
+    raceLogUnavailable = !raceLog && !currentRace;
 
-    // Fetch basic info (members, trophées, score) et race log (last war fame) pour les clans rivaux.
-    // Tout en parallèle par clan rival, les erreurs sont silencieuses pour ne pas bloquer l'analyse.
+    // Helper: somme des fame individuelles (standings.fame est tronqué en GDC classique)
+    const sumParticipantsFame = (standing) => {
+      const parts = standing?.clan?.participants;
+      if (!Array.isArray(parts) || parts.length === 0) return standing?.clan?.fame ?? null;
+      let total = 0;
+      for (let i = 0; i < parts.length; i++) {
+        total += (parts[i].fame ?? 0);
+      }
+      return total;
+    };
+
+    const includeTopPlayers = options.includeTopPlayers !== false;
+    const includeUncomplete = options.includeUncomplete !== false;
+    // Robust boolean check: true, 'true', or '1'
+    const includeRaceGroup  = options.includeRaceGroup === true || options.includeRaceGroup === 'true' || options.includeRaceGroup === '1' || options.includeRaceGroup === 1;
+
+
     const raceGroupRivalData = {};
     const rivalLastWarByTag = {};
     const rivalPrevWarByTag = {};
-    if (Array.isArray(currentRace?.clans)) {
+    if (includeRaceGroup && Array.isArray(currentRace?.clans)) {
       const ownTagNorm = `#${clanTag}`.toUpperCase();
       const rivalClans = currentRace.clans.filter(
         (c) => c.tag && c.tag.toUpperCase() !== ownTagNorm,
       );
-      await Promise.allSettled(
-        rivalClans.map(async (c) => {
-          const tagNorm = c.tag.toUpperCase();
-          try {
-            const [clanData, rivalLog] = await Promise.all([
-              fetchClan(c.tag),
-              fetchRaceLog(c.tag),
-            ]);
-            raceGroupRivalData[tagNorm] = clanData;
-            // Fonction utilitaire : somme des fame individuelles des participants
-            // (standings.fame ne contient que le score du dernier jour en GDC classique)
-            const sumParticipantsFame = (standing) => {
-              const parts = standing?.clan?.participants ?? [];
-              return parts.length > 0
-                ? parts.reduce((sum, p) => sum + (p.fame ?? 0), 0)
-                : (standing?.clan?.fame ?? null);
-            };
-            // Fame du dernier war terminé pour ce clan rival
-            const lastStanding = (rivalLog?.[0]?.standings ?? []).find(
-              (s) => (s.clan?.tag ?? '').toUpperCase() === tagNorm,
-            );
-            rivalLastWarByTag[tagNorm] = sumParticipantsFame(lastStanding);
-            // Fame de l'avant-dernière guerre (n-2) pour ce clan rival
-            const prevStanding = (rivalLog?.[1]?.standings ?? []).find(
-              (s) => (s.clan?.tag ?? '').toUpperCase() === tagNorm,
-            );
-            rivalPrevWarByTag[tagNorm] = sumParticipantsFame(prevStanding);
-          } catch (_) {}
-        }),
-      );
-    }
 
-    const includeTopPlayers = options.includeTopPlayers !== false;
-    const includeUncomplete = options.includeUncomplete !== false;
+      // Timeout de sécurité : si les rivaux mettent > 4s, on continue sans eux
+      // pour éviter le 504 (timeout global 10s-15s sur Vercel).
+      const timeoutPromise = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), ms));
+
+      await Promise.race([
+        Promise.allSettled(
+          rivalClans.map(async (c) => {
+            const tagNorm = c.tag.toUpperCase();
+            try {
+              const [clanData, rivalLog] = await Promise.all([
+                fetchClan(c.tag),
+                fetchRaceLog(c.tag),
+              ]);
+              raceGroupRivalData[tagNorm] = clanData;
+              const lastStanding = (rivalLog?.[0]?.standings ?? []).find(
+                (s) => (s.clan?.tag ?? '').toUpperCase() === tagNorm,
+              );
+              rivalLastWarByTag[tagNorm] = sumParticipantsFame(lastStanding);
+              const prevStanding = (rivalLog?.[1]?.standings ?? []).find(
+                (s) => (s.clan?.tag ?? '').toUpperCase() === tagNorm,
+              );
+              rivalPrevWarByTag[tagNorm] = sumParticipantsFame(prevStanding);
+            } catch (err) {
+              console.warn(`[clan] Failed to fetch rival ${c.tag}:`, err.message);
+            }
+          })
+        ),
+        timeoutPromise(6000)
+      ]).catch((err) => {
+        console.warn('[clan] Rival fetching reached safety timeout or failed:', err.message);
+      });
+    }
 
     let topPlayers = null;
     if (includeTopPlayers) {
@@ -602,7 +622,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     });
 
     // detect API rate limiting in member fetches
-    const memberRateLimited = memberDataResults.some((res) =>
+    memberRateLimited = memberDataResults.some((res) =>
       res.status === 'rejected' && res.reason?.isRateLimit
     );
 
@@ -1456,21 +1476,11 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       currentWarDays: clanWarSummary?.days ?? null, // expose the per-day summary for debug/insights
       raceGroup: currentRace?.clans
         ? (() => {
-            // Fonction utilitaire : somme des fame individuelles des participants
-            // (standings.fame ne contient que le score du dernier jour en GDC classique)
-            const sumParticipantsFame = (standing) => {
-              const parts = standing?.clan?.participants ?? [];
-              return parts.length > 0
-                ? parts.reduce((sum, p) => sum + (p.fame ?? 0), 0)
-                : (standing?.clan?.fame ?? null);
-            };
-            // Fame du dernier war terminé pour le clan courant (depuis son propre raceLog)
             const ownTagNorm = `#${clanTag}`.toUpperCase();
             const ownLastStanding = (raceLog?.[0]?.standings ?? []).find(
               (s) => (s.clan?.tag ?? '').toUpperCase() === ownTagNorm,
             );
             const ownLastWarFame = sumParticipantsFame(ownLastStanding);
-            // Fame de l'avant-dernière guerre (n-2) pour le clan courant
             const ownPrevStanding = (raceLog?.[1]?.standings ?? []).find(
               (s) => (s.clan?.tag ?? '').toUpperCase() === ownTagNorm,
             );
@@ -1479,14 +1489,15 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             return currentRace.clans.map((c) => {
               const cTagNorm = (c.tag ?? '').toUpperCase();
               const isOwn = cTagNorm === ownTagNorm;
-              const extra = isOwn ? clan : (raceGroupRivalData[cTagNorm] ?? null);
+              // Attempt lookup in extra data collected for rivals
+              const extra = isOwn ? clan : (raceGroupRivalData[cTagNorm] || null);
               return {
                 tag:             c.tag ?? null,
                 name:            c.name ?? null,
                 rank:            c.rank ?? null,
                 members:         extra?.members ?? null,
                 clanWarTrophies: extra?.clanWarTrophies ?? null,
-                clanScore:       extra?.clanScore ?? null,
+                clanScore:       c.fame ?? extra?.clanScore ?? 0,
                 prevWarFame:     isOwn ? ownPrevWarFame : (rivalPrevWarByTag[cTagNorm] ?? null),
                 lastWarFame:     isOwn ? ownLastWarFame : (rivalLastWarByTag[cTagNorm] ?? null),
               };

@@ -1693,7 +1693,7 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
-        const apiUrl = `https://trustroyale.vercel.app/api/clan/${resolved.tag}/analysis?includeTopPlayers=false&includeUncomplete=false`;
+        const apiUrl = `https://trustroyale.vercel.app/api/clan/${resolved.tag}/analysis?includeRaceGroup=true&includeTopPlayers=false&includeUncomplete=false`;
         const apiRes = await fetch(apiUrl);
         if (!apiRes.ok) throw new Error(`API ${apiRes.status}`);
         const data = await apiRes.json();
@@ -1727,13 +1727,22 @@ export default async function handler(req, res) {
           const rank = `**#${idx + 1}**`;
           const nameStr = `[${clan.name ?? clanTag}](${url})`;
           const bold = isOwn ? '__' : '';
+          
           const members   = clan.members != null ? `👥 ${clan.members}/50` : '';
           const trophies  = clan.clanWarTrophies != null ? `🏆 ${fmt(clan.clanWarTrophies)}` : '';
-          const score     = clan.clanScore != null ? `📊 ${fmt(clan.clanScore)}` : '';
-          const lastWar   = clan.lastWarFame != null ? `⚔️ ${fmt(clan.lastWarFame)}` : '⚔️ —';
-          const extras = [members, trophies, score, lastWar].filter(Boolean).join(' · ');
+          const prevWar   = clan.prevWarFame != null ? `🛡️ ${fmt(clan.prevWarFame)}` : '';
+          
+          let trend = '';
+          if (clan.lastWarFame != null && clan.prevWarFame != null) {
+            if (clan.lastWarFame > clan.prevWarFame) trend = ' 📈';
+            else if (clan.lastWarFame < clan.prevWarFame) trend = ' 📉';
+          }
+          const lastWar   = clan.lastWarFame != null ? `**${fmt(clan.lastWarFame)}**${trend}` : '';
+          
+          const extras = [members, trophies, prevWar, lastWar].filter(Boolean).join(' · ');
           return `${rank} ${bold}${nameStr}${bold}\n${extras}`;
         });
+
 
         const embed = {
           title: `⚔️ Groupe de GDC — ${resolved.name}`,

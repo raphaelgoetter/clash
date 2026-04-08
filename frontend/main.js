@@ -1969,7 +1969,7 @@ function renderClanWarCard(clanWarSummary) {
 // Affiche l'overview du clan, les charts et les cards top/uncomplete.
 // Peut être appelé depuis le cache statique ET depuis les données live.
 let activeClanTag = null;
-let loadedClanSections = { topPlayers: false, uncomplete: false };
+let loadedClanSections = { topPlayers: false, uncomplete: false, raceGroup: false };
 
 function computeClanLeague(clanWarTrophies) {
   if (clanWarTrophies == null || Number.isNaN(Number(clanWarTrophies))) {
@@ -2087,7 +2087,22 @@ function renderClanOverview(data) {
     // Charts
     renderClanPieChart(summary);
     // Card groupe de course
-    renderRaceGroupCard(data, t);
+    const cardGroup = document.getElementById('card-war-group');
+    const detailsGroup = document.getElementById('details-war-group');
+    const groupListEl = document.getElementById('war-group-list');
+    if (data.raceGroup) {
+      cardGroup.classList.remove('hidden');
+      if (!loadedClanSections.raceGroup) {
+        if (groupListEl) {
+          groupListEl.innerHTML = `<tr class="text-muted"><td colspan="6" style="padding:15px;text-align:center;">${t('clickToLoadRaceGroup') || 'Open the section to load rival data.'}</td></tr>`;
+        }
+        detailsGroup.open = false;
+      } else {
+        renderRaceGroupCard(data, t);
+      }
+    } else {
+      cardGroup.classList.add('hidden');
+    }
     // Card guerre courante clan
     const effectiveClanWarSummary = mergeWarSummaries(data.clanWarSummary, data.lastWarSummary);
     renderClanWarCard(effectiveClanWarSummary);
@@ -2142,12 +2157,31 @@ function setupClanLazySectionHandlers(weekId) {
     uncompleteCard.dataset.lazyInit = '1';
   }
 
+  const groupCard = document.getElementById('card-war-group');
+  if (groupCard && !groupCard.dataset.lazyInit) {
+    const groupDetails = groupCard.querySelector('details');
+    if (groupDetails) {
+      groupDetails.addEventListener('toggle', async () => {
+        if (!groupDetails.open || loadedClanSections.raceGroup) return;
+        document.getElementById('war-group-spinner').classList.remove('hidden');
+        try {
+          await loadClanSection(activeClanTag, 'raceGroup', weekId);
+        } catch (err) {
+          document.getElementById('war-group-list').innerHTML = `<tr class="text-muted"><td colspan="6" style="padding:15px;text-align:center;">${t('errorLoadingSection') || 'Failed to load group data.'}</td></tr>`;
+        } finally {
+          document.getElementById('war-group-spinner').classList.add('hidden');
+        }
+      });
+    }
+    groupCard.dataset.lazyInit = '1';
+  }
 }
 
 async function loadClanSection(tag, section, weekId) {
   const params = new URLSearchParams();
   params.set('includeTopPlayers', section === 'topPlayers' ? '1' : '0');
   params.set('includeUncomplete', section === 'uncomplete' ? '1' : '0');
+  params.set('includeRaceGroup',  section === 'raceGroup' ? 'true' : 'false');
   const { data } = await apiFetch(`/api/clan/${encodeURIComponent(tag)}/analysis?${params.toString()}`);
 
   if (section === 'topPlayers') {
@@ -2157,6 +2191,10 @@ async function loadClanSection(tag, section, weekId) {
   if (section === 'uncomplete') {
     loadedClanSections.uncomplete = true;
     renderUncompleteCard(data.uncomplete, weekId);
+  }
+  if (section === 'raceGroup') {
+    loadedClanSections.raceGroup = true;
+    renderRaceGroupCard(data, t);
   }
 }
 

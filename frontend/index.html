@@ -209,10 +209,14 @@
 
         <!-- War Group card (groupe de GDC) -->
         <div class="card hidden" id="card-war-group">
-          <h2 class="card-title">⚔️ Current War Group</h2>
-          <div class="war-group-table-wrapper">
-            <table class="war-group-table"><tbody class="war-group-list"></tbody></table>
-          </div>
+          <details id="details-war-group">
+            <summary><span class="card-title">⚔️ Current War Group</span></summary>
+            <p class="card-desc">Compare the 5 clans of the current River Race group</p>
+            <div class="war-group-table-wrapper">
+              <div id="war-group-spinner" class="spinner-small hidden"></div>
+              <table class="war-group-table"><tbody class="war-group-list" id="war-group-list"></tbody></table>
+            </div>
+          </details>
         </div>
 
         <!-- Current Clan War card (jeudi–dimanche) -->
