@@ -31,23 +31,26 @@ favoris se retrouve sous la barre de recherche.
 
 ## 🤖 Bot Discord
 
-Cinq commandes disponibles :
+Liste des commandes disponibles :
 
-- **`/trust tag:#TAG`** — analyse la fiabilité d'un joueur
-- **`/trust-clan clan:N`** — liste tous les membres High risk / Extreme risk d'un clan (N = 1, 2 ou 3)
-- **`/late clan:N`** — liste les joueurs en retard sur leurs decks de la journée (avant le reset)
-- **`/chelem clan:N [season:X]`** — liste les joueurs ayant fait 16/16 decks chaque semaine d'une saison (par défaut : la dernière saison terminée)
-- **`/promote clan:N min:X`** — liste les joueurs ayant atteint ≥ X pts la semaine précédente (ligne par ligne, `⬆️` pour les membres)
-- **`/top-players number:X period:[week|season] scope:[previous|actual]`** — liste les meilleurs joueurs de la famille en fonction de la période. Pages de membre, aka :
-  - previous week -> dernière semaine complétée
-  - actual week -> semaine en cours
-  - previous season -> dernière saison complète
-  - actual season -> saison courante (S130 en cours)
-- **`/demote clan:N`** — liste les joueurs n’ayant pas fait 16/16 decks la semaine précédente (header + .card-week-id + maximum 25 lignes)
-- **`/discord-link tag:#TAG`** — lie ton compte Clash à ton Discord (tag2 et tag3 optionnels pour comptes multiples)
-- **`/discord-check clan:N`** — vérifie quels membres d'un clan sont présents sur le serveur Discord
+1. **`/trust`** : analyse la fiabilité d'un joueur. Options : `tag:#TAG`
+2. **`/trust-clan`** : liste tous les membres peu fiables d'un clan de la famille. Options : `clan:N`
+3. **`/late`** : liste les joueurs en retard sur leurs decks de la journée (avant le reset). Options : `clan:N`
+4. **`/chelem`** : liste les joueurs ayant fait 16/16 decks toutes les semaines d'une saison (par défaut : la dernière saison terminée). Options : `clan:N [season:X]`
+5. **`/promote`** : liste les joueurs ayant atteint ≥ 2600 pts la semaine précédente. Options : `clan:N min:X`
+6. **`/top-players`** : liste les meilleurs joueurs de la famille en fonction de la période. Options : `number:X period:[week|season] scope:[previous|actual]`
+7. **`/demote`** : liste les joueurs n’ayant pas fait tous leurs combats GDC la semaine précédente. Options : `clan:N`
+8. **`/discord-link`** : lie son compte Clash à son Discord. Options : `tag:#TAG` (tag2 et tag3 optionnels pour comptes multiples)
+9. **`/discord-check`** : vérifie quels membres d'un clan sont présents sur le serveur Discord. Options : `clan:N`
 
 > Remarque : l'installation de ce bot n'est réalisable que par displaynone.
+
+## Notifications Discord automatiques
+
+Deux scripts permettent de publier des messages dans les channels Discord des clans :
+
+1. **Entrées/Sorties** : détecte les entrées et sorties de membres par comparaison entre deux snapshots. Post automatique dans le channel Discord du clan.
+2. **Résumé GDC** : poste un résumé de la journée de GDC qui vient de se terminer dans chaque channel clan. Poste un résumé de la semaine lorsque le dernier jour de la GDC est fini.
 
 <img width="802" height="656" alt="image" src="https://github.com/user-attachments/assets/7b0409be-0518-424f-a959-3c4a1fbb22b5" />
 
@@ -94,33 +97,6 @@ Cinq commandes disponibles :
 - Pour analyser rapidement un tag sans recharger, collez-le dans l'URL.
 
 ---
-
-## � Notifications Discord automatiques
-
-Deux scripts permettent de publier des messages dans les channels Discord des clans :
-
-- `node scripts/notifyMemberChanges.js`
-  - détecte les entrées et sorties de membres par comparaison entre le cache
-    clan existant (`frontend/public/clan-cache/*.json`) et l’état actuel de l’API
-    Clash Royale.
-  - à exécuter avant `npm run cache` pour que le cache précédent n’ait pas encore
-    été écrasé.
-  - options :
-    - `--dry-run` : affiche l’embed qui serait posté sans appeler Discord.
-    - `--simulate` : génère un embed fictif pour tous les clans sans appel API.
-
-- `node scripts/notifyWarSummary.js`
-  - poste un résumé de la journée de GDC qui vient de se terminer dans chaque
-    channel clan.
-  - doit être exécuté après 09:40 UTC pour couvrir la journée précédente
-    (J1/J2/J3/J4 selon le reset GDC).
-  - option :
-    - `--dry-run` : affiche l’embed sans poster.
-
-Ces scripts utilisent les variables d’environnement suivantes :
-
-- `DISCORD_TOKEN` pour authentifier le bot Discord
-- `DISCORD_CHANNEL_MEMBERS_<TAG>` pour le channel de chaque clan autorisé
 
 ## �🛠  Pour les développeurs
 
