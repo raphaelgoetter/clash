@@ -45,7 +45,7 @@ Liste des commandes disponibles :
 
 > Remarque : l'installation de ce bot n'est réalisable que par displaynone.
 
-## Notifications Discord automatiques
+## 📮 Notifications Discord automatiques
 
 Deux scripts permettent de publier des messages dans les channels Discord des clans :
 
