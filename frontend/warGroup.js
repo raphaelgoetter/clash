@@ -77,6 +77,7 @@ export function renderRaceGroupCard(data, t) {
     const membersVal = clan.members != null ? `${clan.members}/50` : '—';
     const trophiesVal = clan.clanWarTrophies != null ? `🏆 ${fmtNum(clan.clanWarTrophies)}` : '—';
     const scoreVal = clan.clanScore != null ? `📊 ${fmtNum(clan.clanScore)}` : '—';
+    const prevWarVal = clan.prevWarFame != null ? `⚔️ ${fmtNum(clan.prevWarFame)}` : '—';
     const lastWarVal = clan.lastWarFame != null ? `⚔️ ${fmtNum(clan.lastWarFame)}` : '—';
 
     return `<tr class="war-group-row${isOwn ? ' war-group-own' : ''}">
@@ -85,6 +86,7 @@ export function renderRaceGroupCard(data, t) {
       <td class="war-group-members">${membersVal}</td>
       <td class="war-group-trophies">${trophiesVal}</td>
       <td class="war-group-score">${scoreVal}</td>
+      <td class="war-group-prev-war">${prevWarVal}</td>
       <td class="war-group-last-war">${lastWarVal}</td>
     </tr>`;
   }).join('');
@@ -97,6 +99,7 @@ export function renderRaceGroupCard(data, t) {
         <th class="war-group-members">${t('labelMembers')}</th>
         <th class="war-group-trophies">${t('labelWarTrophies')}</th>
         <th class="war-group-score">${t('labelClanScore')}</th>
+        <th class="war-group-prev-war">${t('warGroupPrevWar')}</th>
         <th class="war-group-last-war">${t('warGroupLastWar')}</th>
       </tr>
     </thead>

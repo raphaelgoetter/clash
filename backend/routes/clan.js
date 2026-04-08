@@ -477,6 +477,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     // Tout en parallèle par clan rival, les erreurs sont silencieuses pour ne pas bloquer l'analyse.
     const raceGroupRivalData = {};
     const rivalLastWarByTag = {};
+    const rivalPrevWarByTag = {};
     if (Array.isArray(currentRace?.clans)) {
       const ownTagNorm = `#${clanTag}`.toUpperCase();
       const rivalClans = currentRace.clans.filter(
@@ -491,11 +492,24 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               fetchRaceLog(c.tag),
             ]);
             raceGroupRivalData[tagNorm] = clanData;
+            // Fonction utilitaire : somme des fame individuelles des participants
+            // (standings.fame ne contient que le score du dernier jour en GDC classique)
+            const sumParticipantsFame = (standing) => {
+              const parts = standing?.clan?.participants ?? [];
+              return parts.length > 0
+                ? parts.reduce((sum, p) => sum + (p.fame ?? 0), 0)
+                : (standing?.clan?.fame ?? null);
+            };
             // Fame du dernier war terminé pour ce clan rival
             const lastStanding = (rivalLog?.[0]?.standings ?? []).find(
               (s) => (s.clan?.tag ?? '').toUpperCase() === tagNorm,
             );
-            rivalLastWarByTag[tagNorm] = lastStanding?.clan?.fame ?? null;
+            rivalLastWarByTag[tagNorm] = sumParticipantsFame(lastStanding);
+            // Fame de l'avant-dernière guerre (n-2) pour ce clan rival
+            const prevStanding = (rivalLog?.[1]?.standings ?? []).find(
+              (s) => (s.clan?.tag ?? '').toUpperCase() === tagNorm,
+            );
+            rivalPrevWarByTag[tagNorm] = sumParticipantsFame(prevStanding);
           } catch (_) {}
         }),
       );
@@ -1442,12 +1456,25 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       currentWarDays: clanWarSummary?.days ?? null, // expose the per-day summary for debug/insights
       raceGroup: currentRace?.clans
         ? (() => {
+            // Fonction utilitaire : somme des fame individuelles des participants
+            // (standings.fame ne contient que le score du dernier jour en GDC classique)
+            const sumParticipantsFame = (standing) => {
+              const parts = standing?.clan?.participants ?? [];
+              return parts.length > 0
+                ? parts.reduce((sum, p) => sum + (p.fame ?? 0), 0)
+                : (standing?.clan?.fame ?? null);
+            };
             // Fame du dernier war terminé pour le clan courant (depuis son propre raceLog)
             const ownTagNorm = `#${clanTag}`.toUpperCase();
             const ownLastStanding = (raceLog?.[0]?.standings ?? []).find(
               (s) => (s.clan?.tag ?? '').toUpperCase() === ownTagNorm,
             );
-            const ownLastWarFame = ownLastStanding?.clan?.fame ?? null;
+            const ownLastWarFame = sumParticipantsFame(ownLastStanding);
+            // Fame de l'avant-dernière guerre (n-2) pour le clan courant
+            const ownPrevStanding = (raceLog?.[1]?.standings ?? []).find(
+              (s) => (s.clan?.tag ?? '').toUpperCase() === ownTagNorm,
+            );
+            const ownPrevWarFame = sumParticipantsFame(ownPrevStanding);
 
             return currentRace.clans.map((c) => {
               const cTagNorm = (c.tag ?? '').toUpperCase();
@@ -1460,6 +1487,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 members:         extra?.members ?? null,
                 clanWarTrophies: extra?.clanWarTrophies ?? null,
                 clanScore:       extra?.clanScore ?? null,
+                prevWarFame:     isOwn ? ownPrevWarFame : (rivalPrevWarByTag[cTagNorm] ?? null),
                 lastWarFame:     isOwn ? ownLastWarFame : (rivalLastWarByTag[cTagNorm] ?? null),
               };
             });
