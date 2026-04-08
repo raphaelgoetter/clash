@@ -16,6 +16,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import fetch from 'node-fetch';
 import { fetchClanMembers } from '../backend/services/clashApi.js';
+import { getPlayerAnalysis } from '../backend/services/playerAnalysis.js';
 import { ALLOWED_CLANS } from '../backend/routes/clan.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -72,11 +73,46 @@ async function readClanName(tag) {
 }
 
 /**
+ * Formate une ligne de membre avec son score de fiabilité.
+ * @param {object} m - { tag, name, analysis? }
+ * @returns {string}
+ */
+function formatMemberLine(m) {
+  const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(m.tag)}`;
+  let reliabilityStr = '';
+
+  if (m.analysis?.warScore) {
+    const s = m.analysis.warScore;
+    const pct = Math.round(s.score ?? 0);
+    let verdict = s.verdict || '';
+    let emoji = '⚪';
+
+    if (pct >= 75) {
+      emoji = '🟢';
+      verdict = 'Fiable';
+    } else if (pct >= 61) {
+      emoji = '🟡';
+      verdict = 'Risque';
+    } else if (pct >= 31) {
+      emoji = '🟠';
+      verdict = 'Élevé';
+    } else {
+      emoji = '🔴';
+      verdict = 'Extrême';
+    }
+
+    reliabilityStr = ` · ${emoji} ${verdict} (${pct}%)`;
+  }
+
+  return `**[${m.name}](${playerUrl})**${reliabilityStr}`;
+}
+
+/**
  * Envoie un embed Discord dans le channel configuré pour ce clan.
  * @param {string} tag - tag du clan (sans #)
  * @param {string} clanName
- * @param {Array<{tag: string, name: string}>} arrivals
- * @param {Array<{tag: string, name: string}>} departures
+ * @param {Array<{tag: string, name: string, analysis?: object}>} arrivals
+ * @param {Array<{tag: string, name: string, analysis?: object}>} departures
  */
 async function postDiscordEmbed(tag, clanName, arrivals, departures) {
   const channelId = process.env[`DISCORD_CHANNEL_MEMBERS_${tag}`];
@@ -93,12 +129,7 @@ async function postDiscordEmbed(tag, clanName, arrivals, departures) {
   if (arrivals.length > 0) {
     fields.push({
       name: `🟢 Arrivée${arrivals.length > 1 ? 's' : ''} (${arrivals.length})`,
-      value: arrivals
-        .map((m) => {
-          const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(m.tag)}`;
-          return `**[${m.name}](${playerUrl})** (\`${m.tag}\`)`;
-        })
-        .join('\n'),
+      value: arrivals.map(formatMemberLine).join('\n'),
       inline: false,
     });
   }
@@ -106,12 +137,7 @@ async function postDiscordEmbed(tag, clanName, arrivals, departures) {
   if (departures.length > 0) {
     fields.push({
       name: `🔴 Départ${departures.length > 1 ? 's' : ''} (${departures.length})`,
-      value: departures
-        .map((m) => {
-          const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(m.tag)}`;
-          return `**[${m.name}](${playerUrl})** (\`${m.tag}\`)`;
-        })
-        .join('\n'),
+      value: departures.map(formatMemberLine).join('\n'),
       inline: false,
     });
   }
@@ -208,6 +234,19 @@ async function main() {
       }
 
       console.log(`[${tag}] Changements détectés — ${arrivals.length} arrivée(s), ${departures.length} départ(s).`);
+
+      // Enrichissement avec les scores de fiabilité (en parallèle pour les arrivées et départs)
+      const allChanges = [...arrivals, ...departures];
+      await Promise.all(
+        allChanges.map(async (m) => {
+          try {
+            m.analysis = await getPlayerAnalysis(m.tag);
+          } catch (err) {
+            console.warn(`[${tag}] Impossible de récupérer l'analyse pour ${m.tag}: ${err.message}`);
+          }
+        }),
+      );
+
       await postDiscordEmbed(tag, clanName, arrivals, departures);
     } catch (err) {
       console.error(`[${tag}] Erreur : ${err.message}`);

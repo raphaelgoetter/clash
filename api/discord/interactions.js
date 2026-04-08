@@ -120,6 +120,9 @@ const LABEL_FR = {
   'Regularity': 'Régularité',
   'Avg Score': 'Score moyen',
   'Stability': 'Stabilité',
+  'Points': 'Points',
+  'Member Reliability': 'Fiabilité membre',
+  'Historical Win Rate': 'Winrate historique',
   // fallback: other labels can be added if needed
 };
 function breakdownField(item) {
@@ -587,7 +590,7 @@ export default async function handler(req, res) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              content: `✅ Aucun membre en High/Extreme risk trouvé dans ${resolved.name}.`,
+              content: `✅ Aucun membre avec un risque Élevé/Extrême trouvé dans ${resolved.name}.`,
               flags: 64,
             }),
           });
@@ -595,14 +598,15 @@ export default async function handler(req, res) {
         }
 
         const VERDICT_EMOJI = { 'Extreme risk': '🔴', 'High risk': '🟠' };
+        const VERDICT_LABELFr = { 'Extreme risk': 'Extrême', 'High risk': 'Élevé' };
         const clanUrl = `https://trustroyale.vercel.app/?mode=clan&tag=%23${resolved.tag}`;
         const allRows = filtered.map((m) => {
           const newTag = m.isNew ? ' 🆕' : '';
           const emoji = VERDICT_EMOJI[m.verdict] ?? '⚠️';
           const pct = Math.round(Number(m.reliability ?? 0));
-          const verdict = (m.verdict || '').replace(/\s*risk$/i, '');
+          const verdictLabel = VERDICT_LABELFr[m.verdict] || (m.verdict || '').replace(/\s*risk$/i, '');
           const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(m.tag)}`;
-          return `- [${m.name}](${playerUrl})${newTag} · ${emoji} ${verdict} (${pct}%)`;
+          return `- [${m.name}](${playerUrl})${newTag} · ${emoji} ${verdictLabel} (${pct}%)`;
         });
 
         let description;
@@ -755,7 +759,8 @@ export default async function handler(req, res) {
 
         const displayedRows = selectedMode === 'bottom' ? [...selectedRows].reverse() : selectedRows;
         const rows = displayedRows.map((p, idx) => `${idx + 1}. [${p.name}](${p.playerUrl}) · ${p.battlesPerDay}`);
-        const descriptionHeader = `Mode : ${selectedMode} | ${selectedRows.length} membres (limit 25)\n\n`;
+        const modeLabel = selectedMode === 'bottom' ? 'Bas du classement' : 'Haut du classement';
+        const descriptionHeader = `Mode : ${modeLabel} | ${selectedRows.length} membres (limite 25)\n\n`;
         const description = descriptionHeader + rows.join('\n');
 
         const embed = {
@@ -1048,15 +1053,14 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
-        const apiResp = await fetch(
-          `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis`,
-          { headers: { Accept: 'application/json' } },
-        );
+        const apiUrl = `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis?includeTopPlayers=false&includeUncomplete=false`;
+        const apiResp = await fetch(apiUrl);
         if (!apiResp.ok) {
+          const msg = `Erreur API : ${apiResp.status}`;
           await fetch(webhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: `Erreur API clan (${apiResp.status}).`, flags: 64 }),
+            body: JSON.stringify({ content: msg, flags: 64 }),
           });
           return;
         }
