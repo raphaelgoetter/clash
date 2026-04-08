@@ -1,20 +1,22 @@
-# ⚔️ TrustRoyale — analyseur de fiabilité des guerres de clan
+# ⚔️ TrustRoyale
 
-TrustRoyale est un outil Clash Royale servant à évaluer rapidement la
-fiabilité des joueurs et clans avant les recrutements ou les guerres.
+TrustRoyale est le Bot officiel de la ☆. Resistance Family 🛠️
 
-Le service se compose :
+- Suivez en temps réel les statistiques de nos clans
+- Analysez vos performances et celles des autres joueurs
+- Optimisez votre stratégie
 
-- d'une application web accessible sur
-  `https://trustroyale.vercel.app` ;
-- d'un bot Discord (commande `/trust`) permettant de lancer une analyse
-  depuis un serveur Discord.
+TrustRoyale se compose :
+
+1. d'une application web accessible sur `https://trustroyale.vercel.app` ;
+2. d'un bot Discord (commandes `/`) permettant de lancer diverses analyses
+  depuis notre serveur Discord.
 
 <img width="612" height="100" alt="image" src="https://github.com/user-attachments/assets/9c05c90d-7890-4e32-aa8c-550909837c58" />
 
 ## 🚀 Utilisation de l'application web
 
-1. Rendez-vous sur <https://trustroyale.vercel.app>.
+1. Rendez-vous sur <https://trustroyale.vercel.app> (version anglaise ou française disponibles)
 2. Choisissez le mode `Player` ou `Clan` en haut.
 3. Saisissez le tag du joueur ou du clan (le `#` est ajouté automatiquement)
    puis cliquez sur **Analyze**.
@@ -22,16 +24,16 @@ Le service se compose :
    - fiche d'aperçu (nom, tag, trophées, etc.) ;
    - indicateurs d'activité et graphiques (logs de bataille/guerre) ;
    - score de fiabilité en pourcentage suivant les données disponibles ;
-   - verdict couleur (vert, jaune, orange, rouge).
+   - etc.
 
 Un bouton étoile permet d'enregistrer le tag en « favori » ; la liste des
 favoris se retrouve sous la barre de recherche.
 
----
+## 🤖 Utilisation du Bot Discord
 
-## 🤖 Bot Discord
+Commencer par taper `/` dans le chat pour voir la liste des commandes disponibles.
 
-Liste des commandes disponibles :
+Liste des commandes :
 
 1. **`/trust`** : analyse la fiabilité d'un joueur. Options : `tag:#TAG`
 2. **`/trust-clan`** : liste tous les membres peu fiables d'un clan de la famille. Options : `clan:N`
@@ -47,10 +49,10 @@ Liste des commandes disponibles :
 
 ## 📮 Notifications Discord automatiques
 
-Deux scripts permettent de publier des messages dans les channels Discord des clans :
+En plus des commandes du Bot, deux scripts permettent de publier automatiquement des messages dans les channels Discord des clans :
 
 1. **Entrées/Sorties** : détecte les entrées et sorties de membres par comparaison entre deux snapshots. Post automatique dans le channel Discord du clan.
-2. **Résumé GDC** : poste un résumé de la journée de GDC qui vient de se terminer dans chaque channel clan. Poste un résumé de la semaine lorsque le dernier jour de la GDC est fini.
+2. **Résumé GDC** : poste un résumé de la journée de GDC qui vient de se terminer dans chaque channel clan. Poste un résumé de la semaine lorsque le dernier jour de la GDC est terminé.
 
 <img width="802" height="656" alt="image" src="https://github.com/user-attachments/assets/7b0409be-0518-424f-a959-3c4a1fbb22b5" />
 
@@ -62,39 +64,6 @@ Deux scripts permettent de publier des messages dans les channels Discord des cl
   partagés entre appareils.
 - Le lien de partage de l'analyse (`https://trustroyale.vercel.app/?mode=...`) peut
   être copié et envoyé à d'autres membres du clan.
-- Sur la fiche joueur, le tag du clan renvoie désormais vers la page RoyaleAPI du
-  clan (les analyses directes ne sont possibles que pour les 3 clans autorisés).
-- La note jaune/verte en haut à droite indique si les données provenaient du cache
-  (`Cached content 🔃`) ou non (`Live data`).
-  Elle affiche aussi l'âge du dernier snapshot de decks&nbsp;: "Snapshot : today ✅",
-  "Snapshot : yesterday ⚠️" ou une date plus ancienne (⚠️/❌ selon le jour).
-  Si aucun snapshot n'a encore été enregistré pour le clan, la mention devient
-  "Snapshot : none (no data) ❌".
-  Les snapshots sont pris automatiquement lorsque des logs de guerre sont disponibles.
-  Chaque snapshot contient désormais un champ `gdcPeriod` (UTC) qui indique
-  précisément l'intervalle couvert par ce snapshot (par ex. "Sat 10:40 → Sun 10:40").
-
-- Les pages de clan utilisent en priorité des données pré‑calculées
-  (fichiers JSON issus de `npm run cache` et embarqués dans
-  `frontend/public/clan-cache`) afin d'afficher instantanément l'aperçu
-  et les graphiques (< 200 ms). Pendant ce temps, la liste des membres
-  affiche un indicateur de chargement. Les données live arrivent ensuite
-  (~3 s) et remplacent la liste des membres une seule fois, sans décalage
-  visuel (*skeleton pattern*). L'aperçu et les graphiques sont également
-  mis à jour silencieusement avec les valeurs fraîches.
-- Le serveur garde également un petit cache mémoire (TTL ≈ 30 s) pour
-  accélérer les navigations répétées sur la même instance. Ce dernier ne
-  persiste pas entre redémarrages, mais évite des recomputations trop
-  fréquentes lors d'un simple retour arrière dans le navigateur.
-- Sur la vue clan, le badge **new** indique seulement que l'analyse n'a pas
-  pu s'appuyer sur un historique de guerre complet. Il n'apparait plus si le
-  membre n'a pas été vu dans le jeu depuis plus d'une semaine (pour éviter de
-  considérer comme « nouveau » un ancien membre rentré sans jouer).
-- **Transferts familiaux** : si un joueur passe d'un clan de la famille
-  (`Y8JUPC9C`, `LRQP20V9`, `QU9UQJRL`) à un autre et qu'il a joué au moins 13 decks
-  la semaine précédente, son historique est automatiquement fusionné et il
-  est marqué **transfer** (score calé sur le vrai war log, pas sur le battle log).
-- Pour analyser rapidement un tag sans recharger, collez-le dans l'URL.
 
 ---
 
