@@ -93,7 +93,12 @@ async function postDiscordEmbed(tag, clanName, arrivals, departures) {
   if (arrivals.length > 0) {
     fields.push({
       name: `🟢 Arrivée${arrivals.length > 1 ? 's' : ''} (${arrivals.length})`,
-      value: arrivals.map((m) => `**${m.name}** (\`${m.tag}\`)`).join('\n'),
+      value: arrivals
+        .map((m) => {
+          const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(m.tag)}`;
+          return `**[${m.name}](${playerUrl})** (\`${m.tag}\`)`;
+        })
+        .join('\n'),
       inline: false,
     });
   }
@@ -101,7 +106,12 @@ async function postDiscordEmbed(tag, clanName, arrivals, departures) {
   if (departures.length > 0) {
     fields.push({
       name: `🔴 Départ${departures.length > 1 ? 's' : ''} (${departures.length})`,
-      value: departures.map((m) => `**${m.name}** (\`${m.tag}\`)`).join('\n'),
+      value: departures
+        .map((m) => {
+          const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(m.tag)}`;
+          return `**[${m.name}](${playerUrl})** (\`${m.tag}\`)`;
+        })
+        .join('\n'),
       inline: false,
     });
   }
