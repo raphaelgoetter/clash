@@ -101,6 +101,24 @@ export function computeCurrentWeekId(currentRace, raceLog) {
 }
 
 /**
+ * Calcule le seasonId en cours (ex. 131).
+ *
+ * @param {object|null} currentRace  Réponse /currentriverrace
+ * @param {Array}       raceLog      Guerres terminées — raceLog[0] = la plus récente
+ * @returns {number|null}            L'ID de la saison ou null si données insuffisantes
+ */
+export function computeCurrentSeasonId(currentRace, raceLog) {
+  if (!currentRace || !raceLog?.length) return raceLog?.[0]?.seasonId || null;
+  const currSection = currentRace.sectionIndex ?? 0;
+  const lastEntry = raceLog[0];
+  if (lastEntry.seasonId == null) return null;
+  let seasonId = lastEntry.seasonId;
+  // Rollover : sectionIndex qui repart de 0 indique une nouvelle saison
+  if (currSection <= (lastEntry.sectionIndex ?? -1)) seasonId++;
+  return seasonId;
+}
+
+/**
  * Calcule le weekId de la dernière semaine terminée (ex. "S130W4").
  *
  * @param {Array} raceLog  Guerres terminées — raceLog[0] = la plus récente

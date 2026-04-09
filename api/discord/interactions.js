@@ -491,9 +491,8 @@ export default async function handler(req, res) {
         }
 
         // Déduire le weekId depuis le raceLog (première entrée = semaine précédente)
-        const weekId = raceLog?.[0]
-          ? `S${raceLog[0].seasonId}W${raceLog[0].sectionIndex + 1}`
-          : 'S?';
+        const { computePrevWeekId } = await import('../../backend/services/dateUtils.js');
+        const weekId = computePrevWeekId(raceLog) || 'S?';
 
         let description;
         if (players.length === 0) {
@@ -617,12 +616,13 @@ export default async function handler(req, res) {
           description = allRows.slice(0, MAX_ROWS).join('\n') + `\n...et ${allRows.length - MAX_ROWS} autres`; 
         }
 
+        const weekId = analysis.prevWeekId || analysis.clanWarSummary?.weekId || 'S?';
         const embed = {
           title: `⚠️  ${resolved.name} (${filtered.length} joueurs à risque)`,
           url: clanUrl,
           color: 0xe67e22,
           description,
-          footer: { text: `Clan : ${resolved.name}` },
+          footer: { text: `Clan : ${resolved.name} · Semaine : ${weekId}` },
         };
 
         await fetch(webhookUrl, {
@@ -817,6 +817,8 @@ export default async function handler(req, res) {
         const clanRaceLogs = {};
         const currentRaceByClan = {};
 
+        const { computeCurrentSeasonId, computeCurrentWeekId, computePrevWeekId } = await import('../../backend/services/dateUtils.js');
+
         for (const clan of CLANS) {
           const [raceLog, members, currentRace] = await Promise.all([
             fetchRaceLog(`#${clan.tag}`),
@@ -828,13 +830,14 @@ export default async function handler(req, res) {
 
           if (Array.isArray(raceLog) && raceLog.length > 0) {
             clanRaceLogs[clan.tag] = raceLog;
-            if (currentSeason === null) currentSeason = raceLog[0]?.seasonId;
+            
+            if (currentSeason === null) {
+              currentSeason = computeCurrentSeasonId(currentRace, raceLog);
+            }
 
             if (defaultSeason === null) {
               // Saison par défaut = la plus récente saison TERMINÉE.
-              // On exclut la saison active (currentRace.seasonId) car elle est encore en cours,
-              // même si elle a déjà ≥ 4 semaines dans le log (cas des saisons à 5 semaines).
-              const localCurrentSeasonId = currentRace?.seasonId ?? raceLog[0]?.seasonId;
+              // On exclut la saison active (currentSeason) car elle est encore en cours.
               const localSeasonCounts = {};
               for (const week of raceLog) {
                 const sid = week?.seasonId;
@@ -844,8 +847,8 @@ export default async function handler(req, res) {
 
               const sortedSeasons = Object.keys(localSeasonCounts).map(Number).sort((a, b) => b - a);
               defaultSeason =
-                sortedSeasons.find((sid) => sid !== localCurrentSeasonId && localSeasonCounts[sid] >= 4) ??
-                sortedSeasons.find((sid) => sid !== localCurrentSeasonId) ??
+                sortedSeasons.find((sid) => sid !== currentSeason && localSeasonCounts[sid] >= 4) ??
+                sortedSeasons.find((sid) => sid !== currentSeason) ??
                 sortedSeasons[0];
             }
 
@@ -970,21 +973,17 @@ export default async function handler(req, res) {
             ? (function () {
                 for (const clan of CLANS) {
                   const currentRace = currentRaceByClan[clan.tag];
-                  if (currentRace?.seasonId != null && currentRace?.sectionIndex != null) {
-                    return `S${currentRace.seasonId}-W${currentRace.sectionIndex + 1}`;
-                  }
+                  const raceLog = clanRaceLogs[clan.tag];
+                  const currentWeekId = computeCurrentWeekId(currentRace, raceLog);
+                  if (currentWeekId) return currentWeekId;
                 }
                 return null;
               })()
             : (function () {
                 for (const clan of CLANS) {
                   const raceLog = clanRaceLogs[clan.tag];
-                  if (Array.isArray(raceLog) && raceLog.length > 0) {
-                    const week = raceLog[0];
-                    if (week?.seasonId != null && week?.sectionIndex != null) {
-                      return `S${week.seasonId}-W${week.sectionIndex + 1}`;
-                    }
-                  }
+                  const prevWeekId = computePrevWeekId(raceLog);
+                  if (prevWeekId) return prevWeekId;
                 }
                 return null;
               })();
@@ -1165,16 +1164,18 @@ export default async function handler(req, res) {
           return;
         }
 
+        const { computeCurrentSeasonId } = await import('../../backend/services/dateUtils.js');
+
         // Saison par défaut = la plus récente saison TERMINÉE dans le log.
         // Si toutes les semaines de la saison courante sont déjà dans le raceLog (>= 4),
         // c'est que la saison est terminée (ex. Colisée fini) → on peut l'utiliser comme défaut.
-        const currentSeasonId = currentRace?.seasonId ?? raceLog[0]?.seasonId;
+        const currentSeasonId = computeCurrentSeasonId(currentRace, raceLog);
         const seasonCounts = {};
         for (const r of raceLog) {
           seasonCounts[r.seasonId] = (seasonCounts[r.seasonId] || 0) + 1;
         }
         const sortedSeasons = Object.keys(seasonCounts).map(Number).sort((a, b) => b - a);
-        const currentSeasonIsComplete = (seasonCounts[currentSeasonId] ?? 0) >= 4;
+        const currentSeasonIsComplete = currentSeasonId && (seasonCounts[currentSeasonId] ?? 0) >= 4;
         const defaultSeason = currentSeasonIsComplete
           ? (sortedSeasons.find((sid) => seasonCounts[sid] >= 4) ?? sortedSeasons[0])
           : (
