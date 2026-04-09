@@ -1715,8 +1715,15 @@ export default async function handler(req, res) {
         const ownTag = `#${resolved.tag}`.toUpperCase();
         const FAMILY_TAGS = new Set(['#Y8JUPC9C', '#LRQP20V9', '#QU9UQJRL']);
 
-        // Trier par lastWarFame décroissant
-        const sorted = [...raceGroup].sort((a, b) => (b.lastWarFame ?? 0) - (a.lastWarFame ?? 0));
+        const isWarPeriod = raceGroup.some(c => c.projectedFame != null);
+
+        // Trier par projection si GDC active, sinon par lastWarFame décroissant
+        const sorted = [...raceGroup].sort((a, b) => {
+          if (isWarPeriod) {
+            return (b.projectedFame ?? 0) - (a.projectedFame ?? 0);
+          }
+          return (b.lastWarFame ?? 0) - (a.lastWarFame ?? 0);
+        });
 
         const fmt = (n) => typeof n === 'number' ? n.toLocaleString('fr-FR') : '—';
 
@@ -1729,7 +1736,7 @@ export default async function handler(req, res) {
             ? `https://trustroyale.vercel.app/?mode=clan&tag=${encodeURIComponent(clanTag)}`
             : `https://trustroyale.vercel.app/?mode=clan&tag=${encodeURIComponent(clanTag)}`;
           const rank = `**#${idx + 1}**`;
-          const nameStr = `[${clan.name ?? clanTag}](${url})`;
+          const nameStr = `**[${clan.name ?? clanTag}](${url})**`;
           const bold = isOwn ? '__' : '';
           
           const members   = clan.members != null ? `👥 ${clan.members}/50` : '';
@@ -1743,7 +1750,16 @@ export default async function handler(req, res) {
           }
           const lastWar   = clan.lastWarFame != null ? `**${fmt(clan.lastWarFame)}**${trend}` : '';
           
-          const extras = [members, trophies, prevWar, lastWar].filter(Boolean).join(' · ');
+          let extras = [members, trophies, prevWar, lastWar].filter(Boolean).join(' · ');
+          
+          // Ajouter indicateurs GDC si disponibles
+          if (isWarPeriod && clan.projectedFame != null) {
+            const decks = `🎴 ${clan.decksToday != null ? clan.decksToday : '?'}/${clan.targetDecksToday || 200}`;
+            const eff   = `🎯 ${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(1) : '?'}`;
+            const proj  = `🔮 **${fmt(Math.round(clan.projectedFame))}**`;
+            extras += `\n${decks} · ${eff} · ${proj}`;
+          }
+
           return `${rank} ${bold}${nameStr}${bold}\n${extras}`;
         });
 
@@ -1752,7 +1768,7 @@ export default async function handler(req, res) {
           title: `⚔️ Groupe de GDC — ${resolved.name}`,
           color: 0xe74c3c,
           description: rows.join('\n\n'),
-          footer: { text: `Liste triée par Total Dernière GDC` },
+          footer: { text: isWarPeriod ? `Liste triée par Projection (fin de journée)` : `Liste triée par Total Dernière GDC` },
         };
 
         await fetch(webhookUrl, {
