@@ -1540,8 +1540,11 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 const targetDecks = avgDecksLastWeek || 200;
                 
                 if (totalDecksWeekly > 0) {
+                  // Efficacité (E) : Points ÷ Decks (Hebdomadaire)
                   ptsPerDeck = currentFame / totalDecksWeekly;
-                  // Projection fin de journée = fame actuelle + (decks restants * efficacité)
+                  
+                  // Projection (P) = Fame actuelle + (Decks restants vers cible T * E)
+                  // T = Moyenne quotidienne semaine passée (targetDecks)
                   const remaining = Math.max(0, targetDecks - decksToday);
                   projectedFame = currentFame + (remaining * ptsPerDeck);
                 }
