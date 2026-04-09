@@ -54,9 +54,11 @@ export function renderRaceGroupCard(data, t) {
   }
   container.classList.remove('hidden');
 
-  // Titre
+  // Titre et Description
   const titleEl = container.querySelector('.card-title');
-  if (titleEl) titleEl.textContent = `${t('warGroupTitle')}`;
+  if (titleEl) titleEl.textContent = t('warGroupTitle');
+  const descEl = container.querySelector('#war-group-description');
+  if (descEl) descEl.textContent = t('warGroupDescription');
 
   // Trier : par projection si GDC active, sinon par last war fame décroissant
   const sorted = [...raceGroup].sort((a, b) => {
