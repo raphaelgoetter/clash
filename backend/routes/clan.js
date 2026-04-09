@@ -499,26 +499,28 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     const raceGroupRivalData = {};
     const rivalLastWarByTag = {};
     const rivalPrevWarByTag = {};
+    const rivalCurrentRaceByTag = {};
+
     if (includeRaceGroup && Array.isArray(currentRace?.clans)) {
       const ownTagNorm = `#${clanTag}`.toUpperCase();
       const rivalClans = currentRace.clans.filter(
         (c) => c.tag && c.tag.toUpperCase() !== ownTagNorm,
       );
 
-      // Timeout de sécurité : si les rivaux mettent > 4s, on continue sans eux
-      // pour éviter le 504 (timeout global 10s-15s sur Vercel).
-      const timeoutPromise = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), ms));
+      // Timeout de sécurité pour éviter le 504 global (Vercel)
+      const timeoutPromise = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Rivals')), ms));
+
+      console.log(`[clan] Fetching data for ${rivalClans.length} rivals of ${ownTagNorm}...`);
 
       await Promise.race([
         Promise.allSettled(
           rivalClans.map(async (c) => {
             const tagNorm = c.tag.toUpperCase();
-            try {
-              const [clanData, rivalLog] = await Promise.all([
-                fetchClan(c.tag),
-                fetchRaceLog(c.tag),
-              ]);
-              raceGroupRivalData[tagNorm] = clanData;
+            console.log(`[clan]   -> Fetching rival ${tagNorm} (${c.name})...`);
+            
+            // On traite chaque rival indépendamment pour maximiser les chances
+            const clanProm = fetchClan(c.tag).then(res => { raceGroupRivalData[tagNorm] = res; }).catch(e => console.warn(`[clan]     ! fetchClan ${tagNorm} failed:`, e.message));
+            const logProm = fetchRaceLog(c.tag).then(rivalLog => {
               const lastStanding = (rivalLog?.[0]?.standings ?? []).find(
                 (s) => (s.clan?.tag ?? '').toUpperCase() === tagNorm,
               );
@@ -527,15 +529,17 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 (s) => (s.clan?.tag ?? '').toUpperCase() === tagNorm,
               );
               rivalPrevWarByTag[tagNorm] = sumParticipantsFame(prevStanding);
-            } catch (err) {
-              console.warn(`[clan] Failed to fetch rival ${c.tag}:`, err.message);
-            }
+            }).catch(e => console.warn(`[clan]     ! fetchRaceLog ${tagNorm} failed:`, e.message));
+            const currProm = fetchCurrentRace(c.tag).then(res => { rivalCurrentRaceByTag[tagNorm] = res; }).catch(e => console.warn(`[clan]     ! fetchCurrentRace ${tagNorm} failed:`, e.message));
+
+            return Promise.allSettled([clanProm, logProm, currProm]);
           })
         ),
-        timeoutPromise(6000)
+        timeoutPromise(14000)
       ]).catch((err) => {
-        console.warn('[clan] Rival fetching reached safety timeout or failed:', err.message);
+        console.warn('[clan] Rival fetching timed out or failed globally:', err.message);
       });
+      console.log(`[clan] Finished fetching rivals. Found extra data for tags:`, Object.keys(raceGroupRivalData));
     }
 
     let topPlayers = null;
@@ -1486,11 +1490,35 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             );
             const ownPrevWarFame = sumParticipantsFame(ownPrevStanding);
 
-            return currentRace.clans.map((c) => {
+            const isWarPeriod = currentRace?.periodType === 'warDay';
+
+            // Step 1: Pré-calcul des projections pour tous les clans du groupe
+            const groupWithProjections = currentRace.clans.map((c) => {
               const cTagNorm = (c.tag ?? '').toUpperCase();
               const isOwn = cTagNorm === ownTagNorm;
-              // Attempt lookup in extra data collected for rivals
               const extra = isOwn ? clan : (raceGroupRivalData[cTagNorm] || null);
+              const raceData = isOwn ? currentRace : (rivalCurrentRaceByTag[cTagNorm] || null);
+
+              let decksToday = null;
+              let ptsPerDeck = null;
+              let projectedFame = null;
+
+              if (isWarPeriod && raceData?.clan?.participants) {
+                const parts = raceData.clan.participants;
+                decksToday = parts.reduce((s, p) => s + (p.decksUsedToday ?? 0), 0);
+                const totalDecksWeekly = parts.reduce((s, p) => s + (p.decksUsed ?? 0), 0);
+                
+                // Méthode la plus fiable : on somme la fame de chaque participant
+                const currentFame = parts.reduce((s, p) => s + (p.fame ?? 0), 0);
+                
+                if (totalDecksWeekly > 0) {
+                  ptsPerDeck = currentFame / totalDecksWeekly;
+                  // Projection fin de journée = fame actuelle + (decks restants * efficacité)
+                  const remaining = Math.max(0, 200 - decksToday);
+                  projectedFame = currentFame + (remaining * ptsPerDeck);
+                }
+              }
+
               return {
                 tag:             c.tag ?? null,
                 name:            c.name ?? null,
@@ -1500,8 +1528,24 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 clanScore:       c.fame ?? extra?.clanScore ?? 0,
                 prevWarFame:     isOwn ? ownPrevWarFame : (rivalPrevWarByTag[cTagNorm] ?? null),
                 lastWarFame:     isOwn ? ownLastWarFame : (rivalLastWarByTag[cTagNorm] ?? null),
+                // Nouveaux champs
+                decksToday,
+                ptsPerDeck,
+                projectedFame,
               };
             });
+
+            // Step 2: Déterminer le rang projeté pour chaque clan
+            if (isWarPeriod) {
+              const sortedByProjection = [...groupWithProjections].sort((a, b) => (b.projectedFame ?? 0) - (a.projectedFame ?? 0));
+              groupWithProjections.forEach((c) => {
+                if (c.projectedFame !== null) {
+                  c.projectedRank = sortedByProjection.findIndex((s) => s.tag === c.tag) + 1;
+                }
+              });
+            }
+
+            return groupWithProjections;
           })()
         : null,
       rateLimited: memberRateLimited,

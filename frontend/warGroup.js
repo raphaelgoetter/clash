@@ -45,6 +45,7 @@ export function renderRaceGroupCard(data, t) {
 
   const raceGroup = data.raceGroup;
   const ownTag = (data.clan?.tag ?? '').replace('#', '').toUpperCase();
+  const isWarPeriod = data.isWarPeriod === true;
 
   // Masquer la card si pas de données
   if (!Array.isArray(raceGroup) || raceGroup.length === 0) {
@@ -57,8 +58,13 @@ export function renderRaceGroupCard(data, t) {
   const titleEl = container.querySelector('.card-title');
   if (titleEl) titleEl.textContent = `${t('warGroupTitle')}`;
 
-  // Trier : last war fame décroissant
-  const sorted = [...raceGroup].sort((a, b) => (b.lastWarFame ?? 0) - (a.lastWarFame ?? 0));
+  // Trier : par projection si GDC active, sinon par last war fame décroissant
+  const sorted = [...raceGroup].sort((a, b) => {
+    if (isWarPeriod && b.projectedFame != null && a.projectedFame != null) {
+      return b.projectedFame - a.projectedFame;
+    }
+    return (b.lastWarFame ?? 0) - (a.lastWarFame ?? 0);
+  });
 
   const tbody = container.querySelector('.war-group-list');
   if (!tbody) return;
@@ -71,10 +77,9 @@ export function renderRaceGroupCard(data, t) {
 
     const nameHtml = `<a href="${url}" class="${isFamilyMember ? 'war-group-family-link' : 'war-group-external-link'}">${clan.name ?? clan.tag}</a>`;
 
-    const displayRank = clan.rank ?? (idx + 1);
+    const displayRank = isWarPeriod ? (clan.projectedRank ?? idx + 1) : (clan.rank ?? (idx + 1));
     const rankBadge = `<span class="war-group-rank">#${displayRank}</span>`;
 
-    const membersVal = clan.members != null ? `${clan.members}/50` : '—';
     const trophiesVal = clan.clanWarTrophies != null ? `🏆 ${fmtNum(clan.clanWarTrophies)}` : '—';
     const prevWarVal = clan.prevWarFame != null ? `${fmtNum(clan.prevWarFame)}` : '—';
     
@@ -85,26 +90,44 @@ export function renderRaceGroupCard(data, t) {
     }
     const lastWarVal = clan.lastWarFame != null ? `${fmtNum(clan.lastWarFame)}${trendIcon}` : '—';
 
+    // Nouvelles colonnes GDC
+    const decksNowHtml = isWarPeriod ? `<td class="war-group-decks-now">${clan.decksToday != null ? clan.decksToday : '—'}</td>` : '';
+    const avgPtsHtml = isWarPeriod ? `<td class="war-group-avg-pts">${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(1) : '—'}</td>` : '';
+    
+    let projectionHtml = '';
+    if (isWarPeriod) {
+      const projVal = clan.projectedFame != null ? fmtNum(Math.round(clan.projectedFame)) : '—';
+      const rankKey = `warGroupRank${clan.projectedRank}`;
+      const projRankLabel = clan.projectedRank ? ` <span class="war-group-proj-rank">(${t(rankKey) || clan.projectedRank})</span>` : '';
+      projectionHtml = `<td class="war-group-projection">${projVal}${projRankLabel}</td>`;
+    }
+
     return `<tr class="war-group-row${isOwn ? ' war-group-own' : ''}">
       <td class="war-group-rank-cell">${rankBadge}</td>
       <td class="war-group-name">${nameHtml}</td>
-      <td class="war-group-members">${membersVal}</td>
       <td class="war-group-trophies">${trophiesVal}</td>
       <td class="war-group-prev-war">${prevWarVal}</td>
       <td class="war-group-last-war">${lastWarVal}</td>
+      ${decksNowHtml}
+      ${avgPtsHtml}
+      ${projectionHtml}
     </tr>`;
   }).join('');
 
-  tbody.innerHTML = `
+  const headers = `
     <thead>
       <tr>
         <th class="war-group-rank-cell"></th>
         <th class="war-group-name">${t('labelName')}</th>
-        <th class="war-group-members">${t('labelMembers')}</th>
         <th class="war-group-trophies">${t('labelWarTrophies')}</th>
         <th class="war-group-prev-war">${t('warGroupPrevWar')}</th>
         <th class="war-group-last-war">${t('warGroupLastWar')}</th>
+        ${isWarPeriod ? `<th class="war-group-decks-now">${t('warGroupDecksToday')}</th>` : ''}
+        ${isWarPeriod ? `<th class="war-group-avg-pts">${t('warGroupPtsPerDeck')}</th>` : ''}
+        ${isWarPeriod ? `<th class="war-group-projection">${t('warGroupProjection')}</th>` : ''}
       </tr>
     </thead>
-    <tbody>${rows}</tbody>`;
+  `;
+
+  tbody.innerHTML = `${headers}<tbody>${rows}</tbody>`;
 }

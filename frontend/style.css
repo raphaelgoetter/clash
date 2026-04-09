@@ -332,7 +332,10 @@ code {
 .war-group-trophies,
 .war-group-score,
 .war-group-prev-war,
-.war-group-last-war {
+.war-group-last-war,
+.war-group-decks-now,
+.war-group-avg-pts,
+.war-group-projection {
   padding: 8px;
   text-align: right;
   color: var(--text-secondary);
