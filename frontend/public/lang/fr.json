@@ -197,5 +197,6 @@
   "clickToLoadRaceGroup": "Ouvrez cette section pour comparer les clans du groupe (peut prendre quelques secondes).",
   "warGroupLastWar": "Dernière GDC",
   "warGroupDescription": "Comparez les 5 clans du groupe de River Race actuel",
-  "warGroupRankSuffix": "clst"
+  "warGroupRankSuffix": "clst",
+  "warGroupTargetTooltip": "Moyenne quotidienne semaine passée : {{target}}"
 }

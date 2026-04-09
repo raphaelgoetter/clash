@@ -93,7 +93,9 @@ export function renderRaceGroupCard(data, t) {
     const lastWarVal = clan.lastWarFame != null ? `${fmtNum(clan.lastWarFame)}${trendIcon}` : '—';
 
     // Nouvelles colonnes GDC
-    const decksNowHtml = isWarPeriod ? `<td class="war-group-decks-now">${clan.decksToday != null ? clan.decksToday : '—'}</td>` : '';
+    const targetVal = clan.targetDecksToday || 200;
+    const tooltipText = t('warGroupTargetTooltip').replace('{{target}}', targetVal);
+    const decksNowHtml = isWarPeriod ? `<td class="war-group-decks-now" title="${tooltipText}">${clan.decksToday != null ? clan.decksToday : '—'}</td>` : '';
     const avgPtsHtml = isWarPeriod ? `<td class="war-group-avg-pts">${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(1) : '—'}</td>` : '';
     
     let projectionHtml = '';

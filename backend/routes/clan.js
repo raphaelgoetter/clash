@@ -496,9 +496,16 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     const includeRaceGroup  = options.includeRaceGroup === true || options.includeRaceGroup === 'true' || options.includeRaceGroup === '1' || options.includeRaceGroup === 1;
 
 
+    const sumParticipantsDecks = (standing) => {
+      const parts = standing?.clan?.participants;
+      if (!Array.isArray(parts) || parts.length === 0) return null;
+      return parts.reduce((s, p) => s + (p.decksUsed ?? 0), 0);
+    };
+
     const raceGroupRivalData = {};
     const rivalLastWarByTag = {};
     const rivalPrevWarByTag = {};
+    const rivalAvgDecksByTag = {}; // Moyenne quotidienne de la semaine passée
     const rivalCurrentRaceByTag = {};
 
     if (includeRaceGroup && Array.isArray(currentRace?.clans)) {
@@ -525,6 +532,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 (s) => (s.clan?.tag ?? '').toUpperCase() === tagNorm,
               );
               rivalLastWarByTag[tagNorm] = sumParticipantsFame(lastStanding);
+              const totalDecksLastWeek = sumParticipantsDecks(lastStanding);
+              if (totalDecksLastWeek != null) {
+                rivalAvgDecksByTag[tagNorm] = totalDecksLastWeek / 4;
+              }
               const prevStanding = (rivalLog?.[1]?.standings ?? []).find(
                 (s) => (s.clan?.tag ?? '').toUpperCase() === tagNorm,
               );
@@ -1493,6 +1504,18 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             const isWarPeriod = currentRace?.periodType === 'warDay';
 
             // Step 1: Pré-calcul des projections pour tous les clans du groupe
+            // Calcul de la moyenne de decks de la semaine passée pour ce clan
+            let ownAvgDecks = null;
+            if (Array.isArray(raceLog) && raceLog[0]) {
+              const lastStanding = (raceLog[0].standings ?? []).find(
+                (s) => (s.clan?.tag ?? '').replace('#', '').toUpperCase() === clanTag.toUpperCase()
+              );
+              const totalDecksLastWeek = sumParticipantsDecks(lastStanding);
+              if (totalDecksLastWeek != null) {
+                ownAvgDecks = totalDecksLastWeek / 4;
+              }
+            }
+
             const groupWithProjections = currentRace.clans.map((c) => {
               const cTagNorm = (c.tag ?? '').toUpperCase();
               const isOwn = cTagNorm === ownTagNorm;
@@ -1511,12 +1534,20 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 // Méthode la plus fiable : on somme la fame de chaque participant
                 const currentFame = parts.reduce((s, p) => s + (p.fame ?? 0), 0);
                 
+                // On utilise la moyenne de la semaine passée comme cible réaliste,
+                // ou 200 comme fallback.
+                const avgDecksLastWeek = isOwn ? ownAvgDecks : rivalAvgDecksByTag[cTagNorm];
+                const targetDecks = avgDecksLastWeek || 200;
+                
                 if (totalDecksWeekly > 0) {
                   ptsPerDeck = currentFame / totalDecksWeekly;
                   // Projection fin de journée = fame actuelle + (decks restants * efficacité)
-                  const remaining = Math.max(0, 200 - decksToday);
+                  const remaining = Math.max(0, targetDecks - decksToday);
                   projectedFame = currentFame + (remaining * ptsPerDeck);
                 }
+                
+                // On transmet la cible pour affichage
+                c.targetDecksToday = Math.round(targetDecks);
               }
 
               return {
@@ -1532,6 +1563,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 decksToday,
                 ptsPerDeck,
                 projectedFame,
+                targetDecksToday: c.targetDecksToday,
               };
             });
 
