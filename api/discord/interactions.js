@@ -1740,36 +1740,42 @@ export default async function handler(req, res) {
           const nameStr = `**[${clan.name ?? clanTag}](${url})**`;
           const bold = isOwn ? '__' : '';
           
-          const members   = clan.members != null ? `👥 ${clan.members}/50` : '';
           const trophies  = clan.clanWarTrophies != null ? `🏆 ${fmt(clan.clanWarTrophies)}` : '';
-          const prevWar   = clan.prevWarFame != null ? `🛡️ ${fmt(clan.prevWarFame)}` : '';
+          
+          let prevWarStr = clan.prevWarFame != null ? `🛡️ ${fmt(clan.prevWarFame)} (n-2)` : '';
           
           let trend = '';
           if (clan.lastWarFame != null && clan.prevWarFame != null) {
             if (clan.lastWarFame > clan.prevWarFame) trend = ' ⬆';
             else if (clan.lastWarFame < clan.prevWarFame) trend = ' ⬇';
           }
-          const lastWar   = clan.lastWarFame != null ? `**${fmt(clan.lastWarFame)}**${trend}` : '';
+          let lastWarStr = clan.lastWarFame != null ? `⚔️ **${fmt(clan.lastWarFame)}** (Last)${trend}` : '';
           
-          let extras = [members, trophies, prevWar, lastWar].filter(Boolean).join(' · ');
+          let line1 = `${rank} ${bold}${nameStr}${bold} ${trophies}`.trim();
+          let line2 = [prevWarStr, lastWarStr].filter(Boolean).join(' · ');
           
+          let row = `${line1}\n${line2}`;
+
           // Ajouter indicateurs GDC si disponibles
           if (isWarPeriod && clan.projectedFame != null) {
-            const decks = `🎴 ${clan.decksToday != null ? clan.decksToday : '?'}`;
-            const eff   = `🎯 ${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(1) : '?'}`;
-            const proj  = `🔮 **${fmt(Math.round(clan.projectedFame))}**`;
-            extras += `\n${decks} · ${eff} · ${proj}`;
+            const decks = `🎴 ${clan.decksToday != null ? clan.decksToday : '?'} decks`;
+            const eff   = `🎯 ${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(1) : '?'} pts/d`;
+            const proj  = `🔮 Proj: **${fmt(Math.round(clan.projectedFame))}**`;
+            row += `\n${decks} · ${eff} · ${proj}`;
           }
 
-          return `${rank} ${bold}${nameStr}${bold}\n${extras}`;
+          return row;
         });
 
+        const footerText = isWarPeriod 
+          ? `Trié par Projection · 🛡️ n-2 GDC · ⚔️ Dernière GDC · 🔮 Estimé fin de journée`
+          : `Trié par Total Dernière GDC · 🛡️ n-2 GDC · ⚔️ Dernière GDC`;
 
         const embed = {
           title: `⚔️ Groupe de GDC — ${resolved.name}`,
           color: 0xe74c3c,
           description: rows.join('\n\n'),
-          footer: { text: isWarPeriod ? `Liste triée par Projection (fin de journée)` : `Liste triée par Total Dernière GDC` },
+          footer: { text: footerText },
         };
 
         await fetch(webhookUrl, {
