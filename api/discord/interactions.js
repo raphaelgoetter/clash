@@ -1754,7 +1754,7 @@ export default async function handler(req, res) {
           
           // Ajouter indicateurs GDC si disponibles
           if (isWarPeriod && clan.projectedFame != null) {
-            const decks = `🎴 ${clan.decksToday != null ? clan.decksToday : '?'}/${clan.targetDecksToday || 200}`;
+            const decks = `🎴 ${clan.decksToday != null ? clan.decksToday : '?'}`;
             const eff   = `🎯 ${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(1) : '?'}`;
             const proj  = `🔮 **${fmt(Math.round(clan.projectedFame))}**`;
             extras += `\n${decks} · ${eff} · ${proj}`;
