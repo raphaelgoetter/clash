@@ -1781,7 +1781,7 @@
       "trophies": 11281,
       "donations": 226,
       "totalDonations": 231540,
-      "donationsReceived": 220,
+      "donationsReceived": 230,
       "expLevel": 78,
       "reliability": 49,
       "reliabilitySource": "player",
@@ -2201,7 +2201,7 @@
       "trophies": 10330,
       "donations": 142,
       "totalDonations": 44323,
-      "donationsReceived": 150,
+      "donationsReceived": 160,
       "expLevel": 63,
       "reliability": 66,
       "reliabilitySource": "player",
@@ -4359,7 +4359,7 @@
       "tag": "#VGJ9LL8VC",
       "role": "coLeader",
       "trophies": 12673,
-      "donations": 388,
+      "donations": 408,
       "totalDonations": 33645,
       "donationsReceived": 280,
       "expLevel": 66,
@@ -4411,7 +4411,7 @@
         "daysFromThu": 0
       },
       "warDecks": 4,
-      "lastSeen": "20260409T164515.000Z",
+      "lastSeen": "20260409T171013.000Z",
       "scoreVersion": "2026-04-07-v1"
     }
   ],
@@ -4486,7 +4486,7 @@
   "snapshotToday": false,
   "snapshotDate": "2026-04-09",
   "warCurrentWeekId": "S131W1",
-  "snapshotTakenAt": "2026-04-09T17:09:45.236Z",
+  "snapshotTakenAt": "2026-04-09T17:18:32.982Z",
   "raceGroup": [
     {
       "tag": "#P898QQQ8",
@@ -4500,6 +4500,7 @@
       "decksToday": 76,
       "ptsPerDeck": 167.10526315789474,
       "projectedFame": 30120.723684210527,
+      "targetDecksToday": 180,
       "projectedRank": 2
     },
     {
@@ -4514,6 +4515,7 @@
       "decksToday": 105,
       "ptsPerDeck": 170,
       "projectedFame": 31620,
+      "targetDecksToday": 186,
       "projectedRank": 1
     },
     {
@@ -4528,6 +4530,7 @@
       "decksToday": 104,
       "ptsPerDeck": 162.5,
       "projectedFame": 29656.25,
+      "targetDecksToday": 183,
       "projectedRank": 3
     },
     {
@@ -4539,9 +4542,10 @@
       "clanScore": 0,
       "prevWarFame": 74975,
       "lastWarFame": 91050,
-      "decksToday": 33,
-      "ptsPerDeck": 148.4848484848485,
-      "projectedFame": 21604.545454545456,
+      "decksToday": 36,
+      "ptsPerDeck": 148.61111111111111,
+      "projectedFame": 21622.916666666668,
+      "targetDecksToday": 146,
       "projectedRank": 4
     },
     {
@@ -4553,13 +4557,14 @@
       "clanScore": 0,
       "prevWarFame": 64325,
       "lastWarFame": 82600,
-      "decksToday": 61,
-      "ptsPerDeck": 160.65573770491804,
-      "projectedFame": 20845.081967213115,
+      "decksToday": 62,
+      "ptsPerDeck": 161.29032258064515,
+      "projectedFame": 20927.41935483871,
+      "targetDecksToday": 130,
       "projectedRank": 5
     }
   ],
   "rateLimited": false,
   "raceLogUnavailable": false,
-  "analysisCacheUpdatedAt": "2026-04-09T17:09:56.763Z"
+  "analysisCacheUpdatedAt": "2026-04-09T17:18:40.593Z"
 }
