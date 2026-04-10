@@ -393,21 +393,15 @@ router.get("/:tag/analysis", async (req, res) => {
       }
 
       try {
-        const clean = clanTag.replace(/[^A-Za-z0-9]/g, "");
-        const staticPath = path.join(
-          process.cwd(),
-          "frontend",
-          "public",
-          "clan-cache",
-          `${clean}.json`,
-        );
-        const raw = await fs.readFile(staticPath, "utf-8");
-        const fallbackData = JSON.parse(raw);
-        fallbackData.fallbackReason = "publicCache";
-        fallbackData.rateLimited = true;
-        res.set("X-Cache", "STALE");
-        res.set("Cache-Control", "no-store, max-age=0, must-revalidate");
-        return res.status(200).json(fallbackData);
+        // Utilise loadClanCache pour respecter la priorité /tmp → bundle statique
+        const fallbackData = await loadClanCache(clanTag);
+        if (fallbackData) {
+          fallbackData.fallbackReason = "publicCache";
+          fallbackData.rateLimited = true;
+          res.set("X-Cache", "STALE");
+          res.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+          return res.status(200).json(fallbackData);
+        }
       } catch (fallbackErr) {
         console.warn(
           `[clan] rate-limited public fallback failed for ${clanTag}:`,
