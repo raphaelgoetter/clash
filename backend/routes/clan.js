@@ -255,10 +255,6 @@ router.get("/:tag/analysis", async (req, res) => {
           ? nowMs - new Date(diskCached.analysisCacheUpdatedAt).getTime()
           : Number.MAX_SAFE_INTEGER;
 
-        const requiresTopPlayers = includeTopPlayers;
-        const requiresUncomplete = includeUncomplete;
-        const hasTopPlayers = !!diskCached.topPlayers;
-        const hasUncomplete = !!diskCached.uncomplete;
         // The raceGroup is considered "complete" if at least one rival has war fame data.
         const hasFullRaceGroup =
           includeRaceGroup &&
@@ -269,10 +265,9 @@ router.get("/:tag/analysis", async (req, res) => {
               (c.lastWarFame !== null || c.prevWarFame !== null),
           );
 
-        const canUseDiskCache =
-          (!requiresTopPlayers || hasTopPlayers) &&
-          (!requiresUncomplete || hasUncomplete) &&
-          (!includeRaceGroup || hasFullRaceGroup);
+        // topPlayers et uncomplete sont toujours calculés désormais — seul raceGroup
+        // justifie une clé de cache distincte (appels rivaux supplémentaires).
+        const canUseDiskCache = !includeRaceGroup || hasFullRaceGroup;
 
         if (!forceRefresh && age <= DISK_CACHE_TTL_MS && canUseDiskCache) {
           // Fresh cache: safe to return directly.
@@ -298,8 +293,6 @@ router.get("/:tag/analysis", async (req, res) => {
           setTimeout(async () => {
             try {
               const fresh = await buildClanAnalysis(clanTag, {
-                includeTopPlayers,
-                includeUncomplete,
                 includeRaceGroup,
               });
               await saveClanCache(clanTag, fresh).catch(() => null);
@@ -318,17 +311,16 @@ router.get("/:tag/analysis", async (req, res) => {
 
     // short-lived in-memory cache to speed up back/forward and repeated
     // clicks on the same instance.  TTL is small so stale issues are rare.
-    // Include includeTopPlayers/includeUncomplete in cache key so we don't
-    // serve a payload with excluded sections when the user explicitly requested them.
-    const cacheKey = `clan:${clanTag}:top=${includeTopPlayers ? 1 : 0}:uncomplete=${includeUncomplete ? 1 : 0}:group=${includeRaceGroup ? 1 : 0}`;
+    // topPlayers et uncomplete sont toujours calculés dans le payload — seul
+    // includeRaceGroup entraîne des appels API supplémentaires (rivaux) et
+    // justifie une clé distincte.
+    const cacheKey = `clan:${clanTag}:group=${includeRaceGroup ? 1 : 0}`;
     try {
       let payload;
       let fromCache = false;
       if (forceRefresh) {
         payload = await buildClanAnalysis(clanTag, {
           forceRefresh: true,
-          includeTopPlayers,
-          includeUncomplete,
           includeRaceGroup,
         });
         // force refresh est une demande forte, mettre à jour cache public clan
@@ -336,12 +328,7 @@ router.get("/:tag/analysis", async (req, res) => {
       } else {
         const cached = await getOrSet(
           cacheKey,
-          () =>
-            buildClanAnalysis(clanTag, {
-              includeTopPlayers,
-              includeUncomplete,
-              includeRaceGroup,
-            }),
+          () => buildClanAnalysis(clanTag, { includeRaceGroup }),
           5 * 60 * 1000,
         );
         payload = cached.value;
@@ -677,18 +664,15 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     );
   }
 
+  // topPlayers est toujours calculé (pas d'appel API supplémentaire : réutilise
+  // raceLog déjà chargé) pour que le cache unifié le contienne dès le 1er appel.
   let topPlayers = null;
-  if (includeTopPlayers) {
-    // compute top players for a few predefined points quotas so the frontend
-    // can render the "Last War Best Players" card without additional
-    // network requests. The helper gracefully handles missing logs.
-    topPlayers = await computeTopPlayers(
-      clanTag,
-      members,
-      [2400, 2600, 2800],
-      raceLog,
-    );
-  }
+  topPlayers = await computeTopPlayers(
+    clanTag,
+    members,
+    [2400, 2600, 2800],
+    raceLog,
+  );
 
   // Preload family clan race logs to detect recent transfers between clans.
   // This avoids querying the API repeatedly for each member.
@@ -837,16 +821,15 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     }
   });
 
-  // compute list of players who didn't do the full 16 decks last week (with breakdown)
+  // uncomplete est toujours calculé (pas d'appel API supplémentaire : réutilise
+  // battleLogsByTag déjà chargé) pour que le cache unifié le contienne dès le 1er appel.
   let uncomplete = null;
-  if (includeUncomplete) {
-    uncomplete = await computeUncomplete(
-      clanTag,
-      members,
-      battleLogsByTag,
-      raceLog,
-    );
-  }
+  uncomplete = await computeUncomplete(
+    clanTag,
+    members,
+    battleLogsByTag,
+    raceLog,
+  );
 
   // override/update daily breakdown using snapshots if available and race log exists
   let weekSnaps = [];
@@ -959,7 +942,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
   }
 
   // First pass: compute war scores for all members (concurrency-limited to avoid Clash API rate pressure)
-  const MEMBER_CONCURRENCY = 8;
+  const MEMBER_CONCURRENCY = 15;
   const memberTasks = members.map((m, idx) => async () => {
     let reliabilityScore,
       verdict,

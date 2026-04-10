@@ -11,25 +11,40 @@
 - **Déploiement** : Vercel (`vercel --prod` depuis la racine), `api/index.js` comme entrée serverless
 - **Cache** : in-memory, TTL 15 min (`backend/services/cache.js`)
 
+## Système de fichiers sur Vercel Serverless — règle absolue
+
+Les fonctions Vercel s'exécutent dans un environnement **read-only** sauf pour `/tmp`.
+
+| Chemin                                              | Accès                  | Usage                                                                                                                                                                   |
+| --------------------------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/tmp/`                                             | **lecture + écriture** | Seul dossier writable. Utiliser `/tmp/<sous-dossier>/` pour tout fichier généré à l'exécution. Durée de vie : le container Lambda (quelques minutes à quelques heures). |
+| Tout le reste (`frontend/`, `data/`, `backend/`, …) | **lecture seule**      | Fichiers bundlés au déploiement. Écrire dessus échoue silencieusement ou lève une erreur.                                                                               |
+
+**Conséquences pratiques :**
+
+- `clanCache.js` écrit dans `/tmp/clan-cache/` et lit d'abord `/tmp`, puis `frontend/public/clan-cache/` (bundle statique pré-généré par `npm run cache`).
+- `snapshot.js` et tout code qui crée/modifie des fichiers JSON au runtime doivent pointer vers `/tmp/`.
+- `data/war-summary-log.json`, `data/discord-links.json` : lisibles depuis le bundle, **non modifiables** sur Vercel — les scripts qui y écrivent ne fonctionnent qu'en local ou via CI.
+
 ## Architecture des services backend
 
 `backend/services/` est découpé en modules spécialisés. **Ne jamais réécrire dans `analysisService.js` directement** — c'est désormais un barrel de ré-exports.
 
-| Fichier | Rôle |
-|---|---|
-| `analysisService.js` | **Barrel** — re-exporte tout pour rétrocompatibilité |
-| `dateUtils.js` | `parisOffsetMs`, `warResetOffsetMs`, `warDayKey`, `parseClashDate`, `MS_PER_DAY`, **`computeCurrentWeekId`**, **`computePrevWeekId`** |
-| `battleLogUtils.js` | `filterWarBattles`, `categorizeBattleLog`, `expandDuelRounds`, `isWarWin/Loss`, `buildDailyActivity` |
-| `warScoring.js` | `computeWarScore`, `computeWarReliabilityFallback`, `scoreTotalDonations`, `estimateWinsFromFame` |
-| `warHistory.js` | `buildWarHistory`, `buildFamilyWarHistory` (avec cache course) |
-| `playerAnalysis.js` | `analyzePlayer`, `getPlayerAnalysis`, `buildCurrentWarDays`, `computeIsNewPlayer`, `computeMemberReliability` |
-| `clashApi.js` | Wrappers HTTP vers l'API Clash Royale |
-| `cache.js` | Cache mémoire générique (`getOrSet`, `invalidate`) |
-| `clanCache.js` | Lecture/écriture du cache clan persistant (JSON sur disque) |
-| `snapshot.js` | Snapshots de decksUsed quotidiens (fichiers `data/snapshots/`) |
-| `discordLinks.js` | Mapping tag joueur → Discord ID (GitHub Gist + fallback local) |
-| `topplayers.js` | `computeTopPlayers` — classement de la famille par points |
-| `uncomplete.js` | `computeUncomplete` — liste des joueurs avec < 16 decks |
+| Fichier              | Rôle                                                                                                                                  |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `analysisService.js` | **Barrel** — re-exporte tout pour rétrocompatibilité                                                                                  |
+| `dateUtils.js`       | `parisOffsetMs`, `warResetOffsetMs`, `warDayKey`, `parseClashDate`, `MS_PER_DAY`, **`computeCurrentWeekId`**, **`computePrevWeekId`** |
+| `battleLogUtils.js`  | `filterWarBattles`, `categorizeBattleLog`, `expandDuelRounds`, `isWarWin/Loss`, `buildDailyActivity`                                  |
+| `warScoring.js`      | `computeWarScore`, `computeWarReliabilityFallback`, `scoreTotalDonations`, `estimateWinsFromFame`                                     |
+| `warHistory.js`      | `buildWarHistory`, `buildFamilyWarHistory` (avec cache course)                                                                        |
+| `playerAnalysis.js`  | `analyzePlayer`, `getPlayerAnalysis`, `buildCurrentWarDays`, `computeIsNewPlayer`, `computeMemberReliability`                         |
+| `clashApi.js`        | Wrappers HTTP vers l'API Clash Royale                                                                                                 |
+| `cache.js`           | Cache mémoire générique (`getOrSet`, `invalidate`)                                                                                    |
+| `clanCache.js`       | Lecture/écriture du cache clan persistant (JSON sur disque)                                                                           |
+| `snapshot.js`        | Snapshots de decksUsed quotidiens (fichiers `data/snapshots/`)                                                                        |
+| `discordLinks.js`    | Mapping tag joueur → Discord ID (GitHub Gist + fallback local)                                                                        |
+| `topplayers.js`      | `computeTopPlayers` — classement de la famille par points                                                                             |
+| `uncomplete.js`      | `computeUncomplete` — liste des joueurs avec < 16 decks                                                                               |
 
 ## Semaine / Saison Clash Royale — source de vérité
 
@@ -54,13 +69,13 @@ npm run cache    # régénère frontend/public/clan-cache/*.json (via scripts/re
 
 ## Scripts utiles
 
-| Script | Commande / usage | Rôle |
-|---|---|---|
-| `scripts/refreshClanCache.js` | `npm run cache` | Précalcule et persiste l'analyse de tous les clans dans `frontend/public/clan-cache/` |
-| `scripts/collectSnapshots.js` | `node scripts/collectSnapshots.js` | Enregistre les snapshots de decksUsed quotidiens depuis le race log |
-| `scripts/registerCommands.js` | `node scripts/registerCommands.js` | Enregistre/met à jour les slash-commands Discord |
-| `scripts/notifyMemberChanges.js` | `npm run notify-members` | Diff membres clan (cache N-1 vs API actuelle) et poste un embed Discord par clan si changement. `--dry-run` affiche sans poster, `--simulate` utilise des données fictives |
-| `scripts/notifyWarSummary.js` | `npm run war-summary` | **Résumé quotidien GDC** — poste un embed dans chaque channel famille après le reset (10h05 UTC). J1→J3 : points + decks du jour vs veille. J4 (dimanche) : idem + bilan de semaine (points totaux, decks / 800, moyenne/jour). Colossée : pts = cumul natif du dernier snapshot ; GDC classique : somme des journées. Déduplication via `data/war-summary-log.json`. `--dry-run` affiche sans poster. Workflow : `.github/workflows/war-summary.yml`. |
+| Script                           | Commande / usage                   | Rôle                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| -------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `scripts/refreshClanCache.js`    | `npm run cache`                    | Précalcule et persiste l'analyse de tous les clans dans `frontend/public/clan-cache/`                                                                                                                                                                                                                                                                                                                                                                  |
+| `scripts/collectSnapshots.js`    | `node scripts/collectSnapshots.js` | Enregistre les snapshots de decksUsed quotidiens depuis le race log                                                                                                                                                                                                                                                                                                                                                                                    |
+| `scripts/registerCommands.js`    | `node scripts/registerCommands.js` | Enregistre/met à jour les slash-commands Discord                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `scripts/notifyMemberChanges.js` | `npm run notify-members`           | Diff membres clan (cache N-1 vs API actuelle) et poste un embed Discord par clan si changement. `--dry-run` affiche sans poster, `--simulate` utilise des données fictives                                                                                                                                                                                                                                                                             |
+| `scripts/notifyWarSummary.js`    | `npm run war-summary`              | **Résumé quotidien GDC** — poste un embed dans chaque channel famille après le reset (10h05 UTC). J1→J3 : points + decks du jour vs veille. J4 (dimanche) : idem + bilan de semaine (points totaux, decks / 800, moyenne/jour). Colossée : pts = cumul natif du dernier snapshot ; GDC classique : somme des journées. Déduplication via `data/war-summary-log.json`. `--dry-run` affiche sans poster. Workflow : `.github/workflows/war-summary.yml`. |
 
 ## Conventions de génération de scripts temporaires
 
@@ -117,7 +132,7 @@ return;
 - **Ne jamais importer `buildClanAnalysis` ou des services backend directement** dans un handler Discord — la fonction surchargerait et expirerait. Toujours passer par l'endpoint HTTP :
   - Joueur : `https://trustroyale.vercel.app/api/player/:tag/analysis`
   - Clan : `https://trustroyale.vercel.app/api/clan/:tag/analysis`
-- **Pas de backtick littéral multiligne dans une string** (`` '```\n' `` est correct, un vrai saut de ligne dans `'...'` est une SyntaxError qui crashe tout le module).
+- **Pas de backtick littéral multiligne dans une string** (`'```\n'` est correct, un vrai saut de ligne dans `'...'` est une SyntaxError qui crashe tout le module).
 - **`res.status(200).json({ type: 5 })` avant tout `await`** — si un await précède, Discord timeout car la réponse arrive trop tard.
 
 ### Enregistrement des commandes
@@ -130,17 +145,17 @@ node scripts/registerCommands.js
 
 ### Commandes disponibles
 
-| Commande | Description |
-|---|---|
-| `/trust tag:#TAG` | Analyse la fiabilité d'un joueur |
-| `/promote clan:N min:X` | Liste les joueurs ≥ X points de la semaine précédente |
-| `/trust-clan clan:N` | Liste les membres High/Extreme risk d'un clan |
-| `/chelem clan:N [season:X]` | Liste les joueurs 16/16 decks chaque semaine d'une saison |
-| `/top-players number:X period:[week|season] scope:[previous|actual]` | Liste les meilleurs joueurs de la famille pour la période demandée |
-| `/discord-link tag:#TAG` | Lie un compte Clash à un Discord |
-| `/discord-check clan:N` | Vérifie la présence Discord des membres d'un clan |
-| `/late clan:N` | Liste les retardataires de la journée de GDC (avant reset) |
-| `/compare clan:N` | Affiche les clans du groupe GDC (membres, trophées, score, dernière GDC) |
+| Commande                            | Description                                                              |
+| ----------------------------------- | ------------------------------------------------------------------------ | -------- | ------------------------------------------------------------------ |
+| `/trust tag:#TAG`                   | Analyse la fiabilité d'un joueur                                         |
+| `/promote clan:N min:X`             | Liste les joueurs ≥ X points de la semaine précédente                    |
+| `/trust-clan clan:N`                | Liste les membres High/Extreme risk d'un clan                            |
+| `/chelem clan:N [season:X]`         | Liste les joueurs 16/16 decks chaque semaine d'une saison                |
+| `/top-players number:X period:[week | season] scope:[previous                                                  | actual]` | Liste les meilleurs joueurs de la famille pour la période demandée |
+| `/discord-link tag:#TAG`            | Lie un compte Clash à un Discord                                         |
+| `/discord-check clan:N`             | Vérifie la présence Discord des membres d'un clan                        |
+| `/late clan:N`                      | Liste les retardataires de la journée de GDC (avant reset)               |
+| `/compare clan:N`                   | Affiche les clans du groupe GDC (membres, trophées, score, dernière GDC) |
 
 ## Sous-agents
 
