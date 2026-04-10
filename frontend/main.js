@@ -2442,7 +2442,7 @@ function renderClanWarCard(clanWarSummary, warResetUtcMinutes = null) {
     `<div class="war-progress-fill ${statusCls}" style="width:${pctFill}%"></div>` +
     `</div>` +
     `<div class="war-progress-meta">` +
-    `${t("warProgressDayOf", { day: dayNum, total: 4 })} · ${statusIcon} ${statusText}` +
+    `${t("warProgressDayOf", { day: dayNum, total: 4 })}` +
     `</div>` +
     `<div class="war-progress-note">⚠ ${snapshotWarning}</div>` +
     `${snapshotDataInvalid ? `<div class="war-progress-warning">⚠ ${t("warSnapshotDataInvalid")}</div>` : ""}` +
