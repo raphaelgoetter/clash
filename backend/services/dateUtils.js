@@ -8,6 +8,11 @@ export const MS_PER_DAY = 1000 * 60 * 60 * 24;
 /**
  * Heures de reset GDC par clan (UTC). Les clans absents de cette table utilisent
  * le défaut 09:40 UTC.
+ *
+ * ⚠️ ATTENTION : L'heure du reset de chaque clan (CLAN_RESET_TIMES) change à
+ * chaque nouvelle Saison. Elle n'est pas connue à l'avance et il faut la
+ * renseigner à la main à chaque saison.
+ *
  * @type {Object<string,{h:number,m:number}>}
  */
 export const CLAN_RESET_TIMES = {
