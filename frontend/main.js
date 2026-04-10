@@ -2015,7 +2015,7 @@ function renderCurrentWarCard(
     `<div class="war-progress-fill ${statusCls}" style="width:${pctFill}%"></div>` +
     `</div>` +
     `<div class="war-progress-meta">` +
-    `${t("warProgressDayOf", { day: dayNum, total: 4 })} · ${statusIcon} ${statusText}` +
+    `${t("warProgressDayOf", { day: dayNum, total: 4 })}` +
     `</div>` +
     `${daysFromThu > 0 && decksYesterdayAtThisHour != null ? `<div class="war-yesterday-hint">${t("warDecksYesterdayHour").replace("{{decks}}", decksYesterdayAtThisHour)}</div>` : ""}` +
     `<div class="war-progress-note">⚠ ${snapshotWarning}</div>` +
