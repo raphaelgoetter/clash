@@ -1516,6 +1516,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               }
             }
 
+            const warDayIndex = buildCurrentWarDays([], null, currentRace, clanTag)?.daysFromThu ?? 0;
+
             const groupWithProjections = currentRace.clans.map((c) => {
               const cTagNorm = (c.tag ?? '').toUpperCase();
               const isOwn = cTagNorm === ownTagNorm;
@@ -1534,17 +1536,24 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 // Méthode la plus fiable : on somme la fame de chaque participant
                 const currentFame = parts.reduce((s, p) => s + (p.fame ?? 0), 0);
                 
-                // On utilise la moyenne de la semaine passée comme cible réaliste,
-                // ou 200 comme fallback.
                 const avgDecksLastWeek = isOwn ? ownAvgDecks : rivalAvgDecksByTag[cTagNorm];
-                const targetDecks = avgDecksLastWeek || 200;
+                let targetDecks;
+
+                if (warDayIndex > 0) {
+                  // J2-J4 : la cible est basée sur la performance réelle des jours passés de cette semaine
+                  const decksPassed = totalDecksWeekly - decksToday;
+                  targetDecks = decksPassed / warDayIndex;
+                } else {
+                  // J1 (ou par défaut) : on utilise la moyenne de la semaine passée
+                  targetDecks = avgDecksLastWeek || 200;
+                }
                 
                 if (totalDecksWeekly > 0) {
                   // Efficacité (E) : Points ÷ Decks (Hebdomadaire)
                   ptsPerDeck = currentFame / totalDecksWeekly;
                   
                   // Projection (P) = Fame actuelle + (Decks restants vers cible T * E)
-                  // T = Moyenne quotidienne semaine passée (targetDecks)
+                  // T = Cible dynamique calculée plus haut
                   const remaining = Math.max(0, targetDecks - decksToday);
                   projectedFame = currentFame + (remaining * ptsPerDeck);
                 }
