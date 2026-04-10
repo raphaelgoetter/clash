@@ -92,10 +92,29 @@ export function renderRaceGroupCard(data, t) {
     }
     const lastWarVal = clan.lastWarFame != null ? `${fmtNum(clan.lastWarFame)}${trendIcon}` : '—';
 
-    // Nouvelles colonnes GDC
     const targetVal = clan.targetDecksToday || 200;
-    const tooltipText = t('warGroupTargetTooltip').replace('{{target}}', targetVal);
-    const decksNowHtml = isWarPeriod ? `<td class="war-group-decks-now" title="${tooltipText}">${clan.decksToday != null ? clan.decksToday : '—'}</td>` : '';
+    const decksTodayVal = clan.decksToday ?? 0;
+    const maxDecks = 200;
+
+    // Calcul des segments de la barre (en superposition)
+    const currentPct = Math.min(100, (decksTodayVal / maxDecks) * 100);
+    const targetPct = Math.min(100, (targetVal / maxDecks) * 100);
+
+    let decksNowHtml = '—';
+    if (isWarPeriod) {
+      const tooltipText = t('warGroupDecksTooltip')
+        .replace('{{decks}}', decksTodayVal)
+        .replace('{{target}}', targetVal);
+      decksNowHtml = `
+        <td class="war-group-decks-now" title="${tooltipText}">
+          <div class="wg-pbar-track">
+            <div class="wg-pbar-fill wg-pbar-current" style="width: ${currentPct}%"></div>
+            <div class="wg-pbar-fill wg-pbar-target" style="width: ${targetPct}%"></div>
+            <div class="wg-pbar-value">${decksTodayVal}</div>
+          </div>
+        </td>`;
+    }
+
     const avgPtsHtml = isWarPeriod ? `<td class="war-group-avg-pts">${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(1) : '—'}</td>` : '';
     
     let projectionHtml = '';
