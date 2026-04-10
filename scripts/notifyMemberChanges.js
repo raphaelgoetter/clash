@@ -7,24 +7,30 @@
 //   node scripts/notifyMemberChanges.js           — mode normal (poste sur Discord)
 //   node scripts/notifyMemberChanges.js --dry-run — affiche l'embed sans poster
 
-import dotenv from 'dotenv';
-dotenv.config({ path: './.env' });
+import dotenv from "dotenv";
+dotenv.config({ path: "./.env" });
 
-import { readFile } from 'fs/promises';
-import { existsSync } from 'fs';
-import { fileURLToPath } from 'url';
-import path from 'path';
-import fetch from 'node-fetch';
-import { fetchClanMembers } from '../backend/services/clashApi.js';
-import { getPlayerAnalysis } from '../backend/services/playerAnalysis.js';
-import { ALLOWED_CLANS } from '../backend/routes/clan.js';
+import { readFile } from "fs/promises";
+import { existsSync } from "fs";
+import { fileURLToPath } from "url";
+import path from "path";
+import fetch from "node-fetch";
+import { fetchClanMembers } from "../backend/services/clashApi.js";
+import { getPlayerAnalysis } from "../backend/services/playerAnalysis.js";
+import { ALLOWED_CLANS } from "../backend/routes/clan.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CACHE_DIR = path.join(__dirname, '..', 'frontend', 'public', 'clan-cache');
+const CACHE_DIR = path.join(
+  __dirname,
+  "..",
+  "frontend",
+  "public",
+  "clan-cache",
+);
 
-const DISCORD_API = 'https://discord.com/api/v10';
-const DRY_RUN = process.argv.includes('--dry-run');
-const SIMULATE = process.argv.includes('--simulate');
+const DISCORD_API = "https://discord.com/api/v10";
+const DRY_RUN = process.argv.includes("--dry-run");
+const SIMULATE = process.argv.includes("--simulate");
 
 /**
  * Lit le clan cache persisté pour un tag donné.
@@ -36,7 +42,7 @@ async function readCachedMembers(tag) {
   const filePath = path.join(CACHE_DIR, `${tag}.json`);
   if (!existsSync(filePath)) return null;
 
-  const raw = await readFile(filePath, 'utf-8');
+  const raw = await readFile(filePath, "utf-8");
   const data = JSON.parse(raw);
   const members = data.members ?? [];
   if (members.length === 0) return null;
@@ -67,7 +73,7 @@ async function fetchCurrentMembers(tag) {
 async function readClanName(tag) {
   const filePath = path.join(CACHE_DIR, `${tag}.json`);
   if (!existsSync(filePath)) return `#${tag}`;
-  const raw = await readFile(filePath, 'utf-8');
+  const raw = await readFile(filePath, "utf-8");
   const data = JSON.parse(raw);
   return data.clan?.name ?? `#${tag}`;
 }
@@ -79,26 +85,27 @@ async function readClanName(tag) {
  */
 function formatMemberLine(m) {
   const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(m.tag)}`;
-  let reliabilityStr = '';
+  let reliabilityStr = "";
 
-  if (m.analysis?.warScore) {
-    const s = m.analysis.warScore;
-    const pct = Math.round(s.score ?? 0);
-    let verdict = s.verdict || '';
-    let emoji = '⚪';
+  const scoreObj = m.analysis?.warScore ?? m.analysis?.reliability;
+  if (scoreObj) {
+    const s = scoreObj;
+    const pct = Math.round(s.pct ?? 0);
+    let verdict = s.verdict || "";
+    let emoji = "⚪";
 
     if (pct >= 75) {
-      emoji = '🟢';
-      verdict = 'Fiable';
+      emoji = "🟢";
+      verdict = "Fiable";
     } else if (pct >= 61) {
-      emoji = '🟡';
-      verdict = 'Risque';
+      emoji = "🟡";
+      verdict = "Risque";
     } else if (pct >= 31) {
-      emoji = '🟠';
-      verdict = 'Élevé';
+      emoji = "🟠";
+      verdict = "Élevé";
     } else {
-      emoji = '🔴';
-      verdict = 'Extrême';
+      emoji = "🔴";
+      verdict = "Extrême";
     }
 
     reliabilityStr = ` · ${emoji} ${verdict} (${pct}%)`;
@@ -120,34 +127,36 @@ async function postDiscordEmbed(tag, clanName, arrivals, departures) {
 
   // Couleur : vert = arrivées uniquement, rouge = départs uniquement, bleu = mixte
   let color;
-  if (arrivals.length > 0 && departures.length === 0) color = 0x57f287; // vert
-  else if (departures.length > 0 && arrivals.length === 0) color = 0xed4245; // rouge
+  if (arrivals.length > 0 && departures.length === 0)
+    color = 0x57f287; // vert
+  else if (departures.length > 0 && arrivals.length === 0)
+    color = 0xed4245; // rouge
   else color = 0x5865f2; // bleu
 
   const fields = [];
 
   if (arrivals.length > 0) {
     fields.push({
-      name: `🟢 Arrivée${arrivals.length > 1 ? 's' : ''} (${arrivals.length})`,
-      value: arrivals.map(formatMemberLine).join('\n'),
+      name: `🟢 Arrivée${arrivals.length > 1 ? "s" : ""} (${arrivals.length})`,
+      value: arrivals.map(formatMemberLine).join("\n"),
       inline: false,
     });
   }
 
   if (departures.length > 0) {
     fields.push({
-      name: `🔴 Départ${departures.length > 1 ? 's' : ''} (${departures.length})`,
-      value: departures.map(formatMemberLine).join('\n'),
+      name: `🔴 Départ${departures.length > 1 ? "s" : ""} (${departures.length})`,
+      value: departures.map(formatMemberLine).join("\n"),
       inline: false,
     });
   }
 
   const now = new Date();
-  const date = now.toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' }); // JJ/MM/AAAA
-  const time = now.toLocaleTimeString('fr-FR', {
-    timeZone: 'Europe/Paris',
-    hour: '2-digit',
-    minute: '2-digit',
+  const date = now.toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" }); // JJ/MM/AAAA
+  const time = now.toLocaleTimeString("fr-FR", {
+    timeZone: "Europe/Paris",
+    hour: "2-digit",
+    minute: "2-digit",
     hour12: false,
   });
 
@@ -159,13 +168,17 @@ async function postDiscordEmbed(tag, clanName, arrivals, departures) {
   };
 
   if (DRY_RUN) {
-    console.log(`\n[${tag}] ── DRY-RUN ── embed qui serait posté dans le channel ${channelId ?? '(non configuré)'} :`);
+    console.log(
+      `\n[${tag}] ── DRY-RUN ── embed qui serait posté dans le channel ${channelId ?? "(non configuré)"} :`,
+    );
     console.log(JSON.stringify({ embeds: [embed] }, null, 2));
     return;
   }
 
   if (!channelId) {
-    console.log(`[${tag}] DISCORD_CHANNEL_MEMBERS_${tag} non configuré — notification ignorée.`);
+    console.log(
+      `[${tag}] DISCORD_CHANNEL_MEMBERS_${tag} non configuré — notification ignorée.`,
+    );
     return;
   }
   if (!token) {
@@ -174,9 +187,9 @@ async function postDiscordEmbed(tag, clanName, arrivals, departures) {
   }
 
   const res = await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       Authorization: `Bot ${token}`,
     },
     body: JSON.stringify({ embeds: [embed] }),
@@ -187,7 +200,9 @@ async function postDiscordEmbed(tag, clanName, arrivals, departures) {
     throw new Error(`Discord API ${res.status}: ${err}`);
   }
 
-  console.log(`[${tag}] Notification envoyée (${arrivals.length} arrivée(s), ${departures.length} départ(s)).`);
+  console.log(
+    `[${tag}] Notification envoyée (${arrivals.length} arrivée(s), ${departures.length} départ(s)).`,
+  );
 }
 
 async function main() {
@@ -198,8 +213,11 @@ async function main() {
       await postDiscordEmbed(
         tag,
         clanName,
-        [{ tag: '#FAKEARRIVAL1', name: 'NouveauMembre' }, { tag: '#FAKEARRIVAL2', name: 'AutreArrivée' }],
-        [{ tag: '#FAKEDEPART1', name: 'AncienMembre' }],
+        [
+          { tag: "#FAKEARRIVAL1", name: "NouveauMembre" },
+          { tag: "#FAKEARRIVAL2", name: "AutreArrivée" },
+        ],
+        [{ tag: "#FAKEDEPART1", name: "AncienMembre" }],
       );
     }
     return;
@@ -216,7 +234,9 @@ async function main() {
       ]);
 
       if (!cached) {
-        console.log(`[${tag}] Pas de cache précédent — premier run, diff ignoré.`);
+        console.log(
+          `[${tag}] Pas de cache précédent — premier run, diff ignoré.`,
+        );
         continue;
       }
 
@@ -233,7 +253,9 @@ async function main() {
         continue;
       }
 
-      console.log(`[${tag}] Changements détectés — ${arrivals.length} arrivée(s), ${departures.length} départ(s).`);
+      console.log(
+        `[${tag}] Changements détectés — ${arrivals.length} arrivée(s), ${departures.length} départ(s).`,
+      );
 
       // Enrichissement avec les scores de fiabilité (en parallèle pour les arrivées et départs)
       const allChanges = [...arrivals, ...departures];
@@ -242,7 +264,9 @@ async function main() {
           try {
             m.analysis = await getPlayerAnalysis(m.tag);
           } catch (err) {
-            console.warn(`[${tag}] Impossible de récupérer l'analyse pour ${m.tag}: ${err.message}`);
+            console.warn(
+              `[${tag}] Impossible de récupérer l'analyse pour ${m.tag}: ${err.message}`,
+            );
           }
         }),
       );
