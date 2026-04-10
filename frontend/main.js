@@ -1651,17 +1651,19 @@ function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null, sn
 function warMiniBarHtml(warData) {
   if (!warData) return '<span class="war-mini-na">—</span>';
   const { totalDecksUsed, maxDecksWeek, maxDecksElapsed, arrivedMidWar, arrivedOnDay } = warData;
-  // Joueur arrivé en cours de semaine : icône distincte
-  if (arrivedMidWar) {
-    const dayName = DAY_NAMES[(arrivedOnDay ?? 1) - 1] ?? `day ${arrivedOnDay}`;
-    const tooltip = `${t('warArrived') || 'Arrived'} ${dayName} — ${t('warCantCountBattlesThisWeek') || "can't count battles this week"}`;
-    return `<div class="war-mini-arrived" title="${tooltip}">⚠</div>`;
-  }
+
   const pct = Math.round((totalDecksUsed / maxDecksWeek) * 100);
   const cls = totalDecksUsed >= maxDecksElapsed                   ? 'good'
             : totalDecksUsed >= Math.ceil(maxDecksElapsed / 2)   ? 'partial'
             :                                                        'bad';
-  return `<div class="war-mini-total" title="${totalDecksUsed}/${maxDecksElapsed} decks">` +
+
+  let title = `${totalDecksUsed}/${maxDecksElapsed} decks`;
+  if (arrivedMidWar) {
+    const dayName = DAY_NAMES[(arrivedOnDay ?? 1) - 1] ?? `day ${arrivedOnDay}`;
+    title += ` — ${t('warArrived') || 'Arrived'} ${dayName}`;
+  }
+
+  return `<div class="war-mini-total" title="${title}">` +
     `<div class="war-mini-track"><div class="war-mini-fill ${cls}" style="width:${pct}%"></div></div>` +
     `<span class="war-mini-text ${cls}">${totalDecksUsed}/${maxDecksElapsed}</span>` +
   `</div>`;
