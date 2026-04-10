@@ -33,7 +33,7 @@
 
 ## Semaine / Saison Clash Royale — source de vérité
 
-- Une saison dure environ un mois et commence toujours le **premier lundi du mois**, juste après le reset GDC (**09:40 UTC**).
+- Une saison dure environ un mois et commence toujours le **premier lundi du mois**, juste après le reset GDC (**09:40 UTC, ou selon le clan**).
 - Elle est composée de **3 à 5 semaines** selon le nombre de lundis dans le mois.
 - L'API représente les semaines avec `seasonId` (entier, ex. 130) et `sectionIndex` (0-based : W1=0, …, W5=4).
 - `/currentriverrace` **ne fournit pas de `seasonId`** — on le déduit de `raceLog[0].seasonId`.

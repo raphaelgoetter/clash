@@ -11,14 +11,16 @@ export const MS_PER_DAY = 1000 * 60 * 60 * 24;
  * @type {Object<string,{h:number,m:number}>}
  */
 export const CLAN_RESET_TIMES = {
-  'Y8JUPC9C': { h: 9, m: 50 }, // La Resistance (Clan 1) — reset spécifique 09:50 UTC
-  'LRQP20V9': { h: 9, m: 54 }, // Les Resistants (Clan 2) — reset spécifique 09:54 UTC
+  Y8JUPC9C: { h: 9, m: 52 }, // La Resistance (Clan 1) — reset spécifique 09:52 UTC
+  LRQP20V9: { h: 9, m: 54 }, // Les Resistants (Clan 2) — reset spécifique 09:54 UTC
 };
 
 /** Décalage UTC→Paris en ms pour une date donnée (+3 600 000 hiver, +7 200 000 été) */
 export function parisOffsetMs(date = new Date()) {
-  const p = new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
-  const u = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const p = new Date(
+    date.toLocaleString("en-US", { timeZone: "Europe/Paris" }),
+  );
+  const u = new Date(date.toLocaleString("en-US", { timeZone: "UTC" }));
   return p - u;
 }
 
@@ -28,7 +30,9 @@ export function parisOffsetMs(date = new Date()) {
  * @param {string|null} [clanTag]  Tag du clan sans '#' (ex. 'LRQP20V9'). Optionnel — fallback 09:40.
  */
 export function warResetOffsetMs(clanTag = null) {
-  const cfg = clanTag ? CLAN_RESET_TIMES[String(clanTag).replace('#', '').toUpperCase()] : null;
+  const cfg = clanTag
+    ? CLAN_RESET_TIMES[String(clanTag).replace("#", "").toUpperCase()]
+    : null;
   const h = cfg?.h ?? 9;
   const m = cfg?.m ?? 40;
   return (h * 60 + m) * 60 * 1000;
@@ -44,7 +48,7 @@ export function parseClashDate(ts) {
   // Format: 20240315T123456.000Z → standard ISO-ish
   const iso = ts.replace(
     /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})\.(\d{3})Z$/,
-    '$1-$2-$3T$4:$5:$6.$7Z'
+    "$1-$2-$3T$4:$5:$6.$7Z",
   );
   return new Date(iso);
 }
@@ -58,7 +62,9 @@ export function parseClashDate(ts) {
  */
 export function warDayKey(dateOrTs, clanTag = null) {
   const d = dateOrTs instanceof Date ? dateOrTs : parseClashDate(dateOrTs);
-  return new Date(d.getTime() - warResetOffsetMs(clanTag)).toISOString().slice(0, 10);
+  return new Date(d.getTime() - warResetOffsetMs(clanTag))
+    .toISOString()
+    .slice(0, 10);
 }
 
 // ============================================================
@@ -127,6 +133,7 @@ export function computeCurrentSeasonId(currentRace, raceLog) {
  */
 export function computePrevWeekId(raceLog) {
   const entry = raceLog?.[0];
-  if (!entry || entry.seasonId == null || entry.sectionIndex == null) return null;
+  if (!entry || entry.seasonId == null || entry.sectionIndex == null)
+    return null;
   return `S${entry.seasonId}W${entry.sectionIndex + 1}`;
 }

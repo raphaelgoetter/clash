@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // notifyWarSummary.js
 // Poste un embed résumé de la journée de GDC qui vient de se terminer dans
-// chaque channel de clan. Doit être exécuté après 09:40 UTC.
+// chaque channel de clan. Doit être exécuté après le reset UTC du clan.
 //
 // Usage :
 //   node scripts/notifyWarSummary.js           — mode normal (poste sur Discord)
@@ -64,7 +64,7 @@ const WAR_DAY_FR = {
 };
 
 /**
- * Retourne la journée GDC qui vient de se terminer (à appeler après 09:40 UTC).
+ * Retourne la journée GDC qui vient de se terminer (à appeler après le reset UTC).
  * On recule de 90 minutes pour se trouver avant le reset et identifier la journée écoulée.
  * Exemples :
  *   10:05 UTC vendredi → 08:35 UTC vendredi (avant reset) → jeudi GDC (J1)
@@ -81,7 +81,7 @@ function getEndedWarDay(now = new Date(), clanTag = null) {
   const refParis = new Date(
     refTime.toLocaleString("en-US", { timeZone: "Europe/Paris" }),
   );
-  // Avant 09:40 UTC, on est encore dans la journée précédente en terme GDC.
+  // Avant le reset UTC, on est encore dans la journée précédente en terme GDC.
   if (msOfDayUtc < resetUtcMs) {
     refParis.setDate(refParis.getDate() - 1);
   }

@@ -113,7 +113,7 @@ function parisTimeUtcMs(dateKey, hour = 0, minute = 0) {
 
 /**
  * Retourne le timestamp UTC (ms) correspondant au début d'une journée GDC.
- * Par défaut 09:40 UTC ; peut être surchargé par clan (ex. Y8JUPC9C → 09:50 UTC).
+ * Par défaut 09:40 UTC ; peut être surchargé par clan (ex. Y8JUPC9C → 09:52 UTC).
  */
 function warPeriodStartUtcMs(realDay, clanTag = null) {
   const [y, m, d] = (realDay ?? '').split('-').map(Number);
@@ -128,7 +128,7 @@ function warPeriodStartUtcMs(realDay, clanTag = null) {
  * For a given timestamp, return the war day (thu/fri/sat/sun) and the corresponding
  * local calendar date (Paris) for that war day.
  *
- * A war day runs from 09:40 UTC until the next day 09:40 UTC (= 11:40 Paris en CEST, 10:40 en CET).
+ * A war day runs from the clan's reset UTC until the next day exactly 24h later.
  */
 function getWarDayInfo(date = new Date(), clanTag = null) {
   const paris = new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
@@ -136,7 +136,7 @@ function getWarDayInfo(date = new Date(), clanTag = null) {
   const resetUtcMs = warResetOffsetMs(clanTag);
   const msOfDayUtc = utc.getUTCHours() * 3600000 + utc.getUTCMinutes() * 60000 + utc.getUTCSeconds() * 1000 + utc.getUTCMilliseconds();
 
-  // Before reset (9:40 UTC), on est toujours sur la journée précédente.
+  // Before reset, on est toujours sur la journée précédente.
   // Après reset, on passe à la journée suivante.
   if (msOfDayUtc < resetUtcMs) {
     paris.setDate(paris.getDate() - 1);
@@ -378,7 +378,7 @@ export async function recordSnapshot(clanTag, participantData, week = null, opti
 
   // If we already have a primary snapshot for this war day, do not overwrite the
   // recorded decks when running after reset (backup snapshot). This ensures we
-  // keep the last pre-reset state even if the workflow completes after 09:40 UTC.
+  // keep the last pre-reset state even if the workflow completes after the reset UTC.
   const cutoff = Date.now() - RETENTION_DAYS * 24 * 3600 * 1000;
   const filtered = history.filter((w) =>
     w.days.some((d) => d.realDay && new Date(d.realDay).getTime() >= cutoff)

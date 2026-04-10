@@ -325,7 +325,7 @@ export function buildCurrentWarDays(battleLog, raceTotalDecks = null, raceMeta =
     if (state === 'trainingDay' || state === 'preparation') return null;
     if (typeof periodIndex === 'number' && periodIndex >= 0 && periodIndex <= 3) {
       daysFromThu = periodIndex; // 0=Jeu, 1=Ven, 2=Sam, 3=Dim
-      // Protection : ne pas avancer avant le reset officiel (9:40 UTC)
+      // Protection : ne pas avancer avant le reset officiel (selon le clan)
       if (fallbackDaysFromThu !== undefined && daysFromThu > fallbackDaysFromThu) {
         daysFromThu = fallbackDaysFromThu;
       }
