@@ -881,6 +881,7 @@
           "#LJYGJYCYC": 3,
           "#2200UQ9P08": 2,
           "#2V20JP28Q": 2,
+          "#C0RRPJYV9": 2,
           "#UYRR99RL8": 1,
           "#CLQ2RYYJQ": 0,
           "#CLVU02QLP": 0,
@@ -946,12 +947,13 @@
           "start": "2026-04-10T09:40:00.000Z",
           "end": "2026-04-11T09:39:59.999Z"
         },
-        "snapshotTime": "2026-04-10T10:22:36.554Z",
-        "snapshotBackupTime": "2026-04-10T10:22:36.554Z",
+        "snapshotTime": "2026-04-10T11:18:42.987Z",
+        "snapshotBackupTime": "2026-04-10T11:18:42.987Z",
         "decks": {
+          "#2V20JP28Q": 4,
           "#C0RRPJYV9": 4,
+          "#UVGPPVQ8Q": 4,
           "#2200UQ9P08": 2,
-          "#2V20JP28Q": 1,
           "#8JGU9UUJJ": 0,
           "#8VP9UJV9L": 0,
           "#CLQ2RYYJQ": 0,
@@ -965,7 +967,6 @@
           "#RJJGJ8PRC": 0,
           "#RRCRJ8QJJ": 0,
           "#UQ9U8YQPC": 0,
-          "#UVGPPVQ8Q": 0,
           "#UYRR99RL8": 0,
           "#V22VCQV9V": 0,
           "#VPGCQPR9U": 0,
@@ -983,16 +984,16 @@
           "#CLVU02QLP": 0,
           "#CLQ2RYYJQ": 0,
           "#VY0LYQQVJ": 0,
-          "#2V20JP28Q": 400,
+          "#2V20JP28Q": 800,
           "#UYRR99RL8": 200,
           "#8JGU9UUJJ": 400,
           "#LJYGJYCYC": 400,
           "#QPU0U2C9": 500,
-          "#UVGPPVQ8Q": 600,
+          "#UVGPPVQ8Q": 1300,
           "#8VP9UJV9L": 600,
           "#V22VCQV9V": 700,
           "#PGQ98JVJ8": 700,
-          "#C0RRPJYV9": 600
+          "#C0RRPJYV9": 700
         },
         "periodType": "warDay",
         "_cumul": {
@@ -1007,16 +1008,16 @@
           "#CLVU02QLP": 0,
           "#CLQ2RYYJQ": 0,
           "#VY0LYQQVJ": 0,
-          "#2V20JP28Q": 3,
+          "#2V20JP28Q": 6,
           "#UYRR99RL8": 1,
           "#8JGU9UUJJ": 4,
           "#LJYGJYCYC": 3,
           "#QPU0U2C9": 4,
-          "#UVGPPVQ8Q": 4,
+          "#UVGPPVQ8Q": 8,
           "#8VP9UJV9L": 4,
           "#V22VCQV9V": 4,
           "#PGQ98JVJ8": 4,
-          "#C0RRPJYV9": 4
+          "#C0RRPJYV9": 5
         }
       },
       {
