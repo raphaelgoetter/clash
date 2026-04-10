@@ -7,8 +7,8 @@ permissions:
 on:
   schedule:
     # Snapshot + cache refresh : toutes les 60 minutes
-    - cron: '0 * * * *'
-  workflow_dispatch:            # permet un déclenchement manuel
+    - cron: "0 * * * *"
+  workflow_dispatch: # permet un déclenchement manuel
 
 jobs:
   take-snapshots:
@@ -24,12 +24,12 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          persist-credentials: true   # pour pouvoir pousser plus tard
+          persist-credentials: true # pour pouvoir pousser plus tard
 
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'        # ou la version de votre projet
+          node-version: "20" # ou la version de votre projet
 
       - name: Install deps
         run: npm ci
@@ -56,6 +56,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/snapshots/*.json frontend/public/clan-cache/*.json || true
+          git add data/snapshots/*.json data/member-notifications.json frontend/public/clan-cache/*.json || true
           git commit --allow-empty -m "chore: update hourly snapshots & clan cache"
           git push
