@@ -39,7 +39,7 @@ function fmtNum(n) {
  * @param {object} data — réponse de /api/clan/:tag/analysis
  * @param {Function} t  — fonction de traduction
  */
-export function renderRaceGroupCard(data, t) {
+export function renderRaceGroupCard(data, t, timerHelper) {
   const container = document.getElementById('card-war-group');
   if (!container) return;
 
@@ -145,7 +145,7 @@ export function renderRaceGroupCard(data, t) {
         <th class="war-group-trophies">${t('labelWarTrophies')}</th>
         <th class="war-group-prev-war">${t('warGroupPrevWar')}</th>
         <th class="war-group-last-war">${t('warGroupLastWar')}</th>
-        ${isWarPeriod ? `<th class="war-group-decks-now">${t('warGroupDecksToday')}</th>` : ''}
+        ${isWarPeriod ? `<th class="war-group-decks-now">${t('warGroupDecksToday')} <div style="font-weight:normal; font-size:0.8em; opacity:0.8">${timerHelper(data.clan?.warResetUtcMinutes)}</div></th>` : ''}
         ${isWarPeriod ? `<th class="war-group-avg-pts">${t('warGroupPtsPerDeck')}</th>` : ''}
         ${isWarPeriod ? `<th class="war-group-projection">${t('warGroupProjection')}</th>` : ''}
       </tr>

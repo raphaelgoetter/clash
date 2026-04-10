@@ -199,5 +199,6 @@
   "warGroupDescription": "Compare the 5 clans of the current River Race group",
   "warGroupRankSuffix": "ranking",
   "warGroupTargetTooltip": "Daily average last week: {{target}}",
-  "warGroupDecksTooltip": "{{decks}} decks / target of {{target}}"
+  "warGroupDecksTooltip": "{{decks}} decks / target of {{target}}",
+  "warDayRemaining": "({{time}} left)"
 }

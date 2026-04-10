@@ -8,6 +8,7 @@ import {
   analyzePlayer, buildWarHistory, computeWarScore,
   filterWarBattles, expandDuelRounds, isWarWin, buildCurrentWarDays,
   getPlayerAnalysis,
+  warResetOffsetMs,
 } from '../services/analysisService.js';
 import { getOrSet } from '../services/cache.js';
 import { getDiscordLinks } from '../services/discordLinks.js';
@@ -118,8 +119,10 @@ router.get('/:tag/analysis', async (req, res) => {
       } catch (_) { /* silencieux */ }
     }
 
+    const warResetUtcMinutes = clanTag ? warResetOffsetMs(clanTag) / 60000 : null;
+
     // keep API shape consistent with clan route
-    res.json({ ...analysis, snapshotDate: null, warSnapshotDays, warCurrentWeekId, warSnapshotTakenAt });
+    res.json({ ...analysis, snapshotDate: null, warSnapshotDays, warCurrentWeekId, warSnapshotTakenAt, warResetUtcMinutes });
   } catch (err) {
     const status = err.message.includes('404') ? 404 : 500;
     res.status(status).json({ error: err.message });

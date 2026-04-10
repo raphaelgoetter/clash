@@ -1576,6 +1576,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 ptsPerDeck,
                 projectedFame,
                 targetDecksToday: c.targetDecksToday,
+                warResetUtcMinutes: warResetOffsetMs(c.tag) / 60000,
               };
             });
 

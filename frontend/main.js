@@ -1353,10 +1353,11 @@ function renderPlayerResults(data) {
 
   // 3b. Actual Clan War (visible jeudi–dimanche)
   renderCurrentWarCard(
-    data.currentWarDays ?? null,
-    data.warSnapshotDays ?? null,
-    data.warCurrentWeekId ?? null,
-    data.snapshotTakenAt ?? null,
+    data.currentWarDays,
+    data.warSnapshotDays,
+    data.warCurrentWeekId,
+    data.warSnapshotTakenAt,
+    data.warResetUtcMinutes
   );
 
   // 4. War Reliability Score avec breakdown
@@ -1494,7 +1495,7 @@ const DAY_NAMES = [
   t('daySun') || 'Sun',
 ];
 
-function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null, snapshotTakenAt = null) {
+function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null, snapshotTakenAt = null, warResetUtcMinutes = null) {
   if (!warData) { cardCurrentWar.classList.add('hidden'); return; }
   cardCurrentWar.classList.remove('hidden');
 
@@ -1628,7 +1629,7 @@ function renderCurrentWarCard(warData, warSnapshotDays = null, weekId = null, sn
     `<div class="war-summary">` +
       `<div class="war-progress-row">` +
         `<span class="war-decks-count">${totalDecksUsed} <span class="war-decks-max">/ ${computedMaxElapsed}</span></span>` +
-        `<span class="war-decks-label">${t('warDecksSoFar') || 'decks so far'}</span>` +
+        `<span class="war-decks-label">${t('warDecksSoFar') || 'decks so far'} ${getRemainingTimeHtml(warResetUtcMinutes)}</span>` +
         sourceNote +
       `</div>` +
       `<div class="war-progress-track">` +
@@ -1897,6 +1898,22 @@ function mergeWarSummaries(clanWarSummary, lastWarSummary) {
   };
 }
 
+function getRemainingTimeHtml(resetUtcMinutes) {
+  if (resetUtcMinutes == null) return '';
+  const now = new Date();
+  const nowUtcMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+  let diff = resetUtcMinutes - nowUtcMinutes;
+  
+  // Si le reset de la journée est déjà passé, on parle du reset de demain
+  if (diff <= 0) diff += 1440;
+  
+  const h = Math.floor(diff / 60);
+  const m = diff % 60;
+  const timeStr = `${h}h${m.toString().padStart(2, '0')}`;
+  
+  return `<span class="war-time-remaining">${t('warDayRemaining').replace('{{time}}', timeStr)}</span>`;
+}
+
 function translateWarDayLabel(label) {
   switch ((label || '').toLowerCase()) {
     case 'thu': case 'thursday': return t('dayThu') || 'Thu';
@@ -1907,7 +1924,7 @@ function translateWarDayLabel(label) {
   }
 }
 
-function renderClanWarCard(clanWarSummary) {
+function renderClanWarCard(clanWarSummary, warResetUtcMinutes = null) {
   const card = document.getElementById('card-clan-war');
   if (!clanWarSummary || clanWarSummary.ended) { card.classList.add('hidden'); return; }
   card.classList.remove('hidden');
@@ -1949,7 +1966,7 @@ function renderClanWarCard(clanWarSummary) {
     `<div class="war-summary">` +
       `<div class="war-progress-row">` +
         `<span class="war-decks-count">${totalDecksUsed} <span class="war-decks-max">/ ${maxDecksElapsed}</span></span>` +
-        `<span class="war-decks-label">${t('warDecksSoFar') || 'decks so far'}</span>` +
+        `<span class="war-decks-label">${t('warDecksSoFar') || 'decks so far'} ${getRemainingTimeHtml(warResetUtcMinutes)}</span>` +
         `<span class="war-data-source reliable">Race log ✓</span>` +
       `</div>` +
       `<div class="war-progress-track">` +
@@ -2098,14 +2115,15 @@ function renderClanOverview(data) {
         }
         detailsGroup.open = false;
       } else {
-        renderRaceGroupCard(data, t);
+        renderRaceGroupCard(data, t, getRemainingTimeHtml);
       }
     } else {
       cardGroup.classList.add('hidden');
     }
     // Card guerre courante clan
     const effectiveClanWarSummary = mergeWarSummaries(data.clanWarSummary, data.lastWarSummary);
-    renderClanWarCard(effectiveClanWarSummary);
+    if (effectiveClanWarSummary) effectiveClanWarSummary.warResetUtcMinutes = data.clan?.warResetUtcMinutes;
+    renderClanWarCard(effectiveClanWarSummary, data.clan?.warResetUtcMinutes);
 
     // card title (chart label)
   }
@@ -2194,7 +2212,7 @@ async function loadClanSection(tag, section, weekId) {
   }
   if (section === 'raceGroup') {
     loadedClanSections.raceGroup = true;
-    renderRaceGroupCard(data, t);
+    renderRaceGroupCard(data, t, getRemainingTimeHtml);
   }
 }
 

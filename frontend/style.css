@@ -344,10 +344,10 @@ code {
 
 .war-group-decks-now {
   padding: 8px;
-  text-align: right;
+  text-align: center;
   color: var(--text-secondary);
   white-space: nowrap;
-  width: 180px; /* Élargi pour la barre de progression */
+  width: 200px; /* Élargi pour la barre de progression */
 }
 
 .war-group-last-war {
@@ -1426,6 +1426,14 @@ a.member-link:hover div:first-child {
 .war-arrived-note {
   color: var(--purple-light);
   font-style: italic;
+}
+
+.war-time-remaining {
+  font-size: 0.8em;
+  font-weight: normal;
+  color: var(--text-secondary);
+  opacity: 0.8;
+  margin-left: 6px;
 }
 
 /* Barre de progression */
