@@ -935,6 +935,50 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     }
   }
 
+  // Calcul de "decks joués hier à cette heure" depuis hourlyCumul des snapshots.
+  let decksYesterdayAtThisHour = null;
+  if (weekSnaps.length >= 2) {
+    const nowMs = Date.now();
+    // Trouver le jour GDC en cours (gdcPeriod.start <= now <= gdcPeriod.end)
+    const todayIndex = weekSnaps.findIndex((s) => {
+      const start = s.gdcPeriod?.start
+        ? new Date(s.gdcPeriod.start).getTime()
+        : null;
+      const end = s.gdcPeriod?.end ? new Date(s.gdcPeriod.end).getTime() : null;
+      return start != null && end != null && nowMs >= start && nowMs <= end;
+    });
+    if (todayIndex > 0) {
+      const todaySnap = weekSnaps[todayIndex];
+      const yesterdaySnap = weekSnaps[todayIndex - 1];
+      const hourlyCumul = yesterdaySnap.hourlyCumul ?? [];
+      if (hourlyCumul.length > 0) {
+        // Durée écoulée depuis le début de la journée GDC en cours
+        const todayStartMs = new Date(todaySnap.gdcPeriod.start).getTime();
+        const elapsedMs = nowMs - todayStartMs;
+        // Heure équivalente sur la journée d'hier
+        const yesterdayStartMs = new Date(
+          yesterdaySnap.gdcPeriod.start,
+        ).getTime();
+        const targetMs = yesterdayStartMs + elapsedMs;
+        // Entrée la plus proche du targetMs dans l'historique d'hier
+        let best = null;
+        let bestDiff = Infinity;
+        for (const entry of hourlyCumul) {
+          const diff = Math.abs(new Date(entry.takenAt).getTime() - targetMs);
+          if (diff < bestDiff) {
+            bestDiff = diff;
+            best = entry;
+          }
+        }
+        // Tolérance : on n'affiche la valeur que si le point le plus proche
+        // est dans une fenêtre de ±90 min (evite un chiffre trompeur si peu de data).
+        if (best && bestDiff <= 90 * 60 * 1000) {
+          decksYesterdayAtThisHour = best.total;
+        }
+      }
+    }
+  }
+
   // First pass: compute war scores for all members (concurrency-limited to avoid Clash API rate pressure)
   const MEMBER_CONCURRENCY = 15;
   const memberTasks = members.map((m, idx) => async () => {
@@ -1866,6 +1910,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     snapshotDate, // ISO date or null, used by frontend for message
     warCurrentWeekId: clanWarSummary?.weekId ?? null,
     warSnapshotDays, // derived from snapshot files (null if missing)
+    decksYesterdayAtThisHour, // decks joués hier à la même heure (null si indisponible)
     snapshotTakenAt: warSnapshotTakenAt,
     currentWarDays: clanWarSummary?.days ?? null, // expose the per-day summary for debug/insights
     raceGroup: currentRace?.clans

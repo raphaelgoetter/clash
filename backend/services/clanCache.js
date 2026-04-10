@@ -47,6 +47,7 @@ function stripClanCachePayload(payload) {
     lastWarSummary,
     warSnapshotDays,
     currentWarDays,
+    decksYesterdayAtThisHour,
     // these are war/day specific and must be kept in snapshots or live API only
     ...rest
   } = payload;

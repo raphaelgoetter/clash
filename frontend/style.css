@@ -1786,6 +1786,13 @@ a.member-link:hover div:first-child {
   margin: 6px 0 0 0;
 }
 
+.war-yesterday-hint {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 4px 0 0 0;
+  font-style: italic;
+}
+
 .war-progress-source {
   font-size: 0.8rem;
   color: var(--text-muted);
