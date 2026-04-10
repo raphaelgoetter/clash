@@ -10,7 +10,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { readFile } from "fs/promises";
+import { readFile, writeFile } from "fs/promises";
 import { existsSync } from "fs";
 import { fileURLToPath } from "url";
 import path from "path";
@@ -70,12 +70,32 @@ async function fetchCurrentMembers(tag) {
  * @param {string} tag
  * @returns {Promise<string>}
  */
+const NOTIFIED_FILE = path.join(
+  __dirname,
+  "..",
+  "data",
+  "member-notifications.json",
+);
+
 async function readClanName(tag) {
   const filePath = path.join(CACHE_DIR, `${tag}.json`);
   if (!existsSync(filePath)) return `#${tag}`;
   const raw = await readFile(filePath, "utf-8");
   const data = JSON.parse(raw);
   return data.clan?.name ?? `#${tag}`;
+}
+
+async function readNotifiedChanges() {
+  try {
+    const raw = await readFile(NOTIFIED_FILE, "utf-8");
+    return JSON.parse(raw);
+  } catch (_) {
+    return {};
+  }
+}
+
+async function saveNotifiedChanges(data) {
+  await writeFile(NOTIFIED_FILE, JSON.stringify(data, null, 2));
 }
 
 /**
@@ -224,6 +244,7 @@ async function main() {
   }
 
   let hasError = false;
+  const notifiedChanges = await readNotifiedChanges();
 
   for (const tag of ALLOWED_CLANS) {
     try {
@@ -240,6 +261,11 @@ async function main() {
         continue;
       }
 
+      const notified = notifiedChanges[tag] ?? {
+        arrivals: [],
+        departures: [],
+      };
+
       const arrivals = [...current.tags]
         .filter((t) => !cached.tags.has(t))
         .map((t) => ({ tag: t, name: current.names.get(t) ?? t }));
@@ -248,17 +274,39 @@ async function main() {
         .filter((t) => !current.tags.has(t))
         .map((t) => ({ tag: t, name: cached.names.get(t) ?? t }));
 
-      if (arrivals.length === 0 && departures.length === 0) {
-        console.log(`[${tag}] Aucun changement de membres.`);
+      // Retirer des notifications déjà envoyées les joueurs qui sont revenus.
+      notified.arrivals = notified.arrivals.filter((t) => current.tags.has(t));
+      notified.departures = notified.departures.filter(
+        (t) => !current.tags.has(t),
+      );
+
+      const newArrivals = arrivals.filter(
+        (a) => !notified.arrivals.includes(a.tag),
+      );
+      const newDepartures = departures.filter(
+        (d) => !notified.departures.includes(d.tag),
+      );
+
+      if (newArrivals.length === 0 && newDepartures.length === 0) {
+        const nbArrivals = arrivals.length;
+        const nbDepartures = departures.length;
+        if (nbArrivals > 0 || nbDepartures > 0) {
+          console.log(
+            `[${tag}] Aucun nouveau changement de membres à notifier — mêmes tags déjà traités.`,
+          );
+        } else {
+          console.log(`[${tag}] Aucun changement de membres.`);
+        }
+        notifiedChanges[tag] = notified;
+        await saveNotifiedChanges(notifiedChanges);
         continue;
       }
 
       console.log(
-        `[${tag}] Changements détectés — ${arrivals.length} arrivée(s), ${departures.length} départ(s).`,
+        `[${tag}] Changements détectés — ${newArrivals.length} arrivée(s), ${newDepartures.length} départ(s) (après dédup).`,
       );
 
-      // Enrichissement avec les scores de fiabilité (en parallèle pour les arrivées et départs)
-      const allChanges = [...arrivals, ...departures];
+      const allChanges = [...newArrivals, ...newDepartures];
       await Promise.all(
         allChanges.map(async (m) => {
           try {
@@ -271,7 +319,18 @@ async function main() {
         }),
       );
 
-      await postDiscordEmbed(tag, clanName, arrivals, departures);
+      await postDiscordEmbed(tag, clanName, newArrivals, newDepartures);
+
+      if (!DRY_RUN) {
+        notified.arrivals = Array.from(
+          new Set([...notified.arrivals, ...newArrivals.map((a) => a.tag)]),
+        );
+        notified.departures = Array.from(
+          new Set([...notified.departures, ...newDepartures.map((d) => d.tag)]),
+        );
+        notifiedChanges[tag] = notified;
+        await saveNotifiedChanges(notifiedChanges);
+      }
     } catch (err) {
       console.error(`[${tag}] Erreur : ${err.message}`);
       hasError = true;
