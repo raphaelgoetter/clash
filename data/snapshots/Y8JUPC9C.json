@@ -946,10 +946,10 @@
     "days": [
       {
         "warDay": "thursday",
-        "realDay": "2026-04-09",
+        "realDay": "2026-04-10",
         "gdcPeriod": {
-          "start": "2026-04-09T09:52:00.000Z",
-          "end": "2026-04-10T09:51:59.999Z"
+          "start": "2026-04-10T09:52:00.000Z",
+          "end": "2026-04-11T09:51:59.999Z"
         },
         "snapshotTime": "2026-04-10T09:27:43.848Z",
         "snapshotBackupTime": "2026-04-09T21:16:03.044Z",
@@ -1114,13 +1114,13 @@
       },
       {
         "warDay": "friday",
-        "realDay": "2026-04-10",
+        "realDay": "2026-04-11",
         "gdcPeriod": {
-          "start": "2026-04-10T09:52:00.000Z",
-          "end": "2026-04-11T09:51:59.999Z"
+          "start": "2026-04-11T09:52:00.000Z",
+          "end": "2026-04-12T09:51:59.999Z"
         },
-        "snapshotTime": "2026-04-10T19:18:58.253Z",
-        "snapshotBackupTime": "2026-04-10T19:18:58.253Z",
+        "snapshotTime": "2026-04-10T20:10:57.528Z",
+        "snapshotBackupTime": "2026-04-10T20:10:57.528Z",
         "decks": {
           "#28PQVJ2V": 4,
           "#2902YQRQL": 4,
@@ -1128,7 +1128,9 @@
           "#809G8YC8": 4,
           "#80CCLY20L": 4,
           "#82URJC8CR": 4,
+          "#888Y29GY": 4,
           "#8PP9JQCLY": 4,
+          "#8V98QYY8V": 4,
           "#9GG9GRC0G": 4,
           "#9YQ0P0L0": 4,
           "#9YQ8RVU2P": 4,
@@ -1143,6 +1145,7 @@
           "#J8RU2RJ8C": 4,
           "#J9ULCGJYU": 4,
           "#JLU88JR28": 4,
+          "#LCQ2J0VGC": 4,
           "#LQLY92CR0": 4,
           "#PGJPJG9QQ": 4,
           "#PVQ2QRLJQ": 4,
@@ -1152,7 +1155,6 @@
           "#UYP0YCQ9": 4,
           "#VVJ8RURL9": 4,
           "#YRYPUR822": 4,
-          "#LCQ2J0VGC": 3,
           "#P9R8Y90P8": 3,
           "#2R9QUYQ2C": 1,
           "#8CCCQYV99": 1,
@@ -1160,11 +1162,9 @@
           "#2CL028C80": 0,
           "#2GPUQY9P9": 0,
           "#2UQQJJ98Y": 0,
-          "#888Y29GY": 0,
           "#88QP9CJU": 0,
           "#8P29RRU2": 0,
           "#8QL2J8PQ": 0,
-          "#8V98QYY8V": 0,
           "#99CRC8PP": 0,
           "#9CQC0YUR8": 0,
           "#9Y28LR22": 0,
@@ -1205,10 +1205,10 @@
           "#UY00GJG2": 1050,
           "#2R9QUYQ2C": 750,
           "#PG0Q0YYGY": 600,
-          "#8V98QYY8V": 650,
+          "#8V98QYY8V": 1450,
           "#J8RU2RJ8C": 1250,
           "#UJ89GUUUY": 1050,
-          "#888Y29GY": 700,
+          "#888Y29GY": 1600,
           "#28PQVJ2V": 1300,
           "#9GG9GRC0G": 1350,
           "#GGRLYR8PL": 1350,
@@ -1219,7 +1219,7 @@
           "#PGJPJG9QQ": 1200,
           "#9CQC0YUR8": 800,
           "#VVJ8RURL9": 1600,
-          "#LCQ2J0VGC": 1400,
+          "#LCQ2J0VGC": 1500,
           "#LQLY92CR0": 1450,
           "#PVQ2QRLJQ": 1600,
           "#CYRGPVGVG": 1500,
@@ -1258,10 +1258,10 @@
           "#UY00GJG2": 8,
           "#2R9QUYQ2C": 5,
           "#PG0Q0YYGY": 4,
-          "#8V98QYY8V": 4,
+          "#8V98QYY8V": 8,
           "#J8RU2RJ8C": 8,
           "#UJ89GUUUY": 8,
-          "#888Y29GY": 4,
+          "#888Y29GY": 8,
           "#28PQVJ2V": 8,
           "#9GG9GRC0G": 8,
           "#GGRLYR8PL": 8,
@@ -1272,7 +1272,7 @@
           "#PGJPJG9QQ": 8,
           "#9CQC0YUR8": 4,
           "#VVJ8RURL9": 8,
-          "#LCQ2J0VGC": 7,
+          "#LCQ2J0VGC": 8,
           "#LQLY92CR0": 8,
           "#PVQ2QRLJQ": 8,
           "#CYRGPVGVG": 8,
@@ -1282,10 +1282,10 @@
       },
       {
         "warDay": "saturday",
-        "realDay": "2026-04-11",
+        "realDay": "2026-04-12",
         "gdcPeriod": {
-          "start": "2026-04-11T09:52:00.000Z",
-          "end": "2026-04-12T09:51:59.999Z"
+          "start": "2026-04-12T09:52:00.000Z",
+          "end": "2026-04-13T09:51:59.999Z"
         },
         "snapshotTime": null,
         "snapshotBackupTime": null,
@@ -1297,10 +1297,10 @@
       },
       {
         "warDay": "sunday",
-        "realDay": "2026-04-12",
+        "realDay": "2026-04-13",
         "gdcPeriod": {
-          "start": "2026-04-12T09:52:00.000Z",
-          "end": "2026-04-13T09:51:59.999Z"
+          "start": "2026-04-13T09:52:00.000Z",
+          "end": "2026-04-14T09:51:59.999Z"
         },
         "snapshotTime": null,
         "snapshotBackupTime": null,
