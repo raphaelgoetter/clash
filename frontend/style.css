@@ -378,7 +378,8 @@ code {
   text-align: center;
   color: var(--text-secondary);
   white-space: nowrap;
-  width: 200px; /* Élargi pour la barre de progression */
+  width: 300px; /* Élargi pour la barre de progression */
+  min-width: 200px;
 
   & span {
     font-weight: normal;
