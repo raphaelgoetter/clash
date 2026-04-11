@@ -128,8 +128,10 @@ async function readClanName(tag) {
 
 /**
  * Calcule le total de points d'une journée GDC depuis _cumulFame.
- * Colosseum : les points s'accumulent toute la semaine → on soustrait le cumul du jour précédent.
- * warDay    : le score est remis à 0 à chaque reset → _cumulFame = total du jour uniquement.
+ * Que ce soit en warDay ou en colosseum, _cumulFame est cumulatif sur toute la semaine
+ * (le champ `fame` de l'API /currentriverrace s'accumule du J1 au J4 sans jamais
+ * se remettre à zéro entre les jours). Pour obtenir les points du jour seul, on
+ * soustrait systématiquement le cumul du jour précédent.
  */
 function computeDailyFame(dayEntry, prevDayEntry) {
   const todayCumul = Object.values(dayEntry._cumulFame ?? {}).reduce(
@@ -137,15 +139,11 @@ function computeDailyFame(dayEntry, prevDayEntry) {
     0,
   );
   if (!prevDayEntry) return todayCumul;
-  if (dayEntry.periodType === "colosseum") {
-    const prevCumul = Object.values(prevDayEntry._cumulFame ?? {}).reduce(
-      (a, b) => a + b,
-      0,
-    );
-    return Math.max(0, todayCumul - prevCumul);
-  }
-  // warDay : total du jour directement
-  return todayCumul;
+  const prevCumul = Object.values(prevDayEntry._cumulFame ?? {}).reduce(
+    (a, b) => a + b,
+    0,
+  );
+  return Math.max(0, todayCumul - prevCumul);
 }
 
 const DECKS_MAX_WEEK = 800; // 50 membres × 4 decks × 4 jours
@@ -179,19 +177,13 @@ function computeWeeklySummary(allDays) {
   );
 
   if (daysWithFame.length > 0) {
-    if (isColosseum) {
-      // Le dernier jour disponible contient le cumul total de la semaine
-      const lastWithFame = daysWithFame[daysWithFame.length - 1];
-      totalFameWeek = Object.values(lastWithFame._cumulFame).reduce(
-        (a, b) => a + b,
-        0,
-      );
-    } else {
-      // warDay : sommer le _cumulFame de chaque journée (chacune repart de 0)
-      totalFameWeek = daysWithFame.reduce((sum, d) => {
-        return sum + Object.values(d._cumulFame).reduce((a, b) => a + b, 0);
-      }, 0);
-    }
+    // warDay et colosseum : _cumulFame est cumulatif toute la semaine →
+    // le dernier jour disponible contient déjà le total de la semaine.
+    const lastWithFame = daysWithFame[daysWithFame.length - 1];
+    totalFameWeek = Object.values(lastWithFame._cumulFame).reduce(
+      (a, b) => a + b,
+      0,
+    );
   }
 
   return {
