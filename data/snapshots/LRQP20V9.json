@@ -189,7 +189,7 @@
           "start": "2026-04-10T09:54:00.000Z",
           "end": "2026-04-11T09:53:59.999Z"
         },
-        "snapshotTime": "2026-04-10T21:11:40.550Z",
+        "snapshotTime": "2026-04-11T00:21:22.776Z",
         "snapshotBackupTime": "2026-04-10T21:11:40.550Z",
         "decks": {
           "#2U9QL8Q89": 4,
@@ -205,6 +205,7 @@
           "#9CYUGPQ0C": 4,
           "#9R8UV8RQV": 4,
           "#9VQYC9GJQ": 4,
+          "#CGJP0YYUJ": 4,
           "#GGVQJLG9": 4,
           "#J008G9CLJ": 4,
           "#J290800UU": 4,
@@ -220,9 +221,9 @@
           "#VQJ0Y8PLV": 4,
           "#YRGJGR8R": 4,
           "#802YQPVQ": 3,
-          "#CGJP0YYUJ": 3,
           "#Y9P9GGL89": 3,
           "#8GGQLU28": 2,
+          "#G2R0VRYYQ": 2,
           "#GLV9Q2P09": 2,
           "#UP9YJV080": 2,
           "#2L8RPQRJ9": 0,
@@ -235,7 +236,6 @@
           "#98UULQY8": 0,
           "#99VY0090": 0,
           "#9PCYJ2UQ0": 0,
-          "#G2R0VRYYQ": 0,
           "#GC20UCLL": 0,
           "#P2JYV980": 0,
           "#PRGCCRUJP": 0,
@@ -256,7 +256,7 @@
           "#VQJ0Y8PLV": 650,
           "#VVJV80PCG": 0,
           "#9R8UV8RQV": 950,
-          "#G2R0VRYYQ": 400,
+          "#G2R0VRYYQ": 600,
           "#2P0VYJJR9": 500,
           "#80GVRPGPY": 1100,
           "#8VQLJLR0": 1200,
@@ -290,7 +290,7 @@
           "#J290800UU": 1450,
           "#QVG90PQVG": 1700,
           "#8YGY2RPCC": 800,
-          "#CGJP0YYUJ": 1200,
+          "#CGJP0YYUJ": 1400,
           "#8Y90VQYP9": 1300,
           "#2U9QL8Q89": 1300,
           "#9VQYC9GJQ": 1300,
@@ -315,7 +315,7 @@
           "#VQJ0Y8PLV": 4,
           "#VVJV80PCG": 0,
           "#9R8UV8RQV": 8,
-          "#G2R0VRYYQ": 4,
+          "#G2R0VRYYQ": 6,
           "#2P0VYJJR9": 4,
           "#80GVRPGPY": 8,
           "#8VQLJLR0": 8,
@@ -349,7 +349,7 @@
           "#J290800UU": 8,
           "#QVG90PQVG": 8,
           "#8YGY2RPCC": 4,
-          "#CGJP0YYUJ": 7,
+          "#CGJP0YYUJ": 8,
           "#8Y90VQYP9": 8,
           "#2U9QL8Q89": 8,
           "#9VQYC9GJQ": 8,
@@ -360,7 +360,12 @@
           "#JCCQY0U9G": 8,
           "#8QLCU9QG": 8
         },
-        "hourlyCumul": []
+        "hourlyCumul": [
+          {
+            "takenAt": "2026-04-11T00:21:13.111Z",
+            "total": 126
+          }
+        ]
       },
       {
         "warDay": "saturday",
