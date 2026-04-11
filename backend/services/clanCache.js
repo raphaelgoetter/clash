@@ -82,3 +82,13 @@ export async function saveClanCache(clanTag, payload) {
     await fs.writeFile(file, JSON.stringify(data, null, 2));
   } catch (_) {}
 }
+
+// Écrit dans le bundle statique (frontend/public/clan-cache/).
+// Réservé aux scripts CI (refreshClanCache.js) — jamais appelé depuis une fonction Vercel.
+export async function saveClanCacheToBundle(clanTag, payload) {
+  const clean = clanTag.replace(/[^A-Za-z0-9]/g, "");
+  const file = path.join(BUNDLE_DIR, `${clean}.json`);
+  const data = stripClanCachePayload(payload);
+  await fs.mkdir(BUNDLE_DIR, { recursive: true });
+  await fs.writeFile(file, JSON.stringify(data, null, 2));
+}

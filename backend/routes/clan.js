@@ -3,6 +3,7 @@
 // ============================================================
 
 import { Router } from "express";
+import { waitUntil } from "@vercel/functions";
 import {
   fetchClan,
   fetchClanMembers,
@@ -290,19 +291,17 @@ router.get("/:tag/analysis", async (req, res) => {
           };
 
           // Trigger asynchronous update in background as a best-effort refresh.
-          setTimeout(async () => {
-            try {
-              const fresh = await buildClanAnalysis(clanTag, {
-                includeRaceGroup,
-              });
-              await saveClanCache(clanTag, fresh).catch(() => null);
-            } catch (err) {
-              console.warn(
-                `[clan] background refresh failed for ${clanTag}:`,
-                err.message,
-              );
-            }
-          }, 0);
+          // waitUntil garantit que Vercel maintient la fonction active jusqu'à la fin du refresh.
+          waitUntil(
+            buildClanAnalysis(clanTag, { includeRaceGroup })
+              .then((fresh) => saveClanCache(clanTag, fresh).catch(() => null))
+              .catch((err) =>
+                console.warn(
+                  `[clan] background refresh failed for ${clanTag}:`,
+                  err.message,
+                ),
+              ),
+          );
         }
       }
     } catch (err) {
