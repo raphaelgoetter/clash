@@ -1119,12 +1119,14 @@
           "start": "2026-04-10T09:52:00.000Z",
           "end": "2026-04-11T09:51:59.999Z"
         },
-        "snapshotTime": "2026-04-11T05:30:31.053Z",
+        "snapshotTime": "2026-04-11T06:22:39.294Z",
         "snapshotBackupTime": "2026-04-10T21:11:34.429Z",
         "decks": {
           "#28PQVJ2V": 4,
           "#2902YQRQL": 4,
+          "#2GPUQY9P9": 4,
           "#2GUPJ99G2": 4,
+          "#2R9QUYQ2C": 4,
           "#2UQQJJ98Y": 4,
           "#809G8YC8": 4,
           "#80CCLY20L": 4,
@@ -1160,15 +1162,13 @@
           "#UYP0YCQ9": 4,
           "#VVJ8RURL9": 4,
           "#YRYPUR822": 4,
+          "#99CRC8PP": 2,
           "#PG0Q0YYGY": 2,
-          "#2R9QUYQ2C": 1,
           "#8CCCQYV99": 1,
           "#9VQ0J29Y": 1,
           "#2CL028C80": 0,
-          "#2GPUQY9P9": 0,
           "#88QP9CJU": 0,
           "#8QL2J8PQ": 0,
-          "#99CRC8PP": 0,
           "#QGVJ2U0QJ": 0,
           "#VQP8PU2V": 0,
           "#YGLL08Y8C": 0
@@ -1181,8 +1181,8 @@
           "#VQP8PU2V": 800,
           "#G9LPGQUG": 1400,
           "#8PP9JQCLY": 1100,
-          "#2GPUQY9P9": 500,
-          "#99CRC8PP": 800,
+          "#2GPUQY9P9": 1050,
+          "#99CRC8PP": 1000,
           "#QGVJ2U0QJ": 100,
           "#2UQQJJ98Y": 1300,
           "#YGLL08Y8C": 900,
@@ -1203,7 +1203,7 @@
           "#J9ULCGJYU": 1300,
           "#U008V0PQ8": 1350,
           "#UY00GJG2": 1050,
-          "#2R9QUYQ2C": 750,
+          "#2R9QUYQ2C": 1200,
           "#PG0Q0YYGY": 1100,
           "#8V98QYY8V": 1450,
           "#J8RU2RJ8C": 1250,
@@ -1234,8 +1234,8 @@
           "#VQP8PU2V": 4,
           "#G9LPGQUG": 8,
           "#8PP9JQCLY": 8,
-          "#2GPUQY9P9": 4,
-          "#99CRC8PP": 4,
+          "#2GPUQY9P9": 8,
+          "#99CRC8PP": 6,
           "#QGVJ2U0QJ": 1,
           "#2UQQJJ98Y": 8,
           "#YGLL08Y8C": 4,
@@ -1256,7 +1256,7 @@
           "#J9ULCGJYU": 8,
           "#U008V0PQ8": 8,
           "#UY00GJG2": 8,
-          "#2R9QUYQ2C": 5,
+          "#2R9QUYQ2C": 8,
           "#PG0Q0YYGY": 6,
           "#8V98QYY8V": 8,
           "#J8RU2RJ8C": 8,
@@ -1298,6 +1298,10 @@
           {
             "takenAt": "2026-04-11T05:30:26.820Z",
             "total": 157
+          },
+          {
+            "takenAt": "2026-04-11T06:22:35.122Z",
+            "total": 166
           }
         ]
       },
