@@ -880,10 +880,10 @@
     "days": [
       {
         "warDay": "thursday",
-        "realDay": "2026-04-09",
+        "realDay": "2026-04-10",
         "gdcPeriod": {
-          "start": "2026-04-09T09:40:00.000Z",
-          "end": "2026-04-10T09:39:59.999Z"
+          "start": "2026-04-10T09:40:00.000Z",
+          "end": "2026-04-11T09:39:59.999Z"
         },
         "snapshotTime": "2026-04-10T09:27:55.146Z",
         "snapshotBackupTime": "2026-04-09T21:16:14.525Z",
@@ -959,10 +959,10 @@
       },
       {
         "warDay": "friday",
-        "realDay": "2026-04-10",
+        "realDay": "2026-04-11",
         "gdcPeriod": {
-          "start": "2026-04-10T09:40:00.000Z",
-          "end": "2026-04-11T09:39:59.999Z"
+          "start": "2026-04-11T09:40:00.000Z",
+          "end": "2026-04-12T09:39:59.999Z"
         },
         "snapshotTime": "2026-04-11T09:15:18.559Z",
         "snapshotBackupTime": "2026-04-10T21:11:46.342Z",
@@ -1083,13 +1083,13 @@
       },
       {
         "warDay": "saturday",
-        "realDay": "2026-04-11",
+        "realDay": "2026-04-12",
         "gdcPeriod": {
-          "start": "2026-04-11T09:40:00.000Z",
-          "end": "2026-04-12T09:39:59.999Z"
+          "start": "2026-04-12T09:40:00.000Z",
+          "end": "2026-04-13T09:39:59.999Z"
         },
-        "snapshotTime": "2026-04-11T19:15:14.887Z",
-        "snapshotBackupTime": "2026-04-11T19:15:14.887Z",
+        "snapshotTime": "2026-04-11T20:07:09.491Z",
+        "snapshotBackupTime": "2026-04-11T20:07:09.491Z",
         "decks": {
           "#8JGU9UUJJ": 4,
           "#8VP9UJV9L": 4,
@@ -1170,10 +1170,10 @@
       },
       {
         "warDay": "sunday",
-        "realDay": "2026-04-12",
+        "realDay": "2026-04-13",
         "gdcPeriod": {
-          "start": "2026-04-12T09:40:00.000Z",
-          "end": "2026-04-13T09:39:59.999Z"
+          "start": "2026-04-13T09:40:00.000Z",
+          "end": "2026-04-14T09:39:59.999Z"
         },
         "snapshotTime": null,
         "snapshotBackupTime": null,
