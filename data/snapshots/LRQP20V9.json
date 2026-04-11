@@ -406,10 +406,11 @@
           "start": "2026-04-12T09:54:00.000Z",
           "end": "2026-04-13T09:53:59.999Z"
         },
-        "snapshotTime": "2026-04-11T20:07:04.530Z",
-        "snapshotBackupTime": "2026-04-11T20:07:04.530Z",
+        "snapshotTime": "2026-04-11T21:09:10.532Z",
+        "snapshotBackupTime": "2026-04-11T21:09:10.532Z",
         "decks": {
           "#2U9QL8Q89": 4,
+          "#2YLYG9V92": 4,
           "#80GVRPGPY": 4,
           "#82JPJ9J98": 4,
           "#82UPUGYP": 4,
@@ -439,6 +440,7 @@
           "#UPC0Y0LRQ": 4,
           "#UVV8CULJV": 4,
           "#V0VLJQCJU": 4,
+          "#VGJ9LL8VC": 4,
           "#VQJ0Y8PLV": 4,
           "#YGP000RP8": 4,
           "#YRGJGR8R": 4,
@@ -448,7 +450,6 @@
           "#8GGQLU28": 1,
           "#2L8RPQRJ9": 0,
           "#2P0VYJJR9": 0,
-          "#2YLYG9V92": 0,
           "#2YP2V2G0R": 0,
           "#802YQPVQ": 0,
           "#822GLVL00": 0,
@@ -457,8 +458,7 @@
           "#8YGY2RPCC": 0,
           "#9PCYJ2UQ0": 0,
           "#P2JYV980": 0,
-          "#QY0LG0R0P": 0,
-          "#R8PR99CQ0": 0
+          "#QY0LG0R0P": 0
         },
         "_cumulFame": {
           "#GC20UCLL": 300,
@@ -498,7 +498,7 @@
           "#J008G9CLJ": 1700,
           "#2YP2V2G0R": 1300,
           "#RJJ99Y9J": 1300,
-          "#2YLYG9V92": 1300,
+          "#2YLYG9V92": 1900,
           "#8Y90VQYP9": 1900,
           "#2U9QL8Q89": 2100,
           "#9VQYC9GJQ": 1900,
@@ -516,7 +516,7 @@
           "#YRGJGR8R": 2400,
           "#QVG90PQVG": 2200,
           "#8UL8JRCJ": 1800,
-          "#VGJ9LL8VC": 1800
+          "#VGJ9LL8VC": 2300
         },
         "periodType": "warDay",
         "_cumul": {
@@ -557,7 +557,7 @@
           "#J008G9CLJ": 12,
           "#2YP2V2G0R": 8,
           "#RJJ99Y9J": 8,
-          "#2YLYG9V92": 8,
+          "#2YLYG9V92": 12,
           "#8Y90VQYP9": 12,
           "#2U9QL8Q89": 12,
           "#9VQYC9GJQ": 12,
@@ -575,7 +575,7 @@
           "#YRGJGR8R": 12,
           "#QVG90PQVG": 12,
           "#8UL8JRCJ": 8,
-          "#VGJ9LL8VC": 8
+          "#VGJ9LL8VC": 12
         },
         "hourlyCumul": []
       },
