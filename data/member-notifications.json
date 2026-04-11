@@ -4,7 +4,9 @@
     "departures": []
   },
   "LRQP20V9": {
-    "arrivals": [],
+    "arrivals": [
+      "#UPC0Y0LRQ"
+    ],
     "departures": [
       "#2P0VYJJR9"
     ]
