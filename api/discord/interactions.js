@@ -1,21 +1,21 @@
 // Fonction Vercel dédiée pour les interactions Discord.
 // Utilise waitUntil de @vercel/functions pour maintenir la fonction active
 // après avoir répondu type:5 à Discord (deferred).
-import { createPublicKey, verify } from 'node:crypto';
-import { waitUntil } from '@vercel/functions';
+import { createPublicKey, verify } from "node:crypto";
+import { waitUntil } from "@vercel/functions";
 
 // Maintient la fonction Vercel active le temps de l'exécution asynchrone.
 function runBackground(fn) {
   try {
-    if (typeof waitUntil === 'function') {
+    if (typeof waitUntil === "function") {
       waitUntil(fn());
     } else {
       // En environnement non-Vercel (dev), on exécute quand même pour éviter le timeout.
-      fn().catch((err) => console.error('runBackground fallback error:', err));
+      fn().catch((err) => console.error("runBackground fallback error:", err));
     }
   } catch (err) {
-    console.error('runBackground error:', err);
-    fn().catch((err2) => console.error('runBackground fallback error:', err2));
+    console.error("runBackground error:", err);
+    fn().catch((err2) => console.error("runBackground fallback error:", err2));
   }
 }
 
@@ -25,34 +25,48 @@ function verifyDiscordSignature(signature, timestamp, rawBody) {
   if (!publicKeyHex || !signature || !timestamp) return false;
   try {
     // Encapsule la clé publique brute dans le format SPKI DER attendu par Node.js
-    const spkiPrefix = Buffer.from('302a300506032b6570032100', 'hex');
-    const pubKeyDer = Buffer.concat([spkiPrefix, Buffer.from(publicKeyHex, 'hex')]);
-    const publicKey = createPublicKey({ key: pubKeyDer, format: 'der', type: 'spki' });
+    const spkiPrefix = Buffer.from("302a300506032b6570032100", "hex");
+    const pubKeyDer = Buffer.concat([
+      spkiPrefix,
+      Buffer.from(publicKeyHex, "hex"),
+    ]);
+    const publicKey = createPublicKey({
+      key: pubKeyDer,
+      format: "der",
+      type: "spki",
+    });
     return verify(
       null,
       Buffer.from(timestamp + rawBody),
       publicKey,
-      Buffer.from(signature, 'hex'),
+      Buffer.from(signature, "hex"),
     );
   } catch {
     return false;
   }
 }
 
-const COLOR_MAP = { green: 0x2ecc71, yellow: 0xf1c40f, orange: 0xe67e22, red: 0xe74c3c };
-const EMOJI_MAP = { green: '🟢', yellow: '🟡', orange: '🟠', red: '🔴' };
+const COLOR_MAP = {
+  green: 0x2ecc71,
+  yellow: 0xf1c40f,
+  orange: 0xe67e22,
+  red: 0xe74c3c,
+};
+const EMOJI_MAP = { green: "🟢", yellow: "🟡", orange: "🟠", red: "🔴" };
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 const ROLE_FR = {
-  leader: 'chef',
-  coleader: 'chef adjoint',
-  coLeader: 'chef adjoint',
-  elder: 'aîné',
-  member: 'membre',
+  leader: "chef",
+  coleader: "chef adjoint",
+  coLeader: "chef adjoint",
+  elder: "aîné",
+  member: "membre",
 };
 
 function formatDiscordRole(role) {
-  const normalized = String(role || 'member').trim().toLowerCase();
+  const normalized = String(role || "member")
+    .trim()
+    .toLowerCase();
   return `(${ROLE_FR[normalized] ?? ROLE_FR.member})`;
 }
 
@@ -78,7 +92,14 @@ function computeBattlesPerDayFromPlayer(player) {
 
   if (battleLog.length > 0) {
     const times = battleLog
-      .map((b) => parseBattleTimestamp(b?.battleTime || b?.battleTimeStamp || b?.battle_time || b?.battleTimeStampLocal))
+      .map((b) =>
+        parseBattleTimestamp(
+          b?.battleTime ||
+            b?.battleTimeStamp ||
+            b?.battle_time ||
+            b?.battleTimeStampLocal,
+        ),
+      )
       .filter((d) => d instanceof Date && !Number.isNaN(d.getTime()))
       .map((d) => d.getTime());
 
@@ -86,14 +107,20 @@ function computeBattlesPerDayFromPlayer(player) {
       const min = Math.min(...times);
       const max = Math.max(...times);
       const spanDays = Math.max(1, Math.ceil((max - min + 1) / MS_PER_DAY));
-      const totalBattles = Number.isFinite(player?.activityIndicators?.totalBattles)
+      const totalBattles = Number.isFinite(
+        player?.activityIndicators?.totalBattles,
+      )
         ? player.activityIndicators.totalBattles
         : battleLog.length;
-      return totalBattles > 0 ? Number((totalBattles / spanDays).toFixed(1)) : 0;
+      return totalBattles > 0
+        ? Number((totalBattles / spanDays).toFixed(1))
+        : 0;
     }
   }
 
-  const dailyActivity = Array.isArray(player.recentActivity?.dailyActivity) ? player.recentActivity.dailyActivity : [];
+  const dailyActivity = Array.isArray(player.recentActivity?.dailyActivity)
+    ? player.recentActivity.dailyActivity
+    : [];
   const dailyTotal = dailyActivity.reduce((sum, d) => sum + (d?.count ?? 0), 0);
   const dailyCount = dailyActivity.length > 0 ? dailyActivity.length : 7;
   return dailyCount > 0 ? Number((dailyTotal / dailyCount).toFixed(1)) : 0;
@@ -102,39 +129,44 @@ function computeBattlesPerDayFromPlayer(player) {
 // Icône selon le ratio score/max : ✅ ≥ 75 %, ⚠️ ≥ 40 %, ❌ sinon
 function criterionIcon(score, max) {
   const r = max > 0 ? score / max : 0;
-  if (r >= 0.75) return '✅';
-  if (r >= 0.4)  return '⚠️';
-  return '❌';
+  if (r >= 0.75) return "✅";
+  if (r >= 0.4) return "⚠️";
+  return "❌";
 }
 
 // Convertit un critère de breakdown en field Discord (inline)
 // et effectue la traduction française des libellés.
 const LABEL_FR = {
-  'War Activity': 'Activité de guerre',
-  'Win Rate (War)': 'Winrate (guerre)',
-  'CW2 Battle Wins': 'Victoires CW2',
-  'Last Seen': 'Connexion',
-  'General Activity': 'Activité générale',
-  'Experience': 'Expérience',
-  'Donations': 'Dons totaux',
-  'Regularity': 'Régularité',
-  'Avg Score': 'Score moyen',
-  'Stability': 'Stabilité',
-  'Points': 'Points',
-  'Member Reliability': 'Fiabilité membre',
-  'Historical Win Rate': 'Winrate historique',
+  "War Activity": "Activité de guerre",
+  "Win Rate (War)": "Winrate (guerre)",
+  "CW2 Battle Wins": "Victoires CW2",
+  "Last Seen": "Connexion",
+  "General Activity": "Activité générale",
+  Experience: "Expérience",
+  Donations: "Dons totaux",
+  Regularity: "Régularité",
+  "Avg Score": "Score moyen",
+  Stability: "Stabilité",
+  Points: "Points",
+  "Member Reliability": "Fiabilité membre",
+  "Historical Win Rate": "Winrate historique",
   // fallback: other labels can be added if needed
 };
 function breakdownField(item) {
   const icon = criterionIcon(item.score, item.max);
   let label = LABEL_FR[item.label] || item.label;
-  if (item.label === 'Discord') label = `Discord (${item.score > 0 ? 'oui' : 'non'})`;
-  return { name: `${icon} ${label}`, value: `${item.score}/${item.max}`, inline: true };
+  if (item.label === "Discord")
+    label = `Discord (${item.score > 0 ? "oui" : "non"})`;
+  return {
+    name: `${icon} ${label}`,
+    value: `${item.score}/${item.max}`,
+    inline: true,
+  };
 }
 
 // simple utility used by promote handler
 function capitalize(str) {
-  return str && str.length ? str[0].toUpperCase() + str.slice(1) : '';
+  return str && str.length ? str[0].toUpperCase() + str.slice(1) : "";
 }
 
 // Calcule la largeur visuelle d'une chaîne en monospace :
@@ -145,16 +177,16 @@ function displayWidth(str) {
   for (const ch of str) {
     const cp = ch.codePointAt(0);
     if (
-      (cp >= 0x1100 && cp <= 0x115F) ||
-      (cp >= 0x2E80 && cp <= 0x9FFF) ||
-      (cp >= 0xA000 && cp <= 0xA4CF) ||
-      (cp >= 0xAC00 && cp <= 0xD7AF) ||
-      (cp >= 0xF900 && cp <= 0xFAFF) ||
-      (cp >= 0xFE10 && cp <= 0xFE6F) ||
-      (cp >= 0xFF00 && cp <= 0xFF60) ||
-      (cp >= 0xFFE0 && cp <= 0xFFE6) ||
-      (cp >= 0x1F004 && cp <= 0x1FFFF) ||
-      (cp >= 0x2600 && cp <= 0x27BF)   // Misc Symbols : ♠♦♥♣☆ etc.
+      (cp >= 0x1100 && cp <= 0x115f) ||
+      (cp >= 0x2e80 && cp <= 0x9fff) ||
+      (cp >= 0xa000 && cp <= 0xa4cf) ||
+      (cp >= 0xac00 && cp <= 0xd7af) ||
+      (cp >= 0xf900 && cp <= 0xfaff) ||
+      (cp >= 0xfe10 && cp <= 0xfe6f) ||
+      (cp >= 0xff00 && cp <= 0xff60) ||
+      (cp >= 0xffe0 && cp <= 0xffe6) ||
+      (cp >= 0x1f004 && cp <= 0x1ffff) ||
+      (cp >= 0x2600 && cp <= 0x27bf) // Misc Symbols : ♠♦♥♣☆ etc.
     ) {
       w += 2;
     } else {
@@ -167,7 +199,7 @@ function displayWidth(str) {
 // Équivalent de padEnd mais qui tient compte de la largeur visuelle.
 function padEndDisplay(str, width) {
   const dw = displayWidth(str);
-  return str + ' '.repeat(Math.max(0, width - dw));
+  return str + " ".repeat(Math.max(0, width - dw));
 }
 
 // ── Discord Links — stockage GitHub ─────────────────────────────────────────
@@ -175,17 +207,24 @@ function padEndDisplay(str, width) {
 // via l'API GitHub Contents pour survivre aux redéploiements Vercel.
 
 async function readDiscordLinks() {
-  const repo  = process.env.GITHUB_REPO;
+  const repo = process.env.GITHUB_REPO;
   const token = process.env.GITHUB_TOKEN;
   if (!repo || !token) return { links: {}, sha: null };
   try {
     const res = await fetch(
       `https://api.github.com/repos/${repo}/contents/data/discord-links.json`,
-      { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github+json' } },
+      {
+        headers: {
+          Authorization: `token ${token}`,
+          Accept: "application/vnd.github+json",
+        },
+      },
     );
     if (!res.ok) return { links: {}, sha: null };
     const data = await res.json();
-    const links = JSON.parse(Buffer.from(data.content, 'base64').toString('utf8'));
+    const links = JSON.parse(
+      Buffer.from(data.content, "base64").toString("utf8"),
+    );
     return { links, sha: data.sha };
   } catch {
     return { links: {}, sha: null };
@@ -193,22 +232,24 @@ async function readDiscordLinks() {
 }
 
 async function writeDiscordLinks(links, sha, message) {
-  const repo  = process.env.GITHUB_REPO;
+  const repo = process.env.GITHUB_REPO;
   const token = process.env.GITHUB_TOKEN;
   if (!repo || !token || !sha) return false;
   try {
     const res = await fetch(
       `https://api.github.com/repos/${repo}/contents/data/discord-links.json`,
       {
-        method: 'PUT',
+        method: "PUT",
         headers: {
           Authorization: `token ${token}`,
-          Accept: 'application/vnd.github+json',
-          'Content-Type': 'application/json',
+          Accept: "application/vnd.github+json",
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           message,
-          content: Buffer.from(JSON.stringify(links, null, 2) + '\n').toString('base64'),
+          content: Buffer.from(JSON.stringify(links, null, 2) + "\n").toString(
+            "base64",
+          ),
           sha,
         }),
       },
@@ -220,29 +261,29 @@ async function writeDiscordLinks(links, sha, message) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).end();
+  if (req.method !== "POST") return res.status(405).end();
 
-  const signature = req.headers['x-signature-ed25519'];
-  const timestamp  = req.headers['x-signature-timestamp'];
+  const signature = req.headers["x-signature-ed25519"];
+  const timestamp = req.headers["x-signature-timestamp"];
 
   // Lecture du corps brut (nécessaire pour vérifier la signature)
   const chunks = [];
   for await (const chunk of req) {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
   }
-  const rawBody = Buffer.concat(chunks).toString('utf8');
+  const rawBody = Buffer.concat(chunks).toString("utf8");
 
   // Vérification de signature obligatoire *avant tout*, y compris pour les PINGs.
   // Discord teste explicitement que le endpoint rejette les requêtes sans signature valide.
   if (!verifyDiscordSignature(signature, timestamp, rawBody)) {
-    return res.status(401).end('invalid request signature');
+    return res.status(401).end("invalid request signature");
   }
 
   let body;
   try {
     body = JSON.parse(rawBody);
   } catch {
-    return res.status(400).end('invalid json');
+    return res.status(400).end("invalid json");
   }
 
   // Discord PING — répond après vérification de signature (requis par Discord pour valider l'endpoint)
@@ -252,12 +293,15 @@ export default async function handler(req, res) {
 
   // Vérification de la liste blanche des serveurs autorisés.
   // Effectuée en premier, avant tout traitement métier, pour minimiser le temps d'exécution.
-  const authorizedGuilds = (process.env.AUTHORIZED_GUILD_IDS || '')
-    .split(',')
+  const authorizedGuilds = (process.env.AUTHORIZED_GUILD_IDS || "")
+    .split(",")
     .map((id) => id.trim())
     .filter(Boolean);
 
-  if (authorizedGuilds.length > 0 && !authorizedGuilds.includes(body.guild_id)) {
+  if (
+    authorizedGuilds.length > 0 &&
+    !authorizedGuilds.includes(body.guild_id)
+  ) {
     return res.status(200).json({
       type: 4,
       data: {
@@ -269,13 +313,16 @@ export default async function handler(req, res) {
   }
 
   // Commande /trust
-  if (body.type === 2 && body.data?.name === 'trust') {
-    const tagOption = body.data.options?.find((o) => o.name === 'tag');
+  if (body.type === 2 && body.data?.name === "trust") {
+    const tagOption = body.data.options?.find((o) => o.name === "tag");
     const rawTag = tagOption?.value?.trim();
     if (!rawTag) {
       return res.status(200).json({
         type: 4,
-        data: { content: 'Veuillez fournir un tag de joueur (ex: `#ABC123`).', flags: 64 },
+        data: {
+          content: "Veuillez fournir un tag de joueur (ex: `#ABC123`).",
+          flags: 64,
+        },
       });
     }
 
@@ -283,7 +330,7 @@ export default async function handler(req, res) {
     // waitUntil garantit que Vercel maintient la fonction active jusqu'à la fin de l'analyse.
     res.status(200).json({ type: 5 });
 
-    const tag = rawTag.startsWith('#') ? rawTag : `#${rawTag}`;
+    const tag = rawTag.startsWith("#") ? rawTag : `#${rawTag}`;
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
 
     runBackground(async () => {
@@ -292,39 +339,55 @@ export default async function handler(req, res) {
         // On utilise l'URL canonique pour éviter les redirections vers une instance froide
         const apiResp = await fetch(
           `https://trustroyale.vercel.app/api/player/${encodeURIComponent(tag)}/analysis`,
-          { headers: { Accept: 'application/json' } },
+          { headers: { Accept: "application/json" } },
         );
 
         // --- déclencher snapshots pour tous les clans autorisés ---
         // c'est léger (3 appels à RoyaleAPI) et fait gagner un cycle aux visiteurs.
         // Si l'un d'eux échoue, on s'en fiche.
-        const [{ ALLOWED_CLANS }, { fetchRaceLog }, { recordSnapshot }] = await Promise.all([
-          import('../../backend/routes/clan.js'),
-          import('../../backend/services/clashApi.js'),
-          import('../../backend/services/snapshot.js'),
-        ]);
+        const [{ ALLOWED_CLANS }, { fetchRaceLog }, { recordSnapshot }] =
+          await Promise.all([
+            import("../../backend/routes/clan.js"),
+            import("../../backend/services/clashApi.js"),
+            import("../../backend/services/snapshot.js"),
+          ]);
         ALLOWED_CLANS.forEach((clanTag) => {
           fetchRaceLog(clanTag)
             .then((log) => {
               if (Array.isArray(log) && log.length) {
                 const standing = log[0].standings.find(
-                  (s) => s.clan?.tag?.toUpperCase() === `#${clanTag}`
+                  (s) => s.clan?.tag?.toUpperCase() === `#${clanTag}`,
                 );
                 const participants = standing?.clan?.participants || [];
                 const weekId = `S${log[0].seasonId}W${log[0].sectionIndex + 1}`;
-                recordSnapshot(clanTag, participants, weekId).catch((err) => console.warn('[snapshot] recordSnapshot failed for', clanTag, ':', err.message));
+                recordSnapshot(clanTag, participants, weekId).catch((err) =>
+                  console.warn(
+                    "[snapshot] recordSnapshot failed for",
+                    clanTag,
+                    ":",
+                    err.message,
+                  ),
+                );
               }
             })
-            .catch((err) => console.warn('[snapshot] fetchRaceLog failed for', clanTag, ':', err.message));
+            .catch((err) =>
+              console.warn(
+                "[snapshot] fetchRaceLog failed for",
+                clanTag,
+                ":",
+                err.message,
+              ),
+            );
         });
 
         if (!apiResp.ok) {
-          const msg = apiResp.status === 404
-            ? `Joueur \`${tag}\` introuvable.`
-            : `Erreur API (${apiResp.status}).`;
+          const msg =
+            apiResp.status === 404
+              ? `Joueur \`${tag}\` introuvable.`
+              : `Erreur API (${apiResp.status}).`;
           await fetch(webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ content: msg, flags: 64 }),
           });
           return;
@@ -333,14 +396,14 @@ export default async function handler(req, res) {
         const analysis = await apiResp.json();
         const score = analysis.warScore ?? analysis.reliability;
         const { total, maxScore, pct, color, verdict } = score;
-        const emoji      = EMOJI_MAP[color]  ?? '⚪';
+        const emoji = EMOJI_MAP[color] ?? "⚪";
         const embedColor = COLOR_MAP[color] ?? 0x808080;
         // verdict en français
         const FR_VERDICTS = {
-          'High reliability': 'Fiabilité élevée',
-          'Moderate risk': 'Risque modéré',
-          'High risk': 'Risque élevé',
-          'Extreme risk': 'Risque extrême',
+          "High reliability": "Fiabilité élevée",
+          "Moderate risk": "Risque modéré",
+          "High risk": "Risque élevé",
+          "Extreme risk": "Risque extrême",
         };
         const verdictFr = FR_VERDICTS[verdict] || verdict;
 
@@ -361,7 +424,7 @@ export default async function handler(req, res) {
           const scoreStr = `${item.score}/${item.max}`;
           rows.push(`${icon} ${label.padEnd(maxLabel)} ${scoreStr}`);
         }
-        const description = '```\n' + rows.join('\n') + '\n```';
+        const description = "```\n" + rows.join("\n") + "\n```";
 
         const embed = {
           title: `${emoji} ${analysis.overview.name} ⤑ ${pct} % (${verdictFr})`,
@@ -372,14 +435,14 @@ export default async function handler(req, res) {
         };
 
         await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ embeds: [embed] }),
         });
       } catch (err) {
         await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             content: `Erreur lors de l'analyse : ${err.message}`,
             flags: 64,
@@ -391,41 +454,47 @@ export default async function handler(req, res) {
   }
 
   // Commande /help
-  if (body.type === 2 && body.data?.name === 'help') {
+  if (body.type === 2 && body.data?.name === "help") {
     res.status(200).json({ type: 5 });
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
 
     runBackground(async () => {
       try {
         const embed = {
-          title: '🛠️ TrustRoyale — Guide des commandes',
+          title: "🛠️ TrustRoyale — Guide des commandes",
           color: 0x5865f2,
           description:
-            '- `/trust tag:#TAG` : analyse la fiabilité d\'un joueur\n' +
-            '- `/trust-clan clan:N` : liste les membres risqués du clan\n' +
-            '- `/promote clan:N min:X` : liste les joueurs ≥ X pts semaine précédente\n' +
-            '- `/demote clan:N` : liste les joueurs n\'ayant pas joué 16/16 decks (semaine précédente)\n' +
-            '- `/late clan:N` : liste les retardataires GDC du jour\n' +
-            '- `/compare clan:N` : affiche les clans du groupe GDC\n' +
-            '- `/chelem clan:N [season:X]` : 16/16 decks toutes semaines d\'une saison entière\n' +
-            '- `/top-players number:X period:[week|season] scope:[previous|actual]` : meilleurs joueurs de toute la famille\n' +
-            '- `/battles-per-day clan:N` : activités moyennes selon les 30 dernières batailles (Battle log)\n' +
-            '- `/discord-link tag:#TAG [tag2] [tag3]` : lie ton tag Clash à Discord\n' +
-            '- `/discord-check clan:N` : vérifie la présence Discord\n' +
-            '- `/help` : affiche cette fenêtre',
-          footer: { text: 'Utilise /help pour réafficher ce menu.' },
+            "- `/trust tag:#TAG` : analyse la fiabilité d'un joueur\n" +
+            "- `/trust-clan clan:N` : liste les membres risqués du clan\n" +
+            "- `/promote clan:N min:X` : liste les joueurs ≥ X pts semaine précédente\n" +
+            "- `/demote clan:N` : liste les joueurs n'ayant pas joué 16/16 decks (semaine précédente)\n" +
+            "- `/late clan:N` : liste les retardataires GDC du jour\n" +
+            "- `/compare clan:N` : affiche les clans du groupe GDC\n" +
+            "- `/chelem clan:N [season:X]` : 16/16 decks toutes semaines d'une saison entière\n" +
+            "- `/top-players number:X period:[week|season] scope:[previous|actual]` : meilleurs joueurs de toute la famille\n" +
+            "- `/battles-per-day clan:N` : activités moyennes selon les 30 dernières batailles (Battle log)\n" +
+            "- `/discord-link tag:#TAG [tag2] [tag3]` : lie ton tag Clash à Discord\n" +
+            "- `/discord-check clan:N` : vérifie la présence Discord\n" +
+            "- `/help` : affiche cette fenêtre",
+          footer: { text: "Utilise /help pour réafficher ce menu." },
         };
 
         await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ embeds: [embed], allowed_mentions: { parse: [] } }),
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            embeds: [embed],
+            allowed_mentions: { parse: [] },
+          }),
         });
       } catch (err) {
         await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur : ${err.message}`,
+            flags: 64,
+          }),
         });
       }
     });
@@ -433,26 +502,26 @@ export default async function handler(req, res) {
   }
 
   // Commande /promote
-  if (body.type === 2 && body.data?.name === 'promote') {
+  if (body.type === 2 && body.data?.name === "promote") {
     // parse options
-    const minOpt = body.data.options?.find((o) => o.name === 'min');
-    const clanOpt = body.data.options?.find((o) => o.name === 'clan');
+    const minOpt = body.data.options?.find((o) => o.name === "min");
+    const clanOpt = body.data.options?.find((o) => o.name === "clan");
     let min = 2800;
     if (minOpt && !isNaN(parseInt(minOpt.value))) {
       min = parseInt(minOpt.value, 10);
     }
-    let clanVal = (clanOpt?.value || '1').toString().trim().toLowerCase();
+    let clanVal = (clanOpt?.value || "1").toString().trim().toLowerCase();
     // Résoudre clan de façon synchrone (pas d'await) avant le type:5
     const CLAN_MAP = {
-      '1': { index: 0, name: 'La Resistance',  tag: 'Y8JUPC9C' },
-      'la': { index: 0, name: 'La Resistance', tag: 'Y8JUPC9C' },
-      '2': { index: 1, name: 'Les Resistants', tag: 'LRQP20V9' },
-      'les': { index: 1, name: 'Les Resistants', tag: 'LRQP20V9' },
-      '3': { index: 2, name: 'Les Revoltes',   tag: 'QU9UQJRL' },
+      1: { index: 0, name: "La Resistance", tag: "Y8JUPC9C" },
+      la: { index: 0, name: "La Resistance", tag: "Y8JUPC9C" },
+      2: { index: 1, name: "Les Resistants", tag: "LRQP20V9" },
+      les: { index: 1, name: "Les Resistants", tag: "LRQP20V9" },
+      3: { index: 2, name: "Les Revoltes", tag: "QU9UQJRL" },
     };
-    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP['1'];
+    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
     const clanName = resolved.name;
-    const clanTag  = resolved.tag;
+    const clanTag = resolved.tag;
 
     // defer response IMMÉDIATEMENT — avant tout await
     res.status(200).json({ type: 5 });
@@ -460,11 +529,14 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
-        const { fetchClanMembers } = await import('../../backend/services/clashApi.js');
-        const { computeTopPlayers } = await import('../../backend/services/topplayers.js');
+        const { fetchClanMembers } =
+          await import("../../backend/services/clashApi.js");
+        const { computeTopPlayers } =
+          await import("../../backend/services/topplayers.js");
         // fetch clan members to get roles
         const members = await fetchClanMembers(`#${clanTag}`);
-        const { fetchRaceLog } = await import('../../backend/services/clashApi.js');
+        const { fetchRaceLog } =
+          await import("../../backend/services/clashApi.js");
         const raceLog = await fetchRaceLog(`#${clanTag}`);
         const top = await computeTopPlayers(clanTag, members, [min], raceLog);
         let players = top.playersByQuota[min] || [];
@@ -477,13 +549,16 @@ export default async function handler(req, res) {
           const abortTimer = setTimeout(() => abortCtrl.abort(), 50000);
           const apiResp = await fetch(
             `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(clanTag)}/analysis`,
-            { headers: { Accept: 'application/json' }, signal: abortCtrl.signal },
+            {
+              headers: { Accept: "application/json" },
+              signal: abortCtrl.signal,
+            },
           );
           clearTimeout(abortTimer);
           if (apiResp.ok) {
             const analysis = await apiResp.json();
             (analysis.members || []).forEach((m) => {
-              if (m?.tag) analysisMap.set((m.tag || '').toUpperCase(), m);
+              if (m?.tag) analysisMap.set((m.tag || "").toUpperCase(), m);
             });
           }
         } catch (err) {
@@ -491,8 +566,9 @@ export default async function handler(req, res) {
         }
 
         // Déduire le weekId depuis le raceLog (première entrée = semaine précédente)
-        const { computePrevWeekId } = await import('../../backend/services/dateUtils.js');
-        const weekId = computePrevWeekId(raceLog) || 'S?';
+        const { computePrevWeekId } =
+          await import("../../backend/services/dateUtils.js");
+        const weekId = computePrevWeekId(raceLog) || "S?";
 
         let description;
         if (players.length === 0) {
@@ -500,28 +576,35 @@ export default async function handler(req, res) {
         } else {
           const rows = players.map((p, idx) => {
             const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
-            const fameStr = Number.isFinite(p.fame) ? p.fame.toLocaleString('fr-FR') : '0';
+            const fameStr = Number.isFinite(p.fame)
+              ? p.fame.toLocaleString("fr-FR")
+              : "0";
             return `${idx + 1}. [${p.name}](${playerUrl}) · **${fameStr} pts** · ${formatDiscordRole(p.role)}`;
           });
-          description = rows.join('\n');
+          description = rows.join("\n");
         }
         const embed = {
           title: `🏅 Semaine de GDC précédente — ${clanName} (≥ ${min} pts)`,
           color: 0x5865f2,
           description,
-          footer: { text: `Clan : ${clanName} · Quota : ${min} · Semaine : ${weekId}` },
+          footer: {
+            text: `Clan : ${clanName} · Quota : ${min} · Semaine : ${weekId}`,
+          },
         };
 
         await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ embeds: [embed] }),
         });
       } catch (err) {
         await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur : ${err.message}`,
+            flags: 64,
+          }),
         });
       }
     });
@@ -529,15 +612,15 @@ export default async function handler(req, res) {
   }
 
   // Commande /trust-clan
-  if (body.type === 2 && body.data?.name === 'trust-clan') {
-    const clanOpt = body.data.options?.find((o) => o.name === 'clan');
-    const clanVal = (clanOpt?.value || '1').toString().trim().toLowerCase();
+  if (body.type === 2 && body.data?.name === "trust-clan") {
+    const clanOpt = body.data.options?.find((o) => o.name === "clan");
+    const clanVal = (clanOpt?.value || "1").toString().trim().toLowerCase();
     const CLAN_MAP = {
-      '1': { name: 'La Resistance',  tag: 'Y8JUPC9C' },
-      '2': { name: 'Les Resistants', tag: 'LRQP20V9' },
-      '3': { name: 'Les Revoltes',   tag: 'QU9UQJRL' },
+      1: { name: "La Resistance", tag: "Y8JUPC9C" },
+      2: { name: "Les Resistants", tag: "LRQP20V9" },
+      3: { name: "Les Revoltes", tag: "QU9UQJRL" },
     };
-    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP['1'];
+    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
 
     res.status(200).json({ type: 5 });
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
@@ -550,22 +633,33 @@ export default async function handler(req, res) {
         try {
           apiResp = await fetch(
             `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis`,
-            { headers: { Accept: 'application/json' }, signal: abortCtrl.signal },
+            {
+              headers: { Accept: "application/json" },
+              signal: abortCtrl.signal,
+            },
           );
         } catch (fetchErr) {
           clearTimeout(abortTimer);
-          const msg = fetchErr.name === 'AbortError'
-            ? `⏱️ L'analyse du clan a pris trop longtemps. Réessayez dans 30 secondes (le cache est en cours de préchauffage).`
-            : `Erreur réseau : ${fetchErr.message}`;
-          await fetch(webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: msg, flags: 64 }) });
+          const msg =
+            fetchErr.name === "AbortError"
+              ? `⏱️ L'analyse du clan a pris trop longtemps. Réessayez dans 30 secondes (le cache est en cours de préchauffage).`
+              : `Erreur réseau : ${fetchErr.message}`;
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: msg, flags: 64 }),
+          });
           return;
         }
         clearTimeout(abortTimer);
         if (!apiResp.ok) {
           await fetch(webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: `Erreur API clan (${apiResp.status}). Réessayez dans quelques instants.`, flags: 64 }),
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `Erreur API clan (${apiResp.status}). Réessayez dans quelques instants.`,
+              flags: 64,
+            }),
           });
           return;
         }
@@ -573,21 +667,23 @@ export default async function handler(req, res) {
         const members = analysis.members || [];
 
         const filtered = members
-          .filter((m) => m.verdict === 'High risk' || m.verdict === 'Extreme risk')
+          .filter(
+            (m) => m.verdict === "High risk" || m.verdict === "Extreme risk",
+          )
           .sort((a, b) => {
             // Risque le plus élevé en premier (score le plus bas = plus risqué)
             const scoreA = Number(a.reliability ?? 0);
             const scoreB = Number(b.reliability ?? 0);
             if (scoreA !== scoreB) return scoreA - scoreB;
             // En cas d'égalité, trier par verdict (extrême avant high)
-            const severity = { 'Extreme risk': 0, 'High risk': 1 };
+            const severity = { "Extreme risk": 0, "High risk": 1 };
             return (severity[a.verdict] || 0) - (severity[b.verdict] || 0);
           });
 
         if (filtered.length === 0) {
           await fetch(webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               content: `✅ Aucun membre avec un risque Élevé/Extrême trouvé dans ${resolved.name}.`,
               flags: 64,
@@ -596,14 +692,19 @@ export default async function handler(req, res) {
           return;
         }
 
-        const VERDICT_EMOJI = { 'Extreme risk': '🔴', 'High risk': '🟠' };
-        const VERDICT_LABELFr = { 'Extreme risk': 'Extrême', 'High risk': 'Élevé' };
+        const VERDICT_EMOJI = { "Extreme risk": "🔴", "High risk": "🟠" };
+        const VERDICT_LABELFr = {
+          "Extreme risk": "Extrême",
+          "High risk": "Élevé",
+        };
         const clanUrl = `https://trustroyale.vercel.app/?mode=clan&tag=%23${resolved.tag}`;
         const allRows = filtered.map((m) => {
-          const newTag = m.isNew ? ' 🆕' : '';
-          const emoji = VERDICT_EMOJI[m.verdict] ?? '⚠️';
+          const newTag = m.isNew ? " 🆕" : "";
+          const emoji = VERDICT_EMOJI[m.verdict] ?? "⚠️";
           const pct = Math.round(Number(m.reliability ?? 0));
-          const verdictLabel = VERDICT_LABELFr[m.verdict] || (m.verdict || '').replace(/\s*risk$/i, '');
+          const verdictLabel =
+            VERDICT_LABELFr[m.verdict] ||
+            (m.verdict || "").replace(/\s*risk$/i, "");
           const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(m.tag)}`;
           return `- [${m.name}](${playerUrl})${newTag} · ${emoji} ${verdictLabel} (${pct}%)`;
         });
@@ -611,12 +712,15 @@ export default async function handler(req, res) {
         let description;
         const MAX_ROWS = 80;
         if (allRows.length <= MAX_ROWS) {
-          description = allRows.join('\n');
+          description = allRows.join("\n");
         } else {
-          description = allRows.slice(0, MAX_ROWS).join('\n') + `\n...et ${allRows.length - MAX_ROWS} autres`; 
+          description =
+            allRows.slice(0, MAX_ROWS).join("\n") +
+            `\n...et ${allRows.length - MAX_ROWS} autres`;
         }
 
-        const weekId = analysis.prevWeekId || analysis.clanWarSummary?.weekId || 'S?';
+        const weekId =
+          analysis.prevWeekId || analysis.clanWarSummary?.weekId || "S?";
         const embed = {
           title: `⚠️  ${resolved.name} (${filtered.length} joueurs à risque)`,
           url: clanUrl,
@@ -626,15 +730,18 @@ export default async function handler(req, res) {
         };
 
         await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ embeds: [embed] }),
         });
       } catch (err) {
         await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur : ${err.message}`,
+            flags: 64,
+          }),
         });
       }
     });
@@ -642,18 +749,21 @@ export default async function handler(req, res) {
   }
 
   // Commande /battles-per-day
-  if (body.type === 2 && body.data?.name === 'battles-per-day') {
-    const clanOpt = body.data.options?.find((o) => o.name === 'clan');
-    const modeOpt = body.data.options?.find((o) => o.name === 'mode');
-    const clanVal = (clanOpt?.value || '1').toString().trim().toLowerCase();
-    const selectedMode = (modeOpt?.value || 'top').toString().trim().toLowerCase() === 'bottom' ? 'bottom' : 'top';
+  if (body.type === 2 && body.data?.name === "battles-per-day") {
+    const clanOpt = body.data.options?.find((o) => o.name === "clan");
+    const modeOpt = body.data.options?.find((o) => o.name === "mode");
+    const clanVal = (clanOpt?.value || "1").toString().trim().toLowerCase();
+    const selectedMode =
+      (modeOpt?.value || "top").toString().trim().toLowerCase() === "bottom"
+        ? "bottom"
+        : "top";
 
     const CLAN_MAP = {
-      '1': { name: 'La Resistance',  tag: 'Y8JUPC9C' },
-      '2': { name: 'Les Resistants', tag: 'LRQP20V9' },
-      '3': { name: 'Les Revoltes',   tag: 'QU9UQJRL' },
+      1: { name: "La Resistance", tag: "Y8JUPC9C" },
+      2: { name: "Les Resistants", tag: "LRQP20V9" },
+      3: { name: "Les Revoltes", tag: "QU9UQJRL" },
     };
-    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP['1'];
+    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
 
     res.status(200).json({ type: 5 });
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
@@ -662,43 +772,53 @@ export default async function handler(req, res) {
       try {
         const baseUrl = process.env.VERCEL_URL
           ? `https://${process.env.VERCEL_URL}`
-          : process.env.NODE_ENV === 'production'
-            ? 'https://trustroyale.vercel.app'
-            : 'http://localhost:3000';
+          : process.env.NODE_ENV === "production"
+            ? "https://trustroyale.vercel.app"
+            : "http://localhost:3000";
 
         let analysis = null;
         let analysisSource = null;
 
         try {
-          const { buildClanAnalysis } = await import('../../backend/routes/clan.js');
+          const { buildClanAnalysis } =
+            await import("../../backend/routes/clan.js");
           analysis = await buildClanAnalysis(resolved.tag);
-          analysisSource = 'local';
+          analysisSource = "local";
         } catch (err) {
-          console.warn('[battles-per-day] buildClanAnalysis failed, fallback to API:', err.message);
+          console.warn(
+            "[battles-per-day] buildClanAnalysis failed, fallback to API:",
+            err.message,
+          );
           const apiResp = await fetch(
             `${baseUrl}/api/clan/${encodeURIComponent(resolved.tag)}/analysis`,
-            { headers: { Accept: 'application/json' } },
+            { headers: { Accept: "application/json" } },
           );
           if (!apiResp.ok) {
-            const bodyText = await apiResp.text().catch(() => '(no body)');
+            const bodyText = await apiResp.text().catch(() => "(no body)");
             await fetch(webhookUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ content: `Erreur API clan (${apiResp.status}): ${bodyText}`, flags: 64 }),
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                content: `Erreur API clan (${apiResp.status}): ${bodyText}`,
+                flags: 64,
+              }),
             });
             return;
           }
           analysis = await apiResp.json();
-          analysisSource = 'http';
+          analysisSource = "http";
         }
 
         const members = Array.isArray(analysis.members) ? analysis.members : [];
 
         if (members.length === 0) {
           await fetch(webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: `Aucun membre trouvé pour ${resolved.name}.`, flags: 64 }),
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `Aucun membre trouvé pour ${resolved.name}.`,
+              flags: 64,
+            }),
           });
           return;
         }
@@ -709,77 +829,109 @@ export default async function handler(req, res) {
 
         const limitedCandidates = candidates;
 
-        const { fetchBattleLog } = await import('../../backend/services/clashApi.js');
+        const { fetchBattleLog } =
+          await import("../../backend/services/clashApi.js");
         const BATCH_SIZE = 4;
         const withTimeout = (promise, ms) =>
           Promise.race([
             promise,
-            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("timeout")), ms),
+            ),
           ]);
 
         const enriched = [];
         for (let i = 0; i < limitedCandidates.length; i += BATCH_SIZE) {
           const chunk = limitedCandidates.slice(i, i + BATCH_SIZE);
-          const results = await Promise.all(chunk.map(async (m) => {
-            try {
-              const tagNormalized = m.tag?.startsWith('#') ? m.tag : `#${m.tag}`;
-              const battleLog = await withTimeout(fetchBattleLog(tagNormalized), 7000);
-              const battlesPerDay = computeBattlesPerDayFromPlayer({ battleLog: Array.isArray(battleLog) ? battleLog : [] });
-              if (battlesPerDay == null || Number.isNaN(battlesPerDay)) return null;
-              return {
-                tag: tagNormalized,
-                name: m.name,
-                battlesPerDay,
-                playerUrl: `${baseUrl}/?mode=player&tag=${encodeURIComponent(tagNormalized)}`,
-              };
-            } catch {
-              return null;
-            }
-          }));
+          const results = await Promise.all(
+            chunk.map(async (m) => {
+              try {
+                const tagNormalized = m.tag?.startsWith("#")
+                  ? m.tag
+                  : `#${m.tag}`;
+                const battleLog = await withTimeout(
+                  fetchBattleLog(tagNormalized),
+                  7000,
+                );
+                const battlesPerDay = computeBattlesPerDayFromPlayer({
+                  battleLog: Array.isArray(battleLog) ? battleLog : [],
+                });
+                if (battlesPerDay == null || Number.isNaN(battlesPerDay))
+                  return null;
+                return {
+                  tag: tagNormalized,
+                  name: m.name,
+                  battlesPerDay,
+                  playerUrl: `${baseUrl}/?mode=player&tag=${encodeURIComponent(tagNormalized)}`,
+                };
+              } catch {
+                return null;
+              }
+            }),
+          );
           enriched.push(...results.filter(Boolean));
         }
 
         if (enriched.length === 0) {
           await fetch(webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: `Impossible de récupérer les logs Battle pour ${resolved.name}.`, flags: 64 }),
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `Impossible de récupérer les logs Battle pour ${resolved.name}.`,
+              flags: 64,
+            }),
           });
           return;
         }
 
         const sorted = enriched.sort((a, b) => {
-          return selectedMode === 'bottom'
+          return selectedMode === "bottom"
             ? a.battlesPerDay - b.battlesPerDay
             : b.battlesPerDay - a.battlesPerDay;
         });
 
         const selectedRows = sorted.slice(0, 25);
-        const totalAvg = selectedRows.reduce((sum, p) => sum + p.battlesPerDay, 0) / selectedRows.length;
+        const totalAvg =
+          selectedRows.reduce((sum, p) => sum + p.battlesPerDay, 0) /
+          selectedRows.length;
 
-        const displayedRows = selectedMode === 'bottom' ? [...selectedRows].reverse() : selectedRows;
-        const rows = displayedRows.map((p, idx) => `${idx + 1}. [${p.name}](${p.playerUrl}) · ${p.battlesPerDay}`);
-        const modeLabel = selectedMode === 'bottom' ? 'Bas du classement' : 'Haut du classement';
+        const displayedRows =
+          selectedMode === "bottom"
+            ? [...selectedRows].reverse()
+            : selectedRows;
+        const rows = displayedRows.map(
+          (p, idx) =>
+            `${idx + 1}. [${p.name}](${p.playerUrl}) · ${p.battlesPerDay}`,
+        );
+        const modeLabel =
+          selectedMode === "bottom"
+            ? "Bas du classement"
+            : "Haut du classement";
         const descriptionHeader = `Mode : ${modeLabel} | ${selectedRows.length} membres (limite 25)\n\n`;
-        const description = descriptionHeader + rows.join('\n');
+        const description = descriptionHeader + rows.join("\n");
 
         const embed = {
           title: `Clan : ${resolved.name} · Combats moyens / jour`,
           color: 0x5865f2,
           description,
-          footer: { text: `Moyenne (liste) : ${totalAvg.toFixed(1)} (n=${sorted.length})` },
+          footer: {
+            text: `Moyenne (liste) : ${totalAvg.toFixed(1)} (n=${sorted.length})`,
+          },
         };
 
         await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ embeds: [embed] }),
         });
       } catch (err) {
         await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur : ${err.message}`,
+            flags: 64,
+          }),
         });
       }
     });
@@ -787,26 +939,27 @@ export default async function handler(req, res) {
   }
 
   // Commande /top-players
-  if (body.type === 2 && body.data?.name === 'top-players') {
-    const numberOpt = body.data.options?.find((o) => o.name === 'number');
-    const periodOpt = body.data.options?.find((o) => o.name === 'period');
-    const scopeOpt  = body.data.options?.find((o) => o.name === 'scope');
+  if (body.type === 2 && body.data?.name === "top-players") {
+    const numberOpt = body.data.options?.find((o) => o.name === "number");
+    const periodOpt = body.data.options?.find((o) => o.name === "period");
+    const scopeOpt = body.data.options?.find((o) => o.name === "scope");
 
     const limit = Math.min(Math.max(1, Number(numberOpt?.value ?? 5) || 5), 30);
-    const period = (periodOpt?.value || 'week').toString().toLowerCase();
-    const scope  = (scopeOpt?.value || 'previous').toString().toLowerCase();
+    const period = (periodOpt?.value || "week").toString().toLowerCase();
+    const scope = (scopeOpt?.value || "previous").toString().toLowerCase();
 
     res.status(200).json({ type: 5 });
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
 
     runBackground(async () => {
       try {
-        const { fetchRaceLog, fetchClanMembers, fetchCurrentRace } = await import('../../backend/services/clashApi.js');
+        const { fetchRaceLog, fetchClanMembers, fetchCurrentRace } =
+          await import("../../backend/services/clashApi.js");
 
         const CLANS = [
-          { name: 'La Resistance',  tag: 'Y8JUPC9C' },
-          { name: 'Les Resistants', tag: 'LRQP20V9' },
-          { name: 'Les Revoltes',   tag: 'QU9UQJRL' },
+          { name: "La Resistance", tag: "Y8JUPC9C" },
+          { name: "Les Resistants", tag: "LRQP20V9" },
+          { name: "Les Revoltes", tag: "QU9UQJRL" },
         ];
 
         const allMembers = new Map(); // tag -> { name, role, clan }
@@ -817,7 +970,11 @@ export default async function handler(req, res) {
         const clanRaceLogs = {};
         const currentRaceByClan = {};
 
-        const { computeCurrentSeasonId, computeCurrentWeekId, computePrevWeekId } = await import('../../backend/services/dateUtils.js');
+        const {
+          computeCurrentSeasonId,
+          computeCurrentWeekId,
+          computePrevWeekId,
+        } = await import("../../backend/services/dateUtils.js");
 
         for (const clan of CLANS) {
           const [raceLog, members, currentRace] = await Promise.all([
@@ -830,7 +987,7 @@ export default async function handler(req, res) {
 
           if (Array.isArray(raceLog) && raceLog.length > 0) {
             clanRaceLogs[clan.tag] = raceLog;
-            
+
             if (currentSeason === null) {
               currentSeason = computeCurrentSeasonId(currentRace, raceLog);
             }
@@ -845,44 +1002,57 @@ export default async function handler(req, res) {
                 localSeasonCounts[sid] = (localSeasonCounts[sid] || 0) + 1;
               }
 
-              const sortedSeasons = Object.keys(localSeasonCounts).map(Number).sort((a, b) => b - a);
+              const sortedSeasons = Object.keys(localSeasonCounts)
+                .map(Number)
+                .sort((a, b) => b - a);
               defaultSeason =
-                sortedSeasons.find((sid) => sid !== currentSeason && localSeasonCounts[sid] >= 4) ??
+                sortedSeasons.find(
+                  (sid) => sid !== currentSeason && localSeasonCounts[sid] >= 4,
+                ) ??
                 sortedSeasons.find((sid) => sid !== currentSeason) ??
                 sortedSeasons[0];
             }
 
             const lastWeek = raceLog[0];
             const standing = Array.isArray(lastWeek?.standings)
-              ? lastWeek.standings.find((s) => s.clan?.tag?.toUpperCase() === `#${clan.tag}`)
+              ? lastWeek.standings.find(
+                  (s) => s.clan?.tag?.toUpperCase() === `#${clan.tag}`,
+                )
               : null;
             const participants = standing?.clan?.participants ?? [];
 
             // we will populate `allTeams` after accumulations depending on scope
 
             members.forEach((m) => {
-              const normalized = m.tag?.toUpperCase?.() || '';
+              const normalized = m.tag?.toUpperCase?.() || "";
               if (!normalized) return;
-              if (!allMembers.has(normalized) || allMembers.get(normalized).clan === 'La Resistance') {
-                allMembers.set(normalized, { name: m.name, role: m.role || 'member', clan: clan.name });
+              if (
+                !allMembers.has(normalized) ||
+                allMembers.get(normalized).clan === "La Resistance"
+              ) {
+                allMembers.set(normalized, {
+                  name: m.name,
+                  role: m.role || "member",
+                  clan: clan.name,
+                });
               }
             });
           }
         }
 
         // Build record for week mode based on requested scope.
-        if (period === 'week') {
-          if (scope === 'actual') {
+        if (period === "week") {
+          if (scope === "actual") {
             for (const clan of CLANS) {
               const currentRace = currentRaceByClan[clan.tag];
               const participants = currentRace?.clan?.participants ?? [];
               if (Array.isArray(participants) && participants.length > 0) {
                 for (const p of participants) {
-                  const tag = p.tag?.toUpperCase?.() || '';
-                  const role = (allMembers.get(tag)?.role) || 'member';
+                  const tag = p.tag?.toUpperCase?.() || "";
+                  const role = allMembers.get(tag)?.role || "member";
                   allTeams.push({
                     tag,
-                    name: p.name || '',
+                    name: p.name || "",
                     clan: clan.name,
                     role,
                     fame: p.fame || 0,
@@ -893,20 +1063,25 @@ export default async function handler(req, res) {
           }
 
           // fallback to previous (last completed week) when no actual data available
-          if (scope === 'previous' || allTeams.length === 0) {
+          if (scope === "previous" || allTeams.length === 0) {
             for (const clan of CLANS) {
               const raceLog = clanRaceLogs[clan.tag];
-              const lastWeek = Array.isArray(raceLog) && raceLog.length > 0 ? raceLog[0] : null;
+              const lastWeek =
+                Array.isArray(raceLog) && raceLog.length > 0
+                  ? raceLog[0]
+                  : null;
               const standing = Array.isArray(lastWeek?.standings)
-                ? lastWeek.standings.find((s) => s.clan?.tag?.toUpperCase() === `#${clan.tag}`)
+                ? lastWeek.standings.find(
+                    (s) => s.clan?.tag?.toUpperCase() === `#${clan.tag}`,
+                  )
                 : null;
               const participants = standing?.clan?.participants ?? [];
               for (const p of participants) {
-                const tag = p.tag?.toUpperCase?.() || '';
-                const role = (allMembers.get(tag)?.role) || 'member';
+                const tag = p.tag?.toUpperCase?.() || "";
+                const role = allMembers.get(tag)?.role || "member";
                 allTeams.push({
                   tag,
-                  name: p.name || '',
+                  name: p.name || "",
                   clan: clan.name,
                   role,
                   fame: p.fame || 0,
@@ -920,21 +1095,30 @@ export default async function handler(req, res) {
         let footer;
         let players = [];
 
-        if (period === 'season') {
+        if (period === "season") {
           if (defaultSeason == null && currentSeason == null) {
-            throw new Error('Impossible de trouver une saison dans les logs.');
+            throw new Error("Impossible de trouver une saison dans les logs.");
           }
 
-          const selectedSeason = (scope === 'actual' ? (currentSeason || defaultSeason) : defaultSeason);
+          const selectedSeason =
+            scope === "actual" ? currentSeason || defaultSeason : defaultSeason;
           if (selectedSeason == null) {
-            throw new Error('Impossible de déterminer la saison cible.');
+            throw new Error("Impossible de déterminer la saison cible.");
           }
 
-          title = `🏅Meilleurs joueurs de la famille - saison ${scope === 'actual' ? 'actuelle' : 'précédente'}`;
+          title = `🏅Meilleurs joueurs de la famille - saison ${scope === "actual" ? "actuelle" : "précédente"}`;
           footer = `Famille Resistance · Saison : S${selectedSeason}`;
-          if (scope === 'previous' && currentSeason != null && currentSeason !== selectedSeason) {
+          if (
+            scope === "previous" &&
+            currentSeason != null &&
+            currentSeason !== selectedSeason
+          ) {
             footer += ` (la S${currentSeason} n'est pas terminée)`;
-          } else if (scope === 'actual' && currentSeason != null && currentSeason !== selectedSeason) {
+          } else if (
+            scope === "actual" &&
+            currentSeason != null &&
+            currentSeason !== selectedSeason
+          ) {
             footer += ` (la S${currentSeason} est celle en cours)`;
           }
 
@@ -946,17 +1130,22 @@ export default async function handler(req, res) {
             const weeks = raceLog.filter((w) => w.seasonId === selectedSeason);
             for (const week of weeks) {
               const standing = Array.isArray(week.standings)
-                ? week.standings.find((s) => s.clan?.tag?.toUpperCase() === `#${clan.tag}`)
+                ? week.standings.find(
+                    (s) => s.clan?.tag?.toUpperCase() === `#${clan.tag}`,
+                  )
                 : null;
               const participants = standing?.clan?.participants ?? [];
               for (const p of participants) {
-                const tag = p.tag?.toUpperCase?.() || '';
+                const tag = p.tag?.toUpperCase?.() || "";
                 if (!tag) continue;
-                const existing = seasonTotals.get(tag) || { name: p.name || '', fame: 0 };
-                existing.name = existing.name || p.name || '';
+                const existing = seasonTotals.get(tag) || {
+                  name: p.name || "",
+                  fame: 0,
+                };
+                existing.name = existing.name || p.name || "";
                 existing.fame += p.fame || 0;
                 existing.clan = allMembers.get(tag)?.clan || clan.name;
-                existing.role = allMembers.get(tag)?.role || 'member';
+                existing.role = allMembers.get(tag)?.role || "member";
                 seasonTotals.set(tag, existing);
               }
             }
@@ -964,54 +1153,70 @@ export default async function handler(req, res) {
 
           players = Array.from(seasonTotals.entries())
             .map(([tag, data]) => ({ tag, ...data }))
-            .sort((a, b) => b.fame - a.fame || a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }))
+            .sort(
+              (a, b) =>
+                b.fame - a.fame ||
+                a.name.localeCompare(b.name, "fr", { sensitivity: "base" }),
+            )
             .slice(0, limit);
-
         } else {
-          title = `🏅Meilleurs joueurs de la famille - semaine ${scope === 'actual' ? 'actuelle' : 'précédente'}`;
-          const weekRef = (scope === 'actual')
-            ? (function () {
-                for (const clan of CLANS) {
-                  const currentRace = currentRaceByClan[clan.tag];
-                  const raceLog = clanRaceLogs[clan.tag];
-                  const currentWeekId = computeCurrentWeekId(currentRace, raceLog);
-                  if (currentWeekId) return currentWeekId;
-                }
-                return null;
-              })()
-            : (function () {
-                for (const clan of CLANS) {
-                  const raceLog = clanRaceLogs[clan.tag];
-                  const prevWeekId = computePrevWeekId(raceLog);
-                  if (prevWeekId) return prevWeekId;
-                }
-                return null;
-              })();
+          title = `🏅Meilleurs joueurs de la famille - semaine ${scope === "actual" ? "actuelle" : "précédente"}`;
+          const weekRef =
+            scope === "actual"
+              ? (function () {
+                  for (const clan of CLANS) {
+                    const currentRace = currentRaceByClan[clan.tag];
+                    const raceLog = clanRaceLogs[clan.tag];
+                    const currentWeekId = computeCurrentWeekId(
+                      currentRace,
+                      raceLog,
+                    );
+                    if (currentWeekId) return currentWeekId;
+                  }
+                  return null;
+                })()
+              : (function () {
+                  for (const clan of CLANS) {
+                    const raceLog = clanRaceLogs[clan.tag];
+                    const prevWeekId = computePrevWeekId(raceLog);
+                    if (prevWeekId) return prevWeekId;
+                  }
+                  return null;
+                })();
 
-          footer = `Famille Resistance · Semaine : ${weekRef ?? 'S?-W?'}`;
+          footer = `Famille Resistance · Semaine : ${weekRef ?? "S?-W?"}`;
 
           players = allTeams
-            .sort((a, b) => b.fame - a.fame || a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }))
+            .sort(
+              (a, b) =>
+                b.fame - a.fame ||
+                a.name.localeCompare(b.name, "fr", { sensitivity: "base" }),
+            )
             .slice(0, limit);
         }
 
         if (players.length === 0) {
           await fetch(webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: 'Aucun joueur trouvé pour la période demandée.', flags: 64 }),
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: "Aucun joueur trouvé pour la période demandée.",
+              flags: 64,
+            }),
           });
           return;
         }
 
-        const rows = players.map((p, idx) => {
-          const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
-          const name = p.name || p.tag;
-          const clan = p.clan || '?';
-          const fame = p.fame || 0;
-          const fameStr = fame.toLocaleString('fr-FR');
-          return `${idx + 1}. [${name}](${playerUrl}) (${clan}) · **${fameStr} pts**`;
-        }).join('\n');
+        const rows = players
+          .map((p, idx) => {
+            const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
+            const name = p.name || p.tag;
+            const clan = p.clan || "?";
+            const fame = p.fame || 0;
+            const fameStr = fame.toLocaleString("fr-FR");
+            return `${idx + 1}. [${name}](${playerUrl}) (${clan}) · **${fameStr} pts**`;
+          })
+          .join("\n");
 
         const embed = {
           title,
@@ -1021,15 +1226,21 @@ export default async function handler(req, res) {
         };
 
         await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ embeds: [embed], allowed_mentions: { parse: [] } }),
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            embeds: [embed],
+            allowed_mentions: { parse: [] },
+          }),
         });
       } catch (err) {
         await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur : ${err.message}`,
+            flags: 64,
+          }),
         });
       }
     });
@@ -1037,15 +1248,15 @@ export default async function handler(req, res) {
   }
 
   // Commande /demote
-  if (body.type === 2 && body.data?.name === 'demote') {
-    const clanOpt = body.data.options?.find((o) => o.name === 'clan');
-    const clanVal = (clanOpt?.value || '1').toString().trim().toLowerCase();
+  if (body.type === 2 && body.data?.name === "demote") {
+    const clanOpt = body.data.options?.find((o) => o.name === "clan");
+    const clanVal = (clanOpt?.value || "1").toString().trim().toLowerCase();
     const CLAN_MAP = {
-      '1': { name: 'La Resistance',  tag: 'Y8JUPC9C' },
-      '2': { name: 'Les Resistants', tag: 'LRQP20V9' },
-      '3': { name: 'Les Revoltes',   tag: 'QU9UQJRL' },
+      1: { name: "La Resistance", tag: "Y8JUPC9C" },
+      2: { name: "Les Resistants", tag: "LRQP20V9" },
+      3: { name: "Les Revoltes", tag: "QU9UQJRL" },
     };
-    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP['1'];
+    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
 
     res.status(200).json({ type: 5 });
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
@@ -1057,8 +1268,8 @@ export default async function handler(req, res) {
         if (!apiResp.ok) {
           const msg = `Erreur API : ${apiResp.status}`;
           await fetch(webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ content: msg, flags: 64 }),
           });
           return;
@@ -1070,9 +1281,12 @@ export default async function handler(req, res) {
 
         if (uncomplete.length === 0) {
           await fetch(webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: `✅ Aucun joueur en fail 16/16 dans ${resolved.name}.`, flags: 64 }),
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `✅ Aucun joueur en fail 16/16 dans ${resolved.name}.`,
+              flags: 64,
+            }),
           });
           return;
         }
@@ -1084,25 +1298,26 @@ export default async function handler(req, res) {
 
         const rows = sorted.slice(0, MAX_ROWS).map((p, i) => {
           const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
-          const isNew = p.isNew ? ' 🆕' : '';
+          const isNew = p.isNew ? " 🆕" : "";
           const role = formatDiscordRole(p.role);
           return `${i + 1}. [${p.name}](${playerUrl})${isNew} • ${role} • **${p.decks} decks**`;
         });
 
-        let description = `Joueurs n'ayant pas joué 16/16 decks\n${rows.join('\n')}`;
+        let description = `Joueurs n'ayant pas joué 16/16 decks\n${rows.join("\n")}`;
         // Discord limite les embeds à 4096 caractères pour description
         if (description.length > 4090) {
           const trimmed = rows
-            .join('\n')
+            .join("\n")
             .slice(0, 4000)
-            .split('\n')
+            .split("\n")
             .slice(0, -1)
-            .join('\n');
+            .join("\n");
           description = `Joueurs n'ayant pas joué 16/16 decks\n${trimmed}\n...liste tronquée`;
         }
         const clanUrl = `https://trustroyale.vercel.app/?mode=clan&tag=%23${resolved.tag}`;
 
-        const weekId = analysis.prevWeekId || analysis.clanWarSummary?.weekId || 'S?';
+        const weekId =
+          analysis.prevWeekId || analysis.clanWarSummary?.weekId || "S?";
         const embed = {
           title: `🤷 Semaine de GDC précédente — ${resolved.name}`,
           url: clanUrl,
@@ -1112,15 +1327,18 @@ export default async function handler(req, res) {
         };
 
         await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ embeds: [embed] }),
         });
       } catch (err) {
         await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur : ${err.message}`,
+            flags: 64,
+          }),
         });
       }
     });
@@ -1128,21 +1346,22 @@ export default async function handler(req, res) {
   }
 
   // Commande /chelem
-  if (body.type === 2 && body.data?.name === 'chelem') {
-    const clanOpt = body.data.options?.find((o) => o.name === 'clan');
-    const seasonOpt = body.data.options?.find((o) => o.name === 'season');
+  if (body.type === 2 && body.data?.name === "chelem") {
+    const clanOpt = body.data.options?.find((o) => o.name === "clan");
+    const seasonOpt = body.data.options?.find((o) => o.name === "season");
 
-    const clanVal = (clanOpt?.value || '1').toString().trim().toLowerCase();
+    const clanVal = (clanOpt?.value || "1").toString().trim().toLowerCase();
     const CLAN_MAP = {
-      '1': { name: 'La Resistance',  tag: 'Y8JUPC9C' },
-      '2': { name: 'Les Resistants', tag: 'LRQP20V9' },
-      '3': { name: 'Les Revoltes',   tag: 'QU9UQJRL' },
+      1: { name: "La Resistance", tag: "Y8JUPC9C" },
+      2: { name: "Les Resistants", tag: "LRQP20V9" },
+      3: { name: "Les Revoltes", tag: "QU9UQJRL" },
     };
-    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP['1'];
+    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
 
-    const requestedSeason = seasonOpt && !Number.isNaN(parseInt(seasonOpt.value, 10))
-      ? parseInt(seasonOpt.value, 10)
-      : null;
+    const requestedSeason =
+      seasonOpt && !Number.isNaN(parseInt(seasonOpt.value, 10))
+        ? parseInt(seasonOpt.value, 10)
+        : null;
 
     // Réponse différée obligatoire (sinon Discord timeout)
     res.status(200).json({ type: 5 });
@@ -1150,21 +1369,26 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
-        const { fetchRaceLog, fetchClanMembers, fetchCurrentRace } = await import('../../backend/services/clashApi.js');
+        const { fetchRaceLog, fetchClanMembers, fetchCurrentRace } =
+          await import("../../backend/services/clashApi.js");
         const [raceLog, currentRace] = await Promise.all([
           fetchRaceLog(`#${resolved.tag}`),
           fetchCurrentRace(`#${resolved.tag}`).catch(() => null),
         ]);
         if (!Array.isArray(raceLog) || raceLog.length === 0) {
           await fetch(webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: 'Impossible de récupérer le race log du clan.', flags: 64 }),
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: "Impossible de récupérer le race log du clan.",
+              flags: 64,
+            }),
           });
           return;
         }
 
-        const { computeCurrentSeasonId } = await import('../../backend/services/dateUtils.js');
+        const { computeCurrentSeasonId } =
+          await import("../../backend/services/dateUtils.js");
 
         // Saison par défaut = la plus récente saison TERMINÉE dans le log.
         // Si toutes les semaines de la saison courante sont déjà dans le raceLog (>= 4),
@@ -1174,22 +1398,29 @@ export default async function handler(req, res) {
         for (const r of raceLog) {
           seasonCounts[r.seasonId] = (seasonCounts[r.seasonId] || 0) + 1;
         }
-        const sortedSeasons = Object.keys(seasonCounts).map(Number).sort((a, b) => b - a);
-        const currentSeasonIsComplete = currentSeasonId && (seasonCounts[currentSeasonId] ?? 0) >= 4;
+        const sortedSeasons = Object.keys(seasonCounts)
+          .map(Number)
+          .sort((a, b) => b - a);
+        const currentSeasonIsComplete =
+          currentSeasonId && (seasonCounts[currentSeasonId] ?? 0) >= 4;
         const defaultSeason = currentSeasonIsComplete
-          ? (sortedSeasons.find((sid) => seasonCounts[sid] >= 4) ?? sortedSeasons[0])
-          : (
-            sortedSeasons.find((sid) => sid !== currentSeasonId && seasonCounts[sid] >= 4) ??
+          ? (sortedSeasons.find((sid) => seasonCounts[sid] >= 4) ??
+            sortedSeasons[0])
+          : (sortedSeasons.find(
+              (sid) => sid !== currentSeasonId && seasonCounts[sid] >= 4,
+            ) ??
             sortedSeasons.find((sid) => sid !== currentSeasonId) ??
-            sortedSeasons[0]
-          );
+            sortedSeasons[0]);
 
         const seasonId = requestedSeason ?? defaultSeason;
         if (!seasonId) {
           await fetch(webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: 'Impossible de déterminer la saison cible.', flags: 64 }),
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: "Impossible de déterminer la saison cible.",
+              flags: 64,
+            }),
           });
           return;
         }
@@ -1197,16 +1428,19 @@ export default async function handler(req, res) {
         const weeks = raceLog.filter((r) => r.seasonId === seasonId);
         if (weeks.length === 0) {
           await fetch(webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: `Aucune donnée trouvée pour la saison ${seasonId}.`, flags: 64 }),
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `Aucune donnée trouvée pour la saison ${seasonId}.`,
+              flags: 64,
+            }),
           });
           return;
         }
 
         const fullSets = weeks.map((w) => {
-          const standing = (w.standings || []).find((s) =>
-            s.clan?.tag?.toUpperCase() === `#${resolved.tag}`
+          const standing = (w.standings || []).find(
+            (s) => s.clan?.tag?.toUpperCase() === `#${resolved.tag}`,
           );
           const participants = standing?.clan?.participants ?? [];
           return new Set(
@@ -1227,8 +1461,8 @@ export default async function handler(req, res) {
         // On parcourt toutes les semaines de la saison ciblée pour construire le dictionnaire.
         const nameFromLog = {};
         for (const w of weeks) {
-          const standing = (w.standings || []).find((s) =>
-            s.clan?.tag?.toUpperCase() === `#${resolved.tag}`
+          const standing = (w.standings || []).find(
+            (s) => s.clan?.tag?.toUpperCase() === `#${resolved.tag}`,
           );
           for (const p of standing?.clan?.participants ?? []) {
             if (p.tag && p.name) nameFromLog[p.tag.toUpperCase()] = p.name;
@@ -1236,17 +1470,21 @@ export default async function handler(req, res) {
         }
 
         const clanMembers = await fetchClanMembers(`#${resolved.tag}`);
-        const memberByTag = Object.fromEntries(clanMembers.map((m) => [m.tag.toUpperCase(), m]));
+        const memberByTag = Object.fromEntries(
+          clanMembers.map((m) => [m.tag.toUpperCase(), m]),
+        );
 
         const players = fullTags
           .map((tag) => {
             const m = memberByTag[tag];
             // Nom depuis le raceLog si disponible, sinon depuis le roster actuel
             const name = nameFromLog[tag] ?? m?.name ?? tag;
-            const role = m ? formatDiscordRole(m.role) : '(parti)';
+            const role = m ? formatDiscordRole(m.role) : "(parti)";
             return { tag, name, role };
           })
-          .sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+          .sort((a, b) =>
+            a.name.localeCompare(b.name, "fr", { sensitivity: "base" }),
+          );
 
         // 16 decks/semaine × nombre de semaines de la saison = decks attendus par joueur
         const decksPerPlayer = weeks.length * 16;
@@ -1261,7 +1499,7 @@ export default async function handler(req, res) {
             return `${idx + 1}. [${p.name}](${playerUrl}) · ${p.role}`;
           });
           const visibleRows = rows.slice(0, MAX_ROWS);
-          description = visibleRows.join('\n');
+          description = visibleRows.join("\n");
           if (rows.length > MAX_ROWS) {
             description += `\n...et ${rows.length - MAX_ROWS} autres`;
           }
@@ -1271,19 +1509,24 @@ export default async function handler(req, res) {
           title: `🏆 ${resolved.name} — saison ${seasonId}`,
           color: 0x5865f2,
           description,
-          footer: { text: `${players.length} joueur(s) ont joué 100% des decks (${decksPerPlayer} decks)` },
+          footer: {
+            text: `${players.length} joueur(s) ont joué 100% des decks (${decksPerPlayer} decks)`,
+          },
         };
 
         await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ embeds: [embed] }),
         });
       } catch (err) {
         await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur : ${err.message}`,
+            flags: 64,
+          }),
         });
       }
     });
@@ -1291,15 +1534,19 @@ export default async function handler(req, res) {
   }
 
   // Commande /discord-link
-  if (body.type === 2 && body.data?.name === 'discord-link') {
+  if (body.type === 2 && body.data?.name === "discord-link") {
     const opts = body.data.options ?? [];
-    const rawTags = ['tag', 'tag2', 'tag3']
+    const rawTags = ["tag", "tag2", "tag3"]
       .map((n) => opts.find((o) => o.name === n)?.value?.trim())
       .filter(Boolean);
     if (rawTags.length === 0) {
       return res.status(200).json({
         type: 4,
-        data: { content: 'Veuillez fournir au moins un tag de joueur (ex: `#ABC123`).', flags: 64 },
+        data: {
+          content:
+            "Veuillez fournir au moins un tag de joueur (ex: `#ABC123`).",
+          flags: 64,
+        },
       });
     }
 
@@ -1307,30 +1554,39 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
     const discordUserId = body.member?.user?.id ?? body.user?.id;
-    const tags = rawTags.map((t) => t.startsWith('#') ? t.toUpperCase() : `#${t.toUpperCase()}`);
+    const tags = rawTags.map((t) =>
+      t.startsWith("#") ? t.toUpperCase() : `#${t.toUpperCase()}`,
+    );
 
     runBackground(async () => {
       try {
-        const { fetchPlayer } = await import('../../backend/services/clashApi.js');
+        const { fetchPlayer } =
+          await import("../../backend/services/clashApi.js");
         // Valider tous les tags en parallèle
-        const results = await Promise.all(tags.map(async (tag) => {
-          try {
-            const player = await fetchPlayer(tag);
-            return { tag, player, ok: true };
-          } catch {
-            return { tag, ok: false };
-          }
-        }));
+        const results = await Promise.all(
+          tags.map(async (tag) => {
+            try {
+              const player = await fetchPlayer(tag);
+              return { tag, player, ok: true };
+            } catch {
+              return { tag, ok: false };
+            }
+          }),
+        );
 
-        const failed  = results.filter((r) => !r.ok);
+        const failed = results.filter((r) => !r.ok);
         const success = results.filter((r) => r.ok);
 
         if (failed.length > 0 && success.length === 0) {
           await fetch(webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              content: failed.map((r) => `❌ Tag \`${r.tag}\` introuvable dans Clash Royale.`).join('\n'),
+              content: failed
+                .map(
+                  (r) => `❌ Tag \`${r.tag}\` introuvable dans Clash Royale.`,
+                )
+                .join("\n"),
               flags: 64,
             }),
           });
@@ -1343,9 +1599,10 @@ export default async function handler(req, res) {
           links[tag] = discordUserId;
         }
 
-        const tagList = success.map((r) => r.tag).join(', ');
+        const tagList = success.map((r) => r.tag).join(", ");
         const ok = await writeDiscordLinks(
-          links, sha,
+          links,
+          sha,
           `discord: lien Discord ${discordUserId} → Clash ${tagList}`,
         );
 
@@ -1356,18 +1613,22 @@ export default async function handler(req, res) {
         for (const { tag } of failed) {
           lines.push(`❌ Tag \`${tag}\` introuvable — ignoré.`);
         }
-        if (!ok) lines.push('⚠️ Sauvegarde GitHub échouée — contacte un admin.');
+        if (!ok)
+          lines.push("⚠️ Sauvegarde GitHub échouée — contacte un admin.");
 
         await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: lines.join('\n'), flags: 64 }),
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: lines.join("\n"), flags: 64 }),
         });
       } catch (err) {
         await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur : ${err.message}`,
+            flags: 64,
+          }),
         });
       }
     });
@@ -1375,49 +1636,54 @@ export default async function handler(req, res) {
   }
 
   // Commande /discord-check
-  if (body.type === 2 && body.data?.name === 'discord-check') {
-    const clanOpt = body.data.options?.find((o) => o.name === 'clan');
-    const clanVal = (clanOpt?.value || '1').toString().trim();
+  if (body.type === 2 && body.data?.name === "discord-check") {
+    const clanOpt = body.data.options?.find((o) => o.name === "clan");
+    const clanVal = (clanOpt?.value || "1").toString().trim();
     const CLAN_MAP = {
-      '1': { name: 'La Resistance',  tag: 'Y8JUPC9C' },
-      '2': { name: 'Les Resistants', tag: 'LRQP20V9' },
-      '3': { name: 'Les Revoltes',   tag: 'QU9UQJRL' },
+      1: { name: "La Resistance", tag: "Y8JUPC9C" },
+      2: { name: "Les Resistants", tag: "LRQP20V9" },
+      3: { name: "Les Revoltes", tag: "QU9UQJRL" },
     };
-    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP['1'];
+    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
 
     res.status(200).json({ type: 5 });
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
 
     runBackground(async () => {
       try {
-        const { fetchClanMembers } = await import('../../backend/services/clashApi.js');
+        const { fetchClanMembers } =
+          await import("../../backend/services/clashApi.js");
         const [clanMembers, { links }] = await Promise.all([
           fetchClanMembers(`#${resolved.tag}`),
           readDiscordLinks(),
         ]);
 
         // Récupère tous les membres du serveur Discord (max 1 000)
-        const guildId   = process.env.DISCORD_GUILD_ID;
-        const botToken  = process.env.DISCORD_TOKEN;
-        const guildRes  = await fetch(
+        const guildId = process.env.DISCORD_GUILD_ID;
+        const botToken = process.env.DISCORD_TOKEN;
+        const guildRes = await fetch(
           `https://discord.com/api/v10/guilds/${guildId}/members?limit=1000`,
           { headers: { Authorization: `Bot ${botToken}` } },
         );
         if (!guildRes.ok) {
           const errBody = await guildRes.text();
-          throw new Error(`Discord Guild Members API: ${guildRes.status} — ${errBody}`);
+          throw new Error(
+            `Discord Guild Members API: ${guildRes.status} — ${errBody}`,
+          );
         }
-        const guildMembers   = await guildRes.json();
-        const guildMemberIds = new Set(guildMembers.map((m) => m.user?.id).filter(Boolean));
+        const guildMembers = await guildRes.json();
+        const guildMemberIds = new Set(
+          guildMembers.map((m) => m.user?.id).filter(Boolean),
+        );
 
         const memberById = new Map(guildMembers.map((m) => [m.user?.id, m]));
 
         const presentByDiscord = new Map();
-        const absentByDiscord  = new Map();
+        const absentByDiscord = new Map();
         const unlinked = [];
 
         for (const m of clanMembers) {
-          const normTag   = m.tag.startsWith('#') ? m.tag : `#${m.tag}`;
+          const normTag = m.tag.startsWith("#") ? m.tag : `#${m.tag}`;
           const discordId = links[normTag];
           if (!discordId) {
             unlinked.push({ clash: m.name, tag: normTag });
@@ -1435,52 +1701,83 @@ export default async function handler(req, res) {
           }
 
           const user = guildMember.user;
-          const displayName = guildMember.nick || user.global_name || user.username || 'unknown';
-          const key = `${displayName.startsWith('☆') ? '0' : '1'}:${displayName.toLowerCase()}`;
+          const displayName =
+            guildMember.nick || user.global_name || user.username || "unknown";
+          const key = `${displayName.startsWith("☆") ? "0" : "1"}:${displayName.toLowerCase()}`;
 
           const existing = presentByDiscord.get(discordId);
           if (existing) {
             existing.entries.push(entry);
           } else {
-            presentByDiscord.set(discordId, { discord: displayName, discordId, key, entries: [entry] });
+            presentByDiscord.set(discordId, {
+              discord: displayName,
+              discordId,
+              key,
+              entries: [entry],
+            });
           }
         }
 
         const present = Array.from(presentByDiscord.values());
-        present.sort((a, b) => a.key.localeCompare(b.key, 'fr', { numeric: true, sensitivity: 'base' }));
+        present.sort((a, b) =>
+          a.key.localeCompare(b.key, "fr", {
+            numeric: true,
+            sensitivity: "base",
+          }),
+        );
 
         const absent = Array.from(absentByDiscord.values())
           .flat()
-          .sort((a, b) => a.clash.localeCompare(b.clash, 'fr', { numeric: true, sensitivity: 'base' }));
+          .sort((a, b) =>
+            a.clash.localeCompare(b.clash, "fr", {
+              numeric: true,
+              sensitivity: "base",
+            }),
+          );
 
-        unlinked.sort((a, b) => a.clash.localeCompare(b.clash, 'fr', { numeric: true, sensitivity: 'base' }));
+        unlinked.sort((a, b) =>
+          a.clash.localeCompare(b.clash, "fr", {
+            numeric: true,
+            sensitivity: "base",
+          }),
+        );
 
         const lines = [];
         if (present.length) {
           const list = present
             .map((p) => {
-              const clashes = p.entries.map((e) => `${e.clash} ${e.tag}`).join(' + ');
+              const clashes = p.entries
+                .map((e) => `${e.clash} ${e.tag}`)
+                .join(" + ");
               const mention = `<@${p.discordId}>`;
               return `• ${mention} ⤑ ${clashes}`;
             })
-            .join('\n');
+            .join("\n");
 
-          lines.push('✅ Liés (présents sur le serveur) :');
+          lines.push("✅ Liés (présents sur le serveur) :");
           lines.push(list);
         }
-        if (absent.length)   lines.push(`❌ **Liés mais absents du serveur** (${absent.length}) : ${absent.map((e) => `${e.clash} ${e.tag}`).join(', ')}`);
-        if (unlinked.length) lines.push(`❓ **Non liés** (${unlinked.length}) : ${unlinked.map((e) => e.clash).join(', ')}`);
+        if (absent.length)
+          lines.push(
+            `❌ **Liés mais absents du serveur** (${absent.length}) : ${absent.map((e) => `${e.clash} ${e.tag}`).join(", ")}`,
+          );
+        if (unlinked.length)
+          lines.push(
+            `❓ **Non liés** (${unlinked.length}) : ${unlinked.map((e) => e.clash).join(", ")}`,
+          );
 
         const embed = {
           title: `📋 Présence Discord — ${resolved.name}`,
           color: 0x5865f2,
-          description: lines.join('\n\n') || 'Aucun membre trouvé.',
-          footer: { text: `${clanMembers.length} membres · ${present.length + absent.length} comptes Discord liés` },
+          description: lines.join("\n\n") || "Aucun membre trouvé.",
+          footer: {
+            text: `${clanMembers.length} membres · ${present.length + absent.length} comptes Discord liés`,
+          },
         };
 
         await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             embeds: [embed],
             allowed_mentions: { parse: [] },
@@ -1488,9 +1785,12 @@ export default async function handler(req, res) {
         });
       } catch (err) {
         await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur : ${err.message}`,
+            flags: 64,
+          }),
         });
       }
     });
@@ -1498,15 +1798,15 @@ export default async function handler(req, res) {
   }
 
   // Commande /late
-  if (body.type === 2 && body.data?.name === 'late') {
-    const clanOpt = body.data.options?.find((o) => o.name === 'clan');
-    const clanVal = (clanOpt?.value || '1').toString().trim();
+  if (body.type === 2 && body.data?.name === "late") {
+    const clanOpt = body.data.options?.find((o) => o.name === "clan");
+    const clanVal = (clanOpt?.value || "1").toString().trim();
     const CLAN_MAP = {
-      '1': { name: 'La Resistance',  tag: 'Y8JUPC9C' },
-      '2': { name: 'Les Resistants', tag: 'LRQP20V9' },
-      '3': { name: 'Les Revoltes',   tag: 'QU9UQJRL' },
+      1: { name: "La Resistance", tag: "Y8JUPC9C" },
+      2: { name: "Les Resistants", tag: "LRQP20V9" },
+      3: { name: "Les Revoltes", tag: "QU9UQJRL" },
     };
-    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP['1'];
+    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
 
     res.status(200).json({ type: 5 });
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
@@ -1517,27 +1817,34 @@ export default async function handler(req, res) {
         Promise.race([
           promise,
           new Promise((_, reject) =>
-            setTimeout(() => reject(new Error(`Timeout ${label} (${ms}ms)`)), ms)
+            setTimeout(
+              () => reject(new Error(`Timeout ${label} (${ms}ms)`)),
+              ms,
+            ),
           ),
         ]);
 
       // Envoie systématiquement quelque chose au webhook Discord (évite le freeze "thinking...")
       const sendToWebhook = async (payload) => {
         const r = await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
         if (!r.ok) {
-          const txt = await r.text().catch(() => '');
-          console.error(`[/late] webhook Discord HTTP ${r.status}:`, txt.slice(0, 300));
+          const txt = await r.text().catch(() => "");
+          console.error(
+            `[/late] webhook Discord HTTP ${r.status}:`,
+            txt.slice(0, 300),
+          );
         }
       };
 
       try {
-        console.log('[/late] start, clan:', resolved.tag);
-        const { fetchCurrentRace, fetchClanMembers } = await import('../../backend/services/clashApi.js');
-        console.log('[/late] import OK');
+        console.log("[/late] start, clan:", resolved.tag);
+        const { fetchCurrentRace, fetchClanMembers } =
+          await import("../../backend/services/clashApi.js");
+        console.log("[/late] import OK");
 
         const [race, currentMembers, { links }] = await withTimeout(
           Promise.all([
@@ -1545,7 +1852,8 @@ export default async function handler(req, res) {
             fetchClanMembers(`#${resolved.tag}`),
             readDiscordLinks(),
           ]),
-          20000, 'fetch initial'
+          20000,
+          "fetch initial",
         );
 
         const participants = race?.clan?.participants ?? [];
@@ -1559,13 +1867,16 @@ export default async function handler(req, res) {
           const abortTimer = setTimeout(() => abortCtrl.abort(), 10000);
           const apiResp = await fetch(
             `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis`,
-            { headers: { Accept: 'application/json' }, signal: abortCtrl.signal },
+            {
+              headers: { Accept: "application/json" },
+              signal: abortCtrl.signal,
+            },
           );
           clearTimeout(abortTimer);
           if (apiResp.ok) {
             const analysis = await apiResp.json();
             (analysis.members || []).forEach((m) => {
-              if (m?.tag) analysisMap.set((m.tag || '').toUpperCase(), m);
+              if (m?.tag) analysisMap.set((m.tag || "").toUpperCase(), m);
             });
           }
         } catch (err) {
@@ -1574,13 +1885,20 @@ export default async function handler(req, res) {
 
         // Seuls les membres actuellement dans le clan (les anciens membres ex-participants sont exclus)
         const currentMemberTags = new Set(currentMembers.map((m) => m.tag));
-        const currentMemberByTag = new Map(currentMembers.map((m) => [(m.tag || '').toUpperCase(), m]));
+        const currentMemberByTag = new Map(
+          currentMembers.map((m) => [(m.tag || "").toUpperCase(), m]),
+        );
 
         // Joueurs en retard : membres actuels qui n'ont pas encore joué leurs 4 decks du jour
         const late = participants
-          .filter((p) => currentMemberTags.has(p.tag) && (p.decksUsedToday ?? 0) < 4)
+          .filter(
+            (p) => currentMemberTags.has(p.tag) && (p.decksUsedToday ?? 0) < 4,
+          )
           .map((p) => ({ ...p, missing: 4 - (p.decksUsedToday ?? 0) }))
-          .sort((a, b) => b.missing - a.missing || a.name.localeCompare(b.name, 'fr'));
+          .sort(
+            (a, b) =>
+              b.missing - a.missing || a.name.localeCompare(b.name, "fr"),
+          );
 
         if (late.length === 0) {
           await sendToWebhook({
@@ -1590,7 +1908,7 @@ export default async function handler(req, res) {
         }
 
         // Pseudos Discord — timeout 10s, non-bloquant (pings optionnels)
-        const guildId  = process.env.DISCORD_GUILD_ID;
+        const guildId = process.env.DISCORD_GUILD_ID;
         const botToken = process.env.DISCORD_TOKEN;
         let guildMembers = [];
         try {
@@ -1599,7 +1917,8 @@ export default async function handler(req, res) {
               `https://discord.com/api/v10/guilds/${guildId}/members?limit=1000`,
               { headers: { Authorization: `Bot ${botToken}` } },
             ),
-            10000, 'guild members'
+            10000,
+            "guild members",
           );
           guildMembers = guildRes.ok ? await guildRes.json() : [];
         } catch {
@@ -1609,59 +1928,127 @@ export default async function handler(req, res) {
 
         // Heure de Paris au moment de la commande
         const now = new Date();
-        const p = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
-        const parisTime = `${String(p.getHours()).padStart(2, '0')}h${String(p.getMinutes()).padStart(2, '0')}`;
+        const p = new Date(
+          now.toLocaleString("en-US", { timeZone: "Europe/Paris" }),
+        );
+        const parisTime = `${String(p.getHours()).padStart(2, "0")}h${String(p.getMinutes()).padStart(2, "0")}`;
 
-        const { warResetOffsetMs } = await import('../../backend/services/dateUtils.js');
+        const { warResetOffsetMs } =
+          await import("../../backend/services/dateUtils.js");
         const resetUtcMs = warResetOffsetMs(resolved.tag);
-        const msOfDayUtc = now.getUTCHours() * 3600000 + now.getUTCMinutes() * 60000;
+        const msOfDayUtc =
+          now.getUTCHours() * 3600000 + now.getUTCMinutes() * 60000;
         if (msOfDayUtc < resetUtcMs) p.setDate(p.getDate() - 1);
-        const WAR_DAY_LABELS = { 4: 'Jeudi (J1)', 5: 'Vendredi (J2)', 6: 'Samedi (J3)', 0: 'Dimanche (J4)' };
-        const warDayLabel = WAR_DAY_LABELS[p.getDay()] ?? 'Jour de GDC';
+        const WAR_DAY_LABELS = {
+          4: "Jeudi (J1)",
+          5: "Vendredi (J2)",
+          6: "Samedi (J3)",
+          0: "Dimanche (J4)",
+        };
+        const warDayLabel = WAR_DAY_LABELS[p.getDay()] ?? "Jour de GDC";
 
         // Decks déjà joués aujourd'hui par les membres actuels
-        const currentParticipants = participants.filter((p) => currentMemberTags.has(p.tag));
-        const totalPlayed = currentParticipants.reduce((sum, pl) => sum + (pl.decksUsedToday ?? 0), 0);
+        const currentParticipants = participants.filter((p) =>
+          currentMemberTags.has(p.tag),
+        );
+        const totalPlayed = currentParticipants.reduce(
+          (sum, pl) => sum + (pl.decksUsedToday ?? 0),
+          0,
+        );
 
-        // Points totaux du clan cette semaine (tous participants, y compris ex-membres)
-        const totalFame = participants.reduce((sum, pl) => sum + (pl.fame ?? 0), 0);
+        // Points du jour uniquement pour GDC classique (warDay) : on soustrait la fame
+        // cumulée des jours précédents via le snapshot local. Pour Colisée, la fame de
+        // l'API est déjà cumulative par nature → on l'affiche telle quelle.
+        const isWarDay = race?.periodType === "warDay";
+        const prevCumulByTag = new Map();
+        if (isWarDay) {
+          const pad2 = (n) => String(n).padStart(2, "0");
+          const realDayToday = `${p.getFullYear()}-${pad2(p.getMonth() + 1)}-${pad2(p.getDate())}`;
+          try {
+            const { readFile: _rf } = await import("fs/promises");
+            const { fileURLToPath: _ftu } = await import("url");
+            const { default: _path } = await import("path");
+            const __fileDir = _path.dirname(_ftu(import.meta.url));
+            const snapPath = _path.resolve(
+              __fileDir,
+              "../../data/snapshots",
+              `${resolved.tag}.json`,
+            );
+            const snapData = JSON.parse(await _rf(snapPath, "utf-8"));
+            if (Array.isArray(snapData)) {
+              for (const week of snapData) {
+                for (const day of week.days ?? []) {
+                  if (
+                    day.realDay &&
+                    day.realDay < realDayToday &&
+                    day._cumulFame
+                  ) {
+                    for (const [tag, fame] of Object.entries(day._cumulFame)) {
+                      prevCumulByTag.set(
+                        tag,
+                        (prevCumulByTag.get(tag) ?? 0) + (fame ?? 0),
+                      );
+                    }
+                  }
+                }
+              }
+            }
+          } catch (_) {
+            // snapshot indisponible — on affichera la fame hebdomadaire (dégradé acceptable)
+          }
+        }
+
+        const totalFame = currentParticipants.reduce((sum, pl) => {
+          const rawFame = pl.fame ?? 0;
+          const plTag = pl.tag.startsWith("#") ? pl.tag : `#${pl.tag}`;
+          const todayFame = isWarDay
+            ? Math.max(0, rawFame - (prevCumulByTag.get(plTag) ?? 0))
+            : rawFame;
+          return sum + todayFame;
+        }, 0);
 
         // Decks manquants (pré-calculé)
         const totalMissing = late.reduce((sum, pl) => sum + pl.missing, 0);
 
         // Construction de la liste par groupe
         const descLines = [
-          `- ${late.length} joueur${late.length > 1 ? 's' : ''} en retard à ${parisTime}`,
+          `- ${late.length} joueur${late.length > 1 ? "s" : ""} en retard à ${parisTime}`,
           `- ${totalFame} pts marqués`,
-          `- ${totalPlayed} deck${totalPlayed > 1 ? 's' : ''} joué${totalPlayed > 1 ? 's' : ''}`,
-          `- ${totalMissing} deck${totalMissing > 1 ? 's' : ''} manquant${totalMissing > 1 ? 's' : ''}`,
+          `- ${totalPlayed} deck${totalPlayed > 1 ? "s" : ""} joué${totalPlayed > 1 ? "s" : ""}`,
+          `- ${totalMissing} deck${totalMissing > 1 ? "s" : ""} manquant${totalMissing > 1 ? "s" : ""}`,
         ];
 
         for (const count of [4, 3, 2, 1]) {
           const group = late.filter((pl) => pl.missing === count);
           if (!group.length) continue;
-          descLines.push('');
-          descLines.push(`**Manque ${count} deck${count > 1 ? 's' : ''}**`);
+          descLines.push("");
+          descLines.push(`**Manque ${count} deck${count > 1 ? "s" : ""}**`);
           for (const pl of group) {
-            const tag = pl.tag.startsWith('#') ? pl.tag : `#${pl.tag}`;
+            const tag = pl.tag.startsWith("#") ? pl.tag : `#${pl.tag}`;
             const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(tag)}`;
             const memberInfo = currentMemberByTag.get(tag.toUpperCase());
-            const role = (memberInfo?.role || 'member').toLowerCase();
+            const role = (memberInfo?.role || "member").toLowerCase();
             const roleText = formatDiscordRole(role);
-            const discordId   = links[tag];
+            const discordId = links[tag];
             const guildMember = discordId ? memberById.get(discordId) : null;
-            const discordPart = guildMember ? ` <@${discordId}>` : '';
+            const discordPart = guildMember ? ` <@${discordId}>` : "";
             const memberAnalysis = analysisMap.get(tag.toUpperCase()) || {};
-            const newTag = memberAnalysis.isNew ? ' 🆕' : '';
-            descLines.push(`• [${pl.name}](${playerUrl})${newTag} ${roleText}${discordPart}`);
+            const newTag = memberAnalysis.isNew ? " 🆕" : "";
+            descLines.push(
+              `• [${pl.name}](${playerUrl})${newTag} ${roleText}${discordPart}`,
+            );
           }
         }
 
         // Discord limite les descriptions d'embed à 4096 caractères
-        let description = descLines.join('\n');
+        let description = descLines.join("\n");
         if (description.length > 4000) {
-          console.warn('[/late] description trop longue:', description.length, 'chars, troncature');
-          description = description.slice(0, 3950) + '\n…*(liste tronquée)*';
+          console.warn(
+            "[/late] description trop longue:",
+            description.length,
+            "chars, troncature",
+          );
+          description = description.slice(0, 3950) + "\n…*(liste tronquée)*";
         }
 
         const embed = {
@@ -1670,10 +2057,18 @@ export default async function handler(req, res) {
           color: 0xe67e22,
         };
 
-        console.log('[/late] envoi embed, late:', late.length, 'descLen:', description.length);
-        await sendToWebhook({ embeds: [embed], allowed_mentions: { parse: [] } });
+        console.log(
+          "[/late] envoi embed, late:",
+          late.length,
+          "descLen:",
+          description.length,
+        );
+        await sendToWebhook({
+          embeds: [embed],
+          allowed_mentions: { parse: [] },
+        });
       } catch (err) {
-        console.error('[/late] erreur:', err.message);
+        console.error("[/late] erreur:", err.message);
         await sendToWebhook({ content: `Erreur : ${err.message}`, flags: 64 });
       }
     });
@@ -1681,15 +2076,15 @@ export default async function handler(req, res) {
   }
 
   // Commande /compare
-  if (body.type === 2 && body.data?.name === 'compare') {
-    const clanOpt = body.data.options?.find((o) => o.name === 'clan');
-    const clanVal = (clanOpt?.value || '1').toString().trim().toLowerCase();
+  if (body.type === 2 && body.data?.name === "compare") {
+    const clanOpt = body.data.options?.find((o) => o.name === "clan");
+    const clanVal = (clanOpt?.value || "1").toString().trim().toLowerCase();
     const CLAN_MAP = {
-      '1': { name: 'La Resistance',  tag: 'Y8JUPC9C' },
-      '2': { name: 'Les Resistants', tag: 'LRQP20V9' },
-      '3': { name: 'Les Revoltes',   tag: 'QU9UQJRL' },
+      1: { name: "La Resistance", tag: "Y8JUPC9C" },
+      2: { name: "Les Resistants", tag: "LRQP20V9" },
+      3: { name: "Les Revoltes", tag: "QU9UQJRL" },
     };
-    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP['1'];
+    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
 
     res.status(200).json({ type: 5 });
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
@@ -1704,17 +2099,20 @@ export default async function handler(req, res) {
         const raceGroup = data.raceGroup;
         if (!Array.isArray(raceGroup) || raceGroup.length === 0) {
           await fetch(webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: `Aucun groupe de course trouvé pour **${resolved.name}** (données indisponibles ou phase de préparation).`, flags: 64 }),
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `Aucun groupe de course trouvé pour **${resolved.name}** (données indisponibles ou phase de préparation).`,
+              flags: 64,
+            }),
           });
           return;
         }
 
         const ownTag = `#${resolved.tag}`.toUpperCase();
-        const FAMILY_TAGS = new Set(['#Y8JUPC9C', '#LRQP20V9', '#QU9UQJRL']);
+        const FAMILY_TAGS = new Set(["#Y8JUPC9C", "#LRQP20V9", "#QU9UQJRL"]);
 
-        const isWarPeriod = raceGroup.some(c => c.projectedFame != null);
+        const isWarPeriod = raceGroup.some((c) => c.projectedFame != null);
 
         // Trier par projection si GDC active, sinon par lastWarFame décroissant
         const sorted = [...raceGroup].sort((a, b) => {
@@ -1724,74 +2122,88 @@ export default async function handler(req, res) {
           return (b.lastWarFame ?? 0) - (a.lastWarFame ?? 0);
         });
 
-        const fmt = (n) => typeof n === 'number' ? n.toLocaleString('fr-FR') : '—';
+        const fmt = (n) =>
+          typeof n === "number" ? n.toLocaleString("fr-FR") : "—";
 
         const rows = sorted.map((clan, idx) => {
-          const clanTag = (clan.tag ?? '').toUpperCase();
+          const clanTag = (clan.tag ?? "").toUpperCase();
           const isOwn = clanTag === ownTag;
-          const cleanTag = clanTag.replace('#', '');
+          const cleanTag = clanTag.replace("#", "");
           const isFamilyMember = FAMILY_TAGS.has(clanTag);
           const url = isFamilyMember
             ? `https://trustroyale.vercel.app/?mode=clan&tag=${encodeURIComponent(clanTag)}`
             : `https://trustroyale.vercel.app/?mode=clan&tag=${encodeURIComponent(clanTag)}`;
           const rank = `**#${idx + 1}**`;
           const nameStr = `**[${clan.name ?? clanTag}](${url})**`;
-          const bold = isOwn ? '__' : '';
-          
-          const trophies  = clan.clanWarTrophies != null ? `🏆 ${fmt(clan.clanWarTrophies)}` : '';
-          
-          let prevWarStr = clan.prevWarFame != null ? `🛡️ ${fmt(clan.prevWarFame)} (n-2)` : '';
-          
-          let trend = '';
+          const bold = isOwn ? "__" : "";
+
+          const trophies =
+            clan.clanWarTrophies != null
+              ? `🏆 ${fmt(clan.clanWarTrophies)}`
+              : "";
+
+          let prevWarStr =
+            clan.prevWarFame != null ? `🛡️ ${fmt(clan.prevWarFame)} (n-2)` : "";
+
+          let trend = "";
           if (clan.lastWarFame != null && clan.prevWarFame != null) {
-            if (clan.lastWarFame > clan.prevWarFame) trend = ' ⬆';
-            else if (clan.lastWarFame < clan.prevWarFame) trend = ' ⬇';
+            if (clan.lastWarFame > clan.prevWarFame) trend = " ⬆";
+            else if (clan.lastWarFame < clan.prevWarFame) trend = " ⬇";
           }
-          let lastWarStr = clan.lastWarFame != null ? `⚔️ **${fmt(clan.lastWarFame)}** (Last)${trend}` : '';
-          
+          let lastWarStr =
+            clan.lastWarFame != null
+              ? `⚔️ **${fmt(clan.lastWarFame)}** (Last)${trend}`
+              : "";
+
           let line1 = `${rank} ${bold}${nameStr}${bold} ${trophies}`.trim();
-          let line2 = [prevWarStr, lastWarStr].filter(Boolean).join(' · ');
-          
+          let line2 = [prevWarStr, lastWarStr].filter(Boolean).join(" · ");
+
           let row = `${line1}\n${line2}`;
 
           // Ajouter indicateurs GDC si disponibles
           if (isWarPeriod && clan.projectedFame != null) {
-            const decks = `🎴 ${clan.decksToday != null ? clan.decksToday : '?'} decks`;
-            const eff   = `🎯 ${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(1) : '?'} pts/d`;
-            const proj  = `🔮 Proj: **${fmt(Math.round(clan.projectedFame))}**`;
+            const decks = `🎴 ${clan.decksToday != null ? clan.decksToday : "?"} decks`;
+            const eff = `🎯 ${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(1) : "?"} pts/d`;
+            const proj = `🔮 Proj: **${fmt(Math.round(clan.projectedFame))}**`;
             row += `\n${decks} · ${eff} · ${proj}`;
           }
 
           return row;
         });
 
-        const footerText = isWarPeriod 
+        const footerText = isWarPeriod
           ? `Trié par Projection · 🛡️ n-2 GDC · ⚔️ Dernière GDC · 🔮 Estimé fin de journée`
           : `Trié par Total Dernière GDC · 🛡️ n-2 GDC · ⚔️ Dernière GDC`;
 
         const embed = {
           title: `⚔️ Groupe de GDC — ${resolved.name}`,
           color: 0xe74c3c,
-          description: rows.join('\n\n'),
+          description: rows.join("\n\n"),
           footer: { text: footerText },
         };
 
         await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ embeds: [embed], allowed_mentions: { parse: [] } }),
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            embeds: [embed],
+            allowed_mentions: { parse: [] },
+          }),
         });
       } catch (err) {
-        console.error('[/compare] erreur:', err.message);
+        console.error("[/compare] erreur:", err.message);
         await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur : ${err.message}`,
+            flags: 64,
+          }),
         });
       }
     });
     return;
   }
 
-  return res.status(400).json({ error: 'Unsupported interaction type' });
+  return res.status(400).json({ error: "Unsupported interaction type" });
 }
