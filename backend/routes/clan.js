@@ -1958,7 +1958,11 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             let projectedFame = null;
 
             if (isWarPeriod && raceData?.clan?.participants) {
-              const parts = raceData.clan.participants;
+              // Pour le clan propre, exclure les participants déjà partis (cohérence avec clanWarSummary)
+              const allParts = raceData.clan.participants;
+              const parts = isOwn
+                ? allParts.filter((p) => currentMemberTags.has(p.tag))
+                : allParts;
               decksToday = parts.reduce(
                 (s, p) => s + (p.decksUsedToday ?? 0),
                 0,
