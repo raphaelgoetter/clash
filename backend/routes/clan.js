@@ -1980,8 +1980,15 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 : rivalAvgDecksByTag[cTagNorm];
               let targetDecks;
 
-              if (warDayIndex > 0) {
-                // J2-J4 : la cible est basée sur la performance réelle des jours passés de cette semaine
+              if (
+                isOwn &&
+                warDayIndex > 0 &&
+                warSnapshotDays?.[warDayIndex - 1] != null
+              ) {
+                // Clan propre J2-J4 : cible = snapshot de la veille (reflète la journée précédente réelle)
+                targetDecks = warSnapshotDays[warDayIndex - 1];
+              } else if (warDayIndex > 0) {
+                // J2-J4 (rivaux) : cible = moyenne des jours passés (seule donnée disponible)
                 const decksPassed = totalDecksWeekly - decksToday;
                 targetDecks = decksPassed / warDayIndex;
               } else {
