@@ -1973,8 +1973,11 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 0,
               );
 
-              // Fame officielle de la course (valeur authoritative, cohérente avec les standings)
-              const currentFame = c.fame ?? 0;
+              // Fame hebdomadaire : somme de la fame de chaque participant (source: raceData.clan.participants)
+              const currentFame = allParts.reduce(
+                (s, p) => s + (p.fame ?? 0),
+                0,
+              );
 
               const avgDecksLastWeek = isOwn
                 ? ownAvgDecks
