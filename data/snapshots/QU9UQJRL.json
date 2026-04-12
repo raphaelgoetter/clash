@@ -1088,7 +1088,7 @@
           "start": "2026-04-11T09:40:00.000Z",
           "end": "2026-04-12T09:39:59.999Z"
         },
-        "snapshotTime": "2026-04-11T21:09:15.559Z",
+        "snapshotTime": "2026-04-12T00:24:41.598Z",
         "snapshotBackupTime": "2026-04-11T21:09:15.559Z",
         "decks": {
           "#8JGU9UUJJ": 4,
@@ -1166,7 +1166,12 @@
           "#UVGPPVQ8Q": 12,
           "#PGQ98JVJ8": 8
         },
-        "hourlyCumul": []
+        "hourlyCumul": [
+          {
+            "takenAt": "2026-04-12T00:24:27.230Z",
+            "total": 31
+          }
+        ]
       },
       {
         "warDay": "sunday",
