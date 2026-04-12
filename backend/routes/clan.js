@@ -1994,11 +1994,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 targetDecks = avgDecksLastWeek || 200;
               }
 
-              // currentCumulFame : somme des fame cumulatives hebdomadaires (API /currentriverrace)
-              const currentCumulFame = allParts.reduce(
-                (s, p) => s + (p.fame ?? 0),
-                0,
-              );
               // weeklyDecks : pour le fallback rivaux (pas de snapshot disponible)
               const weeklyDecks = allParts.reduce(
                 (s, p) => s + (p.decksUsed ?? 0),
@@ -2007,29 +2002,36 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
               if (decksToday > 0) {
                 // Efficacité (E) : fame du jour ÷ decks du jour (identique à cwstats)
-                // Clan propre : fameToday = cumul actuel − cumul snapshot J-1 (_cumulFame)
+                // Clan propre : delta par joueur (même filtre que decksToday = membres actuels)
+                //   fameToday[joueur] = p.fame − snapshot_J-1._cumulFame[p.tag]
                 // Rivaux : pas de snapshot → approximation hebdo (fame/decks, écart ~1%)
                 if (isOwn) {
                   const prevSnap =
                     warDayIndex > 0 ? weekSnaps[warDayIndex - 1] : null;
-                  const prevCumulFame = prevSnap?._cumulFame
-                    ? Object.values(prevSnap._cumulFame).reduce(
-                        (s, v) => s + v,
-                        0,
-                      )
-                    : 0;
-                  // Si snapshot J-1 disponible (prevCumulFame > 0) ou si c'est J1 (warDayIndex=0)
-                  // → fame du jour exacte. Sinon snapshot manquant → fallback hebdo.
-                  if (warDayIndex === 0 || prevCumulFame > 0) {
-                    const fameToday = Math.max(
-                      0,
-                      currentCumulFame - prevCumulFame,
-                    );
+                  const prevCumulFameMap = prevSnap?._cumulFame ?? {};
+                  const hasPrevSnap =
+                    warDayIndex === 0 ||
+                    Object.keys(prevCumulFameMap).length > 0;
+                  if (hasPrevSnap) {
+                    // Calcul par joueur sur les membres actuels uniquement (cohérent avec decksToday)
+                    const fameToday = activePartsToday.reduce((s, p) => {
+                      const prev = prevCumulFameMap[p.tag] ?? 0;
+                      return s + Math.max(0, (p.fame ?? 0) - prev);
+                    }, 0);
                     ptsPerDeck = fameToday / decksToday;
                   } else if (weeklyDecks > 0) {
+                    // Snapshot J-1 absent → fallback hebdo
+                    const currentCumulFame = activePartsToday.reduce(
+                      (s, p) => s + (p.fame ?? 0),
+                      0,
+                    );
                     ptsPerDeck = currentCumulFame / weeklyDecks;
                   }
                 } else if (weeklyDecks > 0) {
+                  const currentCumulFame = allParts.reduce(
+                    (s, p) => s + (p.fame ?? 0),
+                    0,
+                  );
                   ptsPerDeck = currentCumulFame / weeklyDecks;
                 }
 
