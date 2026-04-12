@@ -1958,22 +1958,26 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             let projectedFame = null;
 
             if (isWarPeriod && raceData?.clan?.participants) {
-              // Pour le clan propre, exclure les participants déjà partis (cohérence avec clanWarSummary)
               const allParts = raceData.clan.participants;
-              const parts = isOwn
+              // decksToday : exclure les ex-membres pour cohérence avec clanWarSummary
+              const activePartsToday = isOwn
                 ? allParts.filter((p) => currentMemberTags.has(p.tag))
                 : allParts;
-              decksToday = parts.reduce(
+              decksToday = activePartsToday.reduce(
                 (s, p) => s + (p.decksUsedToday ?? 0),
                 0,
               );
-              const totalDecksWeekly = parts.reduce(
+              // totalDecksWeekly et fame : tous les participants de la semaine (base ptsPerDeck)
+              const totalDecksWeekly = allParts.reduce(
                 (s, p) => s + (p.decksUsed ?? 0),
                 0,
               );
 
               // Méthode la plus fiable : on somme la fame de chaque participant
-              const currentFame = parts.reduce((s, p) => s + (p.fame ?? 0), 0);
+              const currentFame = allParts.reduce(
+                (s, p) => s + (p.fame ?? 0),
+                0,
+              );
 
               const avgDecksLastWeek = isOwn
                 ? ownAvgDecks
