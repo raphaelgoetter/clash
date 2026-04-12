@@ -406,7 +406,7 @@
           "start": "2026-04-11T09:54:00.000Z",
           "end": "2026-04-12T09:53:59.999Z"
         },
-        "snapshotTime": "2026-04-12T06:32:22.511Z",
+        "snapshotTime": "2026-04-12T07:30:25.463Z",
         "snapshotBackupTime": "2026-04-11T21:55:03.261Z",
         "decks": {
           "#2L8RPQRJ9": 4,
@@ -419,6 +419,7 @@
           "#82JPJ9J98": 4,
           "#82UPUGYP": 4,
           "#8QLCU9QG": 4,
+          "#8QV8G0CC0": 4,
           "#8QVRJYVYU": 4,
           "#8UL8JRCJ": 4,
           "#8VQLJLR0": 4,
@@ -455,10 +456,9 @@
           "#CGJP0YYUJ": 3,
           "#GC20UCLL": 3,
           "#Y9P9GGL89": 2,
+          "#8G00908LP": 1,
           "#8GGQLU28": 1,
-          "#2P0VYJJR9": 0,
-          "#8G00908LP": 0,
-          "#9PCYJ2UQ0": 0
+          "#2P0VYJJR9": 0
         },
         "_cumulFame": {
           "#GC20UCLL": 300,
@@ -486,7 +486,7 @@
           "#98UULQY8": 1400,
           "#8GGQLU28": 950,
           "#8YGY2RPCC": 1850,
-          "#8G00908LP": 1400,
+          "#8G00908LP": 1600,
           "#9R8UV8RQV": 1500,
           "#JCCQY0U9G": 1700,
           "#8QLCU9QG": 1450,
@@ -516,7 +516,8 @@
           "#YRGJGR8R": 2400,
           "#QVG90PQVG": 2200,
           "#8UL8JRCJ": 2600,
-          "#VGJ9LL8VC": 2300
+          "#VGJ9LL8VC": 2300,
+          "#8QV8G0CC0": 500
         },
         "periodType": "warDay",
         "_cumul": {
@@ -545,7 +546,7 @@
           "#98UULQY8": 8,
           "#8GGQLU28": 8,
           "#8YGY2RPCC": 12,
-          "#8G00908LP": 8,
+          "#8G00908LP": 9,
           "#9R8UV8RQV": 12,
           "#JCCQY0U9G": 12,
           "#8QLCU9QG": 12,
@@ -575,7 +576,8 @@
           "#YRGJGR8R": 12,
           "#QVG90PQVG": 12,
           "#8UL8JRCJ": 12,
-          "#VGJ9LL8VC": 12
+          "#VGJ9LL8VC": 12,
+          "#8QV8G0CC0": 4
         },
         "hourlyCumul": [
           {
@@ -601,6 +603,10 @@
           {
             "takenAt": "2026-04-12T06:32:13.940Z",
             "total": 180
+          },
+          {
+            "takenAt": "2026-04-12T07:30:16.182Z",
+            "total": 185
           }
         ]
       },
