@@ -2018,11 +2018,17 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                         0,
                       )
                     : 0;
-                  const fameToday = Math.max(
-                    0,
-                    currentCumulFame - prevCumulFame,
-                  );
-                  ptsPerDeck = fameToday / decksToday;
+                  // Si snapshot J-1 disponible (prevCumulFame > 0) ou si c'est J1 (warDayIndex=0)
+                  // → fame du jour exacte. Sinon snapshot manquant → fallback hebdo.
+                  if (warDayIndex === 0 || prevCumulFame > 0) {
+                    const fameToday = Math.max(
+                      0,
+                      currentCumulFame - prevCumulFame,
+                    );
+                    ptsPerDeck = fameToday / decksToday;
+                  } else if (weeklyDecks > 0) {
+                    ptsPerDeck = currentCumulFame / weeklyDecks;
+                  }
                 } else if (weeklyDecks > 0) {
                   ptsPerDeck = currentCumulFame / weeklyDecks;
                 }

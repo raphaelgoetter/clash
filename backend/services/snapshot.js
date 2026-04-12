@@ -565,6 +565,7 @@ export async function getSnapshotsForWeeks(clanTag, weeks) {
     date: d.realDay,
     warDay: d.warDay,
     decks: isValidSnapshot(d) ? d.decks : {},
+    _cumulFame: d._cumulFame ?? {},
     hourlyCumul: d.hourlyCumul ?? [],
     snapshotTime: isValidSnapshot(d) ? (d.snapshotTime ?? null) : null,
     snapshotBackupTime: isValidSnapshot(d)
