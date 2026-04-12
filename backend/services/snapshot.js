@@ -509,12 +509,15 @@ export async function getSnapshotsForWeek(clanTag, week = null) {
   const history = await loadSnapshots(clanTag);
   if (!history.length) return [];
 
-  // Un snapshot est valide seulement si snapshotTime >= gdcPeriod.start.
-  // Un snapshot pris avant le début de la journée GDC contient des données
-  // d'une journée précédente et ne doit pas être utilisé.
+  // Un snapshot est valide si snapshotTime tombe le même jour calendaire que realDay
+  // (captures pré-reset incluses), ou bien après le gdcPeriod.start (post-reset).
+  // Cela évite de rejeter les snapshots horaires pris juste avant le reset (ex : 09:17 < 09:54).
   const isValidSnapshot = (d) => {
     if (!d.snapshotTime || !d.gdcPeriod?.start) return false;
-    return d.snapshotTime >= d.gdcPeriod.start;
+    return (
+      d.snapshotTime.slice(0, 10) === d.realDay ||
+      d.snapshotTime >= d.gdcPeriod.start
+    );
   };
 
   const formatDay = (weekId, d) => ({
@@ -522,6 +525,7 @@ export async function getSnapshotsForWeek(clanTag, week = null) {
     date: d.realDay,
     warDay: d.warDay,
     decks: isValidSnapshot(d) ? d.decks : {},
+    _cumulFame: d._cumulFame ?? {},
     hourlyCumul: d.hourlyCumul ?? [],
     snapshotTime: isValidSnapshot(d) ? (d.snapshotTime ?? null) : null,
     snapshotBackupTime: isValidSnapshot(d)
@@ -557,7 +561,10 @@ export async function getSnapshotsForWeeks(clanTag, weeks) {
   // Même validation que getSnapshotsForWeek.
   const isValidSnapshot = (d) => {
     if (!d.snapshotTime || !d.gdcPeriod?.start) return false;
-    return d.snapshotTime >= d.gdcPeriod.start;
+    return (
+      d.snapshotTime.slice(0, 10) === d.realDay ||
+      d.snapshotTime >= d.gdcPeriod.start
+    );
   };
 
   const formatDay = (weekId, d) => ({
