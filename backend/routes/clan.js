@@ -1973,11 +1973,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 0,
               );
 
-              // Méthode la plus fiable : on somme la fame de chaque participant
-              const currentFame = allParts.reduce(
-                (s, p) => s + (p.fame ?? 0),
-                0,
-              );
+              // Fame officielle de la course (valeur authoritative, cohérente avec les standings)
+              const currentFame = c.fame ?? 0;
 
               const avgDecksLastWeek = isOwn
                 ? ownAvgDecks
