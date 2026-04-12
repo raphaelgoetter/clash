@@ -1994,9 +1994,13 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 targetDecks = avgDecksLastWeek || 200;
               }
 
+              // fame hebdomadaire : participants[].fame est en unités brutes ×10 dans l'API Clash
+              const weeklyFame =
+                allParts.reduce((s, p) => s + (p.fame ?? 0), 0) / 10;
+
               if (decksToday > 0) {
-                // Efficacité (E) : fame totale clan (c.fame) ÷ decks du jour (formule cwstats)
-                ptsPerDeck = c.fame / decksToday;
+                // Efficacité (E) : fame hebdomadaire ÷ decks du jour (formule cwstats)
+                ptsPerDeck = weeklyFame / decksToday;
 
                 // Projection (P) = Estimation de la fame gagnée AUJOURD'HUI uniquement.
                 // En GDC normale (non-Colisée), chaque journée est indépendante : on ne cumule pas
