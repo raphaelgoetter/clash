@@ -17,7 +17,10 @@ import path from "path";
 import fetch from "node-fetch";
 import { ALLOWED_CLANS } from "../backend/routes/clan.js";
 import { warResetOffsetMs } from "../backend/services/dateUtils.js";
-import { fetchRaceLog } from "../backend/services/clashApi.js";
+import {
+  fetchRaceLog,
+  fetchCurrentRace,
+} from "../backend/services/clashApi.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SNAP_DIR = path.join(__dirname, "..", "data", "snapshots");
@@ -232,15 +235,44 @@ async function postWarSummary(
   const { warDay } = dayEntry;
   const isLastDay = warDay === "sunday";
 
+  // Appel live à /currentriverrace pour obtenir le cumul de fame exact après le reset.
+  // Le snapshot disque est pris ~1h avant le reset et peut manquer les dernières minutes.
+  // Après le reset, 0 deck n'a encore été joué dans la nouvelle journée → pl.fame est
+  // le cumul exact de la journée qui vient de se terminer.
+  let liveTodayCumul = null;
+  let livePrevCumul = null;
+  try {
+    const race = await fetchCurrentRace(tag);
+    const participants = race?.clan?.participants ?? [];
+    if (participants.length > 0) {
+      liveTodayCumul = participants.reduce((s, p) => s + (p.fame ?? 0), 0);
+    }
+    // Cumul du jour précédent depuis le snapshot (pour calculer le delta du jour)
+    if (prevDayEntry && Object.keys(prevDayEntry._cumulFame ?? {}).length > 0) {
+      livePrevCumul = Object.values(prevDayEntry._cumulFame).reduce(
+        (a, b) => a + b,
+        0,
+      );
+    }
+  } catch (_) {
+    // Appel live échoué — on tombera sur le calcul snapshot ci-dessous
+  }
+
   // Totaux du jour
   const totalDecks = Object.values(dayEntry.decks ?? {}).reduce(
     (a, b) => a + b,
     0,
   );
-  const hasFameData = Object.keys(dayEntry._cumulFame ?? {}).length > 0;
-  const totalFame = hasFameData
-    ? computeDailyFame(dayEntry, prevDayEntry)
-    : null;
+  const hasFameData =
+    liveTodayCumul !== null ||
+    Object.keys(dayEntry._cumulFame ?? {}).length > 0;
+  let totalFame;
+  if (liveTodayCumul !== null) {
+    // Utilise le cumul live (exact) : soustrait le cumul J-1 du snapshot pour obtenir le delta du jour
+    totalFame = Math.max(0, liveTodayCumul - (livePrevCumul ?? 0));
+  } else {
+    totalFame = hasFameData ? computeDailyFame(dayEntry, prevDayEntry) : null;
+  }
 
   // Totaux du jour précédent (pour les deltas)
   const prevDecks =
@@ -253,7 +285,11 @@ async function postWarSummary(
       : null;
 
   // Bilan de semaine (J4 uniquement)
-  const weekly = isLastDay ? computeWeeklySummary(allWeekDays) : null;
+  let weekly = isLastDay ? computeWeeklySummary(allWeekDays) : null;
+  // Si on a un cumul live, l'utiliser comme total de semaine (plus précis que le snapshot)
+  if (weekly && liveTodayCumul !== null && !weekly.isColosseum) {
+    weekly = { ...weekly, totalFameWeek: liveTodayCumul };
+  }
 
   // Couleur selon la tendance (fame en priorité, decks en fallback)
   let color = 0x5865f2; // bleu neutre (J1 ou données insuffisantes)

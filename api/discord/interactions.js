@@ -1976,20 +1976,18 @@ export default async function handler(req, res) {
             );
             const snapData = JSON.parse(await _rf(snapPath, "utf-8"));
             if (Array.isArray(snapData)) {
-              for (const week of snapData) {
-                for (const day of week.days ?? []) {
-                  if (
-                    day.realDay &&
-                    day.realDay < realDayToday &&
-                    day._cumulFame
-                  ) {
-                    for (const [tag, fame] of Object.entries(day._cumulFame)) {
-                      prevCumulByTag.set(
-                        tag,
-                        (prevCumulByTag.get(tag) ?? 0) + (fame ?? 0),
-                      );
-                    }
-                  }
+              // _cumulFame est cumulatif sur toute la semaine GDC : il ne faut pas
+              // sommer les entrées de tous les jours précédents (double-comptage).
+              // On prend uniquement le dernier jour antérieur à aujourd'hui.
+              const allDays = snapData.flatMap((w) => w.days ?? []);
+              const prevDay = allDays
+                .filter(
+                  (d) => d.realDay && d.realDay < realDayToday && d._cumulFame,
+                )
+                .sort((a, b) => b.realDay.localeCompare(a.realDay))[0];
+              if (prevDay?._cumulFame) {
+                for (const [tag, fame] of Object.entries(prevDay._cumulFame)) {
+                  prevCumulByTag.set(tag, fame ?? 0);
                 }
               }
             }
