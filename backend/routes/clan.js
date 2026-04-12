@@ -1994,18 +1994,39 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 targetDecks = avgDecksLastWeek || 200;
               }
 
-              // fame hebdomadaire : participants[].fame est en unités brutes ×10 dans l'API Clash
-              const weeklyFame =
-                allParts.reduce((s, p) => s + (p.fame ?? 0), 0) / 10;
+              // currentCumulFame : somme des fame cumulatives hebdomadaires (API /currentriverrace)
+              const currentCumulFame = allParts.reduce(
+                (s, p) => s + (p.fame ?? 0),
+                0,
+              );
+              // weeklyDecks : pour le fallback rivaux (pas de snapshot disponible)
+              const weeklyDecks = allParts.reduce(
+                (s, p) => s + (p.decksUsed ?? 0),
+                0,
+              );
 
               if (decksToday > 0) {
-                // Efficacité (E) : fame hebdomadaire ÷ decks du jour (formule cwstats)
-                ptsPerDeck = weeklyFame / decksToday;
+                // Efficacité (E) : fame du jour ÷ decks du jour (identique à cwstats)
+                // Clan propre : fameToday = cumul actuel − cumul snapshot J-1 (_cumulFame)
+                // Rivaux : pas de snapshot → approximation hebdo (fame/decks, écart ~1%)
+                if (isOwn) {
+                  const prevSnap =
+                    warDayIndex > 0 ? weekSnaps[warDayIndex - 1] : null;
+                  const prevCumulFame = prevSnap?._cumulFame
+                    ? Object.values(prevSnap._cumulFame).reduce(
+                        (s, v) => s + v,
+                        0,
+                      )
+                    : 0;
+                  const fameToday = Math.max(
+                    0,
+                    currentCumulFame - prevCumulFame,
+                  );
+                  ptsPerDeck = fameToday / decksToday;
+                } else if (weeklyDecks > 0) {
+                  ptsPerDeck = currentCumulFame / weeklyDecks;
+                }
 
-                // Projection (P) = Estimation de la fame gagnée AUJOURD'HUI uniquement.
-                // En GDC normale (non-Colisée), chaque journée est indépendante : on ne cumule pas
-                // la fame des jours précédents. p.fame étant le cumul hebdomadaire, on projette
-                // uniquement les decks de la journée : max(decksToday, targetDecks) × E.
                 const decksProjected = Math.max(decksToday, targetDecks);
                 projectedFame = decksProjected * ptsPerDeck;
               }
