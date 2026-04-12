@@ -1973,18 +1973,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 0,
               );
 
-              // Efficacité (E) : fame accumulée cette semaine ÷ decks joués aujourd'hui
-              // Identique à cwstats : totalFame / decksToday
-              const weeklyFame = allParts.reduce(
-                (s, p) => s + (p.fame ?? 0),
-                0,
-              );
-              // weeklyDecks : uniquement pour targetDecks des rivaux
-              const weeklyDecks = allParts.reduce(
-                (s, p) => s + (p.decksUsed ?? 0),
-                0,
-              );
-
               const avgDecksLastWeek = isOwn
                 ? ownAvgDecks
                 : rivalAvgDecksByTag[cTagNorm];
@@ -2007,8 +1995,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               }
 
               if (decksToday > 0) {
-                // Efficacité (E) : fame hebdomadaire ÷ decks du jour (formule cwstats)
-                ptsPerDeck = weeklyFame / decksToday;
+                // Efficacité (E) : fame totale clan (c.fame) ÷ decks du jour (formule cwstats)
+                ptsPerDeck = c.fame / decksToday;
 
                 // Projection (P) = Estimation de la fame gagnée AUJOURD'HUI uniquement.
                 // En GDC normale (non-Colisée), chaque journée est indépendante : on ne cumule pas
