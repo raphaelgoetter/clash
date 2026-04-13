@@ -68,8 +68,8 @@ export function renderRaceGroupCard(data, t, timerHelper) {
     return (b.lastWarFame ?? 0) - (a.lastWarFame ?? 0);
   });
 
-  const tbody = container.querySelector(".war-group-list");
-  if (!tbody) return;
+  const table = container.querySelector(".war-group-table");
+  if (!table) return;
 
   const rows = sorted
     .map((clan, idx) => {
@@ -172,5 +172,5 @@ export function renderRaceGroupCard(data, t, timerHelper) {
     </thead>
   `;
 
-  tbody.innerHTML = `${headers}<tbody>${rows}</tbody>`;
+  table.innerHTML = `${headers}<tbody>${rows}</tbody>`;
 }
