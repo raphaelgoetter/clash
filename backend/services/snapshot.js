@@ -461,6 +461,17 @@ export async function recordSnapshot(
       prevDayEntry.decks = clampDeckValues(prevDayEntry.decks);
     }
 
+    // Le snapshot backup est pris juste après le reset : currentCumulFame reflète
+    // l'état exact de fin de journée GDC J-1. On l'écrit sur le jour précédent pour
+    // permettre un calcul précis de la fame du jour courant (sans l'écart ~37 min
+    // inhérent aux snapshots primaires pris avant le reset).
+    if (prevDayEntry) {
+      prevDayEntry._cumulFame = mergeMaps(
+        prevDayEntry._cumulFame ?? {},
+        currentCumulFame,
+      );
+    }
+
     await saveSnapshots(clanTag, filtered);
     return;
   }
