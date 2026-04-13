@@ -4,10 +4,10 @@
     "days": [
       {
         "warDay": "thursday",
-        "realDay": "2026-04-10",
+        "realDay": "2026-04-09",
         "gdcPeriod": {
-          "start": "2026-04-10T09:54:00.000Z",
-          "end": "2026-04-11T09:53:59.999Z"
+          "start": "2026-04-09T09:54:00.000Z",
+          "end": "2026-04-10T09:53:59.999Z"
         },
         "snapshotTime": "2026-04-10T09:27:49.610Z",
         "snapshotBackupTime": null,
@@ -184,10 +184,10 @@
       },
       {
         "warDay": "friday",
-        "realDay": "2026-04-11",
+        "realDay": "2026-04-10",
         "gdcPeriod": {
-          "start": "2026-04-11T09:54:00.000Z",
-          "end": "2026-04-12T09:53:59.999Z"
+          "start": "2026-04-10T09:54:00.000Z",
+          "end": "2026-04-11T09:53:59.999Z"
         },
         "snapshotTime": "2026-04-11T09:15:12.818Z",
         "snapshotBackupTime": "2026-04-10T21:11:40.550Z",
@@ -401,10 +401,10 @@
       },
       {
         "warDay": "saturday",
-        "realDay": "2026-04-12",
+        "realDay": "2026-04-11",
         "gdcPeriod": {
-          "start": "2026-04-12T09:54:00.000Z",
-          "end": "2026-04-13T09:53:59.999Z"
+          "start": "2026-04-11T09:54:00.000Z",
+          "end": "2026-04-12T09:53:59.999Z"
         },
         "snapshotTime": "2026-04-12T09:17:16.805Z",
         "snapshotBackupTime": "2026-04-11T21:55:03.261Z",
@@ -624,12 +624,12 @@
       },
       {
         "warDay": "sunday",
-        "realDay": "2026-04-13",
+        "realDay": "2026-04-12",
         "gdcPeriod": {
-          "start": "2026-04-13T09:54:00.000Z",
-          "end": "2026-04-14T09:53:59.999Z"
+          "start": "2026-04-12T09:54:00.000Z",
+          "end": "2026-04-13T09:53:59.999Z"
         },
-        "snapshotTime": "2026-04-12T21:09:57.964Z",
+        "snapshotTime": "2026-04-13T00:25:11.168Z",
         "snapshotBackupTime": "2026-04-12T21:09:57.964Z",
         "decks": {
           "#2U9QL8Q89": 4,
@@ -653,6 +653,7 @@
           "#GC20UCLL": 4,
           "#GGVQJLG9": 4,
           "#J008G9CLJ": 4,
+          "#JCCQY0U9G": 4,
           "#L2JC8P0G2": 4,
           "#LUGP2RYY": 4,
           "#QVG90PQVG": 4,
@@ -662,11 +663,13 @@
           "#UPC0Y0LRQ": 4,
           "#UVV8CULJV": 4,
           "#V0VLJQCJU": 4,
+          "#VGJ9LL8VC": 4,
           "#VQJ0Y8PLV": 4,
           "#YRGJGR8R": 4,
           "#8GGQLU28": 3,
           "#8UL8JRCJ": 2,
           "#CGJP0YYUJ": 1,
+          "#GLV9Q2P09": 1,
           "#Y9P9GGL89": 1,
           "#2L8RPQRJ9": 0,
           "#2P0VYJJR9": 0,
@@ -676,12 +679,9 @@
           "#8QV8G0CC0": 0,
           "#9PCYJ2UQ0": 0,
           "#9R8UV8RQV": 0,
-          "#GLV9Q2P09": 0,
           "#J290800UU": 0,
-          "#JCCQY0U9G": 0,
           "#P2JYV980": 0,
-          "#PRGCCRUJP": 0,
-          "#QY0LG0R0P": 0
+          "#PRGCCRUJP": 0
         },
         "_cumulFame": {
           "#R8PR99CQ0": 0,
@@ -709,7 +709,7 @@
           "#PRGCCRUJP": 1500,
           "#9R8UV8RQV": 1500,
           "#L2JC8P0G2": 2400,
-          "#JCCQY0U9G": 1700,
+          "#JCCQY0U9G": 2200,
           "#YGP000RP8": 1700,
           "#80GVRPGPY": 2300,
           "#J008G9CLJ": 2200,
@@ -733,10 +733,10 @@
           "#8QVRJYVYU": 2700,
           "#LUGP2RYY": 2850,
           "#QVG90PQVG": 2750,
-          "#GLV9Q2P09": 2200,
+          "#GLV9Q2P09": 2300,
           "#8R0LR8GYC": 2850,
           "#9CYUGPQ0C": 3000,
-          "#VGJ9LL8VC": 2300,
+          "#VGJ9LL8VC": 3100,
           "#UP9YJV080": 2300,
           "#99VY0090": 3200,
           "#YRGJGR8R": 3200,
@@ -771,7 +771,7 @@
           "#PRGCCRUJP": 8,
           "#9R8UV8RQV": 12,
           "#L2JC8P0G2": 16,
-          "#JCCQY0U9G": 12,
+          "#JCCQY0U9G": 16,
           "#YGP000RP8": 12,
           "#80GVRPGPY": 16,
           "#J008G9CLJ": 16,
@@ -795,10 +795,10 @@
           "#8QVRJYVYU": 16,
           "#LUGP2RYY": 16,
           "#QVG90PQVG": 16,
-          "#GLV9Q2P09": 12,
+          "#GLV9Q2P09": 13,
           "#8R0LR8GYC": 14,
           "#9CYUGPQ0C": 16,
-          "#VGJ9LL8VC": 12,
+          "#VGJ9LL8VC": 16,
           "#UP9YJV080": 12,
           "#99VY0090": 16,
           "#YRGJGR8R": 16,
@@ -806,7 +806,12 @@
           "#2YV89UGJQ": 4,
           "#8QV8G0CC0": 4
         },
-        "hourlyCumul": []
+        "hourlyCumul": [
+          {
+            "takenAt": "2026-04-13T00:25:03.427Z",
+            "total": 144
+          }
+        ]
       }
     ]
   }
