@@ -136,16 +136,14 @@ async function readClanName(tag) {
  * se remettre à zéro entre les jours). Pour obtenir les points du jour seul, on
  * soustrait systématiquement le cumul du jour précédent.
  */
+function sumValues(map) {
+  return Object.values(map ?? {}).reduce((a, b) => a + b, 0);
+}
+
 function computeDailyFame(dayEntry, prevDayEntry) {
-  const todayCumul = Object.values(dayEntry._cumulFame ?? {}).reduce(
-    (a, b) => a + b,
-    0,
-  );
+  const todayCumul = sumValues(dayEntry._cumulFame);
   if (!prevDayEntry) return todayCumul;
-  const prevCumul = Object.values(prevDayEntry._cumulFame ?? {}).reduce(
-    (a, b) => a + b,
-    0,
-  );
+  const prevCumul = sumValues(prevDayEntry._cumulFame);
   return Math.max(0, todayCumul - prevCumul);
 }
 
@@ -266,12 +264,23 @@ async function postWarSummary(
   const hasFameData =
     liveTodayCumul !== null ||
     Object.keys(dayEntry._cumulFame ?? {}).length > 0;
-  let totalFame;
-  if (liveTodayCumul !== null) {
-    // Utilise le cumul live (exact) : soustrait le cumul J-1 du snapshot pour obtenir le delta du jour
-    totalFame = Math.max(0, liveTodayCumul - (livePrevCumul ?? 0));
-  } else {
-    totalFame = hasFameData ? computeDailyFame(dayEntry, prevDayEntry) : null;
+  const snapshotFame = hasFameData
+    ? computeDailyFame(dayEntry, prevDayEntry)
+    : null;
+  let totalFame = snapshotFame;
+
+  if (liveTodayCumul !== null && livePrevCumul !== null) {
+    const liveDelta = Math.max(0, liveTodayCumul - livePrevCumul);
+    const snapshotTotalCumul = sumValues(dayEntry._cumulFame);
+
+    // /currentriverrace peut déjà pointer vers la nouvelle journée après reset.
+    // On n'utilise le cumul live que s'il est au moins aussi élevé que le dernier
+    // snapshot du jour terminé, sinon le snapshot reste la source de vérité.
+    if (liveTodayCumul >= snapshotTotalCumul) {
+      totalFame = liveDelta;
+    } else if (snapshotFame === null) {
+      totalFame = liveDelta;
+    }
   }
 
   // Totaux du jour précédent (pour les deltas)
@@ -288,7 +297,10 @@ async function postWarSummary(
   let weekly = isLastDay ? computeWeeklySummary(allWeekDays) : null;
   // Si on a un cumul live, l'utiliser comme total de semaine (plus précis que le snapshot)
   if (weekly && liveTodayCumul !== null && !weekly.isColosseum) {
-    weekly = { ...weekly, totalFameWeek: liveTodayCumul };
+    const snapshotTotalCumul = sumValues(dayEntry._cumulFame);
+    if (liveTodayCumul >= snapshotTotalCumul) {
+      weekly = { ...weekly, totalFameWeek: liveTodayCumul };
+    }
   }
 
   // Couleur selon la tendance (fame en priorité, decks en fallback)
@@ -305,6 +317,11 @@ async function postWarSummary(
   const isColosseum = dayEntry.periodType === "colosseum";
 
   if (hasFameData) {
+    if (totalFame === null) {
+      throw new Error(
+        `Données de fame incomplètes pour ${tag} (${dayEntry.realDay})`,
+      );
+    }
     let line = `${fmt(totalFame)} pts`;
     // En Colisée le score journalier fluctue selon les matchs — le delta n'est pas significatif
     if (prevFame !== null && !isColosseum)
@@ -335,6 +352,10 @@ async function postWarSummary(
         value: `${fmt(weekly.totalFameWeek)} pts`,
         inline: false,
       });
+    } else {
+      throw new Error(
+        `Bilan de semaine incomplet pour ${tag} (${dayEntry.realDay})`,
+      );
     }
 
     const pct = Math.round((weekly.totalDecksWeek / DECKS_MAX_WEEK) * 100);
