@@ -49,7 +49,7 @@ Les fonctions Vercel s'exécutent dans un environnement **read-only** sauf pour 
 ## Semaine / Saison Clash Royale — source de vérité
 
 - Une saison dure environ un mois et commence toujours le **premier lundi du mois**, juste après le reset GDC (**09:40 UTC, ou selon le clan**).
-- **⚠️ L'heure du reset de chaque clan (`CLAN_RESET_TIMES`) change à chaque nouvelle Saison.** Elle n'est pas connue à l'avance et il faut la renseigner à la main dans `dateUtils.js` à chaque saison.
+- **⚠️ L'heure du reset de chaque clan (**`CLAN_RESET_TIMES`**) change à chaque nouvelle Saison.** Elle n'est pas connue à l'avance et il faut la renseigner à la main dans `dateUtils.js` à chaque saison.
 - Elle est composée de **3 à 5 semaines** selon le nombre de lundis dans le mois.
 - L'API représente les semaines avec `seasonId` (entier, ex. 130) et `sectionIndex` (0-based : W1=0, …, W5=4).
 - `/currentriverrace` **ne fournit pas de `seasonId`** — on le déduit de `raceLog[0].seasonId`.

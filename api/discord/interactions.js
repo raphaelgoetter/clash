@@ -1956,13 +1956,18 @@ export default async function handler(req, res) {
           0,
         );
 
-        // Points du jour uniquement pour GDC classique (warDay) : on soustrait la fame
-        // cumulée des jours précédents via le snapshot local. Pour Colisée, la fame de
-        // l'API est déjà cumulative par nature → on l'affiche telle quelle.
+        // Points du jour uniquement pour GDC classique (warDay).
+        // Après le reset (msOfDayUtc >= resetUtcMs) : p.fame est déjà remis à zéro
+        // par l'API → on l'utilise directement sans soustraction.
+        // Avant le reset : p.fame est cumulatif sur la semaine → on soustrait la fame
+        // cumulée du dernier snapshot (veille) pour obtenir uniquement la fame du jour.
+        // Pour Colisée, la fame est toujours cumulative → on l'affiche telle quelle.
         const isWarDay = race?.periodType === "warDay";
+        const isAfterReset = msOfDayUtc >= resetUtcMs;
         const prevCumulByTag = new Map();
-        if (isWarDay) {
+        if (isWarDay && !isAfterReset) {
           const pad2 = (n) => String(n).padStart(2, "0");
+          // p a déjà été ajusté (setDate -1) donc correspond au jour GDC courant
           const realDayToday = `${p.getFullYear()}-${pad2(p.getMonth() + 1)}-${pad2(p.getDate())}`;
           try {
             const { readFile: _rf } = await import("fs/promises");
@@ -1976,13 +1981,19 @@ export default async function handler(req, res) {
             );
             const snapData = JSON.parse(await _rf(snapPath, "utf-8"));
             if (Array.isArray(snapData)) {
-              // _cumulFame est cumulatif sur toute la semaine GDC : il ne faut pas
-              // sommer les entrées de tous les jours précédents (double-comptage).
-              // On prend uniquement le dernier jour antérieur à aujourd'hui.
+              // _cumulFame est cumulatif sur toute la semaine GDC : on prend
+              // le dernier snapshot du jour GDC précédent (realDay < realDayToday
+              // où realDayToday est la date GDC du jour courant, corrigée pré-reset).
+              // Note : l'écart de ~400 pts est inévitable car le snapshot est pris
+              // ~37 min avant le reset (pas exactement à 09h54 UTC).
               const allDays = snapData.flatMap((w) => w.days ?? []);
               const prevDay = allDays
                 .filter(
-                  (d) => d.realDay && d.realDay < realDayToday && d._cumulFame,
+                  (d) =>
+                    d.realDay &&
+                    d.realDay < realDayToday &&
+                    d._cumulFame &&
+                    Object.keys(d._cumulFame).length > 0,
                 )
                 .sort((a, b) => b.realDay.localeCompare(a.realDay))[0];
               if (prevDay?._cumulFame) {
@@ -1999,9 +2010,10 @@ export default async function handler(req, res) {
         const totalFame = currentParticipants.reduce((sum, pl) => {
           const rawFame = pl.fame ?? 0;
           const plTag = pl.tag.startsWith("#") ? pl.tag : `#${pl.tag}`;
-          const todayFame = isWarDay
-            ? Math.max(0, rawFame - (prevCumulByTag.get(plTag) ?? 0))
-            : rawFame;
+          const todayFame =
+            isWarDay && !isAfterReset
+              ? Math.max(0, rawFame - (prevCumulByTag.get(plTag) ?? 0))
+              : rawFame;
           return sum + todayFame;
         }, 0);
 
