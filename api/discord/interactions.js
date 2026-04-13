@@ -466,7 +466,7 @@ export default async function handler(req, res) {
           description:
             "- `/trust tag:#TAG` : analyse la fiabilité d'un joueur\n" +
             "- `/trust-clan clan:N` : liste les membres risqués du clan\n" +
-            "- `/promote clan:N min:X` : liste les joueurs ≥ X pts semaine précédente\n" +
+            "- `/promote clan:N` : liste les joueurs ≥ 2600 pts semaine précédente\n" +
             "- `/demote clan:N` : liste les joueurs n'ayant pas joué 16/16 decks (semaine précédente)\n" +
             "- `/late clan:N` : liste les retardataires GDC du jour\n" +
             "- `/compare clan:N` : affiche les clans du groupe GDC\n" +
@@ -504,12 +504,8 @@ export default async function handler(req, res) {
   // Commande /promote
   if (body.type === 2 && body.data?.name === "promote") {
     // parse options
-    const minOpt = body.data.options?.find((o) => o.name === "min");
     const clanOpt = body.data.options?.find((o) => o.name === "clan");
-    let min = 2800;
-    if (minOpt && !isNaN(parseInt(minOpt.value))) {
-      min = parseInt(minOpt.value, 10);
-    }
+    const min = 2600;
     let clanVal = (clanOpt?.value || "1").toString().trim().toLowerCase();
     // Résoudre clan de façon synchrone (pas d'await) avant le type:5
     const CLAN_MAP = {
@@ -572,14 +568,19 @@ export default async function handler(req, res) {
 
         let description;
         if (players.length === 0) {
-          description = `Aucun joueur n'a joué 100% des decks toutes les semaines de la saison ${seasonId}.`;
+          description =
+            "Aucun joueur n'a atteint 2600 pts la semaine précédente.";
         } else {
           const rows = players.map((p, idx) => {
             const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
             const fameStr = Number.isFinite(p.fame)
               ? p.fame.toLocaleString("fr-FR")
               : "0";
-            return `${idx + 1}. [${p.name}](${playerUrl}) · **${fameStr} pts** · ${formatDiscordRole(p.role)}`;
+            const normalizedRole = String(p.role || "member")
+              .trim()
+              .toLowerCase();
+            const promotionMarker = normalizedRole === "member" ? "🔼 " : "";
+            return `${idx + 1}. [${p.name}](${playerUrl}) · **${fameStr} pts** · ${promotionMarker}${formatDiscordRole(p.role)}`;
           });
           description = rows.join("\n");
         }

@@ -2,16 +2,16 @@
 // Small utility to register the `/trust` command with Discord. Run once
 // after setting DISCORD_APP_ID and DISCORD_TOKEN in your environment.
 
-import fetch from 'node-fetch';
-import dotenv from 'dotenv';
+import fetch from "node-fetch";
+import dotenv from "dotenv";
 
-dotenv.config({ path: './.env' });
+dotenv.config({ path: "./.env" });
 
 const appId = process.env.DISCORD_APP_ID;
 const token = process.env.DISCORD_TOKEN;
 
 if (!appId || !token) {
-  console.error('DISCORD_APP_ID and DISCORD_TOKEN must be set');
+  console.error("DISCORD_APP_ID and DISCORD_TOKEN must be set");
   process.exit(1);
 }
 
@@ -23,238 +23,238 @@ const guildUrl = guildId
 
 const commands = [
   {
-    name: 'trust',
+    name: "trust",
     description: "Analyse la fiabilité d'un joueur Clash Royale",
     options: [
       {
         type: 3, // STRING
-        name: 'tag',
-        description: 'Tag du joueur (ex : #ABC123)',
+        name: "tag",
+        description: "Tag du joueur (ex : #ABC123)",
         required: true,
       },
     ],
   },
   {
-    name: 'discord-link',
-    description: 'Lie un ou plusieurs tags Clash Royale à ton compte Discord.',
+    name: "discord-link",
+    description: "Lie un ou plusieurs tags Clash Royale à ton compte Discord.",
     options: [
       {
         type: 3, // STRING
-        name: 'tag',
-        description: 'Ton tag Clash Royale principal (ex : #ABC123)',
+        name: "tag",
+        description: "Ton tag Clash Royale principal (ex : #ABC123)",
         required: true,
       },
       {
         type: 3, // STRING
-        name: 'tag2',
-        description: 'Deuxième tag Clash Royale (optionnel)',
+        name: "tag2",
+        description: "Deuxième tag Clash Royale (optionnel)",
         required: false,
       },
       {
         type: 3, // STRING
-        name: 'tag3',
-        description: 'Troisième tag Clash Royale (optionnel)',
+        name: "tag3",
+        description: "Troisième tag Clash Royale (optionnel)",
         required: false,
       },
     ],
   },
   {
-    name: 'discord-check',
-    description: 'Vérifie quels membres d\'un clan sont présents sur ce serveur Discord.',
+    name: "discord-check",
+    description:
+      "Vérifie quels membres d'un clan sont présents sur ce serveur Discord.",
     options: [
       {
         type: 3, // STRING
-        name: 'clan',
-        description: '1=La Resistance, 2=Les Resistants, 3=Les Revoltes (défaut : 1)',
+        name: "clan",
+        description:
+          "1=La Resistance, 2=Les Resistants, 3=Les Revoltes (défaut : 1)",
         required: false,
         choices: [
-          { name: 'La Resistance',  value: '1' },
-          { name: 'Les Resistants', value: '2' },
-          { name: 'Les Revoltes',   value: '3' },
+          { name: "La Resistance", value: "1" },
+          { name: "Les Resistants", value: "2" },
+          { name: "Les Revoltes", value: "3" },
         ],
       },
     ],
   },
   {
-    name: 'promote',
-    description: "Liste les joueurs éligibles à la promotion (quota minimum)",
+    name: "promote",
+    description:
+      "Liste les joueurs éligibles à la promotion (2600 pts minimum)",
     options: [
       {
-        type: 4, // INTEGER
-        name: 'min',
-        description: 'Quota minimal (ex: 2400 à 2800)',
-        required: false,
-        choices: [
-          { name: '2400', value: 2400 },
-          { name: '2600', value: 2600 },
-          { name: '2800', value: 2800 },
-        ],
-      },
-      {
         type: 3, // STRING
-        name: 'clan',
-        description: '1/2/3 ou la/les (1=La Resistance, 2=Les Resistants, 3=Les Revoltes)',
+        name: "clan",
+        description:
+          "1/2/3 ou la/les (1=La Resistance, 2=Les Resistants, 3=Les Revoltes)",
         required: false,
         choices: [
-          { name: 'La Resistance', value: '1' },
-          { name: 'Les Resistants', value: '2' },
-          { name: 'Les Revoltes', value: '3' },
+          { name: "La Resistance", value: "1" },
+          { name: "Les Resistants", value: "2" },
+          { name: "Les Revoltes", value: "3" },
         ],
       },
     ],
   },
   {
-    name: 'demote',
-    description: 'Liste les joueurs n’ayant pas fait 16/16 decks lors de la dernière semaine GDC',
+    name: "demote",
+    description:
+      "Liste les joueurs n’ayant pas fait 16/16 decks lors de la dernière semaine GDC",
     options: [
       {
         type: 3, // STRING
-        name: 'clan',
-        description: '1=La Resistance, 2=Les Resistants, 3=Les Revoltes',
+        name: "clan",
+        description: "1=La Resistance, 2=Les Resistants, 3=Les Revoltes",
         required: true,
         choices: [
-          { name: 'La Resistance', value: '1' },
-          { name: 'Les Resistants', value: '2' },
-          { name: 'Les Revoltes', value: '3' },
+          { name: "La Resistance", value: "1" },
+          { name: "Les Resistants", value: "2" },
+          { name: "Les Revoltes", value: "3" },
         ],
       },
     ],
   },
   {
-    name: 'trust-clan',
+    name: "trust-clan",
     description: "Liste les membres risqués d'un clan",
     options: [
       {
         type: 3, // STRING
-        name: 'clan',
-        description: '1=La Resistance, 2=Les Resistants, 3=Les Revoltes',
+        name: "clan",
+        description: "1=La Resistance, 2=Les Resistants, 3=Les Revoltes",
         required: true,
         choices: [
-          { name: 'La Resistance', value: '1' },
-          { name: 'Les Resistants', value: '2' },
-          { name: 'Les Revoltes', value: '3' },
+          { name: "La Resistance", value: "1" },
+          { name: "Les Resistants", value: "2" },
+          { name: "Les Revoltes", value: "3" },
         ],
       },
     ],
   },
   {
-    name: 'battles-per-day',
-    description: 'Liste les combats par jour moyen pour chaque membre d un clan (battle.log 30 dernières entrées).',
+    name: "battles-per-day",
+    description:
+      "Liste les combats par jour moyen pour chaque membre d un clan (battle.log 30 dernières entrées).",
     options: [
       {
         type: 3,
-        name: 'clan',
-        description: '1=La Resistance, 2=Les Resistants, 3=Les Revoltes',
+        name: "clan",
+        description: "1=La Resistance, 2=Les Resistants, 3=Les Revoltes",
         required: true,
         choices: [
-          { name: 'La Resistance', value: '1' },
-          { name: 'Les Resistants', value: '2' },
-          { name: 'Les Revoltes', value: '3' },
+          { name: "La Resistance", value: "1" },
+          { name: "Les Resistants", value: "2" },
+          { name: "Les Revoltes", value: "3" },
         ],
       },
       {
         type: 3,
-        name: 'mode',
-        description: 'Tri: top = membre les plus actifs / bottom = membres les moins actifs',
+        name: "mode",
+        description:
+          "Tri: top = membre les plus actifs / bottom = membres les moins actifs",
         required: false,
         choices: [
-          { name: 'top', value: 'top' },
-          { name: 'bottom', value: 'bottom' },
+          { name: "top", value: "top" },
+          { name: "bottom", value: "bottom" },
         ],
       },
     ],
   },
   {
-    name: 'late',
-    description: 'Liste les joueurs en retard dans leurs combats GDC avant le reset.',
+    name: "late",
+    description:
+      "Liste les joueurs en retard dans leurs combats GDC avant le reset.",
     options: [
       {
         type: 3, // STRING
-        name: 'clan',
-        description: '1=La Resistance, 2=Les Resistants, 3=Les Revoltes',
+        name: "clan",
+        description: "1=La Resistance, 2=Les Resistants, 3=Les Revoltes",
         required: true,
         choices: [
-          { name: 'La Resistance',  value: '1' },
-          { name: 'Les Resistants', value: '2' },
-          { name: 'Les Revoltes',   value: '3' },
+          { name: "La Resistance", value: "1" },
+          { name: "Les Resistants", value: "2" },
+          { name: "Les Revoltes", value: "3" },
         ],
       },
     ],
   },
   {
-    name: 'compare',
-    description: 'Affiche les clans du groupe GDC.',
+    name: "compare",
+    description: "Affiche les clans du groupe GDC.",
     options: [
       {
         type: 3, // STRING
-        name: 'clan',
-        description: '1=La Resistance, 2=Les Resistants, 3=Les Revoltes',
+        name: "clan",
+        description: "1=La Resistance, 2=Les Resistants, 3=Les Revoltes",
         required: true,
         choices: [
-          { name: 'La Resistance',  value: '1' },
-          { name: 'Les Resistants', value: '2' },
-          { name: 'Les Revoltes',   value: '3' },
+          { name: "La Resistance", value: "1" },
+          { name: "Les Resistants", value: "2" },
+          { name: "Les Revoltes", value: "3" },
         ],
       },
     ],
   },
   {
-    name: 'top-players',
-    description: 'Liste les meilleurs joueurs de la famille pour la semaine/saison actuelle ou précédente.',
+    name: "top-players",
+    description:
+      "Liste les meilleurs joueurs de la famille pour la semaine/saison actuelle ou précédente.",
     options: [
       {
         type: 4, // INTEGER
-        name: 'number',
-        description: 'Nombre de joueurs à afficher (par défaut 5).',
+        name: "number",
+        description: "Nombre de joueurs à afficher (par défaut 5).",
         required: false,
       },
       {
         type: 3, // STRING
-        name: 'period',
-        description: 'Période : week (par défaut) ou season.',
+        name: "period",
+        description: "Période : week (par défaut) ou season.",
         required: false,
         choices: [
-          { name: 'week', value: 'week' },
-          { name: 'season', value: 'season' },
+          { name: "week", value: "week" },
+          { name: "season", value: "season" },
         ],
       },
       {
         type: 3, // STRING
-        name: 'scope',
-        description: 'Période : previous (défaut) ou actual.',
+        name: "scope",
+        description: "Période : previous (défaut) ou actual.",
         required: false,
         choices: [
-          { name: 'previous', value: 'previous' },
-          { name: 'actual', value: 'actual' },
+          { name: "previous", value: "previous" },
+          { name: "actual", value: "actual" },
         ],
       },
     ],
   },
   {
-    name: 'help',
-    description: 'Affiche l’aide détaillée de toutes les commandes du bot.',
+    name: "help",
+    description: "Affiche l’aide détaillée de toutes les commandes du bot.",
     options: [],
   },
   {
-    name: 'chelem',
-    description: 'Liste les joueurs ayant fait 16/16 decks chaque semaine d’une saison donnée.',
-    
+    name: "chelem",
+    description:
+      "Liste les joueurs ayant fait 16/16 decks chaque semaine d’une saison donnée.",
+
     options: [
       {
         type: 3, // STRING
-        name: 'clan',
-        description: '1=La Resistance, 2=Les Resistants, 3=Les Revoltes',
+        name: "clan",
+        description: "1=La Resistance, 2=Les Resistants, 3=Les Revoltes",
         required: true,
         choices: [
-          { name: 'La Resistance', value: '1' },
-          { name: 'Les Resistants', value: '2' },
-          { name: 'Les Revoltes', value: '3' },
+          { name: "La Resistance", value: "1" },
+          { name: "Les Resistants", value: "2" },
+          { name: "Les Revoltes", value: "3" },
         ],
       },
       {
         type: 4, // INTEGER
-        name: 'season',
-        description: 'Numéro de saison (ex: 129). Par défaut, la dernière saison terminée.',
+        name: "season",
+        description:
+          "Numéro de saison (ex: 129). Par défaut, la dernière saison terminée.",
         required: false,
       },
     ],
@@ -263,10 +263,10 @@ const commands = [
 
 async function registerAtUrl(url) {
   const res = await fetch(url, {
-    method: 'PUT',
+    method: "PUT",
     headers: {
       Authorization: `Bot ${token}`,
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(commands),
   });
@@ -284,24 +284,26 @@ async function registerAtUrl(url) {
     // Supprimer les commandes guild si DISCORD_GUILD_ID est défini (évite les doublons).
     if (guildUrl) {
       const res = await fetch(guildUrl, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
           Authorization: `Bot ${token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify([]),
       });
       if (!res.ok) {
-        console.error('Failed to clear guild commands', await res.json());
+        console.error("Failed to clear guild commands", await res.json());
         process.exit(1);
       }
-      console.log('Guild commands cleared.');
+      console.log("Guild commands cleared.");
     }
     // Enregistrement global uniquement.
     await registerAtUrl(globalUrl);
-    console.log('Global command registration done (may take up to 1 hour to propagate).');
+    console.log(
+      "Global command registration done (may take up to 1 hour to propagate).",
+    );
   } catch (err) {
-    console.error('Request failed', err);
+    console.error("Request failed", err);
     process.exit(1);
   }
 })();

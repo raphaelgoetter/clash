@@ -9,14 +9,14 @@ vers `README.md` (en français).
 
 ## ✨ Features
 
-| Feature | Details |
-|---|---|
-| **Player analysis** | Overview, activity indicators, battle log chart, war reliability score (/45 or /40), colour-coded verdict + breakdown |
-| **Clan analysis** | Member table with sorting & filtering, score distribution chart, reliable-vs-risky pie chart |
-| **Family transfers** | Detects when a player moves between the 3 allowed clans and merges last week history to compute a proper score |
-| **Response cache** | In-memory cache (30 s TTL) to avoid hammering the Clash Royale API on repeated navigations |
-| **Responsive UI** | Clash Royale-inspired dark theme, works on mobile |
-| **Favorites** | Save player or clan tags (with names) locally and recall them with one click |
+| Feature              | Details                                                                                                               |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| **Player analysis**  | Overview, activity indicators, battle log chart, war reliability score (/45 or /40), colour-coded verdict + breakdown |
+| **Clan analysis**    | Member table with sorting & filtering, score distribution chart, reliable-vs-risky pie chart                          |
+| **Family transfers** | Detects when a player moves between the 3 allowed clans and merges last week history to compute a proper score        |
+| **Response cache**   | In-memory cache (30 s TTL) to avoid hammering the Clash Royale API on repeated navigations                            |
+| **Responsive UI**    | Clash Royale-inspired dark theme, works on mobile                                                                     |
+| **Favorites**        | Save player or clan tags (with names) locally and recall them with one click                                          |
 
 ---
 
@@ -110,14 +110,14 @@ This launches both backend (**<http://localhost:3000>**) and frontend (**<http:/
 
 ## 📡 Backend API reference
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/health` | Health check |
-| `GET` | `/api/player/:tag` | Raw player profile |
-| `GET` | `/api/player/:tag/analysis` | Full player analysis |
-| `GET` | `/api/clan/:tag` | Raw clan profile |
-| `GET` | `/api/clan/:tag/analysis` | Clan + member analysis |
-| `POST` | `/api/cache/flush` | Vide le cache mémoire (dev uniquement) |
+| Method | Endpoint                    | Description                            |
+| ------ | --------------------------- | -------------------------------------- |
+| `GET`  | `/health`                   | Health check                           |
+| `GET`  | `/api/player/:tag`          | Raw player profile                     |
+| `GET`  | `/api/player/:tag/analysis` | Full player analysis                   |
+| `GET`  | `/api/clan/:tag`            | Raw clan profile                       |
+| `GET`  | `/api/clan/:tag/analysis`   | Clan + member analysis                 |
+| `POST` | `/api/cache/flush`          | Vide le cache mémoire (dev uniquement) |
 
 Tags should include the `#` prefix (URL‑encoded as `%23`).
 
@@ -158,17 +158,17 @@ Used when the war race log is available. Eight weighted criteria:
 
 Seven weighted criteria:
 
-| # | Criterion | Max | Cap / rule |
-|---|---|---|---|
-| 1 | Regularity | 12 | war decks used / (16 × completed weeks); –0.5 pt per incomplete week |
-| 2 | Avg pts | 10 | 3,000 pts/week = full score |
-| 3 | CW2 battle wins | 8 | 250 total CW2 wins = full score |
-| 4 | Clan stability | 8 | 5+ consecutive weeks in clan = full score |
-| 5 | Last seen | +5 | active within 24 h = +5; ≤3 d = +3; ≤7 d = +1 |
-| 6 | Win rate (River Race) | 3 | 100% win rate = full score · **min. 10 GDC battles** (absent otherwise) |
-| 7 | Experience (best trophies) | 3 | 12,000 trophies = full score |
-| 8 | Donations | 2 | 100 000 total cards donated = full score (≤ 2 000 = minimum score) |
-| 9 | Discord | 2 | compte lié via `/discord-link` = full score |
+| #   | Criterion                  | Max | Cap / rule                                                              |
+| --- | -------------------------- | --- | ----------------------------------------------------------------------- |
+| 1   | Regularity                 | 12  | war decks used / (16 × completed weeks); –0.5 pt per incomplete week    |
+| 2   | Avg pts                    | 10  | 3,000 pts/week = full score                                             |
+| 3   | CW2 battle wins            | 8   | 250 total CW2 wins = full score                                         |
+| 4   | Clan stability             | 8   | 5+ consecutive weeks in clan = full score                               |
+| 5   | Last seen                  | +5  | active within 24 h = +5; ≤3 d = +3; ≤7 d = +1                           |
+| 6   | Win rate (River Race)      | 3   | 100% win rate = full score · **min. 10 GDC battles** (absent otherwise) |
+| 7   | Experience (best trophies) | 3   | 12,000 trophies = full score                                            |
+| 8   | Donations                  | 2   | 100 000 total cards donated = full score (≤ 2 000 = minimum score)      |
+| 9   | Discord                    | 2   | compte lié via `/discord-link` = full score                             |
 
 Without battle log (criterion 6 absent): max = **45 pts**. With last seen and win rate: **53 pts** maximum.
 
@@ -176,25 +176,25 @@ Without battle log (criterion 6 absent): max = **45 pts**. With last seen and wi
 
 Used when no race log history is available (battle log only):
 
-| # | Criterion | Max | Cap / rule |
-|---|---|---|---|
-| 1 | War activity | 12 | Decks/day over sliding window; bonus +0.2 pt per 4‑deck day, penalty ‑0.1 pt per short day |
-| 2 | Win rate (war) | 5 | From battle log war battles · **min. 10 GDC battles** (scores 0 otherwise) |
-| 3 | CW2 battle wins | 8 | 250 total CW2 wins = full score |
-| 4 | Last seen | +5 | same as above but only awarded after ≥16 war decks in log |
-| 5 | General activity | 8 | 20 competitive battles = full score |
-| 6 | Experience | 3 | 12,000 best trophies = full score |
-| 7 | Donations | 2 | 100 000 total cards donated = full score (≤ 2 000 = minimum score) |
-| 8 | Discord | 2 | compte lié via `/discord-link` = full score |
+| #   | Criterion        | Max | Cap / rule                                                                                 |
+| --- | ---------------- | --- | ------------------------------------------------------------------------------------------ |
+| 1   | War activity     | 12  | Decks/day over sliding window; bonus +0.2 pt per 4‑deck day, penalty ‑0.1 pt per short day |
+| 2   | Win rate (war)   | 5   | From battle log war battles · **min. 10 GDC battles** (scores 0 otherwise)                 |
+| 3   | CW2 battle wins  | 8   | 250 total CW2 wins = full score                                                            |
+| 4   | Last seen        | +5  | same as above but only awarded after ≥16 war decks in log                                  |
+| 5   | General activity | 8   | 20 competitive battles = full score                                                        |
+| 6   | Experience       | 3   | 12,000 best trophies = full score                                                          |
+| 7   | Donations        | 2   | 100 000 total cards donated = full score (≤ 2 000 = minimum score)                         |
+| 8   | Discord          | 2   | compte lié via `/discord-link` = full score                                                |
 
 ### Verdict thresholds (both scoring modes)
 
-| % of max score | Verdict | Colour |
-|---|---|---|
-| ≥ 75 % | High reliability | 🟢 Green |
-| 56–74 % | Moderate risk | 🟡 Yellow |
-| 31–55 % | High risk | 🟠 Orange |
-| 0–30 % | Extreme risk | 🔴 Red |
+| % of max score | Verdict          | Colour    |
+| -------------- | ---------------- | --------- |
+| ≥ 75 %         | High reliability | 🟢 Green  |
+| 56–74 %        | Moderate risk    | 🟡 Yellow |
+| 31–55 %        | High risk        | 🟠 Orange |
+| 0–30 %         | Extreme risk     | 🔴 Red    |
 
 ### Member activity score (clan view, 0–100)
 
@@ -216,15 +216,15 @@ Le bot Discord expose des slash commands qui affichent les analyses directement 
 
 ### Commandes disponibles
 
-| Commande | Description |
-|---|---|
-| `/trust tag:#TAG` | Analyse la fiabilité d'un joueur |
-| `/trust-clan clan:N` | Liste les membres High/Extreme risk d'un clan (N = 1/2/3) |
-| `/promote clan:N min:X` | Liste les joueurs ≥ X pts la semaine précédente |
-| `/top-players number:X period:[week|season] scope:[previous|actual]` | Liste les meilleurs joueurs de la famille sur la période demandée |
-| `/discord-link tag:#TAG` | Lie un compte Clash à un Discord |
-| `/discord-check clan:N` | Vérifie la présence Discord des membres d'un clan |
-| `/late clan:N` | Liste les joueurs en retard sur leurs decks de la journée (avant reset) |
+| Commande                            | Description                                                             |
+| ----------------------------------- | ----------------------------------------------------------------------- | -------- | ----------------------------------------------------------------- |
+| `/trust tag:#TAG`                   | Analyse la fiabilité d'un joueur                                        |
+| `/trust-clan clan:N`                | Liste les membres High/Extreme risk d'un clan (N = 1/2/3)               |
+| `/promote clan:N`                   | Liste les joueurs ≥ 2600 pts la semaine précédente                      |
+| `/top-players number:X period:[week | season] scope:[previous                                                 | actual]` | Liste les meilleurs joueurs de la famille sur la période demandée |
+| `/discord-link tag:#TAG`            | Lie un compte Clash à un Discord                                        |
+| `/discord-check clan:N`             | Vérifie la présence Discord des membres d'un clan                       |
+| `/late clan:N`                      | Liste les joueurs en retard sur leurs decks de la journée (avant reset) |
 
 ### Architecture
 
@@ -244,22 +244,22 @@ La fonction Discord est **séparée** de l'app Express (`api/index.js`) pour gar
 
 ### Points techniques clés
 
-| Problème | Solution |
-|---|---|
-| Validation endpoint Discord échoue | La vérification de signature Ed25519 doit se faire **avant** de répondre au PING, pas après |
+| Problème                                         | Solution                                                                                            |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| Validation endpoint Discord échoue               | La vérification de signature Ed25519 doit se faire **avant** de répondre au PING, pas après         |
 | Cold start > 3 s → "application did not respond" | Fonction Vercel dédiée (`api/discord/interactions.js`) sans Express, uniquement `node:crypto` natif |
-| Fonction tuée après `res.end()` | `runBackground(fn)` appelle `waitUntil(fn())` de `@vercel/functions` — maintient la fonction active |
-| `Promise.resolve().then(fn)` sans waitUntil | Vercel coupe la VM dès que `res.json()` est envoyé — utiliser `runBackground` **uniquement** |
-| Syntaxe cassée → module entier planté | Ne jamais écrire de saut de ligne littéral dans `'...'`. Utiliser `'\`\`\`\n'` |
-| Import direct de services backend | Ne jamais `import('../../backend/routes/clan.js')` dans un handler — appeler l'endpoint HTTP |
-| Vérification de signature | Reconstruit la clé publique Ed25519 depuis hex → SPKI DER via `node:crypto` |
+| Fonction tuée après `res.end()`                  | `runBackground(fn)` appelle `waitUntil(fn())` de `@vercel/functions` — maintient la fonction active |
+| `Promise.resolve().then(fn)` sans waitUntil      | Vercel coupe la VM dès que `res.json()` est envoyé — utiliser `runBackground` **uniquement**        |
+| Syntaxe cassée → module entier planté            | Ne jamais écrire de saut de ligne littéral dans `'...'`. Utiliser `'\`\`\`\n'`                      |
+| Import direct de services backend                | Ne jamais `import('../../backend/routes/clan.js')` dans un handler — appeler l'endpoint HTTP        |
+| Vérification de signature                        | Reconstruit la clé publique Ed25519 depuis hex → SPKI DER via `node:crypto`                         |
 
 ### Patron obligatoire pour toute nouvelle commande
 
 ```js
-if (body.type === 2 && body.data?.name === 'ma-commande') {
+if (body.type === 2 && body.data?.name === "ma-commande") {
   // 1. Parser les options SYNCHRONEMENT (pas d'await)
-  const opt = body.data.options?.find((o) => o.name === 'mon-option');
+  const opt = body.data.options?.find((o) => o.name === "mon-option");
 
   // 2. Répondre IMMÉDIATEMENT — avant tout await
   res.status(200).json({ type: 5 });
@@ -269,14 +269,18 @@ if (body.type === 2 && body.data?.name === 'ma-commande') {
   runBackground(async () => {
     try {
       // Toujours appeler les endpoints HTTP, jamais les services directement
-      const resp = await fetch('https://trustroyale.vercel.app/api/...');
-      await fetch(webhookUrl, { method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ embeds: [embed] }) });
+      const resp = await fetch("https://trustroyale.vercel.app/api/...");
+      await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ embeds: [embed] }),
+      });
     } catch (err) {
-      await fetch(webhookUrl, { method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }) });
+      await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
+      });
     }
   });
   return;
@@ -345,8 +349,7 @@ Tag : #YRGJGR8R
 ...and 18 de plus
 ```
 
-Icônes : ✅ ≥ 75 % du max · ⚠️ entre 40 % et 74 % · ❌ < 40 %
----
+## Icônes : ✅ ≥ 75 % du max · ⚠️ entre 40 % et 74 % · ❌ < 40 %
 
 ## ☁️ Deployment
 

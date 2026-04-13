@@ -10,7 +10,7 @@ TrustRoyale se compose :
 
 1. d'une application web accessible sur `https://trustroyale.vercel.app` ;
 2. d'un bot Discord (commandes `/`) permettant de lancer diverses analyses
-  depuis notre serveur Discord.
+   depuis notre serveur Discord.
 
 <img width="612" height="100" alt="image" src="https://github.com/user-attachments/assets/9c05c90d-7890-4e32-aa8c-550909837c58" />
 
@@ -39,7 +39,7 @@ Liste des commandes :
 2. **`/trust-clan`** : liste tous les membres peu fiables d'un clan de la famille. Options : `clan:N`
 3. **`/late`** : liste les joueurs en retard sur leurs decks de la journée (avant le reset). Options : `clan:N`
 4. **`/chelem`** : liste les joueurs ayant fait 16/16 decks toutes les semaines d'une saison (par défaut : la dernière saison terminée). Options : `clan:N [season:X]`
-5. **`/promote`** : liste les joueurs ayant atteint ≥ 2600 pts la semaine précédente. Options : `clan:N min:X`
+5. **`/promote`** : liste les joueurs ayant atteint ≥ 2600 pts la semaine précédente. Options : `clan:N`
 6. **`/top-players`** : liste les meilleurs joueurs de la famille en fonction de la période. Options : `number:X period:[week|season] scope:[previous|actual]`
 7. **`/demote`** : liste les joueurs n’ayant pas fait tous leurs combats GDC la semaine précédente. Options : `clan:N`
 8. **`/discord-link`** : lie son compte Clash à son Discord. Options : `tag:#TAG` (tag2 et tag3 optionnels pour comptes multiples)
@@ -67,7 +67,7 @@ En plus des commandes du Bot, deux scripts permettent de publier automatiquement
 
 ---
 
-## �🛠  Pour les développeurs
+## �🛠 Pour les développeurs
 
 Voir [`CONTRIBUTING.md`](CONTRIBUTING.md) pour la documentation technique,
 le setup local et les formules de calcul.
