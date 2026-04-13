@@ -112,7 +112,7 @@ export function renderRaceGroupCard(data, t, timerHelper) {
       const currentPct = Math.min(100, (decksTodayVal / maxDecks) * 100);
       const targetPct = Math.min(100, (targetVal / maxDecks) * 100);
 
-      let decksNowHtml = "—";
+      let decksNowHtml = "";
       if (isWarPeriod) {
         const tooltipText = t("warGroupDecksTooltip")
           .replace("{{decks}}", decksTodayVal)
