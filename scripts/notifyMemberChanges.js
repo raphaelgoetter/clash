@@ -1,11 +1,12 @@
 // notifyMemberChanges.js
-// Détecte les arrivées et départs de membres dans chaque clan en comparant
-// le clan cache persisté (état précédent, ~1h) avec l'état actuel de l'API Clash Royale.
+// Détecte les arrivées, départs et changements de rôle de membres dans chaque clan
+// en comparant le clan cache persisté (état précédent, ~1h) avec l'état actuel de l'API Clash Royale.
 // Doit être exécuté AVANT npm run cache pour que le fichier JSON ne soit pas encore écrasé.
 //
 // Usage :
 //   node scripts/notifyMemberChanges.js           — mode normal (poste sur Discord)
 //   node scripts/notifyMemberChanges.js --dry-run — affiche l'embed sans poster
+//   DEBUG_NOTIFY_MEMBER_CHANGES=1 node scripts/notifyMemberChanges.js --dry-run — mode debug
 
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
@@ -31,6 +32,7 @@ const CACHE_DIR = path.join(
 const DISCORD_API = "https://discord.com/api/v10";
 const DRY_RUN = process.argv.includes("--dry-run");
 const SIMULATE = process.argv.includes("--simulate");
+const DEBUG = process.env.DEBUG_NOTIFY_MEMBER_CHANGES === "1";
 
 /**
  * Lit le clan cache persisté pour un tag donné.
@@ -74,6 +76,12 @@ async function readCachedMembers(tag) {
 async function fetchCurrentMembers(tag) {
   const members = await fetchClanMembers(tag);
   return buildMemberData(members);
+}
+
+function debugLog(msg) {
+  if (DEBUG) {
+    console.log(`[DEBUG] ${msg}`);
+  }
 }
 
 /**
@@ -385,6 +393,15 @@ async function main() {
         (change) =>
           getRolePriority(change.newRole) < getRolePriority(change.oldRole),
       );
+
+      if (DEBUG) {
+        debugLog(
+          `${tag}: roleChanges=${roleChanges.length} promotions=${promotions.length} demotions=${demotions.length}`,
+        );
+        for (const change of roleChanges) {
+          debugLog(`  ${change.tag} ${change.oldRole} -> ${change.newRole}`);
+        }
+      }
 
       // Retirer des notifications déjà envoyées les joueurs qui sont revenus ou dont le changement de rôle a disparu.
       notified.arrivals = notified.arrivals.filter((t) => current.tags.has(t));
