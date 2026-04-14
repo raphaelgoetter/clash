@@ -1181,7 +1181,7 @@ export default async function handler(req, res) {
           color: 0x5865f2,
           description: rows,
           thumbnail: {
-            url: "https://trustroyale.vercel.app/icons/trophy.webp",
+            url: "https://trustroyale.vercel.app/icons/princess-wink.webp",
           },
           footer: { text: footer },
         };
