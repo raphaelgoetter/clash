@@ -1464,7 +1464,7 @@ export default async function handler(req, res) {
         }
 
         const embed = {
-          title: `🏆 ${resolved.name} — saison ${seasonId}`,
+          title: `<:topplayers:1493708397407899648> ${resolved.name} — saison ${seasonId}`,
           color: 0x5865f2,
           description,
           footer: {
@@ -2107,7 +2107,7 @@ export default async function handler(req, res) {
 
           const trophies =
             clan.clanWarTrophies != null
-              ? `🏆 ${fmt(clan.clanWarTrophies)}`
+              ? `<:trophy2:1493677804733337621> ${fmt(clan.clanWarTrophies)}`
               : "";
 
           let prevWarStr =
