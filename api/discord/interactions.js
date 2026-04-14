@@ -2143,7 +2143,7 @@ export default async function handler(req, res) {
 
         const footerText = isWarPeriod
           ? `Trié par Projection · <:battle:1493710671244689449> n-2 GDC · <:battle:1493710671244689449> Dernière GDC · 🔮 Estimé fin de journée`
-          : `Trié par Total Dernière GDC · <:battle:1493710671244689449> n-2 GDC · <:battle:1493710671244689449> Dernière GDC`;
+          : `Trié par Total Dernière GDC`;
 
         const embed = {
           title: `<:trophy2:1493677804733337621> Groupe de GDC — ${resolved.name}`,
