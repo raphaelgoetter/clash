@@ -38,6 +38,22 @@ const SIMULATE = process.argv.includes("--simulate");
  * @param {string} tag
  * @returns {Promise<{ tags: Set<string>, names: Map<string, string> } | null>}
  */
+function buildMemberData(members) {
+  const tags = new Set();
+  const names = new Map();
+  const roles = new Map();
+
+  for (const member of members) {
+    const tag = member.tag;
+    if (!tag) continue;
+    tags.add(tag);
+    names.set(tag, member.name ?? tag);
+    roles.set(tag, String(member.role || "member"));
+  }
+
+  return { tags, names, roles };
+}
+
 async function readCachedMembers(tag) {
   const filePath = path.join(CACHE_DIR, `${tag}.json`);
   if (!existsSync(filePath)) return null;
@@ -47,22 +63,17 @@ async function readCachedMembers(tag) {
   const members = data.members ?? [];
   if (members.length === 0) return null;
 
-  const tags = new Set(members.map((m) => m.tag));
-  const names = new Map(members.map((m) => [m.tag, m.name]));
-  return { tags, names };
+  return buildMemberData(members);
 }
 
 /**
  * Récupère les membres actuels via l'API Clash Royale.
  * @param {string} tag
- * @returns {Promise<{ tags: Set<string>, names: Map<string, string>, clanName: string }>}
+ * @returns {Promise<{ tags: Set<string>, names: Map<string, string>, roles: Map<string, string> }>}
  */
 async function fetchCurrentMembers(tag) {
   const members = await fetchClanMembers(tag);
-  const tags = new Set(members.map((m) => m.tag));
-  const names = new Map(members.map((m) => [m.tag, m.name]));
-  // Le nom du clan n'est pas dans fetchClanMembers — fallback sur le cache si dispo
-  return { tags, names };
+  return buildMemberData(members);
 }
 
 /**
@@ -134,22 +145,71 @@ function formatMemberLine(m) {
   return `**[${m.name}](${playerUrl})**${reliabilityStr}`;
 }
 
+const ROLE_ORDER = {
+  leader: 4,
+  coleader: 3,
+  coLeader: 3,
+  elder: 2,
+  member: 1,
+};
+
+const ROLE_LABELS = {
+  member: "membre",
+  elder: "aîné",
+  coleader: "chef adjoint",
+  coLeader: "chef adjoint",
+  leader: "chef",
+};
+
+function getRolePriority(role) {
+  const normalized = String(role || "member")
+    .trim()
+    .toLowerCase();
+  return ROLE_ORDER[normalized] ?? 0;
+}
+
+function formatRole(role) {
+  const normalized = String(role || "member")
+    .trim()
+    .toLowerCase();
+  return ROLE_LABELS[normalized] ?? String(role);
+}
+
+function formatRoleChangeLine(change) {
+  const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(change.tag)}`;
+  return `**[${change.name}](${playerUrl})** (${formatRole(change.oldRole)} ⇢ ${formatRole(change.newRole)})`;
+}
+
 /**
  * Envoie un embed Discord dans le channel configuré pour ce clan.
  * @param {string} tag - tag du clan (sans #)
  * @param {string} clanName
  * @param {Array<{tag: string, name: string, analysis?: object}>} arrivals
  * @param {Array<{tag: string, name: string, analysis?: object}>} departures
+ * @param {Array<{tag: string, name: string, oldRole: string, newRole: string}>} promotions
+ * @param {Array<{tag: string, name: string, oldRole: string, newRole: string}>} demotions
  */
-async function postDiscordEmbed(tag, clanName, arrivals, departures) {
+async function postDiscordEmbed(
+  tag,
+  clanName,
+  arrivals,
+  departures,
+  promotions,
+  demotions,
+) {
   const channelId = process.env[`DISCORD_CHANNEL_MEMBERS_${tag}`];
   const token = process.env.DISCORD_TOKEN;
 
-  // Couleur : vert = arrivées uniquement, rouge = départs uniquement, bleu = mixte
+  const hasArrivals = arrivals.length > 0;
+  const hasDepartures = departures.length > 0;
+  const hasPromotions = promotions.length > 0;
+  const hasDemotions = demotions.length > 0;
+
+  // Couleur : vert = arrivées/promotions uniquement, rouge = départs/rétrogradations uniquement, bleu = mixte
   let color;
-  if (arrivals.length > 0 && departures.length === 0)
+  if ((hasArrivals || hasPromotions) && !(hasDepartures || hasDemotions))
     color = 0x57f287; // vert
-  else if (departures.length > 0 && arrivals.length === 0)
+  else if ((hasDepartures || hasDemotions) && !(hasArrivals || hasPromotions))
     color = 0xed4245; // rouge
   else color = 0x5865f2; // bleu
 
@@ -171,6 +231,22 @@ async function postDiscordEmbed(tag, clanName, arrivals, departures) {
     });
   }
 
+  if (promotions.length > 0) {
+    fields.push({
+      name: `🔼 Promotions (${promotions.length})`,
+      value: promotions.map(formatRoleChangeLine).join("\n"),
+      inline: false,
+    });
+  }
+
+  if (demotions.length > 0) {
+    fields.push({
+      name: `🔽 Rétrogradations (${demotions.length})`,
+      value: demotions.map(formatRoleChangeLine).join("\n"),
+      inline: false,
+    });
+  }
+
   const now = new Date();
   const date = now.toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" }); // JJ/MM/AAAA
   const time = now.toLocaleTimeString("fr-FR", {
@@ -181,7 +257,7 @@ async function postDiscordEmbed(tag, clanName, arrivals, departures) {
   });
 
   const embed = {
-    title: `${clanName} · Entrées/Sorties`,
+    title: `${clanName} · Nouveautés`,
     color,
     fields,
     footer: { text: `Constat fait le : ${date} ${time}` },
@@ -238,6 +314,22 @@ async function main() {
           { tag: "#FAKEARRIVAL2", name: "AutreArrivée" },
         ],
         [{ tag: "#FAKEDEPART1", name: "AncienMembre" }],
+        [
+          {
+            tag: "#FAKEPROMO1",
+            name: "displaynone",
+            oldRole: "member",
+            newRole: "elder",
+          },
+        ],
+        [
+          {
+            tag: "#FAKEREV1",
+            name: "slowfall",
+            oldRole: "elder",
+            newRole: "member",
+          },
+        ],
       );
     }
     return;
@@ -264,6 +356,8 @@ async function main() {
       const notified = notifiedChanges[tag] ?? {
         arrivals: [],
         departures: [],
+        promotions: [],
+        demotions: [],
       };
 
       const arrivals = [...current.tags]
@@ -274,10 +368,40 @@ async function main() {
         .filter((t) => !current.tags.has(t))
         .map((t) => ({ tag: t, name: cached.names.get(t) ?? t }));
 
-      // Retirer des notifications déjà envoyées les joueurs qui sont revenus.
+      const roleChanges = [...current.tags]
+        .filter((t) => cached.tags.has(t))
+        .map((tag) => {
+          const oldRole = cached.roles.get(tag) ?? "member";
+          const newRole = current.roles.get(tag) ?? "member";
+          return { tag, oldRole, newRole };
+        })
+        .filter((change) => change.oldRole !== change.newRole);
+
+      const promotions = roleChanges.filter(
+        (change) =>
+          getRolePriority(change.newRole) > getRolePriority(change.oldRole),
+      );
+      const demotions = roleChanges.filter(
+        (change) =>
+          getRolePriority(change.newRole) < getRolePriority(change.oldRole),
+      );
+
+      // Retirer des notifications déjà envoyées les joueurs qui sont revenus ou dont le changement de rôle a disparu.
       notified.arrivals = notified.arrivals.filter((t) => current.tags.has(t));
       notified.departures = notified.departures.filter(
         (t) => !current.tags.has(t),
+      );
+      notified.promotions = notified.promotions.filter(
+        (t) =>
+          current.tags.has(t) &&
+          cached.tags.has(t) &&
+          current.roles.get(t) !== cached.roles.get(t),
+      );
+      notified.demotions = notified.demotions.filter(
+        (t) =>
+          current.tags.has(t) &&
+          cached.tags.has(t) &&
+          current.roles.get(t) !== cached.roles.get(t),
       );
 
       const newArrivals = arrivals.filter(
@@ -286,13 +410,31 @@ async function main() {
       const newDepartures = departures.filter(
         (d) => !notified.departures.includes(d.tag),
       );
+      const newPromotions = promotions.filter(
+        (p) => !notified.promotions.includes(p.tag),
+      );
+      const newDemotions = demotions.filter(
+        (d) => !notified.demotions.includes(d.tag),
+      );
 
-      if (newArrivals.length === 0 && newDepartures.length === 0) {
+      if (
+        newArrivals.length === 0 &&
+        newDepartures.length === 0 &&
+        newPromotions.length === 0 &&
+        newDemotions.length === 0
+      ) {
         const nbArrivals = arrivals.length;
         const nbDepartures = departures.length;
-        if (nbArrivals > 0 || nbDepartures > 0) {
+        const nbPromotions = promotions.length;
+        const nbDemotions = demotions.length;
+        if (
+          nbArrivals > 0 ||
+          nbDepartures > 0 ||
+          nbPromotions > 0 ||
+          nbDemotions > 0
+        ) {
           console.log(
-            `[${tag}] Aucun nouveau changement de membres à notifier — mêmes tags déjà traités.`,
+            `[${tag}] Aucun nouveau changement de membres à notifier — mêmes tags/rôles déjà traités.`,
           );
         } else {
           console.log(`[${tag}] Aucun changement de membres.`);
@@ -303,10 +445,15 @@ async function main() {
       }
 
       console.log(
-        `[${tag}] Changements détectés — ${newArrivals.length} arrivée(s), ${newDepartures.length} départ(s) (après dédup).`,
+        `[${tag}] Changements détectés — ${newArrivals.length} arrivée(s), ${newDepartures.length} départ(s), ${newPromotions.length} promotion(s), ${newDemotions.length} rétrogradation(s) (après dédup).`,
       );
 
-      const allChanges = [...newArrivals, ...newDepartures];
+      const allChanges = [
+        ...newArrivals,
+        ...newDepartures,
+        ...newPromotions,
+        ...newDemotions,
+      ];
       await Promise.all(
         allChanges.map(async (m) => {
           try {
@@ -319,7 +466,14 @@ async function main() {
         }),
       );
 
-      await postDiscordEmbed(tag, clanName, newArrivals, newDepartures);
+      await postDiscordEmbed(
+        tag,
+        clanName,
+        newArrivals,
+        newDepartures,
+        newPromotions,
+        newDemotions,
+      );
 
       if (!DRY_RUN) {
         notified.arrivals = Array.from(
@@ -327,6 +481,12 @@ async function main() {
         );
         notified.departures = Array.from(
           new Set([...notified.departures, ...newDepartures.map((d) => d.tag)]),
+        );
+        notified.promotions = Array.from(
+          new Set([...notified.promotions, ...newPromotions.map((p) => p.tag)]),
+        );
+        notified.demotions = Array.from(
+          new Set([...notified.demotions, ...newDemotions.map((d) => d.tag)]),
         );
         notifiedChanges[tag] = notified;
         await saveNotifiedChanges(notifiedChanges);

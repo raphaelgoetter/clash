@@ -51,7 +51,7 @@ Liste des commandes :
 
 En plus des commandes du Bot, deux scripts permettent de publier automatiquement des messages dans les channels Discord des clans :
 
-1. **Entrées/Sorties** : détecte les entrées et sorties de membres par comparaison entre deux snapshots. Post automatique dans le channel Discord du clan.
+1. **Nouveautés** : détecte les arrivées, départs et changements de rôle des membres par comparaison entre deux snapshots. Post automatique dans le channel Discord du clan.
 2. **Résumé GDC** : poste un résumé de la journée de GDC qui vient de se terminer dans chaque channel clan. Poste un résumé de la semaine lorsque le dernier jour de la GDC est terminé.
 
 <img width="802" height="656" alt="image" src="https://github.com/user-attachments/assets/7b0409be-0518-424f-a959-3c4a1fbb22b5" />
