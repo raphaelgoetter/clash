@@ -2111,7 +2111,9 @@ export default async function handler(req, res) {
               : "";
 
           let prevWarStr =
-            clan.prevWarFame != null ? `🛡️ ${fmt(clan.prevWarFame)} (n-2)` : "";
+            clan.prevWarFame != null
+              ? `<:battle:1493710671244689449> ${fmt(clan.prevWarFame)} (n-2)`
+              : "";
 
           let trend = "";
           if (clan.lastWarFame != null && clan.prevWarFame != null) {
@@ -2120,7 +2122,7 @@ export default async function handler(req, res) {
           }
           let lastWarStr =
             clan.lastWarFame != null
-              ? `⚔️ **${fmt(clan.lastWarFame)}** (Last)${trend}`
+              ? `<:battle:1493710671244689449> **${fmt(clan.lastWarFame)}** (Last)${trend}`
               : "";
 
           let line1 = `${rank} ${bold}${nameStr}${bold} ${trophies}`.trim();
@@ -2130,8 +2132,8 @@ export default async function handler(req, res) {
 
           // Ajouter indicateurs GDC si disponibles
           if (isWarPeriod && clan.projectedFame != null) {
-            const decks = `🎴 ${clan.decksToday != null ? clan.decksToday : "?"} decks`;
-            const eff = `🎯 ${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(1) : "?"} pts/d`;
+            const decks = `<:cards:1493711279121104926> ${clan.decksToday != null ? clan.decksToday : "?"} decks`;
+            const eff = `<:cible:1493711597682557019> ${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(1) : "?"} pts/d`;
             const proj = `🔮 Proj: **${fmt(Math.round(clan.projectedFame))}**`;
             row += `\n${decks} · ${eff} · ${proj}`;
           }
@@ -2140,8 +2142,8 @@ export default async function handler(req, res) {
         });
 
         const footerText = isWarPeriod
-          ? `Trié par Projection · 🛡️ n-2 GDC · ⚔️ Dernière GDC · 🔮 Estimé fin de journée`
-          : `Trié par Total Dernière GDC · 🛡️ n-2 GDC · ⚔️ Dernière GDC`;
+          ? `Trié par Projection · <:battle:1493710671244689449> n-2 GDC · <:battle:1493710671244689449> Dernière GDC · 🔮 Estimé fin de journée`
+          : `Trié par Total Dernière GDC · <:battle:1493710671244689449> n-2 GDC · <:battle:1493710671244689449> Dernière GDC`;
 
         const embed = {
           title: `<:trophy2:1493677804733337621> Groupe de GDC — ${resolved.name}`,
