@@ -723,11 +723,11 @@ export default async function handler(req, res) {
         const weekId =
           analysis.prevWeekId || analysis.clanWarSummary?.weekId || "S?";
         const embed = {
-          title: `⚠️  ${resolved.name} (${filtered.length} joueurs à risque)`,
+          title: `<:question:1493704366786482376> ${resolved.name} (${filtered.length} risqués)`,
           url: clanUrl,
           color: 0xe67e22,
           description,
-          footer: { text: `Clan : ${resolved.name} · Semaine : ${weekId}` },
+          footer: { text: `${resolved.name} · Semaine : ${weekId}` },
         };
 
         await fetch(webhookUrl, {
