@@ -1128,7 +1128,7 @@ export default async function handler(req, res) {
             players = seasonSorted.filter((p) => p.fame >= cutoffFame);
           }
         } else {
-          title = `<:trophy:1493670704644751390>Meilleurs joueurs de la famille - semaine précédente`;
+          title = `<:trophy2:1493677804733337621> Meilleurs joueurs de la famille - semaine précédente`;
           const weekRef = (function () {
             for (const clan of CLANS) {
               const raceLog = clanRaceLogs[clan.tag];
