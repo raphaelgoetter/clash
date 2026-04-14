@@ -1079,7 +1079,7 @@ export default async function handler(req, res) {
             throw new Error("Impossible de déterminer la saison cible.");
           }
 
-          title = `<:trophy2:1493677804733337621> Meilleurs joueurs`;
+          title = `<:topplayers:1493708397407899648> Meilleurs joueurs`;
           footer = `😎 Meilleurs joueurs de la saison précédente (S${selectedSeason})`;
           if (currentSeason != null && currentSeason !== selectedSeason) {
             footer += ` (la S${currentSeason} n'est pas terminée)`;
@@ -1128,7 +1128,7 @@ export default async function handler(req, res) {
             players = seasonSorted.filter((p) => p.fame >= cutoffFame);
           }
         } else {
-          title = `<:trophy2:1493677804733337621> Meilleurs joueurs`;
+          title = `<:topplayers:1493708397407899648> Meilleurs joueurs`;
           const weekRef = (function () {
             for (const clan of CLANS) {
               const raceLog = clanRaceLogs[clan.tag];
