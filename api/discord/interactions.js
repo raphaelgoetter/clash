@@ -1079,8 +1079,8 @@ export default async function handler(req, res) {
             throw new Error("Impossible de déterminer la saison cible.");
           }
 
-          title = `<:trophy2:1493677804733337621> Meilleurs joueurs de la famille - saison précédente`;
-          footer = `Famille Resistance · Saison : S${selectedSeason}`;
+          title = `<:trophy2:1493677804733337621> Meilleurs joueurs`;
+          footer = `Meilleurs joueurs de la saison précédente (S${selectedSeason})`;
           if (currentSeason != null && currentSeason !== selectedSeason) {
             footer += ` (la S${currentSeason} n'est pas terminée)`;
           }
@@ -1128,7 +1128,7 @@ export default async function handler(req, res) {
             players = seasonSorted.filter((p) => p.fame >= cutoffFame);
           }
         } else {
-          title = `<:trophy2:1493677804733337621> Meilleurs joueurs de la famille - semaine précédente`;
+          title = `<:trophy2:1493677804733337621> Meilleurs joueurs`;
           const weekRef = (function () {
             for (const clan of CLANS) {
               const raceLog = clanRaceLogs[clan.tag];
@@ -1138,7 +1138,7 @@ export default async function handler(req, res) {
             return null;
           })();
 
-          footer = `Famille Resistance · Semaine : ${weekRef ?? "S?-W?"}`;
+          footer = `Meilleurs joueurs de la semaine précédente (${weekRef ?? "S?-W?"})`;
 
           const weekSorted = allTeams.sort(
             (a, b) =>
@@ -1172,7 +1172,7 @@ export default async function handler(req, res) {
             const clan = p.clan || "?";
             const fame = p.fame || 0;
             const fameStr = fame.toLocaleString("fr-FR");
-            return `${idx + 1}. [${name}](${playerUrl}) (${clan}) · **${fameStr} pts**`;
+            return `${idx + 1}. [${name}](${playerUrl}) (${clan})\n**${fameStr} pts**`;
           })
           .join("\n");
 
