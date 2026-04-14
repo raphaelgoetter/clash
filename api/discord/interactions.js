@@ -1180,7 +1180,10 @@ export default async function handler(req, res) {
           title,
           color: 0x5865f2,
           description: rows,
-          footer: { text: footer },
+          footer: {
+            text: footer,
+            icon_url: "https://trustroyale.vercel.app/icons/princess-wink.webp",
+          },
         };
 
         await fetch(webhookUrl, {
