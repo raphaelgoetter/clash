@@ -1079,7 +1079,7 @@ export default async function handler(req, res) {
             throw new Error("Impossible de déterminer la saison cible.");
           }
 
-          title = `🏅Meilleurs joueurs de la famille - saison précédente`;
+          title = `<:trophy:1493670704644751390>Meilleurs joueurs de la famille - saison précédente`;
           footer = `Famille Resistance · Saison : S${selectedSeason}`;
           if (currentSeason != null && currentSeason !== selectedSeason) {
             footer += ` (la S${currentSeason} n'est pas terminée)`;
@@ -1128,7 +1128,7 @@ export default async function handler(req, res) {
             players = seasonSorted.filter((p) => p.fame >= cutoffFame);
           }
         } else {
-          title = `🏅Meilleurs joueurs de la famille - semaine précédente`;
+          title = `<:trophy:1493670704644751390>Meilleurs joueurs de la famille - semaine précédente`;
           const weekRef = (function () {
             for (const clan of CLANS) {
               const raceLog = clanRaceLogs[clan.tag];
