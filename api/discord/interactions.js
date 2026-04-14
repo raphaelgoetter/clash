@@ -1079,7 +1079,7 @@ export default async function handler(req, res) {
             throw new Error("Impossible de déterminer la saison cible.");
           }
 
-          title = `<:trophy:1493670704644751390>Meilleurs joueurs de la famille - saison précédente`;
+          title = `<:trophybig:1493673701554651277> Meilleurs joueurs de la famille - saison précédente`;
           footer = `Famille Resistance · Saison : S${selectedSeason}`;
           if (currentSeason != null && currentSeason !== selectedSeason) {
             footer += ` (la S${currentSeason} n'est pas terminée)`;
