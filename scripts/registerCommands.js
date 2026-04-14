@@ -198,13 +198,19 @@ const commands = [
   {
     name: "top-players",
     description:
-      "Liste les meilleurs joueurs de la famille pour la semaine/saison actuelle ou précédente.",
+      "Liste les meilleurs joueurs de la famille pour la semaine ou la saison précédente.",
     options: [
       {
         type: 4, // INTEGER
         name: "number",
-        description: "Nombre de joueurs à afficher (par défaut 5).",
+        description:
+          "Nombre de joueurs à afficher (3, 5 ou 10 ; par défaut 5).",
         required: false,
+        choices: [
+          { name: "3", value: 3 },
+          { name: "5", value: 5 },
+          { name: "10", value: 10 },
+        ],
       },
       {
         type: 3, // STRING
@@ -214,16 +220,6 @@ const commands = [
         choices: [
           { name: "week", value: "week" },
           { name: "season", value: "season" },
-        ],
-      },
-      {
-        type: 3, // STRING
-        name: "scope",
-        description: "Période : previous (défaut) ou actual.",
-        required: false,
-        choices: [
-          { name: "previous", value: "previous" },
-          { name: "actual", value: "actual" },
         ],
       },
     ],

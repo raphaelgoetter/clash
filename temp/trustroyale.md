@@ -76,7 +76,7 @@ C’est un outil conçu pour être **proactif** : on détecte les membres à ris
 /chelem clan:1
 ```
 
-### 4) `/top-players number:X period:[week|season] scope:[previous|actual]`
+### 4) `/top-players number:[3|5|10] period:[week|season]`
 
 ➡️ Liste les top X joueurs (tous clans) sur la période demandée.
 
@@ -93,7 +93,7 @@ C’est un outil conçu pour être **proactif** : on détecte les membres à ris
 
 /chelem clan:1 season:129
 
-```
+````
 
 ### 5) `/discord-link tag:#TAG`
 
@@ -105,7 +105,7 @@ C’est un outil conçu pour être **proactif** : on détecte les membres à ris
 
 ```text
 /discord-link tag:#YRGJGR8R
-```
+````
 
 Plusieurs tags peuvent être liés (ex : pour les comptes secondaires) en ajoutant `tag2:#TAG` et `tag3:#TAG` dans la commande.
 

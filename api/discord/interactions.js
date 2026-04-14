@@ -471,7 +471,7 @@ export default async function handler(req, res) {
             "- `/late clan:N` : liste les retardataires GDC du jour\n" +
             "- `/compare clan:N` : affiche les clans du groupe GDC\n" +
             "- `/chelem clan:N [season:X]` : 16/16 decks toutes semaines d'une saison entière\n" +
-            "- `/top-players number:X period:[week|season] scope:[previous|actual]` : meilleurs joueurs de toute la famille\n" +
+            "- `/top-players number:[3|5|10] period:[week|season]` : meilleurs joueurs de toute la famille (période précédente)\n" +
             "- `/battles-per-day clan:N` : activités moyennes selon les 30 dernières batailles (Battle log)\n" +
             "- `/discord-link tag:#TAG [tag2] [tag3]` : lie ton tag Clash à Discord\n" +
             "- `/discord-check clan:N` : vérifie la présence Discord\n" +
@@ -943,18 +943,20 @@ export default async function handler(req, res) {
   if (body.type === 2 && body.data?.name === "top-players") {
     const numberOpt = body.data.options?.find((o) => o.name === "number");
     const periodOpt = body.data.options?.find((o) => o.name === "period");
-    const scopeOpt = body.data.options?.find((o) => o.name === "scope");
 
-    const limit = Math.min(Math.max(1, Number(numberOpt?.value ?? 5) || 5), 30);
+    const allowedNumbers = [3, 5, 10];
+    const requestedNumber = Number(numberOpt?.value ?? 5) || 5;
+    const limit = allowedNumbers.includes(requestedNumber)
+      ? requestedNumber
+      : 5;
     const period = (periodOpt?.value || "week").toString().toLowerCase();
-    const scope = (scopeOpt?.value || "previous").toString().toLowerCase();
 
     res.status(200).json({ type: 5 });
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
 
     runBackground(async () => {
       try {
-        const { fetchRaceLog, fetchClanMembers, fetchCurrentRace } =
+        const { fetchRaceLog, fetchClanMembers } =
           await import("../../backend/services/clashApi.js");
 
         const CLANS = [
@@ -969,7 +971,6 @@ export default async function handler(req, res) {
         let currentSeason = null;
         let defaultSeason = null; // determined from first clan race log, same logic as /chelem
         const clanRaceLogs = {};
-        const currentRaceByClan = {};
 
         const {
           computeCurrentSeasonId,
@@ -978,19 +979,16 @@ export default async function handler(req, res) {
         } = await import("../../backend/services/dateUtils.js");
 
         for (const clan of CLANS) {
-          const [raceLog, members, currentRace] = await Promise.all([
+          const [raceLog, members] = await Promise.all([
             fetchRaceLog(`#${clan.tag}`),
             fetchClanMembers(`#${clan.tag}`),
-            fetchCurrentRace(`#${clan.tag}`).catch(() => null),
           ]);
-
-          currentRaceByClan[clan.tag] = currentRace;
 
           if (Array.isArray(raceLog) && raceLog.length > 0) {
             clanRaceLogs[clan.tag] = raceLog;
 
             if (currentSeason === null) {
-              currentSeason = computeCurrentSeasonId(currentRace, raceLog);
+              currentSeason = computeCurrentSeasonId(null, raceLog);
             }
 
             if (defaultSeason === null) {
@@ -1022,7 +1020,7 @@ export default async function handler(req, res) {
               : null;
             const participants = standing?.clan?.participants ?? [];
 
-            // we will populate `allTeams` after accumulations depending on scope
+            // we will populate `allTeams` after accumulations.
 
             members.forEach((m) => {
               const normalized = m.tag?.toUpperCase?.() || "";
@@ -1041,53 +1039,28 @@ export default async function handler(req, res) {
           }
         }
 
-        // Build record for week mode based on requested scope.
+        // Build record for week mode.
         if (period === "week") {
-          if (scope === "actual") {
-            for (const clan of CLANS) {
-              const currentRace = currentRaceByClan[clan.tag];
-              const participants = currentRace?.clan?.participants ?? [];
-              if (Array.isArray(participants) && participants.length > 0) {
-                for (const p of participants) {
-                  const tag = p.tag?.toUpperCase?.() || "";
-                  const role = allMembers.get(tag)?.role || "member";
-                  allTeams.push({
-                    tag,
-                    name: p.name || "",
-                    clan: clan.name,
-                    role,
-                    fame: p.fame || 0,
-                  });
-                }
-              }
-            }
-          }
-
-          // fallback to previous (last completed week) when no actual data available
-          if (scope === "previous" || allTeams.length === 0) {
-            for (const clan of CLANS) {
-              const raceLog = clanRaceLogs[clan.tag];
-              const lastWeek =
-                Array.isArray(raceLog) && raceLog.length > 0
-                  ? raceLog[0]
-                  : null;
-              const standing = Array.isArray(lastWeek?.standings)
-                ? lastWeek.standings.find(
-                    (s) => s.clan?.tag?.toUpperCase() === `#${clan.tag}`,
-                  )
-                : null;
-              const participants = standing?.clan?.participants ?? [];
-              for (const p of participants) {
-                const tag = p.tag?.toUpperCase?.() || "";
-                const role = allMembers.get(tag)?.role || "member";
-                allTeams.push({
-                  tag,
-                  name: p.name || "",
-                  clan: clan.name,
-                  role,
-                  fame: p.fame || 0,
-                });
-              }
+          for (const clan of CLANS) {
+            const raceLog = clanRaceLogs[clan.tag];
+            const lastWeek =
+              Array.isArray(raceLog) && raceLog.length > 0 ? raceLog[0] : null;
+            const standing = Array.isArray(lastWeek?.standings)
+              ? lastWeek.standings.find(
+                  (s) => s.clan?.tag?.toUpperCase() === `#${clan.tag}`,
+                )
+              : null;
+            const participants = standing?.clan?.participants ?? [];
+            for (const p of participants) {
+              const tag = p.tag?.toUpperCase?.() || "";
+              const role = allMembers.get(tag)?.role || "member";
+              allTeams.push({
+                tag,
+                name: p.name || "",
+                clan: clan.name,
+                role,
+                fame: p.fame || 0,
+              });
             }
           }
         }
@@ -1101,26 +1074,15 @@ export default async function handler(req, res) {
             throw new Error("Impossible de trouver une saison dans les logs.");
           }
 
-          const selectedSeason =
-            scope === "actual" ? currentSeason || defaultSeason : defaultSeason;
+          const selectedSeason = defaultSeason;
           if (selectedSeason == null) {
             throw new Error("Impossible de déterminer la saison cible.");
           }
 
-          title = `🏅Meilleurs joueurs de la famille - saison ${scope === "actual" ? "actuelle" : "précédente"}`;
+          title = `🏅Meilleurs joueurs de la famille - saison précédente`;
           footer = `Famille Resistance · Saison : S${selectedSeason}`;
-          if (
-            scope === "previous" &&
-            currentSeason != null &&
-            currentSeason !== selectedSeason
-          ) {
+          if (currentSeason != null && currentSeason !== selectedSeason) {
             footer += ` (la S${currentSeason} n'est pas terminée)`;
-          } else if (
-            scope === "actual" &&
-            currentSeason != null &&
-            currentSeason !== selectedSeason
-          ) {
-            footer += ` (la S${currentSeason} est celle en cours)`;
           }
 
           const seasonTotals = new Map();
@@ -1152,48 +1114,43 @@ export default async function handler(req, res) {
             }
           }
 
-          players = Array.from(seasonTotals.entries())
+          const seasonSorted = Array.from(seasonTotals.entries())
             .map(([tag, data]) => ({ tag, ...data }))
             .sort(
               (a, b) =>
                 b.fame - a.fame ||
                 a.name.localeCompare(b.name, "fr", { sensitivity: "base" }),
-            )
-            .slice(0, limit);
+            );
+          if (seasonSorted.length <= limit) {
+            players = seasonSorted;
+          } else {
+            const cutoffFame = seasonSorted[limit - 1].fame;
+            players = seasonSorted.filter((p) => p.fame >= cutoffFame);
+          }
         } else {
-          title = `🏅Meilleurs joueurs de la famille - semaine ${scope === "actual" ? "actuelle" : "précédente"}`;
-          const weekRef =
-            scope === "actual"
-              ? (function () {
-                  for (const clan of CLANS) {
-                    const currentRace = currentRaceByClan[clan.tag];
-                    const raceLog = clanRaceLogs[clan.tag];
-                    const currentWeekId = computeCurrentWeekId(
-                      currentRace,
-                      raceLog,
-                    );
-                    if (currentWeekId) return currentWeekId;
-                  }
-                  return null;
-                })()
-              : (function () {
-                  for (const clan of CLANS) {
-                    const raceLog = clanRaceLogs[clan.tag];
-                    const prevWeekId = computePrevWeekId(raceLog);
-                    if (prevWeekId) return prevWeekId;
-                  }
-                  return null;
-                })();
+          title = `🏅Meilleurs joueurs de la famille - semaine précédente`;
+          const weekRef = (function () {
+            for (const clan of CLANS) {
+              const raceLog = clanRaceLogs[clan.tag];
+              const prevWeekId = computePrevWeekId(raceLog);
+              if (prevWeekId) return prevWeekId;
+            }
+            return null;
+          })();
 
           footer = `Famille Resistance · Semaine : ${weekRef ?? "S?-W?"}`;
 
-          players = allTeams
-            .sort(
-              (a, b) =>
-                b.fame - a.fame ||
-                a.name.localeCompare(b.name, "fr", { sensitivity: "base" }),
-            )
-            .slice(0, limit);
+          const weekSorted = allTeams.sort(
+            (a, b) =>
+              b.fame - a.fame ||
+              a.name.localeCompare(b.name, "fr", { sensitivity: "base" }),
+          );
+          if (weekSorted.length <= limit) {
+            players = weekSorted;
+          } else {
+            const cutoffFame = weekSorted[limit - 1].fame;
+            players = weekSorted.filter((p) => p.fame >= cutoffFame);
+          }
         }
 
         if (players.length === 0) {
