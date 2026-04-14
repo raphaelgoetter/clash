@@ -361,11 +361,14 @@ async function main() {
         continue;
       }
 
-      const notified = notifiedChanges[tag] ?? {
+      // Fusionner avec les valeurs par défaut pour que les clés promotions/demotions
+      // existent même si l'entrée du clan dans le fichier JSON est antérieure à leur ajout.
+      const notified = {
         arrivals: [],
         departures: [],
         promotions: [],
         demotions: [],
+        ...(notifiedChanges[tag] ?? {}),
       };
 
       const arrivals = [...current.tags]
@@ -465,23 +468,26 @@ async function main() {
         `[${tag}] Changements détectés — ${newArrivals.length} arrivée(s), ${newDepartures.length} départ(s), ${newPromotions.length} promotion(s), ${newDemotions.length} rétrogradation(s) (après dédup).`,
       );
 
-      const allChanges = [
-        ...newArrivals,
-        ...newDepartures,
-        ...newPromotions,
-        ...newDemotions,
-      ];
-      await Promise.all(
-        allChanges.map(async (m) => {
-          try {
-            m.analysis = await getPlayerAnalysis(m.tag);
-          } catch (err) {
-            console.warn(
-              `[${tag}] Impossible de récupérer l'analyse pour ${m.tag}: ${err.message}`,
-            );
-          }
-        }),
-      );
+      // En dry-run, on ne récupère pas l'analyse pour ne pas ralentir la vérification.
+      if (!DRY_RUN) {
+        const allChanges = [
+          ...newArrivals,
+          ...newDepartures,
+          ...newPromotions,
+          ...newDemotions,
+        ];
+        await Promise.all(
+          allChanges.map(async (m) => {
+            try {
+              m.analysis = await getPlayerAnalysis(m.tag);
+            } catch (err) {
+              console.warn(
+                `[${tag}] Impossible de récupérer l'analyse pour ${m.tag}: ${err.message}`,
+              );
+            }
+          }),
+        );
+      }
 
       await postDiscordEmbed(
         tag,
