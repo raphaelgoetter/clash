@@ -1080,7 +1080,7 @@ export default async function handler(req, res) {
           }
 
           title = `<:trophy2:1493677804733337621> Meilleurs joueurs`;
-          footer = `<:princesswink:1493700353735262249> Meilleurs joueurs de la saison précédente (S${selectedSeason})`;
+          footer = `😎 Meilleurs joueurs de la saison précédente (S${selectedSeason})`;
           if (currentSeason != null && currentSeason !== selectedSeason) {
             footer += ` (la S${currentSeason} n'est pas terminée)`;
           }
@@ -1138,7 +1138,7 @@ export default async function handler(req, res) {
             return null;
           })();
 
-          footer = `<:princesswink:1493700353735262249> Meilleurs joueurs de la semaine précédente (${weekRef ?? "S?-W?"})`;
+          footer = `😎 Meilleurs joueurs de la semaine précédente (${weekRef ?? "S?-W?"})`;
 
           const weekSorted = allTeams.sort(
             (a, b) =>
