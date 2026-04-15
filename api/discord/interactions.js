@@ -1820,6 +1820,14 @@ export default async function handler(req, res) {
 
         const participants = race?.clan?.participants ?? [];
 
+        // Hors journée de GDC : afficher un message explicite et ne rien calculer
+        if (race?.periodType !== "warDay") {
+          await sendToWebhook({
+            content: `⏸️ **${resolved.name}** — Aucune journée de GDC en cours (période d'entraînement). Les decks joués affichés par l'API correspondent à la dernière journée GDC.`,
+          });
+          return;
+        }
+
         // Récupération éventuelle des statuts isNew/isFamilyTransfer pour /late
         // Timeout court (10s) car ces annotations sont facultatives — le /late doit
         // impérativement s'exécuter en moins de 60s (limite Vercel, fonction interactions.js).
