@@ -483,25 +483,25 @@ export default async function handler(req, res) {
             "Usage : liste les joueurs n'ayant pas joué 16/16 decks (semaine précédente)\n\n" +
             "**Late**\n" +
             "Commande : `/late clan:N`\n" +
-            "Usage : liste les retardataires GDC du jour\n\n" +
+            "Usage : liste les retardataires GDC actuels (à faire avant reset)\n\n" +
             "**Compare**\n" +
             "Commande : `/compare clan:N`\n" +
-            "Usage : affiche les clans du groupe GDC\n\n" +
+            "Usage : compare les 5 clans du groupe GDC\n\n" +
             "**Chelem**\n" +
             "Commande : `/chelem clan:N [season:X]`\n" +
-            "Usage : 16/16 decks toutes semaines d'une saison entière\n\n" +
+            "Usage : joueurs ayant fait 16/16 decks toutes semaines d'une saison entière\n\n" +
             "**Top Players**\n" +
             "Commande : `/top-players number:[3|5|10] period:[week|season]`\n" +
-            "Usage : meilleurs joueurs de toute la famille (période précédente)\n\n" +
+            "Usage : meilleurs joueurs de toute la famille (semaine ou saison précédente)\n\n" +
             "**Battles Per Day**\n" +
             "Commande : `/battles-per-day clan:N`\n" +
             "Usage : activités moyennes selon les 30 dernières batailles (Battle log)\n\n" +
             "**Discord Link**\n" +
             "Commande : `/discord-link tag:#TAG [tag2] [tag3]`\n" +
-            "Usage : lie ton tag Clash à Discord\n\n" +
+            "Usage : lie ton tag Clash à Discord (à faire par un membre)\n\n" +
             "**Discord Check**\n" +
             "Commande : `/discord-check clan:N`\n" +
-            "Usage : vérifie la présence Discord\n\n" +
+            "Usage : vérifie la présence Discord des membres d'un clan\n\n" +
             "**Help**\n" +
             "Commande : `/help`\n" +
             "Usage : affiche cette fenêtre",
