@@ -225,7 +225,7 @@ async function postDiscordEmbed(
 
   if (arrivals.length > 0) {
     fields.push({
-      name: `🟢 Arrivée${arrivals.length > 1 ? "s" : ""} (${arrivals.length})`,
+      name: `<:hi:1493849416514277426> Arrivée${arrivals.length > 1 ? "s" : ""} (${arrivals.length})`,
       value: arrivals.map(formatMemberLine).join("\n"),
       inline: false,
     });
@@ -233,7 +233,7 @@ async function postDiscordEmbed(
 
   if (departures.length > 0) {
     fields.push({
-      name: `🔴 Départ${departures.length > 1 ? "s" : ""} (${departures.length})`,
+      name: `<:bye:1493849413901222019> Départ${departures.length > 1 ? "s" : ""} (${departures.length})`,
       value: departures.map(formatMemberLine).join("\n"),
       inline: false,
     });
@@ -241,7 +241,7 @@ async function postDiscordEmbed(
 
   if (promotions.length > 0) {
     fields.push({
-      name: `🔼 Promotions (${promotions.length})`,
+      name: `<:princesswink:1493700353735262249> Promotions (${promotions.length})`,
       value: promotions.map(formatRoleChangeLine).join("\n"),
       inline: false,
     });
@@ -249,7 +249,7 @@ async function postDiscordEmbed(
 
   if (demotions.length > 0) {
     fields.push({
-      name: `🔽 Rétrogradations (${demotions.length})`,
+      name: `<:boohoo:1493849412387209357> Rétrogradations (${demotions.length})`,
       value: demotions.map(formatRoleChangeLine).join("\n"),
       inline: false,
     });
@@ -265,7 +265,7 @@ async function postDiscordEmbed(
   });
 
   const embed = {
-    title: `${clanName} · Nouveautés`,
+    title: `<:scroll:1493850130560847892> ${clanName} · Nouveautés`,
     color,
     fields,
     footer: { text: `Constat fait le : ${date} ${time}` },
