@@ -469,19 +469,42 @@ export default async function handler(req, res) {
             "<:interrogation:1493849417520906271> TrustRoyale — Guide des commandes",
           color: 0x5865f2,
           description:
-            "- `/trust tag:#TAG` : analyse la fiabilité d'un joueur\n" +
-            "- `/trust-clan clan:N` : liste les membres risqués du clan\n" +
-            "- `/promote clan:N` : liste les joueurs ≥ 2600 pts semaine précédente\n" +
-            "- `/demote clan:N` : liste les joueurs n'ayant pas joué 16/16 decks (semaine précédente)\n" +
-            "- `/late clan:N` : liste les retardataires GDC du jour\n" +
-            "- `/compare clan:N` : affiche les clans du groupe GDC\n" +
-            "- `/chelem clan:N [season:X]` : 16/16 decks toutes semaines d'une saison entière\n" +
-            "- `/top-players number:[3|5|10] period:[week|season]` : meilleurs joueurs de toute la famille (période précédente)\n" +
-            "- `/battles-per-day clan:N` : activités moyennes selon les 30 dernières batailles (Battle log)\n" +
-            "- `/discord-link tag:#TAG [tag2] [tag3]` : lie ton tag Clash à Discord\n" +
-            "- `/discord-check clan:N` : vérifie la présence Discord\n" +
-            "- `/help` : affiche cette fenêtre",
-          footer: { text: "Utilise /help pour réafficher ce menu." },
+            "Trust\n" +
+            "Commande : `/trust tag:#TAG`\n" +
+            "Usage : donne le score de fiabilité d'un joueur à partir de son tag\n\n" +
+            "Trust Clan\n" +
+            "Commande : `/trust-clan clan:N`\n" +
+            "Usage : liste les membres risqués du clan\n\n" +
+            "Promote\n" +
+            "Commande : `/promote clan:N`\n" +
+            "Usage : liste les joueurs ≥ 2600 pts semaine précédente\n\n" +
+            "Demote\n" +
+            "Commande : `/demote clan:N`\n" +
+            "Usage : liste les joueurs n'ayant pas joué 16/16 decks (semaine précédente)\n\n" +
+            "Late\n" +
+            "Commande : `/late clan:N`\n" +
+            "Usage : liste les retardataires GDC du jour\n\n" +
+            "Compare\n" +
+            "Commande : `/compare clan:N`\n" +
+            "Usage : affiche les clans du groupe GDC\n\n" +
+            "Chelem\n" +
+            "Commande : `/chelem clan:N [season:X]`\n" +
+            "Usage : 16/16 decks toutes semaines d'une saison entière\n\n" +
+            "Top Players\n" +
+            "Commande : `/top-players number:[3|5|10] period:[week|season]`\n" +
+            "Usage : meilleurs joueurs de toute la famille (période précédente)\n\n" +
+            "Battles Per Day\n" +
+            "Commande : `/battles-per-day clan:N`\n" +
+            "Usage : activités moyennes selon les 30 dernières batailles (Battle log)\n\n" +
+            "Discord Link\n" +
+            "Commande : `/discord-link tag:#TAG [tag2] [tag3]`\n" +
+            "Usage : lie ton tag Clash à Discord\n\n" +
+            "Discord Check\n" +
+            "Commande : `/discord-check clan:N`\n" +
+            "Usage : vérifie la présence Discord\n\n" +
+            "Help\n" +
+            "Commande : `/help`\n" +
+            "Usage : affiche cette fenêtre",
         };
 
         await fetch(webhookUrl, {
