@@ -1823,7 +1823,7 @@ export default async function handler(req, res) {
         // Hors journée de GDC : afficher un message explicite et ne rien calculer
         if (race?.periodType !== "warDay") {
           await sendToWebhook({
-            content: `⏸️ **${resolved.name}** — Aucune journée de GDC en cours (période d'entraînement). Les decks joués affichés par l'API correspondent à la dernière journée GDC.`,
+            content: `⏸️ **${resolved.name}** — Aucune journée de GDC en cours (période d'entraînement).`,
           });
           return;
         }
