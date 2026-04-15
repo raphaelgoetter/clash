@@ -2024,7 +2024,7 @@ export default async function handler(req, res) {
         }
 
         const embed = {
-          title: `⏳  ${resolved.name}, retardataires de ${warDayLabel}`,
+          title: `<:boohoo:1493849412387209357> ${resolved.name}, retardataires de ${warDayLabel}`,
           description,
           color: 0xe67e22,
         };
