@@ -326,13 +326,21 @@ async function postWarSummary(
     // En Colisée le score journalier fluctue selon les matchs — le delta n'est pas significatif
     if (prevFame !== null && !isColosseum)
       line += ` ${fmtDelta(totalFame - prevFame)}`;
-    fields.push({ name: "⚔️ Points marqués", value: line, inline: false });
+    fields.push({
+      name: "<:trophy2:1493677804733337621> Points marqués",
+      value: line,
+      inline: false,
+    });
   }
 
   {
     let line = `${fmt(totalDecks)} decks`;
     if (prevDecks !== null) line += ` ${fmtDelta(totalDecks - prevDecks)}`;
-    fields.push({ name: "🃏 Decks joués", value: line, inline: false });
+    fields.push({
+      name: "<:cards:1493711279121104926> Decks joués",
+      value: line,
+      inline: false,
+    });
   }
 
   // ── Bilan de semaine (J4) ──
@@ -345,8 +353,8 @@ async function postWarSummary(
 
     if (weekly.totalFameWeek !== null) {
       const fameLabel = weekly.isColosseum
-        ? "🏆 Points totaux (Colisée)"
-        : "🏆 Points totaux";
+        ? "<:trophy2:1493677804733337621> Points totaux (Colisée)"
+        : "<:trophy2:1493677804733337621> Points totaux";
       fields.push({
         name: fameLabel,
         value: `${fmt(weekly.totalFameWeek)} pts`,
@@ -360,13 +368,13 @@ async function postWarSummary(
 
     const pct = Math.round((weekly.totalDecksWeek / DECKS_MAX_WEEK) * 100);
     fields.push({
-      name: "🃏 Decks semaine",
+      name: "<:cards:1493711279121104926> Decks semaine",
       value: `${fmt(weekly.totalDecksWeek)} / ${fmt(DECKS_MAX_WEEK)} (${pct}%)`,
       inline: false,
     });
 
     fields.push({
-      name: "📊 Moyenne / jour",
+      name: "<:battle:1493710671244689449> Moyenne / jour",
       value: `${weekly.avgDecksPerDay.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} decks`,
       inline: false,
     });
@@ -374,7 +382,7 @@ async function postWarSummary(
     // Classement final : J4 uniquement, standings disponibles en warDay et en Colisée
     if (clanRank !== null) {
       fields.push({
-        name: "🏅 Classement",
+        name: "<:topplayers:1493708397407899648> Classement",
         value: `${fmtRank(clanRank)} / 5`,
         inline: false,
       });
@@ -387,11 +395,11 @@ async function postWarSummary(
     fd && fmo && fy ? `${fd}/${fmo}/${fy}` : (dayEntry.realDay ?? "");
 
   const embed = {
-    title: clanName,
-    description: `Résumé Journée ${WAR_DAY_NUMBER[warDay]} de GDC (${WAR_DAY_FR[warDay]})`,
+    title: `<:scroll:1493850130560847892> ${clanName} · Résumé GDC`,
+    description: `Journée ${WAR_DAY_NUMBER[warDay]} (${WAR_DAY_FR[warDay]})`,
     color,
     fields,
-    footer: { text: `Journée du ${WAR_DAY_FR[warDay]} ${realDayFR}` },
+    footer: { text: `Constat fait le ${WAR_DAY_FR[warDay]} ${realDayFR}` },
   };
 
   if (DRY_RUN) {
