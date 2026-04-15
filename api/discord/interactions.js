@@ -585,11 +585,11 @@ export default async function handler(req, res) {
           description = rows.join("\n");
         }
         const embed = {
-          title: `🏅 Semaine de GDC précédente — ${clanName} (≥ ${min} pts)`,
+          title: `<:princesswink:1493700353735262249> ${clanName} (scores ≥ ${min} pts)`,
           color: 0x5865f2,
           description,
           footer: {
-            text: `Clan : ${clanName} · Quota : ${min} · Semaine : ${weekId}`,
+            text: `Quota : ${min} · Semaine : ${weekId}`,
           },
         };
 
@@ -1277,11 +1277,11 @@ export default async function handler(req, res) {
         const weekId =
           analysis.prevWeekId || analysis.clanWarSummary?.weekId || "S?";
         const embed = {
-          title: `🤷 Semaine de GDC précédente — ${resolved.name}`,
+          title: `<:interrogation:1493849417520906271> ${resolved.name} · Oublis`,
           url: clanUrl,
           color: 0xf1c40f,
           description,
-          footer: { text: `Clan : ${resolved.name} · Semaine : ${weekId}` },
+          footer: { text: `Combats non joués · Semaine : ${weekId}` },
         };
 
         await fetch(webhookUrl, {
