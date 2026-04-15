@@ -424,10 +424,14 @@ export default async function handler(req, res) {
           const scoreStr = `${item.score}/${item.max}`;
           rows.push(`${icon} ${label.padEnd(maxLabel)} ${scoreStr}`);
         }
-        const description = "```\n" + rows.join("\n") + "\n```";
+        const description =
+          `${emoji} ${pct} % (${verdictFr})\n\n` +
+          "```\n" +
+          rows.join("\n") +
+          "\n```";
 
         const embed = {
-          title: `${emoji} ${analysis.overview.name} ⤑ ${pct} % (${verdictFr})`,
+          title: `<:interrogation:1493849417520906271> Joueur : ${analysis.overview.name}`,
           url: `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(tag)}`,
           color: embedColor,
           description,
@@ -461,7 +465,8 @@ export default async function handler(req, res) {
     runBackground(async () => {
       try {
         const embed = {
-          title: "🛠️ TrustRoyale — Guide des commandes",
+          title:
+            "<:interrogation:1493849417520906271> TrustRoyale — Guide des commandes",
           color: 0x5865f2,
           description:
             "- `/trust tag:#TAG` : analyse la fiabilité d'un joueur\n" +
@@ -723,11 +728,10 @@ export default async function handler(req, res) {
         const weekId =
           analysis.prevWeekId || analysis.clanWarSummary?.weekId || "S?";
         const embed = {
-          title: `<:question:1493704366786482376> ${resolved.name} (${filtered.length} risqués)`,
+          title: `<:interrogation:1493849417520906271> ${resolved.name} (${filtered.length} risqués)`,
           url: clanUrl,
           color: 0xe67e22,
           description,
-          footer: { text: `${resolved.name} · Semaine : ${weekId}` },
         };
 
         await fetch(webhookUrl, {
