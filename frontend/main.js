@@ -1641,6 +1641,10 @@ function renderPlayerResults(data) {
   }
 
   // 3b. Actual Clan War (visible jeudi–dimanche)
+  const isFamilyWarPlayer = Boolean(
+    overview.clan?.tag && CLAN_OPTIONS.some((o) => o.tag === overview.clan.tag),
+  );
+
   renderCurrentWarCard(
     data.currentWarDays,
     data.warSnapshotDays,
@@ -1648,6 +1652,7 @@ function renderPlayerResults(data) {
     data.warSnapshotTakenAt,
     data.warResetUtcMinutes,
     data.decksYesterdayAtThisHour ?? null,
+    isFamilyWarPlayer,
   );
 
   // 4. War Reliability Score avec breakdown
@@ -1845,6 +1850,7 @@ function renderCurrentWarCard(
   snapshotTakenAt = null,
   warResetUtcMinutes = null,
   decksYesterdayAtThisHour = null,
+  showWarDayDetails = true,
 ) {
   if (!warData) {
     cardCurrentWar.classList.add("hidden");
@@ -1857,6 +1863,8 @@ function renderCurrentWarCard(
     : "";
   cardCurrentWar.querySelector(".card-title").innerHTML =
     `⚔️ ${t("currentClanWar")} ${weekLabel}`;
+
+  const showDetails = showWarDayDetails === true;
 
   // If we have snapshot data, prefer it for totals/daily counts (because battle log can be incomplete).
   const snapDays = Array.isArray(warSnapshotDays) ? warSnapshotDays : null;
@@ -2008,12 +2016,23 @@ function renderCurrentWarCard(
     })
     .join("");
 
+  const sourceNoteHtml = showDetails ? sourceNote : "";
+  const progressNoteHtml = showDetails
+    ? `<div class="war-progress-note">⚠ ${snapshotWarning}</div>`
+    : "";
+  const sourceHintHtml = showDetails
+    ? `<div class="war-progress-source">${sourceHint}</div>`
+    : "";
+  const dayChipsHtml = showDetails
+    ? `<div class="war-day-chips">${chipsHtml}</div>`
+    : "";
+
   warDaysGrid.innerHTML =
     `<div class="war-summary">` +
     `<div class="war-progress-row">` +
     `<span class="war-decks-count">${totalDecksUsed} <span class="war-decks-max">/ ${computedMaxElapsed}</span></span>` +
     `<span class="war-decks-label">${t("warDecksSoFar") || "decks so far"} ${getRemainingTimeHtml(warResetUtcMinutes)}</span>` +
-    sourceNote +
+    sourceNoteHtml +
     `</div>` +
     `<div class="war-progress-track">` +
     `<div class="war-progress-fill ${statusCls}" style="width:${pctFill}%"></div>` +
@@ -2022,10 +2041,10 @@ function renderCurrentWarCard(
     `${t("warProgressDayOf", { day: dayNum, total: 4 })}` +
     `</div>` +
     `${daysFromThu > 0 && decksYesterdayAtThisHour != null ? `<div class="war-yesterday-hint">${t("warDecksYesterdayHour").replace("{{decks}}", decksYesterdayAtThisHour)}</div>` : ""}` +
-    `<div class="war-progress-note">⚠ ${snapshotWarning}</div>` +
-    `${snapshotDataInvalid ? `<div class="war-progress-warning">⚠ ${t("warSnapshotDataInvalid")}</div>` : ""}` +
-    `<div class="war-progress-source">${sourceHint}</div>` +
-    `<div class="war-day-chips">${chipsHtml}</div>` +
+    `${progressNoteHtml}` +
+    `${showDetails && snapshotDataInvalid ? `<div class="war-progress-warning">⚠ ${t("warSnapshotDataInvalid")}</div>` : ""}` +
+    `${sourceHintHtml}` +
+    `${dayChipsHtml}` +
     `</div>`;
 }
 
