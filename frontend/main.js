@@ -2881,7 +2881,7 @@ function renderMembersTable(members) {
 
       const discordCell = currentClanIsLite
         ? ""
-        : `<td class="discord-col">${m.discord ? "✅" : "❓"}</td>`;
+        : `<td class="discord-col">${m.discord ? "✅" : "-"}</td>`;
       const reliabilityCell = currentClanIsLite
         ? ""
         : `<td>
