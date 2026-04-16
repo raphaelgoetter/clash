@@ -1706,6 +1706,10 @@ function renderPlayerResults(data) {
         /consecutive weeks in this clan/gi,
         "semaines consécutives dans le clan",
       )
+      .replace(
+        /points \/ week \(average weekly fame, 1,000–3,000\)/gi,
+        "points / semaine (gloire hebdomadaire moyenne, 1 000–3 000)",
+      )
       .replace(/fame \/ week \(cap 3,000\)/gi, t("avgFameCap"))
       .replace(/total cw2 wins \(cap 250\)/gi, t("cw2BattleWinsCap"))
       .replace(/victories in river race/gi, "victoires en River Race")
