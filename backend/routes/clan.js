@@ -574,7 +574,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
   const rivalLastWarByTag = {};
   const rivalPrevWarByTag = {};
   const rivalAvgDecksByTag = {}; // Moyenne quotidienne de la semaine passée
-  const rivalLastWarDecksByTag = {}; // Total decks semaine précédente (pour ptsPerDeck)
   const rivalCurrentRaceByTag = {};
 
   if (includeRaceGroup && Array.isArray(currentRace?.clans)) {
@@ -619,7 +618,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               const totalDecksLastWeek = sumParticipantsDecks(lastStanding);
               if (totalDecksLastWeek != null) {
                 rivalAvgDecksByTag[tagNorm] = totalDecksLastWeek / 4;
-                rivalLastWarDecksByTag[tagNorm] = totalDecksLastWeek;
               }
               const prevStanding = (rivalLog?.[1]?.standings ?? []).find(
                 (s) => (s.clan?.tag ?? "").toUpperCase() === tagNorm,
@@ -1949,14 +1947,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             buildCurrentWarDays([], null, currentRace, clanTag)?.daysFromThu ??
             0;
 
-          // Après le reset quotidien GDC, p.fame repart de 0 → on l'utilise directement
-          // Avant le reset, p.fame est cumulatif depuis la dernière remise à zéro
-          const nowMs = Date.now();
-          const msOfDayUtc =
-            new Date().getUTCHours() * 3600000 +
-            new Date().getUTCMinutes() * 60000;
-          const isAfterReset = msOfDayUtc >= warResetOffsetMs(clanTag);
-
           const groupWithProjections = currentRace.clans.map((c) => {
             const cTagNorm = (c.tag ?? "").toUpperCase();
             const isOwn = cTagNorm === ownTagNorm;
@@ -2018,62 +2008,36 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 //   fameToday[joueur] = p.fame − snapshot_J-1._cumulFame[p.tag]
                 // Rivaux : pas de snapshot → approximation hebdo (fame/decks, écart ~1%)
                 if (isOwn) {
-                  if (isAfterReset) {
-                    // Après reset : p.fame repart de 0 → représente uniquement la fame du jour
-                    // On l'utilise directement, pas besoin de soustraction snapshot
-                    const fameToday = activePartsToday.reduce(
+                  // Clan propre : delta par joueur via snapshot J-1
+                  //   fameToday[joueur] = p.fame − snapshot_J-1._cumulFame[p.tag]
+                  const prevSnap =
+                    warDayIndex > 0 ? weekSnaps[warDayIndex - 1] : null;
+                  const prevCumulFameMap = prevSnap?._cumulFame ?? {};
+                  const hasPrevSnap =
+                    warDayIndex === 0 ||
+                    Object.keys(prevCumulFameMap).length > 0;
+                  if (hasPrevSnap) {
+                    // Calcul par joueur sur les membres actuels uniquement (cohérent avec decksToday)
+                    const fameToday = activePartsToday.reduce((s, p) => {
+                      const prev = prevCumulFameMap[p.tag] ?? 0;
+                      return s + Math.max(0, (p.fame ?? 0) - prev);
+                    }, 0);
+                    ptsPerDeck = fameToday / decksToday;
+                  } else if (weeklyDecks > 0) {
+                    // Snapshot J-1 absent → fallback hebdo
+                    const currentCumulFame = activePartsToday.reduce(
                       (s, p) => s + (p.fame ?? 0),
                       0,
                     );
-                    ptsPerDeck = fameToday / decksToday;
-                  } else {
-                    // Avant reset : p.fame est cumulatif → delta avec snapshot J-1
-                    const prevSnap =
-                      warDayIndex > 0 ? weekSnaps[warDayIndex - 1] : null;
-                    const prevCumulFameMap = prevSnap?._cumulFame ?? {};
-                    const hasPrevSnap =
-                      warDayIndex === 0 ||
-                      Object.keys(prevCumulFameMap).length > 0;
-                    if (hasPrevSnap) {
-                      const fameToday = activePartsToday.reduce((s, p) => {
-                        const prev = prevCumulFameMap[p.tag] ?? 0;
-                        return s + Math.max(0, (p.fame ?? 0) - prev);
-                      }, 0);
-                      ptsPerDeck = fameToday / decksToday;
-                    } else if (weeklyDecks > 0) {
-                      const currentCumulFame = activePartsToday.reduce(
-                        (s, p) => s + (p.fame ?? 0),
-                        0,
-                      );
-                      ptsPerDeck = currentCumulFame / weeklyDecks;
-                    }
+                    ptsPerDeck = currentCumulFame / weeklyDecks;
                   }
                 } else if (weeklyDecks > 0) {
+                  // Rivals : pas de snapshot → fame/decks cumulatifs de la semaine en cours
                   const currentCumulFame = allParts.reduce(
                     (s, p) => s + (p.fame ?? 0),
                     0,
                   );
-                  // Rival sans snapshot : approximation par fame/decks de la semaine en cours.
-                  // MAIS : si weeklyDecks ≈ decksToday, le rival vient de resetter et n'a que
-                  // les decks d'aujourd'hui → la fame cumulée est faible → ratio biaisé.
-                  // Dans ce cas on préfère l'efficacité de la semaine précédente
-                  // (rivalLastWarByTag / rivalLastWarDecksByTag), plus stable.
-                  const prevFame = rivalLastWarByTag[cTagNorm];
-                  const prevDecks = rivalLastWarDecksByTag[cTagNorm];
-                  // Fiable si au moins 4 decks ont été joués en dehors d'aujourd'hui
-                  const hasReliableWeeklyData = weeklyDecks - decksToday >= 4;
-                  if (hasReliableWeeklyData) {
-                    ptsPerDeck = currentCumulFame / weeklyDecks;
-                  } else if (
-                    prevFame != null &&
-                    prevDecks != null &&
-                    prevDecks > 0
-                  ) {
-                    // Fallback semaine précédente : stable, indépendant du reset du jour
-                    ptsPerDeck = prevFame / prevDecks;
-                  } else {
-                    ptsPerDeck = currentCumulFame / weeklyDecks;
-                  }
+                  ptsPerDeck = currentCumulFame / weeklyDecks;
                 }
 
                 const decksProjected = Math.max(decksToday, targetDecks);
