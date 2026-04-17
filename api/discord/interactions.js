@@ -1983,8 +1983,22 @@ export default async function handler(req, res) {
                 )
                 .sort((a, b) => b.realDay.localeCompare(a.realDay))[0];
               if (prevDay?._cumulFame) {
-                for (const [tag, fame] of Object.entries(prevDay._cumulFame)) {
-                  prevCumulByTag.set(tag, fame ?? 0);
+                // Vérifier que prevDay est bien le jour calendaire immédiatement avant
+                // realDayToday. Sur J1, le dernier snapshot disponible est celui de J4
+                // de la semaine précédente → la soustraction serait fausse (elle donnerait
+                // ~400 pts au lieu des vrais points J1).
+                const realDayTodayMs = new Date(
+                  realDayToday + "T00:00:00Z",
+                ).getTime();
+                const prevDayExpected = new Date(realDayTodayMs - 86400000)
+                  .toISOString()
+                  .slice(0, 10);
+                if (prevDay.realDay === prevDayExpected) {
+                  for (const [tag, fame] of Object.entries(
+                    prevDay._cumulFame,
+                  )) {
+                    prevCumulByTag.set(tag, fame ?? 0);
+                  }
                 }
               }
             }
