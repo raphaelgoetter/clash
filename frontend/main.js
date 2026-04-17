@@ -232,6 +232,11 @@ function translateUI() {
     .getElementById("card-current-war")
     .querySelector(".card-title").textContent = `⚔️ ${t("currentClanWar")}`;
   document
+    .getElementById("card-war-group")
+    .querySelector(".card-title").textContent = `⚔️ ${t("warGroupTitle")}`;
+  const warGroupDesc = document.getElementById("war-group-description");
+  if (warGroupDesc) warGroupDesc.textContent = t("warGroupDescription");
+  document
     .getElementById("card-verdict")
     .querySelector(".card-title").textContent =
     `⚔️ ${t("warReliabilityScore")}`;
