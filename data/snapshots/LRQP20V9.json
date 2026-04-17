@@ -865,9 +865,10 @@
           "start": "2026-04-16T09:54:00.000Z",
           "end": "2026-04-17T09:53:59.999Z"
         },
-        "snapshotTime": "2026-04-17T07:33:38.371Z",
+        "snapshotTime": "2026-04-17T08:34:04.624Z",
         "snapshotBackupTime": "2026-04-16T21:16:26.104Z",
         "decks": {
+          "#2L8RPQRJ9": 4,
           "#2U9QL8Q89": 4,
           "#2YLYG9V92": 4,
           "#2YP2V2G0R": 4,
@@ -898,6 +899,7 @@
           "#J008G9CLJ": 4,
           "#J290800UU": 4,
           "#JCCQY0U9G": 4,
+          "#L2JC8P0G2": 4,
           "#LUGP2RYY": 4,
           "#PRGCCRUJP": 4,
           "#PUP2LP8G2": 4,
@@ -915,9 +917,7 @@
           "#YGP000RP8": 4,
           "#YRGJGR8R": 4,
           "#8UL8JRCJ": 3,
-          "#U9PP0CJRL": 3,
-          "#2L8RPQRJ9": 0,
-          "#2P0VYJJR9": 0
+          "#U9PP0CJRL": 3
         },
         "hourlyCumul": [
           {
@@ -947,6 +947,10 @@
           {
             "takenAt": "2026-04-17T07:33:30.626Z",
             "total": 190
+          },
+          {
+            "takenAt": "2026-04-17T08:33:52.480Z",
+            "total": 198
           }
         ],
         "_cumulFame": {
@@ -970,7 +974,7 @@
           "#822GLVL00": 400,
           "#8G00908LP": 400,
           "#2YP2V2G0R": 700,
-          "#L2JC8P0G2": 0,
+          "#L2JC8P0G2": 700,
           "#JCCQY0U9G": 400,
           "#9R8UV8RQV": 400,
           "#J290800UU": 650,
@@ -981,7 +985,7 @@
           "#VGJ9LL8VC": 500,
           "#99VY0090": 700,
           "#QVG90PQVG": 600,
-          "#2L8RPQRJ9": 0,
+          "#2L8RPQRJ9": 700,
           "#GLV9Q2P09": 600,
           "#82JPJ9J98": 500,
           "#8YGY2RPCC": 800,
@@ -1035,7 +1039,7 @@
           "#822GLVL00": 4,
           "#8G00908LP": 4,
           "#2YP2V2G0R": 4,
-          "#L2JC8P0G2": 0,
+          "#L2JC8P0G2": 4,
           "#JCCQY0U9G": 4,
           "#9R8UV8RQV": 4,
           "#J290800UU": 4,
@@ -1046,7 +1050,7 @@
           "#VGJ9LL8VC": 4,
           "#99VY0090": 4,
           "#QVG90PQVG": 4,
-          "#2L8RPQRJ9": 0,
+          "#2L8RPQRJ9": 4,
           "#GLV9Q2P09": 4,
           "#82JPJ9J98": 4,
           "#8YGY2RPCC": 4,
