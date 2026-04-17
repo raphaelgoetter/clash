@@ -332,7 +332,7 @@ async function postWarSummary(
         `Données de fame incomplètes pour ${tag} (${dayEntry.realDay})`,
       );
     }
-    let line = `${fmt(totalFame)} pts`;
+    let line = `${fmt(totalFame)} pts (approx.)`;
     // En Colisée le score journalier fluctue selon les matchs — le delta n'est pas significatif
     if (prevFame !== null && !isColosseum)
       line += ` ${fmtDelta(totalFame - prevFame)}`;
@@ -382,7 +382,7 @@ async function postWarSummary(
         : "<:trophy2:1493677804733337621> Points totaux";
       fields.push({
         name: fameLabel,
-        value: `${fmt(weekly.totalFameWeek)} pts`,
+        value: `${fmt(weekly.totalFameWeek)} pts (approx.)`,
         inline: false,
       });
     } else {
