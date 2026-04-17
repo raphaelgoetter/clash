@@ -923,13 +923,15 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     if (weekSnaps.length) {
       // weekSnaps is expected to be an array of day entries for the current week
       // (thu→sun). Build an array of total decks per day.
+      // null = pas de snapshot valide pour ce jour (snapshot invalide ou manquant)
       warSnapshotDays = weekSnaps.map((snap) => {
-        if (!snap || !snap.decks) return null;
+        if (!snap || !snap.decks || Object.keys(snap.decks).length === 0)
+          return null;
         const total = Object.values(snap.decks).reduce(
           (s, v) => s + (typeof v === "number" ? v : 0),
           0,
         );
-        return total > 0 ? Math.min(200, total) : 0;
+        return total > 0 ? Math.min(200, total) : null;
       });
     }
   }

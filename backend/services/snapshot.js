@@ -536,7 +536,10 @@ export async function getSnapshotsForWeek(clanTag, week = null) {
     date: d.realDay,
     warDay: d.warDay,
     decks: isValidSnapshot(d) ? d.decks : {},
-    _cumulFame: d._cumulFame ?? {},
+    // _cumulFame n'est utile que si le snapshot est valide : un snapshot pris
+    // avant le reset GDC (periodType=training) contient des données de la semaine
+    // précédente qui corrompent le calcul du delta de fame du jour.
+    _cumulFame: isValidSnapshot(d) ? (d._cumulFame ?? {}) : {},
     hourlyCumul: d.hourlyCumul ?? [],
     snapshotTime: isValidSnapshot(d) ? (d.snapshotTime ?? null) : null,
     snapshotBackupTime: isValidSnapshot(d)
@@ -583,7 +586,10 @@ export async function getSnapshotsForWeeks(clanTag, weeks) {
     date: d.realDay,
     warDay: d.warDay,
     decks: isValidSnapshot(d) ? d.decks : {},
-    _cumulFame: d._cumulFame ?? {},
+    // _cumulFame n'est utile que si le snapshot est valide : un snapshot pris
+    // avant le reset GDC (periodType=training) contient des données de la semaine
+    // précédente qui corrompent le calcul du delta de fame du jour.
+    _cumulFame: isValidSnapshot(d) ? (d._cumulFame ?? {}) : {},
     hourlyCumul: d.hourlyCumul ?? [],
     snapshotTime: isValidSnapshot(d) ? (d.snapshotTime ?? null) : null,
     snapshotBackupTime: isValidSnapshot(d)
