@@ -2031,13 +2031,16 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                     );
                     ptsPerDeck = currentCumulFame / weeklyDecks;
                   }
-                } else if (weeklyDecks > 0) {
-                  // Rivals : pas de snapshot → fame/decks cumulatifs de la semaine en cours
+                } else {
+                  // Rivals : pas de snapshot disponible
+                  // weeklyDecks inclut les decks d'entraînement → mauvais dénominateur
+                  // On estime les decks de guerre cumulés : decksToday × (warDayIndex+1)
                   const currentCumulFame = allParts.reduce(
                     (s, p) => s + (p.fame ?? 0),
                     0,
                   );
-                  ptsPerDeck = currentCumulFame / weeklyDecks;
+                  ptsPerDeck =
+                    currentCumulFame / ((warDayIndex + 1) * decksToday);
                 }
 
                 const decksProjected = Math.max(decksToday, targetDecks);

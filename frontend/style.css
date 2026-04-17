@@ -364,6 +364,7 @@ code {
 .war-group-score,
 .war-group-prev-war,
 .war-group-last-war,
+.war-group-current-pts,
 .war-group-avg-pts,
 .war-group-projection {
   padding: 8px;

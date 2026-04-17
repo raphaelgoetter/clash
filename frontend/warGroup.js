@@ -127,6 +127,9 @@ export function renderRaceGroupCard(data, t, timerHelper) {
         </td>`;
       }
 
+      const currentPtsHtml = isWarPeriod
+        ? `<td class="war-group-current-pts">${clan.clanScore != null ? fmtNum(Math.round(clan.clanScore)) : "—"}</td>`
+        : "";
       const avgPtsHtml = isWarPeriod
         ? `<td class="war-group-avg-pts">${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(1) : "—"}</td>`
         : "";
@@ -151,6 +154,7 @@ export function renderRaceGroupCard(data, t, timerHelper) {
       <td class="war-group-prev-war">${prevWarVal}</td>
       <td class="war-group-last-war">${lastWarVal}</td>
       ${decksNowHtml}
+      ${currentPtsHtml}
       ${avgPtsHtml}
       ${projectionHtml}
     </tr>`;
@@ -166,6 +170,7 @@ export function renderRaceGroupCard(data, t, timerHelper) {
         <th class="war-group-prev-war">${t("warGroupPrevWar")}</th>
         <th class="war-group-last-war">${t("warGroupLastWar")}</th>
         ${isWarPeriod ? `<th class="war-group-decks-now">${t("warGroupDecksToday")} <span>${timerHelper(data.clan?.warResetUtcMinutes)}</span></th>` : ""}
+        ${isWarPeriod ? `<th class="war-group-current-pts">${t("warGroupCurrentPts")}</th>` : ""}
         ${isWarPeriod ? `<th class="war-group-avg-pts">${t("warGroupPtsPerDeck")}</th>` : ""}
         ${isWarPeriod ? `<th class="war-group-projection">${t("warGroupProjection")}</th>` : ""}
       </tr>
