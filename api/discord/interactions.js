@@ -1893,13 +1893,6 @@ export default async function handler(req, res) {
               b.missing - a.missing || a.name.localeCompare(b.name, "fr"),
           );
 
-        if (late.length === 0) {
-          await sendToWebhook({
-            content: `✅ Tous les joueurs de **${resolved.name}** ont joué leurs 4 decks aujourd'hui !`,
-          });
-          return;
-        }
-
         // Pseudos Discord — timeout 10s, non-bloquant (pings optionnels)
         const guildId = process.env.DISCORD_GUILD_ID;
         const botToken = process.env.DISCORD_TOKEN;
@@ -2024,12 +2017,20 @@ export default async function handler(req, res) {
         const boatNames = boatAttackers.map((pl) => pl.name).join(", ");
 
         // Construction de la liste par groupe
+        const lateHeader =
+          late.length === 0
+            ? `Aucun joueur en retard à ${parisTime}`
+            : `- ${late.length} joueur${late.length > 1 ? "s" : ""} en retard à ${parisTime}`;
         const descLines = [
-          `- ${late.length} joueur${late.length > 1 ? "s" : ""} en retard à ${parisTime}`,
+          lateHeader,
           `- ${totalFame} pts marqués`,
           `- ${totalPlayed} deck${totalPlayed > 1 ? "s" : ""} joué${totalPlayed > 1 ? "s" : ""}`,
-          `- ${totalMissing} deck${totalMissing > 1 ? "s" : ""} manquant${totalMissing > 1 ? "s" : ""}`,
         ];
+        if (late.length > 0) {
+          descLines.push(
+            `- ${totalMissing} deck${totalMissing > 1 ? "s" : ""} manquant${totalMissing > 1 ? "s" : ""}`,
+          );
+        }
         if (totalBoatAttacks > 0) {
           descLines.push(
             `- ${totalBoatAttacks} attaque${totalBoatAttacks > 1 ? "s" : ""} bateau (${boatNames})`,
