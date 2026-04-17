@@ -248,7 +248,11 @@ async function postWarSummary(
       liveTodayCumul = participants.reduce((s, p) => s + (p.fame ?? 0), 0);
       liveBoatAttackers = participants
         .filter((p) => (p.boatAttacks ?? 0) > 0)
-        .map((p) => ({ name: p.name, boatAttacks: p.boatAttacks ?? 0 }));
+        .map((p) => ({
+          name: p.name,
+          tag: p.tag,
+          boatAttacks: p.boatAttacks ?? 0,
+        }));
       liveBoatTotal = liveBoatAttackers.reduce((s, p) => s + p.boatAttacks, 0);
     }
     // Cumul du jour précédent depuis le snapshot (pour calculer le delta du jour)
@@ -350,7 +354,13 @@ async function postWarSummary(
   }
 
   if (liveBoatTotal > 0) {
-    const boatNames = liveBoatAttackers.map((p) => p.name).join(", ");
+    const boatNames = liveBoatAttackers
+      .map((p) => {
+        const plTag = p.tag.startsWith("#") ? p.tag : `#${p.tag}`;
+        const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(plTag)}`;
+        return `[${p.name}](${playerUrl})`;
+      })
+      .join(", ");
     fields.push({
       name: "⚓ Attaques bateau",
       value: `${liveBoatTotal} attaque${liveBoatTotal > 1 ? "s" : ""} — ${boatNames}`,
