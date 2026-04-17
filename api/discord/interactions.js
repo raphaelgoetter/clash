@@ -2014,7 +2014,13 @@ export default async function handler(req, res) {
           (sum, pl) => sum + (pl.boatAttacks ?? 0),
           0,
         );
-        const boatNames = boatAttackers.map((pl) => pl.name).join(", ");
+        const boatNames = boatAttackers
+          .map((pl) => {
+            const plTag = pl.tag.startsWith("#") ? pl.tag : `#${pl.tag}`;
+            const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(plTag)}`;
+            return `[${pl.name}](${playerUrl})`;
+          })
+          .join(", ");
 
         // Construction de la liste par groupe
         const lateHeader =
