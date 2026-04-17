@@ -865,7 +865,7 @@
           "start": "2026-04-16T09:54:00.000Z",
           "end": "2026-04-17T09:53:59.999Z"
         },
-        "snapshotTime": "2026-04-17T01:34:30.297Z",
+        "snapshotTime": "2026-04-17T03:04:16.041Z",
         "snapshotBackupTime": "2026-04-16T21:16:26.104Z",
         "decks": {
           "#2U9QL8Q89": 4,
@@ -889,6 +889,7 @@
           "#9VQYC9GJQ": 4,
           "#G2R0VRYYQ": 4,
           "#GGVQJLG9": 4,
+          "#GLV9Q2P09": 4,
           "#J008G9CLJ": 4,
           "#J290800UU": 4,
           "#JCCQY0U9G": 4,
@@ -906,9 +907,9 @@
           "#VGJ9LL8VC": 4,
           "#VQJ0Y8PLV": 4,
           "#Y9P9GGL89": 4,
+          "#YGP000RP8": 4,
           "#YRGJGR8R": 4,
           "#8UL8JRCJ": 3,
-          "#YGP000RP8": 3,
           "#2L8RPQRJ9": 0,
           "#2P0VYJJR9": 0,
           "#2YP2V2G0R": 0,
@@ -916,8 +917,7 @@
           "#8G00908LP": 0,
           "#8QV8G0CC0": 0,
           "#8R0LR8GYC": 0,
-          "#9PCYJ2UQ0": 0,
-          "#CGJP0YYUJ": 0
+          "#9PCYJ2UQ0": 0
         },
         "hourlyCumul": [
           {
@@ -927,6 +927,10 @@
           {
             "takenAt": "2026-04-17T01:34:20.590Z",
             "total": 162
+          },
+          {
+            "takenAt": "2026-04-17T03:04:06.197Z",
+            "total": 167
           }
         ],
         "_cumulFame": {
@@ -962,11 +966,11 @@
           "#99VY0090": 700,
           "#QVG90PQVG": 600,
           "#2L8RPQRJ9": 0,
-          "#GLV9Q2P09": 0,
+          "#GLV9Q2P09": 600,
           "#82JPJ9J98": 500,
           "#8YGY2RPCC": 800,
           "#8QVRJYVYU": 500,
-          "#YGP000RP8": 400,
+          "#YGP000RP8": 600,
           "#CGJP0YYUJ": 0,
           "#RJJ99Y9J": 500,
           "#LUGP2RYY": 800,
@@ -1027,11 +1031,11 @@
           "#99VY0090": 4,
           "#QVG90PQVG": 4,
           "#2L8RPQRJ9": 0,
-          "#GLV9Q2P09": 0,
+          "#GLV9Q2P09": 4,
           "#82JPJ9J98": 4,
           "#8YGY2RPCC": 4,
           "#8QVRJYVYU": 4,
-          "#YGP000RP8": 3,
+          "#YGP000RP8": 4,
           "#CGJP0YYUJ": 0,
           "#RJJ99Y9J": 4,
           "#LUGP2RYY": 4,
