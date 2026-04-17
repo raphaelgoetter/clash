@@ -2213,7 +2213,7 @@ export default async function handler(req, res) {
         });
 
         const footerText = isWarPeriod
-          ? `Trié par Projection · <:battle:1493710671244689449> n-2 GDC · <:battle:1493710671244689449> Dernière GDC · 🔮 Estimé fin de journée`
+          ? `Trié par Projection`
           : `Trié par Total Dernière GDC`;
 
         const embed = {
