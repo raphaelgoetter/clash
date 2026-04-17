@@ -384,7 +384,8 @@ async function main() {
         .map((tag) => {
           const oldRole = cached.roles.get(tag) ?? "member";
           const newRole = current.roles.get(tag) ?? "member";
-          return { tag, oldRole, newRole };
+          const name = current.names.get(tag) ?? tag;
+          return { tag, name, oldRole, newRole };
         })
         .filter((change) => change.oldRole !== change.newRole);
 
