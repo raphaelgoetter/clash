@@ -239,11 +239,17 @@ async function postWarSummary(
   // le cumul exact de la journée qui vient de se terminer.
   let liveTodayCumul = null;
   let livePrevCumul = null;
+  let liveBoatAttackers = [];
+  let liveBoatTotal = 0;
   try {
     const race = await fetchCurrentRace(tag);
     const participants = race?.clan?.participants ?? [];
     if (participants.length > 0) {
       liveTodayCumul = participants.reduce((s, p) => s + (p.fame ?? 0), 0);
+      liveBoatAttackers = participants
+        .filter((p) => (p.boatAttacks ?? 0) > 0)
+        .map((p) => ({ name: p.name, boatAttacks: p.boatAttacks ?? 0 }));
+      liveBoatTotal = liveBoatAttackers.reduce((s, p) => s + p.boatAttacks, 0);
     }
     // Cumul du jour précédent depuis le snapshot (pour calculer le delta du jour)
     if (prevDayEntry && Object.keys(prevDayEntry._cumulFame ?? {}).length > 0) {
@@ -339,6 +345,15 @@ async function postWarSummary(
     fields.push({
       name: "<:cards:1493711279121104926> Decks joués",
       value: line,
+      inline: false,
+    });
+  }
+
+  if (liveBoatTotal > 0) {
+    const boatNames = liveBoatAttackers.map((p) => p.name).join(", ");
+    fields.push({
+      name: "⚓ Attaques bateau",
+      value: `${liveBoatTotal} attaque${liveBoatTotal > 1 ? "s" : ""} — ${boatNames}`,
       inline: false,
     });
   }

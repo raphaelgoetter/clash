@@ -2013,6 +2013,16 @@ export default async function handler(req, res) {
         // Decks manquants (pré-calculé)
         const totalMissing = late.reduce((sum, pl) => sum + pl.missing, 0);
 
+        // Attaques bateaux du jour
+        const boatAttackers = currentParticipants.filter(
+          (pl) => (pl.boatAttacks ?? 0) > 0,
+        );
+        const totalBoatAttacks = boatAttackers.reduce(
+          (sum, pl) => sum + (pl.boatAttacks ?? 0),
+          0,
+        );
+        const boatNames = boatAttackers.map((pl) => pl.name).join(", ");
+
         // Construction de la liste par groupe
         const descLines = [
           `- ${late.length} joueur${late.length > 1 ? "s" : ""} en retard à ${parisTime}`,
@@ -2020,6 +2030,11 @@ export default async function handler(req, res) {
           `- ${totalPlayed} deck${totalPlayed > 1 ? "s" : ""} joué${totalPlayed > 1 ? "s" : ""}`,
           `- ${totalMissing} deck${totalMissing > 1 ? "s" : ""} manquant${totalMissing > 1 ? "s" : ""}`,
         ];
+        if (totalBoatAttacks > 0) {
+          descLines.push(
+            `- ${totalBoatAttacks} attaque${totalBoatAttacks > 1 ? "s" : ""} bateau (${boatNames})`,
+          );
+        }
 
         for (const count of [4, 3, 2, 1]) {
           const group = late.filter((pl) => pl.missing === count);
