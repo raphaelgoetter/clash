@@ -1947,6 +1947,15 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             buildCurrentWarDays([], null, currentRace, clanTag)?.daysFromThu ??
             0;
 
+          // Déterminer si on est après le reset GDC journalier du clan.
+          // Après le reset : p.fame repart de 0 → utiliser directement.
+          // Avant le reset : p.fame est encore cumulatif semaine → soustraire snapshot J-1.
+          const _nowDate = new Date();
+          const _msOfDayUtc =
+            _nowDate.getUTCHours() * 3600000 +
+            _nowDate.getUTCMinutes() * 60000;
+          const isAfterReset = _msOfDayUtc >= warResetOffsetMs(clanTag);
+
           const groupWithProjections = currentRace.clans.map((c) => {
             const cTagNorm = (c.tag ?? "").toUpperCase();
             const isOwn = cTagNorm === ownTagNorm;
@@ -1959,8 +1968,20 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             let ptsPerDeck = null;
             let projectedFame = null;
 
-            if (isWarPeriod && raceData?.clan?.participants) {
-              const allParts = raceData.clan.participants;
+            // Pour les rivaux, utiliser c.participants (données du groupe propre au clan analysé)
+            // plutôt que rivalCurrentRaceByTag qui retourne la course du rival DANS SON PROPRE
+            // groupe — lequel peut être complètement différent si les clans sont dans des ligues
+            // distinctes (ex. Légende 1 vs Légende 2 vs Or).
+            const rivalParticipants = isOwn ? null : (c.participants ?? []);
+            if (
+              isWarPeriod &&
+              (isOwn
+                ? raceData?.clan?.participants
+                : rivalParticipants.length > 0)
+            ) {
+              const allParts = isOwn
+                ? raceData.clan.participants
+                : rivalParticipants;
               // decksToday : exclure les ex-membres pour cohérence avec clanWarSummary
               const activePartsToday = isOwn
                 ? allParts.filter((p) => currentMemberTags.has(p.tag))
@@ -2002,45 +2023,48 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 0,
               );
 
+              // Fame du jour pour le clan propre (utilisée aussi pour clanScore)
+              let ownFameTodayAll = null; // inclut les ex-membres (pour clanScore)
+
               if (decksToday > 0) {
                 // Efficacité (E) : fame du jour ÷ decks du jour (identique à cwstats)
-                // Clan propre : delta par joueur (même filtre que decksToday = membres actuels)
-                //   fameToday[joueur] = p.fame − snapshot_J-1._cumulFame[p.tag]
-                // Rivaux : pas de snapshot → approximation hebdo (fame/decks, écart ~1%)
                 if (isOwn) {
-                  // Clan propre : delta par joueur via snapshot J-1
-                  //   fameToday[joueur] = p.fame − snapshot_J-1._cumulFame[p.tag]
-                  const prevSnap =
-                    warDayIndex > 0 ? weekSnaps[warDayIndex - 1] : null;
-                  const prevCumulFameMap = prevSnap?._cumulFame ?? {};
-                  const hasPrevSnap =
-                    warDayIndex === 0 ||
-                    Object.keys(prevCumulFameMap).length > 0;
-                  if (hasPrevSnap) {
-                    // Calcul par joueur sur les membres actuels uniquement (cohérent avec decksToday)
-                    const fameToday = activePartsToday.reduce((s, p) => {
-                      const prev = prevCumulFameMap[p.tag] ?? 0;
-                      return s + Math.max(0, (p.fame ?? 0) - prev);
-                    }, 0);
-                    ptsPerDeck = fameToday / decksToday;
-                  } else if (weeklyDecks > 0) {
-                    // Snapshot J-1 absent → fallback hebdo
-                    const currentCumulFame = activePartsToday.reduce(
+                  // Helper : calcule la fame du jour sur un ensemble de participants
+                  // selon la période (avant/après reset journalier).
+                  const computeFameToday = (parts) => {
+                    if (isAfterReset || warDayIndex === 0) {
+                      // Après reset : p.fame a remis à zéro → fame du jour = p.fame directement
+                      // J1 : premier jour de guerre → pas de snapshot précédent
+                      return parts.reduce((s, p) => s + (p.fame ?? 0), 0);
+                    }
+                    // Avant reset (J2-J4) : p.fame encore cumulatif → soustraire snapshot J-1
+                    const prevSnap = weekSnaps[warDayIndex - 1] ?? null;
+                    const prevCumulFameMap = prevSnap?._cumulFame ?? {};
+                    if (Object.keys(prevCumulFameMap).length > 0) {
+                      return parts.reduce((s, p) => {
+                        const prev = prevCumulFameMap[p.tag] ?? 0;
+                        return s + Math.max(0, (p.fame ?? 0) - prev);
+                      }, 0);
+                    }
+                    // Snapshot absent → fallback direct
+                    return parts.reduce((s, p) => s + (p.fame ?? 0), 0);
+                  };
+
+                  const fameToday = computeFameToday(activePartsToday);
+                  ownFameTodayAll = computeFameToday(allParts);
+                  ptsPerDeck = fameToday / decksToday;
+                } else {
+                  // Rivaux : efficacité hebdo = sum(fame) / sum(decksUsed).
+                  // c.participants provient directement de currentRace.clans[i] (groupe partagé) :
+                  // participant.fame = cumulatif section, participant.decksUsed = decks guerre
+                  // → ratio stable ≈ 160-175 pts/deck, fidèle à cwstats.
+                  if (weeklyDecks > 0) {
+                    const currentCumulFame = allParts.reduce(
                       (s, p) => s + (p.fame ?? 0),
                       0,
                     );
                     ptsPerDeck = currentCumulFame / weeklyDecks;
                   }
-                } else {
-                  // Rivals : pas de snapshot disponible
-                  // weeklyDecks inclut les decks d'entraînement → mauvais dénominateur
-                  // On estime les decks de guerre cumulés : decksToday × (warDayIndex+1)
-                  const currentCumulFame = allParts.reduce(
-                    (s, p) => s + (p.fame ?? 0),
-                    0,
-                  );
-                  ptsPerDeck =
-                    currentCumulFame / ((warDayIndex + 1) * decksToday);
                 }
 
                 const decksProjected = Math.max(decksToday, targetDecks);
@@ -2057,7 +2081,24 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               rank: c.rank ?? null,
               members: extra?.members ?? null,
               clanWarTrophies: extra?.clanWarTrophies ?? null,
-              clanScore: c.fame ?? extra?.clanScore ?? 0,
+              // clanScore = pts du jour (p.fame après reset, ou delta snapshot avant reset).
+              // Pour le clan propre : calculé via ownFameTodayAll (inclut ex-membres).
+              // Pour les rivaux : sum(c.participants.fame) = pts depuis le dernier reset (même heure).
+              clanScore: isOwn
+                ? (ownFameTodayAll ??
+                    (c.participants ?? []).reduce(
+                      (s, p) => s + (p.fame ?? 0),
+                      0,
+                    ) ||
+                    c.fame ||
+                    0)
+                : (c.participants ?? []).reduce(
+                      (s, p) => s + (p.fame ?? 0),
+                      0,
+                    ) ||
+                  c.fame ||
+                  extra?.clanScore ||
+                  0,
               prevWarFame: isOwn
                 ? ownPrevWarFame
                 : (rivalPrevWarByTag[cTagNorm] ?? null),
