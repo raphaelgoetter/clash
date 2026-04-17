@@ -1942,10 +1942,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           //   → clan propre  : fameTodayRaw / decksToday où
           //                    fameTodayRaw = sum(p.fame) [API live, cumulatif section]
           //                                  - sum(weekSnaps[J-1]._cumulFame) [snapshot fin J-1]
-          //                    fameTodayRaw arrondi à la dizaine (multiples de 50 en GDC)
           //                    ⚠ fallback hebdo si snapshot J-1 corrompu (delta < 50% de la moyenne)
-          //   → rivaux       : ceil(sectionFame / weeklyDecks / 10) × 10
-          //                    (moyenne hebdo arrondie dizaine supérieure, pas de snapshot dispo)
+          //   → rivaux       : sectionFame / weeklyDecks
+          //                    (moyenne hebdo brute, pas de snapshot dispo)
           //
           // clanScore        {number}  Pts estimés gagnés aujourd'hui  [0–40 000]
           //   = round(decksToday × ptsPerDeck / 10) × 10
@@ -2096,9 +2095,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                     (weeklyAvgFame === 0 ||
                       fameTodayRaw / decksToday >= weeklyAvgFame * 0.5);
                   if (snapshotSeemsTrusted) {
-                    // Les pts de guerre sont toujours multiples de 50 → arrondi à la dizaine
-                    const fameTodayRounded = Math.round(fameTodayRaw / 10) * 10;
-                    ptsPerDeck = fameTodayRounded / decksToday;
+                    ptsPerDeck = fameTodayRaw / decksToday;
                   } else {
                     // Snapshot corrompu détecté : fallback sur la moyenne hebdo
                     console.warn(
@@ -2111,11 +2108,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                   projectedFame =
                     Math.max(decksToday, targetDecks) * ptsPerDeck;
                 } else {
-                  // Rivaux : efficacité hebdo = cumul section / decks section.
-                  // Arrondi à la dizaine supérieure (on ne connaît pas les pts du jour seul).
+                  // Rivaux : efficacité hebdo brute = cumul section / decks section.
                   if (weeklyDecks > 0) {
-                    const rawPtsPerDeck = sectionFame / weeklyDecks;
-                    ptsPerDeck = Math.ceil(rawPtsPerDeck / 10) * 10;
+                    ptsPerDeck = sectionFame / weeklyDecks;
                   }
                   projectedFame =
                     Math.max(decksToday, targetDecks) * ptsPerDeck;
