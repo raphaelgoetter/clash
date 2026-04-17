@@ -463,12 +463,19 @@ export async function recordSnapshot(
 
     // Le snapshot backup est pris juste après le reset : currentCumulFame reflète
     // l'état exact de fin de journée GDC J-1. On l'écrit sur le jour précédent pour
-    // permettre un calcul précis de la fame du jour courant (sans l'écart ~37 min
-    // inhérent aux snapshots primaires pris avant le reset).
-    if (prevDayEntry) {
+    // permettre un calcul précis de la fame du jour courant.
+    // ⚠️ Garde-fou : si le backup est pris plus de 90 min après le reset, p.fame a
+    // déjà accumulé une partie du nouveau jour → ne pas contaminer le snapshot J-1.
+    const minutesSinceReset = (msOfDayUtc - resetUtcMs) / 60000;
+    if (prevDayEntry && minutesSinceReset <= 90) {
       prevDayEntry._cumulFame = mergeMaps(
         prevDayEntry._cumulFame ?? {},
         currentCumulFame,
+      );
+    } else if (minutesSinceReset > 90) {
+      console.log(
+        `[snapshot] backup tardif (${Math.round(minutesSinceReset)} min après reset) — ` +
+          `prevDay._cumulFame NON mis à jour pour éviter contamination J-1.`,
       );
     }
 
