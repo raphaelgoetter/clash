@@ -1985,7 +1985,7 @@
           "start": "2026-04-17T09:52:00.000Z",
           "end": "2026-04-18T09:51:59.999Z"
         },
-        "snapshotTime": "2026-04-18T05:32:46.161Z",
+        "snapshotTime": "2026-04-18T06:25:41.901Z",
         "snapshotBackupTime": "2026-04-17T21:15:47.132Z",
         "decks": {
           "#28PQVJ2V": 4,
@@ -2001,6 +2001,7 @@
           "#8P29RRU2": 4,
           "#8PP9JQCLY": 4,
           "#8V98QYY8V": 4,
+          "#9CQC0YUR8": 4,
           "#9GG9GRC0G": 4,
           "#9VQ0J29Y": 4,
           "#9YQ0P0L0": 4,
@@ -2022,6 +2023,7 @@
           "#U008V0PQ8": 4,
           "#UJ89GUUUY": 4,
           "#UY00GJG2": 4,
+          "#UYP0YCQ9": 4,
           "#VQP8PU2V": 4,
           "#VVJ8RURL9": 4,
           "#YGLL08Y8C": 4,
@@ -2033,11 +2035,9 @@
           "#8P9CL92LC": 0,
           "#8QL2J8PQ": 0,
           "#99CRC8PP": 0,
-          "#9CQC0YUR8": 0,
           "#9RRP8V0LG": 0,
           "#9Y28LR22": 0,
-          "#G2VVUJLLQ": 0,
-          "#J8LUJQGY0": 0
+          "#G2VVUJLLQ": 0
         },
         "hourlyCumul": [
           {
@@ -2059,6 +2059,10 @@
           {
             "takenAt": "2026-04-18T05:32:41.767Z",
             "total": 152
+          },
+          {
+            "takenAt": "2026-04-18T06:25:38.070Z",
+            "total": 160
           }
         ],
         "_cumulFame": {
@@ -2077,7 +2081,7 @@
           "#99CRC8PP": 900,
           "#QGVJ2U0QJ": 0,
           "#2UQQJJ98Y": 1250,
-          "#9CQC0YUR8": 700,
+          "#9CQC0YUR8": 1400,
           "#CC29JU800": 900,
           "#J9ULCGJYU": 700,
           "#UGU9JG2QC": 0,
@@ -2117,7 +2121,7 @@
           "#U008V0PQ8": 1600,
           "#88QP9CJU": 1350,
           "#9GG9GRC0G": 1300,
-          "#UYP0YCQ9": 800,
+          "#UYP0YCQ9": 1400,
           "#LCQ2J0VGC": 1600
         },
         "periodType": "warDay",
@@ -2137,7 +2141,7 @@
           "#99CRC8PP": 4,
           "#QGVJ2U0QJ": 0,
           "#2UQQJJ98Y": 8,
-          "#9CQC0YUR8": 4,
+          "#9CQC0YUR8": 8,
           "#CC29JU800": 8,
           "#J9ULCGJYU": 4,
           "#UGU9JG2QC": 0,
@@ -2177,7 +2181,7 @@
           "#U008V0PQ8": 8,
           "#88QP9CJU": 8,
           "#9GG9GRC0G": 8,
-          "#UYP0YCQ9": 4,
+          "#UYP0YCQ9": 8,
           "#LCQ2J0VGC": 8
         }
       },
