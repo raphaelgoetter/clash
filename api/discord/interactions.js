@@ -53,6 +53,7 @@ const COLOR_MAP = {
   red: 0xe74c3c,
 };
 const EMOJI_MAP = { green: "🟢", yellow: "🟡", orange: "🟠", red: "🔴" };
+const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 const ROLE_FR = {
@@ -1207,6 +1208,9 @@ export default async function handler(req, res) {
           title,
           color: 0x5865f2,
           description: rows,
+          image: {
+            url: `${TRUST_ROYALE_URL}/images/banner1.webp`,
+          },
           footer: { text: footer },
         };
 
