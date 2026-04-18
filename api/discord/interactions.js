@@ -2224,7 +2224,7 @@ export default async function handler(req, res) {
         });
 
         const footerText = isWarPeriod
-          ? `Trié par Projection`
+          ? `Trié par Projection en fin de journée`
           : `Trié par Total Dernière GDC`;
 
         const embed = {
