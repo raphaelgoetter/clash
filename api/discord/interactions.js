@@ -2019,6 +2019,7 @@ export default async function handler(req, res) {
 
         // Decks manquants (pré-calculé)
         const totalMissing = late.reduce((sum, pl) => sum + pl.missing, 0);
+        const hideDetails = totalMissing > 100;
 
         // Attaques bateaux du jour
         const boatAttackers = currentParticipants.filter(
@@ -2056,25 +2057,32 @@ export default async function handler(req, res) {
           );
         }
 
-        for (const count of [4, 3, 2, 1]) {
-          const group = late.filter((pl) => pl.missing === count);
-          if (!group.length) continue;
-          descLines.push("");
-          descLines.push(`**Manque ${count} deck${count > 1 ? "s" : ""}**`);
-          for (const pl of group) {
-            const tag = pl.tag.startsWith("#") ? pl.tag : `#${pl.tag}`;
-            const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(tag)}`;
-            const memberInfo = currentMemberByTag.get(tag.toUpperCase());
-            const role = (memberInfo?.role || "member").toLowerCase();
-            const roleText = formatDiscordRole(role);
-            const discordId = links[tag];
-            const guildMember = discordId ? memberById.get(discordId) : null;
-            const discordPart = guildMember ? ` <@${discordId}>` : "";
-            const memberAnalysis = analysisMap.get(tag.toUpperCase()) || {};
-            const newTag = memberAnalysis.isNew ? " 🆕" : "";
-            descLines.push(
-              `• [${pl.name}](${playerUrl})${newTag} ${roleText}${discordPart}`,
-            );
+        if (hideDetails) {
+          descLines.push(
+            "",
+            "Pas de liste détaillée car il y a plus de 100 decks manquants",
+          );
+        } else {
+          for (const count of [4, 3, 2, 1]) {
+            const group = late.filter((pl) => pl.missing === count);
+            if (!group.length) continue;
+            descLines.push("");
+            descLines.push(`**Manque ${count} deck${count > 1 ? "s" : ""}**`);
+            for (const pl of group) {
+              const tag = pl.tag.startsWith("#") ? pl.tag : `#${pl.tag}`;
+              const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(tag)}`;
+              const memberInfo = currentMemberByTag.get(tag.toUpperCase());
+              const role = (memberInfo?.role || "member").toLowerCase();
+              const roleText = formatDiscordRole(role);
+              const discordId = links[tag];
+              const guildMember = discordId ? memberById.get(discordId) : null;
+              const discordPart = guildMember ? ` <@${discordId}>` : "";
+              const memberAnalysis = analysisMap.get(tag.toUpperCase()) || {};
+              const newTag = memberAnalysis.isNew ? " 🆕" : "";
+              descLines.push(
+                `• [${pl.name}](${playerUrl})${newTag} ${roleText}${discordPart}`,
+              );
+            }
           }
         }
 
