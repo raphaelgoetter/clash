@@ -1107,7 +1107,7 @@ export default async function handler(req, res) {
             throw new Error("Impossible de déterminer la saison cible.");
           }
 
-          title = `<:topplayers:1493708397407899648> Meilleurs joueurs`;
+          title = `🏆 <:topplayers:1493708397407899648> Meilleurs joueurs`;
           footer = `😎 Meilleurs joueurs de la saison précédente (S${selectedSeason})`;
           if (currentSeason != null && currentSeason !== selectedSeason) {
             footer += ` (la S${currentSeason} n'est pas terminée)`;
@@ -1207,7 +1207,7 @@ export default async function handler(req, res) {
         const embed = {
           title,
           color: 0x5865f2,
-          description: rows,
+          description: `**🏅 Classement familial**\n\n${rows}`,
           image: {
             url: `${TRUST_ROYALE_URL}/images/banner1.webp`,
           },
