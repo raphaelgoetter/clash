@@ -2231,6 +2231,9 @@ export default async function handler(req, res) {
           title: `<:trophy2:1493677804733337621> Groupe de GDC — ${resolved.name}`,
           color: 0xe74c3c,
           description: rows.join("\n\n"),
+          image: {
+            url: `${TRUST_ROYALE_URL}/images/banner2.webp`,
+          },
           footer: { text: footerText },
         };
 
