@@ -2043,7 +2043,6 @@ export default async function handler(req, res) {
             : `- ${late.length} joueur${late.length > 1 ? "s" : ""} en retard à ${parisTime}`;
         const descLines = [
           lateHeader,
-          `- ${totalFame} pts marqués`,
           `- ${totalPlayed} deck${totalPlayed > 1 ? "s" : ""} joué${totalPlayed > 1 ? "s" : ""}`,
         ];
         if (late.length > 0) {
