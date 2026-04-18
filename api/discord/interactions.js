@@ -2229,7 +2229,7 @@ export default async function handler(req, res) {
 
         const embed = {
           title: `<:trophy2:1493677804733337621> Groupe de GDC — ${resolved.name}`,
-          color: 0xe74c3c,
+          color: 0x9b59b6,
           description: rows.join("\n\n"),
           image: {
             url: `${TRUST_ROYALE_URL}/images/banner2.webp`,
