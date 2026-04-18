@@ -1207,7 +1207,7 @@ export default async function handler(req, res) {
         const embed = {
           title,
           color: 0x5865f2,
-          description: `**🏅 Classement familial**\n\n${rows}`,
+          description: `Classement familial\n\n${rows}`,
           image: {
             url: `${TRUST_ROYALE_URL}/images/banner1.webp`,
           },
