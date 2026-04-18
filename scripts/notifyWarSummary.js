@@ -129,6 +129,29 @@ async function readClanName(tag) {
   return data.clan?.name ?? `#${tag}`;
 }
 
+function normalizePlayerTag(tag) {
+  if (!tag) return "";
+  return tag.startsWith("#") ? tag : `#${tag}`;
+}
+
+async function readClanMemberNames(tag) {
+  const filePath = path.join(CACHE_DIR, `${tag}.json`);
+  if (!existsSync(filePath)) return {};
+  try {
+    const raw = await readFile(filePath, "utf-8");
+    const data = JSON.parse(raw);
+    const membersRaw = data.membersRaw || {};
+    return Object.fromEntries(
+      Object.entries(membersRaw).map(([playerTag, playerData]) => [
+        normalizePlayerTag(playerTag),
+        playerData?.profile?.name || normalizePlayerTag(playerTag),
+      ]),
+    );
+  } catch {
+    return {};
+  }
+}
+
 /**
  * Calcule le total de points d'une journée GDC depuis _cumulFame.
  * Que ce soit en warDay ou en colosseum, _cumulFame est cumulatif sur toute la semaine
@@ -198,8 +221,8 @@ function computeWeeklySummary(allDays) {
 
 /** Formate un delta signé avec émoji de tendance. */
 function fmtDelta(delta) {
-  if (delta > 0) return `(+${fmt(delta)} 🟢⬆)`;
-  if (delta < 0) return `(${fmt(delta)} 🔴⬇)`;
+  if (delta > 0) return `(+${fmt(delta)})`;
+  if (delta < 0) return `(${fmt(delta)})`;
   return "(stable)";
 }
 
@@ -351,6 +374,50 @@ async function postWarSummary(
       value: line,
       inline: false,
     });
+  }
+
+  {
+    const memberNames = await readClanMemberNames(tag);
+    const missingPlayers = Object.entries(dayEntry.decks ?? {})
+      .map(([playerTag, count]) => {
+        const tagNorm = normalizePlayerTag(playerTag);
+        const decksCount = Number(count) || 0;
+        return {
+          tag: tagNorm,
+          name: memberNames[tagNorm] ?? tagNorm,
+          missing: Math.max(0, 4 - decksCount),
+        };
+      })
+      .filter((p) => p.missing > 0)
+      .sort(
+        (a, b) => b.missing - a.missing || a.name.localeCompare(b.name, "fr"),
+      );
+
+    const totalMissingDecks = missingPlayers.reduce(
+      (sum, player) => sum + player.missing,
+      0,
+    );
+
+    if (totalMissingDecks > 0) {
+      if (totalMissingDecks < 30) {
+        const lines = missingPlayers.map((player) => {
+          const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(player.tag)}`;
+          return `- [${player.name}](${playerUrl}) (x${player.missing})`;
+        });
+        const value = lines.join("\n");
+        fields.push({
+          name: "<:boohoo:1493849412387209357> Combats manquants",
+          value: value,
+          inline: false,
+        });
+      } else {
+        fields.push({
+          name: `Combats manquants (${fmt(totalMissingDecks)})`,
+          value: "\u200b",
+          inline: false,
+        });
+      }
+    }
   }
 
   if (liveBoatTotal > 0) {
