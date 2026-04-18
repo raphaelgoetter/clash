@@ -1985,7 +1985,7 @@
           "start": "2026-04-17T09:52:00.000Z",
           "end": "2026-04-18T09:51:59.999Z"
         },
-        "snapshotTime": "2026-04-17T21:15:47.132Z",
+        "snapshotTime": "2026-04-18T00:23:57.216Z",
         "snapshotBackupTime": "2026-04-17T21:15:47.132Z",
         "decks": {
           "#28PQVJ2V": 4,
@@ -2014,14 +2014,16 @@
           "#GVGVR0J2U": 4,
           "#J8RU2RJ8C": 4,
           "#JLU88JR28": 4,
+          "#LCQ2J0VGC": 4,
+          "#LQLY92CR0": 4,
           "#PG0Q0YYGY": 4,
+          "#U008V0PQ8": 4,
           "#UJ89GUUUY": 4,
           "#UY00GJG2": 4,
           "#VQP8PU2V": 4,
           "#VVJ8RURL9": 4,
           "#YGLL08Y8C": 4,
           "#YRYPUR822": 4,
-          "#U008V0PQ8": 3,
           "#2902YQRQL": 0,
           "#2CL028C80": 0,
           "#2GPUQY9P9": 0,
@@ -2035,11 +2037,14 @@
           "#9Y28LR22": 0,
           "#G2VVUJLLQ": 0,
           "#J8LUJQGY0": 0,
-          "#J9ULCGJYU": 0,
-          "#LCQ2J0VGC": 0,
-          "#LQLY92CR0": 0
+          "#J9ULCGJYU": 0
         },
-        "hourlyCumul": [],
+        "hourlyCumul": [
+          {
+            "takenAt": "2026-04-18T00:23:53.384Z",
+            "total": 144
+          }
+        ],
         "_cumulFame": {
           "#G2VVUJLLQ": 400,
           "#2VULJRRY9": 0,
@@ -2071,7 +2076,7 @@
           "#J8RU2RJ8C": 1200,
           "#2902YQRQL": 550,
           "#YRYPUR822": 950,
-          "#LQLY92CR0": 550,
+          "#LQLY92CR0": 950,
           "#PVQ2QRLJQ": 550,
           "#8QL2J8PQ": 600,
           "#CQ0GQ0JRU": 1200,
@@ -2093,11 +2098,11 @@
           "#VVJ8RURL9": 1250,
           "#2R9QUYQ2C": 1100,
           "#C0VQRUP2": 1400,
-          "#U008V0PQ8": 1400,
+          "#U008V0PQ8": 1600,
           "#88QP9CJU": 1350,
           "#9GG9GRC0G": 1300,
           "#UYP0YCQ9": 800,
-          "#LCQ2J0VGC": 800
+          "#LCQ2J0VGC": 1600
         },
         "periodType": "warDay",
         "_cumul": {
@@ -2131,7 +2136,7 @@
           "#J8RU2RJ8C": 8,
           "#2902YQRQL": 4,
           "#YRYPUR822": 8,
-          "#LQLY92CR0": 4,
+          "#LQLY92CR0": 8,
           "#PVQ2QRLJQ": 4,
           "#8QL2J8PQ": 4,
           "#CQ0GQ0JRU": 8,
@@ -2153,11 +2158,11 @@
           "#VVJ8RURL9": 8,
           "#2R9QUYQ2C": 8,
           "#C0VQRUP2": 8,
-          "#U008V0PQ8": 7,
+          "#U008V0PQ8": 8,
           "#88QP9CJU": 8,
           "#9GG9GRC0G": 8,
           "#UYP0YCQ9": 4,
-          "#LCQ2J0VGC": 4
+          "#LCQ2J0VGC": 8
         }
       },
       {

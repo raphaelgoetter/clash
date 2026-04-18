@@ -1489,7 +1489,7 @@
           "start": "2026-04-17T09:40:00.000Z",
           "end": "2026-04-18T09:39:59.999Z"
         },
-        "snapshotTime": "2026-04-17T21:15:57.216Z",
+        "snapshotTime": "2026-04-18T00:24:07.481Z",
         "snapshotBackupTime": "2026-04-17T21:15:57.216Z",
         "decks": {
           "#2V20JP28Q": 4,
@@ -1522,7 +1522,12 @@
           "#VR0LV90YP": 0,
           "#VY0LYQQVJ": 0
         },
-        "hourlyCumul": [],
+        "hourlyCumul": [
+          {
+            "takenAt": "2026-04-18T00:23:54.196Z",
+            "total": 29
+          }
+        ],
         "_cumulFame": {
           "#JC28YVLPG": 0,
           "#QPU0U2C9": 0,
