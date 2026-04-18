@@ -2208,18 +2208,18 @@ export default async function handler(req, res) {
               : "";
 
           let line1 = `${rank} ${bold}${nameStr}${bold} ${trophies}`.trim();
-          let line2 = [prevWarStr, lastWarStr].filter(Boolean).join(" · ");
+          let line2;
 
-          let row = `${line1}\n${line2}`;
-
-          // Ajouter indicateurs GDC si disponibles
-          if (isWarPeriod && clan.projectedFame != null) {
+          if (isWarPeriod) {
             const decks = `<:cards:1493711279121104926> ${clan.decksToday != null ? clan.decksToday : "?"} decks`;
             const eff = `<:cible:1493711597682557019> ${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(1) : "?"} pts/d`;
-            const proj = `🔮 Proj: **${fmt(Math.round(clan.projectedFame))}**`;
-            row += `\n${decks} · ${eff} · ${proj}`;
+            const proj = `🔮 Proj: **${clan.projectedFame != null ? fmt(Math.round(clan.projectedFame)) : "?"}**`;
+            line2 = `${decks} · ${eff} · ${proj}`;
+          } else {
+            line2 = [prevWarStr, lastWarStr].filter(Boolean).join(" · ");
           }
 
+          const row = `${line1}\n${line2}`;
           return row;
         });
 
