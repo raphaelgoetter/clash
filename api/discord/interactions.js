@@ -2188,7 +2188,7 @@ export default async function handler(req, res) {
           const bold = isOwn ? "__" : "";
 
           const trophies =
-            clan.clanWarTrophies != null
+            !isWarPeriod && clan.clanWarTrophies != null
               ? `<:trophy2:1493677804733337621> ${fmt(clan.clanWarTrophies)}`
               : "";
 
