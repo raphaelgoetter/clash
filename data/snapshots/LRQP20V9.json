@@ -1323,7 +1323,7 @@
           "start": "2026-04-18T09:54:00.000Z",
           "end": "2026-04-19T09:53:59.999Z"
         },
-        "snapshotTime": "2026-04-18T21:10:35.129Z",
+        "snapshotTime": "2026-04-19T00:25:14.444Z",
         "snapshotBackupTime": "2026-04-18T21:10:35.129Z",
         "decks": {
           "#2U9QL8Q89": 4,
@@ -1352,11 +1352,13 @@
           "#JCCQY0U9G": 4,
           "#L2JC8P0G2": 4,
           "#LUGP2RYY": 4,
+          "#PRGCCRUJP": 4,
           "#PUP2LP8G2": 4,
           "#QVG90PQVG": 4,
           "#RJJ99Y9J": 4,
           "#RJY2R282V": 4,
           "#ULCRCVPLG": 4,
+          "#UPC0Y0LRQ": 4,
           "#UVV8CULJV": 4,
           "#V0VLJQCJU": 4,
           "#VGJ9LL8VC": 4,
@@ -1365,7 +1367,6 @@
           "#YGP000RP8": 4,
           "#YRGJGR8R": 4,
           "#9CYUGPQ0C": 1,
-          "#UPC0Y0LRQ": 1,
           "#2L8RPQRJ9": 0,
           "#2P0VYJJR9": 0,
           "#2YP2V2G0R": 0,
@@ -1374,10 +1375,14 @@
           "#8G00908LP": 0,
           "#8QV8G0CC0": 0,
           "#8UL8JRCJ": 0,
-          "#9PCYJ2UQ0": 0,
-          "#GLV9Q2P09": 0
+          "#9PCYJ2UQ0": 0
         },
-        "hourlyCumul": [],
+        "hourlyCumul": [
+          {
+            "takenAt": "2026-04-19T00:25:06.054Z",
+            "total": 161
+          }
+        ],
         "_cumulFame": {
           "#2YV89UGJQ": 0,
           "#U9UGY99VC": 0,
@@ -1422,7 +1427,7 @@
           "#82UPUGYP": 1900,
           "#2YLYG9V92": 2000,
           "#80GVRPGPY": 1900,
-          "#UPC0Y0LRQ": 1400,
+          "#UPC0Y0LRQ": 2100,
           "#98UULQY8": 2100,
           "#802YQPVQ": 1350,
           "#8GGQLU28": 2100,
@@ -1434,7 +1439,7 @@
           "#GGVQJLG9": 2150,
           "#8YGY2RPCC": 1950,
           "#Y9P9GGL89": 2400,
-          "#PRGCCRUJP": 1600,
+          "#PRGCCRUJP": 2400,
           "#CGJP0YYUJ": 2500,
           "#LUGP2RYY": 2300,
           "#829GLP0CV": 2250,
@@ -1487,7 +1492,7 @@
           "#82UPUGYP": 12,
           "#2YLYG9V92": 12,
           "#80GVRPGPY": 12,
-          "#UPC0Y0LRQ": 9,
+          "#UPC0Y0LRQ": 12,
           "#98UULQY8": 12,
           "#802YQPVQ": 8,
           "#8GGQLU28": 12,
@@ -1499,7 +1504,7 @@
           "#GGVQJLG9": 12,
           "#8YGY2RPCC": 12,
           "#Y9P9GGL89": 12,
-          "#PRGCCRUJP": 8,
+          "#PRGCCRUJP": 12,
           "#CGJP0YYUJ": 12,
           "#LUGP2RYY": 12,
           "#829GLP0CV": 12,
