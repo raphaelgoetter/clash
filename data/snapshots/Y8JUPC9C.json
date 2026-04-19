@@ -1761,10 +1761,10 @@
     "days": [
       {
         "warDay": "thursday",
-        "realDay": "2026-04-16",
+        "realDay": "2026-04-17",
         "gdcPeriod": {
-          "start": "2026-04-16T09:52:00.000Z",
-          "end": "2026-04-17T09:51:59.999Z"
+          "start": "2026-04-17T09:52:00.000Z",
+          "end": "2026-04-18T09:51:59.999Z"
         },
         "snapshotTime": "2026-04-17T09:31:50.992Z",
         "snapshotBackupTime": "2026-04-16T21:16:20.715Z",
@@ -1980,10 +1980,10 @@
       },
       {
         "warDay": "friday",
-        "realDay": "2026-04-17",
+        "realDay": "2026-04-18",
         "gdcPeriod": {
-          "start": "2026-04-17T09:52:00.000Z",
-          "end": "2026-04-18T09:51:59.999Z"
+          "start": "2026-04-18T09:52:00.000Z",
+          "end": "2026-04-19T09:51:59.999Z"
         },
         "snapshotTime": "2026-04-18T09:16:55.826Z",
         "snapshotBackupTime": "2026-04-17T21:15:47.132Z",
@@ -2199,10 +2199,10 @@
       },
       {
         "warDay": "saturday",
-        "realDay": "2026-04-18",
+        "realDay": "2026-04-19",
         "gdcPeriod": {
-          "start": "2026-04-18T09:52:00.000Z",
-          "end": "2026-04-19T09:51:59.999Z"
+          "start": "2026-04-19T09:52:00.000Z",
+          "end": "2026-04-20T09:51:59.999Z"
         },
         "snapshotTime": "2026-04-19T09:16:57.638Z",
         "snapshotBackupTime": "2026-04-18T21:10:29.560Z",
@@ -2414,15 +2414,16 @@
       },
       {
         "warDay": "sunday",
-        "realDay": "2026-04-19",
+        "realDay": "2026-04-20",
         "gdcPeriod": {
-          "start": "2026-04-19T09:52:00.000Z",
-          "end": "2026-04-20T09:51:59.999Z"
+          "start": "2026-04-20T09:52:00.000Z",
+          "end": "2026-04-21T09:51:59.999Z"
         },
-        "snapshotTime": "2026-04-19T19:16:35.373Z",
-        "snapshotBackupTime": "2026-04-19T19:16:35.373Z",
+        "snapshotTime": "2026-04-19T20:10:07.911Z",
+        "snapshotBackupTime": "2026-04-19T20:10:07.911Z",
         "decks": {
           "#28PQVJ2V": 4,
+          "#2UQQJJ98Y": 4,
           "#80CCLY20L": 4,
           "#82URJC8CR": 4,
           "#888Y29GY": 4,
@@ -2430,6 +2431,7 @@
           "#8PP9JQCLY": 4,
           "#9CQC0YUR8": 4,
           "#9GG9GRC0G": 4,
+          "#9VQ0J29Y": 4,
           "#9YQ0P0L0": 4,
           "#9YQ8RVU2P": 4,
           "#C0VQRUP2": 4,
@@ -2442,6 +2444,7 @@
           "#J8RU2RJ8C": 4,
           "#J9ULCGJYU": 4,
           "#LCQ2J0VGC": 4,
+          "#LQLY92CR0": 4,
           "#PG0Q0YYGY": 4,
           "#PVQ2QRLJQ": 4,
           "#U008V0PQ8": 4,
@@ -2458,7 +2461,6 @@
           "#2GPUQY9P9": 0,
           "#2GUPJ99G2": 0,
           "#2R9QUYQ2C": 0,
-          "#2UQQJJ98Y": 0,
           "#2VULJRRY9": 0,
           "#809G8YC8": 0,
           "#88QP9CJU": 0,
@@ -2468,17 +2470,15 @@
           "#8V98QYY8V": 0,
           "#99CRC8PP": 0,
           "#9RRP8V0LG": 0,
-          "#9VQ0J29Y": 0,
           "#9Y28LR22": 0,
-          "#CC29JU800": 0,
-          "#J8LUJQGY0": 0
+          "#CC29JU800": 0
         },
         "hourlyCumul": [],
         "_cumulFame": {
           "#809G8YC8": 2000,
           "#PG0Q0YYGY": 2850,
           "#9Y28LR22": 1700,
-          "#9VQ0J29Y": 1550,
+          "#9VQ0J29Y": 2150,
           "#G2VVUJLLQ": 1900,
           "#2902YQRQL": 1900,
           "#U008V0PQ8": 2950,
@@ -2511,7 +2511,7 @@
           "#UY00GJG2": 2625,
           "#99CRC8PP": 2300,
           "#QGVJ2U0QJ": 0,
-          "#2UQQJJ98Y": 1900,
+          "#2UQQJJ98Y": 2550,
           "#UJ89GUUUY": 2500,
           "#80CCLY20L": 2500,
           "#CQ0GQ0JRU": 2750,
@@ -2530,7 +2530,7 @@
           "#PVQ2QRLJQ": 2000,
           "#CYRGPVGVG": 1750,
           "#JLU88JR28": 1650,
-          "#LQLY92CR0": 1500,
+          "#LQLY92CR0": 2200,
           "#LCQ2J0VGC": 2850
         },
         "periodType": "warDay",
@@ -2556,10 +2556,10 @@
           "#2CL028C80": 12,
           "#99CRC8PP": 12,
           "#UYP0YCQ9": 16,
-          "#LQLY92CR0": 12,
+          "#LQLY92CR0": 16,
           "#G9LPGQUG": 16,
           "#J9ULCGJYU": 12,
-          "#9VQ0J29Y": 12,
+          "#9VQ0J29Y": 16,
           "#8V98QYY8V": 12,
           "#9YQ8RVU2P": 16,
           "#JLU88JR28": 12,
@@ -2574,7 +2574,7 @@
           "#88QP9CJU": 12,
           "#8PP9JQCLY": 16,
           "#8P29RRU2": 12,
-          "#2UQQJJ98Y": 12,
+          "#2UQQJJ98Y": 16,
           "#80CCLY20L": 16,
           "#P9R8Y90P8": 12,
           "#GGRLYR8PL": 16,
