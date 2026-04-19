@@ -140,13 +140,22 @@ async function readClanMemberNames(tag) {
   try {
     const raw = await readFile(filePath, "utf-8");
     const data = JSON.parse(raw);
+    const names = {};
+
     const membersRaw = data.membersRaw || {};
-    return Object.fromEntries(
-      Object.entries(membersRaw).map(([playerTag, playerData]) => [
-        normalizePlayerTag(playerTag),
-        playerData?.profile?.name || normalizePlayerTag(playerTag),
-      ]),
-    );
+    for (const [playerTag, playerData] of Object.entries(membersRaw)) {
+      names[normalizePlayerTag(playerTag)] =
+        playerData?.profile?.name || normalizePlayerTag(playerTag);
+    }
+
+    const members = Array.isArray(data.members) ? data.members : [];
+    for (const member of members) {
+      const playerTag = normalizePlayerTag(member?.tag);
+      if (!playerTag || names[playerTag]) continue;
+      names[playerTag] = member.name || playerTag;
+    }
+
+    return names;
   } catch {
     return {};
   }
