@@ -222,6 +222,8 @@ function translateUI() {
   document.getElementById("btn-clan").textContent = `👥 ${t("modeClan")}`;
   searchInput.placeholder = t("searchPlaceholder");
   searchHint.textContent = t("searchHint");
+  document.getElementById("search-panel-title").textContent =
+    t("searchPanelTitle");
   document.getElementById("search-btn-label").textContent = t("searchButton");
   favBtn.title = t("favButton");
   document
