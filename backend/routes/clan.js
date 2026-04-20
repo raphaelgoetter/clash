@@ -1958,6 +1958,13 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           //
           // projectedRank    {string}  Rang projeté ("1st"…"5th")
           //
+          // currentFame      {number}  Fame cumulée actuelle de la semaine
+          // maxReachableFame {number}  Fame max théorique atteignable
+          //                            = currentFame + (800 - decksUsedWeekly) * 200
+          // isClinchedWin    {boolean} Victoire mathématiquement assurée
+          //                            (strictement au-dessus du max atteignable
+          //                            de tous les autres clans du groupe)
+          //
           // warResetUtcMinutes {number}  Heure du reset GDC en minutes UTC  [540–660]
           //   → tiré de warResetOffsetMs(tag) — differ per clan, set manually in dateUtils.js
           //
@@ -2010,6 +2017,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             let decksToday = null;
             let ptsPerDeck = null;
             let projectedFame = null;
+            let currentFame = null;
+            let maxReachableFame = null;
 
             // Pour les rivaux, utiliser c.participants (données du groupe propre au clan analysé)
             // plutôt que rivalCurrentRaceByTag qui retourne la course du rival DANS SON PROPRE
@@ -2025,6 +2034,18 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               const allParts = isOwn
                 ? raceData.clan.participants
                 : rivalParticipants;
+              // Fame cumulée section en cours (source: participants, plus fiable que c.fame)
+              const sectionFame = allParts.reduce(
+                (s, p) => s + (p.fame ?? 0),
+                0,
+              );
+              currentFame = sectionFame;
+
+              // Borne haute théorique stricte pour la fin de semaine.
+              // 800 = 50 membres * 4 decks * 4 jours ; 200 fame max/deck (CW2).
+              const MAX_WEEKLY_DECKS = 800;
+              const MAX_FAME_PER_DECK = 200;
+
               // decksToday : exclure les ex-membres pour cohérence avec clanWarSummary
               const activePartsToday = isOwn
                 ? allParts.filter((p) => currentMemberTags.has(p.tag))
@@ -2038,6 +2059,12 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 (s, p) => s + (p.decksUsed ?? 0),
                 0,
               );
+              const remainingDecksWeekly = Math.max(
+                0,
+                MAX_WEEKLY_DECKS - totalDecksWeekly,
+              );
+              maxReachableFame =
+                sectionFame + remainingDecksWeekly * MAX_FAME_PER_DECK;
 
               const avgDecksLastWeek = isOwn
                 ? ownAvgDecks
@@ -2067,11 +2094,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               );
 
               if (decksToday > 0) {
-                const sectionFame = allParts.reduce(
-                  (s, p) => s + (p.fame ?? 0),
-                  0,
-                );
-
                 if (isOwn) {
                   // Clan propre : pts du jour = cumul API live - cumul snapshot J-1.
                   // weekSnaps[warDayIndex-1]._cumulFame stocke la fame cumulée à la fin du jour précédent.
@@ -2144,6 +2166,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               decksToday,
               ptsPerDeck,
               projectedFame,
+              currentFame,
+              maxReachableFame,
+              isClinchedWin: false,
               targetDecksToday: c.targetDecksToday,
               warResetUtcMinutes: warResetOffsetMs(c.tag) / 60000,
             };
@@ -2159,6 +2184,22 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 c.projectedRank =
                   sortedByProjection.findIndex((s) => s.tag === c.tag) + 1;
               }
+            });
+
+            // Détection rigoureuse d'une victoire déjà assurée :
+            // currentFame du clan > maxReachableFame de tous les autres.
+            groupWithProjections.forEach((c) => {
+              if (typeof c.currentFame !== "number") return;
+              const rivalsMax = groupWithProjections
+                .filter((x) => x.tag !== c.tag)
+                .map((x) =>
+                  typeof x.maxReachableFame === "number"
+                    ? x.maxReachableFame
+                    : -Infinity,
+                );
+              if (rivalsMax.length === 0) return;
+              const bestRivalReachable = Math.max(...rivalsMax);
+              c.isClinchedWin = c.currentFame > bestRivalReachable;
             });
           }
 

@@ -170,6 +170,33 @@ function capitalize(str) {
   return str && str.length ? str[0].toUpperCase() + str.slice(1) : "";
 }
 
+function normalizeClanTag(tag) {
+  if (!tag) return "";
+  const raw = String(tag).trim().toUpperCase();
+  return raw.startsWith("#") ? raw : `#${raw}`;
+}
+
+function sumStandingDecks(standing) {
+  const participants = standing?.clan?.participants;
+  if (!Array.isArray(participants) || participants.length === 0) return null;
+  return participants.reduce((sum, p) => sum + (p.decksUsed ?? 0), 0);
+}
+
+// Victoire anticipée "dès J3" : clan 1er et total decks hebdo <= 600.
+// 600 = 50 membres * 4 decks * 3 jours.
+function isEarlyWinByDay3(lastRace, clanTag) {
+  if (!lastRace || !Array.isArray(lastRace.standings)) return false;
+  const ownTag = normalizeClanTag(clanTag);
+  const standing = lastRace.standings.find(
+    (s) => normalizeClanTag(s?.clan?.tag) === ownTag,
+  );
+  if (!standing) return false;
+  if ((standing.rank ?? null) !== 1) return false;
+  const totalDecks = sumStandingDecks(standing);
+  if (totalDecks == null) return false;
+  return totalDecks <= 600;
+}
+
 // Calcule la largeur visuelle d'une chaîne en monospace :
 // les symboles Misc, CJK et emoji comptent pour 2 colonnes,
 // les caractères ASCII normaux pour 1.
@@ -534,6 +561,16 @@ export default async function handler(req, res) {
   if (body.type === 2 && body.data?.name === "promote") {
     // parse options
     const clanOpt = body.data.options?.find((o) => o.name === "clan");
+    if (!clanOpt?.value) {
+      res.status(200).json({
+        type: 4,
+        data: {
+          content: "Option obligatoire manquante : `clan`.",
+          flags: 64,
+        },
+      });
+      return;
+    }
     const min = 2600;
     let clanVal = (clanOpt?.value || "1").toString().trim().toLowerCase();
     // Résoudre clan de façon synchrone (pas d'await) avant le type:5
@@ -563,6 +600,7 @@ export default async function handler(req, res) {
         const { fetchRaceLog } =
           await import("../../backend/services/clashApi.js");
         const raceLog = await fetchRaceLog(`#${clanTag}`);
+        const earlyWinByDay3 = isEarlyWinByDay3(raceLog?.[0], clanTag);
         const top = await computeTopPlayers(clanTag, members, [min], raceLog);
         let players = top.playersByQuota[min] || [];
         players = players.slice().sort((a, b) => b.fame - a.fame);
@@ -597,8 +635,9 @@ export default async function handler(req, res) {
 
         let description;
         if (players.length === 0) {
-          description =
-            "Aucun joueur n'a atteint 2600 pts la semaine précédente.";
+          description = earlyWinByDay3
+            ? "Aucun joueur n'a atteint 2600 pts la semaine précédente car il y a eu une victoire anticipée dès le jour 3"
+            : "Aucun joueur n'a atteint 2600 pts la semaine précédente.";
         } else {
           const rows = players.map((p, idx) => {
             const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
@@ -1239,6 +1278,16 @@ export default async function handler(req, res) {
   // Commande /demote
   if (body.type === 2 && body.data?.name === "demote") {
     const clanOpt = body.data.options?.find((o) => o.name === "clan");
+    if (!clanOpt?.value) {
+      res.status(200).json({
+        type: 4,
+        data: {
+          content: "Option obligatoire manquante : `clan`.",
+          flags: 64,
+        },
+      });
+      return;
+    }
     const clanVal = (clanOpt?.value || "1").toString().trim().toLowerCase();
     const CLAN_MAP = {
       1: { name: "La Resistance", tag: "Y8JUPC9C" },
@@ -1252,6 +1301,8 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
+        const { fetchRaceLog } =
+          await import("../../backend/services/clashApi.js");
         const apiUrl = `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis?includeTopPlayers=false&includeUncomplete=true`;
         const apiResp = await fetch(apiUrl);
         if (!apiResp.ok) {
@@ -1265,6 +1316,8 @@ export default async function handler(req, res) {
         }
 
         const analysis = await apiResp.json();
+        const raceLog = await fetchRaceLog(`#${resolved.tag}`);
+        const earlyWinByDay3 = isEarlyWinByDay3(raceLog?.[0], resolved.tag);
         const uncompleteAll = analysis.uncomplete?.players || [];
         const uncomplete = uncompleteAll.filter((p) => p.inClan);
 
@@ -1292,7 +1345,10 @@ export default async function handler(req, res) {
           return `${i + 1}. [${p.name}](${playerUrl})${isNew} • ${role} • **${p.decks} decks**`;
         });
 
-        let description = `Joueurs n'ayant pas joué 16/16 decks\n${rows.join("\n")}`;
+        const demoteHeader = earlyWinByDay3
+          ? "Joueurs n'ayant pas joué 16/16 decks car il y a eu une victoire anticipée dès le jour 3"
+          : "Joueurs n'ayant pas joué 16/16 decks";
+        let description = `${demoteHeader}\n${rows.join("\n")}`;
         // Discord limite les embeds à 4096 caractères pour description
         if (description.length > 4090) {
           const trimmed = rows
@@ -1301,7 +1357,7 @@ export default async function handler(req, res) {
             .split("\n")
             .slice(0, -1)
             .join("\n");
-          description = `Joueurs n'ayant pas joué 16/16 decks\n${trimmed}\n...liste tronquée`;
+          description = `${demoteHeader}\n${trimmed}\n...liste tronquée`;
         }
         const clanUrl = `https://trustroyale.vercel.app/?mode=clan&tag=%23${resolved.tag}`;
 
@@ -2214,7 +2270,10 @@ export default async function handler(req, res) {
             const decks = `<:cards:1493711279121104926> ${clan.decksToday != null ? clan.decksToday : "?"} decks`;
             const eff = `<:cible:1493711597682557019> ${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(1) : "?"} pts/d`;
             const proj = `<:lucky:1495168368611950632> Projection: **${clan.projectedFame != null ? fmt(Math.round(clan.projectedFame)) : "?"}**`;
-            line2 = `${decks} · ${eff} · ${proj}`;
+            const clinched = clan.isClinchedWin
+              ? "\n✅ Victoire mathématiquement assurée"
+              : "";
+            line2 = `${decks} · ${eff} · ${proj}${clinched}`;
           } else {
             line2 = [prevWarStr, lastWarStr].filter(Boolean).join(" · ");
           }
@@ -2223,8 +2282,11 @@ export default async function handler(req, res) {
           return row;
         });
 
+        const anyClinched = isWarPeriod && sorted.some((c) => c.isClinchedWin);
         const footerText = isWarPeriod
-          ? `Trié par Projection en fin de journée`
+          ? anyClinched
+            ? `Trié par Projection · ✅ = victoire mathématiquement assurée`
+            : `Trié par Projection en fin de journée`
           : `Trié par Total Dernière GDC`;
 
         const embed = {

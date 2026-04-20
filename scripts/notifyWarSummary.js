@@ -251,6 +251,60 @@ function fmtRank(n) {
   return n === 1 ? "1er" : `${n}e`;
 }
 
+function normalizeClanTag(tag) {
+  if (!tag) return "";
+  const raw = String(tag).trim().toUpperCase();
+  return raw.startsWith("#") ? raw : `#${raw}`;
+}
+
+/**
+ * Détecte si le clan est déjà mathématiquement gagnant en warDay.
+ * Règle stricte : currentFame(clan) > max(maxReachableFame(rivaux)).
+ */
+function computeClinchedWinInfo(race, ownClanTag) {
+  if (race?.periodType !== "warDay") return null;
+  if (!Array.isArray(race?.clans) || race.clans.length === 0) return null;
+
+  const MAX_WEEKLY_DECKS = 800; // 50*4*4
+  const MAX_FAME_PER_DECK = 200;
+  const ownTag = normalizeClanTag(ownClanTag);
+
+  const group = race.clans
+    .map((clan) => {
+      const parts = Array.isArray(clan?.participants) ? clan.participants : [];
+      if (parts.length === 0) return null;
+
+      const currentFame = parts.reduce((s, p) => s + (p.fame ?? 0), 0);
+      const decksUsedWeekly = parts.reduce((s, p) => s + (p.decksUsed ?? 0), 0);
+      const remainingDecks = Math.max(0, MAX_WEEKLY_DECKS - decksUsedWeekly);
+      const maxReachableFame = currentFame + remainingDecks * MAX_FAME_PER_DECK;
+
+      return {
+        tag: normalizeClanTag(clan?.tag),
+        currentFame,
+        maxReachableFame,
+      };
+    })
+    .filter(Boolean);
+
+  if (group.length === 0) return null;
+  const own = group.find((c) => c.tag === ownTag);
+  if (!own) return null;
+
+  const rivals = group.filter((c) => c.tag !== ownTag);
+  if (rivals.length === 0) return null;
+
+  const bestRivalReachable = Math.max(...rivals.map((c) => c.maxReachableFame));
+  const margin = own.currentFame - bestRivalReachable;
+
+  return {
+    isClinchedWin: margin > 0,
+    margin,
+    ownCurrentFame: own.currentFame,
+    bestRivalReachable,
+  };
+}
+
 async function sendDiscordEmbed(tag, channelId, token, embed) {
   if (DRY_RUN) {
     console.log(
@@ -308,6 +362,7 @@ async function postWarSummary(
   let livePrevCumul = null;
   let liveBoatAttackers = [];
   let liveBoatTotal = 0;
+  let clinchedInfo = null;
   try {
     const race = await fetchCurrentRace(tag);
     const participants = race?.clan?.participants ?? [];
@@ -322,6 +377,7 @@ async function postWarSummary(
         }));
       liveBoatTotal = liveBoatAttackers.reduce((s, p) => s + p.boatAttacks, 0);
     }
+    clinchedInfo = computeClinchedWinInfo(race, tag);
     // Cumul du jour précédent depuis le snapshot (pour calculer le delta du jour)
     if (prevDayEntry && Object.keys(prevDayEntry._cumulFame ?? {}).length > 0) {
       livePrevCumul = Object.values(prevDayEntry._cumulFame).reduce(
@@ -380,6 +436,11 @@ async function postWarSummary(
     }
   }
 
+  // Victoire anticipée dès J3 (semaine terminée) :
+  // clan 1er + total decks hebdo <= 600 (50*4*3).
+  const earlyWinByDay3 =
+    isLastDay && clanRank === 1 && (weekly?.totalDecksWeek ?? Infinity) <= 600;
+
   // Couleur selon la tendance (fame en priorité, decks en fallback)
   let color = 0x5865f2; // bleu neutre (J1 ou données insuffisantes)
   if (totalFame !== null && prevFame !== null) {
@@ -399,10 +460,15 @@ async function postWarSummary(
         `Données de fame incomplètes pour ${tag} (${dayEntry.realDay})`,
       );
     }
-    let line = `≈${fmt(totalFame)} pts`;
-    // En Colisée le score journalier fluctue selon les matchs — le delta n'est pas significatif
-    if (prevFame !== null && !isColosseum)
-      line += ` ${fmtDelta(totalFame - prevFame)}`;
+    let line;
+    if (earlyWinByDay3 && totalFame === 0) {
+      line = "0 pts (victoire acquise.)";
+    } else {
+      line = `≈${fmt(totalFame)} pts`;
+      // En Colisée le score journalier fluctue selon les matchs — le delta n'est pas significatif
+      if (prevFame !== null && !isColosseum)
+        line += ` ${fmtDelta(totalFame - prevFame)}`;
+    }
     fields.push({
       name: "<:trophy2:1493677804733337621> Points marqués",
       value: line,
@@ -475,6 +541,14 @@ async function postWarSummary(
     fields.push({
       name: "<:boat:1495083435612438729> Attaques bateau (cumul)",
       value: `${liveBoatTotal} attaque${liveBoatTotal > 1 ? "s" : ""} — ${boatNames}`,
+      inline: false,
+    });
+  }
+
+  if (clinchedInfo?.isClinchedWin) {
+    fields.push({
+      name: "<:topplayers:1493708397407899648> Statut de la course",
+      value: `✅ Victoire mathématiquement assurée (avance minimale garantie: ${fmt(clinchedInfo.margin)} pts).`,
       inline: false,
     });
   }
