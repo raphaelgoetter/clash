@@ -438,7 +438,7 @@ async function postWarSummary(
       })
       .join(", ");
     fields.push({
-      name: "<:boat:1495083435612438729> Attaques bateau",
+      name: "<:boat:1495083435612438729> Attaques bateau (cumul)",
       value: `${liveBoatTotal} attaque${liveBoatTotal > 1 ? "s" : ""} — ${boatNames}`,
       inline: false,
     });

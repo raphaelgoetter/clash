@@ -2025,7 +2025,7 @@ export default async function handler(req, res) {
         const totalMissing = late.reduce((sum, pl) => sum + pl.missing, 0);
         const hideDetails = totalMissing > 100;
 
-        // Attaques bateaux du jour
+        // Attaques bateaux (cumul)
         const boatAttackers = currentParticipants.filter(
           (pl) => (pl.boatAttacks ?? 0) > 0,
         );
@@ -2057,7 +2057,7 @@ export default async function handler(req, res) {
         }
         if (totalBoatAttacks > 0) {
           descLines.push(
-            `- ${totalBoatAttacks} attaque${totalBoatAttacks > 1 ? "s" : ""} bateau (${boatNames})`,
+            `- ${totalBoatAttacks} attaque${totalBoatAttacks > 1 ? "s" : ""} bateau (cumul) (${boatNames})`,
           );
         }
 
