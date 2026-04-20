@@ -251,6 +251,30 @@ function fmtRank(n) {
   return n === 1 ? "1er" : `${n}e`;
 }
 
+async function sendDiscordEmbed(tag, channelId, token, embed) {
+  if (DRY_RUN) {
+    console.log(
+      `\n[${tag}] ── DRY-RUN ── embed pour le channel ${channelId ?? "(non configuré)"} :`,
+    );
+    console.log(JSON.stringify({ embeds: [embed] }, null, 2));
+    return;
+  }
+
+  const res = await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bot ${token}`,
+    },
+    body: JSON.stringify({ embeds: [embed] }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Discord API ${res.status}: ${err}`);
+  }
+}
+
 /**
  * Construit et envoie l'embed Discord du résumé GDC pour un clan.
  *
@@ -375,7 +399,7 @@ async function postWarSummary(
         `Données de fame incomplètes pour ${tag} (${dayEntry.realDay})`,
       );
     }
-    let line = `${fmt(totalFame)} pts (approx.)`;
+    let line = `≈${fmt(totalFame)} pts`;
     // En Colisée le score journalier fluctue selon les matchs — le delta n'est pas significatif
     if (prevFame !== null && !isColosseum)
       line += ` ${fmtDelta(totalFame - prevFame)}`;
@@ -455,52 +479,6 @@ async function postWarSummary(
     });
   }
 
-  // ── Bilan de semaine (J4) ──
-  if (weekly) {
-    fields.push({
-      name: "\u200b",
-      value: "**— Bilan de la semaine —**",
-      inline: false,
-    });
-
-    if (weekly.totalFameWeek !== null) {
-      const fameLabel = weekly.isColosseum
-        ? "<:trophy2:1493677804733337621> Points totaux (Colisée)"
-        : "<:trophy2:1493677804733337621> Points totaux";
-      fields.push({
-        name: fameLabel,
-        value: `${fmt(weekly.totalFameWeek)} pts (approx.)`,
-        inline: false,
-      });
-    } else {
-      throw new Error(
-        `Bilan de semaine incomplet pour ${tag} (${dayEntry.realDay})`,
-      );
-    }
-
-    const pct = Math.round((weekly.totalDecksWeek / DECKS_MAX_WEEK) * 100);
-    fields.push({
-      name: "<:cards:1493711279121104926> Decks semaine",
-      value: `${fmt(weekly.totalDecksWeek)} / ${fmt(DECKS_MAX_WEEK)} (${pct}%)`,
-      inline: false,
-    });
-
-    fields.push({
-      name: "<:battle:1493710671244689449> Moyenne / jour",
-      value: `${weekly.avgDecksPerDay.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} decks`,
-      inline: false,
-    });
-
-    // Classement final : J4 uniquement, standings disponibles en warDay et en Colisée
-    if (clanRank !== null) {
-      fields.push({
-        name: "<:topplayers:1493708397407899648> Classement",
-        value: `${fmtRank(clanRank)} / 5`,
-        inline: false,
-      });
-    }
-  }
-
   // Footer : date de publication réelle du constat (après le reset GDC).
   const postDate = new Date();
   const postParis = new Date(
@@ -522,21 +500,13 @@ async function postWarSummary(
   ][postParis.getDay()];
   const postDateFR = `${postDayFR} ${pd}/${pm}/${py} à ${ph}h${pmin}`;
 
-  const embed = {
+  const dailyEmbed = {
     title: `<:scroll:1493850130560847892> ${clanName} · Résumé GDC`,
     description: `Journée ${WAR_DAY_NUMBER[warDay]} (${WAR_DAY_FR[warDay]})`,
     color,
     fields,
     footer: { text: `Constat fait le ${postDateFR}` },
   };
-
-  if (DRY_RUN) {
-    console.log(
-      `\n[${tag}] ── DRY-RUN ── embed pour le channel ${channelId ?? "(non configuré)"} :`,
-    );
-    console.log(JSON.stringify({ embeds: [embed] }, null, 2));
-    return;
-  }
 
   if (!channelId) {
     console.log(
@@ -549,18 +519,64 @@ async function postWarSummary(
     return;
   }
 
-  const res = await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bot ${token}`,
-    },
-    body: JSON.stringify({ embeds: [embed] }),
-  });
+  await sendDiscordEmbed(tag, channelId, token, dailyEmbed);
 
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Discord API ${res.status}: ${err}`);
+  if (weekly) {
+    const weeklyFields = [];
+    if (weekly.totalFameWeek !== null) {
+      const fameLabel = weekly.isColosseum
+        ? "<:trophy2:1493677804733337621> Points totaux (Colisée)"
+        : "<:trophy2:1493677804733337621> Points totaux";
+      weeklyFields.push({
+        name: fameLabel,
+        value: `≈${fmt(weekly.totalFameWeek)} pts`,
+        inline: false,
+      });
+    } else {
+      throw new Error(
+        `Bilan de semaine incomplet pour ${tag} (${dayEntry.realDay})`,
+      );
+    }
+
+    const pct = Math.round((weekly.totalDecksWeek / DECKS_MAX_WEEK) * 100);
+    weeklyFields.push({
+      name: "<:cards:1493711279121104926> Decks semaine",
+      value: `${fmt(weekly.totalDecksWeek)} / ${fmt(DECKS_MAX_WEEK)} (${pct}%)`,
+      inline: false,
+    });
+
+    weeklyFields.push({
+      name: "<:battle:1493710671244689449> Moyenne / jour",
+      value: `${weekly.avgDecksPerDay.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} decks`,
+      inline: false,
+    });
+
+    if (liveBoatTotal > 0) {
+      const boatNames = liveBoatAttackers.map((p) => p.name).join(", ");
+      weeklyFields.push({
+        name: "<:boat:1495083435612438729> Attaques bateau",
+        value: `${liveBoatTotal} attaque${liveBoatTotal > 1 ? "s" : ""} — ${boatNames}`,
+        inline: false,
+      });
+    }
+
+    if (clanRank !== null) {
+      weeklyFields.push({
+        name: "<:topplayers:1493708397407899648> Classement",
+        value: `${fmtRank(clanRank)} / 5`,
+        inline: false,
+      });
+    }
+
+    const weeklyEmbed = {
+      title: `<:scroll:1493850130560847892> ${clanName} · Bilan de la semaine`,
+      description: "Résumé de la semaine",
+      color,
+      fields: weeklyFields,
+      footer: { text: `Constat fait le ${postDateFR}` },
+    };
+
+    await sendDiscordEmbed(tag, channelId, token, weeklyEmbed);
   }
 
   const fameStr = totalFame !== null ? `${fmt(totalFame)} pts` : "pts N/A";
