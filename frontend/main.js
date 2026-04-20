@@ -1723,26 +1723,42 @@ function renderPlayerResults(data) {
         "points / semaine (gloire hebdomadaire moyenne, 1 000–3 000)",
       )
       .replace(/fame \/ week \(cap 3,000\)/gi, t("avgFameCap"))
-      .replace(/in recent\s+(\d+)-day window:/gi, (_, n) => `Sur les ${n} derniers jours :`)
-      .replace(/(\d+)\s*full days?/gi, (_, n) =>
-        `${n} ${Number(n) > 1 ? "jours complets" : "jour complet"}`,
+      .replace(
+        /in recent\s+(\d+)-day window:/gi,
+        (_, n) => `Sur les ${n} derniers jours :`,
       )
-      .replace(/(\d+)\s*short days?/gi, (_, n) =>
-        `${n} ${Number(n) > 1 ? "jours courts" : "jour court"}`,
+      .replace(
+        /(\d+)\s*full days?/gi,
+        (_, n) => `${n} ${Number(n) > 1 ? "jours complets" : "jour complet"}`,
       )
-      .replace(/(\d+)\s*inactive days?/gi, (_, n) =>
-        `${n} ${Number(n) > 1 ? "jours inactifs" : "jour inactif"}`,
+      .replace(
+        /(\d+)\s*short days?/gi,
+        (_, n) => `${n} ${Number(n) > 1 ? "jours courts" : "jour court"}`,
+      )
+      .replace(
+        /(\d+)\s*inactive days?/gi,
+        (_, n) => `${n} ${Number(n) > 1 ? "jours inactifs" : "jour inactif"}`,
       )
       .replace(/last war: (\d{4}-\d{2}-\d{2})/gi, "dernière guerre : $1")
-      .replace(/\((\d+) day\(s\) ago\)/gi, (_, n) =>
-        `(il y a ${n} ${Number(n) > 1 ? "jours" : "jour"})`,
+      .replace(
+        /\((\d+) day\(s\) ago\)/gi,
+        (_, n) => `(il y a ${n} ${Number(n) > 1 ? "jours" : "jour"})`,
       )
       .replace(/competitive battles/gi, "combats compétitifs")
       .replace(/([0-9]+)\s*War/gi, "$1 Guerre")
       .replace(/([0-9]+)\s*Challenges/gi, "$1 Défis")
-      .replace(/(\d+)% wins \((\d+)W \/ (\d+)L\)/gi, "$1% victoires ($2W / $3L)")
-      .replace(/not counted \(10 battles required\)/gi, "non compté (10 combats requis)")
-      .replace(/No data — no war battles found/gi, "Aucune donnée — aucun combat de guerre trouvé")
+      .replace(
+        /(\d+)% wins \((\d+)W \/ (\d+)L\)/gi,
+        "$1% victoires ($2W / $3L)",
+      )
+      .replace(
+        /not counted \(10 battles required\)/gi,
+        "non compté (10 combats requis)",
+      )
+      .replace(
+        /No data — no war battles found/gi,
+        "Aucune donnée — aucun combat de guerre trouvé",
+      )
       .replace(/total cw2 wins \(cap 250\)/gi, t("cw2BattleWinsCap"))
       .replace(/victories in river race/gi, "victoires en River Race")
       .replace(/trophies \(range 4000–14000\)/gi, "trophées (plage 4000–14000)")
