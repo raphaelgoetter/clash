@@ -131,7 +131,8 @@ async function readClanName(tag) {
 
 function normalizePlayerTag(tag) {
   if (!tag) return "";
-  return tag.startsWith("#") ? tag : `#${tag}`;
+  const normalized = tag.startsWith("#") ? tag.slice(1) : tag;
+  return `#${normalized.toUpperCase()}`;
 }
 
 async function readClanMemberNames(tag) {
@@ -150,6 +151,16 @@ async function readClanMemberNames(tag) {
 
     const members = Array.isArray(data.members) ? data.members : [];
     for (const member of members) {
+      const playerTag = normalizePlayerTag(member?.tag);
+      if (!playerTag || names[playerTag]) continue;
+      names[playerTag] = member.name || playerTag;
+    }
+
+    const uncompletePlayers =
+      data.uncomplete && Array.isArray(data.uncomplete.players)
+        ? data.uncomplete.players
+        : [];
+    for (const member of uncompletePlayers) {
       const playerTag = normalizePlayerTag(member?.tag);
       if (!playerTag || names[playerTag]) continue;
       names[playerTag] = member.name || playerTag;
