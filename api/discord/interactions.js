@@ -176,25 +176,29 @@ function normalizeClanTag(tag) {
   return raw.startsWith("#") ? raw : `#${raw}`;
 }
 
-function sumStandingDecks(standing) {
-  const participants = standing?.clan?.participants;
-  if (!Array.isArray(participants) || participants.length === 0) return null;
-  return participants.reduce((sum, p) => sum + (p.decksUsed ?? 0), 0);
+let warClinchLogCache = null;
+
+async function loadWarClinchLog() {
+  if (warClinchLogCache) return warClinchLogCache;
+  try {
+    const { readFile } = await import("fs/promises");
+    const { fileURLToPath } = await import("url");
+    const { default: path } = await import("path");
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const filePath = path.resolve(__dirname, "../../data/war-clinch-log.json");
+    const raw = await readFile(filePath, "utf-8");
+    warClinchLogCache = JSON.parse(raw);
+  } catch {
+    warClinchLogCache = {};
+  }
+  return warClinchLogCache;
 }
 
-// Victoire anticipée "dès J3" : clan 1er et total decks hebdo <= 600.
-// 600 = 50 membres * 4 decks * 3 jours.
-function isEarlyWinByDay3(lastRace, clanTag) {
-  if (!lastRace || !Array.isArray(lastRace.standings)) return false;
-  const ownTag = normalizeClanTag(clanTag);
-  const standing = lastRace.standings.find(
-    (s) => normalizeClanTag(s?.clan?.tag) === ownTag,
-  );
-  if (!standing) return false;
-  if ((standing.rank ?? null) !== 1) return false;
-  const totalDecks = sumStandingDecks(standing);
-  if (totalDecks == null) return false;
-  return totalDecks <= 600;
+async function hasProvenEarlyWinByDay3(clanTag, weekId) {
+  if (!weekId) return false;
+  const log = await loadWarClinchLog();
+  const key = `${normalizeClanTag(clanTag).replace("#", "")}:${weekId}`;
+  return log?.[key]?.known === true && log?.[key]?.isClinched === true;
 }
 
 // Calcule la largeur visuelle d'une chaîne en monospace :
@@ -600,38 +604,15 @@ export default async function handler(req, res) {
         const { fetchRaceLog } =
           await import("../../backend/services/clashApi.js");
         const raceLog = await fetchRaceLog(`#${clanTag}`);
-        const earlyWinByDay3 = isEarlyWinByDay3(raceLog?.[0], clanTag);
         const top = await computeTopPlayers(clanTag, members, [min], raceLog);
         let players = top.playersByQuota[min] || [];
         players = players.slice().sort((a, b) => b.fame - a.fame);
-
-        // Récupérer éventuellement isNew/isFamilyTransfer via l'analyse de clan pour annoter /promote
-        const analysisMap = new Map();
-        try {
-          const abortCtrl = new AbortController();
-          const abortTimer = setTimeout(() => abortCtrl.abort(), 50000);
-          const apiResp = await fetch(
-            `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(clanTag)}/analysis`,
-            {
-              headers: { Accept: "application/json" },
-              signal: abortCtrl.signal,
-            },
-          );
-          clearTimeout(abortTimer);
-          if (apiResp.ok) {
-            const analysis = await apiResp.json();
-            (analysis.members || []).forEach((m) => {
-              if (m?.tag) analysisMap.set((m.tag || "").toUpperCase(), m);
-            });
-          }
-        } catch (err) {
-          // ignore, annotations sont facultatives
-        }
 
         // Déduire le weekId depuis le raceLog (première entrée = semaine précédente)
         const { computePrevWeekId } =
           await import("../../backend/services/dateUtils.js");
         const weekId = computePrevWeekId(raceLog) || "S?";
+        const earlyWinByDay3 = await hasProvenEarlyWinByDay3(clanTag, weekId);
 
         let description;
         if (players.length === 0) {
@@ -1317,7 +1298,13 @@ export default async function handler(req, res) {
 
         const analysis = await apiResp.json();
         const raceLog = await fetchRaceLog(`#${resolved.tag}`);
-        const earlyWinByDay3 = isEarlyWinByDay3(raceLog?.[0], resolved.tag);
+        const { computePrevWeekId } =
+          await import("../../backend/services/dateUtils.js");
+        const weekIdFromLog = computePrevWeekId(raceLog);
+        const earlyWinByDay3 = await hasProvenEarlyWinByDay3(
+          resolved.tag,
+          weekIdFromLog,
+        );
         const uncompleteAll = analysis.uncomplete?.players || [];
         const uncomplete = uncompleteAll.filter((p) => p.inClan);
 
@@ -1362,7 +1349,10 @@ export default async function handler(req, res) {
         const clanUrl = `https://trustroyale.vercel.app/?mode=clan&tag=%23${resolved.tag}`;
 
         const weekId =
-          analysis.prevWeekId || analysis.clanWarSummary?.weekId || "S?";
+          weekIdFromLog ||
+          analysis.prevWeekId ||
+          analysis.clanWarSummary?.weekId ||
+          "S?";
         const embed = {
           title: `<:interrogation:1493849417520906271> ${resolved.name} · Oublis`,
           url: clanUrl,

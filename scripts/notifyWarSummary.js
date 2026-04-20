@@ -16,7 +16,10 @@ import { fileURLToPath } from "url";
 import path from "path";
 import fetch from "node-fetch";
 import { ALLOWED_CLANS } from "../backend/routes/clan.js";
-import { warResetOffsetMs } from "../backend/services/dateUtils.js";
+import {
+  computeCurrentWeekId,
+  warResetOffsetMs,
+} from "../backend/services/dateUtils.js";
 import {
   fetchRaceLog,
   fetchCurrentRace,
@@ -32,6 +35,12 @@ const CACHE_DIR = path.join(
   "clan-cache",
 );
 const LOG_FILE = path.join(__dirname, "..", "data", "war-summary-log.json");
+const CLINCH_LOG_FILE = path.join(
+  __dirname,
+  "..",
+  "data",
+  "war-clinch-log.json",
+);
 
 const DISCORD_API = "https://discord.com/api/v10";
 const DRY_RUN = process.argv.includes("--dry-run");
@@ -46,6 +55,20 @@ async function loadLog() {
   } catch {
     return {};
   }
+}
+
+async function loadClinchLog() {
+  if (!existsSync(CLINCH_LOG_FILE)) return {};
+  try {
+    return JSON.parse(await readFile(CLINCH_LOG_FILE, "utf-8"));
+  } catch {
+    return {};
+  }
+}
+
+async function saveClinchLog(clinchLog) {
+  if (DRY_RUN) return;
+  await writeFile(CLINCH_LOG_FILE, JSON.stringify(clinchLog, null, 2));
 }
 
 async function markPosted(log, tag, warDay, realDay) {
@@ -251,6 +274,55 @@ function fmtRank(n) {
   return n === 1 ? "1er" : `${n}e`;
 }
 
+function computeDay3ClinchProof(race, ownClanTag) {
+  if (race?.periodType !== "warDay") return { known: false, isClinched: false };
+  if (!Array.isArray(race?.clans) || race.clans.length === 0)
+    return { known: false, isClinched: false };
+
+  const ownTag = normalizeClanTag(ownClanTag);
+  const MAX_FAME_DAY4 = 200 * 200; // 200 decks max sur J4, 200 fame max/deck
+
+  const group = race.clans
+    .map((clan) => {
+      const participants = Array.isArray(clan?.participants)
+        ? clan.participants
+        : [];
+      if (participants.length === 0) return null;
+      const currentFame = participants.reduce((s, p) => s + (p.fame ?? 0), 0);
+      const decksToday = participants.reduce(
+        (s, p) => s + (p.decksUsedToday ?? 0),
+        0,
+      );
+      return {
+        tag: normalizeClanTag(clan?.tag),
+        currentFame,
+        decksToday,
+      };
+    })
+    .filter(Boolean);
+
+  if (group.length === 0) return { known: false, isClinched: false };
+  const own = group.find((c) => c.tag === ownTag);
+  if (!own) return { known: false, isClinched: false };
+
+  const rivals = group.filter((c) => c.tag !== ownTag);
+  if (rivals.length === 0) return { known: false, isClinched: false };
+
+  // Condition de preuve: aucun deck joué en J4 au moment de la mesure.
+  const cleanJ3Snapshot = group.every((c) => c.decksToday === 0);
+  if (!cleanJ3Snapshot) return { known: false, isClinched: false };
+
+  const bestRivalReachable = Math.max(
+    ...rivals.map((c) => c.currentFame + MAX_FAME_DAY4),
+  );
+  const margin = own.currentFame - bestRivalReachable;
+  return {
+    known: true,
+    isClinched: margin > 0,
+    margin,
+  };
+}
+
 function normalizeClanTag(tag) {
   if (!tag) return "";
   const raw = String(tag).trim().toUpperCase();
@@ -347,6 +419,7 @@ async function postWarSummary(
   prevDayEntry,
   prevPrevDayEntry,
   allWeekDays,
+  earlyWinByDay3,
   clanRank = null,
 ) {
   const channelId = process.env[`DISCORD_CHANNEL_MEMBERS_${tag}`];
@@ -436,11 +509,6 @@ async function postWarSummary(
     }
   }
 
-  // Victoire anticipée dès J3 (semaine terminée) :
-  // clan 1er + total decks hebdo <= 600 (50*4*3).
-  const earlyWinByDay3 =
-    isLastDay && clanRank === 1 && (weekly?.totalDecksWeek ?? Infinity) <= 600;
-
   // Couleur selon la tendance (fame en priorité, decks en fallback)
   let color = 0x5865f2; // bleu neutre (J1 ou données insuffisantes)
   if (totalFame !== null && prevFame !== null) {
@@ -461,7 +529,7 @@ async function postWarSummary(
       );
     }
     let line;
-    if (earlyWinByDay3 && totalFame === 0) {
+    if (isLastDay && earlyWinByDay3 === true && totalFame === 0) {
       line = "0 pts (victoire acquise.)";
     } else {
       line = `≈${fmt(totalFame)} pts`;
@@ -662,6 +730,7 @@ async function postWarSummary(
 async function main() {
   const now = new Date();
   const log = await loadLog();
+  const clinchLog = await loadClinchLog();
 
   for (const tag of ALLOWED_CLANS) {
     try {
@@ -700,6 +769,7 @@ async function main() {
       let prevDayEntry = null;
       let prevPrevDayEntry = null;
       let allWeekDays = [];
+      let selectedWeekId = null;
 
       for (const week of snapshots) {
         const dayIdx = (week.days ?? []).findIndex(
@@ -718,6 +788,7 @@ async function main() {
         prevDayEntry = dayIdx > 0 ? week.days[dayIdx - 1] : null;
         prevPrevDayEntry = dayIdx > 1 ? week.days[dayIdx - 2] : null;
         allWeekDays = week.days ?? [];
+        selectedWeekId = week.week ?? null;
         break;
       }
 
@@ -738,6 +809,33 @@ async function main() {
 
       // Classement final : uniquement J4, après le reset
       let clanRank = null;
+      let earlyWinByDay3 = null;
+
+      // Sur le run post-reset de J3 (warDay = saturday), on tente d'établir une preuve
+      // rigoureuse en lisant le groupe avant tout deck J4.
+      if (warDay === "saturday" && process.env.CLASH_API_KEY) {
+        try {
+          const [raceLog, currentRace] = await Promise.all([
+            fetchRaceLog(tag),
+            fetchCurrentRace(tag),
+          ]);
+          const weekId = computeCurrentWeekId(currentRace, raceLog);
+          if (weekId) {
+            const key = `${tag}:${weekId}`;
+            const proof = computeDay3ClinchProof(currentRace, tag);
+            clinchLog[key] = {
+              known: proof.known === true,
+              isClinched:
+                proof.known === true ? proof.isClinched === true : null,
+              computedAt: new Date().toISOString(),
+            };
+            await saveClinchLog(clinchLog);
+          }
+        } catch (err) {
+          console.warn(`[${tag}] Preuve J3 indisponible : ${err.message}`);
+        }
+      }
+
       if (warDay === "sunday" && process.env.CLASH_API_KEY) {
         try {
           const raceLog = await fetchRaceLog(tag);
@@ -748,6 +846,14 @@ async function main() {
         } catch (err) {
           console.warn(`[${tag}] Classement indisponible : ${err.message}`);
         }
+
+        if (selectedWeekId) {
+          const key = `${tag}:${selectedWeekId}`;
+          const proof = clinchLog[key];
+          if (proof?.known === true) {
+            earlyWinByDay3 = proof.isClinched === true;
+          }
+        }
       }
 
       await postWarSummary(
@@ -757,6 +863,7 @@ async function main() {
         prevDayEntry,
         prevPrevDayEntry,
         allWeekDays,
+        earlyWinByDay3,
         clanRank,
       );
       await markPosted(log, tag, warDay, realDay);
