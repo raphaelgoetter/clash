@@ -501,17 +501,33 @@ async function postWarSummary(
     }
   }
 
-  // Footer : date de la journée GDC (indépendant de l'heure du run)
-  const [fy, fmo, fd] = (dayEntry.realDay ?? "").split("-");
-  const realDayFR =
-    fd && fmo && fy ? `${fd}/${fmo}/${fy}` : (dayEntry.realDay ?? "");
+  // Footer : date de publication réelle du constat (après le reset GDC).
+  const postDate = new Date();
+  const postParis = new Date(
+    postDate.toLocaleString("en-US", { timeZone: "Europe/Paris" }),
+  );
+  const pd = String(postParis.getDate()).padStart(2, "0");
+  const pm = String(postParis.getMonth() + 1).padStart(2, "0");
+  const py = postParis.getFullYear();
+  const ph = String(postParis.getHours()).padStart(2, "0");
+  const pmin = String(postParis.getMinutes()).padStart(2, "0");
+  const postDayFR = [
+    "dimanche",
+    "lundi",
+    "mardi",
+    "mercredi",
+    "jeudi",
+    "vendredi",
+    "samedi",
+  ][postParis.getDay()];
+  const postDateFR = `${postDayFR} ${pd}/${pm}/${py} à ${ph}h${pmin}`;
 
   const embed = {
     title: `<:scroll:1493850130560847892> ${clanName} · Résumé GDC`,
     description: `Journée ${WAR_DAY_NUMBER[warDay]} (${WAR_DAY_FR[warDay]})`,
     color,
     fields,
-    footer: { text: `Constat fait le ${WAR_DAY_FR[warDay]} ${realDayFR}` },
+    footer: { text: `Constat fait le ${postDateFR}` },
   };
 
   if (DRY_RUN) {
