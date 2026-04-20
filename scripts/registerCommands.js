@@ -87,7 +87,7 @@ const commands = [
         name: "clan",
         description:
           "1/2/3 ou la/les (1=La Resistance, 2=Les Resistants, 3=Les Revoltes)",
-        required: false,
+        required: true,
         choices: [
           { name: "La Resistance", value: "1" },
           { name: "Les Resistants", value: "2" },
