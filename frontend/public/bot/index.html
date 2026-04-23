@@ -13,6 +13,9 @@
     <link rel="manifest" href="/site.webmanifest" />
   </head>
   <body>
+    <!-- ════════════════════════════════════════════════════════
+         HEADER
+    ════════════════════════════════════════════════════════ -->
     <header class="site-header">
       <div class="header-inner">
         <img src="/favicon.svg" alt="TrustRoyale logo" class="header-logo" />
@@ -56,11 +59,10 @@
           </li>
         </ol>
         <img
-          src="/images/bot01.webp"
+          src="/images/bot-01.webp"
           alt="Exemple d'utilisation du bot"
           class="card-image"
-          width="1706"
-          height="352"
+          width="600"
         />
       </section>
 
@@ -70,112 +72,177 @@
           Voici les commandes actuellement disponibles dans TrustRoyale Discord.
         </p>
 
+        <!-- Trust -->
         <div class="card">
           <h3 class="card-title">/trust</h3>
-          <p class="card-desc">
-            Analyse la fiabilité d’un joueur Clash Royale.
-          </p>
-          <p><strong>Option :</strong> <code>tag:#TAG</code></p>
+          <div data-layout="duo" data-split="2-1">
+            <div>
+              <p class="card-desc">
+                Analyse la fiabilité d’un joueur Clash Royale à partir de son
+                tag CR.
+              </p>
+              <p><strong>Option :</strong> <code>tag:#TAG</code></p>
+            </div>
+            <img src="/images/bot-02.webp" alt="" width="300" />
+          </div>
         </div>
 
+        <!-- Trust Clan -->
         <div class="card">
           <h3 class="card-title">/trust-clan</h3>
-          <p class="card-desc">Liste les membres peu fiables d’un clan.</p>
-          <p><strong>Option :</strong> <code>clan:N</code></p>
+          <div data-layout="duo" data-split="2-1">
+            <div>
+              <p class="card-desc">Liste les membres peu fiables d’un clan.</p>
+              <p><strong>Option :</strong> <code>clan:N</code></p>
+            </div>
+            <img src="/images/bot-03.webp" alt="" width="300" />
+          </div>
         </div>
 
+        <!-- Late -->
         <div class="card">
           <h3 class="card-title">/late</h3>
-          <p class="card-desc">
-            Affiche les joueurs en retard sur leurs decks de la journée, avant
-            le reset.
-          </p>
-          <p><strong>Option :</strong> <code>clan:N</code></p>
+          <div data-layout="duo" data-split="2-1">
+            <div>
+              <p class="card-desc">
+                Affiche les joueurs en retard sur leurs decks de la journée.
+                Commande à exécuter de préférence quelques minutes avant le
+                reset journalier.
+              </p>
+              <p><strong>Option :</strong> <code>clan:N</code></p>
+            </div>
+            <img src="/images/bot-04.webp" alt="" width="300" />
+          </div>
         </div>
 
-        <div class="card">
-          <h3 class="card-title">/chelem</h3>
-          <p class="card-desc">
-            Liste les joueurs ayant fait <strong>16/16 decks</strong> chaque
-            semaine d’une saison.
-          </p>
-          <p>
-            <strong>Options :</strong> <code>clan:N</code>
-            <code>[season:X]</code>
-          </p>
-        </div>
-
+        <!-- Promote -->
         <div class="card">
           <h3 class="card-title">/promote</h3>
-          <p class="card-desc">
-            Affiche les joueurs ayant atteint un minimum de points la semaine
-            précédente.
-          </p>
-          <p>
-            <strong>Options :</strong> <code>clan:N</code> <code>min:X</code>
-          </p>
+          <div data-layout="duo" data-split="2-1">
+            <div>
+              <p class="card-desc">
+                Affiche les joueurs ayant atteint un minimum de 2600 points la
+                semaine précédente. Généralement utilisé pour identifier les
+                membres à promouvoir dans le clan.
+              </p>
+              <p><strong>Options :</strong> <code>clan:N</code></p>
+            </div>
+            <img src="/images/bot-06.webp" alt="" width="300" />
+          </div>
         </div>
 
-        <div class="card">
-          <h3 class="card-title">/top-players</h3>
-          <p class="card-desc">
-            Liste les meilleurs joueurs de la famille pour une période donnée.
-          </p>
-          <p>
-            <strong>Options :</strong> <code>number:[3|5|10]</code>
-            <code>period:[week|season]</code>
-            <code>scope:[previous|actual]</code>
-          </p>
-        </div>
-
+        <!-- Demote -->
         <div class="card">
           <h3 class="card-title">/demote</h3>
-          <p class="card-desc">
-            Liste les joueurs qui n’ont pas réalisé 16/16 decks la semaine
-            précédente.
-          </p>
-          <p><strong>Option :</strong> <code>clan:N</code></p>
+          <div data-layout="duo" data-split="2-1">
+            <div>
+              <p class="card-desc">
+                Liste les joueurs qui n’ont pas réalisé 16/16 decks la semaine
+                précédente.
+              </p>
+              <p><strong>Option :</strong> <code>clan:N</code></p>
+            </div>
+            <img src="/images/bot-08.webp" alt="" width="300" />
+          </div>
         </div>
 
+        <!-- Top Players -->
+        <div class="card">
+          <h3 class="card-title">/top-players</h3>
+          <div data-layout="duo" data-split="2-1">
+            <div>
+              <p class="card-desc">
+                Liste les meilleurs joueurs de la famille pour une période
+                donnée.
+              </p>
+              <p>
+                <strong>Options :</strong> <code>number:[3|5|10]</code>
+                <code>period:[week|season]</code>
+              </p>
+            </div>
+            <img src="/images/bot-07.webp" alt="" width="300" />
+          </div>
+        </div>
+
+        <!-- Chelem -->
+        <div class="card">
+          <h3 class="card-title">/chelem</h3>
+          <div data-layout="duo" data-split="2-1">
+            <div>
+              <p class="card-desc">
+                Liste les joueurs ayant fait <strong>16/16 decks</strong> chaque
+                semaine d’une saison.
+              </p>
+              <p>
+                <strong>Options :</strong> <code>clan:N</code>
+                <code>[season:X]</code>
+              </p>
+            </div>
+            <img src="/images/bot-05.webp" alt="" width="300" />
+          </div>
+        </div>
+
+        <!-- Compare -->
+        <div class="card">
+          <h3 class="card-title">/compare</h3>
+          <div data-layout="duo" data-split="2-1">
+            <div>
+              <p class="card-desc">
+                Compare les 5 clans d'un groupe de GDC, avec projection de
+                points à la fin de la journée.
+              </p>
+              <p><strong>Options :</strong> <code>clan:N</code></p>
+            </div>
+            <img src="/images/bot-12.webp" alt="" width="300" />
+          </div>
+        </div>
+
+        <!-- Discord Link -->
         <div class="card">
           <h3 class="card-title">/discord-link</h3>
-          <p class="card-desc">
-            Permet de lier un compte Clash Royale à un compte Discord.
-          </p>
-          <p>
-            <strong>Option :</strong> <code>tag:#TAG</code> (<code
-              >tag2:#TAG</code
-            >
-            et <code>tag3:#TAG</code> optionnels)
-          </p>
+          <div data-layout="duo" data-split="2-1">
+            <div>
+              <p class="card-desc">
+                Permet de lier un compte Clash Royale à un compte Discord.
+              </p>
+              <p>
+                <strong>Option :</strong> <code>tag:#TAG</code> (<code
+                  >tag2:#TAG</code
+                >
+                et <code>tag3:#TAG</code> optionnels)
+              </p>
+            </div>
+            <img src="/images/bot-09.webp" alt="" width="300" />
+          </div>
         </div>
 
+        <!-- Discord Check -->
         <div class="card">
           <h3 class="card-title">/discord-check</h3>
-          <p class="card-desc">
-            Vérifie quels membres d’un clan sont présents sur le serveur
-            Discord.
-          </p>
-          <p><strong>Option :</strong> <code>clan:N</code></p>
+          <div data-layout="duo" data-split="2-1">
+            <div>
+              <p class="card-desc">
+                Vérifie quels membres d’un clan sont présents sur le serveur
+                Discord.
+              </p>
+              <p><strong>Option :</strong> <code>clan:N</code></p>
+            </div>
+            <img src="/images/bot-10.webp" alt="" width="300" />
+          </div>
         </div>
-      </section>
 
-      <section class="card">
-        <h2 class="card-title">Objectifs du bot</h2>
-        <ul>
-          <li>
-            Fournir une analyse rapide et objective de la fiabilité d’un joueur.
-          </li>
-          <li>Identifier les membres à risque avant les Guerres de Clan.</li>
-          <li>
-            Soutenir les chefs de clan dans leurs décisions de promotion,
-            recrutement et gestion.
-          </li>
-          <li>
-            Faciliter le suivi Discord des membres grâce à un lien
-            Clash/Discord.
-          </li>
-        </ul>
+        <!-- Help -->
+        <div class="card">
+          <h3 class="card-title">/help</h3>
+          <div data-layout="duo" data-split="2-1">
+            <div>
+              <p class="card-desc">
+                Affiche l'ensemble des commandes disponibles pour le bot.
+              </p>
+            </div>
+            <img src="/images/bot-11.webp" alt="" width="300" />
+          </div>
+        </div>
       </section>
 
       <section class="card">
@@ -184,7 +251,7 @@
           En complément des commandes, TrustRoyale publie automatiquement des
           messages dans les channels clan.
         </p>
-        <ul>
+        <ul class="card-list">
           <li>
             <strong>Nouveautés :</strong> détection des arrivées, départs et
             changements de rôle.
@@ -195,34 +262,6 @@
           </li>
         </ul>
       </section>
-
-      <section class="card">
-        <h2 class="card-title">Astuces</h2>
-        <p class="card-desc">
-          Les favoris sont stockés localement dans le navigateur et ne sont pas
-          partagés entre appareils.
-        </p>
-        <p class="card-desc">
-          Pour partager une analyse, copiez l’URL du site avec le mode approprié
-          et envoyez-la à un membre du clan.
-        </p>
-      </section>
-
-      <section class="card">
-        <h2 class="card-title">Pour les développeurs</h2>
-        <p class="card-desc">
-          La documentation technique, le setup local et les formules de calcul
-          sont disponibles dans le dépôt GitHub, notamment le fichier
-          <code>CONTRIBUTING.md</code>.
-        </p>
-      </section>
     </main>
-
-    <footer class="site-footer">
-      <p>
-        Built with ❤️ using the Clash Royale API · Not affiliated with Supercell
-        or RoyaleAPI
-      </p>
-    </footer>
   </body>
 </html>
