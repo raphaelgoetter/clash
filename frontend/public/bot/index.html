@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TrustRoyale – Documentation du bot Discord</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="TrustRoyale" />
+    <link rel="manifest" href="/site.webmanifest" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <img src="/favicon.svg" alt="TrustRoyale logo" class="header-logo" />
+        <div>
+          <h1 class="header-title">TrustRoyale Bot Discord</h1>
+          <p class="header-subtitle">
+            Documentation publique du bot officiel de la ☆. Resistance Family.
+          </p>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="card">
+        <h2 class="card-title">Présentation</h2>
+        <p class="card-desc">
+          TrustRoyale est l’outil interne de la famille Résistance pour analyser
+          la fiabilité des membres en mode Guerre de Clan.
+        </p>
+        <p class="card-desc">
+          Le bot permet de lancer des analyses directement depuis Discord,
+          suivre l’activité des clans, et afficher des statistiques clés sans
+          quitter le serveur.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2 class="card-title">Comment utiliser</h2>
+        <ol class="card-list">
+          <li>
+            Dans Discord, tapez <code>/</code> pour ouvrir la liste des
+            commandes.
+          </li>
+          <li>
+            Sélectionnez la commande souhaitée et remplissez les options
+            requises.
+          </li>
+          <li>
+            Le bot renvoie un message formaté avec les résultats ou la liste
+            demandée.
+          </li>
+        </ol>
+        <img
+          src="/images/bot01.webp"
+          alt="Exemple d'utilisation du bot"
+          class="card-image"
+          width="1706"
+          height="352"
+        />
+      </section>
+
+      <section class="card">
+        <h2 class="card-title">Commandes principales</h2>
+        <p class="card-desc">
+          Voici les commandes actuellement disponibles dans TrustRoyale Discord.
+        </p>
+
+        <div class="card">
+          <h3 class="card-title">/trust</h3>
+          <p class="card-desc">
+            Analyse la fiabilité d’un joueur Clash Royale.
+          </p>
+          <p><strong>Option :</strong> <code>tag:#TAG</code></p>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">/trust-clan</h3>
+          <p class="card-desc">Liste les membres peu fiables d’un clan.</p>
+          <p><strong>Option :</strong> <code>clan:N</code></p>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">/late</h3>
+          <p class="card-desc">
+            Affiche les joueurs en retard sur leurs decks de la journée, avant
+            le reset.
+          </p>
+          <p><strong>Option :</strong> <code>clan:N</code></p>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">/chelem</h3>
+          <p class="card-desc">
+            Liste les joueurs ayant fait <strong>16/16 decks</strong> chaque
+            semaine d’une saison.
+          </p>
+          <p>
+            <strong>Options :</strong> <code>clan:N</code>
+            <code>[season:X]</code>
+          </p>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">/promote</h3>
+          <p class="card-desc">
+            Affiche les joueurs ayant atteint un minimum de points la semaine
+            précédente.
+          </p>
+          <p>
+            <strong>Options :</strong> <code>clan:N</code> <code>min:X</code>
+          </p>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">/top-players</h3>
+          <p class="card-desc">
+            Liste les meilleurs joueurs de la famille pour une période donnée.
+          </p>
+          <p>
+            <strong>Options :</strong> <code>number:[3|5|10]</code>
+            <code>period:[week|season]</code>
+            <code>scope:[previous|actual]</code>
+          </p>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">/demote</h3>
+          <p class="card-desc">
+            Liste les joueurs qui n’ont pas réalisé 16/16 decks la semaine
+            précédente.
+          </p>
+          <p><strong>Option :</strong> <code>clan:N</code></p>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">/discord-link</h3>
+          <p class="card-desc">
+            Permet de lier un compte Clash Royale à un compte Discord.
+          </p>
+          <p>
+            <strong>Option :</strong> <code>tag:#TAG</code> (<code
+              >tag2:#TAG</code
+            >
+            et <code>tag3:#TAG</code> optionnels)
+          </p>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">/discord-check</h3>
+          <p class="card-desc">
+            Vérifie quels membres d’un clan sont présents sur le serveur
+            Discord.
+          </p>
+          <p><strong>Option :</strong> <code>clan:N</code></p>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 class="card-title">Objectifs du bot</h2>
+        <ul>
+          <li>
+            Fournir une analyse rapide et objective de la fiabilité d’un joueur.
+          </li>
+          <li>Identifier les membres à risque avant les Guerres de Clan.</li>
+          <li>
+            Soutenir les chefs de clan dans leurs décisions de promotion,
+            recrutement et gestion.
+          </li>
+          <li>
+            Faciliter le suivi Discord des membres grâce à un lien
+            Clash/Discord.
+          </li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2 class="card-title">Notifications automatiques</h2>
+        <p class="card-desc">
+          En complément des commandes, TrustRoyale publie automatiquement des
+          messages dans les channels clan.
+        </p>
+        <ul>
+          <li>
+            <strong>Nouveautés :</strong> détection des arrivées, départs et
+            changements de rôle.
+          </li>
+          <li>
+            <strong>Résumé GDC :</strong> publication quotidienne après le
+            reset, avec un récapitulatif hebdomadaire le dimanche.
+          </li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2 class="card-title">Astuces</h2>
+        <p class="card-desc">
+          Les favoris sont stockés localement dans le navigateur et ne sont pas
+          partagés entre appareils.
+        </p>
+        <p class="card-desc">
+          Pour partager une analyse, copiez l’URL du site avec le mode approprié
+          et envoyez-la à un membre du clan.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2 class="card-title">Pour les développeurs</h2>
+        <p class="card-desc">
+          La documentation technique, le setup local et les formules de calcul
+          sont disponibles dans le dépôt GitHub, notamment le fichier
+          <code>CONTRIBUTING.md</code>.
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        Built with ❤️ using the Clash Royale API · Not affiliated with Supercell
+        or RoyaleAPI
+      </p>
+    </footer>
+  </body>
+</html>
