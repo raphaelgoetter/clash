@@ -1931,20 +1931,20 @@
     "days": [
       {
         "warDay": "thursday",
-        "realDay": "2026-04-23",
+        "realDay": "2026-04-24",
         "gdcPeriod": {
-          "start": "2026-04-23T09:49:00.000Z",
-          "end": "2026-04-24T09:48:59.999Z"
+          "start": "2026-04-24T09:49:00.000Z",
+          "end": "2026-04-25T09:48:59.999Z"
         },
-        "snapshotTime": "2026-04-23T19:29:55.421Z",
-        "snapshotBackupTime": "2026-04-23T19:29:55.421Z",
+        "snapshotTime": "2026-04-23T20:20:30.047Z",
+        "snapshotBackupTime": "2026-04-23T20:20:30.047Z",
         "decks": {
           "#C0RRPJYV9": 4,
           "#J008G9CLJ": 4,
           "#VPGCQPR9U": 4,
           "#2V20JP28Q": 2,
+          "#UVGPPVQ8Q": 2,
           "#20U08C2V2Q": 1,
-          "#UVGPPVQ8Q": 1,
           "#209CGRVQJV": 0,
           "#2200UQ9P08": 0,
           "#228LP802YL": 0,
@@ -1989,7 +1989,7 @@
           "#VY9VLJR02": 0,
           "#8JGU9UUJJ": 0,
           "#UQ9U8YQPC": 0,
-          "#UVGPPVQ8Q": 200,
+          "#UVGPPVQ8Q": 400,
           "#98VCJLG92": 0,
           "#R2YP2UJRL": 0,
           "#88JY2CG8J": 0,
@@ -2027,7 +2027,7 @@
           "#VY9VLJR02": 0,
           "#8JGU9UUJJ": 0,
           "#UQ9U8YQPC": 0,
-          "#UVGPPVQ8Q": 1,
+          "#UVGPPVQ8Q": 2,
           "#98VCJLG92": 0,
           "#R2YP2UJRL": 0,
           "#88JY2CG8J": 0,
@@ -2054,21 +2054,6 @@
       },
       {
         "warDay": "friday",
-        "realDay": "2026-04-24",
-        "gdcPeriod": {
-          "start": "2026-04-24T09:49:00.000Z",
-          "end": "2026-04-25T09:48:59.999Z"
-        },
-        "snapshotTime": null,
-        "snapshotBackupTime": null,
-        "decks": {},
-        "hourlyCumul": [],
-        "_cumulFame": {},
-        "periodType": null,
-        "_cumul": {}
-      },
-      {
-        "warDay": "saturday",
         "realDay": "2026-04-25",
         "gdcPeriod": {
           "start": "2026-04-25T09:49:00.000Z",
@@ -2083,11 +2068,26 @@
         "_cumul": {}
       },
       {
-        "warDay": "sunday",
+        "warDay": "saturday",
         "realDay": "2026-04-26",
         "gdcPeriod": {
           "start": "2026-04-26T09:49:00.000Z",
           "end": "2026-04-27T09:48:59.999Z"
+        },
+        "snapshotTime": null,
+        "snapshotBackupTime": null,
+        "decks": {},
+        "hourlyCumul": [],
+        "_cumulFame": {},
+        "periodType": null,
+        "_cumul": {}
+      },
+      {
+        "warDay": "sunday",
+        "realDay": "2026-04-27",
+        "gdcPeriod": {
+          "start": "2026-04-27T09:49:00.000Z",
+          "end": "2026-04-28T09:48:59.999Z"
         },
         "snapshotTime": null,
         "snapshotBackupTime": null,
