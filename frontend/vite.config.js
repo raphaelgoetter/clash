@@ -1,23 +1,37 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from "vite";
 
 export default defineConfig({
-  root: '.',
+  root: ".",
   server: {
     port: 5173,
     proxy: {
       // All /api requests are forwarded to the Express backend
-      '/api': {
-        target: 'http://localhost:3000',
+      "/api": {
+        target: "http://localhost:3000",
         changeOrigin: true,
       },
     },
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const url = req.url?.split("?")[0] || "";
+        if (
+          url === "/bot" ||
+          url === "/bot/" ||
+          url === "/fr/bot" ||
+          url === "/fr/bot/"
+        ) {
+          req.url = "/bot/index.html";
+        }
+        next();
+      });
+    },
   },
   build: {
-    outDir: 'dist',
+    outDir: "dist",
     emptyOutDir: true,
     rollupOptions: {
       output: {
-        manualChunks: { chart: ['chart.js'] },
+        manualChunks: { chart: ["chart.js"] },
       },
     },
   },

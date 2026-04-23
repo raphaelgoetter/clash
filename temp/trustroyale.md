@@ -80,20 +80,16 @@ C’est un outil conçu pour être **proactif** : on détecte les membres à ris
 
 ➡️ Liste les top X joueurs (tous clans) sur la période demandée.
 
-- `period=week` : points de la semaine précédente (`scope=previous`) ou courant (`scope=actual`)
-- `period=season` : total points de la saison précédente (`scope=previous`) ou saison en cours (`scope=actual`)
+- `period=week` : points de la semaine précédente
+- `period=season` : total points de la saison précédente
 
 **Usage** :
 
 ```text
-/top-players number:5 period:week scope:previous
-/top-players number:10 period:season scope:previous
-/top-players number:5 period:season scope:actual
+/top-players number:5 period:week
+/top-players number:10 period:season
+/top-players number:5 period:season
 ```
-
-/chelem clan:1 season:129
-
-````
 
 ### 5) `/discord-link tag:#TAG`
 
@@ -105,7 +101,7 @@ C’est un outil conçu pour être **proactif** : on détecte les membres à ris
 
 ```text
 /discord-link tag:#YRGJGR8R
-````
+```
 
 Plusieurs tags peuvent être liés (ex : pour les comptes secondaires) en ajoutant `tag2:#TAG` et `tag3:#TAG` dans la commande.
 
@@ -115,16 +111,16 @@ Plusieurs tags peuvent être liés (ex : pour les comptes secondaires) en ajout
 
 Pratique pour les recrutements et pour s’assurer que tout le monde est bien connecté.
 
-### 7) `/promote min:X clan:N` (pour chefs de clan)
+### 7) `/promote clan:N` (pour chefs de clan)
 
-➡️ Affiche les joueurs qui ont atteint un minimum de points (par ex. 2400, 2600, 2800) la semaine précédente.
+➡️ Affiche les joueurs qui ont atteint un minimum de 2600 points la semaine précédente.
 
 Utile pour les campagnes de promotion et pour savoir qui soutenir pour monter dans les quotas.
 
 **Usage** :
 
 ```text
-/promote min:2600 clan:1
+/promote clan:1
 ```
 
 ### 8) `/demote clan:N` (pour chefs de clan)
