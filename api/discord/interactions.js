@@ -959,29 +959,34 @@ export default async function handler(req, res) {
                   )
                 : null;
               const participants = standing?.clan?.participants ?? [];
+              const weekId =
+                week?.seasonId != null && week?.sectionIndex != null
+                  ? `S${week.seasonId}W${week.sectionIndex + 1}`
+                  : null;
               for (const p of participants) {
                 const tag = p.tag?.toUpperCase?.() || "";
                 if (!tag || !allMembers.has(tag)) continue;
-                const existing = allTimeTotals.get(tag) || {
-                  name: p.name || "",
-                  fame: 0,
-                };
-                existing.name = existing.name || p.name || "";
-                existing.fame += p.fame || 0;
-                existing.clan = allMembers.get(tag)?.clan || clan.name;
-                existing.role = allMembers.get(tag)?.role || "member";
-                allTimeTotals.set(tag, existing);
+                const fame = p.fame || 0;
+                const existing = allTimeTotals.get(tag);
+                if (!existing || fame > existing.fame) {
+                  allTimeTotals.set(tag, {
+                    tag,
+                    name: p.name || "",
+                    fame,
+                    weekId,
+                    clan: allMembers.get(tag)?.clan || clan.name,
+                    role: allMembers.get(tag)?.role || "member",
+                  });
+                }
               }
             }
           }
 
-          const allTimeSorted = Array.from(allTimeTotals.entries())
-            .map(([tag, data]) => ({ tag, ...data }))
-            .sort(
-              (a, b) =>
-                b.fame - a.fame ||
-                a.name.localeCompare(b.name, "fr", { sensitivity: "base" }),
-            );
+          const allTimeSorted = Array.from(allTimeTotals.values()).sort(
+            (a, b) =>
+              b.fame - a.fame ||
+              a.name.localeCompare(b.name, "fr", { sensitivity: "base" }),
+          );
           if (allTimeSorted.length <= limit) {
             players = allTimeSorted;
           } else {
@@ -1033,7 +1038,8 @@ export default async function handler(req, res) {
             const clan = p.clan || "?";
             const fame = p.fame || 0;
             const fameStr = fame.toLocaleString("fr-FR");
-            return `${idx + 1}. [${name}](${playerUrl}) (${clan})\n**${fameStr} pts**`;
+            const weekLabel = p.weekId ? ` (${p.weekId})` : "";
+            return `${idx + 1}. [${name}](${playerUrl}) (${clan})\n**${fameStr} pts**${weekLabel}`;
           })
           .join("\n");
 
