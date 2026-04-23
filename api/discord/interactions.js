@@ -483,8 +483,8 @@ export default async function handler(req, res) {
             "Commande : `/chelem clan:N [season:X]`\n" +
             "Usage : joueurs ayant fait 16/16 decks toutes semaines d'une saison entière\n\n" +
             "**Top Players**\n" +
-            "Commande : `/top-players number:[3|5|10] period:[week|season]`\n" +
-            "Usage : meilleurs joueurs de toute la famille (semaine ou saison précédente)\n\n" +
+            "Commande : `/top-players number:[3|5|10] period:[week|season|all-time]`\n" +
+            "Usage : meilleurs joueurs de toute la famille (semaine, saison précédente ou tous les temps)\n\n" +
             "**Discord Link**\n" +
             "Commande : `/discord-link tag:#TAG [tag2] [tag3]`\n" +
             "Usage : lie ton tag Clash à Discord (à faire par un membre)\n\n" +
@@ -941,6 +941,52 @@ export default async function handler(req, res) {
           } else {
             const cutoffFame = seasonSorted[limit - 1].fame;
             players = seasonSorted.filter((p) => p.fame >= cutoffFame);
+          }
+        } else if (period === "all-time") {
+          title = `<:topplayers:1493708397407899648> Meilleurs joueurs`;
+          footer =
+            "😎 Meilleurs joueurs de tous les temps de la famille (depuis CW2)";
+
+          const allTimeTotals = new Map();
+
+          for (const clan of CLANS) {
+            const raceLog = clanRaceLogs[clan.tag];
+            if (!Array.isArray(raceLog)) continue;
+            for (const week of raceLog) {
+              const standing = Array.isArray(week.standings)
+                ? week.standings.find(
+                    (s) => s.clan?.tag?.toUpperCase() === `#${clan.tag}`,
+                  )
+                : null;
+              const participants = standing?.clan?.participants ?? [];
+              for (const p of participants) {
+                const tag = p.tag?.toUpperCase?.() || "";
+                if (!tag || !allMembers.has(tag)) continue;
+                const existing = allTimeTotals.get(tag) || {
+                  name: p.name || "",
+                  fame: 0,
+                };
+                existing.name = existing.name || p.name || "";
+                existing.fame += p.fame || 0;
+                existing.clan = allMembers.get(tag)?.clan || clan.name;
+                existing.role = allMembers.get(tag)?.role || "member";
+                allTimeTotals.set(tag, existing);
+              }
+            }
+          }
+
+          const allTimeSorted = Array.from(allTimeTotals.entries())
+            .map(([tag, data]) => ({ tag, ...data }))
+            .sort(
+              (a, b) =>
+                b.fame - a.fame ||
+                a.name.localeCompare(b.name, "fr", { sensitivity: "base" }),
+            );
+          if (allTimeSorted.length <= limit) {
+            players = allTimeSorted;
+          } else {
+            const cutoffFame = allTimeSorted[limit - 1].fame;
+            players = allTimeSorted.filter((p) => p.fame >= cutoffFame);
           }
         } else {
           title = `<:topplayers:1493708397407899648> Meilleurs joueurs`;

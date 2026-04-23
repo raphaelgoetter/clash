@@ -169,7 +169,7 @@ const commands = [
   {
     name: "top-players",
     description:
-      "Liste les meilleurs joueurs de la famille pour la semaine ou la saison précédente.",
+      "Liste les meilleurs joueurs de la famille pour la semaine, la saison précédente ou tous les temps.",
     options: [
       {
         type: 4, // INTEGER
@@ -186,11 +186,12 @@ const commands = [
       {
         type: 3, // STRING
         name: "period",
-        description: "Période : week (par défaut) ou season.",
+        description: "Période : week (par défaut), season ou all-time.",
         required: false,
         choices: [
           { name: "week", value: "week" },
           { name: "season", value: "season" },
+          { name: "all-time", value: "all-time" },
         ],
       },
     ],
