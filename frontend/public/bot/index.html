@@ -81,6 +81,13 @@
                 Analyse la fiabilité d’un joueur Clash Royale à partir de son
                 tag CR.
               </p>
+              <p>
+                Plus le pourcentage de fiabilité est élevé, plus le joueur est
+                considéré comme fiable pour la GDC. <br />Les critères d’analyse
+                incluent la régularité des combats GDC, les performances, la
+                stabilité dans un clan, l'expérience en GDC, l’activité récente,
+                etc.
+              </p>
               <p><strong>Option :</strong> <code>tag:#TAG</code></p>
             </div>
             <img src="/images/bot-02.webp" alt="" width="300" />
@@ -93,6 +100,13 @@
           <div data-layout="duo" data-split="2-1">
             <div>
               <p class="card-desc">Liste les membres peu fiables d’un clan.</p>
+              <p>
+                Cette commande permet d'identifier rapidement les membres qui ne
+                respectent pas les critères de fiabilité établis par la famille
+                Résistance (score de fiabilité "risque extrême" ou "risque
+                élevé"). <br />Cliquer sur un membre de la liste affiche son
+                profil complet avec les critères d’analyse détaillés.
+              </p>
               <p><strong>Option :</strong> <code>clan:N</code></p>
             </div>
             <img src="/images/bot-03.webp" alt="" width="300" />
@@ -106,8 +120,11 @@
             <div>
               <p class="card-desc">
                 Affiche les joueurs en retard sur leurs decks de la journée.
-                Commande à exécuter de préférence quelques minutes avant le
-                reset journalier.
+              </p>
+              <p>
+                Cette commande, pour être efficace, est à exécuter de préférence
+                quelques minutes avant le reset journalier.<br />Note : elle
+                n'envoie pas de notification aux retardataires.
               </p>
               <p><strong>Option :</strong> <code>clan:N</code></p>
             </div>
@@ -122,8 +139,11 @@
             <div>
               <p class="card-desc">
                 Affiche les joueurs ayant atteint un minimum de 2600 points la
-                semaine précédente. Généralement utilisé pour identifier les
-                membres à promouvoir dans le clan.
+                semaine de GDC précédente.
+              </p>
+              <p>
+                Généralement utilisé pour identifier les membres à promouvoir
+                dans le clan.
               </p>
               <p><strong>Options :</strong> <code>clan:N</code></p>
             </div>
@@ -137,8 +157,12 @@
           <div data-layout="duo" data-split="2-1">
             <div>
               <p class="card-desc">
-                Liste les joueurs qui n’ont pas réalisé 16/16 decks la semaine
-                précédente.
+                Liste les joueurs qui n’ont pas réalisé tous leurs combats des
+                Guerres de clans (16/16 decks) la semaine précédente.
+              </p>
+              <p>
+                Généralement utilisé pour identifier les membres à rétrograder
+                ou à sanctionner dans le clan.
               </p>
               <p><strong>Option :</strong> <code>clan:N</code></p>
             </div>
@@ -152,8 +176,8 @@
           <div data-layout="duo" data-split="2-1">
             <div>
               <p class="card-desc">
-                Liste les meilleurs joueurs de la famille pour une période
-                donnée.
+                Liste les meilleurs joueurs de la famille (meilleurs scores GDC)
+                pour une période donnée.
               </p>
               <p>
                 <strong>Options :</strong> <code>number:[3|5|10]</code>
@@ -170,8 +194,13 @@
           <div data-layout="duo" data-split="2-1">
             <div>
               <p class="card-desc">
-                Liste les joueurs ayant fait <strong>16/16 decks</strong> chaque
-                semaine d’une saison.
+                Liste les joueurs ayant fait <strong>16/16 decks</strong> sur
+                l'ensemble d’une saison entière, soit toutes les semaines sans
+                exception.
+              </p>
+              <p>
+                Par défaut, la commande concerne la saison précédente, mais il
+                est possible de spécifier une autre saison.
               </p>
               <p>
                 <strong>Options :</strong> <code>clan:N</code>
@@ -187,10 +216,16 @@
           <h3 class="card-title">/compare</h3>
           <div data-layout="duo" data-split="2-1">
             <div>
-              <p class="card-desc">
-                Compare les 5 clans d'un groupe de GDC, avec projection de
-                points à la fin de la journée.
+              <p class="card-desc">Compare les 5 clans d'un groupe de GDC.</p>
+              <p>
+                En période "hors Guerre de clan", affiche les résultats des
+                semaines précédentes de chaque clan.
               </p>
+              <p>
+                En période "Guerre de clan", affiche les decks joués, les points
+                obtenus et les projections de points à la fin de la journée.
+              </p>
+
               <p><strong>Options :</strong> <code>clan:N</code></p>
             </div>
             <img src="/images/bot-12.webp" alt="" width="300" />
@@ -204,6 +239,11 @@
             <div>
               <p class="card-desc">
                 Permet de lier un compte Clash Royale à un compte Discord.
+              </p>
+              <p>
+                En liant un compte, les informations du joueur seront
+                synchronisées entre Discord et TrustRoyale. <br />Un petit bonus
+                de fiabilité est accordé aux joueurs ayant lié leur compte.
               </p>
               <p>
                 <strong>Option :</strong> <code>tag:#TAG</code> (<code
@@ -222,8 +262,8 @@
           <div data-layout="duo" data-split="2-1">
             <div>
               <p class="card-desc">
-                Vérifie quels membres d’un clan sont présents sur le serveur
-                Discord.
+                Vérifie quels membres d’un clan ont associé leur Tag CR à leur
+                compte Discord.
               </p>
               <p><strong>Option :</strong> <code>clan:N</code></p>
             </div>
