@@ -2,46 +2,43 @@
 // server.js — Express entry point
 // ============================================================
 
-import dotenv from 'dotenv';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import dotenv from "dotenv";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
 
 // Load .env from the project root (one level above backend/)
 const __dirname = dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: resolve(__dirname, '../.env') });
+dotenv.config({ path: resolve(__dirname, "../.env") });
 
-import express from 'express';
-import cors from 'cors';
-import compression from 'compression';
-import playerRoutes from './routes/player.js';
-import clanRoutes, { ALLOWED_CLANS } from './routes/clan.js';
-import discordRoutes from './routes/discord.js';
-import { clearAll } from './services/cache.js';
+import express from "express";
+import cors from "cors";
+import compression from "compression";
+import playerRoutes from "./routes/player.js";
+import clanRoutes, { ALLOWED_CLANS } from "./routes/clan.js";
+import discordRoutes from "./routes/discord.js";
+import { clearAll } from "./services/cache.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ── Middleware ────────────────────────────────────────────────
-app.use(cors());app.use(compression());// We need raw body for Discord interaction signature verification, so
+app.use(cors());
+app.use(compression()); // We need raw body for Discord interaction signature verification, so
 // skip the global JSON parser for the /api/discord route.
 app.use((req, res, next) => {
-  if (req.path.startsWith('/api/discord')) return next();
+  if (req.path.startsWith("/api/discord")) return next();
   express.json()(req, res, next);
 });
 
-// ── Request logger (development) ──────────────────────────────
-app.use((req, _res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  next();
-});
-
 // ── Health check ──────────────────────────────────────────────
-app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
 // ── Server public IP (useful to whitelist on developer.clashroyale.com) ──
-app.get('/api/ip', async (_req, res) => {
+app.get("/api/ip", async (_req, res) => {
   try {
-    const r = await (await import('node-fetch')).default('https://api.ipify.org?format=json');
+    const r = await (
+      await import("node-fetch")
+    ).default("https://api.ipify.org?format=json");
     const data = await r.json();
     res.json({
       ip: data.ip,
@@ -53,35 +50,35 @@ app.get('/api/ip', async (_req, res) => {
 });
 
 // ── Debug helper (remove before production) ─────────────────────
-app.get('/api/debug', (_req, res) => {
+app.get("/api/debug", (_req, res) => {
   // show which critical env vars are set; public key/app id are safe to print
   res.json({
-    clashKey: process.env.CLASH_API_KEY ? 'present' : null,
+    clashKey: process.env.CLASH_API_KEY ? "present" : null,
     discordPublicKey: process.env.DISCORD_PUBLIC_KEY || null,
     discordAppId: process.env.DISCORD_APP_ID || null,
   });
 });
 
 // ── API routes ────────────────────────────────────────────────
-app.use('/api/player', playerRoutes);
-app.use('/api/clan', clanRoutes);
+app.use("/api/player", playerRoutes);
+app.use("/api/clan", clanRoutes);
 // Discord interactions endpoint (slash commands)
-app.use('/api/discord', discordRoutes);
+app.use("/api/discord", discordRoutes);
 
 // ── Cache flush (dev) ─────────────────────────────────────────
-app.post('/api/cache/flush', (_req, res) => {
+app.post("/api/cache/flush", (_req, res) => {
   clearAll();
-  res.json({ ok: true, message: 'Cache vidé.' });
+  res.json({ ok: true, message: "Cache vidé." });
 });
 
 // ── 404 handler ───────────────────────────────────────────────
-app.use((_req, res) => res.status(404).json({ error: 'Route not found' }));
+app.use((_req, res) => res.status(404).json({ error: "Route not found" }));
 
 // ── Global error handler ──────────────────────────────────────
 // eslint-disable-next-line no-unused-vars
 app.use((err, _req, res, _next) => {
   console.error(err);
-  res.status(500).json({ error: 'Internal server error' });
+  res.status(500).json({ error: "Internal server error" });
 });
 
 // ── Start ─────────────────────────────────────────────────────

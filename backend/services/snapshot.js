@@ -444,11 +444,6 @@ export async function recordSnapshot(
         const overflow = Math.max(0, rawDaily[tag] - 4);
         if (overflow <= 0) continue;
 
-        console.log(
-          `[snapshot] overflow for ${clanTag} ${warDay} (${realDay})` +
-            ` player=${tag} overflow=${overflow} (attributed to previous day)`,
-        );
-
         // Transfer overflow to previous day (but clamp to 4)
         prevDayEntry.decks = mergeMaps(prevDayEntry.decks, {
           [tag]: Math.min(4, (prevDayEntry.decks?.[tag] ?? 0) + overflow),
@@ -473,10 +468,7 @@ export async function recordSnapshot(
         currentCumulFame,
       );
     } else if (minutesSinceReset > 90) {
-      console.log(
-        `[snapshot] backup tardif (${Math.round(minutesSinceReset)} min après reset) — ` +
-          `prevDay._cumulFame NON mis à jour pour éviter contamination J-1.`,
-      );
+      // Backup tardif : ne pas contaminer le snapshot J-1.
     }
 
     await saveSnapshots(clanTag, filtered);

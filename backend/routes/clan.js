@@ -590,17 +590,12 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         setTimeout(() => reject(new Error("Timeout Rivals")), ms),
       );
 
-    console.log(
-      `[clan] Fetching data for ${rivalClans.length} rivals of ${ownTagNorm}...`,
-    );
-
     await Promise.race([
       Promise.allSettled(
         rivalClans.map(async (c) => {
           const tagNorm = c.tag.toUpperCase();
-          console.log(`[clan]   -> Fetching rival ${tagNorm} (${c.name})...`);
 
-          // On traite chaque rival indépendamment pour maximiser les chances
+          // On traite chaque rival indépendément pour maximiser les chances
           const clanProm = fetchClan(c.tag)
             .then((res) => {
               raceGroupRivalData[tagNorm] = res;
@@ -679,10 +674,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         err.message,
       );
     });
-    console.log(
-      `[clan] Finished fetching rivals. Found extra data for tags:`,
-      Object.keys(raceGroupRivalData),
-    );
   }
 
   // topPlayers est toujours calculé (pas d'appel API supplémentaire : réutilise
@@ -2190,7 +2181,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                     const totalLiveFame = allPartsInner
                       .filter((p) => currentMemberTags.has(p.tag))
                       .reduce((s, p) => s + (p.fame ?? 0), 0);
-                    console.log("[DEBUG TOTAL LIVE FAME]", totalLiveFame);
                     const prevSnap = weekSnaps[warDayIndex - 1];
                     const prevCumulFame = prevSnap?._cumulFame ?? {};
                     // Log détaillé pour chaque membre actuel
@@ -2210,8 +2200,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                         });
                         return s + delta;
                       }, 0);
-                    // Affiche le log détaillé dans la console
-                    console.log("[DEBUG DELTA JOUR]", debugDelta);
                     // Garde-fou : delta négatif ou anormalement bas → snapshot corrompu
                     if (deltaSum > 0 && decksToday > 0) {
                       fameTodayRaw = deltaSum;
