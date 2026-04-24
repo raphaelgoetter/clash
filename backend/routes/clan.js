@@ -2144,13 +2144,25 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                   if (warDayIndex > 0) {
                     const prevSnap = weekSnaps[warDayIndex - 1];
                     const prevCumulFame = prevSnap?._cumulFame ?? {};
-                    // Correction : pour chaque membre actuel, on fait (fame live - fame snapshot J-1 ou 0 si absent)
+                    // Log détaillé pour chaque membre actuel
+                    let debugDelta = [];
                     const deltaSum = allParts
                       .filter((p) => currentMemberTags.has(p.tag))
                       .reduce((s, p) => {
                         const prev = prevCumulFame[p.tag] ?? 0;
-                        return s + ((p.fame ?? 0) - prev);
+                        const live = p.fame ?? 0;
+                        const delta = live - prev;
+                        debugDelta.push({
+                          tag: p.tag,
+                          name: p.name,
+                          live,
+                          prev,
+                          delta,
+                        });
+                        return s + delta;
                       }, 0);
+                    // Affiche le log détaillé dans la console
+                    console.log("[DEBUG DELTA JOUR]", debugDelta);
                     // Garde-fou : delta négatif ou anormalement bas → snapshot corrompu
                     if (deltaSum > 0 && decksToday > 0) {
                       fameTodayRaw = deltaSum;
