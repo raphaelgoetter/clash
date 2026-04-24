@@ -2046,40 +2046,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             0;
 
           const groupWithProjections = currentRace.clans.map((c) => {
-            // Pour debug-panel : collecte des infos snapshot J-1
-            let debugSnapshotInfo = null;
-            if (isOwn && warDayIndex > 0 && weekSnaps?.[warDayIndex - 1]) {
-              const prevSnap = weekSnaps[warDayIndex - 1];
-              debugSnapshotInfo = {
-                snapshotTime: prevSnap?.snapshotTime ?? null,
-                snapshotBackupTime: prevSnap?.snapshotBackupTime ?? null,
-                cumulFameSnapshot: Object.values(
-                  prevSnap?._cumulFame ?? {},
-                ).reduce((s, v) => s + (v ?? 0), 0),
-                cumulFameLive: sectionFame,
-                delta:
-                  sectionFame -
-                  Object.values(prevSnap?._cumulFame ?? {}).reduce(
-                    (s, v) => s + (v ?? 0),
-                    0,
-                  ),
-                snapshotJ1Exists:
-                  Object.keys(prevSnap?._cumulFame ?? {}).length > 0,
-              };
-              // Ajoute un warning si le snapshot J-1 est trop éloigné du reset (>2h)
-              if (prevSnap?.snapshotTime && prevSnap?.gdcPeriod?.end) {
-                const snapTs = new Date(prevSnap.snapshotTime).getTime();
-                const resetTs = new Date(prevSnap.gdcPeriod.end).getTime();
-                const diffMin = Math.abs(snapTs - resetTs) / 60000;
-                debugSnapshotInfo.warning =
-                  diffMin > 120
-                    ? `⚠️ Snapshot J-1 trop éloigné du reset (${Math.round(diffMin)} min)`
-                    : null;
-                debugSnapshotInfo.diffMin = Math.round(diffMin);
-              }
-            }
             const cTagNorm = (c.tag ?? "").toUpperCase();
             const isOwn = cTagNorm === ownTagNorm;
+            let debugSnapshotInfo = null;
             const extra = isOwn ? clan : raceGroupRivalData[cTagNorm] || null;
             const raceData = isOwn
               ? currentRace
@@ -2091,6 +2060,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             let clanScore = null;
             let currentFame = null;
             let maxReachableFame = null;
+
+            // Le calcul de debugSnapshotInfo doit se faire APRÈS le calcul de sectionFame
+            // ...existing code...
 
             // Pour les rivaux, utiliser c.participants (données du groupe propre au clan analysé)
             // plutôt que rivalCurrentRaceByTag qui retourne la course du rival DANS SON PROPRE
