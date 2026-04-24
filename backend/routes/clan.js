@@ -2024,6 +2024,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             let decksToday = null;
             let ptsPerDeck = null;
             let projectedFame = null;
+            let clanScore = null;
             let currentFame = null;
             let maxReachableFame = null;
 
@@ -2094,53 +2095,25 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 targetDecks = avgDecksLastWeek || 200;
               }
 
-              // weeklyDecks : pour le fallback rivaux (pas de snapshot disponible)
+              // weeklyDecks : fallback de secours si la fame live du jour est indisponible.
               const weeklyDecks = allParts.reduce(
                 (s, p) => s + (p.decksUsed ?? 0),
                 0,
               );
+              const liveDayFame = typeof c.fame === "number" ? c.fame : null;
 
               if (decksToday > 0) {
-                if (isOwn) {
-                  // Clan propre : pts du jour = cumul API live - cumul snapshot J-1.
-                  // weekSnaps[warDayIndex-1]._cumulFame stocke la fame cumulée à la fin du jour précédent.
-                  // J1 (warDayIndex=0) : pas de snapshot précédent → fame depuis le début de la section.
-                  let prevCumulFameSum = 0;
-                  if (warDayIndex > 0) {
-                    const prevSnap = weekSnaps[warDayIndex - 1];
-                    if (prevSnap?._cumulFame) {
-                      prevCumulFameSum = Object.values(
-                        prevSnap._cumulFame,
-                      ).reduce((s, v) => s + (v ?? 0), 0);
-                    }
-                  }
-                  const fameTodayRaw = sectionFame - prevCumulFameSum;
-                  // Fallback : si le delta snapshot est inférieur à la moyenne hebdo (snapshot corrompu),
-                  // on bascule sur la moyenne hebdo (même formule que les rivaux).
-                  const weeklyAvgFame =
-                    weeklyDecks > 0 ? sectionFame / weeklyDecks : 0;
-                  const snapshotSeemsTrusted =
-                    fameTodayRaw > 0 &&
-                    (weeklyAvgFame === 0 ||
-                      fameTodayRaw / decksToday >= weeklyAvgFame * 0.5);
-                  if (snapshotSeemsTrusted) {
-                    ptsPerDeck = fameTodayRaw / decksToday;
-                  } else {
-                    // Snapshot corrompu détecté : fallback sur la moyenne hebdo
-                    console.warn(
-                      `[raceGroup] snapshot J-1 potentiellement corrompu pour ${c.tag} ` +
-                        `(delta=${fameTodayRaw}, weeklyAvg/deck=${weeklyAvgFame.toFixed(1)}) — fallback hebdo`,
-                    );
-                    ptsPerDeck =
-                      weeklyDecks > 0 ? sectionFame / weeklyDecks : 0;
-                  }
-                  projectedFame =
-                    Math.max(decksToday, targetDecks) * ptsPerDeck;
-                } else {
-                  // Rivaux : efficacité hebdo brute = cumul section / decks section.
-                  if (weeklyDecks > 0) {
-                    ptsPerDeck = sectionFame / weeklyDecks;
-                  }
+                if (liveDayFame != null && liveDayFame >= 0) {
+                  // Source principale : fame live du jour renvoyée par currentRace.clans[i].fame.
+                  ptsPerDeck = liveDayFame / decksToday;
+                  clanScore = Math.round(liveDayFame / 10) * 10;
+                } else if (weeklyDecks > 0) {
+                  // Fallback de secours : moyenne hebdo sur la section en cours.
+                  ptsPerDeck = sectionFame / weeklyDecks;
+                  clanScore = Math.round((decksToday * ptsPerDeck) / 10) * 10;
+                }
+
+                if (ptsPerDeck != null) {
                   projectedFame =
                     Math.max(decksToday, targetDecks) * ptsPerDeck;
                 }
@@ -2159,10 +2132,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               // clanScore = pts du jour.
               // Clan propre : delta (live API - snapshot J-1), calculé dans ptsPerDeck * decksToday.
               // Rivaux : decksToday × efficacité hebdo (arrondie à la dizaine supérieure).
-              clanScore:
-                decksToday != null && ptsPerDeck != null
-                  ? Math.round((decksToday * ptsPerDeck) / 10) * 10
-                  : c.fame || extra?.clanScore || 0,
+              clanScore: clanScore ?? c.fame ?? extra?.clanScore ?? 0,
               prevWarFame: isOwn
                 ? ownPrevWarFame
                 : (rivalPrevWarByTag[cTagNorm] ?? null),
