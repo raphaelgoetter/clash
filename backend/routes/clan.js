@@ -2049,6 +2049,19 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             const cTagNorm = (c.tag ?? "").toUpperCase();
             const isOwn = cTagNorm === ownTagNorm;
             let debugSnapshotInfo = null;
+            // Ajout debug-panel modulaire
+            if (isOwn && warDayIndex > 0) {
+              debugSnapshotInfo = buildDebugSnapshotInfo({
+                weekSnaps,
+                warDayIndex,
+                currentMemberTags,
+                allParts,
+                warSnapshotDays,
+                clanTag,
+              });
+            }
+            if (debugSnapshotInfo && !debugSnapshotInfoRoot)
+              debugSnapshotInfoRoot = debugSnapshotInfo;
             const extra = isOwn ? clan : raceGroupRivalData[cTagNorm] || null;
             const raceData = isOwn
               ? currentRace
@@ -2219,6 +2232,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               c.targetDecksToday = Math.round(targetDecks);
             }
 
+            // Expose le debugSnapshotInfo à la racine de la réponse
+            const debugSnapshotInfo =
+              groupWithProjections?.__debugSnapshotInfo ?? null;
             return {
               tag: c.tag ?? null,
               name: c.name ?? null,
@@ -2286,6 +2302,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     rateLimited: memberRateLimited,
     raceLogUnavailable,
     analysisCacheUpdatedAt: new Date().toISOString(),
+    debugSnapshotInfo,
   };
 }
 
