@@ -1887,6 +1887,19 @@ export async function buildClanAnalysis(clanTag, options = {}) {
   }
 
   if (clanWarSummary && Array.isArray(clanWarSummary.days)) {
+    const summarySnapshotDays = clanWarSummary.days.map((day) =>
+      typeof day?.snapshotCount === "number"
+        ? Math.min(200, Math.max(0, day.snapshotCount))
+        : null,
+    );
+    if (Array.isArray(warSnapshotDays)) {
+      warSnapshotDays = warSnapshotDays.map((value, idx) =>
+        value != null ? value : (summarySnapshotDays[idx] ?? null),
+      );
+    } else {
+      warSnapshotDays = summarySnapshotDays;
+    }
+
     const warnings = [];
     if (
       clanWarSummary.days.some(
@@ -2076,6 +2089,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 allParts,
                 warSnapshotDays,
                 clanTag,
+                fallbackWarDays:
+                  existingCache?.clanWarSummary?.days ??
+                  existingCache?.lastWarSummary?.days ??
+                  [],
               });
             }
             if (debugSnapshotInfo && !debugSnapshotInfoRoot)

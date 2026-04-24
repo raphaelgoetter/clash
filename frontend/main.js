@@ -3155,8 +3155,9 @@ function updateDebugPanel(data, mode) {
           <div>⏰ <b>snapshotTime</b> : <code>${escHtml(info.snapshotTime || "—")}</code></div>
           <div>⏰ <b>snapshotBackupTime</b> : <code>${escHtml(info.snapshotBackupTime || "—")}</code></div>
           <div>🎯 <b>Cumul points live</b> : <b>${info.cumulFameLive}</b></div>
-          <div>📦 <b>Cumul snapshot J-1</b> : <b>${info.cumulFameSnapshot}</b></div>
-          <div>🧮 <b>Delta (live - J-1)</b> : <b>${info.delta}</b></div>
+          <div>📦 <b>Cumul snapshot J-1</b> : <b>${info.cumulFameSnapshot ?? "—"}</b></div>
+          ${info.snapshotCount != null ? `<div>📊 <b>Decks snapshot J-1</b> : <b>${info.snapshotCount}</b></div>` : ""}
+          <div>🧮 <b>Delta (live - J-1)</b> : <b>${info.delta ?? "—"}</b></div>
           <div>📏 <b>Écart snapshot/reset</b> : <b>${info.diffMin ?? "—"} min</b></div>
           ${info.warning ? `<div style='color:#ffb300'><b>${escHtml(info.warning)}</b></div>` : ""}
         </div>
@@ -3172,8 +3173,9 @@ function updateDebugPanel(data, mode) {
         <div>⏰ <b>snapshotTime</b> : <code>${escHtml(info.snapshotTime || "—")}</code></div>
         <div>⏰ <b>snapshotBackupTime</b> : <code>${escHtml(info.snapshotBackupTime || "—")}</code></div>
         <div>🎯 <b>Cumul points live</b> : <b>${info.cumulFameLive}</b></div>
-        <div>📦 <b>Cumul snapshot J-1</b> : <b>${info.cumulFameSnapshot}</b></div>
-        <div>🧮 <b>Delta (live - J-1)</b> : <b>${info.delta}</b></div>
+        <div>📦 <b>Cumul snapshot J-1</b> : <b>${info.cumulFameSnapshot ?? "—"}</b></div>
+        ${info.snapshotCount != null ? `<div>📊 <b>Decks snapshot J-1</b> : <b>${info.snapshotCount}</b></div>` : ""}
+        <div>🧮 <b>Delta (live - J-1)</b> : <b>${info.delta ?? "—"}</b></div>
         <div>📏 <b>Écart snapshot/reset</b> : <b>${info.diffMin ?? "—"} min</b></div>
         ${info.warning ? `<div style='color:#ffb300'><b>${escHtml(info.warning)}</b></div>` : ""}
       </div>
@@ -3188,8 +3190,9 @@ function updateDebugPanel(data, mode) {
         <div>⏰ <b>snapshotTime</b> : <code>${escHtml(info.snapshotTime || "—")}</code></div>
         <div>⏰ <b>snapshotBackupTime</b> : <code>${escHtml(info.snapshotBackupTime || "—")}</code></div>
         <div>🎯 <b>Cumul points live</b> : <b>${info.cumulFameLive}</b></div>
-        <div>📦 <b>Cumul snapshot J-1</b> : <b>${info.cumulFameSnapshot}</b></div>
-        <div>🧮 <b>Delta (live - J-1)</b> : <b>${info.delta}</b></div>
+        <div>📦 <b>Cumul snapshot J-1</b> : <b>${info.cumulFameSnapshot ?? "—"}</b></div>
+        ${info.snapshotCount != null ? `<div>📊 <b>Decks snapshot J-1</b> : <b>${info.snapshotCount}</b></div>` : ""}
+        <div>🧮 <b>Delta (live - J-1)</b> : <b>${info.delta ?? "—"}</b></div>
         <div>📏 <b>Écart snapshot/reset</b> : <b>${info.diffMin ?? "—"} min</b></div>
         ${info.warning ? `<div style='color:#ffb300'><b>${escHtml(info.warning)}</b></div>` : ""}
       </div>

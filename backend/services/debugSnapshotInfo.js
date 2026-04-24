@@ -13,6 +13,7 @@ export function buildDebugSnapshotInfo({
   allParts,
   warSnapshotDays,
   clanTag,
+  fallbackWarDays = [],
 }) {
   // Sécurité : tous les paramètres doivent être fournis
   if (
@@ -66,12 +67,25 @@ export function buildDebugSnapshotInfo({
     warning = "snapshot appears late / after reset";
   }
   return {
-    weekSnaps: weekSnaps.map((s, i) => ({
-      day: i,
-      snapshotTime: s?.snapshotTime || s?.snapshotBackupTime || null,
-      decks: s?.decks || null,
-      _cumulFame: s?._cumulFame || null,
-    })),
+    weekSnaps: weekSnaps.map((s, i) => {
+      const snapshotCount = s?.decks
+        ? Object.values(s.decks).reduce(
+            (sum, value) => sum + (typeof value === "number" ? value : 0),
+            0,
+          )
+        : null;
+      const fallbackCount =
+        fallbackWarDays?.[i]?.snapshotCount != null
+          ? fallbackWarDays[i].snapshotCount
+          : (fallbackWarDays?.[i]?.totalCount ?? null);
+      return {
+        day: i,
+        snapshotTime: s?.snapshotTime || s?.snapshotBackupTime || null,
+        decks: s?.decks || null,
+        _cumulFame: s?._cumulFame || null,
+        snapshotCount: snapshotCount != null ? snapshotCount : fallbackCount,
+      };
+    }),
     warDayIndex,
     warSnapshotDays,
     debugDelta,
