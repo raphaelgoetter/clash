@@ -2024,6 +2024,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           // Step 1: Pré-calcul des projections pour tous les clans du groupe
           // Calcul de la moyenne de decks de la semaine passée pour ce clan
           let ownAvgDecks = null;
+          let ownHistoricPpd = null;
           if (Array.isArray(raceLog) && raceLog[0]) {
             const lastStanding = (raceLog[0].standings ?? []).find(
               (s) =>
@@ -2033,6 +2034,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             const totalDecksLastWeek = sumParticipantsDecks(lastStanding);
             if (totalDecksLastWeek != null) {
               ownAvgDecks = totalDecksLastWeek / 4;
+              // Efficacité historique : même logique que pour les rivaux
+              if (ownLastWarFame > 0 && totalDecksLastWeek > 0) {
+                ownHistoricPpd = ownLastWarFame / totalDecksLastWeek;
+              }
             }
           }
 
@@ -2131,12 +2136,37 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
               if (decksToday > 0) {
                 if (isOwn) {
-                  if (liveDayFame != null && liveDayFame >= 0) {
-                    // Clan propre : utiliser la fame live du jour.
-                    ptsPerDeck = liveDayFame / decksToday;
-                    clanScore = Math.round(liveDayFame / 10) * 10;
+                  // Calcul exact : fameTodayRaw = sectionFame - cumulFame fin J(n-1)
+                  // sectionFame = sum(participants.fame) = cumulatif depuis J1 inclus entraînement
+                  // prevCumulFameSum = sum(weekSnaps[warDayIndex-1]._cumulFame) = fame fin du jour précédent
+                  // Le snapshot J-1 est pris ~20 min avant le reset → valeur propre, sans contamination J+1
+                  let fameTodayRaw = null;
+                  if (warDayIndex > 0) {
+                    const prevSnap = weekSnaps[warDayIndex - 1];
+                    const prevCumulFame = prevSnap?._cumulFame ?? {};
+                    const prevCumulFameSum = Object.values(prevCumulFame).reduce(
+                      (s, v) => s + (v ?? 0),
+                      0,
+                    );
+                    if (prevCumulFameSum > 0) {
+                      const delta = sectionFame - prevCumulFameSum;
+                      // Garde-fou : delta négatif ou anormalement bas → snapshot corrompu
+                      if (delta > 0 && decksToday > 0) {
+                        fameTodayRaw = delta;
+                      }
+                    }
+                  }
+
+                  if (fameTodayRaw != null && decksToday > 0) {
+                    // Source primaire : delta snapshot exact
+                    ptsPerDeck = fameTodayRaw / decksToday;
+                    clanScore = Math.round(fameTodayRaw / 10) * 10;
+                  } else if (ownHistoricPpd != null) {
+                    // Fallback : efficacité moyenne de la semaine précédente
+                    ptsPerDeck = ownHistoricPpd;
+                    clanScore = Math.round((decksToday * ptsPerDeck) / 10) * 10;
                   } else if (weeklyDecks > 0) {
-                    // Fallback de secours : moyenne hebdo section en cours.
+                    // Fallback ultime : moyenne hebdo section en cours
                     ptsPerDeck = sectionFame / weeklyDecks;
                     clanScore = Math.round((decksToday * ptsPerDeck) / 10) * 10;
                   }
