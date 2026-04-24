@@ -574,6 +574,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
   const rivalLastWarByTag = {};
   const rivalPrevWarByTag = {};
   const rivalAvgDecksByTag = {}; // Moyenne quotidienne de la semaine passée
+  const rivalAvgPtsPerDeckByTag = {}; // Moyenne pts/deck sur les GDC récentes
   const rivalCurrentRaceByTag = {};
 
   if (includeRaceGroup && Array.isArray(currentRace?.clans)) {
@@ -623,6 +624,32 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 (s) => (s.clan?.tag ?? "").toUpperCase() === tagNorm,
               );
               rivalPrevWarByTag[tagNorm] = sumParticipantsFame(prevStanding);
+
+              // Rivaux : on n'a pas de snapshots par jour, donc on estime
+              // l'efficacité avec la moyenne pts/deck des GDC précédentes.
+              const ppdSamples = [];
+              for (const weekEntry of rivalLog ?? []) {
+                const standing = (weekEntry?.standings ?? []).find(
+                  (s) => (s.clan?.tag ?? "").toUpperCase() === tagNorm,
+                );
+                if (!standing) continue;
+                const fame = sumParticipantsFame(standing);
+                const decks = sumParticipantsDecks(standing);
+                if (
+                  typeof fame === "number" &&
+                  Number.isFinite(fame) &&
+                  typeof decks === "number" &&
+                  Number.isFinite(decks) &&
+                  decks > 0
+                ) {
+                  ppdSamples.push(fame / decks);
+                }
+                if (ppdSamples.length >= 4) break;
+              }
+              if (ppdSamples.length > 0) {
+                rivalAvgPtsPerDeckByTag[tagNorm] =
+                  ppdSamples.reduce((s, v) => s + v, 0) / ppdSamples.length;
+              }
             })
             .catch((e) =>
               console.warn(
@@ -2103,14 +2130,32 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               const liveDayFame = typeof c.fame === "number" ? c.fame : null;
 
               if (decksToday > 0) {
-                if (liveDayFame != null && liveDayFame >= 0) {
-                  // Source principale : fame live du jour renvoyée par currentRace.clans[i].fame.
-                  ptsPerDeck = liveDayFame / decksToday;
-                  clanScore = Math.round(liveDayFame / 10) * 10;
-                } else if (weeklyDecks > 0) {
-                  // Fallback de secours : moyenne hebdo sur la section en cours.
-                  ptsPerDeck = sectionFame / weeklyDecks;
-                  clanScore = Math.round((decksToday * ptsPerDeck) / 10) * 10;
+                if (isOwn) {
+                  if (liveDayFame != null && liveDayFame >= 0) {
+                    // Clan propre : utiliser la fame live du jour.
+                    ptsPerDeck = liveDayFame / decksToday;
+                    clanScore = Math.round(liveDayFame / 10) * 10;
+                  } else if (weeklyDecks > 0) {
+                    // Fallback de secours : moyenne hebdo section en cours.
+                    ptsPerDeck = sectionFame / weeklyDecks;
+                    clanScore = Math.round((decksToday * ptsPerDeck) / 10) * 10;
+                  }
+                } else {
+                  // Rivaux : estimation basée sur l'historique des GDC précédentes.
+                  const rivalPpd = rivalAvgPtsPerDeckByTag[cTagNorm];
+                  if (
+                    typeof rivalPpd === "number" &&
+                    Number.isFinite(rivalPpd) &&
+                    rivalPpd > 0
+                  ) {
+                    ptsPerDeck = rivalPpd;
+                  } else if (weeklyDecks > 0) {
+                    // Fallback ultime si historique indisponible.
+                    ptsPerDeck = sectionFame / weeklyDecks;
+                  }
+                  if (ptsPerDeck != null) {
+                    clanScore = Math.round((decksToday * ptsPerDeck) / 10) * 10;
+                  }
                 }
 
                 if (ptsPerDeck != null) {
