@@ -26,13 +26,14 @@ export function buildDebugSnapshotInfo({
   }
   // Extraction du snapshot J-1
   const prevSnap = weekSnaps[warDayIndex - 1];
+  if (!prevSnap) return null;
   const prevCumulFame = prevSnap?._cumulFame ?? {};
   const debugDelta = [];
-  allParts
+  const cumulFameLive = allParts
     .filter((p) => currentMemberTags.has(p.tag))
-    .forEach((p) => {
-      const prev = prevCumulFame[p.tag] ?? 0;
+    .reduce((sum, p) => {
       const live = p.fame ?? 0;
+      const prev = prevCumulFame[p.tag] ?? 0;
       debugDelta.push({
         tag: p.tag,
         name: p.name,
@@ -40,7 +41,30 @@ export function buildDebugSnapshotInfo({
         prev,
         delta: live - prev,
       });
-    });
+      return sum + live;
+    }, 0);
+  const cumulFameSnapshot = Object.values(prevCumulFame).reduce(
+    (sum, value) => sum + (typeof value === "number" ? value : 0),
+    0,
+  );
+  const delta = cumulFameLive - cumulFameSnapshot;
+  const snapshotTime =
+    prevSnap.snapshotTime || prevSnap.snapshotBackupTime || null;
+  const snapshotBackupTime = prevSnap.snapshotBackupTime || null;
+  let diffMin = null;
+  if (snapshotTime && prevSnap.gdcPeriod?.start) {
+    const snapshotMs = new Date(snapshotTime).getTime();
+    const resetMs = new Date(prevSnap.gdcPeriod.start).getTime();
+    if (!Number.isNaN(snapshotMs) && !Number.isNaN(resetMs)) {
+      diffMin = Math.round((snapshotMs - resetMs) / 60000);
+    }
+  }
+  let warning = null;
+  if (delta <= 0) {
+    warning = "snapshot suspect or corrupted";
+  } else if (diffMin != null && diffMin > 90) {
+    warning = "snapshot appears late / after reset";
+  }
   return {
     weekSnaps: weekSnaps.map((s, i) => ({
       day: i,
@@ -52,5 +76,12 @@ export function buildDebugSnapshotInfo({
     warSnapshotDays,
     debugDelta,
     clanTag,
+    snapshotTime,
+    snapshotBackupTime,
+    cumulFameLive,
+    cumulFameSnapshot,
+    delta,
+    diffMin,
+    warning,
   };
 }

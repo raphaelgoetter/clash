@@ -31,6 +31,7 @@ import {
   computeCurrentWeekId,
   computePrevWeekId,
 } from "../services/analysisService.js";
+import { buildDebugSnapshotInfo } from "../services/debugSnapshotInfo.js";
 import { computeTopPlayers } from "../services/topplayers.js";
 import { computeUncomplete } from "../services/uncomplete.js";
 import { getOrSet } from "../services/cache.js";
@@ -1879,7 +1880,11 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     return { ...current, totalDecksUsed, days };
   };
 
+  let debugSnapshotInfo = null;
   clanWarSummary = mergeWarSummariesBackend(clanWarSummary, fallbackWarSummary);
+  if (debugSnapshotInfo && clanWarSummary) {
+    clanWarSummary.debugSnapshotInfo = debugSnapshotInfo;
+  }
 
   if (clanWarSummary && Array.isArray(clanWarSummary.days)) {
     const warnings = [];
@@ -2045,10 +2050,23 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             buildCurrentWarDays([], null, currentRace, clanTag)?.daysFromThu ??
             0;
 
+          let debugSnapshotInfoRoot = null;
           const groupWithProjections = currentRace.clans.map((c) => {
+            let rivalParticipants = null;
             const cTagNorm = (c.tag ?? "").toUpperCase();
             const isOwn = cTagNorm === ownTagNorm;
             let debugSnapshotInfo = null;
+            // (déjà défini plus haut)
+            const raceData = isOwn
+              ? currentRace
+              : rivalCurrentRaceByTag[cTagNorm] || null;
+            // allParts toujours défini
+            const allParts = isOwn
+              ? (raceData?.clan?.participants ?? [])
+              : (() => {
+                  rivalParticipants = c.participants ?? [];
+                  return rivalParticipants;
+                })();
             // Ajout debug-panel modulaire
             if (isOwn && warDayIndex > 0) {
               debugSnapshotInfo = buildDebugSnapshotInfo({
@@ -2063,9 +2081,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             if (debugSnapshotInfo && !debugSnapshotInfoRoot)
               debugSnapshotInfoRoot = debugSnapshotInfo;
             const extra = isOwn ? clan : raceGroupRivalData[cTagNorm] || null;
-            const raceData = isOwn
-              ? currentRace
-              : rivalCurrentRaceByTag[cTagNorm] || null;
+            // (déjà défini plus haut)
 
             let decksToday = null;
             let ptsPerDeck = null;
@@ -2074,25 +2090,18 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             let currentFame = null;
             let maxReachableFame = null;
 
-            // Le calcul de debugSnapshotInfo doit se faire APRÈS le calcul de sectionFame
-            // ...existing code...
-
-            // Pour les rivaux, utiliser c.participants (données du groupe propre au clan analysé)
-            // plutôt que rivalCurrentRaceByTag qui retourne la course du rival DANS SON PROPRE
-            // groupe — lequel peut être complètement différent si les clans sont dans des ligues
-            // distinctes (ex. Légende 1 vs Légende 2 vs Or).
-            const rivalParticipants = isOwn ? null : (c.participants ?? []);
+            // rivalParticipants n'est utilisé que côté rivaux, jamais côté isOwn
             if (
               isWarPeriod &&
               (isOwn
                 ? raceData?.clan?.participants
-                : rivalParticipants.length > 0)
+                : (rivalParticipants ?? []).length > 0)
             ) {
-              const allParts = isOwn
+              const allPartsInner = isOwn
                 ? raceData.clan.participants
                 : rivalParticipants;
               // Fame cumulée section en cours (source: participants, plus fiable que c.fame)
-              const sectionFame = allParts.reduce(
+              const sectionFame = allPartsInner.reduce(
                 (s, p) => s + (p.fame ?? 0),
                 0,
               );
@@ -2105,14 +2114,14 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
               // decksToday : exclure les ex-membres pour cohérence avec clanWarSummary
               const activePartsToday = isOwn
-                ? allParts.filter((p) => currentMemberTags.has(p.tag))
-                : allParts;
+                ? allPartsInner.filter((p) => currentMemberTags.has(p.tag))
+                : allPartsInner;
               decksToday = activePartsToday.reduce(
                 (s, p) => s + (p.decksUsedToday ?? 0),
                 0,
               );
               // totalDecksWeekly : nécessaire uniquement pour le calcul de targetDecks (rivaux)
-              const totalDecksWeekly = allParts.reduce(
+              const totalDecksWeekly = allPartsInner.reduce(
                 (s, p) => s + (p.decksUsed ?? 0),
                 0,
               );
@@ -2145,7 +2154,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               }
 
               // weeklyDecks : fallback de secours si la fame live du jour est indisponible.
-              const weeklyDecks = allParts.reduce(
+              const weeklyDecks = allPartsInner.reduce(
                 (s, p) => s + (p.decksUsed ?? 0),
                 0,
               );
@@ -2160,7 +2169,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                   let fameTodayRaw = null;
                   if (warDayIndex > 0) {
                     // Log la somme totale des fames live (API) pour tous les membres actuels
-                    const totalLiveFame = allParts
+                    const totalLiveFame = allPartsInner
                       .filter((p) => currentMemberTags.has(p.tag))
                       .reduce((s, p) => s + (p.fame ?? 0), 0);
                     console.log("[DEBUG TOTAL LIVE FAME]", totalLiveFame);
@@ -2168,7 +2177,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                     const prevCumulFame = prevSnap?._cumulFame ?? {};
                     // Log détaillé pour chaque membre actuel
                     let debugDelta = [];
-                    const deltaSum = allParts
+                    const deltaSum = allPartsInner
                       .filter((p) => currentMemberTags.has(p.tag))
                       .reduce((s, p) => {
                         const prev = prevCumulFame[p.tag] ?? 0;
@@ -2233,8 +2242,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             }
 
             // Expose le debugSnapshotInfo à la racine de la réponse
-            const debugSnapshotInfo =
-              groupWithProjections?.__debugSnapshotInfo ?? null;
+            // (déjà défini plus haut)
             return {
               tag: c.tag ?? null,
               name: c.name ?? null,
@@ -2245,13 +2253,11 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               // Clan propre : delta (live API - snapshot J-1), calculé dans ptsPerDeck * decksToday.
               // Rivaux : decksToday × efficacité hebdo (arrondie à la dizaine supérieure).
               clanScore: clanScore ?? c.fame ?? extra?.clanScore ?? 0,
-              prevWarFame: isOwn,
+              prevWarFame: isOwn
+                ? ownPrevWarFame
+                : (rivalPrevWarByTag[cTagNorm] ?? null),
               // Ajout debug-panel
-              debugSnapshotInfo: isOwn
-                ? debugSnapshotInfo
-                : undefined
-                  ? ownPrevWarFame
-                  : (rivalPrevWarByTag[cTagNorm] ?? null),
+              debugSnapshotInfo: isOwn ? debugSnapshotInfo : undefined,
               lastWarFame: isOwn
                 ? ownLastWarFame
                 : (rivalLastWarByTag[cTagNorm] ?? null),
@@ -2296,6 +2302,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             });
           }
 
+          debugSnapshotInfo = debugSnapshotInfoRoot;
           return groupWithProjections;
         })()
       : null,
