@@ -3144,23 +3144,56 @@ function setDebugPanelVisible(on) {
 function updateDebugPanel(data, mode) {
   // Ajout : infos snapshot J-1 pour le clan courant
   let snapshotDebugHtml = "";
+  // 1. Cherche dans raceGroup (prioritaire si présent)
   if (data?.raceGroup && Array.isArray(data.raceGroup)) {
     const ownClan = data.raceGroup.find((c) => c.debugSnapshotInfo);
     if (ownClan && ownClan.debugSnapshotInfo) {
       const info = ownClan.debugSnapshotInfo;
       snapshotDebugHtml = `
-          <div style="margin-top:1rem;padding:.5em 1em;background:#222;border-radius:6px">
-            <div><strong>Snapshot J-1 :</strong></div>
-            <div>⏰ <b>snapshotTime</b> : <code>${escHtml(info.snapshotTime || "—")}</code></div>
-            <div>⏰ <b>snapshotBackupTime</b> : <code>${escHtml(info.snapshotBackupTime || "—")}</code></div>
-            <div>🎯 <b>Cumul points live</b> : <b>${info.cumulFameLive}</b></div>
-            <div>📦 <b>Cumul snapshot J-1</b> : <b>${info.cumulFameSnapshot}</b></div>
-            <div>🧮 <b>Delta (live - J-1)</b> : <b>${info.delta}</b></div>
-            <div>📏 <b>Écart snapshot/reset</b> : <b>${info.diffMin ?? "—"} min</b></div>
-            ${info.warning ? `<div style='color:#ffb300'><b>${escHtml(info.warning)}</b></div>` : ""}
-          </div>
-        `;
+        <div style="margin-top:1rem;padding:.5em 1em;background:#222;border-radius:6px">
+          <div><strong>Snapshot J-1 :</strong></div>
+          <div>⏰ <b>snapshotTime</b> : <code>${escHtml(info.snapshotTime || "—")}</code></div>
+          <div>⏰ <b>snapshotBackupTime</b> : <code>${escHtml(info.snapshotBackupTime || "—")}</code></div>
+          <div>🎯 <b>Cumul points live</b> : <b>${info.cumulFameLive}</b></div>
+          <div>📦 <b>Cumul snapshot J-1</b> : <b>${info.cumulFameSnapshot}</b></div>
+          <div>🧮 <b>Delta (live - J-1)</b> : <b>${info.delta}</b></div>
+          <div>📏 <b>Écart snapshot/reset</b> : <b>${info.diffMin ?? "—"} min</b></div>
+          ${info.warning ? `<div style='color:#ffb300'><b>${escHtml(info.warning)}</b></div>` : ""}
+        </div>
+      `;
     }
+  }
+  // 2. Sinon, cherche dans data.debugSnapshotInfo (mode direct)
+  if (!snapshotDebugHtml && data?.debugSnapshotInfo) {
+    const info = data.debugSnapshotInfo;
+    snapshotDebugHtml = `
+      <div style="margin-top:1rem;padding:.5em 1em;background:#222;border-radius:6px">
+        <div><strong>Snapshot J-1 :</strong></div>
+        <div>⏰ <b>snapshotTime</b> : <code>${escHtml(info.snapshotTime || "—")}</code></div>
+        <div>⏰ <b>snapshotBackupTime</b> : <code>${escHtml(info.snapshotBackupTime || "—")}</code></div>
+        <div>🎯 <b>Cumul points live</b> : <b>${info.cumulFameLive}</b></div>
+        <div>📦 <b>Cumul snapshot J-1</b> : <b>${info.cumulFameSnapshot}</b></div>
+        <div>🧮 <b>Delta (live - J-1)</b> : <b>${info.delta}</b></div>
+        <div>📏 <b>Écart snapshot/reset</b> : <b>${info.diffMin ?? "—"} min</b></div>
+        ${info.warning ? `<div style='color:#ffb300'><b>${escHtml(info.warning)}</b></div>` : ""}
+      </div>
+    `;
+  }
+  // 3. Sinon, cherche dans data.clanWarSummary.debugSnapshotInfo (mode résumé)
+  if (!snapshotDebugHtml && data?.clanWarSummary?.debugSnapshotInfo) {
+    const info = data.clanWarSummary.debugSnapshotInfo;
+    snapshotDebugHtml = `
+      <div style="margin-top:1rem;padding:.5em 1em;background:#222;border-radius:6px">
+        <div><strong>Snapshot J-1 :</strong></div>
+        <div>⏰ <b>snapshotTime</b> : <code>${escHtml(info.snapshotTime || "—")}</code></div>
+        <div>⏰ <b>snapshotBackupTime</b> : <code>${escHtml(info.snapshotBackupTime || "—")}</code></div>
+        <div>🎯 <b>Cumul points live</b> : <b>${info.cumulFameLive}</b></div>
+        <div>📦 <b>Cumul snapshot J-1</b> : <b>${info.cumulFameSnapshot}</b></div>
+        <div>🧮 <b>Delta (live - J-1)</b> : <b>${info.delta}</b></div>
+        <div>📏 <b>Écart snapshot/reset</b> : <b>${info.diffMin ?? "—"} min</b></div>
+        ${info.warning ? `<div style='color:#ffb300'><b>${escHtml(info.warning)}</b></div>` : ""}
+      </div>
+    `;
   }
   const panel = document.getElementById("debug-panel");
   if (!panel) return;
