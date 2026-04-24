@@ -1936,15 +1936,17 @@
           "start": "2026-04-23T09:49:00.000Z",
           "end": "2026-04-24T09:48:59.999Z"
         },
-        "snapshotTime": "2026-04-24T05:02:20.423Z",
+        "snapshotTime": "2026-04-24T06:39:10.313Z",
         "snapshotBackupTime": "2026-04-23T21:17:17.808Z",
         "decks": {
           "#C0RRPJYV9": 4,
           "#J008G9CLJ": 4,
+          "#UVGPPVQ8Q": 4,
           "#VPGCQPR9U": 4,
           "#VY9VLJR02": 4,
+          "#R2YP2UJRL": 3,
           "#2V20JP28Q": 2,
-          "#UVGPPVQ8Q": 2,
+          "#LJYGJYCYC": 2,
           "#20U08C2V2Q": 1,
           "#209CGRVQJV": 0,
           "#2200UQ9P08": 0,
@@ -1961,10 +1963,8 @@
           "#CVYLYLC8V": 0,
           "#J222JVRUQ": 0,
           "#JC28YVLPG": 0,
-          "#LJYGJYCYC": 0,
           "#PGQ98JVJ8": 0,
           "#QPU0U2C9": 0,
-          "#R2YP2UJRL": 0,
           "#RJJGJ8PRC": 0,
           "#RRCRJ8QJJ": 0,
           "#UQ9U8YQPC": 0,
@@ -1991,6 +1991,10 @@
           {
             "takenAt": "2026-04-24T05:02:06.297Z",
             "total": 21
+          },
+          {
+            "takenAt": "2026-04-24T06:38:56.513Z",
+            "total": 28
           }
         ],
         "_cumulFame": {
@@ -2006,9 +2010,9 @@
           "#VY9VLJR02": 700,
           "#8JGU9UUJJ": 0,
           "#UQ9U8YQPC": 0,
-          "#UVGPPVQ8Q": 400,
+          "#UVGPPVQ8Q": 700,
           "#98VCJLG92": 0,
-          "#R2YP2UJRL": 0,
+          "#R2YP2UJRL": 300,
           "#88JY2CG8J": 0,
           "#RRCRJ8QJJ": 0,
           "#CRLR0P92J": 0,
@@ -2025,7 +2029,7 @@
           "#UYRR99RL8": 0,
           "#8VP9UJV9L": 0,
           "#VY0LYQQVJ": 0,
-          "#LJYGJYCYC": 0,
+          "#LJYGJYCYC": 200,
           "#CVYLYLC8V": 0,
           "#C0RRPJYV9": 600,
           "#209CGRVQJV": 0
@@ -2044,9 +2048,9 @@
           "#VY9VLJR02": 4,
           "#8JGU9UUJJ": 0,
           "#UQ9U8YQPC": 0,
-          "#UVGPPVQ8Q": 2,
+          "#UVGPPVQ8Q": 4,
           "#98VCJLG92": 0,
-          "#R2YP2UJRL": 0,
+          "#R2YP2UJRL": 3,
           "#88JY2CG8J": 0,
           "#RRCRJ8QJJ": 0,
           "#CRLR0P92J": 0,
@@ -2063,7 +2067,7 @@
           "#UYRR99RL8": 0,
           "#8VP9UJV9L": 0,
           "#VY0LYQQVJ": 0,
-          "#LJYGJYCYC": 0,
+          "#LJYGJYCYC": 2,
           "#CVYLYLC8V": 0,
           "#C0RRPJYV9": 4,
           "#209CGRVQJV": 0
