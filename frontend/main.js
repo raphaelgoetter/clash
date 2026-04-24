@@ -3144,59 +3144,44 @@ function setDebugPanelVisible(on) {
 function updateDebugPanel(data, mode) {
   // Ajout : infos snapshot J-1 pour le clan courant
   let snapshotDebugHtml = "";
+  const buildSnapshotDebugHtml = (info) => {
+    if (!info) return "";
+    const hasSnapshotData =
+      info.snapshotTime ||
+      info.snapshotBackupTime ||
+      info.snapshotCount != null;
+    if (!hasSnapshotData) return "";
+    return `
+      <div style="margin-top:1rem;padding:.5em 1em;background:#222;border-radius:6px">
+        <div><strong>Snapshot J-1 :</strong></div>
+        <div>⏰ <b>snapshotTime</b> : <code>${escHtml(info.snapshotTime || "—")}</code></div>
+        <div>⏰ <b>snapshotBackupTime</b> : <code>${escHtml(info.snapshotBackupTime || "—")}</code></div>
+        <div>🎯 <b>Cumul points live</b> : <b>${info.cumulFameLive}</b></div>
+        <div>📦 <b>Cumul snapshot J-1</b> : <b>${info.cumulFameSnapshot ?? "—"}</b></div>
+        ${info.snapshotCount != null ? `<div>📊 <b>Decks snapshot J-1</b> : <b>${info.snapshotCount}</b></div>` : ""}
+        <div>🧮 <b>Delta (live - J-1)</b> : <b>${info.delta ?? "—"}</b></div>
+        <div>📏 <b>Écart snapshot/reset</b> : <b>${info.diffMin ?? "—"} min</b></div>
+        ${info.warning ? `<div style='color:#ffb300'><b>${escHtml(info.warning)}</b></div>` : ""}
+      </div>
+    `;
+  };
+
   // 1. Cherche dans raceGroup (prioritaire si présent)
   if (data?.raceGroup && Array.isArray(data.raceGroup)) {
     const ownClan = data.raceGroup.find((c) => c.debugSnapshotInfo);
     if (ownClan && ownClan.debugSnapshotInfo) {
-      const info = ownClan.debugSnapshotInfo;
-      snapshotDebugHtml = `
-        <div style="margin-top:1rem;padding:.5em 1em;background:#222;border-radius:6px">
-          <div><strong>Snapshot J-1 :</strong></div>
-          <div>⏰ <b>snapshotTime</b> : <code>${escHtml(info.snapshotTime || "—")}</code></div>
-          <div>⏰ <b>snapshotBackupTime</b> : <code>${escHtml(info.snapshotBackupTime || "—")}</code></div>
-          <div>🎯 <b>Cumul points live</b> : <b>${info.cumulFameLive}</b></div>
-          <div>📦 <b>Cumul snapshot J-1</b> : <b>${info.cumulFameSnapshot ?? "—"}</b></div>
-          ${info.snapshotCount != null ? `<div>📊 <b>Decks snapshot J-1</b> : <b>${info.snapshotCount}</b></div>` : ""}
-          <div>🧮 <b>Delta (live - J-1)</b> : <b>${info.delta ?? "—"}</b></div>
-          <div>📏 <b>Écart snapshot/reset</b> : <b>${info.diffMin ?? "—"} min</b></div>
-          ${info.warning ? `<div style='color:#ffb300'><b>${escHtml(info.warning)}</b></div>` : ""}
-        </div>
-      `;
+      snapshotDebugHtml = buildSnapshotDebugHtml(ownClan.debugSnapshotInfo);
     }
   }
   // 2. Sinon, cherche dans data.debugSnapshotInfo (mode direct)
   if (!snapshotDebugHtml && data?.debugSnapshotInfo) {
-    const info = data.debugSnapshotInfo;
-    snapshotDebugHtml = `
-      <div style="margin-top:1rem;padding:.5em 1em;background:#222;border-radius:6px">
-        <div><strong>Snapshot J-1 :</strong></div>
-        <div>⏰ <b>snapshotTime</b> : <code>${escHtml(info.snapshotTime || "—")}</code></div>
-        <div>⏰ <b>snapshotBackupTime</b> : <code>${escHtml(info.snapshotBackupTime || "—")}</code></div>
-        <div>🎯 <b>Cumul points live</b> : <b>${info.cumulFameLive}</b></div>
-        <div>📦 <b>Cumul snapshot J-1</b> : <b>${info.cumulFameSnapshot ?? "—"}</b></div>
-        ${info.snapshotCount != null ? `<div>📊 <b>Decks snapshot J-1</b> : <b>${info.snapshotCount}</b></div>` : ""}
-        <div>🧮 <b>Delta (live - J-1)</b> : <b>${info.delta ?? "—"}</b></div>
-        <div>📏 <b>Écart snapshot/reset</b> : <b>${info.diffMin ?? "—"} min</b></div>
-        ${info.warning ? `<div style='color:#ffb300'><b>${escHtml(info.warning)}</b></div>` : ""}
-      </div>
-    `;
+    snapshotDebugHtml = buildSnapshotDebugHtml(data.debugSnapshotInfo);
   }
   // 3. Sinon, cherche dans data.clanWarSummary.debugSnapshotInfo (mode résumé)
   if (!snapshotDebugHtml && data?.clanWarSummary?.debugSnapshotInfo) {
-    const info = data.clanWarSummary.debugSnapshotInfo;
-    snapshotDebugHtml = `
-      <div style="margin-top:1rem;padding:.5em 1em;background:#222;border-radius:6px">
-        <div><strong>Snapshot J-1 :</strong></div>
-        <div>⏰ <b>snapshotTime</b> : <code>${escHtml(info.snapshotTime || "—")}</code></div>
-        <div>⏰ <b>snapshotBackupTime</b> : <code>${escHtml(info.snapshotBackupTime || "—")}</code></div>
-        <div>🎯 <b>Cumul points live</b> : <b>${info.cumulFameLive}</b></div>
-        <div>📦 <b>Cumul snapshot J-1</b> : <b>${info.cumulFameSnapshot ?? "—"}</b></div>
-        ${info.snapshotCount != null ? `<div>📊 <b>Decks snapshot J-1</b> : <b>${info.snapshotCount}</b></div>` : ""}
-        <div>🧮 <b>Delta (live - J-1)</b> : <b>${info.delta ?? "—"}</b></div>
-        <div>📏 <b>Écart snapshot/reset</b> : <b>${info.diffMin ?? "—"} min</b></div>
-        ${info.warning ? `<div style='color:#ffb300'><b>${escHtml(info.warning)}</b></div>` : ""}
-      </div>
-    `;
+    snapshotDebugHtml = buildSnapshotDebugHtml(
+      data.clanWarSummary.debugSnapshotInfo,
+    );
   }
   const panel = document.getElementById("debug-panel");
   if (!panel) return;
@@ -3234,14 +3219,8 @@ function updateDebugPanel(data, mode) {
       <div><strong>snapshotDate :</strong> ${escHtml(payload.snapshotDate ?? "—")}</div>
       <div><strong>warCurrentWeekId :</strong> ${escHtml(payload.warCurrentWeekId ?? "—")}</div>
       <div><strong>warSnapshotDays :</strong> ${payload.warSnapshotDays ? JSON.stringify(payload.warSnapshotDays) : "—"}</div>
-      <div><strong>currentWarDays :</strong> ${payload.currentWarDays ? payload.currentWarDays.length + " jours" : "—"}</div>
-      <div><strong>clanWarSummary :</strong> ${payload.clanWarSummary ? "ok" : "—"}</div>
     </div>
     ${snapshotDebugHtml}
-    <details style="margin-top:.75rem;">
-      <summary>Full debug payload</summary>
-      <pre>${escHtml(text)}</pre>
-    </details>
   `;
 
   const refreshBtn = document.getElementById("debug-refresh-now");
