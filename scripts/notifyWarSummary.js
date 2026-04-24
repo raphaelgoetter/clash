@@ -44,6 +44,13 @@ const CLINCH_LOG_FILE = path.join(
 
 const DISCORD_API = "https://discord.com/api/v10";
 const DRY_RUN = process.argv.includes("--dry-run");
+const FORCE = process.argv.includes("--force");
+const CLAN_FILTER = (() => {
+  const idx = process.argv.indexOf("--clan");
+  return idx !== -1
+    ? process.argv[idx + 1]?.replace(/^#/, "").toUpperCase()
+    : null;
+})();
 
 // ── Déduplication ────────────────────────────────────────────
 // Format : { "LRQP20V9": "saturday:2026-04-04", ... }
@@ -172,18 +179,12 @@ async function readClanMemberNames(tag) {
         playerData?.profile?.name || normalizePlayerTag(playerTag);
     }
 
+    // data.members est la source de vérité pour l'appartenance actuelle au clan.
+    // Ne pas utiliser uncomplete.players : cette liste peut contenir des ex-membres
+    // qui n'ont pas joué leurs decks avant de quitter, ce qui fausserait la liste
+    // des combats manquants.
     const members = Array.isArray(data.members) ? data.members : [];
     for (const member of members) {
-      const playerTag = normalizePlayerTag(member?.tag);
-      if (!playerTag || names[playerTag]) continue;
-      names[playerTag] = member.name || playerTag;
-    }
-
-    const uncompletePlayers =
-      data.uncomplete && Array.isArray(data.uncomplete.players)
-        ? data.uncomplete.players
-        : [];
-    for (const member of uncompletePlayers) {
       const playerTag = normalizePlayerTag(member?.tag);
       if (!playerTag || names[playerTag]) continue;
       names[playerTag] = member.name || playerTag;
@@ -556,9 +557,9 @@ async function postWarSummary(
 
   {
     const memberNames = await readClanMemberNames(tag);
-    // Itérer sur les membres actuels du cache (et non sur le snapshot) pour
-    // exclure les joueurs qui ont quitté le clan et inclure ceux qui n'ont pas
-    // participé à la course (non présents dans dayEntry.decks → 0 decks).
+    // Itérer sur les membres actuels du cache : inclut les membres absents du
+    // snapshot (0 decks), exclut les ex-membres (riko, les Goetter…) qui ne sont
+    // plus dans data.members/membersRaw mais pourraient traîner dans d'autres listes.
     const missingPlayers = Object.entries(memberNames)
       .map(([tagNorm, name]) => {
         const decksCount = Number(dayEntry.decks?.[tagNorm]) || 0;
@@ -735,6 +736,7 @@ async function main() {
   const clinchLog = await loadClinchLog();
 
   for (const tag of ALLOWED_CLANS) {
+    if (CLAN_FILTER && tag !== CLAN_FILTER) continue;
     try {
       const endedDay = getEndedWarDay(now, tag);
       if (!endedDay) {
@@ -746,9 +748,9 @@ async function main() {
       const { warDay, realDay } = endedDay;
 
       // Vérification anti-doublon
-      if (alreadyPosted(log, tag, warDay, realDay)) {
+      if (!FORCE && alreadyPosted(log, tag, warDay, realDay)) {
         console.log(
-          `[${tag}] Résumé déjà posté pour ${warDay} ${realDay} — ignoré.`,
+          `[${tag}] Résumé déjà posté pour ${warDay} ${realDay} — ignoré. (--force pour forcer)`,
         );
         continue;
       }
