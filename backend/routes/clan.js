@@ -1344,10 +1344,15 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       // On ne peut rien calculer si ni battleLog ni données de race ne sont disponibles
       if (battleLog === null && raceTotalDecks === null) return null;
       const effectiveBattleLog = battleLog ?? [];
-      const summary = buildCurrentWarDays(effectiveBattleLog, raceTotalDecks, {
-        state: currentRace?.state ?? null,
-        periodIndex: currentRace?.periodIndex ?? null,
-      });
+      const summary = buildCurrentWarDays(
+        effectiveBattleLog,
+        raceTotalDecks,
+        {
+          state: currentRace?.state ?? null,
+          periodIndex: currentRace?.periodIndex ?? null,
+        },
+        clanTag,
+      );
       if (
         summary &&
         summary.daysFromThu > 0 &&
@@ -1459,7 +1464,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
   const warActiveFromMembers = analyzedMembers.some((m) => m.warDays !== null);
   // Garde calendaire : hors jeu–dim, on ne construit jamais de clanWarSummary,
   // même si l'API renvoie encore periodType='warDay' après le reset du lundi.
-  const _gdcDowClan = new Date(Date.now() - warResetOffsetMs()).getUTCDay();
+  const _gdcDowClan = new Date(
+    Date.now() - warResetOffsetMs(clanTag),
+  ).getUTCDay();
   const isWarPeriodCalendar = _gdcDowClan === 0 || _gdcDowClan >= 4;
   if (
     isWarPeriodCalendar &&
@@ -1483,7 +1490,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         daysFromThu = currentRace.periodIndex;
       } else {
         const now = new Date();
-        const nowGdcDate = new Date(now.getTime() - warResetOffsetMs());
+        const nowGdcDate = new Date(now.getTime() - warResetOffsetMs(clanTag));
         const dow = nowGdcDate.getUTCDay();
         if (dow === 0 || dow >= 4) {
           daysFromThu = dow === 4 ? 0 : dow === 5 ? 1 : dow === 6 ? 2 : 3;
@@ -1785,7 +1792,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
   let currentWarDays = null;
   if (clanWarSummary && clanWarSummary.days) {
     const now = new Date();
-    const nowGdcDate = new Date(now.getTime() - warResetOffsetMs(now));
+    const nowGdcDate = new Date(now.getTime() - warResetOffsetMs(clanTag));
     const thuGdcMs =
       nowGdcDate.getTime() - (clanWarSummary.daysFromThu ?? 0) * MS_PER_DAY;
     currentWarDays = clanWarSummary.days.map((d, i) => ({
