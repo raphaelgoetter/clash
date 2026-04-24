@@ -2144,9 +2144,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                   if (warDayIndex > 0) {
                     const prevSnap = weekSnaps[warDayIndex - 1];
                     const prevCumulFame = prevSnap?._cumulFame ?? {};
-                    const prevCumulFameSum = Object.values(
-                      prevCumulFame,
-                    ).reduce((s, v) => s + (v ?? 0), 0);
+                    // Ne garder que les membres actuels pour éviter la pollution par ex-membres
+                    const prevCumulFameSum = Object.entries(prevCumulFame)
+                      .filter(([tag]) => currentMemberTags.has(tag))
+                      .reduce((s, [, v]) => s + (v ?? 0), 0);
                     if (prevCumulFameSum > 0) {
                       const delta = sectionFame - prevCumulFameSum;
                       // Garde-fou : delta négatif ou anormalement bas → snapshot corrompu
