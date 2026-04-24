@@ -725,7 +725,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       computeCurrentWeekId(currentRace, raceLog) ??
       `W${(currentRace.sectionIndex ?? 0) + 1}`;
     import("../services/snapshot.js").then(({ recordSnapshot }) => {
-      recordSnapshot(clanTag, participants, weekId).catch((err) =>
+      recordSnapshot(clanTag, participants, weekId, {
+        periodType: currentRace?.periodType ?? null,
+      }).catch((err) =>
         console.warn(
           "[snapshot] recordSnapshot failed for",
           clanTag,
@@ -1571,8 +1573,12 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
         // Prefer the decks sum from the snapshot (matches warSnapshotDays),
         // fallback to the _cumul delta if decks are missing.
-        const snapshotCountFromDecks = snap?.decks
-          ? Object.values(snap.decks).reduce((s, v) => s + v, 0)
+        const snapshotCountFromDecks =
+          snap?.decks && Object.keys(snap.decks).length > 0
+            ? Object.values(snap.decks).reduce((s, v) => s + v, 0)
+            : null;
+        const snapshotCountFromMeta = Number.isFinite(snap?.snapshotCount)
+          ? clampDeckTotal(snap.snapshotCount)
           : null;
 
         const cumul = snap?._cumul ?? null;
@@ -1589,9 +1595,11 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         let snapshotCount =
           snapshotCountFromDecks !== null
             ? clampDeckTotal(snapshotCountFromDecks)
-            : cumulDelta !== null
-              ? clampDeckTotal(cumulDelta)
-              : null;
+            : snapshotCountFromMeta !== null
+              ? snapshotCountFromMeta
+              : cumulDelta !== null
+                ? clampDeckTotal(cumulDelta)
+                : null;
 
         // Les jours passés sont immutables côté affichage.
         // On permet à un snapshot plus récent d'améliorer la valeur (jamais de descente).
@@ -1887,18 +1895,11 @@ export async function buildClanAnalysis(clanTag, options = {}) {
   }
 
   if (clanWarSummary && Array.isArray(clanWarSummary.days)) {
-    const summarySnapshotDays = clanWarSummary.days.map((day) =>
-      typeof day?.snapshotCount === "number"
-        ? Math.min(200, Math.max(0, day.snapshotCount))
-        : null,
-    );
-    if (Array.isArray(warSnapshotDays)) {
-      warSnapshotDays = warSnapshotDays.map((value, idx) =>
-        value != null ? value : (summarySnapshotDays[idx] ?? null),
-      );
-    } else {
-      warSnapshotDays = summarySnapshotDays;
-    }
+    warSnapshotDays = clanWarSummary.days.map((day) => {
+      if (!day || typeof day.totalCount !== "number") return null;
+      if (day.isFuture && day.snapshotCount == null) return null;
+      return Math.min(200, Math.max(0, day.totalCount));
+    });
 
     const warnings = [];
     if (

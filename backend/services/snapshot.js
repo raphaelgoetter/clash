@@ -528,14 +528,17 @@ export async function getSnapshotsForWeek(clanTag, week = null) {
   if (!history.length) return [];
 
   // Un snapshot est valide si snapshotTime tombe le même jour calendaire que realDay
-  // (captures pré-reset incluses), ou bien après le gdcPeriod.start (post-reset).
-  // Cela évite de rejeter les snapshots horaires pris juste avant le reset (ex : 09:17 < 09:54).
+  // (captures pré-reset incluses), ou bien si un snapshotCount manuel a été fourni.
+  // Les snapshots non GDC sont rejetés (periodType différent de warDay).
   const isValidSnapshot = (d) => {
-    if (!d.snapshotTime || !d.gdcPeriod?.start) return false;
-    return (
-      d.snapshotTime.slice(0, 10) === d.realDay ||
-      d.snapshotTime >= d.gdcPeriod.start
-    );
+    if (d.periodType != null && d.periodType !== "warDay") return false;
+    if (!d.gdcPeriod?.start) return false;
+    const hasValidTime =
+      d.snapshotTime &&
+      (d.snapshotTime.slice(0, 10) === d.realDay ||
+        d.snapshotTime >= d.gdcPeriod.start);
+    const hasManualCount = Number.isFinite(d.snapshotCount);
+    return hasValidTime || hasManualCount;
   };
 
   const formatDay = (weekId, d) => ({
@@ -543,6 +546,7 @@ export async function getSnapshotsForWeek(clanTag, week = null) {
     date: d.realDay,
     warDay: d.warDay,
     decks: isValidSnapshot(d) ? d.decks : {},
+    snapshotCount: isValidSnapshot(d) ? (d.snapshotCount ?? null) : null,
     // _cumulFame n'est utile que si le snapshot est valide : un snapshot pris
     // avant le reset GDC (periodType=training) contient des données de la semaine
     // précédente qui corrompent le calcul du delta de fame du jour.
@@ -581,11 +585,14 @@ export async function getSnapshotsForWeeks(clanTag, weeks) {
 
   // Même validation que getSnapshotsForWeek.
   const isValidSnapshot = (d) => {
-    if (!d.snapshotTime || !d.gdcPeriod?.start) return false;
-    return (
-      d.snapshotTime.slice(0, 10) === d.realDay ||
-      d.snapshotTime >= d.gdcPeriod.start
-    );
+    if (d.periodType != null && d.periodType !== "warDay") return false;
+    if (!d.gdcPeriod?.start) return false;
+    const hasValidTime =
+      d.snapshotTime &&
+      (d.snapshotTime.slice(0, 10) === d.realDay ||
+        d.snapshotTime >= d.gdcPeriod.start);
+    const hasManualCount = Number.isFinite(d.snapshotCount);
+    return hasValidTime || hasManualCount;
   };
 
   const formatDay = (weekId, d) => ({
@@ -593,6 +600,7 @@ export async function getSnapshotsForWeeks(clanTag, weeks) {
     date: d.realDay,
     warDay: d.warDay,
     decks: isValidSnapshot(d) ? d.decks : {},
+    snapshotCount: isValidSnapshot(d) ? (d.snapshotCount ?? null) : null,
     // _cumulFame n'est utile que si le snapshot est valide : un snapshot pris
     // avant le reset GDC (periodType=training) contient des données de la semaine
     // précédente qui corrompent le calcul du delta de fame du jour.

@@ -68,22 +68,35 @@ export function buildDebugSnapshotInfo({
   }
   return {
     weekSnaps: weekSnaps.map((s, i) => {
-      const snapshotCount = s?.decks
-        ? Object.values(s.decks).reduce(
-            (sum, value) => sum + (typeof value === "number" ? value : 0),
-            0,
-          )
-        : null;
+      const snapshotCount =
+        s?.decks && Object.keys(s.decks).length > 0
+          ? Object.values(s.decks).reduce(
+              (sum, value) => sum + (typeof value === "number" ? value : 0),
+              0,
+            )
+          : Number.isFinite(s?.snapshotCount)
+            ? s.snapshotCount
+            : null;
       const fallbackCount =
         fallbackWarDays?.[i]?.snapshotCount != null
           ? fallbackWarDays[i].snapshotCount
           : (fallbackWarDays?.[i]?.totalCount ?? null);
+      const effectiveSnapshotCount =
+        snapshotCount != null && snapshotCount > 0
+          ? snapshotCount
+          : fallbackCount;
       return {
         day: i,
         snapshotTime: s?.snapshotTime || s?.snapshotBackupTime || null,
         decks: s?.decks || null,
         _cumulFame: s?._cumulFame || null,
-        snapshotCount: snapshotCount != null ? snapshotCount : fallbackCount,
+        snapshotCount: effectiveSnapshotCount,
+        snapshotCountSource:
+          snapshotCount != null && snapshotCount > 0
+            ? "raw"
+            : fallbackCount != null
+              ? "fallback"
+              : "missing",
       };
     }),
     warDayIndex,
