@@ -3149,7 +3149,11 @@ function updateDebugPanel(data, mode) {
     const hasSnapshotData =
       info.snapshotTime ||
       info.snapshotBackupTime ||
-      info.snapshotCount != null;
+      info.snapshotCount != null ||
+      info.cumulFameSnapshot != null ||
+      info.delta != null ||
+      info.diffMin != null ||
+      info.warning;
     if (!hasSnapshotData) return "";
     return `
       <div style="margin-top:1rem;padding:.5em 1em;background:#222;border-radius:6px">

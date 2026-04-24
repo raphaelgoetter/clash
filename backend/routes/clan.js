@@ -1881,9 +1881,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
   let debugSnapshotInfo = null;
   clanWarSummary = mergeWarSummariesBackend(clanWarSummary, fallbackWarSummary);
-  if (debugSnapshotInfo && clanWarSummary) {
-    clanWarSummary.debugSnapshotInfo = debugSnapshotInfo;
-  }
 
   if (clanWarSummary && Array.isArray(clanWarSummary.days)) {
     warSnapshotDays = clanWarSummary.days.map((day) => {
@@ -2309,6 +2306,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           }
 
           debugSnapshotInfo = debugSnapshotInfoRoot;
+          if (debugSnapshotInfo && clanWarSummary) {
+            clanWarSummary.debugSnapshotInfo = debugSnapshotInfo;
+          }
           return groupWithProjections;
         })()
       : null,
