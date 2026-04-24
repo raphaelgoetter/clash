@@ -556,13 +556,15 @@ async function postWarSummary(
 
   {
     const memberNames = await readClanMemberNames(tag);
-    const missingPlayers = Object.entries(dayEntry.decks ?? {})
-      .map(([playerTag, count]) => {
-        const tagNorm = normalizePlayerTag(playerTag);
-        const decksCount = Number(count) || 0;
+    // Itérer sur les membres actuels du cache (et non sur le snapshot) pour
+    // exclure les joueurs qui ont quitté le clan et inclure ceux qui n'ont pas
+    // participé à la course (non présents dans dayEntry.decks → 0 decks).
+    const missingPlayers = Object.entries(memberNames)
+      .map(([tagNorm, name]) => {
+        const decksCount = Number(dayEntry.decks?.[tagNorm]) || 0;
         return {
           tag: tagNorm,
-          name: memberNames[tagNorm] ?? tagNorm,
+          name,
           missing: Math.max(0, 4 - decksCount),
         };
       })
