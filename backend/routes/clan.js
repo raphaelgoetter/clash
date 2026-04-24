@@ -2046,6 +2046,38 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             0;
 
           const groupWithProjections = currentRace.clans.map((c) => {
+            // Pour debug-panel : collecte des infos snapshot J-1
+            let debugSnapshotInfo = null;
+            if (isOwn && warDayIndex > 0 && weekSnaps?.[warDayIndex - 1]) {
+              const prevSnap = weekSnaps[warDayIndex - 1];
+              debugSnapshotInfo = {
+                snapshotTime: prevSnap?.snapshotTime ?? null,
+                snapshotBackupTime: prevSnap?.snapshotBackupTime ?? null,
+                cumulFameSnapshot: Object.values(
+                  prevSnap?._cumulFame ?? {},
+                ).reduce((s, v) => s + (v ?? 0), 0),
+                cumulFameLive: sectionFame,
+                delta:
+                  sectionFame -
+                  Object.values(prevSnap?._cumulFame ?? {}).reduce(
+                    (s, v) => s + (v ?? 0),
+                    0,
+                  ),
+                snapshotJ1Exists:
+                  Object.keys(prevSnap?._cumulFame ?? {}).length > 0,
+              };
+              // Ajoute un warning si le snapshot J-1 est trop éloigné du reset (>2h)
+              if (prevSnap?.snapshotTime && prevSnap?.gdcPeriod?.end) {
+                const snapTs = new Date(prevSnap.snapshotTime).getTime();
+                const resetTs = new Date(prevSnap.gdcPeriod.end).getTime();
+                const diffMin = Math.abs(snapTs - resetTs) / 60000;
+                debugSnapshotInfo.warning =
+                  diffMin > 120
+                    ? `⚠️ Snapshot J-1 trop éloigné du reset (${Math.round(diffMin)} min)`
+                    : null;
+                debugSnapshotInfo.diffMin = Math.round(diffMin);
+              }
+            }
             const cTagNorm = (c.tag ?? "").toUpperCase();
             const isOwn = cTagNorm === ownTagNorm;
             const extra = isOwn ? clan : raceGroupRivalData[cTagNorm] || null;
@@ -2142,6 +2174,11 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                   // Le snapshot J-1 est pris ~20 min avant le reset → valeur propre, sans contamination J+1
                   let fameTodayRaw = null;
                   if (warDayIndex > 0) {
+                    // Log la somme totale des fames live (API) pour tous les membres actuels
+                    const totalLiveFame = allParts
+                      .filter((p) => currentMemberTags.has(p.tag))
+                      .reduce((s, p) => s + (p.fame ?? 0), 0);
+                    console.log("[DEBUG TOTAL LIVE FAME]", totalLiveFame);
                     const prevSnap = weekSnaps[warDayIndex - 1];
                     const prevCumulFame = prevSnap?._cumulFame ?? {};
                     // Log détaillé pour chaque membre actuel
@@ -2220,9 +2257,13 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               // Clan propre : delta (live API - snapshot J-1), calculé dans ptsPerDeck * decksToday.
               // Rivaux : decksToday × efficacité hebdo (arrondie à la dizaine supérieure).
               clanScore: clanScore ?? c.fame ?? extra?.clanScore ?? 0,
-              prevWarFame: isOwn
-                ? ownPrevWarFame
-                : (rivalPrevWarByTag[cTagNorm] ?? null),
+              prevWarFame: isOwn,
+              // Ajout debug-panel
+              debugSnapshotInfo: isOwn
+                ? debugSnapshotInfo
+                : undefined
+                  ? ownPrevWarFame
+                  : (rivalPrevWarByTag[cTagNorm] ?? null),
               lastWarFame: isOwn
                 ? ownLastWarFame
                 : (rivalLastWarByTag[cTagNorm] ?? null),

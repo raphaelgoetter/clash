@@ -3142,6 +3142,26 @@ function setDebugPanelVisible(on) {
 }
 
 function updateDebugPanel(data, mode) {
+  // Ajout : infos snapshot J-1 pour le clan courant
+  let snapshotDebugHtml = "";
+  if (data?.raceGroup && Array.isArray(data.raceGroup)) {
+    const ownClan = data.raceGroup.find((c) => c.debugSnapshotInfo);
+    if (ownClan && ownClan.debugSnapshotInfo) {
+      const info = ownClan.debugSnapshotInfo;
+      snapshotDebugHtml = `
+          <div style="margin-top:1rem;padding:.5em 1em;background:#222;border-radius:6px">
+            <div><strong>Snapshot J-1 :</strong></div>
+            <div>⏰ <b>snapshotTime</b> : <code>${escHtml(info.snapshotTime || "—")}</code></div>
+            <div>⏰ <b>snapshotBackupTime</b> : <code>${escHtml(info.snapshotBackupTime || "—")}</code></div>
+            <div>🎯 <b>Cumul points live</b> : <b>${info.cumulFameLive}</b></div>
+            <div>📦 <b>Cumul snapshot J-1</b> : <b>${info.cumulFameSnapshot}</b></div>
+            <div>🧮 <b>Delta (live - J-1)</b> : <b>${info.delta}</b></div>
+            <div>📏 <b>Écart snapshot/reset</b> : <b>${info.diffMin ?? "—"} min</b></div>
+            ${info.warning ? `<div style='color:#ffb300'><b>${escHtml(info.warning)}</b></div>` : ""}
+          </div>
+        `;
+    }
+  }
   const panel = document.getElementById("debug-panel");
   if (!panel) return;
 
@@ -3181,6 +3201,7 @@ function updateDebugPanel(data, mode) {
       <div><strong>currentWarDays :</strong> ${payload.currentWarDays ? payload.currentWarDays.length + " jours" : "—"}</div>
       <div><strong>clanWarSummary :</strong> ${payload.clanWarSummary ? "ok" : "—"}</div>
     </div>
+    ${snapshotDebugHtml}
     <details style="margin-top:.75rem;">
       <summary>Full debug payload</summary>
       <pre>${escHtml(text)}</pre>
