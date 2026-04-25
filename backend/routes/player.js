@@ -2,16 +2,27 @@
 // routes/player.js — Player-related API routes
 // ============================================================
 
-import { Router } from 'express';
-import { fetchPlayer, fetchBattleLog, fetchRaceLog, fetchCurrentRace, fetchClanMembers } from '../services/clashApi.js';
+import { Router } from "express";
 import {
-  analyzePlayer, buildWarHistory, computeWarScore,
-  filterWarBattles, expandDuelRounds, isWarWin, buildCurrentWarDays,
+  fetchPlayer,
+  fetchBattleLog,
+  fetchRaceLog,
+  fetchCurrentRace,
+  fetchClanMembers,
+} from "../services/clashApi.js";
+import {
+  analyzePlayer,
+  buildWarHistory,
+  computeWarScore,
+  filterWarBattles,
+  expandDuelRounds,
+  isWarWin,
+  buildCurrentWarDays,
   getPlayerAnalysis,
   warResetOffsetMs,
-} from '../services/analysisService.js';
-import { getOrSet } from '../services/cache.js';
-import { getDiscordLinks } from '../services/discordLinks.js';
+} from "../services/analysisService.js";
+import { getOrSet } from "../services/cache.js";
+import { getDiscordLinks } from "../services/discordLinks.js";
 
 // short TTL so we don't keep erroneous scores for long
 const PLAYER_CACHE_TTL = 30 * 1000; // 30 seconds
@@ -22,12 +33,12 @@ const router = Router();
  * GET /api/player/:tag
  * Returns raw player profile from the Clash Royale API.
  */
-router.get('/:tag', async (req, res) => {
+router.get("/:tag", async (req, res) => {
   try {
     const player = await fetchPlayer(req.params.tag);
     res.json(player);
   } catch (err) {
-    const status = err.message.includes('404') ? 404 : 500;
+    const status = err.message.includes("404") ? 404 : 500;
     res.status(status).json({ error: err.message });
   }
 });
@@ -36,14 +47,17 @@ router.get('/:tag', async (req, res) => {
  * GET /api/player/:tag/analysis
  * Returns computed reliability analysis for a player.
  */
-router.get('/:tag/analysis', async (req, res) => {
+router.get("/:tag/analysis", async (req, res) => {
   try {
     const tag = req.params.tag;
-    const forceRefresh = req.query.force === 'true';
+    const forceRefresh = req.query.force === "true";
 
     // Récupère le statut Discord (lié ou non) avant l'analyse
-    const discordLinks  = await getDiscordLinks().catch(() => ({}));
-    const discordLinked = Object.prototype.hasOwnProperty.call(discordLinks, tag);
+    const discordLinks = await getDiscordLinks().catch(() => ({}));
+    const discordLinked = Object.prototype.hasOwnProperty.call(
+      discordLinks,
+      tag,
+    );
 
     // attempt memory cache but obey force parameter
     let analysis, fromCache;
@@ -60,14 +74,20 @@ router.get('/:tag/analysis', async (req, res) => {
 
     // if cached result has warHistory but no weeks and player isn't fallback,
     // refresh synchronously to avoid blank cards
-    if (!forceRefresh && fromCache && analysis.warHistory && analysis.warHistory.weeks.length === 0 && !analysis.reliability) {
+    if (
+      !forceRefresh &&
+      fromCache &&
+      analysis.warHistory &&
+      analysis.warHistory.weeks.length === 0 &&
+      !analysis.reliability
+    ) {
       // recompute immediately ignoring cache
       analysis = await getPlayerAnalysis(tag, discordLinked);
       fromCache = false;
     }
 
-    res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
-    res.set('X-Cache', fromCache ? 'HIT' : 'MISS');
+    res.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+    res.set("X-Cache", fromCache ? "HIT" : "MISS");
     // S'assure que le statut Discord est toujours à jour (indépendamment du cache d'analyse)
     if (analysis.overview) analysis.overview.discord = discordLinked;
 
@@ -78,9 +98,10 @@ router.get('/:tag/analysis', async (req, res) => {
     const clanTag = analysis.overview?.clan?.tag ?? null;
     if (analysis.currentWarDays?.days && clanTag) {
       try {
-        const { getSnapshots } = await import('../services/snapshot.js');
+        const { getSnapshots } = await import("../services/snapshot.js");
         const allSnaps = await getSnapshots(clanTag);
-        const currentWeek = allSnaps.length > 0 ? allSnaps[allSnaps.length - 1].week : null;
+        const currentWeek =
+          allSnaps.length > 0 ? allSnaps[allSnaps.length - 1].week : null;
         if (currentWeek) {
           warCurrentWeekId = currentWeek;
           const weekSnaps = allSnaps.filter((s) => s.week === currentWeek);
@@ -97,7 +118,7 @@ router.get('/:tag/analysis', async (req, res) => {
           // Ensure we match days by date, not by array index (snapshot array order
           // can’t be relied upon). Use the day key (YYYY-MM-DD) from currentWarDays.
           const snapByDate = Object.fromEntries(
-            weekSnaps.map((s) => [s.date, s.decks[playerTag] ?? null])
+            weekSnaps.map((s) => [s.date, s]),
           );
 
           const battleDays = Array.isArray(analysis.currentWarDays?.days)
@@ -107,24 +128,42 @@ router.get('/:tag/analysis', async (req, res) => {
           warSnapshotDays = battleDays.map((d) => {
             const snap = snapByDate[d.key] ?? null;
             const count = d.count ?? 0;
-            // If snapshot is missing, keep null (no data).
-            // Otherwise, prefer the higher of snapshot vs. battle-log count to reflect
-            // combat played after the snapshot was taken.
-            if (snap === null) {
+            if (!snap) {
+              // No snapshot for this day: fall back to the battle log count.
               return count > 0 ? Math.min(4, count) : null;
             }
-            return Math.min(4, Math.max(snap, count));
+            const hasPlayerDecks =
+              snap.decks &&
+              Object.prototype.hasOwnProperty.call(snap.decks, playerTag);
+            if (!hasPlayerDecks) {
+              // Snapshot exists for this day, but no per-player breakdown was recorded.
+              // Do not fallback to incomplete battle log data, to avoid misleading counts.
+              return null;
+            }
+            const playerDecks = snap.decks[playerTag];
+            return Math.min(4, Math.max(playerDecks, count));
           });
         }
-      } catch (_) { /* silencieux */ }
+      } catch (_) {
+        /* silencieux */
+      }
     }
 
-    const warResetUtcMinutes = clanTag ? warResetOffsetMs(clanTag) / 60000 : null;
+    const warResetUtcMinutes = clanTag
+      ? warResetOffsetMs(clanTag) / 60000
+      : null;
 
     // keep API shape consistent with clan route
-    res.json({ ...analysis, snapshotDate: null, warSnapshotDays, warCurrentWeekId, warSnapshotTakenAt, warResetUtcMinutes });
+    res.json({
+      ...analysis,
+      snapshotDate: null,
+      warSnapshotDays,
+      warCurrentWeekId,
+      warSnapshotTakenAt,
+      warResetUtcMinutes,
+    });
   } catch (err) {
-    const status = err.message.includes('404') ? 404 : 500;
+    const status = err.message.includes("404") ? 404 : 500;
     res.status(status).json({ error: err.message });
   }
 });
