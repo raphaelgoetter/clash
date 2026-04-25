@@ -36,7 +36,7 @@ import { computeTopPlayers } from "../services/topplayers.js";
 import { computeUncomplete } from "../services/uncomplete.js";
 import { getOrSet } from "../services/cache.js";
 import { getDiscordLinks } from "../services/discordLinks.js";
-import { recordSnapshot } from "../services/snapshot.js";
+import { recordSnapshot, getSnapshotFileDebug } from "../services/snapshot.js";
 import { loadClanCache, saveClanCache } from "../services/clanCache.js";
 import fs from "fs/promises";
 import path from "path";
@@ -442,7 +442,66 @@ router.post("/:tag/snapshot", async (req, res) => {
       `W${(currentRace.sectionIndex ?? 0) + 1}`;
 
     await recordSnapshot(clanTag, currentRace.clan.participants, weekId);
-    res.json({ ok: true, weekId });
+    const debugInfo = await getSnapshotFileDebug(clanTag).catch(() => null);
+    res.json({ ok: true, weekId, debugInfo });
+  } catch (err) {
+    const status = err.message.includes("404") ? 404 : 500;
+    res.status(status).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/clan/:tag/snapshot-force
+ * Force a runtime snapshot generation from the current live war and returns /tmp debug info.
+ */
+router.get("/:tag/snapshot-force", async (req, res) => {
+  try {
+    let clanTag = req.params.tag;
+    if (clanTag.startsWith("#")) clanTag = clanTag.slice(1);
+    clanTag = clanTag.toUpperCase();
+
+    if (!ALLOWED_CLANS.includes(clanTag)) {
+      return res.status(400).json({ error: "Clan not in allowed list" });
+    }
+
+    const [raceLog, currentRace] = await Promise.all([
+      fetchRaceLog(clanTag).catch(() => null),
+      fetchCurrentRace(clanTag).catch(() => null),
+    ]);
+
+    if (!currentRace || currentRace.periodType !== "warDay") {
+      return res.status(400).json({ error: "No active war in progress" });
+    }
+
+    const weekId =
+      computeCurrentWeekId(currentRace, raceLog) ??
+      `W${(currentRace.sectionIndex ?? 0) + 1}`;
+
+    await recordSnapshot(clanTag, currentRace.clan.participants, weekId);
+    const debugInfo = await getSnapshotFileDebug(clanTag).catch(() => null);
+    return res.json({ ok: true, weekId, debugInfo });
+  } catch (err) {
+    const status = err.message.includes("404") ? 404 : 500;
+    res.status(status).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/clan/:tag/snapshot-debug
+ * Returns runtime snapshot storage metadata to verify whether /tmp or data/ is used.
+ */
+router.get("/:tag/snapshot-debug", async (req, res) => {
+  try {
+    let clanTag = req.params.tag;
+    if (clanTag.startsWith("#")) clanTag = clanTag.slice(1);
+    clanTag = clanTag.toUpperCase();
+
+    if (!ALLOWED_CLANS.includes(clanTag)) {
+      return res.status(400).json({ error: "Clan not in allowed list" });
+    }
+
+    const debugInfo = await getSnapshotFileDebug(clanTag);
+    res.json(debugInfo);
   } catch (err) {
     const status = err.message.includes("404") ? 404 : 500;
     res.status(status).json({ error: err.message });
@@ -715,18 +774,19 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     const weekId =
       computeCurrentWeekId(currentRace, raceLog) ??
       `W${(currentRace.sectionIndex ?? 0) + 1}`;
-    import("../services/snapshot.js").then(({ recordSnapshot }) => {
-      recordSnapshot(clanTag, participants, weekId, {
+    try {
+      const { recordSnapshot } = await import("../services/snapshot.js");
+      await recordSnapshot(clanTag, participants, weekId, {
         periodType: currentRace?.periodType ?? null,
-      }).catch((err) =>
-        console.warn(
-          "[snapshot] recordSnapshot failed for",
-          clanTag,
-          ":",
-          err.message,
-        ),
+      });
+    } catch (err) {
+      console.warn(
+        "[snapshot] recordSnapshot failed for",
+        clanTag,
+        ":",
+        err?.message || err,
       );
-    });
+    }
   }
 
   // fetch full player profiles + battle logs for members requiring refresh
@@ -958,9 +1018,11 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           ? Math.min(200, snap.snapshotCount)
           : null;
         const total =
-          totalFromDecks != null && totalFromDecks > 0
-            ? totalFromDecks
-            : snapshotCount;
+          snapshotCount != null
+            ? snapshotCount
+            : totalFromDecks != null && totalFromDecks > 0
+              ? totalFromDecks
+              : null;
         return total != null && total > 0 ? total : null;
       });
     }
@@ -1593,10 +1655,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             : null;
 
         let snapshotCount =
-          snapshotCountFromDecks !== null
-            ? clampDeckTotal(snapshotCountFromDecks)
-            : snapshotCountFromMeta !== null
-              ? snapshotCountFromMeta
+          snapshotCountFromMeta !== null
+            ? snapshotCountFromMeta
+            : snapshotCountFromDecks !== null
+              ? clampDeckTotal(snapshotCountFromDecks)
               : cumulDelta !== null
                 ? clampDeckTotal(cumulDelta)
                 : null;
@@ -1757,9 +1819,11 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           ? Math.min(200, s.snapshotCount)
           : null;
         const total =
-          totalFromDecks != null && totalFromDecks > 0
-            ? totalFromDecks
-            : snapshotCount;
+          snapshotCount != null
+            ? snapshotCount
+            : totalFromDecks != null && totalFromDecks > 0
+              ? totalFromDecks
+              : null;
         return total != null && total > 0 ? total : null;
       });
 

@@ -38,6 +38,14 @@ async function fileMtime(file) {
   }
 }
 
+async function fileStat(file) {
+  try {
+    return await fs.stat(file);
+  } catch (_) {
+    return null;
+  }
+}
+
 function convertLegacySnapshots(raw, clanTag = null) {
   // Legacy format: array of { week, date, warDay, decks, _cumul, ... }
   // Convert to new format: [{ week, days: [{ warDay, realDay, snapshots:[...], decks: {...} }] }]
@@ -164,12 +172,26 @@ async function loadSnapshots(clanTag) {
 
   const tmpMtime = await fileMtime(tmpFile);
   const dataMtime = await fileMtime(dataFile);
+  const tmpMtimeIso = tmpMtime > 0 ? new Date(tmpMtime).toISOString() : null;
+  const dataMtimeIso = dataMtime > 0 ? new Date(dataMtime).toISOString() : null;
+  const debugMeta = {
+    clanTag,
+    tmpFile,
+    tmpMtime: tmpMtimeIso,
+    dataFile,
+    dataMtime: dataMtimeIso,
+  };
 
   if (tmpMtime > 0 && tmpMtime >= dataMtime) {
     try {
       const raw = await readJsonFile(tmpFile);
+      console.warn("[snapshot] loadSnapshots using tmp file", debugMeta);
       return normalizeSnapshots(raw, clanTag);
-    } catch (_) {
+    } catch (err) {
+      console.warn(
+        "[snapshot] loadSnapshots tmp file invalid, falling back to data file",
+        { ...debugMeta, error: err.message },
+      );
       // tmp file invalid or corrupted, fallback to data file below.
     }
   }
@@ -178,6 +200,7 @@ async function loadSnapshots(clanTag) {
     try {
       const raw = await readJsonFile(dataFile);
       const snaps = normalizeSnapshots(raw, clanTag);
+      console.warn("[snapshot] loadSnapshots using data file", debugMeta);
       try {
         await ensureDirectory(TMP_SNAP_DIR);
         await fs.writeFile(tmpFile, JSON.stringify(raw, null, 2));
@@ -185,7 +208,11 @@ async function loadSnapshots(clanTag) {
         // ignore, /tmp may be unavailable in some environments
       }
       return snaps;
-    } catch (_) {
+    } catch (err) {
+      console.warn(
+        "[snapshot] loadSnapshots data file invalid, falling back to tmp file",
+        { ...debugMeta, error: err.message },
+      );
       // data file invalid or absent, fallback to tmp if available.
     }
   }
@@ -193,12 +220,21 @@ async function loadSnapshots(clanTag) {
   if (tmpMtime > 0) {
     try {
       const raw = await readJsonFile(tmpFile);
+      console.warn(
+        "[snapshot] loadSnapshots using tmp file as final fallback",
+        debugMeta,
+      );
       return normalizeSnapshots(raw, clanTag);
-    } catch (_) {
+    } catch (err) {
+      console.warn(
+        "[snapshot] loadSnapshots final tmp fallback invalid, returning empty",
+        { ...debugMeta, error: err.message },
+      );
       // fallback to empty
     }
   }
 
+  console.warn("[snapshot] loadSnapshots no snapshot file found", debugMeta);
   return [];
 }
 
@@ -456,6 +492,36 @@ function fillWeekDays(week, clanTag = null) {
 
   week.days = days;
   return week;
+}
+
+export async function getSnapshotFileDebug(clanTag) {
+  await ensureDirectory(TMP_SNAP_DIR);
+  const tmpFile = snapshotFilename(clanTag, true);
+  const dataFile = snapshotFilename(clanTag, false);
+  const tmpStat = await fileStat(tmpFile);
+  const dataStat = await fileStat(dataFile);
+  const tmpMtime = tmpStat?.mtimeMs ?? 0;
+  const dataMtime = dataStat?.mtimeMs ?? 0;
+
+  return {
+    clanTag,
+    tmpFile,
+    dataFile,
+    tmpExists: tmpMtime > 0,
+    dataExists: dataMtime > 0,
+    tmpMtime: tmpMtime > 0 ? new Date(tmpMtime).toISOString() : null,
+    dataMtime: dataMtime > 0 ? new Date(dataMtime).toISOString() : null,
+    tmpSize: tmpStat?.size ?? null,
+    dataSize: dataStat?.size ?? null,
+    selectedSource:
+      tmpMtime > 0 && tmpMtime >= dataMtime
+        ? "tmp"
+        : dataMtime > 0
+          ? "data"
+          : tmpMtime > 0
+            ? "tmp"
+            : "none",
+  };
 }
 
 /**
