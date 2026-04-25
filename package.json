@@ -17,7 +17,7 @@
     "cache:clear": "rm -f frontend/public/clan-cache/*.json",
     "deploy": "npm run cache:clear && npm run build && vercel --prod --confirm --force",
     "build": "cd frontend && npm run build && cd .. && vercel --prod",
-    "test": "node backend/services/analysisService.test.js"
+    "test": "node backend/services/analysisService.test.js && node backend/services/snapshot.test.js"
   },
   "dependencies": {
     "@vercel/functions": "^3.4.3",

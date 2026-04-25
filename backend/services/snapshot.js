@@ -340,6 +340,20 @@ function clampDeckValues(decks = {}) {
   return Object.fromEntries(prioritized);
 }
 
+function isValidSnapshotTimestamp(day, timestamp) {
+  if (!timestamp || !day?.gdcPeriod?.start) return false;
+  return (
+    timestamp.slice(0, 10) === day.realDay || timestamp >= day.gdcPeriod.start
+  );
+}
+
+function hasValidSnapshotTime(day) {
+  return (
+    isValidSnapshotTimestamp(day, day.snapshotTime) ||
+    isValidSnapshotTimestamp(day, day.snapshotBackupTime)
+  );
+}
+
 function makeEmptyDay(warDay, realDay = null, clanTag = null) {
   const gdcPeriod = realDay
     ? {
@@ -635,6 +649,8 @@ export async function recordSnapshot(
       }
       prevDayEntry._cumul = mergeMaps(prevDayEntry._cumul ?? {}, currentCumul);
       prevDayEntry.snapshotCount = computeSnapshotCount(prevDayEntry.decks);
+      prevDayEntry.snapshotBackupTime =
+        prevDayEntry.snapshotBackupTime ?? now.toISOString();
     }
 
     // Si on a un baseCumul valide : certains decks du backup peuvent appartenir
@@ -712,16 +728,13 @@ export async function getSnapshotsForWeek(clanTag, week = null) {
   const history = await loadSnapshots(clanTag);
   if (!history.length) return [];
 
-  // Un snapshot est valide si snapshotTime tombe le même jour calendaire que realDay
-  // (captures pré-reset incluses), ou bien si un snapshotCount manuel a été fourni.
-  // Les snapshots non GDC sont rejetés (periodType différent de warDay).
+  // Un snapshot est valide si snapshotTime ou snapshotBackupTime tombe le même
+  // jour calendaire que realDay (captures pré-reset incluses), ou bien si un
+  // snapshotCount manuel a été fourni. Les snapshots non GDC sont rejetés.
   const isValidSnapshot = (d) => {
     if (d.periodType != null && d.periodType !== "warDay") return false;
     if (!d.gdcPeriod?.start) return false;
-    const hasValidTime =
-      d.snapshotTime &&
-      (d.snapshotTime.slice(0, 10) === d.realDay ||
-        d.snapshotTime >= d.gdcPeriod.start);
+    const hasValidTime = hasValidSnapshotTime(d);
     const hasManualCount = Number.isFinite(d.snapshotCount);
     return hasValidTime || hasManualCount;
   };
@@ -772,10 +785,7 @@ export async function getSnapshotsForWeeks(clanTag, weeks) {
   const isValidSnapshot = (d) => {
     if (d.periodType != null && d.periodType !== "warDay") return false;
     if (!d.gdcPeriod?.start) return false;
-    const hasValidTime =
-      d.snapshotTime &&
-      (d.snapshotTime.slice(0, 10) === d.realDay ||
-        d.snapshotTime >= d.gdcPeriod.start);
+    const hasValidTime = hasValidSnapshotTime(d);
     const hasManualCount = Number.isFinite(d.snapshotCount);
     return hasValidTime || hasManualCount;
   };
