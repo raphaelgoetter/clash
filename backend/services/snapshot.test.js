@@ -119,6 +119,67 @@ async function main() {
     "Backup snapshot should record backupTime while preserving primary snapshot data",
   );
 
+  // Backup snapshot without an existing primary snapshot should still
+  // record the backup timestamp on the current day and keep the previous day.
+  const noPrimaryFixture = [
+    {
+      week: "S131W3",
+      days: [
+        {
+          warDay: "friday",
+          realDay: "2026-04-24",
+          gdcPeriod: {
+            start: "2026-04-24T09:40:00.000Z",
+            end: "2026-04-25T09:39:59.999Z",
+          },
+          snapshotTime: "2026-04-24T14:00:00.000Z",
+          snapshotCount: 200,
+          decks: { "#A": 4, "#B": 4, "#C": 4, "#D": 4, "#E": 4 },
+          periodType: "warDay",
+          _cumul: { "#A": 4, "#B": 4, "#C": 4, "#D": 4, "#E": 4 },
+        },
+        {
+          warDay: "saturday",
+          realDay: "2026-04-25",
+          gdcPeriod: {
+            start: "2026-04-25T09:40:00.000Z",
+            end: "2026-04-26T09:39:59.999Z",
+          },
+          decks: {},
+          _cumul: {},
+          periodType: "warDay",
+        },
+      ],
+    },
+  ];
+
+  await fs.writeFile(
+    TEST_FILE,
+    JSON.stringify(noPrimaryFixture, null, 2),
+    "utf-8",
+  );
+  await recordSnapshot(
+    "TESTTAG",
+    [
+      { tag: "#A", decksUsed: 4, fame: 0 },
+      { tag: "#B", decksUsed: 4, fame: 0 },
+      { tag: "#C", decksUsed: 4, fame: 0 },
+      { tag: "#D", decksUsed: 4, fame: 0 },
+      { tag: "#E", decksUsed: 4, fame: 0 },
+    ],
+    "S131W3",
+    { now: "2026-04-25T10:05:00.000Z" },
+  );
+
+  const noPrimaryWeekSnaps = await getSnapshotsForWeeks("TESTTAG", ["S131W3"]);
+  const saturdaySnap = noPrimaryWeekSnaps.S131W3[2];
+  assert.strictEqual(
+    saturdaySnap.snapshotBackupTime,
+    "2026-04-25T10:05:00.000Z",
+  );
+  assert.strictEqual(saturdaySnap.snapshotCount, 0);
+  assert.deepStrictEqual(saturdaySnap.decks, {});
+
   await fs.unlink(TEST_FILE);
   console.log("✓ snapshot service tests passed");
 }

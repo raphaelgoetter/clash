@@ -365,8 +365,8 @@ function mergeMaps(a = {}, b = {}) {
 
 function clampDeckValues(decks = {}) {
   const normalized = Object.entries(decks)
-    .filter(([, v]) => Number.isFinite(v) && v >= 0)
-    .map(([k, v]) => [k, Math.min(4, Math.max(0, Math.round(v)))]);
+    .map(([k, v]) => [k, Math.min(4, Math.max(0, Math.round(v)))])
+    .filter(([, v]) => Number.isFinite(v) && v > 0);
 
   // Keep top 50 contributors to avoid impossible sums (>200) and membership overflow.
   const prioritized = normalized
@@ -388,6 +388,18 @@ function hasValidSnapshotTime(day) {
     isValidSnapshotTimestamp(day, day.snapshotTime) ||
     isValidSnapshotTimestamp(day, day.snapshotBackupTime)
   );
+}
+
+function isValidSnapshotDay(day) {
+  if (!day) return false;
+  if (day.periodType != null && day.periodType !== "warDay") return false;
+  if (!day.gdcPeriod?.start) return false;
+  const hasValidTime = hasValidSnapshotTime(day);
+  const hasManualCount = Number.isFinite(day.snapshotCount);
+  const hasDeckData =
+    day.decks &&
+    Object.values(day.decks).some((v) => Number.isFinite(v) && v > 0);
+  return hasValidTime || hasManualCount || hasDeckData;
 }
 
 function makeEmptyDay(warDay, realDay = null, clanTag = null) {
@@ -690,6 +702,12 @@ export async function recordSnapshot(
   );
 
   if (snapshotType === "backup") {
+    // Keep the current day snapshot marked as a backup even if no primary
+    // snapshot has been recorded yet. This preserves the intent of the
+    // early-run recovery and makes the day entry reliably identifiable.
+    dayEntry.snapshotBackupTime =
+      dayEntry.snapshotBackupTime ?? now.toISOString();
+
     if (hasCurrentDayPrimarySnapshot) {
       dayEntry.snapshotBackupTime = now.toISOString();
     }
@@ -804,15 +822,9 @@ export async function getSnapshotsForWeek(clanTag, week = null) {
   if (!history.length) return [];
 
   // Un snapshot est valide si snapshotTime ou snapshotBackupTime tombe le même
-  // jour calendaire que realDay (captures pré-reset incluses), ou bien si un
-  // snapshotCount manuel a été fourni. Les snapshots non GDC sont rejetés.
-  const isValidSnapshot = (d) => {
-    if (d.periodType != null && d.periodType !== "warDay") return false;
-    if (!d.gdcPeriod?.start) return false;
-    const hasValidTime = hasValidSnapshotTime(d);
-    const hasManualCount = Number.isFinite(d.snapshotCount);
-    return hasValidTime || hasManualCount;
-  };
+  // jour calendaire que realDay (captures pré-reset incluses), si un
+  // snapshotCount manuel a été fourni, ou si des données de decks sont présentes.
+  const isValidSnapshot = (d) => isValidSnapshotDay(d);
 
   const formatDay = (weekId, d) => {
     const deckSum =
@@ -871,13 +883,7 @@ export async function getSnapshotsForWeeks(clanTag, weeks) {
   if (!history.length) return result;
 
   // Même validation que getSnapshotsForWeek.
-  const isValidSnapshot = (d) => {
-    if (d.periodType != null && d.periodType !== "warDay") return false;
-    if (!d.gdcPeriod?.start) return false;
-    const hasValidTime = hasValidSnapshotTime(d);
-    const hasManualCount = Number.isFinite(d.snapshotCount);
-    return hasValidTime || hasManualCount;
-  };
+  const isValidSnapshot = (d) => isValidSnapshotDay(d);
 
   const formatDay = (weekId, d) => {
     const deckSum =
