@@ -656,6 +656,10 @@ export async function recordSnapshot(
       0,
     );
 
+  if (preserveCurrentDaySnapshot && !Number.isFinite(dayEntry.snapshotCount)) {
+    dayEntry.snapshotCount = computeSnapshotCount(dayEntry.decks);
+  }
+
   if (!preserveCurrentDaySnapshot) {
     // Si baseCumul est fiable (non vide), on utilise le delta exact comme source
     // de vérité — cela permet de corriger des valeurs gonflées lors de runs
@@ -719,6 +723,9 @@ export async function recordSnapshot(
       prevDayEntry.snapshotCount = computeSnapshotCount(prevDayEntry.decks);
       prevDayEntry.snapshotBackupTime =
         prevDayEntry.snapshotBackupTime ?? now.toISOString();
+      if (!Number.isFinite(prevDayEntry.snapshotCount)) {
+        prevDayEntry.snapshotCount = computeSnapshotCount(prevDayEntry.decks);
+      }
     }
 
     // Si on a un baseCumul valide : certains decks du backup peuvent appartenir
@@ -807,22 +814,36 @@ export async function getSnapshotsForWeek(clanTag, week = null) {
     return hasValidTime || hasManualCount;
   };
 
-  const formatDay = (weekId, d) => ({
-    week: weekId,
-    date: d.realDay,
-    warDay: d.warDay,
-    decks: isValidSnapshot(d) ? d.decks : {},
-    snapshotCount: isValidSnapshot(d) ? (d.snapshotCount ?? null) : null,
-    // _cumulFame n'est utile que si le snapshot est valide : un snapshot pris
-    // avant le reset GDC (periodType=training) contient des données de la semaine
-    // précédente qui corrompent le calcul du delta de fame du jour.
-    _cumulFame: isValidSnapshot(d) ? (d._cumulFame ?? {}) : {},
-    hourlyCumul: d.hourlyCumul ?? [],
-    snapshotTime: isValidSnapshot(d) ? (d.snapshotTime ?? null) : null,
-    snapshotBackupTime: isValidSnapshot(d)
-      ? (d.snapshotBackupTime ?? null)
-      : null,
-  });
+  const formatDay = (weekId, d) => {
+    const deckSum =
+      d?.decks && Object.keys(d.decks).length > 0
+        ? Object.values(d.decks).reduce(
+            (s, v) => s + (typeof v === "number" ? v : 0),
+            0,
+          )
+        : null;
+    const snapshotCount = isValidSnapshot(d)
+      ? Number.isFinite(d.snapshotCount)
+        ? d.snapshotCount
+        : deckSum
+      : null;
+    return {
+      week: weekId,
+      date: d.realDay,
+      warDay: d.warDay,
+      decks: isValidSnapshot(d) ? d.decks : {},
+      snapshotCount: snapshotCount ?? null,
+      // _cumulFame n'est utile que si le snapshot est valide : un snapshot pris
+      // avant le reset GDC (periodType=training) contient des données de la semaine
+      // précédente qui corrompent le calcul du delta de fame du jour.
+      _cumulFame: isValidSnapshot(d) ? (d._cumulFame ?? {}) : {},
+      hourlyCumul: d.hourlyCumul ?? [],
+      snapshotTime: isValidSnapshot(d) ? (d.snapshotTime ?? null) : null,
+      snapshotBackupTime: isValidSnapshot(d)
+        ? (d.snapshotBackupTime ?? null)
+        : null,
+    };
+  };
 
   if (week == null) {
     return history
@@ -858,23 +879,37 @@ export async function getSnapshotsForWeeks(clanTag, weeks) {
     return hasValidTime || hasManualCount;
   };
 
-  const formatDay = (weekId, d) => ({
-    week: weekId,
-    date: d.realDay,
-    warDay: d.warDay,
-    decks: isValidSnapshot(d) ? d.decks : {},
-    snapshotCount: isValidSnapshot(d) ? (d.snapshotCount ?? null) : null,
-    // _cumulFame n'est utile que si le snapshot est valide : un snapshot pris
-    // avant le reset GDC (periodType=training) contient des données de la semaine
-    // précédente qui corrompent le calcul du delta de fame du jour.
-    _cumulFame: isValidSnapshot(d) ? (d._cumulFame ?? {}) : {},
-    hourlyCumul: d.hourlyCumul ?? [],
-    snapshotTime: isValidSnapshot(d) ? (d.snapshotTime ?? null) : null,
-    snapshotBackupTime: isValidSnapshot(d)
-      ? (d.snapshotBackupTime ?? null)
-      : null,
-    gdcPeriod: d.gdcPeriod ?? null,
-  });
+  const formatDay = (weekId, d) => {
+    const deckSum =
+      d?.decks && Object.keys(d.decks).length > 0
+        ? Object.values(d.decks).reduce(
+            (s, v) => s + (typeof v === "number" ? v : 0),
+            0,
+          )
+        : null;
+    const snapshotCount = isValidSnapshot(d)
+      ? Number.isFinite(d.snapshotCount)
+        ? d.snapshotCount
+        : deckSum
+      : null;
+    return {
+      week: weekId,
+      date: d.realDay,
+      warDay: d.warDay,
+      decks: isValidSnapshot(d) ? d.decks : {},
+      snapshotCount: snapshotCount ?? null,
+      // _cumulFame n'est utile que si le snapshot est valide : un snapshot pris
+      // avant le reset GDC (periodType=training) contient des données de la semaine
+      // précédente qui corrompent le calcul du delta de fame du jour.
+      _cumulFame: isValidSnapshot(d) ? (d._cumulFame ?? {}) : {},
+      hourlyCumul: d.hourlyCumul ?? [],
+      snapshotTime: isValidSnapshot(d) ? (d.snapshotTime ?? null) : null,
+      snapshotBackupTime: isValidSnapshot(d)
+        ? (d.snapshotBackupTime ?? null)
+        : null,
+      gdcPeriod: d.gdcPeriod ?? null,
+    };
+  };
 
   for (const weekEntry of history) {
     if (!result.hasOwnProperty(weekEntry.week)) continue;
