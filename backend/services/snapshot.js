@@ -479,11 +479,7 @@ export async function recordSnapshot(
   // Snapshot taken in the first 90 minutes after a war-day reset is a backup
   // snapshot for the previous day. Later runs during the same war day report
   // the current day's data and should not be treated as a backup.
-  const snapshotType = resolveSnapshotType(
-    now,
-    clanTag,
-    options.snapshotType,
-  );
+  const snapshotType = resolveSnapshotType(now, clanTag, options.snapshotType);
 
   const warInfo = getWarDayInfo(now, clanTag);
   if (!warInfo) return; // outside of war period (mon-wed after reset)
@@ -615,7 +611,8 @@ export async function recordSnapshot(
     const prevIndex = baseIndex - 1;
     const prevDayEntry = prevIndex >= 0 ? weekEntry.days[prevIndex] : null;
     const prevPrevIndex = baseIndex - 2;
-    const prevPrevDayEntry = prevPrevIndex >= 0 ? weekEntry.days[prevPrevIndex] : null;
+    const prevPrevDayEntry =
+      prevPrevIndex >= 0 ? weekEntry.days[prevPrevIndex] : null;
     const prevPrevCumul = prevPrevDayEntry?._cumul ?? {};
 
     // Backup snapshot taken soon after reset can be used to recover the
@@ -623,7 +620,10 @@ export async function recordSnapshot(
     if (prevDayEntry && minutesSinceWarDayStart <= 90) {
       const inferredPrevDayDecks = {};
       for (const tag of Object.keys(currentCumul)) {
-        const delta = Math.max(0, currentCumul[tag] - (prevPrevCumul[tag] ?? 0));
+        const delta = Math.max(
+          0,
+          currentCumul[tag] - (prevPrevCumul[tag] ?? 0),
+        );
         if (delta > 0) inferredPrevDayDecks[tag] = Math.min(4, delta);
       }
       if (Object.keys(inferredPrevDayDecks).length > 0) {
