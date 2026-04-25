@@ -646,47 +646,49 @@ export async function recordSnapshot(
     daily[tag] = Math.min(4, delta);
   }
 
-  // Si baseCumul est fiable (non vide), on utilise le delta exact comme source
-  // de vérité — cela permet de corriger des valeurs gonflées lors de runs
-  // précédents où baseCumul était absent. Sinon, on garde le max (sécurité).
-  const newDecks = clampDeckValues(
-    baseCumulHasData ? daily : mergeMaps(dayEntry.decks, daily),
-  );
-  if (
-    Object.keys(newDecks).length === 0 &&
-    Object.keys(dayEntry.decks ?? {}).length > 0
-  ) {
-    // Préserve les données déjà enregistrées pour le jour si la nouvelle
-    // capture ne contient aucune valeur.
-    dayEntry.decks = dayEntry.decks;
-  } else {
-    dayEntry.decks = newDecks;
-  }
-  dayEntry._cumul = mergeMaps(dayEntry._cumul ?? {}, currentCumul);
-  dayEntry._cumulFame = mergeMaps(dayEntry._cumulFame ?? {}, currentCumulFame);
-  dayEntry.periodType = options.periodType ?? dayEntry.periodType ?? null;
+  const hasCurrentDayPrimarySnapshot = Boolean(dayEntry.snapshotTime);
+  const preserveCurrentDaySnapshot =
+    snapshotType === "backup" && hasCurrentDayPrimarySnapshot;
 
   const computeSnapshotCount = (decks = {}) =>
     Object.values(decks).reduce(
       (s, v) => s + (typeof v === "number" ? v : 0),
       0,
     );
-  dayEntry.snapshotCount = computeSnapshotCount(dayEntry.decks);
 
-  // If we already have a primary snapshot for this war day, do not overwrite the
-  // recorded decks when running after reset (backup snapshot). This ensures we
-  // keep the last pre-reset state even if the workflow completes after the reset UTC.
+  if (!preserveCurrentDaySnapshot) {
+    // Si baseCumul est fiable (non vide), on utilise le delta exact comme source
+    // de vérité — cela permet de corriger des valeurs gonflées lors de runs
+    // précédents où baseCumul était absent. Sinon, on garde le max (sécurité).
+    const newDecks = clampDeckValues(
+      baseCumulHasData ? daily : mergeMaps(dayEntry.decks, daily),
+    );
+    if (
+      Object.keys(newDecks).length === 0 &&
+      Object.keys(dayEntry.decks ?? {}).length > 0
+    ) {
+      // Préserve les données déjà enregistrées pour le jour si la nouvelle
+      // capture ne contient aucune valeur.
+      dayEntry.decks = dayEntry.decks;
+    } else {
+      dayEntry.decks = newDecks;
+    }
+    dayEntry.snapshotCount = computeSnapshotCount(dayEntry.decks);
+  }
+
+  dayEntry._cumul = mergeMaps(dayEntry._cumul ?? {}, currentCumul);
+  dayEntry._cumulFame = mergeMaps(dayEntry._cumulFame ?? {}, currentCumulFame);
+  dayEntry.periodType = options.periodType ?? dayEntry.periodType ?? null;
+
   const cutoff = Date.now() - RETENTION_DAYS * 24 * 3600 * 1000;
   const filtered = history.filter((w) =>
     w.days.some((d) => d.realDay && new Date(d.realDay).getTime() >= cutoff),
   );
 
-  // Always record the time the snapshot script ran (helps debugging / ensures
-  // the file is updated even if no deck changes occur).
-  dayEntry.snapshotTime = now.toISOString();
-
   if (snapshotType === "backup") {
-    dayEntry.snapshotBackupTime = now.toISOString();
+    if (hasCurrentDayPrimarySnapshot) {
+      dayEntry.snapshotBackupTime = now.toISOString();
+    }
 
     const prevIndex = baseIndex - 1;
     const prevDayEntry = prevIndex >= 0 ? weekEntry.days[prevIndex] : null;
