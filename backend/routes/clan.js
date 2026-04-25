@@ -1783,12 +1783,20 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     const DAY_LABELS = ["Thu", "Fri", "Sat", "Sun"];
     const days = DAY_LABELS.map((label, i) => {
       const snap = weekSnaps[i] ?? null;
-      let totalCount = snap?.decks
-        ? Object.values(snap.decks).reduce(
-            (acc, v) => acc + (typeof v === "number" ? v : 0),
-            0,
-          )
+      const totalFromDecks =
+        snap?.decks && Object.keys(snap.decks).length > 0
+          ? Object.values(snap.decks).reduce(
+              (acc, v) => acc + (typeof v === "number" ? v : 0),
+              0,
+            )
+          : null;
+      const snapshotCount = Number.isFinite(snap?.snapshotCount)
+        ? Math.min(200, snap.snapshotCount)
         : null;
+      let totalCount =
+        totalFromDecks != null && totalFromDecks > 0
+          ? totalFromDecks
+          : snapshotCount;
       if (totalCount != null) {
         totalCount = Math.min(200, Math.max(0, totalCount));
       }

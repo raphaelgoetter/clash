@@ -1914,7 +1914,17 @@ function renderCurrentWarCard(
   const showDetails = showWarDayDetails === true;
 
   // If we have snapshot data, prefer it for totals/daily counts (because battle log can be incomplete).
-  const snapDays = Array.isArray(warSnapshotDays) ? warSnapshotDays : null;
+  const rawSnapDays = Array.isArray(warSnapshotDays) ? warSnapshotDays : null;
+  const fallbackSnapDays = days.map((d) => {
+    if (d.snapshotCount != null) return d.snapshotCount;
+    if (d.source === "snapshot") return d.totalCount ?? null;
+    return null;
+  });
+  const snapDays = rawSnapDays
+    ? rawSnapDays.map((value, idx) =>
+        value != null ? value : fallbackSnapDays[idx],
+      )
+    : fallbackSnapDays;
   const snapHasData =
     snapDays && snapDays.some((v) => v !== null && v !== undefined);
 
