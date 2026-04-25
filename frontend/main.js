@@ -3252,6 +3252,8 @@ function updateDebugPanel(data, mode) {
         payload.snapshotFileDebug
           ? `
         <div><strong>snapshotFileDebug.selectedSource :</strong> ${escHtml(payload.snapshotFileDebug.selectedSource)}</div>
+        <div><strong>snapshotFileDebug.tmpFile :</strong> <code>${escHtml(payload.snapshotFileDebug.tmpFile)}</code></div>
+        <div><strong>snapshotFileDebug.dataFile :</strong> <code>${escHtml(payload.snapshotFileDebug.dataFile)}</code></div>
         <div><strong>snapshotFileDebug.tmpMtime :</strong> ${escHtml(payload.snapshotFileDebug.tmpMtime ?? "—")}</div>
         <div><strong>snapshotFileDebug.dataMtime :</strong> ${escHtml(payload.snapshotFileDebug.dataMtime ?? "—")}</div>
       `
