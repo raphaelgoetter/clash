@@ -1034,6 +1034,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         warSnapshotDays,
         currentRace,
         currentMemberTags,
+        clanTag,
       );
     }
   }

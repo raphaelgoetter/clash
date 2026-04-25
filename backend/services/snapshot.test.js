@@ -105,6 +105,33 @@ async function main() {
     );
   }
 
+  {
+    const original = [100, 120, 80, null];
+    const currentRace = {
+      periodType: "warDay",
+      periodIndex: 19,
+      clan: {
+        participants: [
+          { tag: "#A", decksUsedToday: 2 },
+          { tag: "#B", decksUsedToday: 3 },
+        ],
+      },
+    };
+    const currentMemberTags = new Set(["#A", "#B"]);
+    const updated = overrideWarSnapshotDaysWithLiveCurrentDay(
+      original,
+      currentRace,
+      currentMemberTags,
+      "Y8JUPC9C",
+      new Date("2026-04-25T12:00:00Z"),
+    );
+    assert.deepStrictEqual(
+      updated,
+      [100, 120, 5, null],
+      "Should fallback to calendar day index when periodIndex is outside 0..3",
+    );
+  }
+
   // Backup snapshot should not overwrite an existing primary snapshot for the current war day.
   const backupFixture = [
     {

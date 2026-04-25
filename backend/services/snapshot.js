@@ -937,32 +937,53 @@ export async function getSnapshots(clanTag) {
   return getSnapshotsForWeek(clanTag, null);
 }
 
+function getCurrentWarDayIndex(currentRace, clanTag = null, now = new Date()) {
+  if (!currentRace || currentRace?.periodType !== "warDay") return null;
+
+  if (
+    typeof currentRace.periodIndex === "number" &&
+    currentRace.periodIndex >= 0 &&
+    currentRace.periodIndex <= 3
+  ) {
+    return currentRace.periodIndex;
+  }
+
+  if (!clanTag) return null;
+
+  const nowGdcDate = new Date(now.getTime() - warResetOffsetMs(clanTag));
+  const nowDow = nowGdcDate.getUTCDay(); // 0=Sun, 1=Mon, ..., 4=Thu
+  const isWarPeriod = nowDow === 0 || nowDow >= 4;
+  if (!isWarPeriod) return null;
+
+  return nowDow === 4 ? 0 : nowDow === 5 ? 1 : nowDow === 6 ? 2 : 3;
+}
+
 export function overrideWarSnapshotDaysWithLiveCurrentDay(
   warSnapshotDays,
   currentRace,
   currentMemberTags,
+  clanTag = null,
+  now = new Date(),
 ) {
   if (!Array.isArray(warSnapshotDays)) return warSnapshotDays;
   if (currentRace?.periodType !== "warDay") return warSnapshotDays;
-  if (
-    typeof currentRace.periodIndex !== "number" ||
-    currentRace.periodIndex < 0 ||
-    currentRace.periodIndex > 3
-  ) {
-    return warSnapshotDays;
-  }
 
+  const normalizedTags = new Set(
+    Array.from(currentMemberTags || []).map((tag) => String(tag).toUpperCase()),
+  );
   const currentLiveCount = (currentRace.clan?.participants ?? [])
-    .filter((p) => currentMemberTags.has(p.tag))
+    .filter((p) => normalizedTags.has(String(p.tag).toUpperCase()))
     .reduce((sum, p) => sum + (p.decksUsedToday ?? 0), 0);
 
-  if (currentLiveCount > 0) {
-    const cloned = [...warSnapshotDays];
-    cloned[currentRace.periodIndex] = Math.min(200, currentLiveCount);
-    return cloned;
-  }
+  if (currentLiveCount <= 0) return warSnapshotDays;
 
-  return warSnapshotDays;
+  const dayIndex = getCurrentWarDayIndex(currentRace, clanTag, now);
+  if (dayIndex === null || dayIndex < 0 || dayIndex >= warSnapshotDays.length)
+    return warSnapshotDays;
+
+  const cloned = [...warSnapshotDays];
+  cloned[dayIndex] = Math.min(200, currentLiveCount);
+  return cloned;
 }
 
 /**
