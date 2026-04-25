@@ -132,6 +132,27 @@ async function main() {
     );
   }
 
+  {
+    await fs.writeFile(TEST_FILE, JSON.stringify([], null, 2), "utf-8");
+    await recordSnapshot(
+      "TESTTAG",
+      [
+        { tag: "#A", decksUsed: 5, decksUsedToday: 1 },
+        { tag: "#B", decksUsed: 8, decksUsedToday: 4 },
+      ],
+      "S131W3",
+      { now: "2026-04-24T10:05:00.000Z" },
+    );
+    const fridayWeekSnaps = await getSnapshotsForWeeks("TESTTAG", ["S131W3"]);
+    const fridaySnap = fridayWeekSnaps.S131W3[1];
+    assert.strictEqual(
+      fridaySnap.snapshotCount,
+      5,
+      "Should compute today's decks from decksUsedToday when no base cumul exists",
+    );
+    assert.deepStrictEqual(fridaySnap.decks, { "#A": 1, "#B": 4 });
+  }
+
   // Backup snapshot should not overwrite an existing primary snapshot for the current war day.
   const backupFixture = [
     {

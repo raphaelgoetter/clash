@@ -588,9 +588,13 @@ export async function recordSnapshot(
   // weekly cumulative totals from currentriverrace
   const currentCumul = {};
   const currentCumulFame = {};
+  const currentToday = {};
   participantData.forEach((p) => {
     currentCumul[p.tag] = p.decksUsed || 0;
     currentCumulFame[p.tag] = p.fame || 0;
+    currentToday[p.tag] = Number.isFinite(p.decksUsedToday)
+      ? p.decksUsedToday
+      : null;
   });
 
   const history = await loadSnapshots(clanTag);
@@ -662,7 +666,9 @@ export async function recordSnapshot(
   for (const tag of Object.keys(currentCumul)) {
     const delta = Math.max(0, currentCumul[tag] - (baseCumul[tag] ?? 0));
     rawDaily[tag] = delta;
-    daily[tag] = Math.min(4, delta);
+    daily[tag] = baseCumulHasData
+      ? Math.min(4, delta)
+      : Math.min(4, currentToday[tag] ?? delta);
   }
 
   const hasCurrentDayPrimarySnapshot = Boolean(dayEntry.snapshotTime);
@@ -731,10 +737,15 @@ export async function recordSnapshot(
     if (prevDayEntry && minutesSinceWarDayStart <= 90) {
       const inferredPrevDayDecks = {};
       for (const tag of Object.keys(currentCumul)) {
-        const delta = Math.max(
+        const priorDayDelta = Math.max(
           0,
-          currentCumul[tag] - (prevPrevCumul[tag] ?? 0),
+          currentCumul[tag] -
+            (currentToday[tag] ?? 0) -
+            (prevPrevCumul[tag] ?? 0),
         );
+        const delta = Number.isFinite(priorDayDelta)
+          ? priorDayDelta
+          : Math.max(0, currentCumul[tag] - (prevPrevCumul[tag] ?? 0));
         if (delta > 0) inferredPrevDayDecks[tag] = Math.min(4, delta);
       }
       if (Object.keys(inferredPrevDayDecks).length > 0) {
