@@ -1,7 +1,11 @@
 import assert from "assert";
 import fs from "fs/promises";
 import path from "path";
-import { getSnapshotsForWeeks, recordSnapshot, resolveSnapshotType } from "./snapshot.js";
+import {
+  getSnapshotsForWeeks,
+  recordSnapshot,
+  resolveSnapshotType,
+} from "./snapshot.js";
 
 const TMP_DIR = path.join("/tmp", "clash-snapshots");
 const TEST_FILE = path.join(TMP_DIR, "TESTTAG.json");
@@ -83,7 +87,11 @@ async function main() {
       ],
     },
   ];
-  await fs.writeFile(TEST_FILE, JSON.stringify(backupFixture, null, 2), "utf-8");
+  await fs.writeFile(
+    TEST_FILE,
+    JSON.stringify(backupFixture, null, 2),
+    "utf-8",
+  );
   await recordSnapshot(
     "TESTTAG",
     [
