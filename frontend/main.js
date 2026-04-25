@@ -1913,6 +1913,16 @@ function renderCurrentWarCard(
 
   const showDetails = showWarDayDetails === true;
 
+  const {
+    totalDecksUsed: rawTotal,
+    maxDecksElapsed: rawMaxElapsed,
+    maxDecksWeek: rawMaxWeek,
+    isReliableTotal,
+    days,
+    arrivedMidWar,
+    arrivedOnDay,
+  } = warData;
+
   // If we have snapshot data, prefer it for totals/daily counts (because battle log can be incomplete).
   const rawSnapDays = Array.isArray(warSnapshotDays) ? warSnapshotDays : null;
   const fallbackSnapDays = days.map((d) => {
@@ -1927,16 +1937,6 @@ function renderCurrentWarCard(
     : fallbackSnapDays;
   const snapHasData =
     snapDays && snapDays.some((v) => v !== null && v !== undefined);
-
-  const {
-    totalDecksUsed: rawTotal,
-    maxDecksElapsed: rawMaxElapsed,
-    maxDecksWeek: rawMaxWeek,
-    isReliableTotal,
-    days,
-    arrivedMidWar,
-    arrivedOnDay,
-  } = warData;
 
   // Determine current war day index (0=Thu, 1=Fri, 2=Sat, 3=Sun)
   const daysFromThu = days.findIndex((d) => d.isToday);
