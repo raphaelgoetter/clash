@@ -129,10 +129,11 @@ function normalizeSnapshots(raw, clanTag = null) {
         latestBackupTime ??
         existing.snapshotBackupTime ??
         incoming.snapshotBackupTime,
-      decks:
+      decks: cleanDecks(
         Object.keys(incoming.decks ?? {}).length > 0
           ? incoming.decks
           : (existing.decks ?? {}),
+      ),
       _cumul: mergeMaps(existing._cumul ?? {}, incoming._cumul ?? {}),
       _cumulFame: mergeMaps(
         existing._cumulFame ?? {},
@@ -374,6 +375,12 @@ function clampDeckValues(decks = {}) {
     .slice(0, 50);
 
   return Object.fromEntries(prioritized);
+}
+
+function cleanDecks(decks = {}) {
+  return Object.fromEntries(
+    Object.entries(decks || {}).filter(([, v]) => Number.isFinite(v) && v > 0),
+  );
 }
 
 function isValidSnapshotTimestamp(day, timestamp) {
@@ -679,13 +686,13 @@ export async function recordSnapshot(
     const newDecks = clampDeckValues(
       baseCumulHasData ? daily : mergeMaps(dayEntry.decks, daily),
     );
-    if (
-      Object.keys(newDecks).length === 0 &&
-      Object.keys(dayEntry.decks ?? {}).length > 0
-    ) {
+    const hasExistingPositiveDecks = Object.values(dayEntry.decks ?? {}).some(
+      (v) => Number.isFinite(v) && v > 0,
+    );
+    if (Object.keys(newDecks).length === 0 && hasExistingPositiveDecks) {
       // Préserve les données déjà enregistrées pour le jour si la nouvelle
-      // capture ne contient aucune valeur.
-      dayEntry.decks = dayEntry.decks;
+      // capture ne contient aucune valeur et que des decks valides étaient déjà présents.
+      dayEntry.decks = clampDeckValues(dayEntry.decks);
     } else {
       dayEntry.decks = newDecks;
     }
@@ -843,7 +850,7 @@ export async function getSnapshotsForWeek(clanTag, week = null) {
       week: weekId,
       date: d.realDay,
       warDay: d.warDay,
-      decks: isValidSnapshot(d) ? d.decks : {},
+      decks: isValidSnapshot(d) ? cleanDecks(d.decks) : {},
       snapshotCount: snapshotCount ?? null,
       // _cumulFame n'est utile que si le snapshot est valide : un snapshot pris
       // avant le reset GDC (periodType=training) contient des données de la semaine
@@ -902,7 +909,7 @@ export async function getSnapshotsForWeeks(clanTag, weeks) {
       week: weekId,
       date: d.realDay,
       warDay: d.warDay,
-      decks: isValidSnapshot(d) ? d.decks : {},
+      decks: isValidSnapshot(d) ? cleanDecks(d.decks) : {},
       snapshotCount: snapshotCount ?? null,
       // _cumulFame n'est utile que si le snapshot est valide : un snapshot pris
       // avant le reset GDC (periodType=training) contient des données de la semaine
