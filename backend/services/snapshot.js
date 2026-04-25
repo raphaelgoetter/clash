@@ -409,6 +409,15 @@ function isValidSnapshotDay(day) {
   return hasValidTime || hasManualCount || hasDeckData;
 }
 
+function hasStablePastDaySnapshot(day) {
+  if (!day) return false;
+  if (Number.isFinite(day.snapshotCount)) return true;
+  return (
+    day.decks &&
+    Object.values(day.decks).some((v) => Number.isFinite(v) && v > 0)
+  );
+}
+
 function makeEmptyDay(warDay, realDay = null, clanTag = null) {
   const gdcPeriod = realDay
     ? {
@@ -732,9 +741,22 @@ export async function recordSnapshot(
       prevPrevIndex >= 0 ? weekEntry.days[prevPrevIndex] : null;
     const prevPrevCumul = prevPrevDayEntry?._cumul ?? {};
 
+    if (
+      prevDayEntry &&
+      minutesSinceWarDayStart <= 90 &&
+      hasStablePastDaySnapshot(prevDayEntry)
+    ) {
+      prevDayEntry.snapshotBackupTime =
+        prevDayEntry.snapshotBackupTime ?? now.toISOString();
+    }
+
     // Backup snapshot taken soon after reset can be used to recover the
     // previous day's totals if they are missing.
-    if (prevDayEntry && minutesSinceWarDayStart <= 90) {
+    if (
+      prevDayEntry &&
+      minutesSinceWarDayStart <= 90 &&
+      !hasStablePastDaySnapshot(prevDayEntry)
+    ) {
       const inferredPrevDayDecks = {};
       for (const tag of Object.keys(currentCumul)) {
         const priorDayDelta = Math.max(
@@ -766,7 +788,11 @@ export async function recordSnapshot(
 
     // Si on a un baseCumul valide : certains decks du backup peuvent appartenir
     // au jour précédent (joués dans les dernières secondes avant le reset).
-    if (baseCumulHasData && prevDayEntry) {
+    if (
+      baseCumulHasData &&
+      prevDayEntry &&
+      !hasStablePastDaySnapshot(prevDayEntry)
+    ) {
       for (const tag of Object.keys(rawDaily)) {
         const overflow = Math.max(0, rawDaily[tag] - 4);
         if (overflow <= 0) continue;
@@ -786,7 +812,11 @@ export async function recordSnapshot(
     // Le snapshot backup est pris juste après le reset : currentCumulFame reflète
     // l'état exact de fin de journée GDC J-1. On l'écrit sur le jour précédent pour
     // permettre un calcul précis de la fame du jour courant.
-    if (prevDayEntry && minutesSinceWarDayStart <= 90) {
+    if (
+      prevDayEntry &&
+      minutesSinceWarDayStart <= 90 &&
+      !hasStablePastDaySnapshot(prevDayEntry)
+    ) {
       prevDayEntry._cumulFame = mergeMaps(
         prevDayEntry._cumulFame ?? {},
         currentCumulFame,

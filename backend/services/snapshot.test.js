@@ -153,6 +153,85 @@ async function main() {
     assert.deepStrictEqual(fridaySnap.decks, { "#A": 1, "#B": 4 });
   }
 
+  {
+    const existingFixture = [
+      {
+        week: "S131W3",
+        days: [
+          {
+            warDay: "thursday",
+            realDay: "2026-04-23",
+            gdcPeriod: {
+              start: "2026-04-23T09:40:00.000Z",
+              end: "2026-04-24T09:39:59.999Z",
+            },
+            snapshotTime: "2026-04-24T22:00:00.000Z",
+            snapshotCount: 194,
+            decks: {
+              "#A": 4,
+              "#B": 4,
+              "#C": 4,
+              "#D": 4,
+              "#E": 4,
+            },
+            periodType: "warDay",
+            _cumul: {
+              "#A": 4,
+              "#B": 4,
+              "#C": 4,
+              "#D": 4,
+              "#E": 4,
+            },
+          },
+          {
+            warDay: "friday",
+            realDay: "2026-04-24",
+            gdcPeriod: {
+              start: "2026-04-24T09:40:00.000Z",
+              end: "2026-04-25T09:39:59.999Z",
+            },
+            decks: {},
+            _cumul: {},
+            periodType: "warDay",
+          },
+        ],
+      },
+    ];
+    await fs.writeFile(
+      TEST_FILE,
+      JSON.stringify(existingFixture, null, 2),
+      "utf-8",
+    );
+    await recordSnapshot(
+      "TESTTAG",
+      [
+        { tag: "#A", decksUsed: 4, decksUsedToday: 1 },
+        { tag: "#B", decksUsed: 8, decksUsedToday: 4 },
+        { tag: "#C", decksUsed: 12, decksUsedToday: 4 },
+        { tag: "#D", decksUsed: 16, decksUsedToday: 4 },
+        { tag: "#E", decksUsed: 20, decksUsedToday: 4 },
+      ],
+      "S131W3",
+      { now: "2026-04-25T10:05:00.000Z" },
+    );
+    const preservedWeekSnaps = await getSnapshotsForWeeks("TESTTAG", [
+      "S131W3",
+    ]);
+    const preservedThursday = preservedWeekSnaps.S131W3[0];
+    assert.strictEqual(
+      preservedThursday.snapshotCount,
+      194,
+      "Should preserve a valid past day snapshotCount when backup runs after reset",
+    );
+    assert.deepStrictEqual(preservedThursday.decks, {
+      "#A": 4,
+      "#B": 4,
+      "#C": 4,
+      "#D": 4,
+      "#E": 4,
+    });
+  }
+
   // Backup snapshot should not overwrite an existing primary snapshot for the current war day.
   const backupFixture = [
     {
