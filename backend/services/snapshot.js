@@ -79,10 +79,11 @@ function normalizeSnapshots(raw, clanTag = null) {
     if (!timestamp) return day;
     const info = getWarDayInfo(new Date(timestamp), clanTag);
     if (!info) return day;
+    if (day.warDay && day.realDay) return day;
     return {
       ...day,
-      warDay: info.warDay ?? day.warDay,
-      realDay: info.realDay ?? day.realDay,
+      warDay: day.warDay ?? info.warDay,
+      realDay: day.realDay ?? info.realDay,
     };
   };
 
@@ -362,6 +363,25 @@ function makeEmptyDay(warDay, realDay = null, clanTag = null) {
   };
 }
 
+export function resolveSnapshotType(now, clanTag = null, overrideType = null) {
+  const type = String(overrideType ?? "auto").toLowerCase();
+  if (type === "primary" || type === "backup") return type;
+
+  const utc = now instanceof Date ? now : new Date(now);
+  const resetUtcMs = warResetOffsetMs(clanTag);
+  const utcMidnight = Date.UTC(
+    utc.getUTCFullYear(),
+    utc.getUTCMonth(),
+    utc.getUTCDate(),
+  );
+  const todayResetUtc = utcMidnight + resetUtcMs;
+  const warDayStartUtc =
+    utc.getTime() < todayResetUtc ? todayResetUtc - MS_PER_DAY : todayResetUtc;
+  const minutesSinceWarDayStart = (utc.getTime() - warDayStartUtc) / 60000;
+
+  return minutesSinceWarDayStart <= 90 ? "backup" : "primary";
+}
+
 function fillWeekDays(week, clanTag = null) {
   // Ensure week.days contains exactly one entry per war day (thu→sun), ordered.
   const byWarDay = new Map((week.days ?? []).map((d) => [d.warDay, d]));
@@ -447,14 +467,23 @@ export async function recordSnapshot(
   );
 
   const resetUtcMs = warResetOffsetMs(clanTag);
-  const msOfDayUtc =
-    now.getUTCHours() * 3600000 +
-    now.getUTCMinutes() * 60000 +
-    now.getUTCSeconds() * 1000 +
-    now.getUTCMilliseconds();
-  // Before reset → primary snapshot (captures the final decks of the day)
-  // After reset  → backup snapshot (should be empty/zeroed)
-  const snapshotType = msOfDayUtc < resetUtcMs ? "primary" : "backup";
+  const utcMidnight = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+  );
+  const todayResetUtc = utcMidnight + resetUtcMs;
+  const warDayStartUtc =
+    now.getTime() < todayResetUtc ? todayResetUtc - MS_PER_DAY : todayResetUtc;
+  const minutesSinceWarDayStart = (now.getTime() - warDayStartUtc) / 60000;
+  // Snapshot taken in the first 90 minutes after a war-day reset is a backup
+  // snapshot for the previous day. Later runs during the same war day report
+  // the current day's data and should not be treated as a backup.
+  const snapshotType = resolveSnapshotType(
+    now,
+    clanTag,
+    options.snapshotType,
+  );
 
   const warInfo = getWarDayInfo(now, clanTag);
   if (!warInfo) return; // outside of war period (mon-wed after reset)
@@ -527,7 +556,8 @@ export async function recordSnapshot(
   }
 
   // Determine decks for this snapshot (delta since yesterday)
-  const prevDay = weekEntry.days[WAR_DAYS.indexOf(warDay) - 1];
+  const prevDayIndex = WAR_DAYS.indexOf(warDay) - 1;
+  const prevDay = prevDayIndex >= 0 ? weekEntry.days[prevDayIndex] : null;
   const baseCumul = prevDay?._cumul ?? {};
 
   const baseCumulHasData = Object.keys(baseCumul).length > 0;
@@ -582,10 +612,33 @@ export async function recordSnapshot(
   if (snapshotType === "backup") {
     dayEntry.snapshotBackupTime = now.toISOString();
 
+    const prevIndex = baseIndex - 1;
+    const prevDayEntry = prevIndex >= 0 ? weekEntry.days[prevIndex] : null;
+    const prevPrevIndex = baseIndex - 2;
+    const prevPrevDayEntry = prevPrevIndex >= 0 ? weekEntry.days[prevPrevIndex] : null;
+    const prevPrevCumul = prevPrevDayEntry?._cumul ?? {};
+
+    // Backup snapshot taken soon after reset can be used to recover the
+    // previous day's totals if they are missing.
+    if (prevDayEntry && minutesSinceWarDayStart <= 90) {
+      const inferredPrevDayDecks = {};
+      for (const tag of Object.keys(currentCumul)) {
+        const delta = Math.max(0, currentCumul[tag] - (prevPrevCumul[tag] ?? 0));
+        if (delta > 0) inferredPrevDayDecks[tag] = Math.min(4, delta);
+      }
+      if (Object.keys(inferredPrevDayDecks).length > 0) {
+        prevDayEntry.decks = clampDeckValues(
+          Object.keys(prevDayEntry.decks ?? {}).length > 0
+            ? mergeMaps(prevDayEntry.decks, inferredPrevDayDecks)
+            : inferredPrevDayDecks,
+        );
+      }
+      prevDayEntry._cumul = mergeMaps(prevDayEntry._cumul ?? {}, currentCumul);
+      prevDayEntry.snapshotCount = computeSnapshotCount(prevDayEntry.decks);
+    }
+
     // Si on a un baseCumul valide : certains decks du backup peuvent appartenir
     // au jour précédent (joués dans les dernières secondes avant le reset).
-    const prevIndex = (baseIndex + WAR_DAYS.length - 1) % WAR_DAYS.length;
-    const prevDayEntry = weekEntry.days[prevIndex];
     if (baseCumulHasData && prevDayEntry) {
       for (const tag of Object.keys(rawDaily)) {
         const overflow = Math.max(0, rawDaily[tag] - 4);
@@ -606,17 +659,12 @@ export async function recordSnapshot(
     // Le snapshot backup est pris juste après le reset : currentCumulFame reflète
     // l'état exact de fin de journée GDC J-1. On l'écrit sur le jour précédent pour
     // permettre un calcul précis de la fame du jour courant.
-    // ⚠️ Garde-fou : si le backup est pris plus de 90 min après le reset, p.fame a
-    // déjà accumulé une partie du nouveau jour → ne pas contaminer le snapshot J-1.
-    const minutesSinceReset = (msOfDayUtc - resetUtcMs) / 60000;
-    if (prevDayEntry && minutesSinceReset <= 90) {
+    if (prevDayEntry && minutesSinceWarDayStart <= 90) {
       prevDayEntry._cumulFame = mergeMaps(
         prevDayEntry._cumulFame ?? {},
         currentCumulFame,
       );
       prevDayEntry.snapshotCount = computeSnapshotCount(prevDayEntry.decks);
-    } else if (minutesSinceReset > 90) {
-      // Backup tardif : ne pas contaminer le snapshot J-1.
     }
 
     await saveSnapshots(clanTag, filtered);
