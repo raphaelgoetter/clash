@@ -71,10 +71,85 @@ function normalizeSnapshots(raw, clanTag = null) {
   if (!Array.isArray(raw)) return [];
   if (raw.length === 0) return [];
 
+  const actualizeDay = (day) => {
+    const timestamp =
+      day.snapshotTime ||
+      day.snapshotBackupTime ||
+      day.hourlyCumul?.[0]?.takenAt;
+    if (!timestamp) return day;
+    const info = getWarDayInfo(new Date(timestamp), clanTag);
+    if (!info) return day;
+    return {
+      ...day,
+      warDay: info.warDay ?? day.warDay,
+      realDay: info.realDay ?? day.realDay,
+    };
+  };
+
+  const mergeDayEntries = (existing, incoming) => {
+    const latestSnapshotTime = [existing.snapshotTime, incoming.snapshotTime]
+      .filter(Boolean)
+      .sort()
+      .pop();
+    const latestBackupTime = [
+      existing.snapshotBackupTime,
+      incoming.snapshotBackupTime,
+    ]
+      .filter(Boolean)
+      .sort()
+      .pop();
+    const mergeHourly = [
+      ...(existing.hourlyCumul ?? []),
+      ...(incoming.hourlyCumul ?? []),
+    ];
+    const hourlyCumul = Array.from(
+      mergeHourly
+        .reduce((map, entry) => {
+          if (entry?.takenAt) map.set(entry.takenAt, entry);
+          return map;
+        }, new Map())
+        .values(),
+    ).sort((a, b) => new Date(a.takenAt) - new Date(b.takenAt));
+
+    return {
+      ...existing,
+      ...incoming,
+      snapshotTime:
+        latestSnapshotTime ?? existing.snapshotTime ?? incoming.snapshotTime,
+      snapshotBackupTime:
+        latestBackupTime ??
+        existing.snapshotBackupTime ??
+        incoming.snapshotBackupTime,
+      decks:
+        Object.keys(incoming.decks ?? {}).length > 0
+          ? incoming.decks
+          : (existing.decks ?? {}),
+      _cumul: mergeMaps(existing._cumul ?? {}, incoming._cumul ?? {}),
+      _cumulFame: mergeMaps(
+        existing._cumulFame ?? {},
+        incoming._cumulFame ?? {},
+      ),
+      hourlyCumul,
+    };
+  };
+
+  const rebucketDays = (week) => {
+    const entries = (week.days ?? []).map((d) => actualizeDay(d));
+    const byWarDay = new Map();
+    for (const day of entries) {
+      const key = day.warDay || "unknown";
+      if (!byWarDay.has(key)) {
+        byWarDay.set(key, { ...day });
+      } else {
+        byWarDay.set(key, mergeDayEntries(byWarDay.get(key), day));
+      }
+    }
+    return { ...week, days: Array.from(byWarDay.values()) };
+  };
+
   // Already new format (weeks with days array)
   if (raw[0].week && Array.isArray(raw[0].days)) {
-    // Ensure each week has a full set of days + computed metadata (gdcPeriod, etc.)
-    return raw.map((w) => fillWeekDays(w, clanTag));
+    return raw.map((w) => fillWeekDays(rebucketDays(w), clanTag));
   }
 
   // Legacy format (flat list) -> convert
@@ -193,24 +268,20 @@ function warPeriodStartUtcMs(realDay, clanTag = null) {
  * A war day runs from the clan's reset UTC until the next day exactly 24h later.
  */
 function getWarDayInfo(date = new Date(), clanTag = null) {
-  const paris = new Date(
-    date.toLocaleString("en-US", { timeZone: "Europe/Paris" }),
-  );
-  const utc = new Date(date.toISOString());
+  const utc = date instanceof Date ? date : new Date(date);
   const resetUtcMs = warResetOffsetMs(clanTag);
-  const msOfDayUtc =
-    utc.getUTCHours() * 3600000 +
-    utc.getUTCMinutes() * 60000 +
-    utc.getUTCSeconds() * 1000 +
-    utc.getUTCMilliseconds();
 
-  // Before reset, on est toujours sur la journée précédente.
-  // Après reset, on passe à la journée suivante.
-  if (msOfDayUtc < resetUtcMs) {
-    paris.setDate(paris.getDate() - 1);
+  const utcMidnight = Date.UTC(
+    utc.getUTCFullYear(),
+    utc.getUTCMonth(),
+    utc.getUTCDate(),
+  );
+  let dayStartUtc = utcMidnight + resetUtcMs;
+  if (utc.getTime() < dayStartUtc) {
+    dayStartUtc -= MS_PER_DAY;
   }
 
-  const dow = paris.getDay(); // 0=Sun..6=Sat
+  const warDate = new Date(dayStartUtc);
   const names = [
     "sunday",
     "monday",
@@ -220,13 +291,13 @@ function getWarDayInfo(date = new Date(), clanTag = null) {
     "friday",
     "saturday",
   ];
-  const warDay = names[dow];
+  const warDay = names[warDate.getUTCDay()];
   const warDays = ["thursday", "friday", "saturday", "sunday"];
   if (!warDays.includes(warDay)) return null;
 
   return {
     warDay,
-    realDay: parisDateKey(paris),
+    realDay: warDate.toISOString().slice(0, 10),
   };
 }
 
