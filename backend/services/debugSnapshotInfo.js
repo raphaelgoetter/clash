@@ -110,11 +110,11 @@ export function buildDebugSnapshotInfo({
   const hasValidSnapshot =
     Boolean(snapshotTime) || hasSnapshotCount || hasFallbackSnapshotCount;
   let diffMin = null;
-  if (snapshotTime && prevSnap.gdcPeriod?.start) {
+  if (snapshotTime && prevSnap.gdcPeriod?.end) {
     const snapshotMs = new Date(snapshotTime).getTime();
-    const resetMs = new Date(prevSnap.gdcPeriod.start).getTime();
-    if (!Number.isNaN(snapshotMs) && !Number.isNaN(resetMs)) {
-      diffMin = Math.round((snapshotMs - resetMs) / 60000);
+    const endMs = new Date(prevSnap.gdcPeriod.end).getTime();
+    if (!Number.isNaN(snapshotMs) && !Number.isNaN(endMs)) {
+      diffMin = Math.round((snapshotMs - endMs) / 60000);
     }
   }
   let warning = null;
@@ -125,7 +125,7 @@ export function buildDebugSnapshotInfo({
   } else if (delta <= 0) {
     warning = "snapshot suspect or corrupted";
   } else if (diffMin != null && diffMin > 90) {
-    warning = "snapshot appears late / after reset";
+    warning = "snapshot appears >90 min after reset";
   }
   return {
     weekSnaps: weekSnaps.map((s, i) => {

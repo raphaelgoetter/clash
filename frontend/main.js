@@ -3227,6 +3227,7 @@ function updateDebugPanel(data, mode) {
     clanWarSummary: data?.clanWarSummary ?? null,
     clanName: data?.clan?.name ?? null,
     clanTag: data?.clan?.tag ?? null,
+    snapshotFileDebug: data?.snapshotFileDebug ?? null,
   };
 
   const text = JSON.stringify(payload, null, 2);
@@ -3247,6 +3248,15 @@ function updateDebugPanel(data, mode) {
       <div><strong>snapshotDate :</strong> ${escHtml(payload.snapshotDate ?? "—")}</div>
       <div><strong>warCurrentWeekId :</strong> ${escHtml(payload.warCurrentWeekId ?? "—")}</div>
       <div><strong>warSnapshotDays :</strong> ${payload.warSnapshotDays ? JSON.stringify(payload.warSnapshotDays) : "—"}</div>
+      ${
+        payload.snapshotFileDebug
+          ? `
+        <div><strong>snapshotFileDebug.selectedSource :</strong> ${escHtml(payload.snapshotFileDebug.selectedSource)}</div>
+        <div><strong>snapshotFileDebug.tmpMtime :</strong> ${escHtml(payload.snapshotFileDebug.tmpMtime ?? "—")}</div>
+        <div><strong>snapshotFileDebug.dataMtime :</strong> ${escHtml(payload.snapshotFileDebug.dataMtime ?? "—")}</div>
+      `
+          : ""
+      }
     </div>
     ${snapshotDebugHtml}
   `;

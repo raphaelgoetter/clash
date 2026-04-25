@@ -2055,6 +2055,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
   }
 
   const computedLastWarSummary = existingCache?.lastWarSummary || null;
+  const snapshotFileDebug = await getSnapshotFileDebug(clanTag).catch(
+    () => null,
+  );
 
   return {
     lastWarSummary: computedLastWarSummary,
@@ -2091,6 +2094,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     warSnapshotDays, // derived from snapshot files (null if missing)
     decksYesterdayAtThisHour, // decks joués hier à la même heure (null si indisponible)
     snapshotTakenAt: warSnapshotTakenAt,
+    snapshotFileDebug,
     currentWarDays: clanWarSummary?.days ?? null, // expose the per-day summary for debug/insights
     raceGroup: currentRace?.clans
       ? (() => {
