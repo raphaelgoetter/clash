@@ -946,13 +946,22 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       // (thu→sun). Build an array of total decks per day.
       // null = pas de snapshot valide pour ce jour (snapshot invalide ou manquant)
       warSnapshotDays = weekSnaps.map((snap) => {
-        if (!snap || !snap.decks || Object.keys(snap.decks).length === 0)
-          return null;
-        const total = Object.values(snap.decks).reduce(
-          (s, v) => s + (typeof v === "number" ? v : 0),
-          0,
-        );
-        return total > 0 ? Math.min(200, total) : null;
+        if (!snap) return null;
+        const totalFromDecks =
+          snap.decks && Object.keys(snap.decks).length > 0
+            ? Object.values(snap.decks).reduce(
+                (s, v) => s + (typeof v === "number" ? v : 0),
+                0,
+              )
+            : null;
+        const snapshotCount = Number.isFinite(snap.snapshotCount)
+          ? Math.min(200, snap.snapshotCount)
+          : null;
+        const total =
+          totalFromDecks != null && totalFromDecks > 0
+            ? totalFromDecks
+            : snapshotCount;
+        return total != null && total > 0 ? total : null;
       });
     }
   }
@@ -1736,12 +1745,22 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
       // Keep the same derived debug fields as in war-week processing.
       warSnapshotDays = weekSnaps.map((s) => {
-        if (!s || !s.decks) return null;
-        const total = Object.values(s.decks).reduce(
-          (acc, v) => acc + (typeof v === "number" ? v : 0),
-          0,
-        );
-        return total > 0 ? Math.min(200, total) : 0;
+        if (!s) return null;
+        const totalFromDecks =
+          s.decks && Object.keys(s.decks).length > 0
+            ? Object.values(s.decks).reduce(
+                (acc, v) => acc + (typeof v === "number" ? v : 0),
+                0,
+              )
+            : null;
+        const snapshotCount = Number.isFinite(s.snapshotCount)
+          ? Math.min(200, s.snapshotCount)
+          : null;
+        const total =
+          totalFromDecks != null && totalFromDecks > 0
+            ? totalFromDecks
+            : snapshotCount;
+        return total != null && total > 0 ? total : null;
       });
 
       const latestSnap = weekSnaps
