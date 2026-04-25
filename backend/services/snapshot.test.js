@@ -5,6 +5,7 @@ import {
   getSnapshotsForWeeks,
   recordSnapshot,
   resolveSnapshotType,
+  overrideWarSnapshotDaysWithLiveCurrentDay,
 } from "./snapshot.js";
 
 const TMP_DIR = path.join("/tmp", "clash-snapshots");
@@ -52,6 +53,57 @@ async function main() {
     resolveSnapshotType("2026-04-24T12:00:00.000Z", "Y8JUPC9C"),
     "primary",
   );
+
+  {
+    const original = [100, 120, 80, null];
+    const currentRace = {
+      periodType: "warDay",
+      periodIndex: 2,
+      clan: {
+        participants: [
+          { tag: "#A", decksUsedToday: 2 },
+          { tag: "#B", decksUsedToday: 3 },
+          { tag: "#C", decksUsedToday: 0 },
+        ],
+      },
+    };
+    const currentMemberTags = new Set(["#A", "#B", "#C"]);
+    const updated = overrideWarSnapshotDaysWithLiveCurrentDay(
+      original,
+      currentRace,
+      currentMemberTags,
+    );
+    assert.deepStrictEqual(
+      updated,
+      [100, 120, 5, null],
+      "Should override current war day with live decksUsedToday sum",
+    );
+  }
+
+  {
+    const original = [100, 120, 80, null];
+    const currentRace = {
+      periodType: "warDay",
+      periodIndex: 1,
+      clan: {
+        participants: [
+          { tag: "#A", decksUsedToday: 0 },
+          { tag: "#B", decksUsedToday: 0 },
+        ],
+      },
+    };
+    const currentMemberTags = new Set(["#A", "#B"]);
+    const updated = overrideWarSnapshotDaysWithLiveCurrentDay(
+      original,
+      currentRace,
+      currentMemberTags,
+    );
+    assert.deepStrictEqual(
+      updated,
+      original,
+      "Should not override with zero live decksUsedToday",
+    );
+  }
 
   // Backup snapshot should not overwrite an existing primary snapshot for the current war day.
   const backupFixture = [

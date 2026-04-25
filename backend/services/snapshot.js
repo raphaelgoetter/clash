@@ -937,6 +937,34 @@ export async function getSnapshots(clanTag) {
   return getSnapshotsForWeek(clanTag, null);
 }
 
+export function overrideWarSnapshotDaysWithLiveCurrentDay(
+  warSnapshotDays,
+  currentRace,
+  currentMemberTags,
+) {
+  if (!Array.isArray(warSnapshotDays)) return warSnapshotDays;
+  if (currentRace?.periodType !== "warDay") return warSnapshotDays;
+  if (
+    typeof currentRace.periodIndex !== "number" ||
+    currentRace.periodIndex < 0 ||
+    currentRace.periodIndex > 3
+  ) {
+    return warSnapshotDays;
+  }
+
+  const currentLiveCount = (currentRace.clan?.participants ?? [])
+    .filter((p) => currentMemberTags.has(p.tag))
+    .reduce((sum, p) => sum + (p.decksUsedToday ?? 0), 0);
+
+  if (currentLiveCount > 0) {
+    const cloned = [...warSnapshotDays];
+    cloned[currentRace.periodIndex] = Math.min(200, currentLiveCount);
+    return cloned;
+  }
+
+  return warSnapshotDays;
+}
+
 /**
  * Return true if we already recorded a snapshot for today (UTC).
  */

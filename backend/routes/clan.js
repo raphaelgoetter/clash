@@ -36,7 +36,11 @@ import { computeTopPlayers } from "../services/topplayers.js";
 import { computeUncomplete } from "../services/uncomplete.js";
 import { getOrSet } from "../services/cache.js";
 import { getDiscordLinks } from "../services/discordLinks.js";
-import { recordSnapshot, getSnapshotFileDebug } from "../services/snapshot.js";
+import {
+  recordSnapshot,
+  getSnapshotFileDebug,
+  overrideWarSnapshotDaysWithLiveCurrentDay,
+} from "../services/snapshot.js";
 import { loadClanCache, saveClanCache } from "../services/clanCache.js";
 import fs from "fs/promises";
 import path from "path";
@@ -1026,22 +1030,11 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         return total != null && total > 0 ? total : null;
       });
 
-      if (
-        currentRace?.periodType === "warDay" &&
-        typeof currentRace.periodIndex === "number" &&
-        currentRace.periodIndex >= 0 &&
-        currentRace.periodIndex <= 3
-      ) {
-        const currentLiveCount = (currentRace.clan?.participants ?? [])
-          .filter((p) => currentMemberTags.has(p.tag))
-          .reduce((sum, p) => sum + (p.decksUsedToday ?? 0), 0);
-        if (currentLiveCount > 0) {
-          warSnapshotDays[currentRace.periodIndex] = Math.min(
-            200,
-            currentLiveCount,
-          );
-        }
-      }
+      warSnapshotDays = overrideWarSnapshotDaysWithLiveCurrentDay(
+        warSnapshotDays,
+        currentRace,
+        currentMemberTags,
+      );
     }
   }
 
