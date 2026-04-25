@@ -10,19 +10,32 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 import { parisOffsetMs, warResetOffsetMs } from "./dateUtils.js";
-const SNAP_DIR = path.resolve(__dirname, "..", "..", "data", "snapshots");
+const DATA_SNAP_DIR = path.resolve(__dirname, "..", "..", "data", "snapshots");
+const TMP_SNAP_DIR = path.join("/tmp", "clash-snapshots");
 const RETENTION_DAYS = 60;
 
-async function ensureDirectory() {
+async function ensureDirectory(dir) {
   try {
-    await fs.mkdir(SNAP_DIR, { recursive: true });
+    await fs.mkdir(dir, { recursive: true });
   } catch (_) {}
 }
 
-function snapshotFilename(clanTag) {
-  // sanitize tag (# replaced by empty)
+function snapshotFilename(clanTag, useTmp = false) {
   const clean = clanTag.replace(/[^A-Za-z0-9]/g, "");
-  return path.join(SNAP_DIR, `${clean}.json`);
+  return path.join(useTmp ? TMP_SNAP_DIR : DATA_SNAP_DIR, `${clean}.json`);
+}
+
+async function readJsonFile(file) {
+  const txt = await fs.readFile(file, "utf-8");
+  return JSON.parse(txt);
+}
+
+async function fileMtime(file) {
+  try {
+    return (await fs.stat(file)).mtimeMs;
+  } catch (_) {
+    return 0;
+  }
 }
 
 function convertLegacySnapshots(raw, clanTag = null) {
@@ -69,24 +82,70 @@ function normalizeSnapshots(raw, clanTag = null) {
 }
 
 async function loadSnapshots(clanTag) {
-  await ensureDirectory();
-  const file = snapshotFilename(clanTag);
-  try {
-    const txt = await fs.readFile(file, "utf-8");
-    const raw = JSON.parse(txt);
-    return normalizeSnapshots(raw, clanTag);
-  } catch (err) {
-    return [];
+  await ensureDirectory(TMP_SNAP_DIR);
+  const tmpFile = snapshotFilename(clanTag, true);
+  const dataFile = snapshotFilename(clanTag, false);
+
+  const tmpMtime = await fileMtime(tmpFile);
+  const dataMtime = await fileMtime(dataFile);
+
+  if (tmpMtime > 0 && tmpMtime >= dataMtime) {
+    try {
+      const raw = await readJsonFile(tmpFile);
+      return normalizeSnapshots(raw, clanTag);
+    } catch (_) {
+      // tmp file invalid or corrupted, fallback to data file below.
+    }
   }
+
+  if (dataMtime > 0) {
+    try {
+      const raw = await readJsonFile(dataFile);
+      const snaps = normalizeSnapshots(raw, clanTag);
+      try {
+        await ensureDirectory(TMP_SNAP_DIR);
+        await fs.writeFile(tmpFile, JSON.stringify(raw, null, 2));
+      } catch (_) {
+        // ignore, /tmp may be unavailable in some environments
+      }
+      return snaps;
+    } catch (_) {
+      // data file invalid or absent, fallback to tmp if available.
+    }
+  }
+
+  if (tmpMtime > 0) {
+    try {
+      const raw = await readJsonFile(tmpFile);
+      return normalizeSnapshots(raw, clanTag);
+    } catch (_) {
+      // fallback to empty
+    }
+  }
+
+  return [];
 }
 
 async function saveSnapshots(clanTag, weeks) {
   // _cumul est persisté sur disque : il sert à calculer le delta quotidien
   // au run suivant (baseCumul = _cumul du jour précédent). Le stripper
   // provoquait rawDaily = cumulatif total au lieu du vrai delta du jour.
-  await ensureDirectory();
-  const file = snapshotFilename(clanTag);
-  await fs.writeFile(file, JSON.stringify(weeks || [], null, 2));
+  await ensureDirectory(TMP_SNAP_DIR);
+  const tmpFile = snapshotFilename(clanTag, true);
+  try {
+    await fs.writeFile(tmpFile, JSON.stringify(weeks || [], null, 2));
+    return;
+  } catch (err) {
+    // If /tmp is unavailable, fallback to the repo data folder when writable.
+  }
+
+  const dataFile = snapshotFilename(clanTag, false);
+  try {
+    await ensureDirectory(DATA_SNAP_DIR);
+    await fs.writeFile(dataFile, JSON.stringify(weeks || [], null, 2));
+  } catch (_) {
+    // ignore write failure, snapshot persistence is best-effort
+  }
 }
 
 /**
@@ -413,12 +472,29 @@ export async function recordSnapshot(
   // Si baseCumul est fiable (non vide), on utilise le delta exact comme source
   // de vérité — cela permet de corriger des valeurs gonflées lors de runs
   // précédents où baseCumul était absent. Sinon, on garde le max (sécurité).
-  dayEntry.decks = clampDeckValues(
+  const newDecks = clampDeckValues(
     baseCumulHasData ? daily : mergeMaps(dayEntry.decks, daily),
   );
+  if (
+    Object.keys(newDecks).length === 0 &&
+    Object.keys(dayEntry.decks ?? {}).length > 0
+  ) {
+    // Préserve les données déjà enregistrées pour le jour si la nouvelle
+    // capture ne contient aucune valeur.
+    dayEntry.decks = dayEntry.decks;
+  } else {
+    dayEntry.decks = newDecks;
+  }
   dayEntry._cumul = mergeMaps(dayEntry._cumul ?? {}, currentCumul);
   dayEntry._cumulFame = mergeMaps(dayEntry._cumulFame ?? {}, currentCumulFame);
   dayEntry.periodType = options.periodType ?? dayEntry.periodType ?? null;
+
+  const computeSnapshotCount = (decks = {}) =>
+    Object.values(decks).reduce(
+      (s, v) => s + (typeof v === "number" ? v : 0),
+      0,
+    );
+  dayEntry.snapshotCount = computeSnapshotCount(dayEntry.decks);
 
   // If we already have a primary snapshot for this war day, do not overwrite the
   // recorded decks when running after reset (backup snapshot). This ensures we
@@ -467,6 +543,7 @@ export async function recordSnapshot(
         prevDayEntry._cumulFame ?? {},
         currentCumulFame,
       );
+      prevDayEntry.snapshotCount = computeSnapshotCount(prevDayEntry.decks);
     } else if (minutesSinceReset > 90) {
       // Backup tardif : ne pas contaminer le snapshot J-1.
     }
@@ -474,10 +551,6 @@ export async function recordSnapshot(
     await saveSnapshots(clanTag, filtered);
     return;
   }
-
-  dayEntry.decks = clampDeckValues(
-    baseCumulHasData ? daily : mergeMaps(dayEntry.decks, daily),
-  );
 
   if (snapshotType === "primary") {
     dayEntry.snapshotTime = now.toISOString();
@@ -508,6 +581,7 @@ export async function recordSnapshot(
     });
   }
 
+  dayEntry.snapshotCount = computeSnapshotCount(dayEntry.decks);
   await saveSnapshots(clanTag, filtered);
 }
 
@@ -661,7 +735,7 @@ export async function getLastSnapshotDate(clanTag) {
 }
 
 // expose the directory path so callers can inspect or do manual operations
-export const SNAP_DIR_PATH = SNAP_DIR; // absolute path used internally
+export const SNAP_DIR_PATH = TMP_SNAP_DIR; // absolute path used internally
 
 function warDayNameFromKey(warDayKey) {
   if (!warDayKey) return null;

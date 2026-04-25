@@ -1849,8 +1849,16 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         typeof day.totalCount === "number" ? day.totalCount : null;
       const backupValue =
         typeof backupDay?.totalCount === "number" ? backupDay.totalCount : null;
+      const hasExplicitCurrent =
+        day.source === "snapshot" ||
+        day.source === "live" ||
+        Number.isFinite(day.snapshotCount);
+      const hasCurrent = currentValue != null;
 
       if (day.isPast) {
+        if (hasExplicitCurrent) {
+          return day;
+        }
         if (backupValue != null) {
           return {
             ...day,
@@ -1859,7 +1867,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             source: "snapshot",
           };
         }
-        if (currentValue != null) {
+        if (hasCurrent) {
           return {
             ...day,
             totalCount: currentValue,
@@ -1869,8 +1877,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         }
         return {
           ...day,
-          totalCount: 0,
-          snapshotCount: 0,
+          totalCount: null,
+          snapshotCount: null,
           source: "snapshot",
         };
       }
@@ -1879,7 +1887,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       return day;
     });
     const totalDecksUsed = days.reduce(
-      (sum, d) => sum + (d?.totalCount ?? 0),
+      (sum, d) => sum + (typeof d?.totalCount === "number" ? d.totalCount : 0),
       0,
     );
     return { ...current, totalDecksUsed, days };
@@ -1906,9 +1914,16 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
     const warnings = [];
     if (
-      clanWarSummary.days.some(
-        (d) => d.isPast && (d.totalCount == null || d.totalCount === 0),
-      )
+      clanWarSummary.days.some((d) => {
+        if (!d.isPast) return false;
+        if (d.totalCount == null) return true;
+        return (
+          d.totalCount === 0 &&
+          d.source !== "snapshot" &&
+          d.source !== "live" &&
+          !Number.isFinite(d.snapshotCount)
+        );
+      })
     ) {
       warnings.push("missingOrZeroPastDay");
     }
