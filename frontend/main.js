@@ -677,7 +677,7 @@ async function handleSearch(force = false) {
           data.fallbackReason === "rateLimited" ||
           data.raceLogUnavailable);
       if (shouldWarn) showError(t("rateLimitedWarning"));
-      updateDebugPanel(data, "clan");
+      updateDebugPanel(effectiveData, "clan");
       updateFavBtnState(tag);
       showCacheNote(false, data.snapshotDate, {
         source: data.rateLimited ? "live (degraded)" : "live",
@@ -3168,7 +3168,7 @@ function updateDebugPanel(data, mode) {
     const snapshotBackupTimeLabel = info.snapshotBackupTime
       ? escHtml(info.snapshotBackupTime)
       : info.snapshotTime
-        ? "useless"
+        ? "n/a (primary snapshot)"
         : "—";
     return `
       <div style="margin-top:1rem;padding:.5em 1em;background:#222;border-radius:6px">
