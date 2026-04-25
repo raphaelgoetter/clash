@@ -1854,8 +1854,20 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         day.source === "live" ||
         Number.isFinite(day.snapshotCount);
       const hasCurrent = currentValue != null;
+      const shouldUseBackup =
+        backupValue != null &&
+        backupValue > 0 &&
+        (!hasCurrent || currentValue <= 0);
 
       if (day.isPast) {
+        if (shouldUseBackup) {
+          return {
+            ...day,
+            totalCount: backupValue,
+            snapshotCount: backupValue,
+            source: "snapshot",
+          };
+        }
         if (hasExplicitCurrent) {
           return day;
         }
