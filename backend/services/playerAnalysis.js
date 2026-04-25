@@ -470,11 +470,7 @@ export function buildCurrentWarDays(
     ? raceTotalDecks
     : days.reduce((s, d) => s + d.count, 0);
 
-  if (
-    raceMeta?.state === "warDay" &&
-    daysFromThu >= 0 &&
-    daysFromThu < days.length
-  ) {
+  if (daysFromThu >= 0 && daysFromThu < days.length) {
     days[daysFromThu].source = "live";
     days[daysFromThu].liveCount = days[daysFromThu].count;
   }
