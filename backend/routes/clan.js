@@ -1596,7 +1596,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         // On permet à un snapshot plus récent d'améliorer la valeur (jamais de descente).
         // ATTENTION : existingDay.source === 'live' signifie que la valeur en cache
         // est la valeur live de fin de journée (ex. 200), pas un snapshot figé.
-        // Ne jamais l'utiliser comme plancher — elle peut écraser la vraie valeur snapshot.
+        // On l'utilise uniquement comme dernier recours si elle est strictement
+        // inférieure à 200, afin de conserver un total connu plutôt que d'inférer 200.
         if (i < daysFromThu) {
           const existingSnapshot =
             existingDay?.snapshotCount != null
@@ -1614,12 +1615,14 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             ) {
               snapshotCount = existingSnapshot;
             }
-          } else if (
-            (snapshotCount == null || snapshotCount === 0) &&
-            existingDay?.totalCount > 0 &&
-            existingDay?.source !== "live"
-          ) {
-            snapshotCount = clampDeckTotal(existingDay.totalCount);
+          } else if (snapshotCount == null || snapshotCount === 0) {
+            const existingTotal = existingDay?.totalCount;
+            if (
+              existingTotal > 0 &&
+              (existingDay?.source !== "live" || existingTotal < 200)
+            ) {
+              snapshotCount = clampDeckTotal(existingTotal);
+            }
           }
         }
 
@@ -1646,12 +1649,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           if (snapshotCount != null) {
             totalCount = Math.min(200, snapshotCount);
             source = "snapshot";
-          } else if (inferredFromLive != null) {
-            totalCount = inferredFromLive;
-            source = "live";
           } else {
-            totalCount = 0;
-            source = "snapshot";
+            totalCount = null;
+            source = "unknown";
           }
           liveCount = null;
         } else {
@@ -1851,16 +1851,22 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         typeof backupDay?.totalCount === "number" ? backupDay.totalCount : null;
 
       if (day.isPast) {
-        const chosen = Math.max(currentValue ?? 0, backupValue ?? 0);
-        if (chosen > 0) {
+        if (backupValue != null) {
           return {
             ...day,
-            totalCount: chosen,
-            snapshotCount: chosen,
+            totalCount: backupValue,
+            snapshotCount: backupValue,
             source: "snapshot",
           };
         }
-        // conserve zéro si aucune donnée historique
+        if (currentValue != null) {
+          return {
+            ...day,
+            totalCount: currentValue,
+            snapshotCount: currentValue,
+            source: day.source === "live" ? "unknown" : "snapshot",
+          };
+        }
         return {
           ...day,
           totalCount: 0,
@@ -1883,8 +1889,17 @@ export async function buildClanAnalysis(clanTag, options = {}) {
   clanWarSummary = mergeWarSummariesBackend(clanWarSummary, fallbackWarSummary);
 
   if (clanWarSummary && Array.isArray(clanWarSummary.days)) {
-    warSnapshotDays = clanWarSummary.days.map((day) => {
-      if (!day || typeof day.totalCount !== "number") return null;
+    const backupDays = fallbackWarSummary?.days ?? [];
+    warSnapshotDays = clanWarSummary.days.map((day, idx) => {
+      if (!day || typeof day.totalCount !== "number") {
+        const backupTotal =
+          typeof backupDays[idx]?.totalCount === "number"
+            ? backupDays[idx].totalCount
+            : null;
+        return backupTotal != null
+          ? Math.min(200, Math.max(0, backupTotal))
+          : null;
+      }
       if (day.isFuture && day.snapshotCount == null) return null;
       return Math.min(200, Math.max(0, day.totalCount));
     });
@@ -2079,7 +2094,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 warSnapshotDays,
                 clanTag,
                 fallbackWarDays:
+                  existingCache?.debugSnapshotInfo?.weekSnaps ??
                   existingCache?.clanWarSummary?.days ??
+                  existingCache?.lastWarSummary?.debugSnapshotInfo?.weekSnaps ??
                   existingCache?.lastWarSummary?.days ??
                   [],
               });

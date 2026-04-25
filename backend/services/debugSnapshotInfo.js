@@ -25,10 +25,42 @@ export function buildDebugSnapshotInfo({
   ) {
     return null;
   }
-  // Extraction du snapshot J-1
-  const prevSnap = weekSnaps[warDayIndex - 1];
+  // Extraction du snapshot J-1.
+  // Si l'entrée adjacente est manquante, chercher le dernier snapshot valide antérieur.
+  const hasSnapshotData = (snap) =>
+    !!snap &&
+    (!!snap.snapshotTime ||
+      !!snap.snapshotBackupTime ||
+      Number.isFinite(snap.snapshotCount) ||
+      (snap.decks && Object.keys(snap.decks).length > 0) ||
+      (typeof snap.totalCount === "number" && snap.totalCount > 0));
+
+  let prevSnap = weekSnaps[warDayIndex - 1] ?? null;
+  if (!hasSnapshotData(prevSnap)) {
+    for (let i = warDayIndex - 2; i >= 0; i--) {
+      if (hasSnapshotData(weekSnaps[i])) {
+        prevSnap = weekSnaps[i];
+        break;
+      }
+    }
+  }
+
+  if (!hasSnapshotData(prevSnap)) {
+    for (let i = warDayIndex - 2; i >= 0; i--) {
+      if (hasSnapshotData(fallbackWarDays?.[i])) {
+        prevSnap = fallbackWarDays[i];
+        break;
+      }
+    }
+  }
+
+  const fallbackPrevDay = fallbackWarDays?.[warDayIndex - 1] ?? null;
+  if (!hasSnapshotData(prevSnap) && hasSnapshotData(fallbackPrevDay)) {
+    prevSnap = fallbackPrevDay;
+  }
   if (!prevSnap) return null;
-  const prevCumulFame = prevSnap?._cumulFame ?? {};
+
+  const prevCumulFame = prevSnap._cumulFame ?? {};
   const debugDelta = [];
   const cumulFameLive = allParts
     .filter((p) => currentMemberTags.has(p.tag))
@@ -48,10 +80,35 @@ export function buildDebugSnapshotInfo({
     (sum, value) => sum + (typeof value === "number" ? value : 0),
     0,
   );
-  const delta = cumulFameLive - cumulFameSnapshot;
+  const hasPrevCumulFame = Object.keys(prevCumulFame).length > 0;
+  const cumulFameSnapshotValid = hasPrevCumulFame ? cumulFameSnapshot : null;
+  const delta = hasPrevCumulFame
+    ? cumulFameLive - cumulFameSnapshotValid
+    : null;
   const snapshotTime =
-    prevSnap.snapshotTime || prevSnap.snapshotBackupTime || null;
-  const snapshotBackupTime = prevSnap.snapshotBackupTime || null;
+    prevSnap.snapshotTime ||
+    prevSnap.snapshotBackupTime ||
+    fallbackPrevDay?.snapshotTime ||
+    fallbackPrevDay?.snapshotBackupTime ||
+    null;
+  const snapshotBackupTime =
+    prevSnap.snapshotBackupTime || fallbackPrevDay?.snapshotBackupTime || null;
+  const hasSnapshotCount =
+    Number.isFinite(prevSnap.snapshotCount) ||
+    (prevSnap.decks && Object.keys(prevSnap.decks).length > 0) ||
+    Number.isFinite(fallbackPrevDay?.snapshotCount);
+  const fallbackSnapshotCount = Number.isFinite(fallbackPrevDay?.snapshotCount)
+    ? fallbackPrevDay.snapshotCount
+    : null;
+  const fallbackTotalCount =
+    typeof fallbackPrevDay?.totalCount === "number"
+      ? fallbackPrevDay.totalCount
+      : null;
+  const hasFallbackSnapshotCount =
+    fallbackSnapshotCount != null ||
+    (fallbackTotalCount != null && fallbackTotalCount > 0);
+  const hasValidSnapshot =
+    Boolean(snapshotTime) || hasSnapshotCount || hasFallbackSnapshotCount;
   let diffMin = null;
   if (snapshotTime && prevSnap.gdcPeriod?.start) {
     const snapshotMs = new Date(snapshotTime).getTime();
@@ -61,7 +118,11 @@ export function buildDebugSnapshotInfo({
     }
   }
   let warning = null;
-  if (delta <= 0) {
+  if (!hasValidSnapshot) {
+    warning = "missing valid J-1 snapshot";
+  } else if (!hasPrevCumulFame) {
+    warning = "missing J-1 cumulFame (snapshot decks available)";
+  } else if (delta <= 0) {
     warning = "snapshot suspect or corrupted";
   } else if (diffMin != null && diffMin > 90) {
     warning = "snapshot appears late / after reset";
@@ -106,7 +167,7 @@ export function buildDebugSnapshotInfo({
     snapshotTime,
     snapshotBackupTime,
     cumulFameLive,
-    cumulFameSnapshot,
+    cumulFameSnapshot: cumulFameSnapshotValid,
     delta,
     diffMin,
     warning,
