@@ -24,9 +24,9 @@ import {
   fetchRaceLog,
   fetchCurrentRace,
 } from "../backend/services/clashApi.js";
+import { loadSnapshots } from "../backend/services/snapshot.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const SNAP_DIR = path.join(__dirname, "..", "data", "snapshots");
 const CACHE_DIR = path.join(
   __dirname,
   "..",
@@ -140,14 +140,6 @@ function getEndedWarDay(now = new Date(), clanTag = null) {
 /**
  * Charge le fichier snapshot JSON pour un clan (lecture directe depuis le disque).
  */
-async function loadSnapshots(tag) {
-  const clean = tag.replace(/[^A-Za-z0-9]/g, "");
-  const filePath = path.join(SNAP_DIR, `${clean}.json`);
-  if (!existsSync(filePath)) return [];
-  const raw = await readFile(filePath, "utf-8");
-  return JSON.parse(raw);
-}
-
 /**
  * Lit le nom du clan depuis le cache persisté.
  */

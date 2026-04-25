@@ -1,6 +1,14 @@
 // ============================================================
 // snapshot.js — helper for recording daily decksUsed snapshots from a
-// river race log. File-based storage under data/snapshots.
+// river race log.
+//
+// Storage model:
+// - runtime snapshot writes are first written to `/tmp/clash-snapshots/`
+// - when available, a durable copy is also persisted to `data/snapshots/`
+// - `loadSnapshots()` reads `/tmp` first, then falls back to `data/snapshots/`
+//
+// This ensures fast runtime access while keeping a persistent repository-backed
+// snapshot history for cron jobs and offline scripts.
 // ============================================================
 
 import fs from "fs/promises";
@@ -166,7 +174,7 @@ function normalizeSnapshots(raw, clanTag = null) {
   return convertLegacySnapshots(raw, clanTag);
 }
 
-async function loadSnapshots(clanTag) {
+export async function loadSnapshots(clanTag) {
   await ensureDirectory(TMP_SNAP_DIR);
   const tmpFile = snapshotFilename(clanTag, true);
   const dataFile = snapshotFilename(clanTag, false);
@@ -243,21 +251,27 @@ async function saveSnapshots(clanTag, weeks) {
   // _cumul est persisté sur disque : il sert à calculer le delta quotidien
   // au run suivant (baseCumul = _cumul du jour précédent). Le stripper
   // provoquait rawDaily = cumulatif total au lieu du vrai delta du jour.
+  const payload = JSON.stringify(weeks || [], null, 2);
+  let tmpWriteOk = false;
+
   await ensureDirectory(TMP_SNAP_DIR);
   const tmpFile = snapshotFilename(clanTag, true);
   try {
-    await fs.writeFile(tmpFile, JSON.stringify(weeks || [], null, 2));
-    return;
+    await fs.writeFile(tmpFile, payload);
+    tmpWriteOk = true;
   } catch (err) {
-    // If /tmp is unavailable, fallback to the repo data folder when writable.
+    // If /tmp is unavailable, continue to attempt data folder write.
   }
 
+  // Persist a durable copy in the repository-backed snapshot folder.
   const dataFile = snapshotFilename(clanTag, false);
   try {
     await ensureDirectory(DATA_SNAP_DIR);
-    await fs.writeFile(dataFile, JSON.stringify(weeks || [], null, 2));
-  } catch (_) {
-    // ignore write failure, snapshot persistence is best-effort
+    await fs.writeFile(dataFile, payload);
+  } catch (err) {
+    if (!tmpWriteOk) {
+      // ignore if both write locations fail, but keep the behavior best-effort.
+    }
   }
 }
 

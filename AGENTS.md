@@ -23,7 +23,7 @@ Les fonctions Vercel s'exécutent dans un environnement **read-only** sauf pour 
 **Conséquences pratiques :**
 
 - `clanCache.js` écrit dans `/tmp/clan-cache/` et lit d'abord `/tmp`, puis `frontend/public/clan-cache/` (bundle statique pré-généré par `npm run cache`).
-- `snapshot.js` et tout code qui crée/modifie des fichiers JSON au runtime doivent pointer vers `/tmp/`.
+- `snapshot.js` écrit par défaut dans `/tmp/clash-snapshots/` mais persiste aussi dans `data/snapshots/` quand le dossier est accessible, afin de conserver les données entre les exécutions du cron.
 - `data/war-summary-log.json`, `data/discord-links.json` : lisibles depuis le bundle, **non modifiables** sur Vercel — les scripts qui y écrivent ne fonctionnent qu'en local ou via CI.
 
 ## Architecture des services backend
@@ -41,7 +41,7 @@ Les fonctions Vercel s'exécutent dans un environnement **read-only** sauf pour 
 | `clashApi.js`        | Wrappers HTTP vers l'API Clash Royale                                                                                                 |
 | `cache.js`           | Cache mémoire générique (`getOrSet`, `invalidate`)                                                                                    |
 | `clanCache.js`       | Lecture/écriture du cache clan persistant (JSON sur disque)                                                                           |
-| `snapshot.js`        | Snapshots de decksUsed quotidiens (fichiers `data/snapshots/`)                                                                        |
+| `snapshot.js`        | Snapshots de decksUsed quotidiens (`/tmp/clash-snapshots/` en runtime + `data/snapshots/` persistant)                                 |
 | `discordLinks.js`    | Mapping tag joueur → Discord ID (GitHub Gist + fallback local)                                                                        |
 | `topplayers.js`      | `computeTopPlayers` — classement de la famille par points                                                                             |
 | `uncomplete.js`      | `computeUncomplete` — liste des joueurs avec < 16 decks                                                                               |
