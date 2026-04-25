@@ -1025,6 +1025,23 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               : null;
         return total != null && total > 0 ? total : null;
       });
+
+      if (
+        currentRace?.periodType === "warDay" &&
+        typeof currentRace.periodIndex === "number" &&
+        currentRace.periodIndex >= 0 &&
+        currentRace.periodIndex <= 3
+      ) {
+        const currentLiveCount = (currentRace.clan?.participants ?? [])
+          .filter((p) => currentMemberTags.has(p.tag))
+          .reduce((sum, p) => sum + (p.decksUsedToday ?? 0), 0);
+        if (currentLiveCount > 0) {
+          warSnapshotDays[currentRace.periodIndex] = Math.min(
+            200,
+            currentLiveCount,
+          );
+        }
+      }
     }
   }
 
