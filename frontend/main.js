@@ -3230,9 +3230,23 @@ function updateDebugPanel(data, mode) {
     snapshotFileDebug: data?.snapshotFileDebug ?? null,
   };
 
-  const text = JSON.stringify(payload, null, 2);
+  const sourceSelected = payload.snapshotFileDebug?.selectedSource;
+  const sourceFile =
+    sourceSelected === "tmp"
+      ? payload.snapshotFileDebug?.tmpFile
+      : payload.snapshotFileDebug?.dataFile;
+  const sourceSize =
+    sourceSelected === "tmp"
+      ? payload.snapshotFileDebug?.tmpSize
+      : payload.snapshotFileDebug?.dataSize;
+  const sourceTime =
+    sourceSelected === "tmp"
+      ? payload.snapshotFileDebug?.tmpMtime
+      : (payload.snapshotFileDebug?.dataLatestSnapshotTime ??
+        payload.snapshotFileDebug?.dataMtime);
+
   panel.innerHTML = `
-    <h3>Debug info (${mode})</h3>
+    <h3>Debug info (mode : ${escHtml(payload.mode)}, source : ${escHtml(payload.source)})</h3>
     <button id="debug-refresh-now" class="btn btn-small" style="margin-bottom:.5rem;">🔄 ${t("refreshNow") || "Refresh now"}</button>
     <div style="font-size:.88rem;line-height:1.35;">
       ${
@@ -3242,8 +3256,6 @@ function updateDebugPanel(data, mode) {
       `
           : ""
       }
-      <div><strong>mode :</strong> ${escHtml(payload.mode)}</div>
-      <div><strong>source :</strong> ${escHtml(payload.source)}</div>
       <div><strong>now :</strong> ${escHtml(payload.now)}</div>
       <div><strong>snapshotDate :</strong> ${escHtml(payload.snapshotDate ?? "—")}</div>
       <div><strong>warCurrentWeekId :</strong> ${escHtml(payload.warCurrentWeekId ?? "—")}</div>
@@ -3251,15 +3263,12 @@ function updateDebugPanel(data, mode) {
       ${
         payload.snapshotFileDebug
           ? `
-        <div><strong>snapshotFileDebug.selectedSource :</strong> ${escHtml(payload.snapshotFileDebug.selectedSource)}</div>
-        <div><strong>snapshotFileDebug.tmpFile :</strong> <code>${escHtml(payload.snapshotFileDebug.tmpFile)}</code></div>
-        <div><strong>snapshotFileDebug.tmpSize :</strong> ${escHtml(payload.snapshotFileDebug.tmpSize ?? "—")} bytes</div>
-        <div><strong>snapshotFileDebug.tempLatestSnapshotTime :</strong> ${escHtml(payload.snapshotFileDebug.tmpLatestSnapshotTime ?? "—")}</div>
-        <div><strong>snapshotFileDebug.tmpMtime :</strong> ${escHtml(payload.snapshotFileDebug.tmpMtime ?? "—")}</div>
-        <div><strong>snapshotFileDebug.dataFile :</strong> <code>${escHtml(payload.snapshotFileDebug.dataFile)}</code></div>
-        <div><strong>snapshotFileDebug.dataSize :</strong> ${escHtml(payload.snapshotFileDebug.dataSize ?? "—")} bytes</div>
-        <div><strong>snapshotFileDebug.dataLatestSnapshotTime :</strong> ${escHtml(payload.snapshotFileDebug.dataLatestSnapshotTime ?? "—")}</div>
-        <div><strong>snapshotFileDebug.dataMtime :</strong> ${escHtml(payload.snapshotFileDebug.dataMtime ?? "—")}</div>
+        <div style="margin:1rem 0;border-top:1px solid #444"></div>
+        <div><strong>snapshot Source :</strong> ${escHtml(payload.snapshotFileDebug.selectedSource)} <code>${escHtml(sourceFile)}</code> ${escHtml(sourceSize ?? "—")} bytes</div>
+        <div><strong>snapshot Source Time :</strong> ${escHtml(sourceTime ?? "—")}</div>
+        <div style="margin:.75rem 0;border-top:1px solid #444"></div>
+        <div><strong>snapshot data :</strong> <code>${escHtml(payload.snapshotFileDebug.dataFile)}</code> ${escHtml(payload.snapshotFileDebug.dataSize ?? "—")} bytes</div>
+        <div><strong>snapshot data Time :</strong> ${escHtml(payload.snapshotFileDebug.dataLatestSnapshotTime ?? payload.snapshotFileDebug.dataMtime ?? "—")}</div>
       `
           : ""
       }
