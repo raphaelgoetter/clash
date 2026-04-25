@@ -3165,11 +3165,16 @@ function updateDebugPanel(data, mode) {
       info.diffMin != null ||
       info.warning;
     if (!hasSnapshotData) return "";
+    const snapshotBackupTimeLabel = info.snapshotBackupTime
+      ? escHtml(info.snapshotBackupTime)
+      : info.snapshotTime
+        ? "useless"
+        : "—";
     return `
       <div style="margin-top:1rem;padding:.5em 1em;background:#222;border-radius:6px">
         <div><strong>Snapshot J-1 :</strong></div>
         <div>⏰ <b>snapshotTime</b> : <code>${escHtml(info.snapshotTime || "—")}</code></div>
-        <div>⏰ <b>snapshotBackupTime</b> : <code>${escHtml(info.snapshotBackupTime || "—")}</code></div>
+        <div>⏰ <b>snapshotBackupTime</b> : <code>${snapshotBackupTimeLabel}</code></div>
         <div>🎯 <b>Cumul points live</b> : <b>${info.cumulFameLive}</b></div>
         <div>📦 <b>Cumul snapshot J-1</b> : <b>${info.cumulFameSnapshot ?? "—"}</b></div>
         ${info.snapshotCount != null ? `<div>📊 <b>Decks snapshot J-1</b> : <b>${info.snapshotCount}</b></div>` : ""}
@@ -3220,6 +3225,8 @@ function updateDebugPanel(data, mode) {
     warSnapshotDays: data?.warSnapshotDays ?? null,
     currentWarDays: data?.currentWarDays ?? null,
     clanWarSummary: data?.clanWarSummary ?? null,
+    clanName: data?.clan?.name ?? null,
+    clanTag: data?.clan?.tag ?? null,
   };
 
   const text = JSON.stringify(payload, null, 2);
@@ -3227,6 +3234,13 @@ function updateDebugPanel(data, mode) {
     <h3>Debug info (${mode})</h3>
     <button id="debug-refresh-now" class="btn btn-small" style="margin-bottom:.5rem;">🔄 ${t("refreshNow") || "Refresh now"}</button>
     <div style="font-size:.88rem;line-height:1.35;">
+      ${
+        payload.clanName || payload.clanTag
+          ? `
+      <div><strong>clan :</strong> ${escHtml(payload.clanName ? `${payload.clanName} ${payload.clanTag ? `(${payload.clanTag})` : ""}` : payload.clanTag)}</div>
+      `
+          : ""
+      }
       <div><strong>mode :</strong> ${escHtml(payload.mode)}</div>
       <div><strong>source :</strong> ${escHtml(payload.source)}</div>
       <div><strong>now :</strong> ${escHtml(payload.now)}</div>
