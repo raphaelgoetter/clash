@@ -3253,8 +3253,12 @@ function updateDebugPanel(data, mode) {
           ? `
         <div><strong>snapshotFileDebug.selectedSource :</strong> ${escHtml(payload.snapshotFileDebug.selectedSource)}</div>
         <div><strong>snapshotFileDebug.tmpFile :</strong> <code>${escHtml(payload.snapshotFileDebug.tmpFile)}</code></div>
-        <div><strong>snapshotFileDebug.dataFile :</strong> <code>${escHtml(payload.snapshotFileDebug.dataFile)}</code></div>
+        <div><strong>snapshotFileDebug.tmpSize :</strong> ${escHtml(payload.snapshotFileDebug.tmpSize ?? "—")} bytes</div>
+        <div><strong>snapshotFileDebug.tempLatestSnapshotTime :</strong> ${escHtml(payload.snapshotFileDebug.tmpLatestSnapshotTime ?? "—")}</div>
         <div><strong>snapshotFileDebug.tmpMtime :</strong> ${escHtml(payload.snapshotFileDebug.tmpMtime ?? "—")}</div>
+        <div><strong>snapshotFileDebug.dataFile :</strong> <code>${escHtml(payload.snapshotFileDebug.dataFile)}</code></div>
+        <div><strong>snapshotFileDebug.dataSize :</strong> ${escHtml(payload.snapshotFileDebug.dataSize ?? "—")} bytes</div>
+        <div><strong>snapshotFileDebug.dataLatestSnapshotTime :</strong> ${escHtml(payload.snapshotFileDebug.dataLatestSnapshotTime ?? "—")}</div>
         <div><strong>snapshotFileDebug.dataMtime :</strong> ${escHtml(payload.snapshotFileDebug.dataMtime ?? "—")}</div>
       `
           : ""

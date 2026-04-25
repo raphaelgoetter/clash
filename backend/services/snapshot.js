@@ -54,6 +54,33 @@ async function fileStat(file) {
   }
 }
 
+async function extractLatestSnapshotTime(raw, clanTag = null) {
+  try {
+    const normalized = normalizeSnapshots(raw, clanTag);
+    let latest = null;
+    for (const week of Array.isArray(normalized) ? normalized : []) {
+      for (const day of week.days ?? []) {
+        const ts = day.snapshotTime || day.snapshotBackupTime;
+        if (typeof ts === "string" && ts) {
+          if (!latest || ts > latest) latest = ts;
+        }
+      }
+    }
+    return latest;
+  } catch (_err) {
+    return null;
+  }
+}
+
+async function readLatestSnapshotTime(file, clanTag) {
+  try {
+    const raw = await readJsonFile(file);
+    return await extractLatestSnapshotTime(raw, clanTag);
+  } catch (_) {
+    return null;
+  }
+}
+
 function convertLegacySnapshots(raw, clanTag = null) {
   // Legacy format: array of { week, date, warDay, decks, _cumul, ... }
   // Convert to new format: [{ week, days: [{ warDay, realDay, snapshots:[...], decks: {...} }] }]
@@ -544,6 +571,10 @@ export async function getSnapshotFileDebug(clanTag) {
   const dataStat = await fileStat(dataFile);
   const tmpMtime = tmpStat?.mtimeMs ?? 0;
   const dataMtime = dataStat?.mtimeMs ?? 0;
+  const tmpLatestSnapshotTime =
+    tmpMtime > 0 ? await readLatestSnapshotTime(tmpFile, clanTag) : null;
+  const dataLatestSnapshotTime =
+    dataMtime > 0 ? await readLatestSnapshotTime(dataFile, clanTag) : null;
 
   return {
     clanTag,
@@ -553,6 +584,8 @@ export async function getSnapshotFileDebug(clanTag) {
     dataExists: dataMtime > 0,
     tmpMtime: tmpMtime > 0 ? new Date(tmpMtime).toISOString() : null,
     dataMtime: dataMtime > 0 ? new Date(dataMtime).toISOString() : null,
+    tmpLatestSnapshotTime,
+    dataLatestSnapshotTime,
     tmpSize: tmpStat?.size ?? null,
     dataSize: dataStat?.size ?? null,
     selectedSource:
