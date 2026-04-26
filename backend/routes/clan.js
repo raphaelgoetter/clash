@@ -2231,6 +2231,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 allParts,
                 warSnapshotDays,
                 clanTag,
+                currentRaceClanFame: currentRace?.clan?.fame ?? null,
                 fallbackWarDays:
                   existingCache?.debugSnapshotInfo?.weekSnaps ??
                   existingCache?.clanWarSummary?.days ??
@@ -2261,11 +2262,16 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               const allPartsInner = isOwn
                 ? raceData.clan.participants
                 : rivalParticipants;
-              // Fame cumulée section en cours (source: participants, plus fiable que c.fame)
-              const sectionFame = allPartsInner.reduce(
+              const sectionFameFromParticipants = allPartsInner.reduce(
                 (s, p) => s + (p.fame ?? 0),
                 0,
               );
+              const clanFameFromApi = raceData?.clan?.fame;
+              const sectionFame =
+                Number.isFinite(clanFameFromApi) &&
+                clanFameFromApi > sectionFameFromParticipants
+                  ? clanFameFromApi
+                  : sectionFameFromParticipants;
               currentFame = sectionFame;
 
               // Borne haute théorique stricte pour la fin de semaine.

@@ -24,6 +24,7 @@ export function buildDebugSnapshotInfo({
   warSnapshotDays,
   clanTag,
   fallbackWarDays = [],
+  currentRaceClanFame = null,
 }) {
   // Sécurité : tous les paramètres doivent être fournis
   if (
@@ -149,6 +150,15 @@ export function buildDebugSnapshotInfo({
       });
       return sum + live;
     }, 0);
+  const rawClanFameTotal = Number.isFinite(currentRaceClanFame)
+    ? currentRaceClanFame
+    : null;
+  const clanFameTotalDiff =
+    rawClanFameTotal != null ? rawClanFameTotal - cumulFameLive : null;
+  const effectiveCumulFameLive =
+    rawClanFameTotal != null && rawClanFameTotal > cumulFameLive
+      ? rawClanFameTotal
+      : cumulFameLive;
   const cumulFameSnapshot = Object.values(prevCumulFame).reduce(
     (sum, value) => sum + (typeof value === "number" ? value : 0),
     0,
@@ -160,7 +170,7 @@ export function buildDebugSnapshotInfo({
   const hasPrevCumulFame = Object.keys(prevCumulFame).length > 0;
   const cumulFameSnapshotValid = hasPrevCumulFame ? cumulFameSnapshot : null;
   const delta = hasPrevCumulFame
-    ? cumulFameLive - cumulFameSnapshotValid
+    ? effectiveCumulFameLive - cumulFameSnapshotValid
     : null;
   const livePlayersWithDecks = debugDelta.filter(
     (d) => d.decksUsedToday > 0,
@@ -278,6 +288,13 @@ export function buildDebugSnapshotInfo({
     cumulDecksLive,
     livePlayersWithDecks,
     livePlayersWithDecksAndNoFameDiff,
+    rawClanFameTotal,
+    clanFameTotalDiff,
+    effectiveCumulFameLive,
+    cumulFameLiveSource:
+      rawClanFameTotal != null && rawClanFameTotal > cumulFameLive
+        ? "clanTotal"
+        : "participantsSum",
     liveFameDeltaZeroWithDecks:
       cumulDecksLive > 0 && delta === 0 && hasPrevCumulFame,
     delta,

@@ -88,4 +88,33 @@ assert.strictEqual(
   "prev cumul fame lookup doit fonctionner avec tags normalisés et J-1",
 );
 
+const infoClanTotal = buildDebugSnapshotInfo({
+  weekSnaps,
+  warDayIndex: 3,
+  currentMemberTags: new Set(["#A", "#B"]),
+  allParts: [
+    { tag: "#A", name: "Alice", fame: 120 },
+    { tag: "#B", name: "Bob", fame: 40 },
+  ],
+  warSnapshotDays: [15, 35, 50, 80],
+  clanTag: "TEST",
+  currentRaceClanFame: 170,
+  fallbackWarDays: [],
+});
+assert.strictEqual(
+  infoClanTotal.cumulFameLive,
+  160,
+  "cumulFameLive doit encore refléter la somme des participants",
+);
+assert.strictEqual(
+  infoClanTotal.effectiveCumulFameLive,
+  170,
+  "effectiveCumulFameLive doit utiliser la valeur totale du clan si elle est plus grande",
+);
+assert.strictEqual(
+  infoClanTotal.cumulFameLiveSource,
+  "clanTotal",
+  "cumulFameLiveSource doit indiquer la source utilisée",
+);
+
 console.log("All debugSnapshotInfo tests passed.");
