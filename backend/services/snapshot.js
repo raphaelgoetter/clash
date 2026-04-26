@@ -240,6 +240,11 @@ export async function loadSnapshots(clanTag) {
   const tmpFile = snapshotFilename(clanTag, true);
   const dataFile = snapshotFilename(clanTag, false);
 
+  // Load runtime snapshots from /tmp first, then use the durable data backup.
+  // If both exist, the tmp version is merged with the data backup, it is not
+  // selected based on a delta before reset. There is currently no pre-reset
+  // age-based fallback from tmp to data.
+
   const tmpMtime = await fileMtime(tmpFile);
   const dataMtime = await fileMtime(dataFile);
   const tmpMtimeIso = tmpMtime > 0 ? new Date(tmpMtime).toISOString() : null;

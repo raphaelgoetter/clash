@@ -24,6 +24,7 @@ Les fonctions Vercel s'exécutent dans un environnement **read-only** sauf pour 
 
 - `clanCache.js` écrit dans `/tmp/clan-cache/` et lit d'abord `/tmp`, puis `frontend/public/clan-cache/` (bundle statique pré-généré par `npm run cache`).
 - `snapshot.js` écrit par défaut dans `/tmp/clash-snapshots/` mais persiste aussi dans `data/snapshots/` quand le dossier est accessible, afin de conserver les données entre les exécutions du cron.
+  - `loadSnapshots()` lit `/tmp` en priorité et fusionne les données avec `data/snapshots/` si les deux sources existent. Il n’existe pas de sélection age-based pré-reset de la source `data` dans le code actuel.
 - `data/war-summary-log.json`, `data/discord-links.json` : lisibles depuis le bundle, **non modifiables** sur Vercel — les scripts qui y écrivent ne fonctionnent qu'en local ou via CI.
 
 ## Architecture des services backend
