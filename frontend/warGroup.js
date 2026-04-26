@@ -145,17 +145,13 @@ export function renderRaceGroupCard(data, t, timerHelper) {
           clan.projectedFame != null
             ? fmtNum(Math.round(clan.projectedFame))
             : "—";
-        const rankKey = `warGroupRank${clan.projectedRank}`;
-        const projRankLabel = clan.projectedRank
-          ? ` <span class="war-group-proj-rank">(${t(rankKey) || clan.projectedRank})</span>`
-          : "";
         const shouldShowClinched =
           clan.isClinchedWin ||
           (isOwn && clan.projectedFame === 0 && clan.decksToday > 0);
         const clinchedHtml = shouldShowClinched
           ? ` <span class="war-group-clinched" title="${t("warGroupClinchedWin")}">${t("warGroupClinchedLabel")}</span>`
           : "";
-        projectionHtml = `<td class="war-group-projection">${projVal}${clinchedHtml}${projRankLabel}</td>`;
+        projectionHtml = `<td class="war-group-projection">${projVal}${clinchedHtml}</td>`;
       }
 
       return `<tr class="war-group-row${isOwn ? " war-group-own" : ""}">
