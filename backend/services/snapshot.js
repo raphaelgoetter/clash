@@ -220,7 +220,16 @@ function isBackupDayBetter(primaryDay, backupDay) {
   return backupMs > primaryMs;
 }
 
-function mergeSnapshotsByDay(primaryWeeks, backupWeeks) {
+// Select the day snapshot closest to reset by preferring the later valid
+// timestamp. This means that when tmp and data both contain a valid
+// daily snapshot, the version with the more recent `snapshotTime` /
+// `snapshotBackupTime` is used.
+
+function mergeSnapshotsByDay(
+  primaryWeeks,
+  backupWeeks,
+  annotateSource = false,
+) {
   const backupByWeek = new Map((backupWeeks ?? []).map((w) => [w.week, w]));
   return (primaryWeeks ?? []).map((week) => {
     const backupWeek = backupByWeek.get(week.week);
@@ -229,7 +238,13 @@ function mergeSnapshotsByDay(primaryWeeks, backupWeeks) {
       ...week,
       days: (week.days ?? []).map((day, idx) => {
         const backupDay = backupWeek.days?.[idx] ?? null;
-        return isBackupDayBetter(day, backupDay) ? backupDay : day;
+        const useBackup = isBackupDayBetter(day, backupDay);
+        const selectedDay = useBackup ? backupDay : day;
+        if (!annotateSource) return selectedDay;
+        return {
+          ...selectedDay,
+          source: useBackup ? "data" : "tmp",
+        };
       }),
     };
   });
@@ -241,9 +256,10 @@ export async function loadSnapshots(clanTag) {
   const dataFile = snapshotFilename(clanTag, false);
 
   // Load runtime snapshots from /tmp first, then use the durable data backup.
-  // If both exist, the tmp version is merged with the data backup, it is not
-  // selected based on a delta before reset. There is currently no pre-reset
-  // age-based fallback from tmp to data.
+  // If both exist, the tmp version is merged with the data backup per day.
+  // `mergeSnapshotsByDay()` prefers the later valid daily snapshot timestamp,
+  // which means a data snapshot closer to the reset can override an older tmp
+  // snapshot for the same war day.
 
   const tmpMtime = await fileMtime(tmpFile);
   const dataMtime = await fileMtime(dataFile);
@@ -638,6 +654,36 @@ export async function getSnapshotFileDebug(clanTag) {
         clanTag,
       );
       backupDaysUsed = countBackupDaysUsed(tmpSnaps, dataSnaps);
+      const merged = mergeSnapshotsByDay(tmpSnaps, dataSnaps, true);
+      const snapshotDaySources = merged.map((week) => ({
+        week: week.week,
+        sources: (week.days ?? []).map(
+          (day) => `${day.warDay}:${day.source ?? "tmp"}`,
+        ),
+      }));
+      return {
+        clanTag,
+        tmpFile,
+        dataFile,
+        tmpExists: tmpMtime > 0,
+        dataExists: dataMtime > 0,
+        tmpMtime: tmpMtime > 0 ? new Date(tmpMtime).toISOString() : null,
+        dataMtime: dataMtime > 0 ? new Date(dataMtime).toISOString() : null,
+        tmpLatestSnapshotTime,
+        dataLatestSnapshotTime,
+        tmpSize: tmpStat?.size ?? null,
+        dataSize: dataStat?.size ?? null,
+        selectedSource:
+          tmpMtime > 0 && tmpMtime >= dataMtime
+            ? "tmp"
+            : dataMtime > 0
+              ? "data"
+              : tmpMtime > 0
+                ? "tmp"
+                : "none",
+        backupDaysUsed,
+        snapshotDaySources,
+      };
     } catch (_) {
       backupDaysUsed = 0;
     }
@@ -656,12 +702,12 @@ export async function getSnapshotFileDebug(clanTag) {
     tmpSize: tmpStat?.size ?? null,
     dataSize: dataStat?.size ?? null,
     selectedSource:
-      tmpMtime > 0 && tmpMtime >= dataMtime
-        ? "tmp"
-        : dataMtime > 0
-          ? "data"
-          : tmpMtime > 0
-            ? "tmp"
+      tmpMtime > 0 && dataMtime > 0
+        ? "merged"
+        : tmpMtime > 0
+          ? "tmp"
+          : dataMtime > 0
+            ? "data"
             : "none",
     backupDaysUsed,
   };
