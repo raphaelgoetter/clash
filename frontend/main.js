@@ -3176,9 +3176,6 @@ function updateDebugPanel(data, mode) {
         <div>⏰ <b>snapshotTime</b> : <code>${escHtml(info.snapshotTime || "—")}</code></div>
         <div>⏰ <b>snapshotBackupTime</b> : <code>${snapshotBackupTimeLabel}</code></div>
         <div>🎯 <b>Cumul points live effectif</b> : <b>${info.effectiveCumulFameLive ?? info.cumulFameLive}</b></div>
-        <div>ℹ️ <b>raw clan fame total</b> : <b>${info.rawClanFameTotal ?? "—"}</b></div>
-        <div>ℹ️ <b>participants fame sum</b> : <b>${info.cumulFameLive ?? "—"}</b></div>
-        <div>ℹ️ <b>diff total - participants</b> : <b>${info.clanFameTotalDiff ?? "—"}</b></div>
         <div>📊 <b>Decks live aujourd'hui</b> : <b>${info.cumulDecksLive ?? "—"}</b></div>
         <div>📦 <b>Cumul snapshot J-1</b> : <b>${info.cumulFameSnapshot ?? "—"}</b></div>
         ${info.snapshotCount != null ? `<div>📊 <b>Decks snapshot J-1</b> : <b>${info.snapshotCount}</b></div>` : ""}
