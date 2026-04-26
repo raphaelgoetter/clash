@@ -2380,6 +2380,17 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                     ptsPerDeck = sectionFame / weeklyDecks;
                     clanScore = Math.round((decksToday * ptsPerDeck) / 10) * 10;
                   }
+
+                  if (
+                    debugSnapshotInfo?.delta === 0 &&
+                    debugSnapshotInfo?.livePlayersWithDecks > 0
+                  ) {
+                    // Si la GDC est déjà gagnée prématurément, aucun point ne sera
+                    // comptabilisé aujourd'hui, même si des decks sont joués.
+                    ptsPerDeck = 0;
+                    projectedFame = 0;
+                    clanScore = 0;
+                  }
                 } else {
                   // Rivaux : estimation basée sur l'historique des GDC précédentes.
                   const rivalPpd = rivalAvgPtsPerDeckByTag[cTagNorm];

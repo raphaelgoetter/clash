@@ -2032,6 +2032,9 @@ export default async function handler(req, res) {
         // Trier par projection si GDC active, sinon par lastWarFame décroissant
         const sorted = [...raceGroup].sort((a, b) => {
           if (isWarPeriod) {
+            const aClinched = a.isClinchedWin ? 1 : 0;
+            const bClinched = b.isClinchedWin ? 1 : 0;
+            if (aClinched !== bClinched) return bClinched - aClinched;
             return (b.projectedFame ?? 0) - (a.projectedFame ?? 0);
           }
           return (b.lastWarFame ?? 0) - (a.lastWarFame ?? 0);
