@@ -2251,6 +2251,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             let clanScore = null;
             let currentFame = null;
             let maxReachableFame = null;
+            let isClinchedWin = false;
 
             // rivalParticipants n'est utilisé que côté rivaux, jamais côté isOwn
             if (
@@ -2390,6 +2391,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                     ptsPerDeck = 0;
                     projectedFame = 0;
                     clanScore = 0;
+                    isClinchedWin = true;
                   }
                 } else {
                   // Rivaux : estimation basée sur l'historique des GDC précédentes.
@@ -2448,7 +2450,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               projectedFame,
               currentFame,
               maxReachableFame,
-              isClinchedWin: false,
+              isClinchedWin,
               targetDecksToday: c.targetDecksToday,
               warResetUtcMinutes: warResetOffsetMs(c.tag) / 60000,
             };
