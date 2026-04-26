@@ -104,20 +104,30 @@ export function buildDebugSnapshotInfo({
     return Math.max(0, currentSummed - prevSummed);
   };
 
+  const normalizedMemberTags = new Set(
+    Array.from(currentMemberTags || []).map((tag) => String(tag).toUpperCase()),
+  );
   const prevCumulFame = prevSnap._cumulFame ?? {};
   const prevPrevCumulFame = prevPrevSnap?._cumulFame ?? {};
   const debugDelta = [];
+  let cumulDecksLive = 0;
   const cumulFameLive = allParts
-    .filter((p) => currentMemberTags.has(p.tag))
+    .filter((p) => normalizedMemberTags.has(String(p.tag).toUpperCase()))
     .reduce((sum, p) => {
       const live = p.fame ?? 0;
+      const decksUsedToday = Number.isFinite(p.decksUsedToday)
+        ? p.decksUsedToday
+        : 0;
+      cumulDecksLive += decksUsedToday;
       const prev = prevCumulFame[p.tag] ?? 0;
+      const delta = live - prev;
       debugDelta.push({
         tag: p.tag,
         name: p.name,
         live,
         prev,
-        delta: live - prev,
+        delta,
+        decksUsedToday,
       });
       return sum + live;
     }, 0);
@@ -134,6 +144,12 @@ export function buildDebugSnapshotInfo({
   const delta = hasPrevCumulFame
     ? cumulFameLive - cumulFameSnapshotValid
     : null;
+  const livePlayersWithDecks = debugDelta.filter(
+    (d) => d.decksUsedToday > 0,
+  ).length;
+  const livePlayersWithDecksAndNoFameDiff = debugDelta.filter(
+    (d) => d.decksUsedToday > 0 && d.delta === 0,
+  ).length;
   const scoreJeudi = computeDailyScore(weekSnaps[0], null);
   const scoreVendredi = computeDailyScore(weekSnaps[1], weekSnaps[0]);
   const scoreSamedi = computeDailyScore(weekSnaps[2], weekSnaps[1]);
@@ -187,6 +203,9 @@ export function buildDebugSnapshotInfo({
     warning = "missing J-1 cumulFame (snapshot decks available)";
   } else if (delta < 0) {
     warning = "snapshot suspect or corrupted";
+  } else if (cumulDecksLive > 0 && delta === 0) {
+    warning =
+      "live fame did not change despite decks played — API may be delayed";
   } else if (diffMin != null && diffMin > 90) {
     warning = "snapshot appears >90 min after reset";
   }
@@ -238,6 +257,11 @@ export function buildDebugSnapshotInfo({
     scoreDimanche,
     dailyScores,
     snapshotJ1PrevPrevCumulFame: cumulFamePrevPrevSnapshot,
+    cumulDecksLive,
+    livePlayersWithDecks,
+    livePlayersWithDecksAndNoFameDiff,
+    liveFameDeltaZeroWithDecks:
+      cumulDecksLive > 0 && delta === 0 && hasPrevCumulFame,
     delta,
     diffMin,
     warning,
