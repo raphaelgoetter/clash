@@ -3269,6 +3269,7 @@ function updateDebugPanel(data, mode) {
         <div style="margin:.75rem 0;border-top:1px solid #444"></div>
         <div><strong>snapshot data :</strong> <code>${escHtml(payload.snapshotFileDebug.dataFile)}</code> ${escHtml(payload.snapshotFileDebug.dataSize ?? "—")} bytes</div>
         <div><strong>snapshot data Time :</strong> ${escHtml(payload.snapshotFileDebug.dataLatestSnapshotTime ?? payload.snapshotFileDebug.dataMtime ?? "—")}</div>
+        ${payload.snapshotFileDebug.backupDaysUsed > 0 ? `<div style="margin-top:.75rem;padding:.5rem 0.75rem;background:#031828;color:#9cd7ff;border:1px solid #0b5ea1;border-radius:6px;display:inline-flex;align-items:center;gap:.5rem"><strong style="font-weight:700;">backup days used :</strong><span>${escHtml(payload.snapshotFileDebug.backupDaysUsed)} day(s)</span></div>` : ""}
       `
           : ""
       }

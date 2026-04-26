@@ -201,6 +201,40 @@ function normalizeSnapshots(raw, clanTag = null) {
   return convertLegacySnapshots(raw, clanTag);
 }
 
+function daySnapshotTimestamp(day) {
+  return day?.snapshotTime || day?.snapshotBackupTime || null;
+}
+
+function isBackupDayBetter(primaryDay, backupDay) {
+  if (!isValidSnapshotDay(backupDay)) return false;
+  if (!isValidSnapshotDay(primaryDay)) return true;
+
+  const primaryTs = daySnapshotTimestamp(primaryDay);
+  const backupTs = daySnapshotTimestamp(backupDay);
+  if (!backupTs) return false;
+  if (!primaryTs) return true;
+
+  const primaryMs = Date.parse(primaryTs);
+  const backupMs = Date.parse(backupTs);
+  if (Number.isNaN(primaryMs) || Number.isNaN(backupMs)) return false;
+  return backupMs > primaryMs;
+}
+
+function mergeSnapshotsByDay(primaryWeeks, backupWeeks) {
+  const backupByWeek = new Map((backupWeeks ?? []).map((w) => [w.week, w]));
+  return (primaryWeeks ?? []).map((week) => {
+    const backupWeek = backupByWeek.get(week.week);
+    if (!backupWeek) return week;
+    return {
+      ...week,
+      days: (week.days ?? []).map((day, idx) => {
+        const backupDay = backupWeek.days?.[idx] ?? null;
+        return isBackupDayBetter(day, backupDay) ? backupDay : day;
+      }),
+    };
+  });
+}
+
 export async function loadSnapshots(clanTag) {
   await ensureDirectory(TMP_SNAP_DIR);
   const tmpFile = snapshotFilename(clanTag, true);
@@ -218,56 +252,53 @@ export async function loadSnapshots(clanTag) {
     dataMtime: dataMtimeIso,
   };
 
-  if (tmpMtime > 0 && tmpMtime >= dataMtime) {
+  let tmpSnaps = null;
+  let dataSnaps = null;
+
+  if (tmpMtime > 0) {
     try {
-      const raw = await readJsonFile(tmpFile);
-      console.warn("[snapshot] loadSnapshots using tmp file", debugMeta);
-      return normalizeSnapshots(raw, clanTag);
+      tmpSnaps = normalizeSnapshots(await readJsonFile(tmpFile), clanTag);
     } catch (err) {
-      console.warn(
-        "[snapshot] loadSnapshots tmp file invalid, falling back to data file",
-        { ...debugMeta, error: err.message },
-      );
-      // tmp file invalid or corrupted, fallback to data file below.
+      console.warn("[snapshot] loadSnapshots tmp file invalid", {
+        ...debugMeta,
+        error: err.message,
+      });
     }
   }
 
   if (dataMtime > 0) {
     try {
-      const raw = await readJsonFile(dataFile);
-      const snaps = normalizeSnapshots(raw, clanTag);
-      console.warn("[snapshot] loadSnapshots using data file", debugMeta);
-      try {
-        await ensureDirectory(TMP_SNAP_DIR);
-        await fs.writeFile(tmpFile, JSON.stringify(raw, null, 2));
-      } catch (_) {
-        // ignore, /tmp may be unavailable in some environments
-      }
-      return snaps;
+      dataSnaps = normalizeSnapshots(await readJsonFile(dataFile), clanTag);
     } catch (err) {
-      console.warn(
-        "[snapshot] loadSnapshots data file invalid, falling back to tmp file",
-        { ...debugMeta, error: err.message },
-      );
-      // data file invalid or absent, fallback to tmp if available.
+      console.warn("[snapshot] loadSnapshots data file invalid", {
+        ...debugMeta,
+        error: err.message,
+      });
     }
   }
 
-  if (tmpMtime > 0) {
+  if (tmpSnaps && dataSnaps) {
+    console.warn(
+      "[snapshot] loadSnapshots using tmp file merged with data backup",
+      debugMeta,
+    );
+    return mergeSnapshotsByDay(tmpSnaps, dataSnaps);
+  }
+
+  if (tmpSnaps) {
+    console.warn("[snapshot] loadSnapshots using tmp file", debugMeta);
+    return tmpSnaps;
+  }
+
+  if (dataSnaps) {
+    console.warn("[snapshot] loadSnapshots using data file", debugMeta);
     try {
-      const raw = await readJsonFile(tmpFile);
-      console.warn(
-        "[snapshot] loadSnapshots using tmp file as final fallback",
-        debugMeta,
-      );
-      return normalizeSnapshots(raw, clanTag);
-    } catch (err) {
-      console.warn(
-        "[snapshot] loadSnapshots final tmp fallback invalid, returning empty",
-        { ...debugMeta, error: err.message },
-      );
-      // fallback to empty
+      await ensureDirectory(TMP_SNAP_DIR);
+      await fs.writeFile(tmpFile, JSON.stringify(dataSnaps, null, 2));
+    } catch (_) {
+      // ignore, /tmp may be unavailable in some environments
     }
+    return dataSnaps;
   }
 
   console.warn("[snapshot] loadSnapshots no snapshot file found", debugMeta);
@@ -563,6 +594,23 @@ function fillWeekDays(week, clanTag = null) {
   return week;
 }
 
+function countBackupDaysUsed(primaryWeeks, backupWeeks) {
+  if (!Array.isArray(primaryWeeks) || !Array.isArray(backupWeeks)) return 0;
+  const backupByWeek = new Map((backupWeeks ?? []).map((w) => [w.week, w]));
+  let count = 0;
+  for (const week of primaryWeeks) {
+    const backupWeek = backupByWeek.get(week.week);
+    if (!backupWeek) continue;
+    const days = week.days ?? [];
+    for (let idx = 0; idx < days.length; idx += 1) {
+      const primaryDay = days[idx] ?? null;
+      const backupDay = backupWeek.days?.[idx] ?? null;
+      if (isBackupDayBetter(primaryDay, backupDay)) count += 1;
+    }
+  }
+  return count;
+}
+
 export async function getSnapshotFileDebug(clanTag) {
   await ensureDirectory(TMP_SNAP_DIR);
   const tmpFile = snapshotFilename(clanTag, true);
@@ -575,6 +623,20 @@ export async function getSnapshotFileDebug(clanTag) {
     tmpMtime > 0 ? await readLatestSnapshotTime(tmpFile, clanTag) : null;
   const dataLatestSnapshotTime =
     dataMtime > 0 ? await readLatestSnapshotTime(dataFile, clanTag) : null;
+
+  let backupDaysUsed = 0;
+  if (tmpMtime > 0 && dataMtime > 0) {
+    try {
+      const tmpSnaps = normalizeSnapshots(await readJsonFile(tmpFile), clanTag);
+      const dataSnaps = normalizeSnapshots(
+        await readJsonFile(dataFile),
+        clanTag,
+      );
+      backupDaysUsed = countBackupDaysUsed(tmpSnaps, dataSnaps);
+    } catch (_) {
+      backupDaysUsed = 0;
+    }
+  }
 
   return {
     clanTag,
@@ -596,6 +658,7 @@ export async function getSnapshotFileDebug(clanTag) {
           : tmpMtime > 0
             ? "tmp"
             : "none",
+    backupDaysUsed,
   };
 }
 
