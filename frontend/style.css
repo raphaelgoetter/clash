@@ -468,6 +468,11 @@ code {
 .war-group-external-link {
   color: var(--text-primary);
 }
+
+.war-group-clinched {
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
 .war-group-external-link:hover {
   text-decoration: underline;
 }

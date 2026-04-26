@@ -60,10 +60,15 @@ export function renderRaceGroupCard(data, t, timerHelper) {
   const descEl = container.querySelector("#war-group-description");
   if (descEl) descEl.textContent = t("warGroupDescription");
 
-  // Trier : par projection si GDC active, sinon par last war fame décroissant
+  // Trier : par victoire assurée puis projection en période de GDC, sinon par last war fame décroissant
   const sorted = [...raceGroup].sort((a, b) => {
-    if (isWarPeriod && b.projectedFame != null && a.projectedFame != null) {
-      return b.projectedFame - a.projectedFame;
+    if (isWarPeriod) {
+      const aClinched = a.isClinchedWin ? 1 : 0;
+      const bClinched = b.isClinchedWin ? 1 : 0;
+      if (aClinched !== bClinched) return bClinched - aClinched;
+      if (a.projectedFame != null && b.projectedFame != null) {
+        return b.projectedFame - a.projectedFame;
+      }
     }
     return (b.lastWarFame ?? 0) - (a.lastWarFame ?? 0);
   });
@@ -144,7 +149,10 @@ export function renderRaceGroupCard(data, t, timerHelper) {
         const projRankLabel = clan.projectedRank
           ? ` <span class="war-group-proj-rank">(${t(rankKey) || clan.projectedRank})</span>`
           : "";
-        projectionHtml = `<td class="war-group-projection">${projVal}${projRankLabel}</td>`;
+        const clinchedHtml = clan.isClinchedWin
+          ? ` <span class="war-group-clinched" title="${t("warGroupClinchedWin")}">✅</span>`
+          : "";
+        projectionHtml = `<td class="war-group-projection">${projVal}${clinchedHtml}${projRankLabel}</td>`;
       }
 
       return `<tr class="war-group-row${isOwn ? " war-group-own" : ""}">

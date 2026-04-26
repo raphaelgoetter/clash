@@ -205,5 +205,6 @@
   "warGroupRankSuffix": "clst",
   "warGroupTargetTooltip": "Moyenne quotidienne semaine passée : {{target}}",
   "warGroupDecksTooltip": "{{decks}} decks / objectif de {{target}}",
+  "warGroupClinchedWin": "Victoire mathématiquement assurée",
   "warDayRemaining": "(reste {{time}})"
 }
