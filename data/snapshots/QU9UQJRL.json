@@ -341,13 +341,18 @@
           "start": "2026-04-26T09:49:00.000Z",
           "end": "2026-04-27T09:48:59.999Z"
         },
-        "snapshotTime": null,
+        "snapshotTime": "2026-04-26T12:14:48.786Z",
         "snapshotBackupTime": "2026-04-26T10:16:44.612Z",
         "decks": {
           "#88JY2CG8J": 4,
           "#RRCRJ8QJJ": 2
         },
-        "hourlyCumul": [],
+        "hourlyCumul": [
+          {
+            "takenAt": "2026-04-26T12:14:32.238Z",
+            "total": 6
+          }
+        ],
         "_cumulFame": {
           "#JC28YVLPG": 0,
           "#VRYY2Q20P": 0,
