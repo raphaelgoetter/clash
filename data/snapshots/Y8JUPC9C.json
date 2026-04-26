@@ -479,7 +479,7 @@
           "start": "2026-04-26T09:52:00.000Z",
           "end": "2026-04-27T09:51:59.999Z"
         },
-        "snapshotTime": "2026-04-26T17:14:42.374Z",
+        "snapshotTime": "2026-04-26T18:14:34.244Z",
         "snapshotBackupTime": "2026-04-26T10:16:43.570Z",
         "decks": {
           "#80CCLY20L": 4,
@@ -502,10 +502,11 @@
           "#VVJ8RURL9": 4,
           "#YGLL08Y8C": 4,
           "#YRYPUR822": 4,
+          "#28PQVJ2V": 3,
           "#U008V0PQ8": 3,
-          "#28PQVJ2V": 2,
           "#9VQ0J29Y": 1,
-          "#G2VVUJLLQ": 1
+          "#G2VVUJLLQ": 1,
+          "#P9R8Y90P8": 1
         },
         "hourlyCumul": [
           {
@@ -531,6 +532,10 @@
           {
             "takenAt": "2026-04-26T17:14:37.898Z",
             "total": 87
+          },
+          {
+            "takenAt": "2026-04-26T18:14:28.754Z",
+            "total": 89
           }
         ],
         "_cumulFame": {
@@ -565,7 +570,7 @@
           "#2CL028C80": 1800,
           "#YRYPUR822": 2400,
           "#80CCLY20L": 2500,
-          "#P9R8Y90P8": 1800,
+          "#P9R8Y90P8": 1900,
           "#88QP9CJU": 1850,
           "#2902YQRQL": 1900,
           "#8V98QYY8V": 1900,
@@ -577,7 +582,7 @@
           "#82URJC8CR": 2650,
           "#GVGVR0J2U": 2850,
           "#U008V0PQ8": 2700,
-          "#28PQVJ2V": 2400,
+          "#28PQVJ2V": 2500,
           "#GGRLYR8PL": 2750,
           "#8P29RRU2": 2100,
           "#G9LPGQUG": 2700,
@@ -626,7 +631,7 @@
           "#2CL028C80": 12,
           "#YRYPUR822": 16,
           "#80CCLY20L": 16,
-          "#P9R8Y90P8": 11,
+          "#P9R8Y90P8": 12,
           "#88QP9CJU": 12,
           "#2902YQRQL": 12,
           "#8V98QYY8V": 12,
@@ -638,7 +643,7 @@
           "#82URJC8CR": 15,
           "#GVGVR0J2U": 16,
           "#U008V0PQ8": 15,
-          "#28PQVJ2V": 14,
+          "#28PQVJ2V": 15,
           "#GGRLYR8PL": 16,
           "#8P29RRU2": 12,
           "#G9LPGQUG": 16,
@@ -654,7 +659,7 @@
           "#8QL2J8PQ": 12,
           "#GR9G9ULL": 0
         },
-        "snapshotCount": 87
+        "snapshotCount": 89
       }
     ]
   }

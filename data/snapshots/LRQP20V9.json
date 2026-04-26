@@ -493,20 +493,24 @@
           "start": "2026-04-26T09:54:00.000Z",
           "end": "2026-04-27T09:53:59.999Z"
         },
-        "snapshotTime": "2026-04-26T17:14:48.410Z",
+        "snapshotTime": "2026-04-26T18:14:39.855Z",
         "snapshotBackupTime": "2026-04-26T10:16:44.255Z",
         "decks": {
+          "#2U9QL8Q89": 4,
           "#2YLYG9V92": 4,
           "#82JPJ9J98": 4,
           "#8QVRJYVYU": 4,
+          "#8UL8JRCJ": 4,
           "#8VQLJLR0": 4,
           "#99VY0090": 4,
           "#9CYUGPQ0C": 4,
           "#9VQYC9GJQ": 4,
+          "#CGJP0YYUJ": 4,
           "#GC20UCLL": 4,
           "#GGVQJLG9": 4,
           "#JCCQY0U9G": 4,
           "#LUGP2RYY": 4,
+          "#RJJ99Y9J": 4,
           "#RJY2R282V": 4,
           "#UVV8CULJV": 4,
           "#V0VLJQCJU": 4,
@@ -515,9 +519,7 @@
           "#QVG90PQVG": 3,
           "#VQJ0Y8PLV": 3,
           "#YRGJGR8R": 3,
-          "#8UL8JRCJ": 1,
           "#8Y90VQYP9": 1,
-          "#CGJP0YYUJ": 1,
           "#GLV9Q2P09": 1
         },
         "hourlyCumul": [
@@ -544,6 +546,10 @@
           {
             "takenAt": "2026-04-26T17:14:38.541Z",
             "total": 75
+          },
+          {
+            "takenAt": "2026-04-26T18:14:29.529Z",
+            "total": 89
           }
         ],
         "_cumulFame": {
@@ -656,10 +662,10 @@
           "#98UULQY8": 12,
           "#PRGCCRUJP": 12,
           "#RJY2R282V": 16,
-          "#2U9QL8Q89": 12,
+          "#2U9QL8Q89": 16,
           "#822GLVL00": 12,
           "#Y9P9GGL89": 11,
-          "#RJJ99Y9J": 12,
+          "#RJJ99Y9J": 16,
           "#8Y90VQYP9": 13,
           "#YRGJGR8R": 15,
           "#G2R0VRYYQ": 12,
@@ -668,7 +674,7 @@
           "#8R0LR8GYC": 12,
           "#VQJ0Y8PLV": 15,
           "#2YP2V2G0R": 12,
-          "#8UL8JRCJ": 13,
+          "#8UL8JRCJ": 16,
           "#LUGP2RYY": 16,
           "#82UPUGYP": 12,
           "#L2JC8P0G2": 15,
@@ -680,10 +686,10 @@
           "#UP9YJV080": 12,
           "#VGJ9LL8VC": 12,
           "#U9PP0CJRL": 12,
-          "#CGJP0YYUJ": 13,
+          "#CGJP0YYUJ": 16,
           "#829GLP0CV": 12
         },
-        "snapshotCount": 75
+        "snapshotCount": 89
       }
     ]
   }
