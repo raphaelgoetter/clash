@@ -2082,7 +2082,10 @@ export default async function handler(req, res) {
             const decks = `<:cards:1493711279121104926> ${clan.decksToday != null ? clan.decksToday : "?"} decks`;
             const eff = `<:cible:1493711597682557019> ${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(1) : "?"} pts/d`;
             const proj = `<:lucky:1495168368611950632> Projection: **${clan.projectedFame != null ? fmt(Math.round(clan.projectedFame)) : "?"}**`;
-            const clinched = clan.isClinchedWin
+            const shouldShowClinched =
+              clan.isClinchedWin ||
+              (isOwn && clan.projectedFame === 0 && clan.decksToday > 0);
+            const clinched = shouldShowClinched
               ? "\n✅ Victoire mathématiquement assurée"
               : "";
             line2 = `${decks} · ${eff} · ${proj}${clinched}`;
