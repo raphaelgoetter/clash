@@ -149,7 +149,10 @@ export function renderRaceGroupCard(data, t, timerHelper) {
         const projRankLabel = clan.projectedRank
           ? ` <span class="war-group-proj-rank">(${t(rankKey) || clan.projectedRank})</span>`
           : "";
-        const clinchedHtml = clan.isClinchedWin
+        const shouldShowClinched =
+          clan.isClinchedWin ||
+          (isOwn && clan.projectedFame === 0 && clan.decksToday > 0);
+        const clinchedHtml = shouldShowClinched
           ? ` <span class="war-group-clinched" title="${t("warGroupClinchedWin")}">${t("warGroupClinchedLabel")}</span>`
           : "";
         projectionHtml = `<td class="war-group-projection">${projVal}${clinchedHtml}${projRankLabel}</td>`;

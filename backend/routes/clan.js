@@ -2393,6 +2393,12 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                     clanScore = 0;
                     isClinchedWin = true;
                   }
+
+                  if (ptsPerDeck === 0 && decksToday > 0 && !isClinchedWin) {
+                    // Quand la projection est verrouillée à zéro sur le clan propre,
+                    // cela signifie que la journée n'ajoute aucun point.
+                    isClinchedWin = true;
+                  }
                 } else {
                   // Rivaux : estimation basée sur l'historique des GDC précédentes.
                   const rivalPpd = rivalAvgPtsPerDeckByTag[cTagNorm];
