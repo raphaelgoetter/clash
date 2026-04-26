@@ -241,7 +241,7 @@
           "start": "2026-04-25T09:52:00.000Z",
           "end": "2026-04-26T09:51:59.999Z"
         },
-        "snapshotTime": "2026-04-26T07:32:06.692Z",
+        "snapshotTime": "2026-04-26T08:26:42.742Z",
         "snapshotBackupTime": "2026-04-24T23:14:38.216Z",
         "decks": {
           "#28PQVJ2V": 4,
@@ -257,7 +257,9 @@
           "#88QP9CJU": 4,
           "#8P29RRU2": 4,
           "#8PP9JQCLY": 4,
+          "#8QL2J8PQ": 4,
           "#8V98QYY8V": 4,
+          "#99CRC8PP": 4,
           "#9CQC0YUR8": 4,
           "#9GG9GRC0G": 4,
           "#9VQ0J29Y": 4,
@@ -284,6 +286,7 @@
           "#UJ89GUUUY": 4,
           "#UY00GJG2": 4,
           "#UYP0YCQ9": 4,
+          "#VQP8PU2V": 4,
           "#VVJ8RURL9": 4,
           "#YGLL08Y8C": 4,
           "#YRYPUR822": 4,
@@ -338,6 +341,10 @@
           {
             "takenAt": "2026-04-26T07:32:02.287Z",
             "total": 178
+          },
+          {
+            "takenAt": "2026-04-26T08:26:38.565Z",
+            "total": 190
           }
         ],
         "_cumulFame": {
@@ -348,14 +355,14 @@
           "#QGVJ2U0QJ": 0,
           "#UGU9JG2QC": 0,
           "#8CCCQYV99": 400,
-          "#VQP8PU2V": 1050,
+          "#VQP8PU2V": 1550,
           "#J8LUJQGY0": 500,
           "#2GPUQY9P9": 1600,
           "#CC29JU800": 1200,
           "#P9R8Y90P8": 1800,
           "#2CL028C80": 1300,
           "#LCQ2J0VGC": 1350,
-          "#8QL2J8PQ": 1600,
+          "#8QL2J8PQ": 2500,
           "#G9LPGQUG": 2150,
           "#9YQ0P0L0": 2000,
           "#2R9QUYQ2C": 1300,
@@ -385,7 +392,7 @@
           "#U008V0PQ8": 2100,
           "#28PQVJ2V": 2100,
           "#8P29RRU2": 2100,
-          "#99CRC8PP": 1400,
+          "#99CRC8PP": 1900,
           "#80CCLY20L": 1800,
           "#GVGVR0J2U": 2050,
           "#82URJC8CR": 2050,
@@ -408,14 +415,14 @@
           "#QGVJ2U0QJ": 0,
           "#UGU9JG2QC": 0,
           "#8CCCQYV99": 4,
-          "#VQP8PU2V": 8,
+          "#VQP8PU2V": 12,
           "#J8LUJQGY0": 4,
           "#2GPUQY9P9": 12,
           "#CC29JU800": 8,
           "#P9R8Y90P8": 11,
           "#2CL028C80": 8,
           "#LCQ2J0VGC": 8,
-          "#8QL2J8PQ": 8,
+          "#8QL2J8PQ": 12,
           "#G9LPGQUG": 12,
           "#9YQ0P0L0": 12,
           "#2R9QUYQ2C": 8,
@@ -445,7 +452,7 @@
           "#U008V0PQ8": 12,
           "#28PQVJ2V": 12,
           "#8P29RRU2": 12,
-          "#99CRC8PP": 8,
+          "#99CRC8PP": 12,
           "#80CCLY20L": 12,
           "#GVGVR0J2U": 12,
           "#82URJC8CR": 11,
@@ -459,7 +466,7 @@
           "#UYP0YCQ9": 12,
           "#CYRGPVGVG": 12
         },
-        "snapshotCount": 178
+        "snapshotCount": 190
       },
       {
         "warDay": "sunday",
