@@ -92,10 +92,14 @@ export function buildDebugSnapshotInfo({
       0,
     );
 
+  const hasFame = (fameMap) =>
+    fameMap &&
+    Object.values(fameMap).some((value) => typeof value === "number");
+
   const computeDailyScore = (daySnap, prevDaySnap) => {
-    if (!daySnap?._cumulFame) return null;
+    if (!hasFame(daySnap?._cumulFame)) return null;
     const currentSummed = sumFame(daySnap._cumulFame);
-    if (!prevDaySnap?._cumulFame) return currentSummed;
+    if (!hasFame(prevDaySnap?._cumulFame)) return currentSummed;
     const prevSummed = sumFame(prevDaySnap._cumulFame);
     return Math.max(0, currentSummed - prevSummed);
   };
@@ -181,7 +185,7 @@ export function buildDebugSnapshotInfo({
     warning = "missing valid J-1 snapshot";
   } else if (!hasPrevCumulFame) {
     warning = "missing J-1 cumulFame (snapshot decks available)";
-  } else if (delta <= 0) {
+  } else if (delta < 0) {
     warning = "snapshot suspect or corrupted";
   } else if (diffMin != null && diffMin > 90) {
     warning = "snapshot appears >90 min after reset";

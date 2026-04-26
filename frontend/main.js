@@ -3232,6 +3232,10 @@ function updateDebugPanel(data, mode) {
     clanName: data?.clan?.name ?? null,
     clanTag: data?.clan?.tag ?? null,
     snapshotFileDebug: data?.snapshotFileDebug ?? null,
+    debugSnapshotInfo:
+      data?.debugSnapshotInfo ??
+      data?.clanWarSummary?.debugSnapshotInfo ??
+      null,
   };
 
   const sourceSelected = payload.snapshotFileDebug?.selectedSource;
