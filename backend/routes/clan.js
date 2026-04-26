@@ -2409,7 +2409,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               prevWarFame: isOwn
                 ? ownPrevWarFame
                 : (rivalPrevWarByTag[cTagNorm] ?? null),
-              // Ajout debug-panel
+              // Ajout debug-panel.
+              // `debugSnapshotInfo` contient désormais les scores journaliers par jour de guerre :
+              //   scoreJeudi, scoreVendredi, scoreSamedi, scoreDimanche
+              // et un objet structuré dailyScores { jeudi, vendredi, samedi, dimanche }.
               debugSnapshotInfo: isOwn ? debugSnapshotInfo : undefined,
               lastWarFame: isOwn
                 ? ownLastWarFame

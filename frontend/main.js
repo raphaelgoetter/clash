@@ -3178,6 +3178,10 @@ function updateDebugPanel(data, mode) {
         <div>🎯 <b>Cumul points live</b> : <b>${info.cumulFameLive}</b></div>
         <div>📦 <b>Cumul snapshot J-1</b> : <b>${info.cumulFameSnapshot ?? "—"}</b></div>
         ${info.snapshotCount != null ? `<div>📊 <b>Decks snapshot J-1</b> : <b>${info.snapshotCount}</b></div>` : ""}
+        <div>🟡 <b>scoreJeudi</b> : <b>${info.scoreJeudi ?? "—"}</b></div>
+        <div>🟡 <b>scoreVendredi</b> : <b>${info.scoreVendredi ?? "—"}</b></div>
+        <div>🟡 <b>scoreSamedi</b> : <b>${info.scoreSamedi ?? "—"}</b></div>
+        <div>🟡 <b>scoreDimanche</b> : <b>${info.scoreDimanche ?? "—"}</b></div>
         <div>🧮 <b>Delta (live - J-1)</b> : <b>${info.delta ?? "—"}</b></div>
         <div>📏 <b>Écart snapshot/reset</b> : <b>${info.diffMin ?? "—"} min</b></div>
         ${info.warning ? `<div style='color:#ffb300'><b>${escHtml(info.warning)}</b></div>` : ""}
@@ -3267,6 +3271,7 @@ function updateDebugPanel(data, mode) {
         <div><strong>snapshot Source :</strong> ${escHtml(payload.snapshotFileDebug.selectedSource)} <code>${escHtml(sourceFile)}</code> ${escHtml(sourceSize ?? "—")} bytes</div>
         <div><strong>snapshot file latest time :</strong> ${escHtml(sourceTime ?? "—")}</div>
         <div><strong>snapshot J-1 source time :</strong> ${escHtml(payload.debugSnapshotInfo?.snapshotTime ?? payload.debugSnapshotInfo?.snapshotBackupTime ?? "—")}</div>
+        <div><strong>snapshot J-1 score :</strong> ${escHtml(payload.debugSnapshotInfo?.snapshotJ1DailyFame != null ? payload.debugSnapshotInfo.snapshotJ1DailyFame : "—")}</div>
         <div style="margin:.75rem 0;border-top:1px solid #444"></div>
         <div><strong>snapshot data :</strong> <code>${escHtml(payload.snapshotFileDebug.dataFile)}</code> ${escHtml(payload.snapshotFileDebug.dataSize ?? "—")} bytes</div>
         <div><strong>snapshot data Time :</strong> ${escHtml(payload.snapshotFileDebug.dataLatestSnapshotTime ?? payload.snapshotFileDebug.dataMtime ?? "—")}</div>

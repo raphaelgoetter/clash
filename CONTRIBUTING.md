@@ -121,6 +121,19 @@ This launches both backend (**<http://localhost:3000>**) and frontend (**<http:/
 
 Tags should include the `#` prefix (URL‑encoded as `%23`).
 
+### `debugSnapshotInfo` / daily score fields
+
+- `debugSnapshotInfo` est ajouté à la réponse de `/api/clan/:tag/analysis` pour le clan propre lorsqu’une analyse de guerre est disponible.
+- Il contient désormais des scores journaliers explicites :
+  - `scoreJeudi`
+  - `scoreVendredi`
+  - `scoreSamedi`
+  - `scoreDimanche`
+- Il expose aussi un objet structuré :
+  - `dailyScores: { jeudi, vendredi, samedi, dimanche }`
+- Utile pour les scripts de résumé et les commandes de debug qui doivent connaître le score de chaque journée GDC terminée.
+- Autres champs disponibles : `snapshotJ1DailyFame`, `snapshotTime`, `snapshotBackupTime`, `delta`, `diffMin`, `warning`.
+
 ---
 
 ## 🧮 Score formulas

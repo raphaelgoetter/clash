@@ -5,6 +5,16 @@
  * Construit le bloc détaillé pour le debug-panel frontend.
  * @param {Object} params - Tous les objets nécessaires à l'analyse (voir clan.js)
  * @returns {Object} debugSnapshotInfo
+ *   - scoreJeudi: number|null
+ *   - scoreVendredi: number|null
+ *   - scoreSamedi: number|null
+ *   - scoreDimanche: number|null
+ *   - dailyScores: {
+ *       jeudi: number|null,
+ *       vendredi: number|null,
+ *       samedi: number|null,
+ *       dimanche: number|null,
+ *     }
  */
 export function buildDebugSnapshotInfo({
   weekSnaps,
@@ -60,7 +70,38 @@ export function buildDebugSnapshotInfo({
   }
   if (!prevSnap) return null;
 
+  let prevPrevSnap = weekSnaps[warDayIndex - 2] ?? null;
+  if (!hasSnapshotData(prevPrevSnap)) {
+    for (let i = warDayIndex - 3; i >= 0; i--) {
+      if (hasSnapshotData(weekSnaps[i])) {
+        prevPrevSnap = weekSnaps[i];
+        break;
+      }
+    }
+  }
+  if (
+    !hasSnapshotData(prevPrevSnap) &&
+    hasSnapshotData(fallbackWarDays?.[warDayIndex - 2])
+  ) {
+    prevPrevSnap = fallbackWarDays[warDayIndex - 2];
+  }
+
+  const sumFame = (fameMap) =>
+    Object.values(fameMap ?? {}).reduce(
+      (sum, value) => sum + (typeof value === "number" ? value : 0),
+      0,
+    );
+
+  const computeDailyScore = (daySnap, prevDaySnap) => {
+    if (!daySnap?._cumulFame) return null;
+    const currentSummed = sumFame(daySnap._cumulFame);
+    if (!prevDaySnap?._cumulFame) return currentSummed;
+    const prevSummed = sumFame(prevDaySnap._cumulFame);
+    return Math.max(0, currentSummed - prevSummed);
+  };
+
   const prevCumulFame = prevSnap._cumulFame ?? {};
+  const prevPrevCumulFame = prevPrevSnap?._cumulFame ?? {};
   const debugDelta = [];
   const cumulFameLive = allParts
     .filter((p) => currentMemberTags.has(p.tag))
@@ -80,11 +121,29 @@ export function buildDebugSnapshotInfo({
     (sum, value) => sum + (typeof value === "number" ? value : 0),
     0,
   );
+  const cumulFamePrevPrevSnapshot = Object.values(prevPrevCumulFame).reduce(
+    (sum, value) => sum + (typeof value === "number" ? value : 0),
+    0,
+  );
   const hasPrevCumulFame = Object.keys(prevCumulFame).length > 0;
   const cumulFameSnapshotValid = hasPrevCumulFame ? cumulFameSnapshot : null;
   const delta = hasPrevCumulFame
     ? cumulFameLive - cumulFameSnapshotValid
     : null;
+  const scoreJeudi = computeDailyScore(weekSnaps[0], null);
+  const scoreVendredi = computeDailyScore(weekSnaps[1], weekSnaps[0]);
+  const scoreSamedi = computeDailyScore(weekSnaps[2], weekSnaps[1]);
+  const scoreDimanche = computeDailyScore(weekSnaps[3], weekSnaps[2]);
+  const dailyScores = {
+    jeudi: scoreJeudi,
+    vendredi: scoreVendredi,
+    samedi: scoreSamedi,
+    dimanche: scoreDimanche,
+  };
+  const snapshotJ1DailyFame =
+    hasPrevCumulFame && Object.keys(prevPrevCumulFame).length > 0
+      ? Math.max(0, cumulFameSnapshot - cumulFamePrevPrevSnapshot)
+      : null;
   const snapshotTime =
     prevSnap.snapshotTime ||
     prevSnap.snapshotBackupTime ||
@@ -168,6 +227,13 @@ export function buildDebugSnapshotInfo({
     snapshotBackupTime,
     cumulFameLive,
     cumulFameSnapshot: cumulFameSnapshotValid,
+    snapshotJ1DailyFame,
+    scoreJeudi,
+    scoreVendredi,
+    scoreSamedi,
+    scoreDimanche,
+    dailyScores,
+    snapshotJ1PrevPrevCumulFame: cumulFamePrevPrevSnapshot,
     delta,
     diffMin,
     warning,

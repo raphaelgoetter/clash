@@ -37,14 +37,16 @@ Les fonctions Vercel s'exécutent dans un environnement **read-only** sauf pour 
 | `battleLogUtils.js`  | `filterWarBattles`, `categorizeBattleLog`, `expandDuelRounds`, `isWarWin/Loss`, `buildDailyActivity`                                  |
 | `warScoring.js`      | `computeWarScore`, `computeWarReliabilityFallback`, `scoreTotalDonations`, `estimateWinsFromFame`                                     |
 | `warHistory.js`      | `buildWarHistory`, `buildFamilyWarHistory` (avec cache course)                                                                        |
-| `playerAnalysis.js`  | `analyzePlayer`, `getPlayerAnalysis`, `buildCurrentWarDays`, `computeIsNewPlayer`, `computeMemberReliability`                         |
-| `clashApi.js`        | Wrappers HTTP vers l'API Clash Royale                                                                                                 |
-| `cache.js`           | Cache mémoire générique (`getOrSet`, `invalidate`)                                                                                    |
-| `clanCache.js`       | Lecture/écriture du cache clan persistant (JSON sur disque)                                                                           |
-| `snapshot.js`        | Snapshots de decksUsed quotidiens (`/tmp/clash-snapshots/` en runtime + `data/snapshots/` persistant)                                 |
-| `discordLinks.js`    | Mapping tag joueur → Discord ID (GitHub Gist + fallback local)                                                                        |
-| `topplayers.js`      | `computeTopPlayers` — classement de la famille par points                                                                             |
-| `uncomplete.js`      | `computeUncomplete` — liste des joueurs avec < 16 decks                                                                               |
+
+**Note** : `backend/routes/clan.js` expose dans la réponse `debugSnapshotInfo` pour le clan propre. Ce bloc contient désormais les scores journaliers par jour de guerre (`scoreJeudi`, `scoreVendredi`, `scoreSamedi`, `scoreDimanche`) et `dailyScores` pour faciliter les scripts et la validation IA.
+| `playerAnalysis.js` | `analyzePlayer`, `getPlayerAnalysis`, `buildCurrentWarDays`, `computeIsNewPlayer`, `computeMemberReliability` |
+| `clashApi.js` | Wrappers HTTP vers l'API Clash Royale |
+| `cache.js` | Cache mémoire générique (`getOrSet`, `invalidate`) |
+| `clanCache.js` | Lecture/écriture du cache clan persistant (JSON sur disque) |
+| `snapshot.js` | Snapshots de decksUsed quotidiens (`/tmp/clash-snapshots/` en runtime + `data/snapshots/` persistant) |
+| `discordLinks.js` | Mapping tag joueur → Discord ID (GitHub Gist + fallback local) |
+| `topplayers.js` | `computeTopPlayers` — classement de la famille par points |
+| `uncomplete.js` | `computeUncomplete` — liste des joueurs avec < 16 decks |
 
 ## Semaine / Saison Clash Royale — source de vérité
 
