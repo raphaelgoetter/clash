@@ -3176,7 +3176,6 @@ function updateDebugPanel(data, mode) {
         <div>⏰ <b>snapshotTime</b> : <code>${escHtml(info.snapshotTime || "—")}</code></div>
         <div>⏰ <b>snapshotBackupTime</b> : <code>${snapshotBackupTimeLabel}</code></div>
         <div>🎯 <b>Cumul points live effectif</b> : <b>${info.effectiveCumulFameLive ?? info.cumulFameLive}</b></div>
-        <div>ℹ️ <b>source live</b> : <b>${info.cumulFameLiveSource ?? "participantsSum"}</b></div>
         <div>ℹ️ <b>raw clan fame total</b> : <b>${info.rawClanFameTotal ?? "—"}</b></div>
         <div>ℹ️ <b>participants fame sum</b> : <b>${info.cumulFameLive ?? "—"}</b></div>
         <div>ℹ️ <b>diff total - participants</b> : <b>${info.clanFameTotalDiff ?? "—"}</b></div>
@@ -3190,19 +3189,7 @@ function updateDebugPanel(data, mode) {
         <div>🧮 <b>Delta (live - J-1)</b> : <b>${info.delta ?? "—"}</b></div>
         <div>👥 <b>Joueurs live avec decks</b> : <b>${info.livePlayersWithDecks ?? "—"}</b></div>
         <div>⚠️ <b>Joueurs avec decks sans variation de fame</b> : <b>${info.livePlayersWithDecksAndNoFameDiff ?? "—"}</b></div>
-        ${
-          info.livePlayersWithDecksAndNoFameDiff > 0
-            ? `<div style="margin:.5rem 0 0 0;padding:.5rem 0 0 1rem;border-left:2px solid #ffb300"><strong>Players with decks but no fame diff:</strong><ul style="margin:.25rem 0 0 0;padding-left:1rem;">${info.debugDelta
-                .filter((d) => d.decksUsedToday > 0 && d.delta === 0)
-                .map(
-                  (d) =>
-                    `<li>${escHtml(d.tag)} ${escHtml(d.name)} — decks:${d.decksUsedToday} fame:${d.live} prev:${d.prev}</li>`,
-                )
-                .join("")}</ul></div>`
-            : ""
-        }
         <div>📏 <b>Écart snapshot/reset</b> : <b>${info.diffMin ?? "—"} min</b></div>
-        ${info.liveFameDeltaZeroWithDecks ? `<div style='color:#ffb300'><b>Live fame seems delayed: decks live changed but fame stayed equal to J-1.</b></div>` : ""}
         ${info.warning ? `<div style='color:#ffb300'><b>${escHtml(info.warning)}</b></div>` : ""}
       </div>
     `;

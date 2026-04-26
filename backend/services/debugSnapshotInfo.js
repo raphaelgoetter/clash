@@ -233,7 +233,7 @@ export function buildDebugSnapshotInfo({
     warning = "snapshot suspect or corrupted";
   } else if (cumulDecksLive > 0 && delta === 0) {
     warning =
-      "live fame did not change despite decks played — live data may be inconsistent";
+      "Points non comptabilisés aujourd'hui : GDC déjà gagnée prématurément";
   } else if (diffMin != null && diffMin > 90) {
     warning = "snapshot appears >90 min after reset";
   }
