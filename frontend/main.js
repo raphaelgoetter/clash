@@ -3241,7 +3241,7 @@ function updateDebugPanel(data, mode) {
       : payload.snapshotFileDebug?.dataSize;
   const sourceTime =
     sourceSelected === "tmp"
-      ? payload.snapshotFileDebug?.tmpMtime
+      ? payload.snapshotFileDebug?.tmpLatestSnapshotTime
       : (payload.snapshotFileDebug?.dataLatestSnapshotTime ??
         payload.snapshotFileDebug?.dataMtime);
 
