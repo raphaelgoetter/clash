@@ -3265,7 +3265,8 @@ function updateDebugPanel(data, mode) {
           ? `
         <div style="margin:1rem 0;border-top:1px solid #444"></div>
         <div><strong>snapshot Source :</strong> ${escHtml(payload.snapshotFileDebug.selectedSource)} <code>${escHtml(sourceFile)}</code> ${escHtml(sourceSize ?? "—")} bytes</div>
-        <div><strong>snapshot Source Time :</strong> ${escHtml(sourceTime ?? "—")}</div>
+        <div><strong>snapshot file latest time :</strong> ${escHtml(sourceTime ?? "—")}</div>
+        <div><strong>snapshot J-1 source time :</strong> ${escHtml(payload.debugSnapshotInfo?.snapshotTime ?? payload.debugSnapshotInfo?.snapshotBackupTime ?? "—")}</div>
         <div style="margin:.75rem 0;border-top:1px solid #444"></div>
         <div><strong>snapshot data :</strong> <code>${escHtml(payload.snapshotFileDebug.dataFile)}</code> ${escHtml(payload.snapshotFileDebug.dataSize ?? "—")} bytes</div>
         <div><strong>snapshot data Time :</strong> ${escHtml(payload.snapshotFileDebug.dataLatestSnapshotTime ?? payload.snapshotFileDebug.dataMtime ?? "—")}</div>
