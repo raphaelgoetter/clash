@@ -434,6 +434,13 @@ code {
   width: 90px;
 }
 
+.war-group-clinched {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 0.85rem;
+  color: var(--green);
+}
+
 .war-group-decks-now {
   padding: 8px;
   text-align: center;

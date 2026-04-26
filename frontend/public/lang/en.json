@@ -206,5 +206,6 @@
   "warGroupTargetTooltip": "Daily average last week: {{target}}",
   "warGroupDecksTooltip": "{{decks}} decks / target of {{target}}",
   "warGroupClinchedWin": "Mathematically guaranteed win",
+  "warGroupClinchedLabel": "✅ Clinched",
   "warDayRemaining": "({{time}} left)"
 }
