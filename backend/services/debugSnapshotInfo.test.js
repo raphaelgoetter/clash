@@ -60,4 +60,32 @@ assert.strictEqual(
   "snapshotJ1DailyFame doit refléter J-1 quand warDayIndex=3",
 );
 
+const infoNormalizedTags = buildDebugSnapshotInfo({
+  weekSnaps,
+  warDayIndex: 3,
+  currentMemberTags: new Set(["A", "b"]),
+  allParts: [
+    { tag: "a", name: "Alice", fame: 120 },
+    { tag: "#B", name: "Bob", fame: 40 },
+  ],
+  warSnapshotDays: [15, 35, 50, 80],
+  clanTag: "TEST",
+  fallbackWarDays: [],
+});
+assert.strictEqual(
+  infoNormalizedTags.cumulFameLive,
+  160,
+  "cumulFameLive doit normaliser les tags sans # et avec majuscules",
+);
+assert.strictEqual(
+  infoNormalizedTags.debugDelta[0].prev,
+  80,
+  "prev cumul fame lookup doit fonctionner avec tags normalisés et J-1",
+);
+assert.strictEqual(
+  infoNormalizedTags.debugDelta[1].prev,
+  20,
+  "prev cumul fame lookup doit fonctionner avec tags normalisés et J-1",
+);
+
 console.log("All debugSnapshotInfo tests passed.");

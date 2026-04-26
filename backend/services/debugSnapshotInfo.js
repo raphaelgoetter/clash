@@ -104,22 +104,40 @@ export function buildDebugSnapshotInfo({
     return Math.max(0, currentSummed - prevSummed);
   };
 
+  const normalizeTag = (tag) =>
+    `#${String(tag ?? "")
+      .replace(/^#/, "")
+      .toUpperCase()}`;
+
   const normalizedMemberTags = new Set(
-    Array.from(currentMemberTags || []).map((tag) => String(tag).toUpperCase()),
+    Array.from(currentMemberTags || []).map((tag) => normalizeTag(tag)),
   );
   const prevCumulFame = prevSnap._cumulFame ?? {};
   const prevPrevCumulFame = prevPrevSnap?._cumulFame ?? {};
+  const prevCumulFameByTag = new Map(
+    Object.entries(prevCumulFame).map(([tag, value]) => [
+      normalizeTag(tag),
+      value,
+    ]),
+  );
+  const prevPrevCumulFameByTag = new Map(
+    Object.entries(prevPrevCumulFame).map(([tag, value]) => [
+      normalizeTag(tag),
+      value,
+    ]),
+  );
   const debugDelta = [];
   let cumulDecksLive = 0;
   const cumulFameLive = allParts
-    .filter((p) => normalizedMemberTags.has(String(p.tag).toUpperCase()))
+    .filter((p) => normalizedMemberTags.has(normalizeTag(p.tag)))
     .reduce((sum, p) => {
       const live = p.fame ?? 0;
       const decksUsedToday = Number.isFinite(p.decksUsedToday)
         ? p.decksUsedToday
         : 0;
       cumulDecksLive += decksUsedToday;
-      const prev = prevCumulFame[p.tag] ?? 0;
+      const key = normalizeTag(p.tag);
+      const prev = prevCumulFameByTag.get(key) ?? 0;
       const delta = live - prev;
       debugDelta.push({
         tag: p.tag,
@@ -205,7 +223,7 @@ export function buildDebugSnapshotInfo({
     warning = "snapshot suspect or corrupted";
   } else if (cumulDecksLive > 0 && delta === 0) {
     warning =
-      "live fame did not change despite decks played — API may be delayed";
+      "live fame did not change despite decks played — live data may be inconsistent";
   } else if (diffMin != null && diffMin > 90) {
     warning = "snapshot appears >90 min after reset";
   }

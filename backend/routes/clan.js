@@ -844,10 +844,15 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     });
   }
 
+  const normalizeTag = (tag) =>
+    `#${String(tag ?? "")
+      .replace(/^#/, "")
+      .toUpperCase()}`;
+
   // Remove old members who are no longer in clan.
-  const currentMemberTags = new Set(members.map((m) => m.tag));
+  const currentMemberTags = new Set(members.map((m) => normalizeTag(m.tag)));
   Object.keys(membersRaw).forEach((tag) => {
-    if (!currentMemberTags.has(tag)) delete membersRaw[tag];
+    if (!currentMemberTags.has(normalizeTag(tag))) delete membersRaw[tag];
   });
 
   // detect API rate limiting in member fetches
@@ -1606,7 +1611,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       // (150 joueurs). On filtre sur les membres actuels du clan uniquement.
       const allParticipants = currentRace?.clan?.participants ?? [];
       const participants = allParticipants.filter((p) =>
-        currentMemberTags.has(p.tag),
+        currentMemberTags.has(normalizeTag(p.tag)),
       );
       // Total fiable depuis currentRace (cumul hebdo par participant)
       let totalDecksUsed = participants.reduce(
@@ -2270,7 +2275,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
               // decksToday : exclure les ex-membres pour cohérence avec clanWarSummary
               const activePartsToday = isOwn
-                ? allPartsInner.filter((p) => currentMemberTags.has(p.tag))
+                ? allPartsInner.filter((p) =>
+                    currentMemberTags.has(normalizeTag(p.tag)),
+                  )
                 : allPartsInner;
               decksToday = activePartsToday.reduce(
                 (s, p) => s + (p.decksUsedToday ?? 0),
@@ -2326,16 +2333,17 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                   if (warDayIndex > 0) {
                     // Log la somme totale des fames live (API) pour tous les membres actuels
                     const totalLiveFame = allPartsInner
-                      .filter((p) => currentMemberTags.has(p.tag))
+                      .filter((p) => currentMemberTags.has(normalizeTag(p.tag)))
                       .reduce((s, p) => s + (p.fame ?? 0), 0);
                     const prevSnap = weekSnaps[warDayIndex - 1];
                     const prevCumulFame = prevSnap?._cumulFame ?? {};
                     // Log détaillé pour chaque membre actuel
                     let debugDelta = [];
                     const deltaSum = allPartsInner
-                      .filter((p) => currentMemberTags.has(p.tag))
+                      .filter((p) => currentMemberTags.has(normalizeTag(p.tag)))
                       .reduce((s, p) => {
-                        const prev = prevCumulFame[p.tag] ?? 0;
+                        const key = normalizeTag(p.tag);
+                        const prev = prevCumulFame[key] ?? 0;
                         const live = p.fame ?? 0;
                         const delta = live - prev;
                         debugDelta.push({
