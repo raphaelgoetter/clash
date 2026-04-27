@@ -745,9 +745,15 @@ export default async function handler(req, res) {
           ? buildHistoryCodeBlock(latestWeeks)
           : "Aucune semaine GDC terminée trouvée.";
 
-        const resistantsWeeks = weeks.filter(
-          (w) => normalizeClanTag(w.clanTag) === RESISTANTS_CLAN_TAG,
-        ).length;
+        const currentClanName =
+          analysis.overview.clan?.name ||
+          analysis.overview.clan?.tag ||
+          "Clan inconnu";
+        const currentClanWeeks = Number.isFinite(
+          warHistory?.streakInCurrentClan,
+        )
+          ? warHistory.streakInCurrentClan
+          : 0;
         const familyWeeks = weeks.filter((w) =>
           FAMILY_CLAN_TAGS.has(normalizeClanTag(w.clanTag)),
         ).length;
@@ -773,10 +779,11 @@ export default async function handler(req, res) {
           color: COLOR_MAP[color] ?? 0x808080,
           description:
             `**Fiabilité :** ${emoji} ${Math.round(pct)}% (${verdictFr})\n` +
+            `**Clan actuel :** ${currentClanName}\n` +
+            `**Semaines ${currentClanName} :** ≥ ${currentClanWeeks} semaine${currentClanWeeks === 1 ? "" : "s"}\n` +
+            `**Semaines Famille Resistance :** ≥ ${familyWeeks} semaines\n` +
             `**Moyenne par semaine :** ${avgFame}\n` +
-            `**Record de points :** ${allTimeRecord}\n` +
-            `**Semaines Les Resistants :** (au moins) ${resistantsWeeks} semaines\n` +
-            `**Semaines Famille Resistance :** (au moins) ${familyWeeks} semaines`,
+            `**Record de points :** ${allTimeRecord}`,
           fields,
           footer: {
             text: `Affiche les ${availableWeeks} dernières semaines disponibles dans L'API Clash Royale.`,
