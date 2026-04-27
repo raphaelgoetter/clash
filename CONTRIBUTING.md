@@ -331,7 +331,7 @@ node scripts/registerCommands.js
 **`/trust`**
 
 ```
-🟢 NomJoueur ⤑ 93 % (Fiabilité élevée)
+🟢 NomJoueur ⤑ 93 % (Très fiable)
 ✅ Activité de guerre  10/12    ✅ Victoires CW2  8/8
 ⚠️ Winrate (guerre)    1.9/3   ✅ Expérience     3/3
 ✅ Dons                2/2
@@ -341,7 +341,7 @@ Tag : #YRGJGR8R
 **`/stats`**
 
 ```
-🟢 NomJoueur ⤑ 90 % (Fiabilité élevée)
+🟢 NomJoueur ⤑ 90 % (Très fiable)
 Historique Decks : ✅16 ⚠️15 ✅16 ✅16 ✅16 ✅16
 Historique Points : 1900 2300 3200 2900 2500 2700
 Moyenne points/semaine : 2570

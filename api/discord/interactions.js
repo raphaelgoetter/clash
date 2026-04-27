@@ -446,7 +446,7 @@ export default async function handler(req, res) {
         const embedColor = COLOR_MAP[color] ?? 0x808080;
         // verdict en français
         const FR_VERDICTS = {
-          "High reliability": "Fiabilité élevée",
+          "High reliability": "Très fiable",
           "Moderate risk": "Risque faible",
           "High risk": "Risque élevé",
           "Extreme risk": "Risque extrême",
@@ -719,7 +719,7 @@ export default async function handler(req, res) {
         const emoji = EMOJI_MAP[color] ?? "⚪";
         const verdictFr =
           {
-            "High reliability": "Fiabilité élevée",
+            "High reliability": "Très fiable",
             "Moderate risk": "Risque faible",
             "High risk": "Risque élevé",
             "Extreme risk": "Risque extrême",
