@@ -749,6 +749,12 @@ export default async function handler(req, res) {
           analysis.overview.clan?.name ||
           analysis.overview.clan?.tag ||
           "Clan inconnu";
+        const currentClanTag = analysis.overview.clan?.tag || null;
+        const currentClanLink = currentClanTag
+          ? `[${currentClanName}](${TRUST_ROYALE_URL}/?mode=clan&tag=${encodeURIComponent(
+              currentClanTag,
+            )})`
+          : currentClanName;
         const currentClanWeeks = Number.isFinite(
           warHistory?.streakInCurrentClan,
         )
@@ -757,6 +763,25 @@ export default async function handler(req, res) {
         const familyWeeks = weeks.filter((w) =>
           FAMILY_CLAN_TAGS.has(normalizeClanTag(w.clanTag)),
         ).length;
+        const previousClanWeek = (warHistory?.weeks ?? []).find(
+          (w) =>
+            !w.isCurrent &&
+            currentClanTag &&
+            normalizeClanTag(w.clanTag) !== normalizeClanTag(currentClanTag),
+        );
+        const previousClanName =
+          previousClanWeek?.clanName || previousClanWeek?.clanTag || null;
+        const previousClanTag = previousClanWeek?.clanTag ?? null;
+        const previousClanLink = previousClanName
+          ? previousClanTag
+            ? `[${previousClanName}](${TRUST_ROYALE_URL}/?mode=clan&tag=${encodeURIComponent(
+                previousClanTag,
+              )})`
+            : previousClanName
+          : null;
+        const previousClanLine = previousClanLink
+          ? `**Clan précédent :** ${previousClanLink}\n`
+          : "";
         const approxPrefix = availableWeeks >= 10 ? "≥ " : "";
 
         const avgFame = Number.isFinite(warHistory?.avgFame)
@@ -769,7 +794,10 @@ export default async function handler(req, res) {
         const fields = [
           {
             name: `Historique (${displayedWeeks} semaines)`,
-            value: historyCodeBlock,
+            value:
+              `${historyCodeBlock}\n` +
+              `**Moyenne par semaine :** ${avgFame}\n` +
+              `**Record de points :** ${allTimeRecord}`,
             inline: false,
           },
         ];
@@ -781,10 +809,9 @@ export default async function handler(req, res) {
           description:
             `**Fiabilité :** ${emoji} ${Math.round(pct)}% (${verdictFr})\n` +
             `**Tag :** ${tag}\n` +
-            `**Clan actuel :** ${currentClanName} (depuis ${currentClanWeeks} semaine${currentClanWeeks === 1 ? "" : "s"})\n` +
-            `**Stabilité dans la Famille Resistance :** ${approxPrefix}${familyWeeks} semaines\n` +
-            `**Moyenne par semaine :** ${avgFame}\n` +
-            `**Record de points :** ${allTimeRecord}`,
+            `**Clan actuel :** ${currentClanLink} (depuis ${currentClanWeeks} semaine${currentClanWeeks === 1 ? "" : "s"})\n` +
+            previousClanLine +
+            `**Stabilité dans la Famille Resistance :** ${approxPrefix}${familyWeeks} semaines`,
           fields,
           footer: {
             text: `Affiche les ${availableWeeks} dernières semaines disponibles dans L'API Clash Royale.`,
