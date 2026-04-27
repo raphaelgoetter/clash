@@ -194,6 +194,14 @@ export async function buildFamilyWarHistory(
   const clanTags = new Set(FAMILY_CLAN_TAGS);
   if (normalizedCurrent) clanTags.add(normalizedCurrent);
 
+  for (const b of battleLog) {
+    const clanTag = b?.team?.[0]?.clan?.tag;
+    if (clanTag) {
+      const clean = clanTag.replace(/^#/, "").toUpperCase();
+      if (clean) clanTags.add(clean);
+    }
+  }
+
   const weekMap = new Map();
 
   const results = await fetchRaceLogsForClans(clanTags);
