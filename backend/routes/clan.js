@@ -2467,18 +2467,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             };
           });
 
-          // Step 2: Déterminer le rang projeté pour chaque clan
+          // Step 2: Détecter une victoire assurée et déterminer le rang projeté.
           if (isWarPeriod) {
-            const sortedByProjection = [...groupWithProjections].sort(
-              (a, b) => (b.projectedFame ?? 0) - (a.projectedFame ?? 0),
-            );
-            groupWithProjections.forEach((c) => {
-              if (c.projectedFame !== null) {
-                c.projectedRank =
-                  sortedByProjection.findIndex((s) => s.tag === c.tag) + 1;
-              }
-            });
-
             // Détection rigoureuse d'une victoire déjà assurée :
             // currentFame du clan > maxReachableFame de tous les autres.
             groupWithProjections.forEach((c) => {
@@ -2502,6 +2492,19 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 c.ptsPerDeck = 0;
                 c.clanScore = 0;
               }
+            });
+
+            const sortedByProjection = [...groupWithProjections].sort(
+              (a, b) => {
+                const aClinched = a.isClinchedWin ? 1 : 0;
+                const bClinched = b.isClinchedWin ? 1 : 0;
+                if (aClinched !== bClinched) return bClinched - aClinched;
+                return (b.projectedFame ?? 0) - (a.projectedFame ?? 0);
+              },
+            );
+            groupWithProjections.forEach((c) => {
+              c.projectedRank =
+                sortedByProjection.findIndex((s) => s.tag === c.tag) + 1;
             });
           }
 

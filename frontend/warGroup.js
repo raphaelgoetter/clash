@@ -86,7 +86,9 @@ export function renderRaceGroupCard(data, t, timerHelper) {
       const nameHtml = `<a href="${url}" class="${isFamilyMember ? "war-group-family-link" : "war-group-external-link"}">${clan.name ?? clan.tag}</a>`;
 
       const displayRank = isWarPeriod
-        ? (clan.projectedRank ?? idx + 1)
+        ? clan.isClinchedWin
+          ? idx + 1
+          : (clan.projectedRank ?? idx + 1)
         : (clan.rank ?? idx + 1);
       const rankBadge = `<span class="war-group-rank">#${displayRank}</span>`;
 
