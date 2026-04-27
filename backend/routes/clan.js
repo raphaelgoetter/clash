@@ -2299,8 +2299,13 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 0,
                 MAX_WEEKLY_DECKS - totalDecksWeekly,
               );
+              const remainingDaysInclusive = Math.max(0, 3 - warDayIndex + 1);
+              const remainingDecksDaily = Math.min(
+                remainingDecksWeekly,
+                remainingDaysInclusive * 50 * 4,
+              );
               maxReachableFame =
-                sectionFame + remainingDecksWeekly * MAX_FAME_PER_DECK;
+                sectionFame + remainingDecksDaily * MAX_FAME_PER_DECK;
 
               const avgDecksLastWeek = isOwn
                 ? ownAvgDecks
