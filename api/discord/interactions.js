@@ -699,7 +699,10 @@ export default async function handler(req, res) {
         const weeks = Array.isArray(warHistory?.weeks)
           ? warHistory.weeks.filter((w) => !w.isCurrent)
           : [];
+        const availableWeeks = weeks.length;
         const latestWeeks = weeks.slice(0, 12);
+        const displayedWeeks = latestWeeks.length;
+        const maxDisplayedWeeks = 12;
 
         const deckHistory = latestWeeks.length
           ? formatDeckHistory(latestWeeks)
@@ -718,45 +721,42 @@ export default async function handler(req, res) {
         const avgFame = Number.isFinite(warHistory?.avgFame)
           ? warHistory.avgFame
           : 0;
-        const maxFame = Number.isFinite(warHistory?.maxFame)
+        const allTimeRecord = Number.isFinite(warHistory?.maxFame)
           ? warHistory.maxFame
           : 0;
 
+        const historyTable = latestWeeks.length
+          ? [
+              `Decks : ${formatDeckHistory(latestWeeks)}`,
+              `Points: ${formatPointHistory(latestWeeks)}`,
+            ].join("\n")
+          : "Aucune semaine GDC terminée trouvée.";
+
         const fields = [
           {
-            name: "Fiabilité",
-            value: `${emoji} ${Math.round(pct)}% (${verdictFr})`,
+            name: "Historique",
+            value: `\`\`\`\n${historyTable}\n\`\`\``,
             inline: false,
           },
           {
-            name: "Historique Decks",
-            value: deckHistory,
-            inline: false,
-          },
-          {
-            name: "Historique Points",
-            value: pointHistory,
-            inline: false,
-          },
-          {
-            name: "Moyenne points/semaine",
+            name: "Moyenne",
             value: `${avgFame}`,
             inline: true,
           },
           {
-            name: "Record points/semaine",
-            value: `${maxFame}`,
+            name: "Record",
+            value: `${allTimeRecord}`,
             inline: true,
           },
           {
             name: "Semaines Les Resistants",
             value: `${resistantsWeeks}`,
-            inline: true,
+            inline: false,
           },
           {
             name: "Semaines Famille Resistance",
             value: `${familyWeeks}`,
-            inline: true,
+            inline: false,
           },
         ];
 
@@ -764,10 +764,10 @@ export default async function handler(req, res) {
           title: `<:interrogation:1493849417520906271> Statistiques GDC : ${analysis.overview.name}`,
           url: `${TRUST_ROYALE_URL}/?mode=player&tag=${encodeURIComponent(tag)}`,
           color: COLOR_MAP[color] ?? 0x808080,
-          description: `Tag : ${tag}`,
+          description: `Tag : ${tag}\n${emoji} ${Math.round(pct)}% (${verdictFr})`,
           fields,
           footer: {
-            text: `Historique récent : ${latestWeeks.length} semaine(s)`,
+            text: `Affiche ${displayedWeeks}/${availableWeeks} dernières semaines terminées (max ${maxDisplayedWeeks})`,
           },
         };
 
