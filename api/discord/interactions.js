@@ -2081,13 +2081,16 @@ export default async function handler(req, res) {
           if (isWarPeriod) {
             const decks = `<:cards:1493711279121104926> ${clan.decksToday != null ? clan.decksToday : "?"} decks`;
             const eff = `<:cible:1493711597682557019> ${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(1) : "?"} pts/d`;
-            const proj = `<:lucky:1495168368611950632> Projection: **${clan.projectedFame != null ? fmt(Math.round(clan.projectedFame)) : "?"}**`;
+            const proj = clan.isClinchedWin
+              ? "<:lucky:1495168368611950632> ✅ Victoire mathématiquement assurée"
+              : `<:lucky:1495168368611950632> Projection: **${clan.projectedFame != null ? fmt(Math.round(clan.projectedFame)) : "?"}**`;
             const shouldShowClinched =
               clan.isClinchedWin ||
               (isOwn && clan.projectedFame === 0 && clan.decksToday > 0);
-            const clinched = shouldShowClinched
-              ? "\n✅ Victoire mathématiquement assurée"
-              : "";
+            const clinched =
+              shouldShowClinched && !clan.isClinchedWin
+                ? "\n✅ Victoire mathématiquement assurée"
+                : "";
             line2 = `${decks} · ${eff} · ${proj}${clinched}`;
           } else {
             line2 = [prevWarStr, lastWarStr].filter(Boolean).join(" · ");

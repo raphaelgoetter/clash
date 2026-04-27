@@ -2488,6 +2488,15 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               if (rivalsMax.length === 0) return;
               const bestRivalReachable = Math.max(...rivalsMax);
               c.isClinchedWin = c.currentFame > bestRivalReachable;
+
+              // Si la victoire est déjà assurée sur J4, la projection ne doit plus
+              // reposer sur la moyenne précédente : aucun point supplémentaire ne
+              // sera compté pour la journée.
+              if (c.isClinchedWin && warDayIndex === 3) {
+                c.projectedFame = 0;
+                c.ptsPerDeck = 0;
+                c.clanScore = 0;
+              }
             });
           }
 
