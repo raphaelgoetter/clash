@@ -843,7 +843,7 @@ export default async function handler(req, res) {
         ];
 
         const embed = {
-          title: `<:interrogation:1493849417520906271> Stats complètes : ${analysis.overview.name}`,
+          title: `<:scroll:1493850130560847892> Stats complètes : ${analysis.overview.name}`,
           url: `${TRUST_ROYALE_URL}/?mode=player&tag=${encodeURIComponent(tag)}`,
           color: COLOR_MAP[color] ?? 0x808080,
           description:
