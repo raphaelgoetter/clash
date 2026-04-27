@@ -774,11 +774,12 @@ export default async function handler(req, res) {
         ];
 
         const embed = {
-          title: `<:interrogation:1493849417520906271> Statistiques GDC : ${analysis.overview.name} (${tag})`,
+          title: `<:interrogation:1493849417520906271> Statistiques GDC : ${analysis.overview.name}`,
           url: `${TRUST_ROYALE_URL}/?mode=player&tag=${encodeURIComponent(tag)}`,
           color: COLOR_MAP[color] ?? 0x808080,
           description:
             `**Fiabilité :** ${emoji} ${Math.round(pct)}% (${verdictFr})\n` +
+            `**Tag :** ${tag}\n` +
             `**Clan actuel :** ${currentClanName}\n` +
             `**Semaines ${currentClanName} :** ≥ ${currentClanWeeks} semaine${currentClanWeeks === 1 ? "" : "s"}\n` +
             `**Semaines Famille Resistance :** ≥ ${familyWeeks} semaines\n` +
