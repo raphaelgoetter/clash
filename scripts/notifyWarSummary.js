@@ -45,6 +45,7 @@ const CLINCH_LOG_FILE = path.join(
 const DISCORD_API = "https://discord.com/api/v10";
 const DRY_RUN = process.argv.includes("--dry-run");
 const FORCE = process.argv.includes("--force");
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const CLAN_FILTER = (() => {
   const idx = process.argv.indexOf("--clan");
   return idx !== -1
@@ -104,20 +105,19 @@ const WAR_DAY_FR = {
  *   10:05 UTC lundi    → 08:35 UTC lundi    (avant reset) → dimanche GDC (J4)
  */
 function getEndedWarDay(now = new Date(), clanTag = null) {
-  const refTime = new Date(now.getTime() - 90 * 60_000);
   const resetUtcMs = warResetOffsetMs(clanTag);
-  const msOfDayUtc =
-    refTime.getUTCHours() * 3_600_000 +
-    refTime.getUTCMinutes() * 60_000 +
-    refTime.getUTCSeconds() * 1000;
-
-  const refParis = new Date(
-    refTime.toLocaleString("en-US", { timeZone: "Europe/Paris" }),
+  const dayUtcStart = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
   );
-  // Avant le reset UTC, on est encore dans la journée précédente en terme GDC.
-  if (msOfDayUtc < resetUtcMs) {
-    refParis.setDate(refParis.getDate() - 1);
+  let currentResetUtc = dayUtcStart + resetUtcMs;
+  if (now.getTime() < currentResetUtc) {
+    currentResetUtc -= MS_PER_DAY;
   }
+
+  const endedDayUtc = currentResetUtc - MS_PER_DAY;
+  const endedDayDate = new Date(endedDayUtc);
 
   const names = [
     "sunday",
@@ -128,12 +128,12 @@ function getEndedWarDay(now = new Date(), clanTag = null) {
     "friday",
     "saturday",
   ];
-  const warDay = names[refParis.getDay()];
+  const warDay = names[endedDayDate.getUTCDay()];
   if (!WAR_DAYS.includes(warDay)) return null;
 
-  const y = refParis.getFullYear();
-  const mo = String(refParis.getMonth() + 1).padStart(2, "0");
-  const d = String(refParis.getDate()).padStart(2, "0");
+  const y = endedDayDate.getUTCFullYear();
+  const mo = String(endedDayDate.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(endedDayDate.getUTCDate()).padStart(2, "0");
   return { warDay, realDay: `${y}-${mo}-${d}` };
 }
 
