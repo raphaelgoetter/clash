@@ -131,6 +131,27 @@ function buildHistoryCodeBlock(weeks) {
   return `\`\`\`\n${deckLine}\n${pointLine}\n\`\`\``;
 }
 
+function buildScoreBreakdownCodeBlock(score) {
+  const breakdown = Array.isArray(score?.breakdown) ? score.breakdown : [];
+  if (breakdown.length === 0) {
+    return "Aucun détail de fiabilité disponible.";
+  }
+
+  const rows = [];
+  let maxLabel = 0;
+  for (const item of breakdown) {
+    const label = LABEL_FR[item.label] || item.label;
+    if (label.length > maxLabel) maxLabel = label.length;
+  }
+  for (const item of breakdown) {
+    const icon = criterionIcon(item.score, item.max);
+    const label = LABEL_FR[item.label] || item.label;
+    const scoreStr = `${item.score}/${item.max}`;
+    rows.push(`${icon} ${label.padEnd(maxLabel)} ${scoreStr}`);
+  }
+  return "```\n" + rows.join("\n") + "\n```";
+}
+
 function buildSparkline(values) {
   if (!Array.isArray(values) || values.length === 0) return "";
   const min = Math.min(...values);
