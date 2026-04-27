@@ -809,7 +809,7 @@ export default async function handler(req, res) {
           description:
             `**Fiabilité :** ${emoji} ${Math.round(pct)}% (${verdictFr})\n` +
             `**Tag :** ${tag}\n` +
-            `**Clan actuel :** ${currentClanLink} (depuis ${currentClanWeeks} semaine${currentClanWeeks === 1 ? "" : "s"})\n` +
+            `**Clan actuel :** ${currentClanLink} (depuis ${approxPrefix}${currentClanWeeks} semaine${currentClanWeeks === 1 ? "" : "s"})\n` +
             previousClanLine +
             `**Stabilité dans la Famille Resistance :** ${approxPrefix}${familyWeeks} semaines`,
           fields,
