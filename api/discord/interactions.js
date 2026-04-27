@@ -740,11 +740,6 @@ export default async function handler(req, res) {
         const pointHistory = latestWeeks.length
           ? formatPointHistory(latestWeeks)
           : "Aucune semaine GDC terminée trouvée.";
-        const sparkline = latestWeeks.length
-          ? buildSparkline(
-              latestWeeks.map((w) => (Number.isFinite(w.fame) ? w.fame : 0)),
-            )
-          : "";
 
         const historyCodeBlock = latestWeeks.length
           ? buildHistoryCodeBlock(latestWeeks)
@@ -770,33 +765,18 @@ export default async function handler(req, res) {
             value: historyCodeBlock,
             inline: false,
           },
-          {
-            name: "Moyenne par semaine",
-            value: `${avgFame}`,
-            inline: false,
-          },
-          {
-            name: "Record de points",
-            value: `${allTimeRecord}`,
-            inline: false,
-          },
-          {
-            name: "Semaines Les Resistants",
-            value: `(au moins) ${resistantsWeeks} semaines`,
-            inline: false,
-          },
-          {
-            name: "Semaines Famille Resistance",
-            value: `(au moins) ${familyWeeks} semaines`,
-            inline: false,
-          },
         ];
 
         const embed = {
           title: `<:interrogation:1493849417520906271> Statistiques GDC : ${analysis.overview.name} (${tag})`,
           url: `${TRUST_ROYALE_URL}/?mode=player&tag=${encodeURIComponent(tag)}`,
           color: COLOR_MAP[color] ?? 0x808080,
-          description: `**Fiabilité :** ${emoji} ${Math.round(pct)}% (${verdictFr})`,
+          description:
+            `**Fiabilité :** ${emoji} ${Math.round(pct)}% (${verdictFr})\n` +
+            `**Moyenne par semaine :** ${avgFame}\n` +
+            `**Record de points :** ${allTimeRecord}\n` +
+            `**Semaines Les Resistants :** (au moins) ${resistantsWeeks} semaines\n` +
+            `**Semaines Famille Resistance :** (au moins) ${familyWeeks} semaines`,
           fields,
           footer: {
             text: `Affiche les ${availableWeeks} dernières semaines disponibles dans L'API Clash Royale.`,
