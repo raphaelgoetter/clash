@@ -192,10 +192,21 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
       // Semaines passées uniquement (hors semaine en cours)
       let prevWeeks = analysis.warHistory.weeks.filter((w) => !w.isCurrent);
 
-      const hasFullWeek = prevWeeks.some((w) => (w.decksUsed ?? 0) >= 16);
+      const normalizedCurrentClan = player.clan?.tag
+        ? player.clan.tag.replace(/^#/, "").toUpperCase()
+        : null;
+      const hasFullWeek = prevWeeks.some(
+        (w) =>
+          (w.decksUsed ?? 0) >= 16 &&
+          (w.clanTag ?? "").replace(/^#/, "").toUpperCase() ===
+            normalizedCurrentClan,
+      );
       const oldRule =
         analysis.warHistory.streakInCurrentClan >= 2 &&
         analysis.warHistory.completedParticipation >= 2;
+      const isNewClanArrivee =
+        analysis.warHistory.streakInCurrentClan < 2 &&
+        (analysis.warHistory.totalWeeks ?? 0) > 1;
       let hasEnoughHistory = hasFullWeek || oldRule;
 
       // Si la semaine la plus ancienne est incomplète (<16 decks), on la marque ignorée
@@ -207,6 +218,12 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
           hasFullWeek ||
           (analysis.warHistory.streakInCurrentClan >= 2 &&
             analysis.warHistory.completedParticipation >= 2);
+      }
+
+      // Nouveau membre dans le clan actuel : on conserve l'historique
+      // des anciens clans, mais on bascule vers le score BattleLog.
+      if (isNewClanArrivee) {
+        hasEnoughHistory = false;
       }
 
       const effectiveWinRate =
