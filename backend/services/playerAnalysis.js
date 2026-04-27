@@ -32,7 +32,11 @@ import {
   computeWarReliabilityFallback,
   estimateWinsFromFame,
 } from "./warScoring.js";
-import { buildFamilyWarHistory, applyOldestWeekIgnore } from "./warHistory.js";
+import {
+  buildFamilyWarHistory,
+  applyOldestWeekIgnore,
+  FAMILY_CLAN_TAGS,
+} from "./warHistory.js";
 
 // ── Vue complète d'un joueur (score + historique) ─────────────
 
@@ -195,18 +199,14 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
       const normalizedCurrentClan = player.clan?.tag
         ? player.clan.tag.replace(/^#/, "").toUpperCase()
         : null;
-      const hasFullWeek = prevWeeks.some(
-        (w) =>
-          (w.decksUsed ?? 0) >= 16 &&
-          (w.clanTag ?? "").replace(/^#/, "").toUpperCase() ===
-            normalizedCurrentClan,
-      );
+      const hasFullWeek = prevWeeks.some((w) => (w.decksUsed ?? 0) >= 16);
+      const hasFamilyWeek = prevWeeks.some((w) => {
+        const normalized = (w.clanTag ?? "").replace(/^#/, "").toUpperCase();
+        return FAMILY_CLAN_TAGS.includes(normalized);
+      });
       const oldRule =
         analysis.warHistory.streakInCurrentClan >= 2 &&
         analysis.warHistory.completedParticipation >= 2;
-      const isNewClanArrivee =
-        analysis.warHistory.streakInCurrentClan < 2 &&
-        (analysis.warHistory.totalWeeks ?? 0) > 1;
       let hasEnoughHistory = hasFullWeek || oldRule;
 
       // Si la semaine la plus ancienne est incomplète (<16 decks), on la marque ignorée
@@ -220,9 +220,9 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
             analysis.warHistory.completedParticipation >= 2);
       }
 
-      // Nouveau membre dans le clan actuel : on conserve l'historique
-      // des anciens clans, mais on bascule vers le score BattleLog.
-      if (isNewClanArrivee) {
+      // Si l'historique complet ne contient aucune semaine de clan famille,
+      // on reste en fallback BattleLog même si d'anciens clans sont visibles.
+      if (!hasFamilyWeek) {
         hasEnoughHistory = false;
       }
 

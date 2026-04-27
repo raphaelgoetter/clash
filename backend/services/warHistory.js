@@ -10,7 +10,7 @@ import { computeCurrentWeekId } from "./dateUtils.js";
 
 const CLAN_RACELOG_CONCURRENCY = 3;
 const CLAN_RACELOG_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const FAMILY_CLAN_TAGS = ["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"];
+export const FAMILY_CLAN_TAGS = ["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"];
 
 // ── Helpers privés ────────────────────────────────────────────
 
