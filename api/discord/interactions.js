@@ -825,6 +825,14 @@ export default async function handler(req, res) {
             inline: false,
           },
           {
+            name: "Clan",
+            value:
+              `**Clan actuel :** ${currentClanLink} (depuis ${currentClanWeeksPrefix}${currentClanWeeks} semaine${currentClanWeeks === 1 ? "" : "s"})\n` +
+              previousClanLine +
+              `**Stabilité dans la Famille Resistance :** ${familyWeeksPrefix}${familyWeeks} semaines`,
+            inline: false,
+          },
+          {
             name: `Historique (${displayedWeeks} semaines)`,
             value:
               `${historyCodeBlock}\n` +
@@ -835,15 +843,12 @@ export default async function handler(req, res) {
         ];
 
         const embed = {
-          title: `<:interrogation:1493849417520906271> Statistiques GDC : ${analysis.overview.name}`,
+          title: `<:interrogation:1493849417520906271> Stats complètes : ${analysis.overview.name}`,
           url: `${TRUST_ROYALE_URL}/?mode=player&tag=${encodeURIComponent(tag)}`,
           color: COLOR_MAP[color] ?? 0x808080,
           description:
-            `**Fiabilité :** ${emoji} ${Math.round(pct)}% (${verdictFr})\n` +
             `**Tag :** ${tag}\n` +
-            `**Clan actuel :** ${currentClanLink} (depuis ${currentClanWeeksPrefix}${currentClanWeeks} semaine${currentClanWeeks === 1 ? "" : "s"})\n` +
-            previousClanLine +
-            `**Stabilité dans la Famille Resistance :** ${familyWeeksPrefix}${familyWeeks} semaines`,
+            `**Fiabilité :** ${emoji} ${Math.round(pct)}% (${verdictFr})`,
           fields,
           footer: {
             text: `Affiche les ${availableWeeks} dernières semaines disponibles dans L'API Clash Royale.`,
