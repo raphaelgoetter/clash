@@ -2474,30 +2474,35 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
           // Step 2: Détecter une victoire assurée et déterminer le rang projeté.
           if (isWarPeriod) {
-            // Détection rigoureuse d'une victoire déjà assurée :
-            // currentFame du clan > maxReachableFame de tous les autres.
-            groupWithProjections.forEach((c) => {
-              if (typeof c.currentFame !== "number") return;
-              const rivalsMax = groupWithProjections
-                .filter((x) => x.tag !== c.tag)
-                .map((x) =>
-                  typeof x.maxReachableFame === "number"
-                    ? x.maxReachableFame
-                    : -Infinity,
-                );
-              if (rivalsMax.length === 0) return;
-              const bestRivalReachable = Math.max(...rivalsMax);
-              c.isClinchedWin = c.currentFame > bestRivalReachable;
+            const reliableClinchedData = groupWithProjections.every(
+              (c) =>
+                typeof c.currentFame === "number" &&
+                typeof c.maxReachableFame === "number" &&
+                Number.isFinite(c.maxReachableFame) &&
+                typeof c.decksToday === "number",
+            );
 
-              // Si la victoire est déjà assurée sur J4, la projection ne doit plus
-              // reposer sur la moyenne précédente : aucun point supplémentaire ne
-              // sera compté pour la journée.
-              if (c.isClinchedWin && warDayIndex === 3) {
-                c.projectedFame = 0;
-                c.ptsPerDeck = 0;
-                c.clanScore = 0;
-              }
-            });
+            if (reliableClinchedData) {
+              // Détection rigoureuse d'une victoire déjà assurée :
+              // currentFame du clan > maxReachableFame de tous les autres.
+              groupWithProjections.forEach((c) => {
+                const rivalsMax = groupWithProjections
+                  .filter((x) => x.tag !== c.tag)
+                  .map((x) => x.maxReachableFame);
+                if (rivalsMax.length === 0) return;
+                const bestRivalReachable = Math.max(...rivalsMax);
+                c.isClinchedWin = c.currentFame > bestRivalReachable;
+
+                // Si la victoire est déjà assurée sur J4, la projection ne doit plus
+                // reposer sur la moyenne précédente : aucun point supplémentaire ne
+                // sera compté pour la journée.
+                if (c.isClinchedWin && warDayIndex === 3) {
+                  c.projectedFame = 0;
+                  c.ptsPerDeck = 0;
+                  c.clanScore = 0;
+                }
+              });
+            }
 
             const sortedByProjection = [...groupWithProjections].sort(
               (a, b) => {
