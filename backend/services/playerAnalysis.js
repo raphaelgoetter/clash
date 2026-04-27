@@ -352,7 +352,7 @@ export function computeMemberReliability(member) {
     verdict = "High reliability";
     color = "green";
   } else if (score >= 61) {
-    verdict = "Moderate risk";
+    verdict = "Low risk";
     color = "yellow";
   } else if (score >= 31) {
     verdict = "High risk";

@@ -86,7 +86,7 @@ function getScoreLabelMap() {
     Donations: t("donations"),
     Discord: t("discord"),
     "High reliability": t("highReliability"),
-    "Moderate risk": t("moderateRisk"),
+    "Low risk": t("moderateRisk"),
     "High risk": t("highRisk"),
     "Extreme risk": t("extremeRisk"),
   };
@@ -1671,7 +1671,7 @@ function renderPlayerResults(data) {
     { green: "✅", yellow: "⚠️", orange: "🟠", red: "🔴" }[ws.color] ?? "❓";
   const verdictMap = {
     "High reliability": t("highReliability"),
-    "Moderate risk": t("moderateRisk"),
+    "Low risk": t("moderateRisk"),
     "High risk": t("highRisk"),
     "Extreme risk": t("extremeRisk"),
   };
@@ -2931,7 +2931,7 @@ function renderMembersTable(members) {
       const memberVerdict =
         {
           "High reliability": t("highReliability"),
-          "Moderate risk": t("moderateRisk"),
+          "Low risk": t("moderateRisk"),
           "High risk": t("highRisk"),
           "Extreme risk": t("extremeRisk"),
         }[m.verdict] || m.verdict;

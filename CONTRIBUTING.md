@@ -207,7 +207,7 @@ Used when no race log history is available (battle log only):
 | % of max score | Verdict          | Colour    |
 | -------------- | ---------------- | --------- |
 | ≥ 75 %         | High reliability | 🟢 Green  |
-| 56–74 %        | Moderate risk    | 🟡 Yellow |
+| 56–74 %        | Low risk         | 🟡 Yellow |
 | 31–55 %        | High risk        | 🟠 Orange |
 | 0–30 %         | Extreme risk     | 🔴 Red    |
 

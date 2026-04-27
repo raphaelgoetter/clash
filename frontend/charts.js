@@ -18,21 +18,28 @@ import {
   Tooltip,
   Legend,
   Filler,
-} from 'chart.js';
+} from "chart.js";
 
 // Register only the components we use (tree-shaking friendly)
 Chart.register(
-  LineController, LineElement, PointElement,
-  LinearScale, CategoryScale,
-  BarController, BarElement,
-  DoughnutController, ArcElement,
+  LineController,
+  LineElement,
+  PointElement,
+  LinearScale,
+  CategoryScale,
+  BarController,
+  BarElement,
+  DoughnutController,
+  ArcElement,
   PieController,
-  Tooltip, Legend, Filler
+  Tooltip,
+  Legend,
+  Filler,
 );
 
 // ── Shared defaults ───────────────────────────────────────────
-Chart.defaults.color = '#9090b8';
-Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+Chart.defaults.color = "#9090b8";
+Chart.defaults.borderColor = "rgba(255,255,255,0.06)";
 Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
 
 /** Destroy an existing chart on a canvas before creating a new one. */
@@ -42,13 +49,13 @@ export function destroyIfExists(canvasId) {
 }
 
 let chartTranslations = {
-  members: 'Members',
-  memberPlural: 'members',
-  memberSingular: 'member',
-  highReliability: 'High reliability',
-  moderateRisk: 'Moderate risk',
-  highRisk: 'High risk',
-  extremeRisk: 'Extreme risk',
+  members: "Members",
+  memberPlural: "members",
+  memberSingular: "member",
+  highReliability: "High reliability",
+  moderateRisk: "Low risk",
+  highRisk: "High risk",
+  extremeRisk: "Extreme risk",
 };
 
 export function setChartTranslations(trans) {
@@ -62,33 +69,33 @@ export function setChartTranslations(trans) {
  * @param {{ date: string; count: number }[]} dailyActivity
  */
 export function renderActivityChart(dailyActivity) {
-  destroyIfExists('chart-activity');
-  const ctx = document.getElementById('chart-activity').getContext('2d');
+  destroyIfExists("chart-activity");
+  const ctx = document.getElementById("chart-activity").getContext("2d");
 
   const labels = dailyActivity.map((d) => {
-    const dt = new Date(d.date + 'T00:00:00');
-    return dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const dt = new Date(d.date + "T00:00:00");
+    return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" });
   });
   const data = dailyActivity.map((d) => d.count);
 
   // Gradient fill
   const gradient = ctx.createLinearGradient(0, 0, 0, 200);
-  gradient.addColorStop(0, 'rgba(124,58,237,0.5)');
-  gradient.addColorStop(1, 'rgba(124,58,237,0.02)');
+  gradient.addColorStop(0, "rgba(124,58,237,0.5)");
+  gradient.addColorStop(1, "rgba(124,58,237,0.02)");
 
   new Chart(ctx, {
-    type: 'line',
+    type: "line",
     data: {
       labels,
       datasets: [
         {
-          label: 'Battles',
+          label: "Battles",
           data,
-          borderColor: '#7c3aed',
+          borderColor: "#7c3aed",
           backgroundColor: gradient,
           borderWidth: 2,
           pointRadius: 3,
-          pointBackgroundColor: '#a78bfa',
+          pointBackgroundColor: "#a78bfa",
           tension: 0.35,
           fill: true,
         },
@@ -101,7 +108,8 @@ export function renderActivityChart(dailyActivity) {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: (ctx) => ` ${ctx.parsed.y} battle${ctx.parsed.y !== 1 ? 's' : ''}`,
+            label: (ctx) =>
+              ` ${ctx.parsed.y} battle${ctx.parsed.y !== 1 ? "s" : ""}`,
           },
         },
       },
@@ -129,50 +137,52 @@ export function renderActivityChart(dailyActivity) {
  * @param {{ label:string; fame:number }[]} weeks  Most-recent-first array
  */
 export function renderWarHistoryChart(weeks) {
-  destroyIfExists('chart-activity');
-  const el = document.getElementById('chart-activity');
+  destroyIfExists("chart-activity");
+  const el = document.getElementById("chart-activity");
   if (!el) return;
 
   // Display oldest → newest (left → right)
   const ordered = [...weeks].reverse();
-  const labels   = ordered.map((w) => {
-    const deckInfo = typeof w.decksUsed === 'number' ? ` (${w.decksUsed}/16)` : '';
-    let badge = '';
+  const labels = ordered.map((w) => {
+    const deckInfo =
+      typeof w.decksUsed === "number" ? ` (${w.decksUsed}/16)` : "";
+    let badge = "";
     if (w.ignored || w.isCurrent) {
       // ignored or live/current weeks are shown in neutral grey and do not get a red failure icon
-      badge = '⚪ ';
-    } else if (typeof w.decksUsed === 'number') {
-      badge = w.decksUsed >= 16 ? '✅'
-            : w.decksUsed >= 8  ? '⚠️'
-            : '❌';
-      badge += ' ';
+      badge = "⚪ ";
+    } else if (typeof w.decksUsed === "number") {
+      badge = w.decksUsed >= 16 ? "✅" : w.decksUsed >= 8 ? "⚠️" : "❌";
+      badge += " ";
     }
     return `${badge}${w.label}${deckInfo}`;
   });
   const fameData = ordered.map((w) => w.fame);
-  const avg      = fameData.reduce((a, b) => a + b, 0) / (fameData.length || 1);
+  const avg = fameData.reduce((a, b) => a + b, 0) / (fameData.length || 1);
 
-  new Chart(el.getContext('2d'), {
-    type: 'bar',
+  new Chart(el.getContext("2d"), {
+    type: "bar",
     data: {
       labels,
       datasets: [
         {
-          label: 'Fame',
+          label: "Fame",
           data: fameData,
           backgroundColor: fameData.map((f, idx) =>
             // grey out ignored or current live week
-            ordered[idx].ignored || ordered[idx].isCurrent ? 'rgba(128,128,128,0.5)'
-              : f >= avg ? 'rgba(99,102,241,0.85)' : 'rgba(239,68,68,0.65)'
+            ordered[idx].ignored || ordered[idx].isCurrent
+              ? "rgba(128,128,128,0.5)"
+              : f >= avg
+                ? "rgba(99,102,241,0.85)"
+                : "rgba(239,68,68,0.65)",
           ),
           borderRadius: 6,
           order: 2,
         },
         {
-          label: 'Average',
-          type: 'line',
+          label: "Average",
+          type: "line",
           data: fameData.map(() => Math.round(avg)),
-          borderColor: 'rgba(234,179,8,0.8)',
+          borderColor: "rgba(234,179,8,0.8)",
           borderDash: [6, 3],
           borderWidth: 2,
           pointRadius: 0,
@@ -190,8 +200,11 @@ export function renderWarHistoryChart(weeks) {
           callbacks: {
             label: (ctx) => {
               const row = ordered[ctx.dataIndex];
-              const deckInfo = row && row.decksUsed != null ? ` — ${row.decksUsed}/16 decks` : '';
-              const ignoreNote = row && row.ignored ? ' (ignored)' : '';
+              const deckInfo =
+                row && row.decksUsed != null
+                  ? ` — ${row.decksUsed}/16 decks`
+                  : "";
+              const ignoreNote = row && row.ignored ? " (ignored)" : "";
               return ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}${deckInfo}${ignoreNote}`;
             },
           },
@@ -199,13 +212,13 @@ export function renderWarHistoryChart(weeks) {
       },
       scales: {
         x: {
-          ticks: { color: '#94a3b8', font: { size: 11 }, maxRotation: 45 },
-          grid: { color: 'rgba(255,255,255,.04)' },
+          ticks: { color: "#94a3b8", font: { size: 11 }, maxRotation: 45 },
+          grid: { color: "rgba(255,255,255,.04)" },
         },
         y: {
           beginAtZero: true,
-          ticks: { color: '#94a3b8' },
-          grid: { color: 'rgba(255,255,255,.06)' },
+          ticks: { color: "#94a3b8" },
+          grid: { color: "rgba(255,255,255,.06)" },
         },
       },
     },
@@ -216,9 +229,13 @@ export function renderWarHistoryChart(weeks) {
  * Render a 24-hour River Race time distribution chart on #chart-race-time.
  * @param {number[]} buckets Array length 24 (hours since 08:40 UTC)
  */
-export function renderRaceTimeChart(buckets, lastBucketRiskLabel = ' ⚠️ risk (last slot)', resetUtcMinutes = 580) {
-  destroyIfExists('chart-race-time');
-  const el = document.getElementById('chart-race-time');
+export function renderRaceTimeChart(
+  buckets,
+  lastBucketRiskLabel = " ⚠️ risk (last slot)",
+  resetUtcMinutes = 580,
+) {
+  destroyIfExists("chart-race-time");
+  const el = document.getElementById("chart-race-time");
   if (!el) return;
 
   const nowUtc = new Date();
@@ -231,35 +248,37 @@ export function renderRaceTimeChart(buckets, lastBucketRiskLabel = ' ⚠️ risk
     const h = Math.floor(totalMin / 60) % 24;
     const m = totalMin % 60;
     const utcBase = new Date(Date.UTC(utcYear, utcMonth, utcDate, h, m, 0)); // heure reset UTC + i heures, date actuelle pour DST
-    return utcBase.toLocaleTimeString('fr-FR', {
-      timeZone: 'Europe/Paris',
-      hour: '2-digit',
-      minute: '2-digit',
+    return utcBase.toLocaleTimeString("fr-FR", {
+      timeZone: "Europe/Paris",
+      hour: "2-digit",
+      minute: "2-digit",
       hour12: false,
     });
   });
 
-  new Chart(el.getContext('2d'), {
-    type: 'bar',
+  new Chart(el.getContext("2d"), {
+    type: "bar",
 
     data: {
       labels,
-      datasets: [{
-        label: 'GDC decks',
-        data: buckets,
-        backgroundColor: buckets.map((v, i) => {
-          const isLastBucket = i === buckets.length - 1;
-          if (isLastBucket && v > 0) return 'rgba(249,115,22,0.9)'; // orange for risky late decks
-          return v > 0 ? 'rgba(99,102,241,0.9)' : 'rgba(148,163,184,0.26)';
-        }),
-        borderColor: buckets.map((v, i) => {
-          const isLastBucket = i === buckets.length - 1;
-          if (isLastBucket && v > 0) return 'rgba(234,88,12,1)';
-          return v > 0 ? 'rgba(99,102,241,0.9)' : 'rgba(148,163,184,0.26)';
-        }),
-        borderWidth: 1,
-        borderRadius: 4,
-      }],
+      datasets: [
+        {
+          label: "GDC decks",
+          data: buckets,
+          backgroundColor: buckets.map((v, i) => {
+            const isLastBucket = i === buckets.length - 1;
+            if (isLastBucket && v > 0) return "rgba(249,115,22,0.9)"; // orange for risky late decks
+            return v > 0 ? "rgba(99,102,241,0.9)" : "rgba(148,163,184,0.26)";
+          }),
+          borderColor: buckets.map((v, i) => {
+            const isLastBucket = i === buckets.length - 1;
+            if (isLastBucket && v > 0) return "rgba(234,88,12,1)";
+            return v > 0 ? "rgba(99,102,241,0.9)" : "rgba(148,163,184,0.26)";
+          }),
+          borderWidth: 1,
+          borderRadius: 4,
+        },
+      ],
     },
     options: {
       responsive: true,
@@ -271,14 +290,17 @@ export function renderRaceTimeChart(buckets, lastBucketRiskLabel = ' ⚠️ risk
             label: (ctx) => {
               const value = ctx.parsed.y ?? 0;
               const isLastBucket = ctx.dataIndex === labels.length - 1;
-              const risk = isLastBucket && value > 0 ? lastBucketRiskLabel : '';
-              return ` ${value} deck${value === 1 ? '' : 's'}${risk}`;
+              const risk = isLastBucket && value > 0 ? lastBucketRiskLabel : "";
+              return ` ${value} deck${value === 1 ? "" : "s"}${risk}`;
             },
           },
         },
       },
       scales: {
-        x: { ticks: { maxRotation: 45, minRotation: 0 }, grid: { display: false } },
+        x: {
+          ticks: { maxRotation: 45, minRotation: 0 },
+          grid: { display: false },
+        },
         y: { beginAtZero: true, ticks: { stepSize: 1 } },
       },
     },
@@ -293,40 +315,44 @@ export function renderRaceTimeChart(buckets, lastBucketRiskLabel = ' ⚠️ risk
  * @param {string} color  'green' | 'yellow' | 'red'
  */
 export function renderBattleLogBreakdownChart(breakdown) {
-  destroyIfExists('chart-activity');
-  const el = document.getElementById('chart-activity');
+  destroyIfExists("chart-activity");
+  const el = document.getElementById("chart-activity");
   if (!el) return;
 
-  const keys = ['gdc', 'ladder', 'challenge', 'friendly', 'other'];
-  const labels = ['River Race', 'Ladder', 'Challenges', 'Friendly', 'Other'];
+  const keys = ["gdc", "ladder", "challenge", "friendly", "other"];
+  const labels = ["River Race", "Ladder", "Challenges", "Friendly", "Other"];
   const values = keys.map((k) => breakdown?.[k] ?? 0);
   const total = values.reduce((s, v) => s + v, 0);
 
   // River Race mis en valeur, les autres en gris
   const colors = [
-    'rgba(99,102,241,0.9)',
-    'rgba(148,163,184,0.35)',
-    'rgba(148,163,184,0.35)',
-    'rgba(148,163,184,0.35)',
-    'rgba(148,163,184,0.35)',
+    "rgba(99,102,241,0.9)",
+    "rgba(148,163,184,0.35)",
+    "rgba(148,163,184,0.35)",
+    "rgba(148,163,184,0.35)",
+    "rgba(148,163,184,0.35)",
   ];
 
-  new Chart(el.getContext('2d'), {
-    type: 'bar',
+  new Chart(el.getContext("2d"), {
+    type: "bar",
     data: {
       labels,
-      datasets: [{
-        data: values,
-        backgroundColor: colors,
-        borderColor: colors.map((c, i) => i === 0 ? 'rgba(99,102,241,1)' : 'rgba(148,163,184,0.5)'),
-        borderWidth: 1,
-        borderRadius: 4,
-      }],
+      datasets: [
+        {
+          data: values,
+          backgroundColor: colors,
+          borderColor: colors.map((c, i) =>
+            i === 0 ? "rgba(99,102,241,1)" : "rgba(148,163,184,0.5)",
+          ),
+          borderWidth: 1,
+          borderRadius: 4,
+        },
+      ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      indexAxis: 'y',
+      indexAxis: "y",
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -341,11 +367,11 @@ export function renderBattleLogBreakdownChart(breakdown) {
       },
       scales: {
         x: {
-          ticks: { color: '#94a3b8', stepSize: 1 },
-          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: { color: "#94a3b8", stepSize: 1 },
+          grid: { color: "rgba(255,255,255,0.05)" },
         },
         y: {
-          ticks: { color: '#cbd5e1' },
+          ticks: { color: "#cbd5e1" },
           grid: { display: false },
         },
       },
@@ -354,27 +380,27 @@ export function renderBattleLogBreakdownChart(breakdown) {
 }
 
 export function renderGaugeChart(score, color) {
-  destroyIfExists('chart-gauge');
-  const el = document.getElementById('chart-gauge');
+  destroyIfExists("chart-gauge");
+  const el = document.getElementById("chart-gauge");
   if (!el) return;
-  const ctx = el.getContext('2d');
+  const ctx = el.getContext("2d");
 
   const colorMap = {
-    green:  '#22c55e',
-    yellow: '#eab308',
-    orange: '#f97316',
-    red:    '#ef4444',
+    green: "#22c55e",
+    yellow: "#eab308",
+    orange: "#f97316",
+    red: "#ef4444",
   };
-  const fillColor = colorMap[color] ?? '#7c3aed';
+  const fillColor = colorMap[color] ?? "#7c3aed";
 
   new Chart(ctx, {
-    type: 'doughnut',
+    type: "doughnut",
     data: {
       datasets: [
         {
           data: [score, 100 - score],
-          backgroundColor: [fillColor, 'rgba(255,255,255,0.06)'],
-          borderColor: ['transparent', 'transparent'],
+          backgroundColor: [fillColor, "rgba(255,255,255,0.06)"],
+          borderColor: ["transparent", "transparent"],
           borderRadius: [8, 0],
           circumference: 270,
           rotation: 225,
@@ -384,7 +410,7 @@ export function renderGaugeChart(score, color) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      cutout: '78%',
+      cutout: "78%",
       plugins: {
         legend: { display: false },
         tooltip: { enabled: false },
@@ -392,23 +418,26 @@ export function renderGaugeChart(score, color) {
     },
     plugins: [
       {
-        id: 'gaugeText',
+        id: "gaugeText",
         afterDraw(chart) {
-          const { ctx: c, chartArea: { top, bottom, left, right } } = chart;
+          const {
+            ctx: c,
+            chartArea: { top, bottom, left, right },
+          } = chart;
           const cx = (left + right) / 2;
           const cy = (top + bottom) / 2 + 20;
 
           c.save();
-          c.textAlign = 'center';
-          c.textBaseline = 'middle';
+          c.textAlign = "center";
+          c.textBaseline = "middle";
 
-          c.font = 'bold 36px Segoe UI, sans-serif';
+          c.font = "bold 36px Segoe UI, sans-serif";
           c.fillStyle = fillColor;
           c.fillText(`${score}`, cx, cy);
 
-          c.font = '13px Segoe UI, sans-serif';
-          c.fillStyle = '#9090b8';
-          c.fillText('/ 100', cx, cy + 26);
+          c.font = "13px Segoe UI, sans-serif";
+          c.fillStyle = "#9090b8";
+          c.fillText("/ 100", cx, cy + 26);
           c.restore();
         },
       },
@@ -423,8 +452,8 @@ export function renderGaugeChart(score, color) {
  * @param {object[]} members  Analyzed members array
  */
 export function renderClanBarChart(members) {
-  destroyIfExists('chart-clan-bar');
-  const ctx = document.getElementById('chart-clan-bar').getContext('2d');
+  destroyIfExists("chart-clan-bar");
+  const ctx = document.getElementById("chart-clan-bar").getContext("2d");
 
   // Build score buckets (0-9, 10-19, … 90-100) and determine worst colour per bucket.
   const buckets = Array(10).fill(0);
@@ -435,9 +464,11 @@ export function renderClanBarChart(members) {
     red: Array(10).fill(0),
   };
   function worsen(current, incoming) {
-    const order = ['green', 'yellow', 'orange', 'red'];
+    const order = ["green", "yellow", "orange", "red"];
     if (!current) return incoming;
-    return order.indexOf(incoming) > order.indexOf(current) ? incoming : current;
+    return order.indexOf(incoming) > order.indexOf(current)
+      ? incoming
+      : current;
   }
   const bucketWorst = Array(10).fill(null);
 
@@ -445,22 +476,33 @@ export function renderClanBarChart(members) {
     const score = Number(m.reliability ?? 0);
     const i = Math.min(9, Math.floor(score / 10));
     buckets[i]++;
-    const c = m.color || 'green';
+    const c = m.color || "green";
     if (bucketsByColor[c]) bucketsByColor[c][i]++;
     bucketWorst[i] = worsen(bucketWorst[i], c);
   });
 
-  const labels = ['0–9','10–19','20–29','30–39','40–49','50–59','60–69','70–79','80–89','90–100'];
+  const labels = [
+    "0–9",
+    "10–19",
+    "20–29",
+    "30–39",
+    "40–49",
+    "50–59",
+    "60–69",
+    "70–79",
+    "80–89",
+    "90–100",
+  ];
 
   const barColors = bucketWorst.map((c) => {
-    if (c === 'red') return 'rgba(239, 68, 68, 0.7)';
-    if (c === 'orange') return 'rgba(249, 115, 22, 0.7)';
-    if (c === 'yellow') return 'rgba(234, 179, 8, 0.7)';
-    return 'rgba(34, 197, 94, 0.7)';
+    if (c === "red") return "rgba(239, 68, 68, 0.7)";
+    if (c === "orange") return "rgba(249, 115, 22, 0.7)";
+    if (c === "yellow") return "rgba(234, 179, 8, 0.7)";
+    return "rgba(34, 197, 94, 0.7)";
   });
 
   new Chart(ctx, {
-    type: 'bar',
+    type: "bar",
     data: {
       labels,
       datasets: [
@@ -490,8 +532,11 @@ export function renderClanBarChart(members) {
               if (y) parts.push(`${y} ${chartTranslations.moderateRisk}`);
               if (o) parts.push(`${o} ${chartTranslations.highRisk}`);
               if (r) parts.push(`${r} ${chartTranslations.extremeRisk}`);
-              const breakdown = parts.length ? ` (${parts.join(', ')})` : '';
-              const memberWord = total === 1 ? chartTranslations.memberSingular : chartTranslations.memberPlural;
+              const breakdown = parts.length ? ` (${parts.join(", ")})` : "";
+              const memberWord =
+                total === 1
+                  ? chartTranslations.memberSingular
+                  : chartTranslations.memberPlural;
               return ` ${total} ${memberWord}${breakdown}`;
             },
           },
@@ -512,11 +557,11 @@ export function renderClanBarChart(members) {
  * @param {{ green: number; yellow: number; red: number }} summary
  */
 export function renderClanPieChart(summary) {
-  destroyIfExists('chart-clan-pie');
-  const ctx = document.getElementById('chart-clan-pie').getContext('2d');
+  destroyIfExists("chart-clan-pie");
+  const ctx = document.getElementById("chart-clan-pie").getContext("2d");
 
   new Chart(ctx, {
-    type: 'pie',
+    type: "pie",
     data: {
       labels: [
         chartTranslations.highReliability,
@@ -528,12 +573,12 @@ export function renderClanPieChart(summary) {
         {
           data: [summary.green, summary.yellow, summary.orange, summary.red],
           backgroundColor: [
-            'rgba(34, 197, 94, 0.8)',
-            'rgba(234, 179, 8, 0.8)',
-            'rgba(249, 115, 22, 0.8)',
-            'rgba(239, 68, 68, 0.8)',
+            "rgba(34, 197, 94, 0.8)",
+            "rgba(234, 179, 8, 0.8)",
+            "rgba(249, 115, 22, 0.8)",
+            "rgba(239, 68, 68, 0.8)",
           ],
-          borderColor: ['#0e0e1a', '#0e0e1a', '#0e0e1a', '#0e0e1a'],
+          borderColor: ["#0e0e1a", "#0e0e1a", "#0e0e1a", "#0e0e1a"],
           borderWidth: 2,
         },
       ],
@@ -542,13 +587,16 @@ export function renderClanPieChart(summary) {
       responsive: true,
       plugins: {
         legend: {
-          position: 'bottom',
+          position: "bottom",
           labels: { padding: 16, boxWidth: 12 },
         },
         tooltip: {
           callbacks: {
             label: (ctx) => {
-              const memberWord = ctx.parsed === 1 ? chartTranslations.memberSingular : chartTranslations.memberPlural;
+              const memberWord =
+                ctx.parsed === 1
+                  ? chartTranslations.memberSingular
+                  : chartTranslations.memberPlural;
               return ` ${ctx.label}: ${ctx.parsed} ${memberWord}`;
             },
           },

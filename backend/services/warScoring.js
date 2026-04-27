@@ -284,7 +284,7 @@ export function computeWarScore(
     verdict = "High reliability";
     color = "green";
   } else if (pct >= 56) {
-    verdict = "Moderate risk";
+    verdict = "Low risk";
     color = "yellow";
   } else if (pct >= 31) {
     verdict = "High risk";
@@ -540,7 +540,7 @@ export function computeWarReliabilityFallback(
     verdict = "High reliability";
     color = "green";
   } else if (pct >= 56) {
-    verdict = "Moderate risk";
+    verdict = "Low risk";
     color = "yellow";
   } else if (pct >= 31) {
     verdict = "High risk";
