@@ -757,6 +757,7 @@ export default async function handler(req, res) {
         const familyWeeks = weeks.filter((w) =>
           FAMILY_CLAN_TAGS.has(normalizeClanTag(w.clanTag)),
         ).length;
+        const approxPrefix = availableWeeks >= 10 ? "≥ " : "";
 
         const avgFame = Number.isFinite(warHistory?.avgFame)
           ? warHistory.avgFame
@@ -780,9 +781,8 @@ export default async function handler(req, res) {
           description:
             `**Fiabilité :** ${emoji} ${Math.round(pct)}% (${verdictFr})\n` +
             `**Tag :** ${tag}\n` +
-            `**Clan actuel :** ${currentClanName}\n` +
-            `**Semaines ${currentClanName} :** ≥ ${currentClanWeeks} semaine${currentClanWeeks === 1 ? "" : "s"}\n` +
-            `**Semaines Famille Resistance :** ≥ ${familyWeeks} semaines\n` +
+            `**Clan actuel :** ${currentClanName} (depuis ${currentClanWeeks} semaine${currentClanWeeks === 1 ? "" : "s"})\n` +
+            `**Stabilité dans la Famille Resistance :** ${approxPrefix}${familyWeeks} semaines\n` +
             `**Moyenne par semaine :** ${avgFame}\n` +
             `**Record de points :** ${allTimeRecord}`,
           fields,
