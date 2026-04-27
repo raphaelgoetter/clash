@@ -522,7 +522,11 @@ async function postWarSummary(
       );
     }
     let line;
-    if (isLastDay && earlyWinByDay3 === true && totalFame === 0) {
+    if (
+      isLastDay &&
+      totalFame === 0 &&
+      (earlyWinByDay3 === true || clinchedInfo?.isClinchedWin === true)
+    ) {
       line = "0 pts (victoire acquise.)";
     } else {
       line = `≈${fmt(totalFame)} pts`;
@@ -614,6 +618,13 @@ async function postWarSummary(
       value: `✅ Victoire mathématiquement assurée (avance minimale garantie: ${fmt(clinchedInfo.margin)} pts).`,
       inline: false,
     });
+  } else if (earlyWinByDay3 === true) {
+    fields.push({
+      name: "<:topplayers:1493708397407899648> Statut de la course",
+      value:
+        "✅ Victoire acquise dès le samedi — J4 ne rapporte aucun point supplémentaire.",
+      inline: false,
+    });
   }
 
   // Footer : date de publication réelle du constat (après le reset GDC).
@@ -698,9 +709,13 @@ async function postWarSummary(
     }
 
     if (clanRank !== null) {
+      const rankValue =
+        clanRank === 1
+          ? `${fmtRank(clanRank)} / 5 — ✅ Première place`
+          : `${fmtRank(clanRank)} / 5`;
       weeklyFields.push({
         name: "<:topplayers:1493708397407899648> Classement",
-        value: `${fmtRank(clanRank)} / 5`,
+        value: rankValue,
         inline: false,
       });
     }
