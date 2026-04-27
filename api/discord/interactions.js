@@ -825,15 +825,15 @@ export default async function handler(req, res) {
             inline: false,
           },
           {
-            name: "Clan",
+            name: "Clans :",
             value:
-              `**Clan actuel :** ${currentClanLink} (depuis ${currentClanWeeksPrefix}${currentClanWeeks} semaine${currentClanWeeks === 1 ? "" : "s"})\n` +
-              previousClanLine +
-              `**Stabilité dans la Famille Resistance :** ${familyWeeksPrefix}${familyWeeks} semaines`,
+              `- **Clan actuel :** ${currentClanLink} (depuis ${currentClanWeeksPrefix}${currentClanWeeks} semaine${currentClanWeeks === 1 ? "" : "s"})\n` +
+              `- **Clan précédent :** ${previousClanLink || "Aucun"}\n` +
+              `- **Stabilité dans la Famille Resistance :** ${familyWeeksPrefix}${familyWeeks} semaines`,
             inline: false,
           },
           {
-            name: `Historique (${displayedWeeks} semaines)`,
+            name: `Historique GDC (${displayedWeeks} semaines)`,
             value:
               `${historyCodeBlock}\n` +
               `**Moyenne par semaine :** ${avgFame}\n` +
@@ -848,6 +848,7 @@ export default async function handler(req, res) {
           color: COLOR_MAP[color] ?? 0x808080,
           description:
             `**Tag :** ${tag}\n` +
+            `**Trophées :** ${analysis.overview.trophies ?? 0}\n` +
             `**Fiabilité :** ${emoji} ${Math.round(pct)}% (${verdictFr})`,
           fields,
           footer: {
