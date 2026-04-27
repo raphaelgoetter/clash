@@ -782,7 +782,12 @@ export default async function handler(req, res) {
         const previousClanLine = previousClanLink
           ? `**Clan précédent :** ${previousClanLink}\n`
           : "";
-        const approxPrefix = availableWeeks >= 10 ? "≥ " : "";
+        const currentClanWeeksPrefix =
+          currentClanWeeks > 0 && currentClanWeeks === availableWeeks
+            ? "≥ "
+            : "";
+        const familyWeeksPrefix =
+          familyWeeks > 0 && familyWeeks === availableWeeks ? "≥ " : "";
 
         const avgFame = Number.isFinite(warHistory?.avgFame)
           ? warHistory.avgFame
@@ -809,9 +814,9 @@ export default async function handler(req, res) {
           description:
             `**Fiabilité :** ${emoji} ${Math.round(pct)}% (${verdictFr})\n` +
             `**Tag :** ${tag}\n` +
-            `**Clan actuel :** ${currentClanLink} (depuis ${approxPrefix}${currentClanWeeks} semaine${currentClanWeeks === 1 ? "" : "s"})\n` +
+            `**Clan actuel :** ${currentClanLink} (depuis ${currentClanWeeksPrefix}${currentClanWeeks} semaine${currentClanWeeks === 1 ? "" : "s"})\n` +
             previousClanLine +
-            `**Stabilité dans la Famille Resistance :** ${approxPrefix}${familyWeeks} semaines`,
+            `**Stabilité dans la Famille Resistance :** ${familyWeeksPrefix}${familyWeeks} semaines`,
           fields,
           footer: {
             text: `Affiche les ${availableWeeks} dernières semaines disponibles dans L'API Clash Royale.`,
