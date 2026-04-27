@@ -796,7 +796,13 @@ export default async function handler(req, res) {
           ? warHistory.maxFame
           : 0;
 
+        const trustBreakdownCodeBlock = buildScoreBreakdownCodeBlock(score);
         const fields = [
+          {
+            name: "Fiabilité",
+            value: trustBreakdownCodeBlock,
+            inline: false,
+          },
           {
             name: `Historique (${displayedWeeks} semaines)`,
             value:
