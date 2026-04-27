@@ -54,6 +54,8 @@ const COLOR_MAP = {
 };
 const EMOJI_MAP = { green: "🟢", yellow: "🟡", orange: "🟠", red: "🔴" };
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
+const FAMILY_CLAN_TAGS = new Set(["#Y8JUPC9C", "#LRQP20V9", "#QU9UQJRL"]);
+const RESISTANTS_CLAN_TAG = "#LRQP20V9";
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 const ROLE_FR = {
@@ -93,6 +95,28 @@ function criterionIcon(score, max) {
   if (r >= 0.75) return "✅";
   if (r >= 0.4) return "⚠️";
   return "❌";
+}
+
+function deckUsageBadge(decksUsed, ignored = false) {
+  if (ignored) return "⚪";
+  if (typeof decksUsed !== "number" || Number.isNaN(decksUsed)) return "❔";
+  if (decksUsed >= 16) return "✅";
+  if (decksUsed >= 8) return "⚠️";
+  return "❌";
+}
+
+function formatDeckHistory(weeks) {
+  return weeks
+    .map(
+      (w) => `${deckUsageBadge(w.decksUsed, w.ignored)}${w.decksUsed ?? "-"}`,
+    )
+    .join(" ");
+}
+
+function formatPointHistory(weeks) {
+  return weeks
+    .map((w) => `${Number.isFinite(w.fame) ? w.fame : "0"}`)
+    .join(" ");
 }
 
 // Convertit un critère de breakdown en field Discord (inline)
@@ -464,6 +488,9 @@ export default async function handler(req, res) {
             "**Trust**\n" +
             "Commande : `/trust tag:#TAG`\n" +
             "Usage : donne le score de fiabilité d'un joueur à partir de son tag\n\n" +
+            "**Stats**\n" +
+            "Commande : `/stats tag:#TAG`\n" +
+            "Usage : affiche les statistiques GDC détaillées d'un membre de la famille\n\n" +
             "**Trust Clan**\n" +
             "Commande : `/trust-clan clan:N`\n" +
             "Usage : liste les membres risqués du clan\n\n" +
@@ -610,6 +637,151 @@ export default async function handler(req, res) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             content: `Erreur : ${err.message}`,
+            flags: 64,
+          }),
+        });
+      }
+    });
+    return;
+  }
+
+  // Commande /stats
+  if (body.type === 2 && body.data?.name === "stats") {
+    const tagOption = body.data.options?.find((o) => o.name === "tag");
+    const rawTag = tagOption?.value?.trim();
+    if (!rawTag) {
+      return res.status(200).json({
+        type: 4,
+        data: {
+          content: "Veuillez fournir un tag de joueur (ex: `#ABC123`).",
+          flags: 64,
+        },
+      });
+    }
+
+    res.status(200).json({ type: 5 });
+    const tag = rawTag.startsWith("#") ? rawTag : `#${rawTag}`;
+    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+
+    runBackground(async () => {
+      try {
+        const apiResp = await fetch(
+          `${TRUST_ROYALE_URL}/api/player/${encodeURIComponent(tag)}/analysis`,
+          { headers: { Accept: "application/json" } },
+        );
+
+        if (!apiResp.ok) {
+          const msg =
+            apiResp.status === 404
+              ? `Joueur \`${tag}\` introuvable.`
+              : `Erreur API (${apiResp.status}).`;
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: msg, flags: 64 }),
+          });
+          return;
+        }
+
+        const analysis = await apiResp.json();
+        const score = analysis.warScore ?? analysis.reliability;
+        const { pct, color, verdict } = score;
+        const emoji = EMOJI_MAP[color] ?? "⚪";
+        const verdictFr =
+          {
+            "High reliability": "Fiabilité élevée",
+            "Moderate risk": "Risque modéré",
+            "High risk": "Risque élevé",
+            "Extreme risk": "Risque extrême",
+          }[verdict] ?? verdict;
+
+        const warHistory = analysis.warHistory;
+        const weeks = Array.isArray(warHistory?.weeks)
+          ? warHistory.weeks.filter((w) => !w.isCurrent)
+          : [];
+        const latestWeeks = weeks.slice(0, 12);
+
+        const deckHistory = latestWeeks.length
+          ? formatDeckHistory(latestWeeks)
+          : "Aucune semaine GDC terminée trouvée.";
+        const pointHistory = latestWeeks.length
+          ? formatPointHistory(latestWeeks)
+          : "Aucune semaine GDC terminée trouvée.";
+
+        const resistantsWeeks = weeks.filter(
+          (w) => normalizeClanTag(w.clanTag) === RESISTANTS_CLAN_TAG,
+        ).length;
+        const familyWeeks = weeks.filter((w) =>
+          FAMILY_CLAN_TAGS.has(normalizeClanTag(w.clanTag)),
+        ).length;
+
+        const avgFame = Number.isFinite(warHistory?.avgFame)
+          ? warHistory.avgFame
+          : 0;
+        const maxFame = Number.isFinite(warHistory?.maxFame)
+          ? warHistory.maxFame
+          : 0;
+
+        const fields = [
+          {
+            name: "Fiabilité",
+            value: `${emoji} ${Math.round(pct)}% (${verdictFr})`,
+            inline: false,
+          },
+          {
+            name: "Historique Decks",
+            value: deckHistory,
+            inline: false,
+          },
+          {
+            name: "Historique Points",
+            value: pointHistory,
+            inline: false,
+          },
+          {
+            name: "Moyenne points/semaine",
+            value: `${avgFame}`,
+            inline: true,
+          },
+          {
+            name: "Record points/semaine",
+            value: `${maxFame}`,
+            inline: true,
+          },
+          {
+            name: "Semaines Les Resistants",
+            value: `${resistantsWeeks}`,
+            inline: true,
+          },
+          {
+            name: "Semaines Famille Resistance",
+            value: `${familyWeeks}`,
+            inline: true,
+          },
+        ];
+
+        const embed = {
+          title: `<:interrogation:1493849417520906271> Statistiques GDC : ${analysis.overview.name}`,
+          url: `${TRUST_ROYALE_URL}/?mode=player&tag=${encodeURIComponent(tag)}`,
+          color: COLOR_MAP[color] ?? 0x808080,
+          description: `Tag : ${tag}`,
+          fields,
+          footer: {
+            text: `Historique récent : ${latestWeeks.length} semaine(s)`,
+          },
+        };
+
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ embeds: [embed] }),
+        });
+      } catch (err) {
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur lors de l'analyse : ${err.message}`,
             flags: 64,
           }),
         });

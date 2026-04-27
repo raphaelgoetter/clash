@@ -152,6 +152,7 @@ node scripts/registerCommands.js
 | Commande                            | Description                                                              |
 | ----------------------------------- | ------------------------------------------------------------------------ | -------- | ------------------------------------------------------------------ |
 | `/trust tag:#TAG`                   | Analyse la fiabilité d'un joueur                                         |
+| `/stats tag:#TAG`                   | Affiche les statistiques GDC détaillées d'un membre de la famille        |
 | `/promote clan:N min:X`             | Liste les joueurs ≥ X points de la semaine précédente                    |
 | `/trust-clan clan:N`                | Liste les membres High/Extreme risk d'un clan                            |
 | `/chelem clan:N [season:X]`         | Liste les joueurs 16/16 decks chaque semaine d'une saison                |

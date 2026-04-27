@@ -36,14 +36,15 @@ Commencer par taper `/` dans le chat pour voir la liste des commandes disponible
 Liste des commandes :
 
 1. **`/trust`** : analyse la fiabilité d'un joueur. Options : `tag:#TAG`
-2. **`/trust-clan`** : liste tous les membres peu fiables d'un clan de la famille. Options : `clan:N`
-3. **`/late`** : liste les joueurs en retard sur leurs decks de la journée (avant le reset). Options : `clan:N`
-4. **`/chelem`** : liste les joueurs ayant fait 16/16 decks toutes les semaines d'une saison (par défaut : la dernière saison terminée). Options : `clan:N [season:X]`
-5. **`/promote`** : liste les joueurs ayant atteint ≥ 2600 pts la semaine précédente. Options : `clan:N`
-6. **`/top-players`** : liste les meilleurs joueurs de la famille pour la période précédente. Options : `number:[3|5|10] period:[week|season]`
-7. **`/demote`** : liste les joueurs n’ayant pas fait tous leurs combats GDC la semaine précédente. Options : `clan:N`
-8. **`/discord-link`** : lie son compte Clash à son Discord. Options : `tag:#TAG` (tag2 et tag3 optionnels pour comptes multiples)
-9. **`/discord-check`** : vérifie quels membres d'un clan sont présents sur le serveur Discord. Options : `clan:N`
+2. **`/stats`** : affiche les statistiques GDC détaillées d'un membre de la famille. Options : `tag:#TAG`
+3. **`/trust-clan`** : liste tous les membres peu fiables d'un clan de la famille. Options : `clan:N`
+4. **`/late`** : liste les joueurs en retard sur leurs decks de la journée (avant le reset). Options : `clan:N`
+5. **`/chelem`** : liste les joueurs ayant fait 16/16 decks toutes les semaines d'une saison (par défaut : la dernière saison terminée). Options : `clan:N [season:X]`
+6. **`/promote`** : liste les joueurs ayant atteint ≥ 2600 pts la semaine précédente. Options : `clan:N`
+7. **`/top-players`** : liste les meilleurs joueurs de la famille pour la période précédente. Options : `number:[3|5|10] period:[week|season]`
+8. **`/demote`** : liste les joueurs n’ayant pas fait tous leurs combats GDC la semaine précédente. Options : `clan:N`
+9. **`/discord-link`** : lie son compte Clash à son Discord. Options : `tag:#TAG` (tag2 et tag3 optionnels pour comptes multiples)
+10. **`/discord-check`** : vérifie quels membres d'un clan sont présents sur le serveur Discord. Options : `clan:N`
 
 > Remarque : l'installation de ce bot n'est réalisable que par displaynone.
 

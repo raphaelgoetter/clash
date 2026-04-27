@@ -338,6 +338,19 @@ node scripts/registerCommands.js
 Tag : #YRGJGR8R
 ```
 
+**`/stats`**
+
+```
+🟢 NomJoueur ⤑ 90 % (Fiabilité élevée)
+Historique Decks : ✅16 ⚠️15 ✅16 ✅16 ✅16 ✅16
+Historique Points : 1900 2300 3200 2900 2500 2700
+Moyenne points/semaine : 2570
+Record points/semaine : 3200
+Semaines Les Resistants : 4
+Semaines Famille Resistance : 6
+Tag : #YRGJGR8R
+```
+
 **`/trust-clan`**
 
 ```

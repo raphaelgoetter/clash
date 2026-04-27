@@ -35,6 +35,19 @@ const commands = [
     ],
   },
   {
+    name: "stats",
+    description:
+      "Affiche les statistiques GDC détaillées d'un membre de la famille à partir de son tag.",
+    options: [
+      {
+        type: 3, // STRING
+        name: "tag",
+        description: "Tag du joueur (ex : #ABC123)",
+        required: true,
+      },
+    ],
+  },
+  {
     name: "discord-link",
     description: "Lie un ou plusieurs tags Clash Royale à ton compte Discord.",
     options: [
