@@ -468,7 +468,8 @@ export default async function handler(req, res) {
         // verdict en français
         const FR_VERDICTS = {
           "High reliability": "Très fiable",
-          "Moderate risk": "Risque faible",
+          "Low risk": "Risque faible",
+          "Moderate risk": "Risque modéré",
           "High risk": "Risque élevé",
           "Extreme risk": "Risque extrême",
         };
@@ -741,7 +742,8 @@ export default async function handler(req, res) {
         const verdictFr =
           {
             "High reliability": "Très fiable",
-            "Moderate risk": "Risque faible",
+            "Low risk": "Risque faible",
+            "Moderate risk": "Risque modéré",
             "High risk": "Risque élevé",
             "Extreme risk": "Risque extrême",
           }[verdict] ?? verdict;
