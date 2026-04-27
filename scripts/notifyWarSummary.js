@@ -223,10 +223,16 @@ function fmt(n) {
 function computeWeeklySummary(allDays) {
   const isColosseum = allDays.some((d) => d.periodType === "colosseum");
 
-  // Decks : somme de chaque journée (0 si snapshot absent)
-  const decksByDay = allDays.map((d) =>
-    Object.values(d.decks ?? {}).reduce((a, b) => a + b, 0),
-  );
+  // Decks : somme de chaque journée. Utiliser snapshotCount si le détail decks
+  // est absent, comme c'est le cas pour certains jours de snapshot.  
+  // Cela permet au bilan de semaine de refléter les decks totaux exacts.
+  const decksByDay = allDays.map((d) => {
+    const snapshotCount = Number.isFinite(d.snapshotCount)
+      ? d.snapshotCount
+      : null;
+    if (snapshotCount != null && snapshotCount > 0) return snapshotCount;
+    return Object.values(d.decks ?? {}).reduce((a, b) => a + b, 0);
+  });
   const totalDecksWeek = decksByDay.reduce((a, b) => a + b, 0);
   const avgDecksPerDay = totalDecksWeek / allDays.length;
 
