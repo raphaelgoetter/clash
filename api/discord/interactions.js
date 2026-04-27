@@ -108,15 +108,33 @@ function deckUsageBadge(decksUsed, ignored = false) {
 function formatDeckHistory(weeks) {
   return weeks
     .map(
-      (w) => `${deckUsageBadge(w.decksUsed, w.ignored)}${w.decksUsed ?? "-"}`,
+      (w) => `${deckUsageBadge(w.decksUsed, w.ignored)} ${w.decksUsed ?? "-"}`,
     )
-    .join(" ");
+    .join(" · ");
 }
 
 function formatPointHistory(weeks) {
   return weeks
     .map((w) => `${Number.isFinite(w.fame) ? w.fame : "0"}`)
-    .join(" ");
+    .join(" · ");
+}
+
+function buildSparkline(values) {
+  if (!Array.isArray(values) || values.length === 0) return "";
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  if (min === max) return "█".repeat(values.length);
+  const blocks = ["▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"];
+  return values
+    .map((value) => {
+      const ratio = (value - min) / (max - min);
+      const index = Math.min(
+        blocks.length - 1,
+        Math.max(0, Math.round(ratio * (blocks.length - 1))),
+      );
+      return blocks[index];
+    })
+    .join("");
 }
 
 // Convertit un critère de breakdown en field Discord (inline)
@@ -710,6 +728,11 @@ export default async function handler(req, res) {
         const pointHistory = latestWeeks.length
           ? formatPointHistory(latestWeeks)
           : "Aucune semaine GDC terminée trouvée.";
+        const sparkline = latestWeeks.length
+          ? buildSparkline(
+              latestWeeks.map((w) => (Number.isFinite(w.fame) ? w.fame : 0)),
+            )
+          : "";
 
         const resistantsWeeks = weeks.filter(
           (w) => normalizeClanTag(w.clanTag) === RESISTANTS_CLAN_TAG,
@@ -725,17 +748,20 @@ export default async function handler(req, res) {
           ? warHistory.maxFame
           : 0;
 
-        const historyTable = latestWeeks.length
-          ? [
-              `Decks : ${formatDeckHistory(latestWeeks)}`,
-              `Points: ${formatPointHistory(latestWeeks)}`,
-            ].join("\n")
-          : "Aucune semaine GDC terminée trouvée.";
-
         const fields = [
           {
-            name: "Historique",
-            value: `\`\`\`\n${historyTable}\n\`\`\``,
+            name: "Historique Decks",
+            value: deckHistory,
+            inline: false,
+          },
+          {
+            name: "Historique Points",
+            value: pointHistory,
+            inline: false,
+          },
+          {
+            name: "Tendance",
+            value: sparkline || "Aucune donnée",
             inline: false,
           },
           {
@@ -764,10 +790,13 @@ export default async function handler(req, res) {
           title: `<:interrogation:1493849417520906271> Statistiques GDC : ${analysis.overview.name}`,
           url: `${TRUST_ROYALE_URL}/?mode=player&tag=${encodeURIComponent(tag)}`,
           color: COLOR_MAP[color] ?? 0x808080,
-          description: `Tag : ${tag}\n${emoji} ${Math.round(pct)}% (${verdictFr})`,
+          description:
+            `Tag : ${tag}\n` +
+            `${emoji} ${Math.round(pct)}% (${verdictFr})\n` +
+            `Record all-time disponible : ${allTimeRecord}`,
           fields,
           footer: {
-            text: `Affiche ${displayedWeeks}/${availableWeeks} dernières semaines terminées (max ${maxDisplayedWeeks})`,
+            text: `Affiche ${availableWeeks} dernières semaines disponibles du riverracelog. L'API ne fournit actuellement que cet historique.`,
           },
         };
 
