@@ -223,15 +223,16 @@ function fmt(n) {
 function computeWeeklySummary(allDays) {
   const isColosseum = allDays.some((d) => d.periodType === "colosseum");
 
-  // Decks : somme de chaque journée. Utiliser snapshotCount si le détail decks
-  // est absent, comme c'est le cas pour certains jours de snapshot.
-  // Cela permet au bilan de semaine de refléter les decks totaux exacts.
+  // Decks : somme de chaque journée.
+  // On privilégie le détail `decks` quand il existe, car il reflète le total réel.
+  // Si `decks` est vide, on retombe sur `snapshotCount`.
   const decksByDay = allDays.map((d) => {
+    const deckSum = Object.values(d.decks ?? {}).reduce((a, b) => a + b, 0);
+    if (deckSum > 0) return deckSum;
     const snapshotCount = Number.isFinite(d.snapshotCount)
       ? d.snapshotCount
       : null;
-    if (snapshotCount != null && snapshotCount > 0) return snapshotCount;
-    return Object.values(d.decks ?? {}).reduce((a, b) => a + b, 0);
+    return snapshotCount != null && snapshotCount > 0 ? snapshotCount : 0;
   });
   const totalDecksWeek = decksByDay.reduce((a, b) => a + b, 0);
   const avgDecksPerDay = totalDecksWeek / allDays.length;
@@ -743,6 +744,8 @@ async function postWarSummary(
   );
 }
 
+export { computeWeeklySummary };
+
 async function main() {
   const now = new Date();
   const log = await loadLog();
@@ -892,4 +895,7 @@ async function main() {
   process.exit(0);
 }
 
-main();
+const __filename = fileURLToPath(import.meta.url);
+if (process.argv[1] === __filename) {
+  main();
+}
