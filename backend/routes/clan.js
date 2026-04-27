@@ -1240,6 +1240,14 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         }
       }
 
+      const hasFamilyWeek = prevWeeks.some((w) => {
+        const normalized = (w.clanTag ?? "").replace(/^#/, "").toUpperCase();
+        return FAMILY_CLAN_TAGS.includes(normalized);
+      });
+      if (!hasFamilyWeek) {
+        hasEnoughHistory = false;
+      }
+
       const isNewClanArrivee =
         (wh?.streakInCurrentClan ?? 0) < 2 && (wh?.totalWeeks ?? 0) > 1;
 
