@@ -224,7 +224,7 @@ function computeWeeklySummary(allDays) {
   const isColosseum = allDays.some((d) => d.periodType === "colosseum");
 
   // Decks : somme de chaque journée. Utiliser snapshotCount si le détail decks
-  // est absent, comme c'est le cas pour certains jours de snapshot.  
+  // est absent, comme c'est le cas pour certains jours de snapshot.
   // Cela permet au bilan de semaine de refléter les decks totaux exacts.
   const decksByDay = allDays.map((d) => {
     const snapshotCount = Number.isFinite(d.snapshotCount)
