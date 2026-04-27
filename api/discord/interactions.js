@@ -107,16 +107,28 @@ function deckUsageBadge(decksUsed, ignored = false) {
 
 function formatDeckHistory(weeks) {
   return weeks
-    .map(
-      (w) => `${deckUsageBadge(w.decksUsed, w.ignored)} ${w.decksUsed ?? "-"}`,
-    )
-    .join(" · ");
+    .map((w) => {
+      const badge = deckUsageBadge(w.decksUsed, w.ignored);
+      const deck = String(w.decksUsed ?? "-");
+      return `${badge} ${deck.padStart(2, " ")}`;
+    })
+    .join("  ");
 }
 
 function formatPointHistory(weeks) {
   return weeks
-    .map((w) => `${Number.isFinite(w.fame) ? w.fame : "0"}`)
-    .join(" · ");
+    .map((w) => {
+      const fame = Number.isFinite(w.fame) ? w.fame : 0;
+      return String(fame).padStart(4, " ");
+    })
+    .join("  ");
+}
+
+function buildHistoryCodeBlock(weeks) {
+  const headers = [`Decks :`, `Points:`];
+  const deckLine = `Decks : ${formatDeckHistory(weeks)}`;
+  const pointLine = `Points: ${formatPointHistory(weeks)}`;
+  return `\`\`\`\n${deckLine}\n${pointLine}\n\`\`\``;
 }
 
 function buildSparkline(values) {
@@ -734,6 +746,10 @@ export default async function handler(req, res) {
             )
           : "";
 
+        const historyCodeBlock = latestWeeks.length
+          ? buildHistoryCodeBlock(latestWeeks)
+          : "Aucune semaine GDC terminée trouvée.";
+
         const resistantsWeeks = weeks.filter(
           (w) => normalizeClanTag(w.clanTag) === RESISTANTS_CLAN_TAG,
         ).length;
@@ -750,53 +766,40 @@ export default async function handler(req, res) {
 
         const fields = [
           {
-            name: "Historique Decks",
-            value: deckHistory,
+            name: `Historique (${displayedWeeks} semaines)`,
+            value: historyCodeBlock,
             inline: false,
           },
           {
-            name: "Historique Points",
-            value: pointHistory,
-            inline: false,
-          },
-          {
-            name: "Tendance",
-            value: sparkline || "Aucune donnée",
-            inline: false,
-          },
-          {
-            name: "Moyenne",
+            name: "Moyenne par semaine",
             value: `${avgFame}`,
-            inline: true,
+            inline: false,
           },
           {
-            name: "Record",
+            name: "Record de points",
             value: `${allTimeRecord}`,
-            inline: true,
+            inline: false,
           },
           {
             name: "Semaines Les Resistants",
-            value: `${resistantsWeeks}`,
+            value: `(au moins) ${resistantsWeeks} semaines`,
             inline: false,
           },
           {
             name: "Semaines Famille Resistance",
-            value: `${familyWeeks}`,
+            value: `(au moins) ${familyWeeks} semaines`,
             inline: false,
           },
         ];
 
         const embed = {
-          title: `<:interrogation:1493849417520906271> Statistiques GDC : ${analysis.overview.name}`,
+          title: `<:interrogation:1493849417520906271> Statistiques GDC : ${analysis.overview.name} (${tag})`,
           url: `${TRUST_ROYALE_URL}/?mode=player&tag=${encodeURIComponent(tag)}`,
           color: COLOR_MAP[color] ?? 0x808080,
-          description:
-            `Tag : ${tag}\n` +
-            `${emoji} ${Math.round(pct)}% (${verdictFr})\n` +
-            `Record all-time disponible : ${allTimeRecord}`,
+          description: `**Fiabilité :** ${emoji} ${Math.round(pct)}% (${verdictFr})`,
           fields,
           footer: {
-            text: `Affiche ${availableWeeks} dernières semaines disponibles du riverracelog. L'API ne fournit actuellement que cet historique.`,
+            text: `Affiche les ${availableWeeks} dernières semaines disponibles dans L'API Clash Royale.`,
           },
         };
 
