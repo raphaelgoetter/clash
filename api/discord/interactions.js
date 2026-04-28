@@ -894,7 +894,7 @@ export default async function handler(req, res) {
 
         const fields = [
           {
-            name: "Fiabilité",
+            name: `Fiabilité : ${emoji} ${Math.round(pct)}% (${verdictFr})`,
             value: trustBreakdownCodeBlock,
             inline: false,
           },
@@ -907,7 +907,7 @@ export default async function handler(req, res) {
             inline: false,
           },
           {
-            name: `Historique GDC (${displayedWeeks} semaines)`,
+            name: `Historique GDC (${displayedWeeks} semaines disponibles)`,
             value: historyCodeBlock,
             inline: false,
           },
@@ -922,15 +922,8 @@ export default async function handler(req, res) {
           title: `<:scroll:1493850130560847892> Stats complètes : ${analysis.overview.name}`,
           url: `${TRUST_ROYALE_URL}/?mode=player&tag=${encodeURIComponent(tag)}`,
           color: COLOR_MAP[color] ?? 0x808080,
-          description:
-            `**Tag :** ${tag}\n` +
-            `**Niveau d'expérience :** ${analysis.overview.expLevel ?? "N/A"}\n` +
-            `**Trophées :** ${analysis.overview.trophies ?? 0}\n` +
-            `**Fiabilité :** ${emoji} ${Math.round(pct)}% (${verdictFr})`,
+          description: `**Tag :** ${tag} · <:xp:1498633184319901796> ${analysis.overview.expLevel ?? "N/A"} · <:trophy2:1493677804733337621> ${analysis.overview.trophies ?? 0}`,
           fields,
-          footer: {
-            text: `Affiche les ${availableWeeks} dernières semaines disponibles dans L'API Clash Royale.`,
-          },
         };
 
         await fetch(webhookUrl, {
