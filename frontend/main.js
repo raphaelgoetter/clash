@@ -1723,7 +1723,7 @@ function renderPlayerResults(data) {
       )
       .replace(
         /points \/ week \(average weekly fame, 1,000–3,000\)/gi,
-        "points / semaine (gloire hebdomadaire moyenne, 1 000–3 000)",
+        "points / semaine (1 000–3 000)",
       )
       .replace(/fame \/ week \(cap 3,000\)/gi, t("avgFameCap"))
       .replace(
@@ -1763,7 +1763,7 @@ function renderPlayerResults(data) {
         "Aucune donnée — aucun combat de guerre trouvé",
       )
       .replace(/total cw2 wins \(cap 250\)/gi, t("cw2BattleWinsCap"))
-      .replace(/victories in river race/gi, "victoires en River Race")
+      .replace(/victories in river race/gi, "victoires en GDC")
       .replace(/trophies \(range 4000–14000\)/gi, "trophées (plage 4000–14000)")
       .replace(/trophies/gi, "trophées")
       .replace(/battles required/gi, "combats requis")

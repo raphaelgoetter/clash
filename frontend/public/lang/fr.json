@@ -138,7 +138,7 @@
   "fallbackFormulaBody": "Activité guerre (max 12), Activité générale (8), Victoires CW2 (8), Win Rate (War) (5, nécessite ≥ 10 batailles GDC), Expérience (3), Dons (2) et Discord (2).",
   "rateLimitedWarning": "Limite de requêtes Clash API dépassée – données partielles affichées, réessayez dans quelques secondes.",
   "regularityDetail": "{{deckSum}}/{{idealDecks}} decks en {{completedCount}} semaines ({{pct}} %)",
-  "avgScoreDetail": "{{avgFame}} pts / semaine (gloire hebdomadaire moyenne, 1 000–3 000)",
+  "avgScoreDetail": "{{avgFame}} pts / semaine (1 000–3 000)",
   "cw2BattleWinsDetail": "{{cw2Wins}} victoires CW2 totales (maxé à 250)",
   "clanStabilityDetail": "{{s}} semaines consécutives dans le clan ou la famille",
   "lastSeenDetail": "{{lastSeenText}}",
