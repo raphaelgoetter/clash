@@ -542,7 +542,7 @@ async function postWarSummary(
         line += ` ${fmtDelta(totalFame - prevFame)}`;
     }
     fields.push({
-      name: "<:trophy2:1493677804733337621> Points marqués",
+      name: "<:trophy:1498645869224792105> Points marqués",
       value: line,
       inline: false,
     });
@@ -680,8 +680,8 @@ async function postWarSummary(
     const weeklyFields = [];
     if (weekly.totalFameWeek !== null) {
       const fameLabel = weekly.isColosseum
-        ? "<:trophy2:1493677804733337621> Points totaux (Colisée)"
-        : "<:trophy2:1493677804733337621> Points totaux";
+        ? "<:trophy:1498645869224792105> Points totaux (Colisée)"
+        : "<:trophy:1498645869224792105> Points totaux";
       weeklyFields.push({
         name: fameLabel,
         value: `≈${fmt(weekly.totalFameWeek)} pts`,

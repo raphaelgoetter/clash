@@ -2435,7 +2435,7 @@ export default async function handler(req, res) {
           : `Trié par Total Dernière GDC`;
 
         const embed = {
-          title: `<:trophy2:1493677804733337621> Groupe de GDC — ${resolved.name}`,
+          title: `<:trophy:1498645869224792105> Groupe de GDC — ${resolved.name}`,
           color: 0x9b59b6,
           description: rows.join("\n\n"),
           image: {
