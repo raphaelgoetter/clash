@@ -1713,9 +1713,9 @@ function renderPlayerResults(data) {
           `membre depuis ${Number(n) >= 10 ? "au moins " : ""}${n} ${Number(n) > 1 ? "semaines" : "semaine"}`,
       )
       .replace(
-        /(at least\s*)?([0-9]+)\s*consecutive weeks?\s*in this clan/gi,
+        /(at least\s*)?([0-9]+)\s*consecutive weeks?\s*in this clan(?: or family)?/gi,
         (_, atLeast, n) =>
-          `${atLeast ? "au moins " : ""}${n} ${Number(n) > 1 ? "semaines" : "semaine"} ${Number(n) > 1 ? "consécutives" : "consécutive"} dans le clan`,
+          `${atLeast ? "au moins " : ""}${n} ${Number(n) > 1 ? "semaines" : "semaine"} ${Number(n) > 1 ? "consécutives" : "consécutive"} dans le clan ou la famille`,
       )
       .replace(
         /([0-9.,]+)\s*weeks?/gi,

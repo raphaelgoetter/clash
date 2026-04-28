@@ -158,7 +158,7 @@ export function estimateWinsFromFame(fame, decksUsed, boatAttacks) {
  * Criteria (max sans win rate / avec win rate) :
  *  1. Régularité  /12 — decks used relative to ideal 16/week
  *  2. Score moyen /10 — average fame per played week (cap 3 000)
- *  3. Stabilité   / 8 — consecutive weeks in current clan (cap 5 wks = 8)
+ *  3. Stabilité   / 8 — consecutive weeks in current clan or family (cap 5 wks = 8)
  *  4. CW2 Wins    / 8 — badge progress (cap 250)
  *  5. Last Seen   / 5 — only in clan context (optional)
  *  6. Win Rate    / 3 — optional, only when battle log available
@@ -218,9 +218,11 @@ export function computeWarScore(
         );
   const scoreMoyen = r(rawAvgScore);
 
-  // 3. Stabilité (0-8) — échelle absolue : 5 semaines consécutives = 8/8
+  // 3. Stabilité (0-8) — échelle absolue : 5 semaines consécutives dans le clan ou la famille = 8/8
   // streak=0→0, 1→1.6, 2→3.2, 3→4.8, 4→6.4, 5+→8.0
-  const stabilite = r(Math.min(8, warHistory.streakInCurrentClan * 1.6));
+  const familyStreak =
+    warHistory.streakInFamily ?? warHistory.streakInCurrentClan;
+  const stabilite = r(Math.min(8, familyStreak * 1.6));
 
   // 4. Expérience trophées (0-3) — [4 000, 14 000] trophées actuels
   const TROPHY_MIN = 4000;
@@ -353,9 +355,9 @@ export function computeWarScore(
       score: stabilite,
       max: 8,
       detail: (() => {
-        const s = warHistory.streakInCurrentClan;
+        const s = warHistory.streakInFamily ?? warHistory.streakInCurrentClan;
         const isApiMaxWeeks = s >= 10;
-        const base = `${isApiMaxWeeks ? "at least " : ""}${s} consecutive week${s !== 1 ? "s" : ""} in this clan`;
+        const base = `${isApiMaxWeeks ? "at least " : ""}${s} consecutive week${s !== 1 ? "s" : ""} in this clan or family`;
         return s < 5 ? `${base} (full score at 5 wks)` : base;
       })(),
     },

@@ -204,19 +204,24 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
         const normalized = (w.clanTag ?? "").replace(/^#/, "").toUpperCase();
         return FAMILY_CLAN_TAGS.includes(normalized);
       });
+      const streakInFamily =
+        analysis.warHistory.streakInFamily ??
+        analysis.warHistory.streakInCurrentClan;
       const oldRule =
-        analysis.warHistory.streakInCurrentClan >= 2 &&
-        analysis.warHistory.completedParticipation >= 2;
+        streakInFamily >= 2 && analysis.warHistory.completedParticipation >= 2;
       let hasEnoughHistory = hasFullWeek || oldRule;
 
       // Si la semaine la plus ancienne est incomplète (<16 decks), on la marque ignorée
       // (affichage grisé dans l'UI) pour ne pas pénaliser une arrivée en cours de race.
       if (prevWeeks.length >= 2) {
         applyOldestWeekIgnore(analysis.warHistory, prevWeeks);
+        const familyStreakAfterIgnore =
+          analysis.warHistory.streakInFamily ??
+          analysis.warHistory.streakInCurrentClan;
         hasEnoughHistory =
           hasEnoughHistory ||
           hasFullWeek ||
-          (analysis.warHistory.streakInCurrentClan >= 2 &&
+          (familyStreakAfterIgnore >= 2 &&
             analysis.warHistory.completedParticipation >= 2);
       }
 
@@ -318,9 +323,10 @@ export function computeIsNewPlayer(warHistory, warScore) {
   const hasOnlyCurrentWeek = !!(
     warHistory?.weeks?.length === 1 && warHistory.weeks[0]?.isCurrent
   );
+  const familyStreak =
+    warHistory?.streakInFamily ?? warHistory?.streakInCurrentClan ?? 0;
   const isNewClanArrivee =
-    (warHistory?.streakInCurrentClan ?? 0) < 2 &&
-    (warHistory?.totalWeeks ?? 0) > 1;
+    familyStreak < 2 && (warHistory?.totalWeeks ?? 0) > 1;
 
   const isBattleLogMode =
     !hasCompletedWarWeeks || hasOnlyCurrentWeek || isNewClanArrivee;

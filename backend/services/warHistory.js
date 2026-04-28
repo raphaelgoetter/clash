@@ -283,11 +283,18 @@ export async function buildFamilyWarHistory(
   const totalWeeks = mergedWeeks.length;
 
   let streakInCurrentClan = 0;
+  let streakInFamily = 0;
   const currentTag = normalizedCurrent ? `#${normalizedCurrent}` : null;
+  const familyTags = new Set(
+    FAMILY_CLAN_TAGS.map((t) => t.replace(/^#/, "").toUpperCase()),
+  );
+  if (normalizedCurrent) familyTags.add(normalizedCurrent);
   for (const w of mergedWeeks) {
     if (w.isCurrent) continue;
+    const normalizedWeekTag = (w.clanTag ?? "").replace(/^#/, "").toUpperCase();
     if (w.clanTag === currentTag) streakInCurrentClan += 1;
-    else break;
+    if (familyTags.has(normalizedWeekTag)) streakInFamily += 1;
+    if (!familyTags.has(normalizedWeekTag)) break;
   }
 
   const avgFame = participation ? Math.round(totalFame / participation) : 0;
@@ -321,6 +328,7 @@ export async function buildFamilyWarHistory(
     completedParticipation,
     totalWeeks,
     streakInCurrentClan,
+    streakInFamily,
     historicalWinRate,
     noFurtherData,
   };

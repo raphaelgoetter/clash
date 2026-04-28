@@ -178,7 +178,7 @@ Seven weighted criteria:
 | 1   | Regularity                 | 12  | war decks used / (16 × completed weeks); –0.5 pt per incomplete week    |
 | 2   | Avg pts                    | 10  | 3,000 pts/week = full score                                             |
 | 3   | CW2 battle wins            | 8   | 250 total CW2 wins = full score                                         |
-| 4   | Clan stability             | 8   | 5+ consecutive weeks in clan = full score                               |
+| 4   | Stability                  | 8   | 5+ consecutive weeks in clan or family = full score                     |
 | 5   | Last seen                  | +5  | active within 24 h = +5; ≤3 d = +3; ≤7 d = +1                           |
 | 6   | Win rate (River Race)      | 3   | 100% win rate = full score · **min. 10 GDC battles** (absent otherwise) |
 | 7   | Experience (best trophies) | 3   | 12,000 trophies = full score                                            |

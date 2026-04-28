@@ -1215,8 +1215,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       // in the past or the old rule of ≥2 completed weeks in the clan.
       let prevWeeks = wh.weeks.filter((w) => !w.isCurrent);
       let hasFullWeek = prevWeeks.some((w) => (w.decksUsed ?? 0) >= 16);
-      const oldRule =
-        wh.streakInCurrentClan >= 2 && wh.completedParticipation >= 2;
+      const streakInFamily = wh.streakInFamily ?? wh.streakInCurrentClan;
+      const oldRule = streakInFamily >= 2 && wh.completedParticipation >= 2;
       // Strict mapping with Player view : only full week or old rule counts.
       let hasEnoughHistory = hasFullWeek || oldRule;
 
@@ -1233,10 +1233,12 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         if (applyOldestWeekIgnore(wh, prevWeeks)) {
           // réévaluer après le recalcul (completedParticipation peut avoir changé)
           // conserver true si on avait déjà suffisamment d'historique avant l'ajustement.
+          const familyStreakAfterIgnore =
+            wh.streakInFamily ?? wh.streakInCurrentClan;
           hasEnoughHistory =
             hasEnoughHistory ||
             hasFullWeek ||
-            (wh.streakInCurrentClan >= 2 && wh.completedParticipation >= 2);
+            (familyStreakAfterIgnore >= 2 && wh.completedParticipation >= 2);
         }
       }
 

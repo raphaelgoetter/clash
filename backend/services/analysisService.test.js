@@ -91,6 +91,22 @@ const testCases = [
     },
     expected: false,
   },
+  {
+    name: "family transfer not new",
+    input: {
+      warHistory: {
+        weeks: [
+          { isCurrent: false, decksUsed: 8 },
+          { isCurrent: false, decksUsed: 8 },
+        ],
+        streakInCurrentClan: 1,
+        streakInFamily: 3,
+        totalWeeks: 3,
+      },
+      warScore: { isFallback: false },
+    },
+    expected: false,
+  },
 ];
 
 for (const tc of testCases) {
@@ -164,6 +180,34 @@ for (const tc of scoreCases) {
   );
 }
 console.log("✓ computeWarScore Avg Score thresholds test passed.");
+
+const stabilityFamilyScore = computeWarScore(
+  { trophies: 5000, totalDonations: 1000, badges: [] },
+  {
+    avgFame: 2000,
+    streakInCurrentClan: 1,
+    streakInFamily: 5,
+    weeks: [],
+    totalWeeks: 5,
+  },
+  null,
+  null,
+  false,
+);
+const stabilityEntry = stabilityFamilyScore.breakdown.find(
+  (entry) => entry.label === "Stability",
+);
+assert.ok(stabilityEntry, "Stability entry exists for family streak test");
+assert.strictEqual(
+  stabilityEntry.score,
+  8,
+  `Family streak of 5 should cap stability at 8, got ${stabilityEntry.score}`,
+);
+assert.ok(
+  stabilityEntry.detail.includes("in this clan or family"),
+  `Expected stability detail to mention clan or family, got ${stabilityEntry.detail}`,
+);
+console.log("✓ computeWarScore family stability test passed.");
 
 const fallback = computeWarReliabilityFallback(
   { trophies: 12000, totalDonations: 10000, badges: [] },
