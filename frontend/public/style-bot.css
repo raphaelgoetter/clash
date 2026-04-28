@@ -323,7 +323,11 @@ code {
 }
 
 .card-list li {
-  margin-bottom: 10px;
+  margin-bottom: 1rem;
+}
+
+.card [data-layout] p {
+  margin-block: 1rem;
 }
 
 .card-image,
