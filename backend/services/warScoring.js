@@ -320,11 +320,12 @@ export function computeWarScore(
       detail: (() => {
         if (completedCount === 0) return "No completed week in this clan yet";
         const pct = Math.round((deckSum / (idealDecks || 1)) * 100);
+        const isApiMaxWeeks = weeksInClan >= 10;
         const suffix =
           weeksInClan < totalWeeks
             ? weeksInClan === 0
               ? ` — joined recently (< 1 week in this clan)`
-              : ` — member for ${weeksInClan} week${weeksInClan > 1 ? "s" : ""}`
+              : ` — member for ${isApiMaxWeeks ? "at least " : ""}${weeksInClan} week${weeksInClan > 1 ? "s" : ""}`
             : "";
         let txt = `${deckSum}/${idealDecks} decks across ${completedCount} week${completedCount > 1 ? "s" : ""} (${pct}%)`;
         if (incompleteWeeks > 0) {
@@ -353,7 +354,8 @@ export function computeWarScore(
       max: 8,
       detail: (() => {
         const s = warHistory.streakInCurrentClan;
-        const base = `${s} consecutive week${s !== 1 ? "s" : ""} in this clan`;
+        const isApiMaxWeeks = s >= 10;
+        const base = `${isApiMaxWeeks ? "at least " : ""}${s} consecutive week${s !== 1 ? "s" : ""} in this clan`;
         return s < 5 ? `${base} (full score at 5 wks)` : base;
       })(),
     },

@@ -1708,17 +1708,18 @@ function renderPlayerResults(data) {
           : m,
       )
       .replace(
-        /member for\s*(\d+)\s*weeks?/i,
+        /member for\s*(?:at least\s*)?(\d+)\s*weeks?/i,
         (_, n) =>
-          `membre depuis ${n} ${Number(n) > 1 ? "semaines" : "semaine"}`,
+          `membre depuis ${Number(n) >= 10 ? "au moins " : ""}${n} ${Number(n) > 1 ? "semaines" : "semaine"}`,
+      )
+      .replace(
+        /(at least\s*)?([0-9]+)\s*consecutive weeks?\s*in this clan/gi,
+        (_, atLeast, n) =>
+          `${atLeast ? "au moins " : ""}${n} ${Number(n) > 1 ? "semaines" : "semaine"} ${Number(n) > 1 ? "consécutives" : "consécutive"} dans le clan`,
       )
       .replace(
         /([0-9.,]+)\s*weeks?/gi,
         (_, n) => `${n} ${Number(n) > 1 ? "semaines" : "semaine"}`,
-      )
-      .replace(
-        /consecutive weeks in this clan/gi,
-        "semaines consécutives dans le clan",
       )
       .replace(
         /points \/ week \(average weekly fame, 1,000–3,000\)/gi,
