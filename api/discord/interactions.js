@@ -163,14 +163,22 @@ function isRiverRaceBattle(type) {
   ].includes(t);
 }
 
-function formatHourRange(startMinutes) {
-  const startHour = Math.floor(startMinutes / 60);
-  const startMin = startMinutes % 60;
-  const endMinutes = (startMinutes + 60) % 1440;
-  const endHour = Math.floor(endMinutes / 60);
-  const endMin = endMinutes % 60;
-  const fmt = (h, m) => `${h}h${String(m).padStart(2, "0")}`;
-  return `${fmt(startHour, startMin)} - ${fmt(endHour, endMin)}`;
+function formatParisHourRange(startUtcMinutes) {
+  const pad = (value) => String(value).padStart(2, "0");
+  const baseUtc = new Date(Date.UTC(2000, 0, 1, 0, 0, 0));
+  const startUtc = new Date(baseUtc.getTime() + startUtcMinutes * 60000);
+  const endUtc = new Date(startUtc.getTime() + 60 * 60000);
+
+  const startParis = new Date(
+    startUtc.toLocaleString("en-US", { timeZone: "Europe/Paris" }),
+  );
+  const endParis = new Date(
+    endUtc.toLocaleString("en-US", { timeZone: "Europe/Paris" }),
+  );
+
+  return `${pad(startParis.getHours())}h${pad(startParis.getMinutes())} - ${pad(
+    endParis.getHours(),
+  )}h${pad(endParis.getMinutes())}`;
 }
 
 function buildAverageRaceTimeRange(battleLog, clanTag) {
@@ -201,7 +209,7 @@ function buildAverageRaceTimeRange(battleLog, clanTag) {
   const maxCount = Math.max(...counts);
   if (maxCount <= 0) return null;
   const bin = counts.findIndex((c) => c === maxCount);
-  return formatHourRange((resetUtcMinutes + bin * 60) % 1440);
+  return formatParisHourRange((resetUtcMinutes + bin * 60) % 1440);
 }
 
 function buildSparkline(values) {
@@ -904,7 +912,7 @@ export default async function handler(req, res) {
             inline: false,
           },
           {
-            name: "Détails GDC",
+            name: "Détails GDC :",
             value: detailLines.join("\n"),
             inline: false,
           },
@@ -916,6 +924,7 @@ export default async function handler(req, res) {
           color: COLOR_MAP[color] ?? 0x808080,
           description:
             `**Tag :** ${tag}\n` +
+            `**Niveau d'expérience :** ${analysis.overview.expLevel ?? "N/A"}\n` +
             `**Trophées :** ${analysis.overview.trophies ?? 0}\n` +
             `**Fiabilité :** ${emoji} ${Math.round(pct)}% (${verdictFr})`,
           fields,
