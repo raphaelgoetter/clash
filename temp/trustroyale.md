@@ -54,7 +54,22 @@ Pour rendre Trustroyale accessible directement dans nos serveurs Discord, nous a
 /trust tag:#YRGJGR8R
 ```
 
-### 2) `/trust-clan clan:N`
+### 2) `/stats tag:#TAG`
+
+➡️ Affiche les statistiques détaillées de GDC pour un membre de la famille :
+
+- Historique des decks par semaine
+- Points par semaine
+- Moyenne et record de points
+- Statut de présence dans la famille
+
+**Usage** :
+
+```text
+/stats tag:#YRGJGR8R
+```
+
+### 3) `/trust-clan clan:N`
 
 ➡️ Liste les membres **risqués** du clan.
 
@@ -66,7 +81,7 @@ C’est un outil conçu pour être **proactif** : on détecte les membres à ris
 /trust-clan clan:2
 ```
 
-### 3) `/chelem clan:N [season:X]`
+### 4) `/chelem clan:N [season:X]`
 
 ➡️ Liste les joueurs ayant fait **16/16 decks** chaque semaine de la saison spécifiée (par défaut : la dernière saison terminée).
 
@@ -76,7 +91,7 @@ C’est un outil conçu pour être **proactif** : on détecte les membres à ris
 /chelem clan:1
 ```
 
-### 4) `/top-players number:[3|5|10] period:[week|season]`
+### 5) `/top-players number:[3|5|10] period:[week|season]`
 
 ➡️ Liste les top X joueurs (tous clans) sur la période demandée.
 
@@ -91,7 +106,7 @@ C’est un outil conçu pour être **proactif** : on détecte les membres à ris
 /top-players number:5 period:season
 ```
 
-### 5) `/discord-link tag:#TAG`
+### 6) `/discord-link tag:#TAG`
 
 ➡️ Lie ton compte Clash à ton compte Discord.
 
@@ -105,13 +120,13 @@ C’est un outil conçu pour être **proactif** : on détecte les membres à ris
 
 Plusieurs tags peuvent être liés (ex : pour les comptes secondaires) en ajoutant `tag2:#TAG` et `tag3:#TAG` dans la commande.
 
-### 6) `/discord-check clan:N` (surtout pour chefs de clan)
+### 7) `/discord-check clan:N` (surtout pour chefs de clan)
 
 ➡️ Vérifie qui du clan est présent sur le serveur Discord (liés / non liés / absents).
 
 Pratique pour les recrutements et pour s’assurer que tout le monde est bien connecté.
 
-### 7) `/promote clan:N` (pour chefs de clan)
+### 8) `/promote clan:N` (pour chefs de clan)
 
 ➡️ Affiche les joueurs qui ont atteint un minimum de 2600 points la semaine précédente.
 
@@ -123,7 +138,7 @@ Utile pour les campagnes de promotion et pour savoir qui soutenir pour monter da
 /promote clan:1
 ```
 
-### 8) `/demote clan:N` (pour chefs de clan)
+### 9) `/demote clan:N` (pour chefs de clan)
 
 ➡️ Affiche les joueurs qui n’ont pas réalisé 16/16 decks la semaine précédente (identique à la carte "🤷 Last War fails").
 
