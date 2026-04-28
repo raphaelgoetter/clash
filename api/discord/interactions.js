@@ -152,6 +152,58 @@ function buildScoreBreakdownCodeBlock(score) {
   return "```\n" + rows.join("\n") + "\n```";
 }
 
+function isRiverRaceBattle(type) {
+  const t = (type ?? "").toLowerCase();
+  return [
+    "riverracepvp",
+    "riverraceduel",
+    "riverraceduelscolosseum",
+    "riverraceboat",
+    "clanwarbattle",
+  ].includes(t);
+}
+
+function formatHourRange(startMinutes) {
+  const startHour = Math.floor(startMinutes / 60);
+  const startMin = startMinutes % 60;
+  const endMinutes = (startMinutes + 60) % 1440;
+  const endHour = Math.floor(endMinutes / 60);
+  const endMin = endMinutes % 60;
+  const fmt = (h, m) => `${h}h${String(m).padStart(2, "0")}`;
+  return `${fmt(startHour, startMin)} - ${fmt(endHour, endMin)}`;
+}
+
+function buildAverageRaceTimeRange(battleLog, clanTag) {
+  if (!Array.isArray(battleLog) || battleLog.length === 0) return null;
+  const CLAN_RESETS_UTC = { Y8JUPC9C: 590 };
+  const normalizedTag = (clanTag ?? "").replace(/^#/, "").toUpperCase();
+  const resetUtcMinutes = CLAN_RESETS_UTC[normalizedTag] ?? 580;
+  const counts = Array(24).fill(0);
+  let totalGdc = 0;
+
+  for (const b of battleLog) {
+    if (!isRiverRaceBattle(b.type)) continue;
+    const parsed = parseBattleTimestamp(
+      b.battleTime ||
+        b.battleTimeStamp ||
+        b.battle_time ||
+        b.battleTimeStampLocal,
+    );
+    if (!parsed) continue;
+    const minutes = parsed.getUTCHours() * 60 + parsed.getUTCMinutes();
+    const offset = (((minutes - resetUtcMinutes) % 1440) + 1440) % 1440;
+    const bin = Math.floor(offset / 60);
+    counts[bin] += 1;
+    totalGdc += 1;
+  }
+
+  if (totalGdc === 0) return null;
+  const maxCount = Math.max(...counts);
+  if (maxCount <= 0) return null;
+  const bin = counts.findIndex((c) => c === maxCount);
+  return formatHourRange((resetUtcMinutes + bin * 60) % 1440);
+}
+
 function buildSparkline(values) {
   if (!Array.isArray(values) || values.length === 0) return "";
   const min = Math.min(...values);
@@ -818,8 +870,20 @@ export default async function handler(req, res) {
         const allTimeRecord = Number.isFinite(warHistory?.maxFame)
           ? warHistory.maxFame
           : 0;
+        const averageHourRange = buildAverageRaceTimeRange(
+          analysis.battleLog,
+          analysis.overview.clan?.tag,
+        );
 
         const trustBreakdownCodeBlock = buildScoreBreakdownCodeBlock(score);
+        const detailLines = [
+          `- **Moyenne par semaine :** ${avgFame}`,
+          `- **Record de points :** ${allTimeRecord}`,
+        ];
+        if (averageHourRange) {
+          detailLines.push(`- **Plage horaire moyenne :** ${averageHourRange}`);
+        }
+
         const fields = [
           {
             name: "Fiabilité",
@@ -836,10 +900,12 @@ export default async function handler(req, res) {
           },
           {
             name: `Historique GDC (${displayedWeeks} semaines)`,
-            value:
-              `${historyCodeBlock}\n` +
-              `**Moyenne par semaine :** ${avgFame}\n` +
-              `**Record de points :** ${allTimeRecord}`,
+            value: historyCodeBlock,
+            inline: false,
+          },
+          {
+            name: "Détails GDC",
+            value: detailLines.join("\n"),
             inline: false,
           },
         ];
