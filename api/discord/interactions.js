@@ -907,7 +907,7 @@ export default async function handler(req, res) {
             inline: false,
           },
           {
-            name: `Historique GDC (${displayedWeeks} semaines disponibles)`,
+            name: `Historique GDC (${displayedWeeks} semaine${displayedWeeks === 1 ? "" : "s"} disponible${displayedWeeks === 1 ? "" : "s"})`,
             value: historyCodeBlock,
             inline: false,
           },
