@@ -922,7 +922,7 @@ export default async function handler(req, res) {
           title: `<:scroll:1493850130560847892> Stats complètes : ${analysis.overview.name}`,
           url: `${TRUST_ROYALE_URL}/?mode=player&tag=${encodeURIComponent(tag)}`,
           color: COLOR_MAP[color] ?? 0x808080,
-          description: `${tag} · <:xp:1498633184319901796> ${analysis.overview.expLevel ?? "N/A"} · <:trophy2:1493677804733337621> ${analysis.overview.trophies ?? 0}`,
+          description: `${tag} · <:xp:1498645264079257730> ${analysis.overview.expLevel ?? "N/A"} · <:trophy2:1493677804733337621> ${analysis.overview.trophies ?? 0}`,
           fields,
         };
 
