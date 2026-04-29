@@ -124,11 +124,11 @@ function formatPointHistory(weeks) {
     .join("  ");
 }
 
-function buildHistoryCodeBlock(weeks) {
-  const headers = [`Decks :`, `Points:`];
+function buildHistoryCodeBlock(weeks, hasCurrentWeek = false) {
   const deckLine = `Decks : ${formatDeckHistory(weeks)}`;
   const pointLine = `Points: ${formatPointHistory(weeks)}`;
-  return `\`\`\`\n${deckLine}\n${pointLine}\n\`\`\``;
+  const legend = hasCurrentWeek ? "Dernière colonne = semaine en cours\n" : "";
+  return `${legend}\`\`\`\n${deckLine}\n${pointLine}\n\`\`\``;
 }
 
 function buildScoreBreakdownCodeBlock(score) {
@@ -809,13 +809,19 @@ export default async function handler(req, res) {
           }[verdict] ?? verdict;
 
         const warHistory = analysis.warHistory;
-        const weeks = Array.isArray(warHistory?.weeks)
+        const currentWeek = Array.isArray(warHistory?.weeks)
+          ? (warHistory.weeks.find((w) => w.isCurrent) ?? null)
+          : null;
+        const completedWeeks = Array.isArray(warHistory?.weeks)
           ? warHistory.weeks.filter((w) => !w.isCurrent)
           : [];
-        const availableWeeks = weeks.length;
-        const latestWeeks = weeks.slice(0, 12);
+        const availableWeeks = completedWeeks.length;
+        const latestWeeks = completedWeeks.slice(0, 12);
         const displayedWeeks = latestWeeks.length;
         const maxDisplayedWeeks = 12;
+        const historyWeeks = currentWeek
+          ? [...latestWeeks, currentWeek]
+          : latestWeeks;
 
         const deckHistory = latestWeeks.length
           ? formatDeckHistory(latestWeeks)
@@ -824,8 +830,8 @@ export default async function handler(req, res) {
           ? formatPointHistory(latestWeeks)
           : "Aucune semaine GDC terminée trouvée.";
 
-        const historyCodeBlock = latestWeeks.length
-          ? buildHistoryCodeBlock(latestWeeks)
+        const historyCodeBlock = historyWeeks.length
+          ? buildHistoryCodeBlock(historyWeeks, Boolean(currentWeek))
           : "Aucune semaine GDC terminée trouvée.";
 
         const currentClanName =
@@ -892,6 +898,7 @@ export default async function handler(req, res) {
           detailLines.push(`- **Plage horaire moyenne :** ${averageHourRange}`);
         }
 
+        const currentWeekLabel = currentWeek ? " + 1 en cours" : "";
         const fields = [
           {
             name: `Fiabilité : ${emoji} ${Math.round(pct)}% (${verdictFr})`,
@@ -907,7 +914,7 @@ export default async function handler(req, res) {
             inline: false,
           },
           {
-            name: `Historique GDC (${displayedWeeks} semaine${displayedWeeks === 1 ? "" : "s"} disponible${displayedWeeks === 1 ? "" : "s"})`,
+            name: `Historique GDC (${displayedWeeks} semaine${displayedWeeks === 1 ? "" : "s"} disponible${displayedWeeks === 1 ? "" : "s"}${currentWeekLabel})`,
             value: historyCodeBlock,
             inline: false,
           },
