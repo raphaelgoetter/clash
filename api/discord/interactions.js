@@ -119,14 +119,14 @@ function formatPointHistory(weeks) {
   return weeks
     .map((w) => {
       const fame = Number.isFinite(w.fame) ? w.fame : 0;
-      return String(fame).padStart(4, " ");
+      return String(fame);
     })
-    .join("  ");
+    .join(" · ");
 }
 
 function buildHistoryCodeBlock(weeks) {
-  const deckLine = `Decks : ${formatDeckHistory(weeks)}`;
-  const pointLine = `Points: ${formatPointHistory(weeks)}`;
+  const deckLine = `- **Decks :** ${formatDeckHistory(weeks)}`;
+  const pointLine = `- **Points :** ${formatPointHistory(weeks)}`;
   return `${deckLine}\n${pointLine}`;
 }
 
@@ -862,8 +862,8 @@ export default async function handler(req, res) {
             : previousClanName
           : null;
         const previousClanLine = previousClanLink
-          ? `**Clan précédent :** ${previousClanLink}\n`
-          : `**Clan précédent :** Clan inconnu\n`;
+          ? `**Précédent :** ${previousClanLink}\n`
+          : `**Précédent :** Inconnu\n`;
         const currentClanWeeksPrefix =
           currentClanWeeks > 0 && currentClanWeeks === availableWeeks
             ? "≥ "
@@ -900,13 +900,13 @@ export default async function handler(req, res) {
           {
             name: "Clans :",
             value:
-              `- **Clan actuel :** ${currentClanLink} (depuis ${currentClanWeeksPrefix}${currentClanWeeks} semaine${currentClanWeeks === 1 ? "" : "s"})\n` +
-              `- **Clan précédent :** ${previousClanLink || "Aucun"}\n` +
-              `- **Stabilité dans la Famille Resistance :** ${familyWeeksPrefix}${familyWeeks} semaines`,
+              `- **Actuel :** ${currentClanLink} (depuis ${currentClanWeeksPrefix}${currentClanWeeks} semaine${currentClanWeeks === 1 ? "" : "s"})\n` +
+              `- **Précédent :** ${previousClanLink || "Inconnu"}\n` +
+              `- **Stabilité dans la Famille :** ${familyWeeksPrefix}${familyWeeks} semaines`,
             inline: false,
           },
           {
-            name: `Historique GDC (${displayedWeeks} semaine${displayedWeeks === 1 ? "" : "s"} disponible${displayedWeeks === 1 ? "" : "s"})`,
+            name: `Historique GDC (${displayedWeeks} dernière${displayedWeeks === 1 ? "" : "s"} semaines) :`,
             value: historyCodeBlock,
             inline: false,
           },
