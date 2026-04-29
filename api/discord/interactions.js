@@ -911,12 +911,15 @@ export default async function handler(req, res) {
             value: historyCodeBlock,
             inline: false,
           },
-          {
+        ];
+
+        if (displayedWeeks > 0) {
+          fields.push({
             name: "Détails GDC :",
             value: detailLines.join("\n"),
             inline: false,
-          },
-        ];
+          });
+        }
 
         const embed = {
           title: `<:scroll:1493850130560847892> Stats complètes : ${analysis.overview.name}`,
