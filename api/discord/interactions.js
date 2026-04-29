@@ -100,9 +100,9 @@ function criterionIcon(score, max) {
 function deckUsageBadge(decksUsed, ignored = false) {
   if (ignored) return "⚪";
   if (typeof decksUsed !== "number" || Number.isNaN(decksUsed)) return "❔";
-  if (decksUsed >= 16) return "✅";
-  if (decksUsed >= 8) return "⚠️";
-  return "❌";
+  if (decksUsed >= 16) return "<:success:1499002702208958577>";
+  if (decksUsed >= 12) return "<:warning:1499002725965500577>";
+  return "<:error:1499002755841265826>";
 }
 
 function formatDeckHistory(weeks) {
@@ -870,7 +870,7 @@ export default async function handler(req, res) {
           : null;
         const previousClanLine = previousClanLink
           ? `**Clan précédent :** ${previousClanLink}\n`
-          : "";
+          : `**Clan précédent :** Clan inconnu\n`;
         const currentClanWeeksPrefix =
           currentClanWeeks > 0 && currentClanWeeks === availableWeeks
             ? "≥ "

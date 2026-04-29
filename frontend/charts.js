@@ -151,7 +151,7 @@ export function renderWarHistoryChart(weeks) {
       // ignored or live/current weeks are shown in neutral grey and do not get a red failure icon
       badge = "⚪ ";
     } else if (typeof w.decksUsed === "number") {
-      badge = w.decksUsed >= 16 ? "✅" : w.decksUsed >= 8 ? "⚠️" : "❌";
+      badge = w.decksUsed >= 16 ? "✅" : w.decksUsed >= 12 ? "⚠️" : "❌";
       badge += " ";
     }
     return `${badge}${w.label}${deckInfo}`;
