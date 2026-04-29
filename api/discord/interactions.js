@@ -942,8 +942,8 @@ export default async function handler(req, res) {
 
         const fields = [
           {
-            name: `Fiabilité : ${icon} ${Math.round(pct)}% (${verdictFr})`,
-            value: "\u200b",
+            name: "Fiabilité :",
+            value: `${icon} ${Math.round(pct)}% (${verdictFr})`,
             inline: false,
           },
           ...(breakdownFields ?? []),
