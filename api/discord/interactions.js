@@ -124,11 +124,10 @@ function formatPointHistory(weeks) {
     .join("  ");
 }
 
-function buildHistoryCodeBlock(weeks, hasCurrentWeek = false) {
+function buildHistoryCodeBlock(weeks) {
   const deckLine = `Decks : ${formatDeckHistory(weeks)}`;
   const pointLine = `Points: ${formatPointHistory(weeks)}`;
-  const legend = hasCurrentWeek ? "Dernière colonne = semaine en cours\n" : "";
-  return `${legend}${deckLine}\n${pointLine}`;
+  return `${deckLine}\n${pointLine}`;
 }
 
 function buildScoreBreakdownCodeBlock(score) {
@@ -809,9 +808,6 @@ export default async function handler(req, res) {
           }[verdict] ?? verdict;
 
         const warHistory = analysis.warHistory;
-        const currentWeek = Array.isArray(warHistory?.weeks)
-          ? (warHistory.weeks.find((w) => w.isCurrent) ?? null)
-          : null;
         const completedWeeks = Array.isArray(warHistory?.weeks)
           ? warHistory.weeks.filter((w) => !w.isCurrent)
           : [];
@@ -819,9 +815,6 @@ export default async function handler(req, res) {
         const latestWeeks = completedWeeks.slice(0, 12);
         const displayedWeeks = latestWeeks.length;
         const maxDisplayedWeeks = 12;
-        const historyWeeks = currentWeek
-          ? [...latestWeeks, currentWeek]
-          : latestWeeks;
 
         const deckHistory = latestWeeks.length
           ? formatDeckHistory(latestWeeks)
@@ -830,8 +823,8 @@ export default async function handler(req, res) {
           ? formatPointHistory(latestWeeks)
           : "Aucune semaine GDC terminée trouvée.";
 
-        const historyCodeBlock = historyWeeks.length
-          ? buildHistoryCodeBlock(historyWeeks, Boolean(currentWeek))
+        const historyCodeBlock = latestWeeks.length
+          ? buildHistoryCodeBlock(latestWeeks)
           : "Aucune semaine GDC terminée trouvée.";
 
         const currentClanName =
@@ -898,7 +891,6 @@ export default async function handler(req, res) {
           detailLines.push(`- **Plage horaire moyenne :** ${averageHourRange}`);
         }
 
-        const currentWeekLabel = currentWeek ? " + 1 en cours" : "";
         const fields = [
           {
             name: `Fiabilité : ${emoji} ${Math.round(pct)}% (${verdictFr})`,
@@ -914,7 +906,7 @@ export default async function handler(req, res) {
             inline: false,
           },
           {
-            name: `Historique GDC (${displayedWeeks} semaine${displayedWeeks === 1 ? "" : "s"} disponible${displayedWeeks === 1 ? "" : "s"}${currentWeekLabel})`,
+            name: `Historique GDC (${displayedWeeks} semaine${displayedWeeks === 1 ? "" : "s"} disponible${displayedWeeks === 1 ? "" : "s"})`,
             value: historyCodeBlock,
             inline: false,
           },
