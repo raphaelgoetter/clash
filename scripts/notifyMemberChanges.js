@@ -122,6 +122,13 @@ async function saveNotifiedChanges(data) {
  * @param {object} m - { tag, name, analysis? }
  * @returns {string}
  */
+const RELIABILITY_BADGES = {
+  green: "<:relsuccess:1499075446527099032>",
+  yellow: "<:relok:1499077516143497307>",
+  orange: "<:relwarn:1499078423463854122>",
+  red: "<:relerror:1499077154066137230>",
+};
+
 function formatMemberLine(m) {
   const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(m.tag)}`;
   let reliabilityStr = "";
@@ -134,16 +141,16 @@ function formatMemberLine(m) {
     let emoji = "⚪";
 
     if (pct >= 75) {
-      emoji = "🟢";
+      emoji = RELIABILITY_BADGES.green;
       verdict = "Fiable";
     } else if (pct >= 61) {
-      emoji = "🟡";
+      emoji = RELIABILITY_BADGES.yellow;
       verdict = "Risque";
     } else if (pct >= 31) {
-      emoji = "🟠";
+      emoji = RELIABILITY_BADGES.orange;
       verdict = "Élevé";
     } else {
-      emoji = "🔴";
+      emoji = RELIABILITY_BADGES.red;
       verdict = "Extrême";
     }
 
