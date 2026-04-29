@@ -128,10 +128,7 @@ function formatDeckHistory(weeks) {
 
 function formatPointHistory(weeks) {
   return weeks
-    .map((w) => {
-      const fame = Number.isFinite(w.fame) ? w.fame : 0;
-      return String(fame);
-    })
+    .map((w) => String(Number.isFinite(w.fame) ? w.fame : 0))
     .join(" · ");
 }
 
@@ -212,16 +209,17 @@ function buildReliabilityFields(score) {
     else right.push(line);
   }
 
+  const lines = [];
+  for (let i = 0; i < Math.max(left.length, right.length); i += 1) {
+    if (left[i]) lines.push(left[i]);
+    if (right[i]) lines.push(right[i]);
+  }
+
   return [
     {
       name: "Détails fiabilité :",
-      value: left.length > 0 ? left.join("\n") : "\u200b",
-      inline: true,
-    },
-    {
-      name: "\u200b",
-      value: right.length > 0 ? right.join("\n") : "\u200b",
-      inline: true,
+      value: lines.join("\n") || "\u200b",
+      inline: false,
     },
   ];
 }
@@ -932,6 +930,16 @@ export default async function handler(req, res) {
           detailLines.push(`- **Plage horaire moyenne :** ${averageHourRange}`);
         }
 
+        const clanLines = [
+          `- **Actuel :** ${currentClanLink} (depuis ${currentClanWeeksPrefix}${currentClanWeeks} semaine${currentClanWeeks === 1 ? "" : "s"})`,
+          `- **Précédent :** ${previousClanLink || "Inconnu"}`,
+        ];
+        if (familyWeeks > 0) {
+          clanLines.push(
+            `- **Stabilité dans la Famille :** ${familyWeeksPrefix}${familyWeeks} semaine${familyWeeks === 1 ? "" : "s"}`,
+          );
+        }
+
         const fields = [
           {
             name: `Fiabilité : ${icon} ${Math.round(pct)}% (${verdictFr})`,
@@ -941,10 +949,7 @@ export default async function handler(req, res) {
           ...(breakdownFields ?? []),
           {
             name: "Clans :",
-            value:
-              `- **Actuel :** ${currentClanLink} (depuis ${currentClanWeeksPrefix}${currentClanWeeks} semaine${currentClanWeeks === 1 ? "" : "s"})\n` +
-              `- **Précédent :** ${previousClanLink || "Inconnu"}\n` +
-              `- **Stabilité dans la Famille :** ${familyWeeksPrefix}${familyWeeks} semaines`,
+            value: clanLines.join("\n"),
             inline: false,
           },
           {
