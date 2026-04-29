@@ -128,7 +128,7 @@ function buildHistoryCodeBlock(weeks, hasCurrentWeek = false) {
   const deckLine = `Decks : ${formatDeckHistory(weeks)}`;
   const pointLine = `Points: ${formatPointHistory(weeks)}`;
   const legend = hasCurrentWeek ? "Dernière colonne = semaine en cours\n" : "";
-  return `${legend}\`\`\`\n${deckLine}\n${pointLine}\n\`\`\``;
+  return `${legend}${deckLine}\n${pointLine}`;
 }
 
 function buildScoreBreakdownCodeBlock(score) {
