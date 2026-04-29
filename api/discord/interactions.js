@@ -53,10 +53,10 @@ const COLOR_MAP = {
   red: 0xe74c3c,
 };
 const RELIABILITY_ICON = {
-  green: "<:reliabilitysuccess:1499013590097858610>",
-  yellow: "<:reliabilityok:1499013654010396702>",
-  orange: "<:reliabilitywarning:1499013658481655959>",
-  red: "<:reliabilityerror:1499013660301987870>",
+  green: "<:relsuccess:1499075446527099032>",
+  yellow: "<:relok:1499077516143497307>",
+  orange: "<:relwarn:1499078423463854122>",
+  red: "<:relerror:1499077154066137230>",
 };
 const FR_VERDICTS = {
   green: "Très fiable",
