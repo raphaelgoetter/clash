@@ -52,7 +52,18 @@ const COLOR_MAP = {
   orange: 0xe67e22,
   red: 0xe74c3c,
 };
-const EMOJI_MAP = { green: "🟢", yellow: "🟡", orange: "🟠", red: "🔴" };
+const RELIABILITY_ICON = {
+  green: "<:reliabilitysuccess:1499013590097858610>",
+  yellow: "<:reliabilityok:1499013654010396702>",
+  orange: "<:reliabilitywarning:1499013658481655959>",
+  red: "<:reliabilityerror:1499013660301987870>",
+};
+const FR_VERDICTS = {
+  green: "Très fiable",
+  yellow: "Risque faible",
+  orange: "Risque élevé",
+  red: "Risque extrême",
+};
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 const FAMILY_CLAN_TAGS = new Set(["#Y8JUPC9C", "#LRQP20V9", "#QU9UQJRL"]);
 const RESISTANTS_CLAN_TAG = "#LRQP20V9";
@@ -522,17 +533,9 @@ export default async function handler(req, res) {
         const analysis = await apiResp.json();
         const score = analysis.warScore ?? analysis.reliability;
         const { total, maxScore, pct, color, verdict } = score;
-        const emoji = EMOJI_MAP[color] ?? "⚪";
+        const icon = RELIABILITY_ICON[color] ?? "⚪";
         const embedColor = COLOR_MAP[color] ?? 0x808080;
-        // verdict en français
-        const FR_VERDICTS = {
-          "High reliability": "Très fiable",
-          "Low risk": "Risque faible",
-          "Moderate risk": "Risque modéré",
-          "High risk": "Risque élevé",
-          "Extreme risk": "Risque extrême",
-        };
-        const verdictFr = FR_VERDICTS[verdict] || verdict;
+        const verdictFr = FR_VERDICTS[color] ?? verdict ?? "Fiabilité inconnue";
 
         // Grille 2 colonnes : 2 critères inline + 1 spacer invisible = 1 ligne
         const breakdown = score.breakdown ?? [];
@@ -552,7 +555,7 @@ export default async function handler(req, res) {
           rows.push(`${icon} ${label.padEnd(maxLabel)} ${scoreStr}`);
         }
         const description =
-          `${emoji} ${pct} % (${verdictFr})\n\n` +
+          `${icon} ${pct} % (${verdictFr})\n\n` +
           "```\n" +
           rows.join("\n") +
           "\n```";
@@ -797,15 +800,8 @@ export default async function handler(req, res) {
         const analysis = await apiResp.json();
         const score = analysis.warScore ?? analysis.reliability;
         const { pct, color, verdict } = score;
-        const emoji = EMOJI_MAP[color] ?? "⚪";
-        const verdictFr =
-          {
-            "High reliability": "Très fiable",
-            "Low risk": "Risque faible",
-            "Moderate risk": "Risque modéré",
-            "High risk": "Risque élevé",
-            "Extreme risk": "Risque extrême",
-          }[verdict] ?? verdict;
+        const icon = RELIABILITY_ICON[color] ?? "⚪";
+        const verdictFr = FR_VERDICTS[color] ?? verdict ?? "Fiabilité inconnue";
 
         const warHistory = analysis.warHistory;
         const completedWeeks = Array.isArray(warHistory?.weeks)
@@ -893,7 +889,7 @@ export default async function handler(req, res) {
 
         const fields = [
           {
-            name: `Fiabilité : ${emoji} ${Math.round(pct)}% (${verdictFr})`,
+            name: `Fiabilité : ${icon} ${Math.round(pct)}% (${verdictFr})`,
             value: trustBreakdownCodeBlock,
             inline: false,
           },
@@ -1028,7 +1024,12 @@ export default async function handler(req, res) {
           return;
         }
 
-        const VERDICT_EMOJI = { "Extreme risk": "🔴", "High risk": "🟠" };
+        const VERDICT_EMOJI = {
+          "High reliability": RELIABILITY_ICON.green,
+          "Low risk": RELIABILITY_ICON.yellow,
+          "High risk": RELIABILITY_ICON.orange,
+          "Extreme risk": RELIABILITY_ICON.red,
+        };
         const VERDICT_LABELFr = {
           "Extreme risk": "Extrême",
           "High risk": "Élevé",
@@ -1036,7 +1037,7 @@ export default async function handler(req, res) {
         const clanUrl = `https://trustroyale.vercel.app/?mode=clan&tag=%23${resolved.tag}`;
         const allRows = filtered.map((m) => {
           const newTag = m.isNew ? " 🆕" : "";
-          const emoji = VERDICT_EMOJI[m.verdict] ?? "⚠️";
+          const emoji = VERDICT_EMOJI[m.verdict] ?? RELIABILITY_ICON.red;
           const pct = Math.round(Number(m.reliability ?? 0));
           const verdictLabel =
             VERDICT_LABELFr[m.verdict] ||
