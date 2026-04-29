@@ -162,6 +162,70 @@ function buildScoreBreakdownCodeBlock(score) {
   return "```\n" + rows.join("\n") + "\n```";
 }
 
+const SCORE_BADGES = {
+  success: "<:success:1499002702208958577>",
+  warning: "<:warning:1499002725965500577>",
+  error: "<:error:1499002755841265826>",
+};
+
+function scoreBadge(score, max) {
+  const r = max > 0 ? score / max : 0;
+  if (r >= 0.75) return SCORE_BADGES.success;
+  if (r >= 0.4) return SCORE_BADGES.warning;
+  return SCORE_BADGES.error;
+}
+
+const RELIABILITY_LEFT_LABELS = new Set([
+  "Regularity",
+  "Avg Score",
+  "CW2 Battle Wins",
+  "Stability",
+  "Last Seen",
+  "War Activity",
+  "General Activity",
+]);
+const RELIABILITY_RIGHT_LABELS = new Set([
+  "Win Rate (War)",
+  "Experience",
+  "Donations",
+  "Discord",
+]);
+
+function buildReliabilityFields(score) {
+  const breakdown = Array.isArray(score?.breakdown) ? score.breakdown : [];
+  if (breakdown.length === 0) return null;
+
+  const left = [];
+  const right = [];
+  const fallback = [];
+  for (const item of breakdown) {
+    const label = LABEL_FR[item.label] || item.label;
+    const badge = scoreBadge(item.score, item.max);
+    const line = `${badge} ${label}`;
+    if (RELIABILITY_LEFT_LABELS.has(item.label)) left.push(line);
+    else if (RELIABILITY_RIGHT_LABELS.has(item.label)) right.push(line);
+    else fallback.push(line);
+  }
+
+  for (const line of fallback) {
+    if (left.length <= right.length) left.push(line);
+    else right.push(line);
+  }
+
+  return [
+    {
+      name: "Détails fiabilité",
+      value: left.length > 0 ? left.join("\n") : "\u200b",
+      inline: true,
+    },
+    {
+      name: "\u200b",
+      value: right.length > 0 ? right.join("\n") : "\u200b",
+      inline: true,
+    },
+  ];
+}
+
 function isRiverRaceBattle(type) {
   const t = (type ?? "").toLowerCase();
   return [
@@ -243,9 +307,9 @@ function buildSparkline(values) {
 // Convertit un critère de breakdown en field Discord (inline)
 // et effectue la traduction française des libellés.
 const LABEL_FR = {
-  "War Activity": "Activité de guerre",
-  "Win Rate (War)": "Winrate (guerre)",
-  "CW2 Battle Wins": "Victoires CW2",
+  "War Activity": "Activité de GDC",
+  "Win Rate (War)": "Winrate GDC",
+  "CW2 Battle Wins": "Badge CW2",
   "Last Seen": "Connexion",
   "General Activity": "Activité générale",
   Experience: "Expérience",
@@ -537,34 +601,15 @@ export default async function handler(req, res) {
         const embedColor = COLOR_MAP[color] ?? 0x808080;
         const verdictFr = FR_VERDICTS[color] ?? verdict ?? "Fiabilité inconnue";
 
-        // Grille 2 colonnes : 2 critères inline + 1 spacer invisible = 1 ligne
-        const breakdown = score.breakdown ?? [];
-
-        // Table markdown isn't rendered by Discord; instead build a
-        // monospaced code block with padded columns so values align nicely.
-        const rows = [];
-        let maxLabel = 0;
-        for (const item of breakdown) {
-          const label = LABEL_FR[item.label] || item.label;
-          if (label.length > maxLabel) maxLabel = label.length;
-        }
-        for (const item of breakdown) {
-          const icon = criterionIcon(item.score, item.max);
-          const label = LABEL_FR[item.label] || item.label;
-          const scoreStr = `${item.score}/${item.max}`;
-          rows.push(`${icon} ${label.padEnd(maxLabel)} ${scoreStr}`);
-        }
-        const description =
-          `${icon} ${pct} % (${verdictFr})\n\n` +
-          "```\n" +
-          rows.join("\n") +
-          "\n```";
+        const breakdownFields = buildReliabilityFields(score);
+        const description = `${icon} ${pct} % (${verdictFr})`;
 
         const embed = {
           title: `<:interrogation:1493849417520906271> Joueur : ${analysis.overview.name}`,
           url: `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(tag)}`,
           color: embedColor,
           description,
+          fields: breakdownFields ?? [],
           footer: { text: `Tag : ${tag}` },
         };
 
@@ -878,7 +923,7 @@ export default async function handler(req, res) {
           analysis.overview.clan?.tag,
         );
 
-        const trustBreakdownCodeBlock = buildScoreBreakdownCodeBlock(score);
+        const breakdownFields = buildReliabilityFields(score);
         const detailLines = [
           `- **Moyenne par semaine :** ${avgFame}`,
           `- **Record de points :** ${allTimeRecord}`,
@@ -890,9 +935,10 @@ export default async function handler(req, res) {
         const fields = [
           {
             name: `Fiabilité : ${icon} ${Math.round(pct)}% (${verdictFr})`,
-            value: trustBreakdownCodeBlock,
+            value: "\u200b",
             inline: false,
           },
+          ...(breakdownFields ?? []),
           {
             name: "Clans :",
             value:
