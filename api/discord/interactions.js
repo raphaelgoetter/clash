@@ -849,7 +849,7 @@ export default async function handler(req, res) {
         )
           ? warHistory.streakInCurrentClan
           : 0;
-        const familyWeeks = weeks.filter((w) =>
+        const familyWeeks = completedWeeks.filter((w) =>
           FAMILY_CLAN_TAGS.has(normalizeClanTag(w.clanTag)),
         ).length;
         const previousClanWeek = (warHistory?.weeks ?? []).find(
