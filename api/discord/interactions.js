@@ -214,13 +214,13 @@ function buildReliabilityFields(score) {
 
   return [
     {
-      name: "Détails fiabilité",
-      value: left.length > 0 ? left.join("\n") : "\u200b",
+      name: "Détails fiabilité :",
+      value: left.length > 0 ? left.join("\n\u200b\n") : "\u200b",
       inline: true,
     },
     {
       name: "\u200b",
-      value: right.length > 0 ? right.join("\n") : "\u200b",
+      value: right.length > 0 ? right.join("\n\u200b\n") : "\u200b",
       inline: true,
     },
   ];
