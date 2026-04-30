@@ -773,19 +773,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     raceLog,
   );
 
-  // Preload family clan race logs to detect recent transfers between clans.
-  // This avoids querying the API repeatedly for each member.
-  const familyRaceLogs = {};
-  await Promise.all(
-    ALLOWED_CLANS.filter((t) => t !== clanTag).map(async (tag) => {
-      try {
-        familyRaceLogs[tag] = await fetchRaceLog(tag);
-      } catch (_) {
-        familyRaceLogs[tag] = null;
-      }
-    }),
-  );
-
   // Enregistre le snapshot journalier depuis la course EN COURS (currentRace),
   // pas depuis le race log terminé. decksUsed = cumul depuis jeudi → le delta
   // inter-snapshots donne les combats du jour.
