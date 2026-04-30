@@ -1888,7 +1888,7 @@ a.member-link:hover div:first-child {
   opacity: 1;
 }
 .chip-snap-live {
-  color: var(--green);
+  /* color: var(--green); */
   opacity: 1;
 }
 
