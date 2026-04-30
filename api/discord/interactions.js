@@ -604,7 +604,7 @@ export default async function handler(req, res) {
         const verdictFr = FR_VERDICTS[color] ?? verdict ?? "Fiabilité inconnue";
 
         const breakdownFields = buildReliabilityFields(score);
-        const description = `${icon} ${pct} % (${verdictFr})`;
+        const description = `${tag}\n${icon} ${pct} % (${verdictFr})`;
 
         const embed = {
           title: `<:interrogation:1493849417520906271> Joueur : ${analysis.overview.name}`,
@@ -612,7 +612,6 @@ export default async function handler(req, res) {
           color: embedColor,
           description,
           fields: breakdownFields ?? [],
-          footer: { text: `Tag : ${tag}` },
         };
 
         await fetch(webhookUrl, {
