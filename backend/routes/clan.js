@@ -289,6 +289,7 @@ router.get("/:tag/analysis", async (req, res) => {
 
         // topPlayers et uncomplete sont toujours calculés désormais — seul raceGroup
         // justifie une clé de cache distincte (appels rivaux supplémentaires).
+        const currentRaceIndicatesWarDay = false;
         const canUseDiskCache =
           !includeRaceGroup ||
           (hasFullRaceGroup &&
