@@ -145,7 +145,7 @@ function formatMemberLine(m) {
       verdict = "Fiable";
     } else if (pct >= 61) {
       emoji = RELIABILITY_BADGES.yellow;
-      verdict = "Risque";
+      verdict = "Faible";
     } else if (pct >= 31) {
       emoji = RELIABILITY_BADGES.orange;
       verdict = "Élevé";
