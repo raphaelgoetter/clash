@@ -54,7 +54,7 @@ const COLOR_MAP = {
 };
 const RELIABILITY_ICON = {
   green: "<:relsuccess:1499075446527099032>",
-  yellow: "<:relmedium:1499320146559369286>",
+  yellow: "<:relok:1499332644805017672>",
   orange: "<:relwarn:1499078423463854122>",
   red: "<:relerror:1499077154066137230>",
 };
