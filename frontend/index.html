@@ -345,63 +345,63 @@
 
         <!-- Member table -->
         <div class="card" id="card-clan-table">
-          <div class="table-header-row">
-            <h2 class="card-title">👥 Members</h2>
-          </div>
+          <details>
+            <summary><span class="card-title">👥 Members</span></summary>
 
-          <!-- Filters -->
-          <div class="table-filters">
-            <input
-              type="text"
-              id="filter-name"
-              class="filter-input"
-              placeholder="Filter by name or tag…"
-            />
-            <select id="filter-verdict" class="filter-select">
-              <option value="">All verdicts</option>
-              <option value="green">✅ High reliability</option>
-              <option value="yellow">⚠️ Low risk</option>
-              <option value="orange">🟠 High risk</option>
-              <option value="red">🔴 Extreme risk</option>
-            </select>
-          </div>
+            <!-- Filters -->
+            <div class="table-filters">
+              <input
+                type="text"
+                id="filter-name"
+                class="filter-input"
+                placeholder="Filter by name or tag…"
+              />
+              <select id="filter-verdict" class="filter-select">
+                <option value="">All verdicts</option>
+                <option value="green">✅ High reliability</option>
+                <option value="yellow">⚠️ Low risk</option>
+                <option value="orange">🟠 High risk</option>
+                <option value="red">🔴 Extreme risk</option>
+              </select>
+            </div>
 
-          <div class="table-scroll">
-            <table id="members-table" class="members-table">
-              <thead>
-                <tr>
-                  <th class="sortable" data-col="name">
-                    Player <span class="sort-icon">↕</span>
-                  </th>
-                  <th class="sortable" data-col="role">
-                    Role <span class="sort-icon">↕</span>
-                  </th>
-                  <th class="sortable" data-col="trophies">
-                    Trophies <span class="sort-icon">↕</span>
-                  </th>
-                  <th class="sortable" data-col="donations">
-                    Dons <span class="sort-icon">↕</span>
-                  </th>
-                  <th data-col="discord">Discord</th>
-                  <th class="sortable" data-col="lastSeen">
-                    Last Seen <span class="sort-icon">↕</span>
-                  </th>
-                  <th
-                    id="th-this-war"
-                    class="hidden sortable"
-                    data-col="warDecks"
-                  >
-                    This War <span class="sort-icon">↕</span>
-                  </th>
-                  <th class="sortable" data-col="reliability">
-                    Reliability <span class="sort-icon">↕</span>
-                  </th>
-                  <th data-col="verdict">Verdict</th>
-                </tr>
-              </thead>
-              <tbody id="members-tbody"></tbody>
-            </table>
-          </div>
+            <div class="table-scroll">
+              <table id="members-table" class="members-table">
+                <thead>
+                  <tr>
+                    <th class="sortable" data-col="name">
+                      Player <span class="sort-icon">↕</span>
+                    </th>
+                    <th class="sortable" data-col="role">
+                      Role <span class="sort-icon">↕</span>
+                    </th>
+                    <th class="sortable" data-col="trophies">
+                      Trophies <span class="sort-icon">↕</span>
+                    </th>
+                    <th class="sortable" data-col="donations">
+                      Dons <span class="sort-icon">↕</span>
+                    </th>
+                    <th data-col="discord">Discord</th>
+                    <th class="sortable" data-col="lastSeen">
+                      Last Seen <span class="sort-icon">↕</span>
+                    </th>
+                    <th
+                      id="th-this-war"
+                      class="hidden sortable"
+                      data-col="warDecks"
+                    >
+                      This War <span class="sort-icon">↕</span>
+                    </th>
+                    <th class="sortable" data-col="reliability">
+                      Reliability <span class="sort-icon">↕</span>
+                    </th>
+                    <th data-col="verdict">Verdict</th>
+                  </tr>
+                </thead>
+                <tbody id="members-tbody"></tbody>
+              </table>
+            </div>
+          </details>
         </div>
       </section>
     </main>

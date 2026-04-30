@@ -2542,6 +2542,7 @@ let loadedClanSections = {
   topPlayers: false,
   uncomplete: false,
   raceGroup: false,
+  members: false,
 };
 
 function computeClanLeague(clanWarTrophies) {
@@ -2803,6 +2804,19 @@ function setupClanLazySectionHandlers(weekId) {
     }
     groupCard.dataset.lazyInit = "1";
   }
+
+  const membersCard = document.getElementById("card-clan-table");
+  if (membersCard && !membersCard.dataset.lazyInit) {
+    const membersDetails = membersCard.querySelector("details");
+    if (membersDetails) {
+      membersDetails.addEventListener("toggle", () => {
+        if (!membersDetails.open) return;
+        if (!membersTbody.querySelector(".members-placeholder")) return;
+        applyFilters();
+      });
+    }
+    membersCard.dataset.lazyInit = "1";
+  }
 }
 
 async function loadClanSection(tag, section, weekId) {
@@ -2841,6 +2855,9 @@ function renderClanMembers(data) {
   filterName.value = "";
   filterVerdict.value = "";
 
+  const membersDetails = document.querySelector("#card-clan-table details");
+  const shouldRenderMembers = membersDetails?.open ?? false;
+
   if (isLite) {
     // Mode lite : tri par trophées décroissant
     sortState = { col: "trophies", dir: "desc" };
@@ -2848,19 +2865,31 @@ function renderClanMembers(data) {
       h.classList.remove("sort-asc", "sort-desc");
       if (h.dataset.col === "trophies") h.classList.add("sort-desc");
     });
-    renderMembersTable(sortMembers(members, "trophies", "desc"));
   } else {
     sortState = { col: "reliability", dir: "asc" };
     document.querySelectorAll(".members-table th.sortable").forEach((h) => {
       h.classList.remove("sort-asc", "sort-desc");
       if (h.dataset.col === "reliability") h.classList.add("sort-asc");
     });
-    renderMembersTable(sortMembers(members, "reliability", "asc"));
+  }
+
+  if (shouldRenderMembers) {
+    const sortedMembers = isLite
+      ? sortMembers(members, "trophies", "desc")
+      : sortMembers(members, "reliability", "asc");
+    renderMembersTable(sortedMembers);
+  } else {
+    renderMembersPlaceholder();
   }
   updateDebugPanel(data, "clan");
 }
 
 // Affiche un skeleton dans le tableau membres pendant le chargement live.
+function renderMembersPlaceholder() {
+  const cols = currentClanIsLite ? 5 : isWarActive ? 9 : 8;
+  membersTbody.innerHTML = `<tr class="members-placeholder"><td colspan="${cols}" style="text-align:center;color:var(--text-muted);padding:18px 0;">${t("clickToLoadMembers")}</td></tr>`;
+}
+
 function renderMembersSkeleton() {
   const cols = isWarActive ? 9 : 8;
   membersTbody.innerHTML = `<tr><td colspan="${cols}" class="members-skeleton">${t("membersLoading")}</td></tr>`;

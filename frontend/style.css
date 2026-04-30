@@ -1503,6 +1503,43 @@ a.member-link:hover div:first-child {
   color: var(--text-primary);
 }
 
+.card details {
+  width: 100%;
+}
+
+.card details summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.card details summary::-webkit-details-marker {
+  display: none;
+}
+
+.card details summary::before {
+  content: "▶";
+  font-size: 0.75rem;
+  transition: transform var(--transition);
+  flex-shrink: 0;
+}
+
+.card details[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.card details summary:hover {
+  color: var(--text-primary);
+}
+
+.card details summary .card-title {
+  margin-bottom: 0;
+}
+
 .note-disclosure p {
   padding: 0 12px 10px;
   font-size: 0.85rem;
