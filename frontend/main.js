@@ -75,6 +75,7 @@ function getScoreLabelMap() {
     Regularity: t("regularity"),
     "Avg Score": t("avgScore"),
     "Avg fame": t("avgFame"),
+    "CW2 badge": t("cw2BattleWins"),
     "CW2 Battle Wins": t("cw2BattleWins"),
     "CW2 battle wins": t("cw2BattleWins"),
     "Clan stability": t("clanStability"),

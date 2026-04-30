@@ -173,11 +173,11 @@ function scoreBadge(score, max) {
 }
 
 const RELIABILITY_ORDER = [
-  "CW2 Battle Wins",
+  "CW2 badge",
   "War Activity",
   "General Activity",
   "Experience",
-  "Win Rate (War)",
+  "Last Seen",
   "Donations",
   "Discord",
 ];
@@ -298,8 +298,8 @@ function buildSparkline(values) {
 const LABEL_FR = {
   "War Activity": "Activité de GDC",
   "Win Rate (War)": "Winrate GDC",
+  "CW2 badge": "Badge CW2",
   "CW2 Battle Wins": "Badge CW2",
-  "Last Seen": "Connexion",
   "General Activity": "Activité générale",
   Experience: "Expérience",
   Donations: "Dons totaux",

@@ -227,9 +227,13 @@ assert.ok(
   typeof fallback.summary === "string" && fallback.summary.length > 0,
   "fallback summary should be present",
 );
+const warActivityEntry = fallback.breakdown.find(
+  (entry) => entry.label === "War Activity",
+);
 assert.ok(
-  typeof fallback.breakdown[0].explanation === "string" &&
-    fallback.breakdown[0].explanation.length > 0,
+  warActivityEntry &&
+    typeof warActivityEntry.explanation === "string" &&
+    warActivityEntry.explanation.length > 0,
   "war activity explanation should be present",
 );
 console.log("✓ fallback warScore summary/explanation test passed.");
@@ -276,26 +280,24 @@ assert.strictEqual(
 );
 assert.strictEqual(
   fallbackAllWar.maxScore,
-  38,
-  `Expected fallback maxScore 38 when win rate counted and Discord is accounted for, got ${fallbackAllWar.maxScore}`,
+  33,
+  `Expected fallback maxScore 33 when no last seen data and Discord is not counted, got ${fallbackAllWar.maxScore}`,
 );
-const cw2Entry = fallbackAllWar.breakdown.find(
-  (b) => b.label === "CW2 Battle Wins",
-);
-assert.ok(cw2Entry, "CW2 Battle Wins entry exists for all-war case");
+const cw2Entry = fallbackAllWar.breakdown.find((b) => b.label === "CW2 badge");
+assert.ok(cw2Entry, "CW2 badge entry exists for all-war case");
 assert.strictEqual(
   cw2Entry.max,
   10,
-  `CW2 Battle Wins max should be 10, got ${cw2Entry.max}`,
+  `CW2 badge max should be 10, got ${cw2Entry.max}`,
 );
-const warActivityEntry = fallbackAllWar.breakdown.find(
+const warActivityEntryAllWar = fallbackAllWar.breakdown.find(
   (b) => b.label === "War Activity",
 );
-assert.ok(warActivityEntry, "War Activity entry exists for all-war case");
+assert.ok(warActivityEntryAllWar, "War Activity entry exists for all-war case");
 assert.strictEqual(
-  warActivityEntry.max,
+  warActivityEntryAllWar.max,
   8,
-  `War Activity max should be 8, got ${warActivityEntry.max}`,
+  `War Activity max should be 8, got ${warActivityEntryAllWar.max}`,
 );
 console.log("✓ General Activity war-ratio adjustment tests passed.");
 

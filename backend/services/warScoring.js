@@ -245,7 +245,7 @@ export function computeWarScore(
   const winRateGDC =
     warWinRate !== null ? r(Math.min(3, warWinRate * 3)) : null;
 
-  // 7. CW2 Battle Wins (0-8) — from ClanWarWins badge
+  // 7. CW2 badge (0-8) — from ClanWarWins badge
   const CW2_CAP = 250;
   const cw2Wins =
     player.badges?.find((b) => b.name === "ClanWarWins")?.progress ??
@@ -345,7 +345,7 @@ export function computeWarScore(
         : "No data",
     },
     {
-      label: "CW2 Battle Wins",
+      label: "CW2 badge",
       score: cw2Score,
       max: 8,
       detail: `${cw2Wins.toLocaleString("en-US")} total CW2 wins (cap 250)`,
@@ -415,14 +415,14 @@ export function computeWarScore(
  * Fallback reliability from battle log only (used when no race log history available).
  * Applies the same scale as computeWarScore for consistency.
  *
- * Criteria (total /36 base) :
+ * Criteria (total /34 base, 31 if no last seen data) :
  *  1. Activité GDC    /8 — decks/day (bonuses for 4-deck days, penalties for <4)
  *  2. Activité générale /8 — combats compétitifs dans le log (cap 30)
- *  3. CW2 Wins        /10 — badge progress (cap 250)
- *  4. Win Rate GDC    /5 — % victoires sur combats GDC (0 if no GDC battles)
+ *  3. CW2 badge       /10 — badge progress (cap 250)
+ *  4. Last Seen       /3 — last seen activity after ~16 war decks
  *  5. Expérience      /3 — bestTrophies (cap 12 000)
  *  6. Dons            /2 — totalDonations (stable cumulative metric)
- *  (+2 Discord toujours ; +5 Last Seen si ≥16 war decks observés)
+ *  (+2 Discord toujours)
  *
  * @param {object}   player
  * @param {object[]} warLog              - Filtered war battles (expanded duels)
@@ -459,7 +459,6 @@ export function computeWarReliabilityFallback(
 
   const gdcCount = warLog.length > 0 ? warLog.length : currentRaceDecks;
   const gdcWins = warLog.filter(isWarWin).length;
-  const gdcWinRate = gdcCount > 0 ? gdcWins / gdcCount : 0;
   const competitive = gdcCount + bd.ladder + bd.challenge;
 
   // 1. War Activity (0-8) — basé sur decks/jour, avec bonus/pénalités
@@ -478,9 +477,15 @@ export function computeWarReliabilityFallback(
   const confidenceCap = r(Math.min(8, (gdcCount / 16) * 8));
   activiteGDC = r(Math.min(activiteGDC, confidenceCap));
 
-  // 2. Win Rate GDC (0-5) — minimum 10 combats requis
-  const winRateExcluded = gdcCount < 10;
-  const winRateGDC = winRateExcluded ? 0 : r(gdcWinRate * 5);
+  // 2. Last Seen replacement (0-3) — requires about 16 war decks before it counts
+  let lastSeenScore = null;
+  let lastSeenDays = null;
+  if (lastSeen && warLog.length >= 16) {
+    lastSeenDays =
+      (Date.now() - parseClashDate(lastSeen).getTime()) / MS_PER_DAY;
+    lastSeenScore =
+      lastSeenDays <= 1 ? 3 : lastSeenDays <= 3 ? 2 : lastSeenDays <= 7 ? 1 : 0;
+  }
 
   // 3. Activité générale (0-8) — 30 combats compétitifs requis pour score max
   const warRatio = competitive > 0 ? gdcCount / competitive : 0;
@@ -505,21 +510,11 @@ export function computeWarReliabilityFallback(
   const totalDonations = player.totalDonations ?? player.donations ?? 0;
   const dons = r(scoreTotalDonations(totalDonations, 2));
 
-  // 6. CW2 Battle Wins (0-10) — from ClanWarWins badge
+  // 7. CW2 badge (0-10) — from ClanWarWins badge
   const CW2_CAP = 250;
   const cw2Wins =
     player.badges?.find((b) => b.name === "ClanWarWins")?.progress ?? 0;
   const cw2Score = r(Math.min(10, (cw2Wins / CW2_CAP) * 10));
-
-  // 7. Last seen (0-5) — exige environ deux semaines de decks GDC avant de compter
-  let lastSeenScore = null;
-  let lastSeenDays = null;
-  if (lastSeen && warLog.length >= 16) {
-    lastSeenDays =
-      (Date.now() - parseClashDate(lastSeen).getTime()) / MS_PER_DAY;
-    lastSeenScore =
-      lastSeenDays <= 1 ? 5 : lastSeenDays <= 3 ? 3 : lastSeenDays <= 7 ? 1 : 0;
-  }
 
   // 8. Discord (0-2) — lié au serveur Discord du clan
   const discordScore = discordLinked ? 2 : 0;
@@ -528,15 +523,13 @@ export function computeWarReliabilityFallback(
     activiteGDC +
       activiteGen +
       cw2Score +
-      winRateGDC +
+      (lastSeenScore ?? 0) +
       experience +
       dons +
-      (lastSeenScore ?? 0) +
       discordScore,
   );
-  // base max: 8+8+10+5+3+2=36, réduit à 31 si win rate exclu (<10 combats); Discord toujours +2
-  const maxBase = winRateExcluded ? 31 : 36;
-  const maxScore = maxBase + (lastSeenScore !== null ? 5 : 0) + 2;
+  const maxBase = lastSeenScore !== null ? 34 : 31;
+  const maxScore = maxBase + 2;
   const pct = Math.round((total / maxScore) * 100);
 
   let verdict, color;
@@ -595,6 +588,12 @@ export function computeWarReliabilityFallback(
     summary,
     breakdown: [
       {
+        label: "CW2 badge",
+        score: cw2Score,
+        max: 10,
+        detail: `${cw2Wins.toLocaleString("en-US")} total CW2 wins (cap 250)`,
+      },
+      {
         label: "War Activity",
         score: activiteGDC,
         max: 8,
@@ -612,30 +611,12 @@ export function computeWarReliabilityFallback(
         max: 8,
         detail: `${competitive} competitive battles (${gdcCount} War + ${bd.ladder} Ladder + ${bd.challenge} Challenges)`,
       },
-      {
-        label: "CW2 Battle Wins",
-        score: cw2Score,
-        max: 10,
-        detail: `${cw2Wins.toLocaleString("en-US")} total CW2 wins (cap 250)`,
-      },
-      {
-        label: "Win Rate (War)",
-        score: gdcCount > 0 ? r(Math.min(5, gdcWinRate * 5)) : 0,
-        max: 5,
-        excluded: winRateExcluded,
-        detail:
-          gdcCount === 0
-            ? "No data — no war battles found"
-            : winRateExcluded
-              ? `${Math.round(gdcWinRate * 100)}% wins (${gdcWins}W / ${gdcCount - gdcWins}L) — not counted (10 battles required)`
-              : `${Math.round(gdcWinRate * 100)}% wins (${gdcWins}W / ${gdcCount - gdcWins}L)`,
-      },
       ...(lastSeenScore !== null
         ? [
             {
               label: "Last Seen",
               score: lastSeenScore,
-              max: 5,
+              max: 3,
               detail:
                 lastSeenDays < 1
                   ? "Active in the last 24 h"
