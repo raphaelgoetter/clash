@@ -445,6 +445,22 @@ async function main() {
         (d) => !notified.demotions.includes(d.tag),
       );
 
+      if (newArrivals.length > 0) {
+        await Promise.all(
+          newArrivals.map(async (arrival) => {
+            try {
+              arrival.analysis = await getPlayerAnalysis(arrival.tag);
+            } catch (err) {
+              if (DEBUG) {
+                debugLog(
+                  `Failed to load analysis for ${arrival.tag}: ${err.message}`,
+                );
+              }
+            }
+          }),
+        );
+      }
+
       if (
         newArrivals.length === 0 &&
         newDepartures.length === 0 &&
