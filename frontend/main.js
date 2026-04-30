@@ -647,6 +647,11 @@ async function handleSearch(force = false) {
 
       const queryParams = new URLSearchParams();
       if (force) queryParams.set("force", "true");
+      // When a cached static clan payload was shown, force a live refresh so
+      // the summary and current war counters are updated immediately.
+      if (staticData && !force) {
+        queryParams.set("force", "true");
+      }
       // lazy load heavy sections (topPlayers/uncomplete) on demand
       queryParams.set("includeTopPlayers", "false");
       queryParams.set("includeUncomplete", "false");
