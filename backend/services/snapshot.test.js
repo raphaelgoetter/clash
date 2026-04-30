@@ -9,10 +9,14 @@ import {
 } from "./snapshot.js";
 
 const TMP_DIR = path.join("/tmp", "clash-snapshots");
-const TEST_FILE = path.join(TMP_DIR, "TESTTAG.json");
+const TEST_TAG = "TESTTAG2";
+const TEST_FILE = path.join(TMP_DIR, `${TEST_TAG}.json`);
+const TEST_DATA_FILE = path.join("data", "snapshots", `${TEST_TAG}.json`);
 
 async function main() {
   await fs.mkdir(TMP_DIR, { recursive: true });
+  await fs.rm(TEST_FILE, { force: true });
+  await fs.rm(TEST_DATA_FILE, { force: true });
   const fixture = [
     {
       week: "S131W3",
@@ -34,7 +38,7 @@ async function main() {
 
   await fs.writeFile(TEST_FILE, JSON.stringify(fixture, null, 2), "utf-8");
 
-  const weekSnaps = await getSnapshotsForWeeks("TESTTAG", ["S131W3"]);
+  const weekSnaps = await getSnapshotsForWeeks(TEST_TAG, ["S131W3"]);
   assert.strictEqual(
     weekSnaps.S131W3.length,
     4,
@@ -108,6 +112,31 @@ async function main() {
   {
     const original = [100, 120, 80, null];
     const currentRace = {
+      state: "warDay",
+      periodIndex: 0,
+      clan: {
+        participants: [
+          { tag: "#A", decksUsedToday: 2 },
+          { tag: "#B", decksUsedToday: 3 },
+        ],
+      },
+    };
+    const currentMemberTags = new Set(["#A", "#B"]);
+    const updated = overrideWarSnapshotDaysWithLiveCurrentDay(
+      original,
+      currentRace,
+      currentMemberTags,
+    );
+    assert.deepStrictEqual(
+      updated,
+      [5, 120, 80, null],
+      "Should override current war day even when periodType is missing but state indicates warDay",
+    );
+  }
+
+  {
+    const original = [100, 120, 80, null];
+    const currentRace = {
       periodType: "warDay",
       periodIndex: 19,
       clan: {
@@ -135,7 +164,7 @@ async function main() {
   {
     await fs.writeFile(TEST_FILE, JSON.stringify([], null, 2), "utf-8");
     await recordSnapshot(
-      "TESTTAG",
+      TEST_TAG,
       [
         { tag: "#A", decksUsed: 5, decksUsedToday: 1 },
         { tag: "#B", decksUsed: 8, decksUsedToday: 4 },
@@ -143,7 +172,7 @@ async function main() {
       "S131W3",
       { now: "2026-04-24T10:05:00.000Z" },
     );
-    const fridayWeekSnaps = await getSnapshotsForWeeks("TESTTAG", ["S131W3"]);
+    const fridayWeekSnaps = await getSnapshotsForWeeks(TEST_TAG, ["S131W3"]);
     const fridaySnap = fridayWeekSnaps.S131W3[1];
     assert.strictEqual(
       fridaySnap.snapshotCount,
@@ -203,7 +232,7 @@ async function main() {
       "utf-8",
     );
     await recordSnapshot(
-      "TESTTAG",
+      TEST_TAG,
       [
         { tag: "#A", decksUsed: 4, decksUsedToday: 1 },
         { tag: "#B", decksUsed: 8, decksUsedToday: 4 },
@@ -214,9 +243,7 @@ async function main() {
       "S131W3",
       { now: "2026-04-25T10:05:00.000Z" },
     );
-    const preservedWeekSnaps = await getSnapshotsForWeeks("TESTTAG", [
-      "S131W3",
-    ]);
+    const preservedWeekSnaps = await getSnapshotsForWeeks(TEST_TAG, ["S131W3"]);
     const preservedThursday = preservedWeekSnaps.S131W3[0];
     assert.strictEqual(
       preservedThursday.snapshotCount,
@@ -272,7 +299,7 @@ async function main() {
     "utf-8",
   );
   await recordSnapshot(
-    "TESTTAG",
+    TEST_TAG,
     [
       { tag: "#A", decksUsed: 4 },
       { tag: "#B", decksUsed: 4 },
@@ -280,7 +307,7 @@ async function main() {
     "S131W3",
     { now: "2026-04-25T10:42:00.000Z" },
   );
-  const updatedWeekSnaps = await getSnapshotsForWeeks("TESTTAG", ["S131W3"]);
+  const updatedWeekSnaps = await getSnapshotsForWeeks(TEST_TAG, ["S131W3"]);
   const fridaySnap = updatedWeekSnaps.S131W3[1];
   assert.strictEqual(
     fridaySnap.snapshotCount,
@@ -338,7 +365,7 @@ async function main() {
     "utf-8",
   );
   await recordSnapshot(
-    "TESTTAG",
+    TEST_TAG,
     [
       { tag: "#A", decksUsed: 4, fame: 0 },
       { tag: "#B", decksUsed: 4, fame: 0 },
@@ -350,7 +377,7 @@ async function main() {
     { now: "2026-04-25T10:05:00.000Z" },
   );
 
-  const noPrimaryWeekSnaps = await getSnapshotsForWeeks("TESTTAG", ["S131W3"]);
+  const noPrimaryWeekSnaps = await getSnapshotsForWeeks(TEST_TAG, ["S131W3"]);
   const saturdaySnap = noPrimaryWeekSnaps.S131W3[2];
   assert.strictEqual(
     saturdaySnap.snapshotBackupTime,
@@ -359,7 +386,8 @@ async function main() {
   assert.strictEqual(saturdaySnap.snapshotCount, 0);
   assert.deepStrictEqual(saturdaySnap.decks, {});
 
-  await fs.unlink(TEST_FILE);
+  await fs.rm(TEST_FILE, { force: true });
+  await fs.rm(TEST_DATA_FILE, { force: true });
   console.log("✓ snapshot service tests passed");
 }
 
