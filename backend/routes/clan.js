@@ -373,7 +373,10 @@ router.get("/:tag/analysis", async (req, res) => {
     } catch (err) {
       if (
         staleCache &&
-        (err.isRateLimit || err.message.includes("429") || err.status >= 500)
+        (err.isRateLimit ||
+          err.message.includes("429") ||
+          err.message.includes("504") ||
+          err.status >= 500)
       ) {
         const responseStale = { ...staleCache };
         responseStale.rateLimited = true;
@@ -391,7 +394,10 @@ router.get("/:tag/analysis", async (req, res) => {
 
     // If we are temporarily rate-limited, serve prebuilt static cache to avoid total failure.
     if (
-      (err.isRateLimit || err.message.includes("429") || err.status >= 500) &&
+      (err.isRateLimit ||
+        err.message.includes("429") ||
+        err.message.includes("504") ||
+        err.status >= 500) &&
       clanTag
     ) {
       try {

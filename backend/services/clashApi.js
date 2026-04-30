@@ -4,11 +4,11 @@
 // authentication and error handling.
 // ============================================================
 
-import fetch from 'node-fetch';
+import fetch from "node-fetch";
 
 // Using the official RoyaleAPI proxy which does not enforce IP whitelisting.
 // Same API key, same endpoints — no need to whitelist Vercel's dynamic IPs.
-const BASE_URL = 'https://proxy.royaleapi.dev/v1';
+const BASE_URL = "https://proxy.royaleapi.dev/v1";
 
 /**
  * Build authorization headers using the API key stored in env.
@@ -16,11 +16,11 @@ const BASE_URL = 'https://proxy.royaleapi.dev/v1';
 function buildHeaders() {
   const key = process.env.CLASH_API_KEY?.trim();
   if (!key) {
-    throw new Error('CLASH_API_KEY environment variable is not set.');
+    throw new Error("CLASH_API_KEY environment variable is not set.");
   }
   return {
     Authorization: `Bearer ${key}`,
-    Accept: 'application/json',
+    Accept: "application/json",
   };
 }
 
@@ -46,12 +46,16 @@ async function get(path, retries = 3, delayMs = 500) {
 
     const body = await res.text();
     const err = new Error(`Clash API error ${res.status} on ${path}: ${body}`);
+    err.status = res.status;
     if (res.status === 429) {
       err.isRateLimit = true;
-      err.retryAfter = res.headers.get('retry-after');
+      err.retryAfter = res.headers.get("retry-after");
     }
 
-    if ((res.status === 429 || [502, 503, 504].includes(res.status)) && attempt < retries) {
+    if (
+      (res.status === 429 || [502, 503, 504].includes(res.status)) &&
+      attempt < retries
+    ) {
       const backoff = delayMs * Math.pow(2, attempt);
       attempt += 1;
       await sleep(backoff);
@@ -69,7 +73,7 @@ async function get(path, retries = 3, delayMs = 500) {
  * @returns {string}
  */
 export function encodeTag(tag) {
-  return encodeURIComponent(tag.startsWith('#') ? tag : `#${tag}`);
+  return encodeURIComponent(tag.startsWith("#") ? tag : `#${tag}`);
 }
 
 // ── Player endpoints ──────────────────────────────────────────
@@ -83,7 +87,7 @@ export async function fetchPlayer(tag) {
 export async function fetchBattleLog(tag) {
   const data = await get(`/players/${encodeTag(tag)}/battlelog`);
   // The API returns an array directly
-  return Array.isArray(data) ? data : data.items ?? [];
+  return Array.isArray(data) ? data : (data.items ?? []);
 }
 
 // ── Clan endpoints ────────────────────────────────────────────
@@ -96,7 +100,7 @@ export async function fetchClan(tag) {
 /** Fetch the list of members in a clan. */
 export async function fetchClanMembers(tag) {
   const data = await get(`/clans/${encodeTag(tag)}/members`);
-  return Array.isArray(data) ? data : data.items ?? [];
+  return Array.isArray(data) ? data : (data.items ?? []);
 }
 
 /**
@@ -105,7 +109,7 @@ export async function fetchClanMembers(tag) {
  */
 export async function fetchRaceLog(tag) {
   const data = await get(`/clans/${encodeTag(tag)}/riverracelog`);
-  return Array.isArray(data) ? data : data.items ?? [];
+  return Array.isArray(data) ? data : (data.items ?? []);
 }
 
 /**
