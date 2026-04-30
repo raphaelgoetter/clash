@@ -1027,7 +1027,7 @@ export default async function handler(req, res) {
         let apiResp;
         try {
           apiResp = await fetch(
-            `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis`,
+            `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis?fast=true`,
             {
               headers: { Accept: "application/json" },
               signal: abortCtrl.signal,
@@ -1496,7 +1496,7 @@ export default async function handler(req, res) {
       try {
         const { fetchRaceLog } =
           await import("../../backend/services/clashApi.js");
-        const apiUrl = `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis?includeTopPlayers=false&includeUncomplete=true`;
+        const apiUrl = `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis?includeTopPlayers=false&includeUncomplete=true&fast=true`;
         const apiResp = await fetch(apiUrl);
         if (!apiResp.ok) {
           const msg = `Erreur API : ${apiResp.status}`;
@@ -2399,7 +2399,7 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
-        const apiUrl = `https://trustroyale.vercel.app/api/clan/${resolved.tag}/analysis?includeRaceGroup=true&includeTopPlayers=false&includeUncomplete=false`;
+        const apiUrl = `https://trustroyale.vercel.app/api/clan/${resolved.tag}/analysis?includeRaceGroup=true&includeTopPlayers=false&includeUncomplete=false&fast=true`;
         const apiRes = await fetch(apiUrl);
         if (!apiRes.ok) throw new Error(`API ${apiRes.status}`);
         const data = await apiRes.json();

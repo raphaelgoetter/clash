@@ -258,6 +258,7 @@ router.get("/:tag/analysis", async (req, res) => {
       req.query.includeRaceGroup === "1";
     const includeMembers =
       req.query.includeMembers !== "false" && req.query.includeMembers !== "0";
+    const fast = req.query.fast === "true" || req.query.fast === "1";
 
     try {
       diskCached = await loadClanCache(clanTag);
@@ -303,6 +304,21 @@ router.get("/:tag/analysis", async (req, res) => {
           if (!includeUncomplete) responsePayload.uncomplete = null;
           responsePayload.members = null;
           responsePayload.membersRaw = null;
+          res.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+          res.set("X-Cache", "HIT");
+          return res.json(responsePayload);
+        }
+
+        if (!forceRefresh && fast && diskCached) {
+          const responsePayload = { ...diskCached };
+          responsePayload.fallbackReason = "diskCacheFast";
+          responsePayload.rateLimited = false;
+          if (!includeTopPlayers) responsePayload.topPlayers = null;
+          if (!includeUncomplete) responsePayload.uncomplete = null;
+          if (!includeMembers) {
+            responsePayload.members = null;
+            responsePayload.membersRaw = null;
+          }
           res.set("Cache-Control", "no-store, max-age=0, must-revalidate");
           res.set("X-Cache", "HIT");
           return res.json(responsePayload);
