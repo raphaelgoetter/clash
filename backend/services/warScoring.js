@@ -316,6 +316,12 @@ export function computeWarScore(
 
   const breakdown = [
     {
+      label: "CW2 badge",
+      score: cw2Score,
+      max: 8,
+      detail: `${cw2Wins.toLocaleString("en-US")} total CW2 wins (cap 250)`,
+    },
+    {
       label: "Regularity",
       score: regularite,
       max: 12,
@@ -337,20 +343,6 @@ export function computeWarScore(
       })(),
     },
     {
-      label: "Avg Score",
-      score: scoreMoyen,
-      max: 10,
-      detail: warHistory.avgFame
-        ? `${warHistory.avgFame.toLocaleString("en-US")} points / week (average weekly fame, 1,000–3,000)`
-        : "No data",
-    },
-    {
-      label: "CW2 badge",
-      score: cw2Score,
-      max: 8,
-      detail: `${cw2Wins.toLocaleString("en-US")} total CW2 wins (cap 250)`,
-    },
-    {
       label: "Stability",
       score: stabilite,
       max: 8,
@@ -361,21 +353,14 @@ export function computeWarScore(
         return s < 5 ? `${base} (full score at 5 wks)` : base;
       })(),
     },
-    ...(lastSeenScore !== null
-      ? [
-          {
-            label: "Last Seen",
-            score: lastSeenScore,
-            max: 5,
-            detail:
-              lastSeenDays < 1
-                ? "today"
-                : lastSeenDays < 2
-                  ? "1 day"
-                  : `${Math.round(lastSeenDays)} days`,
-          },
-        ]
-      : []),
+    {
+      label: "Avg Score",
+      score: scoreMoyen,
+      max: 10,
+      detail: warHistory.avgFame
+        ? `${warHistory.avgFame.toLocaleString("en-US")} points / week (average weekly fame, 1,000–3,000)`
+        : "No data",
+    },
     ...(winRateGDC !== null
       ? [
           {
@@ -392,6 +377,21 @@ export function computeWarScore(
       max: 3,
       detail: `${(player.trophies ?? 0).toLocaleString("en-US")} trophies (range 4000–14000)`,
     },
+    ...(lastSeenScore !== null
+      ? [
+          {
+            label: "Last Seen",
+            score: lastSeenScore,
+            max: 5,
+            detail:
+              lastSeenDays < 1
+                ? "today"
+                : lastSeenDays < 2
+                  ? "1 day"
+                  : `${Math.round(lastSeenDays)} days`,
+          },
+        ]
+      : []),
     {
       label: "Donations",
       score: dons,

@@ -81,6 +81,7 @@ function getScoreLabelMap() {
     "Clan stability": t("clanStability"),
     Stability: t("clanStability"),
     "Last seen": t("lastSeen"),
+    "Last Seen": t("lastSeen"),
     "Win Rate (War)": t("winRateFullMode"),
     "Win rate full mode": t("winRateFullMode"),
     Experience: t("experience"),

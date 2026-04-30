@@ -172,7 +172,19 @@ function scoreBadge(score, max) {
   return SCORE_BADGES.error;
 }
 
-const RELIABILITY_ORDER = [
+const RELIABILITY_ORDER_HISTORY = [
+  "CW2 badge",
+  "Regularity",
+  "Stability",
+  "Avg Score",
+  "Win Rate (War)",
+  "Experience",
+  "Last Seen",
+  "Donations",
+  "Discord",
+];
+
+const RELIABILITY_ORDER_FALLBACK = [
   "CW2 badge",
   "War Activity",
   "General Activity",
@@ -188,21 +200,21 @@ function buildReliabilityFields(score) {
 
   const ordered = [];
   const fallback = [];
+  const order = score?.isFallback
+    ? RELIABILITY_ORDER_FALLBACK
+    : RELIABILITY_ORDER_HISTORY;
   for (const item of breakdown) {
     const badge = scoreBadge(item.score, item.max);
     const label = LABEL_FR[item.label] || item.label;
-    const line = `${badge} ${label}`;
-    if (RELIABILITY_ORDER.includes(item.label)) {
+    const line = `${badge} ${label} (${item.score}/${item.max})`;
+    if (order.includes(item.label)) {
       ordered.push({ label: item.label, line });
     } else {
       fallback.push(line);
     }
   }
 
-  ordered.sort(
-    (a, b) =>
-      RELIABILITY_ORDER.indexOf(a.label) - RELIABILITY_ORDER.indexOf(b.label),
-  );
+  ordered.sort((a, b) => order.indexOf(a.label) - order.indexOf(b.label));
 
   const lines = ordered.map((item) => item.line).concat(fallback);
 
