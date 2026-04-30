@@ -1143,8 +1143,10 @@ function getCurrentWarDayIndex(currentRace, clanTag = null, now = new Date()) {
   if (!currentRace) return null;
   const isWarDay =
     currentRace.periodType === "warDay" ||
+    currentRace.periodType === "colosseum" ||
     currentRace.state === "warDay" ||
-    currentRace.state === "overtime";
+    currentRace.state === "overtime" ||
+    currentRace.state === "full";
   if (!isWarDay) return null;
 
   if (
@@ -1175,8 +1177,10 @@ export function overrideWarSnapshotDaysWithLiveCurrentDay(
   if (!Array.isArray(warSnapshotDays)) return warSnapshotDays;
   const isWarDay =
     currentRace?.periodType === "warDay" ||
+    currentRace?.periodType === "colosseum" ||
     currentRace?.state === "warDay" ||
-    currentRace?.state === "overtime";
+    currentRace?.state === "overtime" ||
+    currentRace?.state === "full";
   if (!isWarDay) return warSnapshotDays;
 
   const normalizedTags = new Set(

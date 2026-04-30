@@ -138,7 +138,7 @@ export function renderRaceGroupCard(data, t, timerHelper) {
         ? `<td class="war-group-current-pts">${clan.clanScore != null ? fmtNum(Math.round(clan.clanScore)) : "—"}</td>`
         : "";
       const avgPtsHtml = isWarPeriod
-        ? `<td class="war-group-avg-pts">${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(1) : "—"}</td>`
+        ? `<td class="war-group-avg-pts">${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(2) : "—"}</td>`
         : "";
 
       let projectionHtml = "";
@@ -149,7 +149,7 @@ export function renderRaceGroupCard(data, t, timerHelper) {
         const projVal = isClinched
           ? t("warGroupClinchedLabel")
           : clan.projectedFame != null
-            ? fmtNum(Math.round(clan.projectedFame))
+            ? fmtNum(Math.round(clan.projectedFame / 100) * 100)
             : "—";
         const clinchedHtml = isClinched
           ? ` <span class="war-group-clinched" title="${t("warGroupClinchedWin")}">${t("warGroupClinchedLabel")}</span>`

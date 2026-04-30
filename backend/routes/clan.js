@@ -273,10 +273,24 @@ router.get("/:tag/analysis", async (req, res) => {
               c.tag !== `#${clanTag}` &&
               (c.lastWarFame !== null || c.prevWarFame !== null),
           );
+        const hasLiveRaceGroupDetails =
+          includeRaceGroup &&
+          Array.isArray(diskCached.raceGroup) &&
+          diskCached.raceGroup.some(
+            (c) =>
+              c.decksToday != null ||
+              c.ptsPerDeck != null ||
+              c.projectedFame != null ||
+              c.currentFame != null ||
+              c.maxReachableFame != null,
+          );
 
         // topPlayers et uncomplete sont toujours calculés désormais — seul raceGroup
         // justifie une clé de cache distincte (appels rivaux supplémentaires).
-        const canUseDiskCache = !includeRaceGroup || hasFullRaceGroup;
+        const canUseDiskCache =
+          !includeRaceGroup ||
+          (hasFullRaceGroup &&
+            (!currentRaceIndicatesWarDay || hasLiveRaceGroupDetails));
 
         if (!forceRefresh && age <= DISK_CACHE_TTL_MS && canUseDiskCache) {
           // Fresh cache: safe to return directly.
@@ -609,6 +623,13 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
   // If both are missing, we are in degraded mode.
   raceLogUnavailable = !raceLog && !currentRace;
+
+  const currentRaceIndicatesWarDay =
+    currentRace?.periodType === "warDay" ||
+    currentRace?.periodType === "colosseum" ||
+    currentRace?.state === "warDay" ||
+    currentRace?.state === "overtime" ||
+    currentRace?.state === "full";
 
   // Helper: somme des fame individuelles (standings.fame est tronqué en GDC classique)
   const sumParticipantsFame = (standing) => {
@@ -1591,10 +1612,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     Date.now() - warResetOffsetMs(clanTag),
   ).getUTCDay();
   const isWarPeriodCalendar = _gdcDowClan === 0 || _gdcDowClan >= 4;
-  const currentRaceIndicatesWarDay =
-    currentRace?.periodType === "warDay" ||
-    currentRace?.state === "warDay" ||
-    currentRace?.state === "overtime";
 
   if (
     isWarPeriodCalendar &&
@@ -2204,8 +2221,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
           const isWarPeriod =
             currentRace?.periodType === "warDay" ||
+            currentRace?.periodType === "colosseum" ||
             currentRace?.state === "warDay" ||
-            currentRace?.state === "overtime";
+            currentRace?.state === "overtime" ||
+            currentRace?.state === "full";
 
           // Step 1: Pré-calcul des projections pour tous les clans du groupe
           // Calcul de la moyenne de decks de la semaine passée pour ce clan
@@ -2402,6 +2421,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                     if (deltaSum > 0 && decksToday > 0) {
                       fameTodayRaw = deltaSum;
                     }
+                  } else if (warDayIndex === 0) {
+                    // J1 : l'API fournit déjà la fame de la journée en cours.
+                    fameTodayRaw = sectionFame;
                   }
 
                   if (fameTodayRaw != null && decksToday > 0) {

@@ -2476,10 +2476,10 @@ export default async function handler(req, res) {
 
           if (isWarPeriod) {
             const decks = `<:cards:1493711279121104926> ${clan.decksToday != null ? clan.decksToday : "?"} decks`;
-            const eff = `<:cible:1493711597682557019> ${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(1) : "?"} pts/d`;
+            const eff = `<:cible:1493711597682557019> ${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(2) : "?"} pts/d`;
             const proj = clan.isClinchedWin
               ? "<:projection:1499275709078700073> ✅ Victoire mathématiquement assurée"
-              : `<:projection:1499275709078700073> Projection: **${clan.projectedFame != null ? fmt(Math.round(clan.projectedFame)) : "?"}**`;
+              : `<:projection:1499275709078700073> Projection: **${clan.projectedFame != null ? fmt(Math.round(clan.projectedFame / 100) * 100) : "?"}**`;
             const shouldShowClinched =
               clan.isClinchedWin ||
               (isOwn && clan.projectedFame === 0 && clan.decksToday > 0);
