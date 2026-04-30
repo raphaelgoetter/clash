@@ -256,6 +256,8 @@ router.get("/:tag/analysis", async (req, res) => {
     const includeRaceGroup =
       req.query.includeRaceGroup === "true" ||
       req.query.includeRaceGroup === "1";
+    const includeMembers =
+      req.query.includeMembers !== "false" && req.query.includeMembers !== "0";
 
     try {
       diskCached = await loadClanCache(clanTag);
@@ -292,6 +294,19 @@ router.get("/:tag/analysis", async (req, res) => {
           (hasFullRaceGroup &&
             (!currentRaceIndicatesWarDay || hasLiveRaceGroupDetails));
 
+        if (!forceRefresh && !includeMembers) {
+          const responsePayload = { ...diskCached };
+          responsePayload.fallbackReason = "diskCache";
+          responsePayload.rateLimited = false;
+          if (!includeTopPlayers) responsePayload.topPlayers = null;
+          if (!includeUncomplete) responsePayload.uncomplete = null;
+          responsePayload.members = null;
+          responsePayload.membersRaw = null;
+          res.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+          res.set("X-Cache", "HIT");
+          return res.json(responsePayload);
+        }
+
         if (!forceRefresh && age <= DISK_CACHE_TTL_MS && canUseDiskCache) {
           // Fresh cache: safe to return directly.
           const responsePayload = { ...diskCached };
@@ -299,6 +314,10 @@ router.get("/:tag/analysis", async (req, res) => {
           responsePayload.rateLimited = false;
           if (!includeTopPlayers) responsePayload.topPlayers = null;
           if (!includeUncomplete) responsePayload.uncomplete = null;
+          if (!includeMembers) {
+            responsePayload.members = null;
+            responsePayload.membersRaw = null;
+          }
           res.set("Cache-Control", "no-store, max-age=0, must-revalidate");
           res.set("X-Cache", "HIT");
           return res.json(responsePayload);
@@ -311,6 +330,10 @@ router.get("/:tag/analysis", async (req, res) => {
             fallbackReason: "diskCacheStale",
             rateLimited: false,
           };
+          if (!includeMembers) {
+            staleCache.members = null;
+            staleCache.membersRaw = null;
+          }
 
           // Trigger asynchronous update in background as a best-effort refresh.
           // waitUntil garantit que Vercel maintient la fonction active jusqu'à la fin du refresh.
@@ -365,6 +388,10 @@ router.get("/:tag/analysis", async (req, res) => {
       const responsePayload = { ...payload };
       if (!includeTopPlayers) responsePayload.topPlayers = null;
       if (!includeUncomplete) responsePayload.uncomplete = null;
+      if (!includeMembers) {
+        responsePayload.members = null;
+        responsePayload.membersRaw = null;
+      }
 
       // prevent Vercel/edge from caching this response
       res.set("Cache-Control", "no-store, max-age=0, must-revalidate");
@@ -383,6 +410,10 @@ router.get("/:tag/analysis", async (req, res) => {
         responseStale.fallbackReason = "diskCacheRateLimited";
         if (!includeTopPlayers) responseStale.topPlayers = null;
         if (!includeUncomplete) responseStale.uncomplete = null;
+        if (!includeMembers) {
+          responseStale.members = null;
+          responseStale.membersRaw = null;
+        }
         res.set("X-Cache", "STALE");
         res.set("Cache-Control", "no-store, max-age=0, must-revalidate");
         return res.status(200).json(responseStale);
@@ -408,6 +439,10 @@ router.get("/:tag/analysis", async (req, res) => {
           responseCached.rateLimited = true;
           if (!includeTopPlayers) responseCached.topPlayers = null;
           if (!includeUncomplete) responseCached.uncomplete = null;
+          if (!includeMembers) {
+            responseCached.members = null;
+            responseCached.membersRaw = null;
+          }
           res.set("X-Cache", "STALE");
           res.set("Cache-Control", "no-store, max-age=0, must-revalidate");
           return res.status(200).json(responseCached);
@@ -425,6 +460,10 @@ router.get("/:tag/analysis", async (req, res) => {
         if (fallbackData) {
           fallbackData.fallbackReason = "publicCache";
           fallbackData.rateLimited = true;
+          if (!includeMembers) {
+            fallbackData.members = null;
+            fallbackData.membersRaw = null;
+          }
           res.set("X-Cache", "STALE");
           res.set("Cache-Control", "no-store, max-age=0, must-revalidate");
           return res.status(200).json(fallbackData);

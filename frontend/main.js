@@ -650,6 +650,7 @@ async function handleSearch(force = false) {
       // lazy load heavy sections (topPlayers/uncomplete) on demand
       queryParams.set("includeTopPlayers", "false");
       queryParams.set("includeUncomplete", "false");
+      queryParams.set("includeMembers", "false");
       const { data, fromCache } = await apiFetch(
         `/api/clan/${encodeURIComponent(tag)}/analysis?${queryParams.toString()}`,
       );
@@ -2809,10 +2810,19 @@ function setupClanLazySectionHandlers(weekId) {
   if (membersCard && !membersCard.dataset.lazyInit) {
     const membersDetails = membersCard.querySelector("details");
     if (membersDetails) {
-      membersDetails.addEventListener("toggle", () => {
-        if (!membersDetails.open) return;
-        if (!membersTbody.querySelector(".members-placeholder")) return;
-        applyFilters();
+      membersDetails.addEventListener("toggle", async () => {
+        if (!membersDetails.open || loadedClanSections.members) return;
+        const cols = currentClanIsLite ? 5 : isWarActive ? 9 : 8;
+        if (allMembers.length > 0) {
+          applyFilters();
+        } else {
+          membersTbody.innerHTML = `<tr><td colspan="${cols}" class="members-skeleton">${t("membersLoading")}</td></tr>`;
+        }
+        try {
+          await loadClanSection(activeClanTag, "members", weekId);
+        } catch (err) {
+          membersTbody.innerHTML = `<tr class="text-muted"><td colspan="${cols}" style="padding:15px;text-align:center;">${t("errorLoadingSection") || "Failed to load members."}</td></tr>`;
+        }
       });
     }
     membersCard.dataset.lazyInit = "1";
@@ -2824,6 +2834,7 @@ async function loadClanSection(tag, section, weekId) {
   params.set("includeTopPlayers", section === "topPlayers" ? "1" : "0");
   params.set("includeUncomplete", section === "uncomplete" ? "1" : "0");
   params.set("includeRaceGroup", section === "raceGroup" ? "true" : "false");
+  params.set("includeMembers", section === "members" ? "true" : "false");
   const { data } = await apiFetch(
     `/api/clan/${encodeURIComponent(tag)}/analysis?${params.toString()}`,
   );
@@ -2840,13 +2851,21 @@ async function loadClanSection(tag, section, weekId) {
     loadedClanSections.raceGroup = true;
     renderRaceGroupCard(data, t, getRemainingTimeHtml);
   }
+  if (section === "members") {
+    loadedClanSections.members = true;
+    allMembers = Array.isArray(data.members) ? data.members : [];
+    const sortedMembers = currentClanIsLite
+      ? sortMembers(allMembers, "trophies", "desc")
+      : sortMembers(allMembers, "reliability", "asc");
+    renderMembersTable(sortedMembers);
+  }
 }
 
 // Affiche la liste des membres — appelé uniquement depuis les données live.
 function renderClanMembers(data) {
   const { members } = data;
   const isLite = !!data.isLite;
-  allMembers = members;
+  allMembers = Array.isArray(members) ? members : [];
 
   // Filtre verdict : désactivé en mode lite (pas de verdict disponible)
   if (filterVerdict) filterVerdict.classList.toggle("lite-hidden", isLite);
