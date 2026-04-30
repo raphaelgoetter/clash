@@ -477,10 +477,10 @@ export function computeWarReliabilityFallback(
   const confidenceCap = r(Math.min(8, (gdcCount / 16) * 8));
   activiteGDC = r(Math.min(activiteGDC, confidenceCap));
 
-  // 2. Last Seen replacement (0-3) — requires about 16 war decks before it counts
+  // 2. Last Seen replacement (0-3) — shown whenever a lastSeen date is available
   let lastSeenScore = null;
   let lastSeenDays = null;
-  if (lastSeen && warLog.length >= 16) {
+  if (lastSeen) {
     lastSeenDays =
       (Date.now() - parseClashDate(lastSeen).getTime()) / MS_PER_DAY;
     lastSeenScore =

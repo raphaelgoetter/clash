@@ -257,6 +257,25 @@ assert.ok(
   `Expected General Activity <= 4 for 0% War (got ${gaNoWar.score})`,
 );
 
+const fallbackNoWarWithLastSeen = computeWarReliabilityFallback(
+  { trophies: 12000, totalDonations: 10000, badges: [] },
+  [],
+  { total: 0, gdc: 0, ladder: 0, challenge: 0 },
+  "2026-04-29T12:00:00.000Z",
+  false,
+  0,
+  null,
+);
+assert.strictEqual(
+  fallbackNoWarWithLastSeen.maxScore,
+  36,
+  `Expected fallback maxScore 36 when lastSeen is present, got ${fallbackNoWarWithLastSeen.maxScore}`,
+);
+assert.ok(
+  fallbackNoWarWithLastSeen.breakdown.some((b) => b.label === "Last Seen"),
+  "Expected Last Seen entry when lastSeen data is available",
+);
+
 const fallbackAllWar = computeWarReliabilityFallback(
   { trophies: 12000, totalDonations: 10000, badges: [] },
   Array.from({ length: 30 }, () => ({
