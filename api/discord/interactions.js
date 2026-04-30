@@ -173,13 +173,11 @@ function scoreBadge(score, max) {
 }
 
 const RELIABILITY_ORDER = [
-  "Regularity",
-  "Avg Score",
+  "War Activity",
+  "General Activity",
   "CW2 Battle Wins",
-  "Stability",
-  "Last Seen",
-  "Win Rate (War)",
   "Experience",
+  "Win Rate (War)",
   "Donations",
   "Discord",
 ];
