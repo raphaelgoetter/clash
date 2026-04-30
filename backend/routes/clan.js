@@ -480,6 +480,53 @@ router.get("/:tag/analysis", async (req, res) => {
   }
 });
 
+/**
+ * GET /api/clan/:tag/members
+ * Returns only the clan member table payload, optionally from static cache.
+ */
+router.get("/:tag/members", async (req, res) => {
+  try {
+    let clanTag = req.params.tag;
+    if (clanTag.startsWith("#")) clanTag = clanTag.slice(1);
+    clanTag = clanTag.toUpperCase();
+
+    if (!ALLOWED_CLANS.includes(clanTag)) {
+      return res.status(400).json({ error: "Clan not in allowed list" });
+    }
+
+    const forceRefresh = req.query.force === "true" || req.query.force === "1";
+    let cached = null;
+    try {
+      cached = await loadClanCache(clanTag);
+    } catch (_) {
+      cached = null;
+    }
+
+    if (!forceRefresh && cached && Array.isArray(cached.members)) {
+      return res.json({ members: cached.members });
+    }
+
+    try {
+      const payload = await buildClanAnalysis(clanTag, {
+        includeRaceGroup: false,
+      });
+      await saveClanCache(clanTag, payload).catch(() => null);
+      return res.json({
+        members: Array.isArray(payload.members) ? payload.members : [],
+      });
+    } catch (err) {
+      if (cached && Array.isArray(cached.members)) {
+        return res.json({ members: cached.members });
+      }
+      const status = err.message.includes("404") ? 404 : 500;
+      res.status(status).json({ error: err.message });
+    }
+  } catch (err) {
+    const status = err.message.includes("404") ? 404 : 500;
+    res.status(status).json({ error: err.message });
+  }
+});
+
 // Force a snapshot generation for the given clan (useful for debugging / manual refresh).
 // This runs the same logic as the nightly cron but is triggered on demand.
 router.post("/:tag/snapshot", async (req, res) => {

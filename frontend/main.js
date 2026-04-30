@@ -2830,14 +2830,23 @@ function setupClanLazySectionHandlers(weekId) {
 }
 
 async function loadClanSection(tag, section, weekId) {
-  const params = new URLSearchParams();
-  params.set("includeTopPlayers", section === "topPlayers" ? "1" : "0");
-  params.set("includeUncomplete", section === "uncomplete" ? "1" : "0");
-  params.set("includeRaceGroup", section === "raceGroup" ? "true" : "false");
-  params.set("includeMembers", section === "members" ? "true" : "false");
-  const { data } = await apiFetch(
-    `/api/clan/${encodeURIComponent(tag)}/analysis?${params.toString()}`,
-  );
+  let data;
+  if (section === "members") {
+    const { data: membersData } = await apiFetch(
+      `/api/clan/${encodeURIComponent(tag)}/members`,
+    );
+    data = membersData;
+  } else {
+    const params = new URLSearchParams();
+    params.set("includeTopPlayers", section === "topPlayers" ? "1" : "0");
+    params.set("includeUncomplete", section === "uncomplete" ? "1" : "0");
+    params.set("includeRaceGroup", section === "raceGroup" ? "true" : "false");
+    params.set("includeMembers", "false");
+    const result = await apiFetch(
+      `/api/clan/${encodeURIComponent(tag)}/analysis?${params.toString()}`,
+    );
+    data = result.data;
+  }
 
   if (section === "topPlayers") {
     loadedClanSections.topPlayers = true;
