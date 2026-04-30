@@ -202,7 +202,8 @@ function buildReliabilityFields(score) {
   }
 
   ordered.sort(
-    (a, b) => RELIABILITY_ORDER.indexOf(a.label) - RELIABILITY_ORDER.indexOf(b.label),
+    (a, b) =>
+      RELIABILITY_ORDER.indexOf(a.label) - RELIABILITY_ORDER.indexOf(b.label),
   );
 
   const lines = ordered.map((item) => item.line).concat(fallback);
@@ -2456,8 +2457,8 @@ export default async function handler(req, res) {
             const decks = `<:cards:1493711279121104926> ${clan.decksToday != null ? clan.decksToday : "?"} decks`;
             const eff = `<:cible:1493711597682557019> ${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(1) : "?"} pts/d`;
             const proj = clan.isClinchedWin
-              ? "<:lucky:1495168368611950632> ✅ Victoire mathématiquement assurée"
-              : `<:lucky:1495168368611950632> Projection: **${clan.projectedFame != null ? fmt(Math.round(clan.projectedFame)) : "?"}**`;
+              ? "<:stats:1499275709078700073> ✅ Victoire mathématiquement assurée"
+              : `<:stats:1499275709078700073> Projection: **${clan.projectedFame != null ? fmt(Math.round(clan.projectedFame)) : "?"}**`;
             const shouldShowClinched =
               clan.isClinchedWin ||
               (isOwn && clan.projectedFame === 0 && clan.decksToday > 0);
