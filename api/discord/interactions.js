@@ -604,14 +604,23 @@ export default async function handler(req, res) {
         const verdictFr = FR_VERDICTS[color] ?? verdict ?? "Fiabilité inconnue";
 
         const breakdownFields = buildReliabilityFields(score);
-        const description = `${tag}\n${icon} ${pct} % (${verdictFr})`;
+        const description = `${tag}`;
+
+        const fields = [
+          {
+            name: "Fiabilité :",
+            value: `${icon} ${pct} % (${verdictFr})`,
+            inline: false,
+          },
+          ...(breakdownFields ?? []),
+        ];
 
         const embed = {
           title: `<:interrogation:1493849417520906271> Joueur : ${analysis.overview.name}`,
           url: `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(tag)}`,
           color: embedColor,
           description,
-          fields: breakdownFields ?? [],
+          fields,
         };
 
         await fetch(webhookUrl, {
