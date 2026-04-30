@@ -168,13 +168,18 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
     analysis.rateLimited = true;
   }
 
-  // Enrichit avec l'historique River Race si le joueur est dans un clan.
+  // Enrichit avec l'historique River Race si le joueur est dans un clan
+  // ou si son BattleLog contient encore des combats GDC identifiables par clan.
   let currentRaceMeta = null;
-  if (player.clan?.tag) {
+  const currentClanTag = player.clan?.tag ?? null;
+  const hasBattleLogClanTag = battleLog.some((b) => b?.team?.[0]?.clan?.tag);
+  if (currentClanTag || hasBattleLogClanTag) {
     try {
       const [raceLog, currentRace] = await Promise.all([
-        fetchRaceLog(player.clan.tag),
-        fetchCurrentRace(player.clan.tag).catch(() => null),
+        currentClanTag ? fetchRaceLog(currentClanTag) : Promise.resolve(null),
+        currentClanTag
+          ? fetchCurrentRace(currentClanTag).catch(() => null)
+          : Promise.resolve(null),
       ]);
       currentRaceMeta = {
         state: currentRace?.state ?? null,
@@ -182,7 +187,7 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
       };
       analysis.warHistory = await buildFamilyWarHistory(
         player.tag,
-        player.clan.tag,
+        currentClanTag,
         currentRace,
         battleLog,
       );

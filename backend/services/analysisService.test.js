@@ -274,6 +274,29 @@ assert.strictEqual(
   8,
   `Expected General Activity 8 for 100% War (got ${gaAllWar.score})`,
 );
+assert.strictEqual(
+  fallbackAllWar.maxScore,
+  38,
+  `Expected fallback maxScore 38 when win rate counted and Discord is accounted for, got ${fallbackAllWar.maxScore}`,
+);
+const cw2Entry = fallbackAllWar.breakdown.find(
+  (b) => b.label === "CW2 Battle Wins",
+);
+assert.ok(cw2Entry, "CW2 Battle Wins entry exists for all-war case");
+assert.strictEqual(
+  cw2Entry.max,
+  10,
+  `CW2 Battle Wins max should be 10, got ${cw2Entry.max}`,
+);
+const warActivityEntry = fallbackAllWar.breakdown.find(
+  (b) => b.label === "War Activity",
+);
+assert.ok(warActivityEntry, "War Activity entry exists for all-war case");
+assert.strictEqual(
+  warActivityEntry.max,
+  8,
+  `War Activity max should be 8, got ${warActivityEntry.max}`,
+);
 console.log("✓ General Activity war-ratio adjustment tests passed.");
 
 // New test: dailyActivity should count all battles, not only war battles

@@ -415,10 +415,10 @@ export function computeWarScore(
  * Fallback reliability from battle log only (used when no race log history available).
  * Applies the same scale as computeWarScore for consistency.
  *
- * Criteria (total /38 base) :
- *  1. Activité GDC    /12 — decks/day (bonuses for 4-deck days, penalties for <4)
+ * Criteria (total /36 base) :
+ *  1. Activité GDC    /8 — decks/day (bonuses for 4-deck days, penalties for <4)
  *  2. Activité générale /8 — combats compétitifs dans le log (cap 30)
- *  3. CW2 Wins        /8 — badge progress (cap 250)
+ *  3. CW2 Wins        /10 — badge progress (cap 250)
  *  4. Win Rate GDC    /5 — % victoires sur combats GDC (0 if no GDC battles)
  *  5. Expérience      /3 — bestTrophies (cap 12 000)
  *  6. Dons            /2 — totalDonations (stable cumulative metric)
@@ -462,7 +462,7 @@ export function computeWarReliabilityFallback(
   const gdcWinRate = gdcCount > 0 ? gdcWins / gdcCount : 0;
   const competitive = gdcCount + bd.ladder + bd.challenge;
 
-  // 1. War Activity (0-12) — basé sur decks/jour, avec bonus/pénalités
+  // 1. War Activity (0-8) — basé sur decks/jour, avec bonus/pénalités
   const activityResult = dailyWarReliabilityScore(effectiveLog, clanTag);
   const perfectDays = Object.values(activityResult.byDay).filter(
     (d) => d >= 4,
@@ -473,9 +473,9 @@ export function computeWarReliabilityFallback(
   let activiteGDC = activityResult.score;
   activiteGDC += perfectDays * 0.2;
   activiteGDC -= shortDays * 0.1;
-  activiteGDC = r(Math.min(12, Math.max(0, activiteGDC)));
+  activiteGDC = r(Math.min(8, Math.max(0, activiteGDC)));
   // Plafond de confiance : 16 batailles (1 semaine complète) = plafond entièrement levé.
-  const confidenceCap = r(Math.min(12, (gdcCount / 16) * 12));
+  const confidenceCap = r(Math.min(8, (gdcCount / 16) * 8));
   activiteGDC = r(Math.min(activiteGDC, confidenceCap));
 
   // 2. Win Rate GDC (0-5) — minimum 10 combats requis
@@ -505,11 +505,11 @@ export function computeWarReliabilityFallback(
   const totalDonations = player.totalDonations ?? player.donations ?? 0;
   const dons = r(scoreTotalDonations(totalDonations, 2));
 
-  // 6. CW2 Battle Wins (0-8) — from ClanWarWins badge
+  // 6. CW2 Battle Wins (0-10) — from ClanWarWins badge
   const CW2_CAP = 250;
   const cw2Wins =
     player.badges?.find((b) => b.name === "ClanWarWins")?.progress ?? 0;
-  const cw2Score = r(Math.min(8, (cw2Wins / CW2_CAP) * 8));
+  const cw2Score = r(Math.min(10, (cw2Wins / CW2_CAP) * 10));
 
   // 7. Last seen (0-5) — exige environ deux semaines de decks GDC avant de compter
   let lastSeenScore = null;
@@ -534,8 +534,8 @@ export function computeWarReliabilityFallback(
       (lastSeenScore ?? 0) +
       discordScore,
   );
-  // base max: 12+8+8+5+3+2=38, réduit à 33 si win rate exclu (<10 combats); Discord toujours +2
-  const maxBase = winRateExcluded ? 33 : 38;
+  // base max: 8+8+10+5+3+2=36, réduit à 31 si win rate exclu (<10 combats); Discord toujours +2
+  const maxBase = winRateExcluded ? 31 : 36;
   const maxScore = maxBase + (lastSeenScore !== null ? 5 : 0) + 2;
   const pct = Math.round((total / maxScore) * 100);
 
@@ -555,7 +555,7 @@ export function computeWarReliabilityFallback(
   }
 
   const warHistoryWeeks = warHistory?.streakInCurrentClan ?? 0;
-  const warActivityQuality = scoreQuality(activiteGDC, 12);
+  const warActivityQuality = scoreQuality(activiteGDC, 8);
   const cw2Remark =
     cw2Score >= 6
       ? "strong experience in Clan Wars"
@@ -581,7 +581,7 @@ export function computeWarReliabilityFallback(
   const inactiveDays = Math.max(0, windowDays - activeDaysCount);
 
   const summary =
-    `War Activity: ${warActivityQuality} (${activiteGDC}/12, ${perfectDays} full days, ${shortDays} short days, ${inactiveDays} inactive days in ${windowDays}-day window).\n` +
+    `War Activity: ${warActivityQuality} (${activiteGDC}/8, ${perfectDays} full days, ${shortDays} short days, ${inactiveDays} inactive days in ${windowDays}-day window).\n` +
     `Last war battle: ${lastWarDay || "none"}${daysSinceLastWar !== null ? ` (${daysSinceLastWar} day(s) ago)` : ""}.\n` +
     `In clan: ${clanDurationText}.\nCW2: ${cw2Remark}.`;
 
@@ -597,7 +597,7 @@ export function computeWarReliabilityFallback(
       {
         label: "War Activity",
         score: activiteGDC,
-        max: 12,
+        max: 8,
         detail: (() => {
           const parts = Object.entries(activityResult.byDay)
             .sort((a, b) => b[0].localeCompare(a[0]))
@@ -615,7 +615,7 @@ export function computeWarReliabilityFallback(
       {
         label: "CW2 Battle Wins",
         score: cw2Score,
-        max: 8,
+        max: 10,
         detail: `${cw2Wins.toLocaleString("en-US")} total CW2 wins (cap 250)`,
       },
       {
