@@ -157,12 +157,22 @@ export function renderRaceGroupCard(data, t, timerHelper) {
         projectionHtml = `<td class="war-group-projection">${projVal}${isClinched ? "" : clinchedHtml}</td>`;
       }
 
+      const trophiesHtml = !isWarPeriod
+        ? `<td class="war-group-trophies">${trophiesVal}</td>`
+        : "";
+      const prevWarHtml = !isWarPeriod
+        ? `<td class="war-group-prev-war">${prevWarVal}</td>`
+        : "";
+      const lastWarHtml = !isWarPeriod
+        ? `<td class="war-group-last-war">${lastWarVal}</td>`
+        : "";
+
       return `<tr class="war-group-row${isOwn ? " war-group-own" : ""}">
       <td class="war-group-rank-cell">${rankBadge}</td>
       <td class="war-group-name">${nameHtml}</td>
-      <td class="war-group-trophies">${trophiesVal}</td>
-      <td class="war-group-prev-war">${prevWarVal}</td>
-      <td class="war-group-last-war">${lastWarVal}</td>
+      ${trophiesHtml}
+      ${prevWarHtml}
+      ${lastWarHtml}
       ${decksNowHtml}
       ${currentPtsHtml}
       ${avgPtsHtml}
@@ -176,9 +186,9 @@ export function renderRaceGroupCard(data, t, timerHelper) {
       <tr>
         <th class="war-group-rank-cell"></th>
         <th class="war-group-name">${t("labelName")}</th>
-        <th class="war-group-trophies">${t("labelWarTrophies")}</th>
-        <th class="war-group-prev-war">${t("warGroupPrevWar")}</th>
-        <th class="war-group-last-war">${t("warGroupLastWar")}</th>
+        ${!isWarPeriod ? `<th class="war-group-trophies">${t("labelWarTrophies")}</th>` : ""}
+        ${!isWarPeriod ? `<th class="war-group-prev-war">${t("warGroupPrevWar")}</th>` : ""}
+        ${!isWarPeriod ? `<th class="war-group-last-war">${t("warGroupLastWar")}</th>` : ""}
         ${isWarPeriod ? `<th class="war-group-decks-now">${t("warGroupDecksToday")} <span>${timerHelper(data.clan?.warResetUtcMinutes)}</span></th>` : ""}
         ${isWarPeriod ? `<th class="war-group-current-pts">approx. ${t("warGroupCurrentPts")}</th>` : ""}
         ${isWarPeriod ? `<th class="war-group-avg-pts">${t("warGroupPtsPerDeck")}</th>` : ""}
