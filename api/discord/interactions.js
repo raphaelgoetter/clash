@@ -2420,7 +2420,10 @@ export default async function handler(req, res) {
         const ownTag = `#${resolved.tag}`.toUpperCase();
         const FAMILY_TAGS = new Set(["#Y8JUPC9C", "#LRQP20V9", "#QU9UQJRL"]);
 
-        const isWarPeriod = raceGroup.some((c) => c.projectedFame != null);
+        const isWarPeriod =
+          data.isWarPeriod === true ||
+          data.warCurrentWeekId != null ||
+          raceGroup.some((c) => c.projectedFame != null);
 
         // Trier par projection si GDC active, sinon par lastWarFame décroissant
         const sorted = [...raceGroup].sort((a, b) => {

@@ -192,7 +192,10 @@ router.get("/:tag/lite", async (req, res) => {
             }));
         }
 
-        const isWarPeriod = currentRace?.periodType === "warDay";
+        const isWarPeriod =
+          currentRace?.periodType === "warDay" ||
+          currentRace?.state === "warDay" ||
+          currentRace?.state === "overtime";
 
         return {
           clan: {
@@ -769,10 +772,12 @@ export async function buildClanAnalysis(clanTag, options = {}) {
   // reflète la guerre précédente terminée et produirait des valeurs erronées.
   // On utilise periodType (et non state qui peut valoir 'full' quand le clan
   // a atteint 10 000 pts) pour distinguer guerre vs entraînement.
-  if (
-    currentRace?.periodType === "warDay" &&
-    currentRace?.clan?.participants?.length > 0
-  ) {
+  const isCurrentRaceWarDay =
+    currentRace?.periodType === "warDay" ||
+    currentRace?.state === "warDay" ||
+    currentRace?.state === "overtime";
+
+  if (isCurrentRaceWarDay && currentRace?.clan?.participants?.length > 0) {
     const participants = currentRace.clan.participants;
     // Calcul de l'identifiant de semaine (source de vérité : computeCurrentWeekId)
     const weekId =
@@ -1586,9 +1591,14 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     Date.now() - warResetOffsetMs(clanTag),
   ).getUTCDay();
   const isWarPeriodCalendar = _gdcDowClan === 0 || _gdcDowClan >= 4;
+  const currentRaceIndicatesWarDay =
+    currentRace?.periodType === "warDay" ||
+    currentRace?.state === "warDay" ||
+    currentRace?.state === "overtime";
+
   if (
     isWarPeriodCalendar &&
-    (warActiveFromMembers || currentRace?.periodType === "warDay")
+    (warActiveFromMembers || currentRaceIndicatesWarDay)
   ) {
     // Déterminer daysFromThu : préférer sampleWarDays (calculé par membre), puis
     // periodIndex de l'API, puis fallback calendaire. Cela permet de construire un
@@ -2098,7 +2108,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       avgScore,
       total: analyzedMembers.length,
     },
-    isWarPeriod: analyzedMembers.some((m) => m.warDays !== null),
+    isWarPeriod:
+      clanWarSummary != null ||
+      analyzedMembers.some((m) => m.warDays !== null) ||
+      isCurrentRaceWarDay,
     topPlayers, // added by computeTopPlayers
     uncomplete, // new list of incomplete deck players
     clanWarSummary, // synthèse GDC clan (null hors période de guerre)
@@ -2189,7 +2202,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           );
           const ownPrevWarFame = sumParticipantsFame(ownPrevStanding);
 
-          const isWarPeriod = currentRace?.periodType === "warDay";
+          const isWarPeriod =
+            currentRace?.periodType === "warDay" ||
+            currentRace?.state === "warDay" ||
+            currentRace?.state === "overtime";
 
           // Step 1: Pré-calcul des projections pour tous les clans du groupe
           // Calcul de la moyenne de decks de la semaine passée pour ce clan
