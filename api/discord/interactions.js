@@ -835,7 +835,7 @@ export default async function handler(req, res) {
     runBackground(async () => {
       try {
         const apiResp = await fetch(
-          `${TRUST_ROYALE_URL}/api/player/${encodeURIComponent(tag)}/analysis`,
+          `${TRUST_ROYALE_URL}/api/player/${encodeURIComponent(tag)}/analysis?fast=true`,
           { headers: { Accept: "application/json" } },
         );
 
