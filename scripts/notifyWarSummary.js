@@ -656,7 +656,7 @@ async function postWarSummary(
   const postDateFR = `${postDayFR} ${pd}/${pm}/${py} à ${ph}h${pmin}`;
 
   const dailyEmbed = {
-    title: `<:scroll:1493850130560847892> ${clanName} · Résumé GDC`,
+    title: `<:stats:1499284927894650950> ${clanName} · Résumé GDC`,
     description: `Journée ${WAR_DAY_NUMBER[warDay]} (${WAR_DAY_FR[warDay]})`,
     color,
     fields,
@@ -728,7 +728,7 @@ async function postWarSummary(
     }
 
     const weeklyEmbed = {
-      title: `<:scroll:1493850130560847892> ${clanName} · Bilan de la semaine`,
+      title: `<:stats:1499284927894650950> ${clanName} · Bilan de la semaine`,
       description: "Résumé de la semaine",
       color,
       fields: weeklyFields,

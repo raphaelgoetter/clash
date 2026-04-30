@@ -272,7 +272,7 @@ async function postDiscordEmbed(
   });
 
   const embed = {
-    title: `<:scroll:1493850130560847892> ${clanName} · Nouveautés`,
+    title: `<:stats:1499284927894650950> ${clanName} · Nouveautés`,
     color,
     fields,
     footer: { text: `Constat fait le : ${date} ${time}` },

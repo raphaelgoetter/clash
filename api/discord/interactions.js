@@ -962,7 +962,7 @@ export default async function handler(req, res) {
         }
 
         const embed = {
-          title: `<:scroll:1493850130560847892> Stats complètes : ${analysis.overview.name}`,
+          title: `<:stats:1499284927894650950> Stats complètes : ${analysis.overview.name}`,
           url: `${TRUST_ROYALE_URL}/?mode=player&tag=${encodeURIComponent(tag)}`,
           color: COLOR_MAP[color] ?? 0x808080,
           description: `${tag} · <:xp:1498645264079257730> ${analysis.overview.expLevel ?? "N/A"} · <:trophy:1498645869224792105> ${analysis.overview.trophies ?? 0}`,
@@ -2457,14 +2457,14 @@ export default async function handler(req, res) {
             const decks = `<:cards:1493711279121104926> ${clan.decksToday != null ? clan.decksToday : "?"} decks`;
             const eff = `<:cible:1493711597682557019> ${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(1) : "?"} pts/d`;
             const proj = clan.isClinchedWin
-              ? "<:stats:1499275709078700073> ✅ Victoire mathématiquement assurée"
-              : `<:stats:1499275709078700073> Projection: **${clan.projectedFame != null ? fmt(Math.round(clan.projectedFame)) : "?"}**`;
+              ? "<:projection:1499275709078700073> ✅ Victoire mathématiquement assurée"
+              : `<:projection:1499275709078700073> Projection: **${clan.projectedFame != null ? fmt(Math.round(clan.projectedFame)) : "?"}**`;
             const shouldShowClinched =
               clan.isClinchedWin ||
               (isOwn && clan.projectedFame === 0 && clan.decksToday > 0);
             const clinched =
               shouldShowClinched && !clan.isClinchedWin
-                ? "\n✅ Victoire mathématiquement assurée"
+                ? "\n<:projection:1499275709078700073> Victoire mathématiquement assurée"
                 : "";
             line2 = `${decks} · ${eff} · ${proj}${clinched}`;
           } else {
