@@ -51,6 +51,7 @@ router.get("/:tag/analysis", async (req, res) => {
   try {
     const tag = req.params.tag;
     const forceRefresh = req.query.force === "true";
+    const fast = req.query.fast === "true" || req.query.fast === "1";
 
     // Récupère le statut Discord (lié ou non) avant l'analyse
     const discordLinks = await getDiscordLinks().catch(() => ({}));
@@ -58,6 +59,8 @@ router.get("/:tag/analysis", async (req, res) => {
       discordLinks,
       tag,
     );
+
+    let clanTag = null;
 
     // attempt memory cache but obey force parameter
     let analysis, fromCache;
@@ -70,6 +73,29 @@ router.get("/:tag/analysis", async (req, res) => {
         () => getPlayerAnalysis(tag, discordLinked),
         PLAYER_CACHE_TTL,
       ));
+    }
+
+    clanTag = analysis.overview?.clan?.tag ?? null;
+
+    // if a fast response is requested, return cached analysis immediately when available.
+    if (fast && fromCache) {
+      res.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+      res.set("X-Cache", "HIT");
+      if (analysis.overview) analysis.overview.discord = discordLinked;
+      const warResetUtcMinutes = clanTag
+        ? warResetOffsetMs(clanTag) / 60000
+        : null;
+      const warSnapshotDays = analysis.warSnapshotDays || null;
+      const warCurrentWeekId = analysis.warCurrentWeekId || null;
+      const warSnapshotTakenAt = analysis.warSnapshotTakenAt || null;
+      return res.json({
+        ...analysis,
+        snapshotDate: null,
+        warSnapshotDays,
+        warCurrentWeekId,
+        warSnapshotTakenAt,
+        warResetUtcMinutes,
+      });
     }
 
     // if cached result has warHistory but no weeks and player isn't fallback,
@@ -95,7 +121,7 @@ router.get("/:tag/analysis", async (req, res) => {
     let warSnapshotDays = null;
     let warSnapshotTakenAt = null;
     let warCurrentWeekId = null;
-    const clanTag = analysis.overview?.clan?.tag ?? null;
+    clanTag = analysis.overview?.clan?.tag ?? null;
     if (analysis.currentWarDays?.days && clanTag) {
       try {
         const { getSnapshots } = await import("../services/snapshot.js");

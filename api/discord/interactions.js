@@ -541,7 +541,7 @@ export default async function handler(req, res) {
         // Appel interne à notre propre endpoint d'analyse (évite de redupliquer la logique)
         // On utilise l'URL canonique pour éviter les redirections vers une instance froide
         const apiResp = await fetch(
-          `https://trustroyale.vercel.app/api/player/${encodeURIComponent(tag)}/analysis`,
+          `https://trustroyale.vercel.app/api/player/${encodeURIComponent(tag)}/analysis?fast=true`,
           { headers: { Accept: "application/json" } },
         );
 
