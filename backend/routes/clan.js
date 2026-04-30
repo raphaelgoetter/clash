@@ -263,6 +263,17 @@ router.get("/:tag/analysis", async (req, res) => {
     try {
       diskCached = await loadClanCache(clanTag);
       if (diskCached) {
+        staleCache = { ...diskCached };
+        staleCache.fallbackReason = forceRefresh
+          ? "diskCacheForceFailed"
+          : "diskCacheStale";
+        staleCache.rateLimited = false;
+        if (!includeTopPlayers) staleCache.topPlayers = null;
+        if (!includeUncomplete) staleCache.uncomplete = null;
+        if (!includeMembers) {
+          staleCache.members = null;
+          staleCache.membersRaw = null;
+        }
         const age = diskCached.analysisCacheUpdatedAt
           ? nowMs - new Date(diskCached.analysisCacheUpdatedAt).getTime()
           : Number.MAX_SAFE_INTEGER;

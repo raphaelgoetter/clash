@@ -610,7 +610,7 @@ async function handleSearch(force = false) {
       });
     } else {
       // clan mode: try static file first but always refresh from live API.
-      const staticData = await loadStaticClan(tag);
+      staticData = await loadStaticClan(tag);
       if (staticData) {
         lastResultName = staticData.clan?.name || null;
         // Display cached clan overview and members instantly, but keep
