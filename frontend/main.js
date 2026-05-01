@@ -613,6 +613,7 @@ async function handleSearch(force = false) {
       staticData = await loadStaticClan(tag);
       if (staticData) {
         lastResultName = staticData.clan?.name || null;
+        staticData.fromCache = true;
         // Display cached clan overview and members instantly, but keep
         // section-heavy parts (topPlayers / uncomplete) in lazy state.
         const cachedOverview = {
@@ -961,8 +962,8 @@ function showCacheNote(fromCache, snapshotDate = null, sourceMeta = null) {
   }
 
   const sourceInfo =
-    sourceMeta && sourceMeta.source && sourceMeta.source !== "cached"
-      ? ` · source: ${sourceMeta.source}`
+    sourceMeta && sourceMeta.source
+      ? ` · source: ${formatSourceLabel(sourceMeta.source)}`
       : "";
 
   const ageInfo =
@@ -981,6 +982,87 @@ function showCacheNote(fromCache, snapshotDate = null, sourceMeta = null) {
   cacheNote.textContent = fromCache
     ? `${t("searchHintCached")} ${snapshotText}${sourceInfo}${ageInfo}`
     : `${t("searchHintNoDate")} ${snapshotText}${sourceInfo}${ageInfo}`;
+}
+
+function renderMembersCacheNote(data) {
+  const noteEl = document.getElementById("members-cache-note");
+  if (!noteEl) return;
+
+  const sourceMeta = data.membersMeta || {
+    source: data.fromCache ? "cached" : data.isLite ? "static" : "live",
+    updatedAt:
+      data.membersMeta?.updatedAt ||
+      data.analysisCacheUpdatedAt ||
+      data.snapshotTakenAt ||
+      data.warSnapshotTakenAt ||
+      null,
+    snapshotTakenAt:
+      data.membersMeta?.snapshotTakenAt ||
+      data.snapshotTakenAt ||
+      data.warSnapshotTakenAt ||
+      null,
+  };
+
+  const text = formatCacheMetaText(sourceMeta);
+  noteEl.textContent = text ? `Members data · ${text}` : "";
+  noteEl.classList.toggle("hidden", !noteEl.textContent);
+}
+
+function formatCacheMetaText(sourceMeta = {}) {
+  const snapshotDate =
+    sourceMeta.snapshotTakenAt ||
+    sourceMeta.warSnapshotTakenAt ||
+    sourceMeta.analysisCacheUpdatedAt ||
+    null;
+  const snapshotText = formatSnapshotText(snapshotDate);
+  const sourceLabel = formatSourceLabel(sourceMeta.source);
+  const ageText = formatAgeText(sourceMeta.updatedAt);
+  const parts = [];
+  if (snapshotText) parts.push(snapshotText);
+  if (sourceLabel) parts.push(`source: ${sourceLabel}`);
+  if (ageText) parts.push(ageText);
+  return parts.join(" · ");
+}
+
+function formatSnapshotText(snapshotDate) {
+  if (!snapshotDate) return "no snapshot";
+  const today = new Date().toISOString().slice(0, 10);
+  const yesterday = new Date(Date.now() - 86400000)
+    .toISOString()
+    .slice(0, 10);
+  const d = new Date(snapshotDate);
+  if (Number.isNaN(d.getTime())) return `${snapshotDate}`;
+  const dayName = d.toLocaleDateString("en-US", { weekday: "long" });
+  if (snapshotDate === today) {
+    return `snapshot: war day today${dayName ? ` (${dayName})` : ""}`;
+  }
+  if (snapshotDate === yesterday) {
+    return `snapshot: war day yesterday${dayName ? ` (${dayName})` : ""}`;
+  }
+  const dateString = d.toLocaleDateString(undefined, {
+    month: "long",
+    day: "numeric",
+  });
+  return `snapshot: ${dateString}${dayName ? ` (${dayName})` : ""}`;
+}
+
+function formatSourceLabel(source) {
+  if (!source) return "unknown";
+  if (source === "cached") return "cache";
+  if (source === "static") return "static cache";
+  if (source === "live") return "live API";
+  return source;
+}
+
+function formatAgeText(updatedAt) {
+  if (!updatedAt) return "";
+  const now = Date.now();
+  const updated = Date.parse(updatedAt);
+  if (Number.isNaN(updated)) return "";
+  const diffSec = Math.max(0, Math.round((now - updated) / 1000));
+  if (diffSec < 60) return `fresh ${diffSec}s`;
+  const diffMin = Math.round(diffSec / 60);
+  return `cached ${diffMin}m`;
 }
 
 // ── Player rendering ──────────────────────────────────────────
@@ -2837,9 +2919,10 @@ function setupClanLazySectionHandlers(weekId) {
 async function loadClanSection(tag, section, weekId) {
   let data;
   if (section === "members") {
-    const { data: membersData } = await apiFetch(
+    const { data: membersData, fromCache } = await apiFetch(
       `/api/clan/${encodeURIComponent(tag)}/members`,
     );
+    membersData.fromCache = fromCache;
     data = membersData;
   } else {
     const params = new URLSearchParams();
@@ -2875,6 +2958,7 @@ async function loadClanSection(tag, section, weekId) {
       ? sortMembers(allMembers, "trophies", "desc")
       : sortMembers(allMembers, "reliability", "asc");
     renderMembersTable(sortedMembers);
+    renderMembersCacheNote(data);
   }
 }
 
@@ -2883,6 +2967,7 @@ function renderClanMembers(data) {
   const { members } = data;
   const isLite = !!data.isLite;
   allMembers = Array.isArray(members) ? members : [];
+  renderMembersCacheNote(data);
 
   // Filtre verdict : désactivé en mode lite (pas de verdict disponible)
   if (filterVerdict) filterVerdict.classList.toggle("lite-hidden", isLite);

@@ -531,7 +531,16 @@ router.get("/:tag/members", async (req, res) => {
     }
 
     if (!forceRefresh && cached && Array.isArray(cached.members)) {
-      return res.json({ members: cached.members });
+      res.set("X-Cache", "HIT");
+      return res.json({
+        members: cached.members,
+        membersMeta: {
+          source: "cached",
+          updatedAt: cached.analysisCacheUpdatedAt || new Date().toISOString(),
+          snapshotTakenAt:
+            cached.snapshotTakenAt ?? cached.warSnapshotTakenAt ?? null,
+        },
+      });
     }
 
     try {
@@ -539,12 +548,27 @@ router.get("/:tag/members", async (req, res) => {
         includeRaceGroup: false,
       });
       await saveClanCache(clanTag, payload).catch(() => null);
+      res.set("X-Cache", "MISS");
       return res.json({
         members: Array.isArray(payload.members) ? payload.members : [],
+        membersMeta: {
+          source: "live",
+          updatedAt: payload.analysisCacheUpdatedAt || new Date().toISOString(),
+          snapshotTakenAt: payload.snapshotTakenAt ?? null,
+        },
       });
     } catch (err) {
       if (cached && Array.isArray(cached.members)) {
-        return res.json({ members: cached.members });
+        res.set("X-Cache", "HIT");
+        return res.json({
+          members: cached.members,
+          membersMeta: {
+            source: "cached",
+            updatedAt: cached.analysisCacheUpdatedAt || new Date().toISOString(),
+            snapshotTakenAt:
+              cached.snapshotTakenAt ?? cached.warSnapshotTakenAt ?? null,
+          },
+        });
       }
       const status = err.message.includes("404") ? 404 : 500;
       res.status(status).json({ error: err.message });
