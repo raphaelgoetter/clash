@@ -2629,8 +2629,13 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
               if (decksToday > 0) {
                 if (isColosseum) {
-                  ptsPerDeck = currentFame / decksToday;
-                  clanScore = Math.round((decksToday * ptsPerDeck) / 10) * 10;
+                  if (totalDecksWeekly > 0) {
+                    ptsPerDeck = currentFame / totalDecksWeekly;
+                  } else if (weeklyDecks > 0) {
+                    ptsPerDeck = sectionFame / weeklyDecks;
+                  }
+                  clanScore =
+                    Math.round((decksToday * (ptsPerDeck ?? 0)) / 10) * 10;
                 } else if (isOwn) {
                   // Calcul exact : fameTodayRaw = sectionFame - cumulFame fin J(n-1)
                   // sectionFame = sum(participants.fame) = cumulatif depuis J1 inclus entraînement
