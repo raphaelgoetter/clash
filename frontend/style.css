@@ -1262,7 +1262,7 @@ select.search-input {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
-  margin-bottom: 16px;
+  margin-block: 8px;
 }
 
 .filter-input,
@@ -1288,6 +1288,14 @@ select.search-input {
 
 .table-scroll {
   overflow-x: auto;
+}
+
+.members-cache-note {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-align: right;
+  margin-bottom: 12px;
+  opacity: 0.8;
 }
 
 .members-table {
