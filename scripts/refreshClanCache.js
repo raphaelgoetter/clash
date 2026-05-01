@@ -27,6 +27,7 @@ async function main() {
     try {
       const payload = await buildClanAnalysis(statusTag, {
         forceRefresh: true,
+        includeRaceGroup: true,
       });
       await saveClanCacheToBundle(tag, payload);
       console.log(`✓ refreshed cache for ${tag}`);
