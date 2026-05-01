@@ -46,6 +46,7 @@ export function renderRaceGroupCard(data, t, timerHelper) {
   const raceGroup = data.raceGroup;
   const ownTag = (data.clan?.tag ?? "").replace("#", "").toUpperCase();
   const isWarPeriod = data.isWarPeriod === true;
+  const isColosseum = data.isColosseum === true;
 
   // Masquer la card si pas de données
   if (!Array.isArray(raceGroup) || raceGroup.length === 0) {
@@ -135,7 +136,15 @@ export function renderRaceGroupCard(data, t, timerHelper) {
       }
 
       const currentPtsHtml = isWarPeriod
-        ? `<td class="war-group-current-pts">${clan.clanScore != null ? fmtNum(Math.round(clan.clanScore)) : "—"}</td>`
+        ? `<td class="war-group-current-pts">${
+            isColosseum
+              ? clan.currentFame != null
+                ? fmtNum(Math.round(clan.currentFame))
+                : "—"
+              : clan.clanScore != null
+                ? fmtNum(Math.round(clan.clanScore))
+                : "—"
+          }</td>`
         : "";
       const avgPtsHtml = isWarPeriod
         ? `<td class="war-group-avg-pts">${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(2) : "—"}</td>`

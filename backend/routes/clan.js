@@ -2355,6 +2355,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       clanWarSummary != null ||
       analyzedMembers.some((m) => m.warDays !== null) ||
       isCurrentRaceWarDay,
+    isColosseum: currentRace?.periodType === "colosseum",
     topPlayers, // added by computeTopPlayers
     uncomplete, // new list of incomplete deck players
     clanWarSummary, // synthèse GDC clan (null hors période de guerre)
@@ -2415,6 +2416,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           //   = max(decksToday, targetDecks) × ptsPerDeck
           //   → hypothèse : les decks restants (targetDecks - decksToday) auront
           //     la même efficacité que les decks déjà joués
+          //   → en mode Colosseum, la valeur est cumulée au total live actuel
+          //     (currentFame + points estimés restants).
           //
           // projectedRank    {string}  Rang projeté ("1st"…"5th")
           //
@@ -2451,6 +2454,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             currentRace?.state === "warDay" ||
             currentRace?.state === "overtime" ||
             currentRace?.state === "full";
+          const isColosseum = currentRace?.periodType === "colosseum";
 
           // Step 1: Pré-calcul des projections pour tous les clans du groupe
           // Calcul de la moyenne de decks de la semaine passée pour ce clan
@@ -2711,8 +2715,16 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 }
 
                 if (ptsPerDeck != null) {
-                  projectedFame =
-                    Math.max(decksToday, targetDecks) * ptsPerDeck;
+                  if (isColosseum && currentFame != null) {
+                    const remainingDecks = Math.max(
+                      0,
+                      targetDecks - decksToday,
+                    );
+                    projectedFame = currentFame + remainingDecks * ptsPerDeck;
+                  } else {
+                    projectedFame =
+                      Math.max(decksToday, targetDecks) * ptsPerDeck;
+                  }
                 }
               }
 
