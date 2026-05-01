@@ -1033,11 +1033,6 @@ function showCacheNote(
     }
   }
 
-  const sourceInfo =
-    sourceMeta && sourceMeta.source
-      ? ` · source: ${formatSourceLabel(sourceMeta.source)}`
-      : "";
-
   const ageInfo =
     sourceMeta && sourceMeta.updatedAt
       ? (() => {
@@ -1052,14 +1047,28 @@ function showCacheNote(
       : "";
 
   const baseText = fromCache
-    ? `${t("searchHintCached")} ${snapshotText}${sourceInfo}${ageInfo}`
-    : `${t("searchHintNoDate")} ${snapshotText}${sourceInfo}${ageInfo}`;
+    ? `${t("searchHintCached")}${ageInfo}`
+    : `${t("searchHintNoDate")}${ageInfo}`;
 
   if (refreshing) {
-    cacheNote.innerHTML = `${baseText} <span class="cache-note-refreshing"><span class="spinner-small"></span> ${t("refreshingLiveData")}</span>`;
+    cacheNote.innerHTML = `${escHtml(baseText)} <span class="cache-note-refreshing"><span class="spinner-small"></span> ${t("refreshingLiveData")}</span>`;
   } else {
-    cacheNote.textContent = baseText;
+    const refreshLink = fromCache
+      ? ` <a href="#" class="cache-note-refresh-link">${t("refresh") || "refresh"}</a>`
+      : "";
+    cacheNote.innerHTML = `${escHtml(baseText)}${refreshLink}`;
+    const refreshBtn = cacheNote.querySelector(".cache-note-refresh-link");
+    if (refreshBtn) {
+      refreshBtn.addEventListener("click", (event) => {
+        event.preventDefault();
+        refreshCacheNoteLive();
+      });
+    }
   }
+}
+
+function refreshCacheNoteLive() {
+  handleSearch(true);
 }
 
 function renderMembersCacheNote(data) {
@@ -3497,6 +3506,12 @@ function updateDebugPanel(data, mode) {
     snapshotTakenAt: data?.snapshotTakenAt ?? null,
     warCurrentWeekId:
       data?.warCurrentWeekId ?? data?.clanWarSummary?.weekId ?? null,
+    warDayLabel:
+      data?.clanWarSummary?.days?.find((d) => d.isToday)?.label ?? null,
+    warDayIndex:
+      typeof data?.clanWarSummary?.daysFromThu === "number"
+        ? data.clanWarSummary.daysFromThu + 1
+        : null,
     source:
       data?.fromCache != null ? (data.fromCache ? "cache" : "api") : "live",
     warSnapshotDays: data?.warSnapshotDays ?? null,
@@ -3547,6 +3562,7 @@ function updateDebugPanel(data, mode) {
       <div><strong>now :</strong> ${escHtml(payload.now)}</div>
       <div><strong>snapshotDate :</strong> ${escHtml(payload.snapshotDate ?? "—")}</div>
       <div><strong>warCurrentWeekId :</strong> ${escHtml(payload.warCurrentWeekId ?? "—")}</div>
+      ${payload.warDayLabel && payload.warDayIndex ? `<div><strong>WarDay :</strong> ${escHtml(translateWarDayLabel(payload.warDayLabel))} (J${escHtml(String(payload.warDayIndex))})</div>` : ""}
       <div><strong>warSnapshotDays :</strong> ${payload.warSnapshotDays ? JSON.stringify(payload.warSnapshotDays) : "—"}</div>
       ${
         payload.snapshotFileDebug
@@ -3577,13 +3593,6 @@ function updateDebugPanel(data, mode) {
         : ""
     }
   `;
-
-  const refreshBtn = document.getElementById("debug-refresh-now");
-  if (refreshBtn) {
-    refreshBtn.addEventListener("click", () => {
-      handleSearch(true);
-    });
-  }
 }
 
 // Initialize debug UI once the DOM is ready

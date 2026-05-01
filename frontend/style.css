@@ -878,6 +878,14 @@ select.search-input {
   margin-bottom: 12px;
   opacity: 0.7;
 }
+.cache-note-refresh-link {
+  color: var(--text-link);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.cache-note-refresh-link:hover {
+  color: var(--text-link-hover);
+}
 .cache-note-refreshing {
   display: inline-flex;
   align-items: center;
