@@ -758,6 +758,18 @@ async function refreshLiveClanOverview(tag, staticData = null) {
     queryParams.set("includeUncomplete", "false");
     queryParams.set("includeMembers", "false");
 
+    showCacheNote(
+      true,
+      staticData?.snapshotDate ?? staticData?.warSnapshotTakenAt ?? null,
+      {
+        source: "cached",
+        updatedAt:
+          staticData?.analysisCacheUpdatedAt || new Date().toISOString(),
+        snapshotTakenAt:
+          staticData?.snapshotTakenAt ?? staticData?.warSnapshotTakenAt ?? null,
+      },
+      true,
+    );
     const { data } = await apiFetch(
       `/api/clan/${encodeURIComponent(tag)}/analysis?${queryParams.toString()}`,
     );
@@ -783,6 +795,22 @@ async function refreshLiveClanOverview(tag, staticData = null) {
       });
     }
   } catch (_err) {
+    if (staticData) {
+      showCacheNote(
+        true,
+        staticData?.snapshotDate ?? staticData?.warSnapshotTakenAt ?? null,
+        {
+          source: "cached",
+          updatedAt:
+            staticData?.analysisCacheUpdatedAt || new Date().toISOString(),
+          snapshotTakenAt:
+            staticData?.snapshotTakenAt ??
+            staticData?.warSnapshotTakenAt ??
+            null,
+        },
+        false,
+      );
+    }
     // ignore live overview refresh errors when the cache is already displayed.
   }
 }
@@ -951,7 +979,12 @@ function hideResults() {
   cardCurrentWar.classList.add("hidden");
 }
 
-function showCacheNote(fromCache, snapshotDate = null, sourceMeta = null) {
+function showCacheNote(
+  fromCache,
+  snapshotDate = null,
+  sourceMeta = null,
+  refreshing = false,
+) {
   cacheNote.classList.remove("hidden");
 
   // decide human‑friendly snapshot text
@@ -1018,9 +1051,15 @@ function showCacheNote(fromCache, snapshotDate = null, sourceMeta = null) {
         })()
       : "";
 
-  cacheNote.textContent = fromCache
+  const baseText = fromCache
     ? `${t("searchHintCached")} ${snapshotText}${sourceInfo}${ageInfo}`
     : `${t("searchHintNoDate")} ${snapshotText}${sourceInfo}${ageInfo}`;
+
+  if (refreshing) {
+    cacheNote.innerHTML = `${baseText} <span class="cache-note-refreshing"><span class="spinner-small"></span> ${t("refreshingLiveData")}</span>`;
+  } else {
+    cacheNote.textContent = baseText;
+  }
 }
 
 function renderMembersCacheNote(data) {

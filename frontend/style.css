@@ -878,6 +878,13 @@ select.search-input {
   margin-bottom: 12px;
   opacity: 0.7;
 }
+.cache-note-refreshing {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
 
 /* ── Overview grid ──────────────────────────────────────────── */
 .overview-grid {
