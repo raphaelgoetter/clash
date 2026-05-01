@@ -4,6 +4,10 @@ name: Hourly snapshots
 permissions:
   contents: write
 
+concurrency:
+  group: snapshot-hourly
+  cancel-in-progress: true
+
 on:
   schedule:
     # Snapshot + cache refresh : toutes les 60 minutes
