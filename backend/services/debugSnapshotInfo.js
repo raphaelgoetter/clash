@@ -80,11 +80,21 @@ export function buildDebugSnapshotInfo({
       }
     }
   }
-  if (
-    !hasSnapshotData(prevPrevSnap) &&
-    hasSnapshotData(fallbackWarDays?.[warDayIndex - 2])
-  ) {
-    prevPrevSnap = fallbackWarDays[warDayIndex - 2];
+  if (!hasSnapshotData(prevPrevSnap)) {
+    const fallbackIndex = warDayIndex - 2;
+    if (
+      fallbackIndex >= 0 &&
+      hasSnapshotData(fallbackWarDays?.[fallbackIndex])
+    ) {
+      prevPrevSnap = fallbackWarDays[fallbackIndex];
+    } else if (Array.isArray(fallbackWarDays) && fallbackWarDays.length > 0) {
+      for (let i = fallbackWarDays.length - 1; i >= 0; i--) {
+        if (hasSnapshotData(fallbackWarDays[i])) {
+          prevPrevSnap = fallbackWarDays[i];
+          break;
+        }
+      }
+    }
   }
 
   const sumFame = (fameMap) =>
