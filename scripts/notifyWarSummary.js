@@ -275,7 +275,15 @@ function fmtRank(n) {
 }
 
 function computeDay3ClinchProof(race, ownClanTag) {
-  if (race?.periodType !== "warDay") return { known: false, isClinched: false };
+  const isWarDay =
+    race?.periodType === "warDay" ||
+    race?.state === "warDay" ||
+    race?.state === "overtime" ||
+    race?.state === "full" ||
+    (typeof race?.periodIndex === "number" &&
+      race.periodIndex >= 0 &&
+      race.periodIndex <= 3);
+  if (!isWarDay) return { known: false, isClinched: false };
   if (!Array.isArray(race?.clans) || race.clans.length === 0)
     return { known: false, isClinched: false };
 
@@ -334,7 +342,15 @@ function normalizeClanTag(tag) {
  * Règle stricte : currentFame(clan) > max(maxReachableFame(rivaux)).
  */
 function computeClinchedWinInfo(race, ownClanTag) {
-  if (race?.periodType !== "warDay") return null;
+  const isWarDay =
+    race?.periodType === "warDay" ||
+    race?.state === "warDay" ||
+    race?.state === "overtime" ||
+    race?.state === "full" ||
+    (typeof race?.periodIndex === "number" &&
+      race.periodIndex >= 0 &&
+      race.periodIndex <= 3);
+  if (!isWarDay) return null;
   if (!Array.isArray(race?.clans) || race.clans.length === 0) return null;
 
   const MAX_WEEKLY_DECKS = 800; // 50*4*4
