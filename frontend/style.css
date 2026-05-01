@@ -604,55 +604,43 @@ code {
   margin-left: 4px;
 }
 
-/* collapsible card styles */
-#card-top-players summary,
-#card-uncomplete summary,
-#card-war-group summary {
-  display: flex !important;
+/* collapsible details/summary styles */
+details summary {
+  display: flex;
   align-items: center;
+  gap: 8px;
   font-weight: 700;
   position: relative;
   cursor: pointer;
   line-height: 1.2;
-  list-style-type: none !important; /* hide default */
-  list-style: none !important; /* hide default */
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  transition: color var(--transition);
 }
-#card-top-players summary::-webkit-details-marker,
-#card-uncomplete summary::-webkit-details-marker,
-#card-war-group summary::-webkit-details-marker {
-  display: none !important; /* hide Safari default */
+details summary::-webkit-details-marker {
+  display: none;
 }
-
-#card-top-players summary .card-title,
-#card-uncomplete summary .card-title,
-#card-war-group summary .card-title {
-  margin-bottom: 0;
-}
-/* custom arrow marker using ::before */
-#card-top-players summary::before,
-#card-uncomplete summary::before,
-#card-war-group summary::before {
-  content: "►";
-  margin-right: 12px;
-  font-size: 0.9em;
-  transition: transform 0.2s;
+details summary::before {
+  content: "▶";
+  font-size: 0.75rem;
   width: 14px;
   text-align: center;
+  flex-shrink: 0;
+  transition: transform var(--transition);
 }
-#card-top-players details[open] summary::before,
-#card-uncomplete details[open] summary::before,
-#card-war-group details[open] summary::before {
-  content: "▼";
+details[open] summary::before {
+  transform: rotate(90deg);
 }
-#card-top-players details[open] .card-desc,
-#card-uncomplete details[open] .card-desc,
-#card-war-group details[open] .card-desc {
+details[open] .card-desc {
   display: block;
 }
-#card-top-players details:not([open]) .card-desc,
-#card-uncomplete details:not([open]) .card-desc,
-#card-war-group details:not([open]) .card-desc {
+details:not([open]) .card-desc {
   display: none;
+}
+details summary .card-title {
+  margin-bottom: 0;
 }
 
 /* ── Search panel ───────────────────────────────────────────── */
@@ -1499,24 +1487,10 @@ a.member-link:hover div:first-child {
   padding: 6px 12px;
   font-size: 0.85rem;
   color: var(--text-secondary);
-  cursor: pointer;
-  user-select: none;
-  list-style: none;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: color var(--transition);
-}
-
-.note-disclosure summary::-webkit-details-marker {
-  display: none;
 }
 
 .note-disclosure summary::before {
-  content: "▶";
   font-size: 0.55rem;
-  transition: transform var(--transition);
-  flex-shrink: 0;
 }
 
 .note-disclosure[open] summary::before {
@@ -1528,35 +1502,6 @@ a.member-link:hover div:first-child {
 
 .card details {
   width: 100%;
-}
-
-.card details summary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.card details summary::-webkit-details-marker {
-  display: none;
-}
-
-.card details summary::before {
-  content: "▶";
-  font-size: 0.75rem;
-  transition: transform var(--transition);
-  flex-shrink: 0;
-}
-
-.card details[open] summary::before {
-  transform: rotate(90deg);
-}
-
-.card details summary:hover {
-  color: var(--text-primary);
 }
 
 .card details summary .card-title {
@@ -1586,24 +1531,11 @@ a.member-link:hover div:first-child {
   padding: 9px 14px;
   font-size: 0.85rem;
   color: var(--text-secondary);
-  cursor: pointer;
-  user-select: none;
-  list-style: none;
-  display: flex;
-  align-items: center;
   gap: 7px;
-  transition: color var(--transition);
-}
-
-.score-explainer summary::-webkit-details-marker {
-  display: none;
 }
 
 .score-explainer summary::before {
-  content: "▶";
   font-size: 0.6rem;
-  transition: transform var(--transition);
-  flex-shrink: 0;
 }
 
 .score-explainer[open] summary::before {
