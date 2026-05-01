@@ -2628,21 +2628,18 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               const liveDayFame = typeof c.fame === "number" ? c.fame : null;
 
               if (decksToday > 0) {
-                if (isOwn) {
+                if (isColosseum) {
+                  ptsPerDeck = currentFame / decksToday;
+                  clanScore = Math.round((decksToday * ptsPerDeck) / 10) * 10;
+                } else if (isOwn) {
                   // Calcul exact : fameTodayRaw = sectionFame - cumulFame fin J(n-1)
                   // sectionFame = sum(participants.fame) = cumulatif depuis J1 inclus entraînement
                   // prevCumulFameSum = sum(weekSnaps[warDayIndex-1]._cumulFame) = fame fin du jour précédent
                   // Le snapshot J-1 est pris ~20 min avant le reset → valeur propre, sans contamination J+1
                   let fameTodayRaw = null;
                   if (warDayIndex > 0) {
-                    // Log la somme totale des fames live (API) pour tous les membres actuels
-                    const totalLiveFame = allPartsInner
-                      .filter((p) => currentMemberTags.has(normalizeTag(p.tag)))
-                      .reduce((s, p) => s + (p.fame ?? 0), 0);
                     const prevSnap = weekSnaps[warDayIndex - 1];
                     const prevCumulFame = prevSnap?._cumulFame ?? {};
-                    // Log détaillé pour chaque membre actuel
-                    let debugDelta = [];
                     const deltaSum = allPartsInner
                       .filter((p) => currentMemberTags.has(normalizeTag(p.tag)))
                       .reduce((s, p) => {
@@ -2650,57 +2647,26 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                         const prev = prevCumulFame[key] ?? 0;
                         const live = p.fame ?? 0;
                         const delta = live - prev;
-                        debugDelta.push({
-                          tag: p.tag,
-                          name: p.name,
-                          live,
-                          prev,
-                          delta,
-                        });
                         return s + delta;
                       }, 0);
-                    // Garde-fou : delta négatif ou anormalement bas → snapshot corrompu
-                    if (deltaSum > 0 && decksToday > 0) {
+                    if (deltaSum > 0) {
                       fameTodayRaw = deltaSum;
                     }
                   } else if (warDayIndex === 0) {
-                    // J1 : l'API fournit déjà la fame de la journée en cours.
                     fameTodayRaw = sectionFame;
                   }
 
                   if (fameTodayRaw != null && decksToday > 0) {
-                    // Source primaire : delta snapshot exact
                     ptsPerDeck = fameTodayRaw / decksToday;
                     clanScore = Math.round(fameTodayRaw / 10) * 10;
                   } else if (ownHistoricPpd != null) {
-                    // Fallback : efficacité moyenne de la semaine précédente
                     ptsPerDeck = ownHistoricPpd;
                     clanScore = Math.round((decksToday * ptsPerDeck) / 10) * 10;
                   } else if (weeklyDecks > 0) {
-                    // Fallback ultime : moyenne hebdo section en cours
                     ptsPerDeck = sectionFame / weeklyDecks;
                     clanScore = Math.round((decksToday * ptsPerDeck) / 10) * 10;
                   }
-
-                  if (
-                    debugSnapshotInfo?.delta === 0 &&
-                    debugSnapshotInfo?.livePlayersWithDecks > 0
-                  ) {
-                    // Si la GDC est déjà gagnée prématurément, aucun point ne sera
-                    // comptabilisé aujourd'hui, même si des decks sont joués.
-                    ptsPerDeck = 0;
-                    projectedFame = 0;
-                    clanScore = 0;
-                    isClinchedWin = true;
-                  }
-
-                  if (ptsPerDeck === 0 && decksToday > 0 && !isClinchedWin) {
-                    // Quand la projection est verrouillée à zéro sur le clan propre,
-                    // cela signifie que la journée n'ajoute aucun point.
-                    isClinchedWin = true;
-                  }
                 } else {
-                  // Rivaux : estimation basée sur l'historique des GDC précédentes.
                   const rivalPpd = rivalAvgPtsPerDeckByTag[cTagNorm];
                   if (
                     typeof rivalPpd === "number" &&
@@ -2709,12 +2675,25 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                   ) {
                     ptsPerDeck = rivalPpd;
                   } else if (weeklyDecks > 0) {
-                    // Fallback ultime si historique indisponible.
                     ptsPerDeck = sectionFame / weeklyDecks;
                   }
                   if (ptsPerDeck != null) {
                     clanScore = Math.round((decksToday * ptsPerDeck) / 10) * 10;
                   }
+                }
+
+                if (
+                  debugSnapshotInfo?.delta === 0 &&
+                  debugSnapshotInfo?.livePlayersWithDecks > 0
+                ) {
+                  ptsPerDeck = 0;
+                  projectedFame = 0;
+                  clanScore = 0;
+                  isClinchedWin = true;
+                }
+
+                if (ptsPerDeck === 0 && decksToday > 0 && !isClinchedWin) {
+                  isClinchedWin = true;
                 }
 
                 if (ptsPerDeck != null) {
