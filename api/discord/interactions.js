@@ -2427,6 +2427,7 @@ export default async function handler(req, res) {
 
         const ownTag = `#${resolved.tag}`.toUpperCase();
         const FAMILY_TAGS = new Set(["#Y8JUPC9C", "#LRQP20V9", "#QU9UQJRL"]);
+        const isColosseum = data.isColosseum === true;
 
         const isWarPeriod =
           data.isWarPeriod === true ||
@@ -2495,7 +2496,11 @@ export default async function handler(req, res) {
               shouldShowClinched && !clan.isClinchedWin
                 ? "\n<:projection:1499275709078700073> Victoire mathématiquement assurée"
                 : "";
-            line2 = `${decks} · ${eff} · ${proj}${clinched}`;
+            const currentPts = isColosseum && clan.currentFame != null
+              ? `<:trophy2:1493677804733337621> Points actuels : **${fmt(clan.currentFame)}**`
+              : "";
+            line2 = [currentPts, decks, eff, proj].filter(Boolean).join(" · ");
+            line2 += clinched;
           } else {
             line2 = [prevWarStr, lastWarStr].filter(Boolean).join(" · ");
           }

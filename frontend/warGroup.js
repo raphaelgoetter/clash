@@ -199,7 +199,7 @@ export function renderRaceGroupCard(data, t, timerHelper) {
         ${!isWarPeriod ? `<th class="war-group-prev-war">${t("warGroupPrevWar")}</th>` : ""}
         ${!isWarPeriod ? `<th class="war-group-last-war">${t("warGroupLastWar")}</th>` : ""}
         ${isWarPeriod ? `<th class="war-group-decks-now">${t("warGroupDecksToday")} <span>${timerHelper(data.clan?.warResetUtcMinutes)}</span></th>` : ""}
-        ${isWarPeriod ? `<th class="war-group-current-pts">approx. ${t("warGroupCurrentPts")}</th>` : ""}
+        ${isWarPeriod ? `<th class="war-group-current-pts">${isColosseum ? t("warGroupCurrentPtsColosseum") : `approx. ${t("warGroupCurrentPts")}`}</th>` : ""}
         ${isWarPeriod ? `<th class="war-group-avg-pts">${t("warGroupPtsPerDeck")}</th>` : ""}
         ${isWarPeriod ? `<th class="war-group-projection">${t("warGroupProjection")}</th>` : ""}
       </tr>
