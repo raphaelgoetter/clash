@@ -492,7 +492,12 @@ function hasValidSnapshotTime(day) {
 
 function isValidSnapshotDay(day) {
   if (!day) return false;
-  if (day.periodType != null && day.periodType !== "warDay") return false;
+  if (
+    day.periodType != null &&
+    day.periodType !== "warDay" &&
+    day.periodType !== "colosseum"
+  )
+    return false;
   if (!day.gdcPeriod?.start) return false;
   const hasValidTime = hasValidSnapshotTime(day);
   const hasManualCount = Number.isFinite(day.snapshotCount);

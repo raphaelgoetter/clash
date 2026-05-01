@@ -59,6 +59,35 @@ async function main() {
   );
 
   {
+    const fixture = [
+      {
+        week: "S131W3",
+        days: [
+          {
+            warDay: "thursday",
+            realDay: "2026-04-23",
+            gdcPeriod: {
+              start: "2026-04-23T09:52:00.000Z",
+              end: "2026-04-24T09:51:59.999Z",
+            },
+            snapshotTime: "2026-04-24T10:00:00.000Z",
+            snapshotCount: 187,
+            decks: {},
+            periodType: "colosseum",
+          },
+        ],
+      },
+    ];
+    await fs.writeFile(TEST_FILE, JSON.stringify(fixture, null, 2), "utf-8");
+    const colosseumSnaps = await getSnapshotsForWeeks(TEST_TAG, ["S131W3"]);
+    assert.strictEqual(
+      colosseumSnaps.S131W3[0].snapshotCount,
+      187,
+      "Should accept colosseum snapshots as valid war snapshots",
+    );
+  }
+
+  {
     const original = [100, 120, 80, null];
     const currentRace = {
       periodType: "warDay",
