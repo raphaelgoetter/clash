@@ -2105,8 +2105,17 @@ export default async function handler(req, res) {
 
         const participants = race?.clan?.participants ?? [];
 
+        const isWarDay =
+          race?.periodType === "warDay" ||
+          race?.state === "warDay" ||
+          race?.state === "overtime" ||
+          race?.state === "full" ||
+          (typeof race?.periodIndex === "number" &&
+            race.periodIndex >= 0 &&
+            race.periodIndex <= 3);
+
         // Hors journée de GDC : afficher un message explicite et ne rien calculer
-        if (race?.periodType !== "warDay") {
+        if (!isWarDay) {
           await sendToWebhook({
             content: `<:cards:1493711279121104926> **${resolved.name}** — Aucune journée de GDC en cours (période d'entraînement).`,
           });
@@ -2210,7 +2219,6 @@ export default async function handler(req, res) {
         // Avant le reset : p.fame est cumulatif sur la semaine → on soustrait la fame
         // cumulée du dernier snapshot (veille) pour obtenir uniquement la fame du jour.
         // Pour Colisée, la fame est toujours cumulative → on l'affiche telle quelle.
-        const isWarDay = race?.periodType === "warDay";
         const isAfterReset = msOfDayUtc >= resetUtcMs;
         const prevCumulByTag = new Map();
         if (isWarDay && !isAfterReset) {
