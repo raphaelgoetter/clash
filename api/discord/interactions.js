@@ -2407,7 +2407,7 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
-        const apiUrl = `https://trustroyale.vercel.app/api/clan/${resolved.tag}/analysis?includeRaceGroup=true&includeTopPlayers=false&includeUncomplete=false&fast=true`;
+        const apiUrl = `https://trustroyale.vercel.app/api/clan/${resolved.tag}/analysis?includeRaceGroup=true&includeTopPlayers=false&includeUncomplete=false&fast=true&force=true`;
         const apiRes = await fetch(apiUrl);
         if (!apiRes.ok) throw new Error(`API ${apiRes.status}`);
         const data = await apiRes.json();
