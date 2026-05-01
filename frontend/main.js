@@ -630,6 +630,9 @@ async function handleSearch(force = false) {
           snapshotTakenAt:
             staticData.snapshotTakenAt ?? staticData.warSnapshotTakenAt ?? null,
         });
+        if (!force) {
+          refreshLiveClanOverview(tag, staticData);
+        }
       } else {
         renderClanOverview({
           clan: { name: t("loading") },
@@ -646,53 +649,52 @@ async function handleSearch(force = false) {
         renderMembersSkeleton();
       }
 
-      const queryParams = new URLSearchParams();
-      if (force) queryParams.set("force", "true");
-      // When a cached static clan payload was shown, force a live refresh so
-      // the summary and current war counters are updated immediately.
       if (staticData && !force) {
-        queryParams.set("force", "true");
+        refreshLiveClanOverview(tag, staticData);
+      } else {
+        const queryParams = new URLSearchParams();
+        if (force) queryParams.set("force", "true");
+        // lazy load heavy sections (topPlayers/uncomplete) on demand
+        queryParams.set("includeTopPlayers", "false");
+        queryParams.set("includeUncomplete", "false");
+        queryParams.set("includeMembers", "false");
+        const { data, fromCache } = await apiFetch(
+          `/api/clan/${encodeURIComponent(tag)}/analysis?${queryParams.toString()}`,
+        );
+        lastResultName = data.clan?.name || null;
+
+        // Conserver les valeurs historiques (p.ex. Thu total) quand le live renvoie 0 :
+        // on merge avec le cache statique initial.
+        const effectiveData = {
+          ...data,
+          clanWarSummary: mergeWarSummaries(
+            data.clanWarSummary,
+            staticData?.clanWarSummary ?? staticData?.lastWarSummary,
+          ),
+          lastWarSummary: mergeWarSummaries(
+            data.lastWarSummary,
+            staticData?.lastWarSummary,
+          ),
+        };
+
+        // Mettre à jour l'overview avec les données fraîches/fusées
+        renderClanOverview(effectiveData);
+        // Afficher les membres live à jour (synchronisation clan / player)
+        renderClanMembers(data);
+        const shouldWarn =
+          !fromCache &&
+          (data.rateLimited ||
+            data.fallbackReason === "rateLimited" ||
+            data.raceLogUnavailable);
+        if (shouldWarn) showError(t("rateLimitedWarning"));
+        updateDebugPanel(effectiveData, "clan");
+        updateFavBtnState(tag);
+        showCacheNote(false, data.snapshotDate, {
+          source: data.rateLimited ? "live (degraded)" : "live",
+          updatedAt: data.analysisCacheUpdatedAt || new Date().toISOString(),
+          snapshotTakenAt: data.snapshotTakenAt ?? null,
+        });
       }
-      // lazy load heavy sections (topPlayers/uncomplete) on demand
-      queryParams.set("includeTopPlayers", "false");
-      queryParams.set("includeUncomplete", "false");
-      queryParams.set("includeMembers", "false");
-      const { data, fromCache } = await apiFetch(
-        `/api/clan/${encodeURIComponent(tag)}/analysis?${queryParams.toString()}`,
-      );
-      lastResultName = data.clan?.name || null;
-
-      // Conserver les valeurs historiques (p.ex. Thu total) quand le live renvoie 0 :
-      // on merge avec le cache statique initial.
-      const effectiveData = {
-        ...data,
-        clanWarSummary: mergeWarSummaries(
-          data.clanWarSummary,
-          staticData?.clanWarSummary ?? staticData?.lastWarSummary,
-        ),
-        lastWarSummary: mergeWarSummaries(
-          data.lastWarSummary,
-          staticData?.lastWarSummary,
-        ),
-      };
-
-      // Mettre à jour l'overview avec les données fraîches/fusées
-      renderClanOverview(effectiveData);
-      // Afficher les membres live à jour (synchronisation clan / player)
-      renderClanMembers(data);
-      const shouldWarn =
-        !fromCache &&
-        (data.rateLimited ||
-          data.fallbackReason === "rateLimited" ||
-          data.raceLogUnavailable);
-      if (shouldWarn) showError(t("rateLimitedWarning"));
-      updateDebugPanel(effectiveData, "clan");
-      updateFavBtnState(tag);
-      showCacheNote(false, data.snapshotDate, {
-        source: data.rateLimited ? "live (degraded)" : "live",
-        updatedAt: data.analysisCacheUpdatedAt || new Date().toISOString(),
-        snapshotTakenAt: data.snapshotTakenAt ?? null,
-      });
     }
     favBtn.classList.remove("hidden");
     renderFavorites();
@@ -746,6 +748,43 @@ async function apiFetch(path) {
   const fromCache = res.headers.get("X-Cache") === "HIT";
   const data = await res.json();
   return { data, fromCache };
+}
+
+async function refreshLiveClanOverview(tag, staticData = null) {
+  try {
+    const queryParams = new URLSearchParams();
+    queryParams.set("force", "true");
+    queryParams.set("includeTopPlayers", "false");
+    queryParams.set("includeUncomplete", "false");
+    queryParams.set("includeMembers", "false");
+
+    const { data } = await apiFetch(
+      `/api/clan/${encodeURIComponent(tag)}/analysis?${queryParams.toString()}`,
+    );
+    if (data) {
+      const effectiveData = {
+        ...data,
+        clanWarSummary: mergeWarSummaries(
+          data.clanWarSummary,
+          staticData?.clanWarSummary ?? staticData?.lastWarSummary,
+        ),
+        lastWarSummary: mergeWarSummaries(
+          data.lastWarSummary,
+          staticData?.lastWarSummary,
+        ),
+      };
+      renderClanOverview(effectiveData);
+      updateDebugPanel(effectiveData, "clan");
+      updateFavBtnState(tag);
+      showCacheNote(false, data.snapshotDate, {
+        source: data.rateLimited ? "live (degraded)" : "live",
+        updatedAt: data.analysisCacheUpdatedAt || new Date().toISOString(),
+        snapshotTakenAt: data.snapshotTakenAt ?? null,
+      });
+    }
+  } catch (_err) {
+    // ignore live overview refresh errors when the cache is already displayed.
+  }
 }
 
 // ── Favorites helpers ───────────────────────────────────────

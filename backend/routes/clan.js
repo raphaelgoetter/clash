@@ -512,6 +512,100 @@ router.get("/:tag/analysis", async (req, res) => {
  * GET /api/clan/:tag/members
  * Returns only the clan member table payload, optionally from static cache.
  */
+router.get("/:tag/current-war", async (req, res) => {
+  try {
+    let clanTag = req.params.tag;
+    if (clanTag.startsWith("#")) clanTag = clanTag.slice(1);
+    clanTag = clanTag.toUpperCase();
+
+    if (!ALLOWED_CLANS.includes(clanTag)) {
+      return res.status(400).json({ error: "Clan not in allowed list" });
+    }
+
+    const clan = await fetchClan(clanTag);
+    const currentRace = await fetchCurrentRace(clanTag);
+    if (!currentRace) {
+      return res.status(500).json({ error: "Failed to load current race" });
+    }
+
+    const isWarDay =
+      currentRace.periodType === "warDay" ||
+      currentRace.state === "warDay" ||
+      currentRace.state === "overtime" ||
+      currentRace.periodType === "colosseum";
+    if (!isWarDay) {
+      return res.status(400).json({ error: "No active war in progress" });
+    }
+
+    const participants = Array.isArray(currentRace.clan?.participants)
+      ? currentRace.clan.participants
+      : [];
+    const deckTotals = participants.reduce(
+      (sum, p) => sum + (p.decksUsed ?? 0),
+      0,
+    );
+    const currentDayLive = participants.reduce(
+      (sum, p) => sum + (p.decksUsedToday ?? 0),
+      0,
+    );
+    const daysFromThu =
+      typeof currentRace.periodIndex === "number" &&
+      currentRace.periodIndex >= 0 &&
+      currentRace.periodIndex <= 3
+        ? currentRace.periodIndex
+        : 0;
+    const MAX_MEMBERS = 50;
+    const maxDecksElapsed = MAX_MEMBERS * (daysFromThu + 1) * 4;
+    const maxDecksWeek = MAX_MEMBERS * 16;
+    const DAY_LABELS = ["Thu", "Fri", "Sat", "Sun"];
+    const days = DAY_LABELS.map((label, index) => {
+      const isToday = index === daysFromThu;
+      return {
+        label,
+        totalCount: isToday ? Math.min(200, Math.max(0, currentDayLive)) : null,
+        maxCount: 200,
+        isPast: index < daysFromThu,
+        isToday,
+        isFuture: index > daysFromThu,
+        source: isToday ? "live" : "unknown",
+        snapshotCount: isToday
+          ? Math.min(200, Math.max(0, currentDayLive))
+          : null,
+        liveCount: isToday ? Math.min(200, Math.max(0, currentDayLive)) : null,
+      };
+    });
+
+    const clanWarSummary = {
+      totalDecksUsed: Math.min(maxDecksWeek, Math.max(0, deckTotals)),
+      maxDecksElapsed,
+      maxDecksWeek,
+      participantCount: MAX_MEMBERS,
+      daysFromThu,
+      days,
+      weekId:
+        currentRace.sectionIndex != null
+          ? `S${currentRace.seasonId ?? ""}W${currentRace.sectionIndex + 1}`
+          : null,
+      ended: false,
+    };
+
+    res.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+    return res.json({
+      clan: {
+        tag: clan.tag,
+        name: clan.name,
+        warResetUtcMinutes: clan.warResetUtcMinutes ?? null,
+      },
+      clanWarSummary,
+      isWarPeriod: true,
+      snapshotDate: null,
+    });
+  } catch (err) {
+    const status = err.message?.includes("404") ? 404 : 500;
+    res.status(status).json({ error: err.message });
+  }
+});
+
 router.get("/:tag/members", async (req, res) => {
   try {
     let clanTag = req.params.tag;
