@@ -1042,9 +1042,30 @@ function renderMembersCacheNote(data) {
       null,
   };
 
-  const text = formatCacheMetaText(sourceMeta);
-  noteEl.textContent = text ? `Members data · ${text}` : "";
+  const snapshotText = formatSnapshotText(sourceMeta.snapshotTakenAt);
+  const sourceLabel = formatSourceLabel(sourceMeta.source);
+  const ageText = formatAgeText(sourceMeta.updatedAt);
+  const parts = [];
+  if (snapshotText && snapshotText !== "no snapshot") parts.push(snapshotText);
+  if (sourceLabel) parts.push(`source: ${sourceLabel}`);
+  if (ageText) parts.push(ageText);
+
+  const text = parts.join(" · ");
+  const refreshHtml =
+    sourceMeta.source === "cached"
+      ? ` <a href="#" class="members-cache-refresh">refresh</a>`
+      : "";
+
+  noteEl.innerHTML = text ? `${text}${refreshHtml}` : "";
   noteEl.classList.toggle("hidden", !noteEl.textContent);
+
+  const refreshLink = noteEl.querySelector(".members-cache-refresh");
+  if (refreshLink) {
+    refreshLink.addEventListener("click", (event) => {
+      event.preventDefault();
+      refreshMembersLive();
+    });
+  }
 }
 
 function formatCacheMetaText(sourceMeta = {}) {
@@ -2953,11 +2974,13 @@ function setupClanLazySectionHandlers(weekId) {
   }
 }
 
-async function loadClanSection(tag, section, weekId) {
+async function loadClanSection(tag, section, weekId, force = false) {
   let data;
   if (section === "members") {
+    const params = new URLSearchParams();
+    if (force) params.set("force", "true");
     const { data: membersData, fromCache } = await apiFetch(
-      `/api/clan/${encodeURIComponent(tag)}/members`,
+      `/api/clan/${encodeURIComponent(tag)}/members${params.toString() ? `?${params.toString()}` : ""}`,
     );
     membersData.fromCache = fromCache;
     data = membersData;
@@ -2996,6 +3019,24 @@ async function loadClanSection(tag, section, weekId) {
       : sortMembers(allMembers, "reliability", "asc");
     renderMembersTable(sortedMembers);
     renderMembersCacheNote(data);
+  }
+}
+
+async function refreshMembersLive() {
+  if (!activeClanTag) return;
+  const membersCard = document.getElementById("card-clan-table");
+  const membersDetails = membersCard?.querySelector("details");
+  const cols = currentClanIsLite ? 5 : isWarActive ? 9 : 8;
+
+  if (membersDetails && !membersDetails.open) {
+    membersDetails.open = true;
+  }
+  membersTbody.innerHTML = `<tr><td colspan="${cols}" class="members-skeleton">${t("membersLoading")}</td></tr>`;
+
+  try {
+    await loadClanSection(activeClanTag, "members", null, true);
+  } catch (err) {
+    membersTbody.innerHTML = `<tr class="text-muted"><td colspan="${cols}" style="padding:15px;text-align:center;">${t("errorLoadingSection") || "Failed to load members."}</td></tr>`;
   }
 }
 
