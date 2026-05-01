@@ -2847,6 +2847,9 @@ async function loadClanSection(tag, section, weekId) {
     params.set("includeUncomplete", section === "uncomplete" ? "1" : "0");
     params.set("includeRaceGroup", section === "raceGroup" ? "true" : "false");
     params.set("includeMembers", "false");
+    if (section === "raceGroup") {
+      params.set("force", "true");
+    }
     const result = await apiFetch(
       `/api/clan/${encodeURIComponent(tag)}/analysis?${params.toString()}`,
     );
