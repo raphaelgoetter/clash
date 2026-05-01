@@ -676,7 +676,9 @@ async function postWarSummary(
     description: `Journée ${WAR_DAY_NUMBER[warDay]} (${WAR_DAY_FR[warDay]})`,
     color,
     fields,
-    footer: { text: `Constat fait le ${postDateFR}` },
+    footer: {
+      text: `Constat fait le ${postDateFR}\nLes combats de dernière minute peuvent être manqués dans ce résumé.`,
+    },
   };
 
   if (!channelId) {
