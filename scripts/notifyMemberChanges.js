@@ -18,6 +18,7 @@ import path from "path";
 import fetch from "node-fetch";
 import { fetchClanMembers } from "../backend/services/clashApi.js";
 import { getPlayerAnalysis } from "../backend/services/playerAnalysis.js";
+import { getDiscordLinks } from "../backend/services/discordLinks.js";
 import { ALLOWED_CLANS } from "../backend/routes/clan.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -353,6 +354,12 @@ async function main() {
   let hasError = false;
   const notifiedChanges = await readNotifiedChanges();
 
+  const discordLinks = await getDiscordLinks().catch(() => ({}));
+  const isDiscordLinked = (tag) => {
+    const normalized = tag.startsWith("#") ? tag : `#${tag}`;
+    return Object.prototype.hasOwnProperty.call(discordLinks, normalized);
+  };
+
   for (const tag of ALLOWED_CLANS) {
     try {
       const [cached, current, clanName] = await Promise.all([
@@ -449,7 +456,10 @@ async function main() {
         await Promise.all(
           newArrivals.map(async (arrival) => {
             try {
-              arrival.analysis = await getPlayerAnalysis(arrival.tag);
+              arrival.analysis = await getPlayerAnalysis(
+                arrival.tag,
+                isDiscordLinked(arrival.tag),
+              );
             } catch (err) {
               if (DEBUG) {
                 debugLog(
@@ -503,7 +513,10 @@ async function main() {
         await Promise.all(
           allChanges.map(async (m) => {
             try {
-              m.analysis = await getPlayerAnalysis(m.tag);
+              m.analysis = await getPlayerAnalysis(
+                m.tag,
+                isDiscordLinked(m.tag),
+              );
             } catch (err) {
               console.warn(
                 `[${tag}] Impossible de récupérer l'analyse pour ${m.tag}: ${err.message}`,
