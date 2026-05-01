@@ -60,6 +60,24 @@ assert.strictEqual(
   "snapshotJ1DailyFame doit refléter J-1 quand warDayIndex=3",
 );
 
+const infoFriday = buildDebugSnapshotInfo({
+  weekSnaps,
+  warDayIndex: 1,
+  currentMemberTags: new Set(["#A", "#B"]),
+  allParts: [
+    { tag: "#A", name: "Alice", fame: 10 },
+    { tag: "#B", name: "Bob", fame: 5 },
+  ],
+  warSnapshotDays: [15, 35, 50, 80],
+  clanTag: "TEST",
+  fallbackWarDays: [],
+});
+assert.strictEqual(
+  infoFriday.snapshotJ1DailyFame,
+  15,
+  "snapshotJ1DailyFame doit refléter J-1 sur vendredi (premier jour précédent)",
+);
+
 const infoNormalizedTags = buildDebugSnapshotInfo({
   weekSnaps,
   warDayIndex: 3,

@@ -198,10 +198,16 @@ export function buildDebugSnapshotInfo({
     samedi: scoreSamedi,
     dimanche: scoreDimanche,
   };
-  const snapshotJ1DailyFame =
-    hasPrevCumulFame && Object.keys(prevPrevCumulFame).length > 0
-      ? Math.max(0, cumulFameSnapshot - cumulFamePrevPrevSnapshot)
-      : null;
+  const snapshotJ1DailyFame = (() => {
+    if (!hasPrevCumulFame) return null;
+    if (Object.keys(prevPrevCumulFame).length > 0) {
+      return Math.max(0, cumulFameSnapshot - cumulFamePrevPrevSnapshot);
+    }
+    if (warDayIndex === 1) {
+      return cumulFameSnapshot;
+    }
+    return null;
+  })();
   const snapshotTime =
     prevSnap.snapshotTime ||
     prevSnap.snapshotBackupTime ||
