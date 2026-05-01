@@ -2508,11 +2508,14 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 clanTag,
                 currentRaceClanFame: currentRace?.clan?.fame ?? null,
                 fallbackWarDays:
-                  existingCache?.debugSnapshotInfo?.weekSnaps ??
-                  existingCache?.clanWarSummary?.days ??
-                  existingCache?.lastWarSummary?.debugSnapshotInfo?.weekSnaps ??
-                  existingCache?.lastWarSummary?.days ??
-                  [],
+                  typeof prevSnaps !== "undefined" && prevSnaps.length > 0
+                    ? prevSnaps
+                    : (existingCache?.debugSnapshotInfo?.weekSnaps ??
+                      existingCache?.clanWarSummary?.days ??
+                      existingCache?.lastWarSummary?.debugSnapshotInfo
+                        ?.weekSnaps ??
+                      existingCache?.lastWarSummary?.days ??
+                      []),
               });
             }
             if (debugSnapshotInfo && !debugSnapshotInfoRoot)
