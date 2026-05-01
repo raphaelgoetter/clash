@@ -111,7 +111,7 @@ export function renderRaceGroupCard(data, t, timerHelper) {
           ? `${fmtNum(clan.lastWarFame)}${trendIcon}`
           : "—";
 
-      const targetVal = clan.targetDecksToday || 200;
+      const targetVal = clan.targetDecksToday ?? 200;
       const decksTodayVal = clan.decksToday ?? 0;
       const maxDecks = 200;
 

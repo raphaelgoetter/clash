@@ -2406,6 +2406,15 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             let isClinchedWin = false;
 
             // rivalParticipants n'est utilisé que côté rivaux, jamais côté isOwn
+            if (isWarPeriod && warDayIndex === 0) {
+              const avgDecksLastWeek = isOwn
+                ? ownAvgDecks
+                : rivalAvgDecksByTag[cTagNorm];
+              if (avgDecksLastWeek != null) {
+                c.targetDecksToday = Math.round(avgDecksLastWeek);
+              }
+            }
+
             if (
               isWarPeriod &&
               (isOwn
@@ -2482,7 +2491,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 targetDecks = decksPassed / warDayIndex;
               } else {
                 // J1 (ou par défaut) : on utilise la moyenne de la semaine passée
-                targetDecks = avgDecksLastWeek || 200;
+                targetDecks = avgDecksLastWeek ?? 200;
               }
 
               // weeklyDecks : fallback de secours si la fame live du jour est indisponible.
