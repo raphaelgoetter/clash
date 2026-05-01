@@ -3550,7 +3550,6 @@ function updateDebugPanel(data, mode) {
 
   panel.innerHTML = `
     <h3>Debug info (mode : ${escHtml(payload.mode)}, source : ${escHtml(payload.source)})</h3>
-    <button id="debug-refresh-now" class="btn btn-small" style="margin-bottom:.5rem;">🔄 ${t("refreshNow") || "Refresh now"}</button>
     <div style="font-size:.88rem;line-height:1.35;">
       ${
         payload.clanName || payload.clanTag
