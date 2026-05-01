@@ -2499,7 +2499,9 @@ export default async function handler(req, res) {
             const currentPts = isColosseum && clan.currentFame != null
               ? `<:trophy2:1493677804733337621> Points actuels : **${fmt(clan.currentFame)}**`
               : "";
-            line2 = [currentPts, decks, eff, proj].filter(Boolean).join(" · ");
+            const line2a = [decks, eff].filter(Boolean).join(" · ");
+            const line2b = [currentPts, proj].filter(Boolean).join(" · ");
+            line2 = line2b ? `${line2a}\n${line2b}` : line2a;
             line2 += clinched;
           } else {
             line2 = [prevWarStr, lastWarStr].filter(Boolean).join(" · ");
