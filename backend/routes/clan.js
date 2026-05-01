@@ -564,7 +564,8 @@ router.get("/:tag/members", async (req, res) => {
           members: cached.members,
           membersMeta: {
             source: "cached",
-            updatedAt: cached.analysisCacheUpdatedAt || new Date().toISOString(),
+            updatedAt:
+              cached.analysisCacheUpdatedAt || new Date().toISOString(),
             snapshotTakenAt:
               cached.snapshotTakenAt ?? cached.warSnapshotTakenAt ?? null,
           },

@@ -1027,9 +1027,7 @@ function formatCacheMetaText(sourceMeta = {}) {
 function formatSnapshotText(snapshotDate) {
   if (!snapshotDate) return "no snapshot";
   const today = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date(Date.now() - 86400000)
-    .toISOString()
-    .slice(0, 10);
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
   const d = new Date(snapshotDate);
   if (Number.isNaN(d.getTime())) return `${snapshotDate}`;
   const dayName = d.toLocaleDateString("en-US", { weekday: "long" });
