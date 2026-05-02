@@ -3066,11 +3066,11 @@ function setupClanLazySectionHandlers(weekId) {
 }
 
 function setupClanPieClickHandler() {
-  const chartCanvas = document.getElementById("chart-clan-pie");
-  if (!chartCanvas || chartCanvas.dataset.pieClickInit) return;
+  const reliableCard = document.getElementById("card-reliable-risky");
+  if (!reliableCard || reliableCard.dataset.pieClickInit) return;
 
-  chartCanvas.style.cursor = "pointer";
-  chartCanvas.addEventListener("click", async () => {
+  reliableCard.style.cursor = "pointer";
+  reliableCard.addEventListener("click", async () => {
     const membersCard = document.getElementById("card-clan-table");
     const membersDetails = membersCard?.querySelector("details");
     if (!membersDetails) return;
@@ -3088,7 +3088,7 @@ function setupClanPieClickHandler() {
 
     membersCard.scrollIntoView({ behavior: "smooth", block: "start" });
   });
-  chartCanvas.dataset.pieClickInit = "1";
+  reliableCard.dataset.pieClickInit = "1";
 }
 
 async function loadClanSection(tag, section, weekId, force = false) {
