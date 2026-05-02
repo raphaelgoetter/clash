@@ -68,7 +68,7 @@ export function setChartTranslations(trans) {
  * Render a battles-per-day line chart on #chart-activity.
  * @param {{ date: string; count: number }[]} dailyActivity
  */
-export function renderActivityChart(dailyActivity) {
+export function renderActivityChart(dailyActivity = []) {
   destroyIfExists("chart-activity");
   const ctx = document.getElementById("chart-activity").getContext("2d");
 
@@ -136,13 +136,13 @@ export function renderActivityChart(dailyActivity) {
  *
  * @param {{ label:string; fame:number }[]} weeks  Most-recent-first array
  */
-export function renderWarHistoryChart(weeks) {
+export function renderWarHistoryChart(weeks = []) {
   destroyIfExists("chart-activity");
   const el = document.getElementById("chart-activity");
   if (!el) return;
 
   // Display oldest → newest (left → right)
-  const ordered = [...weeks].reverse();
+  const ordered = [...(weeks || [])].reverse();
   const labels = ordered.map((w) => {
     const deckInfo =
       typeof w.decksUsed === "number" ? ` (${w.decksUsed}/16)` : "";

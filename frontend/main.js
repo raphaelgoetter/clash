@@ -3375,8 +3375,8 @@ document.querySelectorAll(".members-table th.sortable").forEach((th) => {
   });
 });
 
-function sortMembers(arr, col, dir) {
-  return [...arr].sort((a, b) => {
+function sortMembers(arr = [], col, dir) {
+  return [...(arr || [])].sort((a, b) => {
     let va = a[col],
       vb = b[col];
     // Les valeurs null vont toujours en dernier, quel que soit le sens du tri
