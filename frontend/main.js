@@ -1447,35 +1447,6 @@ function renderPlayerResults(data) {
     return null;
   }
 
-  function parseClashDate(value) {
-    if (!value) return null;
-    const d = new Date(value);
-    if (!Number.isNaN(d.getTime())) return d;
-    const m =
-      /^([0-9]{4})([0-9]{2})([0-9]{2})T([0-9]{2})([0-9]{2})([0-9]{2})\.([0-9]{3})Z$/.exec(
-        value,
-      );
-    if (!m) return null;
-    const iso = `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}.${m[7]}Z`;
-    const d2 = new Date(iso);
-    return Number.isNaN(d2.getTime()) ? null : d2;
-  }
-
-  function formatLastSeenDuration(value) {
-    const date = parseClashDate(value);
-    if (!date) return null;
-    const diffMs = Math.max(0, Date.now() - date.getTime());
-    const totalMinutes = Math.floor(diffMs / 60000);
-    const days = Math.floor(totalMinutes / 1440);
-    const hours = Math.floor((totalMinutes % 1440) / 60);
-    const minutes = totalMinutes % 60;
-    const parts = [];
-    if (days > 0) parts.push(`${days}d`);
-    if (days > 0 || hours > 0) parts.push(`${hours}h`);
-    parts.push(`${minutes}m`);
-    return parts.join(" ");
-  }
-
   function aggregateBattleLogByWeek(entries) {
     const map = new Map();
     entries.forEach((b) => {
@@ -2112,6 +2083,35 @@ function renderPlayerResults(data) {
   translateUI();
   updateLangButtonUI();
   playerResults.classList.remove("hidden");
+}
+
+function parseClashDate(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  if (!Number.isNaN(d.getTime())) return d;
+  const m =
+    /^([0-9]{4})([0-9]{2})([0-9]{2})T([0-9]{2})([0-9]{2})([0-9]{2})\.([0-9]{3})Z$/.exec(
+      value,
+    );
+  if (!m) return null;
+  const iso = `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}.${m[7]}Z`;
+  const d2 = new Date(iso);
+  return Number.isNaN(d2.getTime()) ? null : d2;
+}
+
+function formatLastSeenDuration(value) {
+  const date = parseClashDate(value);
+  if (!date) return null;
+  const diffMs = Math.max(0, Date.now() - date.getTime());
+  const totalMinutes = Math.floor(diffMs / 60000);
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+  const parts = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (days > 0 || hours > 0) parts.push(`${hours}h`);
+  parts.push(`${minutes}m`);
+  return parts.join(" ");
 }
 
 // ── Actual Clan War card (player view) ────────────────────────────
