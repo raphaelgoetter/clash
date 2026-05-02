@@ -247,6 +247,12 @@ function translateUI() {
     .querySelector(".card-title").textContent =
     `⚔️ ${t("warReliabilityScore")}`;
 
+  const reliableCard = document.getElementById("card-reliable-risky");
+  if (reliableCard) {
+    reliableCard.querySelector(".card-title").textContent =
+      `🥧 ${t("reliableVsRisky")}`;
+  }
+
   // traductions dynamiques du clan
   translateClanTableHeaders();
   const filterInput = document.getElementById("filter-name");
@@ -2934,6 +2940,7 @@ function renderClanOverview(data) {
   if (!isLite) {
     // Charts
     renderClanPieChart(summary);
+    setupClanPieClickHandler();
     // Card groupe de course
     const cardGroup = document.getElementById("card-war-group");
     const detailsGroup = document.getElementById("details-war-group");
@@ -3056,6 +3063,32 @@ function setupClanLazySectionHandlers(weekId) {
     }
     membersCard.dataset.lazyInit = "1";
   }
+}
+
+function setupClanPieClickHandler() {
+  const chartCanvas = document.getElementById("chart-clan-pie");
+  if (!chartCanvas || chartCanvas.dataset.pieClickInit) return;
+
+  chartCanvas.style.cursor = "pointer";
+  chartCanvas.addEventListener("click", async () => {
+    const membersCard = document.getElementById("card-clan-table");
+    const membersDetails = membersCard?.querySelector("details");
+    if (!membersDetails) return;
+
+    if (!membersDetails.open) {
+      membersDetails.open = true;
+      return;
+    }
+
+    if (!loadedClanSections.members) {
+      await refreshMembersLive();
+    } else if (allMembers.length > 0) {
+      applyFilters();
+    }
+
+    membersCard.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  chartCanvas.dataset.pieClickInit = "1";
 }
 
 async function loadClanSection(tag, section, weekId, force = false) {
