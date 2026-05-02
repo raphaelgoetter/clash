@@ -1008,7 +1008,7 @@
           "start": "2026-05-01T09:52:00.000Z",
           "end": "2026-05-02T09:51:59.999Z"
         },
-        "snapshotTime": "2026-05-02T01:34:49.260Z",
+        "snapshotTime": "2026-05-02T03:04:19.811Z",
         "snapshotBackupTime": "2026-05-01T10:31:02.896Z",
         "decks": {
           "#28PQVJ2V": 4,
@@ -1047,8 +1047,8 @@
           "#UJ89GUUUY": 4,
           "#UY00GJG2": 4,
           "#UYP0YCQ9": 4,
-          "#VVJ8RURL9": 3,
-          "#YRYPUR822": 3,
+          "#VVJ8RURL9": 4,
+          "#YRYPUR822": 4,
           "#GR9G9ULL": 2
         },
         "hourlyCumul": [
@@ -1107,6 +1107,10 @@
           {
             "takenAt": "2026-05-02T01:34:49.260Z",
             "total": 152
+          },
+          {
+            "takenAt": "2026-05-02T03:04:19.811Z",
+            "total": 154
           }
         ],
         "_cumulFame": {
@@ -1148,7 +1152,7 @@
           "#2GPUQY9P9": 600,
           "#GR9G9ULL": 800,
           "#9YQ8RVU2P": 1100,
-          "#YRYPUR822": 1050,
+          "#YRYPUR822": 1250,
           "#PGJPJG9QQ": 1050,
           "#CQ0GQ0JRU": 1450,
           "#2R9QUYQ2C": 1200,
@@ -1168,7 +1172,7 @@
           "#LCQ2J0VGC": 1500,
           "#GVGVR0J2U": 1350,
           "#J8RU2RJ8C": 1600,
-          "#VVJ8RURL9": 1350
+          "#VVJ8RURL9": 1450
         },
         "periodType": "colosseum",
         "_cumul": {
@@ -1210,7 +1214,7 @@
           "#2GPUQY9P9": 4,
           "#GR9G9ULL": 6,
           "#9YQ8RVU2P": 8,
-          "#YRYPUR822": 7,
+          "#YRYPUR822": 8,
           "#PGJPJG9QQ": 8,
           "#CQ0GQ0JRU": 8,
           "#2R9QUYQ2C": 8,
@@ -1230,9 +1234,9 @@
           "#LCQ2J0VGC": 8,
           "#GVGVR0J2U": 8,
           "#J8RU2RJ8C": 8,
-          "#VVJ8RURL9": 7
+          "#VVJ8RURL9": 8
         },
-        "snapshotCount": 152
+        "snapshotCount": 154
       },
       {
         "warDay": "saturday",
