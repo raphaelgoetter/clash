@@ -3624,13 +3624,6 @@ function updateDebugPanel(data, mode) {
       : (payload.snapshotFileDebug?.dataLatestSnapshotTime ??
         payload.snapshotFileDebug?.dataMtime);
 
-  const ownRaceGroupSample =
-    data?.raceGroup && Array.isArray(data.raceGroup)
-      ? data.raceGroup.find(
-          (c) => c.debugSnapshotInfo || c.tag === data?.clan?.tag,
-        )
-      : null;
-
   panel.innerHTML = `
     <h3>Debug info (mode : ${escHtml(payload.mode)}, source : ${escHtml(payload.source)})</h3>
     <div style="font-size:.88rem;line-height:1.35;">
@@ -3664,16 +3657,6 @@ function updateDebugPanel(data, mode) {
       }
     </div>
     ${snapshotDebugHtml}
-    ${
-      ownRaceGroupSample
-        ? `
-      <div style="margin-top:1rem;padding:.75rem 1rem;background:#111;border-radius:8px;border:1px solid #2a2a2a">
-        <div style="margin-bottom:.5rem;font-weight:700">RaceGroup sample — clan propre</div>
-        <pre style="white-space:pre-wrap;word-break:break-word;margin:0;">${escHtml(JSON.stringify(ownRaceGroupSample, null, 2))}</pre>
-      </div>
-    `
-        : ""
-    }
   `;
 }
 
