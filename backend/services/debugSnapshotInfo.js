@@ -341,7 +341,15 @@ function buildPreResetFields(
   sumFame,
 ) {
   const snapshotPreResetTime = prevSnap?.snapshotPreResetTime ?? null;
-  if (!snapshotPreResetTime) return {};
+
+  // Snapshot pré-reset attendu mais absent : le snapshot régulier existe (J-1 a bien
+  // été enregistré par le cron horaire) mais le workflow pre-reset n'a pas tourné à temps.
+  if (!snapshotPreResetTime) {
+    const hasRegularSnapshot = Boolean(
+      prevSnap?.snapshotTime || prevSnap?.snapshotBackupTime,
+    );
+    return hasRegularSnapshot ? { preResetSnapshotMissing: true } : {};
+  }
 
   const decksPreReset = prevSnap.decksPreReset ?? null;
   const cumulFamePreReset = prevSnap._cumulFamePreReset ?? null;
