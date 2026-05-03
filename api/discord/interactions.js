@@ -928,6 +928,15 @@ export default async function handler(req, res) {
         const allTimeRecord = Number.isFinite(warHistory?.maxFame)
           ? warHistory.maxFame
           : 0;
+        const totalFame = Number.isFinite(warHistory?.totalFame)
+          ? warHistory.totalFame
+          : 0;
+        const totalDecks = Array.isArray(warHistory?.weeks)
+          ? warHistory.weeks.reduce((sum, w) => sum + (Number(w.decksUsed) || 0), 0)
+          : 0;
+        const pointsPerDeck = totalDecks
+          ? Number((totalFame / totalDecks).toFixed(2))
+          : null;
         const averageHourRange = buildAverageRaceTimeRange(
           analysis.battleLog,
           analysis.overview.clan?.tag,
@@ -938,6 +947,9 @@ export default async function handler(req, res) {
           `- **Moyenne par semaine :** ${avgFame}`,
           `- **Record de points :** ${allTimeRecord}`,
         ];
+        if (pointsPerDeck !== null) {
+          detailLines.push(`- **Points par deck :** ${pointsPerDeck}`);
+        }
         if (averageHourRange) {
           detailLines.push(`- **Plage horaire moyenne :** ${averageHourRange}`);
         }
