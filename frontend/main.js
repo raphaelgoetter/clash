@@ -3533,7 +3533,7 @@ function updateDebugPanel(data, mode) {
         <div>⚠️ <b>Joueurs avec decks sans variation de fame</b> : <b>${info.livePlayersWithDecksAndNoFameDiff ?? "—"}</b></div>
         <div>📏 <b>Écart snapshot/reset</b> : <b>${info.diffMin ?? "—"} min</b></div>
         ${info.warning ? `<div style='color:#ffb300'><b>${escHtml(info.warning)}</b></div>` : ""}
-        ${info.preResetSnapshotMissing ? `<div style='margin-top:.5rem;padding:.4em .75em;background:#1f1000;border-radius:6px;border:1px solid #7a4a00;color:#ffb300'>⚠️ <b>Snapshot pré-reset manquant</b> — le workflow CI n'a pas tourné à temps avant le reset.</div>` : ""}
+        ${info.preResetSnapshotMissing ? `<div style='margin-top:.5rem;padding:.4em .75em;background:#1f1000;border-radius:6px;border:1px solid #7a4a00;color:#ffb300'>⚠️ <b>Snapshot pré-reset manquant</b> — le workflow CI n'a pas tourné à temps avant le reset (normal si fonctionnalité récemment activée).</div>` : ""}
         ${
           info.snapshotPreResetTime
             ? `

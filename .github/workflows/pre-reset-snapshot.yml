@@ -14,7 +14,7 @@ concurrency:
 on:
   schedule:
     # 08:45 UTC, jeu–dim — 64 minutes de marge avant le premier reset (09:49)
-    - cron: "45 8 * * 4-0"
+    - cron: "45 8 * * 4,5,6,0"
   workflow_dispatch:
 
 jobs:
