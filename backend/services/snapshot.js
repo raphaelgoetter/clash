@@ -174,6 +174,20 @@ function normalizeSnapshots(raw, clanTag = null) {
         existing._cumulFame ?? {},
         incoming._cumulFame ?? {},
       ),
+      snapshotPreResetTime:
+        [existing.snapshotPreResetTime, incoming.snapshotPreResetTime]
+          .filter(Boolean)
+          .sort()
+          .pop() ?? null,
+      decksPreReset: incoming.decksPreReset ?? existing.decksPreReset ?? null,
+      _cumulPreReset: mergeMaps(
+        existing._cumulPreReset ?? {},
+        incoming._cumulPreReset ?? {},
+      ),
+      _cumulFamePreReset: mergeMaps(
+        existing._cumulFamePreReset ?? {},
+        incoming._cumulFamePreReset ?? {},
+      ),
       hourlyCumul,
     };
   };
@@ -541,7 +555,8 @@ function makeEmptyDay(warDay, realDay = null, clanTag = null) {
 
 export function resolveSnapshotType(now, clanTag = null, overrideType = null) {
   const type = String(overrideType ?? "auto").toLowerCase();
-  if (type === "primary" || type === "backup") return type;
+  if (type === "primary" || type === "backup" || type === "pre-reset")
+    return type;
 
   const utc = now instanceof Date ? now : new Date(now);
   const resetUtcMs = warResetOffsetMs(clanTag);
@@ -994,10 +1009,18 @@ export async function recordSnapshot(
     return;
   }
 
-  if (snapshotType === "primary") {
+  if (snapshotType === "primary" || snapshotType === "pre-reset") {
     dayEntry.snapshotTime = now.toISOString();
   } else {
     dayEntry.snapshotBackupTime = now.toISOString();
+  }
+
+  // Champs de traçabilité supplémentaires pour les snapshots pré-reset.
+  if (snapshotType === "pre-reset") {
+    dayEntry.snapshotPreResetTime = now.toISOString();
+    dayEntry.decksPreReset = { ...dayEntry.decks };
+    dayEntry._cumulPreReset = { ...currentCumul };
+    dayEntry._cumulFamePreReset = { ...currentCumulFame };
   }
 
   dayEntry._cumul = mergeMaps(dayEntry._cumul ?? {}, currentCumul);
@@ -1068,6 +1091,13 @@ export async function getSnapshotsForWeek(clanTag, week = null) {
       snapshotBackupTime: isValidSnapshot(d)
         ? (d.snapshotBackupTime ?? null)
         : null,
+      snapshotPreResetTime: isValidSnapshot(d)
+        ? (d.snapshotPreResetTime ?? null)
+        : null,
+      decksPreReset: isValidSnapshot(d) ? (d.decksPreReset ?? null) : null,
+      _cumulFamePreReset: isValidSnapshot(d)
+        ? (d._cumulFamePreReset ?? {})
+        : {},
     };
   };
 
@@ -1127,6 +1157,13 @@ export async function getSnapshotsForWeeks(clanTag, weeks) {
       snapshotBackupTime: isValidSnapshot(d)
         ? (d.snapshotBackupTime ?? null)
         : null,
+      snapshotPreResetTime: isValidSnapshot(d)
+        ? (d.snapshotPreResetTime ?? null)
+        : null,
+      decksPreReset: isValidSnapshot(d) ? (d.decksPreReset ?? null) : null,
+      _cumulFamePreReset: isValidSnapshot(d)
+        ? (d._cumulFamePreReset ?? {})
+        : {},
       gdcPeriod: d.gdcPeriod ?? null,
     };
   };

@@ -316,5 +316,95 @@ export function buildDebugSnapshotInfo({
     delta,
     diffMin,
     warning,
+    // ── Champs snapshot pré-reset (T−2 min) ──────────────────────────
+    ...buildPreResetFields(
+      prevSnap,
+      prevPrevSnap,
+      normalizedMemberTags,
+      allParts,
+      hasFame,
+      sumFame,
+    ),
+  };
+}
+
+/**
+ * Construit les champs de traçabilité du snapshot pré-reset depuis prevSnap.
+ * Retourne un objet vide si aucun snapshot pré-reset n'a été enregistré.
+ */
+function buildPreResetFields(
+  prevSnap,
+  prevPrevSnap,
+  normalizedMemberTags,
+  allParts,
+  hasFame,
+  sumFame,
+) {
+  const snapshotPreResetTime = prevSnap?.snapshotPreResetTime ?? null;
+  if (!snapshotPreResetTime) return {};
+
+  const decksPreReset = prevSnap.decksPreReset ?? null;
+  const cumulFamePreReset = prevSnap._cumulFamePreReset ?? null;
+
+  // Total de decks joués au moment du snapshot pré-reset.
+  const preResetDecksTotal = decksPreReset
+    ? Object.values(decksPreReset).reduce(
+        (s, v) => s + (typeof v === "number" ? v : 0),
+        0,
+      )
+    : null;
+
+  // Fame journalière J-1 calculée au moment du snapshot pré-reset.
+  const prevPrevCumulFame = prevPrevSnap?._cumulFame ?? {};
+  const preResetFameTotal =
+    cumulFamePreReset && hasFame(cumulFamePreReset)
+      ? Math.max(
+          0,
+          sumFame(cumulFamePreReset) -
+            (hasFame(prevPrevCumulFame) ? sumFame(prevPrevCumulFame) : 0),
+        )
+      : null;
+
+  // Lookup nom des joueurs depuis les participants live.
+  const normalizeTag = (tag) =>
+    `#${String(tag ?? "")
+      .replace(/^#/, "")
+      .toUpperCase()}`;
+  const nameByTag = new Map(
+    (allParts ?? []).map((p) => [
+      normalizeTag(p.tag),
+      p.name ?? normalizeTag(p.tag),
+    ]),
+  );
+
+  // Joueurs avec moins de 4 decks au moment du snapshot pré-reset.
+  const preResetMissingDecks = Array.from(normalizedMemberTags ?? [])
+    .reduce((acc, tag) => {
+      const played = Number.isFinite(decksPreReset?.[tag])
+        ? decksPreReset[tag]
+        : 0;
+      const missing = Math.max(0, 4 - played);
+      if (missing > 0) {
+        acc.push({ tag, name: nameByTag.get(tag) ?? tag, missing });
+      }
+      return acc;
+    }, [])
+    .sort(
+      (a, b) => b.missing - a.missing || a.name.localeCompare(b.name, "fr"),
+    );
+
+  // Écart decks pré-reset vs snapshot régulier.
+  const snapshotCount = prevSnap.snapshotCount ?? null;
+  const preResetVsSnapshotDiff =
+    preResetDecksTotal != null && snapshotCount != null
+      ? preResetDecksTotal - snapshotCount
+      : null;
+
+  return {
+    snapshotPreResetTime,
+    preResetDecksTotal,
+    preResetFameTotal,
+    preResetMissingDecks,
+    preResetVsSnapshotDiff,
   };
 }

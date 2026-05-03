@@ -1,0 +1,48 @@
+name: Pre-reset snapshots
+
+# Prend une photo instantanée des données GDC 2 minutes avant le reset journalier
+# de chaque clan (QU9UQJRL 09:49, Y8JUPC9C 09:52, LRQP20V9 09:54 UTC).
+# Le script dort précisément jusqu'à T−2 min puis appelle l'API en < 1 seconde.
+
+permissions:
+  contents: write
+
+concurrency:
+  group: snapshot-pre-reset
+  cancel-in-progress: false
+
+on:
+  schedule:
+    # 08:45 UTC, jeu–dim — 64 minutes de marge avant le premier reset (09:49)
+    - cron: "45 8 * * 4-0"
+  workflow_dispatch:
+
+jobs:
+  pre-reset-snapshot:
+    runs-on: ubuntu-latest
+    env:
+      CLASH_API_KEY: ${{ secrets.CLASH_API_KEY }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Run pre-reset snapshot script
+        run: node scripts/preResetSnapshot.js
+
+      - name: Commit snapshot result
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/snapshots/*.json || true
+          git diff --cached --quiet || git commit -m "chore: snapshot pré-reset journalier"
+          git push || true

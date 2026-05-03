@@ -3533,6 +3533,22 @@ function updateDebugPanel(data, mode) {
         <div>⚠️ <b>Joueurs avec decks sans variation de fame</b> : <b>${info.livePlayersWithDecksAndNoFameDiff ?? "—"}</b></div>
         <div>📏 <b>Écart snapshot/reset</b> : <b>${info.diffMin ?? "—"} min</b></div>
         ${info.warning ? `<div style='color:#ffb300'><b>${escHtml(info.warning)}</b></div>` : ""}
+        ${
+          info.snapshotPreResetTime
+            ? `
+        <div style="margin-top:.75rem;padding:.5em .75em;background:#0d1f0d;border-radius:6px;border:1px solid #2d5a2d">
+          <div><strong>📸 Snapshot pré-reset (T−2 min)</strong></div>
+          <div>⏰ <b>snapshotPreResetTime</b> : <code>${escHtml(info.snapshotPreResetTime)}</code></div>
+          <div>🃏 <b>Decks pré-reset</b> : <b>${info.preResetDecksTotal ?? "—"}</b>${info.preResetVsSnapshotDiff != null ? ` <span style="color:${info.preResetVsSnapshotDiff > 0 ? "#57f287" : info.preResetVsSnapshotDiff < 0 ? "#ed4245" : "#aaa"}">(${info.preResetVsSnapshotDiff > 0 ? "+" : ""}${info.preResetVsSnapshotDiff} vs snapshot régulier)</span>` : ""}</div>
+          <div>🎯 <b>Fame J-1 pré-reset</b> : <b>${info.preResetFameTotal != null ? Math.round(info.preResetFameTotal).toLocaleString("fr-FR") : "—"}</b></div>
+          ${
+            info.preResetMissingDecks && info.preResetMissingDecks.length > 0
+              ? `<div>⚠️ <b>Manquants à T−2 min (${info.preResetMissingDecks.length})</b> : ${info.preResetMissingDecks.map((p) => escHtml(`${p.name} −${p.missing}`)).join(", ")}</div>`
+              : `<div>✅ <b>Manquants à T−2 min</b> : aucun</div>`
+          }
+        </div>`
+            : ""
+        }
       </div>
     `;
   };
