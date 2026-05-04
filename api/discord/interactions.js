@@ -2448,10 +2448,15 @@ export default async function handler(req, res) {
         const FAMILY_TAGS = new Set(["#Y8JUPC9C", "#LRQP20V9", "#QU9UQJRL"]);
         const isColosseum = data.isColosseum === true;
 
-        // isWarPeriod est déjà filtré par la garde calendaire côté backend.
-        // Les conditions supplémentaires (warCurrentWeekId, projectedFame) pourraient
-        // rester non-nulles depuis le cache et contourner la garde.
-        const isWarPeriod = data.isWarPeriod === true;
+        // Garde calendaire locale : ne pas se fier à data.isWarPeriod qui peut venir
+        // d'un cache statique généré pendant la GDC (lun–mer : false, jeu–dim : true).
+        const { warResetOffsetMs: _compareResetMs } =
+          await import("../../backend/services/dateUtils.js");
+        const _cmpDow = new Date(
+          Date.now() - _compareResetMs(resolved.tag),
+        ).getUTCDay();
+        const isWarPeriod =
+          (_cmpDow === 0 || _cmpDow >= 4) && data.isWarPeriod === true;
 
         // Trier par projection si GDC active, sinon par lastWarFame décroissant
         const sorted = [...raceGroup].sort((a, b) => {
