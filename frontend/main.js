@@ -2821,7 +2821,12 @@ function renderClanOverview(data) {
   }
 
   // Colonne "This War" visible uniquement en période de guerre (jeu–dim)
-  isWarActive = !isLite && !!data.isWarPeriod; // pas de colonne This War en mode lite
+  // Garde calendaire : même si le cache statique dit isWarPeriod=true (généré pendant la GDC),
+  // on refuse d'activer le mode GDC hors jeu–dim selon l'heure de reset du clan.
+  const _warResetMs = (data.clan?.warResetUtcMinutes ?? 580) * 60 * 1000;
+  const _warDow = new Date(Date.now() - _warResetMs).getUTCDay();
+  const _calendarIsWar = _warDow === 0 || _warDow >= 4;
+  isWarActive = !isLite && !!data.isWarPeriod && _calendarIsWar; // pas de colonne This War en mode lite
   const weekId =
     data.prevWeekId ||
     data.clanWarSummary?.weekId ||

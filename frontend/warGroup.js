@@ -45,7 +45,12 @@ export function renderRaceGroupCard(data, t, timerHelper) {
 
   const raceGroup = data.raceGroup;
   const ownTag = (data.clan?.tag ?? "").replace("#", "").toUpperCase();
-  const isWarPeriod = data.isWarPeriod === true;
+  // Garde calendaire : jeu–dim seulement (0=dim, 4=jeu, 5=ven, 6=sam)
+  // Primauté sur le cache statique qui peut contenir isWarPeriod=true depuis le week-end.
+  const _resetMs = (data.clan?.warResetUtcMinutes ?? 580) * 60 * 1000;
+  const _dow = new Date(Date.now() - _resetMs).getUTCDay();
+  const _calendarIsWar = _dow === 0 || _dow >= 4;
+  const isWarPeriod = _calendarIsWar && data.isWarPeriod === true;
   const isColosseum = data.isColosseum === true;
 
   // Masquer la card si pas de données
