@@ -932,7 +932,10 @@ export default async function handler(req, res) {
           ? warHistory.totalFame
           : 0;
         const totalDecks = Array.isArray(warHistory?.weeks)
-          ? warHistory.weeks.reduce((sum, w) => sum + (Number(w.decksUsed) || 0), 0)
+          ? warHistory.weeks.reduce(
+              (sum, w) => sum + (Number(w.decksUsed) || 0),
+              0,
+            )
           : 0;
         const pointsPerDeck = totalDecks
           ? Number((totalFame / totalDecks).toFixed(2))
@@ -2117,14 +2120,21 @@ export default async function handler(req, res) {
 
         const participants = race?.clan?.participants ?? [];
 
+        const { warResetOffsetMs } =
+          await import("../../backend/services/dateUtils.js");
+        const resetUtcMs = warResetOffsetMs(resolved.tag);
+        // Garde calendaire : hors jeu–dim (après reset lundi), jamais en mode GDC
+        // même si l'API retourne encore periodType='warDay' transitoirement.
+        // periodIndex n'est PAS utilisé : il est 0–3 aussi bien en entraînement
+        // qu'en GDC et provoquerait de faux positifs.
+        const _gdcDow = new Date(Date.now() - resetUtcMs).getUTCDay();
+        const isCalendarWarDay = _gdcDow === 0 || _gdcDow >= 4;
         const isWarDay =
-          race?.periodType === "warDay" ||
-          race?.state === "warDay" ||
-          race?.state === "overtime" ||
-          race?.state === "full" ||
-          (typeof race?.periodIndex === "number" &&
-            race.periodIndex >= 0 &&
-            race.periodIndex <= 3);
+          isCalendarWarDay &&
+          (race?.periodType === "warDay" ||
+            race?.state === "warDay" ||
+            race?.state === "overtime" ||
+            race?.state === "full");
 
         // Hors journée de GDC : afficher un message explicite et ne rien calculer
         if (!isWarDay) {
@@ -2202,9 +2212,6 @@ export default async function handler(req, res) {
         );
         const parisTime = `${String(p.getHours()).padStart(2, "0")}h${String(p.getMinutes()).padStart(2, "0")}`;
 
-        const { warResetOffsetMs } =
-          await import("../../backend/services/dateUtils.js");
-        const resetUtcMs = warResetOffsetMs(resolved.tag);
         const msOfDayUtc =
           now.getUTCHours() * 3600000 + now.getUTCMinutes() * 60000;
         if (msOfDayUtc < resetUtcMs) p.setDate(p.getDate() - 1);
@@ -2441,10 +2448,10 @@ export default async function handler(req, res) {
         const FAMILY_TAGS = new Set(["#Y8JUPC9C", "#LRQP20V9", "#QU9UQJRL"]);
         const isColosseum = data.isColosseum === true;
 
-        const isWarPeriod =
-          data.isWarPeriod === true ||
-          data.warCurrentWeekId != null ||
-          raceGroup.some((c) => c.projectedFame != null);
+        // isWarPeriod est déjà filtré par la garde calendaire côté backend.
+        // Les conditions supplémentaires (warCurrentWeekId, projectedFame) pourraient
+        // rester non-nulles depuis le cache et contourner la garde.
+        const isWarPeriod = data.isWarPeriod === true;
 
         // Trier par projection si GDC active, sinon par lastWarFame décroissant
         const sorted = [...raceGroup].sort((a, b) => {
@@ -2508,9 +2515,10 @@ export default async function handler(req, res) {
               shouldShowClinched && !clan.isClinchedWin
                 ? "\n<:projection:1499275709078700073> Victoire mathématiquement assurée"
                 : "";
-            const currentPts = isColosseum && clan.currentFame != null
-              ? `<:trophy2:1493677804733337621> Points actuels : **${fmt(clan.currentFame)}**`
-              : "";
+            const currentPts =
+              isColosseum && clan.currentFame != null
+                ? `<:trophy2:1493677804733337621> Points actuels : **${fmt(clan.currentFame)}**`
+                : "";
             const line2a = [decks, eff].filter(Boolean).join(" · ");
             const line2b = [currentPts, proj].filter(Boolean).join(" · ");
             line2 = line2b ? `${line2a}\n${line2b}` : line2a;
