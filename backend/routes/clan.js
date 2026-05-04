@@ -192,10 +192,16 @@ router.get("/:tag/lite", async (req, res) => {
             }));
         }
 
+        // Garde calendaire : hors jeu–dim, l'API peut encore dire 'warDay'
+        // juste après le reset du lundi — on refuse d'entrer en mode GDC.
+        const _liteDow = new Date(
+          Date.now() - warResetOffsetMs(clanTag),
+        ).getUTCDay();
         const isWarPeriod =
-          currentRace?.periodType === "warDay" ||
-          currentRace?.state === "warDay" ||
-          currentRace?.state === "overtime";
+          (_liteDow === 0 || _liteDow >= 4) &&
+          (currentRace?.periodType === "warDay" ||
+            currentRace?.state === "warDay" ||
+            currentRace?.state === "overtime");
 
         return {
           clan: {
@@ -2354,7 +2360,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     isWarPeriod:
       clanWarSummary != null ||
       analyzedMembers.some((m) => m.warDays !== null) ||
-      isCurrentRaceWarDay,
+      // La garde calendaire prime sur periodType : l'API peut encore renvoyer
+      // 'warDay' juste après le reset du lundi — on refuse d'entrer en mode GDC
+      // hors jeu–dim selon l'heure de reset du clan.
+      (isCurrentRaceWarDay && isWarPeriodCalendar),
     isColosseum: currentRace?.periodType === "colosseum",
     topPlayers, // added by computeTopPlayers
     uncomplete, // new list of incomplete deck players
@@ -2448,12 +2457,15 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           );
           const ownPrevWarFame = sumParticipantsFame(ownPrevStanding);
 
+          // Garde calendaire identique à la route principale : hors jeu–dim,
+          // on ne passe jamais en mode warDay même si l'API dit encore 'warDay'.
           const isWarPeriod =
-            currentRace?.periodType === "warDay" ||
-            currentRace?.periodType === "colosseum" ||
-            currentRace?.state === "warDay" ||
-            currentRace?.state === "overtime" ||
-            currentRace?.state === "full";
+            isWarPeriodCalendar &&
+            (currentRace?.periodType === "warDay" ||
+              currentRace?.periodType === "colosseum" ||
+              currentRace?.state === "warDay" ||
+              currentRace?.state === "overtime" ||
+              currentRace?.state === "full");
           const isColosseum = currentRace?.periodType === "colosseum";
 
           // Step 1: Pré-calcul des projections pour tous les clans du groupe
