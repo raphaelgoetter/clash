@@ -619,12 +619,12 @@ export function computeWarReliabilityFallback(
               max: 3,
               detail:
                 lastSeenDays < 1
-                  ? "Active in the last 24 h"
+                  ? "Connecté au jeu dans les dernières 24 h"
                   : lastSeenDays < 3
-                    ? `Active ${(Math.round(lastSeenDays * 10) / 10).toFixed(1)} day(s) ago`
+                    ? `Actif il y a ${(Math.round(lastSeenDays * 10) / 10).toFixed(1)} jour(s)`
                     : lastSeenDays < 7
-                      ? `Active ${Math.round(lastSeenDays)} days ago`
-                      : `Last seen ${Math.round(lastSeenDays)} days ago ⚠️`,
+                      ? `Actif il y a ${Math.round(lastSeenDays)} jour(s)`
+                      : `Dernière connexion il y a ${Math.round(lastSeenDays)} jour(s) ⚠️`,
             },
           ]
         : []),
