@@ -53,6 +53,7 @@ let allMembers = []; // cache for table filtering / sorting
 let sortState = { col: "reliability", dir: "asc" };
 let isWarActive = false; // true jeu–dim : colonne "This War" visible dans le tableau clan
 let currentClanIsLite = false; // true quand le clan affiché est hors-famille (endpoint /lite)
+let currentClanWeekId = null;
 
 // Name of the last-result returned by API (used when saving favorite)
 let lastResultName = null;
@@ -667,6 +668,7 @@ async function handleSearch(force = false) {
         const { data, fromCache } = await apiFetch(
           `/api/clan/${encodeURIComponent(tag)}/analysis?${queryParams.toString()}`,
         );
+        data.fromCache = fromCache;
         lastResultName = data.clan?.name || null;
 
         // Conserver les valeurs historiques (p.ex. Thu total) quand le live renvoie 0 :
@@ -776,9 +778,10 @@ async function refreshLiveClanOverview(tag, staticData = null) {
       },
       true,
     );
-    const { data } = await apiFetch(
+    const { data, fromCache } = await apiFetch(
       `/api/clan/${encodeURIComponent(tag)}/analysis?${queryParams.toString()}`,
     );
+    data.fromCache = fromCache;
     if (data) {
       const effectiveData = {
         ...data,
@@ -1118,6 +1121,30 @@ function renderMembersCacheNote(data) {
     refreshLink.addEventListener("click", (event) => {
       event.preventDefault();
       refreshMembersLive();
+    });
+  }
+}
+
+function renderCardCacheNote(noteId, sourceMeta = {}, refreshHandler) {
+  const noteEl = document.getElementById(noteId);
+  if (!noteEl) return;
+
+  const text = formatCacheMetaText(sourceMeta);
+  const refreshHtml =
+    sourceMeta.source === "cached"
+      ? ` <a href="#" class="card-cache-refresh">${t("refresh") || "refresh"}</a>`
+      : "";
+
+  noteEl.innerHTML = text ? `${text}${refreshHtml}` : "";
+  noteEl.classList.toggle("hidden", !noteEl.textContent);
+
+  const refreshLink = noteEl.querySelector(".card-cache-refresh");
+  if (refreshLink) {
+    refreshLink.addEventListener("click", (event) => {
+      event.preventDefault();
+      if (typeof refreshHandler === "function") {
+        refreshHandler();
+      }
     });
   }
 }
@@ -2676,13 +2703,19 @@ function translateWarDayLabel(label) {
   }
 }
 
-function renderClanWarCard(clanWarSummary, warResetUtcMinutes = null) {
+function renderClanWarCard(
+  clanWarSummary,
+  warResetUtcMinutes = null,
+  sourceMeta = {},
+) {
   const card = document.getElementById("card-clan-war");
   if (!clanWarSummary || clanWarSummary.ended) {
     card.classList.add("hidden");
     return;
   }
   card.classList.remove("hidden");
+
+  renderCardCacheNote("clan-war-cache-note", sourceMeta, refreshClanWarLive);
 
   const {
     totalDecksUsed,
@@ -2834,6 +2867,7 @@ function renderClanOverview(data) {
     (data.lastWarSummary?.weekId &&
       data.lastWarSummary?.weekId.toUpperCase()) ||
     null;
+  currentClanWeekId = weekId;
 
   if (isLite) {
     // Mode lite : afficher top-fame brut de la dernière guerre, masquer uncomplete
@@ -2971,7 +3005,11 @@ function renderClanOverview(data) {
     if (effectiveClanWarSummary)
       effectiveClanWarSummary.warResetUtcMinutes =
         data.clan?.warResetUtcMinutes;
-    renderClanWarCard(effectiveClanWarSummary, data.clan?.warResetUtcMinutes);
+    renderClanWarCard(effectiveClanWarSummary, data.clan?.warResetUtcMinutes, {
+      source: data.fromCache ? "cached" : "live",
+      updatedAt: data.analysisCacheUpdatedAt || new Date().toISOString(),
+      snapshotTakenAt: data.snapshotTakenAt ?? data.warSnapshotTakenAt ?? null,
+    });
 
     // card title (chart label)
   }
@@ -3118,6 +3156,7 @@ async function loadClanSection(tag, section, weekId, force = false) {
     const result = await apiFetch(
       `/api/clan/${encodeURIComponent(tag)}/analysis?${params.toString()}`,
     );
+    result.data.fromCache = result.fromCache;
     data = result.data;
   }
 
@@ -3132,6 +3171,16 @@ async function loadClanSection(tag, section, weekId, force = false) {
   if (section === "raceGroup") {
     loadedClanSections.raceGroup = true;
     renderRaceGroupCard(data, t, getRemainingTimeHtml);
+    renderCardCacheNote(
+      "war-group-cache-note",
+      {
+        source: data.fromCache ? "cached" : "live",
+        updatedAt: data.analysisCacheUpdatedAt || new Date().toISOString(),
+        snapshotTakenAt:
+          data.snapshotTakenAt ?? data.warSnapshotTakenAt ?? null,
+      },
+      refreshWarGroupLive,
+    );
   }
   if (section === "members") {
     loadedClanSections.members = true;
@@ -3160,6 +3209,30 @@ async function refreshMembersLive() {
   } catch (err) {
     membersTbody.innerHTML = `<tr class="text-muted"><td colspan="${cols}" style="padding:15px;text-align:center;">${t("errorLoadingSection") || "Failed to load members."}</td></tr>`;
   }
+}
+
+async function refreshWarGroupLive() {
+  if (!activeClanTag) return;
+  const groupCard = document.getElementById("card-war-group");
+  const groupDetails = groupCard?.querySelector("details");
+  const spinner = document.getElementById("war-group-spinner");
+  if (groupDetails && !groupDetails.open) groupDetails.open = true;
+  if (spinner) spinner.classList.remove("hidden");
+  try {
+    await loadClanSection(activeClanTag, "raceGroup", currentClanWeekId, true);
+  } catch (err) {
+    const groupList = document.getElementById("war-group-list");
+    if (groupList) {
+      groupList.innerHTML = `<tr class="text-muted"><td colspan="6" style="padding:15px;text-align:center;">${t("errorLoadingSection") || "Failed to load group data."}</td></tr>`;
+    }
+  } finally {
+    if (spinner) spinner.classList.add("hidden");
+  }
+}
+
+async function refreshClanWarLive() {
+  if (!activeClanTag) return;
+  await refreshLiveClanOverview(activeClanTag);
 }
 
 // Affiche la liste des membres — appelé uniquement depuis les données live.
