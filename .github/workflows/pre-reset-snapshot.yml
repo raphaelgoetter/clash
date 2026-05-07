@@ -1,7 +1,7 @@
 name: Pre-reset snapshots
 
 # Prend une photo instantanée des données GDC 2 minutes avant le reset journalier
-# de chaque clan (QU9UQJRL 09:49, Y8JUPC9C 09:52, LRQP20V9 09:54 UTC).
+# de chaque clan. Les heures de reset sont lues depuis CLAN_RESET_TIMES (dateUtils.js).
 # Le script dort précisément jusqu'à T−2 min puis appelle l'API en < 1 seconde.
 
 permissions:
@@ -13,7 +13,7 @@ concurrency:
 
 on:
   schedule:
-    # 08:45 UTC, jeu–dim — 64 minutes de marge avant le premier reset (09:49)
+    # 08:45 UTC, jeu–dim
     - cron: "45 8 * * 4,5,6,0"
   workflow_dispatch:
 
