@@ -56,7 +56,12 @@ let currentClanIsLite = false; // true quand le clan affiché est hors-famille (
 let currentClanWeekId = null;
 const cardCacheNoteMetaById = new Map();
 const CARD_CACHE_NOTE_REFRESH_INTERVAL_MS = 120000;
+let activeCacheNoteMeta = null;
 setInterval(() => {
+  if (!activeCacheNoteMeta) return;
+  const { fromCache, snapshotDate, sourceMeta, refreshing } =
+    activeCacheNoteMeta;
+  showCacheNote(fromCache, snapshotDate, sourceMeta, refreshing);
   for (const [noteId, noteMeta] of cardCacheNoteMetaById.entries()) {
     renderCardCacheNoteElement(
       noteId,
@@ -1005,6 +1010,7 @@ function showCacheNote(
   sourceMeta = null,
   refreshing = false,
 ) {
+  activeCacheNoteMeta = { fromCache, snapshotDate, sourceMeta, refreshing };
   cacheNote.classList.remove("hidden");
 
   // decide human‑friendly snapshot text
@@ -1012,27 +1018,25 @@ function showCacheNote(
   if (!snapshotDate) {
     snapshotText = t("snapshotNone");
   } else {
+    const d = new Date(snapshotDate);
     const today = new Date().toISOString().slice(0, 10);
     const yesterday = new Date(Date.now() - 86400000)
       .toISOString()
       .slice(0, 10);
-    const d = new Date(snapshotDate);
-    const dayName = Number.isNaN(d.getTime())
-      ? null
-      : d.toLocaleDateString("en-US", { weekday: "long" });
-
-    if (snapshotDate === today) {
-      snapshotText = `war day : ${t("snapshotToday")} ${dayName ? `(${dayName})` : ""}`;
-    } else if (snapshotDate === yesterday) {
-      snapshotText = `war day : ${t("snapshotYesterday")} ${dayName ? `(${dayName})` : ""}`;
-    } else if (!Number.isNaN(d.getTime())) {
-      const dateString = d.toLocaleDateString(undefined, {
-        month: "long",
-        day: "numeric",
-      });
-      snapshotText = `war day : ${dateString} ${dayName ? `(${dayName})` : ""}`;
-    } else {
+    if (Number.isNaN(d.getTime())) {
       snapshotText = `war day : ${snapshotDate}`;
+    } else {
+      const snapshotDay = d.toISOString().slice(0, 10);
+      const dayName = d.toLocaleDateString("en-US", { weekday: "long" });
+      if (snapshotDay === today || snapshotDay === yesterday) {
+        snapshotText = "";
+      } else {
+        const dateString = d.toLocaleDateString(undefined, {
+          month: "long",
+          day: "numeric",
+        });
+        snapshotText = `war day : ${dateString} ${dayName ? `(${dayName})` : ""}`;
+      }
     }
   }
 
@@ -1045,7 +1049,7 @@ function showCacheNote(
         sourceMeta.warSnapshotTakenAt ||
         sourceMeta.analysisCacheUpdatedAt
       : null;
-  if (takenAt) {
+  if (takenAt && snapshotText) {
     const taken = new Date(takenAt);
     if (!Number.isNaN(taken.getTime())) {
       const time = taken.toISOString().slice(11, 16);
@@ -1079,10 +1083,10 @@ function showCacheNote(
     cacheNote.innerHTML = `${escHtml(baseText)}${refreshLink}`;
     const refreshBtn = cacheNote.querySelector(".cache-note-refresh-link");
     if (refreshBtn) {
-      refreshBtn.addEventListener("click", (event) => {
+      refreshBtn.onclick = (event) => {
         event.preventDefault();
         refreshCacheNoteLive();
-      });
+      };
     }
   }
 }
@@ -1109,12 +1113,14 @@ function renderMembersCacheNote(data) {
       data.warSnapshotTakenAt ||
       null,
   };
+  const refreshHandler =
+    sourceMeta.source === "cached" ? refreshMembersLive : null;
 
   cardCacheNoteMetaById.set("members-cache-note", {
     sourceMeta,
-    refreshHandler: null,
+    refreshHandler,
   });
-  renderCardCacheNoteElement("members-cache-note", sourceMeta, null);
+  renderCardCacheNoteElement("members-cache-note", sourceMeta, refreshHandler);
 }
 
 function renderCardCacheNote(noteId, sourceMeta = {}, refreshHandler) {
@@ -1166,8 +1172,9 @@ function formatSnapshotText(snapshotDate) {
   const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
   const d = new Date(snapshotDate);
   if (Number.isNaN(d.getTime())) return `${snapshotDate}`;
+  const snapshotDay = d.toISOString().slice(0, 10);
   const dayName = d.toLocaleDateString("en-US", { weekday: "long" });
-  if (snapshotDate === today || snapshotDate === yesterday) {
+  if (snapshotDay === today || snapshotDay === yesterday) {
     return "";
   }
   const dateString = d.toLocaleDateString(undefined, {
