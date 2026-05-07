@@ -2698,6 +2698,7 @@ function translateWarDayLabel(label) {
 function renderClanWarCard(
   clanWarSummary,
   warResetUtcMinutes = null,
+  decksYesterdayAtThisHour = null,
   sourceMeta = {},
 ) {
   const card = document.getElementById("card-clan-war");
@@ -2788,6 +2789,7 @@ function renderClanWarCard(
     `<div class="war-progress-meta">` +
     `${t("warProgressDayOf", { day: dayNum, total: 4 })}` +
     `</div>` +
+    `${daysFromThu > 0 && decksYesterdayAtThisHour != null ? `<div class="war-yesterday-hint">${t("warDecksYesterdayHour").replace("{{decks}}", decksYesterdayAtThisHour)}</div>` : ""}` +
     `<div class="war-progress-note">⚠ ${snapshotWarning}</div>` +
     `${snapshotDataInvalid ? `<div class="war-progress-warning">⚠ ${t("warSnapshotDataInvalid")}</div>` : ""}` +
     `<div class="war-day-chips">${chipsHtml}</div>` +
@@ -2997,11 +2999,17 @@ function renderClanOverview(data) {
     if (effectiveClanWarSummary)
       effectiveClanWarSummary.warResetUtcMinutes =
         data.clan?.warResetUtcMinutes;
-    renderClanWarCard(effectiveClanWarSummary, data.clan?.warResetUtcMinutes, {
-      source: data.fromCache ? "cached" : "live",
-      updatedAt: data.analysisCacheUpdatedAt || new Date().toISOString(),
-      snapshotTakenAt: data.snapshotTakenAt ?? data.warSnapshotTakenAt ?? null,
-    });
+    renderClanWarCard(
+      effectiveClanWarSummary,
+      data.clan?.warResetUtcMinutes,
+      data.decksYesterdayAtThisHour ?? null,
+      {
+        source: data.fromCache ? "cached" : "live",
+        updatedAt: data.analysisCacheUpdatedAt || new Date().toISOString(),
+        snapshotTakenAt:
+          data.snapshotTakenAt ?? data.warSnapshotTakenAt ?? null,
+      },
+    );
 
     // card title (chart label)
   }
