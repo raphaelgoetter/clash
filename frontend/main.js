@@ -1110,30 +1110,11 @@ function renderMembersCacheNote(data) {
       null,
   };
 
-  const snapshotText = formatSnapshotText(sourceMeta.snapshotTakenAt);
-  const sourceLabel = formatSourceLabel(sourceMeta.source);
-  const ageText = formatAgeText(sourceMeta.updatedAt);
-  const parts = [];
-  if (snapshotText && snapshotText !== "no snapshot") parts.push(snapshotText);
-  if (sourceLabel) parts.push(`source: ${sourceLabel}`);
-  if (ageText) parts.push(ageText);
-
-  const text = parts.join(" · ");
-  const refreshHtml =
-    sourceMeta.source === "cached"
-      ? ` <a href="#" class="members-cache-refresh">refresh</a>`
-      : "";
-
-  noteEl.innerHTML = text ? `${text}${refreshHtml}` : "";
-  noteEl.classList.toggle("hidden", !noteEl.textContent);
-
-  const refreshLink = noteEl.querySelector(".members-cache-refresh");
-  if (refreshLink) {
-    refreshLink.addEventListener("click", (event) => {
-      event.preventDefault();
-      refreshMembersLive();
-    });
-  }
+  cardCacheNoteMetaById.set("members-cache-note", {
+    sourceMeta,
+    refreshHandler: null,
+  });
+  renderCardCacheNoteElement("members-cache-note", sourceMeta, null);
 }
 
 function renderCardCacheNote(noteId, sourceMeta = {}, refreshHandler) {
@@ -1186,11 +1167,8 @@ function formatSnapshotText(snapshotDate) {
   const d = new Date(snapshotDate);
   if (Number.isNaN(d.getTime())) return `${snapshotDate}`;
   const dayName = d.toLocaleDateString("en-US", { weekday: "long" });
-  if (snapshotDate === today) {
-    return `snapshot: war day today${dayName ? ` (${dayName})` : ""}`;
-  }
-  if (snapshotDate === yesterday) {
-    return `snapshot: war day yesterday${dayName ? ` (${dayName})` : ""}`;
+  if (snapshotDate === today || snapshotDate === yesterday) {
+    return "";
   }
   const dateString = d.toLocaleDateString(undefined, {
     month: "long",
