@@ -2856,9 +2856,7 @@ export default async function handler(req, res) {
             const proj = clan.isClinchedWin
               ? "<:projection:1499275709078700073> ✅ Victoire mathématiquement assurée"
               : `<:projection:1499275709078700073> Projection: **${clan.projectedFame != null ? fmt(Math.round(clan.projectedFame / 100) * 100) : "?"}**`;
-            const shouldShowClinched =
-              clan.isClinchedWin ||
-              (isOwn && clan.projectedFame === 0 && clan.decksToday > 0);
+            const shouldShowClinched = clan.isClinchedWin;
             const clinched =
               shouldShowClinched && !clan.isClinchedWin
                 ? "\n<:projection:1499275709078700073> Victoire mathématiquement assurée"

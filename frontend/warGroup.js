@@ -157,9 +157,7 @@ export function renderRaceGroupCard(data, t, timerHelper) {
 
       let projectionHtml = "";
       if (isWarPeriod) {
-        const isClinched =
-          clan.isClinchedWin ||
-          (isOwn && clan.projectedFame === 0 && clan.decksToday > 0);
+        const isClinched = clan.isClinchedWin;
         const projVal = isClinched
           ? t("warGroupClinchedLabel")
           : clan.projectedFame != null
