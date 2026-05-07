@@ -163,6 +163,24 @@ const commands = [
     ],
   },
   {
+    name: "late-ping",
+    description:
+      "Liste les joueurs en retard dans leurs combats GDC avant le reset, avec ping des membres lies.",
+    options: [
+      {
+        type: 3, // STRING
+        name: "clan",
+        description: "1=La Resistance, 2=Les Resistants, 3=Les Revoltes",
+        required: true,
+        choices: [
+          { name: "La Resistance", value: "1" },
+          { name: "Les Resistants", value: "2" },
+          { name: "Les Revoltes", value: "3" },
+        ],
+      },
+    ],
+  },
+  {
     name: "compare",
     description: "Affiche les clans du groupe GDC.",
     options: [

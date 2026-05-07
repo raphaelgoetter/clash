@@ -500,6 +500,12 @@ export default async function handler(req, res) {
     .split(",")
     .map((id) => id.trim())
     .filter(Boolean);
+  const authorizedPingIds = new Set(
+    (process.env.AUTHORIZED_PING_IDS || "")
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean),
+  );
 
   if (
     authorizedGuilds.length > 0 &&
@@ -672,6 +678,9 @@ export default async function handler(req, res) {
             "**Late**\n" +
             "Commande : `/late clan:N`\n" +
             "Usage : liste les retardataires GDC actuels (à faire avant reset)\n\n" +
+            "**Late Ping**\n" +
+            "Commande : `/late-ping clan:N`\n" +
+            "Usage : liste les retardataires GDC actuels avec ping Discord des membres liés (réservé au staff)\n\n" +
             "**Compare**\n" +
             "Commande : `/compare clan:N`\n" +
             "Usage : compare les 5 clans du groupe GDC\n\n" +
@@ -2404,6 +2413,340 @@ export default async function handler(req, res) {
         });
       } catch (err) {
         console.error("[/late] erreur:", err.message);
+        await sendToWebhook({ content: `Erreur : ${err.message}`, flags: 64 });
+      }
+    });
+    return;
+  }
+
+  // Commande /late-ping
+  if (body.type === 2 && body.data?.name === "late-ping") {
+    const discordUserId = body.member?.user?.id ?? body.user?.id;
+    if (!discordUserId || !authorizedPingIds.has(discordUserId)) {
+      return res.status(200).json({
+        type: 4,
+        data: {
+          content: "🚫 Vous n'etes pas autorise a utiliser cette commande.",
+          flags: 64,
+        },
+      });
+    }
+
+    const clanOpt = body.data.options?.find((o) => o.name === "clan");
+    const clanVal = (clanOpt?.value || "1").toString().trim();
+    const CLAN_MAP = {
+      1: { name: "La Resistance", tag: "Y8JUPC9C" },
+      2: { name: "Les Resistants", tag: "LRQP20V9" },
+      3: { name: "Les Revoltes", tag: "QU9UQJRL" },
+    };
+    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
+
+    res.status(200).json({ type: 5 });
+    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+
+    runBackground(async () => {
+      const withTimeout = (promise, ms, label) =>
+        Promise.race([
+          promise,
+          new Promise((_, reject) =>
+            setTimeout(
+              () => reject(new Error(`Timeout ${label} (${ms}ms)`)),
+              ms,
+            ),
+          ),
+        ]);
+
+      const sendToWebhook = async (payload) => {
+        const r = await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!r.ok) {
+          const txt = await r.text().catch(() => "");
+          console.error(
+            `[/late-ping] webhook Discord HTTP ${r.status}:`,
+            txt.slice(0, 300),
+          );
+        }
+      };
+
+      try {
+        console.log("[/late-ping] start, clan:", resolved.tag);
+        const { fetchCurrentRace, fetchClanMembers } =
+          await import("../../backend/services/clashApi.js");
+        console.log("[/late-ping] import OK");
+
+        const [race, currentMembers, { links }] = await withTimeout(
+          Promise.all([
+            fetchCurrentRace(`#${resolved.tag}`),
+            fetchClanMembers(`#${resolved.tag}`),
+            readDiscordLinks(),
+          ]),
+          20000,
+          "fetch initial",
+        );
+
+        const participants = race?.clan?.participants ?? [];
+
+        const { warResetOffsetMs } =
+          await import("../../backend/services/dateUtils.js");
+        const resetUtcMs = warResetOffsetMs(resolved.tag);
+        const _gdcDow = new Date(Date.now() - resetUtcMs).getUTCDay();
+        const isCalendarWarDay = _gdcDow === 0 || _gdcDow >= 4;
+        const isWarDay =
+          isCalendarWarDay &&
+          (race?.periodType === "warDay" ||
+            race?.state === "warDay" ||
+            race?.state === "overtime" ||
+            race?.state === "full");
+
+        if (!isWarDay) {
+          await sendToWebhook({
+            content: `<:cards:1493711279121104926> **${resolved.name}** — Aucune journée de GDC en cours (période d'entraînement).`,
+          });
+          return;
+        }
+
+        const analysisMap = new Map();
+        try {
+          const abortCtrl = new AbortController();
+          const abortTimer = setTimeout(() => abortCtrl.abort(), 10000);
+          const apiResp = await fetch(
+            `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis`,
+            {
+              headers: { Accept: "application/json" },
+              signal: abortCtrl.signal,
+            },
+          );
+          clearTimeout(abortTimer);
+          if (apiResp.ok) {
+            const analysis = await apiResp.json();
+            (analysis.members || []).forEach((m) => {
+              if (m?.tag) analysisMap.set((m.tag || "").toUpperCase(), m);
+            });
+          }
+        } catch (err) {
+          // ignore, annotations sont facultatives
+        }
+
+        const currentMemberTags = new Set(currentMembers.map((m) => m.tag));
+        const currentMemberByTag = new Map(
+          currentMembers.map((m) => [(m.tag || "").toUpperCase(), m]),
+        );
+
+        const late = participants
+          .filter(
+            (p) => currentMemberTags.has(p.tag) && (p.decksUsedToday ?? 0) < 4,
+          )
+          .map((p) => ({ ...p, missing: 4 - (p.decksUsedToday ?? 0) }))
+          .sort(
+            (a, b) =>
+              b.missing - a.missing || a.name.localeCompare(b.name, "fr"),
+          );
+
+        const guildId = process.env.DISCORD_GUILD_ID;
+        const botToken = process.env.DISCORD_TOKEN;
+        let guildMembers = [];
+        try {
+          const guildRes = await withTimeout(
+            fetch(
+              `https://discord.com/api/v10/guilds/${guildId}/members?limit=1000`,
+              { headers: { Authorization: `Bot ${botToken}` } },
+            ),
+            10000,
+            "guild members",
+          );
+          guildMembers = guildRes.ok ? await guildRes.json() : [];
+        } catch {
+          // pings Discord optionnels — on continue sans eux
+        }
+        const memberById = new Map(guildMembers.map((m) => [m.user?.id, m]));
+
+        const now = new Date();
+        const p = new Date(
+          now.toLocaleString("en-US", { timeZone: "Europe/Paris" }),
+        );
+        const parisTime = `${String(p.getHours()).padStart(2, "0")}h${String(p.getMinutes()).padStart(2, "0")}`;
+
+        const msOfDayUtc =
+          now.getUTCHours() * 3600000 + now.getUTCMinutes() * 60000;
+        if (msOfDayUtc < resetUtcMs) p.setDate(p.getDate() - 1);
+        const WAR_DAY_LABELS = {
+          4: "Jeudi (J1)",
+          5: "Vendredi (J2)",
+          6: "Samedi (J3)",
+          0: "Dimanche (J4)",
+        };
+        const warDayLabel = WAR_DAY_LABELS[p.getDay()] ?? "Jour de GDC";
+
+        const currentParticipants = participants.filter((p) =>
+          currentMemberTags.has(p.tag),
+        );
+        const totalPlayed = currentParticipants.reduce(
+          (sum, pl) => sum + (pl.decksUsedToday ?? 0),
+          0,
+        );
+
+        const isAfterReset = msOfDayUtc >= resetUtcMs;
+        const prevCumulByTag = new Map();
+        if (isWarDay && !isAfterReset) {
+          const pad2 = (n) => String(n).padStart(2, "0");
+          const realDayToday = `${p.getFullYear()}-${pad2(p.getMonth() + 1)}-${pad2(p.getDate())}`;
+          try {
+            const { readFile: _rf } = await import("fs/promises");
+            const { fileURLToPath: _ftu } = await import("url");
+            const { default: _path } = await import("path");
+            const __fileDir = _path.dirname(_ftu(import.meta.url));
+            const snapPath = _path.resolve(
+              __fileDir,
+              "../../data/snapshots",
+              `${resolved.tag}.json`,
+            );
+            const snapData = JSON.parse(await _rf(snapPath, "utf-8"));
+            if (Array.isArray(snapData)) {
+              const prevDay = snapData
+                .flatMap((w) => w.days ?? [])
+                .filter(
+                  (d) =>
+                    d.realDay &&
+                    d.realDay < realDayToday &&
+                    d._cumulFame &&
+                    Object.keys(d._cumulFame).length > 0,
+                )
+                .sort((a, b) => b.realDay.localeCompare(a.realDay))[0];
+              if (prevDay?._cumulFame) {
+                const realDayTodayMs = new Date(
+                  realDayToday + "T00:00:00Z",
+                ).getTime();
+                const prevDayExpected = new Date(realDayTodayMs - 86400000)
+                  .toISOString()
+                  .slice(0, 10);
+                if (prevDay.realDay === prevDayExpected) {
+                  for (const [tag, fame] of Object.entries(
+                    prevDay._cumulFame,
+                  )) {
+                    prevCumulByTag.set(tag, fame ?? 0);
+                  }
+                }
+              }
+            }
+          } catch (_) {
+            // snapshot indisponible — on affichera la fame hebdomadaire (dégradé acceptable)
+          }
+        }
+
+        const totalFame = currentParticipants.reduce((sum, pl) => {
+          const rawFame = pl.fame ?? 0;
+          const plTag = pl.tag.startsWith("#") ? pl.tag : `#${pl.tag}`;
+          const todayFame =
+            isWarDay && !isAfterReset
+              ? Math.max(0, rawFame - (prevCumulByTag.get(plTag) ?? 0))
+              : rawFame;
+          return sum + todayFame;
+        }, 0);
+
+        const totalMissing = late.reduce((sum, pl) => sum + pl.missing, 0);
+        const hideDetails = totalMissing > 100;
+
+        const boatAttackers = currentParticipants.filter(
+          (pl) => (pl.boatAttacks ?? 0) > 0,
+        );
+        const totalBoatAttacks = boatAttackers.reduce(
+          (sum, pl) => sum + (pl.boatAttacks ?? 0),
+          0,
+        );
+        const boatNames = boatAttackers
+          .map((pl) => {
+            const plTag = pl.tag.startsWith("#") ? pl.tag : `#${pl.tag}`;
+            const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(plTag)}`;
+            return `[${pl.name}](${playerUrl})`;
+          })
+          .join(", ");
+
+        const lateHeader =
+          late.length === 0
+            ? `Aucun joueur en retard à ${parisTime}`
+            : `- ${late.length} joueur${late.length > 1 ? "s" : ""} en retard à ${parisTime}`;
+        const descLines = [
+          lateHeader,
+          `- ${totalPlayed} deck${totalPlayed > 1 ? "s" : ""} joué${totalPlayed > 1 ? "s" : ""}`,
+        ];
+        if (late.length > 0) {
+          descLines.push(
+            `- ${totalMissing} deck${totalMissing > 1 ? "s" : ""} manquant${totalMissing > 1 ? "s" : ""}`,
+          );
+        }
+        if (totalBoatAttacks > 0) {
+          descLines.push(
+            `- ${totalBoatAttacks} attaque${totalBoatAttacks > 1 ? "s" : ""} bateau (cumul) (${boatNames})`,
+          );
+        }
+
+        const mentionIds = new Set();
+
+        if (hideDetails) {
+          descLines.push(
+            "",
+            "Pas de liste détaillée car il y a plus de 100 decks manquants",
+          );
+        } else {
+          for (const count of [4, 3, 2, 1]) {
+            const group = late.filter((pl) => pl.missing === count);
+            if (!group.length) continue;
+            descLines.push("");
+            descLines.push(`**Manque ${count} deck${count > 1 ? "s" : ""}**`);
+            for (const pl of group) {
+              const tag = pl.tag.startsWith("#") ? pl.tag : `#${pl.tag}`;
+              const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(tag)}`;
+              const memberInfo = currentMemberByTag.get(tag.toUpperCase());
+              const role = (memberInfo?.role || "member").toLowerCase();
+              const roleText = formatDiscordRole(role);
+              const discordId = links[tag];
+              const guildMember = discordId ? memberById.get(discordId) : null;
+              const discordPart = guildMember ? ` <@${discordId}>` : "";
+              if (guildMember && discordId) {
+                mentionIds.add(discordId);
+              }
+              const memberAnalysis = analysisMap.get(tag.toUpperCase()) || {};
+              const newTag = memberAnalysis.isNew ? " 🆕" : "";
+              descLines.push(
+                `• [${pl.name}](${playerUrl})${newTag} ${roleText}${discordPart}`,
+              );
+            }
+          }
+        }
+
+        let description = descLines.join("\n");
+        if (description.length > 4000) {
+          console.warn(
+            "[/late-ping] description trop longue:",
+            description.length,
+            "chars, troncature",
+          );
+          description = description.slice(0, 3950) + "\n…*(liste tronquée)*";
+        }
+
+        const embed = {
+          title: `<:boohoo:1493849412387209357> ${resolved.name}, retardataires de ${warDayLabel}`,
+          description,
+          color: 0xe67e22,
+        };
+
+        console.log(
+          "[/late-ping] envoi embed, late:",
+          late.length,
+          "descLen:",
+          description.length,
+          "mentions:",
+          mentionIds.size,
+        );
+        await sendToWebhook({
+          embeds: [embed],
+          allowed_mentions: { parse: [], users: Array.from(mentionIds) },
+        });
+      } catch (err) {
+        console.error("[/late-ping] erreur:", err.message);
         await sendToWebhook({ content: `Erreur : ${err.message}`, flags: 64 });
       }
     });

@@ -39,14 +39,20 @@ Liste des commandes :
 2. **`/stats`** : affiche les statistiques GDC détaillées d'un membre de la famille. Options : `tag:#TAG`
 3. **`/trust-clan`** : liste tous les membres peu fiables d'un clan de la famille. Options : `clan:N`
 4. **`/late`** : liste les joueurs en retard sur leurs decks de la journée (avant le reset). Options : `clan:N`
-5. **`/chelem`** : liste les joueurs ayant fait 16/16 decks toutes les semaines d'une saison (par défaut : la dernière saison terminée). Options : `clan:N [season:X]`
-6. **`/promote`** : liste les joueurs ayant atteint ≥ 2600 pts la semaine précédente. Options : `clan:N`
-7. **`/top-players`** : liste les meilleurs joueurs de la famille pour la période précédente. Options : `number:[3|5|10] period:[week|season]`
-8. **`/demote`** : liste les joueurs n’ayant pas fait tous leurs combats GDC la semaine précédente. Options : `clan:N`
-9. **`/discord-link`** : lie son compte Clash à son Discord. Options : `tag:#TAG` (tag2 et tag3 optionnels pour comptes multiples)
-10. **`/discord-check`** : vérifie quels membres d'un clan sont présents sur le serveur Discord. Options : `clan:N`
+5. **`/late-ping`** : variante de `/late` qui ping les membres liés à Discord quand leur ID est connu. Commande réservée aux membres du staff définis dans `AUTHORIZED_PING_IDS`. Options : `clan:N`
+6. **`/chelem`** : liste les joueurs ayant fait 16/16 decks toutes les semaines d'une saison (par défaut : la dernière saison terminée). Options : `clan:N [season:X]`
+7. **`/promote`** : liste les joueurs ayant atteint ≥ 2600 pts la semaine précédente. Options : `clan:N`
+8. **`/top-players`** : liste les meilleurs joueurs de la famille pour la période précédente. Options : `number:[3|5|10] period:[week|season]`
+9. **`/demote`** : liste les joueurs n’ayant pas fait tous leurs combats GDC la semaine précédente. Options : `clan:N`
+10. **`/discord-link`** : lie son compte Clash à son Discord. Options : `tag:#TAG` (tag2 et tag3 optionnels pour comptes multiples)
+11. **`/discord-check`** : vérifie quels membres d'un clan sont présents sur le serveur Discord. Options : `clan:N`
 
 > Remarque : l'installation de ce bot n'est réalisable que par displaynone.
+
+Configuration Discord utile :
+
+- `AUTHORIZED_GUILD_IDS` limite les serveurs pouvant utiliser le bot.
+- `AUTHORIZED_PING_IDS` limite l'usage de `/late-ping` aux membres du staff autorisés.
 
 ## 📮 Notifications Discord automatiques
 
