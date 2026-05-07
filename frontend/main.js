@@ -2280,15 +2280,6 @@ function renderCurrentWarCard(
       : '<span class="war-data-source fallback">Battle log (approx.)</span>';
 
   const sourceHint = t("sourceHint");
-  // Unique message : use the single snapshot note translation key.
-  let snapshotWarning = t("clanWarSnapshotNote");
-  if (snapshotWarning === "clanWarSnapshotNote") {
-    snapshotWarning =
-      currentLang === "fr"
-        ? "Les snapshots sont enregistrés chaque heure ; les decks joués à la dernière minute peuvent être comptés sur le jour précédent."
-        : "Snapshots are taken every hour; decks played at the last minute may be assigned to the previous day.";
-  }
-
   const snapshotDataInvalid = days.some((d) => d.isPast && d.totalCount === 0);
 
   const chipsHtml = days
@@ -2339,9 +2330,7 @@ function renderCurrentWarCard(
     .join("");
 
   const sourceNoteHtml = showDetails ? sourceNote : "";
-  const progressNoteHtml = showDetails
-    ? `<div class="war-progress-note">⚠ ${snapshotWarning}</div>`
-    : "";
+  const progressNoteHtml = "";
   const sourceHintHtml = showDetails
     ? `<div class="war-progress-source">${sourceHint}</div>`
     : "";
@@ -2773,14 +2762,6 @@ function renderClanWarCard(
     })
     .join("");
 
-  let snapshotWarning = t("clanWarSnapshotNote");
-  if (snapshotWarning === "clanWarSnapshotNote") {
-    snapshotWarning =
-      currentLang === "fr"
-        ? "Les snapshots sont enregistrés chaque heure ; les decks joués à la dernière minute peuvent être comptés sur le jour précédent."
-        : "Snapshots are taken every hour; decks played at the last minute may be assigned to the previous day.";
-  }
-
   const snapshotDataInvalid = days.some((d) => d.isPast && d.totalCount === 0);
 
   document.getElementById("clan-war-grid").innerHTML =
@@ -2797,7 +2778,6 @@ function renderClanWarCard(
     `${t("warProgressDayOf", { day: dayNum, total: 4 })}` +
     `</div>` +
     `${daysFromThu > 0 && decksYesterdayAtThisHour != null ? `<div class="war-yesterday-hint">${t("warDecksYesterdayHour").replace("{{decks}}", decksYesterdayAtThisHour)}</div>` : ""}` +
-    `<div class="war-progress-note">⚠ ${snapshotWarning}</div>` +
     `${snapshotDataInvalid ? `<div class="war-progress-warning">⚠ ${t("warSnapshotDataInvalid")}</div>` : ""}` +
     `<div class="war-day-chips">${chipsHtml}</div>` +
     `</div>`;
