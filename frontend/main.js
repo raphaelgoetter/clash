@@ -54,6 +54,17 @@ let sortState = { col: "reliability", dir: "asc" };
 let isWarActive = false; // true jeu–dim : colonne "This War" visible dans le tableau clan
 let currentClanIsLite = false; // true quand le clan affiché est hors-famille (endpoint /lite)
 let currentClanWeekId = null;
+const cardCacheNoteMetaById = new Map();
+const CARD_CACHE_NOTE_REFRESH_INTERVAL_MS = 120000;
+setInterval(() => {
+  for (const [noteId, noteMeta] of cardCacheNoteMetaById.entries()) {
+    renderCardCacheNoteElement(
+      noteId,
+      noteMeta.sourceMeta,
+      noteMeta.refreshHandler,
+    );
+  }
+}, CARD_CACHE_NOTE_REFRESH_INTERVAL_MS);
 
 // Name of the last-result returned by API (used when saving favorite)
 let lastResultName = null;
@@ -1126,12 +1137,17 @@ function renderMembersCacheNote(data) {
 }
 
 function renderCardCacheNote(noteId, sourceMeta = {}, refreshHandler) {
+  cardCacheNoteMetaById.set(noteId, { sourceMeta, refreshHandler });
+  renderCardCacheNoteElement(noteId, sourceMeta, refreshHandler);
+}
+
+function renderCardCacheNoteElement(noteId, sourceMeta = {}, refreshHandler) {
   const noteEl = document.getElementById(noteId);
   if (!noteEl) return;
 
   const text = formatCacheMetaText(sourceMeta);
   const refreshHtml =
-    sourceMeta.source === "cached"
+    typeof refreshHandler === "function"
       ? ` <a href="#" class="card-cache-refresh">${t("refresh") || "refresh"}</a>`
       : "";
 
@@ -1140,12 +1156,10 @@ function renderCardCacheNote(noteId, sourceMeta = {}, refreshHandler) {
 
   const refreshLink = noteEl.querySelector(".card-cache-refresh");
   if (refreshLink) {
-    refreshLink.addEventListener("click", (event) => {
+    refreshLink.onclick = (event) => {
       event.preventDefault();
-      if (typeof refreshHandler === "function") {
-        refreshHandler();
-      }
-    });
+      if (typeof refreshHandler === "function") refreshHandler();
+    };
   }
 }
 
