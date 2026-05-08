@@ -671,13 +671,26 @@ async function postWarSummary(
   ][postParis.getDay()];
   const postDateFR = `${postDayFR} ${pd}/${pm}/${py} à ${ph}h${pmin}`;
 
+  // Calcul de l'écart entre le snapshot utilisé et le reset de fin de journée GDC.
+  // La journée GDC débute à realDay+resetOffset et se termine le lendemain au même offset.
+  const snapshotTs = dayEntry.snapshotPreResetTime ?? dayEntry.snapshotTime ?? null;
+  let snapshotGapText = "";
+  if (snapshotTs && dayEntry.realDay) {
+    const resetOffsetMs = warResetOffsetMs(tag);
+    const dayUtcStart = Date.parse(`${dayEntry.realDay}T00:00:00Z`);
+    // Fin de la journée GDC = lendemain au même heure de reset
+    const endOfWarDayMs = dayUtcStart + 24 * 60 * 60 * 1000 + resetOffsetMs;
+    const gapMin = Math.round((Date.parse(snapshotTs) - endOfWarDayMs) / 60000);
+    snapshotGapText = `Écart snapshot/reset : ${gapMin >= 0 ? "+" : ""}${gapMin} min`;
+  }
+
   const dailyEmbed = {
     title: `<:stats:1499284927894650950> ${clanName} · Résumé GDC`,
     description: `Journée ${WAR_DAY_NUMBER[warDay]} (${WAR_DAY_FR[warDay]})`,
     color,
     fields,
     footer: {
-      text: `Constat fait le ${postDateFR}\nLes combats de dernière minute peuvent être manqués dans ce résumé.`,
+      text: `Constat fait le ${postDateFR}${snapshotGapText ? `\n${snapshotGapText}` : ""}`,
     },
   };
 
