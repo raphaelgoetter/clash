@@ -1361,8 +1361,7 @@ export default async function handler(req, res) {
           }
         } else if (period === "all-time") {
           title = `<:topplayers:1493708397407899648> Meilleurs joueurs`;
-          footer =
-            "😎 Meilleurs joueurs de tous les temps de la famille (depuis CW2)";
+          footer = "📆 Sur tout la période fournie par l'API (10 semaines max)";
 
           const allTimeTotals = new Map();
 
