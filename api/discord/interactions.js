@@ -1321,9 +1321,6 @@ export default async function handler(req, res) {
 
           title = `🏆 <:topplayers:1493708397407899648> Meilleurs joueurs`;
           footer = `😎 Meilleurs joueurs de la saison précédente (S${selectedSeason})`;
-          if (currentSeason != null && currentSeason !== selectedSeason) {
-            footer += ` (la S${currentSeason} n'est pas terminée)`;
-          }
 
           const seasonTotals = new Map();
 
