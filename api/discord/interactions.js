@@ -2746,7 +2746,11 @@ export default async function handler(req, res) {
           "mentions:",
           mentionIds.size,
         );
+        const mentionLine = Array.from(mentionIds)
+          .map((id) => `<@${id}>`)
+          .join(" ");
         await sendToWebhook({
+          content: mentionLine || undefined,
           embeds: [embed],
           allowed_mentions: { parse: [], users: Array.from(mentionIds) },
         });
