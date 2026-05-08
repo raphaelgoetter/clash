@@ -1188,7 +1188,7 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
-        const { fetchRaceLog, fetchClanMembers } =
+        const { fetchRaceLog, fetchClanMembers, fetchCurrentRace } =
           await import("../../backend/services/clashApi.js");
 
         const CLANS = [
@@ -1210,6 +1210,14 @@ export default async function handler(req, res) {
           computePrevWeekId,
         } = await import("../../backend/services/dateUtils.js");
 
+        // Récupère la course en cours pour détecter le rollover de saison (ex. S131→S132)
+        let currentRaceRef = null;
+        try {
+          currentRaceRef = await fetchCurrentRace(`#${CLANS[0].tag}`);
+        } catch (_) {
+          // fallback : pas de détection de rollover
+        }
+
         for (const clan of CLANS) {
           const [raceLog, members] = await Promise.all([
             fetchRaceLog(`#${clan.tag}`),
@@ -1220,7 +1228,7 @@ export default async function handler(req, res) {
             clanRaceLogs[clan.tag] = raceLog;
 
             if (currentSeason === null) {
-              currentSeason = computeCurrentSeasonId(null, raceLog);
+              currentSeason = computeCurrentSeasonId(currentRaceRef, raceLog);
             }
 
             if (defaultSeason === null) {
