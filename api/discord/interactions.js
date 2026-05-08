@@ -2728,9 +2728,10 @@ export default async function handler(req, res) {
         }
 
         const embed = {
-          title: `<:boohoo:1493849412387209357> ${resolved.name}, retardataires de ${warDayLabel}`,
+          title: "GDC : Soldat, il te reste des decks à jouer !",
           description,
           color: 0xe67e22,
+          footer: { text: `${resolved.name}, retardataires de ${warDayLabel}` },
         };
 
         console.log(
