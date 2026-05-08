@@ -673,7 +673,8 @@ async function postWarSummary(
 
   // Calcul de l'écart entre le snapshot utilisé et le reset de fin de journée GDC.
   // La journée GDC débute à realDay+resetOffset et se termine le lendemain au même offset.
-  const snapshotTs = dayEntry.snapshotPreResetTime ?? dayEntry.snapshotTime ?? null;
+  const snapshotTs =
+    dayEntry.snapshotPreResetTime ?? dayEntry.snapshotTime ?? null;
   let snapshotGapText = "";
   if (snapshotTs && dayEntry.realDay) {
     const resetOffsetMs = warResetOffsetMs(tag);
