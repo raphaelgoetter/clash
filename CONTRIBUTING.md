@@ -1,426 +1,460 @@
-# ⚔️ TrustRoyale — Clan War Reliability Analyzer (developer docs)
+# ⚔️ TrustRoyale Developer docs
 
-Ce fichier rassemble toute la documentation destinée aux développeurs
-et aux contributeurs. Il correspond à l'ancien README du projet.
-Toute la partie "usage" destinée aux utilisateurs finaux a été déplacée
-vers `README.md` (en français).
+Ce document rassemble la documentation destinée aux développeurs et aux contributeurs.
+La documentation orientée utilisateur final reste dans README.md.
 
 ---
 
-## ✨ Features
+## Scripts utiles
 
-| Feature              | Details                                                                                                               |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| **Player analysis**  | Overview, activity indicators, battle log chart, war reliability score (/45 or /40), colour-coded verdict + breakdown |
-| **Clan analysis**    | Member table with sorting & filtering, score distribution chart, reliable-vs-risky pie chart                          |
-| **Family transfers** | Detects when a player moves between the 3 allowed clans and merges last week history to compute a proper score        |
-| **Response cache**   | In-memory cache (30 s TTL) to avoid hammering the Clash Royale API on repeated navigations                            |
-| **Responsive UI**    | Clash Royale-inspired dark theme, works on mobile                                                                     |
-| **Favorites**        | Save player or clan tags (with names) locally and recall them with one click                                          |
+- `npm run dev` — lance le backend Express sur le port 3000 et le frontend Vite sur le port 5173.
+- `npm run test` — exécute les tests Node présents dans backend/services.
+- `npm run cache` — régénère le cache statique des clans dans frontend/public/clan-cache via scripts/refreshClanCache.js.
+- `npm run snapshot` — collecte les snapshots quotidiens de guerre via scripts/collectSnapshots.js.
+- `npm run pre-reset-snapshot` — prend un snapshot juste avant le reset pour fiabiliser les calculs journaliers.
+- `npm run notify-members` — détecte les arrivées, départs et changements de rôle puis poste un résumé Discord.
+- `npm run notify-members:dry` — même script en mode dry-run.
+- `npm run notify-members:sim` — dry-run avec données simulées.
+- `npm run war-summary` — publie le résumé quotidien de guerre après le reset.
+- `npm run war-summary:dry` — version dry-run du résumé quotidien.
+- `node scripts/registerCommands.js` — enregistre ou met à jour les slash commands Discord.
+- `npm run ping-test` — vérifie rapidement la disponibilité réseau ou les secrets utilisés par les scripts de ping.
 
----
+### Notes sur les scripts de snapshots
 
-## 🗂 Project structure
-
-```
-clash/
-├── backend/
-│   ├── server.js              # Express entry point
-│   ├── package.json
-│   ├── routes/
-│   │   ├── player.js          # GET /api/player/:tag[/analysis]
-│   │   └── clan.js            # GET /api/clan/:tag[/analysis]
-│   └── services/
-│       ├── clashApi.js        # Clash Royale API wrapper
-│       ├── analysisService.js # Barrel — re-exporte les 5 modules ci-dessous
-│       ├── dateUtils.js       # Timezone Paris, warDayKey, parseClashDate
-│       ├── battleLogUtils.js  # Filtrage/catégorisation/expansion du battle log GDC
-│       ├── warScoring.js      # computeWarScore, computeWarReliabilityFallback
-│       ├── warHistory.js      # buildWarHistory, buildFamilyWarHistory
-│       ├── playerAnalysis.js  # analyzePlayer, getPlayerAnalysis, analyzeClanMembers
-│       ├── cache.js           # In-memory cache (TTL configurable)
-│       ├── clanCache.js       # Cache clan persisté sur disque (JSON)
-│       ├── snapshot.js        # Snapshots quotidiens de decksUsed
-│       ├── discordLinks.js    # Mapping tag joueur → Discord ID
-│       ├── topplayers.js      # computeTopPlayers — classement famille par points
-│       └── uncomplete.js      # computeUncomplete — joueurs < 16 decks
-├── frontend/
-│   ├── index.html
-│   ├── main.js                # UI orchestration
-│   ├── style.css              # Clash Royale theme
-│   ├── charts.js              # Chart.js wrappers
-│   ├── vite.config.js         # Vite + /api proxy
-│   └── package.json
-├── .env.example
-├── .gitignore
-├── vercel.json                # Vercel deployment config
-└── README.md
-```
+- Les snapshots sont écrits en priorité dans /tmp/clash-snapshots à l’exécution.
+- Quand le dossier data/snapshots est accessible, une copie persistante y est aussi écrite.
+- À la lecture, loadSnapshots() privilégie /tmp puis fusionne avec data/snapshots si les deux existent.
+- La fusion se fait jour par jour avec mergeSnapshotsByDay(), en gardant le snapshot valide le plus récent pour chaque journée.
 
 ---
 
-## 🚀 Local development
+## Référence API backend
 
-### Prerequisites
+| Méthode | Endpoint                  | Description                                                                         |
+| ------- | ------------------------- | ----------------------------------------------------------------------------------- |
+| GET     | /health                   | Vérification simple de disponibilité du backend                                     |
+| GET     | /api/ip                   | Retourne l’IP publique du serveur, utile pour whitelist l’API Clash Royale en local |
+| GET     | /api/debug                | Endpoint de debug des variables d’environnement critiques                           |
+| GET     | /api/player/:tag          | Retourne le profil brut d’un joueur                                                 |
+| GET     | /api/player/:tag/analysis | Retourne l’analyse complète d’un joueur                                             |
+| GET     | /api/clan/:tag            | Retourne le profil brut d’un clan                                                   |
+| GET     | /api/clan/:tag/lite       | Retourne une version allégée d’un clan sans calcul complet de fiabilité             |
+| GET     | /api/clan/:tag/analysis   | Retourne l’analyse complète d’un clan et de ses membres                             |
+| POST    | /api/cache/flush          | Vide le cache mémoire, usage développement                                          |
 
-- Node.js ≥ 18
-- A [Clash Royale developer API key](https://developer.clashroyale.com/)
+Notes :
 
-### 1 — Install dependencies
-
-```bash
-# Backend
-cd backend && npm install
-
-# Frontend
-cd ../frontend && npm install
-```
-
-### 2 — Configure environment variables
-
-```bash
-# At the project root
-cp .env.example .env
-```
-
-Open `.env` and fill in your API key:
-
-```
-CLASH_API_KEY=eyJ0eXAiOiJKV1Qi...
-```
-
-> **Important:** the API key must be whitelisted for your current public IP address on the developer portal.
-
-### 3 — Start the dev servers
-
-```bash
-npm run dev
-```
-
-This launches both backend (**<http://localhost:3000>**) and frontend (**<http://localhost:5173>**) simultaneously via `concurrently`. The frontend proxies `/api` → `:3000`.
-
-### Scripts utiles
-
-- `npm run cache` — pré-génère `frontend/public/clan-cache/*.json` via `scripts/refreshClanCache.js` (rendu instantané en vue clan)
-- `node scripts/collectSnapshots.js` — enregistre les snapshots de decksUsed quotidiens depuis le race log ; les snapshots sont écrits en runtime dans `/tmp/clash-snapshots/` et persistés dans `data/snapshots/` quand le dossier est accessible
-  - `loadSnapshots()` lit d'abord `/tmp/clash-snapshots/` et utilise `data/snapshots/` comme backup. Si les deux fichiers existent, `mergeSnapshotsByDay()` est utilisé : chaque jour de guerre est choisi indépendamment selon le snapshot le plus récent valide.
-  - Cela signifie qu’un snapshot `data` plus proche du reset peut remplacer un snapshot `tmp` plus ancien pour le même jour.
-- `node scripts/registerCommands.js` — enregistre/met à jour les slash-commands Discord
-- `npm run notify-members` — détecte les arrivées, départs et changements de rôle des membres (diff entre le clan cache persisté et l'API Clash actuelle) et poste un embed Discord par clan si des changements sont détectés. Modes : `--dry-run` (affiche l'embed sans poster), `--simulate` (données fictives, pas d'appel API). Exécuté automatiquement par le cron GitHub Actions entre le snapshot et le rebuild du cache. Nécessite les secrets `DISCORD_TOKEN` et `DISCORD_CHANNEL_MEMBERS_{TAG}` (un par clan).
+- Les tags doivent conserver le préfixe # côté appelant, encodé en %23 dans l’URL.
+- L’endpoint /api/clan/:tag/analysis refuse les clans hors liste autorisée.
+- /api/player/:tag/analysis ajoute aussi warSnapshotDays, warCurrentWeekId, warSnapshotTakenAt et warResetUtcMinutes quand les données existent.
+- /api/clan/:tag/analysis peut exposer debugSnapshotInfo avec des scores journaliers explicites : scoreJeudi, scoreVendredi, scoreSamedi, scoreDimanche et dailyScores.
 
 ---
 
-## 📡 Backend API reference
+## Formules et scoring
 
-| Method | Endpoint                    | Description                            |
-| ------ | --------------------------- | -------------------------------------- |
-| `GET`  | `/health`                   | Health check                           |
-| `GET`  | `/api/player/:tag`          | Raw player profile                     |
-| `GET`  | `/api/player/:tag/analysis` | Full player analysis                   |
-| `GET`  | `/api/clan/:tag`            | Raw clan profile                       |
-| `GET`  | `/api/clan/:tag/analysis`   | Clan + member analysis                 |
-| `POST` | `/api/cache/flush`          | Vide le cache mémoire (dev uniquement) |
+### Note sur le cache statique
 
-Tags should include the `#` prefix (URL‑encoded as `%23`).
-
-### `debugSnapshotInfo` / daily score fields
-
-- `debugSnapshotInfo` est ajouté à la réponse de `/api/clan/:tag/analysis` pour le clan propre lorsqu’une analyse de guerre est disponible.
-- Il contient désormais des scores journaliers explicites :
-  - `scoreJeudi`
-  - `scoreVendredi`
-  - `scoreSamedi`
-  - `scoreDimanche`
-- Il expose aussi un objet structuré :
-  - `dailyScores: { jeudi, vendredi, samedi, dimanche }`
-- Utile pour les scripts de résumé et les commandes de debug qui doivent connaître le score de chaque journée GDC terminée.
-- Autres champs disponibles : `snapshotJ1DailyFame`, `snapshotTime`, `snapshotBackupTime`, `delta`, `diffMin`, `warning`.
-
----
-
-## 🧮 Score formulas
-
-## Transferts familiaux
-
-Ce mécanisme a été retiré : les joueurs ne sont plus marqués `transfer` et la
-fusion d'historique n'est plus appliquée. Le statut `isNew` est déterminé
-uniquement via l'historique de guerre standard.
-
-### 🚨 Note sur le cache statique
-
-La vue clan charge un cache JSON statique (`frontend/public/clan-cache/*.json`) en
-priorité pour un rendu instantané. Si vous modifiez le code de scoring ou de
-détection de transfert, relancez :
+La vue clan charge en priorité les fichiers JSON présents dans frontend/public/clan-cache pour afficher un rendu immédiat.
+Si vous modifiez un calcul de scoring, une logique de verdict, une structure de payload clan, ou une logique dépendante des snapshots, relancez :
 
 ```bash
 npm run cache
 ```
 
-### War reliability score — full mode (0–46 pts)
+### Historique famille et transferts
 
-Used when the war race log is available. Eight weighted criteria:
+Le code continue d’utiliser l’historique des clans de la famille pour construire l’historique de guerre d’un joueur.
+La source de vérité est buildFamilyWarHistory() dans backend/services/warHistory.js.
 
-> **Note on history sanitisation.** When a player has at least two prior weeks
-> in the clan and the **oldest** of those weeks shows fewer than 16 decks, that
-> week is treated as a potential mid‑race arrival and **ignored** for scoring
-> purposes. It remains in the returned history (a grey bar in the chart) but
-> does not count toward points averages or participation. This prevents a recent
-> recruit’s first partial week from artificially dragging down their score.
->
-> These same rules are applied across both the player and clan analysis
-> endpoints, ensuring the percentages shown in the clan member list match the
-> individual player view.
+En pratique :
 
-Seven weighted criteria:
+- les semaines passées dans un autre clan autorisé de la famille peuvent être prises en compte dans streakInFamily ;
+- le score n’est pas limité au seul clan actuel quand l’historique famille est disponible ;
+- la notion opérationnelle importante est la continuité dans la famille, pas un ancien flag documentaire de “transfer”.
 
-| #   | Criterion                  | Max | Cap / rule                                                              |
-| --- | -------------------------- | --- | ----------------------------------------------------------------------- |
-| 1   | Regularity                 | 12  | war decks used / (16 × completed weeks); –0.5 pt per incomplete week    |
-| 2   | Avg pts                    | 10  | 3,000 pts/week = full score                                             |
-| 3   | CW2 battle wins            | 8   | 250 total CW2 wins = full score                                         |
-| 4   | Stability                  | 8   | 5+ consecutive weeks in clan or family = full score                     |
-| 5   | Last seen                  | +5  | active within 24 h = +5; ≤3 d = +3; ≤7 d = +1                           |
-| 6   | Win rate (River Race)      | 3   | 100% win rate = full score · **min. 10 GDC battles** (absent otherwise) |
-| 7   | Experience (best trophies) | 3   | 12,000 trophies = full score                                            |
-| 8   | Donations                  | 2   | 100 000 total cards donated = full score (≤ 2 000 = minimum score)      |
-| 9   | Discord                    | 2   | compte lié via `/discord-link` = full score                             |
+### Score de fiabilité guerre, mode complet
 
-Without battle log (criterion 6 absent): max = **45 pts**. With last seen and win rate: **53 pts** maximum.
+Le mode complet est utilisé quand l’historique River Race permet de calculer une `warHistory` exploitable.
+La fonction source est `computeWarScore()` dans `backend/services/warScoring.js`.
 
-### War reliability score — fallback mode (0–36 pts)
+Condition d’activation précise :
 
-Used when no race log history is available (battle log only):
+- côté joueur, `playerAnalysis.js` bascule vers le mode complet si l’historique contient assez de matière pour le score, avec au minimum une vraie semaine terminée dans le clan ou une continuité de famille suffisamment longue ;
+- le code n’impose pas “X jours de présence” comme règle fixe ; il s’appuie sur la profondeur de `raceLog`, la présence de `streakInFamily` / `streakInCurrentClan` et le test `hasEnoughHistory` ;
+- si l’historique famille est inexistant ou trop faible, on reste en `fallback`.
 
-| #   | Criterion        | Max | Cap / rule                                                                                 |
-| --- | ---------------- | --- | ------------------------------------------------------------------------------------------ |
-| 1   | War activity     | 12  | Decks/day over sliding window; bonus +0.2 pt per 4‑deck day, penalty ‑0.1 pt per short day |
-| 2   | Win rate (war)   | 5   | From battle log war battles · **min. 10 GDC battles** (scores 0 otherwise)                 |
-| 3   | CW2 battle wins  | 8   | 250 total CW2 wins = full score                                                            |
-| 4   | Last seen        | +5  | same as above but only awarded after ≥16 war decks in log                                  |
-| 5   | General activity | 8   | 20 competitive battles = full score                                                        |
-| 6   | Experience       | 3   | 12,000 best trophies = full score                                                          |
-| 7   | Donations        | 2   | 100 000 total cards donated = full score (≤ 2 000 = minimum score)                         |
-| 8   | Discord          | 2   | compte lié via `/discord-link` = full score                                                |
+Durée récupérable depuis l’API :
 
-### Verdict thresholds (both scoring modes)
+- `fetchRaceLog()` récupère le `riverracelog` du clan, documenté dans le code comme les `last ~10 completed seasons` ;
+- `fetchCurrentRace()` ajoute la semaine live en cours ;
+- en pratique, la fenêtre exploitable est donc `~10` saisons terminées + `1` semaine courante, sous réserve de ce que l’API renvoie réellement.
 
-| % of max score | Verdict          | Colour    |
-| -------------- | ---------------- | --------- |
-| ≥ 75 %         | High reliability | 🟢 Green  |
-| 56–74 %        | Low risk         | 🟡 Yellow |
-| 31–55 %        | High risk        | 🟠 Orange |
-| 0–30 %         | Extreme risk     | 🔴 Red    |
+Critères :
 
-### Member activity score (clan view, 0–100)
+| #   | Critère            | Maximum | Règle actuelle                                                                                          |
+| --- | ------------------ | ------- | ------------------------------------------------------------------------------------------------------- |
+| 1   | Régularité         | 12      | Proportion de decks joués sur les semaines terminées, avec pénalité de 0,5 point par semaine incomplète |
+| 2   | Score moyen        | 10      | Moyenne de points hebdomadaires, avec plage utile 1000 à 3000                                           |
+| 3   | Stabilité          | 8       | 5 semaines consécutives dans le clan ou la famille donnent le maximum                                   |
+| 4   | Expérience         | 3       | Basée sur les trophées actuels, plage 4000 à 14000                                                      |
+| 5   | Dons               | 2       | Basé sur totalDonations, cap à 100000                                                                   |
+| 6   | Win rate guerre    | 3       | Ajouté seulement si le battle log permet un taux exploitable                                            |
+| 7   | Badge CW2          | 8       | Cap à 250 victoires CW2                                                                                 |
+| 8   | Dernière connexion | 5       | Ajoutée seulement si lastSeen est disponible                                                            |
+| 9   | Discord            | 2       | Compte Discord lié                                                                                      |
 
-Computed from the `/members` endpoint only (no battle log required):
+Maxima réels :
 
+- 45 points : sans win rate et sans lastSeen, avec Discord inclus.
+- 48 points : avec win rate, sans lastSeen.
+- 50 points : sans win rate, avec lastSeen.
+- 53 points : avec win rate et lastSeen.
+
+Règle importante d’assainissement de l’historique :
+
+- si un joueur a au moins deux semaines passées dans l’historique et que la plus ancienne est incomplète, cette semaine peut être marquée ignored pour ne pas pénaliser une arrivée en cours de guerre ;
+- elle reste visible dans l’historique, mais ne compte plus dans les moyennes utiles au score.
+
+### Score de fiabilité guerre, mode fallback
+
+Le mode fallback est utilisé quand l’historique River Race est insuffisant ou indisponible.
+La fonction source est `computeWarReliabilityFallback()` dans `backend/services/warScoring.js`.
+
+Quand il s’active :
+
+- le `riverracelog` n’existe pas, est partiel, ou n’apporte pas assez d’éléments pour un score complet ;
+- le `battlelog` du joueur reste la source de vérité restante ;
+- si l’API de guerre ne fournit plus de combats GDC, le code peut utiliser `currentRace` pour récupérer les `decksUsed` live du jour courant et éviter un zéro artificiel.
+
+Durée récupérable depuis l’API :
+
+- `fetchBattleLog()` récupère les `25` derniers combats d’un joueur ;
+- ces combats mélangent guerre, ladder et challenges, donc le fallback doit les filtrer pour extraire la guerre ;
+- quand le `battlelog` est trop court ou trop écrasé par des combats non-GDC, le calcul devient moins fiable et peut retomber sur des approximations.
+
+Critères :
+
+| #   | Critère            | Maximum | Règle actuelle                                                                                                                                              |
+| --- | ------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Activité GDC       | 8       | Basée sur les decks par jour dans une fenêtre glissante de 14 jours, avec bonus pour les journées complètes et légère pénalité pour les journées partielles |
+| 2   | Activité générale  | 8       | Basée sur les combats compétitifs, pondérée par la part de combats GDC                                                                                      |
+| 3   | Badge CW2          | 10      | Cap à 250 victoires CW2                                                                                                                                     |
+| 4   | Dernière connexion | 3       | Ajoutée si lastSeen est disponible                                                                                                                          |
+| 5   | Expérience         | 3       | Basée sur les trophées actuels                                                                                                                              |
+| 6   | Dons               | 2       | Basé sur totalDonations                                                                                                                                     |
+| 7   | Discord            | 2       | Compte Discord lié                                                                                                                                          |
+
+Maxima réels :
+
+- 33 points : sans lastSeen, avec Discord inclus.
+- 36 points : avec lastSeen et avec Discord inclus.
+
+Particularités :
+
+- si le battle log ne contient plus de combats GDC mais que currentRace expose encore des decks utilisés, le code peut synthétiser une activité minimale du jour pour éviter un zéro artificiel ;
+- le fallback ne calcule plus de critère win rate séparé ;
+- l’activité GDC est plafonnée par un niveau de confiance basé sur le volume de combats observés.
+
+### Seuils de verdict
+
+Les deux modes utilisent les mêmes seuils :
+
+| Pourcentage du score maximal | Verdict          |
+| ---------------------------- | ---------------- |
+| ≥ 75 %                       | High reliability |
+| 56 à 74 %                    | Low risk         |
+| 31 à 55 %                    | High risk        |
+| 0 à 30 %                     | Extreme risk     |
+
+### Score d’activité membre, vue clan
+
+Ce score léger est utilisé quand on ne dispose pas du calcul complet par joueur.
+La fonction source est `computeMemberReliability()` dans `backend/services/playerAnalysis.js`.
+
+Formule actuelle :
+
+```text
+score = min(40, scoreTotalDonations(totalDonations, 40))
+      + min(40, trophies / 10000 × 40)
+      + min(20, expLevel / 60 × 20)
 ```
-score = min(40, totalDonations / 100000 × 40)
-      + min(40, trophies  / 10000 × 40)
-      + min(20, expLevel  / 60 × 20)
-```
 
-Same 4-tier verdict thresholds apply (76 / 61 / 31).
+Notes :
+
+- `totalDonations` est une `source de vérité` venant du profil joueur ;
+- `trophies` et `expLevel` sont des `sources de vérité` venant aussi du profil joueur ;
+- `scoreTotalDonations()` est un `calcul fiable` à partir de `totalDonations` ;
+- le score final est une `estimation` légère ramenée sur `100` et sert surtout à trier/filtrer la vue clan ;
+- les seuils associés dans la vue clan sont : `75+`, `61-74`, `31-60`, `0-30`.
 
 ---
 
-## 🤖 Bot Discord
+## Bot Discord
 
-Le bot Discord expose des slash commands qui affichent les analyses directement dans un serveur Discord.
-
-### Commandes disponibles
-
-| Commande                            | Description                                                             |
-| ----------------------------------- | ----------------------------------------------------------------------- | -------- | ----------------------------------------------------------------- |
-| `/trust tag:#TAG`                   | Analyse la fiabilité d'un joueur                                        |
-| `/trust-clan clan:N`                | Liste les membres High/Extreme risk d'un clan (N = 1/2/3)               |
-| `/promote clan:N`                   | Liste les joueurs ≥ 2600 pts la semaine précédente                      |
-| `/top-players number:X period:[week | season] scope:[previous                                                 | actual]` | Liste les meilleurs joueurs de la famille sur la période demandée |
-| `/discord-link tag:#TAG`            | Lie un compte Clash à un Discord                                        |
-| `/discord-check clan:N`             | Vérifie la présence Discord des membres d'un clan                       |
-| `/late clan:N`                      | Liste les joueurs en retard sur leurs decks de la journée (avant reset) |
+Le bot Discord déclenche les analyses via l’endpoint dédié api/discord/interactions.js.
 
 ### Architecture
 
-```
-Discord → POST /api/discord/interactions   (api/discord/interactions.js)
-              │
-              ├─ type 1 (PING)      → { type: 1 }   (validation endpoint)
-              │
-              └─ type 2 (commande)  → { type: 5 }   (deferred, <3 s)
-                                       runBackground(
-                                         fetch /api/.../analysis
-                                         → webhook follow-up Discord
-                                       )
+```text
+Discord → POST /api/discord/interactions
+        → réponse immédiate { type: 5 }
+        → traitement différé dans runBackground(...)
+        → POST de suivi sur le webhook Discord
 ```
 
-La fonction Discord est **séparée** de l'app Express (`api/index.js`) pour garantir un cold start minimal (< 1 s au lieu de 3‑4 s), impératif pour respecter la fenêtre de 3 s imposée par Discord.
+La fonction Discord est séparée de l’application Express principale pour limiter le cold start et respecter la fenêtre de réponse imposée par Discord.
 
-### Points techniques clés
+### Règles techniques importantes
 
-| Problème                                         | Solution                                                                                            |
-| ------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| Validation endpoint Discord échoue               | La vérification de signature Ed25519 doit se faire **avant** de répondre au PING, pas après         |
-| Cold start > 3 s → "application did not respond" | Fonction Vercel dédiée (`api/discord/interactions.js`) sans Express, uniquement `node:crypto` natif |
-| Fonction tuée après `res.end()`                  | `runBackground(fn)` appelle `waitUntil(fn())` de `@vercel/functions` — maintient la fonction active |
-| `Promise.resolve().then(fn)` sans waitUntil      | Vercel coupe la VM dès que `res.json()` est envoyé — utiliser `runBackground` **uniquement**        |
-| Syntaxe cassée → module entier planté            | Ne jamais écrire de saut de ligne littéral dans `'...'`. Utiliser `'\`\`\`\n'`                      |
-| Import direct de services backend                | Ne jamais `import('../../backend/routes/clan.js')` dans un handler — appeler l'endpoint HTTP        |
-| Vérification de signature                        | Reconstruit la clé publique Ed25519 depuis hex → SPKI DER via `node:crypto`                         |
+- répondre immédiatement avec type: 5 avant tout await ;
+- utiliser runBackground() et jamais Promise.resolve().then(...) directement ;
+- ne jamais appeler directement les services backend lourds depuis un handler Discord, passer par les endpoints HTTP ;
+- vérifier la signature Ed25519 avant de répondre au PING ;
+- après toute modification ou ajout de commande, relancer node scripts/registerCommands.js.
 
-### Patron obligatoire pour toute nouvelle commande
+### Variables d’environnement requises
 
-```js
-if (body.type === 2 && body.data?.name === "ma-commande") {
-  // 1. Parser les options SYNCHRONEMENT (pas d'await)
-  const opt = body.data.options?.find((o) => o.name === "mon-option");
-
-  // 2. Répondre IMMÉDIATEMENT — avant tout await
-  res.status(200).json({ type: 5 });
-  const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
-
-  // 3. Travail lourd dans runBackground (maintient Vercel actif via waitUntil)
-  runBackground(async () => {
-    try {
-      // Toujours appeler les endpoints HTTP, jamais les services directement
-      const resp = await fetch("https://trustroyale.vercel.app/api/...");
-      await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ embeds: [embed] }),
-      });
-    } catch (err) {
-      await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: `Erreur : ${err.message}`, flags: 64 }),
-      });
-    }
-  });
-  return;
-}
-```
-
-### Variables d'environnement requises
-
-```
-DISCORD_PUBLIC_KEY=   # Clé publique du bot (onglet "General Information")
-DISCORD_APP_ID=       # Application ID du bot
-DISCORD_TOKEN=        # Token du bot (pour le script d'enregistrement)
-```
-
-### Enregistrement des commandes
-
-```bash
-node scripts/registerCommands.js
-```
-
-À relancer après tout ajout ou modification de commande.
-
-### Invitation du bot sur un serveur Discord
-
-1. Aller sur le [Discord Developer Portal](https://discord.com/developers/applications) → sélectionner l'application
-2. Onglet **OAuth2 → URL Generator**
-3. Cocher les scopes : `bot` + `applications.commands`
-4. Dans les permissions bot, cocher au minimum : `Send Messages`
-5. Copier l'URL générée et l'ouvrir dans un navigateur → choisir le serveur cible → Autoriser
-
-### Format des réponses
-
-**`/trust`**
-
-```
-🟢 NomJoueur ⤑ 93 % (Très fiable)
-✅ Activité de guerre  10/12    ✅ Victoires CW2  8/8
-⚠️ Winrate (guerre)    1.9/3   ✅ Expérience     3/3
-✅ Dons                2/2
-Tag : #YRGJGR8R
-```
-
-**`/stats`**
-
-```
-🟢 NomJoueur ⤑ 90 % (Très fiable)
-Historique Decks : ✅16 ⚠️15 ✅16 ✅16 ✅16 ✅16
-Historique Points : 1900 2300 3200 2900 2500 2700
-Moyenne points/semaine : 2570
-Record points/semaine : 3200
-Semaines Les Resistants : 4
-Semaines Famille Resistance : 6
-Tag : #YRGJGR8R
-```
-
-**`/trust-clan`**
-
-```
-⚠️  Les Resistants (4 joueurs à risque)
-- NomJoueur   (new) #TAG [Co-Leader] 🔴 Extreme risk (28%)
-- AutreJoueur       #TAG [Member]    🟠 High risk    (45%)
-```
-
-**`/promote`**
-
-```
-🏅 Semaine de GDC précédente — La Resistance (≥ 2800 pts)
-• 2024-03 ?
- 1. NomJoueur   3200 pts  [Co-Leader] ⬆️
- 2. AutreJoueur 3000 pts  [Member] ⬆️
-```
-
-**`/demote`**
-
-```
-🤷 Semaine de GDC précédente — Les Resistants (S130-W3)
-1. NomJoueur (#TAG) [Member] • 15 decks
-2. AutreJoueur (#TAG) [Elder] • 13 decks
-...and 18 de plus
-```
-
-## Icônes : ✅ ≥ 75 % du max · ⚠️ entre 40 % et 74 % · ❌ < 40 %
-
-## ☁️ Deployment
-
-### Backend → Vercel
-
-```bash
-# Install Vercel CLI if needed
-pnpm install -g vercel   # or: npm install -g vercel
-
-cd clash          # project root
-vercel            # follow the prompts
-
-# Set the environment variable in the Vercel dashboard or via CLI:
-vercel env add CLASH_API_KEY
-```
-
-The `vercel.json` at the root maps all `/api/*` requests to the Express server.
-
-### Frontend → Vercel (or GitHub Pages)
-
-#### Vercel
-
-```bash
-npm run build    # build + vercel --prod (depuis la racine)
-```
-
-#### GitHub Pages
-
-```bash
-cd frontend && npx vite build
-# Then push the dist/ folder to the gh-pages branch
+```text
+DISCORD_PUBLIC_KEY=
+DISCORD_APP_ID=
+DISCORD_TOKEN=
 ```
 
 ---
 
-## 🛡 Security
+## Glossaire
 
-- API keys are stored in **environment variables** and never exposed to the browser.
-- The backend acts as a proxy; the frontend never calls the Clash Royale API directly.
-- Add rate-limiting (e.g. `express-rate-limit`) before exposing the backend publicly.
+### Full mode
+
+Mode principal de calcul du score de fiabilité joueur.
+Il est utilisé quand l’historique River Race permet de construire une warHistory suffisamment fiable.
+
+Où le trouver :
+
+- calcul dans backend/services/warScoring.js via computeWarScore() ;
+- décision d’utiliser ce mode dans backend/services/playerAnalysis.js et backend/routes/clan.js.
+
+Comment savoir si ce mode est actif :
+
+- côté joueur, analysis.warScore existe sans isFallback ;
+- côté clan, le membre a un warScore calculé depuis l’historique et non depuis le fallback.
+
+### Fallback mode
+
+Mode dégradé utilisé quand l’historique River Race est absent, insuffisant ou non exploitable.
+Le calcul se base surtout sur le battle log, quelques métadonnées joueur et éventuellement les decks live de currentRace.
+
+Où le trouver :
+
+- calcul dans backend/services/warScoring.js via computeWarReliabilityFallback() ;
+- sélection du mode dans backend/services/playerAnalysis.js et backend/routes/clan.js.
+
+Comment le reconnaître :
+
+- le payload contient isFallback: true dans le score calculé.
+
+### Reset times
+
+Heures officielles de reset GDC par clan, exprimées en UTC.
+Elles servent à déterminer le vrai changement de journée de guerre.
+
+Où trouver la valeur :
+
+- backend/services/dateUtils.js, constante CLAN_RESET_TIMES.
+
+Comment l’utiliser :
+
+- ne pas recalculer à la main ;
+- toujours passer par warResetOffsetMs(clanTag) pour obtenir l’offset en millisecondes.
+
+### Saison
+
+Cycle Clash Royale d’environ un mois, commençant le premier lundi du mois après le reset de guerre.
+Une saison contient 3 à 5 semaines de guerre.
+
+Où trouver ou calculer la valeur :
+
+- `seasonId` est une `source de vérité` fournie par l’API sur `raceLog[0]` ;
+- `sectionIndex` est une `source de vérité` fournie par l’API et commence à `0` ;
+- le `weekId` courant se calcule avec `computeCurrentWeekId(currentRace, raceLog)` dans `backend/services/dateUtils.js` ;
+- le `seasonId` courant se calcule avec `computeCurrentSeasonId(currentRace, raceLog)` dans `backend/services/dateUtils.js`.
+
+### Jours de GDC
+
+Les jours de guerre actifs de la semaine, du jeudi au dimanche.
+Le code raisonne en journée GDC et non en simple journée civile UTC.
+
+Où le trouver ou le calculer :
+
+- `warDayKey()` dans `backend/services/dateUtils.js` est un `calcul fiable` à partir d’un timestamp et d’un `reset` de clan ;
+- `buildCurrentWarDays()` dans `backend/services/playerAnalysis.js` est un `calcul fiable` des jours actifs de la semaine courante ;
+- `getEndedWarDay()` dans `scripts/notifyWarSummary.js` est un `calcul fiable` du jour de guerre qui vient de se terminer.
+
+### Jours de Colisée
+
+Journées où la course est en période Colosseum au lieu du warDay classique.
+Le traitement des points y reste cumulatif à l’échelle de la semaine.
+
+Où le trouver :
+
+- `periodType` est une `source de vérité` renvoyée par l’API de guerre ;
+- la logique de résumé dans `scripts/notifyWarSummary.js` est un `calcul fiable` pour convertir ce contexte en résumé quotidien.
+
+Comment les reconnaître :
+
+- un jour est Colisée si `periodType === "colosseum"`.
+
+### Clans autorisés
+
+Liste fermée des clans de la famille pour lesquels l’analyse complète de clan est autorisée.
+
+Où trouver la valeur :
+
+- `ALLOWED_CLANS` est la `source de vérité` dans `backend/routes/clan.js`.
+
+Valeurs actuelles :
+
+- `Y8JUPC9C`
+- `LRQP20V9`
+- `QU9UQJRL`
+
+### Famille
+
+Ensemble des clans autorisés considérés comme un même périmètre métier pour l’historique et certaines règles de continuité.
+
+Où trouver la valeur :
+
+- `FAMILY_CLAN_TAGS` est une `source de vérité` dans `backend/services/warHistory.js` ;
+- `backend/routes/clan.js` réutilise `ALLOWED_CLANS` pour la même famille métier.
+
+### Score de fiabilité (joueur)
+
+Score principal affiché pour un joueur, exprimé en pourcentage du maximum du mode actif.
+Il provient soit du full mode, soit du fallback mode.
+
+Où trouver la valeur :
+
+- `warScore.total` est un `calcul fiable` ;
+- `warScore.maxScore` est un `calcul fiable` selon les critères disponibles ;
+- `warScore.pct` est un `calcul fiable` dérivé des deux précédents ;
+- l’endpoint `GET /api/player/:tag/analysis` est la `source de vérité` de l’API pour ce score.
+
+### Score de fiabilité (clan)
+
+Il n’existe pas aujourd’hui de score unique canonique pour un clan entier.
+La vue clan s’appuie surtout sur les scores de fiabilité de ses membres et sur leurs verdicts.
+
+Où trouver les données utiles :
+
+- l’endpoint `GET /api/clan/:tag/analysis` est la `source de vérité` ;
+- `members[].reliability` et `members[].verdict` sont des `calculs fiables` par membre ;
+- `membersRaw` contient des données plus brutes, utiles pour le debug ;
+- il n’existe pas de champ canonique `scoreClan` calculé une seule fois et stocké comme vérité métier.
+
+Comment l’interpréter :
+
+- la “fiabilité du clan” est une `estimation` agrégée à partir de la distribution des membres, pas une formule unique stockée dans un champ dédié.
+
+### Snapshot
+
+Capture persistée de l’état de guerre à un instant donné, utilisée pour reconstituer les deltas journaliers de decks et de points.
+
+Où trouver la valeur :
+
+- `backend/services/snapshot.js` est la logique de lecture/écriture ;
+- `/tmp/clash-snapshots` est la destination runtime ;
+- `data/snapshots` est la copie persistante ;
+- `scripts/collectSnapshots.js` et `scripts/preResetSnapshot.js` produisent ces snapshots.
+
+Champs utiles :
+
+- `snapshotTime` est une `source de vérité` si présente dans le snapshot ;
+- `snapshotBackupTime` est une `source de vérité` de secours ;
+- `decks` est une `source de vérité` du snapshot ;
+- `_cumul` et `_cumulFame` sont des `calculs fiables` persistés pour comparer les jours ;
+- les versions `pre-reset` servent de `source de vérité` de secours pour la journée précédant le reset.
+
+### Decks cumul
+
+Total cumulé de decks joués depuis le début de la semaine de guerre pour un joueur ou un clan.
+
+Où trouver la valeur :
+
+- `currentRace.clan.participants[].decksUsed` est la `source de vérité` live ;
+- `_cumul` dans les snapshots est une `source de vérité` persistée pour la semaine courante ;
+- `decksUsed` dans `warHistory.weeks[]` est un `calcul fiable` basé sur le `riverracelog`.
+
+### Decks journaliers
+
+Nombre de decks joués pendant une seule journée GDC.
+
+Comment le calculer :
+
+- `decks` dans un snapshot journalier est une `source de vérité` si le snapshot est disponible ;
+- le delta entre deux cumuls consécutifs est un `calcul fiable` à partir de la source de vérité ;
+- `buildCurrentWarDays()` et `warSnapshotDays` servent de `calcul fiable` de reconstitution pour la vue joueur.
+
+### Decks live
+
+Valeur instantanée issue de l’API en cours de journée, non figée par snapshot.
+
+Où trouver la valeur :
+
+- `currentRace.clan.participants[].decksUsed` est la `source de vérité` live ;
+- la semaine live construite dans `buildWarHistory()` avec `isCurrent: true` est un `calcul fiable` d’assemblage.
+
+### Points (fame) cumul
+
+Total de points accumulés depuis le début de la semaine de guerre.
+
+Où trouver la valeur :
+
+- `currentRace.clan.participants[].fame` est la `source de vérité` live ;
+- `_cumulFame` dans les snapshots est une `source de vérité` persistée ;
+- `warHistory.weeks[].fame` est un `calcul fiable` d’historique.
+
+### Points (fame) journaliers
+
+Points gagnés pendant une seule journée GDC.
+
+Comment le calculer :
+
+- `computeDailyFame(dayEntry, prevDayEntry)` est un `calcul fiable` à partir des cumuls ;
+- le cumul du jour et celui du jour précédent sont des `sources de vérité` prises dans `_cumulFame` ;
+- `debugSnapshotInfo` expose des valeurs journalières déjà calculées pour le debug.
+
+### Points (fame) live
+
+Valeur instantanée observée sur l’API pendant la journée courante.
+Elle peut rester cumulative sur la semaine, selon le contexte warDay ou Colisée.
+
+Où trouver la valeur :
+
+- `currentRace.clan.participants[].fame` est la `source de vérité` live.
+
+Comment l’interpréter :
+
+- en `warDay`, le score journalier est souvent un `calcul fiable` obtenu par soustraction du cumul précédent ;
+- en `colosseum`, la valeur peut rester un cumul natif et donc être une `source de vérité` déjà exploitable telle quelle.
+
+### `periodType`
+
+Indique le type de période fournie par l’API de guerre.
+
+Où trouver la valeur :
+
+- `periodType` est une `source de vérité` issue de l’API Clash Royale.
+
+Comment l’utiliser :
+
+- `periodType === "warDay"` indique une journée de guerre classique ;
+- `periodType === "colosseum"` indique une journée de Colisée ;
+- les calculs de résumé s’appuient dessus pour décider si la fame doit être cumulée ou soustraite.
 
 ---
 
-## 📜 License
+## Licence
 
-MIT — Not affiliated with or endorsed by Supercell.
+MIT — projet non affilié à Supercell et non approuvé par Supercell.
