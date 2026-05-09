@@ -3254,7 +3254,9 @@ function renderClanMembers(data) {
     });
   }
 
-  if (shouldRenderMembers) {
+  // Pour les clans lite, les données sont déjà disponibles : on rend le tableau
+  // directement sans attendre l'ouverture de la section (aucun lazy-loading nécessaire).
+  if (shouldRenderMembers || isLite) {
     const sortedMembers = isLite
       ? sortMembers(members, "trophies", "desc")
       : sortMembers(members, "reliability", "asc");
