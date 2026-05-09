@@ -157,32 +157,45 @@ function normalizePlayerTag(tag) {
   return `#${normalized.toUpperCase()}`;
 }
 
+const ROLE_FR = {
+  member: "membre",
+  elder: "aîné",
+  coLeader: "co-leader",
+  leader: "leader",
+};
+
 async function readClanMemberNames(tag) {
   const filePath = path.join(CACHE_DIR, `${tag}.json`);
   if (!existsSync(filePath)) return {};
   try {
     const raw = await readFile(filePath, "utf-8");
     const data = JSON.parse(raw);
-    const names = {};
+    const members = {};
 
     const membersRaw = data.membersRaw || {};
     for (const [playerTag, playerData] of Object.entries(membersRaw)) {
-      names[normalizePlayerTag(playerTag)] =
-        playerData?.profile?.name || normalizePlayerTag(playerTag);
+      const normTag = normalizePlayerTag(playerTag);
+      members[normTag] = {
+        name: playerData?.profile?.name || normTag,
+        role: null,
+      };
     }
 
     // data.members est la source de vérité pour l'appartenance actuelle au clan.
     // Ne pas utiliser uncomplete.players : cette liste peut contenir des ex-membres
     // qui n'ont pas joué leurs decks avant de quitter, ce qui fausserait la liste
     // des combats manquants.
-    const members = Array.isArray(data.members) ? data.members : [];
-    for (const member of members) {
+    const membersList = Array.isArray(data.members) ? data.members : [];
+    for (const member of membersList) {
       const playerTag = normalizePlayerTag(member?.tag);
-      if (!playerTag || names[playerTag]) continue;
-      names[playerTag] = member.name || playerTag;
+      if (!playerTag) continue;
+      members[playerTag] = {
+        name: members[playerTag]?.name || member.name || playerTag,
+        role: member.role ?? members[playerTag]?.role ?? null,
+      };
     }
 
-    return names;
+    return members;
   } catch {
     return {};
   }
@@ -580,11 +593,12 @@ async function postWarSummary(
     // snapshot (0 decks), exclut les ex-membres (riko, les Goetter…) qui ne sont
     // plus dans data.members/membersRaw mais pourraient traîner dans d'autres listes.
     const missingPlayers = Object.entries(memberNames)
-      .map(([tagNorm, name]) => {
+      .map(([tagNorm, { name, role }]) => {
         const decksCount = Number(dayEntry.decks?.[tagNorm]) || 0;
         return {
           tag: tagNorm,
           name,
+          role,
           missing: Math.max(0, 4 - decksCount),
         };
       })
@@ -602,7 +616,9 @@ async function postWarSummary(
       if (totalMissingDecks < 30) {
         const lines = missingPlayers.map((player) => {
           const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(player.tag)}`;
-          return `- [${player.name}](${playerUrl}) (x${player.missing})`;
+          const roleFr = ROLE_FR[player.role] ?? player.role ?? null;
+          const roleLabel = roleFr ? ` · ${roleFr}` : "";
+          return `- [${player.name}](${playerUrl}) (x${player.missing})${roleLabel}`;
         });
         const value = lines.join("\n");
         fields.push({
