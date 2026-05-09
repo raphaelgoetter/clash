@@ -1,5 +1,12 @@
 # Trustroyale
 
+Trustroyale est un outil web ainsi qu'un bot Discord développé pour la famille Résistance que j'ai commencé à developper le 8 mars (il y a 2 mois aujourd'hui !). Il calcule un **score de fiabilité GDC** (0–100 %) pour chaque joueur à partir de 9 critères objectifs (régularité, score, victoires, stabilité, activité…).
+
+- L'interface web ([trustroyale.vercel.app](https://trustroyale.vercel.app/)) permet d'analyser joueurs et clans. C'est ouvert à tous, mais les données de fiabilité sont limitées à la famille Résistance (3 clans).
+- Le bot Discord expose une dizaine de commandes (`/trust`, `/stats`, `/trust-clan`, `/chelem`, `/top-players`, `/promote`, `/demote`…) pour piloter les GDC, les recrutements et les promotions sans quitter Discord. Le bot est déployé sur les serveurs de la famille et accessible à tous les membres.
+
+---
+
 **Trustroyale** est un outil développé en interne pour la famille Résistance afin de mieux organiser nos clans et faciliter les recrutements.
 
 Trustroyale fournit des "critères de fiabilité" objectifs et orientés spécifiquement pour les Guerres de Clan, pour que chacun (membres et chefs de clan) puisse avancer ensemble en meilleure confiance.
