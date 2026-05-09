@@ -46,6 +46,8 @@ jobs:
           git add data/snapshots/*.json || true
           git diff --cached --quiet || git commit -m "chore: snapshot pré-reset journalier"
           # Le script dort ~45 min : origin/main a pu avancer (cron horaire, commits manuels).
-          # git pull --rebase remet notre commit au sommet avant de pousser.
-          git pull --rebase origin main
+          # On fetch puis merge avec -X ours pour que nos données pré-reset gagnent
+          # en cas de conflit sur les JSON (le rebase échoue car les JSON divergent).
+          git fetch origin main
+          git merge -X ours origin/main
           git push
