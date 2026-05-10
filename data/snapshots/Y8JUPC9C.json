@@ -2736,7 +2736,7 @@
           "start": "2026-05-10T09:40:00.000Z",
           "end": "2026-05-11T09:39:59.999Z"
         },
-        "snapshotTime": "2026-05-10T12:18:27.265Z",
+        "snapshotTime": "2026-05-10T13:30:59.658Z",
         "snapshotBackupTime": "2026-05-10T10:26:35.906Z",
         "decks": {
           "#28PQVJ2V": 4,
@@ -2749,7 +2749,11 @@
           "#LCQ2J0VGC": 4,
           "#PG0Q0YYGY": 4,
           "#PGJPJG9QQ": 4,
-          "#9YQ8RVU2P": 2
+          "#YRYPUR822": 4,
+          "#8PP9JQCLY": 3,
+          "#UJ89GUUUY": 3,
+          "#9YQ8RVU2P": 2,
+          "#9Y28LR22": 1
         },
         "hourlyCumul": [
           {
@@ -2759,6 +2763,10 @@
           {
             "takenAt": "2026-05-10T12:18:22.923Z",
             "total": 42
+          },
+          {
+            "takenAt": "2026-05-10T13:30:55.094Z",
+            "total": 53
           }
         ],
         "_cumulFame": {
@@ -2768,14 +2776,14 @@
           "#YVYCJU9PC": 0,
           "#JCGQCGLLP": 300,
           "#9CQC0YUR8": 1850,
-          "#9Y28LR22": 1350,
+          "#9Y28LR22": 1450,
           "#UYP0YCQ9": 1400,
-          "#8PP9JQCLY": 1600,
+          "#8PP9JQCLY": 2000,
           "#80CCLY20L": 1600,
           "#J8RU2RJ8C": 1850,
-          "#YRYPUR822": 1700,
+          "#YRYPUR822": 2400,
           "#8P29RRU2": 1700,
-          "#UJ89GUUUY": 1700,
+          "#UJ89GUUUY": 2150,
           "#9YQ8RVU2P": 2100,
           "#GVGVR0J2U": 1750,
           "#8C8PCGPQ": 1800,
@@ -2824,14 +2832,14 @@
           "#YVYCJU9PC": 0,
           "#JCGQCGLLP": 3,
           "#9CQC0YUR8": 12,
-          "#9Y28LR22": 12,
+          "#9Y28LR22": 13,
           "#UYP0YCQ9": 12,
-          "#8PP9JQCLY": 12,
+          "#8PP9JQCLY": 15,
           "#80CCLY20L": 12,
           "#J8RU2RJ8C": 16,
-          "#YRYPUR822": 12,
+          "#YRYPUR822": 16,
           "#8P29RRU2": 12,
-          "#UJ89GUUUY": 12,
+          "#UJ89GUUUY": 15,
           "#9YQ8RVU2P": 14,
           "#GVGVR0J2U": 11,
           "#8C8PCGPQ": 11,
@@ -2872,7 +2880,7 @@
           "#28PQVJ2V": 16,
           "#99VY0090": 16
         },
-        "snapshotCount": 42
+        "snapshotCount": 53
       }
     ]
   }
