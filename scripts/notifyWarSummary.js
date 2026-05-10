@@ -496,25 +496,47 @@ async function postWarSummary(
     (a, b) => a + b,
     0,
   );
+
+  // Snapshot pré-reset (T-2 min) : source de vérité exacte.
+  // _cumulFamePreReset est le cumul hebdomadaire capturé avant tout deck de la nouvelle journée.
+  const cumulFamePreReset = dayEntry._cumulFamePreReset ?? null;
+  const hasPreResetSnapshot =
+    Boolean(dayEntry.snapshotPreResetTime) &&
+    cumulFamePreReset !== null &&
+    Object.keys(cumulFamePreReset).length > 0;
+
   const hasFameData =
     liveTodayCumul !== null ||
+    hasPreResetSnapshot ||
     Object.keys(dayEntry._cumulFame ?? {}).length > 0;
-  const snapshotFame = hasFameData
-    ? computeDailyFame(dayEntry, prevDayEntry)
-    : null;
-  let totalFame = snapshotFame;
 
-  if (liveTodayCumul !== null && livePrevCumul !== null) {
-    const liveDelta = Math.max(0, liveTodayCumul - livePrevCumul);
-    const snapshotTotalCumul = sumValues(dayEntry._cumulFame);
+  let totalFame;
+  if (hasPreResetSnapshot) {
+    // On substitue _cumulFamePreReset à _cumulFame dans computeDailyFame :
+    // même formule delta vs J-1, insensible au live post-reset (déjà contaminé par J+1).
+    // Compatible Colisée : si prevDayEntry est null, retourne le cumul natif.
+    totalFame = computeDailyFame(
+      { ...dayEntry, _cumulFame: cumulFamePreReset },
+      prevDayEntry,
+    );
+  } else {
+    const snapshotFame = hasFameData
+      ? computeDailyFame(dayEntry, prevDayEntry)
+      : null;
+    totalFame = snapshotFame;
 
-    // /currentriverrace peut déjà pointer vers la nouvelle journée après reset.
-    // On n'utilise le cumul live que s'il est au moins aussi élevé que le dernier
-    // snapshot du jour terminé, sinon le snapshot reste la source de vérité.
-    if (liveTodayCumul >= snapshotTotalCumul) {
-      totalFame = liveDelta;
-    } else if (snapshotFame === null) {
-      totalFame = liveDelta;
+    if (liveTodayCumul !== null && livePrevCumul !== null) {
+      const liveDelta = Math.max(0, liveTodayCumul - livePrevCumul);
+      const snapshotTotalCumul = sumValues(dayEntry._cumulFame);
+
+      // /currentriverrace peut déjà pointer vers la nouvelle journée après reset.
+      // On n'utilise le cumul live que s'il est au moins aussi élevé que le dernier
+      // snapshot du jour terminé, sinon le snapshot reste la source de vérité.
+      if (liveTodayCumul >= snapshotTotalCumul) {
+        totalFame = liveDelta;
+      } else if (snapshotFame === null) {
+        totalFame = liveDelta;
+      }
     }
   }
 
@@ -530,11 +552,15 @@ async function postWarSummary(
 
   // Bilan de semaine (J4 uniquement)
   let weekly = isLastDay ? computeWeeklySummary(allWeekDays) : null;
-  // Si on a un cumul live, l'utiliser comme total de semaine (plus précis que le snapshot)
-  if (weekly && liveTodayCumul !== null && !weekly.isColosseum) {
-    const snapshotTotalCumul = sumValues(dayEntry._cumulFame);
-    if (liveTodayCumul >= snapshotTotalCumul) {
-      weekly = { ...weekly, totalFameWeek: liveTodayCumul };
+  if (weekly && !weekly.isColosseum) {
+    if (hasPreResetSnapshot) {
+      // Cumul hebdo exact capturé à T-2 min : plus précis que la somme des deltas journaliers.
+      weekly = { ...weekly, totalFameWeek: sumValues(cumulFamePreReset) };
+    } else if (liveTodayCumul !== null) {
+      const snapshotTotalCumul = sumValues(dayEntry._cumulFame);
+      if (liveTodayCumul >= snapshotTotalCumul) {
+        weekly = { ...weekly, totalFameWeek: liveTodayCumul };
+      }
     }
   }
 
