@@ -1880,7 +1880,7 @@
           "start": "2026-05-10T09:42:00.000Z",
           "end": "2026-05-11T09:41:59.999Z"
         },
-        "snapshotTime": "2026-05-10T14:25:48.075Z",
+        "snapshotTime": "2026-05-10T15:21:13.934Z",
         "snapshotBackupTime": "2026-05-10T10:26:36.913Z",
         "decks": {
           "#J008G9CLJ": 4,
@@ -1902,6 +1902,10 @@
           },
           {
             "takenAt": "2026-05-10T14:25:31.959Z",
+            "total": 9
+          },
+          {
+            "takenAt": "2026-05-10T15:20:56.176Z",
             "total": 9
           }
         ],
@@ -1933,7 +1937,8 @@
           "#8JGU9UUJJ": 1700,
           "#J008G9CLJ": 2750,
           "#C0RRPJYV9": 2100,
-          "#UVGPPVQ8Q": 2400
+          "#UVGPPVQ8Q": 2400,
+          "#L8LCR02CG": 0
         },
         "periodType": "warDay",
         "_cumul": {
@@ -1964,7 +1969,8 @@
           "#8JGU9UUJJ": 12,
           "#J008G9CLJ": 16,
           "#C0RRPJYV9": 12,
-          "#UVGPPVQ8Q": 15
+          "#UVGPPVQ8Q": 15,
+          "#L8LCR02CG": 0
         },
         "snapshotCount": 9
       }
