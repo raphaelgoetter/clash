@@ -21,6 +21,12 @@ export default defineConfig({
           url === "/fr/bot/"
         ) {
           req.url = "/bot/index.html";
+          return next();
+        }
+        // URLs path-based : /fr/player/TAG et /fr/clan/TAG → index.html (SPA)
+        if (/^\/(fr|en)\/(player|clan)\//.test(url)) {
+          req.url = "/index.html";
+          return next();
         }
         next();
       });

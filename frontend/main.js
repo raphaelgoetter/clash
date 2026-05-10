@@ -117,15 +117,25 @@ function getBasePath() {
 
 /**
  * Retourne l'état courant de l'URL : { lang, mode, tag }.
- * lang est extrait du segment de chemin, mode et tag depuis les query params.
+ * Supporte les URLs path-based : /<lang>/<mode>/<tag>
+ * Fallback sur les query params pour rétrocompatibilité.
  */
 function getUrlState() {
-  const seg = window.location.pathname.replace(/\/+$/, "").split("/")[1];
+  const parts = window.location.pathname
+    .replace(/\/+$/, "")
+    .split("/")
+    .filter(Boolean);
+  // parts[0] = lang, parts[1] = mode (player|clan), parts[2] = tag sans #
+  const lang = SUPPORTED_LANGS.includes(parts[0]) ? parts[0] : null;
+  const pathMode =
+    parts[1] === "player" || parts[1] === "clan" ? parts[1] : null;
+  const pathTag = parts[2] ? `#${parts[2]}` : null;
+  // Fallback : anciens query params
   const params = new URLSearchParams(window.location.search);
   return {
-    lang: SUPPORTED_LANGS.includes(seg) ? seg : null,
-    mode: params.get("mode"),
-    tag: params.get("tag"),
+    lang,
+    mode: pathMode ?? params.get("mode"),
+    tag: pathTag ?? params.get("tag"),
   };
 }
 
@@ -140,13 +150,13 @@ function setUrlState({ lang, mode, tag, replace = false } = {}) {
   const finalMode = mode ?? current.mode;
   const finalTag = tag ?? current.tag;
 
-  const params = new URLSearchParams();
-  if (finalMode) params.set("mode", finalMode);
-  if (finalTag) params.set("tag", finalTag);
-
-  const url = params.toString()
-    ? `/${finalLang}/?${params.toString()}`
-    : `/${finalLang}/`;
+  let url;
+  if (finalMode && finalTag) {
+    const cleanTag = finalTag.replace(/^#/, "");
+    url = `/${finalLang}/${finalMode}/${cleanTag}`;
+  } else {
+    url = `/${finalLang}/`;
+  }
 
   const state = {
     mode: finalMode ?? currentMode,
@@ -472,13 +482,13 @@ async function switchLanguage(lang) {
   localStorage.setItem(LANG_STORAGE_KEY, lang);
 
   const { mode, tag } = getUrlState();
-  const params = new URLSearchParams();
-  if (mode) params.set("mode", mode);
-  if (tag) params.set("tag", tag);
-
-  const newUrl = params.toString()
-    ? `/${lang}/?${params.toString()}`
-    : `/${lang}/`;
+  let newUrl;
+  if (mode && tag) {
+    const cleanTag = tag.replace(/^#/, "");
+    newUrl = `/${lang}/${mode}/${cleanTag}`;
+  } else {
+    newUrl = `/${lang}/`;
+  }
   window.location.href = newUrl;
 }
 
@@ -508,18 +518,22 @@ async function initApp() {
 
   if (!getUrlState().lang) {
     // Pas de locale explicite dans le chemin : normaliser vers la langue sélectionnée
-    const params = new URLSearchParams(window.location.search);
-    const suffix = params.toString() ? `/?${params.toString()}` : "/";
+    const { mode, tag } = getUrlState();
+    let suffix;
+    if (mode && tag) {
+      const cleanTag = tag.replace(/^#/, "");
+      suffix = `/${mode}/${cleanTag}`;
+    } else {
+      suffix = "/";
+    }
     history.replaceState(null, "", `/${lang}${suffix}`);
   }
 
   await loadLanguage(lang);
 
-  const params = new URLSearchParams(window.location.search);
-  let urlMode = params.get("mode");
-  let urlTag = params.get("tag");
+  let { mode: urlMode, tag: urlTag } = getUrlState();
 
-  // Fallback for unescaped # in URL like /en/?mode=clan&tag=#LRQP20V9
+  // Fallback pour # non-échappé dans l'URL ex: /en/?mode=clan&tag=#LRQP20V9
   if (!urlTag && window.location.hash) {
     const hashVal = window.location.hash.replace(/^#/, "");
     if (hashVal) {
@@ -530,11 +544,12 @@ async function initApp() {
   if (urlTag) {
     const mode = urlMode === "clan" ? "clan" : "player";
     applyUrlState(mode, urlTag);
-    const newParams = new URLSearchParams({ mode, tag: urlTag });
+    // Normaliser vers le nouveau format path-based (rétrocompat query params)
+    const cleanTag = urlTag.replace(/^#/, "");
     history.replaceState(
       { mode, tag: urlTag, lang: currentLang },
       "",
-      `/${currentLang}/?${newParams.toString()}`,
+      `/${currentLang}/${mode}/${cleanTag}`,
     );
     _replaceNextPush = true;
     await handleSearch();
@@ -892,8 +907,9 @@ function renderFavorites() {
   playerKeys.forEach((tag) => {
     const nm = favs.player[tag];
     const display = nm && nm !== tag ? `${escHtml(nm)} (${tag})` : escHtml(tag);
+    const cleanTag = tag.replace(/^#/, "");
     html +=
-      `<li><a class="fav-item" href="${getBasePath()}/?mode=player&tag=${encodeURIComponent(tag)}" ` +
+      `<li><a class="fav-item" href="${getBasePath()}/player/${cleanTag}" ` +
       `data-mode="player" data-tag="${tag}">${display}</a></li>`;
   });
   html += "</ul></div>";
@@ -904,8 +920,9 @@ function renderFavorites() {
     const nm = favs.clan[tag];
     const display = nm && nm !== tag ? `${escHtml(nm)} (${tag})` : escHtml(tag);
     // clan favorites now link to the app (clan view) instead of RoyaleAPI
+    const cleanTag = tag.replace(/^#/, "");
     html +=
-      `<li><a class="fav-item" href="${getBasePath()}/?mode=clan&tag=${encodeURIComponent(tag)}" ` +
+      `<li><a class="fav-item" href="${getBasePath()}/clan/${cleanTag}" ` +
       `data-mode="clan" data-tag="${tag}">${display}</a></li>`;
   });
   html += "</ul></div>";
