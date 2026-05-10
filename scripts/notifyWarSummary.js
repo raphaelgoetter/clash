@@ -591,7 +591,8 @@ async function postWarSummary(
     ) {
       line = "0 pts (victoire acquise.)";
     } else {
-      line = `≈${fmt(totalFame)} pts`;
+      // ≈ uniquement si la valeur est estimée (snapshot horaire) ; exact si pré-reset disponible
+      line = `${hasPreResetSnapshot ? "" : "≈"}${fmt(totalFame)} pts`;
       // En Colisée le score journalier fluctue selon les matchs — le delta n'est pas significatif
       if (prevFame !== null && !isColosseum)
         line += ` ${fmtDelta(totalFame - prevFame)}`;
