@@ -642,7 +642,7 @@ async function postWarSummary(
     if (totalMissingDecks > 0) {
       if (totalMissingDecks < 30) {
         const lines = missingPlayers.map((player) => {
-          const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(player.tag)}`;
+          const playerUrl = `https://trustroyale.vercel.app/fr/player/${player.tag.replace(/^#/, "")}`;
           const roleFr = ROLE_FR[player.role] ?? player.role ?? null;
           const roleLabel = roleFr ? ` · ${roleFr}` : "";
           return `- [${player.name}](${playerUrl}) (x${player.missing})${roleLabel}`;
@@ -667,7 +667,7 @@ async function postWarSummary(
     const boatNames = liveBoatAttackers
       .map((p) => {
         const plTag = p.tag.startsWith("#") ? p.tag : `#${p.tag}`;
-        const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(plTag)}`;
+        const playerUrl = `https://trustroyale.vercel.app/fr/player/${plTag.replace(/^#/, "")}`;
         return `[${p.name}](${playerUrl})`;
       })
       .join(", ");

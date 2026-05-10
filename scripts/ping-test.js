@@ -52,8 +52,7 @@ async function main() {
     .join(" ");
 
   const { parisTime, warDayLabel } = getWarContext();
-  const playerUrl =
-    "https://trustroyale.vercel.app/?mode=player&tag=%23TESTPING";
+  const playerUrl = "https://trustroyale.vercel.app/fr/player/TESTPING";
   const description = [
     `- 1 joueur en retard a ${parisTime}`,
     "- 4 decks joues",

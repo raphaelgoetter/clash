@@ -1750,7 +1750,7 @@ function renderPlayerResults(data) {
 
           // Lien vers la page Clan réduite si le tag est disponible
           const clanCell = r.clanTag
-            ? `<a class="battlelog-clan-link" href="${getBasePath()}/?${new URLSearchParams({ mode: "clan", tag: r.clanTag.startsWith("#") ? r.clanTag : "#" + r.clanTag })}">${escHtml(r.clan)}</a>`
+            ? `<a class="battlelog-clan-link" href="/${currentLang}/clan/${(r.clanTag.startsWith("#") ? r.clanTag : "#" + r.clanTag).replace(/^#/, "")}">${escHtml(r.clan)}</a>`
             : escHtml(r.clan);
 
           return `
@@ -3385,7 +3385,7 @@ function renderMembersTable(members) {
       return `
       <tr>
         <td>
-          <a class="member-link" href="?${new URLSearchParams({ mode: "player", tag: m.tag })}" title="${t("analyze")} ${escHtml(m.name)}">
+          <a class="member-link" href="/${currentLang}/player/${m.tag.replace(/^#/, "")}" title="${t("analyze")} ${escHtml(m.name)}">
             <div style="font-weight:600">${escHtml(m.name)}${displayNew ? ` <span class="new-badge">${t("newBadge")}</span>` : ""}</div>
             <div style="font-size:.75rem;color:var(--text-muted)">${escHtml(m.tag)}</div>
           </a>

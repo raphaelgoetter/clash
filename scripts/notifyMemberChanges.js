@@ -131,7 +131,7 @@ const RELIABILITY_BADGES = {
 };
 
 function formatMemberLine(m) {
-  const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(m.tag)}`;
+  const playerUrl = `https://trustroyale.vercel.app/fr/player/${m.tag.replace(/^#/, "")}`;
   let reliabilityStr = "";
 
   const scoreObj = m.analysis?.warScore ?? m.analysis?.reliability;
@@ -192,7 +192,7 @@ function formatRole(role) {
 }
 
 function formatRoleChangeLine(change) {
-  const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(change.tag)}`;
+  const playerUrl = `https://trustroyale.vercel.app/fr/player/${change.tag.replace(/^#/, "")}`;
   return `**[${change.name}](${playerUrl})** (${formatRole(change.oldRole)} ⇢ ${formatRole(change.newRole)})`;
 }
 

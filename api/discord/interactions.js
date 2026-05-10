@@ -65,6 +65,10 @@ const FR_VERDICTS = {
   red: "Risque extrême",
 };
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
+const trustPlayerUrl = (tag) =>
+  `${TRUST_ROYALE_URL}/fr/player/${String(tag).replace(/^#/, "")}`;
+const trustClanUrl = (tag) =>
+  `${TRUST_ROYALE_URL}/fr/clan/${String(tag).replace(/^#/, "")}`;
 const FAMILY_CLAN_TAGS = new Set(["#Y8JUPC9C", "#LRQP20V9", "#QU9UQJRL"]);
 const RESISTANTS_CLAN_TAG = "#LRQP20V9";
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -623,7 +627,7 @@ export default async function handler(req, res) {
 
         const embed = {
           title: `<:interrogation:1493849417520906271> Joueur : ${analysis.overview.name}`,
-          url: `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(tag)}`,
+          url: trustPlayerUrl(tag),
           color: embedColor,
           description,
           fields,
@@ -783,7 +787,7 @@ export default async function handler(req, res) {
             : "Aucun joueur n'a atteint 2600 pts la semaine précédente.";
         } else {
           const rows = players.map((p, idx) => {
-            const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
+            const playerUrl = trustPlayerUrl(p.tag);
             const fameStr = Number.isFinite(p.fame)
               ? p.fame.toLocaleString("fr-FR")
               : "0";
@@ -893,9 +897,7 @@ export default async function handler(req, res) {
           "Clan inconnu";
         const currentClanTag = analysis.overview.clan?.tag || null;
         const currentClanLink = currentClanTag
-          ? `[${currentClanName}](${TRUST_ROYALE_URL}/?mode=clan&tag=${encodeURIComponent(
-              currentClanTag,
-            )})`
+          ? `[${currentClanName}](${trustClanUrl(currentClanTag)})`
           : currentClanName;
         const currentClanWeeks = Number.isFinite(
           warHistory?.streakInCurrentClan,
@@ -916,9 +918,7 @@ export default async function handler(req, res) {
         const previousClanTag = previousClanWeek?.clanTag ?? null;
         const previousClanLink = previousClanName
           ? previousClanTag
-            ? `[${previousClanName}](${TRUST_ROYALE_URL}/?mode=clan&tag=${encodeURIComponent(
-                previousClanTag,
-              )})`
+            ? `[${previousClanName}](${trustClanUrl(previousClanTag)})`
             : previousClanName
           : null;
         const previousClanLine = previousClanLink
@@ -1005,7 +1005,7 @@ export default async function handler(req, res) {
 
         const embed = {
           title: `<:stats:1499284927894650950> Stats complètes : ${analysis.overview.name}`,
-          url: `${TRUST_ROYALE_URL}/?mode=player&tag=${encodeURIComponent(tag)}`,
+          url: trustPlayerUrl(tag),
           color: COLOR_MAP[color] ?? 0x808080,
           description: `${tag} · <:xp:1498645264079257730> ${analysis.overview.expLevel ?? "N/A"} · <:trophy:1498645869224792105> ${analysis.overview.trophies ?? 0}`,
           fields,
@@ -1121,7 +1121,7 @@ export default async function handler(req, res) {
           "Extreme risk": "Extrême",
           "High risk": "Élevé",
         };
-        const clanUrl = `https://trustroyale.vercel.app/?mode=clan&tag=%23${resolved.tag}`;
+        const clanUrl = trustClanUrl(resolved.tag);
         const allRows = filtered.map((m) => {
           const newTag = m.isNew ? " 🆕" : "";
           const emoji = VERDICT_EMOJI[m.verdict] ?? RELIABILITY_ICON.red;
@@ -1129,7 +1129,7 @@ export default async function handler(req, res) {
           const verdictLabel =
             VERDICT_LABELFr[m.verdict] ||
             (m.verdict || "").replace(/\s*risk$/i, "");
-          const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(m.tag)}`;
+          const playerUrl = trustPlayerUrl(m.tag);
           return `- [${m.name}](${playerUrl})${newTag} · ${emoji} ${verdictLabel} (${pct}%)`;
         });
 
@@ -1454,7 +1454,7 @@ export default async function handler(req, res) {
 
         const rows = players
           .map((p, idx) => {
-            const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
+            const playerUrl = trustPlayerUrl(p.tag);
             const name = p.name || p.tag;
             const clan = p.clan || "?";
             const fame = p.fame || 0;
@@ -1566,7 +1566,7 @@ export default async function handler(req, res) {
           .sort((a, b) => a.decks - b.decks || a.name.localeCompare(b.name));
 
         const rows = sorted.slice(0, MAX_ROWS).map((p, i) => {
-          const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
+          const playerUrl = trustPlayerUrl(p.tag);
           const isNew = p.isNew ? " 🆕" : "";
           const role = formatDiscordRole(p.role);
           return `${i + 1}. [${p.name}](${playerUrl})${isNew} • ${role} • **${p.decks} decks**`;
@@ -1586,7 +1586,7 @@ export default async function handler(req, res) {
             .join("\n");
           description = `${demoteHeader}\n${trimmed}\n...liste tronquée`;
         }
-        const clanUrl = `https://trustroyale.vercel.app/?mode=clan&tag=%23${resolved.tag}`;
+        const clanUrl = trustClanUrl(resolved.tag);
 
         const weekId =
           weekIdFromLog ||
@@ -1770,7 +1770,7 @@ export default async function handler(req, res) {
         } else {
           const MAX_ROWS = 80;
           const rows = players.map((p, idx) => {
-            const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(p.tag)}`;
+            const playerUrl = trustPlayerUrl(p.tag);
             return `${idx + 1}. [${p.name}](${playerUrl}) · ${p.role}`;
           });
           const visibleRows = rows.slice(0, MAX_ROWS);
@@ -2334,7 +2334,7 @@ export default async function handler(req, res) {
         const boatNames = boatAttackers
           .map((pl) => {
             const plTag = pl.tag.startsWith("#") ? pl.tag : `#${pl.tag}`;
-            const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(plTag)}`;
+            const playerUrl = trustPlayerUrl(plTag);
             return `[${pl.name}](${playerUrl})`;
           })
           .join(", ");
@@ -2372,7 +2372,7 @@ export default async function handler(req, res) {
             descLines.push(`**Manque ${count} deck${count > 1 ? "s" : ""}**`);
             for (const pl of group) {
               const tag = pl.tag.startsWith("#") ? pl.tag : `#${pl.tag}`;
-              const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(tag)}`;
+              const playerUrl = trustPlayerUrl(tag);
               const memberInfo = currentMemberByTag.get(tag.toUpperCase());
               const role = (memberInfo?.role || "member").toLowerCase();
               const roleText = formatDiscordRole(role);
@@ -2663,7 +2663,7 @@ export default async function handler(req, res) {
         const boatNames = boatAttackers
           .map((pl) => {
             const plTag = pl.tag.startsWith("#") ? pl.tag : `#${pl.tag}`;
-            const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(plTag)}`;
+            const playerUrl = trustPlayerUrl(plTag);
             return `[${pl.name}](${playerUrl})`;
           })
           .join(", ");
@@ -2702,7 +2702,7 @@ export default async function handler(req, res) {
             descLines.push(`**Manque ${count} deck${count > 1 ? "s" : ""}**`);
             for (const pl of group) {
               const tag = pl.tag.startsWith("#") ? pl.tag : `#${pl.tag}`;
-              const playerUrl = `https://trustroyale.vercel.app/?mode=player&tag=${encodeURIComponent(tag)}`;
+              const playerUrl = trustPlayerUrl(tag);
               const memberInfo = currentMemberByTag.get(tag.toUpperCase());
               const role = (memberInfo?.role || "member").toLowerCase();
               const roleText = formatDiscordRole(role);
@@ -2829,9 +2829,7 @@ export default async function handler(req, res) {
           const isOwn = clanTag === ownTag;
           const cleanTag = clanTag.replace("#", "");
           const isFamilyMember = FAMILY_TAGS.has(clanTag);
-          const url = isFamilyMember
-            ? `https://trustroyale.vercel.app/?mode=clan&tag=${encodeURIComponent(clanTag)}`
-            : `https://trustroyale.vercel.app/?mode=clan&tag=${encodeURIComponent(clanTag)}`;
+          const url = trustClanUrl(clanTag);
           const rank = `**#${idx + 1}**`;
           const nameStr = `**[${clan.name ?? clanTag}](${url})**`;
           const bold = isOwn ? "__" : "";

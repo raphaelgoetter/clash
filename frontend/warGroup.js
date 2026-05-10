@@ -22,7 +22,9 @@ const FAMILY_TAGS = new Set(["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"]);
  */
 function trustUrl(tag) {
   const clean = tag.replace("#", "").toUpperCase();
-  return `/?mode=clan&tag=%23${clean}`;
+  const lang = window.location.pathname.split("/").filter(Boolean)[0];
+  const validLang = lang === "en" || lang === "fr" ? lang : "fr";
+  return `/${validLang}/clan/${clean}`;
 }
 
 /**
