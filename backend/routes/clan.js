@@ -901,11 +901,12 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     currentRace?.state === "overtime" ||
     currentRace?.state === "full";
 
-  // Helper: somme des fame individuelles (standings.fame est tronqué en GDC classique)
+  // Helper: cumul pts de bataille semaine depuis les participants (source de vérité).
+  // Fallback : clan.clanScore qui a la même sémantique dans raceLog (cumul semaine).
   const sumParticipantsFame = (standing) => {
     const parts = standing?.clan?.participants;
     if (!Array.isArray(parts) || parts.length === 0)
-      return standing?.clan?.fame ?? null;
+      return standing?.clan?.clanScore ?? null;
     let total = 0;
     for (let i = 0; i < parts.length; i++) {
       total += parts[i].fame ?? 0;
