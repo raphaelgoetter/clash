@@ -2946,6 +2946,20 @@ function renderClanOverview(data) {
   const fullItems = [
     ...baseItems,
     {
+      label: t("labelFrRank"),
+      value: (() => {
+        if (data.frRank == null) return "—";
+        const diff =
+          data.frPreviousRank != null
+            ? data.frPreviousRank - data.frRank
+            : null;
+        const arrow = diff === null || diff === 0 ? "" : diff > 0 ? " ▲" : " ▼";
+        const diffStr =
+          diff === null || diff === 0 ? "" : ` (${diff > 0 ? "+" : ""}${diff})`;
+        return `🇫🇷 #${data.frRank}${arrow}${diffStr}`;
+      })(),
+    },
+    {
       label: t("labelWarReset"),
       value: (() => {
         const utcMinutes = clan.warResetUtcMinutes ?? 9 * 60 + 40;

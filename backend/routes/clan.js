@@ -11,6 +11,7 @@ import {
   fetchBattleLog,
   fetchPlayer,
   fetchCurrentRace,
+  fetchClanWarRankings,
 } from "../services/clashApi.js";
 import {
   analyzeClanMembers,
@@ -868,6 +869,30 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
   // If both are missing, we are in degraded mode.
   raceLogUnavailable = !raceLog && !currentRace;
+
+  // Classement France (location 57000087) — un seul appel partageable entre les 3 clans.
+  // TTL 60 min : le classement n'est mis à jour qu'après le reset hebdomadaire.
+  let frRank = null;
+  let frPreviousRank = null;
+  try {
+    const frRankings = await getOrSet(
+      "warRankings:fr",
+      () => fetchClanWarRankings(57000087, 500),
+      60 * 60 * 1000,
+    );
+    const entry = (frRankings.value ?? []).find(
+      (r) => r.tag?.replace("#", "").toUpperCase() === clanTag,
+    );
+    if (entry) {
+      frRank = entry.rank ?? null;
+      frPreviousRank = entry.previousRank ?? null;
+    }
+  } catch (err) {
+    console.warn(
+      `[clan] classement France indisponible pour ${clanTag}:`,
+      err.message,
+    );
+  }
 
   const currentRaceIndicatesWarDay =
     currentRace?.periodType === "warDay" ||
@@ -2731,6 +2756,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       : null,
     rateLimited: memberRateLimited,
     raceLogUnavailable,
+    frRank,
+    frPreviousRank,
     analysisCacheUpdatedAt: new Date().toISOString(),
     debugSnapshotInfo,
   };

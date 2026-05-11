@@ -118,3 +118,18 @@ export async function fetchRaceLog(tag) {
 export async function fetchCurrentRace(tag) {
   return get(`/clans/${encodeTag(tag)}/currentriverrace`);
 }
+
+// ── Location rankings endpoints ───────────────────────────────
+
+/**
+ * Fetch clan war rankings for a location.
+ * @param {number|string} locationId - e.g. 57000087 for France.
+ * @param {number} limit - number of entries to fetch (max ~1000). Default 500.
+ * @returns {Promise<Array>} Ranked clan entries with tag, rank, previousRank, clanScore.
+ */
+export async function fetchClanWarRankings(locationId, limit = 500) {
+  const data = await get(
+    `/locations/${locationId}/rankings/clanwars?limit=${limit}`,
+  );
+  return Array.isArray(data) ? data : (data.items ?? []);
+}

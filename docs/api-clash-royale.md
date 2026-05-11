@@ -310,3 +310,67 @@ Retourne l'historique des semaines de guerre **terminées** pour un clan (jusqu'
 | Variation trophées                      | `items[i].standings[j].trophyChange`                        | `notifyWarSummary.js` (bilan J4)                         |
 | Fin anticipée (Colisée)                 | `items[i].standings[j].clan.finishTime` ≠ epoch             | À implémenter si nécessaire                              |
 | Efficacité historique pts/deck (rivaux) | `fame / decksUsed` calculé sur `participants[]`             | `warHistory.js`                                          |
+
+---
+
+## `/locations/{locationId}/rankings/clanwars`
+
+Classement national des clans par trophées de guerre.
+La location France a l'ID `57000087`.
+
+**Particularité** : l'endpoint retourne une **liste paginée** triée par `clanScore` décroissant.
+Il n'est **pas possible de rechercher un clan spécifique** — il faut récupérer suffisamment d'entrées
+(via `?limit=N`) pour couvrir le rang attendu, puis filtrer côté client.
+
+```
+GET /locations/57000087/rankings/clanwars?limit=500
+```
+
+### Structure de la réponse
+
+```json
+{
+  "items": [
+    {
+      "tag": "#LRQP20V9",
+      "name": "Les Resistants",
+      "rank": 323,
+      "previousRank": 339,
+      "location": {
+        "id": 57000087,
+        "name": "France",
+        "isCountry": true,
+        "countryCode": "FR"
+      },
+      "clanScore": 3817,
+      "members": 49,
+      "badgeId": 16000036
+    }
+  ]
+}
+```
+
+### Champs utiles
+
+| Champ          | Type     | Description                                                                                                        |
+| -------------- | -------- | ------------------------------------------------------------------------------------------------------------------ |
+| `tag`          | `string` | Tag du clan (avec `#`).                                                                                            |
+| `rank`         | `number` | Classement actuel dans la location (1 = meilleur).                                                                 |
+| `previousRank` | `number` | Classement la semaine précédente. Permet de calculer la variation (`previousRank - rank` = progression).           |
+| `clanScore`    | `number` | Trophées de guerre du clan (≈ `clanWarTrophies` retourné par `/clans/{tag}`). Source de vérité pour le classement. |
+| `members`      | `number` | Nombre de membres du clan au moment de la requête.                                                                 |
+
+### Pièges
+
+- **Limite à fixer explicitement** : sans `?limit=N`, seuls ~50 résultats sont retournés (défaut API). Utiliser `?limit=500` pour couvrir les rangs attendus (~300-400 pour nos clans).
+- **`clanScore` ici ≠ `clanScore` dans `currentRace`** : ici c'est le score de trophées de guerre (`clanWarTrophies`), pas les points de bataille cumulés.
+- **Délai de mise à jour** : le classement est mis à jour après chaque reset hebdomadaire de GDC, pas en temps réel.
+- **Non filtrables par tag** : il faut récupérer la liste et chercher le clan dedans par son `tag`.
+
+### Usage dans TrustRoyale
+
+| Valeur métier               | Champ à utiliser        | Utilisé dans                                       |
+| --------------------------- | ----------------------- | -------------------------------------------------- |
+| Classement France du clan   | `items[i].rank`         | `clan.js` (`buildClanAnalysis` → `frRank`)         |
+| Classement France précédent | `items[i].previousRank` | `clan.js` (`buildClanAnalysis` → `frPreviousRank`) |
+| Variation de rang           | `previousRank - rank`   | Frontend vue Clan (calcul local)                   |
