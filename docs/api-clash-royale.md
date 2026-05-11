@@ -191,3 +191,122 @@ const apiDayFame = item?.pointsEarned ?? null;
 | Efficacité pts/deck                | `periodPoints / sum(decksUsedToday)`           | historique `raceLog`                   |
 | Type de période                    | `periodType`                                   | —                                      |
 | Semaine courante (weekId)          | `computeCurrentWeekId(currentRace, raceLog)`   | —                                      |
+
+---
+
+## `/clans/{clanTag}/riverracelog`
+
+Retourne l'historique des semaines de guerre **terminées** pour un clan (jusqu'aux dernières semaines selon la pagination).
+
+### Structure de haut niveau
+
+```json
+{
+  "items": [
+    {
+      "seasonId": 131,
+      "sectionIndex": 3,
+      "createdDate": "20260504T095403.000Z",
+      "standings": [ ... ]
+    }
+  ],
+  "paging": { "cursors": {} }
+}
+```
+
+| Champ          | Type     | Description                                                                                                                               |
+| -------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `seasonId`     | `number` | Identifiant de la saison. Utilisé par `computePrevWeekId()`.                                                                              |
+| `sectionIndex` | `number` | Index de la semaine dans la saison (0-based). Utilisé par `computePrevWeekId()`.                                                          |
+| `createdDate`  | `string` | Timestamp de **fin de la semaine** (reset du lundi). Format `YYYYMMDDTHHmmss.000Z`. Utile pour borner des requêtes ou afficher des dates. |
+| `standings`    | `array`  | Classement final des 5 clans du groupe, triés par rang croissant.                                                                         |
+
+> `items[0]` = semaine la plus récente terminée. `items[1]` = semaine d'avant, etc.
+
+---
+
+### `standings[]`
+
+```json
+{
+  "rank": 2,
+  "trophyChange": 50,
+  "clan": { ... }
+}
+```
+
+| Champ          | Type     | Description                                                               |
+| -------------- | -------- | ------------------------------------------------------------------------- |
+| `rank`         | `number` | Classement final du clan pour cette semaine (1 = premier).                |
+| `trophyChange` | `number` | Variation de trophées de guerre. Positif pour le 1er, négatif pour le 5e. |
+| `clan`         | `object` | Données du clan. Voir section ci-dessous.                                 |
+
+---
+
+### `standings[].clan`
+
+```json
+{
+  "tag": "#LRQP20V9",
+  "name": "Les Resistants",
+  "fame": 117050,
+  "repairPoints": 0,
+  "finishTime": "19691231T235959.000Z",
+  "periodPoints": 0,
+  "clanScore": 3747,
+  "participants": [ ... ]
+}
+```
+
+| Champ          | Type     |    Source de vérité     | Description                                                                                                                                                                                                                                                             |
+| -------------- | -------- | :---------------------: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tag`          | `string` |           ✅            | Tag du clan.                                                                                                                                                                                                                                                            |
+| `name`         | `string` |           ✅            | Nom du clan au moment de la fin de la semaine.                                                                                                                                                                                                                          |
+| `fame`         | `number` | ✅ **Source de vérité** | **Total de pts de bataille gagnés par le clan pendant toute la semaine.** Égal à `sum(participants[].fame)`. Valeur typique : 80 000–130 000. ⚠️ Sémantique différente de `clan.fame` dans `currentRace` (qui est un score de progression de classement d'une journée). |
+| `repairPoints` | `number` |           ✅            | Points de réparation du bateau accumulés sur la semaine.                                                                                                                                                                                                                |
+| `finishTime`   | `string` |           ✅            | Date de fin anticipée en Colisée. **Si `"19691231T235959.000Z"` (epoch 0) → le clan n'a pas terminé en avance.** Date réelle → fin anticipée (Colisée uniquement).                                                                                                      |
+| `periodPoints` | `number` |    ⚠️ **Toujours 0**    | **Toujours 0 dans `raceLog`.** Ce champ n'est significatif que dans `currentRace`. Ne pas utiliser.                                                                                                                                                                     |
+| `clanScore`    | `number` |           ✅            | **Score de classement trophy** du clan pour cette semaine. Échelle ~3 500–4 000. ⚠️ Sémantique totalement différente de `clanScore` dans `currentRace` (qui est le cumul des pts de bataille). Ce champ est le score qui détermine `trophyChange`.                      |
+
+> **Piège fréquent** : dans `currentRace`, `clan.clanScore` = cumul des pts de bataille (≈ `fame` de raceLog). Dans `raceLog`, `clan.clanScore` = score trophy (~3700). Ces deux champs portent le même nom mais représentent des métriques complètement différentes.
+
+---
+
+### `standings[].clan.participants[]` — joueurs (données hebdomadaires complètes)
+
+```json
+{
+  "tag": "#ABCDEF",
+  "name": "PlayerName",
+  "fame": 2750,
+  "repairPoints": 0,
+  "boatAttacks": 2,
+  "decksUsed": 16,
+  "decksUsedToday": 0
+}
+```
+
+| Champ            | Type     |    Source de vérité     | Description                                                                                                                                                               |
+| ---------------- | -------- | :---------------------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tag`            | `string` |           ✅            | Tag du joueur.                                                                                                                                                            |
+| `name`           | `string` |           ✅            | Pseudo du joueur.                                                                                                                                                         |
+| `fame`           | `number` | ✅ **Source de vérité** | **Total de pts de bataille gagnés par ce joueur sur toute la semaine.** Max théorique ~3 300 (16 decks × ~200 pts/deck). Utilisé dans `warHistory.js` et `warScoring.js`. |
+| `boatAttacks`    | `number` |           ✅            | Nombre total d'attaques de bateau effectuées sur la semaine.                                                                                                              |
+| `decksUsed`      | `number` | ✅ **Source de vérité** | **Total de decks joués sur toute la semaine.** Max 16 (4 par jour × 4 jours). Utilisé dans `warHistory.js` pour calculer la fiabilité.                                    |
+| `decksUsedToday` | `number` |    ⚠️ **Toujours 0**    | **Toujours 0 dans `raceLog`.** Ce champ n'est significatif que dans `currentRace`. Ne pas utiliser.                                                                       |
+
+---
+
+### Usage dans TrustRoyale
+
+| Valeur métier                           | Champ raceLog à utiliser                                    | Utilisé dans                                             |
+| --------------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------- |
+| Semaine précédente (weekId)             | `computePrevWeekId(raceLog)`                                | `dateUtils.js`                                           |
+| Total pts de bataille semaine (clan)    | `items[i].standings[j].clan.fame`                           | `warHistory.js`, `notifyWarSummary.js` (bilan J4, exact) |
+| Total decks semaine (clan)              | `sum(items[i].standings[j].clan.participants[k].decksUsed)` | `notifyWarSummary.js` (bilan J4, exact)                  |
+| Total decks semaine (joueur)            | `items[i].standings[j].clan.participants[k].decksUsed`      | `warHistory.js`, `warScoring.js`                         |
+| Total pts semaine (joueur)              | `items[i].standings[j].clan.participants[k].fame`           | `warHistory.js`, `warScoring.js`                         |
+| Classement final de la semaine          | `items[i].standings[j].rank`                                | `notifyWarSummary.js` (bilan J4)                         |
+| Variation trophées                      | `items[i].standings[j].trophyChange`                        | `notifyWarSummary.js` (bilan J4)                         |
+| Fin anticipée (Colisée)                 | `items[i].standings[j].clan.finishTime` ≠ epoch             | À implémenter si nécessaire                              |
+| Efficacité historique pts/deck (rivaux) | `fame / decksUsed` calculé sur `participants[]`             | `warHistory.js`                                          |

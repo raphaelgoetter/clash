@@ -450,6 +450,9 @@ async function postWarSummary(
   allWeekDays,
   earlyWinByDay3,
   clanRank = null,
+  trophyChange = null,
+  apiWeekFame = null, // clan.fame depuis raceLog[0] (total pts semaine, exact)
+  apiWeekDecks = null, // sum(participants[].decksUsed) depuis raceLog[0]
 ) {
   const channelId = process.env[`DISCORD_CHANNEL_MEMBERS_${tag}`];
   const token = process.env.DISCORD_TOKEN;
@@ -578,6 +581,24 @@ async function postWarSummary(
       if (liveTodayCumul >= snapshotTotalCumul) {
         weekly = { ...weekly, totalFameWeek: liveTodayCumul };
       }
+    }
+  }
+
+  // Override avec données directes de raceLog (dimanche uniquement, source de vérité).
+  // apiWeekFame = clan.fame (total exact), apiWeekDecks = sum(participants[].decksUsed).
+  // Ces valeurs remplacent les calculs snapshot : plus précis, pas de delta nécessaire.
+  if (weekly) {
+    if (apiWeekFame !== null)
+      weekly = { ...weekly, totalFameWeek: apiWeekFame };
+    if (apiWeekDecks !== null) {
+      weekly = {
+        ...weekly,
+        totalDecksWeek: apiWeekDecks,
+        avgDecksPerDay:
+          allWeekDays.length > 0
+            ? apiWeekDecks / allWeekDays.length
+            : weekly.avgDecksPerDay,
+      };
     }
   }
 
@@ -776,7 +797,7 @@ async function postWarSummary(
         : "<:trophy:1498645869224792105> Points totaux";
       weeklyFields.push({
         name: fameLabel,
-        value: `≈${fmt(weekly.totalFameWeek)} pts`,
+        value: `${apiWeekFame !== null ? "" : "≈"}${fmt(weekly.totalFameWeek)} pts`,
         inline: false,
       });
     } else {
@@ -815,6 +836,15 @@ async function postWarSummary(
       weeklyFields.push({
         name: "<:topplayers:1493708397407899648> Classement",
         value: rankValue,
+        inline: false,
+      });
+    }
+
+    if (trophyChange !== null) {
+      const sign = trophyChange >= 0 ? "+" : "";
+      weeklyFields.push({
+        name: "<:topplayers:1493708397407899648> Trophées de guerre",
+        value: `${sign}${trophyChange}`,
         inline: false,
       });
     }
@@ -921,6 +951,9 @@ async function main() {
 
       // Classement final : uniquement J4, après le reset
       let clanRank = null;
+      let trophyChange = null;
+      let apiWeekFame = null; // clan.fame depuis raceLog[0] = total pts semaine exact
+      let apiWeekDecks = null; // sum(participants[].decksUsed) depuis raceLog[0]
       let earlyWinByDay3 = null;
 
       // Sur le run post-reset de J3 (warDay = saturday), on tente d'établir une preuve
@@ -955,6 +988,17 @@ async function main() {
             (s) => s.clan?.tag === `#${tag}`,
           );
           clanRank = standing?.rank ?? null;
+          trophyChange = standing?.trophyChange ?? null;
+          // clan.fame dans raceLog = total pts de bataille de la semaine (source de vérité)
+          apiWeekFame =
+            standing?.clan?.fame != null ? standing.clan.fame : null;
+          // sum(participants[].decksUsed) = total decks joués sur la semaine
+          if (standing?.clan?.participants != null) {
+            apiWeekDecks = standing.clan.participants.reduce(
+              (s, p) => s + (p.decksUsed ?? 0),
+              0,
+            );
+          }
         } catch (err) {
           console.warn(`[${tag}] Classement indisponible : ${err.message}`);
         }
@@ -977,6 +1021,9 @@ async function main() {
         allWeekDays,
         earlyWinByDay3,
         clanRank,
+        trophyChange,
+        apiWeekFame,
+        apiWeekDecks,
       );
       await markPosted(log, tag, warDay, realDay);
     } catch (err) {
