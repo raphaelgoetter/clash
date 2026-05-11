@@ -93,9 +93,10 @@ npm run cache    # régénère frontend/public/clan-cache/*.json (via scripts/re
 - **Verdicts** : 4 paliers stricts — vert ≥ 75 %, jaune 56–74 %, orange 31–55 %, rouge 0–30 %
 - **maxScore** : mode principal 53 pts (avec win rate) / 50 pts (sans) ; fallback 40 pts (45 pts avec last seen) — Discord toujours inclus (+2)- **Transferts familiaux** : présence d'un champ `isFamilyTransfer` dans les réponses API (clan + joueur). Le score est calculé à partir du war log (pas du battle log) si le joueur a joué ≥ 13 decks la semaine précédente dans un autre clan de la famille.
 - **Projection de Guerre (GDC)** : Calculée uniquement en `periodType: warDay`.
+  - **Score du jour (`clanScore`)** : Source de vérité = `currentRace.clan.periodPoints` (clan propre) ou `currentRace.clans[i].periodPoints` (rivaux). Ne jamais utiliser `clan.fame` (= score de progression de classement, pas les pts de bataille).
   - **Cible ($T$)** : Moyenne quotidienne de decks de la semaine précédente (via `riverracelog[0]`), arrondie à l'entier. Fallback : 200.
-  - **Efficacité ($E$)** : Points accumulés ÷ Total decks joués (hebdomadaire).
-  - **Formule** : $Projection = Fame\_Actuelle + (max(0, T - Decks\_Aujourd'hui) \times E)$.
+  - **Efficacité ($E$)** : `periodPoints` ÷ `decksToday` (jour courant) ; fallback historique `rivalAvgPtsPerDeckByTag` si `decksToday === 0`.
+  - **Formule** : $Projection = max(Decks\_Aujourd\text{'}hui, T) \times E$ (équivalent à $clanScore + max(0, T - Decks\_Aujourd\text{'}hui) \times E$).
   - **Tri** : En période de GDC, la liste des clans est triée par Projection décroissante.
 
 ## Conventions générales critiques

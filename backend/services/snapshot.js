@@ -1027,25 +1027,6 @@ export async function recordSnapshot(
   dayEntry._cumulFame = mergeMaps(dayEntry._cumulFame ?? {}, currentCumulFame);
   dayEntry.periodType = options.periodType ?? dayEntry.periodType ?? null;
 
-  // Historique intraday : un point par heure (dédoublonné sur 30 min) — primary seulement.
-  dayEntry.hourlyCumul = dayEntry.hourlyCumul ?? [];
-  const lastEntry = dayEntry.hourlyCumul[dayEntry.hourlyCumul.length - 1];
-  const DEDUP_MS = 30 * 60 * 1000;
-  if (
-    !lastEntry ||
-    now.getTime() - new Date(lastEntry.takenAt).getTime() >= DEDUP_MS
-  ) {
-    const dailyTotal = Object.keys(currentCumul).reduce(
-      (s, tag) =>
-        s + Math.min(4, Math.max(0, currentCumul[tag] - (baseCumul[tag] ?? 0))),
-      0,
-    );
-    dayEntry.hourlyCumul.push({
-      takenAt: now.toISOString(),
-      total: dailyTotal,
-    });
-  }
-
   dayEntry.snapshotCount = computeSnapshotCount(dayEntry.decks);
   await saveSnapshots(clanTag, filtered);
 }
@@ -1086,7 +1067,6 @@ export async function getSnapshotsForWeek(clanTag, week = null) {
       // avant le reset GDC (periodType=training) contient des données de la semaine
       // précédente qui corrompent le calcul du delta de fame du jour.
       _cumulFame: isValidSnapshot(d) ? (d._cumulFame ?? {}) : {},
-      hourlyCumul: d.hourlyCumul ?? [],
       snapshotTime: isValidSnapshot(d) ? (d.snapshotTime ?? null) : null,
       snapshotBackupTime: isValidSnapshot(d)
         ? (d.snapshotBackupTime ?? null)
@@ -1152,7 +1132,6 @@ export async function getSnapshotsForWeeks(clanTag, weeks) {
       // avant le reset GDC (periodType=training) contient des données de la semaine
       // précédente qui corrompent le calcul du delta de fame du jour.
       _cumulFame: isValidSnapshot(d) ? (d._cumulFame ?? {}) : {},
-      hourlyCumul: d.hourlyCumul ?? [],
       snapshotTime: isValidSnapshot(d) ? (d.snapshotTime ?? null) : null,
       snapshotBackupTime: isValidSnapshot(d)
         ? (d.snapshotBackupTime ?? null)

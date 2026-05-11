@@ -465,6 +465,7 @@ async function postWarSummary(
   let liveBoatAttackers = [];
   let liveBoatTotal = 0;
   let clinchedInfo = null;
+  let apiDayFame = null; // pointsEarned depuis periodLogs (source de vérité J1-J3)
   try {
     const race = await fetchCurrentRace(tag);
     const participants = race?.clan?.participants ?? [];
@@ -486,6 +487,18 @@ async function postWarSummary(
         (a, b) => a + b,
         0,
       );
+    }
+    // periodLogs : source de vérité directe pour les pts de la journée terminée (J1-J3).
+    // periodLogs[WAR_DAY_NUMBER[warDay] - 1] = entrée du jour concerné (ordre chronologique).
+    // Absent pour J4 après le reset lundi → apiDayFame restera null, fallback snapshot.
+    const periodLogIndex = WAR_DAY_NUMBER[warDay] - 1;
+    const periodLog = race?.periodLogs?.[periodLogIndex];
+    const ownTagNorm = `#${tag}`.toUpperCase();
+    const periodLogItem = periodLog?.items?.find(
+      (item) => (item.clan?.tag ?? "").toUpperCase() === ownTagNorm,
+    );
+    if (periodLogItem?.pointsEarned != null) {
+      apiDayFame = periodLogItem.pointsEarned;
     }
   } catch (_) {
     // Appel live échoué — on tombera sur le calcul snapshot ci-dessous
@@ -511,7 +524,11 @@ async function postWarSummary(
     Object.keys(dayEntry._cumulFame ?? {}).length > 0;
 
   let totalFame;
-  if (hasPreResetSnapshot) {
+  if (apiDayFame !== null) {
+    // periodLogs disponible : source de vérité directe, aucun delta nécessaire (J1-J3).
+    // Pour J4 après le reset lundi, apiDayFame est null → on descend vers les fallbacks.
+    totalFame = apiDayFame;
+  } else if (hasPreResetSnapshot) {
     // On substitue _cumulFamePreReset à _cumulFame dans computeDailyFame :
     // même formule delta vs J-1, insensible au live post-reset (déjà contaminé par J+1).
     // Compatible Colisée : si prevDayEntry est null, retourne le cumul natif.

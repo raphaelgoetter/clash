@@ -50,6 +50,10 @@ Notes :
 - /api/player/:tag/analysis ajoute aussi warSnapshotDays, warCurrentWeekId, warSnapshotTakenAt et warResetUtcMinutes quand les données existent.
 - /api/clan/:tag/analysis peut exposer debugSnapshotInfo avec des scores journaliers explicites : scoreJeudi, scoreVendredi, scoreSamedi, scoreDimanche et dailyScores.
 
+### API Clash Royale — champs et sources de vérité
+
+La documentation détaillée des champs retournés par l’API Clash Royale (champs `currentriverrace`, `periodPoints`, `periodLogs`, `participants`, etc.) est dans [docs/api-clash-royale.md](docs/api-clash-royale.md).
+
 ---
 
 ## Formules et scoring
@@ -396,13 +400,14 @@ Comment le calculer :
 - le delta entre deux cumuls consécutifs est un `calcul fiable` à partir de la source de vérité ;
 - `buildCurrentWarDays()` et `warSnapshotDays` servent de `calcul fiable` de reconstitution pour la vue joueur.
 
-### Decks live
+### Decks journaliers live
 
-Valeur instantanée issue de l’API en cours de journée, non figée par snapshot.
+Decks joués pendant le jour courant, par joueur.
 
 Où trouver la valeur :
 
-- `currentRace.clan.participants[].decksUsed` est la `source de vérité` live ;
+- `currentRace.clan.participants[].decksUsedToday` est la `source de vérité` pour le jour courant, disponible pour tous les clans du groupe (`currentRace.clans[i].participants[].decksUsedToday`) sans appel supplémentaire.
+- `currentRace.clan.participants[].decksUsed` est la `source de vérité` pour le cumul hebdomadaire.
 - la semaine live construite dans `buildWarHistory()` avec `isCurrent: true` est un `calcul fiable` d’assemblage.
 
 ### Points (fame) cumul
@@ -419,25 +424,62 @@ Où trouver la valeur :
 
 Points gagnés pendant une seule journée GDC.
 
-Comment le calculer :
+Où trouver la valeur :
 
-- `computeDailyFame(dayEntry, prevDayEntry)` est un `calcul fiable` à partir des cumuls ;
-- le cumul du jour et celui du jour précédent sont des `sources de vérité` prises dans `_cumulFame` ;
+- `currentRace.clan.periodPoints` (et `currentRace.clans[i].periodPoints`) est la `source de vérité` pour le **jour courant** — disponible sans calcul pour tous les clans du groupe dans un seul appel API.
+- `currentRace.periodLogs[i].items[j].pointsEarned` est la `source de vérité` pour les **jours terminés** (J1, J2, J3 disponibles pendant J4 ; disparaît après le reset hebdomadaire du lundi).
+- `computeDailyFame(dayEntry, prevDayEntry)` reste un `calcul fiable` de secours (delta `_cumulFame` snapshot) quand `periodLogs` n’est pas disponible (J4 après reset, ou appel échoué).
 - `debugSnapshotInfo` expose des valeurs journalières déjà calculées pour le debug.
+
+Structure de `periodLogs` :
+
+```json
+{
+  "periodLogs": [
+    {
+      "periodIndex": 3,
+      "items": [
+        {
+          "clan": { "tag": "#LRQP20V9" },
+          "pointsEarned": 30500,
+          "progressStartOfDay": 0,
+          "progressEndOfDay": 3323,
+          "endOfDayRank": 0,
+          "progressEarned": 3000,
+          "numOfDefensesRemaining": 13,
+          "progressEarnedFromDefenses": 323
+        }
+      ]
+    }
+  ]
+}
+```
+
+`periodLogs` contient 1 entrée par jour de guerre **terminé** (J1→J3 visibles le J4). L’ordre est chronologique : J1 = `[0]`, J2 = `[1]`, J3 = `[2]`. À utiliser via `periodLogs[WAR_DAY_NUMBER[warDay] - 1]`.
+
+⚠ **Ne pas confondre `pointsEarned` et `progressEarned`** :
+
+- `pointsEarned` = fame de bataille (ex : 30 500) — c’est la valeur à utiliser.
+- `progressEarned` = points de classement CR (ex : 3 000) — non pertinent pour les résumés de guerre.
 
 ### Points (fame) live
 
 Valeur instantanée observée sur l’API pendant la journée courante.
-Elle peut rester cumulative sur la semaine, selon le contexte warDay ou Colisée.
 
 Où trouver la valeur :
 
-- `currentRace.clan.participants[].fame` est la `source de vérité` live.
+- `currentRace.clan.periodPoints` est la `source de vérité` pour le **jour courant** (tous les clans du groupe via `currentRace.clans[i].periodPoints`). Remplace tout calcul delta snapshot pour la journée en cours.
+- `currentRace.clan.participants[].decksUsedToday` est la `source de vérité` pour les decks du jour courant, par joueur.
+
+⚠ **À ne pas utiliser pour les pts du jour** :
+
+- `currentRace.clan.fame` (et `currentRace.clans[i].fame`) = **score de progression de classement** (environ 3 000–10 000), **pas** les points de bataille. C’est l’équivalent de `progressEndOfDay` du dernier jour terminé. Ne jamais l’utiliser comme proxy des points de guerre du clan.
+- `sum(currentRace.clan.participants[].fame)` = cumul hebdomadaire des points de bataille depuis J1 — à utiliser pour `currentFame` (total semaine), pas pour les pts du jour.
 
 Comment l’interpréter :
 
-- en `warDay`, le score journalier est souvent un `calcul fiable` obtenu par soustraction du cumul précédent ;
-- en `colosseum`, la valeur peut rester un cumul natif et donc être une `source de vérité` déjà exploitable telle quelle.
+- en `warDay` : `periodPoints` donne directement les pts du jour, pour tous les clans du groupe.
+- en `colosseum` : `periodPoints` reste la source de vérité pour le jour courant.
 
 ### `periodType`
 
