@@ -451,7 +451,7 @@ async function postWarSummary(
   earlyWinByDay3,
   clanRank = null,
   trophyChange = null,
-  apiWeekFame = null, // clan.clanScore depuis raceLog[0] (cumul total pts de bataille semaine)
+  apiWeekFame = null, // clan.fame depuis raceLog[0] (cumul total pts de bataille semaine)
   apiWeekDecks = null, // sum(participants[].decksUsed) depuis raceLog[0]
 ) {
   const channelId = process.env[`DISCORD_CHANNEL_MEMBERS_${tag}`];
@@ -600,7 +600,7 @@ async function postWarSummary(
   }
 
   // Override avec données directes de raceLog (dimanche uniquement, source de vérité).
-  // apiWeekFame = clan.clanScore (cumul total pts de bataille), apiWeekDecks = sum(participants[].decksUsed).
+  // apiWeekFame = clan.fame depuis raceLog (cumul total pts de bataille), apiWeekDecks = sum(participants[].decksUsed).
   // Ces valeurs remplacent les calculs snapshot : plus précis, pas de delta nécessaire.
   if (weekly) {
     if (apiWeekFame !== null)
@@ -967,7 +967,7 @@ async function main() {
       // Classement final : uniquement J4, après le reset
       let clanRank = null;
       let trophyChange = null;
-      let apiWeekFame = null; // clan.clanScore depuis raceLog[0] = cumul total pts de bataille semaine
+      let apiWeekFame = null; // clan.fame depuis raceLog[0] = cumul total pts de bataille semaine
       let apiWeekDecks = null; // sum(participants[].decksUsed) depuis raceLog[0]
       let earlyWinByDay3 = null;
 
@@ -1004,10 +1004,10 @@ async function main() {
           );
           clanRank = standing?.rank ?? null;
           trophyChange = standing?.trophyChange ?? null;
-          // clan.clanScore dans raceLog = cumul total des pts de bataille de la semaine (source de vérité)
-          // Ne pas utiliser clan.fame : c'est un score interne de progression du bateau.
+          // clan.fame dans raceLog = cumul total des pts de bataille de la semaine (source de vérité)
+          // Ne pas utiliser clan.clanScore dans raceLog : c'est le score de trophées de guerre (~3000-5000).
           apiWeekFame =
-            standing?.clan?.clanScore != null ? standing.clan.clanScore : null;
+            standing?.clan?.fame != null ? standing.clan.fame : null;
           // sum(participants[].decksUsed) = total decks joués sur la semaine
           if (standing?.clan?.participants != null) {
             apiWeekDecks = standing.clan.participants.reduce(

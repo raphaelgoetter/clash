@@ -906,7 +906,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
   const sumParticipantsFame = (standing) => {
     const parts = standing?.clan?.participants;
     if (!Array.isArray(parts) || parts.length === 0)
-      return standing?.clan?.clanScore ?? null;
+      return standing?.clan?.fame ?? null; // clan.fame dans raceLog = cumul pts de bataille semaine
     let total = 0;
     for (let i = 0; i < parts.length; i++) {
       total += parts[i].fame ?? 0;

@@ -180,17 +180,18 @@ const apiDayFame = item?.pointsEarned ?? null;
 
 ## Correspondance champ → usage dans TrustRoyale
 
-| Valeur métier                      | Champ API à utiliser                           | Fallback                               |
-| ---------------------------------- | ---------------------------------------------- | -------------------------------------- |
-| Pts du jour (clan propre)          | `clan.periodPoints`                            | `ownHistoricPpd × decksToday`          |
-| Pts du jour (clan rival)           | `clans[i].periodPoints`                        | `rivalAvgPtsPerDeckByTag × decksToday` |
-| Pts du jour terminé (résumé J1-J3) | `periodLogs[n].items[j].pointsEarned`          | delta `_cumulFame` snapshot            |
-| Decks joués aujourd'hui (joueur)   | `participants[].decksUsedToday`                | delta entre deux snapshots             |
-| Decks cumulés semaine (joueur)     | `participants[].decksUsed`                     | `_cumul` snapshot                      |
-| Cumul fame semaine (clan)          | `sum(participants[].fame)` ou `clan.clanScore` | `_cumulFame` snapshot                  |
-| Efficacité pts/deck                | `periodPoints / sum(decksUsedToday)`           | historique `raceLog`                   |
-| Type de période                    | `periodType`                                   | —                                      |
-| Semaine courante (weekId)          | `computeCurrentWeekId(currentRace, raceLog)`   | —                                      |
+| Valeur métier                          | Champ API à utiliser                           | Fallback                               |
+| -------------------------------------- | ---------------------------------------------- | -------------------------------------- |
+| Pts du jour (clan propre)              | `clan.periodPoints`                            | `ownHistoricPpd × decksToday`          |
+| Pts du jour (clan rival)               | `clans[i].periodPoints`                        | `rivalAvgPtsPerDeckByTag × decksToday` |
+| Pts du jour terminé (résumé J1-J3)     | `periodLogs[n].items[j].pointsEarned`          | delta `_cumulFame` snapshot            |
+| Decks joués aujourd'hui (joueur)       | `participants[].decksUsedToday`                | delta entre deux snapshots             |
+| Decks cumulés semaine (joueur)         | `participants[].decksUsed`                     | `_cumul` snapshot                      |
+| Cumul fame semaine (clan, currentRace) | `sum(participants[].fame)` ou `clan.clanScore` | `_cumulFame` snapshot                  |
+| Cumul fame semaine (clan, raceLog)     | `standings[j].clan.fame` (⚠️ ≠ currentRace)    | `_cumulFame` snapshot                  |
+| Efficacité pts/deck                    | `periodPoints / sum(decksUsedToday)`           | historique `raceLog`                   |
+| Type de période                        | `periodType`                                   | —                                      |
+| Semaine courante (weekId)              | `computeCurrentWeekId(currentRace, raceLog)`   | —                                      |
 
 ---
 
@@ -302,7 +303,7 @@ Retourne l'historique des semaines de guerre **terminées** pour un clan (jusqu'
 | Valeur métier                           | Champ raceLog à utiliser                                    | Utilisé dans                                             |
 | --------------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------- |
 | Semaine précédente (weekId)             | `computePrevWeekId(raceLog)`                                | `dateUtils.js`                                           |
-| Total pts de bataille semaine (clan)    | `items[i].standings[j].clan.clanScore`                      | `warHistory.js`, `notifyWarSummary.js` (bilan J4, exact) |
+| Total pts de bataille semaine (clan)    | `items[i].standings[j].clan.fame`                           | `warHistory.js`, `notifyWarSummary.js` (bilan J4, exact) |
 | Total decks semaine (clan)              | `sum(items[i].standings[j].clan.participants[k].decksUsed)` | `notifyWarSummary.js` (bilan J4, exact)                  |
 | Total decks semaine (joueur)            | `items[i].standings[j].clan.participants[k].decksUsed`      | `warHistory.js`, `warScoring.js`                         |
 | Total pts semaine (joueur)              | `items[i].standings[j].clan.participants[k].fame`           | `warHistory.js`, `warScoring.js`                         |
