@@ -535,11 +535,23 @@ async function postWarSummary(
     isExactFame = true;
   } else if (
     isLastDay &&
+    hasPreResetSnapshot &&
+    prevDayEntry?._cumulFamePreReset &&
+    Object.keys(prevDayEntry._cumulFamePreReset).length > 0
+  ) {
+    // J4 exact : cumul pré-reset J4 − cumul pré-reset J3 (tous deux depuis currentriverrace = clanScore exact).
+    totalFame = Math.max(
+      0,
+      sumValues(cumulFamePreReset) - sumValues(prevDayEntry._cumulFamePreReset),
+    );
+    isExactFame = true;
+  } else if (
+    isLastDay &&
     apiWeekFame !== null &&
     prevDayEntry?._cumulFamePreReset &&
     Object.keys(prevDayEntry._cumulFamePreReset).length > 0
   ) {
-    // J4 exact : raceLog.clanScore (total semaine) − cumul J3 pré-reset snapshot.
+    // Fallback J4 : raceLog total semaine − cumul J3 pré-reset snapshot.
     totalFame = Math.max(
       0,
       apiWeekFame - sumValues(prevDayEntry._cumulFamePreReset),
@@ -599,11 +611,12 @@ async function postWarSummary(
     }
   }
 
-  // Override avec données directes de raceLog (dimanche uniquement, source de vérité).
-  // apiWeekFame = clan.fame depuis raceLog (cumul total pts de bataille), apiWeekDecks = sum(participants[].decksUsed).
-  // Ces valeurs remplacent les calculs snapshot : plus précis, pas de delta nécessaire.
+  // Override avec données directes de raceLog (dimanche uniquement).
+  // apiWeekFame = sum(participants[].fame) depuis raceLog[0], apiWeekDecks = sum(decksUsed).
+  // On n'écrase PAS totalFameWeek si un snapshot pré-reset existe : il vient de currentriverrace
+  // (= clanScore exact) et est plus fiable que le raceLog qui archive l'état au reset.
   if (weekly) {
-    if (apiWeekFame !== null)
+    if (apiWeekFame !== null && !hasPreResetSnapshot)
       weekly = { ...weekly, totalFameWeek: apiWeekFame };
     if (apiWeekDecks !== null) {
       weekly = {
@@ -1004,12 +1017,14 @@ async function main() {
           );
           clanRank = standing?.rank ?? null;
           trophyChange = standing?.trophyChange ?? null;
-          // clan.fame dans raceLog = cumul total des pts de bataille de la semaine (source de vérité)
-          // Ne pas utiliser clan.clanScore dans raceLog : c'est le score de trophées de guerre (~3000-5000).
-          apiWeekFame =
-            standing?.clan?.fame != null ? standing.clan.fame : null;
-          // sum(participants[].decksUsed) = total decks joués sur la semaine
+          // sum(participants[].fame) = source de vérité pour le cumul pts de bataille semaine.
+          // clan.fame dans raceLog est inconsistant (parfois = position bateau 10000, parfois = sum).
+          // clan.clanScore dans raceLog = trophées de guerre (~3000-5000), ne pas utiliser.
           if (standing?.clan?.participants != null) {
+            apiWeekFame = standing.clan.participants.reduce(
+              (s, p) => s + (p.fame ?? 0),
+              0,
+            );
             apiWeekDecks = standing.clan.participants.reduce(
               (s, p) => s + (p.decksUsed ?? 0),
               0,
