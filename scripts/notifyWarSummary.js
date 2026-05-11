@@ -879,7 +879,7 @@ async function postWarSummary(
 
     const weeklyEmbed = {
       title: `<:stats:1499284927894650950> ${clanName} · Bilan de la semaine`,
-      description: "Résumé de la semaine",
+      description: `Résumé de la semaine${allWeekDays[0]?.week ? ` ${allWeekDays[0].week}` : ""}`,
       color,
       fields: weeklyFields,
       footer: { text: `Constat fait le ${postDateFR}` },
