@@ -527,10 +527,24 @@ async function postWarSummary(
     Object.keys(dayEntry._cumulFame ?? {}).length > 0;
 
   let totalFame;
+  let isExactFame = false;
   if (apiDayFame !== null) {
     // periodLogs disponible : source de vérité directe, aucun delta nécessaire (J1-J3).
     // Pour J4 après le reset lundi, apiDayFame est null → on descend vers les fallbacks.
     totalFame = apiDayFame;
+    isExactFame = true;
+  } else if (
+    isLastDay &&
+    apiWeekFame !== null &&
+    prevDayEntry?._cumulFamePreReset &&
+    Object.keys(prevDayEntry._cumulFamePreReset).length > 0
+  ) {
+    // J4 exact : raceLog.clanScore (total semaine) − cumul J3 pré-reset snapshot.
+    totalFame = Math.max(
+      0,
+      apiWeekFame - sumValues(prevDayEntry._cumulFamePreReset),
+    );
+    isExactFame = true;
   } else if (hasPreResetSnapshot) {
     // On substitue _cumulFamePreReset à _cumulFame dans computeDailyFame :
     // même formule delta vs J-1, insensible au live post-reset (déjà contaminé par J+1).
@@ -539,6 +553,7 @@ async function postWarSummary(
       { ...dayEntry, _cumulFame: cumulFamePreReset },
       prevDayEntry,
     );
+    isExactFame = true;
   } else {
     const snapshotFame = hasFameData
       ? computeDailyFame(dayEntry, prevDayEntry)
@@ -630,7 +645,7 @@ async function postWarSummary(
       line = "0 pts (victoire acquise.)";
     } else {
       // ≈ uniquement si la valeur est estimée (snapshot horaire) ; exact si pré-reset disponible
-      line = `${hasPreResetSnapshot ? "" : "≈"}${fmt(totalFame)} pts`;
+      line = `${isExactFame ? "" : "≈"}${fmt(totalFame)} pts`;
       // En Colisée le score journalier fluctue selon les matchs — le delta n'est pas significatif
       if (prevFame !== null && !isColosseum)
         line += ` ${fmtDelta(totalFame - prevFame)}`;
@@ -989,9 +1004,10 @@ async function main() {
           );
           clanRank = standing?.rank ?? null;
           trophyChange = standing?.trophyChange ?? null;
-          // clan.fame dans raceLog = total pts de bataille de la semaine (source de vérité)
+          // clan.clanScore dans raceLog = cumul total des pts de bataille de la semaine (source de vérité)
+          // Ne pas utiliser clan.fame : c'est un score interne de progression du bateau.
           apiWeekFame =
-            standing?.clan?.fame != null ? standing.clan.fame : null;
+            standing?.clan?.clanScore != null ? standing.clan.clanScore : null;
           // sum(participants[].decksUsed) = total decks joués sur la semaine
           if (standing?.clan?.participants != null) {
             apiWeekDecks = standing.clan.participants.reduce(
