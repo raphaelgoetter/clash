@@ -13,8 +13,8 @@ concurrency:
 
 on:
   schedule:
-    # 08:45 UTC, jeu–dim
-    - cron: "45 8 * * 4,5,6,0"
+    # 08:45 UTC, ven–lun (capture J1 jeu, J2 ven, J3 sam, J4 dim avant reset du lendemain)
+    - cron: "45 8 * * 5,6,0,1"
   workflow_dispatch:
 
 jobs:
