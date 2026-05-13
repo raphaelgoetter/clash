@@ -214,6 +214,7 @@ router.get("/:tag/lite", async (req, res) => {
             clanWarTrophies: clan.clanWarTrophies ?? 0,
             type: clan.type,
             requiredTrophies: clan.requiredTrophies ?? 0,
+            location: clan.location ?? null,
           },
           members,
           isWarPeriod,
@@ -225,27 +226,31 @@ router.get("/:tag/lite", async (req, res) => {
       5 * 60 * 1000,
     );
 
-    // Classement France — réutilise le cache partagé (TTL 60 min)
+    // Classement national — réutilise un cache partagé par pays (TTL 60 min)
     let frRank = null;
     let frPreviousRank = null;
-    try {
-      const frRankings = await getOrSet(
-        "warRankings:fr",
-        () => fetchClanWarRankings(57000087, 500),
-        60 * 60 * 1000,
-      );
-      const entry = (frRankings.value ?? []).find(
-        (r) => r.tag?.replace("#", "").toUpperCase() === clanTag,
-      );
-      if (entry) {
-        frRank = entry.rank ?? null;
-        frPreviousRank = entry.previousRank ?? null;
+    const clanLocation = cached.value.clan.location;
+    if (clanLocation?.isCountry && clanLocation?.id) {
+      try {
+        const locationId = clanLocation.id;
+        const rankings = await getOrSet(
+          `warRankings:${locationId}`,
+          () => fetchClanWarRankings(locationId, 500),
+          60 * 60 * 1000,
+        );
+        const entry = (rankings.value ?? []).find(
+          (r) => r.tag?.replace("#", "").toUpperCase() === clanTag,
+        );
+        if (entry) {
+          frRank = entry.rank ?? null;
+          frPreviousRank = entry.previousRank ?? null;
+        }
+      } catch (err) {
+        console.warn(
+          `[clan/lite] classement national indisponible pour ${clanTag}:`,
+          err.message,
+        );
       }
-    } catch (err) {
-      console.warn(
-        `[clan/lite] classement France indisponible pour ${clanTag}:`,
-        err.message,
-      );
     }
 
     const liteValue = cached.value;
@@ -897,28 +902,30 @@ export async function buildClanAnalysis(clanTag, options = {}) {
   // If both are missing, we are in degraded mode.
   raceLogUnavailable = !raceLog && !currentRace;
 
-  // Classement France (location 57000087) — un seul appel partageable entre les 3 clans.
-  // TTL 60 min : le classement n'est mis à jour qu'après le reset hebdomadaire.
+  // Classement national — cache partagé par pays (TTL 60 min, mis à jour après reset hebdo).
   let frRank = null;
   let frPreviousRank = null;
-  try {
-    const frRankings = await getOrSet(
-      "warRankings:fr",
-      () => fetchClanWarRankings(57000087, 500),
-      60 * 60 * 1000,
-    );
-    const entry = (frRankings.value ?? []).find(
-      (r) => r.tag?.replace("#", "").toUpperCase() === clanTag,
-    );
-    if (entry) {
-      frRank = entry.rank ?? null;
-      frPreviousRank = entry.previousRank ?? null;
+  if (clan.location?.isCountry && clan.location?.id) {
+    try {
+      const locationId = clan.location.id;
+      const rankings = await getOrSet(
+        `warRankings:${locationId}`,
+        () => fetchClanWarRankings(locationId, 500),
+        60 * 60 * 1000,
+      );
+      const entry = (rankings.value ?? []).find(
+        (r) => r.tag?.replace("#", "").toUpperCase() === clanTag,
+      );
+      if (entry) {
+        frRank = entry.rank ?? null;
+        frPreviousRank = entry.previousRank ?? null;
+      }
+    } catch (err) {
+      console.warn(
+        `[clan] classement national indisponible pour ${clanTag}:`,
+        err.message,
+      );
     }
-  } catch (err) {
-    console.warn(
-      `[clan] classement France indisponible pour ${clanTag}:`,
-      err.message,
-    );
   }
 
   const currentRaceIndicatesWarDay =
@@ -2342,6 +2349,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       requiredTrophies: clan.requiredTrophies,
       badge: clan.badgeId,
       warResetUtcMinutes: warResetOffsetMs(clanTag) / 60000,
+      location: clan.location ?? null,
     },
     membersRaw,
     members: analyzedMembers,
