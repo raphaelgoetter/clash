@@ -2957,7 +2957,7 @@ function renderClanOverview(data) {
                     .join("")
                 : "\ud83c\udff3\ufe0f";
               const diff =
-                data.frPreviousRank != null
+                data.frPreviousRank != null && data.frPreviousRank > 0
                   ? data.frPreviousRank - data.frRank
                   : null;
               const arrow =

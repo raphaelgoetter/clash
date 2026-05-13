@@ -399,13 +399,13 @@ GET /locations/57000087/rankings/clanwars?limit=500
 
 ### Champs utiles
 
-| Champ          | Type     | Description                                                                                                        |
-| -------------- | -------- | ------------------------------------------------------------------------------------------------------------------ |
-| `tag`          | `string` | Tag du clan (avec `#`).                                                                                            |
-| `rank`         | `number` | Classement actuel dans la location (1 = meilleur).                                                                 |
-| `previousRank` | `number` | Classement la semaine précédente. Permet de calculer la variation (`previousRank - rank` = progression).           |
-| `clanScore`    | `number` | Trophées de guerre du clan (≈ `clanWarTrophies` retourné par `/clans/{tag}`). Source de vérité pour le classement. |
-| `members`      | `number` | Nombre de membres du clan au moment de la requête.                                                                 |
+| Champ          | Type     | Description                                                                                                                                                                                                                |
+| -------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tag`          | `string` | Tag du clan (avec `#`).                                                                                                                                                                                                    |
+| `rank`         | `number` | Classement actuel dans la location (1 = meilleur).                                                                                                                                                                         |
+| `previousRank` | `number` | Classement la semaine précédente. Permet de calculer la variation (`previousRank - rank` = progression). **`-1` = clan non classé la semaine précédente (nouveau ou réentrant) — ne pas utiliser pour calculer un delta.** |
+| `clanScore`    | `number` | Trophées de guerre du clan (≈ `clanWarTrophies` retourné par `/clans/{tag}`). Source de vérité pour le classement.                                                                                                         |
+| `members`      | `number` | Nombre de membres du clan au moment de la requête.                                                                                                                                                                         |
 
 ### Pièges
 
