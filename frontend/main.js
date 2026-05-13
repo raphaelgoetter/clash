@@ -77,7 +77,7 @@ let lastResultName = null;
 // Multi-language support
 const LANG_STORAGE_KEY = "trustroyaleLang";
 const SUPPORTED_LANGS = ["en", "fr"];
-const DEFAULT_LANG = "en";
+const DEFAULT_LANG = "fr";
 let currentLang = DEFAULT_LANG;
 let translations = {};
 
