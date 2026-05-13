@@ -314,6 +314,52 @@ Retourne l'historique des semaines de guerre **terminées** pour un clan (jusqu'
 
 ---
 
+## `/locations`
+
+Retourne la liste de toutes les locations (régions et pays) disponibles dans Clash Royale.
+Utile pour obtenir l'`id` d'un pays à partir de son nom ou de son code ISO, notamment pour interroger ensuite `/locations/{locationId}/rankings/clanwars`.
+
+```
+GET /locations
+```
+
+### Structure de la réponse
+
+```json
+{
+  "items": [
+    {
+      "id": 57000000,
+      "name": "Europe",
+      "isCountry": false
+    },
+    {
+      "id": 57000007,
+      "name": "Afghanistan",
+      "isCountry": true,
+      "countryCode": "AF"
+    }
+  ]
+}
+```
+
+### Champs utiles
+
+| Champ         | Type      | Description                                                                                |
+| ------------- | --------- | ------------------------------------------------------------------------------------------ |
+| `id`          | `number`  | Identifiant de la location. À utiliser comme `locationId` dans les endpoints de ranking.   |
+| `name`        | `string`  | Nom de la région ou du pays (en anglais).                                                  |
+| `isCountry`   | `boolean` | `true` si c'est un pays, `false` si c'est une région (Europe, Asia…).                      |
+| `countryCode` | `string`  | Code ISO 3166-1 alpha-2 du pays (ex. `"FR"` pour la France). Absent si `isCountry: false`. |
+
+### Notes
+
+- L'endpoint retourne **toutes les locations en une seule réponse** (pas de pagination nécessaire).
+- La France a l'ID `57000087` (`countryCode: "FR"`).
+- Les régions (`isCountry: false`) ont des IDs de `57000000` à `57000006`.
+
+---
+
 ## `/locations/{locationId}/rankings/clanwars`
 
 Classement national des clans par trophées de guerre.

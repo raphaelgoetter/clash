@@ -2942,9 +2942,6 @@ function renderClanOverview(data) {
     },
     { label: t("labelRequired"), value: `🏆 ${fmt(clan.requiredTrophies)}` },
     { label: t("labelType"), value: capitalize(clan.type ?? "—") },
-  ];
-  const fullItems = [
-    ...baseItems,
     {
       label: t("labelFrRank"),
       value: (() => {
@@ -2959,6 +2956,9 @@ function renderClanOverview(data) {
         return `🇫🇷 #${data.frRank}${arrow}${diffStr}`;
       })(),
     },
+  ];
+  const fullItems = [
+    ...baseItems,
     {
       label: t("labelWarReset"),
       value: (() => {

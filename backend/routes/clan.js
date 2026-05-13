@@ -225,9 +225,36 @@ router.get("/:tag/lite", async (req, res) => {
       5 * 60 * 1000,
     );
 
+    // Classement France — réutilise le cache partagé (TTL 60 min)
+    let frRank = null;
+    let frPreviousRank = null;
+    try {
+      const frRankings = await getOrSet(
+        "warRankings:fr",
+        () => fetchClanWarRankings(57000087, 500),
+        60 * 60 * 1000,
+      );
+      const entry = (frRankings.value ?? []).find(
+        (r) => r.tag?.replace("#", "").toUpperCase() === clanTag,
+      );
+      if (entry) {
+        frRank = entry.rank ?? null;
+        frPreviousRank = entry.previousRank ?? null;
+      }
+    } catch (err) {
+      console.warn(
+        `[clan/lite] classement France indisponible pour ${clanTag}:`,
+        err.message,
+      );
+    }
+
+    const liteValue = cached.value;
+    const responseWithRank =
+      frRank != null ? { ...liteValue, frRank, frPreviousRank } : liteValue;
+
     res.set("Cache-Control", "no-store, max-age=0, must-revalidate");
     res.set("X-Cache", cached.fromCache ? "HIT" : "MISS");
-    return res.json(cached.value);
+    return res.json(responseWithRank);
   } catch (err) {
     const status = err.message?.includes("404") ? 404 : 500;
     res.status(status).json({ error: err.message });
