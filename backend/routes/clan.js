@@ -129,12 +129,17 @@ router.get("/:tag", async (req, res) => {
  * Récupère le classement national d'un clan depuis le cache mémoire partagé (TTL 60 min).
  * Ne jamais stocker ce résultat dans le cache disque — il est toujours récupéré en live.
  */
-async function fetchLiveCountryRank(clanTag, location) {
-  if (!location?.isCountry || !location?.id) {
+async function fetchLiveCountryRank(
+  clanTag,
+  location,
+  fallbackLocationId = null,
+) {
+  const locationId =
+    location?.isCountry && location?.id ? location.id : fallbackLocationId;
+  if (!locationId) {
     return { frRank: null, frPreviousRank: null };
   }
   try {
-    const locationId = location.id;
     const rankings = await getOrSet(
       `warRankings:${locationId}`,
       () => fetchClanWarRankings(locationId, 500),
@@ -366,6 +371,7 @@ router.get("/:tag/analysis", async (req, res) => {
           const { frRank, frPreviousRank } = await fetchLiveCountryRank(
             clanTag,
             responsePayload.clan?.location,
+            57000087,
           );
           if (frRank != null) {
             responsePayload.frRank = frRank;
@@ -389,6 +395,7 @@ router.get("/:tag/analysis", async (req, res) => {
           const { frRank, frPreviousRank } = await fetchLiveCountryRank(
             clanTag,
             responsePayload.clan?.location,
+            57000087,
           );
           if (frRank != null) {
             responsePayload.frRank = frRank;
@@ -413,6 +420,7 @@ router.get("/:tag/analysis", async (req, res) => {
           const { frRank, frPreviousRank } = await fetchLiveCountryRank(
             clanTag,
             responsePayload.clan?.location,
+            57000087,
           );
           if (frRank != null) {
             responsePayload.frRank = frRank;
@@ -497,7 +505,11 @@ router.get("/:tag/analysis", async (req, res) => {
       res.set("Cache-Control", "no-store, max-age=0, must-revalidate");
       res.set("X-Cache", fromCache ? "HIT" : "MISS");
       const { frRank: liveRank, frPreviousRank: livePrevRank } =
-        await fetchLiveCountryRank(clanTag, responsePayload.clan?.location);
+        await fetchLiveCountryRank(
+          clanTag,
+          responsePayload.clan?.location,
+          57000087,
+        );
       if (liveRank != null) {
         responsePayload.frRank = liveRank;
         responsePayload.frPreviousRank = livePrevRank;
