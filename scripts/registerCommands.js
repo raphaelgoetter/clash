@@ -230,7 +230,7 @@ const commands = [
   {
     name: "top-clans",
     description:
-      "Affiche une tranche de 20 clans du classement France GDC par trophées de guerre.",
+      "Affiche une tranche de 10 clans du classement France GDC par trophées de guerre.",
     options: [
       {
         type: 4, // INTEGER
