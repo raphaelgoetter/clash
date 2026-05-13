@@ -2942,27 +2942,38 @@ function renderClanOverview(data) {
     },
     { label: t("labelRequired"), value: `🏆 ${fmt(clan.requiredTrophies)}` },
     { label: t("labelType"), value: capitalize(clan.type ?? "—") },
-    {
-      label: t("labelLocationRank"),
-      value: (() => {
-        if (data.frRank == null) return "\u2014";
-        const code = clan.location?.countryCode ?? "";
-        const flag = code
-          ? [...code.toUpperCase()]
-              .map((c) => String.fromCodePoint(0x1f1e0 - 65 + c.charCodeAt(0)))
-              .join("")
-          : "\ud83c\udff3\ufe0f";
-        const diff =
-          data.frPreviousRank != null
-            ? data.frPreviousRank - data.frRank
-            : null;
-        const arrow =
-          diff === null || diff === 0 ? "" : diff > 0 ? " \u25b2" : " \u25bc";
-        const diffStr =
-          diff === null || diff === 0 ? "" : ` (${diff > 0 ? "+" : ""}${diff})`;
-        return `${flag} #${data.frRank}${arrow}${diffStr}`;
-      })(),
-    },
+    ...(data.frRank != null
+      ? [
+          {
+            label: t("labelLocationRank"),
+            value: (() => {
+              const code = clan.location?.countryCode ?? "";
+              const flag = code
+                ? [...code.toUpperCase()]
+                    .map((c) =>
+                      String.fromCodePoint(0x1f1e0 - 65 + c.charCodeAt(0)),
+                    )
+                    .join("")
+                : "\ud83c\udff3\ufe0f";
+              const diff =
+                data.frPreviousRank != null
+                  ? data.frPreviousRank - data.frRank
+                  : null;
+              const arrow =
+                diff === null || diff === 0
+                  ? ""
+                  : diff > 0
+                    ? " \u25b2"
+                    : " \u25bc";
+              const diffStr =
+                diff === null || diff === 0
+                  ? ""
+                  : ` (${diff > 0 ? "+" : ""}${diff})`;
+              return `${flag} #${data.frRank}${arrow}${diffStr}`;
+            })(),
+          },
+        ]
+      : []),
   ];
   const fullItems = [
     ...baseItems,
