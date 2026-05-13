@@ -697,6 +697,9 @@ export default async function handler(req, res) {
             "**Top Clans**\n" +
             "Commande : `/top-clans [start:N]`\n" +
             "Usage : affiche 20 clans du classement France GDC à partir du rang N (défaut : 1)\n\n" +
+            "**Collection**\n" +
+            "Commande : `/collection tag:#TAG`\n" +
+            "Usage : statistiques de collection (cartes, niveaux, évolutions, héros, niveau de collection)\n\n" +
             "**Discord Link**\n" +
             "Commande : `/discord-link tag:#TAG [tag2] [tag3]`\n" +
             "Usage : lie ton tag Clash à Discord (à faire par un membre)\n\n" +
@@ -3072,6 +3075,167 @@ export default async function handler(req, res) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             content: `Erreur : ${err.message}`,
+            flags: 64,
+          }),
+        });
+      }
+    });
+    return;
+  }
+
+  // Commande /collection
+  if (body.type === 2 && body.data?.name === "collection") {
+    const tagOption = body.data.options?.find((o) => o.name === "tag");
+    const rawTag = tagOption?.value?.trim();
+    if (!rawTag) {
+      return res.status(200).json({
+        type: 4,
+        data: {
+          content: "Veuillez fournir un tag de joueur (ex: `#ABC123`).",
+          flags: 64,
+        },
+      });
+    }
+
+    res.status(200).json({ type: 5 });
+
+    const tag = rawTag.startsWith("#") ? rawTag : `#${rawTag}`;
+    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+
+    runBackground(async () => {
+      try {
+        const apiResp = await fetch(
+          `https://trustroyale.vercel.app/api/player/${encodeURIComponent(tag)}`,
+          { headers: { Accept: "application/json" } },
+        );
+
+        if (!apiResp.ok) {
+          const msg =
+            apiResp.status === 404
+              ? `Joueur \`${tag}\` introuvable.`
+              : `Erreur API (${apiResp.status}).`;
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: msg, flags: 64 }),
+          });
+          return;
+        }
+
+        const player = await apiResp.json();
+
+        // Offsets de rareté pour la normalisation (système Niveau de Collection)
+        const RARITY_OFFSET = {
+          common: 0,
+          rare: 2,
+          epic: 5,
+          legendary: 8,
+          champion: 10,
+        };
+        const TOTAL_CARDS = 125; // 121 cartes standard + 4 troupes de tour
+        const TOTAL_EVOLUTIONS = 39;
+        const TOTAL_HEROES = 13; // 8 champions + 1 nouveau héros + 4 troupes de tour
+
+        const normLevel = (c) => c.level + (RARITY_OFFSET[c.rarity] ?? 0);
+
+        const baseCards = player.cards ?? [];
+        const supportCards = player.currentDeckSupportCards ?? [];
+        const allCards = [...baseCards, ...supportCards];
+
+        // Distribution des niveaux normalisés
+        const dist = {};
+        for (const card of allCards) {
+          const lvl = normLevel(card);
+          dist[lvl] = (dist[lvl] ?? 0) + 1;
+        }
+        const sortedLevels = Object.keys(dist)
+          .map(Number)
+          .sort((a, b) => b - a);
+
+        // Somme des niveaux normalisés
+        const sumNormLevels = allCards.reduce((s, c) => s + normLevel(c), 0);
+
+        // Évolutions complètes (evolutionLevel atteint maxEvolutionLevel)
+        const evolvedCount = allCards.filter(
+          (c) =>
+            c.maxEvolutionLevel > 0 && c.evolutionLevel >= c.maxEvolutionLevel,
+        ).length;
+
+        // Héros : champions + troupes de tour équipées (API ne retourne que celle équipée)
+        const champCount = baseCards.filter(
+          (c) => c.rarity === "champion",
+        ).length;
+        const heroCount = champCount + supportCards.length;
+
+        // Niveau de Collection = Σ niveaux normalisés + 5 × évolutions + 5 × héros
+        const collectionLevel =
+          sumNormLevels + 5 * evolvedCount + 5 * heroCount;
+
+        // Formatage de la distribution (3 niveaux par ligne)
+        const distLines = [];
+        for (let i = 0; i < sortedLevels.length; i += 3) {
+          const row = sortedLevels.slice(i, i + 3).map((lvl) => {
+            const count = dist[lvl];
+            return `Niv.${String(lvl).padStart(2)} ▸ ${String(count).padStart(3)}`;
+          });
+          distLines.push(row.join("   "));
+        }
+
+        const fields = [
+          {
+            name: "Cartes :",
+            value: `${allCards.length} / ${TOTAL_CARDS}`,
+            inline: true,
+          },
+          {
+            name: "Niveau de Collection :",
+            value: String(collectionLevel),
+            inline: true,
+          },
+          {
+            name: "Évolutions :",
+            value: `${evolvedCount} / ${TOTAL_EVOLUTIONS}`,
+            inline: true,
+          },
+          {
+            name: "Héros :",
+            value: `${heroCount} / ${TOTAL_HEROES}`,
+            inline: true,
+          },
+          {
+            name: "Total niveaux normalisés :",
+            value: String(sumNormLevels),
+            inline: true,
+          },
+          {
+            name: "Distribution des niveaux :",
+            value: "```\n" + distLines.join("\n") + "\n```",
+            inline: false,
+          },
+        ];
+
+        const embed = {
+          title: `📦 Collection : ${player.name}`,
+          url: trustPlayerUrl(tag),
+          color: 0xf1c40f,
+          description: tag,
+          fields,
+          footer: {
+            text: "Niveaux normalisés : commun +0 · rare +2 · épique +5 · légendaire +8 · champion +10. Troubes de tour : seule la carte équipée est retournée par l'API.",
+          },
+        };
+
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ embeds: [embed] }),
+        });
+      } catch (err) {
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur lors de l'analyse : ${err.message}`,
             flags: 64,
           }),
         });

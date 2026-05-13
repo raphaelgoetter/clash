@@ -244,6 +244,19 @@ const commands = [
     ],
   },
   {
+    name: "collection",
+    description:
+      "Statistiques de collection d'un joueur (cartes, niveaux, évolutions, héros).",
+    options: [
+      {
+        type: 3, // STRING
+        name: "tag",
+        description: "Tag du joueur (ex : #ABC123)",
+        required: true,
+      },
+    ],
+  },
+  {
     name: "help",
     description: "Affiche l’aide détaillée de toutes les commandes du bot.",
     options: [],
