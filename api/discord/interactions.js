@@ -3184,14 +3184,10 @@ export default async function handler(req, res) {
         }
 
         const fields = [
+          // Ligne 1 : cartes | évolutions | héros
           {
             name: "Cartes :",
             value: `${allCards.length} / ${TOTAL_CARDS}`,
-            inline: true,
-          },
-          {
-            name: "Niveau de Collection :",
-            value: String(collectionLevel),
             inline: true,
           },
           {
@@ -3204,11 +3200,23 @@ export default async function handler(req, res) {
             value: `${heroCount} / ${TOTAL_HEROES}`,
             inline: true,
           },
+          // Ligne 2 : total niveaux | vide | niveau de collection
           {
             name: "Total niveaux :",
             value: String(sumNormLevels),
             inline: true,
           },
+          {
+            name: "\u200b",
+            value: "\u200b",
+            inline: true,
+          },
+          {
+            name: "Niveau de Collection :",
+            value: String(collectionLevel),
+            inline: true,
+          },
+          // Distribution
           {
             name: "Distribution des niveaux :",
             value: "```\n" + distLines.join("\n") + "\n```",
