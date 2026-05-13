@@ -2946,6 +2946,7 @@ function renderClanOverview(data) {
       ? [
           {
             label: t("labelLocationRank"),
+            title: clan.location?.name ?? null,
             value: (() => {
               const code = clan.location?.countryCode ?? "";
               const flag = code
@@ -3529,7 +3530,15 @@ function sortMembers(arr = [], col, dir) {
 function overviewItems(items) {
   return items
     .map(
-      ({ label, value, cls = "", risk = null, badge = null, link = null }) => {
+      ({
+        label,
+        value,
+        cls = "",
+        risk = null,
+        badge = null,
+        link = null,
+        title = null,
+      }) => {
         const sym =
           risk === "bad"
             ? ' <span class="risk-bad">&#10007;</span>'
@@ -3543,8 +3552,9 @@ function overviewItems(items) {
         const inner = link
           ? `<a href="${link}" target="_blank" rel="noopener" class="oi-ext-link">${val}</a>`
           : val;
+        const titleAttr = title ? ` title="${escHtml(title)}"` : "";
         return `
-        <div class="overview-item">
+        <div class="overview-item"${titleAttr}>
           <div class="oi-label">${label}</div>
           <div class="oi-value ${cls}">${inner}${sym}${bdg}</div>
         </div>`;
