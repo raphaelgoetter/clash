@@ -421,3 +421,247 @@ GET /locations/57000087/rankings/clanwars?limit=500
 | Classement France du clan   | `items[i].rank`         | `clan.js` (`buildClanAnalysis` → `frRank`)         |
 | Classement France précédent | `items[i].previousRank` | `clan.js` (`buildClanAnalysis` → `frPreviousRank`) |
 | Variation de rang           | `previousRank - rank`   | Frontend vue Clan (calcul local)                   |
+
+---
+
+## `/players/{playerTag}`
+
+Retourne le profil complet d'un joueur Clash Royale.
+Le tag doit être encodé URL (ex. `%23YRGJGR8R` pour `#YRGJGR8R`).
+
+```
+GET /players/%23YRGJGR8R
+```
+
+### Structure de haut niveau
+
+```json
+{
+  "tag": "#YRGJGR8R",
+  "name": "displaynone",
+  "expLevel": 76,
+  "trophies": 9691,
+  "bestTrophies": 9975,
+  "wins": 8288,
+  "losses": 8474,
+  "battleCount": 16762,
+  "threeCrownWins": 2930,
+  "challengeCardsWon": 1052,
+  "challengeMaxWins": 9,
+  "tournamentCardsWon": 15,
+  "tournamentBattleCount": 77,
+  "currentWinLoseStreak": 0,
+  "role": "coLeader",
+  "donations": 616,
+  "donationsReceived": 280,
+  "totalDonations": 148846,
+  "warDayWins": 32,
+  "clanCardsCollected": 36080,
+  "starPoints": 13785,
+  "expPoints": 296604,
+  "clan": { ... },
+  "arena": { ... },
+  "cards": [ ... ],
+  "badges": [ ... ],
+  "currentDeck": [ ... ],
+  "currentDeckSupportCards": [ ... ],
+  "currentFavouriteCard": { ... }
+}
+```
+
+### Champs principaux
+
+| Champ                   | Type     | Description                                                                      |
+| ----------------------- | -------- | -------------------------------------------------------------------------------- |
+| `tag`                   | `string` | Tag du joueur (avec `#`).                                                        |
+| `name`                  | `string` | Pseudo du joueur.                                                                |
+| `expLevel`              | `number` | Niveau d'expérience du joueur.                                                   |
+| `trophies`              | `number` | Trophées actuels.                                                                |
+| `bestTrophies`          | `number` | Record personnel de trophées.                                                    |
+| `wins`                  | `number` | Nombre total de victoires.                                                       |
+| `losses`                | `number` | Nombre total de défaites.                                                        |
+| `battleCount`           | `number` | Nombre total de batailles jouées.                                                |
+| `threeCrownWins`        | `number` | Nombre de victoires 3 couronnes.                                                 |
+| `challengeCardsWon`     | `number` | Cartes gagnées en défi.                                                          |
+| `challengeMaxWins`      | `number` | Nombre maximum de victoires consécutives en défi classique (12 max).             |
+| `tournamentCardsWon`    | `number` | Cartes gagnées en tournoi.                                                       |
+| `tournamentBattleCount` | `number` | Nombre total de batailles en tournoi.                                            |
+| `currentWinLoseStreak`  | `number` | Série de victoires (positif) ou défaites (négatif) en cours. `0` = pas de série. |
+| `role`                  | `string` | Rôle dans le clan. Valeurs : `"member"`, `"elder"`, `"coLeader"`, `"leader"`.    |
+| `donations`             | `number` | Dons effectués dans la semaine en cours.                                         |
+| `donationsReceived`     | `number` | Dons reçus dans la semaine en cours.                                             |
+| `totalDonations`        | `number` | Total cumulé de toutes les cartes données depuis la création du compte.          |
+| `warDayWins`            | `number` | Victoires en jour de guerre GDC (cumulatif).                                     |
+| `clanCardsCollected`    | `number` | Total de cartes de clan collectées (contribue aux coffres de clan).              |
+| `starPoints`            | `number` | Points étoile accumulés (obtenus en améliorant des cartes déjà au niveau max).   |
+| `expPoints`             | `number` | Points d'expérience totaux accumulés.                                            |
+
+---
+
+### `clan`
+
+Clan actuel du joueur. **Absent si le joueur n'est dans aucun clan.**
+
+```json
+"clan": {
+  "tag": "#LRQP20V9",
+  "name": "Les Resistants",
+  "badgeId": 16000036
+}
+```
+
+| Champ     | Type     | Description             |
+| --------- | -------- | ----------------------- |
+| `tag`     | `string` | Tag du clan (avec `#`). |
+| `name`    | `string` | Nom du clan.            |
+| `badgeId` | `number` | Identifiant du badge.   |
+
+---
+
+### `arena`
+
+Arène actuelle du joueur.
+
+```json
+"arena": {
+  "id": 54000031,
+  "name": "Legendary Arena",
+  "rawName": "Arena_L10"
+}
+```
+
+| Champ     | Type     | Description                                    |
+| --------- | -------- | ---------------------------------------------- |
+| `id`      | `number` | Identifiant interne de l'arène.                |
+| `name`    | `string` | Nom affiché de l'arène.                        |
+| `rawName` | `string` | Identifiant technique de l'arène (asset name). |
+
+---
+
+### `cards[]` — collection de cartes
+
+Liste complète des cartes possédées par le joueur.
+
+```json
+{
+  "name": "Firecracker",
+  "id": 26000064,
+  "level": 14,
+  "evolutionLevel": 1,
+  "maxLevel": 16,
+  "maxEvolutionLevel": 1,
+  "rarity": "common",
+  "count": 4020,
+  "elixirCost": 3,
+  "iconUrls": {
+    "medium": "https://...",
+    "evolutionMedium": "https://..."
+  }
+}
+```
+
+| Champ                      | Type     | Description                                                                                         |
+| -------------------------- | -------- | --------------------------------------------------------------------------------------------------- |
+| `name`                     | `string` | Nom de la carte.                                                                                    |
+| `id`                       | `number` | Identifiant unique de la carte.                                                                     |
+| `level`                    | `number` | Niveau actuel de la carte pour ce joueur.                                                           |
+| `maxLevel`                 | `number` | Niveau maximum atteignable pour cette carte (varie selon la rareté).                                |
+| `evolutionLevel`           | `number` | Niveau d'évolution actuel. **Absent si la carte n'est pas évoluée (ou non évoluable).**             |
+| `maxEvolutionLevel`        | `number` | Niveau d'évolution maximum. **Absent si la carte n'est pas évoluable.**                             |
+| `rarity`                   | `string` | Rareté de la carte. Valeurs : `"common"`, `"rare"`, `"epic"`, `"legendary"`, `"champion"`.          |
+| `count`                    | `number` | Nombre d'exemplaires en possession. `0` si la carte est au niveau max ou en deck (non accumulable). |
+| `elixirCost`               | `number` | Coût en élixir pour jouer la carte.                                                                 |
+| `iconUrls.medium`          | `string` | URL de l'image de la carte (300 px).                                                                |
+| `iconUrls.evolutionMedium` | `string` | URL de l'image de la version évoluée. **Absent si non évoluable.**                                  |
+
+---
+
+### `badges[]` — badges de maîtrise et autres
+
+Liste des badges obtenus par le joueur (maîtrise de cartes, achievements…).
+
+```json
+{
+  "name": "MasteryFirecracker",
+  "level": 6,
+  "maxLevel": 10,
+  "progress": 6,
+  "target": 7,
+  "iconUrls": {
+    "large": "https://..."
+  }
+}
+```
+
+| Champ            | Type     | Description                                        |
+| ---------------- | -------- | -------------------------------------------------- |
+| `name`           | `string` | Identifiant du badge (ex. `"MasteryFirecracker"`). |
+| `level`          | `number` | Niveau actuel du badge.                            |
+| `maxLevel`       | `number` | Niveau maximum du badge.                           |
+| `progress`       | `number` | Progression actuelle vers le prochain niveau.      |
+| `target`         | `number` | Valeur cible pour atteindre le prochain niveau.    |
+| `iconUrls.large` | `string` | URL de l'image du badge (512 px).                  |
+
+---
+
+### `currentDeck[]` — deck actuel (8 cartes)
+
+Deck équipé actuellement par le joueur. Même structure que `cards[]` avec les champs supplémentaires :
+
+| Champ       | Type     | Description                                                               |
+| ----------- | -------- | ------------------------------------------------------------------------- |
+| `starLevel` | `number` | Niveau d'étoile cosmétique de la carte (1–3). **Absent si non appliqué.** |
+
+> `count: 0` dans le deck actuel signifie que la carte est en usage (non accumulable tant qu'elle est équipée).
+
+---
+
+### `currentDeckSupportCards[]` — cartes de soutien
+
+Cartes de soutien équipées (ex. Tour Princesse). Structure identique à `currentDeck[]`.
+
+```json
+{
+  "name": "Tower Princess",
+  "id": 159000000,
+  "level": 16,
+  "maxLevel": 16,
+  "rarity": "common",
+  "count": 0,
+  "iconUrls": { "medium": "https://..." }
+}
+```
+
+---
+
+### `currentFavouriteCard` — carte favorite
+
+Carte mise en avant sur le profil du joueur.
+
+```json
+{
+  "name": "Bomb Tower",
+  "id": 27000004,
+  "maxLevel": 14,
+  "elixirCost": 4,
+  "rarity": "rare",
+  "iconUrls": { "medium": "https://..." }
+}
+```
+
+Champs identiques à `cards[]` (sans `level`, `count`, `evolutionLevel`).
+
+---
+
+### Usage dans TrustRoyale
+
+| Valeur métier       | Champ à utiliser | Utilisé dans                                                          |
+| ------------------- | ---------------- | --------------------------------------------------------------------- |
+| Tag du joueur       | `tag`            | `clashApi.js`, `playerAnalysis.js`                                    |
+| Rôle dans le clan   | `role`           | `playerAnalysis.js` (affichage)                                       |
+| Dons de la semaine  | `donations`      | `warScoring.js` (`scoreTotalDonations`)                               |
+| Dons totaux         | `totalDonations` | `warScoring.js` (`scoreTotalDonations`) — source de vérité cumulative |
+| Victoires GDC       | `warDayWins`     | `playerAnalysis.js` (stats affichées)                                 |
+| Niveau d'expérience | `expLevel`       | Affiché dans le profil joueur                                         |
+| Clan actuel         | `clan.tag`       | Détection transfert familial (`isFamilyTransfer`)                     |
+| Deck actuel         | `currentDeck[]`  | Affiché dans le profil joueur                                         |
