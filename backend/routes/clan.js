@@ -126,6 +126,37 @@ router.get("/:tag", async (req, res) => {
 });
 
 /**
+ * Récupère le classement national d'un clan depuis le cache mémoire partagé (TTL 60 min).
+ * Ne jamais stocker ce résultat dans le cache disque — il est toujours récupéré en live.
+ */
+async function fetchLiveCountryRank(clanTag, location) {
+  if (!location?.isCountry || !location?.id) {
+    return { frRank: null, frPreviousRank: null };
+  }
+  try {
+    const locationId = location.id;
+    const rankings = await getOrSet(
+      `warRankings:${locationId}`,
+      () => fetchClanWarRankings(locationId, 500),
+      60 * 60 * 1000,
+    );
+    const entry = (rankings.value ?? []).find(
+      (r) => r.tag?.replace("#", "").toUpperCase() === clanTag,
+    );
+    return {
+      frRank: entry?.rank ?? null,
+      frPreviousRank: entry?.previousRank ?? null,
+    };
+  } catch (err) {
+    console.warn(
+      `[clan] classement national indisponible pour ${clanTag}:`,
+      err.message,
+    );
+    return { frRank: null, frPreviousRank: null };
+  }
+}
+
+/**
  * GET /api/clan/:tag/lite
  * Retourne un profil clan simplifié à partir des données natives de l'API Clash Royale.
  * Aucun calcul de fiabilité ni appel individuel par membre — 4 requêtes max.
@@ -226,32 +257,10 @@ router.get("/:tag/lite", async (req, res) => {
       5 * 60 * 1000,
     );
 
-    // Classement national — réutilise un cache partagé par pays (TTL 60 min)
-    let frRank = null;
-    let frPreviousRank = null;
-    const clanLocation = cached.value.clan.location;
-    if (clanLocation?.isCountry && clanLocation?.id) {
-      try {
-        const locationId = clanLocation.id;
-        const rankings = await getOrSet(
-          `warRankings:${locationId}`,
-          () => fetchClanWarRankings(locationId, 500),
-          60 * 60 * 1000,
-        );
-        const entry = (rankings.value ?? []).find(
-          (r) => r.tag?.replace("#", "").toUpperCase() === clanTag,
-        );
-        if (entry) {
-          frRank = entry.rank ?? null;
-          frPreviousRank = entry.previousRank ?? null;
-        }
-      } catch (err) {
-        console.warn(
-          `[clan/lite] classement national indisponible pour ${clanTag}:`,
-          err.message,
-        );
-      }
-    }
+    const { frRank, frPreviousRank } = await fetchLiveCountryRank(
+      clanTag,
+      cached.value.clan.location,
+    );
 
     const liteValue = cached.value;
     const responseWithRank =
@@ -354,6 +363,14 @@ router.get("/:tag/analysis", async (req, res) => {
           if (!includeUncomplete) responsePayload.uncomplete = null;
           responsePayload.members = null;
           responsePayload.membersRaw = null;
+          const { frRank, frPreviousRank } = await fetchLiveCountryRank(
+            clanTag,
+            responsePayload.clan?.location,
+          );
+          if (frRank != null) {
+            responsePayload.frRank = frRank;
+            responsePayload.frPreviousRank = frPreviousRank;
+          }
           res.set("Cache-Control", "no-store, max-age=0, must-revalidate");
           res.set("X-Cache", "HIT");
           return res.json(responsePayload);
@@ -368,6 +385,14 @@ router.get("/:tag/analysis", async (req, res) => {
           if (!includeMembers) {
             responsePayload.members = null;
             responsePayload.membersRaw = null;
+          }
+          const { frRank, frPreviousRank } = await fetchLiveCountryRank(
+            clanTag,
+            responsePayload.clan?.location,
+          );
+          if (frRank != null) {
+            responsePayload.frRank = frRank;
+            responsePayload.frPreviousRank = frPreviousRank;
           }
           res.set("Cache-Control", "no-store, max-age=0, must-revalidate");
           res.set("X-Cache", "HIT");
@@ -384,6 +409,14 @@ router.get("/:tag/analysis", async (req, res) => {
           if (!includeMembers) {
             responsePayload.members = null;
             responsePayload.membersRaw = null;
+          }
+          const { frRank, frPreviousRank } = await fetchLiveCountryRank(
+            clanTag,
+            responsePayload.clan?.location,
+          );
+          if (frRank != null) {
+            responsePayload.frRank = frRank;
+            responsePayload.frPreviousRank = frPreviousRank;
           }
           res.set("Cache-Control", "no-store, max-age=0, must-revalidate");
           res.set("X-Cache", "HIT");
@@ -463,6 +496,12 @@ router.get("/:tag/analysis", async (req, res) => {
       // prevent Vercel/edge from caching this response
       res.set("Cache-Control", "no-store, max-age=0, must-revalidate");
       res.set("X-Cache", fromCache ? "HIT" : "MISS");
+      const { frRank: liveRank, frPreviousRank: livePrevRank } =
+        await fetchLiveCountryRank(clanTag, responsePayload.clan?.location);
+      if (liveRank != null) {
+        responsePayload.frRank = liveRank;
+        responsePayload.frPreviousRank = livePrevRank;
+      }
       return res.json(responsePayload);
     } catch (err) {
       if (
@@ -901,32 +940,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
   // If both are missing, we are in degraded mode.
   raceLogUnavailable = !raceLog && !currentRace;
-
-  // Classement national — cache partagé par pays (TTL 60 min, mis à jour après reset hebdo).
-  let frRank = null;
-  let frPreviousRank = null;
-  if (clan.location?.isCountry && clan.location?.id) {
-    try {
-      const locationId = clan.location.id;
-      const rankings = await getOrSet(
-        `warRankings:${locationId}`,
-        () => fetchClanWarRankings(locationId, 500),
-        60 * 60 * 1000,
-      );
-      const entry = (rankings.value ?? []).find(
-        (r) => r.tag?.replace("#", "").toUpperCase() === clanTag,
-      );
-      if (entry) {
-        frRank = entry.rank ?? null;
-        frPreviousRank = entry.previousRank ?? null;
-      }
-    } catch (err) {
-      console.warn(
-        `[clan] classement national indisponible pour ${clanTag}:`,
-        err.message,
-      );
-    }
-  }
 
   const currentRaceIndicatesWarDay =
     currentRace?.periodType === "warDay" ||
@@ -2791,8 +2804,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       : null,
     rateLimited: memberRateLimited,
     raceLogUnavailable,
-    frRank,
-    frPreviousRank,
     analysisCacheUpdatedAt: new Date().toISOString(),
     debugSnapshotInfo,
   };
