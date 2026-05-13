@@ -694,6 +694,9 @@ export default async function handler(req, res) {
             "**Top Players**\n" +
             "Commande : `/top-players number:[3|5|10] period:[week|season|all-time]`\n" +
             "Usage : meilleurs joueurs de toute la famille (semaine, saison précédente ou tous les temps)\n\n" +
+            "**Top Clans**\n" +
+            "Commande : `/top-clans [start:N]`\n" +
+            "Usage : affiche 20 clans du classement France GDC à partir du rang N (défaut : 1)\n\n" +
             "**Discord Link**\n" +
             "Commande : `/discord-link tag:#TAG [tag2] [tag3]`\n" +
             "Usage : lie ton tag Clash à Discord (à faire par un membre)\n\n" +
@@ -2911,6 +2914,158 @@ export default async function handler(req, res) {
         });
       } catch (err) {
         console.error("[/compare] erreur:", err.message);
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur : ${err.message}`,
+            flags: 64,
+          }),
+        });
+      }
+    });
+    return;
+  }
+
+  // Commande /top-clans
+  if (body.type === 2 && body.data?.name === "top-clans") {
+    res.status(200).json({ type: 5 });
+    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+
+    runBackground(async () => {
+      try {
+        const startOpt = body.data.options?.find((o) => o.name === "start");
+        const startRank = Math.max(
+          1,
+          Math.min(980, parseInt(startOpt?.value ?? 1, 10) || 1),
+        );
+
+        const FRANCE_ID = "57000087";
+        // Limite : assez pour couvrir la tranche + trouver les clans famille (~rang 300-400)
+        const fetchLimit = Math.max(startRank + 19, 500);
+
+        const { fetchClanWarRankings, fetchClan } =
+          await import("../../backend/services/clashApi.js");
+
+        // Récupérer le leaderboard GDC France
+        const allClans = await fetchClanWarRankings(FRANCE_ID, fetchLimit);
+
+        // Extraire la tranche demandée (rank startRank → startRank+19)
+        const slice = allClans.filter(
+          (c) => c.rank >= startRank && c.rank < startRank + 20,
+        );
+
+        if (slice.length === 0) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `Aucun clan trouvé à partir du rang #${startRank} dans le classement France.`,
+              flags: 64,
+            }),
+          });
+          return;
+        }
+
+        // Récupérer les détails (description) de chaque clan de la tranche en parallèle
+        const sliceDetails = await Promise.allSettled(
+          slice.map((c) => fetchClan(c.tag)),
+        );
+
+        // Identifier les clans famille absents de la tranche
+        const sliceTags = new Set(slice.map((c) => c.tag.toUpperCase()));
+        const familyOutside = allClans.filter(
+          (c) =>
+            FAMILY_CLAN_TAGS.has(c.tag.toUpperCase()) &&
+            !sliceTags.has(c.tag.toUpperCase()),
+        );
+
+        // Récupérer les détails des clans famille hors tranche
+        const familyDetails = await Promise.allSettled(
+          familyOutside.map((c) => fetchClan(c.tag)),
+        );
+
+        // Formateur de médaille/rang
+        const rankLabel = (r) => {
+          if (r === 1) return "🥇";
+          if (r === 2) return "🥈";
+          if (r === 3) return "🥉";
+          return `**#${r}**`;
+        };
+
+        // Formateur de variation de rang (previousRank - rank)
+        const rankDelta = (rank, previousRank) => {
+          if (previousRank == null || previousRank === -1) return " 🆕";
+          const delta = previousRank - rank;
+          if (delta > 0) return ` ▲${delta}`;
+          if (delta < 0) return ` ▼${Math.abs(delta)}`;
+          return " →";
+        };
+
+        // Formateur d'une entrée de clan
+        const formatEntry = (clan, detailResult) => {
+          const tag = (clan.tag ?? "").toUpperCase();
+          const isFamily = FAMILY_CLAN_TAGS.has(tag);
+          const familyIcon = isFamily ? " 🏠" : "";
+          const label = rankLabel(clan.rank);
+          const delta = rankDelta(clan.rank, clan.previousRank);
+          const name = clan.name ?? tag;
+          const members = clan.members != null ? `${clan.members}/50` : "?/50";
+
+          const detail =
+            detailResult?.status === "fulfilled" ? detailResult.value : null;
+          const rawDesc = detail?.description ?? "";
+          const desc =
+            rawDesc.length > 80 ? rawDesc.slice(0, 77) + "..." : rawDesc;
+
+          const line1 = `${label}${delta}${familyIcon} **${name}** · \`${tag}\` · ${members} membres`;
+          const line2 = desc ? `> *${desc}*` : "";
+          return [line1, line2].filter(Boolean).join("\n");
+        };
+
+        // Construire les lignes de la tranche
+        const sliceRows = slice.map((clan, i) =>
+          formatEntry(clan, sliceDetails[i]),
+        );
+
+        // Construire les lignes des clans famille hors tranche
+        const familyRows = familyOutside.map((clan, i) =>
+          formatEntry(clan, familyDetails[i]),
+        );
+
+        let description = sliceRows.join("\n\n");
+
+        if (familyRows.length > 0) {
+          description +=
+            "\n\n─────────────────\n**🏠 Clans famille (hors tranche)**\n\n" +
+            familyRows.join("\n\n");
+        }
+
+        // Tronquer si nécessaire (limite embed Discord : 4096 chars)
+        if (description.length > 4096) {
+          description = description.slice(0, 4090) + "…";
+        }
+
+        const endRank = slice[slice.length - 1]?.rank ?? startRank + 19;
+        const embed = {
+          title: `🏆 Classement France GDC — #${startRank} → #${endRank}`,
+          color: 0xf1c40f,
+          description,
+          footer: {
+            text: `France · Trophées de guerre · ${allClans.length} clans chargés`,
+          },
+        };
+
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            embeds: [embed],
+            allowed_mentions: { parse: [] },
+          }),
+        });
+      } catch (err) {
+        console.error("[/top-clans] erreur:", err.message);
         await fetch(webhookUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
