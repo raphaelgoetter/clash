@@ -3139,8 +3139,9 @@ export default async function handler(req, res) {
         const normLevel = (c) => c.level + (RARITY_OFFSET[c.rarity] ?? 0);
 
         const baseCards = player.cards ?? [];
-        const supportCards = player.currentDeckSupportCards ?? [];
-        const allCards = [...baseCards, ...supportCards];
+        // supportCards = toutes les troupes de tour débloquées (pas seulement l'équipée)
+        const towerTroops = player.supportCards ?? [];
+        const allCards = [...baseCards, ...towerTroops];
 
         // Distribution des niveaux normalisés
         const dist = {};
@@ -3163,11 +3164,10 @@ export default async function handler(req, res) {
             !!c.iconUrls?.evolutionMedium,
         ).length;
 
-        // Héros : champions + troupes de tour équipées (API ne retourne que celle équipée)
-        const champCount = baseCards.filter(
-          (c) => c.rarity === "champion",
+        // Héros : cartes avec variant héros débloqué (iconUrls.heroMedium)
+        const heroCount = allCards.filter(
+          (c) => !!c.iconUrls?.heroMedium,
         ).length;
-        const heroCount = champCount + supportCards.length;
 
         // Niveau de Collection = Σ niveaux normalisés + 5 × évolutions + 5 × héros
         const collectionLevel =

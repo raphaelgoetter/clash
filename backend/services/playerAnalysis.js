@@ -89,8 +89,9 @@ export function analyzePlayer(
     champion: 10,
   };
   const baseCardsCol = player.cards ?? [];
-  const supportCardsCol = player.currentDeckSupportCards ?? [];
-  const allCardsCol = [...baseCardsCol, ...supportCardsCol];
+  // supportCards = toutes les troupes de tour débloquées (pas seulement l'équipée)
+  const towerTroopsCol = player.supportCards ?? [];
+  const allCardsCol = [...baseCardsCol, ...towerTroopsCol];
   const sumNormLevels = allCardsCol.reduce(
     (s, c) => s + c.level + (RARITY_OFFSET_COL[c.rarity] ?? 0),
     0,
@@ -101,9 +102,10 @@ export function analyzePlayer(
       c.evolutionLevel >= c.maxEvolutionLevel &&
       !!c.iconUrls?.evolutionMedium,
   ).length;
-  const heroCountCol =
-    baseCardsCol.filter((c) => c.rarity === "champion").length +
-    supportCardsCol.length;
+  // Héros : cartes avec variant héros débloqué (iconUrls.heroMedium)
+  const heroCountCol = allCardsCol.filter(
+    (c) => !!c.iconUrls?.heroMedium,
+  ).length;
   const collectionLevel =
     sumNormLevels + 5 * evolvedCountCol + 5 * heroCountCol;
 
