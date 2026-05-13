@@ -102,9 +102,9 @@ export function analyzePlayer(
       c.evolutionLevel >= c.maxEvolutionLevel &&
       !!c.iconUrls?.evolutionMedium,
   ).length;
-  // Héros : cartes avec variant héros débloqué (iconUrls.heroMedium)
+  // Héros : cartes avec variant héros débloqué (heroMedium présent ET carte évoluée au moins 1 fois)
   const heroCountCol = allCardsCol.filter(
-    (c) => !!c.iconUrls?.heroMedium,
+    (c) => !!c.iconUrls?.heroMedium && (c.evolutionLevel ?? 0) > 0,
   ).length;
   const collectionLevel =
     sumNormLevels + 5 * evolvedCountCol + 5 * heroCountCol;

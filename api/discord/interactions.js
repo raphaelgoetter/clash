@@ -3164,9 +3164,9 @@ export default async function handler(req, res) {
             !!c.iconUrls?.evolutionMedium,
         ).length;
 
-        // Héros : cartes avec variant héros débloqué (iconUrls.heroMedium)
+        // Héros : cartes avec variant héros débloqué (heroMedium présent ET carte évoluée au moins 1 fois)
         const heroCount = allCards.filter(
-          (c) => !!c.iconUrls?.heroMedium,
+          (c) => !!c.iconUrls?.heroMedium && (c.evolutionLevel ?? 0) > 0,
         ).length;
 
         // Niveau de Collection = Σ niveaux normalisés + 5 × évolutions + 5 × héros
@@ -3230,9 +3230,6 @@ export default async function handler(req, res) {
           color: 0xf1c40f,
           description: tag,
           fields,
-          footer: {
-            text: "Troupes de tour : seule la carte équipée est retournée par l'API.",
-          },
         };
 
         await fetch(webhookUrl, {
