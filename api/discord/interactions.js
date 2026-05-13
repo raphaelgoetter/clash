@@ -3155,10 +3155,12 @@ export default async function handler(req, res) {
         // Somme des niveaux normalisés
         const sumNormLevels = allCards.reduce((s, c) => s + normLevel(c), 0);
 
-        // Évolutions complètes (evolutionLevel atteint maxEvolutionLevel)
+        // Évolutions débloquées : maxées ET avec icône d'évolution (filtre les formes sans affichage officiel)
         const evolvedCount = allCards.filter(
           (c) =>
-            c.maxEvolutionLevel > 0 && c.evolutionLevel >= c.maxEvolutionLevel,
+            c.maxEvolutionLevel > 0 &&
+            c.evolutionLevel >= c.maxEvolutionLevel &&
+            !!c.iconUrls?.evolutionMedium,
         ).length;
 
         // Héros : champions + troupes de tour équipées (API ne retourne que celle équipée)
@@ -3203,7 +3205,7 @@ export default async function handler(req, res) {
             inline: true,
           },
           {
-            name: "Total niveaux normalisés :",
+            name: "Total niveaux :",
             value: String(sumNormLevels),
             inline: true,
           },
@@ -3221,7 +3223,7 @@ export default async function handler(req, res) {
           description: tag,
           fields,
           footer: {
-            text: "Niveaux normalisés : commun +0 · rare +2 · épique +5 · légendaire +8 · champion +10. Troubes de tour : seule la carte équipée est retournée par l'API.",
+            text: "Troupes de tour : seule la carte équipée est retournée par l'API.",
           },
         };
 
