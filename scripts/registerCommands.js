@@ -236,10 +236,10 @@ const commands = [
         type: 4, // INTEGER
         name: "start",
         description:
-          "Rang de départ (défaut : 1). Affiche 20 clans à partir de ce rang.",
+          "Rang de départ (défaut : 1). Affiche 10 clans à partir de ce rang.",
         required: false,
         min_value: 1,
-        max_value: 980,
+        max_value: 990,
       },
     ],
   },

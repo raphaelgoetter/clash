@@ -2942,7 +2942,7 @@ export default async function handler(req, res) {
 
         const FRANCE_ID = "57000087";
         // Limite : assez pour couvrir la tranche + trouver les clans famille (~rang 300-400)
-        const fetchLimit = Math.max(startRank + 19, 500);
+        const fetchLimit = Math.max(startRank + 9, 500);
 
         const { fetchClanWarRankings, fetchClan } =
           await import("../../backend/services/clashApi.js");
@@ -2950,9 +2950,9 @@ export default async function handler(req, res) {
         // Récupérer le leaderboard GDC France
         const allClans = await fetchClanWarRankings(FRANCE_ID, fetchLimit);
 
-        // Extraire la tranche demandée (rank startRank → startRank+19)
+        // Extraire la tranche demandée (rank startRank → startRank+9)
         const slice = allClans.filter(
-          (c) => c.rank >= startRank && c.rank < startRank + 20,
+          (c) => c.rank >= startRank && c.rank < startRank + 10,
         );
 
         if (slice.length === 0) {
@@ -3015,8 +3015,9 @@ export default async function handler(req, res) {
           const detail =
             detailResult?.status === "fulfilled" ? detailResult.value : null;
           const rawDesc = detail?.description ?? "";
+          // Sécurité : 400 chars couvrent toutes les descriptions Clash sans tronquer en pratique
           const desc =
-            rawDesc.length > 80 ? rawDesc.slice(0, 77) + "..." : rawDesc;
+            rawDesc.length > 400 ? rawDesc.slice(0, 397) + "..." : rawDesc;
 
           const line1 = `${label}${delta}${familyIcon} **${name}** · \`${tag}\` · ${members} membres`;
           const line2 = desc ? `> *${desc}*` : "";
@@ -3046,7 +3047,7 @@ export default async function handler(req, res) {
           description = description.slice(0, 4090) + "…";
         }
 
-        const endRank = slice[slice.length - 1]?.rank ?? startRank + 19;
+        const endRank = slice[slice.length - 1]?.rank ?? startRank + 9;
         const embed = {
           title: `🏆 Classement France GDC — #${startRank} → #${endRank}`,
           color: 0xf1c40f,
