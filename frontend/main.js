@@ -1243,7 +1243,6 @@ function renderPlayerResults(data) {
   }
 
   // 1. Overview (Clan & Role removed)
-  const cw2 = overview.clanWarWins ?? 0;
   // build clan link if available (external RoyaleAPI page)
   const clanTag = overview.clan?.tag ?? null;
   const clanLink = clanTag
@@ -1329,9 +1328,9 @@ function renderPlayerResults(data) {
             : null,
     },
     {
-      label: t("labelCW2Wins"),
-      value: `⚔️ ${fmt(cw2)}`,
-      risk: cw2 < 50 ? "bad" : cw2 < 150 ? "warn" : null,
+      label: t("labelCollectionLevel"),
+      value:
+        overview.collectionLevel != null ? fmt(overview.collectionLevel) : "-",
     },
     {
       label: t("labelDiscord"),

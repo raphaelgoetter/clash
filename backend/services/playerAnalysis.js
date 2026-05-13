@@ -80,6 +80,33 @@ export function analyzePlayer(
   const winRate =
     totalBattlesInLog > 0 ? Math.round((wins / totalBattlesInLog) * 100) : 0;
 
+  // Niveau de Collection = Σ niveaux normalisés + 5 × évolutions débloquées + 5 × héros
+  const RARITY_OFFSET_COL = {
+    common: 0,
+    rare: 2,
+    epic: 5,
+    legendary: 8,
+    champion: 10,
+  };
+  const baseCardsCol = player.cards ?? [];
+  const supportCardsCol = player.currentDeckSupportCards ?? [];
+  const allCardsCol = [...baseCardsCol, ...supportCardsCol];
+  const sumNormLevels = allCardsCol.reduce(
+    (s, c) => s + c.level + (RARITY_OFFSET_COL[c.rarity] ?? 0),
+    0,
+  );
+  const evolvedCountCol = allCardsCol.filter(
+    (c) =>
+      c.maxEvolutionLevel > 0 &&
+      c.evolutionLevel >= c.maxEvolutionLevel &&
+      !!c.iconUrls?.evolutionMedium,
+  ).length;
+  const heroCountCol =
+    baseCardsCol.filter((c) => c.rarity === "champion").length +
+    supportCardsCol.length;
+  const collectionLevel =
+    sumNormLevels + 5 * evolvedCountCol + 5 * heroCountCol;
+
   return {
     overview: {
       name: player.name,
@@ -93,6 +120,7 @@ export function analyzePlayer(
       role: player.role ?? null,
       clanWarWins:
         player.badges?.find((b) => b.name === "ClanWarWins")?.progress ?? 0,
+      collectionLevel: allCardsCol.length > 0 ? collectionLevel : null,
     },
     activityIndicators: {
       totalWarBattles: totalBattlesInLog,
