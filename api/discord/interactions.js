@@ -3156,17 +3156,24 @@ export default async function handler(req, res) {
         // Somme des niveaux normalisés
         const sumNormLevels = allCards.reduce((s, c) => s + normLevel(c), 0);
 
-        // Évolutions débloquées : maxées ET avec icône d'évolution (filtre les formes sans affichage officiel)
+        // Évolutions débloquées : icône évolution présente ET évoluée au moins 1 fois.
+        // Exception : si la carte est en "phase héros" (heroMedium ET evoLvl >= 2 mais pas encore maxée),
+        // elle n'est comptée que dans les héros (exemple : Knight 2/3).
+        // Une fois maxée (ex. Wizard 3/3), elle compte dans les deux.
         const evolvedCount = allCards.filter(
           (c) =>
-            c.maxEvolutionLevel > 0 &&
-            c.evolutionLevel >= c.maxEvolutionLevel &&
-            !!c.iconUrls?.evolutionMedium,
+            !!c.iconUrls?.evolutionMedium &&
+            (c.evolutionLevel ?? 0) > 0 &&
+            !(
+              !!c.iconUrls?.heroMedium &&
+              (c.evolutionLevel ?? 0) >= 2 &&
+              (c.evolutionLevel ?? 0) < c.maxEvolutionLevel
+            ),
         ).length;
 
-        // Héros : cartes avec variant héros débloqué (heroMedium présent ET carte évoluée au moins 1 fois)
+        // Héros : variant héros débloqué (heroMedium ET evolutionLevel >= 2)
         const heroCount = allCards.filter(
-          (c) => !!c.iconUrls?.heroMedium && (c.evolutionLevel ?? 0) > 0,
+          (c) => !!c.iconUrls?.heroMedium && (c.evolutionLevel ?? 0) >= 2,
         ).length;
 
         // Niveau de Collection = Σ niveaux normalisés + 5 × évolutions + 5 × héros
