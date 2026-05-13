@@ -3422,11 +3422,28 @@ function renderMembersTable(members) {
 membersTbody.addEventListener("click", (e) => {
   const link = e.target.closest("a.member-link");
   if (!link) return;
-  e.preventDefault();
-  const params = new URLSearchParams(link.search);
-  const tag = params.get("tag");
+  if (
+    e.defaultPrevented ||
+    e.button !== 0 ||
+    e.ctrlKey ||
+    e.metaKey ||
+    e.altKey ||
+    e.shiftKey
+  ) {
+    return;
+  }
+
+  const url = new URL(link.href, window.location.origin);
+  const params = new URLSearchParams(url.search);
+  let tag = params.get("tag");
+  if (!tag) {
+    const match = url.pathname.match(/^\/(?:fr|en)\/player\/([^/]+)/);
+    tag = match ? match[1] : null;
+  }
   if (!tag) return;
-  applyUrlState("player", tag);
+
+  e.preventDefault();
+  applyUrlState("player", `#${tag.replace(/^#/, "")}`);
   _replaceNextPush = false;
   handleSearch();
 });
