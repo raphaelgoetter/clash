@@ -803,7 +803,7 @@ export default async function handler(req, res) {
           description = rows.join("\n");
         }
         const embed = {
-          title: `<:princesswink:1493700353735262249> ${clanName} (scores ≥ ${min} pts)`,
+          title: `<:victory:1504136468900352070> ${clanName} (scores ≥ ${min} pts)`,
           color: 0x5865f2,
           description,
           footer: {
@@ -1149,7 +1149,7 @@ export default async function handler(req, res) {
         const weekId =
           analysis.prevWeekId || analysis.clanWarSummary?.weekId || "S?";
         const embed = {
-          title: `<:interrogation:1493849417520906271> ${resolved.name} (${filtered.length} risqués)`,
+          title: `<:sweat:1504139431106576405> ${resolved.name} (${filtered.length} risqués)`,
           url: clanUrl,
           color: 0xe67e22,
           description,
@@ -2403,7 +2403,7 @@ export default async function handler(req, res) {
         }
 
         const embed = {
-          title: `<:boohoo:1493849412387209357> ${resolved.name}, retardataires de ${warDayLabel}`,
+          title: `<:late:1504138659622948985> ${resolved.name}, retardataires de ${warDayLabel}`,
           description,
           color: 0xe67e22,
         };
@@ -2895,7 +2895,7 @@ export default async function handler(req, res) {
           : `Trié par Total Dernière GDC`;
 
         const embed = {
-          title: `<:trophy:1498645869224792105> ${isColosseum ? "Groupe de Colisée" : "Groupe de GDC"} — ${resolved.name}`,
+          title: `<:trophy2:1493677804733337621> ${isColosseum ? "Groupe de Colisée" : "Groupe de GDC"} — ${resolved.name}`,
           color: 0x9b59b6,
           description: rows.join("\n\n"),
           image: {

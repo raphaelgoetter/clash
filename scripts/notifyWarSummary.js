@@ -715,7 +715,7 @@ async function postWarSummary(
         });
         const value = lines.join("\n");
         fields.push({
-          name: "<:boohoo:1493849412387209357> Combats manquants",
+          name: "<:eyeclosed:1504138067580158053> Combats manquants",
           value: value,
           inline: false,
         });

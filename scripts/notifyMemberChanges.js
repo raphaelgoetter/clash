@@ -249,7 +249,7 @@ async function postDiscordEmbed(
 
   if (promotions.length > 0) {
     fields.push({
-      name: `<:princesswink:1493700353735262249> Promotions (${promotions.length})`,
+      name: `<:victory:1504136468900352070> Promotions (${promotions.length})`,
       value: promotions.map(formatRoleChangeLine).join("\n"),
       inline: false,
     });
@@ -257,7 +257,7 @@ async function postDiscordEmbed(
 
   if (demotions.length > 0) {
     fields.push({
-      name: `<:boohoo:1493849412387209357> Rétrogradations (${demotions.length})`,
+      name: `<:eyeclosed:1504138067580158053> Rétrogradations (${demotions.length})`,
       value: demotions.map(formatRoleChangeLine).join("\n"),
       inline: false,
     });
