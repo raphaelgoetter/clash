@@ -1269,7 +1269,11 @@ function renderPlayerResults(data) {
     !hasCompletedWarWeeks ||
     hasOnlyCurrentWeek ||
     isNewClanArrivee;
-  const playerBadge = isNewClanArrivee ? "new" : isBattleLogMode ? "new" : null;
+  const isInFamilyClan = Boolean(
+    overview.clan?.tag && CLAN_OPTIONS.some((o) => o.tag === overview.clan.tag),
+  );
+  const playerBadge =
+    isInFamilyClan && (isNewClanArrivee || isBattleLogMode) ? "new" : null;
 
   const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
