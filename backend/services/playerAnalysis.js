@@ -137,10 +137,15 @@ export function analyzePlayer(
     { cards: 13, level: 14 },
     { cards: 14, level: 15 },
   ];
+  // Filtre sur le niveau normalisé (même base que la formule Niveau de Collection)
+  const normLevelCol = (c) => c.level + (RARITY_OFFSET_COL[c.rarity] ?? 0);
   let tourLevel = 1;
   for (let lvl = 2; lvl <= 16; lvl++) {
     const req = TOUR_REQ[lvl];
-    if (allCardsCol.filter((c) => c.level >= req.level).length >= req.cards) {
+    if (
+      allCardsCol.filter((c) => normLevelCol(c) >= req.level).length >=
+      req.cards
+    ) {
       tourLevel = lvl;
     } else {
       break;
@@ -149,7 +154,7 @@ export function analyzePlayer(
   let tourNextInfo = null;
   if (tourLevel < 16) {
     const nxt = TOUR_REQ[tourLevel + 1];
-    const have = allCardsCol.filter((c) => c.level >= nxt.level).length;
+    const have = allCardsCol.filter((c) => normLevelCol(c) >= nxt.level).length;
     tourNextInfo = { missing: nxt.cards - have, level: nxt.level };
   }
 
