@@ -2604,13 +2604,13 @@ a.member-link:hover div:first-child {
     opacity var(--transition),
     color var(--transition);
   padding: 2px;
-  line-height: 1;
+  line-height: 0.7;
   border-radius: 50%;
   aspect-ratio: 1;
   width: 2ch;
   height: 2ch;
   display: inline-grid;
-  place-content: center;
+  translate: 0 -2px;
 }
 
 .oi-info-btn:hover {
