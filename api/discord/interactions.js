@@ -3221,7 +3221,7 @@ export default async function handler(req, res) {
           const nextReq = TOUR_REQUIREMENTS[tourLevel + 1];
           const have = allCards.filter((c) => c.level >= nextReq.level).length;
           const missing = nextReq.cards - have;
-          tourFooter = `Prochain niveau de tour : manque ${missing} carte${missing > 1 ? "s" : ""} niveau ${nextReq.level}`;
+          tourFooter = `Prochain niveau de tour : manque ${missing} carte${missing > 1 ? "s" : ""} niveau ${nextReq.level}+`;
         }
 
         // Formatage de la distribution (3 niveaux par ligne)
