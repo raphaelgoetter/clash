@@ -240,6 +240,43 @@ router.get("/:tag/lite", async (req, res) => {
             currentRace?.state === "warDay" ||
             currentRace?.state === "overtime");
 
+        // Résumé GDC allégé : total decks + jour courant, sans détail par jour
+        let clanWarSummary = null;
+        if (isWarPeriod && currentRace) {
+          const participants = currentRace.clan?.participants ?? [];
+          const daysFromThu =
+            typeof currentRace.periodIndex === "number" &&
+            currentRace.periodIndex >= 0 &&
+            currentRace.periodIndex <= 3
+              ? currentRace.periodIndex
+              : null;
+          if (daysFromThu !== null) {
+            const MAX_MEMBERS = 50;
+            const totalDecksUsed = Math.min(
+              MAX_MEMBERS * 16,
+              participants.reduce((s, p) => s + (p.decksUsed ?? 0), 0),
+            );
+            const maxDecksElapsed = MAX_MEMBERS * (daysFromThu + 1) * 4;
+            const maxDecksWeek = MAX_MEMBERS * 16;
+            const DAY_LABELS = ["Thu", "Fri", "Sat", "Sun"];
+            const days = DAY_LABELS.map((label, i) => ({
+              label,
+              isToday: i === daysFromThu,
+              isPast: i < daysFromThu,
+              isFuture: i > daysFromThu,
+              totalCount: null, // pas de détail par jour en mode lite
+              maxCount: MAX_MEMBERS * 4,
+            }));
+            clanWarSummary = {
+              totalDecksUsed,
+              maxDecksElapsed,
+              maxDecksWeek,
+              daysFromThu,
+              days,
+            };
+          }
+        }
+
         return {
           clan: {
             name: clan.name,
@@ -254,6 +291,7 @@ router.get("/:tag/lite", async (req, res) => {
           },
           members,
           isWarPeriod,
+          clanWarSummary,
           lastWarBest,
           lastWarWeekId: computePrevWeekId(races),
           isLite: true,

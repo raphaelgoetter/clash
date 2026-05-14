@@ -2745,6 +2745,7 @@ function renderClanWarCard(
   warResetUtcMinutes = null,
   decksYesterdayAtThisHour = null,
   sourceMeta = {},
+  showDayChips = true,
 ) {
   const card = document.getElementById("card-clan-war");
   if (!clanWarSummary || clanWarSummary.ended) {
@@ -2828,7 +2829,7 @@ function renderClanWarCard(
     `</div>` +
     `${daysFromThu > 0 && decksYesterdayAtThisHour != null ? `<div class="war-yesterday-hint">${t("warDecksYesterdayHour").replace("{{decks}}", decksYesterdayAtThisHour)}</div>` : ""}` +
     `${snapshotDataInvalid ? `<div class="war-progress-warning">⚠ ${t("warSnapshotDataInvalid")}</div>` : ""}` +
-    `<div class="war-day-chips">${chipsHtml}</div>` +
+    `${showDayChips ? `<div class="war-day-chips">${chipsHtml}</div>` : ""}` +
     `</div>`;
 }
 
@@ -2906,6 +2907,14 @@ function renderClanOverview(data) {
     renderClanLiteBest(data.lastWarBest, data.members, data.lastWarWeekId);
     const uncompleteCard = document.getElementById("card-uncomplete");
     if (uncompleteCard) uncompleteCard.classList.add("hidden");
+    // Card guerre allégée : total decks + jour courant, sans détail par jour
+    renderClanWarCard(
+      data.clanWarSummary ?? null,
+      null,
+      null,
+      { source: "live", updatedAt: new Date().toISOString() },
+      false,
+    );
   } else {
     loadedClanSections.topPlayers = Boolean(data.topPlayers);
     loadedClanSections.uncomplete = Boolean(data.uncomplete);
