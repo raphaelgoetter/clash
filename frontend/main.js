@@ -1331,6 +1331,9 @@ function renderPlayerResults(data) {
       label: t("labelCollectionLevel"),
       value:
         overview.collectionLevel != null ? fmt(overview.collectionLevel) : "-",
+      buttonHtml: data.collection
+        ? `<button class="oi-info-btn" id="collection-modal-btn" title="${currentLang === "fr" ? "Détails de la Collection" : "Collection Details"}">&#x1F4CA;</button>`
+        : "",
     },
     {
       label: t("labelDiscord"),
@@ -1340,6 +1343,14 @@ function renderPlayerResults(data) {
       cls: data.overview?.discord ? "c-green" : "c-red",
     },
   ]);
+
+  // Bouton d'info Collection Level → modale détails
+  const colBtn = document.getElementById("collection-modal-btn");
+  if (colBtn && data.collection) {
+    colBtn.addEventListener("click", () =>
+      showCollectionModal(data.collection),
+    );
+  }
 
   // 2. Stats — Battle Log indicators for battle log mode, else river race history
   if (isBattleLogMode) {
@@ -3526,6 +3537,93 @@ function sortMembers(arr = [], col, dir) {
 
 // ── Template helpers ─────────────────────────────────────────
 
+function showCollectionModal(col) {
+  const isFr = currentLang === "fr";
+  const TOTAL_CARDS = 125;
+  const TOTAL_EVO = 39;
+  const TOTAL_HEROES = 13;
+
+  // Distribution des niveaux normalisés (3 par ligne)
+  const distEntries = Object.entries(col.distribution)
+    .map(([lvl, cnt]) => [Number(lvl), cnt])
+    .sort((a, b) => b[0] - a[0]);
+  const distLines = [];
+  for (let i = 0; i < distEntries.length; i += 3) {
+    const row = distEntries
+      .slice(i, i + 3)
+      .map(
+        ([lvl, cnt]) =>
+          `Niv.${String(lvl).padStart(2)} \u25b8 ${String(cnt).padStart(3)}`,
+      );
+    distLines.push(row.join("   "));
+  }
+
+  // Texte footer tour
+  let tourFooter;
+  if (!col.tourNextInfo) {
+    tourFooter = isFr ? "Tour du Roi maximale !" : "King Tower maxed!";
+  } else {
+    const { missing, level } = col.tourNextInfo;
+    const s = missing > 1 ? "s" : "";
+    tourFooter = isFr
+      ? `Prochain niveau de tour\u00a0: manque ${missing} carte${s} niveau ${level}+`
+      : `Next tower level: need ${missing} card${s} level ${level}+`;
+  }
+
+  const title = isFr ? "D\u00e9tails de la Collection" : "Collection Details";
+  const lCards = isFr ? "Cartes" : "Cards";
+  const lEvos = isFr ? "\u00c9volutions" : "Evolutions";
+  const lHeroes = isFr ? "H\u00e9ros" : "Heroes";
+  const lTotal = isFr ? "Total niveaux" : "Total Levels";
+  const lTour = isFr ? "Tour du Roi" : "King Tower";
+  const lTourVal = `${isFr ? "Niveau" : "Level"} ${col.tourLevel}`;
+  const lCol = isFr ? "Niveau de Collection" : "Collection Level";
+  const lDist = isFr ? "Distribution des niveaux" : "Level Distribution";
+
+  let overlay = document.getElementById("collection-modal-overlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "collection-modal-overlay";
+    overlay.className = "collection-modal-overlay";
+    overlay.setAttribute("hidden", "");
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) overlay.setAttribute("hidden", "");
+    });
+  }
+
+  overlay.innerHTML = `
+    <div class="collection-modal" role="dialog" aria-modal="true" aria-label="${escHtml(title)}">
+      <button class="collection-modal-close" id="cml-close" aria-label="${isFr ? "Fermer" : "Close"}">&#x2715;</button>
+      <div class="collection-modal-title">\ud83d\udce6 ${escHtml(title)}</div>
+      <div class="collection-modal-grid">
+        <div class="collection-modal-item"><div class="cmi-label">${lCards}</div><div class="cmi-value">${col.cardCount} / ${TOTAL_CARDS}</div></div>
+        <div class="collection-modal-item"><div class="cmi-label">${lEvos}</div><div class="cmi-value">${col.evolvedCount} / ${TOTAL_EVO}</div></div>
+        <div class="collection-modal-item"><div class="cmi-label">${lHeroes}</div><div class="cmi-value">${col.heroCount} / ${TOTAL_HEROES}</div></div>
+        <div class="collection-modal-item"><div class="cmi-label">${lTotal}</div><div class="cmi-value">${col.sumNormLevels}</div></div>
+        <div class="collection-modal-item"><div class="cmi-label">${lTour}</div><div class="cmi-value">${lTourVal}</div></div>
+        <div class="collection-modal-item"><div class="cmi-label">${lCol}</div><div class="cmi-value">${col.collectionLevel}</div></div>
+      </div>
+      <div class="collection-modal-dist-label">${lDist}</div>
+      <div class="collection-modal-dist"><pre>${distLines.join("\n")}</pre></div>
+      <div class="collection-modal-footer">${escHtml(tourFooter)}</div>
+    </div>`;
+
+  overlay.removeAttribute("hidden");
+
+  overlay.querySelector("#cml-close").addEventListener("click", () => {
+    overlay.setAttribute("hidden", "");
+  });
+
+  const onKeydown = (e) => {
+    if (e.key === "Escape") {
+      overlay.setAttribute("hidden", "");
+      document.removeEventListener("keydown", onKeydown);
+    }
+  };
+  document.addEventListener("keydown", onKeydown);
+}
+
 function overviewItems(items) {
   return items
     .map(
@@ -3537,6 +3635,7 @@ function overviewItems(items) {
         badge = null,
         link = null,
         title = null,
+        buttonHtml = "",
       }) => {
         const sym =
           risk === "bad"
@@ -3555,7 +3654,7 @@ function overviewItems(items) {
         return `
         <div class="overview-item"${titleAttr}>
           <div class="oi-label">${label}</div>
-          <div class="oi-value ${cls}">${inner}${sym}${bdg}</div>
+          <div class="oi-value ${cls}">${inner}${sym}${bdg}${buttonHtml}</div>
         </div>`;
       },
     )

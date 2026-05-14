@@ -117,6 +117,49 @@ export function analyzePlayer(
   const collectionLevel =
     sumNormLevels + 5 * evolvedCountCol + 5 * heroCountCol;
 
+  // Tour du Roi (nouveau système)
+  const TOUR_REQ = [
+    null,
+    null,
+    { cards: 9, level: 1 },
+    { cards: 9, level: 2 },
+    { cards: 9, level: 3 },
+    { cards: 9, level: 4 },
+    { cards: 10, level: 5 },
+    { cards: 10, level: 6 },
+    { cards: 10, level: 7 },
+    { cards: 10, level: 8 },
+    { cards: 10, level: 9 },
+    { cards: 10, level: 10 },
+    { cards: 11, level: 11 },
+    { cards: 11, level: 12 },
+    { cards: 12, level: 13 },
+    { cards: 13, level: 14 },
+    { cards: 14, level: 15 },
+  ];
+  let tourLevel = 1;
+  for (let lvl = 2; lvl <= 16; lvl++) {
+    const req = TOUR_REQ[lvl];
+    if (allCardsCol.filter((c) => c.level >= req.level).length >= req.cards) {
+      tourLevel = lvl;
+    } else {
+      break;
+    }
+  }
+  let tourNextInfo = null;
+  if (tourLevel < 16) {
+    const nxt = TOUR_REQ[tourLevel + 1];
+    const have = allCardsCol.filter((c) => c.level >= nxt.level).length;
+    tourNextInfo = { missing: nxt.cards - have, level: nxt.level };
+  }
+
+  // Distribution des niveaux normalisés
+  const distribution = {};
+  for (const c of allCardsCol) {
+    const lvl = c.level + (RARITY_OFFSET_COL[c.rarity] ?? 0);
+    distribution[lvl] = (distribution[lvl] ?? 0) + 1;
+  }
+
   return {
     overview: {
       name: player.name,
@@ -132,6 +175,19 @@ export function analyzePlayer(
         player.badges?.find((b) => b.name === "ClanWarWins")?.progress ?? 0,
       collectionLevel: allCardsCol.length > 0 ? collectionLevel : null,
     },
+    collection:
+      allCardsCol.length > 0
+        ? {
+            cardCount: allCardsCol.length,
+            evolvedCount: evolvedCountCol,
+            heroCount: heroCountCol,
+            sumNormLevels,
+            collectionLevel,
+            tourLevel,
+            tourNextInfo,
+            distribution,
+          }
+        : null,
     activityIndicators: {
       totalWarBattles: totalBattlesInLog,
       totalBattles: battleLog.length,
