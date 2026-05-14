@@ -1621,15 +1621,21 @@ function renderPlayerResults(data) {
       rows = warHistory.weeks.map((w) => {
         const isCurrentRow = !!w.isCurrent;
         const weekIndex = isCurrentRow ? 0 : ++prevIndex;
-        const clanName = w.clanName || w.clanTag || "No Clan";
         const gdcCount = Number(w.decksUsed) || 0;
+        // Pour les semaines à 0 decks issues du race log, le clan enregistré peut
+        // être incorrect (transfert mid-race) → on ne l'affiche pas.
+        const clanName = w.transferRisk
+          ? "—"
+          : w.clanName || w.clanTag || "No Clan";
+        const clanTag = w.transferRisk ? null : w.clanTag || null;
         const weekLabel = isCurrentRow ? currentWeekLabel : w.label || `S?·W?`;
 
         return {
           week: weekLabel,
           clan: clanName,
-          clanTag: w.clanTag || null,
+          clanTag,
           gdc: gdcCount,
+          transferRisk: !!w.transferRisk,
           style:
             gdcCount === 0
               ? "empty-week"
@@ -1754,6 +1760,18 @@ function renderPlayerResults(data) {
         .map((r, idx) => {
           const rawGdc = Number(r.gdc) || 0;
           const weekLabel = r.week || currentWeekLabel;
+          // transferRisk : données incertaines (transfert mid-race possible),
+          // le vrai décompte est inconnu → on affiche "?" au lieu de "0 ❌"
+          if (r.transferRisk) {
+            const clanCell = escHtml(r.clan); // clan = "—", pas de lien
+            return `
+          <tr class="empty-week${r.isCurrentClan ? " current-week" : ""}">
+            <td>${weekLabel}</td>
+            <td>${clanCell}</td>
+            <td>? ❓</td>
+          </tr>
+        `;
+          }
           let badge = rawGdc === 0 ? "❌" : rawGdc < 16 ? "⚠️" : "✅";
           if (r.isCurrentClan) {
             badge = "";

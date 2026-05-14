@@ -355,6 +355,21 @@ export async function buildFamilyWarHistory(
     }
   }
 
+  // Marque les semaines à 0 decks (hors semaine en cours) comme incertaines :
+  // le clan affiché est celui où le joueur était enregistré au départ de la race,
+  // mais il a pu transférer en cours de semaine et jouer ailleurs.
+  // Sans battle log suffisamment récent, on ne peut pas distinguer
+  // « vrai non-jeu » de « transfert mid-race ».
+  for (const week of mergedWeeks) {
+    if (
+      !week.isCurrent &&
+      (week.decksUsed ?? 0) === 0 &&
+      week.sourceKind === "clanRaceLog"
+    ) {
+      week.transferRisk = true;
+    }
+  }
+
   const playedWeeks = mergedWeeks.filter((w) => w.decksUsed > 0);
   const totalFame = playedWeeks.reduce((sum, w) => sum + (w.fame || 0), 0);
   const participation = playedWeeks.length;
