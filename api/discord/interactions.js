@@ -3269,7 +3269,7 @@ export default async function handler(req, res) {
                       : r.label
                         ? ` "${r.label}"`
                         : ` ×${r.qty}`;
-                  return `CL ${r.cl} — ${label}${suffix}`;
+                  return `• CL ${r.cl} — ${label}${suffix}`;
                 })
                 .join("\n")
             : "Niveau maximum atteint !";
