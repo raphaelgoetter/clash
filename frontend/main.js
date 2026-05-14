@@ -1332,7 +1332,7 @@ function renderPlayerResults(data) {
       value:
         overview.collectionLevel != null ? fmt(overview.collectionLevel) : "-",
       buttonHtml: data.collection
-        ? `<button class="oi-info-btn" id="collection-modal-btn" title="${currentLang === "fr" ? "Détails de la Collection" : "Collection Details"}">&#x1F4CA;</button>`
+        ? `<button class="oi-info-btn" id="collection-modal-btn" title="${currentLang === "fr" ? "Détails de la Collection" : "Collection Details"}">ℹ</button>`
         : "",
     },
     {
