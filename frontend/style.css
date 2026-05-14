@@ -2594,18 +2594,23 @@ a.member-link:hover div:first-child {
 
 .oi-info-btn {
   background: none;
-  border: none;
+  border: 1px solid;
   cursor: pointer;
   color: var(--text-secondary);
   font-size: 0.8rem;
   vertical-align: middle;
   margin-left: 6px;
-  opacity: 0.65;
   transition:
     opacity var(--transition),
     color var(--transition);
-  padding: 0;
+  padding: 2px;
   line-height: 1;
+  border-radius: 50%;
+  aspect-ratio: 1;
+  width: 2ch;
+  height: 2ch;
+  display: inline-grid;
+  place-content: center;
 }
 
 .oi-info-btn:hover {
