@@ -3310,6 +3310,18 @@ async function refreshWarGroupLive() {
 
 async function refreshClanWarLive() {
   if (!activeClanTag) return;
+  if (currentClanIsLite) {
+    // Clan hors-famille : rafraîchir via l'endpoint lite
+    try {
+      const { data } = await apiFetch(
+        `/api/clan/${encodeURIComponent(activeClanTag)}/lite`,
+      );
+      renderClanOverview(data);
+    } catch (_) {
+      // échec silencieux
+    }
+    return;
+  }
   await refreshLiveClanOverview(activeClanTag);
 }
 

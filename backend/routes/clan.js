@@ -244,12 +244,9 @@ router.get("/:tag/lite", async (req, res) => {
         let clanWarSummary = null;
         if (isWarPeriod && currentRace) {
           const participants = currentRace.clan?.participants ?? [];
+          // Déduire le jour de guerre depuis le jour de semaine (plus fiable que periodIndex cumulatif)
           const daysFromThu =
-            typeof currentRace.periodIndex === "number" &&
-            currentRace.periodIndex >= 0 &&
-            currentRace.periodIndex <= 3
-              ? currentRace.periodIndex
-              : null;
+            _liteDow >= 4 ? _liteDow - 4 : _liteDow === 0 ? 3 : null;
           if (daysFromThu !== null) {
             const MAX_MEMBERS = 50;
             const totalDecksUsed = Math.min(
