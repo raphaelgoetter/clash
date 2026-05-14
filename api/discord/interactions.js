@@ -3136,6 +3136,27 @@ export default async function handler(req, res) {
         const TOTAL_EVOLUTIONS = 39;
         const TOTAL_HEROES = 13; // 8 champions + 1 nouveau héros + 4 troupes de tour
 
+        // Conditions pour atteindre chaque niveau de Tour du Roi (nouveau système)
+        const TOUR_REQUIREMENTS = [
+          null, // 0: inutilisé
+          null, // 1: aucune condition
+          { cards: 9, level: 1 }, // 2
+          { cards: 9, level: 2 }, // 3
+          { cards: 9, level: 3 }, // 4
+          { cards: 9, level: 4 }, // 5
+          { cards: 10, level: 5 }, // 6
+          { cards: 10, level: 6 }, // 7
+          { cards: 10, level: 7 }, // 8
+          { cards: 10, level: 8 }, // 9
+          { cards: 10, level: 9 }, // 10
+          { cards: 10, level: 10 }, // 11
+          { cards: 11, level: 11 }, // 12
+          { cards: 11, level: 12 }, // 13
+          { cards: 12, level: 13 }, // 14
+          { cards: 13, level: 14 }, // 15
+          { cards: 14, level: 15 }, // 16
+        ];
+
         const normLevel = (c) => c.level + (RARITY_OFFSET[c.rarity] ?? 0);
 
         const baseCards = player.cards ?? [];
@@ -3180,6 +3201,29 @@ export default async function handler(req, res) {
         const collectionLevel =
           sumNormLevels + 5 * evolvedCount + 5 * heroCount;
 
+        // Calcul du niveau de Tour du Roi (nouveau système)
+        let tourLevel = 1;
+        for (let lvl = 2; lvl <= 16; lvl++) {
+          const req = TOUR_REQUIREMENTS[lvl];
+          const count = allCards.filter((c) => c.level >= req.level).length;
+          if (count >= req.cards) {
+            tourLevel = lvl;
+          } else {
+            break;
+          }
+        }
+
+        // Texte footer : prochain niveau de tour
+        let tourFooter;
+        if (tourLevel >= 16) {
+          tourFooter = "Tour du Roi maximale !";
+        } else {
+          const nextReq = TOUR_REQUIREMENTS[tourLevel + 1];
+          const have = allCards.filter((c) => c.level >= nextReq.level).length;
+          const missing = nextReq.cards - have;
+          tourFooter = `Prochain niveau de tour : manque ${missing} carte${missing > 1 ? "s" : ""} niveau ${nextReq.level}`;
+        }
+
         // Formatage de la distribution (3 niveaux par ligne)
         const distLines = [];
         for (let i = 0; i < sortedLevels.length; i += 3) {
@@ -3207,15 +3251,15 @@ export default async function handler(req, res) {
             value: `${heroCount} / ${TOTAL_HEROES}`,
             inline: true,
           },
-          // Ligne 2 : total niveaux | vide | niveau de collection
+          // Ligne 2 : total niveaux | tour du roi | niveau de collection
           {
             name: "Total niveaux :",
             value: String(sumNormLevels),
             inline: true,
           },
           {
-            name: "\u200b",
-            value: "\u200b",
+            name: "Tour du Roi :",
+            value: `Niveau ${tourLevel}`,
             inline: true,
           },
           {
@@ -3237,6 +3281,7 @@ export default async function handler(req, res) {
           color: 0xf1c40f,
           description: tag,
           fields,
+          footer: { text: tourFooter },
         };
 
         await fetch(webhookUrl, {
