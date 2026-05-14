@@ -3580,31 +3580,74 @@ function sortMembers(arr = [], col, dir) {
 
 // ── Template helpers ─────────────────────────────────────────
 
-function showCollectionModal(col) {
+let _collectionRewardsPromise = null;
+function loadCollectionRewards() {
+  if (!_collectionRewardsPromise)
+    _collectionRewardsPromise = fetch("/collection-rewards.json")
+      .then((r) => r.json())
+      .catch(() => []);
+  return _collectionRewardsPromise;
+}
+
+async function showCollectionModal(col) {
   const isFr = currentLang === "fr";
   const TOTAL_CARDS = 125;
   const TOTAL_EVO = 39;
   const TOTAL_HEROES = 13;
 
-  // Distribution des niveaux normalisés (3 par ligne)
+  // Chargement paresseux des récompenses
+  const rewards = await loadCollectionRewards();
+
+  // Distribution des niveaux normalisés (4 par ligne)
   const distEntries = Object.entries(col.distribution)
     .map(([lvl, cnt]) => [Number(lvl), cnt])
     .sort((a, b) => b[0] - a[0]);
   const distLines = [];
-  for (let i = 0; i < distEntries.length; i += 3) {
+  for (let i = 0; i < distEntries.length; i += 4) {
     const row = distEntries
-      .slice(i, i + 3)
-      .map(
-        ([lvl, cnt]) =>
-          `Niv.${String(lvl).padStart(2)} \u25b8 ${String(cnt).padStart(3)}`,
-      );
+      .slice(i, i + 4)
+      .map(([lvl, cnt]) => `Niv${lvl}: ${cnt}`);
     distLines.push(row.join("   "));
   }
+
+  // Prochaines récompenses (5 prochains paliers)
+  const REWARD_LABELS = {
+    gems: isFr ? "Gemmes" : "Gems",
+    common_wc: isFr ? "Joker Commun" : "Common WC",
+    rare_wc: isFr ? "Joker Rare" : "Rare WC",
+    epic_wc: isFr ? "Joker \u00c9pique" : "Epic WC",
+    legendary_wc: isFr ? "Joker L\u00e9gendaire" : "Legendary WC",
+    champion_wc: isFr ? "Joker Champion" : "Champion WC",
+    lucky_chest_4star: isFr ? "Coffre 4\u2605" : "4\u2605 Chest",
+    lucky_chest_5star: isFr ? "Coffre 5\u2605" : "5\u2605 Chest",
+    evo_box: "Bo\u00eete EVO",
+    banner: isFr ? "Banni\u00e8re" : "Banner",
+  };
+  const nextRewards = rewards
+    .filter((r) => r.cl > col.collectionLevel)
+    .slice(0, 5);
+  const rewardsText =
+    nextRewards.length > 0
+      ? nextRewards
+          .map((r) => {
+            const label = REWARD_LABELS[r.type] ?? r.type;
+            const suffix =
+              r.arenaLevel != null
+                ? ` (${isFr ? "Ar\u00e8ne" : "Arena"} ${r.arenaLevel})`
+                : r.label
+                  ? ` "${r.label}"`
+                  : ` \u00d7${r.qty}`;
+            return `\u2022 CL ${r.cl} \u2014 ${label}${suffix}`;
+          })
+          .join("\n")
+      : isFr
+        ? "Niveau maximum atteint\u00a0!"
+        : "Maximum level reached!";
 
   // Texte footer tour
   let tourFooter;
   if (!col.tourNextInfo) {
-    tourFooter = isFr ? "Tour du Roi maximale !" : "King Tower maxed!";
+    tourFooter = isFr ? "Tour du Roi maximale\u00a0!" : "King Tower maxed!";
   } else {
     const { missing, level } = col.tourNextInfo;
     const s = missing > 1 ? "s" : "";
@@ -3617,11 +3660,11 @@ function showCollectionModal(col) {
   const lCards = isFr ? "Cartes" : "Cards";
   const lEvos = isFr ? "\u00c9volutions" : "Evolutions";
   const lHeroes = isFr ? "H\u00e9ros" : "Heroes";
-  const lTotal = isFr ? "Total niveaux" : "Total Levels";
   const lTour = isFr ? "Tour du Roi" : "King Tower";
   const lTourVal = `${isFr ? "Niveau" : "Level"} ${col.tourLevel}`;
   const lCol = isFr ? "Niveau de Collection" : "Collection Level";
   const lDist = isFr ? "Distribution des niveaux" : "Level Distribution";
+  const lRewards = isFr ? "Prochaines r\u00e9compenses" : "Next Rewards";
 
   let overlay = document.getElementById("collection-modal-overlay");
   if (!overlay) {
@@ -3643,12 +3686,13 @@ function showCollectionModal(col) {
         <div class="collection-modal-item"><div class="cmi-label">${lCards}</div><div class="cmi-value">${col.cardCount} / ${TOTAL_CARDS}</div></div>
         <div class="collection-modal-item"><div class="cmi-label">${lEvos}</div><div class="cmi-value">${col.evolvedCount} / ${TOTAL_EVO}</div></div>
         <div class="collection-modal-item"><div class="cmi-label">${lHeroes}</div><div class="cmi-value">${col.heroCount} / ${TOTAL_HEROES}</div></div>
-        <div class="collection-modal-item"><div class="cmi-label">${lTotal}</div><div class="cmi-value">${col.sumNormLevels}</div></div>
         <div class="collection-modal-item"><div class="cmi-label">${lTour}</div><div class="cmi-value">${lTourVal}</div></div>
         <div class="collection-modal-item"><div class="cmi-label">${lCol}</div><div class="cmi-value">${col.collectionLevel}</div></div>
       </div>
       <div class="collection-modal-dist-label">${lDist}</div>
       <div class="collection-modal-dist"><pre>${distLines.join("\n")}</pre></div>
+      <div class="collection-modal-dist-label">${lRewards}</div>
+      <div class="collection-modal-dist"><pre>${escHtml(rewardsText)}</pre></div>
       <div class="collection-modal-footer">${escHtml(tourFooter)}</div>
     </div>`;
 
