@@ -6,7 +6,12 @@
 import { getOrSet } from "./cache.js";
 import { fetchRaceLog } from "./clashApi.js";
 import { estimateWinsFromFame } from "./warScoring.js";
-import { computeCurrentWeekId } from "./dateUtils.js";
+import {
+  computeCurrentWeekId,
+  parseClashDate,
+  MS_PER_DAY,
+} from "./dateUtils.js";
+import { filterWarBattles } from "./battleLogUtils.js";
 
 const CLAN_RACELOG_CONCURRENCY = 3;
 const CLAN_RACELOG_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -58,6 +63,39 @@ async function fetchRaceLogsForClans(clanTags) {
 }
 
 // ── Exports publics ───────────────────────────────────────────
+
+/**
+ * Construit un supplément d'historique GDC à partir du battle log du joueur.
+ * Utile pour les transferts de clan en cours de semaine : le joueur peut ne pas
+ * apparaître comme participant dans le race log du nouveau clan, mais ses batailles
+ * restent visibles dans le battle log individuel.
+ *
+ * @param {object[]} battleLog     Battle log brut du joueur
+ * @param {Map}      weekRangesMap Map<weekKey, {startMs, endMs, seasonId, sectionIndex}>
+ * @returns {Map<string, {clanTag: string, clanName: string, decksUsed: number}>}
+ */
+function buildBattleLogWeekSupplement(battleLog, weekRangesMap) {
+  const warBattles = filterWarBattles(battleLog);
+  const result = new Map();
+  for (const b of warBattles) {
+    const ts = parseClashDate(b.battleTime).getTime();
+    if (!ts) continue;
+    for (const [weekKey, range] of weekRangesMap) {
+      if (ts >= range.startMs && ts <= range.endMs) {
+        const clanTag = b?.team?.[0]?.clan?.tag ?? null;
+        const clanName = b?.team?.[0]?.clan?.name ?? clanTag;
+        const existing = result.get(weekKey);
+        if (!existing) {
+          result.set(weekKey, { clanTag, clanName, decksUsed: 1 });
+        } else {
+          existing.decksUsed += 1;
+        }
+        break;
+      }
+    }
+  }
+  return result;
+}
 
 /**
  * Extract a player's week-by-week river race history from a clan race log.
@@ -273,6 +311,49 @@ export async function buildFamilyWarHistory(
   }
 
   mergedWeeks = [...weekSelector.values()];
+
+  // Supplément battle log : pour les semaines à 0 decks, tenter de récupérer
+  // le vrai clan et le vrai décompte depuis les batailles war du battle log.
+  // Cas typique : joueur transféré après le début de la race → absent des
+  // participants[] du nouveau clan mais ses batailles restent dans son battle log.
+  if (battleLog.length > 0) {
+    const weekRangesMap = new Map();
+    for (const entry of results) {
+      if (!entry.raceLog) continue;
+      for (const race of entry.raceLog) {
+        if (
+          !race.createdDate ||
+          race.seasonId == null ||
+          race.sectionIndex == null
+        )
+          continue;
+        const weekKey = `${race.seasonId}:${race.sectionIndex}`;
+        if (!weekRangesMap.has(weekKey)) {
+          const endMs = parseClashDate(race.createdDate).getTime();
+          weekRangesMap.set(weekKey, {
+            seasonId: race.seasonId,
+            sectionIndex: race.sectionIndex,
+            startMs: endMs - 7 * MS_PER_DAY,
+            endMs,
+          });
+        }
+      }
+    }
+    if (weekRangesMap.size > 0) {
+      const supplement = buildBattleLogWeekSupplement(battleLog, weekRangesMap);
+      for (const week of mergedWeeks) {
+        if (week.isCurrent || (week.decksUsed ?? 0) > 0) continue;
+        const weekKey = `${week.seasonId ?? ""}:${week.sectionIndex ?? ""}`;
+        const sup = supplement.get(weekKey);
+        if (sup) {
+          week.decksUsed = sup.decksUsed;
+          week.clanTag = sup.clanTag;
+          week.clanName = sup.clanName;
+          week.sourceKind = "battleLogSupplement";
+        }
+      }
+    }
+  }
 
   const playedWeeks = mergedWeeks.filter((w) => w.decksUsed > 0);
   const totalFame = playedWeeks.reduce((sum, w) => sum + (w.fame || 0), 0);
