@@ -3,6 +3,10 @@
 // après avoir répondu type:5 à Discord (deferred).
 import { createPublicKey, verify } from "node:crypto";
 import { waitUntil } from "@vercel/functions";
+import { createRequire } from "node:module";
+
+const _require = createRequire(import.meta.url);
+const COLLECTION_REWARDS = _require("../../data/collection-rewards.json");
 
 // Maintient la fonction Vercel active le temps de l'exécution asynchrone.
 function runBackground(fn) {
@@ -3228,15 +3232,47 @@ export default async function handler(req, res) {
           tourFooter = `Prochain niveau de tour : manque ${missing} carte${missing > 1 ? "s" : ""} niveau ${nextReq.level}+`;
         }
 
-        // Formatage de la distribution (3 niveaux par ligne)
+        // Formatage de la distribution (4 niveaux par ligne)
         const distLines = [];
-        for (let i = 0; i < sortedLevels.length; i += 3) {
-          const row = sortedLevels.slice(i, i + 3).map((lvl) => {
+        for (let i = 0; i < sortedLevels.length; i += 4) {
+          const row = sortedLevels.slice(i, i + 4).map((lvl) => {
             const count = dist[lvl];
-            return `Niv.${String(lvl).padStart(2)} ▸ ${String(count).padStart(3)}`;
+            return `Niv${lvl}: ${count}`;
           });
           distLines.push(row.join("   "));
         }
+
+        // Prochaines récompenses (5 prochains paliers depuis le niveau de collection actuel)
+        const REWARD_LABELS = {
+          gems: "Gemmes",
+          common_wc: "Joker Commun",
+          rare_wc: "Joker Rare",
+          epic_wc: "Joker Épique",
+          legendary_wc: "Joker Légendaire",
+          champion_wc: "Joker Champion",
+          lucky_chest_4star: "Coffre 4★",
+          lucky_chest_5star: "Coffre 5★",
+          evo_box: "Boîte EVO",
+          banner: "Bannière",
+        };
+        const nextRewards = COLLECTION_REWARDS.filter(
+          (r) => r.cl > collectionLevel,
+        ).slice(0, 5);
+        const rewardsText =
+          nextRewards.length > 0
+            ? nextRewards
+                .map((r) => {
+                  const label = REWARD_LABELS[r.type] ?? r.type;
+                  const suffix =
+                    r.arenaLevel != null
+                      ? ` (Arène ${r.arenaLevel})`
+                      : r.label
+                        ? ` "${r.label}"`
+                        : ` ×${r.qty}`;
+                  return `CL ${r.cl} — ${label}${suffix}`;
+                })
+                .join("\n")
+            : "Niveau maximum atteint !";
 
         const fields = [
           // Ligne 1 : cartes | évolutions | héros
@@ -3255,12 +3291,7 @@ export default async function handler(req, res) {
             value: `${heroCount} / ${TOTAL_HEROES}`,
             inline: true,
           },
-          // Ligne 2 : total niveaux | tour du roi | niveau de collection
-          {
-            name: "Total niveaux :",
-            value: String(sumNormLevels),
-            inline: true,
-          },
+          // Ligne 2 : tour du roi | niveau de collection
           {
             name: "Tour du Roi :",
             value: `Niveau ${tourLevel}`,
@@ -3277,13 +3308,18 @@ export default async function handler(req, res) {
             value: "```\n" + distLines.join("\n") + "\n```",
             inline: false,
           },
+          // Prochaines récompenses
+          {
+            name: "Prochaines récompenses :",
+            value: rewardsText,
+            inline: false,
+          },
         ];
 
         const embed = {
           title: `📦 Collection : ${player.name}`,
           url: trustPlayerUrl(tag),
           color: 0xf1c40f,
-          description: tag,
           fields,
           footer: { text: tourFooter },
         };
