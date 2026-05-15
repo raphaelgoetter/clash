@@ -528,9 +528,19 @@ async function postWarSummary(
 
   let totalFame;
   let isExactFame = false;
-  if (apiDayFame !== null) {
-    // periodLogs disponible : source de vérité directe, aucun delta nécessaire (J1-J3).
-    // Pour J4 après le reset lundi, apiDayFame est null → on descend vers les fallbacks.
+  if (!isLastDay && hasPreResetSnapshot) {
+    // J1-J3 : snapshot pré-reset (cumulFamePreReset) = source de vérité la plus fiable.
+    // periodLogs[n].pointsEarned peut inclure des pts de la nouvelle journée déjà en cours
+    // au moment de l'appel live (si le clan a commencé à jouer avant que le résumé soit posté).
+    // Le snapshot pré-reset est capturé à T−2 min, avant tout deck de la journée suivante.
+    totalFame = computeDailyFame(
+      { ...dayEntry, _cumulFame: cumulFamePreReset },
+      prevDayEntry,
+    );
+    isExactFame = true;
+  } else if (apiDayFame !== null) {
+    // periodLogs disponible : source de vérité pour J1-J3 quand le snapshot pré-reset manque,
+    // et pour J4 après le reset lundi.
     totalFame = apiDayFame;
     isExactFame = true;
   } else if (
