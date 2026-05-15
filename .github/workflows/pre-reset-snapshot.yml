@@ -13,10 +13,11 @@ concurrency:
 
 on:
   schedule:
-    # 08:00 UTC, ven–lun (capture J1 jeu, J2 ven, J3 sam, J4 dim avant reset du lendemain)
+    # 08:30 UTC, ven–lun (capture J1 jeu, J2 ven, J3 sam, J4 dim avant reset du lendemain)
     # Marche d'avance volontaire : GitHub Actions peut démarrer jusqu'à ~60 min après le cron planifié.
-    # Les resets des clans sont à 09:40, 09:42 et 09:57 UTC — 08:00 assure de démarrer à temps même avec retard.
-    - cron: "0 8 * * 5,6,0,1"
+    # Les resets des clans sont à 09:40, 09:42 et 09:57 UTC.
+    # 08:30 donne 68 min de marge avant le premier T−2 min (09:38) — compromis durée/sécurité.
+    - cron: "30 8 * * 5,6,0,1"
   workflow_dispatch:
 
 jobs:
