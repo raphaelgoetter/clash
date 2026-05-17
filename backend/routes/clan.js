@@ -1655,6 +1655,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           m.lastSeen ?? null,
           discordLinked,
           racePartFb?.decksUsed ?? 0,
+          wh,
         );
 
         // If we already have a player-level analysis, use it to align the score.
