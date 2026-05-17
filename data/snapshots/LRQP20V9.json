@@ -4130,7 +4130,7 @@
           "start": "2026-05-17T09:57:00.000Z",
           "end": "2026-05-18T09:56:59.999Z"
         },
-        "snapshotTime": "2026-05-17T19:27:06.124Z",
+        "snapshotTime": "2026-05-17T20:17:15.399Z",
         "snapshotBackupTime": "2026-05-17T10:30:37.495Z",
         "decks": {
           "#2YLYG9V92": 4,
@@ -4139,6 +4139,7 @@
           "#82UPUGYP": 4,
           "#8GGQLU28": 4,
           "#8R0LR8GYC": 4,
+          "#8UL8JRCJ": 4,
           "#8VQLJLR0": 4,
           "#8Y90VQYP9": 4,
           "#9CYUGPQ0C": 4,
@@ -4158,7 +4159,9 @@
           "#VQJ0Y8PLV": 4,
           "#YRGJGR8R": 4,
           "#YRQRUU9PC": 4,
+          "#2U9QL8Q89": 3,
           "#YGP000RP8": 3,
+          "#GJ8RV8802": 2,
           "#J290800UU": 2,
           "#VGJ9LL8VC": 2
         },
@@ -4174,7 +4177,7 @@
           "#Y9P9GGL89": 0,
           "#80VGLG9": 0,
           "#Q8GYUQ8GG": 500,
-          "#GJ8RV8802": 0,
+          "#GJ8RV8802": 500,
           "#UPUQ9VC2R": 0,
           "#2QCVVL98R": 0,
           "#J008G9CLJ": 0,
@@ -4201,7 +4204,7 @@
           "#UVV8CULJV": 2400,
           "#2YP2V2G0R": 1900,
           "#G2R0VRYYQ": 1900,
-          "#2U9QL8Q89": 1900,
+          "#2U9QL8Q89": 2500,
           "#UP9YJV080": 1900,
           "#829L90UU": 1950,
           "#8GGQLU28": 2700,
@@ -4225,7 +4228,7 @@
           "#VGJ9LL8VC": 2600,
           "#2YLYG9V92": 2400,
           "#YRGJGR8R": 3200,
-          "#8UL8JRCJ": 2500
+          "#8UL8JRCJ": 3000
         },
         "periodType": "warDay",
         "_cumul": {
@@ -4239,7 +4242,7 @@
           "#Y9P9GGL89": 0,
           "#80VGLG9": 0,
           "#Q8GYUQ8GG": 4,
-          "#GJ8RV8802": 0,
+          "#GJ8RV8802": 2,
           "#UPUQ9VC2R": 0,
           "#2QCVVL98R": 0,
           "#J008G9CLJ": 0,
@@ -4266,7 +4269,7 @@
           "#UVV8CULJV": 15,
           "#2YP2V2G0R": 12,
           "#G2R0VRYYQ": 12,
-          "#2U9QL8Q89": 12,
+          "#2U9QL8Q89": 15,
           "#UP9YJV080": 12,
           "#829L90UU": 12,
           "#8GGQLU28": 16,
@@ -4290,9 +4293,9 @@
           "#VGJ9LL8VC": 14,
           "#2YLYG9V92": 16,
           "#YRGJGR8R": 16,
-          "#8UL8JRCJ": 12
+          "#8UL8JRCJ": 16
         },
-        "snapshotCount": 107
+        "snapshotCount": 116
       }
     ]
   }
