@@ -716,17 +716,29 @@ async function postWarSummary(
     );
 
     if (totalMissingDecks > 0) {
-      if (totalMissingDecks < 30) {
+      if (totalMissingDecks < 50) {
         const lines = missingPlayers.map((player) => {
           const playerUrl = `https://trustroyale.vercel.app/fr/player/${player.tag.replace(/^#/, "")}`;
           const roleFr = ROLE_FR[player.role] ?? player.role ?? null;
           const roleLabel = roleFr ? ` · ${roleFr}` : "";
           return `- [${player.name}](${playerUrl}) (x${player.missing})${roleLabel}`;
         });
-        const value = lines.join("\n");
+        // Troncature à 1024 chars (limite Discord par champ embed)
+        let value = "";
+        let hidden = 0;
+        for (const line of lines) {
+          const candidate = value ? value + "\n" + line : line;
+          if (candidate.length > 1000) {
+            hidden = lines.length - lines.indexOf(line);
+            break;
+          }
+          value = candidate;
+        }
+        if (hidden > 0)
+          value += `\n_... et ${hidden} autre${hidden > 1 ? "s" : ""}_`;
         fields.push({
           name: "<:eyeclosed:1504138067580158053> Combats manquants",
-          value: value,
+          value: value || "\u200b",
           inline: false,
         });
       } else {
