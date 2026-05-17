@@ -477,6 +477,32 @@ export function computeWarReliabilityFallback(
   const confidenceCap = r(Math.min(8, (gdcCount / 16) * 8));
   activiteGDC = r(Math.min(activiteGDC, confidenceCap));
 
+  // Override War Activity depuis l'historique de guerre (race log) si disponible.
+  // Source prioritaire car couvre plusieurs semaines complètes, contrairement au
+  // battle log limité à 30 combats toutes catégories confondues.
+  const completedWarWeeks = (warHistory?.weeks ?? []).filter(
+    (w) => !w.isCurrent && typeof w.decksUsed === "number",
+  );
+  let warHistoryUsed = false;
+  let warHistoryActivityDetail = null;
+  if (completedWarWeeks.length > 0) {
+    const recentWeeks = completedWarWeeks.slice(0, 5); // semaines les plus récentes en premier
+    const n = recentWeeks.length;
+    let weightedSum = 0;
+    let weightTotal = 0;
+    for (let i = 0; i < n; i++) {
+      const weekScore = (recentWeeks[i].decksUsed ?? 0) / 16;
+      const weight = n - i; // semaine la plus récente = poids le plus élevé
+      weightedSum += weekScore * weight;
+      weightTotal += weight;
+    }
+    activiteGDC = r(Math.min(8, (weightedSum / weightTotal) * 8));
+    warHistoryUsed = true;
+    warHistoryActivityDetail = recentWeeks
+      .map((w) => `${w.decksUsed}/16 (${w.label ?? "?"})`)
+      .join(" · ");
+  }
+
   // 2. Last Seen replacement (0-3) — shown whenever a lastSeen date is available
   let lastSeenScore = null;
   let lastSeenDays = null;
@@ -573,8 +599,12 @@ export function computeWarReliabilityFallback(
   const windowDays = 14;
   const inactiveDays = Math.max(0, windowDays - activeDaysCount);
 
+  const warActivitySummaryLine = warHistoryUsed
+    ? `War Activity: ${warActivityQuality} (${activiteGDC}/8, based on ${completedWarWeeks.slice(0, 5).length} week(s) history: ${warHistoryActivityDetail}).`
+    : `War Activity: ${warActivityQuality} (${activiteGDC}/8, ${perfectDays} full days, ${shortDays} short days, ${inactiveDays} inactive days in ${windowDays}-day window).`;
+
   const summary =
-    `War Activity: ${warActivityQuality} (${activiteGDC}/8, ${perfectDays} full days, ${shortDays} short days, ${inactiveDays} inactive days in ${windowDays}-day window).\n` +
+    `${warActivitySummaryLine}\n` +
     `Last war battle: ${lastWarDay || "none"}${daysSinceLastWar !== null ? ` (${daysSinceLastWar} day(s) ago)` : ""}.\n` +
     `In clan: ${clanDurationText}.\nCW2: ${cw2Remark}.`;
 
@@ -597,13 +627,17 @@ export function computeWarReliabilityFallback(
         label: "War Activity",
         score: activiteGDC,
         max: 8,
-        detail: (() => {
-          const parts = Object.entries(activityResult.byDay)
-            .sort((a, b) => b[0].localeCompare(a[0]))
-            .map(([k, n]) => `${n}× ${k}`);
-          return parts.join(" · ");
-        })(),
-        explanation: `In recent ${windowDays}-day window: ${perfectDays} full days, ${shortDays} short days, ${inactiveDays} inactive days; last war: ${lastWarDay || "none"}${daysSinceLastWar !== null ? ` (${daysSinceLastWar} day(s) ago)` : ""}.`,
+        detail: warHistoryUsed
+          ? warHistoryActivityDetail
+          : (() => {
+              const parts = Object.entries(activityResult.byDay)
+                .sort((a, b) => b[0].localeCompare(a[0]))
+                .map(([k, n]) => `${n}\u00d7 ${k}`);
+              return parts.join(" \u00b7 ");
+            })(),
+        explanation: warHistoryUsed
+          ? `Based on ${completedWarWeeks.slice(0, 5).length} week(s) war history. Battle log (14-day window): ${perfectDays} full days, ${shortDays} short days, ${inactiveDays} inactive days; last war: ${lastWarDay || "none"}${daysSinceLastWar !== null ? ` (${daysSinceLastWar} day(s) ago)` : ""}.`
+          : `In recent ${windowDays}-day window: ${perfectDays} full days, ${shortDays} short days, ${inactiveDays} inactive days; last war: ${lastWarDay || "none"}${daysSinceLastWar !== null ? ` (${daysSinceLastWar} day(s) ago)` : ""}.`,
       },
       {
         label: "General Activity",
