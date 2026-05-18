@@ -3483,7 +3483,7 @@ export default async function handler(req, res) {
           },
           {
             name: "Requis",
-            value: `${fmt(clan.requiredTrophies)} <:trophy2:1493677804733337621>`,
+            value: `${fmt(clan.requiredTrophies)} <:trophy:1498645869224792105>`,
             inline: true,
           },
           {
