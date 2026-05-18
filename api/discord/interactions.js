@@ -3343,5 +3343,204 @@ export default async function handler(req, res) {
     return;
   }
 
+  if (body.type === 2 && body.data?.name === "clan") {
+    const clanOpt = body.data.options?.find((o) => o.name === "clan");
+    const clanVal = (clanOpt?.value || "1").toString().trim();
+    const CLAN_MAP = {
+      1: { name: "La Resistance", tag: "Y8JUPC9C" },
+      2: { name: "Les Resistants", tag: "LRQP20V9" },
+      3: { name: "Les Revoltes", tag: "QU9UQJRL" },
+    };
+    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
+
+    res.status(200).json({ type: 5 });
+    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+
+    runBackground(async () => {
+      try {
+        const abortCtrl = new AbortController();
+        const abortTimer = setTimeout(() => abortCtrl.abort(), 50000);
+        let apiResp;
+        try {
+          apiResp = await fetch(
+            `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis?fast=true&includeRaceGroup=false`,
+            {
+              headers: { Accept: "application/json" },
+              signal: abortCtrl.signal,
+            },
+          );
+        } catch (fetchErr) {
+          clearTimeout(abortTimer);
+          const msg =
+            fetchErr.name === "AbortError"
+              ? `⏱️ L'analyse du clan a pris trop longtemps. Réessayez dans 30 secondes.`
+              : `Erreur réseau : ${fetchErr.message}`;
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: msg, flags: 64 }),
+          });
+          return;
+        }
+        clearTimeout(abortTimer);
+        if (!apiResp.ok) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `Erreur API clan (${apiResp.status}). Réessayez dans quelques instants.`,
+              flags: 64,
+            }),
+          });
+          return;
+        }
+
+        const analysis = await apiResp.json();
+        const clan = analysis.clan || {};
+        const members = analysis.members || [];
+        const summary = analysis.summary || {};
+
+        const TYPE_FR = {
+          open: "Ouvert",
+          inviteOnly: "Sur invitation",
+          closed: "Fermé",
+        };
+
+        function warLeagueLabel(trophies) {
+          if (trophies >= 6000) return "Légendaire I";
+          if (trophies >= 5000) return "Légendaire II";
+          if (trophies >= 4000) return "Légendaire III";
+          if (trophies >= 3500) return "Or I";
+          if (trophies >= 3000) return "Or II";
+          if (trophies >= 2500) return "Or III";
+          if (trophies >= 2000) return "Argent I";
+          if (trophies >= 1500) return "Argent II";
+          if (trophies >= 1000) return "Argent III";
+          if (trophies >= 600) return "Bronze I";
+          if (trophies >= 400) return "Bronze II";
+          return "Bronze III";
+        }
+
+        const fmt = (n) =>
+          typeof n === "number" ? n.toLocaleString("fr-FR") : "—";
+        const avgScore = summary.avgScore ?? 0;
+        const embedColor =
+          avgScore >= 75
+            ? COLOR_MAP.green
+            : avgScore >= 56
+              ? COLOR_MAP.yellow
+              : avgScore >= 31
+                ? COLOR_MAP.orange
+                : COLOR_MAP.red;
+
+        const MEMBER_LIMIT = 5;
+        const topReliable = [...members]
+          .sort(
+            (a, b) => Number(b.reliability ?? 0) - Number(a.reliability ?? 0),
+          )
+          .slice(0, MEMBER_LIMIT);
+        const topRisky = members
+          .filter(
+            (m) => m.verdict === "High risk" || m.verdict === "Extreme risk",
+          )
+          .sort(
+            (a, b) => Number(a.reliability ?? 0) - Number(b.reliability ?? 0),
+          )
+          .slice(0, MEMBER_LIMIT);
+        const newMembers = members
+          .filter((m) => m.isNew)
+          .slice(0, MEMBER_LIMIT);
+
+        function memberLine(m) {
+          const icon = RELIABILITY_ICON[m.color] ?? RELIABILITY_ICON.orange;
+          const pct = Math.round(Number(m.reliability ?? 0));
+          return `- [${m.name}](${trustPlayerUrl(m.tag)}) · ${icon} ${pct}%`;
+        }
+
+        const clanUrl = trustClanUrl(resolved.tag);
+        const fields = [
+          {
+            name: "Membres",
+            value: `${clan.members ?? "?"} / 50`,
+            inline: true,
+          },
+          {
+            name: "Trophées de guerre",
+            value: `${fmt(clan.clanWarTrophies)} 🏆`,
+            inline: true,
+          },
+          {
+            name: "Ligue",
+            value: warLeagueLabel(clan.clanWarTrophies ?? 0),
+            inline: true,
+          },
+          {
+            name: "Statut",
+            value: TYPE_FR[clan.type] ?? clan.type ?? "—",
+            inline: true,
+          },
+          {
+            name: "Requis",
+            value: `${fmt(clan.requiredTrophies)} 🏆`,
+            inline: true,
+          },
+          {
+            name: "Fiabilité globale",
+            value: `**${avgScore}%** · ✅ ${summary.green ?? 0}  🟡 ${summary.yellow ?? 0}  🟠 ${summary.orange ?? 0}  🔴 ${summary.red ?? 0}`,
+            inline: false,
+          },
+        ];
+
+        if (topReliable.length > 0) {
+          fields.push({
+            name: `✅ Top fiables (${topReliable.length})`,
+            value: topReliable.map(memberLine).join("\n"),
+            inline: false,
+          });
+        }
+        if (topRisky.length > 0) {
+          fields.push({
+            name: `⚠️ Top risqués (${topRisky.length})`,
+            value: topRisky.map(memberLine).join("\n"),
+            inline: false,
+          });
+        }
+        if (newMembers.length > 0) {
+          fields.push({
+            name: `🆕 Nouveaux (${newMembers.length})`,
+            value: newMembers.map(memberLine).join("\n"),
+            inline: false,
+          });
+        }
+
+        const clanTag = (clan.tag ?? `#${resolved.tag}`).replace(/^#/, "");
+        const embed = {
+          title: `${clan.name ?? resolved.name} | #${clanTag}`,
+          url: clanUrl,
+          description: clan.description ?? "",
+          color: embedColor,
+          fields,
+          footer: { text: `Plus d'infos sur ${clanUrl}` },
+        };
+
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ embeds: [embed] }),
+        });
+      } catch (err) {
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur : ${err.message}`,
+            flags: 64,
+          }),
+        });
+      }
+    });
+    return;
+  }
+
   return res.status(400).json({ error: "Unsupported interaction type" });
 }
