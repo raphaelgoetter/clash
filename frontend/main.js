@@ -3035,7 +3035,7 @@ function renderClanOverview(data) {
     },
     {
       label: t("labelAvgScore"),
-      value: `${summary.avgScore} / 100`,
+      value: `${summary.avgScore}%`,
       cls:
         summary.avgScore < 60
           ? "c-red"
