@@ -78,22 +78,22 @@ En pratique :
 - le score n’est pas limité au seul clan actuel quand l’historique famille est disponible ;
 - la notion opérationnelle importante est la continuité dans la famille, pas un ancien flag documentaire de “transfer”.
 
+### Score de fiabilité
+
+Le score de fiabilité de GDC est un pourcentage calculé à partir d’un ensemble de critères pondérés, avec des maxima définis pour chaque critère.
+
+Clash Royale ne fournissant pas directement un score de fiabilité, nous avons défini notre propre algorithme pour évaluer la fiabilité d’un joueur en GDC, basé sur des données objectives et transparentes.
+
+L’API Clash Royale fournit deux sources de données principales pour ce calcul :
+
+- le `riverracelog` du clan. Très complet, il permet de reconstituer l’historique de guerre et d’obtenir des critères précis sur les semaines terminées. C’est la source de vérité principale pour le score complet.
+- le `battlelog` du joueur, qui sert de source de secours quand le `riverracelog` est insuffisant ou indisponible. Cette source est plus limitée (30 derniers combats d'un joueur) et moins spécifique à la GDC, d’où un score de fiabilité en mode fallback.
+
 ### Score de fiabilité guerre, mode complet
 
-Le mode complet est utilisé quand l’historique River Race permet de calculer une `warHistory` exploitable.
-La fonction source est `computeWarScore()` dans `backend/services/warScoring.js`.
+Le mode complet est utilisé quand l’historique d'un joueur permet d'exploiter le `riverracelog`. Il faut au minimum une vraie semaine terminée dans le clan ou la famille pour que ce mode s’active. Si l’historique famille est inexistant ou trop faible, on reste en `fallback`.
 
-Condition d’activation précise :
-
-- côté joueur, `playerAnalysis.js` bascule vers le mode complet si l’historique contient assez de matière pour le score, avec au minimum une vraie semaine terminée dans le clan ou une continuité de famille suffisamment longue ;
-- le code n’impose pas “X jours de présence” comme règle fixe ; il s’appuie sur la profondeur de `raceLog`, la présence de `streakInFamily` / `streakInCurrentClan` et le test `hasEnoughHistory` ;
-- si l’historique famille est inexistant ou trop faible, on reste en `fallback`.
-
-Durée récupérable depuis l’API :
-
-- `fetchRaceLog()` récupère le `riverracelog` du clan, documenté dans le code comme les `last ~10 completed seasons` ;
-- `fetchCurrentRace()` ajoute la semaine live en cours ;
-- en pratique, la fenêtre exploitable est donc `~10` saisons terminées + `1` semaine courante, sous réserve de ce que l’API renvoie réellement.
+En pratique, la fenêtre exploitable est de `~10` saisons terminées + `1` semaine courante, sous réserve de ce que l’API renvoie réellement.
 
 Critères :
 
@@ -109,34 +109,12 @@ Critères :
 | 8   | Dernière connexion | 5       | Ajoutée seulement si lastSeen est disponible                                                            |
 | 9   | Discord            | 2       | Compte Discord lié                                                                                      |
 
-Maxima réels :
-
-- 45 points : sans win rate et sans lastSeen, avec Discord inclus.
-- 48 points : avec win rate, sans lastSeen.
-- 50 points : sans win rate, avec lastSeen.
-- 53 points : avec win rate et lastSeen.
-
-Règle importante d’assainissement de l’historique :
-
-- si un joueur a au moins deux semaines passées dans l’historique et que la plus ancienne est incomplète, cette semaine peut être marquée ignored pour ne pas pénaliser une arrivée en cours de guerre ;
-- elle reste visible dans l’historique, mais ne compte plus dans les moyennes utiles au score.
-
 ### Score de fiabilité guerre, mode fallback
 
-Le mode fallback est utilisé quand l’historique River Race est insuffisant ou indisponible.
-La fonction source est `computeWarReliabilityFallback()` dans `backend/services/warScoring.js`.
+Le mode fallback est utilisé quand le `riverracelog` est insuffisant ou indisponible. Le `battlelog` du joueur reste la source de vérité restante ;
 
-Quand il s’active :
-
-- le `riverracelog` n’existe pas, est partiel, ou n’apporte pas assez d’éléments pour un score complet ;
-- le `battlelog` du joueur reste la source de vérité restante ;
-- si l’API de guerre ne fournit plus de combats GDC, le code peut utiliser `currentRace` pour récupérer les `decksUsed` live du jour courant et éviter un zéro artificiel.
-
-Durée récupérable depuis l’API :
-
-- `fetchBattleLog()` récupère les `25` derniers combats d’un joueur ;
-- ces combats mélangent guerre, ladder et challenges, donc le fallback doit les filtrer pour extraire la guerre ;
-- quand le `battlelog` est trop court ou trop écrasé par des combats non-GDC, le calcul devient moins fiable et peut retomber sur des approximations.
+L'API `battlelog` ne fournit que les `30` derniers combats d’un joueur tous types confondus (ladder, challenges, GDC, etc.). Le code tente de filtrer les combats de GDC.
+Quand le `battlelog` est trop court ou trop écrasé par des combats non-GDC, le calcul devient moins fiable et peut retomber sur des approximations.
 
 Critères :
 
@@ -149,17 +127,6 @@ Critères :
 | 5   | Expérience         | 3       | Basée sur les trophées actuels                                                                                                                              |
 | 6   | Dons               | 2       | Basé sur totalDonations                                                                                                                                     |
 | 7   | Discord            | 2       | Compte Discord lié                                                                                                                                          |
-
-Maxima réels :
-
-- 33 points : sans lastSeen, avec Discord inclus.
-- 36 points : avec lastSeen et avec Discord inclus.
-
-Particularités :
-
-- si le battle log ne contient plus de combats GDC mais que currentRace expose encore des decks utilisés, le code peut synthétiser une activité minimale du jour pour éviter un zéro artificiel ;
-- le fallback ne calcule plus de critère win rate séparé ;
-- l’activité GDC est plafonnée par un niveau de confiance basé sur le volume de combats observés.
 
 ### Seuils de verdict
 
