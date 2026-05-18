@@ -3494,6 +3494,7 @@ export default async function handler(req, res) {
         ];
 
         // Rangée 3 : Top fiables | Top risqués | Nouveaux (toujours affichés, inline)
+        fields.push({ name: "\u200b", value: "\u200b", inline: false });
         fields.push({
           name: `✅ Top fiables (${topReliable.length})`,
           value:
