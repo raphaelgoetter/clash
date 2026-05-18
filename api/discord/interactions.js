@@ -3407,18 +3407,18 @@ export default async function handler(req, res) {
         };
 
         function warLeagueLabel(trophies) {
-          if (trophies >= 6000) return "Légendaire I";
-          if (trophies >= 5000) return "Légendaire II";
-          if (trophies >= 4000) return "Légendaire III";
-          if (trophies >= 3500) return "Or I";
-          if (trophies >= 3000) return "Or II";
-          if (trophies >= 2500) return "Or III";
-          if (trophies >= 2000) return "Argent I";
-          if (trophies >= 1500) return "Argent II";
-          if (trophies >= 1000) return "Argent III";
-          if (trophies >= 600) return "Bronze I";
-          if (trophies >= 400) return "Bronze II";
-          return "Bronze III";
+          if (trophies < 200) return "Bronze 1";
+          if (trophies < 400) return "Bronze 2";
+          if (trophies < 600) return "Bronze 3";
+          if (trophies < 900) return "Argent 1";
+          if (trophies < 1200) return "Argent 2";
+          if (trophies < 1500) return "Argent 3";
+          if (trophies < 2000) return "Or 1";
+          if (trophies < 2500) return "Or 2";
+          if (trophies < 3000) return "Or 3";
+          if (trophies < 4000) return "Légendaire 1";
+          if (trophies < 5000) return "Légendaire 2";
+          return "Légendaire 3";
         }
 
         const fmt = (n) =>
