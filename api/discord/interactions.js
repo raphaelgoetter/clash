@@ -3488,7 +3488,7 @@ export default async function handler(req, res) {
           },
           {
             name: "Fiabilité globale",
-            value: `**${avgScore}%** · ✅ ${summary.green ?? 0}  🟡 ${summary.yellow ?? 0}  🟠 ${summary.orange ?? 0}  🔴 ${summary.red ?? 0}`,
+            value: `**${avgScore}%**`,
             inline: true,
           },
         ];
