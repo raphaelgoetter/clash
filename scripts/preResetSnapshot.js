@@ -26,7 +26,6 @@ import {
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PRE_RESET_LEAD_MS = 2 * 60 * 1000; // 2 minutes avant le reset
-const WAR_DAYS = ["thursday", "friday", "saturday", "sunday"];
 
 /** Retourne le timestamp UTC (ms) du prochain reset journalier d'un clan, le jour courant. */
 function todayResetUtcMs(clanTag, now = new Date()) {
@@ -113,13 +112,9 @@ async function main() {
   const now = new Date();
   const today = utcDayName(now);
 
-  // Vérification : on ne prend des snapshots que les jours GDC (jeu–dim).
-  if (!WAR_DAYS.includes(today)) {
-    console.log(
-      `Aujourd'hui (${today}) n'est pas un jour GDC — aucun snapshot pré-reset à prendre.`,
-    );
-    process.exit(0);
-  }
+  // Le cron (war-summary.yml) est la seule source de vérité sur les jours d'exécution.
+  // Pas de guard ici : si le script tourne un jour sans reset GDC, les clans auront
+  // msUntilReset < 0 et seront simplement sautés.
 
   // Construire la liste des clans triés par heure de reset (le plus tôt d'abord).
   const clansWithReset = ALLOWED_CLANS.map((tag) => {
@@ -129,7 +124,7 @@ async function main() {
     return { tag: cleanTag, resetMs, targetMs };
   }).sort((a, b) => a.targetMs - b.targetMs);
 
-  console.log(`Jour GDC : ${today}. Planning des snapshots pré-reset :`);
+  console.log(`Matin de reset : ${today}. Planning des snapshots pré-reset :`);
   for (const { tag, resetMs, targetMs } of clansWithReset) {
     const resetTime = new Date(resetMs).toISOString();
     const snapTime = new Date(targetMs).toISOString();
