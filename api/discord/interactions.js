@@ -3459,6 +3459,7 @@ export default async function handler(req, res) {
 
         const clanUrl = trustClanUrl(resolved.tag);
         const fields = [
+          // Rangée 1 : Membres | Trophées de guerre | Ligue
           {
             name: "Membres",
             value: `${clan.members ?? "?"} / 50`,
@@ -3466,7 +3467,7 @@ export default async function handler(req, res) {
           },
           {
             name: "Trophées de guerre",
-            value: `${fmt(clan.clanWarTrophies)} 🏆`,
+            value: `${fmt(clan.clanWarTrophies)} <:trophy2:1493677804733337621>`,
             inline: true,
           },
           {
@@ -3474,6 +3475,7 @@ export default async function handler(req, res) {
             value: warLeagueLabel(clan.clanWarTrophies ?? 0),
             inline: true,
           },
+          // Rangée 2 : Statut | Requis | Fiabilité globale
           {
             name: "Statut",
             value: TYPE_FR[clan.type] ?? clan.type ?? "—",
@@ -3481,37 +3483,48 @@ export default async function handler(req, res) {
           },
           {
             name: "Requis",
-            value: `${fmt(clan.requiredTrophies)} 🏆`,
+            value: `${fmt(clan.requiredTrophies)} <:trophy2:1493677804733337621>`,
             inline: true,
           },
           {
             name: "Fiabilité globale",
             value: `**${avgScore}%** · ✅ ${summary.green ?? 0}  🟡 ${summary.yellow ?? 0}  🟠 ${summary.orange ?? 0}  🔴 ${summary.red ?? 0}`,
-            inline: false,
+            inline: true,
           },
         ];
 
-        if (topReliable.length > 0) {
-          fields.push({
-            name: `✅ Top fiables (${topReliable.length})`,
-            value: topReliable.map(memberLine).join("\n"),
-            inline: false,
-          });
-        }
-        if (topRisky.length > 0) {
-          fields.push({
-            name: `⚠️ Top risqués (${topRisky.length})`,
-            value: topRisky.map(memberLine).join("\n"),
-            inline: false,
-          });
-        }
-        if (newMembers.length > 0) {
-          fields.push({
-            name: `🆕 Nouveaux (${newMembers.length})`,
-            value: newMembers.map(memberLine).join("\n"),
-            inline: false,
-          });
-        }
+        // Rangée 3 : Top fiables | Top risqués | Nouveaux (toujours affichés, inline)
+        fields.push({
+          name: `✅ Top fiables (${topReliable.length})`,
+          value:
+            topReliable.length > 0
+              ? topReliable.map(memberLine).join("\n")
+              : "Aucun",
+          inline: true,
+        });
+        fields.push({
+          name: `⚠️ Top risqués (${topRisky.length})`,
+          value:
+            topRisky.length > 0
+              ? topRisky.map(memberLine).join("\n")
+              : "Aucun ✅",
+          inline: true,
+        });
+        fields.push({
+          name: `🆕 Nouveaux (${newMembers.length})`,
+          value:
+            newMembers.length > 0
+              ? newMembers.map(memberLine).join("\n")
+              : "Aucun",
+          inline: true,
+        });
+
+        // Lien cliquable en bas
+        fields.push({
+          name: "\u200b",
+          value: `[Plus d'infos sur TrustRoyale ↗](${clanUrl})`,
+          inline: false,
+        });
 
         const clanTag = (clan.tag ?? `#${resolved.tag}`).replace(/^#/, "");
         const embed = {
@@ -3520,7 +3533,6 @@ export default async function handler(req, res) {
           description: clan.description ?? "",
           color: embedColor,
           fields,
-          footer: { text: `Plus d'infos sur ${clanUrl}` },
         };
 
         await fetch(webhookUrl, {
