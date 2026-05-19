@@ -3183,22 +3183,18 @@ export default async function handler(req, res) {
         const sumNormLevels = allCards.reduce((s, c) => s + normLevel(c), 0);
 
         // Évolutions débloquées : icône évolution présente ET évoluée au moins 1 fois.
-        // Exception : si la carte est en "phase héros" (heroMedium ET evoLvl >= 2 mais pas encore maxée),
-        // elle n'est comptée que dans les héros (exemple : Knight 2/3).
-        // Une fois maxée (ex. Wizard 3/3), elle compte dans les deux.
-        const evolvedCount = allCards.filter(
+        // Les tower troops ne peuvent pas être évoluées — on utilise baseCards uniquement.
+        // Exception : cartes héros (heroMedium ET evoLvl >= 2) comptées uniquement dans heroCount.
+        const evolvedCount = baseCards.filter(
           (c) =>
             !!c.iconUrls?.evolutionMedium &&
             (c.evolutionLevel ?? 0) > 0 &&
-            !(
-              !!c.iconUrls?.heroMedium &&
-              (c.evolutionLevel ?? 0) >= 2 &&
-              (c.evolutionLevel ?? 0) < c.maxEvolutionLevel
-            ),
+            !(!!c.iconUrls?.heroMedium && (c.evolutionLevel ?? 0) >= 2),
         ).length;
 
         // Héros : variant héros débloqué (heroMedium ET evolutionLevel >= 2)
-        const heroCount = allCards.filter(
+        // Les tower troops ne peuvent pas être des héros — on utilise baseCards uniquement.
+        const heroCount = baseCards.filter(
           (c) => !!c.iconUrls?.heroMedium && (c.evolutionLevel ?? 0) >= 2,
         ).length;
 
@@ -3354,12 +3350,16 @@ export default async function handler(req, res) {
             value: rewardsText,
             inline: false,
           },
-          // Total cumulé jusqu'au niveau maximum
-          {
-            name: "Total à récolter (CL 2100) :",
-            value: totalRewardsText,
-            inline: false,
-          },
+          // Total cumulé jusqu'au niveau maximum (masqué si max déjà atteint)
+          ...(remainingRewards.length > 0
+            ? [
+                {
+                  name: "Total à récolter (CL 2100) :",
+                  value: totalRewardsText,
+                  inline: false,
+                },
+              ]
+            : []),
         ];
 
         const embed = {
