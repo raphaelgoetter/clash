@@ -263,18 +263,25 @@ const commands = [
   },
   {
     name: "clan",
-    description: "Affiche la fiche récapitulative d'un clan de la famille.",
+    description: "Affiche la fiche récapitulative d'un clan.",
     options: [
       {
         type: 3, // STRING
         name: "clan",
-        description: "1=La Resistance, 2=Les Resistants, 3=Les Revoltes",
-        required: true,
+        description: "Clan de la famille (données de fiabilité incluses).",
+        required: false,
         choices: [
           { name: "La Resistance", value: "1" },
           { name: "Les Resistants", value: "2" },
           { name: "Les Revoltes", value: "3" },
         ],
+      },
+      {
+        type: 3, // STRING
+        name: "tag",
+        description:
+          "Tag d'un clan quelconque (ex: #ABC123). Prioritaire sur le choix clan.",
+        required: false,
       },
     ],
   },

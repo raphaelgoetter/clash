@@ -3345,13 +3345,34 @@ export default async function handler(req, res) {
 
   if (body.type === 2 && body.data?.name === "clan") {
     const clanOpt = body.data.options?.find((o) => o.name === "clan");
-    const clanVal = (clanOpt?.value || "1").toString().trim();
+    const tagOpt = body.data.options?.find((o) => o.name === "tag");
+
+    if (!clanOpt && !tagOpt) {
+      return res.status(200).json({
+        type: 4,
+        data: {
+          content: "Veuillez sélectionner un clan ou fournir un tag.",
+          flags: 64,
+        },
+      });
+    }
+
     const CLAN_MAP = {
       1: { name: "La Resistance", tag: "Y8JUPC9C" },
       2: { name: "Les Resistants", tag: "LRQP20V9" },
       3: { name: "Les Revoltes", tag: "QU9UQJRL" },
     };
-    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
+    const FAMILY_TAGS = new Set(["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"]);
+
+    let resolved;
+    if (tagOpt) {
+      const rawTag = tagOpt.value.trim().toUpperCase().replace(/^#/, "");
+      resolved = { tag: rawTag, name: `#${rawTag}` };
+    } else {
+      const clanVal = (clanOpt.value || "1").toString().trim();
+      resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
+    }
+    const isFamilyClan = FAMILY_TAGS.has(resolved.tag.toUpperCase());
 
     res.status(200).json({ type: 5 });
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
@@ -3406,7 +3427,12 @@ export default async function handler(req, res) {
           closed: "Fermé",
         };
 
-        const LEAGUE_ICON = {
+        const LEAGUE_ICON_SPECIFIC = {
+          "Or 2": "<:gold2:1506200349424488448>",
+          "Légendaire 1": "<:leg1:1506200350250762311>",
+          "Légendaire 2": "<:leg2:1506200352372822016>",
+        };
+        const LEAGUE_ICON_GENERIC = {
           "Bronze 1": "<:bronze:1506201933331824721>",
           "Bronze 2": "<:bronze:1506201933331824721>",
           "Bronze 3": "<:bronze:1506201933331824721>",
@@ -3414,10 +3440,10 @@ export default async function handler(req, res) {
           "Argent 2": "<:silver:1506201931922800730>",
           "Argent 3": "<:silver:1506201931922800730>",
           "Or 1": "<:gold:1506201934477004880>",
-          "Or 2": "<:gold2:1506200349424488448>",
+          "Or 2": "<:gold:1506201934477004880>",
           "Or 3": "<:gold:1506201934477004880>",
-          "Légendaire 1": "<:leg1:1506200350250762311>",
-          "Légendaire 2": "<:leg2:1506200352372822016>",
+          "Légendaire 1": "<:leg:1506201926935646228>",
+          "Légendaire 2": "<:leg:1506201926935646228>",
           "Légendaire 3": "<:leg:1506201926935646228>",
         };
         function warLeagueLabel(trophies) {
@@ -3434,45 +3460,70 @@ export default async function handler(req, res) {
           else if (trophies < 4000) label = "Légendaire 1";
           else if (trophies < 5000) label = "Légendaire 2";
           else label = "Légendaire 3";
-          const icon = LEAGUE_ICON[label];
+          const icon = isFamilyClan
+            ? (LEAGUE_ICON_SPECIFIC[label] ?? LEAGUE_ICON_GENERIC[label])
+            : LEAGUE_ICON_GENERIC[label];
           return icon ? `${icon} ${label}` : label;
         }
 
         const fmt = (n) =>
           typeof n === "number" ? n.toLocaleString("fr-FR") : "—";
         const avgScore = summary.avgScore ?? 0;
-        const embedColor =
-          avgScore >= 75
+        const embedColor = isFamilyClan
+          ? avgScore >= 75
             ? COLOR_MAP.green
             : avgScore >= 56
               ? COLOR_MAP.yellow
               : avgScore >= 31
                 ? COLOR_MAP.orange
-                : COLOR_MAP.red;
+                : COLOR_MAP.red
+          : 0x99aab5;
 
         const MEMBER_LIMIT = 5;
-        const topReliable = [...members]
-          .sort(
-            (a, b) => Number(b.reliability ?? 0) - Number(a.reliability ?? 0),
-          )
-          .slice(0, MEMBER_LIMIT);
-        const topRisky = members
-          .filter(
-            (m) => m.verdict === "High risk" || m.verdict === "Extreme risk",
-          )
-          .sort(
-            (a, b) => Number(a.reliability ?? 0) - Number(b.reliability ?? 0),
-          )
-          .slice(0, MEMBER_LIMIT);
-        const newMembers = members
-          .filter((m) => m.isNew)
-          .slice(0, MEMBER_LIMIT);
+        const topReliable = isFamilyClan
+          ? [...members]
+              .sort(
+                (a, b) =>
+                  Number(b.reliability ?? 0) - Number(a.reliability ?? 0),
+              )
+              .slice(0, MEMBER_LIMIT)
+          : [];
+        const topRisky = isFamilyClan
+          ? members
+              .filter(
+                (m) =>
+                  m.verdict === "High risk" || m.verdict === "Extreme risk",
+              )
+              .sort(
+                (a, b) =>
+                  Number(a.reliability ?? 0) - Number(b.reliability ?? 0),
+              )
+              .slice(0, MEMBER_LIMIT)
+          : [];
+        const newMembers = isFamilyClan
+          ? members.filter((m) => m.isNew).slice(0, MEMBER_LIMIT)
+          : [];
 
         function memberLine(m) {
           const icon = RELIABILITY_ICON[m.color] ?? RELIABILITY_ICON.orange;
           const pct = Math.round(Number(m.reliability ?? 0));
           return `- [${m.name}](${trustPlayerUrl(m.tag)}) · ${icon} ${pct}%`;
         }
+
+        // Champ 6 : Fiabilité (clan famille) ou Chef (clan externe)
+        const sixthField = isFamilyClan
+          ? {
+              name: "Fiabilité",
+              value: `<:warn:1506174837519945800> **${avgScore}%**`,
+              inline: true,
+            }
+          : (() => {
+              const leader = clan.memberList?.find((m) => m.role === "leader");
+              const leaderValue = leader
+                ? `[${leader.name}](${trustPlayerUrl(leader.tag)})`
+                : "—";
+              return { name: "Chef", value: leaderValue, inline: true };
+            })();
 
         const clanUrl = trustClanUrl(resolved.tag);
         const fields = [
@@ -3492,7 +3543,7 @@ export default async function handler(req, res) {
             value: warLeagueLabel(clan.clanWarTrophies ?? 0),
             inline: true,
           },
-          // Rangée 2 : Statut | Requis | Fiabilité
+          // Rangée 2 : Statut | Requis | Fiabilité/Chef
           {
             name: "Statut",
             value: (() => {
@@ -3512,42 +3563,37 @@ export default async function handler(req, res) {
             value: `<:trophy:1498645869224792105> ${fmt(clan.requiredTrophies)}`,
             inline: true,
           },
-          {
-            name: "Fiabilité",
-            value: `<:warn:1506174837519945800> **${avgScore}%**`,
-            inline: true,
-          },
+          sixthField,
         ];
 
-        // Rangée 3 : Top fiables | Top risqués | Nouveaux (toujours affichés, inline)
-        fields.push({ name: "\u200b", value: "\u200b", inline: false });
-        fields.push({
-          name: `Top fiables (${topReliable.length})`,
-
-          value:
-            topReliable.length > 0
-              ? topReliable.map(memberLine).join("\n")
-              : "Aucun",
-          inline: true,
-        });
-        fields.push({
-          name: `Top risqués (${topRisky.length})`,
-
-          value:
-            topRisky.length > 0
-              ? topRisky.map(memberLine).join("\n")
-              : "Aucun ✅",
-          inline: true,
-        });
-        fields.push({
-          name: `Nouveaux (${newMembers.length})`,
-
-          value:
-            newMembers.length > 0
-              ? newMembers.map(memberLine).join("\n")
-              : "Aucun",
-          inline: true,
-        });
+        // Rangée 3 : listes membres (uniquement pour les clans famille)
+        if (isFamilyClan) {
+          fields.push({ name: "\u200b", value: "\u200b", inline: false });
+          fields.push({
+            name: `Top fiables (${topReliable.length})`,
+            value:
+              topReliable.length > 0
+                ? topReliable.map(memberLine).join("\n")
+                : "Aucun",
+            inline: true,
+          });
+          fields.push({
+            name: `Top risqués (${topRisky.length})`,
+            value:
+              topRisky.length > 0
+                ? topRisky.map(memberLine).join("\n")
+                : "Aucun ✅",
+            inline: true,
+          });
+          fields.push({
+            name: `Nouveaux (${newMembers.length})`,
+            value:
+              newMembers.length > 0
+                ? newMembers.map(memberLine).join("\n")
+                : "Aucun",
+            inline: true,
+          });
+        }
 
         // Lien cliquable en bas
         fields.push({
