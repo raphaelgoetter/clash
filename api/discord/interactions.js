@@ -3462,7 +3462,7 @@ export default async function handler(req, res) {
           // Rangée 1 : Membres | Trophées GDC | Ligue
           {
             name: "Membres",
-            value: `${clan.members ?? "?"} / 50`,
+            value: `${clan.members ?? "?"} / 50 <:members:1506175789731811399>`,
             inline: true,
           },
           {
@@ -3478,7 +3478,16 @@ export default async function handler(req, res) {
           // Rangée 2 : Statut | Requis | Fiabilité
           {
             name: "Statut",
-            value: TYPE_FR[clan.type] ?? clan.type ?? "—",
+            value: (() => {
+              const STATUS_ICON = {
+                open: "<:success:1499002702208958577>",
+                inviteOnly: "<:warning:1499002725965500577>",
+                closed: "<:error:1499002755841265826>",
+              };
+              const icon = STATUS_ICON[clan.type] ?? "";
+              const label = TYPE_FR[clan.type] ?? clan.type ?? "—";
+              return `${icon} ${label}`;
+            })(),
             inline: true,
           },
           {
@@ -3488,7 +3497,7 @@ export default async function handler(req, res) {
           },
           {
             name: "Fiabilité",
-            value: `**${avgScore}%**`,
+            value: `**${avgScore}%** <:warn:1506174837519945800>`,
             inline: true,
           },
         ];
@@ -3496,7 +3505,8 @@ export default async function handler(req, res) {
         // Rangée 3 : Top fiables | Top risqués | Nouveaux (toujours affichés, inline)
         fields.push({ name: "\u200b", value: "\u200b", inline: false });
         fields.push({
-          name: `✅ Top fiables (${topReliable.length})`,
+          name: `Top fiables (${topReliable.length})`,
+
           value:
             topReliable.length > 0
               ? topReliable.map(memberLine).join("\n")
@@ -3504,7 +3514,8 @@ export default async function handler(req, res) {
           inline: true,
         });
         fields.push({
-          name: `⚠️ Top risqués (${topRisky.length})`,
+          name: `Top risqués (${topRisky.length})`,
+
           value:
             topRisky.length > 0
               ? topRisky.map(memberLine).join("\n")
@@ -3512,7 +3523,8 @@ export default async function handler(req, res) {
           inline: true,
         });
         fields.push({
-          name: `🆕 Nouveaux (${newMembers.length})`,
+          name: `Nouveaux (${newMembers.length})`,
+
           value:
             newMembers.length > 0
               ? newMembers.map(memberLine).join("\n")
