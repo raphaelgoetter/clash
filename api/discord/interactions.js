@@ -3407,9 +3407,18 @@ export default async function handler(req, res) {
         };
 
         const LEAGUE_ICON = {
+          "Bronze 1": "<:bronze:1506201933331824721>",
+          "Bronze 2": "<:bronze:1506201933331824721>",
+          "Bronze 3": "<:bronze:1506201933331824721>",
+          "Argent 1": "<:silver:1506201931922800730>",
+          "Argent 2": "<:silver:1506201931922800730>",
+          "Argent 3": "<:silver:1506201931922800730>",
+          "Or 1": "<:gold:1506201934477004880>",
           "Or 2": "<:gold2:1506200349424488448>",
+          "Or 3": "<:gold:1506201934477004880>",
           "Légendaire 1": "<:leg1:1506200350250762311>",
           "Légendaire 2": "<:leg2:1506200352372822016>",
+          "Légendaire 3": "<:leg:1506201926935646228>",
         };
         function warLeagueLabel(trophies) {
           let label;
