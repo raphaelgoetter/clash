@@ -3138,7 +3138,7 @@ export default async function handler(req, res) {
           champion: 10,
         };
         const TOTAL_CARDS = 125; // 121 cartes standard + 4 troupes de tour
-        const TOTAL_EVOLUTIONS = 39;
+        const TOTAL_EVOLUTIONS = 40;
         const TOTAL_HEROES = 13; // 8 champions + 1 nouveau héros + 4 troupes de tour
 
         // Conditions pour atteindre chaque niveau de Tour du Roi (nouveau système)
@@ -3184,12 +3184,9 @@ export default async function handler(req, res) {
 
         // Évolutions débloquées : icône évolution présente ET évoluée au moins 1 fois.
         // Les tower troops ne peuvent pas être évoluées — on utilise baseCards uniquement.
-        // Exception : cartes héros (heroMedium ET evoLvl >= 2) comptées uniquement dans heroCount.
+        // Les héros comptent aussi dans les évolutions (le jeu affiche les deux séparément).
         const evolvedCount = baseCards.filter(
-          (c) =>
-            !!c.iconUrls?.evolutionMedium &&
-            (c.evolutionLevel ?? 0) > 0 &&
-            !(!!c.iconUrls?.heroMedium && (c.evolutionLevel ?? 0) >= 2),
+          (c) => !!c.iconUrls?.evolutionMedium && (c.evolutionLevel ?? 0) > 0,
         ).length;
 
         // Héros : variant héros débloqué (heroMedium ET evolutionLevel >= 2)
