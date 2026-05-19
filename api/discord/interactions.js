@@ -4,6 +4,7 @@
 import { createPublicKey, verify } from "node:crypto";
 import { waitUntil } from "@vercel/functions";
 import { createRequire } from "node:module";
+import { getLeagueName } from "../../backend/services/warLeagues.js";
 
 const _require = createRequire(import.meta.url);
 const COLLECTION_REWARDS = _require("../../data/collection-rewards.json");
@@ -3448,19 +3449,7 @@ export default async function handler(req, res) {
           "Légendaire 3": "<:legendary3:1506218625508573225>",
         };
         function warLeagueLabel(trophies) {
-          let label;
-          if (trophies < 200) label = "Bronze 1";
-          else if (trophies < 400) label = "Bronze 2";
-          else if (trophies < 600) label = "Bronze 3";
-          else if (trophies < 900) label = "Argent 1";
-          else if (trophies < 1200) label = "Argent 2";
-          else if (trophies < 1500) label = "Argent 3";
-          else if (trophies < 2000) label = "Or 1";
-          else if (trophies < 2500) label = "Or 2";
-          else if (trophies < 3000) label = "Or 3";
-          else if (trophies < 4000) label = "Légendaire 1";
-          else if (trophies < 5000) label = "Légendaire 2";
-          else label = "Légendaire 3";
+          const label = getLeagueName(trophies ?? 0, "fr") ?? "Bronze 1";
           const icon = isFamilyClan
             ? (LEAGUE_ICON_SPECIFIC[label] ?? LEAGUE_ICON_GENERIC[label])
             : LEAGUE_ICON_GENERIC[label];

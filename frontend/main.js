@@ -14,6 +14,7 @@ import {
   destroyIfExists,
 } from "./charts.js";
 import { renderRaceGroupCard } from "./warGroup.js";
+import { getLeagueName } from "../backend/services/warLeagues.js";
 
 // ── DOM references ───────────────────────────────────────────
 const searchInput = document.getElementById("search-input");
@@ -2846,22 +2847,7 @@ let loadedClanSections = {
 };
 
 function computeClanLeague(clanWarTrophies) {
-  if (clanWarTrophies == null || Number.isNaN(Number(clanWarTrophies))) {
-    return null;
-  }
-  const trophies = Number(clanWarTrophies);
-  if (trophies < 200) return "Bronze 1";
-  if (trophies < 400) return "Bronze 2";
-  if (trophies < 600) return "Bronze 3";
-  if (trophies < 900) return "Silver 1";
-  if (trophies < 1200) return "Silver 2";
-  if (trophies < 1500) return "Silver 3";
-  if (trophies < 2000) return "Gold 1";
-  if (trophies < 2500) return "Gold 2";
-  if (trophies < 3000) return "Gold 3";
-  if (trophies < 4000) return "Legendary 1";
-  if (trophies < 5000) return "Legendary 2";
-  return "Legendary 3";
+  return getLeagueName(clanWarTrophies, "en");
 }
 
 function renderClanOverview(data) {

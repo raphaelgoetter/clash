@@ -162,6 +162,67 @@ Notes :
 
 ---
 
+## Paliers de ligue GDC
+
+### Source de vérité
+
+Les seuils de trophées de guerre (`clanWarTrophies`) déterminant le palier de ligue GDC sont définis **une seule fois** dans :
+
+```
+backend/services/warLeagues.js
+```
+
+Ce module est importé par le frontend (`frontend/main.js`) et le bot Discord (`api/discord/interactions.js`).
+**Ne jamais dupliquer ces seuils** — toute modification doit se faire uniquement dans `warLeagues.js`.
+
+### Tableau des paliers
+
+| Trophées de guerre | Palier (EN) | Palier (FR)  |
+| ------------------ | ----------- | ------------ |
+| 0 – 199            | Bronze 1    | Bronze 1     |
+| 200 – 399          | Bronze 2    | Bronze 2     |
+| 400 – 599          | Bronze 3    | Bronze 3     |
+| 600 – 899          | Silver 1    | Argent 1     |
+| 900 – 1 199        | Silver 2    | Argent 2     |
+| 1 200 – 1 499      | Silver 3    | Argent 3     |
+| 1 500 – 1 999      | Gold 1      | Or 1         |
+| 2 000 – 2 499      | Gold 2      | Or 2         |
+| 2 500 – 2 999      | Gold 3      | Or 3         |
+| 3 000 – 3 999      | Legendary 1 | Légendaire 1 |
+| 4 000 – 4 999      | Legendary 2 | Légendaire 2 |
+| 5 000 +            | Legendary 3 | Légendaire 3 |
+
+### API exposée
+
+```js
+import { getLeagueName } from "../../backend/services/warLeagues.js";
+
+getLeagueName(3812, "en"); // → "Legendary 1"
+getLeagueName(3812, "fr"); // → "Légendaire 1"
+```
+
+### Trophées gagnés/perdus par position — GDC normale (River Race)
+
+| Position | Bronze | Argent | Or & Légendaire |
+| -------- | ------ | ------ | --------------- |
+| 1er      | +20    | +20    | +20             |
+| 2e       | +10    | +10    | +10             |
+| 3e       | 0      | -2     | -5              |
+| 4e       | 0      | -4     | -10             |
+| 5e       | 0      | -8     | -20             |
+
+### Trophées gagnés/perdus par position — GDC Colisée (Colosseum)
+
+| Position | Bronze | Argent | Or & Légendaire |
+| -------- | ------ | ------ | --------------- |
+| 1er      | +100   | +100   | +100            |
+| 2e       | +50    | +50    | +50             |
+| 3e       | 0      | -10    | -25             |
+| 4e       | 0      | -20    | -50             |
+| 5e       | 0      | -40    | -100            |
+
+---
+
 ## Bot Discord
 
 Le bot Discord déclenche les analyses via l’endpoint dédié api/discord/interactions.js.

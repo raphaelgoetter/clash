@@ -4,6 +4,10 @@ export default defineConfig({
   root: ".",
   server: {
     port: 5173,
+    fs: {
+      // Autorise les imports depuis ../backend/ (ex: warLeagues.js)
+      allow: [".."],
+    },
     proxy: {
       // All /api requests are forwarded to the Express backend
       "/api": {
