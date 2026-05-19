@@ -3426,7 +3426,7 @@ export default async function handler(req, res) {
           else if (trophies < 5000) label = "Légendaire 2";
           else label = "Légendaire 3";
           const icon = LEAGUE_ICON[label];
-          return icon ? `${label} ${icon}` : label;
+          return icon ? `${icon} ${label}` : label;
         }
 
         const fmt = (n) =>
@@ -3470,12 +3470,12 @@ export default async function handler(req, res) {
           // Rangée 1 : Membres | Trophées GDC | Ligue
           {
             name: "Membres",
-            value: `${clan.members ?? "?"} / 50 <:members:1506175789731811399>`,
+            value: `<:members:1506175789731811399> ${clan.members ?? "?"} / 50`,
             inline: true,
           },
           {
             name: "Trophées GDC",
-            value: `${fmt(clan.clanWarTrophies)} <:trophy2:1493677804733337621>`,
+            value: `<:trophy2:1493677804733337621> ${fmt(clan.clanWarTrophies)}`,
             inline: true,
           },
           {
@@ -3500,12 +3500,12 @@ export default async function handler(req, res) {
           },
           {
             name: "Requis",
-            value: `${fmt(clan.requiredTrophies)} <:trophy:1498645869224792105>`,
+            value: `<:trophy:1498645869224792105> ${fmt(clan.requiredTrophies)}`,
             inline: true,
           },
           {
             name: "Fiabilité",
-            value: `**${avgScore}%** <:warn:1506174837519945800>`,
+            value: `<:warn:1506174837519945800> **${avgScore}%**`,
             inline: true,
           },
         ];
