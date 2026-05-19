@@ -3184,9 +3184,18 @@ export default async function handler(req, res) {
 
         // Évolutions débloquées : icône évolution présente ET évoluée au moins 1 fois.
         // Les tower troops ne peuvent pas être évoluées — on utilise baseCards uniquement.
-        // Les héros comptent aussi dans les évolutions (le jeu affiche les deux séparément).
+        // Exception : carte "en transition héros" (heroMedium ET evoLvl >= 2 mais pas encore maxée)
+        // → comptée uniquement dans heroCount, pas dans evolvedCount (comportement du jeu).
+        // Une carte maxée (evoLvl === maxEvolutionLevel) compte dans les deux.
         const evolvedCount = baseCards.filter(
-          (c) => !!c.iconUrls?.evolutionMedium && (c.evolutionLevel ?? 0) > 0,
+          (c) =>
+            !!c.iconUrls?.evolutionMedium &&
+            (c.evolutionLevel ?? 0) > 0 &&
+            !(
+              !!c.iconUrls?.heroMedium &&
+              (c.evolutionLevel ?? 0) >= 2 &&
+              (c.evolutionLevel ?? 0) < c.maxEvolutionLevel
+            ),
         ).length;
 
         // Héros : variant héros débloqué (heroMedium ET evolutionLevel >= 2)
