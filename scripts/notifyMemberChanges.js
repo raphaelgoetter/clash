@@ -124,10 +124,10 @@ async function saveNotifiedChanges(data) {
  * @returns {string}
  */
 const RELIABILITY_BADGES = {
-  green: "<:relsuccess:1499075446527099032>",
-  yellow: "<:relwarn:1499078423463854122>",
-  orange: "<:relwarn:1499078423463854122>",
-  red: "<:relerror:1499077154066137230>",
+  green: "<:green:1506174830297485362>",
+  yellow: "<:yellow:1506174838870642739>",
+  orange: "<:orange:1506174834470686860>",
+  red: "<:red:1506174836102139944>",
 };
 
 function formatMemberLine(m) {

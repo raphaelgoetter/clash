@@ -2453,7 +2453,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           // name             {string}  Nom du clan
           // rank             {number}  Classement dans le groupe de course
           // members          {number}  Nb membres actifs
-          // clanWarTrophies  {number}  Trophées de guerre du clan
+          // clanWarTrophies  {number}  Trophées GDC
           //
           // prevWarFame      {number}  Total pts semaine N-2  [≈ 50 000–200 000]
           // lastWarFame      {number}  Total pts semaine N-1  [≈ 50 000–200 000]

@@ -57,10 +57,10 @@ const COLOR_MAP = {
   red: 0xe74c3c,
 };
 const RELIABILITY_ICON = {
-  green: "<:relsuccess:1499075446527099032>",
-  yellow: "<:relwarn:1499078423463854122>",
-  orange: "<:relwarn:1499078423463854122>",
-  red: "<:relerror:1499077154066137230>",
+  green: "<:green:1506174830297485362>",
+  yellow: "<:yellow:1506174838870642739>",
+  orange: "<:orange:1506174834470686860>",
+  red: "<:red:1506174836102139944>",
 };
 const FR_VERDICTS = {
   green: "Très fiable",
@@ -3060,7 +3060,7 @@ export default async function handler(req, res) {
           color: 0xf1c40f,
           description,
           footer: {
-            text: `France · Trophées de guerre · ${allClans.length} clans chargés`,
+            text: `France · Trophées GDC · ${allClans.length} clans chargés`,
           },
         };
 
@@ -3459,14 +3459,14 @@ export default async function handler(req, res) {
 
         const clanUrl = trustClanUrl(resolved.tag);
         const fields = [
-          // Rangée 1 : Membres | Trophées de guerre | Ligue
+          // Rangée 1 : Membres | Trophées GDC | Ligue
           {
             name: "Membres",
             value: `${clan.members ?? "?"} / 50`,
             inline: true,
           },
           {
-            name: "Trophées de guerre",
+            name: "Trophées GDC",
             value: `${fmt(clan.clanWarTrophies)} <:trophy2:1493677804733337621>`,
             inline: true,
           },
@@ -3475,7 +3475,7 @@ export default async function handler(req, res) {
             value: warLeagueLabel(clan.clanWarTrophies ?? 0),
             inline: true,
           },
-          // Rangée 2 : Statut | Requis | Fiabilité globale
+          // Rangée 2 : Statut | Requis | Fiabilité
           {
             name: "Statut",
             value: TYPE_FR[clan.type] ?? clan.type ?? "—",
@@ -3487,7 +3487,7 @@ export default async function handler(req, res) {
             inline: true,
           },
           {
-            name: "Fiabilité globale",
+            name: "Fiabilité",
             value: `**${avgScore}%**`,
             inline: true,
           },
