@@ -3310,9 +3310,9 @@ export default async function handler(req, res) {
         );
         const totalRewardsText =
           `• Gemmes : ${totalGems}\n` +
-          `• Jokers : ${totalCommonWc} (c)  ${totalRareWc} (r)  ${totalEpicWc} (e)  ${totalLegWc} (l)  ${totalChampWc} (c)\n` +
-          `• Coffre 5\u2605 : ${totalChest5}\n` +
-          `• Box évo : ${totalEvoBox}`;
+          `• Jokers : ${totalCommonWc} (C)  ${totalRareWc} (R)  ${totalEpicWc} (E)  ${totalLegWc} (L)  ${totalChampWc} (CH)\n` +
+          `• Coffres 5\u2605 : ${totalChest5}` +
+          `— Box évo : ${totalEvoBox}`;
 
         const fields = [
           // Ligne 1 : cartes | évolutions | héros
