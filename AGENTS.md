@@ -163,6 +163,7 @@ node scripts/registerCommands.js
 | `/late clan:N`                      | Liste les retardataires de la journée de GDC (avant reset)                |
 | `/late-ping clan:N`                 | Variante de `/late` avec ping Discord des membres liés, réservée au staff |
 | `/compare clan:N`                   | Affiche les clans du groupe GDC (membres, trophées, score, dernière GDC)  |
+| `/clan clan:N\|tag:#TAG`            | Affiche la fiche récapitulative d'un clan (famille ou tag libre)          |
 
 ## Sous-agents
 
