@@ -3407,9 +3407,9 @@ export default async function handler(req, res) {
         };
 
         const LEAGUE_ICON = {
-          "Or 2": "<:gold2:1506174828313444403>",
-          "Légendaire 1": "<:leg1:1506174831920680961>",
-          "Légendaire 2": "<:leg2:1506174833136762981>",
+          "Or 2": "<:gold2:1506200349424488448>",
+          "Légendaire 1": "<:leg1:1506200350250762311>",
+          "Légendaire 2": "<:leg2:1506200352372822016>",
         };
         function warLeagueLabel(trophies) {
           let label;
