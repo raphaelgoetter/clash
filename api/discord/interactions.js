@@ -3494,7 +3494,7 @@ export default async function handler(req, res) {
               };
               const icon = STATUS_ICON[clan.type] ?? "";
               const label = TYPE_FR[clan.type] ?? clan.type ?? "—";
-              return icon ? `${label} ${icon}` : label;
+              return icon ? `${icon} ${label}` : label;
             })(),
             inline: true,
           },
