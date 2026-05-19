@@ -3383,13 +3383,13 @@ export default async function handler(req, res) {
         const abortTimer = setTimeout(() => abortCtrl.abort(), 50000);
         let apiResp;
         try {
-          apiResp = await fetch(
-            `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis?fast=true&includeRaceGroup=false`,
-            {
-              headers: { Accept: "application/json" },
-              signal: abortCtrl.signal,
-            },
-          );
+          const endpoint = isFamilyClan
+            ? `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis?fast=true&includeRaceGroup=false`
+            : `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/lite`;
+          apiResp = await fetch(endpoint, {
+            headers: { Accept: "application/json" },
+            signal: abortCtrl.signal,
+          });
         } catch (fetchErr) {
           clearTimeout(abortTimer);
           const msg =
@@ -3419,6 +3419,7 @@ export default async function handler(req, res) {
         const analysis = await apiResp.json();
         const clan = analysis.clan || {};
         const members = analysis.members || [];
+        const liteMembers = analysis.isLite ? members : [];
         const summary = analysis.summary || {};
 
         const TYPE_FR = {
@@ -3518,7 +3519,7 @@ export default async function handler(req, res) {
               inline: true,
             }
           : (() => {
-              const leader = clan.memberList?.find((m) => m.role === "leader");
+              const leader = liteMembers.find((m) => m.role === "leader");
               const leaderValue = leader
                 ? `[${leader.name}](${trustPlayerUrl(leader.tag)})`
                 : "—";
