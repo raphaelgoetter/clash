@@ -3443,9 +3443,9 @@ export default async function handler(req, res) {
           "Or 1": "<:gold:1506201934477004880>",
           "Or 2": "<:gold:1506201934477004880>",
           "Or 3": "<:gold:1506201934477004880>",
-          "Légendaire 1": "<:leg:1506201926935646228>",
-          "Légendaire 2": "<:leg:1506201926935646228>",
-          "Légendaire 3": "<:leg:1506201926935646228>",
+          "Légendaire 1": "<:legendary1:1506218399498244166>",
+          "Légendaire 2": "<:legendary2:1506217437601992734>",
+          "Légendaire 3": "<:legendary3:1506218625508573225>",
         };
         function warLeagueLabel(trophies) {
           let label;
