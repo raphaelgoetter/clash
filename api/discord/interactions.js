@@ -3256,9 +3256,10 @@ export default async function handler(req, res) {
           evo_box: "Boîte EVO",
           banner: "Bannière",
         };
-        const nextRewards = COLLECTION_REWARDS.filter(
+        const remainingRewards = COLLECTION_REWARDS.filter(
           (r) => r.cl > collectionLevel,
-        ).slice(0, 5);
+        );
+        const nextRewards = remainingRewards.slice(0, 5);
         const rewardsText =
           nextRewards.length > 0
             ? nextRewards
@@ -3274,6 +3275,44 @@ export default async function handler(req, res) {
                 })
                 .join("\n")
             : "Niveau maximum atteint !";
+
+        // Totaux cumulés des récompenses restantes (du CL actuel jusqu'à CL 2100)
+        const totalGems = remainingRewards.reduce(
+          (s, r) => (r.type === "gems" ? s + r.qty : s),
+          0,
+        );
+        const totalCommonWc = remainingRewards.reduce(
+          (s, r) => (r.type === "common_wc" ? s + r.qty : s),
+          0,
+        );
+        const totalRareWc = remainingRewards.reduce(
+          (s, r) => (r.type === "rare_wc" ? s + r.qty : s),
+          0,
+        );
+        const totalEpicWc = remainingRewards.reduce(
+          (s, r) => (r.type === "epic_wc" ? s + r.qty : s),
+          0,
+        );
+        const totalLegWc = remainingRewards.reduce(
+          (s, r) => (r.type === "legendary_wc" ? s + r.qty : s),
+          0,
+        );
+        const totalChampWc = remainingRewards.reduce(
+          (s, r) => (r.type === "champion_wc" ? s + r.qty : s),
+          0,
+        );
+        const totalChest5 = remainingRewards.filter(
+          (r) => r.type === "lucky_chest_5star",
+        ).length;
+        const totalEvoBox = remainingRewards.reduce(
+          (s, r) => (r.type === "evo_box" ? s + r.qty : s),
+          0,
+        );
+        const totalRewardsText =
+          `• Gemmes : ${totalGems}\n` +
+          `• Jokers : ${totalCommonWc} (c)  ${totalRareWc} (r)  ${totalEpicWc} (e)  ${totalLegWc} (l)  ${totalChampWc} (c)\n` +
+          `• Coffre 5\u2605 : ${totalChest5}\n` +
+          `• Box évo : ${totalEvoBox}`;
 
         const fields = [
           // Ligne 1 : cartes | évolutions | héros
@@ -3313,6 +3352,12 @@ export default async function handler(req, res) {
           {
             name: "Prochaines récompenses :",
             value: rewardsText,
+            inline: false,
+          },
+          // Total cumulé jusqu'au niveau maximum
+          {
+            name: "Total à récolter (CL 2100) :",
+            value: totalRewardsText,
             inline: false,
           },
         ];
