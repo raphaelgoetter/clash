@@ -3406,19 +3406,27 @@ export default async function handler(req, res) {
           closed: "Fermé",
         };
 
+        const LEAGUE_ICON = {
+          "Or 2": "<:gold2:1506174828313444403>",
+          "Légendaire 1": "<:leg1:1506174831920680961>",
+          "Légendaire 2": "<:leg2:1506174833136762981>",
+        };
         function warLeagueLabel(trophies) {
-          if (trophies < 200) return "Bronze 1";
-          if (trophies < 400) return "Bronze 2";
-          if (trophies < 600) return "Bronze 3";
-          if (trophies < 900) return "Argent 1";
-          if (trophies < 1200) return "Argent 2";
-          if (trophies < 1500) return "Argent 3";
-          if (trophies < 2000) return "Or 1";
-          if (trophies < 2500) return "Or 2";
-          if (trophies < 3000) return "Or 3";
-          if (trophies < 4000) return "Légendaire 1";
-          if (trophies < 5000) return "Légendaire 2";
-          return "Légendaire 3";
+          let label;
+          if (trophies < 200) label = "Bronze 1";
+          else if (trophies < 400) label = "Bronze 2";
+          else if (trophies < 600) label = "Bronze 3";
+          else if (trophies < 900) label = "Argent 1";
+          else if (trophies < 1200) label = "Argent 2";
+          else if (trophies < 1500) label = "Argent 3";
+          else if (trophies < 2000) label = "Or 1";
+          else if (trophies < 2500) label = "Or 2";
+          else if (trophies < 3000) label = "Or 3";
+          else if (trophies < 4000) label = "Légendaire 1";
+          else if (trophies < 5000) label = "Légendaire 2";
+          else label = "Légendaire 3";
+          const icon = LEAGUE_ICON[label];
+          return icon ? `${label} ${icon}` : label;
         }
 
         const fmt = (n) =>
