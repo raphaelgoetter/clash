@@ -103,11 +103,10 @@ Critères :
 | 2   | Score moyen        | 10      | Moyenne de points hebdomadaires, avec plage utile 1000 à 3000                                           |
 | 3   | Stabilité          | 8       | 5 semaines consécutives dans le clan ou la famille donnent le maximum                                   |
 | 4   | Expérience         | 3       | Basée sur les trophées actuels, plage 4000 à 14000                                                      |
-| 5   | Dons               | 2       | Basé sur totalDonations, cap à 100000                                                                   |
-| 6   | Win rate guerre    | 3       | Ajouté seulement si le battle log permet un taux exploitable                                            |
-| 7   | Badge CW2          | 8       | Cap à 250 victoires CW2                                                                                 |
-| 8   | Dernière connexion | 5       | Ajoutée seulement si lastSeen est disponible                                                            |
-| 9   | Discord            | 2       | Compte Discord lié                                                                                      |
+| 5   | Win rate guerre    | 3       | Ajouté seulement si le battle log permet un taux exploitable                                            |
+| 6   | Badge CW2          | 8       | Cap à 250 victoires CW2                                                                                 |
+| 7   | Dernière connexion | 5       | Ajoutée seulement si lastSeen est disponible                                                            |
+| 8   | Discord            | 2       | Compte Discord lié                                                                                      |
 
 ### Score de fiabilité guerre, mode fallback
 
@@ -147,16 +146,13 @@ La fonction source est `computeMemberReliability()` dans `backend/services/playe
 Formule actuelle :
 
 ```text
-score = min(40, scoreTotalDonations(totalDonations, 40))
-      + min(40, trophies / 10000 × 40)
-      + min(20, expLevel / 60 × 20)
+score = min(60, trophies / 10000 × 60)
+      + min(40, expLevel / 60 × 40)
 ```
 
 Notes :
 
-- `totalDonations` est une `source de vérité` venant du profil joueur ;
-- `trophies` et `expLevel` sont des `sources de vérité` venant aussi du profil joueur ;
-- `scoreTotalDonations()` est un `calcul fiable` à partir de `totalDonations` ;
+- `trophies` et `expLevel` sont des `sources de vérité` venant du profil joueur ;
 - le score final est une `estimation` légère ramenée sur `100` et sert surtout à trier/filtrer la vue clan ;
 - les seuils associés dans la vue clan sont : `75+`, `61-74`, `31-60`, `0-30`.
 

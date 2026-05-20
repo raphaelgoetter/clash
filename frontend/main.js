@@ -103,7 +103,6 @@ function getScoreLabelMap() {
     "Win Rate (War)": t("winRateFullMode"),
     "Win rate full mode": t("winRateFullMode"),
     Experience: t("experience"),
-    Donations: t("donations"),
     Discord: t("discord"),
     "High reliability": t("highReliability"),
     "Low risk": t("moderateRisk"),
@@ -340,7 +339,6 @@ function translateUI() {
           <tr><td>${t("lastSeen")}</td><td>5</td><td>${t("lastSeenCap")}</td></tr>
           <tr><td>${t("winRateFullMode")}</td><td>3</td><td>${t("winRateFullModeCap")}</td></tr>
           <tr><td>${t("experience")}</td><td>3</td><td>${t("experienceCap")}</td></tr>
-          <tr><td>${t("donations")}</td><td>2</td><td>${t("donationsCap")}</td></tr>
           <tr><td>${t("discord")}</td><td>2</td><td>${t("discordCap")}</td></tr>
         </tbody>
       </table>
@@ -2095,12 +2093,6 @@ function renderPlayerResults(data) {
     if (
       lowercaseLabel.includes("experience") ||
       lowercaseLabel.includes("expérience")
-    ) {
-      return text;
-    }
-    if (
-      lowercaseLabel.includes("donations") ||
-      lowercaseLabel.includes("dons")
     ) {
       return text;
     }

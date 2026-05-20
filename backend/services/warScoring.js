@@ -163,8 +163,7 @@ export function estimateWinsFromFame(fame, decksUsed, boatAttacks) {
  *  5. Last Seen   / 5 — only in clan context (optional)
  *  6. Win Rate    / 3 — optional, only when battle log available
  *  7. Expérience  / 3 — trophies [4 000, 14 000]
- *  8. Dons        / 2 — totalDonations (cap 100 000)
- *  9. Discord     / 2 — lié au serveur Discord
+ *  8. Discord     / 2 — lié au serveur Discord
  *
  * @param {object} player      - Player profile from Clash API
  * @param {object} warHistory  - Output of buildWarHistory()
@@ -237,11 +236,7 @@ export function computeWarScore(
     ),
   );
 
-  // 5. Dons (0-2) — basé sur les donations cumulées (totalDonations).
-  const totalDonations = player.totalDonations ?? player.donations ?? 0;
-  const dons = r(scoreTotalDonations(totalDonations, 2));
-
-  // 6. Win Rate GDC (0-3) — optionnel, uniquement quand battlelog disponible
+  // 5. Win Rate GDC (0-3) — optionnel, uniquement quand battlelog disponible
   const winRateGDC =
     warWinRate !== null ? r(Math.min(3, warWinRate * 3)) : null;
 
@@ -271,14 +266,13 @@ export function computeWarScore(
       scoreMoyen +
       stabilite +
       experience +
-      dons +
       (winRateGDC ?? 0) +
       cw2Score +
       (lastSeenScore ?? 0) +
       discordScore,
   );
   const maxScore =
-    (winRateGDC !== null ? 46 : 43) + (lastSeenScore !== null ? 5 : 0) + 2;
+    (winRateGDC !== null ? 44 : 41) + (lastSeenScore !== null ? 5 : 0) + 2;
   const pct = Math.round((total / maxScore) * 100);
 
   let verdict, color;
@@ -393,12 +387,6 @@ export function computeWarScore(
         ]
       : []),
     {
-      label: "Donations",
-      score: dons,
-      max: 2,
-      detail: `${totalDonations.toLocaleString("en-US")} total cards donated (cap 100000)`,
-    },
-    {
       label: "Discord",
       score: discordScore,
       max: 2,
@@ -421,7 +409,6 @@ export function computeWarScore(
  *  3. CW2 badge       /10 — badge progress (cap 250)
  *  4. Last Seen       /3 — last seen activity after ~16 war decks
  *  5. Expérience      /3 — bestTrophies (cap 12 000)
- *  6. Dons            /2 — totalDonations (stable cumulative metric)
  *  (+2 Discord toujours)
  *
  * @param {object}   player
@@ -532,11 +519,7 @@ export function computeWarReliabilityFallback(
     ),
   );
 
-  // 5. Dons (0-2) — basé sur les donations cumulées
-  const totalDonations = player.totalDonations ?? player.donations ?? 0;
-  const dons = r(scoreTotalDonations(totalDonations, 2));
-
-  // 7. CW2 badge (0-10) — from ClanWarWins badge
+  // 5. CW2 badge (0-10) — from ClanWarWins badge
   const CW2_CAP = 250;
   const cw2Wins =
     player.badges?.find((b) => b.name === "ClanWarWins")?.progress ?? 0;
@@ -551,10 +534,9 @@ export function computeWarReliabilityFallback(
       cw2Score +
       (lastSeenScore ?? 0) +
       experience +
-      dons +
       discordScore,
   );
-  const maxBase = lastSeenScore !== null ? 34 : 31;
+  const maxBase = lastSeenScore !== null ? 32 : 29;
   const maxScore = maxBase + 2;
   const pct = Math.round((total / maxScore) * 100);
 
@@ -667,12 +649,6 @@ export function computeWarReliabilityFallback(
         score: experience,
         max: 3,
         detail: `${(player.trophies ?? 0).toLocaleString("en-US")} trophies (range 4,000–14,000)`,
-      },
-      {
-        label: "Donations",
-        score: dons,
-        max: 2,
-        detail: `${totalDonations.toLocaleString("en-US")} total cards donated (cap 100000)`,
       },
       {
         label: "Discord",

@@ -27,7 +27,6 @@ import {
   buildCurrentWarDays,
   estimateWinsFromFame,
   warResetOffsetMs,
-  scoreTotalDonations,
   applyOldestWeekIgnore,
   computeCurrentWeekId,
   computePrevWeekId,
@@ -1684,16 +1683,12 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           scoreSource = "fallback";
         }
       } else if (!playerScoreOverride) {
-        // Battle log unavailable — minimal estimate
-        const totalDonations =
-          playerProxy.totalDonations ?? playerProxy.donations ?? 0;
-        const donationPts = scoreTotalDonations(totalDonations, 2);
-        const pct = Math.round((donationPts / 40) * 100);
-        reliabilityScore = pct;
+        // Battle log unavailable — aucune donnée fiable disponible
+        reliabilityScore = 0;
         verdict = "Extreme risk";
         color = "red";
-        // If we have no race log, we cannot safely mark someone as "new".
-        // Keep their existing status to avoid false positives for clan / Discord.
+        // Si pas de race log, on ne peut pas déterminer si le joueur est nouveau.
+        // On conserve l'état existant pour éviter les faux positifs.
       }
     } else if (!playerScoreOverride) {
       // No river race log available (rate-limited or missing data) — use battle logs / player profile fallback.

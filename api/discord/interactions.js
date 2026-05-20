@@ -197,7 +197,6 @@ const RELIABILITY_ORDER_HISTORY = [
   "Win Rate (War)",
   "Experience",
   "Last Seen",
-  "Donations",
   "Discord",
 ];
 
@@ -207,7 +206,6 @@ const RELIABILITY_ORDER_FALLBACK = [
   "General Activity",
   "Experience",
   "Last Seen",
-  "Donations",
   "Discord",
 ];
 
@@ -331,7 +329,6 @@ const LABEL_FR = {
   "CW2 Battle Wins": "Badge CW2",
   "General Activity": "Activité générale",
   Experience: "Expérience",
-  Donations: "Dons totaux",
   Regularity: "Régularité",
   "Avg Score": "Score moyen",
   Stability: "Stabilité",

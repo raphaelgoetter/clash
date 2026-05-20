@@ -91,7 +91,7 @@ npm run cache    # régénère frontend/public/clan-cache/*.json (via scripts/re
 
 - **ESM obligatoire** : `"type": "module"` dans le backend — pas de `require()`
 - **Verdicts** : 4 paliers stricts — vert ≥ 75 %, jaune 56–74 %, orange 31–55 %, rouge 0–30 %
-- **maxScore** : mode principal 53 pts (avec win rate) / 50 pts (sans) ; fallback 40 pts (45 pts avec last seen) — Discord toujours inclus (+2)- **Transferts familiaux** : présence d'un champ `isFamilyTransfer` dans les réponses API (clan + joueur). Le score est calculé à partir du war log (pas du battle log) si le joueur a joué ≥ 13 decks la semaine précédente dans un autre clan de la famille.
+- **maxScore** : mode principal 51 pts (avec win rate) / 48 pts (sans) ; fallback 31 pts (34 pts avec last seen) — Discord toujours inclus (+2)- **Transferts familiaux** : présence d'un champ `isFamilyTransfer` dans les réponses API (clan + joueur). Le score est calculé à partir du war log (pas du battle log) si le joueur a joué ≥ 13 decks la semaine précédente dans un autre clan de la famille.
 - **Projection de Guerre (GDC)** : Calculée uniquement en `periodType: warDay`.
   - **Score du jour (`clanScore`)** : Source de vérité = `currentRace.clan.periodPoints` (clan propre) ou `currentRace.clans[i].periodPoints` (rivaux). Ne jamais utiliser `clan.fame` (= score de progression de classement, pas les pts de bataille).
   - **Cible ($T$)** : Moyenne quotidienne de decks de la semaine précédente (via `riverracelog[0]`), arrondie à l'entier. Fallback : 200.

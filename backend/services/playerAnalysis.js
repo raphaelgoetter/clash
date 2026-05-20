@@ -36,7 +36,6 @@ import {
   buildDailyActivity,
 } from "./battleLogUtils.js";
 import {
-  scoreTotalDonations,
   computeWarScore,
   computeWarReliabilityFallback,
   estimateWinsFromFame,
@@ -430,19 +429,17 @@ export function computeIsNewPlayer(warHistory, warScore) {
  * Compute a lightweight activity score for a clan member.
  * Uses only data available from the /members endpoint (no battle log).
  *
- * Score (0–100):
- *   = min(100, (donations / 300 * 40) + (trophies / 10000 * 40) + (expLevel / 60 * 20))
+ * Score (0–100) :
+ *   = min(60, trophies / 10000 × 60) + min(40, expLevel / 60 × 40)
  */
 export function computeMemberReliability(member) {
-  const totalDonations = member.totalDonations ?? member.donations ?? 0;
   const trophies = member.trophies ?? 0;
   const expLevel = member.expLevel ?? 1;
 
-  const donationPart = Math.min(40, scoreTotalDonations(totalDonations, 40));
-  const trophyPart = Math.min(40, (trophies / 10000) * 40);
-  const expPart = Math.min(20, (expLevel / 60) * 20);
+  const trophyPart = Math.min(60, (trophies / 10000) * 60);
+  const expPart = Math.min(40, (expLevel / 60) * 40);
 
-  const score = Math.round(donationPart + trophyPart + expPart);
+  const score = Math.round(trophyPart + expPart);
 
   let verdict, color;
   if (score >= 75) {
