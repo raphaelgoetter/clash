@@ -3577,9 +3577,11 @@ function loadCollectionRewards() {
 
 async function showCollectionModal(col) {
   const isFr = currentLang === "fr";
-  const TOTAL_CARDS = 125;
-  const TOTAL_EVO = 39;
-  const TOTAL_HEROES = 13;
+  // Totaux fournis par le backend (source de vérité : collectionConstants.js)
+  // Fallback sur les valeurs actuelles si l'API ne les retourne pas encore.
+  const TOTAL_CARDS = col.totals?.cards ?? 125;
+  const TOTAL_EVO = col.totals?.evolutions ?? 40;
+  const TOTAL_HEROES = col.totals?.heroes ?? 13;
 
   // Chargement paresseux des récompenses
   const rewards = await loadCollectionRewards();

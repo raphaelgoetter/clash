@@ -18,6 +18,15 @@ import {
   MS_PER_DAY,
 } from "./dateUtils.js";
 import {
+  TOTAL_CARDS,
+  TOTAL_EVOLUTIONS,
+  TOTAL_HEROES,
+  RARITY_OFFSET,
+  normLevel,
+  countEvolved,
+  countHeroes,
+} from "./collectionConstants.js";
+import {
   filterWarBattles,
   expandDuelRounds,
   categorizeBattleLog,
@@ -81,39 +90,14 @@ export function analyzePlayer(
     totalBattlesInLog > 0 ? Math.round((wins / totalBattlesInLog) * 100) : 0;
 
   // Niveau de Collection = Σ niveaux normalisés + 5 × évolutions débloquées + 5 × héros
-  const RARITY_OFFSET_COL = {
-    common: 0,
-    rare: 2,
-    epic: 5,
-    legendary: 8,
-    champion: 10,
-  };
   const baseCardsCol = player.cards ?? [];
   // supportCards = toutes les troupes de tour débloquées (pas seulement l'équipée)
   const towerTroopsCol = player.supportCards ?? [];
   const allCardsCol = [...baseCardsCol, ...towerTroopsCol];
-  const sumNormLevels = allCardsCol.reduce(
-    (s, c) => s + c.level + (RARITY_OFFSET_COL[c.rarity] ?? 0),
-    0,
-  );
-  // Évolutions débloquées : icône évolution présente ET évoluée au moins 1 fois.
-  // Exception : si la carte est en "phase héros" (heroMedium ET evoLvl >= 2 mais pas encore maxée),
-  // elle n'est comptée que dans les héros (exemple : Knight 2/3).
-  // Une fois maxée (ex. Wizard 3/3), elle compte dans les deux.
-  const evolvedCountCol = allCardsCol.filter(
-    (c) =>
-      !!c.iconUrls?.evolutionMedium &&
-      (c.evolutionLevel ?? 0) > 0 &&
-      !(
-        !!c.iconUrls?.heroMedium &&
-        (c.evolutionLevel ?? 0) >= 2 &&
-        (c.evolutionLevel ?? 0) < c.maxEvolutionLevel
-      ),
-  ).length;
-  // Héros : variant héros débloqué (heroMedium ET evolutionLevel >= 2)
-  const heroCountCol = allCardsCol.filter(
-    (c) => !!c.iconUrls?.heroMedium && (c.evolutionLevel ?? 0) >= 2,
-  ).length;
+  const sumNormLevels = allCardsCol.reduce((s, c) => s + normLevel(c), 0);
+  // Tour troops exclues des évolutions et héros (ils ne peuvent pas être évolués)
+  const evolvedCountCol = countEvolved(baseCardsCol);
+  const heroCountCol = countHeroes(baseCardsCol);
   const collectionLevel =
     sumNormLevels + 5 * evolvedCountCol + 5 * heroCountCol;
 
@@ -138,13 +122,11 @@ export function analyzePlayer(
     { cards: 14, level: 15 },
   ];
   // Filtre sur le niveau normalisé (même base que la formule Niveau de Collection)
-  const normLevelCol = (c) => c.level + (RARITY_OFFSET_COL[c.rarity] ?? 0);
   let tourLevel = 1;
   for (let lvl = 2; lvl <= 16; lvl++) {
     const req = TOUR_REQ[lvl];
     if (
-      allCardsCol.filter((c) => normLevelCol(c) >= req.level).length >=
-      req.cards
+      allCardsCol.filter((c) => normLevel(c) >= req.level).length >= req.cards
     ) {
       tourLevel = lvl;
     } else {
@@ -154,14 +136,14 @@ export function analyzePlayer(
   let tourNextInfo = null;
   if (tourLevel < 16) {
     const nxt = TOUR_REQ[tourLevel + 1];
-    const have = allCardsCol.filter((c) => normLevelCol(c) >= nxt.level).length;
+    const have = allCardsCol.filter((c) => normLevel(c) >= nxt.level).length;
     tourNextInfo = { missing: nxt.cards - have, level: nxt.level };
   }
 
   // Distribution des niveaux normalisés
   const distribution = {};
   for (const c of allCardsCol) {
-    const lvl = c.level + (RARITY_OFFSET_COL[c.rarity] ?? 0);
+    const lvl = normLevel(c);
     distribution[lvl] = (distribution[lvl] ?? 0) + 1;
   }
 
@@ -191,6 +173,11 @@ export function analyzePlayer(
             tourLevel,
             tourNextInfo,
             distribution,
+            totals: {
+              cards: TOTAL_CARDS,
+              evolutions: TOTAL_EVOLUTIONS,
+              heroes: TOTAL_HEROES,
+            },
           }
         : null,
     activityIndicators: {

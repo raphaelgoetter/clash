@@ -5,6 +5,14 @@ import { createPublicKey, verify } from "node:crypto";
 import { waitUntil } from "@vercel/functions";
 import { createRequire } from "node:module";
 import { getLeagueName } from "../../backend/services/warLeagues.js";
+import {
+  TOTAL_CARDS,
+  TOTAL_EVOLUTIONS,
+  TOTAL_HEROES,
+  normLevel,
+  countEvolved,
+  countHeroes,
+} from "../../backend/services/collectionConstants.js";
 
 const _require = createRequire(import.meta.url);
 const COLLECTION_REWARDS = _require("../../data/collection-rewards.json");
@@ -3129,18 +3137,6 @@ export default async function handler(req, res) {
 
         const player = await apiResp.json();
 
-        // Offsets de rareté pour la normalisation (système Niveau de Collection)
-        const RARITY_OFFSET = {
-          common: 0,
-          rare: 2,
-          epic: 5,
-          legendary: 8,
-          champion: 10,
-        };
-        const TOTAL_CARDS = 125; // 121 cartes standard + 4 troupes de tour
-        const TOTAL_EVOLUTIONS = 40;
-        const TOTAL_HEROES = 13; // 8 champions + 1 nouveau héros + 4 troupes de tour
-
         // Conditions pour atteindre chaque niveau de Tour du Roi (nouveau système)
         const TOUR_REQUIREMENTS = [
           null, // 0: inutilisé
@@ -3162,8 +3158,6 @@ export default async function handler(req, res) {
           { cards: 14, level: 15 }, // 16
         ];
 
-        const normLevel = (c) => c.level + (RARITY_OFFSET[c.rarity] ?? 0);
-
         const baseCards = player.cards ?? [];
         // supportCards = toutes les troupes de tour débloquées (pas seulement l'équipée)
         const towerTroops = player.supportCards ?? [];
@@ -3182,27 +3176,9 @@ export default async function handler(req, res) {
         // Somme des niveaux normalisés
         const sumNormLevels = allCards.reduce((s, c) => s + normLevel(c), 0);
 
-        // Évolutions débloquées : icône évolution présente ET évoluée au moins 1 fois.
-        // Les tower troops ne peuvent pas être évoluées — on utilise baseCards uniquement.
-        // Exception : carte "en transition héros" (heroMedium ET evoLvl >= 2 mais pas encore maxée)
-        // → comptée uniquement dans heroCount, pas dans evolvedCount (comportement du jeu).
-        // Une carte maxée (evoLvl === maxEvolutionLevel) compte dans les deux.
-        const evolvedCount = baseCards.filter(
-          (c) =>
-            !!c.iconUrls?.evolutionMedium &&
-            (c.evolutionLevel ?? 0) > 0 &&
-            !(
-              !!c.iconUrls?.heroMedium &&
-              (c.evolutionLevel ?? 0) >= 2 &&
-              (c.evolutionLevel ?? 0) < c.maxEvolutionLevel
-            ),
-        ).length;
-
-        // Héros : variant héros débloqué (heroMedium ET evolutionLevel >= 2)
-        // Les tower troops ne peuvent pas être des héros — on utilise baseCards uniquement.
-        const heroCount = baseCards.filter(
-          (c) => !!c.iconUrls?.heroMedium && (c.evolutionLevel ?? 0) >= 2,
-        ).length;
+        // Tower troops exclus des évolutions et héros (ils ne peuvent pas être évolués)
+        const evolvedCount = countEvolved(baseCards);
+        const heroCount = countHeroes(baseCards);
 
         // Niveau de Collection = Σ niveaux normalisés + 5 × évolutions + 5 × héros
         const collectionLevel =
