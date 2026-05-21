@@ -2613,7 +2613,7 @@
           "start": "2026-05-21T09:42:00.000Z",
           "end": "2026-05-22T09:41:59.999Z"
         },
-        "snapshotTime": "2026-05-21T15:07:18.335Z",
+        "snapshotTime": "2026-05-21T16:53:36.499Z",
         "snapshotBackupTime": "2026-05-21T11:04:39.505Z",
         "decks": {
           "#209CGRVQJV": 4,
@@ -2621,10 +2621,12 @@
           "#C0RRPJYV9": 4,
           "#GGRLYR8PL": 4,
           "#J008G9CLJ": 4,
+          "#L8LCR02CG": 4,
           "#UVGPPVQ8Q": 4,
           "#R2YP2UJRL": 3,
+          "#VPGCQPR9U": 3,
+          "#8JGU9UUJJ": 2,
           "#UV8R8RYVR": 2,
-          "#8JGU9UUJJ": 1,
           "#GYCJPJL0L": 1
         },
         "hourlyCumul": [],
@@ -2633,9 +2635,9 @@
           "#G2VVUJLLQ": 0,
           "#JLU88JR28": 0,
           "#CVCVR08YG": 0,
-          "#VPGCQPR9U": 0,
+          "#VPGCQPR9U": 400,
           "#VQP8PU2V": 0,
-          "#L8LCR02CG": 0,
+          "#L8LCR02CG": 550,
           "#UQ9U8YQPC": 0,
           "#VJRLG9UVR": 0,
           "#2U82GVQRR": 0,
@@ -2656,7 +2658,7 @@
           "#20CUVVJ2JP": 0,
           "#LJYGJYCYC": 0,
           "#CVYLYLC8V": 0,
-          "#8JGU9UUJJ": 100,
+          "#8JGU9UUJJ": 200,
           "#GYCJPJL0L": 125,
           "#UVGPPVQ8Q": 600,
           "#UV8R8RYVR": 300,
@@ -2671,9 +2673,9 @@
           "#G2VVUJLLQ": 0,
           "#JLU88JR28": 0,
           "#CVCVR08YG": 0,
-          "#VPGCQPR9U": 0,
+          "#VPGCQPR9U": 3,
           "#VQP8PU2V": 0,
-          "#L8LCR02CG": 0,
+          "#L8LCR02CG": 4,
           "#UQ9U8YQPC": 0,
           "#VJRLG9UVR": 0,
           "#2U82GVQRR": 0,
@@ -2694,7 +2696,7 @@
           "#20CUVVJ2JP": 0,
           "#LJYGJYCYC": 0,
           "#CVYLYLC8V": 0,
-          "#8JGU9UUJJ": 1,
+          "#8JGU9UUJJ": 2,
           "#GYCJPJL0L": 1,
           "#UVGPPVQ8Q": 4,
           "#UV8R8RYVR": 2,
@@ -2703,7 +2705,7 @@
           "#C0RRPJYV9": 4,
           "#GGRLYR8PL": 4
         },
-        "snapshotCount": 31
+        "snapshotCount": 39
       },
       {
         "warDay": "friday",
