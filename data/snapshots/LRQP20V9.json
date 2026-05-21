@@ -4327,7 +4327,7 @@
           "start": "2026-05-21T09:57:00.000Z",
           "end": "2026-05-22T09:56:59.999Z"
         },
-        "snapshotTime": "2026-05-21T19:34:21.863Z",
+        "snapshotTime": "2026-05-21T20:35:17.256Z",
         "snapshotBackupTime": "2026-05-21T11:04:39.044Z",
         "decks": {
           "#20PCYYRVYL": 4,
@@ -4336,6 +4336,7 @@
           "#2YP2V2G0R": 4,
           "#829L90UU": 4,
           "#82JPJ9J98": 4,
+          "#82UPUGYP": 4,
           "#8GGQLU28": 4,
           "#8QVRJYVYU": 4,
           "#8R0LR8GYC": 4,
@@ -4361,19 +4362,18 @@
           "#RJJ99Y9J": 4,
           "#RJY2R282V": 4,
           "#UP9YJV080": 4,
+          "#UVV8CULJV": 4,
           "#V0VLJQCJU": 4,
           "#VGJ9LL8VC": 4,
           "#VQJ0Y8PLV": 4,
           "#YGP000RP8": 4,
           "#YRGJGR8R": 4,
-          "#YRQRUU9PC": 4,
-          "#82UPUGYP": 3,
-          "#UVV8CULJV": 1
+          "#YRQRUU9PC": 4
         },
         "hourlyCumul": [],
         "_cumulFame": {
           "#8GGQLU28": 600,
-          "#UVV8CULJV": 100,
+          "#UVV8CULJV": 700,
           "#9Y92LQ0": 0,
           "#PQ0JLGGRP": 0,
           "#VV9CPQ": 0,
@@ -4384,7 +4384,7 @@
           "#GC20UCLL": 0,
           "#C2JQ8ULJ9": 0,
           "#PRGCCRUJP": 0,
-          "#82UPUGYP": 600,
+          "#82UPUGYP": 800,
           "#9GP9LQ9P": 800,
           "#2YGYYPYV": 0,
           "#RJY2R282V": 800,
@@ -4446,7 +4446,7 @@
         "periodType": "warDay",
         "_cumul": {
           "#8GGQLU28": 4,
-          "#UVV8CULJV": 1,
+          "#UVV8CULJV": 4,
           "#9Y92LQ0": 0,
           "#PQ0JLGGRP": 0,
           "#VV9CPQ": 0,
@@ -4457,7 +4457,7 @@
           "#GC20UCLL": 0,
           "#C2JQ8ULJ9": 0,
           "#PRGCCRUJP": 0,
-          "#82UPUGYP": 3,
+          "#82UPUGYP": 4,
           "#9GP9LQ9P": 4,
           "#2YGYYPYV": 0,
           "#RJY2R282V": 4,
@@ -4516,7 +4516,7 @@
           "#2U9QL8Q89": 4,
           "#98UULQY8": 4
         },
-        "snapshotCount": 152
+        "snapshotCount": 156
       },
       {
         "warDay": "friday",
