@@ -706,7 +706,7 @@ export default async function handler(req, res) {
             "Usage : meilleurs joueurs de toute la famille (semaine, saison précédente ou tous les temps)\n\n" +
             "**Top Clans**\n" +
             "Commande : `/top-clans [start:N]`\n" +
-            "Usage : affiche 25 clans du classement France GDC à partir du rang N (défaut : 1)\n\n" +
+            "Usage : affiche 50 clans du classement France GDC à partir du rang N (défaut : 1)\n\n" +
             "**Collection**\n" +
             "Commande : `/collection tag:#TAG`\n" +
             "Usage : statistiques de collection (cartes, niveaux, évolutions, héros, niveau de collection)\n\n" +
@@ -2955,7 +2955,7 @@ export default async function handler(req, res) {
 
         const FRANCE_ID = "57000087";
         // Limite : assez pour couvrir la tranche + trouver les clans famille (~rang 300-400)
-        const fetchLimit = Math.max(startRank + 24, 500);
+        const fetchLimit = Math.max(startRank + 49, 500);
 
         const { fetchClanWarRankings } =
           await import("../../backend/services/clashApi.js");
@@ -2963,9 +2963,9 @@ export default async function handler(req, res) {
         // Récupérer le leaderboard GDC France
         const allClans = await fetchClanWarRankings(FRANCE_ID, fetchLimit);
 
-        // Extraire la tranche demandée (rank startRank → startRank+24)
+        // Extraire la tranche demandée (rank startRank → startRank+49)
         const slice = allClans.filter(
-          (c) => c.rank >= startRank && c.rank < startRank + 25,
+          (c) => c.rank >= startRank && c.rank < startRank + 50,
         );
 
         if (slice.length === 0) {
@@ -3024,12 +3024,12 @@ export default async function handler(req, res) {
         // Construire les lignes des clans famille hors tranche
         const familyRows = familyOutside.map((clan) => formatEntry(clan));
 
-        let description = sliceRows.join("\n\n");
+        let description = sliceRows.join("\n");
 
         if (familyRows.length > 0) {
           description +=
-            "\n\n─────────────────\n**🏠 Clans famille (hors tranche)**\n\n" +
-            familyRows.join("\n\n");
+            "\n─────────────────\n**🏠 Clans famille (hors tranche)**\n" +
+            familyRows.join("\n");
         }
 
         // Tronquer si nécessaire (limite embed Discord : 4096 chars)
