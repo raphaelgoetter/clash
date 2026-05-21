@@ -706,7 +706,7 @@ export default async function handler(req, res) {
             "Usage : meilleurs joueurs de toute la famille (semaine, saison précédente ou tous les temps)\n\n" +
             "**Top Clans**\n" +
             "Commande : `/top-clans [start:N]`\n" +
-            "Usage : affiche 20 clans du classement France GDC à partir du rang N (défaut : 1)\n\n" +
+            "Usage : affiche 25 clans du classement France GDC à partir du rang N (défaut : 1)\n\n" +
             "**Collection**\n" +
             "Commande : `/collection tag:#TAG`\n" +
             "Usage : statistiques de collection (cartes, niveaux, évolutions, héros, niveau de collection)\n\n" +
@@ -2955,17 +2955,17 @@ export default async function handler(req, res) {
 
         const FRANCE_ID = "57000087";
         // Limite : assez pour couvrir la tranche + trouver les clans famille (~rang 300-400)
-        const fetchLimit = Math.max(startRank + 9, 500);
+        const fetchLimit = Math.max(startRank + 24, 500);
 
-        const { fetchClanWarRankings, fetchClan } =
+        const { fetchClanWarRankings } =
           await import("../../backend/services/clashApi.js");
 
         // Récupérer le leaderboard GDC France
         const allClans = await fetchClanWarRankings(FRANCE_ID, fetchLimit);
 
-        // Extraire la tranche demandée (rank startRank → startRank+9)
+        // Extraire la tranche demandée (rank startRank → startRank+24)
         const slice = allClans.filter(
-          (c) => c.rank >= startRank && c.rank < startRank + 10,
+          (c) => c.rank >= startRank && c.rank < startRank + 25,
         );
 
         if (slice.length === 0) {
@@ -2980,22 +2980,12 @@ export default async function handler(req, res) {
           return;
         }
 
-        // Récupérer les détails (description) de chaque clan de la tranche en parallèle
-        const sliceDetails = await Promise.allSettled(
-          slice.map((c) => fetchClan(c.tag)),
-        );
-
         // Identifier les clans famille absents de la tranche
         const sliceTags = new Set(slice.map((c) => c.tag.toUpperCase()));
         const familyOutside = allClans.filter(
           (c) =>
             FAMILY_CLAN_TAGS.has(c.tag.toUpperCase()) &&
             !sliceTags.has(c.tag.toUpperCase()),
-        );
-
-        // Récupérer les détails des clans famille hors tranche
-        const familyDetails = await Promise.allSettled(
-          familyOutside.map((c) => fetchClan(c.tag)),
         );
 
         // Formateur de médaille/rang
@@ -3016,7 +3006,7 @@ export default async function handler(req, res) {
         };
 
         // Formateur d'une entrée de clan
-        const formatEntry = (clan, detailResult) => {
+        const formatEntry = (clan) => {
           const tag = (clan.tag ?? "").toUpperCase();
           const isFamily = FAMILY_CLAN_TAGS.has(tag);
           const familyIcon = isFamily ? " 🏠" : "";
@@ -3025,27 +3015,14 @@ export default async function handler(req, res) {
           const name = clan.name ?? tag;
           const members = clan.members != null ? `${clan.members}/50` : "?/50";
 
-          const detail =
-            detailResult?.status === "fulfilled" ? detailResult.value : null;
-          const rawDesc = detail?.description ?? "";
-          // Sécurité : 400 chars couvrent toutes les descriptions Clash sans tronquer en pratique
-          const desc =
-            rawDesc.length > 400 ? rawDesc.slice(0, 397) + "..." : rawDesc;
-
-          const line1 = `${label}${delta}${familyIcon} **${name}** · \`${tag}\` · ${members} membres`;
-          const line2 = desc ? `> *${desc}*` : "";
-          return [line1, line2].filter(Boolean).join("\n");
+          return `${label}${delta}${familyIcon} **${name}** · \`${tag}\` · ${members} membres`;
         };
 
         // Construire les lignes de la tranche
-        const sliceRows = slice.map((clan, i) =>
-          formatEntry(clan, sliceDetails[i]),
-        );
+        const sliceRows = slice.map((clan) => formatEntry(clan));
 
         // Construire les lignes des clans famille hors tranche
-        const familyRows = familyOutside.map((clan, i) =>
-          formatEntry(clan, familyDetails[i]),
-        );
+        const familyRows = familyOutside.map((clan) => formatEntry(clan));
 
         let description = sliceRows.join("\n\n");
 

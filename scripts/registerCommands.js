@@ -230,16 +230,16 @@ const commands = [
   {
     name: "top-clans",
     description:
-      "Affiche une tranche de 10 clans du classement France GDC par trophées de guerre.",
+      "Affiche une tranche de 25 clans du classement France GDC par trophées de guerre.",
     options: [
       {
         type: 4, // INTEGER
         name: "start",
         description:
-          "Rang de départ (défaut : 1). Affiche 10 clans à partir de ce rang.",
+          "Rang de départ (défaut : 1). Affiche 25 clans à partir de ce rang.",
         required: false,
         min_value: 1,
-        max_value: 990,
+        max_value: 975,
       },
     ],
   },
