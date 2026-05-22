@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // preResetSnapshot.js
 // Prend une "photo" instantanée des données GDC pour chaque clan, 2 minutes
-// avant son reset journalier. Le script est lancé par GitHub Actions à 07:00 UTC
+// avant son reset journalier. Le script est lancé par GitHub Actions à 08:00 UTC
 // (ven–lun), attend précisément jusqu'à T−2 min de chaque reset, puis appelle
 // l'API Clash Royale en moins d'une seconde.
 //
