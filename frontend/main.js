@@ -3401,11 +3401,11 @@ function renderMembersTable(members) {
         daysFrac = diffMs / (1000 * 60 * 60 * 24);
         const days = Math.round(daysFrac);
         const cls =
-          days <= 1
+          daysFrac <= 1
             ? "c-green"
-            : days <= 3
+            : daysFrac <= 3
               ? "c-yellow"
-              : days <= 7
+              : daysFrac <= 7
                 ? "c-red"
                 : "c-red";
         const label =
