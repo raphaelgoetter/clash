@@ -809,12 +809,21 @@ async function postWarSummary(
 
   const fields = [];
   const memberNames = await readClanMemberNames(tag);
-  const duelTargetDays = allWeekDays
+  const weeklyDuelTargetDays = allWeekDays
     .map((day) => day?.realDay)
     .filter((day) => typeof day === "string" && day);
-  const duelMissingInfo = await computeMissingDuelsForDays(
+  const dailyDuelTargetDays =
+    typeof dayEntry?.realDay === "string" && dayEntry.realDay
+      ? [dayEntry.realDay]
+      : [];
+  const dailyDuelMissingInfo = await computeMissingDuelsForDays(
     tag,
-    duelTargetDays,
+    dailyDuelTargetDays,
+    memberNames,
+  );
+  const weeklyDuelMissingInfo = await computeMissingDuelsForDays(
+    tag,
+    weeklyDuelTargetDays,
     memberNames,
   );
 
@@ -918,18 +927,18 @@ async function postWarSummary(
     }
   }
 
-  if (duelMissingInfo.players.length > 0) {
-    const totalMissingDuels = duelMissingInfo.players.reduce(
+  if (dailyDuelMissingInfo.players.length > 0) {
+    const totalMissingDuels = dailyDuelMissingInfo.players.reduce(
       (sum, player) => sum + player.missingDuels,
       0,
     );
-    const duelLines = duelMissingInfo.players.map((player) => {
+    const duelLines = dailyDuelMissingInfo.players.map((player) => {
       const playerUrl = `https://trustroyale.vercel.app/fr/player/${player.tag.replace(/^#/, "")}`;
       return `- [${player.name}](${playerUrl}) (x${player.missingDuels})`;
     });
     const failedNote =
-      duelMissingInfo.failed > 0
-        ? `_( ${duelMissingInfo.failed} battlelog${duelMissingInfo.failed > 1 ? "s" : ""} indisponible${duelMissingInfo.failed > 1 ? "s" : ""})_`
+      dailyDuelMissingInfo.failed > 0
+        ? `_( ${dailyDuelMissingInfo.failed} battlelog${dailyDuelMissingInfo.failed > 1 ? "s" : ""} indisponible${dailyDuelMissingInfo.failed > 1 ? "s" : ""})_`
         : "";
     fields.push(
       ...buildMissingDuelsFields(
@@ -1068,12 +1077,12 @@ async function postWarSummary(
       });
     }
 
-    if (duelMissingInfo.players.length > 0) {
-      const totalMissingDuels = duelMissingInfo.players.reduce(
+    if (weeklyDuelMissingInfo.players.length > 0) {
+      const totalMissingDuels = weeklyDuelMissingInfo.players.reduce(
         (sum, player) => sum + player.missingDuels,
         0,
       );
-      const duelLines = duelMissingInfo.players.map(
+      const duelLines = weeklyDuelMissingInfo.players.map(
         (player) => `- ${player.name} (x${player.missingDuels})`,
       );
       weeklyFields.push(
