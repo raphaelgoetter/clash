@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TrustRoyale - Deck Upgrade</title>
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="/deck-upgrade/deck-upgrade.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <a class="brand" href="/">
+          <img src="/favicon.svg" alt="Logo TrustRoyale" />
+          <span>TrustRoyale</span>
+        </a>
+        <h1>Calculateur Deck Upgrade</h1>
+        <p>
+          Ajoutez vos cartes une par une, puis calculez le total de cartes manquantes
+          pour atteindre le niveau cible.
+        </p>
+      </header>
+
+      <section class="panel" aria-labelledby="deck-form-title">
+        <div class="panel-head">
+          <h2 id="deck-form-title">Cartes du deck</h2>
+          <button id="add-row-btn" type="button" class="btn btn-primary">
+            + Ajouter une carte
+          </button>
+        </div>
+
+        <div class="table-wrap">
+          <table class="deck-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Niveau actuel</th>
+                <th>Cartes actuelles</th>
+                <th>Niveau souhaité</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="rows-body"></tbody>
+          </table>
+        </div>
+
+        <div class="panel-actions">
+          <button id="calculate-btn" type="button" class="btn btn-accent">
+            Calculer le cumul par type
+          </button>
+          <button id="reset-btn" type="button" class="btn btn-ghost">
+            Réinitialiser
+          </button>
+        </div>
+
+        <p id="global-error" class="global-error" role="alert"></p>
+      </section>
+
+      <section id="results" class="panel hidden" aria-labelledby="results-title">
+        <h2 id="results-title">Résultats</h2>
+
+        <div class="summary-grid" id="summary-grid"></div>
+
+        <div class="table-wrap detail-wrap">
+          <table class="detail-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Type</th>
+                <th>Du niveau</th>
+                <th>Au niveau</th>
+                <th>Cartes déjà stockées</th>
+                <th>Cartes manquantes</th>
+              </tr>
+            </thead>
+            <tbody id="details-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <template id="row-template">
+      <tr>
+        <td>
+          <select class="field rarity" aria-label="Type de carte">
+            <option value="common">Commune</option>
+            <option value="rare">Rare</option>
+            <option value="epic">Épique</option>
+            <option value="legendary">Légendaire</option>
+            <option value="champion">Champion</option>
+          </select>
+        </td>
+        <td>
+          <input class="field current-level" type="number" min="1" step="1" value="10" aria-label="Niveau actuel" />
+        </td>
+        <td>
+          <input class="field current-cards" type="number" min="0" step="1" value="0" aria-label="Cartes actuelles" />
+        </td>
+        <td>
+          <input class="field target-level" type="number" min="1" step="1" value="16" aria-label="Niveau souhaité" />
+        </td>
+        <td>
+          <button type="button" class="btn btn-danger remove-row" aria-label="Supprimer la carte">Retirer</button>
+          <p class="row-error" role="alert"></p>
+        </td>
+      </tr>
+    </template>
+
+    <script type="module" src="/deck-upgrade/deck-upgrade.js"></script>
+  </body>
+</html>

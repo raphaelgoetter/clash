@@ -27,6 +27,17 @@ export default defineConfig({
           req.url = "/bot/index.html";
           return next();
         }
+        if (
+          url === "/deck-upgrade" ||
+          url === "/deck-upgrade/" ||
+          url === "/fr/deck-upgrade" ||
+          url === "/fr/deck-upgrade/" ||
+          url === "/en/deck-upgrade" ||
+          url === "/en/deck-upgrade/"
+        ) {
+          req.url = "/deck-upgrade/index.html";
+          return next();
+        }
         // URLs path-based : /fr/player/TAG et /fr/clan/TAG → index.html (SPA)
         if (/^\/(fr|en)\/(player|clan)\//.test(url)) {
           req.url = "/index.html";

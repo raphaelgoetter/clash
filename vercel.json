@@ -14,6 +14,18 @@
   },
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api/index.js" },
+    { "source": "/deck-upgrade", "destination": "/deck-upgrade/index.html" },
+    { "source": "/deck-upgrade/", "destination": "/deck-upgrade/index.html" },
+    { "source": "/fr/deck-upgrade", "destination": "/deck-upgrade/index.html" },
+    {
+      "source": "/fr/deck-upgrade/",
+      "destination": "/deck-upgrade/index.html"
+    },
+    { "source": "/en/deck-upgrade", "destination": "/deck-upgrade/index.html" },
+    {
+      "source": "/en/deck-upgrade/",
+      "destination": "/deck-upgrade/index.html"
+    },
     { "source": "/bot", "destination": "/bot/index.html" },
     { "source": "/bot/", "destination": "/bot/index.html" },
     { "source": "/fr/bot", "destination": "/bot/index.html" },

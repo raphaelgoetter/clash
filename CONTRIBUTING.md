@@ -58,6 +58,93 @@ La documentation détaillée des champs retournés par l’API Clash Royale (cha
 
 ## Formules et scoring
 
+## Données upgrade cartes (page /deck-upgrade)
+
+Source de vérité utilisée pour la page publique `/deck-upgrade` :
+
+- <https://clashroyale.fandom.com/wiki/Cards>
+- sections `Types of Cards` (plages de niveaux par rareté) et `Statistics`
+- date de collecte : 25/05/2026
+
+### Niveaux disponibles par rareté
+
+| Rareté     | Niveau min | Niveau max |
+| ---------- | ---------- | ---------- |
+| Commune    | 1          | 16         |
+| Rare       | 3          | 16         |
+| Épique     | 6          | 16         |
+| Légendaire | 9          | 16         |
+| Champion   | 11         | 16         |
+
+### Cartes nécessaires pour passer au niveau suivant
+
+Les clés ci-dessous représentent le niveau actuel, la valeur représente les cartes nécessaires pour passer au niveau +1.
+
+```js
+const DECK_UPGRADE_COSTS = {
+  common: {
+    1: 2,
+    2: 4,
+    3: 10,
+    4: 20,
+    5: 50,
+    6: 100,
+    7: 200,
+    8: 400,
+    9: 800,
+    10: 1000,
+    11: 2000,
+    12: 5000,
+    13: 10000,
+    14: 25000,
+    15: 50000,
+  },
+  rare: {
+    3: 2,
+    4: 4,
+    5: 10,
+    6: 20,
+    7: 50,
+    8: 100,
+    9: 200,
+    10: 400,
+    11: 800,
+    12: 1000,
+    13: 2000,
+    14: 5000,
+    15: 10000,
+  },
+  epic: {
+    6: 2,
+    7: 4,
+    8: 10,
+    9: 20,
+    10: 50,
+    11: 100,
+    12: 200,
+    13: 400,
+    14: 800,
+    15: 1000,
+  },
+  legendary: {
+    9: 2,
+    10: 4,
+    11: 6,
+    12: 10,
+    13: 20,
+    14: 40,
+    15: 80,
+  },
+  champion: {
+    11: 2,
+    12: 4,
+    13: 8,
+    14: 10,
+    15: 20,
+  },
+};
+```
+
 ### Note sur le cache statique
 
 La vue clan charge en priorité les fichiers JSON présents dans frontend/public/clan-cache pour afficher un rendu immédiat.
@@ -164,7 +251,7 @@ Notes :
 
 Les seuils de trophées de guerre (`clanWarTrophies`) déterminant le palier de ligue GDC sont définis **une seule fois** dans :
 
-```
+```text
 backend/services/warLeagues.js
 ```
 
