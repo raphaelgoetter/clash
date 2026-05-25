@@ -327,12 +327,12 @@ function fmt(n) {
   return Math.round(n).toLocaleString("fr-FR");
 }
 
-function chunkLinesForDiscord(lines, maxLength = 1000) {
+function chunkEntriesForDiscord(entries, maxLength = 1000, separator = " · ") {
   const chunks = [];
   let current = "";
 
-  for (const line of lines) {
-    const candidate = current ? `${current}\n${line}` : line;
+  for (const entry of entries) {
+    const candidate = current ? `${current}${separator}${entry}` : entry;
     if (candidate.length <= maxLength) {
       current = candidate;
       continue;
@@ -343,16 +343,16 @@ function chunkLinesForDiscord(lines, maxLength = 1000) {
       current = "";
     }
 
-    // Fallback de sécurité pour une ligne exceptionnellement longue.
-    chunks.push(line.slice(0, maxLength));
+    // Fallback de sécurité pour une entrée exceptionnellement longue.
+    chunks.push(entry.slice(0, maxLength));
   }
 
   if (current) chunks.push(current);
   return chunks;
 }
 
-function buildMissingDuelsFields(title, totalMissingDuels, lines, note = "") {
-  if (lines.length === 0) return [];
+function buildMissingDuelsFields(title, totalMissingDuels, entries, note = "") {
+  if (entries.length === 0) return [];
 
   if (totalMissingDuels > MISSING_DUELS_DETAIL_THRESHOLD) {
     return [
@@ -364,7 +364,7 @@ function buildMissingDuelsFields(title, totalMissingDuels, lines, note = "") {
     ];
   }
 
-  const chunks = chunkLinesForDiscord(lines, 1000);
+  const chunks = chunkEntriesForDiscord(entries, 1000, " · ");
   if (note) {
     const suffix = `\n${note}`;
     const lastIdx = chunks.length - 1;
@@ -932,9 +932,9 @@ async function postWarSummary(
       (sum, player) => sum + player.missingDuels,
       0,
     );
-    const duelLines = dailyDuelMissingInfo.players.map((player) => {
+    const duelEntries = dailyDuelMissingInfo.players.map((player) => {
       const playerUrl = `https://trustroyale.vercel.app/fr/player/${player.tag.replace(/^#/, "")}`;
-      return `- [${player.name}](${playerUrl}) (x${player.missingDuels})`;
+      return `[${player.name}](${playerUrl})`;
     });
     const failedNote =
       dailyDuelMissingInfo.failed > 0
@@ -944,7 +944,7 @@ async function postWarSummary(
       ...buildMissingDuelsFields(
         "<:battle:1493710671244689449> Duels manquants",
         totalMissingDuels,
-        duelLines,
+        duelEntries,
         failedNote,
       ),
     );
@@ -1082,14 +1082,14 @@ async function postWarSummary(
         (sum, player) => sum + player.missingDuels,
         0,
       );
-      const duelLines = weeklyDuelMissingInfo.players.map(
-        (player) => `- ${player.name} (x${player.missingDuels})`,
+      const duelEntries = weeklyDuelMissingInfo.players.map(
+        (player) => `${player.name} (x${player.missingDuels})`,
       );
       weeklyFields.push(
         ...buildMissingDuelsFields(
           "<:battle:1493710671244689449> Duels manquants",
           totalMissingDuels,
-          duelLines,
+          duelEntries,
         ),
       );
     }
