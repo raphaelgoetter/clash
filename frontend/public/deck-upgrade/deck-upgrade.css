@@ -20,8 +20,16 @@ body {
   font-family: "Segoe UI", "Inter", system-ui, sans-serif;
   color: var(--text);
   background:
-    radial-gradient(1200px 600px at 90% -10%, #2b3963 0%, rgba(43, 57, 99, 0) 70%),
-    radial-gradient(1000px 500px at -10% 0%, #203253 0%, rgba(32, 50, 83, 0) 65%),
+    radial-gradient(
+      1200px 600px at 90% -10%,
+      #2b3963 0%,
+      rgba(43, 57, 99, 0) 70%
+    ),
+    radial-gradient(
+      1000px 500px at -10% 0%,
+      #203253 0%,
+      rgba(32, 50, 83, 0) 65%
+    ),
     linear-gradient(180deg, var(--bg) 0%, #090d17 100%);
   min-height: 100vh;
 }
@@ -61,7 +69,11 @@ body {
 }
 
 .panel {
-  background: linear-gradient(180deg, rgba(26, 36, 58, 0.97), rgba(16, 24, 41, 0.97));
+  background: linear-gradient(
+    180deg,
+    rgba(26, 36, 58, 0.97),
+    rgba(16, 24, 41, 0.97)
+  );
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 18px;
@@ -223,6 +235,23 @@ tr:last-child td {
   font-weight: 800;
   color: var(--ok);
   font-size: 1.05rem;
+}
+
+.summary-card .gold-value {
+  margin-top: 4px;
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.total-gold-line {
+  margin-top: 10px;
+  margin-bottom: 10px;
+  color: var(--muted);
+}
+
+.total-gold-line strong {
+  color: var(--accent);
 }
 
 .detail-wrap {

@@ -24,11 +24,28 @@ const RARITY_CONFIG = {
       8: 400,
       9: 800,
       10: 1000,
-      11: 2000,
-      12: 5000,
-      13: 10000,
-      14: 25000,
-      15: 50000,
+      11: 1500,
+      12: 2500,
+      13: 3500,
+      14: 5500,
+      15: 7500,
+    },
+    goldUpgrades: {
+      1: 5,
+      2: 20,
+      3: 50,
+      4: 150,
+      5: 400,
+      6: 1000,
+      7: 2000,
+      8: 4000,
+      9: 8000,
+      10: 15000,
+      11: 25000,
+      12: 40000,
+      13: 60000,
+      14: 90000,
+      15: 120000,
     },
   },
   rare: {
@@ -43,12 +60,27 @@ const RARITY_CONFIG = {
       7: 50,
       8: 100,
       9: 200,
-      10: 400,
-      11: 800,
-      12: 1000,
-      13: 2000,
-      14: 5000,
-      15: 10000,
+      10: 300,
+      11: 400,
+      12: 550,
+      13: 750,
+      14: 1000,
+      15: 1400,
+    },
+    goldUpgrades: {
+      3: 50,
+      4: 150,
+      5: 400,
+      6: 1000,
+      7: 2000,
+      8: 4000,
+      9: 8000,
+      10: 15000,
+      11: 25000,
+      12: 40000,
+      13: 60000,
+      14: 90000,
+      15: 120000,
     },
   },
   epic: {
@@ -60,12 +92,24 @@ const RARITY_CONFIG = {
       7: 4,
       8: 10,
       9: 20,
-      10: 50,
-      11: 100,
-      12: 200,
-      13: 400,
-      14: 800,
-      15: 1000,
+      10: 30,
+      11: 50,
+      12: 70,
+      13: 100,
+      14: 130,
+      15: 180,
+    },
+    goldUpgrades: {
+      6: 400,
+      7: 2000,
+      8: 4000,
+      9: 8000,
+      10: 15000,
+      11: 25000,
+      12: 40000,
+      13: 60000,
+      14: 90000,
+      15: 120000,
     },
   },
   legendary: {
@@ -76,10 +120,19 @@ const RARITY_CONFIG = {
       9: 2,
       10: 4,
       11: 6,
-      12: 10,
-      13: 20,
-      14: 40,
-      15: 80,
+      12: 9,
+      13: 12,
+      14: 14,
+      15: 20,
+    },
+    goldUpgrades: {
+      9: 5000,
+      10: 15000,
+      11: 25000,
+      12: 40000,
+      13: 60000,
+      14: 90000,
+      15: 120000,
     },
   },
   champion: {
@@ -88,10 +141,17 @@ const RARITY_CONFIG = {
     maxLevel: 16,
     upgrades: {
       11: 2,
-      12: 4,
+      12: 5,
       13: 8,
-      14: 10,
-      15: 20,
+      14: 11,
+      15: 15,
+    },
+    goldUpgrades: {
+      11: 25000,
+      12: 40000,
+      13: 60000,
+      14: 90000,
+      15: 120000,
     },
   },
 };
@@ -174,6 +234,17 @@ function computeMissingCards({
   return Math.max(0, total - usableCurrentCards);
 }
 
+function computeMissingGold({ rarity, currentLevel, targetLevel }) {
+  const conf = RARITY_CONFIG[rarity];
+  let total = 0;
+
+  for (let level = currentLevel; level < targetLevel; level += 1) {
+    total += conf.goldUpgrades[level] ?? 0;
+  }
+
+  return total;
+}
+
 function validateRow(payload) {
   const conf = RARITY_CONFIG[payload.rarity];
 
@@ -209,7 +280,7 @@ function validateRow(payload) {
   return "";
 }
 
-function renderSummary(totalsByRarity) {
+function renderSummary(totalsByRarity, goldByRarity) {
   summaryGrid.innerHTML = "";
 
   RARITY_ORDER.forEach((rarity) => {
@@ -224,7 +295,11 @@ function renderSummary(totalsByRarity) {
     value.className = "value";
     value.textContent = `${totalsByRarity[rarity].toLocaleString("fr-FR")} cartes`;
 
-    card.append(label, value);
+    const goldValue = document.createElement("p");
+    goldValue.className = "gold-value";
+    goldValue.textContent = `${goldByRarity[rarity].toLocaleString("fr-FR")} or`;
+
+    card.append(label, value, goldValue);
     summaryGrid.appendChild(card);
   });
 }
@@ -241,6 +316,7 @@ function renderDetails(detailRows) {
       <td>${rowData.targetLevel}</td>
       <td>${rowData.currentCards.toLocaleString("fr-FR")}</td>
       <td>${rowData.missingCards.toLocaleString("fr-FR")}</td>
+      <td>${rowData.missingGold.toLocaleString("fr-FR")}</td>
     `;
     detailsBody.appendChild(tr);
   });
@@ -268,6 +344,13 @@ function handleCalculate() {
     legendary: 0,
     champion: 0,
   };
+  const goldByRarity = {
+    common: 0,
+    rare: 0,
+    epic: 0,
+    legendary: 0,
+    champion: 0,
+  };
 
   let hasError = false;
   const detailRows = [];
@@ -283,8 +366,10 @@ function handleCalculate() {
     }
 
     const missingCards = computeMissingCards(payload);
+    const missingGold = computeMissingGold(payload);
     totalsByRarity[payload.rarity] += missingCards;
-    detailRows.push({ ...payload, missingCards });
+    goldByRarity[payload.rarity] += missingGold;
+    detailRows.push({ ...payload, missingCards, missingGold });
   });
 
   if (hasError) {
@@ -294,7 +379,16 @@ function handleCalculate() {
     return;
   }
 
-  renderSummary(totalsByRarity);
+  const totalGold = Object.values(goldByRarity).reduce(
+    (sum, value) => sum + value,
+    0,
+  );
+  const totalGoldEl = document.getElementById("total-gold");
+  if (totalGoldEl) {
+    totalGoldEl.textContent = `${totalGold.toLocaleString("fr-FR")} or`;
+  }
+
+  renderSummary(totalsByRarity, goldByRarity);
   renderDetails(detailRows);
   results.classList.remove("hidden");
 }
@@ -303,6 +397,10 @@ function handleReset() {
   rowsBody.innerHTML = "";
   clearErrors();
   results.classList.add("hidden");
+  const totalGoldEl = document.getElementById("total-gold");
+  if (totalGoldEl) {
+    totalGoldEl.textContent = "0 or";
+  }
   createRow({
     rarity: "common",
     currentLevel: 10,
