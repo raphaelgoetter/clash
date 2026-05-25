@@ -697,22 +697,11 @@ async function postWarSummary(
       prevDayEntry,
     );
     isExactFame = true;
-  } else if (apiDayFame !== null) {
-    // periodLogs disponible : source de vérité pour J1-J3 quand le snapshot pré-reset manque,
-    // et pour J4 après le reset lundi.
+  } else if (apiDayFame !== null && !isLastDay) {
+    // periodLogs disponible : source de vérité pour J1-J3 quand le snapshot pré-reset manque.
+    // On exclut J4 car periodLogs[3].pointsEarned après le reset lundi peut être incomplet
+    // (lag API : tous les pts ne sont pas encore comptabilisés au moment de l'appel).
     totalFame = apiDayFame;
-    isExactFame = true;
-  } else if (
-    isLastDay &&
-    hasPreResetSnapshot &&
-    prevDayEntry?._cumulFamePreReset &&
-    Object.keys(prevDayEntry._cumulFamePreReset).length > 0
-  ) {
-    // J4 exact : cumul pré-reset J4 − cumul pré-reset J3 (tous deux depuis currentriverrace = clanScore exact).
-    totalFame = Math.max(
-      0,
-      sumValues(cumulFamePreReset) - sumValues(prevDayEntry._cumulFamePreReset),
-    );
     isExactFame = true;
   } else if (
     isLastDay &&
@@ -720,10 +709,25 @@ async function postWarSummary(
     prevDayEntry?._cumulFamePreReset &&
     Object.keys(prevDayEntry._cumulFamePreReset).length > 0
   ) {
-    // Fallback J4 : raceLog total semaine − cumul J3 pré-reset snapshot.
+    // J4 : raceLog total semaine (sum participants[].fame) − cumul pré-reset J3.
+    // Source de vérité per api-clash-royale.md : apiWeekFame est la valeur finale stabilisée
+    // après le reset lundi, plus fiable que le snapshot T−2 min qui peut sous-estimer
+    // le total réel à cause du lag API (participants[].fame pas encore tous mis à jour).
     totalFame = Math.max(
       0,
       apiWeekFame - sumValues(prevDayEntry._cumulFamePreReset),
+    );
+    isExactFame = true;
+  } else if (
+    isLastDay &&
+    hasPreResetSnapshot &&
+    prevDayEntry?._cumulFamePreReset &&
+    Object.keys(prevDayEntry._cumulFamePreReset).length > 0
+  ) {
+    // Fallback J4 : snapshot pré-reset J4 − snapshot pré-reset J3, si raceLog indisponible.
+    totalFame = Math.max(
+      0,
+      sumValues(cumulFamePreReset) - sumValues(prevDayEntry._cumulFamePreReset),
     );
     isExactFame = true;
   } else if (hasPreResetSnapshot) {
