@@ -678,29 +678,29 @@ GET /players/%23YRGJGR8R/battlelog
 
 ### Champs clés pour distinguer les combats GDC
 
-| Champ | Type | Source de vérité | Description |
-| --- | --- | --- | --- |
-| `type` | `string` | ✅ | Type de combat. C'est le champ de référence pour différencier Duel / 1v1 / Boat en GDC. |
-| `battleTime` | `string` | ✅ | Horodatage du combat (`YYYYMMDDTHHmmss.000Z`). À convertir via `parseClashDate()` puis à mapper au jour GDC via `warDayKey()`. |
-| `team[0].rounds[]` | `array` | ✅ | Présent sur les duels. Permet d'estimer le nombre de decks consommés par le duel (longueur du tableau). |
+| Champ              | Type     | Source de vérité | Description                                                                                                                    |
+| ------------------ | -------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `type`             | `string` | ✅               | Type de combat. C'est le champ de référence pour différencier Duel / 1v1 / Boat en GDC.                                        |
+| `battleTime`       | `string` | ✅               | Horodatage du combat (`YYYYMMDDTHHmmss.000Z`). À convertir via `parseClashDate()` puis à mapper au jour GDC via `warDayKey()`. |
+| `team[0].rounds[]` | `array`  | ✅               | Présent sur les duels. Permet d'estimer le nombre de decks consommés par le duel (longueur du tableau).                        |
 
 ### Valeurs `type` utilisées en GDC
 
-| Valeur `type` | Catégorie métier | Notes |
-| ------------- | ---------------- | ----- |
-| `riverRaceDuel` | Duel | Duel GDC classique. |
-| `riverRaceDuelsColosseum` | Duel | Duel GDC en Colisée. |
-| `riverRacePvP` | 1v1 | Combat 1v1 de rivière. |
-| `clanWarBattle` | 1v1 (legacy) | Type historique encore observé dans certains logs. |
-| `riverRaceBoat` | Boat | Attaque de bateau. |
+| Valeur `type`             | Catégorie métier | Notes                                              |
+| ------------------------- | ---------------- | -------------------------------------------------- |
+| `riverRaceDuel`           | Duel             | Duel GDC classique.                                |
+| `riverRaceDuelsColosseum` | Duel             | Duel GDC en Colisée.                               |
+| `riverRacePvP`            | 1v1              | Combat 1v1 de rivière.                             |
+| `clanWarBattle`           | 1v1 (legacy)     | Type historique encore observé dans certains logs. |
+| `riverRaceBoat`           | Boat             | Attaque de bateau.                                 |
 
 > Recommandation TrustRoyale : normaliser en minuscule avant comparaison (`type.toLowerCase()`).
 
 ### Mapping recommandé (résumés journaliers)
 
-| Information métier | Règle |
-| ------------------ | ----- |
-| Duel joué | `type in {riverRaceDuel, riverRaceDuelsColosseum}` |
-| 1v1 joué | `type in {riverRacePvP, clanWarBattle}` |
-| Boat joué | `type === riverRaceBoat` |
-| Combat du jour GDC | `warDayKey(battleTime, clanTag) === realDay` |
+| Information métier | Règle                                              |
+| ------------------ | -------------------------------------------------- |
+| Duel joué          | `type in {riverRaceDuel, riverRaceDuelsColosseum}` |
+| 1v1 joué           | `type in {riverRacePvP, clanWarBattle}`            |
+| Boat joué          | `type === riverRaceBoat`                           |
+| Combat du jour GDC | `warDayKey(battleTime, clanTag) === realDay`       |

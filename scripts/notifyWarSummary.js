@@ -166,10 +166,7 @@ const ROLE_FR = {
   leader: "leader",
 };
 
-const DUEL_BATTLE_TYPES = new Set([
-  "riverraceduel",
-  "riverraceduelscolosseum",
-]);
+const DUEL_BATTLE_TYPES = new Set(["riverraceduel", "riverraceduelscolosseum"]);
 const PVP_BATTLE_TYPES = new Set(["riverracepvp", "clanwarbattle"]);
 const BOAT_BATTLE_TYPES = new Set(["riverraceboat"]);
 const WAR_BATTLE_TYPES = new Set([
@@ -179,7 +176,9 @@ const WAR_BATTLE_TYPES = new Set([
 ]);
 
 function normalizeBattleType(type) {
-  return String(type ?? "").trim().toLowerCase();
+  return String(type ?? "")
+    .trim()
+    .toLowerCase();
 }
 
 function getNonBoatDeckCountFromBattle(battle) {
@@ -210,7 +209,12 @@ async function pooledMap(items, mapper, concurrency = 8) {
   return results;
 }
 
-async function computeMissingDuelsForDay(clanTag, realDay, membersByTag, dayDecks) {
+async function computeMissingDuelsForDay(
+  clanTag,
+  realDay,
+  membersByTag,
+  dayDecks,
+) {
   const members = Object.entries(membersByTag ?? {});
   if (members.length === 0) {
     return { players: [], fetched: 0, failed: 0 };
@@ -867,24 +871,24 @@ async function postWarSummary(
         inline: false,
       });
     } else {
-    const lineItems = duelMissingInfo.players.map((player) => {
-      const playerUrl = `https://trustroyale.vercel.app/fr/player/${player.tag.replace(/^#/, "")}`;
-      return `[${player.name}](${playerUrl}) (${player.missingDuels})`;
-    });
-    let value = lineItems.join(", ");
-    if (value.length > 1000) {
-      const kept = [];
-      for (const item of lineItems) {
-        const candidate = (kept.length ? `${kept.join(", ")}, ` : "") + item;
-        if (candidate.length > 960) break;
-        kept.push(item);
+      const lineItems = duelMissingInfo.players.map((player) => {
+        const playerUrl = `https://trustroyale.vercel.app/fr/player/${player.tag.replace(/^#/, "")}`;
+        return `[${player.name}](${playerUrl}) (${player.missingDuels})`;
+      });
+      let value = lineItems.join(", ");
+      if (value.length > 1000) {
+        const kept = [];
+        for (const item of lineItems) {
+          const candidate = (kept.length ? `${kept.join(", ")}, ` : "") + item;
+          if (candidate.length > 960) break;
+          kept.push(item);
+        }
+        const hidden = lineItems.length - kept.length;
+        value = `${kept.join(", ")}${hidden > 0 ? `, ... (+${hidden})` : ""}`;
       }
-      const hidden = lineItems.length - kept.length;
-      value = `${kept.join(", ")}${hidden > 0 ? `, ... (+${hidden})` : ""}`;
-    }
-    if (duelMissingInfo.failed > 0) {
-      value += `\n_(${duelMissingInfo.failed} battlelog${duelMissingInfo.failed > 1 ? "s" : ""} indisponible${duelMissingInfo.failed > 1 ? "s" : ""})_`;
-    }
+      if (duelMissingInfo.failed > 0) {
+        value += `\n_(${duelMissingInfo.failed} battlelog${duelMissingInfo.failed > 1 ? "s" : ""} indisponible${duelMissingInfo.failed > 1 ? "s" : ""})_`;
+      }
       fields.push({
         name: `<:battle:1493710671244689449> Duels manquants (${fmt(totalMissingDuels)})`,
         value,
