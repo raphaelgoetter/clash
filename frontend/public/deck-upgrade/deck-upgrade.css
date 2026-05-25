@@ -193,6 +193,84 @@ tr:last-child td {
   flex-wrap: wrap;
 }
 
+.jokers-panel {
+  margin-top: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 12px;
+  background: rgba(7, 12, 22, 0.35);
+}
+
+.jokers-panel h3 {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.strategy-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+  max-width: 300px;
+}
+
+.strategy-field span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.strategy-help {
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.strategy-help-title {
+  margin: 0 0 6px;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.strategy-help ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.strategy-help li {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 0.83rem;
+}
+
+.strategy-help-note {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.jokers-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.joker-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.joker-field span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 .row-error {
   margin: 6px 0 0;
   color: var(--danger);
@@ -244,10 +322,26 @@ tr:last-child td {
   font-size: 0.9rem;
 }
 
+.summary-card .joker-value {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 .total-gold-line {
   margin-top: 10px;
   margin-bottom: 10px;
   color: var(--muted);
+}
+
+.total-jokers-line {
+  margin-top: 10px;
+  margin-bottom: 4px;
+  color: var(--muted);
+}
+
+.total-jokers-line strong {
+  color: var(--ok);
 }
 
 .total-gold-line strong {
@@ -260,6 +354,10 @@ tr:last-child td {
 
 @media (max-width: 920px) {
   .summary-grid {
+    grid-template-columns: repeat(2, minmax(130px, 1fr));
+  }
+
+  .jokers-grid {
     grid-template-columns: repeat(2, minmax(130px, 1fr));
   }
 }
@@ -285,5 +383,9 @@ tr:last-child td {
 
   .panel-actions {
     flex-direction: column;
+  }
+
+  .jokers-grid {
+    grid-template-columns: 1fr;
   }
 }

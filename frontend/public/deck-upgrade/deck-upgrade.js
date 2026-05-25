@@ -2,11 +2,23 @@ const rowsBody = document.getElementById("rows-body");
 const rowTemplate = document.getElementById("row-template");
 const addRowBtn = document.getElementById("add-row-btn");
 const calculateBtn = document.getElementById("calculate-btn");
+const optimizeJokersBtn = document.getElementById("optimize-jokers-btn");
 const resetBtn = document.getElementById("reset-btn");
 const globalError = document.getElementById("global-error");
 const results = document.getElementById("results");
 const summaryGrid = document.getElementById("summary-grid");
 const detailsBody = document.getElementById("details-body");
+const totalGoldEl = document.getElementById("total-gold");
+const totalJokersUsedEl = document.getElementById("total-jokers-used");
+const jokerStrategySelect = document.getElementById("joker-strategy");
+
+const jokerInputs = {
+  common: document.getElementById("joker-common"),
+  rare: document.getElementById("joker-rare"),
+  epic: document.getElementById("joker-epic"),
+  legendary: document.getElementById("joker-legendary"),
+  champion: document.getElementById("joker-champion"),
+};
 
 const RARITY_CONFIG = {
   common: {
@@ -245,6 +257,82 @@ function computeMissingGold({ rarity, currentLevel, targetLevel }) {
   return total;
 }
 
+function getJokersByRarity() {
+  const jokers = {};
+  RARITY_ORDER.forEach((rarity) => {
+    const raw = Number.parseInt(jokerInputs[rarity]?.value ?? "0", 10);
+    jokers[rarity] = Number.isInteger(raw) && raw > 0 ? raw : 0;
+  });
+  return jokers;
+}
+
+function getJokerStrategy() {
+  const strategy = jokerStrategySelect?.value;
+  return strategy === "priority-max-level"
+    ? "priority-max-level"
+    : "max-completed";
+}
+
+function allocateJokers(detailRows, jokersByRarity, strategy) {
+  const jokersUsedByRarity = {
+    common: 0,
+    rare: 0,
+    epic: 0,
+    legendary: 0,
+    champion: 0,
+  };
+
+  const byRarity = {
+    common: [],
+    rare: [],
+    epic: [],
+    legendary: [],
+    champion: [],
+  };
+
+  detailRows.forEach((row) => {
+    if (row.missingCards > 0) byRarity[row.rarity].push(row);
+  });
+
+  RARITY_ORDER.forEach((rarity) => {
+    let available = jokersByRarity[rarity] ?? 0;
+    if (available <= 0) return;
+
+    if (strategy === "priority-max-level") {
+      // Favorise les cartes déjà proches du niveau max (niveau courant élevé),
+      // puis celles qui demandent le moins de jokers restants.
+      byRarity[rarity].sort((a, b) => {
+        if (b.currentLevel !== a.currentLevel) {
+          return b.currentLevel - a.currentLevel;
+        }
+        if (b.targetLevel !== a.targetLevel) {
+          return b.targetLevel - a.targetLevel;
+        }
+        return a.remainingCards - b.remainingCards;
+      });
+    } else {
+      // Stratégie par défaut: compléter le plus de cartes possible.
+      byRarity[rarity].sort((a, b) => {
+        if (a.remainingCards !== b.remainingCards) {
+          return a.remainingCards - b.remainingCards;
+        }
+        return b.currentLevel - a.currentLevel;
+      });
+    }
+
+    byRarity[rarity].forEach((row) => {
+      if (available <= 0) return;
+      const use = Math.min(available, row.remainingCards);
+      row.jokersUsed += use;
+      row.remainingCards -= use;
+      available -= use;
+      jokersUsedByRarity[rarity] += use;
+    });
+  });
+
+  return jokersUsedByRarity;
+}
+
 function validateRow(payload) {
   const conf = RARITY_CONFIG[payload.rarity];
 
@@ -280,7 +368,7 @@ function validateRow(payload) {
   return "";
 }
 
-function renderSummary(totalsByRarity, goldByRarity) {
+function renderSummary(totalsByRarity, goldByRarity, jokersUsedByRarity) {
   summaryGrid.innerHTML = "";
 
   RARITY_ORDER.forEach((rarity) => {
@@ -299,7 +387,11 @@ function renderSummary(totalsByRarity, goldByRarity) {
     goldValue.className = "gold-value";
     goldValue.textContent = `${goldByRarity[rarity].toLocaleString("fr-FR")} or`;
 
-    card.append(label, value, goldValue);
+    const jokerValue = document.createElement("p");
+    jokerValue.className = "joker-value";
+    jokerValue.textContent = `Jokers utilisés : ${jokersUsedByRarity[rarity].toLocaleString("fr-FR")}`;
+
+    card.append(label, value, goldValue, jokerValue);
     summaryGrid.appendChild(card);
   });
 }
@@ -316,13 +408,15 @@ function renderDetails(detailRows) {
       <td>${rowData.targetLevel}</td>
       <td>${rowData.currentCards.toLocaleString("fr-FR")}</td>
       <td>${rowData.missingCards.toLocaleString("fr-FR")}</td>
+      <td>${rowData.jokersUsed.toLocaleString("fr-FR")}</td>
+      <td>${rowData.remainingCards.toLocaleString("fr-FR")}</td>
       <td>${rowData.missingGold.toLocaleString("fr-FR")}</td>
     `;
     detailsBody.appendChild(tr);
   });
 }
 
-function handleCalculate() {
+function runCalculation({ useJokers = false } = {}) {
   clearErrors();
 
   const rowElements = Array.from(rowsBody.querySelectorAll("tr"));
@@ -369,7 +463,13 @@ function handleCalculate() {
     const missingGold = computeMissingGold(payload);
     totalsByRarity[payload.rarity] += missingCards;
     goldByRarity[payload.rarity] += missingGold;
-    detailRows.push({ ...payload, missingCards, missingGold });
+    detailRows.push({
+      ...payload,
+      missingCards,
+      missingGold,
+      jokersUsed: 0,
+      remainingCards: missingCards,
+    });
   });
 
   if (hasError) {
@@ -379,28 +479,71 @@ function handleCalculate() {
     return;
   }
 
+  const jokersUsedByRarity = {
+    common: 0,
+    rare: 0,
+    epic: 0,
+    legendary: 0,
+    champion: 0,
+  };
+
+  if (useJokers) {
+    const jokersByRarity = getJokersByRarity();
+    const strategy = getJokerStrategy();
+    const allocated = allocateJokers(detailRows, jokersByRarity, strategy);
+    RARITY_ORDER.forEach((rarity) => {
+      jokersUsedByRarity[rarity] = allocated[rarity];
+    });
+
+    RARITY_ORDER.forEach((rarity) => {
+      totalsByRarity[rarity] = detailRows
+        .filter((row) => row.rarity === rarity)
+        .reduce((sum, row) => sum + row.remainingCards, 0);
+    });
+  }
+
   const totalGold = Object.values(goldByRarity).reduce(
     (sum, value) => sum + value,
     0,
   );
-  const totalGoldEl = document.getElementById("total-gold");
   if (totalGoldEl) {
     totalGoldEl.textContent = `${totalGold.toLocaleString("fr-FR")} or`;
   }
 
-  renderSummary(totalsByRarity, goldByRarity);
+  const totalJokersUsed = Object.values(jokersUsedByRarity).reduce(
+    (sum, value) => sum + value,
+    0,
+  );
+  if (totalJokersUsedEl) {
+    totalJokersUsedEl.textContent = totalJokersUsed.toLocaleString("fr-FR");
+  }
+
+  renderSummary(totalsByRarity, goldByRarity, jokersUsedByRarity);
   renderDetails(detailRows);
   results.classList.remove("hidden");
+}
+
+function handleCalculate() {
+  runCalculation({ useJokers: false });
+}
+
+function handleOptimizeJokers() {
+  runCalculation({ useJokers: true });
 }
 
 function handleReset() {
   rowsBody.innerHTML = "";
   clearErrors();
   results.classList.add("hidden");
-  const totalGoldEl = document.getElementById("total-gold");
   if (totalGoldEl) {
     totalGoldEl.textContent = "0 or";
   }
+  if (totalJokersUsedEl) {
+    totalJokersUsedEl.textContent = "0";
+  }
+  RARITY_ORDER.forEach((rarity) => {
+    if (jokerInputs[rarity]) jokerInputs[rarity].value = "0";
+  });
   createRow({
     rarity: "common",
     currentLevel: 10,
@@ -411,6 +554,7 @@ function handleReset() {
 
 addRowBtn.addEventListener("click", () => createRow());
 calculateBtn.addEventListener("click", handleCalculate);
+optimizeJokersBtn.addEventListener("click", handleOptimizeJokers);
 resetBtn.addEventListener("click", handleReset);
 
 createRow({

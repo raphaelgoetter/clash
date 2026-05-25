@@ -48,9 +48,109 @@
           </table>
         </div>
 
+        <div class="jokers-panel" aria-labelledby="jokers-title">
+          <h3 id="jokers-title">Jokers en possession</h3>
+          <label class="strategy-field">
+            <span>Stratégie de répartition</span>
+            <select id="joker-strategy" class="field">
+              <option value="max-completed" selected>
+                Max cartes complétées
+              </option>
+              <option value="priority-max-level">Priorité niveau max</option>
+            </select>
+          </label>
+          <div
+            class="strategy-help"
+            role="note"
+            aria-label="Documentation des stratégies"
+          >
+            <p class="strategy-help-title">Comment ça fonctionne ?</p>
+            <ul>
+              <li>
+                <strong>Max cartes complétées</strong> : utilise les jokers pour
+                terminer d'abord les cartes qui demandent le moins de cartes
+                restantes.
+              </li>
+              <li>
+                <strong>Priorité niveau max</strong> : favorise les cartes déjà
+                haut niveau, puis termine les plus proches de l'upgrade.
+              </li>
+            </ul>
+            <p class="strategy-help-note">
+              Astuce : utilisez le premier mode pour maximiser le nombre
+              d'upgrades finis, et le second pour pousser vos cartes clés vers
+              le niveau max.
+            </p>
+          </div>
+          <div class="jokers-grid">
+            <label class="joker-field">
+              <span>Commune</span>
+              <input
+                id="joker-common"
+                class="field"
+                type="number"
+                min="0"
+                step="1"
+                value="0"
+              />
+            </label>
+            <label class="joker-field">
+              <span>Rare</span>
+              <input
+                id="joker-rare"
+                class="field"
+                type="number"
+                min="0"
+                step="1"
+                value="0"
+              />
+            </label>
+            <label class="joker-field">
+              <span>Épique</span>
+              <input
+                id="joker-epic"
+                class="field"
+                type="number"
+                min="0"
+                step="1"
+                value="0"
+              />
+            </label>
+            <label class="joker-field">
+              <span>Légendaire</span>
+              <input
+                id="joker-legendary"
+                class="field"
+                type="number"
+                min="0"
+                step="1"
+                value="0"
+              />
+            </label>
+            <label class="joker-field">
+              <span>Champion</span>
+              <input
+                id="joker-champion"
+                class="field"
+                type="number"
+                min="0"
+                step="1"
+                value="0"
+              />
+            </label>
+          </div>
+        </div>
+
         <div class="panel-actions">
           <button id="calculate-btn" type="button" class="btn btn-accent">
             Calculer le cumul par type
+          </button>
+          <button
+            id="optimize-jokers-btn"
+            type="button"
+            class="btn btn-primary"
+          >
+            Répartir intelligemment les jokers
           </button>
           <button id="reset-btn" type="button" class="btn btn-ghost">
             Réinitialiser
@@ -66,6 +166,9 @@
         aria-labelledby="results-title"
       >
         <h2 id="results-title">Résultats</h2>
+        <p class="total-jokers-line">
+          Jokers utilisés : <strong id="total-jokers-used">0</strong>
+        </p>
         <p class="total-gold-line">
           Or nécessaire total : <strong id="total-gold">0 or</strong>
         </p>
@@ -82,6 +185,8 @@
                 <th>Au niveau</th>
                 <th>Cartes déjà stockées</th>
                 <th>Cartes manquantes</th>
+                <th>Jokers utilisés</th>
+                <th>Cartes restantes</th>
                 <th>Or nécessaire</th>
               </tr>
             </thead>
