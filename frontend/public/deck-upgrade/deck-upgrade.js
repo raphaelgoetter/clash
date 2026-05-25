@@ -101,6 +101,16 @@ const RARITY_ORDER = ["common", "rare", "epic", "legendary", "champion"];
 function createRow(defaultValues = null) {
   const fragment = rowTemplate.content.cloneNode(true);
   const row = fragment.querySelector("tr");
+  row.dataset.touched = "false";
+
+  row.querySelectorAll(".field").forEach((field) => {
+    field.addEventListener("input", () => {
+      row.dataset.touched = "true";
+    });
+    field.addEventListener("change", () => {
+      row.dataset.touched = "true";
+    });
+  });
 
   if (defaultValues) {
     row.querySelector(".rarity").value = defaultValues.rarity;
@@ -142,7 +152,12 @@ function getRowPayload(row) {
   return { rarity, currentLevel, currentCards, targetLevel };
 }
 
-function computeMissingCards({ rarity, currentLevel, currentCards, targetLevel }) {
+function computeMissingCards({
+  rarity,
+  currentLevel,
+  currentCards,
+  targetLevel,
+}) {
   const conf = RARITY_CONFIG[rarity];
   let total = 0;
 
@@ -151,7 +166,10 @@ function computeMissingCards({ rarity, currentLevel, currentCards, targetLevel }
   }
 
   const nextLevelRequirement = conf.upgrades[currentLevel] ?? 0;
-  const usableCurrentCards = Math.min(Math.max(currentCards, 0), nextLevelRequirement);
+  const usableCurrentCards = Math.min(
+    Math.max(currentCards, 0),
+    nextLevelRequirement,
+  );
 
   return Math.max(0, total - usableCurrentCards);
 }
@@ -159,7 +177,10 @@ function computeMissingCards({ rarity, currentLevel, currentCards, targetLevel }
 function validateRow(payload) {
   const conf = RARITY_CONFIG[payload.rarity];
 
-  if (!Number.isInteger(payload.currentLevel) || !Number.isInteger(payload.targetLevel)) {
+  if (
+    !Number.isInteger(payload.currentLevel) ||
+    !Number.isInteger(payload.targetLevel)
+  ) {
     return "Les niveaux doivent être des entiers.";
   }
 
@@ -167,11 +188,17 @@ function validateRow(payload) {
     return "Le nombre de cartes actuelles doit être un entier positif.";
   }
 
-  if (payload.currentLevel < conf.minLevel || payload.currentLevel > conf.maxLevel) {
+  if (
+    payload.currentLevel < conf.minLevel ||
+    payload.currentLevel > conf.maxLevel
+  ) {
     return `Pour ${conf.label}, le niveau actuel doit être entre ${conf.minLevel} et ${conf.maxLevel}.`;
   }
 
-  if (payload.targetLevel < conf.minLevel || payload.targetLevel > conf.maxLevel) {
+  if (
+    payload.targetLevel < conf.minLevel ||
+    payload.targetLevel > conf.maxLevel
+  ) {
     return `Pour ${conf.label}, le niveau souhaité doit être entre ${conf.minLevel} et ${conf.maxLevel}.`;
   }
 
@@ -223,6 +250,17 @@ function handleCalculate() {
   clearErrors();
 
   const rowElements = Array.from(rowsBody.querySelectorAll("tr"));
+  const activeRows = rowElements.filter(
+    (row) => row.dataset.touched === "true",
+  );
+
+  if (!activeRows.length) {
+    globalError.textContent =
+      "Aucune carte active. Modifiez au moins une ligne avant de calculer.";
+    results.classList.add("hidden");
+    return;
+  }
+
   const totalsByRarity = {
     common: 0,
     rare: 0,
@@ -234,7 +272,7 @@ function handleCalculate() {
   let hasError = false;
   const detailRows = [];
 
-  rowElements.forEach((row) => {
+  activeRows.forEach((row) => {
     const payload = getRowPayload(row);
     const rowError = validateRow(payload);
 
@@ -250,7 +288,8 @@ function handleCalculate() {
   });
 
   if (hasError) {
-    globalError.textContent = "Corrigez les erreurs du tableau avant de calculer.";
+    globalError.textContent =
+      "Corrigez les erreurs du tableau avant de calculer.";
     results.classList.add("hidden");
     return;
   }
@@ -278,48 +317,6 @@ resetBtn.addEventListener("click", handleReset);
 
 createRow({
   rarity: "common",
-  currentLevel: 10,
-  currentCards: 30,
-  targetLevel: 16,
-});
-createRow({
-  rarity: "common",
-  currentLevel: 10,
-  currentCards: 0,
-  targetLevel: 16,
-});
-createRow({
-  rarity: "common",
-  currentLevel: 10,
-  currentCards: 0,
-  targetLevel: 16,
-});
-createRow({
-  rarity: "common",
-  currentLevel: 10,
-  currentCards: 0,
-  targetLevel: 16,
-});
-createRow({
-  rarity: "rare",
-  currentLevel: 10,
-  currentCards: 0,
-  targetLevel: 16,
-});
-createRow({
-  rarity: "rare",
-  currentLevel: 10,
-  currentCards: 0,
-  targetLevel: 16,
-});
-createRow({
-  rarity: "epic",
-  currentLevel: 10,
-  currentCards: 0,
-  targetLevel: 16,
-});
-createRow({
-  rarity: "legendary",
   currentLevel: 10,
   currentCards: 0,
   targetLevel: 16,
