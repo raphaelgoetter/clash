@@ -1,5 +1,8 @@
 import assert from "assert";
-import { computeWeeklySummary } from "../../scripts/notifyWarSummary.js";
+import {
+  computeWeeklySummary,
+  computeMissingDuelsCountFromBattleLog,
+} from "../../scripts/notifyWarSummary.js";
 
 const FIXTURE = [
   {
@@ -46,3 +49,37 @@ assert.strictEqual(
   "Average should compute with the weekly total and 4 days",
 );
 console.log("notifyWarSummary.test.js passed");
+
+const WEEK_DAYS = ["2026-05-21", "2026-05-22", "2026-05-23", "2026-05-24"];
+
+const noDuelBattleLog = [
+  { type: "riverRacePvP", battleTime: "20260521T120000.000Z" },
+  { type: "riverRacePvP", battleTime: "20260522T120000.000Z" },
+  { type: "clanWarBattle", battleTime: "20260523T120000.000Z" },
+  { type: "riverRaceBoat", battleTime: "20260524T120000.000Z" },
+];
+
+assert.strictEqual(
+  computeMissingDuelsCountFromBattleLog(noDuelBattleLog, "LRQP20V9", WEEK_DAYS),
+  4,
+  "Un joueur sans duel sur la semaine doit avoir 4 duels manquants",
+);
+
+const mixedDuelBattleLog = [
+  { type: "riverRaceDuel", battleTime: "20260521T120000.000Z" },
+  { type: "riverRaceDuelsColosseum", battleTime: "20260523T120000.000Z" },
+  { type: "riverRacePvP", battleTime: "20260522T120000.000Z" },
+  { type: "riverRaceBoat", battleTime: "20260524T120000.000Z" },
+];
+
+assert.strictEqual(
+  computeMissingDuelsCountFromBattleLog(
+    mixedDuelBattleLog,
+    "LRQP20V9",
+    WEEK_DAYS,
+  ),
+  2,
+  "Le calcul doit retirer uniquement les jours où au moins un duel a été joué",
+);
+
+console.log("notifyWarSummary.duels.test.js passed");
