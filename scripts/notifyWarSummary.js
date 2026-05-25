@@ -19,10 +19,12 @@ import { ALLOWED_CLANS } from "../backend/routes/clan.js";
 import {
   computeCurrentWeekId,
   warResetOffsetMs,
+  warDayKey,
 } from "../backend/services/dateUtils.js";
 import {
   fetchRaceLog,
   fetchCurrentRace,
+  fetchBattleLog,
 } from "../backend/services/clashApi.js";
 import { loadSnapshots } from "../backend/services/snapshot.js";
 
@@ -163,6 +165,102 @@ const ROLE_FR = {
   coLeader: "co-leader",
   leader: "leader",
 };
+
+const DUEL_BATTLE_TYPES = new Set([
+  "riverraceduel",
+  "riverraceduelscolosseum",
+]);
+const PVP_BATTLE_TYPES = new Set(["riverracepvp", "clanwarbattle"]);
+const BOAT_BATTLE_TYPES = new Set(["riverraceboat"]);
+const WAR_BATTLE_TYPES = new Set([
+  ...DUEL_BATTLE_TYPES,
+  ...PVP_BATTLE_TYPES,
+  ...BOAT_BATTLE_TYPES,
+]);
+
+function normalizeBattleType(type) {
+  return String(type ?? "").trim().toLowerCase();
+}
+
+function getNonBoatDeckCountFromBattle(battle) {
+  const type = normalizeBattleType(battle?.type);
+  if (DUEL_BATTLE_TYPES.has(type)) {
+    const rounds = battle?.team?.[0]?.rounds;
+    if (Array.isArray(rounds) && rounds.length > 0) return rounds.length;
+    return 1;
+  }
+  if (PVP_BATTLE_TYPES.has(type)) return 1;
+  return 0;
+}
+
+async function pooledMap(items, mapper, concurrency = 8) {
+  const results = new Array(items.length);
+  let cursor = 0;
+
+  async function worker() {
+    while (cursor < items.length) {
+      const index = cursor++;
+      results[index] = await mapper(items[index], index);
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, items.length) }, worker),
+  );
+  return results;
+}
+
+async function computeMissingDuelsForDay(clanTag, realDay, membersByTag, dayDecks) {
+  const members = Object.entries(membersByTag ?? {});
+  if (members.length === 0) {
+    return { players: [], fetched: 0, failed: 0 };
+  }
+
+  let fetched = 0;
+  let failed = 0;
+
+  const rows = await pooledMap(
+    members,
+    async ([playerTag, meta]) => {
+      try {
+        const battleLog = await fetchBattleLog(playerTag);
+        fetched += 1;
+
+        let nonBoatDecks = 0;
+        for (const battle of battleLog) {
+          const type = normalizeBattleType(battle?.type);
+          if (!WAR_BATTLE_TYPES.has(type)) continue;
+          if (warDayKey(battle?.battleTime, clanTag) !== realDay) continue;
+          nonBoatDecks += getNonBoatDeckCountFromBattle(battle);
+        }
+
+        const cappedNonBoatDecks = Math.min(4, Math.max(0, nonBoatDecks));
+        const missingDuels = Math.max(0, 4 - cappedNonBoatDecks);
+        if (missingDuels <= 0) return null;
+
+        return {
+          tag: playerTag,
+          name: meta?.name || playerTag,
+          missingDuels,
+          decksToday: Number(dayDecks?.[playerTag]) || 0,
+        };
+      } catch {
+        failed += 1;
+        return null;
+      }
+    },
+    8,
+  );
+
+  const players = rows
+    .filter(Boolean)
+    .sort(
+      (a, b) =>
+        b.missingDuels - a.missingDuels || a.name.localeCompare(b.name, "fr"),
+    );
+
+  return { players, fetched, failed };
+}
 
 async function readClanMemberNames(tag) {
   const filePath = path.join(CACHE_DIR, `${tag}.json`);
@@ -649,6 +747,13 @@ async function postWarSummary(
   }
 
   const fields = [];
+  const memberNames = await readClanMemberNames(tag);
+  const duelMissingInfo = await computeMissingDuelsForDay(
+    tag,
+    dayEntry.realDay,
+    memberNames,
+    dayEntry.decks ?? {},
+  );
 
   // ── Résumé du jour ──
   const isColosseum = dayEntry.periodType === "colosseum";
@@ -691,7 +796,6 @@ async function postWarSummary(
   }
 
   {
-    const memberNames = await readClanMemberNames(tag);
     // Itérer sur les membres actuels du cache : inclut les membres absents du
     // snapshot (0 decks), exclut les ex-membres (riko, les Goetter…) qui ne sont
     // plus dans data.members/membersRaw mais pourraient traîner dans d'autres listes.
@@ -748,6 +852,44 @@ async function postWarSummary(
           inline: false,
         });
       }
+    }
+  }
+
+  if (duelMissingInfo.players.length > 0) {
+    const totalMissingDuels = duelMissingInfo.players.reduce(
+      (sum, player) => sum + player.missingDuels,
+      0,
+    );
+    if (totalMissingDuels > 25) {
+      fields.push({
+        name: `<:battle:1493710671244689449> Duels manquants (${fmt(totalMissingDuels)})`,
+        value: "\u200b",
+        inline: false,
+      });
+    } else {
+    const lineItems = duelMissingInfo.players.map((player) => {
+      const playerUrl = `https://trustroyale.vercel.app/fr/player/${player.tag.replace(/^#/, "")}`;
+      return `[${player.name}](${playerUrl}) (${player.missingDuels})`;
+    });
+    let value = lineItems.join(", ");
+    if (value.length > 1000) {
+      const kept = [];
+      for (const item of lineItems) {
+        const candidate = (kept.length ? `${kept.join(", ")}, ` : "") + item;
+        if (candidate.length > 960) break;
+        kept.push(item);
+      }
+      const hidden = lineItems.length - kept.length;
+      value = `${kept.join(", ")}${hidden > 0 ? `, ... (+${hidden})` : ""}`;
+    }
+    if (duelMissingInfo.failed > 0) {
+      value += `\n_(${duelMissingInfo.failed} battlelog${duelMissingInfo.failed > 1 ? "s" : ""} indisponible${duelMissingInfo.failed > 1 ? "s" : ""})_`;
+    }
+      fields.push({
+        name: `<:battle:1493710671244689449> Duels manquants (${fmt(totalMissingDuels)})`,
+        value,
+        inline: false,
+      });
     }
   }
 
@@ -876,6 +1018,34 @@ async function postWarSummary(
         value: `${liveBoatTotal} attaque${liveBoatTotal > 1 ? "s" : ""} — ${boatNames}`,
         inline: false,
       });
+    }
+
+    if (duelMissingInfo.players.length > 0) {
+      const totalMissingDuels = duelMissingInfo.players.reduce(
+        (sum, player) => sum + player.missingDuels,
+        0,
+      );
+
+      if (totalMissingDuels > 25) {
+        weeklyFields.push({
+          name: `<:battle:1493710671244689449> Duels manquants (${fmt(totalMissingDuels)})`,
+          value: "\u200b",
+          inline: false,
+        });
+      } else {
+        const lineItems = duelMissingInfo.players.map(
+          (player) => `${player.name} (${player.missingDuels})`,
+        );
+        let value = lineItems.join(", ");
+        if (value.length > 1000) {
+          value = `${lineItems.slice(0, 12).join(", ")}...`;
+        }
+        weeklyFields.push({
+          name: `<:battle:1493710671244689449> Duels manquants (${fmt(totalMissingDuels)})`,
+          value,
+          inline: false,
+        });
+      }
     }
 
     if (clanRank !== null) {
