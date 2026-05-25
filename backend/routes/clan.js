@@ -2727,19 +2727,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                   }
                 }
 
-                if (
-                  debugSnapshotInfo?.delta === 0 &&
-                  debugSnapshotInfo?.livePlayersWithDecks > 0
-                ) {
-                  ptsPerDeck = 0;
-                  projectedFame = 0;
-                  clanScore = 0;
-                  isClinchedWin = true;
-                }
-
-                if (ptsPerDeck === 0 && decksToday > 0 && !isClinchedWin) {
-                  isClinchedWin = true;
-                }
+                // Ne jamais inférer une victoire assurée depuis un simple 0 pts/deck.
+                // La détection de clinch est traitée plus bas via la borne stricte
+                // currentFame > max(maxReachableFame des rivaux).
 
                 if (ptsPerDeck != null) {
                   if (isColosseum && currentFame != null) {
