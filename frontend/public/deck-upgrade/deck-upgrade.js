@@ -11,6 +11,7 @@ const detailsBody = document.getElementById("details-body");
 const totalGoldEl = document.getElementById("total-gold");
 const totalJokersUsedEl = document.getElementById("total-jokers-used");
 const jokerStrategySelect = document.getElementById("joker-strategy");
+const JOKER_PREFS_STORAGE_KEY = "trustroyale_deck_upgrade_joker_prefs_v1";
 
 const jokerInputs = {
   common: document.getElementById("joker-common"),
@@ -264,6 +265,51 @@ function getJokersByRarity() {
     jokers[rarity] = Number.isInteger(raw) && raw > 0 ? raw : 0;
   });
   return jokers;
+}
+
+function saveJokerPrefsToStorage() {
+  try {
+    const payload = {
+      strategy: getJokerStrategy(),
+      jokers: getJokersByRarity(),
+    };
+    localStorage.setItem(JOKER_PREFS_STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    // Ignore storage errors (private mode, quota, etc.)
+  }
+}
+
+function loadJokerPrefsFromStorage() {
+  try {
+    const raw = localStorage.getItem(JOKER_PREFS_STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+
+    if (
+      parsed?.strategy === "max-completed" ||
+      parsed?.strategy === "priority-max-level"
+    ) {
+      jokerStrategySelect.value = parsed.strategy;
+    }
+
+    RARITY_ORDER.forEach((rarity) => {
+      const value = Number.parseInt(parsed?.jokers?.[rarity], 10);
+      if (jokerInputs[rarity]) {
+        jokerInputs[rarity].value =
+          Number.isInteger(value) && value >= 0 ? String(value) : "0";
+      }
+    });
+  } catch {
+    // Ignore malformed JSON or storage errors.
+  }
+}
+
+function clearJokerPrefsFromStorage() {
+  try {
+    localStorage.removeItem(JOKER_PREFS_STORAGE_KEY);
+  } catch {
+    // Ignore storage errors.
+  }
 }
 
 function getJokerStrategy() {
@@ -544,6 +590,10 @@ function handleReset() {
   RARITY_ORDER.forEach((rarity) => {
     if (jokerInputs[rarity]) jokerInputs[rarity].value = "0";
   });
+  if (jokerStrategySelect) {
+    jokerStrategySelect.value = "max-completed";
+  }
+  clearJokerPrefsFromStorage();
   createRow({
     rarity: "common",
     currentLevel: 10,
@@ -556,6 +606,19 @@ addRowBtn.addEventListener("click", () => createRow());
 calculateBtn.addEventListener("click", handleCalculate);
 optimizeJokersBtn.addEventListener("click", handleOptimizeJokers);
 resetBtn.addEventListener("click", handleReset);
+
+if (jokerStrategySelect) {
+  jokerStrategySelect.addEventListener("change", saveJokerPrefsToStorage);
+}
+
+RARITY_ORDER.forEach((rarity) => {
+  if (jokerInputs[rarity]) {
+    jokerInputs[rarity].addEventListener("input", saveJokerPrefsToStorage);
+    jokerInputs[rarity].addEventListener("change", saveJokerPrefsToStorage);
+  }
+});
+
+loadJokerPrefsFromStorage();
 
 createRow({
   rarity: "common",
