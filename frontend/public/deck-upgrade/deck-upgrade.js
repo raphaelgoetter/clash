@@ -233,6 +233,11 @@ function encodeTagForApi(tag) {
   return encodeURIComponent(tag);
 }
 
+function normalizeCardId(id) {
+  if (id === null || id === undefined) return "";
+  return String(id);
+}
+
 async function fetchJsonOrThrow(url) {
   const res = await fetch(url);
   const data = await res.json().catch(() => ({}));
@@ -261,8 +266,6 @@ function cardToRow(card) {
   const currentCardsRaw = Number.parseInt(card?.count, 10);
   const currentCards = Number.isInteger(currentCardsRaw) ? currentCardsRaw : 0;
   const targetLevel = conf.maxLevel;
-
-  if (safeLevel >= targetLevel) return null;
 
   return {
     cardName: card?.name ?? null,
@@ -331,7 +334,7 @@ function extractWarDeckCardsFromBattlelog(battleLog, cardById) {
 
   const rows = [];
   uniqueCardIds.forEach((id) => {
-    const card = cardById.get(id);
+    const card = cardById.get(normalizeCardId(id));
     if (!card) return;
     const row = cardToRow(card);
     if (row) rows.push(row);
@@ -435,7 +438,8 @@ async function handleLoadPlayerData() {
 
     const cardById = new Map();
     allCards.forEach((card) => {
-      if (card?.id) cardById.set(card.id, card);
+      const normalizedId = normalizeCardId(card?.id);
+      if (normalizedId) cardById.set(normalizedId, card);
     });
 
     let rows = [];
@@ -446,7 +450,10 @@ async function handleLoadPlayerData() {
         : [];
       rows = sortRowsByPriority(
         deckCards
-          .map((deckCard) => cardById.get(deckCard.id) || deckCard)
+          .map((deckCard) => {
+            const normalizedId = normalizeCardId(deckCard?.id);
+            return cardById.get(normalizedId) || deckCard;
+          })
           .map(cardToRow)
           .filter(Boolean),
       );
@@ -648,8 +655,9 @@ function allocateJokers(detailRows, jokersByRarity, strategy) {
   return jokersUsedByRarity;
 }
 
-function validateRow(payload) {
+function validateRow(payload, options = {}) {
   const conf = RARITY_CONFIG[payload.rarity];
+  const allowSameLevel = options.allowSameLevel === true;
 
   if (
     !Number.isInteger(payload.currentLevel) ||
@@ -674,6 +682,13 @@ function validateRow(payload) {
     payload.targetLevel > conf.maxLevel
   ) {
     return `Pour ${conf.label}, le niveau souhaité doit être entre ${conf.minLevel} et ${conf.maxLevel}.`;
+  }
+
+  if (allowSameLevel) {
+    if (payload.targetLevel < payload.currentLevel) {
+      return "Le niveau souhaité ne peut pas être inférieur au niveau actuel.";
+    }
+    return "";
   }
 
   if (payload.targetLevel <= payload.currentLevel) {
@@ -766,7 +781,9 @@ function runCalculation({ useJokers = false } = {}) {
 
   activeRows.forEach((row) => {
     const payload = getRowPayload(row);
-    const rowError = validateRow(payload);
+    const rowError = validateRow(payload, {
+      allowSameLevel: row.dataset.lockType === "true",
+    });
 
     if (rowError) {
       row.querySelector(".row-error").textContent = rowError;
