@@ -389,13 +389,13 @@ function appendCollectionLevelTitle(level, count) {
   rowsBody.appendChild(titleRow);
 }
 
-function appendWarDeckTitle(deckNumber) {
+function appendWarDeckTitle(title) {
   const titleRow = document.createElement("tr");
   titleRow.className = "deck-title-row";
 
   const titleCell = document.createElement("td");
   titleCell.colSpan = 5;
-  titleCell.textContent = `Deck ${deckNumber}`;
+  titleCell.textContent = title;
 
   titleRow.appendChild(titleCell);
   rowsBody.appendChild(titleRow);
@@ -490,6 +490,7 @@ function renderWarDeckGroupsForCurrentMode(groups) {
         rows: Array.isArray(group?.rows)
           ? group.rows.map((row) => ({ ...row }))
           : [],
+        title: group?.title || "Deck",
       }))
     : [];
 
@@ -502,7 +503,7 @@ function renderWarDeckGroupsForCurrentMode(groups) {
     const deckRows = Array.isArray(group?.rows) ? group.rows : [];
     if (!deckRows.length) return;
 
-    appendWarDeckTitle(index + 1);
+    appendWarDeckTitle(group?.title || `Deck ${index + 1}`);
     deckRows.forEach((row) => {
       createRow(row, {
         touched: true,
@@ -522,6 +523,16 @@ function extractWarDeckGroupsFromBattlelog(battleLog, cardById) {
   ]);
   const groups = [];
 
+  const battleTypeToLabel = (type) => {
+    const normalizedType = String(type || "").toLowerCase();
+    if (normalizedType === "riverracepvp") return "PvP";
+    if (normalizedType === "riverraceduel") return "Duel";
+    if (normalizedType === "riverraceduelscolosseum") return "Duel (colisée)";
+    if (normalizedType === "riverraceboat") return "Bateau";
+    if (normalizedType === "clanwarbattle") return "Guerre";
+    return "GDC";
+  };
+
   (Array.isArray(battleLog) ? battleLog : []).forEach((battle) => {
     const type = String(battle?.type || "").toLowerCase();
     if (!gdcTypes.has(type)) return;
@@ -540,7 +551,12 @@ function extractWarDeckGroupsFromBattlelog(battleLog, cardById) {
         .filter(Boolean);
 
       if (rows.length) {
-        groups.push({ rows: sortRowsByPriority(rows) });
+        const deckNumber = groups.length + 1;
+        const typeLabel = battleTypeToLabel(type);
+        groups.push({
+          rows: sortRowsByPriority(rows),
+          title: `${typeLabel} - Deck ${deckNumber}`,
+        });
       }
     });
   });
