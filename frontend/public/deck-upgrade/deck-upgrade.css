@@ -221,6 +221,14 @@ tr:last-child td {
   letter-spacing: 0.02em;
 }
 
+.deck-title-row td {
+  background: rgba(66, 137, 255, 0.12);
+  color: #9ec5ff;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
 .field {
   width: 100%;
   background: var(--bg-alt);
@@ -398,7 +406,7 @@ tr:last-child td {
 }
 
 .global-error {
-  margin: 12px 0 0;
+  margin: 8px 0 0;
   color: var(--danger);
   min-height: 1.2em;
 }

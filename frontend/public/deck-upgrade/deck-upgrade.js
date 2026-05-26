@@ -367,6 +367,14 @@ function sortCollectionRows(rows) {
   });
 }
 
+function chunkArray(items, size) {
+  const chunks = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
+}
+
 function appendCollectionLevelTitle(level, count) {
   const titleRow = document.createElement("tr");
   titleRow.className = "level-title-row";
@@ -376,6 +384,18 @@ function appendCollectionLevelTitle(level, count) {
   titleCell.textContent = `Cartes Niveau ${level}${
     level === 16 ? ` (${count})` : ""
   }`;
+
+  titleRow.appendChild(titleCell);
+  rowsBody.appendChild(titleRow);
+}
+
+function appendWarDeckTitle(deckNumber) {
+  const titleRow = document.createElement("tr");
+  titleRow.className = "deck-title-row";
+
+  const titleCell = document.createElement("td");
+  titleCell.colSpan = 5;
+  titleCell.textContent = `Deck ${deckNumber}`;
 
   titleRow.appendChild(titleCell);
   rowsBody.appendChild(titleRow);
@@ -410,6 +430,23 @@ function replaceRowsCollection(rows) {
   });
 
   appendCollectionLevelTitle(16, level16Rows.length);
+}
+
+function replaceRowsWarDecks(groups) {
+  const validGroups = Array.isArray(groups) ? groups : [];
+
+  validGroups.forEach((group, index) => {
+    const rows = Array.isArray(group?.rows) ? group.rows : [];
+    if (!rows.length) return;
+
+    appendWarDeckTitle(index + 1);
+    rows.forEach((row) => {
+      createRow(row, {
+        touched: true,
+        lockType: true,
+      });
+    });
+  });
 }
 
 function replaceRows(rows) {
@@ -447,7 +484,35 @@ function renderRowsForCurrentMode(rows) {
   replaceRows(rows);
 }
 
-function extractWarDeckCardsFromBattlelog(battleLog, cardById) {
+function renderWarDeckGroupsForCurrentMode(groups) {
+  modeRowsCache[currentMode] = Array.isArray(groups)
+    ? groups.map((group) => ({
+        rows: Array.isArray(group?.rows)
+          ? group.rows.map((row) => ({ ...row }))
+          : [],
+      }))
+    : [];
+
+  rowsBody.innerHTML = "";
+  clearErrors();
+  results.classList.add("hidden");
+
+  const validGroups = Array.isArray(groups) ? groups : [];
+  validGroups.forEach((group, index) => {
+    const deckRows = Array.isArray(group?.rows) ? group.rows : [];
+    if (!deckRows.length) return;
+
+    appendWarDeckTitle(index + 1);
+    deckRows.forEach((row) => {
+      createRow(row, {
+        touched: true,
+        lockType: true,
+      });
+    });
+  });
+}
+
+function extractWarDeckGroupsFromBattlelog(battleLog, cardById) {
   const gdcTypes = new Set([
     "riverracepvp",
     "riverraceduel",
@@ -455,7 +520,7 @@ function extractWarDeckCardsFromBattlelog(battleLog, cardById) {
     "riverraceboat",
     "clanwarbattle",
   ]);
-  const uniqueCardIds = new Set();
+  const groups = [];
 
   (Array.isArray(battleLog) ? battleLog : []).forEach((battle) => {
     const type = String(battle?.type || "").toLowerCase();
@@ -464,19 +529,23 @@ function extractWarDeckCardsFromBattlelog(battleLog, cardById) {
     const cards = Array.isArray(battle?.team?.[0]?.cards)
       ? battle.team[0].cards
       : [];
-    cards.forEach((card) => {
-      if (card?.id) uniqueCardIds.add(card.id);
+
+    chunkArray(cards, 8).forEach((deckCards) => {
+      const rows = deckCards
+        .map((card) => {
+          const normalizedId = normalizeCardId(card?.id);
+          return cardById.get(normalizedId) || card;
+        })
+        .map(cardToRow)
+        .filter(Boolean);
+
+      if (rows.length) {
+        groups.push({ rows: sortRowsByPriority(rows) });
+      }
     });
   });
 
-  const rows = [];
-  uniqueCardIds.forEach((id) => {
-    const card = cardById.get(normalizeCardId(id));
-    if (!card) return;
-    const row = cardToRow(card);
-    if (row) rows.push(row);
-  });
-  return sortRowsByPriority(rows);
+  return groups;
 }
 
 function extractLatestPvpDeckCardIds(battleLog) {
@@ -574,8 +643,11 @@ async function handleLoadPlayerData() {
   clearErrors();
 
   if (currentMode === "manual") {
-    globalError.textContent =
-      "Sélectionnez un onglet auto (Deck actuel, Decks GDC, Collection entière) pour charger des données joueur.";
+    const normalizedTag = normalizeTag(playerTagInput?.value);
+    if (normalizedTag && playerTagInput) {
+      playerTagInput.value = normalizedTag;
+      savePlayerTagToStorage(normalizedTag);
+    }
     return;
   }
 
@@ -653,15 +725,20 @@ async function handleLoadPlayerData() {
       const analysis = await fetchJsonOrThrow(
         `/api/player/${encodedTag}/analysis?fast=true`,
       );
-      rows = extractWarDeckCardsFromBattlelog(analysis?.battleLog, cardById);
+      const groups = extractWarDeckGroupsFromBattlelog(
+        analysis?.battleLog,
+        cardById,
+      );
+      renderWarDeckGroupsForCurrentMode(groups);
+
+      if (!groups.length) {
+        globalError.textContent =
+          "Aucun deck GDC trouvé dans l'historique des 30 derniers combats.";
+      }
+      return;
     }
 
     renderRowsForCurrentMode(rows);
-
-    if (currentMode === "war-decks" && !rows.length) {
-      globalError.textContent =
-        "Aucun deck GDC trouvé dans l'historique des 30 derniers combats.";
-    }
   } catch (err) {
     globalError.textContent =
       err?.message || "Impossible de charger les données joueur.";
