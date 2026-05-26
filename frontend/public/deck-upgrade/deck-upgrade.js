@@ -188,6 +188,17 @@ function setActiveMode(mode) {
   modeTabs.forEach((tab) => {
     tab.classList.toggle("active", tab.dataset.mode === mode);
   });
+
+  addRowBtn.disabled = mode !== "manual";
+
+  if (mode === "manual" && !rowsBody.children.length) {
+    createRow({
+      rarity: "common",
+      currentLevel: 10,
+      currentCards: 0,
+      targetLevel: 16,
+    });
+  }
 }
 
 function savePlayerTagToStorage(tag) {
@@ -241,6 +252,7 @@ function cardToRow(card) {
   if (safeLevel >= targetLevel) return null;
 
   return {
+    cardName: card?.name ?? null,
     rarity,
     currentLevel: safeLevel,
     currentCards,
@@ -263,17 +275,22 @@ function replaceRows(rows) {
   results.classList.add("hidden");
 
   if (!rows.length) {
-    createRow({
-      rarity: "common",
-      currentLevel: 10,
-      currentCards: 0,
-      targetLevel: 16,
-    });
+    if (currentMode === "manual") {
+      createRow({
+        rarity: "common",
+        currentLevel: 10,
+        currentCards: 0,
+        targetLevel: 16,
+      });
+    }
     return;
   }
 
   rows.forEach((row) => {
-    createRow(row, { touched: true });
+    createRow(row, {
+      touched: true,
+      lockType: currentMode !== "manual",
+    });
   });
 }
 
@@ -313,6 +330,7 @@ function createRow(defaultValues = null, options = {}) {
   const fragment = rowTemplate.content.cloneNode(true);
   const row = fragment.querySelector("tr");
   row.dataset.touched = options.touched ? "true" : "false";
+  row.dataset.lockType = options.lockType ? "true" : "false";
 
   row.querySelectorAll(".field").forEach((field) => {
     field.addEventListener("input", () => {
@@ -328,11 +346,27 @@ function createRow(defaultValues = null, options = {}) {
     row.querySelector(".current-level").value = defaultValues.currentLevel;
     row.querySelector(".current-cards").value = defaultValues.currentCards;
     row.querySelector(".target-level").value = defaultValues.targetLevel;
+
+    if (options.lockType) {
+      row.dataset.rarity = defaultValues.rarity;
+      const staticType = row.querySelector(".type-static");
+      const rarityLabel = RARITY_CONFIG[defaultValues.rarity]?.label ?? "";
+      const cardName = defaultValues.cardName || rarityLabel;
+      staticType.textContent = `${cardName} | ${rarityLabel}`;
+    }
+  }
+
+  const raritySelect = row.querySelector(".rarity");
+  const staticType = row.querySelector(".type-static");
+  if (options.lockType) {
+    raritySelect.classList.add("hidden");
+    raritySelect.disabled = true;
+    staticType.classList.remove("hidden");
   }
 
   row.querySelector(".remove-row").addEventListener("click", () => {
     row.remove();
-    if (!rowsBody.children.length) createRow();
+    if (!rowsBody.children.length && currentMode === "manual") createRow();
   });
 
   rowsBody.appendChild(fragment);
@@ -417,7 +451,10 @@ async function handleLoadPlayerData() {
 }
 
 function getRowPayload(row) {
-  const rarity = row.querySelector(".rarity").value;
+  const rarity =
+    row.dataset.lockType === "true"
+      ? row.dataset.rarity
+      : row.querySelector(".rarity").value;
   const currentLevel = Number.parseInt(
     row.querySelector(".current-level").value,
     10,
