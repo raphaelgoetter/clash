@@ -285,6 +285,68 @@ function sortRowsByPriority(rows) {
   });
 }
 
+function sortCollectionRows(rows) {
+  return rows.sort((a, b) => {
+    if (a.currentLevel !== b.currentLevel) {
+      return a.currentLevel - b.currentLevel;
+    }
+
+    const rarityDelta =
+      RARITY_ORDER.indexOf(a.rarity) - RARITY_ORDER.indexOf(b.rarity);
+    if (rarityDelta !== 0) return rarityDelta;
+
+    return String(a.cardName || "").localeCompare(
+      String(b.cardName || ""),
+      "fr",
+    );
+  });
+}
+
+function appendCollectionLevelTitle(level, count) {
+  const titleRow = document.createElement("tr");
+  titleRow.className = "level-title-row";
+
+  const titleCell = document.createElement("td");
+  titleCell.colSpan = 5;
+  titleCell.textContent = `Cartes Niveau ${level}${
+    level === 16 ? ` (${count})` : ""
+  }`;
+
+  titleRow.appendChild(titleCell);
+  rowsBody.appendChild(titleRow);
+}
+
+function replaceRowsCollection(rows) {
+  const sortedRows = sortCollectionRows(rows);
+  const rowsByLevel = new Map();
+
+  sortedRows.forEach((row) => {
+    const level = row.currentLevel;
+    if (!rowsByLevel.has(level)) rowsByLevel.set(level, []);
+    rowsByLevel.get(level).push(row);
+  });
+
+  const level16Rows = rowsByLevel.get(16) ?? [];
+  const levelsBelow16 = Array.from(rowsByLevel.keys())
+    .filter((level) => level < 16)
+    .sort((a, b) => a - b);
+
+  levelsBelow16.forEach((level) => {
+    const levelRows = rowsByLevel.get(level) ?? [];
+    if (!levelRows.length) return;
+
+    appendCollectionLevelTitle(level, levelRows.length);
+    levelRows.forEach((row) => {
+      createRow(row, {
+        touched: true,
+        lockType: true,
+      });
+    });
+  });
+
+  appendCollectionLevelTitle(16, level16Rows.length);
+}
+
 function replaceRows(rows) {
   rowsBody.innerHTML = "";
   clearErrors();
@@ -299,6 +361,11 @@ function replaceRows(rows) {
         targetLevel: 16,
       });
     }
+    return;
+  }
+
+  if (currentMode === "collection") {
+    replaceRowsCollection(rows);
     return;
   }
 
@@ -511,7 +578,7 @@ async function handleLoadPlayerData() {
         resolvedDeckCards.map(cardToRow).filter(Boolean),
       );
     } else if (currentMode === "collection") {
-      rows = sortRowsByPriority(allCards.map(cardToRow).filter(Boolean));
+      rows = allCards.map(cardToRow).filter(Boolean);
     } else if (currentMode === "war-decks") {
       const analysis = await fetchJsonOrThrow(
         `/api/player/${encodedTag}/analysis?fast=true`,
