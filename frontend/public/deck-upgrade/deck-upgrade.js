@@ -781,6 +781,8 @@ function getRowPayload(row) {
     row.dataset.lockType === "true"
       ? row.dataset.rarity
       : row.querySelector(".rarity").value;
+  const cardName =
+    row.dataset.lockType === "true" ? row.dataset.cardName || "" : "";
   const currentLevel = Number.parseInt(
     row.querySelector(".current-level").value,
     10,
@@ -794,7 +796,7 @@ function getRowPayload(row) {
     10,
   );
 
-  return { rarity, currentLevel, currentCards, targetLevel };
+  return { rarity, cardName, currentLevel, currentCards, targetLevel };
 }
 
 function computeMissingCards({
@@ -1029,6 +1031,7 @@ function renderDetails(detailRows) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${idx + 1}</td>
+      <td>${rowData.cardName || "-"}</td>
       <td>${RARITY_CONFIG[rowData.rarity].label}</td>
       <td>${rowData.currentLevel}</td>
       <td>${rowData.targetLevel}</td>
