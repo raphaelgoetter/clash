@@ -26,6 +26,44 @@
       </header>
 
       <section class="panel" aria-labelledby="deck-form-title">
+        <div class="mode-tabs" role="tablist" aria-label="Formule de calcul">
+          <button type="button" class="mode-tab active" data-mode="manual">
+            À la carte
+          </button>
+          <button type="button" class="mode-tab" data-mode="current-deck">
+            Deck actuel
+          </button>
+          <button type="button" class="mode-tab" data-mode="war-decks">
+            Decks GDC
+          </button>
+          <button type="button" class="mode-tab" data-mode="collection">
+            Collection entière
+          </button>
+        </div>
+
+        <div class="player-loader" aria-labelledby="player-loader-title">
+          <p id="player-loader-title" class="player-loader-title">
+            Chargement auto depuis un joueur
+          </p>
+          <div class="player-loader-row">
+            <input
+              id="player-tag-input"
+              class="field"
+              type="text"
+              placeholder="#YRGJGR8R"
+              autocomplete="off"
+              spellcheck="false"
+              aria-label="Tag joueur"
+            />
+            <button id="load-player-btn" type="button" class="btn btn-primary">
+              Charger selon l'onglet
+            </button>
+          </div>
+          <p class="player-loader-note">
+            Le tag est conservé localement sur cet appareil.
+          </p>
+        </div>
+
         <div class="panel-head">
           <h2 id="deck-form-title">Cartes du deck</h2>
           <button id="add-row-btn" type="button" class="btn btn-primary">
