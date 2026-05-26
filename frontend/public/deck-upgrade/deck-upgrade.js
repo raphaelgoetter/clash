@@ -522,6 +522,7 @@ function extractWarDeckGroupsFromBattlelog(battleLog, cardById) {
     "clanwarbattle",
   ]);
   const groups = [];
+  const seenDeckSignatures = new Set();
 
   const battleTypeToLabel = (type) => {
     const normalizedType = String(type || "").toLowerCase();
@@ -542,6 +543,17 @@ function extractWarDeckGroupsFromBattlelog(battleLog, cardById) {
       : [];
 
     chunkArray(cards, 8).forEach((deckCards) => {
+      const deckSignature = deckCards
+        .map((card) => normalizeCardId(card?.id))
+        .filter(Boolean)
+        .sort()
+        .join("-");
+
+      if (!deckSignature || seenDeckSignatures.has(deckSignature)) {
+        return;
+      }
+      seenDeckSignatures.add(deckSignature);
+
       const rows = deckCards
         .map((card) => {
           const normalizedId = normalizeCardId(card?.id);
