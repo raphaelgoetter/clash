@@ -654,13 +654,14 @@ async function handleLoadPlayerData() {
         `/api/player/${encodedTag}/analysis?fast=true`,
       );
       rows = extractWarDeckCardsFromBattlelog(analysis?.battleLog, cardById);
-      if (!rows.length) {
-        globalError.textContent =
-          "Aucun deck GDC trouvé dans l'historique des 30 derniers combats.";
-      }
     }
 
     renderRowsForCurrentMode(rows);
+
+    if (currentMode === "war-decks" && !rows.length) {
+      globalError.textContent =
+        "Aucun deck GDC trouvé dans l'historique des 30 derniers combats.";
+    }
   } catch (err) {
     globalError.textContent =
       err?.message || "Impossible de charger les données joueur.";
