@@ -1027,7 +1027,11 @@ function renderSummary(totalsByRarity, goldByRarity, jokersUsedByRarity) {
 function renderDetails(detailRows) {
   detailsBody.innerHTML = "";
 
-  detailRows.forEach((rowData, idx) => {
+  const visibleRows = detailRows.filter(
+    (rowData) => rowData.currentLevel < rowData.targetLevel,
+  );
+
+  visibleRows.forEach((rowData, idx) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${idx + 1}</td>
