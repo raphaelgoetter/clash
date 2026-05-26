@@ -196,6 +196,33 @@ function normalizeTag(raw) {
   return `#${clean}`;
 }
 
+function getNormalizedPlayerTag() {
+  return normalizeTag(playerTagInput?.value);
+}
+
+function isAutoMode(mode) {
+  return (
+    mode === "current-deck" || mode === "war-decks" || mode === "collection"
+  );
+}
+
+function showMissingTagState() {
+  rowsBody.innerHTML = "";
+  results.classList.add("hidden");
+  globalError.textContent =
+    "Renseignez votre tag joueur pour charger les données de cet onglet.";
+}
+
+function maybeAutoLoadActiveMode() {
+  if (!isAutoMode(currentMode)) return;
+  if (!getNormalizedPlayerTag()) {
+    showMissingTagState();
+    return;
+  }
+
+  void handleLoadPlayerData();
+}
+
 function setActiveMode(mode) {
   if (currentMode) {
     modeRowsCache[currentMode] = getRowsSnapshot();
@@ -207,6 +234,16 @@ function setActiveMode(mode) {
   });
 
   addRowBtn.disabled = mode !== "manual";
+
+  if (isAutoMode(mode) && !getNormalizedPlayerTag()) {
+    showMissingTagState();
+    return;
+  }
+
+  if (isAutoMode(mode)) {
+    maybeAutoLoadActiveMode();
+    return;
+  }
 
   const cachedRows = modeRowsCache[mode];
   if (Array.isArray(cachedRows)) {
@@ -544,8 +581,7 @@ async function handleLoadPlayerData() {
 
   const normalizedTag = normalizeTag(playerTagInput?.value);
   if (!normalizedTag) {
-    globalError.textContent =
-      "Renseignez un tag joueur valide (ex: #YRGJGR8R).";
+    showMissingTagState();
     return;
   }
 
@@ -1064,6 +1100,9 @@ if (playerTagInput) {
     if (normalized) {
       playerTagInput.value = normalized;
       savePlayerTagToStorage(normalized);
+      maybeAutoLoadActiveMode();
+    } else if (isAutoMode(currentMode)) {
+      showMissingTagState();
     }
   });
 }
