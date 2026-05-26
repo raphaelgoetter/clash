@@ -656,7 +656,7 @@ async function handleLoadPlayerData() {
       rows = extractWarDeckCardsFromBattlelog(analysis?.battleLog, cardById);
       if (!rows.length) {
         globalError.textContent =
-          "Aucune carte GDC trouvée dans la fenêtre du battlelog (données API limitées).";
+          "Aucun deck GDC trouvé dans l'historique des 30 derniers combats.";
       }
     }
 
