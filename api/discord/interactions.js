@@ -3228,44 +3228,6 @@ export default async function handler(req, res) {
                 .join("\n")
             : "Niveau maximum atteint !";
 
-        // Totaux cumulés des récompenses restantes (du CL actuel jusqu'à CL 2100)
-        const totalGems = remainingRewards.reduce(
-          (s, r) => (r.type === "gems" ? s + r.qty : s),
-          0,
-        );
-        const totalCommonWc = remainingRewards.reduce(
-          (s, r) => (r.type === "common_wc" ? s + r.qty : s),
-          0,
-        );
-        const totalRareWc = remainingRewards.reduce(
-          (s, r) => (r.type === "rare_wc" ? s + r.qty : s),
-          0,
-        );
-        const totalEpicWc = remainingRewards.reduce(
-          (s, r) => (r.type === "epic_wc" ? s + r.qty : s),
-          0,
-        );
-        const totalLegWc = remainingRewards.reduce(
-          (s, r) => (r.type === "legendary_wc" ? s + r.qty : s),
-          0,
-        );
-        const totalChampWc = remainingRewards.reduce(
-          (s, r) => (r.type === "champion_wc" ? s + r.qty : s),
-          0,
-        );
-        const totalChest5 = remainingRewards.filter(
-          (r) => r.type === "lucky_chest_5star",
-        ).length;
-        const totalEvoBox = remainingRewards.reduce(
-          (s, r) => (r.type === "evo_box" ? s + r.qty : s),
-          0,
-        );
-        const totalRewardsText =
-          `• Gemmes : ${totalGems}\n` +
-          `• Jokers : ${totalCommonWc} (C)  ${totalRareWc} (R)  ${totalEpicWc} (E)  ${totalLegWc} (L)  ${totalChampWc} (CH)\n` +
-          `• Coffres 5\u2605 : ${totalChest5}` +
-          `— Box évo : ${totalEvoBox}`;
-
         const fields = [
           // Ligne 1 : cartes | évolutions | héros
           {
@@ -3306,16 +3268,6 @@ export default async function handler(req, res) {
             value: rewardsText,
             inline: false,
           },
-          // Total cumulé jusqu'au niveau maximum (masqué si max déjà atteint)
-          ...(remainingRewards.length > 0
-            ? [
-                {
-                  name: "Total à récolter (CL 2100) :",
-                  value: totalRewardsText,
-                  inline: false,
-                },
-              ]
-            : []),
         ];
 
         const embed = {
