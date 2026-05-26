@@ -68,6 +68,40 @@ body {
   color: var(--muted);
 }
 
+.hero-faq {
+  margin-top: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(7, 12, 22, 0.35);
+  padding: 10px 12px;
+}
+
+.hero-faq summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--text);
+  list-style: none;
+}
+
+.hero-faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.hero-faq ul {
+  margin: 10px 0 0;
+  padding-left: 18px;
+}
+
+.hero-faq li {
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.hero-faq strong {
+  color: var(--text);
+}
+
 .panel {
   background: linear-gradient(
     180deg,
