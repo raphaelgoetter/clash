@@ -350,10 +350,17 @@ tr:last-child td {
 }
 
 .row-error {
-  margin: 6px 0 0;
   color: var(--danger);
-  min-height: 1.2em;
   font-size: 0.82rem;
+}
+
+.row-error:empty {
+  display: none;
+}
+
+.row-error:not(:empty) {
+  display: block;
+  margin: 6px 0 0;
 }
 
 .global-error {
