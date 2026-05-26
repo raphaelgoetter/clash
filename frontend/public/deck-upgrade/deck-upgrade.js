@@ -173,6 +173,73 @@ const RARITY_CONFIG = {
   },
 };
 
+const GEM_UPGRADES = {
+  common: {
+    2: 100,
+    3: 100,
+    4: 100,
+    5: 100,
+    6: 100,
+    7: 100,
+    8: 100,
+    9: 130,
+    10: 290,
+    11: 360,
+    12: 540,
+    13: 900,
+    14: 1250,
+    15: 2000,
+    16: 2700,
+  },
+  rare: {
+    3: 100,
+    4: 100,
+    5: 100,
+    6: 100,
+    7: 100,
+    8: 130,
+    9: 210,
+    10: 420,
+    11: 630,
+    12: 840,
+    13: 1200,
+    14: 1600,
+    15: 2100,
+    16: 3000,
+  },
+  epic: {
+    6: 100,
+    7: 100,
+    8: 130,
+    9: 210,
+    10: 420,
+    11: 630,
+    12: 1100,
+    13: 1500,
+    14: 2100,
+    15: 2500,
+    16: 3900,
+  },
+  legendary: {
+    9: 210,
+    10: 420,
+    11: 840,
+    12: 1300,
+    13: 1900,
+    14: 2500,
+    15: 2900,
+    16: 4200,
+  },
+  champion: {
+    11: 400,
+    12: 800,
+    13: 2000,
+    14: 3200,
+    15: 4400,
+    16: 6000,
+  },
+};
+
 const RARITY_ORDER = ["common", "rare", "epic", "legendary", "champion"];
 const RARITY_OFFSET = {
   common: 0,
@@ -832,6 +899,50 @@ function computeMissingGold({ rarity, currentLevel, targetLevel }) {
   return total;
 }
 
+function computeMissingGemCost({
+  rarity,
+  currentLevel,
+  currentCards,
+  remainingCards,
+}) {
+  const conf = RARITY_CONFIG[rarity];
+  const gemUpgrades = GEM_UPGRADES[rarity] ?? {};
+
+  let cardsToSpend = Math.max(0, remainingCards);
+  let cardsAtLevel = Math.max(0, currentCards);
+  let level = currentLevel;
+  let total = 0;
+
+  while (cardsToSpend > 0 && level < conf.maxLevel) {
+    const nextLevel = level + 1;
+    const requiredCards = conf.upgrades[level] ?? 0;
+    const fullGemCost = gemUpgrades[nextLevel] ?? 0;
+
+    if (requiredCards <= 0 || fullGemCost <= 0) {
+      break;
+    }
+
+    const cardsNeededForThisStep = Math.max(0, requiredCards - cardsAtLevel);
+    if (cardsNeededForThisStep === 0) {
+      level = nextLevel;
+      cardsAtLevel = 0;
+      continue;
+    }
+
+    const spend = Math.min(cardsToSpend, cardsNeededForThisStep);
+    total += (fullGemCost * spend) / requiredCards;
+    cardsToSpend -= spend;
+    cardsAtLevel += spend;
+
+    if (cardsAtLevel >= requiredCards) {
+      level = nextLevel;
+      cardsAtLevel = 0;
+    }
+  }
+
+  return Math.ceil(total);
+}
+
 function getJokersByRarity() {
   const jokers = {};
   RARITY_ORDER.forEach((rarity) => {
@@ -1032,6 +1143,13 @@ function renderDetails(detailRows) {
   );
 
   visibleRows.forEach((rowData, idx) => {
+    const gemCost = computeMissingGemCost({
+      rarity: rowData.rarity,
+      currentLevel: rowData.currentLevel,
+      currentCards: rowData.currentCards,
+      remainingCards: rowData.remainingCards,
+    });
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${idx + 1}</td>
@@ -1043,6 +1161,7 @@ function renderDetails(detailRows) {
       <td>${rowData.missingCards.toLocaleString("fr-FR")}</td>
       <td>${rowData.jokersUsed.toLocaleString("fr-FR")}</td>
       <td>${rowData.remainingCards.toLocaleString("fr-FR")}</td>
+      <td><em>${gemCost.toLocaleString("fr-FR")}</em></td>
       <td>${rowData.missingGold.toLocaleString("fr-FR")}</td>
     `;
     detailsBody.appendChild(tr);
