@@ -174,6 +174,13 @@ const RARITY_CONFIG = {
 };
 
 const RARITY_ORDER = ["common", "rare", "epic", "legendary", "champion"];
+const RARITY_OFFSET = {
+  common: 0,
+  rare: 2,
+  epic: 5,
+  legendary: 8,
+  champion: 10,
+};
 let currentMode = "manual";
 
 function normalizeTag(raw) {
@@ -241,10 +248,16 @@ function cardToRow(card) {
   const conf = RARITY_CONFIG[rarity];
   if (!conf) return null;
 
-  const currentLevel = Number.parseInt(card?.level, 10);
-  const safeLevel = Number.isInteger(currentLevel)
-    ? currentLevel
+  // Aligné sur /collection: niveau normalisé = level API + offset de rareté.
+  const rawLevel = Number.parseInt(card?.level, 10);
+  const offset = RARITY_OFFSET[rarity] ?? 0;
+  const normalizedLevel = Number.isInteger(rawLevel)
+    ? rawLevel + offset
     : conf.minLevel;
+  const safeLevel = Math.min(
+    conf.maxLevel,
+    Math.max(conf.minLevel, normalizedLevel),
+  );
   const currentCardsRaw = Number.parseInt(card?.count, 10);
   const currentCards = Number.isInteger(currentCardsRaw) ? currentCardsRaw : 0;
   const targetLevel = conf.maxLevel;
@@ -352,7 +365,17 @@ function createRow(defaultValues = null, options = {}) {
       const staticType = row.querySelector(".type-static");
       const rarityLabel = RARITY_CONFIG[defaultValues.rarity]?.label ?? "";
       const cardName = defaultValues.cardName || rarityLabel;
-      staticType.textContent = `${cardName} | ${rarityLabel}`;
+
+      staticType.innerHTML = "";
+      const nameEl = document.createElement("span");
+      nameEl.className = "type-card-name";
+      nameEl.textContent = cardName;
+
+      const rarityEl = document.createElement("span");
+      rarityEl.className = "type-card-rarity";
+      rarityEl.textContent = rarityLabel;
+
+      staticType.append(nameEl, rarityEl);
     }
   }
 
