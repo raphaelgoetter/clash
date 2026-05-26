@@ -182,6 +182,12 @@ const RARITY_OFFSET = {
   champion: 10,
 };
 let currentMode = "manual";
+const modeRowsCache = {
+  manual: null,
+  "current-deck": null,
+  "war-decks": null,
+  collection: null,
+};
 
 function normalizeTag(raw) {
   if (!raw) return null;
@@ -191,12 +197,22 @@ function normalizeTag(raw) {
 }
 
 function setActiveMode(mode) {
+  if (currentMode) {
+    modeRowsCache[currentMode] = getRowsSnapshot();
+  }
+
   currentMode = mode;
   modeTabs.forEach((tab) => {
     tab.classList.toggle("active", tab.dataset.mode === mode);
   });
 
   addRowBtn.disabled = mode !== "manual";
+
+  const cachedRows = modeRowsCache[mode];
+  if (Array.isArray(cachedRows)) {
+    replaceRows(cachedRows);
+    return;
+  }
 
   if (mode === "manual" && !rowsBody.children.length) {
     createRow({
@@ -236,6 +252,18 @@ function encodeTagForApi(tag) {
 function normalizeCardId(id) {
   if (id === null || id === undefined) return "";
   return String(id);
+}
+
+function getRowsSnapshot() {
+  return Array.from(rowsBody.querySelectorAll("tr"))
+    .filter((row) => row.querySelector(".current-level"))
+    .map((row) => {
+      const payload = getRowPayload(row);
+      return {
+        ...payload,
+        cardName: row.dataset.cardName || null,
+      };
+    });
 }
 
 async function fetchJsonOrThrow(url) {
@@ -377,6 +405,11 @@ function replaceRows(rows) {
   });
 }
 
+function renderRowsForCurrentMode(rows) {
+  modeRowsCache[currentMode] = rows.map((row) => ({ ...row }));
+  replaceRows(rows);
+}
+
 function extractWarDeckCardsFromBattlelog(battleLog, cardById) {
   const gdcTypes = new Set([
     "riverracepvp",
@@ -459,6 +492,7 @@ function createRow(defaultValues = null, options = {}) {
 
     if (options.lockType) {
       row.dataset.rarity = defaultValues.rarity;
+      row.dataset.cardName = defaultValues.cardName || "";
       const staticType = row.querySelector(".type-static");
       const rarityLabel = RARITY_CONFIG[defaultValues.rarity]?.label ?? "";
       const cardName = defaultValues.cardName || rarityLabel;
@@ -590,7 +624,7 @@ async function handleLoadPlayerData() {
       }
     }
 
-    replaceRows(rows);
+    renderRowsForCurrentMode(rows);
   } catch (err) {
     globalError.textContent =
       err?.message || "Impossible de charger les données joueur.";
@@ -987,6 +1021,10 @@ function handleReset() {
   rowsBody.innerHTML = "";
   clearErrors();
   results.classList.add("hidden");
+  modeRowsCache.manual = null;
+  modeRowsCache["current-deck"] = null;
+  modeRowsCache["war-decks"] = null;
+  modeRowsCache.collection = null;
   if (totalGoldEl) {
     totalGoldEl.textContent = "0 or";
   }
