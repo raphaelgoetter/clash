@@ -342,6 +342,33 @@ function extractWarDeckCardsFromBattlelog(battleLog, cardById) {
   return sortRowsByPriority(rows);
 }
 
+function extractLatestPvpDeckCardIds(battleLog) {
+  const gdcTypes = new Set([
+    "riverracepvp",
+    "riverraceduel",
+    "riverraceduelscolosseum",
+    "riverraceboat",
+    "clanwarbattle",
+  ]);
+
+  const battles = Array.isArray(battleLog) ? battleLog : [];
+  for (const battle of battles) {
+    const type = String(battle?.type || "").toLowerCase();
+    if (gdcTypes.has(type)) continue;
+
+    const cards = Array.isArray(battle?.team?.[0]?.cards)
+      ? battle.team[0].cards
+      : [];
+    const ids = cards.map((card) => normalizeCardId(card?.id)).filter(Boolean);
+
+    if (ids.length >= 8) {
+      return ids;
+    }
+  }
+
+  return [];
+}
+
 function createRow(defaultValues = null, options = {}) {
   const fragment = rowTemplate.content.cloneNode(true);
   const row = fragment.querySelector("tr");
@@ -448,14 +475,40 @@ async function handleLoadPlayerData() {
       const deckCards = Array.isArray(player.currentDeck)
         ? player.currentDeck
         : [];
+
+      let resolvedDeckCards = deckCards.map((deckCard) => {
+        const normalizedId = normalizeCardId(deckCard?.id);
+        return cardById.get(normalizedId) || deckCard;
+      });
+
+      if (resolvedDeckCards.length < 8) {
+        try {
+          const analysis = await fetchJsonOrThrow(
+            `/api/player/${encodedTag}/analysis?fast=true`,
+          );
+          const fallbackIds = extractLatestPvpDeckCardIds(analysis?.battleLog);
+          if (fallbackIds.length) {
+            const existingIds = new Set(
+              resolvedDeckCards
+                .map((card) => normalizeCardId(card?.id))
+                .filter(Boolean),
+            );
+
+            fallbackIds.forEach((id) => {
+              if (existingIds.has(id) || resolvedDeckCards.length >= 8) return;
+              const fallbackCard = cardById.get(id);
+              if (!fallbackCard) return;
+              resolvedDeckCards.push(fallbackCard);
+              existingIds.add(id);
+            });
+          }
+        } catch {
+          // Ignore fallback error: keep currentDeck as-is.
+        }
+      }
+
       rows = sortRowsByPriority(
-        deckCards
-          .map((deckCard) => {
-            const normalizedId = normalizeCardId(deckCard?.id);
-            return cardById.get(normalizedId) || deckCard;
-          })
-          .map(cardToRow)
-          .filter(Boolean),
+        resolvedDeckCards.map(cardToRow).filter(Boolean),
       );
     } else if (currentMode === "collection") {
       rows = sortRowsByPriority(allCards.map(cardToRow).filter(Boolean));
