@@ -6,6 +6,7 @@ import { waitUntil } from "@vercel/functions";
 import { createRequire } from "node:module";
 import { getLeagueName } from "../../backend/services/warLeagues.js";
 import { getDiscordLinks } from "../../backend/services/discordLinks.js";
+import { fetchPlayer } from "../../backend/services/clashApi.js";
 import {
   TOTAL_CARDS,
   TOTAL_EVOLUTIONS,
@@ -87,6 +88,8 @@ const FAMILY_CLAN_TAGS = new Set(["#Y8JUPC9C", "#LRQP20V9", "#QU9UQJRL"]);
 const RESISTANTS_CLAN_TAG = "#LRQP20V9";
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const TAG_AUTOCOMPLETE_COMMANDS = new Set(["trust", "stats", "collection"]);
+const TAG_NAME_CACHE_TTL = 6 * 60 * 60 * 1000;
+const tagNameCache = new Map();
 
 const ROLE_FR = {
   leader: "chef",
@@ -471,7 +474,38 @@ function getLinkedTagsForDiscordUser(links, discordUserId) {
   return [...new Set(tags)].sort((a, b) => a.localeCompare(b));
 }
 
-function buildTagAutocompleteChoices(body, links) {
+function getCachedTagName(tag) {
+  const entry = tagNameCache.get(tag);
+  if (!entry) return null;
+  if (Date.now() - entry.updatedAt > TAG_NAME_CACHE_TTL) {
+    tagNameCache.delete(tag);
+    return null;
+  }
+  return entry.name;
+}
+
+async function getClashTagName(tag) {
+  const normalizedTag = normalizeClashTag(tag);
+  if (!normalizedTag) return null;
+
+  const cachedName = getCachedTagName(normalizedTag);
+  if (cachedName) return cachedName;
+
+  try {
+    const player = await fetchPlayer(normalizedTag);
+    const name = String(player?.name ?? "").trim();
+    if (name) {
+      tagNameCache.set(normalizedTag, { name, updatedAt: Date.now() });
+      return name;
+    }
+  } catch {
+    // Si le profil n'est pas disponible, on conserve juste le tag.
+  }
+
+  return null;
+}
+
+async function buildTagAutocompleteChoices(body, links) {
   const focusedOption = body.data?.options?.find((option) => option.focused);
   const currentValue = String(focusedOption?.value ?? "")
     .trim()
@@ -484,7 +518,15 @@ function buildTagAutocompleteChoices(body, links) {
     ? linkedTags.filter((tag) => tag.slice(1).startsWith(prefix))
     : linkedTags;
 
-  return filteredTags.slice(0, 25).map((tag) => ({ name: tag, value: tag }));
+  const limitedTags = filteredTags.slice(0, 25);
+  const resolvedNames = await Promise.all(
+    limitedTags.map(async (tag) => ({ tag, name: await getClashTagName(tag) })),
+  );
+
+  return resolvedNames.map(({ tag, name }) => ({
+    name: name ? `${tag} (${name})` : tag,
+    value: tag,
+  }));
 }
 
 async function writeDiscordLinks(links, sha, message) {
@@ -569,7 +611,7 @@ export default async function handler(req, res) {
     }
 
     const links = await getDiscordLinks();
-    const choices = buildTagAutocompleteChoices(body, links);
+    const choices = await buildTagAutocompleteChoices(body, links);
     return res.status(200).json({ type: 8, data: { choices } });
   }
 
