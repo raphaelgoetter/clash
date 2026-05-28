@@ -3444,7 +3444,28 @@ export default async function handler(req, res) {
               .slice(0, MEMBER_LIMIT)
           : [];
         const newMembers = isFamilyClan
-          ? members.filter((m) => m.isNew).slice(0, MEMBER_LIMIT)
+          ? members
+              .filter((m) => m.isNew)
+              .sort((a, b) => {
+                const aStreak = Number.isFinite(a.arrivalStreakInCurrentClan)
+                  ? Number(a.arrivalStreakInCurrentClan)
+                  : Number.POSITIVE_INFINITY;
+                const bStreak = Number.isFinite(b.arrivalStreakInCurrentClan)
+                  ? Number(b.arrivalStreakInCurrentClan)
+                  : Number.POSITIVE_INFINITY;
+                if (aStreak !== bStreak) return aStreak - bStreak;
+
+                const aWeeks = Number.isFinite(a.arrivalTotalWeeks)
+                  ? Number(a.arrivalTotalWeeks)
+                  : Number.POSITIVE_INFINITY;
+                const bWeeks = Number.isFinite(b.arrivalTotalWeeks)
+                  ? Number(b.arrivalTotalWeeks)
+                  : Number.POSITIVE_INFINITY;
+                if (aWeeks !== bWeeks) return aWeeks - bWeeks;
+
+                return Number(b.reliability ?? 0) - Number(a.reliability ?? 0);
+              })
+              .slice(0, MEMBER_LIMIT)
           : [];
 
         function memberLine(m) {

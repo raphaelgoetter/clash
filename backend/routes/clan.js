@@ -1821,6 +1821,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       isNew,
       discord: discordLinked,
       warDays,
+      arrivalStreakInCurrentClan: warHistory?.streakInCurrentClan ?? null,
+      arrivalTotalWeeks: warHistory?.totalWeeks ?? null,
       // Valeur numérique pour le tri de la colonne "This War"
       // -1 = arrivé en cours de semaine, null = hors période de guerre
       warDecks:
@@ -1846,6 +1848,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       reliabilitySource: "fallback",
       isNew: false,
       warDays: null,
+      arrivalStreakInCurrentClan: null,
+      arrivalTotalWeeks: null,
       warDecks: null,
       lastSeen: members[idx].lastSeen ?? null,
     };
