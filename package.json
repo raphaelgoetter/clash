@@ -11,6 +11,8 @@
     "notify-members": "node scripts/notifyMemberChanges.js",
     "notify-members:dry": "node scripts/notifyMemberChanges.js --dry-run",
     "notify-members:sim": "node scripts/notifyMemberChanges.js --dry-run --simulate",
+    "last-seen": "node scripts/notifyLastSeen.js",
+    "last-seen:dry": "node scripts/notifyLastSeen.js --dry-run",
     "ping-test": "node scripts/ping-test.js",
     "war-summary": "node scripts/notifyWarSummary.js",
     "war-summary:dry": "node scripts/notifyWarSummary.js --dry-run",
@@ -19,7 +21,7 @@
     "cache:clear": "rm -f frontend/public/clan-cache/*.json",
     "deploy": "npm run cache:clear && npm run build && vercel --prod --confirm --force",
     "build": "cd frontend && npm run build && cd .. && vercel --prod",
-    "test": "node backend/services/analysisService.test.js && node backend/services/snapshot.test.js && node backend/services/notifyWarSummary.test.js"
+    "test": "node backend/services/analysisService.test.js && node backend/services/snapshot.test.js && node backend/services/notifyWarSummary.test.js && node backend/services/notifyLastSeen.test.js"
   },
   "dependencies": {
     "@vercel/functions": "^3.4.3",
