@@ -3422,7 +3422,7 @@ export default async function handler(req, res) {
                 : COLOR_MAP.red
           : 0x99aab5;
 
-        const MEMBER_LIMIT = 5;
+        const MEMBER_LIMIT = 10;
         const topReliable = isFamilyClan
           ? [...members]
               .sort(
