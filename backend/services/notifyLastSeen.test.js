@@ -92,7 +92,10 @@ const embed = buildInactiveEmbed(
   clanOneResult.warnings,
   clanOneResult.errors,
 );
-assert.strictEqual(embed.title, "Avertissement joueurs inactifs");
+assert.strictEqual(
+  embed.title,
+  "<:sweat:1504139431106576405> Avertissement joueurs inactifs",
+);
 assert.strictEqual(
   embed.fields.length,
   1,

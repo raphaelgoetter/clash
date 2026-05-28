@@ -198,7 +198,7 @@ export function buildInactiveEmbed(clanTag, clanName, warnings, errors) {
   );
 
   return {
-    title: "Avertissement joueurs inactifs",
+    title: "<:sweat:1504139431106576405> Avertissement joueurs inactifs",
     description: clanName,
     color,
     fields: [
@@ -279,7 +279,7 @@ async function main() {
       throw new Error(`Variable manquante: DISCORD_CHANNEL_MEMBERS_${clanTag}`);
     }
 
-    if (log[clanTag] === todayKey) {
+    if (!FORCE && log[clanTag] === todayKey) {
       continue;
     }
 
