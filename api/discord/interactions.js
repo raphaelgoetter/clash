@@ -5,6 +5,7 @@ import { createPublicKey, verify } from "node:crypto";
 import { waitUntil } from "@vercel/functions";
 import { createRequire } from "node:module";
 import { getLeagueName } from "../../backend/services/warLeagues.js";
+import { getDiscordLinks } from "../../backend/services/discordLinks.js";
 import {
   TOTAL_CARDS,
   TOTAL_EVOLUTIONS,
@@ -85,6 +86,7 @@ const trustClanUrl = (tag) =>
 const FAMILY_CLAN_TAGS = new Set(["#Y8JUPC9C", "#LRQP20V9", "#QU9UQJRL"]);
 const RESISTANTS_CLAN_TAG = "#LRQP20V9";
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const TAG_AUTOCOMPLETE_COMMANDS = new Set(["trust", "stats", "collection"]);
 
 const ROLE_FR = {
   leader: "chef",
@@ -448,6 +450,43 @@ async function readDiscordLinks() {
   }
 }
 
+function normalizeClashTag(tag) {
+  if (!tag) return "";
+  const raw = String(tag).trim().toUpperCase();
+  if (!raw) return "";
+  return raw.startsWith("#") ? raw : `#${raw}`;
+}
+
+function getLinkedTagsForDiscordUser(links, discordUserId) {
+  const userId = String(discordUserId ?? "").trim();
+  if (!userId) return [];
+
+  const tags = [];
+  for (const [tag, linkedUserId] of Object.entries(links ?? {})) {
+    if (String(linkedUserId) !== userId) continue;
+    const normalizedTag = normalizeClashTag(tag);
+    if (normalizedTag) tags.push(normalizedTag);
+  }
+
+  return [...new Set(tags)].sort((a, b) => a.localeCompare(b));
+}
+
+function buildTagAutocompleteChoices(body, links) {
+  const focusedOption = body.data?.options?.find((option) => option.focused);
+  const currentValue = String(focusedOption?.value ?? "")
+    .trim()
+    .toUpperCase();
+  const prefix = currentValue.replace(/^#/, "");
+  const discordUserId = body.member?.user?.id ?? body.user?.id ?? "";
+
+  const linkedTags = getLinkedTagsForDiscordUser(links, discordUserId);
+  const filteredTags = prefix
+    ? linkedTags.filter((tag) => tag.slice(1).startsWith(prefix))
+    : linkedTags;
+
+  return filteredTags.slice(0, 25).map((tag) => ({ name: tag, value: tag }));
+}
+
 async function writeDiscordLinks(links, sha, message) {
   const repo = process.env.GITHUB_REPO;
   const token = process.env.GITHUB_TOKEN;
@@ -520,6 +559,19 @@ export default async function handler(req, res) {
       .map((id) => id.trim())
       .filter(Boolean),
   );
+
+  if (body.type === 4 && TAG_AUTOCOMPLETE_COMMANDS.has(body.data?.name)) {
+    if (
+      authorizedGuilds.length > 0 &&
+      !authorizedGuilds.includes(body.guild_id)
+    ) {
+      return res.status(200).json({ type: 8, data: { choices: [] } });
+    }
+
+    const links = await getDiscordLinks();
+    const choices = buildTagAutocompleteChoices(body, links);
+    return res.status(200).json({ type: 8, data: { choices } });
+  }
 
   if (
     authorizedGuilds.length > 0 &&
