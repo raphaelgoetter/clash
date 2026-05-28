@@ -76,7 +76,8 @@ function formatRole(role) {
   const normalized = String(role || "member")
     .trim()
     .toLowerCase();
-  return ROLE_LABELS[normalized] ?? String(role || "membre");
+  const label = ROLE_LABELS[normalized] ?? String(role || "membre");
+  return `[${label}]`;
 }
 
 function getRolePriority(role) {
@@ -187,40 +188,26 @@ export function formatInactiveLine(member) {
 export function buildInactiveEmbed(clanTag, clanName, warnings, errors) {
   const totalWarnings = warnings.length;
   const totalErrors = errors.length;
+  const totalMembers = totalWarnings + totalErrors;
   const color = totalErrors > 0 ? 0xed4245 : 0xe67e22;
-
-  const fields = [];
-  if (totalErrors > 0) {
-    fields.push({
-      name: `Erreurs (${totalErrors})`,
-      value: errors.map(formatInactiveLine).join("\n"),
-      inline: false,
-    });
-  }
-
-  if (totalWarnings > 0) {
-    fields.push({
-      name: `Avertissements (${totalWarnings})`,
-      value: warnings.map(formatInactiveLine).join("\n"),
-      inline: false,
-    });
-  }
-
-  const descriptionParts = [];
-  if (totalErrors > 0) {
-    descriptionParts.push(`${totalErrors} erreur${totalErrors > 1 ? "s" : ""}`);
-  }
-  if (totalWarnings > 0) {
-    descriptionParts.push(
-      `${totalWarnings} avertissement${totalWarnings > 1 ? "s" : ""}`,
-    );
-  }
+  const inactiveMembers = [...errors, ...warnings].sort(
+    (a, b) =>
+      b.daysInactive - a.daysInactive ||
+      getRolePriority(b.role) - getRolePriority(a.role) ||
+      a.name.localeCompare(b.name, "fr"),
+  );
 
   return {
     title: "Avertissement joueurs inactifs",
-    description: descriptionParts.join(" · ") || clanName,
+    description: clanName,
     color,
-    fields,
+    fields: [
+      {
+        name: `Non connectés (${totalMembers})`,
+        value: inactiveMembers.map(formatInactiveLine).join("\n"),
+        inline: false,
+      },
+    ],
     footer: { text: `${clanName} · #${clanTag}` },
   };
 }

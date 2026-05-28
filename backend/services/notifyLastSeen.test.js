@@ -95,8 +95,17 @@ const embed = buildInactiveEmbed(
 assert.strictEqual(embed.title, "Avertissement joueurs inactifs");
 assert.strictEqual(
   embed.fields.length,
-  2,
-  "Embed should expose both severities",
+  1,
+  "Embed should expose one merged field",
+);
+assert.strictEqual(
+  embed.fields[0].name,
+  "Non connectés (2)",
+  "Merged field should show the total count",
+);
+assert.ok(
+  embed.fields[0].value.includes("[membre]"),
+  "Member role should be wrapped in brackets",
 );
 
 console.log("notifyLastSeen.test.js passed");
