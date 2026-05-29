@@ -16,6 +16,7 @@ import { ALLOWED_CLANS } from "../backend/routes/clan.js";
 import {
   fetchCurrentRace,
   fetchRaceLog,
+  fetchBattleLog,
 } from "../backend/services/clashApi.js";
 import { recordSnapshot } from "../backend/services/snapshot.js";
 import {
@@ -26,6 +27,22 @@ import {
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PRE_RESET_LEAD_MS = 2 * 60 * 1000; // 2 minutes avant le reset
+
+async function buildBattleLogsByTag(participants = []) {
+  const activeParticipants = participants.filter(
+    (p) => (p.decksUsedToday ?? 0) > 0,
+  );
+  const entries = await Promise.all(
+    activeParticipants.map(async (participant) => {
+      try {
+        return [participant.tag, await fetchBattleLog(participant.tag)];
+      } catch (_) {
+        return [participant.tag, null];
+      }
+    }),
+  );
+  return Object.fromEntries(entries.filter(([, log]) => Array.isArray(log)));
+}
 
 /** Retourne le timestamp UTC (ms) du prochain reset journalier d'un clan, le jour courant. */
 function todayResetUtcMs(clanTag, now = new Date()) {
@@ -84,6 +101,7 @@ async function takePreResetSnapshot(clanTag) {
     0,
   );
   const fameTotal = participants.reduce((s, p) => s + (p.fame ?? 0), 0);
+  const battleLogsByTag = await buildBattleLogsByTag(participants);
   console.log(
     `[${clanTag}] ${participants.length} participants — decks aujourd'hui: ${decksTotal}, fame cumulée: ${fameTotal} — weekId: ${weekId}`,
   );
@@ -98,6 +116,7 @@ async function takePreResetSnapshot(clanTag) {
   await recordSnapshot(clanTag, participants, weekId, {
     snapshotType: "pre-reset",
     periodType: race?.periodType,
+    battleLogsByTag,
   });
   console.log(`[${clanTag}] Snapshot pré-reset enregistré.`);
 }

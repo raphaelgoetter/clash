@@ -3,7 +3,7 @@
 // GDC, expansion des duels, helpers win/loss et activité quotidienne.
 // ============================================================
 
-import { parseClashDate, MS_PER_DAY } from './dateUtils.js';
+import { parseClashDate, MS_PER_DAY, warDayKey } from "./dateUtils.js";
 
 /**
  * Clan War battle types in the Clash Royale API.
@@ -11,24 +11,35 @@ import { parseClashDate, MS_PER_DAY } from './dateUtils.js';
  * Tous les types en minuscules — la comparaison normalise b.type avec .toLowerCase()
  */
 const WAR_BATTLE_TYPES = new Set([
-  'riverracepvp',
-  'riverraceduel',
-  'riverraceduelscolosseum',
-  'riverraceboat',
-  'clanwarbattle',
+  "riverracepvp",
+  "riverraceduel",
+  "riverraceduelscolosseum",
+  "riverraceboat",
+  "clanwarbattle",
 ]);
 
+const DUEL_BATTLE_TYPES = new Set(["riverraceduel", "riverraceduelscolosseum"]);
+
 /** Battle types considered as regular Ladder / Path of Legend. */
-const LADDER_TYPES = new Set(['pvp', 'pathoflegend', 'ranked']);
+const LADDER_TYPES = new Set(["pvp", "pathoflegend", "ranked"]);
 
 /** Battle types considered as challenge / tournament. */
 const CHALLENGE_TYPES = new Set([
-  'challenge', 'grandchallenge', 'classicchallenge',
-  'challengetournament', 'tournament',
+  "challenge",
+  "grandchallenge",
+  "classicchallenge",
+  "challengetournament",
+  "tournament",
 ]);
 
 /** Battle types considered as friendly / training (not competitive). */
-const FRIENDLY_TYPES = new Set(['training', 'friendly', 'clanmate', 'casual2v2', '2v2']);
+const FRIENDLY_TYPES = new Set([
+  "training",
+  "friendly",
+  "clanmate",
+  "casual2v2",
+  "2v2",
+]);
 
 /**
  * Filter a battle log to keep only Clan War battles.
@@ -36,7 +47,9 @@ const FRIENDLY_TYPES = new Set(['training', 'friendly', 'clanmate', 'casual2v2',
  * @returns {object[]}
  */
 export function filterWarBattles(battleLog) {
-  return battleLog.filter((b) => WAR_BATTLE_TYPES.has((b.type ?? '').toLowerCase()));
+  return battleLog.filter((b) =>
+    WAR_BATTLE_TYPES.has((b.type ?? "").toLowerCase()),
+  );
 }
 
 /**
@@ -47,16 +60,27 @@ export function filterWarBattles(battleLog) {
  * @returns {{ total:number; gdc:number; ladder:number; challenge:number; friendly:number; other:number }}
  */
 export function categorizeBattleLog(rawBattleLog) {
-  let gdc = 0, ladder = 0, challenge = 0, friendly = 0, other = 0;
+  let gdc = 0,
+    ladder = 0,
+    challenge = 0,
+    friendly = 0,
+    other = 0;
   for (const b of rawBattleLog) {
-    const t = (b.type ?? '').toLowerCase();
-    if (WAR_BATTLE_TYPES.has(t))      gdc++;
-    else if (LADDER_TYPES.has(t))     ladder++;
-    else if (CHALLENGE_TYPES.has(t))  challenge++;
-    else if (FRIENDLY_TYPES.has(t))   friendly++;
+    const t = (b.type ?? "").toLowerCase();
+    if (WAR_BATTLE_TYPES.has(t)) gdc++;
+    else if (LADDER_TYPES.has(t)) ladder++;
+    else if (CHALLENGE_TYPES.has(t)) challenge++;
+    else if (FRIENDLY_TYPES.has(t)) friendly++;
     else other++;
   }
-  return { total: rawBattleLog.length, gdc, ladder, challenge, friendly, other };
+  return {
+    total: rawBattleLog.length,
+    gdc,
+    ladder,
+    challenge,
+    friendly,
+    other,
+  };
 }
 
 /**
@@ -73,17 +97,17 @@ export function categorizeBattleLog(rawBattleLog) {
 export function expandDuelRounds(warLog) {
   const expanded = [];
   for (const battle of warLog) {
-    const myEntry  = battle.team?.[0];
+    const myEntry = battle.team?.[0];
     const oppEntry = battle.opponent?.[0];
-    if (battle.type === 'riverRaceDuel' && Array.isArray(myEntry?.rounds)) {
+    if (battle.type === "riverRaceDuel" && Array.isArray(myEntry?.rounds)) {
       // One synthetic entry per round — store per-round crowns so win detection is accurate.
       // The parent crowns represent the duel total and must NOT be used per-round.
       myEntry.rounds.forEach((round, i) => {
         const oppRound = oppEntry?.rounds?.[i] ?? {};
         expanded.push({
           ...battle,
-          _roundIndex:     i,
-          _roundCrownsMe:  round.crowns   ?? 0,
+          _roundIndex: i,
+          _roundCrownsMe: round.crowns ?? 0,
           _roundCrownsOpp: oppRound.crowns ?? 0,
         });
       });
@@ -120,6 +144,23 @@ export function isWarLoss(b) {
 export function getMyBattleCrowns(b) {
   if (b._roundIndex !== undefined) return b._roundCrownsMe ?? 0;
   return b.team?.[0]?.crowns ?? 0;
+}
+
+/**
+ * Tell whether a battle log contains at least one duel battle for a given war day.
+ * @param {object[]} battleLog
+ * @param {string|null} clanTag
+ * @param {string} realDay
+ * @returns {boolean}
+ */
+export function hasDuelOnWarDay(battleLog, clanTag, realDay) {
+  if (!realDay) return false;
+  for (const battle of battleLog ?? []) {
+    const type = (battle?.type ?? "").toLowerCase();
+    if (!DUEL_BATTLE_TYPES.has(type)) continue;
+    if (warDayKey(battle?.battleTime, clanTag) === realDay) return true;
+  }
+  return false;
 }
 
 /**

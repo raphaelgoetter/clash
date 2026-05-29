@@ -274,6 +274,59 @@ async function computeMissingDuelsForDays(clanTag, realDays, membersByTag) {
   return { players, fetched, failed, truncatedBattleLogs };
 }
 
+function computeMissingDuelsFromSnapshots(
+  snapshotDays,
+  realDays,
+  membersByTag,
+) {
+  const normalizedDays = Array.from(
+    new Set((realDays ?? []).filter((day) => typeof day === "string" && day)),
+  );
+  if (normalizedDays.length === 0) {
+    return null;
+  }
+
+  const dayEntries = normalizedDays
+    .map((realDay) => snapshotDays.find((day) => day?.realDay === realDay))
+    .filter(Boolean);
+  if (dayEntries.length !== normalizedDays.length) return null;
+  if (
+    dayEntries.some(
+      (day) => !Object.prototype.hasOwnProperty.call(day, "duelsTodayByTag"),
+    )
+  ) {
+    return null;
+  }
+
+  const members = Object.entries(membersByTag ?? {});
+  if (members.length === 0) {
+    return { players: [], fetched: 0, failed: 0, truncatedBattleLogs: 0 };
+  }
+
+  const players = members
+    .map(([playerTag, meta]) => {
+      const missingDuels = normalizedDays.reduce((sum, realDay) => {
+        const day = dayEntries.find((entry) => entry.realDay === realDay);
+        return sum + ((day?.duelsTodayByTag?.[playerTag] ?? 0) > 0 ? 0 : 1);
+      }, 0);
+
+      if (missingDuels <= 0) return null;
+
+      return {
+        tag: playerTag,
+        name: meta?.name || playerTag,
+        missingDuels,
+      };
+    })
+    .filter(Boolean)
+    .sort(
+      (a, b) =>
+        b.missingDuels - a.missingDuels || a.name.localeCompare(b.name, "fr"),
+    );
+
+  return { players, fetched: 0, failed: 0, truncatedBattleLogs: 0 };
+}
+
 async function readClanMemberNames(tag) {
   const filePath = path.join(CACHE_DIR, `${tag}.json`);
   if (!existsSync(filePath)) return {};
@@ -830,16 +883,20 @@ async function postWarSummary(
     typeof dayEntry?.realDay === "string" && dayEntry.realDay
       ? [dayEntry.realDay]
       : [];
-  const dailyDuelMissingInfo = await computeMissingDuelsForDays(
-    tag,
-    dailyDuelTargetDays,
-    memberNames,
-  );
-  const weeklyDuelMissingInfo = await computeMissingDuelsForDays(
-    tag,
-    weeklyDuelTargetDays,
-    memberNames,
-  );
+  const dailyDuelMissingInfo =
+    computeMissingDuelsFromSnapshots(
+      allWeekDays,
+      dailyDuelTargetDays,
+      memberNames,
+    ) ??
+    (await computeMissingDuelsForDays(tag, dailyDuelTargetDays, memberNames));
+  const weeklyDuelMissingInfo =
+    computeMissingDuelsFromSnapshots(
+      allWeekDays,
+      weeklyDuelTargetDays,
+      memberNames,
+    ) ??
+    (await computeMissingDuelsForDays(tag, weeklyDuelTargetDays, memberNames));
 
   // ── Résumé du jour ──
   const isColosseum = dayEntry.periodType === "colosseum";

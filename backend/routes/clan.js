@@ -1146,6 +1146,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       const { recordSnapshot } = await import("../services/snapshot.js");
       await recordSnapshot(clanTag, participants, weekId, {
         periodType: currentRace?.periodType ?? null,
+        battleLogsByTag,
       });
     } catch (err) {
       console.warn(

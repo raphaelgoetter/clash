@@ -18,6 +18,7 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 import { parisOffsetMs, warResetOffsetMs } from "./dateUtils.js";
+import { hasDuelOnWarDay } from "./battleLogUtils.js";
 const DATA_SNAP_DIR = path.resolve(__dirname, "..", "..", "data", "snapshots");
 const TMP_SNAP_DIR = path.join("/tmp", "clash-snapshots");
 const RETENTION_DAYS = 60;
@@ -32,7 +33,6 @@ function snapshotFilename(clanTag, useTmp = false) {
   const clean = clanTag.replace(/[^A-Za-z0-9]/g, "");
   return path.join(useTmp ? TMP_SNAP_DIR : DATA_SNAP_DIR, `${clean}.json`);
 }
-
 async function readJsonFile(file) {
   const txt = await fs.readFile(file, "utf-8");
   return JSON.parse(txt);
@@ -187,6 +187,10 @@ function normalizeSnapshots(raw, clanTag = null) {
       _cumulFamePreReset: mergeMaps(
         existing._cumulFamePreReset ?? {},
         incoming._cumulFamePreReset ?? {},
+      ),
+      duelsTodayByTag: mergeMaps(
+        existing.duelsTodayByTag ?? {},
+        incoming.duelsTodayByTag ?? {},
       ),
       hourlyCumul,
     };
@@ -558,6 +562,7 @@ function makeEmptyDay(warDay, realDay = null, clanTag = null) {
     decks: {},
     hourlyCumul: [],
     _cumulFame: {},
+    duelsTodayByTag: {},
     periodType: null,
   };
 }
@@ -635,6 +640,7 @@ function fillWeekDays(week, clanTag = null) {
     day.hourlyCumul = day.hourlyCumul ?? [];
     day._cumul = day._cumul ?? {};
     day._cumulFame = day._cumulFame ?? {};
+    day.duelsTodayByTag = day.duelsTodayByTag ?? {};
     day.periodType = day.periodType ?? null;
 
     return day;
@@ -796,6 +802,18 @@ export async function recordSnapshot(
       : null;
   });
 
+  const battleLogsByTag = options.battleLogsByTag ?? null;
+  const buildDuelPresenceByTag = (targetRealDay) => {
+    const duelPresenceByTag = {};
+    if (!battleLogsByTag || !targetRealDay) return duelPresenceByTag;
+    for (const [playerTag, battleLog] of Object.entries(battleLogsByTag)) {
+      if (hasDuelOnWarDay(battleLog, clanTag, targetRealDay)) {
+        duelPresenceByTag[playerTag] = 1;
+      }
+    }
+    return duelPresenceByTag;
+  };
+
   const history = await loadSnapshots(clanTag);
 
   const weekId = week ?? "unknown";
@@ -906,6 +924,10 @@ export async function recordSnapshot(
 
   dayEntry._cumul = mergeMaps(dayEntry._cumul ?? {}, currentCumul);
   dayEntry._cumulFame = mergeMaps(dayEntry._cumulFame ?? {}, currentCumulFame);
+  dayEntry.duelsTodayByTag = mergeMaps(
+    dayEntry.duelsTodayByTag ?? {},
+    buildDuelPresenceByTag(realDay),
+  );
   dayEntry.periodType = options.periodType ?? dayEntry.periodType ?? null;
 
   const cutoff = Date.now() - RETENTION_DAYS * 24 * 3600 * 1000;
@@ -968,6 +990,10 @@ export async function recordSnapshot(
         );
       }
       prevDayEntry._cumul = mergeMaps(prevDayEntry._cumul ?? {}, currentCumul);
+      prevDayEntry.duelsTodayByTag = mergeMaps(
+        prevDayEntry.duelsTodayByTag ?? {},
+        buildDuelPresenceByTag(prevDayEntry.realDay),
+      );
       prevDayEntry.snapshotCount = computeSnapshotCount(prevDayEntry.decks);
       prevDayEntry.snapshotBackupTime =
         prevDayEntry.snapshotBackupTime ?? now.toISOString();
@@ -1010,6 +1036,10 @@ export async function recordSnapshot(
       prevDayEntry._cumulFame = mergeMaps(
         prevDayEntry._cumulFame ?? {},
         currentCumulFame,
+      );
+      prevDayEntry.duelsTodayByTag = mergeMaps(
+        prevDayEntry.duelsTodayByTag ?? {},
+        buildDuelPresenceByTag(prevDayEntry.realDay),
       );
       prevDayEntry.snapshotCount = computeSnapshotCount(prevDayEntry.decks);
     }
@@ -1087,6 +1117,7 @@ export async function getSnapshotsForWeek(clanTag, week = null) {
       _cumulFamePreReset: isValidSnapshot(d)
         ? (d._cumulFamePreReset ?? {})
         : {},
+      duelsTodayByTag: isValidSnapshot(d) ? (d.duelsTodayByTag ?? {}) : {},
     };
   };
 
@@ -1152,6 +1183,7 @@ export async function getSnapshotsForWeeks(clanTag, weeks) {
       _cumulFamePreReset: isValidSnapshot(d)
         ? (d._cumulFamePreReset ?? {})
         : {},
+      duelsTodayByTag: isValidSnapshot(d) ? (d.duelsTodayByTag ?? {}) : {},
       gdcPeriod: d.gdcPeriod ?? null,
     };
   };

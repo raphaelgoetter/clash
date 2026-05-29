@@ -7,7 +7,6 @@ import {
   resolveSnapshotType,
   overrideWarSnapshotDaysWithLiveCurrentDay,
 } from "./snapshot.js";
-
 const TMP_DIR = path.join("/tmp", "clash-snapshots");
 const TEST_TAG = "TESTTAG2";
 const TEST_FILE = path.join(TMP_DIR, `${TEST_TAG}.json`);
@@ -191,6 +190,7 @@ async function main() {
   }
 
   {
+    await fs.rm(TEST_DATA_FILE, { force: true });
     await fs.writeFile(TEST_FILE, JSON.stringify([], null, 2), "utf-8");
     await recordSnapshot(
       TEST_TAG,
@@ -412,8 +412,34 @@ async function main() {
     saturdaySnap.snapshotBackupTime,
     "2026-04-25T10:05:00.000Z",
   );
-  assert.strictEqual(saturdaySnap.snapshotCount, 0);
-  assert.deepStrictEqual(saturdaySnap.decks, {});
+  assert.strictEqual(saturdaySnap.snapshotCount, 12);
+  assert.deepStrictEqual(saturdaySnap.decks, {
+    "#C": 4,
+    "#D": 4,
+    "#E": 4,
+  });
+
+  {
+    await fs.writeFile(TEST_FILE, JSON.stringify([], null, 2), "utf-8");
+    await recordSnapshot(
+      TEST_TAG,
+      [
+        { tag: "#A", decksUsed: 4, decksUsedToday: 1 },
+        { tag: "#B", decksUsed: 4, decksUsedToday: 4 },
+      ],
+      "S131W3",
+      {
+        now: "2026-04-24T10:05:00.000Z",
+        battleLogsByTag: {
+          "#A": [{ type: "riverRaceDuel", battleTime: "20260424T120000.000Z" }],
+          "#B": [{ type: "riverRacePvP", battleTime: "20260424T120000.000Z" }],
+        },
+      },
+    );
+    const duelWeekSnaps = await getSnapshotsForWeeks(TEST_TAG, ["S131W3"]);
+    const fridayDuelSnap = duelWeekSnaps.S131W3[1];
+    assert.deepStrictEqual(fridayDuelSnap.duelsTodayByTag, { "#A": 1 });
+  }
 
   await fs.rm(TEST_FILE, { force: true });
   await fs.rm(TEST_DATA_FILE, { force: true });
