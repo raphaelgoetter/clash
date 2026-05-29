@@ -244,10 +244,19 @@ function mergeSnapshotsByDay(
   backupWeeks,
   annotateSource = false,
 ) {
+  const primaryByWeek = new Map((primaryWeeks ?? []).map((w) => [w.week, w]));
   const backupByWeek = new Map((backupWeeks ?? []).map((w) => [w.week, w]));
-  return (primaryWeeks ?? []).map((week) => {
-    const backupWeek = backupByWeek.get(week.week);
-    if (!backupWeek) return week;
+  const orderedWeekKeys = [
+    ...(primaryWeeks ?? []).map((w) => w.week),
+    ...(backupWeeks ?? [])
+      .map((w) => w.week)
+      .filter((week) => !primaryByWeek.has(week)),
+  ];
+
+  return orderedWeekKeys.map((weekKey) => {
+    const week = primaryByWeek.get(weekKey) ?? backupByWeek.get(weekKey);
+    const backupWeek = backupByWeek.get(weekKey);
+    if (!backupWeek || !primaryByWeek.has(weekKey)) return week;
     return {
       ...week,
       days: (week.days ?? []).map((day, idx) => {
