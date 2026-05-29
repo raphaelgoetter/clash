@@ -325,6 +325,49 @@ function buildSparkline(values) {
     .join("");
 }
 
+// Construit la section "Autres comptes connus" pour un tag donné.
+// Renvoie un field Discord ou null si aucun autre compte n'est trouvé.
+async function buildOtherAccountsField(playerTag, discordLinks) {
+  const normalizedTag = normalizeClashTag(playerTag);
+  const discordUserId = discordLinks[normalizedTag];
+  if (!discordUserId) return null;
+
+  const otherTags = Object.entries(discordLinks)
+    .filter(
+      ([t, uid]) =>
+        String(uid) === String(discordUserId) &&
+        normalizeClashTag(t) !== normalizedTag,
+    )
+    .map(([t]) => normalizeClashTag(t));
+
+  if (otherTags.length === 0) return null;
+
+  const resolved = await Promise.all(
+    otherTags.map(async (t) => {
+      try {
+        const p = await fetchPlayer(t);
+        const name = String(p?.name ?? "").trim() || t;
+        const clanName = p?.clan?.name ?? null;
+        return { tag: t, name, clanName };
+      } catch {
+        return { tag: t, name: t, clanName: null };
+      }
+    }),
+  );
+
+  const lines = resolved.map(({ tag, name, clanName }) => {
+    const url = trustPlayerUrl(tag);
+    const clan = clanName ? ` (${clanName})` : "";
+    return `- [${name}](${url})${clan}`;
+  });
+
+  return {
+    name: "Autres comptes connus :",
+    value: lines.join("\n"),
+    inline: false,
+  };
+}
+
 // Convertit un critère de breakdown en field Discord (inline)
 // et effectue la traduction française des libellés.
 const LABEL_FR = {
@@ -720,6 +763,12 @@ export default async function handler(req, res) {
         const breakdownFields = buildReliabilityFields(score);
         const description = `${tag}`;
 
+        const discordLinks = await getDiscordLinks();
+        const otherAccountsField = await buildOtherAccountsField(
+          tag,
+          discordLinks,
+        );
+
         const fields = [
           {
             name: "Fiabilité :",
@@ -727,6 +776,7 @@ export default async function handler(req, res) {
             inline: false,
           },
           ...(breakdownFields ?? []),
+          ...(otherAccountsField ? [otherAccountsField] : []),
         ];
 
         const embed = {
@@ -1072,9 +1122,6 @@ export default async function handler(req, res) {
         if (pointsPerDeck !== null) {
           detailLines.push(`- **Points par deck :** ${pointsPerDeck}`);
         }
-        if (averageHourRange) {
-          detailLines.push(`- **Plage horaire moyenne :** ${averageHourRange}`);
-        }
 
         const clanLines = [
           `- **Actuel :** ${currentClanLink} (depuis ${currentClanWeeksPrefix}${currentClanWeeks} semaine${currentClanWeeks === 1 ? "" : "s"})`,
@@ -1111,6 +1158,15 @@ export default async function handler(req, res) {
             value: detailLines.join("\n"),
             inline: false,
           });
+        }
+
+        const discordLinks = await getDiscordLinks();
+        const otherAccountsField = await buildOtherAccountsField(
+          tag,
+          discordLinks,
+        );
+        if (otherAccountsField) {
+          fields.push(otherAccountsField);
         }
 
         const embed = {
