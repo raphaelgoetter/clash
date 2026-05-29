@@ -82,4 +82,22 @@ assert.strictEqual(
   "Le calcul doit retirer uniquement les jours où au moins un duel a été joué",
 );
 
+const truncatedBattleLogWithoutDuels = Array.from(
+  { length: 25 },
+  (_, index) => ({
+    type: index % 2 === 0 ? "riverRacePvP" : "riverRaceBoat",
+    battleTime: `202605${21 + (index % 4)}T120000.000Z`,
+  }),
+);
+
+assert.strictEqual(
+  computeMissingDuelsCountFromBattleLog(
+    truncatedBattleLogWithoutDuels,
+    "LRQP20V9",
+    WEEK_DAYS,
+  ),
+  0,
+  "Un battle log complet mais sans duel visible ne doit pas être traité comme une absence certaine",
+);
+
 console.log("notifyWarSummary.duels.test.js passed");

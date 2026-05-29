@@ -192,6 +192,7 @@ async function pooledMap(items, mapper, concurrency = 8) {
 }
 
 function computeMissingDuelsCountFromBattleLog(battleLog, clanTag, realDays) {
+  const rawBattleLog = Array.isArray(battleLog) ? battleLog : [];
   const normalizedDays = Array.from(
     new Set((realDays ?? []).filter((day) => typeof day === "string" && day)),
   );
@@ -200,13 +201,18 @@ function computeMissingDuelsCountFromBattleLog(battleLog, clanTag, realDays) {
   const targetDays = new Set(normalizedDays);
   const duelDays = new Set();
 
-  for (const battle of battleLog ?? []) {
+  for (const battle of rawBattleLog) {
     const type = normalizeBattleType(battle?.type);
     if (!DUEL_BATTLE_TYPES.has(type)) continue;
     const realDay = warDayKey(battle?.battleTime, clanTag);
     if (!targetDays.has(realDay)) continue;
     duelDays.add(realDay);
   }
+
+  // Le battle log Clash Royale est limité aux 25 combats les plus récents.
+  // Quand aucune entrée de duel n'y apparaît, on ne peut pas conclure de façon fiable
+  // qu'aucun duel n'a été joué sur la semaine.
+  if (rawBattleLog.length >= 25 && duelDays.size === 0) return 0;
 
   return Math.max(0, normalizedDays.length - duelDays.size);
 }
@@ -226,6 +232,7 @@ async function computeMissingDuelsForDays(clanTag, realDays, membersByTag) {
 
   let fetched = 0;
   let failed = 0;
+  let truncatedBattleLogs = 0;
 
   const rows = await pooledMap(
     members,
@@ -233,6 +240,9 @@ async function computeMissingDuelsForDays(clanTag, realDays, membersByTag) {
       try {
         const battleLog = await fetchBattleLog(playerTag);
         fetched += 1;
+        if (Array.isArray(battleLog) && battleLog.length >= 25) {
+          truncatedBattleLogs += 1;
+        }
 
         const missingDuels = computeMissingDuelsCountFromBattleLog(
           battleLog,
@@ -261,7 +271,7 @@ async function computeMissingDuelsForDays(clanTag, realDays, membersByTag) {
         b.missingDuels - a.missingDuels || a.name.localeCompare(b.name, "fr"),
     );
 
-  return { players, fetched, failed };
+  return { players, fetched, failed, truncatedBattleLogs };
 }
 
 async function readClanMemberNames(tag) {
@@ -944,12 +954,16 @@ async function postWarSummary(
       dailyDuelMissingInfo.failed > 0
         ? `_( ${dailyDuelMissingInfo.failed} battlelog${dailyDuelMissingInfo.failed > 1 ? "s" : ""} indisponible${dailyDuelMissingInfo.failed > 1 ? "s" : ""})_`
         : "";
+    const truncationNote =
+      dailyDuelMissingInfo.truncatedBattleLogs > 0
+        ? `_( ${dailyDuelMissingInfo.truncatedBattleLogs} battlelog${dailyDuelMissingInfo.truncatedBattleLogs > 1 ? "s" : ""} potentiellement tronqué${dailyDuelMissingInfo.truncatedBattleLogs > 1 ? "s" : ""} par la limite API de 25 combats )_`
+        : "";
     fields.push(
       ...buildMissingDuelsFields(
         "<:battle:1493710671244689449> Duels manquants",
         totalMissingDuels,
         duelEntries,
-        failedNote,
+        [failedNote, truncationNote].filter(Boolean).join("\n"),
       ),
     );
   }
@@ -1089,11 +1103,16 @@ async function postWarSummary(
       const duelEntries = weeklyDuelMissingInfo.players.map(
         (player) => `${player.name} (x${player.missingDuels})`,
       );
+      const truncationNote =
+        weeklyDuelMissingInfo.truncatedBattleLogs > 0
+          ? `_( ${weeklyDuelMissingInfo.truncatedBattleLogs} battlelog${weeklyDuelMissingInfo.truncatedBattleLogs > 1 ? "s" : ""} potentiellement tronqué${weeklyDuelMissingInfo.truncatedBattleLogs > 1 ? "s" : ""} par la limite API de 25 combats )_`
+          : "";
       weeklyFields.push(
         ...buildMissingDuelsFields(
           "<:battle:1493710671244689449> Duels manquants",
           totalMissingDuels,
           duelEntries,
+          truncationNote,
         ),
       );
     }
