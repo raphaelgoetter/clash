@@ -28,7 +28,6 @@ const LOG_FILE = path.join(__dirname, "..", "data", "last-seen-log.json");
 const DISCORD_API = "https://discord.com/api/v10";
 const DRY_RUN = process.argv.includes("--dry-run");
 const FORCE = process.argv.includes("--force");
-const TARGET_PARIS_HOUR = 11;
 
 const CLAN_RULES = {
   Y8JUPC9C: {
@@ -99,8 +98,6 @@ function formatPlayerUrl(tag) {
 function getParisDateParts(now = new Date()) {
   const formatter = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Europe/Paris",
-    hour: "2-digit",
-    hour12: false,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -110,7 +107,6 @@ function getParisDateParts(now = new Date()) {
     parts.find((part) => part.type === type)?.value ?? "";
   return {
     dateKey: `${getPart("year")}-${getPart("month")}-${getPart("day")}`,
-    hour: Number(getPart("hour")),
   };
 }
 
@@ -262,12 +258,6 @@ async function main() {
 
   const now = new Date();
   const parisParts = getParisDateParts(now);
-  if (!DRY_RUN && !FORCE && parisParts.hour !== TARGET_PARIS_HOUR) {
-    console.log(
-      `LastSeen: exécution ignorée à ${parisParts.hour}h Paris, cible ${TARGET_PARIS_HOUR}h.`,
-    );
-    return;
-  }
 
   const log = await readLog();
   const todayKey = parisParts.dateKey;

@@ -9,7 +9,7 @@ on:
     # 10:05 UTC — ~25 min après le reset GDC (09:40 UTC).
     # Tourne chaque jour mais ne poste que les lendemains de GDC
     # (ven/sam/dim/lun matin, pour J1/J2/J3/J4).
-    - cron: '5 10 * * *'
+    - cron: "5 10 * * *"
   workflow_dispatch:
 
 jobs:
@@ -28,7 +28,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Install deps
         run: npm ci
@@ -36,10 +36,14 @@ jobs:
       - name: Post GDC summary
         run: node scripts/notifyWarSummary.js
 
+      - name: Post last seen alert
+        run: node scripts/notifyLastSeen.js
+
       - name: Commit log anti-doublon
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/war-summary-log.json || true
+          git add data/last-seen-log.json || true
           git diff --cached --quiet || git commit -m "chore: mise à jour log résumé GDC"
           git push || true
