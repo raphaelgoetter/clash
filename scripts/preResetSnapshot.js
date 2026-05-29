@@ -78,18 +78,59 @@ function sleepUntil(targetMs) {
   return new Promise((resolve) => setTimeout(resolve, delay));
 }
 
+/** Attend un délai fixe en ms. */
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function takePreResetSnapshot(clanTag) {
-  console.log(`[${clanTag}] Appel API pré-reset...`);
-  const [race, raceLog] = await Promise.all([
-    fetchCurrentRace(clanTag),
-    fetchRaceLog(clanTag),
-  ]);
+  const MAX_ATTEMPTS = 3;
+  const RETRY_DELAY_MS = 10_000; // 10s entre chaque tentative
+
+  let race = null;
+  let raceLog = null;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    console.log(
+      `[${clanTag}] Appel API pré-reset (tentative ${attempt}/${MAX_ATTEMPTS})...`,
+    );
+    try {
+      [race, raceLog] = await Promise.all([
+        fetchCurrentRace(clanTag),
+        fetchRaceLog(clanTag),
+      ]);
+    } catch (err) {
+      console.warn(
+        `[${clanTag}] Erreur API tentative ${attempt}: ${err.message}`,
+      );
+      if (attempt < MAX_ATTEMPTS) {
+        console.log(
+          `[${clanTag}] Nouvel essai dans ${RETRY_DELAY_MS / 1000}s...`,
+        );
+        await sleep(RETRY_DELAY_MS);
+        continue;
+      }
+      throw err;
+    }
+
+    const participants = race?.clan?.participants ?? [];
+    if (participants.length === 0) {
+      console.warn(
+        `[${clanTag}] Aucun participant (tentative ${attempt}) — ${attempt < MAX_ATTEMPTS ? `nouvel essai dans ${RETRY_DELAY_MS / 1000}s...` : "snapshot ignoré."}`,
+      );
+      if (attempt < MAX_ATTEMPTS) {
+        await sleep(RETRY_DELAY_MS);
+        continue;
+      }
+      return;
+    }
+
+    // API OK, on sort de la boucle
+    break;
+  }
 
   const participants = race?.clan?.participants ?? [];
-  if (participants.length === 0) {
-    console.warn(`[${clanTag}] Aucun participant — snapshot ignoré.`);
-    return;
-  }
+  if (participants.length === 0) return;
 
   const WAR_ACTIVE_TYPES = ["warDay", "colosseum"];
   const weekId = !WAR_ACTIVE_TYPES.includes(race?.periodType)
@@ -177,7 +218,10 @@ async function main() {
     try {
       await takePreResetSnapshot(tag);
     } catch (err) {
-      console.error(`[${tag}] Erreur lors du snapshot pré-reset:`, err.message);
+      console.error(
+        `[${tag}] Échec définitif après ${3} tentatives:`,
+        err.message,
+      );
     }
   }
 
