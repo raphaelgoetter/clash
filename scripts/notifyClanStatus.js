@@ -13,6 +13,7 @@ import { fileURLToPath } from "url";
 import path from "path";
 import fetch from "node-fetch";
 import { warResetOffsetMs } from "../backend/services/dateUtils.js";
+import { fetchClan } from "../backend/services/clashApi.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CACHE_DIR = path.join(
@@ -27,15 +28,16 @@ const LOG_FILE = path.join(__dirname, "..", "data", "clan-status-log.json");
 const DISCORD_API = "https://discord.com/api/v10";
 const DRY_RUN = process.argv.includes("--dry-run");
 const FORCE = process.argv.includes("--force");
+const ROLE_CACHE = new Map();
 
 const CLAN_RULES = {
   Y8JUPC9C: {
     name: "La Resistance",
-    channelEnv: "DISCORD_CHANNEL_MEMBERS_Y8JUPC9C",
+    roleName: "LA RESISTANCE ★",
   },
   LRQP20V9: {
     name: "Les Resistants",
-    channelEnv: "DISCORD_CHANNEL_MEMBERS_LRQP20V9",
+    roleName: "LES RESISTANTS ★",
   },
 };
 
@@ -81,6 +83,52 @@ function shouldBeInviteOnly(clanTag, now = new Date()) {
 
 function expectedClanType(clanTag, now = new Date()) {
   return shouldBeInviteOnly(clanTag, now) ? "inviteOnly" : "open";
+}
+
+function normalizeRoleName(value) {
+  return String(value ?? "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
+async function fetchGuildRoles(token) {
+  const guildId = process.env.DISCORD_GUILD_ID;
+  if (!guildId) {
+    throw new Error("Variable manquante: DISCORD_GUILD_ID");
+  }
+
+  const cacheKey = `roles:${guildId}`;
+  if (ROLE_CACHE.has(cacheKey)) {
+    return ROLE_CACHE.get(cacheKey);
+  }
+
+  const res = await fetch(`${DISCORD_API}/guilds/${guildId}/roles`, {
+    headers: { Authorization: `Bot ${token}` },
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Discord API ${res.status}: ${err}`);
+  }
+
+  const roles = await res.json();
+  ROLE_CACHE.set(cacheKey, Array.isArray(roles) ? roles : []);
+  return ROLE_CACHE.get(cacheKey);
+}
+
+async function resolveRoleMention(token, roleName) {
+  const normalizedTarget = normalizeRoleName(roleName);
+  const roles = await fetchGuildRoles(token);
+  const role = roles.find(
+    (entry) => normalizeRoleName(entry?.name) === normalizedTarget,
+  );
+
+  if (!role?.id) {
+    throw new Error(`Rôle Discord introuvable: ${roleName}`);
+  }
+
+  return { id: role.id, mention: `<@&${role.id}>` };
 }
 
 export function collectClanStatusIssues(clan, clanTag, now = new Date()) {
@@ -133,7 +181,18 @@ export function buildClanStatusEmbed(issue) {
         inline: false,
       },
     ],
-    footer: { text: `${issue.name} · #${issue.tag}` },
+  };
+}
+
+export function buildClanStatusPayload(issue, role) {
+  const embed = buildClanStatusEmbed(issue);
+  return {
+    content: role?.mention,
+    embeds: [embed],
+    allowed_mentions: {
+      parse: [],
+      roles: role?.id ? [role.id] : [],
+    },
   };
 }
 
@@ -158,9 +217,9 @@ async function saveLog(log) {
   await writeFile(LOG_FILE, JSON.stringify(log, null, 2));
 }
 
-async function sendDiscordEmbed(channelId, token, embed) {
+async function sendDiscordEmbed(channelId, token, payload) {
   if (DRY_RUN) {
-    console.log(JSON.stringify({ embeds: [embed] }, null, 2));
+    console.log(JSON.stringify(payload, null, 2));
     return;
   }
 
@@ -170,7 +229,7 @@ async function sendDiscordEmbed(channelId, token, embed) {
       "Content-Type": "application/json",
       Authorization: `Bot ${token}`,
     },
-    body: JSON.stringify({ embeds: [embed] }),
+    body: JSON.stringify(payload),
   });
 
   if (!res.ok) {
@@ -185,6 +244,11 @@ async function main() {
     throw new Error("Variable manquante: DISCORD_TOKEN");
   }
 
+  const staffChannelId = process.env.DISCORD_CHANNEL_STAFF;
+  if (!staffChannelId) {
+    throw new Error("Variable manquante: DISCORD_CHANNEL_STAFF");
+  }
+
   const now = new Date();
   const parisParts = getParisDateParts(now);
   const log = await readLog();
@@ -192,23 +256,32 @@ async function main() {
   let postedCount = 0;
 
   for (const [clanTag, rule] of Object.entries(CLAN_RULES)) {
-    const channelId = process.env[rule.channelEnv];
-    if (!channelId) {
-      throw new Error(`Variable manquante: ${rule.channelEnv}`);
-    }
-
     if (!FORCE && log[clanTag] === todayKey) {
       continue;
     }
 
     const cached = await readClanCache(clanTag);
-    if (!cached) continue;
+    const liveClan = await fetchClan(clanTag).catch(() => null);
+    if (!cached && !liveClan) continue;
 
-    const issue = collectClanStatusIssues(cached, clanTag, now);
+    const issue = collectClanStatusIssues(
+      {
+        clan: {
+          name: liveClan?.name ?? cached?.clan?.name,
+          type: liveClan?.type ?? cached?.clan?.type,
+        },
+      },
+      clanTag,
+      now,
+    );
     if (!issue) continue;
 
-    const embed = buildClanStatusEmbed(issue);
-    await sendDiscordEmbed(channelId, token, embed);
+    const role = await resolveRoleMention(token, rule.roleName);
+    await sendDiscordEmbed(
+      staffChannelId,
+      token,
+      buildClanStatusPayload(issue, role),
+    );
     log[clanTag] = todayKey;
     await saveLog(log);
     postedCount += 1;

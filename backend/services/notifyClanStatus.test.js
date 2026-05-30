@@ -1,6 +1,7 @@
 import assert from "assert";
 import {
   buildClanStatusEmbed,
+  buildClanStatusPayload,
   collectClanStatusIssues,
 } from "../../scripts/notifyClanStatus.js";
 
@@ -42,5 +43,15 @@ assert.strictEqual(
 );
 assert.strictEqual(embed.fields[0].name, "Statut actuel");
 assert.strictEqual(embed.fields[1].value, "InvitationOnly");
+
+const payload = buildClanStatusPayload(warDayIssue, {
+  id: "1234567890",
+  mention: "<@&1234567890>",
+});
+assert.strictEqual(payload.content, "<@&1234567890>");
+assert.deepStrictEqual(payload.allowed_mentions, {
+  parse: [],
+  roles: ["1234567890"],
+});
 
 console.log("notifyClanStatus.test.js passed");
