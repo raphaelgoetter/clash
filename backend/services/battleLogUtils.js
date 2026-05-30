@@ -210,11 +210,10 @@ function normalizeWarDeckCardId(card) {
 }
 
 function formatWarDeckCards(deckCards) {
-  const names = deckCards
+  return deckCards
     .map((card) => String(card?.name ?? card?.id ?? "").trim())
-    .filter(Boolean);
-  if (names.length <= 2) return names.join(", ");
-  return `${names.slice(0, 2).join(", ")}, ...`;
+    .filter(Boolean)
+    .join(", ");
 }
 
 /**
@@ -224,13 +223,15 @@ function formatWarDeckCards(deckCards) {
  *
  * @param {object[]} battleLog
  * @param {number} [limit=4]
+ * @param {string|null} [dayKey=null] Optionnel — limite aux combats du jour GDC indiqué (YYYY-MM-DD).
  * @returns {{ label:string; cards:string; plays:number; wins:number; winRate:number }[]}
  */
-export function summarizeWarDecks(battleLog, limit = 4) {
+export function summarizeWarDecks(battleLog, limit = 4, dayKey = null) {
   const decks = new Map();
   const warBattles = filterWarBattles(battleLog ?? []);
 
   warBattles.forEach((battle, battleIndex) => {
+    if (dayKey && warDayKey(battle?.battleTime) !== dayKey) return;
     const cards = Array.isArray(battle?.team?.[0]?.cards)
       ? battle.team[0].cards
       : [];
