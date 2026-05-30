@@ -292,7 +292,9 @@ function computeMissingDuelsFromSnapshots(
   if (dayEntries.length !== normalizedDays.length) return null;
   if (
     dayEntries.some(
-      (day) => !Object.prototype.hasOwnProperty.call(day, "duelsTodayByTag"),
+      (day) =>
+        !Object.prototype.hasOwnProperty.call(day, "duelsTodayByTag") ||
+        day.duelsComplete !== true,
     )
   ) {
     return null;
@@ -383,7 +385,7 @@ function computeDailyFame(dayEntry, prevDayEntry) {
 }
 
 const DECKS_MAX_WEEK = 800; // 50 membres × 4 decks × 4 jours
-const MISSING_DUELS_DETAIL_THRESHOLD = 50;
+const MISSING_DUELS_DETAIL_THRESHOLD = 15;
 
 /** Formate un entier avec séparateur de milliers français : 88400 → "88 400". */
 function fmt(n) {
@@ -883,20 +885,16 @@ async function postWarSummary(
     typeof dayEntry?.realDay === "string" && dayEntry.realDay
       ? [dayEntry.realDay]
       : [];
-  const dailyDuelMissingInfo =
-    computeMissingDuelsFromSnapshots(
-      allWeekDays,
-      dailyDuelTargetDays,
-      memberNames,
-    ) ??
-    (await computeMissingDuelsForDays(tag, dailyDuelTargetDays, memberNames));
-  const weeklyDuelMissingInfo =
-    computeMissingDuelsFromSnapshots(
-      allWeekDays,
-      weeklyDuelTargetDays,
-      memberNames,
-    ) ??
-    (await computeMissingDuelsForDays(tag, weeklyDuelTargetDays, memberNames));
+  const dailyDuelMissingInfo = computeMissingDuelsFromSnapshots(
+    allWeekDays,
+    dailyDuelTargetDays,
+    memberNames,
+  );
+  const weeklyDuelMissingInfo = computeMissingDuelsFromSnapshots(
+    allWeekDays,
+    weeklyDuelTargetDays,
+    memberNames,
+  );
 
   // ── Résumé du jour ──
   const isColosseum = dayEntry.periodType === "colosseum";

@@ -192,6 +192,8 @@ function normalizeSnapshots(raw, clanTag = null) {
         existing.duelsTodayByTag ?? {},
         incoming.duelsTodayByTag ?? {},
       ),
+      duelsComplete:
+        Boolean(existing.duelsComplete) || Boolean(incoming.duelsComplete),
       hourlyCumul,
     };
   };
@@ -563,6 +565,7 @@ function makeEmptyDay(warDay, realDay = null, clanTag = null) {
     hourlyCumul: [],
     _cumulFame: {},
     duelsTodayByTag: {},
+    duelsComplete: false,
     periodType: null,
   };
 }
@@ -641,6 +644,7 @@ function fillWeekDays(week, clanTag = null) {
     day._cumul = day._cumul ?? {};
     day._cumulFame = day._cumulFame ?? {};
     day.duelsTodayByTag = day.duelsTodayByTag ?? {};
+    day.duelsComplete = Boolean(day.duelsComplete);
     day.periodType = day.periodType ?? null;
 
     return day;
@@ -803,6 +807,11 @@ export async function recordSnapshot(
   });
 
   const battleLogsByTag = options.battleLogsByTag ?? null;
+  const hasCompleteDuelCapture =
+    battleLogsByTag != null &&
+    participantData.every((participant) =>
+      Object.prototype.hasOwnProperty.call(battleLogsByTag, participant.tag),
+    );
   const buildDuelPresenceByTag = (targetRealDay) => {
     const duelPresenceByTag = {};
     if (!battleLogsByTag || !targetRealDay) return duelPresenceByTag;
@@ -928,6 +937,8 @@ export async function recordSnapshot(
     dayEntry.duelsTodayByTag ?? {},
     buildDuelPresenceByTag(realDay),
   );
+  dayEntry.duelsComplete =
+    Boolean(dayEntry.duelsComplete) || hasCompleteDuelCapture;
   dayEntry.periodType = options.periodType ?? dayEntry.periodType ?? null;
 
   const cutoff = Date.now() - RETENTION_DAYS * 24 * 3600 * 1000;
@@ -994,6 +1005,8 @@ export async function recordSnapshot(
         prevDayEntry.duelsTodayByTag ?? {},
         buildDuelPresenceByTag(prevDayEntry.realDay),
       );
+      prevDayEntry.duelsComplete =
+        Boolean(prevDayEntry.duelsComplete) || hasCompleteDuelCapture;
       prevDayEntry.snapshotCount = computeSnapshotCount(prevDayEntry.decks);
       prevDayEntry.snapshotBackupTime =
         prevDayEntry.snapshotBackupTime ?? now.toISOString();
@@ -1041,6 +1054,8 @@ export async function recordSnapshot(
         prevDayEntry.duelsTodayByTag ?? {},
         buildDuelPresenceByTag(prevDayEntry.realDay),
       );
+      prevDayEntry.duelsComplete =
+        Boolean(prevDayEntry.duelsComplete) || hasCompleteDuelCapture;
       prevDayEntry.snapshotCount = computeSnapshotCount(prevDayEntry.decks);
     }
 
@@ -1118,6 +1133,7 @@ export async function getSnapshotsForWeek(clanTag, week = null) {
         ? (d._cumulFamePreReset ?? {})
         : {},
       duelsTodayByTag: isValidSnapshot(d) ? (d.duelsTodayByTag ?? {}) : {},
+      duelsComplete: isValidSnapshot(d) ? Boolean(d.duelsComplete) : false,
     };
   };
 
@@ -1184,6 +1200,7 @@ export async function getSnapshotsForWeeks(clanTag, weeks) {
         ? (d._cumulFamePreReset ?? {})
         : {},
       duelsTodayByTag: isValidSnapshot(d) ? (d.duelsTodayByTag ?? {}) : {},
+      duelsComplete: isValidSnapshot(d) ? Boolean(d.duelsComplete) : false,
       gdcPeriod: d.gdcPeriod ?? null,
     };
   };
