@@ -578,7 +578,7 @@ async function buildTagAutocompleteChoices(body, links) {
   );
 
   return resolvedNames.map(({ tag, name }) => ({
-    name: name ? `${tag} (${name})` : tag,
+    name: name ? `${name} (${tag})` : tag,
     value: tag,
   }));
 }
