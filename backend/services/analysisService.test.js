@@ -6,6 +6,9 @@ import {
   computeIsNewPlayer,
   computeWarScore,
   computeWarReliabilityFallback,
+  filterWarBattles,
+  hasDuelOnWarDay,
+  expandDuelRounds,
   warDayKey,
   warResetOffsetMs,
 } from "./analysisService.js";
@@ -145,11 +148,36 @@ assert.strictEqual(
   "warDayKey should still be saturday before clan-specific 09:54 UTC reset",
 );
 
-const clanAfterReset = new Date("2026-03-29T09:56:00.000Z"); // après 09:54 UTC pour LRQP20V9
+const clanAfterReset = new Date("2026-03-29T09:58:00.000Z"); // après 09:57 UTC pour LRQP20V9
 assert.strictEqual(
   warDayKey(clanAfterReset, "LRQP20V9"),
   "2026-03-29",
   "warDayKey should switch to sunday after clan-specific 09:54 UTC reset",
+);
+
+const duelBattleLog = [
+  {
+    type: "riverRaceDuelColosseum",
+    battleTime: "20260530T123350.000Z",
+    team: [{ rounds: [{ crowns: 1 }, { crowns: 2 }] }],
+    opponent: [{ rounds: [{ crowns: 0 }, { crowns: 1 }] }],
+  },
+  { type: "riverRacePvP", battleTime: "20260530T123845.000Z" },
+];
+assert.strictEqual(
+  hasDuelOnWarDay(duelBattleLog, "LRQP20V9", "2026-05-30"),
+  true,
+  "hasDuelOnWarDay should detect riverRaceDuelColosseum entries",
+);
+assert.strictEqual(
+  filterWarBattles(duelBattleLog).length,
+  2,
+  "filterWarBattles should keep duel colosseum battles",
+);
+assert.strictEqual(
+  expandDuelRounds([duelBattleLog[0]]).length,
+  2,
+  "expandDuelRounds should expand duel colosseum rounds",
 );
 
 // new Avg Score behavior (linear 1000→3000 fame) for all players

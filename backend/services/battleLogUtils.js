@@ -13,12 +13,12 @@ import { parseClashDate, MS_PER_DAY, warDayKey } from "./dateUtils.js";
 const WAR_BATTLE_TYPES = new Set([
   "riverracepvp",
   "riverraceduel",
-  "riverraceduelscolosseum",
+  "riverraceduelcolosseum",
   "riverraceboat",
   "clanwarbattle",
 ]);
 
-const DUEL_BATTLE_TYPES = new Set(["riverraceduel", "riverraceduelscolosseum"]);
+const DUEL_BATTLE_TYPES = new Set(["riverraceduel", "riverraceduelcolosseum"]);
 
 /** Battle types considered as regular Ladder / Path of Legend. */
 const LADDER_TYPES = new Set(["pvp", "pathoflegend", "ranked"]);
@@ -99,7 +99,11 @@ export function expandDuelRounds(warLog) {
   for (const battle of warLog) {
     const myEntry = battle.team?.[0];
     const oppEntry = battle.opponent?.[0];
-    if (battle.type === "riverRaceDuel" && Array.isArray(myEntry?.rounds)) {
+    const battleType = (battle.type ?? "").toLowerCase();
+    if (
+      DUEL_BATTLE_TYPES.has(battleType) &&
+      Array.isArray(myEntry?.rounds)
+    ) {
       // One synthetic entry per round — store per-round crowns so win detection is accurate.
       // The parent crowns represent the duel total and must NOT be used per-round.
       myEntry.rounds.forEach((round, i) => {
