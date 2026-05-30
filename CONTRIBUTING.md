@@ -58,6 +58,28 @@ La documentation détaillée des champs retournés par l’API Clash Royale (cha
 
 ## Formules et scoring
 
+### Projection de fin de journée (groupe GDC)
+
+La projection estime les points qu'un clan atteindra à la fin de la journée de guerre.
+
+**Formule générale :**
+
+```
+Projection = max(decksToday, targetDecks) × ptsPerDeck
+```
+
+**Calcul de `targetDecks` :**
+
+- **J1** (premier jour, `warDayIndex === 0`) : moyenne quotidienne de la semaine précédente (`avgDecksLastWeek`, fallback 200).
+- **J2–J4** (`warDayIndex > 0`) : `min(200, max(tReference, tPace, decksToday))`
+  - `tReference` : snapshot réel de la veille pour le clan propre ; moyenne de la semaine précédente pour les clans adverses.
+  - `tPace` : extrapolation de la cadence courante = `round(decksToday / fractionElapsed)`, où `fractionElapsed` est la fraction de journée écoulée depuis le reset. Activé seulement si ≥ 5 % du jour est écoulé (~72 min) — sinon `tPace = decksToday` pour éviter les extrapolations explosives en début de journée.
+  - Cap absolu à **200** (50 membres × 4 decks, infranchissable).
+
+**Remarques :**
+- Tous les clans d'un même groupe GDC partagent le même créneau de reset → `fractionElapsed` est calculée avec le reset du clan propre (`warResetOffsetMs(clanTag)`).
+- Cette formule s'applique uniformément au clan propre et aux clans adverses. Code source : `backend/routes/clan.js`, bloc `groupWithProjections`.
+
 ## Données upgrade cartes (page /deck-upgrade)
 
 Source de vérité utilisée pour la page publique `/deck-upgrade` :
