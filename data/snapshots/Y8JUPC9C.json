@@ -17,7 +17,8 @@
         "periodType": null,
         "snapshotCount": 190,
         "_cumul": {},
-        "duelsTodayByTag": {}
+        "duelsTodayByTag": {},
+        "duelsComplete": false
       },
       {
         "warDay": "friday",
@@ -234,7 +235,8 @@
           "#GGRLYR8PL": 8
         },
         "snapshotCount": 194,
-        "duelsTodayByTag": {}
+        "duelsTodayByTag": {},
+        "duelsComplete": false
       },
       {
         "warDay": "saturday",
@@ -473,7 +475,8 @@
           "#CYRGPVGVG": 12
         },
         "snapshotCount": 190,
-        "duelsTodayByTag": {}
+        "duelsTodayByTag": {},
+        "duelsComplete": false
       },
       {
         "warDay": "sunday",
@@ -739,7 +742,8 @@
           "#GR9G9ULL": 4
         },
         "snapshotCount": 194,
-        "duelsTodayByTag": {}
+        "duelsTodayByTag": {},
+        "duelsComplete": false
       }
     ]
   },
@@ -1004,7 +1008,8 @@
           "#28PQVJ2V": 4
         },
         "snapshotCount": 177,
-        "duelsTodayByTag": {}
+        "duelsTodayByTag": {},
+        "duelsComplete": false
       },
       {
         "warDay": "friday",
@@ -1271,7 +1276,8 @@
           "#VVJ8RURL9": 8
         },
         "snapshotCount": 189,
-        "duelsTodayByTag": {}
+        "duelsTodayByTag": {},
+        "duelsComplete": false
       },
       {
         "warDay": "saturday",
@@ -1534,7 +1540,8 @@
           "#PGJPJG9QQ": 12
         },
         "snapshotCount": 172,
-        "duelsTodayByTag": {}
+        "duelsTodayByTag": {},
+        "duelsComplete": false
       },
       {
         "warDay": "sunday",
@@ -1796,7 +1803,8 @@
           "#VVJ8RURL9": 16
         },
         "snapshotCount": 186,
-        "duelsTodayByTag": {}
+        "duelsTodayByTag": {},
+        "duelsComplete": false
       }
     ]
   },
@@ -2061,7 +2069,8 @@
           "#99CRC8PP": 4
         },
         "snapshotCount": 191,
-        "duelsTodayByTag": {}
+        "duelsTodayByTag": {},
+        "duelsComplete": false
       },
       {
         "warDay": "friday",
@@ -2320,7 +2329,8 @@
           "#VVJ8RURL9": 8
         },
         "snapshotCount": 189,
-        "duelsTodayByTag": {}
+        "duelsTodayByTag": {},
+        "duelsComplete": false
       },
       {
         "warDay": "saturday",
@@ -2738,7 +2748,8 @@
           "#UY00GJG2": 2400,
           "#8QL2J8PQ": 2500
         },
-        "duelsTodayByTag": {}
+        "duelsTodayByTag": {},
+        "duelsComplete": false
       },
       {
         "warDay": "sunday",
@@ -2985,7 +2996,8 @@
           "#99VY0090": 16
         },
         "snapshotCount": 176,
-        "duelsTodayByTag": {}
+        "duelsTodayByTag": {},
+        "duelsComplete": false
       }
     ]
   },
@@ -3180,7 +3192,8 @@
           "#YYYLG9JL": 4
         },
         "snapshotCount": 192,
-        "duelsTodayByTag": {}
+        "duelsTodayByTag": {},
+        "duelsComplete": false
       },
       {
         "warDay": "friday",
@@ -3551,7 +3564,8 @@
           "#G9LPGQUG": 1600,
           "#99VY0090": 1600
         },
-        "duelsTodayByTag": {}
+        "duelsTodayByTag": {},
+        "duelsComplete": false
       },
       {
         "warDay": "saturday",
@@ -3920,7 +3934,8 @@
           "#G9LPGQUG": 2400,
           "#888Y29GY": 2500
         },
-        "duelsTodayByTag": {}
+        "duelsTodayByTag": {},
+        "duelsComplete": false
       },
       {
         "warDay": "sunday",
@@ -4111,7 +4126,8 @@
           "#888Y29GY": 16
         },
         "snapshotCount": 187,
-        "duelsTodayByTag": {}
+        "duelsTodayByTag": {},
+        "duelsComplete": false
       }
     ]
   },
@@ -4320,7 +4336,8 @@
           "#YRYPUR822": 4
         },
         "snapshotCount": 191,
-        "duelsTodayByTag": {}
+        "duelsTodayByTag": {},
+        "duelsComplete": false
       },
       {
         "warDay": "friday",
@@ -4725,7 +4742,8 @@
           "#PG0Q0YYGY": 1700,
           "#YQGCRQ0": 1700
         },
-        "duelsTodayByTag": {}
+        "duelsTodayByTag": {},
+        "duelsComplete": false
       },
       {
         "warDay": "saturday",
@@ -5138,7 +5156,8 @@
           "#PG0Q0YYGY": 2500,
           "#YQGCRQ0": 2600
         },
-        "duelsTodayByTag": {}
+        "duelsTodayByTag": {},
+        "duelsComplete": false
       },
       {
         "warDay": "sunday",
@@ -5553,7 +5572,8 @@
           "#YQGCRQ0": 3250,
           "#GJ8RV8802": 3300
         },
-        "duelsTodayByTag": {}
+        "duelsTodayByTag": {},
+        "duelsComplete": false
       }
     ]
   },
@@ -5989,7 +6009,8 @@
           "#UY00GJG2": 900,
           "#UJ89GUUUY": 900
         },
-        "duelsTodayByTag": {}
+        "duelsTodayByTag": {},
+        "duelsComplete": false
       },
       {
         "warDay": "friday",
@@ -6420,7 +6441,8 @@
           "#GJ8RV8802": 1600,
           "#P9R8Y90P8": 1600,
           "#UY00GJG2": 1800
-        }
+        },
+        "duelsComplete": false
       },
       {
         "warDay": "saturday",
@@ -6429,7 +6451,7 @@
           "start": "2026-05-30T09:40:00.000Z",
           "end": "2026-05-31T09:39:59.999Z"
         },
-        "snapshotTime": "2026-05-30T15:26:34.803Z",
+        "snapshotTime": "2026-05-30T15:41:32.326Z",
         "snapshotBackupTime": "2026-05-30T09:43:31.034Z",
         "decks": {
           "#8PJ20UQCC": 4,
@@ -6611,7 +6633,8 @@
           "#9LJGGJGY": 2
         },
         "duelsTodayByTag": {},
-        "snapshotCount": 58
+        "snapshotCount": 58,
+        "duelsComplete": true
       },
       {
         "warDay": "sunday",
@@ -6627,7 +6650,8 @@
         "_cumulFame": {},
         "periodType": null,
         "_cumul": {},
-        "duelsTodayByTag": {}
+        "duelsTodayByTag": {},
+        "duelsComplete": false
       }
     ]
   }
