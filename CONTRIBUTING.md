@@ -77,6 +77,7 @@ Projection = max(decksToday, targetDecks) × ptsPerDeck
   - Cap absolu à **200** (50 membres × 4 decks, infranchissable).
 
 **Remarques :**
+
 - Tous les clans d'un même groupe GDC partagent le même créneau de reset → `fractionElapsed` est calculée avec le reset du clan propre (`warResetOffsetMs(clanTag)`).
 - Cette formule s'applique uniformément au clan propre et aux clans adverses. Code source : `backend/routes/clan.js`, bloc `groupWithProjections`.
 
