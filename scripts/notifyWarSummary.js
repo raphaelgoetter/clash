@@ -889,12 +889,12 @@ async function postWarSummary(
     allWeekDays,
     dailyDuelTargetDays,
     memberNames,
-  );
+  ) ?? { players: [], fetched: 0, failed: 0, truncatedBattleLogs: 0 };
   const weeklyDuelMissingInfo = computeMissingDuelsFromSnapshots(
     allWeekDays,
     weeklyDuelTargetDays,
     memberNames,
-  );
+  ) ?? { players: [], fetched: 0, failed: 0, truncatedBattleLogs: 0 };
 
   // ── Résumé du jour ──
   const isColosseum = dayEntry.periodType === "colosseum";

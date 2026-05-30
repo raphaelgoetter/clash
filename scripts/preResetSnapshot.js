@@ -29,11 +29,8 @@ const DRY_RUN = process.argv.includes("--dry-run");
 const PRE_RESET_LEAD_MS = 2 * 60 * 1000; // 2 minutes avant le reset
 
 async function buildBattleLogsByTag(participants = []) {
-  const activeParticipants = participants.filter(
-    (p) => (p.decksUsedToday ?? 0) > 0,
-  );
   const entries = await Promise.all(
-    activeParticipants.map(async (participant) => {
+    participants.map(async (participant) => {
       try {
         return [participant.tag, await fetchBattleLog(participant.tag)];
       } catch (_) {

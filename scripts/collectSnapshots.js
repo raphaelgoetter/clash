@@ -18,11 +18,8 @@ import {
 } from "../backend/services/dateUtils.js";
 
 async function buildBattleLogsByTag(participants = []) {
-  const activeParticipants = participants.filter(
-    (p) => (p.decksUsedToday ?? 0) > 0,
-  );
   const entries = await Promise.all(
-    activeParticipants.map(async (participant) => {
+    participants.map(async (participant) => {
       try {
         return [participant.tag, await fetchBattleLog(participant.tag)];
       } catch (_) {

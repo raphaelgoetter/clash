@@ -110,6 +110,19 @@ async function pooledAllSettled(tasks, concurrency = 10) {
   return results;
 }
 
+async function buildBattleLogsByTag(participants = []) {
+  const entries = await Promise.all(
+    participants.map(async (participant) => {
+      try {
+        return [participant.tag, await fetchBattleLog(participant.tag)];
+      } catch (_) {
+        return [participant.tag, null];
+      }
+    }),
+  );
+  return Object.fromEntries(entries.filter(([, log]) => Array.isArray(log)));
+}
+
 /**
  * GET /api/clan/:tag
  * Returns raw clan profile from the Clash Royale API.
@@ -824,8 +837,14 @@ router.post("/:tag/snapshot", async (req, res) => {
     const weekId =
       computeCurrentWeekId(currentRace, raceLog) ??
       `W${(currentRace.sectionIndex ?? 0) + 1}`;
+    const battleLogsByTag = await buildBattleLogsByTag(
+      currentRace.clan.participants,
+    );
 
-    await recordSnapshot(clanTag, currentRace.clan.participants, weekId);
+    await recordSnapshot(clanTag, currentRace.clan.participants, weekId, {
+      periodType: currentRace?.periodType ?? null,
+      battleLogsByTag,
+    });
     const debugInfo = await getSnapshotFileDebug(clanTag).catch(() => null);
     res.json({ ok: true, weekId, debugInfo });
   } catch (err) {
@@ -860,8 +879,14 @@ router.get("/:tag/snapshot-force", async (req, res) => {
     const weekId =
       computeCurrentWeekId(currentRace, raceLog) ??
       `W${(currentRace.sectionIndex ?? 0) + 1}`;
+    const battleLogsByTag = await buildBattleLogsByTag(
+      currentRace.clan.participants,
+    );
 
-    await recordSnapshot(clanTag, currentRace.clan.participants, weekId);
+    await recordSnapshot(clanTag, currentRace.clan.participants, weekId, {
+      periodType: currentRace?.periodType ?? null,
+      battleLogsByTag,
+    });
     const debugInfo = await getSnapshotFileDebug(clanTag).catch(() => null);
     return res.json({ ok: true, weekId, debugInfo });
   } catch (err) {
