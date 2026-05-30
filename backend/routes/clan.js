@@ -2674,9 +2674,23 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 // Clan propre J2-J4 : cible = snapshot de la veille (reflète la journée précédente réelle)
                 targetDecks = warSnapshotDays[warDayIndex - 1];
               } else if (warDayIndex > 0) {
-                // J2-J4 (rivaux) : cible = moyenne des jours passés (seule donnée disponible)
-                const decksPassed = totalDecksWeekly - decksToday;
-                targetDecks = decksPassed / warDayIndex;
+                // J2-J4 (rivaux) : cible = max(historique semaine passée, pace extrapolée)
+                // Tous les clans d'un groupe GDC partagent le même reset → on utilise celui du clan propre.
+                const resetOffsetMs = warResetOffsetMs(clanTag);
+                const nowGdcDate = new Date(Date.now() - resetOffsetMs);
+                const msElapsedToday = nowGdcDate.getTime() % MS_PER_DAY;
+                const fractionElapsed = msElapsedToday / MS_PER_DAY;
+                // Extrapolation de pace : décks joués / fraction de journée écoulée, capé à 200.
+                // Seuil de 5 % (~72 min) pour éviter une extrapolation explosive en tout début de journée.
+                const tPace =
+                  fractionElapsed >= 0.05 && decksToday > 0
+                    ? Math.round(decksToday / fractionElapsed)
+                    : decksToday;
+                const tHistorique = avgDecksLastWeek ?? 200;
+                targetDecks = Math.min(
+                  200,
+                  Math.max(tHistorique, tPace, decksToday),
+                );
               } else {
                 // J1 (ou par défaut) : on utilise la moyenne de la semaine passée
                 targetDecks = avgDecksLastWeek ?? 200;
