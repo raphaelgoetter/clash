@@ -9,6 +9,7 @@ import {
   filterWarBattles,
   hasDuelOnWarDay,
   expandDuelRounds,
+  summarizeWarDecks,
   warDayKey,
   warResetOffsetMs,
 } from "./analysisService.js";
@@ -178,6 +179,93 @@ assert.strictEqual(
   expandDuelRounds([duelBattleLog[0]]).length,
   2,
   "expandDuelRounds should expand duel colosseum rounds",
+);
+
+const warDeckSummary = summarizeWarDecks(
+  [
+    {
+      type: "riverRacePvP",
+      battleTime: "20260530T120000.000Z",
+      team: [
+        {
+          cards: [
+            { id: "1001", name: "Valkyrie" },
+            { id: "1002", name: "Bowler" },
+            { id: "1003", name: "Fireball" },
+            { id: "1004", name: "Miner" },
+            { id: "1005", name: "Zap" },
+            { id: "1006", name: "Poison" },
+            { id: "1007", name: "Musketeer" },
+            { id: "1008", name: "Tesla" },
+          ],
+          crowns: 3,
+        },
+      ],
+      opponent: [{ crowns: 0 }],
+    },
+    {
+      type: "riverRacePvP",
+      battleTime: "20260530T121000.000Z",
+      team: [
+        {
+          cards: [
+            { id: "1008", name: "Tesla" },
+            { id: "1007", name: "Musketeer" },
+            { id: "1006", name: "Poison" },
+            { id: "1005", name: "Zap" },
+            { id: "1004", name: "Miner" },
+            { id: "1003", name: "Fireball" },
+            { id: "1002", name: "Bowler" },
+            { id: "1001", name: "Valkyrie" },
+          ],
+          crowns: 0,
+        },
+      ],
+      opponent: [{ crowns: 1 }],
+    },
+    {
+      type: "riverRaceDuel",
+      battleTime: "20260530T122000.000Z",
+      team: [
+        {
+          cards: [
+            { id: "2001", name: "Knight" },
+            { id: "2002", name: "Archers" },
+            { id: "2003", name: "Goblin Gang" },
+            { id: "2004", name: "Log" },
+            { id: "2005", name: "Cannon" },
+            { id: "2006", name: "Ice Spirit" },
+            { id: "2007", name: "Skeletons" },
+            { id: "2008", name: "Hog Rider" },
+          ],
+          rounds: [{ crowns: 1 }],
+        },
+      ],
+      opponent: [{ rounds: [{ crowns: 0 }] }],
+    },
+  ],
+  4,
+);
+
+assert.strictEqual(
+  warDeckSummary.length,
+  2,
+  "summarizeWarDecks should merge identical deck signatures",
+);
+assert.strictEqual(
+  warDeckSummary[0].plays,
+  2,
+  "summarizeWarDecks should count both plays of the same deck",
+);
+assert.strictEqual(
+  warDeckSummary[0].winRate,
+  50,
+  "summarizeWarDecks should compute the right winrate",
+);
+assert.strictEqual(
+  warDeckSummary[1].label,
+  "Deck 2",
+  "summarizeWarDecks should number the second deck",
 );
 
 // new Avg Score behavior (linear 1000→3000 fame) for all players

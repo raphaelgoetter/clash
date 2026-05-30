@@ -193,3 +193,101 @@ export function buildDailyActivity(battleLog, days = 30) {
 
   return Object.entries(map).map(([date, count]) => ({ date, count }));
 }
+
+function chunkArray(items, size) {
+  const chunks = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
+function normalizeWarDeckCardId(card) {
+  const rawId = card?.id ?? card?.name ?? card;
+  if (rawId === null || rawId === undefined) return "";
+  const normalized = String(rawId).trim();
+  return normalized ? normalized.toUpperCase() : "";
+}
+
+function formatWarDeckCards(deckCards) {
+  const names = deckCards
+    .map((card) => String(card?.name ?? card?.id ?? "").trim())
+    .filter(Boolean);
+  if (names.length <= 2) return names.join(", ");
+  return `${names.slice(0, 2).join(", ")}, ...`;
+}
+
+/**
+ * Agrège les decks GDC visibles dans le battle log brut du joueur.
+ * Le résultat est trié par nombre d'utilisations décroissant puis par ordre
+ * d'apparition, pour faire ressortir les decks les plus joués.
+ *
+ * @param {object[]} battleLog
+ * @param {number} [limit=4]
+ * @returns {{ label:string; cards:string; plays:number; wins:number; winRate:number }[]}
+ */
+export function summarizeWarDecks(battleLog, limit = 4) {
+  const decks = new Map();
+  const warBattles = filterWarBattles(battleLog ?? []);
+
+  warBattles.forEach((battle, battleIndex) => {
+    const cards = Array.isArray(battle?.team?.[0]?.cards)
+      ? battle.team[0].cards
+      : [];
+    const deckChunks = chunkArray(cards, 8).filter((chunk) => chunk.length > 0);
+    if (!deckChunks.length) return;
+
+    const duelRounds = Array.isArray(battle?.team?.[0]?.rounds)
+      ? battle.team[0].rounds
+      : null;
+    const duelOppRounds = Array.isArray(battle?.opponent?.[0]?.rounds)
+      ? battle.opponent[0].rounds
+      : null;
+    const battleWon = isWarWin(battle);
+    deckChunks.forEach((deckCards, deckIndex) => {
+      const signature = deckCards
+        .map((card) => normalizeWarDeckCardId(card))
+        .filter(Boolean)
+        .sort()
+        .join("-");
+      if (!signature) return;
+
+      const roundMe = duelRounds?.[deckIndex]?.crowns;
+      const roundOpp = duelOppRounds?.[deckIndex]?.crowns;
+      const deckWon =
+        Number.isFinite(roundMe) && Number.isFinite(roundOpp)
+          ? roundMe > roundOpp
+          : battleWon;
+
+      const existing = decks.get(signature) ?? {
+        cards: formatWarDeckCards(deckCards),
+        plays: 0,
+        wins: 0,
+        firstSeenIndex: battleIndex,
+      };
+
+      existing.plays += 1;
+      if (deckWon) existing.wins += 1;
+      if (battleIndex < existing.firstSeenIndex) {
+        existing.firstSeenIndex = battleIndex;
+      }
+
+      decks.set(signature, existing);
+    });
+  });
+
+  return [...decks.values()]
+    .sort((a, b) => {
+      if (b.plays !== a.plays) return b.plays - a.plays;
+      if (b.wins !== a.wins) return b.wins - a.wins;
+      return a.firstSeenIndex - b.firstSeenIndex;
+    })
+    .slice(0, limit)
+    .map((deck, index) => ({
+      label: `Deck ${index + 1}`,
+      cards: deck.cards,
+      plays: deck.plays,
+      wins: deck.wins,
+      winRate: deck.plays > 0 ? Math.round((deck.wins / deck.plays) * 100) : 0,
+    }));
+}
