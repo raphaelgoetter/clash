@@ -6437,7 +6437,7 @@
           "start": "2026-05-29T09:57:00.000Z",
           "end": "2026-05-30T09:56:59.999Z"
         },
-        "snapshotTime": "2026-05-30T01:37:03.299Z",
+        "snapshotTime": "2026-05-30T03:05:19.505Z",
         "snapshotBackupTime": "2026-05-29T11:05:25.929Z",
         "decks": {
           "#2U9QL8Q89": 4,
@@ -6470,14 +6470,15 @@
           "#RJY2R282V": 4,
           "#VGJ9LL8VC": 4,
           "#Y9P9GGL89": 4,
+          "#YGP000RP8": 4,
           "#YRGJGR8R": 4,
           "#YRQRUU9PC": 4,
           "#CGJP0YYUJ": 3,
           "#20PCYYRVYL": 2,
           "#8R0LR8GYC": 2,
           "#GYU0VLGL": 2,
-          "#YGP000RP8": 2,
-          "#GC20UCLL": 1
+          "#GC20UCLL": 1,
+          "#V0VY2LV2U": 1
         },
         "hourlyCumul": [],
         "_cumulFame": {
@@ -6526,7 +6527,7 @@
           "#Q8GYUQ8GG": 1250,
           "#2YGYYPYV": 1400,
           "#8QVRJYVYU": 1400,
-          "#YGP000RP8": 800,
+          "#YGP000RP8": 1100,
           "#GY800U0RL": 1500,
           "#20PCYYRVYL": 900,
           "#2U9QL8Q89": 1250,
@@ -6561,7 +6562,8 @@
           "#9CYUGPQ0C": 1200,
           "#PL9CL8V20": 1100,
           "#QYGYV8R8Y": 1200,
-          "#Y9P9GGL89": 1400
+          "#Y9P9GGL89": 1400,
+          "#V0VY2LV2U": 100
         },
         "periodType": "colosseum",
         "_cumul": {
@@ -6610,7 +6612,7 @@
           "#Q8GYUQ8GG": 8,
           "#2YGYYPYV": 8,
           "#8QVRJYVYU": 8,
-          "#YGP000RP8": 6,
+          "#YGP000RP8": 8,
           "#GY800U0RL": 8,
           "#20PCYYRVYL": 6,
           "#2U9QL8Q89": 8,
@@ -6645,9 +6647,10 @@
           "#9CYUGPQ0C": 8,
           "#PL9CL8V20": 8,
           "#QYGYV8R8Y": 8,
-          "#Y9P9GGL89": 8
+          "#Y9P9GGL89": 8,
+          "#V0VY2LV2U": 1
         },
-        "snapshotCount": 140,
+        "snapshotCount": 143,
         "duelsTodayByTag": {}
       },
       {
