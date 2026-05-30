@@ -3739,14 +3739,15 @@
           "start": "2026-05-30T09:42:00.000Z",
           "end": "2026-05-31T09:41:59.999Z"
         },
-        "snapshotTime": "2026-05-30T14:32:07.767Z",
+        "snapshotTime": "2026-05-30T15:26:36.788Z",
         "snapshotBackupTime": "2026-05-30T09:43:33.077Z",
         "decks": {
           "#8JGU9UUJJ": 4,
           "#GYCJPJL0L": 4,
+          "#UVGPPVQ8Q": 4,
           "#V0VLJQCJU": 4,
-          "#UVGPPVQ8Q": 3,
           "#220VL2VRLG": 2,
+          "#C0RRPJYV9": 2,
           "#R2YP2UJRL": 2,
           "#Q8J99R8G": 1,
           "#VPGCQPR9U": 1
@@ -3791,7 +3792,7 @@
           "#8J8R820L": 800,
           "#Q8J99R8G": 800,
           "#YPVL92URU": 800,
-          "#C0RRPJYV9": 1000,
+          "#C0RRPJYV9": 1300,
           "#209CGRVQJV": 1000,
           "#G2VVUJLLQ": 1100,
           "#20QQUV09YU": 1200,
@@ -3799,7 +3800,7 @@
           "#R2YP2UJRL": 1500,
           "#J008G9CLJ": 1300,
           "#8VP9UJV9L": 1400,
-          "#UVGPPVQ8Q": 2100,
+          "#UVGPPVQ8Q": 2200,
           "#V0VLJQCJU": 2000
         },
         "periodType": "colosseum",
@@ -3842,7 +3843,7 @@
           "#8J8R820L": 4,
           "#Q8J99R8G": 8,
           "#YPVL92URU": 4,
-          "#C0RRPJYV9": 8,
+          "#C0RRPJYV9": 10,
           "#209CGRVQJV": 8,
           "#G2VVUJLLQ": 7,
           "#20QQUV09YU": 8,
@@ -3850,11 +3851,11 @@
           "#R2YP2UJRL": 10,
           "#J008G9CLJ": 8,
           "#8VP9UJV9L": 8,
-          "#UVGPPVQ8Q": 11,
+          "#UVGPPVQ8Q": 12,
           "#V0VLJQCJU": 12
         },
         "duelsTodayByTag": {},
-        "snapshotCount": 21
+        "snapshotCount": 24
       },
       {
         "warDay": "sunday",
