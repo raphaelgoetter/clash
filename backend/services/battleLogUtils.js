@@ -100,10 +100,7 @@ export function expandDuelRounds(warLog) {
     const myEntry = battle.team?.[0];
     const oppEntry = battle.opponent?.[0];
     const battleType = (battle.type ?? "").toLowerCase();
-    if (
-      DUEL_BATTLE_TYPES.has(battleType) &&
-      Array.isArray(myEntry?.rounds)
-    ) {
+    if (DUEL_BATTLE_TYPES.has(battleType) && Array.isArray(myEntry?.rounds)) {
       // One synthetic entry per round — store per-round crowns so win detection is accurate.
       // The parent crowns represent the duel total and must NOT be used per-round.
       myEntry.rounds.forEach((round, i) => {
