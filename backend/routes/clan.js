@@ -2664,32 +2664,30 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               const avgDecksLastWeek = isOwn
                 ? ownAvgDecks
                 : rivalAvgDecksByTag[cTagNorm];
+              // Pace extrapolée (commune à tous les clans — même reset dans un groupe GDC).
+              // Seuil de 5 % (~72 min) pour éviter une extrapolation explosive en tout début de journée.
+              const _resetOffsetMs = warResetOffsetMs(clanTag);
+              const _nowGdcDate = new Date(Date.now() - _resetOffsetMs);
+              const _msElapsedToday = _nowGdcDate.getTime() % MS_PER_DAY;
+              const _fractionElapsed = _msElapsedToday / MS_PER_DAY;
+              const tPace =
+                _fractionElapsed >= 0.05 && decksToday > 0
+                  ? Math.round(decksToday / _fractionElapsed)
+                  : decksToday;
+
               let targetDecks;
 
-              if (
-                isOwn &&
-                warDayIndex > 0 &&
-                warSnapshotDays?.[warDayIndex - 1] != null
-              ) {
-                // Clan propre J2-J4 : cible = snapshot de la veille (reflète la journée précédente réelle)
-                targetDecks = warSnapshotDays[warDayIndex - 1];
-              } else if (warDayIndex > 0) {
-                // J2-J4 (rivaux) : cible = max(historique semaine passée, pace extrapolée)
-                // Tous les clans d'un groupe GDC partagent le même reset → on utilise celui du clan propre.
-                const resetOffsetMs = warResetOffsetMs(clanTag);
-                const nowGdcDate = new Date(Date.now() - resetOffsetMs);
-                const msElapsedToday = nowGdcDate.getTime() % MS_PER_DAY;
-                const fractionElapsed = msElapsedToday / MS_PER_DAY;
-                // Extrapolation de pace : décks joués / fraction de journée écoulée, capé à 200.
-                // Seuil de 5 % (~72 min) pour éviter une extrapolation explosive en tout début de journée.
-                const tPace =
-                  fractionElapsed >= 0.05 && decksToday > 0
-                    ? Math.round(decksToday / fractionElapsed)
-                    : decksToday;
-                const tHistorique = avgDecksLastWeek ?? 200;
+              if (warDayIndex > 0) {
+                // J2-J4 : cible = max(référence historique, pace extrapolée, decks déjà joués), capé à 200.
+                // Pour le clan propre : référence = snapshot réel de la veille (si disponible).
+                // Pour les rivaux   : référence = moyenne de la semaine précédente.
+                const tReference =
+                  isOwn && warSnapshotDays?.[warDayIndex - 1] != null
+                    ? warSnapshotDays[warDayIndex - 1]
+                    : (avgDecksLastWeek ?? 200);
                 targetDecks = Math.min(
                   200,
-                  Math.max(tHistorique, tPace, decksToday),
+                  Math.max(tReference, tPace, decksToday),
                 );
               } else {
                 // J1 (ou par défaut) : on utilise la moyenne de la semaine passée
