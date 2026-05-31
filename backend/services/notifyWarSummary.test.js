@@ -1,5 +1,6 @@
 import assert from "assert";
 import {
+  buildWeeklyZeroActivityLists,
   computeWeeklySummary,
   computeMissingDuelsCountFromBattleLog,
 } from "../../scripts/notifyWarSummary.js";
@@ -49,6 +50,35 @@ assert.strictEqual(
   "Average should compute with the weekly total and 4 days",
 );
 console.log("notifyWarSummary.test.js passed");
+
+const zeroActivityFixture = {
+  "#A": { name: "Alpha", donations: 0 },
+  "#B": { name: "Bravo", donations: 12 },
+  "#C": { name: "Charlie", donations: 0 },
+};
+
+const zeroActivityWeeks = [
+  { decks: { "#B": 4 } },
+  { decks: { "#B": 4 } },
+  { decks: { "#B": 4 } },
+  { decks: { "#B": 4 } },
+];
+
+const zeroActivityLists = buildWeeklyZeroActivityLists(
+  zeroActivityFixture,
+  zeroActivityWeeks,
+);
+
+assert.deepStrictEqual(
+  zeroActivityLists.zeroDeckPlayers.map((player) => player.tag),
+  ["#A", "#C"],
+  "La liste zéro GDC doit inclure uniquement les joueurs à 0 deck sur la semaine",
+);
+assert.deepStrictEqual(
+  zeroActivityLists.zeroDonationPlayers.map((player) => player.tag),
+  ["#A", "#C"],
+  "La liste zéro don doit utiliser donations et non totalDonations",
+);
 
 const WEEK_DAYS = ["2026-05-21", "2026-05-22", "2026-05-23", "2026-05-24"];
 

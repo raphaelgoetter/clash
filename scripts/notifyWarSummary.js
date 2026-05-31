@@ -343,6 +343,7 @@ async function readClanMemberNames(tag) {
       members[normTag] = {
         name: playerData?.profile?.name || normTag,
         role: null,
+        donations: playerData?.profile?.donations ?? null,
       };
     }
 
@@ -357,6 +358,7 @@ async function readClanMemberNames(tag) {
       members[playerTag] = {
         name: members[playerTag]?.name || member.name || playerTag,
         role: member.role ?? members[playerTag]?.role ?? null,
+        donations: members[playerTag]?.donations ?? member.donations ?? null,
       };
     }
 
@@ -509,6 +511,54 @@ function fmtDelta(delta) {
 /** Formate un rang en français : 1 → "1er", 2 → "2e", etc. */
 function fmtRank(n) {
   return n === 1 ? "1er" : `${n}e`;
+}
+
+function formatPlayerVercelLink(tag, name) {
+  const playerUrl = `https://trustroyale.vercel.app/fr/player/${tag.replace(/^#/, "")}`;
+  return `[${name}](${playerUrl})`;
+}
+
+function buildInlinePlayerListFields(title, players) {
+  if (!players.length) return [];
+
+  const entries = players.map((player) =>
+    formatPlayerVercelLink(player.tag, player.name),
+  );
+  const chunks = chunkEntriesForDiscord(entries, 1000, " · ");
+
+  return chunks.map((value, index) => ({
+    name:
+      index === 0
+        ? `${title} (${players.length})`
+        : `${title} (suite ${index + 1})`,
+    value,
+    inline: false,
+  }));
+}
+
+function buildWeeklyZeroActivityLists(memberNames, allWeekDays) {
+  const weekDays = Array.isArray(allWeekDays) ? allWeekDays : [];
+
+  const members = Object.entries(memberNames ?? {})
+    .map(([tag, member]) => {
+      const weeklyDecks = weekDays.reduce(
+        (sum, day) => sum + (Number(day?.decks?.[tag]) || 0),
+        0,
+      );
+
+      return {
+        tag,
+        name: member?.name || tag,
+        weeklyDecks,
+        donations: member?.donations ?? null,
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name, "fr"));
+
+  return {
+    zeroDeckPlayers: members.filter((member) => member.weeklyDecks === 0),
+    zeroDonationPlayers: members.filter((member) => member.donations === 0),
+  };
 }
 
 function computeDay3ClinchProof(race, ownClanTag) {
@@ -878,6 +928,10 @@ async function postWarSummary(
 
   const fields = [];
   const memberNames = await readClanMemberNames(tag);
+  const weeklyZeroActivityLists = buildWeeklyZeroActivityLists(
+    memberNames,
+    allWeekDays,
+  );
   const weeklyDuelTargetDays = allWeekDays
     .map((day) => day?.realDay)
     .filter((day) => typeof day === "string" && day);
@@ -1150,6 +1204,17 @@ async function postWarSummary(
       });
     }
 
+    weeklyFields.push(
+      ...buildInlinePlayerListFields(
+        "Zéro GDC cette semaine",
+        weeklyZeroActivityLists.zeroDeckPlayers,
+      ),
+      ...buildInlinePlayerListFields(
+        "Zéro don cette semaine",
+        weeklyZeroActivityLists.zeroDonationPlayers,
+      ),
+    );
+
     if (weeklyDuelMissingInfo.players.length > 0) {
       const totalMissingDuels = weeklyDuelMissingInfo.players.reduce(
         (sum, player) => sum + player.missingDuels,
@@ -1210,7 +1275,11 @@ async function postWarSummary(
   );
 }
 
-export { computeWeeklySummary, computeMissingDuelsCountFromBattleLog };
+export {
+  buildWeeklyZeroActivityLists,
+  computeWeeklySummary,
+  computeMissingDuelsCountFromBattleLog,
+};
 
 async function main() {
   const now = new Date();
