@@ -2597,7 +2597,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 allParts,
                 warSnapshotDays,
                 clanTag,
-                currentRaceClanFame: currentRace?.clan?.fame ?? null,
+                currentRaceClanFame: currentRace?.clan?.clanScore ?? null,
                 fallbackWarDays:
                   typeof prevSnaps !== "undefined" && prevSnaps.length > 0
                     ? prevSnaps
@@ -2641,12 +2641,19 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               const allPartsInner = isOwn
                 ? raceData.clan.participants
                 : rivalParticipants;
-              // currentFame = cumul hebdomadaire des pts de bataille depuis J1.
-              // clan.fame est le score de progression de classement (≠ fame de combat) ; ne jamais l'utiliser ici.
-              currentFame = allPartsInner.reduce(
+              const rawClanScore = isOwn
+                ? currentRace?.clan?.clanScore
+                : c.clanScore;
+              const summedFame = allPartsInner.reduce(
                 (s, p) => s + (p.fame ?? 0),
                 0,
               );
+              // currentFame = cumul hebdomadaire des pts de bataille depuis J1.
+              // On privilégie le total brut exposé par l'API, puis la somme des participants en secours.
+              currentFame =
+                Number.isFinite(rawClanScore) && rawClanScore > 0
+                  ? rawClanScore
+                  : summedFame;
               const sectionFame = currentFame; // alias de compatibilité locale
 
               // Borne haute théorique stricte pour la fin de semaine.
