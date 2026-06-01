@@ -116,7 +116,7 @@ function formatDiscordRoleWithTiming(role, timingLabels = []) {
 }
 
 const LATE_TAG_FOOTER_LEGEND =
-  "Légende tags : moitié 1 = 12 premières heures | moitié 2 = 12 dernières heures | in-extremis = dernière heure avant reset";
+  "Légende tags : 1ère moitié = 12 premières heures | 2ème moitié = 12 dernières heures | in-extremis = dernière heure avant reset";
 
 function buildRaceTimeHistogram(entries, resetUtcMinutes = 580) {
   const counts = Array(24).fill(0);
@@ -150,12 +150,12 @@ function computeRaceTimeTagLabels(counts) {
   const tags = [];
 
   if (firstHalf > secondHalf && firstHalf / total >= dominanceThreshold) {
-    tags.push("moitié 1");
+    tags.push("1ère moitié");
   } else if (
     secondHalf > firstHalf &&
     secondHalf / total >= dominanceThreshold
   ) {
-    tags.push("moitié 2");
+    tags.push("2ème moitié");
   }
 
   if ((counts[23] || 0) > 0) {
