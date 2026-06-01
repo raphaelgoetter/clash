@@ -107,6 +107,125 @@ function formatDiscordRole(role) {
   return `(${ROLE_FR[normalized] ?? ROLE_FR.member})`;
 }
 
+function formatDiscordRoleWithTiming(role, timingLabels = []) {
+  const normalized = String(role || "member")
+    .trim()
+    .toLowerCase();
+  const parts = [ROLE_FR[normalized] ?? ROLE_FR.member, ...timingLabels];
+  return `(${parts.join(" · ")})`;
+}
+
+const LATE_TAG_FOOTER_LEGEND =
+  "Légende tags : moitié 1 = 12 premières heures | moitié 2 = 12 dernières heures | in-extremis = dernière heure avant reset";
+
+function buildRaceTimeHistogram(entries, resetUtcMinutes = 580) {
+  const counts = Array(24).fill(0);
+
+  for (const b of entries || []) {
+    if (!/riverRace/i.test(String(b?.type || ""))) continue;
+    const parsed = parseBattleTimestamp(
+      b?.battleTime ||
+        b?.battleTimeStamp ||
+        b?.battle_time ||
+        b?.battleTimeStampLocal,
+    );
+    if (!parsed || Number.isNaN(parsed.getTime())) continue;
+
+    const minutes = parsed.getUTCHours() * 60 + parsed.getUTCMinutes();
+    const offset = (((minutes - resetUtcMinutes) % 1440) + 1440) % 1440;
+    const bin = Math.floor(offset / 60);
+    counts[bin] += 1;
+  }
+
+  return counts;
+}
+
+function computeRaceTimeTagLabels(counts) {
+  const total = (counts || []).reduce((sum, val) => sum + (val || 0), 0);
+  if (total <= 0) return [];
+
+  const firstHalf = counts.slice(0, 12).reduce((sum, val) => sum + val, 0);
+  const secondHalf = counts.slice(12).reduce((sum, val) => sum + val, 0);
+  const dominanceThreshold = 0.55;
+  const tags = [];
+
+  if (firstHalf > secondHalf && firstHalf / total >= dominanceThreshold) {
+    tags.push("moitié 1");
+  } else if (
+    secondHalf > firstHalf &&
+    secondHalf / total >= dominanceThreshold
+  ) {
+    tags.push("moitié 2");
+  }
+
+  if ((counts[23] || 0) > 0) {
+    tags.push("in-extremis");
+  }
+
+  return tags;
+}
+
+async function mapWithConcurrency(items, limit, mapper) {
+  const result = Array(items.length);
+  let cursor = 0;
+
+  async function worker() {
+    while (cursor < items.length) {
+      const index = cursor;
+      cursor += 1;
+      result[index] = await mapper(items[index], index);
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(limit, items.length) }, () =>
+    worker(),
+  );
+  await Promise.all(workers);
+  return result;
+}
+
+async function buildLateTimingTagsByPlayer(playerTags) {
+  const cleanTags = [...new Set(playerTags.map((t) => String(t || "").trim()))]
+    .filter(Boolean)
+    .map((t) => (t.startsWith("#") ? t : `#${t}`));
+  const byTag = new Map();
+
+  await mapWithConcurrency(cleanTags, 8, async (rawTag) => {
+    const cleanTag = rawTag.replace(/^#/, "").toUpperCase();
+    const abortCtrl = new AbortController();
+    const abortTimer = setTimeout(() => abortCtrl.abort(), 4500);
+    try {
+      const apiResp = await fetch(
+        `${TRUST_ROYALE_URL}/api/player/${encodeURIComponent(cleanTag)}/analysis`,
+        {
+          headers: { Accept: "application/json" },
+          signal: abortCtrl.signal,
+        },
+      );
+      if (!apiResp.ok) return;
+
+      const data = await apiResp.json();
+      const resetUtcMinutes = Number.isFinite(data?.warResetUtcMinutes)
+        ? data.warResetUtcMinutes
+        : 580;
+      const counts = buildRaceTimeHistogram(
+        data?.battleLog || [],
+        resetUtcMinutes,
+      );
+      const labels = computeRaceTimeTagLabels(counts);
+      if (labels.length > 0) {
+        byTag.set(`#${cleanTag}`, labels);
+      }
+    } catch {
+      // best effort : on garde la commande fonctionnelle sans ces tags
+    } finally {
+      clearTimeout(abortTimer);
+    }
+  });
+
+  return byTag;
+}
+
 function parseBattleTimestamp(value) {
   if (!value) return null;
   const d = new Date(value);
@@ -2400,6 +2519,10 @@ export default async function handler(req, res) {
               b.missing - a.missing || a.name.localeCompare(b.name, "fr"),
           );
 
+        const lateTimingTagsByTag = await buildLateTimingTagsByPlayer(
+          late.map((pl) => pl.tag),
+        );
+
         // Pseudos Discord — timeout 10s, non-bloquant (pings optionnels)
         const guildId = process.env.DISCORD_GUILD_ID;
         const botToken = process.env.DISCORD_TOKEN;
@@ -2576,7 +2699,9 @@ export default async function handler(req, res) {
               const playerUrl = trustPlayerUrl(tag);
               const memberInfo = currentMemberByTag.get(tag.toUpperCase());
               const role = (memberInfo?.role || "member").toLowerCase();
-              const roleText = formatDiscordRole(role);
+              const timingLabels =
+                lateTimingTagsByTag.get(tag.toUpperCase()) || [];
+              const roleText = formatDiscordRoleWithTiming(role, timingLabels);
               const discordId = links[tag];
               const guildMember = discordId ? memberById.get(discordId) : null;
               const discordPart = guildMember ? ` <@${discordId}>` : "";
@@ -2604,6 +2729,7 @@ export default async function handler(req, res) {
           title: `<:late:1504138659622948985> ${resolved.name}, retardataires de ${warDayLabel}`,
           description,
           color: 0xe67e22,
+          footer: { text: LATE_TAG_FOOTER_LEGEND },
         };
 
         console.log(
@@ -2906,7 +3032,9 @@ export default async function handler(req, res) {
               const playerUrl = trustPlayerUrl(tag);
               const memberInfo = currentMemberByTag.get(tag.toUpperCase());
               const role = (memberInfo?.role || "member").toLowerCase();
-              const roleText = formatDiscordRole(role);
+              const timingLabels =
+                lateTimingTagsByTag.get(tag.toUpperCase()) || [];
+              const roleText = formatDiscordRoleWithTiming(role, timingLabels);
               const discordId = links[tag];
               const guildMember = discordId ? memberById.get(discordId) : null;
               const discordPart = guildMember ? ` <@${discordId}>` : "";
@@ -2936,7 +3064,9 @@ export default async function handler(req, res) {
           title: "GDC : Soldat, il te reste des decks à jouer !",
           description,
           color: 0xe67e22,
-          footer: { text: `${resolved.name}, retardataires de ${warDayLabel}` },
+          footer: {
+            text: `${resolved.name}, retardataires de ${warDayLabel} • ${LATE_TAG_FOOTER_LEGEND}`,
+          },
         };
 
         console.log(
