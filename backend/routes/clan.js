@@ -2674,9 +2674,19 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 MAX_WEEKLY_DECKS - totalDecksWeekly,
               );
               const maxDecksPerDay = 200;
+              // avgDecksLastWeek est nécessaire avant maxReachableFame pour le calcul du plafond J4.
+              const avgDecksLastWeek = isOwn
+                ? ownAvgDecks
+                : rivalAvgDecksByTag[cTagNorm];
+              // Sur J4 (dernier jour), le plafond réaliste est la référence historique du clan,
+              // pas les 200 decks théoriques : personne ne jouera au-delà de son objectif.
+              const effectiveMaxDecksToday =
+                warDayIndex === 3
+                  ? Math.max(decksToday, avgDecksLastWeek ?? maxDecksPerDay)
+                  : maxDecksPerDay;
               const remainingDecksToday = Math.max(
                 0,
-                maxDecksPerDay - decksToday,
+                effectiveMaxDecksToday - decksToday,
               );
               const remainingFullDays = Math.max(0, 3 - warDayIndex);
               const remainingDecks = Math.min(
@@ -2685,10 +2695,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               );
               maxReachableFame =
                 sectionFame + remainingDecks * MAX_FAME_PER_DECK;
-
-              const avgDecksLastWeek = isOwn
-                ? ownAvgDecks
-                : rivalAvgDecksByTag[cTagNorm];
               // Pace extrapolée (commune à tous les clans — même reset dans un groupe GDC).
               // Seuil de 5 % (~72 min) pour éviter une extrapolation explosive en tout début de journée.
               const _resetOffsetMs = warResetOffsetMs(clanTag);
