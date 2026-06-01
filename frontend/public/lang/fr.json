@@ -206,7 +206,7 @@
   "raceTimeGroupVariableTitle": "Decks joués à divers moments de la journée",
   "raceTimeGroupUnknownTitle": "Pas de données récupérées",
   "raceTimeInExtremis": "In-extremis",
-  "raceTimeInExtremisTitle": "Certains decks joués au dernier moment avant le reset",
+  "raceTimeInExtremisTitle": "{{count}} decks joués au dernier moment avant le reset",
   "clanTagInputPlaceholder": "Autre clan (ex : #ABC123) …",
   "clanLiteNotice": "Ce clan n'est pas dans la famille. Les scores de fiabilité GDC ne sont pas disponibles.",
   "clanLiteLastWarFame": "pts",

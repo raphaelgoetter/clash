@@ -1619,6 +1619,7 @@ function renderPlayerResults(data) {
     return {
       groupLabel,
       groupTitle,
+      lastBucketCount: counts[23] || 0,
       inExtremis: (counts[23] || 0) > 0,
     };
   }
@@ -1632,8 +1633,11 @@ function renderPlayerResults(data) {
     ];
 
     if (profile.inExtremis) {
+      const inExtremisTitle = t("raceTimeInExtremisTitle", {
+        count: profile.lastBucketCount || 0,
+      });
       tags.push(
-        `<span class="race-time-tag extremis" title="${escHtml(t("raceTimeInExtremisTitle"))}">${escHtml(t("raceTimeInExtremis"))}</span>`,
+        `<span class="race-time-tag extremis" title="${escHtml(inExtremisTitle)}">${escHtml(t("raceTimeInExtremis"))}</span>`,
       );
     }
 
