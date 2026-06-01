@@ -37,9 +37,6 @@ jobs:
       - name: Post GDC summary
         run: node scripts/notifyWarSummary.js
 
-      - name: Post last seen alert
-        run: node scripts/notifyLastSeen.js
-
       - name: Post clan status alert
         run: node scripts/notifyClanStatus.js
 
@@ -48,7 +45,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/war-summary-log.json || true
-          git add data/last-seen-log.json || true
           git add data/clan-status-log.json || true
           git diff --cached --quiet || git commit -m "chore: mise à jour log résumé GDC"
           git push || true

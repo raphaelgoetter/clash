@@ -5,6 +5,9 @@ permissions:
   contents: write
 
 on:
+  schedule:
+    # Exécution quotidienne dédiée LastSeen
+    - cron: "8 10 * * *"
   workflow_dispatch:
 
 jobs:
