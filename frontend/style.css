@@ -1038,6 +1038,36 @@ select.search-input {
   border: 1px solid rgba(244, 197, 66, 0.4);
 }
 
+.race-time-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 6px 0 10px;
+}
+
+.race-time-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+}
+
+.race-time-tag.group {
+  background: rgba(99, 102, 241, 0.2);
+  color: #c7d2fe;
+  border-color: rgba(99, 102, 241, 0.45);
+}
+
+.race-time-tag.extremis {
+  background: rgba(249, 115, 22, 0.16);
+  color: #fdba74;
+  border-color: rgba(249, 115, 22, 0.45);
+}
+
 /* ── Stability ──────────────────────────────────────────────── */
 .stability-content {
   display: flex;

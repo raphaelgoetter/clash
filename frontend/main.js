@@ -1581,6 +1581,66 @@ function renderPlayerResults(data) {
     return { counts, totalGdc };
   }
 
+  function buildRaceTimeProfile(counts) {
+    const total = (counts || []).reduce((sum, val) => sum + (val || 0), 0);
+    if (total <= 0) {
+      return {
+        groupLabel: t("raceTimeGroupUnknown"),
+        groupTitle: t("raceTimeGroupUnknownTitle"),
+        inExtremis: false,
+      };
+    }
+
+    const firstHalf = counts
+      .slice(0, 12)
+      .reduce((sum, val) => sum + (val || 0), 0);
+    const secondHalf = counts
+      .slice(12, 24)
+      .reduce((sum, val) => sum + (val || 0), 0);
+
+    const dominanceThreshold = 0.55;
+    const firstHalfRatio = firstHalf / total;
+    const secondHalfRatio = secondHalf / total;
+
+    let groupLabel = t("raceTimeGroupVariable");
+    let groupTitle = t("raceTimeGroupVariableTitle");
+
+    if (firstHalf > secondHalf && firstHalfRatio >= dominanceThreshold) {
+      groupLabel = t("raceTimeGroupFirstHalf");
+      groupTitle = t("raceTimeGroupFirstHalfTitle");
+    } else if (
+      secondHalf > firstHalf &&
+      secondHalfRatio >= dominanceThreshold
+    ) {
+      groupLabel = t("raceTimeGroupSecondHalf");
+      groupTitle = t("raceTimeGroupSecondHalfTitle");
+    }
+
+    return {
+      groupLabel,
+      groupTitle,
+      inExtremis: (counts[23] || 0) > 0,
+    };
+  }
+
+  function renderRaceTimeTags(profile) {
+    const tagsEl = document.getElementById("race-time-tags");
+    if (!tagsEl || !profile) return;
+
+    const tags = [
+      `<span class="race-time-tag group" title="${escHtml(profile.groupTitle)}">${escHtml(profile.groupLabel)}</span>`,
+    ];
+
+    if (profile.inExtremis) {
+      tags.push(
+        `<span class="race-time-tag extremis" title="${escHtml(t("raceTimeInExtremisTitle"))}">${escHtml(t("raceTimeInExtremis"))}</span>`,
+      );
+    }
+
+    tagsEl.innerHTML = tags.join("");
+    tagsEl.classList.remove("hidden");
+  }
+
   const battleLogSummary = aggregateBattleLogByWeek(battleLog);
 
   if (isBattleLogMode) {
@@ -1880,6 +1940,7 @@ function renderPlayerResults(data) {
   // 3c. River Race Time card (BattleLog MVP)
   const cardRaceTime = document.getElementById("card-race-time");
   const raceTimeNote = document.getElementById("race-time-note");
+  const raceTimeTags = document.getElementById("race-time-tags");
   const raceTimeChartWrapper = cardRaceTime
     ? cardRaceTime.querySelector(".chart-wrapper")
     : null;
@@ -1894,11 +1955,13 @@ function renderPlayerResults(data) {
       battleLog || [],
       resetUtcMinutes,
     );
+    const raceTimeProfile = buildRaceTimeProfile(counts);
     if (cardRaceTime) {
       cardRaceTime.classList.remove("hidden");
       const cardTitle = cardRaceTime.querySelector(".card-title");
       if (cardTitle) cardTitle.textContent = t("raceTimeTitle");
     }
+    renderRaceTimeTags(raceTimeProfile);
 
     const rawLateBucketWarning = t("raceTimeLateBucketWarning");
     const defaultLateBucketWarning =
@@ -1923,6 +1986,10 @@ function renderPlayerResults(data) {
   } else {
     if (cardRaceTime) cardRaceTime.classList.add("hidden");
     if (raceTimeNote) raceTimeNote.textContent = t("raceTimeNoHistory");
+    if (raceTimeTags) {
+      raceTimeTags.innerHTML = "";
+      raceTimeTags.classList.add("hidden");
+    }
   }
 
   // 3b. Actual Clan War (visible jeudi–dimanche)
