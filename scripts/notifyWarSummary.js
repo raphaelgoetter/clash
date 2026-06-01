@@ -515,34 +515,48 @@ function fmtRank(n) {
 
 const WEEKLY_ZERO_ACTIVITY_MAX_RESULTS = 30;
 
+function formatPlayerVercelLink(tag, name) {
+  const playerUrl = `https://trustroyale.vercel.app/fr/player/${String(tag).replace(/^#/, "")}`;
+  return `[${name}](${playerUrl})`;
+}
+
 function buildWeeklyCappedPlayerListField(title, players) {
   if (!players.length) return [];
 
   const total = players.length;
-  const shownPlayers = players.slice(0, WEEKLY_ZERO_ACTIVITY_MAX_RESULTS);
-  const remaining = total - shownPlayers.length;
-
-  const baseList = shownPlayers.map((player) => player.name).join(" · ");
-  const remainingLine =
-    remaining > 0
-      ? `\n+${fmt(remaining)} autre${remaining > 1 ? "s" : ""}`
-      : "";
+  const limitedPlayers = players.slice(0, WEEKLY_ZERO_ACTIVITY_MAX_RESULTS);
+  const separator = " · ";
 
   // On force un seul field Discord (max 1024) pour éviter les sections "(suite)".
   const maxValueLength = 1000;
-  const maxBaseLength = Math.max(0, maxValueLength - remainingLine.length);
-  let safeBaseList = baseList;
-  if (safeBaseList.length > maxBaseLength) {
-    safeBaseList = `${safeBaseList.slice(0, Math.max(0, maxBaseLength - 1)).trimEnd()}…`;
-  }
+  const visibleEntries = limitedPlayers.map((player) =>
+    formatPlayerVercelLink(player.tag, player.name),
+  );
 
-  return [
-    {
-      name: `${title} (${fmt(total)})`,
-      value: `${safeBaseList}${remainingLine}`,
-      inline: false,
-    },
-  ];
+  // Ajuste dynamiquement le nombre d'entrées visibles pour conserver de la place
+  // à la ligne "+N autres" quand nécessaire.
+  while (true) {
+    const visibleCount = visibleEntries.length;
+    const remaining = total - visibleCount;
+    const baseList = visibleEntries.join(separator);
+    const remainingLine =
+      remaining > 0
+        ? `\n+${fmt(remaining)} autre${remaining > 1 ? "s" : ""}`
+        : "";
+    const value = `${baseList}${remainingLine}`;
+
+    if (value.length <= maxValueLength || visibleEntries.length === 0) {
+      return [
+        {
+          name: `${title} (${fmt(total)})`,
+          value: value || "\u200b",
+          inline: false,
+        },
+      ];
+    }
+
+    visibleEntries.pop();
+  }
 }
 
 function buildWeeklyZeroActivityLists(memberNames, allWeekDays) {
