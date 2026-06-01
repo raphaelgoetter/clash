@@ -3062,13 +3062,9 @@ export default async function handler(req, res) {
             const decks = `<:cards:1493711279121104926> ${clan.decksToday != null ? clan.decksToday : "?"} decks`;
             const eff = `<:cible:1493711597682557019> ${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(2) : "?"} pts/d`;
             const proj = clan.isClinchedWin
-              ? "<:projection:1499275709078700073> ✅ Victoire mathématiquement assurée"
+              ? "<:projection:1499275709078700073> ✅ Victoire"
               : `<:projection:1499275709078700073> Projection: **${clan.projectedFame != null ? fmt(Math.round(clan.projectedFame / 100) * 100) : "?"}**`;
-            const shouldShowClinched = clan.isClinchedWin;
-            const clinched =
-              shouldShowClinched && !clan.isClinchedWin
-                ? "\n<:projection:1499275709078700073> Victoire mathématiquement assurée"
-                : "";
+            const clinched = "";
             const currentPts =
               isColosseum && clan.currentFame != null
                 ? `<:trophy2:1493677804733337621> Points actuels : **${fmt(clan.currentFame)}**`
