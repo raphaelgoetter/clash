@@ -513,27 +513,36 @@ function fmtRank(n) {
   return n === 1 ? "1er" : `${n}e`;
 }
 
-function formatPlayerVercelLink(tag, name) {
-  const playerUrl = `https://trustroyale.vercel.app/fr/player/${tag.replace(/^#/, "")}`;
-  return `[${name}](${playerUrl})`;
-}
+const WEEKLY_ZERO_ACTIVITY_MAX_RESULTS = 30;
 
-function buildInlinePlayerListFields(title, players) {
+function buildWeeklyCappedPlayerListField(title, players) {
   if (!players.length) return [];
 
-  const entries = players.map((player) =>
-    formatPlayerVercelLink(player.tag, player.name),
-  );
-  const chunks = chunkEntriesForDiscord(entries, 1000, " · ");
+  const total = players.length;
+  const shownPlayers = players.slice(0, WEEKLY_ZERO_ACTIVITY_MAX_RESULTS);
+  const remaining = total - shownPlayers.length;
 
-  return chunks.map((value, index) => ({
-    name:
-      index === 0
-        ? `${title} (${players.length})`
-        : `${title} (suite ${index + 1})`,
-    value,
-    inline: false,
-  }));
+  const baseList = shownPlayers.map((player) => player.name).join(" · ");
+  const remainingLine =
+    remaining > 0
+      ? `\n+${fmt(remaining)} autre${remaining > 1 ? "s" : ""}`
+      : "";
+
+  // On force un seul field Discord (max 1024) pour éviter les sections "(suite)".
+  const maxValueLength = 1000;
+  const maxBaseLength = Math.max(0, maxValueLength - remainingLine.length);
+  let safeBaseList = baseList;
+  if (safeBaseList.length > maxBaseLength) {
+    safeBaseList = `${safeBaseList.slice(0, Math.max(0, maxBaseLength - 1)).trimEnd()}…`;
+  }
+
+  return [
+    {
+      name: `${title} (${fmt(total)})`,
+      value: `${safeBaseList}${remainingLine}`,
+      inline: false,
+    },
+  ];
 }
 
 function buildWeeklyZeroActivityLists(memberNames, allWeekDays) {
@@ -1205,11 +1214,11 @@ async function postWarSummary(
     }
 
     weeklyFields.push(
-      ...buildInlinePlayerListFields(
+      ...buildWeeklyCappedPlayerListField(
         "Zéro GDC cette semaine",
         weeklyZeroActivityLists.zeroDeckPlayers,
       ),
-      ...buildInlinePlayerListFields(
+      ...buildWeeklyCappedPlayerListField(
         "Zéro don cette semaine",
         weeklyZeroActivityLists.zeroDonationPlayers,
       ),
