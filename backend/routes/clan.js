@@ -2845,13 +2845,11 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 const bestRivalReachable = Math.max(...rivalsMax);
                 c.isClinchedWin = c.currentFame > bestRivalReachable;
 
-                // Si la victoire est déjà assurée sur J4, la projection ne doit plus
-                // reposer sur la moyenne précédente : aucun point supplémentaire ne
-                // sera compté pour la journée.
+                // Si la victoire est déjà assurée sur J4, masquer la projection
+                // (inutile de projeter une journée déjà gagnée), mais conserver
+                // ptsPerDeck et clanScore qui reflètent les pts réellement marqués.
                 if (c.isClinchedWin && warDayIndex === 3) {
-                  c.projectedFame = 0;
-                  c.ptsPerDeck = 0;
-                  c.clanScore = 0;
+                  c.projectedFame = null;
                 }
               });
             }
