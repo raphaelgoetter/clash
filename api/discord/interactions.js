@@ -3644,37 +3644,77 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
-        const abortCtrl = new AbortController();
-        const abortTimer = setTimeout(() => abortCtrl.abort(), 50000);
-        let apiResp;
-        try {
-          const endpoint = isFamilyClan
-            ? `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis?fast=true&includeRaceGroup=false`
-            : `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/lite`;
-          apiResp = await fetch(endpoint, {
-            headers: { Accept: "application/json" },
-            signal: abortCtrl.signal,
-          });
-        } catch (fetchErr) {
-          clearTimeout(abortTimer);
-          const msg =
-            fetchErr.name === "AbortError"
-              ? `⏱️ L'analyse du clan a pris trop longtemps. Réessayez dans 30 secondes.`
-              : `Erreur réseau : ${fetchErr.message}`;
-          await fetch(webhookUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ content: msg, flags: 64 }),
-          });
-          return;
+        const analysisEndpoint = `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis?fast=true&includeRaceGroup=false`;
+        const liteEndpoint = `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/lite`;
+
+        async function fetchJsonWithTimeout(endpoint, timeoutMs) {
+          const abortCtrl = new AbortController();
+          const abortTimer = setTimeout(() => abortCtrl.abort(), timeoutMs);
+          try {
+            const response = await fetch(endpoint, {
+              headers: { Accept: "application/json" },
+              signal: abortCtrl.signal,
+            });
+            return response;
+          } finally {
+            clearTimeout(abortTimer);
+          }
         }
-        clearTimeout(abortTimer);
-        if (!apiResp.ok) {
+
+        let apiResp = null;
+        let usedLiteFallback = false;
+
+        try {
+          apiResp = await fetchJsonWithTimeout(
+            isFamilyClan ? analysisEndpoint : liteEndpoint,
+            isFamilyClan ? 12000 : 18000,
+          );
+        } catch (fetchErr) {
+          if (isFamilyClan) {
+            usedLiteFallback = true;
+            try {
+              apiResp = await fetchJsonWithTimeout(liteEndpoint, 12000);
+            } catch (liteErr) {
+              const msg =
+                fetchErr.name === "AbortError" || liteErr.name === "AbortError"
+                  ? `⏱️ L'analyse du clan a pris trop longtemps. Réessayez dans 30 secondes.`
+                  : `Erreur réseau : ${liteErr.message}`;
+              await fetch(webhookUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ content: msg, flags: 64 }),
+              });
+              return;
+            }
+          } else {
+            const msg =
+              fetchErr.name === "AbortError"
+                ? `⏱️ L'analyse du clan a pris trop longtemps. Réessayez dans 30 secondes.`
+                : `Erreur réseau : ${fetchErr.message}`;
+            await fetch(webhookUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ content: msg, flags: 64 }),
+            });
+            return;
+          }
+        }
+
+        if (!apiResp.ok && isFamilyClan) {
+          usedLiteFallback = true;
+          try {
+            apiResp = await fetchJsonWithTimeout(liteEndpoint, 12000);
+          } catch (_) {
+            // Preserve original status message below.
+          }
+        }
+
+        if (!apiResp || !apiResp.ok) {
           await fetch(webhookUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              content: `Erreur API clan (${apiResp.status}). Réessayez dans quelques instants.`,
+              content: `Erreur API clan (${apiResp?.status ?? "inconnu"}). Réessayez dans quelques instants.`,
               flags: 64,
             }),
           });
@@ -3686,6 +3726,8 @@ export default async function handler(req, res) {
         const members = analysis.members || [];
         const liteMembers = analysis.isLite ? members : [];
         const summary = analysis.summary || {};
+        const hasReliabilityDetails =
+          isFamilyClan && !analysis.isLite && !usedLiteFallback;
 
         const TYPE_FR = {
           open: "Ouvert",
@@ -3723,7 +3765,7 @@ export default async function handler(req, res) {
         const fmt = (n) =>
           typeof n === "number" ? n.toLocaleString("fr-FR") : "—";
         const avgScore = summary.avgScore ?? 0;
-        const embedColor = isFamilyClan
+        const embedColor = hasReliabilityDetails
           ? avgScore >= 75
             ? COLOR_MAP.green
             : avgScore >= 56
@@ -3734,7 +3776,7 @@ export default async function handler(req, res) {
           : 0x99aab5;
 
         const MEMBER_LIMIT = 10;
-        const topReliable = isFamilyClan
+        const topReliable = hasReliabilityDetails
           ? [...members]
               .sort(
                 (a, b) =>
@@ -3742,7 +3784,7 @@ export default async function handler(req, res) {
               )
               .slice(0, MEMBER_LIMIT)
           : [];
-        const topRisky = isFamilyClan
+        const topRisky = hasReliabilityDetails
           ? members
               .filter(
                 (m) =>
@@ -3754,7 +3796,7 @@ export default async function handler(req, res) {
               )
               .slice(0, MEMBER_LIMIT)
           : [];
-        const newMembers = isFamilyClan
+        const newMembers = hasReliabilityDetails
           ? members
               .filter((m) => m.isNew)
               .sort((a, b) => {
@@ -3785,8 +3827,40 @@ export default async function handler(req, res) {
           return `- [${m.name}](${trustPlayerUrl(m.tag)}) · ${icon} ${pct}%`;
         }
 
+        function formatMemberListValue(list, emptyText = "Aucun") {
+          if (!Array.isArray(list) || list.length === 0) return emptyText;
+
+          const lines = list.map(memberLine);
+          const MAX_FIELD_LEN = 1024;
+          let value = "";
+          let used = 0;
+
+          for (let i = 0; i < lines.length; i += 1) {
+            const candidate = value ? `${value}\n${lines[i]}` : lines[i];
+            if (candidate.length > MAX_FIELD_LEN) {
+              break;
+            }
+            value = candidate;
+            used = i + 1;
+          }
+
+          const remaining = lines.length - used;
+          if (remaining > 0) {
+            const suffix = `\n… +${remaining} autre${remaining > 1 ? "s" : ""}`;
+            if ((value + suffix).length <= MAX_FIELD_LEN) {
+              value += suffix;
+            } else if (value.length > suffix.length) {
+              value = `${value.slice(0, MAX_FIELD_LEN - suffix.length)}${suffix}`;
+            } else {
+              value = `… +${remaining} autre${remaining > 1 ? "s" : ""}`;
+            }
+          }
+
+          return value || emptyText;
+        }
+
         // Champ 6 : Fiabilité (clan famille) ou Chef (clan externe)
-        const sixthField = isFamilyClan
+        const sixthField = hasReliabilityDetails
           ? {
               name: "Fiabilité",
               value: `<:warn:1506174837519945800> **${avgScore}%**`,
@@ -3842,30 +3916,21 @@ export default async function handler(req, res) {
         ];
 
         // Rangée 3 : listes membres (uniquement pour les clans famille)
-        if (isFamilyClan) {
+        if (hasReliabilityDetails) {
           fields.push({ name: "\u200b", value: "\u200b", inline: false });
           fields.push({
             name: `Top fiables (${topReliable.length})`,
-            value:
-              topReliable.length > 0
-                ? topReliable.map(memberLine).join("\n")
-                : "Aucun",
+            value: formatMemberListValue(topReliable, "Aucun"),
             inline: true,
           });
           fields.push({
             name: `Top risqués (${topRisky.length})`,
-            value:
-              topRisky.length > 0
-                ? topRisky.map(memberLine).join("\n")
-                : "Aucun ✅",
+            value: formatMemberListValue(topRisky, "Aucun ✅"),
             inline: true,
           });
           fields.push({
             name: `Nouveaux (${newMembers.length})`,
-            value:
-              newMembers.length > 0
-                ? newMembers.map(memberLine).join("\n")
-                : "Aucun",
+            value: formatMemberListValue(newMembers, "Aucun"),
             inline: true,
           });
         }
@@ -3881,7 +3946,7 @@ export default async function handler(req, res) {
         const embed = {
           title: `${clan.name ?? resolved.name} | #${clanTag}`,
           url: clanUrl,
-          description: clan.description ?? "",
+          description: `${clan.description ?? ""}${usedLiteFallback ? "\n\n⚠️ Données de fiabilité temporairement indisponibles, affichage allégé." : ""}`,
           color: embedColor,
           fields,
         };
