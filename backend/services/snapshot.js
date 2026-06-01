@@ -222,12 +222,22 @@ function normalizeSnapshots(raw, clanTag = null) {
 }
 
 function daySnapshotTimestamp(day) {
-  return day?.snapshotTime || day?.snapshotBackupTime || null;
+  return (
+    day?.snapshotPreResetTime ||
+    day?.snapshotTime ||
+    day?.snapshotBackupTime ||
+    null
+  );
 }
 
 function isBackupDayBetter(primaryDay, backupDay) {
   if (!isValidSnapshotDay(backupDay)) return false;
   if (!isValidSnapshotDay(primaryDay)) return true;
+
+  // Un snapshot pré-reset (T-2 min) est la source de vérité prioritaire.
+  const primaryHasPreReset = Boolean(primaryDay?.snapshotPreResetTime);
+  const backupHasPreReset = Boolean(backupDay?.snapshotPreResetTime);
+  if (primaryHasPreReset !== backupHasPreReset) return backupHasPreReset;
 
   const primaryTs = daySnapshotTimestamp(primaryDay);
   const backupTs = daySnapshotTimestamp(backupDay);
@@ -238,6 +248,36 @@ function isBackupDayBetter(primaryDay, backupDay) {
   const backupMs = Date.parse(backupTs);
   if (Number.isNaN(primaryMs) || Number.isNaN(backupMs)) return false;
   return backupMs > primaryMs;
+}
+
+function hasMapData(value) {
+  return Boolean(value) && Object.keys(value).length > 0;
+}
+
+function withPreservedPreReset(selectedDay, otherDay) {
+  if (!selectedDay) return selectedDay;
+  if (!otherDay?.snapshotPreResetTime) return selectedDay;
+
+  // Si la journée retenue n'a pas de pré-reset, on conserve celui de l'autre source.
+  if (!selectedDay.snapshotPreResetTime) {
+    return {
+      ...selectedDay,
+      snapshotPreResetTime: otherDay.snapshotPreResetTime,
+      decksPreReset:
+        selectedDay.decksPreReset ??
+        (hasMapData(otherDay.decksPreReset) ? otherDay.decksPreReset : null),
+      _cumulPreReset:
+        selectedDay._cumulPreReset ??
+        (hasMapData(otherDay._cumulPreReset) ? otherDay._cumulPreReset : {}),
+      _cumulFamePreReset:
+        selectedDay._cumulFamePreReset ??
+        (hasMapData(otherDay._cumulFamePreReset)
+          ? otherDay._cumulFamePreReset
+          : {}),
+    };
+  }
+
+  return selectedDay;
 }
 
 // Select the day snapshot closest to reset by preferring the later valid
@@ -269,9 +309,11 @@ function mergeSnapshotsByDay(
         const backupDay = backupWeek.days?.[idx] ?? null;
         const useBackup = isBackupDayBetter(day, backupDay);
         const selectedDay = useBackup ? backupDay : day;
-        if (!annotateSource) return selectedDay;
+        const otherDay = useBackup ? day : backupDay;
+        const mergedDay = withPreservedPreReset(selectedDay, otherDay);
+        if (!annotateSource) return mergedDay;
         return {
-          ...selectedDay,
+          ...mergedDay,
           source: useBackup ? "data" : "tmp",
         };
       }),
@@ -286,9 +328,8 @@ export async function loadSnapshots(clanTag) {
 
   // Load runtime snapshots from /tmp first, then use the durable data backup.
   // If both exist, the tmp version is merged with the data backup per day.
-  // `mergeSnapshotsByDay()` prefers the later valid daily snapshot timestamp,
-  // which means a data snapshot closer to the reset can override an older tmp
-  // snapshot for the same war day.
+  // `mergeSnapshotsByDay()` préserve en priorité un snapshot pré-reset (T-2 min)
+  // et, à défaut, conserve la capture valide la plus récente pour la journée.
 
   const tmpMtime = await fileMtime(tmpFile);
   const dataMtime = await fileMtime(dataFile);
