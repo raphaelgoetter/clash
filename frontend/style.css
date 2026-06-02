@@ -1730,6 +1730,12 @@ a.member-link:hover div:first-child {
   text-align: center;
 }
 
+.last-war-col,
+.reliability-col {
+  text-align: center;
+  font-weight: 700;
+}
+
 /* ── Actual Clan War card ────────────────────────────────────── */
 .war-summary {
   display: flex;

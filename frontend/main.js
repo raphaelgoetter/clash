@@ -371,6 +371,7 @@ function translateClanTableHeaders() {
     lastSeen: t("memberLastSeen"),
     reliability: t("memberReliability"),
     warDecks: t("memberThisWar"),
+    lastWarDecks: t("memberLastWar"),
     verdict: t("memberVerdict"),
   };
   document.querySelectorAll("#card-clan-table thead th").forEach((th) => {
@@ -3218,7 +3219,7 @@ function setupClanLazySectionHandlers(weekId) {
     if (membersDetails) {
       membersDetails.addEventListener("toggle", async () => {
         if (!membersDetails.open || loadedClanSections.members) return;
-        const cols = currentClanIsLite ? 5 : isWarActive ? 9 : 8;
+        const cols = currentClanIsLite ? 6 : isWarActive ? 10 : 9;
         if (allMembers.length > 0) {
           applyFilters();
         } else {
@@ -3324,7 +3325,7 @@ async function refreshMembersLive() {
   if (!activeClanTag) return;
   const membersCard = document.getElementById("card-clan-table");
   const membersDetails = membersCard?.querySelector("details");
-  const cols = currentClanIsLite ? 5 : isWarActive ? 9 : 8;
+  const cols = currentClanIsLite ? 6 : isWarActive ? 10 : 9;
 
   if (membersDetails && !membersDetails.open) {
     membersDetails.open = true;
@@ -3421,23 +3422,22 @@ function renderClanMembers(data) {
 
 // Affiche un skeleton dans le tableau membres pendant le chargement live.
 function renderMembersPlaceholder() {
-  const cols = currentClanIsLite ? 5 : isWarActive ? 9 : 8;
+  const cols = currentClanIsLite ? 6 : isWarActive ? 10 : 9;
   membersTbody.innerHTML = `<tr class="members-placeholder"><td colspan="${cols}" style="text-align:center;color:var(--text-muted);padding:18px 0;">${t("clickToLoadMembers")}</td></tr>`;
 }
 
 function renderMembersSkeleton() {
-  const cols = isWarActive ? 9 : 8;
+  const cols = currentClanIsLite ? 6 : isWarActive ? 10 : 9;
   membersTbody.innerHTML = `<tr><td colspan="${cols}" class="members-skeleton">${t("membersLoading")}</td></tr>`;
 }
 
 // ── Members table ────────────────────────────────────────────
 
 function renderMembersTable(members) {
-  // Nombre de colonnes : base 6 (name, role, trophies, donations, lastSeen + 1 variable)
-  // Full mode : +discord +reliability +verdict = 9 (+ warDecks si guerre active)
-  // Lite mode : 6 (name, role, trophies, donations, lastSeen) → pas discord/reliability/verdict
-  const liteColCount = 5;
-  const fullColCount = isWarActive ? 9 : 8;
+  // Full mode : 9 colonnes (+ This War pendant la GDC = 10)
+  // Lite mode : 6 colonnes (inclut Dernière GDC)
+  const liteColCount = 6;
+  const fullColCount = isWarActive ? 10 : 9;
   const colCount = currentClanIsLite ? liteColCount : fullColCount;
 
   if (members.length === 0) {
@@ -3503,16 +3503,15 @@ function renderMembersTable(members) {
       const discordCell = currentClanIsLite
         ? ""
         : `<td class="discord-col">${m.discord ? "✅" : "-"}</td>`;
+
+      const lastWarDecks = Number.isFinite(m.lastWarDecks)
+        ? Math.max(0, Math.min(16, m.lastWarDecks))
+        : 0;
+      const lastWarDecksCell = `<td class="last-war-col">${lastWarDecks}</td>`;
+
       const reliabilityCell = currentClanIsLite
         ? ""
-        : `<td>
-          <div style="display:flex;align-items:center;gap:8px">
-            <div style="flex:1;height:6px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden;min-width:60px">
-              <div style="width:${m.reliability}%;height:100%;background:${scoreBarColor(m.color)};border-radius:999px"></div>
-            </div>
-            <span style="font-weight:700;font-size:.88rem">${Math.round(m.reliability)}%</span>
-          </div>
-        </td>`;
+        : `<td class="reliability-col">${Math.round(m.reliability)}%</td>`;
       const verdictCell = currentClanIsLite
         ? ""
         : `<td><span class="verdict-badge ${m.color}">${escHtml(memberVerdict)}</span></td>`;
@@ -3531,6 +3530,7 @@ function renderMembersTable(members) {
         ${discordCell}
         ${lastSeenCell}
         ${isWarActive ? `<td class="war-col">${warMiniBarHtml(m.warDays)}</td>` : ""}
+        ${lastWarDecksCell}
         ${reliabilityCell}
         ${verdictCell}
       </tr>`;

@@ -208,27 +208,27 @@ router.get("/:tag/lite", async (req, res) => {
             ? currentRaceResult.value
             : null;
 
-        // Membres : champs natifs uniquement, sans calcul de fiabilité
-        const members = membersRaw.map((m) => ({
-          tag: m.tag,
-          name: m.name,
-          role: m.role,
-          trophies: m.trophies,
-          donations: m.donations,
-          donationsReceived: m.donationsReceived,
-          lastSeen: m.lastSeen,
-          expLevel: m.expLevel,
-        }));
-
         // Meilleures performances de la dernière guerre (top par fame brut)
         let lastWarBest = null;
         const races = Array.isArray(raceLog) ? raceLog : (raceLog?.items ?? []);
+        const lastWarDecksByTag = new Map();
         if (races.length > 0) {
           const lastRace = races[0];
           const ourStanding = (lastRace.standings ?? []).find(
             (s) => s.clan?.tag?.replace("#", "").toUpperCase() === clanTag,
           );
           const participants = ourStanding?.clan?.participants ?? [];
+
+          participants.forEach((p) => {
+            const normalizedTag = `#${String(p.tag ?? "")
+              .replace(/^#/, "")
+              .toUpperCase()}`;
+            const decksUsed = Number.isFinite(p.decksUsed)
+              ? Math.max(0, Math.min(16, p.decksUsed))
+              : 0;
+            lastWarDecksByTag.set(normalizedTag, decksUsed);
+          });
+
           lastWarBest = participants
             .filter((p) => (p.fame ?? 0) >= 2600)
             .sort((a, b) => (b.fame ?? 0) - (a.fame ?? 0))
@@ -240,6 +240,24 @@ router.get("/:tag/lite", async (req, res) => {
               decksUsed: p.decksUsed ?? 0,
             }));
         }
+
+        // Membres : champs natifs uniquement, sans calcul de fiabilité
+        const members = membersRaw.map((m) => {
+          const normalizedTag = `#${String(m.tag ?? "")
+            .replace(/^#/, "")
+            .toUpperCase()}`;
+          return {
+            tag: m.tag,
+            name: m.name,
+            role: m.role,
+            trophies: m.trophies,
+            donations: m.donations,
+            donationsReceived: m.donationsReceived,
+            lastSeen: m.lastSeen,
+            expLevel: m.expLevel,
+            lastWarDecks: lastWarDecksByTag.get(normalizedTag) ?? 0,
+          };
+        });
 
         // Garde calendaire : hors jeu–dim, l'API peut encore dire 'warDay'
         // juste après le reset du lundi — on refuse d'entrer en mode GDC.
@@ -1314,6 +1332,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
   let getSnapshotsForWeeks = null;
   let getWarDayName = null;
   let getWarDayKey = null;
+  const lastWarDecksByTag = new Map();
 
   if (raceLog && raceLog.length > 0) {
     ({ getSnapshotsForWeeks, getWarDayName, getWarDayKey } =
@@ -1328,6 +1347,19 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       prevWeekId,
       currWeekId,
     ]);
+
+    const lastRace = raceLog[0];
+    const lastStanding = (lastRace?.standings ?? []).find(
+      (s) => normalizeTag(s.clan?.tag) === normalizeTag(clanTag),
+    );
+    const lastParticipants = lastStanding?.clan?.participants ?? [];
+    lastParticipants.forEach((p) => {
+      const decksUsed = Number.isFinite(p.decksUsed)
+        ? Math.max(0, Math.min(16, p.decksUsed))
+        : 0;
+      lastWarDecksByTag.set(normalizeTag(p.tag), decksUsed);
+    });
+
     const prevSnaps = snapshotsByWeek[prevWeekId] ?? [];
     weekSnaps = snapshotsByWeek[currWeekId] ?? [];
     if (
@@ -1858,6 +1890,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             ? -1
             : (warDays.totalDecksUsed ?? 0),
       lastSeen: m.lastSeen ?? null,
+      lastWarDecks: lastWarDecksByTag.get(normalizeTag(m.tag)) ?? 0,
       scoreVersion: SCORE_VERSION,
     };
   });
@@ -1878,6 +1911,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       arrivalTotalWeeks: null,
       warDecks: null,
       lastSeen: members[idx].lastSeen ?? null,
+      lastWarDecks: lastWarDecksByTag.get(normalizeTag(members[idx].tag)) ?? 0,
     };
   });
 
