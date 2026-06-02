@@ -3527,7 +3527,7 @@ function renderMembersTable(members) {
         </td>
         <td><span class="role-badge ${m.role}">${capitalize(m.role)}</span></td>
         <td>🏆 ${fmt(m.trophies)}</td>
-        <td>${fmt(m.totalDonations ?? m.donations)}</td>
+        <td>${fmt(m.donations ?? m.totalDonations)}</td>
         ${discordCell}
         ${lastSeenCell}
         ${isWarActive ? `<td class="war-col">${warMiniBarHtml(m.warDays)}</td>` : ""}
