@@ -972,6 +972,9 @@ export default async function handler(req, res) {
             "**Compare**\n" +
             "Commande : `/compare clan:N`\n" +
             "Usage : compare les 5 clans du groupe GDC\n\n" +
+            "**Clan**\n" +
+            "Commande : `/clan clan:N|tag:#TAG`\n" +
+            "Usage : affiche la fiche récapitulative d'un clan (famille ou tag libre)\n\n" +
             "**Chelem**\n" +
             "Commande : `/chelem clan:N [season:X]`\n" +
             "Usage : joueurs ayant fait 16/16 decks toutes semaines d'une saison entière\n\n" +
