@@ -2536,7 +2536,7 @@ function renderClanLiteBest(lastWarBest, members, prevWeekId = null) {
     listEl.innerHTML = lastWarBest
       .map((p) => {
         const member = memberByTag[p.tag] || {};
-        const role = member.role ? capitalize(member.role) : null;
+        const role = member.role ? formatRoleLabel(member.role) : null;
         return (
           `<li class="lite-best-list-item">` +
           `<span class="lite-best-name">` +
@@ -2589,7 +2589,7 @@ function renderTopPlayersCard(topPlayers, prevWeekId = null) {
           `<span class="tp-tag">${escHtml(p.tag)}</span>` +
           `</span>` +
           `<span class="tp-meta">` +
-          `<span class="role-badge ${p.role}">${capitalize(p.role)}</span>` +
+          `<span class="role-badge ${p.role}">${formatRoleLabel(p.role)}</span>` +
           `<span class="tp-fame">${fmt(p.fame)} pts</span>` +
           `</span>` +
           `</li>`,
@@ -2714,7 +2714,7 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
       `<li><span class="tp-name">${escHtml(p.name)} ` +
       `<span class="tp-tag">${escHtml(p.tag)}</span>${newBadge}</span>` +
       `<span class="tp-meta">` +
-      `<span class="role-badge ${p.role}">${capitalize(p.role)}</span>` +
+      `<span class="role-badge ${p.role}">${formatRoleLabel(p.role)}</span>` +
       `<span class="tp-fame">${fmt(p.decks)} decks ${dailyBadge}</span>` +
       `</span></li>`
     );
@@ -3532,7 +3532,7 @@ function renderMembersTable(members) {
             <div style="font-size:.75rem;color:var(--text-muted)">${escHtml(m.tag)}</div>
           </a>
         </td>
-        <td><span class="role-badge ${m.role}">${capitalize(m.role)}</span></td>
+        <td><span class="role-badge ${m.role}">${formatRoleLabel(m.role)}</span></td>
         <td>🏆 ${fmt(m.trophies)}</td>
         <td>${fmt(m.donations ?? m.totalDonations)}</td>
         ${discordCell}
@@ -3845,6 +3845,23 @@ const pl = (n) => (n !== 1 ? "s" : "");
 function capitalize(s) {
   if (!s) return s;
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function formatRoleLabel(role) {
+  if (!role) return role;
+  const normalizedRole = String(role)
+    .toLowerCase()
+    .replace(/[^a-z]/g, "");
+  if (currentLang === "fr") {
+    const frRoleByKey = {
+      member: "Membre",
+      elder: "Aîné",
+      coleader: "Chef Adjoint",
+      leader: "Chef",
+    };
+    return frRoleByKey[normalizedRole] || capitalize(String(role));
+  }
+  return capitalize(String(role));
 }
 
 function escHtml(s) {
