@@ -246,7 +246,10 @@ async function main() {
 
   const staffChannelId = process.env.DISCORD_CHANNEL_STAFF;
   if (!staffChannelId) {
-    throw new Error("Variable manquante: DISCORD_CHANNEL_STAFF");
+    console.warn(
+      "[notifyClanStatus] Variable manquante: DISCORD_CHANNEL_STAFF, script ignore.",
+    );
+    return;
   }
 
   const now = new Date();
