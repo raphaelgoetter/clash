@@ -1449,7 +1449,7 @@ a.member-link:hover div:first-child {
 .role-badge {
   padding: 2px 8px;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   font-weight: 700;
   text-transform: capitalize;
 }
@@ -1704,7 +1704,7 @@ a.member-link:hover div:first-child {
   display: inline-block;
   padding: 2px 8px;
   border-radius: 999px;
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   font-weight: 600;
 }
 
@@ -1737,7 +1737,8 @@ a.member-link:hover div:first-child {
 }
 
 .last-war-decks-badge {
-  display: inline-block;
+  display: inline-grid;
+  place-content: center;
   min-width: 2.1rem;
   padding: 2px 8px;
   border-radius: 999px;
