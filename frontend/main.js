@@ -3507,7 +3507,15 @@ function renderMembersTable(members) {
       const lastWarDecks = Number.isFinite(m.lastWarDecks)
         ? Math.max(0, Math.min(16, m.lastWarDecks))
         : 0;
-      const lastWarDecksCell = `<td class="last-war-col">${lastWarDecks}</td>`;
+      const lastWarDecksColorClass =
+        lastWarDecks >= 16
+          ? "green"
+          : lastWarDecks >= 12
+            ? "yellow"
+            : lastWarDecks >= 8
+              ? "orange"
+              : "red";
+      const lastWarDecksCell = `<td class="last-war-col"><span class="last-war-decks-badge ${lastWarDecksColorClass}">${lastWarDecks}</span></td>`;
 
       const reliabilityCell = currentClanIsLite
         ? ""
