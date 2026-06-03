@@ -40,13 +40,59 @@ async function fetchJson(url) {
   return res.json();
 }
 
+const RARITY_OFFSET = {
+  common: 0,
+  rare: 2,
+  epic: 5,
+  legendary: 8,
+  champion: 10,
+};
+
+const RARITY_MAX = {
+  common: 16,
+  rare: 16,
+  epic: 16,
+  legendary: 16,
+  champion: 16,
+};
+
+function normalizeCardLevel(card) {
+  const rarity = String(card?.rarity || "").toLowerCase();
+  const rawLevel = Number.parseInt(card?.level, 10);
+  if (!Number.isFinite(rawLevel) || !(rarity in RARITY_OFFSET)) return null;
+  const normalized = rawLevel + (RARITY_OFFSET[rarity] ?? 0);
+  return Math.min(RARITY_MAX[rarity] ?? normalized, Math.max(1, normalized));
+}
+
+function selectCardIconUrl(card) {
+  if (!card?.iconUrls) return null;
+  const evoLevel = Number.isFinite(card.evolutionLevel)
+    ? card.evolutionLevel
+    : 0;
+
+  if (card.iconUrls.heroMedium && evoLevel >= 2) {
+    return card.iconUrls.heroMedium;
+  }
+  if (card.iconUrls.evolutionMedium && evoLevel > 0) {
+    return card.iconUrls.evolutionMedium;
+  }
+  return (
+    card.iconUrls.medium || card.iconUrls.large || card.iconUrls.small || null
+  );
+}
+
 function renderCardItem(card) {
   const type = card.type || "utility";
+  const level = normalizeCardLevel(card);
+  const iconUrl = selectCardIconUrl(card);
   return `
     <li class="card-item">
-      <strong>${card.name}</strong>
-      <div class="card-type">${type}</div>
-      ${card.level ? `<div>Niveau ${card.level}</div>` : ""}
+      ${iconUrl ? `<img class="card-icon" src="${iconUrl}" alt="${card.name}" />` : ""}
+      <div>
+        <strong>${card.name}</strong>
+        <div class="card-type">${type}</div>
+        ${level ? `<div>Niveau ${level}</div>` : ""}
+      </div>
     </li>
   `;
 }
@@ -61,12 +107,18 @@ function renderCurrentDeck(payload) {
       <div class="card-list">
         ${current.cards.map(renderCardItem).join("")}
       </div>
+      ${
+        current.suggestions?.length > 0
+          ? `
       <div class="deck-card-footer">
         <strong>Suggestions :</strong>
         <ul>
-          ${current.suggestions.length > 0 ? current.suggestions.map((line) => `<li>${line}</li>`).join("") : "<li>Aucune suggestion automatique.</li>"}
+          ${current.suggestions.map((line) => `<li>${line}</li>`).join("")}
         </ul>
       </div>
+      `
+          : ""
+      }
     </div>
   `;
   showSection(currentDeckSection);

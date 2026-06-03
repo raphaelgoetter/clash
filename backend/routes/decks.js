@@ -236,7 +236,7 @@ function getCurrentDeckSummary(currentDeck, warDecks) {
     samplePlays: matched?.plays ?? 0,
     sampleWins: matched?.wins ?? 0,
     winRateEstimate: matched?.winRate ?? null,
-    suggestions: buildDeckSuggestions(currentDeck),
+    suggestions: [],
   };
 }
 
