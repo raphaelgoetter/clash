@@ -260,8 +260,13 @@ export function summarizeWarDecks(battleLog, limit = 4, dayKey = null) {
           ? roundMe > roundOpp
           : battleWon;
 
+      const cardNames = deckCards
+        .map((card) => normalizeWarDeckCardId(card))
+        .filter(Boolean);
       const existing = decks.get(signature) ?? {
         cards: formatWarDeckCards(deckCards),
+        cardNames,
+        signature,
         plays: 0,
         wins: 0,
         firstSeenIndex: battleIndex,
@@ -286,7 +291,9 @@ export function summarizeWarDecks(battleLog, limit = 4, dayKey = null) {
     .slice(0, limit)
     .map((deck, index) => ({
       label: `Deck ${index + 1}`,
+      signature: deck.signature,
       cards: deck.cards,
+      cardNames: deck.cardNames,
       plays: deck.plays,
       wins: deck.wins,
       winRate: deck.plays > 0 ? Math.round((deck.wins / deck.plays) * 100) : 0,

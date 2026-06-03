@@ -90,6 +90,13 @@ export async function fetchBattleLog(tag) {
   return Array.isArray(data) ? data : (data.items ?? []);
 }
 
+/** Fetch all Clash Royale locations (regions and countries). */
+export async function fetchLocations() {
+  const data = await get(`/locations`);
+  if (Array.isArray(data)) return data;
+  return Array.isArray(data.items) ? data.items : [];
+}
+
 // ── Clan endpoints ────────────────────────────────────────────
 
 /** Fetch a clan's public profile. */

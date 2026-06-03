@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TrustRoyale - Decks</title>
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="/decks/decks.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <a class="brand" href="/">
+          <img src="/favicon.svg" alt="Logo TrustRoyale" />
+          <span>TrustRoyale</span>
+        </a>
+        <h1>Decks</h1>
+        <p>Analyse de deck actuel, decks GDC et top decks par région.</p>
+      </header>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Chargement joueur</h2>
+        </div>
+        <div class="deck-controls">
+          <label class="deck-field">
+            <span>Tag joueur</span>
+            <input
+              id="player-tag-input"
+              type="text"
+              placeholder="#YRGJGR8R"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </label>
+          <div class="deck-actions">
+            <button id="load-current-deck-btn" class="btn btn-primary">
+              Charger deck actuel
+            </button>
+            <button id="load-war-decks-btn" class="btn btn-secondary">
+              Charger decks GDC
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Top decks par région</h2>
+        </div>
+        <div class="deck-controls">
+          <label class="deck-field">
+            <span>Région</span>
+            <select id="top-location-select">
+              <option value="Europe" selected>Europe</option>
+              <option value="France">France</option>
+              <option value="USA">USA</option>
+            </select>
+          </label>
+          <div class="deck-actions">
+            <button id="load-top-decks-btn" class="btn btn-primary">
+              Charger top decks
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <div id="status" class="status"></div>
+
+      <section id="current-deck-section" class="panel hidden">
+        <div class="panel-head">
+          <h2>Deck actuel</h2>
+        </div>
+        <div id="current-deck-container"></div>
+      </section>
+
+      <section id="war-decks-section" class="panel hidden">
+        <div class="panel-head">
+          <h2>Decks GDC récents</h2>
+        </div>
+        <div id="war-decks-container"></div>
+      </section>
+
+      <section id="top-decks-section" class="panel hidden">
+        <div class="panel-head">
+          <h2>Top decks</h2>
+        </div>
+        <div id="top-decks-container"></div>
+      </section>
+    </main>
+    <script type="module" src="/decks/decks.js"></script>
+  </body>
+</html>

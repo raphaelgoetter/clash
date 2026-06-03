@@ -38,6 +38,17 @@ export default defineConfig({
           req.url = "/deck-upgrade/index.html";
           return next();
         }
+        if (
+          url === "/decks" ||
+          url === "/decks/" ||
+          url === "/fr/decks" ||
+          url === "/fr/decks/" ||
+          url === "/en/decks" ||
+          url === "/en/decks/"
+        ) {
+          req.url = "/decks/index.html";
+          return next();
+        }
         // URLs path-based : /fr/player/TAG et /fr/clan/TAG → index.html (SPA)
         if (/^\/(fr|en)\/(player|clan)\//.test(url)) {
           req.url = "/index.html";

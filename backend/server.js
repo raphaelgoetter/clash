@@ -15,6 +15,7 @@ import cors from "cors";
 import compression from "compression";
 import playerRoutes from "./routes/player.js";
 import clanRoutes, { ALLOWED_CLANS } from "./routes/clan.js";
+import deckRoutes from "./routes/decks.js";
 import discordRoutes from "./routes/discord.js";
 import { clearAll } from "./services/cache.js";
 
@@ -62,6 +63,7 @@ app.get("/api/debug", (_req, res) => {
 // ── API routes ────────────────────────────────────────────────
 app.use("/api/player", playerRoutes);
 app.use("/api/clan", clanRoutes);
+app.use("/api/decks", deckRoutes);
 // Discord interactions endpoint (slash commands)
 app.use("/api/discord", discordRoutes);
 
