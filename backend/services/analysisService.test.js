@@ -13,6 +13,7 @@ import {
   warDayKey,
   warResetOffsetMs,
 } from "./analysisService.js";
+import { summarizeDecks } from "./battleLogUtils.js";
 
 console.log("Running analysisService computeIsNewPlayer + war-score tests...");
 
@@ -266,6 +267,67 @@ assert.strictEqual(
   warDeckSummary[1].label,
   "Deck 2",
   "summarizeWarDecks should number the second deck",
+);
+
+const allBattleDeckSummary = summarizeDecks(
+  [
+    {
+      type: "pvp",
+      battleTime: "20260530T120000.000Z",
+      team: [
+        {
+          cards: [
+            { id: "1001", name: "Valkyrie" },
+            { id: "1002", name: "Bowler" },
+            { id: "1003", name: "Fireball" },
+            { id: "1004", name: "Miner" },
+            { id: "1005", name: "Zap" },
+            { id: "1006", name: "Poison" },
+            { id: "1007", name: "Musketeer" },
+            { id: "1008", name: "Tesla" },
+          ],
+          crowns: 3,
+        },
+      ],
+      opponent: [{ crowns: 0 }],
+    },
+    {
+      type: "pvp",
+      battleTime: "20260530T121000.000Z",
+      team: [
+        {
+          cards: [
+            { id: "1008", name: "Tesla" },
+            { id: "1007", name: "Musketeer" },
+            { id: "1006", name: "Poison" },
+            { id: "1005", name: "Zap" },
+            { id: "1004", name: "Miner" },
+            { id: "1003", name: "Fireball" },
+            { id: "1002", name: "Bowler" },
+            { id: "1001", name: "Valkyrie" },
+          ],
+          crowns: 0,
+        },
+      ],
+      opponent: [{ crowns: 1 }],
+    },
+  ],
+  4,
+);
+assert.strictEqual(
+  allBattleDeckSummary.length,
+  1,
+  "summarizeDecks should count all combat types and merge identical deck signatures",
+);
+assert.strictEqual(
+  allBattleDeckSummary[0].plays,
+  2,
+  "summarizeDecks should count both plays of the same deck across all combats",
+);
+assert.strictEqual(
+  allBattleDeckSummary[0].winRate,
+  50,
+  "summarizeDecks should compute winrate across all combats",
 );
 
 // new Avg Score behavior (linear 1000→3000 fame) for all players

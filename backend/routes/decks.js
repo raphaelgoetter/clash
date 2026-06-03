@@ -13,6 +13,7 @@ import {
 import {
   filterWarBattles,
   normalizeWarDeckCardId,
+  summarizeDecks,
   summarizeWarDecks,
 } from "../services/battleLogUtils.js";
 import { getOrSet } from "../services/cache.js";
@@ -330,15 +331,12 @@ router.get("/player/:tag", async (req, res) => {
           ? player.currentDeck
           : [];
         const battleLog = await fetchBattleLog(tag);
-        const allWarDecks = summarizeWarDecks(
-          filterWarBattles(battleLog),
-          Infinity,
-        );
-        const warDecks = allWarDecks.slice(0, 4);
+        const allDecks = summarizeDecks(battleLog, Infinity);
+        const warDecks = summarizeWarDecks(filterWarBattles(battleLog), 4);
 
         return {
           player,
-          currentDeck: getCurrentDeckSummary(currentDeck, allWarDecks),
+          currentDeck: getCurrentDeckSummary(currentDeck, allDecks),
           warDecks,
         };
       },

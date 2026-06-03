@@ -226,6 +226,80 @@ function formatWarDeckCards(deckCards) {
  * @param {string|null} [dayKey=null] Optionnel — limite aux combats du jour GDC indiqué (YYYY-MM-DD).
  * @returns {{ label:string; cards:string; plays:number; wins:number; winRate:number }[]}
  */
+export function summarizeDecks(battleLog, limit = 4, dayKey = null) {
+  const decks = new Map();
+  const rawBattles = battleLog ?? [];
+
+  rawBattles.forEach((battle, battleIndex) => {
+    if (dayKey && warDayKey(battle?.battleTime) !== dayKey) return;
+    const cards = Array.isArray(battle?.team?.[0]?.cards)
+      ? battle.team[0].cards
+      : [];
+    const deckChunks = chunkArray(cards, 8).filter((chunk) => chunk.length > 0);
+    if (!deckChunks.length) return;
+
+    const duelRounds = Array.isArray(battle?.team?.[0]?.rounds)
+      ? battle.team[0].rounds
+      : null;
+    const duelOppRounds = Array.isArray(battle?.opponent?.[0]?.rounds)
+      ? battle.opponent[0].rounds
+      : null;
+    const battleWon = isWarWin(battle);
+    deckChunks.forEach((deckCards, deckIndex) => {
+      const signature = deckCards
+        .map((card) => normalizeWarDeckCardId(card))
+        .filter(Boolean)
+        .sort()
+        .join("-");
+      if (!signature) return;
+
+      const roundMe = duelRounds?.[deckIndex]?.crowns;
+      const roundOpp = duelOppRounds?.[deckIndex]?.crowns;
+      const deckWon =
+        Number.isFinite(roundMe) && Number.isFinite(roundOpp)
+          ? roundMe > roundOpp
+          : battleWon;
+
+      const cardNames = deckCards
+        .map((card) => normalizeWarDeckCardId(card))
+        .filter(Boolean);
+      const existing = decks.get(signature) ?? {
+        cards: formatWarDeckCards(deckCards),
+        cardNames,
+        signature,
+        plays: 0,
+        wins: 0,
+        firstSeenIndex: battleIndex,
+      };
+
+      existing.plays += 1;
+      if (deckWon) existing.wins += 1;
+      if (battleIndex < existing.firstSeenIndex) {
+        existing.firstSeenIndex = battleIndex;
+      }
+
+      decks.set(signature, existing);
+    });
+  });
+
+  return [...decks.values()]
+    .sort((a, b) => {
+      if (b.plays !== a.plays) return b.plays - a.plays;
+      if (b.wins !== a.wins) return b.wins - a.wins;
+      return a.firstSeenIndex - b.firstSeenIndex;
+    })
+    .slice(0, limit)
+    .map((deck, index) => ({
+      label: `Deck ${index + 1}`,
+      signature: deck.signature,
+      cards: deck.cards,
+      cardNames: deck.cardNames,
+      plays: deck.plays,
+      wins: deck.wins,
+      winRate: deck.plays > 0 ? Math.round((deck.wins / deck.plays) * 100) : 0,
+    }));
+}
+
 export function summarizeWarDecks(battleLog, limit = 4, dayKey = null) {
   const decks = new Map();
   const warBattles = filterWarBattles(battleLog ?? []);

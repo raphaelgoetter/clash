@@ -93,7 +93,7 @@ function renderCurrentDeck(payload) {
   currentDeckContainer.innerHTML = `
     <div class="deck-card">
       <h3>${player.name} (${player.tag})</h3>
-      <p>${current.samplePlays > 0 ? `Winrate estimé : ${current.winRateEstimate}% sur ${current.samplePlays} parties` : "Aucune estimation de winrate disponible."}</p>
+      <p>${current.samplePlays > 0 ? `Winrate estimé (tous combats) : ${current.winRateEstimate}% sur ${current.samplePlays} parties` : "Aucune estimation de winrate disponible."}</p>
       <div class="card-list">
         ${current.cards.map(renderCardItem).join("")}
       </div>
