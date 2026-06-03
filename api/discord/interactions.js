@@ -1048,7 +1048,7 @@ export default async function handler(req, res) {
             "Usage : meilleurs joueurs de toute la famille (semaine, saison précédente ou tous les temps)\n\n" +
             "**Top Clans**\n" +
             "Commande : `/top-clans [start:N]`\n" +
-            "Usage : affiche 50 clans du classement France GDC à partir du rang N (défaut : 1)\n\n" +
+            "Usage : affiche 30 clans du classement France GDC à partir du rang N (défaut : 1)\n\n" +
             "**Collection**\n" +
             "Commande : `/collection tag:#TAG`\n" +
             "Usage : statistiques de collection (cartes, niveaux, évolutions, héros, niveau de collection)\n\n" +
@@ -3326,15 +3326,17 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
+        const TOP_CLANS_WINDOW = 30;
+        const MAX_EMBED_DESCRIPTION = 4096;
         const startOpt = body.data.options?.find((o) => o.name === "start");
         const startRank = Math.max(
           1,
-          Math.min(980, parseInt(startOpt?.value ?? 1, 10) || 1),
+          Math.min(970, parseInt(startOpt?.value ?? 1, 10) || 1),
         );
 
         const FRANCE_ID = "57000087";
         // Limite : assez pour couvrir la tranche + trouver les clans famille (~rang 300-400)
-        const fetchLimit = Math.max(startRank + 49, 500);
+        const fetchLimit = Math.max(startRank + (TOP_CLANS_WINDOW - 1), 500);
 
         const { fetchClanWarRankings } =
           await import("../../backend/services/clashApi.js");
@@ -3342,9 +3344,9 @@ export default async function handler(req, res) {
         // Récupérer le leaderboard GDC France
         const allClans = await fetchClanWarRankings(FRANCE_ID, fetchLimit);
 
-        // Extraire la tranche demandée (rank startRank → startRank+49)
+        // Extraire la tranche demandée
         const slice = allClans.filter(
-          (c) => c.rank >= startRank && c.rank < startRank + 50,
+          (c) => c.rank >= startRank && c.rank < startRank + TOP_CLANS_WINDOW,
         );
 
         if (slice.length === 0) {
@@ -3396,9 +3398,23 @@ export default async function handler(req, res) {
           const delta = rankDelta(clan.rank, clan.previousRank);
           const name = clan.name ?? tag;
           const members = clan.members != null ? `${clan.members}/50` : "?/50";
-          const trophies = fmt(clan.clanWarTrophies);
+          const trophyValue =
+            clan.clanWarTrophies ?? clan.clanScore ?? clan.trophies ?? null;
+          const trophies = fmt(trophyValue);
 
           return `${label}${delta}${familyIcon} **${name}** · \`${tag}\` · <:trophy2:1493677804733337621> ${trophies} · <:members:1506175789731811399> ${members} membres`;
+        };
+
+        const truncateByLine = (text, maxLen = MAX_EMBED_DESCRIPTION) => {
+          if (text.length <= maxLen) return text;
+          const lines = text.split("\n");
+          let out = "";
+          for (const line of lines) {
+            const next = out ? `${out}\n${line}` : line;
+            if (next.length > maxLen - 2) break;
+            out = next;
+          }
+          return out ? `${out}\n…` : "…";
         };
 
         // Construire les lignes de la tranche
@@ -3415,12 +3431,11 @@ export default async function handler(req, res) {
             familyRows.join("\n");
         }
 
-        // Tronquer si nécessaire (limite embed Discord : 4096 chars)
-        if (description.length > 4096) {
-          description = description.slice(0, 4090) + "…";
-        }
+        // Tronquer si nécessaire (limite embed Discord : 4096 chars), sans casser une ligne/emoji
+        description = truncateByLine(description, MAX_EMBED_DESCRIPTION);
 
-        const endRank = slice[slice.length - 1]?.rank ?? startRank + 9;
+        const endRank =
+          slice[slice.length - 1]?.rank ?? startRank + (TOP_CLANS_WINDOW - 1);
         const embed = {
           title: `🏆 Classement France GDC — #${startRank} → #${endRank}`,
           color: 0xf1c40f,
