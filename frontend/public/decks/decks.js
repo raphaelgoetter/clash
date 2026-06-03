@@ -352,6 +352,9 @@ function renderTopDecks(payload, gdcGroups = []) {
     ${gdcGroups.length ? renderGdcAdaptedGroups(gdcGroups) : ""}
   `;
   showSection(topDecksSection);
+  if (showGdcAdaptedBtn) {
+    showGdcAdaptedBtn.classList.remove("hidden");
+  }
   attachTopDeckCardListeners();
 }
 
