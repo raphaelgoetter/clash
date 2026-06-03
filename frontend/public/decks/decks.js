@@ -8,6 +8,7 @@ const topSortSelect = document.getElementById("top-sort-select");
 const topDecksLoader = document.getElementById("top-decks-loader");
 const topDecksLoaderFill = document.getElementById("top-decks-loader-fill");
 const topDecksLoaderLabel = document.getElementById("top-decks-loader-label");
+const showGdcAdaptedBtn = document.getElementById("show-gdc-adapted-btn");
 let topDecksPayload = null;
 let selectedTopDeckCard = null;
 let topDecksLoaderInterval = null;
@@ -155,6 +156,100 @@ function renderTopDeckCard(card) {
   `;
 }
 
+function getDeckCardNames(deck) {
+  const cardNames = Array.isArray(deck.cardList)
+    ? deck.cardList.map((card) => String(card?.name || "").trim())
+    : Array.isArray(deck.cardNames)
+    ? deck.cardNames.map((name) => String(name).trim())
+    : [];
+  return cardNames.filter(Boolean);
+}
+
+function buildGdcAdaptedGroups(decks, groupSize = 4) {
+  const items = decks
+    .map((deck, index) => {
+      const names = getDeckCardNames(deck);
+      const normalized = names.map((name) => name.toLowerCase());
+      return {
+        index,
+        deck,
+        cardNames: names,
+        normalized,
+        cardSet: new Set(normalized),
+      };
+    })
+    .sort((a, b) => (b.deck.plays || 0) - (a.deck.plays || 0));
+
+  const groups = [];
+  const used = new Set();
+
+  for (let i = 0; i < items.length; i += 1) {
+    if (used.has(items[i].index)) continue;
+    const group = [items[i]];
+    const cardSet = new Set(items[i].normalized);
+
+    for (let j = i + 1; j < items.length && group.length < groupSize; j += 1) {
+      if (used.has(items[j].index)) continue;
+      const candidate = items[j];
+      const overlap = candidate.normalized.some((name) => cardSet.has(name));
+      if (!overlap) {
+        candidate.normalized.forEach((name) => cardSet.add(name));
+        group.push(candidate);
+      }
+    }
+
+    if (group.length === groupSize) {
+      groups.push(group);
+      group.forEach((item) => used.add(item.index));
+    }
+  }
+
+  return groups;
+}
+
+function renderGdcAdaptedGroups(groups) {
+  if (!groups || groups.length === 0) {
+    return `
+      <div class="deck-card">
+        <p>Aucun groupe complet de 4 decks adaptés GDC n'a pu être trouvé parmi les decks chargés.</p>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="gdc-adapted-section">
+      <div class="deck-card">
+        <h3>Decks adaptés GDC</h3>
+        <p>${groups.length} groupe${groups.length > 1 ? "s" : ""} complet${groups.length > 1 ? "s" : ""} trouvé${groups.length > 1 ? "s" : ""}.</p>
+      </div>
+      ${groups
+        .map(
+          (group, groupIndex) => `
+          <div class="gdc-group">
+            <div class="gdc-group-title">Groupe ${groupIndex + 1}</div>
+            <div class="deck-grid gdc-group-grid">
+              ${group
+                .map((item) => {
+                  const cards = getDeckCardNames(item.deck).map((name) => ({ name }));
+                  return `
+                    <div class="deck-card">
+                      <p>Utilisé ${item.deck.plays} fois • Winrate ${item.deck.winRate}%</p>
+                      <ul class="top-decks-list">
+                        ${cards.map(renderTopDeckCard).join("")}
+                      </ul>
+                    </div>
+                  `;
+                })
+                .join("")}
+            </div>
+          </div>
+        `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
 function sortTopDecks(decks) {
   const mode = topSortSelect?.value || "usage";
   if (mode === "winrate") {
@@ -203,7 +298,7 @@ function stopTopDecksLoader(success = true) {
   }, 600);
 }
 
-function renderTopDecks(payload) {
+function renderTopDecks(payload, gdcGroups = []) {
   topDecksPayload = payload;
   const allDecks = sortTopDecks(payload.decks || []);
   const decks = selectedTopDeckCard
@@ -252,6 +347,7 @@ function renderTopDecks(payload) {
         })
         .join("")}
     </div>
+    ${gdcGroups.length ? renderGdcAdaptedGroups(gdcGroups) : ""}
   `;
   showSection(topDecksSection);
   attachTopDeckCardListeners();
@@ -337,6 +433,42 @@ async function handleLoadTopDecks() {
 }
 
 loadTopDecksBtn.addEventListener("click", handleLoadTopDecks);
+if (showGdcAdaptedBtn) {
+  showGdcAdaptedBtn.addEventListener("click", () => {
+    if (!topDecksPayload) {
+      setStatus(
+        "Merci de charger les top decks avant de générer des decks adaptés GDC.",
+        true,
+      );
+      return;
+    }
+
+    const allDecks = sortTopDecks(topDecksPayload.decks || []);
+    const decks = selectedTopDeckCard
+      ? allDecks.filter((deck) =>
+          (deck.cardList ?? []).some(
+            (card) =>
+              card.name.toLowerCase() === selectedTopDeckCard.toLowerCase(),
+          ),
+        )
+      : allDecks;
+
+    const groups = buildGdcAdaptedGroups(decks, 4);
+    if (groups.length === 0) {
+      setStatus(
+        "Aucun groupe complet GDC trouvé parmi les decks chargés.",
+        true,
+      );
+    } else {
+      setStatus(
+        `Decks adaptés GDC générés : ${groups.length} groupe${
+          groups.length > 1 ? "s" : ""
+        }.`,
+      );
+    }
+    renderTopDecks(topDecksPayload, groups);
+  });
+}
 if (topSortSelect) {
   topSortSelect.addEventListener("change", () => {
     selectedTopDeckCard = null;

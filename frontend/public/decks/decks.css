@@ -236,6 +236,31 @@ select {
   }
 }
 
+.gdc-adapted-section {
+  margin-top: 24px;
+  display: grid;
+  gap: 16px;
+}
+
+.gdc-group {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.gdc-group-title {
+  margin: 0 0 12px;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.gdc-group-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .top-deck-card-item {
   display: flex;
   align-items: center;
