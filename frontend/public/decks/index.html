@@ -18,35 +18,9 @@
           <img src="/favicon.svg" alt="Logo TrustRoyale" />
           <span>TrustRoyale</span>
         </a>
-        <h1>Decks</h1>
-        <p>Analyse de deck actuel, decks GDC et top decks par région.</p>
+        <h1>Top decks</h1>
+        <p>Top decks compétitifs par région.</p>
       </header>
-
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Chargement joueur</h2>
-        </div>
-        <div class="deck-controls">
-          <label class="deck-field">
-            <span>Tag joueur</span>
-            <input
-              id="player-tag-input"
-              type="text"
-              placeholder="#YRGJGR8R"
-              autocomplete="off"
-              spellcheck="false"
-            />
-          </label>
-          <div class="deck-actions">
-            <button id="load-current-deck-btn" class="btn btn-primary">
-              Charger deck actuel
-            </button>
-            <button id="load-war-decks-btn" class="btn btn-secondary">
-              Charger decks GDC
-            </button>
-          </div>
-        </div>
-      </section>
 
       <section class="panel">
         <div class="panel-head">
@@ -86,19 +60,43 @@
         </div>
       </div>
 
-      <section id="current-deck-section" class="panel hidden">
+      <section id="top-decks-section" class="panel hidden">
         <div class="panel-head">
-          <h2>Deck actuel</h2>
+          <h2>Top decks par région</h2>
         </div>
-        <div id="current-deck-container"></div>
+        <div class="deck-controls">
+          <label class="deck-field">
+            <span>Région</span>
+            <select id="top-location-select">
+              <option value="Europe" selected>Europe</option>
+              <option value="France">France</option>
+              <option value="USA">USA</option>
+            </select>
+          </label>
+          <label class="deck-field">
+            <span>Trier par</span>
+            <select id="top-sort-select">
+              <option value="usage" selected>Usage</option>
+              <option value="winrate">Winrate</option>
+            </select>
+          </label>
+          <div class="deck-actions">
+            <button id="load-top-decks-btn" class="btn btn-primary">
+              Charger top decks
+            </button>
+          </div>
+        </div>
       </section>
 
-      <section id="war-decks-section" class="panel hidden">
-        <div class="panel-head">
-          <h2>Decks GDC récents</h2>
+      <div id="status" class="status"></div>
+      <div id="top-decks-loader" class="loader hidden">
+        <div class="loader-bar">
+          <div id="top-decks-loader-fill" class="loader-fill"></div>
         </div>
-        <div id="war-decks-container"></div>
-      </section>
+        <div id="top-decks-loader-label" class="loader-label">
+          Chargement des top decks…
+        </div>
+      </div>
 
       <section id="top-decks-section" class="panel hidden">
         <div class="panel-head">

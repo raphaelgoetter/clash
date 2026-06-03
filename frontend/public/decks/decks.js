@@ -1,14 +1,7 @@
 const API_BASE = "/api/decks";
 const statusEl = document.getElementById("status");
-const currentDeckSection = document.getElementById("current-deck-section");
-const currentDeckContainer = document.getElementById("current-deck-container");
-const warDecksSection = document.getElementById("war-decks-section");
-const warDecksContainer = document.getElementById("war-decks-container");
 const topDecksSection = document.getElementById("top-decks-section");
 const topDecksContainer = document.getElementById("top-decks-container");
-const playerTagInput = document.getElementById("player-tag-input");
-const loadCurrentDeckBtn = document.getElementById("load-current-deck-btn");
-const loadWarDecksBtn = document.getElementById("load-war-decks-btn");
 const loadTopDecksBtn = document.getElementById("load-top-decks-btn");
 const topLocationSelect = document.getElementById("top-location-select");
 const topSortSelect = document.getElementById("top-sort-select");
@@ -338,8 +331,6 @@ async function handleLoadTopDecks() {
   }
 }
 
-loadCurrentDeckBtn.addEventListener("click", handleLoadCurrentDeck);
-loadWarDecksBtn.addEventListener("click", handleLoadWarDecks);
 loadTopDecksBtn.addEventListener("click", handleLoadTopDecks);
 if (topSortSelect) {
   topSortSelect.addEventListener("change", () => {
