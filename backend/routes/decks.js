@@ -12,6 +12,7 @@ import {
   fetchCards,
 } from "../services/clashApi.js";
 import {
+  filterCompetitiveBattles,
   filterWarBattles,
   normalizeWarDeckCardId,
   summarizeDecks,
@@ -267,9 +268,9 @@ function pickPlayersForClan(members, limit) {
   }));
 }
 
-function aggregateWarDecksFromPlayers(playersWarDecks) {
+function aggregateDecksFromPlayers(playersDecks) {
   const decks = new Map();
-  for (const player of playersWarDecks) {
+  for (const player of playersDecks) {
     const sampleKey = `${player.tag}:${player.clanTag}`;
     for (const deck of player.warDecks) {
       if (!deck.signature) continue;
@@ -432,13 +433,22 @@ router.get("/meta/top-war-decks", async (req, res) => {
         });
         const battleLogResults = await pooledAllSettled(battleLogTasks, 6);
 
-        const playersWarDecks = [];
+        const playersCompetitiveDecks = [];
         for (const result of battleLogResults) {
           if (result.status === "fulfilled") {
             const { tag, name, clanTag, clanName, battleLog } = result.value;
-            const warDecks = summarizeWarDecks(filterWarBattles(battleLog), 4);
+            const warDecks = summarizeDecks(
+              filterCompetitiveBattles(battleLog),
+              4,
+            );
             if (warDecks.length) {
-              playersWarDecks.push({ tag, name, clanTag, clanName, warDecks });
+              playersCompetitiveDecks.push({
+                tag,
+                name,
+                clanTag,
+                clanName,
+                warDecks,
+              });
             }
           } else {
             warnings.push(
@@ -447,8 +457,8 @@ router.get("/meta/top-war-decks", async (req, res) => {
           }
         }
 
-        const aggregatedDecks = aggregateWarDecksFromPlayers(
-          playersWarDecks,
+        const aggregatedDecks = aggregateDecksFromPlayers(
+          playersCompetitiveDecks,
         ).slice(0, 25);
 
         const cardDefinitions = await getOrSet(

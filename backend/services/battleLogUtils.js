@@ -41,6 +41,12 @@ const FRIENDLY_TYPES = new Set([
   "2v2",
 ]);
 
+const COMPETITIVE_TYPES = new Set([
+  ...WAR_BATTLE_TYPES,
+  ...LADDER_TYPES,
+  ...CHALLENGE_TYPES,
+]);
+
 /**
  * Filter a battle log to keep only Clan War battles.
  * @param {object[]} battleLog
@@ -49,6 +55,18 @@ const FRIENDLY_TYPES = new Set([
 export function filterWarBattles(battleLog) {
   return battleLog.filter((b) =>
     WAR_BATTLE_TYPES.has((b.type ?? "").toLowerCase()),
+  );
+}
+
+/**
+ * Filter a battle log to keep only competitive battles.
+ * Includes War, Ladder, and Challenge modes.
+ * @param {object[]} battleLog
+ * @returns {object[]}
+ */
+export function filterCompetitiveBattles(battleLog) {
+  return battleLog.filter((b) =>
+    COMPETITIVE_TYPES.has((b.type ?? "").toLowerCase()),
   );
 }
 
