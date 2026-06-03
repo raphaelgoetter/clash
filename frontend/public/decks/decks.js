@@ -160,8 +160,8 @@ function getDeckCardNames(deck) {
   const cardNames = Array.isArray(deck.cardList)
     ? deck.cardList.map((card) => String(card?.name || "").trim())
     : Array.isArray(deck.cardNames)
-    ? deck.cardNames.map((name) => String(name).trim())
-    : [];
+      ? deck.cardNames.map((name) => String(name).trim())
+      : [];
   return cardNames.filter(Boolean);
 }
 
@@ -230,7 +230,9 @@ function renderGdcAdaptedGroups(groups) {
             <div class="deck-grid gdc-group-grid">
               ${group
                 .map((item) => {
-                  const cards = getDeckCardNames(item.deck).map((name) => ({ name }));
+                  const cards = getDeckCardNames(item.deck).map((name) => ({
+                    name,
+                  }));
                   return `
                     <div class="deck-card">
                       <p>Utilisé ${item.deck.plays} fois • Winrate ${item.deck.winRate}%</p>
