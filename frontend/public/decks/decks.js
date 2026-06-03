@@ -66,16 +66,6 @@ function normalizeCardLevel(card) {
 
 function selectCardIconUrl(card) {
   if (!card?.iconUrls) return null;
-  const evoLevel = Number.isFinite(card.evolutionLevel)
-    ? card.evolutionLevel
-    : 0;
-
-  if (card.iconUrls.heroMedium && evoLevel >= 2) {
-    return card.iconUrls.heroMedium;
-  }
-  if (card.iconUrls.evolutionMedium && evoLevel > 0) {
-    return card.iconUrls.evolutionMedium;
-  }
   return (
     card.iconUrls.medium || card.iconUrls.large || card.iconUrls.small || null
   );
