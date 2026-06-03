@@ -334,6 +334,7 @@ async function handleLoadTopDecks() {
 loadTopDecksBtn.addEventListener("click", handleLoadTopDecks);
 if (topSortSelect) {
   topSortSelect.addEventListener("change", () => {
+    selectedTopDeckCard = null;
     if (topDecksPayload) renderTopDecks(topDecksPayload);
   });
 }
