@@ -393,7 +393,8 @@ function renderTopDecks(payload, gdcGroups = []) {
       <p>Région : <strong>${payload.location.name}</strong> — ${headerSummary}</p>
       ${
         payload.topClans && payload.topClans.length > 0
-          ? `<p class="deck-source">Source : données agrégées depuis ${payload.playersSampled} joueurs parmi les ${payload.topClans.length} meilleurs clans GDC de la région.</p>`
+          ? `<p class="deck-source">Source : données agrégées depuis ${payload.playersSampled} joueurs parmi les ${payload.topClans.length} meilleurs clans GDC de la région.</p>
+          <p>Les cartes des decks sont affichées dans l'ordre.</p>`
           : ""
       }
     </div>
