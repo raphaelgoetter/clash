@@ -11,6 +11,8 @@ const loadCurrentDeckBtn = document.getElementById("load-current-deck-btn");
 const loadWarDecksBtn = document.getElementById("load-war-decks-btn");
 const loadTopDecksBtn = document.getElementById("load-top-decks-btn");
 const topLocationSelect = document.getElementById("top-location-select");
+const topSortSelect = document.getElementById("top-sort-select");
+let topDecksPayload = null;
 
 function normalizeTag(raw) {
   if (!raw || typeof raw !== "string") return "";
@@ -151,8 +153,25 @@ function renderTopDeckCard(card) {
   `;
 }
 
+function sortTopDecks(decks) {
+  const mode = topSortSelect?.value || "usage";
+  if (mode === "winrate") {
+    return [...decks].sort((a, b) => {
+      if (b.winRate !== a.winRate) return b.winRate - a.winRate;
+      if (b.plays !== a.plays) return b.plays - a.plays;
+      return a.signature.localeCompare(b.signature);
+    });
+  }
+  return [...decks].sort((a, b) => {
+    if (b.plays !== a.plays) return b.plays - a.plays;
+    if (b.winRate !== a.winRate) return b.winRate - a.winRate;
+    return a.signature.localeCompare(b.signature);
+  });
+}
+
 function renderTopDecks(payload) {
-  const decks = payload.decks || [];
+  const decks = sortTopDecks(payload.decks || []);
+  topDecksPayload = payload;
   if (decks.length === 0) {
     topDecksContainer.innerHTML =
       "<p>Aucun top deck n'a pu être agrégé pour cette région.</p>";
@@ -175,7 +194,11 @@ function renderTopDecks(payload) {
           <div class="deck-card">
             <h3>Deck #${index + 1}</h3>
             <p>Utilisé ${deck.plays} fois • Winrate ${deck.winRate}%</p>
-            <p>Clans : ${deck.clanCount} • Joueurs : ${deck.playerCount}</p>
+            ${
+              deck.clanCount > 1 || deck.playerCount > 1
+                ? `<p>Clans : ${deck.clanCount} • Joueurs : ${deck.playerCount}</p>`
+                : ""
+            }
             <ul class="top-decks-list">
               ${cards.map(renderTopDeckCard).join("")}
             </ul>
@@ -248,3 +271,8 @@ async function handleLoadTopDecks() {
 loadCurrentDeckBtn.addEventListener("click", handleLoadCurrentDeck);
 loadWarDecksBtn.addEventListener("click", handleLoadWarDecks);
 loadTopDecksBtn.addEventListener("click", handleLoadTopDecks);
+if (topSortSelect) {
+  topSortSelect.addEventListener("change", () => {
+    if (topDecksPayload) renderTopDecks(topDecksPayload);
+  });
+}
