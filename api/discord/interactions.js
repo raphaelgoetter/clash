@@ -18,7 +18,72 @@ import {
 import { summarizeWarDecks } from "../../backend/services/analysisService.js";
 
 const _require = createRequire(import.meta.url);
-const COLLECTION_REWARDS = _require("../../data/collection-rewards.json");
+const COLLECTION_LEVELS = _require("../../data/collection_levels.json");
+
+function parseRewardTypeFromLevel(level) {
+  const mysteryBox = String(level?.MysteryBox || "");
+  const consumable = String(level?.Consumable || "");
+  const resource = String(level?.Resource || "");
+
+  if (resource === "Diamonds") return "gems";
+
+  const consumableMap = {
+    WildcardCommon: "common_wc",
+    WildcardRare: "rare_wc",
+    WildcardEpic: "epic_wc",
+    WildcardLegendary: "legendary_wc",
+    WildcardChampion: "champion_wc",
+  };
+  if (consumableMap[consumable]) return consumableMap[consumable];
+
+  if (mysteryBox === "LegendaryLuckyDrop_NoUpgrade") return "lucky_chest_4star";
+  if (mysteryBox === "ChampionLuckyDrop") return "lucky_chest_5star";
+  if (mysteryBox === "EVO_Shard_5Star") return "evo_box";
+
+  if (level?.Banner) return "banner";
+
+  return null;
+}
+
+function parseArenaMeta(chestArena) {
+  if (!chestArena) return {};
+  const raw = String(chestArena);
+
+  const simpleMatch = /^Arena(\d+)$/.exec(raw);
+  if (simpleMatch) {
+    return { arenaLevel: Number(simpleMatch[1]) };
+  }
+
+  const prefixedMatch = /^Arena_(.+)$/.exec(raw);
+  if (prefixedMatch) {
+    return { arenaLabel: prefixedMatch[1].replaceAll("_", " ") };
+  }
+
+  return { arenaLabel: raw };
+}
+
+const COLLECTION_REWARDS = COLLECTION_LEVELS.map((level) => {
+  const cl = Number(level?.RequiredLevel);
+  const type = parseRewardTypeFromLevel(level);
+  if (!Number.isFinite(cl) || !type) return null;
+
+  const qty = Number(level?.Amount);
+  const reward = {
+    cl,
+    type,
+    qty: Number.isFinite(qty) ? qty : 1,
+  };
+
+  if (level?.Banner) reward.label = String(level.Banner);
+
+  const arenaMeta = parseArenaMeta(level?.ChestArena);
+  if (arenaMeta.arenaLevel != null) reward.arenaLevel = arenaMeta.arenaLevel;
+  if (arenaMeta.arenaLabel) reward.arenaLabel = arenaMeta.arenaLabel;
+
+  return reward;
+})
+  .filter(Boolean)
+  .sort((a, b) => a.cl - b.cl);
 
 // Maintient la fonction Vercel active le temps de l'exécution asynchrone.
 function runBackground(fn) {
@@ -3534,9 +3599,11 @@ export default async function handler(req, res) {
                   const suffix =
                     r.arenaLevel != null
                       ? ` (Arène ${r.arenaLevel})`
-                      : r.label
-                        ? ` "${r.label}"`
-                        : ` ×${r.qty}`;
+                      : r.arenaLabel
+                        ? ` (Arène ${r.arenaLabel})`
+                        : r.label
+                          ? ` "${r.label}"`
+                          : ` ×${r.qty}`;
                   return `• CL ${r.cl} — ${label}${suffix}`;
                 })
                 .join("\n")

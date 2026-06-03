@@ -3638,10 +3638,84 @@ function sortMembers(arr = [], col, dir) {
 // ── Template helpers ─────────────────────────────────────────
 
 let _collectionRewardsPromise = null;
+
+function parseRewardTypeFromCollectionLevel(level) {
+  const mysteryBox = String(level?.MysteryBox || "");
+  const consumable = String(level?.Consumable || "");
+  const resource = String(level?.Resource || "");
+
+  if (resource === "Diamonds") return "gems";
+
+  const consumableMap = {
+    WildcardCommon: "common_wc",
+    WildcardRare: "rare_wc",
+    WildcardEpic: "epic_wc",
+    WildcardLegendary: "legendary_wc",
+    WildcardChampion: "champion_wc",
+  };
+  if (consumableMap[consumable]) return consumableMap[consumable];
+
+  if (mysteryBox === "LegendaryLuckyDrop_NoUpgrade") return "lucky_chest_4star";
+  if (mysteryBox === "ChampionLuckyDrop") return "lucky_chest_5star";
+  if (mysteryBox === "EVO_Shard_5Star") return "evo_box";
+
+  if (level?.Banner) return "banner";
+
+  return null;
+}
+
+function parseArenaMeta(chestArena) {
+  if (!chestArena) return {};
+  const raw = String(chestArena);
+
+  const simpleMatch = /^Arena(\d+)$/.exec(raw);
+  if (simpleMatch) return { arenaLevel: Number(simpleMatch[1]) };
+
+  const prefixedMatch = /^Arena_(.+)$/.exec(raw);
+  if (prefixedMatch) {
+    return { arenaLabel: prefixedMatch[1].replaceAll("_", " ") };
+  }
+
+  return { arenaLabel: raw };
+}
+
+function normalizeCollectionRewards(rawLevels) {
+  if (!Array.isArray(rawLevels)) return [];
+  return rawLevels
+    .map((level) => {
+      // Compat: si le JSON est déjà au format rewards (cl/type), on le garde.
+      if (level && typeof level === "object" && "cl" in level && "type" in level) {
+        return level;
+      }
+
+      const cl = Number(level?.RequiredLevel);
+      const type = parseRewardTypeFromCollectionLevel(level);
+      if (!Number.isFinite(cl) || !type) return null;
+
+      const qty = Number(level?.Amount);
+      const reward = {
+        cl,
+        type,
+        qty: Number.isFinite(qty) ? qty : 1,
+      };
+
+      if (level?.Banner) reward.label = String(level.Banner);
+
+      const arenaMeta = parseArenaMeta(level?.ChestArena);
+      if (arenaMeta.arenaLevel != null) reward.arenaLevel = arenaMeta.arenaLevel;
+      if (arenaMeta.arenaLabel) reward.arenaLabel = arenaMeta.arenaLabel;
+
+      return reward;
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.cl - b.cl);
+}
+
 function loadCollectionRewards() {
   if (!_collectionRewardsPromise)
-    _collectionRewardsPromise = fetch("/collection-rewards.json")
+    _collectionRewardsPromise = fetch("/collection_levels.json")
       .then((r) => r.json())
+      .then((levels) => normalizeCollectionRewards(levels))
       .catch(() => []);
   return _collectionRewardsPromise;
 }
@@ -3693,6 +3767,8 @@ async function showCollectionModal(col) {
             const suffix =
               r.arenaLevel != null
                 ? ` (${isFr ? "Ar\u00e8ne" : "Arena"} ${r.arenaLevel})`
+                : r.arenaLabel
+                  ? ` (${isFr ? "Ar\u00e8ne" : "Arena"} ${r.arenaLabel})`
                 : r.label
                   ? ` "${r.label}"`
                   : ` \u00d7${r.qty}`;
