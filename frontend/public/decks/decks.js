@@ -92,7 +92,7 @@ function renderCurrentDeck(payload) {
   const current = payload.currentDeck;
   const player = payload.player;
   currentDeckContainer.innerHTML = `
-    <div class="deck-card">
+    <div class="deck-card-title">
       <h3>${player.name} (${player.tag})</h3>
       <p>${current.samplePlays > 0 ? `Winrate estimé (tous combats) : ${current.winRateEstimate}% sur ${current.samplePlays} parties` : "Aucune estimation de winrate disponible."}</p>
       <div class="card-list">
@@ -227,6 +227,11 @@ function renderTopDecks(payload) {
           ? `${selectedTopDeckCard} — ${decks.length} decks`
           : `${payload.playersSampled} joueurs analysés — ${payload.decks.length} decks`
       }</p>
+      ${
+        payload.topClans && payload.topClans.length > 0
+          ? `<p class="deck-source">Source : données agrégées depuis ${payload.playersSampled} joueurs parmi les ${payload.topClans.length} meilleurs clans GDC de la région.</p>`
+          : ""
+      }
     </div>
     <div class="deck-grid">
       ${decks

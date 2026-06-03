@@ -141,6 +141,7 @@ select {
 
 .status {
   margin-top: 14px;
+  margin-left: 12px;
   min-height: 22px;
   color: var(--accent);
 }
@@ -194,12 +195,22 @@ select {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
-  padding: 14px;
+  padding: 6px;
 }
 
 .deck-card h3 {
   margin: 0 0 10px;
   color: var(--text);
+}
+
+.deck-card p {
+  margin: 8px 4px;
+}
+
+.deck-source {
+  margin: 4px 4px 0;
+  color: var(--muted);
+  font-size: 0.92rem;
 }
 
 .deck-card ul,
@@ -212,7 +223,7 @@ select {
 .top-decks-list {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 6px;
 }
 
 .top-deck-card-item {
@@ -223,7 +234,6 @@ select {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.04);
-  color: var(--muted);
   cursor: pointer;
   transition:
     border-color 0.2s ease,
@@ -254,7 +264,7 @@ select {
 
 .deck-card li,
 .top-decks-list li {
-  margin-bottom: 8px;
+  margin-bottom: 0;
   color: var(--muted);
 }
 
