@@ -334,17 +334,30 @@ function renderTopDecks(payload, gdcGroups = []) {
         ),
       )
     : allDecks;
-  if (decks.length === 0) {
+
+  const activeGdcGroups = selectedTopDeckCard
+    ? gdcGroups.filter((group) =>
+        group.some((item) =>
+          item.cardItems.some(
+            (card) =>
+              card.name.toLowerCase() === selectedTopDeckCard.toLowerCase(),
+          ),
+        ),
+      )
+    : gdcGroups;
+
+  if (!decks.length && !activeGdcGroups.length) {
     topDecksContainer.innerHTML =
       "<p>Aucun top deck n'a pu être agrégé pour cette région.</p>";
     showSection(topDecksSection);
     return;
   }
-  const groupSectionHtml = gdcGroups.length
-    ? renderGdcAdaptedGroups(gdcGroups)
+
+  const groupSectionHtml = activeGdcGroups.length
+    ? renderGdcAdaptedGroups(activeGdcGroups)
     : "";
 
-  const decksSectionHtml = gdcGroups.length
+  const decksSectionHtml = activeGdcGroups.length
     ? ""
     : `
       <div class="deck-grid">
@@ -368,13 +381,17 @@ function renderTopDecks(payload, gdcGroups = []) {
       </div>
     `;
 
+  const headerSummary = selectedTopDeckCard
+    ? activeGdcGroups.length
+      ? `${selectedTopDeckCard} — ${activeGdcGroups.length} groupe${
+          activeGdcGroups.length > 1 ? "s" : ""
+        }`
+      : `${selectedTopDeckCard} — ${decks.length} decks`
+    : `${payload.playersSampled} joueurs analysés — ${payload.decks.length} decks`;
+
   topDecksContainer.innerHTML = `
     <div class="deck-card">
-      <p>Région : <strong>${payload.location.name}</strong> — ${
-        selectedTopDeckCard
-          ? `${selectedTopDeckCard} — ${decks.length} decks`
-          : `${payload.playersSampled} joueurs analysés — ${payload.decks.length} decks`
-      }</p>
+      <p>Région : <strong>${payload.location.name}</strong> — ${headerSummary}</p>
       ${
         payload.topClans && payload.topClans.length > 0
           ? `<p class="deck-source">Source : données agrégées depuis ${payload.playersSampled} joueurs parmi les ${payload.topClans.length} meilleurs clans GDC de la région.</p>`
