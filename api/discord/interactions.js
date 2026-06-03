@@ -3384,6 +3384,9 @@ export default async function handler(req, res) {
           return " →";
         };
 
+        const fmt = (n) =>
+          typeof n === "number" ? n.toLocaleString("fr-FR") : "—";
+
         // Formateur d'une entrée de clan
         const formatEntry = (clan) => {
           const tag = (clan.tag ?? "").toUpperCase();
@@ -3393,8 +3396,9 @@ export default async function handler(req, res) {
           const delta = rankDelta(clan.rank, clan.previousRank);
           const name = clan.name ?? tag;
           const members = clan.members != null ? `${clan.members}/50` : "?/50";
+          const trophies = fmt(clan.clanWarTrophies);
 
-          return `${label}${delta}${familyIcon} **${name}** · \`${tag}\` · ${members} membres`;
+          return `${label}${delta}${familyIcon} **${name}** · \`${tag}\` · <:trophy2:1493677804733337621> ${trophies} · <:members:1506175789731811399> ${members} membres`;
         };
 
         // Construire les lignes de la tranche
