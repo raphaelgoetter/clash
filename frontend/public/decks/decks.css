@@ -230,7 +230,18 @@ select {
 .top-decks-list {
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+
+  @container (min-width: 340px) {
+    grid-template-columns: repeat(2, minmax(240px, 1fr));
+  }
+
+  @container (min-width: 600px) {
+    grid-template-columns: repeat(4, minmax(240px, 1fr));
+  }
+
+  @container (min-width: 800px) {
+    grid-template-columns: repeat(8, minmax(240px, 1fr));
+  }
 }
 
 .gdc-adapted-section {
@@ -260,55 +271,33 @@ select {
 
 .top-deck-card-item {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  min-height: 178px;
-  padding: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.04);
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
   cursor: pointer;
   transition:
-    border-color 0.2s ease,
-    background-color 0.2s ease,
-    transform 0.2s ease;
+    transform 0.2s ease,
+    filter 0.2s ease;
 }
 
 .top-deck-card-item:hover {
-  border-color: rgba(255, 211, 92, 0.5);
   transform: translateY(-2px);
+  filter: brightness(1.05);
 }
 
 .top-deck-card-item.selected {
-  border-color: rgba(255, 211, 92, 0.9);
-  background: rgba(255, 211, 92, 0.12);
-}
-
-.top-deck-card-item span {
-  display: block;
-  color: var(--text);
-  font-size: 0.95rem;
-  opacity: 0;
-  max-height: 0;
-  overflow: hidden;
-  transition:
-    opacity 0.2s ease,
-    max-height 0.2s ease;
-}
-
-.top-deck-card-item:hover span {
-  opacity: 1;
-  max-height: 3rem;
+  transform: scale(1.02);
 }
 
 .top-deck-card-icon {
   width: 128px;
   height: 128px;
-  border-radius: 24px;
-  object-fit: contain;
-  background: rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  object-fit: cover;
+  background: transparent;
 }
 
 .deck-card li,

@@ -150,9 +150,8 @@ function renderTopDeckCard(card) {
     ? card.name.toLowerCase() === selectedTopDeckCard.toLowerCase()
     : false;
   return `
-    <li class="top-deck-card-item${isSelected ? " selected" : ""}" data-card-name="${card.name}">
+    <li class="top-deck-card-item${isSelected ? " selected" : ""}" data-card-name="${card.name}" title="${card.name}" aria-label="${card.name}">
       ${card.iconUrl ? `<img class="top-deck-card-icon" src="${card.iconUrl}" alt="${card.name}" />` : ""}
-      <span>${card.name}</span>
     </li>
   `;
 }
