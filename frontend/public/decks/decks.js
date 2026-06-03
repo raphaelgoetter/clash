@@ -192,7 +192,11 @@ function renderTopDecks(payload) {
   }
   topDecksContainer.innerHTML = `
     <div class="deck-card">
-      <p>Région : <strong>${payload.location.name}</strong> — ${payload.playersSampled} joueurs analysés — ${payload.decks.length} decks</p>
+      <p>Région : <strong>${payload.location.name}</strong> — ${
+        selectedTopDeckCard
+          ? `${selectedTopDeckCard} — ${decks.length} decks`
+          : `${payload.playersSampled} joueurs analysés — ${payload.decks.length} decks`
+      }</p>
     </div>
     <div class="deck-grid">
       ${decks
