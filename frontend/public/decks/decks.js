@@ -313,8 +313,7 @@ async function handleLoadWarDecks() {
 }
 
 async function handleLoadTopDecks() {
-  clearSection(currentDeckSection, currentDeckContainer);
-  clearSection(warDecksSection, warDecksContainer);
+  clearSection(topDecksSection, topDecksContainer);
   const location = topLocationSelect.value;
   setStatus(`Chargement des meilleurs decks pour ${location}...`);
   startTopDecksLoader();
