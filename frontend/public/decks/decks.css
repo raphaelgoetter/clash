@@ -90,7 +90,10 @@ body {
 .deck-controls {
   display: grid;
   gap: 12px;
-  grid-template-columns: minmax(200px, 1.8fr) minmax(180px, 1fr);
+  grid-template-columns: minmax(200px, 1.5fr) minmax(180px, 1fr) minmax(
+      160px,
+      0.8fr
+    );
   align-items: end;
 }
 
