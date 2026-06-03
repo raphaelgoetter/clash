@@ -25,6 +25,7 @@ const PLAYER_DECK_CACHE_TTL = 30 * 1000;
 const LOCATION_CACHE_TTL = 24 * 60 * 60 * 1000;
 const CARD_DEF_CACHE_TTL = 24 * 60 * 60 * 1000;
 const TOP_WAR_DECKS_CACHE_TTL = 10 * 60 * 1000;
+const TOP_WAR_DECKS_LIMIT = 100;
 const DEFAULT_TOP_CLANS = 10;
 const DEFAULT_PLAYERS_PER_CLAN = 10;
 const MAX_TOP_CLANS = 20;
@@ -459,7 +460,7 @@ router.get("/meta/top-war-decks", async (req, res) => {
 
         const aggregatedDecks = aggregateDecksFromPlayers(
           playersCompetitiveDecks,
-        ).slice(0, 25);
+        ).slice(0, TOP_WAR_DECKS_LIMIT);
 
         const cardDefinitions = await getOrSet(
           "clashCardDefinitions",

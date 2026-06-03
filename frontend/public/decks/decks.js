@@ -12,8 +12,13 @@ const loadWarDecksBtn = document.getElementById("load-war-decks-btn");
 const loadTopDecksBtn = document.getElementById("load-top-decks-btn");
 const topLocationSelect = document.getElementById("top-location-select");
 const topSortSelect = document.getElementById("top-sort-select");
+const topDecksLoader = document.getElementById("top-decks-loader");
+const topDecksLoaderFill = document.getElementById("top-decks-loader-fill");
+const topDecksLoaderLabel = document.getElementById("top-decks-loader-label");
 let topDecksPayload = null;
 let selectedTopDeckCard = null;
+let topDecksLoaderInterval = null;
+let topDecksLoaderProgress = 0;
 
 function normalizeTag(raw) {
   if (!raw || typeof raw !== "string") return "";
@@ -173,6 +178,38 @@ function sortTopDecks(decks) {
   });
 }
 
+function startTopDecksLoader() {
+  if (!topDecksLoader || !topDecksLoaderFill || !topDecksLoaderLabel) return;
+  clearInterval(topDecksLoaderInterval);
+  topDecksLoaderProgress = 0;
+  topDecksLoaderFill.style.width = "0%";
+  topDecksLoaderLabel.textContent = "Chargement des top decks... 0%";
+  topDecksLoader.classList.remove("hidden");
+  topDecksLoaderInterval = window.setInterval(() => {
+    topDecksLoaderProgress = Math.min(
+      95,
+      topDecksLoaderProgress + Math.random() * 8 + 4,
+    );
+    topDecksLoaderFill.style.width = `${Math.round(topDecksLoaderProgress)}%`;
+    topDecksLoaderLabel.textContent = `Chargement des top decks... ${Math.round(
+      topDecksLoaderProgress,
+    )}%`;
+  }, 350);
+}
+
+function stopTopDecksLoader(success = true) {
+  if (!topDecksLoader || !topDecksLoaderFill || !topDecksLoaderLabel) return;
+  clearInterval(topDecksLoaderInterval);
+  topDecksLoaderProgress = 100;
+  topDecksLoaderFill.style.width = "100%";
+  topDecksLoaderLabel.textContent = success
+    ? "Top decks chargés."
+    : "Erreur de chargement des top decks.";
+  window.setTimeout(() => {
+    if (topDecksLoader) topDecksLoader.classList.add("hidden");
+  }, 600);
+}
+
 function renderTopDecks(payload) {
   topDecksPayload = payload;
   const allDecks = sortTopDecks(payload.decks || []);
@@ -287,14 +324,17 @@ async function handleLoadTopDecks() {
   clearSection(warDecksSection, warDecksContainer);
   const location = topLocationSelect.value;
   setStatus(`Chargement des meilleurs decks pour ${location}...`);
+  startTopDecksLoader();
   try {
     const payload = await fetchJson(
       `${API_BASE}/meta/top-war-decks?location=${encodeURIComponent(location)}`,
     );
     renderTopDecks(payload);
     setStatus(`Top decks ${location} chargés.`);
+    stopTopDecksLoader(true);
   } catch (err) {
     setStatus(err.message, true);
+    stopTopDecksLoader(false);
   }
 }
 
