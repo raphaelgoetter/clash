@@ -156,24 +156,31 @@ function renderTopDeckCard(card) {
   `;
 }
 
-function getDeckCardNames(deck) {
-  const cardNames = Array.isArray(deck.cardList)
-    ? deck.cardList.map((card) => String(card?.name || "").trim())
-    : Array.isArray(deck.cardNames)
-      ? deck.cardNames.map((name) => String(name).trim())
-      : [];
-  return cardNames.filter(Boolean);
+function getDeckCardItems(deck) {
+  if (Array.isArray(deck.cardList) && deck.cardList.length > 0) {
+    return deck.cardList.map((card) => ({
+      name: String(card?.name || "").trim(),
+      iconUrl: card?.iconUrl || null,
+    }));
+  }
+  if (Array.isArray(deck.cardNames) && deck.cardNames.length > 0) {
+    return deck.cardNames.map((name) => ({
+      name: String(name || "").trim(),
+      iconUrl: null,
+    }));
+  }
+  return [];
 }
 
 function buildGdcAdaptedGroups(decks, groupSize = 4) {
   const items = decks
     .map((deck, index) => {
-      const names = getDeckCardNames(deck);
-      const normalized = names.map((name) => name.toLowerCase());
+      const cardItems = getDeckCardItems(deck);
+      const normalized = cardItems.map((card) => card.name.toLowerCase());
       return {
         index,
         deck,
-        cardNames: names,
+        cardItems,
         normalized,
         cardSet: new Set(normalized),
       };
@@ -230,9 +237,7 @@ function renderGdcAdaptedGroups(groups) {
             <div class="deck-grid gdc-group-grid">
               ${group
                 .map((item) => {
-                  const cards = getDeckCardNames(item.deck).map((name) => ({
-                    name,
-                  }));
+                  const cards = item.cardItems;
                   return `
                     <div class="deck-card">
                       <p>Utilisé ${item.deck.plays} fois • Winrate ${item.deck.winRate}%</p>
@@ -317,6 +322,10 @@ function renderTopDecks(payload, gdcGroups = []) {
     showSection(topDecksSection);
     return;
   }
+  const groupSectionHtml = gdcGroups.length
+    ? renderGdcAdaptedGroups(gdcGroups)
+    : "";
+
   topDecksContainer.innerHTML = `
     <div class="deck-card">
       <p>Région : <strong>${payload.location.name}</strong> — ${
@@ -330,6 +339,7 @@ function renderTopDecks(payload, gdcGroups = []) {
           : ""
       }
     </div>
+    ${groupSectionHtml}
     <div class="deck-grid">
       ${decks
         .map((deck, index) => {
@@ -349,7 +359,6 @@ function renderTopDecks(payload, gdcGroups = []) {
         })
         .join("")}
     </div>
-    ${gdcGroups.length ? renderGdcAdaptedGroups(gdcGroups) : ""}
   `;
   showSection(topDecksSection);
   if (showGdcAdaptedBtn) {
