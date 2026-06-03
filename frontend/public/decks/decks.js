@@ -217,7 +217,7 @@ function renderGdcAdaptedGroups(groups) {
   }
 
   return `
-    <div class="gdc-adapted-section">
+    <div id="gdc-adapted-section" class="gdc-adapted-section">
       <div class="deck-card">
         <h3>Decks adaptés GDC</h3>
         <p>${groups.length} groupe${groups.length > 1 ? "s" : ""} complet${groups.length > 1 ? "s" : ""} trouvé${groups.length > 1 ? "s" : ""}.</p>
@@ -356,6 +356,10 @@ function renderTopDecks(payload, gdcGroups = []) {
     showGdcAdaptedBtn.classList.remove("hidden");
   }
   attachTopDeckCardListeners();
+  if (gdcGroups.length) {
+    const groupSection = document.getElementById("gdc-adapted-section");
+    groupSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 }
 
 function attachTopDeckCardListeners() {
