@@ -202,7 +202,7 @@ function chunkArray(items, size) {
   return chunks;
 }
 
-function normalizeWarDeckCardId(card) {
+export function normalizeWarDeckCardId(card) {
   const rawId = card?.id ?? card?.name ?? card;
   if (rawId === null || rawId === undefined) return "";
   const normalized = String(rawId).trim();

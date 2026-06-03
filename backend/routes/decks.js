@@ -12,6 +12,7 @@ import {
 } from "../services/clashApi.js";
 import {
   filterWarBattles,
+  normalizeWarDeckCardId,
   summarizeWarDecks,
 } from "../services/battleLogUtils.js";
 import { getOrSet } from "../services/cache.js";
