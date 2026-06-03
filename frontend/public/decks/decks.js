@@ -76,7 +76,9 @@ function selectCardIconUrl(card) {
   if (card.iconUrls.evolutionMedium && evoLevel > 0) {
     return card.iconUrls.evolutionMedium;
   }
-  return card.iconUrls.medium || card.iconUrls.large || card.iconUrls.small || null;
+  return (
+    card.iconUrls.medium || card.iconUrls.large || card.iconUrls.small || null
+  );
 }
 
 function renderCardItem(card) {
