@@ -68,12 +68,7 @@ function normalizeCardName(card) {
 }
 
 function buildDeckSignature(cards) {
-  return cards
-    .map(normalizeCardName)
-    .filter(Boolean)
-    .map((name) => name.toLowerCase())
-    .sort()
-    .join("|");
+  return cards.map(normalizeWarDeckCardId).filter(Boolean).sort().join("-");
 }
 
 const WIN_CONDITIONS = new Set([
@@ -334,11 +329,15 @@ router.get("/player/:tag", async (req, res) => {
           ? player.currentDeck
           : [];
         const battleLog = await fetchBattleLog(tag);
-        const warDecks = summarizeWarDecks(filterWarBattles(battleLog), 4);
+        const allWarDecks = summarizeWarDecks(
+          filterWarBattles(battleLog),
+          Infinity,
+        );
+        const warDecks = allWarDecks.slice(0, 4);
 
         return {
           player,
-          currentDeck: getCurrentDeckSummary(currentDeck, warDecks),
+          currentDeck: getCurrentDeckSummary(currentDeck, allWarDecks),
           warDecks,
         };
       },
