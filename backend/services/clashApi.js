@@ -90,6 +90,13 @@ export async function fetchBattleLog(tag) {
   return Array.isArray(data) ? data : (data.items ?? []);
 }
 
+/** Fetch all Clash Royale cards definitions. */
+export async function fetchCards() {
+  const data = await get(`/cards`);
+  if (Array.isArray(data)) return data;
+  return Array.isArray(data.items) ? data.items : [];
+}
+
 /** Fetch all Clash Royale locations (regions and countries). */
 export async function fetchLocations() {
   const data = await get(`/locations`);

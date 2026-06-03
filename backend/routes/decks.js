@@ -9,6 +9,7 @@ import {
   fetchClanWarRankings,
   fetchClanMembers,
   fetchLocations,
+  fetchCards,
 } from "../services/clashApi.js";
 import {
   filterWarBattles,
@@ -21,6 +22,7 @@ import { getOrSet } from "../services/cache.js";
 const router = Router();
 const PLAYER_DECK_CACHE_TTL = 30 * 1000;
 const LOCATION_CACHE_TTL = 24 * 60 * 60 * 1000;
+const CARD_DEF_CACHE_TTL = 24 * 60 * 60 * 1000;
 const TOP_WAR_DECKS_CACHE_TTL = 10 * 60 * 1000;
 const DEFAULT_TOP_CLANS = 10;
 const DEFAULT_PLAYERS_PER_CLAN = 10;
@@ -277,6 +279,7 @@ function aggregateWarDecksFromPlayers(playersWarDecks) {
         cardNames: Array.isArray(deck.cardNames)
           ? deck.cardNames
           : String(deck.cards).split(/,\s*/),
+        cardIds: Array.isArray(deck.cardIds) ? deck.cardIds : [],
         plays: 0,
         wins: 0,
         players: new Set(),
@@ -307,6 +310,7 @@ function aggregateWarDecksFromPlayers(playersWarDecks) {
       signature: deck.signature,
       cards: deck.cards,
       cardNames: deck.cardNames,
+      cardIds: deck.cardIds,
       plays: deck.plays,
       wins: deck.wins,
       winRate: deck.plays > 0 ? Math.round((deck.wins / deck.plays) * 100) : 0,
@@ -447,6 +451,28 @@ router.get("/meta/top-war-decks", async (req, res) => {
           playersWarDecks,
         ).slice(0, 25);
 
+        const cardDefinitions = await getOrSet(
+          "clashCardDefinitions",
+          () => fetchCards(),
+          CARD_DEF_CACHE_TTL,
+        );
+        const cardById = new Map(
+          (cardDefinitions.value ?? cardDefinitions ?? [])
+            .filter((card) => card && card.id !== undefined)
+            .map((card) => [String(card.id), card]),
+        );
+
+        const enrichedDecks = aggregatedDecks.map((deck) => ({
+          ...deck,
+          cardList: deck.cardIds
+            ? deck.cardIds.map((id, index) => ({
+                id,
+                name: deck.cardNames?.[index] ?? String(id),
+                iconUrl: cardById.get(String(id))?.iconUrls?.medium || null,
+              }))
+            : (deck.cardNames?.map((name) => ({ name })) ?? []),
+        }));
+
         return {
           location,
           topClans: clans.map((clan) => ({
@@ -456,7 +482,7 @@ router.get("/meta/top-war-decks", async (req, res) => {
             clanScore: clan.clanScore,
           })),
           playersSampled: playersWarDecks.length,
-          decks: aggregatedDecks,
+          decks: enrichedDecks,
           warnings,
         };
       },

@@ -142,6 +142,15 @@ function renderWarDecks(payload) {
   showSection(warDecksSection);
 }
 
+function renderTopDeckCard(card) {
+  return `
+    <li class="top-deck-card-item">
+      ${card.iconUrl ? `<img class="top-deck-card-icon" src="${card.iconUrl}" alt="${card.name}" />` : ""}
+      <span>${card.name}</span>
+    </li>
+  `;
+}
+
 function renderTopDecks(payload) {
   const decks = payload.decks || [];
   if (decks.length === 0) {
@@ -156,18 +165,23 @@ function renderTopDecks(payload) {
     </div>
     <div class="deck-grid">
       ${decks
-        .map(
-          (deck, index) => `
+        .map((deck, index) => {
+          const cards =
+            deck.cardList ??
+            (Array.isArray(deck.cardNames)
+              ? deck.cardNames.map((name) => ({ name }))
+              : []);
+          return `
           <div class="deck-card">
             <h3>Deck #${index + 1}</h3>
             <p>Utilisé ${deck.plays} fois • Winrate ${deck.winRate}%</p>
             <p>Clans : ${deck.clanCount} • Joueurs : ${deck.playerCount}</p>
             <ul class="top-decks-list">
-              ${deck.cardNames.map((name) => `<li>${name}</li>`).join("")}
+              ${cards.map(renderTopDeckCard).join("")}
             </ul>
           </div>
-        `,
-        )
+        `;
+        })
         .join("")}
     </div>
   `;

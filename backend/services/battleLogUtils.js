@@ -261,11 +261,15 @@ export function summarizeDecks(battleLog, limit = 4, dayKey = null) {
           : battleWon;
 
       const cardNames = deckCards
-        .map((card) => normalizeWarDeckCardId(card))
+        .map((card) => String(card?.name ?? card?.id ?? "").trim())
+        .filter(Boolean);
+      const cardIds = deckCards
+        .map((card) => String(card?.id ?? "").trim())
         .filter(Boolean);
       const existing = decks.get(signature) ?? {
         cards: formatWarDeckCards(deckCards),
         cardNames,
+        cardIds,
         signature,
         plays: 0,
         wins: 0,
@@ -294,6 +298,7 @@ export function summarizeDecks(battleLog, limit = 4, dayKey = null) {
       signature: deck.signature,
       cards: deck.cards,
       cardNames: deck.cardNames,
+      cardIds: deck.cardIds,
       plays: deck.plays,
       wins: deck.wins,
       winRate: deck.plays > 0 ? Math.round((deck.wins / deck.plays) * 100) : 0,
@@ -335,11 +340,15 @@ export function summarizeWarDecks(battleLog, limit = 4, dayKey = null) {
           : battleWon;
 
       const cardNames = deckCards
-        .map((card) => normalizeWarDeckCardId(card))
+        .map((card) => String(card?.name ?? card?.id ?? "").trim())
+        .filter(Boolean);
+      const cardIds = deckCards
+        .map((card) => String(card?.id ?? "").trim())
         .filter(Boolean);
       const existing = decks.get(signature) ?? {
         cards: formatWarDeckCards(deckCards),
         cardNames,
+        cardIds,
         signature,
         plays: 0,
         wins: 0,
@@ -368,6 +377,7 @@ export function summarizeWarDecks(battleLog, limit = 4, dayKey = null) {
       signature: deck.signature,
       cards: deck.cards,
       cardNames: deck.cardNames,
+      cardIds: deck.cardIds,
       plays: deck.plays,
       wins: deck.wins,
       winRate: deck.plays > 0 ? Math.round((deck.wins / deck.plays) * 100) : 0,
