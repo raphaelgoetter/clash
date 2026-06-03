@@ -13,6 +13,7 @@ const loadTopDecksBtn = document.getElementById("load-top-decks-btn");
 const topLocationSelect = document.getElementById("top-location-select");
 const topSortSelect = document.getElementById("top-sort-select");
 let topDecksPayload = null;
+let selectedTopDeckCard = null;
 
 function normalizeTag(raw) {
   if (!raw || typeof raw !== "string") return "";
@@ -145,8 +146,11 @@ function renderWarDecks(payload) {
 }
 
 function renderTopDeckCard(card) {
+  const isSelected = selectedTopDeckCard
+    ? card.name.toLowerCase() === selectedTopDeckCard.toLowerCase()
+    : false;
   return `
-    <li class="top-deck-card-item">
+    <li class="top-deck-card-item${isSelected ? " selected" : ""}" data-card-name="${card.name}">
       ${card.iconUrl ? `<img class="top-deck-card-icon" src="${card.iconUrl}" alt="${card.name}" />` : ""}
       <span>${card.name}</span>
     </li>
@@ -170,8 +174,16 @@ function sortTopDecks(decks) {
 }
 
 function renderTopDecks(payload) {
-  const decks = sortTopDecks(payload.decks || []);
   topDecksPayload = payload;
+  const allDecks = sortTopDecks(payload.decks || []);
+  const decks = selectedTopDeckCard
+    ? allDecks.filter((deck) =>
+        (deck.cardList ?? []).some(
+          (card) =>
+            card.name.toLowerCase() === selectedTopDeckCard.toLowerCase(),
+        ),
+      )
+    : allDecks;
   if (decks.length === 0) {
     topDecksContainer.innerHTML =
       "<p>Aucun top deck n'a pu être agrégé pour cette région.</p>";
@@ -180,7 +192,7 @@ function renderTopDecks(payload) {
   }
   topDecksContainer.innerHTML = `
     <div class="deck-card">
-      <p>Région : <strong>${payload.location.name}</strong> — ${payload.playersSampled} joueurs analysés.</p>
+      <p>Région : <strong>${payload.location.name}</strong> — ${payload.playersSampled} joueurs analysés — ${payload.decks.length} decks</p>
     </div>
     <div class="deck-grid">
       ${decks
@@ -192,13 +204,7 @@ function renderTopDecks(payload) {
               : []);
           return `
           <div class="deck-card">
-            <h3>Deck #${index + 1}</h3>
             <p>Utilisé ${deck.plays} fois • Winrate ${deck.winRate}%</p>
-            ${
-              deck.clanCount > 1 || deck.playerCount > 1
-                ? `<p>Clans : ${deck.clanCount} • Joueurs : ${deck.playerCount}</p>`
-                : ""
-            }
             <ul class="top-decks-list">
               ${cards.map(renderTopDeckCard).join("")}
             </ul>
@@ -209,6 +215,26 @@ function renderTopDecks(payload) {
     </div>
   `;
   showSection(topDecksSection);
+  attachTopDeckCardListeners();
+}
+
+function attachTopDeckCardListeners() {
+  topDecksContainer.querySelectorAll(".top-deck-card-item").forEach((item) => {
+    item.addEventListener("click", () => {
+      const cardName = String(item.dataset.cardName || "").trim();
+      if (!cardName) return;
+
+      if (
+        selectedTopDeckCard &&
+        selectedTopDeckCard.toLowerCase() === cardName.toLowerCase()
+      ) {
+        selectedTopDeckCard = null;
+      } else {
+        selectedTopDeckCard = cardName;
+      }
+      if (topDecksPayload) renderTopDecks(topDecksPayload);
+    });
+  });
 }
 
 async function handleLoadCurrentDeck() {

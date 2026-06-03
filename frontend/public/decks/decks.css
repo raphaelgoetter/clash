@@ -189,6 +189,19 @@ select {
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.04);
   color: var(--muted);
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.top-deck-card-item:hover {
+  border-color: rgba(255, 211, 92, 0.5);
+}
+
+.top-deck-card-item.selected {
+  border-color: rgba(255, 211, 92, 0.9);
+  background: rgba(255, 211, 92, 0.12);
 }
 
 .top-deck-card-item span {
