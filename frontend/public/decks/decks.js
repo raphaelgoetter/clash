@@ -70,16 +70,13 @@ function selectCardIconUrl(card) {
     ? card.evolutionLevel
     : 0;
 
-  if (card.iconUrls.medium) {
-    return card.iconUrls.medium;
-  }
   if (card.iconUrls.heroMedium && evoLevel >= 2) {
     return card.iconUrls.heroMedium;
   }
   if (card.iconUrls.evolutionMedium && evoLevel > 0) {
     return card.iconUrls.evolutionMedium;
   }
-  return card.iconUrls.large || card.iconUrls.small || null;
+  return card.iconUrls.medium || card.iconUrls.large || card.iconUrls.small || null;
 }
 
 function renderCardItem(card) {
