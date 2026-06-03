@@ -232,15 +232,15 @@ select {
   gap: 12px;
 
   @container (min-width: 340px) {
-    grid-template-columns: repeat(2, minmax(240px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
   }
 
   @container (min-width: 600px) {
-    grid-template-columns: repeat(4, minmax(240px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
   }
 
   @container (min-width: 800px) {
-    grid-template-columns: repeat(8, minmax(240px, 1fr));
+    grid-template-columns: repeat(8, 1fr);
   }
 }
 
