@@ -229,11 +229,11 @@ select {
 
 .top-decks-list {
   display: grid;
+  justify-content: start;
+  justify-items: start;
   gap: 12px;
 
-  @container (min-width: 340px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  grid-template-columns: repeat(2, 1fr);
 
   @container (min-width: 600px) {
     grid-template-columns: repeat(4, 1fr);
@@ -293,9 +293,9 @@ select {
 }
 
 .top-deck-card-icon {
-  width: 128px;
-  height: 128px;
-  border-radius: 20px;
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
   object-fit: cover;
   background: transparent;
 }
