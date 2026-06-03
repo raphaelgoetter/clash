@@ -10,6 +10,7 @@ const topDecksLoaderFill = document.getElementById("top-decks-loader-fill");
 const topDecksLoaderLabel = document.getElementById("top-decks-loader-label");
 const showGdcAdaptedBtn = document.getElementById("show-gdc-adapted-btn");
 let topDecksPayload = null;
+let currentGdcGroups = [];
 let selectedTopDeckCard = null;
 let topDecksLoaderInterval = null;
 let topDecksLoaderProgress = 0;
@@ -172,6 +173,12 @@ function getDeckCardItems(deck) {
   return [];
 }
 
+function formatWinRate(value) {
+  const winRate = Number(value);
+  if (!Number.isFinite(winRate)) return "0%";
+  return `${Math.round(winRate)}%`;
+}
+
 function buildGdcAdaptedGroups(decks, groupSize = 4) {
   const items = decks
     .map((deck, index) => {
@@ -206,12 +213,23 @@ function buildGdcAdaptedGroups(decks, groupSize = 4) {
     }
 
     if (group.length === groupSize) {
+      const avgWinRate =
+        group.reduce((sum, item) => sum + (Number(item.deck.winRate) || 0), 0) /
+        group.length;
+      group.avgWinRate = avgWinRate;
+      group.totalPlays = group.reduce(
+        (sum, item) => sum + (Number(item.deck.plays) || 0),
+        0,
+      );
       groups.push(group);
       group.forEach((item) => used.add(item.index));
     }
   }
 
-  return groups;
+  return groups.sort((a, b) => {
+    if (b.avgWinRate !== a.avgWinRate) return b.avgWinRate - a.avgWinRate;
+    return b.totalPlays - a.totalPlays;
+  });
 }
 
 function renderGdcAdaptedGroups(groups) {
@@ -233,7 +251,7 @@ function renderGdcAdaptedGroups(groups) {
         .map(
           (group, groupIndex) => `
           <div class="gdc-group">
-            <div class="gdc-group-title">Groupe ${groupIndex + 1}</div>
+            <div class="gdc-group-title">Groupe ${groupIndex + 1} — Winrate moyen ${formatWinRate(group.avgWinRate)}</div>
             <div class="deck-grid gdc-group-grid">
               ${group
                 .map((item) => {
@@ -372,8 +390,11 @@ function renderTopDecks(payload, gdcGroups = []) {
   }
   attachTopDeckCardListeners();
   if (gdcGroups.length) {
+    currentGdcGroups = gdcGroups;
     const groupSection = document.getElementById("gdc-adapted-section");
     groupSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+  } else {
+    currentGdcGroups = [];
   }
 }
 
@@ -391,7 +412,7 @@ function attachTopDeckCardListeners() {
       } else {
         selectedTopDeckCard = cardName;
       }
-      if (topDecksPayload) renderTopDecks(topDecksPayload);
+      if (topDecksPayload) renderTopDecks(topDecksPayload, currentGdcGroups);
     });
   });
 }
@@ -447,6 +468,7 @@ async function handleLoadTopDecks() {
     const payload = await fetchJson(
       `${API_BASE}/meta/top-war-decks?location=${encodeURIComponent(location)}`,
     );
+    currentGdcGroups = [];
     renderTopDecks(payload);
     setStatus(`Top decks ${location} chargés.`);
     stopTopDecksLoader(true);
@@ -496,6 +518,7 @@ if (showGdcAdaptedBtn) {
 if (topSortSelect) {
   topSortSelect.addEventListener("change", () => {
     selectedTopDeckCard = null;
+    currentGdcGroups = [];
     if (topDecksPayload) renderTopDecks(topDecksPayload);
   });
 }
