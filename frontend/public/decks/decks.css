@@ -233,14 +233,14 @@ select {
   justify-items: start;
   gap: 12px;
 
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, 80px);
 
-  @container (min-width: 600px) {
-    grid-template-columns: repeat(4, 1fr);
+  @container (min-width: 400px) {
+    grid-template-columns: repeat(4, 80px);
   }
 
   @container (min-width: 800px) {
-    grid-template-columns: repeat(8, 1fr);
+    grid-template-columns: repeat(8, 80px);
   }
 }
 
