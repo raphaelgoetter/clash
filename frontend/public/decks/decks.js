@@ -326,6 +326,30 @@ function renderTopDecks(payload, gdcGroups = []) {
     ? renderGdcAdaptedGroups(gdcGroups)
     : "";
 
+  const decksSectionHtml = gdcGroups.length
+    ? ""
+    : `
+      <div class="deck-grid">
+        ${decks
+          .map((deck, index) => {
+            const cards =
+              deck.cardList ??
+              (Array.isArray(deck.cardNames)
+                ? deck.cardNames.map((name) => ({ name }))
+                : []);
+            return `
+            <div class="deck-card">
+              <p>Utilisé ${deck.plays} fois • Winrate ${deck.winRate}%</p>
+              <ul class="top-decks-list">
+                ${cards.map(renderTopDeckCard).join("")}
+              </ul>
+            </div>
+          `;
+          })
+          .join("")}
+      </div>
+    `;
+
   topDecksContainer.innerHTML = `
     <div class="deck-card">
       <p>Région : <strong>${payload.location.name}</strong> — ${
@@ -340,25 +364,7 @@ function renderTopDecks(payload, gdcGroups = []) {
       }
     </div>
     ${groupSectionHtml}
-    <div class="deck-grid">
-      ${decks
-        .map((deck, index) => {
-          const cards =
-            deck.cardList ??
-            (Array.isArray(deck.cardNames)
-              ? deck.cardNames.map((name) => ({ name }))
-              : []);
-          return `
-          <div class="deck-card">
-            <p>Utilisé ${deck.plays} fois • Winrate ${deck.winRate}%</p>
-            <ul class="top-decks-list">
-              ${cards.map(renderTopDeckCard).join("")}
-            </ul>
-          </div>
-        `;
-        })
-        .join("")}
-    </div>
+    ${decksSectionHtml}
   `;
   showSection(topDecksSection);
   if (showGdcAdaptedBtn) {
