@@ -491,7 +491,7 @@ router.get("/meta/top-war-decks", async (req, res) => {
             rank: clan.rank,
             clanScore: clan.clanScore,
           })),
-          playersSampled: playersWarDecks.length,
+          playersSampled: playersCompetitiveDecks.length,
           decks: enrichedDecks,
           warnings,
         };
