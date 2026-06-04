@@ -95,7 +95,15 @@ function normalizeRoleName(value) {
 async function fetchGuildRoles(token) {
   const guildId = process.env.DISCORD_GUILD_ID;
   if (!guildId) {
-    throw new Error("Variable manquante: DISCORD_GUILD_ID");
+    console.warn(
+      "[notifyClanStatus] Variable manquante: DISCORD_GUILD_ID, rôle Discord désactivé.",
+    );
+    const cacheKey = `roles:undefined`;
+    if (ROLE_CACHE.has(cacheKey)) {
+      return ROLE_CACHE.get(cacheKey);
+    }
+    ROLE_CACHE.set(cacheKey, []);
+    return [];
   }
 
   const cacheKey = `roles:${guildId}`;
@@ -120,6 +128,13 @@ async function fetchGuildRoles(token) {
 async function resolveRoleMention(token, roleName) {
   const normalizedTarget = normalizeRoleName(roleName);
   const roles = await fetchGuildRoles(token);
+  if (!roles.length) {
+    console.warn(
+      `[notifyClanStatus] Envoi sans mention du rôle Discord: ${roleName}.`,
+    );
+    return {};
+  }
+
   const role = roles.find(
     (entry) => normalizeRoleName(entry?.name) === normalizedTarget,
   );
