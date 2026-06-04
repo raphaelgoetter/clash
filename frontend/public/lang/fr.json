@@ -217,6 +217,8 @@
   "warGroupLastWar": "Dernière GDC",
   "warGroupDescription": "Comparez les 5 clans du groupe de GDC actuel",
   "warGroupRankSuffix": "clst",
+  "warGroupEngagement": "Engagement GDC",
+  "warGroupEngagementTooltip": "{{active}} membres actifs / {{roster}} dans le roster",
   "warGroupTargetTooltip": "Moyenne quotidienne semaine passée : {{target}}",
   "warGroupDecksTooltip": "{{decks}} decks / objectif de {{target}}",
   "warGroupClinchedWin": "Victoire mathématiquement assurée",

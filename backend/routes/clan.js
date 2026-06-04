@@ -2702,23 +2702,18 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               const avgDecksLastWeek = isOwn
                 ? ownAvgDecks
                 : rivalAvgDecksByTag[cTagNorm];
-              // Sur J4 (dernier jour), le plafond réaliste est la référence historique du clan,
-              // pas les 200 decks théoriques : personne ne jouera au-delà de son objectif.
-              const effectiveMaxDecksToday =
-                warDayIndex === 3
-                  ? Math.max(decksToday, avgDecksLastWeek ?? maxDecksPerDay)
-                  : maxDecksPerDay;
-              const remainingDecksToday = Math.max(
-                0,
-                effectiveMaxDecksToday - decksToday,
-              );
-              const remainingFullDays = Math.max(0, 3 - warDayIndex);
-              const remainingDecks = Math.min(
-                remainingDecksWeekly,
-                remainingDecksToday + remainingFullDays * maxDecksPerDay,
-              );
-              maxReachableFame =
-                sectionFame + remainingDecks * MAX_FAME_PER_DECK;
+              const participationGdcEstimee = {
+                activeMembers: allPartsInner.length,
+                rosterSize:
+                  typeof extra?.members === "number" && extra.members > 0
+                    ? extra.members
+                    : allPartsInner.length,
+              };
+              participationGdcEstimee.ratio =
+                participationGdcEstimee.rosterSize > 0
+                  ? participationGdcEstimee.activeMembers /
+                    participationGdcEstimee.rosterSize
+                  : null;
               // Pace extrapolée (commune à tous les clans — même reset dans un groupe GDC).
               // Seuil de 5 % (~72 min) pour éviter une extrapolation explosive en tout début de journée.
               const _resetOffsetMs = warResetOffsetMs(clanTag);
@@ -2730,6 +2725,28 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                   ? Math.round(decksToday / _fractionElapsed)
                   : decksToday;
 
+              const practicalMaxDecksToday = Math.min(
+                200,
+                Math.max(
+                  decksToday,
+                  participationGdcEstimee.activeMembers * 4,
+                  avgDecksLastWeek ?? 0,
+                ),
+              );
+
+              const remainingDecksToday = Math.max(
+                0,
+                practicalMaxDecksToday - decksToday,
+              );
+              const remainingFullDays = Math.max(0, 3 - warDayIndex);
+              const remainingDecks = Math.min(
+                remainingDecksWeekly,
+                remainingDecksToday +
+                  remainingFullDays * practicalMaxDecksToday,
+              );
+              maxReachableFame =
+                sectionFame + remainingDecks * MAX_FAME_PER_DECK;
+
               // Cible commune à J1-J4 : référence historique + pace live, capée à 200.
               const tReference =
                 warDayIndex > 0 &&
@@ -2738,7 +2755,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                   ? warSnapshotDays[warDayIndex - 1]
                   : (avgDecksLastWeek ?? 200);
               const targetDecks = Math.min(
-                200,
+                practicalMaxDecksToday,
                 Math.max(tReference, tPace, decksToday),
               );
 
@@ -2812,6 +2829,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
               // On transmet la cible pour affichage
               c.targetDecksToday = Math.round(targetDecks);
+              c.warParticipationEstimate = participationGdcEstimee;
             }
 
             // Expose le debugSnapshotInfo à la racine de la réponse
@@ -2843,6 +2861,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               maxReachableFame,
               isClinchedWin,
               targetDecksToday: c.targetDecksToday,
+              warParticipationEstimate: c.warParticipationEstimate ?? null,
               warResetUtcMinutes: warResetOffsetMs(c.tag) / 60000,
             };
           });

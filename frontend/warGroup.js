@@ -35,6 +35,12 @@ function fmtNum(n) {
   return typeof n === "number" ? n.toLocaleString("fr-FR") : "—";
 }
 
+function fmtPct(ratio) {
+  return typeof ratio === "number" && Number.isFinite(ratio)
+    ? `${Math.round(ratio * 100)}%`
+    : "—";
+}
+
 /**
  * Construit et injecte la carte "War Group" dans le DOM.
  *
@@ -119,6 +125,9 @@ export function renderRaceGroupCard(data, t, timerHelper) {
           ? `${fmtNum(clan.lastWarFame)}${trendIcon}`
           : "—";
 
+      const engagementEstimate = clan.warParticipationEstimate ?? null;
+      const engagementVal = fmtPct(engagementEstimate?.ratio);
+
       const targetVal = clan.targetDecksToday ?? 200;
       const decksTodayVal = clan.decksToday ?? 0;
       const maxDecks = 200;
@@ -129,10 +138,18 @@ export function renderRaceGroupCard(data, t, timerHelper) {
 
       let decksNowHtml = "";
       if (isWarPeriod) {
+        const engagementTooltip = engagementEstimate
+          ? t("warGroupEngagementTooltip")
+              .replace("{{active}}", engagementEstimate.activeMembers ?? "—")
+              .replace("{{roster}}", engagementEstimate.rosterSize ?? "—")
+          : t("warGroupEngagementTooltip")
+              .replace("{{active}}", "—")
+              .replace("{{roster}}", "—");
         const tooltipText = t("warGroupDecksTooltip")
           .replace("{{decks}}", decksTodayVal)
           .replace("{{target}}", targetVal);
         decksNowHtml = `
+        <td class="war-group-engagement" title="${engagementTooltip}">${engagementVal}</td>
         <td class="war-group-decks-now" title="${tooltipText}">
           <div class="wg-pbar-track">
             <div class="wg-pbar-fill wg-pbar-current" style="width: ${currentPct}%"></div>
@@ -203,6 +220,7 @@ export function renderRaceGroupCard(data, t, timerHelper) {
         ${!isWarPeriod ? `<th class="war-group-trophies">${t("labelWarTrophies")}</th>` : ""}
         ${!isWarPeriod ? `<th class="war-group-prev-war">${t("warGroupPrevWar")}</th>` : ""}
         ${!isWarPeriod ? `<th class="war-group-last-war">${t("warGroupLastWar")}</th>` : ""}
+        ${isWarPeriod ? `<th class="war-group-engagement">${t("warGroupEngagement")}</th>` : ""}
         ${isWarPeriod ? `<th class="war-group-decks-now">${t("warGroupDecksToday")} <span>${timerHelper(data.clan?.warResetUtcMinutes)}</span></th>` : ""}
         ${isWarPeriod ? `<th class="war-group-current-pts">${isColosseum ? t("warGroupCurrentPtsColosseum") : t("warGroupCurrentPts")}</th>` : ""}
         ${isWarPeriod ? `<th class="war-group-avg-pts">${t("warGroupPtsPerDeck")}</th>` : ""}

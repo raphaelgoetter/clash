@@ -62,19 +62,29 @@ La documentation détaillée des champs retournés par l’API Clash Royale (cha
 
 La projection estime les points qu'un clan atteindra à la fin de la journée de guerre.
 
+La variable de plafonnement utilisée ici s'appelle **Engagement GDC**. Elle est calculée au niveau du clan à partir des participants de la guerre en cours :
+
+- `activeMembers` = nombre de participants actuellement visibles dans la GDC
+- `rosterSize` = taille du clan (`clan.members`)
+- `ratio` = `activeMembers / rosterSize`
+
+Pour le clan propre comme pour les rivaux, c'est une version légère qui repose uniquement sur les données déjà présentes dans la réponse GDC actuelle, sans requêtes supplémentaires.
+
+Cette même estimation borne aussi le plafond de projection (`maxReachableFame`) afin d'éviter un scénario théorique trop optimiste quand une partie du roster ne joue pas la GDC.
+
 **Formule générale :**
 
-```
+```text
 Projection = max(decksToday, targetDecks) × ptsPerDeck
 ```
 
 **Calcul de `targetDecks` :**
 
 - **J1** (premier jour, `warDayIndex === 0`) : moyenne quotidienne de la semaine précédente (`avgDecksLastWeek`, fallback 200).
-- **J2–J4** (`warDayIndex > 0`) : `min(200, max(tReference, tPace, decksToday))`
+- **J2–J4** (`warDayIndex > 0`) : `min(practicalMaxDecksToday, max(tReference, tPace, decksToday))`
   - `tReference` : snapshot réel de la veille pour le clan propre ; moyenne de la semaine précédente pour les clans adverses.
   - `tPace` : extrapolation de la cadence courante = `round(decksToday / fractionElapsed)`, où `fractionElapsed` est la fraction de journée écoulée depuis le reset. Activé seulement si ≥ 5 % du jour est écoulé (~72 min) — sinon `tPace = decksToday` pour éviter les extrapolations explosives en début de journée.
-  - Cap absolu à **200** (50 membres × 4 decks, infranchissable).
+  - Le plafond pratique est borné par la **Participation GDC estimée** (`activeMembers × 4`), avec un cap absolu à **200** (50 membres × 4 decks, infranchissable).
 
 **Remarques :**
 
