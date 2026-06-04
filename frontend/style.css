@@ -419,6 +419,11 @@ code {
   color: var(--text-secondary);
 }
 
+.war-group-engagement {
+  padding: 8px;
+  text-align: start;
+}
+
 .war-group-members,
 .war-group-trophies,
 .war-group-score,
