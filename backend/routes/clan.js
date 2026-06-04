@@ -1065,6 +1065,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
   };
 
   const raceGroupRivalData = {};
+  const rivalMemberTagsByTag = {};
   const rivalLastWarByTag = {};
   const rivalPrevWarByTag = {};
   const rivalAvgDecksByTag = {}; // Moyenne quotidienne de la semaine passée
@@ -1095,6 +1096,18 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             .catch((e) =>
               console.warn(
                 `[clan]     ! fetchClan ${tagNorm} failed:`,
+                e.message,
+              ),
+            );
+          const membersProm = fetchClanMembers(c.tag)
+            .then((members) => {
+              rivalMemberTagsByTag[tagNorm] = new Set(
+                (members ?? []).map((m) => normalizeTag(m.tag)),
+              );
+            })
+            .catch((e) =>
+              console.warn(
+                `[clan]     ! fetchClanMembers ${tagNorm} failed:`,
                 e.message,
               ),
             );
@@ -1145,7 +1158,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 e.message,
               ),
             );
-          return Promise.allSettled([clanProm, logProm]);
+          return Promise.allSettled([clanProm, membersProm, logProm]);
         }),
       ),
       timeoutPromise(14000),
@@ -2702,17 +2715,30 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               const avgDecksLastWeek = isOwn
                 ? ownAvgDecks
                 : rivalAvgDecksByTag[cTagNorm];
+              const rosterTagSet = isOwn
+                ? currentMemberTags
+                : (rivalMemberTagsByTag[cTagNorm] ?? null);
+              const rosterSize = rosterTagSet?.size
+                ? rosterTagSet.size
+                : typeof extra?.members === "number" && extra.members > 0
+                  ? extra.members
+                  : allPartsInner.length;
+              const activeMembers = rosterTagSet
+                ? allPartsInner.filter((p) =>
+                    rosterTagSet.has(normalizeTag(p.tag)),
+                  ).length
+                : Math.min(allPartsInner.length, rosterSize);
               const participationGdcEstimee = {
-                activeMembers: allPartsInner.length,
-                rosterSize:
-                  typeof extra?.members === "number" && extra.members > 0
-                    ? extra.members
-                    : allPartsInner.length,
+                activeMembers: Math.min(activeMembers, rosterSize),
+                rosterSize,
               };
               participationGdcEstimee.ratio =
                 participationGdcEstimee.rosterSize > 0
-                  ? participationGdcEstimee.activeMembers /
-                    participationGdcEstimee.rosterSize
+                  ? Math.min(
+                      participationGdcEstimee.activeMembers /
+                        participationGdcEstimee.rosterSize,
+                      1,
+                    )
                   : null;
               // Pace extrapolée (commune à tous les clans — même reset dans un groupe GDC).
               // Seuil de 5 % (~72 min) pour éviter une extrapolation explosive en tout début de journée.
