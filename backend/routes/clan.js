@@ -2656,16 +2656,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             let maxReachableFame = null;
             let isClinchedWin = false;
 
-            // rivalParticipants n'est utilisé que côté rivaux, jamais côté isOwn
-            if (isWarPeriod && warDayIndex === 0) {
-              const avgDecksLastWeek = isOwn
-                ? ownAvgDecks
-                : rivalAvgDecksByTag[cTagNorm];
-              if (avgDecksLastWeek != null) {
-                c.targetDecksToday = Math.round(avgDecksLastWeek);
-              }
-            }
-
             if (
               isWarPeriod &&
               (isOwn
@@ -2740,24 +2730,17 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                   ? Math.round(decksToday / _fractionElapsed)
                   : decksToday;
 
-              let targetDecks;
-
-              if (warDayIndex > 0) {
-                // J2-J4 : cible = max(référence historique, pace extrapolée, decks déjà joués), capé à 200.
-                // Pour le clan propre : référence = snapshot réel de la veille (si disponible).
-                // Pour les rivaux   : référence = moyenne de la semaine précédente.
-                const tReference =
-                  isOwn && warSnapshotDays?.[warDayIndex - 1] != null
-                    ? warSnapshotDays[warDayIndex - 1]
-                    : (avgDecksLastWeek ?? 200);
-                targetDecks = Math.min(
-                  200,
-                  Math.max(tReference, tPace, decksToday),
-                );
-              } else {
-                // J1 (ou par défaut) : on utilise la moyenne de la semaine passée
-                targetDecks = avgDecksLastWeek ?? 200;
-              }
+              // Cible commune à J1-J4 : référence historique + pace live, capée à 200.
+              const tReference =
+                warDayIndex > 0 &&
+                isOwn &&
+                warSnapshotDays?.[warDayIndex - 1] != null
+                  ? warSnapshotDays[warDayIndex - 1]
+                  : (avgDecksLastWeek ?? 200);
+              const targetDecks = Math.min(
+                200,
+                Math.max(tReference, tPace, decksToday),
+              );
 
               // weeklyDecks : fallback de secours si la fame live du jour est indisponible.
               const weeklyDecks = allPartsInner.reduce(
