@@ -1368,56 +1368,47 @@ export default async function handler(req, res) {
           },
         ];
 
-        const buildTableValue = () => {
-          if (weekEntries.length === 0) {
-            return "Aucune semaine terminée disponible.";
-          }
+        const formatPlayerLink = (p) => {
+          if (!p) return "";
+          const playerUrl = trustPlayerUrl(p.tag);
+          return `[${p.name}](${playerUrl}) · ${fmt(p.fame)} pts`;
+        };
 
-          const pad = (text, width) => {
-            const str = String(text ?? "");
-            return str + " ".repeat(Math.max(0, width - str.length));
-          };
-
-          const row = (left, right) => `${pad(left, 28)} ${right}`;
-          const week1 = weekEntries[0];
-          const week2 = weekEntries[1];
-
+        const weekFieldValue = (entry) => {
+          if (!entry) return "Aucune donnée.";
           const lines = [
-            row("Semaine -1", "Semaine -2"),
-            row(week1 ? week1.weekId : "—", week2 ? week2.weekId : "—"),
-            row("Moyenne", week2 ? `${fmt(week2.average)} pts` : "—"),
+            `${entry.weekId}`,
+            `${fmt(entry.average)} pts`,
+            "",
+            "Sous quota :",
           ];
-          lines[2] = row(
-            week1 ? `${fmt(week1.average)} pts` : "—",
-            week2 ? `${fmt(week2.average)} pts` : "—",
-          );
-          lines.push("", "Sous quota :");
-
-          const maxRows = 5;
-          for (let i = 0; i < maxRows; i += 1) {
-            const a = week1?.belowQuota?.[i];
-            const b = week2?.belowQuota?.[i];
-            const left = a ? `${i + 1}. ${a.name} ${fmt(a.fame)} pts` : "";
-            const right = b ? `${i + 1}. ${b.name} ${fmt(b.fame)} pts` : "";
-            lines.push(row(left, right));
+          const below = entry.belowQuota || [];
+          if (below.length === 0) {
+            lines.push("Aucun joueur sous quota.");
+          } else {
+            below.slice(0, 5).forEach((p, idx) => {
+              lines.push(`${idx + 1}. ${formatPlayerLink(p)}`);
+            });
+            if (below.length > 5) {
+              lines.push(`... +${below.length - 5} autres`);
+            }
           }
-
           lines.push("", "Top 5 :");
-          for (let i = 0; i < maxRows; i += 1) {
-            const a = week1?.topPlayers?.[i];
-            const b = week2?.topPlayers?.[i];
-            const left = a ? `${i + 1}. ${a.name} ${fmt(a.fame)} pts` : "";
-            const right = b ? `${i + 1}. ${b.name} ${fmt(b.fame)} pts` : "";
-            lines.push(row(left, right));
-          }
-
-          return `\`\`\`md\n${lines.join("\n")}\n\`\`\``;
+          (entry.topPlayers || []).forEach((p, idx) => {
+            lines.push(`${idx + 1}. ${formatPlayerLink(p)}`);
+          });
+          return lines.join("\n");
         };
 
         fields.push({
-          name: "Semaine -1 / Semaine -2",
-          value: buildTableValue(),
-          inline: false,
+          name: "Semaine -1",
+          value: weekFieldValue(weekEntries[0]),
+          inline: true,
+        });
+        fields.push({
+          name: "Semaine -2",
+          value: weekFieldValue(weekEntries[1]),
+          inline: true,
         });
 
         const embed = {
