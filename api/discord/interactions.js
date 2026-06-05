@@ -1366,20 +1366,17 @@ export default async function handler(req, res) {
             )}`,
             inline: true,
           },
-          { name: "Ligue", value: league, inline: true },
         ];
 
         const weekLabels = ["Semaine -1", "Semaine -2"];
-        const weekCount = weekEntries.length;
 
-        if (weekCount === 0) {
+        if (weekEntries.length === 0) {
           fields.push({
             name: "Données GDC",
             value: "Aucune semaine terminée disponible.",
             inline: false,
           });
         } else {
-          // Row 1: week IDs
           for (let i = 0; i < 2; i += 1) {
             const entry = weekEntries[i];
             fields.push({
@@ -1389,7 +1386,6 @@ export default async function handler(req, res) {
             });
           }
 
-          // Row 2: averages
           for (let i = 0; i < 2; i += 1) {
             const entry = weekEntries[i];
             fields.push({
@@ -1399,7 +1395,6 @@ export default async function handler(req, res) {
             });
           }
 
-          // Row 3: below quota
           for (let i = 0; i < 2; i += 1) {
             const entry = weekEntries[i];
             fields.push({
@@ -1411,7 +1406,6 @@ export default async function handler(req, res) {
             });
           }
 
-          // Row 4: top 5
           for (let i = 0; i < 2; i += 1) {
             const entry = weekEntries[i];
             fields.push({
