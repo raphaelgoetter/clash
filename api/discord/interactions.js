@@ -1355,11 +1355,16 @@ export default async function handler(req, res) {
 
         const fields = [
           {
-            name: "Résumé clan",
-            value: `<:members:1506175789731811399> ${clan.members ?? "?"} / 50\n<:trophy2:1506175789731811399> ${fmt(
+            name: "Membres",
+            value: `<:members:1506175789731811399> ${clan.members ?? "?"} / 50`,
+            inline: true,
+          },
+          {
+            name: "Trophées GDC",
+            value: `<:trophy2:1493677804733337621> ${fmt(
               clan.clanWarTrophies,
             )}`,
-            inline: false,
+            inline: true,
           },
         ];
 
@@ -1372,11 +1377,14 @@ export default async function handler(req, res) {
         const weekFieldValue = (entry) => {
           if (!entry) return "Aucune donnée.";
           const lines = [
-            `${entry.weekId}`,
             `${fmt(entry.average)} pts`,
             "",
-            "Sous quota :",
+            "<:victory:1504136468900352070> Top 5 :",
           ];
+          (entry.topPlayers || []).forEach((p, idx) => {
+            lines.push(`${idx + 1}. ${formatPlayerLink(p)}`);
+          });
+          lines.push("", "<:sweat:1504139431106576405> Sous quota :");
           const below = entry.belowQuota || [];
           if (below.length === 0) {
             lines.push("Aucun joueur sous quota.");
@@ -1388,10 +1396,6 @@ export default async function handler(req, res) {
               lines.push(`... +${below.length - 5} autres`);
             }
           }
-          lines.push("", "Top 5 :");
-          (entry.topPlayers || []).forEach((p, idx) => {
-            lines.push(`${idx + 1}. ${formatPlayerLink(p)}`);
-          });
           return lines.join("\n");
         };
 
