@@ -151,10 +151,11 @@ node scripts/registerCommands.js
 ### Commandes disponibles
 
 | Commande                            | Description                                                               |
-| ----------------------------------- | ------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------ |
+| ----------------------------------- | ------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------ | ------ | --------------------------------------------------------------------- |
 | `/trust tag:#TAG`                   | Analyse la fiabilité d'un joueur                                          |
 | `/stats tag:#TAG`                   | Affiche les statistiques GDC détaillées d'un membre de la famille         |
 | `/promote clan:N min:X`             | Liste les joueurs ≥ X points de la semaine précédente                     |
+| `/quota clan:N quota:[1600          | 1800                                                                      | 2000     | 2200                                                               | 2400]` | Affiche la moyenne GDC et les joueurs sous quota (semaine précédente) |
 | `/trust-clan clan:N`                | Liste les membres High/Extreme risk d'un clan                             |
 | `/chelem clan:N [season:X]`         | Liste les joueurs 16/16 decks chaque semaine d'une saison                 |
 | `/top-players number:X period:[week | season] scope:[previous                                                   | actual]` | Liste les meilleurs joueurs de la famille pour la période demandée |
