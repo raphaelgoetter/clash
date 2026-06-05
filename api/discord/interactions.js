@@ -1355,16 +1355,11 @@ export default async function handler(req, res) {
 
         const fields = [
           {
-            name: "Membres",
-            value: `<:members:1506175789731811399> ${clan.members ?? "?"} / 50`,
-            inline: true,
-          },
-          {
-            name: "Trophées GDC",
-            value: `<:trophy2:1493677804733337621> ${fmt(
+            name: "Clan",
+            value: `<:members:1506175789731811399> ${clan.members ?? "?"} / 50\n<:trophy2:1493677804733337621> ${fmt(
               clan.clanWarTrophies,
             )}`,
-            inline: true,
+            inline: false,
           },
         ];
 
