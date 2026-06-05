@@ -2944,6 +2944,10 @@ export default async function handler(req, res) {
               b.missing - a.missing || a.name.localeCompare(b.name, "fr"),
           );
 
+        const lateTimingTagsByTag = await buildLateTimingTagsByPlayer(
+          late.map((pl) => pl.tag),
+        );
+
         const guildId = process.env.DISCORD_GUILD_ID;
         const botToken = process.env.DISCORD_TOKEN;
         let guildMembers = [];
