@@ -1368,55 +1368,57 @@ export default async function handler(req, res) {
           },
         ];
 
-        const weekLabels = ["Semaine -1", "Semaine -2"];
-
-        if (weekEntries.length === 0) {
-          fields.push({
-            name: "Données GDC",
-            value: "Aucune semaine terminée disponible.",
-            inline: false,
-          });
-        } else {
-          for (let i = 0; i < 2; i += 1) {
-            const entry = weekEntries[i];
-            fields.push({
-              name: weekLabels[i],
-              value: entry ? entry.weekId : "—",
-              inline: true,
-            });
+        const buildTableValue = () => {
+          if (weekEntries.length === 0) {
+            return "Aucune semaine terminée disponible.";
           }
 
-          for (let i = 0; i < 2; i += 1) {
-            const entry = weekEntries[i];
-            fields.push({
-              name: i === 0 ? "Moyenne -1" : "Moyenne -2",
-              value: entry ? `${fmt(entry.average)} pts` : "—",
-              inline: true,
-            });
+          const pad = (text, width) => {
+            const str = String(text ?? "");
+            return str + " ".repeat(Math.max(0, width - str.length));
+          };
+
+          const row = (left, right) => `${pad(left, 28)} ${right}`;
+          const week1 = weekEntries[0];
+          const week2 = weekEntries[1];
+
+          const lines = [
+            row("Semaine -1", "Semaine -2"),
+            row(week1 ? week1.weekId : "—", week2 ? week2.weekId : "—"),
+            row("Moyenne", week2 ? `${fmt(week2.average)} pts` : "—"),
+          ];
+          lines[2] = row(
+            week1 ? `${fmt(week1.average)} pts` : "—",
+            week2 ? `${fmt(week2.average)} pts` : "—",
+          );
+          lines.push("", "Sous quota :");
+
+          const maxRows = 5;
+          for (let i = 0; i < maxRows; i += 1) {
+            const a = week1?.belowQuota?.[i];
+            const b = week2?.belowQuota?.[i];
+            const left = a ? `${i + 1}. ${a.name} ${fmt(a.fame)} pts` : "";
+            const right = b ? `${i + 1}. ${b.name} ${fmt(b.fame)} pts` : "";
+            lines.push(row(left, right));
           }
 
-          for (let i = 0; i < 2; i += 1) {
-            const entry = weekEntries[i];
-            fields.push({
-              name: i === 0 ? "Sous quota -1" : "Sous quota -2",
-              value: entry
-                ? formatBelowQuota(entry.belowQuota)
-                : "Aucune donnée.",
-              inline: true,
-            });
+          lines.push("", "Top 5 :");
+          for (let i = 0; i < maxRows; i += 1) {
+            const a = week1?.topPlayers?.[i];
+            const b = week2?.topPlayers?.[i];
+            const left = a ? `${i + 1}. ${a.name} ${fmt(a.fame)} pts` : "";
+            const right = b ? `${i + 1}. ${b.name} ${fmt(b.fame)} pts` : "";
+            lines.push(row(left, right));
           }
 
-          for (let i = 0; i < 2; i += 1) {
-            const entry = weekEntries[i];
-            fields.push({
-              name: i === 0 ? "Top 5 -1" : "Top 5 -2",
-              value: entry
-                ? formatPlayerList(entry.topPlayers, "Aucun joueur actif.")
-                : "Aucun joueur actif.",
-              inline: true,
-            });
-          }
-        }
+          return `\`\`\`md\n${lines.join("\n")}\n\`\`\``;
+        };
+
+        fields.push({
+          name: "Semaine -1 / Semaine -2",
+          value: buildTableValue(),
+          inline: false,
+        });
 
         const embed = {
           title: `Quota ${fmt(quotaValue)} pts — ${clanName}`,
