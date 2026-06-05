@@ -1286,7 +1286,26 @@ export default async function handler(req, res) {
 
         const fmt = (n) =>
           Number.isFinite(n) ? n.toLocaleString("fr-FR") : "?";
-        const league = getLeagueName(clan.clanWarTrophies ?? null, "fr") || "—";
+        const LEAGUE_ICON_GENERIC = {
+          "Bronze 1": "<:bronze:1506201933331824721>",
+          "Bronze 2": "<:bronze:1506201933331824721>",
+          "Bronze 3": "<:bronze:1506201933331824721>",
+          "Argent 1": "<:silver:1506201931922800730>",
+          "Argent 2": "<:silver:1506201931922800730>",
+          "Argent 3": "<:silver:1506201931922800730>",
+          "Or 1": "<:gold:1506201934477004880>",
+          "Or 2": "<:gold:1506201934477004880>",
+          "Or 3": "<:gold:1506201934477004880>",
+          "Légendaire 1": "<:legendary1:1506218399498244166>",
+          "Légendaire 2": "<:legendary2:1506217437601992734>",
+          "Légendaire 3": "<:legendary3:1506218625508573225>",
+        };
+        const warLeagueLabel = (trophies) => {
+          const label = getLeagueName(trophies ?? null, "fr") || "—";
+          const icon = LEAGUE_ICON_GENERIC[label];
+          return icon ? `${icon} ${label}` : label;
+        };
+        const league = warLeagueLabel(clan.clanWarTrophies ?? 0);
         const clanUrl = trustClanUrl(resolved.tag);
         const { computePrevWeekId } =
           await import("../../backend/services/dateUtils.js");
@@ -1331,22 +1350,19 @@ export default async function handler(req, res) {
           fields: [
             {
               name: "Membres",
-              value: `${clan.members ?? "?"}/50`,
+              value: `<:members:1506175789731811399> ${clan.members ?? "?"} / 50`,
               inline: true,
             },
             {
               name: "Trophées GDC",
-              value: fmt(clan.clanWarTrophies),
+              value: `<:trophy2:1493677804733337621> ${fmt(
+                clan.clanWarTrophies,
+              )}`,
               inline: true,
             },
             { name: "Ligue", value: league, inline: true },
             {
-              name: "Actifs",
-              value: fmt(totalActive),
-              inline: true,
-            },
-            {
-              name: "Moyenne GDC (actifs)",
+              name: "Moyenne GDC",
               value: `${fmt(average)} pts`,
               inline: true,
             },
@@ -1362,7 +1378,7 @@ export default async function handler(req, res) {
             },
           ],
           footer: {
-            text: `Semaine : ${weekId || "S?"}`,
+            text: `Semaine dernière : ${weekId || "S?"}`,
           },
         };
 
