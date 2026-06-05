@@ -1240,49 +1240,64 @@ export default async function handler(req, res) {
           ),
         );
         const raceLog = await fetchRaceLog(`#${clanTag}`);
-        const lastRace = Array.isArray(raceLog) ? raceLog[0] : null;
         const clanTagNorm = String(clanTag).replace(/^#/, "").toUpperCase();
-        const standing = (lastRace?.standings ?? []).find(
-          (s) =>
-            String(s.clan?.tag || "")
-              .replace(/^#/, "")
-              .toUpperCase() === clanTagNorm,
-        );
-        const participants = (standing?.clan?.participants ?? []).filter((p) =>
-          memberTags.has(
-            String(p.tag || "")
-              .replace(/^#/, "")
-              .toUpperCase(),
-          ),
-        );
-        const activePlayers = participants.filter(
-          (p) =>
-            (Number.isFinite(p.decksUsed) && p.decksUsed > 0) ||
-            (Number.isFinite(p.fame) && p.fame > 0),
-        );
-        const totalActive = activePlayers.length;
-        const totalFame = activePlayers.reduce(
-          (sum, p) => sum + (Number.isFinite(p.fame) ? p.fame : 0),
-          0,
-        );
-        const average =
-          totalActive > 0 ? Math.round(totalFame / totalActive) : 0;
-        const belowQuota = activePlayers
-          .slice()
-          .filter((p) => (Number.isFinite(p.fame) ? p.fame : 0) < quotaValue)
-          .sort(
-            (a, b) =>
-              (Number.isFinite(a.fame) ? a.fame : 0) -
-              (Number.isFinite(b.fame) ? b.fame : 0),
-          );
-        const topPlayers = activePlayers
-          .slice()
-          .sort(
-            (a, b) =>
-              (Number.isFinite(b.fame) ? b.fame : 0) -
-              (Number.isFinite(a.fame) ? a.fame : 0),
-          )
-          .slice(0, 5);
+        const weekEntries = (Array.isArray(raceLog) ? raceLog.slice(0, 2) : [])
+          .map((entry) => {
+            if (entry.seasonId == null || entry.sectionIndex == null)
+              return null;
+            const weekId = `S${entry.seasonId}W${entry.sectionIndex + 1}`;
+            const standing = (entry.standings ?? []).find(
+              (s) =>
+                String(s.clan?.tag || "")
+                  .replace(/^#/, "")
+                  .toUpperCase() === clanTagNorm,
+            );
+            const participants = (standing?.clan?.participants ?? []).filter(
+              (p) =>
+                memberTags.has(
+                  String(p.tag || "")
+                    .replace(/^#/, "")
+                    .toUpperCase(),
+                ),
+            );
+            const activePlayers = participants.filter(
+              (p) =>
+                (Number.isFinite(p.decksUsed) && p.decksUsed > 0) ||
+                (Number.isFinite(p.fame) && p.fame > 0),
+            );
+            const totalFame = activePlayers.reduce(
+              (sum, p) => sum + (Number.isFinite(p.fame) ? p.fame : 0),
+              0,
+            );
+            const average =
+              activePlayers.length > 0
+                ? Math.round(totalFame / activePlayers.length)
+                : 0;
+            return {
+              weekId,
+              activePlayers,
+              average,
+              belowQuota: activePlayers
+                .slice()
+                .filter(
+                  (p) => (Number.isFinite(p.fame) ? p.fame : 0) < quotaValue,
+                )
+                .sort(
+                  (a, b) =>
+                    (Number.isFinite(a.fame) ? a.fame : 0) -
+                    (Number.isFinite(b.fame) ? b.fame : 0),
+                ),
+              topPlayers: activePlayers
+                .slice()
+                .sort(
+                  (a, b) =>
+                    (Number.isFinite(b.fame) ? b.fame : 0) -
+                    (Number.isFinite(a.fame) ? a.fame : 0),
+                )
+                .slice(0, 5),
+            };
+          })
+          .filter(Boolean);
 
         const fmt = (n) =>
           Number.isFinite(n) ? n.toLocaleString("fr-FR") : "?";
@@ -1311,72 +1326,80 @@ export default async function handler(req, res) {
           await import("../../backend/services/dateUtils.js");
         const weekId = computePrevWeekId(raceLog) || "S?";
 
-        const formattedTop = topPlayers
-          .map((p, idx) => {
-            const playerUrl = trustPlayerUrl(p.tag);
-            return `${idx + 1}. [${p.name}](${playerUrl}) · **${fmt(
-              p.fame,
-            )} pts**`;
-          })
-          .join("\n");
+        const formatPlayerList = (players, fallback) => {
+          if (!players || players.length === 0) return fallback;
+          return players
+            .map((p, idx) => {
+              const playerUrl = trustPlayerUrl(p.tag);
+              return `${idx + 1}. [${p.name}](${playerUrl}) · **${fmt(
+                p.fame,
+              )} pts**`;
+            })
+            .join("\n");
+        };
 
-        let belowQuotaValue = "✅ Aucun joueur en dessous du quota.";
-        if (belowQuota.length > 0) {
-          if (belowQuota.length > 25) {
-            belowQuotaValue = `${belowQuota.length} joueurs n'ont pas atteint ${fmt(
-              quotaValue,
-            )} pts.`;
-          } else {
-            belowQuotaValue = belowQuota
-              .map((p, idx) => {
-                const playerUrl = trustPlayerUrl(p.tag);
-                return `${idx + 1}. [${p.name}](${playerUrl}) · **${fmt(
-                  p.fame,
-                )} pts**`;
-              })
-              .join("\n");
-            if (belowQuotaValue.length > 1020) {
-              belowQuotaValue = `${belowQuota.length} joueurs n'ont pas atteint ${fmt(
-                quotaValue,
-              )} pts.`;
-            }
+        const formatBelowQuota = (players) => {
+          if (!players || players.length === 0)
+            return "✅ Aucun joueur en dessous du quota.";
+          if (players.length > 25) {
+            return `${players.length} joueurs n'ont pas atteint ${fmt(quotaValue)} pts.`;
           }
+          const text = formatPlayerList(
+            players,
+            "✅ Aucun joueur en dessous du quota.",
+          );
+          return text.length > 1020
+            ? `${players.length} joueurs n'ont pas atteint ${fmt(quotaValue)} pts.`
+            : text;
+        };
+
+        const fields = [
+          {
+            name: "Membres",
+            value: `<:members:1506175789731811399> ${clan.members ?? "?"} / 50`,
+            inline: true,
+          },
+          {
+            name: "Trophées GDC",
+            value: `<:trophy2:1493677804733337621> ${fmt(
+              clan.clanWarTrophies,
+            )}`,
+            inline: true,
+          },
+          { name: "Ligue", value: league, inline: true },
+        ];
+
+        if (weekEntries.length === 0) {
+          fields.push({
+            name: "Données GDC",
+            value: "Aucune semaine terminée disponible.",
+            inline: false,
+          });
+        }
+
+        for (const week of weekEntries) {
+          fields.push({
+            name: `Moyenne ${week.weekId}`,
+            value: `${fmt(week.average)} pts`,
+            inline: true,
+          });
+          fields.push({
+            name: `Sous quota ${week.weekId}`,
+            value: formatBelowQuota(week.belowQuota),
+            inline: false,
+          });
+          fields.push({
+            name: `Top 5 ${week.weekId}`,
+            value: formatPlayerList(week.topPlayers, "Aucun joueur actif."),
+            inline: false,
+          });
         }
 
         const embed = {
           title: `Quota ${fmt(quotaValue)} pts — ${clanName}`,
           url: clanUrl,
           color: 0x5865f2,
-          fields: [
-            {
-              name: "Membres",
-              value: `<:members:1506175789731811399> ${clan.members ?? "?"} / 50`,
-              inline: true,
-            },
-            {
-              name: "Trophées GDC",
-              value: `<:trophy2:1493677804733337621> ${fmt(
-                clan.clanWarTrophies,
-              )}`,
-              inline: true,
-            },
-            { name: "Ligue", value: league, inline: true },
-            {
-              name: "Moyenne GDC",
-              value: `${fmt(average)} pts`,
-              inline: true,
-            },
-            {
-              name: `Sous quota < ${fmt(quotaValue)} pts`,
-              value: belowQuotaValue,
-              inline: false,
-            },
-            {
-              name: "Top 5",
-              value: formattedTop || "Aucun joueur actif.",
-              inline: false,
-            },
-          ],
+          fields,
           footer: {
             text: `Semaine dernière : ${weekId || "S?"}`,
           },
