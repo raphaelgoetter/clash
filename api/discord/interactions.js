@@ -1369,30 +1369,59 @@ export default async function handler(req, res) {
           { name: "Ligue", value: league, inline: true },
         ];
 
-        if (weekEntries.length === 0) {
+        const weekLabels = ["Semaine -1", "Semaine -2"];
+        const weekCount = weekEntries.length;
+
+        if (weekCount === 0) {
           fields.push({
             name: "Données GDC",
             value: "Aucune semaine terminée disponible.",
             inline: false,
           });
-        }
+        } else {
+          // Row 1: week IDs
+          for (let i = 0; i < 2; i += 1) {
+            const entry = weekEntries[i];
+            fields.push({
+              name: weekLabels[i],
+              value: entry ? entry.weekId : "—",
+              inline: true,
+            });
+          }
 
-        for (const week of weekEntries) {
-          fields.push({
-            name: `Moyenne ${week.weekId}`,
-            value: `${fmt(week.average)} pts`,
-            inline: true,
-          });
-          fields.push({
-            name: `Sous quota ${week.weekId}`,
-            value: formatBelowQuota(week.belowQuota),
-            inline: false,
-          });
-          fields.push({
-            name: `Top 5 ${week.weekId}`,
-            value: formatPlayerList(week.topPlayers, "Aucun joueur actif."),
-            inline: false,
-          });
+          // Row 2: averages
+          for (let i = 0; i < 2; i += 1) {
+            const entry = weekEntries[i];
+            fields.push({
+              name: i === 0 ? "Moyenne -1" : "Moyenne -2",
+              value: entry ? `${fmt(entry.average)} pts` : "—",
+              inline: true,
+            });
+          }
+
+          // Row 3: below quota
+          for (let i = 0; i < 2; i += 1) {
+            const entry = weekEntries[i];
+            fields.push({
+              name: i === 0 ? "Sous quota -1" : "Sous quota -2",
+              value: entry
+                ? formatBelowQuota(entry.belowQuota)
+                : "Aucune donnée.",
+              inline: true,
+            });
+          }
+
+          // Row 4: top 5
+          for (let i = 0; i < 2; i += 1) {
+            const entry = weekEntries[i];
+            fields.push({
+              name: i === 0 ? "Top 5 -1" : "Top 5 -2",
+              value: entry
+                ? formatPlayerList(entry.topPlayers, "Aucun joueur actif.")
+                : "Aucun joueur actif.",
+              inline: true,
+            });
+          }
         }
 
         const embed = {
