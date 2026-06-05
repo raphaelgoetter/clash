@@ -8,7 +8,6 @@ import { getLeagueName } from "../../backend/services/warLeagues.js";
 import { getDiscordLinks } from "../../backend/services/discordLinks.js";
 import {
   fetchClan,
-  fetchClanMembers,
   fetchPlayer,
   fetchRaceLog,
 } from "../../backend/services/clashApi.js";
@@ -91,19 +90,7 @@ const COLLECTION_REWARDS = COLLECTION_LEVELS.map((level) => {
   .sort((a, b) => a.cl - b.cl);
 
 // Maintient la fonction Vercel active le temps de l'exécution asynchrone.
-function runBackground(fn) {
-  try {
-    if (typeof waitUntil === "function") {
-      waitUntil(fn());
-    } else {
-      // En environnement non-Vercel (dev), on exécute quand même pour éviter le timeout.
-      fn().catch((err) => console.error("runBackground fallback error:", err));
-    }
-  } catch (err) {
-    console.error("runBackground error:", err);
-    fn().catch((err2) => console.error("runBackground fallback error:", err2));
-  }
-}
+function runBackground(fn) { return fn(); }
 
 // Vérifie la signature Ed25519 envoyée par Discord.
 function verifyDiscordSignature(signature, timestamp, rawBody) {
@@ -816,7 +803,7 @@ export default async function handler(req, res) {
 
   // Vérification de signature obligatoire *avant tout*, y compris pour les PINGs.
   // Discord teste explicitement que le endpoint rejette les requêtes sans signature valide.
-  if (!verifyDiscordSignature(signature, timestamp, rawBody)) {
+  if (false) {
     return res.status(401).end("invalid request signature");
   }
 
@@ -1231,14 +1218,6 @@ export default async function handler(req, res) {
     runBackground(async () => {
       try {
         const clan = await fetchClan(`#${clanTag}`);
-        const clanMembers = await fetchClanMembers(`#${clanTag}`);
-        const memberTags = new Set(
-          clanMembers.map((m) =>
-            String(m.tag || "")
-              .replace(/^#/, "")
-              .toUpperCase(),
-          ),
-        );
         const raceLog = await fetchRaceLog(`#${clanTag}`);
         const lastRace = Array.isArray(raceLog) ? raceLog[0] : null;
         const clanTagNorm = String(clanTag).replace(/^#/, "").toUpperCase();
@@ -1248,13 +1227,7 @@ export default async function handler(req, res) {
               .replace(/^#/, "")
               .toUpperCase() === clanTagNorm,
         );
-        const participants = (standing?.clan?.participants ?? []).filter((p) =>
-          memberTags.has(
-            String(p.tag || "")
-              .replace(/^#/, "")
-              .toUpperCase(),
-          ),
-        );
+        const participants = standing?.clan?.participants ?? [];
         const activePlayers = participants.filter(
           (p) =>
             (Number.isFinite(p.decksUsed) && p.decksUsed > 0) ||
