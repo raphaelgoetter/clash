@@ -1366,7 +1366,10 @@ export default async function handler(req, res) {
         const formatPlayerLink = (p) => {
           if (!p) return "";
           const playerUrl = trustPlayerUrl(p.tag);
-          return `[${p.name}](${playerUrl}) · ${fmt(p.fame)} pts`;
+          const deckCount = Number.isFinite(p.decksUsed) ? p.decksUsed : null;
+          const deckSuffix =
+            deckCount != null && deckCount < 16 ? ` (${deckCount})` : "";
+          return `[${p.name}](${playerUrl}) · ${fmt(p.fame)} pts${deckSuffix}`;
         };
 
         const weekFieldValue = (entry) => {
