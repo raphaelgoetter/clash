@@ -1372,7 +1372,7 @@ export default async function handler(req, res) {
         const weekFieldValue = (entry) => {
           if (!entry) return "Aucune donnée.";
           const lines = [
-            `${fmt(entry.average)} pts`,
+            `Moyenne : ${fmt(entry.average)} pts`,
             "",
             "<:victory:1504136468900352070> Top 5 :",
           ];
