@@ -14,10 +14,8 @@
       "#8LR9JRGG",
       "#8QL2J8PQ",
       "#G9LPGQUG",
-      "#R9R2CV0RR",
       "#9VQ0J29Y",
-      "#9UU90UL90",
-      "#8PJ2YRCJG"
+      "#9UU90UL90"
     ],
     "departures": [
       "#9RRP8V0LG",
@@ -53,7 +51,9 @@
       "#YG0V0YVPP",
       "#P82G9PL8V",
       "#2VRRYLJ2J",
-      "#CQ0GQ0JRU"
+      "#CQ0GQ0JRU",
+      "#R9R2CV0RR",
+      "#8PJ2YRCJG"
     ],
     "promotions": [],
     "demotions": []
@@ -81,7 +81,7 @@
       "#G990JY9Q8",
       "#JLGQCL9V8",
       "#8Q2UQL2R",
-      "#8QV8G0CC0"
+      "#22RGGVYP"
     ],
     "departures": [
       "#2P0VYJJR9",
@@ -131,7 +131,8 @@
       "#YY0JR0PJ",
       "#YRQRUU9PC",
       "#LCULPGJL",
-      "#LCQ2J0VGC"
+      "#LCQ2J0VGC",
+      "#8QV8G0CC0"
     ],
     "promotions": [],
     "demotions": []
@@ -198,7 +199,15 @@
       "#JLGQCL9V8",
       "#L0PULJ8RJ"
     ],
-    "promotions": [],
+    "promotions": [
+      "#YPVL92URU",
+      "#2L9YP0P8",
+      "#PCG29ULPQ",
+      "#8J8R820L",
+      "#VPGYR2990",
+      "#220VL2VRLG",
+      "#YQ822Q2YY"
+    ],
     "demotions": []
   }
 }
