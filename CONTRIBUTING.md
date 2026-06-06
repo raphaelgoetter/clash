@@ -62,11 +62,13 @@ La documentation détaillée des champs retournés par l’API Clash Royale (cha
 
 La projection estime les points qu'un clan atteindra à la fin de la journée de guerre.
 
-La variable de plafonnement utilisée ici s'appelle **Engagement GDC**. Elle est calculée au niveau du clan à partir de l'intersection entre le roster du clan et les participants de la guerre en cours :
+La variable de plafonnement utilisée ici s'appelle **Engagement GDC**. Elle est calculée au niveau du clan à partir de l'intersection entre le roster du clan et les participants de la guerre en cours qui ont déjà joué au moins un deck cette semaine :
 
-- `activeMembers` = nombre de participants actuellement visibles dans la GDC
+- `activeMembers` = nombre de membres du roster ayant `decksUsed > 0` dans cette semaine de GDC
 - `rosterSize` = taille du clan (`clan.members`)
 - `ratio` = `activeMembers / rosterSize`
+
+Cette approche donne un indicateur plus utile pour la projection, en évitant de compter comme actifs les membres qui sont simplement listés dans la course mais n'ont encore rien joué.
 
 Pour le clan propre, le roster vient du payload de l'analyse. Pour les rivaux, le roster est chargé une fois au moment du calcul du groupe GDC afin de garder une mesure stricte sans dépasser 100 %.
 

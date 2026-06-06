@@ -2724,10 +2724,15 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                   ? extra.members
                   : allPartsInner.length;
               const activeMembers = rosterTagSet
-                ? allPartsInner.filter((p) =>
-                    rosterTagSet.has(normalizeTag(p.tag)),
+                ? allPartsInner.filter(
+                    (p) =>
+                      rosterTagSet.has(normalizeTag(p.tag)) &&
+                      (p.decksUsed ?? 0) > 0,
                   ).length
-                : Math.min(allPartsInner.length, rosterSize);
+                : Math.min(
+                    allPartsInner.filter((p) => (p.decksUsed ?? 0) > 0).length,
+                    rosterSize,
+                  );
               const participationGdcEstimee = {
                 activeMembers: Math.min(activeMembers, rosterSize),
                 rosterSize,

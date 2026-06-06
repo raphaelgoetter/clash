@@ -218,7 +218,7 @@
   "warGroupDescription": "Compare the 5 clans of the current River Race group",
   "warGroupRankSuffix": "ranking",
   "warGroupEngagement": "GDC Engagement",
-  "warGroupEngagementTooltip": "{{active}} active members / {{roster}} in roster",
+  "warGroupEngagementTooltip": "{{active}} members who played at least 1 deck this week / {{roster}} in roster",
   "warGroupTargetTooltip": "Daily average last week: {{target}}",
   "warGroupDecksTooltip": "{{decks}} decks / target of {{target}}",
   "warGroupClinchedWin": "Mathematically guaranteed win",
