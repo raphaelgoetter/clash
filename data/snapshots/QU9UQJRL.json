@@ -4668,16 +4668,17 @@
           "start": "2026-06-06T09:43:00.000Z",
           "end": "2026-06-07T09:42:59.999Z"
         },
-        "snapshotTime": "2026-06-06T14:32:11.611Z",
+        "snapshotTime": "2026-06-06T15:27:51.687Z",
         "snapshotBackupTime": "2026-06-06T10:38:24.565Z",
         "decks": {
           "#209CGRVQJV": 4,
+          "#J008G9CLJ": 4,
           "#JVRP8QPRU": 4,
           "#L8LCR02CG": 4,
           "#PCG29ULPQ": 4,
           "#R2YP2UJRL": 4,
+          "#V0VLJQCJU": 4,
           "#VPGCQPR9U": 4,
-          "#V0VLJQCJU": 3,
           "#8VP9UJV9L": 2
         },
         "hourlyCumul": [],
@@ -4703,7 +4704,7 @@
           "#UV8R8RYVR": 700,
           "#Q8J99R8G": 800,
           "#GYCJPJL0L": 875,
-          "#J008G9CLJ": 900,
+          "#J008G9CLJ": 1400,
           "#2L9YP0P8": 1000,
           "#L8LCR02CG": 1500,
           "#C0RRPJYV9": 1100,
@@ -4716,7 +4717,7 @@
           "#8VP9UJV9L": 1425,
           "#R2YP2UJRL": 1900,
           "#JR0U8Q008": 1300,
-          "#V0VLJQCJU": 1700,
+          "#V0VLJQCJU": 1800,
           "#VPGYR2990": 1350,
           "#8JGU9UUJJ": 1400,
           "#YPVL92URU": 1400,
@@ -4724,7 +4725,8 @@
         },
         "duelsTodayByTag": {
           "#JLGQCL9V8": 1,
-          "#PCG29ULPQ": 1
+          "#PCG29ULPQ": 1,
+          "#J008G9CLJ": 1
         },
         "duelsComplete": true,
         "periodType": "warDay",
@@ -4750,7 +4752,7 @@
           "#UV8R8RYVR": 3,
           "#Q8J99R8G": 8,
           "#GYCJPJL0L": 6,
-          "#J008G9CLJ": 8,
+          "#J008G9CLJ": 12,
           "#2L9YP0P8": 8,
           "#L8LCR02CG": 12,
           "#C0RRPJYV9": 8,
@@ -4763,13 +4765,13 @@
           "#8VP9UJV9L": 10,
           "#R2YP2UJRL": 12,
           "#JR0U8Q008": 8,
-          "#V0VLJQCJU": 11,
+          "#V0VLJQCJU": 12,
           "#VPGYR2990": 8,
           "#8JGU9UUJJ": 8,
           "#YPVL92URU": 8,
           "#8J8R820L": 8
         },
-        "snapshotCount": 29
+        "snapshotCount": 34
       },
       {
         "warDay": "sunday",
