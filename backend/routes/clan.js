@@ -2758,11 +2758,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
               const practicalMaxDecksToday = Math.min(
                 200,
-                Math.max(
-                  decksToday,
-                  participationGdcEstimee.activeMembers * 4,
-                  avgDecksLastWeek ?? 0,
-                ),
+                participationGdcEstimee.activeMembers * 4,
               );
 
               const remainingDecksToday = Math.max(
