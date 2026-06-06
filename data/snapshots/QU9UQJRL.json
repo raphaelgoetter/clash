@@ -4668,10 +4668,11 @@
           "start": "2026-06-06T09:43:00.000Z",
           "end": "2026-06-07T09:42:59.999Z"
         },
-        "snapshotTime": "2026-06-06T21:23:00.547Z",
+        "snapshotTime": "2026-06-06T22:23:08.465Z",
         "snapshotBackupTime": "2026-06-06T10:38:24.565Z",
         "decks": {
           "#209CGRVQJV": 4,
+          "#2L9YP0P8": 4,
           "#8J8R820L": 4,
           "#8JGU9UUJJ": 4,
           "#8VP9UJV9L": 4,
@@ -4684,9 +4685,9 @@
           "#UVGPPVQ8Q": 4,
           "#V0VLJQCJU": 4,
           "#VPGCQPR9U": 4,
+          "#VPGYR2990": 4,
           "#YPVL92URU": 4,
-          "#YQ822Q2YY": 4,
-          "#2L9YP0P8": 3
+          "#YQ822Q2YY": 4
         },
         "hourlyCumul": [],
         "_cumulFame": {
@@ -4712,7 +4713,7 @@
           "#Q8J99R8G": 800,
           "#GYCJPJL0L": 875,
           "#J008G9CLJ": 1400,
-          "#2L9YP0P8": 1300,
+          "#2L9YP0P8": 1400,
           "#L8LCR02CG": 1500,
           "#C0RRPJYV9": 1700,
           "#209CGRVQJV": 1600,
@@ -4725,7 +4726,7 @@
           "#R2YP2UJRL": 1900,
           "#JR0U8Q008": 1300,
           "#V0VLJQCJU": 1800,
-          "#VPGYR2990": 1350,
+          "#VPGYR2990": 2050,
           "#8JGU9UUJJ": 2000,
           "#YPVL92URU": 1950,
           "#8J8R820L": 2150
@@ -4735,7 +4736,8 @@
           "#PCG29ULPQ": 1,
           "#J008G9CLJ": 1,
           "#8J8R820L": 1,
-          "#YPVL92URU": 1
+          "#YPVL92URU": 1,
+          "#VPGYR2990": 1
         },
         "duelsComplete": true,
         "periodType": "warDay",
@@ -4762,7 +4764,7 @@
           "#Q8J99R8G": 8,
           "#GYCJPJL0L": 6,
           "#J008G9CLJ": 12,
-          "#2L9YP0P8": 11,
+          "#2L9YP0P8": 12,
           "#L8LCR02CG": 12,
           "#C0RRPJYV9": 12,
           "#209CGRVQJV": 12,
@@ -4775,12 +4777,12 @@
           "#R2YP2UJRL": 12,
           "#JR0U8Q008": 8,
           "#V0VLJQCJU": 12,
-          "#VPGYR2990": 8,
+          "#VPGYR2990": 12,
           "#8JGU9UUJJ": 12,
           "#YPVL92URU": 12,
           "#8J8R820L": 12
         },
-        "snapshotCount": 63
+        "snapshotCount": 68
       },
       {
         "warDay": "sunday",
