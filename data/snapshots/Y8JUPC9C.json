@@ -7605,10 +7605,11 @@
           "start": "2026-06-05T09:42:00.000Z",
           "end": "2026-06-06T09:41:59.999Z"
         },
-        "snapshotTime": "2026-06-05T23:27:08.354Z",
+        "snapshotTime": "2026-06-06T00:39:03.047Z",
         "snapshotBackupTime": "2026-06-05T11:06:27.069Z",
         "decks": {
           "#2902YQRQL": 4,
+          "#2GUPJ99G2": 4,
           "#2UQQJJ98Y": 4,
           "#809G8YC8": 4,
           "#80CCLY20L": 4,
@@ -7695,7 +7696,7 @@
           "#9Q920V9U": 1600,
           "#GJ8RV8802": 1500,
           "#PVQ2QRLJQ": 800,
-          "#2GUPJ99G2": 900,
+          "#2GUPJ99G2": 1550,
           "#8PJ20UQCC": 1100,
           "#JLU88JR28": 1100,
           "#80CCLY20L": 1100,
@@ -7734,7 +7735,8 @@
           "#PG0Q0YYGY": 1,
           "#QQLYUL0R": 1,
           "#YQGCRQ0": 1,
-          "#88QP9CJU": 1
+          "#88QP9CJU": 1,
+          "#2GUPJ99G2": 1
         },
         "duelsComplete": true,
         "periodType": "warDay",
@@ -7788,7 +7790,7 @@
           "#9Q920V9U": 8,
           "#GJ8RV8802": 8,
           "#PVQ2QRLJQ": 4,
-          "#2GUPJ99G2": 4,
+          "#2GUPJ99G2": 8,
           "#8PJ20UQCC": 8,
           "#JLU88JR28": 8,
           "#80CCLY20L": 8,
@@ -7796,7 +7798,7 @@
           "#UY00GJG2": 8,
           "#C0VQRUP2": 8
         },
-        "snapshotCount": 131
+        "snapshotCount": 135
       },
       {
         "warDay": "saturday",
