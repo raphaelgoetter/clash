@@ -8426,10 +8426,11 @@
           "start": "2026-06-07T09:42:00.000Z",
           "end": "2026-06-08T09:41:59.999Z"
         },
-        "snapshotTime": "2026-06-07T17:29:24.812Z",
+        "snapshotTime": "2026-06-07T18:26:20.128Z",
         "snapshotBackupTime": "2026-06-07T10:45:13.656Z",
         "decks": {
           "#2902YQRQL": 4,
+          "#2GUPJ99G2": 4,
           "#80CCLY20L": 4,
           "#82URJC8CR": 4,
           "#88QP9CJU": 4,
@@ -8451,6 +8452,8 @@
           "#UYP0YCQ9": 4,
           "#VVJ8RURL9": 4,
           "#YQGCRQ0": 4,
+          "#YRYPUR822": 4,
+          "#QQLYUL0R": 3,
           "#UJ89GUUUY": 1
         },
         "hourlyCumul": [],
@@ -8491,7 +8494,7 @@
           "#GVGVR0J2U": 2500,
           "#809G8YC8": 1900,
           "#8PJ20UQCC": 2500,
-          "#YRYPUR822": 1900,
+          "#YRYPUR822": 2500,
           "#80CCLY20L": 2300,
           "#888Y29GY": 1950,
           "#VQP8PU2V": 1950,
@@ -8505,11 +8508,11 @@
           "#CYRGPVGVG": 2900,
           "#82URJC8CR": 2950,
           "#2902YQRQL": 2700,
-          "#2GUPJ99G2": 2200,
+          "#2GUPJ99G2": 2850,
           "#9Q920V9U": 3000,
           "#YQGCRQ0": 2900,
           "#UY00GJG2": 2450,
-          "#QQLYUL0R": 2300,
+          "#QQLYUL0R": 3000,
           "#GJ8RV8802": 3100,
           "#9CQC0YUR8": 2350,
           "#8QL2J8PQ": 2400,
@@ -8536,7 +8539,9 @@
           "#99VY0090": 1,
           "#PG0Q0YYGY": 1,
           "#GVGVR0J2U": 1,
-          "#2902YQRQL": 1
+          "#2902YQRQL": 1,
+          "#2GUPJ99G2": 1,
+          "#QQLYUL0R": 1
         },
         "duelsComplete": true,
         "periodType": "warDay",
@@ -8577,7 +8582,7 @@
           "#GVGVR0J2U": 16,
           "#809G8YC8": 12,
           "#8PJ20UQCC": 16,
-          "#YRYPUR822": 12,
+          "#YRYPUR822": 16,
           "#80CCLY20L": 16,
           "#888Y29GY": 12,
           "#VQP8PU2V": 12,
@@ -8591,18 +8596,18 @@
           "#CYRGPVGVG": 16,
           "#82URJC8CR": 16,
           "#2902YQRQL": 16,
-          "#2GUPJ99G2": 12,
+          "#2GUPJ99G2": 16,
           "#9Q920V9U": 16,
           "#YQGCRQ0": 16,
           "#UY00GJG2": 16,
-          "#QQLYUL0R": 12,
+          "#QQLYUL0R": 15,
           "#GJ8RV8802": 16,
           "#9CQC0YUR8": 12,
           "#8QL2J8PQ": 12,
           "#C0VQRUP2": 12,
           "#9GG9GRC0G": 16
         },
-        "snapshotCount": 89
+        "snapshotCount": 100
       }
     ]
   }
