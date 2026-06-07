@@ -8426,11 +8426,12 @@
           "start": "2026-06-07T09:42:00.000Z",
           "end": "2026-06-08T09:41:59.999Z"
         },
-        "snapshotTime": "2026-06-07T19:31:39.868Z",
+        "snapshotTime": "2026-06-07T20:26:32.791Z",
         "snapshotBackupTime": "2026-06-07T10:45:13.656Z",
         "decks": {
           "#2902YQRQL": 4,
           "#2GUPJ99G2": 4,
+          "#2UQQJJ98Y": 4,
           "#809G8YC8": 4,
           "#80CCLY20L": 4,
           "#82URJC8CR": 4,
@@ -8452,13 +8453,13 @@
           "#LQLY92CR0": 4,
           "#PG0Q0YYGY": 4,
           "#QQLYUL0R": 4,
+          "#UJ89GUUUY": 4,
           "#UY00GJG2": 4,
           "#UYP0YCQ9": 4,
           "#VVJ8RURL9": 4,
           "#YQGCRQ0": 4,
           "#YRYPUR822": 4,
-          "#2UQQJJ98Y": 3,
-          "#UJ89GUUUY": 1
+          "#8QL2J8PQ": 1
         },
         "hourlyCumul": [],
         "_cumulFame": {
@@ -8487,8 +8488,8 @@
           "#8P29RRU2": 1650,
           "#J8RU2RJ8C": 2250,
           "#99VY0090": 2300,
-          "#2UQQJJ98Y": 2000,
-          "#UJ89GUUUY": 1800,
+          "#2UQQJJ98Y": 2200,
+          "#UJ89GUUUY": 2400,
           "#9VQ0J29Y": 2500,
           "#C2RL8UVYV": 2350,
           "#88QP9CJU": 2350,
@@ -8519,7 +8520,7 @@
           "#QQLYUL0R": 3100,
           "#GJ8RV8802": 3100,
           "#9CQC0YUR8": 2350,
-          "#8QL2J8PQ": 2400,
+          "#8QL2J8PQ": 2600,
           "#C0VQRUP2": 2400,
           "#9GG9GRC0G": 2700
         },
@@ -8550,7 +8551,8 @@
           "#2UQQJJ98Y": 1,
           "#809G8YC8": 1,
           "#888Y29GY": 1,
-          "#G9LPGQUG": 1
+          "#G9LPGQUG": 1,
+          "#UJ89GUUUY": 1
         },
         "duelsComplete": true,
         "periodType": "warDay",
@@ -8580,8 +8582,8 @@
           "#8P29RRU2": 12,
           "#J8RU2RJ8C": 16,
           "#99VY0090": 16,
-          "#2UQQJJ98Y": 15,
-          "#UJ89GUUUY": 13,
+          "#2UQQJJ98Y": 16,
+          "#UJ89GUUUY": 16,
           "#9VQ0J29Y": 16,
           "#C2RL8UVYV": 16,
           "#88QP9CJU": 16,
@@ -8612,11 +8614,11 @@
           "#QQLYUL0R": 16,
           "#GJ8RV8802": 16,
           "#9CQC0YUR8": 12,
-          "#8QL2J8PQ": 12,
+          "#8QL2J8PQ": 13,
           "#C0VQRUP2": 12,
           "#9GG9GRC0G": 16
         },
-        "snapshotCount": 116
+        "snapshotCount": 121
       }
     ]
   }
