@@ -1520,7 +1520,7 @@ export default async function handler(req, res) {
         const currentClanName =
           analysis.overview.clan?.name ||
           analysis.overview.clan?.tag ||
-          "Clan inconnu";
+          "Inconnu";
         const currentClanTag = analysis.overview.clan?.tag || null;
         const currentClanLink = currentClanTag
           ? `[${currentClanName}](${trustClanUrl(currentClanTag)})`

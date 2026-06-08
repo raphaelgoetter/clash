@@ -90,7 +90,9 @@ const COLLECTION_REWARDS = COLLECTION_LEVELS.map((level) => {
   .sort((a, b) => a.cl - b.cl);
 
 // Maintient la fonction Vercel active le temps de l'exécution asynchrone.
-function runBackground(fn) { return fn(); }
+function runBackground(fn) {
+  return fn();
+}
 
 // Vérifie la signature Ed25519 envoyée par Discord.
 function verifyDiscordSignature(signature, timestamp, rawBody) {
@@ -1441,7 +1443,7 @@ export default async function handler(req, res) {
         const currentClanName =
           analysis.overview.clan?.name ||
           analysis.overview.clan?.tag ||
-          "Clan inconnu";
+          "Inconnu";
         const currentClanTag = analysis.overview.clan?.tag || null;
         const currentClanLink = currentClanTag
           ? `[${currentClanName}](${trustClanUrl(currentClanTag)})`
