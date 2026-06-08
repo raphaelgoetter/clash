@@ -1387,11 +1387,11 @@ export default async function handler(req, res) {
           if (below.length === 0) {
             lines.push("Aucun joueur sous quota.");
           } else {
-            below.slice(0, 5).forEach((p, idx) => {
+            below.slice(0, 10).forEach((p, idx) => {
               lines.push(`${idx + 1}. ${formatPlayerLink(p)}`);
             });
-            if (below.length > 5) {
-              lines.push(`... +${below.length - 5} autres`);
+            if (below.length > 10) {
+              lines.push(`... +${below.length - 10} autres`);
             }
           }
           return lines.join("\n");

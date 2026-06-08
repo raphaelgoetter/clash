@@ -1286,7 +1286,8 @@ export default async function handler(req, res) {
               quotaValue,
             )} pts.`;
           } else {
-            belowQuotaValue = belowQuota
+            const shownPlayers = belowQuota.slice(0, 10);
+            belowQuotaValue = shownPlayers
               .map((p, idx) => {
                 const playerUrl = trustPlayerUrl(p.tag);
                 return `${idx + 1}. [${p.name}](${playerUrl}) · **${fmt(
@@ -1294,6 +1295,9 @@ export default async function handler(req, res) {
                 )} pts**`;
               })
               .join("\n");
+            if (belowQuota.length > 10) {
+              belowQuotaValue += `\n... +${belowQuota.length - 10} autres`;
+            }
             if (belowQuotaValue.length > 1020) {
               belowQuotaValue = `${belowQuota.length} joueurs n'ont pas atteint ${fmt(
                 quotaValue,
