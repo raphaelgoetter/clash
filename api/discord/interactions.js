@@ -1208,11 +1208,10 @@ export default async function handler(req, res) {
       return;
     }
 
-    const quota = Number.isFinite(quotaOpt?.value)
-      ? Number(quotaOpt.value)
-      : 2000;
+    const quota = Number(quotaOpt?.value);
     const allowedQuotas = [1600, 1800, 2000, 2200, 2400];
-    const quotaValue = allowedQuotas.includes(quota) ? quota : 2000;
+    const quotaValue =
+      Number.isFinite(quota) && allowedQuotas.includes(quota) ? quota : 2000;
     const clanVal = (clanOpt?.value || "1").toString().trim().toLowerCase();
     const CLAN_MAP = {
       1: { name: "La Resistance", tag: "Y8JUPC9C" },
