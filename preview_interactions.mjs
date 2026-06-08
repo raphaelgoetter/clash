@@ -1535,7 +1535,7 @@ export default async function handler(req, res) {
             inline: false,
           },
           {
-            name: `Historique GDC (${displayedWeeks} dernière${displayedWeeks === 1 ? "" : "s"} semaines) :`,
+            name: `Historique GDC (${displayedWeeks} ${displayedWeeks === 1 ? "dernière semaine" : "dernières semaines"}) :`,
             value: historyCodeBlock,
             inline: false,
           },
