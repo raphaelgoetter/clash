@@ -2745,13 +2745,16 @@ function renderMissingDuelsCard(missingDuels, prevWeekId = null) {
   card.querySelector(".card-title").innerHTML =
     `⚔️ ${t("missingWarDuels")}${weekLabel}`;
   card.querySelector(".card-desc").textContent = t("missingWarDuelsDesc") || "";
+  card.classList.remove("hidden");
 
   if (!missingDuels || !Array.isArray(missingDuels.players)) {
-    card.classList.add("hidden");
+    loadedClanSections.missingDuels = false;
+    if (listEl) {
+      listEl.innerHTML = `<li class="text-muted">${t("clickToLoadMissingDuels") || "Open the section to load missing duels on demand."}</li>`;
+    }
     return;
   }
 
-  card.classList.remove("hidden");
   loadedClanSections.missingDuels = true;
 
   if (!listEl) return;
