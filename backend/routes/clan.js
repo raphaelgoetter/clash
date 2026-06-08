@@ -371,6 +371,9 @@ router.get("/:tag/analysis", async (req, res) => {
     const includeUncomplete =
       req.query.includeUncomplete !== "false" &&
       req.query.includeUncomplete !== "0";
+    const includeMissingDuels =
+      req.query.includeMissingDuels !== "false" &&
+      req.query.includeMissingDuels !== "0";
     const includeRaceGroup =
       req.query.includeRaceGroup === "true" ||
       req.query.includeRaceGroup === "1";
@@ -388,6 +391,7 @@ router.get("/:tag/analysis", async (req, res) => {
         staleCache.rateLimited = false;
         if (!includeTopPlayers) staleCache.topPlayers = null;
         if (!includeUncomplete) staleCache.uncomplete = null;
+        if (!includeMissingDuels) staleCache.missingDuels = null;
         if (!includeMembers) {
           staleCache.members = null;
           staleCache.membersRaw = null;
@@ -431,6 +435,7 @@ router.get("/:tag/analysis", async (req, res) => {
           responsePayload.rateLimited = false;
           if (!includeTopPlayers) responsePayload.topPlayers = null;
           if (!includeUncomplete) responsePayload.uncomplete = null;
+          if (!includeMissingDuels) responsePayload.missingDuels = null;
           responsePayload.members = null;
           responsePayload.membersRaw = null;
           const { frRank, frPreviousRank } = await fetchLiveCountryRank(
@@ -453,6 +458,7 @@ router.get("/:tag/analysis", async (req, res) => {
           responsePayload.rateLimited = false;
           if (!includeTopPlayers) responsePayload.topPlayers = null;
           if (!includeUncomplete) responsePayload.uncomplete = null;
+          if (!includeMissingDuels) responsePayload.missingDuels = null;
           if (!includeMembers) {
             responsePayload.members = null;
             responsePayload.membersRaw = null;
@@ -478,6 +484,7 @@ router.get("/:tag/analysis", async (req, res) => {
           responsePayload.rateLimited = false;
           if (!includeTopPlayers) responsePayload.topPlayers = null;
           if (!includeUncomplete) responsePayload.uncomplete = null;
+          if (!includeMissingDuels) responsePayload.missingDuels = null;
           if (!includeMembers) {
             responsePayload.members = null;
             responsePayload.membersRaw = null;
@@ -561,6 +568,7 @@ router.get("/:tag/analysis", async (req, res) => {
       const responsePayload = { ...payload };
       if (!includeTopPlayers) responsePayload.topPlayers = null;
       if (!includeUncomplete) responsePayload.uncomplete = null;
+      if (!includeMissingDuels) responsePayload.missingDuels = null;
       if (!includeMembers) {
         responsePayload.members = null;
         responsePayload.membersRaw = null;
@@ -622,6 +630,7 @@ router.get("/:tag/analysis", async (req, res) => {
           responseCached.rateLimited = true;
           if (!includeTopPlayers) responseCached.topPlayers = null;
           if (!includeUncomplete) responseCached.uncomplete = null;
+          if (!includeMissingDuels) responseCached.missingDuels = null;
           if (!includeMembers) {
             responseCached.members = null;
             responseCached.membersRaw = null;
@@ -1051,6 +1060,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
   const includeTopPlayers = options.includeTopPlayers !== false;
   const includeUncomplete = options.includeUncomplete !== false;
+  const includeMissingDuels = options.includeMissingDuels !== false;
   // Robust boolean check: true, 'true', or '1'
   const includeRaceGroup =
     options.includeRaceGroup === true ||
@@ -1341,6 +1351,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
   let currWeekId = null;
   let warSnapshotDays = null;
   let warSnapshotTakenAt = null;
+  let missingDuels = null;
 
   let getSnapshotsForWeeks = null;
   let getWarDayName = null;
@@ -1444,6 +1455,45 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       .sort()
       .pop();
     warSnapshotTakenAt = latestSnap ?? null;
+
+    if (
+      includeMissingDuels &&
+      Array.isArray(prevSnaps) &&
+      prevSnaps.length > 0
+    ) {
+      const validDays = prevSnaps.filter(
+        (day) =>
+          day &&
+          typeof day.realDay === "string" &&
+          day.realDay &&
+          day.duelsComplete === true &&
+          day.duelsTodayByTag &&
+          typeof day.duelsTodayByTag === "object",
+      );
+      if (validDays.length === prevSnaps.length) {
+        const players = members
+          .filter((member) => member?.tag)
+          .map((member) => {
+            const missingDuelsCount = validDays.reduce((sum, day) => {
+              return sum + ((day.duelsTodayByTag[member.tag] ?? 0) > 0 ? 0 : 1);
+            }, 0);
+            if (missingDuelsCount <= 0) return null;
+            return {
+              name: member.name || "",
+              tag: member.tag,
+              role: member.role || "member",
+              missingDuels: missingDuelsCount,
+            };
+          })
+          .filter(Boolean)
+          .sort(
+            (a, b) =>
+              b.missingDuels - a.missingDuels ||
+              a.name.localeCompare(b.name, "fr"),
+          );
+        missingDuels = { players };
+      }
+    }
 
     if (weekSnaps.length) {
       // weekSnaps is expected to be an array of day entries for the current week
@@ -2504,6 +2554,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     isColosseum: currentRace?.periodType === "colosseum",
     topPlayers, // added by computeTopPlayers
     uncomplete, // new list of incomplete deck players
+    missingDuels, // new list of players who missed duels during the last war
     clanWarSummary, // synthèse GDC clan (null hors période de guerre)
     prevWeekId, // identifiant semaine précédente (pour Last War cards)
     snapshotToday, // boolean for backwards compatibility
