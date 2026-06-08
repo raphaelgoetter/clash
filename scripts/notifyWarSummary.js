@@ -287,7 +287,11 @@ function computeMissingDuelsFromSnapshots(
   }
 
   const dayEntries = normalizedDays
-    .map((realDay) => snapshotDays.find((day) => day?.realDay === realDay))
+    .map((realDay) =>
+      snapshotDays.find(
+        (day) => (day?.realDay ?? day?.date) === realDay,
+      ),
+    )
     .filter(Boolean);
   if (dayEntries.length !== normalizedDays.length) return null;
   if (

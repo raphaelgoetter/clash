@@ -1461,15 +1461,17 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       Array.isArray(prevSnaps) &&
       prevSnaps.length > 0
     ) {
-      const validDays = prevSnaps.filter(
-        (day) =>
+      const validDays = prevSnaps.filter((day) => {
+        const realDay = day?.realDay ?? day?.date;
+        return (
           day &&
-          typeof day.realDay === "string" &&
-          day.realDay &&
+          typeof realDay === "string" &&
+          realDay &&
           day.duelsComplete === true &&
           day.duelsTodayByTag &&
-          typeof day.duelsTodayByTag === "object",
-      );
+          typeof day.duelsTodayByTag === "object"
+        );
+      });
       if (validDays.length === prevSnaps.length) {
         const players = members
           .filter((member) => member?.tag)

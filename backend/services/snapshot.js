@@ -1155,6 +1155,7 @@ export async function getSnapshotsForWeek(clanTag, week = null) {
     return {
       week: weekId,
       date: d.realDay,
+      realDay: d.realDay,
       warDay: d.warDay,
       decks: isValidSnapshot(d) ? cleanDecks(d.decks) : {},
       snapshotCount: snapshotCount ?? null,
@@ -1222,6 +1223,7 @@ export async function getSnapshotsForWeeks(clanTag, weeks) {
     return {
       week: weekId,
       date: d.realDay,
+      realDay: d.realDay,
       warDay: d.warDay,
       decks: isValidSnapshot(d) ? cleanDecks(d.decks) : {},
       snapshotCount: snapshotCount ?? null,
