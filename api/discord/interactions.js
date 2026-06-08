@@ -1379,22 +1379,43 @@ export default async function handler(req, res) {
             "",
             "<:victory:1504136468900352070> Top 5 :",
           ];
+          let currentLength = lines.join("\n").length;
+          const pushLine = (line) => {
+            const nextLength = currentLength + line.length + 1;
+            if (nextLength <= 1020) {
+              lines.push(line);
+              currentLength = nextLength;
+              return true;
+            }
+            return false;
+          };
+
           (entry.topPlayers || []).forEach((p, idx) => {
-            lines.push(`${idx + 1}. ${formatPlayerLink(p)}`);
+            pushLine(`${idx + 1}. ${formatPlayerLink(p)}`);
           });
           lines.push("", "<:sweat:1504139431106576405> Sous quota :");
+          currentLength = lines.join("\n").length;
+
           const below = entry.belowQuota || [];
           if (below.length === 0) {
             lines.push("Aucun joueur sous quota.");
           } else {
-            below.slice(0, 10).forEach((p, idx) => {
-              lines.push(`${idx + 1}. ${formatPlayerLink(p)}`);
-            });
-            if (below.length > 10) {
-              lines.push(`... +${below.length - 10} autres`);
+            let shownCount = 0;
+            for (let idx = 0; idx < below.length && shownCount < 10; idx += 1) {
+              const line = `${idx + 1}. ${formatPlayerLink(below[idx])}`;
+              if (!pushLine(line)) break;
+              shownCount += 1;
+            }
+            if (shownCount < below.length) {
+              pushLine(`... +${below.length - shownCount} autres`);
             }
           }
-          return lines.join("\n");
+
+          const result = lines.join("\n");
+          if (result.length > 1020) {
+            return `Moyenne : ${fmt(entry.average)} pts\n<:sweat:1504139431106576405> ${below.length} joueurs sous quota.`;
+          }
+          return result;
         };
 
         fields.push({
