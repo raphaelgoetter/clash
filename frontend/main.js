@@ -2637,8 +2637,7 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
   if (needWarning) {
     if (!existing) {
       const desc = card.querySelector(".card-desc");
-      const html =
-        '<div class="uncomplete-warning">⚠ Some GDC data has not yet been collected</div>';
+      const html = "";
       if (desc) {
         desc.insertAdjacentHTML("afterend", html);
       } else {
@@ -3684,7 +3683,12 @@ function normalizeCollectionRewards(rawLevels) {
   return rawLevels
     .map((level) => {
       // Compat: si le JSON est déjà au format rewards (cl/type), on le garde.
-      if (level && typeof level === "object" && "cl" in level && "type" in level) {
+      if (
+        level &&
+        typeof level === "object" &&
+        "cl" in level &&
+        "type" in level
+      ) {
         return level;
       }
 
@@ -3702,7 +3706,8 @@ function normalizeCollectionRewards(rawLevels) {
       if (level?.Banner) reward.label = String(level.Banner);
 
       const arenaMeta = parseArenaMeta(level?.ChestArena);
-      if (arenaMeta.arenaLevel != null) reward.arenaLevel = arenaMeta.arenaLevel;
+      if (arenaMeta.arenaLevel != null)
+        reward.arenaLevel = arenaMeta.arenaLevel;
       if (arenaMeta.arenaLabel) reward.arenaLabel = arenaMeta.arenaLabel;
 
       return reward;
@@ -3769,9 +3774,9 @@ async function showCollectionModal(col) {
                 ? ` (${isFr ? "Ar\u00e8ne" : "Arena"} ${r.arenaLevel})`
                 : r.arenaLabel
                   ? ` (${isFr ? "Ar\u00e8ne" : "Arena"} ${r.arenaLabel})`
-                : r.label
-                  ? ` "${r.label}"`
-                  : ` \u00d7${r.qty}`;
+                  : r.label
+                    ? ` "${r.label}"`
+                    : ` \u00d7${r.qty}`;
             return `\u2022 CL ${r.cl} \u2014 ${label}${suffix}`;
           })
           .join("\n")
