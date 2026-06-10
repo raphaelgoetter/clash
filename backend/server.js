@@ -10,6 +10,7 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: resolve(__dirname, "../.env") });
 
+import fs from "fs/promises";
 import express from "express";
 import cors from "cors";
 import compression from "compression";
@@ -18,6 +19,7 @@ import clanRoutes, { ALLOWED_CLANS } from "./routes/clan.js";
 import deckRoutes from "./routes/decks.js";
 import discordRoutes from "./routes/discord.js";
 import { clearAll } from "./services/cache.js";
+import { fetchClan, fetchPlayer } from "./services/clashApi.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -49,6 +51,162 @@ app.get("/api/ip", async (_req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+
+const CLAN_META_DESCRIPTION = {
+  Y8JUPC9C: {
+    name: "La Resistance",
+    description:
+      "Clan 1 de la famille Resistance. Top France. Guerre de clan obligatoire",
+  },
+  LRQP20V9: {
+    name: "Les Resistants",
+    description:
+      "Clan 2 de la famille Resistance. Top France. Guerre de clan obligatoire",
+  },
+  QU9UQJRL: {
+    name: "Les Revoltes",
+    description: "Clan 3 de la famille Resistance. Entraînement Guerre de clan",
+  },
+  QUV220GJ: {
+    name: "La Treve",
+    description: "Clan 4 de la famille Resistance. Joueurs en pause",
+  },
+};
+
+function normalizeTag(tag) {
+  return tag?.replace(/^#/, "").toUpperCase() || "";
+}
+function getClanMeta(tag) {
+  return CLAN_META_DESCRIPTION[normalizeTag(tag)] || null;
+}
+function escapeHtml(str = "") {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function buildPageMeta(type, titleName, clanTag) {
+  const clanMeta = getClanMeta(clanTag);
+  const name = titleName || clanMeta?.name || "TrustRoyale";
+  const title =
+    type === "clan"
+      ? `TrustRoyale - Fiabilité du clan : ${name}`
+      : `TrustRoyale - Fiabilité du joueur : ${name}`;
+
+  const description =
+    clanMeta?.description ||
+    (type === "clan"
+      ? `Analyse de la fiabilité du clan ${name}.`
+      : clanTag
+        ? `Analyse de la fiabilité du joueur dans le clan ${name}.`
+        : `Analyse de la fiabilité du joueur ${name}.`);
+
+  return { title, description };
+}
+
+async function loadIndexHtml(req) {
+  const staticUrl = new URL(
+    "/index.html",
+    `${req.headers["x-forwarded-proto"] || req.protocol}://${req.headers.host}`,
+  ).toString();
+
+  if (process.env.VERCEL && req.headers.host) {
+    try {
+      const res = await fetch(staticUrl);
+      if (res.ok) return await res.text();
+      throw new Error(`Static index fetch failed: ${res.status}`);
+    } catch (err) {
+      console.warn("Failed to fetch static index.html from host:", err.message);
+    }
+  }
+
+  const localPath = resolve(__dirname, "../frontend/dist/index.html");
+  return fs.readFile(localPath, "utf8");
+}
+
+function applyMetaToHtml(html, meta, reqUrl) {
+  let rendered = html;
+  rendered = rendered.replace(
+    /<title>[\s\S]*?<\/title>/i,
+    `<title>${escapeHtml(meta.title)}</title>`,
+  );
+  rendered = rendered.replace(
+    /<meta\s+name="description"\s+content="[^"]*"\s*\/?>/i,
+    `<meta name="description" content="${escapeHtml(meta.description)}" />`,
+  );
+  rendered = rendered.replace(
+    /<meta\s+property="og:title"\s+content="[^"]*"\s*\/?>/i,
+    `<meta property="og:title" content="${escapeHtml(meta.title)}" />`,
+  );
+  rendered = rendered.replace(
+    /<meta\s+property="og:description"\s+content="[^"]*"\s*\/?>/i,
+    `<meta property="og:description" content="${escapeHtml(meta.description)}" />`,
+  );
+  rendered = rendered.replace(
+    /<meta\s+name="twitter:title"\s+content="[^"]*"\s*\/?>/i,
+    `<meta name="twitter:title" content="${escapeHtml(meta.title)}" />`,
+  );
+  rendered = rendered.replace(
+    /<meta\s+name="twitter:description"\s+content="[^"]*"\s*\/?>/i,
+    `<meta name="twitter:description" content="${escapeHtml(meta.description)}" />`,
+  );
+  rendered = rendered.replace(
+    /<link\s+rel="canonical"\s+href="[^"]*"\s*\/?>/i,
+    `<link rel="canonical" href="${escapeHtml(reqUrl)}" />`,
+  );
+  rendered = rendered.replace(
+    /<meta\s+property="og:url"\s+content="[^"]*"\s*\/?>/i,
+    `<meta property="og:url" content="${escapeHtml(reqUrl)}" />`,
+  );
+  return rendered;
+}
+
+async function renderDynamicPage(req, res, type) {
+  try {
+    const tag = normalizeTag(req.params.tag);
+    let displayName = null;
+
+    if (type === "clan") {
+      try {
+        const clan = await fetchClan(tag);
+        displayName = clan?.name || getClanMeta(tag)?.name || tag;
+      } catch {
+        displayName = getClanMeta(tag)?.name || tag;
+      }
+    } else {
+      try {
+        const player = await fetchPlayer(tag);
+        displayName = player?.clan?.name || tag;
+      } catch {
+        displayName = tag;
+      }
+    }
+
+    const meta = buildPageMeta(type, displayName, tag);
+    const html = await loadIndexHtml(req);
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(
+      applyMetaToHtml(
+        html,
+        meta,
+        `${req.protocol}://${req.headers.host}${req.originalUrl}`,
+      ),
+    );
+  } catch (err) {
+    console.error("Dynamic page rendering failed:", err);
+    res.status(500).send("Internal Server Error");
+  }
+}
+
+app.get("/:lang(en|fr)/player/:tag", async (req, res) =>
+  renderDynamicPage(req, res, "player"),
+);
+app.get("/:lang(en|fr)/clan/:tag", async (req, res) =>
+  renderDynamicPage(req, res, "clan"),
+);
 
 // ── Debug helper (remove before production) ─────────────────────
 app.get("/api/debug", (_req, res) => {

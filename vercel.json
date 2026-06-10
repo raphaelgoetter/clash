@@ -30,6 +30,8 @@
     { "source": "/bot/", "destination": "/bot/index.html" },
     { "source": "/fr/bot", "destination": "/bot/index.html" },
     { "source": "/fr/bot/", "destination": "/bot/index.html" },
+    { "source": "/(fr|en)/player/:tag", "destination": "/api/index.js" },
+    { "source": "/(fr|en)/clan/:tag", "destination": "/api/index.js" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
