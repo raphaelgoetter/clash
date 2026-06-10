@@ -18,6 +18,8 @@
     "ping-test": "node scripts/ping-test.js",
     "war-summary": "node scripts/notifyWarSummary.js",
     "war-summary:dry": "node scripts/notifyWarSummary.js --dry-run",
+    "pre-war-summary": "node scripts/notifyPreWarSummary.js",
+    "pre-war-summary:dry": "node scripts/notifyPreWarSummary.js --dry-run",
     "cache": "node scripts/refreshClanCache.js",
     "prebuild": "npm run cache",
     "cache:clear": "rm -f frontend/public/clan-cache/*.json",

@@ -502,6 +502,7 @@ Où trouver les données utiles :
 - `members[].reliability` et `members[].verdict` sont des `calculs fiables` par membre ;
 - `membersRaw` contient des données plus brutes, utiles pour le debug ;
 - il n’existe pas de champ canonique `scoreClan` calculé une seule fois et stocké comme vérité métier.
+- pour le résumé pré-GDC hebdo, le script stocke néanmoins un champ `scoreClan` dans `data/pre-gdc-weekly-log.json` afin de suivre l’évolution semaine après semaine.
 
 Comment l’interpréter :
 
