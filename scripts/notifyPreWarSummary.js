@@ -223,8 +223,8 @@ function buildEmbed(clanName, summary, riskValue, inactiveValue) {
       : `<:sweat:1504139431106576405> **À risque :** ${riskValue || "aucun"}`;
   const formattedInactive =
     inactiveValue && inactiveValue.includes("\n")
-      ? `<:eyeclosed:1504138067580158053> **Membres inactifs :**\n${inactiveValue}`
-      : `<:eyeclosed:1504138067580158053> **Membres inactifs :** ${inactiveValue || "aucun"}`;
+      ? `<:eyeclosed:1504138067580158053> **Inactifs :**\n${inactiveValue}`
+      : `<:eyeclosed:1504138067580158053> **Inactifs :** ${inactiveValue || "aucun"}`;
 
   lines.push(formattedRisk, formattedInactive);
 
