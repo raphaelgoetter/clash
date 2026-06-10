@@ -481,6 +481,7 @@ function applyUrlState(mode, tag) {
     searchInput.placeholder = t("searchPlaceholder");
     searchHint.textContent = t("searchHint");
     searchInput.value = tag;
+    updatePageMetadata("player", tag, null);
   } else {
     searchInput.classList.add("hidden");
     clanTagRow.classList.remove("hidden");
@@ -491,9 +492,11 @@ function applyUrlState(mode, tag) {
     if (CLAN_OPTIONS.some((o) => o.tag === tag)) {
       searchSelect.value = tag;
       clanTagInput.value = "";
+      updatePageMetadata("clan", getClanMetaData(tag)?.name, tag);
     } else if (tag) {
       // Tag hors-famille : pré-remplir le champ manuel
       clanTagInput.value = tag;
+      updatePageMetadata("clan", tag, tag);
     }
   }
   // mettre à jour l'état de l'étoile dès qu'on connaît le tag (même sans recherche)
