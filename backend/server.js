@@ -97,12 +97,11 @@ function buildPageMeta(type, titleName, clanTag) {
       : `TrustRoyale - Fiabilité du joueur : ${name}`;
 
   const description =
-    clanMeta?.description ||
-    (type === "clan"
-      ? `Analyse de la fiabilité du clan ${name}.`
-      : clanTag
-        ? `Analyse de la fiabilité du joueur dans le clan ${name}.`
-        : `Analyse de la fiabilité du joueur ${name}.`);
+    type === "clan"
+      ? clanMeta?.description || `Analyse de la fiabilité du clan ${name}.`
+      : clanMeta?.name
+        ? `Analyse de la fiabilité du joueur ${name} dans le clan ${clanMeta.name}.`
+        : `Analyse de la fiabilité du joueur ${name}.`;
 
   return { title, description };
 }
@@ -186,24 +185,28 @@ async function renderDynamicPage(req, res, type) {
   try {
     const tag = normalizeTag(req.params.tag);
     let displayName = null;
+    let metaClanTag = null;
 
     if (type === "clan") {
       try {
         const clan = await fetchClan(tag);
         displayName = clan?.name || getClanMeta(tag)?.name || tag;
+        metaClanTag = tag;
       } catch {
         displayName = getClanMeta(tag)?.name || tag;
+        metaClanTag = tag;
       }
     } else {
       try {
         const player = await fetchPlayer(tag);
-        displayName = player?.clan?.name || tag;
+        displayName = player?.name || tag;
+        metaClanTag = player?.clan?.tag ? normalizeTag(player.clan.tag) : null;
       } catch {
         displayName = tag;
       }
     }
 
-    const meta = buildPageMeta(type, displayName, tag);
+    const meta = buildPageMeta(type, displayName, metaClanTag);
     const html = await loadIndexHtml(req);
     const protocol = req.headers["x-forwarded-proto"] || req.protocol;
     const canonicalUrl = `${protocol}://${req.headers.host}${req.path}`;
