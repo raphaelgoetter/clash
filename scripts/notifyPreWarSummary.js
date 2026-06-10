@@ -71,14 +71,28 @@ function getInactiveMembers(members, now) {
     .sort((a, b) => a.lastSeen.getTime() - b.lastSeen.getTime());
 }
 
+function translateRiskVerdict(verdict) {
+  if (!verdict) return null;
+  const normalized = String(verdict).trim();
+  return (
+    {
+      "High risk": "Risque élevé",
+      "Extreme risk": "Risque extrême",
+      "Low risk": "Risque faible",
+      "High reliability": "Très fiable",
+    }[normalized] ?? normalized
+  );
+}
+
 function getRiskyMembers(members) {
   return members
     .map((member) => {
       const profile = member.profile ?? member;
-      const verdict =
+      const rawVerdict =
         typeof member.verdict === "string"
           ? member.verdict
           : computeMemberReliability(profile).verdict;
+      const verdict = translateRiskVerdict(rawVerdict);
       const score = Number.isFinite(member.reliability)
         ? member.reliability
         : computeMemberReliability(profile).score;
@@ -87,11 +101,18 @@ function getRiskyMembers(members) {
         tag: normalizeTag(profile.tag ?? member.tag ?? ""),
         score,
         verdict,
+        rawVerdict,
       };
     })
     .filter(
       (entry) =>
-        entry.verdict === "High risk" || entry.verdict === "Extreme risk",
+        [
+          "High risk",
+          "Extreme risk",
+          "Risque élevé",
+          "Risque extrême",
+        ].includes(entry.rawVerdict) ||
+        ["Risque élevé", "Risque extrême"].includes(entry.verdict),
     )
     .sort((a, b) => a.score - b.score);
 }
