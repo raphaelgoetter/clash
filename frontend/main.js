@@ -1324,11 +1324,7 @@ function renderPlayerResults(data) {
     ? `https://royaleapi.com/player/${playerTag.replace("#", "")}`
     : null;
 
-  updatePageMetadata(
-    "player",
-    overview.clan?.name || getClanMetaData(overview.clan?.tag)?.name,
-    overview.clan?.tag,
-  );
+  updatePageMetadata("player", overview.name, overview.clan?.tag);
 
   // Ce calcul doit rester synchronisé avec la card historique BattleLog/RaceHistory.
   const hasCompletedWarWeeks = warHistory?.weeks?.some(
