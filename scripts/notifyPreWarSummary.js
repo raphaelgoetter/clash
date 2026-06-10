@@ -164,48 +164,44 @@ async function fetchRankingsByLocation(clans) {
 function buildEmbed(clanName, summary, riskValue, inactiveValue) {
   return {
     title: `Résumé pré-GDC pour ${clanName}`,
-    description: `Résumé automatique hebdomadaire pré-GDC`,
     color: 0x1f8b4c,
     fields: [
       {
-        name: "Membres",
-        value: `${summary.membersCount}/${MAX_CLAN_SIZE}${summary.membersWarning}${summary.membersDelta}`,
-        inline: true,
-      },
-      {
-        name: "Statut du clan",
-        value: `${summary.status}`,
-        inline: true,
-      },
-      {
-        name: "Trophées GDC",
-        value: `${summary.clanWarTrophies}${summary.trophiesDelta}`,
-        inline: true,
-      },
-      {
-        name: "Classement France",
-        value: `${summary.rankLabel}${summary.rankDelta}`,
-        inline: true,
-      },
-      {
-        name: "Fiabilité",
-        value: `${summary.scoreClan}%${summary.scoreClanDelta}`,
-        inline: true,
-      },
-      {
-        name: "Membres risqués",
-        value: riskValue,
+        name: `<:members:1506175789731811399> Membres : ${summary.membersCount}/${MAX_CLAN_SIZE}${summary.membersWarning}${summary.membersDelta}`,
+        value: "\u200b",
         inline: false,
       },
       {
-        name: "Membres inactifs",
-        value: inactiveValue,
+        name: `<:key:1514255039764631662> Statut du clan : ${summary.status}`,
+        value: "\u200b",
+        inline: false,
+      },
+      {
+        name: `<:trophy2:1493677804733337621> Trophées GDC : ${summary.clanWarTrophies}${summary.trophiesDelta}`,
+        value: "\u200b",
+        inline: false,
+      },
+      {
+        name: `<:stats:1499284927894650950> Classement France : ${summary.rankLabel}${summary.rankDelta}`,
+        value: "\u200b",
+        inline: false,
+      },
+      {
+        name: `<:warn:1506174837519945800> Fiabilité : ${summary.scoreClan}%${summary.scoreClanDelta}`,
+        value: "\u200b",
+        inline: false,
+      },
+      {
+        name: `<:sweat:1504139431106576405> À risque :`,
+        value: riskValue || "aucun",
+        inline: false,
+      },
+      {
+        name: `<:eyeclosed:1504138067580158053> Membres inactifs :`,
+        value: inactiveValue || "aucun",
         inline: false,
       },
     ],
-    footer: {
-      text: "TrustRoyale · pré-GDC hebdo",
-    },
   };
 }
 
