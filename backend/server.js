@@ -133,32 +133,50 @@ function applyMetaToHtml(html, meta, reqUrl) {
     /<title>[\s\S]*?<\/title>/i,
     `<title>${escapeHtml(meta.title)}</title>`,
   );
-  rendered = rendered.replace(
-    /<meta\s+name="description"\s+content="[^"]*"\s*\/?>/i,
+
+  const insertAfterTitle = (fragment) => {
+    if (!/<\/title>/i.test(rendered)) return;
+    rendered = rendered.replace(
+      /(<\/title>)/i,
+      `$1
+    ${fragment}`,
+    );
+  };
+
+  const ensureMeta = (regex, fragment) => {
+    if (regex.test(rendered)) {
+      rendered = rendered.replace(regex, fragment);
+    } else {
+      insertAfterTitle(fragment);
+    }
+  };
+
+  ensureMeta(
+    /<meta\s+name="description"\s+content="[^"]*"\s*\/?\s*>/i,
     `<meta name="description" content="${escapeHtml(meta.description)}" />`,
   );
-  rendered = rendered.replace(
-    /<meta\s+property="og:title"\s+content="[^"]*"\s*\/?>/i,
+  ensureMeta(
+    /<meta\s+property="og:title"\s+content="[^"]*"\s*\/?\s*>/i,
     `<meta property="og:title" content="${escapeHtml(meta.title)}" />`,
   );
-  rendered = rendered.replace(
-    /<meta\s+property="og:description"\s+content="[^"]*"\s*\/?>/i,
+  ensureMeta(
+    /<meta\s+property="og:description"\s+content="[^"]*"\s*\/?\s*>/i,
     `<meta property="og:description" content="${escapeHtml(meta.description)}" />`,
   );
-  rendered = rendered.replace(
-    /<meta\s+name="twitter:title"\s+content="[^"]*"\s*\/?>/i,
+  ensureMeta(
+    /<meta\s+name="twitter:title"\s+content="[^"]*"\s*\/?\s*>/i,
     `<meta name="twitter:title" content="${escapeHtml(meta.title)}" />`,
   );
-  rendered = rendered.replace(
-    /<meta\s+name="twitter:description"\s+content="[^"]*"\s*\/?>/i,
+  ensureMeta(
+    /<meta\s+name="twitter:description"\s+content="[^"]*"\s*\/?\s*>/i,
     `<meta name="twitter:description" content="${escapeHtml(meta.description)}" />`,
   );
-  rendered = rendered.replace(
-    /<link\s+rel="canonical"\s+href="[^"]*"\s*\/?>/i,
+  ensureMeta(
+    /<link\s+rel="canonical"\s+href="[^"]*"\s*\/?\s*>/i,
     `<link rel="canonical" href="${escapeHtml(reqUrl)}" />`,
   );
-  rendered = rendered.replace(
-    /<meta\s+property="og:url"\s+content="[^"]*"\s*\/?>/i,
+  ensureMeta(
+    /<meta\s+property="og:url"\s+content="[^"]*"\s*\/?\s*>/i,
     `<meta property="og:url" content="${escapeHtml(reqUrl)}" />`,
   );
   return rendered;
@@ -187,14 +205,10 @@ async function renderDynamicPage(req, res, type) {
 
     const meta = buildPageMeta(type, displayName, tag);
     const html = await loadIndexHtml(req);
+    const protocol = req.headers["x-forwarded-proto"] || req.protocol;
+    const canonicalUrl = `${protocol}://${req.headers.host}${req.path}`;
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.send(
-      applyMetaToHtml(
-        html,
-        meta,
-        `${req.protocol}://${req.headers.host}${req.originalUrl}`,
-      ),
-    );
+    res.send(applyMetaToHtml(html, meta, canonicalUrl));
   } catch (err) {
     console.error("Dynamic page rendering failed:", err);
     res.status(500).send("Internal Server Error");
