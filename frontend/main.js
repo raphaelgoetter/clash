@@ -395,6 +395,27 @@ const CLAN_OPTIONS = [
 ];
 const DEFAULT_TAGS = { player: "#YRGJGR8R", clan: CLAN_OPTIONS[0].tag };
 
+const CLAN_META_DESCRIPTION = {
+  Y8JUPC9C: {
+    name: "La Resistance",
+    description:
+      "Clan 1 de la famille Resistance. Top France. Guerre de clan obligatoire",
+  },
+  LRQP20V9: {
+    name: "Les Resistants",
+    description:
+      "Clan 2 de la famille Resistance. Top France. Guerre de clan obligatoire",
+  },
+  QU9UQJRL: {
+    name: "Les Revoltes",
+    description: "Clan 3 de la famille Resistance. Entraînement Guerre de clan",
+  },
+  QUV220GJ: {
+    name: "La Treve",
+    description: "Clan 4 de la famille Resistance. Joueurs en pause",
+  },
+};
+
 // Clé de stockage des favoris
 const FAV_STORAGE_KEY = "trustroyaleFavs";
 
@@ -402,6 +423,51 @@ const FAV_STORAGE_KEY = "trustroyaleFavs";
 
 // When true, le prochain appel setUrlState utilise replaceState (pas de nouvel entrée dans l'historique)
 let _replaceNextPush = false;
+
+function normalizeClanTag(tag) {
+  return tag?.replace(/^#/, "").toUpperCase() || "";
+}
+
+function getClanMetaData(tag) {
+  return CLAN_META_DESCRIPTION[normalizeClanTag(tag)] || null;
+}
+
+function updatePageMetadata(type, clanName, clanTag) {
+  const normalizedTag = normalizeClanTag(clanTag);
+  const clanMeta = getClanMetaData(normalizedTag);
+  const resolvedName = clanName || clanMeta?.name || "clan";
+  const title =
+    type === "clan"
+      ? `TrustRoyale - Fiabilité du clan : ${resolvedName}`
+      : `TrustRoyale - Fiabilité du joueur : ${resolvedName}`;
+  const description =
+    clanMeta?.description ||
+    (type === "clan"
+      ? `Analyse de la fiabilité du clan ${resolvedName}.`
+      : `Analyse de la fiabilité du joueur ${resolvedName}.`);
+
+  document.title = title;
+  const head = document.head;
+  const metaMap = [
+    { selector: 'meta[name="description"]', attr: "content" },
+    { selector: 'meta[property="og:title"]', attr: "content" },
+    { selector: 'meta[property="og:description"]', attr: "content" },
+    { selector: 'meta[name="twitter:title"]', attr: "content" },
+    { selector: 'meta[name="twitter:description"]', attr: "content" },
+  ];
+
+  for (const { selector, attr } of metaMap) {
+    const el = head.querySelector(selector);
+    if (el)
+      el.setAttribute(attr, selector.includes("title") ? title : description);
+  }
+
+  const pageUrl = `${window.location.origin}${window.location.pathname}`;
+  const canonical = head.querySelector('link[rel="canonical"]');
+  if (canonical) canonical.href = pageUrl;
+  const ogUrl = head.querySelector('meta[property="og:url"]');
+  if (ogUrl) ogUrl.setAttribute("content", pageUrl);
+}
 
 function applyUrlState(mode, tag) {
   currentMode = mode;
@@ -1254,6 +1320,12 @@ function renderPlayerResults(data) {
   const playerLink = playerTag
     ? `https://royaleapi.com/player/${playerTag.replace("#", "")}`
     : null;
+
+  updatePageMetadata(
+    "player",
+    overview.clan?.name || getClanMetaData(overview.clan?.tag)?.name,
+    overview.clan?.tag,
+  );
 
   // Ce calcul doit rester synchronisé avec la card historique BattleLog/RaceHistory.
   const hasCompletedWarWeeks = warHistory?.weeks?.some(
@@ -2980,6 +3052,12 @@ function renderClanOverview(data) {
   const isLite = !!data.isLite;
   activeClanTag = clan?.tag || null;
   currentClanIsLite = isLite;
+
+  updatePageMetadata(
+    "clan",
+    clan?.name || getClanMetaData(clan?.tag)?.name,
+    clan?.tag,
+  );
 
   // Notice clan hors-famille
   if (clanLiteNotice) {
