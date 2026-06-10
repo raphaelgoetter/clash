@@ -101,6 +101,32 @@ function getPlayerUrl(tag) {
   return `https://trustroyale.vercel.app/fr/player/${normalized}`;
 }
 
+function migrateLog(log) {
+  const migrated = {};
+  for (const [clanTag, entry] of Object.entries(log)) {
+    if (entry && typeof entry === "object" && entry.current) {
+      migrated[clanTag] = entry;
+      continue;
+    }
+    const scoreClan = Number.isFinite(entry?.scoreClan)
+      ? entry.scoreClan
+      : Number.isFinite(entry?.reliabilityPercent)
+        ? entry.reliabilityPercent
+        : null;
+    migrated[clanTag] = {
+      current: {
+        date: entry?.date ?? null,
+        membersCount: entry?.membersCount ?? null,
+        clanWarTrophies: entry?.clanWarTrophies ?? null,
+        rank: entry?.rank ?? null,
+        scoreClan,
+      },
+      baseline: null,
+    };
+  }
+  return migrated;
+}
+
 function formatList(entries, max = 10) {
   if (!entries.length) return "aucun";
   if (entries.length > max) return `${entries.length} membres`;
@@ -162,46 +188,22 @@ async function fetchRankingsByLocation(clans) {
 }
 
 function buildEmbed(clanName, summary, riskValue, inactiveValue) {
+  const lines = [
+    `<:members:1506175789731811399> Membres : ${summary.membersCount}/${MAX_CLAN_SIZE}${summary.membersWarning}${summary.membersDelta}`,
+    `<:key:1514255039764631662> Statut du clan : ${summary.status}`,
+    `<:trophy2:1493677804733337621> Trophées GDC : ${summary.clanWarTrophies}${summary.trophiesDelta}`,
+    `<:stats:1499284927894650950> Classement France : ${summary.rankLabel}${summary.rankDelta}`,
+    `<:warn:1506174837519945800> Fiabilité : ${summary.scoreClan}%${summary.scoreClanDelta}`,
+    `<:sweat:1504139431106576405> À risque :`,
+    riskValue || "aucun",
+    `<:eyeclosed:1504138067580158053> Membres inactifs :`,
+    inactiveValue || "aucun",
+  ];
+
   return {
     title: `Résumé pré-GDC pour ${clanName}`,
     color: 0x1f8b4c,
-    fields: [
-      {
-        name: `<:members:1506175789731811399> Membres : ${summary.membersCount}/${MAX_CLAN_SIZE}${summary.membersWarning}${summary.membersDelta}`,
-        value: "\u200b",
-        inline: false,
-      },
-      {
-        name: `<:key:1514255039764631662> Statut du clan : ${summary.status}`,
-        value: "\u200b",
-        inline: false,
-      },
-      {
-        name: `<:trophy2:1493677804733337621> Trophées GDC : ${summary.clanWarTrophies}${summary.trophiesDelta}`,
-        value: "\u200b",
-        inline: false,
-      },
-      {
-        name: `<:stats:1499284927894650950> Classement France : ${summary.rankLabel}${summary.rankDelta}`,
-        value: "\u200b",
-        inline: false,
-      },
-      {
-        name: `<:warn:1506174837519945800> Fiabilité : ${summary.scoreClan}%${summary.scoreClanDelta}`,
-        value: "\u200b",
-        inline: false,
-      },
-      {
-        name: `<:sweat:1504139431106576405> À risque :`,
-        value: riskValue || "aucun",
-        inline: false,
-      },
-      {
-        name: `<:eyeclosed:1504138067580158053> Membres inactifs :`,
-        value: inactiveValue || "aucun",
-        inline: false,
-      },
-    ],
+    description: lines.join("\n"),
   };
 }
 
@@ -234,7 +236,8 @@ async function main() {
   }
 
   const now = new Date();
-  const previousLog = await readJson(LOG_FILE, {});
+  const previousRawLog = await readJson(LOG_FILE, {});
+  const previousLog = migrateLog(previousRawLog);
   const clans = [];
 
   for (const clanTag of CLAN_TAGS) {
@@ -262,7 +265,8 @@ async function main() {
         ? cache.members
         : Object.values(membersRaw);
 
-    const previous = previousLog[clanTag] ?? {};
+    const previousEntry = previousLog[clanTag]?.current ?? null;
+    const previousBaseline = previousLog[clanTag]?.baseline ?? null;
     const membersCount = Number.isFinite(cache.members)
       ? cache.members
       : memberEntries.length;
@@ -303,14 +307,30 @@ async function main() {
             reliabilityScores.length,
         )
       : 0;
-    const previousScore = Number.isFinite(previous.scoreClan)
-      ? previous.scoreClan
-      : Number.isFinite(previous.reliabilityPercent)
-        ? previous.reliabilityPercent
+
+    const previousScore = Number.isFinite(previousBaseline?.scoreClan)
+      ? previousBaseline.scoreClan
+      : previousEntry && previousEntry.date
+        ? null
         : null;
+
+    const baselineScore = Number.isFinite(previousBaseline?.scoreClan)
+      ? previousBaseline.scoreClan
+      : null;
+
+    const scoreClanDelta = formatDelta(scoreClan, baselineScore);
 
     const riskMembers = getRiskyMembers(memberEntries);
     const inactiveMembers = getInactiveMembers(memberEntries, now);
+
+    const baseline =
+      previousBaseline ??
+      (previousEntry &&
+      previousEntry.date &&
+      now.getTime() - parseClashDate(previousEntry.date).getTime() >=
+        6 * MS_PER_DAY
+        ? previousEntry
+        : null);
 
     const summary = {
       membersCount,
@@ -320,10 +340,10 @@ async function main() {
       rankLabel,
       scoreClan,
       membersWarning: membersCount <= 45 ? " ⚠️" : "",
-      membersDelta: formatDelta(membersCount, previous.membersCount),
-      trophiesDelta: formatDelta(clanWarTrophies, previous.clanWarTrophies),
-      rankDelta: getRankDelta(rank, previous.rank),
-      scoreClanDelta: formatDelta(scoreClan, previousScore),
+      membersDelta: formatDelta(membersCount, baseline?.membersCount),
+      trophiesDelta: formatDelta(clanWarTrophies, baseline?.clanWarTrophies),
+      rankDelta: getRankDelta(rank, baseline?.rank),
+      scoreClanDelta: formatDelta(scoreClan, baseline?.scoreClan),
     };
 
     const riskValue = formatList(riskMembers, 10);
@@ -343,11 +363,21 @@ async function main() {
     sentCount += 1;
 
     newLog[clanTag] = {
-      date: now.toISOString(),
-      membersCount,
-      clanWarTrophies,
-      rank: rank ?? null,
-      scoreClan,
+      current: {
+        date: now.toISOString(),
+        membersCount,
+        clanWarTrophies,
+        rank: rank ?? null,
+        scoreClan,
+      },
+      baseline:
+        previousBaseline ??
+        (previousEntry &&
+        previousEntry.date &&
+        now.getTime() - parseClashDate(previousEntry.date).getTime() >=
+          6 * MS_PER_DAY
+          ? previousEntry
+          : null),
     };
   }
 
