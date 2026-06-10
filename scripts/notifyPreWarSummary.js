@@ -189,16 +189,23 @@ async function fetchRankingsByLocation(clans) {
 
 function buildEmbed(clanName, summary, riskValue, inactiveValue) {
   const lines = [
-    `<:members:1506175789731811399> Membres : ${summary.membersCount}/${MAX_CLAN_SIZE}${summary.membersWarning}${summary.membersDelta}`,
-    `<:key:1514255039764631662> Statut du clan : ${summary.status}`,
-    `<:trophy2:1493677804733337621> Trophées GDC : ${summary.clanWarTrophies}${summary.trophiesDelta}`,
-    `<:stats:1499284927894650950> Classement France : ${summary.rankLabel}${summary.rankDelta}`,
-    `<:warn:1506174837519945800> Fiabilité : ${summary.scoreClan}%${summary.scoreClanDelta}`,
-    `<:sweat:1504139431106576405> À risque :`,
-    riskValue || "aucun",
-    `<:eyeclosed:1504138067580158053> Membres inactifs :`,
-    inactiveValue || "aucun",
+    `<:members:1506175789731811399> **Membres :** ${summary.membersCount}/${MAX_CLAN_SIZE}${summary.membersWarning}${summary.membersDelta}`,
+    `<:key:1514255039764631662> **Statut du clan :** ${summary.status}`,
+    `<:trophy2:1493677804733337621> **Trophées GDC :** ${summary.clanWarTrophies}${summary.trophiesDelta}`,
+    `<:stats:1499284927894650950> **Classement France :** ${summary.rankLabel}${summary.rankDelta}`,
+    `<:warn:1506174837519945800> **Fiabilité :** ${summary.scoreClan}%${summary.scoreClanDelta}`,
   ];
+
+  const formattedRisk =
+    riskValue && riskValue.includes("\n")
+      ? `<:sweat:1504139431106576405> **À risque :**\n${riskValue}`
+      : `<:sweat:1504139431106576405> **À risque :** ${riskValue || "aucun"}`;
+  const formattedInactive =
+    inactiveValue && inactiveValue.includes("\n")
+      ? `<:eyeclosed:1504138067580158053> **Membres inactifs :**\n${inactiveValue}`
+      : `<:eyeclosed:1504138067580158053> **Membres inactifs :** ${inactiveValue || "aucun"}`;
+
+  lines.push(formattedRisk, formattedInactive);
 
   return {
     title: `Résumé pré-GDC pour ${clanName}`,
