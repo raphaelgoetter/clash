@@ -4464,7 +4464,7 @@ export default async function handler(req, res) {
           }
 
           return {
-            title: `${clanResult.name} | #${clanResult.tag}`,
+            title: `<:laresistance:1514545454527025182> ${clanResult.name} | #${clanResult.tag}`,
             url: trustClanUrl(clanResult.tag),
             description: clanResult.description,
             color: 0x5865f2,

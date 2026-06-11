@@ -3060,7 +3060,11 @@ function renderClanOverview(data) {
 
   // Notice clan hors-famille
   if (clanLiteNotice) {
-    clanLiteNotice.textContent = t("clanLiteNotice");
+    const clanTagNoHash = String(clanTag || "").replace(/^#/, "");
+    const isTreve = clanTagNoHash.toUpperCase() === "QUV220GJ";
+    clanLiteNotice.textContent = isTreve
+      ? t("clanLiteNoticeTreve")
+      : t("clanLiteNotice");
     clanLiteNotice.classList.toggle("hidden", !isLite);
   }
 
