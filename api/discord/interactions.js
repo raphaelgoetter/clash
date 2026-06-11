@@ -155,9 +155,38 @@ const trustPlayerUrl = (tag) =>
   `${TRUST_ROYALE_URL}/fr/player/${String(tag).replace(/^#/, "")}`;
 const trustClanUrl = (tag) =>
   `${TRUST_ROYALE_URL}/fr/clan/${String(tag).replace(/^#/, "")}`;
-const FAMILY_CLAN_TAGS = new Set(["#Y8JUPC9C", "#LRQP20V9", "#QU9UQJRL"]);
+const ALLOWED_CLAN_TAGS = new Set(["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"]);
+const FAMILY_CLAN_TAGS = new Set([...ALLOWED_CLAN_TAGS, "QUV220GJ"]);
 const RESISTANTS_CLAN_TAG = "#LRQP20V9";
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+const LEAGUE_ICON_SPECIFIC = {
+  "Or 2": "<:gold2:1506200349424488448>",
+  "Légendaire 1": "<:leg1:1506200350250762311>",
+  "Légendaire 2": "<:leg2:1506200352372822016>",
+};
+const LEAGUE_ICON_GENERIC = {
+  "Bronze 1": "<:bronze:1506201933331824721>",
+  "Bronze 2": "<:bronze:1506201933331824721>",
+  "Bronze 3": "<:bronze:1506201933331824721>",
+  "Argent 1": "<:silver:1506201931922800730>",
+  "Argent 2": "<:silver:1506201931922800730>",
+  "Argent 3": "<:silver:1506201931922800730>",
+  "Or 1": "<:gold:1506201934477004880>",
+  "Or 2": "<:gold:1506201934477004880>",
+  "Or 3": "<:gold:1506201934477004880>",
+  "Légendaire 1": "<:legendary1:1506218399498244166>",
+  "Légendaire 2": "<:legendary2:1506217437601992734>",
+  "Légendaire 3": "<:legendary3:1506218625508573225>",
+};
+
+function warLeagueLabel(trophies, isFamilyClan = false) {
+  const label = getLeagueName(trophies ?? 0, "fr") ?? "Bronze 1";
+  const icon = isFamilyClan
+    ? (LEAGUE_ICON_SPECIFIC[label] ?? LEAGUE_ICON_GENERIC[label])
+    : LEAGUE_ICON_GENERIC[label];
+  return icon ? `${icon} ${label}` : label;
+}
 const TAG_AUTOCOMPLETE_COMMANDS = new Set(["trust", "stats", "collection"]);
 const TAG_NAME_CACHE_TTL = 6 * 60 * 60 * 1000;
 const tagNameCache = new Map();
@@ -1045,6 +1074,9 @@ export default async function handler(req, res) {
             "**Compare**\n" +
             "Commande : `/compare clan:N`\n" +
             "Usage : compare les 5 clans du groupe GDC\n\n" +
+            "**Family**\n" +
+            "Commande : `/family`\n" +
+            "Usage : affiche un résumé des clans de la famille\n\n" +
             "**Clan**\n" +
             "Commande : `/clan clan:N|tag:#TAG`\n" +
             "Usage : affiche la fiche récapitulative d'un clan (famille ou tag libre)\n\n" +
@@ -3992,7 +4024,6 @@ export default async function handler(req, res) {
       2: { name: "Les Resistants", tag: "LRQP20V9" },
       3: { name: "Les Revoltes", tag: "QU9UQJRL" },
     };
-    const FAMILY_TAGS = new Set(["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"]);
 
     let resolved;
     if (tagOpt) {
@@ -4002,15 +4033,19 @@ export default async function handler(req, res) {
       const clanVal = (clanOpt.value || "1").toString().trim();
       resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
     }
-    const isFamilyClan = FAMILY_TAGS.has(resolved.tag.toUpperCase());
+    const isFamilyClan = ALLOWED_CLAN_TAGS.has(resolved.tag.toUpperCase());
 
     res.status(200).json({ type: 5 });
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
 
     runBackground(async () => {
       try {
-        const analysisEndpoint = `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis?fast=true&includeRaceGroup=false`;
-        const liteEndpoint = `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/lite`;
+        const analysisEndpoint = `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(
+          resolved.tag,
+        )}/analysis?fast=true&includeRaceGroup=false`;
+        const liteEndpoint = `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(
+          resolved.tag,
+        )}/lite`;
 
         async function fetchJsonWithTimeout(endpoint, timeoutMs) {
           const abortCtrl = new AbortController();
@@ -4320,6 +4355,143 @@ export default async function handler(req, res) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ embeds: [embed] }),
+        });
+      } catch (err) {
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur : ${err.message}`,
+            flags: 64,
+          }),
+        });
+      }
+    });
+    return;
+  }
+
+  if (body.type === 2 && body.data?.name === "family") {
+    const familyClanDefs = [
+      { name: "La Resistance", tag: "Y8JUPC9C" },
+      { name: "Les Resistants", tag: "LRQP20V9" },
+      { name: "Les Revoltes", tag: "QU9UQJRL" },
+      { name: "La Treve", tag: "QUV220GJ" },
+    ];
+
+    res.status(200).json({ type: 5 });
+    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+
+    runBackground(async () => {
+      try {
+        async function fetchJsonWithTimeout(endpoint, timeoutMs) {
+          const abortCtrl = new AbortController();
+          const abortTimer = setTimeout(() => abortCtrl.abort(), timeoutMs);
+          try {
+            const response = await fetch(endpoint, {
+              headers: { Accept: "application/json" },
+              signal: abortCtrl.signal,
+            });
+            return response;
+          } finally {
+            clearTimeout(abortTimer);
+          }
+        }
+
+        const clanResults = await mapWithConcurrency(
+          familyClanDefs,
+          4,
+          async ({ name, tag }) => {
+            const analysisEndpoint = `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(
+              tag,
+            )}/analysis?fast=true&includeRaceGroup=false`;
+            const liteEndpoint = `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(
+              tag,
+            )}/lite`;
+            const isAllowed = ALLOWED_CLAN_TAGS.has(tag.toUpperCase());
+            let apiResp = null;
+            let usedLiteFallback = false;
+
+            if (isAllowed) {
+              try {
+                apiResp = await fetchJsonWithTimeout(analysisEndpoint, 12000);
+              } catch (err) {
+                usedLiteFallback = true;
+              }
+              if (!apiResp || !apiResp.ok) {
+                try {
+                  apiResp = await fetchJsonWithTimeout(liteEndpoint, 12000);
+                } catch (err) {
+                  apiResp = null;
+                }
+              }
+            } else {
+              try {
+                apiResp = await fetchJsonWithTimeout(liteEndpoint, 12000);
+              } catch (err) {
+                apiResp = null;
+              }
+            }
+
+            if (!apiResp || !apiResp.ok) {
+              return {
+                name,
+                tag,
+                error: `Impossible de charger les données du clan ${name} (${tag}).`,
+              };
+            }
+
+            const analysis = await apiResp.json();
+            const clan = analysis.clan || {};
+            return {
+              name: clan.name || name,
+              tag,
+              description: clan.description || "",
+              members: clan.members ?? clan.memberCount ?? "—",
+              clanWarTrophies: clan.clanWarTrophies ?? 0,
+              isFamilyClan: true,
+              usedLiteFallback,
+            };
+          },
+        );
+
+        const embeds = clanResults.map((clanResult) => {
+          if (clanResult.error) {
+            return {
+              title: `${clanResult.name} | #${clanResult.tag}`,
+              description: clanResult.error,
+              color: 0xe74c3c,
+            };
+          }
+
+          return {
+            title: `${clanResult.name} | #${clanResult.tag}`,
+            url: trustClanUrl(clanResult.tag),
+            description: clanResult.description,
+            color: 0x5865f2,
+            fields: [
+              {
+                name: "Membres",
+                value: `<:members:1506175789731811399> ${clanResult.members}`,
+                inline: true,
+              },
+              {
+                name: "Trophées GDC",
+                value: `<:trophy2:1493677804733337621> ${clanResult.clanWarTrophies}`,
+                inline: true,
+              },
+              {
+                name: "Ligue",
+                value: warLeagueLabel(clanResult.clanWarTrophies, true),
+                inline: true,
+              },
+            ],
+          };
+        });
+
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ embeds }),
         });
       } catch (err) {
         await fetch(webhookUrl, {

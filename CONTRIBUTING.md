@@ -470,6 +470,8 @@ Valeurs actuelles :
 - `LRQP20V9`
 - `QU9UQJRL`
 
+> Note : la famille comporte désormais aussi le clan **La Treve** (`QUV220GJ`) pour les résumés `/family` et la vue collective, mais il n'est pas inclus dans `ALLOWED_CLANS` car il ne reçoit pas l'analyse complète de clan.
+
 ### Famille
 
 Ensemble des clans autorisés considérés comme un même périmètre métier pour l’historique et certaines règles de continuité.

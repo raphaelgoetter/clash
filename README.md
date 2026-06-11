@@ -46,7 +46,8 @@ Liste des commandes :
 9. **`/demote`** : liste les joueurs n’ayant pas fait tous leurs combats GDC la semaine précédente. Options : `clan:N`
 10. **`/discord-link`** : lie son compte Clash à son Discord. Options : `tag:#TAG` (tag2 et tag3 optionnels pour comptes multiples)
 11. **`/discord-check`** : vérifie quels membres d'un clan sont présents sur le serveur Discord. Options : `clan:N`
-12. **`/clan`** : affiche la fiche récapitulative d'un clan (membres, trophées GDC, ligue, statut, fiabilité). Options : `clan:N` ou `tag:#TAG`
+12. **`/family`** : affiche un résumé des clans de la famille. Options : aucune
+13. **`/clan`** : affiche la fiche récapitulative d'un clan (membres, trophées GDC, ligue, statut, fiabilité). Options : `clan:N` ou `tag:#TAG`
 
 > Remarque : l'installation de ce bot n'est réalisable que par displaynone.
 

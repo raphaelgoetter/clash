@@ -321,6 +321,11 @@ const commands = [
     ],
   },
   {
+    name: "family",
+    description: "Affiche un résumé des clans de la famille.",
+    options: [],
+  },
+  {
     name: "chelem",
     description:
       "Liste les joueurs ayant fait 16/16 decks chaque semaine d’une saison donnée.",
