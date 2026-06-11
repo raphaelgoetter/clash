@@ -60,6 +60,8 @@ export function renderRaceGroupCard(data, t, timerHelper) {
   const _calendarIsWar = _dow === 0 || _dow >= 4;
   const isWarPeriod = _calendarIsWar && data.isWarPeriod === true;
   const isColosseum = data.isColosseum === true;
+  const warDayIndex = data.clanWarSummary?.daysFromThu ?? 0;
+  const showEngagement = isWarPeriod && warDayIndex > 0;
 
   // Masquer la card si pas de données
   if (!Array.isArray(raceGroup) || raceGroup.length === 0) {
@@ -148,8 +150,7 @@ export function renderRaceGroupCard(data, t, timerHelper) {
         const tooltipText = t("warGroupDecksTooltip")
           .replace("{{decks}}", decksTodayVal)
           .replace("{{target}}", targetVal);
-        decksNowHtml = `
-        <td class="war-group-engagement" title="${engagementTooltip}">${engagementVal}</td>
+        decksNowHtml = `${showEngagement ? `<td class="war-group-engagement" title="${engagementTooltip}">${engagementVal}</td>` : ""}
         <td class="war-group-decks-now" title="${tooltipText}">
           <div class="wg-pbar-track">
             <div class="wg-pbar-fill wg-pbar-current" style="width: ${currentPct}%"></div>
@@ -220,7 +221,7 @@ export function renderRaceGroupCard(data, t, timerHelper) {
         ${!isWarPeriod ? `<th class="war-group-trophies">${t("labelWarTrophies")}</th>` : ""}
         ${!isWarPeriod ? `<th class="war-group-prev-war">${t("warGroupPrevWar")}</th>` : ""}
         ${!isWarPeriod ? `<th class="war-group-last-war">${t("warGroupLastWar")}</th>` : ""}
-        ${isWarPeriod ? `<th class="war-group-engagement">${t("warGroupEngagement")}</th>` : ""}
+        ${showEngagement ? `<th class="war-group-engagement">${t("warGroupEngagement")}</th>` : ""}
         ${isWarPeriod ? `<th class="war-group-decks-now">${t("warGroupDecksToday")} <span>${timerHelper(data.clan?.warResetUtcMinutes)}</span></th>` : ""}
         ${isWarPeriod ? `<th class="war-group-current-pts">${isColosseum ? t("warGroupCurrentPtsColosseum") : t("warGroupCurrentPts")}</th>` : ""}
         ${isWarPeriod ? `<th class="war-group-avg-pts">${t("warGroupPtsPerDeck")}</th>` : ""}

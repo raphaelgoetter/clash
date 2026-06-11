@@ -2791,13 +2791,15 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 rosterSize,
               };
               participationGdcEstimee.ratio =
-                participationGdcEstimee.rosterSize > 0
-                  ? Math.min(
-                      participationGdcEstimee.activeMembers /
-                        participationGdcEstimee.rosterSize,
-                      1,
-                    )
-                  : null;
+                warDayIndex === 0
+                  ? null
+                  : participationGdcEstimee.rosterSize > 0
+                    ? Math.min(
+                        participationGdcEstimee.activeMembers /
+                          participationGdcEstimee.rosterSize,
+                        1,
+                      )
+                    : null;
               // Pace extrapolée (commune à tous les clans — même reset dans un groupe GDC).
               // Seuil de 5 % (~72 min) pour éviter une extrapolation explosive en tout début de journée.
               const _resetOffsetMs = warResetOffsetMs(clanTag);
@@ -2811,7 +2813,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
               const practicalMaxDecksToday = Math.min(
                 200,
-                participationGdcEstimee.activeMembers * 4,
+                (warDayIndex === 0
+                  ? participationGdcEstimee.rosterSize
+                  : participationGdcEstimee.activeMembers) * 4,
               );
 
               const remainingDecksToday = Math.max(
