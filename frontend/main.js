@@ -3051,6 +3051,7 @@ function renderClanOverview(data) {
   const isLite = !!data.isLite;
   activeClanTag = clan?.tag || null;
   currentClanIsLite = isLite;
+  const currentClanTag = clan.tag ?? null;
 
   updatePageMetadata(
     "clan",
@@ -3060,7 +3061,7 @@ function renderClanOverview(data) {
 
   // Notice clan hors-famille
   if (clanLiteNotice) {
-    const clanTagNoHash = String(clanTag || "").replace(/^#/, "");
+    const clanTagNoHash = String(currentClanTag || "").replace(/^#/, "");
     const isTreve = clanTagNoHash.toUpperCase() === "QUV220GJ";
     clanLiteNotice.textContent = isTreve
       ? t("clanLiteNoticeTreve")
