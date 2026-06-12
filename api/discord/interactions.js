@@ -325,6 +325,33 @@ async function buildLateTimingTagsByPlayer(playerTags) {
   return byTag;
 }
 
+function buildLateSummary(participants, currentMembers, maxSlots = 50) {
+  const currentMemberTags = new Set(currentMembers.map((m) => m.tag));
+  const currentMemberByTag = new Map(
+    currentMembers.map((m) => [(m.tag || "").toUpperCase(), m]),
+  );
+  const currentParticipants = participants.filter((p) =>
+    currentMemberTags.has(p.tag),
+  );
+  const totalPlayed = participants.reduce(
+    (sum, p) => sum + (p.decksUsedToday ?? 0),
+    0,
+  );
+  const slotsOccupied = participants.filter(
+    (p) => (p.decksUsedToday ?? 0) > 0,
+  ).length;
+  const slotsAvailable = Math.max(0, maxSlots - slotsOccupied);
+
+  return {
+    currentMemberTags,
+    currentMemberByTag,
+    currentParticipants,
+    totalPlayed,
+    slotsOccupied,
+    slotsAvailable,
+  };
+}
+
 function parseBattleTimestamp(value) {
   if (!value) return null;
   const d = new Date(value);
@@ -2874,11 +2901,14 @@ export default async function handler(req, res) {
           // ignore, annotations sont facultatives
         }
 
-        // Seuls les membres actuellement dans le clan (les anciens membres ex-participants sont exclus)
-        const currentMemberTags = new Set(currentMembers.map((m) => m.tag));
-        const currentMemberByTag = new Map(
-          currentMembers.map((m) => [(m.tag || "").toUpperCase(), m]),
-        );
+        const {
+          currentMemberTags,
+          currentMemberByTag,
+          currentParticipants,
+          totalPlayed,
+          slotsOccupied,
+          slotsAvailable,
+        } = buildLateSummary(participants, currentMembers);
 
         // Joueurs en retard : membres actuels qui n'ont pas encore joué leurs 4 decks du jour
         const late = participants
@@ -2932,14 +2962,8 @@ export default async function handler(req, res) {
         };
         const warDayLabel = WAR_DAY_LABELS[p.getDay()] ?? "Jour de GDC";
 
-        // Decks déjà joués aujourd'hui par les membres actuels
-        const currentParticipants = participants.filter((p) =>
-          currentMemberTags.has(p.tag),
-        );
-        const totalPlayed = currentParticipants.reduce(
-          (sum, pl) => sum + (pl.decksUsedToday ?? 0),
-          0,
-        );
+        // Decks déjà joués aujourd'hui par tous les participants de la course
+        // et slots occupés par ceux qui ont déjà joué au moins un combat.
 
         // Points du jour uniquement pour GDC classique (warDay).
         // Après le reset (msOfDayUtc >= resetUtcMs) : p.fame est déjà remis à zéro
@@ -3043,11 +3067,18 @@ export default async function handler(req, res) {
         const descLines = [
           lateHeader,
           `- ${totalPlayed} deck${totalPlayed > 1 ? "s" : ""} joué${totalPlayed > 1 ? "s" : ""}`,
+          `- ${slotsOccupied} slots occupés`,
+          `- ${slotsAvailable} slots disponibles`,
         ];
         if (late.length > 0) {
           descLines.push(
             `- ${totalMissing} deck${totalMissing > 1 ? "s" : ""} manquant${totalMissing > 1 ? "s" : ""}`,
           );
+          if (slotsAvailable === 0) {
+            descLines.push(
+              `- ${totalMissing} deck${totalMissing > 1 ? "s" : ""} perdus`,
+            );
+          }
         }
         if (totalBoatAttacks > 0) {
           descLines.push(
@@ -3233,10 +3264,14 @@ export default async function handler(req, res) {
           // ignore, annotations sont facultatives
         }
 
-        const currentMemberTags = new Set(currentMembers.map((m) => m.tag));
-        const currentMemberByTag = new Map(
-          currentMembers.map((m) => [(m.tag || "").toUpperCase(), m]),
-        );
+        const {
+          currentMemberTags,
+          currentMemberByTag,
+          currentParticipants,
+          totalPlayed,
+          slotsOccupied,
+          slotsAvailable,
+        } = buildLateSummary(participants, currentMembers);
 
         const late = participants
           .filter(
@@ -3287,13 +3322,14 @@ export default async function handler(req, res) {
         };
         const warDayLabel = WAR_DAY_LABELS[p.getDay()] ?? "Jour de GDC";
 
-        const currentParticipants = participants.filter((p) =>
-          currentMemberTags.has(p.tag),
-        );
-        const totalPlayed = currentParticipants.reduce(
-          (sum, pl) => sum + (pl.decksUsedToday ?? 0),
-          0,
-        );
+        const {
+          currentMemberTags,
+          currentMemberByTag,
+          currentParticipants,
+          totalPlayed,
+          slotsOccupied,
+          slotsAvailable,
+        } = buildLateSummary(participants, currentMembers);
 
         const isAfterReset = msOfDayUtc >= resetUtcMs;
         const prevCumulByTag = new Map();
@@ -3378,11 +3414,18 @@ export default async function handler(req, res) {
         const descLines = [
           lateHeader,
           `- ${totalPlayed} deck${totalPlayed > 1 ? "s" : ""} joué${totalPlayed > 1 ? "s" : ""}`,
+          `- ${slotsOccupied} slots occupés`,
+          `- ${slotsAvailable} slots disponibles`,
         ];
         if (late.length > 0) {
           descLines.push(
             `- ${totalMissing} deck${totalMissing > 1 ? "s" : ""} manquant${totalMissing > 1 ? "s" : ""}`,
           );
+          if (slotsAvailable === 0) {
+            descLines.push(
+              `- ${totalMissing} deck${totalMissing > 1 ? "s" : ""} perdus`,
+            );
+          }
         }
         if (totalBoatAttacks > 0) {
           descLines.push(
