@@ -2757,6 +2757,15 @@ export default async function handler(req, res) {
           currentMembers.map((m) => [(m.tag || "").toUpperCase(), m]),
         );
 
+        const totalPlayed = participants.reduce(
+          (sum, pl) => sum + (pl.decksUsedToday ?? 0),
+          0,
+        );
+        const slotsOccupied = participants.filter(
+          (pl) => (pl.decksUsedToday ?? 0) > 0,
+        ).length;
+        const slotsAvailable = Math.max(0, 50 - slotsOccupied);
+
         // Joueurs en retard : membres actuels qui n'ont pas encore joué leurs 4 decks du jour
         const late = participants
           .filter(
@@ -2808,15 +2817,6 @@ export default async function handler(req, res) {
           0: "Dimanche (J4)",
         };
         const warDayLabel = WAR_DAY_LABELS[p.getDay()] ?? "Jour de GDC";
-
-        // Decks déjà joués aujourd'hui par les membres actuels
-        const currentParticipants = participants.filter((p) =>
-          currentMemberTags.has(p.tag),
-        );
-        const totalPlayed = currentParticipants.reduce(
-          (sum, pl) => sum + (pl.decksUsedToday ?? 0),
-          0,
-        );
 
         // Points du jour uniquement pour GDC classique (warDay).
         // Après le reset (msOfDayUtc >= resetUtcMs) : p.fame est déjà remis à zéro
@@ -2920,11 +2920,18 @@ export default async function handler(req, res) {
         const descLines = [
           lateHeader,
           `- ${totalPlayed} deck${totalPlayed > 1 ? "s" : ""} joué${totalPlayed > 1 ? "s" : ""}`,
+          `- ${slotsOccupied} slots occupés`,
+          `- ${slotsAvailable} slots disponibles`,
         ];
         if (late.length > 0) {
           descLines.push(
             `- ${totalMissing} deck${totalMissing > 1 ? "s" : ""} manquant${totalMissing > 1 ? "s" : ""}`,
           );
+          if (slotsAvailable === 0) {
+            descLines.push(
+              `- ${totalMissing} deck${totalMissing > 1 ? "s" : ""} perdus`,
+            );
+          }
         }
         if (totalBoatAttacks > 0) {
           descLines.push(
@@ -3115,6 +3122,15 @@ export default async function handler(req, res) {
           currentMembers.map((m) => [(m.tag || "").toUpperCase(), m]),
         );
 
+        const totalPlayed = participants.reduce(
+          (sum, pl) => sum + (pl.decksUsedToday ?? 0),
+          0,
+        );
+        const slotsOccupied = participants.filter(
+          (pl) => (pl.decksUsedToday ?? 0) > 0,
+        ).length;
+        const slotsAvailable = Math.max(0, 50 - slotsOccupied);
+
         const late = participants
           .filter(
             (p) => currentMemberTags.has(p.tag) && (p.decksUsedToday ?? 0) < 4,
@@ -3163,14 +3179,6 @@ export default async function handler(req, res) {
           0: "Dimanche (J4)",
         };
         const warDayLabel = WAR_DAY_LABELS[p.getDay()] ?? "Jour de GDC";
-
-        const currentParticipants = participants.filter((p) =>
-          currentMemberTags.has(p.tag),
-        );
-        const totalPlayed = currentParticipants.reduce(
-          (sum, pl) => sum + (pl.decksUsedToday ?? 0),
-          0,
-        );
 
         const isAfterReset = msOfDayUtc >= resetUtcMs;
         const prevCumulByTag = new Map();
@@ -3255,11 +3263,18 @@ export default async function handler(req, res) {
         const descLines = [
           lateHeader,
           `- ${totalPlayed} deck${totalPlayed > 1 ? "s" : ""} joué${totalPlayed > 1 ? "s" : ""}`,
+          `- ${slotsOccupied} slots occupés`,
+          `- ${slotsAvailable} slots disponibles`,
         ];
         if (late.length > 0) {
           descLines.push(
             `- ${totalMissing} deck${totalMissing > 1 ? "s" : ""} manquant${totalMissing > 1 ? "s" : ""}`,
           );
+          if (slotsAvailable === 0) {
+            descLines.push(
+              `- ${totalMissing} deck${totalMissing > 1 ? "s" : ""} perdus`,
+            );
+          }
         }
         if (totalBoatAttacks > 0) {
           descLines.push(
