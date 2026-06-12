@@ -341,6 +341,13 @@ function buildLateSummary(participants, currentMembers, maxSlots = 50) {
     (p) => (p.decksUsedToday ?? 0) > 0,
   ).length;
   const slotsAvailable = Math.max(0, maxSlots - slotsOccupied);
+  const exClanPlayedToday = participants
+    .filter((p) => !currentMemberTags.has(p.tag) && (p.decksUsedToday ?? 0) > 0)
+    .sort(
+      (a, b) =>
+        (b.decksUsedToday ?? 0) - (a.decksUsedToday ?? 0) ||
+        a.name.localeCompare(b.name, "fr"),
+    );
 
   return {
     currentMemberTags,
@@ -349,6 +356,7 @@ function buildLateSummary(participants, currentMembers, maxSlots = 50) {
     totalPlayed,
     slotsOccupied,
     slotsAvailable,
+    exClanPlayedToday,
   };
 }
 
@@ -2908,6 +2916,7 @@ export default async function handler(req, res) {
           totalPlayed,
           slotsOccupied,
           slotsAvailable,
+          exClanPlayedToday,
         } = buildLateSummary(participants, currentMembers);
 
         // Joueurs en retard : membres actuels qui n'ont pas encore joué leurs 4 decks du jour
@@ -3116,6 +3125,22 @@ export default async function handler(req, res) {
           }
         }
 
+        if (exClanPlayedToday.length > 0) {
+          descLines.push("");
+          descLines.push("**Anciens participants joués aujourd'hui**");
+          for (const pl of exClanPlayedToday) {
+            const tag = pl.tag.startsWith("#") ? pl.tag : `#${pl.tag}`;
+            const playerUrl = trustPlayerUrl(tag);
+            const played = pl.decksUsedToday ?? 0;
+            const discordId = links[tag];
+            const guildMember = discordId ? memberById.get(discordId) : null;
+            const discordPart = guildMember ? ` <@${discordId}>` : "";
+            descLines.push(
+              `• [${pl.name}](${playerUrl}) — ${played} deck${played > 1 ? "s" : ""}${discordPart}`,
+            );
+          }
+        }
+
         // Discord limite les descriptions d'embed à 4096 caractères
         let description = descLines.join("\n");
         if (description.length > 4000) {
@@ -3272,6 +3297,7 @@ export default async function handler(req, res) {
           totalPlayed,
           slotsOccupied,
           slotsAvailable,
+          exClanPlayedToday,
         } = buildLateSummary(participants, currentMembers);
 
         const late = participants
@@ -3407,7 +3433,6 @@ export default async function handler(req, res) {
           lateHeader,
           `- ${totalPlayed} deck${totalPlayed > 1 ? "s" : ""} joué${totalPlayed > 1 ? "s" : ""}`,
           `- ${slotsOccupied} slots occupés`,
-          `- ${slotsAvailable} slots disponibles`,
         ];
         if (late.length > 0) {
           descLines.push(
@@ -3458,6 +3483,22 @@ export default async function handler(req, res) {
                 `• [${pl.name}](${playerUrl})${newTag} ${roleText}${discordPart}`,
               );
             }
+          }
+        }
+
+        if (exClanPlayedToday.length > 0) {
+          descLines.push("");
+          descLines.push("**Anciens participants joués aujourd'hui**");
+          for (const pl of exClanPlayedToday) {
+            const tag = pl.tag.startsWith("#") ? pl.tag : `#${pl.tag}`;
+            const playerUrl = trustPlayerUrl(tag);
+            const played = pl.decksUsedToday ?? 0;
+            const discordId = links[tag];
+            const guildMember = discordId ? memberById.get(discordId) : null;
+            const discordPart = guildMember ? ` <@${discordId}>` : "";
+            descLines.push(
+              `• [${pl.name}](${playerUrl}) — ${played} deck${played > 1 ? "s" : ""}${discordPart}`,
+            );
           }
         }
 
