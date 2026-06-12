@@ -3068,7 +3068,6 @@ export default async function handler(req, res) {
           lateHeader,
           `- ${totalPlayed} deck${totalPlayed > 1 ? "s" : ""} joué${totalPlayed > 1 ? "s" : ""}`,
           `- ${slotsOccupied} slots occupés`,
-          `- ${slotsAvailable} slots disponibles`,
         ];
         if (late.length > 0) {
           descLines.push(
@@ -3132,8 +3131,10 @@ export default async function handler(req, res) {
           title: `<:late:1504138659622948985> ${resolved.name}, retardataires de ${warDayLabel}`,
           description,
           color: 0xe67e22,
-          footer: { text: LATE_TAG_FOOTER_LEGEND },
         };
+        if (!hideDetails) {
+          embed.footer = { text: LATE_TAG_FOOTER_LEGEND };
+        }
 
         console.log(
           "[/late] envoi embed, late:",
