@@ -3322,15 +3322,6 @@ export default async function handler(req, res) {
         };
         const warDayLabel = WAR_DAY_LABELS[p.getDay()] ?? "Jour de GDC";
 
-        const {
-          currentMemberTags,
-          currentMemberByTag,
-          currentParticipants,
-          totalPlayed,
-          slotsOccupied,
-          slotsAvailable,
-        } = buildLateSummary(participants, currentMembers);
-
         const isAfterReset = msOfDayUtc >= resetUtcMs;
         const prevCumulByTag = new Map();
         if (isWarDay && !isAfterReset) {
