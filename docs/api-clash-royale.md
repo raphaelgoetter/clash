@@ -93,6 +93,12 @@ Présent dans `clan.participants` (clan propre) et dans `clans[i].participants` 
 | `decksUsed`      | `number` | ✅ **Source de vérité** | **Decks joués depuis le début de la semaine** (cumul J1→Jn). Max 16 (4 decks × 4 jours).                                                                                           |
 | `decksUsedToday` | `number` | ✅ **Source de vérité** | **Decks joués pendant la journée courante uniquement.** Source directe, sans calcul. Max 4. Disponible pour tous les clans du groupe via `clans[i].participants[].decksUsedToday`. |
 
+> **Règle des slots GDC**
+>
+> - Il y a **50 slots possibles maximum** pour chaque journée de GDC.
+> - Un joueur occupe un slot dès qu’il joue **au moins 1 deck aujourd’hui**, même s’il quitte le clan durant la journée.
+> - Quand les **50 slots sont occupés**, aucun nouveau membre ne peut plus compter pour les decks de la journée : le front de course est fermé.
+
 ---
 
 ### `clans[]` — tous les clans du groupe de guerre

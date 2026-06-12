@@ -326,6 +326,9 @@ async function buildLateTimingTagsByPlayer(playerTags) {
 }
 
 function buildLateSummary(participants, currentMembers, maxSlots = 50) {
+  // Slots GDC : maximum 50 slots par journée. Un joueur occupe un slot dès
+  // qu'il joue au moins 1 deck aujourd'hui, même s'il quitte le clan plus
+  // tard pendant la même journée.
   const currentMemberTags = new Set(currentMembers.map((m) => m.tag));
   const currentMemberByTag = new Map(
     currentMembers.map((m) => [(m.tag || "").toUpperCase(), m]),

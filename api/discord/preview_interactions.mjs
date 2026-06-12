@@ -2761,6 +2761,9 @@ export default async function handler(req, res) {
           (sum, pl) => sum + (pl.decksUsedToday ?? 0),
           0,
         );
+        // Slots GDC : maximum 50 slots par journée. Un joueur occupe un slot dès
+        // qu'il joue au moins 1 deck aujourd'hui, même s'il quitte le clan plus
+        // tard pendant la même journée.
         const slotsOccupied = participants.filter(
           (pl) => (pl.decksUsedToday ?? 0) > 0,
         ).length;
@@ -3152,6 +3155,9 @@ export default async function handler(req, res) {
           (sum, pl) => sum + (pl.decksUsedToday ?? 0),
           0,
         );
+        // Slots GDC : maximum 50 slots par journée. Un joueur occupe un slot dès
+        // qu'il joue au moins 1 deck aujourd'hui, même s'il quitte le clan plus
+        // tard pendant la même journée.
         const slotsOccupied = participants.filter(
           (pl) => (pl.decksUsedToday ?? 0) > 0,
         ).length;
