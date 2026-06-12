@@ -9286,7 +9286,7 @@
           "start": "2026-06-12T09:42:00.000Z",
           "end": "2026-06-13T09:41:59.999Z"
         },
-        "snapshotTime": "2026-06-12T17:50:42.500Z",
+        "snapshotTime": "2026-06-12T18:41:30.210Z",
         "snapshotBackupTime": null,
         "decks": {
           "#2902YQRQL": 4,
@@ -9303,6 +9303,7 @@
           "#9CQC0YUR8": 4,
           "#9GG9GRC0G": 4,
           "#9Q920V9U": 4,
+          "#9VQ0J29Y": 4,
           "#9YQ8RVU2P": 4,
           "#C0VQRUP2": 4,
           "#G9LPGQUG": 4,
@@ -9316,8 +9317,8 @@
           "#UYP0YCQ9": 4,
           "#YRYPUR822": 4,
           "#VVJ8RURL9": 3,
-          "#99VY0090": 1,
-          "#9VQ0J29Y": 1
+          "#CYRGPVGVG": 2,
+          "#99VY0090": 1
         },
         "hourlyCumul": [],
         "_cumulFame": {
@@ -9342,13 +9343,13 @@
           "#88QP9CJU": 1200,
           "#2UQQJJ98Y": 400,
           "#V9Y0GUJC8": 400,
-          "#9VQ0J29Y": 700,
+          "#9VQ0J29Y": 1000,
           "#2CL028C80": 500,
           "#888Y29GY": 500,
           "#8P29RRU2": 500,
           "#PGJPJG9QQ": 500,
           "#C0VQRUP2": 1100,
-          "#CYRGPVGVG": 500,
+          "#CYRGPVGVG": 1000,
           "#82URJC8CR": 1250,
           "#9Q920V9U": 1250,
           "#P9R8Y90P8": 550,
@@ -9413,7 +9414,10 @@
           "#2902YQRQL": 1,
           "#C0VQRUP2": 1,
           "#8QL2J8PQ": 1,
-          "#9GG9GRC0G": 1
+          "#9GG9GRC0G": 1,
+          "#2VRRYLJ2J": 1,
+          "#9VQ0J29Y": 1,
+          "#CYRGPVGVG": 1
         },
         "duelsComplete": true,
         "periodType": "warDay",
@@ -9439,13 +9443,13 @@
           "#88QP9CJU": 8,
           "#2UQQJJ98Y": 4,
           "#V9Y0GUJC8": 4,
-          "#9VQ0J29Y": 5,
+          "#9VQ0J29Y": 8,
           "#2CL028C80": 4,
           "#888Y29GY": 4,
           "#8P29RRU2": 4,
           "#PGJPJG9QQ": 4,
           "#C0VQRUP2": 8,
-          "#CYRGPVGVG": 4,
+          "#CYRGPVGVG": 6,
           "#82URJC8CR": 8,
           "#9Q920V9U": 8,
           "#P9R8Y90P8": 4,
@@ -9485,7 +9489,7 @@
           "#9CQC0YUR8": 8,
           "#GVGVR0J2U": 8
         },
-        "snapshotCount": 109
+        "snapshotCount": 114
       },
       {
         "warDay": "saturday",
