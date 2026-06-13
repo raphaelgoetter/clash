@@ -2164,6 +2164,28 @@ export default async function handler(req, res) {
 
         const analysis = await apiResp.json();
         let warDecks = summarizeWarDecks(analysis.battleLog ?? []);
+        const missingMatchData =
+          warDecks.length > 0 &&
+          warDecks.every(
+            (deck) => !Array.isArray(deck.matches) || deck.matches.length === 0,
+          );
+        if (missingMatchData) {
+          try {
+            const battleLogResp = await fetch(
+              `${TRUST_ROYALE_URL}/api/player/${encodeURIComponent(tag)}/battlelog`,
+              { headers: { Accept: "application/json" } },
+            );
+            if (battleLogResp.ok) {
+              const battleLog = await battleLogResp.json();
+              const fallbackDecks = summarizeWarDecks(battleLog ?? []);
+              if (fallbackDecks.length > 0) {
+                warDecks = fallbackDecks;
+              }
+            }
+          } catch {
+            // On garde le résumé déjà calculé si le fallback échoue.
+          }
+        }
 
         let deckImage = null;
         try {
