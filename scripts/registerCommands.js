@@ -162,6 +162,24 @@ const commands = [
     ],
   },
   {
+    name: "fail",
+    description:
+      "Affiche les joueurs qui ont manqué une journée de GDC la veille pour un clan.",
+    options: [
+      {
+        type: 3, // STRING
+        name: "clan",
+        description: "1=La Resistance, 2=Les Resistants, 3=Les Revoltes",
+        required: true,
+        choices: [
+          { name: "La Resistance", value: "1" },
+          { name: "Les Resistants", value: "2" },
+          { name: "Les Revoltes", value: "3" },
+        ],
+      },
+    ],
+  },
+  {
     name: "trust-clan",
     description: "Liste les membres risqués d'un clan",
     options: [

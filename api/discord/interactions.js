@@ -214,6 +214,35 @@ function formatDiscordRoleWithTiming(role, timingLabels = []) {
   return `(${parts.join(" · ")})`;
 }
 
+const FAIL_WAR_DAY_LABELS = [
+  "Jeudi (J1)",
+  "Vendredi (J2)",
+  "Samedi (J3)",
+  "Dimanche (J4)",
+];
+
+function isWarDayPeriod(currentRace) {
+  return (
+    currentRace?.periodType === "warDay" ||
+    currentRace?.periodType === "colosseum" ||
+    currentRace?.state === "warDay" ||
+    currentRace?.state === "overtime" ||
+    currentRace?.state === "full"
+  );
+}
+
+function getCurrentWarDayIndex(currentRace) {
+  if (!currentRace || typeof currentRace.periodIndex !== "number") return null;
+  const index = currentRace.periodIndex;
+  return index >= 0 && index <= 3 ? index : null;
+}
+
+function getPreviousWarDayIndex(currentRace) {
+  const index = getCurrentWarDayIndex(currentRace);
+  if (index === null || index <= 0) return null;
+  return index - 1;
+}
+
 const LATE_TAG_FOOTER_LEGEND =
   "Légende tags : 1ère moitié = 12 premières heures | 2ème moitié = 12 dernières heures | in-extremis = dernière heure avant reset";
 
@@ -2787,6 +2816,234 @@ export default async function handler(req, res) {
             embeds: [embed],
             allowed_mentions: { parse: [] },
           }),
+        });
+      } catch (err) {
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur : ${err.message}`,
+            flags: 64,
+          }),
+        });
+      }
+    });
+    return;
+  }
+
+  // Commande /fail
+  if (body.type === 2 && body.data?.name === "fail") {
+    const clanOpt = body.data.options?.find((o) => o.name === "clan");
+    const clanVal = (clanOpt?.value || "1").toString().trim();
+    const CLAN_MAP = {
+      1: { name: "La Resistance", tag: "Y8JUPC9C" },
+      2: { name: "Les Resistants", tag: "LRQP20V9" },
+      3: { name: "Les Revoltes", tag: "QU9UQJRL" },
+    };
+    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
+
+    res.status(200).json({ type: 5 });
+    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+
+    runBackground(async () => {
+      const normalizeTag = (tag) =>
+        String(tag || "")
+          .toUpperCase()
+          .replace(/^#/, "");
+
+      const formatStatus = (role) => {
+        const normalized = String(role || "member")
+          .trim()
+          .toLowerCase();
+        return ROLE_FR[normalized] ?? ROLE_FR.member;
+      };
+
+      try {
+        const { fetchCurrentRace, fetchClanMembers, fetchRaceLog } =
+          await import("../../backend/services/clashApi.js");
+        const { getSnapshotsForWeeks } =
+          await import("../../backend/services/snapshot.js");
+        const { computeCurrentWeekId } =
+          await import("../../backend/services/dateUtils.js");
+
+        const [race, currentMembers, raceLog] = await Promise.all([
+          fetchCurrentRace(`#${resolved.tag}`),
+          fetchClanMembers(`#${resolved.tag}`),
+          fetchRaceLog(`#${resolved.tag}`),
+        ]);
+
+        const isCalendarWarDay =
+          new Date(Date.now() - warResetOffsetMs(resolved.tag)).getUTCDay() ===
+            0 ||
+          new Date(Date.now() - warResetOffsetMs(resolved.tag)).getUTCDay() >=
+            4;
+        const isWarDay = isCalendarWarDay && isWarDayPeriod(race);
+        if (!isWarDay) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `<:cards:1493711279121104926> **${resolved.name}** — Aucune journée de GDC en cours.`,
+              flags: 64,
+            }),
+          });
+          return;
+        }
+
+        const currentDayIndex = getCurrentWarDayIndex(race);
+        const prevDayIndex = getPreviousWarDayIndex(race);
+        if (prevDayIndex === null) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `📌 ${resolved.name} — Impossible de déterminer le jour précédent pour cette GDC.`,
+              flags: 64,
+            }),
+          });
+          return;
+        }
+
+        const currentWeekId = computeCurrentWeekId(race, raceLog);
+        if (!currentWeekId) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `Erreur : impossible de déterminer la semaine GDC courante.`,
+              flags: 64,
+            }),
+          });
+          return;
+        }
+
+        const snapshots = await getSnapshotsForWeeks(resolved.tag, [
+          currentWeekId,
+        ]);
+        const weekSnaps = snapshots[currentWeekId] || [];
+        const prevDaySnap = weekSnaps[prevDayIndex];
+        if (
+          !prevDaySnap ||
+          !prevDaySnap.decks ||
+          Object.keys(prevDaySnap.decks).length === 0
+        ) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `❌ Pas de données de decks disponibles pour ${FAIL_WAR_DAY_LABELS[prevDayIndex]}.`,
+              flags: 64,
+            }),
+          });
+          return;
+        }
+
+        const decksByTag = new Map(
+          Object.entries(prevDaySnap.decks).map(([tag, value]) => [
+            normalizeTag(tag),
+            Number.isFinite(value) ? Math.max(0, Math.min(4, value)) : 0,
+          ]),
+        );
+
+        const failedPlayers = currentMembers
+          .map((member) => {
+            const tag = normalizeTag(member.tag);
+            const decks = decksByTag.has(tag) ? decksByTag.get(tag) : 0;
+            return {
+              name: member.name || "Inconnu",
+              tag: member.tag || "#UNKNOWN",
+              role: member.role || "member",
+              decks,
+            };
+          })
+          .filter((p) => p.decks < 4)
+          .sort((a, b) =>
+            a.name.localeCompare(b.name, "fr", {
+              numeric: true,
+              sensitivity: "base",
+            }),
+          );
+
+        const warDayLabel =
+          FAIL_WAR_DAY_LABELS[prevDayIndex] || "jour précédent";
+        if (failedPlayers.length === 0) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `✅ Aucun joueur en échec ${warDayLabel} dans ${resolved.name}.`,
+              flags: 64,
+            }),
+          });
+          return;
+        }
+
+        if (failedPlayers.length > 30) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `⚠️ ${failedPlayers.length} joueurs ont manqué ${warDayLabel} dans ${resolved.name}.`,
+              flags: 64,
+            }),
+          });
+          return;
+        }
+
+        const playerLines = [];
+        const fetchLines = await Promise.all(
+          failedPlayers.map(async (player) => {
+            const tag = player.tag.startsWith("#")
+              ? player.tag
+              : `#${player.tag}`;
+            try {
+              const apiResp = await fetch(
+                `${TRUST_ROYALE_URL}/api/player/${encodeURIComponent(tag)}/analysis?fast=true`,
+                { headers: { Accept: "application/json" } },
+              );
+              if (!apiResp.ok) throw new Error(`API joueur ${apiResp.status}`);
+              const analysis = await apiResp.json();
+              const weeks = Array.isArray(analysis.warHistory?.weeks)
+                ? analysis.warHistory.weeks.filter(
+                    (w) => !w.isCurrent && Number(w.decksUsed) > 0,
+                  )
+                : [];
+              const recent = weeks.slice(0, 8);
+              const decksLine = recent
+                .map((w) => String(Number(w.decksUsed || 0)).padStart(2, " "))
+                .join("   ");
+              const totalFame = recent.reduce(
+                (sum, w) => sum + (Number(w.fame) || 0),
+                0,
+              );
+              const totalDecks = recent.reduce(
+                (sum, w) => sum + (Number(w.decksUsed) || 0),
+                0,
+              );
+              const avgPerDeck = totalDecks
+                ? Math.round(totalFame / totalDecks)
+                : 0;
+              const status = formatStatus(player.role);
+              return `- [${player.name}](${trustPlayerUrl(tag)}) (${status}) : ${decksLine} (moyenne par deck : ${avgPerDeck})`;
+            } catch (err) {
+              const status = formatStatus(player.role);
+              return `- [${player.name}](${trustPlayerUrl(tag)}) (${status}) : données historiques indisponibles`;
+            }
+          }),
+        );
+
+        const embed = {
+          title: `<:boohoo:1493849412387209357> ${resolved.name} — Joueurs en échec ${warDayLabel}`,
+          url: trustClanUrl(resolved.tag),
+          color: 0xe74c3c,
+          description: fetchLines.join("\n"),
+          footer: { text: `Données pour ${warDayLabel}` },
+        };
+
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ embeds: [embed] }),
         });
       } catch (err) {
         await fetch(webhookUrl, {
