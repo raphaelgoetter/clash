@@ -219,6 +219,10 @@ function formatDiscordRoleWithTiming(role, timingLabels = []) {
   return `(${parts.join(" · ")})`;
 }
 
+function normalizeTag(tag) {
+  return String(tag || "").toUpperCase().replace(/^#/, "");
+}
+
 async function readClanCacheMembers(clanTag) {
   const data = await loadClanCache(clanTag);
   const members = Array.isArray(data?.members) ? data.members : [];
