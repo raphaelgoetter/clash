@@ -784,15 +784,13 @@ async function sendDiscordWebhookEmbedWithImage(webhookUrl, embed, image) {
 
     const filename = image.filename || "tension-decks.png";
     const contentType = image.mimeType || "image/png";
-    const embedWithImage = {
-      ...embed,
-      image: { url: `attachment://${filename}` },
-      footer: {
-        text: "Decks GDC générés en image",
-      },
-    };
     const form = new FormData();
-    form.append("payload_json", JSON.stringify({ embeds: [embedWithImage] }));
+    if (embed?.description) {
+      form.append(
+        "payload_json",
+        JSON.stringify({ content: embed.description }),
+      );
+    }
     form.append("file", image.buffer, {
       filename,
       contentType,
@@ -800,6 +798,30 @@ async function sendDiscordWebhookEmbedWithImage(webhookUrl, embed, image) {
     return await fetch(webhookUrl, { method: "POST", body: form });
   } catch (err) {
     console.error("Erreur d'envoi webhook Discord :", err);
+    return {
+      ok: false,
+      status: 0,
+      statusText: err?.message || "Network error",
+      text: async () => String(err?.message || "Network error"),
+    };
+  }
+}
+
+async function sendDiscordWebhookFile(webhookUrl, image, content) {
+  try {
+    const filename = image.filename || "tension-decks.png";
+    const contentType = image.mimeType || "image/png";
+    const form = new FormData();
+    if (content) {
+      form.append("payload_json", JSON.stringify({ content }));
+    }
+    form.append("file", image.buffer, {
+      filename,
+      contentType,
+    });
+    return await fetch(webhookUrl, { method: "POST", body: form });
+  } catch (err) {
+    console.error("Erreur d'envoi webhook Discord (file) :", err);
     return {
       ok: false,
       status: 0,
@@ -2321,15 +2343,6 @@ export default async function handler(req, res) {
         const averageTension = Number.isFinite(analysis.tension?.average)
           ? `${Math.round(analysis.tension.average * 100)}%`
           : null;
-        const imageEmbed = {
-          title: `⚡ Tension GDC : ${analysis.overview.name}`,
-          url: trustPlayerUrl(tag),
-          color: 0xe67e22,
-          description: averageTension
-            ? `Tension moyenne : ${averageTension}`
-            : undefined,
-        };
-
         const dataEmbed = {
           title: `⚡ Tension GDC : ${analysis.overview.name}`,
           url: trustPlayerUrl(tag),
@@ -2342,10 +2355,10 @@ export default async function handler(req, res) {
 
         let imageResponse = null;
         if (deckImage?.buffer) {
-          imageResponse = await sendDiscordWebhookEmbedWithImage(
+          imageResponse = await sendDiscordWebhookFile(
             webhookUrl,
-            imageEmbed,
             deckImage,
+            averageTension ? `Tension moyenne : ${averageTension}` : undefined,
           );
         }
 
