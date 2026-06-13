@@ -3,6 +3,7 @@ import fs from "fs/promises";
 import path from "path";
 import {
   getSnapshotsForWeeks,
+  getCurrentWarDayIndex,
   recordSnapshot,
   resolveSnapshotType,
   overrideWarSnapshotDaysWithLiveCurrentDay,
@@ -186,6 +187,38 @@ async function main() {
       updated,
       [100, 120, 5, null],
       "Should fallback to calendar day index when periodIndex is outside 0..3",
+    );
+  }
+
+  {
+    const currentRace = {
+      state: "warDay",
+      clan: {},
+    };
+    assert.strictEqual(
+      getCurrentWarDayIndex(
+        currentRace,
+        "LRQP20V9",
+        new Date("2026-06-12T12:00:00Z"),
+      ),
+      1,
+      "Should infer Friday (J2) from date when periodIndex is missing",
+    );
+  }
+
+  {
+    const currentRace = {
+      state: "warDay",
+      clan: {},
+    };
+    assert.strictEqual(
+      getCurrentWarDayIndex(
+        currentRace,
+        "LRQP20V9",
+        new Date("2026-06-11T12:00:00Z"),
+      ),
+      0,
+      "Should infer Thursday (J1) from date when periodIndex is missing",
     );
   }
 

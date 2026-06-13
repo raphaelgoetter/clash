@@ -1028,6 +1028,9 @@ export default async function handler(req, res) {
             "**Demote**\n" +
             "Commande : `/demote clan:N`\n" +
             "Usage : liste les joueurs n'ayant pas joué 16/16 decks (semaine précédente)\n\n" +
+            "**Fail**\n" +
+            "Commande : `/fail clan:N`\n" +
+            "Usage : affiche les joueurs qui ont manqué une journée de GDC hier\n\n" +
             "**Late**\n" +
             "Commande : `/late clan:N`\n" +
             "Usage : liste les retardataires GDC actuels (à faire avant reset)\n\n" +

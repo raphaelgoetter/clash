@@ -1388,4 +1388,9 @@ function warDayNameFromKey(warDayKey) {
 }
 
 // Expose helpers for computing the war day label (used by UI summaries)
-export { getWarDayInfo, getWarDayName, warDayNameFromKey };
+export {
+  getCurrentWarDayIndex,
+  getWarDayInfo,
+  getWarDayName,
+  warDayNameFromKey,
+};
