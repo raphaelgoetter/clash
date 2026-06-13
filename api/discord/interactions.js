@@ -2369,6 +2369,18 @@ export default async function handler(req, res) {
             textResponse.status,
             textResponse.statusText,
           );
+          const fallbackText = warDecksField
+            ? `Tension moyenne : ${averageTension ?? "N/A"}\n\n${warDecksField}`
+            : `Tension moyenne : ${averageTension ?? "N/A"}`;
+          const safeFallback =
+            fallbackText.length > 1900
+              ? `${fallbackText.slice(0, 1897)}...`
+              : fallbackText;
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: safeFallback }),
+          });
         }
       } catch (err) {
         await fetch(webhookUrl, {
