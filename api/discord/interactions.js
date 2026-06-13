@@ -2278,7 +2278,7 @@ export default async function handler(req, res) {
           });
         }
 
-        if (!deckImage && warDecksField) {
+        if (warDecksField) {
           fields.push({
             name: "Decks GDC :",
             value: warDecksField,
