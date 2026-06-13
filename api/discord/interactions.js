@@ -723,7 +723,9 @@ function formatWarDecksField(warDecks) {
 
   if (lines.length === 0) return null;
   if (totalLines >= maxLines) {
-    lines.push("... et plus de matchs sont disponibles dans l'analyse complète.");
+    lines.push(
+      "... et plus de matchs sont disponibles dans l'analyse complète.",
+    );
   }
   return lines.join("\n");
 }
