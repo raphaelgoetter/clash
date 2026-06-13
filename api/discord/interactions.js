@@ -682,12 +682,8 @@ async function buildWarDecksImage(warDecks) {
       filename: "tension-decks.png",
     };
   } catch (err) {
-    console.error("Resvg a échoué, fallback SVG", err?.message || err);
-    return {
-      buffer: svgBuffer,
-      mimeType: "image/svg+xml",
-      filename: "tension-decks.svg",
-    };
+    console.error("Resvg a échoué pour l'image de deck :", err?.message || err);
+    return null;
   }
 }
 
@@ -764,11 +760,7 @@ function buildWarDecksTextFallbackImage(warDecks) {
     };
   } catch (err) {
     console.error("Resvg fallback a échoué :", err?.message || err);
-    return {
-      buffer: svgBuffer,
-      mimeType: "image/svg+xml",
-      filename: "tension-decks-fallback.svg",
-    };
+    return null;
   }
 }
 
