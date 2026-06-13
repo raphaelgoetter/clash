@@ -568,14 +568,31 @@ async function buildWarDecksImage(warDecks) {
       })
       .join("");
 
-      const firstMatch = Array.isArray(deck.matches) ? deck.matches[0] : null;
-      const metaParts = [];
-      if (firstMatch?.opponentName) metaParts.push(firstMatch.opponentName);
-      if (firstMatch?.opponentTourLevel != null)
-        metaParts.push(`Tour ${firstMatch.opponentTourLevel}`);
-      if (firstMatch?.score) metaParts.push(firstMatch.score);
-      if (Number.isFinite(firstMatch?.tension)) {
-        metaParts.push(`Tension ${Math.round(firstMatch.tension * 100)}%`);
+    const firstMatch = Array.isArray(deck.matches) ? deck.matches[0] : null;
+    const metaParts = [];
+    if (firstMatch?.opponentName) metaParts.push(firstMatch.opponentName);
+    if (firstMatch?.opponentTourLevel != null)
+      metaParts.push(`Tour ${firstMatch.opponentTourLevel}`);
+    if (firstMatch?.score) metaParts.push(firstMatch.score);
+    if (Number.isFinite(firstMatch?.tension)) {
+      metaParts.push(`Tension ${Math.round(firstMatch.tension * 100)}%`);
+    }
+
+    const metaLabel = escapeText(metaParts.join(" · ") || "Aucun match");
+    return `
+      ${cardsSvg}
+      <text x="${padding}" y="${y + cardHeight + 24}" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#e2e8f0" font-weight="700">${escapeText(
+        deck.label || "Deck",
+      )}</text>
+      <text x="${padding}" y="${y + cardHeight + 42}" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#94a3b8">${metaLabel}</text>
+    `;
+  });
+
+  const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Decks GDC">
+  <rect width="100%" height="100%" rx="24" fill="#0f172a" />
+  ${deckRows.join("")}
+</svg>`;
 
   const svgBuffer = Buffer.from(svg, "utf8");
   try {
@@ -645,9 +662,10 @@ function formatWarDecksField(warDecks) {
     }
 
     matchLines.forEach((match, index) => {
-      const resultEmoji = match.result === "win"
-        ? "<:success:1499002702208958577>"
-        : "<:error:1499002755841265826>";
+      const resultEmoji =
+        match.result === "win"
+          ? "<:success:1499002702208958577>"
+          : "<:error:1499002755841265826>";
       const opponentName = match.opponentName || "?";
       const towerLevel = Number.isFinite(match.opponentTourLevel)
         ? match.opponentTourLevel
