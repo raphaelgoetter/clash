@@ -634,31 +634,41 @@ async function buildWarDecksImage(warDecks) {
 }
 
 async function sendDiscordWebhookEmbedWithImage(webhookUrl, embed, image) {
-  if (!image?.buffer) {
-    return fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ embeds: [embed] }),
-    });
-  }
+  try {
+    if (!image?.buffer) {
+      return await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ embeds: [embed] }),
+      });
+    }
 
-  const filename = image.filename || "tension-decks.png";
-  const mimeType = image.mimeType || "image/png";
-  const embedWithImage = {
-    ...embed,
-    image: { url: `attachment://${filename}` },
-    footer: {
-      text: "Decks GDC générés en image",
-    },
-  };
-  const form = new FormData();
-  form.append("payload_json", JSON.stringify({ embeds: [embedWithImage] }));
-  form.append(
-    "files[0]",
-    new Blob([image.buffer], { type: mimeType }),
-    filename,
-  );
-  return fetch(webhookUrl, { method: "POST", body: form });
+    const filename = image.filename || "tension-decks.png";
+    const mimeType = image.mimeType || "image/png";
+    const embedWithImage = {
+      ...embed,
+      image: { url: `attachment://${filename}` },
+      footer: {
+        text: "Decks GDC générés en image",
+      },
+    };
+    const form = new FormData();
+    form.append("payload_json", JSON.stringify({ embeds: [embedWithImage] }));
+    form.append(
+      "files[0]",
+      new Blob([image.buffer], { type: mimeType }),
+      filename,
+    );
+    return await fetch(webhookUrl, { method: "POST", body: form });
+  } catch (err) {
+    console.error("Erreur d'envoi webhook Discord :", err);
+    return {
+      ok: false,
+      status: 0,
+      statusText: err?.message || "Network error",
+      text: async () => String(err?.message || "Network error"),
+    };
+  }
 }
 
 function formatWarDecksField(warDecks) {
