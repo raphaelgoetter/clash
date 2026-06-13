@@ -542,7 +542,7 @@ async function buildWarDecksImage(warDecks) {
       .map((card) => [String(card.id), card]),
   );
 
-  const rows = warDecks.slice(0, 8);
+  const rows = warDecks.slice(0, 4);
   const cardWidth = 144;
   const cardHeight = 192;
   const cardGap = 10;
@@ -654,13 +654,13 @@ async function buildWarDecksImage(warDecks) {
       return `<text x="${padding}" y="${lineY}" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#e2e8f0">${escapeText(line)}</text>`;
     });
 
+    const deckTitle = escapeText(deck.label || `Deck ${deckIndex + 1}`);
     return `
       <rect x="${padding - 8}" y="${yStart - 8}" width="${cardWidth * 8 + cardGap * 7 + 16}" height="${cardHeight + 12 + labelSpacing + matchLines.slice(0, 4).length * textLineHeight + matchTopSpacing}" rx="28" fill="rgba(148, 163, 184, 0.08)" stroke="#334155" stroke-width="2"/>
       ${cardsSvg}
-      <text x="${padding}" y="${labelY}" font-family="Inter, system-ui, sans-serif" font-size="16" fill="#f8fafc" font-weight="700">${escapeText(
-        deck.label || "Deck",
-      )}</text>
-      <text x="${padding + 8}" y="${labelY - 6}" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#38bdf8" font-weight="700">#${deckIndex + 1}</text>
+      <rect x="${padding}" y="${labelY - 28}" width="44" height="24" rx="12" fill="#2563eb" />
+      <text x="${padding + 22}" y="${labelY - 10}" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#f8fafc" font-weight="700">#${deckIndex + 1}</text>
+      <text x="${padding + 60}" y="${labelY - 10}" font-family="Inter, system-ui, sans-serif" font-size="16" fill="#f8fafc" font-weight="700">${deckTitle}</text>
       ${renderedMatchLines.join("")}
     `;
   });
@@ -857,18 +857,18 @@ function formatWarDecksField(warDecks) {
   if (!Array.isArray(warDecks)) return null;
 
   const entries = [];
-  warDecks.slice(0, 8).forEach((deck, deckIndex) => {
+  warDecks.slice(0, 4).forEach((deck, deckIndex) => {
     const deckLabel = deck.label || `Deck ${deckIndex + 1}`;
     const matchLines = Array.isArray(deck.matches) ? deck.matches : [];
-    matchLines.slice(0, 1).forEach((match, matchIndex) => {
+    matchLines.slice(0, 2).forEach((match, matchIndex) => {
       entries.push({ deckIndex, matchIndex, deckLabel, match });
     });
   });
 
   entries.sort((a, b) =>
-    a.matchIndex !== b.matchIndex
-      ? a.matchIndex - b.matchIndex
-      : a.deckIndex - b.deckIndex,
+    a.deckIndex !== b.deckIndex
+      ? a.deckIndex - b.deckIndex
+      : a.matchIndex - b.matchIndex,
   );
 
   const maxLines = 8;
@@ -2319,12 +2319,12 @@ export default async function handler(req, res) {
           );
           if (battleLogResp.ok) {
             const battleLog = await battleLogResp.json();
-            warDecks = summarizeWarDecks(battleLog ?? []);
+            warDecks = summarizeWarDecks(battleLog ?? [], 4);
           } else {
-            warDecks = summarizeWarDecks(analysis.battleLog ?? []);
+            warDecks = summarizeWarDecks(analysis.battleLog ?? [], 4);
           }
         } catch {
-          warDecks = summarizeWarDecks(analysis.battleLog ?? []);
+          warDecks = summarizeWarDecks(analysis.battleLog ?? [], 4);
         }
 
         let deckImage = null;
@@ -2352,9 +2352,15 @@ export default async function handler(req, res) {
             value: "Aucune synthèse de deck n'a pu être construite.",
             inline: false,
           });
+        } else if (deckImage) {
+          fields.push({
+            name: "Decks affichés :",
+            value: `${Math.min(warDecks.length, 8)} deck(s)`,
+            inline: false,
+          });
         }
 
-        if (warDecksField) {
+        if (!deckImage && warDecksField) {
           fields.push({
             name: "Decks GDC :",
             value: warDecksField,
@@ -2377,16 +2383,8 @@ export default async function handler(req, res) {
 
         let imageResponse = null;
         if (deckImage?.buffer) {
-          const directContent =
-            `⚡ [Tension GDC : ${analysis.overview.name}](${trustPlayerUrl(tag)})\n` +
-            (warDecksField
-              ? `\nTension moyenne : ${averageTension ?? "N/A"}\n\n${warDecksField}`
-              : averageTension
-                ? `\nTension moyenne : ${averageTension}`
-                : "\nAnalyse GDC disponible.");
-
           console.log(
-            "Sending deck image with embed title and direct content:",
+            "Sending deck image with embed title only:",
             deckImage.filename,
             deckImage.mimeType,
             "bufferType=",
@@ -2395,7 +2393,6 @@ export default async function handler(req, res) {
             deckImage.buffer?.length,
           );
           imageResponse = await sendDiscordWebhookFile(webhookUrl, deckImage, {
-            content: directContent,
             embed: dataEmbed,
           });
           console.log(
