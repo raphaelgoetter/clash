@@ -2,6 +2,9 @@
 // Utilise waitUntil de @vercel/functions pour maintenir la fonction active
 // après avoir répondu type:5 à Discord (deferred).
 import { createPublicKey, verify } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { waitUntil } from "@vercel/functions";
 import { createRequire } from "node:module";
 import { getLeagueName } from "../../backend/services/warLeagues.js";
@@ -24,6 +27,7 @@ import { summarizeWarDecks } from "../../backend/services/analysisService.js";
 
 const _require = createRequire(import.meta.url);
 const COLLECTION_LEVELS = _require("../../data/collection_levels.json");
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function parseRewardTypeFromLevel(level) {
   const mysteryBox = String(level?.MysteryBox || "");
@@ -214,12 +218,41 @@ function formatDiscordRoleWithTiming(role, timingLabels = []) {
   return `(${parts.join(" · ")})`;
 }
 
+async function readClanCacheMembers(clanTag) {
+  const cacheFile = path.join(
+    __dirname,
+    "..",
+    "..",
+    "frontend",
+    "public",
+    "clan-cache",
+    `${clanTag}.json`,
+  );
+  try {
+    const raw = await readFile(cacheFile, "utf-8");
+    const data = JSON.parse(raw);
+    const members = Array.isArray(data.members) ? data.members : [];
+    return new Map(
+      members.map((member) => [
+        normalizeTag(member.tag),
+        {
+          name: member.name || normalizeTag(member.tag),
+          role: member.role || "member",
+        },
+      ]),
+    );
+  } catch {
+    return new Map();
+  }
+}
+
 const FAIL_WAR_DAY_LABELS = [
   "Jeudi (J1)",
   "Vendredi (J2)",
   "Samedi (J3)",
   "Dimanche (J4)",
 ];
+const FAIL_WAR_DAY_SHORT_LABELS = ["J1", "J2", "J3", "J4"];
 
 function isWarDayPeriod(currentRace) {
   return (
@@ -2861,9 +2894,9 @@ export default async function handler(req, res) {
       try {
         const { fetchCurrentRace, fetchClanMembers, fetchRaceLog } =
           await import("../../backend/services/clashApi.js");
-        const { getSnapshotsForWeeks } =
+        const { getSnapshotsForWeeks, getCurrentWarDayIndex } =
           await import("../../backend/services/snapshot.js");
-        const { computeCurrentWeekId } =
+        const { computeCurrentWeekId, warResetOffsetMs } =
           await import("../../backend/services/dateUtils.js");
 
         const [race, currentMembers, raceLog] = await Promise.all([
@@ -2890,8 +2923,11 @@ export default async function handler(req, res) {
           return;
         }
 
-        const currentDayIndex = getCurrentWarDayIndex(race);
-        const prevDayIndex = getPreviousWarDayIndex(race);
+        const currentDayIndex = getCurrentWarDayIndex(race, resolved.tag);
+        const prevDayIndex =
+          currentDayIndex !== null && currentDayIndex > 0
+            ? currentDayIndex - 1
+            : null;
         if (prevDayIndex === null) {
           await fetch(webhookUrl, {
             method: "POST",
@@ -2938,6 +2974,7 @@ export default async function handler(req, res) {
           return;
         }
 
+        const snapshotMembersByTag = await readClanCacheMembers(resolved.tag);
         const decksByTag = new Map(
           Object.entries(prevDaySnap.decks).map(([tag, value]) => [
             normalizeTag(tag),
@@ -2945,17 +2982,15 @@ export default async function handler(req, res) {
           ]),
         );
 
-        const failedPlayers = currentMembers
-          .map((member) => {
-            const tag = normalizeTag(member.tag);
-            const decks = decksByTag.has(tag) ? decksByTag.get(tag) : 0;
-            return {
-              name: member.name || "Inconnu",
-              tag: member.tag || "#UNKNOWN",
-              role: member.role || "member",
-              decks,
-            };
-          })
+        const failedPlayers = Array.from(snapshotMembersByTag.entries())
+          .map(([normalizedTag, member]) => ({
+            name: member.name || "Inconnu",
+            tag: member.tag || `#${normalizedTag}`,
+            role: member.role || "member",
+            decks: decksByTag.has(normalizedTag)
+              ? decksByTag.get(normalizedTag)
+              : 0,
+          }))
           .filter((p) => p.decks < 4)
           .sort((a, b) =>
             a.name.localeCompare(b.name, "fr", {
@@ -2965,13 +3000,13 @@ export default async function handler(req, res) {
           );
 
         const warDayLabel =
-          FAIL_WAR_DAY_LABELS[prevDayIndex] || "jour précédent";
+          FAIL_WAR_DAY_SHORT_LABELS[prevDayIndex] || "jour précédent";
         if (failedPlayers.length === 0) {
           await fetch(webhookUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              content: `✅ Aucun joueur en échec ${warDayLabel} dans ${resolved.name}.`,
+              content: `✅ Aucun joueur fail ${warDayLabel} dans ${resolved.name}.`,
               flags: 64,
             }),
           });
@@ -2990,7 +3025,6 @@ export default async function handler(req, res) {
           return;
         }
 
-        const playerLines = [];
         const fetchLines = await Promise.all(
           failedPlayers.map(async (player) => {
             const tag = player.tag.startsWith("#")
@@ -3033,10 +3067,10 @@ export default async function handler(req, res) {
         );
 
         const embed = {
-          title: `<:boohoo:1493849412387209357> ${resolved.name} — Joueurs en échec ${warDayLabel}`,
+          title: `<:boohoo:1493849412387209357> ${resolved.name} — Joueurs fails hier (${warDayLabel})`,
           url: trustClanUrl(resolved.tag),
           color: 0xe74c3c,
-          description: fetchLines.join("\n"),
+          description: `Historique des dernières GDC :\n${fetchLines.join("\n")}`,
           footer: { text: `Données pour ${warDayLabel}` },
         };
 
