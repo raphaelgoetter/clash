@@ -677,7 +677,7 @@ async function buildWarDecksImage(warDecks) {
     });
     const pngData = resvg.render();
     return {
-      buffer: pngData.asPng(),
+      buffer: Buffer.from(pngData.asPng()),
       mimeType: "image/png",
       filename: "tension-decks.png",
     };
@@ -754,7 +754,7 @@ function buildWarDecksTextFallbackImage(warDecks) {
     });
     const pngData = resvg.render();
     return {
-      buffer: pngData.asPng(),
+      buffer: Buffer.from(pngData.asPng()),
       mimeType: "image/png",
       filename: "tension-decks-fallback.png",
     };
@@ -2355,11 +2355,28 @@ export default async function handler(req, res) {
 
         let imageResponse = null;
         if (deckImage?.buffer) {
+          console.log(
+            "Sending deck image:",
+            deckImage.filename,
+            deckImage.mimeType,
+            "bufferType=",
+            deckImage.buffer?.constructor?.name,
+            "size=",
+            deckImage.buffer?.length,
+          );
           imageResponse = await sendDiscordWebhookFile(
             webhookUrl,
             deckImage,
             averageTension ? `Tension moyenne : ${averageTension}` : undefined,
           );
+          console.log(
+            "Image response ok=",
+            imageResponse.ok,
+            "status=",
+            imageResponse.status,
+          );
+        } else {
+          console.log("No deckImage generated for /tension");
         }
 
         const textResponse = await fetch(webhookUrl, {
