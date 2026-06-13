@@ -4,6 +4,7 @@
 // ============================================================
 
 import { parseClashDate, MS_PER_DAY, warDayKey } from "./dateUtils.js";
+import { normLevel, computeTourLevel } from "./collectionConstants.js";
 
 /**
  * Clan War battle types in the Clash Royale API.
@@ -187,8 +188,30 @@ function normalizeDeckStrength(deckCards) {
   return deckCards.reduce((acc, card) => {
     const level = Number(card?.level ?? card?.lvl ?? 0);
     if (!Number.isFinite(level) || level <= 0) return acc;
-    return acc + level;
+    return acc + normLevel(card);
   }, 0);
+}
+
+function computeTowerLevelFactor(playerTourLevel, opponentTourLevel) {
+  if (
+    !Number.isFinite(playerTourLevel) ||
+    !Number.isFinite(opponentTourLevel)
+  ) {
+    return 0;
+  }
+  const towerDiff = Math.max(
+    -3,
+    Math.min(3, opponentTourLevel - playerTourLevel),
+  );
+  return towerDiff * 0.25;
+}
+
+function computeBattleTourLevel(entry) {
+  const cards = Array.isArray(entry?.cards) ? entry.cards : [];
+  const supportCards = Array.isArray(entry?.supportCards)
+    ? entry.supportCards
+    : [];
+  return computeTourLevel([...cards, ...supportCards]);
 }
 
 function deckStrengthFromBattle(battle) {
@@ -204,7 +227,7 @@ function deckStrengthFromBattle(battle) {
   };
 }
 
-export function computeBattleTension(battle) {
+export function computeBattleTension(battle, options = {}) {
   const playerCrowns = getMyBattleCrowns(battle);
   const opponentCrowns =
     battle._roundIndex !== undefined
@@ -221,18 +244,35 @@ export function computeBattleTension(battle) {
   const isTraining = FRIENDLY_TYPES.has(battleType);
   const trainingFactor = isTraining ? -0.15 : 0;
 
+  const towerFactor = computeTowerLevelFactor(
+    options.playerTourLevel,
+    options.opponentTourLevel,
+  );
+
   const base =
-    0.5 + strengthFactor * 0.25 - scoreFactor * 0.05 + trainingFactor;
+    0.5 +
+    strengthFactor * 0.25 -
+    scoreFactor * 0.05 +
+    trainingFactor +
+    towerFactor;
   return Number(Math.max(0, Math.min(1, base)).toFixed(3));
 }
 
-export function computeTensionFromBattleLog(battleLog) {
+export function computeTensionFromBattleLog(battleLog, options = {}) {
   const battles = Array.isArray(battleLog) ? battleLog : [];
   if (battles.length === 0) return null;
   const warBattles = filterWarBattles(battles);
   const samples = warBattles.length > 0 ? warBattles : battles;
 
-  const tensions = samples.map((battle) => computeBattleTension(battle));
+  const tensions = samples.map((battle) => {
+    const playerTourLevel = computeBattleTourLevel(battle.team?.[0]);
+    const opponentTourLevel = computeBattleTourLevel(battle.opponent?.[0]);
+    return computeBattleTension(battle, {
+      ...options,
+      playerTourLevel,
+      opponentTourLevel,
+    });
+  });
   const total = tensions.reduce((sum, value) => sum + value, 0);
   return Number((total / tensions.length).toFixed(3));
 }

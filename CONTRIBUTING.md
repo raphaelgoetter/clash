@@ -93,6 +93,61 @@ Projection = max(decksToday, targetDecks) × ptsPerDeck
 - Tous les clans d'un même groupe GDC partagent le même créneau de reset → `fractionElapsed` est calculée avec le reset du clan propre (`warResetOffsetMs(clanTag)`).
 - Cette formule s'applique uniformément au clan propre et aux clans adverses. Code source : `backend/routes/clan.js`, bloc `groupWithProjections`.
 
+### Tension GDC
+
+La tension GDC mesure la difficulté moyenne des matchups d'un joueur sur ses combats récents.
+Elle est calculée en analysant les derniers combats de guerre (ou, à défaut, tous les combats compétitifs disponibles) et en associant trois facteurs :
+
+- **Écart de forces de deck** (`strengthFactor`) : différence entre le total des niveaux de cartes des deux decks. Concrètement, le code additionne les niveaux (`level`) de chaque carte présente dans le deck du joueur et dans le deck adverse.
+- **Différence de niveaux de tours** : calculée à partir des cartes visibles dans le match (`cards` + `supportCards`) et intégrée au score sous la forme d'un `towerFactor`.
+- **Résultat du combat** (`scoreFactor`) : écart de couronnes gagné/perdu par le joueur.
+- **Type de combat** (`trainingFactor`) : réduit la tension pour les combats amicaux / d'entraînement.
+
+Le score de tension d'un combat est normalisé entre `0` et `1`.
+
+```text
+strengthFactor = (opponentDeckStrength - playerDeckStrength) / max(1, playerDeckStrength + opponentDeckStrength)
+scoreFactor = clamp(playerCrowns - opponentCrowns, -3, 3)
+towerFactor = clamp(opponentTourLevel - playerTourLevel, -3, 3) × 0.25
+trainingFactor = -0.15 si combat amical, sinon 0
+
+base = 0.5 + strengthFactor × 0.25 - scoreFactor × 0.05 + trainingFactor + towerFactor
+Tension combat = clamp(base, 0, 1)
+```
+
+Le score final de `analysis.tension.average` est la moyenne de ces tensions de combat sur les batailles GDC récentes.
+S'il n'y a pas de combat de guerre dans le `battleLog`, la moyenne est calculée sur les derniers combats compétitifs disponibles.
+
+#### Critères et pondération
+
+- `strengthFactor` (≈ 25 % de l’impact) :
+  - Si l'adversaire dispose d'un deck plus fort, la tension augmente.
+  - Si le deck du joueur est plus fort, la tension diminue.
+  - La valeur est divisée par la somme des forces des deux decks, ce qui borne l’impact.
+- `towerFactor` (≈ 25 % de l’impact) :
+  - Calculé depuis la différence de niveaux de tours (`opponentTourLevel - playerTourLevel`).
+  - Chaque écart de 1 niveau de tour correspond à ±0,25 tension, limité à ±3 niveaux.
+  - Ce facteur augmente significativement la tension quand l'adversaire a un niveau de tour supérieur.
+- `scoreFactor` (≈ 5 % de l’impact) :
+  - Une victoire large (`+3` couronnes) réduit légèrement la tension.
+  - Une défaite large (`-3` couronnes) augmente légèrement la tension.
+  - L’impact est modéré par un coefficient faible (`0.05`), car le résultat compte moins que le matchup.
+- `trainingFactor` (-0.15 fixe) :
+  - Les combats amicaux / d'entraînement sont considérés comme moins tendus.
+  - Ce facteur soustrait 15 points de tension sur une échelle normalisée de 0 à 1.
+
+#### Interprétation
+
+- `0.0` : matchup très confortable ou combat amical sans pression.
+- `0.5` : tension neutre, matchup équilibré.
+- `1.0` : matchup très tendu, adversaire plus fort et/ou résultat négatif.
+
+#### Source de vérité
+
+- Fonction de référence : `backend/services/battleLogUtils.js`
+- Formule principale : `computeBattleTension()`
+- Agrégation : `computeTensionFromBattleLog()`
+
 ## Données upgrade cartes (page /deck-upgrade)
 
 Source de vérité utilisée pour la page publique `/deck-upgrade` :
