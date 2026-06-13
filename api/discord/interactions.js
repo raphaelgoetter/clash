@@ -220,7 +220,9 @@ function formatDiscordRoleWithTiming(role, timingLabels = []) {
 }
 
 function normalizeTag(tag) {
-  return String(tag || "").toUpperCase().replace(/^#/, "");
+  return String(tag || "")
+    .toUpperCase()
+    .replace(/^#/, "");
 }
 
 async function readClanCacheMembers(clanTag) {
