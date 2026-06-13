@@ -799,12 +799,21 @@ async function sendDiscordWebhookEmbedWithImage(webhookUrl, embed, image) {
   }
 }
 
-async function sendDiscordWebhookFile(webhookUrl, image, content) {
+async function sendDiscordWebhookFile(webhookUrl, image, options = {}) {
   try {
     const filename = image.filename || "tension-decks.png";
     const contentType = image.mimeType || "image/png";
     const form = new FormData();
-    form.append("payload_json", JSON.stringify({ content: content ?? "" }));
+    const payload = {};
+    if (typeof options === "string") {
+      payload.content = options;
+    } else if (options?.content) {
+      payload.content = options.content;
+    }
+    if (options?.embed) {
+      payload.embeds = [options.embed];
+    }
+    form.append("payload_json", JSON.stringify(payload));
     form.append("file", image.buffer, {
       filename,
       contentType,
@@ -2355,8 +2364,11 @@ export default async function handler(req, res) {
 
         let imageResponse = null;
         if (deckImage?.buffer) {
+          dataEmbed.image = {
+            url: `attachment://${deckImage.filename}`,
+          };
           console.log(
-            "Sending deck image:",
+            "Sending deck image with embed:",
             deckImage.filename,
             deckImage.mimeType,
             "bufferType=",
@@ -2364,53 +2376,61 @@ export default async function handler(req, res) {
             "size=",
             deckImage.buffer?.length,
           );
-          imageResponse = await sendDiscordWebhookFile(
-            webhookUrl,
-            deckImage,
-            averageTension ? `Tension moyenne : ${averageTension}` : undefined,
-          );
+          imageResponse = await sendDiscordWebhookFile(webhookUrl, deckImage, {
+            content: averageTension
+              ? `Tension moyenne : ${averageTension}`
+              : undefined,
+            embed: dataEmbed,
+          });
           console.log(
-            "Image response ok=",
+            "Discord webhook response ok=",
             imageResponse.ok,
             "status=",
             imageResponse.status,
           );
+
+          if (!imageResponse.ok) {
+            const fallbackText = warDecksField
+              ? `Tension moyenne : ${averageTension ?? "N/A"}\n\n${warDecksField}`
+              : `Tension moyenne : ${averageTension ?? "N/A"}`;
+            const safeFallback =
+              fallbackText.length > 1900
+                ? `${fallbackText.slice(0, 1897)}...`
+                : fallbackText;
+            await fetch(webhookUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ content: safeFallback }),
+            });
+          }
         } else {
-          console.log("No deckImage generated for /tension");
-        }
-
-        const textResponse = await fetch(webhookUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ embeds: [dataEmbed] }),
-        });
-
-        if (deckImage?.buffer && imageResponse && !imageResponse.ok) {
-          console.error(
-            "Discord image webhook failed, text message still sent:",
-            imageResponse.status,
-            imageResponse.statusText,
+          console.log(
+            "No deckImage generated for /tension, sending embed only",
           );
-        }
-
-        if (!textResponse.ok) {
-          console.error(
-            "Discord text webhook failed:",
-            textResponse.status,
-            textResponse.statusText,
-          );
-          const fallbackText = warDecksField
-            ? `Tension moyenne : ${averageTension ?? "N/A"}\n\n${warDecksField}`
-            : `Tension moyenne : ${averageTension ?? "N/A"}`;
-          const safeFallback =
-            fallbackText.length > 1900
-              ? `${fallbackText.slice(0, 1897)}...`
-              : fallbackText;
-          await fetch(webhookUrl, {
+          const textResponse = await fetch(webhookUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ content: safeFallback }),
+            body: JSON.stringify({ embeds: [dataEmbed] }),
           });
+          if (!textResponse.ok) {
+            console.error(
+              "Discord text webhook failed:",
+              textResponse.status,
+              textResponse.statusText,
+            );
+            const fallbackText = warDecksField
+              ? `Tension moyenne : ${averageTension ?? "N/A"}\n\n${warDecksField}`
+              : `Tension moyenne : ${averageTension ?? "N/A"}`;
+            const safeFallback =
+              fallbackText.length > 1900
+                ? `${fallbackText.slice(0, 1897)}...`
+                : fallbackText;
+            await fetch(webhookUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ content: safeFallback }),
+            });
+          }
         }
       } catch (err) {
         await fetch(webhookUrl, {
