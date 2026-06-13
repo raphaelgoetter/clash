@@ -2377,8 +2377,15 @@ export default async function handler(req, res) {
 
         let imageResponse = null;
         if (deckImage?.buffer) {
+          const directContent =
+            `⚡ [Tension GDC : ${analysis.overview.name}](${trustPlayerUrl(tag)})\n` +
+            (averageTension
+              ? `Tension moyenne : ${averageTension}`
+              : "Tension moyenne inconnue") +
+            (warDecksField ? `\n\n${warDecksField}` : "");
+
           console.log(
-            "Sending deck image with embed title only:",
+            "Sending deck image with direct content:",
             deckImage.filename,
             deckImage.mimeType,
             "bufferType=",
@@ -2387,7 +2394,7 @@ export default async function handler(req, res) {
             deckImage.buffer?.length,
           );
           imageResponse = await sendDiscordWebhookFile(webhookUrl, deckImage, {
-            embed: dataEmbed,
+            content: directContent,
           });
           console.log(
             "Discord webhook response ok=",
