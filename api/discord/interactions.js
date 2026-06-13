@@ -14,6 +14,7 @@ import {
   fetchClanMembers,
   fetchPlayer,
   fetchRaceLog,
+  fetchCards,
 } from "../../backend/services/clashApi.js";
 import {
   TOTAL_CARDS,
@@ -25,6 +26,7 @@ import {
   TOUR_REQ,
   computeTourLevel,
 } from "../../backend/services/collectionConstants.js";
+import { getOrSet } from "../../backend/services/cache.js";
 import { summarizeWarDecks } from "../../backend/services/analysisService.js";
 import { loadClanCache } from "../../backend/services/clanCache.js";
 
@@ -194,6 +196,8 @@ function warLeagueLabel(trophies, isFamilyClan = false) {
     : LEAGUE_ICON_GENERIC[label];
   return icon ? `${icon} ${label}` : label;
 }
+const CARD_DEF_CACHE_TTL = 24 * 60 * 60 * 1000;
+const CARD_ICON_CACHE = new Map();
 const TAG_AUTOCOMPLETE_COMMANDS = new Set([
   "trust",
   "stats",
@@ -480,6 +484,141 @@ function buildHistoryCodeBlock(weeks) {
   const deckLine = `- **Decks :** ${formatDeckHistory(weeks)}`;
   const pointLine = `- **Points :** ${formatPointHistory(weeks)}`;
   return `${deckLine}\n${pointLine}`;
+}
+
+async function loadCardDefinitions() {
+  const { value } = await getOrSet(
+    "clashCardDefinitions",
+    () => fetchCards(),
+    CARD_DEF_CACHE_TTL,
+  );
+  return Array.isArray(value) ? value : [];
+}
+
+async function fetchImageDataUrl(url) {
+  if (!url) return null;
+  if (CARD_ICON_CACHE.has(url)) return CARD_ICON_CACHE.get(url);
+
+  const res = await fetch(url);
+  if (!res.ok) return null;
+
+  const buffer = Buffer.from(await res.arrayBuffer());
+  const type = res.headers.get("content-type") || "image/png";
+  const dataUrl = `data:${type};base64,${buffer.toString("base64")}`;
+  CARD_ICON_CACHE.set(url, dataUrl);
+  return dataUrl;
+}
+
+async function buildWarDecksImage(warDecks) {
+  if (!Array.isArray(warDecks) || warDecks.length === 0) return null;
+  const cardDefinitions = await loadCardDefinitions();
+  const cardById = new Map(
+    cardDefinitions
+      .filter((card) => card && card.id !== undefined)
+      .map((card) => [String(card.id), card]),
+  );
+
+  const rows = warDecks.slice(0, 4);
+  const cardWidth = 72;
+  const cardHeight = 96;
+  const cardGap = 8;
+  const padding = 20;
+  const rowHeight = cardHeight + 50;
+  const width = padding * 2 + 8 * cardWidth + 7 * cardGap;
+  const height = padding * 2 + rows.length * rowHeight;
+
+  const uniqueUrls = new Map();
+  for (const deck of rows) {
+    const ids = Array.isArray(deck.cardIds) ? deck.cardIds : [];
+    for (const id of ids) {
+      const card = cardById.get(String(id));
+      if (card?.iconUrls?.medium) {
+        uniqueUrls.set(card.iconUrls.medium, null);
+      }
+    }
+  }
+
+  await Promise.all(
+    [...uniqueUrls.keys()].map(async (url) => {
+      uniqueUrls.set(url, await fetchImageDataUrl(url));
+    }),
+  );
+
+  const escapeText = (value) =>
+    String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+  const deckRows = rows.map((deck, rowIndex) => {
+    const y = padding + rowIndex * rowHeight;
+    const ids = Array.isArray(deck.cardIds) ? deck.cardIds : [];
+    const cardsSvg = ids
+      .slice(0, 8)
+      .map((id, index) => {
+        const card = cardById.get(String(id));
+        const url = card?.iconUrls?.medium
+          ? uniqueUrls.get(card.iconUrls.medium)
+          : null;
+        const x = padding + index * (cardWidth + cardGap);
+        return url
+          ? `<image x="${x}" y="${y}" width="${cardWidth}" height="${cardHeight}" href="${url}" preserveAspectRatio="xMidYMid slice"/>`
+          : `<rect x="${x}" y="${y}" width="${cardWidth}" height="${cardHeight}" rx="10" ry="10" fill="#22303f"/>`;
+      })
+      .join("");
+
+    const metaParts = [];
+    if (Number.isFinite(deck.tension)) {
+      metaParts.push(`Tension ${Math.round(deck.tension * 100)}%`);
+    }
+    if (Number.isFinite(deck.winRate)) {
+      metaParts.push(`Winrate ${deck.winRate}%`);
+    }
+    if (Number.isFinite(deck.plays)) {
+      metaParts.push(`${deck.plays}x joué`);
+    }
+    const metaText = metaParts.join(" • ");
+    return `${cardsSvg}
+      <text x="${padding}" y="${y + cardHeight + 20}" fill="#ffffff" font-family="Arial, sans-serif" font-size="14">${escapeText(deck.label)}${metaText ? ` · ${escapeText(metaText)}` : ""}</text>`;
+  });
+
+  const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <style type="text/css"><![CDATA[
+      .bg { fill: #0f172a; }
+      .text { font-family: Arial, sans-serif; font-size: 14px; fill: #ffffff; }
+    ]]></style>
+  </defs>
+  <rect width="100%" height="100%" class="bg" rx="24" ry="24" />
+  ${deckRows.join("\n")}
+</svg>`;
+  return Buffer.from(svg, "utf8");
+}
+
+async function sendDiscordWebhookEmbedWithImage(
+  webhookUrl,
+  embed,
+  imageBuffer,
+  filename = "tension-decks.svg",
+  mimeType = "image/svg+xml",
+) {
+  if (!imageBuffer) {
+    return fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ embeds: [embed] }),
+    });
+  }
+
+  const embedWithImage = {
+    ...embed,
+    image: { url: `attachment://${filename}` },
+  };
+  const form = new FormData();
+  form.append("payload_json", JSON.stringify({ embeds: [embedWithImage] }));
+  form.append("file", new Blob([imageBuffer], { type: mimeType }), filename);
+  return fetch(webhookUrl, { method: "POST", body: form });
 }
 
 function formatWarDecksField(warDecks) {
@@ -1921,11 +2060,22 @@ export default async function handler(req, res) {
           fields,
         };
 
-        await fetch(webhookUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ embeds: [embed] }),
-        });
+        let deckImage = null;
+        try {
+          deckImage = await buildWarDecksImage(warDecks);
+        } catch {
+          deckImage = null;
+        }
+
+        const response = await sendDiscordWebhookEmbedWithImage(
+          webhookUrl,
+          embed,
+          deckImage,
+        );
+
+        if (!response.ok && deckImage) {
+          await sendDiscordWebhookEmbedWithImage(webhookUrl, embed, null);
+        }
       } catch (err) {
         await fetch(webhookUrl, {
           method: "POST",
