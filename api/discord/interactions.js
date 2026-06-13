@@ -808,12 +808,26 @@ async function sendDiscordWebhookFile(webhookUrl, image, options = {}) {
     } else if (options?.content) {
       payload.content = options.content;
     }
+    let useIndexedFile = false;
     if (options?.embed) {
       payload.embeds = [options.embed];
+      if (options.embed.image?.url?.startsWith("attachment://")) {
+        payload.attachments = [
+          {
+            id: 0,
+            filename,
+          },
+        ];
+        useIndexedFile = true;
+      }
     }
     form.append("payload_json", JSON.stringify(payload));
     const blob = new Blob([image.buffer], { type: contentType });
-    form.append("file", blob, filename);
+    if (useIndexedFile) {
+      form.append("files[0]", blob, filename);
+    } else {
+      form.append("file", blob, filename);
+    }
     const response = await fetch(webhookUrl, { method: "POST", body: form });
     if (!response.ok) {
       const text = await response.text();
