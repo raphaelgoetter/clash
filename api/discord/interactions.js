@@ -595,11 +595,12 @@ async function buildWarDecksImage(warDecks) {
     clearTimeout(abortTimeout);
   }
 
-  const escapeText = (value) =>
-    String(value || "")
+  function escapeText(value) {
+    return String(value || "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
+  }
 
   const deckRows = rows.map((deck, deckIndex) => {
     const yStart = rows.slice(0, deckIndex).reduce((sum, prevDeck) => {
