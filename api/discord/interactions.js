@@ -783,10 +783,8 @@ async function sendDiscordWebhookEmbedWithImage(webhookUrl, embed, image) {
         JSON.stringify({ content: embed.description }),
       );
     }
-    form.append("file", image.buffer, {
-      filename,
-      contentType,
-    });
+    const blob = new Blob([image.buffer], { type: contentType });
+    form.append("file", blob, filename);
     return await fetch(webhookUrl, { method: "POST", body: form });
   } catch (err) {
     console.error("Erreur d'envoi webhook Discord :", err);
@@ -814,10 +812,8 @@ async function sendDiscordWebhookFile(webhookUrl, image, options = {}) {
       payload.embeds = [options.embed];
     }
     form.append("payload_json", JSON.stringify(payload));
-    form.append("file", image.buffer, {
-      filename,
-      contentType,
-    });
+    const blob = new Blob([image.buffer], { type: contentType });
+    form.append("file", blob, filename);
     const response = await fetch(webhookUrl, { method: "POST", body: form });
     if (!response.ok) {
       const text = await response.text();
