@@ -649,7 +649,7 @@ async function buildWarDecksImage(warDecks) {
       const tension = Number.isFinite(match.tension)
         ? `${Math.round(match.tension * 100)}%`
         : "?";
-      const line = `- 👥 ${opponentName} · <:tower:1515395461140447342> ${towerLevel} · ${resultIcon} ${score} · ${tension}`;
+      const line = `- 👥 ${opponentName} · <:tower:1515395461140447342> ${towerLevel} · ${resultIcon} ${score} · <:warn:1506174837519945800> ${tension}`;
       const lineY = labelY + 22 + index * textLineHeight;
       return `<text x="${padding}" y="${lineY}" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#e2e8f0">${escapeText(line)}</text>`;
     });
@@ -696,28 +696,42 @@ function buildWarDecksTextFallbackImage(warDecks) {
   if (!Array.isArray(warDecks) || warDecks.length === 0) {
     lines.push("Aucune donnée GDC à afficher.");
   } else {
-    for (const deck of warDecks.slice(0, 4)) {
-      lines.push(`Deck ${deck.label || "?"}`);
+    const entries = [];
+    warDecks.slice(0, 4).forEach((deck, deckIndex) => {
+      const deckLabel = deck.label || "Deck";
       const matchLines = Array.isArray(deck.matches) ? deck.matches : [];
-      if (matchLines.length === 0) {
-        lines.push("  Pas de match GDC disponible.");
-      } else {
-        for (const match of matchLines.slice(0, 4)) {
-          const opponentName = escapeText(match.opponentName || "?");
-          const towerLevel = Number.isFinite(match.opponentTourLevel)
-            ? match.opponentTourLevel
-            : "?";
-          const score = escapeText(match.score || "?");
-          const tension = Number.isFinite(match.tension)
-            ? `${Math.round(match.tension * 100)}%`
-            : "?";
-          const resultIcon = match.result === "win" ? "✅" : "❌";
-          lines.push(
-            `  👥 ${opponentName} · <:tower:1515395461140447342> ${towerLevel} · ${resultIcon} ${score} · ${tension}`,
-          );
-        }
+      matchLines.slice(0, 4).forEach((match, matchIndex) => {
+        entries.push({
+          deckIndex,
+          deckLabel,
+          matchIndex,
+          match,
+        });
+      });
+    });
+
+    if (entries.length === 0) {
+      lines.push("Aucune donnée de match GDC disponible.");
+    } else {
+      entries.sort((a, b) =>
+        a.matchIndex !== b.matchIndex
+          ? a.matchIndex - b.matchIndex
+          : a.deckIndex - b.deckIndex,
+      );
+      for (const entry of entries) {
+        const opponentName = escapeText(entry.match.opponentName || "?");
+        const towerLevel = Number.isFinite(entry.match.opponentTourLevel)
+          ? entry.match.opponentTourLevel
+          : "?";
+        const score = escapeText(entry.match.score || "?");
+        const tension = Number.isFinite(entry.match.tension)
+          ? `${Math.round(entry.match.tension * 100)}%`
+          : "?";
+        const resultIcon = entry.match.result === "win" ? "✅" : "❌";
+        lines.push(
+          `- ${entry.deckLabel} #${entry.matchIndex + 1} : <:members:1506175789731811399> ${opponentName} · <:tower:1515395461140447342> ${towerLevel} · ${resultIcon} ${score} · <:warn:1506174837519945800> ${tension}`,
+        );
       }
-      lines.push("");
     }
   }
 
@@ -779,7 +793,7 @@ async function sendDiscordWebhookEmbedWithImage(webhookUrl, embed, image) {
     };
     const form = new FormData();
     form.append("payload_json", JSON.stringify({ embeds: [embedWithImage] }));
-    form.append("file", image.buffer, {
+    form.append("files[0]", image.buffer, {
       filename,
       contentType,
     });
@@ -799,49 +813,43 @@ function formatWarDecksField(warDecks) {
   const lines = [];
   if (!Array.isArray(warDecks)) return null;
 
+  const entries = [];
+  warDecks.slice(0, 4).forEach((deck, deckIndex) => {
+    const deckLabel = deck.label || "Deck";
+    const matchLines = Array.isArray(deck.matches) ? deck.matches : [];
+    matchLines.slice(0, 4).forEach((match, matchIndex) => {
+      entries.push({ deckIndex, matchIndex, deckLabel, match });
+    });
+  });
+
+  entries.sort((a, b) =>
+    a.matchIndex !== b.matchIndex
+      ? a.matchIndex - b.matchIndex
+      : a.deckIndex - b.deckIndex,
+  );
+
   const maxLines = 20;
   let totalLines = 0;
 
-  for (const deck of warDecks) {
+  for (const entry of entries) {
     if (totalLines >= maxLines) break;
-    const deckLabel = deck.label || "Deck";
-    const matchLines = Array.isArray(deck.matches) ? deck.matches : [];
-    if (matchLines.length === 0) {
-      const playedLabel = deck.plays === 1 ? "1x" : `${deck.plays}x`;
-      const tensionLabel = Number.isFinite(deck.tension)
-        ? ` · Tension ${Math.round(deck.tension * 100)}%`
-        : "";
-      lines.push(
-        `- ${deckLabel} : ${deck.cards} (Joué ${playedLabel}, Winrate ${deck.winRate}%${tensionLabel})`,
-      );
-      totalLines += 1;
-      continue;
-    }
-
-    matchLines.some((match, index) => {
-      if (totalLines >= maxLines) return true;
-      const resultEmoji =
-        match.result === "win"
-          ? "<:success:1499002702208958577>"
-          : "<:error:1499002755841265826>";
-      const opponentName = match.opponentName || "?";
-      const towerLevel = Number.isFinite(match.opponentTourLevel)
-        ? match.opponentTourLevel
-        : "?";
-      const score = match.score || "?";
-      const tension = Number.isFinite(match.tension)
-        ? `${Math.round(match.tension * 100)}%`
-        : "?";
-      lines.push(
-        `- ${deckLabel} #${index + 1} : <:members:1506175789731811399> ${opponentName} · <:tower:1515395461140447342> ${towerLevel} · ${resultEmoji} ${score} · ${tension}`,
-      );
-      totalLines += 1;
-      return false;
-    });
-
-    if (matchLines.length > 0 && totalLines >= maxLines) {
-      break;
-    }
+    const match = entry.match;
+    const resultEmoji =
+      match.result === "win"
+        ? "<:success:1499002702208958577>"
+        : "<:error:1499002755841265826>";
+    const opponentName = match.opponentName || "?";
+    const towerLevel = Number.isFinite(match.opponentTourLevel)
+      ? match.opponentTourLevel
+      : "?";
+    const score = match.score || "?";
+    const tension = Number.isFinite(match.tension)
+      ? `${Math.round(match.tension * 100)}%`
+      : "?";
+    lines.push(
+      `- ${entry.deckLabel} #${entry.matchIndex + 1} : <:members:1506175789731811399> ${opponentName} · <:tower:1515395461140447342> ${towerLevel} · ${resultEmoji} ${score} · <:warn:1506174837519945800> ${tension}`,
+    );
+    totalLines += 1;
   }
 
   if (lines.length === 0) return null;
