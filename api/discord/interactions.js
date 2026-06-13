@@ -793,7 +793,7 @@ async function sendDiscordWebhookEmbedWithImage(webhookUrl, embed, image) {
     };
     const form = new FormData();
     form.append("payload_json", JSON.stringify({ embeds: [embedWithImage] }));
-    form.append("files[0]", image.buffer, {
+    form.append("file", image.buffer, {
       filename,
       contentType,
     });
