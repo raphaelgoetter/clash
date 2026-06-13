@@ -405,23 +405,12 @@ async function registerAtUrl(url) {
 
 (async () => {
   try {
-    // Supprimer les commandes guild si DISCORD_GUILD_ID est défini (évite les doublons).
     if (guildUrl) {
-      const res = await fetch(guildUrl, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bot ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify([]),
-      });
-      if (!res.ok) {
-        console.error("Failed to clear guild commands", await res.json());
-        process.exit(1);
-      }
-      console.log("Guild commands cleared.");
+      // Register guild commands for instant availability in the configured server.
+      await registerAtUrl(guildUrl);
+      console.log("Guild commands registered.");
     }
-    // Enregistrement global uniquement.
+    // Keep global registration for long-term availability outside the guild.
     await registerAtUrl(globalUrl);
     console.log(
       "Global command registration done (may take up to 1 hour to propagate).",
