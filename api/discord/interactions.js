@@ -856,52 +856,37 @@ function formatWarDecksField(warDecks) {
   const lines = [];
   if (!Array.isArray(warDecks)) return null;
 
-  const entries = [];
-  warDecks.slice(0, 4).forEach((deck, deckIndex) => {
+  for (
+    let deckIndex = 0;
+    deckIndex < Math.min(warDecks.length, 4);
+    deckIndex += 1
+  ) {
+    const deck = warDecks[deckIndex];
     const deckLabel = deck.label || `Deck ${deckIndex + 1}`;
     const matchLines = Array.isArray(deck.matches) ? deck.matches : [];
+    if (matchLines.length === 0) continue;
+
+    lines.push(`**${deckLabel}**`);
     matchLines.slice(0, 2).forEach((match, matchIndex) => {
-      entries.push({ deckIndex, matchIndex, deckLabel, match });
+      const opponentName = match.opponentName || "?";
+      const towerLevel = Number.isFinite(match.opponentTourLevel)
+        ? match.opponentTourLevel
+        : "?";
+      const score = match.score || "?";
+      const tension = Number.isFinite(match.tension)
+        ? `${Math.round(match.tension * 100)}%`
+        : "?";
+      const resultEmoji = match.result === "win" ? "✅" : "❌";
+      lines.push(
+        `- #${matchIndex + 1} : <:members:1506175789731811399> ${opponentName} · <:tower:1515395461140447342> ${towerLevel} · ${resultEmoji} ${score} · <:warn:1506174837519945800> ${tension}`,
+      );
     });
-  });
-
-  entries.sort((a, b) =>
-    a.deckIndex !== b.deckIndex
-      ? a.deckIndex - b.deckIndex
-      : a.matchIndex - b.matchIndex,
-  );
-
-  const maxLines = 8;
-  const truncated = entries.length > maxLines;
-  let totalLines = 0;
-
-  for (const entry of entries) {
-    if (totalLines >= maxLines) break;
-    const match = entry.match;
-    const resultEmoji =
-      match.result === "win"
-        ? "<:success:1499002702208958577>"
-        : "<:error:1499002755841265826>";
-    const opponentName = match.opponentName || "?";
-    const towerLevel = Number.isFinite(match.opponentTourLevel)
-      ? match.opponentTourLevel
-      : "?";
-    const score = match.score || "?";
-    const tension = Number.isFinite(match.tension)
-      ? `${Math.round(match.tension * 100)}%`
-      : "?";
-    lines.push(
-      `- ${entry.deckLabel} #${entry.matchIndex + 1} : <:members:1506175789731811399> ${opponentName} · <:tower:1515395461140447342> ${towerLevel} · ${resultEmoji} ${score} · <:warn:1506174837519945800> ${tension}`,
-    );
-    totalLines += 1;
+    if (deckIndex < Math.min(warDecks.length, 4) - 1) {
+      lines.push("\u200b");
+    }
   }
 
   if (lines.length === 0) return null;
-  if (truncated && totalLines >= maxLines) {
-    lines.push(
-      "... et plus de matchs sont disponibles dans l'analyse complète.",
-    );
-  }
 
   let value = lines.join("\n");
   if (value.length > 1000) {
@@ -2377,12 +2362,12 @@ export default async function handler(req, res) {
 
         let imageResponse = null;
         if (deckImage?.buffer) {
-          const directContent =
-            `⚡ [Tension GDC : ${analysis.overview.name}](${trustPlayerUrl(tag)})\n` +
-            (averageTension
-              ? `Tension moyenne : ${averageTension}`
-              : "Tension moyenne inconnue") +
-            (warDecksField ? `\n\n${warDecksField}` : "");
+          const directContent = averageTension
+            ? `⚡ Tension GDC : ${analysis.overview.name}\nTension moyenne : ${averageTension}`
+            : `⚡ Tension GDC : ${analysis.overview.name}`;
+          const content = warDecksField
+            ? `${directContent}\n\n${warDecksField}`
+            : directContent;
 
           console.log(
             "Sending deck image with direct content:",
@@ -2394,7 +2379,7 @@ export default async function handler(req, res) {
             deckImage.buffer?.length,
           );
           imageResponse = await sendDiscordWebhookFile(webhookUrl, deckImage, {
-            content: directContent,
+            content,
           });
           console.log(
             "Discord webhook response ok=",
