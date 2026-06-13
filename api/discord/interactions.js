@@ -616,7 +616,7 @@ async function buildWarDecksImage(warDecks) {
       return (
         sum +
         cardHeight +
-        labelHeight +
+        labelSpacing +
         matchCount * textLineHeight +
         deckSpacing
       );
@@ -755,6 +755,7 @@ async function sendDiscordWebhookEmbedWithImage(webhookUrl, embed, image) {
     }
 
     const filename = image.filename || "tension-decks.png";
+    const contentType = image.mimeType || "image/png";
     const embedWithImage = {
       ...embed,
       image: { url: `attachment://${filename}` },
@@ -766,7 +767,7 @@ async function sendDiscordWebhookEmbedWithImage(webhookUrl, embed, image) {
     form.append("payload_json", JSON.stringify({ embeds: [embedWithImage] }));
     form.append("files[0]", image.buffer, {
       filename,
-      contentType: mimeType,
+      contentType,
     });
     return await fetch(webhookUrl, { method: "POST", body: form });
   } catch (err) {
@@ -2234,31 +2235,24 @@ export default async function handler(req, res) {
         }
 
         const analysis = await apiResp.json();
-        let warDecks = summarizeWarDecks(analysis.battleLog ?? []);
-        const missingMatchData =
-          warDecks.length === 0 ||
-          warDecks.every(
-            (deck) => !Array.isArray(deck.matches) || deck.matches.length === 0,
+        let warDecks = [];
+        try {
+          const battleLogResp = await fetch(
+            `${TRUST_ROYALE_URL}/api/player/${encodeURIComponent(tag)}/battlelog`,
+            { headers: { Accept: "application/json" } },
           );
-        if (missingMatchData) {
-          try {
-            const battleLogResp = await fetch(
-              `${TRUST_ROYALE_URL}/api/player/${encodeURIComponent(tag)}/battlelog`,
-              { headers: { Accept: "application/json" } },
-            );
-            if (battleLogResp.ok) {
-              const battleLog = await battleLogResp.json();
-              const fallbackDecks = summarizeWarDecks(battleLog ?? []);
-              if (fallbackDecks.length > 0) {
-                warDecks = fallbackDecks;
-              }
-            }
-          } catch {
-            // On garde le résumé déjà calculé si le fallback échoue.
+          if (battleLogResp.ok) {
+            const battleLog = await battleLogResp.json();
+            warDecks = summarizeWarDecks(battleLog ?? []);
+          } else {
+            warDecks = summarizeWarDecks(analysis.battleLog ?? []);
           }
+        } catch {
+          warDecks = summarizeWarDecks(analysis.battleLog ?? []);
         }
 
         let deckImage = null;
+        const warDecksField = formatWarDecksField(warDecks);
         try {
           deckImage = await buildWarDecksImage(warDecks);
         } catch {
@@ -2268,20 +2262,26 @@ export default async function handler(req, res) {
           deckImage = buildWarDecksTextFallbackImage(warDecks);
         }
 
-        const hasDecks = Array.isArray(warDecks) && warDecks.length > 0;
         const fields = [];
-        if (!hasDecks) {
+        if (!Array.isArray(warDecks) || warDecks.length === 0) {
           fields.push({
             name: "Aucune donnée GDC :",
             value:
               "Aucune donnée de match GDC trouvée dans le battlelog. Vérifiez que le joueur a des combats récents en guerre.",
             inline: false,
           });
-        } else if (!deckImage) {
+        } else if (!warDecksField) {
           fields.push({
-            name: "Erreur image :",
-            value:
-              "L'image n'a pas pu être générée. Le bot envoie le titre et le tag uniquement.",
+            name: "Aucune donnée de deck :",
+            value: "Aucune synthèse de deck n'a pu être construite.",
+            inline: false,
+          });
+        }
+
+        if (!deckImage && warDecksField) {
+          fields.push({
+            name: "Decks GDC :",
+            value: warDecksField,
             inline: false,
           });
         }
@@ -2294,14 +2294,41 @@ export default async function handler(req, res) {
           fields: fields.length ? fields : undefined,
         };
 
-        const response = await sendDiscordWebhookEmbedWithImage(
+        let response = await sendDiscordWebhookEmbedWithImage(
           webhookUrl,
           embed,
           deckImage,
         );
 
-        if (!response.ok && deckImage) {
-          await sendDiscordWebhookEmbedWithImage(webhookUrl, embed, null);
+        if (!response.ok) {
+          if (deckImage) {
+            response = await sendDiscordWebhookEmbedWithImage(
+              webhookUrl,
+              embed,
+              null,
+            );
+          }
+          if (!response.ok && warDecksField) {
+            await fetch(webhookUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                embeds: [
+                  {
+                    ...embed,
+                    image: undefined,
+                    fields: [
+                      {
+                        name: "Decks GDC :",
+                        value: warDecksField,
+                        inline: false,
+                      },
+                    ],
+                  },
+                ],
+              }),
+            });
+          }
         }
       } catch (err) {
         await fetch(webhookUrl, {

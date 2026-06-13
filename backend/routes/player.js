@@ -194,4 +194,19 @@ router.get("/:tag/analysis", async (req, res) => {
   }
 });
 
+/**
+ * GET /api/player/:tag/battlelog
+ * Returns raw battle log from the Clash Royale API.
+ */
+router.get("/:tag/battlelog", async (req, res) => {
+  try {
+    const battleLog = await fetchBattleLog(req.params.tag);
+    res.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+    res.json(Array.isArray(battleLog) ? battleLog : []);
+  } catch (err) {
+    const status = err.message.includes("404") ? 404 : 500;
+    res.status(status).json({ error: err.message });
+  }
+});
+
 export default router;
