@@ -2125,40 +2125,7 @@ export default async function handler(req, res) {
         }
 
         const analysis = await apiResp.json();
-        const tensionValue = analysis.tension?.average;
-        const tensionField =
-          tensionValue != null
-            ? {
-                name: "Tension GDC moyenne :",
-                value: `${Math.round(tensionValue * 100)}%`,
-                inline: false,
-              }
-            : {
-                name: "Tension GDC moyenne :",
-                value: "Aucune donnée de guerre disponible.",
-                inline: false,
-              };
-
         let warDecks = summarizeWarDecks(analysis.battleLog ?? []);
-        const warDecksField = formatWarDecksField(warDecks);
-
-        const fields = [tensionField];
-        if (warDecksField) {
-          fields.push({
-            name: "Decks GDC :",
-            value: warDecksField,
-            inline: false,
-          });
-        }
-
-        const discordLinks = await getDiscordLinks();
-        const otherAccountsField = await buildOtherAccountsField(
-          tag,
-          discordLinks,
-        );
-        if (otherAccountsField) {
-          fields.push(otherAccountsField);
-        }
 
         let deckImage = null;
         try {
@@ -2167,21 +2134,11 @@ export default async function handler(req, res) {
           deckImage = null;
         }
 
-        const imageStatusField = {
-          name: "Visualisation :",
-          value: deckImage?.buffer
-            ? "🖼️ Image de deck générée et envoyée avec l'embed."
-            : "⚠️ L'image de deck n'a pas pu être générée, affichage texte uniquement.",
-          inline: false,
-        };
-        fields.push(imageStatusField);
-
         const embed = {
           title: `⚡ Tension GDC : ${analysis.overview.name}`,
           url: trustPlayerUrl(tag),
           color: 0xe67e22,
           description: `${tag} · <:trophy:1498645869224792105> ${analysis.overview.trophies ?? 0}`,
-          fields,
         };
 
         const response = await sendDiscordWebhookEmbedWithImage(
@@ -2191,23 +2148,7 @@ export default async function handler(req, res) {
         );
 
         if (!response.ok && deckImage) {
-          const fallbackEmbed = {
-            ...embed,
-            fields: fields.map((field) =>
-              field.name === "Visualisation :"
-                ? {
-                    ...field,
-                    value:
-                      "⚠️ L'image n'a pas pu être envoyée, affichage texte uniquement.",
-                  }
-                : field,
-            ),
-          };
-          await sendDiscordWebhookEmbedWithImage(
-            webhookUrl,
-            fallbackEmbed,
-            null,
-          );
+          await sendDiscordWebhookEmbedWithImage(webhookUrl, embed, null);
         }
       } catch (err) {
         await fetch(webhookUrl, {
