@@ -857,10 +857,10 @@ function formatWarDecksField(warDecks) {
   if (!Array.isArray(warDecks)) return null;
 
   const entries = [];
-  warDecks.slice(0, 4).forEach((deck, deckIndex) => {
-    const deckLabel = deck.label || "Deck";
+  warDecks.slice(0, 8).forEach((deck, deckIndex) => {
+    const deckLabel = deck.label || `Deck ${deckIndex + 1}`;
     const matchLines = Array.isArray(deck.matches) ? deck.matches : [];
-    matchLines.slice(0, 4).forEach((match, matchIndex) => {
+    matchLines.slice(0, 1).forEach((match, matchIndex) => {
       entries.push({ deckIndex, matchIndex, deckLabel, match });
     });
   });
@@ -871,7 +871,8 @@ function formatWarDecksField(warDecks) {
       : a.deckIndex - b.deckIndex,
   );
 
-  const maxLines = 20;
+  const maxLines = 8;
+  const truncated = entries.length > maxLines;
   let totalLines = 0;
 
   for (const entry of entries) {
@@ -896,7 +897,7 @@ function formatWarDecksField(warDecks) {
   }
 
   if (lines.length === 0) return null;
-  if (totalLines >= maxLines) {
+  if (truncated && totalLines >= maxLines) {
     lines.push(
       "... et plus de matchs sont disponibles dans l'analyse complète.",
     );
@@ -2376,14 +2377,16 @@ export default async function handler(req, res) {
 
         let imageResponse = null;
         if (deckImage?.buffer) {
-          const directContent = warDecksField
-            ? `Tension moyenne : ${averageTension ?? "N/A"}\n\n${warDecksField}`
-            : averageTension
-              ? `Tension moyenne : ${averageTension}`
-              : "Analyse GDC disponible.";
+          const directContent =
+            `⚡ [Tension GDC : ${analysis.overview.name}](${trustPlayerUrl(tag)})\n` +
+            (warDecksField
+              ? `\nTension moyenne : ${averageTension ?? "N/A"}\n\n${warDecksField}`
+              : averageTension
+                ? `\nTension moyenne : ${averageTension}`
+                : "\nAnalyse GDC disponible.");
 
           console.log(
-            "Sending deck image as direct file, without embedded attachment:",
+            "Sending deck image with embed title and direct content:",
             deckImage.filename,
             deckImage.mimeType,
             "bufferType=",
@@ -2393,6 +2396,7 @@ export default async function handler(req, res) {
           );
           imageResponse = await sendDiscordWebhookFile(webhookUrl, deckImage, {
             content: directContent,
+            embed: dataEmbed,
           });
           console.log(
             "Discord webhook response ok=",
