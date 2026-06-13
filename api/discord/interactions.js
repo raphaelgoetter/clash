@@ -645,12 +645,11 @@ async function buildWarDecksImage(warDecks) {
         ? match.opponentTourLevel
         : "?";
       const score = escapeText(match.score || "?");
-      const resultLabel = match.result === "win" ? "Victoire" : "Défaite";
       const resultIcon = match.result === "win" ? "✅" : "❌";
       const tension = Number.isFinite(match.tension)
         ? `${Math.round(match.tension * 100)}%`
         : "?";
-      const line = `- 👥 ${opponentName} · 🏰 Tour ${towerLevel} · ${resultIcon} ${resultLabel} ${score} · ⚡ Tension ${tension}`;
+      const line = `- 👥 ${opponentName} · <:tower:1515395461140447342> ${towerLevel} · ${resultIcon} ${score} · ${tension}`;
       const lineY = labelY + 22 + index * textLineHeight;
       return `<text x="${padding}" y="${lineY}" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#e2e8f0">${escapeText(line)}</text>`;
     });
@@ -709,12 +708,12 @@ function buildWarDecksTextFallbackImage(warDecks) {
             ? match.opponentTourLevel
             : "?";
           const score = escapeText(match.score || "?");
-          const resultLabel = match.result === "win" ? "Victoire" : "Défaite";
           const tension = Number.isFinite(match.tension)
             ? `${Math.round(match.tension * 100)}%`
             : "?";
+          const resultIcon = match.result === "win" ? "✅" : "❌";
           lines.push(
-            `  👥 ${opponentName} · 🏰 Tour ${towerLevel} · ${resultLabel} ${score} · ⚡ ${tension}`,
+            `  👥 ${opponentName} · <:tower:1515395461140447342> ${towerLevel} · ${resultIcon} ${score} · ${tension}`,
           );
         }
       }
@@ -737,11 +736,26 @@ function buildWarDecksTextFallbackImage(warDecks) {
     )
     .join("")}
 </svg>`;
-  return {
-    buffer: Buffer.from(svg, "utf8"),
-    mimeType: "image/svg+xml",
-    filename: "tension-decks-fallback.svg",
-  };
+  const svgBuffer = Buffer.from(svg, "utf8");
+  try {
+    const resvg = new Resvg(svgBuffer, {
+      fitTo: { mode: "width", value: width },
+      background: "#0f172a",
+    });
+    const pngData = resvg.render();
+    return {
+      buffer: pngData.asPng(),
+      mimeType: "image/png",
+      filename: "tension-decks-fallback.png",
+    };
+  } catch (err) {
+    console.error("Resvg fallback a échoué :", err?.message || err);
+    return {
+      buffer: svgBuffer,
+      mimeType: "image/svg+xml",
+      filename: "tension-decks-fallback.svg",
+    };
+  }
 }
 
 async function sendDiscordWebhookEmbedWithImage(webhookUrl, embed, image) {
@@ -765,7 +779,7 @@ async function sendDiscordWebhookEmbedWithImage(webhookUrl, embed, image) {
     };
     const form = new FormData();
     form.append("payload_json", JSON.stringify({ embeds: [embedWithImage] }));
-    form.append("files[0]", image.buffer, {
+    form.append("file", image.buffer, {
       filename,
       contentType,
     });
@@ -815,12 +829,11 @@ function formatWarDecksField(warDecks) {
         ? match.opponentTourLevel
         : "?";
       const score = match.score || "?";
-      const resultLabel = match.result === "win" ? "Victoire" : "Défaite";
       const tension = Number.isFinite(match.tension)
         ? `${Math.round(match.tension * 100)}%`
         : "?";
       lines.push(
-        `- ${deckLabel} #${index + 1} : <:members:1506175789731811399> ${opponentName} · <:tower:1515395461140447342> Tour ${towerLevel} · ${resultEmoji} ${resultLabel} ${score} · <:success:1499002702208958577> Tension ${tension}`,
+        `- ${deckLabel} #${index + 1} : <:members:1506175789731811399> ${opponentName} · <:tower:1515395461140447342> ${towerLevel} · ${resultEmoji} ${score} · ${tension}`,
       );
       totalLines += 1;
       return false;
@@ -2297,11 +2310,16 @@ export default async function handler(req, res) {
           });
         }
 
+        const averageTension = Number.isFinite(analysis.tension?.average)
+          ? `${Math.round(analysis.tension.average * 100)}%`
+          : null;
         const embed = {
           title: `⚡ Tension GDC : ${analysis.overview.name}`,
           url: trustPlayerUrl(tag),
           color: 0xe67e22,
-          description: `${tag} · <:trophy:1498645869224792105> ${analysis.overview.trophies ?? 0}`,
+          description: averageTension
+            ? `Tension moyenne : ${averageTension}`
+            : undefined,
           fields: fields.length ? fields : undefined,
         };
 
