@@ -545,12 +545,12 @@ async function buildWarDecksImage(warDecks) {
   const rows = warDecks.slice(0, 4);
   const cardWidth = 144;
   const cardHeight = 192;
-  const cardGap = 10;
+  const cardGap = 8;
   const padding = 20;
-  const labelSpacing = 10;
-  const matchTopSpacing = 16;
-  const textLineHeight = 18;
-  const deckSpacing = 12;
+  const labelSpacing = 6;
+  const matchTopSpacing = 12;
+  const textLineHeight = 16;
+  const deckSpacing = 8;
   const width = padding * 2 + 8 * cardWidth + 7 * cardGap;
   const height =
     padding * 2 +
@@ -637,7 +637,7 @@ async function buildWarDecksImage(warDecks) {
       })
       .join("");
 
-    const labelY = yStart + cardHeight + 14;
+    const labelY = yStart + cardHeight + 10;
     const matchLines = Array.isArray(deck.matches) ? deck.matches : [];
     const renderedMatchLines = matchLines.slice(0, 4).map((match, index) => {
       const opponentName = escapeText(match.opponentName || "?");
@@ -650,17 +650,17 @@ async function buildWarDecksImage(warDecks) {
         ? `${Math.round(match.tension * 100)}%`
         : "?";
       const line = `- 👥 ${opponentName} · <:tower:1515395461140447342> ${towerLevel} · ${resultIcon} ${score} · <:warn:1506174837519945800> ${tension}`;
-      const lineY = labelY + 18 + index * textLineHeight;
+      const lineY = labelY + 14 + index * textLineHeight;
       return `<text x="${padding}" y="${lineY}" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#e2e8f0">${escapeText(line)}</text>`;
     });
 
     const deckTitle = escapeText(deck.label || `Deck ${deckIndex + 1}`);
     return `
-      <rect x="${padding - 8}" y="${yStart - 8}" width="${cardWidth * 8 + cardGap * 7 + 16}" height="${cardHeight + 12 + labelSpacing + matchLines.slice(0, 4).length * textLineHeight + matchTopSpacing}" rx="28" fill="rgba(148, 163, 184, 0.08)" stroke="#334155" stroke-width="2"/>
+      <rect x="${padding - 6}" y="${yStart - 4}" width="${cardWidth * 8 + cardGap * 7 + 12}" height="${cardHeight + 10 + labelSpacing + matchLines.slice(0, 4).length * textLineHeight + matchTopSpacing}" rx="20" fill="rgba(148, 163, 184, 0.06)" stroke="#334155" stroke-width="1.5"/>
       ${cardsSvg}
-      <rect x="${padding}" y="${labelY - 28}" width="44" height="24" rx="12" fill="#2563eb" />
-      <text x="${padding + 22}" y="${labelY - 10}" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#f8fafc" font-weight="700">#${deckIndex + 1}</text>
-      <text x="${padding + 60}" y="${labelY - 10}" font-family="Inter, system-ui, sans-serif" font-size="16" fill="#f8fafc" font-weight="700">${deckTitle}</text>
+      <rect x="${padding}" y="${yStart - 22}" width="70" height="28" rx="14" fill="#0ea5e9" />
+      <text x="${padding + 35}" y="${yStart - 4}" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="15" fill="#ffffff" font-weight="800">#${deckIndex + 1}</text>
+      <text x="${padding + 80}" y="${yStart - 4}" font-family="Inter, system-ui, sans-serif" font-size="16" fill="#f8fafc" font-weight="700">${deckTitle}</text>
       ${renderedMatchLines.join("")}
     `;
   });
@@ -2352,15 +2352,9 @@ export default async function handler(req, res) {
             value: "Aucune synthèse de deck n'a pu être construite.",
             inline: false,
           });
-        } else if (deckImage) {
-          fields.push({
-            name: "Decks affichés :",
-            value: `${Math.min(warDecks.length, 8)} deck(s)`,
-            inline: false,
-          });
         }
 
-        if (!deckImage && warDecksField) {
+        if (warDecksField) {
           fields.push({
             name: "Decks GDC :",
             value: warDecksField,
