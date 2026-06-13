@@ -24,6 +24,7 @@ import {
   countHeroes,
 } from "../../backend/services/collectionConstants.js";
 import { summarizeWarDecks } from "../../backend/services/analysisService.js";
+import { loadClanCache } from "../../backend/services/clanCache.js";
 
 const _require = createRequire(import.meta.url);
 const COLLECTION_LEVELS = _require("../../data/collection_levels.json");
@@ -219,31 +220,18 @@ function formatDiscordRoleWithTiming(role, timingLabels = []) {
 }
 
 async function readClanCacheMembers(clanTag) {
-  const cacheFile = path.join(
-    __dirname,
-    "..",
-    "..",
-    "frontend",
-    "public",
-    "clan-cache",
-    `${clanTag}.json`,
+  const data = await loadClanCache(clanTag);
+  const members = Array.isArray(data?.members) ? data.members : [];
+  return new Map(
+    members.map((member) => [
+      normalizeTag(member.tag),
+      {
+        name: member.name || normalizeTag(member.tag),
+        role: member.role || "member",
+        tag: member.tag || `#${normalizeTag(member.tag)}`,
+      },
+    ]),
   );
-  try {
-    const raw = await readFile(cacheFile, "utf-8");
-    const data = JSON.parse(raw);
-    const members = Array.isArray(data.members) ? data.members : [];
-    return new Map(
-      members.map((member) => [
-        normalizeTag(member.tag),
-        {
-          name: member.name || normalizeTag(member.tag),
-          role: member.role || "member",
-        },
-      ]),
-    );
-  } catch {
-    return new Map();
-  }
 }
 
 const FAIL_WAR_DAY_LABELS = [
@@ -2978,6 +2966,18 @@ export default async function handler(req, res) {
         }
 
         const snapshotMembersByTag = await readClanCacheMembers(resolved.tag);
+        if (snapshotMembersByTag.size === 0) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `❌ Impossible de charger la liste des membres de ${resolved.name}.`,
+              flags: 64,
+            }),
+          });
+          return;
+        }
+
         const decksByTag = new Map(
           Object.entries(prevDaySnap.decks).map(([tag, value]) => [
             normalizeTag(tag),
