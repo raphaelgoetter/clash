@@ -165,6 +165,13 @@ const trustPlayerUrl = (tag) =>
   `${TRUST_ROYALE_URL}/fr/player/${String(tag).replace(/^#/, "")}`;
 const trustClanUrl = (tag) =>
   `${TRUST_ROYALE_URL}/fr/clan/${String(tag).replace(/^#/, "")}`;
+
+function buildDiscordWebhookUrl(body) {
+  const appId = process.env.DISCORD_APP_ID || body?.application_id;
+  if (!appId || !body?.token) return null;
+  return `https://discord.com/api/v10/webhooks/${appId}/${body.token}`;
+}
+
 const ALLOWED_CLAN_TAGS = new Set(["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"]);
 const FAMILY_CLAN_TAGS = new Set([...ALLOWED_CLAN_TAGS, "QUV220GJ"]);
 const RESISTANTS_CLAN_TAG = "#LRQP20V9";
@@ -2044,7 +2051,11 @@ export default async function handler(req, res) {
 
     res.status(200).json({ type: 5 });
     const tag = rawTag.startsWith("#") ? rawTag : `#${rawTag}`;
-    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    if (!webhookUrl) {
+      console.error("Discord webhook URL non construite pour /tension");
+      return;
+    }
 
     runBackground(async () => {
       try {
