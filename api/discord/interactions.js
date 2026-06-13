@@ -804,14 +804,22 @@ async function sendDiscordWebhookFile(webhookUrl, image, content) {
     const filename = image.filename || "tension-decks.png";
     const contentType = image.mimeType || "image/png";
     const form = new FormData();
-    if (content) {
-      form.append("payload_json", JSON.stringify({ content }));
-    }
-    form.append("files[0]", image.buffer, {
+    form.append("payload_json", JSON.stringify({ content: content ?? "" }));
+    form.append("file", image.buffer, {
       filename,
       contentType,
     });
-    return await fetch(webhookUrl, { method: "POST", body: form });
+    const response = await fetch(webhookUrl, { method: "POST", body: form });
+    if (!response.ok) {
+      const text = await response.text();
+      console.error(
+        "Discord file webhook failed:",
+        response.status,
+        response.statusText,
+        text,
+      );
+    }
+    return response;
   } catch (err) {
     console.error("Erreur d'envoi webhook Discord (file) :", err);
     return {
