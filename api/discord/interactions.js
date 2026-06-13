@@ -673,7 +673,6 @@ async function sendDiscordWebhookEmbedWithImage(webhookUrl, embed, image) {
     }
 
     const filename = image.filename || "tension-decks.png";
-    const mimeType = image.mimeType || "image/png";
     const embedWithImage = {
       ...embed,
       image: { url: `attachment://${filename}` },
@@ -683,11 +682,10 @@ async function sendDiscordWebhookEmbedWithImage(webhookUrl, embed, image) {
     };
     const form = new FormData();
     form.append("payload_json", JSON.stringify({ embeds: [embedWithImage] }));
-    form.append(
-      "files[0]",
-      new Blob([image.buffer], { type: mimeType }),
+    form.append("files[0]", image.buffer, {
       filename,
-    );
+      contentType: mimeType,
+    });
     return await fetch(webhookUrl, { method: "POST", body: form });
   } catch (err) {
     console.error("Erreur d'envoi webhook Discord :", err);
@@ -2185,11 +2183,30 @@ export default async function handler(req, res) {
           deckImage = null;
         }
 
+        const hasDecks = Array.isArray(warDecks) && warDecks.length > 0;
+        const fields = [];
+        if (!hasDecks) {
+          fields.push({
+            name: "Aucune donnée GDC :",
+            value:
+              "Aucune donnée de match GDC trouvée dans le battlelog. Vérifiez que le joueur a des combats récents en guerre.",
+            inline: false,
+          });
+        } else if (!deckImage) {
+          fields.push({
+            name: "Erreur image :",
+            value:
+              "L'image n'a pas pu être générée. Le bot envoie le titre et le tag uniquement.",
+            inline: false,
+          });
+        }
+
         const embed = {
           title: `⚡ Tension GDC : ${analysis.overview.name}`,
           url: trustPlayerUrl(tag),
           color: 0xe67e22,
           description: `${tag} · <:trophy:1498645869224792105> ${analysis.overview.trophies ?? 0}`,
+          fields: fields.length ? fields : undefined,
         };
 
         const response = await sendDiscordWebhookEmbedWithImage(
