@@ -2321,7 +2321,16 @@ export default async function handler(req, res) {
         const averageTension = Number.isFinite(analysis.tension?.average)
           ? `${Math.round(analysis.tension.average * 100)}%`
           : null;
-        const embed = {
+        const imageEmbed = {
+          title: `⚡ Tension GDC : ${analysis.overview.name}`,
+          url: trustPlayerUrl(tag),
+          color: 0xe67e22,
+          description: averageTension
+            ? `Tension moyenne : ${averageTension}`
+            : undefined,
+        };
+
+        const dataEmbed = {
           title: `⚡ Tension GDC : ${analysis.overview.name}`,
           url: trustPlayerUrl(tag),
           color: 0xe67e22,
@@ -2331,41 +2340,35 @@ export default async function handler(req, res) {
           fields: fields.length ? fields : undefined,
         };
 
-        let response = await sendDiscordWebhookEmbedWithImage(
-          webhookUrl,
-          embed,
-          deckImage,
-        );
+        let imageResponse = null;
+        if (deckImage?.buffer) {
+          imageResponse = await sendDiscordWebhookEmbedWithImage(
+            webhookUrl,
+            imageEmbed,
+            deckImage,
+          );
+        }
 
-        if (!response.ok) {
-          if (deckImage) {
-            response = await sendDiscordWebhookEmbedWithImage(
-              webhookUrl,
-              embed,
-              null,
-            );
-          }
-          if (!response.ok && warDecksField) {
-            await fetch(webhookUrl, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                embeds: [
-                  {
-                    ...embed,
-                    image: undefined,
-                    fields: [
-                      {
-                        name: "Decks GDC :",
-                        value: warDecksField,
-                        inline: false,
-                      },
-                    ],
-                  },
-                ],
-              }),
-            });
-          }
+        const textResponse = await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ embeds: [dataEmbed] }),
+        });
+
+        if (deckImage?.buffer && imageResponse && !imageResponse.ok) {
+          console.error(
+            "Discord image webhook failed, text message still sent:",
+            imageResponse.status,
+            imageResponse.statusText,
+          );
+        }
+
+        if (!textResponse.ok) {
+          console.error(
+            "Discord text webhook failed:",
+            textResponse.status,
+            textResponse.statusText,
+          );
         }
       } catch (err) {
         await fetch(webhookUrl, {
