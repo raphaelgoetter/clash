@@ -2374,11 +2374,14 @@ export default async function handler(req, res) {
 
         let imageResponse = null;
         if (deckImage?.buffer) {
-          dataEmbed.image = {
-            url: `attachment://${deckImage.filename}`,
-          };
+          const directContent = warDecksField
+            ? `Tension moyenne : ${averageTension ?? "N/A"}\n\n${warDecksField}`
+            : averageTension
+              ? `Tension moyenne : ${averageTension}`
+              : "Analyse GDC disponible.";
+
           console.log(
-            "Sending deck image with embed:",
+            "Sending deck image as direct file, without embedded attachment:",
             deckImage.filename,
             deckImage.mimeType,
             "bufferType=",
@@ -2387,10 +2390,7 @@ export default async function handler(req, res) {
             deckImage.buffer?.length,
           );
           imageResponse = await sendDiscordWebhookFile(webhookUrl, deckImage, {
-            content: averageTension
-              ? `Tension moyenne : ${averageTension}`
-              : undefined,
-            embed: dataEmbed,
+            content: directContent,
           });
           console.log(
             "Discord webhook response ok=",
@@ -2398,19 +2398,24 @@ export default async function handler(req, res) {
             "status=",
             imageResponse.status,
           );
-
           if (!imageResponse.ok) {
-            const fallbackText = warDecksField
-              ? `Tension moyenne : ${averageTension ?? "N/A"}\n\n${warDecksField}`
-              : `Tension moyenne : ${averageTension ?? "N/A"}`;
-            const safeFallback =
-              fallbackText.length > 1900
-                ? `${fallbackText.slice(0, 1897)}...`
-                : fallbackText;
+            const responseText = await imageResponse
+              .text()
+              .catch(() => "<no body>");
+            console.error(
+              "Discord file webhook failed:",
+              imageResponse.status,
+              imageResponse.statusText,
+              responseText,
+            );
             await fetch(webhookUrl, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ content: safeFallback }),
+              body: JSON.stringify({
+                content:
+                  "Échec de l'envoi de l'image. Veuillez vérifier les logs du serveur.",
+                flags: 64,
+              }),
             });
           }
         } else {
@@ -2423,10 +2428,14 @@ export default async function handler(req, res) {
             body: JSON.stringify({ embeds: [dataEmbed] }),
           });
           if (!textResponse.ok) {
+            const responseText = await textResponse
+              .text()
+              .catch(() => "<no body>");
             console.error(
               "Discord text webhook failed:",
               textResponse.status,
               textResponse.statusText,
+              responseText,
             );
             const fallbackText = warDecksField
               ? `Tension moyenne : ${averageTension ?? "N/A"}\n\n${warDecksField}`
