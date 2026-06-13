@@ -268,6 +268,11 @@ assert.strictEqual(
   "Deck 2",
   "summarizeWarDecks should number the second deck",
 );
+assert.strictEqual(
+  warDeckSummary[0].matches[0].dayKey,
+  "2026-05-30",
+  "summarizeWarDecks should preserve the GDC dayKey on matches",
+);
 
 const allBattleDeckSummary = summarizeDecks(
   [

@@ -658,9 +658,9 @@ async function buildWarDecksImage(warDecks) {
     return `
       <rect x="${padding - 6}" y="${yStart - 4}" width="${cardWidth * 8 + cardGap * 7 + 12}" height="${cardHeight + 10 + labelSpacing + matchLines.slice(0, 4).length * textLineHeight + matchTopSpacing}" rx="20" fill="rgba(148, 163, 184, 0.06)" stroke="#334155" stroke-width="1.5"/>
       ${cardsSvg}
-      <rect x="${padding}" y="${yStart - 22}" width="70" height="28" rx="14" fill="#0ea5e9" />
-      <text x="${padding + 35}" y="${yStart - 4}" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="15" fill="#ffffff" font-weight="800">#${deckIndex + 1}</text>
-      <text x="${padding + 80}" y="${yStart - 4}" font-family="Inter, system-ui, sans-serif" font-size="16" fill="#f8fafc" font-weight="700">${deckTitle}</text>
+      <rect x="${padding}" y="${yStart - 34}" width="56" height="28" rx="14" fill="#0ea5e9" />
+      <text x="${padding + 28}" y="${yStart - 20}" text-anchor="middle" dominant-baseline="middle" font-family="Inter, system-ui, sans-serif" font-size="15" fill="#ffffff" font-weight="800">#${deckIndex + 1}</text>
+      <text x="${padding + 72}" y="${yStart - 20}" font-family="Inter, system-ui, sans-serif" font-size="15" fill="#f8fafc" font-weight="700">${deckTitle}</text>
       ${renderedMatchLines.join("")}
     `;
   });
@@ -694,41 +694,67 @@ function buildWarDecksTextFallbackImage(warDecks) {
   if (!Array.isArray(warDecks) || warDecks.length === 0) {
     lines.push("Aucune donnée GDC à afficher.");
   } else {
-    const entries = [];
-    warDecks.slice(0, 4).forEach((deck, deckIndex) => {
-      const deckLabel = deck.label || "Deck";
+    const dayGroups = new Map();
+    for (
+      let deckIndex = 0;
+      deckIndex < Math.min(warDecks.length, 4);
+      deckIndex += 1
+    ) {
+      const deck = warDecks[deckIndex];
+      const deckLabel = deck.label || `Deck ${deckIndex + 1}`;
       const matchLines = Array.isArray(deck.matches) ? deck.matches : [];
-      matchLines.slice(0, 4).forEach((match, matchIndex) => {
-        entries.push({
-          deckIndex,
-          deckLabel,
-          matchIndex,
-          match,
-        });
-      });
-    });
 
-    if (entries.length === 0) {
+      matchLines.slice(0, 4).forEach((match, matchIndex) => {
+        const dayKey = match.dayKey || "";
+        const group = dayGroups.get(dayKey) ?? {
+          dayKey,
+          dayLabel: getWarDayLabel(dayKey),
+          decks: new Map(),
+        };
+        const deckGroup = group.decks.get(deckLabel) ?? {
+          label: deckLabel,
+          matches: [],
+        };
+        if (deckGroup.matches.length < 2) {
+          deckGroup.matches.push({
+            matchIndex,
+            ...match,
+          });
+        }
+        group.decks.set(deckLabel, deckGroup);
+        dayGroups.set(dayKey, group);
+      });
+    }
+
+    if (dayGroups.size === 0) {
       lines.push("Aucune donnée de match GDC disponible.");
     } else {
-      entries.sort((a, b) =>
-        a.matchIndex !== b.matchIndex
-          ? a.matchIndex - b.matchIndex
-          : a.deckIndex - b.deckIndex,
+      const sortedDays = [...dayGroups.values()].sort((a, b) =>
+        b.dayKey.localeCompare(a.dayKey),
       );
-      for (const entry of entries) {
-        const opponentName = escapeText(entry.match.opponentName || "?");
-        const towerLevel = Number.isFinite(entry.match.opponentTourLevel)
-          ? entry.match.opponentTourLevel
-          : "?";
-        const score = escapeText(entry.match.score || "?");
-        const tension = Number.isFinite(entry.match.tension)
-          ? `${Math.round(entry.match.tension * 100)}%`
-          : "?";
-        const resultIcon = entry.match.result === "win" ? "✅" : "❌";
-        lines.push(
-          `- ${entry.deckLabel} #${entry.matchIndex + 1} : <:members:1506175789731811399> ${opponentName} · <:tower:1515395461140447342> ${towerLevel} · ${resultIcon} ${score} · <:warn:1506174837519945800> ${tension}`,
-        );
+      for (const group of sortedDays.slice(0, 2)) {
+        lines.push(`**${group.dayLabel}**`);
+        for (const deckGroup of group.decks.values()) {
+          lines.push(`- ${deckGroup.label}`);
+          deckGroup.matches.forEach((match, matchIndex) => {
+            const opponentName = escapeText(match.opponentName || "?");
+            const towerLevel = Number.isFinite(match.opponentTourLevel)
+              ? match.opponentTourLevel
+              : "?";
+            const score = escapeText(match.score || "?");
+            const tension = Number.isFinite(match.tension)
+              ? `${Math.round(match.tension * 100)}%`
+              : "?";
+            const resultIcon = match.result === "win" ? "✅" : "❌";
+            lines.push(
+              `  - #${matchIndex + 1} : <:members:1506175789731811399> ${opponentName} · <:tower:1515395461140447342> ${towerLevel} · ${resultIcon} ${score} · <:warn:1506174837519945800> ${tension}`,
+            );
+          });
+        }
+        lines.push("\u200b");
+      }
+      if (lines[lines.length - 1] === "\u200b") {
+        lines.pop();
       }
     }
   }
@@ -852,52 +878,109 @@ async function sendDiscordWebhookFile(webhookUrl, image, options = {}) {
   }
 }
 
+const WAR_DAY_SHORT_LABELS_BY_UTC_DAY = {
+  4: "J1",
+  5: "J2",
+  6: "J3",
+  0: "J4",
+};
+
+function getWarDayLabel(dayKey) {
+  if (!dayKey) return "Jour GDC";
+  const date = new Date(`${dayKey}T00:00:00Z`);
+  return WAR_DAY_SHORT_LABELS_BY_UTC_DAY[date.getUTCDay()] || dayKey;
+}
+
 function formatWarDecksField(warDecks) {
-  const lines = [];
   if (!Array.isArray(warDecks)) return null;
+
+  const maxDecks = 4;
+  const maxDays = 2;
+  const maxMatchesPerDeck = 2;
+  const dayGroups = new Map();
 
   for (
     let deckIndex = 0;
-    deckIndex < Math.min(warDecks.length, 4);
+    deckIndex < Math.min(warDecks.length, maxDecks);
     deckIndex += 1
   ) {
     const deck = warDecks[deckIndex];
     const deckLabel = deck.label || `Deck ${deckIndex + 1}`;
     const matchLines = Array.isArray(deck.matches) ? deck.matches : [];
-    if (matchLines.length === 0) continue;
 
-    lines.push(`**${deckLabel}**`);
-    matchLines.slice(0, 2).forEach((match, matchIndex) => {
-      const opponentName = match.opponentName || "?";
-      const towerLevel = Number.isFinite(match.opponentTourLevel)
-        ? match.opponentTourLevel
-        : "?";
-      const score = match.score || "?";
-      const tension = Number.isFinite(match.tension)
-        ? `${Math.round(match.tension * 100)}%`
-        : "?";
-      const resultEmoji = match.result === "win" ? "✅" : "❌";
-      lines.push(
-        `- #${matchIndex + 1} : <:members:1506175789731811399> ${opponentName} · <:tower:1515395461140447342> ${towerLevel} · ${resultEmoji} ${score} · <:warn:1506174837519945800> ${tension}`,
-      );
+    matchLines.slice(0, 4).forEach((match) => {
+      const dayKey = match.dayKey || "";
+      const dayLabel = getWarDayLabel(dayKey);
+      const group = dayGroups.get(dayKey) ?? {
+        dayKey,
+        dayLabel,
+        decks: new Map(),
+      };
+
+      const deckGroup = group.decks.get(deckLabel) ?? {
+        label: deckLabel,
+        matches: [],
+      };
+      if (deckGroup.matches.length < maxMatchesPerDeck) {
+        deckGroup.matches.push({
+          opponentName: match.opponentName || "?",
+          opponentTourLevel: Number.isFinite(match.opponentTourLevel)
+            ? match.opponentTourLevel
+            : "?",
+          score: match.score || "?",
+          tension: match.tension,
+          result: match.result,
+        });
+      }
+      group.decks.set(deckLabel, deckGroup);
+      dayGroups.set(dayKey, group);
     });
-    if (deckIndex < Math.min(warDecks.length, 4) - 1) {
+  }
+
+  if (dayGroups.size === 0) return null;
+
+  const sortedDays = [...dayGroups.values()].sort((a, b) =>
+    b.dayKey.localeCompare(a.dayKey),
+  );
+
+  const lines = [];
+  for (
+    let dayIndex = 0;
+    dayIndex < Math.min(sortedDays.length, maxDays);
+    dayIndex += 1
+  ) {
+    const group = sortedDays[dayIndex];
+    lines.push(`**${group.dayLabel}**`);
+
+    let deckCount = 0;
+    for (const deckGroup of group.decks.values()) {
+      if (deckCount >= maxDecks) break;
+      deckCount += 1;
+      lines.push(`• ${deckGroup.label}`);
+
+      deckGroup.matches.forEach((match, matchIndex) => {
+        const resultEmoji = match.result === "win" ? "✅" : "❌";
+        const tension = Number.isFinite(match.tension)
+          ? `${Math.round(match.tension * 100)}%`
+          : "?";
+        lines.push(
+          `  - #${matchIndex + 1} : <:members:1506175789731811399> ${match.opponentName} · <:tower:1515395461140447342> ${match.opponentTourLevel} · ${resultEmoji} ${match.score} · <:warn:1506174837519945800> ${tension}`,
+        );
+      });
+    }
+
+    if (dayIndex < Math.min(sortedDays.length, maxDays) - 1) {
       lines.push("\u200b");
     }
   }
 
-  if (lines.length === 0) return null;
-
   let value = lines.join("\n");
   if (value.length > 1000) {
-    value = value.slice(0, 980);
-    value = value.replace(/\n[^\n]*$/, "");
-    if (!value.endsWith("...")) {
-      value +=
-        "\n... et plus de matchs sont disponibles dans l'analyse complète.";
+    while (value.length > 1000 && lines.length > 0) {
+      lines.pop();
+      value = lines.join("\n");
     }
   }
-
   return value;
 }
 

@@ -519,6 +519,7 @@ export function summarizeWarDecks(battleLog, limit = 4, dayKey = null) {
         score,
         result,
         tension,
+        dayKey: warDayKey(battle?.battleTime),
       });
       if (battleIndex < existing.firstSeenIndex) {
         existing.firstSeenIndex = battleIndex;
