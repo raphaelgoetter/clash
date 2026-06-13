@@ -568,32 +568,14 @@ async function buildWarDecksImage(warDecks) {
       })
       .join("");
 
-    const metaParts = [];
-    if (Number.isFinite(deck.tension)) {
-      metaParts.push(`Tension ${Math.round(deck.tension * 100)}%`);
-    }
-    if (Number.isFinite(deck.winRate)) {
-      metaParts.push(`Winrate ${deck.winRate}%`);
-    }
-    if (Number.isFinite(deck.plays)) {
-      metaParts.push(`${deck.plays}x joué`);
-    }
-    const metaText = metaParts.join(" • ");
-    return `${cardsSvg}
-      <text x="${padding}" y="${y + cardHeight + 20}" fill="#ffffff" font-family="Arial, sans-serif" font-size="14">${escapeText(deck.label)}${metaText ? ` · ${escapeText(metaText)}` : ""}</text>`;
-  });
-
-  const svg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-  <defs>
-    <style type="text/css"><![CDATA[
-      .bg { fill: #0f172a; }
-      .text { font-family: Arial, sans-serif; font-size: 14px; fill: #ffffff; }
-    ]]></style>
-  </defs>
-  <rect width="100%" height="100%" class="bg" rx="24" ry="24" />
-  ${deckRows.join("\n")}
-</svg>`;
+      const firstMatch = Array.isArray(deck.matches) ? deck.matches[0] : null;
+      const metaParts = [];
+      if (firstMatch?.opponentName) metaParts.push(firstMatch.opponentName);
+      if (firstMatch?.opponentTourLevel != null)
+        metaParts.push(`Tour ${firstMatch.opponentTourLevel}`);
+      if (firstMatch?.score) metaParts.push(firstMatch.score);
+      if (Number.isFinite(firstMatch?.tension)) {
+        metaParts.push(`Tension ${Math.round(firstMatch.tension * 100)}%`);
 
   const svgBuffer = Buffer.from(svg, "utf8");
   try {
@@ -645,15 +627,42 @@ async function sendDiscordWebhookEmbedWithImage(webhookUrl, embed, image) {
 }
 
 function formatWarDecksField(warDecks) {
-  const lines = Array.isArray(warDecks)
-    ? warDecks.map((deck) => {
-        const playedLabel = deck.plays === 1 ? "1x" : `${deck.plays}x`;
-        const tensionLabel = Number.isFinite(deck.tension)
-          ? ` · Tension ${Math.round(deck.tension * 100)}%`
-          : "";
-        return `- ${deck.label} : ${deck.cards} (Joué ${playedLabel}, Winrate ${deck.winRate}%${tensionLabel})`;
-      })
-    : [];
+  const lines = [];
+  if (!Array.isArray(warDecks)) return null;
+
+  for (const deck of warDecks) {
+    const deckLabel = deck.label || "Deck";
+    const matchLines = Array.isArray(deck.matches) ? deck.matches : [];
+    if (matchLines.length === 0) {
+      const playedLabel = deck.plays === 1 ? "1x" : `${deck.plays}x`;
+      const tensionLabel = Number.isFinite(deck.tension)
+        ? ` · Tension ${Math.round(deck.tension * 100)}%`
+        : "";
+      lines.push(
+        `- ${deckLabel} : ${deck.cards} (Joué ${playedLabel}, Winrate ${deck.winRate}%${tensionLabel})`,
+      );
+      continue;
+    }
+
+    matchLines.forEach((match, index) => {
+      const resultEmoji = match.result === "win"
+        ? "<:success:1499002702208958577>"
+        : "<:error:1499002755841265826>";
+      const opponentName = match.opponentName || "?";
+      const towerLevel = Number.isFinite(match.opponentTourLevel)
+        ? match.opponentTourLevel
+        : "?";
+      const score = match.score || "?";
+      const resultLabel = match.result === "win" ? "Victoire" : "Défaite";
+      const tension = Number.isFinite(match.tension)
+        ? `${Math.round(match.tension * 100)}%`
+        : "?";
+      lines.push(
+        `- ${deckLabel} #${index + 1} : <:members:1506175789731811399> ${opponentName} · <:tower:1515395461140447342> Tour ${towerLevel} · ${resultEmoji} ${resultLabel} ${score} · <:success:1499002702208958577> Tension ${tension}`,
+      );
+    });
+  }
+
   return lines.length ? lines.join("\n") : null;
 }
 

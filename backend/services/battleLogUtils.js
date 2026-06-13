@@ -487,6 +487,17 @@ export function summarizeWarDecks(battleLog, limit = 4, dayKey = null) {
       const cardIds = deckCards
         .map((card) => String(card?.id ?? "").trim())
         .filter(Boolean);
+      const opponentName = String(
+        battle.opponent?.[0]?.name ?? battle.opponent?.[0]?.tag ?? "?",
+      ).trim();
+      const opponentTourLevel = computeBattleTourLevel(battle.opponent?.[0]);
+      const myCrowns = getMyBattleCrowns(battle);
+      const oppCrowns =
+        battle._roundIndex !== undefined
+          ? (battle._roundCrownsOpp ?? 0)
+          : (battle.opponent?.[0]?.crowns ?? 0);
+      const score = `${myCrowns}-${oppCrowns}`;
+      const result = isWarWin(battle) ? "win" : "loss";
       const existing = decks.get(signature) ?? {
         cards: formatWarDeckCards(deckCards),
         cardNames,
@@ -495,12 +506,20 @@ export function summarizeWarDecks(battleLog, limit = 4, dayKey = null) {
         plays: 0,
         wins: 0,
         tensionSum: 0,
+        matches: [],
         firstSeenIndex: battleIndex,
       };
 
       existing.plays += 1;
       existing.tensionSum += tension;
       if (deckWon) existing.wins += 1;
+      existing.matches.push({
+        opponentName,
+        opponentTourLevel,
+        score,
+        result,
+        tension,
+      });
       if (battleIndex < existing.firstSeenIndex) {
         existing.firstSeenIndex = battleIndex;
       }
@@ -527,5 +546,6 @@ export function summarizeWarDecks(battleLog, limit = 4, dayKey = null) {
       tension:
         deck.plays > 0 ? Number((deck.tensionSum / deck.plays).toFixed(3)) : 0,
       winRate: deck.plays > 0 ? Math.round((deck.wins / deck.plays) * 100) : 0,
+      matches: deck.matches ?? [],
     }));
 }
