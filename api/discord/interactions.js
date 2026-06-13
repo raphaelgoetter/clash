@@ -3029,12 +3029,13 @@ export default async function handler(req, res) {
           return;
         }
 
-        if (failedPlayers.length > 30) {
+        const DETAILABLE_FAIL_LIMIT = 12;
+        if (failedPlayers.length > DETAILABLE_FAIL_LIMIT) {
           await fetch(webhookUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              content: `⚠️ ${failedPlayers.length} joueurs ont manqué ${warDayLabel} dans ${resolved.name}.`,
+              content: `⚠️ ${failedPlayers.length} joueurs ont manqué ${warDayLabel} dans ${resolved.name}. Trop nombreux pour afficher les détails dans une seule commande.`,
               flags: 64,
             }),
           });
