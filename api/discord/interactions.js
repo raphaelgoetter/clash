@@ -837,7 +837,18 @@ function formatWarDecksField(warDecks) {
       "... et plus de matchs sont disponibles dans l'analyse complète.",
     );
   }
-  return lines.join("\n");
+
+  let value = lines.join("\n");
+  if (value.length > 1000) {
+    value = value.slice(0, 980);
+    value = value.replace(/\n[^\n]*$/, "");
+    if (!value.endsWith("...")) {
+      value +=
+        "\n... et plus de matchs sont disponibles dans l'analyse complète.";
+    }
+  }
+
+  return value;
 }
 
 function buildScoreBreakdownCodeBlock(score) {
