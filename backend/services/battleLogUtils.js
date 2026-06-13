@@ -211,7 +211,11 @@ function computeBattleTourLevel(entry) {
   const supportCards = Array.isArray(entry?.supportCards)
     ? entry.supportCards
     : [];
-  return computeTourLevel([...cards, ...supportCards]);
+  const allCards = [...cards, ...supportCards];
+
+  // Les entrées de bataille de GDC ne contiennent souvent que le deck joué (8 cartes),
+  // donc il est peu fiable d’en déduire le niveau de tour complet.
+  return allCards.length >= 16 ? computeTourLevel(allCards) : null;
 }
 
 function deckStrengthFromBattle(battle) {
@@ -265,8 +269,12 @@ export function computeTensionFromBattleLog(battleLog, options = {}) {
   const samples = warBattles.length > 0 ? warBattles : battles;
 
   const tensions = samples.map((battle) => {
-    const playerTourLevel = computeBattleTourLevel(battle.team?.[0]);
-    const opponentTourLevel = computeBattleTourLevel(battle.opponent?.[0]);
+    const playerTourLevel = Number.isFinite(options.playerTourLevel)
+      ? options.playerTourLevel
+      : computeBattleTourLevel(battle.team?.[0]);
+    const opponentTourLevel = Number.isFinite(options.opponentTourLevel)
+      ? options.opponentTourLevel
+      : computeBattleTourLevel(battle.opponent?.[0]);
     return computeBattleTension(battle, {
       ...options,
       playerTourLevel,

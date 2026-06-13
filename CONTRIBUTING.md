@@ -148,6 +148,17 @@ S'il n'y a pas de combat de guerre dans le `battleLog`, la moyenne est calculée
 - Formule principale : `computeBattleTension()`
 - Agrégation : `computeTensionFromBattleLog()`
 
+### Niveau de Tour du Roi
+
+Le niveau de Tour du Roi n'est pas un champ livré directement par l'API Clash Royale. Il est reconstruit dans la commande `/collection` à partir du profil du joueur.
+
+- Source de vérité : `backend/services/collectionConstants.js`
+- Fonction : `computeTourLevel(allCardsCol)`
+- Entrée : `player.cards` + `player.supportCards`
+- Usage : `/collection` affiche `Niveau ${tourLevel}` et le backend réutilise ce même calcul pour les analyses de joueurs.
+
+Cette fonction doit rester la source de vérité pour connaître rapidement le niveau de tour d'un joueur.
+
 ## Données upgrade cartes (page /deck-upgrade)
 
 Source de vérité utilisée pour la page publique `/deck-upgrade` :

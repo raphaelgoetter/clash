@@ -22,6 +22,8 @@ import {
   normLevel,
   countEvolved,
   countHeroes,
+  TOUR_REQ,
+  computeTourLevel,
 } from "../../backend/services/collectionConstants.js";
 import { summarizeWarDecks } from "../../backend/services/analysisService.js";
 import { loadClanCache } from "../../backend/services/clanCache.js";
@@ -4333,25 +4335,7 @@ export default async function handler(req, res) {
         const player = await apiResp.json();
 
         // Conditions pour atteindre chaque niveau de Tour du Roi (nouveau système)
-        const TOUR_REQUIREMENTS = [
-          null, // 0: inutilisé
-          null, // 1: aucune condition
-          { cards: 9, level: 1 }, // 2
-          { cards: 9, level: 2 }, // 3
-          { cards: 9, level: 3 }, // 4
-          { cards: 9, level: 4 }, // 5
-          { cards: 10, level: 5 }, // 6
-          { cards: 10, level: 6 }, // 7
-          { cards: 10, level: 7 }, // 8
-          { cards: 10, level: 8 }, // 9
-          { cards: 10, level: 9 }, // 10
-          { cards: 10, level: 10 }, // 11
-          { cards: 11, level: 11 }, // 12
-          { cards: 11, level: 12 }, // 13
-          { cards: 12, level: 13 }, // 14
-          { cards: 13, level: 14 }, // 15
-          { cards: 14, level: 15 }, // 16
-        ];
+        const TOUR_REQUIREMENTS = TOUR_REQ;
 
         const baseCards = player.cards ?? [];
         // supportCards = toutes les troupes de tour débloquées (pas seulement l'équipée)
@@ -4379,19 +4363,8 @@ export default async function handler(req, res) {
         const collectionLevel =
           sumNormLevels + 5 * evolvedCount + 5 * heroCount;
 
-        // Calcul du niveau de Tour du Roi (nouveau système, niveaux normalisés)
-        let tourLevel = 1;
-        for (let lvl = 2; lvl <= 16; lvl++) {
-          const req = TOUR_REQUIREMENTS[lvl];
-          const count = allCards.filter(
-            (c) => normLevel(c) >= req.level,
-          ).length;
-          if (count >= req.cards) {
-            tourLevel = lvl;
-          } else {
-            break;
-          }
-        }
+        // Niveau de Tour du Roi calculé depuis le profil complet du joueur.
+        const tourLevel = computeTourLevel(allCards);
 
         // Texte footer : prochain niveau de tour
         let tourFooter;
