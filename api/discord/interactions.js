@@ -531,7 +531,8 @@ async function buildWarDecksImage(warDecks) {
   const cardHeight = 96;
   const cardGap = 8;
   const padding = 20;
-  const labelHeight = 24;
+  const labelSpacing = 18;
+  const matchTopSpacing = 22;
   const textLineHeight = 20;
   const deckSpacing = 24;
   const width = padding * 2 + 8 * cardWidth + 7 * cardGap;
@@ -540,13 +541,9 @@ async function buildWarDecksImage(warDecks) {
     rows.reduce((sum, deck) => {
       const matches = Array.isArray(deck.matches) ? deck.matches : [];
       const matchCount = Math.min(matches.length, 4);
-      return (
-        sum +
-        cardHeight +
-        labelHeight +
-        matchCount * textLineHeight +
-        deckSpacing
-      );
+      const matchBlock =
+        matchCount > 0 ? matchTopSpacing + matchCount * textLineHeight : 0;
+      return sum + cardHeight + labelSpacing + matchBlock + deckSpacing;
     }, 0);
 
   const uniqueUrls = new Map();
@@ -613,7 +610,7 @@ async function buildWarDecksImage(warDecks) {
 
     const labelY = yStart + cardHeight + 18;
     const matchLines = Array.isArray(deck.matches) ? deck.matches : [];
-    const renderedMatchLines = matchLines.slice(0, 4).map((match) => {
+    const renderedMatchLines = matchLines.slice(0, 4).map((match, index) => {
       const opponentName = escapeText(match.opponentName || "?");
       const towerLevel = Number.isFinite(match.opponentTourLevel)
         ? match.opponentTourLevel
@@ -624,23 +621,17 @@ async function buildWarDecksImage(warDecks) {
       const tension = Number.isFinite(match.tension)
         ? `${Math.round(match.tension * 100)}%`
         : "?";
-      return escapeText(
-        `- 👥 ${opponentName} · 🏰 Tour ${towerLevel} · ${resultIcon} ${resultLabel} ${score} · ⚡ Tension ${tension}`,
-      );
+      const line = `- 👥 ${opponentName} · 🏰 Tour ${towerLevel} · ${resultIcon} ${resultLabel} ${score} · ⚡ Tension ${tension}`;
+      const lineY = labelY + 22 + index * textLineHeight;
+      return `<text x="${padding}" y="${lineY}" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#e2e8f0">${escapeText(line)}</text>`;
     });
-
-    const matchText = renderedMatchLines
-      .map((line) => `<tspan x="${padding}" dy="1.2em">${line}</tspan>`)
-      .join("");
 
     return `
       ${cardsSvg}
       <text x="${padding}" y="${labelY}" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#e2e8f0" font-weight="700">${escapeText(
         deck.label || "Deck",
       )}</text>
-      <text x="${padding}" y="${labelY + 22}" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#e2e8f0" xml:space="preserve">
-        ${matchText}
-      </text>
+      ${renderedMatchLines.join("")}
     `;
   });
 
@@ -2165,7 +2156,7 @@ export default async function handler(req, res) {
         const analysis = await apiResp.json();
         let warDecks = summarizeWarDecks(analysis.battleLog ?? []);
         const missingMatchData =
-          warDecks.length > 0 &&
+          warDecks.length === 0 ||
           warDecks.every(
             (deck) => !Array.isArray(deck.matches) || deck.matches.length === 0,
           );
