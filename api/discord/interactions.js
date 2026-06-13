@@ -620,7 +620,11 @@ async function sendDiscordWebhookEmbedWithImage(
   };
   const form = new FormData();
   form.append("payload_json", JSON.stringify({ embeds: [embedWithImage] }));
-  form.append("file", new Blob([imageBuffer], { type: mimeType }), filename);
+  form.append(
+    "files[0]",
+    new Blob([imageBuffer], { type: mimeType }),
+    filename,
+  );
   return fetch(webhookUrl, { method: "POST", body: form });
 }
 
