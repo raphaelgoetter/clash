@@ -542,15 +542,15 @@ async function buildWarDecksImage(warDecks) {
       .map((card) => [String(card.id), card]),
   );
 
-  const rows = warDecks.slice(0, 4);
-  const cardWidth = 72;
-  const cardHeight = 96;
-  const cardGap = 8;
+  const rows = warDecks.slice(0, 8);
+  const cardWidth = 144;
+  const cardHeight = 192;
+  const cardGap = 10;
   const padding = 20;
-  const labelSpacing = 18;
-  const matchTopSpacing = 22;
-  const textLineHeight = 20;
-  const deckSpacing = 24;
+  const labelSpacing = 10;
+  const matchTopSpacing = 16;
+  const textLineHeight = 18;
+  const deckSpacing = 12;
   const width = padding * 2 + 8 * cardWidth + 7 * cardGap;
   const height =
     padding * 2 +
@@ -633,11 +633,11 @@ async function buildWarDecksImage(warDecks) {
         const x = padding + index * (cardWidth + cardGap);
         return url
           ? `<image x="${x}" y="${yStart}" width="${cardWidth}" height="${cardHeight}" href="${url}" preserveAspectRatio="xMidYMid slice"/>`
-          : `<rect x="${x}" y="${yStart}" width="${cardWidth}" height="${cardHeight}" rx="10" ry="10" fill="#22303f"/>`;
+          : `<rect x="${x}" y="${yStart}" width="${cardWidth}" height="${cardHeight}" rx="12" ry="12" fill="#1f2937"/>`;
       })
       .join("");
 
-    const labelY = yStart + cardHeight + 18;
+    const labelY = yStart + cardHeight + 14;
     const matchLines = Array.isArray(deck.matches) ? deck.matches : [];
     const renderedMatchLines = matchLines.slice(0, 4).map((match, index) => {
       const opponentName = escapeText(match.opponentName || "?");
@@ -650,15 +650,17 @@ async function buildWarDecksImage(warDecks) {
         ? `${Math.round(match.tension * 100)}%`
         : "?";
       const line = `- 👥 ${opponentName} · <:tower:1515395461140447342> ${towerLevel} · ${resultIcon} ${score} · <:warn:1506174837519945800> ${tension}`;
-      const lineY = labelY + 22 + index * textLineHeight;
-      return `<text x="${padding}" y="${lineY}" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#e2e8f0">${escapeText(line)}</text>`;
+      const lineY = labelY + 18 + index * textLineHeight;
+      return `<text x="${padding}" y="${lineY}" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#e2e8f0">${escapeText(line)}</text>`;
     });
 
     return `
+      <rect x="${padding - 8}" y="${yStart - 8}" width="${cardWidth * 8 + cardGap * 7 + 16}" height="${cardHeight + 12 + labelSpacing + matchLines.slice(0, 4).length * textLineHeight + matchTopSpacing}" rx="28" fill="rgba(148, 163, 184, 0.08)" stroke="#334155" stroke-width="2"/>
       ${cardsSvg}
-      <text x="${padding}" y="${labelY}" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#e2e8f0" font-weight="700">${escapeText(
+      <text x="${padding}" y="${labelY}" font-family="Inter, system-ui, sans-serif" font-size="16" fill="#f8fafc" font-weight="700">${escapeText(
         deck.label || "Deck",
       )}</text>
+      <text x="${padding + 8}" y="${labelY - 6}" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#38bdf8" font-weight="700">#${deckIndex + 1}</text>
       ${renderedMatchLines.join("")}
     `;
   });
