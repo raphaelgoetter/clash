@@ -3082,7 +3082,7 @@ export default async function handler(req, res) {
                 Number.isFinite(player.arrivalWeeks) &&
                 player.arrivalWeeks <= 1;
               const newTag = isNew ? " 🆕" : "";
-              return `- [${player.name}](${trustPlayerUrl(tag)})${newTag} (${status}) :\n  ${decksLine}\n  (moyenne par deck : ${avgPerDeck})`;
+              return `- [${player.name}](${trustPlayerUrl(tag)})${newTag} (${status}) :\n  Decks : ${decksLine}\n  Moyenne : ${avgPerDeck}`;
             } catch (err) {
               const status = formatStatus(player.role);
               return `- [${player.name}](${trustPlayerUrl(tag)}) (${status}) : données historiques indisponibles`;
@@ -3090,8 +3090,11 @@ export default async function handler(req, res) {
           }),
         );
 
+        const failCount = failedPlayers.length;
+        const failLabel =
+          failCount === 1 ? "Joueur en échec" : "Joueurs en échec";
         const embed = {
-          title: `<:boohoo:1493849412387209357> ${resolved.name} — Joueurs en échec hier (${warDayLabel})`,
+          title: `<:boohoo:1493849412387209357> ${resolved.name} — ${failCount} ${failLabel} hier (${warDayLabel})`,
           url: trustClanUrl(resolved.tag),
           color: 0xe74c3c,
           description: `Historique des dernières GDC :\n${fetchLines.join("\n")}`,
