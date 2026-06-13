@@ -503,11 +503,11 @@ async function loadCardDefinitions() {
   return Array.isArray(value) ? value : [];
 }
 
-async function fetchImageDataUrl(url) {
+async function fetchImageDataUrl(url, signal) {
   if (!url) return null;
   if (CARD_ICON_CACHE.has(url)) return CARD_ICON_CACHE.get(url);
 
-  const res = await fetch(url);
+  const res = await fetch(url, { signal });
   if (!res.ok) return null;
 
   const buffer = Buffer.from(await res.arrayBuffer());
@@ -546,11 +546,19 @@ async function buildWarDecksImage(warDecks) {
     }
   }
 
-  await Promise.all(
-    [...uniqueUrls.keys()].map(async (url) => {
-      uniqueUrls.set(url, await fetchImageDataUrl(url));
-    }),
-  );
+  const abortController = new AbortController();
+  const abortTimeout = setTimeout(() => abortController.abort(), 9000);
+  try {
+    await Promise.all(
+      [...uniqueUrls.keys()].map(async (url) => {
+        uniqueUrls.set(url, await fetchImageDataUrl(url, abortController.signal));
+      }),
+    );
+  } catch {
+    // Ignorer les erreurs d'image pour ne pas bloquer la génération du message.
+  } finally {
+    clearTimeout(abortTimeout);
+  }
 
   const escapeText = (value) =>
     String(value || "")
@@ -2049,13 +2057,21 @@ export default async function handler(req, res) {
       });
     }
 
-    res.status(200).json({ type: 5 });
-    const tag = rawTag.startsWith("#") ? rawTag : `#${rawTag}`;
     const webhookUrl = buildDiscordWebhookUrl(body);
     if (!webhookUrl) {
       console.error("Discord webhook URL non construite pour /tension");
-      return;
+      return res.status(200).json({
+        type: 4,
+        data: {
+          content:
+            "Configuration Discord incomplète : impossible de répondre à l'interaction.",
+          flags: 64,
+        },
+      });
     }
+
+    res.status(200).json({ type: 5 });
+    const tag = rawTag.startsWith("#") ? rawTag : `#${rawTag}`;
 
     runBackground(async () => {
       try {
