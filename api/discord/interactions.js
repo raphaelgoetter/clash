@@ -7,6 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { waitUntil } from "@vercel/functions";
 import { createRequire } from "node:module";
+import { Resvg } from "@resvg/resvg-js";
 import { getLeagueName } from "../../backend/services/warLeagues.js";
 import { getDiscordLinks } from "../../backend/services/discordLinks.js";
 import {
@@ -593,17 +594,30 @@ async function buildWarDecksImage(warDecks) {
   <rect width="100%" height="100%" class="bg" rx="24" ry="24" />
   ${deckRows.join("\n")}
 </svg>`;
-  return Buffer.from(svg, "utf8");
+
+  const svgBuffer = Buffer.from(svg, "utf8");
+  try {
+    const resvg = new Resvg(svgBuffer, {
+      fitTo: { mode: "width", value: width },
+      background: "#0f172a",
+    });
+    const pngData = resvg.render();
+    return {
+      buffer: pngData.asPng(),
+      mimeType: "image/png",
+      filename: "tension-decks.png",
+    };
+  } catch {
+    return {
+      buffer: svgBuffer,
+      mimeType: "image/svg+xml",
+      filename: "tension-decks.svg",
+    };
+  }
 }
 
-async function sendDiscordWebhookEmbedWithImage(
-  webhookUrl,
-  embed,
-  imageBuffer,
-  filename = "tension-decks.svg",
-  mimeType = "image/svg+xml",
-) {
-  if (!imageBuffer) {
+async function sendDiscordWebhookEmbedWithImage(webhookUrl, embed, image) {
+  if (!image?.buffer) {
     return fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -611,6 +625,8 @@ async function sendDiscordWebhookEmbedWithImage(
     });
   }
 
+  const filename = image.filename || "tension-decks.png";
+  const mimeType = image.mimeType || "image/png";
   const embedWithImage = {
     ...embed,
     image: { url: `attachment://${filename}` },
@@ -622,7 +638,7 @@ async function sendDiscordWebhookEmbedWithImage(
   form.append("payload_json", JSON.stringify({ embeds: [embedWithImage] }));
   form.append(
     "files[0]",
-    new Blob([imageBuffer], { type: mimeType }),
+    new Blob([image.buffer], { type: mimeType }),
     filename,
   );
   return fetch(webhookUrl, { method: "POST", body: form });
@@ -2068,7 +2084,7 @@ export default async function handler(req, res) {
 
         const imageStatusField = {
           name: "Visualisation :",
-          value: deckImage
+          value: deckImage?.buffer
             ? "🖼️ Image de deck générée et envoyée avec l'embed."
             : "⚠️ L'image de deck n'a pas pu être générée, affichage texte uniquement.",
           inline: false,
