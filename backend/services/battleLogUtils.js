@@ -206,7 +206,24 @@ function computeTowerLevelFactor(playerTourLevel, opponentTourLevel) {
   return towerDiff * 0.25;
 }
 
+function estimateTowerLevelFromHp(hp) {
+  if (!Number.isFinite(hp) || hp <= 0) return null;
+  if (hp >= 7728) return 16;
+  if (hp >= 7032) return 15;
+  if (hp >= 6408) return 14;
+  if (hp >= 5832) return 13;
+  if (hp >= 5234) return 12;
+  if (hp >= 4565) return 11;
+  return null;
+}
+
 function computeBattleTourLevel(entry) {
+  const kingTowerHp = Number(
+    entry?.kingTowerHitPoints ?? entry?.kingTowerHP ?? 0,
+  );
+  const hpLevel = estimateTowerLevelFromHp(kingTowerHp);
+  if (hpLevel) return hpLevel;
+
   const cards = Array.isArray(entry?.cards) ? entry.cards : [];
   const supportCards = Array.isArray(entry?.supportCards)
     ? entry.supportCards
