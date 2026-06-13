@@ -551,7 +551,10 @@ async function buildWarDecksImage(warDecks) {
   try {
     await Promise.all(
       [...uniqueUrls.keys()].map(async (url) => {
-        uniqueUrls.set(url, await fetchImageDataUrl(url, abortController.signal));
+        uniqueUrls.set(
+          url,
+          await fetchImageDataUrl(url, abortController.signal),
+        );
       }),
     );
   } catch {
