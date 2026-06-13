@@ -235,6 +235,8 @@ async function readClanCacheMembers(clanTag) {
         name: member.name || normalizeTag(member.tag),
         role: member.role || "member",
         tag: member.tag || `#${normalizeTag(member.tag)}`,
+        arrivalStreakInCurrentClan: member.arrivalStreakInCurrentClan,
+        arrivalTotalWeeks: member.arrivalTotalWeeks,
       },
     ]),
   );
@@ -2889,16 +2891,15 @@ export default async function handler(req, res) {
       };
 
       try {
-        const { fetchCurrentRace, fetchClanMembers, fetchRaceLog } =
+        const { fetchCurrentRace, fetchRaceLog } =
           await import("../../backend/services/clashApi.js");
         const { getSnapshotsForWeeks, getCurrentWarDayIndex } =
           await import("../../backend/services/snapshot.js");
         const { computeCurrentWeekId, warResetOffsetMs } =
           await import("../../backend/services/dateUtils.js");
 
-        const [race, currentMembers, raceLog] = await Promise.all([
+        const [race, raceLog] = await Promise.all([
           fetchCurrentRace(`#${resolved.tag}`),
-          fetchClanMembers(`#${resolved.tag}`),
           fetchRaceLog(`#${resolved.tag}`),
         ]);
 
@@ -2999,8 +3000,14 @@ export default async function handler(req, res) {
             decks: decksByTag.has(normalizedTag)
               ? decksByTag.get(normalizedTag)
               : 0,
+            arrivalStreak: member.arrivalStreakInCurrentClan,
+            arrivalWeeks: member.arrivalTotalWeeks,
           }))
-          .filter((p) => p.decks < 4)
+          .filter((p) => {
+            const isNewArrival =
+              Number.isFinite(p.arrivalStreak) && p.arrivalStreak === 0;
+            return p.decks < 4 && !isNewArrival;
+          })
           .sort((a, b) =>
             a.name.localeCompare(b.name, "fr", {
               numeric: true,
@@ -3053,7 +3060,11 @@ export default async function handler(req, res) {
                 : [];
               const recent = weeks.slice(0, 8);
               const decksLine = recent
-                .map((w) => String(Number(w.decksUsed || 0)).padStart(2, " "))
+                .map((w) => {
+                  const deckCount = Number(w.decksUsed || 0);
+                  const badge = deckUsageBadge(deckCount, Boolean(w.ignored));
+                  return `${badge} ${String(deckCount).padStart(2, " ")}`;
+                })
                 .join("   ");
               const totalFame = recent.reduce(
                 (sum, w) => sum + (Number(w.fame) || 0),
@@ -3076,11 +3087,11 @@ export default async function handler(req, res) {
         );
 
         const embed = {
-          title: `<:boohoo:1493849412387209357> ${resolved.name} — Joueurs fails hier (${warDayLabel})`,
+          title: `<:boohoo:1493849412387209357> ${resolved.name} — Joueurs en échec hier (${warDayLabel})`,
           url: trustClanUrl(resolved.tag),
           color: 0xe74c3c,
           description: `Historique des dernières GDC :\n${fetchLines.join("\n")}`,
-          footer: { text: `Données pour ${warDayLabel}` },
+          footer: { text: `Données pour ${warDayLabel} — ${currentWeekId}` },
         };
 
         await fetch(webhookUrl, {
