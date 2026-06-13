@@ -192,7 +192,12 @@ function warLeagueLabel(trophies, isFamilyClan = false) {
     : LEAGUE_ICON_GENERIC[label];
   return icon ? `${icon} ${label}` : label;
 }
-const TAG_AUTOCOMPLETE_COMMANDS = new Set(["trust", "stats", "collection"]);
+const TAG_AUTOCOMPLETE_COMMANDS = new Set([
+  "trust",
+  "stats",
+  "tension",
+  "collection",
+]);
 const TAG_NAME_CACHE_TTL = 6 * 60 * 60 * 1000;
 const tagNameCache = new Map();
 
@@ -479,7 +484,10 @@ function formatWarDecksField(warDecks) {
   const lines = Array.isArray(warDecks)
     ? warDecks.map((deck) => {
         const playedLabel = deck.plays === 1 ? "1x" : `${deck.plays}x`;
-        return `- ${deck.label} : ${deck.cards} (Joué ${playedLabel}, Winrate ${deck.winRate}%)`;
+        const tensionLabel = Number.isFinite(deck.tension)
+          ? ` · Tension ${Math.round(deck.tension * 100)}%`
+          : "";
+        return `- ${deck.label} : ${deck.cards} (Joué ${playedLabel}, Winrate ${deck.winRate}%${tensionLabel})`;
       })
     : [];
   return lines.length ? lines.join("\n") : null;
@@ -1777,6 +1785,14 @@ export default async function handler(req, res) {
           });
         }
 
+        if (analysis.tension?.average != null) {
+          fields.splice(1, 0, {
+            name: "Tension moyenne :",
+            value: `${Math.round(analysis.tension.average * 100)}%`,
+            inline: false,
+          });
+        }
+
         if (warDecksField) {
           fields.push({
             name: "Decks GDC :",
@@ -1799,6 +1815,107 @@ export default async function handler(req, res) {
           url: trustPlayerUrl(tag),
           color: COLOR_MAP[color] ?? 0x808080,
           description: `${tag} · <:xp:1498645264079257730> ${analysis.overview.expLevel ?? "N/A"} · <:trophy:1498645869224792105> ${analysis.overview.trophies ?? 0}`,
+          fields,
+        };
+
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ embeds: [embed] }),
+        });
+      } catch (err) {
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur lors de l'analyse : ${err.message}`,
+            flags: 64,
+          }),
+        });
+      }
+    });
+    return;
+  }
+
+  // Commande /tension
+  if (body.type === 2 && body.data?.name === "tension") {
+    const tagOption = body.data.options?.find((o) => o.name === "tag");
+    const rawTag = tagOption?.value?.trim();
+    if (!rawTag) {
+      return res.status(200).json({
+        type: 4,
+        data: {
+          content: "Veuillez fournir un tag de joueur (ex: `#ABC123`).",
+          flags: 64,
+        },
+      });
+    }
+
+    res.status(200).json({ type: 5 });
+    const tag = rawTag.startsWith("#") ? rawTag : `#${rawTag}`;
+    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+
+    runBackground(async () => {
+      try {
+        const apiResp = await fetch(
+          `${TRUST_ROYALE_URL}/api/player/${encodeURIComponent(tag)}/analysis?fast=true`,
+          { headers: { Accept: "application/json" } },
+        );
+
+        if (!apiResp.ok) {
+          const msg =
+            apiResp.status === 404
+              ? `Joueur \`${tag}\` introuvable.`
+              : `Erreur API (${apiResp.status}).`;
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: msg, flags: 64 }),
+          });
+          return;
+        }
+
+        const analysis = await apiResp.json();
+        const tensionValue = analysis.tension?.average;
+        const tensionField =
+          tensionValue != null
+            ? {
+                name: "Tension GDC moyenne :",
+                value: `${Math.round(tensionValue * 100)}%`,
+                inline: false,
+              }
+            : {
+                name: "Tension GDC moyenne :",
+                value: "Aucune donnée de guerre disponible.",
+                inline: false,
+              };
+
+        let warDecks = summarizeWarDecks(analysis.battleLog ?? []);
+        const warDecksField = formatWarDecksField(warDecks);
+
+        const fields = [tensionField];
+        if (warDecksField) {
+          fields.push({
+            name: "Decks GDC :",
+            value: warDecksField,
+            inline: false,
+          });
+        }
+
+        const discordLinks = await getDiscordLinks();
+        const otherAccountsField = await buildOtherAccountsField(
+          tag,
+          discordLinks,
+        );
+        if (otherAccountsField) {
+          fields.push(otherAccountsField);
+        }
+
+        const embed = {
+          title: `⚡ Tension GDC : ${analysis.overview.name}`,
+          url: trustPlayerUrl(tag),
+          color: 0xe67e22,
+          description: `${tag} · <:trophy:1498645869224792105> ${analysis.overview.trophies ?? 0}`,
           fields,
         };
 

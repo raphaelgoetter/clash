@@ -50,6 +50,20 @@ const commands = [
     ],
   },
   {
+    name: "tension",
+    description:
+      "Calcule la tension GDC d'un joueur selon ses matchups et ses decks.",
+    options: [
+      {
+        type: 3, // STRING
+        name: "tag",
+        description: "Tag du joueur (ex : #ABC123)",
+        required: true,
+        autocomplete: true,
+      },
+    ],
+  },
+  {
     name: "discord-link",
     description: "Lie un ou plusieurs tags Clash Royale à ton compte Discord.",
     options: [

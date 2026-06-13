@@ -34,6 +34,7 @@ import {
   isWarLoss,
   getMyBattleCrowns,
   buildDailyActivity,
+  computeTensionFromBattleLog,
 } from "./battleLogUtils.js";
 import {
   computeWarScore,
@@ -87,6 +88,7 @@ export function analyzePlayer(
   const totalBattlesInLog = warLog.length;
   const winRate =
     totalBattlesInLog > 0 ? Math.round((wins / totalBattlesInLog) * 100) : 0;
+  const tensionAverage = computeTensionFromBattleLog(battleLog);
 
   // Niveau de Collection = Σ niveaux normalisés + 5 × évolutions débloquées + 5 × héros
   const baseCardsCol = player.cards ?? [];
@@ -192,6 +194,9 @@ export function analyzePlayer(
     recentActivity: {
       dailyActivity,
       apiLimitNote: "Battle log capped at 30 entries by the Clash Royale API.",
+    },
+    tension: {
+      average: tensionAverage,
     },
     reliability, // fallback — remplacé par warScore quand l'historique de course est disponible
     battleLog, // log brut utilisé par la carte BattleLog

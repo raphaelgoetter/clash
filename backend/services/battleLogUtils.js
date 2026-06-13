@@ -182,6 +182,61 @@ export function hasDuelOnWarDay(battleLog, clanTag, realDay) {
   return false;
 }
 
+function normalizeDeckStrength(deckCards) {
+  if (!Array.isArray(deckCards)) return 0;
+  return deckCards.reduce((acc, card) => {
+    const level = Number(card?.level ?? card?.lvl ?? 0);
+    if (!Number.isFinite(level) || level <= 0) return acc;
+    return acc + level;
+  }, 0);
+}
+
+function deckStrengthFromBattle(battle) {
+  const playerCards = Array.isArray(battle?.team?.[0]?.cards)
+    ? battle.team[0].cards
+    : [];
+  const opponentCards = Array.isArray(battle?.opponent?.[0]?.cards)
+    ? battle.opponent[0].cards
+    : [];
+  return {
+    player: normalizeDeckStrength(playerCards),
+    opponent: normalizeDeckStrength(opponentCards),
+  };
+}
+
+export function computeBattleTension(battle) {
+  const playerCrowns = getMyBattleCrowns(battle);
+  const opponentCrowns =
+    battle._roundIndex !== undefined
+      ? (battle._roundCrownsOpp ?? 0)
+      : (battle.opponent?.[0]?.crowns ?? 0);
+  const crownDiff = playerCrowns - opponentCrowns;
+  const scoreFactor = Math.max(-3, Math.min(3, crownDiff));
+
+  const { player, opponent } = deckStrengthFromBattle(battle);
+  const strengthDiff = opponent - player;
+  const strengthFactor = strengthDiff / Math.max(1, player + opponent);
+
+  const battleType = (battle?.type ?? "").toLowerCase();
+  const isTraining = FRIENDLY_TYPES.has(battleType);
+  const trainingFactor = isTraining ? -0.15 : 0;
+
+  const base =
+    0.5 + strengthFactor * 0.25 - scoreFactor * 0.05 + trainingFactor;
+  return Number(Math.max(0, Math.min(1, base)).toFixed(3));
+}
+
+export function computeTensionFromBattleLog(battleLog) {
+  const battles = Array.isArray(battleLog) ? battleLog : [];
+  if (battles.length === 0) return null;
+  const warBattles = filterWarBattles(battles);
+  const samples = warBattles.length > 0 ? warBattles : battles;
+
+  const tensions = samples.map((battle) => computeBattleTension(battle));
+  const total = tensions.reduce((sum, value) => sum + value, 0);
+  return Number((total / tensions.length).toFixed(3));
+}
+
 /**
  * Build a battles-per-day map for the last `days` days.
  * Returns an array of { date: 'YYYY-MM-DD', count: number }.
@@ -342,6 +397,8 @@ export function summarizeWarDecks(battleLog, limit = 4, dayKey = null) {
       ? battle.opponent[0].rounds
       : null;
     const battleWon = isWarWin(battle);
+    const tension = computeBattleTension(battle);
+
     deckChunks.forEach((deckCards, deckIndex) => {
       const signature = deckCards
         .map((card) => normalizeWarDeckCardId(card))
@@ -370,10 +427,12 @@ export function summarizeWarDecks(battleLog, limit = 4, dayKey = null) {
         signature,
         plays: 0,
         wins: 0,
+        tensionSum: 0,
         firstSeenIndex: battleIndex,
       };
 
       existing.plays += 1;
+      existing.tensionSum += tension;
       if (deckWon) existing.wins += 1;
       if (battleIndex < existing.firstSeenIndex) {
         existing.firstSeenIndex = battleIndex;
@@ -398,6 +457,8 @@ export function summarizeWarDecks(battleLog, limit = 4, dayKey = null) {
       cardIds: deck.cardIds,
       plays: deck.plays,
       wins: deck.wins,
+      tension:
+        deck.plays > 0 ? Number((deck.tensionSum / deck.plays).toFixed(3)) : 0,
       winRate: deck.plays > 0 ? Math.round((deck.wins / deck.plays) * 100) : 0,
     }));
 }
