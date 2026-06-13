@@ -517,6 +517,13 @@ async function fetchImageDataUrl(url, signal) {
   return dataUrl;
 }
 
+function escapeText(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 async function buildWarDecksImage(warDecks) {
   if (!Array.isArray(warDecks) || warDecks.length === 0) return null;
   let cardDefinitions = [];
