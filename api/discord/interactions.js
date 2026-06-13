@@ -3078,7 +3078,11 @@ export default async function handler(req, res) {
                 ? Math.round(totalFame / totalDecks)
                 : 0;
               const status = formatStatus(player.role);
-              return `- [${player.name}](${trustPlayerUrl(tag)}) (${status}) : ${decksLine} (moyenne par deck : ${avgPerDeck})`;
+              const isNew =
+                Number.isFinite(player.arrivalWeeks) &&
+                player.arrivalWeeks <= 1;
+              const newTag = isNew ? " 🆕" : "";
+              return `- [${player.name}](${trustPlayerUrl(tag)})${newTag} (${status}) :\n  ${decksLine}\n  (moyenne par deck : ${avgPerDeck})`;
             } catch (err) {
               const status = formatStatus(player.role);
               return `- [${player.name}](${trustPlayerUrl(tag)}) (${status}) : données historiques indisponibles`;
