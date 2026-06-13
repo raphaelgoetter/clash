@@ -614,6 +614,9 @@ async function sendDiscordWebhookEmbedWithImage(
   const embedWithImage = {
     ...embed,
     image: { url: `attachment://${filename}` },
+    footer: {
+      text: "Decks GDC générés en image",
+    },
   };
   const form = new FormData();
   form.append("payload_json", JSON.stringify({ embeds: [embedWithImage] }));
