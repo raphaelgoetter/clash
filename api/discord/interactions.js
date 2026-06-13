@@ -519,7 +519,16 @@ async function fetchImageDataUrl(url, signal) {
 
 async function buildWarDecksImage(warDecks) {
   if (!Array.isArray(warDecks) || warDecks.length === 0) return null;
-  const cardDefinitions = await loadCardDefinitions();
+  let cardDefinitions = [];
+  try {
+    cardDefinitions = await loadCardDefinitions();
+  } catch (err) {
+    console.error(
+      "Impossible de charger les définitions de cartes pour l'image :",
+      err?.message || err,
+    );
+    cardDefinitions = [];
+  }
   const cardById = new Map(
     cardDefinitions
       .filter((card) => card && card.id !== undefined)
@@ -562,14 +571,26 @@ async function buildWarDecksImage(warDecks) {
   try {
     await Promise.all(
       [...uniqueUrls.keys()].map(async (url) => {
-        uniqueUrls.set(
-          url,
-          await fetchImageDataUrl(url, abortController.signal),
-        );
+        try {
+          uniqueUrls.set(
+            url,
+            await fetchImageDataUrl(url, abortController.signal),
+          );
+        } catch (err) {
+          console.error(
+            "Impossible de charger l'icône de carte :",
+            url,
+            err?.message || err,
+          );
+          uniqueUrls.set(url, null);
+        }
       }),
     );
-  } catch {
-    // Ignorer les erreurs d'image pour ne pas bloquer la génération du message.
+  } catch (err) {
+    console.error(
+      "Erreur lors de la récupération des images de cartes :",
+      err?.message || err,
+    );
   } finally {
     clearTimeout(abortTimeout);
   }
@@ -653,13 +674,66 @@ async function buildWarDecksImage(warDecks) {
       mimeType: "image/png",
       filename: "tension-decks.png",
     };
-  } catch {
+  } catch (err) {
+    console.error("Resvg a échoué, fallback SVG", err?.message || err);
     return {
       buffer: svgBuffer,
       mimeType: "image/svg+xml",
       filename: "tension-decks.svg",
     };
   }
+}
+
+function buildWarDecksTextFallbackImage(warDecks) {
+  const lines = [];
+  if (!Array.isArray(warDecks) || warDecks.length === 0) {
+    lines.push("Aucune donnée GDC à afficher.");
+  } else {
+    for (const deck of warDecks.slice(0, 4)) {
+      lines.push(`Deck ${deck.label || "?"}`);
+      const matchLines = Array.isArray(deck.matches) ? deck.matches : [];
+      if (matchLines.length === 0) {
+        lines.push("  Pas de match GDC disponible.");
+      } else {
+        for (const match of matchLines.slice(0, 4)) {
+          const opponentName = escapeText(match.opponentName || "?");
+          const towerLevel = Number.isFinite(match.opponentTourLevel)
+            ? match.opponentTourLevel
+            : "?";
+          const score = escapeText(match.score || "?");
+          const resultLabel = match.result === "win" ? "Victoire" : "Défaite";
+          const tension = Number.isFinite(match.tension)
+            ? `${Math.round(match.tension * 100)}%`
+            : "?";
+          lines.push(
+            `  👥 ${opponentName} · 🏰 Tour ${towerLevel} · ${resultLabel} ${score} · ⚡ ${tension}`,
+          );
+        }
+      }
+      lines.push("");
+    }
+  }
+
+  const width = 760;
+  const lineHeight = 24;
+  const height = 40 + lines.length * lineHeight;
+  const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Decks GDC fallback">
+  <rect width="100%" height="100%" rx="24" fill="#0f172a" />
+  ${lines
+    .map(
+      (line, index) =>
+        `<text x="24" y="${40 + index * lineHeight}" font-family="sans-serif" font-size="16" fill="#e2e8f0">${escapeText(
+          line,
+        )}</text>`,
+    )
+    .join("")}
+</svg>`;
+  return {
+    buffer: Buffer.from(svg, "utf8"),
+    mimeType: "image/svg+xml",
+    filename: "tension-decks-fallback.svg",
+  };
 }
 
 async function sendDiscordWebhookEmbedWithImage(webhookUrl, embed, image) {
@@ -2181,6 +2255,9 @@ export default async function handler(req, res) {
           deckImage = await buildWarDecksImage(warDecks);
         } catch {
           deckImage = null;
+        }
+        if (!deckImage && Array.isArray(warDecks) && warDecks.length > 0) {
+          deckImage = buildWarDecksTextFallbackImage(warDecks);
         }
 
         const hasDecks = Array.isArray(warDecks) && warDecks.length > 0;
