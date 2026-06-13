@@ -675,7 +675,11 @@ function formatWarDecksField(warDecks) {
   const lines = [];
   if (!Array.isArray(warDecks)) return null;
 
+  const maxLines = 20;
+  let totalLines = 0;
+
   for (const deck of warDecks) {
+    if (totalLines >= maxLines) break;
     const deckLabel = deck.label || "Deck";
     const matchLines = Array.isArray(deck.matches) ? deck.matches : [];
     if (matchLines.length === 0) {
@@ -686,10 +690,12 @@ function formatWarDecksField(warDecks) {
       lines.push(
         `- ${deckLabel} : ${deck.cards} (Joué ${playedLabel}, Winrate ${deck.winRate}%${tensionLabel})`,
       );
+      totalLines += 1;
       continue;
     }
 
-    matchLines.forEach((match, index) => {
+    matchLines.some((match, index) => {
+      if (totalLines >= maxLines) return true;
       const resultEmoji =
         match.result === "win"
           ? "<:success:1499002702208958577>"
@@ -706,10 +712,20 @@ function formatWarDecksField(warDecks) {
       lines.push(
         `- ${deckLabel} #${index + 1} : <:members:1506175789731811399> ${opponentName} · <:tower:1515395461140447342> Tour ${towerLevel} · ${resultEmoji} ${resultLabel} ${score} · <:success:1499002702208958577> Tension ${tension}`,
       );
+      totalLines += 1;
+      return false;
     });
+
+    if (matchLines.length > 0 && totalLines >= maxLines) {
+      break;
+    }
   }
 
-  return lines.length ? lines.join("\n") : null;
+  if (lines.length === 0) return null;
+  if (totalLines >= maxLines) {
+    lines.push("... et plus de matchs sont disponibles dans l'analyse complète.");
+  }
+  return lines.join("\n");
 }
 
 function buildScoreBreakdownCodeBlock(score) {
