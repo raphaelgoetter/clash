@@ -807,7 +807,7 @@ async function sendDiscordWebhookFile(webhookUrl, image, content) {
     if (content) {
       form.append("payload_json", JSON.stringify({ content }));
     }
-    form.append("file", image.buffer, {
+    form.append("files[0]", image.buffer, {
       filename,
       contentType,
     });
