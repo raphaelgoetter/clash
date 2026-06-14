@@ -451,33 +451,10 @@ export function summarizeWarDecksForTension(
   dayKey = null,
   clanTag = null,
 ) {
-  const rawWarBattles = filterWarBattles(battleLog ?? []);
-  const warBattles = [];
-  for (const battle of rawWarBattles) {
-    const battleType = (battle?.type ?? "").toLowerCase();
-    const myEntry = battle.team?.[0];
-    const oppEntry = battle.opponent?.[0];
-    if (
-      DUEL_BATTLE_TYPES.has(battleType) &&
-      Array.isArray(myEntry?.rounds) &&
-      battle._roundIndex === undefined
-    ) {
-      myEntry.rounds.forEach((round, i) => {
-        const oppRound = oppEntry?.rounds?.[i] ?? {};
-        warBattles.push({
-          ...battle,
-          _roundIndex: i,
-          _roundCrownsMe: Number(round?.crowns ?? 0),
-          _roundCrownsOpp: Number(oppRound?.crowns ?? 0),
-        });
-      });
-    } else {
-      warBattles.push(battle);
-    }
-  }
-
+  const warBattles = expandDuelRounds(filterWarBattles(battleLog ?? []));
   const entries = [];
   let deckIndex = 0;
+  const dayDeckCounts = new Map();
 
   for (const battle of warBattles) {
     const battleClanTag =
@@ -513,6 +490,9 @@ export function summarizeWarDecksForTension(
     for (const chunk of deckChunks) {
       if (deckIndex >= limit) break;
       deckIndex += 1;
+      const dayDeckLabel = `Deck ${
+        (dayDeckCounts.get(effectiveDayKey) ?? 0) + 1
+      }`;
 
       const signature = chunk
         .map((card) => normalizeWarDeckCardId(card))
@@ -528,8 +508,14 @@ export function summarizeWarDecksForTension(
         .map((card) => String(card?.id ?? "").trim())
         .filter(Boolean);
 
+      const displayLabel = dayDeckLabel;
+      dayDeckCounts.set(
+        effectiveDayKey,
+        (dayDeckCounts.get(effectiveDayKey) ?? 0) + 1,
+      );
+
       entries.push({
-        label: `Deck ${deckIndex}`,
+        label: displayLabel,
         signature,
         cards: formatWarDeckCards(chunk),
         cardNames,

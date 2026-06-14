@@ -740,7 +740,7 @@ function buildWarDecksTextFallbackImage(warDecks) {
       const sortedDays = [...dayGroups.values()].sort((a, b) =>
         b.dayKey.localeCompare(a.dayKey),
       );
-      for (const group of sortedDays.slice(0, 2)) {
+      for (const group of sortedDays.slice(0, 4)) {
         lines.push(`**${group.dayLabel}**`);
         for (const deckGroup of group.decks.values()) {
           for (const [innerIndex, match] of deckGroup.matches.entries()) {
@@ -900,7 +900,7 @@ function formatWarDecksField(warDecks) {
   if (!Array.isArray(warDecks)) return null;
 
   const maxDecks = 4;
-  const maxDays = 2;
+  const maxDays = 4;
   const maxMatchesPerDeck = 4;
   const dayGroups = new Map();
   const deckOrder = [];
@@ -941,11 +941,12 @@ function formatWarDecksField(warDecks) {
 
     let deckCount = 0;
     const deckLabels = [...group.decks.keys()].slice(0, maxDecks);
-    for (const deckLabel of deckLabels) {
+    for (const [deckIndex, deckLabel] of deckLabels.entries()) {
       const deckGroup = group.decks.get(deckLabel);
       if (!deckGroup) continue;
       deckCount += 1;
       if (deckCount > maxDecks) break;
+      const displayDeckLabel = deckGroup.label || `Deck ${deckIndex + 1}`;
 
       deckGroup.matches
         .slice(0, maxMatchesPerDeck)
@@ -963,7 +964,7 @@ function formatWarDecksField(warDecks) {
             ? `${Math.round(match.tension * 100)}%`
             : "?";
           groupLines.push(
-            `• ${deckLabel} #${matchIndex + 1} : <:members:1506175789731811399> ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultEmoji} ${score} ⚡ ${tension}`,
+            `• ${displayDeckLabel} #${matchIndex + 1} : <:members:1506175789731811399> ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultEmoji} ${score} ⚡ ${tension}`,
           );
         });
     }

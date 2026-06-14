@@ -292,6 +292,99 @@ assert.ok(
   "Tension summary should contain the older day",
 );
 
+const sameDayLabels = summarizeWarDecksForTension(
+  [
+    {
+      type: "riverRacePvp",
+      battleTime: "20260612T100000.000Z",
+      team: [
+        {
+          cards: [
+            { id: "1", name: "A" },
+            { id: "2", name: "B" },
+            { id: "3", name: "C" },
+            { id: "4", name: "D" },
+            { id: "5", name: "E" },
+            { id: "6", name: "F" },
+            { id: "7", name: "G" },
+            { id: "8", name: "H" },
+          ],
+          crowns: 3,
+        },
+      ],
+      opponent: [{ name: "X", crowns: 0 }],
+    },
+    {
+      type: "riverRacePvp",
+      battleTime: "20260612T101000.000Z",
+      team: [
+        {
+          cards: [
+            { id: "9", name: "I" },
+            { id: "10", name: "J" },
+            { id: "11", name: "K" },
+            { id: "12", name: "L" },
+            { id: "13", name: "M" },
+            { id: "14", name: "N" },
+            { id: "15", name: "O" },
+            { id: "16", name: "P" },
+          ],
+          crowns: 2,
+        },
+      ],
+      opponent: [{ name: "Y", crowns: 1 }],
+    },
+    {
+      type: "riverRacePvp",
+      battleTime: "20260612T102000.000Z",
+      team: [
+        {
+          cards: [
+            { id: "17", name: "Q" },
+            { id: "18", name: "R" },
+            { id: "19", name: "S" },
+            { id: "20", name: "T" },
+            { id: "21", name: "U" },
+            { id: "22", name: "V" },
+            { id: "23", name: "W" },
+            { id: "24", name: "X" },
+          ],
+          crowns: 1,
+        },
+      ],
+      opponent: [{ name: "Z", crowns: 2 }],
+    },
+    {
+      type: "riverRacePvp",
+      battleTime: "20260612T103000.000Z",
+      team: [
+        {
+          cards: [
+            { id: "25", name: "Y" },
+            { id: "26", name: "Z" },
+            { id: "27", name: "A2" },
+            { id: "28", name: "B2" },
+            { id: "29", name: "C2" },
+            { id: "30", name: "D2" },
+            { id: "31", name: "E2" },
+            { id: "32", name: "F2" },
+          ],
+          crowns: 0,
+        },
+      ],
+      opponent: [{ name: "W", crowns: 3 }],
+    },
+  ],
+  8,
+  null,
+  "LRQP20V9",
+);
+assert.deepStrictEqual(
+  sameDayLabels.map((deck) => deck.label),
+  ["Deck 1", "Deck 2", "Deck 3", "Deck 4"],
+  "Deck labels should restart at 1 for each new GDC day",
+);
+
 const warDeckSummary = summarizeWarDecks(
   [
     {
