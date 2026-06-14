@@ -308,6 +308,92 @@ assert.strictEqual(
   "The third round should be scored 1-0 for root-level rounds",
 );
 
+const displaynoneCaseDecks = summarizeWarDecksForTension(
+  [
+    {
+      type: "riverRacePvp",
+      battleTime: "20260612T100000.000Z",
+      team: [
+        {
+          cards: Array.from({ length: 24 }, (_, index) => ({
+            id: String(index + 1),
+            name: `C${index + 1}`,
+          })),
+          crowns: 2,
+        },
+      ],
+      opponent: [{ name: "juaco041", crowns: 0 }],
+    },
+    {
+      type: "riverRaceDuel",
+      battleTime: "20260612T101000.000Z",
+      team: [
+        {
+          cards: Array.from({ length: 24 }, (_, index) => ({
+            id: String(index + 25),
+            name: `D${index + 1}`,
+          })),
+          rounds: [{ crowns: 0 }, { crowns: 1 }, { crowns: 0 }],
+        },
+      ],
+      opponent: [
+        {
+          name: "R-ANGELITO",
+          rounds: [{ crowns: 3 }, { crowns: 0 }, { crowns: 1 }],
+        },
+      ],
+    },
+    {
+      type: "riverRaceDuel",
+      battleTime: "20260613T134400.000Z",
+      team: [
+        {
+          cards: Array.from({ length: 24 }, (_, index) => ({
+            id: String(index + 49),
+            name: `E${index + 1}`,
+          })),
+          rounds: [{ crowns: 1 }, { crowns: 0 }, { crowns: 1 }],
+        },
+      ],
+      opponent: [
+        {
+          name: "Aegon Targaryen",
+          rounds: [{ crowns: 0 }, { crowns: 1 }, { crowns: 0 }],
+        },
+      ],
+    },
+  ],
+  64,
+  null,
+  "LRQP20V9",
+);
+const j2Decks = displaynoneCaseDecks.filter(
+  (deck) => deck.matches?.[0]?.dayKey === "2026-06-12",
+);
+assert.strictEqual(
+  j2Decks.length,
+  4,
+  "J2 must include 4 decks when R-ANGELITO plays 3 rounds",
+);
+assert.deepStrictEqual(
+  j2Decks.map((deck) => deck.matches?.[0]?.score),
+  ["2-0", "0-3", "1-0", "0-1"],
+  "J2 deck scores must preserve the 3-round duel against R-ANGELITO",
+);
+const j3Decks = displaynoneCaseDecks.filter(
+  (deck) => deck.matches?.[0]?.dayKey === "2026-06-13",
+);
+assert.strictEqual(
+  j3Decks.length,
+  3,
+  "J3 should include 3 duel decks for Aegon Targaryen",
+);
+assert.deepStrictEqual(
+  j3Decks.map((deck) => deck.matches?.[0]?.score),
+  ["1-0", "0-1", "1-0"],
+  "J3 deck scores must preserve the 3-round duel against Aegon Targaryen",
+);
+
 const duelFirstDecks = summarizeWarDecksForTension(
   [
     {
