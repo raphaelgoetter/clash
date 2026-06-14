@@ -116,19 +116,22 @@ export function categorizeBattleLog(rawBattleLog) {
 export function expandDuelRounds(warLog) {
   const expanded = [];
   for (const battle of warLog) {
-    const myEntry = battle.team?.[0];
-    const oppEntry = battle.opponent?.[0];
+    const myEntry = getFirstEntry(battle.team);
+    const oppEntry = getFirstEntry(battle.opponent);
     const battleType = (battle.type ?? "").toLowerCase();
-    if (DUEL_BATTLE_TYPES.has(battleType) && Array.isArray(myEntry?.rounds)) {
+    const myRounds = getRoundArray(myEntry, battle);
+    const oppRounds = getRoundArray(oppEntry, battle);
+
+    if (DUEL_BATTLE_TYPES.has(battleType) && myRounds.length > 0) {
       // One synthetic entry per round — store per-round crowns so win detection is accurate.
       // The parent crowns represent the duel total and must NOT be used per-round.
-      myEntry.rounds.forEach((round, i) => {
-        const oppRound = oppEntry?.rounds?.[i] ?? {};
+      myRounds.forEach((round, i) => {
+        const oppRound = oppRounds?.[i] ?? {};
         expanded.push({
           ...battle,
           _roundIndex: i,
-          _roundCrownsMe: round.crowns ?? 0,
-          _roundCrownsOpp: oppRound.crowns ?? 0,
+          _roundCrownsMe: getRoundCrowns(round),
+          _roundCrownsOpp: getRoundCrowns(oppRound),
         });
       });
     } else {
@@ -342,6 +345,35 @@ function chunkArray(items, size) {
   return chunks;
 }
 
+function getFirstEntry(entry) {
+  if (Array.isArray(entry)) return entry[0] || null;
+  if (entry && typeof entry === "object") return entry;
+  return null;
+}
+
+function getRoundArray(entry, battle) {
+  if (Array.isArray(entry?.rounds)) return entry.rounds;
+  if (Array.isArray(battle?.rounds)) return battle.rounds;
+  return [];
+}
+
+function getRoundCrowns(round, fallbackPrefix = "crowns") {
+  if (!round || typeof round !== "object") return 0;
+  const candidates = [
+    round.crowns,
+    round.crown,
+    round.crownsMe,
+    round.crownsOpp,
+    round.playerCrowns,
+    round.myCrowns,
+    round.opponentCrowns,
+  ];
+  for (const value of candidates) {
+    if (Number.isFinite(Number(value))) return Number(value);
+  }
+  return 0;
+}
+
 export function normalizeWarDeckCardId(card) {
   const rawId = card?.id ?? card?.name ?? card;
   if (rawId === null || rawId === undefined) return "";
@@ -454,9 +486,15 @@ export function summarizeWarDecksForTension(
   const warBattles = expandDuelRounds(filterWarBattles(battleLog ?? []));
   const entries = [];
   let deckIndex = 0;
+  const dayDeckCounts = new Map();
 
   for (const battle of warBattles) {
-    if (dayKey && warDayKey(battle?.battleTime, clanTag) !== dayKey) continue;
+    const teamEntry = getFirstEntry(battle.team);
+    const oppEntry = getFirstEntry(battle.opponent);
+    const battleClanTag =
+      clanTag ?? teamEntry?.clan?.tag ?? oppEntry?.clan?.tag ?? null;
+    const effectiveDayKey = warDayKey(battle?.battleTime, battleClanTag);
+    if (dayKey && effectiveDayKey !== dayKey) continue;
     if (deckIndex >= limit) break;
 
     const cards = Array.isArray(battle?.team?.[0]?.cards)
@@ -465,19 +503,27 @@ export function summarizeWarDecksForTension(
     const deckChunks = chunkArray(cards, 8).filter((chunk) => chunk.length > 0);
     if (!deckChunks.length) continue;
 
-    const duelRounds = Array.isArray(battle?.team?.[0]?.rounds)
-      ? battle.team[0].rounds
-      : null;
-    const duelOppRounds = Array.isArray(battle?.opponent?.[0]?.rounds)
-      ? battle.opponent[0].rounds
-      : null;
-    const battleWon = isWarWin(battle);
     const tension = computeBattleTension(battle);
+    const opponentName = String(oppEntry?.name ?? oppEntry?.tag ?? "?").trim();
+    const opponentTourLevel = computeBattleTourLevel(oppEntry);
+    const myCrowns = getMyBattleCrowns(battle);
+    const oppCrowns =
+      battle._roundIndex !== undefined
+        ? (battle._roundCrownsOpp ?? 0)
+        : (battle.opponent?.[0]?.crowns ?? 0);
+    const score = `${myCrowns}-${oppCrowns}`;
+    const result = isWarWin(battle) ? "win" : "loss";
+    const deckWon = Number.isFinite(cards[0]?.crowns)
+      ? undefined
+      : result === "win";
 
     for (const chunk of deckChunks) {
       if (deckIndex >= limit) break;
-
       deckIndex += 1;
+      const dayDeckLabel = `Deck ${
+        (dayDeckCounts.get(effectiveDayKey) ?? 0) + 1
+      }`;
+
       const signature = chunk
         .map((card) => normalizeWarDeckCardId(card))
         .filter(Boolean)
@@ -491,21 +537,15 @@ export function summarizeWarDecksForTension(
       const cardIds = chunk
         .map((card) => String(card?.id ?? "").trim())
         .filter(Boolean);
-      const opponentName = String(
-        battle.opponent?.[0]?.name ?? battle.opponent?.[0]?.tag ?? "?",
-      ).trim();
-      const opponentTourLevel = computeBattleTourLevel(battle.opponent?.[0]);
-      const myCrowns = getMyBattleCrowns(battle);
-      const oppCrowns =
-        battle._roundIndex !== undefined
-          ? (battle._roundCrownsOpp ?? 0)
-          : (battle.opponent?.[0]?.crowns ?? 0);
-      const score = `${myCrowns}-${oppCrowns}`;
-      const result = isWarWin(battle) ? "win" : "loss";
-      const deckWon = Number.isFinite(chunk[0]?.crowns) ? undefined : battleWon;
+
+      const displayLabel = dayDeckLabel;
+      dayDeckCounts.set(
+        effectiveDayKey,
+        (dayDeckCounts.get(effectiveDayKey) ?? 0) + 1,
+      );
 
       entries.push({
-        label: `Deck ${deckIndex}`,
+        label: displayLabel,
         signature,
         cards: formatWarDeckCards(chunk),
         cardNames,
@@ -524,7 +564,7 @@ export function summarizeWarDecksForTension(
             oppCrowns,
             result,
             tension,
-            dayKey: warDayKey(battle?.battleTime, clanTag),
+            dayKey: effectiveDayKey,
           },
         ],
       });

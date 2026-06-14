@@ -740,7 +740,7 @@ function buildWarDecksTextFallbackImage(warDecks) {
       const sortedDays = [...dayGroups.values()].sort((a, b) =>
         b.dayKey.localeCompare(a.dayKey),
       );
-      for (const group of sortedDays.slice(0, 2)) {
+      for (const group of sortedDays.slice(0, 4)) {
         lines.push(`**${group.dayLabel}**`);
         for (const deckGroup of group.decks.values()) {
           for (const [innerIndex, match] of deckGroup.matches.entries()) {
@@ -910,7 +910,7 @@ function formatWarDecksField(warDecks) {
     if (!deckOrder.includes(deckLabel)) deckOrder.push(deckLabel);
     const matchLines = Array.isArray(deck.matches) ? deck.matches : [];
 
-    matchLines.slice(0, maxMatchesPerDeck).forEach((match, matchIndex) => {
+    matchLines.forEach((match, matchIndex) => {
       const dayKey = match.dayKey || "";
       const group = dayGroups.get(dayKey) ?? {
         dayKey,
@@ -941,37 +941,57 @@ function formatWarDecksField(warDecks) {
 
     let deckCount = 0;
     const deckLabels = [...group.decks.keys()].slice(0, maxDecks);
-    for (const deckLabel of deckLabels) {
+    for (const [deckIndex, deckLabel] of deckLabels.entries()) {
       const deckGroup = group.decks.get(deckLabel);
       if (!deckGroup) continue;
       deckCount += 1;
       if (deckCount > maxDecks) break;
+      const displayDeckLabel = deckGroup.label || `Deck ${deckIndex + 1}`;
 
-      deckGroup.matches.forEach((match, matchIndex) => {
-        const opponentName = escapeText(match.opponentName || "?");
-        const towerLevel = Number.isFinite(match.opponentTourLevel)
-          ? match.opponentTourLevel
-          : "?";
-        const resultEmoji =
-          match.result === "win"
-            ? "<:success:1499002702208958577>"
-            : "<:error:1499002755841265826>";
-        const score = escapeText(match.score || "?");
-        const tension = Number.isFinite(match.tension)
-          ? `${Math.round(match.tension * 100)}%`
-          : "?";
-        groupLines.push(
-          `• ${deckLabel} #${matchIndex + 1} : <:members:1506175789731811399> ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultEmoji} ${score} ⚡ ${tension}`,
-        );
-      });
+      deckGroup.matches
+        .slice(0, maxMatchesPerDeck)
+        .forEach((match, matchIndex) => {
+          const opponentName = escapeText(match.opponentName || "?");
+          const towerLevel = Number.isFinite(match.opponentTourLevel)
+            ? match.opponentTourLevel
+            : "?";
+          const resultEmoji =
+            match.result === "win"
+              ? "<:success:1499002702208958577>"
+              : "<:error:1499002755841265826>";
+          const score = escapeText(match.score || "?");
+          const tension = Number.isFinite(match.tension)
+            ? `${Math.round(match.tension * 100)}%`
+            : "?";
+          groupLines.push(
+            `• ${displayDeckLabel} #${matchIndex + 1} : <:members:1506175789731811399> ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultEmoji} ${score} ⚡ ${tension}`,
+          );
+        });
     }
     return groupLines.join("\n");
   });
 
   let blocks = groupBlocks;
   let value = blocks.join("\n");
+
   while (value.length > 1000 && blocks.length > 1) {
-    blocks = blocks.slice(0, -1);
+    let longestIndex = 0;
+    let longestLength = 0;
+    for (let i = 0; i < blocks.length; i += 1) {
+      const blockLines = blocks[i].split("\n");
+      if (blockLines.length > longestLength) {
+        longestLength = blockLines.length;
+        longestIndex = i;
+      }
+    }
+
+    const longestLines = blocks[longestIndex].split("\n");
+    if (longestLines.length > 2) {
+      longestLines.pop();
+      blocks[longestIndex] = longestLines.join("\n");
+    } else {
+      blocks = blocks.filter((_, index) => index !== longestIndex);
+    }
     value = blocks.join("\n");
   }
 
@@ -2437,7 +2457,7 @@ export default async function handler(req, res) {
 
         if (warDecksField) {
           fields.push({
-            name: "Decks GDC :",
+            name: "Decks GDC",
             value: warDecksField,
             inline: false,
           });
@@ -2447,8 +2467,8 @@ export default async function handler(req, res) {
           ? `${Math.round(analysis.tension.average * 100)}%`
           : null;
         const title = averageTension
-          ? `⚡ Tension GDC : ${analysis.overview.name} : ${averageTension}`
-          : `⚡ Tension GDC : ${analysis.overview.name}`;
+          ? `⚡ Tension GDC · ${analysis.overview.name} : ${averageTension}`
+          : `⚡ Tension GDC · ${analysis.overview.name}`;
         const dataEmbed = {
           title,
           url: trustPlayerUrl(tag),
