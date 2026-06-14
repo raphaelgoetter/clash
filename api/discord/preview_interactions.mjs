@@ -19,7 +19,10 @@ import {
   countEvolved,
   countHeroes,
 } from "../../backend/services/collectionConstants.js";
-import { summarizeWarDecks } from "../../backend/services/analysisService.js";
+import {
+  summarizeWarDecks,
+  summarizeWarDecksForTension,
+} from "../../backend/services/analysisService.js";
 
 const _require = createRequire(import.meta.url);
 const COLLECTION_LEVELS = _require("../../data/collection_levels.json");
@@ -1513,22 +1516,6 @@ export default async function handler(req, res) {
         const pointHistory = latestWeeks.length
           ? formatPointHistory(latestWeeks)
           : "Aucune semaine GDC terminée trouvée.";
-        let warDecks = summarizeWarDecks(analysis.battleLog ?? []);
-        if (!warDecks.length) {
-          try {
-            const battleLogResp = await fetch(
-              `${TRUST_ROYALE_URL}/api/player/${encodeURIComponent(tag)}/battlelog`,
-              { headers: { Accept: "application/json" } },
-            );
-            if (battleLogResp.ok) {
-              const battleLog = await battleLogResp.json();
-              warDecks = summarizeWarDecks(battleLog ?? []);
-            }
-          } catch {
-            // On garde le résumé déjà calculé si le fallback échoue.
-          }
-        }
-        const warDecksField = formatWarDecksField(warDecks);
 
         const historyCodeBlock = latestWeeks.length
           ? buildHistoryCodeBlock(latestWeeks)
@@ -1639,14 +1626,6 @@ export default async function handler(req, res) {
           fields.push({
             name: "Détails GDC :",
             value: detailLines.join("\n"),
-            inline: false,
-          });
-        }
-
-        if (warDecksField) {
-          fields.push({
-            name: "Decks GDC :",
-            value: warDecksField,
             inline: false,
           });
         }

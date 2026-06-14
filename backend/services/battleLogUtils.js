@@ -445,6 +445,94 @@ export function summarizeDecks(battleLog, limit = 4, dayKey = null) {
     }));
 }
 
+export function summarizeWarDecksForTension(
+  battleLog,
+  limit = 8,
+  dayKey = null,
+) {
+  const warBattles = expandDuelRounds(filterWarBattles(battleLog ?? []));
+  const entries = [];
+  let deckIndex = 0;
+
+  for (const battle of warBattles) {
+    if (dayKey && warDayKey(battle?.battleTime) !== dayKey) continue;
+    if (deckIndex >= limit) break;
+
+    const cards = Array.isArray(battle?.team?.[0]?.cards)
+      ? battle.team[0].cards
+      : [];
+    const deckChunks = chunkArray(cards, 8).filter((chunk) => chunk.length > 0);
+    if (!deckChunks.length) continue;
+
+    const duelRounds = Array.isArray(battle?.team?.[0]?.rounds)
+      ? battle.team[0].rounds
+      : null;
+    const duelOppRounds = Array.isArray(battle?.opponent?.[0]?.rounds)
+      ? battle.opponent[0].rounds
+      : null;
+    const battleWon = isWarWin(battle);
+    const tension = computeBattleTension(battle);
+
+    for (const chunk of deckChunks) {
+      if (deckIndex >= limit) break;
+
+      deckIndex += 1;
+      const signature = chunk
+        .map((card) => normalizeWarDeckCardId(card))
+        .filter(Boolean)
+        .sort()
+        .join("-");
+      if (!signature) continue;
+
+      const cardNames = chunk
+        .map((card) => String(card?.name ?? card?.id ?? "").trim())
+        .filter(Boolean);
+      const cardIds = chunk
+        .map((card) => String(card?.id ?? "").trim())
+        .filter(Boolean);
+      const opponentName = String(
+        battle.opponent?.[0]?.name ?? battle.opponent?.[0]?.tag ?? "?",
+      ).trim();
+      const opponentTourLevel = computeBattleTourLevel(battle.opponent?.[0]);
+      const myCrowns = getMyBattleCrowns(battle);
+      const oppCrowns =
+        battle._roundIndex !== undefined
+          ? (battle._roundCrownsOpp ?? 0)
+          : (battle.opponent?.[0]?.crowns ?? 0);
+      const score = `${myCrowns}-${oppCrowns}`;
+      const result = isWarWin(battle) ? "win" : "loss";
+      const deckWon = Number.isFinite(chunk[0]?.crowns) ? undefined : battleWon;
+
+      entries.push({
+        label: `Deck ${deckIndex}`,
+        signature,
+        cards: formatWarDeckCards(chunk),
+        cardNames,
+        cardIds,
+        plays: 1,
+        wins:
+          deckWon === undefined ? (result === "win" ? 1 : 0) : deckWon ? 1 : 0,
+        tension,
+        winRate: result === "win" ? 100 : 0,
+        matches: [
+          {
+            opponentName,
+            opponentTourLevel,
+            score,
+            myCrowns,
+            oppCrowns,
+            result,
+            tension,
+            dayKey: warDayKey(battle?.battleTime),
+          },
+        ],
+      });
+    }
+  }
+
+  return entries;
+}
+
 export function summarizeWarDecks(battleLog, limit = 4, dayKey = null) {
   const decks = new Map();
   const warBattles = expandDuelRounds(filterWarBattles(battleLog ?? []));

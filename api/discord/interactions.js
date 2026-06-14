@@ -28,7 +28,10 @@ import {
   computeTourLevel,
 } from "../../backend/services/collectionConstants.js";
 import { getOrSet } from "../../backend/services/cache.js";
-import { summarizeWarDecks } from "../../backend/services/analysisService.js";
+import {
+  summarizeWarDecks,
+  summarizeWarDecksForTension,
+} from "../../backend/services/analysisService.js";
 import { loadClanCache } from "../../backend/services/clanCache.js";
 
 const _require = createRequire(import.meta.url);
@@ -2372,12 +2375,12 @@ export default async function handler(req, res) {
           );
           if (battleLogResp.ok) {
             const battleLog = await battleLogResp.json();
-            warDecks = summarizeWarDecks(battleLog ?? [], 8);
+            warDecks = summarizeWarDecksForTension(battleLog ?? [], 8);
           } else {
-            warDecks = summarizeWarDecks(analysis.battleLog ?? [], 8);
+            warDecks = summarizeWarDecksForTension(analysis.battleLog ?? [], 8);
           }
         } catch {
-          warDecks = summarizeWarDecks(analysis.battleLog ?? [], 4);
+          warDecks = summarizeWarDecksForTension(analysis.battleLog ?? [], 4);
         }
 
         let deckImage = null;
