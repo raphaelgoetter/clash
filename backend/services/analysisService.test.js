@@ -144,18 +144,18 @@ assert.strictEqual(
   "warDayKey should be sunday after 9:40 UTC reset",
 );
 
-const clanBeforeReset = new Date("2026-03-29T09:50:00.000Z"); // avant 09:54 UTC pour LRQP20V9
+const clanBeforeReset = new Date("2026-03-29T09:42:00.000Z"); // avant 09:44 UTC pour LRQP20V9
 assert.strictEqual(
   warDayKey(clanBeforeReset, "LRQP20V9"),
   "2026-03-28",
-  "warDayKey should still be saturday before clan-specific 09:54 UTC reset",
+  "warDayKey should still be saturday before clan-specific 09:44 UTC reset",
 );
 
-const clanAfterReset = new Date("2026-03-29T09:58:00.000Z"); // après 09:57 UTC pour LRQP20V9
+const clanAfterReset = new Date("2026-03-29T09:50:00.000Z"); // après 09:44 UTC pour LRQP20V9
 assert.strictEqual(
   warDayKey(clanAfterReset, "LRQP20V9"),
   "2026-03-29",
-  "warDayKey should switch to sunday after clan-specific 09:54 UTC reset",
+  "warDayKey should switch to sunday after clan-specific 09:44 UTC reset",
 );
 
 const duelBattleLog = [
@@ -254,6 +254,42 @@ assert.strictEqual(
   tensionDecks[3].matches?.[0]?.score,
   "1-0",
   "The third duel round should be scored 1-0",
+);
+
+const multiDayTensionDecks = summarizeWarDecksForTension(
+  [
+    {
+      type: "riverRacePvp",
+      battleTime: "20260611T100000.000Z",
+      team: [{ cards: [{ id: "1", name: "A" }], crowns: 3 }],
+      opponent: [{ name: "X", crowns: 0 }],
+    },
+    {
+      type: "riverRacePvp",
+      battleTime: "20260612T100000.000Z",
+      team: [{ cards: [{ id: "2", name: "B" }], crowns: 2 }],
+      opponent: [{ name: "Y", crowns: 1 }],
+    },
+  ],
+  8,
+  null,
+  "LRQP20V9",
+);
+assert.ok(
+  multiDayTensionDecks.length >= 2,
+  "summarizeWarDecksForTension should include multiple day entries",
+);
+assert.ok(
+  multiDayTensionDecks.some(
+    (deck) => deck.matches?.[0]?.dayKey === "2026-06-12",
+  ),
+  "Tension summary should contain the newest day",
+);
+assert.ok(
+  multiDayTensionDecks.some(
+    (deck) => deck.matches?.[0]?.dayKey === "2026-06-11",
+  ),
+  "Tension summary should contain the older day",
 );
 
 const warDeckSummary = summarizeWarDecks(

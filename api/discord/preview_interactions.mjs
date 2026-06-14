@@ -367,17 +367,12 @@ function formatWarDecksField(warDecks) {
   const dayGroups = new Map();
   const deckOrder = [];
 
-  for (
-    let deckIndex = 0;
-    deckIndex < Math.min(warDecks.length, maxDecks);
-    deckIndex += 1
-  ) {
-    const deck = warDecks[deckIndex];
+  warDecks.forEach((deck, deckIndex) => {
     const deckLabel = deck.label || `Deck ${deckIndex + 1}`;
-    deckOrder.push(deckLabel);
+    if (!deckOrder.includes(deckLabel)) deckOrder.push(deckLabel);
     const matchLines = Array.isArray(deck.matches) ? deck.matches : [];
 
-    matchLines.slice(0, maxMatchesPerDeck).forEach((match) => {
+    matchLines.forEach((match, matchIndex) => {
       const dayKey = match.dayKey || "";
       const group = dayGroups.get(dayKey) ?? {
         dayKey,
@@ -390,6 +385,7 @@ function formatWarDecksField(warDecks) {
         matches: [],
       };
       deckGroup.matches.push({
+        originalIndex: matchIndex,
         opponentName: match.opponentName || "?",
         opponentTourLevel: Number.isFinite(match.opponentTourLevel)
           ? match.opponentTourLevel
@@ -401,7 +397,7 @@ function formatWarDecksField(warDecks) {
       group.decks.set(deckLabel, deckGroup);
       dayGroups.set(dayKey, group);
     });
-  }
+  });
 
   if (dayGroups.size === 0) return null;
 
@@ -418,7 +414,9 @@ function formatWarDecksField(warDecks) {
     for (const deckLabel of deckOrder) {
       const deckGroup = group.decks.get(deckLabel);
       if (!deckGroup) continue;
-      for (const [matchIndex, match] of deckGroup.matches.entries()) {
+      for (const [matchIndex, match] of deckGroup.matches
+        .slice(0, maxMatchesPerDeck)
+        .entries()) {
         const resultEmoji = match.result === "win" ? "✅" : "❌";
         const tension = Number.isFinite(match.tension)
           ? `${Math.round(match.tension * 100)}%`
