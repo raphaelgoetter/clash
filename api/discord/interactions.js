@@ -975,22 +975,15 @@ function formatWarDecksField(warDecks) {
   let value = blocks.join("\n");
 
   while (value.length > 1000 && blocks.length > 1) {
-    let longestIndex = 0;
-    let longestLength = 0;
-    for (let i = 0; i < blocks.length; i += 1) {
-      const blockLines = blocks[i].split("\n");
-      if (blockLines.length > longestLength) {
-        longestLength = blockLines.length;
-        longestIndex = i;
-      }
-    }
-
-    const longestLines = blocks[longestIndex].split("\n");
-    if (longestLines.length > 2) {
-      longestLines.pop();
-      blocks[longestIndex] = longestLines.join("\n");
+    // Si le texte est trop long, on commence par tronquer le bloc le plus récent,
+    // afin de préserver les jours plus anciens comme J2 tant que possible.
+    const trimIndex = 0;
+    const trimLines = blocks[trimIndex].split("\n");
+    if (trimLines.length > 2) {
+      trimLines.pop();
+      blocks[trimIndex] = trimLines.join("\n");
     } else {
-      blocks = blocks.filter((_, index) => index !== longestIndex);
+      blocks = blocks.filter((_, index) => index !== trimIndex);
     }
     value = blocks.join("\n");
   }
