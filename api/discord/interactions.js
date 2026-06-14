@@ -735,21 +735,23 @@ function buildWarDecksTextFallbackImage(warDecks) {
       for (const group of sortedDays.slice(0, 2)) {
         lines.push(`**${group.dayLabel}**`);
         for (const deckGroup of group.decks.values()) {
-          lines.push(`- ${deckGroup.label}`);
-          deckGroup.matches.forEach((match, matchIndex) => {
-            const opponentName = escapeText(match.opponentName || "?");
-            const towerLevel = Number.isFinite(match.opponentTourLevel)
-              ? match.opponentTourLevel
-              : "?";
-            const score = escapeText(match.score || "?");
-            const tension = Number.isFinite(match.tension)
-              ? `${Math.round(match.tension * 100)}%`
-              : "?";
-            const resultIcon = match.result === "win" ? "✅" : "❌";
-            lines.push(
-              `  - #${matchIndex + 1} : <:members:1506175789731811399> ${opponentName} · <:tower:1515395461140447342> ${towerLevel} · ${resultIcon} ${score} · <:warn:1506174837519945800> ${tension}`,
-            );
-          });
+          const match = deckGroup.matches[0];
+          if (!match) {
+            lines.push(`• ${deckGroup.label}`);
+            continue;
+          }
+          const opponentName = escapeText(match.opponentName || "?");
+          const towerLevel = Number.isFinite(match.opponentTourLevel)
+            ? match.opponentTourLevel
+            : "?";
+          const score = escapeText(match.score || "?");
+          const tension = Number.isFinite(match.tension)
+            ? `${Math.round(match.tension * 100)}%`
+            : "?";
+          const resultIcon = match.result === "win" ? "✅" : "❌";
+          lines.push(
+            `• ${deckGroup.label} : <:members:1506175789731811399> ${opponentName} ${towerLevel} ${resultIcon} ${score} <:warn:1506174837519945800> ${tension}`,
+          );
         }
         lines.push("\u200b");
       }
@@ -956,17 +958,18 @@ function formatWarDecksField(warDecks) {
     for (const deckGroup of group.decks.values()) {
       if (deckCount >= maxDecks) break;
       deckCount += 1;
-      lines.push(`• ${deckGroup.label}`);
-
-      deckGroup.matches.forEach((match, matchIndex) => {
-        const resultEmoji = match.result === "win" ? "✅" : "❌";
-        const tension = Number.isFinite(match.tension)
-          ? `${Math.round(match.tension * 100)}%`
-          : "?";
-        lines.push(
-          `  - #${matchIndex + 1} : <:members:1506175789731811399> ${match.opponentName} · <:tower:1515395461140447342> ${match.opponentTourLevel} · ${resultEmoji} ${match.score} · <:warn:1506174837519945800> ${tension}`,
-        );
-      });
+      const match = deckGroup.matches[0];
+      if (!match) {
+        lines.push(`• ${deckGroup.label}`);
+        continue;
+      }
+      const resultEmoji = match.result === "win" ? "✅" : "❌";
+      const tension = Number.isFinite(match.tension)
+        ? `${Math.round(match.tension * 100)}%`
+        : "?";
+      lines.push(
+        `• ${deckGroup.label} : <:members:1506175789731811399> ${match.opponentName} ${match.opponentTourLevel} ${resultEmoji} ${match.score} <:warn:1506174837519945800> ${tension}`,
+      );
     }
 
     if (dayIndex < Math.min(sortedDays.length, maxDays) - 1) {
