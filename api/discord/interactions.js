@@ -546,9 +546,9 @@ async function buildWarDecksImage(warDecks) {
   );
 
   const rows = warDecks.slice(0, 4);
-  const cardWidth = 144;
-  const cardHeight = 192;
-  const cardGap = 8;
+  const cardWidth = 160;
+  const cardHeight = 214;
+  const cardGap = 10;
   const padding = 20;
   const topLabelHeight = 38;
   const labelSpacing = 6;
@@ -665,8 +665,8 @@ async function buildWarDecksImage(warDecks) {
     const deckNumber = `#${deckIndex + 1}`;
     return `
       ${cardsSvg}
-      <rect x="${padding}" y="${yStart - 42}" width="40" height="28" rx="14" fill="#0ea5e9" />
-      <text x="${padding + 20}" y="${yStart - 24}" text-anchor="middle" dominant-baseline="middle" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#ffffff" font-weight="800">${deckNumber}</text>
+      <rect x="${padding - 2}" y="${yStart - 46}" width="48" height="32" rx="16" fill="#0ea5e9" />
+      <text x="${padding + 22}" y="${yStart - 26}" text-anchor="middle" dominant-baseline="middle" font-family="Inter, system-ui, sans-serif" font-size="16" fill="#ffffff" font-weight="800">${deckNumber}</text>
       ${renderedMatchLines.join("")}
     `;
   });
