@@ -119,19 +119,20 @@ export function expandDuelRounds(warLog) {
     const myEntry = getFirstEntry(battle.team);
     const oppEntry = getFirstEntry(battle.opponent);
     const battleType = (battle.type ?? "").toLowerCase();
-    const myRounds = getRoundArray(myEntry, battle);
-    const oppRounds = getRoundArray(oppEntry, battle);
+    const myRounds = getRoundArray(myEntry, battle, false);
+    const oppRounds = getRoundArray(oppEntry, battle, true);
 
     if (DUEL_BATTLE_TYPES.has(battleType) && myRounds.length > 0) {
       // One synthetic entry per round — store per-round crowns so win detection is accurate.
       // The parent crowns represent the duel total and must NOT be used per-round.
       myRounds.forEach((round, i) => {
-        const oppRound = oppRounds?.[i] ?? {};
+        const oppRound = oppRounds?.[i] ?? null;
+        const { myCrowns, oppCrowns } = getRoundScores(round, oppRound);
         expanded.push({
           ...battle,
           _roundIndex: i,
-          _roundCrownsMe: getRoundCrowns(round),
-          _roundCrownsOpp: getRoundCrowns(oppRound),
+          _roundCrownsMe: myCrowns,
+          _roundCrownsOpp: oppCrowns,
         });
       });
     } else {
@@ -351,27 +352,62 @@ function getFirstEntry(entry) {
   return null;
 }
 
-function getRoundArray(entry, battle) {
+function getRoundArray(entry, battle, isOpponent = false) {
   if (Array.isArray(entry?.rounds)) return entry.rounds;
   if (Array.isArray(battle?.rounds)) return battle.rounds;
   return [];
 }
 
-function getRoundCrowns(round, fallbackPrefix = "crowns") {
-  if (!round || typeof round !== "object") return 0;
+function getRoundCrowns(round) {
+  if (!round || typeof round !== "object") return null;
   const candidates = [
     round.crowns,
     round.crown,
     round.crownsMe,
-    round.crownsOpp,
-    round.playerCrowns,
     round.myCrowns,
-    round.opponentCrowns,
+    round.playerCrowns,
+    round.player_crowns,
+    round.player?.crowns,
   ];
   for (const value of candidates) {
     if (Number.isFinite(Number(value))) return Number(value);
   }
-  return 0;
+  return null;
+}
+
+function getOppRoundCrowns(round) {
+  if (!round || typeof round !== "object") return null;
+  const candidates = [
+    round.crownsOpp,
+    round.opponentCrowns,
+    round.crownsOpponent,
+    round.oppCrowns,
+    round.enemyCrowns,
+    round.opponent_crowns,
+    round.opponent?.crownsOpp,
+    round.opponent?.opponentCrowns,
+    round.opponent?.crowns,
+    round.enemy?.crowns,
+  ];
+  for (const value of candidates) {
+    if (Number.isFinite(Number(value))) return Number(value);
+  }
+  return null;
+}
+
+function getRoundScores(myRound, oppRound) {
+  const myCrowns = getRoundCrowns(myRound);
+  let oppCrowns = getOppRoundCrowns(oppRound);
+  if (oppCrowns === null) {
+    oppCrowns = getOppRoundCrowns(myRound);
+  }
+  if (oppCrowns === null && oppRound) {
+    oppCrowns = getRoundCrowns(oppRound);
+  }
+  return {
+    myCrowns: Number.isFinite(myCrowns) ? myCrowns : 0,
+    oppCrowns: Number.isFinite(oppCrowns) ? oppCrowns : 0,
+  };
 }
 
 export function normalizeWarDeckCardId(card) {

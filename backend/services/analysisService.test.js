@@ -256,6 +256,58 @@ assert.strictEqual(
   "The third duel round should be scored 1-0",
 );
 
+const rootLevelRoundDecks = summarizeWarDecksForTension(
+  [
+    {
+      type: "riverRaceDuel",
+      battleTime: "20260612T100000.000Z",
+      rounds: [
+        { crowns: 1, opponent: { crowns: 0 } },
+        { crowns: 0, opponent: { crowns: 1 } },
+        { crowns: 1, opponent: { crowns: 0 } },
+      ],
+      team: [
+        {
+          cards: [
+            { id: "11", name: "K" },
+            { id: "12", name: "L" },
+            { id: "13", name: "M" },
+            { id: "14", name: "N" },
+            { id: "15", name: "O" },
+            { id: "16", name: "P" },
+            { id: "17", name: "Q" },
+            { id: "18", name: "R" },
+          ],
+        },
+      ],
+      opponent: [{ name: "Aegon Targaryen" }],
+    },
+  ],
+  64,
+  null,
+  "LRQP20V9",
+);
+assert.strictEqual(
+  rootLevelRoundDecks.length,
+  3,
+  "summarizeWarDecksForTension should expand root-level battle.rounds",
+);
+assert.strictEqual(
+  rootLevelRoundDecks[0].matches?.[0]?.score,
+  "1-0",
+  "The first round should be scored 1-0 for root-level rounds",
+);
+assert.strictEqual(
+  rootLevelRoundDecks[1].matches?.[0]?.score,
+  "0-1",
+  "The second round should be scored 0-1 for root-level rounds",
+);
+assert.strictEqual(
+  rootLevelRoundDecks[2].matches?.[0]?.score,
+  "1-0",
+  "The third round should be scored 1-0 for root-level rounds",
+);
+
 const duelFirstDecks = summarizeWarDecksForTension(
   [
     {
