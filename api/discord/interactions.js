@@ -2387,14 +2387,14 @@ export default async function handler(req, res) {
             const battleLog = await battleLogResp.json();
             warDecks = summarizeWarDecksForTension(
               battleLog ?? [],
-              32,
+              64,
               null,
               analysis.overview.clan?.tag,
             );
           } else {
             warDecks = summarizeWarDecksForTension(
               analysis.battleLog ?? [],
-              32,
+              64,
               null,
               analysis.overview.clan?.tag,
             );
@@ -2402,7 +2402,7 @@ export default async function handler(req, res) {
         } catch {
           warDecks = summarizeWarDecksForTension(
             analysis.battleLog ?? [],
-            32,
+            64,
             null,
             analysis.overview.clan?.tag,
           );
