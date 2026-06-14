@@ -943,6 +943,11 @@ function formatWarDecksField(warDecks) {
     if (groupIndex > 0) groupLines.push("\u200b");
     groupLines.push(`**${group.dayLabel}**`);
 
+    const daySuffix = ["J2", "J3"].includes(group.dayLabel)
+      ? "(700pts · winrate 50%)"
+      : "";
+    groupLines[0] = `**${group.dayLabel}${daySuffix ? ` ${daySuffix}` : ""}**`;
+
     let deckCount = 0;
     const deckLabels = [...group.decks.keys()].slice(0, maxDecks);
     for (const [deckIndex, deckLabel] of deckLabels.entries()) {
@@ -968,9 +973,7 @@ function formatWarDecksField(warDecks) {
             ? `${Math.round(match.tension * 100)}%`
             : "?";
           const typeLabel = getWarMatchTypeLabel(match.type);
-          const pointLabel =
-            group.dayLabel === "J3" ? "(700pts · winrate 50%)" : "";
-          const displayLabelWithType = [displayDeckLabel, typeLabel, pointLabel]
+          const displayLabelWithType = [displayDeckLabel, typeLabel]
             .filter(Boolean)
             .join(" ");
           groupLines.push(
