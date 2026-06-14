@@ -547,6 +547,7 @@ async function buildWarDecksImage(warDecks) {
   const cardHeight = 192;
   const cardGap = 8;
   const padding = 20;
+  const topLabelHeight = 38;
   const labelSpacing = 6;
   const matchTopSpacing = 12;
   const textLineHeight = 16;
@@ -554,6 +555,7 @@ async function buildWarDecksImage(warDecks) {
   const width = padding * 2 + 8 * cardWidth + 7 * cardGap;
   const height =
     padding * 2 +
+    topLabelHeight +
     rows.reduce((sum, deck) => {
       const matches = Array.isArray(deck.matches) ? deck.matches : [];
       const matchCount = Math.min(matches.length, 4);
@@ -620,7 +622,7 @@ async function buildWarDecksImage(warDecks) {
         matchCount * textLineHeight +
         deckSpacing
       );
-    }, padding);
+    }, padding + topLabelHeight);
 
     const ids = Array.isArray(deck.cardIds) ? deck.cardIds : [];
     const cardsSvg = ids
@@ -645,11 +647,14 @@ async function buildWarDecksImage(warDecks) {
         ? match.opponentTourLevel
         : "?";
       const score = escapeText(match.score || "?");
-      const resultIcon = match.result === "win" ? "✅" : "❌";
+      const resultIcon =
+        match.result === "win"
+          ? "<:success:1499002702208958577>"
+          : "<:error:1499002755841265826>";
       const tension = Number.isFinite(match.tension)
         ? `${Math.round(match.tension * 100)}%`
         : "?";
-      const line = `- 👥 ${opponentName} · <:tower:1515395461140447342> ${towerLevel} · ${resultIcon} ${score} · <:warn:1506174837519945800> ${tension}`;
+      const line = `- 👥 ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultIcon} ${score} ⚡ ${tension}`;
       const lineY = labelY + 14 + index * textLineHeight;
       return `<text x="${padding}" y="${lineY}" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#e2e8f0">${escapeText(line)}</text>`;
     });
@@ -658,9 +663,9 @@ async function buildWarDecksImage(warDecks) {
     return `
       <rect x="${padding - 6}" y="${yStart - 4}" width="${cardWidth * 8 + cardGap * 7 + 12}" height="${cardHeight + 10 + labelSpacing + matchLines.slice(0, 4).length * textLineHeight + matchTopSpacing}" rx="20" fill="rgba(148, 163, 184, 0.06)" stroke="#334155" stroke-width="1.5"/>
       ${cardsSvg}
-      <rect x="${padding}" y="${yStart - 34}" width="56" height="28" rx="14" fill="#0ea5e9" />
-      <text x="${padding + 28}" y="${yStart - 20}" text-anchor="middle" dominant-baseline="middle" font-family="Inter, system-ui, sans-serif" font-size="15" fill="#ffffff" font-weight="800">#${deckIndex + 1}</text>
-      <text x="${padding + 72}" y="${yStart - 20}" font-family="Inter, system-ui, sans-serif" font-size="15" fill="#f8fafc" font-weight="700">${deckTitle}</text>
+      <rect x="${padding}" y="${yStart - 42}" width="84" height="32" rx="16" fill="#0ea5e9" />
+      <text x="${padding + 42}" y="${yStart - 20}" text-anchor="middle" dominant-baseline="middle" font-family="Inter, system-ui, sans-serif" font-size="15" fill="#ffffff" font-weight="800">Deck ${deckIndex + 1}</text>
+      <text x="${padding + 96}" y="${yStart - 20}" font-family="Inter, system-ui, sans-serif" font-size="15" fill="#f8fafc" font-weight="700">${deckTitle}</text>
       ${renderedMatchLines.join("")}
     `;
   });
@@ -748,9 +753,12 @@ function buildWarDecksTextFallbackImage(warDecks) {
           const tension = Number.isFinite(match.tension)
             ? `${Math.round(match.tension * 100)}%`
             : "?";
-          const resultIcon = match.result === "win" ? "✅" : "❌";
+          const resultIcon =
+            match.result === "win"
+              ? "<:success:1499002702208958577>"
+              : "<:error:1499002755841265826>";
           lines.push(
-            `• ${deckGroup.label} : <:members:1506175789731811399> ${opponentName} ${towerLevel} ${resultIcon} ${score} <:warn:1506174837519945800> ${tension}`,
+            `• ${deckGroup.label} : <:members:1506175789731811399> ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultIcon} ${score} ⚡ ${tension}`,
           );
         }
         lines.push("\u200b");
@@ -963,12 +971,15 @@ function formatWarDecksField(warDecks) {
         lines.push(`• ${deckGroup.label}`);
         continue;
       }
-      const resultEmoji = match.result === "win" ? "✅" : "❌";
+      const resultEmoji =
+        match.result === "win"
+          ? "<:success:1499002702208958577>"
+          : "<:error:1499002755841265826>";
       const tension = Number.isFinite(match.tension)
         ? `${Math.round(match.tension * 100)}%`
         : "?";
       lines.push(
-        `• ${deckGroup.label} : <:members:1506175789731811399> ${match.opponentName} ${match.opponentTourLevel} ${resultEmoji} ${match.score} <:warn:1506174837519945800> ${tension}`,
+        `• ${deckGroup.label} : <:members:1506175789731811399> ${match.opponentName} <:tower:1515395461140447342> ${match.opponentTourLevel} ${resultEmoji} ${match.score} ⚡ ${tension}`,
       );
     }
 

@@ -447,7 +447,7 @@ export function summarizeDecks(battleLog, limit = 4, dayKey = null) {
 
 export function summarizeWarDecks(battleLog, limit = 4, dayKey = null) {
   const decks = new Map();
-  const warBattles = filterWarBattles(battleLog ?? []);
+  const warBattles = expandDuelRounds(filterWarBattles(battleLog ?? []));
 
   warBattles.forEach((battle, battleIndex) => {
     if (dayKey && warDayKey(battle?.battleTime) !== dayKey) return;
