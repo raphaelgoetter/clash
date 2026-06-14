@@ -546,15 +546,15 @@ async function buildWarDecksImage(warDecks) {
   );
 
   const rows = warDecks.slice(0, 4);
-  const cardWidth = 144;
-  const cardHeight = 192;
+  const cardWidth = 152;
+  const cardHeight = 204;
   const cardGap = 8;
   const padding = 20;
-  const topLabelHeight = 38;
-  const labelSpacing = 6;
-  const matchTopSpacing = 12;
+  const topLabelHeight = 0;
+  const labelSpacing = 0;
+  const matchTopSpacing = 6;
   const textLineHeight = 16;
-  const deckSpacing = 8;
+  const deckSpacing = 0;
   const width = padding * 2 + 8 * cardWidth + 7 * cardGap;
   const height =
     padding * 2 +
@@ -564,7 +564,7 @@ async function buildWarDecksImage(warDecks) {
       const matchCount = Math.min(matches.length, 4);
       const matchBlock =
         matchCount > 0 ? matchTopSpacing + matchCount * textLineHeight : 0;
-      return sum + cardHeight + labelSpacing + matchBlock + deckSpacing;
+      return sum + cardHeight + matchBlock + deckSpacing;
     }, 0);
 
   const uniqueUrls = new Map();
@@ -642,7 +642,7 @@ async function buildWarDecksImage(warDecks) {
       })
       .join("");
 
-    const labelY = yStart + cardHeight + 10;
+    const labelY = yStart + cardHeight + 6;
     const matchLines = Array.isArray(deck.matches) ? deck.matches : [];
     const renderedMatchLines = matchLines.slice(0, 4).map((match, index) => {
       const opponentName = escapeText(match.opponentName || "?");
@@ -658,7 +658,7 @@ async function buildWarDecksImage(warDecks) {
         ? `${Math.round(match.tension * 100)}%`
         : "?";
       const line = `- 👥 ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultIcon} ${score} ⚡ ${tension}`;
-      const lineY = labelY + 14 + index * textLineHeight;
+      const lineY = labelY + 12 + index * textLineHeight;
       return `<text x="${padding}" y="${lineY}" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#e2e8f0">${escapeText(line)}</text>`;
     });
 
