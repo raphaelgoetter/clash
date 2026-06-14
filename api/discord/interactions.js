@@ -662,13 +662,11 @@ async function buildWarDecksImage(warDecks) {
       return `<text x="${padding}" y="${lineY}" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#e2e8f0">${escapeText(line)}</text>`;
     });
 
-    const deckLabel = deck.label || `Deck ${deckIndex + 1}`;
-    const deckTitle = escapeText(deckLabel);
+    const deckNumber = `#${deckIndex + 1}`;
     return `
-      <rect x="${padding - 6}" y="${yStart - 4}" width="${cardWidth * 8 + cardGap * 7 + 12}" height="${cardHeight + 10 + labelSpacing + matchLines.slice(0, 4).length * textLineHeight + matchTopSpacing}" rx="20" fill="rgba(148, 163, 184, 0.06)" stroke="#334155" stroke-width="1.5"/>
       ${cardsSvg}
-      <rect x="${padding}" y="${yStart - 42}" width="84" height="32" rx="16" fill="#0ea5e9" />
-      <text x="${padding + 42}" y="${yStart - 20}" text-anchor="middle" dominant-baseline="middle" font-family="Inter, system-ui, sans-serif" font-size="15" fill="#ffffff" font-weight="800">${deckTitle}</text>
+      <rect x="${padding}" y="${yStart - 42}" width="40" height="28" rx="14" fill="#0ea5e9" />
+      <text x="${padding + 20}" y="${yStart - 24}" text-anchor="middle" dominant-baseline="middle" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#ffffff" font-weight="800">${deckNumber}</text>
       ${renderedMatchLines.join("")}
     `;
   });
