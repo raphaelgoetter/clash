@@ -897,62 +897,53 @@ function formatWarDecksField(warDecks) {
   if (!Array.isArray(warDecks)) return null;
 
   const maxDecks = 4;
-  const maxDays = 2;
-  const entries = [];
+  const maxDays = 4;
+  const maxMatchesPerDeck = 4;
+  const dayGroups = new Map();
+  const deckOrder = [];
 
   warDecks.slice(0, 8).forEach((deck, deckIndex) => {
     const deckLabel = deck.label || `Deck ${deckIndex + 1}`;
+    if (!deckOrder.includes(deckLabel)) deckOrder.push(deckLabel);
     const matchLines = Array.isArray(deck.matches) ? deck.matches : [];
 
-    matchLines.forEach((match, matchIndex) => {
+    matchLines.slice(0, maxMatchesPerDeck).forEach((match, matchIndex) => {
       const dayKey = match.dayKey || "";
-      entries.push({
+      const group = dayGroups.get(dayKey) ?? {
         dayKey,
         dayLabel: getWarDayLabel(dayKey),
+        decks: new Map(),
+      };
+
+      const deckGroup = group.decks.get(deckLabel) ?? {
         deckLabel,
-        matchIndex,
-        match,
-      });
+        matches: [],
+      };
+      deckGroup.matches.push({ matchIndex, ...match });
+      group.decks.set(deckLabel, deckGroup);
+      dayGroups.set(dayKey, group);
     });
   });
 
-  if (entries.length === 0) return null;
+  if (dayGroups.size === 0) return null;
 
-  entries.sort((a, b) => {
-    const dayCmp = a.dayKey.localeCompare(b.dayKey);
-    if (dayCmp !== 0) return dayCmp;
-    if (a.deckLabel !== b.deckLabel)
-      return a.deckLabel.localeCompare(b.deckLabel);
-    return a.matchIndex - b.matchIndex;
-  });
-
-  const days = new Map();
-  entries.forEach((entry) => {
-    const group = days.get(entry.dayKey) ?? {
-      dayKey: entry.dayKey,
-      dayLabel: entry.dayLabel,
-      decks: new Map(),
-    };
-    const deckGroup = group.decks.get(entry.deckLabel) ?? {
-      deckLabel: entry.deckLabel,
-      matches: [],
-    };
-    deckGroup.matches.push(entry.match);
-    group.decks.set(entry.deckLabel, deckGroup);
-    days.set(entry.dayKey, group);
-  });
-
-  const sortedDays = [...days.values()]
-    .sort((a, b) => a.dayKey.localeCompare(b.dayKey))
+  const sortedDays = [...dayGroups.values()]
+    .sort((a, b) => b.dayKey.localeCompare(a.dayKey))
     .slice(0, maxDays);
-  const lines = [];
 
-  for (const group of sortedDays) {
+  const lines = [];
+  sortedDays.forEach((group, groupIndex) => {
+    if (groupIndex > 0) lines.push("\u200b");
     lines.push(`**${group.dayLabel}**`);
-    for (const [deckLabel, deckGroup] of group.decks) {
-      let matchIndex = 0;
-      for (const match of deckGroup.matches) {
-        matchIndex += 1;
+
+    let deckCount = 0;
+    for (const deckLabel of deckOrder.slice(0, maxDecks)) {
+      const deckGroup = group.decks.get(deckLabel);
+      if (!deckGroup) continue;
+      deckCount += 1;
+      if (deckCount > maxDecks) break;
+
+      deckGroup.matches.forEach((match, matchIndex) => {
         const opponentName = escapeText(match.opponentName || "?");
         const towerLevel = Number.isFinite(match.opponentTourLevel)
           ? match.opponentTourLevel
@@ -966,11 +957,11 @@ function formatWarDecksField(warDecks) {
           ? `${Math.round(match.tension * 100)}%`
           : "?";
         lines.push(
-          `• ${deckLabel} #${matchIndex} : <:members:1506175789731811399> ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultEmoji} ${score} ⚡ ${tension}`,
+          `• ${deckLabel} #${matchIndex + 1} : <:members:1506175789731811399> ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultEmoji} ${score} ⚡ ${tension}`,
         );
-      }
+      });
     }
-  }
+  });
 
   let value = lines.join("\n");
   if (value.length > 1000) {
