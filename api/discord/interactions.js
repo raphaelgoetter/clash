@@ -2274,11 +2274,7 @@ export default async function handler(req, res) {
         }
 
         if (warDecksField) {
-          fields.push({
-            name: "Decks GDC :",
-            value: warDecksField,
-            inline: false,
-          });
+          // /stats ne doit plus afficher les decks GDC, ce bloc est réservé à /tension.
         }
 
         const discordLinks = await getDiscordLinks();
