@@ -517,6 +517,8 @@ export function summarizeWarDecks(battleLog, limit = 4, dayKey = null) {
         opponentName,
         opponentTourLevel,
         score,
+        myCrowns,
+        oppCrowns,
         result,
         tension,
         dayKey: warDayKey(battle?.battleTime),

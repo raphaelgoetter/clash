@@ -914,101 +914,86 @@ function formatWarDecksField(warDecks) {
 
   const maxDecks = 4;
   const maxDays = 2;
-  const maxMatchesPerDeck = 3;
-  const dayGroups = new Map();
+  const maxMatchesPerDay = 4;
+  const entries = [];
 
-  for (
-    let deckIndex = 0;
-    deckIndex < Math.min(warDecks.length, maxDecks);
-    deckIndex += 1
-  ) {
-    const deck = warDecks[deckIndex];
+  warDecks.slice(0, 8).forEach((deck, deckIndex) => {
     const deckLabel = deck.label || `Deck ${deckIndex + 1}`;
     const matchLines = Array.isArray(deck.matches) ? deck.matches : [];
 
-    matchLines.slice(0, 4).forEach((match) => {
+    matchLines.slice(0, maxMatchesPerDay).forEach((match) => {
       const dayKey = match.dayKey || "";
-      const dayLabel = getWarDayLabel(dayKey);
-      const group = dayGroups.get(dayKey) ?? {
+      entries.push({
         dayKey,
-        dayLabel,
-        decks: new Map(),
-      };
-
-      const deckGroup = group.decks.get(deckLabel) ?? {
-        label: deckLabel,
-        matches: [],
-      };
-      if (deckGroup.matches.length < maxMatchesPerDeck) {
-        deckGroup.matches.push({
-          opponentName: match.opponentName || "?",
-          opponentTourLevel: Number.isFinite(match.opponentTourLevel)
-            ? match.opponentTourLevel
-            : "?",
-          score: match.score || "?",
-          tension: match.tension,
-          result: match.result,
-        });
-      }
-      group.decks.set(deckLabel, deckGroup);
-      dayGroups.set(dayKey, group);
+        dayLabel: getWarDayLabel(dayKey),
+        deckLabel,
+        match,
+      });
     });
-  }
+  });
 
-  if (dayGroups.size === 0) return null;
+  if (entries.length === 0) return null;
 
-  const sortedDays = [...dayGroups.values()].sort((a, b) =>
-    b.dayKey.localeCompare(a.dayKey),
+  entries.sort(
+    (a, b) =>
+      b.dayKey.localeCompare(a.dayKey) ||
+      a.deckLabel.localeCompare(b.deckLabel),
   );
 
-  const lines = [];
-  for (
-    let dayIndex = 0;
-    dayIndex < Math.min(sortedDays.length, maxDays);
-    dayIndex += 1
-  ) {
-    const group = sortedDays[dayIndex];
-    lines.push(`**${group.dayLabel}**`);
+  const days = new Map();
+  entries.forEach((entry) => {
+    const group = days.get(entry.dayKey) ?? {
+      dayKey: entry.dayKey,
+      dayLabel: entry.dayLabel,
+      entries: [],
+    };
+    group.entries.push(entry);
+    days.set(entry.dayKey, group);
+  });
 
+  const sortedDays = [...days.values()].slice(0, maxDays);
+  const lines = [];
+
+  for (const group of sortedDays) {
+    lines.push(`**${group.dayLabel}**`);
     let deckCount = 0;
-    for (const deckGroup of group.decks.values()) {
+    for (const entry of group.entries) {
       if (deckCount >= maxDecks) break;
       deckCount += 1;
-      const match = deckGroup.matches[0];
-      if (!match) {
-        lines.push(`• ${deckGroup.label}`);
-        continue;
-      }
-      const roundScores = deckGroup.matches
-        .map((round) => escapeText(round.score || "?"))
-        .join(" ");
-      const roundWins = deckGroup.matches.filter(
-        (round) => round.result === "win",
-      ).length;
-      const roundLosses = deckGroup.matches.filter(
-        (round) => round.result === "loss",
-      ).length;
+      const match = entry.match;
+      const opponentName = escapeText(match.opponentName || "?");
+      const towerLevel = Number.isFinite(match.opponentTourLevel)
+        ? match.opponentTourLevel
+        : "?";
       const resultEmoji =
-        roundWins > roundLosses
+        match.result === "win"
           ? "<:success:1499002702208958577>"
           : "<:error:1499002755841265826>";
+      const score = escapeText(match.score || "?");
       const tension = Number.isFinite(match.tension)
         ? `${Math.round(match.tension * 100)}%`
         : "?";
       lines.push(
-        `• ${deckGroup.label} : <:members:1506175789731811399> ${match.opponentName} <:tower:1515395461140447342> ${match.opponentTourLevel} ${resultEmoji} ${roundScores} ⚡ ${tension}`,
+        `• ${entry.deckLabel} : <:members:1506175789731811399> ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultEmoji} ${score} ⚡ ${tension}`,
       );
     }
+    lines.push("\u200b");
+  }
 
-    if (dayIndex < Math.min(sortedDays.length, maxDays) - 1) {
-      lines.push("\u200b");
-    }
+  if (lines[lines.length - 1] === "\u200b") {
+    lines.pop();
   }
 
   let value = lines.join("\n");
   if (value.length > 1000) {
-    while (value.length > 1000 && lines.length > 0) {
+    while (value.length > 1000 && lines.length > 1) {
       lines.pop();
+      value = lines.join("\n");
+    }
+    if (!value.endsWith("...")) {
+      if (lines.length > 0) {
+        lines[lines.length - 1] += " ...";
+      }
       value = lines.join("\n");
     }
   }
@@ -2418,9 +2403,9 @@ export default async function handler(req, res) {
           );
           if (battleLogResp.ok) {
             const battleLog = await battleLogResp.json();
-            warDecks = summarizeWarDecks(battleLog ?? [], 4);
+            warDecks = summarizeWarDecks(battleLog ?? [], 8);
           } else {
-            warDecks = summarizeWarDecks(analysis.battleLog ?? [], 4);
+            warDecks = summarizeWarDecks(analysis.battleLog ?? [], 8);
           }
         } catch {
           warDecks = summarizeWarDecks(analysis.battleLog ?? [], 4);
