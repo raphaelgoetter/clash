@@ -256,6 +256,69 @@ assert.strictEqual(
   "The third duel round should be scored 1-0",
 );
 
+const duelFirstDecks = summarizeWarDecksForTension(
+  [
+    {
+      type: "riverRaceDuel",
+      battleTime: "20260612T100000.000Z",
+      team: [
+        {
+          cards: [
+            { id: "11", name: "K" },
+            { id: "12", name: "L" },
+            { id: "13", name: "M" },
+            { id: "14", name: "N" },
+            { id: "15", name: "O" },
+            { id: "16", name: "P" },
+            { id: "17", name: "Q" },
+            { id: "18", name: "R" },
+          ],
+          rounds: [{ crowns: 1 }, { crowns: 0 }, { crowns: 1 }],
+        },
+      ],
+      opponent: [
+        {
+          name: "Aegon Targaryen",
+          rounds: [{ crowns: 0 }, { crowns: 1 }, { crowns: 0 }],
+        },
+      ],
+    },
+    {
+      type: "riverRacePvp",
+      battleTime: "20260612T110000.000Z",
+      team: [
+        {
+          cards: [
+            { id: "1", name: "A" },
+            { id: "2", name: "B" },
+            { id: "3", name: "C" },
+            { id: "4", name: "D" },
+            { id: "5", name: "E" },
+            { id: "6", name: "F" },
+            { id: "7", name: "G" },
+            { id: "8", name: "H" },
+          ],
+          crowns: 3,
+        },
+      ],
+      opponent: [{ name: "X", crowns: 0 }],
+    },
+  ],
+  8,
+  null,
+  "LRQP20V9",
+);
+assert.deepStrictEqual(
+  duelFirstDecks.map((deck) => deck.label),
+  ["Deck 1", "Deck 2", "Deck 3", "Deck 4"],
+  "Deck labels should remain sequential when the duel appears before the PvP match",
+);
+assert.strictEqual(
+  duelFirstDecks[3].matches?.[0]?.score,
+  "3-0",
+  "The final PvP match should still be labeled Deck 4",
+);
+
 const multiDayTensionDecks = summarizeWarDecksForTension(
   [
     {
@@ -290,6 +353,31 @@ assert.ok(
     (deck) => deck.matches?.[0]?.dayKey === "2026-06-11",
   ),
   "Tension summary should contain the older day",
+);
+
+const multiDayLabels = summarizeWarDecksForTension(
+  [
+    {
+      type: "riverRacePvp",
+      battleTime: "20260611T100000.000Z",
+      team: [{ cards: [{ id: "1", name: "A" }], crowns: 3 }],
+      opponent: [{ name: "X", crowns: 0 }],
+    },
+    {
+      type: "riverRacePvp",
+      battleTime: "20260612T100000.000Z",
+      team: [{ cards: [{ id: "2", name: "B" }], crowns: 2 }],
+      opponent: [{ name: "Y", crowns: 1 }],
+    },
+  ],
+  8,
+  null,
+  "LRQP20V9",
+);
+assert.deepStrictEqual(
+  multiDayLabels.map((deck) => deck.label),
+  ["Deck 1", "Deck 1"],
+  "Deck labels should restart at 1 for a new GDC day",
 );
 
 const sameDayLabels = summarizeWarDecksForTension(
