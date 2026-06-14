@@ -424,6 +424,18 @@ function formatWarDeckCards(deckCards) {
     .join(", ");
 }
 
+function getDeckChunksForBattle(battle) {
+  const cards = Array.isArray(battle?.team?.[0]?.cards)
+    ? battle.team[0].cards
+    : [];
+  const deckChunks = chunkArray(cards, 8).filter((chunk) => chunk.length > 0);
+  if (battle?._roundIndex !== undefined) {
+    const roundChunk = deckChunks[battle._roundIndex];
+    return roundChunk ? [roundChunk] : deckChunks;
+  }
+  return deckChunks;
+}
+
 /**
  * Agrège les decks GDC visibles dans le battle log brut du joueur.
  * Le résultat est trié par nombre d'utilisations décroissant puis par ordre
@@ -533,10 +545,7 @@ export function summarizeWarDecksForTension(
     if (dayKey && effectiveDayKey !== dayKey) continue;
     if (deckIndex >= limit) break;
 
-    const cards = Array.isArray(battle?.team?.[0]?.cards)
-      ? battle.team[0].cards
-      : [];
-    const deckChunks = chunkArray(cards, 8).filter((chunk) => chunk.length > 0);
+    const deckChunks = getDeckChunksForBattle(battle);
     if (!deckChunks.length) continue;
 
     const tension = computeBattleTension(battle);
@@ -549,7 +558,7 @@ export function summarizeWarDecksForTension(
         : (battle.opponent?.[0]?.crowns ?? 0);
     const score = `${myCrowns}-${oppCrowns}`;
     const result = isWarWin(battle) ? "win" : "loss";
-    const deckWon = Number.isFinite(cards[0]?.crowns)
+    const deckWon = Number.isFinite(battle?.team?.[0]?.crowns)
       ? undefined
       : result === "win";
 
