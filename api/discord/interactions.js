@@ -974,7 +974,8 @@ function formatWarDecksField(warDecks) {
   let blocks = groupBlocks;
   let value = blocks.join("\n");
 
-  while (value.length > 1000 && blocks.length > 1) {
+  const maxDescriptionLength = 4096;
+  while (value.length > maxDescriptionLength && blocks.length > 1) {
     // Si le texte est trop long, on commence par tronquer le bloc le plus récent,
     // afin de préserver les jours plus anciens comme J2 tant que possible.
     const trimIndex = 0;
@@ -988,9 +989,9 @@ function formatWarDecksField(warDecks) {
     value = blocks.join("\n");
   }
 
-  if (value.length > 1000 && blocks.length === 1) {
+  if (value.length > maxDescriptionLength && blocks.length === 1) {
     const lines = value.split("\n");
-    while (value.length > 1000 && lines.length > 1) {
+    while (value.length > maxDescriptionLength && lines.length > 1) {
       lines.pop();
       value = lines.join("\n");
     }
@@ -2448,14 +2449,6 @@ export default async function handler(req, res) {
           });
         }
 
-        if (warDecksField) {
-          fields.push({
-            name: "Decks GDC",
-            value: warDecksField,
-            inline: false,
-          });
-        }
-
         const averageTension = Number.isFinite(analysis.tension?.average)
           ? `${Math.round(analysis.tension.average * 100)}%`
           : null;
@@ -2466,18 +2459,21 @@ export default async function handler(req, res) {
           title,
           url: trustPlayerUrl(tag),
           color: 0xe67e22,
+          description: warDecksField || undefined,
           fields: fields.length ? fields : undefined,
         };
 
         let imageResponse = null;
         if (deckImage?.buffer) {
-          const directContent = title;
-          const content = warDecksField
-            ? `${directContent}\n\n${warDecksField}`
-            : directContent;
+          const embedWithImage = {
+            ...dataEmbed,
+            image: {
+              url: `attachment://${deckImage.filename || "tension-decks.png"}`,
+            },
+          };
 
           console.log(
-            "Sending deck image with direct content:",
+            "Sending deck image with embed description:",
             deckImage.filename,
             deckImage.mimeType,
             "bufferType=",
@@ -2486,7 +2482,7 @@ export default async function handler(req, res) {
             deckImage.buffer?.length,
           );
           imageResponse = await sendDiscordWebhookFile(webhookUrl, deckImage, {
-            content,
+            embed: embedWithImage,
           });
           console.log(
             "Discord webhook response ok=",
