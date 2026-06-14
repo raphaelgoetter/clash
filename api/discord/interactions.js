@@ -659,13 +659,13 @@ async function buildWarDecksImage(warDecks) {
       return `<text x="${padding}" y="${lineY}" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#e2e8f0">${escapeText(line)}</text>`;
     });
 
-    const deckTitle = escapeText(deck.label || `Deck ${deckIndex + 1}`);
+    const deckLabel = deck.label || `Deck ${deckIndex + 1}`;
+    const deckTitle = escapeText(deckLabel);
     return `
       <rect x="${padding - 6}" y="${yStart - 4}" width="${cardWidth * 8 + cardGap * 7 + 12}" height="${cardHeight + 10 + labelSpacing + matchLines.slice(0, 4).length * textLineHeight + matchTopSpacing}" rx="20" fill="rgba(148, 163, 184, 0.06)" stroke="#334155" stroke-width="1.5"/>
       ${cardsSvg}
       <rect x="${padding}" y="${yStart - 42}" width="84" height="32" rx="16" fill="#0ea5e9" />
-      <text x="${padding + 42}" y="${yStart - 20}" text-anchor="middle" dominant-baseline="middle" font-family="Inter, system-ui, sans-serif" font-size="15" fill="#ffffff" font-weight="800">Deck ${deckIndex + 1}</text>
-      <text x="${padding + 96}" y="${yStart - 20}" font-family="Inter, system-ui, sans-serif" font-size="15" fill="#f8fafc" font-weight="700">${deckTitle}</text>
+      <text x="${padding + 42}" y="${yStart - 20}" text-anchor="middle" dominant-baseline="middle" font-family="Inter, system-ui, sans-serif" font-size="15" fill="#ffffff" font-weight="800">${deckTitle}</text>
       ${renderedMatchLines.join("")}
     `;
   });
@@ -720,7 +720,7 @@ function buildWarDecksTextFallbackImage(warDecks) {
           label: deckLabel,
           matches: [],
         };
-        if (deckGroup.matches.length < 2) {
+        if (deckGroup.matches.length < 4) {
           deckGroup.matches.push({
             matchIndex,
             ...match,
@@ -735,44 +735,28 @@ function buildWarDecksTextFallbackImage(warDecks) {
       lines.push("Aucune donnée de match GDC disponible.");
     } else {
       const sortedDays = [...dayGroups.values()].sort((a, b) =>
-        b.dayKey.localeCompare(a.dayKey),
+        a.dayKey.localeCompare(b.dayKey),
       );
       for (const group of sortedDays.slice(0, 2)) {
         lines.push(`**${group.dayLabel}**`);
         for (const deckGroup of group.decks.values()) {
-          const match = deckGroup.matches[0];
-          if (!match) {
-            lines.push(`• ${deckGroup.label}`);
-            continue;
+          for (const [innerIndex, match] of deckGroup.matches.entries()) {
+            const opponentName = escapeText(match.opponentName || "?");
+            const towerLevel = Number.isFinite(match.opponentTourLevel)
+              ? match.opponentTourLevel
+              : "?";
+            const resultIcon =
+              match.result === "win"
+                ? "<:success:1499002702208958577>"
+                : "<:error:1499002755841265826>";
+            const tension = Number.isFinite(match.tension)
+              ? `${Math.round(match.tension * 100)}%`
+              : "?";
+            lines.push(
+              `• ${deckGroup.label} #${innerIndex + 1} : <:members:1506175789731811399> ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultIcon} ${escapeText(match.score || "?")} ⚡ ${tension}`,
+            );
           }
-          const opponentName = escapeText(match.opponentName || "?");
-          const towerLevel = Number.isFinite(match.opponentTourLevel)
-            ? match.opponentTourLevel
-            : "?";
-          const roundScores = deckGroup.matches
-            .map((round) => escapeText(round.score || "?"))
-            .join(" ");
-          const roundWins = deckGroup.matches.filter(
-            (round) => round.result === "win",
-          ).length;
-          const roundLosses = deckGroup.matches.filter(
-            (round) => round.result === "loss",
-          ).length;
-          const resultIcon =
-            roundWins > roundLosses
-              ? "<:success:1499002702208958577>"
-              : "<:error:1499002755841265826>";
-          const tension = Number.isFinite(match.tension)
-            ? `${Math.round(match.tension * 100)}%`
-            : "?";
-          lines.push(
-            `• ${deckGroup.label} : <:members:1506175789731811399> ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultIcon} ${roundScores} ⚡ ${tension}`,
-          );
         }
-        lines.push("\u200b");
-      }
-      if (lines[lines.length - 1] === "\u200b") {
-        lines.pop();
       }
     }
   }
@@ -914,19 +898,19 @@ function formatWarDecksField(warDecks) {
 
   const maxDecks = 4;
   const maxDays = 2;
-  const maxMatchesPerDay = 4;
   const entries = [];
 
   warDecks.slice(0, 8).forEach((deck, deckIndex) => {
     const deckLabel = deck.label || `Deck ${deckIndex + 1}`;
     const matchLines = Array.isArray(deck.matches) ? deck.matches : [];
 
-    matchLines.slice(0, maxMatchesPerDay).forEach((match) => {
+    matchLines.forEach((match, matchIndex) => {
       const dayKey = match.dayKey || "";
       entries.push({
         dayKey,
         dayLabel: getWarDayLabel(dayKey),
         deckLabel,
+        matchIndex,
         match,
       });
     });
@@ -934,66 +918,64 @@ function formatWarDecksField(warDecks) {
 
   if (entries.length === 0) return null;
 
-  entries.sort(
-    (a, b) =>
-      b.dayKey.localeCompare(a.dayKey) ||
-      a.deckLabel.localeCompare(b.deckLabel),
-  );
+  entries.sort((a, b) => {
+    const dayCmp = a.dayKey.localeCompare(b.dayKey);
+    if (dayCmp !== 0) return dayCmp;
+    if (a.deckLabel !== b.deckLabel)
+      return a.deckLabel.localeCompare(b.deckLabel);
+    return a.matchIndex - b.matchIndex;
+  });
 
   const days = new Map();
   entries.forEach((entry) => {
     const group = days.get(entry.dayKey) ?? {
       dayKey: entry.dayKey,
       dayLabel: entry.dayLabel,
-      entries: [],
+      decks: new Map(),
     };
-    group.entries.push(entry);
+    const deckGroup = group.decks.get(entry.deckLabel) ?? {
+      deckLabel: entry.deckLabel,
+      matches: [],
+    };
+    deckGroup.matches.push(entry.match);
+    group.decks.set(entry.deckLabel, deckGroup);
     days.set(entry.dayKey, group);
   });
 
-  const sortedDays = [...days.values()].slice(0, maxDays);
+  const sortedDays = [...days.values()]
+    .sort((a, b) => a.dayKey.localeCompare(b.dayKey))
+    .slice(0, maxDays);
   const lines = [];
 
   for (const group of sortedDays) {
     lines.push(`**${group.dayLabel}**`);
-    let deckCount = 0;
-    for (const entry of group.entries) {
-      if (deckCount >= maxDecks) break;
-      deckCount += 1;
-      const match = entry.match;
-      const opponentName = escapeText(match.opponentName || "?");
-      const towerLevel = Number.isFinite(match.opponentTourLevel)
-        ? match.opponentTourLevel
-        : "?";
-      const resultEmoji =
-        match.result === "win"
-          ? "<:success:1499002702208958577>"
-          : "<:error:1499002755841265826>";
-      const score = escapeText(match.score || "?");
-      const tension = Number.isFinite(match.tension)
-        ? `${Math.round(match.tension * 100)}%`
-        : "?";
-      lines.push(
-        `• ${entry.deckLabel} : <:members:1506175789731811399> ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultEmoji} ${score} ⚡ ${tension}`,
-      );
+    for (const [deckLabel, deckGroup] of group.decks) {
+      let matchIndex = 0;
+      for (const match of deckGroup.matches) {
+        matchIndex += 1;
+        const opponentName = escapeText(match.opponentName || "?");
+        const towerLevel = Number.isFinite(match.opponentTourLevel)
+          ? match.opponentTourLevel
+          : "?";
+        const resultEmoji =
+          match.result === "win"
+            ? "<:success:1499002702208958577>"
+            : "<:error:1499002755841265826>";
+        const score = escapeText(match.score || "?");
+        const tension = Number.isFinite(match.tension)
+          ? `${Math.round(match.tension * 100)}%`
+          : "?";
+        lines.push(
+          `• ${deckLabel} #${matchIndex} : <:members:1506175789731811399> ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultEmoji} ${score} ⚡ ${tension}`,
+        );
+      }
     }
-    lines.push("\u200b");
-  }
-
-  if (lines[lines.length - 1] === "\u200b") {
-    lines.pop();
   }
 
   let value = lines.join("\n");
   if (value.length > 1000) {
     while (value.length > 1000 && lines.length > 1) {
       lines.pop();
-      value = lines.join("\n");
-    }
-    if (!value.endsWith("...")) {
-      if (lines.length > 0) {
-        lines[lines.length - 1] += " ...";
-      }
       value = lines.join("\n");
     }
   }
@@ -2462,7 +2444,7 @@ export default async function handler(req, res) {
         let imageResponse = null;
         if (deckImage?.buffer) {
           const directContent = averageTension
-            ? `⚡ Tension GDC : ${analysis.overview.name}\nTension moyenne : ${averageTension}`
+            ? `⚡ Tension GDC : ${analysis.overview.name} • Tension moyenne : ${averageTension}`
             : `⚡ Tension GDC : ${analysis.overview.name}`;
           const content = warDecksField
             ? `${directContent}\n\n${warDecksField}`
