@@ -749,16 +749,24 @@ function buildWarDecksTextFallbackImage(warDecks) {
           const towerLevel = Number.isFinite(match.opponentTourLevel)
             ? match.opponentTourLevel
             : "?";
-          const score = escapeText(match.score || "?");
+          const roundScores = deckGroup.matches
+            .map((round) => escapeText(round.score || "?"))
+            .join(" ");
+          const roundWins = deckGroup.matches.filter(
+            (round) => round.result === "win",
+          ).length;
+          const roundLosses = deckGroup.matches.filter(
+            (round) => round.result === "loss",
+          ).length;
+          const resultIcon =
+            roundWins > roundLosses
+              ? "<:success:1499002702208958577>"
+              : "<:error:1499002755841265826>";
           const tension = Number.isFinite(match.tension)
             ? `${Math.round(match.tension * 100)}%`
             : "?";
-          const resultIcon =
-            match.result === "win"
-              ? "<:success:1499002702208958577>"
-              : "<:error:1499002755841265826>";
           lines.push(
-            `• ${deckGroup.label} : <:members:1506175789731811399> ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultIcon} ${score} ⚡ ${tension}`,
+            `• ${deckGroup.label} : <:members:1506175789731811399> ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultIcon} ${roundScores} ⚡ ${tension}`,
           );
         }
         lines.push("\u200b");
@@ -906,7 +914,7 @@ function formatWarDecksField(warDecks) {
 
   const maxDecks = 4;
   const maxDays = 2;
-  const maxMatchesPerDeck = 2;
+  const maxMatchesPerDeck = 3;
   const dayGroups = new Map();
 
   for (
@@ -971,15 +979,24 @@ function formatWarDecksField(warDecks) {
         lines.push(`• ${deckGroup.label}`);
         continue;
       }
+      const roundScores = deckGroup.matches
+        .map((round) => escapeText(round.score || "?"))
+        .join(" ");
+      const roundWins = deckGroup.matches.filter(
+        (round) => round.result === "win",
+      ).length;
+      const roundLosses = deckGroup.matches.filter(
+        (round) => round.result === "loss",
+      ).length;
       const resultEmoji =
-        match.result === "win"
+        roundWins > roundLosses
           ? "<:success:1499002702208958577>"
           : "<:error:1499002755841265826>";
       const tension = Number.isFinite(match.tension)
         ? `${Math.round(match.tension * 100)}%`
         : "?";
       lines.push(
-        `• ${deckGroup.label} : <:members:1506175789731811399> ${match.opponentName} <:tower:1515395461140447342> ${match.opponentTourLevel} ${resultEmoji} ${match.score} ⚡ ${tension}`,
+        `• ${deckGroup.label} : <:members:1506175789731811399> ${match.opponentName} <:tower:1515395461140447342> ${match.opponentTourLevel} ${resultEmoji} ${roundScores} ⚡ ${tension}`,
       );
     }
 
