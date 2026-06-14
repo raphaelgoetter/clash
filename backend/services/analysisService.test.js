@@ -10,6 +10,7 @@ import {
   hasDuelOnWarDay,
   expandDuelRounds,
   summarizeWarDecks,
+  summarizeWarDecksForTension,
   warDayKey,
   warResetOffsetMs,
 } from "./analysisService.js";
@@ -180,6 +181,79 @@ assert.strictEqual(
   expandDuelRounds([duelBattleLog[0]]).length,
   2,
   "expandDuelRounds should expand duel colosseum rounds",
+);
+
+const tensionDecks = summarizeWarDecksForTension(
+  [
+    {
+      type: "riverRacePvp",
+      battleTime: "20260611T100000.000Z",
+      team: [
+        {
+          cards: [
+            { id: "1", name: "A" },
+            { id: "2", name: "B" },
+            { id: "3", name: "C" },
+            { id: "4", name: "D" },
+            { id: "5", name: "E" },
+            { id: "6", name: "F" },
+            { id: "7", name: "G" },
+            { id: "8", name: "H" },
+          ],
+          crowns: 3,
+        },
+      ],
+      opponent: [{ name: "X", crowns: 0 }],
+    },
+    {
+      type: "riverRaceDuel",
+      battleTime: "20260612T100000.000Z",
+      team: [
+        {
+          cards: [
+            { id: "11", name: "K" },
+            { id: "12", name: "L" },
+            { id: "13", name: "M" },
+            { id: "14", name: "N" },
+            { id: "15", name: "O" },
+            { id: "16", name: "P" },
+            { id: "17", name: "Q" },
+            { id: "18", name: "R" },
+          ],
+          rounds: [{ crowns: 1 }, { crowns: 0 }, { crowns: 1 }],
+        },
+      ],
+      opponent: [
+        {
+          name: "Aegon Targaryen",
+          rounds: [{ crowns: 0 }, { crowns: 1 }, { crowns: 0 }],
+        },
+      ],
+    },
+  ],
+  8,
+  null,
+  "LRQP20V9",
+);
+assert.strictEqual(
+  tensionDecks.length,
+  4,
+  "summarizeWarDecksForTension should return one entry per duel round",
+);
+assert.strictEqual(
+  tensionDecks[1].matches?.[0]?.score,
+  "1-0",
+  "The first duel round should be scored 1-0",
+);
+assert.strictEqual(
+  tensionDecks[2].matches?.[0]?.score,
+  "0-1",
+  "The second duel round should be scored 0-1",
+);
+assert.strictEqual(
+  tensionDecks[3].matches?.[0]?.score,
+  "1-0",
+  "The third duel round should be scored 1-0",
 );
 
 const warDeckSummary = summarizeWarDecks(

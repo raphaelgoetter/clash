@@ -449,13 +449,14 @@ export function summarizeWarDecksForTension(
   battleLog,
   limit = 8,
   dayKey = null,
+  clanTag = null,
 ) {
   const warBattles = expandDuelRounds(filterWarBattles(battleLog ?? []));
   const entries = [];
   let deckIndex = 0;
 
   for (const battle of warBattles) {
-    if (dayKey && warDayKey(battle?.battleTime) !== dayKey) continue;
+    if (dayKey && warDayKey(battle?.battleTime, clanTag) !== dayKey) continue;
     if (deckIndex >= limit) break;
 
     const cards = Array.isArray(battle?.team?.[0]?.cards)
@@ -523,7 +524,7 @@ export function summarizeWarDecksForTension(
             oppCrowns,
             result,
             tension,
-            dayKey: warDayKey(battle?.battleTime),
+            dayKey: warDayKey(battle?.battleTime, clanTag),
           },
         ],
       });

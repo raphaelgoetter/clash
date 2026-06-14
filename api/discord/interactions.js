@@ -738,7 +738,7 @@ function buildWarDecksTextFallbackImage(warDecks) {
       lines.push("Aucune donnée de match GDC disponible.");
     } else {
       const sortedDays = [...dayGroups.values()].sort((a, b) =>
-        a.dayKey.localeCompare(b.dayKey),
+        b.dayKey.localeCompare(a.dayKey),
       );
       for (const group of sortedDays.slice(0, 2)) {
         lines.push(`**${group.dayLabel}**`);
@@ -940,7 +940,8 @@ function formatWarDecksField(warDecks) {
     lines.push(`**${group.dayLabel}**`);
 
     let deckCount = 0;
-    for (const deckLabel of deckOrder.slice(0, maxDecks)) {
+    const deckLabels = [...group.decks.keys()].slice(0, maxDecks);
+    for (const deckLabel of deckLabels) {
       const deckGroup = group.decks.get(deckLabel);
       if (!deckGroup) continue;
       deckCount += 1;
@@ -2375,12 +2376,27 @@ export default async function handler(req, res) {
           );
           if (battleLogResp.ok) {
             const battleLog = await battleLogResp.json();
-            warDecks = summarizeWarDecksForTension(battleLog ?? [], 8);
+            warDecks = summarizeWarDecksForTension(
+              battleLog ?? [],
+              8,
+              null,
+              analysis.overview.clan?.tag,
+            );
           } else {
-            warDecks = summarizeWarDecksForTension(analysis.battleLog ?? [], 8);
+            warDecks = summarizeWarDecksForTension(
+              analysis.battleLog ?? [],
+              8,
+              null,
+              analysis.overview.clan?.tag,
+            );
           }
         } catch {
-          warDecks = summarizeWarDecksForTension(analysis.battleLog ?? [], 4);
+          warDecks = summarizeWarDecksForTension(
+            analysis.battleLog ?? [],
+            4,
+            null,
+            analysis.overview.clan?.tag,
+          );
         }
 
         let deckImage = null;
@@ -2421,21 +2437,19 @@ export default async function handler(req, res) {
         const averageTension = Number.isFinite(analysis.tension?.average)
           ? `${Math.round(analysis.tension.average * 100)}%`
           : null;
+        const title = averageTension
+          ? `⚡ Tension GDC : ${analysis.overview.name} : ${averageTension}`
+          : `⚡ Tension GDC : ${analysis.overview.name}`;
         const dataEmbed = {
-          title: `⚡ Tension GDC : ${analysis.overview.name}`,
+          title,
           url: trustPlayerUrl(tag),
           color: 0xe67e22,
-          description: averageTension
-            ? `Tension moyenne : ${averageTension}`
-            : undefined,
           fields: fields.length ? fields : undefined,
         };
 
         let imageResponse = null;
         if (deckImage?.buffer) {
-          const directContent = averageTension
-            ? `⚡ Tension GDC : ${analysis.overview.name} • Tension moyenne : ${averageTension}`
-            : `⚡ Tension GDC : ${analysis.overview.name}`;
+          const directContent = title;
           const content = warDecksField
             ? `${directContent}\n\n${warDecksField}`
             : directContent;
