@@ -938,15 +938,35 @@ function formatWarDecksField(warDecks) {
     .sort((a, b) => b.dayKey.localeCompare(a.dayKey))
     .slice(0, maxDays);
 
-  const groupBlocks = sortedDays.map((group, groupIndex) => {
-    const groupLines = [];
-    if (groupIndex > 0) groupLines.push("\u200b");
-    groupLines.push(`**${group.dayLabel}**`);
+  const getWarMatchPoints = (match) => {
+    const type = String(match.type || "").toLowerCase();
+    const result = match.result === "win" ? "win" : "loss";
+    if (type === "riverracepvp") return result === "win" ? 200 : 100;
+    if (type === "riverraceboat") return result === "win" ? 125 : 75;
+    if (type === "riverraceduel" || type === "riverraceduelcolosseum")
+      return result === "win" ? 250 : 100;
+    return 0;
+  };
 
-    const daySuffix = ["J2", "J3"].includes(group.dayLabel)
-      ? "(700pts · winrate 50%)"
-      : "";
-    groupLines[0] = `**${group.dayLabel}${daySuffix ? ` ${daySuffix}` : ""}**`;
+  const groupBlocks = sortedDays.map((group, groupIndex) => {
+    const allMatches = [...group.decks.values()].flatMap((deckGroup) =>
+      Array.isArray(deckGroup.matches) ? deckGroup.matches : [],
+    );
+    const points = allMatches.reduce(
+      (sum, match) => sum + getWarMatchPoints(match),
+      0,
+    );
+    const wins = allMatches.filter((match) => match.result === "win").length;
+    const totalMatches = allMatches.length;
+    const winRate =
+      totalMatches > 0 ? Math.round((wins / totalMatches) * 100) : 0;
+    const daySuffix =
+      ["J2", "J3"].includes(group.dayLabel) && totalMatches > 0
+        ? `(${points}pts · winrate ${winRate}%)`
+        : "";
+
+    const groupLines = groupIndex > 0 ? [""] : [];
+    groupLines.push(`**${group.dayLabel}${daySuffix ? ` ${daySuffix}` : ""}**`);
 
     let deckCount = 0;
     const deckLabels = [...group.decks.keys()].slice(0, maxDecks);
