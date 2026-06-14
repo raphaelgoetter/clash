@@ -5898,7 +5898,7 @@
           "start": "2026-06-14T09:42:00.000Z",
           "end": "2026-06-15T09:41:59.999Z"
         },
-        "snapshotTime": "2026-06-14T19:31:19.908Z",
+        "snapshotTime": "2026-06-14T20:28:30.354Z",
         "snapshotBackupTime": "2026-06-14T10:58:08.249Z",
         "decks": {
           "#8JGU9UUJJ": 4,
@@ -5909,8 +5909,11 @@
           "#UVCYYJ9VC": 4,
           "#UVGPPVQ8Q": 4,
           "#VPGCQPR9U": 4,
+          "#VPGYR2990": 4,
+          "#VRQYP2RRV": 4,
           "#20V20RG08G": 3,
-          "#V0VLJQCJU": 3
+          "#V0VLJQCJU": 3,
+          "#209CGRVQJV": 1
         },
         "hourlyCumul": [],
         "_cumulFame": {
@@ -5947,15 +5950,15 @@
           "#YPVL92URU": 650,
           "#YQ822Q2YY": 700,
           "#9GP9LQ9P": 800,
-          "#VRQYP2RRV": 900,
+          "#VRQYP2RRV": 1300,
           "#8VP9UJV9L": 1350,
           "#L8LCR02CG": 1200,
-          "#209CGRVQJV": 1200,
+          "#209CGRVQJV": 1400,
           "#VPGCQPR9U": 1900,
           "#R2YP2UJRL": 1400,
           "#C0RRPJYV9": 2400,
           "#V0VLJQCJU": 2000,
-          "#VPGYR2990": 1750,
+          "#VPGYR2990": 2550,
           "#8JGU9UUJJ": 2400,
           "#UVGPPVQ8Q": 2300,
           "#UVCYYJ9VC": 2200,
@@ -5964,7 +5967,9 @@
         },
         "duelsTodayByTag": {
           "#2PG80VRY": 1,
-          "#UVCYYJ9VC": 1
+          "#UVCYYJ9VC": 1,
+          "#VRQYP2RRV": 1,
+          "#VPGYR2990": 1
         },
         "duelsComplete": true,
         "periodType": "warDay",
@@ -6002,22 +6007,22 @@
           "#YPVL92URU": 4,
           "#YQ822Q2YY": 4,
           "#9GP9LQ9P": 4,
-          "#VRQYP2RRV": 9,
+          "#VRQYP2RRV": 13,
           "#8VP9UJV9L": 12,
           "#L8LCR02CG": 8,
-          "#209CGRVQJV": 8,
+          "#209CGRVQJV": 9,
           "#VPGCQPR9U": 12,
           "#R2YP2UJRL": 8,
           "#C0RRPJYV9": 16,
           "#V0VLJQCJU": 15,
-          "#VPGYR2990": 12,
+          "#VPGYR2990": 16,
           "#8JGU9UUJJ": 16,
           "#UVGPPVQ8Q": 16,
           "#UVCYYJ9VC": 16,
           "#J008G9CLJ": 12,
           "#JVRP8QPRU": 15
         },
-        "snapshotCount": 38
+        "snapshotCount": 47
       }
     ]
   }
