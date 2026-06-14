@@ -961,9 +961,7 @@ function formatWarDecksField(warDecks) {
     const winRate =
       totalMatches > 0 ? Math.round((wins / totalMatches) * 100) : 0;
     const daySuffix =
-      ["J2", "J3"].includes(group.dayLabel) && totalMatches > 0
-        ? `(${points}pts · winrate ${winRate}%)`
-        : "";
+      totalMatches > 0 ? `(${points}pts · winrate ${winRate}%)` : "";
 
     const groupLines = groupIndex > 0 ? [""] : [];
     groupLines.push(`**${group.dayLabel}${daySuffix ? ` ${daySuffix}` : ""}**`);
