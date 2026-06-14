@@ -447,7 +447,7 @@ export function summarizeDecks(battleLog, limit = 4, dayKey = null) {
 
 export function summarizeWarDecksForTension(
   battleLog,
-  limit = 8,
+  limit = 32,
   dayKey = null,
   clanTag = null,
 ) {

@@ -905,7 +905,7 @@ function formatWarDecksField(warDecks) {
   const dayGroups = new Map();
   const deckOrder = [];
 
-  warDecks.slice(0, 8).forEach((deck, deckIndex) => {
+  warDecks.forEach((deck, deckIndex) => {
     const deckLabel = deck.label || `Deck ${deckIndex + 1}`;
     if (!deckOrder.includes(deckLabel)) deckOrder.push(deckLabel);
     const matchLines = Array.isArray(deck.matches) ? deck.matches : [];
@@ -934,10 +934,10 @@ function formatWarDecksField(warDecks) {
     .sort((a, b) => b.dayKey.localeCompare(a.dayKey))
     .slice(0, maxDays);
 
-  const lines = [];
-  sortedDays.forEach((group, groupIndex) => {
-    if (groupIndex > 0) lines.push("\u200b");
-    lines.push(`**${group.dayLabel}**`);
+  const groupBlocks = sortedDays.map((group, groupIndex) => {
+    const groupLines = [];
+    if (groupIndex > 0) groupLines.push("\u200b");
+    groupLines.push(`**${group.dayLabel}**`);
 
     let deckCount = 0;
     const deckLabels = [...group.decks.keys()].slice(0, maxDecks);
@@ -960,20 +960,29 @@ function formatWarDecksField(warDecks) {
         const tension = Number.isFinite(match.tension)
           ? `${Math.round(match.tension * 100)}%`
           : "?";
-        lines.push(
+        groupLines.push(
           `• ${deckLabel} #${matchIndex + 1} : <:members:1506175789731811399> ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultEmoji} ${score} ⚡ ${tension}`,
         );
       });
     }
+    return groupLines.join("\n");
   });
 
-  let value = lines.join("\n");
-  if (value.length > 1000) {
+  let blocks = groupBlocks;
+  let value = blocks.join("\n");
+  while (value.length > 1000 && blocks.length > 1) {
+    blocks = blocks.slice(0, -1);
+    value = blocks.join("\n");
+  }
+
+  if (value.length > 1000 && blocks.length === 1) {
+    const lines = value.split("\n");
     while (value.length > 1000 && lines.length > 1) {
       lines.pop();
       value = lines.join("\n");
     }
   }
+
   return value;
 }
 
@@ -2378,14 +2387,14 @@ export default async function handler(req, res) {
             const battleLog = await battleLogResp.json();
             warDecks = summarizeWarDecksForTension(
               battleLog ?? [],
-              8,
+              32,
               null,
               analysis.overview.clan?.tag,
             );
           } else {
             warDecks = summarizeWarDecksForTension(
               analysis.battleLog ?? [],
-              8,
+              32,
               null,
               analysis.overview.clan?.tag,
             );
@@ -2393,7 +2402,7 @@ export default async function handler(req, res) {
         } catch {
           warDecks = summarizeWarDecksForTension(
             analysis.battleLog ?? [],
-            4,
+            32,
             null,
             analysis.overview.clan?.tag,
           );
