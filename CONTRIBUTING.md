@@ -80,6 +80,16 @@ Cette même estimation borne aussi le plafond de projection (`maxReachableFame`)
 Projection = max(decksToday, targetDecks) × ptsPerDeck
 ```
 
+### Barème des médailles GDC
+
+Les points gagnés/perdus dans les combats de guerre sont utilisés pour estimer les victoires et les défaites à partir des fame du clan.
+
+- **PvP Battle** : victoire = 200 points, défaite = 100 points
+- **Boat Battle** : victoire = 125 points, défaite = 75 points
+- **Duels** : victoire = 250 points, défaite = 100 points
+
+Ces valeurs sont issues du barème de Clan Wars de Clash Royale.
+
 **Calcul de `targetDecks` :**
 
 - **J1** (premier jour, `warDayIndex === 0`) : moyenne quotidienne de la semaine précédente (`avgDecksLastWeek`, fallback 200).

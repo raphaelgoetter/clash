@@ -891,6 +891,15 @@ function getWarDayLabel(dayKey) {
   return WAR_DAY_SHORT_LABELS_BY_UTC_DAY[date.getUTCDay()] || dayKey;
 }
 
+function getWarMatchTypeLabel(type) {
+  const normalized = String(type || "").toLowerCase();
+  if (normalized === "riverracepvp") return "(PvP)";
+  if (normalized === "riverraceboat") return "(Bateau)";
+  if (normalized === "riverraceduel" || normalized === "riverraceduelcolosseum")
+    return "(Duel)";
+  return "";
+}
+
 function formatWarDecksField(warDecks) {
   if (!Array.isArray(warDecks)) return null;
 
@@ -958,8 +967,14 @@ function formatWarDecksField(warDecks) {
           const tension = Number.isFinite(match.tension)
             ? `${Math.round(match.tension * 100)}%`
             : "?";
+          const typeLabel = getWarMatchTypeLabel(match.type);
+          const pointLabel =
+            group.dayLabel === "J3" ? "(700pts · winrate 50%)" : "";
+          const displayLabelWithType = [displayDeckLabel, typeLabel, pointLabel]
+            .filter(Boolean)
+            .join(" ");
           groupLines.push(
-            `• ${displayDeckLabel} #${matchIndex + 1} : <:members:1506175789731811399> ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultEmoji} ${score} ⚡ ${tension}`,
+            `• ${displayLabelWithType} : <:members:1506175789731811399> ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultEmoji} ${score} ⚡ ${tension}`,
           );
         });
     }

@@ -610,6 +610,7 @@ export function summarizeWarDecksForTension(
             result,
             tension,
             dayKey: effectiveDayKey,
+            type: battle.type ?? null,
           },
         ],
       });
