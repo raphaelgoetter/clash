@@ -2564,6 +2564,9 @@ export default async function handler(req, res) {
           color: 0xe67e22,
           description: warDecksField || undefined,
           fields: fields.length ? fields : undefined,
+          footer: {
+            text: "Comprendre le calcul de matchup : trustroyale.vercel.app/bot/#matchup",
+          },
         };
 
         let imageResponse = null;
