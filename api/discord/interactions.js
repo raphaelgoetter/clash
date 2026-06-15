@@ -2363,14 +2363,6 @@ export default async function handler(req, res) {
           });
         }
 
-        if (analysis.matchup?.average != null) {
-          fields.splice(1, 0, {
-            name: "Matchup moyen :",
-            value: `⚡ ${Math.round(analysis.matchup.average * 100)}%`,
-            inline: false,
-          });
-        }
-
         if (warDecksField) {
           // /stats ne doit plus afficher les decks GDC, ce bloc est réservé à /matchup.
         }
