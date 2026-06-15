@@ -2326,7 +2326,7 @@ export default async function handler(req, res) {
         if (analysis.tension?.average != null) {
           fields.splice(1, 0, {
             name: "Tension moyenne :",
-            value: `${Math.round(analysis.tension.average * 100)}%`,
+            value: `⚡ ${Math.round(analysis.tension.average * 100)}%`,
             inline: false,
           });
         }
