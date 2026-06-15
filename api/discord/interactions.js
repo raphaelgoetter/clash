@@ -2558,15 +2558,18 @@ export default async function handler(req, res) {
         const title = averageMatchup
           ? `⚡ Matchup GDC · ${analysis.overview.name} : ${averageMatchup}`
           : `⚡ Matchup GDC · ${analysis.overview.name}`;
+        const matchupLinkField = {
+          name: "Comprendre le calcul de matchup",
+          value: "https://trustroyale.vercel.app/bot/#matchup",
+          inline: false,
+        };
+
         const dataEmbed = {
           title,
           url: trustPlayerUrl(tag),
           color: 0xe67e22,
           description: warDecksField || undefined,
-          fields: fields.length ? fields : undefined,
-          footer: {
-            text: "Comprendre le calcul de matchup : trustroyale.vercel.app/bot/#matchup",
-          },
+          fields: [...fields, matchupLinkField],
         };
 
         let imageResponse = null;
