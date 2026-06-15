@@ -3,6 +3,7 @@ import fs from "fs/promises";
 import {
   analyzePlayer,
   buildDailyActivity,
+  computeBattleTension,
   computeIsNewPlayer,
   computeWarScore,
   computeWarReliabilityFallback,
@@ -254,6 +255,64 @@ assert.strictEqual(
   tensionDecks[3].matches?.[0]?.score,
   "1-0",
   "The third duel round should be scored 1-0",
+);
+
+const extremeTensionHigh = computeBattleTension(
+  {
+    type: "riverRacePvp",
+    team: [
+      {
+        cards: Array.from({ length: 8 }, () => ({
+          level: 1,
+          rarity: "common",
+        })),
+        crowns: 0,
+      },
+    ],
+    opponent: [
+      {
+        cards: Array.from({ length: 8 }, () => ({
+          level: 16,
+          rarity: "legendary",
+        })),
+        crowns: 0,
+      },
+    ],
+  },
+  { playerTourLevel: 10, opponentTourLevel: 13 },
+);
+assert.ok(
+  extremeTensionHigh >= 0.99,
+  `Extreme disadvantage should produce a very high tension, got ${extremeTensionHigh}`,
+);
+
+const extremeTensionLow = computeBattleTension(
+  {
+    type: "riverRacePvp",
+    team: [
+      {
+        cards: Array.from({ length: 8 }, () => ({
+          level: 16,
+          rarity: "legendary",
+        })),
+        crowns: 0,
+      },
+    ],
+    opponent: [
+      {
+        cards: Array.from({ length: 8 }, () => ({
+          level: 1,
+          rarity: "common",
+        })),
+        crowns: 0,
+      },
+    ],
+  },
+  { playerTourLevel: 13, opponentTourLevel: 10 },
+);
+assert.ok(
+  extremeTensionLow <= 0.01,
+  `Extreme advantage should produce a very low tension, got ${extremeTensionLow}`,
 );
 
 const rootLevelRoundDecks = summarizeWarDecksForTension(

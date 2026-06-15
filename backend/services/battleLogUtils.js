@@ -207,9 +207,9 @@ function computeTowerLevelFactor(playerTourLevel, opponentTourLevel) {
     -3,
     Math.min(3, opponentTourLevel - playerTourLevel),
   );
-  // Si l'adversaire a un niveau de tour supérieur, la tension augmente fortement.
-  // Si le joueur a un niveau supérieur, la tension baisse mais beaucoup moins vite.
-  return towerDiff > 0 ? towerDiff * 0.2 : towerDiff * 0.05;
+  // Les écarts de niveau de tour doivent avoir un impact plus marqué,
+  // pour que les adversaires nettement supérieurs puissent rendre la tension extrême.
+  return towerDiff > 0 ? towerDiff * 0.3 : towerDiff * 0.1;
 }
 
 function estimateTowerLevelFromHp(hp) {
@@ -278,7 +278,7 @@ export function computeBattleTension(battle, options = {}) {
 
   const base =
     0.5 +
-    strengthFactor * 0.25 -
+    strengthFactor * 0.45 -
     scoreFactor * 0.05 +
     trainingFactor +
     towerFactor;

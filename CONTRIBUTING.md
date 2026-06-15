@@ -119,12 +119,12 @@ Le score de tension d'un combat est normalisé entre `0` et `1`.
 strengthFactor = (opponentDeckStrength - playerDeckStrength) / max(1, playerDeckStrength + opponentDeckStrength)
 scoreFactor = clamp(playerCrowns - opponentCrowns, -3, 3)
 if opponentTourLevel > playerTourLevel:
-  towerFactor = clamp(opponentTourLevel - playerTourLevel, -3, 3) × 0.2
+  towerFactor = clamp(opponentTourLevel - playerTourLevel, -3, 3) × 0.3
 else:
-  towerFactor = clamp(opponentTourLevel - playerTourLevel, -3, 3) × 0.05
+  towerFactor = clamp(opponentTourLevel - playerTourLevel, -3, 3) × 0.1
 trainingFactor = -0.15 si combat amical, sinon 0
 
-base = 0.5 + strengthFactor × 0.25 - scoreFactor × 0.05 + trainingFactor + towerFactor
+base = 0.5 + strengthFactor × 0.45 - scoreFactor × 0.05 + trainingFactor + towerFactor
 Tension combat = clamp(base, 0, 1)
 ```
 
