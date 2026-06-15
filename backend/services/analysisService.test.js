@@ -315,6 +315,35 @@ assert.ok(
   `Extreme advantage should produce a very low tension, got ${extremeTensionLow}`,
 );
 
+const measuredTension = computeBattleTension(
+  {
+    type: "riverRacePvp",
+    team: [
+      {
+        cards: Array.from({ length: 8 }, () => ({
+          level: 13,
+          rarity: "rare",
+        })),
+        crowns: 0,
+      },
+    ],
+    opponent: [
+      {
+        cards: Array.from({ length: 8 }, () => ({
+          level: 15,
+          rarity: "legendary",
+        })),
+        crowns: 3,
+      },
+    ],
+  },
+  { playerTourLevel: 13, opponentTourLevel: 15 },
+);
+assert.ok(
+  measuredTension >= 0.8,
+  `Une vraie grosse différence de deck/tour doit donner une tension élevée, got ${measuredTension}`,
+);
+
 const rootLevelRoundDecks = summarizeWarDecksForTension(
   [
     {

@@ -133,14 +133,14 @@ S'il n'y a pas de combat de guerre dans le `battleLog`, la moyenne est calculée
 
 #### Critères et pondération
 
-- `strengthFactor` (≈ 25 % de l’impact) :
-  - Si l'adversaire dispose d'un deck plus fort, la tension augmente.
-  - Si le deck du joueur est plus fort, la tension diminue.
-  - La valeur est divisée par la somme des forces des deux decks, ce qui borne l’impact.
-- `towerFactor` (≈ 25 % de l’impact) :
+- `strengthFactor` (≈ 70 % de l’impact) :
+  - Si l'adversaire dispose d'un deck plus fort, la tension augmente très fortement.
+  - Si le deck du joueur est plus fort, la tension diminue très fortement.
+  - La valeur est divisée par la force du deck le plus faible, ce qui rend les gros écarts bien plus saillants.
+- `towerFactor` (≈ 30 % de l’impact) :
   - Calculé depuis la différence de niveaux de tours (`opponentTourLevel - playerTourLevel`).
-  - Chaque écart de 1 niveau de tour correspond à ±0,25 tension, limité à ±3 niveaux.
-  - Ce facteur augmente significativement la tension quand l'adversaire a un niveau de tour supérieur.
+  - Chaque écart de 1 niveau de tour correspond à ±0,3 tension lorsque l'adversaire est supérieur.
+  - Ce facteur augmente encore la tension pour un adversaire nettement plus haut niveau.
 - `scoreFactor` (≈ 5 % de l’impact) :
   - Une victoire large (`+3` couronnes) réduit légèrement la tension.
   - Une défaite large (`-3` couronnes) augmente légèrement la tension.

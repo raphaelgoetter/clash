@@ -223,6 +223,25 @@ function estimateTowerLevelFromHp(hp) {
   return null;
 }
 
+function estimateTourLevelFromPartialCards(allCards) {
+  const norms = allCards
+    .map((card) => normLevel(card))
+    .filter((level) => Number.isFinite(level) && level > 0);
+  if (norms.length === 0) return null;
+
+  const avgNorm = norms.reduce((sum, level) => sum + level, 0) / norms.length;
+  if (avgNorm >= 23) return 15;
+  if (avgNorm >= 22) return 14;
+  if (avgNorm >= 21) return 13;
+  if (avgNorm >= 20) return 12;
+  if (avgNorm >= 19) return 11;
+  if (avgNorm >= 18) return 10;
+  if (avgNorm >= 17) return 9;
+  if (avgNorm >= 16) return 8;
+  if (avgNorm >= 15) return 7;
+  return 6;
+}
+
 function computeBattleTourLevel(entry) {
   const kingTowerHp = Number(
     entry?.kingTowerHitPoints ?? entry?.kingTowerHP ?? 0,
@@ -236,9 +255,9 @@ function computeBattleTourLevel(entry) {
     : [];
   const allCards = [...cards, ...supportCards];
 
-  // Les entrées de bataille de GDC ne contiennent souvent que le deck joué (8 cartes),
-  // donc il est peu fiable d’en déduire le niveau de tour complet.
-  return allCards.length >= 16 ? computeTourLevel(allCards) : null;
+  if (allCards.length >= 16) return computeTourLevel(allCards);
+  if (allCards.length >= 8) return estimateTourLevelFromPartialCards(allCards);
+  return null;
 }
 
 function deckStrengthFromBattle(battle) {
@@ -265,7 +284,10 @@ export function computeBattleTension(battle, options = {}) {
 
   const { player, opponent } = deckStrengthFromBattle(battle);
   const strengthDiff = opponent - player;
-  const strengthFactor = strengthDiff / Math.max(1, player + opponent);
+  const strengthFactor = Math.max(
+    -1,
+    Math.min(1, strengthDiff / Math.max(1, Math.min(player, opponent))),
+  );
 
   const battleType = (battle?.type ?? "").toLowerCase();
   const isTraining = FRIENDLY_TYPES.has(battleType);
@@ -278,7 +300,7 @@ export function computeBattleTension(battle, options = {}) {
 
   const base =
     0.5 +
-    strengthFactor * 0.45 -
+    strengthFactor * 0.7 -
     scoreFactor * 0.05 +
     trainingFactor +
     towerFactor;
