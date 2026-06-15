@@ -295,7 +295,7 @@ code {
 .summary-grid {
   display: grid;
   gap: 1.25rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
 }
 
 .summary-group {
@@ -329,12 +329,6 @@ code {
 .summary-links a:focus-visible {
   color: var(--gold);
   text-decoration: none;
-}
-
-@media (max-width: 820px) {
-  .summary-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 .card-title {
