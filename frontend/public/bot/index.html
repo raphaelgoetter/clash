@@ -181,14 +181,15 @@
               <p>Barème détaillé :</p>
               <ul>
                 <li>
-                  <strong>deckScore</strong> (±15) : écart de force du deck. Max
-                  atteint dès qu’il y a un écart d’au moins `10` points entre
-                  les deux forces de deck.
+                  <strong>deckScore</strong> (±15) : écart de niveaux de cartes
+                  du deck. Max atteint dès qu’il y a un écart d’au moins `10`
+                  points entre les deux niveaux de deck.
                 </li>
                 <li>
                   <strong>collectionScore</strong> (±10) : écart de niveau de
-                  collection. Max atteint pour un écart de collection de `100`
-                  points ou plus.
+                  collection (inclus niveaux totaux des cartes + Évolutions +
+                  Héros possédés). Max atteint pour un écart de collection de
+                  `100` points ou plus.
                 </li>
                 <li>
                   <strong>cw2Score</strong> (±5) : écart de victoires CW2. Max
@@ -208,9 +209,15 @@
               <pre><code>matchup = clamp(50 + deckScore + collectionScore + cw2Score + winRateScore + trophyScore, 0, 100)</code></pre>
               <p>Interprétation :</p>
               <ul>
-                <li><strong>0%</strong> : matchup très confortable</li>
+                <li>
+                  <strong>0%</strong> : matchup très confortable (adversaire
+                  "facile")
+                </li>
                 <li><strong>50%</strong> : matchup moyen, combat équilibré</li>
-                <li><strong>100%</strong> : matchup très tendu</li>
+                <li>
+                  <strong>100%</strong> : matchup très tendu (adversaire
+                  "difficile")
+                </li>
               </ul>
               <p><strong>Commande :</strong> <code>/matchup</code></p>
               <p><strong>Option :</strong> <code>tag:#TAG</code></p>
