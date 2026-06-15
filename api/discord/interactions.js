@@ -247,6 +247,49 @@ function normalizeTag(tag) {
     .replace(/^#/, "");
 }
 
+function extractOpponentTagsFromBattleLog(battleLog) {
+  const tags = new Set();
+  for (const battle of Array.isArray(battleLog) ? battleLog : []) {
+    const opponentEntry = Array.isArray(battle?.opponent)
+      ? battle.opponent[0]
+      : battle?.opponent;
+    const tag = normalizeTag(opponentEntry?.tag);
+    if (tag) tags.add(tag);
+  }
+  return [...tags];
+}
+
+async function buildOpponentStatsByTag(battleLog, excludeTag = null) {
+  const tags = extractOpponentTagsFromBattleLog(battleLog);
+  const map = new Map();
+  let loaded = 0;
+  const maxFetches = 8;
+
+  for (const tag of tags) {
+    if (loaded >= maxFetches) break;
+    if (excludeTag && normalizeTag(excludeTag) === tag) continue;
+    try {
+      const resp = await fetch(
+        `${TRUST_ROYALE_URL}/api/player/${encodeURIComponent(`#${tag}`)}/analysis?fast=true`,
+        { headers: { Accept: "application/json" } },
+      );
+      if (!resp.ok) continue;
+      const analysis = await resp.json();
+      if (analysis && typeof analysis === "object") {
+        map.set(tag, analysis);
+      }
+      loaded += 1;
+    } catch (err) {
+      console.error(
+        "Impossible de charger les stats du joueur adverse :",
+        tag,
+        err?.message || err,
+      );
+    }
+  }
+  return map;
+}
+
 async function readClanCacheMembers(clanTag) {
   const data = await loadClanCache(clanTag);
   const members = Array.isArray(data?.members) ? data.members : [];
@@ -2427,26 +2470,59 @@ export default async function handler(req, res) {
           );
           if (battleLogResp.ok) {
             const battleLog = await battleLogResp.json();
+            const opponentStatsByTag = await buildOpponentStatsByTag(
+              battleLog ?? [],
+              tag,
+            );
             warDecks = summarizeWarDecksForTension(
               battleLog ?? [],
               64,
               null,
               analysis.overview.clan?.tag,
+              {
+                playerWinRate: analysis.activityIndicators?.winRate,
+                playerCollectionLevel: analysis.overview?.collectionLevel,
+                playerCw2Wins: analysis.overview?.clanWarWins,
+                playerTrophies: analysis.overview?.trophies,
+                opponentStatsByTag,
+              },
             );
           } else {
+            const opponentStatsByTag = await buildOpponentStatsByTag(
+              analysis.battleLog ?? [],
+              tag,
+            );
             warDecks = summarizeWarDecksForTension(
               analysis.battleLog ?? [],
               64,
               null,
               analysis.overview.clan?.tag,
+              {
+                playerWinRate: analysis.activityIndicators?.winRate,
+                playerCollectionLevel: analysis.overview?.collectionLevel,
+                playerCw2Wins: analysis.overview?.clanWarWins,
+                playerTrophies: analysis.overview?.trophies,
+                opponentStatsByTag,
+              },
             );
           }
         } catch {
+          const opponentStatsByTag = await buildOpponentStatsByTag(
+            analysis.battleLog ?? [],
+            tag,
+          );
           warDecks = summarizeWarDecksForTension(
             analysis.battleLog ?? [],
             64,
             null,
             analysis.overview.clan?.tag,
+            {
+              playerWinRate: analysis.activityIndicators?.winRate,
+              playerCollectionLevel: analysis.overview?.collectionLevel,
+              playerCw2Wins: analysis.overview?.clanWarWins,
+              playerTrophies: analysis.overview?.trophies,
+              opponentStatsByTag,
+            },
           );
         }
 

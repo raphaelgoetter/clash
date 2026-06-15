@@ -106,54 +106,60 @@ Ces valeurs sont issues du barème de Clan Wars de Clash Royale.
 ### Tension GDC
 
 La tension GDC mesure la difficulté moyenne des matchups d'un joueur sur ses combats récents.
-Elle est calculée en analysant les derniers combats de guerre (ou, à défaut, tous les combats compétitifs disponibles) et en associant trois facteurs :
+Elle est calculée en analysant les derniers combats de guerre (ou, à défaut, tous les combats compétitifs disponibles) et en associant cinq critères pondérés :
 
-- **Écart de forces de deck** (`strengthFactor`) : différence entre le total des niveaux de cartes des deux decks. Concrètement, le code additionne les niveaux (`level`) de chaque carte présente dans le deck du joueur et dans le deck adverse.
-- **Différence de niveaux de tours** : calculée à partir des cartes visibles dans le match (`cards` + `supportCards`) et intégrée au score sous la forme d'un `towerFactor`.
-- **Résultat du combat** (`scoreFactor`) : écart de couronnes gagné/perdu par le joueur.
-- **Type de combat** (`trainingFactor`) : réduit la tension pour les combats amicaux / d'entraînement.
+- **Écart de forces de deck** (`strengthFactor`) : différence normalisée entre la force du deck adverse et la force du deck du joueur.
+- **Niveau de collection** (`collectionFactor`) : écart relatif entre le niveau de collection du joueur et celui de l'adversaire.
+- **CW2 wins** (`cw2Factor`) : écart relatif entre le nombre total de victoires en Guerre de clan (`ClanWarWins`) du joueur et de l'adversaire.
+- **Win rate** (`winRateFactor`) : différence de taux de victoire, comparée au taux adverse quand il est disponible.
+- **Trophées** (`trophyFactor`) : écart relatif entre le nombre de trophées du joueur et de l'adversaire.
 
-Le score de tension d'un combat est normalisé entre `0` et `1`.
+La tension d’un combat est calculée à partir d’une base de `50` et d’un total de critères compris entre `-50` et `+50`.
 
 ```text
-strengthFactor = (opponentDeckStrength - playerDeckStrength) / max(1, playerDeckStrength + opponentDeckStrength)
-scoreFactor = clamp(playerCrowns - opponentCrowns, -3, 3)
-if opponentTourLevel > playerTourLevel:
-  towerFactor = clamp(opponentTourLevel - playerTourLevel, -3, 3) × 0.3
-else:
-  towerFactor = clamp(opponentTourLevel - playerTourLevel, -3, 3) × 0.1
-trainingFactor = -0.15 si combat amical, sinon 0
+deckScore = clamp(opponentDeckStrength - playerDeckStrength, -10, 10) × 1.5
+collectionScore = clamp((playerCollectionLevel - opponentCollectionLevel) / max(1, opponentCollectionLevel), -0.25, 0.25) × 40
+cw2Score = clamp((playerCw2Wins - opponentCw2Wins) / max(1, opponentCw2Wins), -0.5, 0.5) × 10
+winRateScore = clamp(playerWinRate - opponentWinRateBaseline, -0.5, 0.5) × 10
+trophyScore = clamp((playerTrophies - opponentTrophies) / max(1, opponentTrophies), -0.25, 0.25) × 60
 
-base = 0.5 + strengthFactor × 0.45 - scoreFactor × 0.05 + trainingFactor + towerFactor
-Tension combat = clamp(base, 0, 1)
+total = deckScore + collectionScore + cw2Score + winRateScore + trophyScore
+Tension combat (%) = clamp(50 + total, 0, 100)
 ```
 
-Le score final de `analysis.tension.average` est la moyenne de ces tensions de combat sur les batailles GDC récentes.
-S'il n'y a pas de combat de guerre dans le `battleLog`, la moyenne est calculée sur les derniers combats compétitifs disponibles.
+- `opponentWinRateBaseline` vaut le win rate adverse si disponible, sinon `0.5`.
+- `deckScore` est maxé à `±15` pour un écart de deck d’au moins `10` points.
+- `collectionScore` est maxé à `±10` pour un écart de collection d’au moins `25 %`.
+- `cw2Score` est maxé à `±5` pour un écart de CW2 de `50 %` ou plus.
+- `winRateScore` est maxé à `±5` pour une différence de winrate de `50` points de pourcentage ou plus.
+- `trophyScore` est maxé à `±15` pour une différence de trophées d’au moins `1000`.
+- Le total de l’ensemble des critères peut varier entre `-50` et `+50`.
+- `analysis.tension.average` est la moyenne des tensions de combat sur les batailles GDC récentes.
+- Si le `battleLog` ne contient aucune bataille de guerre, la moyenne est calculée sur les derniers combats compétitifs disponibles.
 
 #### Critères et pondération
 
-- `strengthFactor` (≈ 70 % de l’impact) :
-  - Si l'adversaire dispose d'un deck plus fort, la tension augmente très fortement.
-  - Si le deck du joueur est plus fort, la tension diminue très fortement.
-  - La valeur est divisée par la force du deck le plus faible, ce qui rend les gros écarts bien plus saillants.
-- `towerFactor` (≈ 30 % de l’impact) :
-  - Calculé depuis la différence de niveaux de tours (`opponentTourLevel - playerTourLevel`).
-  - Chaque écart de 1 niveau de tour correspond à ±0,3 tension lorsque l'adversaire est supérieur.
-  - Ce facteur augmente encore la tension pour un adversaire nettement plus haut niveau.
-- `scoreFactor` (≈ 5 % de l’impact) :
-  - Une victoire large (`+3` couronnes) réduit légèrement la tension.
-  - Une défaite large (`-3` couronnes) augmente légèrement la tension.
-  - L’impact est modéré par un coefficient faible (`0.05`), car le résultat compte moins que le matchup.
-- `trainingFactor` (-0.15 fixe) :
-  - Les combats amicaux / d'entraînement sont considérés comme moins tendus.
-  - Ce facteur soustrait 15 points de tension sur une échelle normalisée de 0 à 1.
+- `deckScore` (±15) :
+  - Écart de niveau des cartes dans le deck joué.
+  - Max atteint dès qu’il y a un écart d’au moins `10` points entre les deux forces de deck.
+- `collectionScore` (±10) :
+  - Écart de niveau de collection.
+  - Max atteint pour un écart de collection de `100` points ou plus.
+- `cw2Score` (±5) :
+  - Écart relatif de victoires CW2.
+  - Max atteint pour une différence de `50 %` ou plus.
+- `winRateScore` (±5) :
+  - Écart de winrate.
+  - Max atteint pour une différence de `50` points de pourcentage ou plus.
+- `trophyScore` (±15) :
+  - Écart de trophées.
+  - Max atteint pour une différence de `25 %` ou plus.
 
 #### Interprétation
 
-- `0.0` : matchup très confortable ou combat amical sans pression.
-- `0.5` : tension neutre, matchup équilibré.
-- `1.0` : matchup très tendu, adversaire plus fort et/ou résultat négatif.
+- `0.0` : matchup très confortable.
+- `0.5` : tension moyenne, matchup équilibré.
+- `1.0` : matchup très tendu.
 
 #### Source de vérité
 

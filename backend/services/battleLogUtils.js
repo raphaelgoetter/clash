@@ -4,7 +4,12 @@
 // ============================================================
 
 import { parseClashDate, MS_PER_DAY, warDayKey } from "./dateUtils.js";
-import { normLevel, computeTourLevel } from "./collectionConstants.js";
+import {
+  normLevel,
+  computeTourLevel,
+  countEvolved,
+  countHeroes,
+} from "./collectionConstants.js";
 
 /**
  * Clan War battle types in the Clash Royale API.
@@ -273,38 +278,71 @@ function deckStrengthFromBattle(battle) {
   };
 }
 
-export function computeBattleTension(battle, options = {}) {
-  const playerCrowns = getMyBattleCrowns(battle);
-  const opponentCrowns =
-    battle._roundIndex !== undefined
-      ? (battle._roundCrownsOpp ?? 0)
-      : (battle.opponent?.[0]?.crowns ?? 0);
-  const crownDiff = playerCrowns - opponentCrowns;
-  const scoreFactor = Math.max(-3, Math.min(3, crownDiff));
+export function clampValue(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function computeBattleTension(battle, options = {}) {
+  const {
+    playerWinRate = null,
+    opponentWinRate = null,
+    playerCollectionLevel = null,
+    opponentCollectionLevel = null,
+    playerCw2Wins = null,
+    opponentCw2Wins = null,
+    playerTrophies = null,
+    opponentTrophies = null,
+  } = options;
 
   const { player, opponent } = deckStrengthFromBattle(battle);
-  const strengthDiff = opponent - player;
-  const strengthFactor = Math.max(
-    -1,
-    Math.min(1, strengthDiff / Math.max(1, Math.min(player, opponent))),
-  );
+  const deckScore = clampValue(opponent - player, -10, 10) * 1.5;
 
-  const battleType = (battle?.type ?? "").toLowerCase();
-  const isTraining = FRIENDLY_TYPES.has(battleType);
-  const trainingFactor = isTraining ? -0.15 : 0;
+  const collectionScore =
+    Number.isFinite(playerCollectionLevel) &&
+    Number.isFinite(opponentCollectionLevel)
+      ? clampValue(
+          (playerCollectionLevel - opponentCollectionLevel) / 100,
+          -1,
+          1,
+        ) * 10
+      : 0;
 
-  const towerFactor = computeTowerLevelFactor(
-    options.playerTourLevel,
-    options.opponentTourLevel,
-  );
+  const cw2Score =
+    Number.isFinite(playerCw2Wins) && Number.isFinite(opponentCw2Wins)
+      ? clampValue(
+          (playerCw2Wins - opponentCw2Wins) / Math.max(1, opponentCw2Wins),
+          -0.5,
+          0.5,
+        ) * 10
+      : 0;
 
-  const base =
-    0.5 +
-    strengthFactor * 0.7 -
-    scoreFactor * 0.05 +
-    trainingFactor +
-    towerFactor;
-  return Number(Math.max(0, Math.min(1, base)).toFixed(3));
+  const normalizedPlayerWinRate = Number.isFinite(playerWinRate)
+    ? playerWinRate > 1
+      ? playerWinRate / 100
+      : playerWinRate
+    : null;
+  const normalizedOpponentWinRate = Number.isFinite(opponentWinRate)
+    ? opponentWinRate > 1
+      ? opponentWinRate / 100
+      : opponentWinRate
+    : null;
+  const winRateBaseline = Number.isFinite(normalizedOpponentWinRate)
+    ? normalizedOpponentWinRate
+    : 0.5;
+  const winRateScore = Number.isFinite(normalizedPlayerWinRate)
+    ? clampValue(normalizedPlayerWinRate - winRateBaseline, -0.5, 0.5) * 10
+    : 0;
+
+  const trophyScore =
+    Number.isFinite(playerTrophies) && Number.isFinite(opponentTrophies)
+      ? clampValue((playerTrophies - opponentTrophies) / 1000, -1, 1) * 15
+      : 0;
+
+  const totalScore =
+    deckScore + collectionScore + cw2Score + winRateScore + trophyScore;
+  const tension = 0.5 + totalScore / 100;
+
+  return Number(clampValue(tension, 0, 1).toFixed(3));
 }
 
 export function computeTensionFromBattleLog(battleLog, options = {}) {
@@ -313,19 +351,9 @@ export function computeTensionFromBattleLog(battleLog, options = {}) {
   const warBattles = filterWarBattles(battles);
   const samples = warBattles.length > 0 ? warBattles : battles;
 
-  const tensions = samples.map((battle) => {
-    const playerTourLevel = Number.isFinite(options.playerTourLevel)
-      ? options.playerTourLevel
-      : computeBattleTourLevel(battle.team?.[0]);
-    const opponentTourLevel = Number.isFinite(options.opponentTourLevel)
-      ? options.opponentTourLevel
-      : computeBattleTourLevel(battle.opponent?.[0]);
-    return computeBattleTension(battle, {
-      ...options,
-      playerTourLevel,
-      opponentTourLevel,
-    });
-  });
+  const tensions = samples.map((battle) =>
+    computeBattleTension(battle, options),
+  );
   const total = tensions.reduce((sum, value) => sum + value, 0);
   return Number((total / tensions.length).toFixed(3));
 }
@@ -372,6 +400,17 @@ function getFirstEntry(entry) {
   if (Array.isArray(entry)) return entry[0] || null;
   if (entry && typeof entry === "object") return entry;
   return null;
+}
+
+function normalizePlayerTag(tag) {
+  if (!tag) return null;
+  const raw = String(tag).trim().toUpperCase();
+  return raw.startsWith("#") ? raw.slice(1) : raw;
+}
+
+function getOpponentTag(battle) {
+  const oppEntry = getFirstEntry(battle.opponent);
+  return normalizePlayerTag(oppEntry?.tag);
 }
 
 function getRoundArray(entry, battle, isOpponent = false) {
@@ -552,6 +591,7 @@ export function summarizeWarDecksForTension(
   limit = 64,
   dayKey = null,
   clanTag = null,
+  options = {},
 ) {
   const warBattles = expandDuelRounds(filterWarBattles(battleLog ?? []));
   const entries = [];
@@ -570,9 +610,34 @@ export function summarizeWarDecksForTension(
     const deckChunks = getDeckChunksForBattle(battle);
     if (!deckChunks.length) continue;
 
-    const tension = computeBattleTension(battle);
-    const opponentName = String(oppEntry?.name ?? oppEntry?.tag ?? "?").trim();
+    const opponentTag = getOpponentTag(battle);
     const opponentTourLevel = computeBattleTourLevel(oppEntry);
+    const opponentMeta = opponentTag
+      ? (options.opponentStatsByTag?.get?.(opponentTag) ??
+        options.opponentStatsByTag?.[opponentTag] ??
+        null)
+      : null;
+    const tensionOptions = { ...options, opponentTourLevel };
+    if (opponentMeta) {
+      tensionOptions.opponentWinRate =
+        opponentMeta.activityIndicators?.winRate ??
+        opponentMeta.playerWinRate ??
+        tensionOptions.opponentWinRate;
+      tensionOptions.opponentCollectionLevel =
+        opponentMeta.overview?.collectionLevel ??
+        opponentMeta.playerCollectionLevel ??
+        tensionOptions.opponentCollectionLevel;
+      tensionOptions.opponentCw2Wins =
+        opponentMeta.overview?.clanWarWins ??
+        opponentMeta.playerCw2Wins ??
+        tensionOptions.opponentCw2Wins;
+      tensionOptions.opponentTrophies =
+        opponentMeta.overview?.trophies ??
+        opponentMeta.playerTrophies ??
+        tensionOptions.opponentTrophies;
+    }
+    const tension = computeBattleTension(battle, tensionOptions);
+    const opponentName = String(oppEntry?.name ?? oppEntry?.tag ?? "?").trim();
     const myCrowns = getMyBattleCrowns(battle);
     const oppCrowns =
       battle._roundIndex !== undefined
