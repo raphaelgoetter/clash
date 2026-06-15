@@ -179,7 +179,7 @@
                 moyenne des combats de guerre du joueur.
               </p>
               <p>Barème détaillé :</p>
-              <ul>
+              <ol>
                 <li>
                   <strong>deckScore</strong> (±15) : écart de niveaux de cartes
                   du deck. Max atteint dès qu’il y a un écart d’au moins `10`
@@ -197,14 +197,13 @@
                 </li>
                 <li>
                   <strong>winRateScore</strong> (±5) : écart de winrate. Max
-                  atteint pour une différence de `50` points de pourcentage ou
-                  plus.
+                  atteint pour une différence de `50 %` ou plus.
                 </li>
                 <li>
                   <strong>trophyScore</strong> (±15) : écart de trophées. Max
                   atteint pour une différence de `1000` ou plus.
                 </li>
-              </ul>
+              </ol>
               <p>Formule :</p>
               <pre><code>matchup = clamp(50 + deckScore + collectionScore + cw2Score + winRateScore + trophyScore, 0, 100)</code></pre>
               <p>Interprétation :</p>

@@ -115,7 +115,8 @@ code {
   font-size: 0.85em;
 }
 
-[data-layout] ul {
+[data-layout] ul,
+[data-layout] ol {
   padding-left: 20px;
 }
 
