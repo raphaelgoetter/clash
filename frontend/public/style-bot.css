@@ -294,39 +294,38 @@ code {
 
 .summary-grid {
   display: grid;
-  gap: 1.25rem;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-}
-
-.summary-group {
-  color: var(--text-primary);
-  font-weight: 700;
-  margin-bottom: 0.75rem;
-}
-
-.summary-links {
-  display: grid;
   gap: 0.75rem;
   list-style: none;
   padding: 0;
   margin: 0;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
 }
 
-.summary-links li {
+.summary-grid li {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 999px;
   padding: 0.8rem 1rem;
 }
 
-.summary-links a {
+.summary-group {
+  grid-column: 1/-1;
+  background: transparent;
+  border-color: transparent;
+  padding: 0;
+  color: var(--text-primary);
+  font-weight: 700;
+  margin: 0;
+}
+
+.summary-item a {
   color: var(--purple-light);
   display: block;
   font-weight: 600;
 }
 
-.summary-links a:hover,
-.summary-links a:focus-visible {
+.summary-item a:hover,
+.summary-item a:focus-visible {
   color: var(--gold);
   text-decoration: none;
 }
