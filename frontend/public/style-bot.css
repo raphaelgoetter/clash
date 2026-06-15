@@ -115,6 +115,10 @@ code {
   font-size: 0.85em;
 }
 
+[data-layout] ul {
+  padding-left: 20px;
+}
+
 /* ── Layout helpers ─────────────────────────────────────────── */
 .container {
   width: 100%;
@@ -282,6 +286,55 @@ code {
 
 .card:hover {
   border-color: var(--border-light);
+}
+
+.nav-summary {
+  padding: 24px;
+}
+
+.summary-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.summary-group {
+  color: var(--text-primary);
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.summary-links {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.summary-links li {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 0.8rem 1rem;
+}
+
+.summary-links a {
+  color: var(--purple-light);
+  display: block;
+  font-weight: 600;
+}
+
+.summary-links a:hover,
+.summary-links a:focus-visible {
+  color: var(--gold);
+  text-decoration: none;
+}
+
+@media (max-width: 820px) {
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .card-title {
