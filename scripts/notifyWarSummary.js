@@ -48,6 +48,76 @@ const DISCORD_API = "https://discord.com/api/v10";
 const DRY_RUN = process.argv.includes("--dry-run");
 const FORCE = process.argv.includes("--force");
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const ROLE_CACHE = new Map();
+const CLAN_ROLE_NAMES = {
+  Y8JUPC9C: "LA RESISTANCE ★",
+  LRQP20V9: "LES RESISTANTS ★",
+  QU9UQJRL: "LES REVOLTES ★",
+};
+
+function normalizeRoleName(value) {
+  return String(value ?? "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
+async function fetchGuildRoles(token) {
+  const guildId = process.env.DISCORD_GUILD_ID;
+  if (!guildId) {
+    console.warn(
+      "[notifyWarSummary] Variable manquante: DISCORD_GUILD_ID, rôle Discord désactivé.",
+    );
+    const cacheKey = `roles:undefined`;
+    if (ROLE_CACHE.has(cacheKey)) {
+      return ROLE_CACHE.get(cacheKey);
+    }
+    ROLE_CACHE.set(cacheKey, []);
+    return [];
+  }
+
+  const cacheKey = `roles:${guildId}`;
+  if (ROLE_CACHE.has(cacheKey)) {
+    return ROLE_CACHE.get(cacheKey);
+  }
+
+  const res = await fetch(`${DISCORD_API}/guilds/${guildId}/roles`, {
+    headers: { Authorization: `Bot ${token}` },
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Discord API ${res.status}: ${err}`);
+  }
+
+  const roles = await res.json();
+  ROLE_CACHE.set(cacheKey, Array.isArray(roles) ? roles : []);
+  return ROLE_CACHE.get(cacheKey);
+}
+
+async function resolveClanRoleMention(token, clanTag) {
+  const roleName = CLAN_ROLE_NAMES[clanTag];
+  if (!roleName) return {};
+
+  const roles = await fetchGuildRoles(token);
+  if (!roles.length) {
+    console.warn(
+      `[notifyWarSummary] Envoi sans mention du rôle Discord: ${roleName}.`,
+    );
+    return {};
+  }
+
+  const role = roles.find(
+    (entry) => normalizeRoleName(entry?.name) === normalizeRoleName(roleName),
+  );
+  if (!role?.id) {
+    console.warn(`[notifyWarSummary] Rôle Discord introuvable: ${roleName}.`);
+    return {};
+  }
+
+  return { id: role.id, mention: `<@&${role.id}>` };
+}
+
 const CLAN_FILTER = (() => {
   const idx = process.argv.indexOf("--clan");
   return idx !== -1
@@ -705,12 +775,12 @@ function computeClinchedWinInfo(race, ownClanTag) {
   };
 }
 
-async function sendDiscordEmbed(tag, channelId, token, embed) {
+async function sendDiscordPayload(tag, channelId, token, payload) {
   if (DRY_RUN) {
     console.log(
-      `\n[${tag}] ── DRY-RUN ── embed pour le channel ${channelId ?? "(non configuré)"} :`,
+      `\n[${tag}] ── DRY-RUN ── payload pour le channel ${channelId ?? "(non configuré)"} :`,
     );
-    console.log(JSON.stringify({ embeds: [embed] }, null, 2));
+    console.log(JSON.stringify(payload, null, 2));
     return;
   }
 
@@ -720,13 +790,17 @@ async function sendDiscordEmbed(tag, channelId, token, embed) {
       "Content-Type": "application/json",
       Authorization: `Bot ${token}`,
     },
-    body: JSON.stringify({ embeds: [embed] }),
+    body: JSON.stringify(payload),
   });
 
   if (!res.ok) {
     const err = await res.text();
     throw new Error(`Discord API ${res.status}: ${err}`);
   }
+}
+
+async function sendDiscordEmbed(tag, channelId, token, embed) {
+  await sendDiscordPayload(tag, channelId, token, { embeds: [embed] });
 }
 
 /**
@@ -1291,7 +1365,17 @@ async function postWarSummary(
       footer: { text: `Constat fait le ${postDateFR}` },
     };
 
-    await sendDiscordEmbed(tag, channelId, token, weeklyEmbed);
+    const role = await resolveClanRoleMention(token, tag);
+    const payload = {
+      content: role?.mention ?? null,
+      embeds: [weeklyEmbed],
+      allowed_mentions: {
+        parse: [],
+        roles: role?.id ? [role.id] : [],
+      },
+    };
+
+    await sendDiscordPayload(tag, channelId, token, payload);
   }
 
   const fameStr = totalFame !== null ? `${fmt(totalFame)} pts` : "pts N/A";
