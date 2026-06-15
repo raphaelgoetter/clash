@@ -50,9 +50,9 @@ const commands = [
     ],
   },
   {
-    name: "tension",
+    name: "matchup",
     description:
-      "Calcule la tension GDC d'un joueur selon ses matchups et ses decks.",
+      "Calcule le matchup GDC d'un joueur selon ses decks et ses adversaires.",
     options: [
       {
         type: 3, // STRING

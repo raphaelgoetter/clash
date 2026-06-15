@@ -103,38 +103,15 @@ Ces valeurs sont issues du barème de Clan Wars de Clash Royale.
 - Tous les clans d'un même groupe GDC partagent le même créneau de reset → `fractionElapsed` est calculée avec le reset du clan propre (`warResetOffsetMs(clanTag)`).
 - Cette formule s'applique uniformément au clan propre et aux clans adverses. Code source : `backend/routes/clan.js`, bloc `groupWithProjections`.
 
-### Tension GDC
+### Matchup GDC
 
-La tension GDC mesure la difficulté moyenne des matchups d'un joueur sur ses combats récents.
-Elle est calculée en analysant les derniers combats de guerre (ou, à défaut, tous les combats compétitifs disponibles) et en associant cinq critères pondérés :
+Le matchup GDC mesure la difficulté moyenne des combats d'un joueur sur ses récents combats de guerre.
+Il est calculé en analysant les derniers combats de guerre (ou, à défaut, tous les combats compétitifs disponibles) et en associant cinq critères pondérés.
 
-- **Écart de forces de deck** (`strengthFactor`) : différence normalisée entre la force du deck adverse et la force du deck du joueur.
-- **Niveau de collection** (`collectionFactor`) : écart relatif entre le niveau de collection du joueur et celui de l'adversaire.
-- **CW2 wins** (`cw2Factor`) : écart relatif entre le nombre total de victoires en Guerre de clan (`ClanWarWins`) du joueur et de l'adversaire.
-- **Win rate** (`winRateFactor`) : différence de taux de victoire, comparée au taux adverse quand il est disponible.
-- **Trophées** (`trophyFactor`) : écart relatif entre le nombre de trophées du joueur et de l'adversaire.
+Généralités :
 
-La tension d’un combat est calculée à partir d’une base de `50` et d’un total de critères compris entre `-50` et `+50`.
-
-```text
-deckScore = clamp(opponentDeckStrength - playerDeckStrength, -10, 10) × 1.5
-collectionScore = clamp((playerCollectionLevel - opponentCollectionLevel) / max(1, opponentCollectionLevel), -0.25, 0.25) × 40
-cw2Score = clamp((playerCw2Wins - opponentCw2Wins) / max(1, opponentCw2Wins), -0.5, 0.5) × 10
-winRateScore = clamp(playerWinRate - opponentWinRateBaseline, -0.5, 0.5) × 10
-trophyScore = clamp((playerTrophies - opponentTrophies) / max(1, opponentTrophies), -0.25, 0.25) × 60
-
-total = deckScore + collectionScore + cw2Score + winRateScore + trophyScore
-Tension combat (%) = clamp(50 + total, 0, 100)
-```
-
-- `opponentWinRateBaseline` vaut le win rate adverse si disponible, sinon `0.5`.
-- `deckScore` est maxé à `±15` pour un écart de deck d’au moins `10` points.
-- `collectionScore` est maxé à `±10` pour un écart de collection d’au moins `25 %`.
-- `cw2Score` est maxé à `±5` pour un écart de CW2 de `50 %` ou plus.
-- `winRateScore` est maxé à `±5` pour une différence de winrate de `50` points de pourcentage ou plus.
-- `trophyScore` est maxé à `±15` pour une différence de trophées d’au moins `1000`.
-- Le total de l’ensemble des critères peut varier entre `-50` et `+50`.
-- `analysis.tension.average` est la moyenne des tensions de combat sur les batailles GDC récentes.
+- Le matchup d’un combat est calculé à partir d’une base de `50%` et d’un total de critères compris entre `-50` et `+50`.
+- `analysis.matchup.average` est la moyenne des matchups de combat sur les batailles GDC récentes.
 - Si le `battleLog` ne contient aucune bataille de guerre, la moyenne est calculée sur les derniers combats compétitifs disponibles.
 
 #### Critères et pondération
@@ -143,7 +120,7 @@ Tension combat (%) = clamp(50 + total, 0, 100)
   - Écart de niveau des cartes dans le deck joué.
   - Max atteint dès qu’il y a un écart d’au moins `10` points entre les deux forces de deck.
 - `collectionScore` (±10) :
-  - Écart de niveau de collection.
+  - Écart de niveau de collection (total de toutes les cartes + nombre d'évo et de héros)
   - Max atteint pour un écart de collection de `100` points ou plus.
 - `cw2Score` (±5) :
   - Écart relatif de victoires CW2.
@@ -153,19 +130,32 @@ Tension combat (%) = clamp(50 + total, 0, 100)
   - Max atteint pour une différence de `50` points de pourcentage ou plus.
 - `trophyScore` (±15) :
   - Écart de trophées.
-  - Max atteint pour une différence de `25 %` ou plus.
+  - Max atteint pour une différence de `1000` ou plus.
+
+#### Formule de calcul
+
+```text
+deckScore = clamp(opponentDeckStrength - playerDeckStrength, -10, 10) × 1.5
+collectionScore = clamp((opponentCollectionLevel - playerCollectionLevel) / 100, -1, 1) × 10
+cw2Score = clamp((opponentCw2Wins - playerCw2Wins) / max(1, opponentCw2Wins), -0.5, 0.5) × 10
+winRateScore = clamp(opponentWinRateBaseline - playerWinRate, -0.5, 0.5) × 10
+trophyScore = clamp((opponentTrophies - playerTrophies) / 1000, -1, 1) × 15
+
+total = deckScore + collectionScore + cw2Score + winRateScore + trophyScore
+Tension combat (%) = clamp(50 + total, 0, 100)
+```
 
 #### Interprétation
 
-- `0.0` : matchup très confortable.
-- `0.5` : tension moyenne, matchup équilibré.
-- `1.0` : matchup très tendu.
+- `0%` : matchup très confortable.
+- `50%` : matchup moyen, combat équilibré.
+- `100%` : matchup très tendu (opposant très supérieur)
 
 #### Source de vérité
 
 - Fonction de référence : `backend/services/battleLogUtils.js`
-- Formule principale : `computeBattleTension()`
-- Agrégation : `computeTensionFromBattleLog()`
+- Formule principale : `computeBattleMatchup()`
+- Agrégation : `computeMatchupFromBattleLog()`
 
 ### Niveau de Tour du Roi
 

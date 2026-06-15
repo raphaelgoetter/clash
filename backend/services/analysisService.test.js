@@ -3,7 +3,7 @@ import fs from "fs/promises";
 import {
   analyzePlayer,
   buildDailyActivity,
-  computeBattleTension,
+  computeBattleMatchup,
   computeIsNewPlayer,
   computeWarScore,
   computeWarReliabilityFallback,
@@ -11,7 +11,7 @@ import {
   hasDuelOnWarDay,
   expandDuelRounds,
   summarizeWarDecks,
-  summarizeWarDecksForTension,
+  summarizeWarDecksForMatchup,
   warDayKey,
   warResetOffsetMs,
 } from "./analysisService.js";
@@ -184,7 +184,7 @@ assert.strictEqual(
   "expandDuelRounds should expand duel colosseum rounds",
 );
 
-const tensionDecks = summarizeWarDecksForTension(
+const matchupDecks = summarizeWarDecksForMatchup(
   [
     {
       type: "riverRacePvp",
@@ -237,27 +237,27 @@ const tensionDecks = summarizeWarDecksForTension(
   "LRQP20V9",
 );
 assert.strictEqual(
-  tensionDecks.length,
+  matchupDecks.length,
   4,
-  "summarizeWarDecksForTension should return one entry per duel round",
+  "summarizeWarDecksForMatchup should return one entry per duel round",
 );
 assert.strictEqual(
-  tensionDecks[1].matches?.[0]?.score,
+  matchupDecks[1].matches?.[0]?.score,
   "1-0",
   "The first duel round should be scored 1-0",
 );
 assert.strictEqual(
-  tensionDecks[2].matches?.[0]?.score,
+  matchupDecks[2].matches?.[0]?.score,
   "0-1",
   "The second duel round should be scored 0-1",
 );
 assert.strictEqual(
-  tensionDecks[3].matches?.[0]?.score,
+  matchupDecks[3].matches?.[0]?.score,
   "1-0",
   "The third duel round should be scored 1-0",
 );
 
-const extremeTensionHigh = computeBattleTension(
+const extremeMatchupHigh = computeBattleMatchup(
   {
     type: "riverRacePvp",
     team: [
@@ -282,11 +282,11 @@ const extremeTensionHigh = computeBattleTension(
   { playerTourLevel: 10, opponentTourLevel: 13 },
 );
 assert.ok(
-  extremeTensionHigh >= 0.99,
-  `Extreme disadvantage should produce a very high tension, got ${extremeTensionHigh}`,
+  extremeMatchupHigh >= 0.99,
+  `Extreme disadvantage should produce a very high matchup, got ${extremeMatchupHigh}`,
 );
 
-const extremeTensionLow = computeBattleTension(
+const extremeMatchupLow = computeBattleMatchup(
   {
     type: "riverRacePvp",
     team: [
@@ -311,11 +311,11 @@ const extremeTensionLow = computeBattleTension(
   { playerTourLevel: 13, opponentTourLevel: 10 },
 );
 assert.ok(
-  extremeTensionLow <= 0.01,
-  `Extreme advantage should produce a very low tension, got ${extremeTensionLow}`,
+  extremeMatchupLow <= 0.01,
+  `Extreme advantage should produce a very low matchup, got ${extremeMatchupLow}`,
 );
 
-const measuredTension = computeBattleTension(
+const measuredMatchup = computeBattleMatchup(
   {
     type: "riverRacePvp",
     team: [
@@ -340,11 +340,11 @@ const measuredTension = computeBattleTension(
   { playerTourLevel: 13, opponentTourLevel: 15 },
 );
 assert.ok(
-  measuredTension >= 0.8,
-  `Une vraie grosse différence de deck/tour doit donner une tension élevée, got ${measuredTension}`,
+  measuredMatchup >= 0.8,
+  `Une vraie grosse différence de deck/tour doit donner un matchup élevé, got ${measuredMatchup}`,
 );
 
-const rootLevelRoundDecks = summarizeWarDecksForTension(
+const rootLevelRoundDecks = summarizeWarDecksForMatchup(
   [
     {
       type: "riverRaceDuel",
@@ -378,7 +378,7 @@ const rootLevelRoundDecks = summarizeWarDecksForTension(
 assert.strictEqual(
   rootLevelRoundDecks.length,
   3,
-  "summarizeWarDecksForTension should expand root-level battle.rounds",
+  "summarizeWarDecksForMatchup should expand root-level battle.rounds",
 );
 assert.strictEqual(
   rootLevelRoundDecks[0].matches?.[0]?.score,
@@ -396,7 +396,7 @@ assert.strictEqual(
   "The third round should be scored 1-0 for root-level rounds",
 );
 
-const displaynoneCaseDecks = summarizeWarDecksForTension(
+const displaynoneCaseDecks = summarizeWarDecksForMatchup(
   [
     {
       type: "riverRacePvp",
@@ -482,7 +482,7 @@ assert.deepStrictEqual(
   "J3 deck scores must preserve the 3-round duel against Aegon Targaryen",
 );
 
-const duelFirstDecks = summarizeWarDecksForTension(
+const duelFirstDecks = summarizeWarDecksForMatchup(
   [
     {
       type: "riverRaceDuel",
@@ -545,7 +545,7 @@ assert.strictEqual(
   "The final PvP match should still be labeled Deck 4",
 );
 
-const multiDayTensionDecks = summarizeWarDecksForTension(
+const multiDayMatchupDecks = summarizeWarDecksForMatchup(
   [
     {
       type: "riverRacePvp",
@@ -565,23 +565,23 @@ const multiDayTensionDecks = summarizeWarDecksForTension(
   "LRQP20V9",
 );
 assert.ok(
-  multiDayTensionDecks.length >= 2,
-  "summarizeWarDecksForTension should include multiple day entries",
+  multiDayMatchupDecks.length >= 2,
+  "summarizeWarDecksForMatchup should include multiple day entries",
 );
 assert.ok(
-  multiDayTensionDecks.some(
+  multiDayMatchupDecks.some(
     (deck) => deck.matches?.[0]?.dayKey === "2026-06-12",
   ),
-  "Tension summary should contain the newest day",
+  "Matchup summary should contain the newest day",
 );
 assert.ok(
-  multiDayTensionDecks.some(
+  multiDayMatchupDecks.some(
     (deck) => deck.matches?.[0]?.dayKey === "2026-06-11",
   ),
-  "Tension summary should contain the older day",
+  "Matchup summary should contain the older day",
 );
 
-const multiDayLabels = summarizeWarDecksForTension(
+const multiDayLabels = summarizeWarDecksForMatchup(
   [
     {
       type: "riverRacePvp",
@@ -606,7 +606,7 @@ assert.deepStrictEqual(
   "Deck labels should restart at 1 for a new GDC day",
 );
 
-const sameDayLabels = summarizeWarDecksForTension(
+const sameDayLabels = summarizeWarDecksForMatchup(
   [
     {
       type: "riverRacePvp",

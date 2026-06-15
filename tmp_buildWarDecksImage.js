@@ -1,4 +1,4 @@
-import { Resvg } from '@resvg/resvg-js';
+import { Resvg } from "@resvg/resvg-js";
 async function buildWarDecksImage(warDecks) {
   if (!Array.isArray(warDecks) || warDecks.length === 0) return null;
   let cardDefinitions = [];
@@ -126,10 +126,10 @@ async function buildWarDecksImage(warDecks) {
         match.result === "win"
           ? "<:success:1499002702208958577>"
           : "<:error:1499002755841265826>";
-      const tension = Number.isFinite(match.tension)
-        ? `${Math.round(match.tension * 100)}%`
+      const matchup = Number.isFinite(match.matchup)
+        ? `${Math.round(match.matchup * 100)}%`
         : "?";
-      const line = `- 👥 ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultIcon} ${score} ⚡ ${tension}`;
+      const line = `- 👥 ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultIcon} ${score} ⚡ ${matchup}`;
       const lineY = labelY + 14 + index * textLineHeight;
       return `<text x="${padding}" y="${lineY}" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#e2e8f0">${escapeText(line)}</text>`;
     });
@@ -159,7 +159,7 @@ async function buildWarDecksImage(warDecks) {
     return {
       buffer: Buffer.from(pngData.asPng()),
       mimeType: "image/png",
-      filename: "tension-decks.png",
+      filename: "matchup-decks.png",
     };
   } catch (err) {
     console.error("Resvg a échoué pour l'image de deck :", err?.message || err);

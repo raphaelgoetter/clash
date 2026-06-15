@@ -21,7 +21,7 @@ import {
 } from "../../backend/services/collectionConstants.js";
 import {
   summarizeWarDecks,
-  summarizeWarDecksForTension,
+  summarizeWarDecksForMatchup,
 } from "../../backend/services/analysisService.js";
 
 const _require = createRequire(import.meta.url);
@@ -374,7 +374,7 @@ function formatWarDecksField(warDecks) {
           ? match.opponentTourLevel
           : "?",
         score: match.score || "?",
-        tension: match.tension,
+        matchup: match.matchup,
         result: match.result,
       });
       group.decks.set(deckLabel, deckGroup);
@@ -401,11 +401,11 @@ function formatWarDecksField(warDecks) {
         .slice(0, maxMatchesPerDeck)
         .entries()) {
         const resultEmoji = match.result === "win" ? "✅" : "❌";
-        const tension = Number.isFinite(match.tension)
-          ? `${Math.round(match.tension * 100)}%`
+        const matchup = Number.isFinite(match.matchup)
+          ? `${Math.round(match.matchup * 100)}%`
           : "?";
         lines.push(
-          `• ${deckLabel} #${matchIndex + 1} : <:members:1506175789731811399> ${match.opponentName} · <:tower:1515395461140447342> ${match.opponentTourLevel} · ${resultEmoji} ${match.score} · <:warn:1506174837519945800> ${tension}`,
+          `• ${deckLabel} #${matchIndex + 1} : <:members:1506175789731811399> ${match.opponentName} · <:tower:1515395461140447342> ${match.opponentTourLevel} · ${resultEmoji} ${match.score} · <:warn:1506174837519945800> ${matchup}`,
         );
       }
     }

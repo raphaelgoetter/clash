@@ -30,7 +30,7 @@ import {
 import { getOrSet } from "../../backend/services/cache.js";
 import {
   summarizeWarDecks,
-  summarizeWarDecksForTension,
+  summarizeWarDecksForMatchup,
 } from "../../backend/services/analysisService.js";
 import { loadClanCache } from "../../backend/services/clanCache.js";
 
@@ -212,7 +212,7 @@ const CARD_ICON_CACHE = new Map();
 const TAG_AUTOCOMPLETE_COMMANDS = new Set([
   "trust",
   "stats",
-  "tension",
+  "matchup",
   "collection",
 ]);
 const TAG_NAME_CACHE_TTL = 6 * 60 * 60 * 1000;
@@ -680,10 +680,10 @@ async function buildWarDecksImage(warDecks) {
         match.result === "win"
           ? "<:success:1499002702208958577>"
           : "<:error:1499002755841265826>";
-      const tension = Number.isFinite(match.tension)
-        ? `${Math.round(match.tension * 100)}%`
+      const matchup = Number.isFinite(match.matchup)
+        ? `${Math.round(match.matchup * 100)}%`
         : "?";
-      const line = `- 👥 ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultIcon} ${score} ⚡ ${tension}`;
+      const line = `- 👥 ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultIcon} ${score} ⚡ ${matchup}`;
       const lineY = labelY + 12 + index * textLineHeight;
       return `<text x="${padding}" y="${lineY}" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#e2e8f0">${escapeText(line)}</text>`;
     });
@@ -710,7 +710,7 @@ async function buildWarDecksImage(warDecks) {
     return {
       buffer: Buffer.from(pngData.asPng()),
       mimeType: "image/png",
-      filename: "tension-decks.png",
+      filename: "matchup-decks.png",
     };
   } catch (err) {
     console.error("Resvg a échoué pour l'image de deck :", err?.message || err);
@@ -718,18 +718,18 @@ async function buildWarDecksImage(warDecks) {
   }
 }
 
-function computeAverageTensionFromWarDecks(warDecks) {
+function computeAverageMatchupFromWarDecks(warDecks) {
   if (!Array.isArray(warDecks)) return null;
-  const tensions = [];
+  const matchups = [];
   for (const deck of warDecks) {
     for (const match of Array.isArray(deck.matches) ? deck.matches : []) {
-      if (Number.isFinite(match.tension)) {
-        tensions.push(match.tension);
+      if (Number.isFinite(match.matchup)) {
+        matchups.push(match.matchup);
       }
     }
   }
-  if (tensions.length === 0) return null;
-  return tensions.reduce((sum, tension) => sum + tension, 0) / tensions.length;
+  if (matchups.length === 0) return null;
+  return matchups.reduce((sum, matchup) => sum + matchup, 0) / matchups.length;
 }
 
 function buildWarDecksTextFallbackImage(warDecks) {
@@ -787,11 +787,11 @@ function buildWarDecksTextFallbackImage(warDecks) {
               match.result === "win"
                 ? "<:success:1499002702208958577>"
                 : "<:error:1499002755841265826>";
-            const tension = Number.isFinite(match.tension)
-              ? `${Math.round(match.tension * 100)}%`
+            const matchup = Number.isFinite(match.matchup)
+              ? `${Math.round(match.matchup * 100)}%`
               : "?";
             lines.push(
-              `• ${deckGroup.label} #${innerIndex + 1} : <:members:1506175789731811399> ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultIcon} ${escapeText(match.score || "?")} ⚡ ${tension}`,
+              `• ${deckGroup.label} #${innerIndex + 1} : <:members:1506175789731811399> ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultIcon} ${escapeText(match.score || "?")} ⚡ ${matchup}`,
             );
           }
         }
@@ -824,7 +824,7 @@ function buildWarDecksTextFallbackImage(warDecks) {
     return {
       buffer: Buffer.from(pngData.asPng()),
       mimeType: "image/png",
-      filename: "tension-decks-fallback.png",
+      filename: "matchup-decks-fallback.png",
     };
   } catch (err) {
     console.error("Resvg fallback a échoué :", err?.message || err);
@@ -842,7 +842,7 @@ async function sendDiscordWebhookEmbedWithImage(webhookUrl, embed, image) {
       });
     }
 
-    const filename = image.filename || "tension-decks.png";
+    const filename = image.filename || "matchup-decks.png";
     const contentType = image.mimeType || "image/png";
     const form = new FormData();
     if (embed?.description) {
@@ -867,7 +867,7 @@ async function sendDiscordWebhookEmbedWithImage(webhookUrl, embed, image) {
 
 async function sendDiscordWebhookFile(webhookUrl, image, options = {}) {
   try {
-    const filename = image.filename || "tension-decks.png";
+    const filename = image.filename || "matchup-decks.png";
     const contentType = image.mimeType || "image/png";
     const form = new FormData();
     const payload = {};
@@ -1027,15 +1027,15 @@ function formatWarDecksField(warDecks) {
               ? "<:success:1499002702208958577>"
               : "<:error:1499002755841265826>";
           const score = escapeText(match.score || "?");
-          const tension = Number.isFinite(match.tension)
-            ? `${Math.round(match.tension * 100)}%`
+          const matchup = Number.isFinite(match.matchup)
+            ? `${Math.round(match.matchup * 100)}%`
             : "?";
           const typeLabel = getWarMatchTypeLabel(match.type);
           const displayLabelWithType = [displayDeckLabel, typeLabel]
             .filter(Boolean)
             .join(" ");
           groupLines.push(
-            `• ${displayLabelWithType} : <:members:1506175789731811399> ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultEmoji} ${score} ⚡ ${tension}`,
+            `• ${displayLabelWithType} : <:members:1506175789731811399> ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultEmoji} ${score} ⚡ ${matchup}`,
           );
         });
     }
@@ -2363,16 +2363,16 @@ export default async function handler(req, res) {
           });
         }
 
-        if (analysis.tension?.average != null) {
+        if (analysis.matchup?.average != null) {
           fields.splice(1, 0, {
-            name: "Tension moyenne :",
-            value: `⚡ ${Math.round(analysis.tension.average * 100)}%`,
+            name: "Matchup moyen :",
+            value: `⚡ ${Math.round(analysis.matchup.average * 100)}%`,
             inline: false,
           });
         }
 
         if (warDecksField) {
-          // /stats ne doit plus afficher les decks GDC, ce bloc est réservé à /tension.
+          // /stats ne doit plus afficher les decks GDC, ce bloc est réservé à /matchup.
         }
 
         const discordLinks = await getDiscordLinks();
@@ -2411,8 +2411,8 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Commande /tension
-  if (body.type === 2 && body.data?.name === "tension") {
+  // Commande /matchup
+  if (body.type === 2 && body.data?.name === "matchup") {
     const tagOption = body.data.options?.find((o) => o.name === "tag");
     const rawTag = tagOption?.value?.trim();
     if (!rawTag) {
@@ -2427,7 +2427,7 @@ export default async function handler(req, res) {
 
     const webhookUrl = buildDiscordWebhookUrl(body);
     if (!webhookUrl) {
-      console.error("Discord webhook URL non construite pour /tension");
+      console.error("Discord webhook URL non construite pour /matchup");
       return res.status(200).json({
         type: 4,
         data: {
@@ -2474,7 +2474,7 @@ export default async function handler(req, res) {
               battleLog ?? [],
               tag,
             );
-            warDecks = summarizeWarDecksForTension(
+            warDecks = summarizeWarDecksForMatchup(
               battleLog ?? [],
               64,
               null,
@@ -2492,7 +2492,7 @@ export default async function handler(req, res) {
               analysis.battleLog ?? [],
               tag,
             );
-            warDecks = summarizeWarDecksForTension(
+            warDecks = summarizeWarDecksForMatchup(
               analysis.battleLog ?? [],
               64,
               null,
@@ -2500,7 +2500,7 @@ export default async function handler(req, res) {
               {
                 playerWinRate: analysis.activityIndicators?.winRate,
                 playerCollectionLevel: analysis.overview?.collectionLevel,
-                playerCw2Wins: analysis.overview?.clanWarWins,
+                playerCw2Wins: analysis.overview.clanWarWins,
                 playerTrophies: analysis.overview?.trophies,
                 opponentStatsByTag,
               },
@@ -2511,7 +2511,7 @@ export default async function handler(req, res) {
             analysis.battleLog ?? [],
             tag,
           );
-          warDecks = summarizeWarDecksForTension(
+          warDecks = summarizeWarDecksForMatchup(
             analysis.battleLog ?? [],
             64,
             null,
@@ -2553,19 +2553,19 @@ export default async function handler(req, res) {
           });
         }
 
-        const displayedAverageTensionValue =
-          computeAverageTensionFromWarDecks(warDecks);
-        const averageTensionValue = Number.isFinite(
-          displayedAverageTensionValue,
+        const displayedAverageMatchupValue =
+          computeAverageMatchupFromWarDecks(warDecks);
+        const averageMatchupValue = Number.isFinite(
+          displayedAverageMatchupValue,
         )
-          ? displayedAverageTensionValue
-          : analysis.tension?.average;
-        const averageTension = Number.isFinite(averageTensionValue)
-          ? `${Math.round(averageTensionValue * 100)}%`
+          ? displayedAverageMatchupValue
+          : analysis.matchup?.average;
+        const averageMatchup = Number.isFinite(averageMatchupValue)
+          ? `${Math.round(averageMatchupValue * 100)}%`
           : null;
-        const title = averageTension
-          ? `⚡ Tension GDC · ${analysis.overview.name} : ${averageTension}`
-          : `⚡ Tension GDC · ${analysis.overview.name}`;
+        const title = averageMatchup
+          ? `⚡ Matchup GDC · ${analysis.overview.name} : ${averageMatchup}`
+          : `⚡ Matchup GDC · ${analysis.overview.name}`;
         const dataEmbed = {
           title,
           url: trustPlayerUrl(tag),
@@ -2579,7 +2579,7 @@ export default async function handler(req, res) {
           const embedWithImage = {
             ...dataEmbed,
             image: {
-              url: `attachment://${deckImage.filename || "tension-decks.png"}`,
+              url: `attachment://${deckImage.filename || "matchup-decks.png"}`,
             },
           };
 
@@ -2623,7 +2623,7 @@ export default async function handler(req, res) {
           }
         } else {
           console.log(
-            "No deckImage generated for /tension, sending embed only",
+            "No deckImage generated for /matchup, sending embed only",
           );
           const textResponse = await fetch(webhookUrl, {
             method: "POST",
@@ -2641,8 +2641,8 @@ export default async function handler(req, res) {
               responseText,
             );
             const fallbackText = warDecksField
-              ? `Tension moyenne : ${averageTension ?? "N/A"}\n\n${warDecksField}`
-              : `Tension moyenne : ${averageTension ?? "N/A"}`;
+              ? `Matchup moyen : ${averageMatchup ?? "N/A"}\n\n${warDecksField}`
+              : `Matchup moyen : ${averageMatchup ?? "N/A"}`;
             const safeFallback =
               fallbackText.length > 1900
                 ? `${fallbackText.slice(0, 1897)}...`
