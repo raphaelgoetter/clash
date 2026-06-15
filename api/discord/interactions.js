@@ -675,6 +675,20 @@ async function buildWarDecksImage(warDecks) {
   }
 }
 
+function computeAverageTensionFromWarDecks(warDecks) {
+  if (!Array.isArray(warDecks)) return null;
+  const tensions = [];
+  for (const deck of warDecks) {
+    for (const match of Array.isArray(deck.matches) ? deck.matches : []) {
+      if (Number.isFinite(match.tension)) {
+        tensions.push(match.tension);
+      }
+    }
+  }
+  if (tensions.length === 0) return null;
+  return tensions.reduce((sum, tension) => sum + tension, 0) / tensions.length;
+}
+
 function buildWarDecksTextFallbackImage(warDecks) {
   const lines = [];
   if (!Array.isArray(warDecks) || warDecks.length === 0) {
@@ -2463,8 +2477,15 @@ export default async function handler(req, res) {
           });
         }
 
-        const averageTension = Number.isFinite(analysis.tension?.average)
-          ? `${Math.round(analysis.tension.average * 100)}%`
+        const displayedAverageTensionValue =
+          computeAverageTensionFromWarDecks(warDecks);
+        const averageTensionValue = Number.isFinite(
+          displayedAverageTensionValue,
+        )
+          ? displayedAverageTensionValue
+          : analysis.tension?.average;
+        const averageTension = Number.isFinite(averageTensionValue)
+          ? `${Math.round(averageTensionValue * 100)}%`
           : null;
         const title = averageTension
           ? `⚡ Tension GDC · ${analysis.overview.name} : ${averageTension}`
