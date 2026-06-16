@@ -2534,7 +2534,7 @@ export default async function handler(req, res) {
           fields.push({
             name: "Aucune donnée GDC :",
             value:
-              "Aucune donnée de match GDC trouvée dans le battlelog. Vérifiez que le joueur a des combats récents en guerre.",
+              "Aucune donnée de match GDC trouvée dans le battlelog (25 derniers combats). Vérifiez que le joueur a des combats récents en guerre.",
             inline: false,
           });
         } else if (!warDecksField) {
