@@ -20,6 +20,8 @@
     "war-summary:dry": "node scripts/notifyWarSummary.js --dry-run",
     "pre-war-summary": "node scripts/notifyPreWarSummary.js",
     "pre-war-summary:dry": "node scripts/notifyPreWarSummary.js --dry-run",
+    "gdc-launch": "node scripts/notifyGdcLaunch.js",
+    "gdc-launch:dry": "node scripts/notifyGdcLaunch.js --dry-run",
     "cache": "node scripts/refreshClanCache.js",
     "prebuild": "npm run cache",
     "cache:clear": "rm -f frontend/public/clan-cache/*.json",

@@ -1,0 +1,42 @@
+name: GDC Launch Announcement
+
+permissions:
+  contents: write
+
+on:
+  schedule:
+    # 07:00 UTC = 08:00 CET / 09:00 CEST — jeudi matin, avant le début de la GDC
+    - cron: "0 7 * * 4"
+  workflow_dispatch:
+
+jobs:
+  post-announcement:
+    runs-on: ubuntu-latest
+    env:
+      CLASH_API_KEY: ${{ secrets.CLASH_API_KEY }}
+      DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+      DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+      DISCORD_CHANNEL_MEMBERS_LRQP20V9: ${{ secrets.DISCORD_CHANNEL_MEMBERS_LRQP20V9 }}
+      DISCORD_CHANNEL_MEMBERS_QU9UQJRL: ${{ secrets.DISCORD_CHANNEL_MEMBERS_QU9UQJRL }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Post GDC launch announcement
+        run: node scripts/notifyGdcLaunch.js
+
+      - name: Commit dedup log
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/gdc-launch-log.json || true
+          git diff --cached --quiet || git commit -m "chore: mise à jour log lancement GDC"
+          git push || true
