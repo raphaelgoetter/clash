@@ -8,9 +8,9 @@
 // Guerre de Clans (GDC).
 //
 // Clans ciblés :
+//   Y8JUPC9C — La Resistance
 //   LRQP20V9 — Les Resistants
 //   QU9UQJRL — Les Revoltes
-//   (Y8JUPC9C — La Resistance, à décommenter quand souhaité)
 //
 // Fonctionnement :
 //   1. Vérifie le log de déduplication (data/gdc-launch-log.json)
@@ -32,7 +32,7 @@
 //
 // Dépendances env :
 //   DISCORD_TOKEN, DISCORD_GUILD_ID
-//   DISCORD_CHANNEL_MEMBERS_LRQP20V9, DISCORD_CHANNEL_MEMBERS_QU9UQJRL
+//   DISCORD_CHANNEL_MEMBERS_Y8JUPC9C, DISCORD_CHANNEL_MEMBERS_LRQP20V9, DISCORD_CHANNEL_MEMBERS_QU9UQJRL
 //   CLASH_API_KEY
 //
 // Log de déduplication : data/gdc-launch-log.json
@@ -54,10 +54,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // ── Constants ──────────────────────────────────────────────────
 
 const DISCORD_API = "https://discord.com/api/v10";
-const CLAN_TAGS = ["LRQP20V9", "QU9UQJRL"];
+const CLAN_TAGS = ["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"];
 const LOG_FILE = path.resolve(__dirname, "..", "data", "gdc-launch-log.json");
 
 const CLAN_ROLE_NAMES = {
+  Y8JUPC9C: "LA RESISTANCE ★",
   LRQP20V9: "LES RESISTANTS ★",
   QU9UQJRL: "LES REVOLTES ★",
 };
@@ -85,6 +86,27 @@ Détails pratiques :
 - Durée de la GDC : 4 jours
 - Nombre de combats : 4 combats par jour (soit 16 combats sur la durée de la GDC)
 - Promotion si 2600pts marqués ou plus sur la durée de la GDC
+
+🤜 **Bonne chance à tous !**`;
+
+const RESISTANCE_BODY =
+`**La Guerre de Clans commence !** 🔥
+
+⚔️ La GDC commence aujourd'hui ! Les combats dans notre clan sont **OBLIGATOIRES** chaque jour. Une absence de combat sera sanctionnée par une rétrogradation ou une orientation vers nos clans chill.
+{colosseum}
+😴 **Indisponibilité ?** ⤑ Prévenez sur <#881862784059592704>
+
+🎯 L'objectif n'est pas de gagner tous ses combats, "juste" de faire ses 4 combats chaque jour, car **tous les combats comptent pour le clan**. Un combat même perdu rapporte des points !
+
+📊 On peut suivre la progression de notre clan au quotidien sur ⤑ <https://trustroyale.vercel.app>
+
+Détails pratiques :
+
+- Début de la GDC : jeudi à {resetTime}
+- Fin de la GDC : lundi à {resetTime}
+- Durée de la GDC : 4 jours
+- Nombre de combats : 4 combats par jour (soit 16 combats sur la durée de la GDC)
+- Promotion si tous les combats faits sur une saison entière
 
 🤜 **Bonne chance à tous !**`;
 
@@ -205,8 +227,14 @@ function getWeekKey() {
 
 // ── Build message ──────────────────────────────────────────────
 
+const CLAN_TEMPLATES = {
+  Y8JUPC9C: RESISTANCE_BODY,
+  LRQP20V9: RESISTANTS_BODY,
+  QU9UQJRL: REVOLTES_BODY,
+};
+
 function buildMessageBody(clanTag, isColosseum, resetTime) {
-  const template = clanTag === "LRQP20V9" ? RESISTANTS_BODY : REVOLTES_BODY;
+  const template = CLAN_TEMPLATES[clanTag] ?? REVOLTES_BODY;
   const colosseumBlock = isColosseum ? COLOSSEUM_SECTION + "\n" : "";
   return template
     .replace("{colosseum}", colosseumBlock)
