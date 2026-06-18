@@ -142,6 +142,8 @@ export function analyzePlayer(
       role: player.role ?? null,
       clanWarWins:
         player.badges?.find((b) => b.name === "ClanWarWins")?.progress ?? 0,
+      yearsPlayed:
+        player.badges?.find((b) => b.name === "YearsPlayed")?.progress ?? null,
       collectionLevel: allCardsCol.length > 0 ? collectionLevel : null,
     },
     collection:

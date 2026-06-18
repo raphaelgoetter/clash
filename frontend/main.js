@@ -1393,6 +1393,12 @@ function renderPlayerResults(data) {
     { label: t("labelTag"), value: overview.tag, link: playerLink },
     { label: t("labelClan"), value: clanValue, link: clanLink },
     {
+      label: t("labelYearsPlayed"),
+      value: overview.yearsPlayed != null
+        ? (overview.yearsPlayed / 365).toFixed(1) + " ans"
+        : "-",
+    },
+    {
       label: t("labelTrophies"),
       value: `🏆 ${fmt(overview.trophies)}`,
       risk:
