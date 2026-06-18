@@ -2547,10 +2547,12 @@ export default async function handler(req, res) {
 
         const displayedAverageMatchupValue =
           computeAverageMatchupFromWarDecks(warDecks);
-        const averageMatchupValue = Number.isFinite(analysis.matchup?.average)
-          ? analysis.matchup.average
-          : Number.isFinite(displayedAverageMatchupValue)
-            ? displayedAverageMatchupValue
+        const averageMatchupValue = Number.isFinite(
+          displayedAverageMatchupValue,
+        )
+          ? displayedAverageMatchupValue
+          : Number.isFinite(analysis.matchup?.average)
+            ? analysis.matchup.average
             : null;
         const averageMatchup = Number.isFinite(averageMatchupValue)
           ? `${Math.round(averageMatchupValue * 100)}%`
