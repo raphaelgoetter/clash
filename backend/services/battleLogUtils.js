@@ -625,8 +625,7 @@ export function summarizeWarDecksForMatchup(
         options.opponentStatsByTag?.[opponentTag] ??
         null)
       : null;
-    const opponentTourLevel = opponentMeta?.collection?.tourLevel
-      ?? computeBattleTourLevel(oppEntry);
+    const opponentTourLevel = computeBattleTourLevel(oppEntry);
     const matchupOptions = { ...options, opponentTourLevel };
     if (opponentMeta) {
       matchupOptions.opponentWinRate =
