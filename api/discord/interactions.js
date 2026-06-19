@@ -2561,7 +2561,7 @@ export default async function handler(req, res) {
           ? `⚡ Matchup GDC · ${analysis.overview.name} : ${averageMatchup}`
           : `⚡ Matchup GDC · ${analysis.overview.name}`;
         const matchupLinkField = {
-          name: "Comprendre le calcul de matchup",
+          name: "Le ⚡% correspond à la difficulté de l'affrontement. Comprendre le calcu :",
           value: "https://trustroyale.vercel.app/bot/#matchup",
           inline: false,
         };
