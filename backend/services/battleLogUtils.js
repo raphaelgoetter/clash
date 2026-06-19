@@ -6,7 +6,6 @@
 import { parseClashDate, MS_PER_DAY, warDayKey } from "./dateUtils.js";
 import {
   normLevel,
-  computeTourLevel,
   countEvolved,
   countHeroes,
 } from "./collectionConstants.js";
@@ -228,25 +227,6 @@ function estimateTowerLevelFromHp(hp) {
   return null;
 }
 
-function estimateTourLevelFromPartialCards(allCards) {
-  const norms = allCards
-    .map((card) => normLevel(card))
-    .filter((level) => Number.isFinite(level) && level > 0);
-  if (norms.length === 0) return null;
-
-  const avgNorm = norms.reduce((sum, level) => sum + level, 0) / norms.length;
-  if (avgNorm >= 23) return 15;
-  if (avgNorm >= 22) return 14;
-  if (avgNorm >= 21) return 13;
-  if (avgNorm >= 20) return 12;
-  if (avgNorm >= 19) return 11;
-  if (avgNorm >= 18) return 10;
-  if (avgNorm >= 17) return 9;
-  if (avgNorm >= 16) return 8;
-  if (avgNorm >= 15) return 7;
-  return 6;
-}
-
 function computeBattleTourLevel(entry) {
   const rounds = Array.isArray(entry?.rounds) ? entry.rounds : [];
   if (rounds.length > 0) {
@@ -267,10 +247,6 @@ function computeBattleTourLevel(entry) {
   const hpLevel = estimateTowerLevelFromHp(kingTowerHp);
   if (hpLevel) return hpLevel;
 
-  const cards = Array.isArray(entry?.cards) ? entry.cards : [];
-
-  if (cards.length >= 16) return computeTourLevel(cards);
-  if (cards.length >= 8) return estimateTourLevelFromPartialCards(cards);
   return null;
 }
 
