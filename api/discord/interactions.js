@@ -5038,7 +5038,7 @@ export default async function handler(req, res) {
     runBackground(async () => {
       try {
         const apiResp = await fetch(
-          `https://trustroyale.vercel.app/api/player/${encodeURIComponent(tag)}`,
+          `https://trustroyale.vercel.app/api/player/${encodeURIComponent(tag)}/analysis?fast=true`,
           { headers: { Accept: "application/json" } },
         );
 
@@ -5055,58 +5055,45 @@ export default async function handler(req, res) {
           return;
         }
 
-        const player = await apiResp.json();
+        const analysis = await apiResp.json();
+        const col = analysis.collection;
 
-        // Conditions pour atteindre chaque niveau de Tour du Roi (nouveau système)
-        const TOUR_REQUIREMENTS = TOUR_REQ;
+        if (!col) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: "Données de collection non disponibles.",
+              flags: 64,
+            }),
+          });
+          return;
+        }
 
-        const baseCards = player.cards ?? [];
-        // supportCards = toutes les troupes de tour débloquées (pas seulement l'équipée)
-        const towerTroops = player.supportCards ?? [];
-        const allCards = [...baseCards, ...towerTroops];
+        const tourLevel = col.tourLevel;
+        const collectionLevel = col.collectionLevel;
 
         // Distribution des niveaux normalisés
-        const dist = {};
-        for (const card of allCards) {
-          const lvl = normLevel(card);
-          dist[lvl] = (dist[lvl] ?? 0) + 1;
-        }
-        const sortedLevels = Object.keys(dist)
-          .map(Number)
-          .sort((a, b) => b - a);
-
-        // Somme des niveaux normalisés
-        const sumNormLevels = allCards.reduce((s, c) => s + normLevel(c), 0);
-
-        // Tower troops exclus des évolutions et héros (ils ne peuvent pas être évolués)
-        const evolvedCount = countEvolved(baseCards);
-        const heroCount = countHeroes(baseCards);
-
-        // Niveau de Collection = Σ niveaux normalisés + 5 × évolutions + 5 × héros
-        const collectionLevel =
-          sumNormLevels + 5 * evolvedCount + 5 * heroCount;
-
-        // Niveau de Tour du Roi calculé depuis le profil complet du joueur.
-        const tourLevel = computeTourLevel(allCards);
+        const distEntries = Object.entries(col.distribution ?? {})
+          .map(([k, v]) => [Number(k), v])
+          .sort((a, b) => b[0] - a[0]);
+        const sortedLevels = distEntries.map(([k]) => k);
 
         // Texte footer : prochain niveau de tour
         let tourFooter;
-        if (tourLevel >= 16) {
+        if (!col.tourNextInfo) {
           tourFooter = "Tour du Roi maximale !";
         } else {
-          const nextReq = TOUR_REQUIREMENTS[tourLevel + 1];
-          const have = allCards.filter(
-            (c) => normLevel(c) >= nextReq.level,
-          ).length;
-          const missing = nextReq.cards - have;
-          tourFooter = `Prochain niveau de tour : manque ${missing} carte${missing > 1 ? "s" : ""} niveau ${nextReq.level}+`;
+          const { missing, level } = col.tourNextInfo;
+          const plural = missing > 1 ? "s" : "";
+          tourFooter = `Prochain niveau de tour : manque ${missing} carte${plural} niveau ${level}+`;
         }
 
         // Formatage de la distribution (4 niveaux par ligne)
         const distLines = [];
         for (let i = 0; i < sortedLevels.length; i += 4) {
           const row = sortedLevels.slice(i, i + 4).map((lvl) => {
-            const count = dist[lvl];
+            const count = col.distribution[lvl];
             return `Niv${lvl}: ${count}`;
           });
           distLines.push(row.join("   "));
@@ -5151,17 +5138,17 @@ export default async function handler(req, res) {
           // Ligne 1 : cartes | évolutions | héros
           {
             name: "Cartes :",
-            value: `${allCards.length} / ${TOTAL_CARDS}`,
+            value: `${col.cardCount} / ${col.totals.cards}`,
             inline: true,
           },
           {
             name: "Évolutions :",
-            value: `${evolvedCount} / ${TOTAL_EVOLUTIONS}`,
+            value: `${col.evolvedCount} / ${col.totals.evolutions}`,
             inline: true,
           },
           {
             name: "Héros :",
-            value: `${heroCount} / ${TOTAL_HEROES}`,
+            value: `${col.heroCount} / ${col.totals.heroes}`,
             inline: true,
           },
           // Ligne 2 : tour du roi | niveau de collection
@@ -5190,7 +5177,7 @@ export default async function handler(req, res) {
         ];
 
         const embed = {
-          title: `📦 Collection : ${player.name}`,
+          title: `📦 Collection : ${analysis.overview.name}`,
           url: trustPlayerUrl(tag),
           color: 0xf1c40f,
           fields,

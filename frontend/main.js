@@ -1409,6 +1409,13 @@ function renderPlayerResults(data) {
             : null,
     },
     {
+      label: t("labelKingTower"),
+      value:
+        data.collection?.tourLevel != null
+          ? `Niveau ${data.collection.tourLevel}`
+          : "-",
+    },
+    {
       label: t("labelCollectionLevel"),
       value:
         overview.collectionLevel != null ? fmt(overview.collectionLevel) : "-",
