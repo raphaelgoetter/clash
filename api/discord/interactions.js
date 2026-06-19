@@ -4677,7 +4677,6 @@ export default async function handler(req, res) {
         }
 
         const embed = {
-          title: "GDC : Soldat, il te reste des decks à jouer !",
           description,
           color: 0xe67e22,
           footer: {
@@ -4696,8 +4695,10 @@ export default async function handler(req, res) {
         const mentionLine = Array.from(mentionIds)
           .map((id) => `<@${id}>`)
           .join(" ");
+        const contentParts = ["GDC : Soldat, il te reste des decks à jouer !"];
+        if (mentionLine) contentParts.push(mentionLine);
         await sendToWebhook({
-          content: mentionLine || undefined,
+          content: contentParts.join("\n"),
           embeds: [embed],
           allowed_mentions: { parse: [], users: Array.from(mentionIds) },
         });
