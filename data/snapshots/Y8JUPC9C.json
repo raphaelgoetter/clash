@@ -11078,7 +11078,7 @@
           "start": "2026-06-19T09:42:00.000Z",
           "end": "2026-06-20T09:41:59.999Z"
         },
-        "snapshotTime": "2026-06-19T21:25:07.672Z",
+        "snapshotTime": "2026-06-19T22:20:19.299Z",
         "snapshotBackupTime": null,
         "decks": {
           "#2902YQRQL": 4,
@@ -11092,6 +11092,7 @@
           "#8P29RRU2": 4,
           "#8PJ20UQCC": 4,
           "#8PP9JQCLY": 4,
+          "#8V98QYY8V": 4,
           "#90G00QJLG": 4,
           "#9CQC0YUR8": 4,
           "#9GG9GRC0G": 4,
@@ -11114,8 +11115,8 @@
           "#U008V0PQ8": 4,
           "#VVJ8RURL9": 4,
           "#YRYPUR822": 4,
+          "#PG0Q0YYGY": 3,
           "#99VY0090": 2,
-          "#PG0Q0YYGY": 2,
           "#UJ89GUUUY": 2,
           "#VLUYR88Y8": 2,
           "#888Y29GY": 1
@@ -11163,11 +11164,11 @@
           "#C2RL8UVYV": 1150,
           "#2CL028C80": 600,
           "#GVGVR0J2U": 1400,
-          "#PG0Q0YYGY": 850,
+          "#PG0Q0YYGY": 950,
           "#8QL2J8PQ": 650,
           "#GLR2YLQ2U": 1150,
           "#8PJ20UQCC": 1300,
-          "#8V98QYY8V": 700,
+          "#8V98QYY8V": 1350,
           "#99VY0090": 900,
           "#UYP0YCQ9": 700,
           "#QUGLYCJ0U": 1400,
@@ -11225,7 +11226,8 @@
           "#809G8YC8": 1,
           "#PG0Q0YYGY": 1,
           "#U008V0PQ8": 1,
-          "#2902YQRQL": 1
+          "#2902YQRQL": 1,
+          "#8V98QYY8V": 1
         },
         "duelsComplete": true,
         "periodType": "warDay",
@@ -11271,11 +11273,11 @@
           "#C2RL8UVYV": 8,
           "#2CL028C80": 4,
           "#GVGVR0J2U": 8,
-          "#PG0Q0YYGY": 6,
+          "#PG0Q0YYGY": 7,
           "#8QL2J8PQ": 4,
           "#GLR2YLQ2U": 8,
           "#8PJ20UQCC": 8,
-          "#8V98QYY8V": 4,
+          "#8V98QYY8V": 8,
           "#99VY0090": 6,
           "#UYP0YCQ9": 4,
           "#QUGLYCJ0U": 8,
@@ -11299,7 +11301,7 @@
           "#VVJ8RURL9": 8,
           "#9Q920V9U": 8
         },
-        "snapshotCount": 141
+        "snapshotCount": 146
       },
       {
         "warDay": "saturday",
