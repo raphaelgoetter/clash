@@ -268,13 +268,9 @@ function computeBattleTourLevel(entry) {
   if (hpLevel) return hpLevel;
 
   const cards = Array.isArray(entry?.cards) ? entry.cards : [];
-  const supportCards = Array.isArray(entry?.supportCards)
-    ? entry.supportCards
-    : [];
-  const allCards = [...cards, ...supportCards];
 
-  if (allCards.length >= 16) return computeTourLevel(allCards);
-  if (allCards.length >= 8) return estimateTourLevelFromPartialCards(allCards);
+  if (cards.length >= 16) return computeTourLevel(cards);
+  if (cards.length >= 8) return estimateTourLevelFromPartialCards(cards);
   return null;
 }
 

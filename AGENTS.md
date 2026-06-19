@@ -166,6 +166,16 @@ node scripts/registerCommands.js
 | `/compare clan:N`                   | Affiche les clans du groupe GDC (membres, trophées, score, dernière GDC)  |
 | `/clan clan:N\|tag:#TAG`            | Affiche la fiche récapitulative d'un clan (famille ou tag libre)          |
 
+## Sources de vérité — règle absolue
+
+**Avant de modifier ou d'implémenter une formule de scoring, un calcul de niveau, ou toute logique métier, consulter d'abord `CONTRIBUTING.md`** à la racine du projet. Ce document est la source de vérité unique pour :
+- les formules de score (fiabilité, matchup, projection GDC)
+- le calcul du niveau de Tour du Roi
+- les paliers de ligue, les barèmes de points, les seuils de verdict
+- toute règle métier documentée
+
+Ne pas deviner ou inventer les formules. Toujours vérifier dans `CONTRIBUTING.md` avant de coder.
+
 ## Sous-agents
 
 Utiliser des **sous-agents** (Task tool) par défaut pour toute opération dont seul le résumé compte : exploration de code, recherche, revue, investigation. Ne pas encombrer la conversation principale.

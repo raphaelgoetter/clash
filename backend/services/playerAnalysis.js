@@ -96,7 +96,7 @@ export function analyzePlayer(
   // supportCards = toutes les troupes de tour débloquées (pas seulement l'équipée)
   const towerTroopsCol = player.supportCards ?? [];
   const allCardsCol = [...baseCardsCol, ...towerTroopsCol];
-  const tourLevel = computeTourLevel(allCardsCol);
+  const tourLevel = computeTourLevel(baseCardsCol);
 
   const matchupAverage = computeMatchupFromBattleLog(battleLog, {
     playerTourLevel: tourLevel,
@@ -113,7 +113,7 @@ export function analyzePlayer(
   const nextTourLevel = Math.min(tourLevel + 1, TOUR_REQ.length - 1);
   const nextTourReq = TOUR_REQ[nextTourLevel] ?? null;
   if (nextTourReq && tourLevel < nextTourLevel) {
-    const have = allCardsCol.filter(
+    const have = baseCardsCol.filter(
       (c) => normLevel(c) >= nextTourReq.level,
     ).length;
     tourNextInfo = {

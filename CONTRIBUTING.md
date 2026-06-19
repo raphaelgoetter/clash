@@ -162,8 +162,8 @@ Tension combat (%) = clamp(50 + total, 0, 100)
 Le niveau de Tour du Roi n'est pas un champ livré directement par l'API Clash Royale. Il est reconstruit dans la commande `/collection` à partir du profil du joueur.
 
 - Source de vérité : `backend/services/collectionConstants.js`
-- Fonction : `computeTourLevel(allCardsCol)`
-- Entrée : `player.cards` + `player.supportCards`
+- Fonction : `computeTourLevel(baseCardsCol)`
+- Entrée : `player.cards` uniquement (les troupes de tour `supportCards` sont exclues)
 - Usage : `/collection` affiche `Niveau ${tourLevel}` et le backend réutilise ce même calcul pour les analyses de joueurs.
 
 Cette fonction doit rester la source de vérité pour connaître rapidement le niveau de tour d'un joueur.
