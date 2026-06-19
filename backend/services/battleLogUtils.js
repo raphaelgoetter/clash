@@ -248,6 +248,19 @@ function estimateTourLevelFromPartialCards(allCards) {
 }
 
 function computeBattleTourLevel(entry) {
+  const rounds = Array.isArray(entry?.rounds) ? entry.rounds : [];
+  if (rounds.length > 0) {
+    const maxHp = Math.max(
+      ...rounds
+        .map((r) => Number(r.kingTowerHitPoints ?? r.kingTowerHP ?? 0))
+        .filter((hp) => Number.isFinite(hp) && hp > 0),
+    );
+    if (Number.isFinite(maxHp) && maxHp > 0) {
+      const hpLevel = estimateTowerLevelFromHp(maxHp);
+      if (hpLevel) return hpLevel;
+    }
+  }
+
   const kingTowerHp = Number(
     entry?.kingTowerHitPoints ?? entry?.kingTowerHP ?? 0,
   );
@@ -611,12 +624,13 @@ export function summarizeWarDecksForMatchup(
     if (!deckChunks.length) continue;
 
     const opponentTag = getOpponentTag(battle);
-    const opponentTourLevel = computeBattleTourLevel(oppEntry);
     const opponentMeta = opponentTag
       ? (options.opponentStatsByTag?.get?.(opponentTag) ??
         options.opponentStatsByTag?.[opponentTag] ??
         null)
       : null;
+    const opponentTourLevel = opponentMeta?.collection?.tourLevel
+      ?? computeBattleTourLevel(oppEntry);
     const matchupOptions = { ...options, opponentTourLevel };
     if (opponentMeta) {
       matchupOptions.opponentWinRate =
