@@ -3930,10 +3930,10 @@ export default async function handler(req, res) {
                 Number.isFinite(player.arrivalWeeks) &&
                 player.arrivalWeeks <= 1;
               const newTag = isNew ? " 🆕" : "";
-              return `- [${player.name}](${trustPlayerUrl(tag)})${newTag} (${status}) :\n  Decks : ${decksLine}\n  Moyenne : ${avgPerDeck}`;
+              return `- [${player.name}](${trustPlayerUrl(tag)})${newTag} (${status}) manque ${4 - player.decks} :\n  Decks : ${decksLine}\n  Moyenne : ${avgPerDeck}`;
             } catch (err) {
               const status = formatStatus(player.role);
-              return `- [${player.name}](${trustPlayerUrl(tag)}) (${status}) : données historiques indisponibles`;
+              return `- [${player.name}](${trustPlayerUrl(tag)}) (${status}) manque ${4 - player.decks} : données historiques indisponibles`;
             }
           }),
         );
