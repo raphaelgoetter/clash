@@ -11976,7 +11976,7 @@
           "start": "2026-06-21T09:42:00.000Z",
           "end": "2026-06-22T09:41:59.999Z"
         },
-        "snapshotTime": "2026-06-21T12:38:54.951Z",
+        "snapshotTime": "2026-06-21T13:34:16.248Z",
         "snapshotBackupTime": "2026-06-21T11:03:30.740Z",
         "decks": {
           "#2902YQRQL": 4,
@@ -11989,6 +11989,8 @@
           "#GJ8RV8802": 4,
           "#GLR2YLQ2U": 4,
           "#YRYPUR822": 4,
+          "#PG0Q0YYGY": 3,
+          "#9Q920V9U": 2,
           "#QQLYUL0R": 2,
           "#9GG9GRC0G": 1
         },
@@ -12015,7 +12017,7 @@
           "#UY00GJG2": 1400,
           "#GVGVR0J2U": 1400,
           "#9CQC0YUR8": 1450,
-          "#PG0Q0YYGY": 1500,
+          "#PG0Q0YYGY": 1950,
           "#9Y28LR22": 1500,
           "#QY0LG0R0P": 1500,
           "#PGJPJG9QQ": 1550,
@@ -12045,7 +12047,7 @@
           "#U008V0PQ8": 2000,
           "#8P29RRU2": 2000,
           "#2PG80VRY": 2500,
-          "#9Q920V9U": 2000,
+          "#9Q920V9U": 2200,
           "#8LR9JRGG": 2000,
           "#2UQQJJ98Y": 2000,
           "#VLUYR88Y8": 2000,
@@ -12071,7 +12073,10 @@
           "#QQLYUL0R": 1,
           "#9YQ8RVU2P": 1,
           "#2PG80VRY": 1,
-          "#2902YQRQL": 1
+          "#2902YQRQL": 1,
+          "#2VRRYLJ2J": 1,
+          "#PG0Q0YYGY": 1,
+          "#9Q920V9U": 1
         },
         "duelsComplete": true,
         "periodType": "warDay",
@@ -12097,7 +12102,7 @@
           "#UY00GJG2": 8,
           "#GVGVR0J2U": 8,
           "#9CQC0YUR8": 12,
-          "#PG0Q0YYGY": 11,
+          "#PG0Q0YYGY": 14,
           "#9Y28LR22": 12,
           "#QY0LG0R0P": 8,
           "#PGJPJG9QQ": 12,
@@ -12127,7 +12132,7 @@
           "#U008V0PQ8": 12,
           "#8P29RRU2": 12,
           "#2PG80VRY": 16,
-          "#9Q920V9U": 12,
+          "#9Q920V9U": 14,
           "#8LR9JRGG": 12,
           "#2UQQJJ98Y": 12,
           "#VLUYR88Y8": 12,
@@ -12145,7 +12150,7 @@
           "#99VY0090": 16,
           "#C0VQRUP2": 16
         },
-        "snapshotCount": 43
+        "snapshotCount": 48
       }
     ]
   }
