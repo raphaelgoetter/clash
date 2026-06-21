@@ -69,25 +69,27 @@ const COLOSSEUM_SECTION =
   "Cette semaine, c'est une semaine de Colisée ! **C'est la semaine la plus importante du mois car les points remportés (ou perdus) par le clan sont multipliés par 5 !**";
 
 const RESISTANTS_BODY =
-`**La Guerre de Clans commence !** 🔥
-
-⚔️ La GDC commence aujourd'hui ! Les combats dans notre clan sont **OBLIGATOIRES** chaque jour. Une absence de combat sera sanctionnée par une rétrogradation ou une orientation vers nos clans chill.
+`La Guerre de Clans commence ! 🔥
 {colosseum}
-😴 **Indisponibilité ?** ⤑ Prévenez sur <#881862784059592704>
+1. 4 combats/jour OBLIGATOIRES.
+
+- 😴 Si absence prévue → Prévenir dans <#881862784059592704> + quitter le clan pour Les Revoltes (réintégration au retour).
+
+2. ❌ Une journée manquée sans prévenir → Excuses obligatoires (Discord/jeu) sous 3 jours, sinon rétrogradation/exclusion (temporaire si raison exceptionnelle).
+3. ❌❌ Deux journées manquées sans prévenir → Exclusion immédiate (temporaire si raison exceptionnelle).
+4. 🍾 2600 pts/semaine → Promotion au rang "Aîné".
 
 🎯 L'objectif n'est pas de gagner tous ses combats, "juste" de faire ses 4 combats chaque jour, car **tous les combats comptent pour le clan**. Un combat même perdu rapporte des points !
 
-📊 On peut suivre la progression de notre clan au quotidien sur ⤑ <https://trustroyale.vercel.app>
+📊 On peut suivre la progression de notre clan au quotidien sur ⤑ <https://trustroyale.vercel.app/>
 
 Détails pratiques :
 
 - Début de la GDC : jeudi à {resetTime}
 - Fin de la GDC : lundi à {resetTime}
 - Durée de la GDC : 4 jours
-- Nombre de combats : 4 combats par jour (soit 16 combats sur la durée de la GDC)
-- Promotion si 2600pts marqués ou plus sur la durée de la GDC
 
-🤜 **Bonne chance à tous !**`;
+🤜 Bonne chance à tous !`;
 
 const RESISTANCE_BODY =
 `**La Guerre de Clans commence !** 🔥
