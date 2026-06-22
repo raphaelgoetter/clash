@@ -3757,29 +3757,25 @@ export default async function handler(req, res) {
           new Date(Date.now() - warResetOffsetMs(resolved.tag)).getUTCDay() >=
             4;
         const isWarDay = isCalendarWarDay && isWarDayPeriod(race);
-        if (!isWarDay) {
-          await fetch(webhookUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              content: `<:cards:1493711279121104926> **${resolved.name}** — Aucune journée de GDC en cours.`,
-              flags: 64,
-            }),
-          });
-          return;
+
+        let prevDayIndex = null;
+
+        if (isWarDay) {
+          const currentDayIndex = getCurrentWarDayIndex(race, resolved.tag);
+          prevDayIndex =
+            currentDayIndex !== null && currentDayIndex > 0
+              ? currentDayIndex - 1
+              : null;
+        } else if (race && race.sectionIndex !== undefined) {
+          prevDayIndex = 3;
         }
 
-        const currentDayIndex = getCurrentWarDayIndex(race, resolved.tag);
-        const prevDayIndex =
-          currentDayIndex !== null && currentDayIndex > 0
-            ? currentDayIndex - 1
-            : null;
         if (prevDayIndex === null) {
           await fetch(webhookUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              content: `📌 ${resolved.name} — Impossible de déterminer le jour précédent pour cette GDC.`,
+              content: `<:cards:1493711279121104926> **${resolved.name}** — Aucune journée de GDC en cours.`,
               flags: 64,
             }),
           });
