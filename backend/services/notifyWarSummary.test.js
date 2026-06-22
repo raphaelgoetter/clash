@@ -79,6 +79,11 @@ assert.deepStrictEqual(
   ["#A", "#C"],
   "La liste zéro don doit utiliser donations et non totalDonations",
 );
+assert.deepStrictEqual(
+  zeroActivityLists.zeroBothPlayers.map((player) => player.tag),
+  ["#A", "#C"],
+  "La liste combinée doit contenir les joueurs avec 0 deck ET 0 don",
+);
 
 const WEEK_DAYS = ["2026-05-21", "2026-05-22", "2026-05-23", "2026-05-24"];
 

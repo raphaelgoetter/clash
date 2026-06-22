@@ -653,6 +653,9 @@ function buildWeeklyZeroActivityLists(memberNames, allWeekDays) {
   return {
     zeroDeckPlayers: members.filter((member) => member.weeklyDecks === 0),
     zeroDonationPlayers: members.filter((member) => member.donations === 0),
+    zeroBothPlayers: members.filter(
+      (member) => member.weeklyDecks === 0 && member.donations === 0,
+    ),
   };
 }
 
@@ -1312,12 +1315,8 @@ async function postWarSummary(
 
     weeklyFields.push(
       ...buildWeeklyCappedPlayerListField(
-        "Zéro GDC cette semaine",
-        weeklyZeroActivityLists.zeroDeckPlayers,
-      ),
-      ...buildWeeklyCappedPlayerListField(
-        "Zéro don cette semaine",
-        weeklyZeroActivityLists.zeroDonationPlayers,
+        "Zéro GDC et zéro don cette semaine",
+        weeklyZeroActivityLists.zeroBothPlayers,
       ),
     );
 
