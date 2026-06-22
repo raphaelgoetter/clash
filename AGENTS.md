@@ -105,6 +105,22 @@ npm run cache    # régénère frontend/public/clan-cache/*.json (via scripts/re
 - **Commits** : Conventional Commits — type en anglais, description en français ex : `feat(clan): ajoute filtre par verdict`
 - **Commentaires** : en français
 
+## Discord Embed — limites caractères
+
+| Champ | Limite |
+|---|---|
+| `title` | 256 |
+| `description` | **4096** |
+| `field.name` | 256 |
+| `field.value` | **1024** |
+| `footer.text` | 2048 |
+| `author.name` | 256 |
+| Total embed (somme de tous les champs textes) | 6000 |
+| Fields par embed | 25 |
+| Embeds par message | 10 |
+
+**Rappel** : Ne pas confondre `description` (4096) et `field.value` (1024). Pour une longue liste de noms, utiliser la `description` plutôt que des fields multiples "(suite X)".
+
 ## Bot Discord — règles critiques
 
 ### Architecture de chaque commande

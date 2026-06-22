@@ -585,50 +585,11 @@ function fmtRank(n) {
   return n === 1 ? "1er" : `${n}e`;
 }
 
-const WEEKLY_ZERO_ACTIVITY_MAX_RESULTS = 30;
+const WEEKLY_ZERO_ACTIVITY_MAX_RESULTS = 50;
 
 function formatPlayerVercelLink(tag, name) {
   const playerUrl = `https://trustroyale.vercel.app/fr/player/${String(tag).replace(/^#/, "")}`;
   return `[${name}](${playerUrl})`;
-}
-
-function buildWeeklyCappedPlayerListField(title, players) {
-  if (!players.length) return [];
-
-  const total = players.length;
-  const limitedPlayers = players.slice(0, WEEKLY_ZERO_ACTIVITY_MAX_RESULTS);
-  const separator = " · ";
-
-  // On force un seul field Discord (max 1024) pour éviter les sections "(suite)".
-  const maxValueLength = 1000;
-  const visibleEntries = limitedPlayers.map((player) =>
-    formatPlayerVercelLink(player.tag, player.name),
-  );
-
-  // Ajuste dynamiquement le nombre d'entrées visibles pour conserver de la place
-  // à la ligne "+N autres" quand nécessaire.
-  while (true) {
-    const visibleCount = visibleEntries.length;
-    const remaining = total - visibleCount;
-    const baseList = visibleEntries.join(separator);
-    const remainingLine =
-      remaining > 0
-        ? `\n+${fmt(remaining)} autre${remaining > 1 ? "s" : ""}`
-        : "";
-    const value = `${baseList}${remainingLine}`;
-
-    if (value.length <= maxValueLength || visibleEntries.length === 0) {
-      return [
-        {
-          name: `${title} (${fmt(total)})`,
-          value: value || "\u200b",
-          inline: false,
-        },
-      ];
-    }
-
-    visibleEntries.pop();
-  }
 }
 
 function buildWeeklyZeroActivityLists(memberNames, allWeekDays) {
@@ -1313,14 +1274,35 @@ async function postWarSummary(
       });
     }
 
-    weeklyFields.push(
-      ...buildWeeklyCappedPlayerListField(
-        "Zéro GDC et zéro don cette semaine",
-        weeklyZeroActivityLists.zeroBothPlayers,
-      ),
-    );
+    // Zéro GDC et zéro don : dans un field si ≤ 1024, sinon dans la description (4096)
+    let zeroBothDescription = "";
+    const zeroBothPlayers = weeklyZeroActivityLists.zeroBothPlayers;
+    if (zeroBothPlayers.length > 0) {
+      const total = zeroBothPlayers.length;
+      const separator = " · ";
+      const entries = zeroBothPlayers
+        .slice(0, WEEKLY_ZERO_ACTIVITY_MAX_RESULTS)
+        .map((p) => formatPlayerVercelLink(p.tag, p.name));
+      const listText = entries.join(separator);
+      const remaining = Math.max(0, total - WEEKLY_ZERO_ACTIVITY_MAX_RESULTS);
+      const suffix =
+        remaining > 0
+          ? `\n+${fmt(remaining)} autre${remaining > 1 ? "s" : ""}`
+          : "";
+      const fieldValue = `${listText}${suffix}`;
 
-    if (weeklyDuelMissingInfo.players.length > 0) {
+      if (fieldValue.length <= 1024) {
+        weeklyFields.push({
+          name: `Zéro GDC et zéro don cette semaine (${fmt(total)})`,
+          value: fieldValue,
+          inline: false,
+        });
+      } else {
+        zeroBothDescription = `\n\n**Zéro GDC et zéro don cette semaine (${fmt(total)})**\n${listText}${suffix}`;
+      }
+    }
+
+    if (tag !== "QU9UQJRL" && weeklyDuelMissingInfo.players.length > 0) {
       const totalMissingDuels = weeklyDuelMissingInfo.players.reduce(
         (sum, player) => sum + player.missingDuels,
         0,
@@ -1365,7 +1347,7 @@ async function postWarSummary(
 
     const weeklyEmbed = {
       title: `<:stats:1499284927894650950> ${clanName} · Bilan de la semaine`,
-      description: `Résumé de la semaine${allWeekDays[0]?.week ? ` ${allWeekDays[0].week}` : ""}`,
+      description: `Résumé de la semaine${allWeekDays[0]?.week ? ` ${allWeekDays[0].week}` : ""}${zeroBothDescription}`,
       color,
       fields: weeklyFields,
       footer: { text: `Constat fait le ${postDateFR}` },
