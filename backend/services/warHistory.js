@@ -370,21 +370,28 @@ export async function buildFamilyWarHistory(
     }
   }
 
+  const currentTag = normalizedCurrent ? `#${normalizedCurrent}` : null;
+  const familyTags = new Set(
+    FAMILY_CLAN_TAGS.map((t) => t.replace(/^#/, "").toUpperCase()),
+  );
+  if (normalizedCurrent) familyTags.add(normalizedCurrent);
+
   const playedWeeks = mergedWeeks.filter((w) => w.decksUsed > 0);
   const totalFame = playedWeeks.reduce((sum, w) => sum + (w.fame || 0), 0);
   const participation = playedWeeks.length;
   const completedParticipation = mergedWeeks.filter(
     (w) => !w.isCurrent && (w.decksUsed || 0) > 0,
   ).length;
-  const totalWeeks = mergedWeeks.length;
+  const familyCompletedParticipation = mergedWeeks.filter(
+    (w) =>
+      !w.isCurrent &&
+      (w.decksUsed || 0) > 0 &&
+      familyTags.has((w.clanTag ?? "").replace(/^#/, "").toUpperCase()),
+  ).length;
+  const totalWeeks = familyCompletedParticipation;
 
   let streakInCurrentClan = 0;
   let streakInFamily = 0;
-  const currentTag = normalizedCurrent ? `#${normalizedCurrent}` : null;
-  const familyTags = new Set(
-    FAMILY_CLAN_TAGS.map((t) => t.replace(/^#/, "").toUpperCase()),
-  );
-  if (normalizedCurrent) familyTags.add(normalizedCurrent);
   for (const w of mergedWeeks) {
     if (w.isCurrent) continue;
     const normalizedWeekTag = (w.clanTag ?? "").replace(/^#/, "").toUpperCase();
