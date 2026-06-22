@@ -30,6 +30,8 @@ import {
   applyOldestWeekIgnore,
   computeCurrentWeekId,
   computePrevWeekId,
+  parseClashDate,
+  MS_PER_DAY,
 } from "../services/analysisService.js";
 import { buildDebugSnapshotInfo } from "../services/debugSnapshotInfo.js";
 import { computeTopPlayers } from "../services/topplayers.js";
@@ -47,8 +49,6 @@ import path from "path";
 
 const router = Router();
 
-// One day in milliseconds (used for war day calculations)
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
  * Run async tasks with limited concurrency to avoid rate-limiting.
@@ -1920,7 +1920,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       if (
         summary &&
         summary.daysFromThu > 0 &&
-        (warHistory?.streakInCurrentClan ?? 0) === 1 &&
+        (warHistory?.streakInCurrentClan ?? 0) <= 1 &&
         (currentWeek?.decksUsed ?? 0) === 0
       ) {
         summary.arrivedMidWar = true;
@@ -1960,6 +1960,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           : warDays.arrivedMidWar
             ? -1
             : (warDays.totalDecksUsed ?? 0),
+      joinDate: m.joinDate ?? null,
       lastSeen: m.lastSeen ?? null,
       lastWarDecks: lastWarDecksByTag.get(normalizeTag(m.tag)) ?? 0,
       scoreVersion: SCORE_VERSION,
@@ -1981,6 +1982,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       arrivalStreakInCurrentClan: null,
       arrivalTotalWeeks: null,
       warDecks: null,
+      joinDate: members[idx].joinDate ?? null,
       lastSeen: members[idx].lastSeen ?? null,
       lastWarDecks: lastWarDecksByTag.get(normalizeTag(members[idx].tag)) ?? 0,
     };
@@ -1989,13 +1991,19 @@ export async function buildClanAnalysis(clanTag, options = {}) {
   // Sort by reliability ascending (most at-risk first)
   analyzedMembers.sort((a, b) => (a.reliability ?? 0) - (b.reliability ?? 0));
 
-  // Enrichir uncomplete avec isNew (calculé via l'historique de guerre de chaque membre)
+  // Enrichir uncomplete avec isNew et joinedThisWeek
   if (uncomplete && Array.isArray(uncomplete.players)) {
     const memberMap = new Map(analyzedMembers.map((m) => [m.tag, m]));
-    uncomplete.players = uncomplete.players.map((p) => ({
-      ...p,
-      isNew: memberMap.get(p.tag)?.isNew ?? false,
-    }));
+    uncomplete.players = uncomplete.players.map((p) => {
+      const member = memberMap.get(p.tag);
+      const streak = member?.arrivalStreakInCurrentClan ?? null;
+      const joinedThisWeek = streak === 0 || (streak === 1 && p.daily?.[0] == null);
+      return {
+        ...p,
+        isNew: member?.isNew ?? false,
+        joinedThisWeek,
+      };
+    });
   }
 
   // Aggregate stats for chart data

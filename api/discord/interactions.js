@@ -3219,25 +3219,48 @@ export default async function handler(req, res) {
           return;
         }
 
-        const MAX_ROWS = 25;
         const sorted = uncomplete
           .slice()
           .sort((a, b) => a.decks - b.decks || a.name.localeCompare(b.name));
 
-        const rows = sorted.slice(0, MAX_ROWS).map((p, i) => {
-          const playerUrl = trustPlayerUrl(p.tag);
-          const isNew = p.isNew ? " 🆕" : "";
-          const role = formatDiscordRole(p.role);
-          return `${i + 1}. [${p.name}](${playerUrl})${isNew} • ${role} • **${p.decks} decks**`;
-        });
+        const arrived = sorted.filter((p) => p.joinedThisWeek);
+        const regular = sorted.filter((p) => !p.joinedThisWeek);
+
+        const MAX_ARRIVED = 10;
+        const MAX_REGULAR = 25;
+        let rowIndex = 0;
+        const allRows = [];
+
+        if (arrived.length > 0) {
+          allRows.push('**Arrivés en cours de GDC:**');
+          arrived.slice(0, MAX_ARRIVED).forEach((p) => {
+            rowIndex++;
+            const playerUrl = trustPlayerUrl(p.tag);
+            const isNew = p.isNew ? " 🆕" : "";
+            const role = formatDiscordRole(p.role);
+            allRows.push(`${rowIndex}. [${p.name}](${playerUrl})${isNew} • ${role} • **${p.decks} decks**`);
+          });
+        }
+
+        if (regular.length > 0) {
+          if (arrived.length > 0) allRows.push('');
+          allRows.push('**Autres:**');
+          regular.slice(0, MAX_REGULAR).forEach((p) => {
+            rowIndex++;
+            const playerUrl = trustPlayerUrl(p.tag);
+            const isNew = p.isNew ? " 🆕" : "";
+            const role = formatDiscordRole(p.role);
+            allRows.push(`${rowIndex}. [${p.name}](${playerUrl})${isNew} • ${role} • **${p.decks} decks**`);
+          });
+        }
 
         const demoteHeader = earlyWinByDay3
           ? "Joueurs n'ayant pas joué 16/16 decks car il y a eu une victoire anticipée dès le jour 3"
           : "Joueurs n'ayant pas joué 16/16 decks";
-        let description = `${demoteHeader}\n${rows.join("\n")}`;
+        let description = `${demoteHeader}\n${allRows.join("\n")}`;
         // Discord limite les embeds à 4096 caractères pour description
         if (description.length > 4090) {
-          const trimmed = rows
+          const trimmed = allRows
             .join("\n")
             .slice(0, 4000)
             .split("\n")

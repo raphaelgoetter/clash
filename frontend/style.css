@@ -497,6 +497,22 @@ code {
   font-weight: 400;
 }
 
+/* section header for imported / mid-war arrivals (Last War fails) */
+.uncomplete-section-header {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 12px 0 4px;
+  list-style: none;
+}
+.uncomplete-section-header-regular {
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+  padding-top: 12px;
+}
+
 /* section des joueurs qui ont quitté le clan (Last War fails) */
 .uncomplete-departed {
   margin-top: 16px;

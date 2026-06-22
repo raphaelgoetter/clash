@@ -373,7 +373,7 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
   if (
     warSummary &&
     warSummary.daysFromThu > 0 &&
-    (analysis.warHistory?.streakInCurrentClan ?? 0) === 1 &&
+    (analysis.warHistory?.streakInCurrentClan ?? 0) <= 1 &&
     (currentWeek?.decksUsed ?? 0) === 0
   ) {
     warSummary.arrivedMidWar = true;

@@ -2805,14 +2805,25 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
 
   const present = players.filter((p) => p.inClan);
   const departed = players.filter((p) => !p.inClan);
+  const presentArrived = present.filter((p) => p.joinedThisWeek);
+  const presentRegular = present.filter((p) => !p.joinedThisWeek);
 
   if (present.length === 0 && departed.length === 0) {
     listEl.innerHTML = `<li class="text-muted">${t("everyoneCompleted16")}</li>`;
   } else {
-    listEl.innerHTML =
-      present.length > 0
-        ? present.map(renderPlayerItem).join("")
-        : `<li class="text-muted">${t("everyoneInClanCompleted16")}</li>`;
+    let html = '';
+    if (presentArrived.length > 0) {
+      html += `<li class="uncomplete-section-header">${t("warArrivedMidWarSection") || "Arrivés en cours de GDC"}</li>`;
+      html += presentArrived.map(renderPlayerItem).join('');
+    }
+    if (presentRegular.length > 0) {
+      if (presentArrived.length > 0) html += `<li class="uncomplete-section-header uncomplete-section-header-regular">${t("warOthersSection") || "Autres"}</li>`;
+      html += presentRegular.map(renderPlayerItem).join('');
+    }
+    if (present.length === 0) {
+      html = `<li class="text-muted">${t("everyoneInClanCompleted16")}</li>`;
+    }
+    listEl.innerHTML = html;
   }
 
   card.classList.remove("hidden");
