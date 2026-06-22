@@ -3743,7 +3743,7 @@ export default async function handler(req, res) {
           await import("../../backend/services/clashApi.js");
         const { getSnapshotsForWeeks, getCurrentWarDayIndex } =
           await import("../../backend/services/snapshot.js");
-        const { computeCurrentWeekId, warResetOffsetMs } =
+        const { computeCurrentWeekId, computePrevWeekId, warResetOffsetMs } =
           await import("../../backend/services/dateUtils.js");
 
         const [race, raceLog] = await Promise.all([
@@ -3782,7 +3782,9 @@ export default async function handler(req, res) {
           return;
         }
 
-        const currentWeekId = computeCurrentWeekId(race, raceLog);
+        const currentWeekId = isWarDay
+          ? computeCurrentWeekId(race, raceLog)
+          : computePrevWeekId(raceLog);
         if (!currentWeekId) {
           await fetch(webhookUrl, {
             method: "POST",
