@@ -989,26 +989,13 @@ function formatWarDecksField(warDecks) {
   };
 
   const groupBlocks = sortedDays.map((group, groupIndex) => {
-    const allMatches = [...group.decks.values()].flatMap((deckGroup) =>
-      Array.isArray(deckGroup.matches) ? deckGroup.matches : [],
-    );
-    const points = allMatches.reduce(
-      (sum, match) => sum + getWarMatchPoints(match),
-      0,
-    );
-    const wins = allMatches.filter((match) => match.result === "win").length;
-    const totalMatches = allMatches.length;
-    const winRate =
-      totalMatches > 0 ? Math.round((wins / totalMatches) * 100) : 0;
-    const isCompleteDay = totalMatches >= 4;
-    const daySuffix =
-      isCompleteDay ? `(${points}pts · winrate ${winRate}%)` : "";
-
+    const isOldestDay = groupIndex === sortedDays.length - 1;
+    const deckLabels = [...group.decks.keys()].slice(0, maxDecks);
+    const displayedMatches = [];
+    const deckLines = [];
     const groupLines = groupIndex > 0 ? [""] : [];
-    groupLines.push(`**${group.dayLabel}${daySuffix ? ` ${daySuffix}` : ""}**`);
 
     let deckCount = 0;
-    const deckLabels = [...group.decks.keys()].slice(0, maxDecks);
     for (const [deckIndex, deckLabel] of deckLabels.entries()) {
       const deckGroup = group.decks.get(deckLabel);
       if (!deckGroup) continue;
@@ -1035,11 +1022,44 @@ function formatWarDecksField(warDecks) {
           const displayLabelWithType = [displayDeckLabel, typeLabel]
             .filter(Boolean)
             .join(" ");
-          groupLines.push(
+          deckLines.push(
             `• ${displayLabelWithType} : <:members:1506175789731811399> ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultEmoji} ${score} ⚡ ${matchup}`,
           );
+          displayedMatches.push(match);
         });
     }
+
+    // Ajouter "Manquant" pour les jours incomplets (sauf le plus ancien, tronqué par l'API)
+    if (!isOldestDay && displayedMatches.length < 4) {
+      const missingCount = 4 - displayedMatches.length;
+      for (let i = 0; i < missingCount; i++) {
+        displayedMatches.push({
+          result: "loss",
+          type: null,
+          matchup: null,
+          opponentName: "Manquant",
+          opponentTourLevel: null,
+          score: "0-0",
+        });
+        deckLines.push(
+          `• Manquant <:error:1499002755841265826> ⚡ ?`,
+        );
+      }
+    }
+
+    // Stats calculées uniquement sur les combats affichés + Manquant
+    const points = displayedMatches.reduce(
+      (sum, match) => sum + getWarMatchPoints(match),
+      0,
+    );
+    const wins = displayedMatches.filter((m) => m.result === "win").length;
+    const total = displayedMatches.length;
+    const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
+    const showStats = isOldestDay ? displayedMatches.length >= 4 : true;
+    const daySuffix = showStats ? `(${points}pts · winrate ${winRate}%)` : "";
+
+    groupLines.push(`**${group.dayLabel}${daySuffix ? ` ${daySuffix}` : ""}**`);
+    groupLines.push(...deckLines);
     return groupLines.join("\n");
   });
 
