@@ -917,21 +917,28 @@ async function postWarSummary(
     // (lag API : tous les pts ne sont pas encore comptabilisés au moment de l'appel).
     totalFame = apiDayFame;
     isExactFame = true;
-  } else if (
-    isLastDay &&
-    apiWeekFame !== null &&
-    prevDayEntry?._cumulFamePreReset &&
-    Object.keys(prevDayEntry._cumulFamePreReset).length > 0
-  ) {
-    // J4 : raceLog total semaine (sum participants[].fame) − cumul pré-reset J3.
-    // Source de vérité per api-clash-royale.md : apiWeekFame est la valeur finale stabilisée
-    // après le reset lundi, plus fiable que le snapshot T−2 min qui peut sous-estimer
-    // le total réel à cause du lag API (participants[].fame pas encore tous mis à jour).
-    totalFame = Math.max(
-      0,
-      apiWeekFame - sumValues(prevDayEntry._cumulFamePreReset),
-    );
-    isExactFame = true;
+  } else if (isLastDay && apiWeekFame !== null) {
+    // J4 : période de collecte terminée. On utilise dans l'ordre :
+    // 1. periodPointsEarned stocké dans le snapshot (données API exactes collectées
+    //    pendant la semaine via periodLogs -> période correcte, pas décalée par le reset).
+    // 2. raceLog total − cumul pré-reset J3 (fallback, peut surestimer J4 car l'API
+    //    sous-estime le fame J3 au moment du snapshot).
+    const j1j2j3Sum = allWeekDays
+      .slice(0, 3)
+      .reduce((s, d) => s + (d.periodPointsEarned ?? 0), 0);
+    if (j1j2j3Sum > 0) {
+      totalFame = Math.max(0, apiWeekFame - j1j2j3Sum);
+      isExactFame = true;
+    } else if (
+      prevDayEntry?._cumulFamePreReset &&
+      Object.keys(prevDayEntry._cumulFamePreReset).length > 0
+    ) {
+      totalFame = Math.max(
+        0,
+        apiWeekFame - sumValues(prevDayEntry._cumulFamePreReset),
+      );
+      isExactFame = true;
+    }
   } else if (
     isLastDay &&
     hasPreResetSnapshot &&
@@ -1526,125 +1533,6 @@ async function main() {
             );
           }
 
-          // Debug : comparer les participants snapshot vs raceLog pour traquer les écarts
-          if (
-            standing?.clan?.participants &&
-            prevDayEntry?._cumulFamePreReset &&
-            dayEntry?.decks
-          ) {
-            const raceLogParts = standing.clan.participants;
-            const raceLogTags = new Set(raceLogParts.map((p) => p.tag));
-            const snapJ3Tags = new Set(
-              Object.keys(prevDayEntry._cumulFamePreReset),
-            );
-            const snapJ4Tags = new Set(Object.keys(dayEntry.decks));
-
-            // Joueurs dans raceLog mais absents du snapshot J3 → leur fame est
-            // attribuée à J4 dans totalFame = apiWeekFame - sum(snapJ3Fame)
-            const missingFromSnapJ3 = raceLogParts.filter(
-              (p) => !snapJ3Tags.has(p.tag),
-            );
-            if (missingFromSnapJ3.length > 0) {
-              const missingFame = missingFromSnapJ3.reduce(
-                (s, p) => s + (p.fame ?? 0),
-                0,
-              );
-              const missingDecks = missingFromSnapJ3.reduce(
-                (s, p) => s + (p.decksUsed ?? 0),
-                0,
-              );
-              console.log(
-                `[DEBUG][${tag}] ${missingFromSnapJ3.length} joueurs dans raceLog mais absents snapshot J3 :`,
-              );
-              for (const p of missingFromSnapJ3) {
-                console.log(
-                  `[DEBUG][${tag}]   ${p.name} (${p.tag}): fame=${p.fame ?? 0}, decks=${p.decksUsed ?? 0}`,
-                );
-              }
-              console.log(
-                `[DEBUG][${tag}]   Total fame manquante: ${missingFame}, decks: ${missingDecks}`,
-              );
-            }
-
-            // Joueurs dans snapshot J3 mais absents du raceLog
-            const extraInSnapJ3 = [...snapJ3Tags].filter(
-              (t) => !raceLogTags.has(t),
-            );
-            if (extraInSnapJ3.length > 0) {
-              const extraFame = extraInSnapJ3.reduce(
-                (s, t) =>
-                  s + ((prevDayEntry._cumulFamePreReset ?? {})[t] ?? 0),
-                0,
-              );
-              console.log(
-                `[DEBUG][${tag}] ${extraInSnapJ3.length} joueurs dans snapshot J3 mais absents raceLog (fame extra: ${extraFame}):`,
-              );
-              for (const t of extraInSnapJ3) {
-                console.log(
-                  `[DEBUG][${tag}]   ${t}: fame=${(prevDayEntry._cumulFamePreReset ?? {})[t] ?? 0}`,
-                );
-              }
-            }
-
-            // Joueurs dans raceLog mais absents du snapshot J4 (décks)
-            const missingFromSnapJ4 = raceLogParts.filter(
-              (p) => !snapJ4Tags.has(p.tag),
-            );
-            if (missingFromSnapJ4.length > 0) {
-              const missingDecks = missingFromSnapJ4.reduce(
-                (s, p) => s + (p.decksUsed ?? 0),
-                0,
-              );
-              console.log(
-                `[DEBUG][${tag}] ${missingFromSnapJ4.length} joueurs dans raceLog mais absents snapshot J4 decks (decks extra: ${missingDecks}):`,
-              );
-              for (const p of missingFromSnapJ4) {
-                console.log(
-                  `[DEBUG][${tag}]   ${p.name} (${p.tag}): decks=${p.decksUsed ?? 0}`,
-                );
-              }
-            }
-
-            // Comparaison joueur par joueur : fame snapshot J3 vs raceLog
-            const fameDiffs = [];
-            for (const p of raceLogParts) {
-              const snapVal = (prevDayEntry._cumulFamePreReset ?? {})[p.tag] ?? 0;
-              const logVal = p.fame ?? 0;
-              if (snapVal !== logVal) {
-                fameDiffs.push({
-                  name: p.name,
-                  tag: p.tag,
-                  snap: snapVal,
-                  log: logVal,
-                });
-              }
-            }
-            if (fameDiffs.length > 0) {
-              console.log(
-                `[DEBUG][${tag}] ${fameDiffs.length} joueurs avec fame différente snapshot J3 vs raceLog :`,
-              );
-              for (const d of fameDiffs) {
-                console.log(
-                  `[DEBUG][${tag}]   ${d.name} (${d.tag}): snap=${d.snap}, raceLog=${d.log}, diff=${d.log - d.snap}`,
-                );
-              }
-            }
-
-            // Comparaison totaux
-            const snapJ3FameSum = Object.values(
-              prevDayEntry._cumulFamePreReset ?? {},
-            ).reduce((a, b) => a + b, 0);
-            const snapJ4DecksSum = Object.values(dayEntry.decks ?? {}).reduce(
-              (a, b) => a + b,
-              0,
-            );
-            console.log(
-              `[DEBUG][${tag}] Points — apiWeekFame=${apiWeekFame}, snapJ3FameSum=${snapJ3FameSum}, diff(J4 daily)=${(apiWeekFame ?? 0) - snapJ3FameSum}`,
-            );
-            console.log(
-              `[DEBUG][${tag}] Decks  — apiWeekDecks=${apiWeekDecks}, snapJ4DecksSum=${snapJ4DecksSum}`,
-            );
-          }
         } catch (err) {
           console.warn(`[${tag}] Classement indisponible : ${err.message}`);
         }

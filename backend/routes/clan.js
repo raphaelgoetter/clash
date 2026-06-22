@@ -871,6 +871,8 @@ router.post("/:tag/snapshot", async (req, res) => {
     await recordSnapshot(clanTag, currentRace.clan.participants, weekId, {
       periodType: currentRace?.periodType ?? null,
       battleLogsByTag,
+      periodLogs: currentRace?.periodLogs,
+      periodPoints: currentRace?.clan?.periodPoints,
     });
     const debugInfo = await getSnapshotFileDebug(clanTag).catch(() => null);
     res.json({ ok: true, weekId, debugInfo });
@@ -913,6 +915,8 @@ router.get("/:tag/snapshot-force", async (req, res) => {
     await recordSnapshot(clanTag, currentRace.clan.participants, weekId, {
       periodType: currentRace?.periodType ?? null,
       battleLogsByTag,
+      periodLogs: currentRace?.periodLogs,
+      periodPoints: currentRace?.clan?.periodPoints,
     });
     const debugInfo = await getSnapshotFileDebug(clanTag).catch(() => null);
     return res.json({ ok: true, weekId, debugInfo });
@@ -1213,6 +1217,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       await recordSnapshot(clanTag, participants, weekId, {
         periodType: currentRace?.periodType ?? null,
         battleLogsByTag,
+        periodLogs: currentRace?.periodLogs,
+        periodPoints: currentRace?.clan?.periodPoints,
       });
     } catch (err) {
       console.warn(

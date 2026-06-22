@@ -905,6 +905,40 @@ export async function recordSnapshot(
   const dayEntry = weekEntry.days[baseIndex];
   if (!dayEntry) return; // should not happen
 
+  // Store periodLogs pointsEarned from currentRace (source de vérité API)
+  // pour les jours complétés, y compris les jours précédents manquants.
+  if (options.periodLogs && Array.isArray(options.periodLogs)) {
+    const ownTag = `#${clanTag}`.toUpperCase();
+    for (let i = 0; i < options.periodLogs.length && i < 4; i++) {
+      const pl = options.periodLogs[i];
+      const targetDay = weekEntry.days[i];
+      if (!targetDay) continue;
+      if (targetDay.periodPointsEarned != null) continue;
+      const ownEntry = pl?.items?.find(
+        (item) => (item.clan?.tag ?? "").toUpperCase() === ownTag,
+      );
+      if (ownEntry?.pointsEarned != null) {
+        targetDay.periodPointsEarned = ownEntry.pointsEarned;
+      }
+    }
+  }
+  // Pour J4 (dernier jour), déduire de periodPoints si periodLogs[3] absent.
+  if (
+    options.periodPoints != null &&
+    dayEntry.warDay === "sunday" &&
+    dayEntry.periodPointsEarned == null
+  ) {
+    const j1j2j3Sum = weekEntry.days
+      .slice(0, 3)
+      .reduce((s, d) => s + (d.periodPointsEarned ?? 0), 0);
+    if (j1j2j3Sum > 0) {
+      dayEntry.periodPointsEarned = Math.max(
+        0,
+        options.periodPoints - j1j2j3Sum,
+      );
+    }
+  }
+
   // Ensure the real day matches the computed one (Paris date of the war day)
   dayEntry.realDay = realDay;
 

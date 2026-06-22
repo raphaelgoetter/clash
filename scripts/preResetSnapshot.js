@@ -155,6 +155,8 @@ async function takePreResetSnapshot(clanTag) {
     snapshotType: "pre-reset",
     periodType: race?.periodType,
     battleLogsByTag,
+    periodLogs: race?.periodLogs,
+    periodPoints: race?.clan?.periodPoints,
   });
   console.log(`[${clanTag}] Snapshot pré-reset enregistré.`);
 }
