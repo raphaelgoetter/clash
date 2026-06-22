@@ -3228,29 +3228,25 @@ export default async function handler(req, res) {
 
         const MAX_ARRIVED = 10;
         const MAX_REGULAR = 25;
-        let rowIndex = 0;
         const allRows = [];
 
-        if (arrived.length > 0) {
-          allRows.push('**Arrivés en cours de GDC:**');
-          arrived.slice(0, MAX_ARRIVED).forEach((p) => {
-            rowIndex++;
+        if (regular.length > 0) {
+          regular.slice(0, MAX_REGULAR).forEach((p, i) => {
             const playerUrl = trustPlayerUrl(p.tag);
             const isNew = p.isNew ? " 🆕" : "";
             const role = formatDiscordRole(p.role);
-            allRows.push(`${rowIndex}. [${p.name}](${playerUrl})${isNew} • ${role} • **${p.decks} decks**`);
+            allRows.push(`${i + 1}. [${p.name}](${playerUrl})${isNew} • ${role} • **${p.decks} decks**`);
           });
         }
 
-        if (regular.length > 0) {
-          if (arrived.length > 0) allRows.push('');
-          allRows.push('**Autres:**');
-          regular.slice(0, MAX_REGULAR).forEach((p) => {
-            rowIndex++;
+        if (arrived.length > 0) {
+          if (allRows.length > 0) allRows.push('');
+          allRows.push('**Arrivés en cours de GDC:**');
+          arrived.slice(0, MAX_ARRIVED).forEach((p, i) => {
             const playerUrl = trustPlayerUrl(p.tag);
             const isNew = p.isNew ? " 🆕" : "";
             const role = formatDiscordRole(p.role);
-            allRows.push(`${rowIndex}. [${p.name}](${playerUrl})${isNew} • ${role} • **${p.decks} decks**`);
+            allRows.push(`${i + 1}. [${p.name}](${playerUrl})${isNew} • ${role} • **${p.decks} decks**`);
           });
         }
 

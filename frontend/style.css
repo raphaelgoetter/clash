@@ -507,11 +507,6 @@ code {
   padding: 12px 0 4px;
   list-style: none;
 }
-.uncomplete-section-header-regular {
-  border-top: 1px solid var(--border);
-  margin-top: 8px;
-  padding-top: 12px;
-}
 
 /* section des joueurs qui ont quitté le clan (Last War fails) */
 .uncomplete-departed {
