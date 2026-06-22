@@ -72,13 +72,31 @@ Cette approche donne un indicateur plus utile pour la projection, en évitant de
 
 Pour le clan propre, le roster vient du payload de l'analyse. Pour les rivaux, le roster est chargé une fois au moment du calcul du groupe GDC afin de garder une mesure stricte sans dépasser 100 %.
 
-Cette même estimation borne aussi le plafond de projection (`maxReachableFame`) afin d'éviter un scénario théorique trop optimiste quand une partie du roster ne joue pas la GDC.
-
 **Formule générale :**
 
 ```text
 Projection = max(decksToday, targetDecks) × ptsPerDeck
 ```
+
+**Calcul de `targetDecks` :**
+
+`targetDecks` représente la capacité maximale réaliste du clan pour la journée courante, basée sur le roster et l'engagement constaté :
+
+- **J1** (`warDayIndex === 0`) : `min(200, rosterSize × 4)` — on utilise la taille totale du roster car l'engagement n'est pas encore fiable en J1.
+- **J2–J4** (`warDayIndex > 0`) : `min(200, activeMembers × 4)` — on utilise l'engagement constaté : seuls les membres ayant déjà joué au moins un deck dans la semaine sont comptés.
+
+Cette approche simplifiée remplace l'ancienne formule qui combinait historique (moyenne de la semaine passée), pace (extrapolation cadence) et engagement. La donnée d'engagement est plus réactive et évite les décalages avec la semaine réelle. Le pace n'est plus utilisé dans la cible (il reste consultable via les métriques brutes).
+
+### `maxReachableFame` et détection de victoire assurée (`isClinchedWin`)
+
+Le calcul de `maxReachableFame` (borne haute théorique) utilise un plafond **absolu** (`absoluteMaxDecksToday`), différent de `targetDecks` :
+
+- `absoluteMaxDecksToday = min(200, rosterSize × 4)` — capacité maximale du roster complet, indépendamment de l'engagement constaté.
+- `maxReachableFame = currentFame + remainingDecks × 200`
+
+Un clan est marqué `isClinchedWin` quand `currentFame > max(maxReachableFame de tous les rivaux)`, c'est-à-dire quand même le scénario le plus optimiste pour les adversaires ne permet pas de dépasser le clan.
+
+L'utilisation du **roster complet** (pas seulement `activeMembers`) garantit qu'on ne sous-estime pas la capacité de remontée des rivaux quand certains membres n'ont pas encore joué de la semaine.
 
 ### Barème des médailles GDC
 
@@ -90,18 +108,10 @@ Les points gagnés/perdus dans les combats de guerre sont utilisés pour estimer
 
 Ces valeurs sont issues du barème de Clan Wars de Clash Royale.
 
-**Calcul de `targetDecks` :**
-
-- **J1** (premier jour, `warDayIndex === 0`) : moyenne quotidienne de la semaine précédente (`avgDecksLastWeek`, fallback 200).
-- **J2–J4** (`warDayIndex > 0`) : `min(practicalMaxDecksToday, max(tReference, tPace, decksToday))`
-  - `tReference` : snapshot réel de la veille pour le clan propre ; moyenne de la semaine précédente pour les clans adverses.
-  - `tPace` : extrapolation de la cadence courante = `round(decksToday / fractionElapsed)`, où `fractionElapsed` est la fraction de journée écoulée depuis le reset. Activé seulement si ≥ 5 % du jour est écoulé (~72 min) — sinon `tPace = decksToday` pour éviter les extrapolations explosives en début de journée.
-  - Le plafond pratique est borné par la **Participation GDC estimée** (`activeMembers × 4`), avec un cap absolu à **200** (50 membres × 4 decks, infranchissable).
-
 **Remarques :**
 
-- Tous les clans d'un même groupe GDC partagent le même créneau de reset → `fractionElapsed` est calculée avec le reset du clan propre (`warResetOffsetMs(clanTag)`).
-- Cette formule s'applique uniformément au clan propre et aux clans adverses. Code source : `backend/routes/clan.js`, bloc `groupWithProjections`.
+- Tous les clans d'un même groupe GDC partagent le même créneau de reset.
+- Code source : `backend/routes/clan.js`, bloc `groupWithProjections`.
 
 ### Matchup GDC
 

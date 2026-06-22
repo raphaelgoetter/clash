@@ -2649,8 +2649,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           const isColosseum = currentRace?.periodType === "colosseum";
 
           // Step 1: Pré-calcul des projections pour tous les clans du groupe
-          // Calcul de la moyenne de decks de la semaine passée pour ce clan
-          let ownAvgDecks = null;
+          // Efficacité historique (pts/deck) du clan propre — fallback pour ptsPerDeck
           let ownHistoricPpd = null;
           if (Array.isArray(raceLog) && raceLog[0]) {
             const lastStanding = (raceLog[0].standings ?? []).find(
@@ -2659,12 +2658,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 clanTag.toUpperCase(),
             );
             const totalDecksLastWeek = sumParticipantsDecks(lastStanding);
-            if (totalDecksLastWeek != null) {
-              ownAvgDecks = totalDecksLastWeek / 4;
-              // Efficacité historique : même logique que pour les rivaux
-              if (ownLastWarFame > 0 && totalDecksLastWeek > 0) {
-                ownHistoricPpd = ownLastWarFame / totalDecksLastWeek;
-              }
+            if (totalDecksLastWeek != null && ownLastWarFame > 0 && totalDecksLastWeek > 0) {
+              ownHistoricPpd = ownLastWarFame / totalDecksLastWeek;
             }
           }
 
@@ -2763,11 +2758,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 0,
                 MAX_WEEKLY_DECKS - totalDecksWeekly,
               );
-              const maxDecksPerDay = 200;
-              // avgDecksLastWeek est nécessaire avant maxReachableFame pour le calcul du plafond J4.
-              const avgDecksLastWeek = isOwn
-                ? ownAvgDecks
-                : rivalAvgDecksByTag[cTagNorm];
               const rosterTagSet = isOwn
                 ? currentMemberTags
                 : (rivalMemberTagsByTag[cTagNorm] ?? null);
@@ -2800,17 +2790,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                         1,
                       )
                     : null;
-              // Pace extrapolée (commune à tous les clans — même reset dans un groupe GDC).
-              // Seuil de 5 % (~72 min) pour éviter une extrapolation explosive en tout début de journée.
-              const _resetOffsetMs = warResetOffsetMs(clanTag);
-              const _nowGdcDate = new Date(Date.now() - _resetOffsetMs);
-              const _msElapsedToday = _nowGdcDate.getTime() % MS_PER_DAY;
-              const _fractionElapsed = _msElapsedToday / MS_PER_DAY;
-              const tPace =
-                _fractionElapsed >= 0.05 && decksToday > 0
-                  ? Math.round(decksToday / _fractionElapsed)
-                  : decksToday;
-
+              // Capacité maximale réaliste du clan pour aujourd'hui
+              // J1 : rosterSize × 4 (pas encore de donnée d'engagement fiable)
+              // J2+ : activeMembers × 4 (engagement constaté)
               const practicalMaxDecksToday = Math.min(
                 200,
                 (warDayIndex === 0
@@ -2818,30 +2800,30 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                   : participationGdcEstimee.activeMembers) * 4,
               );
 
+              // Maximum théorique absolu pour maxReachableFame (clinch detection)
+              // Utilise rosterSize × 4 (pas activeMembers) pour ne pas sous-estimer
+              // la capacité de remontée des rivaux quand certains membres n'ont pas
+              // encore joué de la semaine
+              const absoluteMaxDecksToday = Math.min(
+                200,
+                participationGdcEstimee.rosterSize * 4,
+              );
+
               const remainingDecksToday = Math.max(
                 0,
-                practicalMaxDecksToday - decksToday,
+                absoluteMaxDecksToday - decksToday,
               );
               const remainingFullDays = Math.max(0, 3 - warDayIndex);
               const remainingDecks = Math.min(
                 remainingDecksWeekly,
                 remainingDecksToday +
-                  remainingFullDays * practicalMaxDecksToday,
+                  remainingFullDays * absoluteMaxDecksToday,
               );
               maxReachableFame =
                 sectionFame + remainingDecks * MAX_FAME_PER_DECK;
 
-              // Cible commune à J1-J4 : référence historique + pace live, capée à 200.
-              const tReference =
-                warDayIndex > 0 &&
-                isOwn &&
-                warSnapshotDays?.[warDayIndex - 1] != null
-                  ? warSnapshotDays[warDayIndex - 1]
-                  : (avgDecksLastWeek ?? 200);
-              const targetDecks = Math.min(
-                practicalMaxDecksToday,
-                Math.max(tReference, tPace, decksToday),
-              );
+              // targetDecks = capacité réaliste du jour (utilisée pour la projection)
+              const targetDecks = practicalMaxDecksToday;
 
               // weeklyDecks : fallback de secours si la fame live du jour est indisponible.
               const weeklyDecks = allPartsInner.reduce(
