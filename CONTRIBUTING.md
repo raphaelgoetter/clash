@@ -98,6 +98,17 @@ Un clan est marqué `isClinchedWin` quand `currentFame > max(maxReachableFame de
 
 L'utilisation du **roster complet** (pas seulement `activeMembers`) garantit qu'on ne sous-estime pas la capacité de remontée des rivaux quand certains membres n'ont pas encore joué de la semaine.
 
+### `decksToday` et `clanWarSummary` — pas de filtre ex-membres
+
+`decksToday` et `clanWarSummary` utilisent les participants bruts de `currentRace.clan.participants`, sans filtre par le roster actuel (`currentMemberTags`). Cela signifie que les decks joués par des membres ayant quitté le clan **pendant le jour de guerre** sont bien comptabilisés.
+
+Conséquence : si 2 membres (8 decks) quittent le clan en cours de J4 mais ont joué leurs 4 decks chacun avant de partir, `decksToday` affichera 198 et non 190 (qui serait le total des seuls membres encore présents).
+
+**Ne pas filtrer** est le comportement correct car :
+- ces decks ont réellement contribué au score du clan dans la course
+- l'API Clash Royale continue de les retourner dans `currentRace.clan.participants` même après leur départ
+- `activeMembers` reste basé sur le roster actuel (logique : les partis ne joueront plus), ce qui borne correctement `targetDecks` et `maxReachableFame`
+
 ### Barème des médailles GDC
 
 Les points gagnés/perdus dans les combats de guerre sont utilisés pour estimer les victoires et les défaites à partir des fame du clan.
