@@ -395,9 +395,7 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
  * Partagé entre la vue joueur et la vue clan pour garantir la cohérence.
  */
 export function computeIsNewPlayer(warHistory, warScore) {
-  const hasCompletedWarWeeks = !!warHistory?.weeks?.some(
-    (w) => !w.isCurrent && (w.decksUsed ?? 0) > 0,
-  );
+  const hasCompletedWarWeeks = (warHistory?.totalWeeks ?? 0) > 0;
   const hasOnlyCurrentWeek = !!(
     warHistory?.weeks?.length === 1 && warHistory.weeks[0]?.isCurrent
   );

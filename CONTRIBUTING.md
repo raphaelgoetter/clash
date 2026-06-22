@@ -606,6 +606,22 @@ Comment l’interpréter :
 
 - la “fiabilité du clan” est une `estimation` agrégée à partir de la distribution des membres, pas une formule unique stockée dans un champ dédié.
 
+### Statut `isNew` (Nouveau joueur)
+
+Indique si un joueur est considéré comme "nouveau" dans la famille TrustRoyale. Un joueur est nouveau si **aucune semaine de GDC complétée avec > 0 decks** n'a été trouvée dans l'un des 3 clans familiaux (`FAMILY_CLAN_TAGS`).
+
+**Algorithme** (dans `computeIsNewPlayer`, `playerAnalysis.js:397`) :
+
+1. `hasCompletedWarWeeks` = `totalWeeks > 0` (compte les semaines terminées avec > 0 decks dans un clan familial)
+2. `isNewClanArrivee` = `streak < 2` ET `totalWeeks > 1` (joueur transféré entre clans de la famille, pas encore installé)
+3. Est "nouveau" si : `isNewClanArrivee` **ou** (`hasCompletedWarWeeks === false` **ou** seule la semaine en cours existe)
+
+**Source de vérité** :
+- `playerAnalysis.js:computeIsNewPlayer` — unique fonction de calcul, utilisée par les routes joueur et clan
+- Même logique utilisée dans l'API (`/api/player/:tag/analysis` et `/api/clan/:tag/analysis`) et le bot Discord
+
+⚠️ **Régression** : `totalWeeks` (depuis `warHistory.js`) ne compte que les semaines familiales (> 0 decks, non-current). Toute modification de `totalWeeks` doit vérifier que `computeIsNewPlayer` reste cohérent. Toute modification de `computeIsNewPlayer` doit être testée via `analysisService.test.js`.
+
 ### Snapshot
 
 Capture persistée de l’état de guerre à un instant donné, utilisée pour reconstituer les deltas journaliers de decks et de points.
