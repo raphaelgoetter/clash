@@ -2064,12 +2064,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     }
 
     if (daysFromThu !== undefined && daysFromThu !== null) {
-      // En mode Colossée, currentRace.clan.participants peut contenir 3 clans
-      // (150 joueurs). On filtre sur les membres actuels du clan uniquement.
-      const allParticipants = currentRace?.clan?.participants ?? [];
-      const participants = allParticipants.filter((p) =>
-        currentMemberTags.has(normalizeTag(p.tag)),
-      );
+      const participants = currentRace?.clan?.participants ?? [];
       // Total fiable depuis currentRace (cumul hebdo par participant)
       let totalDecksUsed = participants.reduce(
         (s, p) => s + (p.decksUsed ?? 0),
@@ -2587,8 +2582,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           //
           // decksToday       {number}  Decks joués aujourd'hui (en période warDay)
           //                           [0–200, 50 membres × 4 decks max]
-          //   → clan propre  : sum(currentRace.clan.participants.decksUsedToday),
-          //                    membres actifs uniquement (filtre currentMemberTags)
+          //   → clan propre  : sum(currentRace.clan.participants.decksUsedToday)
           //   → rivaux       : sum(clans[i].participants.decksUsedToday)
           //   → null hors période warDay
           //
@@ -2739,13 +2733,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               const MAX_WEEKLY_DECKS = 800;
               const MAX_FAME_PER_DECK = 200;
 
-              // decksToday : exclure les ex-membres pour cohérence avec clanWarSummary
-              const activePartsToday = isOwn
-                ? allPartsInner.filter((p) =>
-                    currentMemberTags.has(normalizeTag(p.tag)),
-                  )
-                : allPartsInner;
-              decksToday = activePartsToday.reduce(
+              decksToday = allPartsInner.reduce(
                 (s, p) => s + (p.decksUsedToday ?? 0),
                 0,
               );
