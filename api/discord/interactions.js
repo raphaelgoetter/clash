@@ -3241,7 +3241,7 @@ export default async function handler(req, res) {
 
         if (arrived.length > 0) {
           if (allRows.length > 0) allRows.push('');
-          allRows.push('**Arrivés en cours de GDC:**');
+          allRows.push('Arrivés en cours de GDC:');
           arrived.slice(0, MAX_ARRIVED).forEach((p, i) => {
             const playerUrl = trustPlayerUrl(p.tag);
             const isNew = p.isNew ? " 🆕" : "";
