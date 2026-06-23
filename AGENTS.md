@@ -50,6 +50,16 @@ Voir `CONTRIBUTING.md` pour :
 - **Formules et scoring** — fiabilité, projection, matchup, paliers ligue
 - **Bot Discord** — architecture, `runBackground`, enregistrement des commandes
 
+## Variables d'environnement — déploiement
+
+Toute nouvelle variable d'environnement doit être :
+
+1. **Ajoutée à `api/discord/interactions.js`** (via `process.env.MA_VAR`) — exécution du bot
+2. **Déclarée dans `.env.example`** (valeur vide ou placeholder) — template pour les devs
+3. **Configurée sur Vercel → Settings → Environment Variables** — production (le `.env` local n'est pas lu sur Vercel)
+
+Le `.env` local suffit pour le développement, mais **Vercel est obligatoire** pour la prod.
+
 ## Commandes essentielles
 
 ```bash
