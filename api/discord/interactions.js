@@ -2109,7 +2109,7 @@ export default async function handler(req, res) {
           return `[${p.name}](${playerUrl}) · ${fmt(p.fame)} pts${deckSuffix}`;
         };
 
-        const formatWeek = (entry, label) => {
+        const formatDescriptionWeek = (entry, label) => {
           if (!entry) return `**${label}**\nAucune donnée.`;
           const lines = [
             `**${label}**`,
@@ -2117,37 +2117,45 @@ export default async function handler(req, res) {
             "",
             "<:victory:1504136468900352070> Top 5 :",
           ];
-
           (entry.topPlayers || []).forEach((p, idx) => {
             lines.push(`${idx + 1}. ${formatPlayerLink(p)}`);
           });
-          lines.push("", "<:sweat:1504139431106576405> Sous quota :");
-
-          const below = entry.belowQuota || [];
-          if (below.length === 0) {
-            lines.push("Aucun joueur sous quota.");
-          } else {
-            let shownCount = 0;
-            for (let idx = 0; idx < below.length && shownCount < 10; idx += 1) {
-              lines.push(`${idx + 1}. ${formatPlayerLink(below[idx])}`);
-              shownCount += 1;
-            }
-            if (shownCount < below.length) {
-              lines.push(`... +${below.length - shownCount} autres`);
-            }
-          }
-
           return lines.join("\n");
         };
 
-        const parts = [
-          formatWeek(weekEntries[0], "Semaine -1"),
+        const formatUnderQuotaField = (entry) => {
+          if (!entry) return "Aucune donnée.";
+          const below = entry.belowQuota || [];
+          if (below.length === 0) return "✅ Aucun joueur sous quota.";
+          const lines = [];
+          for (let idx = 0; idx < below.length && idx < 10; idx += 1) {
+            lines.push(`${idx + 1}. ${formatPlayerLink(below[idx])}`);
+          }
+          let result = lines.join("\n");
+          if (below.length > 10) {
+            result += `\n... +${below.length - 10} autres`;
+          }
+          return result;
+        };
+
+        const description = [
+          formatDescriptionWeek(weekEntries[0], "Semaine -1"),
           "",
           "━━━━━━━━━━━━━━━━━━",
           "",
-          formatWeek(weekEntries[1], "Semaine -2"),
-        ];
-        const description = parts.join("\n");
+          formatDescriptionWeek(weekEntries[1], "Semaine -2"),
+        ].join("\n");
+
+        fields.push({
+          name: "<:sweat:1504139431106576405> Sous-quota S-1",
+          value: formatUnderQuotaField(weekEntries[0]),
+          inline: true,
+        });
+        fields.push({
+          name: "<:sweat:1504139431106576405> Sous-quota S-2",
+          value: formatUnderQuotaField(weekEntries[1]),
+          inline: true,
+        });
 
         const embed = {
           title: `Quota ${fmt(quotaValue)} pts — ${clanName}`,
