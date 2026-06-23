@@ -2109,29 +2109,19 @@ export default async function handler(req, res) {
           return `[${p.name}](${playerUrl}) · ${fmt(p.fame)} pts${deckSuffix}`;
         };
 
-        const weekFieldValue = (entry) => {
-          if (!entry) return "Aucune donnée.";
+        const formatWeek = (entry, label) => {
+          if (!entry) return `**${label}**\nAucune donnée.`;
           const lines = [
+            `**${label}**`,
             `Moyenne : ${fmt(entry.average)} pts`,
             "",
             "<:victory:1504136468900352070> Top 5 :",
           ];
-          let currentLength = lines.join("\n").length;
-          const pushLine = (line) => {
-            const nextLength = currentLength + line.length + 1;
-            if (nextLength <= 1020) {
-              lines.push(line);
-              currentLength = nextLength;
-              return true;
-            }
-            return false;
-          };
 
           (entry.topPlayers || []).forEach((p, idx) => {
-            pushLine(`${idx + 1}. ${formatPlayerLink(p)}`);
+            lines.push(`${idx + 1}. ${formatPlayerLink(p)}`);
           });
           lines.push("", "<:sweat:1504139431106576405> Sous quota :");
-          currentLength = lines.join("\n").length;
 
           const below = entry.belowQuota || [];
           if (below.length === 0) {
@@ -2139,37 +2129,31 @@ export default async function handler(req, res) {
           } else {
             let shownCount = 0;
             for (let idx = 0; idx < below.length && shownCount < 10; idx += 1) {
-              const line = `${idx + 1}. ${formatPlayerLink(below[idx])}`;
-              if (!pushLine(line)) break;
+              lines.push(`${idx + 1}. ${formatPlayerLink(below[idx])}`);
               shownCount += 1;
             }
             if (shownCount < below.length) {
-              pushLine(`... +${below.length - shownCount} autres`);
+              lines.push(`... +${below.length - shownCount} autres`);
             }
           }
 
-          const result = lines.join("\n");
-          if (result.length > 1020) {
-            return `Moyenne : ${fmt(entry.average)} pts\n<:sweat:1504139431106576405> ${below.length} joueurs sous quota.`;
-          }
-          return result;
+          return lines.join("\n");
         };
 
-        fields.push({
-          name: "Semaine -1",
-          value: weekFieldValue(weekEntries[0]),
-          inline: true,
-        });
-        fields.push({
-          name: "Semaine -2",
-          value: weekFieldValue(weekEntries[1]),
-          inline: true,
-        });
+        const parts = [
+          formatWeek(weekEntries[0], "Semaine -1"),
+          "",
+          "━━━━━━━━━━━━━━━━━━",
+          "",
+          formatWeek(weekEntries[1], "Semaine -2"),
+        ];
+        const description = parts.join("\n");
 
         const embed = {
           title: `Quota ${fmt(quotaValue)} pts — ${clanName}`,
           url: clanUrl,
           color: 0x5865f2,
+          description,
           fields,
           footer: {
             text: `Données des 2 dernières semaines de GDC`,
