@@ -93,17 +93,24 @@ Ne pas confondre `description` (4096) et `field.value` (1024) — pour une longu
 |---|---|
 | `/trust tag:#TAG` | Analyse fiabilité joueur |
 | `/stats tag:#TAG` | Statistiques GDC détaillées |
-| `/promote clan:N min:X` | Joueurs ≥ X points semaine précédente |
+| `/matchup tag:#TAG` | Calcule le matchup GDC d'un joueur |
+| `/discord-link tag:#TAG` | Lie un tag Clash au compte Discord |
+| `/discord-check clan:N` | Vérifie présence Discord des membres |
+| `/promote clan:N` | Joueurs éligibles à la promotion (2600 pts) |
 | `/quota clan:N quota:V` | Moyenne GDC et sous-quota |
+| `/demote clan:N` | Joueurs n'ayant pas fait 16/16 decks |
+| `/fail clan:N` | Joueurs ayant manqué une journée GDC |
 | `/trust-clan clan:N` | Membres High/Extreme risk |
-| `/chelem clan:N [season:X]` | Joueurs 16/16 decks par semaine |
-| `/top-players number:X period:W scope:Z` | Meilleurs joueurs famille |
-| `/discord-link tag:#TAG` | Lie un Clash à un Discord |
-| `/discord-check clan:N` | Vérifie présence Discord membres |
 | `/late clan:N` | Retardataires GDC du jour |
 | `/late-ping clan:N` | `/late` avec ping, réservé staff |
 | `/compare clan:N` | Clans du groupe GDC |
+| `/top-players number:X period:W` | Meilleurs joueurs famille |
+| `/top-clans` | Classement France GDC |
+| `/collection tag:#TAG` | Statistiques de collection |
+| `/help` | Aide détaillée du bot |
 | `/clan clan:N\|tag:#TAG` | Fiche récapitulative clan |
+| `/family` | Résumé des clans de la famille |
+| `/chelem clan:N [season:X]` | Joueurs 16/16 decks par semaine |
 
 ## Sous-agents
 
