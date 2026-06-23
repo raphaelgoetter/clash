@@ -19,6 +19,8 @@ La documentation orientée utilisateur final reste dans README.md.
 - `npm run war-summary:dry` — version dry-run du résumé quotidien.
 - `node scripts/registerCommands.js` — enregistre ou met à jour les slash commands Discord.
 - `npm run ping-test` — vérifie rapidement la disponibilité réseau ou les secrets utilisés par les scripts de ping.
+- `npm run rules` — poste le rappel des règles du clan le premier mardi du mois.
+- `npm run rules:dry` — même script en mode dry-run.
 
 ### Notes sur les scripts de snapshots
 
