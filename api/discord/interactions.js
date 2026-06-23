@@ -2148,6 +2148,7 @@ export default async function handler(req, res) {
           value: formatTop5Field(sem2),
           inline: true,
         });
+        fields.push({ name: "\u200b", value: "\u200b", inline: false });
         fields.push({
           name: "<:sweat:1504139431106576405> Sous-quota S-1",
           value: formatUnderQuotaField(sem1),
