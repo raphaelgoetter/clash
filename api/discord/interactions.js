@@ -2109,13 +2109,10 @@ export default async function handler(req, res) {
           return `[${p.name}](${playerUrl}) · ${fmt(p.fame)} pts${deckSuffix}`;
         };
 
-        const formatDescriptionWeek = (entry, label) => {
-          if (!entry) return `**${label}**\nAucune donnée.`;
+        const formatTop5Field = (entry) => {
+          if (!entry) return "Aucune donnée.";
           const lines = [
-            `**${label}**`,
-            `Moyenne : ${fmt(entry.average)} pts`,
-            "",
-            "<:victory:1504136468900352070> Top 5 :",
+            `<:victory:1504136468900352070> **Top 5**`,
           ];
           (entry.topPlayers || []).forEach((p, idx) => {
             lines.push(`${idx + 1}. ${formatPlayerLink(p)}`);
@@ -2138,22 +2135,27 @@ export default async function handler(req, res) {
           return result;
         };
 
-        const description = [
-          formatDescriptionWeek(weekEntries[0], "Semaine -1"),
-          "",
-          "━━━━━━━━━━━━━━━━━━",
-          "",
-          formatDescriptionWeek(weekEntries[1], "Semaine -2"),
-        ].join("\n");
+        const sem1 = weekEntries[0];
+        const sem2 = weekEntries[1];
 
         fields.push({
+          name: `Semaine -1 — ∅ ${fmt(sem1?.average ?? 0)} pts`,
+          value: formatTop5Field(sem1),
+          inline: true,
+        });
+        fields.push({
+          name: `Semaine -2 — ∅ ${fmt(sem2?.average ?? 0)} pts`,
+          value: formatTop5Field(sem2),
+          inline: true,
+        });
+        fields.push({
           name: "<:sweat:1504139431106576405> Sous-quota S-1",
-          value: formatUnderQuotaField(weekEntries[0]),
+          value: formatUnderQuotaField(sem1),
           inline: true,
         });
         fields.push({
           name: "<:sweat:1504139431106576405> Sous-quota S-2",
-          value: formatUnderQuotaField(weekEntries[1]),
+          value: formatUnderQuotaField(sem2),
           inline: true,
         });
 
@@ -2161,7 +2163,6 @@ export default async function handler(req, res) {
           title: `Quota ${fmt(quotaValue)} pts — ${clanName}`,
           url: clanUrl,
           color: 0x5865f2,
-          description,
           fields,
           footer: {
             text: `Données des 2 dernières semaines de GDC`,
