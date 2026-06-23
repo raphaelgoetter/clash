@@ -17,7 +17,8 @@
 Avant toute exploration de code dans un nouveau projet :
 ```bash
 codegraph init      # une fois à la création du projet
-codegraph index     # pour indexer/rafraîchir les contenus
+codegraph index     # pour indexer les contenus initialement
+codegraph sync      # pour rafraîchir l'index (début ou fin de session)
 ```
 
 Utiliser les outils `codegraph_*` (context, explore, search, trace, impact) pour les questions structurelles — plus rapides et précis que grep/lecture.
