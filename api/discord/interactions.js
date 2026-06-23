@@ -28,6 +28,7 @@ import {
   computeTourLevel,
 } from "../../backend/services/collectionConstants.js";
 import { getOrSet } from "../../backend/services/cache.js";
+import { isJoinedThisWar } from "../../backend/services/arrivalUtils.js";
 import {
   summarizeWarDecks,
   summarizeWarDecksForMatchup,
@@ -1977,6 +1978,16 @@ export default async function handler(req, res) {
           ),
         );
         const raceLog = await fetchRaceLog(`#${clanTag}`);
+        const { buildWarHistory } = await import("../../backend/services/warHistory.js");
+        const streakCache = new Map();
+        const getStreak = (tag) => {
+          const norm = tag.startsWith("#") ? tag : `#${tag}`;
+          if (!streakCache.has(norm)) {
+            const history = buildWarHistory(norm, raceLog, `#${clanTag}`);
+            streakCache.set(norm, history.streakInCurrentClan);
+          }
+          return streakCache.get(norm);
+        };
         const clanTagNorm = String(clanTag).replace(/^#/, "").toUpperCase();
         const weekEntries = (Array.isArray(raceLog) ? raceLog.slice(0, 2) : [])
           .map((entry) => {
@@ -2019,6 +2030,7 @@ export default async function handler(req, res) {
                 .filter(
                   (p) => (Number.isFinite(p.fame) ? p.fame : 0) < quotaValue,
                 )
+                .filter((p) => getStreak(p.tag) > 0)
                 .sort(
                   (a, b) =>
                     (Number.isFinite(a.fame) ? a.fame : 0) -
@@ -2166,7 +2178,7 @@ export default async function handler(req, res) {
           color: 0x5865f2,
           fields,
           footer: {
-            text: `Données des 2 dernières semaines de GDC`,
+            text: `Données des 2 dernières semaines de GDC · Arrivés en cours de GDC exclus`,
           },
         };
 
@@ -3883,8 +3895,7 @@ export default async function handler(req, res) {
             arrivalWeeks: member.arrivalTotalWeeks,
           }))
           .filter((p) => {
-            const isNewArrival =
-              Number.isFinite(p.arrivalStreak) && p.arrivalStreak === 0;
+            const isNewArrival = isJoinedThisWar(p.arrivalStreak);
             return p.decks < 4 && !isNewArrival;
           })
           .sort((a, b) =>

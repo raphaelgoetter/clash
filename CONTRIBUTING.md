@@ -472,6 +472,41 @@ DISCORD_TOKEN=
 
 ---
 
+## Détection des arrivées en cours de GDC
+
+### Contexte
+
+Plusieurs commandes Discord doivent distinguer les membres « installés » (présents toute la semaine de GDC) des membres « arrivés en cours de GDC » (nouveaux recruits, transferts). Les nouveaux arrivants ne doivent pas être pénalisés dans les listes de sous-quota ou de fail.
+
+### Source : `streakInCurrentClan`
+
+Le service `buildWarHistory()` dans `backend/services/warHistory.js` parcourt le race log du clan (de la semaine la plus récente à la plus ancienne) et calcule `streakInCurrentClan` : le nombre de **semaines complètes consécutives** où le joueur était présent dans le clan actuel. La semaine en cours est exclue car incomplète.
+
+### Fonction utilitaire : `isJoinedThisWar()`
+
+**Fichier :** `backend/services/arrivalUtils.js`
+
+```js
+isJoinedThisWar(streakInCurrentClan, day1Decks = null)
+```
+
+| `streakInCurrentClan` | `day1Decks` | Résultat |
+|---|---|---|
+| `0` | *ignoré* | ✅ Arrivé en cours de GDC (0 semaine complète) |
+| `1` | `null` ou `0` | ✅ Arrivé en début de GDC (1 semaine complète, mais pas de deck au J1) |
+| `1` | `>= 1` | ❌ Membre installé (a joué au J1, peut faire 16/16) |
+| `>= 2` | *ignoré* | ❌ Membre installé |
+
+### Commandes utilisatrices
+
+| Commande | Fichier:ligne | Usage |
+|---|---|---|
+| `/demote` | `api/discord/interactions.js:3220` | Sépare les arrivés en cours de GDC des réguliers dans la liste des fails 16/16 |
+| `/fail` | `api/discord/interactions.js:3886-3888` | Exclut les arrivés en cours de GDC de la liste des fails journaliers |
+| `/quota` | `api/discord/interactions.js:2017-2026` | Exclut les arrivés en cours de GDC de la liste des sous-quota |
+
+---
+
 ## Glossaire
 
 ### Full mode
