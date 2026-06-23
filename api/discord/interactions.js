@@ -2179,12 +2179,12 @@ export default async function handler(req, res) {
             : '';
 
         fields.push({
-          name: `Semaine -1 — ∅ ${fmt(sem1?.average ?? 0)} pts`,
+          name: `Semaine -1 — ${fmt(sem1?.average ?? 0)} pts`,
           value: formatTop5Field(sem1),
           inline: true,
         });
         fields.push({
-          name: `Semaine -2 — ∅ ${fmt(sem2?.average ?? 0)} pts`,
+          name: `Semaine -2 — ${fmt(sem2?.average ?? 0)} pts`,
           value: formatTop5Field(sem2),
           inline: true,
         });
