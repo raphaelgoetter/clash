@@ -2023,21 +2023,27 @@ export default async function handler(req, res) {
               activePlayers.length > 0
                 ? Math.round(totalFame / activePlayers.length)
                 : 0;
+            const below = activePlayers
+              .slice()
+              .filter(
+                (p) => (Number.isFinite(p.fame) ? p.fame : 0) < quotaValue,
+              );
+            const arrivals = below.filter((p) =>
+              isJoinedThisWar(getStreak(p.tag), null, p.decksUsed ?? 0, maxDecks),
+            );
             return {
               weekId,
               activePlayers,
               average,
-              belowQuota: activePlayers
-                .slice()
-                .filter(
-                  (p) => (Number.isFinite(p.fame) ? p.fame : 0) < quotaValue,
-                )
+              belowQuota: below
                 .filter((p) => !isJoinedThisWar(getStreak(p.tag), null, p.decksUsed ?? 0, maxDecks))
                 .sort(
                   (a, b) =>
                     (Number.isFinite(a.fame) ? a.fame : 0) -
                     (Number.isFinite(b.fame) ? b.fame : 0),
                 ),
+              arrivalsExcluded: arrivals.length,
+              arrivalsExcludedNames: arrivals.map((p) => p.name),
               topPlayers: activePlayers
                 .slice()
                 .sort(
@@ -2151,6 +2157,26 @@ export default async function handler(req, res) {
 
         const sem1 = weekEntries[0];
         const sem2 = weekEntries[1];
+        const totalExcluded = (sem1?.arrivalsExcluded ?? 0) + (sem2?.arrivalsExcluded ?? 0);
+        const excludedNames = [
+          ...(sem1?.arrivalsExcludedNames ?? []),
+          ...(sem2?.arrivalsExcludedNames ?? []),
+        ];
+        const excludedSuffix =
+          excludedNames.length > 0
+            ? (() => {
+                const joined = excludedNames.join(', ');
+                if (joined.length <= 1970) return ` (${joined})`;
+                let truncated = '';
+                for (const name of excludedNames) {
+                  const candidate = truncated ? `${truncated}, ${name}` : name;
+                  if (candidate.length > 1970) break;
+                  truncated = candidate;
+                }
+                const remaining = excludedNames.length - truncated.split(', ').length;
+                return ` (${truncated}, …${remaining})`;
+              })()
+            : '';
 
         fields.push({
           name: `Semaine -1 — ∅ ${fmt(sem1?.average ?? 0)} pts`,
@@ -2180,7 +2206,7 @@ export default async function handler(req, res) {
           color: 0x5865f2,
           fields,
           footer: {
-            text: `Données des 2 dernières semaines de GDC · Arrivés en cours de GDC exclus`,
+            text: `Données des 2 dernières semaines de GDC · Arrivés en cours de GDC exclus${excludedSuffix}`,
           },
         };
 
