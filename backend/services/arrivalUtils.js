@@ -13,6 +13,9 @@
  * - streakInCurrentClan === 1 et pas de deck joué au jour 1 (jeudi)
  *                                          → arrivé en début de GDC
  *                                          (a raté le jour 1, ne peut pas faire 16/16)
+ * - streakInCurrentClan === 1, day1Decks inconnu et totalDecks < maxDecks
+ *                                          → probablement arrivé en cours (heuristique
+ *                                            pour les semaines passées du race log)
  * - Autres cas                           → membre installé
  *
  * La source de `streakInCurrentClan` est buildWarHistory() dans warHistory.js,
@@ -23,11 +26,18 @@
  *        dans le clan actuel (hors semaine en cours)
  * @param {number|null} [day1Decks] - Nombre de decks joués au jour 1 (jeudi)
  *        de la GDC en cours. null / 0 si pas joué.
+ * @param {number|null} [totalDecks] - Nombre total de decks joués dans la semaine
+ *        (alternative si day1Decks n'est pas disponible)
+ * @param {number} [maxDecks=16] - Nombre maximal de decks possibles sur la semaine
  * @returns {boolean} true si le joueur est arrivé en cours de GDC
  */
-export function isJoinedThisWar(streakInCurrentClan, day1Decks = null) {
+export function isJoinedThisWar(streakInCurrentClan, day1Decks = null, totalDecks = null, maxDecks = 16) {
   if (streakInCurrentClan == null) return false;
   if (streakInCurrentClan === 0) return true;
-  if (streakInCurrentClan === 1 && day1Decks == null) return true;
+  if (streakInCurrentClan === 1 && day1Decks != null && day1Decks === 0) return true;
+  if (streakInCurrentClan === 1 && day1Decks == null) {
+    if (totalDecks != null) return totalDecks < maxDecks;
+    return true;
+  }
   return false;
 }

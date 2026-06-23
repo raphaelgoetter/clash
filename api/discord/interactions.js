@@ -1978,6 +1978,8 @@ export default async function handler(req, res) {
           ),
         );
         const raceLog = await fetchRaceLog(`#${clanTag}`);
+        const decksPerDay = Math.min(4, Math.max(1, Math.floor((clan.clanWarTrophies ?? 0) / 1000) + 1));
+        const maxDecks = decksPerDay * 4;
         const { buildWarHistory } = await import("../../backend/services/warHistory.js");
         const streakCache = new Map();
         const getStreak = (tag) => {
@@ -2030,7 +2032,7 @@ export default async function handler(req, res) {
                 .filter(
                   (p) => (Number.isFinite(p.fame) ? p.fame : 0) < quotaValue,
                 )
-                .filter((p) => getStreak(p.tag) > 0)
+                .filter((p) => !isJoinedThisWar(getStreak(p.tag), null, p.decksUsed ?? 0, maxDecks))
                 .sort(
                   (a, b) =>
                     (Number.isFinite(a.fame) ? a.fame : 0) -
