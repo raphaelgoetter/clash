@@ -12,7 +12,7 @@
 ### OUBLIS :
 
 🔸 1 ou plusieurs combats non joués sans prévenir → rétrogradation ou exclusion (orientation vers le clan formation).
--# Excuses/explications possible sur discord ou dans le chat du clan.
+-# Excuses/explications possibles sur discord ou dans le chat du clan.
 
 ### PROMOTION :
 
