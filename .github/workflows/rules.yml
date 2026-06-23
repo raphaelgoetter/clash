@@ -1,0 +1,35 @@
+name: Rules Reminder
+
+permissions:
+  contents: write
+
+on:
+  schedule:
+    # 14:00 UTC = 15:00 CET / 16:00 CEST — premier mardi du mois
+    # Le script vérifie que c'est bien le 1er mardi (day <= 7)
+    - cron: "0 14 * * 2"
+  workflow_dispatch:
+
+jobs:
+  post-rules:
+    runs-on: ubuntu-latest
+    env:
+      DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+      DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+      DISCORD_CHANNEL_MEMBERS_Y8JUPC9C: ${{ secrets.DISCORD_CHANNEL_MEMBERS_Y8JUPC9C }}
+      DISCORD_CHANNEL_MEMBERS_LRQP20V9: ${{ secrets.DISCORD_CHANNEL_MEMBERS_LRQP20V9 }}
+      DISCORD_CHANNEL_MEMBERS_QU9UQJRL: ${{ secrets.DISCORD_CHANNEL_MEMBERS_QU9UQJRL }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Post rules reminder
+        run: node scripts/notifyRules.js
