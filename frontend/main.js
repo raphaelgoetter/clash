@@ -2828,59 +2828,6 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
   card.classList.remove("hidden");
 }
 
-function renderMissingDuelsCard(missingDuels, prevWeekId = null) {
-  const card = document.getElementById("card-missing-duels");
-  const listEl = document.getElementById("missing-duels-list");
-  if (!card) return;
-
-  const weekLabel = prevWeekId
-    ? ` <span class="card-week-id">(${prevWeekId.toUpperCase()})</span>`
-    : "";
-  card.querySelector(".card-title").innerHTML =
-    `⚔️ ${t("missingWarDuels")}${weekLabel}`;
-  card.querySelector(".card-desc").textContent = t("missingWarDuelsDesc") || "";
-  card.classList.remove("hidden");
-
-  if (!missingDuels || !Array.isArray(missingDuels.players)) {
-    loadedClanSections.missingDuels = false;
-    if (listEl) {
-      listEl.innerHTML = `<li class="text-muted">${t("clickToLoadMissingDuels") || "Open the section to load missing duels on demand."}</li>`;
-    }
-    return;
-  }
-
-  loadedClanSections.missingDuels = true;
-
-  if (!listEl) return;
-  const players = missingDuels.players
-    .slice()
-    .sort(
-      (a, b) =>
-        b.missingDuels - a.missingDuels ||
-        a.name.localeCompare(b.name, currentLang === "fr" ? "fr" : "en"),
-    );
-
-  if (players.length === 0) {
-    listEl.innerHTML = `<li class="text-muted">${t("noMissingDuels")}</li>`;
-    return;
-  }
-
-  listEl.innerHTML = players
-    .map((p) => {
-      const role = p.role ? formatRoleLabel(p.role) : null;
-      return (
-        `<li>` +
-        `<span class="tp-name">${escHtml(p.name)} ` +
-        `<span class="tp-tag">${escHtml(p.tag)}</span>` +
-        `${role ? ` <span class="role-badge ${p.role}">${role}</span>` : ""}` +
-        `</span>` +
-        `<span class="tp-meta">x${fmt(p.missingDuels)}</span>` +
-        `</li>`
-      );
-    })
-    .join("");
-}
-
 // ── Clan war card (vue clan) ──────────────────────────────────────────
 
 function mergeWarSummaries(clanWarSummary, lastWarSummary) {
@@ -3052,7 +2999,6 @@ let activeClanTag = null;
 let loadedClanSections = {
   topPlayers: false,
   uncomplete: false,
-  missingDuels: false,
   raceGroup: false,
   members: false,
 };
@@ -3112,12 +3058,9 @@ function renderClanOverview(data) {
     // Mode lite : afficher top-fame brut de la dernière guerre, masquer uncomplete
     loadedClanSections.topPlayers = true;
     loadedClanSections.uncomplete = true;
-    loadedClanSections.missingDuels = true;
     renderClanLiteBest(data.lastWarBest, data.members, data.lastWarWeekId);
     const uncompleteCard = document.getElementById("card-uncomplete");
     if (uncompleteCard) uncompleteCard.classList.add("hidden");
-    const missingDuelsCard = document.getElementById("card-missing-duels");
-    if (missingDuelsCard) missingDuelsCard.classList.add("hidden");
     // Card guerre allégée : total decks + jour courant, sans détail par jour
     renderClanWarCard(
       data.clanWarSummary ?? null,
@@ -3129,10 +3072,8 @@ function renderClanOverview(data) {
   } else {
     loadedClanSections.topPlayers = Boolean(data.topPlayers);
     loadedClanSections.uncomplete = Boolean(data.uncomplete);
-    loadedClanSections.missingDuels = Boolean(data.missingDuels);
     renderTopPlayersCard(data.topPlayers, weekId);
     renderUncompleteCard(data.uncomplete, weekId);
-    renderMissingDuelsCard(data.missingDuels, weekId);
     const uncompleteCard = document.getElementById("card-uncomplete");
     if (uncompleteCard) uncompleteCard.classList.remove("hidden");
   }
@@ -3356,26 +3297,6 @@ function setupClanLazySectionHandlers(weekId) {
     uncompleteCard.dataset.lazyInit = "1";
   }
 
-  const missingDuelsCard = document.getElementById("card-missing-duels");
-  if (missingDuelsCard && !missingDuelsCard.dataset.lazyInit) {
-    const missingDuelsDetails = missingDuelsCard.querySelector("details");
-    if (missingDuelsDetails) {
-      missingDuelsDetails.addEventListener("toggle", async () => {
-        if (!missingDuelsDetails.open || loadedClanSections.missingDuels)
-          return;
-        missingDuelsCard.querySelector("#missing-duels-list").innerHTML =
-          `<li class="text-muted">${t("loading") || "Loading..."}</li>`;
-        try {
-          await loadClanSection(activeClanTag, "missingDuels", weekId);
-        } catch (err) {
-          missingDuelsCard.querySelector("#missing-duels-list").innerHTML =
-            `<li class="text-muted">${t("errorLoadingSection") || "Failed to load missing duels."}</li>`;
-        }
-      });
-    }
-    missingDuelsCard.dataset.lazyInit = "1";
-  }
-
   const groupCard = document.getElementById("card-war-group");
   if (groupCard && !groupCard.dataset.lazyInit) {
     const groupDetails = groupCard.querySelector("details");
@@ -3459,7 +3380,6 @@ async function loadClanSection(tag, section, weekId, force = false) {
     const params = new URLSearchParams();
     params.set("includeTopPlayers", section === "topPlayers" ? "1" : "0");
     params.set("includeUncomplete", section === "uncomplete" ? "1" : "0");
-    params.set("includeMissingDuels", section === "missingDuels" ? "1" : "0");
     params.set("includeRaceGroup", section === "raceGroup" ? "true" : "false");
     params.set("includeMembers", "false");
     if (section === "raceGroup") {
@@ -3479,10 +3399,6 @@ async function loadClanSection(tag, section, weekId, force = false) {
   if (section === "uncomplete") {
     loadedClanSections.uncomplete = true;
     renderUncompleteCard(data.uncomplete, weekId);
-  }
-  if (section === "missingDuels") {
-    loadedClanSections.missingDuels = true;
-    renderMissingDuelsCard(data.missingDuels, weekId);
   }
   if (section === "raceGroup") {
     loadedClanSections.raceGroup = true;
