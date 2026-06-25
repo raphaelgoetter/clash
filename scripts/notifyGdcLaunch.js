@@ -71,13 +71,20 @@ const COLOSSEUM_SECTION =
 const RESISTANTS_BODY =
 `La Guerre de Clans commence ! 🔥
 {colosseum}
-1. 4 combats/jour OBLIGATOIRES.
+### OBLIGATIONS :
 
-- 😴 Si absence prévue → Prévenir dans <#881862784059592704> + quitter le clan pour Les Revoltes (réintégration au retour).
+🔹 4 combats/jour du jeudi au lundi matin.
+🔹 Si absence prévue → Prévenir dans <#881862784059592704> + quitter le clan uniquement durant l'absence (réintégration au retour).
+-# Lors de votre retour vous conserverez le rôle que vous aviez avant de partir.
 
-2. ❌ Une journée manquée sans prévenir → Excuses obligatoires (Discord/jeu) sous 3 jours, sinon rétrogradation/exclusion (temporaire si raison exceptionnelle).
-3. ❌❌ Deux journées manquées sans prévenir → Exclusion immédiate (temporaire si raison exceptionnelle).
-4. 🍾 2600 pts/semaine → Promotion au rang "Aîné".
+### OUBLIS :
+
+🔸 1 ou plusieurs combats non joués sans prévenir → rétrogradation ou exclusion (orientation vers le clan formation).
+-# Excuses/explications possibles sur discord ou dans le chat du clan.
+
+### PROMOTION :
+
+<:blue_crown:1294923219668566047> Saison entière avec 100% des combats réalisés → promotion au rang "Aîné".
 
 🎯 L'objectif n'est pas de gagner tous ses combats, "juste" de faire ses 4 combats chaque jour, car **tous les combats comptent pour le clan**. Un combat même perdu rapporte des points !
 
