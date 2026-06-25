@@ -1091,97 +1091,102 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       (c) => c.tag && c.tag.toUpperCase() !== ownTagNorm,
     );
 
-    // Timeout de sécurité pour éviter le 504 global (Vercel)
-    const timeoutPromise = (ms) =>
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Timeout Rivals")), ms),
-      );
+    // Timeout individuel par rival pour éviter qu'un rival lent sacrifice tous les autres
+    const RIVAL_TIMEOUT_MS = 8000;
 
-    await Promise.race([
-      Promise.allSettled(
-        rivalClans.map(async (c) => {
-          const tagNorm = c.tag.toUpperCase();
+    await Promise.allSettled(
+      rivalClans.map(async (c) => {
+        const tagNorm = c.tag.toUpperCase();
 
-          // On traite chaque rival indépendément pour maximiser les chances
-          const clanProm = fetchClan(c.tag)
-            .then((res) => {
-              raceGroupRivalData[tagNorm] = res;
-            })
-            .catch((e) =>
-              console.warn(
-                `[clan]     ! fetchClan ${tagNorm} failed:`,
-                e.message,
+        const rivalTimeout = new Promise((_, reject) =>
+          setTimeout(
+            () => reject(new Error(`Timeout ${tagNorm}`)),
+            RIVAL_TIMEOUT_MS,
+          ),
+        );
+
+        await Promise.race([
+          Promise.allSettled([
+            // fetchClan : raceGroupRivalData (contient clan.members)
+            fetchClan(c.tag)
+              .then((res) => {
+                raceGroupRivalData[tagNorm] = res;
+              })
+              .catch((e) =>
+                console.warn(
+                  `[clan]     ! fetchClan ${tagNorm} failed:`,
+                  e.message,
+                ),
               ),
-            );
-          const membersProm = fetchClanMembers(c.tag)
-            .then((members) => {
-              rivalMemberTagsByTag[tagNorm] = new Set(
-                (members ?? []).map((m) => normalizeTag(m.tag)),
-              );
-            })
-            .catch((e) =>
-              console.warn(
-                `[clan]     ! fetchClanMembers ${tagNorm} failed:`,
-                e.message,
+            // fetchClanMembers : rivalMemberTagsByTag (roster Set)
+            fetchClanMembers(c.tag)
+              .then((members) => {
+                rivalMemberTagsByTag[tagNorm] = new Set(
+                  (members ?? []).map((m) => normalizeTag(m.tag)),
+                );
+              })
+              .catch((e) =>
+                console.warn(
+                  `[clan]     ! fetchClanMembers ${tagNorm} failed:`,
+                  e.message,
+                ),
               ),
-            );
-          const logProm = fetchRaceLog(c.tag)
-            .then((rivalLog) => {
-              const lastStanding = (rivalLog?.[0]?.standings ?? []).find(
-                (s) => (s.clan?.tag ?? "").toUpperCase() === tagNorm,
-              );
-              rivalLastWarByTag[tagNorm] = sumParticipantsFame(lastStanding);
-              const totalDecksLastWeek = sumParticipantsDecks(lastStanding);
-              if (totalDecksLastWeek != null) {
-                rivalAvgDecksByTag[tagNorm] = totalDecksLastWeek / 4;
-              }
-              const prevStanding = (rivalLog?.[1]?.standings ?? []).find(
-                (s) => (s.clan?.tag ?? "").toUpperCase() === tagNorm,
-              );
-              rivalPrevWarByTag[tagNorm] = sumParticipantsFame(prevStanding);
-
-              // Rivaux : on n'a pas de snapshots par jour, donc on estime
-              // l'efficacité avec la moyenne pts/deck des GDC précédentes.
-              const ppdSamples = [];
-              for (const weekEntry of rivalLog ?? []) {
-                const standing = (weekEntry?.standings ?? []).find(
+            // fetchRaceLog : historiques et pts/deck
+            fetchRaceLog(c.tag)
+              .then((rivalLog) => {
+                const lastStanding = (rivalLog?.[0]?.standings ?? []).find(
                   (s) => (s.clan?.tag ?? "").toUpperCase() === tagNorm,
                 );
-                if (!standing) continue;
-                const fame = sumParticipantsFame(standing);
-                const decks = sumParticipantsDecks(standing);
-                if (
-                  typeof fame === "number" &&
-                  Number.isFinite(fame) &&
-                  typeof decks === "number" &&
-                  Number.isFinite(decks) &&
-                  decks > 0
-                ) {
-                  ppdSamples.push(fame / decks);
+                rivalLastWarByTag[tagNorm] = sumParticipantsFame(lastStanding);
+                const totalDecksLastWeek = sumParticipantsDecks(lastStanding);
+                if (totalDecksLastWeek != null) {
+                  rivalAvgDecksByTag[tagNorm] = totalDecksLastWeek / 4;
                 }
-                if (ppdSamples.length >= 4) break;
-              }
-              if (ppdSamples.length > 0) {
-                rivalAvgPtsPerDeckByTag[tagNorm] =
-                  ppdSamples.reduce((s, v) => s + v, 0) / ppdSamples.length;
-              }
-            })
-            .catch((e) =>
-              console.warn(
-                `[clan]     ! fetchRaceLog ${tagNorm} failed:`,
-                e.message,
+                const prevStanding = (rivalLog?.[1]?.standings ?? []).find(
+                  (s) => (s.clan?.tag ?? "").toUpperCase() === tagNorm,
+                );
+                rivalPrevWarByTag[tagNorm] = sumParticipantsFame(prevStanding);
+
+                // Rivaux : on n'a pas de snapshots par jour, donc on estime
+                // l'efficacité avec la moyenne pts/deck des GDC précédentes.
+                const ppdSamples = [];
+                for (const weekEntry of rivalLog ?? []) {
+                  const standing = (weekEntry?.standings ?? []).find(
+                    (s) => (s.clan?.tag ?? "").toUpperCase() === tagNorm,
+                  );
+                  if (!standing) continue;
+                  const fame = sumParticipantsFame(standing);
+                  const decks = sumParticipantsDecks(standing);
+                  if (
+                    typeof fame === "number" &&
+                    Number.isFinite(fame) &&
+                    typeof decks === "number" &&
+                    Number.isFinite(decks) &&
+                    decks > 0
+                  ) {
+                    ppdSamples.push(fame / decks);
+                  }
+                  if (ppdSamples.length >= 4) break;
+                }
+                if (ppdSamples.length > 0) {
+                  rivalAvgPtsPerDeckByTag[tagNorm] =
+                    ppdSamples.reduce((s, v) => s + v, 0) /
+                    ppdSamples.length;
+                }
+              })
+              .catch((e) =>
+                console.warn(
+                  `[clan]     ! fetchRaceLog ${tagNorm} failed:`,
+                  e.message,
+                ),
               ),
-            );
-          return Promise.allSettled([clanProm, membersProm, logProm]);
-        }),
-      ),
-      timeoutPromise(14000),
-    ]).catch((err) => {
-      console.warn(
-        "[clan] Rival fetching timed out or failed globally:",
-        err.message,
-      );
-    });
+          ]),
+          rivalTimeout,
+        ]).catch((e) =>
+          console.warn(`[clan] Rival ${tagNorm} partial/timeout:`, e.message),
+        );
+      }),
+    );
   }
 
   // topPlayers est toujours calculé (pas d'appel API supplémentaire : réutilise
@@ -2767,7 +2772,12 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 ? rosterTagSet.size
                 : typeof extra?.members === "number" && extra.members > 0
                   ? extra.members
-                  : allPartsInner.length;
+                  : Math.max(
+                      allPartsInner.filter(
+                        (p) => (p.decksUsed ?? 0) > 0,
+                      ).length,
+                      1,
+                    );
               const activeMembers = rosterTagSet
                 ? allPartsInner.filter(
                     (p) =>
