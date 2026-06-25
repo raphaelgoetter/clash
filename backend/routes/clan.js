@@ -2606,9 +2606,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           //   → null hors période warDay
           //
           // targetDecksToday {number}  Cible de decks pour la journée  [100–200]
-          //   → clan propre J2-J4 : warSnapshotDays[warDayIndex-1] (snapshot veille)
-          //   → rivaux J2-J4      : (totalDecksWeekly - decksToday) / warDayIndex
-          //   → J1 / fallback     : moyenne decks semaine passée (raceLog[0]) ou 200
+          //   = min(200, rosterSize × 4)  (J1)
+          //   = min(200, activeMembers × 4)  (J2+)
+          //   → rosterSize   = clan.members  (via fetchClan ou rosterTagSet)
+          //   → activeMembers = membres du roster avec decksUsed > 0 (comptés via le Set rosterTagSet)
           //
           // ptsPerDeck       {number}  Efficacité pts/deck  [100–250]
           //   → clan propre  : currentRace.clan.periodPoints / decksToday (source de vérité directe)
@@ -2756,7 +2757,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 (s, p) => s + (p.decksUsedToday ?? 0),
                 0,
               );
-              // totalDecksWeekly : nécessaire uniquement pour le calcul de targetDecks (rivaux)
+              // totalDecksWeekly : cumul hebdo brut (utilisé pour remainingDecksWeekly → maxReachableFame)
               const totalDecksWeekly = allPartsInner.reduce(
                 (s, p) => s + (p.decksUsed ?? 0),
                 0,
