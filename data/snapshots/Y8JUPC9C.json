@@ -11688,7 +11688,7 @@
           "start": "2026-06-25T09:42:00.000Z",
           "end": "2026-06-26T09:41:59.999Z"
         },
-        "snapshotTime": "2026-06-25T12:47:40.803Z",
+        "snapshotTime": "2026-06-25T13:42:41.640Z",
         "snapshotBackupTime": "2026-06-25T10:56:51.805Z",
         "decks": {
           "#2902YQRQL": 4,
@@ -11696,11 +11696,14 @@
           "#82URJC8CR": 4,
           "#88QP9CJU": 4,
           "#9YQ8RVU2P": 4,
+          "#CYRGPVGVG": 4,
           "#J8RU2RJ8C": 4,
           "#LCQ2J0VGC": 4,
           "#VVJ8RURL9": 4,
           "#YRYPUR822": 4,
           "#8PJ20UQCC": 2,
+          "#99VY0090": 2,
+          "#UY00GJG2": 2,
           "#JLU88JR28": 1
         },
         "hourlyCumul": [],
@@ -11744,8 +11747,8 @@
           "#8P29RRU2": 0,
           "#PGJPJG9QQ": 0,
           "#2PG80VRY": 0,
-          "#UY00GJG2": 0,
-          "#99VY0090": 0,
+          "#UY00GJG2": 200,
+          "#99VY0090": 200,
           "#9Q920V9U": 0,
           "#8LR9JRGG": 0,
           "#99CRC8PP": 0,
@@ -11770,7 +11773,7 @@
           "#GVGVR0J2U": 0,
           "#PVQ2QRLJQ": 0,
           "#GLR2YLQ2U": 0,
-          "#CYRGPVGVG": 0,
+          "#CYRGPVGVG": 500,
           "#8PJ20UQCC": 300,
           "#JLU88JR28": 100,
           "#80CCLY20L": 700,
@@ -11786,7 +11789,10 @@
           "#2902YQRQL": 1,
           "#82URJC8CR": 1,
           "#88QP9CJU": 1,
-          "#9YQ8RVU2P": 1
+          "#9YQ8RVU2P": 1,
+          "#UY00GJG2": 1,
+          "#99VY0090": 1,
+          "#CYRGPVGVG": 1
         },
         "duelsComplete": true,
         "periodType": "warDay",
@@ -11830,8 +11836,8 @@
           "#8P29RRU2": 0,
           "#PGJPJG9QQ": 0,
           "#2PG80VRY": 0,
-          "#UY00GJG2": 0,
-          "#99VY0090": 0,
+          "#UY00GJG2": 2,
+          "#99VY0090": 2,
           "#9Q920V9U": 0,
           "#8LR9JRGG": 0,
           "#99CRC8PP": 0,
@@ -11856,7 +11862,7 @@
           "#GVGVR0J2U": 0,
           "#PVQ2QRLJQ": 0,
           "#GLR2YLQ2U": 0,
-          "#CYRGPVGVG": 0,
+          "#CYRGPVGVG": 4,
           "#8PJ20UQCC": 2,
           "#JLU88JR28": 1,
           "#80CCLY20L": 4,
@@ -11865,7 +11871,7 @@
           "#J8RU2RJ8C": 4,
           "#LCQ2J0VGC": 4
         },
-        "snapshotCount": 39
+        "snapshotCount": 47
       },
       {
         "warDay": "friday",
