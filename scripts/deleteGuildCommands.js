@@ -32,7 +32,7 @@ const guildUrl = `https://discord.com/api/v10/applications/${appId}/guilds/${gui
     }
     console.log(`Found ${commands.length} guild command(s) to delete.`);
 
-    // Delete each one
+    // Delete each one with delay to avoid rate limiting
     for (const cmd of commands) {
       const delRes = await fetch(`${guildUrl}/${cmd.id}`, {
         method: "DELETE",
@@ -43,7 +43,11 @@ const guildUrl = `https://discord.com/api/v10/applications/${appId}/guilds/${gui
       } else {
         const err = await delRes.json();
         console.error(`Failed to delete ${cmd.name} (${cmd.id}):`, err);
+        if (err.retry_after) {
+          await new Promise(r => setTimeout(r, (err.retry_after + 0.5) * 1000));
+        }
       }
+      await new Promise(r => setTimeout(r, 1500));
     }
     console.log("Done. Global commands remain active. Duplicates should disappear.");
   } catch (err) {
