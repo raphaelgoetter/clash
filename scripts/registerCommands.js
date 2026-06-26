@@ -16,10 +16,6 @@ if (!appId || !token) {
 }
 
 const globalUrl = `https://discord.com/api/v10/applications/${appId}/commands`;
-const guildId = process.env.DISCORD_GUILD_ID;
-const guildUrl = guildId
-  ? `https://discord.com/api/v10/applications/${appId}/guilds/${guildId}/commands`
-  : null;
 
 const commands = [
   {
@@ -405,12 +401,6 @@ async function registerAtUrl(url) {
 
 (async () => {
   try {
-    if (guildUrl) {
-      // Register guild commands for instant availability in the configured server.
-      await registerAtUrl(guildUrl);
-      console.log("Guild commands registered.");
-    }
-    // Keep global registration for long-term availability outside the guild.
     await registerAtUrl(globalUrl);
     console.log(
       "Global command registration done (may take up to 1 hour to propagate).",
