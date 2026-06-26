@@ -4322,11 +4322,6 @@ export default async function handler(req, res) {
           descLines.push(
             `- ${totalMissing} deck${totalMissing > 1 ? "s" : ""} manquant${totalMissing > 1 ? "s" : ""}`,
           );
-          if (slotsAvailable === 0) {
-            descLines.push(
-              `- ${totalMissing} deck${totalMissing > 1 ? "s" : ""} perdus`,
-            );
-          }
         }
         if (totalBoatAttacks > 0) {
           descLines.push(
