@@ -12641,7 +12641,7 @@
           "start": "2026-06-27T09:42:00.000Z",
           "end": "2026-06-28T09:41:59.999Z"
         },
-        "snapshotTime": "2026-06-27T19:30:20.412Z",
+        "snapshotTime": "2026-06-27T20:23:24.607Z",
         "snapshotBackupTime": "2026-06-27T09:43:02.357Z",
         "decks": {
           "#2902YQRQL": 4,
@@ -12666,11 +12666,13 @@
           "#U008V0PQ8": 4,
           "#UY00GJG2": 4,
           "#VVJ8RURL9": 4,
+          "#YQGCRQ0": 4,
           "#YRYPUR822": 4,
           "#2GUPJ99G2": 3,
           "#UJ89GUUUY": 3,
           "#PG0Q0YYGY": 2,
-          "#2PG80VRY": 1
+          "#2PG80VRY": 1,
+          "#80CCLY20L": 1
         },
         "hourlyCumul": [],
         "_cumulFame": {
@@ -12735,12 +12737,12 @@
           "#R2C89LVU": 1400,
           "#UY00GJG2": 2000,
           "#2UQQJJ98Y": 1400,
-          "#80CCLY20L": 1400,
+          "#80CCLY20L": 1600,
           "#LQLY92CR0": 1400,
           "#8RYQ8Y0GY": 2100,
           "#9CQC0YUR8": 2000,
           "#88QP9CJU": 1500,
-          "#YQGCRQ0": 1500,
+          "#YQGCRQ0": 2150,
           "#82URJC8CR": 2200,
           "#2GUPJ99G2": 2000,
           "#8V98QYY8V": 1550,
@@ -12773,7 +12775,8 @@
           "#UJ89GUUUY": 1,
           "#P9R8Y90P8": 1,
           "#GLR2YLQ2U": 1,
-          "#G9LPGQUG": 1
+          "#G9LPGQUG": 1,
+          "#YQGCRQ0": 1
         },
         "duelsComplete": true,
         "periodType": "warDay",
@@ -12839,12 +12842,12 @@
           "#R2C89LVU": 8,
           "#UY00GJG2": 12,
           "#2UQQJJ98Y": 8,
-          "#80CCLY20L": 8,
+          "#80CCLY20L": 9,
           "#LQLY92CR0": 8,
           "#8RYQ8Y0GY": 12,
           "#9CQC0YUR8": 12,
           "#88QP9CJU": 8,
-          "#YQGCRQ0": 8,
+          "#YQGCRQ0": 12,
           "#82URJC8CR": 12,
           "#2GUPJ99G2": 11,
           "#8V98QYY8V": 8,
@@ -12854,7 +12857,7 @@
           "#9YQ8RVU2P": 12
         },
         "periodPointsEarned": 32050,
-        "snapshotCount": 101
+        "snapshotCount": 106
       },
       {
         "warDay": "sunday",
