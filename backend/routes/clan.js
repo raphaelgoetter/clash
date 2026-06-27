@@ -2606,8 +2606,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           //   → null hors période warDay
           //
           // targetDecksToday {number}  Cible de decks pour la journée  [100–200]
-          //   = min(200, rosterSize × 4)  (J1)
-          //   = min(200, activeMembers × 4)  (J2+)
+          //   = min(practicalMaxDecksToday, decksToday + maxDecksByTime)
+          //   → practicalMaxDecksToday = min(200, rosterSize × 4)  (J1)
+          //                              min(200, activeMembers × 4)  (J2+)
+          //   → maxDecksByTime = floor(msUntilReset / 3min) × 2 slots  (temps restant)
           //   → rosterSize   = clan.members  (via fetchClan ou rosterTagSet)
           //   → activeMembers = membres du roster avec decksUsed > 0 (comptés via le Set rosterTagSet)
           //
@@ -2813,6 +2815,24 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                   : participationGdcEstimee.activeMembers) * 4,
               );
 
+              // Ajustement du nombre de decks réalisables selon le temps restant
+              // avant le reset. 2 joueurs peuvent jouer en même temps, ~3 min/combat.
+              const _nowGdc = new Date(
+                Date.now() - warResetOffsetMs(c.tag),
+              );
+              const _endOfGdcDay = new Date(
+                Date.UTC(
+                  _nowGdc.getUTCFullYear(),
+                  _nowGdc.getUTCMonth(),
+                  _nowGdc.getUTCDate() + 1,
+                ),
+              );
+              const _msUntilEnd = _endOfGdcDay - _nowGdc;
+              const _maxDecksByTime =
+                _msUntilEnd > 0
+                  ? Math.floor(_msUntilEnd / (3 * 60 * 1000)) * 2
+                  : 0;
+
               // Maximum théorique absolu pour maxReachableFame (clinch detection)
               // Utilise rosterSize × 4 (pas activeMembers) pour ne pas sous-estimer
               // la capacité de remontée des rivaux quand certains membres n'ont pas
@@ -2835,8 +2855,11 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               maxReachableFame =
                 sectionFame + remainingDecks * MAX_FAME_PER_DECK;
 
-              // targetDecks = capacité réaliste du jour (utilisée pour la projection)
-              const targetDecks = practicalMaxDecksToday;
+              // targetDecks = capacité réaliste du jour, ajustée au temps restant
+              const targetDecks = Math.min(
+                practicalMaxDecksToday,
+                decksToday + _maxDecksByTime,
+              );
 
               // weeklyDecks : fallback de secours si la fame live du jour est indisponible.
               const weeklyDecks = allPartsInner.reduce(
