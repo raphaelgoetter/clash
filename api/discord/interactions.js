@@ -5064,63 +5064,38 @@ export default async function handler(req, res) {
           }
         };
 
-        const embeds = [];
-
-        // Embed(s) pour la tranche principale
+        // Envoyer chaque bloc dans un message séparé (limite 6000 bytes totale par message Discord)
         for (let i = 0; i < sliceChunks.length; i++) {
-          embeds.push({
-            title:
-              i === 0
-                ? `🏆 Classement France GDC — #${startRank} → #${endRank}`
-                : `🏆 Classement France GDC (suite) — #${startRank} → #${endRank}`,
-            color: 0xf1c40f,
-            description: sliceChunks[i],
-            footer:
-              i === sliceChunks.length - 1 && familyChunks.length === 0
-                ? {
-                    text: `France · Trophées GDC · ${allClans.length} clans chargés`,
-                  }
-                : undefined,
-          });
-        }
-
-        // Embed(s) pour les clans famille hors tranche
-        for (let i = 0; i < familyChunks.length; i++) {
-          embeds.push({
-            title:
-              familyChunks.length > 1
-                ? `🏠 Clans famille (hors tranche) — ${familyRows.length} clan${familyRows.length > 1 ? "s" : ""}`
-                : "🏠 Clans famille (hors tranche)",
-            color: 0x3498db,
-            description: familyChunks[i],
-            footer:
-              i === familyChunks.length - 1
-                ? {
-                    text: `France · Trophées GDC · ${allClans.length} clans chargés`,
-                  }
-                : undefined,
-          });
-        }
-
-        try {
-          await sendWebhook({
-            embeds,
-            allowed_mentions: { parse: [] },
-          });
-        } catch (webhookErr) {
-          // Fallback : un seul embed avec troncature
-          console.error("[/top-clans] fallback single embed:", webhookErr.message);
-          const singleDescription = sliceRows.join("\n");
           await sendWebhook({
             embeds: [{
-              title: `🏆 Classement France GDC — #${startRank} → #${endRank}`,
+              title:
+                i === 0
+                  ? `🏆 Classement France GDC — #${startRank} → #${endRank}`
+                  : `🏆 Classement France GDC (suite) — #${startRank} → #${endRank}`,
               color: 0xf1c40f,
-              description: singleDescription.length > 4096
-                ? singleDescription.slice(0, 4094) + "…"
-                : singleDescription,
-              footer: {
-                text: `France · Trophées GDC · ${allClans.length} clans chargés · ${webhookErr.message.slice(0, 400)}`,
-              },
+              description: sliceChunks[i],
+              footer:
+                i === sliceChunks.length - 1 && familyChunks.length === 0
+                  ? { text: `France · Trophées GDC · ${allClans.length} clans chargés` }
+                  : undefined,
+            }],
+            allowed_mentions: { parse: [] },
+          });
+        }
+
+        for (let i = 0; i < familyChunks.length; i++) {
+          await sendWebhook({
+            embeds: [{
+              title:
+                familyChunks.length > 1
+                  ? `🏠 Clans famille (hors tranche) — ${familyRows.length} clan${familyRows.length > 1 ? "s" : ""}`
+                  : "🏠 Clans famille (hors tranche)",
+              color: 0x3498db,
+              description: familyChunks[i],
+              footer:
+                i === familyChunks.length - 1
+                  ? { text: `France · Trophées GDC · ${allClans.length} clans chargés` }
+                  : undefined,
             }],
             allowed_mentions: { parse: [] },
           });
