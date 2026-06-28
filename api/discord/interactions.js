@@ -5060,7 +5060,7 @@ export default async function handler(req, res) {
           if (!resp.ok) {
             const text = await resp.text();
             console.error("[/top-clans] Discord webhook error:", resp.status, text);
-            throw new Error(`Discord ${resp.status}: ${text.slice(0, 200)}`);
+            throw new Error(`Discord ${resp.status}: ${text.slice(0, 800)}`);
           }
         };
 
@@ -5119,7 +5119,7 @@ export default async function handler(req, res) {
                 ? singleDescription.slice(0, 4094) + "…"
                 : singleDescription,
               footer: {
-                text: `France · Trophées GDC · ${allClans.length} clans chargés · ${webhookErr.message.slice(0, 100)}`,
+                text: `France · Trophées GDC · ${allClans.length} clans chargés · ${webhookErr.message.slice(0, 400)}`,
               },
             }],
             allowed_mentions: { parse: [] },
