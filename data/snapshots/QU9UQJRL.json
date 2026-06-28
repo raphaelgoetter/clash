@@ -7610,9 +7610,10 @@
           "start": "2026-06-28T09:42:00.000Z",
           "end": "2026-06-29T09:41:59.999Z"
         },
-        "snapshotTime": null,
+        "snapshotTime": "2026-06-28T11:33:47.257Z",
         "snapshotBackupTime": "2026-06-28T10:44:20.422Z",
         "decks": {
+          "#LQPRLQJCQ": 4,
           "#UC9LU0L90": 4
         },
         "hourlyCumul": [],
@@ -7629,7 +7630,7 @@
           "#VRG2LLV0L": 0,
           "#GYCJPJL0L": 0,
           "#VJ8UJ0VGU": 0,
-          "#LQPRLQJCQ": 0,
+          "#LQPRLQJCQ": 500,
           "#L8LCR02CG": 0,
           "#2PG80VRY": 0,
           "#UQ9U8YQPC": 0,
@@ -7696,7 +7697,7 @@
           "#VRG2LLV0L": 0,
           "#GYCJPJL0L": 0,
           "#VJ8UJ0VGU": 0,
-          "#LQPRLQJCQ": 0,
+          "#LQPRLQJCQ": 4,
           "#L8LCR02CG": 0,
           "#2PG80VRY": 0,
           "#UQ9U8YQPC": 0,
@@ -7748,7 +7749,7 @@
           "#UVGPPVQ8Q": 12
         },
         "periodPointsEarned": 10925,
-        "snapshotCount": 4
+        "snapshotCount": 8
       }
     ]
   }
