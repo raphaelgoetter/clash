@@ -5119,7 +5119,7 @@ export default async function handler(req, res) {
                 ? singleDescription.slice(0, 4094) + "…"
                 : singleDescription,
               footer: {
-                text: `France · Trophées GDC · ${allClans.length} clans chargés · fallback`,
+                text: `France · Trophées GDC · ${allClans.length} clans chargés · ${webhookErr.message.slice(0, 100)}`,
               },
             }],
             allowed_mentions: { parse: [] },
