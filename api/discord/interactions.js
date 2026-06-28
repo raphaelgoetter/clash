@@ -4942,7 +4942,6 @@ export default async function handler(req, res) {
     runBackground(async () => {
       try {
         const TOP_CLANS_WINDOW = 50;
-        const MAX_EMBED_DESCRIPTION = 4096;
         const startOpt = body.data.options?.find((o) => o.name === "start");
         const startRank = Math.max(
           1,
@@ -5004,7 +5003,7 @@ export default async function handler(req, res) {
         const fmt = (n) =>
           typeof n === "number" ? n.toLocaleString("fr-FR") : "—";
 
-        // Formateur d'une entrée de clan
+        // Formateur d'une entrée de clan (2 lignes)
         const formatEntry = (clan) => {
           const tag = (clan.tag ?? "").toUpperCase();
           const isFamily = FAMILY_CLAN_TAGS.has(tag);
@@ -5017,36 +5016,24 @@ export default async function handler(req, res) {
             clan.clanWarTrophies ?? clan.clanScore ?? clan.trophies ?? null;
           const trophies = fmt(trophyValue);
 
-          return `${label}${delta}${familyIcon} **${name}** · \`${tag}\` · <:trophy2:1493677804733337621> ${trophies} · <:members:1506175789731811399> ${members} membres`;
+          const line1 = `${label}${delta}${familyIcon} **${name}** · \`${tag}\``;
+          const line2 = `┣ <:trophy2:1493677804733337621> ${trophies} · <:members:1506175789731811399> ${members}`;
+          return `${line1}\n${line2}`;
         };
 
-        // Construire les lignes de la tranche
+        // Construire les entrées de la tranche
         const sliceRows = slice.map((clan) => formatEntry(clan));
-
-        // Construire les lignes des clans famille hors tranche
+        // Construire les entrées des clans famille hors tranche
         const familyRows = familyOutside.map((clan) => formatEntry(clan));
 
-        // Découper les lignes en blocs de max 4096 caractères (un embed par bloc)
-        const chunkLines = (lines, maxLen) => {
-          const chunks = [];
-          let current = [];
-          let currentLen = 0;
-          for (const line of lines) {
-            const lineLen = line.length + 1; // +1 pour le \n
-            if (currentLen + lineLen > maxLen && current.length > 0) {
-              chunks.push(current.join("\n"));
-              current = [];
-              currentLen = 0;
-            }
-            current.push(line);
-            currentLen += lineLen;
-          }
-          if (current.length > 0) chunks.push(current.join("\n"));
-          return chunks;
+        // Grouper par 25 clans
+        const groupBy = (arr, size) => {
+          const groups = [];
+          for (let i = 0; i < arr.length; i += size) groups.push(arr.slice(i, i + size));
+          return groups;
         };
-
-        const sliceChunks = chunkLines(sliceRows, MAX_EMBED_DESCRIPTION);
-        const familyChunks = chunkLines(familyRows, MAX_EMBED_DESCRIPTION);
+        const sliceGroups = groupBy(sliceRows, 25);
+        const familyGroups = groupBy(familyRows, 25);
 
         const endRank =
           slice[slice.length - 1]?.rank ?? startRank + (TOP_CLANS_WINDOW - 1);
@@ -5064,36 +5051,52 @@ export default async function handler(req, res) {
           }
         };
 
-        // Message 1 : première tranche du classement
-        await sendWebhook({
-          embeds: [{
-            title: `🏆 Classement France GDC — #${startRank} → #${endRank}`,
-            color: 0xf1c40f,
-            description: sliceChunks[0],
-            footer: {
-              text: `France · Trophées GDC · ${allClans.length} clans chargés`,
-            },
-          }],
-          allowed_mentions: { parse: [] },
-        });
-
-        // Message 2 (et +) : clans famille hors tranche
-        for (let i = 0; i < familyChunks.length; i++) {
+        const sendGroup = async (group, title, color, footer) => {
           await sendWebhook({
             embeds: [{
-              title:
-                familyChunks.length > 1
-                  ? `🏠 Clans famille (hors tranche) — ${familyRows.length} clan${familyRows.length > 1 ? "s" : ""}`
-                  : "🏠 Clans famille (hors tranche)",
-              color: 0x3498db,
-              description: familyChunks[i],
-              footer:
-                i === familyChunks.length - 1
-                  ? { text: `France · Trophées GDC · ${allClans.length} clans chargés` }
-                  : undefined,
+              title,
+              color,
+              description: group.join("\n"),
+              ...(footer ? { footer } : {}),
             }],
             allowed_mentions: { parse: [] },
           });
+        };
+
+        // Message 1 : clans #1 → #25
+        await sendGroup(
+          sliceGroups[0],
+          `🏆 Classement France GDC — #${startRank} → #${endRank}`,
+          0xf1c40f,
+          sliceGroups.length === 1 && familyGroups.length === 0
+            ? { text: `France · Trophées GDC · ${allClans.length} clans chargés` }
+            : null,
+        );
+
+        // Message 2 : clans #26 → #50 (si existants)
+        if (sliceGroups.length > 1) {
+          await sendGroup(
+            sliceGroups[1],
+            `🏆 Classement France GDC (suite) — #${startRank} → #${endRank}`,
+            0xf1c40f,
+            familyGroups.length === 0
+              ? { text: `France · Trophées GDC · ${allClans.length} clans chargés` }
+              : null,
+          );
+        }
+
+        // Message 3 (et +) : clans famille hors tranche
+        for (let i = 0; i < familyGroups.length; i++) {
+          await sendGroup(
+            familyGroups[i],
+            familyGroups.length > 1
+              ? `🏠 Clans famille (hors tranche) — ${familyRows.length} clan${familyRows.length > 1 ? "s" : ""}`
+              : "🏠 Clans famille (hors tranche)",
+            0x3498db,
+            i === familyGroups.length - 1
+              ? { text: `France · Trophées GDC · ${allClans.length} clans chargés` }
+              : null,
+          );
         }
       } catch (err) {
         console.error("[/top-clans] erreur:", err.message);
