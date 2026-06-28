@@ -3632,7 +3632,7 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
-        const TOP_CLANS_WINDOW = 30;
+        const TOP_CLANS_WINDOW = 50;
         const MAX_EMBED_DESCRIPTION = 4096;
         const startOpt = body.data.options?.find((o) => o.name === "start");
         const startRank = Math.max(
@@ -3711,51 +3711,80 @@ export default async function handler(req, res) {
           return `${label}${delta}${familyIcon} **${name}** · \`${tag}\` · <:trophy2:1493677804733337621> ${trophies} · <:members:1506175789731811399> ${members} membres`;
         };
 
-        const truncateByLine = (text, maxLen = MAX_EMBED_DESCRIPTION) => {
-          if (text.length <= maxLen) return text;
-          const lines = text.split("\n");
-          let out = "";
-          for (const line of lines) {
-            const next = out ? `${out}\n${line}` : line;
-            if (next.length > maxLen - 2) break;
-            out = next;
-          }
-          return out ? `${out}\n…` : "…";
-        };
-
         // Construire les lignes de la tranche
         const sliceRows = slice.map((clan) => formatEntry(clan));
 
         // Construire les lignes des clans famille hors tranche
         const familyRows = familyOutside.map((clan) => formatEntry(clan));
 
-        let description = sliceRows.join("\n");
+        // Découper les lignes en blocs de max 4096 caractères (un embed par bloc)
+        const chunkLines = (lines, maxLen) => {
+          const chunks = [];
+          let current = [];
+          let currentLen = 0;
+          for (const line of lines) {
+            const lineLen = line.length + 1; // +1 pour le \n
+            if (currentLen + lineLen > maxLen && current.length > 0) {
+              chunks.push(current.join("\n"));
+              current = [];
+              currentLen = 0;
+            }
+            current.push(line);
+            currentLen += lineLen;
+          }
+          if (current.length > 0) chunks.push(current.join("\n"));
+          return chunks;
+        };
 
-        if (familyRows.length > 0) {
-          description +=
-            "\n─────────────────\n**🏠 Clans famille (hors tranche)**\n" +
-            familyRows.join("\n");
-        }
-
-        // Tronquer si nécessaire (limite embed Discord : 4096 chars), sans casser une ligne/emoji
-        description = truncateByLine(description, MAX_EMBED_DESCRIPTION);
+        const sliceChunks = chunkLines(sliceRows, MAX_EMBED_DESCRIPTION);
+        const familyChunks = chunkLines(familyRows, MAX_EMBED_DESCRIPTION);
 
         const endRank =
           slice[slice.length - 1]?.rank ?? startRank + (TOP_CLANS_WINDOW - 1);
-        const embed = {
-          title: `🏆 Classement France GDC — #${startRank} → #${endRank}`,
-          color: 0xf1c40f,
-          description,
-          footer: {
-            text: `France · Trophées GDC · ${allClans.length} clans chargés`,
-          },
-        };
+
+        const embeds = [];
+
+        // Embed(s) pour la tranche principale
+        for (let i = 0; i < sliceChunks.length; i++) {
+          embeds.push({
+            title:
+              i === 0
+                ? `🏆 Classement France GDC — #${startRank} → #${endRank}`
+                : `🏆 Classement France GDC (suite) — #${startRank} → #${endRank}`,
+            color: 0xf1c40f,
+            description: sliceChunks[i],
+            footer:
+              i === sliceChunks.length - 1 && familyChunks.length === 0
+                ? {
+                    text: `France · Trophées GDC · ${allClans.length} clans chargés`,
+                  }
+                : undefined,
+          });
+        }
+
+        // Embed(s) pour les clans famille hors tranche
+        for (let i = 0; i < familyChunks.length; i++) {
+          embeds.push({
+            title:
+              familyChunks.length > 1
+                ? `🏠 Clans famille (hors tranche) — ${familyRows.length} clan${familyRows.length > 1 ? "s" : ""}`
+                : "🏠 Clans famille (hors tranche)",
+            color: 0x3498db,
+            description: familyChunks[i],
+            footer:
+              i === familyChunks.length - 1
+                ? {
+                    text: `France · Trophées GDC · ${allClans.length} clans chargés`,
+                  }
+                : undefined,
+          });
+        }
 
         await fetch(webhookUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            embeds: [embed],
+            embeds,
             allowed_mentions: { parse: [] },
           }),
         });
