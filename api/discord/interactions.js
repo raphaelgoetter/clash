@@ -5064,25 +5064,20 @@ export default async function handler(req, res) {
           }
         };
 
-        // Envoyer chaque bloc dans un message séparé (limite 6000 bytes totale par message Discord)
-        for (let i = 0; i < sliceChunks.length; i++) {
-          await sendWebhook({
-            embeds: [{
-              title:
-                i === 0
-                  ? `🏆 Classement France GDC — #${startRank} → #${endRank}`
-                  : `🏆 Classement France GDC (suite) — #${startRank} → #${endRank}`,
-              color: 0xf1c40f,
-              description: sliceChunks[i],
-              footer:
-                i === sliceChunks.length - 1 && familyChunks.length === 0
-                  ? { text: `France · Trophées GDC · ${allClans.length} clans chargés` }
-                  : undefined,
-            }],
-            allowed_mentions: { parse: [] },
-          });
-        }
+        // Message 1 : première tranche du classement
+        await sendWebhook({
+          embeds: [{
+            title: `🏆 Classement France GDC — #${startRank} → #${endRank}`,
+            color: 0xf1c40f,
+            description: sliceChunks[0],
+            footer: {
+              text: `France · Trophées GDC · ${allClans.length} clans chargés`,
+            },
+          }],
+          allowed_mentions: { parse: [] },
+        });
 
+        // Message 2 (et +) : clans famille hors tranche
         for (let i = 0; i < familyChunks.length; i++) {
           await sendWebhook({
             embeds: [{
