@@ -4976,11 +4976,12 @@ export default async function handler(req, res) {
         }
 
         // Identifier les clans famille absents de la tranche
-        const sliceTags = new Set(slice.map((c) => c.tag.toUpperCase()));
+        const normalizeTag = (raw) => (raw ?? "").replace(/^#/, "").toUpperCase();
+        const sliceTags = new Set(slice.map((c) => normalizeTag(c.tag)));
         const familyOutside = allClans.filter(
           (c) =>
-            FAMILY_CLAN_TAGS.has(c.tag.toUpperCase()) &&
-            !sliceTags.has(c.tag.toUpperCase()),
+            FAMILY_CLAN_TAGS.has(normalizeTag(c.tag)) &&
+            !sliceTags.has(normalizeTag(c.tag)),
         );
 
         // Formateur de médaille/rang
@@ -5005,7 +5006,8 @@ export default async function handler(req, res) {
 
         // Formateur d'une entrée de clan (2 lignes)
         const formatEntry = (clan) => {
-          const tag = (clan.tag ?? "").toUpperCase();
+          const rawTag = (clan.tag ?? "").toUpperCase();
+          const tag = normalizeTag(clan.tag);
           const isFamily = FAMILY_CLAN_TAGS.has(tag);
           const familyIcon = isFamily ? " 🏠" : "";
           const label = rankLabel(clan.rank);
@@ -5016,7 +5018,7 @@ export default async function handler(req, res) {
             clan.clanWarTrophies ?? clan.clanScore ?? clan.trophies ?? null;
           const trophies = fmt(trophyValue);
 
-          const line1 = `${label}${delta}${familyIcon} **${name}** · \`${tag}\``;
+          const line1 = `${label}${delta}${familyIcon} **${name}** · \`${rawTag}\``;
           const line2 = `┣ <:trophy2:1493677804733337621> ${trophies} · <:members:1506175789731811399> ${members}`;
           return `${line1}\n${line2}`;
         };
