@@ -3742,6 +3742,19 @@ export default async function handler(req, res) {
         const endRank =
           slice[slice.length - 1]?.rank ?? startRank + (TOP_CLANS_WINDOW - 1);
 
+        const sendWebhook = async (payload) => {
+          const resp = await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          if (!resp.ok) {
+            const text = await resp.text();
+            console.error("[/top-clans] Discord webhook error:", resp.status, text);
+            throw new Error(`Discord ${resp.status}: ${text.slice(0, 200)}`);
+          }
+        };
+
         const embeds = [];
 
         // Embed(s) pour la tranche principale
@@ -3780,14 +3793,29 @@ export default async function handler(req, res) {
           });
         }
 
-        await fetch(webhookUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+        try {
+          await sendWebhook({
             embeds,
             allowed_mentions: { parse: [] },
-          }),
-        });
+          });
+        } catch (webhookErr) {
+          // Fallback : un seul embed avec troncature
+          console.error("[/top-clans] fallback single embed:", webhookErr.message);
+          const singleDescription = sliceRows.join("\n");
+          await sendWebhook({
+            embeds: [{
+              title: `🏆 Classement France GDC — #${startRank} → #${endRank}`,
+              color: 0xf1c40f,
+              description: singleDescription.length > 4096
+                ? singleDescription.slice(0, 4094) + "…"
+                : singleDescription,
+              footer: {
+                text: `France · Trophées GDC · ${allClans.length} clans chargés · fallback`,
+              },
+            }],
+            allowed_mentions: { parse: [] },
+          });
+        }
       } catch (err) {
         console.error("[/top-clans] erreur:", err.message);
         await fetch(webhookUrl, {
