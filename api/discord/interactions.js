@@ -5901,7 +5901,7 @@ export default async function handler(req, res) {
 
           const extras = [newIcon, reliabilityStr].filter(Boolean).join(" ");
           const prefix = extras ? ` ${extras} ·` : "";
-          return `**#${rank}. ${m.name}**${prefix} 🏆${avgStr} · ⚡${ppdStr}`;
+          return `**${rank}. ${m.name}**${prefix} 🏆${avgStr} · ⚡${ppdStr}`;
         });
 
         // Pagination au cas où (sécurité, normalement tout tient sur une page)
@@ -6098,7 +6098,7 @@ export default async function handler(req, res) {
 
           const extras = [newIcon, reliabilityStr].filter(Boolean).join(" ");
           const prefix = extras ? ` ${extras} ·` : "";
-          return `**#${rank}. ${m.name}**${prefix} 🏆${avgStr} · ⚡${ppdStr}`;
+          return `**${rank}. ${m.name}**${prefix} 🏆${avgStr} · ⚡${ppdStr}`;
         });
 
         const DESC_MAX = 4096;
