@@ -5906,26 +5906,24 @@ export default async function handler(req, res) {
         const fmt = (n) =>
           Number.isFinite(n) ? n.toLocaleString("fr-FR") : "—";
 
-        // Construit les lignes d'affichage
+        // Construit les lignes d'affichage (format compact une ligne par membre)
         const rows = sorted.map((m, idx) => {
           const rank = idx + 1;
-          const playerUrl = trustPlayerUrl(m.tag);
-          const newIcon = m.isNew ? " 🆕" : "";
+          const newIcon = m.isNew ? "🆕" : "";
 
-          // Fiabilité (clan famille uniquement)
           let reliabilityStr = "";
           if (isFamilyClan && Number.isFinite(m.reliability)) {
             const icon = RELIABILITY_ICON[m.color] ?? "⚪";
-            const verdictFr =
-              FR_VERDICTS[m.color] ?? m.verdict ?? "Inconnue";
-            reliabilityStr = ` ${icon} ${Math.round(m.reliability)}% (${verdictFr})`;
+            reliabilityStr = `${icon}${Math.round(m.reliability)}%`;
           }
 
           const avgStr = fmt(m.avgFame);
           const maxStr = fmt(m.maxFame);
           const ppdStr = fmt(m.pointsPerDeck);
 
-          return `#${rank}. [${m.name}](${playerUrl})${newIcon}${reliabilityStr}\n    <:stats:1499284927894650950> ${avgStr} · <:trophy2:1493677804733337621> ${maxStr} · <:xp:1498645264079257730> ${ppdStr}`;
+          const extras = [newIcon, reliabilityStr].filter(Boolean).join(" ");
+          const prefix = extras ? ` ${extras} ·` : "";
+          return `#${rank}. ${m.name}${prefix} 📊${avgStr} 🏆${maxStr} ⚡${ppdStr}`;
         });
 
         // Pagination : découpage par taille (description limitée à 4096 car.)
@@ -6113,22 +6111,21 @@ export default async function handler(req, res) {
 
         const rows = sorted.map((m, idx) => {
           const rank = idx + 1;
-          const playerUrl = trustPlayerUrl(m.tag);
-          const newIcon = m.isNew ? " 🆕" : "";
+          const newIcon = m.isNew ? "🆕" : "";
 
           let reliabilityStr = "";
           if (isFamilyClan && Number.isFinite(m.reliability)) {
             const icon = RELIABILITY_ICON[m.color] ?? "⚪";
-            const verdictFr =
-              FR_VERDICTS[m.color] ?? m.verdict ?? "Inconnue";
-            reliabilityStr = ` ${icon} ${Math.round(m.reliability)}% (${verdictFr})`;
+            reliabilityStr = `${icon}${Math.round(m.reliability)}%`;
           }
 
           const avgStr = fmt(m.avgFame);
           const maxStr = fmt(m.maxFame);
           const ppdStr = fmt(m.pointsPerDeck);
 
-          return `#${rank}. [${m.name}](${playerUrl})${newIcon}${reliabilityStr}\n    <:stats:1499284927894650950> ${avgStr} · <:trophy2:1493677804733337621> ${maxStr} · <:xp:1498645264079257730> ${ppdStr}`;
+          const extras = [newIcon, reliabilityStr].filter(Boolean).join(" ");
+          const prefix = extras ? ` ${extras} ·` : "";
+          return `#${rank}. ${m.name}${prefix} 📊${avgStr} 🏆${maxStr} ⚡${ppdStr}`;
         });
 
         const DESC_MAX = 4096;
