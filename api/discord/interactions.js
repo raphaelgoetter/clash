@@ -5902,7 +5902,7 @@ export default async function handler(req, res) {
           const parts = [newIcon, reliabilityStr].filter(Boolean);
           const prefix = parts.length ? " " + parts.join(" ") + " ·" : "";
           const body = " " + "\u{1F3C6}" + avgStr + " · " + "\u{26A1}" + ppdStr;
-          return "**" + rank + ". " + m.name + "**" + prefix + body;
+          return rank + ". " + m.name + prefix + body;
         });
 
         // Pagination au cas où (sécurité, normalement tout tient sur une page)
@@ -5929,16 +5929,6 @@ export default async function handler(req, res) {
             ? "Points par deck"
             : "Points par semaine";
         const footerText = `Tri : ${sortLabel} · 🏆 moyenne · ⚡ pts/deck`;
-
-        const debugRow = rows[0] || "(empty)";
-        const hasNewline = debugRow.indexOf(String.fromCharCode(10)) >= 0;
-        const chars = debugRow.split("").map(function(c) { return c.charCodeAt(0); }).join(",");
-        await fetch(webhookUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content: "ROW0: " + debugRow + " | has10:" + hasNewline + " | len:" + debugRow.length + " | chars:" + chars }),
-        });
-        await new Promise(function(r) { setTimeout(r, 200); });
 
         const sendPage = (pageRows, pageIndex) => {
           let description = "";
@@ -6114,7 +6104,7 @@ export default async function handler(req, res) {
           const parts = [newIcon, reliabilityStr].filter(Boolean);
           const prefix = parts.length ? " " + parts.join(" ") + " ·" : "";
           const body = " " + "\u{1F3C6}" + avgStr + " · " + "\u{26A1}" + ppdStr;
-          return "**" + rank + ". " + m.name + "**" + prefix + body;
+          return rank + ". " + m.name + prefix + body;
         });
 
         const DESC_MAX = 4096;
