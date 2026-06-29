@@ -907,24 +907,44 @@ async function postWarSummary(
     isExactFame = true;
   } else if (isLastDay && apiWeekFame !== null) {
     // J4 : période de collecte terminée. On utilise dans l'ordre :
-    // 1. periodPointsEarned stocké dans le snapshot (données API exactes collectées
-    //    pendant la semaine via periodLogs -> période correcte, pas décalée par le reset).
-    // 2. raceLog total − cumul pré-reset J3 (fallback, peut surestimer J4 car l'API
-    //    sous-estime le fame J3 au moment du snapshot).
+    // 1. periodPointsEarned stocké dans le snapshot + total raceLog (si J4 inclus)
+    // 2. raceLog total − cumul pré-reset J3 (si total suffisant)
+    // 3. Snapshot pré-reset (fallback si raceLog pas encore à jour avec J4) — cf. #238
     const j1j2j3Sum = allWeekDays
       .slice(0, 3)
       .reduce((s, d) => s + (d.periodPointsEarned ?? 0), 0);
-    if (j1j2j3Sum > 0) {
+    if (j1j2j3Sum > 0 && apiWeekFame > j1j2j3Sum) {
       totalFame = Math.max(0, apiWeekFame - j1j2j3Sum);
       isExactFame = true;
     } else if (
       prevDayEntry?._cumulFamePreReset &&
       Object.keys(prevDayEntry._cumulFamePreReset).length > 0
     ) {
-      totalFame = Math.max(
-        0,
-        apiWeekFame - sumValues(prevDayEntry._cumulFamePreReset),
-      );
+      const prevCumul = sumValues(prevDayEntry._cumulFamePreReset);
+      if (apiWeekFame > prevCumul) {
+        totalFame = Math.max(0, apiWeekFame - prevCumul);
+        isExactFame = true;
+      }
+    }
+
+    // Fallback snapshot pré-reset : raceLog[0] ne contient pas encore J4
+    // (API en retard après le reset du lundi).
+    if (totalFame == null && hasPreResetSnapshot) {
+      if (
+        prevDayEntry?._cumulFamePreReset &&
+        Object.keys(prevDayEntry._cumulFamePreReset).length > 0
+      ) {
+        totalFame = Math.max(
+          0,
+          sumValues(cumulFamePreReset) -
+            sumValues(prevDayEntry._cumulFamePreReset),
+        );
+      } else {
+        totalFame = computeDailyFame(
+          { ...dayEntry, _cumulFame: cumulFamePreReset },
+          prevDayEntry,
+        );
+      }
       isExactFame = true;
     }
   } else if (
