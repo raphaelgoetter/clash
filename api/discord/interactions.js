@@ -5902,7 +5902,7 @@ export default async function handler(req, res) {
           const parts = [newIcon, reliabilityStr].filter(Boolean);
           const prefix = parts.length ? " " + parts.join(" ") + " ·" : "";
           const body = " " + "\u{1F3C6}" + avgStr + " · " + "\u{26A1}" + ppdStr;
-          return "**" + rank + ". " + m.name + "**" + prefix + body;
+          return rank + ". " + m.name + prefix + body;
         });
 
         // Pagination au cas où (sécurité, normalement tout tient sur une page)
@@ -6104,7 +6104,7 @@ export default async function handler(req, res) {
           const parts = [newIcon, reliabilityStr].filter(Boolean);
           const prefix = parts.length ? " " + parts.join(" ") + " ·" : "";
           const body = " " + "\u{1F3C6}" + avgStr + " · " + "\u{26A1}" + ppdStr;
-          return "**" + rank + ". " + m.name + "**" + prefix + body;
+          return rank + ". " + m.name + prefix + body;
         });
 
         const DESC_MAX = 4096;
