@@ -5931,7 +5931,11 @@ export default async function handler(req, res) {
         const footerText = `Tri : ${sortLabel} · 🏆 moyenne · ⚡ pts/deck`;
 
         const sendPage = (pageRows, pageIndex) => {
-          const description = pageRows.join("\n");
+          let description = "";
+          for (let ri = 0; ri < pageRows.length; ri++) {
+            if (ri > 0) description += String.fromCharCode(10);
+            description += pageRows[ri];
+          }
           const embed = {
             title: `<:stats:1499284927894650950> Stats GDC : ${clanName}`,
             url: trustClanUrl(resolved.tag),
@@ -6127,7 +6131,7 @@ export default async function handler(req, res) {
           title: `<:stats:1499284927894650950> Stats GDC : ${clanName}`,
           url: trustClanUrl(clanTag),
           color: 0x5865f2,
-          description: firstPage.join("\n"),
+          description: firstPage.join(String.fromCharCode(10)),
           footer: {
             text:
               pageCount > 1
