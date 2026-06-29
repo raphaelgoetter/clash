@@ -5928,9 +5928,24 @@ export default async function handler(req, res) {
           return `#${rank}. [${m.name}](${playerUrl})${newIcon}${reliabilityStr}\n    <:stats:1499284927894650950> ${avgStr} · <:trophy2:1493677804733337621> ${maxStr} · <:xp:1498645264079257730> ${ppdStr}`;
         });
 
-        // Pagination : max 25 membres par embed (description limit 4096)
-        const MAX_PER_PAGE = 25;
-        const pageCount = Math.ceil(rows.length / MAX_PER_PAGE);
+        // Pagination : découpage par taille (description limitée à 4096 car.)
+        const DESC_MAX = 4096;
+        const pages = [];
+        let currentPage = [];
+        let currentLen = 0;
+        for (const row of rows) {
+          const rowLen = row.length + 1; // +1 pour le \n de jointure
+          if (currentLen + rowLen > DESC_MAX && currentPage.length > 0) {
+            pages.push(currentPage);
+            currentPage = [row];
+            currentLen = rowLen;
+          } else {
+            currentPage.push(row);
+            currentLen += rowLen;
+          }
+        }
+        if (currentPage.length > 0) pages.push(currentPage);
+        const pageCount = pages.length;
 
         const sortLabel =
           sortMode === "pointsPerDeck"
@@ -5938,13 +5953,8 @@ export default async function handler(req, res) {
             : "Points par semaine";
         const footerText = `Tri : ${sortLabel} · ${isFamilyClan ? "Fiabilité incluse" : "Hors famille, fiabilité non disponible"}`;
 
-        const sendPage = async (pageIndex) => {
-          const pageRows = rows.slice(
-            pageIndex * MAX_PER_PAGE,
-            (pageIndex + 1) * MAX_PER_PAGE,
-          );
+        const sendPage = (pageRows, pageIndex) => {
           const description = pageRows.join("\n");
-
           const embed = {
             title: `<:stats:1499284927894650950> Stats GDC : ${clanName}`,
             url: trustClanUrl(resolved.tag),
@@ -5957,11 +5967,10 @@ export default async function handler(req, res) {
                   : footerText,
             },
           };
-
           return { embeds: [embed] };
         };
 
-        const firstPayload = await sendPage(0);
+        const firstPayload = sendPage(pages[0], 0);
 
         // Ajoute les boutons de tri (uniquement sur la première page)
         const avgFameActive = sortMode === "avgFame";
@@ -6007,7 +6016,7 @@ export default async function handler(req, res) {
 
         // Pages suivantes (sans boutons)
         for (let p = 1; p < pageCount; p++) {
-          const payload = await sendPage(p);
+          const payload = sendPage(pages[p], p);
           await fetch(webhookUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -6114,9 +6123,16 @@ export default async function handler(req, res) {
           return `#${rank}. [${m.name}](${playerUrl})${newIcon}${reliabilityStr}\n    <:stats:1499284927894650950> ${avgStr} · <:trophy2:1493677804733337621> ${maxStr} · <:xp:1498645264079257730> ${ppdStr}`;
         });
 
-        const MAX_PER_PAGE = 25;
-        const pageCount = Math.ceil(rows.length / MAX_PER_PAGE);
-        const pageRows = rows.slice(0, MAX_PER_PAGE);
+        const DESC_MAX = 4096;
+        const firstPage = [];
+        let currentLen = 0;
+        for (const row of rows) {
+          const rowLen = row.length + 1;
+          if (currentLen + rowLen > DESC_MAX && firstPage.length > 0) break;
+          firstPage.push(row);
+          currentLen += rowLen;
+        }
+        const pageCount = Math.ceil(rows.length / firstPage.length);
 
         const sortLabel =
           sortMode === "pointsPerDeck"
@@ -6131,7 +6147,7 @@ export default async function handler(req, res) {
           title: `<:stats:1499284927894650950> Stats GDC : ${clanName}`,
           url: trustClanUrl(`#${clanTag}`),
           color: 0x5865f2,
-          description: pageRows.join("\n"),
+          description: firstPage.join("\n"),
           footer: {
             text:
               pageCount > 1
