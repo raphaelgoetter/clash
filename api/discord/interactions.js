@@ -1787,6 +1787,9 @@ export default async function handler(req, res) {
             "**Clan**\n" +
             "Commande : `/clan clan:N|tag:#TAG`\n" +
             "Usage : affiche la fiche récapitulative d'un clan (famille ou tag libre)\n\n" +
+            "**Stats Clan**\n" +
+            "Commande : `/stats-clan clan:N|tag:#TAG sort:[avgFame|pointsPerDeck]`\n" +
+            "Usage : statistiques GDC détaillées de tous les membres (tri par points/semaine ou points/deck, boutons interactifs)\n\n" +
             "**Chelem**\n" +
             "Commande : `/chelem clan:N [season:X]`\n" +
             "Usage : joueurs ayant fait 16/16 decks toutes semaines d'une saison entière\n\n" +
@@ -5797,6 +5800,382 @@ export default async function handler(req, res) {
           body: JSON.stringify({
             content: `Erreur : ${err.message}`,
             flags: 64,
+          }),
+        });
+      }
+    });
+    return;
+  }
+
+  // ── /stats-clan ──
+  if (body.type === 2 && body.data?.name === "stats-clan") {
+    const clanOpt = body.data.options?.find((o) => o.name === "clan");
+    const tagOpt = body.data.options?.find((o) => o.name === "tag");
+    const sortOpt = body.data.options?.find((o) => o.name === "sort");
+
+    if (!clanOpt && !tagOpt) {
+      return res.status(200).json({
+        type: 4,
+        data: {
+          content: "Veuillez sélectionner un clan ou fournir un tag.",
+          flags: 64,
+        },
+      });
+    }
+
+    const CLAN_MAP = {
+      1: { name: "La Resistance", tag: "Y8JUPC9C" },
+      2: { name: "Les Resistants", tag: "LRQP20V9" },
+      3: { name: "Les Revoltes", tag: "QU9UQJRL" },
+    };
+
+    let resolved;
+    if (tagOpt) {
+      const rawTag = tagOpt.value.trim().toUpperCase().replace(/^#/, "");
+      resolved = { tag: rawTag, name: `#${rawTag}` };
+    } else {
+      const clanVal = (clanOpt.value || "1").toString().trim();
+      resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
+    }
+    const sortMode = sortOpt?.value || "avgFame";
+    const isFamilyClan = ALLOWED_CLAN_TAGS.has(resolved.tag.toUpperCase());
+
+    res.status(200).json({ type: 5 });
+    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+
+    runBackground(async () => {
+      try {
+        const endpoint = isFamilyClan
+          ? `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis?fast=true`
+          : `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/lite`;
+
+        const abortCtrl = new AbortController();
+        const abortTimer = setTimeout(() => abortCtrl.abort(), 20000);
+        let apiResp;
+        try {
+          apiResp = await fetch(endpoint, {
+            headers: { Accept: "application/json" },
+            signal: abortCtrl.signal,
+          });
+        } finally {
+          clearTimeout(abortTimer);
+        }
+
+        if (!apiResp.ok) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `Erreur API (${apiResp.status}). Réessayez dans quelques instants.`,
+              flags: 64,
+            }),
+          });
+          return;
+        }
+
+        const data = await apiResp.json();
+        const members = Array.isArray(data.members) ? data.members : [];
+        const clanInfo = data.clan || {};
+        const clanName = clanInfo.name || resolved.name;
+
+        if (members.length === 0) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: "Aucun membre trouvé.",
+              flags: 64,
+            }),
+          });
+          return;
+        }
+
+        // Tri des membres selon le mode choisi (décroissant)
+        const sorted = [...members].sort((a, b) => {
+          if (sortMode === "pointsPerDeck") {
+            const pa = Number.isFinite(a.pointsPerDeck) ? a.pointsPerDeck : -1;
+            const pb = Number.isFinite(b.pointsPerDeck) ? b.pointsPerDeck : -1;
+            return pb - pa;
+          }
+          // défaut : avgFame
+          const fa = Number.isFinite(a.avgFame) ? a.avgFame : -1;
+          const fb = Number.isFinite(b.avgFame) ? b.avgFame : -1;
+          return fb - fa;
+        });
+
+        const fmt = (n) =>
+          Number.isFinite(n) ? n.toLocaleString("fr-FR") : "—";
+
+        // Construit les lignes d'affichage
+        const rows = sorted.map((m, idx) => {
+          const rank = idx + 1;
+          const playerUrl = trustPlayerUrl(m.tag);
+          const newIcon = m.isNew ? " 🆕" : "";
+
+          // Fiabilité (clan famille uniquement)
+          let reliabilityStr = "";
+          if (isFamilyClan && Number.isFinite(m.reliability)) {
+            const icon = RELIABILITY_ICON[m.color] ?? "⚪";
+            const verdictFr =
+              FR_VERDICTS[m.color] ?? m.verdict ?? "Inconnue";
+            reliabilityStr = ` ${icon} ${Math.round(m.reliability)}% (${verdictFr})`;
+          }
+
+          const avgStr = fmt(m.avgFame);
+          const maxStr = fmt(m.maxFame);
+          const ppdStr = fmt(m.pointsPerDeck);
+
+          return `#${rank}. [${m.name}](${playerUrl})${newIcon}${reliabilityStr}\n    <:stats:1499284927894650950> ${avgStr} · <:trophy2:1493677804733337621> ${maxStr} · <:xp:1498645264079257730> ${ppdStr}`;
+        });
+
+        // Pagination : max 25 membres par embed (description limit 4096)
+        const MAX_PER_PAGE = 25;
+        const pageCount = Math.ceil(rows.length / MAX_PER_PAGE);
+
+        const sortLabel =
+          sortMode === "pointsPerDeck"
+            ? "Points par deck"
+            : "Points par semaine";
+        const footerText = `Tri : ${sortLabel} · ${isFamilyClan ? "Fiabilité incluse" : "Hors famille, fiabilité non disponible"}`;
+
+        const sendPage = async (pageIndex) => {
+          const pageRows = rows.slice(
+            pageIndex * MAX_PER_PAGE,
+            (pageIndex + 1) * MAX_PER_PAGE,
+          );
+          const description = pageRows.join("\n");
+
+          const embed = {
+            title: `<:stats:1499284927894650950> Stats GDC : ${clanName}`,
+            url: trustClanUrl(resolved.tag),
+            color: 0x5865f2,
+            description,
+            footer: {
+              text:
+                pageCount > 1
+                  ? `${footerText} · Page ${pageIndex + 1}/${pageCount}`
+                  : footerText,
+            },
+          };
+
+          return { embeds: [embed] };
+        };
+
+        const firstPayload = await sendPage(0);
+
+        // Ajoute les boutons de tri (uniquement sur la première page)
+        const avgFameActive = sortMode === "avgFame";
+        const ppdActive = sortMode === "pointsPerDeck";
+
+        firstPayload.components = [
+          {
+            type: 1, // Action Row
+            components: [
+              {
+                type: 2, // Button
+                style: avgFameActive ? 5 : 2, // 5 = Success (green), 2 = Primary (blurple)
+                label: "📊 Points/semaine",
+                custom_id: `stats_clan_sort:avgFame:${resolved.tag}:${isFamilyClan ? "1" : "0"}`,
+                disabled: avgFameActive,
+              },
+              {
+                type: 2, // Button
+                style: ppdActive ? 5 : 2,
+                label: "⚡ Points/deck",
+                custom_id: `stats_clan_sort:pointsPerDeck:${resolved.tag}:${isFamilyClan ? "1" : "0"}`,
+                disabled: ppdActive,
+              },
+            ],
+          },
+        ];
+
+        const firstResp = await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(firstPayload),
+        });
+
+        if (!firstResp.ok) {
+          const text = await firstResp.text().catch(() => "");
+          console.error(
+            "stats-clan first page webhook failed:",
+            firstResp.status,
+            text,
+          );
+          return;
+        }
+
+        // Pages suivantes (sans boutons)
+        for (let p = 1; p < pageCount; p++) {
+          const payload = await sendPage(p);
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+        }
+      } catch (err) {
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur : ${err.message}`,
+            flags: 64,
+          }),
+        });
+      }
+    });
+    return;
+  }
+
+  // ── MessageComponent : boutons de tri stats-clan ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("stats_clan_sort:")
+  ) {
+    const parts = body.data.custom_id.split(":");
+    if (parts.length < 4) {
+      return res.status(200).json({ type: 4, data: { content: "Erreur interne.", flags: 64 } });
+    }
+    const sortMode = parts[1];
+    const clanTag = parts[2];
+    const isFamilyClan = parts[3] === "1";
+
+    res.status(200).json({ type: 5 });
+
+    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+
+    runBackground(async () => {
+      try {
+        const endpoint = isFamilyClan
+          ? `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(clanTag)}/analysis?fast=true`
+          : `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(clanTag)}/lite`;
+
+        const abortCtrl = new AbortController();
+        const abortTimer = setTimeout(() => abortCtrl.abort(), 20000);
+        let apiResp;
+        try {
+          apiResp = await fetch(endpoint, {
+            headers: { Accept: "application/json" },
+            signal: abortCtrl.signal,
+          });
+        } finally {
+          clearTimeout(abortTimer);
+        }
+
+        if (!apiResp.ok) {
+          await fetch(webhookUrl, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: "Erreur lors du rechargement. Relancez la commande.",
+            }),
+          });
+          return;
+        }
+
+        const data = await apiResp.json();
+        const members = Array.isArray(data.members) ? data.members : [];
+        const clanInfo = data.clan || {};
+        const clanName = clanInfo.name || `#${clanTag}`;
+
+        const sorted = [...members].sort((a, b) => {
+          if (sortMode === "pointsPerDeck") {
+            const pa = Number.isFinite(a.pointsPerDeck) ? a.pointsPerDeck : -1;
+            const pb = Number.isFinite(b.pointsPerDeck) ? b.pointsPerDeck : -1;
+            return pb - pa;
+          }
+          const fa = Number.isFinite(a.avgFame) ? a.avgFame : -1;
+          const fb = Number.isFinite(b.avgFame) ? b.avgFame : -1;
+          return fb - fa;
+        });
+
+        const fmt = (n) =>
+          Number.isFinite(n) ? n.toLocaleString("fr-FR") : "—";
+
+        const rows = sorted.map((m, idx) => {
+          const rank = idx + 1;
+          const playerUrl = trustPlayerUrl(m.tag);
+          const newIcon = m.isNew ? " 🆕" : "";
+
+          let reliabilityStr = "";
+          if (isFamilyClan && Number.isFinite(m.reliability)) {
+            const icon = RELIABILITY_ICON[m.color] ?? "⚪";
+            const verdictFr =
+              FR_VERDICTS[m.color] ?? m.verdict ?? "Inconnue";
+            reliabilityStr = ` ${icon} ${Math.round(m.reliability)}% (${verdictFr})`;
+          }
+
+          const avgStr = fmt(m.avgFame);
+          const maxStr = fmt(m.maxFame);
+          const ppdStr = fmt(m.pointsPerDeck);
+
+          return `#${rank}. [${m.name}](${playerUrl})${newIcon}${reliabilityStr}\n    <:stats:1499284927894650950> ${avgStr} · <:trophy2:1493677804733337621> ${maxStr} · <:xp:1498645264079257730> ${ppdStr}`;
+        });
+
+        const MAX_PER_PAGE = 25;
+        const pageCount = Math.ceil(rows.length / MAX_PER_PAGE);
+        const pageRows = rows.slice(0, MAX_PER_PAGE);
+
+        const sortLabel =
+          sortMode === "pointsPerDeck"
+            ? "Points par deck"
+            : "Points par semaine";
+        const footerText = `Tri : ${sortLabel} · ${isFamilyClan ? "Fiabilité incluse" : "Hors famille, fiabilité non disponible"}`;
+
+        const avgFameActive = sortMode === "avgFame";
+        const ppdActive = sortMode === "pointsPerDeck";
+
+        const embed = {
+          title: `<:stats:1499284927894650950> Stats GDC : ${clanName}`,
+          url: trustClanUrl(`#${clanTag}`),
+          color: 0x5865f2,
+          description: pageRows.join("\n"),
+          footer: {
+            text:
+              pageCount > 1
+                ? `${footerText} · Page 1/${pageCount}`
+                : footerText,
+          },
+        };
+
+        const payload = {
+          embeds: [embed],
+          components: [
+            {
+              type: 1,
+              components: [
+                {
+                  type: 2,
+                  style: avgFameActive ? 5 : 2,
+                  label: "📊 Points/semaine",
+                  custom_id: `stats_clan_sort:avgFame:${clanTag}:${isFamilyClan ? "1" : "0"}`,
+                  disabled: avgFameActive,
+                },
+                {
+                  type: 2,
+                  style: ppdActive ? 5 : 2,
+                  label: "⚡ Points/deck",
+                  custom_id: `stats_clan_sort:pointsPerDeck:${clanTag}:${isFamilyClan ? "1" : "0"}`,
+                  disabled: ppdActive,
+                },
+              ],
+            },
+          ],
+        };
+
+        await fetch(webhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } catch (err) {
+        await fetch(webhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur : ${err.message}`,
           }),
         });
       }

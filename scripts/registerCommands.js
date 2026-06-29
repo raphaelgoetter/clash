@@ -290,6 +290,43 @@ const commands = [
     ],
   },
   {
+    name: "stats-clan",
+    description:
+      "Statistiques GDC détaillées de tous les membres d'un clan.",
+    options: [
+      {
+        type: 3, // STRING
+        name: "clan",
+        description:
+          "Clan de la famille (1=La Resistance, 2=Les Resistants, 3=Les Revoltes).",
+        required: false,
+        choices: [
+          { name: "La Resistance", value: "1" },
+          { name: "Les Resistants", value: "2" },
+          { name: "Les Revoltes", value: "3" },
+        ],
+      },
+      {
+        type: 3, // STRING
+        name: "tag",
+        description:
+          "Tag d'un clan hors-famille (ex: #ABC123). Prioritaire sur le choix clan.",
+        required: false,
+      },
+      {
+        type: 3, // STRING
+        name: "sort",
+        description:
+          "Mode de tri (défaut : points par semaine).",
+        required: false,
+        choices: [
+          { name: "Points par semaine", value: "avgFame" },
+          { name: "Points par deck", value: "pointsPerDeck" },
+        ],
+      },
+    ],
+  },
+  {
     name: "top-clans",
     description:
       "Affiche une tranche de 50 clans du classement France GDC par trophées de guerre.",

@@ -1969,6 +1969,17 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     const totalDonations =
       playerProxy.totalDonations ?? m.totalDonations ?? null;
 
+    const totalDecks = Array.isArray(warHistory?.weeks)
+      ? warHistory.weeks.reduce(
+          (sum, w) => sum + (Number(w.decksUsed) || 0),
+          0,
+        )
+      : 0;
+    const pointsPerDeck =
+      totalDecks > 0 && warHistory?.totalFame != null
+        ? Number((warHistory.totalFame / totalDecks).toFixed(2))
+        : null;
+
     return {
       name: m.name,
       tag: m.tag,
@@ -1987,6 +1998,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       warDays,
       arrivalStreakInCurrentClan: warHistory?.streakInCurrentClan ?? null,
       arrivalTotalWeeks: warHistory?.totalWeeks ?? null,
+      avgFame: Number.isFinite(warHistory?.avgFame) ? warHistory.avgFame : null,
+      maxFame: Number.isFinite(warHistory?.maxFame) ? warHistory.maxFame : null,
+      totalDecks,
+      pointsPerDeck,
       // Valeur numérique pour le tri de la colonne "This War"
       // -1 = arrivé en cours de semaine, null = hors période de guerre
       warDecks:
@@ -2017,6 +2032,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       arrivalStreakInCurrentClan: null,
       arrivalTotalWeeks: null,
       warDecks: null,
+      avgFame: null,
+      maxFame: null,
+      totalDecks: 0,
+      pointsPerDeck: null,
       joinDate: members[idx].joinDate ?? null,
       lastSeen: members[idx].lastSeen ?? null,
       lastWarDecks: lastWarDecksByTag.get(normalizeTag(members[idx].tag)) ?? 0,
