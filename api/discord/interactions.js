@@ -153,10 +153,10 @@ const COLOR_MAP = {
   red: 0xe74c3c,
 };
 const RELIABILITY_ICON = {
-  green: "🟢",
-  yellow: "🟡",
-  orange: "🟠",
-  red: "🔴",
+  green: "<:green:1506174830297485362>",
+  yellow: "<:yellow:1506174838870642739>",
+  orange: "<:orange:1506174834470686860>",
+  red: "<:red:1506174836102139944>",
 };
 const FR_VERDICTS = {
   green: "Très fiable",
@@ -5897,21 +5897,20 @@ export default async function handler(req, res) {
           }
 
           const avgStr = fmt(m.avgFame);
-          const maxStr = fmt(m.maxFame);
           const ppdStr = fmt(m.pointsPerDeck);
 
           const extras = [newIcon, reliabilityStr].filter(Boolean).join(" ");
-          const prefix = extras ? ` ${extras}·` : "";
-          return `**#${rank}. ${m.name}**${prefix}📊${avgStr}·🏆${maxStr}·⚡${ppdStr}`;
+          const prefix = extras ? ` ${extras} ·` : "";
+          return `**#${rank}. ${m.name}**${prefix} 🏆${avgStr} · ⚡${ppdStr}`;
         });
 
-        // Pagination : découpage par taille (description limitée à 4096 car.)
+        // Pagination au cas où (sécurité, normalement tout tient sur une page)
         const DESC_MAX = 4096;
         const pages = [];
         let currentPage = [];
         let currentLen = 0;
         for (const row of rows) {
-          const rowLen = row.length + 1; // +1 pour le \n de jointure
+          const rowLen = row.length + 1;
           if (currentLen + rowLen > DESC_MAX && currentPage.length > 0) {
             pages.push(currentPage);
             currentPage = [row];
@@ -5928,7 +5927,7 @@ export default async function handler(req, res) {
           sortMode === "pointsPerDeck"
             ? "Points par deck"
             : "Points par semaine";
-        const footerText = `Tri : ${sortLabel} · 📊 moyenne · 🏆 record · ⚡ pts/deck`;
+        const footerText = `Tri : ${sortLabel} · 🏆 moyenne · ⚡ pts/deck`;
 
         const sendPage = (pageRows, pageIndex) => {
           const description = pageRows.join("\n");
@@ -5960,7 +5959,7 @@ export default async function handler(req, res) {
               {
                 type: 2, // Button
                 style: avgFameActive ? 3 : 2, // 3 = Success (green), 2 = Secondary (grey)
-                label: "📊 Points/semaine",
+                label: "🏆 Points/semaine",
                 custom_id: `stats_clan_sort:avgFame:${clanVal}`,
                 disabled: avgFameActive,
               },
@@ -6095,17 +6094,16 @@ export default async function handler(req, res) {
           }
 
           const avgStr = fmt(m.avgFame);
-          const maxStr = fmt(m.maxFame);
           const ppdStr = fmt(m.pointsPerDeck);
 
           const extras = [newIcon, reliabilityStr].filter(Boolean).join(" ");
-          const prefix = extras ? ` ${extras}·` : "";
-          return `**#${rank}. ${m.name}**${prefix}📊${avgStr}·🏆${maxStr}·⚡${ppdStr}`;
+          const prefix = extras ? ` ${extras} ·` : "";
+          return `**#${rank}. ${m.name}**${prefix} 🏆${avgStr} · ⚡${ppdStr}`;
         });
 
         const DESC_MAX = 4096;
-        const firstPage = [];
         let currentLen = 0;
+        const firstPage = [];
         for (const row of rows) {
           const rowLen = row.length + 1;
           if (currentLen + rowLen > DESC_MAX && firstPage.length > 0) break;
@@ -6118,7 +6116,7 @@ export default async function handler(req, res) {
           sortMode === "pointsPerDeck"
             ? "Points par deck"
             : "Points par semaine";
-        const footerText = `Tri : ${sortLabel} · 📊 moyenne · 🏆 record · ⚡ pts/deck`;
+        const footerText = `Tri : ${sortLabel} · 🏆 moyenne · ⚡ pts/deck`;
 
         const avgFameActive = sortMode === "avgFame";
         const ppdActive = sortMode === "pointsPerDeck";
@@ -6145,7 +6143,7 @@ export default async function handler(req, res) {
                 {
                   type: 2,
                   style: avgFameActive ? 3 : 2,
-                  label: "📊 Points/semaine",
+                  label: "🏆 Points/semaine",
                   custom_id: `stats_clan_sort:avgFame:${clanVal}`,
                   disabled: avgFameActive,
                 },
