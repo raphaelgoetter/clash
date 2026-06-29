@@ -595,6 +595,21 @@ function formatPlayerVercelLink(tag, name) {
 function buildWeeklyZeroActivityLists(memberNames, allWeekDays) {
   const weekDays = Array.isArray(allWeekDays) ? allWeekDays : [];
 
+  // Calculer les dons hebdo depuis _totalDonationsByTag des snapshots :
+  // delta totalDonations(dernier jour) - totalDonations(premier jour).
+  // Contrairement à donations (remis à 0 le lundi 00:00), totalDonations
+  // est un cumul à vie qui ne se réinitialise jamais.
+  const donationDays = weekDays.filter(
+    (d) =>
+      d._totalDonationsByTag &&
+      Object.keys(d._totalDonationsByTag).length > 0,
+  );
+  const hasSnapshotDonationData = donationDays.length >= 2;
+  const firstDonationDay = hasSnapshotDonationData ? donationDays[0] : null;
+  const lastDonationDay = hasSnapshotDonationData
+    ? donationDays[donationDays.length - 1]
+    : null;
+
   const members = Object.entries(memberNames ?? {})
     .map(([tag, member]) => {
       const weeklyDecks = weekDays.reduce(
@@ -602,11 +617,20 @@ function buildWeeklyZeroActivityLists(memberNames, allWeekDays) {
         0,
       );
 
+      let weeklyDonations = member?.donations ?? null;
+      if (hasSnapshotDonationData) {
+        const last = lastDonationDay._totalDonationsByTag[tag];
+        const first = firstDonationDay._totalDonationsByTag[tag];
+        if (typeof last === "number" && typeof first === "number") {
+          weeklyDonations = Math.max(0, last - first);
+        }
+      }
+
       return {
         tag,
         name: member?.name || tag,
         weeklyDecks,
-        donations: member?.donations ?? null,
+        donations: weeklyDonations,
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name, "fr"));
