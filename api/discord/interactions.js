@@ -5982,14 +5982,14 @@ export default async function handler(req, res) {
             components: [
               {
                 type: 2, // Button
-                style: avgFameActive ? 5 : 2, // 5 = Success (green), 2 = Primary (blurple)
+                style: avgFameActive ? 3 : 2, // 3 = Success (green), 2 = Secondary (grey)
                 label: "📊 Points/semaine",
                 custom_id: `stats_clan_sort:avgFame:${resolved.tag}:${isFamilyClan ? "1" : "0"}`,
                 disabled: avgFameActive,
               },
               {
                 type: 2, // Button
-                style: ppdActive ? 5 : 2,
+                style: ppdActive ? 3 : 2,
                 label: "⚡ Points/deck",
                 custom_id: `stats_clan_sort:pointsPerDeck:${resolved.tag}:${isFamilyClan ? "1" : "0"}`,
                 disabled: ppdActive,
@@ -6011,6 +6011,14 @@ export default async function handler(req, res) {
             firstResp.status,
             text,
           );
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `⚠️ Erreur d'envoi (${firstResp.status}). Les données sont peut-être trop volumineuses.`,
+              flags: 64,
+            }),
+          });
           return;
         }
 
@@ -6164,14 +6172,14 @@ export default async function handler(req, res) {
               components: [
                 {
                   type: 2,
-                  style: avgFameActive ? 5 : 2,
+                  style: avgFameActive ? 3 : 2,
                   label: "📊 Points/semaine",
                   custom_id: `stats_clan_sort:avgFame:${clanTag}:${isFamilyClan ? "1" : "0"}`,
                   disabled: avgFameActive,
                 },
                 {
                   type: 2,
-                  style: ppdActive ? 5 : 2,
+                  style: ppdActive ? 3 : 2,
                   label: "⚡ Points/deck",
                   custom_id: `stats_clan_sort:pointsPerDeck:${clanTag}:${isFamilyClan ? "1" : "0"}`,
                   disabled: ppdActive,
