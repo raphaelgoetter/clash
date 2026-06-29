@@ -5891,7 +5891,7 @@ export default async function handler(req, res) {
           const newIcon = m.isNew ? "🆕" : "";
 
           let reliabilityStr = "";
-          if (isFamilyClan && Number.isFinite(m.reliability)) {
+          if (Number.isFinite(m.reliability)) {
             const icon = RELIABILITY_ICON[m.color] ?? "⚪";
             reliabilityStr = `${icon}${Math.round(m.reliability)}%`;
           }
