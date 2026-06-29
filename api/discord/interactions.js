@@ -6059,9 +6059,9 @@ export default async function handler(req, res) {
     const clanTag = parts[2];
     const isFamilyClan = parts[3] === "1";
 
-    res.status(200).json({ type: 5 });
+    res.status(200).json({ type: 6 });
 
-    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}/messages/@original`;
 
     runBackground(async () => {
       try {
