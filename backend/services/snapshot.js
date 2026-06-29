@@ -606,6 +606,7 @@ function makeEmptyDay(warDay, realDay = null, clanTag = null) {
     hourlyCumul: [],
     _cumulFame: {},
     duelsTodayByTag: {},
+    _totalDonationsByTag: {},
     duelsComplete: false,
     periodType: null,
   };
@@ -685,6 +686,7 @@ function fillWeekDays(week, clanTag = null) {
     day._cumul = day._cumul ?? {};
     day._cumulFame = day._cumulFame ?? {};
     day.duelsTodayByTag = day.duelsTodayByTag ?? {};
+    day._totalDonationsByTag = day._totalDonationsByTag ?? {};
     day.duelsComplete = Boolean(day.duelsComplete);
     day.periodType = day.periodType ?? null;
 
@@ -1156,8 +1158,47 @@ export async function recordSnapshot(
   dayEntry._cumulFame = mergeMaps(dayEntry._cumulFame ?? {}, currentCumulFame);
   dayEntry.periodType = options.periodType ?? dayEntry.periodType ?? null;
 
+  if (options.totalDonationsByTag && typeof options.totalDonationsByTag === "object") {
+    dayEntry._totalDonationsByTag = {
+      ...(dayEntry._totalDonationsByTag ?? {}),
+      ...options.totalDonationsByTag,
+    };
+  }
+
   dayEntry.snapshotCount = computeSnapshotCount(dayEntry.decks);
   await saveSnapshots(clanTag, filtered);
+}
+
+/**
+ * Met à jour _totalDonationsByTag sur le jour de snapshot correspondant
+ * à la date GDC actuelle. Appelé après le fetch des profils joueurs pour
+ * capturer les totalDonations (cumul à vie) avant le reset API du lundi.
+ */
+export async function updateSnapshotDonations(clanTag, totalDonationsByTag) {
+  if (!totalDonationsByTag || typeof totalDonationsByTag !== "object") return;
+  const entries = Object.entries(totalDonationsByTag).filter(
+    ([, v]) => typeof v === "number" && Number.isFinite(v),
+  );
+  if (entries.length === 0) return;
+
+  const warInfo = getWarDayInfo(new Date(), clanTag);
+  if (!warInfo) return;
+
+  const { realDay } = warInfo;
+  const history = await loadSnapshots(clanTag);
+  if (!history.length) return;
+
+  for (const week of history) {
+    const day = (week.days ?? []).find((d) => d.realDay === realDay);
+    if (!day) continue;
+
+    day._totalDonationsByTag = {
+      ...(day._totalDonationsByTag ?? {}),
+      ...Object.fromEntries(entries),
+    };
+    await saveSnapshots(clanTag, history);
+    return;
+  }
 }
 
 /**

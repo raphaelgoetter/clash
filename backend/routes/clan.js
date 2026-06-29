@@ -1286,6 +1286,36 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     });
   }
 
+  // Mettre à jour le snapshot avec les totalDonations (cumul à vie) des profils
+  // fraîchement récupérés, avant que le reset API du lundi 00:00 ne mette
+  // donations à 0. Utilisé par notifyWarSummary.js pour calculer les dons hebdo.
+  if (isCurrentRaceWarDay && membersToFetch.length > 0) {
+    const totalDonationsByTag = {};
+    for (const res of memberDataResults) {
+      if (res.status !== "fulfilled") continue;
+      const profile = res.value?.[0];
+      const tag = profile?.tag;
+      if (tag && typeof profile?.totalDonations === "number") {
+        totalDonationsByTag[tag] = profile.totalDonations;
+      }
+    }
+    if (Object.keys(totalDonationsByTag).length > 0) {
+      try {
+        const { updateSnapshotDonations } = await import(
+          "../services/snapshot.js"
+        );
+        await updateSnapshotDonations(clanTag, totalDonationsByTag);
+      } catch (err) {
+        console.warn(
+          "[clan] updateSnapshotDonations failed for",
+          clanTag,
+          ":",
+          err?.message || err,
+        );
+      }
+    }
+  }
+
   const normalizeTag = (tag) =>
     `#${String(tag ?? "")
       .replace(/^#/, "")
