@@ -1788,8 +1788,8 @@ export default async function handler(req, res) {
             "Commande : `/clan clan:N|tag:#TAG`\n" +
             "Usage : affiche la fiche récapitulative d'un clan (famille ou tag libre)\n\n" +
             "**Stats Clan**\n" +
-            "Commande : `/stats-clan clan:N|tag:#TAG sort:[avgFame|pointsPerDeck]`\n" +
-            "Usage : statistiques GDC détaillées de tous les membres (tri par points/semaine ou points/deck, boutons interactifs)\n\n" +
+            "Commande : `/stats-clan clan:N`\n" +
+            "Usage : statistiques GDC détaillées de tous les membres, avec boutons pour changer le tri\n\n" +
             "**Chelem**\n" +
             "Commande : `/chelem clan:N [season:X]`\n" +
             "Usage : joueurs ayant fait 16/16 decks toutes semaines d'une saison entière\n\n" +
@@ -5810,18 +5810,6 @@ export default async function handler(req, res) {
   // ── /stats-clan ──
   if (body.type === 2 && body.data?.name === "stats-clan") {
     const clanOpt = body.data.options?.find((o) => o.name === "clan");
-    const tagOpt = body.data.options?.find((o) => o.name === "tag");
-    const sortOpt = body.data.options?.find((o) => o.name === "sort");
-
-    if (!clanOpt && !tagOpt) {
-      return res.status(200).json({
-        type: 4,
-        data: {
-          content: "Veuillez sélectionner un clan ou fournir un tag.",
-          flags: 64,
-        },
-      });
-    }
 
     const CLAN_MAP = {
       1: { name: "La Resistance", tag: "Y8JUPC9C" },
@@ -5829,25 +5817,16 @@ export default async function handler(req, res) {
       3: { name: "Les Revoltes", tag: "QU9UQJRL" },
     };
 
-    let resolved;
-    if (tagOpt) {
-      const rawTag = tagOpt.value.trim().toUpperCase().replace(/^#/, "");
-      resolved = { tag: rawTag, name: `#${rawTag}` };
-    } else {
-      const clanVal = (clanOpt.value || "1").toString().trim();
-      resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
-    }
-    const sortMode = sortOpt?.value || "avgFame";
-    const isFamilyClan = ALLOWED_CLAN_TAGS.has(resolved.tag.toUpperCase());
+    const clanVal = (clanOpt?.value || "1").toString().trim();
+    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
+    const sortMode = "avgFame";
 
     res.status(200).json({ type: 5 });
     const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
 
     runBackground(async () => {
       try {
-        const endpoint = isFamilyClan
-          ? `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis?fast=true`
-          : `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/lite`;
+        const endpoint = `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis?fast=true`;
 
         const abortCtrl = new AbortController();
         const abortTimer = setTimeout(() => abortCtrl.abort(), 20000);
@@ -5923,7 +5902,7 @@ export default async function handler(req, res) {
 
           const extras = [newIcon, reliabilityStr].filter(Boolean).join(" ");
           const prefix = extras ? ` ${extras} ·` : "";
-          return `#${rank}. ${m.name}${prefix} 📊${avgStr} 🏆${maxStr} ⚡${ppdStr}`;
+          return `**#${rank}. ${m.name}**${prefix} 📊${avgStr} · 🏆${maxStr} · ⚡${ppdStr}`;
         });
 
         // Pagination : découpage par taille (description limitée à 4096 car.)
@@ -5949,7 +5928,7 @@ export default async function handler(req, res) {
           sortMode === "pointsPerDeck"
             ? "Points par deck"
             : "Points par semaine";
-        const footerText = `Tri : ${sortLabel} · ${isFamilyClan ? "Fiabilité incluse" : "Hors famille, fiabilité non disponible"}`;
+        const footerText = `Tri : ${sortLabel} · 📊 moyenne · 🏆 record · ⚡ pts/deck`;
 
         const sendPage = (pageRows, pageIndex) => {
           const description = pageRows.join("\n");
@@ -5982,14 +5961,14 @@ export default async function handler(req, res) {
                 type: 2, // Button
                 style: avgFameActive ? 3 : 2, // 3 = Success (green), 2 = Secondary (grey)
                 label: "📊 Points/semaine",
-                custom_id: `stats_clan_sort:avgFame:${resolved.tag}:${isFamilyClan ? "1" : "0"}`,
+                custom_id: `stats_clan_sort:avgFame:${clanVal}`,
                 disabled: avgFameActive,
               },
               {
                 type: 2, // Button
                 style: ppdActive ? 3 : 2,
                 label: "⚡ Points/deck",
-                custom_id: `stats_clan_sort:pointsPerDeck:${resolved.tag}:${isFamilyClan ? "1" : "0"}`,
+                custom_id: `stats_clan_sort:pointsPerDeck:${clanVal}`,
                 disabled: ppdActive,
               },
             ],
@@ -6050,12 +6029,19 @@ export default async function handler(req, res) {
     body.data.custom_id.startsWith("stats_clan_sort:")
   ) {
     const parts = body.data.custom_id.split(":");
-    if (parts.length < 4) {
+    if (parts.length < 3) {
       return res.status(200).json({ type: 4, data: { content: "Erreur interne.", flags: 64 } });
     }
     const sortMode = parts[1];
-    const clanTag = parts[2];
-    const isFamilyClan = parts[3] === "1";
+    const clanVal = parts[2];
+
+    const CLAN_MAP = {
+      1: { name: "La Resistance", tag: "Y8JUPC9C" },
+      2: { name: "Les Resistants", tag: "LRQP20V9" },
+      3: { name: "Les Revoltes", tag: "QU9UQJRL" },
+    };
+    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
+    const clanTag = resolved.tag;
 
     res.status(200).json({ type: 6 });
 
@@ -6063,21 +6049,10 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
-        const endpoint = isFamilyClan
-          ? `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(clanTag)}/analysis?fast=true`
-          : `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(clanTag)}/lite`;
-
-        const abortCtrl = new AbortController();
-        const abortTimer = setTimeout(() => abortCtrl.abort(), 20000);
-        let apiResp;
-        try {
-          apiResp = await fetch(endpoint, {
-            headers: { Accept: "application/json" },
-            signal: abortCtrl.signal,
-          });
-        } finally {
-          clearTimeout(abortTimer);
-        }
+        const apiResp = await fetch(
+          `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(clanTag)}/analysis?fast=true`,
+          { headers: { Accept: "application/json" } },
+        );
 
         if (!apiResp.ok) {
           await fetch(webhookUrl, {
@@ -6093,7 +6068,7 @@ export default async function handler(req, res) {
         const data = await apiResp.json();
         const members = Array.isArray(data.members) ? data.members : [];
         const clanInfo = data.clan || {};
-        const clanName = clanInfo.name || `#${clanTag}`;
+        const clanName = clanInfo.name || resolved.name;
 
         const sorted = [...members].sort((a, b) => {
           if (sortMode === "pointsPerDeck") {
@@ -6114,7 +6089,7 @@ export default async function handler(req, res) {
           const newIcon = m.isNew ? "🆕" : "";
 
           let reliabilityStr = "";
-          if (isFamilyClan && Number.isFinite(m.reliability)) {
+          if (Number.isFinite(m.reliability)) {
             const icon = RELIABILITY_ICON[m.color] ?? "⚪";
             reliabilityStr = `${icon}${Math.round(m.reliability)}%`;
           }
@@ -6125,7 +6100,7 @@ export default async function handler(req, res) {
 
           const extras = [newIcon, reliabilityStr].filter(Boolean).join(" ");
           const prefix = extras ? ` ${extras} ·` : "";
-          return `#${rank}. ${m.name}${prefix} 📊${avgStr} 🏆${maxStr} ⚡${ppdStr}`;
+          return `**#${rank}. ${m.name}**${prefix} 📊${avgStr} · 🏆${maxStr} · ⚡${ppdStr}`;
         });
 
         const DESC_MAX = 4096;
@@ -6143,14 +6118,14 @@ export default async function handler(req, res) {
           sortMode === "pointsPerDeck"
             ? "Points par deck"
             : "Points par semaine";
-        const footerText = `Tri : ${sortLabel} · ${isFamilyClan ? "Fiabilité incluse" : "Hors famille, fiabilité non disponible"}`;
+        const footerText = `Tri : ${sortLabel} · 📊 moyenne · 🏆 record · ⚡ pts/deck`;
 
         const avgFameActive = sortMode === "avgFame";
         const ppdActive = sortMode === "pointsPerDeck";
 
         const embed = {
           title: `<:stats:1499284927894650950> Stats GDC : ${clanName}`,
-          url: trustClanUrl(`#${clanTag}`),
+          url: trustClanUrl(clanTag),
           color: 0x5865f2,
           description: firstPage.join("\n"),
           footer: {
@@ -6171,14 +6146,14 @@ export default async function handler(req, res) {
                   type: 2,
                   style: avgFameActive ? 3 : 2,
                   label: "📊 Points/semaine",
-                  custom_id: `stats_clan_sort:avgFame:${clanTag}:${isFamilyClan ? "1" : "0"}`,
+                  custom_id: `stats_clan_sort:avgFame:${clanVal}`,
                   disabled: avgFameActive,
                 },
                 {
                   type: 2,
                   style: ppdActive ? 3 : 2,
                   label: "⚡ Points/deck",
-                  custom_id: `stats_clan_sort:pointsPerDeck:${clanTag}:${isFamilyClan ? "1" : "0"}`,
+                  custom_id: `stats_clan_sort:pointsPerDeck:${clanVal}`,
                   disabled: ppdActive,
                 },
               ],

@@ -1113,8 +1113,8 @@ export default async function handler(req, res) {
             "Commande : `/clan clan:N|tag:#TAG`\n" +
             "Usage : affiche la fiche récapitulative d'un clan (famille ou tag libre)\n\n" +
             "**Stats Clan**\n" +
-            "Commande : `/stats-clan clan:N|tag:#TAG sort:[avgFame|pointsPerDeck]`\n" +
-            "Usage : statistiques GDC détaillées de tous les membres (tri par points/semaine ou points/deck, boutons interactifs)\n\n" +
+            "Commande : `/stats-clan clan:N`\n" +
+            "Usage : statistiques GDC détaillées de tous les membres, avec boutons pour changer le tri\n\n" +
             "**Chelem**\n" +
             "Commande : `/chelem clan:N [season:X]`\n" +
             "Usage : joueurs ayant fait 16/16 decks toutes semaines d'une saison entière\n\n" +

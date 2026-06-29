@@ -1977,7 +1977,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       : 0;
     const pointsPerDeck =
       totalDecks > 0 && warHistory?.totalFame != null
-        ? Number((warHistory.totalFame / totalDecks).toFixed(2))
+        ? Math.round(warHistory.totalFame / totalDecks)
         : null;
 
     return {

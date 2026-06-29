@@ -26,8 +26,8 @@
         "trophies": 13711,
         "bestTrophies": 13711,
         "expLevel": 83,
-        "totalDonations": 134242,
-        "donations": 32,
+        "totalDonations": 134278,
+        "donations": 68,
         "warDayWins": 19,
         "cw2Progress": 1704,
         "clan": {
@@ -44,7 +44,7 @@
         "totalBattles": 40,
         "warBattles": 20
       },
-      "fetchedAt": "2026-06-29T17:03:55.216Z"
+      "fetchedAt": "2026-06-29T17:47:58.076Z"
     },
     "#82URJC8CR": {
       "profile": {
@@ -54,8 +54,8 @@
         "trophies": 14000,
         "bestTrophies": 14000,
         "expLevel": 78,
-        "totalDonations": 133390,
-        "donations": 8,
+        "totalDonations": 133398,
+        "donations": 16,
         "warDayWins": 237,
         "cw2Progress": 937,
         "clan": {
@@ -64,7 +64,7 @@
         },
         "arena": "Spirit Square",
         "stats": {
-          "battleCount": 37171,
+          "battleCount": 37173,
           "threeCrownWins": 6694
         }
       },
@@ -72,7 +72,7 @@
         "totalBattles": 30,
         "warBattles": 0
       },
-      "fetchedAt": "2026-06-29T17:03:55.217Z"
+      "fetchedAt": "2026-06-29T17:47:58.076Z"
     },
     "#C2RL8UVYV": {
       "profile": {
@@ -100,7 +100,7 @@
         "totalBattles": 30,
         "warBattles": 0
       },
-      "fetchedAt": "2026-06-29T17:03:55.217Z"
+      "fetchedAt": "2026-06-29T17:47:58.077Z"
     },
     "#J8RU2RJ8C": {
       "profile": {
@@ -110,8 +110,8 @@
         "trophies": 14000,
         "bestTrophies": 14000,
         "expLevel": 79,
-        "totalDonations": 101367,
-        "donations": 94,
+        "totalDonations": 101375,
+        "donations": 102,
         "warDayWins": 0,
         "cw2Progress": 1567,
         "clan": {
@@ -120,7 +120,7 @@
         },
         "arena": "Spirit Square",
         "stats": {
-          "battleCount": 40751,
+          "battleCount": 40752,
           "threeCrownWins": 9506
         }
       },
@@ -128,7 +128,147 @@
         "totalBattles": 30,
         "warBattles": 5
       },
-      "fetchedAt": "2026-06-29T17:03:55.218Z"
+      "fetchedAt": "2026-06-29T17:47:58.077Z"
+    },
+    "#9VQ0J29Y": {
+      "profile": {
+        "tag": "#9VQ0J29Y",
+        "name": "steeeph",
+        "role": "member",
+        "trophies": 14000,
+        "bestTrophies": 14000,
+        "expLevel": 73,
+        "totalDonations": 100643,
+        "donations": 120,
+        "warDayWins": 30,
+        "cw2Progress": 532,
+        "clan": {
+          "tag": "#Y8JUPC9C",
+          "name": "La Resistance"
+        },
+        "arena": "Spirit Square",
+        "stats": {
+          "battleCount": 15766,
+          "threeCrownWins": 3549
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 30,
+        "warBattles": 9
+      },
+      "fetchedAt": "2026-06-29T17:47:58.077Z"
+    },
+    "#2PG80VRY": {
+      "profile": {
+        "tag": "#2PG80VRY",
+        "name": "Vic",
+        "role": "member",
+        "trophies": 14000,
+        "bestTrophies": 14000,
+        "expLevel": 74,
+        "totalDonations": 201009,
+        "donations": 54,
+        "warDayWins": 63,
+        "cw2Progress": 269,
+        "clan": {
+          "tag": "#Y8JUPC9C",
+          "name": "La Resistance"
+        },
+        "arena": "Spirit Square",
+        "stats": {
+          "battleCount": 16279,
+          "threeCrownWins": 4746
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 30,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-06-29T17:47:58.077Z"
+    },
+    "#GJ8RV8802": {
+      "profile": {
+        "tag": "#GJ8RV8802",
+        "name": "Lepamowi",
+        "role": "coLeader",
+        "trophies": 14000,
+        "bestTrophies": 14000,
+        "expLevel": 77,
+        "totalDonations": 26215,
+        "donations": 146,
+        "warDayWins": 0,
+        "cw2Progress": 256,
+        "clan": {
+          "tag": "#Y8JUPC9C",
+          "name": "La Resistance"
+        },
+        "arena": "Spirit Square",
+        "stats": {
+          "battleCount": 4799,
+          "threeCrownWins": 532
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 36,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-06-29T17:47:58.077Z"
+    },
+    "#UY00GJG2": {
+      "profile": {
+        "tag": "#UY00GJG2",
+        "name": "Monkey D. SkUul",
+        "role": "elder",
+        "trophies": 14000,
+        "bestTrophies": 14000,
+        "expLevel": 74,
+        "totalDonations": 68482,
+        "donations": 60,
+        "warDayWins": 49,
+        "cw2Progress": 335,
+        "clan": {
+          "tag": "#Y8JUPC9C",
+          "name": "La Resistance"
+        },
+        "arena": "Spirit Square",
+        "stats": {
+          "battleCount": 10262,
+          "threeCrownWins": 2007
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 30,
+        "warBattles": 17
+      },
+      "fetchedAt": "2026-06-29T17:47:58.078Z"
+    },
+    "#99VY0090": {
+      "profile": {
+        "tag": "#99VY0090",
+        "name": "dclik77",
+        "role": "elder",
+        "trophies": 14000,
+        "bestTrophies": 14000,
+        "expLevel": 79,
+        "totalDonations": 115316,
+        "donations": 26,
+        "warDayWins": 55,
+        "cw2Progress": 1003,
+        "clan": {
+          "tag": "#Y8JUPC9C",
+          "name": "La Resistance"
+        },
+        "arena": "Spirit Square",
+        "stats": {
+          "battleCount": 10872,
+          "threeCrownWins": 2893
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 30,
+        "warBattles": 8
+      },
+      "fetchedAt": "2026-06-29T17:47:58.080Z"
     },
     "#809G8YC8": {
       "profile": {
@@ -156,91 +296,7 @@
         "totalBattles": 30,
         "warBattles": 8
       },
-      "fetchedAt": "2026-06-29T17:03:55.218Z"
-    },
-    "#9VQ0J29Y": {
-      "profile": {
-        "tag": "#9VQ0J29Y",
-        "name": "steeeph",
-        "role": "member",
-        "trophies": 14000,
-        "bestTrophies": 14000,
-        "expLevel": 73,
-        "totalDonations": 100627,
-        "donations": 104,
-        "warDayWins": 30,
-        "cw2Progress": 532,
-        "clan": {
-          "tag": "#Y8JUPC9C",
-          "name": "La Resistance"
-        },
-        "arena": "Spirit Square",
-        "stats": {
-          "battleCount": 15764,
-          "threeCrownWins": 3549
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 10
-      },
-      "fetchedAt": "2026-06-29T17:03:55.218Z"
-    },
-    "#2PG80VRY": {
-      "profile": {
-        "tag": "#2PG80VRY",
-        "name": "Vic",
-        "role": "member",
-        "trophies": 14000,
-        "bestTrophies": 14000,
-        "expLevel": 74,
-        "totalDonations": 200993,
-        "donations": 38,
-        "warDayWins": 63,
-        "cw2Progress": 269,
-        "clan": {
-          "tag": "#Y8JUPC9C",
-          "name": "La Resistance"
-        },
-        "arena": "Spirit Square",
-        "stats": {
-          "battleCount": 16277,
-          "threeCrownWins": 4746
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-06-29T17:03:55.218Z"
-    },
-    "#GJ8RV8802": {
-      "profile": {
-        "tag": "#GJ8RV8802",
-        "name": "Lepamowi",
-        "role": "coLeader",
-        "trophies": 14000,
-        "bestTrophies": 14000,
-        "expLevel": 77,
-        "totalDonations": 26207,
-        "donations": 138,
-        "warDayWins": 0,
-        "cw2Progress": 256,
-        "clan": {
-          "tag": "#Y8JUPC9C",
-          "name": "La Resistance"
-        },
-        "arena": "Spirit Square",
-        "stats": {
-          "battleCount": 4799,
-          "threeCrownWins": 532
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 36,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-06-29T17:03:55.219Z"
+      "fetchedAt": "2026-06-29T17:47:58.081Z"
     },
     "#8RYQ8Y0GY": {
       "profile": {
@@ -268,63 +324,7 @@
         "totalBattles": 40,
         "warBattles": 32
       },
-      "fetchedAt": "2026-06-29T17:03:55.222Z"
-    },
-    "#99VY0090": {
-      "profile": {
-        "tag": "#99VY0090",
-        "name": "dclik77",
-        "role": "elder",
-        "trophies": 14000,
-        "bestTrophies": 14000,
-        "expLevel": 79,
-        "totalDonations": 115316,
-        "donations": 26,
-        "warDayWins": 55,
-        "cw2Progress": 1003,
-        "clan": {
-          "tag": "#Y8JUPC9C",
-          "name": "La Resistance"
-        },
-        "arena": "Spirit Square",
-        "stats": {
-          "battleCount": 10871,
-          "threeCrownWins": 2893
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 8
-      },
-      "fetchedAt": "2026-06-29T17:03:55.224Z"
-    },
-    "#UY00GJG2": {
-      "profile": {
-        "tag": "#UY00GJG2",
-        "name": "Monkey D. SkUul",
-        "role": "elder",
-        "trophies": 14000,
-        "bestTrophies": 14000,
-        "expLevel": 74,
-        "totalDonations": 68474,
-        "donations": 52,
-        "warDayWins": 49,
-        "cw2Progress": 335,
-        "clan": {
-          "tag": "#Y8JUPC9C",
-          "name": "La Resistance"
-        },
-        "arena": "Spirit Square",
-        "stats": {
-          "battleCount": 10262,
-          "threeCrownWins": 2007
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 17
-      },
-      "fetchedAt": "2026-06-29T17:03:55.225Z"
+      "fetchedAt": "2026-06-29T17:47:58.082Z"
     },
     "#G9LPGQUG": {
       "profile": {
@@ -352,7 +352,7 @@
         "totalBattles": 30,
         "warBattles": 16
       },
-      "fetchedAt": "2026-06-29T17:03:55.226Z"
+      "fetchedAt": "2026-06-29T17:47:58.083Z"
     },
     "#8V98QYY8V": {
       "profile": {
@@ -380,7 +380,7 @@
         "totalBattles": 30,
         "warBattles": 20
       },
-      "fetchedAt": "2026-06-29T17:03:55.228Z"
+      "fetchedAt": "2026-06-29T17:47:58.084Z"
     },
     "#2902YQRQL": {
       "profile": {
@@ -408,7 +408,7 @@
         "totalBattles": 30,
         "warBattles": 14
       },
-      "fetchedAt": "2026-06-29T17:03:55.229Z"
+      "fetchedAt": "2026-06-29T17:47:58.086Z"
     },
     "#8P29RRU2": {
       "profile": {
@@ -436,7 +436,7 @@
         "totalBattles": 32,
         "warBattles": 12
       },
-      "fetchedAt": "2026-06-29T17:03:55.231Z"
+      "fetchedAt": "2026-06-29T17:47:58.087Z"
     },
     "#8VQLJLR0": {
       "profile": {
@@ -464,7 +464,7 @@
         "totalBattles": 34,
         "warBattles": 8
       },
-      "fetchedAt": "2026-06-29T17:03:55.948Z"
+      "fetchedAt": "2026-06-29T17:47:58.793Z"
     },
     "#P9R8Y90P8": {
       "profile": {
@@ -492,7 +492,7 @@
         "totalBattles": 30,
         "warBattles": 17
       },
-      "fetchedAt": "2026-06-29T17:03:55.948Z"
+      "fetchedAt": "2026-06-29T17:47:58.794Z"
     },
     "#2UQQJJ98Y": {
       "profile": {
@@ -520,7 +520,7 @@
         "totalBattles": 30,
         "warBattles": 16
       },
-      "fetchedAt": "2026-06-29T17:03:55.949Z"
+      "fetchedAt": "2026-06-29T17:47:58.794Z"
     },
     "#QQLYUL0R": {
       "profile": {
@@ -548,7 +548,7 @@
         "totalBattles": 30,
         "warBattles": 32
       },
-      "fetchedAt": "2026-06-29T17:03:55.949Z"
+      "fetchedAt": "2026-06-29T17:47:58.794Z"
     },
     "#9CQC0YUR8": {
       "profile": {
@@ -576,7 +576,7 @@
         "totalBattles": 35,
         "warBattles": 24
       },
-      "fetchedAt": "2026-06-29T17:03:55.949Z"
+      "fetchedAt": "2026-06-29T17:47:58.795Z"
     },
     "#8QL2J8PQ": {
       "profile": {
@@ -586,8 +586,8 @@
         "trophies": 13324,
         "bestTrophies": 13324,
         "expLevel": 78,
-        "totalDonations": 187505,
-        "donations": 34,
+        "totalDonations": 187515,
+        "donations": 44,
         "warDayWins": 4,
         "cw2Progress": 1648,
         "clan": {
@@ -604,7 +604,7 @@
         "totalBattles": 30,
         "warBattles": 16
       },
-      "fetchedAt": "2026-06-29T17:03:55.949Z"
+      "fetchedAt": "2026-06-29T17:47:58.795Z"
     },
     "#VVJ8RURL9": {
       "profile": {
@@ -632,7 +632,7 @@
         "totalBattles": 30,
         "warBattles": 16
       },
-      "fetchedAt": "2026-06-29T17:03:55.950Z"
+      "fetchedAt": "2026-06-29T17:47:58.795Z"
     },
     "#2CL028C80": {
       "profile": {
@@ -642,8 +642,8 @@
         "trophies": 13264,
         "bestTrophies": 13264,
         "expLevel": 73,
-        "totalDonations": 220855,
-        "donations": 26,
+        "totalDonations": 220873,
+        "donations": 44,
         "warDayWins": 166,
         "cw2Progress": 1614,
         "clan": {
@@ -660,7 +660,7 @@
         "totalBattles": 30,
         "warBattles": 16
       },
-      "fetchedAt": "2026-06-29T17:03:55.950Z"
+      "fetchedAt": "2026-06-29T17:47:58.795Z"
     },
     "#9Q920V9U": {
       "profile": {
@@ -688,7 +688,7 @@
         "totalBattles": 30,
         "warBattles": 26
       },
-      "fetchedAt": "2026-06-29T17:03:55.950Z"
+      "fetchedAt": "2026-06-29T17:47:58.796Z"
     },
     "#VQP8PU2V": {
       "profile": {
@@ -716,7 +716,7 @@
         "totalBattles": 40,
         "warBattles": 14
       },
-      "fetchedAt": "2026-06-29T17:03:55.951Z"
+      "fetchedAt": "2026-06-29T17:47:58.796Z"
     },
     "#88QP9CJU": {
       "profile": {
@@ -744,7 +744,7 @@
         "totalBattles": 30,
         "warBattles": 32
       },
-      "fetchedAt": "2026-06-29T17:03:55.956Z"
+      "fetchedAt": "2026-06-29T17:47:58.808Z"
     },
     "#LQLY92CR0": {
       "profile": {
@@ -772,7 +772,7 @@
         "totalBattles": 30,
         "warBattles": 16
       },
-      "fetchedAt": "2026-06-29T17:03:55.956Z"
+      "fetchedAt": "2026-06-29T17:47:58.808Z"
     },
     "#U008V0PQ8": {
       "profile": {
@@ -800,7 +800,7 @@
         "totalBattles": 30,
         "warBattles": 24
       },
-      "fetchedAt": "2026-06-29T17:03:55.956Z"
+      "fetchedAt": "2026-06-29T17:47:58.808Z"
     },
     "#9GG9GRC0G": {
       "profile": {
@@ -828,7 +828,7 @@
         "totalBattles": 33,
         "warBattles": 16
       },
-      "fetchedAt": "2026-06-29T17:03:55.957Z"
+      "fetchedAt": "2026-06-29T17:47:58.808Z"
     },
     "#PG0Q0YYGY": {
       "profile": {
@@ -856,7 +856,7 @@
         "totalBattles": 30,
         "warBattles": 25
       },
-      "fetchedAt": "2026-06-29T17:03:55.957Z"
+      "fetchedAt": "2026-06-29T17:47:58.808Z"
     },
     "#UJ89GUUUY": {
       "profile": {
@@ -884,7 +884,7 @@
         "totalBattles": 30,
         "warBattles": 26
       },
-      "fetchedAt": "2026-06-29T17:03:55.957Z"
+      "fetchedAt": "2026-06-29T17:47:58.809Z"
     },
     "#PGJPJG9QQ": {
       "profile": {
@@ -912,7 +912,7 @@
         "totalBattles": 30,
         "warBattles": 34
       },
-      "fetchedAt": "2026-06-29T17:03:55.957Z"
+      "fetchedAt": "2026-06-29T17:47:58.809Z"
     },
     "#LCQ2J0VGC": {
       "profile": {
@@ -940,7 +940,7 @@
         "totalBattles": 30,
         "warBattles": 12
       },
-      "fetchedAt": "2026-06-29T17:03:55.958Z"
+      "fetchedAt": "2026-06-29T17:47:58.809Z"
     },
     "#GLR2YLQ2U": {
       "profile": {
@@ -968,7 +968,7 @@
         "totalBattles": 36,
         "warBattles": 20
       },
-      "fetchedAt": "2026-06-29T17:03:55.958Z"
+      "fetchedAt": "2026-06-29T17:47:58.809Z"
     },
     "#80CCLY20L": {
       "profile": {
@@ -996,7 +996,7 @@
         "totalBattles": 31,
         "warBattles": 24
       },
-      "fetchedAt": "2026-06-29T17:03:55.962Z"
+      "fetchedAt": "2026-06-29T17:47:58.817Z"
     },
     "#888Y29GY": {
       "profile": {
@@ -1024,7 +1024,7 @@
         "totalBattles": 30,
         "warBattles": 16
       },
-      "fetchedAt": "2026-06-29T17:03:55.962Z"
+      "fetchedAt": "2026-06-29T17:47:58.817Z"
     },
     "#JLU88JR28": {
       "profile": {
@@ -1052,7 +1052,7 @@
         "totalBattles": 30,
         "warBattles": 24
       },
-      "fetchedAt": "2026-06-29T17:03:55.962Z"
+      "fetchedAt": "2026-06-29T17:47:58.817Z"
     },
     "#CYRGPVGVG": {
       "profile": {
@@ -1080,7 +1080,7 @@
         "totalBattles": 30,
         "warBattles": 8
       },
-      "fetchedAt": "2026-06-29T17:03:55.963Z"
+      "fetchedAt": "2026-06-29T17:47:58.818Z"
     },
     "#2GUPJ99G2": {
       "profile": {
@@ -1108,7 +1108,7 @@
         "totalBattles": 30,
         "warBattles": 20
       },
-      "fetchedAt": "2026-06-29T17:03:55.963Z"
+      "fetchedAt": "2026-06-29T17:47:58.818Z"
     },
     "#9YQ8RVU2P": {
       "profile": {
@@ -1136,7 +1136,7 @@
         "totalBattles": 30,
         "warBattles": 16
       },
-      "fetchedAt": "2026-06-29T17:03:55.963Z"
+      "fetchedAt": "2026-06-29T17:47:58.818Z"
     },
     "#8PP9JQCLY": {
       "profile": {
@@ -1164,7 +1164,7 @@
         "totalBattles": 30,
         "warBattles": 4
       },
-      "fetchedAt": "2026-06-29T17:03:55.968Z"
+      "fetchedAt": "2026-06-29T17:47:58.821Z"
     },
     "#YRYPUR822": {
       "profile": {
@@ -1192,7 +1192,7 @@
         "totalBattles": 30,
         "warBattles": 28
       },
-      "fetchedAt": "2026-06-29T17:03:55.969Z"
+      "fetchedAt": "2026-06-29T17:47:58.821Z"
     },
     "#2GPUQY9P9": {
       "profile": {
@@ -1220,7 +1220,7 @@
         "totalBattles": 30,
         "warBattles": 36
       },
-      "fetchedAt": "2026-06-29T17:03:55.969Z"
+      "fetchedAt": "2026-06-29T17:47:58.821Z"
     },
     "#QY0LG0R0P": {
       "profile": {
@@ -1248,7 +1248,7 @@
         "totalBattles": 30,
         "warBattles": 45
       },
-      "fetchedAt": "2026-06-29T17:03:55.969Z"
+      "fetchedAt": "2026-06-29T17:47:58.821Z"
     },
     "#C0VQRUP2": {
       "profile": {
@@ -1276,7 +1276,7 @@
         "totalBattles": 30,
         "warBattles": 10
       },
-      "fetchedAt": "2026-06-29T17:03:55.969Z"
+      "fetchedAt": "2026-06-29T17:47:58.822Z"
     },
     "#UYP0YCQ9": {
       "profile": {
@@ -1304,7 +1304,7 @@
         "totalBattles": 30,
         "warBattles": 42
       },
-      "fetchedAt": "2026-06-29T17:03:55.974Z"
+      "fetchedAt": "2026-06-29T17:47:58.826Z"
     },
     "#GVGVR0J2U": {
       "profile": {
@@ -1332,7 +1332,7 @@
         "totalBattles": 30,
         "warBattles": 48
       },
-      "fetchedAt": "2026-06-29T17:03:55.974Z"
+      "fetchedAt": "2026-06-29T17:47:58.826Z"
     },
     "#9Y28LR22": {
       "profile": {
@@ -1360,7 +1360,7 @@
         "totalBattles": 30,
         "warBattles": 29
       },
-      "fetchedAt": "2026-06-29T17:03:55.974Z"
+      "fetchedAt": "2026-06-29T17:47:58.826Z"
     }
   },
   "members": [
@@ -1385,7 +1385,7 @@
       "avgFame": 2583,
       "maxFame": 3100,
       "totalDecks": 88,
-      "pointsPerDeck": 176.14,
+      "pointsPerDeck": 176,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T071023.000Z",
@@ -1399,7 +1399,7 @@
       "trophies": 14000,
       "donations": 18,
       "totalDonations": 51474,
-      "donationsReceived": 32,
+      "donationsReceived": 40,
       "expLevel": 0,
       "reliability": 74,
       "reliabilitySource": "history",
@@ -1413,7 +1413,7 @@
       "avgFame": 2495,
       "maxFame": 3000,
       "totalDecks": 156,
-      "pointsPerDeck": 159.94,
+      "pointsPerDeck": 160,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T161034.000Z",
@@ -1441,7 +1441,7 @@
       "avgFame": 2433,
       "maxFame": 3100,
       "totalDecks": 98,
-      "pointsPerDeck": 148.98,
+      "pointsPerDeck": 149,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T143345.000Z",
@@ -1453,8 +1453,8 @@
       "tag": "#2PG80VRY",
       "role": "member",
       "trophies": 14000,
-      "donations": 38,
-      "totalDonations": 200993,
+      "donations": 54,
+      "totalDonations": 201009,
       "donationsReceived": 0,
       "expLevel": 0,
       "reliability": 79,
@@ -1469,10 +1469,10 @@
       "avgFame": 2217,
       "maxFame": 2500,
       "totalDecks": 48,
-      "pointsPerDeck": 138.54,
+      "pointsPerDeck": 139,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260629T163833.000Z",
+      "lastSeen": "20260629T173120.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-04-07-v1"
     },
@@ -1497,7 +1497,7 @@
       "avgFame": 2190,
       "maxFame": 2700,
       "totalDecks": 147,
-      "pointsPerDeck": 148.98,
+      "pointsPerDeck": 149,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T134131.000Z",
@@ -1525,7 +1525,7 @@
       "avgFame": 2290,
       "maxFame": 2850,
       "totalDecks": 147,
-      "pointsPerDeck": 155.78,
+      "pointsPerDeck": 156,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260628T183255.000Z",
@@ -1553,7 +1553,7 @@
       "avgFame": 2060,
       "maxFame": 2300,
       "totalDecks": 160,
-      "pointsPerDeck": 128.75,
+      "pointsPerDeck": 129,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T052656.000Z",
@@ -1581,7 +1581,7 @@
       "avgFame": 2456,
       "maxFame": 2750,
       "totalDecks": 124,
-      "pointsPerDeck": 158.47,
+      "pointsPerDeck": 158,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T111908.000Z",
@@ -1609,7 +1609,7 @@
       "avgFame": 2250,
       "maxFame": 3200,
       "totalDecks": 156,
-      "pointsPerDeck": 144.23,
+      "pointsPerDeck": 144,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T054032.000Z",
@@ -1637,7 +1637,7 @@
       "avgFame": 2420,
       "maxFame": 2800,
       "totalDecks": 160,
-      "pointsPerDeck": 151.25,
+      "pointsPerDeck": 151,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T135551.000Z",
@@ -1665,7 +1665,7 @@
       "avgFame": 2600,
       "maxFame": 2900,
       "totalDecks": 155,
-      "pointsPerDeck": 167.74,
+      "pointsPerDeck": 168,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T063607.000Z",
@@ -1693,7 +1693,7 @@
       "avgFame": 2320,
       "maxFame": 2950,
       "totalDecks": 158,
-      "pointsPerDeck": 146.84,
+      "pointsPerDeck": 147,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T092540.000Z",
@@ -1721,7 +1721,7 @@
       "avgFame": 2500,
       "maxFame": 2900,
       "totalDecks": 156,
-      "pointsPerDeck": 160.26,
+      "pointsPerDeck": 160,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T125423.000Z",
@@ -1749,7 +1749,7 @@
       "avgFame": 2355,
       "maxFame": 2700,
       "totalDecks": 159,
-      "pointsPerDeck": 148.11,
+      "pointsPerDeck": 148,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T155226.000Z",
@@ -1777,7 +1777,7 @@
       "avgFame": 2600,
       "maxFame": 3100,
       "totalDecks": 128,
-      "pointsPerDeck": 162.5,
+      "pointsPerDeck": 163,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260628T191159.000Z",
@@ -1805,7 +1805,7 @@
       "avgFame": 2543,
       "maxFame": 3000,
       "totalDecks": 112,
-      "pointsPerDeck": 158.93,
+      "pointsPerDeck": 159,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260628T110152.000Z",
@@ -1833,10 +1833,38 @@
       "avgFame": 2450,
       "maxFame": 3000,
       "totalDecks": 152,
-      "pointsPerDeck": 161.18,
+      "pointsPerDeck": 161,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T131114.000Z",
+      "lastWarDecks": 16,
+      "scoreVersion": "2026-04-07-v1"
+    },
+    {
+      "name": "steeeph",
+      "tag": "#9VQ0J29Y",
+      "role": "member",
+      "trophies": 14000,
+      "donations": 120,
+      "totalDonations": 100643,
+      "donationsReceived": 80,
+      "expLevel": 0,
+      "reliability": 90,
+      "reliabilitySource": "history",
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "discord": true,
+      "warDays": null,
+      "arrivalStreakInCurrentClan": 10,
+      "arrivalTotalWeeks": 9,
+      "avgFame": 2661,
+      "maxFame": 3050,
+      "totalDecks": 140,
+      "pointsPerDeck": 171,
+      "warDecks": null,
+      "joinDate": null,
+      "lastSeen": "20260629T173302.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-04-07-v1"
     },
@@ -1861,38 +1889,10 @@
       "avgFame": 2490,
       "maxFame": 3000,
       "totalDecks": 160,
-      "pointsPerDeck": 155.63,
+      "pointsPerDeck": 156,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T165305.000Z",
-      "lastWarDecks": 16,
-      "scoreVersion": "2026-04-07-v1"
-    },
-    {
-      "name": "steeeph",
-      "tag": "#9VQ0J29Y",
-      "role": "member",
-      "trophies": 14000,
-      "donations": 104,
-      "totalDonations": 100627,
-      "donationsReceived": 50,
-      "expLevel": 0,
-      "reliability": 90,
-      "reliabilitySource": "history",
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "discord": true,
-      "warDays": null,
-      "arrivalStreakInCurrentClan": 10,
-      "arrivalTotalWeeks": 9,
-      "avgFame": 2661,
-      "maxFame": 3050,
-      "totalDecks": 140,
-      "pointsPerDeck": 171.07,
-      "warDecks": null,
-      "joinDate": null,
-      "lastSeen": "20260629T164150.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-04-07-v1"
     },
@@ -1917,7 +1917,7 @@
       "avgFame": 2545,
       "maxFame": 3000,
       "totalDecks": 146,
-      "pointsPerDeck": 174.32,
+      "pointsPerDeck": 174,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T115052.000Z",
@@ -1945,7 +1945,7 @@
       "avgFame": 2295,
       "maxFame": 2800,
       "totalDecks": 160,
-      "pointsPerDeck": 143.44,
+      "pointsPerDeck": 143,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T130547.000Z",
@@ -1973,7 +1973,7 @@
       "avgFame": 2620,
       "maxFame": 3050,
       "totalDecks": 160,
-      "pointsPerDeck": 163.75,
+      "pointsPerDeck": 164,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T061214.000Z",
@@ -2001,7 +2001,7 @@
       "avgFame": 2589,
       "maxFame": 3000,
       "totalDecks": 154,
-      "pointsPerDeck": 151.3,
+      "pointsPerDeck": 151,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T100640.000Z",
@@ -2015,7 +2015,7 @@
       "trophies": 11268,
       "donations": 0,
       "totalDonations": 107946,
-      "donationsReceived": 70,
+      "donationsReceived": 80,
       "expLevel": 0,
       "reliability": 90,
       "reliabilitySource": "history",
@@ -2029,7 +2029,7 @@
       "avgFame": 2405,
       "maxFame": 2700,
       "totalDecks": 160,
-      "pointsPerDeck": 150.31,
+      "pointsPerDeck": 150,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T163556.000Z",
@@ -2057,7 +2057,7 @@
       "avgFame": 2465,
       "maxFame": 3100,
       "totalDecks": 160,
-      "pointsPerDeck": 154.06,
+      "pointsPerDeck": 154,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T105156.000Z",
@@ -2085,7 +2085,7 @@
       "avgFame": 2590,
       "maxFame": 3200,
       "totalDecks": 156,
-      "pointsPerDeck": 166.03,
+      "pointsPerDeck": 166,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T163158.000Z",
@@ -2113,7 +2113,7 @@
       "avgFame": 2710,
       "maxFame": 3050,
       "totalDecks": 160,
-      "pointsPerDeck": 169.38,
+      "pointsPerDeck": 169,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T111543.000Z",
@@ -2141,7 +2141,7 @@
       "avgFame": 2485,
       "maxFame": 3000,
       "totalDecks": 156,
-      "pointsPerDeck": 159.29,
+      "pointsPerDeck": 159,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T142301.000Z",
@@ -2169,7 +2169,7 @@
       "avgFame": 2585,
       "maxFame": 2950,
       "totalDecks": 157,
-      "pointsPerDeck": 164.65,
+      "pointsPerDeck": 165,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T152101.000Z",
@@ -2197,7 +2197,7 @@
       "avgFame": 2465,
       "maxFame": 2900,
       "totalDecks": 160,
-      "pointsPerDeck": 154.06,
+      "pointsPerDeck": 154,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260628T220621.000Z",
@@ -2209,8 +2209,8 @@
       "tag": "#82URJC8CR",
       "role": "member",
       "trophies": 14000,
-      "donations": 8,
-      "totalDonations": 133390,
+      "donations": 16,
+      "totalDonations": 133398,
       "donationsReceived": 80,
       "expLevel": 0,
       "reliability": 92,
@@ -2225,10 +2225,10 @@
       "avgFame": 2594,
       "maxFame": 2950,
       "totalDecks": 154,
-      "pointsPerDeck": 151.62,
+      "pointsPerDeck": 152,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260629T144345.000Z",
+      "lastSeen": "20260629T173751.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-04-07-v1"
     },
@@ -2237,8 +2237,8 @@
       "tag": "#J8RU2RJ8C",
       "role": "elder",
       "trophies": 14000,
-      "donations": 94,
-      "totalDonations": 101367,
+      "donations": 102,
+      "totalDonations": 101375,
       "donationsReceived": 80,
       "expLevel": 0,
       "reliability": 92,
@@ -2253,10 +2253,10 @@
       "avgFame": 2440,
       "maxFame": 3000,
       "totalDecks": 160,
-      "pointsPerDeck": 152.5,
+      "pointsPerDeck": 153,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260629T165811.000Z",
+      "lastSeen": "20260629T173903.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-04-07-v1"
     },
@@ -2281,7 +2281,7 @@
       "avgFame": 2625,
       "maxFame": 3300,
       "totalDecks": 160,
-      "pointsPerDeck": 164.06,
+      "pointsPerDeck": 164,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T155227.000Z",
@@ -2309,7 +2309,7 @@
       "avgFame": 2580,
       "maxFame": 3050,
       "totalDecks": 156,
-      "pointsPerDeck": 165.38,
+      "pointsPerDeck": 165,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T105226.000Z",
@@ -2321,9 +2321,9 @@
       "tag": "#2CL028C80",
       "role": "elder",
       "trophies": 13264,
-      "donations": 26,
-      "totalDonations": 220855,
-      "donationsReceived": 0,
+      "donations": 44,
+      "totalDonations": 220873,
+      "donationsReceived": 40,
       "expLevel": 0,
       "reliability": 92,
       "reliabilitySource": "history",
@@ -2337,10 +2337,10 @@
       "avgFame": 2475,
       "maxFame": 2600,
       "totalDecks": 160,
-      "pointsPerDeck": 154.69,
+      "pointsPerDeck": 155,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260629T104144.000Z",
+      "lastSeen": "20260629T171807.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-04-07-v1"
     },
@@ -2365,10 +2365,38 @@
       "avgFame": 2545,
       "maxFame": 3000,
       "totalDecks": 160,
-      "pointsPerDeck": 159.06,
+      "pointsPerDeck": 159,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T145159.000Z",
+      "lastWarDecks": 16,
+      "scoreVersion": "2026-04-07-v1"
+    },
+    {
+      "name": "Monkey D. SkUul",
+      "tag": "#UY00GJG2",
+      "role": "elder",
+      "trophies": 14000,
+      "donations": 60,
+      "totalDonations": 68482,
+      "donationsReceived": 80,
+      "expLevel": 0,
+      "reliability": 93,
+      "reliabilitySource": "history",
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "discord": true,
+      "warDays": null,
+      "arrivalStreakInCurrentClan": 10,
+      "arrivalTotalWeeks": 10,
+      "avgFame": 2695,
+      "maxFame": 3300,
+      "totalDecks": 152,
+      "pointsPerDeck": 177,
+      "warDecks": null,
+      "joinDate": null,
+      "lastSeen": "20260629T171940.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-04-07-v1"
     },
@@ -2393,38 +2421,10 @@
       "avgFame": 2530,
       "maxFame": 2950,
       "totalDecks": 160,
-      "pointsPerDeck": 158.13,
+      "pointsPerDeck": 158,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260629T155030.000Z",
-      "lastWarDecks": 16,
-      "scoreVersion": "2026-04-07-v1"
-    },
-    {
-      "name": "Monkey D. SkUul",
-      "tag": "#UY00GJG2",
-      "role": "elder",
-      "trophies": 14000,
-      "donations": 52,
-      "totalDonations": 68474,
-      "donationsReceived": 40,
-      "expLevel": 0,
-      "reliability": 93,
-      "reliabilitySource": "history",
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "discord": true,
-      "warDays": null,
-      "arrivalStreakInCurrentClan": 10,
-      "arrivalTotalWeeks": 10,
-      "avgFame": 2695,
-      "maxFame": 3300,
-      "totalDecks": 152,
-      "pointsPerDeck": 177.3,
-      "warDecks": null,
-      "joinDate": null,
-      "lastSeen": "20260629T153939.000Z",
+      "lastSeen": "20260629T171357.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-04-07-v1"
     },
@@ -2449,7 +2449,7 @@
       "avgFame": 2685,
       "maxFame": 3100,
       "totalDecks": 155,
-      "pointsPerDeck": 173.23,
+      "pointsPerDeck": 173,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T111400.000Z",
@@ -2477,7 +2477,7 @@
       "avgFame": 2700,
       "maxFame": 3200,
       "totalDecks": 154,
-      "pointsPerDeck": 175.32,
+      "pointsPerDeck": 175,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T062841.000Z",
@@ -2505,7 +2505,7 @@
       "avgFame": 2594,
       "maxFame": 2900,
       "totalDecks": 155,
-      "pointsPerDeck": 150.65,
+      "pointsPerDeck": 151,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T140117.000Z",
@@ -2533,7 +2533,7 @@
       "avgFame": 2575,
       "maxFame": 2800,
       "totalDecks": 160,
-      "pointsPerDeck": 160.94,
+      "pointsPerDeck": 161,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T115629.000Z",
@@ -2561,7 +2561,7 @@
       "avgFame": 2610,
       "maxFame": 3000,
       "totalDecks": 160,
-      "pointsPerDeck": 163.13,
+      "pointsPerDeck": 163,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T165323.000Z",
@@ -2589,7 +2589,7 @@
       "avgFame": 2675,
       "maxFame": 3200,
       "totalDecks": 160,
-      "pointsPerDeck": 167.19,
+      "pointsPerDeck": 167,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T141153.000Z",
@@ -2617,7 +2617,7 @@
       "avgFame": 2735,
       "maxFame": 3100,
       "totalDecks": 160,
-      "pointsPerDeck": 170.94,
+      "pointsPerDeck": 171,
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260629T103935.000Z",
@@ -2629,8 +2629,8 @@
       "tag": "#8QL2J8PQ",
       "role": "coLeader",
       "trophies": 13324,
-      "donations": 34,
-      "totalDonations": 187505,
+      "donations": 44,
+      "totalDonations": 187515,
       "donationsReceived": 40,
       "expLevel": 0,
       "reliability": 97,
@@ -2645,10 +2645,10 @@
       "avgFame": 2960,
       "maxFame": 3150,
       "totalDecks": 159,
-      "pointsPerDeck": 186.16,
+      "pointsPerDeck": 186,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260629T141044.000Z",
+      "lastSeen": "20260629T173600.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-04-07-v1"
     },
@@ -2657,8 +2657,8 @@
       "tag": "#YQGCRQ0",
       "role": "member",
       "trophies": 13711,
-      "donations": 32,
-      "totalDonations": 134242,
+      "donations": 68,
+      "totalDonations": 134278,
       "donationsReceived": 0,
       "expLevel": 0,
       "reliability": 99,
@@ -2673,10 +2673,10 @@
       "avgFame": 2957,
       "maxFame": 3250,
       "totalDecks": 124,
-      "pointsPerDeck": 166.94,
+      "pointsPerDeck": 167,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260629T165447.000Z",
+      "lastSeen": "20260629T174743.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-04-07-v1"
     },
@@ -2685,8 +2685,8 @@
       "tag": "#GJ8RV8802",
       "role": "coLeader",
       "trophies": 14000,
-      "donations": 138,
-      "totalDonations": 26207,
+      "donations": 146,
+      "totalDonations": 26215,
       "donationsReceived": 80,
       "expLevel": 0,
       "reliability": 99,
@@ -2704,7 +2704,7 @@
       "pointsPerDeck": 181,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260629T162400.000Z",
+      "lastSeen": "20260629T172249.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-04-07-v1"
     }
@@ -4028,6 +4028,6 @@
   ],
   "rateLimited": false,
   "raceLogUnavailable": false,
-  "analysisCacheUpdatedAt": "2026-06-29T17:03:59.262Z",
+  "analysisCacheUpdatedAt": "2026-06-29T17:48:02.129Z",
   "debugSnapshotInfo": null
 }
