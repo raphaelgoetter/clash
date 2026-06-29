@@ -5901,8 +5901,8 @@ export default async function handler(req, res) {
           const ppdStr = fmt(m.pointsPerDeck);
 
           const extras = [newIcon, reliabilityStr].filter(Boolean).join(" ");
-          const prefix = extras ? ` ${extras} ·` : "";
-          return `**#${rank}. ${m.name}**${prefix} 📊${avgStr} · 🏆${maxStr} · ⚡${ppdStr}`;
+          const prefix = extras ? ` ${extras}·` : "";
+          return `**#${rank}. ${m.name}**${prefix}📊${avgStr}·🏆${maxStr}·⚡${ppdStr}`;
         });
 
         // Pagination : découpage par taille (description limitée à 4096 car.)
@@ -6099,8 +6099,8 @@ export default async function handler(req, res) {
           const ppdStr = fmt(m.pointsPerDeck);
 
           const extras = [newIcon, reliabilityStr].filter(Boolean).join(" ");
-          const prefix = extras ? ` ${extras} ·` : "";
-          return `**#${rank}. ${m.name}**${prefix} 📊${avgStr} · 🏆${maxStr} · ⚡${ppdStr}`;
+          const prefix = extras ? ` ${extras}·` : "";
+          return `**#${rank}. ${m.name}**${prefix}📊${avgStr}·🏆${maxStr}·⚡${ppdStr}`;
         });
 
         const DESC_MAX = 4096;
