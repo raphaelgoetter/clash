@@ -83,6 +83,7 @@ async function writeToBlob(path, data) {
     await put(path, JSON.stringify(data), {
       access: "private",
       contentType: "application/json",
+      allowOverwrite: true,
     });
   } catch (err) {
     console.error(`[Blob] Écriture échouée ${path}:`, err.message);
