@@ -62,31 +62,16 @@ async function writeJsonSafe(filePath, data) {
 // ── Vercel Blob (persistance entre instances serverless) ─────
 
 function useBlob() {
-  return !!process.env.BLOB_READ_WRITE_TOKEN && !!blobBaseUrl();
-}
-
-function blobBaseUrl() {
-  const storeId = process.env.BLOB_STORE_ID || "";
-  const token = process.env.BLOB_READ_WRITE_TOKEN || "";
-  // Si on a le store ID, on construit l'URL complète
-  if (storeId) {
-    return `https://${storeId}.private.blob.vercel-storage.com`;
-  }
-  // Sinon on tente d'extraire depuis le token (format: storeId:secret)
-  const parts = token.split(":");
-  if (parts.length >= 2) {
-    return `https://${parts[0]}.private.blob.vercel-storage.com`;
-  }
-  return null;
+  return !!process.env.BLOB_READ_WRITE_TOKEN;
 }
 
 async function readFromBlob(path) {
   try {
-    const baseUrl = blobBaseUrl();
-    if (!baseUrl) return null;
-    const fullUrl = `${baseUrl}/${path}`;
-    const { get } = await import("@vercel/blob");
-    const blob = await get(fullUrl);
+    const { list, get } = await import("@vercel/blob");
+    // Lister pour obtenir l'URL exacte du blob
+    const { blobs } = await list({ prefix: path });
+    if (!blobs || blobs.length === 0) return null;
+    const blob = await get(blobs[0].url);
     if (!blob) return null;
     return await blob.json();
   } catch (err) {
@@ -97,13 +82,8 @@ async function readFromBlob(path) {
 
 async function writeToBlob(path, data) {
   try {
-    const baseUrl = blobBaseUrl();
-    if (!baseUrl) {
-      throw new Error("Impossible de déterminer l'URL du store Blob");
-    }
-    const fullUrl = `${baseUrl}/${path}`;
     const { put } = await import("@vercel/blob");
-    await put(fullUrl, JSON.stringify(data), {
+    await put(path, JSON.stringify(data), {
       access: "private",
       contentType: "application/json",
     });
