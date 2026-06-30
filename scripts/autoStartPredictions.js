@@ -110,7 +110,7 @@ async function main() {
         continue;
       }
 
-      const topScorers = await getTopScorers(clanTag, 9);
+      const topScorers = await getTopScorers(clanTag, 8);
       if (topScorers.length === 0) {
         console.warn(`[${clanTag}] Aucun top scoreur trouvé.`);
         continue;
@@ -175,9 +175,9 @@ async function main() {
         description:
           `Devinez qui sera le **Champion** de la semaine **${targetWeekId}** qui arrive !\n` +
           `*Le Champion est le joueur qui marquera le plus de points GDC.*\n\n` +
-          `**Challengers** (top 9 scoreurs semaine ${prevWeekId}) :\n` +
+          `**Challengers** (top 8 scoreurs semaine ${prevWeekId}) :\n` +
           lines.join("\n") +
-          `\n${ordinal(10)} **Autre** (pas dans la liste)\n\n` +
+          `\n${ordinal(9)} **Autre** (pas dans la liste)\n\n` +
           `📅 **Votez jusqu'au ${endParis}**\n` +
           `Sélectionnez votre challenger dans le menu ci-dessous.\n` +
           `📌 *Épinglez ce message pour que tout le monde puisse voter facilement.*`,
@@ -200,7 +200,7 @@ async function main() {
                 description: `${formatFame(p.fame)} pts · ${p.decksUsed} decks`,
               })),
               {
-                label: `10. Autre (pas dans la liste)`,
+                label: `9. Autre (pas dans la liste)`,
                 value: "__other__",
                 description: "Vote pour un joueur différent",
               },

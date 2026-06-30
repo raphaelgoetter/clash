@@ -1623,7 +1623,7 @@ export default async function handler(req, res) {
 
       // Ajouter "Autre" comme dernier choix
       challengerChoices.push({
-        name: `10. Autre (pas dans la liste)`,
+        name: `9. Autre (pas dans la liste)`,
         value: "__other__",
       });
 
