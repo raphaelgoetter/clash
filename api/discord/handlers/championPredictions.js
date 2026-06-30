@@ -354,8 +354,9 @@ function buildResultEmbed(
       description += `🎉 **Les votants ont eu raison !** Le challenger majoritaire était bien le Champion !\n\n`;
 
       if (winnerVoters.length > 0) {
-        description += `Félicitations à :\n`;
-        description += winnerVoters.map((name) => `• ${name}`).join("\n");
+        const list = winnerVoters.slice(0, 100).join(", ");
+        description += `Félicitations à : ${list}`;
+        if (winnerVoters.length > 100) description += `… (+${winnerVoters.length - 100} autres)`;
         description += `\n\n`;
       }
     } else {
