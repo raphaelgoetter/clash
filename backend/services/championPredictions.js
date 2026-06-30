@@ -67,12 +67,14 @@ function useBlob() {
 
 async function readFromBlob(path) {
   try {
+    const { list } = await import("@vercel/blob");
+    const prefix = path.replace(/\.json$/, "_");
+    const result = await list({ prefix, limit: 10 });
+    const blobs = result.blobs;
+    if (!blobs?.length) return null;
+    blobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
     const token = process.env.BLOB_READ_WRITE_TOKEN;
-    if (!token) return null;
-    const storeId = token.split("_")[3];
-    if (!storeId) return null;
-    const blobUrl = `https://${storeId}.private.blob.vercel-storage.com/${path}`;
-    const res = await fetch(blobUrl, {
+    const res = await fetch(blobs[0].url, {
       headers: { authorization: `Bearer ${token}` },
     });
     if (!res.ok) return null;
@@ -85,14 +87,23 @@ async function readFromBlob(path) {
 
 async function writeToBlob(path, data) {
   try {
-    const { put } = await import("@vercel/blob");
-    await put(path, JSON.stringify(data), {
+    const { put, list, del } = await import("@vercel/blob");
+    const result = await put(path, JSON.stringify(data), {
       access: "private",
       contentType: "application/json",
       allowOverwrite: true,
-      addRandomSuffix: false,
+      addRandomSuffix: true,
       cacheControlMaxAge: 0,
     });
+    // Nettoyer les anciens blobs orphelins (même préfixe, sauf le nouveau)
+    try {
+      const prefix = path.replace(/\.json$/, "_");
+      const old = await list({ prefix, limit: 20 });
+      const stale = old.blobs.map(b => b.url).filter(u => u !== result.url);
+      if (stale.length > 0) await del(stale);
+    } catch {
+      /* best-effort */
+    }
   } catch (err) {
     console.error(`[Blob] Écriture échouée ${path}:`, err.message);
     // Fallback fichier local (dev uniquement)
