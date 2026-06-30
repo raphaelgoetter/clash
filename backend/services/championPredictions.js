@@ -47,45 +47,44 @@ async function readJsonSafe(filePath) {
   }
 }
 
+async function ensureDir(filePath) {
+  const dir = path.dirname(filePath);
+  try {
+    await fs.mkdir(dir, { recursive: true });
+  } catch {
+    // read-only filesystem (Vercel) — ignore
+  }
+}
+
 async function writeJsonSafe(filePath, data) {
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  await ensureDir(filePath);
   await fs.writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
 }
 
 async function readPredictions() {
-  let data = await readJsonSafe(predictionsFilePath());
+  let data = await readJsonSafe(TMP_PREDICTIONS_FILE);
   if (data === null) {
-    data = await readJsonSafe(TMP_PREDICTIONS_FILE);
+    data = await readJsonSafe(predictionsFilePath());
   }
   return data || {};
 }
 
 async function writePredictions(data) {
-  // Sur Vercel, /tmp est le seul dossier writable.
-  // data/ est read-only sur Vercel mais writable en local.
-  try {
-    await writeJsonSafe(TMP_PREDICTIONS_FILE, data);
-  } catch {}
-  try {
-    await writeJsonSafe(predictionsFilePath(), data);
-  } catch {}
+  await writeJsonSafe(TMP_PREDICTIONS_FILE, data).catch(() => {});
+  await writeJsonSafe(predictionsFilePath(), data).catch(() => {});
 }
 
 async function readHistory() {
-  let data = await readJsonSafe(historyFilePath());
+  let data = await readJsonSafe(TMP_HISTORY_FILE);
   if (data === null) {
-    data = await readJsonSafe(TMP_HISTORY_FILE);
+    data = await readJsonSafe(historyFilePath());
   }
   return data || [];
 }
 
 async function writeHistory(data) {
-  try {
-    await writeJsonSafe(TMP_HISTORY_FILE, data);
-  } catch {}
-  try {
-    await writeJsonSafe(historyFilePath(), data);
-  } catch {}
+  await writeJsonSafe(TMP_HISTORY_FILE, data).catch(() => {});
+  await writeJsonSafe(historyFilePath(), data).catch(() => {});
 }
 
 // ── Helpers métier ────────────────────────────────────────────
