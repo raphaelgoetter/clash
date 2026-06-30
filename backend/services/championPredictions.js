@@ -65,31 +65,56 @@ function useBlob() {
   return !!process.env.BLOB_READ_WRITE_TOKEN;
 }
 
-async function readFromBlob(path) {
+function tmpUrlPath(fileKey) {
+  return path.join("/tmp", `blob-${fileKey}`);
+}
+
+async function readStoredUrl(fileKey) {
   try {
-    const token = process.env.BLOB_READ_WRITE_TOKEN;
-    if (!token) return logAndReturn(`[Blob] Pas de token`, null);
-    const storeId = token.split("_")[3];
-    if (!storeId) return logAndReturn(`[Blob] storeId non trouvé dans token`, null);
-    const ts = Date.now();
-    const blobUrl = `https://${storeId}.private.blob.vercel-storage.com/${path}?t=${ts}`;
-    const response = await fetch(blobUrl, {
-      headers: { authorization: `Bearer ${token}` },
-    });
-    console.error(`[Blob] GET ${path} → HTTP ${response.status} (store=${storeId} t=${ts})`);
-    if (response.status === 404) return logAndReturn(`[Blob] 404 ${path}`, null);
-    if (!response.ok) return logAndReturn(`[Blob] HTTP ${response.status} ${path}`, null);
-    const text = await response.text();
-    console.error(`[Blob] Body ${path}: ${text.slice(0, 200)}`);
-    return JSON.parse(text);
-  } catch (err) {
-    return logAndReturn(`[Blob] Erreur ${path}: ${err.message}`, null);
+    return await fs.readFile(tmpUrlPath(fileKey), "utf-8");
+  } catch {
+    return null;
   }
 }
 
-function logAndReturn(msg, val) {
-  console.error(msg);
-  return val;
+async function storeUrl(fileKey, url) {
+  try {
+    await fs.mkdir("/tmp", { recursive: true });
+    await fs.writeFile(tmpUrlPath(fileKey), url, "utf-8");
+  } catch {
+    /* /tmp/ inaccessible (dev local) */
+  }
+}
+
+async function readFromBlob(path) {
+  try {
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    if (!token) return null;
+
+    // 1) URL unique stockée dans /tmp/ (écriture précédente, jamais en cache)
+    const storedUrl = await readStoredUrl(path);
+    if (storedUrl) {
+      const res = await fetch(storedUrl, {
+        headers: { authorization: `Bearer ${token}` },
+      });
+      if (res.ok) return await res.json();
+    }
+
+    // 2) Fallback URL canonique (possiblement périmée côté CDN)
+    const storeId = token.split("_")[3];
+    if (!storeId) return null;
+    const fallbackUrl = `https://${storeId}.private.blob.vercel-storage.com/${path}`;
+    const res = await fetch(fallbackUrl, {
+      headers: { authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    await storeUrl(path, fallbackUrl);
+    return data;
+  } catch (err) {
+    console.warn(`[Blob] Lecture échouée ${path}:`, err.message);
+    return null;
+  }
 }
 
 async function writeToBlob(path, data) {
@@ -99,10 +124,11 @@ async function writeToBlob(path, data) {
       access: "private",
       contentType: "application/json",
       allowOverwrite: true,
-      addRandomSuffix: false,
+      addRandomSuffix: true,
       cacheControlMaxAge: 0,
     });
-    console.error(`[Blob] PUT ${path} → url=${result.url} size=${result.size}`);
+    // Stocker l'URL unique pour contourner le cache CDN aux lectures suivantes
+    await storeUrl(path, result.url);
   } catch (err) {
     console.error(`[Blob] Écriture échouée ${path}:`, err.message);
     // Fallback fichier local (dev uniquement)
@@ -302,9 +328,19 @@ export async function openSession(clanTag, weekId, seasonId, sectionIndex, chall
 }
 
 export async function castVote(clanTag, weekId, discordId, discordName, challengerTag) {
-  const predictions = await readPredictions();
+  let predictions = await readPredictions();
   const key = sessionKey(clanTag, weekId);
-  const session = predictions[key];
+  let session = predictions[key];
+
+  // Retry avec backoff si la session n'est pas trouvée (délai de purge CDN)
+  if (!session) {
+    for (const ms of [500, 1000]) {
+      await new Promise(r => setTimeout(r, ms));
+      predictions = await readPredictions();
+      session = predictions[key];
+      if (session) break;
+    }
+  }
 
   if (!session) {
     throw new Error("Aucune session de vote ouverte pour cette semaine.");
