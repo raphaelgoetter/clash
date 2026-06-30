@@ -77,7 +77,7 @@ async function readFromBlob(path) {
 async function writeToBlob(path, data) {
   const { put } = await import("@vercel/blob");
   await put(path, JSON.stringify(data), {
-    access: "public",
+    access: "private",
     contentType: "application/json",
   });
 }
