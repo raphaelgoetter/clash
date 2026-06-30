@@ -67,29 +67,32 @@ function tmpPath(name) {
   return `/tmp/${name}`;
 }
 
+function blobStoreId() {
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  if (!token) return null;
+  return token.split("_")[3] || null;
+}
+
+function blobUrlFor(path) {
+  const storeId = blobStoreId();
+  if (!storeId) return null;
+  return `https://${storeId}.private.blob.vercel-storage.com/${path}`;
+}
+
 async function readFromBlob(path) {
-  try {
-    const { list } = await import("@vercel/blob");
-    const prefix = path.replace(/\.json$/, "_");
-    for (const delay of [0, 1000, 2000, 4000, 8000]) {
-      if (delay) await new Promise(r => setTimeout(r, delay));
-      const result = await list({ prefix, limit: 10 });
-      const blobs = result.blobs;
-      if (blobs?.length) {
-        blobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
-        const token = process.env.BLOB_READ_WRITE_TOKEN;
-        const res = await fetch(blobs[0].url, {
-          headers: { authorization: `Bearer ${token}` },
-        });
-        if (res.ok) return await res.json();
-        return null;
-      }
-    }
-    return null;
-  } catch (err) {
-    console.warn(`[Blob] Lecture échouée ${path}:`, err.message);
-    return null;
+  const url = blobUrlFor(path);
+  if (!url) return null;
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  for (const delay of [0, 1000, 2000, 4000, 8000]) {
+    if (delay) await new Promise(r => setTimeout(r, delay));
+    try {
+      const res = await fetch(url, {
+        headers: { authorization: `Bearer ${token}` },
+      });
+      if (res.ok) return await res.json();
+    } catch {}
   }
+  return null;
 }
 
 async function writeToBlob(path, data) {
@@ -99,7 +102,7 @@ async function writeToBlob(path, data) {
       access: "private",
       contentType: "application/json",
       allowOverwrite: true,
-      addRandomSuffix: true,
+      addRandomSuffix: false,
       cacheControlMaxAge: 0,
     });
   } catch (err) {
