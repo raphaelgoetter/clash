@@ -67,7 +67,7 @@ async function readFromBlob(path) {
   try {
     const { list } = await import("@vercel/blob");
     const prefix = path.replace(/\.json$/, "_");
-    for (const delay of [0, 300, 700]) {
+    for (const delay of [0, 500, 1000, 2000, 4000]) {
       if (delay) await new Promise(r => setTimeout(r, delay));
       const result = await list({ prefix, limit: 10 });
       const blobs = result.blobs;
@@ -79,6 +79,22 @@ async function readFromBlob(path) {
     return null;
   } catch (err) {
     console.warn(`[Blob] Lecture échouée ${path}:`, err.message);
+    return null;
+  }
+}
+
+async function readFromBlobQuick(path) {
+  try {
+    const { list } = await import("@vercel/blob");
+    const prefix = path.replace(/\.json$/, "_");
+    const result = await list({ prefix, limit: 10 });
+    const blobs = result.blobs;
+    if (blobs?.length) {
+      blobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+      return await fetchBlob(blobs[0].url);
+    }
+    return null;
+  } catch {
     return null;
   }
 }
@@ -124,7 +140,7 @@ async function writeToBlob(path, data) {
 async function waitForConsistency(path) {
   for (const delay of [500, 1000, 2000]) {
     await new Promise(r => setTimeout(r, delay));
-    const data = await readFromBlob(path);
+    const data = await readFromBlobQuick(path);
     if (data && data._wv === writeVersion) return;
   }
   console.warn(`[Blob] Cohérence non vérifiée pour ${path}`);
