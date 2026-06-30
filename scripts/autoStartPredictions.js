@@ -132,18 +132,6 @@ async function main() {
         endsAt.setUTCDate(endsAt.getUTCDate() + 2);
       }
 
-      // Vérifier si une session existe déjà
-      const { getActiveSessionByClan } = await import(
-        "../backend/services/championPredictions.js"
-      );
-      const existing = await getActiveSessionByClan(clanTag);
-      if (existing) {
-        console.log(
-          `[${clanTag}] Session déjà active (${existing.weekId}), ignoré.`,
-        );
-        continue;
-      }
-
       const lastRace = raceLog[0];
       const seasonId = lastRace?.seasonId || 0;
       const sectionIndex = lastRace?.sectionIndex || 0;
