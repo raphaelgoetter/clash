@@ -1861,11 +1861,11 @@ export default async function handler(req, res) {
             "Commande : `/champion select:NOM` ou menu déroulant\n" +
             "Usage : vote pour un challenger dans les pronostics en cours\n\n" +
             "**Décompte Votes**\n" +
-            "Commande : `/champion-count`\n" +
-            "Usage : état des votes pour les 3 clans\n\n" +
+            "Commande : `/champion-count clan:CLAN`\n" +
+            "Usage : état des votes en cours\n\n" +
             "**Historique Champions**\n" +
-            "Commande : `/champion-history`\n" +
-            "Usage : historique des champions GDC des 3 clans\n\n" +
+            "Commande : `/champion-history clan:CLAN`\n" +
+            "Usage : historique des champions GDC passés\n\n" +
             "**Discord Link**\n" +
             "Commande : `/discord-link tag:#TAG [tag2] [tag3]`\n" +
             "Usage : lie ton tag Clash à Discord (à faire par un membre)\n\n" +
@@ -6094,30 +6094,38 @@ export default async function handler(req, res) {
     const cmd = body.data?.name;
 
     if (cmd === "champion-start") {
+      const clanOpt = body.data.options?.find((o) => o.name === "clan");
+      const clanVal = clanOpt?.value || "1";
       res.status(200).json({ type: 5 });
       const webhookUrl = buildDiscordWebhookUrl(body);
-      runBackground(() => handleChampionStart(webhookUrl));
+      runBackground(() => handleChampionStart(webhookUrl, clanVal));
       return;
     }
 
     if (cmd === "champion-end") {
+      const clanOpt = body.data.options?.find((o) => o.name === "clan");
+      const clanVal = clanOpt?.value || "1";
       res.status(200).json({ type: 5 });
       const webhookUrl = buildDiscordWebhookUrl(body);
-      runBackground(() => handleChampionEnd(webhookUrl));
+      runBackground(() => handleChampionEnd(webhookUrl, clanVal));
       return;
     }
 
     if (cmd === "champion-count") {
+      const clanOpt = body.data.options?.find((o) => o.name === "clan");
+      const clanVal = clanOpt?.value || "1";
       res.status(200).json({ type: 5 });
       const webhookUrl = buildDiscordWebhookUrl(body);
-      runBackground(() => handleChampionCount(webhookUrl));
+      runBackground(() => handleChampionCount(webhookUrl, clanVal));
       return;
     }
 
     if (cmd === "champion-history") {
+      const clanOpt = body.data.options?.find((o) => o.name === "clan");
+      const clanVal = clanOpt?.value || "1";
       res.status(200).json({ type: 5 });
       const webhookUrl = buildDiscordWebhookUrl(body);
-      runBackground(() => handleChampionHistory(webhookUrl));
+      runBackground(() => handleChampionHistory(webhookUrl, clanVal));
       return;
     }
 

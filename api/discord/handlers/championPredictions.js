@@ -13,9 +13,13 @@ import {
   getActiveSessionByClan,
   closeSessionAndArchive,
   getHistory,
+  resolveClan,
   formatParisDate,
 } from "../../../backend/services/championPredictions.js";
-import { fetchRaceLog } from "../../../backend/services/clashApi.js";
+import {
+  fetchRaceLog,
+  fetchClan,
+} from "../../../backend/services/clashApi.js";
 import {
   computePrevWeekId,
 } from "../../../backend/services/dateUtils.js";
@@ -23,12 +27,6 @@ import {
 const DISCORD_APP_ID = process.env.DISCORD_APP_ID;
 const CHAMPION_COLOR = 0x9b59b6;
 const CHAMPION_GOLD = 0xf1c40f;
-
-const ALL_CLANS = [
-  { index: 0, name: "La Resistance", tag: "Y8JUPC9C" },
-  { index: 1, name: "Les Resistants", tag: "LRQP20V9" },
-  { index: 2, name: "Les Revoltes", tag: "QU9UQJRL" },
-];
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -58,201 +56,158 @@ function topScorerLine(p, idx) {
 
 // ── Commandes ─────────────────────────────────────────────────
 
-export async function handleStart(webhookUrl) {
+export async function handleStart(webhookUrl, clanVal) {
   try {
-    const embeds = [];
-    const components = [];
-    const errors = [];
+    const resolved = resolveClan(clanVal);
+    const clanTag = resolved.tag;
 
-    for (const clan of ALL_CLANS) {
-      const { tag: clanTag, name: clanName } = clan;
+    const clanResp = await fetchClan(clanTag);
+    const clanName = clanResp?.name || resolved.name;
 
-      try {
-        const raceLog = await fetchRaceLog(clanTag);
-        if (!Array.isArray(raceLog) || raceLog.length === 0) {
-          errors.push(`${clanName} : race log vide`);
-          continue;
-        }
-
-        const prevWeekId = computePrevWeekId(raceLog);
-        if (!prevWeekId) {
-          errors.push(`${clanName} : semaine indéterminable`);
-          continue;
-        }
-
-        const topScorers = await getTopScorers(clanTag, 5);
-        if (!Array.isArray(topScorers) || topScorers.length === 0) {
-          errors.push(`${clanName} : aucun top scoreur`);
-          continue;
-        }
-
-        const { computeCurrentWeekId } = await import("../../../backend/services/dateUtils.js");
-        const { fetchCurrentRace } = await import("../../../backend/services/clashApi.js");
-        const currentRace = await fetchCurrentRace(clanTag).catch(() => null);
-        const targetWeekId = computeCurrentWeekId(currentRace, raceLog) || prevWeekId;
-
-        const now = new Date();
-        const endsAt = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
-        endsAt.setUTCHours(10, 0, 0, 0);
-        if (endsAt <= now) {
-          endsAt.setUTCDate(endsAt.getUTCDate() + 1);
-        }
-
-        const lastRace = raceLog[0];
-        const seasonId = lastRace?.seasonId || 0;
-        const sectionIndex = lastRace?.sectionIndex || 0;
-        const weekId = targetWeekId;
-
-        await openSession(clanTag, weekId, seasonId, sectionIndex, topScorers, endsAt.toISOString());
-
-        embeds.push(buildStartEmbed(clanName, prevWeekId, targetWeekId, topScorers, endsAt));
-        components.push(buildChallengerSelect(clanTag, weekId, topScorers));
-      } catch (err) {
-        errors.push(`${clanName} : ${err.message}`);
-      }
-    }
-
-    const body = { embeds };
-    if (components.length > 0) body.components = components;
-    if (errors.length > 0) body.content = `⚠️ Erreurs partielles :\n${errors.join("\n")}`;
-
-    await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-  } catch (err) {
-    await postError(webhookUrl, `Erreur : ${err.message}`);
-  }
-}
-
-export async function handleEnd(webhookUrl) {
-  try {
-    const embeds = [];
-    const errors = [];
-
-    for (const clan of ALL_CLANS) {
-      const { tag: clanTag, name: clanName } = clan;
-
-      try {
-        const active = await getActiveSessionByClan(clanTag);
-        if (!active) {
-          errors.push(`${clanName} : aucune session active`);
-          continue;
-        }
-
-        const { weekId } = active;
-        const realChampion = await getRealChampion(clanTag);
-        const result = await closeSessionAndArchive(clanTag, weekId, realChampion);
-
-        const winnerVoters = result.winnerTag
-          ? result.session.votes
-              .filter((v) => v.challengerTag === result.winnerTag)
-              .map((v) => v.discordName)
-          : [];
-
-        embeds.push(buildResultEmbed(
-          clanName,
-          weekId,
-          result.session.challengers,
-          result.voteResult,
-          result.winnerTag,
-          result.totalVotes,
-          realChampion,
-          winnerVoters,
-        ));
-      } catch (err) {
-        errors.push(`${clanName} : ${err.message}`);
-      }
-    }
-
-    const body = { embeds };
-    if (errors.length > 0) body.content = `⚠️ Erreurs partielles :\n${errors.join("\n")}`;
-
-    await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-  } catch (err) {
-    await postError(webhookUrl, `Erreur : ${err.message}`);
-  }
-}
-
-export async function handleCount(webhookUrl) {
-  try {
-    const embeds = [];
-    const errors = [];
-
-    for (const clan of ALL_CLANS) {
-      const { tag: clanTag, name: clanName } = clan;
-
-      try {
-        const active = await getActiveSessionByClan(clanTag);
-        if (!active) {
-          continue; // pas d'erreur, juste pas de session
-        }
-
-        const { weekId } = active;
-        const data = await getVoteCounts(clanTag, weekId);
-        if (!data) {
-          continue;
-        }
-
-        embeds.push(buildCountEmbed(clanName, weekId, data.counts, data.totalVotes, data.session.endsAt));
-      } catch (err) {
-        errors.push(`${clanName} : ${err.message}`);
-      }
-    }
-
-    if (embeds.length === 0) {
-      await postError(webhookUrl, "Aucune session de vote en cours.");
+    const raceLog = await fetchRaceLog(clanTag);
+    if (!Array.isArray(raceLog) || raceLog.length === 0) {
+      await postError(webhookUrl, "Impossible de récupérer le race log du clan.");
       return;
     }
 
-    const body = { embeds };
-    if (errors.length > 0) body.content = `⚠️ Erreurs :\n${errors.join("\n")}`;
+    const prevWeekId = computePrevWeekId(raceLog);
+    if (!prevWeekId) {
+      await postError(webhookUrl, "Impossible de déterminer la semaine précédente.");
+      return;
+    }
+
+    const topScorers = await getTopScorers(clanTag, 5);
+    if (!Array.isArray(topScorers) || topScorers.length === 0) {
+      await postError(webhookUrl, "Aucun participant trouvé pour la semaine précédente.");
+      return;
+    }
+
+    const { computeCurrentWeekId } = await import("../../../backend/services/dateUtils.js");
+    const { fetchCurrentRace } = await import("../../../backend/services/clashApi.js");
+    const currentRace = await fetchCurrentRace(clanTag).catch(() => null);
+    const targetWeekId = computeCurrentWeekId(currentRace, raceLog) || prevWeekId;
+
+    const now = new Date();
+    const endsAt = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
+    endsAt.setUTCHours(10, 0, 0, 0);
+    if (endsAt <= now) {
+      endsAt.setUTCDate(endsAt.getUTCDate() + 1);
+    }
+
+    const lastRace = raceLog[0];
+    const seasonId = lastRace?.seasonId || 0;
+    const sectionIndex = lastRace?.sectionIndex || 0;
+    const weekId = targetWeekId;
+
+    try {
+      await openSession(clanTag, weekId, seasonId, sectionIndex, topScorers, endsAt.toISOString());
+    } catch (err) {
+      await postError(webhookUrl, err.message);
+      return;
+    }
+
+    const embed = buildStartEmbed(clanName, prevWeekId, targetWeekId, topScorers, endsAt);
+    const selectMenu = buildChallengerSelect(clanTag, weekId, topScorers);
 
     await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ embeds: [embed], components: [selectMenu] }),
     });
   } catch (err) {
     await postError(webhookUrl, `Erreur : ${err.message}`);
   }
 }
 
-export async function handleHistory(webhookUrl) {
+export async function handleEnd(webhookUrl, clanVal) {
   try {
-    const embeds = [];
-    const errors = [];
+    const resolved = resolveClan(clanVal);
+    const clanTag = resolved.tag;
 
-    for (const clan of ALL_CLANS) {
-      const { tag: clanTag, name: clanName } = clan;
-
-      try {
-        const history = await getHistory(clanTag, 10);
-        if (history.length === 0) continue;
-
-        embeds.push(buildHistoryEmbed(clanName, history));
-      } catch (err) {
-        errors.push(`${clanName} : ${err.message}`);
-      }
-    }
-
-    if (embeds.length === 0) {
-      await postError(webhookUrl, "Aucun historique de champion pour les 3 clans.");
+    const active = await getActiveSessionByClan(clanTag);
+    if (!active) {
+      await postError(webhookUrl, "Aucune session de pronostics trouvée pour ce clan.");
       return;
     }
 
-    const body = { embeds };
-    if (errors.length > 0) body.content = `⚠️ Erreurs :\n${errors.join("\n")}`;
+    const { weekId } = active;
+
+    const realChampion = await getRealChampion(clanTag);
+    const result = await closeSessionAndArchive(clanTag, weekId, realChampion);
+
+    const winnerVoters = result.winnerTag
+      ? result.session.votes
+          .filter((v) => v.challengerTag === result.winnerTag)
+          .map((v) => v.discordName)
+      : [];
+
+    const embed = buildResultEmbed(
+      resolved.name,
+      weekId,
+      result.session.challengers,
+      result.voteResult,
+      result.winnerTag,
+      result.totalVotes,
+      realChampion,
+      winnerVoters,
+    );
 
     await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ embeds: [embed] }),
+    });
+  } catch (err) {
+    await postError(webhookUrl, `Erreur : ${err.message}`);
+  }
+}
+
+export async function handleCount(webhookUrl, clanVal) {
+  try {
+    const resolved = resolveClan(clanVal);
+    const clanTag = resolved.tag;
+
+    const active = await getActiveSessionByClan(clanTag);
+    if (!active) {
+      await postError(webhookUrl, "Aucune session de vote en cours pour ce clan.");
+      return;
+    }
+
+    const { weekId } = active;
+    const data = await getVoteCounts(clanTag, weekId);
+    if (!data) {
+      await postError(webhookUrl, "Aucune session de vote en cours pour ce clan.");
+      return;
+    }
+
+    const embed = buildCountEmbed(resolved.name, weekId, data.counts, data.totalVotes, data.session.endsAt);
+
+    await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ embeds: [embed] }),
+    });
+  } catch (err) {
+    await postError(webhookUrl, `Erreur : ${err.message}`);
+  }
+}
+
+export async function handleHistory(webhookUrl, clanVal) {
+  try {
+    const resolved = resolveClan(clanVal);
+    const history = await getHistory(resolved.tag, 10);
+
+    if (history.length === 0) {
+      await postError(webhookUrl, "Aucun historique de champion pour ce clan.");
+      return;
+    }
+
+    const embed = buildHistoryEmbed(resolved.name, history);
+
+    await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ embeds: [embed] }),
     });
   } catch (err) {
     await postError(webhookUrl, `Erreur : ${err.message}`);

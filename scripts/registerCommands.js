@@ -401,14 +401,38 @@ const commands = [
   {
     name: "champion-start",
     description:
-      "[TEST] Lance les pronostics GDC pour les 3 clans : top 5 scoreurs, ouvre les votes pour 2 jours.",
-    options: [],
+      "[TEST] Lance les pronostics GDC : top 5 scoreurs, ouvre les votes pour 2 jours.",
+    options: [
+      {
+        type: 3, // STRING
+        name: "clan",
+        description: "Choisir le clan",
+        required: true,
+        choices: [
+          { name: "La Resistance", value: "1" },
+          { name: "Les Resistants", value: "2" },
+          { name: "Les Revoltes", value: "3" },
+        ],
+      },
+    ],
   },
   {
     name: "champion-end",
     description:
-      "[TEST] Clôture les pronostics pour les 3 clans, affiche le challenger gagnant et le vrai Champion.",
-    options: [],
+      "[TEST] Clôture les pronostics, affiche le challenger gagnant et le vrai Champion.",
+    options: [
+      {
+        type: 3, // STRING
+        name: "clan",
+        description: "Choisir le clan",
+        required: true,
+        choices: [
+          { name: "La Resistance", value: "1" },
+          { name: "Les Resistants", value: "2" },
+          { name: "Les Revoltes", value: "3" },
+        ],
+      },
+    ],
   },
   {
     name: "champion",
@@ -438,14 +462,38 @@ const commands = [
   {
     name: "champion-count",
     description:
-      "Affiche le décompte des votes pour les pronostics GDC des 3 clans.",
-    options: [],
+      "Affiche le décompte des votes pour les pronostics GDC en cours.",
+    options: [
+      {
+        type: 3, // STRING
+        name: "clan",
+        description: "Choisir le clan",
+        required: true,
+        choices: [
+          { name: "La Resistance", value: "1" },
+          { name: "Les Resistants", value: "2" },
+          { name: "Les Revoltes", value: "3" },
+        ],
+      },
+    ],
   },
   {
     name: "champion-history",
     description:
-      "Affiche l'historique des Champions GDC des 3 clans.",
-    options: [],
+      "Affiche l'historique des Champions GDC passés.",
+    options: [
+      {
+        type: 3, // STRING
+        name: "clan",
+        description: "Choisir le clan",
+        required: true,
+        choices: [
+          { name: "La Resistance", value: "1" },
+          { name: "Les Resistants", value: "2" },
+          { name: "Les Revoltes", value: "3" },
+        ],
+      },
+    ],
   },
 ];
 
