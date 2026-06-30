@@ -71,8 +71,6 @@ export async function handleStart(webhookUrl, clanVal) {
       return;
     }
 
-    await backfillChampionRegistry(clanTag, raceLog);
-
     const prevWeekId = computePrevWeekId(raceLog);
     if (!prevWeekId) {
       await postError(webhookUrl, "Impossible de déterminer la semaine précédente.");
@@ -198,7 +196,14 @@ export async function handleCount(webhookUrl, clanVal) {
 export async function handleHistory(webhookUrl, clanVal) {
   try {
     const resolved = resolveClan(clanVal);
-    const history = await getHistory(resolved.tag, 10);
+    const clanTag = resolved.tag;
+
+    const raceLog = await fetchRaceLog(clanTag).catch(() => null);
+    if (Array.isArray(raceLog) && raceLog.length > 0) {
+      await backfillChampionRegistry(clanTag, raceLog);
+    }
+
+    const history = await getHistory(clanTag, 10);
 
     if (history.length === 0) {
       await postError(webhookUrl, `Aucun historique de champion pour ${resolved.name}.`);
