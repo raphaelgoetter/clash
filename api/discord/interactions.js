@@ -28,6 +28,13 @@ import {
   computeTourLevel,
 } from "../../backend/services/collectionConstants.js";
 import { getOrSet } from "../../backend/services/cache.js";
+import {
+  handleStart as handleChampionStart,
+  handleEnd as handleChampionEnd,
+  handleCount as handleChampionCount,
+  handleHistory as handleChampionHistory,
+  handleSelectInteraction as handleChampionSelect,
+} from "./handlers/championPredictions.js";
 import { isJoinedThisWar } from "../../backend/services/arrivalUtils.js";
 import {
   summarizeWarDecks,
@@ -1802,6 +1809,21 @@ export default async function handler(req, res) {
             "**Collection**\n" +
             "Commande : `/collection tag:#TAG`\n" +
             "Usage : statistiques de collection (cartes, niveaux, évolutions, héros, niveau de collection)\n\n" +
+            "**Pronostics GDC**\n" +
+            "Commande : `/champion-start clan:N`\n" +
+            "Usage : (test) lance les pronostics, top 5 scoreurs, ouvre les votes\n\n" +
+            "**Pronostics Fin**\n" +
+            "Commande : `/champion-end clan:N`\n" +
+            "Usage : (test) clôture les votes, affiche le résultat et le vrai Champion\n\n" +
+            "**Vote Champion**\n" +
+            "Commande : `/champion select:NOM` ou menu déroulant\n" +
+            "Usage : vote pour un challenger dans les pronostics en cours\n\n" +
+            "**Décompte Votes**\n" +
+            "Commande : `/champion-count clan:N`\n" +
+            "Usage : état des votes en cours\n\n" +
+            "**Historique Champions**\n" +
+            "Commande : `/champion-history clan:N`\n" +
+            "Usage : historique des champions GDC passés\n\n" +
             "**Discord Link**\n" +
             "Commande : `/discord-link tag:#TAG [tag2] [tag3]`\n" +
             "Usage : lie ton tag Clash à Discord (à faire par un membre)\n\n" +
@@ -6022,6 +6044,111 @@ export default async function handler(req, res) {
         });
       }
     });
+    return;
+  }
+
+  // ── Pronostics GDC ──
+  if (body.type === 2) {
+    const cmd = body.data?.name;
+
+    if (cmd === "champion-start") {
+      const clanOpt = body.data.options?.find((o) => o.name === "clan");
+      const clanVal = clanOpt?.value || "1";
+      res.status(200).json({ type: 5 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      runBackground(() => handleChampionStart(webhookUrl, clanVal));
+      return;
+    }
+
+    if (cmd === "champion-end") {
+      const clanOpt = body.data.options?.find((o) => o.name === "clan");
+      const clanVal = clanOpt?.value || "1";
+      res.status(200).json({ type: 5 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      runBackground(() => handleChampionEnd(webhookUrl, clanVal));
+      return;
+    }
+
+    if (cmd === "champion-count") {
+      const clanOpt = body.data.options?.find((o) => o.name === "clan");
+      const clanVal = clanOpt?.value || "1";
+      res.status(200).json({ type: 5 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      runBackground(() => handleChampionCount(webhookUrl, clanVal));
+      return;
+    }
+
+    if (cmd === "champion-history") {
+      const clanOpt = body.data.options?.find((o) => o.name === "clan");
+      const clanVal = clanOpt?.value || "1";
+      res.status(200).json({ type: 5 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      runBackground(() => handleChampionHistory(webhookUrl, clanVal));
+      return;
+    }
+
+    if (cmd === "champion") {
+      const selectOpt = body.data.options?.find((o) => o.name === "select");
+      const clanOpt = body.data.options?.find((o) => o.name === "clan");
+      const clanVal = clanOpt?.value || "1";
+      let rawTag = selectOpt?.value?.trim();
+      res.status(200).json({ type: 5 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      runBackground(async () => {
+        try {
+          const { resolveClan, getActiveSessionByClan, castVote } =
+            await import("../../backend/services/championPredictions.js");
+
+          const resolved = resolveClan(clanVal);
+          const active = await getActiveSessionByClan(resolved.tag);
+          if (!active) throw new Error("Aucune session de vote ouverte.");
+          const { weekId, session } = active;
+
+          // Vérifier que le tag correspond à un challenger valide
+          const matchedChallenger = session.challengers.find(
+            (c) =>
+              c.tag === rawTag ||
+              c.tag.toUpperCase() === (rawTag || "").toUpperCase() ||
+              c.name.toLowerCase() === (rawTag || "").toLowerCase(),
+          );
+          if (!matchedChallenger) {
+            throw new Error(`Challenger invalide. Utilisez le menu déroulant.`);
+          }
+          rawTag = matchedChallenger.tag;
+
+          const discordId = body.member?.user?.id;
+          const discordName = body.member?.user?.username || "Inconnu";
+          await castVote(resolved.tag, weekId, discordId, discordName, rawTag);
+
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `Votre vote est enregistré ! ✓`,
+              flags: 64,
+            }),
+          });
+        } catch (err) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: `⚠️ ${err.message}`, flags: 64 }),
+          });
+        }
+      });
+      return;
+    }
+  }
+
+  // ── MessageComponent : select menu pronostics GDC ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("champion_vote:")
+  ) {
+    res.status(200).json({ type: 5 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleChampionSelect(webhookUrl, body));
     return;
   }
 

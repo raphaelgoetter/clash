@@ -375,7 +375,7 @@ const commands = [
   {
     name: "chelem",
     description:
-      "Liste les joueurs ayant fait 16/16 decks chaque semaine d’une saison donnée.",
+      "Liste les joueurs ayant fait 16/16 decks chaque semaine d'une saison donnée.",
 
     options: [
       {
@@ -395,6 +395,103 @@ const commands = [
         description:
           "Numéro de saison (ex: 129). Par défaut, la dernière saison terminée.",
         required: false,
+      },
+    ],
+  },
+  {
+    name: "champion-start",
+    description:
+      "[TEST] Lance les pronostics GDC : top 5 scoreurs, ouvre les votes pour 2 jours.",
+    options: [
+      {
+        type: 3, // STRING
+        name: "clan",
+        description: "Clan (1=La Resistance, 2=Les Resistants, 3=Les Revoltes)",
+        required: false,
+        choices: [
+          { name: "La Resistance", value: "1" },
+          { name: "Les Resistants", value: "2" },
+          { name: "Les Revoltes", value: "3" },
+        ],
+      },
+    ],
+  },
+  {
+    name: "champion-end",
+    description:
+      "[TEST] Clôture les pronostics, affiche le challenger gagnant et le vrai Champion.",
+    options: [
+      {
+        type: 3, // STRING
+        name: "clan",
+        description: "Clan (1=La Resistance, 2=Les Resistants, 3=Les Revoltes)",
+        required: false,
+        choices: [
+          { name: "La Resistance", value: "1" },
+          { name: "Les Resistants", value: "2" },
+          { name: "Les Revoltes", value: "3" },
+        ],
+      },
+    ],
+  },
+  {
+    name: "champion",
+    description:
+      "Vote pour un challenger dans les pronostics GDC en cours.",
+    options: [
+      {
+        type: 3, // STRING
+        name: "select",
+        description: "Choisissez votre challenger",
+        required: true,
+        autocomplete: false,
+      },
+      {
+        type: 3, // STRING
+        name: "clan",
+        description: "Clan (1=La Resistance, 2=Les Resistants, 3=Les Revoltes)",
+        required: false,
+        choices: [
+          { name: "La Resistance", value: "1" },
+          { name: "Les Resistants", value: "2" },
+          { name: "Les Revoltes", value: "3" },
+        ],
+      },
+    ],
+  },
+  {
+    name: "champion-count",
+    description:
+      "Affiche le décompte des votes pour les pronostics GDC en cours.",
+    options: [
+      {
+        type: 3, // STRING
+        name: "clan",
+        description: "Clan (1=La Resistance, 2=Les Resistants, 3=Les Revoltes)",
+        required: false,
+        choices: [
+          { name: "La Resistance", value: "1" },
+          { name: "Les Resistants", value: "2" },
+          { name: "Les Revoltes", value: "3" },
+        ],
+      },
+    ],
+  },
+  {
+    name: "champion-history",
+    description:
+      "Affiche l'historique des Champions GDC passés.",
+    options: [
+      {
+        type: 3, // STRING
+        name: "clan",
+        description: "Clan (1=La Resistance, 2=Les Resistants, 3=Les Revoltes)",
+        required: false,
+        choices: [
+          { name: "La Resistance", value: "1" },
+          { name: "Les Resistants", value: "2" },
+          { name: "Les Revoltes", value: "3" },
+        ],
       },
     ],
   },

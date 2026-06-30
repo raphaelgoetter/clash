@@ -1,0 +1,79 @@
+name: Pronostics GDC
+
+permissions:
+  contents: write
+
+on:
+  schedule:
+    # Mardi 09:55 UTC (11h55 Paris) — lancement des pronostics
+    - cron: "55 9 * * 2"
+    # Lundi 14:00 UTC (16h00 Paris) — résultat des pronostics
+    - cron: "0 14 * * 1"
+  workflow_dispatch:
+
+jobs:
+  start-predictions:
+    if: github.event.schedule == '55 9 * * 2' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      CLASH_API_KEY: ${{ secrets.CLASH_API_KEY }}
+      DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+      DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+      DISCORD_CHANNEL_MEMBERS_Y8JUPC9C: ${{ secrets.DISCORD_CHANNEL_MEMBERS_Y8JUPC9C }}
+      DISCORD_CHANNEL_MEMBERS_LRQP20V9: ${{ secrets.DISCORD_CHANNEL_MEMBERS_LRQP20V9 }}
+      DISCORD_CHANNEL_MEMBERS_QU9UQJRL: ${{ secrets.DISCORD_CHANNEL_MEMBERS_QU9UQJRL }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Post pronostics
+        run: npm run predictions:start
+
+      - name: Commit predictions data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/champion-predictions.json || true
+          git diff --cached --quiet || git commit -m "chore: mise à jour pronostics GDC"
+          git push || true
+
+  end-predictions:
+    if: github.event.schedule == '0 14 * * 1' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      CLASH_API_KEY: ${{ secrets.CLASH_API_KEY }}
+      DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+      DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+      DISCORD_CHANNEL_MEMBERS_Y8JUPC9C: ${{ secrets.DISCORD_CHANNEL_MEMBERS_Y8JUPC9C }}
+      DISCORD_CHANNEL_MEMBERS_LRQP20V9: ${{ secrets.DISCORD_CHANNEL_MEMBERS_LRQP20V9 }}
+      DISCORD_CHANNEL_MEMBERS_QU9UQJRL: ${{ secrets.DISCORD_CHANNEL_MEMBERS_QU9UQJRL }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Post resultat pronostics
+        run: npm run predictions:end
+
+      - name: Commit predictions data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/champion-predictions.json data/champion-history.json || true
+          git diff --cached --quiet || git commit -m "chore: mise à jour historique pronostics GDC"
+          git push || true
