@@ -169,14 +169,14 @@ export async function handleCount(webhookUrl, clanVal) {
 
     const active = await getActiveSessionByClan(clanTag);
     if (!active) {
-      await postError(webhookUrl, "Aucune session de vote en cours pour ce clan.");
+      await postError(webhookUrl, `Aucune session de vote en cours pour le clan ${resolved.name}.`);
       return;
     }
 
     const { weekId } = active;
     const data = await getVoteCounts(clanTag, weekId);
     if (!data) {
-      await postError(webhookUrl, "Aucune session de vote en cours pour ce clan.");
+      await postError(webhookUrl, `Aucune session de vote en cours pour le clan ${resolved.name}.`);
       return;
     }
 
