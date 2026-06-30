@@ -169,7 +169,12 @@ async function main() {
           description += `😅 Le challenger majoritaire **${winnerName}** n'était pas le bon cette fois.`;
         }
       } else {
-        description += `ℹ️ Le véritable Champion n'a pas encore été déterminé.`;
+        if (result.totalVotes > 0) {
+          const list = winnerVoters.slice(0, 100).join(", ");
+          description += `Vous avez majoritairement voté pour **${winnerName}** : ${list}`;
+          if (winnerVoters.length > 100) description += `… (+${winnerVoters.length - 100} autres)`;
+        }
+        description += `\n`;
       }
 
       const embed = {
