@@ -63,6 +63,13 @@ function useBlob() {
   return !!process.env.BLOB_READ_WRITE_TOKEN;
 }
 
+function tmpCachePath(name) {
+  return `/tmp/${name}`;
+}
+
+const TMP_PREDICTIONS = tmpCachePath("champion-predictions.json");
+const TMP_REGISTRY = tmpCachePath("champion-registry.json");
+
 async function readFromBlob(path) {
   try {
     const { list } = await import("@vercel/blob");
@@ -73,7 +80,12 @@ async function readFromBlob(path) {
       const blobs = result.blobs;
       if (blobs?.length) {
         blobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
-        return await fetchBlob(blobs[0].url);
+        const token = process.env.BLOB_READ_WRITE_TOKEN;
+        const res = await fetch(blobs[0].url, {
+          headers: { authorization: `Bearer ${token}` },
+        });
+        if (res.ok) return await res.json();
+        return null;
       }
     }
     return null;
@@ -83,38 +95,9 @@ async function readFromBlob(path) {
   }
 }
 
-async function readFromBlobQuick(path) {
-  try {
-    const { list } = await import("@vercel/blob");
-    const prefix = path.replace(/\.json$/, "_");
-    const result = await list({ prefix, limit: 10 });
-    const blobs = result.blobs;
-    if (blobs?.length) {
-      blobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
-      return await fetchBlob(blobs[0].url);
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-async function fetchBlob(url) {
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
-  const res = await fetch(url, {
-    headers: { authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) return null;
-  return await res.json();
-}
-
-let writeVersion = 0;
-
 async function writeToBlob(path, data) {
   try {
     const { put } = await import("@vercel/blob");
-    writeVersion = Date.now();
-    data._wv = writeVersion;
     await put(path, JSON.stringify(data), {
       access: "private",
       contentType: "application/json",
@@ -137,21 +120,19 @@ async function writeToBlob(path, data) {
   }
 }
 
-async function waitForConsistency(path) {
-  for (const delay of [500, 1000, 2000]) {
-    await new Promise(r => setTimeout(r, delay));
-    const data = await readFromBlobQuick(path);
-    if (data && data._wv === writeVersion) return;
-  }
-  console.warn(`[Blob] Cohérence non vérifiée pour ${path}`);
-}
-
-// ── Prédictions ───────────────────────────────────────────────
+// ── Prédictions (tmp/ → Blob sync) ──────────────────────────
 
 async function readPredictions() {
+  // Cache /tmp/ : immédiat sur la même instance
+  const local = await readJsonSafe(TMP_PREDICTIONS);
+  if (local) return local;
+
   if (useBlob()) {
     const blob = await readFromBlob(PREDICTIONS_FILE);
-    if (blob) return blob;
+    if (blob) {
+      await writeJsonSafe(TMP_PREDICTIONS, blob).catch(() => {});
+      return blob;
+    }
     return {};
   }
   const { value } = await getOrSet(
@@ -163,22 +144,32 @@ async function readPredictions() {
 }
 
 async function writePredictions(data) {
+  // Écrire dans /tmp/ d'abord (instantané sur la même instance)
+  await writeJsonSafe(TMP_PREDICTIONS, data).catch(() => {});
+
   if (useBlob()) {
-    await writeToBlob(PREDICTIONS_FILE, data);
-    await waitForConsistency(PREDICTIONS_FILE);
-    invalidate("champion:predictions");
+    // Sync Blob en arrière-plan (cross-instance)
+    writeToBlob(PREDICTIONS_FILE, data).then(() => {
+      invalidate("champion:predictions");
+    }).catch(() => {});
     return;
   }
   await writeJsonSafe(predictionsFilePath(), data).catch(() => {});
   invalidate("champion:predictions");
 }
 
-// ── Registre des champions ────────────────────────────────────
+// ── Registre des champions (tmp/ → Blob sync) ─────────────
 
 async function readChampionRegistry() {
+  const local = await readJsonSafe(TMP_REGISTRY);
+  if (local) return local;
+
   if (useBlob()) {
     const blob = await readFromBlob(CHAMPION_REGISTRY_FILE);
-    if (blob) return blob;
+    if (blob) {
+      await writeJsonSafe(TMP_REGISTRY, blob).catch(() => {});
+      return blob;
+    }
     return [];
   }
   const { value } = await getOrSet(
@@ -190,10 +181,12 @@ async function readChampionRegistry() {
 }
 
 async function writeChampionRegistry(data) {
+  await writeJsonSafe(TMP_REGISTRY, data).catch(() => {});
+
   if (useBlob()) {
-    await writeToBlob(CHAMPION_REGISTRY_FILE, data);
-    await waitForConsistency(CHAMPION_REGISTRY_FILE);
-    invalidate("champion:registry");
+    writeToBlob(CHAMPION_REGISTRY_FILE, data).then(() => {
+      invalidate("champion:registry");
+    }).catch(() => {});
     return;
   }
   await writeJsonSafe(championRegistryFilePath(), data).catch(() => {});
