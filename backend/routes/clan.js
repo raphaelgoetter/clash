@@ -472,58 +472,72 @@ router.get("/:tag/analysis", async (req, res) => {
         }
 
         if (!forceRefresh && fast && diskCached) {
-          const responsePayload = { ...diskCached };
-          responsePayload.fallbackReason = "diskCacheFast";
-          responsePayload.rateLimited = false;
-          if (!includeTopPlayers) responsePayload.topPlayers = null;
-          if (!includeUncomplete) responsePayload.uncomplete = null;
-          if (!includeMissingDuels) responsePayload.missingDuels = null;
-          if (!includeMembers) {
-            responsePayload.members = null;
-            responsePayload.membersRaw = null;
-          } else if (Array.isArray(responsePayload.members)) {
-            responsePayload.members = responsePayload.members.map(recalcMemberPointsPerDeck);
+          const cacheValid = Array.isArray(diskCached.members) &&
+            diskCached.members.length > 0 &&
+            diskCached.members[0].warHistory != null &&
+            diskCached.members[0].scoreVersion === SCORE_VERSION;
+          if (cacheValid) {
+            const responsePayload = { ...diskCached };
+            responsePayload.fallbackReason = "diskCacheFast";
+            responsePayload.rateLimited = false;
+            if (!includeTopPlayers) responsePayload.topPlayers = null;
+            if (!includeUncomplete) responsePayload.uncomplete = null;
+            if (!includeMissingDuels) responsePayload.missingDuels = null;
+            if (!includeMembers) {
+              responsePayload.members = null;
+              responsePayload.membersRaw = null;
+            } else if (Array.isArray(responsePayload.members)) {
+              responsePayload.members = responsePayload.members.map(recalcMemberPointsPerDeck);
+            }
+            const { frRank, frPreviousRank } = await fetchLiveCountryRank(
+              clanTag,
+              responsePayload.clan?.location,
+              57000087,
+            );
+            if (frRank != null) {
+              responsePayload.frRank = frRank;
+              responsePayload.frPreviousRank = frPreviousRank;
+            }
+            res.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+            res.set("X-Cache", "HIT");
+            return res.json(responsePayload);
           }
-          const { frRank, frPreviousRank } = await fetchLiveCountryRank(
-            clanTag,
-            responsePayload.clan?.location,
-            57000087,
-          );
-          if (frRank != null) {
-            responsePayload.frRank = frRank;
-            responsePayload.frPreviousRank = frPreviousRank;
-          }
-          res.set("Cache-Control", "no-store, max-age=0, must-revalidate");
-          res.set("X-Cache", "HIT");
-          return res.json(responsePayload);
+          // cache disque obsolète → fall through to live build
         }
 
         if (!forceRefresh && age <= DISK_CACHE_TTL_MS && canUseDiskCache) {
-          // Fresh cache: safe to return directly.
-          const responsePayload = { ...diskCached };
-          responsePayload.fallbackReason = "diskCacheFresh";
-          responsePayload.rateLimited = false;
-          if (!includeTopPlayers) responsePayload.topPlayers = null;
-          if (!includeUncomplete) responsePayload.uncomplete = null;
-          if (!includeMissingDuels) responsePayload.missingDuels = null;
-          if (!includeMembers) {
-            responsePayload.members = null;
-            responsePayload.membersRaw = null;
-          } else if (Array.isArray(responsePayload.members)) {
-            responsePayload.members = responsePayload.members.map(recalcMemberPointsPerDeck);
+          const cacheValid = Array.isArray(diskCached.members) &&
+            diskCached.members.length > 0 &&
+            diskCached.members[0].warHistory != null &&
+            diskCached.members[0].scoreVersion === SCORE_VERSION;
+          if (cacheValid) {
+            // Fresh cache: safe to return directly.
+            const responsePayload = { ...diskCached };
+            responsePayload.fallbackReason = "diskCacheFresh";
+            responsePayload.rateLimited = false;
+            if (!includeTopPlayers) responsePayload.topPlayers = null;
+            if (!includeUncomplete) responsePayload.uncomplete = null;
+            if (!includeMissingDuels) responsePayload.missingDuels = null;
+            if (!includeMembers) {
+              responsePayload.members = null;
+              responsePayload.membersRaw = null;
+            } else if (Array.isArray(responsePayload.members)) {
+              responsePayload.members = responsePayload.members.map(recalcMemberPointsPerDeck);
+            }
+            const { frRank, frPreviousRank } = await fetchLiveCountryRank(
+              clanTag,
+              responsePayload.clan?.location,
+              57000087,
+            );
+            if (frRank != null) {
+              responsePayload.frRank = frRank;
+              responsePayload.frPreviousRank = frPreviousRank;
+            }
+            res.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+            res.set("X-Cache", "HIT");
+            return res.json(responsePayload);
           }
-          const { frRank, frPreviousRank } = await fetchLiveCountryRank(
-            clanTag,
-            responsePayload.clan?.location,
-            57000087,
-          );
-          if (frRank != null) {
-            responsePayload.frRank = frRank;
-            responsePayload.frPreviousRank = frPreviousRank;
-          }
-          res.set("Cache-Control", "no-store, max-age=0, must-revalidate");
-          res.set("X-Cache", "HIT");
-          return res.json(responsePayload);
+          // cache disque obsolète → fall through to live build
         }
 
         if (!forceRefresh && age > DISK_CACHE_TTL_MS) {
@@ -1008,7 +1022,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     ? { ...existingCache.membersRaw }
     : {};
 
-  const SCORE_VERSION = "2026-04-07-v1";
+  const SCORE_VERSION = "2026-04-07-v2";
 
   // Quick map of prior member results, to avoid expensive player-api fan-out for a hot cache.
   // `scoreVersion` garantit qu'une modification de l'algorithme force recalcul.
@@ -2018,6 +2032,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       isNew,
       discord: discordLinked,
       warDays,
+      warHistory,
       arrivalStreakInCurrentClan: warHistory?.streakInCurrentClan ?? null,
       arrivalTotalWeeks: warHistory?.totalWeeks ?? null,
       avgFame: Number.isFinite(warHistory?.avgFame) ? warHistory.avgFame : null,
