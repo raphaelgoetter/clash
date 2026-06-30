@@ -63,18 +63,15 @@ function useBlob() {
   return !!process.env.BLOB_READ_WRITE_TOKEN;
 }
 
-function tmpCachePath(name) {
+function tmpPath(name) {
   return `/tmp/${name}`;
 }
-
-const TMP_PREDICTIONS = tmpCachePath("champion-predictions.json");
-const TMP_REGISTRY = tmpCachePath("champion-registry.json");
 
 async function readFromBlob(path) {
   try {
     const { list } = await import("@vercel/blob");
     const prefix = path.replace(/\.json$/, "_");
-    for (const delay of [0, 500, 1000, 2000, 4000]) {
+    for (const delay of [0, 1000, 2000, 4000, 8000]) {
       if (delay) await new Promise(r => setTimeout(r, delay));
       const result = await list({ prefix, limit: 10 });
       const blobs = result.blobs;
@@ -107,31 +104,20 @@ async function writeToBlob(path, data) {
     });
   } catch (err) {
     console.error(`[Blob] Écriture échouée ${path}:`, err.message);
-    const filePath = path === PREDICTIONS_FILE
-      ? predictionsFilePath()
-      : championRegistryFilePath();
-    try {
-      await writeJsonSafe(filePath, data);
-      console.warn("[Blob] Données sauvegardées dans le fichier local en fallback");
-    } catch (fileErr) {
-      console.error("[Blob] Fallback fichier échoué aussi:", fileErr.message);
-      throw err;
-    }
   }
 }
 
-// ── Prédictions (tmp/ → Blob sync) ──────────────────────────
+// ── Prédictions ───────────────────────────────────────────────
 
 async function readPredictions() {
-  // Cache /tmp/ : immédiat sur la même instance
-  const local = await readJsonSafe(TMP_PREDICTIONS);
+  const local = await readJsonSafe(tmpPath(PREDICTIONS_FILE));
   if (local) return local;
 
   if (useBlob()) {
-    const blob = await readFromBlob(PREDICTIONS_FILE);
-    if (blob) {
-      await writeJsonSafe(TMP_PREDICTIONS, blob).catch(() => {});
-      return blob;
+    const data = await readFromBlob(PREDICTIONS_FILE);
+    if (data) {
+      await writeJsonSafe(tmpPath(PREDICTIONS_FILE), data).catch(() => {});
+      return data;
     }
     return {};
   }
@@ -144,31 +130,26 @@ async function readPredictions() {
 }
 
 async function writePredictions(data) {
-  // Écrire dans /tmp/ d'abord (instantané sur la même instance)
-  await writeJsonSafe(TMP_PREDICTIONS, data).catch(() => {});
-
+  await writeJsonSafe(tmpPath(PREDICTIONS_FILE), data).catch(() => {});
   if (useBlob()) {
-    // Sync Blob en arrière-plan (cross-instance)
-    writeToBlob(PREDICTIONS_FILE, data).then(() => {
-      invalidate("champion:predictions");
-    }).catch(() => {});
-    return;
+    await writeToBlob(PREDICTIONS_FILE, data);
+  } else {
+    await writeJsonSafe(predictionsFilePath(), data).catch(() => {});
   }
-  await writeJsonSafe(predictionsFilePath(), data).catch(() => {});
   invalidate("champion:predictions");
 }
 
-// ── Registre des champions (tmp/ → Blob sync) ─────────────
+// ── Registre des champions ────────────────────────────────────
 
 async function readChampionRegistry() {
-  const local = await readJsonSafe(TMP_REGISTRY);
+  const local = await readJsonSafe(tmpPath(CHAMPION_REGISTRY_FILE));
   if (local) return local;
 
   if (useBlob()) {
-    const blob = await readFromBlob(CHAMPION_REGISTRY_FILE);
-    if (blob) {
-      await writeJsonSafe(TMP_REGISTRY, blob).catch(() => {});
-      return blob;
+    const data = await readFromBlob(CHAMPION_REGISTRY_FILE);
+    if (data) {
+      await writeJsonSafe(tmpPath(CHAMPION_REGISTRY_FILE), data).catch(() => {});
+      return data;
     }
     return [];
   }
@@ -181,15 +162,12 @@ async function readChampionRegistry() {
 }
 
 async function writeChampionRegistry(data) {
-  await writeJsonSafe(TMP_REGISTRY, data).catch(() => {});
-
+  await writeJsonSafe(tmpPath(CHAMPION_REGISTRY_FILE), data).catch(() => {});
   if (useBlob()) {
-    writeToBlob(CHAMPION_REGISTRY_FILE, data).then(() => {
-      invalidate("champion:registry");
-    }).catch(() => {});
-    return;
+    await writeToBlob(CHAMPION_REGISTRY_FILE, data);
+  } else {
+    await writeJsonSafe(championRegistryFilePath(), data).catch(() => {});
   }
-  await writeJsonSafe(championRegistryFilePath(), data).catch(() => {});
   invalidate("champion:registry");
 }
 
