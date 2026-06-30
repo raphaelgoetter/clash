@@ -168,7 +168,42 @@ export async function getTopScorers(clanTag, limit = 5) {
   }));
 }
 
-export async function getRealChampion(clanTag) {
+export async function getRealChampion(clanTag, weekId) {
+  const cleanTag = clanTag.replace(/^#/, "").toUpperCase();
+  const raceLog = await fetchRaceLog(cleanTag);
+  if (!Array.isArray(raceLog) || raceLog.length === 0) return null;
+
+  // Si weekId fourni, chercher l'entrée correspondante (semaine terminée)
+  if (weekId) {
+    const match = weekId.match(/^S(\d+)W(\d+)$/);
+    if (!match) return null;
+    const seasonId = Number(match[1]);
+    const weekNum = Number(match[2]);
+
+    const entry = raceLog.find(
+      (e) => e.seasonId === seasonId && e.sectionIndex + 1 === weekNum,
+    );
+    if (!entry || !Array.isArray(entry?.standings)) return null;
+
+    const standing = entry.standings.find(
+      (s) => s?.clan?.tag?.toUpperCase() === `#${cleanTag}`,
+    );
+    const participants = standing?.clan?.participants;
+    if (!Array.isArray(participants)) return null;
+
+    const sorted = [...participants].sort((a, b) => (b.fame || 0) - (a.fame || 0));
+    const top = sorted[0];
+    if (!top) return null;
+
+    return {
+      tag: top.tag,
+      name: top.name || top.tag,
+      fame: top.fame || 0,
+      decksUsed: top.decksUsed || 0,
+    };
+  }
+
+  // Fallback : pas de weekId → dernier race log
   const top = await getTopScorers(clanTag, 1);
   return top[0] || null;
 }

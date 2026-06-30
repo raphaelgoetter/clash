@@ -68,7 +68,7 @@ async function main() {
       const { weekId, session } = active;
 
       // Récupérer le vrai champion de la semaine qui vient de se terminer
-      const realChampion = await getRealChampion(clanTag);
+      const realChampion = await getRealChampion(clanTag, weekId);
 
       const result = await closeSessionAndArchive(
         clanTag,

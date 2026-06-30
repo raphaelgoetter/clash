@@ -132,7 +132,7 @@ export async function handleEnd(webhookUrl, clanVal) {
 
     const { weekId } = active;
 
-    const realChampion = await getRealChampion(clanTag);
+    const realChampion = await getRealChampion(clanTag, weekId);
     const result = await closeSessionAndArchive(clanTag, weekId, realChampion);
 
     const winnerVoters = result.winnerTag
