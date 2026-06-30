@@ -1585,6 +1585,48 @@ export default async function handler(req, res) {
       .filter(Boolean),
   );
 
+  // Autocomplete pour /champion select: — challengers de la session active
+  if (body.type === 4 && body.data?.name === "champion") {
+    const focused = body.data.options?.find((o) => o.focused);
+    if (focused?.name !== "select") {
+      return res.status(200).json({ type: 8, data: { choices: [] } });
+    }
+
+    const clanOpt = body.data.options?.find((o) => o.name === "clan");
+    const clanVal = clanOpt?.value || "1";
+    const CLAN_MAP = {
+      1: { tag: "Y8JUPC9C" }, la: { tag: "Y8JUPC9C" },
+      2: { tag: "LRQP20V9" }, les: { tag: "LRQP20V9" },
+      3: { tag: "QU9UQJRL" },
+    };
+    const resolved = CLAN_MAP[String(clanVal).trim().toLowerCase()] ?? CLAN_MAP["1"];
+
+    try {
+      const { getActiveSessionByClan } = await import("../../backend/services/championPredictions.js");
+      const active = await getActiveSessionByClan(resolved.tag);
+      if (!active) {
+        return res.status(200).json({ type: 8, data: { choices: [] } });
+      }
+
+      const input = (focused.value || "").toLowerCase();
+      const choices = active.session.challengers
+        .filter((c) =>
+          !input ||
+          c.name.toLowerCase().includes(input) ||
+          c.tag.toLowerCase().includes(input),
+        )
+        .map((c, idx) => ({
+          name: `${idx + 1}. ${c.name} — ${Number.isFinite(c.fame) ? c.fame.toLocaleString("fr-FR") : "0"} pts`,
+          value: c.tag,
+        }))
+        .slice(0, 25);
+
+      return res.status(200).json({ type: 8, data: { choices } });
+    } catch {
+      return res.status(200).json({ type: 8, data: { choices: [] } });
+    }
+  }
+
   if (body.type === 4 && TAG_AUTOCOMPLETE_COMMANDS.has(body.data?.name)) {
     if (
       authorizedGuilds.length > 0 &&

@@ -287,7 +287,8 @@ function buildStartEmbed(clanName, weekId, topScorers, endsAt) {
       + lines.join("\n")
       + `\n\n`
       + `📅 **Votez jusqu'au ${endParis}**\n`
-      + `Sélectionnez votre challenger dans le menu ci-dessous, ou utilisez \`/champion\`.`,
+      + `Sélectionnez votre challenger dans le menu ci-dessous, ou utilisez \`/champion\`.\n`
+      + `📌 *Épinglez ce message pour que tout le monde puisse voter facilement.*`,
     footer: {
       text: `Clan : ${clanName} · Semaine ${weekId}`,
     },

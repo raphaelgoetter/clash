@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // autoStartPredictions.js
 // Post automatiquement les pronostics GDC le mardi matin dans chaque channel
-// de clan. Utilise le token Bot Discord pour poster et épingler.
+// de clan. Le message peut être épinglé manuellement.
 //
 // Usage :
 //   node scripts/autoStartPredictions.js            — mode normal
@@ -131,7 +131,8 @@ async function main() {
           lines.join("\n") +
           `\n\n` +
           `📅 **Votez jusqu'au ${endParis}**\n` +
-          `Sélectionnez votre challenger dans le menu ci-dessous.`,
+          `Sélectionnez votre challenger dans le menu ci-dessous.\n` +
+          `📌 *Épinglez ce message pour que tout le monde puisse voter facilement.*`,
         footer: {
           text: `Clan : ${clanName} · Semaine ${targetWeekId}`,
         },
@@ -185,29 +186,6 @@ async function main() {
           errBody,
         );
         continue;
-      }
-
-      const msgData = await msgRes.json();
-      const messageId = msgData.id;
-
-      // Épingler le message
-      const pinRes = await fetch(
-        `${DISCORD_API}/channels/${channelId}/pins/${messageId}`,
-        {
-          method: "PUT",
-          headers: { Authorization: `Bot ${token}` },
-        },
-      );
-
-      if (!pinRes.ok && pinRes.status !== 204) {
-        // 204 = No Content (succès)
-        const errBody = await pinRes.text();
-        console.warn(
-          `[${clanTag}] Épinglage ignoré (${pinRes.status}):`,
-          errBody,
-        );
-      } else {
-        console.log(`[${clanTag}] Message épinglé ✓`);
       }
 
       console.log(`[${clanTag}] Pronostics postés ✓`);

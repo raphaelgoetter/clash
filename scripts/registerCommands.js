@@ -442,9 +442,9 @@ const commands = [
       {
         type: 3, // STRING
         name: "select",
-        description: "Choisissez votre challenger",
+        description: "Nom ou tag du challenger",
         required: true,
-        autocomplete: false,
+        autocomplete: true,
       },
       {
         type: 3, // STRING
