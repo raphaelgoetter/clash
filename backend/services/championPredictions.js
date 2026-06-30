@@ -67,14 +67,20 @@ function useBlob() {
 
 async function readFromBlob(path) {
   try {
-    const { get, list } = await import("@vercel/blob");
-    const listResult = await list({ prefix: path, limit: 1 });
-    const blobUrl = listResult.blobs?.[0]?.url;
-    if (!blobUrl) return null;
-    // Cache-buster pour éviter le cache CDN après un put()
-    const result = await get(blobUrl + `?t=${Date.now()}`, { access: "private" });
-    if (!result || result.statusCode !== 200) return null;
-    return await new Response(result.stream).json();
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    if (!token) return null;
+    const storeId = token.split("_").at(-2);
+    if (!storeId) return null;
+    const blobUrl = `https://${storeId}.private.blob.vercel-storage.com/${path}?t=${Date.now()}`;
+    const response = await fetch(blobUrl, {
+      headers: { authorization: `Bearer ${token}` },
+    });
+    if (response.status === 404) return null;
+    if (!response.ok) {
+      console.warn(`[Blob] Lecture échouée ${path}: HTTP ${response.status}`);
+      return null;
+    }
+    return await response.json();
   } catch (err) {
     console.warn(`[Blob] Lecture échouée ${path}:`, err.message);
     return null;
