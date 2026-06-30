@@ -1852,12 +1852,6 @@ export default async function handler(req, res) {
             "Commande : `/collection tag:#TAG`\n" +
             "Usage : statistiques de collection (cartes, niveaux, évolutions, héros, niveau de collection)\n\n" +
             "**Pronostics GDC**\n" +
-            "Commande : `/champion-start clan:N`\n" +
-            "Usage : (test) lance les pronostics, top 5 scoreurs, ouvre les votes\n\n" +
-            "**Pronostics Fin**\n" +
-            "Commande : `/champion-end clan:N`\n" +
-            "Usage : (test) clôture les votes, affiche le résultat et le vrai Champion\n\n" +
-            "**Vote Champion**\n" +
             "Commande : `/champion select:NOM` ou menu déroulant\n" +
             "Usage : vote pour un challenger dans les pronostics en cours\n\n" +
             "**Décompte Votes**\n" +
