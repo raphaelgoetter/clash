@@ -65,34 +65,44 @@ function useBlob() {
   return !!process.env.BLOB_READ_WRITE_TOKEN;
 }
 
+function blobUrl(path) {
+  const token = process.env.BLOB_READ_WRITE_TOKEN || "";
+  const storeId = token.split(":")[0];
+  if (!storeId) return null;
+  return `https://${storeId}.private.blob.vercel-storage.com/${path}`;
+}
+
 async function readFromBlob(path) {
   try {
-    const { list, get } = await import("@vercel/blob");
-    // Lister pour obtenir l'URL exacte du blob
-    const { blobs } = await list({ prefix: path });
-    if (!blobs || blobs.length === 0) return null;
-    const blob = await get(blobs[0].url);
-    if (!blob) return null;
-    return await blob.json();
+    const url = blobUrl(path);
+    if (!url) return null;
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` },
+    });
+    if (!res.ok) return null;
+    return await res.json();
   } catch (err) {
-    console.warn(`[Blob] Lecture échouée pour ${path}:`, err.message);
+    console.warn(`[Blob] Lecture échouée ${path}:`, err.message);
     return null;
   }
 }
 
 async function writeToBlob(path, data) {
   try {
-    const { put } = await import("@vercel/blob");
-    await put(path, JSON.stringify(data), {
-      access: "private",
-      contentType: "application/json",
+    const url = blobUrl(path);
+    if (!url) throw new Error("URL du store Blob indéterminée");
+    const res = await fetch(url, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
     });
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   } catch (err) {
-    console.warn(`[Blob] Écriture échouée pour ${path}:`, err.message);
-    // Fallback vers fichier local
-    const filePath = path === PREDICTIONS_FILE
-      ? predictionsFilePath()
-      : historyFilePath();
+    console.warn(`[Blob] Écriture échouée ${path}:`, err.message);
+    const filePath = path === PREDICTIONS_FILE ? predictionsFilePath() : historyFilePath();
     await writeJsonSafe(filePath, data).catch(() => {});
   }
 }
