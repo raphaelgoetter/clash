@@ -57,7 +57,6 @@ async function main() {
         getActiveSessionByClan,
         getRealChampion,
         closeSessionAndArchive,
-        resolveClan,
       } = await import("../backend/services/championPredictions.js");
 
       const active = await getActiveSessionByClan(clanTag);

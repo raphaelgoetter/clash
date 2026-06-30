@@ -45,9 +45,9 @@ async function main() {
     const clanName = CLAN_NAMES[clanTag] || clanTag;
 
     try {
-      const { getTopScorers, openSession, resolveClan, formatParisDate } =
+      const { getTopScorers, openSession, formatParisDate } =
         await import("../backend/services/championPredictions.js");
-      const { fetchRaceLog, fetchClan } =
+      const { fetchRaceLog } =
         await import("../backend/services/clashApi.js");
       const { computePrevWeekId, computeCurrentWeekId } =
         await import("../backend/services/dateUtils.js");
