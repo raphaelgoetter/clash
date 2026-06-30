@@ -69,17 +69,27 @@ async function readFromBlob(path) {
     const blob = await get(path);
     if (!blob) return null;
     return await blob.json();
-  } catch {
+  } catch (err) {
+    console.warn(`[Blob] Lecture échouée pour ${path}:`, err.message);
     return null;
   }
 }
 
 async function writeToBlob(path, data) {
-  const { put } = await import("@vercel/blob");
-  await put(path, JSON.stringify(data), {
-    access: "private",
-    contentType: "application/json",
-  });
+  try {
+    const { put } = await import("@vercel/blob");
+    await put(path, JSON.stringify(data), {
+      access: "private",
+      contentType: "application/json",
+    });
+  } catch (err) {
+    console.warn(`[Blob] Écriture échouée pour ${path}:`, err.message);
+    // Fallback vers fichier local
+    const filePath = path === PREDICTIONS_FILE
+      ? predictionsFilePath()
+      : historyFilePath();
+    await writeJsonSafe(filePath, data).catch(() => {});
+  }
 }
 
 // ── Prédictions ───────────────────────────────────────────────
@@ -100,9 +110,10 @@ async function readPredictions() {
 async function writePredictions(data) {
   if (BLOB_STORE) {
     await writeToBlob(PREDICTIONS_FILE, data);
-  } else {
-    await writeJsonSafe(predictionsFilePath(), data);
+    invalidate("champion:predictions");
+    return;
   }
+  await writeJsonSafe(predictionsFilePath(), data).catch(() => {});
   invalidate("champion:predictions");
 }
 
@@ -124,9 +135,10 @@ async function readHistory() {
 async function writeHistory(data) {
   if (BLOB_STORE) {
     await writeToBlob(HISTORY_FILE, data);
-  } else {
-    await writeJsonSafe(historyFilePath(), data);
+    invalidate("champion:history");
+    return;
   }
+  await writeJsonSafe(historyFilePath(), data).catch(() => {});
   invalidate("champion:history");
 }
 
@@ -422,10 +434,9 @@ export async function getHistory(clanTag, limit = 10) {
 // ── Initialisation des fichiers ───────────────────────────────
 
 export async function ensureDataFiles() {
-  const initPredictions = {};
-  const initHistory = [];
-  await writeJsonSafe(predictionsFilePath(), initPredictions).catch(() => {});
-  await writeJsonSafe(historyFilePath(), initHistory).catch(() => {});
+  // Uniquement utile en dev local — sur Vercel, Blob ou la lecture seule du bundle suffisent
+  await writeJsonSafe(predictionsFilePath(), {}).catch(() => {});
+  await writeJsonSafe(historyFilePath(), []).catch(() => {});
 }
 
 export { resolveClan };
