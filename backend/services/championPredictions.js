@@ -69,7 +69,7 @@ async function readFromBlob(path) {
   try {
     const token = process.env.BLOB_READ_WRITE_TOKEN;
     if (!token) return null;
-    const storeId = token.split("_").at(-2);
+    const storeId = token.split("_")[3];
     if (!storeId) return null;
     const blobUrl = `https://${storeId}.private.blob.vercel-storage.com/${path}?t=${Date.now()}`;
     const response = await fetch(blobUrl, {
@@ -118,6 +118,7 @@ async function readPredictions() {
   if (useBlob()) {
     const blob = await readFromBlob(PREDICTIONS_FILE);
     if (blob) return blob;
+    return {};
   }
   const { value } = await getOrSet(
     "champion:predictions",
@@ -143,6 +144,7 @@ async function readChampionRegistry() {
   if (useBlob()) {
     const blob = await readFromBlob(CHAMPION_REGISTRY_FILE);
     if (blob) return blob;
+    return [];
   }
   const { value } = await getOrSet(
     "champion:registry",
