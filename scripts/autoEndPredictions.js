@@ -21,8 +21,53 @@ const CLAN_NAMES = {
   QU9UQJRL: "Les Revoltes",
 };
 
+const CLAN_ROLE_NAMES = {
+  Y8JUPC9C: "LA RESISTANCE ★",
+  LRQP20V9: "LES RESISTANTS ★",
+  QU9UQJRL: "LES REVOLTES ★",
+};
+
 const DISCORD_API = "https://discord.com/api/v10";
+const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
 const DRY_RUN = process.argv.includes("--dry-run");
+const NO_PING = process.argv.includes("--no-ping");
+
+const ROLE_CACHE = new Map();
+
+function normalizeRoleName(value) {
+  return String(value ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+async function getClanRoleId(clanTag) {
+  const roleName = CLAN_ROLE_NAMES[clanTag];
+  if (!roleName || !DISCORD_GUILD_ID) return null;
+
+  const cacheKey = `roles:${DISCORD_GUILD_ID}`;
+  if (!ROLE_CACHE.has(cacheKey)) {
+    try {
+      const token = process.env.DISCORD_TOKEN;
+      const res = await fetch(`${DISCORD_API}/guilds/${DISCORD_GUILD_ID}/roles`, {
+        headers: { Authorization: `Bot ${token}` },
+      });
+      if (!res.ok) {
+        console.warn(`Impossible de récupérer les rôles (${res.status})`);
+        ROLE_CACHE.set(cacheKey, []);
+      } else {
+        const roles = await res.json();
+        ROLE_CACHE.set(cacheKey, Array.isArray(roles) ? roles : []);
+      }
+    } catch (err) {
+      console.warn(`Erreur rôles:`, err.message);
+      ROLE_CACHE.set(cacheKey, []);
+    }
+  }
+
+  const roles = ROLE_CACHE.get(cacheKey);
+  const role = roles.find(
+    (r) => normalizeRoleName(r?.name) === normalizeRoleName(roleName),
+  );
+  return role?.id ?? null;
+}
 
 function getChannelId(clanTag) {
   return process.env[`DISCORD_CHANNEL_MEMBERS_${clanTag}`];
@@ -136,11 +181,17 @@ async function main() {
         },
       };
 
+      // Rôle ping
+      const roleId = NO_PING ? null : await getClanRoleId(clanTag);
+      const content = roleId ? `<@&${roleId}>` : null;
+      const body = { embeds: [embed] };
+      if (content) body.content = content;
+
       if (DRY_RUN) {
         console.log(
           `[${clanTag}] DRY-RUN : message simulé pour ${channelId}`,
         );
-        console.log(JSON.stringify({ embeds: [embed] }, null, 2));
+        console.log(JSON.stringify(body, null, 2));
         continue;
       }
 
@@ -156,7 +207,7 @@ async function main() {
             Authorization: `Bot ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ embeds: [embed] }),
+          body: JSON.stringify(body),
         },
       );
 

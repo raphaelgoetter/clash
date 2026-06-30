@@ -76,7 +76,7 @@ export async function handleStart(webhookUrl, clanVal) {
       return;
     }
 
-    const topScorers = await getTopScorers(clanTag, 5);
+    const topScorers = await getTopScorers(clanTag, 9);
     if (!Array.isArray(topScorers) || topScorers.length === 0) {
       await postError(webhookUrl, "Aucun participant trouvé pour la semaine précédente.");
       return;
@@ -269,9 +269,9 @@ function buildStartEmbed(clanName, prevWeekId, targetWeekId, topScorers, endsAt)
   const description =
     `Devinez qui sera le **Champion** de la semaine **${targetWeekId}** qui arrive !\n`
     + `*Le Champion est le joueur qui marquera le plus de points GDC.*\n\n`
-    + `**Challengers** (top 5 scoreurs semaine ${prevWeekId}) :\n`
+    + `**Challengers** (top 9 scoreurs semaine ${prevWeekId}) :\n`
     + lines.join("\n")
-    + `\n${ordinal(6)} **Autre** (pas dans la liste)\n\n`
+    + `\n${ordinal(10)} **Autre** (pas dans la liste)\n\n`
     + `📅 **Votez jusqu'au ${endParis}**\n`
     + `Sélectionnez votre challenger dans le menu ci-dessous, ou utilisez \`/champion\`.\n`
     + `📌 *Épinglez ce message pour que tout le monde puisse voter facilement.*`;
@@ -301,7 +301,7 @@ function buildChallengerSelect(clanTag, weekId, topScorers) {
             description: `${formatFame(p.fame)} pts · ${p.decksUsed} decks`,
           })),
           {
-            label: `6. Autre (pas dans la liste)`,
+            label: `10. Autre (pas dans la liste)`,
             value: "__other__",
             description: "Vote pour un joueur différent",
           },

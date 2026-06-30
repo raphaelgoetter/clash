@@ -136,7 +136,7 @@ export function formatParisTime(utcDate) {
   return `${heure}h${minute}`;
 }
 
-export async function getTopScorers(clanTag, limit = 5) {
+export async function getTopScorers(clanTag, limit = 9) {
   const cleanTag = clanTag.replace(/^#/, "").toUpperCase();
   const raceLog = await fetchRaceLog(cleanTag);
   if (!Array.isArray(raceLog) || raceLog.length === 0) return [];

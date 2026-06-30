@@ -21,8 +21,54 @@ const CLAN_NAMES = {
   QU9UQJRL: "Les Revoltes",
 };
 
+const CLAN_ROLE_NAMES = {
+  Y8JUPC9C: "LA RESISTANCE ★",
+  LRQP20V9: "LES RESISTANTS ★",
+  QU9UQJRL: "LES REVOLTES ★",
+};
+
 const DISCORD_API = "https://discord.com/api/v10";
+const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
 const DRY_RUN = process.argv.includes("--dry-run");
+const NO_PING = process.argv.includes("--no-ping");
+
+const ROLE_CACHE = new Map();
+let roleCacheLoaded = false;
+
+function normalizeRoleName(value) {
+  return String(value ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+async function getClanRoleId(clanTag) {
+  const roleName = CLAN_ROLE_NAMES[clanTag];
+  if (!roleName || !DISCORD_GUILD_ID) return null;
+
+  const cacheKey = `roles:${DISCORD_GUILD_ID}`;
+  if (!ROLE_CACHE.has(cacheKey)) {
+    try {
+      const token = process.env.DISCORD_TOKEN;
+      const res = await fetch(`${DISCORD_API}/guilds/${DISCORD_GUILD_ID}/roles`, {
+        headers: { Authorization: `Bot ${token}` },
+      });
+      if (!res.ok) {
+        console.warn(`Impossible de récupérer les rôles (${res.status})`);
+        ROLE_CACHE.set(cacheKey, []);
+      } else {
+        const roles = await res.json();
+        ROLE_CACHE.set(cacheKey, Array.isArray(roles) ? roles : []);
+      }
+    } catch (err) {
+      console.warn(`Erreur rôles:`, err.message);
+      ROLE_CACHE.set(cacheKey, []);
+    }
+  }
+
+  const roles = ROLE_CACHE.get(cacheKey);
+  const role = roles.find(
+    (r) => normalizeRoleName(r?.name) === normalizeRoleName(roleName),
+  );
+  return role?.id ?? null;
+}
 
 function getChannelId(clanTag) {
   return process.env[`DISCORD_CHANNEL_MEMBERS_${clanTag}`];
@@ -64,7 +110,7 @@ async function main() {
         continue;
       }
 
-      const topScorers = await getTopScorers(clanTag, 5);
+      const topScorers = await getTopScorers(clanTag, 9);
       if (topScorers.length === 0) {
         console.warn(`[${clanTag}] Aucun top scoreur trouvé.`);
         continue;
@@ -129,9 +175,9 @@ async function main() {
         description:
           `Devinez qui sera le **Champion** de la semaine **${targetWeekId}** qui arrive !\n` +
           `*Le Champion est le joueur qui marquera le plus de points GDC.*\n\n` +
-          `**Challengers** (top 5 scoreurs semaine ${prevWeekId}) :\n` +
+          `**Challengers** (top 9 scoreurs semaine ${prevWeekId}) :\n` +
           lines.join("\n") +
-          `\n${ordinal(6)} **Autre** (pas dans la liste)\n\n` +
+          `\n${ordinal(10)} **Autre** (pas dans la liste)\n\n` +
           `📅 **Votez jusqu'au ${endParis}**\n` +
           `Sélectionnez votre challenger dans le menu ci-dessous.\n` +
           `📌 *Épinglez ce message pour que tout le monde puisse voter facilement.*`,
@@ -154,7 +200,7 @@ async function main() {
                 description: `${formatFame(p.fame)} pts · ${p.decksUsed} decks`,
               })),
               {
-                label: `6. Autre (pas dans la liste)`,
+                label: `10. Autre (pas dans la liste)`,
                 value: "__other__",
                 description: "Vote pour un joueur différent",
               },
@@ -163,11 +209,17 @@ async function main() {
         ],
       };
 
+      // Rôle ping
+      const roleId = NO_PING ? null : await getClanRoleId(clanTag);
+      const content = roleId ? `<@&${roleId}>` : null;
+      const body = { embeds: [embed], components: [selectMenu] };
+      if (content) body.content = content;
+
       if (DRY_RUN) {
         console.log(
           `[${clanTag}] DRY-RUN : message simulé pour ${channelId}`,
         );
-        console.log(JSON.stringify({ embeds: [embed], components: [selectMenu] }, null, 2));
+        console.log(JSON.stringify(body, null, 2));
         continue;
       }
       console.log(`[${clanTag}] Poste les pronostics dans ${channelId}...`);
@@ -181,10 +233,7 @@ async function main() {
             Authorization: `Bot ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            embeds: [embed],
-            components: [selectMenu],
-          }),
+          body: JSON.stringify(body),
         },
       );
 

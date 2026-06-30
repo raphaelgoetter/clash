@@ -401,7 +401,7 @@ const commands = [
   {
     name: "champion-start",
     description:
-      "[TEST] Lance les pronostics GDC : top 5 scoreurs, ouvre les votes pour 2 jours.",
+      "[TEST] Lance les pronostics GDC : top 9 scoreurs, ouvre les votes pour 2 jours.",
     options: [
       {
         type: 3, // STRING
