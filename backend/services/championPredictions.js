@@ -305,12 +305,12 @@ export async function getVoteCounts(clanTag, weekId) {
 
   const voteMap = {};
   for (const c of session.challengers) {
-    voteMap[c.tag] = 0;
+    voteMap[c.tag] = { name: c.name || c.tag, votes: 0 };
   }
-  voteMap["__other__"] = 0;
+  voteMap["__other__"] = { name: "Autre", votes: 0 };
   for (const v of session.votes) {
-    if (voteMap[v.challengerTag] !== undefined) {
-      voteMap[v.challengerTag]++;
+    if (voteMap[v.challengerTag]) {
+      voteMap[v.challengerTag].votes++;
     }
   }
   const totalVotes = session.votes.length;
