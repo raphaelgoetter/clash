@@ -121,14 +121,15 @@ export async function getTopScorers(clanTag, limit = 5) {
   if (!Array.isArray(raceLog) || raceLog.length === 0) return [];
 
   const lastRace = raceLog[0];
-  if (!lastRace?.standings) return [];
+  if (!Array.isArray(lastRace?.standings)) return [];
 
   const standing = lastRace.standings.find(
-    (s) => s.clan?.tag?.toUpperCase() === `#${cleanTag}`,
+    (s) => s?.clan?.tag?.toUpperCase() === `#${cleanTag}`,
   );
-  if (!standing?.clan?.participants) return [];
+  const participants = standing?.clan?.participants;
+  if (!Array.isArray(participants)) return [];
 
-  const sorted = [...standing.clan.participants]
+  const sorted = [...participants]
     .sort((a, b) => (b.fame || 0) - (a.fame || 0));
 
   return sorted.slice(0, limit).map((p) => ({

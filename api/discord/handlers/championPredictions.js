@@ -79,7 +79,7 @@ export async function handleStart(webhookUrl, clanVal) {
     }
 
     const topScorers = await getTopScorers(clanTag, 5);
-    if (topScorers.length === 0) {
+    if (!Array.isArray(topScorers) || topScorers.length === 0) {
       await postError(webhookUrl, "Aucun participant trouvé pour la semaine précédente.");
       return;
     }
@@ -110,7 +110,7 @@ export async function handleStart(webhookUrl, clanVal) {
       return;
     }
 
-    const embed = buildStartEmbed(clanName, prevWeekId, targetWeekId, topScorers, endsAt);
+    const embed = buildStartEmbed(clanName, prevWeekId, topScorers, endsAt);
     const selectMenu = buildChallengerSelect(clanTag, weekId, topScorers);
 
     await fetch(webhookUrl, {
