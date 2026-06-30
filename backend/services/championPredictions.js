@@ -359,6 +359,7 @@ export async function closeSessionAndArchive(clanTag, weekId, realChampion) {
   const session = predictions[key];
 
   if (!session) {
+    console.error(`[Blob] Session introuvable — clé=${key} clans=${Object.keys(predictions).join(",")}`);
     throw new Error("Aucune session trouvée.");
   }
 
