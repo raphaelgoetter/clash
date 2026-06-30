@@ -8,6 +8,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { fetchRaceLog } from "./clashApi.js";
 import { computePrevWeekId, computeCurrentWeekId } from "./dateUtils.js";
+import { getOrSet, invalidate } from "./cache.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.resolve(__dirname, "..", "..", "data");
@@ -62,29 +63,49 @@ async function writeJsonSafe(filePath, data) {
 }
 
 async function readPredictions() {
-  let data = await readJsonSafe(TMP_PREDICTIONS_FILE);
-  if (data === null) {
-    data = await readJsonSafe(predictionsFilePath());
-  }
-  return data || {};
+  const { value } = await getOrSet(
+    "champion:predictions",
+    async () => {
+      const dataFile = await readJsonSafe(predictionsFilePath()) || {};
+      const tmpFile = await readJsonSafe(TMP_PREDICTIONS_FILE) || {};
+      return { ...dataFile, ...tmpFile };
+    },
+    30 * 1000, // 30s TTL (rafraîchi après écriture via invalidate)
+  );
+  return value;
 }
 
 async function writePredictions(data) {
   await writeJsonSafe(TMP_PREDICTIONS_FILE, data).catch(() => {});
   await writeJsonSafe(predictionsFilePath(), data).catch(() => {});
+  invalidate("champion:predictions");
 }
 
 async function readHistory() {
-  let data = await readJsonSafe(TMP_HISTORY_FILE);
-  if (data === null) {
-    data = await readJsonSafe(historyFilePath());
-  }
-  return data || [];
+  const { value } = await getOrSet(
+    "champion:history",
+    async () => {
+      const dataFile = await readJsonSafe(historyFilePath()) || [];
+      const tmpFile = await readJsonSafe(TMP_HISTORY_FILE) || [];
+      const merged = [...dataFile];
+      for (const tmpEntry of tmpFile) {
+        const idx = merged.findIndex(
+          (e) => e.weekId === tmpEntry.weekId && e.clanTag === tmpEntry.clanTag,
+        );
+        if (idx >= 0) merged[idx] = tmpEntry;
+        else merged.push(tmpEntry);
+      }
+      return merged;
+    },
+    30 * 1000,
+  );
+  return value;
 }
 
 async function writeHistory(data) {
   await writeJsonSafe(TMP_HISTORY_FILE, data).catch(() => {});
   await writeJsonSafe(historyFilePath(), data).catch(() => {});
+  invalidate("champion:history");
 }
 
 // ── Helpers métier ────────────────────────────────────────────
