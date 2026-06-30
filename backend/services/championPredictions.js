@@ -85,9 +85,16 @@ async function writeToBlob(path, data) {
       contentType: "application/json",
     });
   } catch (err) {
-    console.warn(`[Blob] Écriture échouée ${path}:`, err.message);
+    console.error(`[Blob] Écriture échouée ${path}:`, err.message);
+    // Fallback fichier local (dev uniquement)
     const filePath = path === PREDICTIONS_FILE ? predictionsFilePath() : historyFilePath();
-    await writeJsonSafe(filePath, data).catch(() => {});
+    try {
+      await writeJsonSafe(filePath, data);
+      console.warn("[Blob] Données sauvegardées dans le fichier local en fallback");
+    } catch (fileErr) {
+      console.error("[Blob] Fallback fichier échoué aussi:", fileErr.message);
+      throw err; // Propager l'erreur Blob pour la rendre visible
+    }
   }
 }
 
