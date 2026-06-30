@@ -68,34 +68,41 @@ function useBlob() {
 async function readFromBlob(path) {
   try {
     const token = process.env.BLOB_READ_WRITE_TOKEN;
-    if (!token) return null;
+    if (!token) return logAndReturn(`[Blob] Pas de token`, null);
     const storeId = token.split("_")[3];
-    if (!storeId) return null;
-    const blobUrl = `https://${storeId}.private.blob.vercel-storage.com/${path}?t=${Date.now()}`;
+    if (!storeId) return logAndReturn(`[Blob] storeId non trouvé dans token`, null);
+    const ts = Date.now();
+    const blobUrl = `https://${storeId}.private.blob.vercel-storage.com/${path}?t=${ts}`;
     const response = await fetch(blobUrl, {
       headers: { authorization: `Bearer ${token}` },
     });
-    if (response.status === 404) return null;
-    if (!response.ok) {
-      console.warn(`[Blob] Lecture échouée ${path}: HTTP ${response.status}`);
-      return null;
-    }
-    return await response.json();
+    console.error(`[Blob] GET ${path} → HTTP ${response.status} (store=${storeId} t=${ts})`);
+    if (response.status === 404) return logAndReturn(`[Blob] 404 ${path}`, null);
+    if (!response.ok) return logAndReturn(`[Blob] HTTP ${response.status} ${path}`, null);
+    const text = await response.text();
+    console.error(`[Blob] Body ${path}: ${text.slice(0, 200)}`);
+    return JSON.parse(text);
   } catch (err) {
-    console.warn(`[Blob] Lecture échouée ${path}:`, err.message);
-    return null;
+    return logAndReturn(`[Blob] Erreur ${path}: ${err.message}`, null);
   }
+}
+
+function logAndReturn(msg, val) {
+  console.error(msg);
+  return val;
 }
 
 async function writeToBlob(path, data) {
   try {
     const { put } = await import("@vercel/blob");
-    await put(path, JSON.stringify(data), {
+    const result = await put(path, JSON.stringify(data), {
       access: "private",
       contentType: "application/json",
       allowOverwrite: true,
+      addRandomSuffix: false,
       cacheControlMaxAge: 0,
     });
+    console.error(`[Blob] PUT ${path} → url=${result.url} size=${result.size}`);
   } catch (err) {
     console.error(`[Blob] Écriture échouée ${path}:`, err.message);
     // Fallback fichier local (dev uniquement)
