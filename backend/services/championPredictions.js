@@ -61,12 +61,32 @@ async function writeJsonSafe(filePath, data) {
 
 // ── Vercel Blob (persistance entre instances serverless) ─────
 
-const BLOB_STORE = !!process.env.BLOB_READ_WRITE_TOKEN;
+function useBlob() {
+  return !!process.env.BLOB_READ_WRITE_TOKEN && !!blobBaseUrl();
+}
+
+function blobBaseUrl() {
+  const storeId = process.env.BLOB_STORE_ID || "";
+  const token = process.env.BLOB_READ_WRITE_TOKEN || "";
+  // Si on a le store ID, on construit l'URL complète
+  if (storeId) {
+    return `https://${storeId}.private.blob.vercel-storage.com`;
+  }
+  // Sinon on tente d'extraire depuis le token (format: storeId:secret)
+  const parts = token.split(":");
+  if (parts.length >= 2) {
+    return `https://${parts[0]}.private.blob.vercel-storage.com`;
+  }
+  return null;
+}
 
 async function readFromBlob(path) {
   try {
+    const baseUrl = blobBaseUrl();
+    if (!baseUrl) return null;
+    const fullUrl = `${baseUrl}/${path}`;
     const { get } = await import("@vercel/blob");
-    const blob = await get(path);
+    const blob = await get(fullUrl);
     if (!blob) return null;
     return await blob.json();
   } catch (err) {
@@ -77,8 +97,13 @@ async function readFromBlob(path) {
 
 async function writeToBlob(path, data) {
   try {
+    const baseUrl = blobBaseUrl();
+    if (!baseUrl) {
+      throw new Error("Impossible de déterminer l'URL du store Blob");
+    }
+    const fullUrl = `${baseUrl}/${path}`;
     const { put } = await import("@vercel/blob");
-    await put(path, JSON.stringify(data), {
+    await put(fullUrl, JSON.stringify(data), {
       access: "private",
       contentType: "application/json",
     });
@@ -95,7 +120,7 @@ async function writeToBlob(path, data) {
 // ── Prédictions ───────────────────────────────────────────────
 
 async function readPredictions() {
-  if (BLOB_STORE) {
+  if (useBlob()) {
     const blob = await readFromBlob(PREDICTIONS_FILE);
     if (blob) return blob;
   }
@@ -108,7 +133,7 @@ async function readPredictions() {
 }
 
 async function writePredictions(data) {
-  if (BLOB_STORE) {
+  if (useBlob()) {
     await writeToBlob(PREDICTIONS_FILE, data);
     invalidate("champion:predictions");
     return;
@@ -120,7 +145,7 @@ async function writePredictions(data) {
 // ── Historique ────────────────────────────────────────────────
 
 async function readHistory() {
-  if (BLOB_STORE) {
+  if (useBlob()) {
     const blob = await readFromBlob(HISTORY_FILE);
     if (blob) return blob;
   }
@@ -133,7 +158,7 @@ async function readHistory() {
 }
 
 async function writeHistory(data) {
-  if (BLOB_STORE) {
+  if (useBlob()) {
     await writeToBlob(HISTORY_FILE, data);
     invalidate("champion:history");
     return;
