@@ -12,6 +12,7 @@ import { getOrSet, invalidate } from "./cache.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.resolve(__dirname, "..", "..", "data");
+const TMP_DIR = "/tmp/clash-blob-urls";
 
 const PREDICTIONS_FILE = "champion-predictions.json";
 const CHAMPION_REGISTRY_FILE = "champion-registry.json";
@@ -65,24 +66,43 @@ function useBlob() {
   return !!process.env.BLOB_READ_WRITE_TOKEN;
 }
 
+async function blobUrlCachePath(path) {
+  const dir = TMP_DIR;
+  try { await fs.mkdir(dir, { recursive: true }); } catch {}
+  return `${dir}/${path.replace(/\//g, "_")}.url`;
+}
+
 async function readFromBlob(path) {
   try {
     const { list } = await import("@vercel/blob");
     const prefix = path.replace(/\.json$/, "_");
     const result = await list({ prefix, limit: 10 });
     const blobs = result.blobs;
-    if (!blobs?.length) return null;
-    blobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
-    const token = process.env.BLOB_READ_WRITE_TOKEN;
-    const res = await fetch(blobs[0].url, {
-      headers: { authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) return null;
-    return await res.json();
+    if (blobs?.length) {
+      blobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+      const url = blobs[0].url;
+      // Mettre à jour le cache intra-instance
+      const cachePath = await blobUrlCachePath(path);
+      await fs.writeFile(cachePath, url, "utf-8").catch(() => {});
+      return await fetchBlob(url);
+    }
+    // Fallback : URL en cache (même instance, évite le délai de list())
+    const cachedUrl = await fs.readFile(await blobUrlCachePath(path), "utf-8").catch(() => null);
+    if (cachedUrl) return await fetchBlob(cachedUrl);
+    return null;
   } catch (err) {
     console.warn(`[Blob] Lecture échouée ${path}:`, err.message);
     return null;
   }
+}
+
+async function fetchBlob(url) {
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  const res = await fetch(url, {
+    headers: { authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return null;
+  return await res.json();
 }
 
 async function writeToBlob(path, data) {
@@ -95,15 +115,16 @@ async function writeToBlob(path, data) {
       addRandomSuffix: true,
       cacheControlMaxAge: 0,
     });
-    // Nettoyer les anciens blobs orphelins (même préfixe, sauf le nouveau)
+    // Cache intra-instance : stocker l'URL pour les lectures immédiates
+    const cachePath = await blobUrlCachePath(path);
+    await fs.writeFile(cachePath, result.url, "utf-8").catch(() => {});
+    // Nettoyer les anciens blobs (best-effort)
     try {
       const prefix = path.replace(/\.json$/, "_");
       const old = await list({ prefix, limit: 20 });
       const stale = old.blobs.map(b => b.url).filter(u => u !== result.url);
       if (stale.length > 0) await del(stale);
-    } catch {
-      /* best-effort */
-    }
+    } catch {}
   } catch (err) {
     console.error(`[Blob] Écriture échouée ${path}:`, err.message);
     // Fallback fichier local (dev uniquement)
