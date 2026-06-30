@@ -84,6 +84,7 @@ async function writeToBlob(path, data) {
       access: "private",
       contentType: "application/json",
       allowOverwrite: true,
+      cacheControlMaxAge: 0,
     });
   } catch (err) {
     console.error(`[Blob] Écriture échouée ${path}:`, err.message);
