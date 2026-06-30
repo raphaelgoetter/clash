@@ -105,12 +105,20 @@ async function writeToBlob(path, data) {
       addRandomSuffix: true,
       cacheControlMaxAge: 0,
     });
-    // Nettoyer les anciens blobs (best-effort)
+    // Nettoyage safe : supprimer les anciens blobs seulement
+    // une fois que le nouveau est indexé par list()
     try {
       const prefix = path.replace(/\.json$/, "_");
-      const old = await list({ prefix, limit: 20 });
-      const stale = old.blobs.map(b => b.url).filter(u => u !== result.url);
-      if (stale.length > 0) await del(stale);
+      for (const delay of [0, 300, 700]) {
+        if (delay) await new Promise(r => setTimeout(r, delay));
+        const old = await list({ prefix, limit: 20 });
+        const hasNew = old.blobs.some(b => b.url === result.url);
+        if (hasNew) {
+          const stale = old.blobs.map(b => b.url).filter(u => u !== result.url);
+          if (stale.length > 0) await del(stale);
+          break;
+        }
+      }
     } catch {}
   } catch (err) {
     console.error(`[Blob] Écriture échouée ${path}:`, err.message);

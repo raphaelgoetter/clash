@@ -106,6 +106,9 @@ export async function handleStart(webhookUrl, clanVal) {
       return;
     }
 
+    // Délai pour laisser le blob se propager avant le vote
+    await new Promise(r => setTimeout(r, 3000));
+
     const embed = buildStartEmbed(clanName, prevWeekId, targetWeekId, topScorers, endsAt);
     const selectMenu = buildChallengerSelect(clanTag, weekId, topScorers);
 
