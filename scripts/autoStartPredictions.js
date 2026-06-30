@@ -7,6 +7,8 @@
 //   node scripts/autoStartPredictions.js            — mode normal
 //   node scripts/autoStartPredictions.js --dry-run  — sans poster
 
+import path from "path";
+import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
@@ -195,7 +197,9 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error("Erreur fatale:", err);
-  process.exit(1);
-});
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  main().catch((err) => {
+    console.error("Erreur fatale:", err);
+    process.exit(1);
+  });
+}

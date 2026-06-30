@@ -15,6 +15,8 @@ const TMP_DIR = "/tmp";
 
 const PREDICTIONS_FILE = "champion-predictions.json";
 const HISTORY_FILE = "champion-history.json";
+const TMP_PREDICTIONS_FILE = path.join(TMP_DIR, PREDICTIONS_FILE);
+const TMP_HISTORY_FILE = path.join(TMP_DIR, HISTORY_FILE);
 
 export const CLAN_MAP = {
   1: { index: 0, name: "La Resistance", tag: "Y8JUPC9C" },
@@ -32,10 +34,6 @@ function predictionsFilePath() {
   return path.join(DATA_DIR, PREDICTIONS_FILE);
 }
 
-function tmpPredictionsFilePath() {
-  return path.join(TMP_DIR, PREDICTIONS_FILE);
-}
-
 function historyFilePath() {
   return path.join(DATA_DIR, HISTORY_FILE);
 }
@@ -50,33 +48,44 @@ async function readJsonSafe(filePath) {
 }
 
 async function writeJsonSafe(filePath, data) {
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
 }
 
 async function readPredictions() {
-  let data = await readJsonSafe(tmpPredictionsFilePath());
+  let data = await readJsonSafe(predictionsFilePath());
   if (data === null) {
-    data = await readJsonSafe(predictionsFilePath());
+    data = await readJsonSafe(TMP_PREDICTIONS_FILE);
   }
   return data || {};
 }
 
 async function writePredictions(data) {
-  await writeJsonSafe(predictionsFilePath(), data);
+  // Sur Vercel, /tmp est le seul dossier writable.
+  // data/ est read-only sur Vercel mais writable en local.
   try {
-    await writeJsonSafe(tmpPredictionsFilePath(), data);
-  } catch {
-    // /tmp peut ne pas exister en local
-  }
+    await writeJsonSafe(TMP_PREDICTIONS_FILE, data);
+  } catch {}
+  try {
+    await writeJsonSafe(predictionsFilePath(), data);
+  } catch {}
 }
 
 async function readHistory() {
   let data = await readJsonSafe(historyFilePath());
+  if (data === null) {
+    data = await readJsonSafe(TMP_HISTORY_FILE);
+  }
   return data || [];
 }
 
 async function writeHistory(data) {
-  await writeJsonSafe(historyFilePath(), data);
+  try {
+    await writeJsonSafe(TMP_HISTORY_FILE, data);
+  } catch {}
+  try {
+    await writeJsonSafe(historyFilePath(), data);
+  } catch {}
 }
 
 // ── Helpers métier ────────────────────────────────────────────
@@ -326,21 +335,20 @@ export async function getHistory(clanTag, limit = 10) {
 // ── Initialisation des fichiers ───────────────────────────────
 
 export async function ensureDataFiles() {
+  const initPredictions = {};
+  const initHistory = [];
   try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
+    await writeJsonSafe(TMP_PREDICTIONS_FILE, initPredictions);
   } catch {}
-  const predPath = predictionsFilePath();
-  const histPath = historyFilePath();
   try {
-    await fs.access(predPath);
-  } catch {
-    await writeJsonSafe(predPath, {});
-  }
+    await writeJsonSafe(predictionsFilePath(), initPredictions);
+  } catch {}
   try {
-    await fs.access(histPath);
-  } catch {
-    await writeJsonSafe(histPath, []);
-  }
+    await writeJsonSafe(TMP_HISTORY_FILE, initHistory);
+  } catch {}
+  try {
+    await writeJsonSafe(historyFilePath(), initHistory);
+  } catch {}
 }
 
 export { resolveClan };
