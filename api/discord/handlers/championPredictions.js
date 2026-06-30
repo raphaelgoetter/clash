@@ -149,7 +149,7 @@ export async function handleEnd(webhookUrl, clanVal) {
 
     const embed = buildResultEmbed(
       resolved.name,
-      prevWeekId,
+      weekId,
       result.session.challengers,
       result.voteResult,
       result.winnerTag,
