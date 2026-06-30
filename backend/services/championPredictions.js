@@ -65,52 +65,18 @@ function useBlob() {
   return !!process.env.BLOB_READ_WRITE_TOKEN;
 }
 
-function tmpUrlPath(fileKey) {
-  return path.join("/tmp", `blob-${fileKey}`);
-}
-
-async function readStoredUrl(fileKey) {
-  try {
-    return await fs.readFile(tmpUrlPath(fileKey), "utf-8");
-  } catch {
-    return null;
-  }
-}
-
-async function storeUrl(fileKey, url) {
-  try {
-    await fs.mkdir("/tmp", { recursive: true });
-    await fs.writeFile(tmpUrlPath(fileKey), url, "utf-8");
-  } catch {
-    /* /tmp/ inaccessible (dev local) */
-  }
-}
-
 async function readFromBlob(path) {
   try {
     const token = process.env.BLOB_READ_WRITE_TOKEN;
     if (!token) return null;
-
-    // 1) URL unique stockée dans /tmp/ (écriture précédente, jamais en cache)
-    const storedUrl = await readStoredUrl(path);
-    if (storedUrl) {
-      const res = await fetch(storedUrl, {
-        headers: { authorization: `Bearer ${token}` },
-      });
-      if (res.ok) return await res.json();
-    }
-
-    // 2) Fallback URL canonique (possiblement périmée côté CDN)
     const storeId = token.split("_")[3];
     if (!storeId) return null;
-    const fallbackUrl = `https://${storeId}.private.blob.vercel-storage.com/${path}`;
-    const res = await fetch(fallbackUrl, {
+    const blobUrl = `https://${storeId}.private.blob.vercel-storage.com/${path}`;
+    const res = await fetch(blobUrl, {
       headers: { authorization: `Bearer ${token}` },
     });
     if (!res.ok) return null;
-    const data = await res.json();
-    await storeUrl(path, fallbackUrl);
-    return data;
+    return await res.json();
   } catch (err) {
     console.warn(`[Blob] Lecture échouée ${path}:`, err.message);
     return null;
@@ -120,15 +86,13 @@ async function readFromBlob(path) {
 async function writeToBlob(path, data) {
   try {
     const { put } = await import("@vercel/blob");
-    const result = await put(path, JSON.stringify(data), {
+    await put(path, JSON.stringify(data), {
       access: "private",
       contentType: "application/json",
       allowOverwrite: true,
-      addRandomSuffix: true,
+      addRandomSuffix: false,
       cacheControlMaxAge: 0,
     });
-    // Stocker l'URL unique pour contourner le cache CDN aux lectures suivantes
-    await storeUrl(path, result.url);
   } catch (err) {
     console.error(`[Blob] Écriture échouée ${path}:`, err.message);
     // Fallback fichier local (dev uniquement)
