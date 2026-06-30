@@ -198,7 +198,7 @@ export async function handleHistory(webhookUrl, clanVal) {
     const history = await getHistory(resolved.tag, 10);
 
     if (history.length === 0) {
-      await postError(webhookUrl, "Aucun historique de champion pour ce clan.");
+      await postError(webhookUrl, `Aucun historique de champion pour ${resolved.name}.`);
       return;
     }
 
