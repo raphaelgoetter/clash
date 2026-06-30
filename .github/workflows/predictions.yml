@@ -5,15 +5,15 @@ permissions:
 
 on:
   schedule:
-    # Mardi 09:55 UTC (11h55 Paris) — lancement des pronostics
-    - cron: "55 9 * * 2"
+    # Mardi 08:00 UTC (10h00 Paris) — lancement des pronostics
+    - cron: "0 8 * * 2"
     # Lundi 14:00 UTC (16h00 Paris) — résultat des pronostics
     - cron: "0 14 * * 1"
   workflow_dispatch:
 
 jobs:
   start-predictions:
-    if: github.event.schedule == '55 9 * * 2' || github.event_name == 'workflow_dispatch'
+    if: github.event.schedule == '0 8 * * 2' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
       CLASH_API_KEY: ${{ secrets.CLASH_API_KEY }}
