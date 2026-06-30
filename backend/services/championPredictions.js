@@ -336,12 +336,14 @@ export async function getRealChampion(clanTag, weekId) {
       if (!period.periodPoints) continue;
       const periodWeekId = period.periodId || computePrevWeekId(raceLog);
       if (periodWeekId !== weekId) continue;
-      const top = period.periodPoints
+      const scored = period.periodPoints
         .filter((p) => p?.fame > 0)
         .sort((a, b) => (b.fame || 0) - (a.fame || 0));
-      if (top.length > 0) {
-        return { tag: top[0].tag, name: top[0].name, fame: top[0].fame };
-      }
+      if (scored.length === 0) continue;
+      const topFame = scored[0].fame;
+      return scored.filter((p) => p.fame === topFame).map((p) => ({
+        tag: p.tag, name: p.name, fame: p.fame,
+      }));
     }
   }
   return null;
@@ -352,15 +354,19 @@ export async function backfillChampionRegistry(clanTag, raceLog) {
 
   const cleanTag = clanTag.replace(/^#/, "").toUpperCase();
   const registry = await readChampionRegistry();
-  const existingWeeks = new Set(
-    registry.filter((e) => e.clanTag === cleanTag).map((e) => e.weekId),
+
+  const clanEntries = registry.filter((e) => e.clanTag === cleanTag);
+  const existingWeeks = new Set(clanEntries.map((e) => e.weekId));
+  const staleWeeks = new Set(
+    clanEntries.filter((e) => !e.champions && e.champion).map((e) => e.weekId),
   );
 
   const entriesToAdd = [];
+  const weeksToRemove = new Set();
 
   for (const race of raceLog) {
     const weekId = `S${race.seasonId}W${race.sectionIndex + 1}`;
-    if (existingWeeks.has(weekId)) continue;
+    if (existingWeeks.has(weekId) && !staleWeeks.has(weekId)) continue;
 
     const standing = (race.standings || []).find(
       (s) => s?.clan?.tag?.toUpperCase() === `#${cleanTag}`,
@@ -370,26 +376,33 @@ export async function backfillChampionRegistry(clanTag, raceLog) {
     const participants = standing.clan?.participants;
     if (!Array.isArray(participants) || participants.length === 0) continue;
 
-    const top = [...participants]
+    const scored = [...participants]
       .filter((p) => p?.fame > 0)
-      .sort((a, b) => (b.fame || 0) - (a.fame || 0))[0];
+      .sort((a, b) => (b.fame || 0) - (a.fame || 0));
+    if (scored.length === 0) continue;
+    const topFame = scored[0].fame;
+    const champions = scored.filter((p) => p.fame === topFame).map((p) => ({
+      tag: p.tag, name: p.name || p.tag, fame: p.fame || 0,
+    }));
 
-    if (!top) continue;
-
+    weeksToRemove.add(weekId);
     entriesToAdd.push({
       clanTag: cleanTag,
       weekId,
       seasonId: race.seasonId,
       sectionIndex: race.sectionIndex,
-      champion: { tag: top.tag, name: top.name || top.tag, fame: top.fame || 0 },
+      champions,
     });
   }
 
   if (entriesToAdd.length === 0) return;
 
-  registry.push(...entriesToAdd);
-  await writeChampionRegistry(registry);
-  console.log(`[Backfill] ${entriesToAdd.length} semaine(s) ajoutée(s) au registre pour ${cleanTag}`);
+  const cleaned = registry.filter(
+    (e) => !(e.clanTag === cleanTag && weeksToRemove.has(e.weekId)),
+  );
+  cleaned.push(...entriesToAdd);
+  await writeChampionRegistry(cleaned);
+  console.log(`[Backfill] ${entriesToAdd.length} semaine(s) traitées pour ${cleanTag}`);
 }
 
 export async function closeSessionAndArchive(clanTag, weekId, realChampion) {
@@ -426,7 +439,7 @@ export async function closeSessionAndArchive(clanTag, weekId, realChampion) {
       weekId: session.weekId,
       seasonId: session.seasonId,
       sectionIndex: session.sectionIndex,
-      champion: { tag: realChampion.tag, name: realChampion.name, fame: realChampion.fame },
+      champions: realChampion.map((c) => ({ tag: c.tag, name: c.name, fame: c.fame })),
     });
     await writeChampionRegistry(registry);
   }

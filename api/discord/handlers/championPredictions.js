@@ -323,7 +323,7 @@ function buildResultEmbed(
   voteResult,
   winnerTag,
   totalVotes,
-  realChampion,
+  realChampions,
   winnerVoters = [],
 ) {
   // Trouver le nom via les challengers
@@ -351,11 +351,15 @@ function buildResultEmbed(
   }
 
   // Message champion
-  if (realChampion) {
+  if (realChampions && realChampions.length > 0) {
     description += `**Véritable Champion de la semaine ${weekId} :**\n`;
-    description += `🏆 **${realChampion.name}** — ${formatFame(realChampion.fame)} pts\n\n`;
+    for (const c of realChampions) {
+      description += `🏆 **${c.name}** — ${formatFame(c.fame)} pts\n`;
+    }
+    description += `\n`;
 
-    if (winnerTag === realChampion.tag) {
+    const matched = realChampions.some((c) => c.tag === winnerTag);
+    if (matched) {
       description += `🎉 **Les votants ont eu raison !** Le challenger majoritaire était bien le Champion !\n\n`;
 
       if (winnerVoters.length > 0) {
@@ -378,7 +382,6 @@ function buildResultEmbed(
 
   return {
     title: `🔮 Résultat des Pronostics — ${clanName}`,
-    url: realChampion ? undefined : undefined,
     color: CHAMPION_GOLD,
     description,
   };
@@ -410,10 +413,14 @@ function buildCountEmbed(clanName, weekId, counts, totalVotes, endsAt) {
 function buildHistoryEmbed(clanName, history) {
   const lines = history.map((entry) => {
     const weekLabel = entry.weekId || `S${entry.seasonId}W${entry.sectionIndex + 1}`;
-    const champion = entry.champion
-      ? `🏆 **${entry.champion.name}** — ${formatFame(entry.champion.fame)} pts`
-      : "❓ Champion inconnu";
-    return `**${weekLabel}**\n${champion}`;
+    const champions = entry.champions || (entry.champion ? [entry.champion] : null);
+    if (!champions || champions.length === 0) {
+      return `**${weekLabel}**\n❓ Champion inconnu`;
+    }
+    const list = champions
+      .map((c) => `🏆 **${c.name}** — ${formatFame(c.fame)} pts`)
+      .join("\n");
+    return `**${weekLabel}**\n${list}`;
   });
 
   return {
