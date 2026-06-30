@@ -1970,10 +1970,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       playerProxy.totalDonations ?? m.totalDonations ?? null;
 
     const totalDecks = Array.isArray(warHistory?.weeks)
-      ? warHistory.weeks.reduce(
-          (sum, w) => sum + (Number(w.decksUsed) || 0),
-          0,
-        )
+      ? warHistory.weeks
+          .filter((w) => !w.ignored)
+          .reduce((sum, w) => sum + (Number(w.decksUsed) || 0), 0)
       : 0;
     const pointsPerDeck =
       totalDecks > 0 && warHistory?.totalFame != null

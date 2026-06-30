@@ -2362,10 +2362,9 @@ export default async function handler(req, res) {
           ? warHistory.totalFame
           : 0;
         const totalDecks = Array.isArray(warHistory?.weeks)
-          ? warHistory.weeks.reduce(
-              (sum, w) => sum + (Number(w.decksUsed) || 0),
-              0,
-            )
+          ? warHistory.weeks
+              .filter((w) => !w.ignored)
+              .reduce((sum, w) => sum + (Number(w.decksUsed) || 0), 0)
           : 0;
         const pointsPerDeck = totalDecks
           ? Number((totalFame / totalDecks).toFixed(2))
