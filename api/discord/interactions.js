@@ -5825,7 +5825,7 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
-        const endpoint = `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis?fast=true`;
+        const endpoint = `${TRUST_ROYALE_URL}/api/clan/${encodeURIComponent(resolved.tag)}/analysis?fast=true`;
 
         const abortCtrl = new AbortController();
         const abortTimer = setTimeout(() => abortCtrl.abort(), 20000);

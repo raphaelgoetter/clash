@@ -1670,7 +1670,7 @@ export default async function handler(req, res) {
         let apiResp;
         try {
           apiResp = await fetch(
-            `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis?fast=true`,
+            `${TRUST_ROYALE_URL}/api/clan/${encodeURIComponent(resolved.tag)}/analysis?fast=true`,
             {
               headers: { Accept: "application/json" },
               signal: abortCtrl.signal,
