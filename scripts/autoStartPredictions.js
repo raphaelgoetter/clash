@@ -79,7 +79,7 @@ async function main() {
       // Session : 2 jours (mardi 10h UTC → jeudi 10h UTC)
       const now = new Date();
       const endsAt = new Date(now);
-      endsAt.setUTCHours(10, 0, 0, 0);
+      endsAt.setUTCHours(8, 0, 0, 0);
       if (endsAt <= now) {
         endsAt.setUTCDate(endsAt.getUTCDate() + 2);
       } else {

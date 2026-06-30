@@ -89,7 +89,7 @@ export async function handleStart(webhookUrl, clanVal) {
 
     const now = new Date();
     const endsAt = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
-    endsAt.setUTCHours(10, 0, 0, 0);
+    endsAt.setUTCHours(8, 0, 0, 0);
     if (endsAt <= now) {
       endsAt.setUTCDate(endsAt.getUTCDate() + 1);
     }
