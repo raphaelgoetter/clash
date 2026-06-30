@@ -124,6 +124,25 @@ async function buildBattleLogsByTag(participants = []) {
 }
 
 /**
+ * Recalcule pointsPerDeck pour chaque membre à partir de son warHistory,
+ * en excluant les semaines ignorées (applyOldestWeekIgnore). Utilisé quand
+ * le cache disque est retourné directement (fast mode / fresh cache).
+ */
+function recalcMemberPointsPerDeck(m) {
+  if (!m?.warHistory) return m;
+  const decks = Array.isArray(m.warHistory.weeks)
+    ? m.warHistory.weeks
+        .filter((w) => !w.ignored)
+        .reduce((s, w) => s + (Number(w.decksUsed) || 0), 0)
+    : 0;
+  const ppd =
+    decks > 0 && m.warHistory.totalFame != null
+      ? Math.round(m.warHistory.totalFame / decks)
+      : null;
+  return { ...m, pointsPerDeck: ppd };
+}
+
+/**
  * GET /api/clan/:tag
  * Returns raw clan profile from the Clash Royale API.
  */
@@ -462,6 +481,8 @@ router.get("/:tag/analysis", async (req, res) => {
           if (!includeMembers) {
             responsePayload.members = null;
             responsePayload.membersRaw = null;
+          } else if (Array.isArray(responsePayload.members)) {
+            responsePayload.members = responsePayload.members.map(recalcMemberPointsPerDeck);
           }
           const { frRank, frPreviousRank } = await fetchLiveCountryRank(
             clanTag,
@@ -488,6 +509,8 @@ router.get("/:tag/analysis", async (req, res) => {
           if (!includeMembers) {
             responsePayload.members = null;
             responsePayload.membersRaw = null;
+          } else if (Array.isArray(responsePayload.members)) {
+            responsePayload.members = responsePayload.members.map(recalcMemberPointsPerDeck);
           }
           const { frRank, frPreviousRank } = await fetchLiveCountryRank(
             clanTag,
