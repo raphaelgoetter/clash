@@ -81,10 +81,12 @@ async function readFromBlob(path) {
   const url = blobUrlFor(path);
   if (!url) return null;
   const token = process.env.BLOB_READ_WRITE_TOKEN;
-  for (const delay of [0, 500, 1500]) {
+  // Cache-buster pour éviter le cache CDN (chaque appel = URL unique)
+  const fetchUrl = () => `${url}?_cb=${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+  for (const delay of [0, 300]) {
     if (delay) await new Promise(r => setTimeout(r, delay));
     try {
-      const res = await fetch(url, {
+      const res = await fetch(fetchUrl(), {
         headers: { authorization: `Bearer ${token}` },
       });
       if (res.ok) return await res.json();
