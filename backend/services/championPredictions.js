@@ -6,7 +6,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import { fetchRaceLog } from "./clashApi.js";
+import { fetchRaceLog, fetchClanMembers } from "./clashApi.js";
 import { computePrevWeekId, computeCurrentWeekId } from "./dateUtils.js";
 import { getOrSet, invalidate } from "./cache.js";
 
@@ -150,7 +150,14 @@ export async function getTopScorers(clanTag, limit = 5) {
   const participants = standing?.clan?.participants;
   if (!Array.isArray(participants)) return [];
 
-  const sorted = [...participants]
+  // Filtrer : ne garder que les joueurs actuellement dans le clan
+  const currentMembers = await fetchClanMembers(cleanTag).catch(() => []);
+  const currentTags = new Set(currentMembers.map((m) => m.tag?.toUpperCase()));
+  const activeParticipants = currentTags.size > 0
+    ? participants.filter((p) => currentTags.has(p.tag?.toUpperCase()))
+    : participants;
+
+  const sorted = [...activeParticipants]
     .sort((a, b) => (b.fame || 0) - (a.fame || 0));
 
   return sorted.slice(0, limit).map((p) => ({
