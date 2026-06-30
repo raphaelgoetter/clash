@@ -65,22 +65,12 @@ function useBlob() {
   return !!process.env.BLOB_READ_WRITE_TOKEN;
 }
 
-function blobUrl(path) {
-  const token = process.env.BLOB_READ_WRITE_TOKEN || "";
-  const storeId = token.split(":")[0];
-  if (!storeId) return null;
-  return `https://${storeId}.private.blob.vercel-storage.com/${path}`;
-}
-
 async function readFromBlob(path) {
   try {
-    const url = blobUrl(path);
-    if (!url) return null;
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` },
-    });
-    if (!res.ok) return null;
-    return await res.json();
+    const { get } = await import("@vercel/blob");
+    const result = await get(path, { access: "private" });
+    if (!result || result.statusCode !== 200) return null;
+    return await new Response(result.stream).json();
   } catch (err) {
     console.warn(`[Blob] Lecture échouée ${path}:`, err.message);
     return null;
@@ -89,17 +79,11 @@ async function readFromBlob(path) {
 
 async function writeToBlob(path, data) {
   try {
-    const url = blobUrl(path);
-    if (!url) throw new Error("URL du store Blob indéterminée");
-    const res = await fetch(url, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
+    const { put } = await import("@vercel/blob");
+    await put(path, JSON.stringify(data), {
+      access: "private",
+      contentType: "application/json",
     });
-    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   } catch (err) {
     console.warn(`[Blob] Écriture échouée ${path}:`, err.message);
     const filePath = path === PREDICTIONS_FILE ? predictionsFilePath() : historyFilePath();
