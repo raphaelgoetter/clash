@@ -131,7 +131,7 @@ async function main() {
           `*Le Champion est le joueur qui marquera le plus de points GDC.*\n\n` +
           `**Challengers** (top 5 scoreurs semaine ${prevWeekId}) :\n` +
           lines.join("\n") +
-          `\n\n` +
+          `\n${ordinal(6)} **Autre** (pas dans la liste)\n\n` +
           `📅 **Votez jusqu'au ${endParis}**\n` +
           `Sélectionnez votre challenger dans le menu ci-dessous.\n` +
           `📌 *Épinglez ce message pour que tout le monde puisse voter facilement.*`,
