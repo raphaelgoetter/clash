@@ -12,12 +12,9 @@ import { getOrSet, invalidate } from "./cache.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.resolve(__dirname, "..", "..", "data");
-const TMP_DIR = "/tmp";
 
 const PREDICTIONS_FILE = "champion-predictions.json";
 const HISTORY_FILE = "champion-history.json";
-const TMP_PREDICTIONS_FILE = path.join(TMP_DIR, PREDICTIONS_FILE);
-const TMP_HISTORY_FILE = path.join(TMP_DIR, HISTORY_FILE);
 
 export const CLAN_MAP = {
   1: { index: 0, name: "La Resistance", tag: "Y8JUPC9C" },
@@ -62,49 +59,74 @@ async function writeJsonSafe(filePath, data) {
   await fs.writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
 }
 
+// ── Vercel Blob (persistance entre instances serverless) ─────
+
+const BLOB_STORE = !!process.env.BLOB_READ_WRITE_TOKEN;
+
+async function readFromBlob(path) {
+  try {
+    const { get } = await import("@vercel/blob");
+    const blob = await get(path);
+    if (!blob) return null;
+    return await blob.json();
+  } catch {
+    return null;
+  }
+}
+
+async function writeToBlob(path, data) {
+  const { put } = await import("@vercel/blob");
+  await put(path, JSON.stringify(data), {
+    access: "public",
+    contentType: "application/json",
+  });
+}
+
+// ── Prédictions ───────────────────────────────────────────────
+
 async function readPredictions() {
+  if (BLOB_STORE) {
+    const blob = await readFromBlob(PREDICTIONS_FILE);
+    if (blob) return blob;
+  }
   const { value } = await getOrSet(
     "champion:predictions",
-    async () => {
-      const dataFile = await readJsonSafe(predictionsFilePath()) || {};
-      const tmpFile = await readJsonSafe(TMP_PREDICTIONS_FILE) || {};
-      return { ...dataFile, ...tmpFile };
-    },
-    30 * 1000, // 30s TTL (rafraîchi après écriture via invalidate)
+    () => readJsonSafe(predictionsFilePath()) || {},
+    30 * 1000,
   );
   return value;
 }
 
 async function writePredictions(data) {
-  await writeJsonSafe(TMP_PREDICTIONS_FILE, data).catch(() => {});
-  await writeJsonSafe(predictionsFilePath(), data).catch(() => {});
+  if (BLOB_STORE) {
+    await writeToBlob(PREDICTIONS_FILE, data);
+  } else {
+    await writeJsonSafe(predictionsFilePath(), data);
+  }
   invalidate("champion:predictions");
 }
 
+// ── Historique ────────────────────────────────────────────────
+
 async function readHistory() {
+  if (BLOB_STORE) {
+    const blob = await readFromBlob(HISTORY_FILE);
+    if (blob) return blob;
+  }
   const { value } = await getOrSet(
     "champion:history",
-    async () => {
-      const dataFile = await readJsonSafe(historyFilePath()) || [];
-      const tmpFile = await readJsonSafe(TMP_HISTORY_FILE) || [];
-      const merged = [...dataFile];
-      for (const tmpEntry of tmpFile) {
-        const idx = merged.findIndex(
-          (e) => e.weekId === tmpEntry.weekId && e.clanTag === tmpEntry.clanTag,
-        );
-        if (idx >= 0) merged[idx] = tmpEntry;
-        else merged.push(tmpEntry);
-      }
-      return merged;
-    },
+    () => readJsonSafe(historyFilePath()) || [],
     30 * 1000,
   );
   return value;
 }
 
 async function writeHistory(data) {
-  await writeJsonSafe(TMP_HISTORY_FILE, data).catch(() => {});
-  await writeJsonSafe(historyFilePath(), data).catch(() => {});
+  if (BLOB_STORE) {
+    await writeToBlob(HISTORY_FILE, data);
+  } else {
+    await writeJsonSafe(historyFilePath(), data);
+  }
   invalidate("champion:history");
 }
 
@@ -402,18 +424,8 @@ export async function getHistory(clanTag, limit = 10) {
 export async function ensureDataFiles() {
   const initPredictions = {};
   const initHistory = [];
-  try {
-    await writeJsonSafe(TMP_PREDICTIONS_FILE, initPredictions);
-  } catch {}
-  try {
-    await writeJsonSafe(predictionsFilePath(), initPredictions);
-  } catch {}
-  try {
-    await writeJsonSafe(TMP_HISTORY_FILE, initHistory);
-  } catch {}
-  try {
-    await writeJsonSafe(historyFilePath(), initHistory);
-  } catch {}
+  await writeJsonSafe(predictionsFilePath(), initPredictions).catch(() => {});
+  await writeJsonSafe(historyFilePath(), initHistory).catch(() => {});
 }
 
 export { resolveClan };

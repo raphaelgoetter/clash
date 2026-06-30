@@ -38,6 +38,7 @@
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.3.0",
+    "@vercel/blob": "^2.5.0",
     "@vercel/functions": "^3.4.3",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
