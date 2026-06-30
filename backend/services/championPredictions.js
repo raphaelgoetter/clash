@@ -67,8 +67,12 @@ function useBlob() {
 
 async function readFromBlob(path) {
   try {
-    const { get } = await import("@vercel/blob");
-    const result = await get(path, { access: "private" });
+    const { get, list } = await import("@vercel/blob");
+    const listResult = await list({ prefix: path, limit: 1 });
+    const blobUrl = listResult.blobs?.[0]?.url;
+    if (!blobUrl) return null;
+    // Cache-buster pour éviter le cache CDN après un put()
+    const result = await get(blobUrl + `?t=${Date.now()}`, { access: "private" });
     if (!result || result.statusCode !== 200) return null;
     return await new Response(result.stream).json();
   } catch (err) {
