@@ -12,7 +12,6 @@ import { getOrSet, invalidate } from "./cache.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.resolve(__dirname, "..", "..", "data");
-const BLOB_CACHE_DIR = "/tmp/clash-blob-cache";
 
 const PREDICTIONS_FILE = "champion-predictions.json";
 const CHAMPION_REGISTRY_FILE = "champion-registry.json";
@@ -66,106 +65,44 @@ function useBlob() {
   return !!process.env.BLOB_READ_WRITE_TOKEN;
 }
 
-function blobCacheFile() {
-  return `${BLOB_CACHE_DIR}/urls.json`;
+function blobStoreId() {
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  if (!token) return null;
+  return token.split("_")[3] || null;
 }
 
-async function readBlobCache() {
-  try {
-    await fs.mkdir(BLOB_CACHE_DIR, { recursive: true });
-    const raw = await fs.readFile(blobCacheFile(), "utf-8");
-    return JSON.parse(raw);
-  } catch {
-    return {};
-  }
-}
-
-async function readCachedUrl(path) {
-  const cache = await readBlobCache();
-  return cache[path] || null;
-}
-
-async function writeCachedUrl(path, url) {
-  const cache = await readBlobCache();
-  cache[path] = url;
-  try {
-    await fs.mkdir(BLOB_CACHE_DIR, { recursive: true });
-    await fs.writeFile(blobCacheFile(), JSON.stringify(cache));
-  } catch { /* best-effort */ }
+function blobUrlFor(path) {
+  const storeId = blobStoreId();
+  if (!storeId) return null;
+  return `https://${storeId}.private.blob.vercel-storage.com/${path}`;
 }
 
 async function readFromBlob(path) {
-  try {
-    // Cache intra-instance : fichier /tmp/, pas besoin de list()
-    const cachedUrl = await readCachedUrl(path);
-    if (cachedUrl) {
-      const data = await fetchBlob(cachedUrl);
-      if (data) {
-        console.error(`[Blob DEBUG] Cache hit pour ${path}, sessions: ${Object.keys(data).filter(k => k !== 'blobMeta').length}`);
-        return data;
-      }
-      console.error(`[Blob DEBUG] Cache miss (fetch failed) pour ${cachedUrl}`);
-    }
-    // Fallback : list() pour cross-instance
-    const { list } = await import("@vercel/blob");
-    const prefix = path.replace(/\.json$/, "_");
-    for (const delay of [0, 500, 1500]) {
-      if (delay) await new Promise(r => setTimeout(r, delay));
-      const result = await list({ prefix, limit: 10 });
-      const blobs = result.blobs;
-      if (blobs?.length) {
-        blobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
-        const url = blobs[0].url;
-        console.error(`[Blob DEBUG] list() trouvé ${blobs.length} blob(s), plus récent: ${url.split('/').pop()}`);
-        await writeCachedUrl(path, url);
-        return await fetchBlob(url);
-      }
-      console.error(`[Blob DEBUG] list() vide (tentative ${delay}ms)`);
-    }
-    console.error(`[Blob DEBUG] Toutes les tentatives échouées pour ${path}`);
-    return null;
-  } catch (err) {
-    console.warn(`[Blob] Lecture échouée ${path}:`, err.message);
-    return null;
-  }
-}
-
-async function fetchBlob(url) {
+  const url = blobUrlFor(path);
+  if (!url) return null;
   const token = process.env.BLOB_READ_WRITE_TOKEN;
-  const res = await fetch(url, {
-    headers: { authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) return null;
-  return await res.json();
+  for (const delay of [0, 500, 1500]) {
+    if (delay) await new Promise(r => setTimeout(r, delay));
+    try {
+      const res = await fetch(url, {
+        headers: { authorization: `Bearer ${token}` },
+      });
+      if (res.ok) return await res.json();
+    } catch {}
+  }
+  return null;
 }
 
 async function writeToBlob(path, data) {
   try {
-    const { put, list, del } = await import("@vercel/blob");
-    const result = await put(path, JSON.stringify(data), {
+    const { put } = await import("@vercel/blob");
+    await put(path, JSON.stringify(data), {
       access: "private",
       contentType: "application/json",
       allowOverwrite: true,
-      addRandomSuffix: true,
+      addRandomSuffix: false,
       cacheControlMaxAge: 0,
     });
-    // Cacher l'URL dans /tmp/ pour les lectures immédiates
-    await writeCachedUrl(path, result.url);
-    console.error(`[Blob DEBUG] Écriture OK: ${result.url.split('/').pop()}`);
-    // Nettoyage safe : supprimer les anciens blobs
-    const prefix = path.replace(/\.json$/, "_");
-    for (const delay of [0, 300, 700]) {
-      if (delay) await new Promise(r => setTimeout(r, delay));
-      try {
-        const old = await list({ prefix, limit: 20 });
-        const hasNew = old.blobs.some(b => b.url === result.url);
-        if (hasNew) {
-          const stale = old.blobs.map(b => b.url).filter(u => u !== result.url);
-          if (stale.length > 0) await del(stale);
-          break;
-        }
-      } catch { /* best-effort */ }
-    }
   } catch (err) {
     console.error(`[Blob] Écriture échouée ${path}:`, err.message);
     // Fallback fichier local (dev uniquement)
