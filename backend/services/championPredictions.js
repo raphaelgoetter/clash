@@ -140,6 +140,8 @@ async function readPredictions() {
 async function writePredictions(data) {
   if (useBlob()) {
     await writeToBlob(PREDICTIONS_FILE, data);
+    // Délai pour laisser le CDN propager avant la prochaine lecture
+    await new Promise(r => setTimeout(r, 1500));
     invalidate("champion:predictions");
     return;
   }
@@ -166,6 +168,7 @@ async function readChampionRegistry() {
 async function writeChampionRegistry(data) {
   if (useBlob()) {
     await writeToBlob(CHAMPION_REGISTRY_FILE, data);
+    await new Promise(r => setTimeout(r, 1500));
     invalidate("champion:registry");
     return;
   }
@@ -281,19 +284,11 @@ export function sessionKey(clanTag, weekId) {
 // ── Sessions de vote ──────────────────────────────────────────
 
 export async function openSession(clanTag, weekId, seasonId, sectionIndex, challengers, endsAt) {
-  let predictions = await readPredictions();
+  const predictions = await readPredictions();
   const key = sessionKey(clanTag, weekId);
 
   if (predictions[key]) {
-    // Vérifier si la session est réelle ou un fantôme CDN (handleEnd a supprimé mais CDN pas encore purgé)
-    for (const delay of [500, 1000]) {
-      await new Promise(r => setTimeout(r, delay));
-      predictions = await readPredictions();
-      if (!predictions[key]) break;
-    }
-    if (predictions[key]) {
-      throw new Error("Une session de vote existe déjà pour cette semaine.");
-    }
+    throw new Error("Une session de vote existe déjà pour cette semaine.");
   }
 
   predictions[key] = {
