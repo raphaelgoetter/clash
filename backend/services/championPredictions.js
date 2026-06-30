@@ -279,11 +279,19 @@ export function sessionKey(clanTag, weekId) {
 // ── Sessions de vote ──────────────────────────────────────────
 
 export async function openSession(clanTag, weekId, seasonId, sectionIndex, challengers, endsAt) {
-  const predictions = await readPredictions();
+  let predictions = await readPredictions();
   const key = sessionKey(clanTag, weekId);
 
   if (predictions[key]) {
-    throw new Error("Une session de vote existe déjà pour cette semaine.");
+    // Vérifier si la session est réelle ou un fantôme CDN (handleEnd a supprimé mais CDN pas encore purgé)
+    for (const delay of [500, 1000]) {
+      await new Promise(r => setTimeout(r, delay));
+      predictions = await readPredictions();
+      if (!predictions[key]) break;
+    }
+    if (predictions[key]) {
+      throw new Error("Une session de vote existe déjà pour cette semaine.");
+    }
   }
 
   predictions[key] = {
