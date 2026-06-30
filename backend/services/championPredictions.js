@@ -12,6 +12,7 @@ import { getOrSet, invalidate } from "./cache.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.resolve(__dirname, "..", "..", "data");
+const BLOB_CACHE_DIR = "/tmp/clash-blob-cache";
 
 const PREDICTIONS_FILE = "champion-predictions.json";
 const CHAMPION_REGISTRY_FILE = "champion-registry.json";
@@ -65,20 +66,63 @@ function useBlob() {
   return !!process.env.BLOB_READ_WRITE_TOKEN;
 }
 
+function blobCacheFile() {
+  return `${BLOB_CACHE_DIR}/urls.json`;
+}
+
+async function readBlobCache() {
+  try {
+    await fs.mkdir(BLOB_CACHE_DIR, { recursive: true });
+    const raw = await fs.readFile(blobCacheFile(), "utf-8");
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+async function readCachedUrl(path) {
+  const cache = await readBlobCache();
+  return cache[path] || null;
+}
+
+async function writeCachedUrl(path, url) {
+  const cache = await readBlobCache();
+  cache[path] = url;
+  try {
+    await fs.mkdir(BLOB_CACHE_DIR, { recursive: true });
+    await fs.writeFile(blobCacheFile(), JSON.stringify(cache));
+  } catch { /* best-effort */ }
+}
+
 async function readFromBlob(path) {
   try {
+    // Cache intra-instance : fichier /tmp/, pas besoin de list()
+    const cachedUrl = await readCachedUrl(path);
+    if (cachedUrl) {
+      const data = await fetchBlob(cachedUrl);
+      if (data) {
+        console.error(`[Blob DEBUG] Cache hit pour ${path}, sessions: ${Object.keys(data).filter(k => k !== 'blobMeta').length}`);
+        return data;
+      }
+      console.error(`[Blob DEBUG] Cache miss (fetch failed) pour ${cachedUrl}`);
+    }
+    // Fallback : list() pour cross-instance
     const { list } = await import("@vercel/blob");
     const prefix = path.replace(/\.json$/, "_");
-
     for (const delay of [0, 500, 1500]) {
       if (delay) await new Promise(r => setTimeout(r, delay));
       const result = await list({ prefix, limit: 10 });
       const blobs = result.blobs;
       if (blobs?.length) {
         blobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
-        return await fetchBlob(blobs[0].url);
+        const url = blobs[0].url;
+        console.error(`[Blob DEBUG] list() trouvé ${blobs.length} blob(s), plus récent: ${url.split('/').pop()}`);
+        await writeCachedUrl(path, url);
+        return await fetchBlob(url);
       }
+      console.error(`[Blob DEBUG] list() vide (tentative ${delay}ms)`);
     }
+    console.error(`[Blob DEBUG] Toutes les tentatives échouées pour ${path}`);
     return null;
   } catch (err) {
     console.warn(`[Blob] Lecture échouée ${path}:`, err.message);
@@ -105,12 +149,14 @@ async function writeToBlob(path, data) {
       addRandomSuffix: true,
       cacheControlMaxAge: 0,
     });
-    // Nettoyage safe : supprimer les anciens blobs seulement
-    // une fois que le nouveau est indexé par list()
-    try {
-      const prefix = path.replace(/\.json$/, "_");
-      for (const delay of [0, 300, 700]) {
-        if (delay) await new Promise(r => setTimeout(r, delay));
+    // Cacher l'URL dans /tmp/ pour les lectures immédiates
+    await writeCachedUrl(path, result.url);
+    console.error(`[Blob DEBUG] Écriture OK: ${result.url.split('/').pop()}`);
+    // Nettoyage safe : supprimer les anciens blobs
+    const prefix = path.replace(/\.json$/, "_");
+    for (const delay of [0, 300, 700]) {
+      if (delay) await new Promise(r => setTimeout(r, delay));
+      try {
         const old = await list({ prefix, limit: 20 });
         const hasNew = old.blobs.some(b => b.url === result.url);
         if (hasNew) {
@@ -118,8 +164,8 @@ async function writeToBlob(path, data) {
           if (stale.length > 0) await del(stale);
           break;
         }
-      }
-    } catch {}
+      } catch { /* best-effort */ }
+    }
   } catch (err) {
     console.error(`[Blob] Écriture échouée ${path}:`, err.message);
     // Fallback fichier local (dev uniquement)
