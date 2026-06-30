@@ -14,7 +14,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.resolve(__dirname, "..", "..", "data");
 
 const PREDICTIONS_FILE = "champion-predictions.json";
-const HISTORY_FILE = "champion-history.json";
+const CHAMPION_REGISTRY_FILE = "champion-registry.json";
 
 export const CLAN_MAP = {
   1: { index: 0, name: "La Resistance", tag: "Y8JUPC9C" },
@@ -32,8 +32,8 @@ function predictionsFilePath() {
   return path.join(DATA_DIR, PREDICTIONS_FILE);
 }
 
-function historyFilePath() {
-  return path.join(DATA_DIR, HISTORY_FILE);
+function championRegistryFilePath() {
+  return path.join(DATA_DIR, CHAMPION_REGISTRY_FILE);
 }
 
 async function readJsonSafe(filePath) {
@@ -93,7 +93,9 @@ async function writeToBlob(path, data) {
   } catch (err) {
     console.error(`[Blob] Écriture échouée ${path}:`, err.message);
     // Fallback fichier local (dev uniquement)
-    const filePath = path === PREDICTIONS_FILE ? predictionsFilePath() : historyFilePath();
+    const filePath = path === PREDICTIONS_FILE
+      ? predictionsFilePath()
+      : championRegistryFilePath();
     try {
       await writeJsonSafe(filePath, data);
       console.warn("[Blob] Données sauvegardées dans le fichier local en fallback");
@@ -129,29 +131,29 @@ async function writePredictions(data) {
   invalidate("champion:predictions");
 }
 
-// ── Historique ────────────────────────────────────────────────
+// ── Registre des champions ────────────────────────────────────
 
-async function readHistory() {
+async function readChampionRegistry() {
   if (useBlob()) {
-    const blob = await readFromBlob(HISTORY_FILE);
+    const blob = await readFromBlob(CHAMPION_REGISTRY_FILE);
     if (blob) return blob;
   }
   const { value } = await getOrSet(
-    "champion:history",
-    () => readJsonSafe(historyFilePath()) || [],
+    "champion:registry",
+    () => readJsonSafe(championRegistryFilePath()) || [],
     30 * 1000,
   );
   return value;
 }
 
-async function writeHistory(data) {
+async function writeChampionRegistry(data) {
   if (useBlob()) {
-    await writeToBlob(HISTORY_FILE, data);
-    invalidate("champion:history");
+    await writeToBlob(CHAMPION_REGISTRY_FILE, data);
+    invalidate("champion:registry");
     return;
   }
-  await writeJsonSafe(historyFilePath(), data).catch(() => {});
-  invalidate("champion:history");
+  await writeJsonSafe(championRegistryFilePath(), data).catch(() => {});
+  invalidate("champion:registry");
 }
 
 // ── Helpers métier ────────────────────────────────────────────
@@ -370,25 +372,18 @@ export async function closeSessionAndArchive(clanTag, weekId, realChampion) {
 
   const winnerTag = sorted.length > 0 ? sorted[0].challengerTag : null;
 
-  // Archivage dans l'historique
-  const history = await readHistory();
-  history.push({
-    clanTag: session.clanTag,
-    weekId: session.weekId,
-    seasonId: session.seasonId,
-    sectionIndex: session.sectionIndex,
-    startedAt: session.startedAt,
-    endsAt: session.endsAt,
-    challengers: session.challengers,
-    realChampion: realChampion
-      ? { tag: realChampion.tag, name: realChampion.name, fame: realChampion.fame }
-      : null,
-    winnerChallengerTag: winnerTag,
-    totalVotes: session.votes.length,
-    voteResult: sorted,
-  });
-
-  await writeHistory(history);
+  // Enregistrer le champion dans le registre
+  if (realChampion) {
+    const registry = await readChampionRegistry();
+    registry.push({
+      clanTag: session.clanTag,
+      weekId: session.weekId,
+      seasonId: session.seasonId,
+      sectionIndex: session.sectionIndex,
+      champion: { tag: realChampion.tag, name: realChampion.name, fame: realChampion.fame },
+    });
+    await writeChampionRegistry(registry);
+  }
 
   // Nettoyage de la session en cours
   delete predictions[key];
@@ -430,9 +425,9 @@ export async function getActiveSessionByClan(clanTag) {
 }
 
 export async function getHistory(clanTag, limit = 10) {
-  const history = await readHistory();
+  const registry = await readChampionRegistry();
   const clean = clanTag.replace(/^#/, "").toUpperCase();
-  return history
+  return registry
     .filter((h) => h.clanTag === clean)
     .sort((a, b) => {
       const sa = a.seasonId || 0;
@@ -448,7 +443,7 @@ export async function getHistory(clanTag, limit = 10) {
 export async function ensureDataFiles() {
   // Uniquement utile en dev local — sur Vercel, Blob ou la lecture seule du bundle suffisent
   await writeJsonSafe(predictionsFilePath(), {}).catch(() => {});
-  await writeJsonSafe(historyFilePath(), []).catch(() => {});
+  await writeJsonSafe(championRegistryFilePath(), []).catch(() => {});
 }
 
 export { resolveClan };

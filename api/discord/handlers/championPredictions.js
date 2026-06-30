@@ -411,28 +411,18 @@ function buildCountEmbed(clanName, weekId, counts, totalVotes, endsAt) {
 function buildHistoryEmbed(clanName, history) {
   const lines = history.map((entry) => {
     const weekLabel = entry.weekId || `S${entry.seasonId}W${entry.sectionIndex + 1}`;
-    const champion = entry.realChampion
-      ? `🏆 **${entry.realChampion.name}** — ${formatFame(entry.realChampion.fame)} pts`
+    const champion = entry.champion
+      ? `🏆 **${entry.champion.name}** — ${formatFame(entry.champion.fame)} pts`
       : "❓ Champion inconnu";
-    const votes = `${entry.totalVotes || 0} vote${entry.totalVotes !== 1 ? "s" : ""}`;
-
-    // Trouver le challenger gagnant
-    const winnerChallenger = entry.challengers?.find(
-      (c) => c.tag === entry.winnerChallengerTag,
-    );
-    const winnerStr = winnerChallenger
-      ? `🔮 Majorité : ${winnerChallenger.name}`
-      : "🔮 Aucun vote";
-
-    return `**${weekLabel}**\n${champion}\n${winnerStr} · ${votes}`;
+    return `**${weekLabel}**\n${champion}`;
   });
 
   return {
-    title: `📜 Historique des Champions — ${clanName}`,
+    title: `📜 Registre des Champions — ${clanName}`,
     color: CHAMPION_COLOR,
-    description: lines.join("\n\n") || "Aucun historique pour le moment.",
+    description: lines.join("\n\n") || "Aucun champion enregistré.",
     footer: {
-      text: "Les 10 dernières entrées",
+      text: "Les 10 derniers champions",
     },
   };
 }
