@@ -347,6 +347,51 @@ export async function getRealChampion(clanTag, weekId) {
   return null;
 }
 
+export async function backfillChampionRegistry(clanTag, raceLog) {
+  if (!Array.isArray(raceLog) || raceLog.length === 0) return;
+
+  const cleanTag = clanTag.replace(/^#/, "").toUpperCase();
+  const registry = await readChampionRegistry();
+  const existingWeeks = new Set(
+    registry.filter((e) => e.clanTag === cleanTag).map((e) => e.weekId),
+  );
+
+  const entriesToAdd = [];
+
+  for (const race of raceLog) {
+    const weekId = `S${race.seasonId}W${race.sectionIndex + 1}`;
+    if (existingWeeks.has(weekId)) continue;
+
+    const standing = (race.standings || []).find(
+      (s) => s?.clan?.tag?.toUpperCase() === `#${cleanTag}`,
+    );
+    if (!standing) continue;
+
+    const participants = standing.clan?.participants;
+    if (!Array.isArray(participants) || participants.length === 0) continue;
+
+    const top = [...participants]
+      .filter((p) => p?.fame > 0)
+      .sort((a, b) => (b.fame || 0) - (a.fame || 0))[0];
+
+    if (!top) continue;
+
+    entriesToAdd.push({
+      clanTag: cleanTag,
+      weekId,
+      seasonId: race.seasonId,
+      sectionIndex: race.sectionIndex,
+      champion: { tag: top.tag, name: top.name || top.tag, fame: top.fame || 0 },
+    });
+  }
+
+  if (entriesToAdd.length === 0) return;
+
+  registry.push(...entriesToAdd);
+  await writeChampionRegistry(registry);
+  console.log(`[Backfill] ${entriesToAdd.length} semaine(s) ajoutée(s) au registre pour ${cleanTag}`);
+}
+
 export async function closeSessionAndArchive(clanTag, weekId, realChampion) {
   const predictions = await readPredictions();
   const key = sessionKey(clanTag, weekId);

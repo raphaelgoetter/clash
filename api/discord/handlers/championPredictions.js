@@ -13,6 +13,7 @@ import {
   getActiveSessionByClan,
   closeSessionAndArchive,
   getHistory,
+  backfillChampionRegistry,
   resolveClan,
   formatParisDate,
 } from "../../../backend/services/championPredictions.js";
@@ -69,6 +70,8 @@ export async function handleStart(webhookUrl, clanVal) {
       await postError(webhookUrl, "Impossible de récupérer le race log du clan.");
       return;
     }
+
+    await backfillChampionRegistry(clanTag, raceLog);
 
     const prevWeekId = computePrevWeekId(raceLog);
     if (!prevWeekId) {
