@@ -391,6 +391,12 @@ export async function closeSessionAndArchive(clanTag, weekId, realChampion) {
   };
 }
 
+export async function getSessionData(clanTag, weekId) {
+  const predictions = await readPredictions();
+  const key = sessionKey(clanTag, weekId);
+  return predictions[key] || null;
+}
+
 export async function getActiveSessionByClan(clanTag) {
   const predictions = await readPredictions();
   const clean = clanTag.replace(/^#/, "").toUpperCase();
