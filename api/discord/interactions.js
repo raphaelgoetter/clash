@@ -1609,7 +1609,7 @@ export default async function handler(req, res) {
       }
 
       const input = (focused.value || "").toLowerCase();
-      const choices = active.session.challengers
+      const challengerChoices = active.session.challengers
         .filter((c) =>
           !input ||
           c.name.toLowerCase().includes(input) ||
@@ -1619,9 +1619,15 @@ export default async function handler(req, res) {
           name: `${idx + 1}. ${c.name} — ${Number.isFinite(c.fame) ? c.fame.toLocaleString("fr-FR") : "0"} pts`,
           value: c.tag,
         }))
-        .slice(0, 25);
+        .slice(0, 24);
 
-      return res.status(200).json({ type: 8, data: { choices } });
+      // Ajouter "Autre" comme dernier choix
+      challengerChoices.push({
+        name: `6. Autre (pas dans la liste)`,
+        value: "__other__",
+      });
+
+      return res.status(200).json({ type: 8, data: { choices: challengerChoices } });
     } catch {
       return res.status(200).json({ type: 8, data: { choices: [] } });
     }

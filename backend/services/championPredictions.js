@@ -193,7 +193,7 @@ export async function castVote(clanTag, weekId, discordId, discordName, challeng
     throw new Error("Vous avez déjà voté.");
   }
 
-  const valid = session.challengers.some((c) => c.tag === challengerTag);
+  const valid = session.challengers.some((c) => c.tag === challengerTag) || challengerTag === "__other__";
   if (!valid) {
     throw new Error("Challenger invalide.");
   }
@@ -220,6 +220,7 @@ export async function getVoteCounts(clanTag, weekId) {
   for (const c of session.challengers) {
     counts[c.tag] = { name: c.name, votes: 0 };
   }
+  counts["__other__"] = { name: "Autre", votes: 0 };
   for (const v of session.votes) {
     if (counts[v.challengerTag]) {
       counts[v.challengerTag].votes++;
@@ -247,6 +248,7 @@ export async function closeSessionAndArchive(clanTag, weekId, realChampion) {
   for (const c of session.challengers) {
     voteMap[c.tag] = 0;
   }
+  voteMap["__other__"] = 0;
   for (const v of session.votes) {
     if (voteMap[v.challengerTag] !== undefined) {
       voteMap[v.challengerTag]++;

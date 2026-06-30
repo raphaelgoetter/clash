@@ -136,7 +136,7 @@ async function main() {
           `Sélectionnez votre challenger dans le menu ci-dessous.\n` +
           `📌 *Épinglez ce message pour que tout le monde puisse voter facilement.*`,
         footer: {
-          text: `Clan : ${clanName} · Semaine ${targetWeekId}`,
+          text: `Clan : ${clanName} · Devinez le prochain champion`,
         },
       };
 
@@ -147,11 +147,18 @@ async function main() {
             type: 3,
             custom_id: `champion_vote:${clanTag}:${targetWeekId}`,
             placeholder: "Choisissez votre challenger...",
-            options: topScorers.map((p, idx) => ({
-              label: `${idx + 1}. ${p.name}`,
-              value: p.tag,
-              description: `${formatFame(p.fame)} pts · ${p.decksUsed} decks`,
-            })),
+            options: [
+              ...topScorers.map((p, idx) => ({
+                label: `${idx + 1}. ${p.name}`,
+                value: p.tag,
+                description: `${formatFame(p.fame)} pts · ${p.decksUsed} decks`,
+              })),
+              {
+                label: `6. Autre (pas dans la liste)`,
+                value: "__other__",
+                description: "Vote pour un joueur différent",
+              },
+            ],
           },
         ],
       };

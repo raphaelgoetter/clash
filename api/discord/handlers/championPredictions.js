@@ -110,7 +110,7 @@ export async function handleStart(webhookUrl, clanVal) {
       return;
     }
 
-    const embed = buildStartEmbed(clanName, prevWeekId, topScorers, endsAt);
+    const embed = buildStartEmbed(clanName, prevWeekId, targetWeekId, topScorers, endsAt);
     const selectMenu = buildChallengerSelect(clanTag, weekId, topScorers);
 
     await fetch(webhookUrl, {
@@ -245,14 +245,13 @@ export async function handleSelectInteraction(webhookUrl, body) {
       return;
     }
 
-    // Récupérer le nom du challenger pour l'afficher
-    const sessionData = await getSessionData(clanTag, weekId);
-    const challengerObj = sessionData?.challengers?.find((c) => c.tag === selectedTag);
-    const displayName = challengerObj?.name || selectedTag;
-
     await castVote(clanTag, weekId, discordId, discordName, selectedTag);
 
     // Message éphémère de confirmation
+    const sessionData2 = await getSessionData(clanTag, weekId);
+    const displayName = selectedTag === "__other__"
+      ? "Autre (pas dans la liste)"
+      : (sessionData2?.challengers?.find((c) => c.tag === selectedTag)?.name || selectedTag);
     const msg = `Votre vote pour **${displayName}** est enregistré ! ✓`;
 
     await fetch(webhookUrl, {
@@ -267,30 +266,29 @@ export async function handleSelectInteraction(webhookUrl, body) {
 
 // ── Constructeurs d'embed ─────────────────────────────────────
 
-function buildStartEmbed(clanName, weekId, topScorers, endsAt) {
-  const lines = topScorers.map((p, idx) => {
-    const winRate = p.decksUsed > 0
-      ? ` · ~${Math.round((p.fame / (p.decksUsed * 500)) * 100)}% win`
-      : "";
-    return `${ordinal(idx + 1)} **${p.name}** — ${formatFame(p.fame)} pts${winRate}`;
-  });
+function buildStartEmbed(clanName, prevWeekId, targetWeekId, topScorers, endsAt) {
+  const lines = topScorers.map((p, idx) =>
+    `${ordinal(idx + 1)} **${p.name}** — ${formatFame(p.fame)} pts`,
+  );
 
   const endParis = formatParisDate(endsAt);
+
+  const description =
+    `Devinez qui sera le **Champion** de la semaine **${targetWeekId}** qui arrive !\n`
+    + `*Le Champion est le joueur qui marquera le plus de points GDC.*\n\n`
+    + `**Challengers** (top 5 scoreurs semaine ${prevWeekId}) :\n`
+    + lines.join("\n")
+    + `\n\n`
+    + `📅 **Votez jusqu'au ${endParis}**\n`
+    + `Sélectionnez votre challenger dans le menu ci-dessous, ou utilisez \`/champion\`.\n`
+    + `📌 *Épinglez ce message pour que tout le monde puisse voter facilement.*`;
 
   return {
     title: `🔮 Pronostics GDC — ${clanName}`,
     color: CHAMPION_COLOR,
-    description:
-      `Devinez qui sera le **Champion** de la semaine **${weekId}** qui arrive !\n`
-      + `*Le Champion est le joueur qui marquera le plus de points GDC.*\n\n`
-      + `**Challengers** (top 5 scoreurs semaine ${weekId}) :\n`
-      + lines.join("\n")
-      + `\n\n`
-      + `📅 **Votez jusqu'au ${endParis}**\n`
-      + `Sélectionnez votre challenger dans le menu ci-dessous, ou utilisez \`/champion\`.\n`
-      + `📌 *Épinglez ce message pour que tout le monde puisse voter facilement.*`,
+    description,
     footer: {
-      text: `Clan : ${clanName} · Semaine ${weekId}`,
+      text: `Clan : ${clanName} · Devinez le prochain champion`,
     },
   };
 }
@@ -303,11 +301,18 @@ function buildChallengerSelect(clanTag, weekId, topScorers) {
         type: 3,
         custom_id: `champion_vote:${clanTag}:${weekId}`,
         placeholder: "Choisissez votre challenger...",
-        options: topScorers.map((p, idx) => ({
-          label: `${idx + 1}. ${p.name}`,
-          value: p.tag,
-          description: `${formatFame(p.fame)} pts · ${p.decksUsed} decks`,
-        })),
+        options: [
+          ...topScorers.map((p, idx) => ({
+            label: `${idx + 1}. ${p.name}`,
+            value: p.tag,
+            description: `${formatFame(p.fame)} pts · ${p.decksUsed} decks`,
+          })),
+          {
+            label: `6. Autre (pas dans la liste)`,
+            value: "__other__",
+            description: "Vote pour un joueur différent",
+          },
+        ],
       },
     ],
   };
@@ -325,6 +330,7 @@ function buildResultEmbed(
 ) {
   // Trouver le nom via les challengers
   const findName = (tag) => {
+    if (tag === "__other__") return "Autre";
     const c = challengers.find((ch) => ch.tag === tag);
     return c ? c.name : tag;
   };
