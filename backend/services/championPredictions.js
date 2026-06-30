@@ -49,9 +49,7 @@ async function ensureDir(filePath) {
   const dir = path.dirname(filePath);
   try {
     await fs.mkdir(dir, { recursive: true });
-  } catch {
-    // read-only filesystem (Vercel) — ignore
-  }
+  } catch {}
 }
 
 async function writeJsonSafe(filePath, data) {
@@ -59,55 +57,57 @@ async function writeJsonSafe(filePath, data) {
   await fs.writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
 }
 
-// ── Vercel Blob (persistance entre instances serverless) ─────
+// ── Blob helpers ───────────────────────────────────────────
 
 function useBlob() {
   return !!process.env.BLOB_READ_WRITE_TOKEN;
 }
 
-function blobStoreId() {
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!token) return null;
-  return token.split("_")[3] || null;
-}
-
-function blobUrlFor(path) {
-  const storeId = blobStoreId();
-  if (!storeId) return null;
-  return `https://${storeId}.private.blob.vercel-storage.com/${path}`;
-}
-
 async function readFromBlob(path) {
-  const url = blobUrlFor(path);
-  if (!url) return null;
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
-  // Cache-buster pour éviter le cache CDN (chaque appel = URL unique)
-  const fetchUrl = () => `${url}?_cb=${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-  for (const delay of [0, 300]) {
-    if (delay) await new Promise(r => setTimeout(r, delay));
-    try {
-      const res = await fetch(fetchUrl(), {
-        headers: { authorization: `Bearer ${token}` },
-      });
-      if (res.ok) return await res.json();
-    } catch {}
+  try {
+    const { list } = await import("@vercel/blob");
+    const prefix = path.replace(/\.json$/, "_");
+    for (const delay of [0, 300, 700]) {
+      if (delay) await new Promise(r => setTimeout(r, delay));
+      const result = await list({ prefix, limit: 10 });
+      const blobs = result.blobs;
+      if (blobs?.length) {
+        blobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+        return await fetchBlob(blobs[0].url);
+      }
+    }
+    return null;
+  } catch (err) {
+    console.warn(`[Blob] Lecture échouée ${path}:`, err.message);
+    return null;
   }
-  return null;
 }
+
+async function fetchBlob(url) {
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  const res = await fetch(url, {
+    headers: { authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return null;
+  return await res.json();
+}
+
+let writeVersion = 0;
 
 async function writeToBlob(path, data) {
   try {
     const { put } = await import("@vercel/blob");
+    writeVersion = Date.now();
+    data._wv = writeVersion;
     await put(path, JSON.stringify(data), {
       access: "private",
       contentType: "application/json",
       allowOverwrite: true,
-      addRandomSuffix: false,
+      addRandomSuffix: true,
       cacheControlMaxAge: 0,
     });
   } catch (err) {
     console.error(`[Blob] Écriture échouée ${path}:`, err.message);
-    // Fallback fichier local (dev uniquement)
     const filePath = path === PREDICTIONS_FILE
       ? predictionsFilePath()
       : championRegistryFilePath();
@@ -116,9 +116,18 @@ async function writeToBlob(path, data) {
       console.warn("[Blob] Données sauvegardées dans le fichier local en fallback");
     } catch (fileErr) {
       console.error("[Blob] Fallback fichier échoué aussi:", fileErr.message);
-      throw err; // Propager l'erreur Blob pour la rendre visible
+      throw err;
     }
   }
+}
+
+async function waitForConsistency(path) {
+  for (const delay of [500, 1000, 2000]) {
+    await new Promise(r => setTimeout(r, delay));
+    const data = await readFromBlob(path);
+    if (data && data._wv === writeVersion) return;
+  }
+  console.warn(`[Blob] Cohérence non vérifiée pour ${path}`);
 }
 
 // ── Prédictions ───────────────────────────────────────────────
@@ -140,8 +149,7 @@ async function readPredictions() {
 async function writePredictions(data) {
   if (useBlob()) {
     await writeToBlob(PREDICTIONS_FILE, data);
-    // Délai pour laisser le CDN propager avant la prochaine lecture
-    await new Promise(r => setTimeout(r, 1500));
+    await waitForConsistency(PREDICTIONS_FILE);
     invalidate("champion:predictions");
     return;
   }
@@ -168,7 +176,7 @@ async function readChampionRegistry() {
 async function writeChampionRegistry(data) {
   if (useBlob()) {
     await writeToBlob(CHAMPION_REGISTRY_FILE, data);
-    await new Promise(r => setTimeout(r, 1500));
+    await waitForConsistency(CHAMPION_REGISTRY_FILE);
     invalidate("champion:registry");
     return;
   }
@@ -183,105 +191,41 @@ export function formatParisDate(utcDate) {
     utcDate.toLocaleString("en-US", { timeZone: "Europe/Paris" }),
   );
   const jours = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
-  const mois = [
-    "janvier", "février", "mars", "avril", "mai", "juin",
-    "juillet", "août", "septembre", "octobre", "novembre", "décembre",
-  ];
-  const jour = jours[d.getDay()];
-  const date = d.getDate();
-  const moisNom = mois[d.getMonth()];
-  const heure = String(d.getHours()).padStart(2, "0");
-  const minute = String(d.getMinutes()).padStart(2, "0");
-  return `${jour} ${date} ${moisNom} à ${heure}h${minute}`;
+  return `${d.getDate()} ${jours[d.getDay()]} ${d.getHours()}h${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-export function formatParisTime(utcDate) {
-  const d = new Date(
-    utcDate.toLocaleString("en-US", { timeZone: "Europe/Paris" }),
-  );
-  const heure = String(d.getHours()).padStart(2, "0");
-  const minute = String(d.getMinutes()).padStart(2, "0");
-  return `${heure}h${minute}`;
+function ordinal(n) {
+  return `${n}${n === 1 ? "ʳᵉʳ" : "ᵉ"}`;
 }
 
-export async function getTopScorers(clanTag, limit = 9) {
-  const cleanTag = clanTag.replace(/^#/, "").toUpperCase();
-  const raceLog = await fetchRaceLog(cleanTag);
-  if (!Array.isArray(raceLog) || raceLog.length === 0) return [];
-
-  const lastRace = raceLog[0];
-  if (!Array.isArray(lastRace?.standings)) return [];
-
-  const standing = lastRace.standings.find(
-    (s) => s?.clan?.tag?.toUpperCase() === `#${cleanTag}`,
-  );
-  const participants = standing?.clan?.participants;
-  if (!Array.isArray(participants)) return [];
-
-  // Filtrer : ne garder que les joueurs actuellement dans le clan
-  const currentMembers = await fetchClanMembers(cleanTag).catch(() => []);
-  const currentTags = new Set(currentMembers.map((m) => m.tag?.toUpperCase()));
-  const activeParticipants = currentTags.size > 0
-    ? participants.filter((p) => currentTags.has(p.tag?.toUpperCase()))
-    : participants;
-
-  const sorted = [...activeParticipants]
-    .sort((a, b) => (b.fame || 0) - (a.fame || 0));
-
-  return sorted.slice(0, limit).map((p) => ({
-    tag: p.tag,
-    name: p.name || p.tag,
-    fame: p.fame || 0,
-    decksUsed: p.decksUsed || 0,
-  }));
+function formatFame(fame) {
+  if (fame >= 1000000) return `${(fame / 1000000).toFixed(1)}M`;
+  if (fame >= 1000) return `${(fame / 1000).toFixed(0)}k`;
+  return String(fame);
 }
 
-export async function getRealChampion(clanTag, weekId) {
-  const cleanTag = clanTag.replace(/^#/, "").toUpperCase();
-  const raceLog = await fetchRaceLog(cleanTag);
-  if (!Array.isArray(raceLog) || raceLog.length === 0) return null;
-
-  // Si weekId fourni, chercher l'entrée correspondante (semaine terminée)
-  if (weekId) {
-    const match = weekId.match(/^S(\d+)W(\d+)$/);
-    if (!match) return null;
-    const seasonId = Number(match[1]);
-    const weekNum = Number(match[2]);
-
-    const entry = raceLog.find(
-      (e) => e.seasonId === seasonId && e.sectionIndex + 1 === weekNum,
-    );
-    if (!entry || !Array.isArray(entry?.standings)) return null;
-
-    const standing = entry.standings.find(
-      (s) => s?.clan?.tag?.toUpperCase() === `#${cleanTag}`,
-    );
-    const participants = standing?.clan?.participants;
-    if (!Array.isArray(participants)) return null;
-
-    const sorted = [...participants].sort((a, b) => (b.fame || 0) - (a.fame || 0));
-    const top = sorted[0];
-    if (!top) return null;
-
-    return {
-      tag: top.tag,
-      name: top.name || top.tag,
-      fame: top.fame || 0,
-      decksUsed: top.decksUsed || 0,
-    };
-  }
-
-  // Fallback : pas de weekId → dernier race log
-  const top = await getTopScorers(clanTag, 1);
-  return top[0] || null;
-}
-
-export function sessionKey(clanTag, weekId) {
+function sessionKey(clanTag, weekId) {
   const clean = clanTag.replace(/^#/, "").toUpperCase();
   return `${clean}:${weekId}`;
 }
 
-// ── Sessions de vote ──────────────────────────────────────────
+export async function getTopScorers(clanTag, limit = 8) {
+  const members = await fetchClanMembers(clanTag);
+  if (!Array.isArray(members)) return [];
+
+  const scored = members
+    .filter((m) => m?.currentFame > 0)
+    .sort((a, b) => (b.currentFame || 0) - (a.currentFame || 0))
+    .slice(0, limit);
+
+  return scored.map((m) => ({
+    tag: m.tag,
+    name: m.name,
+    fame: m.currentFame || 0,
+  }));
+}
+
+// ── Gestion des sessions ─────────────────────────────────────
 
 export async function openSession(clanTag, weekId, seasonId, sectionIndex, challengers, endsAt) {
   const predictions = await readPredictions();
@@ -357,22 +301,44 @@ export async function getVoteCounts(clanTag, weekId) {
 
   if (!session) return null;
 
-  const counts = {};
+  const voteMap = {};
   for (const c of session.challengers) {
-    counts[c.tag] = { name: c.name, votes: 0 };
+    voteMap[c.tag] = 0;
   }
-  counts["__other__"] = { name: "Autre", votes: 0 };
+  voteMap["__other__"] = 0;
   for (const v of session.votes) {
-    if (counts[v.challengerTag]) {
-      counts[v.challengerTag].votes++;
+    if (voteMap[v.challengerTag] !== undefined) {
+      voteMap[v.challengerTag]++;
     }
   }
+  const totalVotes = session.votes.length;
 
   return {
+    counts: voteMap,
+    totalVotes,
     session,
-    counts,
-    totalVotes: session.votes.length,
   };
+}
+
+export async function getRealChampion(clanTag, weekId) {
+  const raceLog = await fetchRaceLog(clanTag);
+  if (!Array.isArray(raceLog)) return null;
+
+  for (const race of raceLog) {
+    if (!race.periodLogs) continue;
+    for (const period of race.periodLogs) {
+      if (!period.periodPoints) continue;
+      const periodWeekId = period.periodId || computePrevWeekId(raceLog);
+      if (periodWeekId !== weekId) continue;
+      const top = period.periodPoints
+        .filter((p) => p?.fame > 0)
+        .sort((a, b) => (b.fame || 0) - (a.fame || 0));
+      if (top.length > 0) {
+        return { tag: top[0].tag, name: top[0].name, fame: top[0].fame };
+      }
+    }
+  }
+  return null;
 }
 
 export async function closeSessionAndArchive(clanTag, weekId, realChampion) {
@@ -385,7 +351,6 @@ export async function closeSessionAndArchive(clanTag, weekId, realChampion) {
     throw new Error("Aucune session trouvée.");
   }
 
-  // Comput des votes
   const voteMap = {};
   for (const c of session.challengers) {
     voteMap[c.tag] = 0;
@@ -403,7 +368,6 @@ export async function closeSessionAndArchive(clanTag, weekId, realChampion) {
 
   const winnerTag = sorted.length > 0 ? sorted[0].challengerTag : null;
 
-  // Enregistrer le champion dans le registre
   if (realChampion) {
     const registry = await readChampionRegistry();
     registry.push({
@@ -416,7 +380,6 @@ export async function closeSessionAndArchive(clanTag, weekId, realChampion) {
     await writeChampionRegistry(registry);
   }
 
-  // Nettoyage de la session en cours
   delete predictions[key];
   await writePredictions(predictions);
 
@@ -428,12 +391,6 @@ export async function closeSessionAndArchive(clanTag, weekId, realChampion) {
   };
 }
 
-export async function getSessionData(clanTag, weekId) {
-  const predictions = await readPredictions();
-  const key = sessionKey(clanTag, weekId);
-  return predictions[key] || null;
-}
-
 export async function getActiveSessionByClan(clanTag) {
   const predictions = await readPredictions();
   const clean = clanTag.replace(/^#/, "").toUpperCase();
@@ -443,7 +400,6 @@ export async function getActiveSessionByClan(clanTag) {
       return { session, key, weekId: session.weekId };
     }
   }
-  // Fallback : retourne la session la plus récente même si expirée
   let latest = null;
   for (const [key, session] of Object.entries(predictions)) {
     if (session.clanTag === clean) {
@@ -459,22 +415,9 @@ export async function getHistory(clanTag, limit = 10) {
   const registry = await readChampionRegistry();
   const clean = clanTag.replace(/^#/, "").toUpperCase();
   return registry
-    .filter((h) => h.clanTag === clean)
-    .sort((a, b) => {
-      const sa = a.seasonId || 0;
-      const sb = b.seasonId || 0;
-      if (sa !== sb) return sb - sa;
-      return (b.sectionIndex || 0) - (a.sectionIndex || 0);
-    })
+    .filter((e) => e.clanTag === clean)
+    .sort((a, b) => b.weekId - a.weekId)
     .slice(0, limit);
-}
-
-// ── Initialisation des fichiers ───────────────────────────────
-
-export async function ensureDataFiles() {
-  // Uniquement utile en dev local — sur Vercel, Blob ou la lecture seule du bundle suffisent
-  await writeJsonSafe(predictionsFilePath(), {}).catch(() => {});
-  await writeJsonSafe(championRegistryFilePath(), []).catch(() => {});
 }
 
 export { resolveClan };
