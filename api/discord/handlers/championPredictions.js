@@ -280,9 +280,6 @@ function buildStartEmbed(clanName, prevWeekId, targetWeekId, topScorers, endsAt)
     title: `🔮 Pronostics GDC — ${clanName}`,
     color: CHAMPION_COLOR,
     description,
-    footer: {
-      text: `Clan : ${clanName} · Devinez le prochain champion`,
-    },
   };
 }
 
@@ -376,9 +373,6 @@ function buildResultEmbed(
     url: realChampion ? undefined : undefined,
     color: CHAMPION_GOLD,
     description,
-    footer: {
-      text: `Semaine ${weekId}`,
-    },
   };
 }
 
@@ -402,9 +396,6 @@ function buildCountEmbed(clanName, weekId, counts, totalVotes, endsAt) {
       + lines.join("\n")
       + `\n\n📊 **${totalVotes}** vote${totalVotes > 1 ? "s" : ""} au total`
       + `\n📅 Vote ouvert jusqu'au ${endParis}`,
-    footer: {
-      text: `Utilisez le menu déroulant ou /champion pour voter`,
-    },
   };
 }
 

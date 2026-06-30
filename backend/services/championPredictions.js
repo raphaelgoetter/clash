@@ -181,7 +181,8 @@ export function formatParisDate(utcDate) {
     utcDate.toLocaleString("en-US", { timeZone: "Europe/Paris" }),
   );
   const jours = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
-  return `${d.getDate()} ${jours[d.getDay()]} ${d.getHours()}h${String(d.getMinutes()).padStart(2, "0")}`;
+  const mois = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+  return `${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]} ${d.getHours()}h${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
 function ordinal(n) {
