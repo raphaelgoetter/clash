@@ -209,19 +209,34 @@ function sessionKey(clanTag, weekId) {
   return `${clean}:${weekId}`;
 }
 
-export async function getTopScorers(clanTag, limit = 8) {
-  const members = await fetchClanMembers(clanTag);
-  if (!Array.isArray(members)) return [];
+export async function getTopScorers(clanTag, limit = 9) {
+  const cleanTag = clanTag.replace(/^#/, "").toUpperCase();
+  const raceLog = await fetchRaceLog(cleanTag);
+  if (!Array.isArray(raceLog) || raceLog.length === 0) return [];
 
-  const scored = members
-    .filter((m) => m?.currentFame > 0)
-    .sort((a, b) => (b.currentFame || 0) - (a.currentFame || 0))
-    .slice(0, limit);
+  const lastRace = raceLog[0];
+  if (!Array.isArray(lastRace?.standings)) return [];
 
-  return scored.map((m) => ({
-    tag: m.tag,
-    name: m.name,
-    fame: m.currentFame || 0,
+  const standing = lastRace.standings.find(
+    (s) => s?.clan?.tag?.toUpperCase() === `#${cleanTag}`,
+  );
+  const participants = standing?.clan?.participants;
+  if (!Array.isArray(participants)) return [];
+
+  const currentMembers = await fetchClanMembers(cleanTag).catch(() => []);
+  const currentTags = new Set(currentMembers.map((m) => m.tag?.toUpperCase()));
+  const activeParticipants = currentTags.size > 0
+    ? participants.filter((p) => currentTags.has(p.tag?.toUpperCase()))
+    : participants;
+
+  const sorted = [...activeParticipants]
+    .sort((a, b) => (b.fame || 0) - (a.fame || 0));
+
+  return sorted.slice(0, limit).map((p) => ({
+    tag: p.tag,
+    name: p.name || p.tag,
+    fame: p.fame || 0,
+    decksUsed: p.decksUsed || 0,
   }));
 }
 
