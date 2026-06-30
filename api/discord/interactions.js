@@ -6134,7 +6134,7 @@ export default async function handler(req, res) {
       const clanOpt = body.data.options?.find((o) => o.name === "clan");
       const clanVal = clanOpt?.value || "1";
       let rawTag = selectOpt?.value?.trim();
-      res.status(200).json({ type: 5 });
+      res.status(200).json({ type: 5, data: { flags: 64 } });
       const webhookUrl = buildDiscordWebhookUrl(body);
       runBackground(async () => {
         try {
@@ -6188,7 +6188,7 @@ export default async function handler(req, res) {
     typeof body.data?.custom_id === "string" &&
     body.data.custom_id.startsWith("champion_vote:")
   ) {
-    res.status(200).json({ type: 5 });
+    res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleChampionSelect(webhookUrl, body));
     return;
