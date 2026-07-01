@@ -51,6 +51,11 @@ function ordinal(n) {
   return n + "\u20E3";
 }
 
+function voteBar(votes, maxVotes, width = 12) {
+  const filled = maxVotes > 0 ? Math.round((votes / maxVotes) * width) : 0;
+  return "█".repeat(filled) + "░".repeat(width - filled);
+}
+
 function topScorerLine(p, idx) {
   return `${ordinal(idx + 1)} **${p.name}** — ${formatFame(p.fame)} pts · ${p.decksUsed} decks`;
 }
@@ -333,11 +338,13 @@ function buildResultEmbed(
     return c ? c.name : tag;
   };
 
+  const maxVotes = voteResult.length > 0 ? voteResult[0].votes : 0;
   const lines = voteResult.map((entry, idx) => {
     const name = findName(entry.challengerTag);
     const icon = entry.challengerTag === winnerTag ? " 🏆" : "";
     const votesStr = entry.votes === 1 ? "1 vote" : `${entry.votes} votes`;
-    return `${ordinal(idx + 1)} ${name} ${icon} (${votesStr})`;
+    const bar = voteBar(entry.votes, maxVotes);
+    return `${ordinal(idx + 1)} ${name} ${icon}\n   ${bar} ${votesStr}`;
   });
 
   const winnerName = winnerTag ? findName(winnerTag) : "Personne";
@@ -392,9 +399,11 @@ function buildCountEmbed(clanName, weekId, counts, totalVotes, endsAt) {
     .map(([tag, c]) => ({ tag, name: c.name, votes: c.votes }))
     .sort((a, b) => b.votes - a.votes);
 
+  const maxVotes = sorted.length > 0 ? sorted[0].votes : 0;
   const lines = sorted.map((entry, idx) => {
     const votesStr = entry.votes === 1 ? "1 vote" : `${entry.votes} votes`;
-    return `${ordinal(idx + 1)} **${entry.name}** — ${votesStr}`;
+    const bar = voteBar(entry.votes, maxVotes);
+    return `${ordinal(idx + 1)} **${entry.name}** — ${bar} ${votesStr}`;
   });
 
   const endParis = formatParisDate(new Date(endsAt));
