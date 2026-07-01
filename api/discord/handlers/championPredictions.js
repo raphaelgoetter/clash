@@ -403,7 +403,7 @@ function buildCountEmbed(clanName, weekId, counts, totalVotes, endsAt) {
   const lines = sorted.map((entry, idx) => {
     const votesStr = entry.votes === 1 ? "1 vote" : `${entry.votes} votes`;
     const bar = voteBar(entry.votes, maxVotes);
-    return `${ordinal(idx + 1)} **${entry.name}** — ${bar} ${votesStr}`;
+    return `${ordinal(idx + 1)} **${entry.name}**\n   ${bar} ${votesStr}`;
   });
 
   const endParis = formatParisDate(new Date(endsAt));
