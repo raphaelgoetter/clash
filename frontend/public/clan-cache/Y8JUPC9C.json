@@ -3,9 +3,9 @@
     "name": "La Resistance",
     "tag": "#Y8JUPC9C",
     "description": "☆. #1 Resistance - GDC obligatoire ⚔️ objectif top 🌍 tournoi hebdomadaire 🗡️ Discord exigé: kPdQN8zfjM▪️code: RoyaleAPI",
-    "clanScore": 135276,
+    "clanScore": 135698,
     "clanWarTrophies": 4107,
-    "members": 49,
+    "members": 50,
     "type": "open",
     "requiredTrophies": 10000,
     "badge": 16000036,
@@ -44,7 +44,7 @@
         "totalBattles": 40,
         "warBattles": 16
       },
-      "fetchedAt": "2026-07-01T11:05:13.037Z"
+      "fetchedAt": "2026-07-01T12:56:45.629Z"
     },
     "#82URJC8CR": {
       "profile": {
@@ -72,7 +72,7 @@
         "totalBattles": 30,
         "warBattles": 0
       },
-      "fetchedAt": "2026-07-01T11:05:13.038Z"
+      "fetchedAt": "2026-07-01T12:56:45.630Z"
     },
     "#C2RL8UVYV": {
       "profile": {
@@ -82,8 +82,8 @@
         "trophies": 14000,
         "bestTrophies": 14000,
         "expLevel": 85,
-        "totalDonations": 43868,
-        "donations": 232,
+        "totalDonations": 43884,
+        "donations": 248,
         "warDayWins": 0,
         "cw2Progress": 1868,
         "clan": {
@@ -92,7 +92,7 @@
         },
         "arena": "Spirit Square",
         "stats": {
-          "battleCount": 25138,
+          "battleCount": 25148,
           "threeCrownWins": 4941
         }
       },
@@ -100,7 +100,91 @@
         "totalBattles": 30,
         "warBattles": 0
       },
-      "fetchedAt": "2026-07-01T11:05:13.038Z"
+      "fetchedAt": "2026-07-01T12:56:45.630Z"
+    },
+    "#GJ8RV8802": {
+      "profile": {
+        "tag": "#GJ8RV8802",
+        "name": "Lepamowi",
+        "role": "coLeader",
+        "trophies": 14000,
+        "bestTrophies": 14000,
+        "expLevel": 77,
+        "totalDonations": 26538,
+        "donations": 469,
+        "warDayWins": 0,
+        "cw2Progress": 256,
+        "clan": {
+          "tag": "#Y8JUPC9C",
+          "name": "La Resistance"
+        },
+        "arena": "Spirit Square",
+        "stats": {
+          "battleCount": 4819,
+          "threeCrownWins": 534
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 36,
+        "warBattles": 4
+      },
+      "fetchedAt": "2026-07-01T12:56:45.631Z"
+    },
+    "#809G8YC8": {
+      "profile": {
+        "tag": "#809G8YC8",
+        "name": "Ghost",
+        "role": "elder",
+        "trophies": 14000,
+        "bestTrophies": 14000,
+        "expLevel": 74,
+        "totalDonations": 95755,
+        "donations": 98,
+        "warDayWins": 191,
+        "cw2Progress": 215,
+        "clan": {
+          "tag": "#Y8JUPC9C",
+          "name": "La Resistance"
+        },
+        "arena": "Spirit Square",
+        "stats": {
+          "battleCount": 18416,
+          "threeCrownWins": 2884
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 30,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-07-01T12:56:45.631Z"
+    },
+    "#9VQ0J29Y": {
+      "profile": {
+        "tag": "#9VQ0J29Y",
+        "name": "steeeph",
+        "role": "member",
+        "trophies": 14000,
+        "bestTrophies": 14000,
+        "expLevel": 73,
+        "totalDonations": 100872,
+        "donations": 349,
+        "warDayWins": 30,
+        "cw2Progress": 532,
+        "clan": {
+          "tag": "#Y8JUPC9C",
+          "name": "La Resistance"
+        },
+        "arena": "Spirit Square",
+        "stats": {
+          "battleCount": 15784,
+          "threeCrownWins": 3552
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 30,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-07-01T12:56:45.632Z"
     },
     "#99VY0090": {
       "profile": {
@@ -128,63 +212,7 @@
         "totalBattles": 30,
         "warBattles": 4
       },
-      "fetchedAt": "2026-07-01T11:05:13.039Z"
-    },
-    "#9VQ0J29Y": {
-      "profile": {
-        "tag": "#9VQ0J29Y",
-        "name": "steeeph",
-        "role": "member",
-        "trophies": 14000,
-        "bestTrophies": 14000,
-        "expLevel": 73,
-        "totalDonations": 100838,
-        "donations": 315,
-        "warDayWins": 30,
-        "cw2Progress": 532,
-        "clan": {
-          "tag": "#Y8JUPC9C",
-          "name": "La Resistance"
-        },
-        "arena": "Spirit Square",
-        "stats": {
-          "battleCount": 15782,
-          "threeCrownWins": 3550
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-07-01T11:05:13.039Z"
-    },
-    "#GJ8RV8802": {
-      "profile": {
-        "tag": "#GJ8RV8802",
-        "name": "Lepamowi",
-        "role": "coLeader",
-        "trophies": 14000,
-        "bestTrophies": 14000,
-        "expLevel": 77,
-        "totalDonations": 26512,
-        "donations": 443,
-        "warDayWins": 0,
-        "cw2Progress": 256,
-        "clan": {
-          "tag": "#Y8JUPC9C",
-          "name": "La Resistance"
-        },
-        "arena": "Spirit Square",
-        "stats": {
-          "battleCount": 4819,
-          "threeCrownWins": 534
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 36,
-        "warBattles": 4
-      },
-      "fetchedAt": "2026-07-01T11:05:13.040Z"
+      "fetchedAt": "2026-07-01T12:56:45.632Z"
     },
     "#G9LPGQUG": {
       "profile": {
@@ -212,7 +240,7 @@
         "totalBattles": 30,
         "warBattles": 5
       },
-      "fetchedAt": "2026-07-01T11:05:13.040Z"
+      "fetchedAt": "2026-07-01T12:56:45.634Z"
     },
     "#J8RU2RJ8C": {
       "profile": {
@@ -240,7 +268,7 @@
         "totalBattles": 30,
         "warBattles": 7
       },
-      "fetchedAt": "2026-07-01T11:05:13.042Z"
+      "fetchedAt": "2026-07-01T12:56:45.638Z"
     },
     "#8RYQ8Y0GY": {
       "profile": {
@@ -268,7 +296,7 @@
         "totalBattles": 40,
         "warBattles": 32
       },
-      "fetchedAt": "2026-07-01T11:05:13.045Z"
+      "fetchedAt": "2026-07-01T12:56:45.641Z"
     },
     "#2PG80VRY": {
       "profile": {
@@ -296,35 +324,7 @@
         "totalBattles": 30,
         "warBattles": 0
       },
-      "fetchedAt": "2026-07-01T11:05:13.049Z"
-    },
-    "#809G8YC8": {
-      "profile": {
-        "tag": "#809G8YC8",
-        "name": "Ghost",
-        "role": "elder",
-        "trophies": 14000,
-        "bestTrophies": 14000,
-        "expLevel": 74,
-        "totalDonations": 95755,
-        "donations": 98,
-        "warDayWins": 191,
-        "cw2Progress": 215,
-        "clan": {
-          "tag": "#Y8JUPC9C",
-          "name": "La Resistance"
-        },
-        "arena": "Spirit Square",
-        "stats": {
-          "battleCount": 18414,
-          "threeCrownWins": 2884
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-07-01T11:05:13.052Z"
+      "fetchedAt": "2026-07-01T12:56:45.644Z"
     },
     "#UY00GJG2": {
       "profile": {
@@ -352,7 +352,7 @@
         "totalBattles": 30,
         "warBattles": 17
       },
-      "fetchedAt": "2026-07-01T11:05:13.055Z"
+      "fetchedAt": "2026-07-01T12:56:45.648Z"
     },
     "#8V98QYY8V": {
       "profile": {
@@ -380,7 +380,7 @@
         "totalBattles": 30,
         "warBattles": 16
       },
-      "fetchedAt": "2026-07-01T11:05:13.058Z"
+      "fetchedAt": "2026-07-01T12:56:45.651Z"
     },
     "#2902YQRQL": {
       "profile": {
@@ -408,7 +408,7 @@
         "totalBattles": 30,
         "warBattles": 12
       },
-      "fetchedAt": "2026-07-01T11:05:13.062Z"
+      "fetchedAt": "2026-07-01T12:56:45.655Z"
     },
     "#8VQLJLR0": {
       "profile": {
@@ -418,8 +418,8 @@
         "trophies": 13866,
         "bestTrophies": 13896,
         "expLevel": 66,
-        "totalDonations": 54149,
-        "donations": 488,
+        "totalDonations": 54183,
+        "donations": 522,
         "warDayWins": 0,
         "cw2Progress": 223,
         "clan": {
@@ -428,15 +428,15 @@
         },
         "arena": "Spirit Square",
         "stats": {
-          "battleCount": 12604,
-          "threeCrownWins": 2162
+          "battleCount": 12607,
+          "threeCrownWins": 2163
         }
       },
       "battleLogSummary": {
         "totalBattles": 34,
         "warBattles": 8
       },
-      "fetchedAt": "2026-07-01T11:05:13.065Z"
+      "fetchedAt": "2026-07-01T12:56:45.658Z"
     },
     "#8P29RRU2": {
       "profile": {
@@ -464,7 +464,7 @@
         "totalBattles": 32,
         "warBattles": 8
       },
-      "fetchedAt": "2026-07-01T11:05:13.585Z"
+      "fetchedAt": "2026-07-01T12:56:46.295Z"
     },
     "#P9R8Y90P8": {
       "profile": {
@@ -474,8 +474,8 @@
         "trophies": 13650,
         "bestTrophies": 13650,
         "expLevel": 67,
-        "totalDonations": 37696,
-        "donations": 156,
+        "totalDonations": 37714,
+        "donations": 174,
         "warDayWins": 1,
         "cw2Progress": 446,
         "clan": {
@@ -484,15 +484,15 @@
         },
         "arena": "Spirit Square",
         "stats": {
-          "battleCount": 5753,
-          "threeCrownWins": 1482
+          "battleCount": 5756,
+          "threeCrownWins": 1483
         }
       },
       "battleLogSummary": {
         "totalBattles": 30,
         "warBattles": 16
       },
-      "fetchedAt": "2026-07-01T11:05:13.586Z"
+      "fetchedAt": "2026-07-01T12:56:46.295Z"
     },
     "#2UQQJJ98Y": {
       "profile": {
@@ -502,8 +502,8 @@
         "trophies": 13525,
         "bestTrophies": 13525,
         "expLevel": 84,
-        "totalDonations": 270363,
-        "donations": 154,
+        "totalDonations": 270373,
+        "donations": 164,
         "warDayWins": 161,
         "cw2Progress": 1579,
         "clan": {
@@ -512,15 +512,15 @@
         },
         "arena": "Spirit Square",
         "stats": {
-          "battleCount": 35419,
+          "battleCount": 35422,
           "threeCrownWins": 6239
         }
       },
       "battleLogSummary": {
         "totalBattles": 30,
-        "warBattles": 13
+        "warBattles": 12
       },
-      "fetchedAt": "2026-07-01T11:05:13.586Z"
+      "fetchedAt": "2026-07-01T12:56:46.296Z"
     },
     "#QQLYUL0R": {
       "profile": {
@@ -548,7 +548,7 @@
         "totalBattles": 30,
         "warBattles": 32
       },
-      "fetchedAt": "2026-07-01T11:05:13.587Z"
+      "fetchedAt": "2026-07-01T12:56:46.297Z"
     },
     "#9CQC0YUR8": {
       "profile": {
@@ -576,18 +576,18 @@
         "totalBattles": 32,
         "warBattles": 17
       },
-      "fetchedAt": "2026-07-01T11:05:13.587Z"
+      "fetchedAt": "2026-07-01T12:56:46.297Z"
     },
     "#8QL2J8PQ": {
       "profile": {
         "tag": "#8QL2J8PQ",
         "name": "☆. Aurel",
         "role": "coLeader",
-        "trophies": 13381,
-        "bestTrophies": 13381,
+        "trophies": 13410,
+        "bestTrophies": 13410,
         "expLevel": 78,
-        "totalDonations": 187645,
-        "donations": 174,
+        "totalDonations": 187655,
+        "donations": 184,
         "warDayWins": 4,
         "cw2Progress": 1648,
         "clan": {
@@ -596,7 +596,7 @@
         },
         "arena": "Little Prince's Tavern",
         "stats": {
-          "battleCount": 12875,
+          "battleCount": 12876,
           "threeCrownWins": 3100
         }
       },
@@ -604,7 +604,7 @@
         "totalBattles": 30,
         "warBattles": 16
       },
-      "fetchedAt": "2026-07-01T11:05:13.588Z"
+      "fetchedAt": "2026-07-01T12:56:46.297Z"
     },
     "#VVJ8RURL9": {
       "profile": {
@@ -632,7 +632,7 @@
         "totalBattles": 30,
         "warBattles": 12
       },
-      "fetchedAt": "2026-07-01T11:05:13.589Z"
+      "fetchedAt": "2026-07-01T12:56:46.298Z"
     },
     "#9Q920V9U": {
       "profile": {
@@ -660,18 +660,18 @@
         "totalBattles": 30,
         "warBattles": 22
       },
-      "fetchedAt": "2026-07-01T11:05:13.589Z"
+      "fetchedAt": "2026-07-01T12:56:46.299Z"
     },
     "#2CL028C80": {
       "profile": {
         "tag": "#2CL028C80",
         "name": "19Benji",
         "role": "elder",
-        "trophies": 13264,
-        "bestTrophies": 13264,
+        "trophies": 13293,
+        "bestTrophies": 13293,
         "expLevel": 73,
-        "totalDonations": 221037,
-        "donations": 208,
+        "totalDonations": 221055,
+        "donations": 226,
         "warDayWins": 166,
         "cw2Progress": 1614,
         "clan": {
@@ -680,15 +680,15 @@
         },
         "arena": "Little Prince's Tavern",
         "stats": {
-          "battleCount": 6765,
+          "battleCount": 6766,
           "threeCrownWins": 2785
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
+        "totalBattles": 31,
         "warBattles": 16
       },
-      "fetchedAt": "2026-07-01T11:05:13.590Z"
+      "fetchedAt": "2026-07-01T12:56:46.300Z"
     },
     "#VQP8PU2V": {
       "profile": {
@@ -698,8 +698,8 @@
         "trophies": 13185,
         "bestTrophies": 13211,
         "expLevel": 86,
-        "totalDonations": 577591,
-        "donations": 442,
+        "totalDonations": 577599,
+        "donations": 450,
         "warDayWins": 88,
         "cw2Progress": 1595,
         "clan": {
@@ -708,7 +708,7 @@
         },
         "arena": "Little Prince's Tavern",
         "stats": {
-          "battleCount": 21711,
+          "battleCount": 21712,
           "threeCrownWins": 10803
         }
       },
@@ -716,7 +716,7 @@
         "totalBattles": 40,
         "warBattles": 14
       },
-      "fetchedAt": "2026-07-01T11:05:13.590Z"
+      "fetchedAt": "2026-07-01T12:56:46.300Z"
     },
     "#88QP9CJU": {
       "profile": {
@@ -744,7 +744,7 @@
         "totalBattles": 31,
         "warBattles": 28
       },
-      "fetchedAt": "2026-07-01T11:05:13.659Z"
+      "fetchedAt": "2026-07-01T12:56:46.311Z"
     },
     "#LQLY92CR0": {
       "profile": {
@@ -772,7 +772,7 @@
         "totalBattles": 30,
         "warBattles": 16
       },
-      "fetchedAt": "2026-07-01T11:05:13.660Z"
+      "fetchedAt": "2026-07-01T12:56:46.311Z"
     },
     "#U008V0PQ8": {
       "profile": {
@@ -800,7 +800,7 @@
         "totalBattles": 30,
         "warBattles": 24
       },
-      "fetchedAt": "2026-07-01T11:05:13.661Z"
+      "fetchedAt": "2026-07-01T12:56:46.312Z"
     },
     "#9GG9GRC0G": {
       "profile": {
@@ -828,7 +828,7 @@
         "totalBattles": 30,
         "warBattles": 12
       },
-      "fetchedAt": "2026-07-01T11:05:13.662Z"
+      "fetchedAt": "2026-07-01T12:56:46.312Z"
     },
     "#PG0Q0YYGY": {
       "profile": {
@@ -856,7 +856,7 @@
         "totalBattles": 30,
         "warBattles": 17
       },
-      "fetchedAt": "2026-07-01T11:05:13.663Z"
+      "fetchedAt": "2026-07-01T12:56:46.313Z"
     },
     "#UJ89GUUUY": {
       "profile": {
@@ -884,7 +884,7 @@
         "totalBattles": 30,
         "warBattles": 20
       },
-      "fetchedAt": "2026-07-01T11:05:13.664Z"
+      "fetchedAt": "2026-07-01T12:56:46.313Z"
     },
     "#PGJPJG9QQ": {
       "profile": {
@@ -912,7 +912,35 @@
         "totalBattles": 30,
         "warBattles": 34
       },
-      "fetchedAt": "2026-07-01T11:05:13.665Z"
+      "fetchedAt": "2026-07-01T12:56:46.314Z"
+    },
+    "#82QVGU8VC": {
+      "profile": {
+        "tag": "#82QVGU8VC",
+        "name": "Farfox",
+        "role": "member",
+        "trophies": 12622,
+        "bestTrophies": 12622,
+        "expLevel": 70,
+        "totalDonations": 20899,
+        "donations": 0,
+        "warDayWins": 0,
+        "cw2Progress": 601,
+        "clan": {
+          "tag": "#Y8JUPC9C",
+          "name": "La Resistance"
+        },
+        "arena": "Ultimate Clash Pit",
+        "stats": {
+          "battleCount": 4859,
+          "threeCrownWins": 1911
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 30,
+        "warBattles": 16
+      },
+      "fetchedAt": "2026-07-01T12:56:46.314Z"
     },
     "#LCQ2J0VGC": {
       "profile": {
@@ -940,7 +968,7 @@
         "totalBattles": 30,
         "warBattles": 12
       },
-      "fetchedAt": "2026-07-01T11:05:13.666Z"
+      "fetchedAt": "2026-07-01T12:56:46.319Z"
     },
     "#GLR2YLQ2U": {
       "profile": {
@@ -968,18 +996,18 @@
         "totalBattles": 36,
         "warBattles": 21
       },
-      "fetchedAt": "2026-07-01T11:05:13.667Z"
+      "fetchedAt": "2026-07-01T12:56:46.319Z"
     },
     "#80CCLY20L": {
       "profile": {
         "tag": "#80CCLY20L",
         "name": "K-ribou",
         "role": "elder",
-        "trophies": 12435,
-        "bestTrophies": 12467,
+        "trophies": 12431,
+        "bestTrophies": 12493,
         "expLevel": 78,
-        "totalDonations": 155859,
-        "donations": 210,
+        "totalDonations": 155875,
+        "donations": 226,
         "warDayWins": 32,
         "cw2Progress": 1608,
         "clan": {
@@ -988,15 +1016,15 @@
         },
         "arena": "Magic Academy",
         "stats": {
-          "battleCount": 10569,
+          "battleCount": 10573,
           "threeCrownWins": 3819
         }
       },
       "battleLogSummary": {
         "totalBattles": 31,
-        "warBattles": 24
+        "warBattles": 20
       },
-      "fetchedAt": "2026-07-01T11:05:13.684Z"
+      "fetchedAt": "2026-07-01T12:56:46.329Z"
     },
     "#JLU88JR28": {
       "profile": {
@@ -1024,7 +1052,7 @@
         "totalBattles": 30,
         "warBattles": 16
       },
-      "fetchedAt": "2026-07-01T11:05:13.685Z"
+      "fetchedAt": "2026-07-01T12:56:46.330Z"
     },
     "#888Y29GY": {
       "profile": {
@@ -1052,18 +1080,18 @@
         "totalBattles": 30,
         "warBattles": 16
       },
-      "fetchedAt": "2026-07-01T11:05:13.685Z"
+      "fetchedAt": "2026-07-01T12:56:46.330Z"
     },
     "#CYRGPVGVG": {
       "profile": {
         "tag": "#CYRGPVGVG",
         "name": "stecurioso",
         "role": "elder",
-        "trophies": 12211,
+        "trophies": 12183,
         "bestTrophies": 12305,
         "expLevel": 79,
-        "totalDonations": 55108,
-        "donations": 0,
+        "totalDonations": 55126,
+        "donations": 18,
         "warDayWins": 0,
         "cw2Progress": 1558,
         "clan": {
@@ -1072,7 +1100,7 @@
         },
         "arena": "Magic Academy",
         "stats": {
-          "battleCount": 12531,
+          "battleCount": 12534,
           "threeCrownWins": 3435
         }
       },
@@ -1080,7 +1108,7 @@
         "totalBattles": 30,
         "warBattles": 8
       },
-      "fetchedAt": "2026-07-01T11:05:13.686Z"
+      "fetchedAt": "2026-07-01T12:56:46.330Z"
     },
     "#2GUPJ99G2": {
       "profile": {
@@ -1108,7 +1136,7 @@
         "totalBattles": 30,
         "warBattles": 20
       },
-      "fetchedAt": "2026-07-01T11:05:13.686Z"
+      "fetchedAt": "2026-07-01T12:56:46.331Z"
     },
     "#9YQ8RVU2P": {
       "profile": {
@@ -1136,7 +1164,7 @@
         "totalBattles": 30,
         "warBattles": 12
       },
-      "fetchedAt": "2026-07-01T11:05:13.686Z"
+      "fetchedAt": "2026-07-01T12:56:46.331Z"
     },
     "#8PP9JQCLY": {
       "profile": {
@@ -1164,7 +1192,7 @@
         "totalBattles": 30,
         "warBattles": 0
       },
-      "fetchedAt": "2026-07-01T11:05:13.691Z"
+      "fetchedAt": "2026-07-01T12:56:46.346Z"
     },
     "#YRYPUR822": {
       "profile": {
@@ -1192,15 +1220,15 @@
         "totalBattles": 30,
         "warBattles": 28
       },
-      "fetchedAt": "2026-07-01T11:05:13.691Z"
+      "fetchedAt": "2026-07-01T12:56:46.346Z"
     },
     "#YP8LLUVR2": {
       "profile": {
         "tag": "#YP8LLUVR2",
         "name": "gabriel",
         "role": "member",
-        "trophies": 10858,
-        "bestTrophies": 10858,
+        "trophies": 10884,
+        "bestTrophies": 10884,
         "expLevel": 54,
         "totalDonations": 37844,
         "donations": 0,
@@ -1212,15 +1240,15 @@
         },
         "arena": "Royal Road",
         "stats": {
-          "battleCount": 4532,
-          "threeCrownWins": 2118
+          "battleCount": 4533,
+          "threeCrownWins": 2119
         }
       },
       "battleLogSummary": {
         "totalBattles": 30,
         "warBattles": 0
       },
-      "fetchedAt": "2026-07-01T11:05:13.691Z"
+      "fetchedAt": "2026-07-01T12:56:46.347Z"
     },
     "#2GPUQY9P9": {
       "profile": {
@@ -1248,7 +1276,7 @@
         "totalBattles": 30,
         "warBattles": 36
       },
-      "fetchedAt": "2026-07-01T11:05:13.697Z"
+      "fetchedAt": "2026-07-01T12:56:46.373Z"
     },
     "#QY0LG0R0P": {
       "profile": {
@@ -1276,7 +1304,7 @@
         "totalBattles": 30,
         "warBattles": 41
       },
-      "fetchedAt": "2026-07-01T11:05:13.697Z"
+      "fetchedAt": "2026-07-01T12:56:46.374Z"
     },
     "#C0VQRUP2": {
       "profile": {
@@ -1304,7 +1332,7 @@
         "totalBattles": 30,
         "warBattles": 4
       },
-      "fetchedAt": "2026-07-01T11:05:13.698Z"
+      "fetchedAt": "2026-07-01T12:56:46.374Z"
     },
     "#UYP0YCQ9": {
       "profile": {
@@ -1332,7 +1360,7 @@
         "totalBattles": 30,
         "warBattles": 42
       },
-      "fetchedAt": "2026-07-01T11:05:13.703Z"
+      "fetchedAt": "2026-07-01T12:56:46.383Z"
     },
     "#GVGVR0J2U": {
       "profile": {
@@ -1360,7 +1388,7 @@
         "totalBattles": 30,
         "warBattles": 48
       },
-      "fetchedAt": "2026-07-01T11:05:13.703Z"
+      "fetchedAt": "2026-07-01T12:56:46.384Z"
     },
     "#9Y28LR22": {
       "profile": {
@@ -1388,7 +1416,7 @@
         "totalBattles": 30,
         "warBattles": 26
       },
-      "fetchedAt": "2026-07-01T11:05:13.704Z"
+      "fetchedAt": "2026-07-01T12:56:46.385Z"
     }
   },
   "members": [
@@ -1399,7 +1427,7 @@
       "trophies": 10884,
       "donations": 0,
       "totalDonations": 37844,
-      "donationsReceived": 32,
+      "donationsReceived": 40,
       "expLevel": 0,
       "reliability": 37,
       "reliabilitySource": "fallback",
@@ -1515,7 +1543,7 @@
       "pointsPerDeck": null,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260701T104902.000Z",
+      "lastSeen": "20260701T110849.000Z",
       "lastWarDecks": 0,
       "scoreVersion": "2026-04-07-v2"
     },
@@ -1526,7 +1554,7 @@
       "trophies": 12530,
       "donations": 69,
       "totalDonations": 19516,
-      "donationsReceived": 176,
+      "donationsReceived": 200,
       "expLevel": 0,
       "reliability": 69,
       "reliabilitySource": "history",
@@ -1837,6 +1865,170 @@
       "joinDate": null,
       "lastSeen": "20260701T084109.000Z",
       "lastWarDecks": 16,
+      "scoreVersion": "2026-04-07-v2"
+    },
+    {
+      "name": "Farfox",
+      "tag": "#82QVGU8VC",
+      "role": "member",
+      "trophies": 12622,
+      "donations": 0,
+      "totalDonations": 20899,
+      "donationsReceived": 40,
+      "expLevel": 0,
+      "reliability": 76,
+      "reliabilitySource": "fallback",
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": true,
+      "discord": false,
+      "warDays": null,
+      "warHistory": {
+        "weeks": [
+          {
+            "label": "S133·W5 (live)",
+            "seasonId": 133,
+            "sectionIndex": 4,
+            "fame": 0,
+            "decksUsed": 0,
+            "boatAttacks": 0,
+            "clanTag": "#Y8JUPC9C",
+            "clanName": "La Resistance",
+            "isCurrent": true,
+            "sourceKind": "currentRaceLog"
+          },
+          {
+            "label": "S133·W4",
+            "seasonId": 133,
+            "sectionIndex": 3,
+            "fame": 700,
+            "decksUsed": 4,
+            "boatAttacks": 0,
+            "clanTag": "#U82UJQ",
+            "clanName": "Ardennes rebels",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S133·W3",
+            "seasonId": 133,
+            "sectionIndex": 2,
+            "fame": 1200,
+            "decksUsed": 8,
+            "boatAttacks": 0,
+            "clanTag": "#U82UJQ",
+            "clanName": "Ardennes rebels",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S133·W2",
+            "seasonId": 133,
+            "sectionIndex": 1,
+            "fame": 2500,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#U82UJQ",
+            "clanName": "Ardennes rebels",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S133·W1",
+            "seasonId": 133,
+            "sectionIndex": 0,
+            "fame": 2500,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#U82UJQ",
+            "clanName": "Ardennes rebels",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S132·W4",
+            "seasonId": 132,
+            "sectionIndex": 3,
+            "fame": 2500,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#U82UJQ",
+            "clanName": "Ardennes rebels",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S132·W3",
+            "seasonId": 132,
+            "sectionIndex": 2,
+            "fame": 2400,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#U82UJQ",
+            "clanName": "Ardennes rebels",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S132·W2",
+            "seasonId": 132,
+            "sectionIndex": 1,
+            "fame": 2400,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#U82UJQ",
+            "clanName": "Ardennes rebels",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S132·W1",
+            "seasonId": 132,
+            "sectionIndex": 0,
+            "fame": 2100,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#U82UJQ",
+            "clanName": "Ardennes rebels",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S131·W4",
+            "seasonId": 131,
+            "sectionIndex": 3,
+            "fame": 2600,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#U82UJQ",
+            "clanName": "Ardennes rebels",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S131·W3",
+            "seasonId": 131,
+            "sectionIndex": 2,
+            "fame": 2100,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#U82UJQ",
+            "clanName": "Ardennes rebels",
+            "sourceKind": "clanRaceLog"
+          }
+        ],
+        "totalFame": 21000,
+        "avgFame": 2100,
+        "maxFame": 2600,
+        "participation": 10,
+        "completedParticipation": 10,
+        "totalWeeks": 0,
+        "streakInCurrentClan": 0,
+        "streakInFamily": 0,
+        "historicalWinRate": 0.5,
+        "noFurtherData": false
+      },
+      "arrivalStreakInCurrentClan": 0,
+      "arrivalTotalWeeks": 0,
+      "avgFame": 2100,
+      "maxFame": 2600,
+      "totalDecks": 140,
+      "pointsPerDeck": 150,
+      "warDecks": null,
+      "joinDate": null,
+      "lastSeen": "20260701T124432.000Z",
+      "lastWarDecks": 0,
       "scoreVersion": "2026-04-07-v2"
     },
     {
@@ -3085,10 +3277,10 @@
       "name": "K-ribou",
       "tag": "#80CCLY20L",
       "role": "elder",
-      "trophies": 12435,
-      "donations": 210,
-      "totalDonations": 155859,
-      "donationsReceived": 240,
+      "trophies": 12431,
+      "donations": 226,
+      "totalDonations": 155875,
+      "donationsReceived": 256,
       "expLevel": 0,
       "reliability": 86,
       "reliabilitySource": "history",
@@ -3241,7 +3433,7 @@
       "pointsPerDeck": 151,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260701T105621.000Z",
+      "lastSeen": "20260701T123805.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-04-07-v2"
     },
@@ -4536,12 +4728,176 @@
       "scoreVersion": "2026-04-07-v2"
     },
     {
+      "name": "Ghost",
+      "tag": "#809G8YC8",
+      "role": "elder",
+      "trophies": 14000,
+      "donations": 98,
+      "totalDonations": 95755,
+      "donationsReceived": 200,
+      "expLevel": 0,
+      "reliability": 90,
+      "reliabilitySource": "history",
+      "verdict": "High reliability",
+      "color": "green",
+      "isNew": false,
+      "discord": true,
+      "warDays": null,
+      "warHistory": {
+        "weeks": [
+          {
+            "label": "S133·W5 (live)",
+            "seasonId": 133,
+            "sectionIndex": 4,
+            "fame": 0,
+            "decksUsed": 0,
+            "boatAttacks": 0,
+            "clanTag": "#Y8JUPC9C",
+            "clanName": "La Resistance",
+            "isCurrent": true,
+            "sourceKind": "currentRaceLog"
+          },
+          {
+            "label": "S133·W4",
+            "seasonId": 133,
+            "sectionIndex": 3,
+            "fame": 2400,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#Y8JUPC9C",
+            "clanName": "La Resistance",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S133·W3",
+            "seasonId": 133,
+            "sectionIndex": 2,
+            "fame": 2650,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#Y8JUPC9C",
+            "clanName": "La Resistance",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S133·W2",
+            "seasonId": 133,
+            "sectionIndex": 1,
+            "fame": 2700,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#Y8JUPC9C",
+            "clanName": "La Resistance",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S133·W1",
+            "seasonId": 133,
+            "sectionIndex": 0,
+            "fame": 2400,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#Y8JUPC9C",
+            "clanName": "La Resistance",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S132·W4",
+            "seasonId": 132,
+            "sectionIndex": 3,
+            "fame": 2550,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#Y8JUPC9C",
+            "clanName": "La Resistance",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S132·W3",
+            "seasonId": 132,
+            "sectionIndex": 2,
+            "fame": 2350,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#Y8JUPC9C",
+            "clanName": "La Resistance",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S132·W2",
+            "seasonId": 132,
+            "sectionIndex": 1,
+            "fame": 2500,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#Y8JUPC9C",
+            "clanName": "La Resistance",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S132·W1",
+            "seasonId": 132,
+            "sectionIndex": 0,
+            "fame": 2400,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#Y8JUPC9C",
+            "clanName": "La Resistance",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S131·W4",
+            "seasonId": 131,
+            "sectionIndex": 3,
+            "fame": 1950,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#Y8JUPC9C",
+            "clanName": "La Resistance",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S131·W3",
+            "seasonId": 131,
+            "sectionIndex": 2,
+            "fame": 3000,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#Y8JUPC9C",
+            "clanName": "La Resistance",
+            "sourceKind": "clanRaceLog"
+          }
+        ],
+        "totalFame": 24900,
+        "avgFame": 2490,
+        "maxFame": 3000,
+        "participation": 10,
+        "completedParticipation": 10,
+        "totalWeeks": 10,
+        "streakInCurrentClan": 10,
+        "streakInFamily": 10,
+        "historicalWinRate": 0.56875,
+        "noFurtherData": false
+      },
+      "arrivalStreakInCurrentClan": 10,
+      "arrivalTotalWeeks": 10,
+      "avgFame": 2490,
+      "maxFame": 3000,
+      "totalDecks": 160,
+      "pointsPerDeck": 156,
+      "warDecks": null,
+      "joinDate": null,
+      "lastSeen": "20260701T115736.000Z",
+      "lastWarDecks": 16,
+      "scoreVersion": "2026-04-07-v2"
+    },
+    {
       "name": "steeeph",
       "tag": "#9VQ0J29Y",
       "role": "member",
       "trophies": 14000,
-      "donations": 315,
-      "totalDonations": 100838,
+      "donations": 349,
+      "totalDonations": 100872,
       "donationsReceived": 200,
       "expLevel": 0,
       "reliability": 90,
@@ -4696,7 +5052,7 @@
       "pointsPerDeck": 171,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260701T095622.000Z",
+      "lastSeen": "20260701T110504.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-04-07-v2"
     },
@@ -4861,170 +5217,6 @@
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260701T090245.000Z",
-      "lastWarDecks": 16,
-      "scoreVersion": "2026-04-07-v2"
-    },
-    {
-      "name": "Ghost",
-      "tag": "#809G8YC8",
-      "role": "elder",
-      "trophies": 14000,
-      "donations": 98,
-      "totalDonations": 95755,
-      "donationsReceived": 200,
-      "expLevel": 0,
-      "reliability": 90,
-      "reliabilitySource": "history",
-      "verdict": "High reliability",
-      "color": "green",
-      "isNew": false,
-      "discord": true,
-      "warDays": null,
-      "warHistory": {
-        "weeks": [
-          {
-            "label": "S133·W5 (live)",
-            "seasonId": 133,
-            "sectionIndex": 4,
-            "fame": 0,
-            "decksUsed": 0,
-            "boatAttacks": 0,
-            "clanTag": "#Y8JUPC9C",
-            "clanName": "La Resistance",
-            "isCurrent": true,
-            "sourceKind": "currentRaceLog"
-          },
-          {
-            "label": "S133·W4",
-            "seasonId": 133,
-            "sectionIndex": 3,
-            "fame": 2400,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#Y8JUPC9C",
-            "clanName": "La Resistance",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S133·W3",
-            "seasonId": 133,
-            "sectionIndex": 2,
-            "fame": 2650,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#Y8JUPC9C",
-            "clanName": "La Resistance",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S133·W2",
-            "seasonId": 133,
-            "sectionIndex": 1,
-            "fame": 2700,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#Y8JUPC9C",
-            "clanName": "La Resistance",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S133·W1",
-            "seasonId": 133,
-            "sectionIndex": 0,
-            "fame": 2400,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#Y8JUPC9C",
-            "clanName": "La Resistance",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S132·W4",
-            "seasonId": 132,
-            "sectionIndex": 3,
-            "fame": 2550,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#Y8JUPC9C",
-            "clanName": "La Resistance",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S132·W3",
-            "seasonId": 132,
-            "sectionIndex": 2,
-            "fame": 2350,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#Y8JUPC9C",
-            "clanName": "La Resistance",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S132·W2",
-            "seasonId": 132,
-            "sectionIndex": 1,
-            "fame": 2500,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#Y8JUPC9C",
-            "clanName": "La Resistance",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S132·W1",
-            "seasonId": 132,
-            "sectionIndex": 0,
-            "fame": 2400,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#Y8JUPC9C",
-            "clanName": "La Resistance",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S131·W4",
-            "seasonId": 131,
-            "sectionIndex": 3,
-            "fame": 1950,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#Y8JUPC9C",
-            "clanName": "La Resistance",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S131·W3",
-            "seasonId": 131,
-            "sectionIndex": 2,
-            "fame": 3000,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#Y8JUPC9C",
-            "clanName": "La Resistance",
-            "sourceKind": "clanRaceLog"
-          }
-        ],
-        "totalFame": 24900,
-        "avgFame": 2490,
-        "maxFame": 3000,
-        "participation": 10,
-        "completedParticipation": 10,
-        "totalWeeks": 10,
-        "streakInCurrentClan": 10,
-        "streakInFamily": 10,
-        "historicalWinRate": 0.56875,
-        "noFurtherData": false
-      },
-      "arrivalStreakInCurrentClan": 10,
-      "arrivalTotalWeeks": 10,
-      "avgFame": 2490,
-      "maxFame": 3000,
-      "totalDecks": 160,
-      "pointsPerDeck": 156,
-      "warDecks": null,
-      "joinDate": null,
-      "lastSeen": "20260701T072039.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-04-07-v2"
     },
@@ -5197,8 +5389,8 @@
       "tag": "#2UQQJJ98Y",
       "role": "elder",
       "trophies": 13525,
-      "donations": 154,
-      "totalDonations": 270363,
+      "donations": 164,
+      "totalDonations": 270373,
       "donationsReceived": 200,
       "expLevel": 0,
       "reliability": 90,
@@ -5352,7 +5544,7 @@
       "pointsPerDeck": 164,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260701T061913.000Z",
+      "lastSeen": "20260701T114342.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-04-07-v2"
     },
@@ -6018,8 +6210,8 @@
       "tag": "#VQP8PU2V",
       "role": "leader",
       "trophies": 13185,
-      "donations": 442,
-      "totalDonations": 577591,
+      "donations": 450,
+      "totalDonations": 577599,
       "donationsReceived": 280,
       "expLevel": 0,
       "reliability": 91,
@@ -6173,7 +6365,7 @@
       "pointsPerDeck": 159,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260701T064216.000Z",
+      "lastSeen": "20260701T123515.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-04-07-v2"
     },
@@ -6345,10 +6537,10 @@
       "name": "stecurioso",
       "tag": "#CYRGPVGVG",
       "role": "elder",
-      "trophies": 12211,
-      "donations": 0,
-      "totalDonations": 55108,
-      "donationsReceived": 40,
+      "trophies": 12183,
+      "donations": 18,
+      "totalDonations": 55126,
+      "donationsReceived": 80,
       "expLevel": 0,
       "reliability": 91,
       "reliabilitySource": "history",
@@ -6501,7 +6693,7 @@
       "pointsPerDeck": 154,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260701T105931.000Z",
+      "lastSeen": "20260701T120324.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-04-07-v2"
     },
@@ -6839,8 +7031,8 @@
       "tag": "#8VQLJLR0",
       "role": "elder",
       "trophies": 13866,
-      "donations": 488,
-      "totalDonations": 54149,
+      "donations": 522,
+      "totalDonations": 54183,
       "donationsReceived": 240,
       "expLevel": 0,
       "reliability": 92,
@@ -6994,7 +7186,7 @@
       "pointsPerDeck": 164,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260701T095435.000Z",
+      "lastSeen": "20260701T125629.000Z",
       "lastWarDecks": 0,
       "scoreVersion": "2026-04-07-v2"
     },
@@ -7166,10 +7358,10 @@
       "name": "19Benji",
       "tag": "#2CL028C80",
       "role": "elder",
-      "trophies": 13264,
-      "donations": 208,
-      "totalDonations": 221037,
-      "donationsReceived": 104,
+      "trophies": 13293,
+      "donations": 226,
+      "totalDonations": 221055,
+      "donationsReceived": 120,
       "expLevel": 0,
       "reliability": 92,
       "reliabilitySource": "history",
@@ -7322,7 +7514,7 @@
       "pointsPerDeck": 155,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260701T104523.000Z",
+      "lastSeen": "20260701T110537.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-04-07-v2"
     },
@@ -7987,8 +8179,8 @@
       "tag": "#P9R8Y90P8",
       "role": "member",
       "trophies": 13650,
-      "donations": 156,
-      "totalDonations": 37696,
+      "donations": 174,
+      "totalDonations": 37714,
       "donationsReceived": 200,
       "expLevel": 0,
       "reliability": 93,
@@ -8143,7 +8335,7 @@
       "pointsPerDeck": 167,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260701T100144.000Z",
+      "lastSeen": "20260701T115307.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-04-07-v2"
     },
@@ -8285,7 +8477,7 @@
       "trophies": 12797,
       "donations": 50,
       "totalDonations": 47853,
-      "donationsReceived": 40,
+      "donationsReceived": 80,
       "expLevel": 0,
       "reliability": 93,
       "reliabilitySource": "history",
@@ -8447,8 +8639,8 @@
       "tag": "#C2RL8UVYV",
       "role": "elder",
       "trophies": 14000,
-      "donations": 232,
-      "totalDonations": 43868,
+      "donations": 248,
+      "totalDonations": 43884,
       "donationsReceived": 160,
       "expLevel": 0,
       "reliability": 95,
@@ -8602,7 +8794,7 @@
       "pointsPerDeck": 167,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260701T093237.000Z",
+      "lastSeen": "20260701T125212.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-04-07-v2"
     },
@@ -8774,10 +8966,10 @@
       "name": "☆. Aurel",
       "tag": "#8QL2J8PQ",
       "role": "coLeader",
-      "trophies": 13381,
-      "donations": 174,
-      "totalDonations": 187645,
-      "donationsReceived": 120,
+      "trophies": 13410,
+      "donations": 184,
+      "totalDonations": 187655,
+      "donationsReceived": 144,
       "expLevel": 0,
       "reliability": 97,
       "reliabilitySource": "history",
@@ -8930,7 +9122,7 @@
       "pointsPerDeck": 186,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260630T231509.000Z",
+      "lastSeen": "20260701T122306.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-04-07-v2"
     },
@@ -9082,8 +9274,8 @@
       "tag": "#GJ8RV8802",
       "role": "coLeader",
       "trophies": 14000,
-      "donations": 443,
-      "totalDonations": 26512,
+      "donations": 469,
+      "totalDonations": 26538,
       "donationsReceived": 280,
       "expLevel": 0,
       "reliability": 99,
@@ -9205,18 +9397,18 @@
       "pointsPerDeck": 189,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260701T095323.000Z",
+      "lastSeen": "20260701T124248.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-04-07-v2"
     }
   ],
   "summary": {
-    "green": 46,
+    "green": 47,
     "yellow": 2,
     "orange": 1,
     "red": 0,
     "avgScore": 88,
-    "total": 49
+    "total": 50
   },
   "isWarPeriod": true,
   "isColosseum": false,
@@ -10244,6 +10436,12 @@
         "missingDuels": 4
       },
       {
+        "name": "Farfox",
+        "tag": "#82QVGU8VC",
+        "role": "member",
+        "missingDuels": 4
+      },
+      {
         "name": "gabriel",
         "tag": "#YP8LLUVR2",
         "role": "member",
@@ -10285,7 +10483,7 @@
     "totalDecksUsed": 795,
     "maxDecksElapsed": 800,
     "maxDecksWeek": 800,
-    "participantCount": 49,
+    "participantCount": 50,
     "daysFromThu": 4,
     "days": [
       {
@@ -10348,8 +10546,8 @@
     "dataFile": "/home/runner/work/clash/clash/data/snapshots/Y8JUPC9C.json",
     "tmpExists": true,
     "dataExists": true,
-    "tmpMtime": "2026-07-01T11:05:13.027Z",
-    "dataMtime": "2026-07-01T11:04:51.997Z",
+    "tmpMtime": "2026-07-01T12:56:45.618Z",
+    "dataMtime": "2026-07-01T12:56:24.965Z",
     "tmpLatestSnapshotTime": "2026-06-29T09:40:01.731Z",
     "dataLatestSnapshotTime": "2026-06-29T09:40:01.731Z",
     "tmpSize": 371168,
@@ -10445,7 +10643,7 @@
       "tag": "#Y8JUPC9C",
       "name": "La Resistance",
       "rank": null,
-      "members": 49,
+      "members": 50,
       "clanWarTrophies": 4107,
       "clanScore": 0,
       "prevWarFame": 126800,
@@ -10535,6 +10733,6 @@
   ],
   "rateLimited": false,
   "raceLogUnavailable": false,
-  "analysisCacheUpdatedAt": "2026-07-01T11:05:15.422Z",
+  "analysisCacheUpdatedAt": "2026-07-01T12:56:48.091Z",
   "debugSnapshotInfo": null
 }
