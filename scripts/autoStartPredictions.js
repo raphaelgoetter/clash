@@ -161,7 +161,7 @@ async function main() {
         title: `🔮 Pronostics GDC — ${clanName}`,
         color: 0x9b59b6,
         description:
-          `Devinez qui sera le **Champion** de la semaine **${targetWeekId}** qui arrive !\n` +
+          `Devinez qui sera le **Champion** de la semaine **${targetWeekId}** qui arrive. Tout le monde peut voter !\n` +
           `*Le Champion est le joueur qui marquera le plus de points GDC.*\n\n` +
           `**Challengers** (top 8 scoreurs semaine ${prevWeekId}) :\n` +
           lines.join("\n") +
