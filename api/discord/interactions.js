@@ -1147,6 +1147,7 @@ const RELIABILITY_ORDER_HISTORY = [
 const RELIABILITY_ORDER_FALLBACK = [
   "CW2 badge",
   "War Activity",
+  "Regularity",
   "General Activity",
   "Experience",
   "Last Seen",

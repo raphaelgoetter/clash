@@ -997,6 +997,31 @@ assert.ok(
 );
 console.log("✓ fallback warScore summary/explanation test passed.");
 
+const fallbackWithHistory = computeWarReliabilityFallback(
+  { trophies: 12000, totalDonations: 10000, badges: [] },
+  [],
+  { total: 0, gdc: 0, ladder: 0, challenge: 0 },
+  null,
+  false,
+  0,
+  {
+    weeks: [
+      { label: "S1·W1", decksUsed: 16, fame: 2200, isCurrent: false },
+      { label: "S1·W2", decksUsed: 16, fame: 2100, isCurrent: false },
+    ],
+    streakInCurrentClan: 2,
+  },
+);
+assert.ok(
+  fallbackWithHistory.breakdown.some((b) => b.label === "Regularity"),
+  "Fallback with warHistory should expose Regularity",
+);
+assert.ok(
+  !fallbackWithHistory.breakdown.some((b) => b.label === "General Activity"),
+  "Fallback with warHistory should no longer expose General Activity",
+);
+console.log("✓ fallback regularity replacement test passed.");
+
 // New tests: fallback war activity war-ratio adjustment
 const fallbackNoWar = computeWarReliabilityFallback(
   { trophies: 12000, totalDonations: 10000, badges: [] },

@@ -521,11 +521,42 @@ export function computeWarReliabilityFallback(
       lastSeenDays <= 1 ? 3 : lastSeenDays <= 3 ? 2 : lastSeenDays <= 7 ? 1 : 0;
   }
 
-  // 3. Activité générale (0-8) — 30 combats compétitifs requis pour score max
+  // 3. Régularité GDC (0-8) — si l'historique River Race existe, on le
+  // privilégie sur l'activité générale brute du battle log.
+  const completedHistoryWeeks = (warHistory?.weeks ?? []).filter(
+    (w) => !w.isCurrent && typeof w.decksUsed === "number",
+  );
+  let regulariteGDC = null;
+  let regulariteGDCDetail = null;
+  if (completedHistoryWeeks.length > 0) {
+    const recentWeeks = completedHistoryWeeks.slice(0, 5);
+    const n = recentWeeks.length;
+    let weightedSum = 0;
+    let weightTotal = 0;
+    for (let i = 0; i < n; i++) {
+      const weekScore = Math.min(1, (recentWeeks[i].decksUsed ?? 0) / 16);
+      const weight = n - i;
+      weightedSum += weekScore * weight;
+      weightTotal += weight;
+    }
+    regulariteGDC = r(Math.min(8, (weightedSum / weightTotal) * 8));
+    regulariteGDCDetail = recentWeeks
+      .map((w) => `${w.decksUsed}/16 (${w.label ?? "?"})`)
+      .join(" · ");
+  }
+
+  // 3b. Activité générale (0-8) — 30 combats compétitifs requis pour score max
   const warRatio = competitive > 0 ? gdcCount / competitive : 0;
   const warFactor = 0.5 + 0.5 * warRatio;
   const baseGeneral = (competitive / 30) * 8;
   const activiteGen = r(Math.min(8, baseGeneral * warFactor));
+  const activiteGenDisplay = regulariteGDC ?? activiteGen;
+  const activiteGenLabel =
+    regulariteGDC !== null ? "Regularity" : "General Activity";
+  const activiteGenDetail =
+    regulariteGDC !== null
+      ? regulariteGDCDetail
+      : `${competitive} competitive battles (${gdcCount} War + ${bd.ladder} Ladder + ${bd.challenge} Challenges)`;
 
   // 4. Expérience (0-3) — trophées actuels, plage [4 000, 14 000]
   const TROPHY_MIN = 4000;
@@ -551,7 +582,7 @@ export function computeWarReliabilityFallback(
 
   const total = r(
     activiteGDC +
-      activiteGen +
+      activiteGenDisplay +
       cw2Score +
       (lastSeenScore ?? 0) +
       experience +
@@ -606,8 +637,14 @@ export function computeWarReliabilityFallback(
     ? `War Activity: ${warActivityQuality} (${activiteGDC}/8, based on ${completedWarWeeks.slice(0, 5).length} week(s) history: ${warHistoryActivityDetail}).`
     : `War Activity: ${warActivityQuality} (${activiteGDC}/8, ${perfectDays} full days, ${shortDays} short days, ${inactiveDays} inactive days in ${windowDays}-day window).`;
 
+  const regularitySummaryLine =
+    regulariteGDC !== null
+      ? `Regularity: ${scoreQuality(regulariteGDC, 8)} (${regulariteGDC}/8, based on ${completedHistoryWeeks.slice(0, 5).length} week(s) history: ${regulariteGDCDetail}).`
+      : `General Activity: ${scoreQuality(activiteGen, 8)} (${activiteGen}/8, ${competitive} competitive battles (${gdcCount} War + ${bd.ladder} Ladder + ${bd.challenge} Challenges)).`;
+
   const summary =
     `${warActivitySummaryLine}\n` +
+    `${regularitySummaryLine}\n` +
     `Last war battle: ${lastWarDay || "none"}${daysSinceLastWar !== null ? ` (${daysSinceLastWar} day(s) ago)` : ""}.\n` +
     `In clan: ${clanDurationText}.\nCW2: ${cw2Remark}.`;
 
@@ -643,10 +680,10 @@ export function computeWarReliabilityFallback(
           : `In recent ${windowDays}-day window: ${perfectDays} full days, ${shortDays} short days, ${inactiveDays} inactive days; last war: ${lastWarDay || "none"}${daysSinceLastWar !== null ? ` (${daysSinceLastWar} day(s) ago)` : ""}.`,
       },
       {
-        label: "General Activity",
-        score: activiteGen,
+        label: activiteGenLabel,
+        score: activiteGenDisplay,
         max: 8,
-        detail: `${competitive} competitive battles (${gdcCount} War + ${bd.ladder} Ladder + ${bd.challenge} Challenges)`,
+        detail: activiteGenDetail,
       },
       ...(lastSeenScore !== null
         ? [
