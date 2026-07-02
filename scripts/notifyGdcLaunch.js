@@ -27,7 +27,7 @@
 //   node scripts/notifyGdcLaunch.js --dry-run     # simule sans poster
 //   node scripts/notifyGdcLaunch.js --force       # ignore le dedup
 //
-// Cron attendu : jeudi ~7h UTC (8h CET / 9h CEST)
+// Cron attendu : jeudi 10h30 UTC (~46 min après le reset GDC de 09:42-09:44 UTC)
 // Workflow : .github/workflows/gdc-launch.yml
 //
 // Dépendances env :
@@ -68,8 +68,7 @@ const CLAN_ROLE_NAMES = {
 const COLOSSEUM_SECTION =
   "Cette semaine, c'est une semaine de Colisée ! **C'est la semaine la plus importante du mois car les points remportés (ou perdus) par le clan sont multipliés par 5 !**";
 
-const RESISTANTS_BODY =
-`La Guerre de Clans commence ! 🔥
+const RESISTANTS_BODY = `La Guerre de Clans commence ! 🔥
 {colosseum}
 ### OBLIGATIONS :
 
@@ -98,8 +97,7 @@ Détails pratiques :
 
 🤜 Bonne chance à tous !`;
 
-const RESISTANCE_BODY =
-`**La Guerre de Clans commence !** 🔥
+const RESISTANCE_BODY = `**La Guerre de Clans commence !** 🔥
 
 ⚔️ La GDC commence aujourd'hui ! Les combats dans notre clan sont **OBLIGATOIRES** chaque jour. Une absence de combat sera sanctionnée par une rétrogradation ou une orientation vers nos clans chill.
 {colosseum}
@@ -119,8 +117,7 @@ Détails pratiques :
 
 🤜 **Bonne chance à tous !**`;
 
-const REVOLTES_BODY =
-`**La Guerre de Clans commence !** 🔥
+const REVOLTES_BODY = `**La Guerre de Clans commence !** 🔥
 
 ⚔️ La GDC commence aujourd'hui ! Les combats dans notre clan sont vivement conseillés, surtout si on souhaite intégrer les clans au-dessus un jour.
 {colosseum}
@@ -163,7 +160,10 @@ async function saveLog(log) {
 const ROLE_CACHE = new Map();
 
 function normalizeRoleName(value) {
-  return String(value ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+  return String(value ?? "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
 }
 
 async function getClanRoleId(clanTag) {
@@ -182,7 +182,9 @@ async function getClanRoleId(clanTag) {
         },
       });
       if (!res.ok) {
-        console.warn(`[notifyGdcLaunch] Impossible de récupérer les rôles (${res.status})`);
+        console.warn(
+          `[notifyGdcLaunch] Impossible de récupérer les rôles (${res.status})`,
+        );
         ROLE_CACHE.set(cacheKey, []);
       } else {
         const roles = await res.json();
@@ -295,7 +297,11 @@ async function main() {
     if (roleId) payload.allowed_mentions.roles = [roleId];
     if (isColosseum) {
       payload.embeds = [
-        { image: { url: "https://trustroyale.vercel.app/images/colosseum.webp" } },
+        {
+          image: {
+            url: "https://trustroyale.vercel.app/images/colosseum.webp",
+          },
+        },
       ];
     }
 
@@ -305,14 +311,17 @@ async function main() {
         console.log(`[DRY RUN] ${tag} → ${channelId}`);
         console.log(JSON.stringify(payload, null, 2));
       } else {
-        const res = await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bot ${process.env.DISCORD_TOKEN}`,
+        const res = await fetch(
+          `${DISCORD_API}/channels/${channelId}/messages`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bot ${process.env.DISCORD_TOKEN}`,
+            },
+            body: JSON.stringify(payload),
           },
-          body: JSON.stringify(payload),
-        });
+        );
         if (!res.ok) {
           const txt = await res.text();
           throw new Error(`HTTP ${res.status}: ${txt}`);

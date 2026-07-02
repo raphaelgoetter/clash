@@ -5,8 +5,8 @@ permissions:
 
 on:
   schedule:
-    # 07:00 UTC = 08:00 CET / 09:00 CEST — jeudi matin, avant le début de la GDC
-    - cron: "0 7 * * 4"
+    # 10:30 UTC — jeudi, ~46 min après le reset GDC (~09:42-09:44 UTC), pour que periodType soit à jour
+    - cron: "30 10 * * 4"
   workflow_dispatch:
 
 jobs:
