@@ -333,7 +333,7 @@ function translateUI() {
           <tr><th>${t("criterion")}</th><th>${t("max")}</th><th>${t("cap")}</th></tr>
         </thead>
         <tbody>
-          <tr><td>${t("regularity")}</td><td>12</td><td>${t("regularityCap")}</td></tr>
+          <tr><td>${t("regularity")}</td><td>10</td><td>${t("regularityCap")}</td></tr>
           <tr><td>${t("cw2BattleWins")}</td><td>8</td><td>${t("cw2BattleWinsCap")}</td></tr>
           <tr><td>${t("clanStability")}</td><td>8</td><td>${t("clanStabilityCap")}</td></tr>
           <tr><td>${t("lastSeen")}</td><td>5</td><td>${t("lastSeenCap")}</td></tr>
@@ -2141,6 +2141,10 @@ function renderPlayerResults(data) {
 
     // Generic phrase-level FR translation when the source detail is still in English.
     let normalized = text
+      .replace(
+        /([0-9.,]+)\s*total cw2 wins \(cap 250\)/gi,
+        (_, n) => `${n} victoires CW2 totales (max 250)`,
+      )
       .replace(/decks across/gi, "decks sur")
       .replace(/incomplete weeks?/gi, (m) =>
         m.toLowerCase().startsWith("incomplete")
@@ -2216,12 +2220,41 @@ function renderPlayerResults(data) {
       text = normalized;
     }
 
+    if (currentLang === "fr") {
+      text = text
+        .replace(/\b(\d{1,3}(?:,\d{3})+)\b/g, (value) =>
+          value.replace(/,/g, " "),
+        )
+        .replace(/(\d+)\.(\d+)/g, "$1,$2");
+    }
+
     const lowercaseLabel = label.toLowerCase();
     if (
       lowercaseLabel.includes("regularity") ||
       lowercaseLabel.includes("régularité")
     ) {
-      return text;
+      return text
+        .replace(
+          /^No completed week in this clan yet$/i,
+          "Aucune semaine terminée dans ce clan pour le moment",
+        )
+        .replace(/(\d+)\/5 full weeks?/i, (_, n) => `${n}/5 semaines complètes`)
+        .replace(
+          /incomplete weeks? count as 0/i,
+          "les semaines incomplètes comptent pour 0",
+        )
+        .replace(
+          /member for at least\s*(\d+)\s*weeks?/i,
+          (_, n) => `membre depuis au moins ${n} semaines`,
+        )
+        .replace(
+          /member for\s*(\d+)\s*weeks?/i,
+          (_, n) => `membre depuis ${n} semaines`,
+        )
+        .replace(
+          /joined recently \(< 1 week in this clan\)/i,
+          "— arrivé récemment (< 1 semaine dans le clan)",
+        );
     }
     if (lowercaseLabel.includes("avg")) {
       return text;
@@ -2232,7 +2265,8 @@ function renderPlayerResults(data) {
           /No completed week with GDC data/gi,
           "Aucune semaine terminée avec données GDC",
         )
-        .replace(/range 100–200/gi, "plage 100–200");
+        .replace(/range 100–180/gi, "plage 100–180")
+        .replace(/last 3 completed weeks/gi, "3 dernières semaines terminées");
     }
     if (lowercaseLabel.includes("cw2")) {
       return text;
@@ -2247,6 +2281,21 @@ function renderPlayerResults(data) {
       lowercaseLabel.includes("last seen") ||
       lowercaseLabel.includes("dernière connexion")
     ) {
+      if (currentLang === "fr") {
+        const localizedDuration = lastSeenDuration
+          ? lastSeenDuration
+              .replace(/(\d+)d/g, "$1 j")
+              .replace(/(\d+)h/g, "$1 h")
+              .replace(/(\d+)m/g, "$1 min")
+          : null;
+        return (
+          localizedDuration ||
+          text
+            .replace(/^today$/i, "Aujourd'hui")
+            .replace(/^1 day$/i, "1 jour")
+            .replace(/^(\d+) days?$/i, (_, n) => `${n} jours`)
+        );
+      }
       return text
         .replace(/today/i, t("today"))
         .replace(/1 day/i, t("oneDayAgo"))
@@ -2259,18 +2308,25 @@ function renderPlayerResults(data) {
       lowercaseLabel.includes("experience") ||
       lowercaseLabel.includes("expérience")
     ) {
-      return text;
+      return currentLang === "fr"
+        ? text.replace(
+            /trophies \(range 4000–14000\)/gi,
+            "trophées (plage 4 000–14 000)",
+          )
+        : text;
     }
     if (lowercaseLabel.includes("discord")) {
-      return text
-        .replace(
-          "Discord account linked to the server",
-          "Compte Discord lié au serveur",
-        )
-        .replace(
-          "Discord account not linked (/discord-link)",
-          "Compte Discord non lié (/discord-link)",
-        );
+      return currentLang === "fr"
+        ? text
+            .replace(
+              "Discord account linked to the server",
+              "Compte Discord lié au serveur",
+            )
+            .replace(
+              "Discord account not linked (/discord-link)",
+              "Compte Discord non lié (/discord-link)",
+            )
+        : text;
     }
     return text;
   }

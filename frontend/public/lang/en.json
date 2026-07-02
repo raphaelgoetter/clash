@@ -140,7 +140,7 @@
   "fallbackFormulaTitle": "If no river-race history is available, a fallback formula is used",
   "fallbackFormulaBody": "Regularity (10, over a fixed 5-week window with missing weeks counted as 0), CW2 badge (10), War Activity (8, based on 5 recovered weeks, maxed at 5 weeks), Points / deck (4, over the 3 most recent completed weeks when history is available), Last Seen (3, requires ~16 war decks), Experience (3) and Discord (2).",
   "rateLimitedWarning": "Clash API rate limit exceeded — partial data may be displayed, retry in a few seconds.",
-  "regularityDetail": "{{deckSum}}/{{idealDecks}} decks across {{completedCount}} weeks ({{pct}}%)",
+  "regularityDetail": "{{fullWeeks}}/5 full weeks ({{pct}}%)",
   "avgScoreDetail": "{{avgFame}} pts / week (1,000 – 3,000)",
   "cw2BattleWinsDetail": "{{cw2Wins}} total CW2 wins (cap 250)",
   "clanStabilityDetail": "{{s}} consecutive weeks in this clan or family",
