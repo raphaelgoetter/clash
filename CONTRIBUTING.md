@@ -326,7 +326,7 @@ Critères :
 - Badge CW2 : 8. Cap à 250 victoires CW2.
 - Stabilité : 8. 5 semaines consécutives dans le clan ou la famille donnent le maximum.
 - Dernière connexion : 5. Ajoutée seulement si lastSeen est disponible.
-- Points / deck : 4. Efficacité GDC sur les 3 dernières semaines terminées, avec une plage utile d’environ 100 à 200 points / deck.
+- Points / deck : 4. Efficacité GDC sur les 3 dernières semaines terminées, avec une plage utile d’environ 100 à 180 points / deck.
 - Expérience : 3. Basée sur les trophées actuels, plage 4000 à 14000.
 - Discord : 2. Compte Discord lié.
 
@@ -345,9 +345,9 @@ Quand le `battlelog` est trop court ou trop écrasé par des combats non-GDC, le
 
 Critères :
 
+- Régularité : 12. Calculée comme si 5 semaines étaient disponibles, les semaines non récupérées comptant pour 0.
 - Badge CW2 : 10. Cap à 250 victoires CW2.
-- Activité GDC : 8. Basée sur les decks par jour dans une fenêtre glissante de 14 jours, avec bonus pour les journées complètes et légère pénalité pour les journées partielles.
-- Régularité / activité générale : 8. Régularité si l’historique River Race est disponible, sinon activité générale basée sur les combats compétitifs.
+- Activité GDC : 8. Basée uniquement sur le nombre de semaines GDC récupérées, avec maximum atteint à partir de 5 semaines récupérées.
 - Points / deck : 4. Efficacité River Race sur les 3 dernières semaines terminées quand l’historique est disponible.
 - Dernière connexion : 3. Ajoutée si lastSeen est disponible.
 - Expérience : 3. Basée sur les trophées actuels.

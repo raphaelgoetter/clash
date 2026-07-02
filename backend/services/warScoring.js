@@ -27,7 +27,7 @@ function scoreQuality(score, max) {
 function scorePointsPerDeck(pointsPerDeck, maxPoints = 4) {
   if (!Number.isFinite(pointsPerDeck) || pointsPerDeck <= 0) return 0;
   const MIN_POINTS_PER_DECK = 100;
-  const MAX_POINTS_PER_DECK = 200;
+  const MAX_POINTS_PER_DECK = 180;
   const raw =
     ((pointsPerDeck - MIN_POINTS_PER_DECK) /
       (MAX_POINTS_PER_DECK - MIN_POINTS_PER_DECK)) *
@@ -374,7 +374,7 @@ export function computeWarScore(
       max: 4,
       detail:
         efficiencyHistory.recentWeeks.length > 0
-          ? `${efficiencyHistory.totalFame.toLocaleString("en-US")} points / ${efficiencyHistory.totalDecks} decks (${efficiencyHistory.pointsPerDeck.toFixed(2)} pts/deck, range 100–200, last 3 completed weeks)`
+          ? `${efficiencyHistory.totalFame.toLocaleString("en-US")} points / ${efficiencyHistory.totalDecks} decks (${efficiencyHistory.pointsPerDeck.toFixed(2)} pts/deck, range 100–180, last 3 completed weeks)`
           : "No completed week with GDC data",
     },
     {
@@ -456,51 +456,35 @@ export function computeWarReliabilityFallback(
       : null;
   const effectiveLog = syntheticLog ?? warLog;
 
-  const gdcCount = warLog.length > 0 ? warLog.length : currentRaceDecks;
-  const gdcWins = warLog.filter(isWarWin).length;
-  const competitive = gdcCount + bd.ladder + bd.challenge;
+  const byDayEntries = Object.entries(
+    dailyWarReliabilityScore(effectiveLog, clanTag).byDay,
+  ).sort((a, b) => a[0].localeCompare(b[0]));
+  const lastWarDay = byDayEntries.length
+    ? byDayEntries[byDayEntries.length - 1][0]
+    : null;
+  const daysSinceLastWar = lastWarDay
+    ? Math.floor((Date.now() - new Date(lastWarDay).getTime()) / MS_PER_DAY)
+    : null;
 
-  // 1. War Activity (0-8) — basé sur decks/jour, avec bonus/pénalités
-  const activityResult = dailyWarReliabilityScore(effectiveLog, clanTag);
-  const perfectDays = Object.values(activityResult.byDay).filter(
-    (d) => d >= 4,
-  ).length;
-  const shortDays = Object.values(activityResult.byDay).filter(
-    (d) => d > 0 && d < 4,
-  ).length;
-  let activiteGDC = activityResult.score;
-  activiteGDC += perfectDays * 0.2;
-  activiteGDC -= shortDays * 0.1;
-  activiteGDC = r(Math.min(8, Math.max(0, activiteGDC)));
-  // Plafond de confiance : 16 batailles (1 semaine complète) = plafond entièrement levé.
-  const confidenceCap = r(Math.min(8, (gdcCount / 16) * 8));
-  activiteGDC = r(Math.min(activiteGDC, confidenceCap));
-
-  // Override War Activity depuis l'historique de guerre (race log) si disponible.
-  // Source prioritaire car couvre plusieurs semaines complètes, contrairement au
-  // battle log limité à 30 combats toutes catégories confondues.
-  const completedWarWeeks = (warHistory?.weeks ?? []).filter(
-    (w) => !w.isCurrent && typeof w.decksUsed === "number",
+  // 1. War Activity (0-8) — uniquement basé sur les semaines GDC récupérées.
+  // La fenêtre de référence est fixe à 5 semaines : les semaines manquantes
+  // comptent comme 0 et le score atteint son maximum à partir de 5 semaines récupérées.
+  const completedHistoryWeeks = (warHistory?.weeks ?? [])
+    .filter((w) => !w.isCurrent && typeof w.decksUsed === "number")
+    .slice(0, 5);
+  const recoveredWeekSlots = Array.from(
+    { length: 5 },
+    (_, index) =>
+      completedHistoryWeeks[index] ?? {
+        decksUsed: 0,
+        label: `slot${index + 1}`,
+      },
   );
-  let warHistoryUsed = false;
-  let warHistoryActivityDetail = null;
-  if (completedWarWeeks.length > 0) {
-    const recentWeeks = completedWarWeeks.slice(0, 5); // semaines les plus récentes en premier
-    const n = recentWeeks.length;
-    let weightedSum = 0;
-    let weightTotal = 0;
-    for (let i = 0; i < n; i++) {
-      const weekScore = (recentWeeks[i].decksUsed ?? 0) / 16;
-      const weight = n - i; // semaine la plus récente = poids le plus élevé
-      weightedSum += weekScore * weight;
-      weightTotal += weight;
-    }
-    activiteGDC = r(Math.min(8, (weightedSum / weightTotal) * 8));
-    warHistoryUsed = true;
-    warHistoryActivityDetail = recentWeeks
-      .map((w) => `${w.decksUsed}/16 (${w.label ?? "?"})`)
-      .join(" · ");
-  }
+  const recoveredWeeksCount = completedHistoryWeeks.length;
+  const activiteGDC = r(Math.min(8, (recoveredWeeksCount / 5) * 8));
+  const warHistoryActivityDetail = recoveredWeekSlots
+    .map((w) => `${w.decksUsed || 0}/16`)
+    .join(" · ");
 
   // 2. Last Seen replacement (0-3) — shown whenever a lastSeen date is available
   let lastSeenScore = null;
@@ -512,42 +496,18 @@ export function computeWarReliabilityFallback(
       lastSeenDays <= 1 ? 3 : lastSeenDays <= 3 ? 2 : lastSeenDays <= 7 ? 1 : 0;
   }
 
-  // 3. Régularité GDC (0-8) — si l'historique River Race existe, on le
-  // privilégie sur l'activité générale brute du battle log.
-  const completedHistoryWeeks = (warHistory?.weeks ?? []).filter(
-    (w) => !w.isCurrent && typeof w.decksUsed === "number",
+  // 3. Régularité (0-8) — calculée sur 5 semaines fixes, avec les semaines
+  // non récupérées comptées à 0.
+  const regularityDecks = recoveredWeekSlots.map((w) => w.decksUsed || 0);
+  const regulariteGDC = r(
+    Math.min(
+      12,
+      (regularityDecks.reduce((sum, n) => sum + n, 0) / (5 * 16)) * 12,
+    ),
   );
-  let regulariteGDC = null;
-  let regulariteGDCDetail = null;
-  if (completedHistoryWeeks.length > 0) {
-    const recentWeeks = completedHistoryWeeks.slice(0, 5);
-    const n = recentWeeks.length;
-    let weightedSum = 0;
-    let weightTotal = 0;
-    for (let i = 0; i < n; i++) {
-      const weekScore = Math.min(1, (recentWeeks[i].decksUsed ?? 0) / 16);
-      const weight = n - i;
-      weightedSum += weekScore * weight;
-      weightTotal += weight;
-    }
-    regulariteGDC = r(Math.min(8, (weightedSum / weightTotal) * 8));
-    regulariteGDCDetail = recentWeeks
-      .map((w) => `${w.decksUsed}/16 (${w.label ?? "?"})`)
-      .join(" · ");
-  }
-
-  // 3b. Activité générale (0-8) — 30 combats compétitifs requis pour score max
-  const warRatio = competitive > 0 ? gdcCount / competitive : 0;
-  const warFactor = 0.5 + 0.5 * warRatio;
-  const baseGeneral = (competitive / 30) * 8;
-  const activiteGen = r(Math.min(8, baseGeneral * warFactor));
-  const activiteGenDisplay = regulariteGDC ?? activiteGen;
-  const activiteGenLabel =
-    regulariteGDC !== null ? "Regularity" : "General Activity";
-  const activiteGenDetail =
-    regulariteGDC !== null
-      ? regulariteGDCDetail
-      : `${competitive} competitive battles (${gdcCount} War + ${bd.ladder} Ladder + ${bd.challenge} Challenges)`;
+  const regulariteGDCDetail = regularityDecks
+    .map((decks) => `${decks}/16`)
+    .join(" · ");
 
   // 3c. Points / deck (0-4) — River Race efficiency on the 3 most recent completed weeks.
   const efficiencyHistory = summarizePointsPerDeckWeeks(
@@ -582,7 +542,7 @@ export function computeWarReliabilityFallback(
 
   const total = r(
     activiteGDC +
-      activiteGenDisplay +
+      regulariteGDC +
       efficiencyScore +
       cw2Score +
       (lastSeenScore ?? 0) +
@@ -610,6 +570,7 @@ export function computeWarReliabilityFallback(
 
   const warHistoryWeeks = warHistory?.streakInCurrentClan ?? 0;
   const warActivityQuality = scoreQuality(activiteGDC, 8);
+  const regularityQuality = scoreQuality(regulariteGDC, 12);
   const cw2Remark =
     cw2Score >= 6
       ? "strong experience in Clan Wars"
@@ -621,27 +582,9 @@ export function computeWarReliabilityFallback(
   const clanDurationText =
     warHistoryWeeks <= 0 ? "Less than one week" : `${warHistoryWeeks} week(s)`;
 
-  const byDayEntries = Object.entries(activityResult.byDay).sort((a, b) =>
-    a[0].localeCompare(b[0]),
-  );
-  const lastWarDay = byDayEntries.length
-    ? byDayEntries[byDayEntries.length - 1][0]
-    : null;
-  const daysSinceLastWar = lastWarDay
-    ? Math.floor((Date.now() - new Date(lastWarDay).getTime()) / MS_PER_DAY)
-    : null;
-  const activeDaysCount = Object.keys(activityResult.byDay).length;
-  const windowDays = 14;
-  const inactiveDays = Math.max(0, windowDays - activeDaysCount);
+  const warActivitySummaryLine = `War Activity: ${warActivityQuality} (${activiteGDC}/8, ${recoveredWeeksCount}/5 recovered weeks: ${warHistoryActivityDetail}).`;
 
-  const warActivitySummaryLine = warHistoryUsed
-    ? `War Activity: ${warActivityQuality} (${activiteGDC}/8, based on ${completedWarWeeks.slice(0, 5).length} week(s) history: ${warHistoryActivityDetail}).`
-    : `War Activity: ${warActivityQuality} (${activiteGDC}/8, ${perfectDays} full days, ${shortDays} short days, ${inactiveDays} inactive days in ${windowDays}-day window).`;
-
-  const regularitySummaryLine =
-    regulariteGDC !== null
-      ? `Regularity: ${scoreQuality(regulariteGDC, 8)} (${regulariteGDC}/8, based on ${completedHistoryWeeks.slice(0, 5).length} week(s) history: ${regulariteGDCDetail}).`
-      : `General Activity: ${scoreQuality(activiteGen, 8)} (${activiteGen}/8, ${competitive} competitive battles (${gdcCount} War + ${bd.ladder} Ladder + ${bd.challenge} Challenges)).`;
+  const regularitySummaryLine = `Regularity: ${regularityQuality} (${regulariteGDC}/12, 5-week window: ${regulariteGDCDetail}).`;
 
   const efficiencySummaryLine =
     efficiencyHistory.recentWeeks.length > 0
@@ -674,23 +617,15 @@ export function computeWarReliabilityFallback(
         label: "War Activity",
         score: activiteGDC,
         max: 8,
-        detail: warHistoryUsed
-          ? warHistoryActivityDetail
-          : (() => {
-              const parts = Object.entries(activityResult.byDay)
-                .sort((a, b) => b[0].localeCompare(a[0]))
-                .map(([k, n]) => `${n}\u00d7 ${k}`);
-              return parts.join(" \u00b7 ");
-            })(),
-        explanation: warHistoryUsed
-          ? `Based on ${completedWarWeeks.slice(0, 5).length} week(s) war history. Battle log (14-day window): ${perfectDays} full days, ${shortDays} short days, ${inactiveDays} inactive days; last war: ${lastWarDay || "none"}${daysSinceLastWar !== null ? ` (${daysSinceLastWar} day(s) ago)` : ""}.`
-          : `In recent ${windowDays}-day window: ${perfectDays} full days, ${shortDays} short days, ${inactiveDays} inactive days; last war: ${lastWarDay || "none"}${daysSinceLastWar !== null ? ` (${daysSinceLastWar} day(s) ago)` : ""}.`,
+        detail: warHistoryActivityDetail,
+        explanation: `Based on ${recoveredWeeksCount} recovered week(s) from the GDC history screen. Last war: ${lastWarDay || "none"}${daysSinceLastWar !== null ? ` (${daysSinceLastWar} day(s) ago)` : ""}.`,
       },
       {
-        label: activiteGenLabel,
-        score: activiteGenDisplay,
-        max: 8,
-        detail: activiteGenDetail,
+        label: "Regularity",
+        score: regulariteGDC,
+        max: 12,
+        detail: regulariteGDCDetail,
+        explanation: `5-week window with missing weeks counted as 0: ${regulariteGDCDetail}.`,
       },
       {
         label: "Points / Deck",
@@ -698,7 +633,7 @@ export function computeWarReliabilityFallback(
         max: 4,
         detail:
           efficiencyHistory.recentWeeks.length > 0
-            ? `${efficiencyHistory.totalFame.toLocaleString("en-US")} points / ${efficiencyHistory.totalDecks} decks (${efficiencyHistory.pointsPerDeck.toFixed(2)} pts/deck, range 100–200, last 3 completed weeks)`
+            ? `${efficiencyHistory.totalFame.toLocaleString("en-US")} points / ${efficiencyHistory.totalDecks} decks (${efficiencyHistory.pointsPerDeck.toFixed(2)} pts/deck, range 100–180, last 3 completed weeks)`
             : "No completed week with GDC data",
       },
       ...(lastSeenScore !== null

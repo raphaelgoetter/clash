@@ -852,12 +852,13 @@ assert.strictEqual(
   "summarizeDecks should compute winrate across all combats",
 );
 
-// New Points / Deck behavior (linear 100→200 pts/deck) for all players
+// New Points / Deck behavior (linear 100→180 pts/deck) for all players
 const scoreCases = [
   { pointsPerDeck: 0, expected: 0 },
   { pointsPerDeck: 99, expected: 0 },
   { pointsPerDeck: 100, expected: 0 },
-  { pointsPerDeck: 150, expected: 2 },
+  { pointsPerDeck: 150, expected: 2.5 },
+  { pointsPerDeck: 180, expected: 4 },
   { pointsPerDeck: 200, expected: 4 },
   { pointsPerDeck: 250, expected: 4 },
 ];
@@ -1049,11 +1050,8 @@ const fallbackWithHistory = computeWarReliabilityFallback(
   false,
   0,
   {
-    weeks: [
-      { label: "S1·W1", decksUsed: 16, fame: 2200, isCurrent: false },
-      { label: "S1·W2", decksUsed: 16, fame: 2100, isCurrent: false },
-    ],
-    streakInCurrentClan: 2,
+    weeks: [{ label: "S1·W1", decksUsed: 12, fame: 2200, isCurrent: false }],
+    streakInCurrentClan: 1,
   },
 );
 assert.ok(
@@ -1064,10 +1062,31 @@ assert.ok(
   !fallbackWithHistory.breakdown.some((b) => b.label === "General Activity"),
   "Fallback with warHistory should no longer expose General Activity",
 );
+const fallbackWarActivityEntry = fallbackWithHistory.breakdown.find(
+  (b) => b.label === "War Activity",
+);
+assert.strictEqual(
+  fallbackWarActivityEntry?.score,
+  1.6,
+  `Expected War Activity to scale from 1/5 recovered weeks, got ${fallbackWarActivityEntry?.score}`,
+);
+const fallbackRegularityEntry = fallbackWithHistory.breakdown.find(
+  (b) => b.label === "Regularity",
+);
+assert.strictEqual(
+  fallbackRegularityEntry?.score,
+  1.8,
+  `Expected Regularity to treat missing weeks as 0, got ${fallbackRegularityEntry?.score}`,
+);
+assert.ok(
+  fallbackRegularityEntry?.detail.includes("12/16") &&
+    fallbackRegularityEntry?.detail.includes("0/16"),
+  `Expected Regularity detail to include recovered and missing weeks, got ${fallbackRegularityEntry?.detail}`,
+);
 console.log("✓ fallback regularity replacement test passed.");
 
-// New tests: fallback war activity war-ratio adjustment
-const fallbackNoWar = computeWarReliabilityFallback(
+// New tests: fallback relies only on recovered weeks and not on battle-log ratios
+const fallbackNoHistory = computeWarReliabilityFallback(
   { trophies: 12000, totalDonations: 10000, badges: [] },
   [],
   { total: 28, gdc: 0, ladder: 28, challenge: 0 },
@@ -1076,13 +1095,22 @@ const fallbackNoWar = computeWarReliabilityFallback(
   0,
   null,
 );
-const gaNoWar = fallbackNoWar.breakdown.find(
-  (b) => b.label === "General Activity",
+const fallbackWarActivityNoHistory = fallbackNoHistory.breakdown.find(
+  (b) => b.label === "War Activity",
 );
-assert.ok(gaNoWar, "General Activity entry exists for no-war case");
 assert.ok(
-  gaNoWar.score <= 4,
-  `Expected General Activity <= 4 for 0% War (got ${gaNoWar.score})`,
+  fallbackWarActivityNoHistory,
+  "War Activity entry exists for no-history case",
+);
+assert.strictEqual(
+  fallbackWarActivityNoHistory?.score,
+  0,
+  `Expected War Activity 0 when no history is recovered, got ${fallbackWarActivityNoHistory?.score}`,
+);
+assert.strictEqual(
+  fallbackNoHistory.breakdown.find((b) => b.label === "Regularity")?.score,
+  0,
+  "Expected Regularity 0 when no history is recovered",
 );
 
 const fallbackNoWarWithLastSeen = computeWarReliabilityFallback(
@@ -1104,49 +1132,61 @@ assert.ok(
   "Expected Last Seen entry when lastSeen data is available",
 );
 
-const fallbackAllWar = computeWarReliabilityFallback(
+const fallbackFiveWeeks = computeWarReliabilityFallback(
   { trophies: 12000, totalDonations: 10000, badges: [] },
-  Array.from({ length: 30 }, () => ({
-    battleTime: new Date().toISOString(),
-    type: "gdc",
-  })),
-  { total: 30, gdc: 30, ladder: 0, challenge: 0 },
+  [],
+  { total: 0, gdc: 0, ladder: 0, challenge: 0 },
   null,
   false,
   0,
-  null,
+  {
+    weeks: [
+      { label: "S1·W1", decksUsed: 16, fame: 2400, isCurrent: false },
+      { label: "S1·W2", decksUsed: 16, fame: 2400, isCurrent: false },
+      { label: "S1·W3", decksUsed: 16, fame: 2400, isCurrent: false },
+      { label: "S1·W4", decksUsed: 16, fame: 2400, isCurrent: false },
+      { label: "S1·W5", decksUsed: 16, fame: 2400, isCurrent: false },
+    ],
+    streakInCurrentClan: 5,
+  },
 );
-const gaAllWar = fallbackAllWar.breakdown.find(
-  (b) => b.label === "General Activity",
-);
-assert.ok(gaAllWar, "General Activity entry exists for all-war case");
 assert.strictEqual(
-  gaAllWar.score,
+  fallbackFiveWeeks.breakdown.find((b) => b.label === "War Activity")?.score,
   8,
-  `Expected General Activity 8 for 100% War (got ${gaAllWar.score})`,
+  "Expected War Activity 8 when five weeks are recovered",
 );
 assert.strictEqual(
-  fallbackAllWar.maxScore,
-  35,
-  `Expected fallback maxScore 35 when no last seen data and Discord is not counted, got ${fallbackAllWar.maxScore}`,
+  fallbackFiveWeeks.breakdown.find((b) => b.label === "Regularity")?.score,
+  8,
+  "Expected Regularity 8 when five full weeks are recovered",
 );
-const cw2Entry = fallbackAllWar.breakdown.find((b) => b.label === "CW2 badge");
-assert.ok(cw2Entry, "CW2 badge entry exists for all-war case");
+assert.strictEqual(
+  fallbackFiveWeeks.maxScore,
+  35,
+  `Expected fallback maxScore 35 when no last seen data and Discord is not counted, got ${fallbackFiveWeeks.maxScore}`,
+);
+const cw2Entry = fallbackFiveWeeks.breakdown.find(
+  (b) => b.label === "CW2 badge",
+);
+assert.ok(cw2Entry, "CW2 badge entry exists for five-week case");
 assert.strictEqual(
   cw2Entry.max,
   10,
   `CW2 badge max should be 10, got ${cw2Entry.max}`,
 );
-const warActivityEntryAllWar = fallbackAllWar.breakdown.find(
+const warActivityEntryAllWar = fallbackFiveWeeks.breakdown.find(
   (b) => b.label === "War Activity",
 );
-assert.ok(warActivityEntryAllWar, "War Activity entry exists for all-war case");
+assert.ok(
+  warActivityEntryAllWar,
+  "War Activity entry exists for five-week case",
+);
 assert.strictEqual(
   warActivityEntryAllWar.max,
   8,
   `War Activity max should be 8, got ${warActivityEntryAllWar.max}`,
 );
-console.log("✓ General Activity war-ratio adjustment tests passed.");
+console.log("✓ fallback recovered-week scaling tests passed.");
 
 // New test: dailyActivity should count all battles, not only war battles
 const gameNow = new Date().toISOString();
