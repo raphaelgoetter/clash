@@ -51,9 +51,15 @@ function ordinal(n) {
   return n + "\u20E3";
 }
 
-function voteBar(votes, maxVotes, width = 12) {
-  const filled = maxVotes > 0 ? Math.floor((votes / maxVotes) * width) : 0;
-  return "■".repeat(filled) + "□".repeat(width - filled);
+function voteBar(votes) {
+  if (votes === 0) return "";
+  const lines = [];
+  let remaining = votes;
+  while (remaining > 0) {
+    lines.push("■".repeat(Math.min(remaining, 12)));
+    remaining -= 12;
+  }
+  return lines.join("\n");
 }
 
 function topScorerLine(p, idx) {
