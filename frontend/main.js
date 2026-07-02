@@ -2241,7 +2241,7 @@ function renderPlayerResults(data) {
         .replace(/(\d+)\/5 full weeks?/i, (_, n) => `${n}/5 semaines complètes`)
         .replace(
           /incomplete weeks? count as 0/i,
-          "les semaines incomplètes comptent pour 0",
+          "Semaines incomplètes comptent 0",
         )
         .replace(
           /member for at least\s*(\d+)\s*weeks?/i,
@@ -2282,19 +2282,17 @@ function renderPlayerResults(data) {
       lowercaseLabel.includes("dernière connexion")
     ) {
       if (currentLang === "fr") {
-        const localizedDuration = lastSeenDuration
-          ? lastSeenDuration
-              .replace(/(\d+)d/g, "$1 j")
-              .replace(/(\d+)h/g, "$1 h")
-              .replace(/(\d+)m/g, "$1 min")
-          : null;
-        return (
-          localizedDuration ||
-          text
-            .replace(/^today$/i, "Aujourd'hui")
-            .replace(/^1 day$/i, "1 jour")
-            .replace(/^(\d+) days?$/i, (_, n) => `${n} jours`)
-        );
+        if (/^today$/i.test(text)) return "Aujourd'hui";
+        if (lastSeenDuration) {
+          if (/^0m$/i.test(lastSeenDuration)) return "Aujourd'hui";
+          return lastSeenDuration
+            .replace(/(\d+)d/g, "$1 j")
+            .replace(/(\d+)h/g, "$1 h")
+            .replace(/(\d+)m/g, "$1 min");
+        }
+        return text
+          .replace(/^1 day$/i, "1 jour")
+          .replace(/^(\d+) days?$/i, (_, n) => `${n} jours`);
       }
       return text
         .replace(/today/i, t("today"))
