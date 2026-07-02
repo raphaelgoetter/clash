@@ -930,8 +930,8 @@ assert.strictEqual(
 );
 assert.strictEqual(
   fallbackPointsPerDeck.maxScore,
-  38,
-  `Fallback maxScore should be 38 when lastSeen is present, got ${fallbackPointsPerDeck.maxScore}`,
+  42,
+  `Fallback maxScore should be 42 when lastSeen is present, got ${fallbackPointsPerDeck.maxScore}`,
 );
 assert.ok(
   fallbackPointsPerDeck.summary.includes("Points / deck"),
@@ -1124,8 +1124,8 @@ const fallbackNoWarWithLastSeen = computeWarReliabilityFallback(
 );
 assert.strictEqual(
   fallbackNoWarWithLastSeen.maxScore,
-  38,
-  `Expected fallback maxScore 38 when lastSeen is present, got ${fallbackNoWarWithLastSeen.maxScore}`,
+  42,
+  `Expected fallback maxScore 42 when lastSeen is present, got ${fallbackNoWarWithLastSeen.maxScore}`,
 );
 assert.ok(
   fallbackNoWarWithLastSeen.breakdown.some((b) => b.label === "Last Seen"),
@@ -1162,8 +1162,8 @@ assert.strictEqual(
 );
 assert.strictEqual(
   fallbackFiveWeeks.maxScore,
-  35,
-  `Expected fallback maxScore 35 when no last seen data and Discord is not counted, got ${fallbackFiveWeeks.maxScore}`,
+  39,
+  `Expected fallback maxScore 39 when no last seen data and Discord is not counted, got ${fallbackFiveWeeks.maxScore}`,
 );
 const cw2Entry = fallbackFiveWeeks.breakdown.find(
   (b) => b.label === "CW2 badge",

@@ -549,8 +549,7 @@ export function computeWarReliabilityFallback(
       experience +
       discordScore,
   );
-  const maxBase = lastSeenScore !== null ? 36 : 33;
-  const maxScore = maxBase + 2;
+  const maxScore = 39 + (lastSeenScore !== null ? 3 : 0);
   const pct = Math.round((total / maxScore) * 100);
 
   let verdict, color;
