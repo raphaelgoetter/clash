@@ -53,6 +53,25 @@ function summarizePointsPerDeckWeeks(weeks, maxWeeks = 3) {
   return { recentWeeks, totalDecks, totalFame, pointsPerDeck };
 }
 
+function summarizeRegularityWeeks(weeks, maxWeeks = 5) {
+  const recentWeeks = (weeks ?? [])
+    .filter(
+      (w) => !w?.isCurrent && !w?.ignored && typeof w?.decksUsed === "number",
+    )
+    .slice(0, maxWeeks);
+
+  const windowWeeks = Array.from({ length: maxWeeks }, (_, index) => ({
+    decksUsed: recentWeeks[index]?.decksUsed ?? 0,
+  }));
+  const completedWeeks = windowWeeks.filter(
+    (week) => (week.decksUsed || 0) >= 16,
+  );
+  const fullWeekCount = completedWeeks.length;
+  const score = maxWeeks > 0 ? (fullWeekCount / maxWeeks) * 12 : 0;
+
+  return { recentWeeks, windowWeeks, fullWeekCount, score };
+}
+
 /**
  * Compute a 0-10 War Activity score that rewards doing all 4 daily battles.
  *
@@ -212,26 +231,18 @@ export function computeWarScore(
 
   // 1. Régularité (0-12) — proportionnelle aux decks joués sur les semaines terminées.
   // On exclut la semaine en cours (isCurrent) car elle n'est pas forcément complète.
-  const totalWeeks = warHistory.totalWeeks || 1;
   const weeksInClan = warHistory.streakInCurrentClan;
   const completedRegularityWeeks = weeks.filter(
     (w) => !w.isCurrent && !w.ignored,
   );
-  const weeksForRegularity = completedRegularityWeeks;
-  const completedCount = weeksForRegularity.length;
-  const deckSum = weeksForRegularity.reduce(
-    (s, w) => s + (w.decksUsed || 0),
-    0,
+  const regularityWindow = summarizeRegularityWeeks(
+    completedRegularityWeeks,
+    5,
   );
-  const idealDecks = completedCount * 16;
-  const incompleteWeeks = weeksForRegularity.filter(
-    (w) => (w.decksUsed || 0) < 16,
-  ).length;
-  // Pénalité de 0.5 pt par semaine incomplète pour décourager les participations partielles.
-  const baseScore = completedCount > 0 ? (deckSum / (idealDecks || 1)) * 12 : 0;
-  const regularite = r(
-    Math.max(0, Math.min(12, baseScore - incompleteWeeks * 0.5)),
-  );
+  const regularite = r(Math.min(12, regularityWindow.score));
+  const regularityWindowDetail = regularityWindow.windowWeeks
+    .map((week) => `${Math.min(week.decksUsed || 0, 16)}/16`)
+    .join(" · ");
 
   // 2. Points / deck (0-4) — efficiency of the 3 most recent completed GDC weeks.
   const efficiencyHistory = summarizePointsPerDeckWeeks(
@@ -324,7 +335,7 @@ export function computeWarScore(
     warHistoryWeeks <= 0 ? "Less than one week" : `${warHistoryWeeks} week(s)`;
 
   const summary =
-    `Regularity: ${regularityQuality} (${regularite}/12 from ${deckSum}/${idealDecks} decks across ${completedCount} week(s) (${incompleteWeeks} incomplete)).\n` +
+    `Regularity: ${regularityQuality} (${regularite}/12 across ${regularityWindow.fullWeekCount}/5 full weeks: ${regularityWindowDetail}).\n` +
     `Points / deck: ${efficiencyQuality} (${efficiencyScore}/4 from ${efficiencyHistory.pointsPerDeck.toFixed(2)} pts/deck across ${efficiencyHistory.recentWeeks.length} week(s)).\n` +
     `CW2: ${cw2Remark}.\n` +
     `In clan: ${clanDurationText}.`;
@@ -341,20 +352,13 @@ export function computeWarScore(
       score: regularite,
       max: 12,
       detail: (() => {
-        if (completedCount === 0) return "No completed week in this clan yet";
-        const pct = Math.round((deckSum / (idealDecks || 1)) * 100);
-        const isApiMaxWeeks = weeksInClan >= 10;
+        if (regularityWindow.recentWeeks.length === 0)
+          return "No completed week in this clan yet";
         const suffix =
-          weeksInClan < totalWeeks
-            ? weeksInClan === 0
-              ? ` — joined recently (< 1 week in this clan)`
-              : ` — member for ${isApiMaxWeeks ? "at least " : ""}${weeksInClan} week${weeksInClan > 1 ? "s" : ""}`
-            : "";
-        let txt = `${deckSum}/${idealDecks} decks across ${completedCount} week${completedCount > 1 ? "s" : ""} (${pct}%)`;
-        if (incompleteWeeks > 0) {
-          txt += ` — ${incompleteWeeks} incomplete week${incompleteWeeks > 1 ? "s" : ""} (-${(incompleteWeeks * 0.5).toFixed(1)} pts)`;
-        }
-        return txt + suffix;
+          weeksInClan <= 0
+            ? " — joined recently (< 1 week in this clan)"
+            : ` — member for ${weeksInClan} week${weeksInClan > 1 ? "s" : ""}`;
+        return `${regularityWindow.fullWeekCount}/5 full weeks (${regularityWindowDetail}; incomplete weeks count as 0)${suffix}`;
       })(),
     },
     {
@@ -496,17 +500,12 @@ export function computeWarReliabilityFallback(
       lastSeenDays <= 1 ? 3 : lastSeenDays <= 3 ? 2 : lastSeenDays <= 7 ? 1 : 0;
   }
 
-  // 3. Régularité (0-8) — calculée sur 5 semaines fixes, avec les semaines
-  // non récupérées comptées à 0.
-  const regularityDecks = recoveredWeekSlots.map((w) => w.decksUsed || 0);
-  const regulariteGDC = r(
-    Math.min(
-      12,
-      (regularityDecks.reduce((sum, n) => sum + n, 0) / (5 * 16)) * 12,
-    ),
-  );
-  const regulariteGDCDetail = regularityDecks
-    .map((decks) => `${decks}/16`)
+  // 3. Régularité (0-12) — 5 semaines fixes, une semaine ne compte que si elle
+  // est complète. Les semaines partielles ou absentes valent 0.
+  const regularityWindow = summarizeRegularityWeeks(warHistory?.weeks ?? [], 5);
+  const regulariteGDC = r(Math.min(12, regularityWindow.score));
+  const regulariteGDCDetail = regularityWindow.windowWeeks
+    .map((week) => `${Math.min(week.decksUsed || 0, 16)}/16`)
     .join(" · ");
 
   // 3c. Points / deck (0-4) — River Race efficiency on the 3 most recent completed weeks.
@@ -583,7 +582,7 @@ export function computeWarReliabilityFallback(
 
   const warActivitySummaryLine = `War Activity: ${warActivityQuality} (${activiteGDC}/8, ${recoveredWeeksCount}/5 recovered weeks: ${warHistoryActivityDetail}).`;
 
-  const regularitySummaryLine = `Regularity: ${regularityQuality} (${regulariteGDC}/12, 5-week window: ${regulariteGDCDetail}).`;
+  const regularitySummaryLine = `Regularity: ${regularityQuality} (${regulariteGDC}/12, ${regularityWindow.fullWeekCount}/5 full weeks: ${regulariteGDCDetail}).`;
 
   const efficiencySummaryLine =
     efficiencyHistory.recentWeeks.length > 0
@@ -624,7 +623,7 @@ export function computeWarReliabilityFallback(
         score: regulariteGDC,
         max: 12,
         detail: regulariteGDCDetail,
-        explanation: `5-week window with missing weeks counted as 0: ${regulariteGDCDetail}.`,
+        explanation: `5-week window where only complete weeks count and missing weeks count as 0: ${regulariteGDCDetail}.`,
       },
       {
         label: "Points / Deck",

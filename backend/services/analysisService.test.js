@@ -895,6 +895,38 @@ for (const tc of scoreCases) {
 }
 console.log("✓ computeWarScore Points / Deck thresholds test passed.");
 
+const regularityProfile = computeWarScore(
+  { trophies: 5000, totalDonations: 1000, badges: [] },
+  {
+    weeks: [
+      { decksUsed: 16, fame: 2400 },
+      { decksUsed: 8, fame: 1200 },
+      { decksUsed: 16, fame: 2400 },
+      { decksUsed: 16, fame: 2400 },
+      { decksUsed: 12, fame: 1800 },
+    ],
+    streakInCurrentClan: 5,
+    totalWeeks: 5,
+  },
+  null,
+  null,
+  false,
+);
+const regularityEntry = regularityProfile.breakdown.find(
+  (entry) => entry.label === "Regularity",
+);
+assert.ok(regularityEntry, "Regularity entry exists for five-week profile");
+assert.strictEqual(
+  regularityEntry.score,
+  7.2,
+  `Five-week profile with 3 full weeks should score 7.2, got ${regularityEntry.score}`,
+);
+assert.ok(
+  regularityEntry.detail.includes("3/5 full weeks"),
+  `Expected regularity detail to mention 3/5 full weeks, got ${regularityEntry.detail}`,
+);
+console.log("✓ computeWarScore regularity window test passed.");
+
 const fallbackPointsPerDeck = computeWarReliabilityFallback(
   {
     trophies: 12000,
@@ -1050,7 +1082,13 @@ const fallbackWithHistory = computeWarReliabilityFallback(
   false,
   0,
   {
-    weeks: [{ label: "S1·W1", decksUsed: 12, fame: 2200, isCurrent: false }],
+    weeks: [
+      { label: "S1·W1", decksUsed: 16, fame: 2400, isCurrent: false },
+      { label: "S1·W2", decksUsed: 8, fame: 1200, isCurrent: false },
+      { label: "S1·W3", decksUsed: 16, fame: 2400, isCurrent: false },
+      { label: "S1·W4", decksUsed: 16, fame: 2400, isCurrent: false },
+      { label: "S1·W5", decksUsed: 12, fame: 1800, isCurrent: false },
+    ],
     streakInCurrentClan: 1,
   },
 );
@@ -1075,13 +1113,12 @@ const fallbackRegularityEntry = fallbackWithHistory.breakdown.find(
 );
 assert.strictEqual(
   fallbackRegularityEntry?.score,
-  1.8,
-  `Expected Regularity to treat missing weeks as 0, got ${fallbackRegularityEntry?.score}`,
+  7.2,
+  `Expected Regularity to count only full weeks on a 5-week window, got ${fallbackRegularityEntry?.score}`,
 );
 assert.ok(
-  fallbackRegularityEntry?.detail.includes("12/16") &&
-    fallbackRegularityEntry?.detail.includes("0/16"),
-  `Expected Regularity detail to include recovered and missing weeks, got ${fallbackRegularityEntry?.detail}`,
+  fallbackRegularityEntry?.detail.includes("3/5 full weeks"),
+  `Expected Regularity detail to mention full weeks, got ${fallbackRegularityEntry?.detail}`,
 );
 console.log("✓ fallback regularity replacement test passed.");
 
@@ -1157,8 +1194,8 @@ assert.strictEqual(
 );
 assert.strictEqual(
   fallbackFiveWeeks.breakdown.find((b) => b.label === "Regularity")?.score,
-  8,
-  "Expected Regularity 8 when five full weeks are recovered",
+  12,
+  "Expected Regularity 12 when five full weeks are recovered",
 );
 assert.strictEqual(
   fallbackFiveWeeks.maxScore,

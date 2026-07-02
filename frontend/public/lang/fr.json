@@ -116,7 +116,7 @@
   "max": "Max",
   "cap": "Cap",
   "regularity": "Régularité",
-  "regularityCap": "decks de guerre utilisés / (16×semaines), -0,5 pt par semaine incomplète",
+  "regularityCap": "5 semaines fixes, 1 point par semaine complète, 0 sinon",
   "pointsPerDeck": "Points / deck",
   "pointsPerDeckCap": "Efficacité River Race sur les 3 dernières semaines terminées (100–180 points / deck)",
   "avgFame": "Points moyens",

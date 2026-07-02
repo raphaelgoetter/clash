@@ -116,7 +116,7 @@
   "max": "Max",
   "cap": "Cap",
   "regularity": "Regularity",
-  "regularityCap": "war decks used / (16×weeks), –0.5 pt per incomplete week",
+  "regularityCap": "fixed 5-week window, 1 point per full week, 0 otherwise",
   "pointsPerDeck": "Points / deck",
   "pointsPerDeckCap": "River Race efficiency on the 3 most recent completed weeks (100–180 points / deck)",
   "avgFame": "Avg points",

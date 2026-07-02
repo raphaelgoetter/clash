@@ -322,7 +322,7 @@ En pratique, la fenêtre exploitable est de `~10` saisons terminées + `1` semai
 
 Critères :
 
-- Régularité : 12. Proportion de decks joués sur les semaines terminées, avec pénalité de 0,5 point par semaine incomplète.
+- Régularité : 12. Sur une fenêtre fixe de 5 semaines, une semaine complète vaut 1 point, sinon 0.
 - Badge CW2 : 8. Cap à 250 victoires CW2.
 - Stabilité : 8. 5 semaines consécutives dans le clan ou la famille donnent le maximum.
 - Dernière connexion : 5. Ajoutée seulement si lastSeen est disponible.
@@ -345,7 +345,7 @@ Quand le `battlelog` est trop court ou trop écrasé par des combats non-GDC, le
 
 Critères :
 
-- Régularité : 12. Calculée comme si 5 semaines étaient disponibles, les semaines non récupérées comptant pour 0.
+- Régularité : 12. Calculée sur 5 semaines fixes, avec une semaine complète valant 1 et les semaines incomplètes ou manquantes valant 0.
 - Badge CW2 : 10. Cap à 250 victoires CW2.
 - Activité GDC : 8. Basée uniquement sur le nombre de semaines GDC récupérées, avec maximum atteint à partir de 5 semaines récupérées.
 - Points / deck : 4. Efficacité River Race sur les 3 dernières semaines terminées quand l’historique est disponible.
