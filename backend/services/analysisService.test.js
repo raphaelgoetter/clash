@@ -857,9 +857,9 @@ const scoreCases = [
   { pointsPerDeck: 0, expected: 0 },
   { pointsPerDeck: 99, expected: 0 },
   { pointsPerDeck: 100, expected: 0 },
-  { pointsPerDeck: 150, expected: 5 },
-  { pointsPerDeck: 200, expected: 10 },
-  { pointsPerDeck: 250, expected: 10 },
+  { pointsPerDeck: 150, expected: 2 },
+  { pointsPerDeck: 200, expected: 4 },
+  { pointsPerDeck: 250, expected: 4 },
 ];
 for (const tc of scoreCases) {
   const warScore = computeWarScore(
@@ -893,6 +893,50 @@ for (const tc of scoreCases) {
   );
 }
 console.log("✓ computeWarScore Points / Deck thresholds test passed.");
+
+const fallbackPointsPerDeck = computeWarReliabilityFallback(
+  {
+    trophies: 12000,
+    totalDonations: 10000,
+    badges: [{ name: "ClanWarWins", progress: 250 }],
+  },
+  [],
+  { total: 0, gdc: 0, ladder: 0, challenge: 0 },
+  null,
+  false,
+  0,
+  {
+    weeks: [
+      { label: "S1·W1", decksUsed: 16, fame: 2400, isCurrent: false },
+      { label: "S1·W2", decksUsed: 16, fame: 2320, isCurrent: false },
+      { label: "S1·W3", decksUsed: 16, fame: 2240, isCurrent: false },
+      { label: "S1·W4", decksUsed: 16, fame: 2160, isCurrent: false },
+    ],
+    streakInCurrentClan: 4,
+  },
+);
+const fallbackPointsPerDeckEntry = fallbackPointsPerDeck.breakdown.find(
+  (entry) => entry.label === "Points / Deck",
+);
+assert.ok(
+  fallbackPointsPerDeckEntry,
+  "Fallback should expose Points / Deck when warHistory is available",
+);
+assert.strictEqual(
+  fallbackPointsPerDeckEntry.max,
+  4,
+  `Fallback Points / Deck max should be 4, got ${fallbackPointsPerDeckEntry.max}`,
+);
+assert.strictEqual(
+  fallbackPointsPerDeck.maxScore,
+  38,
+  `Fallback maxScore should be 38 when lastSeen is present, got ${fallbackPointsPerDeck.maxScore}`,
+);
+assert.ok(
+  fallbackPointsPerDeck.summary.includes("Points / deck"),
+  "Fallback summary should mention Points / deck",
+);
+console.log("✓ fallback Points / Deck thresholds test passed.");
 
 const highEfficiencyProfile = computeWarScore(
   {
@@ -1052,8 +1096,8 @@ const fallbackNoWarWithLastSeen = computeWarReliabilityFallback(
 );
 assert.strictEqual(
   fallbackNoWarWithLastSeen.maxScore,
-  36,
-  `Expected fallback maxScore 36 when lastSeen is present, got ${fallbackNoWarWithLastSeen.maxScore}`,
+  38,
+  `Expected fallback maxScore 38 when lastSeen is present, got ${fallbackNoWarWithLastSeen.maxScore}`,
 );
 assert.ok(
   fallbackNoWarWithLastSeen.breakdown.some((b) => b.label === "Last Seen"),
@@ -1083,8 +1127,8 @@ assert.strictEqual(
 );
 assert.strictEqual(
   fallbackAllWar.maxScore,
-  33,
-  `Expected fallback maxScore 33 when no last seen data and Discord is not counted, got ${fallbackAllWar.maxScore}`,
+  35,
+  `Expected fallback maxScore 35 when no last seen data and Discord is not counted, got ${fallbackAllWar.maxScore}`,
 );
 const cw2Entry = fallbackAllWar.breakdown.find((b) => b.label === "CW2 badge");
 assert.ok(cw2Entry, "CW2 badge entry exists for all-war case");

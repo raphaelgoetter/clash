@@ -312,6 +312,8 @@ L’API Clash Royale fournit deux sources de données principales pour ce calcul
 
 ### Score de fiabilité guerre, mode complet
 
+<!-- markdownlint-disable MD060 -->
+
 Le mode complet est utilisé quand l’historique d'un joueur permet d'exploiter le `riverracelog`. Il faut au minimum une vraie semaine terminée dans le clan ou la famille pour que ce mode s’active. Si l’historique famille est inexistant ou trop faible, on reste en `fallback`.
 
 Quand ces données existent, le score complet privilégie les signaux GDC du profil plutôt qu'une moyenne brute d'activité. La régularité sur les semaines terminées reste la base, et l'efficacité par deck prend le relais dès qu'un historique River Race exploitable est disponible.
@@ -320,16 +322,13 @@ En pratique, la fenêtre exploitable est de `~10` saisons terminées + `1` semai
 
 Critères :
 
-| #   | Critère            | Maximum | Règle actuelle                                                                                           |
-| --- | ------------------ | ------- | -------------------------------------------------------------------------------------------------------- |
-| 1   | Régularité         | 12      | Proportion de decks joués sur les semaines terminées, avec pénalité de 0,5 point par semaine incomplète  |
-| 2   | Points / deck      | 10      | Efficacité River Race sur les semaines terminées, avec une plage utile d’environ 100 à 200 points / deck |
-| 3   | Stabilité          | 8       | 5 semaines consécutives dans le clan ou la famille donnent le maximum                                    |
-| 4   | Expérience         | 3       | Basée sur les trophées actuels, plage 4000 à 14000                                                       |
-| 5   | Win rate guerre    | 3       | Ajouté seulement si le battle log permet un taux exploitable                                             |
-| 6   | Badge CW2          | 8       | Cap à 250 victoires CW2                                                                                  |
-| 7   | Dernière connexion | 5       | Ajoutée seulement si lastSeen est disponible                                                             |
-| 8   | Discord            | 2       | Compte Discord lié                                                                                       |
+- Régularité : 12. Proportion de decks joués sur les semaines terminées, avec pénalité de 0,5 point par semaine incomplète.
+- Badge CW2 : 8. Cap à 250 victoires CW2.
+- Stabilité : 8. 5 semaines consécutives dans le clan ou la famille donnent le maximum.
+- Dernière connexion : 5. Ajoutée seulement si lastSeen est disponible.
+- Points / deck : 4. Efficacité GDC sur les 3 dernières semaines terminées, avec une plage utile d’environ 100 à 200 points / deck.
+- Expérience : 3. Basée sur les trophées actuels, plage 4000 à 14000.
+- Discord : 2. Compte Discord lié.
 
 Disclosures front :
 
@@ -346,15 +345,15 @@ Quand le `battlelog` est trop court ou trop écrasé par des combats non-GDC, le
 
 Critères :
 
-| #   | Critère            | Maximum | Règle actuelle                                                                                                                                              |
-| --- | ------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Activité GDC       | 8       | Basée sur les decks par jour dans une fenêtre glissante de 14 jours, avec bonus pour les journées complètes et légère pénalité pour les journées partielles |
-| 2   | Activité générale  | 8       | Basée sur les combats compétitifs, pondérée par la part de combats GDC                                                                                      |
-| 3   | Badge CW2          | 10      | Cap à 250 victoires CW2                                                                                                                                     |
-| 4   | Dernière connexion | 3       | Ajoutée si lastSeen est disponible                                                                                                                          |
-| 5   | Expérience         | 3       | Basée sur les trophées actuels                                                                                                                              |
-| 6   | Dons               | 2       | Basé sur totalDonations                                                                                                                                     |
-| 7   | Discord            | 2       | Compte Discord lié                                                                                                                                          |
+- Badge CW2 : 10. Cap à 250 victoires CW2.
+- Activité GDC : 8. Basée sur les decks par jour dans une fenêtre glissante de 14 jours, avec bonus pour les journées complètes et légère pénalité pour les journées partielles.
+- Régularité / activité générale : 8. Régularité si l’historique River Race est disponible, sinon activité générale basée sur les combats compétitifs.
+- Points / deck : 4. Efficacité River Race sur les 3 dernières semaines terminées quand l’historique est disponible.
+- Dernière connexion : 3. Ajoutée si lastSeen est disponible.
+- Expérience : 3. Basée sur les trophées actuels.
+- Discord : 2. Compte Discord lié.
+
+<!-- markdownlint-enable MD060 -->
 
 ### Seuils de verdict
 
@@ -389,7 +388,7 @@ Notes :
 
 ## Paliers de ligue GDC
 
-### Source de vérité
+### Source de vérité ligue
 
 Les seuils de trophées de guerre (`clanWarTrophies`) déterminant le palier de ligue GDC sont définis **une seule fois** dans :
 

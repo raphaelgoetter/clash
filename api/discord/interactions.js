@@ -1104,13 +1104,14 @@ function buildScoreBreakdownCodeBlock(score) {
     return "Aucun détail de fiabilité disponible.";
   }
 
+  const orderedBreakdown = [...breakdown].sort((a, b) => b.max - a.max);
   const rows = [];
   let maxLabel = 0;
-  for (const item of breakdown) {
+  for (const item of orderedBreakdown) {
     const label = LABEL_FR[item.label] || item.label;
     if (label.length > maxLabel) maxLabel = label.length;
   }
-  for (const item of breakdown) {
+  for (const item of orderedBreakdown) {
     const icon = criterionIcon(item.score, item.max);
     const label = LABEL_FR[item.label] || item.label;
     const scoreStr = `${item.score}/${item.max}`;
@@ -1132,51 +1133,16 @@ function scoreBadge(score, max) {
   return SCORE_BADGES.error;
 }
 
-const RELIABILITY_ORDER_HISTORY = [
-  "CW2 badge",
-  "Regularity",
-  "Points / Deck",
-  "Avg Score",
-  "Stability",
-  "Win Rate (War)",
-  "Experience",
-  "Last Seen",
-  "Discord",
-];
-
-const RELIABILITY_ORDER_FALLBACK = [
-  "CW2 badge",
-  "War Activity",
-  "Regularity",
-  "General Activity",
-  "Experience",
-  "Last Seen",
-  "Discord",
-];
-
 function buildReliabilityFields(score) {
   const breakdown = Array.isArray(score?.breakdown) ? score.breakdown : [];
   if (breakdown.length === 0) return null;
 
-  const ordered = [];
-  const fallback = [];
-  const order = score?.isFallback
-    ? RELIABILITY_ORDER_FALLBACK
-    : RELIABILITY_ORDER_HISTORY;
-  for (const item of breakdown) {
+  const orderedBreakdown = [...breakdown].sort((a, b) => b.max - a.max);
+  const lines = orderedBreakdown.map((item) => {
     const badge = scoreBadge(item.score, item.max);
     const label = LABEL_FR[item.label] || item.label;
-    const line = `${badge} ${label} (${item.score}/${item.max})`;
-    if (order.includes(item.label)) {
-      ordered.push({ label: item.label, line });
-    } else {
-      fallback.push(line);
-    }
-  }
-
-  ordered.sort((a, b) => order.indexOf(a.label) - order.indexOf(b.label));
-
-  const lines = ordered.map((item) => item.line).concat(fallback);
+    return `${badge} ${label} (${item.score}/${item.max})`;
+  });
 
   return [
     {
@@ -1312,7 +1278,6 @@ async function buildOtherAccountsField(playerTag, discordLinks) {
 // et effectue la traduction française des libellés.
 const LABEL_FR = {
   "War Activity": "Activité de GDC",
-  "Win Rate (War)": "Winrate GDC",
   "CW2 badge": "Badge CW2",
   "CW2 Battle Wins": "Badge CW2",
   "General Activity": "Activité générale",

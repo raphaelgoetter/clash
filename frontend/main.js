@@ -334,11 +334,10 @@ function translateUI() {
         </thead>
         <tbody>
           <tr><td>${t("regularity")}</td><td>12</td><td>${t("regularityCap")}</td></tr>
-          <tr><td>${t("pointsPerDeck")}</td><td>10</td><td>${t("pointsPerDeckCap")}</td></tr>
           <tr><td>${t("cw2BattleWins")}</td><td>8</td><td>${t("cw2BattleWinsCap")}</td></tr>
           <tr><td>${t("clanStability")}</td><td>8</td><td>${t("clanStabilityCap")}</td></tr>
           <tr><td>${t("lastSeen")}</td><td>5</td><td>${t("lastSeenCap")}</td></tr>
-          <tr><td>${t("winRateFullMode")}</td><td>3</td><td>${t("winRateFullModeCap")}</td></tr>
+          <tr><td>${t("pointsPerDeck")}</td><td>4</td><td>${t("pointsPerDeckCap")}</td></tr>
           <tr><td>${t("experience")}</td><td>3</td><td>${t("experienceCap")}</td></tr>
           <tr><td>${t("discord")}</td><td>2</td><td>${t("discordCap")}</td></tr>
         </tbody>
@@ -2275,7 +2274,10 @@ function renderPlayerResults(data) {
     }
     return text;
   }
-  reasonsList.innerHTML = (ws.breakdown ?? [])
+  const sortedBreakdown = [...(ws.breakdown ?? [])].sort(
+    (a, b) => b.max - a.max,
+  );
+  reasonsList.innerHTML = sortedBreakdown
     .map((b) => {
       const labelText = scoreLabelMap[b.label] || b.label;
       const detailText = translateDetail(b.label, b.detail);
