@@ -2225,7 +2225,12 @@ function renderPlayerResults(data) {
         .replace(/\b(\d{1,3}(?:,\d{3})+)\b/g, (value) =>
           value.replace(/,/g, " "),
         )
-        .replace(/(\d+)\.(\d+)/g, "$1,$2");
+        .replace(/(\d+)\.(\d+)/g, "$1,$2")
+        .replace(/\bincomplete weeks? count as 0\b/gi, "Semaines incomplètes comptent 0")
+        .replace(/\btoday\b/gi, "Aujourd'hui")
+        .replace(/\bfull weeks?\b/gi, (match) =>
+          match.toLowerCase().includes("full weeks") ? "semaines complètes" : match,
+        );
     }
 
     const lowercaseLabel = label.toLowerCase();
@@ -2243,6 +2248,11 @@ function renderPlayerResults(data) {
           /incomplete weeks? count as 0/i,
           "Semaines incomplètes comptent 0",
         )
+        .replace(
+          /incompl[eè]te weeks? count as 0/i,
+          "Semaines incomplètes comptent 0",
+        )
+        .replace(/\btoday\b/i, "Aujourd'hui")
         .replace(
           /member for at least\s*(\d+)\s*weeks?/i,
           (_, n) => `membre depuis au moins ${n} semaines`,
@@ -2282,7 +2292,7 @@ function renderPlayerResults(data) {
       lowercaseLabel.includes("dernière connexion")
     ) {
       if (currentLang === "fr") {
-        if (/^today$/i.test(text)) return "Aujourd'hui";
+        if (/today/i.test(text)) return "Aujourd'hui";
         if (lastSeenDuration) {
           if (/^0m$/i.test(lastSeenDuration)) return "Aujourd'hui";
           return lastSeenDuration
