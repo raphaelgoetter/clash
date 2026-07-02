@@ -67,7 +67,7 @@ function summarizeRegularityWeeks(weeks, maxWeeks = 5) {
     (week) => (week.decksUsed || 0) >= 16,
   );
   const fullWeekCount = completedWeeks.length;
-  const score = maxWeeks > 0 ? (fullWeekCount / maxWeeks) * 12 : 0;
+  const score = maxWeeks > 0 ? (fullWeekCount / maxWeeks) * 10 : 0;
 
   return { recentWeeks, windowWeeks, fullWeekCount, score };
 }
@@ -229,7 +229,7 @@ export function computeWarScore(
   // Filtre les semaines ignorées (elles restent dans le tableau pour l'affichage)
   const weeks = warHistory.weeks.filter((w) => !w.ignored);
 
-  // 1. Régularité (0-12) — proportionnelle aux decks joués sur les semaines terminées.
+  // 1. Régularité (0-10) — proportionnelle aux semaines complètes sur une fenêtre fixe de 5 semaines.
   // On exclut la semaine en cours (isCurrent) car elle n'est pas forcément complète.
   const weeksInClan = warHistory.streakInCurrentClan;
   const completedRegularityWeeks = weeks.filter(
@@ -239,7 +239,7 @@ export function computeWarScore(
     completedRegularityWeeks,
     5,
   );
-  const regularite = r(Math.min(12, regularityWindow.score));
+  const regularite = r(Math.min(10, regularityWindow.score));
   const regularityWindowDetail = regularityWindow.windowWeeks
     .map((week) => `${Math.min(week.decksUsed || 0, 16)}/16`)
     .join(" · ");
@@ -302,7 +302,7 @@ export function computeWarScore(
       (lastSeenScore ?? 0) +
       discordScore,
   );
-  const maxScore = 35 + (lastSeenScore !== null ? 5 : 0) + 2;
+  const maxScore = 35 + (lastSeenScore !== null ? 5 : 0);
   const pct = Math.round((total / maxScore) * 100);
 
   let verdict, color;
@@ -321,7 +321,7 @@ export function computeWarScore(
   }
 
   const warHistoryWeeks = warHistory?.streakInCurrentClan ?? 0;
-  const regularityQuality = scoreQuality(regularite, 12);
+  const regularityQuality = scoreQuality(regularite, 10);
   const efficiencyQuality = scoreQuality(efficiencyScore, 4);
   const cw2Remark =
     cw2Score >= 6
@@ -335,7 +335,7 @@ export function computeWarScore(
     warHistoryWeeks <= 0 ? "Less than one week" : `${warHistoryWeeks} week(s)`;
 
   const summary =
-    `Regularity: ${regularityQuality} (${regularite}/12 across ${regularityWindow.fullWeekCount}/5 full weeks: ${regularityWindowDetail}).\n` +
+    `Regularity: ${regularityQuality} (${regularite}/10 across ${regularityWindow.fullWeekCount}/5 full weeks: ${regularityWindowDetail}).\n` +
     `Points / deck: ${efficiencyQuality} (${efficiencyScore}/4 from ${efficiencyHistory.pointsPerDeck.toFixed(2)} pts/deck across ${efficiencyHistory.recentWeeks.length} week(s)).\n` +
     `CW2: ${cw2Remark}.\n` +
     `In clan: ${clanDurationText}.`;
@@ -350,7 +350,7 @@ export function computeWarScore(
     {
       label: "Regularity",
       score: regularite,
-      max: 12,
+      max: 10,
       detail: (() => {
         if (regularityWindow.recentWeeks.length === 0)
           return "No completed week in this clan yet";
@@ -503,7 +503,7 @@ export function computeWarReliabilityFallback(
   // 3. Régularité (0-12) — 5 semaines fixes, une semaine ne compte que si elle
   // est complète. Les semaines partielles ou absentes valent 0.
   const regularityWindow = summarizeRegularityWeeks(warHistory?.weeks ?? [], 5);
-  const regulariteGDC = r(Math.min(12, regularityWindow.score));
+  const regulariteGDC = r(Math.min(10, regularityWindow.score));
   const regulariteGDCDetail = regularityWindow.windowWeeks
     .map((week) => `${Math.min(week.decksUsed || 0, 16)}/16`)
     .join(" · ");
@@ -548,7 +548,7 @@ export function computeWarReliabilityFallback(
       experience +
       discordScore,
   );
-  const maxScore = 39 + (lastSeenScore !== null ? 3 : 0);
+  const maxScore = 37 + (lastSeenScore !== null ? 3 : 0);
   const pct = Math.round((total / maxScore) * 100);
 
   let verdict, color;
@@ -568,7 +568,7 @@ export function computeWarReliabilityFallback(
 
   const warHistoryWeeks = warHistory?.streakInCurrentClan ?? 0;
   const warActivityQuality = scoreQuality(activiteGDC, 8);
-  const regularityQuality = scoreQuality(regulariteGDC, 12);
+  const regularityQuality = scoreQuality(regulariteGDC, 10);
   const cw2Remark =
     cw2Score >= 6
       ? "strong experience in Clan Wars"
@@ -582,7 +582,7 @@ export function computeWarReliabilityFallback(
 
   const warActivitySummaryLine = `War Activity: ${warActivityQuality} (${activiteGDC}/8, ${recoveredWeeksCount}/5 recovered weeks: ${warHistoryActivityDetail}).`;
 
-  const regularitySummaryLine = `Regularity: ${regularityQuality} (${regulariteGDC}/12, ${regularityWindow.fullWeekCount}/5 full weeks: ${regulariteGDCDetail}).`;
+  const regularitySummaryLine = `Regularity: ${regularityQuality} (${regulariteGDC}/10, ${regularityWindow.fullWeekCount}/5 full weeks: ${regulariteGDCDetail}).`;
 
   const efficiencySummaryLine =
     efficiencyHistory.recentWeeks.length > 0
@@ -621,7 +621,7 @@ export function computeWarReliabilityFallback(
       {
         label: "Regularity",
         score: regulariteGDC,
-        max: 12,
+        max: 10,
         detail: regulariteGDCDetail,
         explanation: `5-week window where only complete weeks count and missing weeks count as 0: ${regulariteGDCDetail}.`,
       },

@@ -918,8 +918,8 @@ const regularityEntry = regularityProfile.breakdown.find(
 assert.ok(regularityEntry, "Regularity entry exists for five-week profile");
 assert.strictEqual(
   regularityEntry.score,
-  7.2,
-  `Five-week profile with 3 full weeks should score 7.2, got ${regularityEntry.score}`,
+  6,
+  `Five-week profile with 3 full weeks should score 6, got ${regularityEntry.score}`,
 );
 assert.ok(
   regularityEntry.detail.includes("3/5 full weeks"),
@@ -962,8 +962,8 @@ assert.strictEqual(
 );
 assert.strictEqual(
   fallbackPointsPerDeck.maxScore,
-  42,
-  `Fallback maxScore should be 42 when lastSeen is present, got ${fallbackPointsPerDeck.maxScore}`,
+  40,
+  `Fallback maxScore should be 40 when lastSeen is present, got ${fallbackPointsPerDeck.maxScore}`,
 );
 assert.ok(
   fallbackPointsPerDeck.summary.includes("Points / deck"),
@@ -1113,7 +1113,7 @@ const fallbackRegularityEntry = fallbackWithHistory.breakdown.find(
 );
 assert.strictEqual(
   fallbackRegularityEntry?.score,
-  7.2,
+  6,
   `Expected Regularity to count only full weeks on a 5-week window, got ${fallbackRegularityEntry?.score}`,
 );
 assert.ok(
@@ -1161,8 +1161,8 @@ const fallbackNoWarWithLastSeen = computeWarReliabilityFallback(
 );
 assert.strictEqual(
   fallbackNoWarWithLastSeen.maxScore,
-  42,
-  `Expected fallback maxScore 42 when lastSeen is present, got ${fallbackNoWarWithLastSeen.maxScore}`,
+  40,
+  `Expected fallback maxScore 40 when lastSeen is present, got ${fallbackNoWarWithLastSeen.maxScore}`,
 );
 assert.ok(
   fallbackNoWarWithLastSeen.breakdown.some((b) => b.label === "Last Seen"),
@@ -1194,13 +1194,13 @@ assert.strictEqual(
 );
 assert.strictEqual(
   fallbackFiveWeeks.breakdown.find((b) => b.label === "Regularity")?.score,
-  12,
-  "Expected Regularity 12 when five full weeks are recovered",
+  10,
+  "Expected Regularity 10 when five full weeks are recovered",
 );
 assert.strictEqual(
   fallbackFiveWeeks.maxScore,
-  39,
-  `Expected fallback maxScore 39 when no last seen data and Discord is not counted, got ${fallbackFiveWeeks.maxScore}`,
+  37,
+  `Expected fallback maxScore 37 when no last seen data and Discord is not counted, got ${fallbackFiveWeeks.maxScore}`,
 );
 const cw2Entry = fallbackFiveWeeks.breakdown.find(
   (b) => b.label === "CW2 badge",
