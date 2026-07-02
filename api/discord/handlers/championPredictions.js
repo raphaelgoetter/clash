@@ -52,8 +52,8 @@ function ordinal(n) {
 }
 
 function voteBar(votes, maxVotes, width = 12) {
-  const filled = maxVotes > 0 ? Math.round((votes / maxVotes) * width) : 0;
-  return "█".repeat(filled) + "░".repeat(width - filled);
+  const filled = maxVotes > 0 ? Math.floor((votes / maxVotes) * width) : 0;
+  return "■".repeat(filled) + "□".repeat(width - filled);
 }
 
 function topScorerLine(p, idx) {
