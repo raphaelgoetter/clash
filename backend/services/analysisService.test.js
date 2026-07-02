@@ -852,34 +852,93 @@ assert.strictEqual(
   "summarizeDecks should compute winrate across all combats",
 );
 
-// new Avg Score behavior (linear 1000→3000 fame) for all players
+// New Points / Deck behavior (linear 100→200 pts/deck) for all players
 const scoreCases = [
-  { avgFame: 0, expected: 0 },
-  { avgFame: 999, expected: 0 },
-  { avgFame: 1000, expected: 0 },
-  { avgFame: 1500, expected: 2.5 },
-  { avgFame: 3000, expected: 10 },
-  { avgFame: 4000, expected: 10 },
+  { pointsPerDeck: 0, expected: 0 },
+  { pointsPerDeck: 99, expected: 0 },
+  { pointsPerDeck: 100, expected: 0 },
+  { pointsPerDeck: 150, expected: 5 },
+  { pointsPerDeck: 200, expected: 10 },
+  { pointsPerDeck: 250, expected: 10 },
 ];
 for (const tc of scoreCases) {
   const warScore = computeWarScore(
     { trophies: 5000, totalDonations: 1000, badges: [] },
-    { avgFame: tc.avgFame, streakInCurrentClan: 0, weeks: [], totalWeeks: 0 },
+    {
+      weeks: [
+        {
+          decksUsed: 16,
+          fame: tc.pointsPerDeck * 16,
+        },
+      ],
+      avgFame: tc.pointsPerDeck * 16,
+      streakInCurrentClan: 1,
+      totalWeeks: 1,
+    },
     null,
     null,
     false,
   );
-  const avgEntry = warScore.breakdown.find(
-    (entry) => entry.label === "Avg Score",
+  const pointsPerDeckEntry = warScore.breakdown.find(
+    (entry) => entry.label === "Points / Deck",
   );
-  assert.ok(avgEntry, `Avg Score entry exists for avgFame ${tc.avgFame}`);
+  assert.ok(
+    pointsPerDeckEntry,
+    `Points / Deck entry exists for pointsPerDeck ${tc.pointsPerDeck}`,
+  );
   assert.strictEqual(
-    avgEntry.score,
+    pointsPerDeckEntry.score,
     tc.expected,
-    `avgFame ${tc.avgFame} should give ${tc.expected}, got ${avgEntry.score}`,
+    `pointsPerDeck ${tc.pointsPerDeck} should give ${tc.expected}, got ${pointsPerDeckEntry.score}`,
   );
 }
-console.log("✓ computeWarScore Avg Score thresholds test passed.");
+console.log("✓ computeWarScore Points / Deck thresholds test passed.");
+
+const highEfficiencyProfile = computeWarScore(
+  {
+    trophies: 5000,
+    totalDonations: 1000,
+    badges: [{ name: "ClanWarWins", progress: 250 }],
+  },
+  {
+    weeks: [
+      { decksUsed: 16, fame: 3000 },
+      { decksUsed: 16, fame: 2960 },
+      { decksUsed: 16, fame: 2890 },
+    ],
+    avgFame: 2950,
+    streakInCurrentClan: 3,
+    totalWeeks: 3,
+  },
+  0.9,
+  null,
+  true,
+);
+const lowEfficiencyProfile = computeWarScore(
+  {
+    trophies: 5000,
+    totalDonations: 1000,
+    badges: [{ name: "ClanWarWins", progress: 250 }],
+  },
+  {
+    weeks: [
+      { decksUsed: 16, fame: 1900 },
+      { decksUsed: 16, fame: 1860 },
+      { decksUsed: 16, fame: 1810 },
+    ],
+    avgFame: 1857,
+    streakInCurrentClan: 3,
+    totalWeeks: 3,
+  },
+  0.9,
+  null,
+  true,
+);
+assert.ok(
+  highEfficiencyProfile.total > lowEfficiencyProfile.total,
+  `Expected high efficiency profile to outrank low efficiency profile (${highEfficiencyProfile.total} vs ${lowEfficiencyProfile.total})`,
+);
+console.log("✓ computeWarScore efficiency ranking test passed.");
 
 const stabilityFamilyScore = computeWarScore(
   { trophies: 5000, totalDonations: 1000, badges: [] },
@@ -938,7 +997,7 @@ assert.ok(
 );
 console.log("✓ fallback warScore summary/explanation test passed.");
 
-// New tests: General Activity war-ratio adjustment
+// New tests: fallback war activity war-ratio adjustment
 const fallbackNoWar = computeWarReliabilityFallback(
   { trophies: 12000, totalDonations: 10000, badges: [] },
   [],

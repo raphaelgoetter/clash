@@ -1049,9 +1049,7 @@ function formatWarDecksField(warDecks) {
           opponentTourLevel: null,
           score: "0-0",
         });
-        deckLines.push(
-          `• Manquant <:error:1499002755841265826> ⚡ ?`,
-        );
+        deckLines.push(`• Manquant <:error:1499002755841265826> ⚡ ?`);
       }
     }
 
@@ -1137,8 +1135,9 @@ function scoreBadge(score, max) {
 const RELIABILITY_ORDER_HISTORY = [
   "CW2 badge",
   "Regularity",
-  "Stability",
+  "Points / Deck",
   "Avg Score",
+  "Stability",
   "Win Rate (War)",
   "Experience",
   "Last Seen",
@@ -1318,7 +1317,8 @@ const LABEL_FR = {
   "General Activity": "Activité générale",
   Experience: "Expérience",
   Regularity: "Régularité",
-  "Avg Score": "Score moyen",
+  "Avg Score": "Points / deck",
+  "Points / Deck": "Points / deck",
   Stability: "Stabilité",
   "Last Seen": "Connexion régulière",
   Points: "Points",
@@ -1595,14 +1595,18 @@ export default async function handler(req, res) {
     const clanOpt = body.data.options?.find((o) => o.name === "clan");
     const clanVal = clanOpt?.value || "1";
     const CLAN_MAP = {
-      1: { tag: "Y8JUPC9C" }, la: { tag: "Y8JUPC9C" },
-      2: { tag: "LRQP20V9" }, les: { tag: "LRQP20V9" },
+      1: { tag: "Y8JUPC9C" },
+      la: { tag: "Y8JUPC9C" },
+      2: { tag: "LRQP20V9" },
+      les: { tag: "LRQP20V9" },
       3: { tag: "QU9UQJRL" },
     };
-    const resolved = CLAN_MAP[String(clanVal).trim().toLowerCase()] ?? CLAN_MAP["1"];
+    const resolved =
+      CLAN_MAP[String(clanVal).trim().toLowerCase()] ?? CLAN_MAP["1"];
 
     try {
-      const { getActiveSessionByClan } = await import("../../backend/services/championPredictions.js");
+      const { getActiveSessionByClan } =
+        await import("../../backend/services/championPredictions.js");
       const active = await getActiveSessionByClan(resolved.tag);
       if (!active) {
         return res.status(200).json({ type: 8, data: { choices: [] } });
@@ -1610,10 +1614,11 @@ export default async function handler(req, res) {
 
       const input = (focused.value || "").toLowerCase();
       const challengerChoices = active.session.challengers
-        .filter((c) =>
-          !input ||
-          c.name.toLowerCase().includes(input) ||
-          c.tag.toLowerCase().includes(input),
+        .filter(
+          (c) =>
+            !input ||
+            c.name.toLowerCase().includes(input) ||
+            c.tag.toLowerCase().includes(input),
         )
         .map((c, idx) => ({
           name: `${idx + 1}. ${c.name} — ${Number.isFinite(c.fame) ? c.fame.toLocaleString("fr-FR") : "0"} pts`,
@@ -1627,7 +1632,9 @@ export default async function handler(req, res) {
         value: "__other__",
       });
 
-      return res.status(200).json({ type: 8, data: { choices: challengerChoices } });
+      return res
+        .status(200)
+        .json({ type: 8, data: { choices: challengerChoices } });
     } catch {
       return res.status(200).json({ type: 8, data: { choices: [] } });
     }
@@ -2045,9 +2052,13 @@ export default async function handler(req, res) {
           ),
         );
         const raceLog = await fetchRaceLog(`#${clanTag}`);
-        const decksPerDay = Math.min(4, Math.max(1, Math.floor((clan.clanWarTrophies ?? 0) / 1000) + 1));
+        const decksPerDay = Math.min(
+          4,
+          Math.max(1, Math.floor((clan.clanWarTrophies ?? 0) / 1000) + 1),
+        );
         const maxDecks = decksPerDay * 4;
-        const { buildWarHistory } = await import("../../backend/services/warHistory.js");
+        const { buildWarHistory } =
+          await import("../../backend/services/warHistory.js");
         const streakCache = new Map();
         const getStreak = (tag) => {
           const norm = tag.startsWith("#") ? tag : `#${tag}`;
@@ -2096,14 +2107,27 @@ export default async function handler(req, res) {
                 (p) => (Number.isFinite(p.fame) ? p.fame : 0) < quotaValue,
               );
             const arrivals = below.filter((p) =>
-              isJoinedThisWar(getStreak(p.tag), null, p.decksUsed ?? 0, maxDecks),
+              isJoinedThisWar(
+                getStreak(p.tag),
+                null,
+                p.decksUsed ?? 0,
+                maxDecks,
+              ),
             );
             return {
               weekId,
               activePlayers,
               average,
               belowQuota: below
-                .filter((p) => !isJoinedThisWar(getStreak(p.tag), null, p.decksUsed ?? 0, maxDecks))
+                .filter(
+                  (p) =>
+                    !isJoinedThisWar(
+                      getStreak(p.tag),
+                      null,
+                      p.decksUsed ?? 0,
+                      maxDecks,
+                    ),
+                )
                 .sort(
                   (a, b) =>
                     (Number.isFinite(a.fame) ? a.fame : 0) -
@@ -2198,9 +2222,7 @@ export default async function handler(req, res) {
 
         const formatTop5Field = (entry) => {
           if (!entry) return "Aucune donnée.";
-          const lines = [
-            `<:victory:1504136468900352070> **Top 5**`,
-          ];
+          const lines = [`<:victory:1504136468900352070> **Top 5**`];
           (entry.topPlayers || []).forEach((p, idx) => {
             lines.push(`${idx + 1}. ${formatPlayerLink(p)}`);
           });
@@ -2224,7 +2246,8 @@ export default async function handler(req, res) {
 
         const sem1 = weekEntries[0];
         const sem2 = weekEntries[1];
-        const totalExcluded = (sem1?.arrivalsExcluded ?? 0) + (sem2?.arrivalsExcluded ?? 0);
+        const totalExcluded =
+          (sem1?.arrivalsExcluded ?? 0) + (sem2?.arrivalsExcluded ?? 0);
         const excludedNames = [
           ...(sem1?.arrivalsExcludedNames ?? []),
           ...(sem2?.arrivalsExcludedNames ?? []),
@@ -2232,18 +2255,19 @@ export default async function handler(req, res) {
         const excludedSuffix =
           excludedNames.length > 0
             ? (() => {
-                const joined = excludedNames.join(', ');
+                const joined = excludedNames.join(", ");
                 if (joined.length <= 1970) return ` (${joined})`;
-                let truncated = '';
+                let truncated = "";
                 for (const name of excludedNames) {
                   const candidate = truncated ? `${truncated}, ${name}` : name;
                   if (candidate.length > 1970) break;
                   truncated = candidate;
                 }
-                const remaining = excludedNames.length - truncated.split(', ').length;
+                const remaining =
+                  excludedNames.length - truncated.split(", ").length;
                 return ` (${truncated}, …${remaining})`;
               })()
-            : '';
+            : "";
 
         fields.push({
           name: `Semaine -1 — ${fmt(sem1?.average ?? 0)} pts`,
@@ -3335,18 +3359,22 @@ export default async function handler(req, res) {
             const playerUrl = trustPlayerUrl(p.tag);
             const isNew = p.isNew ? " 🆕" : "";
             const role = formatDiscordRole(p.role);
-            allRows.push(`${i + 1}. [${p.name}](${playerUrl})${isNew} • ${role} • **${p.decks} decks**`);
+            allRows.push(
+              `${i + 1}. [${p.name}](${playerUrl})${isNew} • ${role} • **${p.decks} decks**`,
+            );
           });
         }
 
         if (arrived.length > 0) {
-          if (allRows.length > 0) allRows.push('');
-          allRows.push('Arrivés en cours de GDC:');
+          if (allRows.length > 0) allRows.push("");
+          allRows.push("Arrivés en cours de GDC:");
           arrived.slice(0, MAX_ARRIVED).forEach((p, i) => {
             const playerUrl = trustPlayerUrl(p.tag);
             const isNew = p.isNew ? " 🆕" : "";
             const role = formatDiscordRole(p.role);
-            allRows.push(`${i + 1}. [${p.name}](${playerUrl})${isNew} • ${role} • **${p.decks} decks**`);
+            allRows.push(
+              `${i + 1}. [${p.name}](${playerUrl})${isNew} • ${role} • **${p.decks} decks**`,
+            );
           });
         }
 
@@ -5042,7 +5070,8 @@ export default async function handler(req, res) {
         }
 
         // Identifier les clans famille absents de la tranche
-        const normalizeTag = (raw) => (raw ?? "").replace(/^#/, "").toUpperCase();
+        const normalizeTag = (raw) =>
+          (raw ?? "").replace(/^#/, "").toUpperCase();
         const sliceTags = new Set(slice.map((c) => normalizeTag(c.tag)));
         const familyOutside = allClans.filter(
           (c) =>
@@ -5097,7 +5126,8 @@ export default async function handler(req, res) {
         // Grouper par 25 clans
         const groupBy = (arr, size) => {
           const groups = [];
-          for (let i = 0; i < arr.length; i += size) groups.push(arr.slice(i, i + size));
+          for (let i = 0; i < arr.length; i += size)
+            groups.push(arr.slice(i, i + size));
           return groups;
         };
         const sliceGroups = groupBy(sliceRows, 25);
@@ -5114,19 +5144,25 @@ export default async function handler(req, res) {
           });
           if (!resp.ok) {
             const text = await resp.text();
-            console.error("[/top-clans] Discord webhook error:", resp.status, text);
+            console.error(
+              "[/top-clans] Discord webhook error:",
+              resp.status,
+              text,
+            );
             throw new Error(`Discord ${resp.status}: ${text.slice(0, 800)}`);
           }
         };
 
         const sendGroup = async (group, title, color, footer) => {
           await sendWebhook({
-            embeds: [{
-              title,
-              color,
-              description: group.join("\n"),
-              ...(footer ? { footer } : {}),
-            }],
+            embeds: [
+              {
+                title,
+                color,
+                description: group.join("\n"),
+                ...(footer ? { footer } : {}),
+              },
+            ],
             allowed_mentions: { parse: [] },
           });
         };
@@ -5137,7 +5173,9 @@ export default async function handler(req, res) {
           `🏆 Classement France GDC — #${startRank} → #${endRank}`,
           0xf1c40f,
           sliceGroups.length === 1 && familyGroups.length === 0
-            ? { text: `France · Trophées GDC · ${allClans.length} clans chargés` }
+            ? {
+                text: `France · Trophées GDC · ${allClans.length} clans chargés`,
+              }
             : null,
         );
 
@@ -5148,7 +5186,9 @@ export default async function handler(req, res) {
             `🏆 Classement France GDC (suite) — #${startRank} → #${endRank}`,
             0xf1c40f,
             familyGroups.length === 0
-              ? { text: `France · Trophées GDC · ${allClans.length} clans chargés` }
+              ? {
+                  text: `France · Trophées GDC · ${allClans.length} clans chargés`,
+                }
               : null,
           );
         }
@@ -5162,7 +5202,9 @@ export default async function handler(req, res) {
               : "🏠 Clans famille (hors tranche)",
             0x3498db,
             i === familyGroups.length - 1
-              ? { text: `France · Trophées GDC · ${allClans.length} clans chargés` }
+              ? {
+                  text: `France · Trophées GDC · ${allClans.length} clans chargés`,
+                }
               : null,
           );
         }
@@ -6202,7 +6244,9 @@ export default async function handler(req, res) {
   ) {
     const parts = body.data.custom_id.split(":");
     if (parts.length < 3) {
-      return res.status(200).json({ type: 4, data: { content: "Erreur interne.", flags: 64 } });
+      return res
+        .status(200)
+        .json({ type: 4, data: { content: "Erreur interne.", flags: 64 } });
     }
     const sortMode = parts[1];
     const clanVal = parts[2];

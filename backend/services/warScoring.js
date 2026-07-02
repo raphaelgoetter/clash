@@ -24,6 +24,17 @@ function scoreQuality(score, max) {
   return "bad";
 }
 
+function scorePointsPerDeck(pointsPerDeck) {
+  if (!Number.isFinite(pointsPerDeck) || pointsPerDeck <= 0) return 0;
+  const MIN_POINTS_PER_DECK = 100;
+  const MAX_POINTS_PER_DECK = 200;
+  const raw =
+    ((pointsPerDeck - MIN_POINTS_PER_DECK) /
+      (MAX_POINTS_PER_DECK - MIN_POINTS_PER_DECK)) *
+    10;
+  return Math.max(0, Math.min(10, raw));
+}
+
 /**
  * Compute a 0-10 War Activity score that rewards doing all 4 daily battles.
  *
@@ -153,17 +164,17 @@ export function estimateWinsFromFame(fame, decksUsed, boatAttacks) {
 // ── Score principal (depuis historique de course) ─────────────
 
 /**
- * Compute the War Reliability Score from 9 weighted criteria.
+ * Compute the War Reliability Score from 8 weighted criteria.
  *
  * Criteria (max sans win rate / avec win rate) :
- *  1. Régularité  /12 — decks used relative to ideal 16/week
- *  2. Score moyen /10 — average fame per played week (cap 3 000)
- *  3. Stabilité   / 8 — consecutive weeks in current clan or family (cap 5 wks = 8)
- *  4. CW2 Wins    / 8 — badge progress (cap 250)
- *  5. Last Seen   / 5 — only in clan context (optional)
- *  6. Win Rate    / 3 — optional, only when battle log available
- *  7. Expérience  / 3 — trophies [4 000, 14 000]
- *  8. Discord     / 2 — lié au serveur Discord
+ *  1. Régularité     /12 — decks used relative to ideal 16/week
+ *  2. Points / Deck  /10 — River Race efficiency on completed GDC weeks
+ *  3. Stabilité      / 8 — consecutive weeks in current clan or family (cap 5 wks = 8)
+ *  4. CW2 Wins       / 8 — badge progress (cap 250)
+ *  5. Last Seen      / 5 — only in clan context (optional)
+ *  6. Win Rate       / 3 — optional, only when battle log available
+ *  7. Expérience     / 3 — trophies [4 000, 14 000]
+ *  8. Discord        / 2 — lié au serveur Discord
  *
  * @param {object} player      - Player profile from Clash API
  * @param {object} warHistory  - Output of buildWarHistory()
@@ -205,17 +216,24 @@ export function computeWarScore(
     Math.max(0, Math.min(12, baseScore - incompleteWeeks * 0.5)),
   );
 
-  // 2. Score moyen (0-10) — 1 000 fame = 0, 3 000 fame = 10
-  const FAME_MIN = 1000;
-  const FAME_CAP = 3000;
-  const rawAvgScore =
-    warHistory.avgFame <= 0 || warHistory.avgFame < FAME_MIN
-      ? 0
-      : Math.min(
-          10,
-          ((warHistory.avgFame - FAME_MIN) / (FAME_CAP - FAME_MIN)) * 10,
-        );
-  const scoreMoyen = r(rawAvgScore);
+  // 2. Points / deck (0-10) — efficiency of completed GDC weeks.
+  const weeksForEfficiency =
+    completedRegularityWeeks.length > 0
+      ? completedRegularityWeeks
+      : weeks.filter((w) => !w.ignored);
+  const totalDecksForEfficiency = weeksForEfficiency.reduce(
+    (s, w) => s + (w.decksUsed || 0),
+    0,
+  );
+  const totalFameForEfficiency = weeksForEfficiency.reduce(
+    (s, w) => s + (w.fame || 0),
+    0,
+  );
+  const pointsPerDeck =
+    totalDecksForEfficiency > 0
+      ? totalFameForEfficiency / totalDecksForEfficiency
+      : 0;
+  const efficiencyScore = r(scorePointsPerDeck(pointsPerDeck));
 
   // 3. Stabilité (0-8) — échelle absolue : 5 semaines consécutives dans le clan ou la famille = 8/8
   // streak=0→0, 1→1.6, 2→3.2, 3→4.8, 4→6.4, 5+→8.0
@@ -263,7 +281,7 @@ export function computeWarScore(
 
   const total = r(
     regularite +
-      scoreMoyen +
+      efficiencyScore +
       stabilite +
       experience +
       (winRateGDC ?? 0) +
@@ -292,6 +310,7 @@ export function computeWarScore(
 
   const warHistoryWeeks = warHistory?.streakInCurrentClan ?? 0;
   const regularityQuality = scoreQuality(regularite, 12);
+  const efficiencyQuality = scoreQuality(efficiencyScore, 10);
   const cw2Remark =
     cw2Score >= 6
       ? "strong experience in Clan Wars"
@@ -305,6 +324,7 @@ export function computeWarScore(
 
   const summary =
     `Regularity: ${regularityQuality} (${regularite}/12 from ${deckSum}/${idealDecks} decks across ${completedCount} week(s) (${incompleteWeeks} incomplete)).\n` +
+    `Points / deck: ${efficiencyQuality} (${efficiencyScore}/10 from ${pointsPerDeck.toFixed(2)} pts/deck across ${weeksForEfficiency.length} week(s)).\n` +
     `CW2: ${cw2Remark}.\n` +
     `In clan: ${clanDurationText}.`;
 
@@ -348,12 +368,13 @@ export function computeWarScore(
       })(),
     },
     {
-      label: "Avg Score",
-      score: scoreMoyen,
+      label: "Points / Deck",
+      score: efficiencyScore,
       max: 10,
-      detail: warHistory.avgFame
-        ? `${warHistory.avgFame.toLocaleString("en-US")} points / week (average weekly fame, 1,000–3,000)`
-        : "No data",
+      detail:
+        totalDecksForEfficiency > 0
+          ? `${totalFameForEfficiency.toLocaleString("en-US")} points / ${totalDecksForEfficiency} decks (${pointsPerDeck.toFixed(2)} pts/deck, range 100–200)`
+          : "No completed week with GDC data",
     },
     ...(winRateGDC !== null
       ? [

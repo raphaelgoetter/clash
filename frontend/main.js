@@ -91,7 +91,8 @@ function getScoreLabelMap() {
     "War Activity": t("warActivity"),
     "General Activity": t("generalActivity"),
     Regularity: t("regularity"),
-    "Avg Score": t("avgScore"),
+    "Avg Score": t("pointsPerDeck"),
+    "Points / Deck": t("pointsPerDeck"),
     "Avg fame": t("avgFame"),
     "CW2 badge": t("cw2BattleWins"),
     "CW2 Battle Wins": t("cw2BattleWins"),
@@ -333,7 +334,7 @@ function translateUI() {
         </thead>
         <tbody>
           <tr><td>${t("regularity")}</td><td>12</td><td>${t("regularityCap")}</td></tr>
-          <tr><td>${t("avgFame")}</td><td>10</td><td>${t("avgFameCap")}</td></tr>
+          <tr><td>${t("pointsPerDeck")}</td><td>10</td><td>${t("pointsPerDeckCap")}</td></tr>
           <tr><td>${t("cw2BattleWins")}</td><td>8</td><td>${t("cw2BattleWinsCap")}</td></tr>
           <tr><td>${t("clanStability")}</td><td>8</td><td>${t("clanStabilityCap")}</td></tr>
           <tr><td>${t("lastSeen")}</td><td>5</td><td>${t("lastSeenCap")}</td></tr>
@@ -1394,9 +1395,10 @@ function renderPlayerResults(data) {
     { label: t("labelClan"), value: clanValue, link: clanLink },
     {
       label: t("labelYearsPlayed"),
-      value: overview.yearsPlayed != null
-        ? (overview.yearsPlayed / 365).toFixed(1) + " ans"
-        : "-",
+      value:
+        overview.yearsPlayed != null
+          ? (overview.yearsPlayed / 365).toFixed(1) + " ans"
+          : "-",
     },
     {
       label: t("labelTrophies"),
@@ -2225,6 +2227,14 @@ function renderPlayerResults(data) {
     if (lowercaseLabel.includes("avg")) {
       return text;
     }
+    if (lowercaseLabel.includes("deck")) {
+      return text
+        .replace(
+          /No completed week with GDC data/gi,
+          "Aucune semaine terminée avec données GDC",
+        )
+        .replace(/range 100–200/gi, "plage 100–200");
+    }
     if (lowercaseLabel.includes("cw2")) {
       return text;
     }
@@ -2811,13 +2821,14 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
   if (present.length === 0 && departed.length === 0) {
     listEl.innerHTML = `<li class="text-muted">${t("everyoneCompleted16")}</li>`;
   } else {
-    let html = '';
+    let html = "";
     if (presentRegular.length > 0) {
-      html += presentRegular.map(renderPlayerItem).join('');
+      html += presentRegular.map(renderPlayerItem).join("");
     }
     if (presentArrived.length > 0) {
-      if (presentRegular.length > 0) html += `<li class="uncomplete-section-header">${t("warArrivedMidWarSection") || "Arrivés en cours de GDC"}</li>`;
-      html += presentArrived.map(renderPlayerItem).join('');
+      if (presentRegular.length > 0)
+        html += `<li class="uncomplete-section-header">${t("warArrivedMidWarSection") || "Arrivés en cours de GDC"}</li>`;
+      html += presentArrived.map(renderPlayerItem).join("");
     }
     if (present.length === 0) {
       html = `<li class="text-muted">${t("everyoneInClanCompleted16")}</li>`;

@@ -107,6 +107,7 @@ L'utilisation du **roster complet** (pas seulement `activeMembers`) garantit qu'
 Conséquence : si 2 membres (8 decks) quittent le clan en cours de J4 mais ont joué leurs 4 decks chacun avant de partir, `decksToday` affichera 198 et non 190 (qui serait le total des seuls membres encore présents).
 
 **Ne pas filtrer** est le comportement correct car :
+
 - ces decks ont réellement contribué au score du clan dans la course
 - l'API Clash Royale continue de les retourner dans `currentRace.clan.participants` même après leur départ
 - `activeMembers` reste basé sur le roster actuel (logique : les partis ne joueront plus), ce qui borne correctement `targetDecks` et `maxReachableFame`
@@ -313,20 +314,28 @@ L’API Clash Royale fournit deux sources de données principales pour ce calcul
 
 Le mode complet est utilisé quand l’historique d'un joueur permet d'exploiter le `riverracelog`. Il faut au minimum une vraie semaine terminée dans le clan ou la famille pour que ce mode s’active. Si l’historique famille est inexistant ou trop faible, on reste en `fallback`.
 
+Quand ces données existent, le score complet privilégie les signaux GDC du profil plutôt qu'une moyenne brute d'activité. La régularité sur les semaines terminées reste la base, et l'efficacité par deck prend le relais dès qu'un historique River Race exploitable est disponible.
+
 En pratique, la fenêtre exploitable est de `~10` saisons terminées + `1` semaine courante, sous réserve de ce que l’API renvoie réellement.
 
 Critères :
 
-| #   | Critère            | Maximum | Règle actuelle                                                                                          |
-| --- | ------------------ | ------- | ------------------------------------------------------------------------------------------------------- |
-| 1   | Régularité         | 12      | Proportion de decks joués sur les semaines terminées, avec pénalité de 0,5 point par semaine incomplète |
-| 2   | Score moyen        | 10      | Moyenne de points hebdomadaires, avec plage utile 1000 à 3000                                           |
-| 3   | Stabilité          | 8       | 5 semaines consécutives dans le clan ou la famille donnent le maximum                                   |
-| 4   | Expérience         | 3       | Basée sur les trophées actuels, plage 4000 à 14000                                                      |
-| 5   | Win rate guerre    | 3       | Ajouté seulement si le battle log permet un taux exploitable                                            |
-| 6   | Badge CW2          | 8       | Cap à 250 victoires CW2                                                                                 |
-| 7   | Dernière connexion | 5       | Ajoutée seulement si lastSeen est disponible                                                            |
-| 8   | Discord            | 2       | Compte Discord lié                                                                                      |
+| #   | Critère            | Maximum | Règle actuelle                                                                                           |
+| --- | ------------------ | ------- | -------------------------------------------------------------------------------------------------------- |
+| 1   | Régularité         | 12      | Proportion de decks joués sur les semaines terminées, avec pénalité de 0,5 point par semaine incomplète  |
+| 2   | Points / deck      | 10      | Efficacité River Race sur les semaines terminées, avec une plage utile d’environ 100 à 200 points / deck |
+| 3   | Stabilité          | 8       | 5 semaines consécutives dans le clan ou la famille donnent le maximum                                    |
+| 4   | Expérience         | 3       | Basée sur les trophées actuels, plage 4000 à 14000                                                       |
+| 5   | Win rate guerre    | 3       | Ajouté seulement si le battle log permet un taux exploitable                                             |
+| 6   | Badge CW2          | 8       | Cap à 250 victoires CW2                                                                                  |
+| 7   | Dernière connexion | 5       | Ajoutée seulement si lastSeen est disponible                                                             |
+| 8   | Discord            | 2       | Compte Discord lié                                                                                       |
+
+Disclosures front :
+
+- `/stats` et `/trust` affichent ce score complet avec un breakdown détaillé.
+- La page profil joueur réutilise la même logique pour garantir la cohérence avec Discord.
+- La page profil clan expose les mêmes libellés lorsqu’un score individuel est disponible.
 
 ### Score de fiabilité guerre, mode fallback
 
@@ -487,23 +496,23 @@ Le service `buildWarHistory()` dans `backend/services/warHistory.js` parcourt le
 **Fichier :** `backend/services/arrivalUtils.js`
 
 ```js
-isJoinedThisWar(streakInCurrentClan, day1Decks = null)
+isJoinedThisWar(streakInCurrentClan, (day1Decks = null));
 ```
 
-| `streakInCurrentClan` | `day1Decks` | Résultat |
-|---|---|---|
-| `0` | *ignoré* | ✅ Arrivé en cours de GDC (0 semaine complète) |
-| `1` | `null` ou `0` | ✅ Arrivé en début de GDC (1 semaine complète, mais pas de deck au J1) |
-| `1` | `>= 1` | ❌ Membre installé (a joué au J1, peut faire 16/16) |
-| `>= 2` | *ignoré* | ❌ Membre installé |
+| `streakInCurrentClan` | `day1Decks`   | Résultat                                                               |
+| --------------------- | ------------- | ---------------------------------------------------------------------- |
+| `0`                   | _ignoré_      | ✅ Arrivé en cours de GDC (0 semaine complète)                         |
+| `1`                   | `null` ou `0` | ✅ Arrivé en début de GDC (1 semaine complète, mais pas de deck au J1) |
+| `1`                   | `>= 1`        | ❌ Membre installé (a joué au J1, peut faire 16/16)                    |
+| `>= 2`                | _ignoré_      | ❌ Membre installé                                                     |
 
 ### Commandes utilisatrices
 
-| Commande | Fichier:ligne | Usage |
-|---|---|---|
-| `/demote` | `api/discord/interactions.js:3220` | Sépare les arrivés en cours de GDC des réguliers dans la liste des fails 16/16 |
-| `/fail` | `api/discord/interactions.js:3886-3888` | Exclut les arrivés en cours de GDC de la liste des fails journaliers |
-| `/quota` | `api/discord/interactions.js:2017-2026` | Exclut les arrivés en cours de GDC de la liste des sous-quota |
+| Commande  | Fichier:ligne                           | Usage                                                                          |
+| --------- | --------------------------------------- | ------------------------------------------------------------------------------ |
+| `/demote` | `api/discord/interactions.js:3220`      | Sépare les arrivés en cours de GDC des réguliers dans la liste des fails 16/16 |
+| `/fail`   | `api/discord/interactions.js:3886-3888` | Exclut les arrivés en cours de GDC de la liste des fails journaliers           |
+| `/quota`  | `api/discord/interactions.js:2017-2026` | Exclut les arrivés en cours de GDC de la liste des sous-quota                  |
 
 ---
 
@@ -654,6 +663,7 @@ Indique si un joueur est considéré comme "nouveau" dans la famille TrustRoyale
 3. Est "nouveau" si : `isNewClanArrivee` **ou** (`hasCompletedWarWeeks === false` **ou** seule la semaine en cours existe)
 
 **Source de vérité** :
+
 - `playerAnalysis.js:computeIsNewPlayer` — unique fonction de calcul, utilisée par les routes joueur et clan
 - Même logique utilisée dans l'API (`/api/player/:tag/analysis` et `/api/clan/:tag/analysis`) et le bot Discord
 
