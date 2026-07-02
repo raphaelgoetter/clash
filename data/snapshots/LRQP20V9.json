@@ -12748,14 +12748,18 @@
           "start": "2026-07-02T09:44:00.000Z",
           "end": "2026-07-03T09:43:59.999Z"
         },
-        "snapshotTime": null,
+        "snapshotTime": "2026-07-02T11:47:46.276Z",
         "snapshotBackupTime": "2026-07-02T10:54:10.787Z",
         "decks": {
+          "#82UPUGYP": 4,
           "#8QVRJYVYU": 4,
           "#GGVQJLG9": 4,
+          "#GYU0VLGL": 4,
+          "#JCCQY0U9G": 4,
+          "#U2UYYCQVG": 4,
           "#UPC0Y0LRQ": 4,
           "#VJRPJJC8G": 4,
-          "#JCCQY0U9G": 1
+          "#9VQYC9GJQ": 1
         },
         "hourlyCumul": [],
         "_cumulFame": {
@@ -12773,7 +12777,7 @@
           "#ULVPUU9C2": 0,
           "#UUG22PU0Q": 0,
           "#VRQYP2RRV": 0,
-          "#82UPUGYP": 0,
+          "#82UPUGYP": 400,
           "#9GP9LQ9P": 0,
           "#CL0YPV2YG": 0,
           "#2YGYYPYV": 0,
@@ -12815,7 +12819,7 @@
           "#GJV2UG9P0": 0,
           "#JLGQCL9V8": 0,
           "#QYGYV8R8Y": 0,
-          "#GYU0VLGL": 0,
+          "#GYU0VLGL": 800,
           "#CCG2U8VCG": 0,
           "#209PRUV9Q0": 0,
           "#2YLYG9V92": 0,
@@ -12830,7 +12834,7 @@
           "#G2R0VRYYQ": 0,
           "#CLVGVRUG8": 0,
           "#2U9QL8Q89": 0,
-          "#9VQYC9GJQ": 0,
+          "#9VQYC9GJQ": 200,
           "#90QVR8R90": 0,
           "#LCQ2J0VGC": 0,
           "#28RYLRL8Y": 0,
@@ -12838,11 +12842,11 @@
           "#UGU9JG2QC": 0,
           "#VQJ0Y8PLV": 0,
           "#PL9CL8V20": 0,
-          "#U2UYYCQVG": 0,
+          "#U2UYYCQVG": 700,
           "#98UULQY8": 0,
           "#UP9YJV080": 0,
           "#20G8R9R8CJ": 0,
-          "#JCCQY0U9G": 200,
+          "#JCCQY0U9G": 500,
           "#GGVQJLG9": 400,
           "#VJRPJJC8G": 500,
           "#8QVRJYVYU": 600,
@@ -12850,7 +12854,10 @@
         },
         "duelsTodayByTag": {
           "#GGVQJLG9": 1,
-          "#UPC0Y0LRQ": 1
+          "#UPC0Y0LRQ": 1,
+          "#82UPUGYP": 1,
+          "#U2UYYCQVG": 1,
+          "#GYU0VLGL": 1
         },
         "_totalDonationsByTag": {},
         "duelsComplete": true,
@@ -12870,7 +12877,7 @@
           "#ULVPUU9C2": 0,
           "#UUG22PU0Q": 0,
           "#VRQYP2RRV": 0,
-          "#82UPUGYP": 0,
+          "#82UPUGYP": 4,
           "#9GP9LQ9P": 0,
           "#CL0YPV2YG": 0,
           "#2YGYYPYV": 0,
@@ -12912,7 +12919,7 @@
           "#GJV2UG9P0": 0,
           "#JLGQCL9V8": 0,
           "#QYGYV8R8Y": 0,
-          "#GYU0VLGL": 0,
+          "#GYU0VLGL": 4,
           "#CCG2U8VCG": 0,
           "#209PRUV9Q0": 0,
           "#2YLYG9V92": 0,
@@ -12927,7 +12934,7 @@
           "#G2R0VRYYQ": 0,
           "#CLVGVRUG8": 0,
           "#2U9QL8Q89": 0,
-          "#9VQYC9GJQ": 0,
+          "#9VQYC9GJQ": 1,
           "#90QVR8R90": 0,
           "#LCQ2J0VGC": 0,
           "#28RYLRL8Y": 0,
@@ -12935,22 +12942,25 @@
           "#UGU9JG2QC": 0,
           "#VQJ0Y8PLV": 0,
           "#PL9CL8V20": 0,
-          "#U2UYYCQVG": 0,
+          "#U2UYYCQVG": 4,
           "#98UULQY8": 0,
           "#UP9YJV080": 0,
           "#20G8R9R8CJ": 0,
-          "#JCCQY0U9G": 1,
+          "#JCCQY0U9G": 4,
           "#GGVQJLG9": 4,
           "#VJRPJJC8G": 4,
           "#8QVRJYVYU": 4,
           "#UPC0Y0LRQ": 4
         },
-        "snapshotCount": 17
+        "snapshotCount": 33
       },
       {
         "warDay": "friday",
         "realDay": "2026-07-03",
-        "gdcPeriod": null,
+        "gdcPeriod": {
+          "start": "2026-07-03T09:44:00.000Z",
+          "end": "2026-07-04T09:43:59.999Z"
+        },
         "snapshotTime": null,
         "snapshotBackupTime": null,
         "decks": {},
@@ -12965,7 +12975,10 @@
       {
         "warDay": "saturday",
         "realDay": "2026-07-04",
-        "gdcPeriod": null,
+        "gdcPeriod": {
+          "start": "2026-07-04T09:44:00.000Z",
+          "end": "2026-07-05T09:43:59.999Z"
+        },
         "snapshotTime": null,
         "snapshotBackupTime": null,
         "decks": {},
@@ -12980,7 +12993,10 @@
       {
         "warDay": "sunday",
         "realDay": "2026-07-05",
-        "gdcPeriod": null,
+        "gdcPeriod": {
+          "start": "2026-07-05T09:44:00.000Z",
+          "end": "2026-07-06T09:43:59.999Z"
+        },
         "snapshotTime": null,
         "snapshotBackupTime": null,
         "decks": {},
