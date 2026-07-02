@@ -2226,10 +2226,15 @@ function renderPlayerResults(data) {
           value.replace(/,/g, " "),
         )
         .replace(/(\d+)\.(\d+)/g, "$1,$2")
-        .replace(/\bincomplete weeks? count as 0\b/gi, "Semaines incomplètes comptent 0")
+        .replace(
+          /\bincomplete weeks? count as 0\b/gi,
+          "Semaines incomplètes comptent 0",
+        )
         .replace(/\btoday\b/gi, "Aujourd'hui")
         .replace(/\bfull weeks?\b/gi, (match) =>
-          match.toLowerCase().includes("full weeks") ? "semaines complètes" : match,
+          match.toLowerCase().includes("full weeks")
+            ? "semaines complètes"
+            : match,
         );
     }
 
