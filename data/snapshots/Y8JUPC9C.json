@@ -1,1066 +1,5 @@
 [
   {
-    "week": "S131W4",
-    "days": [
-      {
-        "warDay": "thursday",
-        "realDay": "2026-04-30",
-        "gdcPeriod": {
-          "start": "2026-04-30T09:42:00.000Z",
-          "end": "2026-05-01T09:41:59.999Z"
-        },
-        "snapshotTime": "2026-05-01T09:33:40.874Z",
-        "snapshotBackupTime": "2026-04-30T10:35:03.436Z",
-        "decks": {
-          "#28PQVJ2V": 4,
-          "#2902YQRQL": 4,
-          "#2CL028C80": 4,
-          "#2GPUQY9P9": 4,
-          "#2GUPJ99G2": 4,
-          "#2R9QUYQ2C": 4,
-          "#2UQQJJ98Y": 4,
-          "#809G8YC8": 4,
-          "#80CCLY20L": 4,
-          "#888Y29GY": 4,
-          "#8P29RRU2": 4,
-          "#8PP9JQCLY": 4,
-          "#8QL2J8PQ": 4,
-          "#8V98QYY8V": 4,
-          "#99VY0090": 4,
-          "#9CQC0YUR8": 4,
-          "#9GG9GRC0G": 4,
-          "#9VQ0J29Y": 4,
-          "#9Y28LR22": 4,
-          "#9YQ8RVU2P": 4,
-          "#C0VQRUP2": 4,
-          "#C2RL8UVYV": 4,
-          "#CQ0GQ0JRU": 4,
-          "#CYRGPVGVG": 4,
-          "#G9LPGQUG": 4,
-          "#GGRLYR8PL": 4,
-          "#GR9G9ULL": 4,
-          "#GVGVR0J2U": 4,
-          "#J8LUJQGY0": 4,
-          "#J8RU2RJ8C": 4,
-          "#JLU88JR28": 4,
-          "#LCQ2J0VGC": 4,
-          "#P9R8Y90P8": 4,
-          "#PG0Q0YYGY": 4,
-          "#PGJPJG9QQ": 4,
-          "#PVQ2QRLJQ": 4,
-          "#U008V0PQ8": 4,
-          "#UJ89GUUUY": 4,
-          "#UY00GJG2": 4,
-          "#UYP0YCQ9": 4,
-          "#VQP8PU2V": 4,
-          "#VVJ8RURL9": 4,
-          "#YGLL08Y8C": 4,
-          "#YRYPUR822": 4,
-          "#88QP9CJU": 1
-        },
-        "hourlyCumul": [
-          {
-            "takenAt": "2026-04-30T11:31:29.612Z",
-            "total": 24
-          },
-          {
-            "takenAt": "2026-04-30T12:31:44.065Z",
-            "total": 41
-          },
-          {
-            "takenAt": "2026-04-30T13:34:20.974Z",
-            "total": 53
-          },
-          {
-            "takenAt": "2026-04-30T14:42:31.853Z",
-            "total": 68
-          },
-          {
-            "takenAt": "2026-04-30T16:31:47.071Z",
-            "total": 80
-          },
-          {
-            "takenAt": "2026-04-30T17:30:53.931Z",
-            "total": 92
-          },
-          {
-            "takenAt": "2026-04-30T18:29:21.795Z",
-            "total": 98
-          },
-          {
-            "takenAt": "2026-04-30T19:31:30.299Z",
-            "total": 103
-          },
-          {
-            "takenAt": "2026-04-30T20:24:51.318Z",
-            "total": 108
-          },
-          {
-            "takenAt": "2026-04-30T21:21:45.871Z",
-            "total": 124
-          },
-          {
-            "takenAt": "2026-04-30T22:19:08.648Z",
-            "total": 127
-          },
-          {
-            "takenAt": "2026-04-30T23:18:50.891Z",
-            "total": 127
-          },
-          {
-            "takenAt": "2026-05-01T00:34:00.774Z",
-            "total": 131
-          },
-          {
-            "takenAt": "2026-05-01T01:35:39.287Z",
-            "total": 131
-          },
-          {
-            "takenAt": "2026-05-01T03:05:38.966Z",
-            "total": 131
-          },
-          {
-            "takenAt": "2026-05-01T05:16:26.972Z",
-            "total": 140
-          },
-          {
-            "takenAt": "2026-05-01T06:54:29.657Z",
-            "total": 148
-          },
-          {
-            "takenAt": "2026-05-01T07:46:10.419Z",
-            "total": 156
-          },
-          {
-            "takenAt": "2026-05-01T09:33:40.874Z",
-            "total": 177
-          }
-        ],
-        "_cumulFame": {
-          "#809G8YC8": 550,
-          "#PG0Q0YYGY": 800,
-          "#9Y28LR22": 500,
-          "#9VQ0J29Y": 600,
-          "#G2VVUJLLQ": 0,
-          "#2902YQRQL": 400,
-          "#JLU88JR28": 400,
-          "#U008V0PQ8": 400,
-          "#2GUPJ99G2": 700,
-          "#2VULJRRY9": 0,
-          "#8V98QYY8V": 800,
-          "#8QL2J8PQ": 700,
-          "#C2RL8UVYV": 500,
-          "#2CL028C80": 700,
-          "#U0Q0P2YGU": 0,
-          "#888Y29GY": 700,
-          "#8CCCQYV99": 0,
-          "#VQP8PU2V": 500,
-          "#8P9CL92LC": 0,
-          "#88QP9CJU": 100,
-          "#G9LPGQUG": 550,
-          "#9GG9GRC0G": 700,
-          "#8PP9JQCLY": 600,
-          "#GGRLYR8PL": 700,
-          "#J8LUJQGY0": 600,
-          "#2GPUQY9P9": 600,
-          "#YRYPUR822": 650,
-          "#GR9G9ULL": 600,
-          "#82URJC8CR": 0,
-          "#9YQ0P0L0": 0,
-          "#9RRP8V0LG": 0,
-          "#8P29RRU2": 400,
-          "#PGJPJG9QQ": 650,
-          "#J8RU2RJ8C": 900,
-          "#UY00GJG2": 800,
-          "#99VY0090": 500,
-          "#99CRC8PP": 0,
-          "#QGVJ2U0QJ": 0,
-          "#2UQQJJ98Y": 500,
-          "#UJ89GUUUY": 550,
-          "#80CCLY20L": 500,
-          "#CQ0GQ0JRU": 650,
-          "#9CQC0YUR8": 700,
-          "#CC29JU800": 0,
-          "#UYP0YCQ9": 400,
-          "#9YQ8RVU2P": 600,
-          "#J9ULCGJYU": 0,
-          "#YGLL08Y8C": 400,
-          "#VVJ8RURL9": 900,
-          "#2R9QUYQ2C": 650,
-          "#LCQ2J0VGC": 800,
-          "#UGU9JG2QC": 0,
-          "#P9R8Y90P8": 650,
-          "#LQLY92CR0": 0,
-          "#GVGVR0J2U": 800,
-          "#PVQ2QRLJQ": 400,
-          "#CYRGPVGVG": 500,
-          "#C0VQRUP2": 550,
-          "#28PQVJ2V": 700
-        },
-        "periodType": "colosseum",
-        "_cumul": {
-          "#809G8YC8": 4,
-          "#PG0Q0YYGY": 4,
-          "#9Y28LR22": 4,
-          "#9VQ0J29Y": 4,
-          "#G2VVUJLLQ": 0,
-          "#2902YQRQL": 4,
-          "#JLU88JR28": 4,
-          "#U008V0PQ8": 4,
-          "#2GUPJ99G2": 4,
-          "#2VULJRRY9": 0,
-          "#8V98QYY8V": 4,
-          "#8QL2J8PQ": 4,
-          "#C2RL8UVYV": 4,
-          "#2CL028C80": 4,
-          "#U0Q0P2YGU": 0,
-          "#888Y29GY": 4,
-          "#8CCCQYV99": 0,
-          "#VQP8PU2V": 4,
-          "#8P9CL92LC": 0,
-          "#88QP9CJU": 1,
-          "#G9LPGQUG": 4,
-          "#9GG9GRC0G": 4,
-          "#8PP9JQCLY": 4,
-          "#GGRLYR8PL": 4,
-          "#J8LUJQGY0": 4,
-          "#2GPUQY9P9": 4,
-          "#YRYPUR822": 4,
-          "#GR9G9ULL": 4,
-          "#82URJC8CR": 0,
-          "#9YQ0P0L0": 0,
-          "#9RRP8V0LG": 0,
-          "#8P29RRU2": 4,
-          "#PGJPJG9QQ": 4,
-          "#J8RU2RJ8C": 4,
-          "#UY00GJG2": 4,
-          "#99VY0090": 4,
-          "#99CRC8PP": 0,
-          "#QGVJ2U0QJ": 0,
-          "#2UQQJJ98Y": 4,
-          "#UJ89GUUUY": 4,
-          "#80CCLY20L": 4,
-          "#CQ0GQ0JRU": 4,
-          "#9CQC0YUR8": 4,
-          "#CC29JU800": 0,
-          "#UYP0YCQ9": 4,
-          "#9YQ8RVU2P": 4,
-          "#J9ULCGJYU": 0,
-          "#YGLL08Y8C": 4,
-          "#VVJ8RURL9": 4,
-          "#2R9QUYQ2C": 4,
-          "#LCQ2J0VGC": 4,
-          "#UGU9JG2QC": 0,
-          "#P9R8Y90P8": 4,
-          "#LQLY92CR0": 0,
-          "#GVGVR0J2U": 4,
-          "#PVQ2QRLJQ": 4,
-          "#CYRGPVGVG": 4,
-          "#C0VQRUP2": 4,
-          "#28PQVJ2V": 4
-        },
-        "snapshotCount": 177,
-        "duelsTodayByTag": {},
-        "duelsComplete": false
-      },
-      {
-        "warDay": "friday",
-        "realDay": "2026-05-01",
-        "gdcPeriod": {
-          "start": "2026-05-01T09:42:00.000Z",
-          "end": "2026-05-02T09:41:59.999Z"
-        },
-        "snapshotTime": "2026-05-02T09:25:29.550Z",
-        "snapshotBackupTime": "2026-05-01T10:31:02.896Z",
-        "decks": {
-          "#28PQVJ2V": 4,
-          "#2902YQRQL": 4,
-          "#2CL028C80": 4,
-          "#2GPUQY9P9": 4,
-          "#2GUPJ99G2": 4,
-          "#2R9QUYQ2C": 4,
-          "#2UQQJJ98Y": 4,
-          "#809G8YC8": 4,
-          "#80CCLY20L": 4,
-          "#82URJC8CR": 4,
-          "#888Y29GY": 4,
-          "#88QP9CJU": 4,
-          "#8P29RRU2": 4,
-          "#8P9CL92LC": 4,
-          "#8PP9JQCLY": 4,
-          "#8QL2J8PQ": 4,
-          "#8V98QYY8V": 4,
-          "#99VY0090": 4,
-          "#9CQC0YUR8": 4,
-          "#9GG9GRC0G": 4,
-          "#9VQ0J29Y": 4,
-          "#9Y28LR22": 4,
-          "#9YQ8RVU2P": 4,
-          "#C0VQRUP2": 4,
-          "#C2RL8UVYV": 4,
-          "#CQ0GQ0JRU": 4,
-          "#CYRGPVGVG": 4,
-          "#G9LPGQUG": 4,
-          "#GGRLYR8PL": 4,
-          "#GR9G9ULL": 4,
-          "#GVGVR0J2U": 4,
-          "#J8LUJQGY0": 4,
-          "#J8RU2RJ8C": 4,
-          "#LCQ2J0VGC": 4,
-          "#LQLY92CR0": 4,
-          "#P9R8Y90P8": 4,
-          "#PG0Q0YYGY": 4,
-          "#PGJPJG9QQ": 4,
-          "#PVQ2QRLJQ": 4,
-          "#U008V0PQ8": 4,
-          "#UJ89GUUUY": 4,
-          "#UY00GJG2": 4,
-          "#UYP0YCQ9": 4,
-          "#VQP8PU2V": 4,
-          "#VVJ8RURL9": 4,
-          "#YGLL08Y8C": 4,
-          "#YRYPUR822": 4,
-          "#UGU9JG2QC": 1
-        },
-        "hourlyCumul": [
-          {
-            "takenAt": "2026-05-01T11:25:36.248Z",
-            "total": 13
-          },
-          {
-            "takenAt": "2026-05-01T12:20:13.099Z",
-            "total": 33
-          },
-          {
-            "takenAt": "2026-05-01T14:24:55.125Z",
-            "total": 60
-          },
-          {
-            "takenAt": "2026-05-01T15:21:45.421Z",
-            "total": 76
-          },
-          {
-            "takenAt": "2026-05-01T16:21:01.242Z",
-            "total": 87
-          },
-          {
-            "takenAt": "2026-05-01T17:22:10.141Z",
-            "total": 99
-          },
-          {
-            "takenAt": "2026-05-01T18:22:56.286Z",
-            "total": 103
-          },
-          {
-            "takenAt": "2026-05-01T19:28:33.844Z",
-            "total": 114
-          },
-          {
-            "takenAt": "2026-05-01T20:18:18.369Z",
-            "total": 115
-          },
-          {
-            "takenAt": "2026-05-01T21:17:16.165Z",
-            "total": 130
-          },
-          {
-            "takenAt": "2026-05-01T22:17:04.171Z",
-            "total": 135
-          },
-          {
-            "takenAt": "2026-05-01T23:17:44.453Z",
-            "total": 144
-          },
-          {
-            "takenAt": "2026-05-02T00:30:42.040Z",
-            "total": 152
-          },
-          {
-            "takenAt": "2026-05-02T01:34:49.260Z",
-            "total": 152
-          },
-          {
-            "takenAt": "2026-05-02T03:04:19.811Z",
-            "total": 154
-          },
-          {
-            "takenAt": "2026-05-02T05:02:25.508Z",
-            "total": 158
-          },
-          {
-            "takenAt": "2026-05-02T06:38:39.213Z",
-            "total": 163
-          },
-          {
-            "takenAt": "2026-05-02T07:32:46.491Z",
-            "total": 163
-          },
-          {
-            "takenAt": "2026-05-02T08:30:45.898Z",
-            "total": 171
-          },
-          {
-            "takenAt": "2026-05-02T09:25:29.550Z",
-            "total": 189
-          }
-        ],
-        "_cumulFame": {
-          "#G2VVUJLLQ": 0,
-          "#2VULJRRY9": 0,
-          "#U0Q0P2YGU": 0,
-          "#8CCCQYV99": 0,
-          "#8P9CL92LC": 400,
-          "#82URJC8CR": 550,
-          "#9YQ0P0L0": 0,
-          "#9RRP8V0LG": 0,
-          "#99CRC8PP": 0,
-          "#QGVJ2U0QJ": 0,
-          "#CC29JU800": 0,
-          "#J9ULCGJYU": 0,
-          "#UGU9JG2QC": 100,
-          "#LQLY92CR0": 700,
-          "#2902YQRQL": 1050,
-          "#JLU88JR28": 400,
-          "#U008V0PQ8": 1050,
-          "#8P29RRU2": 1000,
-          "#UYP0YCQ9": 800,
-          "#YGLL08Y8C": 1100,
-          "#PVQ2QRLJQ": 950,
-          "#9Y28LR22": 1200,
-          "#C2RL8UVYV": 1100,
-          "#VQP8PU2V": 1400,
-          "#99VY0090": 1400,
-          "#2UQQJJ98Y": 1150,
-          "#80CCLY20L": 1300,
-          "#CYRGPVGVG": 1300,
-          "#809G8YC8": 1050,
-          "#G9LPGQUG": 1200,
-          "#UJ89GUUUY": 1200,
-          "#C0VQRUP2": 1050,
-          "#9VQ0J29Y": 1400,
-          "#8PP9JQCLY": 1400,
-          "#J8LUJQGY0": 1250,
-          "#2GPUQY9P9": 1100,
-          "#GR9G9ULL": 1100,
-          "#9YQ8RVU2P": 1100,
-          "#YRYPUR822": 1250,
-          "#PGJPJG9QQ": 1050,
-          "#CQ0GQ0JRU": 1450,
-          "#2R9QUYQ2C": 1200,
-          "#P9R8Y90P8": 1300,
-          "#2GUPJ99G2": 1250,
-          "#8QL2J8PQ": 1600,
-          "#2CL028C80": 1400,
-          "#888Y29GY": 1500,
-          "#28PQVJ2V": 1400,
-          "#88QP9CJU": 1400,
-          "#9GG9GRC0G": 1250,
-          "#GGRLYR8PL": 1400,
-          "#9CQC0YUR8": 1600,
-          "#PG0Q0YYGY": 1600,
-          "#8V98QYY8V": 1500,
-          "#UY00GJG2": 1500,
-          "#LCQ2J0VGC": 1500,
-          "#GVGVR0J2U": 1350,
-          "#J8RU2RJ8C": 1600,
-          "#VVJ8RURL9": 1450
-        },
-        "periodType": "colosseum",
-        "_cumul": {
-          "#G2VVUJLLQ": 0,
-          "#2VULJRRY9": 0,
-          "#U0Q0P2YGU": 0,
-          "#8CCCQYV99": 0,
-          "#8P9CL92LC": 4,
-          "#82URJC8CR": 4,
-          "#9YQ0P0L0": 0,
-          "#9RRP8V0LG": 0,
-          "#99CRC8PP": 0,
-          "#QGVJ2U0QJ": 0,
-          "#CC29JU800": 0,
-          "#J9ULCGJYU": 0,
-          "#UGU9JG2QC": 1,
-          "#LQLY92CR0": 4,
-          "#2902YQRQL": 8,
-          "#JLU88JR28": 4,
-          "#U008V0PQ8": 8,
-          "#8P29RRU2": 8,
-          "#UYP0YCQ9": 8,
-          "#YGLL08Y8C": 8,
-          "#PVQ2QRLJQ": 8,
-          "#9Y28LR22": 8,
-          "#C2RL8UVYV": 8,
-          "#VQP8PU2V": 8,
-          "#99VY0090": 8,
-          "#2UQQJJ98Y": 8,
-          "#80CCLY20L": 8,
-          "#CYRGPVGVG": 8,
-          "#809G8YC8": 8,
-          "#G9LPGQUG": 8,
-          "#UJ89GUUUY": 8,
-          "#C0VQRUP2": 8,
-          "#9VQ0J29Y": 8,
-          "#8PP9JQCLY": 8,
-          "#J8LUJQGY0": 8,
-          "#2GPUQY9P9": 8,
-          "#GR9G9ULL": 8,
-          "#9YQ8RVU2P": 8,
-          "#YRYPUR822": 8,
-          "#PGJPJG9QQ": 8,
-          "#CQ0GQ0JRU": 8,
-          "#2R9QUYQ2C": 8,
-          "#P9R8Y90P8": 8,
-          "#2GUPJ99G2": 8,
-          "#8QL2J8PQ": 8,
-          "#2CL028C80": 8,
-          "#888Y29GY": 8,
-          "#28PQVJ2V": 8,
-          "#88QP9CJU": 8,
-          "#9GG9GRC0G": 8,
-          "#GGRLYR8PL": 8,
-          "#9CQC0YUR8": 8,
-          "#PG0Q0YYGY": 8,
-          "#8V98QYY8V": 8,
-          "#UY00GJG2": 8,
-          "#LCQ2J0VGC": 8,
-          "#GVGVR0J2U": 8,
-          "#J8RU2RJ8C": 8,
-          "#VVJ8RURL9": 8
-        },
-        "snapshotCount": 189,
-        "duelsTodayByTag": {},
-        "duelsComplete": false
-      },
-      {
-        "warDay": "saturday",
-        "realDay": "2026-05-02",
-        "gdcPeriod": {
-          "start": "2026-05-02T09:42:00.000Z",
-          "end": "2026-05-03T09:41:59.999Z"
-        },
-        "snapshotTime": "2026-05-03T09:30:27.398Z",
-        "snapshotBackupTime": "2026-05-02T10:19:22.269Z",
-        "decks": {
-          "#2GPUQY9P9": 4,
-          "#2GUPJ99G2": 4,
-          "#2R9QUYQ2C": 4,
-          "#2UQQJJ98Y": 4,
-          "#809G8YC8": 4,
-          "#80CCLY20L": 4,
-          "#82URJC8CR": 4,
-          "#888Y29GY": 4,
-          "#88QP9CJU": 4,
-          "#8P29RRU2": 4,
-          "#8PP9JQCLY": 4,
-          "#8QL2J8PQ": 4,
-          "#8V98QYY8V": 4,
-          "#99VY0090": 4,
-          "#9CQC0YUR8": 4,
-          "#9GG9GRC0G": 4,
-          "#9VQ0J29Y": 4,
-          "#9Y28LR22": 4,
-          "#9YQ8RVU2P": 4,
-          "#C0VQRUP2": 4,
-          "#C2RL8UVYV": 4,
-          "#CQ0GQ0JRU": 4,
-          "#CYRGPVGVG": 4,
-          "#G9LPGQUG": 4,
-          "#GGRLYR8PL": 4,
-          "#GVGVR0J2U": 4,
-          "#J8RU2RJ8C": 4,
-          "#LQLY92CR0": 4,
-          "#P9R8Y90P8": 4,
-          "#PG0Q0YYGY": 4,
-          "#PGJPJG9QQ": 4,
-          "#PVQ2QRLJQ": 4,
-          "#U008V0PQ8": 4,
-          "#U0Q0P2YGU": 4,
-          "#UGU9JG2QC": 4,
-          "#UJ89GUUUY": 4,
-          "#UY00GJG2": 4,
-          "#UYP0YCQ9": 4,
-          "#VQP8PU2V": 4,
-          "#VVJ8RURL9": 4,
-          "#YGLL08Y8C": 4,
-          "#YRYPUR822": 4,
-          "#2902YQRQL": 2,
-          "#LCQ2J0VGC": 2
-        },
-        "hourlyCumul": [
-          {
-            "takenAt": "2026-05-02T12:17:01.864Z",
-            "total": 42
-          },
-          {
-            "takenAt": "2026-05-02T13:30:36.750Z",
-            "total": 56
-          },
-          {
-            "takenAt": "2026-05-02T14:19:24.367Z",
-            "total": 63
-          },
-          {
-            "takenAt": "2026-05-02T15:15:55.168Z",
-            "total": 67
-          },
-          {
-            "takenAt": "2026-05-02T16:15:54.443Z",
-            "total": 77
-          },
-          {
-            "takenAt": "2026-05-02T17:16:33.163Z",
-            "total": 81
-          },
-          {
-            "takenAt": "2026-05-02T18:17:40.789Z",
-            "total": 92
-          },
-          {
-            "takenAt": "2026-05-02T19:22:38.033Z",
-            "total": 102
-          },
-          {
-            "takenAt": "2026-05-02T20:12:03.303Z",
-            "total": 110
-          },
-          {
-            "takenAt": "2026-05-02T21:14:30.346Z",
-            "total": 119
-          },
-          {
-            "takenAt": "2026-05-02T22:13:18.049Z",
-            "total": 127
-          },
-          {
-            "takenAt": "2026-05-02T23:15:42.890Z",
-            "total": 136
-          },
-          {
-            "takenAt": "2026-05-03T00:31:17.521Z",
-            "total": 136
-          },
-          {
-            "takenAt": "2026-05-03T01:34:35.890Z",
-            "total": 144
-          },
-          {
-            "takenAt": "2026-05-03T03:05:15.990Z",
-            "total": 148
-          },
-          {
-            "takenAt": "2026-05-03T05:08:10.054Z",
-            "total": 152
-          },
-          {
-            "takenAt": "2026-05-03T06:50:57.974Z",
-            "total": 160
-          },
-          {
-            "takenAt": "2026-05-03T07:36:09.991Z",
-            "total": 164
-          },
-          {
-            "takenAt": "2026-05-03T08:34:36.222Z",
-            "total": 164
-          },
-          {
-            "takenAt": "2026-05-03T09:30:27.398Z",
-            "total": 172
-          }
-        ],
-        "_cumulFame": {
-          "#G2VVUJLLQ": 0,
-          "#2VULJRRY9": 0,
-          "#8CCCQYV99": 0,
-          "#9YQ0P0L0": 0,
-          "#9RRP8V0LG": 0,
-          "#99CRC8PP": 0,
-          "#QGVJ2U0QJ": 0,
-          "#CC29JU800": 0,
-          "#J9ULCGJYU": 0,
-          "#JLU88JR28": 400,
-          "#U0Q0P2YGU": 800,
-          "#8P9CL92LC": 400,
-          "#82URJC8CR": 1250,
-          "#UGU9JG2QC": 1150,
-          "#LQLY92CR0": 1200,
-          "#UYP0YCQ9": 1300,
-          "#PVQ2QRLJQ": 1500,
-          "#8P29RRU2": 1400,
-          "#809G8YC8": 1550,
-          "#2902YQRQL": 1250,
-          "#U008V0PQ8": 1750,
-          "#C0VQRUP2": 1700,
-          "#C2RL8UVYV": 1650,
-          "#2GPUQY9P9": 1900,
-          "#GR9G9ULL": 1100,
-          "#9YQ8RVU2P": 1600,
-          "#YGLL08Y8C": 1800,
-          "#2UQQJJ98Y": 1850,
-          "#9Y28LR22": 1600,
-          "#G9LPGQUG": 1850,
-          "#UJ89GUUUY": 2000,
-          "#2GUPJ99G2": 2050,
-          "#9GG9GRC0G": 2050,
-          "#J8LUJQGY0": 1250,
-          "#YRYPUR822": 1850,
-          "#80CCLY20L": 2000,
-          "#P9R8Y90P8": 1850,
-          "#CYRGPVGVG": 1800,
-          "#GVGVR0J2U": 1750,
-          "#9VQ0J29Y": 1900,
-          "#2CL028C80": 1400,
-          "#28PQVJ2V": 1400,
-          "#VQP8PU2V": 2200,
-          "#88QP9CJU": 2200,
-          "#8PP9JQCLY": 1900,
-          "#GGRLYR8PL": 1900,
-          "#99VY0090": 2100,
-          "#2R9QUYQ2C": 2000,
-          "#CQ0GQ0JRU": 2150,
-          "#VVJ8RURL9": 2250,
-          "#8V98QYY8V": 2300,
-          "#888Y29GY": 2300,
-          "#UY00GJG2": 2300,
-          "#LCQ2J0VGC": 1700,
-          "#PG0Q0YYGY": 2100,
-          "#8QL2J8PQ": 2300,
-          "#J8RU2RJ8C": 2150,
-          "#9CQC0YUR8": 2250,
-          "#PGJPJG9QQ": 1700
-        },
-        "periodType": "colosseum",
-        "_cumul": {
-          "#G2VVUJLLQ": 0,
-          "#2VULJRRY9": 0,
-          "#8CCCQYV99": 0,
-          "#9YQ0P0L0": 0,
-          "#9RRP8V0LG": 0,
-          "#99CRC8PP": 0,
-          "#QGVJ2U0QJ": 0,
-          "#CC29JU800": 0,
-          "#J9ULCGJYU": 0,
-          "#JLU88JR28": 4,
-          "#U0Q0P2YGU": 8,
-          "#8P9CL92LC": 4,
-          "#82URJC8CR": 8,
-          "#UGU9JG2QC": 8,
-          "#LQLY92CR0": 8,
-          "#UYP0YCQ9": 12,
-          "#PVQ2QRLJQ": 12,
-          "#8P29RRU2": 12,
-          "#809G8YC8": 12,
-          "#2902YQRQL": 10,
-          "#U008V0PQ8": 12,
-          "#C0VQRUP2": 12,
-          "#C2RL8UVYV": 12,
-          "#2GPUQY9P9": 12,
-          "#GR9G9ULL": 8,
-          "#9YQ8RVU2P": 12,
-          "#YGLL08Y8C": 12,
-          "#2UQQJJ98Y": 12,
-          "#9Y28LR22": 12,
-          "#G9LPGQUG": 12,
-          "#UJ89GUUUY": 12,
-          "#2GUPJ99G2": 12,
-          "#9GG9GRC0G": 12,
-          "#J8LUJQGY0": 8,
-          "#YRYPUR822": 12,
-          "#80CCLY20L": 12,
-          "#P9R8Y90P8": 12,
-          "#CYRGPVGVG": 12,
-          "#GVGVR0J2U": 12,
-          "#9VQ0J29Y": 12,
-          "#2CL028C80": 8,
-          "#28PQVJ2V": 8,
-          "#VQP8PU2V": 12,
-          "#88QP9CJU": 12,
-          "#8PP9JQCLY": 12,
-          "#GGRLYR8PL": 12,
-          "#99VY0090": 12,
-          "#2R9QUYQ2C": 12,
-          "#CQ0GQ0JRU": 12,
-          "#VVJ8RURL9": 12,
-          "#8V98QYY8V": 12,
-          "#888Y29GY": 12,
-          "#UY00GJG2": 12,
-          "#LCQ2J0VGC": 10,
-          "#PG0Q0YYGY": 12,
-          "#8QL2J8PQ": 12,
-          "#J8RU2RJ8C": 12,
-          "#9CQC0YUR8": 12,
-          "#PGJPJG9QQ": 12
-        },
-        "snapshotCount": 172,
-        "duelsTodayByTag": {},
-        "duelsComplete": false
-      },
-      {
-        "warDay": "sunday",
-        "realDay": "2026-05-03",
-        "gdcPeriod": {
-          "start": "2026-05-03T09:42:00.000Z",
-          "end": "2026-05-04T09:41:59.999Z"
-        },
-        "snapshotTime": "2026-05-04T09:45:16.658Z",
-        "snapshotBackupTime": "2026-05-03T10:21:02.717Z",
-        "decks": {
-          "#28PQVJ2V": 4,
-          "#2902YQRQL": 4,
-          "#2CL028C80": 4,
-          "#2GPUQY9P9": 4,
-          "#2GUPJ99G2": 4,
-          "#2R9QUYQ2C": 4,
-          "#2UQQJJ98Y": 4,
-          "#809G8YC8": 4,
-          "#80CCLY20L": 4,
-          "#82URJC8CR": 4,
-          "#888Y29GY": 4,
-          "#88QP9CJU": 4,
-          "#8P29RRU2": 4,
-          "#8P9CL92LC": 4,
-          "#8PP9JQCLY": 4,
-          "#8QL2J8PQ": 4,
-          "#8V98QYY8V": 4,
-          "#99VY0090": 4,
-          "#9CQC0YUR8": 4,
-          "#9GG9GRC0G": 4,
-          "#9VQ0J29Y": 4,
-          "#9Y28LR22": 4,
-          "#9YQ8RVU2P": 4,
-          "#C0VQRUP2": 4,
-          "#C2RL8UVYV": 4,
-          "#CQ0GQ0JRU": 4,
-          "#CYRGPVGVG": 4,
-          "#GGRLYR8PL": 4,
-          "#GVGVR0J2U": 4,
-          "#J8RU2RJ8C": 4,
-          "#LCQ2J0VGC": 4,
-          "#LQLY92CR0": 4,
-          "#P9R8Y90P8": 4,
-          "#PG0Q0YYGY": 4,
-          "#PGJPJG9QQ": 4,
-          "#PVQ2QRLJQ": 4,
-          "#U008V0PQ8": 4,
-          "#U0Q0P2YGU": 4,
-          "#UGU9JG2QC": 4,
-          "#UJ89GUUUY": 4,
-          "#UY00GJG2": 4,
-          "#UYP0YCQ9": 4,
-          "#VQP8PU2V": 4,
-          "#VVJ8RURL9": 4,
-          "#YGLL08Y8C": 4,
-          "#YRYPUR822": 4,
-          "#G9LPGQUG": 2
-        },
-        "hourlyCumul": [
-          {
-            "takenAt": "2026-05-03T12:16:45.172Z",
-            "total": 42
-          },
-          {
-            "takenAt": "2026-05-03T13:30:35.465Z",
-            "total": 61
-          },
-          {
-            "takenAt": "2026-05-03T14:19:42.866Z",
-            "total": 64
-          },
-          {
-            "takenAt": "2026-05-03T15:15:39.062Z",
-            "total": 75
-          },
-          {
-            "takenAt": "2026-05-03T16:15:48.708Z",
-            "total": 81
-          },
-          {
-            "takenAt": "2026-05-03T17:17:19.432Z",
-            "total": 96
-          },
-          {
-            "takenAt": "2026-05-03T18:18:12.893Z",
-            "total": 100
-          },
-          {
-            "takenAt": "2026-05-03T19:23:08.125Z",
-            "total": 111
-          },
-          {
-            "takenAt": "2026-05-03T20:12:52.849Z",
-            "total": 118
-          },
-          {
-            "takenAt": "2026-05-03T21:15:40.412Z",
-            "total": 131
-          },
-          {
-            "takenAt": "2026-05-03T22:13:51.011Z",
-            "total": 137
-          },
-          {
-            "takenAt": "2026-05-03T23:15:53.383Z",
-            "total": 144
-          },
-          {
-            "takenAt": "2026-05-04T00:31:25.744Z",
-            "total": 144
-          },
-          {
-            "takenAt": "2026-05-04T01:35:17.205Z",
-            "total": 144
-          },
-          {
-            "takenAt": "2026-05-04T03:05:38.624Z",
-            "total": 144
-          },
-          {
-            "takenAt": "2026-05-04T05:09:18.846Z",
-            "total": 156
-          },
-          {
-            "takenAt": "2026-05-04T07:01:19.145Z",
-            "total": 174
-          },
-          {
-            "takenAt": "2026-05-04T08:49:46.843Z",
-            "total": 181
-          },
-          {
-            "takenAt": "2026-05-04T09:45:16.658Z",
-            "total": 186
-          }
-        ],
-        "_cumulFame": {
-          "#G2VVUJLLQ": 0,
-          "#2VULJRRY9": 0,
-          "#8CCCQYV99": 0,
-          "#9YQ0P0L0": 0,
-          "#9RRP8V0LG": 0,
-          "#99CRC8PP": 0,
-          "#QGVJ2U0QJ": 0,
-          "#CC29JU800": 0,
-          "#J9ULCGJYU": 0,
-          "#JLU88JR28": 400,
-          "#8P9CL92LC": 900,
-          "#U0Q0P2YGU": 1200,
-          "#GR9G9ULL": 1100,
-          "#UGU9JG2QC": 1550,
-          "#LQLY92CR0": 2100,
-          "#2902YQRQL": 2050,
-          "#J8LUJQGY0": 1250,
-          "#82URJC8CR": 1950,
-          "#UYP0YCQ9": 1950,
-          "#8P29RRU2": 2200,
-          "#PVQ2QRLJQ": 1900,
-          "#809G8YC8": 1950,
-          "#9Y28LR22": 2300,
-          "#9YQ8RVU2P": 2300,
-          "#C2RL8UVYV": 2450,
-          "#PGJPJG9QQ": 2250,
-          "#LCQ2J0VGC": 2200,
-          "#C0VQRUP2": 2500,
-          "#U008V0PQ8": 2250,
-          "#GVGVR0J2U": 2250,
-          "#YGLL08Y8C": 2200,
-          "#CYRGPVGVG": 2700,
-          "#28PQVJ2V": 2400,
-          "#G9LPGQUG": 2350,
-          "#YRYPUR822": 2350,
-          "#2UQQJJ98Y": 2500,
-          "#P9R8Y90P8": 2650,
-          "#9VQ0J29Y": 2550,
-          "#8PP9JQCLY": 2600,
-          "#GGRLYR8PL": 2400,
-          "#2GPUQY9P9": 2600,
-          "#2CL028C80": 2600,
-          "#UJ89GUUUY": 2800,
-          "#80CCLY20L": 2600,
-          "#2R9QUYQ2C": 2800,
-          "#2GUPJ99G2": 2850,
-          "#9GG9GRC0G": 2750,
-          "#PG0Q0YYGY": 2900,
-          "#99VY0090": 2800,
-          "#VQP8PU2V": 2600,
-          "#88QP9CJU": 2700,
-          "#CQ0GQ0JRU": 2700,
-          "#9CQC0YUR8": 3050,
-          "#8V98QYY8V": 3100,
-          "#8QL2J8PQ": 2950,
-          "#888Y29GY": 3000,
-          "#UY00GJG2": 3100,
-          "#J8RU2RJ8C": 2650,
-          "#VVJ8RURL9": 3050
-        },
-        "periodType": "colosseum",
-        "_cumul": {
-          "#G2VVUJLLQ": 0,
-          "#2VULJRRY9": 0,
-          "#8CCCQYV99": 0,
-          "#9YQ0P0L0": 0,
-          "#9RRP8V0LG": 0,
-          "#99CRC8PP": 0,
-          "#QGVJ2U0QJ": 0,
-          "#CC29JU800": 0,
-          "#J9ULCGJYU": 0,
-          "#JLU88JR28": 4,
-          "#8P9CL92LC": 8,
-          "#U0Q0P2YGU": 12,
-          "#GR9G9ULL": 8,
-          "#UGU9JG2QC": 12,
-          "#LQLY92CR0": 12,
-          "#2902YQRQL": 14,
-          "#J8LUJQGY0": 8,
-          "#82URJC8CR": 12,
-          "#UYP0YCQ9": 16,
-          "#8P29RRU2": 16,
-          "#PVQ2QRLJQ": 16,
-          "#809G8YC8": 16,
-          "#9Y28LR22": 16,
-          "#9YQ8RVU2P": 16,
-          "#C2RL8UVYV": 16,
-          "#PGJPJG9QQ": 16,
-          "#LCQ2J0VGC": 14,
-          "#C0VQRUP2": 16,
-          "#U008V0PQ8": 16,
-          "#GVGVR0J2U": 16,
-          "#YGLL08Y8C": 16,
-          "#CYRGPVGVG": 16,
-          "#28PQVJ2V": 15,
-          "#G9LPGQUG": 14,
-          "#YRYPUR822": 16,
-          "#2UQQJJ98Y": 16,
-          "#P9R8Y90P8": 16,
-          "#9VQ0J29Y": 16,
-          "#8PP9JQCLY": 16,
-          "#GGRLYR8PL": 16,
-          "#2GPUQY9P9": 16,
-          "#2CL028C80": 16,
-          "#UJ89GUUUY": 16,
-          "#80CCLY20L": 16,
-          "#2R9QUYQ2C": 16,
-          "#2GUPJ99G2": 16,
-          "#9GG9GRC0G": 16,
-          "#PG0Q0YYGY": 16,
-          "#99VY0090": 16,
-          "#VQP8PU2V": 16,
-          "#88QP9CJU": 16,
-          "#CQ0GQ0JRU": 16,
-          "#9CQC0YUR8": 16,
-          "#8V98QYY8V": 16,
-          "#8QL2J8PQ": 16,
-          "#888Y29GY": 16,
-          "#UY00GJG2": 16,
-          "#J8RU2RJ8C": 16,
-          "#VVJ8RURL9": 16
-        },
-        "snapshotCount": 186,
-        "duelsTodayByTag": {},
-        "duelsComplete": false
-      }
-    ]
-  },
-  {
     "week": "S132W1",
     "days": [
       {
@@ -1322,7 +261,8 @@
         },
         "snapshotCount": 191,
         "duelsTodayByTag": {},
-        "duelsComplete": false
+        "duelsComplete": false,
+        "_totalDonationsByTag": {}
       },
       {
         "warDay": "friday",
@@ -1582,7 +522,8 @@
         },
         "snapshotCount": 189,
         "duelsTodayByTag": {},
-        "duelsComplete": false
+        "duelsComplete": false,
+        "_totalDonationsByTag": {}
       },
       {
         "warDay": "saturday",
@@ -2001,7 +942,8 @@
           "#8QL2J8PQ": 2500
         },
         "duelsTodayByTag": {},
-        "duelsComplete": false
+        "duelsComplete": false,
+        "_totalDonationsByTag": {}
       },
       {
         "warDay": "sunday",
@@ -2249,7 +1191,8 @@
         },
         "snapshotCount": 176,
         "duelsTodayByTag": {},
-        "duelsComplete": false
+        "duelsComplete": false,
+        "_totalDonationsByTag": {}
       }
     ]
   },
@@ -2445,7 +1388,8 @@
         },
         "snapshotCount": 192,
         "duelsTodayByTag": {},
-        "duelsComplete": false
+        "duelsComplete": false,
+        "_totalDonationsByTag": {}
       },
       {
         "warDay": "friday",
@@ -2817,7 +1761,8 @@
           "#99VY0090": 1600
         },
         "duelsTodayByTag": {},
-        "duelsComplete": false
+        "duelsComplete": false,
+        "_totalDonationsByTag": {}
       },
       {
         "warDay": "saturday",
@@ -3187,7 +2132,8 @@
           "#888Y29GY": 2500
         },
         "duelsTodayByTag": {},
-        "duelsComplete": false
+        "duelsComplete": false,
+        "_totalDonationsByTag": {}
       },
       {
         "warDay": "sunday",
@@ -3379,7 +2325,8 @@
         },
         "snapshotCount": 187,
         "duelsTodayByTag": {},
-        "duelsComplete": false
+        "duelsComplete": false,
+        "_totalDonationsByTag": {}
       }
     ]
   },
@@ -3589,7 +2536,8 @@
         },
         "snapshotCount": 191,
         "duelsTodayByTag": {},
-        "duelsComplete": false
+        "duelsComplete": false,
+        "_totalDonationsByTag": {}
       },
       {
         "warDay": "friday",
@@ -3995,7 +2943,8 @@
           "#YQGCRQ0": 1700
         },
         "duelsTodayByTag": {},
-        "duelsComplete": false
+        "duelsComplete": false,
+        "_totalDonationsByTag": {}
       },
       {
         "warDay": "saturday",
@@ -4409,7 +3358,8 @@
           "#YQGCRQ0": 2600
         },
         "duelsTodayByTag": {},
-        "duelsComplete": false
+        "duelsComplete": false,
+        "_totalDonationsByTag": {}
       },
       {
         "warDay": "sunday",
@@ -4825,7 +3775,8 @@
           "#GJ8RV8802": 3300
         },
         "duelsTodayByTag": {},
-        "duelsComplete": false
+        "duelsComplete": false,
+        "_totalDonationsByTag": {}
       }
     ]
   },
@@ -5262,7 +4213,8 @@
           "#UJ89GUUUY": 900
         },
         "duelsTodayByTag": {},
-        "duelsComplete": false
+        "duelsComplete": false,
+        "_totalDonationsByTag": {}
       },
       {
         "warDay": "friday",
@@ -5694,7 +4646,8 @@
           "#P9R8Y90P8": 1600,
           "#UY00GJG2": 1800
         },
-        "duelsComplete": false
+        "duelsComplete": false,
+        "_totalDonationsByTag": {}
       },
       {
         "warDay": "saturday",
@@ -6177,7 +5130,8 @@
           "#2UQQJJ98Y": 2400,
           "#GJ8RV8802": 2400,
           "#UY00GJG2": 2450
-        }
+        },
+        "_totalDonationsByTag": {}
       },
       {
         "warDay": "sunday",
@@ -6449,7 +5403,8 @@
           "#UY00GJG2": 1
         },
         "duelsComplete": true,
-        "snapshotCount": 191
+        "snapshotCount": 191,
+        "_totalDonationsByTag": {}
       }
     ]
   },
@@ -6848,7 +5803,8 @@
           "#GJ8RV8802": 800,
           "#PVQ2QRLJQ": 800,
           "#2GUPJ99G2": 900
-        }
+        },
+        "_totalDonationsByTag": {}
       },
       {
         "warDay": "friday",
@@ -7255,7 +6211,8 @@
           "#2GPUQY9P9": 1600,
           "#9Q920V9U": 1600,
           "#C0VQRUP2": 1600
-        }
+        },
+        "_totalDonationsByTag": {}
       },
       {
         "warDay": "saturday",
@@ -7669,7 +6626,8 @@
           "#9CQC0YUR8": 2350,
           "#8QL2J8PQ": 2400,
           "#C0VQRUP2": 2400
-        }
+        },
+        "_totalDonationsByTag": {}
       },
       {
         "warDay": "sunday",
@@ -8083,7 +7041,8 @@
           "#QQLYUL0R": 3100,
           "#GJ8RV8802": 3100,
           "#C0VQRUP2": 3100
-        }
+        },
+        "_totalDonationsByTag": {}
       }
     ]
   },
@@ -8529,7 +7488,8 @@
           "#GVGVR0J2U": 800,
           "#C2RL8UVYV": 900,
           "#VQP8PU2V": 900
-        }
+        },
+        "_totalDonationsByTag": {}
       },
       {
         "warDay": "friday",
@@ -8976,7 +7936,8 @@
           "#VVJ8RURL9": 1600,
           "#VLUYR88Y8": 1600,
           "#VQP8PU2V": 1800
-        }
+        },
+        "_totalDonationsByTag": {}
       },
       {
         "warDay": "saturday",
@@ -9422,7 +8383,8 @@
           "#UY00GJG2": 2300,
           "#VQP8PU2V": 2350,
           "#YQGCRQ0": 2400
-        }
+        },
+        "_totalDonationsByTag": {}
       },
       {
         "warDay": "sunday",
@@ -9867,7 +8829,8 @@
           "#VVJ8RURL9": 3050,
           "#YQGCRQ0": 3200,
           "#UY00GJG2": 3200
-        }
+        },
+        "_totalDonationsByTag": {}
       }
     ]
   },
@@ -10321,7 +9284,8 @@
           "#VLUYR88Y8": 800,
           "#C0VQRUP2": 800,
           "#LQLY92CR0": 800
-        }
+        },
+        "_totalDonationsByTag": {}
       },
       {
         "warDay": "friday",
@@ -10769,7 +9733,8 @@
           "#9VQ0J29Y": 1600,
           "#2902YQRQL": 1600,
           "#C0VQRUP2": 1600
-        }
+        },
+        "_totalDonationsByTag": {}
       },
       {
         "warDay": "saturday",
@@ -11219,7 +10184,8 @@
           "#G9LPGQUG": 2300,
           "#2902YQRQL": 2400,
           "#C0VQRUP2": 2400
-        }
+        },
+        "_totalDonationsByTag": {}
       },
       {
         "warDay": "sunday",
@@ -11674,7 +10640,8 @@
           "#QUGLYCJ0U": 3000,
           "#2902YQRQL": 3200,
           "#C0VQRUP2": 3200
-        }
+        },
+        "_totalDonationsByTag": {}
       }
     ]
   },
@@ -12154,7 +11121,8 @@
           "#2GUPJ99G2": 900,
           "#8V98QYY8V": 900,
           "#9YQ8RVU2P": 900
-        }
+        },
+        "_totalDonationsByTag": {}
       },
       {
         "warDay": "friday",
@@ -12632,7 +11600,8 @@
           "#VVJ8RURL9": 1550,
           "#8QL2J8PQ": 1600,
           "#9YQ8RVU2P": 1600
-        }
+        },
+        "_totalDonationsByTag": {}
       },
       {
         "warDay": "saturday",
@@ -13111,7 +12080,8 @@
           "#9YQ8RVU2P": 2300,
           "#LQLY92CR0": 2300,
           "#8QL2J8PQ": 2400
-        }
+        },
+        "_totalDonationsByTag": {}
       },
       {
         "warDay": "sunday",
@@ -13589,7 +12559,246 @@
           "#LQLY92CR0": 3000,
           "#YQGCRQ0": 3050,
           "#8QL2J8PQ": 3100
-        }
+        },
+        "_totalDonationsByTag": {}
+      }
+    ]
+  },
+  {
+    "week": "S133W5",
+    "days": [
+      {
+        "warDay": "thursday",
+        "realDay": "2026-07-02",
+        "gdcPeriod": {
+          "start": "2026-07-02T09:42:00.000Z",
+          "end": "2026-07-03T09:41:59.999Z"
+        },
+        "snapshotTime": null,
+        "snapshotBackupTime": "2026-07-02T10:54:08.917Z",
+        "decks": {
+          "#80CCLY20L": 4,
+          "#PG0Q0YYGY": 4,
+          "#YRYPUR822": 4,
+          "#82URJC8CR": 3,
+          "#GJ8RV8802": 1
+        },
+        "hourlyCumul": [],
+        "_cumulFame": {
+          "#809G8YC8": 0,
+          "#2VRRYLJ2J": 0,
+          "#8PJ20UQCC": 0,
+          "#R2C89LVU": 0,
+          "#9UU90UL90": 0,
+          "#9Y28LR22": 0,
+          "#9VQ0J29Y": 0,
+          "#9VLCCC8PC": 0,
+          "#2902YQRQL": 0,
+          "#JLU88JR28": 0,
+          "#U008V0PQ8": 0,
+          "#2GUPJ99G2": 0,
+          "#2RCG8Q9YC": 0,
+          "#8V98QYY8V": 0,
+          "#8VQLJLR0": 0,
+          "#8QV8G0CC0": 0,
+          "#LJ2G8UCC0": 0,
+          "#8QL2J8PQ": 0,
+          "#C2RL8UVYV": 0,
+          "#VRQYP2RRV": 0,
+          "#2CL028C80": 0,
+          "#8Q9JUG800": 0,
+          "#888Y29GY": 0,
+          "#82QVGU8VC": 0,
+          "#VQP8PU2V": 0,
+          "#8P9CL92LC": 0,
+          "#88QP9CJU": 0,
+          "#G9LPGQUG": 0,
+          "#90G00QJLG": 0,
+          "#9GG9GRC0G": 0,
+          "#8PP9JQCLY": 0,
+          "#8RYQ8Y0GY": 0,
+          "#YQGCRQ0": 0,
+          "#289Y22JR0": 0,
+          "#J8LUJQGY0": 0,
+          "#2GPUQY9P9": 0,
+          "#QQLYUL0R": 0,
+          "#P82G9PL8V": 0,
+          "#8P29RRU2": 0,
+          "#PGJPJG9QQ": 0,
+          "#2PG80VRY": 0,
+          "#J8RU2RJ8C": 0,
+          "#UY00GJG2": 0,
+          "#QCUL98L8Y": 0,
+          "#99VY0090": 0,
+          "#9Q920V9U": 0,
+          "#8LR9JRGG": 0,
+          "#99CRC8PP": 0,
+          "#2UQQJJ98Y": 0,
+          "#UJ89GUUUY": 0,
+          "#CQ0GQ0JRU": 0,
+          "#VYQRPY090": 0,
+          "#V9Y0GUJC8": 0,
+          "#CJ228GU0": 0,
+          "#8PJ2YRCJG": 0,
+          "#9CQC0YUR8": 0,
+          "#YG0V0YVPP": 0,
+          "#QY0LG0R0P": 0,
+          "#UYP0YCQ9": 0,
+          "#9YQ8RVU2P": 0,
+          "#VVJ8RURL9": 0,
+          "#QUGLYCJ0U": 0,
+          "#LCQ2J0VGC": 0,
+          "#R9R2CV0RR": 0,
+          "#VLUYR88Y8": 0,
+          "#C0VQRUP2": 0,
+          "#UGU9JG2QC": 0,
+          "#P9R8Y90P8": 0,
+          "#LQLY92CR0": 0,
+          "#GVGVR0J2U": 0,
+          "#PVQ2QRLJQ": 0,
+          "#YP8LLUVR2": 0,
+          "#GLR2YLQ2U": 0,
+          "#CYRGPVGVG": 0,
+          "#GJ8RV8802": 100,
+          "#YRYPUR822": 500,
+          "#82URJC8CR": 600,
+          "#80CCLY20L": 600,
+          "#PG0Q0YYGY": 700
+        },
+        "duelsTodayByTag": {
+          "#82URJC8CR": 1,
+          "#PG0Q0YYGY": 1
+        },
+        "_totalDonationsByTag": {},
+        "duelsComplete": true,
+        "periodType": "colosseum",
+        "_cumul": {
+          "#809G8YC8": 0,
+          "#2VRRYLJ2J": 0,
+          "#8PJ20UQCC": 0,
+          "#R2C89LVU": 0,
+          "#9UU90UL90": 0,
+          "#9Y28LR22": 0,
+          "#9VQ0J29Y": 0,
+          "#9VLCCC8PC": 0,
+          "#2902YQRQL": 0,
+          "#JLU88JR28": 0,
+          "#U008V0PQ8": 0,
+          "#2GUPJ99G2": 0,
+          "#2RCG8Q9YC": 0,
+          "#8V98QYY8V": 0,
+          "#8VQLJLR0": 0,
+          "#8QV8G0CC0": 0,
+          "#LJ2G8UCC0": 0,
+          "#8QL2J8PQ": 0,
+          "#C2RL8UVYV": 0,
+          "#VRQYP2RRV": 0,
+          "#2CL028C80": 0,
+          "#8Q9JUG800": 0,
+          "#888Y29GY": 0,
+          "#82QVGU8VC": 0,
+          "#VQP8PU2V": 0,
+          "#8P9CL92LC": 0,
+          "#88QP9CJU": 0,
+          "#G9LPGQUG": 0,
+          "#90G00QJLG": 0,
+          "#9GG9GRC0G": 0,
+          "#8PP9JQCLY": 0,
+          "#8RYQ8Y0GY": 0,
+          "#YQGCRQ0": 0,
+          "#289Y22JR0": 0,
+          "#J8LUJQGY0": 0,
+          "#2GPUQY9P9": 0,
+          "#QQLYUL0R": 0,
+          "#P82G9PL8V": 0,
+          "#8P29RRU2": 0,
+          "#PGJPJG9QQ": 0,
+          "#2PG80VRY": 0,
+          "#J8RU2RJ8C": 0,
+          "#UY00GJG2": 0,
+          "#QCUL98L8Y": 0,
+          "#99VY0090": 0,
+          "#9Q920V9U": 0,
+          "#8LR9JRGG": 0,
+          "#99CRC8PP": 0,
+          "#2UQQJJ98Y": 0,
+          "#UJ89GUUUY": 0,
+          "#CQ0GQ0JRU": 0,
+          "#VYQRPY090": 0,
+          "#V9Y0GUJC8": 0,
+          "#CJ228GU0": 0,
+          "#8PJ2YRCJG": 0,
+          "#9CQC0YUR8": 0,
+          "#YG0V0YVPP": 0,
+          "#QY0LG0R0P": 0,
+          "#UYP0YCQ9": 0,
+          "#9YQ8RVU2P": 0,
+          "#VVJ8RURL9": 0,
+          "#QUGLYCJ0U": 0,
+          "#LCQ2J0VGC": 0,
+          "#R9R2CV0RR": 0,
+          "#VLUYR88Y8": 0,
+          "#C0VQRUP2": 0,
+          "#UGU9JG2QC": 0,
+          "#P9R8Y90P8": 0,
+          "#LQLY92CR0": 0,
+          "#GVGVR0J2U": 0,
+          "#PVQ2QRLJQ": 0,
+          "#YP8LLUVR2": 0,
+          "#GLR2YLQ2U": 0,
+          "#CYRGPVGVG": 0,
+          "#GJ8RV8802": 1,
+          "#YRYPUR822": 4,
+          "#82URJC8CR": 3,
+          "#80CCLY20L": 4,
+          "#PG0Q0YYGY": 4
+        },
+        "snapshotCount": 16
+      },
+      {
+        "warDay": "friday",
+        "realDay": "2026-07-03",
+        "gdcPeriod": null,
+        "snapshotTime": null,
+        "snapshotBackupTime": null,
+        "decks": {},
+        "hourlyCumul": [],
+        "_cumulFame": {},
+        "duelsTodayByTag": {},
+        "_totalDonationsByTag": {},
+        "duelsComplete": false,
+        "periodType": null,
+        "_cumul": {}
+      },
+      {
+        "warDay": "saturday",
+        "realDay": "2026-07-04",
+        "gdcPeriod": null,
+        "snapshotTime": null,
+        "snapshotBackupTime": null,
+        "decks": {},
+        "hourlyCumul": [],
+        "_cumulFame": {},
+        "duelsTodayByTag": {},
+        "_totalDonationsByTag": {},
+        "duelsComplete": false,
+        "periodType": null,
+        "_cumul": {}
+      },
+      {
+        "warDay": "sunday",
+        "realDay": "2026-07-05",
+        "gdcPeriod": null,
+        "snapshotTime": null,
+        "snapshotBackupTime": null,
+        "decks": {},
+        "hourlyCumul": [],
+        "_cumulFame": {},
+        "duelsTodayByTag": {},
+        "_totalDonationsByTag": {},
+        "duelsComplete": false,
+        "periodType": null,
+        "_cumul": {}
       }
     ]
   }
