@@ -6415,56 +6415,81 @@ export default async function handler(req, res) {
     };
     const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
     const clanTag = resolved.tag;
+    const webhookUrl = buildDiscordWebhookUrl(body);
 
-    let data = getCachedStatsClanAnalysis(clanTag);
-    if (!data || action === "stats_clan_refresh") {
-      const endpoint = `${TRUST_ROYALE_URL}/api/clan/${encodeURIComponent(
-        clanTag,
-      )}/analysis?fast=true`;
-      const abortCtrl = new AbortController();
-      const abortTimer = setTimeout(() => abortCtrl.abort(), 15000);
-      try {
-        const apiResp = await fetch(endpoint, {
-          headers: { Accept: "application/json" },
-          signal: abortCtrl.signal,
-        });
-        if (!apiResp.ok) {
-          return res.status(200).json({
-            type: 4,
-            data: {
-              content: `Erreur API (${apiResp.status}). Réessayez dans quelques instants.`,
-              flags: 64,
-            },
-          });
-        }
-        data = await apiResp.json();
-        setCachedStatsClanAnalysis(clanTag, data);
-      } catch (err) {
-        const message =
-          err?.name === "AbortError"
-            ? "⏱️ Le rafraîchissement a pris trop de temps. Réessayez."
-            : `Erreur : ${err?.message || "inconnue"}`;
-        return res.status(200).json({
-          type: 4,
-          data: { content: message, flags: 64 },
-        });
-      } finally {
-        clearTimeout(abortTimer);
-      }
+    if (!webhookUrl) {
+      return res.status(200).json({
+        type: 4,
+        data: {
+          content:
+            "Configuration Discord incomplète : impossible de répondre à l'interaction.",
+          flags: 64,
+        },
+      });
     }
 
-    const clanInfo = data.clan || {};
-    const clanName = clanInfo.name || resolved.name;
-    return res.status(200).json({
-      type: 7,
-      data: buildStatsClanPayload({
-        data,
-        clanName,
-        clanTag,
-        clanVal,
-        sortMode,
-      }),
+    res.status(200).json({ type: 6 });
+
+    runBackground(async () => {
+      let data = getCachedStatsClanAnalysis(clanTag);
+      if (!data || action === "stats_clan_refresh") {
+        const endpoint = `${TRUST_ROYALE_URL}/api/clan/${encodeURIComponent(
+          clanTag,
+        )}/analysis?fast=true`;
+        const abortCtrl = new AbortController();
+        const abortTimer = setTimeout(() => abortCtrl.abort(), 15000);
+        try {
+          const apiResp = await fetch(endpoint, {
+            headers: { Accept: "application/json" },
+            signal: abortCtrl.signal,
+          });
+          if (!apiResp.ok) {
+            await fetch(webhookUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                content: `Erreur API (${apiResp.status}). Réessayez dans quelques instants.`,
+                flags: 64,
+              }),
+            });
+            return;
+          }
+          data = await apiResp.json();
+          setCachedStatsClanAnalysis(clanTag, data);
+        } catch (err) {
+          const message =
+            err?.name === "AbortError"
+              ? "⏱️ Le rafraîchissement a pris trop de temps. Réessayez."
+              : `Erreur : ${err?.message || "inconnue"}`;
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: message, flags: 64 }),
+          });
+          return;
+        } finally {
+          clearTimeout(abortTimer);
+        }
+      }
+
+      const clanInfo = data.clan || {};
+      const clanName = clanInfo.name || resolved.name;
+      await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          buildStatsClanPayload({
+            data,
+            clanName,
+            clanTag,
+            clanVal,
+            sortMode,
+          }),
+        ),
+      });
     });
+
+    return;
   }
 
   return res.status(400).json({ error: "Unsupported interaction type" });
