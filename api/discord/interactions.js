@@ -6343,10 +6343,20 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
-        const apiResp = await fetch(
-          `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(clanTag)}/analysis?fast=true`,
-          { headers: { Accept: "application/json" } },
-        );
+        const abortCtrl = new AbortController();
+        const abortTimer = setTimeout(() => abortCtrl.abort(), 12000);
+        let apiResp;
+        try {
+          apiResp = await fetch(
+            `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(clanTag)}/analysis?fast=true`,
+            {
+              headers: { Accept: "application/json" },
+              signal: abortCtrl.signal,
+            },
+          );
+        } finally {
+          clearTimeout(abortTimer);
+        }
 
         if (!apiResp.ok) {
           await fetch(webhookUrl, {
