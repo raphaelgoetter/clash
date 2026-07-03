@@ -238,21 +238,21 @@ function buildStatsClanComponents(clanVal, sortMode) {
           type: 2,
           style: avgFameActive ? 3 : 1,
           label: "🏆 Points/semaine",
-          custom_id: `stats_clan_sort:avgFame:${clanVal}`,
+          custom_id: `stats_clan_sort:${clanVal}:avgFame`,
           disabled: avgFameActive,
         },
         {
           type: 2,
           style: ppdActive ? 3 : 1,
           label: "⚡ Points/deck",
-          custom_id: `stats_clan_sort:pointsPerDeck:${clanVal}`,
+          custom_id: `stats_clan_sort:${clanVal}:pointsPerDeck`,
           disabled: ppdActive,
         },
         {
           type: 2,
           style: decksActive ? 3 : 1,
           label: "🎮 Decks joués",
-          custom_id: `stats_clan_sort:decksUsed:${clanVal}`,
+          custom_id: `stats_clan_sort:${clanVal}:decksUsed`,
           disabled: decksActive,
         },
         {
@@ -6431,47 +6431,63 @@ export default async function handler(req, res) {
       });
     }
 
+    const cachedData = getCachedStatsClanAnalysis(clanTag);
+    const shouldFetch = action === "stats_clan_refresh" || !cachedData;
+
+    if (!shouldFetch) {
+      const clanInfo = cachedData.clan || {};
+      const clanName = clanInfo.name || resolved.name;
+      return res.status(200).json({
+        type: 7,
+        data: buildStatsClanPayload({
+          data: cachedData,
+          clanName,
+          clanTag,
+          clanVal,
+          sortMode,
+        }),
+      });
+    }
+
     res.status(200).json({ type: 6 });
 
     runBackground(async () => {
-      let data = getCachedStatsClanAnalysis(clanTag);
-      if (!data || action === "stats_clan_refresh") {
-        const endpoint = `${TRUST_ROYALE_URL}/api/clan/${encodeURIComponent(
-          clanTag,
-        )}/analysis?fast=true`;
-        const abortCtrl = new AbortController();
-        const abortTimer = setTimeout(() => abortCtrl.abort(), 15000);
-        try {
-          const apiResp = await fetch(endpoint, {
-            headers: { Accept: "application/json" },
-            signal: abortCtrl.signal,
-          });
-          if (!apiResp.ok) {
-            await fetch(originalWebhookUrl, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                content: `Erreur API (${apiResp.status}). Réessayez dans quelques instants.`,
-              }),
-            });
-            return;
-          }
-          data = await apiResp.json();
-          setCachedStatsClanAnalysis(clanTag, data);
-        } catch (err) {
-          const message =
-            err?.name === "AbortError"
-              ? "⏱️ Le rafraîchissement a pris trop de temps. Réessayez."
-              : `Erreur : ${err?.message || "inconnue"}`;
+      let data = cachedData;
+      const endpoint = `${TRUST_ROYALE_URL}/api/clan/${encodeURIComponent(
+        clanTag,
+      )}/analysis?fast=true`;
+      const abortCtrl = new AbortController();
+      const abortTimer = setTimeout(() => abortCtrl.abort(), 15000);
+      try {
+        const apiResp = await fetch(endpoint, {
+          headers: { Accept: "application/json" },
+          signal: abortCtrl.signal,
+        });
+        if (!apiResp.ok) {
           await fetch(originalWebhookUrl, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ content: message }),
+            body: JSON.stringify({
+              content: `Erreur API (${apiResp.status}). Réessayez dans quelques instants.`,
+            }),
           });
           return;
-        } finally {
-          clearTimeout(abortTimer);
         }
+        data = await apiResp.json();
+        setCachedStatsClanAnalysis(clanTag, data);
+      } catch (err) {
+        const message =
+          err?.name === "AbortError"
+            ? "⏱️ Le rafraîchissement a pris trop de temps. Réessayez."
+            : `Erreur : ${err?.message || "inconnue"}`;
+        await fetch(originalWebhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: message }),
+        });
+        return;
+      } finally {
+        clearTimeout(abortTimer);
       }
 
       const clanInfo = data.clan || {};
