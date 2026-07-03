@@ -126,6 +126,8 @@ function runBackground(fn) {
   }
 }
 
+const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
+
 function getStatsClanScenario(data) {
   const isWarPeriod = Boolean(data?.isWarPeriod);
   return isWarPeriod
