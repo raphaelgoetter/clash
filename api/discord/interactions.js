@@ -859,6 +859,363 @@ function buildLateSummary(participants, currentMembers, maxSlots = 50) {
   };
 }
 
+function buildLateComponents(clanVal) {
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: 2,
+          label: "🔄 Rafraîchir",
+          custom_id: `late_refresh:${clanVal}`,
+          disabled: false,
+        },
+      ],
+    },
+  ];
+}
+
+async function buildLateReportPayload(resolved, clanVal) {
+  // Helper : race une promise contre un timeout
+  const withTimeout = (promise, ms, label) =>
+    Promise.race([
+      promise,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`Timeout ${label} (${ms}ms)`)), ms),
+      ),
+    ]);
+
+  try {
+    console.log("[/late] start, clan:", resolved.tag);
+    const { fetchCurrentRace, fetchClanMembers } = await import(
+      "../../backend/services/clashApi.js"
+    );
+    console.log("[/late] import OK");
+
+    const [race, currentMembers, { links }] = await withTimeout(
+      Promise.all([
+        fetchCurrentRace(`#${resolved.tag}`),
+        fetchClanMembers(`#${resolved.tag}`),
+        readDiscordLinks(),
+      ]),
+      20000,
+      "fetch initial",
+    );
+
+    const participants = race?.clan?.participants ?? [];
+
+    const { warResetOffsetMs } = await import(
+      "../../backend/services/dateUtils.js"
+    );
+    const resetUtcMs = warResetOffsetMs(resolved.tag);
+    // Garde calendaire : hors jeu–dim (après reset lundi), jamais en mode GDC
+    // même si l'API retourne encore periodType='warDay' transitoirement.
+    // periodIndex n'est PAS utilisé : il est 0–3 aussi bien en entraînement
+    // qu'en GDC et provoquerait de faux positifs.
+    const _gdcDow = new Date(Date.now() - resetUtcMs).getUTCDay();
+    const isCalendarWarDay = _gdcDow === 0 || _gdcDow >= 4;
+    const isWarDay =
+      isCalendarWarDay &&
+      (race?.periodType === "warDay" ||
+        race?.state === "warDay" ||
+        race?.state === "overtime" ||
+        race?.state === "full");
+
+    // Hors journée de GDC : afficher un message explicite et ne rien calculer
+    if (!isWarDay) {
+      return {
+        kind: "no-war-day",
+        content: `<:cards:1493711279121104926> **${resolved.name}** — Aucune journée de GDC en cours (période d'entraînement).`,
+      };
+    }
+
+    // Récupération éventuelle des statuts isNew/isFamilyTransfer pour /late
+    // Timeout court (10s) car ces annotations sont facultatives — le /late doit
+    // impérativement s'exécuter en moins de 60s (limite Vercel, fonction interactions.js).
+    const analysisMap = new Map();
+    try {
+      const abortCtrl = new AbortController();
+      const abortTimer = setTimeout(() => abortCtrl.abort(), 10000);
+      const apiResp = await fetch(
+        `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis`,
+        {
+          headers: { Accept: "application/json" },
+          signal: abortCtrl.signal,
+        },
+      );
+      clearTimeout(abortTimer);
+      if (apiResp.ok) {
+        const analysis = await apiResp.json();
+        (analysis.members || []).forEach((m) => {
+          if (m?.tag) analysisMap.set((m.tag || "").toUpperCase(), m);
+        });
+      }
+    } catch (err) {
+      // ignore, annotations sont facultatives
+    }
+
+    const {
+      currentMemberTags,
+      currentMemberByTag,
+      currentParticipants,
+      totalPlayed,
+      slotsOccupied,
+      slotsAvailable,
+      exClanPlayedToday,
+    } = buildLateSummary(participants, currentMembers);
+
+    // Joueurs en retard : membres actuels qui n'ont pas encore joué leurs 4 decks du jour
+    const late = participants
+      .filter(
+        (p) => currentMemberTags.has(p.tag) && (p.decksUsedToday ?? 0) < 4,
+      )
+      .map((p) => ({ ...p, missing: 4 - (p.decksUsedToday ?? 0) }))
+      .sort(
+        (a, b) => b.missing - a.missing || a.name.localeCompare(b.name, "fr"),
+      );
+
+    const lateTimingTagsByTag = await buildLateTimingTagsByPlayer(
+      late.map((pl) => pl.tag),
+    );
+
+    // Pseudos Discord — timeout 10s, non-bloquant (pings optionnels)
+    const guildId = process.env.DISCORD_GUILD_ID;
+    const botToken = process.env.DISCORD_TOKEN;
+    let guildMembers = [];
+    try {
+      const guildRes = await withTimeout(
+        fetch(
+          `https://discord.com/api/v10/guilds/${guildId}/members?limit=1000`,
+          { headers: { Authorization: `Bot ${botToken}` } },
+        ),
+        10000,
+        "guild members",
+      );
+      guildMembers = guildRes.ok ? await guildRes.json() : [];
+    } catch {
+      // pings Discord optionnels — on continue sans eux
+    }
+    const memberById = new Map(guildMembers.map((m) => [m.user?.id, m]));
+
+    // Heure de Paris au moment de la commande
+    const now = new Date();
+    const p = new Date(
+      now.toLocaleString("en-US", { timeZone: "Europe/Paris" }),
+    );
+    const parisTime = `${String(p.getHours()).padStart(2, "0")}h${String(p.getMinutes()).padStart(2, "0")}`;
+
+    const msOfDayUtc =
+      now.getUTCHours() * 3600000 + now.getUTCMinutes() * 60000;
+    if (msOfDayUtc < resetUtcMs) p.setDate(p.getDate() - 1);
+    const WAR_DAY_LABELS = {
+      4: "Jeudi (J1)",
+      5: "Vendredi (J2)",
+      6: "Samedi (J3)",
+      0: "Dimanche (J4)",
+    };
+    const warDayLabel = WAR_DAY_LABELS[p.getDay()] ?? "Jour de GDC";
+
+    // Decks déjà joués aujourd'hui par tous les participants de la course
+    // et slots occupés par ceux qui ont déjà joué au moins un combat.
+
+    // Points du jour uniquement pour GDC classique (warDay).
+    // Après le reset (msOfDayUtc >= resetUtcMs) : p.fame est déjà remis à zéro
+    // par l'API → on l'utilise directement sans soustraction.
+    // Avant le reset : p.fame est cumulatif sur la semaine → on soustrait la fame
+    // cumulée du dernier snapshot (veille) pour obtenir uniquement la fame du jour.
+    // Pour Colisée, la fame est toujours cumulative → on l'affiche telle quelle.
+    const isAfterReset = msOfDayUtc >= resetUtcMs;
+    const prevCumulByTag = new Map();
+    if (isWarDay && !isAfterReset) {
+      const pad2 = (n) => String(n).padStart(2, "0");
+      // p a déjà été ajusté (setDate -1) donc correspond au jour GDC courant
+      const realDayToday = `${p.getFullYear()}-${pad2(p.getMonth() + 1)}-${pad2(p.getDate())}`;
+      try {
+        const { readFile: _rf } = await import("fs/promises");
+        const { fileURLToPath: _ftu } = await import("url");
+        const { default: _path } = await import("path");
+        const __fileDir = _path.dirname(_ftu(import.meta.url));
+        const snapPath = _path.resolve(
+          __fileDir,
+          "../../data/snapshots",
+          `${resolved.tag}.json`,
+        );
+        const snapData = JSON.parse(await _rf(snapPath, "utf-8"));
+        if (Array.isArray(snapData)) {
+          // _cumulFame est cumulatif sur toute la semaine GDC : on prend
+          // le dernier snapshot du jour GDC précédent (realDay < realDayToday
+          // où realDayToday est la date GDC du jour courant, corrigée pré-reset).
+          // Note : l'écart de ~400 pts est inévitable car le snapshot est pris
+          // ~37 min avant le reset (pas exactement à 09h54 UTC).
+          const allDays = snapData.flatMap((w) => w.days ?? []);
+          const prevDay = allDays
+            .filter(
+              (d) =>
+                d.realDay &&
+                d.realDay < realDayToday &&
+                d._cumulFame &&
+                Object.keys(d._cumulFame).length > 0,
+            )
+            .sort((a, b) => b.realDay.localeCompare(a.realDay))[0];
+          if (prevDay?._cumulFame) {
+            // Vérifier que prevDay est bien le jour calendaire immédiatement avant
+            // realDayToday. Sur J1, le dernier snapshot disponible est celui de J4
+            // de la semaine précédente → la soustraction serait fausse (elle donnerait
+            // ~400 pts au lieu des vrais points J1).
+            const realDayTodayMs = new Date(
+              realDayToday + "T00:00:00Z",
+            ).getTime();
+            const prevDayExpected = new Date(realDayTodayMs - 86400000)
+              .toISOString()
+              .slice(0, 10);
+            if (prevDay.realDay === prevDayExpected) {
+              for (const [tag, fame] of Object.entries(prevDay._cumulFame)) {
+                prevCumulByTag.set(tag, fame ?? 0);
+              }
+            }
+          }
+        }
+      } catch (_) {
+        // snapshot indisponible — on affichera la fame hebdomadaire (dégradé acceptable)
+      }
+    }
+
+    const totalFame = currentParticipants.reduce((sum, pl) => {
+      const rawFame = pl.fame ?? 0;
+      const plTag = pl.tag.startsWith("#") ? pl.tag : `#${pl.tag}`;
+      const todayFame =
+        isWarDay && !isAfterReset
+          ? Math.max(0, rawFame - (prevCumulByTag.get(plTag) ?? 0))
+          : rawFame;
+      return sum + todayFame;
+    }, 0);
+
+    // Decks manquants (pré-calculé)
+    const totalMissing = late.reduce((sum, pl) => sum + pl.missing, 0);
+    const hideDetails = totalMissing > 100;
+
+    // Attaques bateaux (cumul)
+    const boatAttackers = currentParticipants.filter(
+      (pl) => (pl.boatAttacks ?? 0) > 0,
+    );
+    const totalBoatAttacks = boatAttackers.reduce(
+      (sum, pl) => sum + (pl.boatAttacks ?? 0),
+      0,
+    );
+    const boatNames = boatAttackers
+      .map((pl) => {
+        const plTag = pl.tag.startsWith("#") ? pl.tag : `#${pl.tag}`;
+        const playerUrl = trustPlayerUrl(plTag);
+        return `[${pl.name}](${playerUrl})`;
+      })
+      .join(", ");
+
+    // Construction de la liste par groupe
+    const lateHeader =
+      late.length === 0
+        ? `Aucun joueur en retard à ${parisTime}`
+        : `- ${late.length} joueur${late.length > 1 ? "s" : ""} en retard à ${parisTime}`;
+    const descLines = [
+      lateHeader,
+      `- ${totalPlayed} deck${totalPlayed > 1 ? "s" : ""} joué${totalPlayed > 1 ? "s" : ""}`,
+      `- ${slotsOccupied} slots occupés`,
+    ];
+    if (late.length > 0) {
+      descLines.push(
+        `- ${totalMissing} deck${totalMissing > 1 ? "s" : ""} manquant${totalMissing > 1 ? "s" : ""}`,
+      );
+    }
+    if (totalBoatAttacks > 0) {
+      descLines.push(
+        `- ${totalBoatAttacks} attaque${totalBoatAttacks > 1 ? "s" : ""} bateau (cumul) (${boatNames})`,
+      );
+    }
+
+    if (hideDetails) {
+      descLines.push(
+        "",
+        "Pas de liste détaillée car il y a plus de 100 decks manquants",
+      );
+    } else {
+      for (const count of [4, 3, 2, 1]) {
+        const group = late.filter((pl) => pl.missing === count);
+        if (!group.length) continue;
+        descLines.push("");
+        descLines.push(`**Manque ${count} deck${count > 1 ? "s" : ""}**`);
+        for (const pl of group) {
+          const tag = pl.tag.startsWith("#") ? pl.tag : `#${pl.tag}`;
+          const playerUrl = trustPlayerUrl(tag);
+          const memberInfo = currentMemberByTag.get(tag.toUpperCase());
+          const role = (memberInfo?.role || "member").toLowerCase();
+          const timingLabels = lateTimingTagsByTag.get(tag.toUpperCase()) || [];
+          const roleText = formatDiscordRoleWithTiming(role, timingLabels);
+          const discordId = links[tag];
+          const guildMember = discordId ? memberById.get(discordId) : null;
+          const discordPart = guildMember ? ` <@${discordId}>` : "";
+          const memberAnalysis = analysisMap.get(tag.toUpperCase()) || {};
+          const newTag = memberAnalysis.isNew ? " 🆕" : "";
+          descLines.push(
+            `• [${pl.name}](${playerUrl})${newTag} ${roleText}${discordPart}`,
+          );
+        }
+      }
+    }
+
+    if (exClanPlayedToday.length > 0) {
+      descLines.push("");
+      descLines.push("**Anciens participants joués aujourd'hui**");
+      for (const pl of exClanPlayedToday) {
+        const tag = pl.tag.startsWith("#") ? pl.tag : `#${pl.tag}`;
+        const playerUrl = trustPlayerUrl(tag);
+        const played = pl.decksUsedToday ?? 0;
+        const discordId = links[tag];
+        const guildMember = discordId ? memberById.get(discordId) : null;
+        const discordPart = guildMember ? ` <@${discordId}>` : "";
+        descLines.push(
+          `• [${pl.name}](${playerUrl}) — ${played} deck${played > 1 ? "s" : ""}${discordPart}`,
+        );
+      }
+    }
+
+    // Discord limite les descriptions d'embed à 4096 caractères
+    let description = descLines.join("\n");
+    if (description.length > 4000) {
+      console.warn(
+        "[/late] description trop longue:",
+        description.length,
+        "chars, troncature",
+      );
+      description = description.slice(0, 3950) + "\n…*(liste tronquée)*";
+    }
+
+    const embed = {
+      title: `<:late:1504138659622948985> ${resolved.name}, retardataires de ${warDayLabel}`,
+      description,
+      color: 0xe67e22,
+    };
+    if (!hideDetails) {
+      embed.footer = { text: LATE_TAG_FOOTER_LEGEND };
+    }
+
+    console.log(
+      "[/late] embed construit, late:",
+      late.length,
+      "descLen:",
+      description.length,
+    );
+
+    return {
+      kind: "success",
+      embeds: [embed],
+      components: buildLateComponents(clanVal),
+    };
+  } catch (err) {
+    console.error("[/late] erreur:", err.message);
+    return { kind: "error", content: `Erreur : ${err.message}` };
+  }
+}
+
 function parseBattleTimestamp(value) {
   if (!value) return null;
   const d = new Date(value);
@@ -4484,21 +4841,9 @@ export default async function handler(req, res) {
     const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
 
     res.status(200).json({ type: 5 });
-    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+    const webhookUrl = buildDiscordWebhookUrl(body);
 
     runBackground(async () => {
-      // Helper : race une promise contre un timeout
-      const withTimeout = (promise, ms, label) =>
-        Promise.race([
-          promise,
-          new Promise((_, reject) =>
-            setTimeout(
-              () => reject(new Error(`Timeout ${label} (${ms}ms)`)),
-              ms,
-            ),
-          ),
-        ]);
-
       // Envoie systématiquement quelque chose au webhook Discord (évite le freeze "thinking...")
       const sendToWebhook = async (payload) => {
         const r = await fetch(webhookUrl, {
@@ -4515,333 +4860,18 @@ export default async function handler(req, res) {
         }
       };
 
-      try {
-        console.log("[/late] start, clan:", resolved.tag);
-        const { fetchCurrentRace, fetchClanMembers } =
-          await import("../../backend/services/clashApi.js");
-        console.log("[/late] import OK");
+      const payload = await buildLateReportPayload(resolved, clanVal);
 
-        const [race, currentMembers, { links }] = await withTimeout(
-          Promise.all([
-            fetchCurrentRace(`#${resolved.tag}`),
-            fetchClanMembers(`#${resolved.tag}`),
-            readDiscordLinks(),
-          ]),
-          20000,
-          "fetch initial",
-        );
-
-        const participants = race?.clan?.participants ?? [];
-
-        const { warResetOffsetMs } =
-          await import("../../backend/services/dateUtils.js");
-        const resetUtcMs = warResetOffsetMs(resolved.tag);
-        // Garde calendaire : hors jeu–dim (après reset lundi), jamais en mode GDC
-        // même si l'API retourne encore periodType='warDay' transitoirement.
-        // periodIndex n'est PAS utilisé : il est 0–3 aussi bien en entraînement
-        // qu'en GDC et provoquerait de faux positifs.
-        const _gdcDow = new Date(Date.now() - resetUtcMs).getUTCDay();
-        const isCalendarWarDay = _gdcDow === 0 || _gdcDow >= 4;
-        const isWarDay =
-          isCalendarWarDay &&
-          (race?.periodType === "warDay" ||
-            race?.state === "warDay" ||
-            race?.state === "overtime" ||
-            race?.state === "full");
-
-        // Hors journée de GDC : afficher un message explicite et ne rien calculer
-        if (!isWarDay) {
-          await sendToWebhook({
-            content: `<:cards:1493711279121104926> **${resolved.name}** — Aucune journée de GDC en cours (période d'entraînement).`,
-          });
-          return;
-        }
-
-        // Récupération éventuelle des statuts isNew/isFamilyTransfer pour /late
-        // Timeout court (10s) car ces annotations sont facultatives — le /late doit
-        // impérativement s'exécuter en moins de 60s (limite Vercel, fonction interactions.js).
-        const analysisMap = new Map();
-        try {
-          const abortCtrl = new AbortController();
-          const abortTimer = setTimeout(() => abortCtrl.abort(), 10000);
-          const apiResp = await fetch(
-            `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis`,
-            {
-              headers: { Accept: "application/json" },
-              signal: abortCtrl.signal,
-            },
-          );
-          clearTimeout(abortTimer);
-          if (apiResp.ok) {
-            const analysis = await apiResp.json();
-            (analysis.members || []).forEach((m) => {
-              if (m?.tag) analysisMap.set((m.tag || "").toUpperCase(), m);
-            });
-          }
-        } catch (err) {
-          // ignore, annotations sont facultatives
-        }
-
-        const {
-          currentMemberTags,
-          currentMemberByTag,
-          currentParticipants,
-          totalPlayed,
-          slotsOccupied,
-          slotsAvailable,
-          exClanPlayedToday,
-        } = buildLateSummary(participants, currentMembers);
-
-        // Joueurs en retard : membres actuels qui n'ont pas encore joué leurs 4 decks du jour
-        const late = participants
-          .filter(
-            (p) => currentMemberTags.has(p.tag) && (p.decksUsedToday ?? 0) < 4,
-          )
-          .map((p) => ({ ...p, missing: 4 - (p.decksUsedToday ?? 0) }))
-          .sort(
-            (a, b) =>
-              b.missing - a.missing || a.name.localeCompare(b.name, "fr"),
-          );
-
-        const lateTimingTagsByTag = await buildLateTimingTagsByPlayer(
-          late.map((pl) => pl.tag),
-        );
-
-        // Pseudos Discord — timeout 10s, non-bloquant (pings optionnels)
-        const guildId = process.env.DISCORD_GUILD_ID;
-        const botToken = process.env.DISCORD_TOKEN;
-        let guildMembers = [];
-        try {
-          const guildRes = await withTimeout(
-            fetch(
-              `https://discord.com/api/v10/guilds/${guildId}/members?limit=1000`,
-              { headers: { Authorization: `Bot ${botToken}` } },
-            ),
-            10000,
-            "guild members",
-          );
-          guildMembers = guildRes.ok ? await guildRes.json() : [];
-        } catch {
-          // pings Discord optionnels — on continue sans eux
-        }
-        const memberById = new Map(guildMembers.map((m) => [m.user?.id, m]));
-
-        // Heure de Paris au moment de la commande
-        const now = new Date();
-        const p = new Date(
-          now.toLocaleString("en-US", { timeZone: "Europe/Paris" }),
-        );
-        const parisTime = `${String(p.getHours()).padStart(2, "0")}h${String(p.getMinutes()).padStart(2, "0")}`;
-
-        const msOfDayUtc =
-          now.getUTCHours() * 3600000 + now.getUTCMinutes() * 60000;
-        if (msOfDayUtc < resetUtcMs) p.setDate(p.getDate() - 1);
-        const WAR_DAY_LABELS = {
-          4: "Jeudi (J1)",
-          5: "Vendredi (J2)",
-          6: "Samedi (J3)",
-          0: "Dimanche (J4)",
-        };
-        const warDayLabel = WAR_DAY_LABELS[p.getDay()] ?? "Jour de GDC";
-
-        // Decks déjà joués aujourd'hui par tous les participants de la course
-        // et slots occupés par ceux qui ont déjà joué au moins un combat.
-
-        // Points du jour uniquement pour GDC classique (warDay).
-        // Après le reset (msOfDayUtc >= resetUtcMs) : p.fame est déjà remis à zéro
-        // par l'API → on l'utilise directement sans soustraction.
-        // Avant le reset : p.fame est cumulatif sur la semaine → on soustrait la fame
-        // cumulée du dernier snapshot (veille) pour obtenir uniquement la fame du jour.
-        // Pour Colisée, la fame est toujours cumulative → on l'affiche telle quelle.
-        const isAfterReset = msOfDayUtc >= resetUtcMs;
-        const prevCumulByTag = new Map();
-        if (isWarDay && !isAfterReset) {
-          const pad2 = (n) => String(n).padStart(2, "0");
-          // p a déjà été ajusté (setDate -1) donc correspond au jour GDC courant
-          const realDayToday = `${p.getFullYear()}-${pad2(p.getMonth() + 1)}-${pad2(p.getDate())}`;
-          try {
-            const { readFile: _rf } = await import("fs/promises");
-            const { fileURLToPath: _ftu } = await import("url");
-            const { default: _path } = await import("path");
-            const __fileDir = _path.dirname(_ftu(import.meta.url));
-            const snapPath = _path.resolve(
-              __fileDir,
-              "../../data/snapshots",
-              `${resolved.tag}.json`,
-            );
-            const snapData = JSON.parse(await _rf(snapPath, "utf-8"));
-            if (Array.isArray(snapData)) {
-              // _cumulFame est cumulatif sur toute la semaine GDC : on prend
-              // le dernier snapshot du jour GDC précédent (realDay < realDayToday
-              // où realDayToday est la date GDC du jour courant, corrigée pré-reset).
-              // Note : l'écart de ~400 pts est inévitable car le snapshot est pris
-              // ~37 min avant le reset (pas exactement à 09h54 UTC).
-              const allDays = snapData.flatMap((w) => w.days ?? []);
-              const prevDay = allDays
-                .filter(
-                  (d) =>
-                    d.realDay &&
-                    d.realDay < realDayToday &&
-                    d._cumulFame &&
-                    Object.keys(d._cumulFame).length > 0,
-                )
-                .sort((a, b) => b.realDay.localeCompare(a.realDay))[0];
-              if (prevDay?._cumulFame) {
-                // Vérifier que prevDay est bien le jour calendaire immédiatement avant
-                // realDayToday. Sur J1, le dernier snapshot disponible est celui de J4
-                // de la semaine précédente → la soustraction serait fausse (elle donnerait
-                // ~400 pts au lieu des vrais points J1).
-                const realDayTodayMs = new Date(
-                  realDayToday + "T00:00:00Z",
-                ).getTime();
-                const prevDayExpected = new Date(realDayTodayMs - 86400000)
-                  .toISOString()
-                  .slice(0, 10);
-                if (prevDay.realDay === prevDayExpected) {
-                  for (const [tag, fame] of Object.entries(
-                    prevDay._cumulFame,
-                  )) {
-                    prevCumulByTag.set(tag, fame ?? 0);
-                  }
-                }
-              }
-            }
-          } catch (_) {
-            // snapshot indisponible — on affichera la fame hebdomadaire (dégradé acceptable)
-          }
-        }
-
-        const totalFame = currentParticipants.reduce((sum, pl) => {
-          const rawFame = pl.fame ?? 0;
-          const plTag = pl.tag.startsWith("#") ? pl.tag : `#${pl.tag}`;
-          const todayFame =
-            isWarDay && !isAfterReset
-              ? Math.max(0, rawFame - (prevCumulByTag.get(plTag) ?? 0))
-              : rawFame;
-          return sum + todayFame;
-        }, 0);
-
-        // Decks manquants (pré-calculé)
-        const totalMissing = late.reduce((sum, pl) => sum + pl.missing, 0);
-        const hideDetails = totalMissing > 100;
-
-        // Attaques bateaux (cumul)
-        const boatAttackers = currentParticipants.filter(
-          (pl) => (pl.boatAttacks ?? 0) > 0,
-        );
-        const totalBoatAttacks = boatAttackers.reduce(
-          (sum, pl) => sum + (pl.boatAttacks ?? 0),
-          0,
-        );
-        const boatNames = boatAttackers
-          .map((pl) => {
-            const plTag = pl.tag.startsWith("#") ? pl.tag : `#${pl.tag}`;
-            const playerUrl = trustPlayerUrl(plTag);
-            return `[${pl.name}](${playerUrl})`;
-          })
-          .join(", ");
-
-        // Construction de la liste par groupe
-        const lateHeader =
-          late.length === 0
-            ? `Aucun joueur en retard à ${parisTime}`
-            : `- ${late.length} joueur${late.length > 1 ? "s" : ""} en retard à ${parisTime}`;
-        const descLines = [
-          lateHeader,
-          `- ${totalPlayed} deck${totalPlayed > 1 ? "s" : ""} joué${totalPlayed > 1 ? "s" : ""}`,
-          `- ${slotsOccupied} slots occupés`,
-        ];
-        if (late.length > 0) {
-          descLines.push(
-            `- ${totalMissing} deck${totalMissing > 1 ? "s" : ""} manquant${totalMissing > 1 ? "s" : ""}`,
-          );
-        }
-        if (totalBoatAttacks > 0) {
-          descLines.push(
-            `- ${totalBoatAttacks} attaque${totalBoatAttacks > 1 ? "s" : ""} bateau (cumul) (${boatNames})`,
-          );
-        }
-
-        if (hideDetails) {
-          descLines.push(
-            "",
-            "Pas de liste détaillée car il y a plus de 100 decks manquants",
-          );
-        } else {
-          for (const count of [4, 3, 2, 1]) {
-            const group = late.filter((pl) => pl.missing === count);
-            if (!group.length) continue;
-            descLines.push("");
-            descLines.push(`**Manque ${count} deck${count > 1 ? "s" : ""}**`);
-            for (const pl of group) {
-              const tag = pl.tag.startsWith("#") ? pl.tag : `#${pl.tag}`;
-              const playerUrl = trustPlayerUrl(tag);
-              const memberInfo = currentMemberByTag.get(tag.toUpperCase());
-              const role = (memberInfo?.role || "member").toLowerCase();
-              const timingLabels =
-                lateTimingTagsByTag.get(tag.toUpperCase()) || [];
-              const roleText = formatDiscordRoleWithTiming(role, timingLabels);
-              const discordId = links[tag];
-              const guildMember = discordId ? memberById.get(discordId) : null;
-              const discordPart = guildMember ? ` <@${discordId}>` : "";
-              const memberAnalysis = analysisMap.get(tag.toUpperCase()) || {};
-              const newTag = memberAnalysis.isNew ? " 🆕" : "";
-              descLines.push(
-                `• [${pl.name}](${playerUrl})${newTag} ${roleText}${discordPart}`,
-              );
-            }
-          }
-        }
-
-        if (exClanPlayedToday.length > 0) {
-          descLines.push("");
-          descLines.push("**Anciens participants joués aujourd'hui**");
-          for (const pl of exClanPlayedToday) {
-            const tag = pl.tag.startsWith("#") ? pl.tag : `#${pl.tag}`;
-            const playerUrl = trustPlayerUrl(tag);
-            const played = pl.decksUsedToday ?? 0;
-            const discordId = links[tag];
-            const guildMember = discordId ? memberById.get(discordId) : null;
-            const discordPart = guildMember ? ` <@${discordId}>` : "";
-            descLines.push(
-              `• [${pl.name}](${playerUrl}) — ${played} deck${played > 1 ? "s" : ""}${discordPart}`,
-            );
-          }
-        }
-
-        // Discord limite les descriptions d'embed à 4096 caractères
-        let description = descLines.join("\n");
-        if (description.length > 4000) {
-          console.warn(
-            "[/late] description trop longue:",
-            description.length,
-            "chars, troncature",
-          );
-          description = description.slice(0, 3950) + "\n…*(liste tronquée)*";
-        }
-
-        const embed = {
-          title: `<:late:1504138659622948985> ${resolved.name}, retardataires de ${warDayLabel}`,
-          description,
-          color: 0xe67e22,
-        };
-        if (!hideDetails) {
-          embed.footer = { text: LATE_TAG_FOOTER_LEGEND };
-        }
-
-        console.log(
-          "[/late] envoi embed, late:",
-          late.length,
-          "descLen:",
-          description.length,
-        );
+      if (payload.kind === "success") {
         await sendToWebhook({
-          embeds: [embed],
+          embeds: payload.embeds,
+          components: payload.components,
           allowed_mentions: { parse: [] },
         });
-      } catch (err) {
-        console.error("[/late] erreur:", err.message);
-        await sendToWebhook({ content: `Erreur : ${err.message}`, flags: 64 });
+      } else if (payload.kind === "no-war-day") {
+        await sendToWebhook({ content: payload.content });
+      } else {
+        await sendToWebhook({ content: payload.content, flags: 64 });
       }
     });
     return;
@@ -6710,6 +6740,69 @@ export default async function handler(req, res) {
           buildComparePayload({ data, resolved, clanVal, sortMode, isWarPeriod }),
         ),
       });
+    });
+
+    return;
+  }
+
+  // ── MessageComponent : bouton refresh /late ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("late_refresh:")
+  ) {
+    const parts = body.data.custom_id.split(":");
+    const clanVal = parts[1] || "1";
+    const CLAN_MAP = {
+      1: { name: "La Resistance", tag: "Y8JUPC9C" },
+      2: { name: "Les Resistants", tag: "LRQP20V9" },
+      3: { name: "Les Revoltes", tag: "QU9UQJRL" },
+    };
+    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
+
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    const originalWebhookUrl = webhookUrl
+      ? `${webhookUrl}/messages/@original`
+      : null;
+
+    if (!originalWebhookUrl) {
+      return res.status(200).json({
+        type: 4,
+        data: {
+          content:
+            "Configuration Discord incomplète : impossible de répondre à l'interaction.",
+          flags: 64,
+        },
+      });
+    }
+
+    // Pas de cache pour /late : toujours un recalcul complet, comme la commande initiale
+    res.status(200).json({ type: 6 });
+
+    runBackground(async () => {
+      const payload = await buildLateReportPayload(resolved, clanVal);
+
+      const patchBody =
+        payload.kind === "success"
+          ? {
+              embeds: payload.embeds,
+              components: payload.components,
+              allowed_mentions: { parse: [] },
+            }
+          : { content: payload.content, embeds: [], components: [] };
+
+      const r = await fetch(originalWebhookUrl, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patchBody),
+      });
+      if (!r.ok) {
+        const txt = await r.text().catch(() => "");
+        console.error(
+          `[late_refresh] PATCH Discord HTTP ${r.status}:`,
+          txt.slice(0, 300),
+        );
+      }
     });
 
     return;
