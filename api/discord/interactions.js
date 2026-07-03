@@ -175,6 +175,68 @@ function buildStatsClanFooter({
   return pageCount > 1 ? `${base} · Page ${pageIndex + 1}/${pageCount}` : base;
 }
 
+function getStatsClanSortLabel(sortMode) {
+  if (sortMode === "pointsPerDeck") return "Points par deck";
+  if (sortMode === "decksUsed") return "Decks joués";
+  return "Points par semaine";
+}
+
+function sortStatsClanMembers(members, sortMode) {
+  return [...members].sort((a, b) => {
+    if (sortMode === "pointsPerDeck") {
+      const pa = Number.isFinite(a.pointsPerDeck) ? a.pointsPerDeck : -1;
+      const pb = Number.isFinite(b.pointsPerDeck) ? b.pointsPerDeck : -1;
+      return pb - pa;
+    }
+    if (sortMode === "decksUsed") {
+      const da = Number.isFinite(a.period?.decksUsed) ? a.period.decksUsed : -1;
+      const db = Number.isFinite(b.period?.decksUsed) ? b.period.decksUsed : -1;
+      if (db !== da) return db - da;
+      const fa = Number.isFinite(a.avgFame) ? a.avgFame : -1;
+      const fb = Number.isFinite(b.avgFame) ? b.avgFame : -1;
+      return fb - fa;
+    }
+    const fa = Number.isFinite(a.avgFame) ? a.avgFame : -1;
+    const fb = Number.isFinite(b.avgFame) ? b.avgFame : -1;
+    return fb - fa;
+  });
+}
+
+function buildStatsClanComponents(clanVal, sortMode) {
+  const avgFameActive = sortMode === "avgFame";
+  const ppdActive = sortMode === "pointsPerDeck";
+  const decksActive = sortMode === "decksUsed";
+
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: avgFameActive ? 3 : 1,
+          label: "🏆 Points/semaine",
+          custom_id: `stats_clan_sort:avgFame:${clanVal}`,
+          disabled: avgFameActive,
+        },
+        {
+          type: 2,
+          style: ppdActive ? 3 : 1,
+          label: "⚡ Points/deck",
+          custom_id: `stats_clan_sort:pointsPerDeck:${clanVal}`,
+          disabled: ppdActive,
+        },
+        {
+          type: 2,
+          style: decksActive ? 3 : 1,
+          label: "🎮 Decks joués",
+          custom_id: `stats_clan_sort:decksUsed:${clanVal}`,
+          disabled: decksActive,
+        },
+      ],
+    },
+  ];
+}
+
 // Vérifie la signature Ed25519 envoyée par Discord.
 function verifyDiscordSignature(signature, timestamp, rawBody) {
   const publicKeyHex = process.env.DISCORD_PUBLIC_KEY;
@@ -202,59 +264,73 @@ function verifyDiscordSignature(signature, timestamp, rawBody) {
   }
 }
 
+function getStatsClanSortLabel(sortMode) {
+  if (sortMode === "pointsPerDeck") return "Points par deck";
+  if (sortMode === "decksUsed") return "Decks joués";
+  return "Points par semaine";
+}
+
+function sortStatsClanMembers(members, sortMode) {
+  return [...members].sort((a, b) => {
+    if (sortMode === "pointsPerDeck") {
+      const pa = Number.isFinite(a.pointsPerDeck) ? a.pointsPerDeck : -1;
+      const pb = Number.isFinite(b.pointsPerDeck) ? b.pointsPerDeck : -1;
+      return pb - pa;
+    }
+    if (sortMode === "decksUsed") {
+      const da = Number.isFinite(a.period?.decksUsed) ? a.period.decksUsed : -1;
+      const db = Number.isFinite(b.period?.decksUsed) ? b.period.decksUsed : -1;
+      if (db !== da) return db - da;
+      const fa = Number.isFinite(a.avgFame) ? a.avgFame : -1;
+      const fb = Number.isFinite(b.avgFame) ? b.avgFame : -1;
+      return fb - fa;
+    }
+    const fa = Number.isFinite(a.avgFame) ? a.avgFame : -1;
+    const fb = Number.isFinite(b.avgFame) ? b.avgFame : -1;
+    return fb - fa;
+  });
+}
+
+function buildStatsClanComponents(clanVal, sortMode) {
+  const avgFameActive = sortMode === "avgFame";
+  const ppdActive = sortMode === "pointsPerDeck";
+  const decksActive = sortMode === "decksUsed";
+
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: avgFameActive ? 3 : 1,
+          label: "🏆 Points/semaine",
+          custom_id: `stats_clan_sort:avgFame:${clanVal}`,
+          disabled: avgFameActive,
+        },
+        {
+          type: 2,
+          style: ppdActive ? 3 : 1,
+          label: "⚡ Points/deck",
+          custom_id: `stats_clan_sort:pointsPerDeck:${clanVal}`,
+          disabled: ppdActive,
+        },
+        {
+          type: 2,
+          style: decksActive ? 3 : 1,
+          label: "🎮 Decks joués",
+          custom_id: `stats_clan_sort:decksUsed:${clanVal}`,
+          disabled: decksActive,
+        },
+      ],
+    },
+  ];
+}
+
 const COLOR_MAP = {
   green: 0x2ecc71,
   yellow: 0xf1c40f,
   orange: 0xe67e22,
   red: 0xe74c3c,
-};
-const RELIABILITY_ICON = {
-  green: "<:green:1506174830297485362>",
-  yellow: "<:yellow:1506174838870642739>",
-  orange: "<:orange:1506174834470686860>",
-  red: "<:red:1506174836102139944>",
-};
-const FR_VERDICTS = {
-  green: "Très fiable",
-  yellow: "Risque faible",
-  orange: "Risque élevé",
-  red: "Risque extrême",
-};
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
-const trustPlayerUrl = (tag) =>
-  `${TRUST_ROYALE_URL}/fr/player/${String(tag).replace(/^#/, "")}`;
-const trustClanUrl = (tag) =>
-  `${TRUST_ROYALE_URL}/fr/clan/${String(tag).replace(/^#/, "")}`;
-
-function buildDiscordWebhookUrl(body) {
-  const appId = process.env.DISCORD_APP_ID || body?.application_id;
-  if (!appId || !body?.token) return null;
-  return `https://discord.com/api/v10/webhooks/${appId}/${body.token}`;
-}
-
-const ALLOWED_CLAN_TAGS = new Set(["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"]);
-const FAMILY_CLAN_TAGS = new Set([...ALLOWED_CLAN_TAGS, "QUV220GJ"]);
-const RESISTANTS_CLAN_TAG = "#LRQP20V9";
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-const LEAGUE_ICON_SPECIFIC = {
-  "Or 2": "<:gold2:1506200349424488448>",
-  "Légendaire 1": "<:leg1:1506200350250762311>",
-  "Légendaire 2": "<:leg2:1506200352372822016>",
-};
-const LEAGUE_ICON_GENERIC = {
-  "Bronze 1": "<:bronze:1506201933331824721>",
-  "Bronze 2": "<:bronze:1506201933331824721>",
-  "Bronze 3": "<:bronze:1506201933331824721>",
-  "Argent 1": "<:silver:1506201931922800730>",
-  "Argent 2": "<:silver:1506201931922800730>",
-  "Argent 3": "<:silver:1506201931922800730>",
-  "Or 1": "<:gold:1506201934477004880>",
-  "Or 2": "<:gold:1506201934477004880>",
-  "Or 3": "<:gold:1506201934477004880>",
-  "Légendaire 1": "<:legendary1:1506218399498244166>",
-  "Légendaire 2": "<:legendary2:1506217437601992734>",
-  "Légendaire 3": "<:legendary3:1506218625508573225>",
 };
 
 function warLeagueLabel(trophies, isFamilyClan = false) {
@@ -6010,17 +6086,7 @@ export default async function handler(req, res) {
         }
 
         // Tri des membres selon le mode choisi (décroissant)
-        const sorted = [...normalizedMembers].sort((a, b) => {
-          if (sortMode === "pointsPerDeck") {
-            const pa = Number.isFinite(a.pointsPerDeck) ? a.pointsPerDeck : -1;
-            const pb = Number.isFinite(b.pointsPerDeck) ? b.pointsPerDeck : -1;
-            return pb - pa;
-          }
-          // défaut : avgFame
-          const fa = Number.isFinite(a.avgFame) ? a.avgFame : -1;
-          const fb = Number.isFinite(b.avgFame) ? b.avgFame : -1;
-          return fb - fa;
-        });
+        const sorted = sortStatsClanMembers(normalizedMembers, sortMode);
 
         const fmt = (n) =>
           Number.isFinite(n) ? n.toLocaleString("fr-FR") : "—";
@@ -6094,30 +6160,7 @@ export default async function handler(req, res) {
         const firstPayload = sendPage(pages[0], 0);
 
         // Ajoute les boutons de tri (uniquement sur la première page)
-        const avgFameActive = sortMode === "avgFame";
-        const ppdActive = sortMode === "pointsPerDeck";
-
-        firstPayload.components = [
-          {
-            type: 1, // Action Row
-            components: [
-              {
-                type: 2, // Button
-                style: avgFameActive ? 3 : 2, // 3 = Success (green), 2 = Secondary (grey)
-                label: "🏆 Points/semaine",
-                custom_id: `stats_clan_sort:avgFame:${clanVal}`,
-                disabled: avgFameActive,
-              },
-              {
-                type: 2, // Button
-                style: ppdActive ? 3 : 2,
-                label: "⚡ Points/deck",
-                custom_id: `stats_clan_sort:pointsPerDeck:${clanVal}`,
-                disabled: ppdActive,
-              },
-            ],
-          },
-        ];
+        firstPayload.components = buildStatsClanComponents(clanVal, sortMode);
 
         const firstResp = await fetch(webhookUrl, {
           method: "POST",
@@ -6332,16 +6375,7 @@ export default async function handler(req, res) {
           };
         });
 
-        const sorted = [...normalizedMembers].sort((a, b) => {
-          if (sortMode === "pointsPerDeck") {
-            const pa = Number.isFinite(a.pointsPerDeck) ? a.pointsPerDeck : -1;
-            const pb = Number.isFinite(b.pointsPerDeck) ? b.pointsPerDeck : -1;
-            return pb - pa;
-          }
-          const fa = Number.isFinite(a.avgFame) ? a.avgFame : -1;
-          const fb = Number.isFinite(b.avgFame) ? b.avgFame : -1;
-          return fb - fa;
-        });
+        const sorted = sortStatsClanMembers(normalizedMembers, sortMode);
 
         const fmt = (n) =>
           Number.isFinite(n) ? n.toLocaleString("fr-FR") : "—";
@@ -6380,9 +6414,6 @@ export default async function handler(req, res) {
         }
         const pageCount = Math.ceil(rows.length / firstPage.length);
 
-        const avgFameActive = sortMode === "avgFame";
-        const ppdActive = sortMode === "pointsPerDeck";
-
         const embed = {
           title: `<:stats:1499284927894650950> Stats GDC : ${clanName}`,
           url: trustClanUrl(clanTag),
@@ -6400,27 +6431,7 @@ export default async function handler(req, res) {
 
         const payload = {
           embeds: [embed],
-          components: [
-            {
-              type: 1,
-              components: [
-                {
-                  type: 2,
-                  style: avgFameActive ? 3 : 2,
-                  label: "🏆 Points/semaine",
-                  custom_id: `stats_clan_sort:avgFame:${clanVal}`,
-                  disabled: avgFameActive,
-                },
-                {
-                  type: 2,
-                  style: ppdActive ? 3 : 2,
-                  label: "⚡ Points/deck",
-                  custom_id: `stats_clan_sort:pointsPerDeck:${clanVal}`,
-                  disabled: ppdActive,
-                },
-              ],
-            },
-          ],
+          components: buildStatsClanComponents(clanVal, sortMode),
         };
 
         await fetch(webhookUrl, {
