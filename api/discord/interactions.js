@@ -237,6 +237,35 @@ function buildStatsClanComponents(clanVal, sortMode) {
   ];
 }
 
+const STATS_CLAN_CACHE_TTL_MS = 60 * 1000;
+const statsClanAnalysisCache = new Map();
+
+function getStatsClanCacheKey(clanTag) {
+  return String(clanTag || "")
+    .replace(/^#/, "")
+    .toUpperCase();
+}
+
+function getCachedStatsClanAnalysis(clanTag) {
+  const key = getStatsClanCacheKey(clanTag);
+  const entry = statsClanAnalysisCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.cachedAt > STATS_CLAN_CACHE_TTL_MS) {
+    statsClanAnalysisCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCachedStatsClanAnalysis(clanTag, data) {
+  const key = getStatsClanCacheKey(clanTag);
+  if (!key || !data) return;
+  statsClanAnalysisCache.set(key, {
+    cachedAt: Date.now(),
+    data,
+  });
+}
+
 // Vérifie la signature Ed25519 envoyée par Discord.
 function verifyDiscordSignature(signature, timestamp, rawBody) {
   const publicKeyHex = process.env.DISCORD_PUBLIC_KEY;
@@ -6058,6 +6087,7 @@ export default async function handler(req, res) {
         }
 
         const data = await apiResp.json();
+        setCachedStatsClanAnalysis(resolved.tag, data);
         const members = Array.isArray(data.members) ? data.members : [];
         const clanInfo = data.clan || {};
         const clanName = clanInfo.name || resolved.name;
@@ -6347,29 +6377,33 @@ export default async function handler(req, res) {
         const abortTimer = setTimeout(() => abortCtrl.abort(), 12000);
         let apiResp;
         try {
-          apiResp = await fetch(
-            `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(clanTag)}/analysis?fast=true`,
-            {
-              headers: { Accept: "application/json" },
-              signal: abortCtrl.signal,
-            },
-          );
+          let data = getCachedStatsClanAnalysis(clanTag);
+          if (!data) {
+            const apiResp = await fetch(
+              `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(clanTag)}/analysis?fast=true`,
+              {
+                headers: { Accept: "application/json" },
+                signal: abortCtrl.signal,
+              },
+            );
+
+            if (!apiResp.ok) {
+              await fetch(webhookUrl, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  content: "Erreur lors du rechargement. Relancez la commande.",
+                }),
+              });
+              return;
+            }
+
+            data = await apiResp.json();
+            setCachedStatsClanAnalysis(clanTag, data);
+          }
         } finally {
           clearTimeout(abortTimer);
         }
-
-        if (!apiResp.ok) {
-          await fetch(webhookUrl, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              content: "Erreur lors du rechargement. Relancez la commande.",
-            }),
-          });
-          return;
-        }
-
-        const data = await apiResp.json();
         const members = Array.isArray(data.members) ? data.members : [];
         const clanInfo = data.clan || {};
         const clanName = clanInfo.name || resolved.name;
