@@ -142,6 +142,13 @@ const FR_VERDICTS = {
 };
 
 const FAMILY_CLAN_TAGS = new Set(["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"]);
+const ALLOWED_CLAN_TAGS = new Set(FAMILY_CLAN_TAGS);
+
+function buildDiscordWebhookUrl(body) {
+  const token = body.token || body.interaction?.token;
+  if (!process.env.DISCORD_APP_ID || !token) return null;
+  return `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${token}`;
+}
 
 function getStatsClanScenario(data) {
   const isWarPeriod = Boolean(data?.isWarPeriod);
