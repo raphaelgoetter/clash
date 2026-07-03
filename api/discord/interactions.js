@@ -237,6 +237,78 @@ function buildStatsClanComponents(clanVal, sortMode) {
   ];
 }
 
+function buildStatsClanPayload({ data, clanName, clanTag, clanVal, sortMode }) {
+  const members = Array.isArray(data?.members) ? data.members : [];
+  const scenario = getStatsClanScenario(data);
+
+  const normalizedMembers = members.map((member) => {
+    const metrics = getStatsClanMetrics(member, scenario.key);
+    return {
+      ...member,
+      period: metrics.period,
+      avgFame: metrics.avgFame,
+      pointsPerDeck: metrics.pointsPerDeck,
+    };
+  });
+
+  const sorted = sortStatsClanMembers(normalizedMembers, sortMode);
+  const fmt = (n) => (Number.isFinite(n) ? n.toLocaleString("fr-FR") : "—");
+
+  const rows = sorted.map((m, idx) => {
+    const rank = idx + 1;
+    const newIcon = m.isNew ? "🆕" : "";
+
+    let reliabilityStr = "";
+    if (Number.isFinite(m.reliability)) {
+      const icon = RELIABILITY_ICON[m.color] ?? "⚪";
+      reliabilityStr = icon + Math.round(m.reliability) + "%";
+    }
+
+    const avgStr = fmt(m.avgFame);
+    const ppdStr = fmt(m.pointsPerDeck);
+    const decksUsed = Number(m.period?.decksUsed);
+    const decksStr = Number.isFinite(decksUsed)
+      ? ` (${Math.round(decksUsed)})`
+      : "";
+
+    const parts = [newIcon, reliabilityStr].filter(Boolean);
+    const prefix = parts.length ? " " + parts.join(" ") : "";
+    const body = ` 🏆${avgStr} ⚡${ppdStr}${decksStr}`;
+    return rank + ". " + m.name + prefix + body;
+  });
+
+  const DESC_MAX = 4096;
+  let currentLen = 0;
+  const firstPage = [];
+  for (const row of rows) {
+    const rowLen = row.length + 1;
+    if (currentLen + rowLen > DESC_MAX && firstPage.length > 0) break;
+    firstPage.push(row);
+    currentLen += rowLen;
+  }
+  const pageCount = Math.ceil(rows.length / firstPage.length);
+
+  return {
+    embeds: [
+      {
+        title: `<:stats:1499284927894650950> Stats GDC : ${clanName}`,
+        url: trustClanUrl(clanTag),
+        color: 0x5865f2,
+        description: firstPage.join(String.fromCharCode(10)),
+        footer: {
+          text: buildStatsClanFooter({
+            sortMode,
+            scenarioLabel: scenario.label,
+            pageIndex: 0,
+            pageCount,
+          }),
+        },
+      },
+    ],
+    components: buildStatsClanComponents(clanVal, sortMode),
+  };
+}
+
 const STATS_CLAN_CACHE_TTL_MS = 60 * 1000;
 const statsClanAnalysisCache = new Map();
 
@@ -6367,142 +6439,29 @@ export default async function handler(req, res) {
     const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
     const clanTag = resolved.tag;
 
-    res.status(200).json({ type: 6 });
+    const data = getCachedStatsClanAnalysis(clanTag);
+    if (!data) {
+      return res.status(200).json({
+        type: 4,
+        data: {
+          content: "Rejoue `/stats-clan` pour rafraîchir les données.",
+          flags: 64,
+        },
+      });
+    }
 
-    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}/messages/@original`;
-
-    runBackground(async () => {
-      try {
-        const abortCtrl = new AbortController();
-        const abortTimer = setTimeout(() => abortCtrl.abort(), 12000);
-        let data = getCachedStatsClanAnalysis(clanTag);
-        try {
-          if (!data) {
-            const apiResp = await fetch(
-              `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(clanTag)}/analysis?fast=true`,
-              {
-                headers: { Accept: "application/json" },
-                signal: abortCtrl.signal,
-              },
-            );
-
-            if (!apiResp.ok) {
-              await fetch(webhookUrl, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  content: "Erreur lors du rechargement. Relancez la commande.",
-                }),
-              });
-              return;
-            }
-
-            data = await apiResp.json();
-            setCachedStatsClanAnalysis(clanTag, data);
-          }
-        } finally {
-          clearTimeout(abortTimer);
-        }
-        if (!data) {
-          await fetch(webhookUrl, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              content: "Erreur lors du rechargement. Relancez la commande.",
-            }),
-          });
-          return;
-        }
-        const members = Array.isArray(data.members) ? data.members : [];
-        const clanInfo = data.clan || {};
-        const clanName = clanInfo.name || resolved.name;
-        const scenario = getStatsClanScenario(data);
-
-        const normalizedMembers = members.map((member) => {
-          const metrics = getStatsClanMetrics(member, scenario.key);
-          return {
-            ...member,
-            period: metrics.period,
-            avgFame: metrics.avgFame,
-            pointsPerDeck: metrics.pointsPerDeck,
-          };
-        });
-
-        const sorted = sortStatsClanMembers(normalizedMembers, sortMode);
-
-        const fmt = (n) =>
-          Number.isFinite(n) ? n.toLocaleString("fr-FR") : "—";
-
-        const rows = sorted.map((m, idx) => {
-          const rank = idx + 1;
-          const newIcon = m.isNew ? "🆕" : "";
-
-          let reliabilityStr = "";
-          if (Number.isFinite(m.reliability)) {
-            const icon = RELIABILITY_ICON[m.color] ?? "⚪";
-            reliabilityStr = icon + Math.round(m.reliability) + "%";
-          }
-
-          const avgStr = fmt(m.avgFame);
-          const ppdStr = fmt(m.pointsPerDeck);
-          const decksUsed = Number(m.period?.decksUsed);
-          const decksStr = Number.isFinite(decksUsed)
-            ? ` (${Math.round(decksUsed)})`
-            : "";
-
-          const parts = [newIcon, reliabilityStr].filter(Boolean);
-          const prefix = parts.length ? " " + parts.join(" ") : "";
-          const body = ` 🏆${avgStr} ⚡${ppdStr}${decksStr}`;
-          return rank + ". " + m.name + prefix + body;
-        });
-
-        const DESC_MAX = 4096;
-        let currentLen = 0;
-        const firstPage = [];
-        for (const row of rows) {
-          const rowLen = row.length + 1;
-          if (currentLen + rowLen > DESC_MAX && firstPage.length > 0) break;
-          firstPage.push(row);
-          currentLen += rowLen;
-        }
-        const pageCount = Math.ceil(rows.length / firstPage.length);
-
-        const embed = {
-          title: `<:stats:1499284927894650950> Stats GDC : ${clanName}`,
-          url: trustClanUrl(clanTag),
-          color: 0x5865f2,
-          description: firstPage.join(String.fromCharCode(10)),
-          footer: {
-            text: buildStatsClanFooter({
-              sortMode,
-              scenarioLabel: scenario.label,
-              pageIndex: 0,
-              pageCount,
-            }),
-          },
-        };
-
-        const payload = {
-          embeds: [embed],
-          components: buildStatsClanComponents(clanVal, sortMode),
-        };
-
-        await fetch(webhookUrl, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-      } catch (err) {
-        await fetch(webhookUrl, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            content: `Erreur : ${err.message}`,
-          }),
-        });
-      }
+    const clanInfo = data.clan || {};
+    const clanName = clanInfo.name || resolved.name;
+    return res.status(200).json({
+      type: 7,
+      data: buildStatsClanPayload({
+        data,
+        clanName,
+        clanTag,
+        clanVal,
+        sortMode,
+      }),
     });
-    return;
   }
 
   return res.status(400).json({ error: "Unsupported interaction type" });
