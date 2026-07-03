@@ -49,7 +49,6 @@ import path from "path";
 
 const router = Router();
 
-
 /**
  * Run async tasks with limited concurrency to avoid rate-limiting.
  * Returns an array of { status, value } | { status, reason } mirroring Promise.allSettled.
@@ -472,7 +471,8 @@ router.get("/:tag/analysis", async (req, res) => {
         }
 
         if (!forceRefresh && fast && diskCached) {
-          const cacheValid = Array.isArray(diskCached.members) &&
+          const cacheValid =
+            Array.isArray(diskCached.members) &&
             diskCached.members.length > 0 &&
             diskCached.members[0].warHistory != null &&
             diskCached.members[0].scoreVersion === SCORE_VERSION;
@@ -487,7 +487,9 @@ router.get("/:tag/analysis", async (req, res) => {
               responsePayload.members = null;
               responsePayload.membersRaw = null;
             } else if (Array.isArray(responsePayload.members)) {
-              responsePayload.members = responsePayload.members.map(recalcMemberPointsPerDeck);
+              responsePayload.members = responsePayload.members.map(
+                recalcMemberPointsPerDeck,
+              );
             }
             const { frRank, frPreviousRank } = await fetchLiveCountryRank(
               clanTag,
@@ -506,7 +508,8 @@ router.get("/:tag/analysis", async (req, res) => {
         }
 
         if (!forceRefresh && age <= DISK_CACHE_TTL_MS && canUseDiskCache) {
-          const cacheValid = Array.isArray(diskCached.members) &&
+          const cacheValid =
+            Array.isArray(diskCached.members) &&
             diskCached.members.length > 0 &&
             diskCached.members[0].warHistory != null &&
             diskCached.members[0].scoreVersion === SCORE_VERSION;
@@ -522,7 +525,9 @@ router.get("/:tag/analysis", async (req, res) => {
               responsePayload.members = null;
               responsePayload.membersRaw = null;
             } else if (Array.isArray(responsePayload.members)) {
-              responsePayload.members = responsePayload.members.map(recalcMemberPointsPerDeck);
+              responsePayload.members = responsePayload.members.map(
+                recalcMemberPointsPerDeck,
+              );
             }
             const { frRank, frPreviousRank } = await fetchLiveCountryRank(
               clanTag,
@@ -1207,8 +1212,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 }
                 if (ppdSamples.length > 0) {
                   rivalAvgPtsPerDeckByTag[tagNorm] =
-                    ppdSamples.reduce((s, v) => s + v, 0) /
-                    ppdSamples.length;
+                    ppdSamples.reduce((s, v) => s + v, 0) / ppdSamples.length;
                 }
               })
               .catch((e) =>
@@ -1338,9 +1342,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     }
     if (Object.keys(totalDonationsByTag).length > 0) {
       try {
-        const { updateSnapshotDonations } = await import(
-          "../services/snapshot.js"
-        );
+        const { updateSnapshotDonations } =
+          await import("../services/snapshot.js");
         await updateSnapshotDonations(clanTag, totalDonationsByTag);
       } catch (err) {
         console.warn(
@@ -2088,7 +2091,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     uncomplete.players = uncomplete.players.map((p) => {
       const member = memberMap.get(p.tag);
       const streak = member?.arrivalStreakInCurrentClan ?? null;
-      const joinedThisWeek = streak === 0 || (streak === 1 && p.daily?.[0] == null);
+      const joinedThisWeek =
+        streak === 0 || (streak === 1 && p.daily?.[0] == null);
       return {
         ...p,
         isNew: member?.isNew ?? false,
@@ -2616,7 +2620,64 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     clanWarSummary.snapshotWarnings = warnings;
   }
 
-  const computedLastWarSummary = existingCache?.lastWarSummary || null;
+  const latestCompletedStanding = Array.isArray(raceLog?.[0]?.standings)
+    ? raceLog[0].standings.find(
+        (s) => (s.clan?.tag ?? "").toUpperCase() === `#${clanTag}`,
+      )
+    : null;
+  const latestCompletedParticipants = Array.isArray(
+    latestCompletedStanding?.clan?.participants,
+  )
+    ? latestCompletedStanding.clan.participants.filter(
+        (p) =>
+          (Number.isFinite(p.decksUsed) ? p.decksUsed : 0) > 0 ||
+          (Number.isFinite(p.fame) ? p.fame : 0) > 0,
+      )
+    : [];
+  const latestCompletedTotalFame = latestCompletedParticipants.reduce(
+    (sum, participant) =>
+      sum + (Number.isFinite(participant.fame) ? participant.fame : 0),
+    0,
+  );
+  const latestCompletedTotalDecks = latestCompletedParticipants.reduce(
+    (sum, participant) =>
+      sum +
+      (Number.isFinite(participant.decksUsed) ? participant.decksUsed : 0),
+    0,
+  );
+  const latestCompletedAveragePerPlayer =
+    latestCompletedParticipants.length > 0
+      ? Math.round(
+          latestCompletedTotalFame / latestCompletedParticipants.length,
+        )
+      : null;
+  const latestCompletedPointsPerDeck =
+    latestCompletedTotalDecks > 0
+      ? Math.round(latestCompletedTotalFame / latestCompletedTotalDecks)
+      : null;
+
+  const computedLastWarSummary = existingCache?.lastWarSummary
+    ? {
+        ...existingCache.lastWarSummary,
+        averagePerPlayer:
+          latestCompletedAveragePerPlayer ??
+          existingCache.lastWarSummary.averagePerPlayer ??
+          null,
+        pointsPerDeck:
+          latestCompletedPointsPerDeck ??
+          existingCache.lastWarSummary.pointsPerDeck ??
+          null,
+      }
+    : latestCompletedParticipants.length > 0
+      ? {
+          weekId: raceLog?.[0]?.weekId ?? null,
+          totalFame: latestCompletedTotalFame,
+          totalDecks: latestCompletedTotalDecks,
+          participantCount: latestCompletedParticipants.length,
+          averagePerPlayer: latestCompletedAveragePerPlayer,
+          pointsPerDeck: latestCompletedPointsPerDeck,
+        }
+      : null;
   const snapshotFileDebug = await getSnapshotFileDebug(clanTag).catch(
     () => null,
   );
@@ -2760,7 +2821,11 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 clanTag.toUpperCase(),
             );
             const totalDecksLastWeek = sumParticipantsDecks(lastStanding);
-            if (totalDecksLastWeek != null && ownLastWarFame > 0 && totalDecksLastWeek > 0) {
+            if (
+              totalDecksLastWeek != null &&
+              ownLastWarFame > 0 &&
+              totalDecksLastWeek > 0
+            ) {
               ownHistoricPpd = ownLastWarFame / totalDecksLastWeek;
             }
           }
@@ -2862,9 +2927,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 : typeof extra?.members === "number" && extra.members > 0
                   ? extra.members
                   : Math.max(
-                      allPartsInner.filter(
-                        (p) => (p.decksUsed ?? 0) > 0,
-                      ).length,
+                      allPartsInner.filter((p) => (p.decksUsed ?? 0) > 0)
+                        .length,
                       1,
                     );
               const activeMembers = rosterTagSet
@@ -2903,9 +2967,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
               // Ajustement du nombre de decks réalisables selon le temps restant
               // avant le reset. 2 joueurs peuvent jouer en même temps, ~3 min/combat.
-              const _nowGdc = new Date(
-                Date.now() - warResetOffsetMs(c.tag),
-              );
+              const _nowGdc = new Date(Date.now() - warResetOffsetMs(c.tag));
               const _endOfGdcDay = new Date(
                 Date.UTC(
                   _nowGdc.getUTCFullYear(),
@@ -2935,8 +2997,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               const remainingFullDays = Math.max(0, 3 - warDayIndex);
               const remainingDecks = Math.min(
                 remainingDecksWeekly,
-                remainingDecksToday +
-                  remainingFullDays * absoluteMaxDecksToday,
+                remainingDecksToday + remainingFullDays * absoluteMaxDecksToday,
               );
               maxReachableFame =
                 sectionFame + remainingDecks * MAX_FAME_PER_DECK;

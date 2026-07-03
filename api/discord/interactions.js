@@ -5488,6 +5488,7 @@ export default async function handler(req, res) {
         const members = analysis.members || [];
         const liteMembers = analysis.isLite ? members : [];
         const summary = analysis.summary || {};
+        const lastWarSummary = analysis.lastWarSummary || null;
         const hasReliabilityDetails =
           isFamilyClan && !analysis.isLite && !usedLiteFallback;
 
@@ -5526,6 +5527,8 @@ export default async function handler(req, res) {
 
         const fmt = (n) =>
           typeof n === "number" ? n.toLocaleString("fr-FR") : "—";
+        const fmtInt = (n) =>
+          Number.isFinite(n) ? Math.round(n).toLocaleString("fr-FR") : "—";
         const avgScore = summary.avgScore ?? 0;
         const embedColor = hasReliabilityDetails
           ? avgScore >= 75
@@ -5675,6 +5678,21 @@ export default async function handler(req, res) {
             inline: true,
           },
           sixthField,
+          {
+            name: "Moyenne/joueur",
+            value: `${fmtInt(lastWarSummary?.averagePerPlayer)} pts`,
+            inline: true,
+          },
+          {
+            name: "Points/deck",
+            value: `${fmtInt(lastWarSummary?.pointsPerDeck)} pts`,
+            inline: true,
+          },
+          {
+            name: "\u200b",
+            value: "\u200b",
+            inline: true,
+          },
         ];
 
         // Rangée 3 : listes membres (uniquement pour les clans famille)
