@@ -6375,9 +6375,8 @@ export default async function handler(req, res) {
       try {
         const abortCtrl = new AbortController();
         const abortTimer = setTimeout(() => abortCtrl.abort(), 12000);
-        let apiResp;
+        let data = getCachedStatsClanAnalysis(clanTag);
         try {
-          let data = getCachedStatsClanAnalysis(clanTag);
           if (!data) {
             const apiResp = await fetch(
               `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(clanTag)}/analysis?fast=true`,
@@ -6403,6 +6402,16 @@ export default async function handler(req, res) {
           }
         } finally {
           clearTimeout(abortTimer);
+        }
+        if (!data) {
+          await fetch(webhookUrl, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: "Erreur lors du rechargement. Relancez la commande.",
+            }),
+          });
+          return;
         }
         const members = Array.isArray(data.members) ? data.members : [];
         const clanInfo = data.clan || {};
