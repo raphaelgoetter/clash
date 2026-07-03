@@ -6416,8 +6416,11 @@ export default async function handler(req, res) {
     const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
     const clanTag = resolved.tag;
     const webhookUrl = buildDiscordWebhookUrl(body);
+    const originalWebhookUrl = webhookUrl
+      ? `${webhookUrl}/messages/@original`
+      : null;
 
-    if (!webhookUrl) {
+    if (!originalWebhookUrl) {
       return res.status(200).json({
         type: 4,
         data: {
@@ -6444,12 +6447,11 @@ export default async function handler(req, res) {
             signal: abortCtrl.signal,
           });
           if (!apiResp.ok) {
-            await fetch(webhookUrl, {
-              method: "POST",
+            await fetch(originalWebhookUrl, {
+              method: "PATCH",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 content: `Erreur API (${apiResp.status}). Réessayez dans quelques instants.`,
-                flags: 64,
               }),
             });
             return;
@@ -6461,10 +6463,10 @@ export default async function handler(req, res) {
             err?.name === "AbortError"
               ? "⏱️ Le rafraîchissement a pris trop de temps. Réessayez."
               : `Erreur : ${err?.message || "inconnue"}`;
-          await fetch(webhookUrl, {
-            method: "POST",
+          await fetch(originalWebhookUrl, {
+            method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ content: message, flags: 64 }),
+            body: JSON.stringify({ content: message }),
           });
           return;
         } finally {
@@ -6474,8 +6476,8 @@ export default async function handler(req, res) {
 
       const clanInfo = data.clan || {};
       const clanName = clanInfo.name || resolved.name;
-      await fetch(webhookUrl, {
-        method: "POST",
+      await fetch(originalWebhookUrl, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
           buildStatsClanPayload({
