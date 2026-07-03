@@ -134,6 +134,15 @@ const trustPlayerUrl = (tag) =>
 const trustClanUrl = (tag) =>
   `${TRUST_ROYALE_URL}/fr/clan/${String(tag).replace(/^#/, "")}`;
 
+const FR_VERDICTS = {
+  green: "Très fiable",
+  yellow: "Risque faible",
+  orange: "Risque élevé",
+  red: "Risque extrême",
+};
+
+const FAMILY_CLAN_TAGS = new Set(["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"]);
+
 function getStatsClanScenario(data) {
   const isWarPeriod = Boolean(data?.isWarPeriod);
   return isWarPeriod
