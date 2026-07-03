@@ -126,6 +126,55 @@ function runBackground(fn) {
   }
 }
 
+function getStatsClanScenario(data) {
+  const isWarPeriod = Boolean(data?.isWarPeriod);
+  return isWarPeriod
+    ? { key: "current", label: "GDC en cours — semaine actuelle" }
+    : { key: "training", label: "Entraînement — semaine passée" };
+}
+
+function getStatsClanPeriodForMember(member, scenarioKey) {
+  const weeks = Array.isArray(member?.warHistory?.weeks)
+    ? member.warHistory.weeks
+    : [];
+  if (scenarioKey === "current") {
+    return weeks.find((week) => week?.isCurrent && !week?.ignored) ?? null;
+  }
+  return (
+    weeks.find(
+      (week) =>
+        !week?.isCurrent && !week?.ignored && (week?.decksUsed ?? 0) > 0,
+    ) ?? null
+  );
+}
+
+function getStatsClanMetrics(member, scenarioKey) {
+  const period = getStatsClanPeriodForMember(member, scenarioKey);
+  const decksUsed = Number(period?.decksUsed);
+  const fame = Number(period?.fame);
+
+  return {
+    period,
+    avgFame: Number.isFinite(fame) ? Math.round(fame) : null,
+    pointsPerDeck:
+      Number.isFinite(fame) && Number.isFinite(decksUsed) && decksUsed > 0
+        ? Math.round(fame / decksUsed)
+        : null,
+  };
+}
+
+function buildStatsClanFooter({
+  sortMode,
+  scenarioLabel,
+  pageIndex,
+  pageCount,
+}) {
+  const sortLabel =
+    sortMode === "pointsPerDeck" ? "Points par deck" : "Points par semaine";
+  const base = `Tri : ${sortLabel} · 🏆 moyenne · ⚡ pts/deck · Scénario : ${scenarioLabel}`;
+  return pageCount > 1 ? `${base} · Page ${pageIndex + 1}/${pageCount}` : base;
+}
+
 // Vérifie la signature Ed25519 envoyée par Discord.
 function verifyDiscordSignature(signature, timestamp, rawBody) {
   const publicKeyHex = process.env.DISCORD_PUBLIC_KEY;
@@ -5936,6 +5985,16 @@ export default async function handler(req, res) {
         const members = Array.isArray(data.members) ? data.members : [];
         const clanInfo = data.clan || {};
         const clanName = clanInfo.name || resolved.name;
+        const scenario = getStatsClanScenario(data);
+
+        const normalizedMembers = members.map((member) => {
+          const metrics = getStatsClanMetrics(member, scenario.key);
+          return {
+            ...member,
+            avgFame: metrics.avgFame,
+            pointsPerDeck: metrics.pointsPerDeck,
+          };
+        });
 
         if (members.length === 0) {
           await fetch(webhookUrl, {
@@ -5950,7 +6009,7 @@ export default async function handler(req, res) {
         }
 
         // Tri des membres selon le mode choisi (décroissant)
-        const sorted = [...members].sort((a, b) => {
+        const sorted = [...normalizedMembers].sort((a, b) => {
           if (sortMode === "pointsPerDeck") {
             const pa = Number.isFinite(a.pointsPerDeck) ? a.pointsPerDeck : -1;
             const pb = Number.isFinite(b.pointsPerDeck) ? b.pointsPerDeck : -1;
@@ -6004,12 +6063,6 @@ export default async function handler(req, res) {
         if (currentPage.length > 0) pages.push(currentPage);
         const pageCount = pages.length;
 
-        const sortLabel =
-          sortMode === "pointsPerDeck"
-            ? "Points par deck"
-            : "Points par semaine";
-        const footerText = `Tri : ${sortLabel} · 🏆 moyenne · ⚡ pts/deck`;
-
         const sendPage = (pageRows, pageIndex) => {
           let description = "";
           for (let ri = 0; ri < pageRows.length; ri++) {
@@ -6022,10 +6075,12 @@ export default async function handler(req, res) {
             color: 0x5865f2,
             description,
             footer: {
-              text:
-                pageCount > 1
-                  ? `${footerText} · Page ${pageIndex + 1}/${pageCount}`
-                  : footerText,
+              text: buildStatsClanFooter({
+                sortMode,
+                scenarioLabel: scenario.label,
+                pageIndex,
+                pageCount,
+              }),
             },
           };
           return { embeds: [embed] };
@@ -6260,8 +6315,18 @@ export default async function handler(req, res) {
         const members = Array.isArray(data.members) ? data.members : [];
         const clanInfo = data.clan || {};
         const clanName = clanInfo.name || resolved.name;
+        const scenario = getStatsClanScenario(data);
 
-        const sorted = [...members].sort((a, b) => {
+        const normalizedMembers = members.map((member) => {
+          const metrics = getStatsClanMetrics(member, scenario.key);
+          return {
+            ...member,
+            avgFame: metrics.avgFame,
+            pointsPerDeck: metrics.pointsPerDeck,
+          };
+        });
+
+        const sorted = [...normalizedMembers].sort((a, b) => {
           if (sortMode === "pointsPerDeck") {
             const pa = Number.isFinite(a.pointsPerDeck) ? a.pointsPerDeck : -1;
             const pb = Number.isFinite(b.pointsPerDeck) ? b.pointsPerDeck : -1;
@@ -6305,12 +6370,6 @@ export default async function handler(req, res) {
         }
         const pageCount = Math.ceil(rows.length / firstPage.length);
 
-        const sortLabel =
-          sortMode === "pointsPerDeck"
-            ? "Points par deck"
-            : "Points par semaine";
-        const footerText = `Tri : ${sortLabel} · 🏆 moyenne · ⚡ pts/deck`;
-
         const avgFameActive = sortMode === "avgFame";
         const ppdActive = sortMode === "pointsPerDeck";
 
@@ -6320,10 +6379,12 @@ export default async function handler(req, res) {
           color: 0x5865f2,
           description: firstPage.join(String.fromCharCode(10)),
           footer: {
-            text:
-              pageCount > 1
-                ? `${footerText} · Page 1/${pageCount}`
-                : footerText,
+            text: buildStatsClanFooter({
+              sortMode,
+              scenarioLabel: scenario.label,
+              pageIndex: 0,
+              pageCount,
+            }),
           },
         };
 
