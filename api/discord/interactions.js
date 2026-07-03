@@ -239,6 +239,13 @@ function buildStatsClanComponents(clanVal, sortMode) {
           custom_id: `stats_clan_sort:decksUsed:${clanVal}`,
           disabled: decksActive,
         },
+        {
+          type: 2,
+          style: 2,
+          label: "🔄",
+          custom_id: `stats_clan_refresh:${clanVal}:${sortMode}`,
+          disabled: false,
+        },
       ],
     },
   ];
@@ -6372,7 +6379,7 @@ export default async function handler(req, res) {
   if (
     body.type === 3 &&
     typeof body.data?.custom_id === "string" &&
-    body.data.custom_id.startsWith("stats_clan_sort:")
+    body.data.custom_id.startsWith("stats_clan_")
   ) {
     const parts = body.data.custom_id.split(":");
     if (parts.length < 3) {
@@ -6380,8 +6387,10 @@ export default async function handler(req, res) {
         .status(200)
         .json({ type: 4, data: { content: "Erreur interne.", flags: 64 } });
     }
-    const sortMode = parts[1];
-    const clanVal = parts[2];
+
+    const action = parts[0];
+    const clanVal = parts[1];
+    const sortMode = parts[2];
 
     const CLAN_MAP = {
       1: { name: "La Resistance", tag: "Y8JUPC9C" },
@@ -6392,7 +6401,7 @@ export default async function handler(req, res) {
     const clanTag = resolved.tag;
 
     let data = getCachedStatsClanAnalysis(clanTag);
-    if (!data) {
+    if (!data || action === "stats_clan_refresh") {
       const endpoint = `${TRUST_ROYALE_URL}/api/clan/${encodeURIComponent(
         clanTag,
       )}/analysis?fast=true`;
