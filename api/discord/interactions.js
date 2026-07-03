@@ -128,6 +128,12 @@ function runBackground(fn) {
 
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 
+const trustPlayerUrl = (tag) =>
+  `${TRUST_ROYALE_URL}/fr/player/${String(tag).replace(/^#/, "")}`;
+
+const trustClanUrl = (tag) =>
+  `${TRUST_ROYALE_URL}/fr/clan/${String(tag).replace(/^#/, "")}`;
+
 function getStatsClanScenario(data) {
   const isWarPeriod = Boolean(data?.isWarPeriod);
   return isWarPeriod
