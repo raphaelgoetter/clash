@@ -382,6 +382,187 @@ function setCachedStatsClanAnalysis(clanTag, data) {
   });
 }
 
+function buildCompareComponents(clanVal, sortMode) {
+  const currentActive = sortMode === "current";
+  const projectionActive = sortMode === "projection";
+
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: currentActive ? 3 : 1,
+          label: "📍 Actuel",
+          custom_id: `compare_sort:${clanVal}:current`,
+          disabled: currentActive,
+        },
+        {
+          type: 2,
+          style: projectionActive ? 3 : 1,
+          label: "📈 Projection",
+          custom_id: `compare_sort:${clanVal}:projection`,
+          disabled: projectionActive,
+        },
+        {
+          type: 2,
+          style: 2,
+          label: "🔄",
+          custom_id: `compare_refresh:${clanVal}:${sortMode}`,
+          disabled: false,
+        },
+      ],
+    },
+  ];
+}
+
+const COMPARE_CACHE_TTL_MS = 60 * 1000;
+const compareAnalysisCache = new Map();
+
+function getCompareCacheKey(clanTag) {
+  return String(clanTag || "")
+    .replace(/^#/, "")
+    .toUpperCase();
+}
+
+function getCachedCompareAnalysis(clanTag) {
+  const key = getCompareCacheKey(clanTag);
+  const entry = compareAnalysisCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.cachedAt > COMPARE_CACHE_TTL_MS) {
+    compareAnalysisCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCachedCompareAnalysis(clanTag, data) {
+  const key = getCompareCacheKey(clanTag);
+  if (!key || !data) return;
+  compareAnalysisCache.set(key, {
+    cachedAt: Date.now(),
+    data,
+  });
+}
+
+async function computeCompareIsWarPeriod(clanTag, data) {
+  // Garde calendaire locale : ne pas se fier à data.isWarPeriod qui peut venir
+  // d'un cache statique généré pendant la GDC (lun–mer : false, jeu–dim : true).
+  const { warResetOffsetMs } = await import(
+    "../../backend/services/dateUtils.js"
+  );
+  const dow = new Date(Date.now() - warResetOffsetMs(clanTag)).getUTCDay();
+  return (dow === 0 || dow >= 4) && data?.isWarPeriod === true;
+}
+
+function sortCompareRaceGroup(raceGroup, sortMode, isWarPeriod) {
+  return [...raceGroup].sort((a, b) => {
+    if (isWarPeriod && sortMode === "current") {
+      return (b.currentFame ?? 0) - (a.currentFame ?? 0);
+    }
+    if (isWarPeriod) {
+      // sortMode === "projection" (comportement par défaut en période GDC)
+      const aClinched = a.isClinchedWin ? 1 : 0;
+      const bClinched = b.isClinchedWin ? 1 : 0;
+      if (aClinched !== bClinched) return bClinched - aClinched;
+      return (b.projectedFame ?? 0) - (a.projectedFame ?? 0);
+    }
+    // Hors période GDC : fallback unique quel que soit sortMode demandé
+    return (b.lastWarFame ?? 0) - (a.lastWarFame ?? 0);
+  });
+}
+
+function buildCompareFooter({ sortMode, isWarPeriod, anyClinched }) {
+  if (!isWarPeriod) return "Trié par Total Dernière GDC";
+  if (sortMode === "current") return "Trié par Points actuels";
+  return anyClinched
+    ? "Trié par Projection · ✅ = victoire mathématiquement assurée"
+    : "Trié par Projection en fin de journée";
+}
+
+function buildComparePayload({ data, resolved, clanVal, sortMode, isWarPeriod }) {
+  const raceGroup = Array.isArray(data?.raceGroup) ? data.raceGroup : [];
+  const ownTag = `#${resolved.tag}`.toUpperCase();
+  const isColosseum = data?.isColosseum === true;
+
+  const sorted = sortCompareRaceGroup(raceGroup, sortMode, isWarPeriod);
+  const fmt = (n) => (typeof n === "number" ? n.toLocaleString("fr-FR") : "—");
+
+  const rows = sorted.map((clan, idx) => {
+    const clanTag = (clan.tag ?? "").toUpperCase();
+    const isOwn = clanTag === ownTag;
+    const url = trustClanUrl(clanTag);
+    const rank = `**#${idx + 1}**`;
+    const nameStr = `**[${clan.name ?? clanTag}](${url})**`;
+    const bold = isOwn ? "__" : "";
+
+    const trophies =
+      !isWarPeriod && clan.clanWarTrophies != null
+        ? `<:trophy2:1493677804733337621> ${fmt(clan.clanWarTrophies)}`
+        : "";
+
+    const prevWarStr =
+      clan.prevWarFame != null
+        ? `<:battle:1493710671244689449> ${fmt(clan.prevWarFame)} (n-2)`
+        : "";
+
+    let trend = "";
+    if (clan.lastWarFame != null && clan.prevWarFame != null) {
+      if (clan.lastWarFame > clan.prevWarFame) trend = " ⬆";
+      else if (clan.lastWarFame < clan.prevWarFame) trend = " ⬇";
+    }
+    const lastWarStr =
+      clan.lastWarFame != null
+        ? `<:battle:1493710671244689449> **${fmt(clan.lastWarFame)}** (Last)${trend}`
+        : "";
+
+    const line1 = `${rank} ${bold}${nameStr}${bold} ${trophies}`.trim();
+    let line2;
+
+    if (isWarPeriod) {
+      const decks = `<:cards:1493711279121104926> ${clan.decksToday != null ? clan.decksToday : "?"} decks`;
+      const eff = `<:cible:1493711597682557019> ${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(2) : "?"} pts/d`;
+      const currentBold = sortMode === "current";
+      const currentPtsVal =
+        clan.currentFame != null ? fmt(clan.currentFame) : null;
+      const currentPts =
+        currentPtsVal != null
+          ? `<:trophy2:1493677804733337621> Points actuels : ${currentBold ? `**${currentPtsVal}**` : currentPtsVal}`
+          : "";
+      const projVal =
+        clan.projectedFame != null
+          ? fmt(Math.round(clan.projectedFame / 100) * 100)
+          : "?";
+      const proj = clan.isClinchedWin
+        ? "<:projection:1499275709078700073> ✅ Victoire"
+        : `<:projection:1499275709078700073> Projection: ${currentBold ? projVal : `**${projVal}**`}`;
+      const line2a = [decks, eff].filter(Boolean).join(" · ");
+      const line2b = [currentPts, proj].filter(Boolean).join(" · ");
+      line2 = line2b ? `${line2a}\n${line2b}` : line2a;
+    } else {
+      line2 = [prevWarStr, lastWarStr].filter(Boolean).join(" · ");
+    }
+
+    return `${line1}\n${line2}`;
+  });
+
+  const anyClinched = isWarPeriod && sorted.some((c) => c.isClinchedWin);
+  const footerText = buildCompareFooter({ sortMode, isWarPeriod, anyClinched });
+
+  return {
+    embeds: [
+      {
+        title: `<:trophy2:1493677804733337621> ${isColosseum ? "Groupe de Colisée" : "Groupe de GDC"} — ${resolved.name}`,
+        color: 0x9b59b6,
+        description: rows.join("\n\n"),
+        image: { url: `${TRUST_ROYALE_URL}/images/banner2.webp` },
+        footer: { text: footerText },
+      },
+    ],
+    components: buildCompareComponents(clanVal, sortMode),
+  };
+}
+
 // Vérifie la signature Ed25519 envoyée par Discord.
 function verifyDiscordSignature(signature, timestamp, rawBody) {
   const publicKeyHex = process.env.DISCORD_PUBLIC_KEY;
@@ -5040,11 +5221,11 @@ export default async function handler(req, res) {
     const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
 
     res.status(200).json({ type: 5 });
-    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+    const webhookUrl = buildDiscordWebhookUrl(body);
 
     runBackground(async () => {
       try {
-        const apiUrl = `https://trustroyale.vercel.app/api/clan/${resolved.tag}/analysis?includeRaceGroup=true&includeTopPlayers=false&includeUncomplete=false&fast=true&force=true`;
+        const apiUrl = `${TRUST_ROYALE_URL}/api/clan/${resolved.tag}/analysis?includeRaceGroup=true&includeTopPlayers=false&includeUncomplete=false&fast=true&force=true`;
         const apiRes = await fetch(apiUrl);
         if (!apiRes.ok) throw new Error(`API ${apiRes.status}`);
         const data = await apiRes.json();
@@ -5062,112 +5243,25 @@ export default async function handler(req, res) {
           return;
         }
 
-        const ownTag = `#${resolved.tag}`.toUpperCase();
-        const FAMILY_TAGS = new Set(["#Y8JUPC9C", "#LRQP20V9", "#QU9UQJRL"]);
-        const isColosseum = data.isColosseum === true;
-
-        // Garde calendaire locale : ne pas se fier à data.isWarPeriod qui peut venir
-        // d'un cache statique généré pendant la GDC (lun–mer : false, jeu–dim : true).
-        const { warResetOffsetMs: _compareResetMs } =
-          await import("../../backend/services/dateUtils.js");
-        const _cmpDow = new Date(
-          Date.now() - _compareResetMs(resolved.tag),
-        ).getUTCDay();
-        const isWarPeriod =
-          (_cmpDow === 0 || _cmpDow >= 4) && data.isWarPeriod === true;
-
-        // Trier par projection si GDC active, sinon par lastWarFame décroissant
-        const sorted = [...raceGroup].sort((a, b) => {
-          if (isWarPeriod) {
-            const aClinched = a.isClinchedWin ? 1 : 0;
-            const bClinched = b.isClinchedWin ? 1 : 0;
-            if (aClinched !== bClinched) return bClinched - aClinched;
-            return (b.projectedFame ?? 0) - (a.projectedFame ?? 0);
-          }
-          return (b.lastWarFame ?? 0) - (a.lastWarFame ?? 0);
+        setCachedCompareAnalysis(resolved.tag, data);
+        const isWarPeriod = await computeCompareIsWarPeriod(
+          resolved.tag,
+          data,
+        );
+        const sortMode = isWarPeriod ? "projection" : "current";
+        const payload = buildComparePayload({
+          data,
+          resolved,
+          clanVal,
+          sortMode,
+          isWarPeriod,
         });
-
-        const fmt = (n) =>
-          typeof n === "number" ? n.toLocaleString("fr-FR") : "—";
-
-        const rows = sorted.map((clan, idx) => {
-          const clanTag = (clan.tag ?? "").toUpperCase();
-          const isOwn = clanTag === ownTag;
-          const cleanTag = clanTag.replace("#", "");
-          const isFamilyMember = FAMILY_TAGS.has(clanTag);
-          const url = trustClanUrl(clanTag);
-          const rank = `**#${idx + 1}**`;
-          const nameStr = `**[${clan.name ?? clanTag}](${url})**`;
-          const bold = isOwn ? "__" : "";
-
-          const trophies =
-            !isWarPeriod && clan.clanWarTrophies != null
-              ? `<:trophy2:1493677804733337621> ${fmt(clan.clanWarTrophies)}`
-              : "";
-
-          let prevWarStr =
-            clan.prevWarFame != null
-              ? `<:battle:1493710671244689449> ${fmt(clan.prevWarFame)} (n-2)`
-              : "";
-
-          let trend = "";
-          if (clan.lastWarFame != null && clan.prevWarFame != null) {
-            if (clan.lastWarFame > clan.prevWarFame) trend = " ⬆";
-            else if (clan.lastWarFame < clan.prevWarFame) trend = " ⬇";
-          }
-          let lastWarStr =
-            clan.lastWarFame != null
-              ? `<:battle:1493710671244689449> **${fmt(clan.lastWarFame)}** (Last)${trend}`
-              : "";
-
-          let line1 = `${rank} ${bold}${nameStr}${bold} ${trophies}`.trim();
-          let line2;
-
-          if (isWarPeriod) {
-            const decks = `<:cards:1493711279121104926> ${clan.decksToday != null ? clan.decksToday : "?"} decks`;
-            const eff = `<:cible:1493711597682557019> ${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(2) : "?"} pts/d`;
-            const proj = clan.isClinchedWin
-              ? "<:projection:1499275709078700073> ✅ Victoire"
-              : `<:projection:1499275709078700073> Projection: **${clan.projectedFame != null ? fmt(Math.round(clan.projectedFame / 100) * 100) : "?"}**`;
-            const clinched = "";
-            const currentPts =
-              isColosseum && clan.currentFame != null
-                ? `<:trophy2:1493677804733337621> Points actuels : **${fmt(clan.currentFame)}**`
-                : "";
-            const line2a = [decks, eff].filter(Boolean).join(" · ");
-            const line2b = [currentPts, proj].filter(Boolean).join(" · ");
-            line2 = line2b ? `${line2a}\n${line2b}` : line2a;
-            line2 += clinched;
-          } else {
-            line2 = [prevWarStr, lastWarStr].filter(Boolean).join(" · ");
-          }
-
-          const row = `${line1}\n${line2}`;
-          return row;
-        });
-
-        const anyClinched = isWarPeriod && sorted.some((c) => c.isClinchedWin);
-        const footerText = isWarPeriod
-          ? anyClinched
-            ? `Trié par Projection · ✅ = victoire mathématiquement assurée`
-            : `Trié par Projection en fin de journée`
-          : `Trié par Total Dernière GDC`;
-
-        const embed = {
-          title: `<:trophy2:1493677804733337621> ${isColosseum ? "Groupe de Colisée" : "Groupe de GDC"} — ${resolved.name}`,
-          color: 0x9b59b6,
-          description: rows.join("\n\n"),
-          image: {
-            url: `${TRUST_ROYALE_URL}/images/banner2.webp`,
-          },
-          footer: { text: footerText },
-        };
 
         await fetch(webhookUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            embeds: [embed],
+            ...payload,
             allowed_mentions: { parse: [] },
           }),
         });
@@ -6503,6 +6597,117 @@ export default async function handler(req, res) {
             clanVal,
             sortMode,
           }),
+        ),
+      });
+    });
+
+    return;
+  }
+
+  // ── MessageComponent : boutons de tri /compare ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("compare_")
+  ) {
+    const parts = body.data.custom_id.split(":");
+    if (parts.length < 3) {
+      return res
+        .status(200)
+        .json({ type: 4, data: { content: "Erreur interne.", flags: 64 } });
+    }
+
+    const action = parts[0];
+    const clanVal = parts[1];
+    const sortMode = parts[2];
+
+    const CLAN_MAP = {
+      1: { name: "La Resistance", tag: "Y8JUPC9C" },
+      2: { name: "Les Resistants", tag: "LRQP20V9" },
+      3: { name: "Les Revoltes", tag: "QU9UQJRL" },
+    };
+    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
+    const clanTag = resolved.tag;
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    const originalWebhookUrl = webhookUrl
+      ? `${webhookUrl}/messages/@original`
+      : null;
+
+    if (!originalWebhookUrl) {
+      return res.status(200).json({
+        type: 4,
+        data: {
+          content:
+            "Configuration Discord incomplète : impossible de répondre à l'interaction.",
+          flags: 64,
+        },
+      });
+    }
+
+    const cachedData = getCachedCompareAnalysis(clanTag);
+    const shouldFetch = action === "compare_refresh" || !cachedData;
+
+    if (!shouldFetch) {
+      const isWarPeriod = await computeCompareIsWarPeriod(clanTag, cachedData);
+      return res.status(200).json({
+        type: 7,
+        data: buildComparePayload({
+          data: cachedData,
+          resolved,
+          clanVal,
+          sortMode,
+          isWarPeriod,
+        }),
+      });
+    }
+
+    res.status(200).json({ type: 6 });
+
+    runBackground(async () => {
+      let data = cachedData;
+      const endpoint = `${TRUST_ROYALE_URL}/api/clan/${encodeURIComponent(
+        clanTag,
+      )}/analysis?includeRaceGroup=true&includeTopPlayers=false&includeUncomplete=false&fast=true&force=true`;
+      const abortCtrl = new AbortController();
+      const abortTimer = setTimeout(() => abortCtrl.abort(), 15000);
+      try {
+        const apiResp = await fetch(endpoint, {
+          headers: { Accept: "application/json" },
+          signal: abortCtrl.signal,
+        });
+        if (!apiResp.ok) {
+          await fetch(originalWebhookUrl, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `Erreur API (${apiResp.status}). Réessayez dans quelques instants.`,
+            }),
+          });
+          return;
+        }
+        data = await apiResp.json();
+        setCachedCompareAnalysis(clanTag, data);
+      } catch (err) {
+        const message =
+          err?.name === "AbortError"
+            ? "⏱️ Le rafraîchissement a pris trop de temps. Réessayez."
+            : `Erreur : ${err?.message || "inconnue"}`;
+        await fetch(originalWebhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: message }),
+        });
+        return;
+      } finally {
+        clearTimeout(abortTimer);
+      }
+
+      const isWarPeriod = await computeCompareIsWarPeriod(clanTag, data);
+      await fetch(originalWebhookUrl, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          buildComparePayload({ data, resolved, clanVal, sortMode, isWarPeriod }),
         ),
       });
     });
