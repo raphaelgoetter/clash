@@ -7543,9 +7543,10 @@
           "start": "2026-07-03T09:42:00.000Z",
           "end": "2026-07-04T09:41:59.999Z"
         },
-        "snapshotTime": "2026-07-03T12:37:44.668Z",
+        "snapshotTime": "2026-07-03T13:33:27.287Z",
         "snapshotBackupTime": "2026-07-03T10:53:39.728Z",
         "decks": {
+          "#J008G9CLJ": 4,
           "#V0VLJQCJU": 4,
           "#VPGCQPR9U": 4,
           "#UVGPPVQ8Q": 3,
@@ -7622,7 +7623,7 @@
           "#LQPRLQJCQ": 600,
           "#YGP0RQC0Q": 700,
           "#C0RRPJYV9": 700,
-          "#J008G9CLJ": 700,
+          "#J008G9CLJ": 1200,
           "#UVGPPVQ8Q": 1300,
           "#V0VLJQCJU": 1100
         },
@@ -7702,12 +7703,12 @@
           "#LQPRLQJCQ": 4,
           "#YGP0RQC0Q": 4,
           "#C0RRPJYV9": 4,
-          "#J008G9CLJ": 4,
+          "#J008G9CLJ": 8,
           "#UVGPPVQ8Q": 7,
           "#V0VLJQCJU": 8
         },
         "periodPointsEarned": 13000,
-        "snapshotCount": 15
+        "snapshotCount": 19
       },
       {
         "warDay": "saturday",
