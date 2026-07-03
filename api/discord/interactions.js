@@ -237,6 +237,13 @@ function buildStatsClanComponents(clanVal, sortMode) {
   ];
 }
 
+const COLOR_MAP = {
+  green: 0x2ecc71,
+  yellow: 0xf1c40f,
+  orange: 0xe67e22,
+  red: 0xe74c3c,
+};
+
 function buildStatsClanPayload({ data, clanName, clanTag, clanVal, sortMode }) {
   const members = Array.isArray(data?.members) ? data.members : [];
   const scenario = getStatsClanScenario(data);
@@ -364,75 +371,6 @@ function verifyDiscordSignature(signature, timestamp, rawBody) {
     return false;
   }
 }
-
-function getStatsClanSortLabel(sortMode) {
-  if (sortMode === "pointsPerDeck") return "Points par deck";
-  if (sortMode === "decksUsed") return "Decks joués";
-  return "Points par semaine";
-}
-
-function sortStatsClanMembers(members, sortMode) {
-  return [...members].sort((a, b) => {
-    if (sortMode === "pointsPerDeck") {
-      const pa = Number.isFinite(a.pointsPerDeck) ? a.pointsPerDeck : -1;
-      const pb = Number.isFinite(b.pointsPerDeck) ? b.pointsPerDeck : -1;
-      return pb - pa;
-    }
-    if (sortMode === "decksUsed") {
-      const da = Number.isFinite(a.period?.decksUsed) ? a.period.decksUsed : -1;
-      const db = Number.isFinite(b.period?.decksUsed) ? b.period.decksUsed : -1;
-      if (db !== da) return db - da;
-      const fa = Number.isFinite(a.avgFame) ? a.avgFame : -1;
-      const fb = Number.isFinite(b.avgFame) ? b.avgFame : -1;
-      return fb - fa;
-    }
-    const fa = Number.isFinite(a.avgFame) ? a.avgFame : -1;
-    const fb = Number.isFinite(b.avgFame) ? b.avgFame : -1;
-    return fb - fa;
-  });
-}
-
-function buildStatsClanComponents(clanVal, sortMode) {
-  const avgFameActive = sortMode === "avgFame";
-  const ppdActive = sortMode === "pointsPerDeck";
-  const decksActive = sortMode === "decksUsed";
-
-  return [
-    {
-      type: 1,
-      components: [
-        {
-          type: 2,
-          style: avgFameActive ? 3 : 1,
-          label: "🏆 Points/semaine",
-          custom_id: `stats_clan_sort:avgFame:${clanVal}`,
-          disabled: avgFameActive,
-        },
-        {
-          type: 2,
-          style: ppdActive ? 3 : 1,
-          label: "⚡ Points/deck",
-          custom_id: `stats_clan_sort:pointsPerDeck:${clanVal}`,
-          disabled: ppdActive,
-        },
-        {
-          type: 2,
-          style: decksActive ? 3 : 1,
-          label: "🎮 Decks joués",
-          custom_id: `stats_clan_sort:decksUsed:${clanVal}`,
-          disabled: decksActive,
-        },
-      ],
-    },
-  ];
-}
-
-const COLOR_MAP = {
-  green: 0x2ecc71,
-  yellow: 0xf1c40f,
-  orange: 0xe67e22,
-  red: 0xe74c3c,
-};
 
 function warLeagueLabel(trophies, isFamilyClan = false) {
   const label = getLeagueName(trophies ?? 0, "fr") ?? "Bronze 1";
