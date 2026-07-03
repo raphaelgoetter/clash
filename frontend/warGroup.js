@@ -41,6 +41,22 @@ function fmtPct(ratio) {
     : "—";
 }
 
+function fmtProjection(projectedFame, decksToday, targetDecksToday) {
+  if (typeof projectedFame !== "number" || !Number.isFinite(projectedFame)) {
+    return "—";
+  }
+
+  if (
+    typeof decksToday === "number" &&
+    typeof targetDecksToday === "number" &&
+    decksToday >= targetDecksToday
+  ) {
+    return fmtNum(Math.round(projectedFame));
+  }
+
+  return fmtNum(Math.floor(projectedFame / 100) * 100);
+}
+
 /**
  * Construit et injecte la carte "War Group" dans le DOM.
  *
@@ -180,9 +196,7 @@ export function renderRaceGroupCard(data, t, timerHelper) {
         const isClinched = clan.isClinchedWin;
         const projVal = isClinched
           ? t("warGroupClinchedLabel")
-          : clan.projectedFame != null
-            ? fmtNum(Math.round(clan.projectedFame / 100) * 100)
-            : "—";
+          : fmtProjection(clan.projectedFame, decksTodayVal, targetVal);
         const clinchedHtml = isClinched
           ? ` <span class="war-group-clinched" title="${t("warGroupClinchedWin")}">${t("warGroupClinchedLabel")}</span>`
           : "";
