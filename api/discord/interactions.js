@@ -680,9 +680,6 @@ async function buildWarDecksImage(warDecks) {
     const matchLines = Array.isArray(deck.matches) ? deck.matches : [];
     const renderedMatchLines = matchLines.slice(0, 4).map((match, index) => {
       const opponentName = escapeText(match.opponentName || "?");
-      const towerLevel = Number.isFinite(match.opponentTourLevel)
-        ? match.opponentTourLevel
-        : "?";
       const score = escapeText(match.score || "?");
       const resultIcon =
         match.result === "win"
@@ -691,7 +688,7 @@ async function buildWarDecksImage(warDecks) {
       const matchup = Number.isFinite(match.matchup)
         ? `${Math.round(match.matchup * 100)}%`
         : "?";
-      const line = `- 👥 ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultIcon} ${score} ⚡ ${matchup}`;
+      const line = `- 👥 ${opponentName} ${resultIcon} ${score} ⚡ ${matchup}`;
       const lineY = labelY + 12 + index * textLineHeight;
       return `<text x="${padding}" y="${lineY}" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#e2e8f0">${escapeText(line)}</text>`;
     });
@@ -788,9 +785,6 @@ function buildWarDecksTextFallbackImage(warDecks) {
         for (const deckGroup of group.decks.values()) {
           for (const [innerIndex, match] of deckGroup.matches.entries()) {
             const opponentName = escapeText(match.opponentName || "?");
-            const towerLevel = Number.isFinite(match.opponentTourLevel)
-              ? match.opponentTourLevel
-              : "?";
             const resultIcon =
               match.result === "win"
                 ? "<:success:1499002702208958577>"
@@ -799,7 +793,7 @@ function buildWarDecksTextFallbackImage(warDecks) {
               ? `${Math.round(match.matchup * 100)}%`
               : "?";
             lines.push(
-              `• ${deckGroup.label} #${innerIndex + 1} : <:members:1506175789731811399> ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultIcon} ${escapeText(match.score || "?")} ⚡ ${matchup}`,
+              `• ${deckGroup.label} #${innerIndex + 1} : <:members:1506175789731811399> ${opponentName} ${resultIcon} ${escapeText(match.score || "?")} ⚡ ${matchup}`,
             );
           }
         }
@@ -1015,9 +1009,6 @@ function formatWarDecksField(warDecks) {
         .slice(0, maxMatchesPerDeck)
         .forEach((match, matchIndex) => {
           const opponentName = escapeText(match.opponentName || "?");
-          const towerLevel = Number.isFinite(match.opponentTourLevel)
-            ? match.opponentTourLevel
-            : "?";
           const resultEmoji =
             match.result === "win"
               ? "<:success:1499002702208958577>"
@@ -1031,7 +1022,7 @@ function formatWarDecksField(warDecks) {
             .filter(Boolean)
             .join(" ");
           deckLines.push(
-            `• ${displayLabelWithType} : <:members:1506175789731811399> ${opponentName} <:tower:1515395461140447342> ${towerLevel} ${resultEmoji} ${score} ⚡ ${matchup}`,
+            `• ${displayLabelWithType} : <:members:1506175789731811399> ${opponentName} ${resultEmoji} ${score} ⚡ ${matchup}`,
           );
           displayedMatches.push(match);
         });

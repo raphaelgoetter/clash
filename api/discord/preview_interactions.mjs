@@ -370,9 +370,6 @@ function formatWarDecksField(warDecks) {
       deckGroup.matches.push({
         originalIndex: matchIndex,
         opponentName: match.opponentName || "?",
-        opponentTourLevel: Number.isFinite(match.opponentTourLevel)
-          ? match.opponentTourLevel
-          : "?",
         score: match.score || "?",
         matchup: match.matchup,
         result: match.result,
@@ -405,7 +402,7 @@ function formatWarDecksField(warDecks) {
           ? `${Math.round(match.matchup * 100)}%`
           : "?";
         lines.push(
-          `• ${deckLabel} #${matchIndex + 1} : <:members:1506175789731811399> ${match.opponentName} · <:tower:1515395461140447342> ${match.opponentTourLevel} · ${resultEmoji} ${match.score} · <:warn:1506174837519945800> ${matchup}`,
+          `• ${deckLabel} #${matchIndex + 1} : <:members:1506175789731811399> ${match.opponentName} · ${resultEmoji} ${match.score} · <:warn:1506174837519945800> ${matchup}`,
         );
       }
     }
@@ -3722,7 +3719,8 @@ export default async function handler(req, res) {
         // Grouper par 25 clans
         const groupBy = (arr, size) => {
           const groups = [];
-          for (let i = 0; i < arr.length; i += size) groups.push(arr.slice(i, i + size));
+          for (let i = 0; i < arr.length; i += size)
+            groups.push(arr.slice(i, i + size));
           return groups;
         };
         const sliceGroups = groupBy(sliceRows, 25);
@@ -3739,19 +3737,25 @@ export default async function handler(req, res) {
           });
           if (!resp.ok) {
             const text = await resp.text();
-            console.error("[/top-clans] Discord webhook error:", resp.status, text);
+            console.error(
+              "[/top-clans] Discord webhook error:",
+              resp.status,
+              text,
+            );
             throw new Error(`Discord ${resp.status}: ${text.slice(0, 800)}`);
           }
         };
 
         const sendGroup = async (group, title, color, footer) => {
           await sendWebhook({
-            embeds: [{
-              title,
-              color,
-              description: group.join("\n"),
-              ...(footer ? { footer } : {}),
-            }],
+            embeds: [
+              {
+                title,
+                color,
+                description: group.join("\n"),
+                ...(footer ? { footer } : {}),
+              },
+            ],
             allowed_mentions: { parse: [] },
           });
         };
@@ -3762,7 +3766,9 @@ export default async function handler(req, res) {
           `🏆 Classement France GDC — #${startRank} → #${endRank}`,
           0xf1c40f,
           sliceGroups.length === 1 && familyGroups.length === 0
-            ? { text: `France · Trophées GDC · ${allClans.length} clans chargés` }
+            ? {
+                text: `France · Trophées GDC · ${allClans.length} clans chargés`,
+              }
             : null,
         );
 
@@ -3773,7 +3779,9 @@ export default async function handler(req, res) {
             `🏆 Classement France GDC (suite) — #${startRank} → #${endRank}`,
             0xf1c40f,
             familyGroups.length === 0
-              ? { text: `France · Trophées GDC · ${allClans.length} clans chargés` }
+              ? {
+                  text: `France · Trophées GDC · ${allClans.length} clans chargés`,
+                }
               : null,
           );
         }
@@ -3787,7 +3795,9 @@ export default async function handler(req, res) {
               : "🏠 Clans famille (hors tranche)",
             0x3498db,
             i === familyGroups.length - 1
-              ? { text: `France · Trophées GDC · ${allClans.length} clans chargés` }
+              ? {
+                  text: `France · Trophées GDC · ${allClans.length} clans chargés`,
+                }
               : null,
           );
         }
