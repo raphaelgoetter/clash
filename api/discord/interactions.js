@@ -5991,6 +5991,7 @@ export default async function handler(req, res) {
           const metrics = getStatsClanMetrics(member, scenario.key);
           return {
             ...member,
+            period: metrics.period,
             avgFame: metrics.avgFame,
             pointsPerDeck: metrics.pointsPerDeck,
           };
@@ -6037,10 +6038,14 @@ export default async function handler(req, res) {
 
           const avgStr = fmt(m.avgFame);
           const ppdStr = fmt(m.pointsPerDeck);
+          const decksUsed = Number(m.period?.decksUsed);
+          const decksStr = Number.isFinite(decksUsed)
+            ? ` (${Math.round(decksUsed)})`
+            : "";
 
           const parts = [newIcon, reliabilityStr].filter(Boolean);
-          const prefix = parts.length ? " " + parts.join(" ") + " ·" : "";
-          const body = " " + "\u{1F3C6}" + avgStr + " · " + "\u{26A1}" + ppdStr;
+          const prefix = parts.length ? " " + parts.join(" ") : "";
+          const body = ` 🏆${avgStr} ⚡${ppdStr}${decksStr}`;
           return rank + ". " + m.name + prefix + body;
         });
 
@@ -6321,6 +6326,7 @@ export default async function handler(req, res) {
           const metrics = getStatsClanMetrics(member, scenario.key);
           return {
             ...member,
+            period: metrics.period,
             avgFame: metrics.avgFame,
             pointsPerDeck: metrics.pointsPerDeck,
           };
@@ -6352,10 +6358,14 @@ export default async function handler(req, res) {
 
           const avgStr = fmt(m.avgFame);
           const ppdStr = fmt(m.pointsPerDeck);
+          const decksUsed = Number(m.period?.decksUsed);
+          const decksStr = Number.isFinite(decksUsed)
+            ? ` (${Math.round(decksUsed)})`
+            : "";
 
           const parts = [newIcon, reliabilityStr].filter(Boolean);
-          const prefix = parts.length ? " " + parts.join(" ") + " ·" : "";
-          const body = " " + "\u{1F3C6}" + avgStr + " · " + "\u{26A1}" + ppdStr;
+          const prefix = parts.length ? " " + parts.join(" ") : "";
+          const body = ` 🏆${avgStr} ⚡${ppdStr}${decksStr}`;
           return rank + ". " + m.name + prefix + body;
         });
 
