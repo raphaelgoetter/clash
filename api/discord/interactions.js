@@ -1257,6 +1257,343 @@ async function buildLateReportPayload(resolved, clanVal) {
   }
 }
 
+function buildClanComponents(clanTag) {
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: 2,
+          label: "🔄 Rafraîchir",
+          custom_id: `clan_refresh:${clanTag}`,
+          disabled: false,
+        },
+      ],
+    },
+  ];
+}
+
+async function buildClanReportPayload(resolved) {
+  const isFamilyClan = ALLOWED_CLAN_TAGS.has(resolved.tag.toUpperCase());
+
+  try {
+    const analysisEndpoint = `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(
+      resolved.tag,
+    )}/analysis?fast=true&includeRaceGroup=false`;
+    const liteEndpoint = `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(
+      resolved.tag,
+    )}/lite`;
+
+    async function fetchJsonWithTimeout(endpoint, timeoutMs) {
+      const abortCtrl = new AbortController();
+      const abortTimer = setTimeout(() => abortCtrl.abort(), timeoutMs);
+      try {
+        const response = await fetch(endpoint, {
+          headers: { Accept: "application/json" },
+          signal: abortCtrl.signal,
+        });
+        return response;
+      } finally {
+        clearTimeout(abortTimer);
+      }
+    }
+
+    let apiResp = null;
+    let usedLiteFallback = false;
+
+    try {
+      apiResp = await fetchJsonWithTimeout(
+        isFamilyClan ? analysisEndpoint : liteEndpoint,
+        isFamilyClan ? 12000 : 18000,
+      );
+    } catch (fetchErr) {
+      if (isFamilyClan) {
+        usedLiteFallback = true;
+        try {
+          apiResp = await fetchJsonWithTimeout(liteEndpoint, 12000);
+        } catch (liteErr) {
+          const msg =
+            fetchErr.name === "AbortError" || liteErr.name === "AbortError"
+              ? `⏱️ L'analyse du clan a pris trop longtemps. Réessayez dans 30 secondes.`
+              : `Erreur réseau : ${liteErr.message}`;
+          return { kind: "error", content: msg };
+        }
+      } else {
+        const msg =
+          fetchErr.name === "AbortError"
+            ? `⏱️ L'analyse du clan a pris trop longtemps. Réessayez dans 30 secondes.`
+            : `Erreur réseau : ${fetchErr.message}`;
+        return { kind: "error", content: msg };
+      }
+    }
+
+    if (!apiResp.ok && isFamilyClan) {
+      usedLiteFallback = true;
+      try {
+        apiResp = await fetchJsonWithTimeout(liteEndpoint, 12000);
+      } catch (_) {
+        // Preserve original status message below.
+      }
+    }
+
+    if (!apiResp || !apiResp.ok) {
+      return {
+        kind: "error",
+        content: `Erreur API clan (${apiResp?.status ?? "inconnu"}). Réessayez dans quelques instants.`,
+      };
+    }
+
+    const analysis = await apiResp.json();
+    const clan = analysis.clan || {};
+    const members = analysis.members || [];
+    const liteMembers = analysis.isLite ? members : [];
+    const summary = analysis.summary || {};
+    const lastWarSummary = analysis.lastWarSummary || null;
+    const hasReliabilityDetails =
+      isFamilyClan && !analysis.isLite && !usedLiteFallback;
+
+    const TYPE_FR = {
+      open: "Ouvert",
+      inviteOnly: "Sur invitation",
+      closed: "Fermé",
+    };
+
+    const LEAGUE_ICON_SPECIFIC = {
+      "Or 2": "<:gold2:1506200349424488448>",
+      "Légendaire 1": "<:leg1:1506200350250762311>",
+      "Légendaire 2": "<:leg2:1506200352372822016>",
+    };
+    const LEAGUE_ICON_GENERIC = {
+      "Bronze 1": "<:bronze:1506201933331824721>",
+      "Bronze 2": "<:bronze:1506201933331824721>",
+      "Bronze 3": "<:bronze:1506201933331824721>",
+      "Argent 1": "<:silver:1506201931922800730>",
+      "Argent 2": "<:silver:1506201931922800730>",
+      "Argent 3": "<:silver:1506201931922800730>",
+      "Or 1": "<:gold:1506201934477004880>",
+      "Or 2": "<:gold:1506201934477004880>",
+      "Or 3": "<:gold:1506201934477004880>",
+      "Légendaire 1": "<:legendary1:1506218399498244166>",
+      "Légendaire 2": "<:legendary2:1506217437601992734>",
+      "Légendaire 3": "<:legendary3:1506218625508573225>",
+    };
+    function warLeagueLabel(trophies) {
+      const label = getLeagueName(trophies ?? 0, "fr") ?? "Bronze 1";
+      const icon = isFamilyClan
+        ? (LEAGUE_ICON_SPECIFIC[label] ?? LEAGUE_ICON_GENERIC[label])
+        : LEAGUE_ICON_GENERIC[label];
+      return icon ? `${icon} ${label}` : label;
+    }
+
+    const fmt = (n) =>
+      typeof n === "number" ? n.toLocaleString("fr-FR") : "—";
+    const fmtInt = (n) =>
+      Number.isFinite(n) ? Math.round(n).toLocaleString("fr-FR") : "—";
+    const avgScore = summary.avgScore ?? 0;
+    const embedColor = hasReliabilityDetails
+      ? avgScore >= 75
+        ? COLOR_MAP.green
+        : avgScore >= 56
+          ? COLOR_MAP.yellow
+          : avgScore >= 31
+            ? COLOR_MAP.orange
+            : COLOR_MAP.red
+      : 0x99aab5;
+
+    const MEMBER_LIMIT = 10;
+    const topReliable = hasReliabilityDetails
+      ? [...members]
+          .sort(
+            (a, b) => Number(b.reliability ?? 0) - Number(a.reliability ?? 0),
+          )
+          .slice(0, MEMBER_LIMIT)
+      : [];
+    const topRisky = hasReliabilityDetails
+      ? members
+          .filter(
+            (m) => m.verdict === "High risk" || m.verdict === "Extreme risk",
+          )
+          .sort(
+            (a, b) => Number(a.reliability ?? 0) - Number(b.reliability ?? 0),
+          )
+          .slice(0, MEMBER_LIMIT)
+      : [];
+    const newMembers = hasReliabilityDetails
+      ? members
+          .filter((m) => m.isNew)
+          .sort((a, b) => {
+            const aStreak = Number.isFinite(a.arrivalStreakInCurrentClan)
+              ? Number(a.arrivalStreakInCurrentClan)
+              : Number.POSITIVE_INFINITY;
+            const bStreak = Number.isFinite(b.arrivalStreakInCurrentClan)
+              ? Number(b.arrivalStreakInCurrentClan)
+              : Number.POSITIVE_INFINITY;
+            if (aStreak !== bStreak) return aStreak - bStreak;
+
+            const aWeeks = Number.isFinite(a.arrivalTotalWeeks)
+              ? Number(a.arrivalTotalWeeks)
+              : Number.POSITIVE_INFINITY;
+            const bWeeks = Number.isFinite(b.arrivalTotalWeeks)
+              ? Number(b.arrivalTotalWeeks)
+              : Number.POSITIVE_INFINITY;
+            if (aWeeks !== bWeeks) return aWeeks - bWeeks;
+
+            return Number(b.reliability ?? 0) - Number(a.reliability ?? 0);
+          })
+          .slice(0, MEMBER_LIMIT)
+      : [];
+
+    function memberLine(m) {
+      const icon = RELIABILITY_ICON[m.color] ?? RELIABILITY_ICON.orange;
+      const pct = Math.round(Number(m.reliability ?? 0));
+      return `- [${m.name}](${trustPlayerUrl(m.tag)}) · ${icon} ${pct}%`;
+    }
+
+    function formatMemberListValue(list, emptyText = "Aucun") {
+      if (!Array.isArray(list) || list.length === 0) return emptyText;
+
+      const lines = list.map(memberLine);
+      const MAX_FIELD_LEN = 1024;
+      let value = "";
+      let used = 0;
+
+      for (let i = 0; i < lines.length; i += 1) {
+        const candidate = value ? `${value}\n${lines[i]}` : lines[i];
+        if (candidate.length > MAX_FIELD_LEN) {
+          break;
+        }
+        value = candidate;
+        used = i + 1;
+      }
+
+      const remaining = lines.length - used;
+      if (remaining > 0) {
+        const suffix = `\n… +${remaining} autre${remaining > 1 ? "s" : ""}`;
+        if ((value + suffix).length <= MAX_FIELD_LEN) {
+          value += suffix;
+        } else if (value.length > suffix.length) {
+          value = `${value.slice(0, MAX_FIELD_LEN - suffix.length)}${suffix}`;
+        } else {
+          value = `… +${remaining} autre${remaining > 1 ? "s" : ""}`;
+        }
+      }
+
+      return value || emptyText;
+    }
+
+    // Champ 6 : Fiabilité (clan famille) ou Chef (clan externe)
+    const sixthField = hasReliabilityDetails
+      ? {
+          name: "Fiabilité",
+          value: `<:warn:1506174837519945800> **${avgScore}%**`,
+          inline: true,
+        }
+      : (() => {
+          const leader = liteMembers.find((m) => m.role === "leader");
+          const leaderValue = leader
+            ? `[${leader.name}](${trustPlayerUrl(leader.tag)})`
+            : "—";
+          return { name: "Chef", value: leaderValue, inline: true };
+        })();
+
+    const clanUrl = trustClanUrl(resolved.tag);
+    const fields = [
+      // Rangée 1 : Membres | Trophées GDC | Ligue
+      {
+        name: "Membres",
+        value: `<:members:1506175789731811399> ${clan.members ?? "?"} / 50`,
+        inline: true,
+      },
+      {
+        name: "Trophées GDC",
+        value: `<:trophy2:1493677804733337621> ${fmt(clan.clanWarTrophies)}`,
+        inline: true,
+      },
+      {
+        name: "Ligue",
+        value: warLeagueLabel(clan.clanWarTrophies ?? 0),
+        inline: true,
+      },
+      // Rangée 2 : Statut | Requis | Fiabilité/Chef
+      {
+        name: "Statut",
+        value: (() => {
+          const STATUS_ICON = {
+            open: "<:success:1499002702208958577>",
+            inviteOnly: "<:warning:1499002725965500577>",
+            closed: "<:error:1499002755841265826>",
+          };
+          const icon = STATUS_ICON[clan.type] ?? "";
+          const label = TYPE_FR[clan.type] ?? clan.type ?? "—";
+          return icon ? `${icon} ${label}` : label;
+        })(),
+        inline: true,
+      },
+      {
+        name: "Requis",
+        value: `<:trophy:1498645869224792105> ${fmt(clan.requiredTrophies)}`,
+        inline: true,
+      },
+      sixthField,
+      {
+        name: "Moyenne/joueur",
+        value: `${fmtInt(lastWarSummary?.averagePerPlayer)} pts`,
+        inline: true,
+      },
+      {
+        name: "Points/deck",
+        value: `${fmtInt(lastWarSummary?.pointsPerDeck)} pts`,
+        inline: true,
+      },
+      {
+        name: "​",
+        value: "​",
+        inline: true,
+      },
+    ];
+
+    // Rangée 3 : listes membres (uniquement pour les clans famille)
+    if (hasReliabilityDetails) {
+      fields.push({ name: "​", value: "​", inline: false });
+      fields.push({
+        name: `Top fiables (${topReliable.length})`,
+        value: formatMemberListValue(topReliable, "Aucun"),
+        inline: true,
+      });
+      fields.push({
+        name: `Top risqués (${topRisky.length})`,
+        value: formatMemberListValue(topRisky, "Aucun ✅"),
+        inline: true,
+      });
+      fields.push({
+        name: `Nouveaux (${newMembers.length})`,
+        value: formatMemberListValue(newMembers, "Aucun"),
+        inline: true,
+      });
+    }
+
+    const clanTag = (clan.tag ?? `#${resolved.tag}`).replace(/^#/, "");
+    const observedAt = await formatParisObservationTime();
+    const embed = {
+      title: `${clan.name ?? resolved.name} | #${clanTag}`,
+      url: clanUrl,
+      description: `${clan.description ?? ""}${usedLiteFallback ? "\n\n⚠️ Données de fiabilité temporairement indisponibles, affichage allégé." : ""}`,
+      color: embedColor,
+      fields,
+      footer: { text: `Observation du clan faite le ${observedAt}` },
+    };
+
+    return {
+      kind: "success",
+      embeds: [embed],
+      components: buildClanComponents(resolved.tag),
+    };
+  } catch (err) {
+    return { kind: "error", content: `Erreur : ${err.message}` };
+  }
+}
+
 function parseBattleTimestamp(value) {
   if (!value) return null;
   const d = new Date(value);
@@ -5765,355 +6102,26 @@ export default async function handler(req, res) {
       const clanVal = (clanOpt.value || "1").toString().trim();
       resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
     }
-    const isFamilyClan = ALLOWED_CLAN_TAGS.has(resolved.tag.toUpperCase());
 
     res.status(200).json({ type: 5 });
-    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
+    const webhookUrl = buildDiscordWebhookUrl(body);
 
     runBackground(async () => {
-      try {
-        const analysisEndpoint = `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(
-          resolved.tag,
-        )}/analysis?fast=true&includeRaceGroup=false`;
-        const liteEndpoint = `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(
-          resolved.tag,
-        )}/lite`;
-
-        async function fetchJsonWithTimeout(endpoint, timeoutMs) {
-          const abortCtrl = new AbortController();
-          const abortTimer = setTimeout(() => abortCtrl.abort(), timeoutMs);
-          try {
-            const response = await fetch(endpoint, {
-              headers: { Accept: "application/json" },
-              signal: abortCtrl.signal,
-            });
-            return response;
-          } finally {
-            clearTimeout(abortTimer);
-          }
-        }
-
-        let apiResp = null;
-        let usedLiteFallback = false;
-
-        try {
-          apiResp = await fetchJsonWithTimeout(
-            isFamilyClan ? analysisEndpoint : liteEndpoint,
-            isFamilyClan ? 12000 : 18000,
-          );
-        } catch (fetchErr) {
-          if (isFamilyClan) {
-            usedLiteFallback = true;
-            try {
-              apiResp = await fetchJsonWithTimeout(liteEndpoint, 12000);
-            } catch (liteErr) {
-              const msg =
-                fetchErr.name === "AbortError" || liteErr.name === "AbortError"
-                  ? `⏱️ L'analyse du clan a pris trop longtemps. Réessayez dans 30 secondes.`
-                  : `Erreur réseau : ${liteErr.message}`;
-              await fetch(webhookUrl, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ content: msg, flags: 64 }),
-              });
-              return;
-            }
-          } else {
-            const msg =
-              fetchErr.name === "AbortError"
-                ? `⏱️ L'analyse du clan a pris trop longtemps. Réessayez dans 30 secondes.`
-                : `Erreur réseau : ${fetchErr.message}`;
-            await fetch(webhookUrl, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ content: msg, flags: 64 }),
-            });
-            return;
-          }
-        }
-
-        if (!apiResp.ok && isFamilyClan) {
-          usedLiteFallback = true;
-          try {
-            apiResp = await fetchJsonWithTimeout(liteEndpoint, 12000);
-          } catch (_) {
-            // Preserve original status message below.
-          }
-        }
-
-        if (!apiResp || !apiResp.ok) {
-          await fetch(webhookUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              content: `Erreur API clan (${apiResp?.status ?? "inconnu"}). Réessayez dans quelques instants.`,
-              flags: 64,
-            }),
-          });
-          return;
-        }
-
-        const analysis = await apiResp.json();
-        const clan = analysis.clan || {};
-        const members = analysis.members || [];
-        const liteMembers = analysis.isLite ? members : [];
-        const summary = analysis.summary || {};
-        const lastWarSummary = analysis.lastWarSummary || null;
-        const hasReliabilityDetails =
-          isFamilyClan && !analysis.isLite && !usedLiteFallback;
-
-        const TYPE_FR = {
-          open: "Ouvert",
-          inviteOnly: "Sur invitation",
-          closed: "Fermé",
-        };
-
-        const LEAGUE_ICON_SPECIFIC = {
-          "Or 2": "<:gold2:1506200349424488448>",
-          "Légendaire 1": "<:leg1:1506200350250762311>",
-          "Légendaire 2": "<:leg2:1506200352372822016>",
-        };
-        const LEAGUE_ICON_GENERIC = {
-          "Bronze 1": "<:bronze:1506201933331824721>",
-          "Bronze 2": "<:bronze:1506201933331824721>",
-          "Bronze 3": "<:bronze:1506201933331824721>",
-          "Argent 1": "<:silver:1506201931922800730>",
-          "Argent 2": "<:silver:1506201931922800730>",
-          "Argent 3": "<:silver:1506201931922800730>",
-          "Or 1": "<:gold:1506201934477004880>",
-          "Or 2": "<:gold:1506201934477004880>",
-          "Or 3": "<:gold:1506201934477004880>",
-          "Légendaire 1": "<:legendary1:1506218399498244166>",
-          "Légendaire 2": "<:legendary2:1506217437601992734>",
-          "Légendaire 3": "<:legendary3:1506218625508573225>",
-        };
-        function warLeagueLabel(trophies) {
-          const label = getLeagueName(trophies ?? 0, "fr") ?? "Bronze 1";
-          const icon = isFamilyClan
-            ? (LEAGUE_ICON_SPECIFIC[label] ?? LEAGUE_ICON_GENERIC[label])
-            : LEAGUE_ICON_GENERIC[label];
-          return icon ? `${icon} ${label}` : label;
-        }
-
-        const fmt = (n) =>
-          typeof n === "number" ? n.toLocaleString("fr-FR") : "—";
-        const fmtInt = (n) =>
-          Number.isFinite(n) ? Math.round(n).toLocaleString("fr-FR") : "—";
-        const avgScore = summary.avgScore ?? 0;
-        const embedColor = hasReliabilityDetails
-          ? avgScore >= 75
-            ? COLOR_MAP.green
-            : avgScore >= 56
-              ? COLOR_MAP.yellow
-              : avgScore >= 31
-                ? COLOR_MAP.orange
-                : COLOR_MAP.red
-          : 0x99aab5;
-
-        const MEMBER_LIMIT = 10;
-        const topReliable = hasReliabilityDetails
-          ? [...members]
-              .sort(
-                (a, b) =>
-                  Number(b.reliability ?? 0) - Number(a.reliability ?? 0),
-              )
-              .slice(0, MEMBER_LIMIT)
-          : [];
-        const topRisky = hasReliabilityDetails
-          ? members
-              .filter(
-                (m) =>
-                  m.verdict === "High risk" || m.verdict === "Extreme risk",
-              )
-              .sort(
-                (a, b) =>
-                  Number(a.reliability ?? 0) - Number(b.reliability ?? 0),
-              )
-              .slice(0, MEMBER_LIMIT)
-          : [];
-        const newMembers = hasReliabilityDetails
-          ? members
-              .filter((m) => m.isNew)
-              .sort((a, b) => {
-                const aStreak = Number.isFinite(a.arrivalStreakInCurrentClan)
-                  ? Number(a.arrivalStreakInCurrentClan)
-                  : Number.POSITIVE_INFINITY;
-                const bStreak = Number.isFinite(b.arrivalStreakInCurrentClan)
-                  ? Number(b.arrivalStreakInCurrentClan)
-                  : Number.POSITIVE_INFINITY;
-                if (aStreak !== bStreak) return aStreak - bStreak;
-
-                const aWeeks = Number.isFinite(a.arrivalTotalWeeks)
-                  ? Number(a.arrivalTotalWeeks)
-                  : Number.POSITIVE_INFINITY;
-                const bWeeks = Number.isFinite(b.arrivalTotalWeeks)
-                  ? Number(b.arrivalTotalWeeks)
-                  : Number.POSITIVE_INFINITY;
-                if (aWeeks !== bWeeks) return aWeeks - bWeeks;
-
-                return Number(b.reliability ?? 0) - Number(a.reliability ?? 0);
-              })
-              .slice(0, MEMBER_LIMIT)
-          : [];
-
-        function memberLine(m) {
-          const icon = RELIABILITY_ICON[m.color] ?? RELIABILITY_ICON.orange;
-          const pct = Math.round(Number(m.reliability ?? 0));
-          return `- [${m.name}](${trustPlayerUrl(m.tag)}) · ${icon} ${pct}%`;
-        }
-
-        function formatMemberListValue(list, emptyText = "Aucun") {
-          if (!Array.isArray(list) || list.length === 0) return emptyText;
-
-          const lines = list.map(memberLine);
-          const MAX_FIELD_LEN = 1024;
-          let value = "";
-          let used = 0;
-
-          for (let i = 0; i < lines.length; i += 1) {
-            const candidate = value ? `${value}\n${lines[i]}` : lines[i];
-            if (candidate.length > MAX_FIELD_LEN) {
-              break;
-            }
-            value = candidate;
-            used = i + 1;
-          }
-
-          const remaining = lines.length - used;
-          if (remaining > 0) {
-            const suffix = `\n… +${remaining} autre${remaining > 1 ? "s" : ""}`;
-            if ((value + suffix).length <= MAX_FIELD_LEN) {
-              value += suffix;
-            } else if (value.length > suffix.length) {
-              value = `${value.slice(0, MAX_FIELD_LEN - suffix.length)}${suffix}`;
-            } else {
-              value = `… +${remaining} autre${remaining > 1 ? "s" : ""}`;
-            }
-          }
-
-          return value || emptyText;
-        }
-
-        // Champ 6 : Fiabilité (clan famille) ou Chef (clan externe)
-        const sixthField = hasReliabilityDetails
-          ? {
-              name: "Fiabilité",
-              value: `<:warn:1506174837519945800> **${avgScore}%**`,
-              inline: true,
-            }
-          : (() => {
-              const leader = liteMembers.find((m) => m.role === "leader");
-              const leaderValue = leader
-                ? `[${leader.name}](${trustPlayerUrl(leader.tag)})`
-                : "—";
-              return { name: "Chef", value: leaderValue, inline: true };
-            })();
-
-        const clanUrl = trustClanUrl(resolved.tag);
-        const fields = [
-          // Rangée 1 : Membres | Trophées GDC | Ligue
-          {
-            name: "Membres",
-            value: `<:members:1506175789731811399> ${clan.members ?? "?"} / 50`,
-            inline: true,
-          },
-          {
-            name: "Trophées GDC",
-            value: `<:trophy2:1493677804733337621> ${fmt(clan.clanWarTrophies)}`,
-            inline: true,
-          },
-          {
-            name: "Ligue",
-            value: warLeagueLabel(clan.clanWarTrophies ?? 0),
-            inline: true,
-          },
-          // Rangée 2 : Statut | Requis | Fiabilité/Chef
-          {
-            name: "Statut",
-            value: (() => {
-              const STATUS_ICON = {
-                open: "<:success:1499002702208958577>",
-                inviteOnly: "<:warning:1499002725965500577>",
-                closed: "<:error:1499002755841265826>",
-              };
-              const icon = STATUS_ICON[clan.type] ?? "";
-              const label = TYPE_FR[clan.type] ?? clan.type ?? "—";
-              return icon ? `${icon} ${label}` : label;
-            })(),
-            inline: true,
-          },
-          {
-            name: "Requis",
-            value: `<:trophy:1498645869224792105> ${fmt(clan.requiredTrophies)}`,
-            inline: true,
-          },
-          sixthField,
-          {
-            name: "Moyenne/joueur",
-            value: `${fmtInt(lastWarSummary?.averagePerPlayer)} pts`,
-            inline: true,
-          },
-          {
-            name: "Points/deck",
-            value: `${fmtInt(lastWarSummary?.pointsPerDeck)} pts`,
-            inline: true,
-          },
-          {
-            name: "\u200b",
-            value: "\u200b",
-            inline: true,
-          },
-        ];
-
-        // Rangée 3 : listes membres (uniquement pour les clans famille)
-        if (hasReliabilityDetails) {
-          fields.push({ name: "\u200b", value: "\u200b", inline: false });
-          fields.push({
-            name: `Top fiables (${topReliable.length})`,
-            value: formatMemberListValue(topReliable, "Aucun"),
-            inline: true,
-          });
-          fields.push({
-            name: `Top risqués (${topRisky.length})`,
-            value: formatMemberListValue(topRisky, "Aucun ✅"),
-            inline: true,
-          });
-          fields.push({
-            name: `Nouveaux (${newMembers.length})`,
-            value: formatMemberListValue(newMembers, "Aucun"),
-            inline: true,
-          });
-        }
-
-        // Lien cliquable en bas
-        fields.push({
-          name: "\u200b",
-          value: `[Plus d'infos sur TrustRoyale ↗](${clanUrl})`,
-          inline: false,
-        });
-
-        const clanTag = (clan.tag ?? `#${resolved.tag}`).replace(/^#/, "");
-        const embed = {
-          title: `${clan.name ?? resolved.name} | #${clanTag}`,
-          url: clanUrl,
-          description: `${clan.description ?? ""}${usedLiteFallback ? "\n\n⚠️ Données de fiabilité temporairement indisponibles, affichage allégé." : ""}`,
-          color: embedColor,
-          fields,
-        };
-
-        await fetch(webhookUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ embeds: [embed] }),
-        });
-      } catch (err) {
+      const payload = await buildClanReportPayload(resolved);
+      if (payload.kind === "success") {
         await fetch(webhookUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            content: `Erreur : ${err.message}`,
-            flags: 64,
+            embeds: payload.embeds,
+            components: payload.components,
           }),
+        });
+      } else {
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: payload.content, flags: 64 }),
         });
       }
     });
@@ -6861,6 +6869,70 @@ export default async function handler(req, res) {
         const txt = await r.text().catch(() => "");
         console.error(
           `[late_refresh] PATCH Discord HTTP ${r.status}:`,
+          txt.slice(0, 300),
+        );
+      }
+    });
+
+    return;
+  }
+
+  // ── MessageComponent : bouton refresh /clan ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("clan_refresh:")
+  ) {
+    const parts = body.data.custom_id.split(":");
+    const tag = (parts[1] || "").toUpperCase();
+    if (!tag) {
+      return res
+        .status(200)
+        .json({ type: 4, data: { content: "Erreur interne.", flags: 64 } });
+    }
+
+    const FAMILY_NAME_BY_TAG = {
+      Y8JUPC9C: "La Resistance",
+      LRQP20V9: "Les Resistants",
+      QU9UQJRL: "Les Revoltes",
+    };
+    const resolved = { tag, name: FAMILY_NAME_BY_TAG[tag] ?? `#${tag}` };
+
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    const originalWebhookUrl = webhookUrl
+      ? `${webhookUrl}/messages/@original`
+      : null;
+
+    if (!originalWebhookUrl) {
+      return res.status(200).json({
+        type: 4,
+        data: {
+          content:
+            "Configuration Discord incomplète : impossible de répondre à l'interaction.",
+          flags: 64,
+        },
+      });
+    }
+
+    // Pas de cache pour /clan : toujours un recalcul complet, comme la commande initiale
+    res.status(200).json({ type: 6 });
+
+    runBackground(async () => {
+      const payload = await buildClanReportPayload(resolved);
+      const patchBody =
+        payload.kind === "success"
+          ? { embeds: payload.embeds, components: payload.components }
+          : { content: payload.content, embeds: [], components: [] };
+
+      const r = await fetch(originalWebhookUrl, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patchBody),
+      });
+      if (!r.ok) {
+        const txt = await r.text().catch(() => "");
+        console.error(
+          `[clan_refresh] PATCH Discord HTTP ${r.status}:`,
           txt.slice(0, 300),
         );
       }
