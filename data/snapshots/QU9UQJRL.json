@@ -7905,7 +7905,7 @@
           "start": "2026-07-04T09:42:00.000Z",
           "end": "2026-07-05T09:41:59.999Z"
         },
-        "snapshotTime": "2026-07-04T13:30:48.517Z",
+        "snapshotTime": "2026-07-04T14:31:00.719Z",
         "snapshotBackupTime": "2026-07-04T09:42:38.652Z",
         "decks": {
           "#8VP9UJV9L": 4,
@@ -7916,6 +7916,8 @@
           "#VPGCQPR9U": 4,
           "#YGP0RQC0Q": 4,
           "#UVGPPVQ8Q": 3,
+          "#GYCJPJL0L": 2,
+          "#UYRR99RL8": 2,
           "#C0RRPJYV9": 1
         },
         "hourlyCumul": [],
@@ -7970,7 +7972,7 @@
           "#VY0LYQQVJ": 0,
           "#20G8R9R8CJ": 0,
           "#LJYGJYCYC": 0,
-          "#UYRR99RL8": 300,
+          "#UYRR99RL8": 600,
           "#R2C89LVU": 400,
           "#9GP9LQ9P": 400,
           "#LJPP988L": 400,
@@ -7980,7 +7982,7 @@
           "#20002JY8J0": 450,
           "#20V20RG08G": 500,
           "#YGP0RQC0Q": 1500,
-          "#GYCJPJL0L": 700,
+          "#GYCJPJL0L": 1200,
           "#UC9LU0L90": 800,
           "#VPGCQPR9U": 1500,
           "#G2VVUJLLQ": 950,
@@ -7999,7 +8001,8 @@
           "#UPC0Y0LRQ": 1,
           "#YGP0RQC0Q": 1,
           "#J008G9CLJ": 1,
-          "#V9RL22GYQ": 1
+          "#V9RL22GYQ": 1,
+          "#GYCJPJL0L": 1
         },
         "_totalDonationsByTag": {},
         "duelsComplete": true,
@@ -8055,7 +8058,7 @@
           "#VY0LYQQVJ": 0,
           "#20G8R9R8CJ": 0,
           "#LJYGJYCYC": 0,
-          "#UYRR99RL8": 2,
+          "#UYRR99RL8": 4,
           "#R2C89LVU": 4,
           "#9GP9LQ9P": 4,
           "#LJPP988L": 4,
@@ -8065,7 +8068,7 @@
           "#20002JY8J0": 3,
           "#20V20RG08G": 4,
           "#YGP0RQC0Q": 8,
-          "#GYCJPJL0L": 7,
+          "#GYCJPJL0L": 9,
           "#UC9LU0L90": 8,
           "#VPGCQPR9U": 11,
           "#G2VVUJLLQ": 6,
@@ -8079,7 +8082,7 @@
           "#UVGPPVQ8Q": 11
         },
         "periodPointsEarned": 11600,
-        "snapshotCount": 32
+        "snapshotCount": 36
       },
       {
         "warDay": "sunday",

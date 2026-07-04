@@ -13809,16 +13809,18 @@
           "start": "2026-07-04T09:44:00.000Z",
           "end": "2026-07-05T09:43:59.999Z"
         },
-        "snapshotTime": "2026-07-04T13:30:47.528Z",
+        "snapshotTime": "2026-07-04T14:30:59.641Z",
         "snapshotBackupTime": "2026-07-04T10:39:05.508Z",
         "decks": {
           "#2U9QL8Q89": 4,
+          "#82UPUGYP": 4,
           "#8Q2UQL2R": 4,
           "#8QVRJYVYU": 4,
           "#8Y90VQYP9": 4,
           "#8YGY2RPCC": 4,
           "#9CYUGPQ0C": 4,
           "#GGRLYR8PL": 4,
+          "#GYU0VLGL": 4,
           "#JCCQY0U9G": 4,
           "#LV0VUJVU": 4,
           "#PP09UGJLL": 4,
@@ -13890,7 +13892,7 @@
           "#8YGY2RPCC": 1550,
           "#8Y90VQYP9": 1800,
           "#RVRL8J892": 1200,
-          "#82UPUGYP": 1200,
+          "#82UPUGYP": 1900,
           "#GGVQJLG9": 1200,
           "#82JPJ9J98": 1200,
           "#UP9YJV080": 2000,
@@ -13918,7 +13920,7 @@
           "#VPGYR2990": 1550,
           "#LRPQL8VCL": 1600,
           "#Q8J99R8G": 1600,
-          "#GYU0VLGL": 1600,
+          "#GYU0VLGL": 2150,
           "#9VQYC9GJQ": 1600,
           "#PG9QUCP": 1700,
           "#JCCQY0U9G": 1800,
@@ -13943,7 +13945,9 @@
           "#VGJ9LL8VC": 1,
           "#Q8GYUQ8GG": 1,
           "#PP09UGJLL": 1,
-          "#QCJJ8JG0": 1
+          "#QCJJ8JG0": 1,
+          "#82UPUGYP": 1,
+          "#GYU0VLGL": 1
         },
         "_totalDonationsByTag": {},
         "duelsComplete": true,
@@ -14004,7 +14008,7 @@
           "#8YGY2RPCC": 12,
           "#8Y90VQYP9": 12,
           "#RVRL8J892": 8,
-          "#82UPUGYP": 8,
+          "#82UPUGYP": 12,
           "#GGVQJLG9": 8,
           "#82JPJ9J98": 8,
           "#UP9YJV080": 12,
@@ -14032,7 +14036,7 @@
           "#VPGYR2990": 8,
           "#LRPQL8VCL": 8,
           "#Q8J99R8G": 8,
-          "#GYU0VLGL": 8,
+          "#GYU0VLGL": 12,
           "#9VQYC9GJQ": 8,
           "#PG9QUCP": 8,
           "#JCCQY0U9G": 12,
@@ -14041,7 +14045,7 @@
           "#YRJP9V2L9": 12
         },
         "periodPointsEarned": 31000,
-        "snapshotCount": 76
+        "snapshotCount": 84
       },
       {
         "warDay": "sunday",
