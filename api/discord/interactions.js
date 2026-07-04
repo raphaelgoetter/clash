@@ -433,16 +433,15 @@ function getCachedCompareAnalysis(clanTag) {
     compareAnalysisCache.delete(key);
     return null;
   }
-  return entry.data;
+  return entry;
 }
 
 function setCachedCompareAnalysis(clanTag, data) {
   const key = getCompareCacheKey(clanTag);
-  if (!key || !data) return;
-  compareAnalysisCache.set(key, {
-    cachedAt: Date.now(),
-    data,
-  });
+  if (!key || !data) return null;
+  const cachedAt = Date.now();
+  compareAnalysisCache.set(key, { cachedAt, data });
+  return cachedAt;
 }
 
 async function computeCompareIsWarPeriod(clanTag, data) {
@@ -453,6 +452,35 @@ async function computeCompareIsWarPeriod(clanTag, data) {
   );
   const dow = new Date(Date.now() - warResetOffsetMs(clanTag)).getUTCDay();
   return (dow === 0 || dow >= 4) && data?.isWarPeriod === true;
+}
+
+const FR_MONTHS = [
+  "janvier",
+  "février",
+  "mars",
+  "avril",
+  "mai",
+  "juin",
+  "juillet",
+  "août",
+  "septembre",
+  "octobre",
+  "novembre",
+  "décembre",
+];
+
+// Heure de l'observation (Paris) — réutilise le décalage UTC→Paris déjà
+// exposé par dateUtils.js (parisOffsetMs), pas de dépendance au fuseau du runtime.
+async function formatParisObservationTime(date = new Date()) {
+  const { parisOffsetMs } = await import(
+    "../../backend/services/dateUtils.js"
+  );
+  const paris = new Date(date.getTime() + parisOffsetMs(date));
+  const day = paris.getUTCDate();
+  const month = FR_MONTHS[paris.getUTCMonth()];
+  const hour = paris.getUTCHours();
+  const minute = String(paris.getUTCMinutes()).padStart(2, "0");
+  return `${day} ${month} à ${hour}h${minute}`;
 }
 
 function sortCompareRaceGroup(raceGroup, sortMode, isWarPeriod) {
@@ -472,15 +500,23 @@ function sortCompareRaceGroup(raceGroup, sortMode, isWarPeriod) {
   });
 }
 
-function buildCompareFooter({ sortMode, isWarPeriod, anyClinched }) {
-  if (!isWarPeriod) return "Trié par Total Dernière GDC";
-  if (sortMode === "current") return "Trié par Points actuels";
+function buildCompareFooter({ sortMode, isWarPeriod, anyClinched, observedAt }) {
+  const suffix = observedAt ? ` Fait le ${observedAt}.` : "";
+  if (!isWarPeriod) return `Trié par Total Dernière GDC.${suffix}`;
+  if (sortMode === "current") return `Trié par Points actuels.${suffix}`;
   return anyClinched
-    ? "Trié par Projection · ✅ = victoire mathématiquement assurée"
-    : "Trié par Projection en fin de journée";
+    ? `Trié par Projection · ✅ = victoire mathématiquement assurée.${suffix}`
+    : `Trié par Projection en fin de journée.${suffix}`;
 }
 
-function buildComparePayload({ data, resolved, clanVal, sortMode, isWarPeriod }) {
+function buildComparePayload({
+  data,
+  resolved,
+  clanVal,
+  sortMode,
+  isWarPeriod,
+  observedAt,
+}) {
   const raceGroup = Array.isArray(data?.raceGroup) ? data.raceGroup : [];
   const ownTag = `#${resolved.tag}`.toUpperCase();
   const isColosseum = data?.isColosseum === true;
@@ -547,7 +583,12 @@ function buildComparePayload({ data, resolved, clanVal, sortMode, isWarPeriod })
   });
 
   const anyClinched = isWarPeriod && sorted.some((c) => c.isClinchedWin);
-  const footerText = buildCompareFooter({ sortMode, isWarPeriod, anyClinched });
+  const footerText = buildCompareFooter({
+    sortMode,
+    isWarPeriod,
+    anyClinched,
+    observedAt,
+  });
 
   return {
     embeds: [
@@ -5273,18 +5314,22 @@ export default async function handler(req, res) {
           return;
         }
 
-        setCachedCompareAnalysis(resolved.tag, data);
+        const cachedAt = setCachedCompareAnalysis(resolved.tag, data);
         const isWarPeriod = await computeCompareIsWarPeriod(
           resolved.tag,
           data,
         );
         const sortMode = isWarPeriod ? "projection" : "current";
+        const observedAt = await formatParisObservationTime(
+          new Date(cachedAt),
+        );
         const payload = buildComparePayload({
           data,
           resolved,
           clanVal,
           sortMode,
           isWarPeriod,
+          observedAt,
         });
 
         await fetch(webhookUrl, {
@@ -6674,19 +6719,26 @@ export default async function handler(req, res) {
       });
     }
 
-    const cachedData = getCachedCompareAnalysis(clanTag);
-    const shouldFetch = action === "compare_refresh" || !cachedData;
+    const cachedEntry = getCachedCompareAnalysis(clanTag);
+    const shouldFetch = action === "compare_refresh" || !cachedEntry;
 
     if (!shouldFetch) {
-      const isWarPeriod = await computeCompareIsWarPeriod(clanTag, cachedData);
+      const isWarPeriod = await computeCompareIsWarPeriod(
+        clanTag,
+        cachedEntry.data,
+      );
+      const observedAt = await formatParisObservationTime(
+        new Date(cachedEntry.cachedAt),
+      );
       return res.status(200).json({
         type: 7,
         data: buildComparePayload({
-          data: cachedData,
+          data: cachedEntry.data,
           resolved,
           clanVal,
           sortMode,
           isWarPeriod,
+          observedAt,
         }),
       });
     }
@@ -6694,7 +6746,8 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 6 });
 
     runBackground(async () => {
-      let data = cachedData;
+      let data = cachedEntry?.data;
+      let cachedAt = cachedEntry?.cachedAt;
       const endpoint = `${TRUST_ROYALE_URL}/api/clan/${encodeURIComponent(
         clanTag,
       )}/analysis?includeRaceGroup=true&includeTopPlayers=false&includeUncomplete=false&fast=true&force=true`;
@@ -6716,7 +6769,7 @@ export default async function handler(req, res) {
           return;
         }
         data = await apiResp.json();
-        setCachedCompareAnalysis(clanTag, data);
+        cachedAt = setCachedCompareAnalysis(clanTag, data);
       } catch (err) {
         const message =
           err?.name === "AbortError"
@@ -6733,11 +6786,19 @@ export default async function handler(req, res) {
       }
 
       const isWarPeriod = await computeCompareIsWarPeriod(clanTag, data);
+      const observedAt = await formatParisObservationTime(new Date(cachedAt));
       await fetch(originalWebhookUrl, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
-          buildComparePayload({ data, resolved, clanVal, sortMode, isWarPeriod }),
+          buildComparePayload({
+            data,
+            resolved,
+            clanVal,
+            sortMode,
+            isWarPeriod,
+            observedAt,
+          }),
         ),
       });
     });
