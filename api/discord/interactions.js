@@ -5079,6 +5079,14 @@ export default async function handler(req, res) {
           ]),
         );
 
+        const day1Snap = weekSnaps[0];
+        const day1DecksByTag = new Map(
+          Object.entries(day1Snap?.decks || {}).map(([tag, value]) => [
+            normalizeTag(tag),
+            Number.isFinite(value) ? Math.max(0, Math.min(4, value)) : 0,
+          ]),
+        );
+
         const failedPlayers = Array.from(snapshotMembersByTag.entries())
           .map(([normalizedTag, member]) => ({
             name: member.name || "Inconnu",
@@ -5089,9 +5097,12 @@ export default async function handler(req, res) {
               : 0,
             arrivalStreak: member.arrivalStreakInCurrentClan,
             arrivalWeeks: member.arrivalTotalWeeks,
+            day1Decks: day1DecksByTag.has(normalizedTag)
+              ? day1DecksByTag.get(normalizedTag)
+              : null,
           }))
           .filter((p) => {
-            const isNewArrival = isJoinedThisWar(p.arrivalStreak);
+            const isNewArrival = isJoinedThisWar(p.arrivalStreak, p.day1Decks);
             return p.decks < 4 && !isNewArrival;
           })
           .sort((a, b) =>

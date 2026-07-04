@@ -8,7 +8,11 @@
  * Détermine si un joueur est arrivé en cours de GDC.
  *
  * Logique :
- * - streakInCurrentClan === 0           → 0 semaines complètes dans le clan
+ * - streakInCurrentClan === 0 et day1Decks > 0
+ *                                          → arrivé le jour 1 mais a quand même
+ *                                            pu jouer ses decks ce jour-là
+ *                                          → pas pénalisé (a eu toute la GDC)
+ * - streakInCurrentClan === 0 (sinon)   → 0 semaines complètes dans le clan
  *                                          → arrivé cette semaine
  * - streakInCurrentClan === 1 et pas de deck joué au jour 1 (jeudi)
  *                                          → arrivé en début de GDC
@@ -33,7 +37,10 @@
  */
 export function isJoinedThisWar(streakInCurrentClan, day1Decks = null, totalDecks = null, maxDecks = 16) {
   if (streakInCurrentClan == null) return false;
-  if (streakInCurrentClan === 0) return true;
+  if (streakInCurrentClan === 0) {
+    if (day1Decks != null && day1Decks > 0) return false;
+    return true;
+  }
   if (streakInCurrentClan === 1 && day1Decks != null && day1Decks === 0) return true;
   if (streakInCurrentClan === 1 && day1Decks == null) {
     if (totalDecks != null) return totalDecks < maxDecks;
