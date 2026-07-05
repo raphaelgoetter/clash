@@ -2145,6 +2145,16 @@ function renderPlayerResults(data) {
         /([0-9.,]+)\s*total cw2 wins \(cap 250\)/gi,
         (_, n) => `${n} victoires CW2 totales (max 250)`,
       )
+      .replace(
+        /5-week window where only complete weeks count and missing weeks count as 0:/gi,
+        "Fenêtre de 5 semaines où seules les semaines complètes comptent et les semaines manquantes comptent 0 :",
+      )
+      .replace(
+        /based on\s*(\d+)\s*recovered week\(s\) from the gdc history screen\./gi,
+        (_, n) => `Basé sur ${n} semaine(s) récupérée(s) depuis l'écran d'historique GDC.`,
+      )
+      .replace(/last war: none/gi, "Dernière guerre : aucune")
+      .replace(/\brange\s*([\d,.  ]+)[–-]([\d,.  ]+)/gi, "plage $1–$2")
       .replace(/decks across/gi, "decks sur")
       .replace(/incomplete weeks?/gi, (m) =>
         m.toLowerCase().startsWith("incomplete")
@@ -2186,7 +2196,7 @@ function renderPlayerResults(data) {
         /(\d+)\s*inactive days?/gi,
         (_, n) => `${n} ${Number(n) > 1 ? "jours inactifs" : "jour inactif"}`,
       )
-      .replace(/last war: (\d{4}-\d{2}-\d{2})/gi, "dernière guerre : $1")
+      .replace(/last war: (\d{4}-\d{2}-\d{2})/gi, "Dernière guerre : $1")
       .replace(
         /\((\d+) day\(s\) ago\)/gi,
         (_, n) => `(il y a ${n} ${Number(n) > 1 ? "jours" : "jour"})`,
@@ -2350,6 +2360,7 @@ function renderPlayerResults(data) {
     .map((b) => {
       const labelText = scoreLabelMap[b.label] || b.label;
       const detailText = translateDetail(b.label, b.detail);
+      const explanationText = translateDetail(b.label, b.explanation);
       if (b.excluded) {
         return `
       <li class="score-row score-row-excluded">
@@ -2359,7 +2370,7 @@ function renderPlayerResults(data) {
         </div>
         <div class="sr-bar-bg"></div>
         <div class="sr-detail">${escHtml(detailText)}</div>
-        ${b.explanation ? `<div class="sr-explanation">${escHtml(b.explanation)}</div>` : ""}
+        ${explanationText ? `<div class="sr-explanation">${escHtml(explanationText)}</div>` : ""}
       </li>`;
       }
       const pct = Math.round((b.score / b.max) * 100);
@@ -2385,7 +2396,7 @@ function renderPlayerResults(data) {
           <div class="sr-bar-fill" style="width:${pct}%;background:${color}"></div>
         </div>
         <div class="sr-detail">${escHtml(detailText)}</div>
-        ${b.explanation ? `<div class="sr-explanation">${escHtml(b.explanation)}</div>` : ""}
+        ${explanationText ? `<div class="sr-explanation">${escHtml(explanationText)}</div>` : ""}
       </li>`;
     })
     .join("");
