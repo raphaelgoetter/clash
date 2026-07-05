@@ -631,6 +631,25 @@ function verifyDiscordSignature(signature, timestamp, rawBody) {
   }
 }
 
+const LEAGUE_ICON_SPECIFIC = {
+  "Or 2": "<:gold2:1506200349424488448>",
+  "Légendaire 1": "<:leg1:1506200350250762311>",
+  "Légendaire 2": "<:leg2:1506200352372822016>",
+};
+const LEAGUE_ICON_GENERIC = {
+  "Bronze 1": "<:bronze:1506201933331824721>",
+  "Bronze 2": "<:bronze:1506201933331824721>",
+  "Bronze 3": "<:bronze:1506201933331824721>",
+  "Argent 1": "<:silver:1506201931922800730>",
+  "Argent 2": "<:silver:1506201931922800730>",
+  "Argent 3": "<:silver:1506201931922800730>",
+  "Or 1": "<:gold:1506201934477004880>",
+  "Or 2": "<:gold:1506201934477004880>",
+  "Or 3": "<:gold:1506201934477004880>",
+  "Légendaire 1": "<:legendary1:1506218399498244166>",
+  "Légendaire 2": "<:legendary2:1506217437601992734>",
+  "Légendaire 3": "<:legendary3:1506218625508573225>",
+};
 function warLeagueLabel(trophies, isFamilyClan = false) {
   const label = getLeagueName(trophies ?? 0, "fr") ?? "Bronze 1";
   const icon = isFamilyClan
@@ -1359,33 +1378,6 @@ async function buildClanReportPayload(resolved) {
       closed: "Fermé",
     };
 
-    const LEAGUE_ICON_SPECIFIC = {
-      "Or 2": "<:gold2:1506200349424488448>",
-      "Légendaire 1": "<:leg1:1506200350250762311>",
-      "Légendaire 2": "<:leg2:1506200352372822016>",
-    };
-    const LEAGUE_ICON_GENERIC = {
-      "Bronze 1": "<:bronze:1506201933331824721>",
-      "Bronze 2": "<:bronze:1506201933331824721>",
-      "Bronze 3": "<:bronze:1506201933331824721>",
-      "Argent 1": "<:silver:1506201931922800730>",
-      "Argent 2": "<:silver:1506201931922800730>",
-      "Argent 3": "<:silver:1506201931922800730>",
-      "Or 1": "<:gold:1506201934477004880>",
-      "Or 2": "<:gold:1506201934477004880>",
-      "Or 3": "<:gold:1506201934477004880>",
-      "Légendaire 1": "<:legendary1:1506218399498244166>",
-      "Légendaire 2": "<:legendary2:1506217437601992734>",
-      "Légendaire 3": "<:legendary3:1506218625508573225>",
-    };
-    function warLeagueLabel(trophies) {
-      const label = getLeagueName(trophies ?? 0, "fr") ?? "Bronze 1";
-      const icon = isFamilyClan
-        ? (LEAGUE_ICON_SPECIFIC[label] ?? LEAGUE_ICON_GENERIC[label])
-        : LEAGUE_ICON_GENERIC[label];
-      return icon ? `${icon} ${label}` : label;
-    }
-
     const fmt = (n) =>
       typeof n === "number" ? n.toLocaleString("fr-FR") : "—";
     const fmtInt = (n) =>
@@ -1512,7 +1504,7 @@ async function buildClanReportPayload(resolved) {
       },
       {
         name: "Ligue",
-        value: warLeagueLabel(clan.clanWarTrophies ?? 0),
+        value: warLeagueLabel(clan.clanWarTrophies ?? 0, isFamilyClan),
         inline: true,
       },
       // Rangée 2 : Statut | Requis | Fiabilité/Chef
