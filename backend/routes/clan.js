@@ -1019,10 +1019,12 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     fetchClanMembers(clanTag),
   ]);
 
+  // Charge toujours le cache précédent (même en forceRefresh) pour ne jamais perdre
+  // la mémoire d'ancienneté des membres (firstSeenAt), indépendante du recalcul des scores.
+  const priorCache = await loadClanCache(clanTag).catch(() => null);
+
   // Reuse existing persisted analysis cache to avoid refetching players on every call.
-  const existingCache = forceRefresh
-    ? null
-    : await loadClanCache(clanTag).catch(() => null);
+  const existingCache = forceRefresh ? null : priorCache;
   const membersRaw = existingCache?.membersRaw
     ? { ...existingCache.membersRaw }
     : {};
@@ -1034,6 +1036,21 @@ export async function buildClanAnalysis(clanTag, options = {}) {
   const existingMemberAnalysis = new Map(
     (existingCache?.members || []).map((member) => [member.tag, member]),
   );
+
+  // Ancienneté réelle des membres : première fois où ce tag a été vu dans le cache
+  // de ce clan, indépendamment de la participation aux GDC. Survit au forceRefresh.
+  const priorFirstSeenByTag = new Map(
+    (priorCache?.members || []).map((member) => [
+      member.tag,
+      member.firstSeenAt || null,
+    ]),
+  );
+  const priorTagsSeen = new Set(
+    (priorCache?.members || []).map((member) => member.tag),
+  );
+  // Membres déjà connus avant l'introduction de firstSeenAt : on les backdate pour
+  // éviter de les taguer "nouveau" au premier déploiement de ce correctif.
+  const LEGACY_BACKFILL_DATE_ISO = "2026-01-01T00:00:00.000Z";
 
   const nowMs = Date.now();
   const membersToFetch = members.filter((m) => {
@@ -1620,11 +1637,19 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       verdictKey,
       color,
       isNew = false,
-      isNewFromCache = null,
       warHistory = null,
       scoreSource = "clan",
       playerAnalysis = null;
     let memberWarScore = null;
+
+    // Ancienneté réelle : conserve la date de première apparition, backdate les membres
+    // déjà connus avant ce correctif, sinon c'est une vraie première apparition.
+    const priorFirstSeenAt = priorFirstSeenByTag.get(m.tag);
+    const firstSeenAt = priorFirstSeenAt
+      ? priorFirstSeenAt
+      : priorTagsSeen.has(m.tag)
+        ? LEGACY_BACKFILL_DATE_ISO
+        : new Date(nowMs).toISOString();
 
     // Resolve full player profile (for badges) and battle log from fetch results or existing cache.
     const memberData = memberDataByTag[m.tag] || {
@@ -1702,9 +1727,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         // still allow fresh computation (not strict override) for isNew.
         playerScoreOverride = false;
       }
-      if (typeof cachedMember.isNew === "boolean") {
-        isNewFromCache = cachedMember.isNew;
-      }
     } else if (
       cachedMember &&
       Number.isFinite(cachedMember.reliability) &&
@@ -1776,9 +1798,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       if (!hasFamilyWeek) {
         hasEnoughHistory = false;
       }
-
-      const isNewClanArrivee =
-        (wh?.streakInCurrentClan ?? 0) < 2 && (wh?.totalWeeks ?? 0) > 1;
 
       // For transfer players, we first evaluate using available family/current clan history.
       // If still insufficient, try fetching the member-specific battle log to recover non-family transfer history.
@@ -1945,38 +1964,11 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       if (playerAnalysis.warHistory) warHistory = playerAnalysis.warHistory;
     }
 
-    // Determine new member flag by shared policy.
-    if (raceLogUnavailable) {
-      if (typeof isNewFromCache === "boolean") {
-        isNew = isNewFromCache;
-      } else {
-        isNew = false;
-      }
-    } else if (warHistory == null) {
-      // Avoid global false positives when war history is missing; fall back to cached state if available.
-      if (typeof isNewFromCache === "boolean") {
-        isNew = isNewFromCache;
-      } else {
-        isNew = false;
-      }
-    } else {
-      isNew = computeIsNewPlayer(warHistory, memberWarScore);
-    }
-
-    // Ensure we don't flag long‑inactive members as "new" for non BattleLog players.
-    if (isNew && m.lastSeen) {
-      const lastSeenDate = new Date(
-        m.lastSeen.replace(
-          /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})\.(\d{3})Z$/,
-          "$1-$2-$3T$4:$5:$6.$7Z",
-        ),
-      );
-      const lastSeenDays =
-        (Date.now() - lastSeenDate.getTime()) / (1000 * 60 * 60 * 24);
-      if (lastSeenDays > 7) {
-        isNew = false;
-      }
-    }
+    // Determine new member flag from real tenure (firstSeenAt), pas de la participation GDC.
+    const NEW_MEMBER_WINDOW_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours
+    isNew = firstSeenAt
+      ? nowMs - Date.parse(firstSeenAt) < NEW_MEMBER_WINDOW_MS
+      : computeIsNewPlayer(warHistory, memberWarScore); // filet de sécurité si firstSeenAt indisponible
 
     // Calcul des jours GDC de la semaine courante
     const warDays = (() => {
@@ -2044,6 +2036,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       verdictKey,
       color,
       isNew,
+      firstSeenAt,
       discord: discordLinked,
       warDays,
       warHistory,
@@ -2079,6 +2072,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       ...fallback,
       reliabilitySource: "fallback",
       isNew: false,
+      firstSeenAt:
+        priorFirstSeenByTag.get(members[idx].tag) || LEGACY_BACKFILL_DATE_ISO,
       warDays: null,
       arrivalStreakInCurrentClan: null,
       arrivalTotalWeeks: null,
