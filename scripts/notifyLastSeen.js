@@ -14,6 +14,7 @@ import { fileURLToPath } from "url";
 import path from "path";
 import fetch from "node-fetch";
 import { parseClashDate, MS_PER_DAY } from "../backend/services/dateUtils.js";
+import { resolveMembersChannelId } from "../backend/services/discordChannels.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CACHE_DIR = path.join(
@@ -264,7 +265,7 @@ async function main() {
   let postedCount = 0;
 
   for (const [clanTag, rule] of Object.entries(CLAN_RULES)) {
-    const channelId = process.env[`DISCORD_CHANNEL_MEMBERS_${clanTag}`];
+    const channelId = resolveMembersChannelId(clanTag);
     if (!channelId) {
       throw new Error(`Variable manquante: DISCORD_CHANNEL_MEMBERS_${clanTag}`);
     }

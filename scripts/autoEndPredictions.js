@@ -14,6 +14,7 @@ dotenv.config({ path: "./.env" });
 
 import fetch from "node-fetch";
 import { FAMILY_CLAN_TAGS } from "../backend/services/warHistory.js";
+import { resolveMembersChannelId } from "../backend/services/discordChannels.js";
 
 const CLAN_NAMES = {
   Y8JUPC9C: "La Resistance",
@@ -69,10 +70,6 @@ async function getClanRoleId(clanTag) {
   return role?.id ?? null;
 }
 
-function getChannelId(clanTag) {
-  return process.env[`DISCORD_CHANNEL_MEMBERS_${clanTag}`];
-}
-
 function formatFame(n) {
   return Number.isFinite(n) ? n.toLocaleString("fr-FR") : "0";
 }
@@ -89,7 +86,7 @@ async function main() {
   }
 
   for (const clanTag of FAMILY_CLAN_TAGS) {
-    const channelId = getChannelId(clanTag);
+    const channelId = resolveMembersChannelId(clanTag);
     if (!channelId) {
       console.warn(`[${clanTag}] Pas de channel configuré, ignoré.`);
       continue;

@@ -20,6 +20,7 @@ import { fetchClanMembers } from "../backend/services/clashApi.js";
 import { getPlayerAnalysis } from "../backend/services/playerAnalysis.js";
 import { getDiscordLinks } from "../backend/services/discordLinks.js";
 import { ALLOWED_CLANS } from "../backend/routes/clan.js";
+import { resolveMembersChannelId } from "../backend/services/discordChannels.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CACHE_DIR = path.join(
@@ -213,7 +214,7 @@ async function postDiscordEmbed(
   promotions,
   demotions,
 ) {
-  const channelId = process.env[`DISCORD_CHANNEL_MEMBERS_${tag}`];
+  const channelId = resolveMembersChannelId(tag);
   const token = process.env.DISCORD_TOKEN;
 
   const hasArrivals = arrivals.length > 0;

@@ -27,6 +27,7 @@ import {
   fetchBattleLog,
 } from "../backend/services/clashApi.js";
 import { loadSnapshots } from "../backend/services/snapshot.js";
+import { resolveMembersChannelId } from "../backend/services/discordChannels.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CACHE_DIR = path.join(
@@ -815,7 +816,7 @@ async function postWarSummary(
   apiWeekFame = null, // clan.fame depuis raceLog[0] (cumul total pts de bataille semaine)
   apiWeekDecks = null, // sum(participants[].decksUsed) depuis raceLog[0]
 ) {
-  const channelId = process.env[`DISCORD_CHANNEL_MEMBERS_${tag}`];
+  const channelId = resolveMembersChannelId(tag);
   const token = process.env.DISCORD_TOKEN;
   const { warDay } = dayEntry;
   const isLastDay = warDay === "sunday";
