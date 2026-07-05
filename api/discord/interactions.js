@@ -1474,6 +1474,13 @@ async function buildClanReportPayload(resolved) {
       return value || emptyText;
     }
 
+    function findLeaderValue() {
+      const leader = (hasReliabilityDetails ? members : liteMembers).find(
+        (m) => m.role === "leader",
+      );
+      return leader ? `[${leader.name}](${trustPlayerUrl(leader.tag)})` : "—";
+    }
+
     // Champ 6 : Fiabilité (clan famille) ou Chef (clan externe)
     const sixthField = hasReliabilityDetails
       ? {
@@ -1481,13 +1488,7 @@ async function buildClanReportPayload(resolved) {
           value: `<:warn:1506174837519945800> **${avgScore}%**`,
           inline: true,
         }
-      : (() => {
-          const leader = liteMembers.find((m) => m.role === "leader");
-          const leaderValue = leader
-            ? `[${leader.name}](${trustPlayerUrl(leader.tag)})`
-            : "—";
-          return { name: "Chef", value: leaderValue, inline: true };
-        })();
+      : { name: "Chef", value: findLeaderValue(), inline: true };
 
     const clanUrl = trustClanUrl(resolved.tag);
     const fields = [
@@ -1538,11 +1539,9 @@ async function buildClanReportPayload(resolved) {
         value: `${fmtInt(lastWarSummary?.pointsPerDeck)} pts`,
         inline: true,
       },
-      {
-        name: "​",
-        value: "​",
-        inline: true,
-      },
+      hasReliabilityDetails
+        ? { name: "Chef", value: findLeaderValue(), inline: true }
+        : { name: "​", value: "​", inline: true },
     ];
 
     // Rangée 3 : listes membres (uniquement pour les clans famille)
