@@ -14343,12 +14343,14 @@
           "start": "2026-07-05T09:44:00.000Z",
           "end": "2026-07-06T09:43:59.999Z"
         },
-        "snapshotTime": null,
+        "snapshotTime": "2026-07-05T11:30:55.576Z",
         "snapshotBackupTime": "2026-07-05T10:42:56.800Z",
         "decks": {
           "#82JPJ9J98": 4,
+          "#9CYUGPQ0C": 4,
           "#JCCQY0U9G": 4,
-          "#LV0VUJVU": 4
+          "#LV0VUJVU": 4,
+          "#QYGYV8R8Y": 4
         },
         "hourlyCumul": [],
         "_cumulFame": {
@@ -14401,7 +14403,7 @@
           "#90QVR8R90": 1500,
           "#U2UYYCQVG": 1500,
           "#8YGY2RPCC": 1550,
-          "#9CYUGPQ0C": 1600,
+          "#9CYUGPQ0C": 2200,
           "#VRQYP2RRV": 1600,
           "#8R0LR8GYC": 1600,
           "#29QRJRLY0": 1650,
@@ -14417,7 +14419,7 @@
           "#2U9QL8Q89": 1850,
           "#82UPUGYP": 1900,
           "#GGRLYR8PL": 1900,
-          "#QYGYV8R8Y": 1900,
+          "#QYGYV8R8Y": 2600,
           "#22RGGVYP": 1950,
           "#RQCCJJ2JQ": 2000,
           "#GGVQJLG9": 2000,
@@ -14444,7 +14446,10 @@
           "#82JPJ9J98": 2700
         },
         "duelsTodayByTag": {
-          "#82JPJ9J98": 1
+          "#82JPJ9J98": 1,
+          "#8VQLJLR0": 1,
+          "#9CYUGPQ0C": 1,
+          "#QYGYV8R8Y": 1
         },
         "_totalDonationsByTag": {},
         "duelsComplete": true,
@@ -14499,7 +14504,7 @@
           "#90QVR8R90": 12,
           "#U2UYYCQVG": 8,
           "#8YGY2RPCC": 12,
-          "#9CYUGPQ0C": 12,
+          "#9CYUGPQ0C": 16,
           "#VRQYP2RRV": 12,
           "#8R0LR8GYC": 12,
           "#29QRJRLY0": 12,
@@ -14515,7 +14520,7 @@
           "#2U9QL8Q89": 12,
           "#82UPUGYP": 12,
           "#GGRLYR8PL": 12,
-          "#QYGYV8R8Y": 12,
+          "#QYGYV8R8Y": 16,
           "#22RGGVYP": 12,
           "#RQCCJJ2JQ": 12,
           "#GGVQJLG9": 12,
@@ -14542,7 +14547,7 @@
           "#82JPJ9J98": 16
         },
         "periodPointsEarned": 31300,
-        "snapshotCount": 12
+        "snapshotCount": 20
       }
     ]
   }
