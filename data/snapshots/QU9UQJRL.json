@@ -8299,13 +8299,14 @@
           "start": "2026-07-05T09:42:00.000Z",
           "end": "2026-07-06T09:41:59.999Z"
         },
-        "snapshotTime": "2026-07-05T16:22:48.601Z",
+        "snapshotTime": "2026-07-05T17:26:11.464Z",
         "snapshotBackupTime": "2026-07-05T10:42:57.737Z",
         "decks": {
           "#8VP9UJV9L": 4,
           "#C0RRPJYV9": 4,
           "#J008G9CLJ": 4,
           "#JVRP8QPRU": 4,
+          "#LQPRLQJCQ": 4,
           "#R2C89LVU": 4,
           "#UVGPPVQ8Q": 4,
           "#UYRR99RL8": 4,
@@ -8389,7 +8390,7 @@
           "#GYCJPJL0L": 2050,
           "#V0VLJQCJU": 2000,
           "#J008G9CLJ": 2200,
-          "#LQPRLQJCQ": 1800,
+          "#LQPRLQJCQ": 2400,
           "#C0RRPJYV9": 2200,
           "#8VP9UJV9L": 2400,
           "#UVGPPVQ8Q": 2600,
@@ -8481,7 +8482,7 @@
           "#GYCJPJL0L": 14,
           "#V0VLJQCJU": 16,
           "#J008G9CLJ": 16,
-          "#LQPRLQJCQ": 12,
+          "#LQPRLQJCQ": 16,
           "#C0RRPJYV9": 15,
           "#8VP9UJV9L": 16,
           "#UVGPPVQ8Q": 16,
@@ -8491,7 +8492,7 @@
           "#VVJVVCQVQ": 0
         },
         "periodPointsEarned": 10925,
-        "snapshotCount": 47
+        "snapshotCount": 51
       }
     ]
   }
