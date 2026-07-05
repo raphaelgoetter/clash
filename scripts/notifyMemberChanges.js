@@ -131,30 +131,26 @@ const RELIABILITY_BADGES = {
   red: "<:red:1506174836102139944>",
 };
 
+// Libellés courts (format embed) par clé de verdict — le verdict lui-même
+// (couleur, seuils) est calculé une seule fois en amont par warScoring.js /
+// playerAnalysis.js ; on ne fait ici que l'afficher, jamais le recalculer.
+const VERDICT_SHORT_LABELS = {
+  highReliability: "Fiable",
+  lowRisk: "Faible",
+  highRisk: "Élevé",
+  extremeRisk: "Extrême",
+};
+
 function formatMemberLine(m) {
-  const playerUrl = `https://trustroyale.vercel.app/fr/player/${m.tag.replace(/^#/, "")}`;
+  const playerUrl = `https://trustroyale.vercel.app/player/${m.tag.replace(/^#/, "")}`;
   let reliabilityStr = "";
 
   const scoreObj = m.analysis?.warScore ?? m.analysis?.reliability;
   if (scoreObj) {
-    const s = scoreObj;
-    const pct = Math.round(s.pct ?? 0);
-    let verdict = s.verdict || "";
-    let emoji = "⚪";
-
-    if (pct >= 75) {
-      emoji = RELIABILITY_BADGES.green;
-      verdict = "Fiable";
-    } else if (pct >= 61) {
-      emoji = RELIABILITY_BADGES.yellow;
-      verdict = "Faible";
-    } else if (pct >= 31) {
-      emoji = RELIABILITY_BADGES.orange;
-      verdict = "Élevé";
-    } else {
-      emoji = RELIABILITY_BADGES.red;
-      verdict = "Extrême";
-    }
+    const pct = Math.round(scoreObj.pct ?? 0);
+    const emoji = RELIABILITY_BADGES[scoreObj.color] ?? RELIABILITY_BADGES.red;
+    const verdict =
+      VERDICT_SHORT_LABELS[scoreObj.verdictKey] ?? scoreObj.verdict ?? "";
 
     reliabilityStr = ` · ${emoji} ${verdict} (${pct}%)`;
   }
@@ -193,7 +189,7 @@ function formatRole(role) {
 }
 
 function formatRoleChangeLine(change) {
-  const playerUrl = `https://trustroyale.vercel.app/fr/player/${change.tag.replace(/^#/, "")}`;
+  const playerUrl = `https://trustroyale.vercel.app/player/${change.tag.replace(/^#/, "")}`;
   return `**[${change.name}](${playerUrl})** (${formatRole(change.oldRole)} ⇢ ${formatRole(change.newRole)})`;
 }
 

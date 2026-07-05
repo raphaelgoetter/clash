@@ -42,6 +42,7 @@ import {
   computeWarScore,
   computeWarReliabilityFallback,
   estimateWinsFromFame,
+  VERDICT_BY_KEY,
 } from "./warScoring.js";
 import {
   buildFamilyWarHistory,
@@ -427,22 +428,15 @@ export function computeMemberReliability(member) {
 
   const score = Math.round(trophyPart + expPart);
 
-  let verdict, color;
-  if (score >= 75) {
-    verdict = "High reliability";
-    color = "green";
-  } else if (score >= 61) {
-    verdict = "Low risk";
-    color = "yellow";
-  } else if (score >= 31) {
-    verdict = "High risk";
-    color = "orange";
-  } else {
-    verdict = "Extreme risk";
-    color = "red";
-  }
+  let verdictKey;
+  if (score >= 75) verdictKey = "highReliability";
+  else if (score >= 61) verdictKey = "lowRisk";
+  else if (score >= 31) verdictKey = "highRisk";
+  else verdictKey = "extremeRisk";
 
-  return { score, verdict, color };
+  const { verdict, color } = VERDICT_BY_KEY[verdictKey];
+
+  return { score, verdict, verdictKey, color };
 }
 
 /**
@@ -452,7 +446,7 @@ export function computeMemberReliability(member) {
  */
 export function analyzeClanMembers(members) {
   return members.map((m) => {
-    const { score, verdict, color } = computeMemberReliability(m);
+    const { score, verdict, verdictKey, color } = computeMemberReliability(m);
     return {
       name: m.name,
       tag: m.tag,
@@ -464,6 +458,7 @@ export function analyzeClanMembers(members) {
       expLevel: m.expLevel ?? 1,
       reliability: score,
       verdict,
+      verdictKey,
       color,
     };
   });

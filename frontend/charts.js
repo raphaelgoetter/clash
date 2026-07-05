@@ -48,19 +48,15 @@ export function destroyIfExists(canvasId) {
   if (existing) existing.destroy();
 }
 
-let chartTranslations = {
-  members: "Members",
-  memberPlural: "members",
-  memberSingular: "member",
-  highReliability: "High reliability",
-  moderateRisk: "Low risk",
-  highRisk: "High risk",
-  extremeRisk: "Extreme risk",
+const chartLabels = {
+  members: "Membres",
+  memberPlural: "entrées",
+  memberSingular: "Joueur",
+  highReliability: "Très fiable",
+  moderateRisk: "Risque faible",
+  highRisk: "Risque élevé",
+  extremeRisk: "Risque extrême",
 };
-
-export function setChartTranslations(trans) {
-  chartTranslations = { ...chartTranslations, ...trans };
-}
 
 // ── 1. Activity line chart (battles per day) ──────────────────
 
@@ -74,7 +70,7 @@ export function renderActivityChart(dailyActivity = []) {
 
   const labels = dailyActivity.map((d) => {
     const dt = new Date(d.date + "T00:00:00");
-    return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    return dt.toLocaleDateString("fr-FR", { month: "short", day: "numeric" });
   });
   const data = dailyActivity.map((d) => d.count);
 
@@ -89,7 +85,7 @@ export function renderActivityChart(dailyActivity = []) {
       labels,
       datasets: [
         {
-          label: "Battles",
+          label: "Combats",
           data,
           borderColor: "#7c3aed",
           backgroundColor: gradient,
@@ -109,7 +105,7 @@ export function renderActivityChart(dailyActivity = []) {
         tooltip: {
           callbacks: {
             label: (ctx) =>
-              ` ${ctx.parsed.y} battle${ctx.parsed.y !== 1 ? "s" : ""}`,
+              ` ${ctx.parsed.y} combat${ctx.parsed.y !== 1 ? "s" : ""}`,
           },
         },
       },
@@ -165,7 +161,7 @@ export function renderWarHistoryChart(weeks = []) {
       labels,
       datasets: [
         {
-          label: "Fame",
+          label: "Points",
           data: fameData,
           backgroundColor: fameData.map((f, idx) =>
             // grey out ignored or current live week
@@ -179,7 +175,7 @@ export function renderWarHistoryChart(weeks = []) {
           order: 2,
         },
         {
-          label: "Average",
+          label: "Moyenne",
           type: "line",
           data: fameData.map(() => Math.round(avg)),
           borderColor: "rgba(234,179,8,0.8)",
@@ -204,8 +200,8 @@ export function renderWarHistoryChart(weeks = []) {
                 row && row.decksUsed != null
                   ? ` — ${row.decksUsed}/16 decks`
                   : "";
-              const ignoreNote = row && row.ignored ? " (ignored)" : "";
-              return ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}${deckInfo}${ignoreNote}`;
+              const ignoreNote = row && row.ignored ? " (ignorée)" : "";
+              return ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString("fr-FR")}${deckInfo}${ignoreNote}`;
             },
           },
         },
@@ -231,7 +227,7 @@ export function renderWarHistoryChart(weeks = []) {
  */
 export function renderRaceTimeChart(
   buckets,
-  lastBucketRiskLabel = " ⚠️ risk (last slot)",
+  lastBucketRiskLabel = " ⚠️ risque (dernier créneau)",
   resetUtcMinutes = 580,
 ) {
   destroyIfExists("chart-race-time");
@@ -263,7 +259,7 @@ export function renderRaceTimeChart(
       labels,
       datasets: [
         {
-          label: "GDC decks",
+          label: "Decks GDC",
           data: buckets,
           backgroundColor: buckets.map((v, i) => {
             const isLastBucket = i === buckets.length - 1;
@@ -320,7 +316,7 @@ export function renderBattleLogBreakdownChart(breakdown) {
   if (!el) return;
 
   const keys = ["gdc", "ladder", "challenge", "friendly", "other"];
-  const labels = ["River Race", "Ladder", "Challenges", "Friendly", "Other"];
+  const labels = ["GDC", "Classé", "Défis", "Amical", "Autre"];
   const values = keys.map((k) => breakdown?.[k] ?? 0);
   const total = values.reduce((s, v) => s + v, 0);
 
@@ -507,7 +503,7 @@ export function renderClanBarChart(members) {
       labels,
       datasets: [
         {
-          label: chartTranslations.members,
+          label: chartLabels.members,
           data: buckets,
           backgroundColor: barColors,
           borderRadius: 5,
@@ -528,15 +524,15 @@ export function renderClanBarChart(members) {
               const o = bucketsByColor.orange[i] || 0;
               const r = bucketsByColor.red[i] || 0;
               const parts = [];
-              if (g) parts.push(`${g} ${chartTranslations.highReliability}`);
-              if (y) parts.push(`${y} ${chartTranslations.moderateRisk}`);
-              if (o) parts.push(`${o} ${chartTranslations.highRisk}`);
-              if (r) parts.push(`${r} ${chartTranslations.extremeRisk}`);
+              if (g) parts.push(`${g} ${chartLabels.highReliability}`);
+              if (y) parts.push(`${y} ${chartLabels.moderateRisk}`);
+              if (o) parts.push(`${o} ${chartLabels.highRisk}`);
+              if (r) parts.push(`${r} ${chartLabels.extremeRisk}`);
               const breakdown = parts.length ? ` (${parts.join(", ")})` : "";
               const memberWord =
                 total === 1
-                  ? chartTranslations.memberSingular
-                  : chartTranslations.memberPlural;
+                  ? chartLabels.memberSingular
+                  : chartLabels.memberPlural;
               return ` ${total} ${memberWord}${breakdown}`;
             },
           },
@@ -564,10 +560,10 @@ export function renderClanPieChart(summary) {
     type: "pie",
     data: {
       labels: [
-        chartTranslations.highReliability,
-        chartTranslations.moderateRisk,
-        chartTranslations.highRisk,
-        chartTranslations.extremeRisk,
+        chartLabels.highReliability,
+        chartLabels.moderateRisk,
+        chartLabels.highRisk,
+        chartLabels.extremeRisk,
       ],
       datasets: [
         {
@@ -595,8 +591,8 @@ export function renderClanPieChart(summary) {
             label: (ctx) => {
               const memberWord =
                 ctx.parsed === 1
-                  ? chartTranslations.memberSingular
-                  : chartTranslations.memberPlural;
+                  ? chartLabels.memberSingular
+                  : chartLabels.memberPlural;
               return ` ${ctx.label}: ${ctx.parsed} ${memberWord}`;
             },
           },

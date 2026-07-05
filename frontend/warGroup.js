@@ -22,9 +22,7 @@ const FAMILY_TAGS = new Set(["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"]);
  */
 function trustUrl(tag) {
   const clean = tag.replace("#", "").toUpperCase();
-  const lang = window.location.pathname.split("/").filter(Boolean)[0];
-  const validLang = lang === "en" || lang === "fr" ? lang : "fr";
-  return `/${validLang}/clan/${clean}`;
+  return `/clan/${clean}`;
 }
 
 /**
@@ -61,9 +59,8 @@ function fmtProjection(projectedFame, decksToday, targetDecksToday) {
  * Construit et injecte la carte "War Group" dans le DOM.
  *
  * @param {object} data — réponse de /api/clan/:tag/analysis
- * @param {Function} t  — fonction de traduction
  */
-export function renderRaceGroupCard(data, t, timerHelper) {
+export function renderRaceGroupCard(data, timerHelper) {
   const container = document.getElementById("card-war-group");
   if (!container) return;
 
@@ -88,9 +85,9 @@ export function renderRaceGroupCard(data, t, timerHelper) {
 
   // Titre et Description
   const titleEl = container.querySelector(".card-title");
-  if (titleEl) titleEl.textContent = t("warGroupTitle");
+  if (titleEl) titleEl.textContent = "Groupe de GDC actuel";
   const descEl = container.querySelector("#war-group-description");
-  if (descEl) descEl.textContent = t("warGroupDescription");
+  if (descEl) descEl.textContent = "Comparez les 5 clans du groupe de GDC actuel";
 
   // Trier : par victoire assurée puis projection en période de GDC, sinon par last war fame décroissant
   const sorted = [...raceGroup].sort((a, b) => {
@@ -156,16 +153,8 @@ export function renderRaceGroupCard(data, t, timerHelper) {
 
       let decksNowHtml = "";
       if (isWarPeriod) {
-        const engagementTooltip = engagementEstimate
-          ? t("warGroupEngagementTooltip")
-              .replace("{{active}}", engagementEstimate.activeMembers ?? "—")
-              .replace("{{roster}}", engagementEstimate.rosterSize ?? "—")
-          : t("warGroupEngagementTooltip")
-              .replace("{{active}}", "—")
-              .replace("{{roster}}", "—");
-        const tooltipText = t("warGroupDecksTooltip")
-          .replace("{{decks}}", decksTodayVal)
-          .replace("{{target}}", targetVal);
+        const engagementTooltip = `${engagementEstimate?.activeMembers ?? "—"} membres ayant joué au moins 1 deck cette semaine / ${engagementEstimate?.rosterSize ?? "—"} dans le clan`;
+        const tooltipText = `${decksTodayVal} decks / objectif de ${targetVal}`;
         decksNowHtml = `${showEngagement ? `<td class="war-group-engagement" title="${engagementTooltip}">${engagementVal}</td>` : ""}
         <td class="war-group-decks-now" title="${tooltipText}">
           <div class="wg-pbar-track">
@@ -195,10 +184,10 @@ export function renderRaceGroupCard(data, t, timerHelper) {
       if (isWarPeriod) {
         const isClinched = clan.isClinchedWin;
         const projVal = isClinched
-          ? t("warGroupClinchedLabel")
+          ? "✅ Victoire"
           : fmtProjection(clan.projectedFame, decksTodayVal, targetVal);
         const clinchedHtml = isClinched
-          ? ` <span class="war-group-clinched" title="${t("warGroupClinchedWin")}">${t("warGroupClinchedLabel")}</span>`
+          ? ` <span class="war-group-clinched" title="Victoire mathématiquement assurée">✅ Victoire</span>`
           : "";
         projectionHtml = `<td class="war-group-projection">${projVal}${isClinched ? "" : clinchedHtml}</td>`;
       }
@@ -231,15 +220,15 @@ export function renderRaceGroupCard(data, t, timerHelper) {
     <thead>
       <tr>
         <th class="war-group-rank-cell"></th>
-        <th class="war-group-name">${t("labelName")}</th>
-        ${!isWarPeriod ? `<th class="war-group-trophies">${t("labelWarTrophies")}</th>` : ""}
-        ${!isWarPeriod ? `<th class="war-group-prev-war">${t("warGroupPrevWar")}</th>` : ""}
-        ${!isWarPeriod ? `<th class="war-group-last-war">${t("warGroupLastWar")}</th>` : ""}
-        ${showEngagement ? `<th class="war-group-engagement">${t("warGroupEngagement")}</th>` : ""}
-        ${isWarPeriod ? `<th class="war-group-decks-now">${t("warGroupDecksToday")} <span>${timerHelper(data.clan?.warResetUtcMinutes)}</span></th>` : ""}
-        ${isWarPeriod ? `<th class="war-group-current-pts">${isColosseum ? t("warGroupCurrentPtsColosseum") : t("warGroupCurrentPts")}</th>` : ""}
-        ${isWarPeriod ? `<th class="war-group-avg-pts">${t("warGroupPtsPerDeck")}</th>` : ""}
-        ${isWarPeriod ? `<th class="war-group-projection">${t("warGroupProjection")}</th>` : ""}
+        <th class="war-group-name">Nom</th>
+        ${!isWarPeriod ? `<th class="war-group-trophies">Trophées de guerre</th>` : ""}
+        ${!isWarPeriod ? `<th class="war-group-prev-war">n-2 GDC</th>` : ""}
+        ${!isWarPeriod ? `<th class="war-group-last-war">Dernière GDC</th>` : ""}
+        ${showEngagement ? `<th class="war-group-engagement">Engagement GDC</th>` : ""}
+        ${isWarPeriod ? `<th class="war-group-decks-now">Decks <span>${timerHelper(data.clan?.warResetUtcMinutes)}</span></th>` : ""}
+        ${isWarPeriod ? `<th class="war-group-current-pts">${isColosseum ? "Pts actuels" : "Pts"}</th>` : ""}
+        ${isWarPeriod ? `<th class="war-group-avg-pts">Pts / Deck</th>` : ""}
+        ${isWarPeriod ? `<th class="war-group-projection">Projection</th>` : ""}
       </tr>
     </thead>
   `;

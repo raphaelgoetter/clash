@@ -218,10 +218,10 @@ async function renderDynamicPage(req, res, type) {
   }
 }
 
-app.get("/:lang(en|fr)/player/:tag", async (req, res) =>
+app.get("/player/:tag", async (req, res) =>
   renderDynamicPage(req, res, "player"),
 );
-app.get("/:lang(en|fr)/clan/:tag", async (req, res) =>
+app.get("/clan/:tag", async (req, res) =>
   renderDynamicPage(req, res, "clan"),
 );
 

@@ -127,11 +127,13 @@ Ne pas confondre `description` (4096) et `field.value` (1024) — pour une longu
 
 Utiliser des **sous-agents** (Task tool) pour exploration de code, recherche, revue, investigation — tout ce dont seul le résumé compte. Ne pas encombrer la conversation principale.
 
-## Internationalisation (i18n)
+## Langue
 
-- Sources : `frontend/public/lang/en.json` et `fr.json`
-- Utiliser `t('key')` côté JS
-- Ajouter les clés dans les deux fichiers pour toute nouvelle feature ou texte visible utilisateur
+TrustRoyale est exclusivement en français (web app et bot Discord) — pas de
+système multilingue, pas de dictionnaire de traduction. Tout texte visible
+utilisateur (UI, embeds Discord, messages d'erreur) doit être écrit en
+français directement dans le code, en littéral. Les URLs sont sans préfixe
+de langue (`/player/:tag`, `/clan/:tag`).
 
 <!-- VERCEL BEST PRACTICES START -->
 ## Best practices for developing on Vercel

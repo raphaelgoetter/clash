@@ -15,14 +15,117 @@ import { isWarWin } from "./battleLogUtils.js";
 
 // ── Helpers privés ────────────────────────────────────────────
 
-function scoreQuality(score, max) {
-  if (max <= 0) return "unknown";
-  const pct = (score / max) * 100;
-  if (pct >= 90) return "very good";
-  if (pct >= 75) return "good";
-  if (pct >= 50) return "average";
-  return "bad";
+function frNum(n) {
+  return Number(n ?? 0).toLocaleString("fr-FR");
 }
+
+function frDecimal(n, digits = 2) {
+  return Number(n ?? 0).toLocaleString("fr-FR", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
+}
+
+const QUALITY_LABELS = {
+  unknown: "inconnu",
+  veryGood: "très bon",
+  good: "bon",
+  average: "moyen",
+  bad: "faible",
+};
+
+function scoreQuality(score, max) {
+  if (max <= 0) return QUALITY_LABELS.unknown;
+  const pct = (score / max) * 100;
+  if (pct >= 90) return QUALITY_LABELS.veryGood;
+  if (pct >= 75) return QUALITY_LABELS.good;
+  if (pct >= 50) return QUALITY_LABELS.average;
+  return QUALITY_LABELS.bad;
+}
+
+// Verdict final selon le pourcentage — libellé affiché + clé stable pour le
+// matching côté frontend/bot (ne jamais matcher sur le texte affiché).
+const VERDICT_TIERS = [
+  {
+    min: 75,
+    verdict: "Très fiable",
+    verdictKey: "highReliability",
+    color: "green",
+  },
+  {
+    min: 56,
+    verdict: "Risque faible",
+    verdictKey: "lowRisk",
+    color: "yellow",
+  },
+  {
+    min: 31,
+    verdict: "Risque élevé",
+    verdictKey: "highRisk",
+    color: "orange",
+  },
+  {
+    min: 0,
+    verdict: "Risque extrême",
+    verdictKey: "extremeRisk",
+    color: "red",
+  },
+];
+
+function computeVerdict(pct) {
+  return (
+    VERDICT_TIERS.find((tier) => pct >= tier.min) ??
+    VERDICT_TIERS[VERDICT_TIERS.length - 1]
+  );
+}
+
+// Libellé + couleur par clé de verdict — pour les modules qui calculent leurs
+// propres seuils (ex. computeMemberReliability) mais doivent afficher le même texte.
+export const VERDICT_BY_KEY = Object.fromEntries(
+  VERDICT_TIERS.map((tier) => [
+    tier.verdictKey,
+    { verdict: tier.verdict, color: tier.color },
+  ]),
+);
+
+function cw2Remark(cw2Score) {
+  if (cw2Score >= 6) return "forte expérience en Guerre de Clans";
+  if (cw2Score >= 4) return "bonne expérience en Guerre de Clans";
+  if (cw2Score >= 2) return "un peu d'expérience en Guerre de Clans";
+  return "peu d'expérience en Guerre de Clans";
+}
+
+function clanDurationText(weeks) {
+  return weeks <= 0
+    ? "Moins d'une semaine"
+    : `${weeks} semaine${weeks > 1 ? "s" : ""}`;
+}
+
+function discordDetail(linked) {
+  return linked
+    ? "Compte Discord lié au serveur"
+    : "Compte Discord non lié (/discord-link)";
+}
+
+function lastSeenDetail(lastSeenDays, maxTierDays = 3) {
+  if (lastSeenDays < 1) return "Connecté au jeu dans les dernières 24 h";
+  if (lastSeenDays < maxTierDays)
+    return `Actif il y a ${frDecimal(Math.round(lastSeenDays * 10) / 10, 1)} jour(s)`;
+  if (lastSeenDays < 7) return `Actif il y a ${Math.round(lastSeenDays)} jour(s)`;
+  return `Dernière connexion il y a ${Math.round(lastSeenDays)} jour(s) ⚠️`;
+}
+
+// Libellés stables des critères du tableau de score (utilisés avec leur `key` associée).
+const LABELS = {
+  cw2Badge: "Badge CW2",
+  regularity: "Régularité",
+  stability: "Stabilité",
+  pointsPerDeck: "Points / deck",
+  experience: "Expérience",
+  discord: "Discord",
+  lastSeen: "Vu",
+  warActivity: "Activité de guerre",
+};
 
 function scorePointsPerDeck(pointsPerDeck, maxPoints = 4) {
   if (!Number.isFinite(pointsPerDeck) || pointsPerDeck <= 0) return 0;
@@ -97,7 +200,7 @@ function dailyWarReliabilityScore(warLog, clanTag = null) {
   }
 
   if (Object.keys(byDay).length === 0)
-    return { score: 0, detail: "No war battles in battle log", byDay };
+    return { score: 0, detail: "Aucun combat de guerre dans le journal de combats", byDay };
 
   // Détermine la fenêtre effective ancrée sur le dernier jour de guerre actif.
   // On n'inclut pas aujourd'hui si aucune bataille n'a encore eu lieu (journée en cours).
@@ -147,18 +250,18 @@ function dailyWarReliabilityScore(warLog, clanTag = null) {
     const d = new Date(iso);
     const opts = { month: "short", day: "numeric" };
     if (d.getFullYear() !== new Date().getFullYear()) opts.year = "numeric";
-    return d.toLocaleDateString(undefined, opts);
+    return d.toLocaleDateString("fr-FR", opts);
   }
   const parts = recentDays.map(([k, n]) => {
     let label;
-    if (k === todayWarDay) label = "today";
-    else if (k === yesterdayKey) label = "yesterday";
+    if (k === todayWarDay) label = "aujourd'hui";
+    else if (k === yesterdayKey) label = "hier";
     else label = fmtDate(k);
-    return `${n}× on ${label}`;
+    return `${n}× le ${label}`;
   });
   const totalBattles = Object.values(byDay).reduce((s, n) => s + n, 0);
   const activeDays = sortedDays.length;
-  const detail = `${parts.join(" · ")} — avg ${(avg * 4).toFixed(1)}/4 battles/day over ${window}-day window (${activeDays} active day${activeDays !== 1 ? "s" : ""}, ${totalBattles} total)`;
+  const detail = `${parts.join(" · ")} — moyenne ${(avg * 4).toFixed(1)} sur 4 batailles/jour sur une fenêtre de ${window} jour(s) (${activeDays} jour${activeDays !== 1 ? "s" : ""} actif${activeDays !== 1 ? "s" : ""}, ${totalBattles} au total)`;
 
   return { score, detail, byDay };
 }
@@ -215,7 +318,7 @@ export function estimateWinsFromFame(fame, decksUsed, boatAttacks) {
  * @param {object} player      - Player profile from Clash API
  * @param {object} warHistory  - Output of buildWarHistory()
  * @param {number|null} [warWinRate=null]  - Win rate on GDC battles (0-1).
- * @returns {{ total:number; maxScore:number; pct:number; verdict:string; color:string; breakdown:object[] }}
+ * @returns {{ total:number; maxScore:number; pct:number; verdict:string; verdictKey:string; color:string; breakdown:object[] }}
  */
 export function computeWarScore(
   player,
@@ -305,114 +408,91 @@ export function computeWarScore(
   const maxScore = 35 + (lastSeenScore !== null ? 5 : 0);
   const pct = Math.round((total / maxScore) * 100);
 
-  let verdict, color;
-  if (pct >= 75) {
-    verdict = "High reliability";
-    color = "green";
-  } else if (pct >= 56) {
-    verdict = "Low risk";
-    color = "yellow";
-  } else if (pct >= 31) {
-    verdict = "High risk";
-    color = "orange";
-  } else {
-    verdict = "Extreme risk";
-    color = "red";
-  }
+  const { verdict, verdictKey, color } = computeVerdict(pct);
 
   const warHistoryWeeks = warHistory?.streakInCurrentClan ?? 0;
   const regularityQuality = scoreQuality(regularite, 10);
   const efficiencyQuality = scoreQuality(efficiencyScore, 4);
-  const cw2Remark =
-    cw2Score >= 6
-      ? "strong experience in Clan Wars"
-      : cw2Score >= 4
-        ? "solid Clan Wars experience"
-        : cw2Score >= 2
-          ? "some Clan Wars experience"
-          : "limited Clan Wars background";
-  const clanDurationText =
-    warHistoryWeeks <= 0 ? "Less than one week" : `${warHistoryWeeks} week(s)`;
 
   const summary =
-    `Regularity: ${regularityQuality} (${regularite}/10 across ${regularityWindow.fullWeekCount}/5 full weeks: ${regularityWindowDetail}).\n` +
-    `Points / deck: ${efficiencyQuality} (${efficiencyScore}/4 from ${efficiencyHistory.pointsPerDeck.toFixed(2)} pts/deck across ${efficiencyHistory.recentWeeks.length} week(s)).\n` +
-    `CW2: ${cw2Remark}.\n` +
-    `In clan: ${clanDurationText}.`;
+    `Régularité : ${regularityQuality} (${regularite}/10 sur ${regularityWindow.fullWeekCount}/5 semaines complètes : ${regularityWindowDetail}).\n` +
+    `Points / deck : ${efficiencyQuality} (${efficiencyScore}/4 à partir de ${frDecimal(efficiencyHistory.pointsPerDeck)} pts/deck sur ${efficiencyHistory.recentWeeks.length} semaine(s)).\n` +
+    `CW2 : ${cw2Remark(cw2Score)}.\n` +
+    `Dans le clan : ${clanDurationText(warHistoryWeeks)}.`;
 
   const breakdown = [
     {
-      label: "CW2 badge",
+      key: "cw2Badge",
+      label: LABELS.cw2Badge,
       score: cw2Score,
       max: 8,
-      detail: `${cw2Wins.toLocaleString("en-US")} total CW2 wins (cap 250)`,
+      detail: `${frNum(cw2Wins)} victoires CW2 totales (max 250)`,
     },
     {
-      label: "Regularity",
+      key: "regularity",
+      label: LABELS.regularity,
       score: regularite,
       max: 10,
       detail: (() => {
         if (regularityWindow.recentWeeks.length === 0)
-          return "No completed week in this clan yet";
+          return "Aucune semaine terminée dans ce clan pour le moment";
         const suffix =
           weeksInClan <= 0
-            ? " — joined recently (< 1 week in this clan)"
-            : ` — member for ${weeksInClan} week${weeksInClan > 1 ? "s" : ""}`;
-        return `${regularityWindow.fullWeekCount}/5 full weeks (${regularityWindowDetail}; incomplete weeks count as 0)${suffix}`;
+            ? " — arrivé récemment (< 1 semaine dans le clan)"
+            : ` — membre depuis ${weeksInClan} semaine${weeksInClan > 1 ? "s" : ""}`;
+        return `${regularityWindow.fullWeekCount}/5 semaines complètes (${regularityWindowDetail} ; semaines incomplètes comptent 0)${suffix}`;
       })(),
     },
     {
-      label: "Stability",
+      key: "stability",
+      label: LABELS.stability,
       score: stabilite,
       max: 8,
       detail: (() => {
         const s = warHistory.streakInFamily ?? warHistory.streakInCurrentClan;
         const isApiMaxWeeks = s >= 10;
-        const base = `${isApiMaxWeeks ? "at least " : ""}${s} consecutive week${s !== 1 ? "s" : ""} in this clan or family`;
-        return s < 5 ? `${base} (full score at 5 wks)` : base;
+        const base = `${isApiMaxWeeks ? "au moins " : ""}${s} semaine${s !== 1 ? "s" : ""} consécutive${s !== 1 ? "s" : ""} dans le clan ou la famille`;
+        return s < 5 ? `${base} (score max à 5 semaines)` : base;
       })(),
     },
     {
-      label: "Points / Deck",
+      key: "pointsPerDeck",
+      label: LABELS.pointsPerDeck,
       score: efficiencyScore,
       max: 4,
       detail:
         efficiencyHistory.recentWeeks.length > 0
-          ? `${efficiencyHistory.totalFame.toLocaleString("en-US")} points / ${efficiencyHistory.totalDecks} decks (${efficiencyHistory.pointsPerDeck.toFixed(2)} pts/deck, range 100–180, last 3 completed weeks)`
-          : "No completed week with GDC data",
+          ? `${frNum(efficiencyHistory.totalFame)} points / ${efficiencyHistory.totalDecks} decks (${frDecimal(efficiencyHistory.pointsPerDeck)} pts/deck, plage 100–180, 3 dernières semaines terminées)`
+          : "Aucune semaine terminée avec données GDC",
     },
     {
-      label: "Experience",
+      key: "experience",
+      label: LABELS.experience,
       score: experience,
       max: 3,
-      detail: `${(player.trophies ?? 0).toLocaleString("en-US")} trophies (range 4000–14000)`,
+      detail: `${frNum(player.trophies ?? 0)} trophées (plage 4 000–14 000)`,
     },
     ...(lastSeenScore !== null
       ? [
           {
-            label: "Last Seen",
+            key: "lastSeen",
+            label: LABELS.lastSeen,
             score: lastSeenScore,
             max: 5,
-            detail:
-              lastSeenDays < 1
-                ? "today"
-                : lastSeenDays < 2
-                  ? "1 day"
-                  : `${Math.round(lastSeenDays)} days`,
+            detail: lastSeenDetail(lastSeenDays, 3),
           },
         ]
       : []),
     {
-      label: "Discord",
+      key: "discord",
+      label: LABELS.discord,
       score: discordScore,
       max: 2,
-      detail: discordLinked
-        ? "Discord account linked to the server"
-        : "Discord account not linked (/discord-link)",
+      detail: discordDetail(discordLinked),
     },
   ];
 
-  return { total, maxScore, pct, verdict, color, summary, breakdown };
+  return { total, maxScore, pct, verdict, verdictKey, color, summary, breakdown };
 }
 
 /**
@@ -551,134 +631,96 @@ export function computeWarReliabilityFallback(
   const maxScore = 37 + (lastSeenScore !== null ? 3 : 0);
   const pct = Math.round((total / maxScore) * 100);
 
-  let verdict, color;
-  if (pct >= 75) {
-    verdict = "High reliability";
-    color = "green";
-  } else if (pct >= 56) {
-    verdict = "Low risk";
-    color = "yellow";
-  } else if (pct >= 31) {
-    verdict = "High risk";
-    color = "orange";
-  } else {
-    verdict = "Extreme risk";
-    color = "red";
-  }
+  const { verdict, verdictKey, color } = computeVerdict(pct);
 
   const warHistoryWeeks = warHistory?.streakInCurrentClan ?? 0;
   const warActivityQuality = scoreQuality(activiteGDC, 8);
   const regularityQuality = scoreQuality(regulariteGDC, 10);
-  const cw2Remark =
-    cw2Score >= 6
-      ? "strong experience in Clan Wars"
-      : cw2Score >= 4
-        ? "solid Clan Wars experience"
-        : cw2Score >= 2
-          ? "some Clan Wars experience"
-          : "limited Clan Wars background";
-  const clanDurationText =
-    warHistoryWeeks <= 0 ? "Less than one week" : `${warHistoryWeeks} week(s)`;
 
-  const warActivitySummaryLine = `War Activity: ${warActivityQuality} (${activiteGDC}/8, ${recoveredWeeksCount}/5 recovered weeks: ${warHistoryActivityDetail}).`;
+  const warActivitySummaryLine = `Activité de guerre : ${warActivityQuality} (${activiteGDC}/8, ${recoveredWeeksCount}/5 semaines récupérées : ${warHistoryActivityDetail}).`;
 
-  const regularitySummaryLine = `Regularity: ${regularityQuality} (${regulariteGDC}/10, ${regularityWindow.fullWeekCount}/5 full weeks: ${regulariteGDCDetail}).`;
+  const regularitySummaryLine = `Régularité : ${regularityQuality} (${regulariteGDC}/10, ${regularityWindow.fullWeekCount}/5 semaines complètes : ${regulariteGDCDetail}).`;
 
   const efficiencySummaryLine =
     efficiencyHistory.recentWeeks.length > 0
-      ? `Points / deck: ${scoreQuality(efficiencyScore, 4)} (${efficiencyScore}/4 from ${efficiencyHistory.pointsPerDeck.toFixed(2)} pts/deck across ${efficiencyHistory.recentWeeks.length} completed week(s)).`
-      : `Points / deck: bad (0/4, no completed week with GDC data).`;
+      ? `Points / deck : ${scoreQuality(efficiencyScore, 4)} (${efficiencyScore}/4 à partir de ${frDecimal(efficiencyHistory.pointsPerDeck)} pts/deck sur ${efficiencyHistory.recentWeeks.length} semaine(s) terminée(s)).`
+      : `Points / deck : ${QUALITY_LABELS.bad} (0/4, aucune semaine terminée avec données GDC).`;
 
   const summary =
     `${warActivitySummaryLine}\n` +
     `${regularitySummaryLine}\n` +
     `${efficiencySummaryLine}\n` +
-    `Last war battle: ${lastWarDay || "none"}${daysSinceLastWar !== null ? ` (${daysSinceLastWar} day(s) ago)` : ""}.\n` +
-    `In clan: ${clanDurationText}.\nCW2: ${cw2Remark}.`;
+    `Dernière bataille de guerre : ${lastWarDay || "aucune"}${daysSinceLastWar !== null ? ` (il y a ${daysSinceLastWar} jour(s))` : ""}.\n` +
+    `Dans le clan : ${clanDurationText(warHistoryWeeks)}.\nCW2 : ${cw2Remark(cw2Score)}.`;
 
   return {
     total,
     maxScore,
     pct,
     verdict,
+    verdictKey,
     color,
     isFallback: true,
     summary,
     breakdown: [
       {
-        label: "CW2 badge",
+        key: "cw2Badge",
+        label: LABELS.cw2Badge,
         score: cw2Score,
         max: 10,
-        detail: `${cw2Wins.toLocaleString("en-US")} total CW2 wins (cap 250)`,
+        detail: `${frNum(cw2Wins)} victoires CW2 totales (max 250)`,
       },
       {
-        label: "War Activity",
+        key: "warActivity",
+        label: LABELS.warActivity,
         score: activiteGDC,
         max: 8,
         detail: warHistoryActivityDetail,
-        explanation: `Based on ${recoveredWeeksCount} recovered week(s) from the GDC history screen. Last war: ${lastWarDay || "none"}${daysSinceLastWar !== null ? ` (${daysSinceLastWar} day(s) ago)` : ""}.`,
+        explanation: `Basé sur ${recoveredWeeksCount} semaine(s) récupérée(s) depuis l'écran d'historique GDC. Dernière guerre : ${lastWarDay || "aucune"}${daysSinceLastWar !== null ? ` (il y a ${daysSinceLastWar} jour(s))` : ""}.`,
       },
       {
-        label: "Regularity",
+        key: "regularity",
+        label: LABELS.regularity,
         score: regulariteGDC,
         max: 10,
         detail: regulariteGDCDetail,
-        explanation: `5-week window where only complete weeks count and missing weeks count as 0: ${regulariteGDCDetail}.`,
+        explanation: `Fenêtre de 5 semaines où seules les semaines complètes comptent et les semaines manquantes comptent 0 : ${regulariteGDCDetail}.`,
       },
       {
-        label: "Points / Deck",
+        key: "pointsPerDeck",
+        label: LABELS.pointsPerDeck,
         score: efficiencyScore,
         max: 4,
         detail:
           efficiencyHistory.recentWeeks.length > 0
-            ? `${efficiencyHistory.totalFame.toLocaleString("en-US")} points / ${efficiencyHistory.totalDecks} decks (${efficiencyHistory.pointsPerDeck.toFixed(2)} pts/deck, range 100–180, last 3 completed weeks)`
-            : "No completed week with GDC data",
+            ? `${frNum(efficiencyHistory.totalFame)} points / ${efficiencyHistory.totalDecks} decks (${frDecimal(efficiencyHistory.pointsPerDeck)} pts/deck, plage 100–180, 3 dernières semaines terminées)`
+            : "Aucune semaine terminée avec données GDC",
       },
       ...(lastSeenScore !== null
         ? [
             {
-              label: "Last Seen",
+              key: "lastSeen",
+              label: LABELS.lastSeen,
               score: lastSeenScore,
               max: 3,
-              detail:
-                lastSeenDays < 1
-                  ? "Connecté au jeu dans les dernières 24 h"
-                  : lastSeenDays < 3
-                    ? `Actif il y a ${(Math.round(lastSeenDays * 10) / 10).toFixed(1)} jour(s)`
-                    : lastSeenDays < 7
-                      ? `Actif il y a ${Math.round(lastSeenDays)} jour(s)`
-                      : `Dernière connexion il y a ${Math.round(lastSeenDays)} jour(s) ⚠️`,
+              detail: lastSeenDetail(lastSeenDays, 3),
             },
           ]
         : []),
       {
-        label: "Experience",
+        key: "experience",
+        label: LABELS.experience,
         score: experience,
         max: 3,
-        detail: `${(player.trophies ?? 0).toLocaleString("en-US")} trophies (range 4,000–14,000)`,
+        detail: `${frNum(player.trophies ?? 0)} trophées (plage 4 000–14 000)`,
       },
       {
-        label: "Discord",
+        key: "discord",
+        label: LABELS.discord,
         score: discordScore,
         max: 2,
-        detail: discordLinked
-          ? "Discord account linked to the server"
-          : "Discord account not linked (/discord-link)",
+        detail: discordDetail(discordLinked),
       },
     ],
   };
-}
-
-// Legacy stability score (conservée pour rétrocompatibilité)
-export function computeStabilityScore(player) {
-  const totalDonations = player.totalDonations ?? player.donations ?? 0;
-  const battleCount = player.battleCount ?? 0;
-  const expLevel = player.expLevel ?? 1;
-  const raw = (totalDonations / 1000) * (battleCount / 2000) * (expLevel * 1.5);
-  const score = Math.min(100, Math.round(raw * 10) / 10);
-  let label;
-  if (score >= 40) label = "High stability";
-  else if (score >= 15) label = "Medium stability";
-  else label = "Low stability";
-  return { score, label };
 }

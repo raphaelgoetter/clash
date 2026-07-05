@@ -71,55 +71,35 @@ function getInactiveMembers(members, now) {
     .sort((a, b) => a.lastSeen.getTime() - b.lastSeen.getTime());
 }
 
-function translateRiskVerdict(verdict) {
-  if (!verdict) return null;
-  const normalized = String(verdict).trim();
-  return (
-    {
-      "High risk": "Risque élevé",
-      "Extreme risk": "Risque extrême",
-      "Low risk": "Risque faible",
-      "High reliability": "Très fiable",
-    }[normalized] ?? normalized
-  );
-}
-
 function getRiskyMembers(members) {
   return members
     .map((member) => {
       const profile = member.profile ?? member;
-      const rawVerdict =
-        typeof member.verdict === "string"
-          ? member.verdict
-          : computeMemberReliability(profile).verdict;
-      const verdict = translateRiskVerdict(rawVerdict);
+      const computed = computeMemberReliability(profile);
+      const verdict =
+        typeof member.verdict === "string" ? member.verdict : computed.verdict;
+      const verdictKey =
+        typeof member.verdictKey === "string"
+          ? member.verdictKey
+          : computed.verdictKey;
       const score = Number.isFinite(member.reliability)
         ? member.reliability
-        : computeMemberReliability(profile).score;
+        : computed.score;
       return {
         name: profile.name ?? member.name ?? "inconnu",
         tag: normalizeTag(profile.tag ?? member.tag ?? ""),
         score,
         verdict,
-        rawVerdict,
+        verdictKey,
       };
     })
-    .filter(
-      (entry) =>
-        [
-          "High risk",
-          "Extreme risk",
-          "Risque élevé",
-          "Risque extrême",
-        ].includes(entry.rawVerdict) ||
-        ["Risque élevé", "Risque extrême"].includes(entry.verdict),
-    )
+    .filter((entry) => ["highRisk", "extremeRisk"].includes(entry.verdictKey))
     .sort((a, b) => a.score - b.score);
 }
 
 function getPlayerUrl(tag) {
   const normalized = normalizeTag(tag);
-  return `https://trustroyale.vercel.app/fr/player/${normalized}`;
+  return `https://trustroyale.vercel.app/player/${normalized}`;
 }
 
 function migrateLog(log) {

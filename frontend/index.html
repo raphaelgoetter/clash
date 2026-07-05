@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -56,30 +56,18 @@
         <div>
           <h1 class="header-title">TrustRoyale</h1>
           <p class="header-subtitle">
-            Clash Royale reliability checker · Made by
+            Analyseur de fiabilité Clash Royale · Créé par
             <a href="https://royaleapi.com/player/YRGJGR8R/" target="_blank"
               >displaynone</a
             >
+            pour la
+            <a href="https://discord.gg/kPdQN8zfjM" target="_blank"
+              >famille Resistance</a
+            >
           </p>
         </div>
-        <div class="lang-switch" id="lang-switch">
+        <div class="header-links" id="header-links">
           <a href="/bot/" class="header-link bot">🤖</a>
-          <button
-            type="button"
-            class="lang-btn"
-            id="btn-lang-en"
-            title="English"
-          >
-            🇺🇸
-          </button>
-          <button
-            type="button"
-            class="lang-btn"
-            id="btn-lang-fr"
-            title="Français"
-          >
-            🇫🇷
-          </button>
         </div>
       </div>
     </header>
@@ -90,12 +78,12 @@
     <main class="container">
       <section class="search-panel card">
         <h2 class="card-title" id="search-panel-title">
-          🔍 Who do you want to analyze?
+          🔍 Qui voulez-vous analyser ?
         </h2>
         <!-- Mode selector -->
-        <div class="mode-selector" role="group" aria-label="Analysis mode">
+        <div class="mode-selector" role="group" aria-label="Mode d'analyse">
           <button class="mode-btn active" data-mode="player" id="btn-player">
-            👤 Player
+            👤 Joueur
           </button>
           <button class="mode-btn" data-mode="clan" id="btn-clan">
             👥 Clan
@@ -108,17 +96,17 @@
             type="text"
             id="search-input"
             class="search-input"
-            placeholder="Enter player tag (e.g. #ABC123) …"
+            placeholder="Entrez un tag joueur (ex : #ABC123) …"
             value="#YRGJGR8R"
             autocomplete="off"
             spellcheck="false"
           />
           <select id="search-select" class="search-input hidden"></select>
-          <button id="fav-btn" class="fav-btn" title="Add to favorites">
+          <button id="fav-btn" class="fav-btn" title="Ajouter aux favoris">
             ☆
           </button>
           <button id="search-btn" class="search-btn">
-            <span id="search-btn-label">🔍 Analyze</span>
+            <span id="search-btn-label">🔍 Analyser</span>
             <span
               id="search-spinner"
               class="spinner hidden"
@@ -132,14 +120,14 @@
             type="text"
             id="clan-tag-input"
             class="search-input"
-            placeholder="Other clan (e.g. #ABC123) …"
+            placeholder="Autre clan (ex : #ABC123) …"
             autocomplete="off"
             spellcheck="false"
           />
         </div>
         <p class="search-hint" id="search-hint">
-          Tags must start with <code>#</code>. You can omit it and we'll add it
-          automatically.
+          Les tags doivent commencer par <code>#</code>. Vous pouvez l'omettre,
+          nous l'ajouterons automatiquement.
         </p>
         <!-- Favorites list -->
         <div id="favorites-container" class="favorites-container"></div>
@@ -157,20 +145,20 @@
       <section id="player-results" class="results-section hidden">
         <!-- 1. Player overview -->
         <div class="card" id="card-overview">
-          <h2 class="card-title">👤 Player Overview</h2>
+          <h2 class="card-title">👤 Fiche joueur</h2>
           <div class="overview-grid" id="overview-grid"></div>
         </div>
 
         <!-- 2. Activity indicators -->
         <div class="card" id="card-activity">
-          <h2 class="card-title">📊 Clan Wars Indicators</h2>
+          <h2 class="card-title">📊 Indicateurs de guerres</h2>
           <div class="stats-grid" id="stats-grid"></div>
         </div>
 
         <!-- 3. Recent activity (chart) -->
         <div class="card" id="card-recent">
           <h2 class="card-title" id="history-card-title">
-            📅 River Race History
+            📅 Historique Guerre de clans
           </h2>
           <div class="chart-wrapper">
             <canvas id="chart-activity"></canvas>
@@ -186,9 +174,9 @@
               <table class="battlelog-table">
                 <thead>
                   <tr>
-                    <th id="battlelog-week-header">week</th>
-                    <th id="battlelog-clan-header">clan</th>
-                    <th id="battlelog-gdc-header">riverRaceBattles</th>
+                    <th id="battlelog-week-header">Semaines</th>
+                    <th id="battlelog-clan-header">Clan</th>
+                    <th id="battlelog-gdc-header">Decks GDC</th>
                   </tr>
                 </thead>
                 <tbody id="battlelog-table-body"></tbody>
@@ -203,13 +191,13 @@
 
         <!-- 3b. Actual Clan War (visible jeudi–dimanche uniquement) -->
         <div class="card hidden" id="card-current-war">
-          <h2 class="card-title">⚔️ Current Clan War</h2>
+          <h2 class="card-title">⚔️ Guerre de clan en cours</h2>
           <div class="war-days-grid" id="war-days-grid"></div>
         </div>
 
         <!-- 3c. River Race Time (BattleLog-based MVP) -->
         <div class="card hidden" id="card-race-time">
-          <h2 class="card-title">⏰ River Race Time</h2>
+          <h2 class="card-title">⏰ Guerre de clan heure par heure</h2>
           <p id="race-time-note" class="card-desc"></p>
           <div id="race-time-tags" class="race-time-tags hidden"></div>
           <div class="chart-wrapper">
@@ -219,85 +207,88 @@
 
         <!-- 4 & 5. War reliability + verdict -->
         <div class="card" id="card-verdict">
-          <h2 class="card-title">⚔️ War Reliability Score</h2>
+          <h2 class="card-title">⚔️ Score de fiabilité</h2>
           <details class="score-explainer">
-            <summary>How is this score calculated?</summary>
+            <summary>Comment ce score est-il calculé ?</summary>
             <div class="score-explainer-body">
               <p>
-                Score out of <strong>48 pts</strong> (full mode with battle
-                log), <strong>45 pts</strong> (full mode without), or
-                <strong>40 pts</strong> (fallback, battle log only). Up to
-                <strong>5 additional pts</strong> for last seen activity &rarr;
-                <strong>53 pts</strong> maximum (&nbsp;45 pts for fallback).
+                Score sur <strong>48 pts</strong> (mode complet avec journal
+                de combats), <strong>45 pts</strong> (mode complet sans), ou
+                <strong>40 pts</strong> (fallback, journal de combats
+                uniquement). Jusqu'à <strong>5 pts supplémentaires</strong>
+                pour l'activité "vu pour la dernière fois" &rarr;
+                <strong>53 pts</strong> maximum (&nbsp;45 pts en fallback).
               </p>
               <table class="explainer-table">
                 <thead>
                   <tr>
-                    <th>Criterion</th>
+                    <th>Critère</th>
                     <th>Max</th>
                     <th>Cap</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td>Regularity</td>
+                    <td>Régularité</td>
                     <td>12</td>
                     <td>
-                      war decks used / (16×weeks), –0.5 pt per incomplete week
+                      decks de guerre utilisés / (16×semaines), –0,5 pt par
+                      semaine incomplète
                     </td>
                   </tr>
                   <tr>
-                    <td>Avg pts</td>
+                    <td>Points moyens</td>
                     <td>10</td>
-                    <td>3 000 points / week</td>
+                    <td>3 000 points / semaine</td>
                   </tr>
                   <tr>
-                    <td>CW2 badge</td>
+                    <td>Badge CW2</td>
                     <td>8</td>
-                    <td>250 total wins</td>
+                    <td>250 victoires totales</td>
                   </tr>
                   <tr>
-                    <td>Stability</td>
+                    <td>Stabilité</td>
                     <td>8</td>
-                    <td>5+ consecutive weeks</td>
+                    <td>5+ semaines consécutives</td>
                   </tr>
                   <tr>
-                    <td>Last seen</td>
+                    <td>Vu</td>
                     <td>5</td>
-                    <td>active within 24 h</td>
+                    <td>actif dans les 24 h</td>
                   </tr>
                   <tr>
                     <td>
-                      Win rate <span class="explainer-tag">full mode</span>
+                      Taux de victoire
+                      <span class="explainer-tag">mode complet</span>
                     </td>
                     <td>3</td>
-                    <td>100 % win rate · min. 10 GDC battles</td>
+                    <td>100 % de victoires · min. 10 combats de GDC</td>
                   </tr>
                   <tr>
-                    <td>Experience</td>
+                    <td>Expérience</td>
                     <td>3</td>
-                    <td>14000 best trophies</td>
+                    <td>14000 meilleurs trophées</td>
                   </tr>
                   <tr>
                     <td>Discord</td>
                     <td>2</td>
-                    <td>Discord linked account</td>
+                    <td>Compte Discord lié</td>
                   </tr>
                 </tbody>
               </table>
               <p class="explainer-thresholds">
-                <span class="c-green">■ ≥ 76 %</span> High reliability &nbsp;
-                <span class="c-yellow">■ 56–75 %</span> Low risk &nbsp;
-                <span class="c-orange">■ 31–55 %</span> High risk &nbsp;
-                <span class="c-red">■ ≤ 30 %</span> Extreme risk
+                <span class="c-green">■ ≥ 76 %</span> Très fiable &nbsp;
+                <span class="c-yellow">■ 56–75 %</span> Risque faible &nbsp;
+                <span class="c-orange">■ 31–55 %</span> Risque élevé &nbsp;
+                <span class="c-red">■ ≤ 30 %</span> Risque extrême
               </p>
               <p class="explainer-note">
                 <em
-                  >If no river‑race history is available, a fallback formula is
-                  used</em
-                >: War Activity (max 8), General Activity (8), CW2 badge (10),
-                Last Seen (3, requires ~16 war decks), Experience (3) and
-                Discord (2).
+                  >Si aucun historique Guerre de clans n'est disponible, une
+                  formule de fallback est utilisée</em
+                >: Activité de guerre (max 8), Activité générale (8), Badge
+                CW2 (10), Vu (3, requiert ~16 decks de guerre), Expérience (3)
+                et Discord (2).
               </p>
             </div>
           </details>
@@ -316,12 +307,12 @@
         <!-- Clan overview + pie chart -->
         <div class="clan-overview-row">
           <div class="card" id="card-clan-overview">
-            <h2 class="card-title">🏰 Clan Overview</h2>
+            <h2 class="card-title">🏰 Vue du clan</h2>
             <p id="clan-overview-description" class="card-desc"></p>
             <div class="overview-grid" id="clan-overview-grid"></div>
           </div>
           <div class="card" id="card-reliable-risky">
-            <h2 class="card-title">🥧 Reliability</h2>
+            <h2 class="card-title">🥧 Fiabilité</h2>
             <canvas id="chart-clan-pie"></canvas>
           </div>
         </div>
@@ -330,10 +321,10 @@
         <div class="card hidden" id="card-war-group">
           <details id="details-war-group">
             <summary>
-              <span class="card-title">⚔️ Current War Group</span>
+              <span class="card-title">⚔️ Groupe de GDC actuel</span>
             </summary>
             <p class="card-desc" id="war-group-description">
-              Compare the 5 clans of the current River Race group
+              Comparez les 5 clans du groupe de GDC actuel
             </p>
             <p id="war-group-cache-note" class="members-cache-note hidden"></p>
             <div class="war-group-table-wrapper">
@@ -347,7 +338,7 @@
 
         <!-- Current Clan War card (jeudi–dimanche) -->
         <div class="card hidden" id="card-clan-war">
-          <h2 class="card-title">⚔️ Current Clan War</h2>
+          <h2 class="card-title">⚔️ Guerre de clan en cours</h2>
           <p id="clan-war-cache-note" class="members-cache-note hidden"></p>
           <div id="clan-war-grid"></div>
         </div>
@@ -355,9 +346,14 @@
         <!-- Last War Best Players card (dynamic, collapsible) -->
         <div class="card hidden" id="card-top-players">
           <details>
-            <summary><span class="card-title">🏅 Last War Best</span></summary>
+            <summary>
+              <span class="card-title"
+                >🏅 Meilleures performances (dernière GDC)</span
+              >
+            </summary>
             <p class="card-desc">
-              List of clan players who performed best during the last GDC week
+              Liste des joueurs du clan qui ont le mieux performé lors de la
+              dernière Guerre de clans (minimum 2600 pts)
             </p>
             <ol id="top-players-list" class="top-players-list"></ol>
           </details>
@@ -366,10 +362,14 @@
         <!-- Uncomplete decks card (dynamic, collapsible) -->
         <div class="card hidden" id="card-uncomplete">
           <details>
-            <summary><span class="card-title">🤷 Last War fails</span></summary>
+            <summary
+              ><span class="card-title"
+                >🤷 Combats manquants (dernière GDC)</span
+              ></summary
+            >
             <p class="card-desc">
-              List of clan players who did not complete all 16 decks during the
-              last GDC week
+              Liste des joueurs du clan qui n'ont pas complété les 16 decks
+              lors de la dernière Guerre de clans
             </p>
             <ol id="uncomplete-list" class="top-players-list"></ol>
           </details>
@@ -378,7 +378,7 @@
         <!-- Member table -->
         <div class="card" id="card-clan-table">
           <details>
-            <summary><span class="card-title">👥 Members</span></summary>
+            <summary><span class="card-title">👥 Membres</span></summary>
 
             <!-- Filters -->
             <div class="table-filters">
@@ -386,14 +386,14 @@
                 type="text"
                 id="filter-name"
                 class="filter-input"
-                placeholder="Filter by name or tag…"
+                placeholder="Filtrer par nom ou tag…"
               />
               <select id="filter-verdict" class="filter-select">
-                <option value="">All verdicts</option>
-                <option value="green">✅ High reliability</option>
-                <option value="yellow">⚠️ Low risk</option>
-                <option value="orange">🟠 High risk</option>
-                <option value="red">🔴 Extreme risk</option>
+                <option value="">Tous verdicts</option>
+                <option value="green">✅ Très fiable</option>
+                <option value="yellow">⚠️ Risque faible</option>
+                <option value="orange">🟠 Risque élevé</option>
+                <option value="red">🔴 Risque extrême</option>
               </select>
             </div>
             <div
@@ -405,33 +405,33 @@
                 <thead>
                   <tr>
                     <th class="sortable" data-col="name">
-                      Player <span class="sort-icon">↕</span>
+                      Joueur <span class="sort-icon">↕</span>
                     </th>
                     <th class="sortable" data-col="role">
-                      Role <span class="sort-icon">↕</span>
+                      Rôle <span class="sort-icon">↕</span>
                     </th>
                     <th class="sortable" data-col="trophies">
-                      Trophies <span class="sort-icon">↕</span>
+                      Trophées <span class="sort-icon">↕</span>
                     </th>
                     <th class="sortable" data-col="donations">
                       Dons <span class="sort-icon">↕</span>
                     </th>
-                    <th data-col="discord">Discord</th>
+                    <th data-col="discord">Disc</th>
                     <th class="sortable" data-col="lastSeen">
-                      Last Seen <span class="sort-icon">↕</span>
+                      Vu <span class="sort-icon">↕</span>
                     </th>
                     <th
                       id="th-this-war"
                       class="hidden sortable"
                       data-col="warDecks"
                     >
-                      This War <span class="sort-icon">↕</span>
+                      Cette GDC <span class="sort-icon">↕</span>
                     </th>
                     <th class="sortable" data-col="lastWarDecks">
-                      Last War <span class="sort-icon">↕</span>
+                      Dernière GDC <span class="sort-icon">↕</span>
                     </th>
                     <th class="sortable" data-col="reliability">
-                      Reliability <span class="sort-icon">↕</span>
+                      Fiabilité <span class="sort-icon">↕</span>
                     </th>
                     <th data-col="verdict">Verdict</th>
                   </tr>
@@ -449,13 +449,13 @@
     ════════════════════════════════════════════════════════ -->
     <footer class="site-footer">
       <p>
-        Built with ❤️ using the Clash Royale API · Not affiliated with Supercell
-        or RoyaleAPI
+        Construit avec ❤️ grâce à l'API Clash Royale · Non affilié à
+        Supercell ou RoyaleAPI
       </p>
     </footer>
 
     <!-- Debug panel (always available) -->
-    <div id="debug-toggle" class="debug-toggle" title="Toggle debug panel">
+    <div id="debug-toggle" class="debug-toggle" title="Afficher/masquer le panneau de debug">
       🐞
     </div>
     <div id="debug-panel" class="debug-panel hidden"></div>

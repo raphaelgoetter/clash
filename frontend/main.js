@@ -10,7 +10,6 @@ import {
   renderRaceTimeChart,
   renderGaugeChart,
   renderClanPieChart,
-  setChartTranslations,
   destroyIfExists,
 } from "./charts.js";
 import { renderRaceGroupCard } from "./warGroup.js";
@@ -75,66 +74,18 @@ setInterval(() => {
 // Name of the last-result returned by API (used when saving favorite)
 let lastResultName = null;
 
-// Multi-language support
-const LANG_STORAGE_KEY = "trustroyaleLang";
-const SUPPORTED_LANGS = ["en", "fr"];
-const DEFAULT_LANG = "fr";
-let currentLang = DEFAULT_LANG;
-let translations = {};
-
-/**
- * Retourne la map de traduction des labels de score breakdown.
- * Doit être appelée après chargement de la langue car elle utilise t().
- */
-function getScoreLabelMap() {
-  return {
-    "War Activity": t("warActivity"),
-    "General Activity": t("generalActivity"),
-    Regularity: t("regularity"),
-    "Avg Score": t("pointsPerDeck"),
-    "Points / Deck": t("pointsPerDeck"),
-    "Avg fame": t("avgFame"),
-    "CW2 badge": t("cw2BattleWins"),
-    "CW2 Battle Wins": t("cw2BattleWins"),
-    "CW2 battle wins": t("cw2BattleWins"),
-    "Clan stability": t("clanStability"),
-    Stability: t("clanStability"),
-    "Last seen": t("lastSeen"),
-    "Last Seen": t("lastSeen"),
-    "Win Rate (War)": t("winRateFullMode"),
-    "Win rate full mode": t("winRateFullMode"),
-    Experience: t("experience"),
-    Discord: t("discord"),
-    "High reliability": t("highReliability"),
-    "Low risk": t("moderateRisk"),
-    "High risk": t("highRisk"),
-    "Extreme risk": t("extremeRisk"),
-  };
-}
-
-function getBasePath() {
-  return `/${currentLang}`;
-}
-
-/**
- * Retourne l'état courant de l'URL : { lang, mode, tag }.
- * Supporte les URLs path-based : /<lang>/<mode>/<tag>
- * Fallback sur les query params pour rétrocompatibilité.
- */
 function getUrlState() {
   const parts = window.location.pathname
     .replace(/\/+$/, "")
     .split("/")
     .filter(Boolean);
-  // parts[0] = lang, parts[1] = mode (player|clan), parts[2] = tag sans #
-  const lang = SUPPORTED_LANGS.includes(parts[0]) ? parts[0] : null;
+  // parts[0] = mode (player|clan), parts[1] = tag sans #
   const pathMode =
-    parts[1] === "player" || parts[1] === "clan" ? parts[1] : null;
-  const pathTag = parts[2] ? `#${parts[2]}` : null;
+    parts[0] === "player" || parts[0] === "clan" ? parts[0] : null;
+  const pathTag = parts[1] ? `#${parts[1]}` : null;
   // Fallback : anciens query params
   const params = new URLSearchParams(window.location.search);
   return {
-    lang,
     mode: pathMode ?? params.get("mode"),
     tag: pathTag ?? params.get("tag"),
   };
@@ -145,24 +96,22 @@ function getUrlState() {
  * conservées depuis l'URL courante. `replace: true` évite d'ajouter une
  * entrée dans l'historique.
  */
-function setUrlState({ lang, mode, tag, replace = false } = {}) {
+function setUrlState({ mode, tag, replace = false } = {}) {
   const current = getUrlState();
-  const finalLang = lang ?? current.lang ?? DEFAULT_LANG;
   const finalMode = mode ?? current.mode;
   const finalTag = tag ?? current.tag;
 
   let url;
   if (finalMode && finalTag) {
     const cleanTag = finalTag.replace(/^#/, "");
-    url = `/${finalLang}/${finalMode}/${cleanTag}`;
+    url = `/${finalMode}/${cleanTag}`;
   } else {
-    url = `/${finalLang}/`;
+    url = "/";
   }
 
   const state = {
     mode: finalMode ?? currentMode,
     tag: finalTag ?? "",
-    lang: finalLang,
   };
   const shouldReplace = replace || _replaceNextPush;
   if (_replaceNextPush) _replaceNextPush = false;
@@ -174,205 +123,135 @@ function setUrlState({ lang, mode, tag, replace = false } = {}) {
   }
 }
 
-function loadLanguage(lang) {
-  if (!SUPPORTED_LANGS.includes(lang)) lang = DEFAULT_LANG;
-  currentLang = lang;
-  localStorage.setItem(LANG_STORAGE_KEY, lang);
-  document.documentElement.lang = lang;
-  // push URL quickly to avoid stuck state when fetch is delayed/fails
-  setUrlState({ lang, replace: true });
-  return fetch(`/lang/${lang}.json`)
-    .then((res) =>
-      res.ok
-        ? res.json()
-        : Promise.reject(new Error("Language file not found")),
-    )
-    .then((obj) => {
-      translations = obj;
-      translateUI();
-      setChartTranslations({
-        members: t("labelMembers"),
-        memberPlural: t("entries"),
-        memberSingular: t("memberPlayer"),
-        highReliability: t("highReliability"),
-        moderateRisk: t("moderateRisk"),
-        highRisk: t("highRisk"),
-        extremeRisk: t("extremeRisk"),
-      });
-      updateLangButtonUI();
-    });
-}
-
-function t(key, vars) {
-  const fallback = {
-    rateLimitedWarning:
-      currentLang === "fr"
-        ? "Limite de requêtes Clash API dépassée — données partielles affichées, réessayez dans quelques secondes."
-        : "Clash API rate limit exceeded — partial data may be displayed, retry in a few seconds.",
-    battleLogNoFurtherData:
-      currentLang === "fr"
-        ? "Aucun historique de clan supplémentaire disponible (Battle Log uniquement)."
-        : "No further clan history available (Battle Log only).",
-    clanWarSnapshotNote:
-      currentLang === "fr"
-        ? "Les snapshots sont enregistrés chaque heure ; les decks joués à la dernière minute peuvent être comptés sur le jour précédent."
-        : "Snapshots are taken every hour; decks played at the last minute may be assigned to the previous day.",
-  };
-
-  let val =
-    translations && translations[key]
-      ? translations[key]
-      : fallback[key] || key;
-  if (!vars || typeof vars !== "object") return val;
-  Object.entries(vars).forEach(([k, v]) => {
-    if (k === "plural") {
-      const suffix = Number(v) > 1 ? "s" : "";
-      val = val.replace("{{plural}}", suffix);
-    } else {
-      val = val.replace(new RegExp(`{{${k}}}`, "g"), v);
-    }
-  });
-  // if plural placeholder left over, replace with empty
-  val = val.replace("{{plural}}", "");
-  return val;
-}
-
-function initialLang() {
-  const pathLang = getUrlState().lang;
-  const saved = localStorage.getItem(LANG_STORAGE_KEY);
-  if (SUPPORTED_LANGS.includes(pathLang)) return pathLang;
-  if (SUPPORTED_LANGS.includes(saved)) return saved;
-  return DEFAULT_LANG;
-}
 
 function translateUI() {
-  document.querySelector(".header-title").textContent = t("headerTitle");
-  document.querySelector(".header-subtitle").innerHTML = t("headerSubtitle");
-  document.getElementById("btn-player").textContent = `👤 ${t("modePlayer")}`;
-  document.getElementById("btn-clan").textContent = `👥 ${t("modeClan")}`;
-  searchInput.placeholder = t("searchPlaceholder");
-  searchHint.textContent = t("searchHint");
+  document.querySelector(".header-title").textContent = "TrustRoyale";
+  document.querySelector(".header-subtitle").innerHTML = "Analyseur de fiabilité Clash Royale · Créé par <a href='https://royaleapi.com/player/YRGJGR8R/' target='_blank'>displaynone</a> pour la <a href='https://discord.gg/kPdQN8zfjM' target='_blank'>famille Resistance</a>";
+  document.getElementById("btn-player").textContent = `👤 ${"Joueur"}`;
+  document.getElementById("btn-clan").textContent = `👥 ${"Clan"}`;
+  searchInput.placeholder = "Entrez un tag joueur (ex : #ABC123) …";
+  searchHint.textContent = "Les tags doivent commencer par #. Vous pouvez l'omettre, nous l'ajouterons automatiquement.";
   document.getElementById("search-panel-title").textContent =
-    t("searchPanelTitle");
-  document.getElementById("search-btn-label").textContent = t("searchButton");
-  favBtn.title = t("favButton");
+    "🔍 Qui voulez-vous analyser ?";
+  document.getElementById("search-btn-label").textContent = "🔍 Analyser";
+  favBtn.title = "Ajouter aux favoris";
   document
     .getElementById("card-overview")
-    .querySelector(".card-title").textContent = `👤 ${t("playerOverview")}`;
+    .querySelector(".card-title").textContent = `👤 ${"Fiche joueur"}`;
   document
     .getElementById("card-activity")
-    .querySelector(".card-title").textContent = `📊 ${t("activityIndicators")}`;
+    .querySelector(".card-title").textContent = `📊 ${"Indicateurs de guerres"}`;
   document
     .getElementById("card-current-war")
-    .querySelector(".card-title").textContent = `⚔️ ${t("currentClanWar")}`;
+    .querySelector(".card-title").textContent = `⚔️ ${"Guerre de clan en cours"}`;
   document
     .getElementById("card-war-group")
-    .querySelector(".card-title").textContent = `⚔️ ${t("warGroupTitle")}`;
+    .querySelector(".card-title").textContent = `⚔️ ${"Groupe de GDC actuel"}`;
   const warGroupDesc = document.getElementById("war-group-description");
-  if (warGroupDesc) warGroupDesc.textContent = t("warGroupDescription");
+  if (warGroupDesc) warGroupDesc.textContent = "Comparez les 5 clans du groupe de GDC actuel";
   document
     .getElementById("card-verdict")
     .querySelector(".card-title").textContent =
-    `⚔️ ${t("warReliabilityScore")}`;
+    `⚔️ ${"Score de fiabilité"}`;
 
   const reliableCard = document.getElementById("card-reliable-risky");
   if (reliableCard) {
     reliableCard.querySelector(".card-title").textContent =
-      `🥧 ${t("reliableVsRisky")}`;
+      `🥧 ${"Fiabilité"}`;
   }
 
   // traductions dynamiques du clan
   translateClanTableHeaders();
   const filterInput = document.getElementById("filter-name");
-  if (filterInput) filterInput.placeholder = t("filterByNameTag");
+  if (filterInput) filterInput.placeholder = "Filtrer par nom ou tag…";
   const filterSelect = document.getElementById("filter-verdict");
   if (filterSelect) {
     filterSelect.innerHTML = `
-      <option value="">${t("allVerdicts")}</option>
-      <option value="green">✅ ${t("highReliability")}</option>
-      <option value="yellow">⚠️ ${t("moderateRisk")}</option>
-      <option value="orange">🟠 ${t("highRisk")}</option>
-      <option value="red">🔴 ${t("extremeRisk")}</option>
+      <option value="">${"Tous verdicts"}</option>
+      <option value="green">✅ ${"Très fiable"}</option>
+      <option value="yellow">⚠️ ${"Risque faible"}</option>
+      <option value="orange">🟠 ${"Risque élevé"}</option>
+      <option value="red">🔴 ${"Risque extrême"}</option>
     `;
   }
   document.querySelector(".score-explainer summary").textContent =
-    t("scoreExplainer");
+    "Comment ce score est-il calculé ?";
   document
     .getElementById("card-clan-overview")
-    .querySelector(".card-title").textContent = `🏰 ${t("clanOverview")}`;
-  if (clanTagInput) clanTagInput.placeholder = t("clanTagInputPlaceholder");
+    .querySelector(".card-title").textContent = `🏰 ${"Vue du clan"}`;
+  if (clanTagInput) clanTagInput.placeholder = "Autre clan (ex : #ABC123) …";
   const cardTop = document.querySelector("#card-top-players .card-title");
   if (cardTop) {
     const weekSpan = cardTop.querySelector(".card-week-id");
-    cardTop.innerHTML = `🏅 ${t("lastWarBest")}`;
+    cardTop.innerHTML = `🏅 ${"Meilleures performances (dernière GDC)"}`;
     if (weekSpan) cardTop.appendChild(weekSpan);
   }
   const cardTopDesc = document.querySelector("#card-top-players .card-desc");
-  if (cardTopDesc) cardTopDesc.textContent = t("lastWarBestDesc") || "";
+  if (cardTopDesc) cardTopDesc.textContent = "Liste des joueurs du clan qui ont le mieux performé lors de la dernière Guerre de clans (minimum 2600 pts)";
 
   const clusterTitle = document.querySelector("#card-clan-table .card-title");
-  if (clusterTitle) clusterTitle.textContent = `👥 ${t("memberList")}`;
+  if (clusterTitle) clusterTitle.textContent = `👥 ${"Membres"}`;
 
   const battlelogWeekHeader = document.getElementById("battlelog-week-header");
   const battlelogClanHeader = document.getElementById("battlelog-clan-header");
   const battlelogGdcHeader = document.getElementById("battlelog-gdc-header");
   if (battlelogWeekHeader)
     battlelogWeekHeader.textContent =
-      currentLang === "fr" ? "Semaines" : t("week");
-  if (battlelogClanHeader) battlelogClanHeader.textContent = t("labelClan");
+      "Semaines";
+  if (battlelogClanHeader) battlelogClanHeader.textContent = "Clan";
   if (battlelogGdcHeader)
     battlelogGdcHeader.textContent =
-      currentLang === "fr" ? "Decks GDC" : t("riverRaceBattles");
+      "Decks GDC";
 
   const scoreExplainerBody = document.querySelector(".score-explainer-body");
   if (scoreExplainerBody) {
     scoreExplainerBody.innerHTML = `
-      <p>${t("scoreExplainerFull")}</p>
+      <p>${"Le score complet combine la régularité GDC, le badge CW2, la stabilité, last seen, les points / deck, l'expérience et Discord. Quand l'historique River Race existe, la régularité GDC et les points / deck priment sur les indicateurs génériques."}</p>
       <table class="explainer-table">
         <thead>
-          <tr><th>${t("criterion")}</th><th>${t("max")}</th><th>${t("cap")}</th></tr>
+          <tr><th>${"Critère"}</th><th>${"Max"}</th><th>${"Cap"}</th></tr>
         </thead>
         <tbody>
-          <tr><td>${t("regularity")}</td><td>10</td><td>${t("regularityCap")}</td></tr>
-          <tr><td>${t("cw2BattleWins")}</td><td>8</td><td>${t("cw2BattleWinsCap")}</td></tr>
-          <tr><td>${t("clanStability")}</td><td>8</td><td>${t("clanStabilityCap")}</td></tr>
-          <tr><td>${t("lastSeen")}</td><td>5</td><td>${t("lastSeenCap")}</td></tr>
-          <tr><td>${t("pointsPerDeck")}</td><td>4</td><td>${t("pointsPerDeckCap")}</td></tr>
-          <tr><td>${t("experience")}</td><td>3</td><td>${t("experienceCap")}</td></tr>
-          <tr><td>${t("discord")}</td><td>2</td><td>${t("discordCap")}</td></tr>
+          <tr><td>${"Régularité"}</td><td>10</td><td>${"5 semaines fixes, 1 point par semaine complète, max 10"}</td></tr>
+          <tr><td>${"Badge CW2"}</td><td>8</td><td>${"(maxé à 250 victoires)"}</td></tr>
+          <tr><td>${"Stabilité"}</td><td>8</td><td>${"5+ semaines consécutives"}</td></tr>
+          <tr><td>${"Vu"}</td><td>5</td><td>${"actif dans les 24 h"}</td></tr>
+          <tr><td>${"Points / deck"}</td><td>4</td><td>${"Efficacité River Race sur les 3 dernières semaines terminées (100–180 points / deck)"}</td></tr>
+          <tr><td>${"Expérience"}</td><td>3</td><td>${"14000 meilleurs trophées"}</td></tr>
+          <tr><td>${"Discord"}</td><td>2</td><td>${"Compte Discord lié"}</td></tr>
         </tbody>
       </table>
-      <p class="explainer-thresholds">${t("thresholds")}</p>
-      <p class="explainer-note"><em>${t("fallbackFormulaTitle")}</em>: ${t("fallbackFormulaBody")}</p>
+      <p class="explainer-thresholds">${"<span class='c-green'>■ ≥ 76 %</span> Très fiable &nbsp; <span class='c-yellow'>■ 56–75 %</span> Risque faible &nbsp; <span class='c-orange'>■ 31–55 %</span> Risque élevé &nbsp; <span class='c-red'>■ ≤ 30 %</span> Risque extrême"}</p>
+      <p class="explainer-note"><em>${"Si aucun historique Guerre de clans n'est disponible, une formule de fallback est utilisée"}</em>: ${"Régularité (10, avec 5 semaines et 0 pour les semaines non récupérées), Badge CW2 (10), Activité guerre (8, basée sur 5 semaines récupérées, maximum à 5 semaines), Points / deck (4, sur les 3 dernières semaines terminées si l'historique est disponible), Last Seen (3, requiert environ 16 decks de guerre), Expérience (3) et Discord (2)."}</p>
     `;
   }
   const cardUncomplete = document.querySelector("#card-uncomplete .card-title");
   if (cardUncomplete) {
     const weekSpan = cardUncomplete.querySelector(".card-week-id");
-    cardUncomplete.innerHTML = `🤷 ${t("lastWarFails")}`;
+    cardUncomplete.innerHTML = `🤷 ${"Combats manquants (dernière GDC)"}`;
     if (weekSpan) cardUncomplete.appendChild(weekSpan);
   }
   const cardUncompleteDesc = document.querySelector(
     "#card-uncomplete .card-desc",
   );
   if (cardUncompleteDesc)
-    cardUncompleteDesc.textContent = t("lastWarFailsDesc") || "";
+    cardUncompleteDesc.textContent = "Liste des joueurs du clan qui n'ont pas complété les 16 decks lors de la dernière Guerre de clans";
   const tabTitleEl = document.querySelector(".tab-title");
-  if (tabTitleEl) tabTitleEl.textContent = t("memberList");
+  if (tabTitleEl) tabTitleEl.textContent = "Membres";
 }
 
 function translateClanTableHeaders() {
   const headerMap = {
-    name: t("memberPlayer"),
-    role: t("memberRole"),
-    trophies: t("memberTrophies"),
-    donations: t("memberDonations"),
-    discord: t("memberDiscord"),
-    lastSeen: t("memberLastSeen"),
-    reliability: t("memberReliability"),
-    warDecks: t("memberThisWar"),
-    lastWarDecks: t("memberLastWar"),
-    verdict: t("memberVerdict"),
+    name: "Joueur",
+    role: "Rôle",
+    trophies: "Trophées",
+    donations: "Dons",
+    discord: "Disc",
+    lastSeen: "Vu",
+    reliability: "Fiabilité",
+    warDecks: "Cette GDC",
+    lastWarDecks: "Dernière GDC",
+    verdict: "Verdict",
   };
   document.querySelectorAll("#card-clan-table thead th").forEach((th) => {
     const col = th.dataset.col;
@@ -478,8 +357,8 @@ function applyUrlState(mode, tag) {
     searchInput.classList.remove("hidden");
     searchSelect.classList.add("hidden");
     clanTagRow.classList.add("hidden");
-    searchInput.placeholder = t("searchPlaceholder");
-    searchHint.textContent = t("searchHint");
+    searchInput.placeholder = "Entrez un tag joueur (ex : #ABC123) …";
+    searchHint.textContent = "Les tags doivent commencer par #. Vous pouvez l'omettre, nous l'ajouterons automatiquement.";
     searchInput.value = tag;
     updatePageMetadata("player", tag, null);
   } else {
@@ -487,7 +366,7 @@ function applyUrlState(mode, tag) {
     clanTagRow.classList.remove("hidden");
     // Toujours afficher le select famille
     searchSelect.classList.remove("hidden");
-    searchHint.textContent = t("selectClanHint");
+    searchHint.textContent = "Sélectionnez un clan (réservé aux clans de la famille Résistance)";
     // Si tag famille : sélectionner dans le select et vider le champ manuel
     if (CLAN_OPTIONS.some((o) => o.tag === tag)) {
       searchSelect.value = tag;
@@ -508,12 +387,7 @@ function applyUrlState(mode, tag) {
 
 // Restore state on browser back/forward
 window.addEventListener("popstate", (e) => {
-  const { mode, tag, lang } = e.state ?? {};
-  const pathLang = getUrlState().lang;
-  const selectedLang = lang || pathLang || currentLang;
-  if (selectedLang !== currentLang) {
-    loadLanguage(selectedLang).catch(() => {});
-  }
+  const { mode, tag } = e.state ?? {};
 
   if (mode && tag) {
     applyUrlState(mode, tag);
@@ -536,42 +410,6 @@ modeBtns.forEach((btn) => {
   });
 });
 
-function updateLangButtonUI() {
-  const btnEn = document.getElementById("btn-lang-en");
-  const btnFr = document.getElementById("btn-lang-fr");
-  if (!btnEn || !btnFr) return;
-  btnEn.classList.toggle("active", currentLang === "en");
-  btnFr.classList.toggle("active", currentLang === "fr");
-}
-
-async function switchLanguage(lang) {
-  if (currentLang === lang) return;
-
-  if (!SUPPORTED_LANGS.includes(lang)) lang = DEFAULT_LANG;
-  localStorage.setItem(LANG_STORAGE_KEY, lang);
-
-  const { mode, tag } = getUrlState();
-  let newUrl;
-  if (mode && tag) {
-    const cleanTag = tag.replace(/^#/, "");
-    newUrl = `/${lang}/${mode}/${cleanTag}`;
-  } else {
-    newUrl = `/${lang}/`;
-  }
-  window.location.href = newUrl;
-}
-
-const btnLangEn = document.getElementById("btn-lang-en");
-const btnLangFr = document.getElementById("btn-lang-fr");
-if (btnLangEn)
-  btnLangEn.addEventListener("click", async () => {
-    await switchLanguage("en");
-  });
-if (btnLangFr)
-  btnLangFr.addEventListener("click", async () => {
-    await switchLanguage("fr");
-  });
-
 // populate clan select options
 function initClanSelect() {
   if (!searchSelect) return;
@@ -583,26 +421,11 @@ initClanSelect();
 
 // ── Init from URL ─────────────────────────────────────────────
 async function initApp() {
-  const lang = initialLang();
-
-  if (!getUrlState().lang) {
-    // Pas de locale explicite dans le chemin : normaliser vers la langue sélectionnée
-    const { mode, tag } = getUrlState();
-    let suffix;
-    if (mode && tag) {
-      const cleanTag = tag.replace(/^#/, "");
-      suffix = `/${mode}/${cleanTag}`;
-    } else {
-      suffix = "/";
-    }
-    history.replaceState(null, "", `/${lang}${suffix}`);
-  }
-
-  await loadLanguage(lang);
+  translateUI();
 
   let { mode: urlMode, tag: urlTag } = getUrlState();
 
-  // Fallback pour # non-échappé dans l'URL ex: /en/?mode=clan&tag=#LRQP20V9
+  // Fallback pour # non-échappé dans l'URL ex: /?mode=clan&tag=#LRQP20V9
   if (!urlTag && window.location.hash) {
     const hashVal = window.location.hash.replace(/^#/, "");
     if (hashVal) {
@@ -615,11 +438,7 @@ async function initApp() {
     applyUrlState(mode, urlTag);
     // Normaliser vers le nouveau format path-based (rétrocompat query params)
     const cleanTag = urlTag.replace(/^#/, "");
-    history.replaceState(
-      { mode, tag: urlTag, lang: currentLang },
-      "",
-      `/${currentLang}/${mode}/${cleanTag}`,
-    );
+    history.replaceState({ mode, tag: urlTag }, "", `/${mode}/${cleanTag}`);
     _replaceNextPush = true;
     await handleSearch();
   } else {
@@ -652,7 +471,7 @@ async function handleSearch(force = false) {
   } else {
     raw = searchInput.value.trim();
   }
-  if (!raw) return showError("Please enter a tag.");
+  if (!raw) return showError("Veuillez entrer un tag.");
 
   const tag = raw.startsWith("#") ? raw : `#${raw}`;
   // Détermine si ce clan est hors-famille (endpoint lite) en se basant sur CLAN_OPTIONS
@@ -676,7 +495,7 @@ async function handleSearch(force = false) {
       lastResultName = data.overview?.name || null;
       renderPlayerResults(data);
       if (data.rateLimited) {
-        showError(t("rateLimitedWarning"));
+        showError("Limite de requêtes Clash API dépassée – données partielles affichées, réessayez dans quelques secondes.");
       }
       updateFavBtnState(tag);
       showCacheNote(fromCache, data?.snapshotDate, {
@@ -742,7 +561,7 @@ async function handleSearch(force = false) {
         }
       } else {
         renderClanOverview({
-          clan: { name: t("loading") },
+          clan: { name: "Chargement…" },
           summary: {
             green: 0,
             yellow: 0,
@@ -794,7 +613,7 @@ async function handleSearch(force = false) {
           (data.rateLimited ||
             data.fallbackReason === "rateLimited" ||
             data.raceLogUnavailable);
-        if (shouldWarn) showError(t("rateLimitedWarning"));
+        if (shouldWarn) showError("Limite de requêtes Clash API dépassée – données partielles affichées, réessayez dans quelques secondes.");
         updateDebugPanel(effectiveData, "clan");
         updateFavBtnState(tag);
         showCacheNote(false, data.snapshotDate, {
@@ -844,7 +663,7 @@ async function apiFetch(path) {
   // always bypass browser cache
   const res = await fetch(path, { cache: "no-store" });
   if (!res.ok) {
-    let msg = `Error ${res.status}`;
+    let msg = `Erreur ${res.status}`;
     try {
       const body = await res.json();
       msg = body.error ?? msg;
@@ -965,33 +784,33 @@ function renderFavorites() {
     CLAN_OPTIONS.some((o) => o.tag === tag),
   );
   if (playerKeys.length === 0 && clanKeys.length === 0) {
-    favoritesContainer.innerHTML = `<p class="text-muted">${t("favoritesNone")}</p>`;
+    favoritesContainer.innerHTML = `<p class="text-muted">${"Aucun favori pour l'instant."}</p>`;
     return;
   }
 
   // build two columns explicitly for players and clans
   let html = "";
   html += '<div class="fav-column" data-mode="player">';
-  html += `<h3>${t("favoritesPlayers")}</h3><ul>`;
+  html += `<h3>${"Joueurs"}</h3><ul>`;
   playerKeys.forEach((tag) => {
     const nm = favs.player[tag];
     const display = nm && nm !== tag ? `${escHtml(nm)} (${tag})` : escHtml(tag);
     const cleanTag = tag.replace(/^#/, "");
     html +=
-      `<li><a class="fav-item" href="${getBasePath()}/player/${cleanTag}" ` +
+      `<li><a class="fav-item" href="/player/${cleanTag}" ` +
       `data-mode="player" data-tag="${tag}">${display}</a></li>`;
   });
   html += "</ul></div>";
 
   html += '<div class="fav-column" data-mode="clan">';
-  html += `<h3>${t("favoritesClans")}</h3><ul>`;
+  html += `<h3>${"Clans"}</h3><ul>`;
   clanKeys.forEach((tag) => {
     const nm = favs.clan[tag];
     const display = nm && nm !== tag ? `${escHtml(nm)} (${tag})` : escHtml(tag);
     // clan favorites now link to the app (clan view) instead of RoyaleAPI
     const cleanTag = tag.replace(/^#/, "");
     html +=
-      `<li><a class="fav-item" href="${getBasePath()}/clan/${cleanTag}" ` +
+      `<li><a class="fav-item" href="/clan/${cleanTag}" ` +
       `data-mode="clan" data-tag="${tag}">${display}</a></li>`;
   });
   html += "</ul></div>";
@@ -1002,11 +821,11 @@ function updateFavBtnState(tag) {
   if (isFavorite(currentMode, tag)) {
     favBtn.textContent = "★";
     favBtn.classList.add("faved");
-    favBtn.title = "Remove from favorites";
+    favBtn.title = "Retirer des favoris";
   } else {
     favBtn.textContent = "☆";
     favBtn.classList.remove("faved");
-    favBtn.title = "Add to favorites";
+    favBtn.title = "Ajouter aux favoris";
   }
   favBtn.classList.remove("hidden");
 }
@@ -1102,7 +921,7 @@ function showCacheNote(
   // decide human‑friendly snapshot text
   let snapshotText;
   if (!snapshotDate) {
-    snapshotText = t("snapshotNone");
+    snapshotText = "aucune (pas de données) ❌";
   } else {
     const d = new Date(snapshotDate);
     const today = new Date().toISOString().slice(0, 10);
@@ -1110,18 +929,18 @@ function showCacheNote(
       .toISOString()
       .slice(0, 10);
     if (Number.isNaN(d.getTime())) {
-      snapshotText = `war day : ${snapshotDate}`;
+      snapshotText = `jour de guerre : ${snapshotDate}`;
     } else {
       const snapshotDay = d.toISOString().slice(0, 10);
-      const dayName = d.toLocaleDateString("en-US", { weekday: "long" });
+      const dayName = d.toLocaleDateString("fr-FR", { weekday: "long" });
       if (snapshotDay === today || snapshotDay === yesterday) {
         snapshotText = "";
       } else {
-        const dateString = d.toLocaleDateString(undefined, {
+        const dateString = d.toLocaleDateString("fr-FR", {
           month: "long",
           day: "numeric",
         });
-        snapshotText = `war day : ${dateString} ${dayName ? `(${dayName})` : ""}`;
+        snapshotText = `jour de guerre : ${dateString} ${dayName ? `(${dayName})` : ""}`;
       }
     }
   }
@@ -1139,7 +958,7 @@ function showCacheNote(
     const taken = new Date(takenAt);
     if (!Number.isNaN(taken.getTime())) {
       const time = taken.toISOString().slice(11, 16);
-      snapshotText = `time : ${time} UTC · ${snapshotText}`;
+      snapshotText = `heure : ${time} UTC · ${snapshotText}`;
     }
   }
 
@@ -1150,21 +969,21 @@ function showCacheNote(
           const updated = Date.parse(sourceMeta.updatedAt);
           if (Number.isNaN(updated)) return "";
           const diffSec = Math.max(0, Math.round((now - updated) / 1000));
-          if (diffSec < 60) return ` · fresh ${diffSec}s`;
+          if (diffSec < 60) return ` · à jour (${diffSec}s)`;
           const diffMin = Math.round(diffSec / 60);
-          return ` · cached ${diffMin}m`;
+          return ` · mis en cache il y a ${diffMin} min`;
         })()
       : "";
 
   const baseText = fromCache
-    ? `${t("searchHintCached")}${ageInfo}`
-    : `${t("searchHintNoDate")}${ageInfo}`;
+    ? `${"Contenu en cache 🔃"}${ageInfo}`
+    : `${"Données en direct ✅"}${ageInfo}`;
 
   if (refreshing) {
-    cacheNote.innerHTML = `${escHtml(baseText)} <span class="cache-note-refreshing"><span class="spinner-small"></span> ${t("refreshingLiveData")}</span>`;
+    cacheNote.innerHTML = `${escHtml(baseText)} <span class="cache-note-refreshing"><span class="spinner-small"></span> ${"Rafraîchissement live…"}</span>`;
   } else {
     const refreshLink = fromCache
-      ? ` <a href="#" class="cache-note-refresh-link">${t("refresh") || "refresh"}</a>`
+      ? ` <a href="#" class="cache-note-refresh-link">${"rafraîchir"}</a>`
       : "";
     cacheNote.innerHTML = `${escHtml(baseText)}${refreshLink}`;
     const refreshBtn = cacheNote.querySelector(".cache-note-refresh-link");
@@ -1221,7 +1040,7 @@ function renderCardCacheNoteElement(noteId, sourceMeta = {}, refreshHandler) {
   const text = formatCacheMetaText(sourceMeta);
   const refreshHtml =
     typeof refreshHandler === "function"
-      ? ` <a href="#" class="card-cache-refresh">${t("refresh") || "refresh"}</a>`
+      ? ` <a href="#" class="card-cache-refresh">${"rafraîchir"}</a>`
       : "";
 
   noteEl.innerHTML = text ? `${text}${refreshHtml}` : "";
@@ -1247,34 +1066,35 @@ function formatCacheMetaText(sourceMeta = {}) {
   const ageText = formatAgeText(sourceMeta.updatedAt);
   const parts = [];
   if (snapshotText) parts.push(snapshotText);
-  if (sourceLabel) parts.push(`source: ${sourceLabel}`);
+  if (sourceLabel) parts.push(`source : ${sourceLabel}`);
   if (ageText) parts.push(ageText);
   return parts.join(" · ");
 }
 
 function formatSnapshotText(snapshotDate) {
-  if (!snapshotDate) return "no snapshot";
+  if (!snapshotDate) return "aucun snapshot";
   const today = new Date().toISOString().slice(0, 10);
   const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
   const d = new Date(snapshotDate);
   if (Number.isNaN(d.getTime())) return `${snapshotDate}`;
   const snapshotDay = d.toISOString().slice(0, 10);
-  const dayName = d.toLocaleDateString("en-US", { weekday: "long" });
+  const dayName = d.toLocaleDateString("fr-FR", { weekday: "long" });
   if (snapshotDay === today || snapshotDay === yesterday) {
     return "";
   }
-  const dateString = d.toLocaleDateString(undefined, {
+  const dateString = d.toLocaleDateString("fr-FR", {
     month: "long",
     day: "numeric",
   });
-  return `snapshot: ${dateString}${dayName ? ` (${dayName})` : ""}`;
+  return `snapshot : ${dateString}${dayName ? ` (${dayName})` : ""}`;
 }
 
 function formatSourceLabel(source) {
-  if (!source) return "unknown";
+  if (!source) return "inconnu";
   if (source === "cached") return "cache";
-  if (source === "static") return "static cache";
-  if (source === "live") return "live API";
+  if (source === "static") return "cache statique";
+  if (source === "live (degraded)") return "API en direct (dégradée)";
+  if (source === "live") return "API en direct";
   return source;
 }
 
@@ -1284,9 +1104,9 @@ function formatAgeText(updatedAt) {
   const updated = Date.parse(updatedAt);
   if (Number.isNaN(updated)) return "";
   const diffSec = Math.max(0, Math.round((now - updated) / 1000));
-  if (diffSec < 60) return `fresh ${diffSec}s`;
+  if (diffSec < 60) return `à jour (${diffSec}s)`;
   const diffMin = Math.round(diffSec / 60);
-  return `cached ${diffMin}m`;
+  return `mis en cache il y a ${diffMin} min`;
 }
 
 // ── Player rendering ──────────────────────────────────────────
@@ -1302,22 +1122,13 @@ function renderPlayerResults(data) {
   } = data;
   const ws = warScore ?? data.reliability; // fallback si pas de race log
 
-  // Forcer la traduction des labels de breakdown si reçus en anglais
-  if (ws && Array.isArray(ws.breakdown)) {
-    const scoreLabelMap = getScoreLabelMap();
-    ws.breakdown = ws.breakdown.map((item) => ({
-      ...item,
-      label: scoreLabelMap[item.label] || item.label,
-    }));
-  }
-
   // 1. Overview (Clan & Role removed)
   // build clan link if available (external RoyaleAPI page)
   const clanTag = overview.clan?.tag ?? null;
   const clanLink = clanTag
     ? `https://royaleapi.com/clan/${clanTag.replace("#", "")}/`
     : null;
-  const clanValue = clanTag ? clanTag : "No clan";
+  const clanValue = clanTag ? clanTag : "Aucun clan";
 
   const playerTag = overview.tag ?? null;
   const playerLink = playerTag
@@ -1380,27 +1191,27 @@ function renderPlayerResults(data) {
     .getElementById("card-activity")
     ?.querySelector(".card-title");
   if (activityTitleEl) {
-    activityTitleEl.textContent = `📊 ${isBattleLogMode ? t("battleLogIndicators") : t("activityIndicators")}`;
+    activityTitleEl.textContent = `📊 ${isBattleLogMode ? "Indicateurs Battle Log" : "Indicateurs de guerres"}`;
   }
 
   overviewGrid.innerHTML = overviewItems([
     {
-      label: t("labelName"),
+      label: "Nom",
       value: overview.name,
       cls: "gold",
       badge: playerBadge,
     },
-    { label: t("labelTag"), value: overview.tag, link: playerLink },
-    { label: t("labelClan"), value: clanValue, link: clanLink },
+    { label: "Tag", value: overview.tag, link: playerLink },
+    { label: "Clan", value: clanValue, link: clanLink },
     {
-      label: t("labelYearsPlayed"),
+      label: "Ancienneté",
       value:
         overview.yearsPlayed != null
           ? (overview.yearsPlayed / 365).toFixed(1) + " ans"
           : "-",
     },
     {
-      label: t("labelTrophies"),
+      label: "Trophées",
       value: `🏆 ${fmt(overview.trophies)}`,
       risk:
         overview.trophies < 3000
@@ -1410,25 +1221,25 @@ function renderPlayerResults(data) {
             : null,
     },
     {
-      label: t("labelKingTower"),
+      label: "Tour du Roi",
       value:
         data.collection?.tourLevel != null
           ? `Niveau ${data.collection.tourLevel}`
           : "-",
     },
     {
-      label: t("labelCollectionLevel"),
+      label: "Niveau de Collection",
       value:
         overview.collectionLevel != null ? fmt(overview.collectionLevel) : "-",
       buttonHtml: data.collection
-        ? `<button class="oi-info-btn" id="collection-modal-btn" title="${currentLang === "fr" ? "Détails de la Collection" : "Collection Details"}">ℹ</button>`
+        ? `<button class="oi-info-btn" id="collection-modal-btn" title="${"Détails de la Collection"}">ℹ</button>`
         : "",
     },
     {
-      label: t("labelDiscord"),
+      label: "Discord",
       value: data.overview?.discord
-        ? t("discordLinked")
-        : t("discordNotLinked"),
+        ? "Lié"
+        : "Non lié",
       cls: data.overview?.discord ? "c-green" : "c-red",
     },
   ]);
@@ -1453,17 +1264,17 @@ function renderPlayerResults(data) {
 
     statsGrid.innerHTML = statCards([
       {
-        label: t("statTotalBattles"),
+        label: "Total combats",
         value: fmt(total),
         risk: total < 10 ? "bad" : total < 20 ? "warn" : null,
       },
       {
-        label: t("statBattlesPerDay"),
+        label: "Combats par jour",
         value: fmt(battlesPerDay),
         risk: battlesPerDay < 2 ? "bad" : battlesPerDay < 4 ? "warn" : null,
       },
       {
-        label: t("statRiverRaceRatio"),
+        label: "Ratio GDC",
         value: `${gdc}/${total} (${ratioPercent}%)`,
         risk: ratioPercent < 25 ? "bad" : ratioPercent < 50 ? "warn" : null,
       },
@@ -1480,13 +1291,13 @@ function renderPlayerResults(data) {
 
     statsGrid.innerHTML = statCards([
       {
-        label: t("statParticipation"),
+        label: "Participation",
         value: `${dispPart} / ${displayDen}`,
         risk: partRatio < 0.4 ? "bad" : partRatio < 0.7 ? "warn" : null,
       },
-      { label: t("statTotalFame"), value: fmt(warHistory.totalFame) },
+      { label: "Points totaux", value: fmt(warHistory.totalFame) },
       {
-        label: t("statAvgFame"),
+        label: "Points / semaine",
         value: fmt(warHistory.avgFame),
         risk:
           warHistory.avgFame < 800
@@ -1495,9 +1306,9 @@ function renderPlayerResults(data) {
               ? "warn"
               : null,
       },
-      { label: t("statBestWeek"), value: fmt(warHistory.maxFame) },
+      { label: "Meilleure semaine", value: fmt(warHistory.maxFame) },
       {
-        label: t("statWinRate"),
+        label: "Taux de victoire",
         value:
           warHistory.historicalWinRate !== null &&
           warHistory.historicalWinRate !== undefined
@@ -1513,7 +1324,7 @@ function renderPlayerResults(data) {
         })(),
       },
       {
-        label: t("statBattlesPerDay"),
+        label: "Combats par jour",
         value: fmt(battlesPerDay),
         risk: battlesPerDay < 2 ? "bad" : battlesPerDay < 4 ? "warn" : null,
       },
@@ -1538,17 +1349,17 @@ function renderPlayerResults(data) {
 
     statsGrid.innerHTML = statCards([
       {
-        label: t("statTotalBattles"),
+        label: "Total combats",
         value: fmt(total),
         risk: total < 10 ? "bad" : total < 20 ? "warn" : null,
       },
       {
-        label: t("statBattlesPerDay"),
+        label: "Combats par jour",
         value: fmt(battlesPerDay),
         risk: battlesPerDay < 2 ? "bad" : battlesPerDay < 4 ? "warn" : null,
       },
       {
-        label: t("statRiverRaceRatio"),
+        label: "Ratio GDC",
         value: `${gdc}/${total} (${ratioPercent}%)`,
         risk: ratioPercent < 25 ? "bad" : ratioPercent < 50 ? "warn" : null,
       },
@@ -1562,7 +1373,7 @@ function renderPlayerResults(data) {
   const battlelogDesc = document.getElementById("battlelog-description");
 
   const defaultCurrentWeekLabel =
-    currentLang === "fr" ? "Semaine en cours" : "Current week";
+    "Semaine en cours";
 
   function isRiverRaceBattle(type) {
     const t = (type ?? "").toLowerCase();
@@ -1671,8 +1482,8 @@ function renderPlayerResults(data) {
     const total = (counts || []).reduce((sum, val) => sum + (val || 0), 0);
     if (total <= 0) {
       return {
-        groupLabel: t("raceTimeGroupUnknown"),
-        groupTitle: t("raceTimeGroupUnknownTitle"),
+        groupLabel: "Groupe : inconnu",
+        groupTitle: "Pas de données récupérées",
         inExtremis: false,
       };
     }
@@ -1688,18 +1499,18 @@ function renderPlayerResults(data) {
     const firstHalfRatio = firstHalf / total;
     const secondHalfRatio = secondHalf / total;
 
-    let groupLabel = t("raceTimeGroupVariable");
-    let groupTitle = t("raceTimeGroupVariableTitle");
+    let groupLabel = "Groupe : variable";
+    let groupTitle = "Decks joués à divers moments de la journée";
 
     if (firstHalf > secondHalf && firstHalfRatio >= dominanceThreshold) {
-      groupLabel = t("raceTimeGroupFirstHalf");
-      groupTitle = t("raceTimeGroupFirstHalfTitle");
+      groupLabel = "Groupe : 1ère moitié";
+      groupTitle = "Decks généralement joués durant les 12 premières heures après le reset";
     } else if (
       secondHalf > firstHalf &&
       secondHalfRatio >= dominanceThreshold
     ) {
-      groupLabel = t("raceTimeGroupSecondHalf");
-      groupTitle = t("raceTimeGroupSecondHalfTitle");
+      groupLabel = "Groupe : 2ème moitié";
+      groupTitle = "Decks généralement joués durant les 12 dernières heures après le reset";
     }
 
     return {
@@ -1719,11 +1530,9 @@ function renderPlayerResults(data) {
     ];
 
     if (profile.inExtremis) {
-      const inExtremisTitle = t("raceTimeInExtremisTitle", {
-        count: profile.lastBucketCount || 0,
-      });
+      const inExtremisTitle = `${profile.lastBucketCount || 0} decks joués au dernier moment avant le reset`;
       tags.push(
-        `<span class="race-time-tag extremis" title="${escHtml(inExtremisTitle)}">${escHtml(t("raceTimeInExtremis"))}</span>`,
+        `<span class="race-time-tag extremis" title="${escHtml(inExtremisTitle)}">${escHtml("In-extremis")}</span>`,
       );
     }
 
@@ -1735,18 +1544,15 @@ function renderPlayerResults(data) {
 
   if (isBattleLogMode) {
     if (titleEl)
-      titleEl.textContent =
-        currentLang === "fr"
-          ? "📅 Données Battle Log"
-          : `📅 ${t("battleLogDataTitle")}`;
-    if (noteEl) noteEl.textContent = t("battleLogDataDescription");
+      titleEl.textContent = "📅 Données Battle Log";
+    if (noteEl) noteEl.textContent = "Nouveau joueur dans la famille. L'API Battle Log fournit seulement les 30 derniers combats, tous modes confondus.";
 
     const bd = activityIndicators.battleLogBreakdown ?? {};
     renderBattleLogBreakdownChart(bd);
 
     if (battlelogSection) battlelogSection.classList.remove("hidden");
     if (battlelogDesc) {
-      battlelogDesc.textContent = t("battleLogDataTableDesc");
+      battlelogDesc.textContent = "Nombre de combats GDC par semaine (estimation).";
     }
 
     const currentClanName = overview.clan?.name || "No Clan";
@@ -1760,8 +1566,8 @@ function renderPlayerResults(data) {
         (w.clanTag || "").replace("#", "").toLowerCase() === currentClanTag,
     );
     const currentWeekLabel =
-      t("battleLogCurrentWeek") !== "battleLogCurrentWeek"
-        ? t("battleLogCurrentWeek")
+      "Semaine en cours" !== "battleLogCurrentWeek"
+        ? "Semaine en cours"
         : defaultCurrentWeekLabel;
 
     let rows = [];
@@ -1931,7 +1737,7 @@ function renderPlayerResults(data) {
 
           // Lien vers la page Clan réduite si le tag est disponible
           const clanCell = r.clanTag
-            ? `<a class="battlelog-clan-link" href="/${currentLang}/clan/${(r.clanTag.startsWith("#") ? r.clanTag : "#" + r.clanTag).replace(/^#/, "")}">${escHtml(r.clan)}</a>`
+            ? `<a class="battlelog-clan-link" href="/clan/${(r.clanTag.startsWith("#") ? r.clanTag : "#" + r.clanTag).replace(/^#/, "")}">${escHtml(r.clan)}</a>`
             : escHtml(r.clan);
 
           return `
@@ -1953,7 +1759,7 @@ function renderPlayerResults(data) {
         warHistory?.weeks?.[0]?.isCurrent);
     if (noDataNote) {
       noDataNote.textContent = hasNoFurtherData
-        ? t("battleLogNoFurtherData")
+        ? "Aucun historique de clan supplémentaire disponible (Battle Log uniquement)."
         : "";
       noDataNote.classList.toggle("hidden", !hasNoFurtherData);
     }
@@ -1962,18 +1768,14 @@ function renderPlayerResults(data) {
 
     if (warHistory) {
       if (warHistory.weeks.length > 0) {
+        const weekCount = warHistory.weeks.length;
         if (titleEl)
-          titleEl.textContent = t("riverRaceHistoryTitle", {
-            count: warHistory.weeks.length,
-          });
+          titleEl.textContent = `📅 Historique Guerre de clans – ${weekCount} semaine${weekCount > 1 ? "s" : ""}`;
         renderWarHistoryChart(warHistory.weeks);
         if (noteEl) {
-          let note = t("riverRaceHistoryNote", {
-            count: warHistory.weeks.length,
-            avgFame: fmt(warHistory.avgFame),
-          });
+          let note = `ℹ️ Données de ${weekCount} Guerre de clans complétées. Indigo = au-dessus de la moyenne, rouge = en-dessous. Ligne en pointillés = moyenne (${fmt(warHistory.avgFame)} pts).`;
           if (warHistory.weeks.some((w) => w.ignored)) {
-            note += ` ${t("riverRaceHistoryIgnored")}`;
+            note += ` La barre grise indique une semaine ignorée pour le calcul (probablement arrivée en cours).`;
           }
           noteEl.textContent = note;
         }
@@ -1981,49 +1783,45 @@ function renderPlayerResults(data) {
         const bd = activityIndicators.battleLogBreakdown ?? {};
         const parts = [
           bd.gdc != null
-            ? `${activityIndicators.totalWarBattles} ${t("statWarBattles")}`
+            ? `${activityIndicators.totalWarBattles} Batailles de guerre`
             : null,
-          bd.ladder != null ? `${bd.ladder} ${t("statLadder")}` : null,
-          bd.challenge != null
-            ? `${bd.challenge} ${t("statChallenges")}`
-            : null,
+          bd.ladder != null ? `${bd.ladder} Ladder / Classé` : null,
+          bd.challenge != null ? `${bd.challenge} Défis` : null,
           bd.friendly != null && bd.friendly > 0
-            ? `${bd.friendly} ${t("friendly") || "Friendly"}`
+            ? `${bd.friendly} Amical`
             : null,
         ]
           .filter(Boolean)
           .join(" · ");
-        if (titleEl) titleEl.textContent = t("noRiverRaceHistoryTitle");
+        if (titleEl) titleEl.textContent = "📅 Historique Guerre de clans – 10 semaines";
         renderWarHistoryChart([]);
         if (noteEl)
           noteEl.innerHTML =
-            `<span>⚠️ ${t("noRiverRaceHistoryNote1")} ` +
-            `${t("apiLogEntries", { count: bd.total ?? 30 })}: ${parts || t("noData")}.</span>` +
+            `<span>⚠️ Aucun historique de GDC trouvé pour ce joueur (membre récent). ` +
+            `Journal API (${bd.total ?? 30} entrées): ${parts || "pas de données"}.</span>` +
             `<details class="note-disclosure">` +
-            `<summary>${t("noRiverRaceHistoryWhySummary")}</summary>` +
-            `<p>${t("noRiverRaceHistoryWhyDetail")}</p>` +
+            `<summary>Pourquoi ce score peut-il être moins précis ?</summary>` +
+            `<p>Le journal de bataille couvre au maximum 30 entrées (guerre ou non-guerre). Pour un membre ancien, c’est fiable, mais pour un recrue récente qui vient juste de rejoindre un clan, l’historique de guerre du clan précédent est perdu — seules ces 30 dernières batailles sont prises en compte. L’estimation de fiabilité peut donc être moins précise qu’un membre établi.</p>` +
             `</details>`;
       }
     } else {
       const bd = activityIndicators.battleLogBreakdown ?? {};
       const parts = [
         bd.gdc != null
-          ? `${activityIndicators.totalWarBattles} ${t("statWarBattles")}`
+          ? `${activityIndicators.totalWarBattles} Batailles de guerre`
           : null,
-        bd.ladder != null ? `${bd.ladder} ${t("statLadder")}` : null,
-        bd.challenge != null ? `${bd.challenge} ${t("statChallenges")}` : null,
-        bd.friendly != null && bd.friendly > 0
-          ? `${bd.friendly} ${t("friendly") || "Friendly"}`
-          : null,
+        bd.ladder != null ? `${bd.ladder} Ladder / Classé` : null,
+        bd.challenge != null ? `${bd.challenge} Défis` : null,
+        bd.friendly != null && bd.friendly > 0 ? `${bd.friendly} Amical` : null,
       ]
         .filter(Boolean)
         .join(" · ");
-      if (titleEl) titleEl.textContent = t("clanWarActivityTitle");
+      if (titleEl) titleEl.textContent = "📅 Activité de guerre de clan – 7 derniers jours";
       renderActivityChart(recentActivity.dailyActivity);
       if (noteEl)
         noteEl.textContent =
-          `⚠️ ${t("noClanWarHistoryWarning")} ` +
-          `${t("apiLogEntries", { count: bd.total ?? 30 })}: ${parts || t("noData")}.`;
+          `⚠️ Aucun clan — historique de guerre indisponible. ` +
+          `Journal API (${bd.total ?? 30} entrées): ${parts || "pas de données"}.`;
     }
   }
 
@@ -2049,33 +1847,24 @@ function renderPlayerResults(data) {
     if (cardRaceTime) {
       cardRaceTime.classList.remove("hidden");
       const cardTitle = cardRaceTime.querySelector(".card-title");
-      if (cardTitle) cardTitle.textContent = t("raceTimeTitle");
+      if (cardTitle) cardTitle.textContent = "⏰ Guerre de clan heure par heure";
     }
     renderRaceTimeTags(raceTimeProfile);
 
-    const rawLateBucketWarning = t("raceTimeLateBucketWarning");
-    const defaultLateBucketWarning =
-      currentLang === "fr"
-        ? " ⚠️ risque (dernier créneau)"
-        : " ⚠️ risk (last bucket)";
-    const lateBucketWarning =
-      rawLateBucketWarning &&
-      rawLateBucketWarning !== "raceTimeLateBucketWarning"
-        ? rawLateBucketWarning
-        : defaultLateBucketWarning;
+    const lateBucketWarning = " ⚠️ risque (dernier créneau)";
 
     if (totalGdc > 0) {
-      if (raceTimeNote) raceTimeNote.textContent = t("raceTimeDesc");
+      if (raceTimeNote) raceTimeNote.textContent = "Répartition des decks GDC joués par plage horaire locale (Europe/Paris).";
       if (raceTimeChartWrapper) raceTimeChartWrapper.classList.remove("hidden");
       renderRaceTimeChart(counts, lateBucketWarning, resetUtcMinutes);
     } else {
-      if (raceTimeNote) raceTimeNote.textContent = t("raceTimeNoGdc");
+      if (raceTimeNote) raceTimeNote.textContent = "Pas de combats GDC dans le BattleLog disponible.";
       destroyIfExists("chart-race-time");
       if (raceTimeChartWrapper) raceTimeChartWrapper.classList.add("hidden");
     }
   } else {
     if (cardRaceTime) cardRaceTime.classList.add("hidden");
-    if (raceTimeNote) raceTimeNote.textContent = t("raceTimeNoHistory");
+    if (raceTimeNote) raceTimeNote.textContent = "2 semaines de GDC requises pour cette vue.";
     if (raceTimeTags) {
       raceTimeTags.innerHTML = "";
       raceTimeTags.classList.add("hidden");
@@ -2102,17 +1891,10 @@ function renderPlayerResults(data) {
 
   const icon =
     { green: "✅", yellow: "⚠️", orange: "🟠", red: "🔴" }[ws.color] ?? "❓";
-  const verdictMap = {
-    "High reliability": t("highReliability"),
-    "Low risk": t("moderateRisk"),
-    "High risk": t("highRisk"),
-    "Extreme risk": t("extremeRisk"),
-  };
-  const verdictText = verdictMap[ws.verdict] || ws.verdict;
-  ws.verdict = verdictText; // override to use translation everywhere
+  const verdictText = ws.verdict;
 
   const fallbackBadge = ws.isFallback
-    ? `<div class="fallback-badge">⚠️ ${t("fallbackBadge")}</div>`
+    ? `<div class="fallback-badge">⚠️ ${"Estimation basée sur le battle log API (≤ 30 entrées) — pas d'historique de guerre disponible"}</div>`
     : "";
 
   verdictBox.innerHTML = `
@@ -2126,231 +1908,13 @@ function renderPlayerResults(data) {
     ${fallbackBadge}
   `;
 
-  const scoreLabelMap = getScoreLabelMap();
-
+  // Les labels/détails/explications sont déjà en français (fournis par warScoring.js).
+  // La durée "vu pour la dernière fois" est calculée côté client (formatage relatif
+  // précis) et prime donc sur le texte renvoyé par le backend pour ce critère.
   const lastSeenDuration = formatLastSeenDuration(overview.lastSeen);
-  function translateDetail(label, text) {
+  function displayDetail(key, text) {
     if (!text) return text;
-    if (
-      label.toLowerCase().includes("last seen") ||
-      label.toLowerCase().includes("dernière connexion")
-    ) {
-      return lastSeenDuration || text;
-    }
-    if (currentLang !== "fr") return text;
-
-    // Generic phrase-level FR translation when the source detail is still in English.
-    let normalized = text
-      .replace(
-        /([0-9.,]+)\s*total cw2 wins \(cap 250\)/gi,
-        (_, n) => `${n} victoires CW2 totales (max 250)`,
-      )
-      .replace(
-        /5-week window where only complete weeks count and missing weeks count as 0:/gi,
-        "Fenêtre de 5 semaines où seules les semaines complètes comptent et les semaines manquantes comptent 0 :",
-      )
-      .replace(
-        /based on\s*(\d+)\s*recovered week\(s\) from the gdc history screen\./gi,
-        (_, n) => `Basé sur ${n} semaine(s) récupérée(s) depuis l'écran d'historique GDC.`,
-      )
-      .replace(/last war: none/gi, "Dernière guerre : aucune")
-      .replace(/\brange\s*([\d,.  ]+)[–-]([\d,.  ]+)/gi, "plage $1–$2")
-      .replace(/decks across/gi, "decks sur")
-      .replace(/incomplete weeks?/gi, (m) =>
-        m.toLowerCase().startsWith("incomplete")
-          ? m.replace(/incomplete/i, "incomplète")
-          : m,
-      )
-      .replace(
-        /member for\s*(?:at least\s*)?(\d+)\s*weeks?/i,
-        (_, n) =>
-          `membre depuis ${Number(n) >= 10 ? "au moins " : ""}${n} ${Number(n) > 1 ? "semaines" : "semaine"}`,
-      )
-      .replace(
-        /(at least\s*)?([0-9]+)\s*consecutive weeks?\s*in this clan(?: or family)?/gi,
-        (_, atLeast, n) =>
-          `${atLeast ? "au moins " : ""}${n} ${Number(n) > 1 ? "semaines" : "semaine"} ${Number(n) > 1 ? "consécutives" : "consécutive"} dans le clan ou la famille`,
-      )
-      .replace(
-        /([0-9.,]+)\s*weeks?/gi,
-        (_, n) => `${n} ${Number(n) > 1 ? "semaines" : "semaine"}`,
-      )
-      .replace(
-        /points \/ week \(average weekly fame, 1,000–3,000\)/gi,
-        "points / semaine (1 000–3 000)",
-      )
-      .replace(/fame \/ week \(cap 3,000\)/gi, t("avgFameCap"))
-      .replace(
-        /in recent\s+(\d+)-day window:/gi,
-        (_, n) => `Sur les ${n} derniers jours :`,
-      )
-      .replace(
-        /(\d+)\s*full days?/gi,
-        (_, n) => `${n} ${Number(n) > 1 ? "jours complets" : "jour complet"}`,
-      )
-      .replace(
-        /(\d+)\s*short days?/gi,
-        (_, n) => `${n} ${Number(n) > 1 ? "jours courts" : "jour court"}`,
-      )
-      .replace(
-        /(\d+)\s*inactive days?/gi,
-        (_, n) => `${n} ${Number(n) > 1 ? "jours inactifs" : "jour inactif"}`,
-      )
-      .replace(/last war: (\d{4}-\d{2}-\d{2})/gi, "Dernière guerre : $1")
-      .replace(
-        /\((\d+) day\(s\) ago\)/gi,
-        (_, n) => `(il y a ${n} ${Number(n) > 1 ? "jours" : "jour"})`,
-      )
-      .replace(/competitive battles/gi, "combats compétitifs")
-      .replace(/([0-9]+)\s*War/gi, "$1 Guerre")
-      .replace(/([0-9]+)\s*Challenges/gi, "$1 Défis")
-      .replace(
-        /(\d+)% wins \((\d+)W \/ (\d+)L\)/gi,
-        "$1% victoires ($2W / $3L)",
-      )
-      .replace(
-        /not counted \(10 battles required\)/gi,
-        "non compté (10 combats requis)",
-      )
-      .replace(
-        /No data — no war battles found/gi,
-        "Aucune donnée — aucun combat de guerre trouvé",
-      )
-      .replace(/total cw2 wins \(cap 250\)/gi, t("cw2BattleWinsCap"))
-      .replace(/victories in river race/gi, "victoires en GDC")
-      .replace(/trophies \(range 4000–14000\)/gi, "trophées (plage 4000–14000)")
-      .replace(/trophies/gi, "trophées")
-      .replace(/battles required/gi, "combats requis")
-      .replace(
-        /total cards donated \(cap 100000\)/gi,
-        "cartes totales données (cap 100000)",
-      );
-
-    if (normalized !== text) {
-      text = normalized;
-    }
-
-    if (currentLang === "fr") {
-      text = text
-        .replace(/\b(\d{1,3}(?:,\d{3})+)\b/g, (value) =>
-          value.replace(/,/g, " "),
-        )
-        .replace(/(\d+)\.(\d+)/g, "$1,$2")
-        .replace(
-          /\bincomplete weeks? count as 0\b/gi,
-          "Semaines incomplètes comptent 0",
-        )
-        .replace(/\btoday\b/gi, "Aujourd'hui")
-        .replace(/\bfull weeks?\b/gi, (match) =>
-          match.toLowerCase().includes("full weeks")
-            ? "semaines complètes"
-            : match,
-        );
-    }
-
-    const lowercaseLabel = label.toLowerCase();
-    if (
-      lowercaseLabel.includes("regularity") ||
-      lowercaseLabel.includes("régularité")
-    ) {
-      return text
-        .replace(
-          /^No completed week in this clan yet$/i,
-          "Aucune semaine terminée dans ce clan pour le moment",
-        )
-        .replace(/(\d+)\/5 full weeks?/i, (_, n) => `${n}/5 semaines complètes`)
-        .replace(
-          /incomplete weeks? count as 0/i,
-          "Semaines incomplètes comptent 0",
-        )
-        .replace(
-          /incompl[eè]te weeks? count as 0/i,
-          "Semaines incomplètes comptent 0",
-        )
-        .replace(/\btoday\b/i, "Aujourd'hui")
-        .replace(
-          /member for at least\s*(\d+)\s*weeks?/i,
-          (_, n) => `membre depuis au moins ${n} semaines`,
-        )
-        .replace(
-          /member for\s*(\d+)\s*weeks?/i,
-          (_, n) => `membre depuis ${n} semaines`,
-        )
-        .replace(
-          /joined recently \(< 1 week in this clan\)/i,
-          "— arrivé récemment (< 1 semaine dans le clan)",
-        );
-    }
-    if (lowercaseLabel.includes("avg")) {
-      return text;
-    }
-    if (lowercaseLabel.includes("deck")) {
-      return text
-        .replace(
-          /No completed week with GDC data/gi,
-          "Aucune semaine terminée avec données GDC",
-        )
-        .replace(/range 100–180/gi, "plage 100–180")
-        .replace(/last 3 completed weeks/gi, "3 dernières semaines terminées");
-    }
-    if (lowercaseLabel.includes("cw2")) {
-      return text;
-    }
-    if (
-      lowercaseLabel.includes("stability") ||
-      lowercaseLabel.includes("stabilité")
-    ) {
-      return text;
-    }
-    if (
-      lowercaseLabel.includes("last seen") ||
-      lowercaseLabel.includes("dernière connexion")
-    ) {
-      if (currentLang === "fr") {
-        if (/today/i.test(text)) return "Aujourd'hui";
-        if (lastSeenDuration) {
-          if (/^0m$/i.test(lastSeenDuration)) return "Aujourd'hui";
-          return lastSeenDuration
-            .replace(/(\d+)d/g, "$1 j")
-            .replace(/(\d+)h/g, "$1 h")
-            .replace(/(\d+)m/g, "$1 min");
-        }
-        return text
-          .replace(/^1 day$/i, "1 jour")
-          .replace(/^(\d+) days?$/i, (_, n) => `${n} jours`);
-      }
-      return text
-        .replace(/today/i, t("today"))
-        .replace(/1 day/i, t("oneDayAgo"))
-        .replace(/(\d+) days?/i, (_, n) => `${n} ${t("days")}`);
-    }
-    if (lowercaseLabel.includes("win rate")) {
-      return text;
-    }
-    if (
-      lowercaseLabel.includes("experience") ||
-      lowercaseLabel.includes("expérience")
-    ) {
-      return currentLang === "fr"
-        ? text.replace(
-            /trophies \(range 4000–14000\)/gi,
-            "trophées (plage 4 000–14 000)",
-          )
-        : text;
-    }
-    if (lowercaseLabel.includes("discord")) {
-      return currentLang === "fr"
-        ? text
-            .replace(
-              "Discord account linked to the server",
-              "Compte Discord lié au serveur",
-            )
-            .replace(
-              "Discord account not linked (/discord-link)",
-              "Compte Discord non lié (/discord-link)",
-            )
-        : text;
-    }
+    if (key === "lastSeen") return lastSeenDuration || text;
     return text;
   }
   const sortedBreakdown = [...(ws.breakdown ?? [])].sort(
@@ -2358,15 +1922,14 @@ function renderPlayerResults(data) {
   );
   reasonsList.innerHTML = sortedBreakdown
     .map((b) => {
-      const labelText = scoreLabelMap[b.label] || b.label;
-      const detailText = translateDetail(b.label, b.detail);
-      const explanationText = translateDetail(b.label, b.explanation);
+      const detailText = displayDetail(b.key, b.detail);
+      const explanationText = displayDetail(b.key, b.explanation);
       if (b.excluded) {
         return `
       <li class="score-row score-row-excluded">
         <div class="sr-header">
-          <span class="sr-label">${escHtml(labelText)}</span>
-          <span class="sr-excluded-badge">${t("notCounted") || "not counted"}</span>
+          <span class="sr-label">${escHtml(b.label)}</span>
+          <span class="sr-excluded-badge">non compté</span>
         </div>
         <div class="sr-bar-bg"></div>
         <div class="sr-detail">${escHtml(detailText)}</div>
@@ -2382,14 +1945,10 @@ function renderPlayerResults(data) {
             : pct >= 31
               ? "var(--orange)"
               : "var(--red)";
-      const label =
-        b.label === "Discord"
-          ? `${t("discord")} (${b.score > 0 ? t("yes") : t("no")})`
-          : escHtml(b.label);
       return `
       <li class="score-row">
         <div class="sr-header">
-          <span class="sr-label">${escHtml(labelText)}</span>
+          <span class="sr-label">${escHtml(b.label)}</span>
           <span class="sr-score-val">${b.score}<span class="sr-max"> / ${b.max}</span></span>
         </div>
         <div class="sr-bar-bg">
@@ -2403,7 +1962,6 @@ function renderPlayerResults(data) {
 
   // Ensure any rendered labels are updated after player content is rendered
   translateUI();
-  updateLangButtonUI();
   playerResults.classList.remove("hidden");
 }
 
@@ -2439,10 +1997,10 @@ function formatLastSeenDuration(value) {
 // ── Actual Clan War card (player view) ────────────────────────────
 
 const DAY_NAMES = [
-  t("dayThu") || "Thu",
-  t("dayFri") || "Fri",
-  t("daySat") || "Sat",
-  t("daySun") || "Sun",
+  "Jeu",
+  "Ven",
+  "Sam",
+  "Dim",
 ];
 
 function renderCurrentWarCard(
@@ -2464,7 +2022,7 @@ function renderCurrentWarCard(
     ? ` <span class="card-week-id">(${weekId.toLowerCase()})</span>`
     : "";
   cardCurrentWar.querySelector(".card-title").innerHTML =
-    `⚔️ ${t("currentClanWar")} ${weekLabel}`;
+    `⚔️ ${"Guerre de clan en cours"} ${weekLabel}`;
 
   const showDetails = showWarDayDetails === true;
 
@@ -2524,12 +2082,12 @@ function renderCurrentWarCard(
       `<div class="war-summary">` +
       `<div class="war-progress-row">` +
       `<span class="war-decks-count">0 <span class="war-decks-max">/ ${computedMaxWeek}</span></span>` +
-      `<span class="war-decks-label">${t("warDecksThisWeek") || "decks this week"}</span>` +
-      `<span class="war-data-source arrived">${t("warArrived") || "Arrived"} ${arrivalDayName} ⚠️</span>` +
+      `<span class="war-decks-label">${"decks cette semaine"}</span>` +
+      `<span class="war-data-source arrived">${"Arrivé"} ${arrivalDayName} ⚠️</span>` +
       `</div>` +
       `<div class="war-progress-track"><div class="war-progress-fill bad" style="width:0%"></div></div>` +
       `<div class="war-progress-meta war-arrived-note">` +
-      `${t("warJoinedDuringWeekNote") || "Joined during the war week — can't count battles this week"}` +
+      `${"Arrivé en cours de semaine — impossible de compter les combats cette semaine"}` +
       `</div>` +
       `<div class="war-day-chips">${chipsHtml}</div>` +
       `</div>`;
@@ -2544,15 +2102,15 @@ function renderCurrentWarCard(
   let statusIcon, statusText, statusCls;
   if (totalDecksUsed >= computedMaxElapsed) {
     statusIcon = "✅";
-    statusText = t("warStatusOnTrack") || "On track";
+    statusText = "Dans les temps";
     statusCls = "good";
   } else if (totalDecksUsed >= Math.ceil(computedMaxElapsed / 2)) {
     statusIcon = "⚠️";
-    statusText = t("warStatusBehindSchedule") || "Behind schedule";
+    statusText = "En retard";
     statusCls = "partial";
   } else {
     statusIcon = "🔴";
-    statusText = t("warStatusVeryBehind") || "Very behind";
+    statusText = "Fortement en retard";
     statusCls = "bad";
   }
 
@@ -2566,10 +2124,10 @@ function renderCurrentWarCard(
   const sourceNote = snapHasData
     ? `<span class="war-data-source reliable">Snapshot ✓${snapshotTakenAtLabel}${snapshotMismatch ? " ⚠️" : ""}</span>`
     : isReliableTotal
-      ? '<span class="war-data-source reliable">Race log ✓</span>'
-      : '<span class="war-data-source fallback">Battle log (approx.)</span>';
+      ? '<span class="war-data-source reliable">Journal de course ✓</span>'
+      : '<span class="war-data-source fallback">Journal de combats (approx.)</span>';
 
-  const sourceHint = t("sourceHint");
+  const sourceHint = "ℹ️ Données live pour aujourd'hui, snapshots pour les jours précédents";
   const snapshotDataInvalid = days.some((d) => d.isPast && d.totalCount === 0);
 
   const chipsHtml = days
@@ -2597,7 +2155,7 @@ function renderCurrentWarCard(
       let snap = "";
 
       if (daySource === "live") {
-        const note = `[live ${liveVal ?? d.count}/4]`;
+        const note = `[direct ${liveVal ?? d.count}/4]`;
         snap = ` <span class="chip-snap chip-snap-live">${battleVal}/4 ${note}</span>`;
       } else if (daySource === "snapshot") {
         const warn = battleVal < 4 ? " ⚠️" : "";
@@ -2607,11 +2165,12 @@ function renderCurrentWarCard(
             : battleVal <= 3
               ? "chip-snap chip-snap-orange"
               : "chip-snap";
-        const note = battleVal !== d.count ? ` (snap ${battleVal}/4)` : "";
+        const note =
+          battleVal !== d.count ? ` (snapshot ${battleVal}/4)` : "";
         snap = ` <span class="${snapCls}">${battleVal}/4${warn}${note}</span>`;
       } else {
         // no snapshot: mark as missing rather than guessing based on incomplete log
-        label += " (no data)";
+        label += " (pas de données)";
         snap = ` <span class="chip-snap chip-snap-fallback">${battleVal}/4</span>`;
       }
 
@@ -2632,18 +2191,18 @@ function renderCurrentWarCard(
     `<div class="war-summary">` +
     `<div class="war-progress-row">` +
     `<span class="war-decks-count">${totalDecksUsed} <span class="war-decks-max">/ ${computedMaxElapsed}</span></span>` +
-    `<span class="war-decks-label">${t("warDecksSoFar") || "decks so far"} ${getRemainingTimeHtml(warResetUtcMinutes)}</span>` +
+    `<span class="war-decks-label">${"decks joués"} ${getRemainingTimeHtml(warResetUtcMinutes)}</span>` +
     sourceNoteHtml +
     `</div>` +
     `<div class="war-progress-track">` +
     `<div class="war-progress-fill ${statusCls}" style="width:${pctFill}%"></div>` +
     `</div>` +
     `<div class="war-progress-meta">` +
-    `${t("warProgressDayOf", { day: dayNum, total: 4 })}` +
+    `Jour ${dayNum} de 4` +
     `</div>` +
-    `${daysFromThu > 0 && decksYesterdayAtThisHour != null ? `<div class="war-yesterday-hint">${t("warDecksYesterdayHour").replace("{{decks}}", decksYesterdayAtThisHour)}</div>` : ""}` +
+    `${daysFromThu > 0 && decksYesterdayAtThisHour != null ? `<div class="war-yesterday-hint">Hier à cette heure : ${decksYesterdayAtThisHour} decks</div>` : ""}` +
     `${progressNoteHtml}` +
-    `${showDetails && snapshotDataInvalid ? `<div class="war-progress-warning">⚠ ${t("warSnapshotDataInvalid")}</div>` : ""}` +
+    `${showDetails && snapshotDataInvalid ? `<div class="war-progress-warning">⚠ ${"Certaines données de snapshot historique sont manquantes ou incohérentes ; les totaux peuvent être peu fiables."}</div>` : ""}` +
     `${sourceHintHtml}` +
     `${dayChipsHtml}` +
     `</div>`;
@@ -2672,7 +2231,7 @@ function warMiniBarHtml(warData) {
   let title = `${totalDecksUsed}/${maxDecksElapsed} decks`;
   if (arrivedMidWar) {
     const dayName = DAY_NAMES[(arrivedOnDay ?? 1) - 1] ?? `day ${arrivedOnDay}`;
-    title += ` — ${t("warArrived") || "Arrived"} ${dayName}`;
+    title += ` — ${"Arrivé"} ${dayName}`;
   }
 
   return (
@@ -2693,8 +2252,8 @@ function renderClanLiteBest(lastWarBest, members, prevWeekId = null) {
     ? ` <span class="card-week-id">(${prevWeekId.toUpperCase()})</span>`
     : "";
   card.querySelector(".card-title").innerHTML =
-    `🏅 ${t("lastWarBest")}${weekLabel}`;
-  card.querySelector(".card-desc").textContent = t("lastWarBestDesc") || "";
+    `🏅 ${"Meilleures performances (dernière GDC)"}${weekLabel}`;
+  card.querySelector(".card-desc").textContent = "Liste des joueurs du clan qui ont le mieux performé lors de la dernière Guerre de clans (minimum 2600 pts)";
 
   if (!Array.isArray(lastWarBest) || lastWarBest.length === 0) {
     card.classList.add("hidden");
@@ -2719,7 +2278,7 @@ function renderClanLiteBest(lastWarBest, members, prevWeekId = null) {
           `${escHtml(p.name)} <span class="lite-best-tag">${escHtml(p.tag)}</span>` +
           `${role ? ` <span class="role-badge ${member.role}">${role}</span>` : ""}` +
           `</span>` +
-          `<span class="lite-best-fame">${fmt(p.fame)} ${t("clanLiteLastWarFame")}</span>` +
+          `<span class="lite-best-fame">${fmt(p.fame)} ${"pts"}</span>` +
           `</li>`
         );
       })
@@ -2736,13 +2295,13 @@ function renderTopPlayersCard(topPlayers, prevWeekId = null) {
     ? ` <span class="card-week-id">(${prevWeekId.toUpperCase()})</span>`
     : "";
   card.querySelector(".card-title").innerHTML =
-    `🏅 ${t("lastWarBest")}${weekLabel}`;
-  card.querySelector(".card-desc").textContent = t("lastWarBestDesc") || "";
+    `🏅 ${"Meilleures performances (dernière GDC)"}${weekLabel}`;
+  card.querySelector(".card-desc").textContent = "Liste des joueurs du clan qui ont le mieux performé lors de la dernière Guerre de clans (minimum 2600 pts)";
 
   if (!topPlayers || !topPlayers.playersByQuota) {
     card.classList.remove("hidden");
     if (listEl) {
-      listEl.innerHTML = `<li class="text-muted">${t("clickToLoadTopPlayers") || "Open the section to load data on demand."}</li>`;
+      listEl.innerHTML = `<li class="text-muted">${"Ouvrez la section pour charger les données à la demande."}</li>`;
     }
     return;
   }
@@ -2755,7 +2314,7 @@ function renderTopPlayersCard(topPlayers, prevWeekId = null) {
   players = players.slice().sort((a, b) => b.fame - a.fame);
 
   if (players.length === 0) {
-    listEl.innerHTML = `<li class="text-muted">${t("noPlayersReachedQuota")}</li>`;
+    listEl.innerHTML = `<li class="text-muted">${"Aucun joueur n'a atteint 2600 pts."}</li>`;
   } else {
     listEl.innerHTML = players
       .map(
@@ -2783,12 +2342,12 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
     ? ` <span class="card-week-id">(${prevWeekId.toUpperCase()})</span>`
     : "";
   card.querySelector(".card-title").innerHTML =
-    `🤷 ${t("lastWarFails")}${weekLabel}`;
+    `🤷 ${"Combats manquants (dernière GDC)"}${weekLabel}`;
 
   if (!uncomplete || !Array.isArray(uncomplete.players)) {
     card.classList.remove("hidden");
     if (listEl) {
-      listEl.innerHTML = `<li class="text-muted">${t("clickToLoadUncomplete") || "Open the section to load data on demand."}</li>`;
+      listEl.innerHTML = `<li class="text-muted">${"Ouvrez la section pour charger les données à la demande."}</li>`;
     }
     return;
   }
@@ -2827,7 +2386,7 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
   function formatDaily(counts) {
     if (!counts) return "";
     if (Array.isArray(counts)) {
-      const labels = ["thu", "fri", "sat", "sun"];
+      const labels = ["jeu", "ven", "sam", "dim"];
       const parts = [];
       for (let i = 0; i < labels.length; i += 1) {
         const val = counts[i];
@@ -2848,7 +2407,7 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
       .filter((e) => e.num > 0);
     if (entries.length === 0) return "";
     const n = entries.length;
-    const labels = ["Thu", "Fri", "Sat", "Sun"].slice(-n);
+    const labels = ["Jeu", "Ven", "Sam", "Dim"].slice(-n);
     return entries
       .map((e, i) => {
         const num = e.num;
@@ -2865,7 +2424,7 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
 
   function formatDailyTooltip(counts) {
     if (!counts || !Array.isArray(counts)) return "";
-    const labels = ["thu", "fri", "sat", "sun"];
+    const labels = ["jeu", "ven", "sam", "dim"];
     return counts
       .map((val, i) =>
         val == null ? `?× ${labels[i]}` : `${val}× ${labels[i]}`,
@@ -2876,12 +2435,12 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
   function renderPlayerItem(p) {
     const dailyStr = formatDaily(p.daily);
     const dailyPlain = formatDailyTooltip(p.daily);
-    const mismatchText = p.dailyMismatch ? "⚠ snapshot mismatch" : "";
-    const tooltipText = [dailyPlain || "no daily data", mismatchText]
+    const mismatchText = p.dailyMismatch ? "⚠ écart de snapshot" : "";
+    const tooltipText = [dailyPlain || "aucune donnée quotidienne", mismatchText]
       .filter(Boolean)
       .join(" · ");
 
-    const newBadge = p.isNew ? '<span class="new-badge">new</span>' : "";
+    const newBadge = p.isNew ? '<span class="new-badge">nouveau</span>' : "";
 
     const dailyBadge = `<span class="daily-tooltip" title="${escHtml(tooltipText)}">📅</span>`;
 
@@ -2901,7 +2460,7 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
   const presentRegular = present.filter((p) => !p.joinedThisWeek);
 
   if (present.length === 0 && departed.length === 0) {
-    listEl.innerHTML = `<li class="text-muted">${t("everyoneCompleted16")}</li>`;
+    listEl.innerHTML = `<li class="text-muted">${"Tout le monde a complété 16 decks 👍"}</li>`;
   } else {
     let html = "";
     if (presentRegular.length > 0) {
@@ -2909,11 +2468,11 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
     }
     if (presentArrived.length > 0) {
       if (presentRegular.length > 0)
-        html += `<li class="uncomplete-section-header">${t("warArrivedMidWarSection") || "Arrivés en cours de GDC"}</li>`;
+        html += `<li class="uncomplete-section-header">${"Arrivés en cours de GDC"}</li>`;
       html += presentArrived.map(renderPlayerItem).join("");
     }
     if (present.length === 0) {
-      html = `<li class="text-muted">${t("everyoneInClanCompleted16")}</li>`;
+      html = `<li class="text-muted">${"Tous les membres du clan ont complété 16 decks 👍"}</li>`;
     }
     listEl.innerHTML = html;
   }
@@ -2969,23 +2528,23 @@ function getRemainingTimeHtml(resetUtcMinutes) {
   const m = diff % 60;
   const timeStr = `${h}h${m.toString().padStart(2, "0")}`;
 
-  return `<span class="war-time-remaining">${t("warDayRemaining").replace("{{time}}", timeStr)}</span>`;
+  return `<span class="war-time-remaining">(reste ${timeStr})</span>`;
 }
 
 function translateWarDayLabel(label) {
   switch ((label || "").toLowerCase()) {
     case "thu":
     case "thursday":
-      return t("dayThu") || "Thu";
+      return "Jeu";
     case "fri":
     case "friday":
-      return t("dayFri") || "Fri";
+      return "Ven";
     case "sat":
     case "saturday":
-      return t("daySat") || "Sat";
+      return "Sam";
     case "sun":
     case "sunday":
-      return t("daySun") || "Sun";
+      return "Dim";
     default:
       return label || "";
   }
@@ -3020,9 +2579,9 @@ function renderClanWarCard(
   const weekLabel = weekId
     ? ` <span class="card-week-id">(${weekId.toLowerCase()})</span>`
     : "";
-  const endedLabel = ended ? t("warEndedSuffix") || " (ended)" : "";
+  const endedLabel = ended ? " (terminée)" : "";
   card.querySelector(".card-title").innerHTML =
-    `⚔️ ${t("currentClanWar")}${weekLabel}${endedLabel}`;
+    `⚔️ ${"Guerre de clan en cours"}${weekLabel}${endedLabel}`;
   const dayNum = ended ? 4 : daysFromThu + 1;
   const pctFill = Math.min(
     100,
@@ -3032,15 +2591,15 @@ function renderClanWarCard(
   let statusIcon, statusText, statusCls;
   if (totalDecksUsed >= maxDecksElapsed) {
     statusIcon = "✅";
-    statusText = t("warStatusOnTrack") || "On track";
+    statusText = "Dans les temps";
     statusCls = "good";
   } else if (totalDecksUsed >= Math.ceil(maxDecksElapsed / 2)) {
     statusIcon = "⚠️";
-    statusText = t("warStatusBehindSchedule") || "Behind schedule";
+    statusText = "En retard";
     statusCls = "partial";
   } else {
     statusIcon = "🔴";
-    statusText = t("warStatusVeryBehind") || "Very behind";
+    statusText = "Fortement en retard";
     statusCls = "bad";
   }
 
@@ -3069,17 +2628,17 @@ function renderClanWarCard(
     `<div class="war-summary">` +
     `<div class="war-progress-row">` +
     `<span class="war-decks-count">${totalDecksUsed} <span class="war-decks-max">/ ${maxDecksElapsed}</span></span>` +
-    `<span class="war-decks-label">${t("warDecksSoFar") || "decks so far"} ${getRemainingTimeHtml(warResetUtcMinutes)}</span>` +
-    `<span class="war-data-source reliable">Race log ✓</span>` +
+    `<span class="war-decks-label">${"decks joués"} ${getRemainingTimeHtml(warResetUtcMinutes)}</span>` +
+    `<span class="war-data-source reliable">Journal de course ✓</span>` +
     `</div>` +
     `<div class="war-progress-track">` +
     `<div class="war-progress-fill ${statusCls}" style="width:${pctFill}%"></div>` +
     `</div>` +
     `<div class="war-progress-meta">` +
-    `${t("warProgressDayOf", { day: dayNum, total: 4 })}` +
+    `Jour ${dayNum} de 4` +
     `</div>` +
-    `${daysFromThu > 0 && decksYesterdayAtThisHour != null ? `<div class="war-yesterday-hint">${t("warDecksYesterdayHour").replace("{{decks}}", decksYesterdayAtThisHour)}</div>` : ""}` +
-    `${snapshotDataInvalid ? `<div class="war-progress-warning">⚠ ${t("warSnapshotDataInvalid")}</div>` : ""}` +
+    `${daysFromThu > 0 && decksYesterdayAtThisHour != null ? `<div class="war-yesterday-hint">Hier à cette heure : ${decksYesterdayAtThisHour} decks</div>` : ""}` +
+    `${snapshotDataInvalid ? `<div class="war-progress-warning">⚠ ${"Certaines données de snapshot historique sont manquantes ou incohérentes ; les totaux peuvent être peu fiables."}</div>` : ""}` +
     `${showDayChips ? `<div class="war-day-chips">${chipsHtml}</div>` : ""}` +
     `</div>`;
 }
@@ -3097,7 +2656,7 @@ let loadedClanSections = {
 };
 
 function computeClanLeague(clanWarTrophies) {
-  return getLeagueName(clanWarTrophies, "en");
+  return getLeagueName(clanWarTrophies);
 }
 
 function renderClanOverview(data) {
@@ -3126,8 +2685,8 @@ function renderClanOverview(data) {
     const clanTagNoHash = String(currentClanTag || "").replace(/^#/, "");
     const isTreve = clanTagNoHash.toUpperCase() === "QUV220GJ";
     clanLiteNotice.textContent = isTreve
-      ? t("clanLiteNoticeTreve")
-      : t("clanLiteNotice");
+      ? "Les scores de fiabilité GDC ne sont pas disponibles."
+      : "Ce clan n'est pas dans la famille. Les scores de fiabilité GDC ne sont pas disponibles.";
     clanLiteNotice.classList.toggle("hidden", !isLite);
   }
 
@@ -3205,10 +2764,10 @@ function renderClanOverview(data) {
 
   // En mode lite : pas de "Reset (Paris)" ni "Avg Score"
   const baseItems = [
-    { label: t("labelName"), value: clan.name },
-    { label: t("labelTag"), value: clan.tag, link: clanLink },
+    { label: "Nom", value: clan.name },
+    { label: "Tag", value: clan.tag, link: clanLink },
     {
-      label: t("labelMembers"),
+      label: "Membres",
       value: `${clan.members} / 50`,
       cls:
         clan.members < 45
@@ -3219,21 +2778,21 @@ function renderClanOverview(data) {
               ? "c-yellow"
               : "",
     },
-    { label: t("labelClanScore"), value: fmt(clan.clanScore) },
+    { label: "Score du clan", value: fmt(clan.clanScore) },
     {
-      label: t("labelWarTrophies"),
+      label: "Trophées de guerre",
       value: `⚔️ ${fmt(clan.clanWarTrophies ?? 0)}`,
     },
     {
-      label: t("labelLeague"),
+      label: "Ligue",
       value: computeClanLeague(clan.clanWarTrophies) || "—",
     },
-    { label: t("labelRequired"), value: `🏆 ${fmt(clan.requiredTrophies)}` },
-    { label: t("labelType"), value: capitalize(clan.type ?? "—") },
+    { label: "Requis", value: `🏆 ${fmt(clan.requiredTrophies)}` },
+    { label: "Type", value: formatClanType(clan.type) },
     ...(data.frRank != null
       ? [
           {
-            label: t("labelLocationRank"),
+            label: "Classement pays",
             title: clan.location?.name ?? null,
             value: (() => {
               const code = clan.location?.countryCode ?? "";
@@ -3267,7 +2826,7 @@ function renderClanOverview(data) {
   const fullItems = [
     ...baseItems,
     {
-      label: t("labelWarReset"),
+      label: "Reset (Paris)",
       value: (() => {
         const utcMinutes = clan.warResetUtcMinutes ?? 9 * 60 + 40;
         const utcMs = utcMinutes * 60 * 1000;
@@ -3281,7 +2840,7 @@ function renderClanOverview(data) {
       })(),
     },
     {
-      label: t("labelAvgScore"),
+      label: "Fiabilité",
       value: `${summary.avgScore}%`,
       cls:
         summary.avgScore < 60
@@ -3307,11 +2866,11 @@ function renderClanOverview(data) {
       cardGroup.classList.remove("hidden");
       if (!loadedClanSections.raceGroup) {
         if (groupListEl) {
-          groupListEl.innerHTML = `<tr class="text-muted"><td colspan="6" style="padding:15px;text-align:center;">${t("clickToLoadRaceGroup") || "Open the section to load rival data."}</td></tr>`;
+          groupListEl.innerHTML = `<tr class="text-muted"><td colspan="6" style="padding:15px;text-align:center;">${"Ouvrez cette section pour comparer les clans du groupe (peut prendre quelques secondes)."}</td></tr>`;
         }
         detailsGroup.open = false;
       } else {
-        renderRaceGroupCard(data, t, getRemainingTimeHtml);
+        renderRaceGroupCard(data, getRemainingTimeHtml);
       }
     } else {
       cardGroup.classList.add("hidden");
@@ -3344,7 +2903,6 @@ function renderClanOverview(data) {
 
   // Ensure any rendered labels are updated after dynamic clan content is rendered
   translateUI();
-  updateLangButtonUI();
   if (!isLite) setupClanLazySectionHandlers(weekId);
   clanResults.classList.remove("hidden");
 }
@@ -3359,12 +2917,12 @@ function setupClanLazySectionHandlers(weekId) {
       topDetails.addEventListener("toggle", async () => {
         if (!topDetails.open || loadedClanSections.topPlayers) return;
         topCard.querySelector("#top-players-list").innerHTML =
-          `<li class="text-muted">${t("loading") || "Loading..."}</li>`;
+          `<li class="text-muted">${"Chargement…"}</li>`;
         try {
           await loadClanSection(activeClanTag, "topPlayers", weekId);
         } catch (err) {
           topCard.querySelector("#top-players-list").innerHTML =
-            `<li class="text-muted">${t("errorLoadingSection") || "Failed to load top players."}</li>`;
+            `<li class="text-muted">${"Échec du chargement de la section. Réessayez."}</li>`;
         }
       });
     }
@@ -3378,12 +2936,12 @@ function setupClanLazySectionHandlers(weekId) {
       uncompleteDetails.addEventListener("toggle", async () => {
         if (!uncompleteDetails.open || loadedClanSections.uncomplete) return;
         uncompleteCard.querySelector("#uncomplete-list").innerHTML =
-          `<li class="text-muted">${t("loading") || "Loading..."}</li>`;
+          `<li class="text-muted">${"Chargement…"}</li>`;
         try {
           await loadClanSection(activeClanTag, "uncomplete", weekId);
         } catch (err) {
           uncompleteCard.querySelector("#uncomplete-list").innerHTML =
-            `<li class="text-muted">${t("errorLoadingSection") || "Failed to load uncomplete list."}</li>`;
+            `<li class="text-muted">${"Échec du chargement de la section. Réessayez."}</li>`;
         }
       });
     }
@@ -3401,7 +2959,7 @@ function setupClanLazySectionHandlers(weekId) {
           await loadClanSection(activeClanTag, "raceGroup", weekId);
         } catch (err) {
           document.getElementById("war-group-list").innerHTML =
-            `<tr class="text-muted"><td colspan="6" style="padding:15px;text-align:center;">${t("errorLoadingSection") || "Failed to load group data."}</td></tr>`;
+            `<tr class="text-muted"><td colspan="6" style="padding:15px;text-align:center;">${"Échec du chargement de la section. Réessayez."}</td></tr>`;
         } finally {
           document.getElementById("war-group-spinner").classList.add("hidden");
         }
@@ -3420,12 +2978,12 @@ function setupClanLazySectionHandlers(weekId) {
         if (allMembers.length > 0) {
           applyFilters();
         } else {
-          membersTbody.innerHTML = `<tr><td colspan="${cols}" class="members-skeleton">${t("membersLoading")}</td></tr>`;
+          membersTbody.innerHTML = `<tr><td colspan="${cols}" class="members-skeleton">${"Chargement de la liste des membres…"}</td></tr>`;
         }
         try {
           await loadClanSection(activeClanTag, "members", weekId);
         } catch (err) {
-          membersTbody.innerHTML = `<tr class="text-muted"><td colspan="${cols}" style="padding:15px;text-align:center;">${t("errorLoadingSection") || "Failed to load members."}</td></tr>`;
+          membersTbody.innerHTML = `<tr class="text-muted"><td colspan="${cols}" style="padding:15px;text-align:center;">${"Échec du chargement de la section. Réessayez."}</td></tr>`;
         }
       });
     }
@@ -3495,7 +3053,7 @@ async function loadClanSection(tag, section, weekId, force = false) {
   }
   if (section === "raceGroup") {
     loadedClanSections.raceGroup = true;
-    renderRaceGroupCard(data, t, getRemainingTimeHtml);
+    renderRaceGroupCard(data, getRemainingTimeHtml);
     renderCardCacheNote(
       "war-group-cache-note",
       {
@@ -3527,12 +3085,12 @@ async function refreshMembersLive() {
   if (membersDetails && !membersDetails.open) {
     membersDetails.open = true;
   }
-  membersTbody.innerHTML = `<tr><td colspan="${cols}" class="members-skeleton">${t("membersLoading")}</td></tr>`;
+  membersTbody.innerHTML = `<tr><td colspan="${cols}" class="members-skeleton">${"Chargement de la liste des membres…"}</td></tr>`;
 
   try {
     await loadClanSection(activeClanTag, "members", null, true);
   } catch (err) {
-    membersTbody.innerHTML = `<tr class="text-muted"><td colspan="${cols}" style="padding:15px;text-align:center;">${t("errorLoadingSection") || "Failed to load members."}</td></tr>`;
+    membersTbody.innerHTML = `<tr class="text-muted"><td colspan="${cols}" style="padding:15px;text-align:center;">${"Échec du chargement de la section. Réessayez."}</td></tr>`;
   }
 }
 
@@ -3548,7 +3106,7 @@ async function refreshWarGroupLive() {
   } catch (err) {
     const groupList = document.getElementById("war-group-list");
     if (groupList) {
-      groupList.innerHTML = `<tr class="text-muted"><td colspan="6" style="padding:15px;text-align:center;">${t("errorLoadingSection") || "Failed to load group data."}</td></tr>`;
+      groupList.innerHTML = `<tr class="text-muted"><td colspan="6" style="padding:15px;text-align:center;">${"Échec du chargement de la section. Réessayez."}</td></tr>`;
     }
   } finally {
     if (spinner) spinner.classList.add("hidden");
@@ -3620,12 +3178,12 @@ function renderClanMembers(data) {
 // Affiche un skeleton dans le tableau membres pendant le chargement live.
 function renderMembersPlaceholder() {
   const cols = currentClanIsLite ? 6 : isWarActive ? 10 : 9;
-  membersTbody.innerHTML = `<tr class="members-placeholder"><td colspan="${cols}" style="text-align:center;color:var(--text-muted);padding:18px 0;">${t("clickToLoadMembers")}</td></tr>`;
+  membersTbody.innerHTML = `<tr class="members-placeholder"><td colspan="${cols}" style="text-align:center;color:var(--text-muted);padding:18px 0;">${"Ouvrez la section pour charger le tableau des membres."}</td></tr>`;
 }
 
 function renderMembersSkeleton() {
   const cols = currentClanIsLite ? 6 : isWarActive ? 10 : 9;
-  membersTbody.innerHTML = `<tr><td colspan="${cols}" class="members-skeleton">${t("membersLoading")}</td></tr>`;
+  membersTbody.innerHTML = `<tr><td colspan="${cols}" class="members-skeleton">${"Chargement de la liste des membres…"}</td></tr>`;
 }
 
 // ── Members table ────────────────────────────────────────────
@@ -3638,7 +3196,7 @@ function renderMembersTable(members) {
   const colCount = currentClanIsLite ? liteColCount : fullColCount;
 
   if (members.length === 0) {
-    membersTbody.innerHTML = `<tr><td colspan="${colCount}" style="text-align:center;color:var(--text-muted)">${t("noMembersFound")}</td></tr>`;
+    membersTbody.innerHTML = `<tr><td colspan="${colCount}" style="text-align:center;color:var(--text-muted)">${"Aucun membre trouvé."}</td></tr>`;
     return;
   }
 
@@ -3679,23 +3237,15 @@ function renderMembersTable(members) {
         const label =
           formatLastSeenDuration(m.lastSeen) ||
           (daysFrac < 1
-            ? t("today")
+            ? "Aujourd'hui"
             : days < 2
-              ? t("oneDayAgo")
-              : currentLang === "fr"
-                ? `${t("ago")} ${days} ${t("days")}`
-                : `${days} ${t("days")} ${t("ago")}`);
+              ? "1 jour"
+              : `il y a ${days} jours`);
         lastSeenCell = `<td class="last-seen-col"><span class="last-seen-badge ${cls}">${label}</span></td>`;
       }
       // New players are marked via backend war history/fallback analysis.
       const displayNew = m.isNew;
-      const memberVerdict =
-        {
-          "High reliability": t("highReliability"),
-          "Low risk": t("moderateRisk"),
-          "High risk": t("highRisk"),
-          "Extreme risk": t("extremeRisk"),
-        }[m.verdict] || m.verdict;
+      const memberVerdict = m.verdict;
 
       const discordCell = currentClanIsLite
         ? ""
@@ -3724,8 +3274,8 @@ function renderMembersTable(members) {
       return `
       <tr>
         <td>
-          <a class="member-link" href="/${currentLang}/player/${m.tag.replace(/^#/, "")}" title="${t("analyze")} ${escHtml(m.name)}">
-            <div style="font-weight:600">${escHtml(m.name)}${displayNew ? ` <span class="new-badge">${t("newBadge")}</span>` : ""}</div>
+          <a class="member-link" href="/player/${m.tag.replace(/^#/, "")}" title="${"Analyser"} ${escHtml(m.name)}">
+            <div style="font-weight:600">${escHtml(m.name)}${displayNew ? ` <span class="new-badge">${"nouveau"}</span>` : ""}</div>
             <div style="font-size:.75rem;color:var(--text-muted)">${escHtml(m.tag)}</div>
           </a>
         </td>
@@ -3924,7 +3474,6 @@ function loadCollectionRewards() {
 }
 
 async function showCollectionModal(col) {
-  const isFr = currentLang === "fr";
   // Totaux fournis par le backend (source de vérité : collectionConstants.js)
   // Fallback sur les valeurs actuelles si l'API ne les retourne pas encore.
   const TOTAL_CARDS = col.totals?.cards ?? 125;
@@ -3948,16 +3497,16 @@ async function showCollectionModal(col) {
 
   // Prochaines récompenses (5 prochains paliers)
   const REWARD_LABELS = {
-    gems: isFr ? "Gemmes" : "Gems",
-    common_wc: isFr ? "Joker Commun" : "Common WC",
-    rare_wc: isFr ? "Joker Rare" : "Rare WC",
-    epic_wc: isFr ? "Joker \u00c9pique" : "Epic WC",
-    legendary_wc: isFr ? "Joker L\u00e9gendaire" : "Legendary WC",
-    champion_wc: isFr ? "Joker Champion" : "Champion WC",
-    lucky_chest_4star: isFr ? "Coffre 4\u2605" : "4\u2605 Chest",
-    lucky_chest_5star: isFr ? "Coffre 5\u2605" : "5\u2605 Chest",
-    evo_box: "Bo\u00eete EVO",
-    banner: isFr ? "Banni\u00e8re" : "Banner",
+    gems: "Gemmes",
+    common_wc: "Joker Commun",
+    rare_wc: "Joker Rare",
+    epic_wc: "Joker Épique",
+    legendary_wc: "Joker Légendaire",
+    champion_wc: "Joker Champion",
+    lucky_chest_4star: "Coffre 4★",
+    lucky_chest_5star: "Coffre 5★",
+    evo_box: "Boîte EVO",
+    banner: "Bannière",
   };
   const nextRewards = rewards
     .filter((r) => r.cl > col.collectionLevel)
@@ -3969,40 +3518,36 @@ async function showCollectionModal(col) {
             const label = REWARD_LABELS[r.type] ?? r.type;
             const suffix =
               r.arenaLevel != null
-                ? ` (${isFr ? "Ar\u00e8ne" : "Arena"} ${r.arenaLevel})`
+                ? ` (Arène ${r.arenaLevel})`
                 : r.arenaLabel
-                  ? ` (${isFr ? "Ar\u00e8ne" : "Arena"} ${r.arenaLabel})`
+                  ? ` (Arène ${r.arenaLabel})`
                   : r.label
                     ? ` "${r.label}"`
-                    : ` \u00d7${r.qty}`;
-            return `\u2022 CL ${r.cl} \u2014 ${label}${suffix}`;
+                    : ` ×${r.qty}`;
+            return `• CL ${r.cl} — ${label}${suffix}`;
           })
           .join("\n")
-      : isFr
-        ? "Niveau maximum atteint\u00a0!"
-        : "Maximum level reached!";
+      : "Niveau maximum atteint\u00a0!";
 
   // Texte footer tour
   let tourFooter;
   if (!col.tourNextInfo) {
-    tourFooter = isFr ? "Tour du Roi maximale\u00a0!" : "King Tower maxed!";
+    tourFooter = "Tour du Roi maximale\u00a0!";
   } else {
     const { missing, level } = col.tourNextInfo;
     const s = missing > 1 ? "s" : "";
-    tourFooter = isFr
-      ? `Prochain niveau de tour\u00a0: manque ${missing} carte${s} niveau ${level}+`
-      : `Next tower level: need ${missing} card${s} level ${level}+`;
+    tourFooter = `Prochain niveau de tour\u00a0: manque ${missing} carte${s} niveau ${level}+`;
   }
 
-  const title = isFr ? "D\u00e9tails de la Collection" : "Collection Details";
-  const lCards = isFr ? "Cartes" : "Cards";
-  const lEvos = isFr ? "\u00c9volutions" : "Evolutions";
-  const lHeroes = isFr ? "H\u00e9ros" : "Heroes";
-  const lTour = isFr ? "Tour du Roi" : "King Tower";
-  const lTourVal = `${isFr ? "Niveau" : "Level"} ${col.tourLevel}`;
-  const lCol = isFr ? "Niveau de Collection" : "Collection Level";
-  const lDist = isFr ? "Distribution des niveaux" : "Level Distribution";
-  const lRewards = isFr ? "Prochaines r\u00e9compenses" : "Next Rewards";
+  const title = "Détails de la Collection";
+  const lCards = "Cartes";
+  const lEvos = "Évolutions";
+  const lHeroes = "Héros";
+  const lTour = "Tour du Roi";
+  const lTourVal = `Niveau ${col.tourLevel}`;
+  const lCol = "Niveau de Collection";
+  const lDist = "Distribution des niveaux";
+  const lRewards = "Prochaines récompenses";
 
   let overlay = document.getElementById("collection-modal-overlay");
   if (!overlay) {
@@ -4018,7 +3563,7 @@ async function showCollectionModal(col) {
 
   overlay.innerHTML = `
     <div class="collection-modal" role="dialog" aria-modal="true" aria-label="${escHtml(title)}">
-      <button class="collection-modal-close" id="cml-close" aria-label="${isFr ? "Fermer" : "Close"}">&#x2715;</button>
+      <button class="collection-modal-close" id="cml-close" aria-label="Fermer">&#x2715;</button>
       <div class="collection-modal-title">\ud83d\udce6 ${escHtml(title)}</div>
       <div class="collection-modal-grid">
         <div class="collection-modal-item"><div class="cmi-label">${lCards}</div><div class="cmi-value">${col.cardCount} / ${TOTAL_CARDS}</div></div>
@@ -4118,12 +3663,15 @@ function scoreBarColor(color) {
 
 // ── Utility ──────────────────────────────────────────────────
 
-const fmt = (n) => Number(n).toLocaleString();
+const fmt = (n) => Number(n).toLocaleString("fr-FR");
 const pl = (n) => (n !== 1 ? "s" : "");
 
-function capitalize(s) {
-  if (!s) return s;
-  return s.charAt(0).toUpperCase() + s.slice(1);
+function formatClanType(type) {
+  const normalized = String(type ?? "").toLowerCase();
+  if (normalized === "open") return "Ouvert";
+  if (normalized === "inviteonly") return "Sur invitation";
+  if (normalized === "closed") return "Fermé";
+  return "—";
 }
 
 function formatRoleLabel(role) {
@@ -4131,16 +3679,15 @@ function formatRoleLabel(role) {
   const normalizedRole = String(role)
     .toLowerCase()
     .replace(/[^a-z]/g, "");
-  if (currentLang === "fr") {
-    const frRoleByKey = {
-      member: "Membre",
-      elder: "Aîné",
-      coleader: "Chef Adjoint",
-      leader: "Chef",
-    };
-    return frRoleByKey[normalizedRole] || capitalize(String(role));
-  }
-  return capitalize(String(role));
+  const frRoleByKey = {
+    member: "Membre",
+    elder: "Aîné",
+    coleader: "Chef Adjoint",
+    leader: "Chef",
+  };
+  // Fallback générique en français (jamais le rôle brut de l'API) si un rôle
+  // inconnu venait à apparaître.
+  return frRoleByKey[normalizedRole] || "Membre";
 }
 
 function escHtml(s) {
@@ -4196,7 +3743,7 @@ function updateDebugPanel(data, mode) {
     const snapshotBackupTimeLabel = info.snapshotBackupTime
       ? escHtml(info.snapshotBackupTime)
       : info.snapshotTime
-        ? "n/a (primary snapshot)"
+        ? "n/a (snapshot principal)"
         : "—";
     return `
       <div style="margin-top:1rem;padding:.5em 1em;background:#222;border-radius:6px">

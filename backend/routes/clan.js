@@ -1027,7 +1027,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     ? { ...existingCache.membersRaw }
     : {};
 
-  const SCORE_VERSION = "2026-04-07-v2";
+  const SCORE_VERSION = "2026-07-05-v3-fr";
 
   // Quick map of prior member results, to avoid expensive player-api fan-out for a hot cache.
   // `scoreVersion` garantit qu'une modification de l'algorithme force recalcul.
@@ -1617,6 +1617,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
   const memberTasks = members.map((m, idx) => async () => {
     let reliabilityScore,
       verdict,
+      verdictKey,
       color,
       isNew = false,
       isNewFromCache = null,
@@ -1680,6 +1681,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       const pa = {
         pct: cachedMember.reliability,
         verdict: cachedMember.verdict,
+        verdictKey: cachedMember.verdictKey,
         color: cachedMember.color,
       };
       playerAnalysis = {
@@ -1687,7 +1689,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         warHistory: cachedMember.warHistory || null,
       };
       reliabilityScore = pa.pct;
-      verdict = pa.verdict ?? "Unknown";
+      verdict = pa.verdict ?? "Inconnu";
+      verdictKey = pa.verdictKey ?? null;
       color = pa.color ?? "orange";
       scoreSource = "cached";
       memberWarScore = pa;
@@ -1841,6 +1844,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         memberWarScore = ws;
         reliabilityScore = ws.pct;
         verdict = ws.verdict;
+        verdictKey = ws.verdictKey;
         color = ws.color;
         scoreSource = "history";
       } else if (battleLog) {
@@ -1870,6 +1874,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           memberWarScore = pa;
           reliabilityScore = pa.pct;
           verdict = pa.verdict ?? wsFallback.verdict;
+          verdictKey = pa.verdictKey ?? wsFallback.verdictKey;
           color = pa.color ?? wsFallback.color;
           scoreSource = "player";
           if (playerAnalysis.warHistory) warHistory = playerAnalysis.warHistory;
@@ -1877,19 +1882,22 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           memberWarScore = wsFallback;
           reliabilityScore = wsFallback.pct;
           verdict = wsFallback.verdict;
+          verdictKey = wsFallback.verdictKey;
           color = wsFallback.color;
           scoreSource = "fallback";
         } else {
           memberWarScore = wsFallback;
           reliabilityScore = wsFallback.pct;
           verdict = wsFallback.verdict;
+          verdictKey = wsFallback.verdictKey;
           color = wsFallback.color;
           scoreSource = "fallback";
         }
       } else if (!playerScoreOverride) {
         // Battle log unavailable — aucune donnée fiable disponible
         reliabilityScore = 0;
-        verdict = "Extreme risk";
+        verdict = "Risque extrême";
+        verdictKey = "extremeRisk";
         color = "red";
         // Si pas de race log, on ne peut pas déterminer si le joueur est nouveau.
         // On conserve l'état existant pour éviter les faux positifs.
@@ -1914,6 +1922,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       memberWarScore = ws;
       reliabilityScore = ws.pct;
       verdict = ws.verdict;
+      verdictKey = ws.verdictKey;
       color = ws.color;
       scoreSource = "fallback";
 
@@ -1930,6 +1939,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       memberWarScore = pa;
       reliabilityScore = pa.pct;
       verdict = pa.verdict ?? verdict;
+      verdictKey = pa.verdictKey ?? verdictKey;
       color = pa.color ?? color;
       scoreSource = "player";
       if (playerAnalysis.warHistory) warHistory = playerAnalysis.warHistory;
@@ -2031,6 +2041,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       reliability: reliabilityScore,
       reliabilitySource: scoreSource,
       verdict,
+      verdictKey,
       color,
       isNew,
       discord: discordLinked,

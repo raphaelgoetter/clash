@@ -129,10 +129,10 @@ function runBackground(fn) {
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 
 const trustPlayerUrl = (tag) =>
-  `${TRUST_ROYALE_URL}/fr/player/${String(tag).replace(/^#/, "")}`;
+  `${TRUST_ROYALE_URL}/player/${String(tag).replace(/^#/, "")}`;
 
 const trustClanUrl = (tag) =>
-  `${TRUST_ROYALE_URL}/fr/clan/${String(tag).replace(/^#/, "")}`;
+  `${TRUST_ROYALE_URL}/clan/${String(tag).replace(/^#/, "")}`;
 
 const FR_VERDICTS = {
   green: "Très fiable",
@@ -651,7 +651,7 @@ const LEAGUE_ICON_GENERIC = {
   "Légendaire 3": "<:legendary3:1506218625508573225>",
 };
 function warLeagueLabel(trophies, isFamilyClan = false) {
-  const label = getLeagueName(trophies ?? 0, "fr") ?? "Bronze 1";
+  const label = getLeagueName(trophies ?? 0) ?? "Bronze 1";
   const icon = isFamilyClan
     ? (LEAGUE_ICON_SPECIFIC[label] ?? LEAGUE_ICON_GENERIC[label])
     : LEAGUE_ICON_GENERIC[label];
@@ -1404,7 +1404,8 @@ async function buildClanReportPayload(resolved) {
     const topRisky = hasReliabilityDetails
       ? members
           .filter(
-            (m) => m.verdict === "High risk" || m.verdict === "Extreme risk",
+            (m) =>
+              m.verdictKey === "highRisk" || m.verdictKey === "extremeRisk",
           )
           .sort(
             (a, b) => Number(a.reliability ?? 0) - Number(b.reliability ?? 0),
@@ -2207,14 +2208,12 @@ function buildScoreBreakdownCodeBlock(score) {
   const rows = [];
   let maxLabel = 0;
   for (const item of orderedBreakdown) {
-    const label = LABEL_FR[item.label] || item.label;
-    if (label.length > maxLabel) maxLabel = label.length;
+    if (item.label.length > maxLabel) maxLabel = item.label.length;
   }
   for (const item of orderedBreakdown) {
     const icon = criterionIcon(item.score, item.max);
-    const label = LABEL_FR[item.label] || item.label;
     const scoreStr = `${item.score}/${item.max}`;
-    rows.push(`${icon} ${label.padEnd(maxLabel)} ${scoreStr}`);
+    rows.push(`${icon} ${item.label.padEnd(maxLabel)} ${scoreStr}`);
   }
   return "```\n" + rows.join("\n") + "\n```";
 }
@@ -2239,8 +2238,7 @@ function buildReliabilityFields(score) {
   const orderedBreakdown = [...breakdown].sort((a, b) => b.max - a.max);
   const lines = orderedBreakdown.map((item) => {
     const badge = scoreBadge(item.score, item.max);
-    const label = LABEL_FR[item.label] || item.label;
-    return `${badge} ${label} (${item.score}/${item.max})`;
+    return `${badge} ${item.label} (${item.score}/${item.max})`;
   });
 
   return [
@@ -2373,29 +2371,14 @@ async function buildOtherAccountsField(playerTag, discordLinks) {
   };
 }
 
-// Convertit un critère de breakdown en field Discord (inline)
-// et effectue la traduction française des libellés.
-const LABEL_FR = {
-  "War Activity": "Activité de GDC",
-  "CW2 badge": "Badge CW2",
-  "CW2 Battle Wins": "Badge CW2",
-  "General Activity": "Activité générale",
-  Experience: "Expérience",
-  Regularity: "Régularité",
-  "Avg Score": "Points / deck",
-  "Points / Deck": "Points / deck",
-  Stability: "Stabilité",
-  "Last Seen": "Connexion régulière",
-  Points: "Points",
-  "Member Reliability": "Fiabilité membre",
-  "Historical Win Rate": "Winrate historique",
-  // fallback: other labels can be added if needed
-};
+// Convertit un critère de breakdown en field Discord (inline).
+// Les libellés sont déjà en français (fournis par warScoring.js).
 function breakdownField(item) {
   const icon = criterionIcon(item.score, item.max);
-  let label = LABEL_FR[item.label] || item.label;
-  if (item.label === "Discord")
-    label = `Discord (${item.score > 0 ? "oui" : "non"})`;
+  const label =
+    item.key === "discord"
+      ? `Discord (${item.score > 0 ? "oui" : "non"})`
+      : item.label;
   return {
     name: `${icon} ${label}`,
     value: `${item.score}/${item.max}`,
@@ -3229,7 +3212,7 @@ export default async function handler(req, res) {
           "Légendaire 3": "<:legendary3:1506218625508573225>",
         };
         const warLeagueLabel = (trophies) => {
-          const label = getLeagueName(trophies ?? null, "fr") || "—";
+          const label = getLeagueName(trophies ?? null) || "—";
           const icon = LEAGUE_ICON_GENERIC[label];
           return icon ? `${icon} ${label}` : label;
         };
@@ -3935,7 +3918,7 @@ export default async function handler(req, res) {
 
         const filtered = members
           .filter(
-            (m) => m.verdict === "High risk" || m.verdict === "Extreme risk",
+            (m) => m.verdictKey === "highRisk" || m.verdictKey === "extremeRisk",
           )
           .sort((a, b) => {
             // Risque le plus élevé en premier (score le plus bas = plus risqué)
@@ -3943,8 +3926,8 @@ export default async function handler(req, res) {
             const scoreB = Number(b.reliability ?? 0);
             if (scoreA !== scoreB) return scoreA - scoreB;
             // En cas d'égalité, trier par verdict (extrême avant high)
-            const severity = { "Extreme risk": 0, "High risk": 1 };
-            return (severity[a.verdict] || 0) - (severity[b.verdict] || 0);
+            const severity = { extremeRisk: 0, highRisk: 1 };
+            return (severity[a.verdictKey] || 0) - (severity[b.verdictKey] || 0);
           });
 
         if (filtered.length === 0) {
@@ -3960,23 +3943,21 @@ export default async function handler(req, res) {
         }
 
         const VERDICT_EMOJI = {
-          "High reliability": RELIABILITY_ICON.green,
-          "Low risk": RELIABILITY_ICON.yellow,
-          "High risk": RELIABILITY_ICON.orange,
-          "Extreme risk": RELIABILITY_ICON.red,
+          highReliability: RELIABILITY_ICON.green,
+          lowRisk: RELIABILITY_ICON.yellow,
+          highRisk: RELIABILITY_ICON.orange,
+          extremeRisk: RELIABILITY_ICON.red,
         };
-        const VERDICT_LABELFr = {
-          "Extreme risk": "Extrême",
-          "High risk": "Élevé",
+        const VERDICT_SHORT_LABEL = {
+          extremeRisk: "Extrême",
+          highRisk: "Élevé",
         };
         const clanUrl = trustClanUrl(resolved.tag);
         const allRows = filtered.map((m) => {
           const newTag = m.isNew ? " 🆕" : "";
-          const emoji = VERDICT_EMOJI[m.verdict] ?? RELIABILITY_ICON.red;
+          const emoji = VERDICT_EMOJI[m.verdictKey] ?? RELIABILITY_ICON.red;
           const pct = Math.round(Number(m.reliability ?? 0));
-          const verdictLabel =
-            VERDICT_LABELFr[m.verdict] ||
-            (m.verdict || "").replace(/\s*risk$/i, "");
+          const verdictLabel = VERDICT_SHORT_LABEL[m.verdictKey] || m.verdict || "";
           const playerUrl = trustPlayerUrl(m.tag);
           return `- [${m.name}](${playerUrl})${newTag} · ${emoji} ${verdictLabel} (${pct}%)`;
         });

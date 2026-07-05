@@ -93,7 +93,7 @@ function formatDays(days) {
 }
 
 function formatPlayerUrl(tag) {
-  return `https://trustroyale.vercel.app/fr/player/${normalizeTag(tag).replace(/^#/, "")}`;
+  return `https://trustroyale.vercel.app/player/${normalizeTag(tag).replace(/^#/, "")}`;
 }
 
 function getParisDateParts(now = new Date()) {

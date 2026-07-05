@@ -147,9 +147,9 @@ const FR_VERDICTS = {
 };
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 const trustPlayerUrl = (tag) =>
-  `${TRUST_ROYALE_URL}/fr/player/${String(tag).replace(/^#/, "")}`;
+  `${TRUST_ROYALE_URL}/player/${String(tag).replace(/^#/, "")}`;
 const trustClanUrl = (tag) =>
-  `${TRUST_ROYALE_URL}/fr/clan/${String(tag).replace(/^#/, "")}`;
+  `${TRUST_ROYALE_URL}/clan/${String(tag).replace(/^#/, "")}`;
 const FAMILY_CLAN_TAGS = new Set(["#Y8JUPC9C", "#LRQP20V9", "#QU9UQJRL"]);
 const RESISTANTS_CLAN_TAG = "#LRQP20V9";
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -427,14 +427,12 @@ function buildScoreBreakdownCodeBlock(score) {
   const rows = [];
   let maxLabel = 0;
   for (const item of breakdown) {
-    const label = LABEL_FR[item.label] || item.label;
-    if (label.length > maxLabel) maxLabel = label.length;
+    if (item.label.length > maxLabel) maxLabel = item.label.length;
   }
   for (const item of breakdown) {
     const icon = criterionIcon(item.score, item.max);
-    const label = LABEL_FR[item.label] || item.label;
     const scoreStr = `${item.score}/${item.max}`;
-    rows.push(`${icon} ${label.padEnd(maxLabel)} ${scoreStr}`);
+    rows.push(`${icon} ${item.label.padEnd(maxLabel)} ${scoreStr}`);
   }
   return "```\n" + rows.join("\n") + "\n```";
 }
@@ -453,23 +451,21 @@ function scoreBadge(score, max) {
 }
 
 const RELIABILITY_ORDER_HISTORY = [
-  "CW2 badge",
-  "Regularity",
-  "Stability",
-  "Avg Score",
-  "Win Rate (War)",
-  "Experience",
-  "Last Seen",
-  "Discord",
+  "cw2Badge",
+  "regularity",
+  "stability",
+  "pointsPerDeck",
+  "experience",
+  "lastSeen",
+  "discord",
 ];
 
 const RELIABILITY_ORDER_FALLBACK = [
-  "CW2 badge",
-  "War Activity",
-  "General Activity",
-  "Experience",
-  "Last Seen",
-  "Discord",
+  "cw2Badge",
+  "warActivity",
+  "experience",
+  "lastSeen",
+  "discord",
 ];
 
 function buildReliabilityFields(score) {
@@ -483,16 +479,15 @@ function buildReliabilityFields(score) {
     : RELIABILITY_ORDER_HISTORY;
   for (const item of breakdown) {
     const badge = scoreBadge(item.score, item.max);
-    const label = LABEL_FR[item.label] || item.label;
-    const line = `${badge} ${label} (${item.score}/${item.max})`;
-    if (order.includes(item.label)) {
-      ordered.push({ label: item.label, line });
+    const line = `${badge} ${item.label} (${item.score}/${item.max})`;
+    if (order.includes(item.key)) {
+      ordered.push({ key: item.key, line });
     } else {
       fallback.push(line);
     }
   }
 
-  ordered.sort((a, b) => order.indexOf(a.label) - order.indexOf(b.label));
+  ordered.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
 
   const lines = ordered.map((item) => item.line).concat(fallback);
 
@@ -627,28 +622,13 @@ async function buildOtherAccountsField(playerTag, discordLinks) {
 }
 
 // Convertit un critère de breakdown en field Discord (inline)
-// et effectue la traduction française des libellés.
-const LABEL_FR = {
-  "War Activity": "Activité de GDC",
-  "Win Rate (War)": "Winrate GDC",
-  "CW2 badge": "Badge CW2",
-  "CW2 Battle Wins": "Badge CW2",
-  "General Activity": "Activité générale",
-  Experience: "Expérience",
-  Regularity: "Régularité",
-  "Avg Score": "Score moyen",
-  Stability: "Stabilité",
-  "Last Seen": "Connexion régulière",
-  Points: "Points",
-  "Member Reliability": "Fiabilité membre",
-  "Historical Win Rate": "Winrate historique",
-  // fallback: other labels can be added if needed
-};
+// Les libellés sont déjà en français (fournis par warScoring.js).
 function breakdownField(item) {
   const icon = criterionIcon(item.score, item.max);
-  let label = LABEL_FR[item.label] || item.label;
-  if (item.label === "Discord")
-    label = `Discord (${item.score > 0 ? "oui" : "non"})`;
+  const label =
+    item.key === "discord"
+      ? `Discord (${item.score > 0 ? "oui" : "non"})`
+      : item.label;
   return {
     name: `${icon} ${label}`,
     value: `${item.score}/${item.max}`,
@@ -1335,7 +1315,7 @@ export default async function handler(req, res) {
 
         const fmt = (n) =>
           Number.isFinite(n) ? n.toLocaleString("fr-FR") : "?";
-        const league = getLeagueName(clan.clanWarTrophies ?? null, "fr") || "—";
+        const league = getLeagueName(clan.clanWarTrophies ?? null) || "—";
         const clanUrl = trustClanUrl(resolved.tag);
         const { computePrevWeekId } =
           await import("../../backend/services/dateUtils.js");
@@ -1703,7 +1683,7 @@ export default async function handler(req, res) {
 
         const filtered = members
           .filter(
-            (m) => m.verdict === "High risk" || m.verdict === "Extreme risk",
+            (m) => m.verdictKey === "highRisk" || m.verdictKey === "extremeRisk",
           )
           .sort((a, b) => {
             // Risque le plus élevé en premier (score le plus bas = plus risqué)
@@ -1711,8 +1691,8 @@ export default async function handler(req, res) {
             const scoreB = Number(b.reliability ?? 0);
             if (scoreA !== scoreB) return scoreA - scoreB;
             // En cas d'égalité, trier par verdict (extrême avant high)
-            const severity = { "Extreme risk": 0, "High risk": 1 };
-            return (severity[a.verdict] || 0) - (severity[b.verdict] || 0);
+            const severity = { extremeRisk: 0, highRisk: 1 };
+            return (severity[a.verdictKey] || 0) - (severity[b.verdictKey] || 0);
           });
 
         if (filtered.length === 0) {
@@ -1728,23 +1708,21 @@ export default async function handler(req, res) {
         }
 
         const VERDICT_EMOJI = {
-          "High reliability": RELIABILITY_ICON.green,
-          "Low risk": RELIABILITY_ICON.yellow,
-          "High risk": RELIABILITY_ICON.orange,
-          "Extreme risk": RELIABILITY_ICON.red,
+          highReliability: RELIABILITY_ICON.green,
+          lowRisk: RELIABILITY_ICON.yellow,
+          highRisk: RELIABILITY_ICON.orange,
+          extremeRisk: RELIABILITY_ICON.red,
         };
-        const VERDICT_LABELFr = {
-          "Extreme risk": "Extrême",
-          "High risk": "Élevé",
+        const VERDICT_SHORT_LABEL = {
+          extremeRisk: "Extrême",
+          highRisk: "Élevé",
         };
         const clanUrl = trustClanUrl(resolved.tag);
         const allRows = filtered.map((m) => {
           const newTag = m.isNew ? " 🆕" : "";
-          const emoji = VERDICT_EMOJI[m.verdict] ?? RELIABILITY_ICON.red;
+          const emoji = VERDICT_EMOJI[m.verdictKey] ?? RELIABILITY_ICON.red;
           const pct = Math.round(Number(m.reliability ?? 0));
-          const verdictLabel =
-            VERDICT_LABELFr[m.verdict] ||
-            (m.verdict || "").replace(/\s*risk$/i, "");
+          const verdictLabel = VERDICT_SHORT_LABEL[m.verdictKey] || m.verdict || "";
           const playerUrl = trustPlayerUrl(m.tag);
           return `- [${m.name}](${playerUrl})${newTag} · ${emoji} ${verdictLabel} (${pct}%)`;
         });
@@ -4192,7 +4170,7 @@ export default async function handler(req, res) {
           "Légendaire 3": "<:legendary3:1506218625508573225>",
         };
         function warLeagueLabel(trophies) {
-          const label = getLeagueName(trophies ?? 0, "fr") ?? "Bronze 1";
+          const label = getLeagueName(trophies ?? 0) ?? "Bronze 1";
           const icon = isFamilyClan
             ? (LEAGUE_ICON_SPECIFIC[label] ?? LEAGUE_ICON_GENERIC[label])
             : LEAGUE_ICON_GENERIC[label];
@@ -4225,7 +4203,7 @@ export default async function handler(req, res) {
           ? members
               .filter(
                 (m) =>
-                  m.verdict === "High risk" || m.verdict === "Extreme risk",
+                  m.verdictKey === "highRisk" || m.verdictKey === "extremeRisk",
               )
               .sort(
                 (a, b) =>

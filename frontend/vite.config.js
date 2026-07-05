@@ -18,39 +18,20 @@ export default defineConfig({
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const url = req.url?.split("?")[0] || "";
-        if (
-          url === "/bot" ||
-          url === "/bot/" ||
-          url === "/fr/bot" ||
-          url === "/fr/bot/"
-        ) {
+        if (url === "/bot" || url === "/bot/") {
           req.url = "/bot/index.html";
           return next();
         }
-        if (
-          url === "/deck-upgrade" ||
-          url === "/deck-upgrade/" ||
-          url === "/fr/deck-upgrade" ||
-          url === "/fr/deck-upgrade/" ||
-          url === "/en/deck-upgrade" ||
-          url === "/en/deck-upgrade/"
-        ) {
+        if (url === "/deck-upgrade" || url === "/deck-upgrade/") {
           req.url = "/deck-upgrade/index.html";
           return next();
         }
-        if (
-          url === "/decks" ||
-          url === "/decks/" ||
-          url === "/fr/decks" ||
-          url === "/fr/decks/" ||
-          url === "/en/decks" ||
-          url === "/en/decks/"
-        ) {
+        if (url === "/decks" || url === "/decks/") {
           req.url = "/decks/index.html";
           return next();
         }
-        // URLs path-based : /fr/player/TAG et /fr/clan/TAG → index.html (SPA)
-        if (/^\/(fr|en)\/(player|clan)\//.test(url)) {
+        // URLs path-based : /player/TAG et /clan/TAG → index.html (SPA)
+        if (/^\/(player|clan)\//.test(url)) {
           req.url = "/index.html";
           return next();
         }

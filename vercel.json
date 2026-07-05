@@ -12,26 +12,46 @@
       "maxDuration": 60
     }
   },
+  "redirects": [
+    { "source": "/fr/player/:tag", "destination": "/player/:tag", "permanent": true },
+    { "source": "/en/player/:tag", "destination": "/player/:tag", "permanent": true },
+    { "source": "/fr/clan/:tag", "destination": "/clan/:tag", "permanent": true },
+    { "source": "/en/clan/:tag", "destination": "/clan/:tag", "permanent": true },
+    { "source": "/fr/bot", "destination": "/bot/", "permanent": true },
+    { "source": "/fr/bot/", "destination": "/bot/", "permanent": true },
+    {
+      "source": "/fr/deck-upgrade",
+      "destination": "/deck-upgrade/",
+      "permanent": true
+    },
+    {
+      "source": "/fr/deck-upgrade/",
+      "destination": "/deck-upgrade/",
+      "permanent": true
+    },
+    {
+      "source": "/en/deck-upgrade",
+      "destination": "/deck-upgrade/",
+      "permanent": true
+    },
+    {
+      "source": "/en/deck-upgrade/",
+      "destination": "/deck-upgrade/",
+      "permanent": true
+    },
+    { "source": "/fr/", "destination": "/", "permanent": true },
+    { "source": "/fr", "destination": "/", "permanent": true },
+    { "source": "/en/", "destination": "/", "permanent": true },
+    { "source": "/en", "destination": "/", "permanent": true }
+  ],
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api/index.js" },
     { "source": "/deck-upgrade", "destination": "/deck-upgrade/index.html" },
     { "source": "/deck-upgrade/", "destination": "/deck-upgrade/index.html" },
-    { "source": "/fr/deck-upgrade", "destination": "/deck-upgrade/index.html" },
-    {
-      "source": "/fr/deck-upgrade/",
-      "destination": "/deck-upgrade/index.html"
-    },
-    { "source": "/en/deck-upgrade", "destination": "/deck-upgrade/index.html" },
-    {
-      "source": "/en/deck-upgrade/",
-      "destination": "/deck-upgrade/index.html"
-    },
     { "source": "/bot", "destination": "/bot/index.html" },
     { "source": "/bot/", "destination": "/bot/index.html" },
-    { "source": "/fr/bot", "destination": "/bot/index.html" },
-    { "source": "/fr/bot/", "destination": "/bot/index.html" },
-    { "source": "/(fr|en)/player/:tag", "destination": "/api/index.js" },
-    { "source": "/(fr|en)/clan/:tag", "destination": "/api/index.js" },
+    { "source": "/player/:tag", "destination": "/api/index.js" },
+    { "source": "/clan/:tag", "destination": "/api/index.js" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
