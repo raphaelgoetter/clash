@@ -1045,11 +1045,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       member.firstSeenAt || null,
     ]),
   );
-  const priorTagsSeen = new Set(
-    (priorCache?.members || []).map((member) => member.tag),
-  );
-  // Membres déjà connus avant l'introduction de firstSeenAt : on les backdate pour
-  // éviter de les taguer "nouveau" au premier déploiement de ce correctif.
+  // Date de backfill pour les membres dont la présence en famille (>=2 semaines) prouve
+  // une ancienneté avérée mais qui n'ont pas encore de firstSeenAt enregistré.
   const LEGACY_BACKFILL_DATE_ISO = "2026-01-01T00:00:00.000Z";
 
   const nowMs = Date.now();
@@ -1641,15 +1638,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       scoreSource = "clan",
       playerAnalysis = null;
     let memberWarScore = null;
-
-    // Ancienneté réelle : conserve la date de première apparition, backdate les membres
-    // déjà connus avant ce correctif, sinon c'est une vraie première apparition.
-    const priorFirstSeenAt = priorFirstSeenByTag.get(m.tag);
-    const firstSeenAt = priorFirstSeenAt
-      ? priorFirstSeenAt
-      : priorTagsSeen.has(m.tag)
-        ? LEGACY_BACKFILL_DATE_ISO
-        : new Date(nowMs).toISOString();
+    // Ancienneté réelle : si déjà suivie, on la conserve telle quelle. Sinon on la
+    // détermine plus bas une fois warHistory disponible (cf. calcul de isNew).
+    let firstSeenAt = priorFirstSeenByTag.get(m.tag) || null;
 
     // Resolve full player profile (for badges) and battle log from fetch results or existing cache.
     const memberData = memberDataByTag[m.tag] || {
@@ -1964,6 +1955,25 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       if (playerAnalysis.warHistory) warHistory = playerAnalysis.warHistory;
     }
 
+    // Si jamais suivi (ou seulement backdaté par une migration précédente, cf. sentinelle
+    // LEGACY_BACKFILL_DATE_ISO), on détermine/réévalue firstSeenAt à partir de la présence
+    // réelle dans le race log (streakInFamily/streakInCurrentClan, indépendant du nombre de
+    // decks joués) : >=2 semaines passées de présence confirmée = ancienneté avérée
+    // (backdate, stable). Sinon aucune preuve de présence passée : vraie première
+    // apparition, firstSeenAt = maintenant. Réévaluer la sentinelle à chaque run permet
+    // d'auto-corriger les faux backdate d'une migration antérieure dès que le joueur
+    // concerné accumule assez d'historique pour trancher.
+    // ⚠️ Ne PAS se baser sur "était déjà dans le cache précédent" : ce cache est régénéré
+    // chaque heure, un joueur arrivé la veille y figure déjà et serait à tort backdaté.
+    if (!firstSeenAt || firstSeenAt === LEGACY_BACKFILL_DATE_ISO) {
+      const familyStreak =
+        warHistory?.streakInFamily ?? warHistory?.streakInCurrentClan ?? 0;
+      firstSeenAt =
+        familyStreak >= 2
+          ? LEGACY_BACKFILL_DATE_ISO
+          : new Date(nowMs).toISOString();
+    }
+
     // Determine new member flag from real tenure (firstSeenAt), pas de la participation GDC.
     const NEW_MEMBER_WINDOW_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours
     isNew = firstSeenAt
@@ -2072,8 +2082,12 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       ...fallback,
       reliabilitySource: "fallback",
       isNew: false,
+      // Échec ponctuel : on ne peut pas évaluer la présence en famille ici. On garde la
+      // valeur déjà connue si elle existe, sinon on ne présume pas d'ancienneté (le
+      // prochain cycle réussi recalculera correctement dès que l'analyse repasse).
       firstSeenAt:
-        priorFirstSeenByTag.get(members[idx].tag) || LEGACY_BACKFILL_DATE_ISO,
+        priorFirstSeenByTag.get(members[idx].tag) ||
+        new Date(nowMs).toISOString(),
       warDays: null,
       arrivalStreakInCurrentClan: null,
       arrivalTotalWeeks: null,
