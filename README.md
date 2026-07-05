@@ -59,10 +59,14 @@ Configuration Discord utile :
 
 ## 📮 Notifications Discord automatiques
 
-En plus des commandes du Bot, deux scripts permettent de publier automatiquement des messages dans les channels Discord des clans :
+En plus des commandes du Bot, plusieurs scripts permettent de publier automatiquement des messages dans les channels Discord des clans :
 
 1. **Nouveautés** : détecte les arrivées, départs et changements de rôle des membres par comparaison entre deux snapshots. Post automatique dans le channel Discord du clan.
 2. **Résumé GDC** : poste un résumé de la journée de GDC qui vient de se terminer dans chaque channel clan. Poste un résumé de la semaine lorsque le dernier jour de la GDC est terminé.
+3. **Joueurs inactifs** : alerte quotidienne listant les membres non connectés depuis plusieurs jours.
+4. **Pronostics** : lance le vote pour le champion à venir, puis annonce les résultats.
+
+Pour ne pas parasiter les discussions du salon principal, ces messages peuvent être redirigés vers un **thread dédié** au sein du salon du clan, réservé aux posts automatiques. Ce fonctionnement est testé pour l'instant uniquement sur le clan 2 (les clans 1 et 3 restent inchangés) ; voir CONTRIBUTING.md pour l'étendre.
 
 <img width="802" height="656" alt="image" src="https://github.com/user-attachments/assets/7b0409be-0518-424f-a959-3c4a1fbb22b5" />
 

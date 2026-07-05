@@ -29,6 +29,23 @@ La documentation orientée utilisateur final reste dans README.md.
 - À la lecture, loadSnapshots() privilégie /tmp puis fusionne avec data/snapshots si les deux existent.
 - La fusion se fait jour par jour avec mergeSnapshotsByDay(), en gardant le snapshot valide le plus récent pour chaque journée.
 
+### Thread Discord dédié aux notifications automatiques (test clan 2)
+
+Pour éviter que les posts automatiques parasitent les discussions manuelles du salon d'un clan, certains scripts peuvent poster dans un thread dédié plutôt que dans le salon principal.
+
+Chaque script concerné résout son channel cible via `resolveMembersChannelId(clanTag)` (`backend/services/discordChannels.js`) plutôt que de lire directement `DISCORD_CHANNEL_MEMBERS_<TAG>`. Cette fonction retourne `DISCORD_THREAD_MEMBERS_<TAG>` si elle est définie pour ce clan, sinon retombe sur `DISCORD_CHANNEL_MEMBERS_<TAG>` (comportement historique inchangé).
+
+Scripts concernés : `notifyWarSummary.js` (résumé quotidien/hebdo), `notifyMemberChanges.js` (arrivées/départs/promotions/rétrogradations), `notifyLastSeen.js` (joueurs inactifs), `autoStartPredictions.js` et `autoEndPredictions.js` (pronostics).
+
+Scripts **non concernés** (restent dans le salon principal ou le salon staff) : `notifyPreWarSummary.js`, `notifyGdcLaunch.js`, `notifyRules.js`, `notifyClanStatus.js`.
+
+Actuellement seul le clan 2 (`LRQP20V9`) a sa variable `DISCORD_THREAD_MEMBERS_LRQP20V9` renseignée (thread `1523295989044088964`), à titre de test. Pour étendre à un autre clan :
+
+1. Renseigner `DISCORD_THREAD_MEMBERS_<TAG>` dans `.env` (local).
+2. Ajouter le secret GitHub Actions du même nom dans les workflows concernés (`snapshot.yml`, `last-seen.yml`, `war-summary.yml`, `predictions.yml`).
+
+Aucun changement de code n'est nécessaire pour étendre le test à un autre clan.
+
 ---
 
 ## Référence API backend
