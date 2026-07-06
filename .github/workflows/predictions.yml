@@ -23,6 +23,7 @@ jobs:
       DISCORD_CHANNEL_MEMBERS_LRQP20V9: ${{ secrets.DISCORD_CHANNEL_MEMBERS_LRQP20V9 }}
       DISCORD_CHANNEL_MEMBERS_QU9UQJRL: ${{ secrets.DISCORD_CHANNEL_MEMBERS_QU9UQJRL }}
       DISCORD_THREAD_MEMBERS_LRQP20V9: ${{ secrets.DISCORD_THREAD_MEMBERS_LRQP20V9 }}
+      BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -57,6 +58,7 @@ jobs:
       DISCORD_CHANNEL_MEMBERS_LRQP20V9: ${{ secrets.DISCORD_CHANNEL_MEMBERS_LRQP20V9 }}
       DISCORD_CHANNEL_MEMBERS_QU9UQJRL: ${{ secrets.DISCORD_CHANNEL_MEMBERS_QU9UQJRL }}
       DISCORD_THREAD_MEMBERS_LRQP20V9: ${{ secrets.DISCORD_THREAD_MEMBERS_LRQP20V9 }}
+      BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
