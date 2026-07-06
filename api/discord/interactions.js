@@ -151,8 +151,7 @@ function buildDiscordWebhookUrl(body) {
   return `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${token}`;
 }
 
-function getStatsClanScenario(data) {
-  const isWarPeriod = Boolean(data?.isWarPeriod);
+function getStatsClanScenario(isWarPeriod) {
   return isWarPeriod
     ? { key: "current", label: "GDC en cours — semaine actuelle" }
     : { key: "training", label: "Entraînement — semaine passée" };
@@ -282,9 +281,16 @@ const RELIABILITY_ICON = {
   red: "<:red:1506174836102139944>",
 };
 
-function buildStatsClanPayload({ data, clanName, clanTag, clanVal, sortMode }) {
+function buildStatsClanPayload({
+  data,
+  clanName,
+  clanTag,
+  clanVal,
+  sortMode,
+  isWarPeriod,
+}) {
   const members = Array.isArray(data?.members) ? data.members : [];
-  const scenario = getStatsClanScenario(data);
+  const scenario = getStatsClanScenario(isWarPeriod);
 
   const normalizedMembers = members.map((member) => {
     const metrics = getStatsClanMetrics(member, scenario.key);
@@ -445,7 +451,7 @@ function setCachedCompareAnalysis(clanTag, data) {
   return cachedAt;
 }
 
-async function computeCompareIsWarPeriod(clanTag, data) {
+async function computeCalendarIsWarPeriod(clanTag, data) {
   // Garde calendaire locale : ne pas se fier à data.isWarPeriod qui peut venir
   // d'un cache statique généré pendant la GDC (lun–mer : false, jeu–dim : true).
   const { warResetOffsetMs } = await import(
@@ -5638,7 +5644,7 @@ export default async function handler(req, res) {
         }
 
         const cachedAt = setCachedCompareAnalysis(resolved.tag, data);
-        const isWarPeriod = await computeCompareIsWarPeriod(
+        const isWarPeriod = await computeCalendarIsWarPeriod(
           resolved.tag,
           data,
         );
@@ -6301,7 +6307,11 @@ export default async function handler(req, res) {
         const members = Array.isArray(data.members) ? data.members : [];
         const clanInfo = data.clan || {};
         const clanName = clanInfo.name || resolved.name;
-        const scenario = getStatsClanScenario(data);
+        const isWarPeriod = await computeCalendarIsWarPeriod(
+          resolved.tag,
+          data,
+        );
+        const scenario = getStatsClanScenario(isWarPeriod);
 
         const normalizedMembers = members.map((member) => {
           const metrics = getStatsClanMetrics(member, scenario.key);
@@ -6600,6 +6610,10 @@ export default async function handler(req, res) {
     if (!shouldFetch) {
       const clanInfo = cachedData.clan || {};
       const clanName = clanInfo.name || resolved.name;
+      const isWarPeriod = await computeCalendarIsWarPeriod(
+        clanTag,
+        cachedData,
+      );
       return res.status(200).json({
         type: 7,
         data: buildStatsClanPayload({
@@ -6607,6 +6621,7 @@ export default async function handler(req, res) {
           clanName,
           clanTag,
           clanVal,
+          isWarPeriod,
           sortMode,
         }),
       });
@@ -6655,6 +6670,7 @@ export default async function handler(req, res) {
 
       const clanInfo = data.clan || {};
       const clanName = clanInfo.name || resolved.name;
+      const isWarPeriod = await computeCalendarIsWarPeriod(clanTag, data);
       await fetch(originalWebhookUrl, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -6664,6 +6680,7 @@ export default async function handler(req, res) {
             clanName,
             clanTag,
             clanVal,
+            isWarPeriod,
             sortMode,
           }),
         ),
@@ -6717,7 +6734,7 @@ export default async function handler(req, res) {
     const shouldFetch = action === "compare_refresh" || !cachedEntry;
 
     if (!shouldFetch) {
-      const isWarPeriod = await computeCompareIsWarPeriod(
+      const isWarPeriod = await computeCalendarIsWarPeriod(
         clanTag,
         cachedEntry.data,
       );
@@ -6779,7 +6796,7 @@ export default async function handler(req, res) {
         clearTimeout(abortTimer);
       }
 
-      const isWarPeriod = await computeCompareIsWarPeriod(clanTag, data);
+      const isWarPeriod = await computeCalendarIsWarPeriod(clanTag, data);
       const observedAt = await formatParisObservationTime(new Date(cachedAt));
       await fetch(originalWebhookUrl, {
         method: "PATCH",
