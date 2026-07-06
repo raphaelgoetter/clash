@@ -9,6 +9,7 @@ import { waitUntil } from "@vercel/functions";
 import { createRequire } from "node:module";
 import { Resvg } from "@resvg/resvg-js";
 import { getLeagueName } from "../../backend/services/warLeagues.js";
+import { roundProjectedFame } from "../../backend/services/projectionFormat.js";
 import { getDiscordLinks } from "../../backend/services/discordLinks.js";
 import {
   fetchClan,
@@ -565,10 +566,12 @@ function buildComparePayload({
         currentPtsVal != null
           ? `<:trophy2:1493677804733337621> Points actuels : ${currentBold ? `**${currentPtsVal}**` : currentPtsVal}`
           : "";
-      const projVal =
-        clan.projectedFame != null
-          ? fmt(Math.round(clan.projectedFame / 100) * 100)
-          : "?";
+      const projRounded = roundProjectedFame(
+        clan.projectedFame,
+        clan.decksToday,
+        clan.targetDecksToday,
+      );
+      const projVal = projRounded != null ? fmt(projRounded) : "?";
       const proj = clan.isClinchedWin
         ? "<:projection:1499275709078700073> ✅ Victoire"
         : `<:projection:1499275709078700073> Projection: ${currentBold ? projVal : `**${projVal}**`}`;

@@ -3,6 +3,8 @@
 // Affiche les clans du groupe de GDC actuel (API currentriverrace.clans[])
 // ============================================================
 
+import { roundProjectedFame } from "../backend/services/projectionFormat.js";
+
 // Tags des clans de la famille — utilisés pour les liens TrustRoyale internes.
 const FAMILY_TAGS = new Set(["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"]);
 
@@ -40,19 +42,8 @@ function fmtPct(ratio) {
 }
 
 function fmtProjection(projectedFame, decksToday, targetDecksToday) {
-  if (typeof projectedFame !== "number" || !Number.isFinite(projectedFame)) {
-    return "—";
-  }
-
-  if (
-    typeof decksToday === "number" &&
-    typeof targetDecksToday === "number" &&
-    decksToday >= targetDecksToday
-  ) {
-    return fmtNum(Math.round(projectedFame));
-  }
-
-  return fmtNum(Math.floor(projectedFame / 100) * 100);
+  const rounded = roundProjectedFame(projectedFame, decksToday, targetDecksToday);
+  return rounded != null ? fmtNum(rounded) : "—";
 }
 
 /**
