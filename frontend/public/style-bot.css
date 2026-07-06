@@ -108,6 +108,7 @@ a:hover {
 }
 
 code {
+  white-space: pre-line;
   font-family: "Fira Code", "Cascadia Code", monospace;
   background: rgba(255, 255, 255, 0.08);
   padding: 1px 5px;
