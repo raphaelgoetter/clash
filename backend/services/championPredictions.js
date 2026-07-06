@@ -7,7 +7,6 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { fetchRaceLog, fetchClanMembers } from "./clashApi.js";
-import { computePrevWeekId, computeCurrentWeekId } from "./dateUtils.js";
 import { getOrSet, invalidate } from "./cache.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -176,6 +175,15 @@ async function writeChampionRegistry(data) {
 
 // ── Helpers métier ────────────────────────────────────────────
 
+export function computeNextPredictionsStart(now = new Date()) {
+  const next = new Date(now);
+  next.setUTCHours(8, 0, 0, 0);
+  let daysUntilTuesday = (2 - next.getUTCDay() + 7) % 7;
+  if (daysUntilTuesday === 0 && next <= now) daysUntilTuesday = 7;
+  next.setUTCDate(next.getUTCDate() + daysUntilTuesday);
+  return next;
+}
+
 export function formatParisDate(utcDate) {
   const d = new Date(
     utcDate.toLocaleString("en-US", { timeZone: "Europe/Paris" }),
@@ -327,26 +335,31 @@ export async function getVoteCounts(clanTag, weekId) {
 }
 
 export async function getRealChampion(clanTag, weekId) {
-  const raceLog = await fetchRaceLog(clanTag);
+  const cleanTag = clanTag.replace(/^#/, "").toUpperCase();
+  const raceLog = await fetchRaceLog(cleanTag);
   if (!Array.isArray(raceLog)) return null;
 
-  for (const race of raceLog) {
-    if (!race.periodLogs) continue;
-    for (const period of race.periodLogs) {
-      if (!period.periodPoints) continue;
-      const periodWeekId = period.periodId || computePrevWeekId(raceLog);
-      if (periodWeekId !== weekId) continue;
-      const scored = period.periodPoints
-        .filter((p) => p?.fame > 0)
-        .sort((a, b) => (b.fame || 0) - (a.fame || 0));
-      if (scored.length === 0) continue;
-      const topFame = scored[0].fame;
-      return scored.filter((p) => p.fame === topFame).map((p) => ({
-        tag: p.tag, name: p.name, fame: p.fame,
-      }));
-    }
-  }
-  return null;
+  const race = raceLog.find(
+    (r) => r?.seasonId != null && r?.sectionIndex != null
+      && `S${r.seasonId}W${r.sectionIndex + 1}` === weekId,
+  );
+  if (!race || !Array.isArray(race.standings)) return null;
+
+  const standing = race.standings.find(
+    (s) => s?.clan?.tag?.toUpperCase() === `#${cleanTag}`,
+  );
+  const participants = standing?.clan?.participants;
+  if (!Array.isArray(participants)) return null;
+
+  const scored = participants
+    .filter((p) => p?.fame > 0)
+    .sort((a, b) => (b.fame || 0) - (a.fame || 0));
+  if (scored.length === 0) return null;
+
+  const topFame = scored[0].fame;
+  return scored.filter((p) => p.fame === topFame).map((p) => ({
+    tag: p.tag, name: p.name, fame: p.fame,
+  }));
 }
 
 export async function backfillChampionRegistry(clanTag, raceLog) {

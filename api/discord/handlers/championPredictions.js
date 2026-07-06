@@ -16,6 +16,7 @@ import {
   backfillChampionRegistry,
   resolveClan,
   formatParisDate,
+  computeNextPredictionsStart,
 } from "../../../backend/services/championPredictions.js";
 import {
   fetchRaceLog,
@@ -153,6 +154,8 @@ export async function handleEnd(webhookUrl, clanVal) {
           .map((v) => v.discordName)
       : [];
 
+    const nextStartText = formatParisDate(computeNextPredictionsStart());
+
     const embed = buildResultEmbed(
       resolved.name,
       weekId,
@@ -162,6 +165,7 @@ export async function handleEnd(webhookUrl, clanVal) {
       result.totalVotes,
       realChampion,
       winnerVoters,
+      nextStartText,
     );
 
     await fetch(webhookUrl, {
@@ -336,6 +340,7 @@ function buildResultEmbed(
   totalVotes,
   realChampions,
   winnerVoters = [],
+  nextStartText = null,
 ) {
   // Trouver le nom via les challengers
   const findName = (tag) => {
@@ -391,6 +396,10 @@ function buildResultEmbed(
       if (winnerVoters.length > 100) description += `… (+${winnerVoters.length - 100} autres)`;
     }
     description += `\n`;
+  }
+
+  if (nextStartText) {
+    description += `\n📅 **Prochaine édition : ${nextStartText} !**`;
   }
 
   return {

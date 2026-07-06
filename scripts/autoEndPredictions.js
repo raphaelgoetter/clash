@@ -78,15 +78,6 @@ function ordinal(n) {
   return n + "\u20E3";
 }
 
-function computeNextPredictionsStart(now = new Date()) {
-  const next = new Date(now);
-  next.setUTCHours(8, 0, 0, 0);
-  let daysUntilTuesday = (2 - next.getUTCDay() + 7) % 7;
-  if (daysUntilTuesday === 0 && next <= now) daysUntilTuesday = 7;
-  next.setUTCDate(next.getUTCDate() + daysUntilTuesday);
-  return next;
-}
-
 async function main() {
   const token = process.env.DISCORD_TOKEN;
   if (!token) {
@@ -94,7 +85,7 @@ async function main() {
     process.exit(1);
   }
 
-  const { formatParisDate } = await import(
+  const { formatParisDate, computeNextPredictionsStart } = await import(
     "../backend/services/championPredictions.js"
   );
   const nextStart = computeNextPredictionsStart();
