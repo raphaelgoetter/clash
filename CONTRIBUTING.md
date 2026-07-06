@@ -46,6 +46,25 @@ Actuellement seul le clan 2 (`LRQP20V9`) a sa variable `DISCORD_THREAD_MEMBERS_L
 
 Aucun changement de code n'est nécessaire pour étendre le test à un autre clan.
 
+### Planification des scripts automatiques (GitHub Actions)
+
+Tous les horaires ci-dessous sont définis en UTC dans les workflows (`.github/workflows/`). L'heure de Paris correspond à UTC+2 en été (CEST) et UTC+1 en hiver (CET).
+
+| Script                                                  | Workflow                 | Jour(s)                                       | Horaire UTC       | Horaire Paris (été/hiver) | Salon Discord                         |
+| ------------------------------------------------------- | ------------------------ | --------------------------------------------- | ----------------- | ------------------------- | ------------------------------------- |
+| `collectSnapshots.js` (`npm run snapshot`)              | `snapshot.yml`           | Tous les jours                                | Toutes les heures | —                         | Aucun post (données uniquement)       |
+| `notifyMemberChanges.js` (`npm run notify-members`)     | `snapshot.yml`           | Tous les jours                                | Toutes les heures | —                         | Salon membres (ou thread test clan 2) |
+| `refreshClanCache.js` (`npm run cache`)                 | `snapshot.yml`           | Tous les jours                                | Toutes les heures | —                         | Aucun post (cache statique)           |
+| `preResetSnapshot.js`                                   | `pre-reset-snapshot.yml` | Ven, Sam, Dim, Lun                            | 07:30             | 09:30 / 08:30             | Aucun post (données uniquement)       |
+| `notifyWarSummary.js`                                   | `war-summary.yml`        | Tous les jours (poste ven/sam/dim/lun)        | 10:05             | 12:05 / 11:05             | Salon membres (ou thread test clan 2) |
+| `notifyClanStatus.js`                                   | `war-summary.yml`        | Tous les jours (idem)                         | 10:05             | 12:05 / 11:05             | Salon staff (`DISCORD_CHANNEL_STAFF`) |
+| `notifyLastSeen.js`                                     | `last-seen.yml`          | Tous les jours                                | 10:08             | 12:08 / 11:08             | Salon membres (ou thread test clan 2) |
+| `notifyGdcLaunch.js`                                    | `gdc-launch.yml`         | Jeudi                                         | 10:30             | 12:30 / 11:30             | Salon membres principal               |
+| `notifyPreWarSummary.js` (`npm run pre-war-summary`)    | `pre-war-summary.yml`    | Mercredi                                      | 14:00             | 16:00 / 15:00             | Salon membres principal               |
+| `notifyRules.js`                                        | `rules.yml`              | Mardi (le script ne poste que le 1er du mois) | 14:00             | 16:00 / 15:00             | Salon membres principal               |
+| `autoStartPredictions.js` (`npm run predictions:start`) | `predictions.yml`        | Mardi                                         | 08:00             | 10:00 / 09:00             | Salon membres (ou thread test clan 2) |
+| `autoEndPredictions.js` (`npm run predictions:end`)     | `predictions.yml`        | Lundi                                         | 12:00             | 14:00 / 13:00             | Salon membres (ou thread test clan 2) |
+
 ---
 
 ## Référence API backend
