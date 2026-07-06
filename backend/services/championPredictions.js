@@ -499,7 +499,7 @@ export async function getHistory(clanTag, limit = 10) {
   const clean = clanTag.replace(/^#/, "").toUpperCase();
   return registry
     .filter((e) => e.clanTag === clean)
-    .sort((a, b) => b.weekId - a.weekId)
+    .sort((a, b) => (b.seasonId - a.seasonId) || (b.sectionIndex - a.sectionIndex))
     .slice(0, limit);
 }
 
