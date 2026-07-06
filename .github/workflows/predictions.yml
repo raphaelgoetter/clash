@@ -7,8 +7,8 @@ on:
   schedule:
     # Mardi 08:00 UTC (10h00 Paris) — lancement des pronostics
     - cron: "0 8 * * 2"
-    # Lundi 14:00 UTC (16h00 Paris) — résultat des pronostics
-    - cron: "0 14 * * 1"
+    # Lundi 12:00 UTC (14h00 Paris) — résultat des pronostics
+    - cron: "0 12 * * 1"
   workflow_dispatch:
 
 jobs:
@@ -47,7 +47,7 @@ jobs:
           git push || true
 
   end-predictions:
-    if: github.event.schedule == '0 14 * * 1' || github.event_name == 'workflow_dispatch'
+    if: github.event.schedule == '0 12 * * 1' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
       CLASH_API_KEY: ${{ secrets.CLASH_API_KEY }}
