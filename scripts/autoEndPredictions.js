@@ -157,11 +157,15 @@ async function main() {
         description += `🗳️ **${result.totalVotes}** vote${result.totalVotes > 1 ? "s" : ""} au total.\n\n`;
       }
 
-      if (realChampion) {
+      if (realChampion && realChampion.length > 0) {
         description += `**Véritable Champion de la semaine ${weekId} :**\n`;
-        description += `🏆 **${realChampion.name}** — ${formatFame(realChampion.fame)} pts\n\n`;
+        for (const c of realChampion) {
+          description += `🏆 **${c.name}** — ${formatFame(c.fame)} pts\n`;
+        }
+        description += `\n`;
 
-        if (result.winnerTag === realChampion.tag) {
+        const matched = realChampion.some((c) => c.tag === result.winnerTag);
+        if (matched) {
           description += `🎉 **Les votants ont eu raison !** Le challenger majoritaire était bien le Champion !\n\n`;
           if (winnerVoters.length > 0) {
             const list = winnerVoters.slice(0, 100).join(", ");
