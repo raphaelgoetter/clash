@@ -25,6 +25,7 @@ import {
 import {
   computePrevWeekId,
 } from "../../../backend/services/dateUtils.js";
+import { resolveMembersChannelId } from "../../../backend/services/discordChannels.js";
 
 const DISCORD_APP_ID = process.env.DISCORD_APP_ID;
 const CHAMPION_COLOR = 0x9b59b6;
@@ -36,6 +37,42 @@ function buildWebhookUrl(body) {
   const token = body.token || body.interaction?.token;
   if (!DISCORD_APP_ID || !token) return null;
   return `https://discord.com/api/v10/webhooks/${DISCORD_APP_ID}/${token}`;
+}
+
+// Poste toujours dans le salon principal du clan (jamais le thread test),
+// comme les scripts cron autoStartPredictions.js / autoEndPredictions.js.
+// Si le salon n'est pas configuré, retombe sur une réponse à l'endroit où
+// la commande a été tapée.
+async function postToClanChannel(clanTag, webhookUrl, payload) {
+  const channelId = resolveMembersChannelId(clanTag, { thread: false });
+  const token = process.env.DISCORD_TOKEN;
+
+  if (channelId && token) {
+    const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bot ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: `✅ Posté dans <#${channelId}>`, flags: 64 }),
+      });
+      return;
+    }
+    const errBody = await res.text();
+    console.error(`[${clanTag}] Erreur envoi salon (${res.status}):`, errBody);
+  }
+
+  await fetch(webhookUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
 }
 
 function decodeCustomId(customId) {
@@ -122,11 +159,7 @@ export async function handleStart(webhookUrl, clanVal) {
     const embed = buildStartEmbed(clanName, prevWeekId, targetWeekId, topScorers, endsAt);
     const selectMenu = buildChallengerSelect(clanTag, weekId, topScorers);
 
-    await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ embeds: [embed], components: [selectMenu] }),
-    });
+    await postToClanChannel(clanTag, webhookUrl, { embeds: [embed], components: [selectMenu] });
   } catch (err) {
     await postError(webhookUrl, `Erreur : ${err.message}`);
   }
@@ -168,11 +201,7 @@ export async function handleEnd(webhookUrl, clanVal) {
       nextStartText,
     );
 
-    await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ embeds: [embed] }),
-    });
+    await postToClanChannel(clanTag, webhookUrl, { embeds: [embed] });
   } catch (err) {
     await postError(webhookUrl, `Erreur : ${err.message}`);
   }

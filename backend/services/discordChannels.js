@@ -11,12 +11,16 @@
  * automatiques d'un clan donné.
  *
  * @param {string} clanTag - tag du clan sans '#', ex "LRQP20V9"
+ * @param {object} [options]
+ * @param {boolean} [options.thread=true] - si false, ignore
+ *   DISCORD_THREAD_MEMBERS_<TAG> et retourne toujours le salon principal.
  * @returns {string|undefined} l'ID du channel/thread, ou undefined si aucune
  *   variable d'env n'est définie pour ce clan.
  */
-export function resolveMembersChannelId(clanTag) {
-  return (
-    process.env[`DISCORD_THREAD_MEMBERS_${clanTag}`] ||
-    process.env[`DISCORD_CHANNEL_MEMBERS_${clanTag}`]
-  );
+export function resolveMembersChannelId(clanTag, { thread = true } = {}) {
+  if (thread) {
+    const threadId = process.env[`DISCORD_THREAD_MEMBERS_${clanTag}`];
+    if (threadId) return threadId;
+  }
+  return process.env[`DISCORD_CHANNEL_MEMBERS_${clanTag}`];
 }

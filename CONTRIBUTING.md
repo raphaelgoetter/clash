@@ -33,18 +33,23 @@ La documentation orientée utilisateur final reste dans README.md.
 
 Pour éviter que les posts automatiques parasitent les discussions manuelles du salon d'un clan, certains scripts peuvent poster dans un thread dédié plutôt que dans le salon principal.
 
-Chaque script concerné résout son channel cible via `resolveMembersChannelId(clanTag)` (`backend/services/discordChannels.js`) plutôt que de lire directement `DISCORD_CHANNEL_MEMBERS_<TAG>`. Cette fonction retourne `DISCORD_THREAD_MEMBERS_<TAG>` si elle est définie pour ce clan, sinon retombe sur `DISCORD_CHANNEL_MEMBERS_<TAG>` (comportement historique inchangé).
+Chaque script concerné résout son channel cible via `resolveMembersChannelId(clanTag)` (`backend/services/discordChannels.js`) plutôt que de lire directement `DISCORD_CHANNEL_MEMBERS_<TAG>`. Par défaut, cette fonction retourne `DISCORD_THREAD_MEMBERS_<TAG>` si elle est définie pour ce clan, sinon retombe sur `DISCORD_CHANNEL_MEMBERS_<TAG>` (comportement historique inchangé). Un appelant peut forcer le salon principal en passant `{ thread: false }`, ce qui ignore `DISCORD_THREAD_MEMBERS_<TAG>` même si elle est définie.
 
-Scripts concernés : `notifyWarSummary.js` (résumé quotidien/hebdo), `notifyMemberChanges.js` (arrivées/départs/promotions/rétrogradations), `notifyLastSeen.js` (joueurs inactifs), `autoStartPredictions.js` et `autoEndPredictions.js` (pronostics).
+Scripts concernés : `notifyWarSummary.js` (résumé quotidien/hebdo), `notifyMemberChanges.js` (arrivées/départs/promotions/rétrogradations), `notifyLastSeen.js` (joueurs inactifs).
+
+Postent toujours dans le salon principal (appellent `resolveMembersChannelId(clanTag, { thread: false })`), quel que soit le clan — choix volontaire pour ne pas noyer les votes dans le thread de test :
+
+- `autoStartPredictions.js` / `autoEndPredictions.js` (cron `predictions.yml`)
+- Les commandes Discord manuelles `/champion-start` et `/champion-end` (`api/discord/handlers/championPredictions.js`) : elles postent directement dans le salon résolu via l'API Discord (token bot), avec une confirmation éphémère à l'endroit où la commande a été tapée — au lieu de répondre dans le salon/thread d'où la commande est lancée.
 
 Scripts **non concernés** (restent dans le salon principal ou le salon staff) : `notifyPreWarSummary.js`, `notifyGdcLaunch.js`, `notifyRules.js`, `notifyClanStatus.js`.
 
 Actuellement seul le clan 2 (`LRQP20V9`) a sa variable `DISCORD_THREAD_MEMBERS_LRQP20V9` renseignée (thread `1523295989044088964`), à titre de test. Pour étendre à un autre clan :
 
 1. Renseigner `DISCORD_THREAD_MEMBERS_<TAG>` dans `.env` (local).
-2. Ajouter le secret GitHub Actions du même nom dans les workflows concernés (`snapshot.yml`, `last-seen.yml`, `war-summary.yml`, `predictions.yml`).
+2. Ajouter le secret GitHub Actions du même nom dans les workflows concernés (`snapshot.yml`, `last-seen.yml`, `war-summary.yml`).
 
-Aucun changement de code n'est nécessaire pour étendre le test à un autre clan.
+Aucun changement de code n'est nécessaire pour étendre le test à un autre clan (sauf pour les pronostics, qui ignorent volontairement le thread — voir plus haut).
 
 ### Planification des scripts automatiques (GitHub Actions)
 
@@ -62,8 +67,8 @@ Tous les horaires ci-dessous sont définis en UTC dans les workflows (`.github/w
 | `notifyGdcLaunch.js`                                    | `gdc-launch.yml`         | Jeudi                                         | 10:30             | 12:30 / 11:30             | Salon membres principal               |
 | `notifyPreWarSummary.js` (`npm run pre-war-summary`)    | `pre-war-summary.yml`    | Mercredi                                      | 14:00             | 16:00 / 15:00             | Salon membres principal               |
 | `notifyRules.js`                                        | `rules.yml`              | Mardi (le script ne poste que le 1er du mois) | 14:00             | 16:00 / 15:00             | Salon membres principal               |
-| `autoStartPredictions.js` (`npm run predictions:start`) | `predictions.yml`        | Mardi                                         | 08:00             | 10:00 / 09:00             | Salon membres (ou thread test clan 2) |
-| `autoEndPredictions.js` (`npm run predictions:end`)     | `predictions.yml`        | Lundi                                         | 12:00             | 14:00 / 13:00             | Salon membres (ou thread test clan 2) |
+| `autoStartPredictions.js` (`npm run predictions:start`) | `predictions.yml`        | Mardi                                         | 08:00             | 10:00 / 09:00             | Salon membres principal               |
+| `autoEndPredictions.js` (`npm run predictions:end`)     | `predictions.yml`        | Lundi                                         | 12:00             | 14:00 / 13:00             | Salon membres principal               |
 
 ---
 

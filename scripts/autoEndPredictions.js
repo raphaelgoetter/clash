@@ -92,7 +92,7 @@ async function main() {
   const nextStartText = formatParisDate(nextStart);
 
   for (const clanTag of FAMILY_CLAN_TAGS) {
-    const channelId = resolveMembersChannelId(clanTag);
+    const channelId = resolveMembersChannelId(clanTag, { thread: false });
     if (!channelId) {
       console.warn(`[${clanTag}] Pas de channel configuré, ignoré.`);
       continue;
