@@ -83,7 +83,7 @@ const RESISTANTS_BODY = `La Guerre de Clans commence ! 🔥
 
 ### PROMOTION :
 
-<:blue_crown:1294923219668566047> Saison entière avec 100% des combats réalisés → promotion au rang "Aîné".
+<:blue_crown:1294923219668566047> Plus de 2600 points dans la semaine → promotion au rang "Aîné".
 
 🎯 L'objectif n'est pas de gagner tous ses combats, "juste" de faire ses 4 combats chaque jour, car **tous les combats comptent pour le clan**. Un combat même perdu rapporte des points !
 
