@@ -5094,20 +5094,19 @@ export default async function handler(req, res) {
             day1Decks: day1DecksByTag.has(normalizedTag)
               ? day1DecksByTag.get(normalizedTag)
               : null,
-          }))
-          .filter((p) => {
             // snapshotMembersByTag vient du cache disque (potentiellement
             // périmé de plusieurs heures) : un joueur exclu du clan entre
-            // deux rafraîchissements y traîne encore. On exclut donc tout
-            // tag absent de la liste live des membres actuels, sauf si cet
-            // appel live a échoué (currentMemberTags === null) pour ne pas
-            // vider la liste à tort en cas d'erreur réseau ponctuelle.
-            if (
-              currentMemberTags &&
-              !currentMemberTags.has(normalizeTag(p.tag))
-            ) {
-              return false;
-            }
+            // deux rafraîchissements y traîne encore. On ne le retire pas de
+            // la liste (il a quand même manqué ses combats), on l'annote
+            // pour l'afficher avec un statut "Parti" au lieu de son ancien
+            // rôle. currentMemberTags === null (appel live échoué) → on ne
+            // marque personne comme parti pour ne pas afficher de faux
+            // positifs en cas d'erreur réseau ponctuelle.
+            hasLeft: currentMemberTags
+              ? !currentMemberTags.has(normalizeTag(member.tag || normalizedTag))
+              : false,
+          }))
+          .filter((p) => {
             const isNewArrival = isJoinedThisWar(p.arrivalStreak, p.day1Decks);
             return p.decks < 4 && !isNewArrival;
           })
@@ -5181,14 +5180,14 @@ export default async function handler(req, res) {
               const avgPerDeck = totalDecks
                 ? Math.round(totalFame / totalDecks)
                 : 0;
-              const status = formatStatus(player.role);
+              const status = player.hasLeft ? "Parti" : formatStatus(player.role);
               const isNew =
                 Number.isFinite(player.arrivalWeeks) &&
                 player.arrivalWeeks <= 1;
               const newTag = isNew ? " 🆕" : "";
               return `- [${player.name}](${trustPlayerUrl(tag)})${newTag} (${status}) manque ${4 - player.decks} :\n  Decks : ${decksLine}\n  Moyenne : ${avgPerDeck}`;
             } catch (err) {
-              const status = formatStatus(player.role);
+              const status = player.hasLeft ? "Parti" : formatStatus(player.role);
               return `- [${player.name}](${trustPlayerUrl(tag)}) (${status}) manque ${4 - player.decks} : données historiques indisponibles`;
             }
           }),
