@@ -1109,17 +1109,21 @@ async function postWarSummary(
     // Itérer sur les membres actuels du cache : inclut les membres absents du
     // snapshot (0 decks), exclut les ex-membres (riko, les Goetter…) qui ne sont
     // plus dans data.members/membersRaw mais pourraient traîner dans d'autres listes.
-    // dayEntry.decks est mis à jour par le cron horaire et peut être en retard de
-    // presque une heure ; decksPreReset est capturé ~2 min avant le reset (source
-    // de vérité, même logique que _cumulFamePreReset pour la fame plus haut) et
-    // évite qu'un arrivant ayant joué juste après le dernier cron horaire soit
-    // affiché à tort comme n'ayant pas joué ses combats.
-    const decksSource = hasPreResetSnapshot
-      ? (dayEntry.decksPreReset ?? dayEntry.decks)
-      : dayEntry.decks;
+    // Deux captures possibles pour un jour donné, chacune pouvant rater une
+    // fenêtre différente : dayEntry.decks est mis à jour par le cron horaire
+    // ET par la correction post-reset (cf. snapshot.js, bloc "backup" dans les
+    // 90 min suivant le reset, qui reconstruit le total exact via le cumul
+    // live) ; decksPreReset est figé ~2 min avant le reset et ne bénéficie
+    // JAMAIS de cette correction post-reset. Aucun des deux n'est donc
+    // systématiquement le plus fiable — on prend le max des deux par joueur
+    // (les deux sont des sous-estimations possibles, jamais des surestimations,
+    // donc le max est toujours la valeur la plus proche de la réalité).
     const missingPlayers = Object.entries(memberNames)
       .map(([tagNorm, { name, role }]) => {
-        const decksCount = Number(decksSource?.[tagNorm]) || 0;
+        const decksCount = Math.max(
+          Number(dayEntry.decks?.[tagNorm]) || 0,
+          Number(dayEntry.decksPreReset?.[tagNorm]) || 0,
+        );
         return {
           tag: tagNorm,
           name,

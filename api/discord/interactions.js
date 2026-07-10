@@ -5066,8 +5066,24 @@ export default async function handler(req, res) {
           return;
         }
 
+        // dayEntry.decks (cron horaire + correction post-reset) et
+        // decksPreReset (figé ~2 min avant le reset, jamais corrigé après)
+        // peuvent chacun rater une fenêtre différente : on prend le max par
+        // joueur, comme dans notifyWarSummary.js, pour rester cohérent entre
+        // les commandes.
+        const mergedDaySnapDecks = (snap) => {
+          const merged = { ...(snap?.decks || {}) };
+          for (const [tag, value] of Object.entries(snap?.decksPreReset || {})) {
+            if (!Number.isFinite(value)) continue;
+            if (!Number.isFinite(merged[tag]) || value > merged[tag]) {
+              merged[tag] = value;
+            }
+          }
+          return merged;
+        };
+
         const decksByTag = new Map(
-          Object.entries(prevDaySnap.decks).map(([tag, value]) => [
+          Object.entries(mergedDaySnapDecks(prevDaySnap)).map(([tag, value]) => [
             normalizeTag(tag),
             Number.isFinite(value) ? Math.max(0, Math.min(4, value)) : 0,
           ]),
@@ -5075,7 +5091,7 @@ export default async function handler(req, res) {
 
         const day1Snap = weekSnaps[0];
         const day1DecksByTag = new Map(
-          Object.entries(day1Snap?.decks || {}).map(([tag, value]) => [
+          Object.entries(mergedDaySnapDecks(day1Snap)).map(([tag, value]) => [
             normalizeTag(tag),
             Number.isFinite(value) ? Math.max(0, Math.min(4, value)) : 0,
           ]),
