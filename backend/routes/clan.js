@@ -843,6 +843,7 @@ router.get("/:tag/members", async (req, res) => {
     }
 
     const forceRefresh = req.query.force === "true" || req.query.force === "1";
+    const MEMBERS_DISK_CACHE_TTL_MS = 5 * 60 * 1000; // aligné sur DISK_CACHE_TTL_MS de /analysis
     let cached = null;
     try {
       cached = await loadClanCache(clanTag);
@@ -851,6 +852,27 @@ router.get("/:tag/members", async (req, res) => {
     }
 
     if (!forceRefresh && cached && Array.isArray(cached.members)) {
+      // Contrairement à /analysis (fast=true), cette route servait le cache
+      // disque tel quel, sans jamais vérifier son âge : un joueur ayant joué
+      // après la dernière écriture du cron horaire restait figé à son ancien
+      // total "cette GDC" tant que personne ne cliquait sur "rafraîchir".
+      // On sert quand même immédiatement (le tableau membres doit s'ouvrir
+      // vite), mais on déclenche un rebuild en arrière-plan si périmé.
+      const age = cached.analysisCacheUpdatedAt
+        ? Date.now() - new Date(cached.analysisCacheUpdatedAt).getTime()
+        : Number.MAX_SAFE_INTEGER;
+      if (age > MEMBERS_DISK_CACHE_TTL_MS) {
+        waitUntil(
+          buildClanAnalysis(clanTag, { includeRaceGroup: false })
+            .then((fresh) => saveClanCache(clanTag, fresh).catch(() => null))
+            .catch((err) =>
+              console.warn(
+                `[clan] background refresh failed for ${clanTag}:`,
+                err.message,
+              ),
+            ),
+        );
+      }
       res.set("X-Cache", "HIT");
       return res.json({
         members: cached.members,
