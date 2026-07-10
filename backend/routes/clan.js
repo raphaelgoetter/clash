@@ -2025,15 +2025,23 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     // Calcul des jours GDC de la semaine courante
     const warDays = (() => {
       const currentWeek = warHistory?.weeks?.find((w) => w.isCurrent) ?? null;
-      // Source fiable 1 : semaine courante depuis warHistory (déjà issu de currentRace)
-      // Source fiable 2 : currentRace.clan.participants en direct (fallback si warHistory
-      //   n'a pas pu intégrer ce joueur, ex. fetch battleLog raté + race log partiel)
+      // Source fiable 1 : currentRace.clan.participants en direct — toujours
+      // refetché à chaque appel de buildClanAnalysis (ligne ~1135), donc
+      // jamais périmé. Source fiable 2 (fallback) : semaine courante depuis
+      // warHistory, utile seulement quand le joueur n'apparaît plus dans le
+      // currentRace de CE clan (transfert en cours de semaine).
+      // ⚠️ warHistory peut lui-même provenir du cache disque persistant
+      // (cachedMember.warHistory réutilisé tant que scoreVersion est
+      // inchangé, cf. ligne ~1756) : son champ decksUsed de la semaine en
+      // cours peut donc être gelé à une valeur ancienne (y compris 0), que
+      // `??` ne contournerait pas puisque 0 est une valeur définie. D'où la
+      // priorité à la donnée live plutôt qu'à warHistory.
       const normalizedTag = m.tag.startsWith("#") ? m.tag : `#${m.tag}`;
       const raceParticipant =
         currentRace?.clan?.participants?.find((p) => p.tag === normalizedTag) ??
         null;
       const raceTotalDecks =
-        currentWeek?.decksUsed ?? raceParticipant?.decksUsed ?? null;
+        raceParticipant?.decksUsed ?? currentWeek?.decksUsed ?? null;
       // On ne peut rien calculer si ni battleLog ni données de race ne sont disponibles
       if (battleLog === null && raceTotalDecks === null) return null;
       const effectiveBattleLog = battleLog ?? [];
@@ -2050,7 +2058,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         summary &&
         summary.daysFromThu > 0 &&
         (warHistory?.streakInCurrentClan ?? 0) <= 1 &&
-        (currentWeek?.decksUsed ?? 0) === 0
+        (raceTotalDecks ?? 0) === 0
       ) {
         summary.arrivedMidWar = true;
         summary.arrivedOnDay = summary.daysFromThu + 1;
