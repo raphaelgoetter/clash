@@ -4131,6 +4131,11 @@ export default async function handler(req, res) {
             const participants = standing?.clan?.participants ?? [];
             for (const p of participants) {
               const tag = p.tag?.toUpperCase?.() || "";
+              // allMembers vient d'un fetch live (fetchClanMembers) : un tag
+              // absent signifie que le joueur a quitté/été exclu du clan
+              // depuis — on l'exclut du classement, comme déjà fait pour le
+              // mode all-time ci-dessous.
+              if (!tag || !allMembers.has(tag)) continue;
               const role = allMembers.get(tag)?.role || "member";
               allTeams.push({
                 tag,
@@ -4175,7 +4180,9 @@ export default async function handler(req, res) {
               const participants = standing?.clan?.participants ?? [];
               for (const p of participants) {
                 const tag = p.tag?.toUpperCase?.() || "";
-                if (!tag) continue;
+                // Même filtre que pour le mode week/all-time : exclure les
+                // joueurs qui ne sont plus membres actuellement du clan.
+                if (!tag || !allMembers.has(tag)) continue;
                 const existing = seasonTotals.get(tag) || {
                   name: p.name || "",
                   fame: 0,
