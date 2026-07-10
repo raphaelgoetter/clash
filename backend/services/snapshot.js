@@ -1051,12 +1051,15 @@ export async function recordSnapshot(
     }
 
     // Backup snapshot taken soon after reset can be used to recover the
-    // previous day's totals if they are missing.
-    if (
-      prevDayEntry &&
-      minutesSinceWarDayStart <= 90 &&
-      !hasStablePastDaySnapshot(prevDayEntry)
-    ) {
+    // previous day's totals, y compris quand un snapshot "primary" partiel
+    // existe déjà (hasStablePastDaySnapshot devient vrai dès la 1ère capture
+    // horaire de la journée, même si elle précède le reset de ~30-60 min et
+    // rate donc les derniers decks joués juste avant le reset). La formule
+    // ci-dessous reconstruit exactement le total de la veille à partir du
+    // cumul hebdo live (cumul avant J − cumul avant J-1), donc elle ne peut
+    // que confirmer/compléter la valeur déjà stockée : le merge se fait par
+    // Math.max (cf. mergeMaps), jamais par écrasement à la baisse.
+    if (prevDayEntry && minutesSinceWarDayStart <= 90) {
       const inferredPrevDayDecks = {};
       for (const tag of Object.keys(currentCumul)) {
         const priorDayDelta = Math.max(

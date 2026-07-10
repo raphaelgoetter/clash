@@ -477,8 +477,28 @@ router.get("/:tag/analysis", async (req, res) => {
             diskCached.members[0].warHistory != null &&
             diskCached.members[0].scoreVersion === SCORE_VERSION;
           if (cacheValid) {
+            // Le cache disque peut avoir plusieurs heures (alimenté par le cron
+            // horaire) : un nouvel arrivant qui a joué après la dernière écriture
+            // du cache resterait figé à 0 deck tant que rien ne le rafraîchit.
+            // On sert quand même ce cache immédiatement (c'est le but de "fast"),
+            // mais on déclenche un rebuild en arrière-plan s'il est périmé, comme
+            // le fait déjà le chemin non-fast (cf. bloc age > DISK_CACHE_TTL_MS
+            // ci-dessous) — sans quoi ce chemin ne se rafraîchissait jamais.
+            if (age > DISK_CACHE_TTL_MS) {
+              waitUntil(
+                buildClanAnalysis(clanTag, { includeRaceGroup })
+                  .then((fresh) => saveClanCache(clanTag, fresh).catch(() => null))
+                  .catch((err) =>
+                    console.warn(
+                      `[clan] background refresh failed for ${clanTag}:`,
+                      err.message,
+                    ),
+                  ),
+              );
+            }
             const responsePayload = { ...diskCached };
-            responsePayload.fallbackReason = "diskCacheFast";
+            responsePayload.fallbackReason =
+              age > DISK_CACHE_TTL_MS ? "diskCacheFastStale" : "diskCacheFast";
             responsePayload.rateLimited = false;
             if (!includeTopPlayers) responsePayload.topPlayers = null;
             if (!includeUncomplete) responsePayload.uncomplete = null;

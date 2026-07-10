@@ -4961,17 +4961,23 @@ export default async function handler(req, res) {
       };
 
       try {
-        const { fetchCurrentRace, fetchRaceLog } =
+        const { fetchCurrentRace, fetchRaceLog, fetchClanMembers } =
           await import("../../backend/services/clashApi.js");
         const { getSnapshotsForWeeks, getCurrentWarDayIndex } =
           await import("../../backend/services/snapshot.js");
         const { computeCurrentWeekId, computePrevWeekId, warResetOffsetMs } =
           await import("../../backend/services/dateUtils.js");
 
-        const [race, raceLog] = await Promise.all([
+        const [race, raceLog, currentMembers] = await Promise.all([
           fetchCurrentRace(`#${resolved.tag}`),
           fetchRaceLog(`#${resolved.tag}`),
+          fetchClanMembers(`#${resolved.tag}`).catch(() => null),
         ]);
+        // null (pas [] явно) si l'appel live échoue, pour ne pas vider la
+        // liste à tort en cas d'erreur réseau — voir filtre plus bas.
+        const currentMemberTags = Array.isArray(currentMembers)
+          ? new Set(currentMembers.map((m) => normalizeTag(m.tag)))
+          : null;
 
         const isCalendarWarDay =
           new Date(Date.now() - warResetOffsetMs(resolved.tag)).getUTCDay() ===
@@ -5083,6 +5089,18 @@ export default async function handler(req, res) {
               : null,
           }))
           .filter((p) => {
+            // snapshotMembersByTag vient du cache disque (potentiellement
+            // périmé de plusieurs heures) : un joueur exclu du clan entre
+            // deux rafraîchissements y traîne encore. On exclut donc tout
+            // tag absent de la liste live des membres actuels, sauf si cet
+            // appel live a échoué (currentMemberTags === null) pour ne pas
+            // vider la liste à tort en cas d'erreur réseau ponctuelle.
+            if (
+              currentMemberTags &&
+              !currentMemberTags.has(normalizeTag(p.tag))
+            ) {
+              return false;
+            }
             const isNewArrival = isJoinedThisWar(p.arrivalStreak, p.day1Decks);
             return p.decks < 4 && !isNewArrival;
           })
