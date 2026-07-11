@@ -490,10 +490,21 @@ async function formatParisObservationTime(date = new Date()) {
   return `${day} ${month} à ${hour}h${minute}`;
 }
 
-function sortCompareRaceGroup(raceGroup, sortMode, isWarPeriod) {
+// clan.currentFame est la fame cumulée hebdomadaire (pertinente uniquement en
+// Colisée) ; en GDC normale, les "points actuels" affichés par l'API sont
+// clan.clanScore (points de la période courante). Même logique que
+// frontend/warGroup.js pour rester cohérent entre le site et le bot.
+function getCurrentPts(clan, isColosseum) {
+  return isColosseum ? clan.currentFame : clan.clanScore;
+}
+
+function sortCompareRaceGroup(raceGroup, sortMode, isWarPeriod, isColosseum) {
   return [...raceGroup].sort((a, b) => {
     if (isWarPeriod && sortMode === "current") {
-      return (b.currentFame ?? 0) - (a.currentFame ?? 0);
+      return (
+        (getCurrentPts(b, isColosseum) ?? 0) -
+        (getCurrentPts(a, isColosseum) ?? 0)
+      );
     }
     if (isWarPeriod) {
       // sortMode === "projection" (comportement par défaut en période GDC)
@@ -528,7 +539,12 @@ function buildComparePayload({
   const ownTag = `#${resolved.tag}`.toUpperCase();
   const isColosseum = data?.isColosseum === true;
 
-  const sorted = sortCompareRaceGroup(raceGroup, sortMode, isWarPeriod);
+  const sorted = sortCompareRaceGroup(
+    raceGroup,
+    sortMode,
+    isWarPeriod,
+    isColosseum,
+  );
   const fmt = (n) => (typeof n === "number" ? n.toLocaleString("fr-FR") : "—");
 
   const rows = sorted.map((clan, idx) => {
@@ -566,8 +582,9 @@ function buildComparePayload({
       const decks = `<:cards:1493711279121104926> ${clan.decksToday != null ? clan.decksToday : "?"} decks`;
       const eff = `<:cible:1493711597682557019> ${clan.ptsPerDeck != null ? clan.ptsPerDeck.toFixed(2) : "?"} pts/d`;
       const currentBold = sortMode === "current";
+      const currentFameOrScore = getCurrentPts(clan, isColosseum);
       const currentPtsVal =
-        clan.currentFame != null ? fmt(clan.currentFame) : null;
+        currentFameOrScore != null ? fmt(currentFameOrScore) : null;
       const currentPts =
         currentPtsVal != null
           ? `<:trophy2:1493677804733337621> Points actuels : ${currentBold ? `**${currentPtsVal}**` : currentPtsVal}`
