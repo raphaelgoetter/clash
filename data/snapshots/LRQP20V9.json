@@ -14399,7 +14399,7 @@
           "#22RGGVYP": 8,
           "#U2UYYCQVG": 8
         },
-        "snapshotCount": 172,
+        "snapshotCount": 182,
         "snapshotPreResetTime": "2026-07-11T09:34:01.538Z",
         "decksPreReset": {
           "#202R9VUJCU": 4,
@@ -14796,7 +14796,8 @@
         "_totalDonationsByTag": {},
         "duelsComplete": false,
         "periodType": null,
-        "_cumul": {}
+        "_cumul": {},
+        "snapshotCount": null
       }
     ]
   }
