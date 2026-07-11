@@ -1060,6 +1060,23 @@ export async function recordSnapshot(
     // que confirmer/compléter la valeur déjà stockée : le merge se fait par
     // Math.max (cf. mergeMaps), jamais par écrasement à la baisse.
     if (prevDayEntry && minutesSinceWarDayStart <= 90) {
+      // cumulThroughPrevDay = cumul live actuel moins les decks déjà joués
+      // AUJOURD'HUI (currentToday, remis à zéro chaque jour GDC par l'API).
+      // ⚠️ Ne JAMAIS merger currentCumul brut dans prevDayEntry._cumul plus
+      // bas : currentCumul inclut les decks déjà joués dans la nouvelle
+      // journée, donc le fusionner (via Math.max) gonflerait à tort le cumul
+      // de la veille dès qu'un joueur commence à jouer le jour suivant — ce
+      // cumul gonflé sert ensuite de baseCumul pour calculer le delta du
+      // jour suivant (baseCumul = prevDay._cumul, cf. plus haut dans cette
+      // fonction), et un baseCumul trop élevé fait ressortir un delta trop
+      // bas, sous-comptant les decks réellement joués ce jour-là.
+      const cumulThroughPrevDay = {};
+      for (const tag of Object.keys(currentCumul)) {
+        cumulThroughPrevDay[tag] = Math.max(
+          0,
+          currentCumul[tag] - (currentToday[tag] ?? 0),
+        );
+      }
       const inferredPrevDayDecks = {};
       for (const tag of Object.keys(currentCumul)) {
         const priorDayDelta = Math.max(
@@ -1080,7 +1097,10 @@ export async function recordSnapshot(
             : inferredPrevDayDecks,
         );
       }
-      prevDayEntry._cumul = mergeMaps(prevDayEntry._cumul ?? {}, currentCumul);
+      prevDayEntry._cumul = mergeMaps(
+        prevDayEntry._cumul ?? {},
+        cumulThroughPrevDay,
+      );
       prevDayEntry.duelsTodayByTag = mergeMaps(
         prevDayEntry.duelsTodayByTag ?? {},
         buildDuelPresenceByTag(prevDayEntry.realDay),
