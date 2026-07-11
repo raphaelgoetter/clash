@@ -21,8 +21,7 @@
       "#9CYUGPQ0C",
       "#99VQ2LR02",
       "#J20QR0UU2",
-      "#URJ0YLPLP",
-      "#J8LUJQGY0"
+      "#URJ0YLPLP"
     ],
     "departures": [
       "#9RRP8V0LG",
@@ -81,7 +80,8 @@
       "#8P9CL92LC",
       "#9Q920V9U",
       "#9Y28LR22",
-      "#LRJCJRRJ2"
+      "#LRJCJRRJ2",
+      "#J8LUJQGY0"
     ],
     "promotions": [],
     "demotions": []
@@ -210,7 +210,10 @@
       "#RVRL8J892",
       "#8Q2UQL2R"
     ],
-    "promotions": [],
+    "promotions": [
+      "#29QRJRLY0",
+      "#22RGGVYP"
+    ],
     "demotions": []
   },
   "QU9UQJRL": {
