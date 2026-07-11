@@ -8314,9 +8314,10 @@
           "start": "2026-07-10T09:56:00.000Z",
           "end": "2026-07-11T09:55:59.999Z"
         },
-        "snapshotTime": "2026-07-10T23:19:31.769Z",
+        "snapshotTime": "2026-07-11T00:26:51.904Z",
         "snapshotBackupTime": "2026-07-10T11:00:53.197Z",
         "decks": {
+          "#8CQ80LJ8V": 4,
           "#8VP9UJV9L": 4,
           "#9U9YVU80": 4,
           "#9YRU2QJJ": 4,
@@ -8380,7 +8381,7 @@
           "#V0VLJQCJU": 1400,
           "#R2C89LVU": 800,
           "#YQGCRQ0": 800,
-          "#8CQ80LJ8V": 800,
+          "#8CQ80LJ8V": 1700,
           "#J008G9CLJ": 1600,
           "#GYCJPJL0L": 950,
           "#8JGU9UUJJ": 1400
@@ -8389,11 +8390,12 @@
           "#R2C89LVU": 1,
           "#YQGCRQ0": 1,
           "#LCQ2J0VGC": 1,
-          "#J008G9CLJ": 1
+          "#J008G9CLJ": 1,
+          "#8CQ80LJ8V": 1
         },
         "_totalDonationsByTag": {
           "#G2VVUJLLQ": 41203,
-          "#8CQ80LJ8V": 105424,
+          "#8CQ80LJ8V": 105442,
           "#9U9YVU80": 64828,
           "#YQGCRQ0": 135230,
           "#V9RL22GYQ": 2046,
@@ -8414,7 +8416,7 @@
           "#JVRP8QPRU": 21529,
           "#P89LCQGP0": 19181,
           "#8JGU9UUJJ": 184641,
-          "#9YRU2QJJ": 18175,
+          "#9YRU2QJJ": 18199,
           "#8VP9UJV9L": 38440,
           "#GYCJPJL0L": 15580,
           "#LUYP8YP9": 48714,
@@ -8486,12 +8488,12 @@
           "#V0VLJQCJU": 8,
           "#R2C89LVU": 8,
           "#YQGCRQ0": 8,
-          "#8CQ80LJ8V": 4,
+          "#8CQ80LJ8V": 8,
           "#J008G9CLJ": 8,
           "#GYCJPJL0L": 5,
           "#8JGU9UUJJ": 8
         },
-        "snapshotCount": 58
+        "snapshotCount": 62
       },
       {
         "warDay": "saturday",
