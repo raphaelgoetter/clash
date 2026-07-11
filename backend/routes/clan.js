@@ -1997,6 +1997,49 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       if (playerAnalysis.warHistory) warHistory = playerAnalysis.warHistory;
     }
 
+    // currentRace est toujours refetché en direct à chaque appel de
+    // buildClanAnalysis (ligne ~1135) : jamais périmé. Calculé une seule
+    // fois ici, réutilisé plus bas (warDays) et pour repatcher warHistory.
+    const normalizedMemberTag = m.tag.startsWith("#") ? m.tag : `#${m.tag}`;
+    const liveRaceParticipant =
+      currentRace?.clan?.participants?.find(
+        (p) => p.tag === normalizedMemberTag,
+      ) ?? null;
+
+    // warHistory peut être entièrement réutilisé depuis le cache disque
+    // persistant (cachedMember.warHistory, cf. ligne ~1756) pour épargner le
+    // recalcul coûteux du score de fiabilité — mais la semaine "isCurrent"
+    // qu'il embarque décrit une GDC encore EN COURS, donc toujours en train
+    // de changer. Sans ce repatch, tout ce qui lit
+    // warHistory.weeks.find(w => w.isCurrent).decksUsed (ex: /stats-clan via
+    // getStatsClanPeriodForMember) affiche un total figé au moment où ce
+    // warHistory a été calculé pour la dernière fois, potentiellement des
+    // heures plus tôt — même quand la requête HTTP elle-même est "live".
+    if (warHistory && Array.isArray(warHistory.weeks) && liveRaceParticipant) {
+      const currentWeekIdx = warHistory.weeks.findIndex((w) => w.isCurrent);
+      if (currentWeekIdx !== -1) {
+        const stale = warHistory.weeks[currentWeekIdx];
+        const liveDecksUsed = liveRaceParticipant.decksUsed ?? 0;
+        const liveFame = liveRaceParticipant.fame ?? 0;
+        if (stale.decksUsed !== liveDecksUsed || stale.fame !== liveFame) {
+          warHistory = {
+            ...warHistory,
+            weeks: warHistory.weeks.map((w, i) =>
+              i === currentWeekIdx
+                ? {
+                    ...w,
+                    decksUsed: liveDecksUsed,
+                    fame: liveFame,
+                    boatAttacks:
+                      liveRaceParticipant.boatAttacks ?? w.boatAttacks,
+                  }
+                : w,
+            ),
+          };
+        }
+      }
+    }
+
     // Si jamais suivi (ou seulement backdaté par une migration précédente, cf. sentinelle
     // LEGACY_BACKFILL_DATE_ISO), on détermine/réévalue firstSeenAt à partir de la présence
     // réelle dans le race log (streakInFamily/streakInCurrentClan, indépendant du nombre de
@@ -2024,22 +2067,13 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
     // Calcul des jours GDC de la semaine courante
     const warDays = (() => {
+      // warHistory.weeks[isCurrent] a déjà été repatché plus haut avec les
+      // données live de currentRace (liveRaceParticipant) quand disponible ;
+      // on garde ici raceParticipant comme filet en repli, utile seulement
+      // quand le joueur n'apparaît plus dans le currentRace de CE clan
+      // (transfert en cours de semaine).
       const currentWeek = warHistory?.weeks?.find((w) => w.isCurrent) ?? null;
-      // Source fiable 1 : currentRace.clan.participants en direct — toujours
-      // refetché à chaque appel de buildClanAnalysis (ligne ~1135), donc
-      // jamais périmé. Source fiable 2 (fallback) : semaine courante depuis
-      // warHistory, utile seulement quand le joueur n'apparaît plus dans le
-      // currentRace de CE clan (transfert en cours de semaine).
-      // ⚠️ warHistory peut lui-même provenir du cache disque persistant
-      // (cachedMember.warHistory réutilisé tant que scoreVersion est
-      // inchangé, cf. ligne ~1756) : son champ decksUsed de la semaine en
-      // cours peut donc être gelé à une valeur ancienne (y compris 0), que
-      // `??` ne contournerait pas puisque 0 est une valeur définie. D'où la
-      // priorité à la donnée live plutôt qu'à warHistory.
-      const normalizedTag = m.tag.startsWith("#") ? m.tag : `#${m.tag}`;
-      const raceParticipant =
-        currentRace?.clan?.participants?.find((p) => p.tag === normalizedTag) ??
-        null;
+      const raceParticipant = liveRaceParticipant;
       const raceTotalDecks =
         raceParticipant?.decksUsed ?? currentWeek?.decksUsed ?? null;
       // On ne peut rien calculer si ni battleLog ni données de race ne sont disponibles
