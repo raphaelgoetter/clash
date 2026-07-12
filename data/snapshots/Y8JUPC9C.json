@@ -14690,7 +14690,7 @@
           "start": "2026-07-12T09:33:00.000Z",
           "end": "2026-07-13T09:32:59.999Z"
         },
-        "snapshotTime": "2026-07-12T22:16:36.432Z",
+        "snapshotTime": "2026-07-12T23:17:15.085Z",
         "snapshotBackupTime": "2026-07-12T09:33:26.776Z",
         "decks": {
           "#2902YQRQL": 4,
@@ -14703,6 +14703,7 @@
           "#888Y29GY": 4,
           "#88QP9CJU": 4,
           "#8P29RRU2": 4,
+          "#8PP9JQCLY": 4,
           "#8RYQ8Y0GY": 4,
           "#8V98QYY8V": 4,
           "#8VQLJLR0": 4,
@@ -14726,13 +14727,14 @@
           "#VVJ8RURL9": 4,
           "#YRYPUR822": 4,
           "#CYRGPVGVG": 3,
+          "#8P9CL92LC": 2,
           "#GY2RJ2RU": 1
         },
         "hourlyCumul": [],
         "_cumulFame": {
           "#9Q920V9U": 0,
           "#LRJCJRRJ2": 0,
-          "#8P9CL92LC": 400,
+          "#8P9CL92LC": 600,
           "#9Y28LR22": 500,
           "#URJ0YLPLP": 950,
           "#J20QR0UU2": 1000,
@@ -14749,7 +14751,7 @@
           "#JLU88JR28": 2425,
           "#99VY0090": 2350,
           "#2GUPJ99G2": 2500,
-          "#8PP9JQCLY": 1700,
+          "#8PP9JQCLY": 2200,
           "#2GPUQY9P9": 1700,
           "#2PG80VRY": 2500,
           "#2UQQJJ98Y": 1700,
@@ -14855,9 +14857,9 @@
           "#CYRGPVGVG": 55243,
           "#80CCLY20L": 156602,
           "#9YQ8RVU2P": 71048,
-          "#2GUPJ99G2": 168026,
+          "#2GUPJ99G2": 168036,
           "#9CYUGPQ0C": 238021,
-          "#8PP9JQCLY": 195767,
+          "#8PP9JQCLY": 195796,
           "#YRYPUR822": 108011,
           "#GY2RJ2RU": 230628,
           "#QY0LG0R0P": 198243,
@@ -14868,14 +14870,14 @@
           "#GVGVR0J2U": 28202,
           "#URJ0YLPLP": 22579,
           "#YG0V0YVPP": 88947,
-          "#8P9CL92LC": 19003
+          "#8P9CL92LC": 19019
         },
         "duelsComplete": true,
         "periodType": "warDay",
         "_cumul": {
           "#9Q920V9U": 0,
           "#LRJCJRRJ2": 0,
-          "#8P9CL92LC": 4,
+          "#8P9CL92LC": 6,
           "#9Y28LR22": 4,
           "#URJ0YLPLP": 8,
           "#J20QR0UU2": 8,
@@ -14892,7 +14894,7 @@
           "#JLU88JR28": 16,
           "#99VY0090": 16,
           "#2GUPJ99G2": 16,
-          "#8PP9JQCLY": 12,
+          "#8PP9JQCLY": 16,
           "#2GPUQY9P9": 12,
           "#2PG80VRY": 16,
           "#2UQQJJ98Y": 12,
@@ -14928,7 +14930,7 @@
           "#PGJPJG9QQ": 16,
           "#GJ8RV8802": 16
         },
-        "snapshotCount": 132
+        "snapshotCount": 138
       }
     ]
   }
