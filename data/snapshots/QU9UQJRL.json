@@ -8980,10 +8980,11 @@
           "start": "2026-07-12T09:56:00.000Z",
           "end": "2026-07-13T09:55:59.999Z"
         },
-        "snapshotTime": "2026-07-12T15:21:47.100Z",
+        "snapshotTime": "2026-07-12T16:19:11.135Z",
         "snapshotBackupTime": "2026-07-12T10:30:20.972Z",
         "decks": {
           "#8VP9UJV9L": 4,
+          "#9U9YVU80": 4,
           "#9YRU2QJJ": 4,
           "#C0RRPJYV9": 4,
           "#J008G9CLJ": 4,
@@ -9023,7 +9024,7 @@
           "#JR0U8Q008": 850,
           "#209Q8CJU0V": 900,
           "#V9RL22GYQ": 1000,
-          "#9U9YVU80": 1100,
+          "#9U9YVU80": 1800,
           "#R2C89LVU": 1400,
           "#UUG22PU0Q": 1200,
           "#YQGCRQ0": 1600,
@@ -9057,19 +9058,19 @@
         "_totalDonationsByTag": {
           "#8CQ80LJ8V": 105476,
           "#G2VVUJLLQ": 41315,
-          "#9U9YVU80": 64844,
+          "#9U9YVU80": 64864,
           "#YQGCRQ0": 135358,
           "#V9RL22GYQ": 2088,
           "#UVGPPVQ8Q": 23011,
           "#9GP9LQ9P": 39176,
           "#LCQ2J0VGC": 39612,
-          "#UV8R8RYVR": 10778,
+          "#UV8R8RYVR": 10788,
           "#V0VLJQCJU": 50086,
           "#2VURUYUP9": 20681,
           "#LJYGJYCYC": 83224,
           "#UQ9U8YQPC": 2136,
           "#CLVU02QLP": 10048,
-          "#LQPRLQJCQ": 54340,
+          "#LQPRLQJCQ": 54370,
           "#88JY2CG8J": 47534,
           "#UYRR99RL8": 5868,
           "#YGP0RQC0Q": 13259,
@@ -9092,7 +9093,7 @@
           "#JR0U8Q008": 8891,
           "#UUG22PU0Q": 7166,
           "#R2YP2UJRL": 8804,
-          "#J008G9CLJ": 7671,
+          "#J008G9CLJ": 7681,
           "#2QVU9JQ8P": 13979,
           "#LJPP988L": 19483,
           "#20V20RG08G": 205,
@@ -9127,7 +9128,7 @@
           "#JR0U8Q008": 8,
           "#209Q8CJU0V": 9,
           "#V9RL22GYQ": 12,
-          "#9U9YVU80": 8,
+          "#9U9YVU80": 12,
           "#R2C89LVU": 14,
           "#UUG22PU0Q": 12,
           "#YQGCRQ0": 16,
@@ -9153,7 +9154,7 @@
           "#J008G9CLJ": 16,
           "#8CQ80LJ8V": 12
         },
-        "snapshotCount": 49
+        "snapshotCount": 53
       }
     ]
   }
