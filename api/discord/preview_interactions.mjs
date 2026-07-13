@@ -3555,7 +3555,7 @@ export default async function handler(req, res) {
             // distincte de la projection ci-dessus — voir warStandings.js.
             const boat =
               !isColosseum && clan.raceProgress != null
-                ? `<:trophy2:1493677804733337621> Bateau : ${fmt(clan.raceProgress)} / 10 000`
+                ? `⛵ Bateau : ${fmt(clan.raceProgress)}`
                 : "";
             const line2a = [decks, eff].filter(Boolean).join(" · ");
             const line2b = [currentPts, proj].filter(Boolean).join(" · ");

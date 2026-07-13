@@ -149,11 +149,23 @@ export function renderRaceGroupCard(data, timerHelper) {
       const currentPct = Math.min(100, (decksTodayVal / maxDecks) * 100);
       const targetPct = Math.min(100, (targetVal / maxDecks) * 100);
 
+      // Colonne "Bateau" — GDC normale uniquement, entre Engagement et Decks.
+      // Reflète la vraie position de course (progression du bateau vers la
+      // ligne d'arrivée à 10000), distincte de la projection du jour affichée
+      // plus loin. Voir warStandings.js.
+      let boatHtml = "";
+      if (isWarPeriod && !isColosseum) {
+        const boatVal =
+          clan.raceProgress != null ? fmtNum(clan.raceProgress) : "—";
+        boatHtml = `<td class="war-group-boat" title="Progression bateau vers la ligne d'arrivée (${fmtNum(RACE_FINISH_LINE)} pts)">${boatVal}</td>`;
+      }
+
       let decksNowHtml = "";
       if (isWarPeriod) {
         const engagementTooltip = `${engagementEstimate?.activeMembers ?? "—"} membres ayant joué au moins 1 deck cette semaine / ${engagementEstimate?.rosterSize ?? "—"} dans le clan`;
         const tooltipText = `${decksTodayVal} decks / objectif de ${targetVal}`;
         decksNowHtml = `${showEngagement ? `<td class="war-group-engagement" title="${engagementTooltip}">${engagementVal}</td>` : ""}
+        ${boatHtml}
         <td class="war-group-decks-now" title="${tooltipText}">
           <div class="wg-pbar-track">
             <div class="wg-pbar-fill wg-pbar-current" style="width: ${currentPct}%"></div>
@@ -189,24 +201,12 @@ export function renderRaceGroupCard(data, timerHelper) {
           projVal = `<span class="war-group-clinched" title="${title}">✅ Victoire</span>`;
         } else {
           // Projection du classement/trophées de fin de journée (pts de bataille
-          // extrapolés) — distincte du classement affiché par le rang (#1..#5),
-          // qui lui reflète la vraie position (bateau en GDC normale, cumul en
-          // Colisée). Voir backend/services/warStandings.js.
+          // extrapolés). En GDC normale, la vraie position de course (progression
+          // du bateau) est distincte et affichée dans la colonne "Bateau" — voir
+          // backend/services/warStandings.js.
           projVal = fmtProjection(clan.projectedFame, decksTodayVal, targetVal);
         }
         projectionHtml = `<td class="war-group-projection">${projVal}</td>`;
-      }
-
-      // Colonne "Bateau" — GDC normale uniquement. Reflète la vraie position de
-      // course (progression du bateau vers la ligne d'arrivée à 10000), distincte
-      // de la projection du jour affichée ci-dessus. Voir warStandings.js.
-      let boatHtml = "";
-      if (isWarPeriod && !isColosseum) {
-        const boatVal =
-          clan.raceProgress != null
-            ? `${fmtNum(clan.raceProgress)} / ${fmtNum(RACE_FINISH_LINE)}`
-            : "—";
-        boatHtml = `<td class="war-group-boat">${boatVal}</td>`;
       }
 
       const trophiesHtml = !isWarPeriod
@@ -229,7 +229,6 @@ export function renderRaceGroupCard(data, timerHelper) {
       ${currentPtsHtml}
       ${avgPtsHtml}
       ${projectionHtml}
-      ${boatHtml}
     </tr>`;
     })
     .join("");
@@ -243,11 +242,11 @@ export function renderRaceGroupCard(data, timerHelper) {
         ${!isWarPeriod ? `<th class="war-group-prev-war">n-2 GDC</th>` : ""}
         ${!isWarPeriod ? `<th class="war-group-last-war">Dernière GDC</th>` : ""}
         ${showEngagement ? `<th class="war-group-engagement">Engagement</th>` : ""}
+        ${isWarPeriod && !isColosseum ? `<th class="war-group-boat">Bateau</th>` : ""}
         ${isWarPeriod ? `<th class="war-group-decks-now">Decks <span>${timerHelper(data.clan?.warResetUtcMinutes)}</span></th>` : ""}
         ${isWarPeriod ? `<th class="war-group-current-pts">${isColosseum ? "Pts actuels" : "Pts"}</th>` : ""}
         ${isWarPeriod ? `<th class="war-group-avg-pts">Pts / Deck</th>` : ""}
         ${isWarPeriod ? `<th class="war-group-projection">Projection</th>` : ""}
-        ${isWarPeriod && !isColosseum ? `<th class="war-group-boat">Bateau</th>` : ""}
       </tr>
     </thead>
   `;
