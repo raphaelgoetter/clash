@@ -319,7 +319,7 @@ export async function getVoteCounts(clanTag, weekId) {
   for (const c of session.challengers) {
     voteMap[c.tag] = { name: c.name || c.tag, votes: 0 };
   }
-  voteMap["__other__"] = { name: "Autre", votes: 0 };
+  voteMap["__other__"] = { name: "Autre joueur", votes: 0 };
   for (const v of session.votes) {
     if (voteMap[v.challengerTag]) {
       voteMap[v.challengerTag].votes++;

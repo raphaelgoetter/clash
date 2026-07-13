@@ -373,7 +373,7 @@ function buildResultEmbed(
 ) {
   // Trouver le nom via les challengers
   const findName = (tag) => {
-    if (tag === "__other__") return "Autre";
+    if (tag === "__other__") return "Autre joueur";
     const c = challengers.find((ch) => ch.tag === tag);
     return c ? c.name : tag;
   };

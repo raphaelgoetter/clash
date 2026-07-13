@@ -133,6 +133,7 @@ async function main() {
 
       // Construire l'embed
       const findName = (tag) => {
+        if (tag === "__other__") return "Autre joueur";
         const c = result.session.challengers.find((ch) => ch.tag === tag);
         return c ? c.name : tag;
       };
