@@ -42,6 +42,7 @@ import {
   summarizeWarDecksForMatchup,
 } from "../../backend/services/analysisService.js";
 import { loadClanCache } from "../../backend/services/clanCache.js";
+import { summarizePointsPerDeckWeeks } from "../../backend/services/warScoring.js";
 
 const _require = createRequire(import.meta.url);
 const COLLECTION_LEVELS = _require("../../data/collection_levels.json");
@@ -3533,16 +3534,17 @@ export default async function handler(req, res) {
         const allTimeRecord = Number.isFinite(warHistory?.maxFame)
           ? warHistory.maxFame
           : 0;
-        const totalFame = Number.isFinite(warHistory?.totalFame)
-          ? warHistory.totalFame
-          : 0;
-        const totalDecks = Array.isArray(warHistory?.weeks)
-          ? warHistory.weeks
-              .filter((w) => !w.ignored)
-              .reduce((sum, w) => sum + (Number(w.decksUsed) || 0), 0)
-          : 0;
-        const pointsPerDeck = totalDecks
-          ? Number((totalFame / totalDecks).toFixed(2))
+        // Même fenêtre que le score "Points / deck" (3 dernières semaines
+        // GDC terminées) pour éviter d'afficher deux moyennes incohérentes.
+        const completedNonIgnoredWeeks = Array.isArray(warHistory?.weeks)
+          ? warHistory.weeks.filter((w) => !w.isCurrent && !w.ignored)
+          : [];
+        const efficiencyHistory = summarizePointsPerDeckWeeks(
+          completedNonIgnoredWeeks,
+          3,
+        );
+        const pointsPerDeck = efficiencyHistory.totalDecks
+          ? Number(efficiencyHistory.pointsPerDeck.toFixed(2))
           : null;
         const averageHourRange = buildAverageRaceTimeRange(
           analysis.battleLog,
@@ -3555,7 +3557,9 @@ export default async function handler(req, res) {
           `- **Record de points :** ${allTimeRecord}`,
         ];
         if (pointsPerDeck !== null) {
-          detailLines.push(`- **Points par deck :** ${pointsPerDeck}`);
+          detailLines.push(
+            `- **Points par deck :** ${pointsPerDeck} (3 dernières semaines terminées)`,
+          );
         }
 
         const clanLines = [

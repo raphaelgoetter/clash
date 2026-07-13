@@ -138,7 +138,7 @@ function scorePointsPerDeck(pointsPerDeck, maxPoints = 4) {
   return Math.max(0, Math.min(maxPoints, raw));
 }
 
-function summarizePointsPerDeckWeeks(weeks, maxWeeks = 3) {
+export function summarizePointsPerDeckWeeks(weeks, maxWeeks = 3) {
   const recentWeeks = (weeks ?? [])
     .filter(
       (w) => !w?.isCurrent && !w?.ignored && typeof w?.decksUsed === "number",
