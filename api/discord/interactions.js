@@ -5002,14 +5002,19 @@ export default async function handler(req, res) {
           await import("../../backend/services/clashApi.js");
         const { getSnapshotsForWeeks, getCurrentWarDayIndex } =
           await import("../../backend/services/snapshot.js");
-        const { computeCurrentWeekId, computePrevWeekId, warResetOffsetMs } =
-          await import("../../backend/services/dateUtils.js");
+        const {
+          computeCurrentWeekId,
+          computePrevWeekId,
+          warResetOffsetMs,
+          parseClashDate,
+        } = await import("../../backend/services/dateUtils.js");
 
-        const [race, raceLog, currentMembers] = await Promise.all([
+        const [race, initialRaceLog, currentMembers] = await Promise.all([
           fetchCurrentRace(`#${resolved.tag}`),
           fetchRaceLog(`#${resolved.tag}`),
           fetchClanMembers(`#${resolved.tag}`).catch(() => null),
         ]);
+        let raceLog = initialRaceLog;
         // null (pas [] явно) si l'appel live échoue, pour ne pas vider la
         // liste à tort en cas d'erreur réseau — voir filtre plus bas.
         const currentMemberTags = Array.isArray(currentMembers)
@@ -5045,6 +5050,56 @@ export default async function handler(req, res) {
             }),
           });
           return;
+        }
+
+        // Autour du reset quotidien, `currentriverrace` bascule instantanément
+        // sur la nouvelle journée alors que `riverracelog` (l'historique) met
+        // couramment 1-2 min de plus à s'actualiser côté Supercell. Si on lit
+        // raceLog dans cette fenêtre, raceLog[0] pointe encore vers l'avant-
+        // dernière semaine terminée, et /fail rapporte des échecs d'une
+        // semaine périmée en les étiquetant "hier". On ne retente que dans
+        // une courte fenêtre après le reset, pour ne pas fausser le cas
+        // normal (mercredi, raceLog[0] datant légitimement de lundi).
+        if (!isWarDay) {
+          const resetOffset = warResetOffsetMs(resolved.tag);
+          const nowGdc = new Date(Date.now() - resetOffset);
+          const lastResetBoundary = new Date(
+            Date.UTC(
+              nowGdc.getUTCFullYear(),
+              nowGdc.getUTCMonth(),
+              nowGdc.getUTCDate(),
+            ) + resetOffset,
+          );
+          const minutesSinceReset =
+            (Date.now() - lastResetBoundary.getTime()) / 60000;
+          const isRaceLogStale = () => {
+            const createdDate = raceLog?.[0]?.createdDate;
+            if (!createdDate) return true;
+            return (
+              parseClashDate(createdDate).getTime() <
+              lastResetBoundary.getTime()
+            );
+          };
+
+          if (
+            minutesSinceReset >= 0 &&
+            minutesSinceReset < 10 &&
+            isRaceLogStale()
+          ) {
+            await new Promise((resolve) => setTimeout(resolve, 5000));
+            raceLog = await fetchRaceLog(`#${resolved.tag}`);
+            if (isRaceLogStale()) {
+              await fetch(webhookUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  content: `⏳ ${resolved.name} — La GDC vient tout juste de se terminer, les données ne sont pas encore synchronisées côté Supercell. Réessayez dans une minute.`,
+                  flags: 64,
+                }),
+              });
+              return;
+            }
+          }
         }
 
         const currentWeekId = isWarDay
@@ -5231,7 +5286,7 @@ export default async function handler(req, res) {
                 Number.isFinite(player.arrivalWeeks) &&
                 player.arrivalWeeks <= 1;
               const newTag = isNew ? " 🆕" : "";
-              return `- [${player.name}](${trustPlayerUrl(tag)})${newTag} (${status}) manque ${4 - player.decks} :\n  Decks : ${decksLine}\n  Moyenne : ${avgPerDeck}`;
+              return `- [${player.name}](${trustPlayerUrl(tag)})${newTag} (${status}) manque ${4 - player.decks} :\n  Historique : ${decksLine}\n  Pts/deck moyen : ${avgPerDeck}`;
             } catch (err) {
               const status = player.hasLeft ? "Parti" : formatStatus(player.role);
               return `- [${player.name}](${trustPlayerUrl(tag)}) (${status}) manque ${4 - player.decks} : données historiques indisponibles`;
