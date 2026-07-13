@@ -1388,7 +1388,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
   // Mettre à jour le snapshot avec les totalDonations (cumul à vie) des profils
   // fraîchement récupérés, avant que le reset API du lundi 00:00 ne mette
   // donations à 0. Utilisé par notifyWarSummary.js pour calculer les dons hebdo.
-  if (isCurrentRaceWarDay && membersToFetch.length > 0) {
+  if (membersToFetch.length > 0) {
     const totalDonationsByTag = {};
     for (const res of memberDataResults) {
       if (res.status !== "fulfilled") continue;
@@ -1399,17 +1399,40 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       }
     }
     if (Object.keys(totalDonationsByTag).length > 0) {
-      try {
-        const { updateSnapshotDonations } =
-          await import("../services/snapshot.js");
-        await updateSnapshotDonations(clanTag, totalDonationsByTag);
-      } catch (err) {
-        console.warn(
-          "[clan] updateSnapshotDonations failed for",
-          clanTag,
-          ":",
-          err?.message || err,
-        );
+      if (isCurrentRaceWarDay) {
+        try {
+          const { updateSnapshotDonations } =
+            await import("../services/snapshot.js");
+          await updateSnapshotDonations(clanTag, totalDonationsByTag);
+        } catch (err) {
+          console.warn(
+            "[clan] updateSnapshotDonations failed for",
+            clanTag,
+            ":",
+            err?.message || err,
+          );
+        }
+      }
+
+      // Baseline début de semaine (tous les jours, y compris hors GDC) pour un
+      // delta hebdo aligné sur le cycle réel lundi→lundi des dons, et non
+      // limité aux 4 jours de guerre.
+      if (currentRace) {
+        const weekId =
+          computeCurrentWeekId(currentRace, raceLog) ??
+          `W${(currentRace.sectionIndex ?? 0) + 1}`;
+        try {
+          const { recordDonationBaseline } =
+            await import("../services/snapshot.js");
+          await recordDonationBaseline(clanTag, weekId, totalDonationsByTag);
+        } catch (err) {
+          console.warn(
+            "[clan] recordDonationBaseline failed for",
+            clanTag,
+            ":",
+            err?.message || err,
+          );
+        }
       }
     }
   }

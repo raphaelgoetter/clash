@@ -1225,6 +1225,49 @@ export async function updateSnapshotDonations(clanTag, totalDonationsByTag) {
 }
 
 /**
+ * Capture le totalDonations (cumul à vie) de chaque membre en tout début de
+ * semaine, avant que les dons ne commencent à s'accumuler. Contrairement à
+ * updateSnapshotDonations (limité aux 4 jours de guerre via getWarDayInfo),
+ * cette fonction est appelée tous les jours — y compris lundi/mardi/mercredi —
+ * pour aligner la fenêtre de mesure sur le cycle réel lundi→lundi des dons
+ * plutôt que sur le cycle jeudi→dimanche de la GDC.
+ *
+ * First-write-wins : une fois le baseline capturé pour une semaine donnée, les
+ * appels suivants sont des no-op, pour garder la valeur la plus proche du
+ * reset du lundi.
+ */
+export async function recordDonationBaseline(
+  clanTag,
+  weekId,
+  totalDonationsByTag,
+) {
+  if (
+    !weekId ||
+    !totalDonationsByTag ||
+    typeof totalDonationsByTag !== "object"
+  )
+    return;
+  const entries = Object.entries(totalDonationsByTag).filter(
+    ([, v]) => typeof v === "number" && Number.isFinite(v),
+  );
+  if (entries.length === 0) return;
+
+  const history = await loadSnapshots(clanTag);
+  let weekEntry = history.find((w) => w.week === weekId);
+  if (!weekEntry) {
+    weekEntry = { week: weekId, days: [] };
+    history.push(weekEntry);
+  }
+  if (weekEntry.donationBaseline) return;
+
+  weekEntry.donationBaseline = {
+    capturedAt: new Date().toISOString(),
+    totalDonationsByTag: Object.fromEntries(entries),
+  };
+  await saveSnapshots(clanTag, history);
+}
+
+/**
  * Return snapshot entries matching a particular week identifier (or all if
  * week is null). Returned array is sorted ascending by date.
  */

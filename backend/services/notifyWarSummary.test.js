@@ -88,6 +88,45 @@ assert.deepStrictEqual(
   "La liste combinée doit contenir les joueurs avec 0 deck ET 0 don",
 );
 
+// #A a donné 50 cartes lundi-mercredi (avant les 4 jours de guerre) puis plus
+// rien pendant jeu→dim : totalDonations reste plat (150→150) sur la fenêtre
+// de guerre, mais a bien augmenté depuis le baseline du lundi (100→150).
+const donationMemberNames = {
+  "#A": { name: "Alpha", donations: 0 },
+  "#B": { name: "Bravo", donations: 0 },
+};
+const donationWeekDays = [
+  { decks: {}, _totalDonationsByTag: { "#A": 150, "#B": 5000 } },
+  { decks: {} },
+  { decks: {} },
+  { decks: {}, _totalDonationsByTag: { "#A": 150, "#B": 5000 } },
+];
+const donationBaselineFixture = {
+  totalDonationsByTag: { "#A": 100, "#B": 5000 },
+};
+
+const withBaseline = buildWeeklyZeroActivityLists(
+  donationMemberNames,
+  donationWeekDays,
+  donationBaselineFixture,
+);
+assert.deepStrictEqual(
+  withBaseline.zeroDonationPlayers.map((player) => player.tag),
+  ["#B"],
+  "Avec baseline lundi, #A ne doit plus être signalé zéro don (delta lundi→dimanche = 50)",
+);
+
+const withoutBaseline = buildWeeklyZeroActivityLists(
+  donationMemberNames,
+  donationWeekDays,
+  null,
+);
+assert.deepStrictEqual(
+  withoutBaseline.zeroDonationPlayers.map((player) => player.tag),
+  ["#A", "#B"],
+  "Sans baseline (semaines déjà enregistrées), repli sur l'ancien calcul jeu→dim qui rate les dons lundi-mercredi",
+);
+
 const WEEK_DAYS = ["2026-05-21", "2026-05-22", "2026-05-23", "2026-05-24"];
 
 const noDuelBattleLog = [

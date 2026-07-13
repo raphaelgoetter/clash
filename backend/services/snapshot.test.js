@@ -5,6 +5,7 @@ import {
   getSnapshotsForWeeks,
   getCurrentWarDayIndex,
   recordSnapshot,
+  recordDonationBaseline,
   resolveSnapshotType,
   overrideWarSnapshotDaysWithLiveCurrentDay,
 } from "./snapshot.js";
@@ -476,6 +477,50 @@ async function main() {
 
   await fs.rm(TEST_FILE, { force: true });
   await fs.rm(TEST_DATA_FILE, { force: true });
+
+  {
+    const BASELINE_TAG = "TESTTAG3";
+    const baselineTmpFile = path.join(TMP_DIR, `${BASELINE_TAG}.json`);
+    const baselineDataFile = path.join(
+      "data",
+      "snapshots",
+      `${BASELINE_TAG}.json`,
+    );
+    await fs.rm(baselineTmpFile, { force: true });
+    await fs.rm(baselineDataFile, { force: true });
+
+    await recordDonationBaseline(BASELINE_TAG, "S131W3", {
+      "#A": 100,
+      "#B": 200,
+    });
+    // First-write-wins : cet appel ne doit pas écraser le baseline déjà capturé.
+    await recordDonationBaseline(BASELINE_TAG, "S131W3", {
+      "#A": 999,
+      "#B": 999,
+    });
+
+    const baselineWeekSnaps = await getSnapshotsForWeeks(BASELINE_TAG, [
+      "S131W3",
+    ]);
+    // getSnapshotsForWeeks ne retourne que les jours ; on relit le fichier
+    // directement pour vérifier le champ donationBaseline sur la semaine.
+    const raw = JSON.parse(await fs.readFile(baselineTmpFile, "utf-8"));
+    const week = raw.find((w) => w.week === "S131W3");
+    assert.deepStrictEqual(
+      week.donationBaseline.totalDonationsByTag,
+      { "#A": 100, "#B": 200 },
+      "recordDonationBaseline doit garder la première valeur capturée (first-write-wins)",
+    );
+    assert.strictEqual(
+      baselineWeekSnaps.S131W3.length,
+      4,
+      "recordDonationBaseline ne doit pas casser la structure des 4 jours de guerre",
+    );
+
+    await fs.rm(baselineTmpFile, { force: true });
+    await fs.rm(baselineDataFile, { force: true });
+  }
+
   console.log("✓ snapshot service tests passed");
 }
 

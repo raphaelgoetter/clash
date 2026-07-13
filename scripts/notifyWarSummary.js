@@ -597,12 +597,16 @@ function formatPlayerVercelLink(tag, name) {
   return `[${name}](${playerUrl})`;
 }
 
-function buildWeeklyZeroActivityLists(memberNames, allWeekDays) {
+function buildWeeklyZeroActivityLists(
+  memberNames,
+  allWeekDays,
+  donationBaseline = null,
+) {
   const weekDays = Array.isArray(allWeekDays) ? allWeekDays : [];
 
   // Calculer les dons hebdo depuis _totalDonationsByTag des snapshots :
-  // delta totalDonations(dernier jour) - totalDonations(premier jour).
-  // Contrairement à donations (remis à 0 le lundi 00:00), totalDonations
+  // delta totalDonations(dernier jour) - totalDonations(baseline début de
+  // semaine). Contrairement à donations (remis à 0 le lundi), totalDonations
   // est un cumul à vie qui ne se réinitialise jamais.
   const donationDays = weekDays.filter(
     (d) =>
@@ -611,9 +615,7 @@ function buildWeeklyZeroActivityLists(memberNames, allWeekDays) {
   );
   const hasSnapshotDonationData = donationDays.length >= 2;
   const firstDonationDay = hasSnapshotDonationData ? donationDays[0] : null;
-  const lastDonationDay = hasSnapshotDonationData
-    ? donationDays[donationDays.length - 1]
-    : null;
+  const lastDonationDay = donationDays[donationDays.length - 1] ?? null;
 
   const members = Object.entries(memberNames ?? {})
     .map(([tag, member]) => {
@@ -623,11 +625,19 @@ function buildWeeklyZeroActivityLists(memberNames, allWeekDays) {
       );
 
       let weeklyDonations = member?.donations ?? null;
-      if (hasSnapshotDonationData) {
-        const last = lastDonationDay._totalDonationsByTag[tag];
-        const first = firstDonationDay._totalDonationsByTag[tag];
-        if (typeof last === "number" && typeof first === "number") {
-          weeklyDonations = Math.max(0, last - first);
+      const baselineFirst = donationBaseline?.totalDonationsByTag?.[tag];
+      const last = lastDonationDay?._totalDonationsByTag?.[tag];
+      if (typeof last === "number" && typeof baselineFirst === "number") {
+        // Delta aligné sur le cycle réel lundi→lundi des dons (couvre toute
+        // la semaine, y compris lundi-mercredi hors GDC).
+        weeklyDonations = Math.max(0, last - baselineFirst);
+      } else if (hasSnapshotDonationData) {
+        // Repli : semaine sans baseline (donnée pas encore disponible) ou
+        // joueur absent du baseline — ancien comportement, delta limité à la
+        // fenêtre jeu→dim.
+        const firstWarDay = firstDonationDay._totalDonationsByTag[tag];
+        if (typeof last === "number" && typeof firstWarDay === "number") {
+          weeklyDonations = Math.max(0, last - firstWarDay);
         }
       }
 
@@ -832,6 +842,7 @@ async function postWarSummary(
   trophyChange = null,
   apiWeekFame = null, // clan.fame depuis raceLog[0] (cumul total pts de bataille semaine)
   apiWeekDecks = null, // sum(participants[].decksUsed) depuis raceLog[0]
+  donationBaseline = null, // totalDonations capturé en début de semaine (lundi), pour le delta hebdo
 ) {
   const channelId = resolveMembersChannelId(tag);
   const token = process.env.DISCORD_TOKEN;
@@ -1063,6 +1074,7 @@ async function postWarSummary(
   const weeklyZeroActivityLists = buildWeeklyZeroActivityLists(
     memberNames,
     allWeekDays,
+    donationBaseline,
   );
   const weeklyDuelTargetDays = allWeekDays
     .map((day) => day?.realDay)
@@ -1501,6 +1513,7 @@ async function main() {
       let prevPrevDayEntry = null;
       let allWeekDays = [];
       let selectedWeekId = null;
+      let donationBaseline = null;
 
       for (const week of snapshots) {
         const dayIdx = (week.days ?? []).findIndex(
@@ -1520,6 +1533,7 @@ async function main() {
         prevPrevDayEntry = dayIdx > 1 ? week.days[dayIdx - 2] : null;
         allWeekDays = week.days ?? [];
         selectedWeekId = week.week ?? null;
+        donationBaseline = week.donationBaseline ?? null;
         break;
       }
 
@@ -1618,6 +1632,7 @@ async function main() {
         trophyChange,
         apiWeekFame,
         apiWeekDecks,
+        donationBaseline,
       );
       await markPosted(log, tag, warDay, realDay);
     } catch (err) {
