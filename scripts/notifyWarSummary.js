@@ -1354,6 +1354,15 @@ async function postWarSummary(
       inline: false,
     });
 
+    if (weekly.totalDecksWeek > 0) {
+      const avgPointsPerDeck = weekly.totalFameWeek / weekly.totalDecksWeek;
+      weeklyFields.push({
+        name: "<:stats:1499284927894650950> Points moyens / deck",
+        value: `${avgPointsPerDeck.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} pts`,
+        inline: false,
+      });
+    }
+
     if (liveBoatTotal > 0) {
       const boatNames = liveBoatAttackers.map((p) => p.name).join(", ");
       weeklyFields.push({
