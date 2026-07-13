@@ -103,6 +103,7 @@ async function writeToBlob(path, data) {
       allowOverwrite: true,
       addRandomSuffix: false,
       cacheControlMaxAge: 0,
+      token: process.env.BLOB_READ_WRITE_TOKEN,
     });
   } catch (err) {
     console.error(`[Blob] Écriture échouée ${path}:`, err.message);
@@ -143,7 +144,7 @@ async function writePredictions(data) {
 
 // ── Registre des champions ────────────────────────────────────
 
-async function readChampionRegistry() {
+export async function readChampionRegistry() {
   const local = await readJsonSafe(tmpPath(CHAMPION_REGISTRY_FILE));
   if (local) return local;
 
@@ -163,7 +164,7 @@ async function readChampionRegistry() {
   return value;
 }
 
-async function writeChampionRegistry(data) {
+export async function writeChampionRegistry(data) {
   await writeJsonSafe(tmpPath(CHAMPION_REGISTRY_FILE), data).catch(() => {});
   if (useBlob()) {
     await writeToBlob(CHAMPION_REGISTRY_FILE, data);

@@ -143,3 +143,16 @@ export function computePrevWeekId(raceLog) {
     return null;
   return `S${entry.seasonId}W${entry.sectionIndex + 1}`;
 }
+
+/**
+ * Parse un weekId ("S134W1") en { seasonId, sectionIndex }. À utiliser plutôt
+ * que de dériver seasonId/sectionIndex séparément du weekId lui-même, pour
+ * garantir qu'ils restent toujours cohérents entre eux.
+ * @param {string|null} weekId
+ * @returns {{seasonId: number, sectionIndex: number}|null}
+ */
+export function parseWeekId(weekId) {
+  const match = /^S(\d+)W(\d+)$/.exec(weekId ?? "");
+  if (!match) return null;
+  return { seasonId: Number(match[1]), sectionIndex: Number(match[2]) - 1 };
+}

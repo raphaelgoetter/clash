@@ -132,7 +132,7 @@ export async function handleStart(webhookUrl, clanVal) {
       return;
     }
 
-    const { computeCurrentWeekId } = await import("../../../backend/services/dateUtils.js");
+    const { computeCurrentWeekId, parseWeekId } = await import("../../../backend/services/dateUtils.js");
     const { fetchCurrentRace } = await import("../../../backend/services/clashApi.js");
     const currentRace = await fetchCurrentRace(clanTag).catch(() => null);
     const targetWeekId = computeCurrentWeekId(currentRace, raceLog) || prevWeekId;
@@ -145,8 +145,10 @@ export async function handleStart(webhookUrl, clanVal) {
     }
 
     const lastRace = raceLog[0];
-    const seasonId = lastRace?.seasonId || 0;
-    const sectionIndex = lastRace?.sectionIndex || 0;
+    const { seasonId, sectionIndex } = parseWeekId(targetWeekId) ?? {
+      seasonId: lastRace?.seasonId || 0,
+      sectionIndex: lastRace?.sectionIndex || 0,
+    };
     const weekId = targetWeekId;
 
     try {

@@ -92,7 +92,7 @@ async function main() {
         await import("../backend/services/championPredictions.js");
       const { fetchRaceLog } =
         await import("../backend/services/clashApi.js");
-      const { computePrevWeekId, computeCurrentWeekId } =
+      const { computePrevWeekId, computeCurrentWeekId, parseWeekId } =
         await import("../backend/services/dateUtils.js");
 
       const raceLog = await fetchRaceLog(clanTag);
@@ -130,8 +130,10 @@ async function main() {
       }
 
       const lastRace = raceLog[0];
-      const seasonId = lastRace?.seasonId || 0;
-      const sectionIndex = lastRace?.sectionIndex || 0;
+      const { seasonId, sectionIndex } = parseWeekId(targetWeekId) ?? {
+        seasonId: lastRace?.seasonId || 0,
+        sectionIndex: lastRace?.sectionIndex || 0,
+      };
 
       await openSession(
         clanTag,
