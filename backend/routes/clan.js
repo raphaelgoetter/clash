@@ -37,6 +37,7 @@ import { buildDebugSnapshotInfo } from "../services/debugSnapshotInfo.js";
 import { computeGroupStandings } from "../services/warStandings.js";
 import { computeTopPlayers } from "../services/topplayers.js";
 import { computeUncomplete } from "../services/uncomplete.js";
+import { hasLateArrivalDailyPattern } from "../services/arrivalUtils.js";
 import { getOrSet } from "../services/cache.js";
 import { getDiscordLinks } from "../services/discordLinks.js";
 import {
@@ -2197,7 +2198,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       const member = memberMap.get(p.tag);
       const streak = member?.arrivalStreakInCurrentClan ?? null;
       const joinedThisWeek =
-        streak === 0 || (streak === 1 && p.daily?.[0] == null);
+        p.lateArrival ||
+        streak === 0 ||
+        (streak === 1 && p.daily?.[0] == null) ||
+        hasLateArrivalDailyPattern(p.daily);
       return {
         ...p,
         isNew: member?.isNew ?? false,

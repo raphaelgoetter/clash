@@ -48,3 +48,28 @@ export function isJoinedThisWar(streakInCurrentClan, day1Decks = null, totalDeck
   }
   return false;
 }
+
+/**
+ * Détecte un pattern de « retour en cours de semaine » à partir du détail
+ * jour par jour des snapshots (thu→sun, valeurs null quand le joueur
+ * n'était pas encore dans le clan au moment du snapshot).
+ *
+ * Un membre peut avoir quitté puis réintégré le même clan au sein de la
+ * semaine de GDC en cours : son streak historique (semaines complètes
+ * *avant* son départ) reste élevé, ce qui masque à tort son absence
+ * réelle en début de semaine courante si on ne regarde que le streak.
+ *
+ * On exige au moins 2 jours d'absence consécutifs en tête de semaine
+ * suivis d'une donnée réelle : un seul jour manquant est trop faible
+ * comme signal (peut être un simple trou de collecte de snapshot pour
+ * un membre installé) pour l'utiliser seul comme preuve d'arrivée tardive.
+ *
+ * @param {Array<number|null>} daily - Tableau à 4 entrées (jeu→dim),
+ *        null si aucune donnée de snapshot pour ce jour.
+ * @returns {boolean}
+ */
+export function hasLateArrivalDailyPattern(daily) {
+  if (!Array.isArray(daily) || daily.length === 0) return false;
+  const firstDataIdx = daily.findIndex((v) => v != null);
+  return firstDataIdx >= 2;
+}

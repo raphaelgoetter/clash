@@ -67,5 +67,21 @@ export async function computeUncomplete(clanTag, members, battleLogsByTag = {}, 
       return base;
     });
 
-  return { players: uncompletePlayers };
+  // Membres actuels du clan absents de standing.clan.participants : ils ont
+  // rejoint trop tard pour que Supercell les inclue dans le participants[]
+  // de cette semaine de course. Sans ce complément, ils seraient invisibles
+  // des listes de fail/oublis alors qu'ils n'ont mécaniquement pas pu jouer.
+  const participantTags = new Set(participants.map((p) => p.tag));
+  const lateArrivals = members
+    .filter((m) => m.tag && !participantTags.has(m.tag))
+    .map((m) => ({
+      name: m.name || '',
+      tag: m.tag,
+      decks: 0,
+      role: m.role || 'member',
+      inClan: true,
+      lateArrival: true,
+    }));
+
+  return { players: [...uncompletePlayers, ...lateArrivals] };
 }
