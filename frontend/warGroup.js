@@ -4,6 +4,7 @@
 // ============================================================
 
 import { roundProjectedFame } from "../backend/services/projectionFormat.js";
+import { RACE_FINISH_LINE } from "../backend/services/warStandings.js";
 
 // Tags des clans de la famille — utilisés pour les liens TrustRoyale internes.
 const FAMILY_TAGS = new Set(["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"]);
@@ -42,7 +43,11 @@ function fmtPct(ratio) {
 }
 
 function fmtProjection(projectedFame, decksToday, targetDecksToday) {
-  const rounded = roundProjectedFame(projectedFame, decksToday, targetDecksToday);
+  const rounded = roundProjectedFame(
+    projectedFame,
+    decksToday,
+    targetDecksToday,
+  );
   return rounded != null ? fmtNum(rounded) : "—";
 }
 
@@ -78,9 +83,13 @@ export function renderRaceGroupCard(data, timerHelper) {
   const titleEl = container.querySelector(".card-title");
   if (titleEl) titleEl.textContent = "Groupe de GDC actuel";
   const descEl = container.querySelector("#war-group-description");
-  if (descEl) descEl.textContent = "Comparez les 5 clans du groupe de GDC actuel";
+  if (descEl)
+    descEl.textContent = "Comparez les 5 clans du groupe de GDC actuel";
 
-  // Trier : par victoire assurée puis projection en période de GDC, sinon par last war fame décroissant
+  // Trier : par victoire assurée puis projection en période de GDC (les deux
+  // types de semaine), sinon par last war fame décroissant. La progression
+  // réelle du bateau (GDC normale) est affichée à part, dans la colonne
+  // "Bateau" — voir backend/services/warStandings.js.
   const sorted = [...raceGroup].sort((a, b) => {
     if (isWarPeriod) {
       const aClinched = a.isClinchedWin ? 1 : 0;
@@ -105,11 +114,9 @@ export function renderRaceGroupCard(data, timerHelper) {
 
       const nameHtml = `<a href="${url}" class="${isFamilyMember ? "war-group-family-link" : "war-group-external-link"}">${clan.name ?? clan.tag}</a>`;
 
-      const displayRank = isWarPeriod
-        ? clan.isClinchedWin
-          ? idx + 1
-          : (clan.projectedRank ?? idx + 1)
-        : (clan.rank ?? idx + 1);
+      // Le tableau est déjà trié selon le bon critère par type de semaine
+      // (cf. `sorted` ci-dessus) : la position post-tri fait foi.
+      const displayRank = isWarPeriod ? idx + 1 : (clan.rank ?? idx + 1);
       const rankBadge = `<span class="war-group-rank">#${displayRank}</span>`;
 
       const trophiesVal =
@@ -142,11 +149,23 @@ export function renderRaceGroupCard(data, timerHelper) {
       const currentPct = Math.min(100, (decksTodayVal / maxDecks) * 100);
       const targetPct = Math.min(100, (targetVal / maxDecks) * 100);
 
+      // Colonne "Bateau" — GDC normale uniquement, entre Engagement et Decks.
+      // Reflète la vraie position de course (progression du bateau vers la
+      // ligne d'arrivée à 10000), distincte de la projection du jour affichée
+      // plus loin. Voir warStandings.js.
+      let boatHtml = "";
+      if (isWarPeriod && !isColosseum) {
+        const boatVal =
+          clan.raceProgress != null ? fmtNum(clan.raceProgress) : "—";
+        boatHtml = `<td class="war-group-boat" title="Progression bateau vers la ligne d'arrivée (${fmtNum(RACE_FINISH_LINE)} pts)">${boatVal}</td>`;
+      }
+
       let decksNowHtml = "";
       if (isWarPeriod) {
         const engagementTooltip = `${engagementEstimate?.activeMembers ?? "—"} membres ayant joué au moins 1 deck cette semaine / ${engagementEstimate?.rosterSize ?? "—"} dans le clan`;
         const tooltipText = `${decksTodayVal} decks / objectif de ${targetVal}`;
         decksNowHtml = `${showEngagement ? `<td class="war-group-engagement" title="${engagementTooltip}">${engagementVal}</td>` : ""}
+        ${boatHtml}
         <td class="war-group-decks-now" title="${tooltipText}">
           <div class="wg-pbar-track">
             <div class="wg-pbar-fill wg-pbar-current" style="width: ${currentPct}%"></div>
@@ -174,13 +193,20 @@ export function renderRaceGroupCard(data, timerHelper) {
       let projectionHtml = "";
       if (isWarPeriod) {
         const isClinched = clan.isClinchedWin;
-        const projVal = isClinched
-          ? "✅ Victoire"
-          : fmtProjection(clan.projectedFame, decksTodayVal, targetVal);
-        const clinchedHtml = isClinched
-          ? ` <span class="war-group-clinched" title="Victoire mathématiquement assurée">✅ Victoire</span>`
-          : "";
-        projectionHtml = `<td class="war-group-projection">${projVal}${isClinched ? "" : clinchedHtml}</td>`;
+        let projVal;
+        if (isClinched) {
+          const title = isColosseum
+            ? "Victoire mathématiquement assurée"
+            : `Ligne d'arrivée franchie (progression bateau : ${fmtNum(RACE_FINISH_LINE)} pts)`;
+          projVal = `<span class="war-group-clinched" title="${title}">✅ Victoire</span>`;
+        } else {
+          // Projection du classement/trophées de fin de journée (pts de bataille
+          // extrapolés). En GDC normale, la vraie position de course (progression
+          // du bateau) est distincte et affichée dans la colonne "Bateau" — voir
+          // backend/services/warStandings.js.
+          projVal = fmtProjection(clan.projectedFame, decksTodayVal, targetVal);
+        }
+        projectionHtml = `<td class="war-group-projection">${projVal}</td>`;
       }
 
       const trophiesHtml = !isWarPeriod
@@ -215,7 +241,8 @@ export function renderRaceGroupCard(data, timerHelper) {
         ${!isWarPeriod ? `<th class="war-group-trophies">Trophées de guerre</th>` : ""}
         ${!isWarPeriod ? `<th class="war-group-prev-war">n-2 GDC</th>` : ""}
         ${!isWarPeriod ? `<th class="war-group-last-war">Dernière GDC</th>` : ""}
-        ${showEngagement ? `<th class="war-group-engagement">Engagement GDC</th>` : ""}
+        ${showEngagement ? `<th class="war-group-engagement">Engagement</th>` : ""}
+        ${isWarPeriod && !isColosseum ? `<th class="war-group-boat">Bateau</th>` : ""}
         ${isWarPeriod ? `<th class="war-group-decks-now">Decks <span>${timerHelper(data.clan?.warResetUtcMinutes)}</span></th>` : ""}
         ${isWarPeriod ? `<th class="war-group-current-pts">${isColosseum ? "Pts actuels" : "Pts"}</th>` : ""}
         ${isWarPeriod ? `<th class="war-group-avg-pts">Pts / Deck</th>` : ""}

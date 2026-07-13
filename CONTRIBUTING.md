@@ -105,7 +105,7 @@ La documentation détaillée des champs retournés par l’API Clash Royale (cha
 
 La projection estime les points qu'un clan atteindra à la fin de la journée de guerre.
 
-La variable de plafonnement utilisée ici s'appelle **Engagement GDC**. Elle est calculée au niveau du clan à partir de l'intersection entre le roster du clan et les participants de la guerre en cours qui ont déjà joué au moins un deck cette semaine :
+La variable de plafonnement utilisée ici s'appelle **Engagement**. Elle est calculée au niveau du clan à partir de l'intersection entre le roster du clan et les participants de la guerre en cours qui ont déjà joué au moins un deck cette semaine :
 
 - `activeMembers` = nombre de membres du roster ayant `decksUsed > 0` dans cette semaine de GDC
 - `rosterSize` = taille du clan (`clan.members`)
@@ -486,6 +486,16 @@ getLeagueName(3812, "fr"); // → "Légendaire 1"
 | 4e       | 0      | -20    | -50             |
 | 5e       | 0      | -40    | -100            |
 
+**Comment la position (1er-5e) est déterminée — voir aussi `docs/api-clash-royale.md`
+§ "Classement final GDC" et `backend/services/warStandings.js` :**
+
+- **GDC normale** : par la progression du **bateau** (`clan.fame` / `clans[i].fame`
+  dans `/currentriverrace`, 0-10 000 — ligne d'arrivée à 10 000 = victoire immédiate,
+  sinon classement par position atteinte au reset du J4). Le cumul brut de fame de
+  bataille (`sum(participants[].fame)`) n'entre pas en jeu ici.
+- **Colisée** : par le cumul brut de fame de bataille sur la semaine
+  (`sum(participants[].fame)`, ~80 000-160 000). Pas de course de bateau.
+
 ---
 
 ## Bot Discord
@@ -627,12 +637,19 @@ Où le trouver ou le calculer :
 ### Jours de Colisée
 
 Journées où la course est en période Colosseum au lieu du warDay classique.
-Le traitement des points y reste cumulatif à l’échelle de la semaine.
+Le traitement des points y reste cumulatif à l’échelle de la semaine — mais c'est
+vrai aussi en GDC normale (`participants[].fame` ne se remet jamais à zéro entre
+J1 et J4, dans les deux types de semaine). Ce qui **change vraiment** entre les
+deux, c'est la métrique qui détermine le vainqueur : voir
+`docs/api-clash-royale.md` § "Classement final GDC" et `backend/services/warStandings.js`
+(nouveau module qui centralise ce calcul, utilisé par `backend/routes/clan.js` et
+`scripts/notifyWarSummary.js`).
 
 Où le trouver :
 
 - `periodType` est une `source de vérité` renvoyée par l’API de guerre ;
-- la logique de résumé dans `scripts/notifyWarSummary.js` est un `calcul fiable` pour convertir ce contexte en résumé quotidien.
+- la logique de résumé dans `scripts/notifyWarSummary.js` est un `calcul fiable` pour convertir ce contexte en résumé quotidien ;
+- `computeGroupStandings()` / `computeClanStanding()` dans `backend/services/warStandings.js` sont le `calcul fiable` du classement/de la victoire assurée, pour les deux types de semaine.
 
 Comment les reconnaître :
 

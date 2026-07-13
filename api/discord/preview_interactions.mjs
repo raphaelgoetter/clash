@@ -3492,7 +3492,9 @@ export default async function handler(req, res) {
         const isWarPeriod =
           (_cmpDow === 0 || _cmpDow >= 4) && data.isWarPeriod === true;
 
-        // Trier par projection si GDC active, sinon par lastWarFame décroissant
+        // Trier par projection si GDC active (les deux types de semaine), sinon
+        // par lastWarFame décroissant. La vraie position de course (GDC normale)
+        // est affichée à part — voir backend/services/warStandings.js.
         const sorted = [...raceGroup].sort((a, b) => {
           if (isWarPeriod) {
             const aClinched = a.isClinchedWin ? 1 : 0;
@@ -3545,15 +3547,19 @@ export default async function handler(req, res) {
             const proj = clan.isClinchedWin
               ? "<:projection:1499275709078700073> ✅ Victoire"
               : `<:projection:1499275709078700073> Projection: **${clan.projectedFame != null ? fmt(Math.round(clan.projectedFame / 100) * 100) : "?"}**`;
-            const clinched = "";
             const currentPts =
               isColosseum && clan.currentFame != null
                 ? `<:trophy2:1493677804733337621> Points actuels : **${fmt(clan.currentFame)}**`
                 : "";
+            // GDC normale : vraie position de course (progression bateau),
+            // distincte de la projection ci-dessus — voir warStandings.js.
+            const boat =
+              !isColosseum && clan.raceProgress != null
+                ? `⛵ Bateau : ${fmt(clan.raceProgress)}`
+                : "";
             const line2a = [decks, eff].filter(Boolean).join(" · ");
             const line2b = [currentPts, proj].filter(Boolean).join(" · ");
-            line2 = line2b ? `${line2a}\n${line2b}` : line2a;
-            line2 += clinched;
+            line2 = [line2a, line2b, boat].filter(Boolean).join("\n");
           } else {
             line2 = [prevWarStr, lastWarStr].filter(Boolean).join(" · ");
           }

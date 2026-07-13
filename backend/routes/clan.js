@@ -34,6 +34,7 @@ import {
   MS_PER_DAY,
 } from "../services/analysisService.js";
 import { buildDebugSnapshotInfo } from "../services/debugSnapshotInfo.js";
+import { computeGroupStandings } from "../services/warStandings.js";
 import { computeTopPlayers } from "../services/topplayers.js";
 import { computeUncomplete } from "../services/uncomplete.js";
 import { getOrSet } from "../services/cache.js";
@@ -2881,14 +2882,27 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           //   → en mode Colosseum, la valeur est cumulée au total live actuel
           //     (currentFame + points estimés restants).
           //
-          // projectedRank    {string}  Rang projeté ("1st"…"5th")
+          // projectedRank    {number}  Rang projeté (1-5)
+          //                            → Colisée : basé sur isClinchedWin puis projectedFame.
+          //                            → GDC normale : basé sur raceProgress décroissant.
           //
-          // currentFame      {number}  Fame cumulée actuelle de la semaine
-          // maxReachableFame {number}  Fame max théorique atteignable
+          // ── Classement / victoire — voir backend/services/warStandings.js ──
+          // currentFame      {number}  Fame cumulée actuelle de la semaine.
+          //                            Informatif partout, mais NE détermine le
+          //                            classement/isClinchedWin qu'en Colisée.
+          // maxReachableFame {number}  Fame max théorique atteignable (Colisée)
           //                            = currentFame + (800 - decksUsedWeekly) * 200
-          // isClinchedWin    {boolean} Victoire mathématiquement assurée
-          //                            (strictement au-dessus du max atteignable
-          //                            de tous les autres clans du groupe)
+          // raceProgress     {number|null} Progression du bateau [0-10000], GDC
+          //                            normale uniquement (`null` en Colisée).
+          //                            = c.fame (déjà fourni par l'API), reflète le
+          //                            dernier jour de guerre CLOS (pas de mise à
+          //                            jour en direct pendant la journée en cours).
+          // isClinchedWin    {boolean} Victoire mathématiquement assurée.
+          //                            → Colisée : currentFame strictement au-dessus
+          //                              du max atteignable de tous les autres clans.
+          //                            → GDC normale : raceProgress >= 10000 (ligne
+          //                              d'arrivée constatée — jamais de prédiction
+          //                              anticipée avant qu'un jour ne soit clos).
           //
           // warResetUtcMinutes {number}  Heure du reset GDC en minutes UTC  [540–660]
           //   → tiré de warResetOffsetMs(tag) — differ per clan, set manually in dateUtils.js
@@ -2987,6 +3001,13 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             let currentFame = null;
             let maxReachableFame = null;
             let isClinchedWin = false;
+            // Progression du bateau (0-10000) — critère de classement en GDC
+            // normale. `null` en Colisée (pas de course de bateau).
+            const raceProgress = isColosseum
+              ? null
+              : typeof c.fame === "number"
+                ? c.fame
+                : null;
 
             if (
               isWarPeriod &&
@@ -2998,7 +3019,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                 ? raceData.clan.participants
                 : rivalParticipants;
               // currentFame = cumul hebdomadaire des pts de bataille depuis J1.
-              // clan.fame est le score de progression de classement (≠ fame de combat) ; ne jamais l'utiliser ici.
+              // Informatif uniquement (affichage) : ne détermine le classement/la
+              // victoire qu'en Colisée. En GDC normale, c'est `c.fame` (progression
+              // du bateau, voir warStandings.js) qui fait foi — jamais ce cumul.
               currentFame = allPartsInner.reduce(
                 (s, p) => s + (p.fame ?? 0),
                 0,
@@ -3212,6 +3235,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               projectedFame,
               currentFame,
               maxReachableFame,
+              raceProgress,
               isClinchedWin,
               targetDecksToday: c.targetDecksToday,
               warParticipationEstimate: c.warParticipationEstimate ?? null,
@@ -3219,33 +3243,56 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             };
           });
 
-          // Step 2: Détecter une victoire assurée et déterminer le rang projeté.
+          // Step 2: Détecter une victoire assurée, puis déterminer le rang projeté.
+          // Ce sont deux choses distinctes :
+          //   - isClinchedWin (victoire assurée) : métrique différente par type de
+          //     semaine (voir warStandings.js) — Colisée : cumul de fame de bataille
+          //     (currentFame/maxReachableFame) ; GDC normale : progression du bateau,
+          //     jamais de prédiction anticipée (raceProgress >= 10000 constaté).
+          //   - projectedRank / tri affiché : toujours basé sur la projection de pts
+          //     de bataille du jour (projectedFame), dans les deux types de semaine —
+          //     c'est un indicateur de forme du jour, pas le classement réel de la
+          //     course (exposé séparément via `raceProgress` pour la GDC normale).
           if (isWarPeriod) {
-            const reliableClinchedData = groupWithProjections.every(
-              (c) =>
-                typeof c.currentFame === "number" &&
-                typeof c.maxReachableFame === "number" &&
-                Number.isFinite(c.maxReachableFame) &&
-                typeof c.decksToday === "number",
-            );
+            if (isColosseum) {
+              const reliableClinchedData = groupWithProjections.every(
+                (c) =>
+                  typeof c.currentFame === "number" &&
+                  typeof c.maxReachableFame === "number" &&
+                  Number.isFinite(c.maxReachableFame) &&
+                  typeof c.decksToday === "number",
+              );
 
-            if (reliableClinchedData) {
-              // Détection rigoureuse d'une victoire déjà assurée :
-              // currentFame du clan > maxReachableFame de tous les autres.
+              if (reliableClinchedData) {
+                // Détection rigoureuse d'une victoire déjà assurée :
+                // currentFame du clan > maxReachableFame de tous les autres.
+                groupWithProjections.forEach((c) => {
+                  const rivalsMax = groupWithProjections
+                    .filter((x) => x.tag !== c.tag)
+                    .map((x) => x.maxReachableFame);
+                  if (rivalsMax.length === 0) return;
+                  const bestRivalReachable = Math.max(...rivalsMax);
+                  c.isClinchedWin = c.currentFame > bestRivalReachable;
+
+                  // Si la victoire est déjà assurée sur J4, masquer la projection
+                  // (inutile de projeter une journée déjà gagnée), mais conserver
+                  // ptsPerDeck et clanScore qui reflètent les pts réellement marqués.
+                  if (c.isClinchedWin && warDayIndex === 3) {
+                    c.projectedFame = null;
+                  }
+                });
+              }
+            } else {
+              // GDC normale : isClinchedWin via warStandings.js (ligne d'arrivée
+              // constatée à 10000), indépendamment du tri par projection ci-dessous.
+              const standings = computeGroupStandings(currentRace.clans, {
+                isColosseum: false,
+              });
               groupWithProjections.forEach((c) => {
-                const rivalsMax = groupWithProjections
-                  .filter((x) => x.tag !== c.tag)
-                  .map((x) => x.maxReachableFame);
-                if (rivalsMax.length === 0) return;
-                const bestRivalReachable = Math.max(...rivalsMax);
-                c.isClinchedWin = c.currentFame > bestRivalReachable;
-
-                // Si la victoire est déjà assurée sur J4, masquer la projection
-                // (inutile de projeter une journée déjà gagnée), mais conserver
-                // ptsPerDeck et clanScore qui reflètent les pts réellement marqués.
-                if (c.isClinchedWin && warDayIndex === 3) {
-                  c.projectedFame = null;
-                }
+                const standing = standings.find(
+                  (s) => s.tag === (c.tag ?? "").toUpperCase(),
+                );
+                c.isClinchedWin = standing?.isClinchedWin ?? false;
               });
             }
 

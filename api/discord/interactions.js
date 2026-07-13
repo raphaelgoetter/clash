@@ -589,18 +589,30 @@ function buildComparePayload({
         currentPtsVal != null
           ? `<:trophy2:1493677804733337621> Points actuels : ${currentBold ? `**${currentPtsVal}**` : currentPtsVal}`
           : "";
-      const projRounded = roundProjectedFame(
-        clan.projectedFame,
-        clan.decksToday,
-        clan.targetDecksToday,
-      );
-      const projVal = projRounded != null ? fmt(projRounded) : "?";
-      const proj = clan.isClinchedWin
-        ? "<:projection:1499275709078700073> ✅ Victoire"
-        : `<:projection:1499275709078700073> Projection: ${currentBold ? projVal : `**${projVal}**`}`;
+      // Projection du classement/trophées de fin de journée (pts de bataille
+      // extrapolés). En GDC normale, la vraie position de course (progression
+      // du bateau) est distincte et affichée séparément (ligne "Bateau" ci-
+      // dessous) — voir backend/services/warStandings.js.
+      let proj;
+      if (clan.isClinchedWin) {
+        proj = "<:projection:1499275709078700073> ✅ Victoire";
+      } else {
+        const projRounded = roundProjectedFame(
+          clan.projectedFame,
+          clan.decksToday,
+          clan.targetDecksToday,
+        );
+        const projVal = projRounded != null ? fmt(projRounded) : "?";
+        proj = `<:projection:1499275709078700073> Projection: ${currentBold ? projVal : `**${projVal}**`}`;
+      }
+      const boat =
+        !isColosseum && clan.raceProgress != null
+          ? `⛵ Bateau : ${fmt(clan.raceProgress)}`
+          : "";
       const line2a = [decks, eff].filter(Boolean).join(" · ");
       const line2b = [currentPts, proj].filter(Boolean).join(" · ");
-      line2 = line2b ? `${line2a}\n${line2b}` : line2a;
+      const line2c = boat;
+      line2 = [line2a, line2b, line2c].filter(Boolean).join("\n");
     } else {
       line2 = [prevWarStr, lastWarStr].filter(Boolean).join(" · ");
     }
@@ -612,6 +624,7 @@ function buildComparePayload({
   const footerText = buildCompareFooter({
     sortMode,
     isWarPeriod,
+    isColosseum,
     anyClinched,
     observedAt,
   });
