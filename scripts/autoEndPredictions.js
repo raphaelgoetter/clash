@@ -74,9 +74,8 @@ function formatFame(n) {
   return Number.isFinite(n) ? n.toLocaleString("fr-FR") : "0";
 }
 
-function ordinal(n) {
-  return n + "\u20E3";
-}
+const CROWN_CHAMPION = "<:blue_crown:1294923219668566047>";
+const CROWN_OTHER = "<:emoji_51:1526217126187237426>";
 
 async function main() {
   const token = process.env.DISCORD_TOKEN;
@@ -106,6 +105,7 @@ async function main() {
         getRealChampion,
         closeSessionAndArchive,
         computeChampionVoters,
+        getChampionChallengerTags,
       } = await import("../backend/services/championPredictions.js");
 
       const active = await getActiveSessionByClan(clanTag);
@@ -132,26 +132,13 @@ async function main() {
         return c ? c.name : tag;
       };
 
-      const lines = result.voteResult.map((entry, idx) => {
-        const name = findName(entry.challengerTag);
-        const icon = entry.challengerTag === result.winnerTag ? " 🏆" : "";
-        const votesStr =
-          entry.votes === 1 ? "1 vote" : `${entry.votes} votes`;
-        return `${ordinal(idx + 1)} ${name} ${icon} (${votesStr})`;
-      });
-
       const winnerName = result.winnerTag
         ? findName(result.winnerTag)
         : "Personne";
 
-      let description = lines.join("\n") + `\n\n`;
+      let description = "";
 
-      if (result.totalVotes === 0) {
-        description += "😴 Personne n'a voté cette semaine.\n\n";
-      } else {
-        description += `🗳️ **${result.totalVotes}** vote${result.totalVotes > 1 ? "s" : ""} au total.\n\n`;
-      }
-
+      // Message champion — affiché en priorité, avant la liste des votes
       if (realChampion && realChampion.length > 0) {
         description += `**Véritable Champion de la semaine ${weekId} :**\n`;
 
@@ -174,9 +161,28 @@ async function main() {
         if (matched) {
           description += `🎉 **Les votants ont eu raison !** Le challenger majoritaire était bien le Champion !\n\n`;
         } else {
-          description += `😅 Le challenger majoritaire **${winnerName}** n'était pas le bon cette fois.`;
+          description += `😅 Le challenger majoritaire **${winnerName}** n'était pas le bon cette fois.\n\n`;
         }
+      }
+
+      // Liste des votes — couronne bleue pour le vrai champion, rouge sinon
+      // (pas de trophée sur le plus voté : il n'est pas forcément le champion)
+      const championTags = getChampionChallengerTags(realChampion, result.session.challengers);
+      const lines = result.voteResult.map((entry) => {
+        const name = findName(entry.challengerTag);
+        const crown = championTags.has(entry.challengerTag) ? CROWN_CHAMPION : CROWN_OTHER;
+        const votesStr = entry.votes === 1 ? "1 vote" : `${entry.votes} votes`;
+        return `${crown} ${name} (${votesStr})`;
+      });
+      description += lines.join("\n") + `\n\n`;
+
+      if (result.totalVotes === 0) {
+        description += "😴 Personne n'a voté cette semaine.\n\n";
       } else {
+        description += `🗳️ **${result.totalVotes}** vote${result.totalVotes > 1 ? "s" : ""} au total.\n\n`;
+      }
+
+      if (!realChampion || realChampion.length === 0) {
         const winnerVoters = result.winnerTag
           ? result.session.votes
               .filter((v) => v.challengerTag === result.winnerTag)

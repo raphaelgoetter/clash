@@ -197,8 +197,26 @@ export function computeChampionVoters(realChampions, challengers, votes) {
     const voters = voterTag
       ? votes.filter((v) => v.challengerTag === voterTag).map((v) => v.discordName)
       : [];
-    return { ...c, voters };
+    return { ...c, voters, voterTag };
   });
+}
+
+/**
+ * Ensemble des challengerTag (ou "__other__") qui correspondent à un vrai
+ * champion de la semaine, pour distinguer visuellement (ex. couronne) les
+ * lignes de vote qui étaient réellement le champion de celles qui ne
+ * l'étaient pas — indépendamment du nombre de votes reçus.
+ * @param {Array<{tag:string,name:string,fame:number}>|null} realChampions
+ * @param {Array<{tag:string}>} challengers
+ * @returns {Set<string>}
+ */
+export function getChampionChallengerTags(realChampions, challengers) {
+  if (!Array.isArray(realChampions)) return new Set();
+  return new Set(
+    computeChampionVoters(realChampions, challengers, [])
+      .map((c) => c.voterTag)
+      .filter(Boolean),
+  );
 }
 
 export function computeNextPredictionsStart(now = new Date()) {
