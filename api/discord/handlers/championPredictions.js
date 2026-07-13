@@ -17,6 +17,7 @@ import {
   resolveClan,
   formatParisDate,
   computeNextPredictionsStart,
+  computeChampionVoters,
 } from "../../../backend/services/championPredictions.js";
 import {
   fetchRaceLog,
@@ -183,12 +184,6 @@ export async function handleEnd(webhookUrl, clanVal) {
     const realChampion = await getRealChampion(clanTag, weekId);
     const result = await closeSessionAndArchive(clanTag, weekId, realChampion);
 
-    const winnerVoters = result.winnerTag
-      ? result.session.votes
-          .filter((v) => v.challengerTag === result.winnerTag)
-          .map((v) => v.discordName)
-      : [];
-
     const nextStartText = formatParisDate(computeNextPredictionsStart());
 
     const embed = buildResultEmbed(
@@ -199,7 +194,7 @@ export async function handleEnd(webhookUrl, clanVal) {
       result.winnerTag,
       result.totalVotes,
       realChampion,
-      winnerVoters,
+      result.session.votes,
       nextStartText,
     );
 
@@ -370,7 +365,7 @@ function buildResultEmbed(
   winnerTag,
   totalVotes,
   realChampions,
-  winnerVoters = [],
+  votes = [],
   nextStartText = null,
 ) {
   // Trouver le nom via les challengers
@@ -402,25 +397,28 @@ function buildResultEmbed(
   // Message champion
   if (realChampions && realChampions.length > 0) {
     description += `**Véritable Champion de la semaine ${weekId} :**\n`;
-    for (const c of realChampions) {
-      description += `🏆 **${c.name}** — ${formatFame(c.fame)} pts\n`;
-    }
-    description += `\n`;
+
+    const championsWithVoters = computeChampionVoters(realChampions, challengers, votes);
+    const champLines = championsWithVoters.map((c) => {
+      let line = `🏆 **${c.name}** — ${formatFame(c.fame)} pts`;
+      if (c.voters.length > 0) {
+        const list = c.voters.slice(0, 100).join(", ");
+        line += ` (votants : ${list}${c.voters.length > 100 ? `… (+${c.voters.length - 100} autres)` : ""})`;
+      }
+      return line;
+    });
+    description += champLines.join("\n") + `\n\n`;
 
     const matched = realChampions.some((c) => c.tag === winnerTag);
     if (matched) {
       description += `🎉 **Les votants ont eu raison !** Le challenger majoritaire était bien le Champion !\n\n`;
-
-      if (winnerVoters.length > 0) {
-        const list = winnerVoters.slice(0, 100).join(", ");
-        description += `Félicitations à : ${list}`;
-        if (winnerVoters.length > 100) description += `… (+${winnerVoters.length - 100} autres)`;
-        description += `\n\n`;
-      }
     } else {
       description += `😅 Le challenger majoritaire **${winnerName}** n'était pas le bon cette fois.`;
     }
   } else {
+    const winnerVoters = winnerTag
+      ? votes.filter((v) => v.challengerTag === winnerTag).map((v) => v.discordName)
+      : [];
     if (totalVotes > 0) {
       const list = winnerVoters.slice(0, 100).join(", ");
       description += `Vous avez majoritairement voté pour **${winnerName}** : ${list}`;

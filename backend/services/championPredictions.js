@@ -176,6 +176,31 @@ export async function writeChampionRegistry(data) {
 
 // ── Helpers métier ────────────────────────────────────────────
 
+/**
+ * Associe à chaque vrai champion de la semaine la liste des votants qui
+ * l'avaient deviné. Si le champion n'était pas dans la liste des
+ * challengers proposés, on ne peut relier les votes "__other__" à lui que
+ * s'il est le SEUL vrai champion de la semaine (pas d'ex-æquo) — sinon
+ * c'est ambigu, le vote "Autre" pourrait viser n'importe quel joueur, pas
+ * forcément l'un des champions ex-æquo.
+ * @param {Array<{tag:string,name:string,fame:number}>} realChampions
+ * @param {Array<{tag:string}>} challengers
+ * @param {Array<{challengerTag:string,discordName:string}>} votes
+ * @returns {Array<{tag:string,name:string,fame:number,voters:string[]}>}
+ */
+export function computeChampionVoters(realChampions, challengers, votes) {
+  if (!Array.isArray(realChampions)) return [];
+
+  return realChampions.map((c) => {
+    const isListed = challengers.some((ch) => ch.tag === c.tag);
+    const voterTag = isListed ? c.tag : (realChampions.length === 1 ? "__other__" : null);
+    const voters = voterTag
+      ? votes.filter((v) => v.challengerTag === voterTag).map((v) => v.discordName)
+      : [];
+    return { ...c, voters };
+  });
+}
+
 export function computeNextPredictionsStart(now = new Date()) {
   const next = new Date(now);
   next.setUTCHours(8, 0, 0, 0);
