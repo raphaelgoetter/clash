@@ -3492,19 +3492,15 @@ export default async function handler(req, res) {
         const isWarPeriod =
           (_cmpDow === 0 || _cmpDow >= 4) && data.isWarPeriod === true;
 
-        // Trier : en Colisée par victoire assurée puis projection ; en GDC
-        // normale par progression du bateau (raceProgress, seul critère de
-        // classement réel — voir backend/services/warStandings.js) ; sinon par
-        // lastWarFame décroissant.
+        // Trier par projection si GDC active (les deux types de semaine), sinon
+        // par lastWarFame décroissant. La vraie position de course (GDC normale)
+        // est affichée à part — voir backend/services/warStandings.js.
         const sorted = [...raceGroup].sort((a, b) => {
-          if (isWarPeriod && isColosseum) {
+          if (isWarPeriod) {
             const aClinched = a.isClinchedWin ? 1 : 0;
             const bClinched = b.isClinchedWin ? 1 : 0;
             if (aClinched !== bClinched) return bClinched - aClinched;
             return (b.projectedFame ?? 0) - (a.projectedFame ?? 0);
-          }
-          if (isWarPeriod) {
-            return (b.raceProgress ?? -1) - (a.raceProgress ?? -1);
           }
           return (b.lastWarFame ?? 0) - (a.lastWarFame ?? 0);
         });
@@ -3551,15 +3547,19 @@ export default async function handler(req, res) {
             const proj = clan.isClinchedWin
               ? "<:projection:1499275709078700073> ✅ Victoire"
               : `<:projection:1499275709078700073> Projection: **${clan.projectedFame != null ? fmt(Math.round(clan.projectedFame / 100) * 100) : "?"}**`;
-            const clinched = "";
             const currentPts =
               isColosseum && clan.currentFame != null
                 ? `<:trophy2:1493677804733337621> Points actuels : **${fmt(clan.currentFame)}**`
                 : "";
+            // GDC normale : vraie position de course (progression bateau),
+            // distincte de la projection ci-dessus — voir warStandings.js.
+            const boat =
+              !isColosseum && clan.raceProgress != null
+                ? `<:trophy2:1493677804733337621> Bateau : ${fmt(clan.raceProgress)} / 10 000`
+                : "";
             const line2a = [decks, eff].filter(Boolean).join(" · ");
             const line2b = [currentPts, proj].filter(Boolean).join(" · ");
-            line2 = line2b ? `${line2a}\n${line2b}` : line2a;
-            line2 += clinched;
+            line2 = [line2a, line2b, boat].filter(Boolean).join("\n");
           } else {
             line2 = [prevWarStr, lastWarStr].filter(Boolean).join(" · ");
           }
@@ -3569,13 +3569,10 @@ export default async function handler(req, res) {
         });
 
         const anyClinched = isWarPeriod && sorted.some((c) => c.isClinchedWin);
-        const sortedByLabel = isColosseum
-          ? "Projection en fin de journée"
-          : "Classement (course)";
         const footerText = isWarPeriod
           ? anyClinched
-            ? `Trié par ${sortedByLabel} · ✅ = victoire mathématiquement assurée`
-            : `Trié par ${sortedByLabel}`
+            ? `Trié par Projection · ✅ = victoire mathématiquement assurée`
+            : `Trié par Projection en fin de journée`
           : `Trié par Total Dernière GDC`;
 
         const embed = {

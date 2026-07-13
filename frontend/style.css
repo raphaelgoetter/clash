@@ -415,7 +415,8 @@ code {
 .war-group-last-war,
 .war-group-current-pts,
 .war-group-avg-pts,
-.war-group-projection {
+.war-group-projection,
+.war-group-boat {
   padding: 8px;
   text-align: end !important;
   color: var(--text-secondary);
