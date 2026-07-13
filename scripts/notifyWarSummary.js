@@ -27,6 +27,10 @@ import {
   fetchBattleLog,
 } from "../backend/services/clashApi.js";
 import { loadSnapshots } from "../backend/services/snapshot.js";
+import {
+  computeGroupStandings,
+  RACE_FINISH_LINE,
+} from "../backend/services/warStandings.js";
 import { resolveMembersChannelId } from "../backend/services/discordChannels.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -645,20 +649,50 @@ function buildWeeklyZeroActivityLists(memberNames, allWeekDays) {
   };
 }
 
-function computeDay3ClinchProof(race, ownClanTag) {
-  const isWarDay =
+function isActiveWarPeriod(race) {
+  return (
     race?.periodType === "warDay" ||
+    race?.periodType === "colosseum" ||
     race?.state === "warDay" ||
     race?.state === "overtime" ||
     race?.state === "full" ||
     (typeof race?.periodIndex === "number" &&
       race.periodIndex >= 0 &&
-      race.periodIndex <= 3);
-  if (!isWarDay) return { known: false, isClinched: false };
+      race.periodIndex <= 3)
+  );
+}
+
+/**
+ * Preuve rigoureuse (avant tout deck de J4) qu'un clan a déjà gagné sa GDC.
+ * La métrique diffère par type de semaine (voir warStandings.js) :
+ *   - GDC normale : constat direct, raceProgress >= 10000 (le bateau ne bouge
+ *     qu'au reset, donc pas besoin d'attendre un instantané "propre" de J4).
+ *   - Colisée : estimation stricte currentFame vs meilleur rival pouvant
+ *     encore jouer tout J4 au max théorique — nécessite un instantané avant
+ *     tout deck de J4 pour ne pas sous-estimer les rivaux.
+ */
+function computeDay3ClinchProof(race, ownClanTag) {
+  if (!isActiveWarPeriod(race)) return { known: false, isClinched: false };
   if (!Array.isArray(race?.clans) || race.clans.length === 0)
     return { known: false, isClinched: false };
 
   const ownTag = normalizeClanTag(ownClanTag);
+  const isColosseum = race?.periodType === "colosseum";
+
+  if (!isColosseum) {
+    const standings = computeGroupStandings(race.clans, {
+      isColosseum: false,
+    });
+    const own = standings.find((c) => c.tag === ownTag);
+    if (!own || own.raceProgress == null)
+      return { known: false, isClinched: false };
+    return {
+      known: true,
+      isClinched: own.isClinchedWin,
+      margin: own.raceProgress - RACE_FINISH_LINE,
+    };
+  }
+
   const MAX_FAME_DAY4 = 200 * 200; // 200 decks max sur J4, 200 fame max/deck
 
   const group = race.clans
@@ -709,56 +743,39 @@ function normalizeClanTag(tag) {
 }
 
 /**
- * Détecte si le clan est déjà mathématiquement gagnant en warDay.
- * Règle stricte : currentFame(clan) > max(maxReachableFame(rivaux)).
+ * Détecte si le clan est déjà mathématiquement gagnant, quel que soit le
+ * type de semaine (voir warStandings.js pour le détail des deux métriques) :
+ *   - GDC normale : raceProgress (progression bateau) >= 10000 (constaté,
+ *     jamais de prédiction anticipée avant qu'un jour ne soit clos).
+ *   - Colisée : currentFame(clan) > max(maxReachableFame(rivaux)).
  */
 function computeClinchedWinInfo(race, ownClanTag) {
-  const isWarDay =
-    race?.periodType === "warDay" ||
-    race?.state === "warDay" ||
-    race?.state === "overtime" ||
-    race?.state === "full" ||
-    (typeof race?.periodIndex === "number" &&
-      race.periodIndex >= 0 &&
-      race.periodIndex <= 3);
-  if (!isWarDay) return null;
+  if (!isActiveWarPeriod(race)) return null;
   if (!Array.isArray(race?.clans) || race.clans.length === 0) return null;
 
-  const MAX_WEEKLY_DECKS = 800; // 50*4*4
-  const MAX_FAME_PER_DECK = 200;
+  const isColosseum = race?.periodType === "colosseum";
   const ownTag = normalizeClanTag(ownClanTag);
+  const standings = computeGroupStandings(race.clans, { isColosseum });
 
-  const group = race.clans
-    .map((clan) => {
-      const parts = Array.isArray(clan?.participants) ? clan.participants : [];
-      if (parts.length === 0) return null;
-
-      const currentFame = parts.reduce((s, p) => s + (p.fame ?? 0), 0);
-      const decksUsedWeekly = parts.reduce((s, p) => s + (p.decksUsed ?? 0), 0);
-      const remainingDecks = Math.max(0, MAX_WEEKLY_DECKS - decksUsedWeekly);
-      const maxReachableFame = currentFame + remainingDecks * MAX_FAME_PER_DECK;
-
-      return {
-        tag: normalizeClanTag(clan?.tag),
-        currentFame,
-        maxReachableFame,
-      };
-    })
-    .filter(Boolean);
-
-  if (group.length === 0) return null;
-  const own = group.find((c) => c.tag === ownTag);
+  const own = standings.find((c) => c.tag === ownTag);
   if (!own) return null;
-
-  const rivals = group.filter((c) => c.tag !== ownTag);
+  const rivals = standings.filter((c) => c.tag !== ownTag);
   if (rivals.length === 0) return null;
 
-  const bestRivalReachable = Math.max(...rivals.map((c) => c.maxReachableFame));
-  const margin = own.currentFame - bestRivalReachable;
+  if (!isColosseum) {
+    return {
+      isClinchedWin: own.isClinchedWin,
+      raceProgress: own.raceProgress,
+      margin: own.raceProgress != null ? own.raceProgress - RACE_FINISH_LINE : null,
+    };
+  }
 
+  const bestRivalReachable = Math.max(
+    ...rivals.map((c) => c.maxReachableFame ?? 0),
+  );
   return {
-    isClinchedWin: margin > 0,
-    margin,
+    isClinchedWin: own.isClinchedWin,
+    margin: (own.currentFame ?? 0) - bestRivalReachable,
     ownCurrentFame: own.currentFame,
     bestRivalReachable,
   };
@@ -1220,9 +1237,12 @@ async function postWarSummary(
   }
 
   if (clinchedInfo?.isClinchedWin) {
+    const statusValue = isColosseum
+      ? `✅ Victoire mathématiquement assurée (avance minimale garantie: ${fmt(clinchedInfo.margin)} pts).`
+      : `✅ Ligne d'arrivée franchie (progression bateau : ${fmt(clinchedInfo.raceProgress)} / ${fmt(RACE_FINISH_LINE)} pts).`;
     fields.push({
       name: "<:topplayers:1493708397407899648> Statut de la course",
-      value: `✅ Victoire mathématiquement assurée (avance minimale garantie: ${fmt(clinchedInfo.margin)} pts).`,
+      value: statusValue,
       inline: false,
     });
   } else if (earlyWinByDay3 === true) {
@@ -1433,6 +1453,8 @@ export {
   buildWeeklyZeroActivityLists,
   computeWeeklySummary,
   computeMissingDuelsCountFromBattleLog,
+  computeClinchedWinInfo,
+  computeDay3ClinchProof,
 };
 
 async function main() {

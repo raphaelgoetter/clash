@@ -4,6 +4,7 @@
 // ============================================================
 
 import { roundProjectedFame } from "../backend/services/projectionFormat.js";
+import { RACE_FINISH_LINE } from "../backend/services/warStandings.js";
 
 // Tags des clans de la famille — utilisés pour les liens TrustRoyale internes.
 const FAMILY_TAGS = new Set(["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"]);
@@ -80,15 +81,20 @@ export function renderRaceGroupCard(data, timerHelper) {
   const descEl = container.querySelector("#war-group-description");
   if (descEl) descEl.textContent = "Comparez les 5 clans du groupe de GDC actuel";
 
-  // Trier : par victoire assurée puis projection en période de GDC, sinon par last war fame décroissant
+  // Trier : en Colisée par victoire assurée puis projection (cumul fame) ; en
+  // GDC normale par progression du bateau (raceProgress, seul critère de
+  // classement réel — voir backend/services/warStandings.js) ; hors période de
+  // GDC, par last war fame décroissant.
   const sorted = [...raceGroup].sort((a, b) => {
-    if (isWarPeriod) {
+    if (isWarPeriod && isColosseum) {
       const aClinched = a.isClinchedWin ? 1 : 0;
       const bClinched = b.isClinchedWin ? 1 : 0;
       if (aClinched !== bClinched) return bClinched - aClinched;
       if (a.projectedFame != null && b.projectedFame != null) {
         return b.projectedFame - a.projectedFame;
       }
+    } else if (isWarPeriod) {
+      return (b.raceProgress ?? -1) - (a.raceProgress ?? -1);
     }
     return (b.lastWarFame ?? 0) - (a.lastWarFame ?? 0);
   });
@@ -105,11 +111,9 @@ export function renderRaceGroupCard(data, timerHelper) {
 
       const nameHtml = `<a href="${url}" class="${isFamilyMember ? "war-group-family-link" : "war-group-external-link"}">${clan.name ?? clan.tag}</a>`;
 
-      const displayRank = isWarPeriod
-        ? clan.isClinchedWin
-          ? idx + 1
-          : (clan.projectedRank ?? idx + 1)
-        : (clan.rank ?? idx + 1);
+      // Le tableau est déjà trié selon le bon critère par type de semaine
+      // (cf. `sorted` ci-dessus) : la position post-tri fait foi.
+      const displayRank = isWarPeriod ? idx + 1 : (clan.rank ?? idx + 1);
       const rankBadge = `<span class="war-group-rank">#${displayRank}</span>`;
 
       const trophiesVal =
@@ -174,13 +178,20 @@ export function renderRaceGroupCard(data, timerHelper) {
       let projectionHtml = "";
       if (isWarPeriod) {
         const isClinched = clan.isClinchedWin;
-        const projVal = isClinched
-          ? "✅ Victoire"
-          : fmtProjection(clan.projectedFame, decksTodayVal, targetVal);
-        const clinchedHtml = isClinched
-          ? ` <span class="war-group-clinched" title="Victoire mathématiquement assurée">✅ Victoire</span>`
-          : "";
-        projectionHtml = `<td class="war-group-projection">${projVal}${isClinched ? "" : clinchedHtml}</td>`;
+        let projVal;
+        if (isClinched) {
+          const title = isColosseum
+            ? "Victoire mathématiquement assurée"
+            : `Ligne d'arrivée franchie (progression bateau : ${fmtNum(RACE_FINISH_LINE)} pts)`;
+          projVal = `<span class="war-group-clinched" title="${title}">✅ Victoire</span>`;
+        } else {
+          // Projection du classement/trophées de fin de journée (pts de bataille
+          // extrapolés) — distincte du classement affiché par le rang (#1..#5),
+          // qui lui reflète la vraie position (bateau en GDC normale, cumul en
+          // Colisée). Voir backend/services/warStandings.js.
+          projVal = fmtProjection(clan.projectedFame, decksTodayVal, targetVal);
+        }
+        projectionHtml = `<td class="war-group-projection">${projVal}</td>`;
       }
 
       const trophiesHtml = !isWarPeriod

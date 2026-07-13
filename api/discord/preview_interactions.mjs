@@ -3492,13 +3492,19 @@ export default async function handler(req, res) {
         const isWarPeriod =
           (_cmpDow === 0 || _cmpDow >= 4) && data.isWarPeriod === true;
 
-        // Trier par projection si GDC active, sinon par lastWarFame décroissant
+        // Trier : en Colisée par victoire assurée puis projection ; en GDC
+        // normale par progression du bateau (raceProgress, seul critère de
+        // classement réel — voir backend/services/warStandings.js) ; sinon par
+        // lastWarFame décroissant.
         const sorted = [...raceGroup].sort((a, b) => {
-          if (isWarPeriod) {
+          if (isWarPeriod && isColosseum) {
             const aClinched = a.isClinchedWin ? 1 : 0;
             const bClinched = b.isClinchedWin ? 1 : 0;
             if (aClinched !== bClinched) return bClinched - aClinched;
             return (b.projectedFame ?? 0) - (a.projectedFame ?? 0);
+          }
+          if (isWarPeriod) {
+            return (b.raceProgress ?? -1) - (a.raceProgress ?? -1);
           }
           return (b.lastWarFame ?? 0) - (a.lastWarFame ?? 0);
         });
@@ -3563,10 +3569,13 @@ export default async function handler(req, res) {
         });
 
         const anyClinched = isWarPeriod && sorted.some((c) => c.isClinchedWin);
+        const sortedByLabel = isColosseum
+          ? "Projection en fin de journée"
+          : "Classement (course)";
         const footerText = isWarPeriod
           ? anyClinched
-            ? `Trié par Projection · ✅ = victoire mathématiquement assurée`
-            : `Trié par Projection en fin de journée`
+            ? `Trié par ${sortedByLabel} · ✅ = victoire mathématiquement assurée`
+            : `Trié par ${sortedByLabel}`
           : `Trié par Total Dernière GDC`;
 
         const embed = {

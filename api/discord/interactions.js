@@ -506,25 +506,38 @@ function sortCompareRaceGroup(raceGroup, sortMode, isWarPeriod, isColosseum) {
         (getCurrentPts(a, isColosseum) ?? 0)
       );
     }
-    if (isWarPeriod) {
+    if (isWarPeriod && isColosseum) {
       // sortMode === "projection" (comportement par défaut en période GDC)
       const aClinched = a.isClinchedWin ? 1 : 0;
       const bClinched = b.isClinchedWin ? 1 : 0;
       if (aClinched !== bClinched) return bClinched - aClinched;
       return (b.projectedFame ?? 0) - (a.projectedFame ?? 0);
     }
+    if (isWarPeriod) {
+      // GDC normale : classement par progression du bateau (voir warStandings.js).
+      return (b.raceProgress ?? -1) - (a.raceProgress ?? -1);
+    }
     // Hors période GDC : fallback unique quel que soit sortMode demandé
     return (b.lastWarFame ?? 0) - (a.lastWarFame ?? 0);
   });
 }
 
-function buildCompareFooter({ sortMode, isWarPeriod, anyClinched, observedAt }) {
+function buildCompareFooter({
+  sortMode,
+  isWarPeriod,
+  isColosseum,
+  anyClinched,
+  observedAt,
+}) {
   const suffix = observedAt ? ` Fait le ${observedAt}.` : "";
   if (!isWarPeriod) return `Trié par Total Dernière GDC.${suffix}`;
   if (sortMode === "current") return `Trié par Points actuels.${suffix}`;
+  const sortedByLabel = isColosseum
+    ? "Projection en fin de journée"
+    : "Classement (course)";
   return anyClinched
-    ? `Trié par Projection · ✅ = victoire mathématiquement assurée.${suffix}`
-    : `Trié par Projection en fin de journée.${suffix}`;
+    ? `Trié par ${sortedByLabel} · ✅ = victoire mathématiquement assurée.${suffix}`
+    : `Trié par ${sortedByLabel}.${suffix}`;
 }
 
 function buildComparePayload({
@@ -589,15 +602,22 @@ function buildComparePayload({
         currentPtsVal != null
           ? `<:trophy2:1493677804733337621> Points actuels : ${currentBold ? `**${currentPtsVal}**` : currentPtsVal}`
           : "";
-      const projRounded = roundProjectedFame(
-        clan.projectedFame,
-        clan.decksToday,
-        clan.targetDecksToday,
-      );
-      const projVal = projRounded != null ? fmt(projRounded) : "?";
-      const proj = clan.isClinchedWin
-        ? "<:projection:1499275709078700073> ✅ Victoire"
-        : `<:projection:1499275709078700073> Projection: ${currentBold ? projVal : `**${projVal}**`}`;
+      // Projection du classement/trophées de fin de journée (pts de bataille
+      // extrapolés) — distincte du classement de l'embed (idx+1), qui lui
+      // reflète la vraie position (bateau en GDC normale, cumul en Colisée).
+      // Voir backend/services/warStandings.js.
+      let proj;
+      if (clan.isClinchedWin) {
+        proj = "<:projection:1499275709078700073> ✅ Victoire";
+      } else {
+        const projRounded = roundProjectedFame(
+          clan.projectedFame,
+          clan.decksToday,
+          clan.targetDecksToday,
+        );
+        const projVal = projRounded != null ? fmt(projRounded) : "?";
+        proj = `<:projection:1499275709078700073> Projection: ${currentBold ? projVal : `**${projVal}**`}`;
+      }
       const line2a = [decks, eff].filter(Boolean).join(" · ");
       const line2b = [currentPts, proj].filter(Boolean).join(" · ");
       line2 = line2b ? `${line2a}\n${line2b}` : line2a;
@@ -612,6 +632,7 @@ function buildComparePayload({
   const footerText = buildCompareFooter({
     sortMode,
     isWarPeriod,
+    isColosseum,
     anyClinched,
     observedAt,
   });

@@ -57,7 +57,7 @@ Données du clan pour lequel l'appel est effectué.
 | -------------- | -------- | :---------------------------------------------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `tag`          | `string` |                       ✅                        | Tag du clan, préfixé `#`.                                                                                                                                                                                    |
 | `name`         | `string` |                       ✅                        | Nom du clan.                                                                                                                                                                                                 |
-| `fame`         | `number` | ⚠️ **NE PAS UTILISER pour les pts de bataille** | Score de **progression de classement** du dernier jour terminé (équivalent de `progressEndOfDay` dans `periodLogs`). Valeur typique : 3 000–10 000. **Ne représente pas les pts de combat du jour courant.** |
+| `fame`         | `number` | ⚠️ **NE PAS UTILISER pour les pts de bataille** — ✅ **classement en GDC classique** | Progression du **bateau** (0-10 000, ligne d'arrivée à 10 000 = victoire immédiate), reflète le dernier jour de guerre **terminé** (= `progressEndOfDay` dans `periodLogs`) — ne se met PAS à jour en direct pendant la journée en cours, seulement au reset. Ne représente pas les pts de combat du jour courant (utiliser `periodPoints`), mais **c'est la seule métrique qui détermine le vainqueur d'une semaine de GDC classique** (`periodType: "warDay"`, voir section "Classement final GDC" plus bas). En Colisée, ce champ n'a plus ce rôle : utiliser `sum(participants[].fame)`. |
 | `repairPoints` | `number` |                       ✅                        | Points de réparation du bateau.                                                                                                                                                                              |
 | `finishTime`   | `string` |                       ✅                        | ISO datetime de fin de la race (si terminée).                                                                                                                                                                |
 | `periodPoints` | `number` |             ✅ **Source de vérité**             | **Pts de bataille exacts gagnés par le clan pendant le jour courant.** Valeur typique : 20 000–50 000. Utiliser pour `clanScore` en `warDay`. Disponible aussi dans `clans[i].periodPoints` pour les rivaux. |
@@ -130,7 +130,7 @@ Champs identiques à `clan` (voir ci-dessus), avec en plus :
 | `trophyChange` | `number` |           ✅            | Variation de trophées de guerre en fin de semaine (peut être négatif).                           |
 | `periodPoints` | `number` | ✅ **Source de vérité** | **Pts de bataille du jour courant pour ce clan rival.** Même sémantique que `clan.periodPoints`. |
 
-> ⚠️ `clans[i].fame` souffre du même problème que `clan.fame` : c'est le score de progression de classement, pas les pts de bataille.
+> ⚠️ `clans[i].fame` a le même rôle que `clan.fame` : ce n'est pas les pts de bataille du jour, c'est la progression du bateau (classement en GDC classique). Disponible pour tous les clans du groupe en un seul appel — c'est ce qui permet de calculer `isClinchedWin` pour tout le groupe sans requête supplémentaire (voir `backend/services/warStandings.js`).
 
 ---
 
@@ -184,6 +184,39 @@ const apiDayFame = item?.pointsEarned ?? null;
 
 ---
 
+## Classement final GDC — quelle métrique utiliser
+
+**Piège historique de ce projet** : le classement/la victoire d'un groupe de GDC ne se
+calcule **pas** de la même façon selon le type de semaine. Confondre les deux métriques
+a produit un vrai bug en production (badge "Victoire" affiché à tort) — voir
+`backend/services/warStandings.js` pour l'implémentation qui centralise cette règle.
+
+- **GDC classique** (`periodType === "warDay"`, toutes les semaines sauf la dernière de
+  la saison) : le vainqueur est déterminé par une **course de bateau**. La progression
+  (0-10 000) est exposée directement par `clan.fame` / `clans[i].fame` dans
+  `/currentriverrace` — équivalent à `progressEndOfDay` du dernier jour de guerre clos
+  dans `periodLogs`. Franchir 10 000 = victoire immédiate ; sinon le classement final se
+  fait sur la position atteinte au reset du J4. Le cumul brut de fame de bataille
+  (`sum(participants[].fame)`) **n'est pas** le critère de classement ici — c'est
+  uniquement le score du jour, sans rapport avec qui gagne la semaine.
+- **Colisée** (`periodType === "colosseum"`, dernière semaine de chaque saison) : pas de
+  course de bateau — le classement dépend du cumul brut de fame de bataille sur toute la
+  semaine (`sum(participants[].fame)`, ~80 000-160 000).
+
+### Preuve empirique (`riverracelog`, 6 semaines réelles / 2 saisons)
+
+| Semaine                              | `standings[].clan.fame`  | `trophyChange`                | Correspond à           |
+| ------------------------------------- | ------------------------ | ------------------------------ | ----------------------- |
+| `sectionIndex` 0-3 (semaines normales) | 3 300 – 10 000 (un clan a touché **exactement 10 000**) | +20/+10/0/-5/-10/-20   | Barème "GDC normale" (`CONTRIBUTING.md`) |
+| `sectionIndex` 4 (Colisée, dernière semaine de saison) | 110 000 – 130 000        | +100/+50/0/-25/-50/-100        | Barème "GDC Colisée" (`CONTRIBUTING.md`) |
+
+Et sur un exemple live (`periodType: "warDay"`, J3 clos) : `clan.fame` = 8 822,
+identique à `periodLogs[periodIndex=5].progressEndOfDay` (J3) — confirme que `clan.fame`
+reflète le dernier jour de guerre **clos**, sans mise à jour en direct pendant le jour en
+cours.
+
+---
+
 ## Correspondance champ → usage dans TrustRoyale
 
 | Valeur métier                          | Champ API à utiliser                                                              | Fallback                                      |
@@ -196,6 +229,8 @@ const apiDayFame = item?.pointsEarned ?? null;
 | Cumul fame semaine (clan, currentRace) | `clan.clanScore` = `sum(participants[].fame)` ✅ **Source de vérité**             | snapshot pré-reset `_cumulFamePreReset`       |
 | Cumul fame semaine (clan, raceLog)     | ⚠️ Aucun champ fiable — utiliser `sum(participants[].fame)` du snapshot pré-reset | `sum(standings[j].clan.participants[k].fame)` |
 | Efficacité pts/deck                    | `periodPoints / sum(decksUsedToday)`                                              | historique `raceLog`                          |
+| Classement/vainqueur (GDC classique)   | `clans[i].fame` (0-10000, ligne d'arrivée 10000) ✅ **Source de vérité**          | `periodLogs[n].items[j].progressEndOfDay`     |
+| Classement/vainqueur (Colisée)         | `sum(participants[].fame)` ✅ **Source de vérité**                                | —                                             |
 | Type de période                        | `periodType`                                                                      | —                                             |
 | Semaine courante (weekId)              | `computeCurrentWeekId(currentRace, raceLog)`                                      | —                                             |
 
@@ -269,13 +304,13 @@ Retourne l'historique des semaines de guerre **terminées** pour un clan (jusqu'
 | -------------- | -------- | :--------------------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `tag`          | `string` |           ✅           | Tag du clan.                                                                                                                                                                               |
 | `name`         | `string` |           ✅           | Nom du clan au moment de la fin de la semaine.                                                                                                                                             |
-| `fame`         | `number` |  ⚠️ **Inconsistant**   | Parfois = `sum(participants[].fame)` (GDC classique), parfois = position du bateau (~10 000 en Colisée). **Ne pas utiliser directement** — utiliser `sum(participants[].fame)` à la place. |
+| `fame`         | `number` |  ⚠️ **Sémantique différente par type de semaine**   | **En GDC classique** : position finale du bateau (~3 300-10 000, source de vérité pour le classement — voir "Classement final GDC" plus haut). **En Colisée** : `sum(participants[].fame)` (~80 000-160 000, cumul brut de fame de bataille). Ne pas confondre les deux échelles ni les substituer l'une à l'autre selon le type de semaine (c'était l'inverse dans une version précédente de cette doc — corrigé après vérification sur `riverracelog` réel). |
 | `repairPoints` | `number` |           ✅           | Points de réparation du bateau accumulés sur la semaine.                                                                                                                                   |
 | `finishTime`   | `string` |           ✅           | Date de fin anticipée en Colisée. **Si `"19691231T235959.000Z"` (epoch 0) → le clan n'a pas terminé en avance.** Date réelle → fin anticipée (Colisée uniquement).                         |
 | `periodPoints` | `number` |   ⚠️ **Toujours 0**    | **Toujours 0 dans `raceLog`.** Ce champ n'est significatif que dans `currentRace`. Ne pas utiliser.                                                                                        |
 | `clanScore`    | `number` | ⚠️ **NE PAS UTILISER** | **Trophées de guerre** (`clanWarTrophies`, ~3 000–5 000). ≠ pts de bataille. Ne pas utiliser pour le bilan GDC.                                                                            |
 
-> **⚠️ Piège** : dans `raceLog`, `clan.fame` est **inconsistant** selon le type de semaine (GDC classique vs Colisée). `clan.clanScore` y représente les trophées de guerre, pas les pts de bataille. La seule source fiable est `sum(participants[].fame)`. Pour le total exact de la semaine (= `currentRace.clan.clanScore`), utiliser le **snapshot pré-reset** (`_cumulFamePreReset`) capturé depuis `currentriverrace` avant le reset.
+> **⚠️ Piège** : dans `raceLog`, `clan.fame` **change de sens** selon le type de semaine (voir tableau ci-dessus — GDC classique = position du bateau, Colisée = cumul de fame). `clan.clanScore` y représente toujours les trophées de guerre, jamais les pts de bataille. Pour le cumul brut de fame de bataille sur la semaine (pertinent en Colisée, ou pour du reporting informatif en GDC classique), la seule source fiable est `sum(participants[].fame)`. Pour le total exact de la semaine (= `currentRace.clan.clanScore`), utiliser le **snapshot pré-reset** (`_cumulFamePreReset`) capturé depuis `currentriverrace` avant le reset.
 
 ---
 
