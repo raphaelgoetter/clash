@@ -390,6 +390,290 @@ function setCachedStatsClanAnalysis(clanTag, data) {
   });
 }
 
+// ============================================================
+// /recap — récap GDC saison passée (bottom 10 La Resistance / top 10 Les
+// Resistants). Source des points : raceLog brut (participants de chaque
+// semaine terminée), pas warHistory — voir plan pour la justification
+// (raceLog validé identique aux snapshots sur 8 semaines de recoupement,
+// et plus complet à l'instant T).
+// ============================================================
+
+const RECAP_CLANS = {
+  clan1: { tag: "Y8JUPC9C", name: "La Resistance" },
+  clan2: { tag: "LRQP20V9", name: "Les Resistants" },
+};
+
+// L'API riverracelog ne renvoie que les 10 dernières semaines terminées, sans
+// pagination possible (limite dure de l'API Clash Royale, testée en live) —
+// ça couvre au mieux 2 saisons pleines, donc /recap ne propose que -1/-2.
+async function resolveRecapSeasonId(raceLog, currentRace, offset) {
+  const { computeCurrentSeasonId } = await import(
+    "../../backend/services/dateUtils.js"
+  );
+  const currentSeasonId = computeCurrentSeasonId(currentRace, raceLog);
+  const seasonCounts = {};
+  for (const r of raceLog) {
+    seasonCounts[r.seasonId] = (seasonCounts[r.seasonId] || 0) + 1;
+  }
+  const sortedSeasons = Object.keys(seasonCounts)
+    .map(Number)
+    .sort((a, b) => b - a);
+  const currentSeasonIsComplete =
+    currentSeasonId && (seasonCounts[currentSeasonId] ?? 0) >= 4;
+  const completedSeasons = sortedSeasons.filter(
+    (sid) =>
+      (seasonCounts[sid] ?? 0) >= 4 &&
+      (sid !== currentSeasonId || currentSeasonIsComplete),
+  );
+  return completedSeasons[offset - 1] ?? null;
+}
+
+function aggregateRecapSeasonStats(raceLog, seasonId, clanTag) {
+  const weeks = raceLog.filter((r) => r.seasonId === seasonId);
+  const totals = new Map();
+  for (const w of weeks) {
+    const standing = (w.standings || []).find(
+      (s) => s.clan?.tag?.toUpperCase() === `#${clanTag}`,
+    );
+    for (const p of standing?.clan?.participants ?? []) {
+      const tag = p.tag?.toUpperCase();
+      if (!tag) continue;
+      const entry = totals.get(tag) ?? { fame: 0, decksUsed: 0 };
+      entry.fame += Number(p.fame) || 0;
+      entry.decksUsed += Number(p.decksUsed) || 0;
+      totals.set(tag, entry);
+    }
+  }
+  return totals;
+}
+
+// Récupère + agrège les données d'un clan pour la saison ciblée, et
+// sélectionne les 10 membres actuels les plus extrêmes sur pointsSaison
+// (direction "asc" = les plus faibles, "desc" = les plus élevés). Cette
+// sélection initiale est figée : les boutons de tri ne font ensuite que
+// réordonner ces mêmes 10 joueurs (voir buildRecapRows).
+async function buildRecapClanSection(
+  clanTag,
+  clanFallbackName,
+  seasonOffset,
+  direction,
+) {
+  const { fetchCurrentRace } = await import(
+    "../../backend/services/clashApi.js"
+  );
+
+  const [raceLog, currentRace] = await Promise.all([
+    fetchRaceLog(`#${clanTag}`),
+    fetchCurrentRace(`#${clanTag}`).catch(() => null),
+  ]);
+
+  const seasonId = await resolveRecapSeasonId(
+    raceLog,
+    currentRace,
+    seasonOffset,
+  );
+  if (!seasonId) {
+    return { seasonId: null, clanName: clanFallbackName, members: [] };
+  }
+
+  const totals = aggregateRecapSeasonStats(raceLog, seasonId, clanTag);
+
+  const endpoint = `${TRUST_ROYALE_URL}/api/clan/${encodeURIComponent(clanTag)}/analysis?fast=true`;
+  const apiResp = await fetch(endpoint, {
+    headers: { Accept: "application/json" },
+  });
+  if (!apiResp.ok) {
+    throw new Error(
+      `Erreur API clan ${clanFallbackName} (${apiResp.status})`,
+    );
+  }
+  const data = await apiResp.json();
+  const currentMembers = Array.isArray(data.members) ? data.members : [];
+
+  const merged = [];
+  for (const m of currentMembers) {
+    const tag = String(m.tag || "").toUpperCase();
+    const totalsEntry = totals.get(tag);
+    const decksJoues = totalsEntry?.decksUsed ?? 0;
+    if (!decksJoues) continue; // pas de deck joué cette saison-là → pas de classement possible
+    merged.push({
+      tag,
+      name: m.name,
+      isNew: !!m.isNew,
+      reliability: m.reliability,
+      color: m.color,
+      pointsSaison: totalsEntry.fame,
+      decksJoues,
+      pointsPerDeck: Math.round(totalsEntry.fame / decksJoues),
+    });
+  }
+
+  merged.sort((a, b) =>
+    direction === "asc"
+      ? a.pointsSaison - b.pointsSaison
+      : b.pointsSaison - a.pointsSaison,
+  );
+
+  return {
+    seasonId,
+    clanName: data.clan?.name || clanFallbackName,
+    members: merged.slice(0, 10),
+  };
+}
+
+async function buildRecapData(seasonOffset) {
+  const [clan1, clan2] = await Promise.all([
+    buildRecapClanSection(
+      RECAP_CLANS.clan1.tag,
+      RECAP_CLANS.clan1.name,
+      seasonOffset,
+      "asc",
+    ),
+    buildRecapClanSection(
+      RECAP_CLANS.clan2.tag,
+      RECAP_CLANS.clan2.name,
+      seasonOffset,
+      "desc",
+    ),
+  ]);
+  const seasonId = clan1.seasonId ?? clan2.seasonId;
+  const observedAt = await formatParisObservationTime();
+  return { clan1, clan2, seasonId, observedAt };
+}
+
+// Réordonne (sans jamais resélectionner) les 10 membres déjà choisis, selon
+// la métrique active — ascendant pour clan1 (pires en tête), descendant pour
+// clan2 (meilleurs en tête).
+function buildRecapRows(members, sortMode, direction) {
+  const metricOf = (m) => {
+    if (sortMode === "pointsPerDeck") {
+      return Number.isFinite(m.pointsPerDeck) ? m.pointsPerDeck : -1;
+    }
+    if (sortMode === "decksUsed") return m.decksJoues ?? 0;
+    return m.pointsSaison ?? 0;
+  };
+
+  const sorted = [...members].sort((a, b) => {
+    const diff = metricOf(a) - metricOf(b);
+    return direction === "asc" ? diff : -diff;
+  });
+
+  const fmt = (n) => (Number.isFinite(n) ? n.toLocaleString("fr-FR") : "—");
+
+  return sorted.map((m, idx) => {
+    const rank = idx + 1;
+    const newIcon = m.isNew ? " 🆕" : "";
+    let reliabilityStr = "";
+    if (Number.isFinite(m.reliability)) {
+      const icon = RELIABILITY_ICON[m.color] ?? "⚪";
+      reliabilityStr = ` ${icon}${Math.round(m.reliability)}%`;
+    }
+    return (
+      `${rank}. [${m.name}](${trustPlayerUrl(m.tag)})${newIcon}${reliabilityStr} ` +
+      `🏆${fmt(m.pointsSaison)} ⚡${fmt(m.pointsPerDeck)} (${m.decksJoues})`
+    );
+  });
+}
+
+function buildRecapComponents(seasonOffset, sortMode) {
+  const pointsSaisonActive = sortMode === "pointsSaison";
+  const pointsDeckActive = sortMode === "pointsPerDeck";
+  const decksActive = sortMode === "decksUsed";
+
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: pointsSaisonActive ? 3 : 1,
+          label: "🏆 Points/saison",
+          custom_id: `recap_sort:${seasonOffset}:pointsSaison`,
+          disabled: pointsSaisonActive,
+        },
+        {
+          type: 2,
+          style: pointsDeckActive ? 3 : 1,
+          label: "⚡ Points/deck",
+          custom_id: `recap_sort:${seasonOffset}:pointsPerDeck`,
+          disabled: pointsDeckActive,
+        },
+        {
+          type: 2,
+          style: decksActive ? 3 : 1,
+          label: "🎮 Decks joués",
+          custom_id: `recap_sort:${seasonOffset}:decksUsed`,
+          disabled: decksActive,
+        },
+        {
+          type: 2,
+          style: 2,
+          label: "🔄",
+          custom_id: `recap_refresh:${seasonOffset}:${sortMode}`,
+          disabled: false,
+        },
+      ],
+    },
+  ];
+}
+
+function buildRecapFooter(seasonId, observedAt) {
+  const suffix = observedAt ? ` Fait le ${observedAt}.` : "";
+  return `Récapitulatif Saison S${seasonId}.${suffix}`;
+}
+
+// Utilise `description` (limite 4096) plutôt que des `fields` (limite 1024
+// chacun) : avec lien Vercel + emoji custom par ligne, 10 lignes dépassent
+// facilement 1024 caractères (voir AGENTS.md — règle description vs fields).
+function buildRecapPayload({
+  clan1,
+  clan2,
+  seasonId,
+  sortMode,
+  seasonOffset,
+  observedAt,
+}) {
+  const clan1Rows = buildRecapRows(clan1.members, sortMode, "asc");
+  const clan2Rows = buildRecapRows(clan2.members, sortMode, "desc");
+
+  const description =
+    `**${clan1.clanName} (bottom scoreurs) :**\n` +
+    (clan1Rows.length ? clan1Rows.join("\n") : "Aucune donnée.") +
+    "\n\n" +
+    `**${clan2.clanName} (top scoreurs) :**\n` +
+    (clan2Rows.length ? clan2Rows.join("\n") : "Aucune donnée.");
+
+  return {
+    embeds: [
+      {
+        title: `<:stats:1499284927894650950> Récap GDC : saison S${seasonId}`,
+        color: 0x5865f2,
+        description,
+        footer: { text: buildRecapFooter(seasonId, observedAt) },
+      },
+    ],
+    components: buildRecapComponents(seasonOffset, sortMode),
+  };
+}
+
+const RECAP_CACHE_TTL_MS = 60 * 1000;
+const recapCache = new Map();
+
+function getCachedRecapData(seasonOffset) {
+  const key = String(seasonOffset);
+  const entry = recapCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.cachedAt > RECAP_CACHE_TTL_MS) {
+    recapCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCachedRecapData(seasonOffset, data) {
+  recapCache.set(String(seasonOffset), { cachedAt: Date.now(), data });
+}
+
 function buildCompareComponents(clanVal, sortMode) {
   const currentActive = sortMode === "current";
   const projectionActive = sortMode === "projection";
@@ -2967,6 +3251,10 @@ export default async function handler(req, res) {
             "**Discord Check**\n" +
             "Commande : `/discord-check clan:N`\n" +
             "Usage : vérifie la présence Discord des membres d'un clan\n\n" +
+            "**Recap**\n" +
+            "Commande : `/recap saison:-1`\n" +
+            "Usage : récap GDC de la saison passée — 10 moins bons scoreurs de La Resistance, " +
+            "10 meilleurs de Les Resistants. Option `saison` : -1 (défaut) ou -2\n\n" +
             "**Help**\n" +
             "Commande : `/help`\n" +
             "Usage : affiche cette fenêtre",
@@ -6588,6 +6876,62 @@ export default async function handler(req, res) {
     return;
   }
 
+  // ── /recap ──
+  if (body.type === 2 && body.data?.name === "recap") {
+    const seasonOpt = body.data.options?.find((o) => o.name === "saison");
+    const seasonOffset = seasonOpt?.value === "-2" ? 2 : 1;
+    const sortMode = "pointsSaison";
+
+    res.status(200).json({ type: 5 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+
+    runBackground(async () => {
+      try {
+        const { clan1, clan2, seasonId, observedAt } =
+          await buildRecapData(seasonOffset);
+
+        if (!seasonId) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `Aucune donnée disponible pour la saison ${seasonOpt?.value || "-1"}.`,
+              flags: 64,
+            }),
+          });
+          return;
+        }
+
+        setCachedRecapData(seasonOffset, { clan1, clan2, seasonId, observedAt });
+
+        const payload = buildRecapPayload({
+          clan1,
+          clan2,
+          seasonId,
+          sortMode,
+          seasonOffset,
+          observedAt,
+        });
+
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } catch (err) {
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur : ${err.message}`,
+            flags: 64,
+          }),
+        });
+      }
+    });
+    return;
+  }
+
   // ── Pronostics GDC ──
   if (body.type === 2) {
     const cmd = body.data?.name;
@@ -6814,6 +7158,109 @@ export default async function handler(req, res) {
           }),
         ),
       });
+    });
+
+    return;
+  }
+
+  // ── MessageComponent : boutons de tri /recap ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("recap_")
+  ) {
+    const parts = body.data.custom_id.split(":");
+    if (parts.length < 3) {
+      return res
+        .status(200)
+        .json({ type: 4, data: { content: "Erreur interne.", flags: 64 } });
+    }
+
+    const action = parts[0]; // "recap_sort" | "recap_refresh"
+    const seasonOffset = Number(parts[1]) || 1;
+    const sortMode = parts[2];
+
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    const originalWebhookUrl = webhookUrl
+      ? `${webhookUrl}/messages/@original`
+      : null;
+
+    if (!originalWebhookUrl) {
+      return res.status(200).json({
+        type: 4,
+        data: {
+          content:
+            "Configuration Discord incomplète : impossible de répondre à l'interaction.",
+          flags: 64,
+        },
+      });
+    }
+
+    const cachedData = getCachedRecapData(seasonOffset);
+    const shouldFetch = action === "recap_refresh" || !cachedData;
+
+    if (!shouldFetch) {
+      return res.status(200).json({
+        type: 7,
+        data: buildRecapPayload({
+          clan1: cachedData.clan1,
+          clan2: cachedData.clan2,
+          seasonId: cachedData.seasonId,
+          sortMode,
+          seasonOffset,
+          observedAt: cachedData.observedAt,
+        }),
+      });
+    }
+
+    res.status(200).json({ type: 6 });
+
+    runBackground(async () => {
+      try {
+        const { clan1, clan2, seasonId, observedAt } =
+          await buildRecapData(seasonOffset);
+
+        if (!seasonId) {
+          await fetch(originalWebhookUrl, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: "Aucune donnée disponible pour cette saison.",
+            }),
+          });
+          return;
+        }
+
+        setCachedRecapData(seasonOffset, {
+          clan1,
+          clan2,
+          seasonId,
+          observedAt,
+        });
+
+        await fetch(originalWebhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            buildRecapPayload({
+              clan1,
+              clan2,
+              seasonId,
+              sortMode,
+              seasonOffset,
+              observedAt,
+            }),
+          ),
+        });
+      } catch (err) {
+        await fetch(originalWebhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur : ${err?.message || "inconnue"}`,
+          }),
+        });
+      }
     });
 
     return;

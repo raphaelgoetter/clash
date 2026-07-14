@@ -49,6 +49,7 @@ Liste des commandes :
 12. **`/discord-check`** : vérifie quels membres d'un clan sont présents sur le serveur Discord. Options : `clan:N`
 13. **`/family`** : affiche un résumé des clans de la famille. Options : aucune
 14. **`/clan`** : affiche la fiche récapitulative d'un clan (membres, trophées GDC, ligue, statut, fiabilité). Options : `clan:N` ou `tag:#TAG`
+15. **`/recap`** : récap GDC de la saison passée — 10 moins bons scoreurs de La Resistance, 10 meilleurs de Les Resistants. Options : `saison:[-1|-2]` (défaut -1)
 
 > Remarque : l'installation de ce bot n'est réalisable que par displaynone.
 

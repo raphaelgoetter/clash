@@ -122,6 +122,7 @@ Ne pas confondre `description` (4096) et `field.value` (1024) — pour une longu
 | `/clan clan:N\|tag:#TAG` | Fiche récapitulative clan |
 | `/family` | Résumé des clans de la famille |
 | `/chelem clan:N [season:X]` | Joueurs 16/16 decks par semaine |
+| `/recap [saison:-1\|-2]` | Bottom 10 La Resistance / top 10 Les Resistants (saison passée) |
 
 ## Sous-agents
 

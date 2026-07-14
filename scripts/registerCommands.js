@@ -309,6 +309,23 @@ const commands = [
     ],
   },
   {
+    name: "recap",
+    description:
+      "Récap GDC : 10 moins bons scoreurs La Resistance / 10 meilleurs Les Resistants.",
+    options: [
+      {
+        type: 3, // STRING
+        name: "saison",
+        description: "Saison à récapituler (défaut : -1, la dernière terminée).",
+        required: false,
+        choices: [
+          { name: "Saison -1 (dernière terminée)", value: "-1" },
+          { name: "Saison -2", value: "-2" },
+        ],
+      },
+    ],
+  },
+  {
     name: "top-clans",
     description:
       "Affiche une tranche de 50 clans du classement France GDC par trophées de guerre.",
