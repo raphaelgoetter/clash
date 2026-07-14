@@ -473,7 +473,12 @@ async function buildRecapClanSection(
     seasonOffset,
   );
   if (!seasonId) {
-    return { seasonId: null, clanName: clanFallbackName, members: [] };
+    return {
+      seasonId: null,
+      clanName: clanFallbackName,
+      members: [],
+      excluded: [],
+    };
   }
 
   const totals = aggregateRecapSeasonStats(raceLog, seasonId, clanTag);
@@ -490,12 +495,21 @@ async function buildRecapClanSection(
   const data = await apiResp.json();
   const currentMembers = Array.isArray(data.members) ? data.members : [];
 
+  // En dessous de 16 decks (une semaine complète), l'échantillon est trop
+  // faible pour être classé équitablement — exclus du classement, mais
+  // listés au footer. Les membres à 0 deck (pas présents cette saison-là)
+  // sont silencieusement ignorés : ils n'ont simplement pas participé.
+  const MIN_DECKS_FOR_RANKING = 16;
   const merged = [];
+  const excluded = [];
   for (const m of currentMembers) {
     const tag = String(m.tag || "").toUpperCase();
     const totalsEntry = totals.get(tag);
     const decksJoues = totalsEntry?.decksUsed ?? 0;
-    if (!decksJoues) continue; // pas de deck joué cette saison-là → pas de classement possible
+    if (decksJoues < MIN_DECKS_FOR_RANKING) {
+      if (decksJoues > 0) excluded.push(m.name);
+      continue;
+    }
     merged.push({
       tag,
       name: m.name,
@@ -519,6 +533,7 @@ async function buildRecapClanSection(
     seasonId,
     clanName: data.clan?.name || clanFallbackName,
     members: merged.slice(0, 10),
+    excluded,
   };
 }
 
@@ -631,9 +646,27 @@ function buildRecapComponents(seasonOffset, sortMode) {
   ];
 }
 
-function buildRecapFooter(seasonId, observedAt) {
+function buildRecapFooter({ seasonId, observedAt, clan1, clan2 }) {
   const suffix = observedAt ? ` Fait le ${observedAt}.` : "";
-  return `Récapitulatif Saison S${seasonId}.${suffix}`;
+  let text = `Récapitulatif Saison S${seasonId}.${suffix}`;
+
+  const MAX_NAMES_PER_CLAN = 10;
+  const excludedGroups = [clan1, clan2]
+    .filter((c) => Array.isArray(c.excluded) && c.excluded.length > 0)
+    .map((c) => {
+      const shown = c.excluded.slice(0, MAX_NAMES_PER_CLAN).join(", ");
+      const extra =
+        c.excluded.length > MAX_NAMES_PER_CLAN
+          ? ` +${c.excluded.length - MAX_NAMES_PER_CLAN}`
+          : "";
+      return `${c.clanName} : ${shown}${extra}`;
+    });
+
+  if (excludedGroups.length) {
+    text += ` Exclus car moins de 16 decks joués — ${excludedGroups.join(" · ")}.`;
+  }
+
+  return text;
 }
 
 // Utilise `description` (limite 4096) plutôt que des `fields` (limite 1024
@@ -666,7 +699,9 @@ function buildRecapPayload({
         title: `<:stats:1499284927894650950> Récap GDC : saison S${seasonId}`,
         color: 0x5865f2,
         description,
-        footer: { text: buildRecapFooter(seasonId, observedAt) },
+        footer: {
+          text: buildRecapFooter({ seasonId, observedAt, clan1, clan2 }),
+        },
       },
     ],
     components: buildRecapComponents(seasonOffset, sortMode),
