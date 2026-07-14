@@ -575,11 +575,11 @@ function buildRecapRows(members, sortMode, direction) {
     const statParts = [];
     if (Number.isFinite(m.reliability)) {
       const icon = RELIABILITY_ICON[m.color] ?? "⚪";
-      statParts.push(`${icon}${Math.round(m.reliability)}%`);
+      statParts.push(`${icon} ${Math.round(m.reliability)}%`);
     }
-    statParts.push(`🏆${fmt(m.pointsSaison)}`);
-    statParts.push(`⚡${fmt(m.pointsPerDeck)}`);
-    statParts.push(`(${m.decksJoues})`);
+    statParts.push(`🏆 ${fmt(m.pointsSaison)}`);
+    statParts.push(`⚡ ${fmt(m.pointsPerDeck)}`);
+    statParts.push(`<:cards:1493711279121104926> ${m.decksJoues}`);
     if (m.discord) statParts.push(RECAP_DISCORD_LINK_EMOJI);
 
     return (
