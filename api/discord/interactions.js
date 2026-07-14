@@ -663,7 +663,7 @@ function buildRecapFooter({ seasonId, observedAt, clan1, clan2 }) {
     });
 
   if (excludedGroups.length) {
-    text += ` Exclus car moins de 16 decks joués — ${excludedGroups.join(" · ")}.`;
+    text += `\nExclus car moins de 16 decks joués — ${excludedGroups.join(" · ")}.`;
   }
 
   return text;
