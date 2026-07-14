@@ -2082,6 +2082,21 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         familyStreak >= 2
           ? LEGACY_BACKFILL_DATE_ISO
           : new Date(nowMs).toISOString();
+    } else {
+      // Garde-fou : un run précédent a pu tamponner firstSeenAt="maintenant" à
+      // tort (ex. échec transitoire du fetch de battle log d'un membre pendant
+      // CE run précis, streakInFamily lu à 0 alors qu'il a une vraie ancienneté).
+      // Si l'ancienneté mesurée MAINTENANT est incompatible avec un firstSeenAt
+      // aussi récent, on corrige rétroactivement plutôt que de laisser l'erreur
+      // figée à vie (le bloc ci-dessus ne réévalue jamais un firstSeenAt déjà
+      // concret, seulement null/sentinelle).
+      const familyStreak =
+        warHistory?.streakInFamily ?? warHistory?.streakInCurrentClan ?? 0;
+      const elapsedMs = nowMs - Date.parse(firstSeenAt);
+      const impliedMinTenureMs = (familyStreak - 1) * 7 * MS_PER_DAY;
+      if (familyStreak >= 2 && elapsedMs < impliedMinTenureMs) {
+        firstSeenAt = LEGACY_BACKFILL_DATE_ISO;
+      }
     }
 
     // Determine new member flag from real tenure (firstSeenAt), pas de la participation GDC.
