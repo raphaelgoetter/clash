@@ -502,6 +502,7 @@ async function buildRecapClanSection(
       isNew: !!m.isNew,
       reliability: m.reliability,
       color: m.color,
+      discord: !!m.discord,
       pointsSaison: totalsEntry.fame,
       decksJoues,
       pointsPerDeck: Math.round(totalsEntry.fame / decksJoues),
@@ -541,9 +542,16 @@ async function buildRecapData(seasonOffset) {
   return { clan1, clan2, seasonId, observedAt };
 }
 
+const RECAP_DISCORD_LINK_EMOJI = "<:discord:1526507049779990601>";
+// Indentation visuelle de la 2e ligne (2 espaces normaux sont collapsés par
+// certains rendus) — Braille Pattern Blank, largeur visible non collapsée.
+const RECAP_INDENT = "⠀⠀";
+
 // Réordonne (sans jamais resélectionner) les 10 membres déjà choisis, selon
-// la métrique active — ascendant pour clan1 (pires en tête), descendant pour
-// clan2 (meilleurs en tête).
+// la métrique active — le plus faible/pire de la métrique termine toujours
+// en bas de liste (idx le plus élevé), que ce soit clan1 (pires) ou clan2
+// (meilleurs) : direction "desc" place les plus forts en tête, "asc" les
+// plus faibles en tête.
 function buildRecapRows(members, sortMode, direction) {
   const metricOf = (m) => {
     if (sortMode === "pointsPerDeck") {
@@ -563,14 +571,20 @@ function buildRecapRows(members, sortMode, direction) {
   return sorted.map((m, idx) => {
     const rank = idx + 1;
     const newIcon = m.isNew ? " 🆕" : "";
-    let reliabilityStr = "";
+
+    const statParts = [];
     if (Number.isFinite(m.reliability)) {
       const icon = RELIABILITY_ICON[m.color] ?? "⚪";
-      reliabilityStr = ` ${icon}${Math.round(m.reliability)}%`;
+      statParts.push(`${icon}${Math.round(m.reliability)}%`);
     }
+    statParts.push(`🏆${fmt(m.pointsSaison)}`);
+    statParts.push(`⚡${fmt(m.pointsPerDeck)}`);
+    statParts.push(`(${m.decksJoues})`);
+    if (m.discord) statParts.push(RECAP_DISCORD_LINK_EMOJI);
+
     return (
-      `${rank}. [${m.name}](${trustPlayerUrl(m.tag)})${newIcon}${reliabilityStr} ` +
-      `🏆${fmt(m.pointsSaison)} ⚡${fmt(m.pointsPerDeck)} (${m.decksJoues})`
+      `${rank}. [${m.name}](${trustPlayerUrl(m.tag)})${newIcon}\n` +
+      `${RECAP_INDENT}${statParts.join(" · ")}`
     );
   });
 }
@@ -633,7 +647,10 @@ function buildRecapPayload({
   seasonOffset,
   observedAt,
 }) {
-  const clan1Rows = buildRecapRows(clan1.members, sortMode, "asc");
+  // "desc" pour les 2 : le meilleur de chaque groupe en tête, le pire tout en
+  // bas — pour clan1 (bottom scoreurs), ça place le plus faible (le vrai
+  // problème) en dernière ligne, la plus visible.
+  const clan1Rows = buildRecapRows(clan1.members, sortMode, "desc");
   const clan2Rows = buildRecapRows(clan2.members, sortMode, "desc");
 
   const description =
