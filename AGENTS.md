@@ -108,7 +108,6 @@ Ne pas confondre `description` (4096) et `field.value` (1024) — pour une longu
 | `/discord-link tag:#TAG` | Lie un tag Clash au compte Discord |
 | `/discord-check clan:N` | Vérifie présence Discord des membres |
 | `/promote clan:N` | Joueurs éligibles à la promotion (2600 pts) |
-| `/quota clan:N quota:V` | Moyenne GDC et sous-quota |
 | `/demote clan:N` | Joueurs n'ayant pas fait 16/16 decks |
 | `/fail clan:N` | Joueurs ayant manqué une journée GDC |
 | `/trust-clan clan:N` | Membres High/Extreme risk |

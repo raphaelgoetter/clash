@@ -535,7 +535,7 @@ DISCORD_TOKEN=
 
 ### Contexte
 
-Plusieurs commandes Discord doivent distinguer les membres « installés » (présents toute la semaine de GDC) des membres « arrivés en cours de GDC » (nouveaux recruits, transferts). Les nouveaux arrivants ne doivent pas être pénalisés dans les listes de sous-quota ou de fail.
+Plusieurs commandes Discord doivent distinguer les membres « installés » (présents toute la semaine de GDC) des membres « arrivés en cours de GDC » (nouveaux recruits, transferts). Les nouveaux arrivants ne doivent pas être pénalisés dans les listes de fail.
 
 ### Source : `streakInCurrentClan`
 
@@ -562,7 +562,6 @@ isJoinedThisWar(streakInCurrentClan, (day1Decks = null));
 | --------- | --------------------------------------- | ------------------------------------------------------------------------------ |
 | `/demote` | `api/discord/interactions.js:3220`      | Sépare les arrivés en cours de GDC des réguliers dans la liste des fails 16/16 |
 | `/fail`   | `api/discord/interactions.js:3886-3888` | Exclut les arrivés en cours de GDC de la liste des fails journaliers           |
-| `/quota`  | `api/discord/interactions.js:2017-2026` | Exclut les arrivés en cours de GDC de la liste des sous-quota                  |
 
 ---
 

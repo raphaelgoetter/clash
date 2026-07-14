@@ -122,38 +122,6 @@ const commands = [
     ],
   },
   {
-    name: "quota",
-    description:
-      "Affiche la moyenne GDC et les joueurs sous quota pour un clan.",
-    options: [
-      {
-        type: 3, // STRING
-        name: "clan",
-        description:
-          "1/2/3 ou la/les (1=La Resistance, 2=Les Resistants, 3=Les Revoltes)",
-        required: true,
-        choices: [
-          { name: "La Resistance", value: "1" },
-          { name: "Les Resistants", value: "2" },
-          { name: "Les Revoltes", value: "3" },
-        ],
-      },
-      {
-        type: 4, // INTEGER
-        name: "quota",
-        description: "Seuil de points GDC (par défaut : 2000)",
-        required: false,
-        choices: [
-          { name: "1600", value: 1600 },
-          { name: "1800", value: 1800 },
-          { name: "2000", value: 2000 },
-          { name: "2200", value: 2200 },
-          { name: "2400", value: 2400 },
-        ],
-      },
-    ],
-  },
-  {
     name: "demote",
     description:
       "Liste les joueurs n’ayant pas fait 16/16 decks lors de la dernière semaine GDC",

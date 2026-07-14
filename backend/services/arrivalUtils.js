@@ -1,7 +1,7 @@
 // ============================================================
 // arrivalUtils.js — Détection des arrivées en cours de GDC
 // Permet de ne pas pénaliser les membres ayant rejoint le clan
-// en cours de semaine dans les listes de sous-quota / fail.
+// en cours de semaine dans les listes de fail.
 // ============================================================
 
 /**
