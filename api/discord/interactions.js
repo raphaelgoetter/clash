@@ -457,6 +457,7 @@ async function buildRecapClanSection(
   clanFallbackName,
   seasonOffset,
   direction,
+  applyMinDecksFilter,
 ) {
   const { fetchCurrentRace } = await import(
     "../../backend/services/clashApi.js"
@@ -499,6 +500,8 @@ async function buildRecapClanSection(
   // faible pour être classé équitablement — exclus du classement, mais
   // listés au footer. Les membres à 0 deck (pas présents cette saison-là)
   // sont silencieusement ignorés : ils n'ont simplement pas participé.
+  // Uniquement pertinent pour le bottom scoreurs (clan1) — un top scoreur
+  // avec aussi peu de decks n'apparaîtrait de toute façon jamais en tête.
   const MIN_DECKS_FOR_RANKING = 16;
   const merged = [];
   const excluded = [];
@@ -506,10 +509,11 @@ async function buildRecapClanSection(
     const tag = String(m.tag || "").toUpperCase();
     const totalsEntry = totals.get(tag);
     const decksJoues = totalsEntry?.decksUsed ?? 0;
-    if (decksJoues < MIN_DECKS_FOR_RANKING) {
+    if (applyMinDecksFilter && decksJoues < MIN_DECKS_FOR_RANKING) {
       if (decksJoues > 0) excluded.push(m.name);
       continue;
     }
+    if (!decksJoues) continue; // pas de deck joué cette saison-là → pas de classement possible
     merged.push({
       tag,
       name: m.name,
@@ -544,12 +548,14 @@ async function buildRecapData(seasonOffset) {
       RECAP_CLANS.clan1.name,
       seasonOffset,
       "asc",
+      true,
     ),
     buildRecapClanSection(
       RECAP_CLANS.clan2.tag,
       RECAP_CLANS.clan2.name,
       seasonOffset,
       "desc",
+      false,
     ),
   ]);
   const seasonId = clan1.seasonId ?? clan2.seasonId;
