@@ -139,5 +139,145 @@
     "indice2": "Christopher Nolan",
     "titre": "Inception",
     "accepte": ["inception"]
+  },
+  {
+    "image": "021.webp",
+    "indice1": "1986",
+    "indice2": "Tony Scott",
+    "titre": "Top Gun",
+    "accepte": ["top gun", "topgun"]
+  },
+  {
+    "image": "022.webp",
+    "indice1": "1994",
+    "indice2": "Studios Disney",
+    "titre": "The Lion King",
+    "accepte": ["lion"]
+  },
+  {
+    "image": "023.webp",
+    "indice1": "1997",
+    "indice2": "Barry Sonnenfeld",
+    "titre": "Men in Black",
+    "accepte": ["men in black", "mib"]
+  },
+  {
+    "image": "024.webp",
+    "indice1": "2004",
+    "indice2": "James Wan",
+    "titre": "Saw",
+    "accepte": ["saw"]
+  },
+  {
+    "image": "025.webp",
+    "indice1": "1984",
+    "indice2": "Wolfgang Petersen",
+    "titre": "The NeverEnding Story (L'Histoire sans fin)",
+    "accepte": ["neverending", "never ending", "histoire sans"]
+  },
+  {
+    "image": "026.webp",
+    "indice1": "1997",
+    "indice2": "Hayao Miyazaki",
+    "titre": "Princess Mononoke (Princesse Mononoke)",
+    "accepte": ["princess", "mononoke"]
+  },
+  {
+    "image": "027.webp",
+    "indice1": "1971",
+    "indice2": "Steven Spielberg",
+    "titre": "Duel",
+    "accepte": ["duel"]
+  },
+  {
+    "image": "028.webp",
+    "indice1": "2014",
+    "indice2": "Christopher Nolan",
+    "titre": "Interstellar",
+    "accepte": ["interstellar"]
+  },
+  {
+    "image": "029.webp",
+    "indice1": "1984",
+    "indice2": "Ivan Reitman",
+    "titre": "Ghostbusters",
+    "accepte": ["ghostbusters", "ghost busters"]
+  },
+  {
+    "image": "030.webp",
+    "indice1": "1999",
+    "indice2": "David Fincher",
+    "titre": "Fight Club",
+    "accepte": ["fight club", "fightclub"]
+  },
+  {
+    "image": "031.webp",
+    "indice1": "1971",
+    "indice2": "Stanley Kubrick",
+    "titre": "A Clockwork Orange (Orange mécanique)",
+    "accepte": ["orange"]
+  },
+  {
+    "image": "032.webp",
+    "indice1": "1999",
+    "indice2": "Lana Wachowski & Lilly Wachowski",
+    "titre": "The Matrix (Matrix)",
+    "accepte": ["matrix"]
+  },
+  {
+    "image": "033.webp",
+    "indice1": "1994",
+    "indice2": "Chuck Russell",
+    "titre": "The Mask",
+    "accepte": ["mask"]
+  },
+  {
+    "image": "034.webp",
+    "indice1": "1982",
+    "indice2": "John Milius",
+    "titre": "Conan the Barbarian (Conan le Barbare)",
+    "accepte": ["conan", "barbarian", "barbare"]
+  },
+  {
+    "image": "035.webp",
+    "indice1": "1985",
+    "indice2": "Robert Zemeckis",
+    "titre": "Back to the Future (Retour vers le futur)",
+    "accepte": ["back to the future", "retour vers le futur"]
+  },
+  {
+    "image": "036.webp",
+    "indice1": "1995",
+    "indice2": "David Fincher",
+    "titre": "Se7en (Seven)",
+    "accepte": ["se7en", "seven"]
+  },
+  {
+    "image": "037.webp",
+    "indice1": "2023",
+    "indice2": "Greta Gerwig",
+    "titre": "Barbie",
+    "accepte": ["barbie"]
+  },
+  {
+    "image": "038.webp",
+    "indice1": "1960",
+    "indice2": "Alfred Hitchcock",
+    "titre": "Psycho (Psychose)",
+    "accepte": ["psycho", "psychose"]
+  },
+  {
+    "image": "039.webp",
+    "indice1": "1991",
+    "indice2": "Jonathan Demme",
+    "titre": "The Silence of the Lambs (Le Silence des agneaux)",
+    "accepte": ["silence", "agneaux", "lambs"]
+  },
+  {
+    "image": "040.webp",
+    "indice1": "1994",
+    "indice2": "Luc Besson",
+    "titre": "Léon: The Professional (Léon)",
+    "accepte": ["léon", "professional", "leon"]
   }
 ]
