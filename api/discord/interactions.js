@@ -36,6 +36,11 @@ import {
   handleHistory as handleChampionHistory,
   handleSelectInteraction as handleChampionSelect,
 } from "./handlers/championPredictions.js";
+import {
+  buildAnswerModal as buildFrameAnswerModal,
+  handleHintButton as handleFrameHintButton,
+  handleModalSubmit as handleFrameModalSubmit,
+} from "./handlers/frames.js";
 import { isJoinedThisWar } from "../../backend/services/arrivalUtils.js";
 import {
   summarizeWarDecks,
@@ -7258,6 +7263,57 @@ export default async function handler(req, res) {
       }
     });
 
+    return;
+  }
+
+  // ── Jeu Frame : boutons indices ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    (body.data.custom_id.startsWith("frame_hint1:") ||
+      body.data.custom_id.startsWith("frame_hint2:"))
+  ) {
+    const [prefix, gameId] = body.data.custom_id.split(":");
+    const hintKey = prefix === "frame_hint1" ? "indice1" : "indice2";
+    const discordId = body.member?.user?.id;
+    const username = body.member?.user?.username || "Inconnu";
+
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleFrameHintButton(webhookUrl, gameId, hintKey, discordId, username));
+    return;
+  }
+
+  // ── Jeu Frame : bouton "Valider" → ouverture de la Modal ──
+  // Réponse synchrone immédiate obligatoire : l'ouverture d'une Modal ne
+  // peut pas être différée (pas de runBackground ici).
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("frame_answer:")
+  ) {
+    const gameId = body.data.custom_id.split(":")[1];
+    return res.status(200).json({ type: 9, data: buildFrameAnswerModal(gameId) });
+  }
+
+  // ── Jeu Frame : soumission de la Modal (réponse du joueur) ──
+  // body.type === 5 ici est un MODAL_SUBMIT (InteractionType), à ne pas
+  // confondre avec le type de réponse 5 (DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE)
+  // utilisé plus haut dans ce fichier — deux enums Discord distinctes qui
+  // partagent des valeurs numériques.
+  if (
+    body.type === 5 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("frame_answer_modal:")
+  ) {
+    const gameId = body.data.custom_id.split(":")[1];
+    const rawAnswer = body.data.components?.[0]?.components?.[0]?.value || "";
+    const discordId = body.member?.user?.id;
+    const username = body.member?.user?.username || "Inconnu";
+
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleFrameModalSubmit(webhookUrl, gameId, discordId, username, rawAnswer));
     return;
   }
 

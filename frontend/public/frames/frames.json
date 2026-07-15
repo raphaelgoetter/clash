@@ -1,0 +1,73 @@
+[
+  {
+    "image": "001.webp",
+    "indice1": "1993",
+    "indice2": "Steven Spielberg",
+    "titre": "Schindler's List",
+    "accepte": ["schindler", "list"]
+  },
+  {
+    "image": "002.webp",
+    "indice1": "2008",
+    "indice2": "Christopher Nolan",
+    "titre": "The Dark Knight",
+    "accepte": ["knight"],
+    "refuse": ["rises", "joker"]
+  },
+  {
+    "image": "003.webp",
+    "indice1": "2016",
+    "indice2": "Damien Chazelle",
+    "titre": "La La Land",
+    "accepte": ["la la", "land"]
+  },
+  {
+    "image": "004.webp",
+    "indice1": "1972",
+    "indice2": "Francis Ford Coppola",
+    "titre": "The Godfather",
+    "accepte": ["godfather", "parrain"]
+  },
+  {
+    "image": "005.webp",
+    "indice1": "2012",
+    "indice2": "Quentin Tarantino",
+    "titre": "Django Unchained",
+    "accepte": ["django", "unchained"]
+  },
+  {
+    "image": "006.webp",
+    "indice1": "1986",
+    "indice2": "David Cronenberg",
+    "titre": "The Fly",
+    "accepte": ["fly", "mouche"]
+  },
+  {
+    "image": "007.webp",
+    "indice1": "2021",
+    "indice2": "Denis Villeneuve",
+    "titre": "Dune",
+    "accepte": ["dune"]
+  },
+  {
+    "image": "008.webp",
+    "indice1": "1979",
+    "indice2": "Ridley Scott",
+    "titre": "Alien",
+    "accepte": ["alien"]
+  },
+  {
+    "image": "009.webp",
+    "indice1": "1994",
+    "indice2": "Robert Zemeckis",
+    "titre": "Forrest Gump",
+    "accepte": ["forrest", "gump"]
+  },
+  {
+    "image": "010.webp",
+    "indice1": "1997",
+    "indice2": "Roberto Benigni",
+    "titre": "Life is Beautiful",
+    "accepte": ["life is", "beautiful", "belle", "vie est"]
+  }
+]
