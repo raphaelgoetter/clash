@@ -7276,7 +7276,11 @@ export default async function handler(req, res) {
     const [prefix, gameId] = body.data.custom_id.split(":");
     const hintKey = prefix === "frame_hint1" ? "indice1" : "indice2";
     const discordId = body.member?.user?.id;
-    const username = body.member?.user?.username || "Inconnu";
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
 
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
@@ -7309,7 +7313,11 @@ export default async function handler(req, res) {
     const gameId = body.data.custom_id.split(":")[1];
     const rawAnswer = body.data.components?.[0]?.components?.[0]?.value || "";
     const discordId = body.member?.user?.id;
-    const username = body.member?.user?.username || "Inconnu";
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
 
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);

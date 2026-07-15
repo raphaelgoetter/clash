@@ -21,6 +21,12 @@ La documentation orientée utilisateur final reste dans README.md.
 - `npm run ping-test` — vérifie rapidement la disponibilité réseau ou les secrets utilisés par les scripts de ping.
 - `npm run rules` — poste le rappel des règles du clan le premier mardi du mois.
 - `npm run rules:dry` — même script en mode dry-run.
+- `npm run frame:test` — poste manuellement une nouvelle partie de Frame sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`).
+- `npm run frame:test:dry` — même script en mode dry-run (aperçu console, rien n'est posté ni écrit).
+- `npm run frame:public` — poste sur le salon public "Général" (`DISCORD_CHANNEL_FRAME_PUBLIC`) ; utilisé par le cron `frames.yml`.
+- `npm run frame:public:dry` — équivalent dry-run.
+- `npm run frame:scores` — affiche le classement de la partie Frame en cours (joueur / score de la partie / score total de la saison).
+- `npm run frame:reset` — remet le jeu Frame à zéro : plus de partie active (la prochaine repart à la première image de `frames.json`), historique et scores effacés.
 
 ### Notes sur les scripts de snapshots
 
@@ -69,6 +75,7 @@ Tous les horaires ci-dessous sont définis en UTC dans les workflows (`.github/w
 | `notifyRules.js`                                        | `rules.yml`              | Mardi (le script ne poste que le 1er du mois) | 14:00             | 16:00 / 15:00             | Salon membres principal               |
 | `autoStartPredictions.js` (`npm run predictions:start`) | `predictions.yml`        | Mardi                                         | 08:00             | 10:00 / 09:00             | Salon membres principal               |
 | `autoEndPredictions.js` (`npm run predictions:end`)     | `predictions.yml`        | Lundi                                         | 12:00             | 14:00 / 13:00             | Salon membres principal               |
+| `postFrame.js` (`npm run frame:public`)                 | `frames.yml`             | Mercredi                                      | 08:00             | 10:00 / 09:00             | Salon "Général"                       |
 
 ---
 
@@ -527,6 +534,57 @@ La fonction Discord est séparée de l’application Express principale pour lim
 DISCORD_PUBLIC_KEY=
 DISCORD_APP_ID=
 DISCORD_TOKEN=
+```
+
+---
+
+## Jeu Frame (devine le film)
+
+Mini-jeu hebdomadaire indépendant du Clash Royale : chaque mercredi 08:00 UTC, une image tirée d'un film connu est postée sur le salon public, les membres devinent le titre. Pas de commande slash associée — la publication passe uniquement par `scripts/postFrame.js` (manuel ou cron), les boutons/modal restent gérés par `api/discord/interactions.js`.
+
+### Barème
+
+- Réponse exacte du 1er coup sans indice : **10 pts**
+- Chaque tentative incorrecte : **-2 pts**
+- Chaque indice utilisé : **-3 pts**
+- Score plancher à **0** (jamais négatif). La tentative gagnante elle-même n'est jamais comptée comme incorrecte.
+
+### Réponse via Modal Discord
+
+Le bot ne fonctionne qu'en webhook HTTP (pas de connexion Gateway, pas d'intent `MESSAGE_CONTENT`), donc il ne peut pas lire les messages tapés librement dans un salon. Le bouton "Répondre" ouvre une **Modal** Discord (réponse `type: 9`, `custom_id: frame_answer_modal:<gameId>`) contenant le champ texte ; la soumission arrive en tant qu'interaction entrante `body.type === 5` (`MODAL_SUBMIT`) — à ne pas confondre avec le `type: 5` de *réponse* (`DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE`) utilisé ailleurs dans `interactions.js`, deux enums Discord distinctes qui partagent des valeurs numériques.
+
+### Correspondance de la réponse
+
+`checkAnswer()` (`backend/services/frames.js`) normalise la réponse (minuscule, accents retirés, ponctuation supprimée) puis vérifie qu'elle **contient** un terme de `accepte` et **ne contient aucun** terme de `refuse`. Exemple (`The Dark Knight`, `accepte: ["knight"]`, `refuse: ["rises", "joker"]`) : "dark knight" → accepté ; "the dark knight rises" → refusé (contient aussi "rises").
+
+### Données
+
+- `data/frames/frames.json` — liste ordonnée des films (`image`, `indice1`, `indice2`, `titre`, `accepte`, `refuse?`), éditée à la main. La partie suivante boucle au début une fois toutes les images épuisées.
+- `data/frames/images/*.webp` — images des frames, nommées comme le champ `image` de `frames.json`.
+- Ni `frames.json` ni les images ne sont exposés statiquement (rien sous `frontend/public/`) : `frames.json` est lu côté serveur uniquement, et seule l'image de la partie **active** est accessible via `GET /api/frames/image` (`backend/server.js`, lit `getCurrentFrameImage()`) — impossible de deviner l'image d'une semaine future en devinant une URL, quel que soit le nom de fichier essayé.
+- **Cache-buster de l'image obligatoire et unique par publication** : l'URL de l'embed est `${TRUST_ROYALE_URL}/api/frames/image?v=<horodatage>`. Le proxy d'images de Discord met en cache par URL complète — utiliser `gameId` comme cache-buster (au lieu d'un horodatage) provoquerait un resservissement indéfini d'une image périmée dès qu'une partie revient sur le même `gameId` (reset ou tour de boucle).
+- `frames_state.json` (partie en cours) et `frames_history.json` (historique) — stockés sur **Vercel Blob**, même pattern lecture `/tmp` → Blob → fallback `data/` que `champion-predictions.json` (`backend/services/championPredictions.js`). Nécessaire car ces données sont lues/écrites en direct par les interactions webhook (clics de boutons, soumission de modal) à des instants imprévisibles, ce que `/tmp` seul ne garantit pas de faire survivre entre deux invocations serverless.
+
+### Scores et classements par saison
+
+Le score total et le classement général affichés en DM ne portent que sur la **saison Clash Royale en cours** (voir [Saison](#saison)), pas un cumul indéfini. `getCurrentSeasonId()` (`backend/services/frames.js`) réutilise `computeCurrentSeasonId(currentRace, raceLog)` de `dateUtils.js`, avec 3 tentatives (délai croissant) pour absorber un aléa réseau transitoire côté API Clash Royale. Chaque partie archivée dans `frames_history.json` garde le `seasonId` de la saison où elle a été jouée ; `computeSeasonRanking()` filtre `games[]` sur le `seasonId` courant avant de sommer — pas de compteur mutable à remettre à zéro manuellement, donc pas de désynchronisation possible au changement de saison.
+
+### Scripts npm
+
+| Commande                   | Effet                                                                                                                                                                                                  |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `npm run frame:test`       | Poste manuellement une nouvelle partie sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`).                                                                                                            |
+| `npm run frame:test:dry`   | Aperçu console de la prochaine partie, sans écrire d'état ni poster sur Discord.                                                                                                                       |
+| `npm run frame:public`     | Poste sur le salon public "Général" (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `frames.yml`.                                                                                               |
+| `npm run frame:public:dry` | Équivalent dry-run de `frame:public`.                                                                                                                                                                  |
+| `npm run frame:scores`     | Affiche le classement de la partie en cours : joueur, score de la partie, score total de la saison.                                                                                                    |
+| `npm run frame:reset`      | Remet le jeu à zéro : plus de partie active (la suivante repart à `frames.json[0]`), historique et scores effacés. **Destructif** — à éviter une fois de vraies parties jouées, sauf besoin explicite. |
+
+### Variables d'environnement requises
+
+```text
+DISCORD_CHANNEL_FRAME_TEST=      # salon de test personnel
+DISCORD_CHANNEL_FRAME_PUBLIC=    # salon "Général"
 ```
 
 ---

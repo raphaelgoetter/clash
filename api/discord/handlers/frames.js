@@ -8,7 +8,7 @@ import {
   loadFrames,
   readState,
   writeState,
-  readHistory,
+  readParticipant,
   startNewGame,
   pickNextFrameIndex,
   checkAnswer,
@@ -36,12 +36,14 @@ function buildFrameEmbed(partieNumber, cacheBust) {
     title: "🎬 Le jeu du mercredi : Trouvez le film !",
     description:
       `**Partie ${partieNumber}**\n\n` +
-      "Devinez le titre d'un film à partir d'uneimage.\n\n" +
+      "Devinez le titre d'un film à partir d'une image.\n\n" +
       "Cliquez sur le bouton «Répondre» pour soumettre votre réponse, ou prenez un indice pour vous aider.\n\n" +
       "**Barème**\n" +
       "- Réponse exacte du 1er coup sans indice : **10 pts**\n" +
       "- Chaque tentative incorrecte : **-2 pts**\n" +
-      "- Chaque indice utilisé : **-3 pts**",
+      "- Chaque indice utilisé : **-3 pts**\n\n" +
+      "Le classement de la saison est mis à jour après chaque partie, et un DM vous est envoyé pour récapituler vos points et votre classement.\n\n" +
+      "**Merci de ne pas spoiler, sinon c'est pas drôle !**",
     // Route dynamique servant uniquement l'image de la partie active. Le
     // paramètre v= est un cache-buster ignoré par le serveur (impossible
     // d'obtenir une image future en le modifiant) — il DOIT être unique à
@@ -190,7 +192,7 @@ export async function handleHintButton(
 
     const frames = await loadFrames();
     const frameEntry = frames[state.currentIndex];
-    const { alreadyUsed } = await recordHintUsed(discordId, username, hintKey);
+    const { alreadyUsed } = await recordHintUsed(gameId, discordId, username, hintKey);
 
     const label = HINT_LABELS[hintKey] || hintKey;
     const value = frameEntry[hintKey];
@@ -276,7 +278,8 @@ export async function handleModalSubmit(
       return;
     }
 
-    if (state.participants[discordId]?.solved) {
+    const existing = await readParticipant(gameId, discordId);
+    if (existing?.solved) {
       await postEphemeral(webhookUrl, "Vous avez déjà trouvé la réponse !");
       return;
     }
@@ -286,7 +289,7 @@ export async function handleModalSubmit(
     const correct = checkAnswer(frameEntry, rawAnswer);
 
     if (!correct) {
-      await recordAttempt(discordId, username, false);
+      await recordAttempt(gameId, discordId, username, false);
       await postEphemeral(
         webhookUrl,
         "❌ Mauvaise réponse ! (-2 pts). Réessayez avec le bouton Répondre.",
@@ -294,25 +297,14 @@ export async function handleModalSubmit(
       return;
     }
 
-    const { state: updatedState, score } = await markSolved(
-      discordId,
-      username,
-    );
-    const solvedAt = updatedState.participants[discordId].solvedAt;
-    await archiveSolve(
-      updatedState,
-      frameEntry,
-      discordId,
-      username,
-      score,
-      solvedAt,
-    );
+    const { participant, score } = await markSolved(gameId, discordId, username);
+    await archiveSolve(state, frameEntry, discordId, username, score, participant.solvedAt);
 
-    const gameRanking = computeGameRanking(updatedState);
+    const [gameRanking, seasonRanking] = await Promise.all([
+      computeGameRanking(gameId),
+      computeSeasonRanking(state.seasonId),
+    ]);
     const gameRank = findRank(gameRanking, discordId);
-
-    const history = await readHistory();
-    const seasonRanking = computeSeasonRanking(history, updatedState.seasonId);
     const seasonEntry = seasonRanking.find((e) => e.discordId === discordId);
     const seasonRank = findRank(seasonRanking, discordId);
 
@@ -324,7 +316,7 @@ export async function handleModalSubmit(
     await sendFrameDM(
       discordId,
       buildDmText({
-        partieNumber: updatedState.currentIndex + 1,
+        partieNumber: state.currentIndex + 1,
         titre: frameEntry.titre,
         score,
         gameRank,

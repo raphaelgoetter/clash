@@ -1,7 +1,19 @@
 // ============================================================
 // frames.js — Jeu "Frame" (devine le film à partir d'une image)
 // Couche métier : lecture des frames, état de la partie, scoring,
-// classements. Même pattern Blob que championPredictions.js.
+// classements.
+//
+// Stockage : frames_state.json (métadonnées de la partie, peu de
+// contention) reste un seul objet Blob. En revanche la progression de
+// CHAQUE joueur (frames_participants/<gameId>/<discordId>.json) et son
+// résultat archivé (frames_results/<gameId>/<discordId>.json) sont
+// éclatés en un objet Blob PAR JOUEUR : deux joueurs différents n'écrivent
+// alors jamais la même clé, donc aucune collision possible entre eux —
+// contrairement à un unique fichier partagé, où un lire-modifier-écrire
+// concurrent peut silencieusement perdre la contribution d'un joueur (testé
+// et confirmé : même un verrou optimiste par ETag ne suffit pas ici, Vercel
+// Blob ayant un délai de réplication qui peut faire relire une version
+// périmée juste après un conflit).
 // ============================================================
 
 import fs from "fs/promises";
@@ -18,7 +30,8 @@ const FRAMES_JSON_PATH = path.join(FRAMES_DIR, "frames.json");
 const FRAMES_IMAGES_DIR = path.join(FRAMES_DIR, "images");
 
 const STATE_FILE = "frames_state.json";
-const HISTORY_FILE = "frames_history.json";
+const PARTICIPANTS_PREFIX = "frames_participants";
+const RESULTS_PREFIX = "frames_results";
 
 // ── Lecture des frames (statique, jamais mutée) ────────────────
 
@@ -107,6 +120,7 @@ async function readFromBlob(path) {
       const res = await fetch(url, {
         headers: { authorization: `Bearer ${token}` },
       });
+      if (res.status === 404) return null;
       if (res.ok) return await res.json();
     } catch {}
   }
@@ -129,90 +143,215 @@ async function writeToBlob(path, data) {
   }
 }
 
-// ── État de la partie en cours ──────────────────────────────────
+// ── Lecture/écriture générique 3 niveaux (tmp → Blob → data/ + cache) ──
 
-export async function readState() {
-  const local = await readJsonSafe(tmpPath(STATE_FILE));
+async function readJsonThreeTier(fileName, cacheKey, defaultValue = null) {
+  const local = await readJsonSafe(tmpPath(fileName));
   if (local) return local;
 
   if (useBlob()) {
-    const data = await readFromBlob(STATE_FILE);
+    const data = await readFromBlob(fileName);
     if (data) {
-      await writeJsonSafe(tmpPath(STATE_FILE), data).catch(() => {});
+      await writeJsonSafe(tmpPath(fileName), data).catch(() => {});
       return data;
     }
-    return null;
+    return defaultValue;
   }
   const { value } = await getOrSet(
-    "frames:state",
-    () => readJsonSafe(dataFilePath(STATE_FILE)),
+    cacheKey,
+    async () => (await readJsonSafe(dataFilePath(fileName))) ?? defaultValue,
     30 * 1000,
   );
   return value;
+}
+
+async function writeJsonThreeTier(fileName, data, cacheKey) {
+  await writeJsonSafe(tmpPath(fileName), data).catch(() => {});
+  if (useBlob()) {
+    await writeToBlob(fileName, data);
+  } else {
+    await writeJsonSafe(dataFilePath(fileName), data).catch(() => {});
+    if (cacheKey) invalidate(cacheKey);
+  }
+}
+
+// ── Verrou optimiste (ETag) — utilisé uniquement pour des clés à faible
+// contention (un seul joueur écrit sa propre clé la plupart du temps ; ça
+// protège juste contre un double-clic très rapproché du même joueur). Pour
+// des clés à FORTE contention (plusieurs joueurs sur le même objet), voir
+// le sharding par joueur ci-dessous — ce verrou seul n'y suffit pas.
+
+async function readBlobWithEtag(path) {
+  const url = blobUrlFor(path);
+  if (!url) return { data: null, etag: null };
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  for (const delay of [0, 400, 800]) {
+    if (delay) await new Promise((r) => setTimeout(r, delay));
+    try {
+      const res = await fetch(`${url}?_=${Date.now()}-${Math.random()}`, {
+        headers: { authorization: `Bearer ${token}` },
+      });
+      if (res.status === 404) return { data: null, etag: null };
+      if (res.ok) {
+        const data = await res.json();
+        return { data, etag: res.headers.get("etag") };
+      }
+    } catch {}
+  }
+  return { data: null, etag: null };
+}
+
+async function writeBlobWithCas(path, data, etag) {
+  try {
+    const { put } = await import("@vercel/blob");
+    await put(path, JSON.stringify(data), {
+      access: "private",
+      contentType: "application/json",
+      allowOverwrite: true,
+      addRandomSuffix: false,
+      cacheControlMaxAge: 0,
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+      ...(etag ? { ifMatch: etag } : {}),
+    });
+    return true;
+  } catch (err) {
+    console.error(`[Blob] Écriture CAS échouée ${path}:`, err.message);
+    return false;
+  }
+}
+
+// mutateFn(doc) reçoit le document courant (ou null s'il n'existe pas encore)
+// et doit retourner { doc, returnValue } — doc étant le document complet à
+// persister, returnValue ce qu'on souhaite renvoyer à l'appelant.
+async function mutateJsonWithCas(fileName, cacheKey, mutateFn, { maxAttempts = 8 } = {}) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    let doc, etag;
+    if (useBlob()) {
+      ({ data: doc, etag } = await readBlobWithEtag(fileName));
+    } else {
+      doc = await readJsonSafe(dataFilePath(fileName));
+    }
+
+    const { doc: nextDoc, returnValue } = mutateFn(doc);
+
+    await writeJsonSafe(tmpPath(fileName), nextDoc).catch(() => {});
+
+    if (useBlob()) {
+      const ok = await writeBlobWithCas(fileName, nextDoc, etag);
+      if (ok) return returnValue;
+      const backoff = Math.min(1500, 50 * 2 ** attempt) + Math.random() * 100;
+      await new Promise((r) => setTimeout(r, backoff));
+      continue;
+    }
+
+    await writeJsonSafe(dataFilePath(fileName), nextDoc).catch(() => {});
+    invalidate(cacheKey);
+    return returnValue;
+  }
+  throw new Error(
+    `Conflit d'écriture persistant sur ${fileName} après ${maxAttempts} tentatives.`,
+  );
+}
+
+// ── Listage éclaté (Blob list() par préfixe / répertoire local) ─────
+
+async function listSharded(prefixNoSlash) {
+  if (useBlob()) {
+    const { list } = await import("@vercel/blob");
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    const prefix = `${prefixNoSlash}/`;
+    let cursor;
+    const blobs = [];
+    do {
+      const res = await list({ prefix, cursor, token, limit: 1000 }).catch(() => ({
+        blobs: [],
+        hasMore: false,
+      }));
+      blobs.push(...res.blobs);
+      cursor = res.hasMore ? res.cursor : undefined;
+    } while (cursor);
+
+    const docs = await Promise.all(
+      blobs.map(async (b) => {
+        try {
+          const res = await fetch(b.url, {
+            headers: { authorization: `Bearer ${token}` },
+          });
+          return res.ok ? await res.json() : null;
+        } catch {
+          return null;
+        }
+      }),
+    );
+    return docs.filter(Boolean);
+  }
+
+  const dir = path.resolve(__dirname, "..", "..", "data", prefixNoSlash);
+  try {
+    const entries = await fs.readdir(dir, { recursive: true });
+    const docs = await Promise.all(
+      entries
+        .filter((f) => f.endsWith(".json"))
+        .map((f) => readJsonSafe(path.join(dir, f))),
+    );
+    return docs.filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+async function delSharded(prefixNoSlash) {
+  if (useBlob()) {
+    const { del, list } = await import("@vercel/blob");
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    const prefix = `${prefixNoSlash}/`;
+    let cursor;
+    do {
+      const res = await list({ prefix, cursor, token, limit: 1000 }).catch(() => ({
+        blobs: [],
+        hasMore: false,
+      }));
+      if (res.blobs.length) {
+        await del(res.blobs.map((b) => b.url), { token }).catch(() => {});
+      }
+      cursor = res.hasMore ? res.cursor : undefined;
+    } while (cursor);
+    return;
+  }
+  await fs
+    .rm(path.resolve(__dirname, "..", "..", "data", prefixNoSlash), {
+      recursive: true,
+      force: true,
+    })
+    .catch(() => {});
+}
+
+// ── État de la partie en cours (métadonnées uniquement) ──────────
+
+export async function readState() {
+  return readJsonThreeTier(STATE_FILE, "frames:state", null);
 }
 
 export async function writeState(state) {
-  await writeJsonSafe(tmpPath(STATE_FILE), state).catch(() => {});
-  if (useBlob()) {
-    await writeToBlob(STATE_FILE, state);
-  } else {
-    await writeJsonSafe(dataFilePath(STATE_FILE), state).catch(() => {});
-  }
-}
-
-// ── Historique ───────────────────────────────────────────────────
-
-const EMPTY_HISTORY = { games: [] };
-
-export async function readHistory() {
-  const local = await readJsonSafe(tmpPath(HISTORY_FILE));
-  if (local) return local;
-
-  if (useBlob()) {
-    const data = await readFromBlob(HISTORY_FILE);
-    if (data) {
-      await writeJsonSafe(tmpPath(HISTORY_FILE), data).catch(() => {});
-      return data;
-    }
-    return { ...EMPTY_HISTORY };
-  }
-  const { value } = await getOrSet(
-    "frames:history",
-    () => readJsonSafe(dataFilePath(HISTORY_FILE)) || { ...EMPTY_HISTORY },
-    30 * 1000,
-  );
-  return value;
-}
-
-export async function writeHistory(history) {
-  await writeJsonSafe(tmpPath(HISTORY_FILE), history).catch(() => {});
-  if (useBlob()) {
-    await writeToBlob(HISTORY_FILE, history);
-  } else {
-    await writeJsonSafe(dataFilePath(HISTORY_FILE), history).catch(() => {});
-  }
+  return writeJsonThreeTier(STATE_FILE, state, "frames:state");
 }
 
 // Remet le jeu à zéro : plus de partie active (la prochaine repart à
 // l'index 0 de frames.json) et historique/scores entièrement effacés.
-// Supprime les copies /tmp, le fallback local data/, et les objets Blob.
 export async function resetGame() {
   await fs.rm(tmpPath(STATE_FILE), { force: true }).catch(() => {});
-  await fs.rm(tmpPath(HISTORY_FILE), { force: true }).catch(() => {});
   await fs.rm(dataFilePath(STATE_FILE), { force: true }).catch(() => {});
-  await fs.rm(dataFilePath(HISTORY_FILE), { force: true }).catch(() => {});
   invalidate("frames:state");
-  invalidate("frames:history");
 
   if (useBlob()) {
     const { del } = await import("@vercel/blob");
     const token = process.env.BLOB_READ_WRITE_TOKEN;
-    for (const name of [STATE_FILE, HISTORY_FILE]) {
-      const url = blobUrlFor(name);
-      if (!url) continue;
-      await del(url, { token }).catch(() => {});
-    }
+    const url = blobUrlFor(STATE_FILE);
+    if (url) await del(url, { token }).catch(() => {});
   }
+
+  await delSharded(PARTICIPANTS_PREFIX);
+  await delSharded(RESULTS_PREFIX);
 }
 
 // ── Saison Clash Royale en cours ────────────────────────────────
@@ -222,9 +361,17 @@ export async function getCurrentSeasonId() {
     "frames:seasonId",
     async () => {
       const clanTag = FAMILY_CLAN_TAGS[0];
-      const raceLog = await fetchRaceLog(clanTag).catch(() => null);
-      const currentRace = await fetchCurrentRace(clanTag).catch(() => null);
-      return computeCurrentSeasonId(currentRace, raceLog);
+      // Une partie ne démarre qu'une fois par semaine : quelques tentatives
+      // suffisent à absorber un aléa réseau transitoire plutôt que de figer
+      // définitivement un seasonId à null pour toute la partie.
+      for (const delay of [0, 1000, 3000]) {
+        if (delay) await new Promise((r) => setTimeout(r, delay));
+        const raceLog = await fetchRaceLog(clanTag).catch(() => null);
+        const currentRace = await fetchCurrentRace(clanTag).catch(() => null);
+        const seasonId = computeCurrentSeasonId(currentRace, raceLog);
+        if (seasonId != null) return seasonId;
+      }
+      return null;
     },
     15 * 60 * 1000,
   );
@@ -252,7 +399,6 @@ export async function startNewGame(channelId) {
     startedAt: new Date().toISOString(),
     channelId,
     messageId: null,
-    participants: {},
   };
 
   await writeState(newState);
@@ -290,96 +436,133 @@ export function computeScore(attemptsIncorrects, hintsUsedCount) {
   return Math.max(0, 10 - 2 * attemptsIncorrects - 3 * hintsUsedCount);
 }
 
-// ── Mutations d'état par joueur ──────────────────────────────────
+// ── Progression par joueur (frames_participants/<gameId>/<discordId>) ──
+// Une clé Blob PAR joueur : deux joueurs différents n'écrivent jamais le
+// même objet, donc aucune collision possible entre eux.
 
-function ensureParticipant(state, discordId, username) {
-  if (!state.participants[discordId]) {
-    state.participants[discordId] = {
-      username,
-      attempts: 0,
-      hintsUsed: [],
-      solved: false,
-      solvedAt: null,
-      score: 0,
-    };
-  } else {
-    state.participants[discordId].username = username;
-  }
-  return state.participants[discordId];
+function participantKey(gameId, discordId) {
+  return `${PARTICIPANTS_PREFIX}/${gameId}/${discordId}.json`;
 }
 
-export async function recordAttempt(discordId, username, isCorrect) {
-  const state = await readState();
-  const participant = ensureParticipant(state, discordId, username);
-  if (!isCorrect) {
-    participant.attempts += 1;
-  }
-  await writeState(state);
-  return participant;
+function defaultParticipant(discordId, username) {
+  return {
+    discordId,
+    username,
+    attempts: 0,
+    hintsUsed: [],
+    solved: false,
+    solvedAt: null,
+    score: 0,
+  };
 }
 
-export async function recordHintUsed(discordId, username, hintKey) {
-  const state = await readState();
-  const participant = ensureParticipant(state, discordId, username);
-  const alreadyUsed = participant.hintsUsed.includes(hintKey);
-  if (!alreadyUsed) {
-    participant.hintsUsed.push(hintKey);
-    await writeState(state);
-  }
-  return { alreadyUsed, state };
+export async function readParticipant(gameId, discordId) {
+  return readJsonThreeTier(
+    participantKey(gameId, discordId),
+    `frames:participant:${gameId}:${discordId}`,
+    null,
+  );
 }
 
-export async function markSolved(discordId, username) {
-  const state = await readState();
-  const participant = ensureParticipant(state, discordId, username);
-  const score = computeScore(participant.attempts, participant.hintsUsed.length);
-  participant.solved = true;
-  participant.solvedAt = new Date().toISOString();
-  participant.score = score;
-  await writeState(state);
-  return { state, participant, score };
+export async function recordAttempt(gameId, discordId, username, isCorrect) {
+  return mutateJsonWithCas(
+    participantKey(gameId, discordId),
+    `frames:participant:${gameId}:${discordId}`,
+    (doc) => {
+      const p = doc || defaultParticipant(discordId, username);
+      p.username = username;
+      if (!isCorrect) p.attempts += 1;
+      return { doc: p, returnValue: p };
+    },
+  );
+}
+
+export async function recordHintUsed(gameId, discordId, username, hintKey) {
+  return mutateJsonWithCas(
+    participantKey(gameId, discordId),
+    `frames:participant:${gameId}:${discordId}`,
+    (doc) => {
+      const p = doc || defaultParticipant(discordId, username);
+      p.username = username;
+      const alreadyUsed = p.hintsUsed.includes(hintKey);
+      if (!alreadyUsed) p.hintsUsed.push(hintKey);
+      return { doc: p, returnValue: { alreadyUsed } };
+    },
+  );
+}
+
+export async function markSolved(gameId, discordId, username) {
+  return mutateJsonWithCas(
+    participantKey(gameId, discordId),
+    `frames:participant:${gameId}:${discordId}`,
+    (doc) => {
+      const p = doc || defaultParticipant(discordId, username);
+      p.username = username;
+      const score = computeScore(p.attempts, p.hintsUsed.length);
+      p.solved = true;
+      p.solvedAt = new Date().toISOString();
+      p.score = score;
+      return { doc: p, returnValue: { participant: p, score } };
+    },
+  );
+}
+
+// ── Résultats archivés (frames_results/<gameId>/<discordId>) ────────
+// Même principe de sharding par joueur, pour l'historique/le total saison.
+
+function resultKey(gameId, discordId) {
+  return `${RESULTS_PREFIX}/${gameId}/${discordId}.json`;
 }
 
 export async function archiveSolve(state, frameEntry, discordId, username, score, solvedAt) {
-  const history = await readHistory();
-  let game = history.games.find((g) => g.gameId === state.gameId);
-  if (!game) {
-    game = {
-      gameId: state.gameId,
-      seasonId: state.seasonId,
-      titre: frameEntry.titre,
-      postedAt: state.startedAt,
-      results: [],
-    };
-    history.games.push(game);
-  }
-  const existing = game.results.find((r) => r.discordId === discordId);
-  if (!existing) {
-    game.results.push({ discordId, pseudo: username, score, solvedAt });
-  }
-  await writeHistory(history);
-  return history;
+  return mutateJsonWithCas(
+    resultKey(state.gameId, discordId),
+    `frames:result:${state.gameId}:${discordId}`,
+    (doc) => {
+      if (doc) return { doc, returnValue: doc }; // déjà archivé, idempotent
+      const result = {
+        gameId: state.gameId,
+        seasonId: state.seasonId,
+        titre: frameEntry.titre,
+        postedAt: state.startedAt,
+        discordId,
+        pseudo: username,
+        score,
+        solvedAt,
+      };
+      return { doc: result, returnValue: result };
+    },
+  );
 }
 
 // ── Classements ──────────────────────────────────────────────────
 
-export function computeGameRanking(state) {
-  return Object.entries(state.participants)
-    .filter(([, p]) => p.solved)
-    .map(([discordId, p]) => ({ discordId, username: p.username, score: p.score, solvedAt: p.solvedAt }))
+export async function computeGameRanking(gameId) {
+  const participants = await listSharded(`${PARTICIPANTS_PREFIX}/${gameId}`);
+  return participants
+    .filter((p) => p.solved)
+    .map((p) => ({
+      discordId: p.discordId,
+      username: p.username,
+      score: p.score,
+      solvedAt: p.solvedAt,
+    }))
     .sort((a, b) => b.score - a.score || new Date(a.solvedAt) - new Date(b.solvedAt));
 }
 
-export function computeSeasonRanking(history, seasonId) {
+export async function computeSeasonRanking(seasonId) {
+  const results = await listSharded(RESULTS_PREFIX);
   const totals = new Map();
-  for (const game of history.games) {
-    if (game.seasonId !== seasonId) continue;
-    for (const r of game.results) {
-      const entry = totals.get(r.discordId) || { discordId: r.discordId, pseudo: r.pseudo, totalScore: 0 };
-      entry.totalScore += r.score;
-      entry.pseudo = r.pseudo;
-      totals.set(r.discordId, entry);
-    }
+  for (const r of results) {
+    if (r.seasonId !== seasonId) continue;
+    const entry = totals.get(r.discordId) || {
+      discordId: r.discordId,
+      pseudo: r.pseudo,
+      totalScore: 0,
+    };
+    entry.totalScore += r.score;
+    entry.pseudo = r.pseudo;
+    totals.set(r.discordId, entry);
   }
   return [...totals.values()].sort(
     (a, b) => b.totalScore - a.totalScore || a.pseudo.localeCompare(b.pseudo),
