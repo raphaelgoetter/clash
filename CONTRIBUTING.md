@@ -563,11 +563,34 @@ Le bot ne fonctionne qu'en webhook HTTP (pas de connexion Gateway, pas d'intent 
 - `data/frames/images/*.webp` — images des frames, nommées comme le champ `image` de `frames.json`.
 - Ni `frames.json` ni les images ne sont exposés statiquement (rien sous `frontend/public/`) : `frames.json` est lu côté serveur uniquement, et seule l'image de la partie **active** est accessible via `GET /api/frames/image` (`backend/server.js`, lit `getCurrentFrameImage()`) — impossible de deviner l'image d'une semaine future en devinant une URL, quel que soit le nom de fichier essayé.
 - **Cache-buster de l'image obligatoire et unique par publication** : l'URL de l'embed est `${TRUST_ROYALE_URL}/api/frames/image?v=<horodatage>`. Le proxy d'images de Discord met en cache par URL complète — utiliser `gameId` comme cache-buster (au lieu d'un horodatage) provoquerait un resservissement indéfini d'une image périmée dès qu'une partie revient sur le même `gameId` (reset ou tour de boucle).
-- `frames_state.json` (partie en cours) et `frames_history.json` (historique) — stockés sur **Vercel Blob**, même pattern lecture `/tmp` → Blob → fallback `data/` que `champion-predictions.json` (`backend/services/championPredictions.js`). Nécessaire car ces données sont lues/écrites en direct par les interactions webhook (clics de boutons, soumission de modal) à des instants imprévisibles, ce que `/tmp` seul ne garantit pas de faire survivre entre deux invocations serverless.
+- État de la partie, progression par joueur et classements — stockés sur **Upstash Redis** (`@upstash/redis`, REST, voir "Stockage — Upstash Redis" ci-dessous).
+
+### Stockage — Upstash Redis
+
+Le jeu stockait initialement son état sur Vercel Blob (même pattern que `champion-predictions.json`), mais Blob facture chaque `put()`/`list()` comme "Advanced Operation" avec un quota gratuit de seulement 2 000/mois — largement dépassé par l'usage normal du jeu (indices, tentatives, résolutions). Migré vers **Upstash Redis** (intégration Vercel Marketplace, tier gratuit 500 000 commandes/mois) qui offre en plus des primitives **atomiques natives** (`INCR`, `SADD`, `HSETNX`, `ZINCRBY`) réglant nativement les problèmes de concurrence (deux joueurs qui répondent au même instant) sans verrou ni retry applicatif à gérer soi-même.
+
+Schéma des clés (`backend/services/frames.js`) :
+
+| Clé Redis                              | Type               | Contenu                                                                                                                                                           |
+| -------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `frame:state`                          | STRING             | Métadonnées de la partie active (JSON)                                                                                                                           |
+| `frame:participants:<gameId>`          | HASH               | `discordId → participant` (doc final, écrit seulement à la résolution)                                                                                          |
+| `frame:usernames:<gameId>`             | HASH               | `discordId → pseudo` (mis à jour à chaque indice/tentative)                                                                                                      |
+| `frame:hints:<gameId>:<discordId>`     | SET                | Indices déjà pris (`indice1`, `indice2`)                                                                                                                         |
+| `frame:attempts:<gameId>:<discordId>`  | STRING (compteur)  | Nombre de tentatives incorrectes (`INCR` atomique)                                                                                                               |
+| `frame:season:<seasonId>`              | ZSET               | `discordId → score total` de la saison (`ZINCRBY` atomique)                                                                                                      |
+| `frame:season:<seasonId>:pseudos`      | HASH               | `discordId → pseudo` pour l'affichage du classement de saison                                                                                                    |
+| `frame:archived:<seasonId>`            | HASH               | `<gameId>:<discordId> → résultat` — marqueur d'idempotence (`HSETNX`) évitant un double comptage si `archiveSolve` est appelé deux fois pour la même résolution |
+
+⚠️ **`automaticDeserialization: false` obligatoire** à la construction du client — par défaut le SDK convertit toute valeur "numérique" en `Number` JS, y compris les IDs Discord (17-19 chiffres, au-delà de `Number.MAX_SAFE_INTEGER`), ce qui les corrompt silencieusement. La sérialisation/désérialisation JSON est donc gérée à la main partout (`toJson`/`fromJson`/`hgetallJson`). Autre piège vérifié empiriquement (non documenté) : avec cette option désactivée, `HGETALL` renvoie un tableau plat `[champ1, valeur1, ...]` et non un objet — voir `pairsToObject()`.
+
+⚠️ **Client Redis construit paresseusement** (`getRedis()`, pas au chargement du module) : avec les imports ES hoistés, `import ... from frames.js` s'exécute avant le `dotenv.config()` du script appelant, donc construire le client en haut de fichier figerait des variables d'environnement pas encore chargées dans les scripts (`postFrame.js`, etc.).
+
+Nettoyage : `startNewGame()` supprime la progression (indices/tentatives/participants) de la partie **précédente** à chaque nouvelle partie — données jetables une fois la partie terminée. Les résultats archivés (`frame:season:*`, nécessaires au total de la saison) ne sont eux jamais supprimés automatiquement.
 
 ### Scores et classements par saison
 
-Le score total et le classement général affichés en DM ne portent que sur la **saison Clash Royale en cours** (voir [Saison](#saison)), pas un cumul indéfini. `getCurrentSeasonId()` (`backend/services/frames.js`) réutilise `computeCurrentSeasonId(currentRace, raceLog)` de `dateUtils.js`, avec 3 tentatives (délai croissant) pour absorber un aléa réseau transitoire côté API Clash Royale. Chaque partie archivée dans `frames_history.json` garde le `seasonId` de la saison où elle a été jouée ; `computeSeasonRanking()` filtre `games[]` sur le `seasonId` courant avant de sommer — pas de compteur mutable à remettre à zéro manuellement, donc pas de désynchronisation possible au changement de saison.
+Le score total et le classement général affichés en DM ne portent que sur la **saison Clash Royale en cours** (voir [Saison](#saison)), pas un cumul indéfini. `getCurrentSeasonId()` (`backend/services/frames.js`) réutilise `computeCurrentSeasonId(currentRace, raceLog)` de `dateUtils.js`, avec 3 tentatives (délai croissant) pour absorber un aléa réseau transitoire côté API Clash Royale. Chaque résultat archivé dans `frame:archived:<seasonId>` garde le `seasonId` de la saison où il a été joué ; le classement de saison vit dans un ZSET dédié par `seasonId` (`frame:season:<seasonId>`), donc aucun recalcul ni remise à zéro manuelle n'est nécessaire au changement de saison — chaque nouvelle saison utilise simplement une nouvelle clé.
 
 ### Scripts npm
 
