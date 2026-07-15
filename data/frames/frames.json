@@ -69,5 +69,75 @@
     "indice2": "Roberto Benigni",
     "titre": "Life is Beautiful",
     "accepte": ["life is", "beautiful", "belle", "vie est"]
+  },
+  {
+    "image": "011.webp",
+    "indice1": "1988",
+    "indice2": "Tim Burton",
+    "titre": "Beetlejuice",
+    "accepte": ["beetlejuice", "beetle juice"]
+  },
+  {
+    "image": "012.webp",
+    "indice1": "2004",
+    "indice2": "Quentin Tarantino",
+    "titre": "Kill Bill",
+    "accepte": ["kill bill", "killbill"]
+  },
+  {
+    "image": "013.webp",
+    "indice1": "1979",
+    "indice2": "Francis Ford Coppola",
+    "titre": "Apocalypse Now",
+    "accepte": ["apocalypse now", "apocalypse"]
+  },
+  {
+    "image": "014.webp",
+    "indice1": "2017",
+    "indice2": "Pixar Animation Studios",
+    "titre": "Coco",
+    "accepte": ["coco"]
+  },
+  {
+    "image": "015.webp",
+    "indice1": "1980",
+    "indice2": "Stanley Kubrick",
+    "titre": "The Shining",
+    "accepte": ["shining", "the shining"]
+  },
+  {
+    "image": "016.webp",
+    "indice1": "1988",
+    "indice2": "John McTiernan",
+    "titre": "Die Hard (Piège de cristal)",
+    "accepte": ["die hard", "piège de cristal", "diehard"]
+  },
+  {
+    "image": "017.webp",
+    "indice1": "2001",
+    "indice2": "Steven Soderbergh",
+    "titre": "Ocean's Eleven",
+    "accepte": ["ocean's eleven", "eleven", "oceans eleven", "oceans 11"]
+  },
+  {
+    "image": "018.webp",
+    "indice1": "1987",
+    "indice2": "John McTiernan",
+    "titre": "Predator",
+    "accepte": ["predator"]
+  },
+  {
+    "image": "019.webp",
+    "indice1": "1998",
+    "indice2": "Joel Coen & Ethan Coen",
+    "titre": "The Big Lebowski",
+    "accepte": ["big lebowski", "lebowski"]
+  },
+  {
+    "image": "020.webp",
+    "indice1": "2010",
+    "indice2": "Christopher Nolan",
+    "titre": "Inception",
+    "accepte": ["inception"]
   }
 ]
