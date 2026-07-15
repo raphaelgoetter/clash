@@ -31,21 +31,24 @@ const HINT_LABELS = {
 
 // ── Embed / composants du post ────────────────────────────────
 
-function buildFrameEmbed(gameId, partieNumber) {
+function buildFrameEmbed(partieNumber, cacheBust) {
   return {
-    title: "🎬 Quel est ce film ?",
+    title: "🎬 Trouvez le film !",
     description:
       `**Partie ${partieNumber}**\n\n` +
-      "Devinez le titre d'un film à partir de l'image\n\n" +
+      "Devinez le titre d'un film à partir d'uneimage.\n\n" +
       "Cliquez sur le bouton «Répondre» pour soumettre votre réponse, ou prenez un indice pour vous aider.\n\n" +
       "**Barème**\n" +
-      "Réponse exacte du 1er coup sans indice : **10 pts**\n" +
-      "Chaque tentative incorrecte : **-2 pts**\n" +
-      "Chaque indice utilisé : **-3 pts**",
-    // Route dynamique servant uniquement l'image de la partie active — le
-    // paramètre v= n'est qu'un cache-buster pour Discord, ignoré par le
-    // serveur (impossible d'obtenir une image future en le modifiant).
-    image: { url: `${TRUST_ROYALE_URL}/api/frames/image?v=${gameId}` },
+      "- Réponse exacte du 1er coup sans indice : **10 pts**\n" +
+      "- Chaque tentative incorrecte : **-2 pts**\n" +
+      "- Chaque indice utilisé : **-3 pts**",
+    // Route dynamique servant uniquement l'image de la partie active. Le
+    // paramètre v= est un cache-buster ignoré par le serveur (impossible
+    // d'obtenir une image future en le modifiant) — il DOIT être unique à
+    // chaque publication (jamais gameId, qui se répète après un reset ou un
+    // tour de boucle) car le proxy d'images de Discord met en cache par URL
+    // complète et resservirait indéfiniment une image périmée sinon.
+    image: { url: `${TRUST_ROYALE_URL}/api/frames/image?v=${cacheBust}` },
     color: FRAME_COLOR,
     footer: {
       text: "Prochaine partie : dans une semaine. Bonne chance tout le monde !",
@@ -118,7 +121,7 @@ export async function postFrame(channelId, { dryRun = false } = {}) {
     const currentIndex = pickNextFrameIndex(state, frames);
     const frameEntry = frames[currentIndex];
     const gameId = frameEntry.image.replace(/\.[^.]+$/, "");
-    const embed = buildFrameEmbed(gameId, currentIndex + 1);
+    const embed = buildFrameEmbed(currentIndex + 1, Date.now());
     const components = buildFrameComponents(gameId);
     return { dryRun: true, frameEntry, embed, components };
   }
@@ -127,7 +130,7 @@ export async function postFrame(channelId, { dryRun = false } = {}) {
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
 
   const { state, frameEntry } = await startNewGame(channelId);
-  const embed = buildFrameEmbed(state.gameId, state.currentIndex + 1);
+  const embed = buildFrameEmbed(state.currentIndex + 1, Date.now());
   const components = buildFrameComponents(state.gameId);
 
   const res = await fetch(
