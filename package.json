@@ -30,6 +30,7 @@
     "frame:test:dry": "node scripts/postFrame.js --dry-run",
     "frame:public": "node scripts/postFrame.js --public",
     "frame:public:dry": "node scripts/postFrame.js --public --dry-run",
+    "frame:reset": "node scripts/resetFrame.js",
     "rules": "node scripts/notifyRules.js",
     "rules:dry": "node scripts/notifyRules.js --dry-run",
     "rules:dry:noping": "node scripts/notifyRules.js --dry-run --no-ping",

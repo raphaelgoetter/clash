@@ -10,7 +10,7 @@ import { fileURLToPath } from "url";
 import { fetchRaceLog, fetchCurrentRace } from "./clashApi.js";
 import { computeCurrentSeasonId } from "./dateUtils.js";
 import { FAMILY_CLAN_TAGS } from "./warHistory.js";
-import { getOrSet } from "./cache.js";
+import { getOrSet, invalidate } from "./cache.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FRAMES_DIR = path.resolve(__dirname, "..", "..", "data", "frames");
@@ -190,6 +190,28 @@ export async function writeHistory(history) {
     await writeToBlob(HISTORY_FILE, history);
   } else {
     await writeJsonSafe(dataFilePath(HISTORY_FILE), history).catch(() => {});
+  }
+}
+
+// Remet le jeu à zéro : plus de partie active (la prochaine repart à
+// l'index 0 de frames.json) et historique/scores entièrement effacés.
+// Supprime les copies /tmp, le fallback local data/, et les objets Blob.
+export async function resetGame() {
+  await fs.rm(tmpPath(STATE_FILE), { force: true }).catch(() => {});
+  await fs.rm(tmpPath(HISTORY_FILE), { force: true }).catch(() => {});
+  await fs.rm(dataFilePath(STATE_FILE), { force: true }).catch(() => {});
+  await fs.rm(dataFilePath(HISTORY_FILE), { force: true }).catch(() => {});
+  invalidate("frames:state");
+  invalidate("frames:history");
+
+  if (useBlob()) {
+    const { del } = await import("@vercel/blob");
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    for (const name of [STATE_FILE, HISTORY_FILE]) {
+      const url = blobUrlFor(name);
+      if (!url) continue;
+      await del(url, { token }).catch(() => {});
+    }
   }
 }
 
