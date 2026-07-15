@@ -33,7 +33,7 @@ const HINT_LABELS = {
 
 function buildFrameEmbed(partieNumber, cacheBust) {
   return {
-    title: "🎬 Trouvez le film !",
+    title: "🎬 Le jeu du mercredi : Trouvez le film !",
     description:
       `**Partie ${partieNumber}**\n\n` +
       "Devinez le titre d'un film à partir d'uneimage.\n\n" +

@@ -4,10 +4,9 @@ permissions:
   contents: read
 
 on:
-  # Mercredi 08:00 UTC — désactivé tant que le jeu n'est pas validé en test.
-  # Décommenter une fois la phase de test terminée :
-  # schedule:
-  #   - cron: "0 8 * * 3"
+  # Mercredi 08:00 UTC
+  schedule:
+    - cron: "0 8 * * 3"
   workflow_dispatch: {}
 
 jobs:
