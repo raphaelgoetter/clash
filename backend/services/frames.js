@@ -618,6 +618,26 @@ export async function computeGameRanking(gameId) {
     .sort((a, b) => b.score - a.score || new Date(a.solvedAt) - new Date(b.solvedAt));
 }
 
+// Tous les joueurs ayant interagi avec la partie (résolu ou non) — un doc
+// principal, un indice pris ou une tentative ratée contiennent tous
+// discordId + username, donc un seul listage sous
+// frames_participants/<gameId>/ suffit à les retrouver tous, même ceux qui
+// n'ont encore qu'un marqueur d'indice/tentative sans document principal.
+export async function listGamePlayersInProgress(gameId) {
+  const docs = await listSharded(`${PARTICIPANTS_PREFIX}/${gameId}`);
+  const byId = new Map();
+  for (const d of docs) {
+    if (!d.discordId) continue;
+    const entry = byId.get(d.discordId) || { discordId: d.discordId, username: d.username, solved: false };
+    entry.username = d.username || entry.username;
+    if (d.solved) entry.solved = true;
+    byId.set(d.discordId, entry);
+  }
+  return [...byId.values()]
+    .filter((p) => !p.solved)
+    .sort((a, b) => a.username.localeCompare(b.username));
+}
+
 export async function computeSeasonRanking(seasonId) {
   const results = await listSharded(`${RESULTS_PREFIX}/${seasonId}`);
   const totals = new Map();

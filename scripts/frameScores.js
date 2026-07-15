@@ -13,6 +13,7 @@ import {
   readState,
   computeGameRanking,
   computeSeasonRanking,
+  listGamePlayersInProgress,
 } from "../backend/services/frames.js";
 
 (async () => {
@@ -24,21 +25,22 @@ import {
 
   const frames = await loadFrames();
   const frameEntry = frames[state.currentIndex];
-  const [gameRanking, seasonRanking] = await Promise.all([
+  const [gameRanking, seasonRanking, inProgress] = await Promise.all([
     computeGameRanking(state.gameId),
     computeSeasonRanking(state.seasonId),
+    listGamePlayersInProgress(state.gameId),
   ]);
 
   console.log(
     `Jeu Frame — Partie ${state.currentIndex + 1} (${frameEntry.titre}) — Saison ${state.seasonId}\n`,
   );
 
-  if (gameRanking.length === 0) {
-    console.log("Personne n'a encore trouvé la réponse pour cette partie.");
+  if (gameRanking.length === 0 && inProgress.length === 0) {
+    console.log("Personne n'a encore interagi avec cette partie.");
     return;
   }
 
-  const rows = gameRanking.map((entry, idx) => {
+  const solvedRows = gameRanking.map((entry, idx) => {
     const seasonEntry = seasonRanking.find((s) => s.discordId === entry.discordId);
     return {
       "#": idx + 1,
@@ -48,5 +50,12 @@ import {
     };
   });
 
-  console.table(rows);
+  const inProgressRows = inProgress.map((p) => ({
+    "#": "-",
+    Joueur: p.username,
+    "Score partie": "-",
+    "Score saison": "-",
+  }));
+
+  console.table([...solvedRows, ...inProgressRows]);
 })();
