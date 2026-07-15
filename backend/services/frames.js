@@ -387,8 +387,8 @@ export function pickNextFrameIndex(state, frames) {
 
 export async function startNewGame(channelId) {
   const frames = await loadFrames();
-  const state = await readState();
-  const currentIndex = pickNextFrameIndex(state, frames);
+  const previousState = await readState();
+  const currentIndex = pickNextFrameIndex(previousState, frames);
   const frameEntry = frames[currentIndex];
   const seasonId = await getCurrentSeasonId();
 
@@ -402,6 +402,16 @@ export async function startNewGame(channelId) {
   };
 
   await writeState(newState);
+
+  // Purge la progression (indices/tentatives/participants) de la partie
+  // précédente — données jetables une fois la partie terminée, plus
+  // jamais lues. Sans ça, ces petits fichiers s'accumuleraient sans fin au
+  // fil des semaines. Les résultats archivés (frames_results, nécessaires
+  // au total de la saison) ne sont eux jamais supprimés ici.
+  if (previousState?.gameId && previousState.gameId !== newState.gameId) {
+    await delSharded(`${PARTICIPANTS_PREFIX}/${previousState.gameId}`).catch(() => {});
+  }
+
   return { state: newState, frameEntry };
 }
 
@@ -440,8 +450,22 @@ export function computeScore(attemptsIncorrects, hintsUsedCount) {
 // Une clé Blob PAR joueur : deux joueurs différents n'écrivent jamais le
 // même objet, donc aucune collision possible entre eux.
 
+// Les indices sont des marqueurs indépendants par type d'indice
+// (frames_participants/<gameId>/<discordId>/hints/<hintKey>.json), écrits
+// sans verrou (simple création idempotente) plutôt que dans le document
+// principal du joueur — un joueur qui clique "Indice 1" et "Indice 2"
+// quasi simultanément n'écrit alors jamais la même clé deux fois, donc
+// aucun conflit possible entre ces deux clics (contrairement à un compteur
+// partagé, où un verrou optimiste seul s'est révélé insuffisant en test
+// sous forte contention).
+const HINT_KEYS = ["indice1", "indice2"];
+
 function participantKey(gameId, discordId) {
   return `${PARTICIPANTS_PREFIX}/${gameId}/${discordId}.json`;
+}
+
+function hintMarkerKey(gameId, discordId, hintKey) {
+  return `${PARTICIPANTS_PREFIX}/${gameId}/${discordId}/hints/${hintKey}.json`;
 }
 
 function defaultParticipant(discordId, username) {
@@ -449,7 +473,6 @@ function defaultParticipant(discordId, username) {
     discordId,
     username,
     attempts: 0,
-    hintsUsed: [],
     solved: false,
     solvedAt: null,
     score: 0,
@@ -464,75 +487,120 @@ export async function readParticipant(gameId, discordId) {
   );
 }
 
-export async function recordAttempt(gameId, discordId, username, isCorrect) {
-  return mutateJsonWithCas(
-    participantKey(gameId, discordId),
-    `frames:participant:${gameId}:${discordId}`,
-    (doc) => {
-      const p = doc || defaultParticipant(discordId, username);
-      p.username = username;
-      if (!isCorrect) p.attempts += 1;
-      return { doc: p, returnValue: p };
-    },
+// Nombre d'indices déjà utilisés par ce joueur — lecture directe des 2 clés
+// connues (indice1/indice2), jamais via list() (pas de délai d'indexation
+// à attendre, contrairement à un listage par préfixe).
+async function countHintsUsed(gameId, discordId) {
+  const markers = await Promise.all(
+    HINT_KEYS.map((k) =>
+      readJsonThreeTier(
+        hintMarkerKey(gameId, discordId, k),
+        `frames:hint:${gameId}:${discordId}:${k}`,
+        null,
+      ),
+    ),
   );
+  return markers.filter(Boolean).length;
+}
+
+// Même principe que les indices : chaque tentative incorrecte est un
+// fichier à part (clé toujours unique), jamais un compteur partagé — un
+// verrou optimiste seul ne suffit pas à protéger un compteur incrémenté par
+// le même joueur qui soumet deux réponses rapprochées (testé et confirmé :
+// des écritures concurrentes sur le MÊME compteur peuvent s'écraser l'une
+// l'autre même avec plusieurs tentatives de ré-essai).
+function attemptsPrefix(gameId, discordId) {
+  return `${PARTICIPANTS_PREFIX}/${gameId}/${discordId}/attempts`;
+}
+
+export async function recordAttempt(gameId, discordId, username, isCorrect) {
+  if (isCorrect) return null; // la tentative gagnante n'est jamais comptée comme incorrecte
+  const uniqueId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  await writeJsonThreeTier(`${attemptsPrefix(gameId, discordId)}/${uniqueId}.json`, {
+    discordId,
+    username,
+    at: new Date().toISOString(),
+  });
+  return null;
+}
+
+async function countAttempts(gameId, discordId) {
+  const docs = await listSharded(attemptsPrefix(gameId, discordId));
+  return docs.length;
 }
 
 export async function recordHintUsed(gameId, discordId, username, hintKey) {
-  return mutateJsonWithCas(
-    participantKey(gameId, discordId),
-    `frames:participant:${gameId}:${discordId}`,
-    (doc) => {
-      const p = doc || defaultParticipant(discordId, username);
-      p.username = username;
-      const alreadyUsed = p.hintsUsed.includes(hintKey);
-      if (!alreadyUsed) p.hintsUsed.push(hintKey);
-      return { doc: p, returnValue: { alreadyUsed } };
-    },
-  );
+  const key = hintMarkerKey(gameId, discordId, hintKey);
+  const cacheKey = `frames:hint:${gameId}:${discordId}:${hintKey}`;
+  const existing = await readJsonThreeTier(key, cacheKey, null);
+  if (existing) return { alreadyUsed: true };
+  await writeJsonThreeTier(key, { discordId, username, hintKey, usedAt: new Date().toISOString() }, cacheKey);
+  return { alreadyUsed: false };
 }
 
+// Écriture directe (sans verrou optimiste) plutôt qu'un mutateJsonWithCas :
+// un double-clic/nouvel essai du même joueur ne doit jamais pouvoir faire
+// échouer la résolution avec un conflit d'écriture. Idempotent : si déjà
+// résolu, renvoie le résultat existant sans rien réécrire ; sinon calcule
+// le score à partir des marqueurs indices/tentatives (déjà sans contention)
+// et écrit sans condition — deux appels concurrents produisent au pire deux
+// écritures avec le même score, jamais une erreur.
 export async function markSolved(gameId, discordId, username) {
-  return mutateJsonWithCas(
+  const existing = await readParticipant(gameId, discordId);
+  if (existing?.solved) {
+    return { participant: existing, score: existing.score };
+  }
+
+  const [hintsUsedCount, attemptsCount] = await Promise.all([
+    countHintsUsed(gameId, discordId),
+    countAttempts(gameId, discordId),
+  ]);
+  const score = computeScore(attemptsCount, hintsUsedCount);
+  const participant = {
+    discordId,
+    username,
+    attempts: attemptsCount,
+    solved: true,
+    solvedAt: new Date().toISOString(),
+    score,
+  };
+  await writeJsonThreeTier(
     participantKey(gameId, discordId),
+    participant,
     `frames:participant:${gameId}:${discordId}`,
-    (doc) => {
-      const p = doc || defaultParticipant(discordId, username);
-      p.username = username;
-      const score = computeScore(p.attempts, p.hintsUsed.length);
-      p.solved = true;
-      p.solvedAt = new Date().toISOString();
-      p.score = score;
-      return { doc: p, returnValue: { participant: p, score } };
-    },
   );
+  return { participant, score };
 }
 
-// ── Résultats archivés (frames_results/<gameId>/<discordId>) ────────
-// Même principe de sharding par joueur, pour l'historique/le total saison.
+// ── Résultats archivés (frames_results/<seasonId>/<gameId>/<discordId>) ──
+// Même principe de sharding par joueur. Scopés par saison (pas juste par
+// partie) pour que computeSeasonRanking ne liste jamais que la saison en
+// cours — sans ça, list() devrait scanner l'historique complet depuis le
+// début du jeu à chaque calcul de classement, un coût qui grandirait sans
+// borne au fil des mois.
 
-function resultKey(gameId, discordId) {
-  return `${RESULTS_PREFIX}/${gameId}/${discordId}.json`;
+function resultKey(seasonId, gameId, discordId) {
+  return `${RESULTS_PREFIX}/${seasonId}/${gameId}/${discordId}.json`;
 }
 
 export async function archiveSolve(state, frameEntry, discordId, username, score, solvedAt) {
-  return mutateJsonWithCas(
-    resultKey(state.gameId, discordId),
-    `frames:result:${state.gameId}:${discordId}`,
-    (doc) => {
-      if (doc) return { doc, returnValue: doc }; // déjà archivé, idempotent
-      const result = {
-        gameId: state.gameId,
-        seasonId: state.seasonId,
-        titre: frameEntry.titre,
-        postedAt: state.startedAt,
-        discordId,
-        pseudo: username,
-        score,
-        solvedAt,
-      };
-      return { doc: result, returnValue: result };
-    },
-  );
+  const key = resultKey(state.seasonId, state.gameId, discordId);
+  const cacheKey = `frames:result:${state.seasonId}:${state.gameId}:${discordId}`;
+  const existing = await readJsonThreeTier(key, cacheKey, null);
+  if (existing) return existing; // déjà archivé, idempotent — pas de réécriture
+
+  const result = {
+    gameId: state.gameId,
+    seasonId: state.seasonId,
+    titre: frameEntry.titre,
+    postedAt: state.startedAt,
+    discordId,
+    pseudo: username,
+    score,
+    solvedAt,
+  };
+  await writeJsonThreeTier(key, result, cacheKey);
+  return result;
 }
 
 // ── Classements ──────────────────────────────────────────────────
@@ -551,10 +619,9 @@ export async function computeGameRanking(gameId) {
 }
 
 export async function computeSeasonRanking(seasonId) {
-  const results = await listSharded(RESULTS_PREFIX);
+  const results = await listSharded(`${RESULTS_PREFIX}/${seasonId}`);
   const totals = new Map();
   for (const r of results) {
-    if (r.seasonId !== seasonId) continue;
     const entry = totals.get(r.discordId) || {
       discordId: r.discordId,
       pseudo: r.pseudo,
