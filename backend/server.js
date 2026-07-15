@@ -20,6 +20,7 @@ import deckRoutes from "./routes/decks.js";
 import discordRoutes from "./routes/discord.js";
 import { clearAll } from "./services/cache.js";
 import { fetchClan, fetchPlayer } from "./services/clashApi.js";
+import { getCurrentFrameImage } from "./services/frames.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -241,6 +242,17 @@ app.use("/api/clan", clanRoutes);
 app.use("/api/decks", deckRoutes);
 // Discord interactions endpoint (slash commands)
 app.use("/api/discord", discordRoutes);
+
+// Jeu Frame : sert uniquement l'image de la partie active (jamais une image
+// future/passée par nom de fichier) — data/frames/images n'est pas exposé
+// statiquement, seule cette route y donne accès.
+app.get("/api/frames/image", async (_req, res) => {
+  const image = await getCurrentFrameImage().catch(() => null);
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", "image/webp");
+  res.setHeader("Cache-Control", "no-store");
+  res.send(image.buffer);
+});
 
 // ── Cache flush (dev) ─────────────────────────────────────────
 app.post("/api/cache/flush", (_req, res) => {

@@ -13,15 +13,9 @@ import { FAMILY_CLAN_TAGS } from "./warHistory.js";
 import { getOrSet } from "./cache.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const FRAMES_JSON_PATH = path.resolve(
-  __dirname,
-  "..",
-  "..",
-  "frontend",
-  "public",
-  "frames",
-  "frames.json",
-);
+const FRAMES_DIR = path.resolve(__dirname, "..", "..", "data", "frames");
+const FRAMES_JSON_PATH = path.join(FRAMES_DIR, "frames.json");
+const FRAMES_IMAGES_DIR = path.join(FRAMES_DIR, "images");
 
 const STATE_FILE = "frames_state.json";
 const HISTORY_FILE = "frames_history.json";
@@ -35,6 +29,23 @@ export async function loadFrames() {
   const txt = await fs.readFile(FRAMES_JSON_PATH, "utf-8");
   framesCache = JSON.parse(txt);
   return framesCache;
+}
+
+// Sert uniquement l'image de la partie active — jamais une image future ou
+// passée par nom de fichier, pour ne pas laisser deviner les prochaines
+// semaines via l'URL (data/frames/images n'est pas exposé statiquement).
+export async function getCurrentFrameImage() {
+  const state = await readState();
+  if (!state) return null;
+  const frames = await loadFrames();
+  const frameEntry = frames[state.currentIndex];
+  if (!frameEntry) return null;
+  try {
+    const buffer = await fs.readFile(path.join(FRAMES_IMAGES_DIR, frameEntry.image));
+    return { buffer, filename: frameEntry.image };
+  } catch {
+    return null;
+  }
 }
 
 // ── Helpers fichiers locaux (fallback dev) ──────────────────────
