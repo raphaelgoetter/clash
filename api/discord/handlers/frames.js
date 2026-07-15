@@ -31,10 +31,11 @@ const HINT_LABELS = {
 
 // ── Embed / composants du post ────────────────────────────────
 
-function buildFrameEmbed(gameId) {
+function buildFrameEmbed(gameId, partieNumber) {
   return {
     title: "🎬 Quel est ce film ?",
     description:
+      `**Partie ${partieNumber}**\n\n` +
       "Devinez le titre d'un film à partir de l'image\n\n" +
       "Cliquez sur le bouton «Répondre» pour soumettre votre réponse, ou prenez un indice pour vous aider.\n\n" +
       "**Barème**\n" +
@@ -117,7 +118,7 @@ export async function postFrame(channelId, { dryRun = false } = {}) {
     const currentIndex = pickNextFrameIndex(state, frames);
     const frameEntry = frames[currentIndex];
     const gameId = frameEntry.image.replace(/\.[^.]+$/, "");
-    const embed = buildFrameEmbed(gameId);
+    const embed = buildFrameEmbed(gameId, currentIndex + 1);
     const components = buildFrameComponents(gameId);
     return { dryRun: true, frameEntry, embed, components };
   }
@@ -126,7 +127,7 @@ export async function postFrame(channelId, { dryRun = false } = {}) {
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
 
   const { state, frameEntry } = await startNewGame(channelId);
-  const embed = buildFrameEmbed(state.gameId);
+  const embed = buildFrameEmbed(state.gameId, state.currentIndex + 1);
   const components = buildFrameComponents(state.gameId);
 
   const res = await fetch(
