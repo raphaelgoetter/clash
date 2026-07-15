@@ -36,7 +36,7 @@ function buildFrameEmbed(frameEntry) {
     title: "🎬 Quel est ce film ?",
     description:
       "Devinez le titre d'un film à partir de l'image\n\n" +
-      "Répondez dans le champ libre ci-dessous et cliquez sur le bouton « Valider » pour soumettre votre réponse.\n\n" +
+      "Répondez dans le champ libre ci-dessous et cliquez sur le bouton « Répondre » pour soumettre votre réponse.\n\n" +
       "**Barème**\n" +
       "Réponse exacte du 1er coup sans indice : **10 pts**\n" +
       "Chaque tentative incorrecte : **-2 pts**\n" +
@@ -54,7 +54,7 @@ function buildFrameComponents(gameId) {
       components: [
         { type: 2, style: 2, label: "💡 Indice 1 (année)", custom_id: `frame_hint1:${gameId}` },
         { type: 2, style: 2, label: "💡 Indice 2 (réalisateur)", custom_id: `frame_hint2:${gameId}` },
-        { type: 2, style: 1, label: "✅ Valider", custom_id: `frame_answer:${gameId}` },
+        { type: 2, style: 1, label: "📝 Répondre", custom_id: `frame_answer:${gameId}` },
       ],
     },
   ];
@@ -231,7 +231,7 @@ export async function handleModalSubmit(webhookUrl, gameId, discordId, username,
       await recordAttempt(discordId, username, false);
       await postEphemeral(
         webhookUrl,
-        "❌ Mauvaise réponse ! (-2 pts). Réessayez avec le bouton Valider.",
+        "❌ Mauvaise réponse ! (-2 pts). Réessayez avec le bouton Répondre.",
       );
       return;
     }
