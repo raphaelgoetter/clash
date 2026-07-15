@@ -254,8 +254,31 @@ async function mutateJsonWithCas(fileName, cacheKey, mutateFn, { maxAttempts = 8
 }
 
 // ── Listage éclaté (Blob list() par préfixe / répertoire local) ─────
+// list() compte comme une "Advanced Operation" Blob (quota gratuit limité,
+// contrairement aux lectures simples) — c'est l'appel le plus coûteux du
+// jeu puisqu'il tourne à chaque résolution (classement partie + saison).
+// Mis en cache brièvement (process en mémoire) pour éviter des list()
+// redondants si plusieurs lectures tombent dans la même fenêtre, et
+// invalidé explicitement juste après toute écriture sous ce préfixe pour
+// que le joueur qui vient de résoudre voie toujours son propre résultat.
+function listShardedCacheKey(prefixNoSlash) {
+  return `frames:list:${prefixNoSlash}`;
+}
+
+function invalidateShardedList(prefixNoSlash) {
+  invalidate(listShardedCacheKey(prefixNoSlash));
+}
 
 async function listSharded(prefixNoSlash) {
+  const { value } = await getOrSet(
+    listShardedCacheKey(prefixNoSlash),
+    () => listShardedUncached(prefixNoSlash),
+    20 * 1000,
+  );
+  return value;
+}
+
+async function listShardedUncached(prefixNoSlash) {
   if (useBlob()) {
     const { list } = await import("@vercel/blob");
     const token = process.env.BLOB_READ_WRITE_TOKEN;
@@ -521,6 +544,7 @@ export async function recordAttempt(gameId, discordId, username, isCorrect) {
     username,
     at: new Date().toISOString(),
   });
+  invalidateShardedList(attemptsPrefix(gameId, discordId));
   return null;
 }
 
@@ -569,6 +593,10 @@ export async function markSolved(gameId, discordId, username) {
     participant,
     `frames:participant:${gameId}:${discordId}`,
   );
+  // Le classement de la partie (computeGameRanking) est calculé juste après
+  // dans le flux de résolution — invalider pour que le joueur voie toujours
+  // son propre résultat, même si le cache list() vient d'être rempli.
+  invalidateShardedList(`${PARTICIPANTS_PREFIX}/${gameId}`);
   return { participant, score };
 }
 
@@ -600,6 +628,9 @@ export async function archiveSolve(state, frameEntry, discordId, username, score
     solvedAt,
   };
   await writeJsonThreeTier(key, result, cacheKey);
+  // computeSeasonRanking est calculé juste après pour le DM — invalider
+  // pour que le score total du joueur soit toujours à jour immédiatement.
+  invalidateShardedList(`${RESULTS_PREFIX}/${state.seasonId}`);
   return result;
 }
 
