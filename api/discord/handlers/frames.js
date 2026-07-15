@@ -36,14 +36,16 @@ function buildFrameEmbed(frameEntry) {
     title: "🎬 Quel est ce film ?",
     description:
       "Devinez le titre d'un film à partir de l'image\n\n" +
-      "Répondez dans le champ libre ci-dessous et cliquez sur le bouton « Répondre » pour soumettre votre réponse.\n\n" +
+      "Cliquez sur le bouton «Répondre» pour soumettre votre réponse, ou prenez un indice pour vous aider.\n\n" +
       "**Barème**\n" +
       "Réponse exacte du 1er coup sans indice : **10 pts**\n" +
       "Chaque tentative incorrecte : **-2 pts**\n" +
       "Chaque indice utilisé : **-3 pts**",
     image: { url: `${TRUST_ROYALE_URL}/frames/images/${frameEntry.image}` },
     color: FRAME_COLOR,
-    footer: { text: "Prochaine partie : dans une semaine. Bonne chance tout le monde !" },
+    footer: {
+      text: "Prochaine partie : dans une semaine. Bonne chance tout le monde !",
+    },
   };
 }
 
@@ -52,9 +54,24 @@ function buildFrameComponents(gameId) {
     {
       type: 1,
       components: [
-        { type: 2, style: 2, label: "💡 Indice 1 (année)", custom_id: `frame_hint1:${gameId}` },
-        { type: 2, style: 2, label: "💡 Indice 2 (réalisateur)", custom_id: `frame_hint2:${gameId}` },
-        { type: 2, style: 1, label: "📝 Répondre", custom_id: `frame_answer:${gameId}` },
+        {
+          type: 2,
+          style: 2,
+          label: "💡 Indice 1 (année)",
+          custom_id: `frame_hint1:${gameId}`,
+        },
+        {
+          type: 2,
+          style: 2,
+          label: "💡 Indice 2 (réalisateur)",
+          custom_id: `frame_hint2:${gameId}`,
+        },
+        {
+          type: 2,
+          style: 1,
+          label: "📝 Répondre",
+          custom_id: `frame_answer:${gameId}`,
+        },
       ],
     },
   ];
@@ -109,14 +126,17 @@ export async function postFrame(channelId, { dryRun = false } = {}) {
   const embed = buildFrameEmbed(frameEntry);
   const components = buildFrameComponents(state.gameId);
 
-  const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bot ${token}`,
-      "Content-Type": "application/json",
+  const res = await fetch(
+    `https://discord.com/api/v10/channels/${channelId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bot ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ embeds: [embed], components }),
     },
-    body: JSON.stringify({ embeds: [embed], components }),
-  });
+  );
 
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
@@ -147,7 +167,13 @@ async function postEphemeral(webhookUrl, content) {
 
 // ── Bouton indice ────────────────────────────────────────────
 
-export async function handleHintButton(webhookUrl, gameId, hintKey, discordId, username) {
+export async function handleHintButton(
+  webhookUrl,
+  gameId,
+  hintKey,
+  discordId,
+  username,
+) {
   try {
     const state = await readState();
     if (!state || state.gameId !== gameId) {
@@ -161,7 +187,9 @@ export async function handleHintButton(webhookUrl, gameId, hintKey, discordId, u
 
     const label = HINT_LABELS[hintKey] || hintKey;
     const value = frameEntry[hintKey];
-    const suffix = alreadyUsed ? "_Indice déjà révélé._" : "_Indice révélé (-3 pts)._";
+    const suffix = alreadyUsed
+      ? "_Indice déjà révélé._"
+      : "_Indice révélé (-3 pts)._";
 
     await postEphemeral(webhookUrl, `💡 **${label}** : ${value}\n${suffix}`);
   } catch (err) {
@@ -171,8 +199,19 @@ export async function handleHintButton(webhookUrl, gameId, hintKey, discordId, u
 
 // ── DM de fin de partie ──────────────────────────────────────
 
-function buildDmText({ titre, score, gameRank, gameTotal, seasonScore, seasonRank, seasonTotal }) {
+function buildDmText({
+  partieNumber,
+  titre,
+  score,
+  gameRank,
+  gameTotal,
+  seasonScore,
+  seasonRank,
+  seasonTotal,
+}) {
   return [
+    `**Trouvez le film : Partie ${partieNumber}**`,
+    "",
     `🎬 **${titre}** — vous avez trouvé !`,
     `Score de cette partie : **${score} pts** (classement : ${gameRank}ᵉ/${gameTotal})`,
     `Score total de la saison : **${seasonScore} pts** (classement général : ${seasonRank}ᵉ/${seasonTotal})`,
@@ -183,24 +222,30 @@ async function sendFrameDM(discordId, text) {
   const token = process.env.DISCORD_TOKEN;
   if (!token) return false;
   try {
-    const dmRes = await fetch("https://discord.com/api/v10/users/@me/channels", {
-      method: "POST",
-      headers: {
-        Authorization: `Bot ${token}`,
-        "Content-Type": "application/json",
+    const dmRes = await fetch(
+      "https://discord.com/api/v10/users/@me/channels",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bot ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ recipient_id: discordId }),
       },
-      body: JSON.stringify({ recipient_id: discordId }),
-    });
+    );
     if (!dmRes.ok) return false;
     const { id: dmChannelId } = await dmRes.json();
-    await fetch(`https://discord.com/api/v10/channels/${dmChannelId}/messages`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bot ${token}`,
-        "Content-Type": "application/json",
+    await fetch(
+      `https://discord.com/api/v10/channels/${dmChannelId}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bot ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ content: text }),
       },
-      body: JSON.stringify({ content: text }),
-    });
+    );
     return true;
   } catch (err) {
     console.error("[Frame] Échec envoi DM:", err.message);
@@ -210,7 +255,13 @@ async function sendFrameDM(discordId, text) {
 
 // ── Soumission de la modal (réponse du joueur) ──────────────────
 
-export async function handleModalSubmit(webhookUrl, gameId, discordId, username, rawAnswer) {
+export async function handleModalSubmit(
+  webhookUrl,
+  gameId,
+  discordId,
+  username,
+  rawAnswer,
+) {
   try {
     const state = await readState();
     if (!state || state.gameId !== gameId) {
@@ -236,9 +287,19 @@ export async function handleModalSubmit(webhookUrl, gameId, discordId, username,
       return;
     }
 
-    const { state: updatedState, score } = await markSolved(discordId, username);
+    const { state: updatedState, score } = await markSolved(
+      discordId,
+      username,
+    );
     const solvedAt = updatedState.participants[discordId].solvedAt;
-    await archiveSolve(updatedState, frameEntry, discordId, username, score, solvedAt);
+    await archiveSolve(
+      updatedState,
+      frameEntry,
+      discordId,
+      username,
+      score,
+      solvedAt,
+    );
 
     const gameRanking = computeGameRanking(updatedState);
     const gameRank = findRank(gameRanking, discordId);
@@ -248,11 +309,15 @@ export async function handleModalSubmit(webhookUrl, gameId, discordId, username,
     const seasonEntry = seasonRanking.find((e) => e.discordId === discordId);
     const seasonRank = findRank(seasonRanking, discordId);
 
-    await postEphemeral(webhookUrl, `🎉 Bravo, c'était bien **${frameEntry.titre}** !`);
+    await postEphemeral(
+      webhookUrl,
+      `🎉 Bravo, c'était bien **${frameEntry.titre}** !`,
+    );
 
     await sendFrameDM(
       discordId,
       buildDmText({
+        partieNumber: updatedState.currentIndex + 1,
         titre: frameEntry.titre,
         score,
         gameRank,
