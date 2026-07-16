@@ -1,7 +1,7 @@
 # Règles des clans de la famille
 
 ```md
-## Règles de GDC "La Resistance" (clan 1)
+## Règles de GDC "La Resistance"
 
 ### OBLIGATIONS :
 
@@ -20,23 +20,23 @@
 ```
 
 ```md
-## Règles de GDC "Les Resistants" (clan 2)
+## Règles de GDC "Les Resistants"
 
 ### OBLIGATIONS :
 
-🔹 4 combats/jour du jeudi au lundi matin.
-🔹 Si absence prévue → Prévenir dans <#881862784059592704> + quitter le clan uniquement durant l'absence (réintégration au retour).
+:small_blue_diamond: 4 combats/jour du jeudi au lundi matin (tolérance de 12/16 fin de semaine)
+:small_blue_diamond: Si absence prévue → Prévenir dans #🔕└＞absentéisme + quitter le clan durant l'absence (réintégration au retour).
 -# Lors de votre retour vous conserverez le rôle que vous aviez avant de partir.
 
 ### OUBLIS :
 
-🔸 1 journée manquée sans prévenir et sans explications → Rétrogradation ou exclusion (orientation vers le clan formation) le lendemain.
-🔸 2 journées manquées sans prévenir et sans explications → Exclusion immédiate.
--# Excuses/explications possibles sur discord ou dans le chat du clan.
+:small_orange_diamond: En fin de semaine GDC, si moins de 12 combats joués → Rétrogradation ou exclusion (selon le rôle).
+-# Excuses/explications possibles sur Discord ou dans le chat du clan.
 
 ### PROMOTION :
 
-<:blue_crown:1294923219668566047> 2600 pts/semaine → Promotion au rang "Aîné". Si joueur régulier en GDC et motivé → Accès possible dans le clan 1 "La Resistance".
+:blue_crown: En fin de semaine, si 2600 pts marqués → Promotion au rang "Aîné".
+:blue_crown: En fin de saison → Accès dans le clan 1 "La Resistance" pour les meilleurs joueurs (Discord obligatoire)
 ```
 
 ```md
