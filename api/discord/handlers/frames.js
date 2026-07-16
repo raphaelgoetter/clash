@@ -35,14 +35,14 @@ function buildFrameEmbed(partieNumber, cacheBust) {
   return {
     title: "🎬 Le jeu du mercredi : Trouvez le film !",
     description:
-      `**Partie ${partieNumber}**\n\n` +
+      `**Manche ${partieNumber}**\n\n` +
       "Devinez le titre d'un film à partir d'une image.\n\n" +
       "Cliquez sur le bouton «Répondre» pour soumettre votre réponse, ou prenez un indice pour vous aider.\n\n" +
       "**Barème**\n" +
       "- Réponse exacte du 1er coup sans indice : **10 pts**\n" +
       "- Chaque tentative incorrecte : **-2 pts**\n" +
       "- Chaque indice utilisé : **-3 pts**\n\n" +
-      "Le classement de la saison est mis à jour après chaque partie, et un DM vous est envoyé pour récapituler vos points et votre classement.\n\n" +
+      "Le classement de la saison est mis à jour après chaque manche, et un DM vous est envoyé pour récapituler vos points et votre classement.\n\n" +
       "**Merci de ne pas spoiler, sinon c'est pas drôle !**",
     // Route dynamique servant uniquement l'image de la partie active. Le
     // paramètre v= est un cache-buster ignoré par le serveur (impossible
@@ -53,7 +53,7 @@ function buildFrameEmbed(partieNumber, cacheBust) {
     image: { url: `${TRUST_ROYALE_URL}/api/frames/image?v=${cacheBust}` },
     color: FRAME_COLOR,
     footer: {
-      text: "Prochaine partie : dans une semaine. Bonne chance tout le monde !",
+      text: "Prochaine manche : dans une semaine. Bonne chance tout le monde !",
     },
   };
 }
@@ -186,13 +186,18 @@ export async function handleHintButton(
   try {
     const state = await readState();
     if (!state || state.gameId !== gameId) {
-      await postEphemeral(webhookUrl, "⚠️ Cette partie est terminée.");
+      await postEphemeral(webhookUrl, "⚠️ Cette manche est terminée.");
       return;
     }
 
     const frames = await loadFrames();
     const frameEntry = frames[state.currentIndex];
-    const { alreadyUsed } = await recordHintUsed(gameId, discordId, username, hintKey);
+    const { alreadyUsed } = await recordHintUsed(
+      gameId,
+      discordId,
+      username,
+      hintKey,
+    );
 
     const label = HINT_LABELS[hintKey] || hintKey;
     const value = frameEntry[hintKey];
@@ -206,7 +211,7 @@ export async function handleHintButton(
   }
 }
 
-// ── DM de fin de partie ──────────────────────────────────────
+// ── DM de fin de manche ──────────────────────────────────────
 
 function buildDmText({
   partieNumber,
@@ -219,10 +224,10 @@ function buildDmText({
   seasonTotal,
 }) {
   return [
-    `**Trouvez le film : Partie ${partieNumber}**`,
+    `**Trouvez le film : Manche ${partieNumber}**`,
     "",
     `🎬 **${titre}** — vous avez trouvé !`,
-    `Score de cette partie : **${score} pts** (classement : ${gameRank}ᵉ/${gameTotal})`,
+    `Score de cette manche : **${score} pts** (classement : ${gameRank}ᵉ/${gameTotal})`,
     `Score total de la saison : **${seasonScore} pts** (classement général : ${seasonRank}ᵉ/${seasonTotal})`,
   ].join("\n");
 }
@@ -274,7 +279,7 @@ export async function handleModalSubmit(
   try {
     const state = await readState();
     if (!state || state.gameId !== gameId) {
-      await postEphemeral(webhookUrl, "⚠️ Cette partie est terminée.");
+      await postEphemeral(webhookUrl, "⚠️ Cette manche est terminée.");
       return;
     }
 
@@ -297,8 +302,19 @@ export async function handleModalSubmit(
       return;
     }
 
-    const { participant, score } = await markSolved(gameId, discordId, username);
-    await archiveSolve(state, frameEntry, discordId, username, score, participant.solvedAt);
+    const { participant, score } = await markSolved(
+      gameId,
+      discordId,
+      username,
+    );
+    await archiveSolve(
+      state,
+      frameEntry,
+      discordId,
+      username,
+      score,
+      participant.solvedAt,
+    );
 
     const [gameRanking, seasonRanking] = await Promise.all([
       computeGameRanking(gameId),
