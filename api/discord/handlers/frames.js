@@ -213,6 +213,21 @@ export async function handleHintButton(
 
     const frames = await loadFrames();
     const frameEntry = frames[state.currentIndex];
+    const label = HINT_LABELS[hintKey] || hintKey;
+    const value = frameEntry[hintKey];
+
+    // Score déjà figé par markSolved() — cliquer un indice après coup ne
+    // déduit plus rien, mais le message ne doit pas laisser croire le
+    // contraire (pas d'appel à recordHintUsed, inutile une fois résolu).
+    const existing = await readParticipant(gameId, discordId);
+    if (existing?.solved) {
+      await postEphemeral(
+        webhookUrl,
+        `💡 **${label}** : ${value}\n_Vous avez déjà trouvé, cet indice ne change plus votre score._`,
+      );
+      return;
+    }
+
     const { alreadyUsed } = await recordHintUsed(
       gameId,
       discordId,
@@ -220,8 +235,6 @@ export async function handleHintButton(
       hintKey,
     );
 
-    const label = HINT_LABELS[hintKey] || hintKey;
-    const value = frameEntry[hintKey];
     const suffix = alreadyUsed
       ? "_Indice déjà révélé._"
       : "_Indice révélé (-3 pts)._";
