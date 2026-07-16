@@ -14233,7 +14233,7 @@
           "start": "2026-07-16T09:36:00.000Z",
           "end": "2026-07-17T09:35:59.999Z"
         },
-        "snapshotTime": "2026-07-16T22:20:34.955Z",
+        "snapshotTime": "2026-07-16T23:17:38.022Z",
         "snapshotBackupTime": "2026-07-16T09:40:26.714Z",
         "decks": {
           "#202R9VUJCU": 4,
@@ -14244,6 +14244,7 @@
           "#82JPJ9J98": 4,
           "#82UPUGYP": 4,
           "#8GGQLU28": 4,
+          "#8Q2UQL2R": 4,
           "#8QVRJYVYU": 4,
           "#8UL8JRCJ": 4,
           "#8Y90VQYP9": 4,
@@ -14266,8 +14267,7 @@
           "#UPC0Y0LRQ": 4,
           "#VGJ9LL8VC": 4,
           "#YRGJGR8R": 4,
-          "#CGJP0YYUJ": 3,
-          "#8Q2UQL2R": 2
+          "#CGJP0YYUJ": 3
         },
         "hourlyCumul": [],
         "_cumulFame": {
@@ -14293,7 +14293,7 @@
           "#VLVLQR0UP": 0,
           "#VY8YG2UYQ": 0,
           "#29QRJRLY0": 400,
-          "#8Q2UQL2R": 500,
+          "#8Q2UQL2R": 900,
           "#8UL8JRCJ": 650,
           "#QCUL98L8Y": 0,
           "#VGJ9LL8VC": 800,
@@ -14369,7 +14369,7 @@
           "#82UPUGYP": 128600,
           "#LV0VUJVU": 89762,
           "#CGJP0YYUJ": 3131,
-          "#RJY2R282V": 47567,
+          "#RJY2R282V": 47575,
           "#GGRLYR8PL": 22302,
           "#29QRJRLY0": 43240,
           "#2YGYYPYV": 95610,
@@ -14382,7 +14382,7 @@
           "#8QVRJYVYU": 86219,
           "#U2UYYCQVG": 2959,
           "#GLV9Q2P09": 58599,
-          "#8Q2UQL2R": 50880,
+          "#8Q2UQL2R": 50896,
           "#Q8GYUQ8GG": 56441,
           "#GGVQJLG9": 300712,
           "#22RGGVYP": 26045,
@@ -14439,7 +14439,7 @@
           "#VLVLQR0UP": 0,
           "#VY8YG2UYQ": 0,
           "#29QRJRLY0": 4,
-          "#8Q2UQL2R": 2,
+          "#8Q2UQL2R": 4,
           "#8UL8JRCJ": 4,
           "#QCUL98L8Y": 0,
           "#VGJ9LL8VC": 4,
@@ -14481,7 +14481,7 @@
           "#98UULQY8": 0,
           "#UP9YJV080": 0
         },
-        "snapshotCount": 125
+        "snapshotCount": 127
       },
       {
         "warDay": "friday",
