@@ -26,7 +26,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
 import { fetchRaceLog, fetchCurrentRace } from "./clashApi.js";
-import { computeCurrentSeasonId } from "./dateUtils.js";
+import { computeCurrentSeasonId, computeSeasonMancheTotal } from "./dateUtils.js";
+
+export { computeSeasonMancheTotal } from "./dateUtils.js";
 import { FAMILY_CLAN_TAGS } from "./warHistory.js";
 import { getOrSet } from "./cache.js";
 
@@ -110,8 +112,11 @@ function seasonKey(seasonId) {
 function seasonPseudosKey(seasonId) {
   return `frame:season:${seasonId}:pseudos`;
 }
-function seasonManchesKey(seasonId) {
-  return `frame:season:${seasonId}:manches`;
+function seasonMancheSeqKey(seasonId) {
+  return `frame:season:${seasonId}:manche_seq`;
+}
+function seasonMancheNumbersKey(seasonId) {
+  return `frame:season:${seasonId}:manche_numbers`;
 }
 function archivedKey(seasonId) {
   return `frame:archived:${seasonId}`;
@@ -223,29 +228,46 @@ export function pickNextFrameIndex(state, frames) {
   return (prevIndex + 1) % frames.length;
 }
 
+// Attribue le numéro de manche relatif à la saison (1, 2, 3...) — idempotent
+// comme archiveSolve() : HSETNX + relecture si la clé existe déjà ou si un
+// appel concurrent a gagné la course, jamais deux numéros pour le même
+// gameId ni de saut dans la séquence.
+async function assignSeasonMancheNumber(seasonId, gameId) {
+  const numbersKey = seasonMancheNumbersKey(seasonId);
+  const existing = await getRedis().hget(numbersKey, gameId);
+  if (existing != null) return Number(existing);
+
+  const seasonManche = Number(await getRedis().incr(seasonMancheSeqKey(seasonId)));
+  const wasSet = Number(await getRedis().hsetnx(numbersKey, gameId, String(seasonManche)));
+  if (!wasSet) {
+    return Number(await getRedis().hget(numbersKey, gameId));
+  }
+  return seasonManche;
+}
+
 export async function startNewGame(channelId) {
   const frames = await loadFrames();
   const previousState = await readState();
   const currentIndex = pickNextFrameIndex(previousState, frames);
   const frameEntry = frames[currentIndex];
   const seasonId = await getCurrentSeasonId();
+  const gameId = path.parse(frameEntry.image).name;
+
+  const seasonManche = await assignSeasonMancheNumber(seasonId, gameId);
+  const seasonMancheTotal = computeSeasonMancheTotal();
 
   const newState = {
     currentIndex,
-    gameId: path.parse(frameEntry.image).name,
+    gameId,
     seasonId,
+    seasonManche,
+    seasonMancheTotal,
     startedAt: new Date().toISOString(),
     channelId,
     messageId: null,
   };
 
   await writeState(newState);
-
-  // Enregistre cette manche comme faisant partie de la saison — permet à
-  // /frame de lister TOUTES les manches passées de la saison (y compris
-  // celles où le joueur n'a pas joué), pas seulement celles où il a un
-  // résultat archivé.
-  await getRedis().sadd(seasonManchesKey(seasonId), newState.gameId);
 
   // Purge la progression (indices/tentatives/participants) de la partie
   // précédente — données jetables une fois la partie terminée. Les
@@ -399,8 +421,24 @@ export async function getPlayerSeasonResults(seasonId, discordId) {
 // passées où un joueur n'a pas du tout joué, pas seulement celles où il a
 // un résultat archivé.
 export async function getSeasonManches(seasonId) {
-  const ids = await getRedis().smembers(seasonManchesKey(seasonId));
+  const ids = await getRedis().hkeys(seasonMancheNumbersKey(seasonId));
   return ids || [];
+}
+
+// Numéro de manche attribué (1, 2, 3... relatif à la saison, voir
+// assignSeasonMancheNumber). null si cette manche n'a jamais été démarrée
+// via startNewGame() pour cette saison.
+export async function getSeasonMancheNumber(seasonId, gameId) {
+  const raw = await getRedis().hget(seasonMancheNumbersKey(seasonId), gameId);
+  return raw == null ? null : Number(raw);
+}
+
+// Aperçu en lecture seule du prochain numéro de manche à attribuer, sans
+// muter l'état (INCR) — utilisé par la branche --dry-run de postFrame(), qui
+// ne doit jamais faire avancer la partie.
+export async function previewSeasonManche(seasonId) {
+  const seq = Number(await getRedis().get(seasonMancheSeqKey(seasonId))) || 0;
+  return seq + 1;
 }
 
 // Un joueur a-t-il interagi avec cette manche (indice pris ou tentative),
@@ -410,14 +448,6 @@ export async function getSeasonManches(seasonId) {
 export async function hasPlayerInteracted(gameId, discordId) {
   const username = await getRedis().hget(usernamesKey(gameId), discordId);
   return username != null;
-}
-
-// Position (1-indexée) d'une partie dans frames.json — c'est ce numéro qui
-// est affiché comme "Manche N" partout dans le jeu (post, DM, /frame).
-export async function getMancheNumber(gameId) {
-  const frames = await loadFrames();
-  const idx = frames.findIndex((f) => path.parse(f.image).name === gameId);
-  return idx === -1 ? null : idx + 1;
 }
 
 // ── Classements ──────────────────────────────────────────────────

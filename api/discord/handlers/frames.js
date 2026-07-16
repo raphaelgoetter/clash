@@ -7,6 +7,7 @@
 
 import {
   loadFrames,
+  getCurrentSeasonId,
   readState,
   writeState,
   readParticipant,
@@ -23,7 +24,9 @@ import {
   getPlayerSeasonResults,
   getSeasonManches,
   hasPlayerInteracted,
-  getMancheNumber,
+  getSeasonMancheNumber,
+  previewSeasonManche,
+  computeSeasonMancheTotal,
   findRank,
   findTiedRank,
 } from "../../../backend/services/frames.js";
@@ -38,11 +41,11 @@ const HINT_LABELS = {
 
 // ── Embed / composants du post ────────────────────────────────
 
-function buildFrameEmbed(partieNumber, cacheBust) {
+function buildFrameEmbed({ seasonId, seasonManche, seasonMancheTotal, cacheBust }) {
   return {
     title: "🎬 Le jeu du mercredi : Trouvez le film !",
     description:
-      `**Manche ${partieNumber}**\n\n` +
+      `**Saison ${seasonId} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
       "Devinez le titre d'un film à partir d'une image.\n\n" +
       "Cliquez sur le bouton «Répondre» pour soumettre votre réponse, ou prenez un indice pour vous aider.\n\n" +
       "**Barème**\n" +
@@ -131,7 +134,10 @@ export async function postFrame(channelId, { dryRun = false } = {}) {
     const currentIndex = pickNextFrameIndex(state, frames);
     const frameEntry = frames[currentIndex];
     const gameId = frameEntry.image.replace(/\.[^.]+$/, "");
-    const embed = buildFrameEmbed(currentIndex + 1, Date.now());
+    const seasonId = await getCurrentSeasonId();
+    const seasonManche = await previewSeasonManche(seasonId);
+    const seasonMancheTotal = computeSeasonMancheTotal();
+    const embed = buildFrameEmbed({ seasonId, seasonManche, seasonMancheTotal, cacheBust: Date.now() });
     const components = buildFrameComponents(gameId);
     return { dryRun: true, frameEntry, embed, components };
   }
@@ -140,7 +146,12 @@ export async function postFrame(channelId, { dryRun = false } = {}) {
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
 
   const { state, frameEntry } = await startNewGame(channelId);
-  const embed = buildFrameEmbed(state.currentIndex + 1, Date.now());
+  const embed = buildFrameEmbed({
+    seasonId: state.seasonId,
+    seasonManche: state.seasonManche,
+    seasonMancheTotal: state.seasonMancheTotal,
+    cacheBust: Date.now(),
+  });
   const components = buildFrameComponents(state.gameId);
 
   const res = await fetch(
@@ -183,7 +194,12 @@ export async function repostFrame(channelId) {
   const frames = await loadFrames();
   const frameEntry = frames[state.currentIndex];
 
-  const embed = buildFrameEmbed(state.currentIndex + 1, Date.now());
+  const embed = buildFrameEmbed({
+    seasonId: state.seasonId,
+    seasonManche: state.seasonManche,
+    seasonMancheTotal: state.seasonMancheTotal,
+    cacheBust: Date.now(),
+  });
   const components = buildFrameComponents(state.gameId);
 
   const res = await fetch(
@@ -297,9 +313,9 @@ function ordinal(n) {
   return `${n}${n === 1 ? "ᵉʳ" : "ᵉ"}`;
 }
 
-function buildDmText({ partieNumber, titre, score, gameRank, seasonScore }) {
+function buildDmText({ seasonId, seasonManche, seasonMancheTotal, titre, score, gameRank, seasonScore }) {
   return [
-    `**Trouvez le film : Manche ${partieNumber}**`,
+    `**Trouvez le film : Saison ${seasonId} · Manche ${seasonManche}/${seasonMancheTotal}**`,
     "",
     `🎬 **${titre}** — vous êtes le ${ordinal(gameRank)} à avoir trouvé !`,
     `Score de cette manche : **${score} pts**`,
@@ -406,7 +422,9 @@ export async function handleModalSubmit(
     await sendFrameDM(
       discordId,
       buildDmText({
-        partieNumber: state.currentIndex + 1,
+        seasonId: state.seasonId,
+        seasonManche: state.seasonManche,
+        seasonMancheTotal: state.seasonMancheTotal,
         titre: frameEntry.titre,
         score,
         gameRank,
@@ -422,7 +440,8 @@ export async function handleModalSubmit(
 
 function buildFrameStatsEmbed({
   pseudo,
-  currentManche,
+  currentSeasonManche,
+  seasonMancheTotal,
   currentSolved,
   currentInteracted,
   currentScore,
@@ -438,7 +457,7 @@ function buildFrameStatsEmbed({
 }) {
   const lines = [];
 
-  lines.push(`**Manche ${currentManche} (actuelle) :**`);
+  lines.push(`**Saison ${seasonId} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`);
   if (currentSolved) {
     lines.push("- Vous avez trouvé le nom du film !");
     lines.push(`- Vous avez marqué ${currentScore} points`);
@@ -456,7 +475,7 @@ function buildFrameStatsEmbed({
 
   for (const m of pastManches) {
     lines.push("");
-    lines.push(`**Manche ${m.manche} :**`);
+    lines.push(`**Saison ${seasonId} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`);
     if (m.played) {
       lines.push("- Vous avez trouvé le nom du film !");
       lines.push(`- Vous avez marqué ${m.score} points`);
@@ -509,7 +528,8 @@ export async function handleFrameStatsCommand(webhookUrl, discordId, username) {
         computeSeasonRanking(state.seasonId),
       ]);
 
-    const currentManche = state.currentIndex + 1;
+    const currentSeasonManche = state.seasonManche;
+    const seasonMancheTotal = state.seasonMancheTotal;
     const currentSolved = !!participant?.solved;
     const currentScore = participant?.score ?? 0;
     const solvedCount = gameRanking.length;
@@ -527,21 +547,22 @@ export async function handleFrameStatsCommand(webhookUrl, discordId, username) {
         pastGameIds.map(async (gameId) => {
           const result = seasonResults.find((r) => r.gameId === gameId);
           return {
-            manche: await getMancheNumber(gameId),
+            seasonManche: await getSeasonMancheNumber(state.seasonId, gameId),
             played: !!result,
             score: result?.score ?? 0,
           };
         }),
       )
     )
-      .filter((m) => m.manche != null)
-      .sort((a, b) => b.manche - a.manche);
+      .filter((m) => m.seasonManche != null)
+      .sort((a, b) => b.seasonManche - a.seasonManche);
 
     const seasonTotal = seasonResults.reduce((sum, r) => sum + r.score, 0);
 
     const embed = buildFrameStatsEmbed({
       pseudo: username,
-      currentManche,
+      currentSeasonManche,
+      seasonMancheTotal,
       currentSolved,
       currentInteracted,
       currentScore,

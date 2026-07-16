@@ -571,16 +571,18 @@ Le jeu stockait initialement son état sur Vercel Blob (même pattern que `champ
 
 Schéma des clés (`backend/services/frames.js`) :
 
-| Clé Redis                              | Type               | Contenu                                                                                                                                                           |
-| -------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `frame:state`                          | STRING             | Métadonnées de la partie active (JSON)                                                                                                                           |
-| `frame:participants:<gameId>`          | HASH               | `discordId → participant` (doc final, écrit seulement à la résolution)                                                                                          |
-| `frame:usernames:<gameId>`             | HASH               | `discordId → pseudo` (mis à jour à chaque indice/tentative)                                                                                                      |
-| `frame:hints:<gameId>:<discordId>`     | SET                | Indices déjà pris (`indice1`, `indice2`)                                                                                                                         |
-| `frame:attempts:<gameId>:<discordId>`  | STRING (compteur)  | Nombre de tentatives incorrectes (`INCR` atomique)                                                                                                               |
-| `frame:season:<seasonId>`              | ZSET               | `discordId → score total` de la saison (`ZINCRBY` atomique)                                                                                                      |
-| `frame:season:<seasonId>:pseudos`      | HASH               | `discordId → pseudo` pour l'affichage du classement de saison                                                                                                    |
-| `frame:archived:<seasonId>`            | HASH               | `<gameId>:<discordId> → résultat` — marqueur d'idempotence (`HSETNX`) évitant un double comptage si `archiveSolve` est appelé deux fois pour la même résolution |
+| Clé Redis                                | Type              | Contenu                                                                                                                                                           |
+| ----------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `frame:state`                            | STRING            | Métadonnées de la partie active (JSON) — inclut `seasonManche`/`seasonMancheTotal` (voir ci-dessous)                                                            |
+| `frame:participants:<gameId>`            | HASH              | `discordId → participant` (doc final, écrit seulement à la résolution)                                                                                          |
+| `frame:usernames:<gameId>`               | HASH              | `discordId → pseudo` (mis à jour à chaque indice/tentative)                                                                                                     |
+| `frame:hints:<gameId>:<discordId>`       | SET               | Indices déjà pris (`indice1`, `indice2`)                                                                                                                        |
+| `frame:attempts:<gameId>:<discordId>`    | STRING (compteur) | Nombre de tentatives incorrectes (`INCR` atomique)                                                                                                              |
+| `frame:season:<seasonId>`                | ZSET              | `discordId → score total` de la saison (`ZINCRBY` atomique)                                                                                                     |
+| `frame:season:<seasonId>:pseudos`        | HASH              | `discordId → pseudo` pour l'affichage du classement de saison                                                                                                   |
+| `frame:season:<seasonId>:manche_seq`     | STRING (compteur) | Dernier numéro de manche attribué cette saison (`INCR` atomique)                                                                                                |
+| `frame:season:<seasonId>:manche_numbers` | HASH              | `gameId → numéro de manche` (1, 2, 3... relatif à la saison, attribué par `assignSeasonMancheNumber()` à chaque `startNewGame()`, idempotent via `HSETNX`)      |
+| `frame:archived:<seasonId>`              | HASH              | `<gameId>:<discordId> → résultat` — marqueur d'idempotence (`HSETNX`) évitant un double comptage si `archiveSolve` est appelé deux fois pour la même résolution |
 
 ⚠️ **`automaticDeserialization: false` obligatoire** à la construction du client — par défaut le SDK convertit toute valeur "numérique" en `Number` JS, y compris les IDs Discord (17-19 chiffres, au-delà de `Number.MAX_SAFE_INTEGER`), ce qui les corrompt silencieusement. La sérialisation/désérialisation JSON est donc gérée à la main partout (`toJson`/`fromJson`/`hgetallJson`). Autre piège vérifié empiriquement (non documenté) : avec cette option désactivée, `HGETALL` renvoie un tableau plat `[champ1, valeur1, ...]` et non un objet — voir `pairsToObject()`.
 
@@ -599,8 +601,10 @@ Seule commande slash du jeu (tout le reste passe par les boutons/modal du post h
 Contenu affiché (`handleFrameStatsCommand()`, `api/discord/handlers/frames.js`) :
 
 - **Manche en cours** : trouvée ou non, score obtenu (ou "pas encore trouvé"/"pas de points").
-- **Manches précédentes de la saison** (`getPlayerSeasonResults()`) : uniquement celles où le joueur a trouvé la réponse — triées de la plus récente à la plus ancienne. Le numéro de manche est recalculé via `getMancheNumber()` (position dans `frames.json`, pas un compteur séparé).
+- **Manches précédentes de la saison** (`getPlayerSeasonResults()`) : uniquement celles où le joueur a trouvé la réponse — triées de la plus récente à la plus ancienne. Le numéro de manche vient de `getSeasonMancheNumber(seasonId, gameId)` (`frame:season:<seasonId>:manche_numbers`, voir "Stockage — Upstash Redis" ci-dessus).
 - **Score total de la saison** : somme de tous les résultats archivés (`frame:archived:<seasonId>`) du joueur, saison en cours uniquement (voir "Scores et classements par saison" ci-dessus).
+
+L'affichage "Manche N" est partout devenu **"Saison S · Manche N/X"** (post hebdomadaire, DM de fin de manche, `/frame`) : N est relatif à la saison (repart à 1 à chaque nouvelle saison, attribué par `assignSeasonMancheNumber()`), X est le nombre total de manches prévues sur la saison, calculé calendairement (voir [Saison](#saison)). La progression des images dans `frames.json` (`currentIndex`) reste, elle, indépendante et ne redémarre jamais — seule la numérotation affichée aux joueurs est scopée par saison.
 
 À relancer `node scripts/registerCommands.js` après toute modification (nouvelle option, changement de description) — comme pour toute commande.
 
@@ -714,6 +718,7 @@ Où trouver ou calculer la valeur :
 - `sectionIndex` est une `source de vérité` fournie par l’API et commence à `0` ;
 - le `weekId` courant se calcule avec `computeCurrentWeekId(currentRace, raceLog)` dans `backend/services/dateUtils.js` ;
 - le `seasonId` courant se calcule avec `computeCurrentSeasonId(currentRace, raceLog)` dans `backend/services/dateUtils.js`.
+- le nombre de manches du jeu Frame sur la saison en cours (X dans "Manche N/X") se calcule par **calcul purement calendaire**, indépendant de l'API Clash Royale : `getCurrentSeasonBounds(now)` détermine les bornes `[premier lundi du mois, premier lundi du mois suivant)`, et `computeSeasonMancheTotal(now)` compte les mercredis dans cet intervalle — les deux dans `backend/services/dateUtils.js`. Risque résiduel accepté : si Supercell décale une transition de saison par rapport à cette règle documentée, le calcul divergerait de la réalité jusqu'à correction manuelle.
 
 ### Jours de GDC
 

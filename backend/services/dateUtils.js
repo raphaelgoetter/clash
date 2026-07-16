@@ -156,3 +156,54 @@ export function parseWeekId(weekId) {
   if (!match) return null;
   return { seasonId: Number(match[1]), sectionIndex: Number(match[2]) - 1 };
 }
+
+// ============================================================
+// Bornes calendaires d'une saison — jeu Frame
+//
+// Calcul purement calendaire (mois civil), indépendant de l'API Clash
+// Royale : sert uniquement à prédire le nombre total de manches Frame
+// (mercredis) de la saison en cours, pour l'affichage "Manche N/X". Ne pas
+// confondre avec seasonId/computeCurrentSeasonId ci-dessus, qui restent la
+// seule source de vérité pour l'identifiant de saison lui-même.
+// ============================================================
+
+/** Premier lundi (UTC minuit) du mois donné. `monthIndex` accepte des
+ * valeurs hors [0,11] (12, -1, ...) : Date.UTC() normalise automatiquement
+ * l'année/le mois, ce qui simplifie le calcul du mois suivant/précédent en
+ * bordure d'année dans getCurrentSeasonBounds(). */
+export function getFirstMondayOfMonth(year, monthIndex) {
+  const first = new Date(Date.UTC(year, monthIndex, 1));
+  const dow = first.getUTCDay(); // 0=dimanche..6=samedi
+  const offset = (1 - dow + 7) % 7;
+  return new Date(Date.UTC(year, monthIndex, 1 + offset));
+}
+
+/** Bornes [start, end) de la saison Frame calendaire en cours à la date `now`. */
+export function getCurrentSeasonBounds(now = new Date()) {
+  const year = now.getUTCFullYear();
+  const monthIndex = now.getUTCMonth();
+  const candidate = getFirstMondayOfMonth(year, monthIndex);
+  const start =
+    now.getTime() >= candidate.getTime()
+      ? candidate
+      : getFirstMondayOfMonth(year, monthIndex - 1);
+  const end = getFirstMondayOfMonth(start.getUTCFullYear(), start.getUTCMonth() + 1);
+  return { start, end };
+}
+
+/** Nombre de mercredis dans [start, end) (borne de fin exclue). */
+export function countWednesdaysInRange(start, end) {
+  let count = 0;
+  const cursor = new Date(start.getTime());
+  while (cursor.getTime() < end.getTime()) {
+    if (cursor.getUTCDay() === 3) count++;
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return count;
+}
+
+/** X : nombre total de manches Frame (mercredis) de la saison calendaire en cours. */
+export function computeSeasonMancheTotal(now = new Date()) {
+  const { start, end } = getCurrentSeasonBounds(now);
+  return countWednesdaysInRange(start, end);
+}
