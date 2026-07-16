@@ -25,6 +25,7 @@ import {
   hasPlayerInteracted,
   getMancheNumber,
   findRank,
+  findTiedRank,
 } from "../../../backend/services/frames.js";
 
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
@@ -369,12 +370,15 @@ function buildFrameStatsEmbed({
   currentSolved,
   currentInteracted,
   currentScore,
+  currentRank,
   solvedCount,
   totalParticipants,
   perfectCount,
   pastManches,
   seasonId,
   seasonTotal,
+  seasonRank,
+  seasonRankTotal,
 }) {
   const lines = [];
 
@@ -382,6 +386,7 @@ function buildFrameStatsEmbed({
   if (currentSolved) {
     lines.push("- Vous avez trouvé le nom du film !");
     lines.push(`- Vous avez marqué ${currentScore} points`);
+    lines.push(`- Votre classement : ${currentRank} / ${solvedCount}`);
   } else if (currentInteracted) {
     lines.push("- Vous n'avez pas encore trouvé le nom du film !");
     lines.push("- Vous n'avez pas marqué de points");
@@ -407,6 +412,9 @@ function buildFrameStatsEmbed({
   lines.push("");
   lines.push(`**Score de la saison (S${seasonId}) :**`);
   lines.push(`- Vous avez accumulé ${seasonTotal} points cette saison`);
+  if (seasonRank != null) {
+    lines.push(`- Votre classement : ${seasonRank} / ${seasonRankTotal}`);
+  }
 
   return {
     title: `🎬  Scores de ${pseudo}`,
@@ -434,7 +442,7 @@ export async function handleFrameStatsCommand(webhookUrl, discordId, username) {
       return;
     }
 
-    const [participant, seasonResults, seasonManches, currentInteracted, gameRanking, inProgress] =
+    const [participant, seasonResults, seasonManches, currentInteracted, gameRanking, inProgress, seasonRanking] =
       await Promise.all([
         readParticipant(state.gameId, discordId),
         getPlayerSeasonResults(state.seasonId, discordId),
@@ -442,6 +450,7 @@ export async function handleFrameStatsCommand(webhookUrl, discordId, username) {
         hasPlayerInteracted(state.gameId, discordId),
         computeGameRanking(state.gameId),
         listGamePlayersInProgress(state.gameId),
+        computeSeasonRanking(state.seasonId),
       ]);
 
     const currentManche = state.currentIndex + 1;
@@ -450,6 +459,11 @@ export async function handleFrameStatsCommand(webhookUrl, discordId, username) {
     const solvedCount = gameRanking.length;
     const totalParticipants = solvedCount + inProgress.length;
     const perfectCount = gameRanking.filter((r) => r.score === 10).length;
+    const currentRank = currentSolved ? findTiedRank(gameRanking, discordId, "score") : null;
+
+    const hasSeasonRank = seasonResults.length > 0;
+    const seasonRank = hasSeasonRank ? findTiedRank(seasonRanking, discordId, "totalScore") : null;
+    const seasonRankTotal = seasonRanking.length;
 
     const pastGameIds = seasonManches.filter((gameId) => gameId !== state.gameId);
     const pastManches = (
@@ -475,12 +489,15 @@ export async function handleFrameStatsCommand(webhookUrl, discordId, username) {
       currentSolved,
       currentInteracted,
       currentScore,
+      currentRank,
       solvedCount,
       totalParticipants,
       perfectCount,
       pastManches,
       seasonId: state.seasonId,
       seasonTotal,
+      seasonRank,
+      seasonRankTotal,
     });
 
     await postEphemeralEmbed(webhookUrl, embed, buildFrameStatsComponents());

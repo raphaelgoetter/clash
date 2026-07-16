@@ -472,3 +472,14 @@ export function findRank(sortedList, discordId) {
   const idx = sortedList.findIndex((e) => e.discordId === discordId);
   return idx === -1 ? null : idx + 1;
 }
+
+// Classement avec ex-aequo ("1224" : les scores égaux partagent le même
+// rang, le rang suivant saute en conséquence) — contrairement à findRank()
+// qui donne juste la position dans la liste triée (utile pour "vous êtes le
+// Xe à avoir trouvé", où c'est l'ordre d'arrivée qui compte, pas le score).
+export function findTiedRank(sortedList, discordId, scoreKey) {
+  const entry = sortedList.find((e) => e.discordId === discordId);
+  if (!entry) return null;
+  const score = entry[scoreKey];
+  return sortedList.filter((e) => e[scoreKey] > score).length + 1;
+}
