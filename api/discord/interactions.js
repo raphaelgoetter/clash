@@ -7273,9 +7273,14 @@ export default async function handler(req, res) {
   // ── Jeu Frame : commande /frame (scores personnels) ──
   if (body.type === 2 && body.data?.name === "frame") {
     const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleFrameStatsCommand(webhookUrl, discordId));
+    runBackground(() => handleFrameStatsCommand(webhookUrl, discordId, username));
     return;
   }
 

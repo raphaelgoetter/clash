@@ -20,6 +20,8 @@ import {
   computeGameRanking,
   computeSeasonRanking,
   getPlayerSeasonResults,
+  getSeasonManches,
+  hasPlayerInteracted,
   getMancheNumber,
   findRank,
 } from "../../../backend/services/frames.js";
@@ -359,23 +361,29 @@ export async function handleModalSubmit(
 
 // ── Commande /frame : scores personnels du joueur ────────────────
 
-function buildFrameStatsEmbed({ currentManche, currentSolved, currentScore, pastResults, seasonId, seasonTotal }) {
+function buildFrameStatsEmbed({ pseudo, currentManche, currentSolved, currentInteracted, currentScore, pastManches, seasonId, seasonTotal }) {
   const lines = [];
 
   lines.push(`**Manche ${currentManche} (actuelle) :**`);
   if (currentSolved) {
     lines.push("- Vous avez trouvé le nom du film !");
     lines.push(`- Vous avez marqué ${currentScore} points`);
-  } else {
+  } else if (currentInteracted) {
     lines.push("- Vous n'avez pas encore trouvé le nom du film !");
     lines.push("- Vous n'avez pas marqué de points");
+  } else {
+    lines.push("- Vous n'avez pas encore commencé cette manche");
   }
 
-  for (const p of pastResults) {
+  for (const m of pastManches) {
     lines.push("");
-    lines.push(`**Manche ${p.manche} :**`);
-    lines.push("- Vous avez trouvé le nom du film !");
-    lines.push(`- Vous avez marqué ${p.score} points`);
+    lines.push(`**Manche ${m.manche} :**`);
+    if (m.played) {
+      lines.push("- Vous avez trouvé le nom du film !");
+      lines.push(`- Vous avez marqué ${m.score} points`);
+    } else {
+      lines.push("- Vous n'avez pas joué cette manche");
+    }
   }
 
   lines.push("");
@@ -383,13 +391,13 @@ function buildFrameStatsEmbed({ currentManche, currentSolved, currentScore, past
   lines.push(`- Vous avez accumulé ${seasonTotal} points cette saison`);
 
   return {
-    title: "🎬  Trouvez le film : vos scores.",
+    title: `🎬  Scores de ${pseudo}`,
     description: lines.join("\n"),
     color: FRAME_COLOR,
   };
 }
 
-export async function handleFrameStatsCommand(webhookUrl, discordId) {
+export async function handleFrameStatsCommand(webhookUrl, discordId, username) {
   try {
     const state = await readState();
     if (!state) {
@@ -397,34 +405,42 @@ export async function handleFrameStatsCommand(webhookUrl, discordId) {
       return;
     }
 
-    const [participant, seasonResults] = await Promise.all([
+    const [participant, seasonResults, seasonManches, currentInteracted] = await Promise.all([
       readParticipant(state.gameId, discordId),
       getPlayerSeasonResults(state.seasonId, discordId),
+      getSeasonManches(state.seasonId),
+      hasPlayerInteracted(state.gameId, discordId),
     ]);
 
     const currentManche = state.currentIndex + 1;
     const currentSolved = !!participant?.solved;
     const currentScore = participant?.score ?? 0;
 
-    const pastResultsRaw = seasonResults.filter((r) => r.gameId !== state.gameId);
-    const pastResults = (
+    const pastGameIds = seasonManches.filter((gameId) => gameId !== state.gameId);
+    const pastManches = (
       await Promise.all(
-        pastResultsRaw.map(async (r) => ({
-          manche: await getMancheNumber(r.gameId),
-          score: r.score,
-        })),
+        pastGameIds.map(async (gameId) => {
+          const result = seasonResults.find((r) => r.gameId === gameId);
+          return {
+            manche: await getMancheNumber(gameId),
+            played: !!result,
+            score: result?.score ?? 0,
+          };
+        }),
       )
     )
-      .filter((p) => p.manche != null)
+      .filter((m) => m.manche != null)
       .sort((a, b) => b.manche - a.manche);
 
     const seasonTotal = seasonResults.reduce((sum, r) => sum + r.score, 0);
 
     const embed = buildFrameStatsEmbed({
+      pseudo: username,
       currentManche,
       currentSolved,
+      currentInteracted,
       currentScore,
-      pastResults,
+      pastManches,
       seasonId: state.seasonId,
       seasonTotal,
     });

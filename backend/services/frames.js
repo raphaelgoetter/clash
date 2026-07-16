@@ -110,6 +110,9 @@ function seasonKey(seasonId) {
 function seasonPseudosKey(seasonId) {
   return `frame:season:${seasonId}:pseudos`;
 }
+function seasonManchesKey(seasonId) {
+  return `frame:season:${seasonId}:manches`;
+}
 function archivedKey(seasonId) {
   return `frame:archived:${seasonId}`;
 }
@@ -237,6 +240,12 @@ export async function startNewGame(channelId) {
   };
 
   await writeState(newState);
+
+  // Enregistre cette manche comme faisant partie de la saison — permet à
+  // /frame de lister TOUTES les manches passées de la saison (y compris
+  // celles où le joueur n'a pas joué), pas seulement celles où il a un
+  // résultat archivé.
+  await getRedis().sadd(seasonManchesKey(seasonId), newState.gameId);
 
   // Purge la progression (indices/tentatives/participants) de la partie
   // précédente — données jetables une fois la partie terminée. Les
@@ -383,6 +392,24 @@ export async function getPlayerSeasonResults(seasonId, discordId) {
   return Object.entries(all)
     .filter(([field]) => field.endsWith(`:${discordId}`))
     .map(([, result]) => result);
+}
+
+// Tous les gameId des manches postées cette saison (résolues ou non par qui
+// que ce soit) — alimenté par startNewGame(). Permet de lister les manches
+// passées où un joueur n'a pas du tout joué, pas seulement celles où il a
+// un résultat archivé.
+export async function getSeasonManches(seasonId) {
+  const ids = await getRedis().smembers(seasonManchesKey(seasonId));
+  return ids || [];
+}
+
+// Un joueur a-t-il interagi avec cette manche (indice pris ou tentative),
+// qu'il ait résolu ou non ? frame:usernames est mis à jour à chaque indice/
+// tentative — mais pas si le joueur trouve du premier coup sans indice, où
+// seul markSolved() écrit directement le document participant.
+export async function hasPlayerInteracted(gameId, discordId) {
+  const username = await getRedis().hget(usernamesKey(gameId), discordId);
+  return username != null;
 }
 
 // Position (1-indexée) d'une partie dans frames.json — c'est ce numéro qui
