@@ -167,6 +167,49 @@ export async function postFrame(channelId, { dryRun = false } = {}) {
   return { state, frameEntry, message };
 }
 
+// Reposte la manche ACTIVE (même gameId) dans un autre salon, sans faire
+// avancer la partie ni toucher aux données déjà enregistrées (participants,
+// indices, tentatives, résultats archivés) — utile pour déplacer le post
+// vers un nouveau salon sans rien perdre. L'ancien message reste
+// fonctionnel (les boutons ne vérifient que le gameId, pas le salon), à
+// supprimer/éditer manuellement si besoin d'éviter la confusion.
+export async function repostFrame(channelId) {
+  const token = process.env.DISCORD_TOKEN;
+  if (!token) throw new Error("DISCORD_TOKEN manquant.");
+
+  const state = await readState();
+  if (!state) throw new Error("Aucune partie active à reposter.");
+
+  const frames = await loadFrames();
+  const frameEntry = frames[state.currentIndex];
+
+  const embed = buildFrameEmbed(state.currentIndex + 1, Date.now());
+  const components = buildFrameComponents(state.gameId);
+
+  const res = await fetch(
+    `https://discord.com/api/v10/channels/${channelId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bot ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ embeds: [embed], components }),
+    },
+  );
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    throw new Error(`Erreur envoi salon Discord (${res.status}): ${errText}`);
+  }
+
+  const message = await res.json();
+  const newState = { ...state, channelId, messageId: message.id };
+  await writeState(newState);
+
+  return { state: newState, frameEntry, message };
+}
+
 // ── Réponse éphémère (PATCH de la réponse différée) ─────────────
 
 async function postEphemeral(webhookUrl, content) {

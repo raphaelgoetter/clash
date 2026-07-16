@@ -32,6 +32,7 @@
     "frame:public:dry": "node scripts/postFrame.js --public --dry-run",
     "frame:reset": "node scripts/resetFrame.js",
     "frame:scores": "node scripts/frameScores.js",
+    "frame:move": "node scripts/moveFrameChannel.js",
     "rules": "node scripts/notifyRules.js",
     "rules:dry": "node scripts/notifyRules.js --dry-run",
     "rules:dry:noping": "node scripts/notifyRules.js --dry-run --no-ping",
