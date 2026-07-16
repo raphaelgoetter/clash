@@ -19,6 +19,7 @@ import {
   archiveSolve,
   computeGameRanking,
   computeSeasonRanking,
+  listGamePlayersInProgress,
   getPlayerSeasonResults,
   getSeasonManches,
   hasPlayerInteracted,
@@ -48,7 +49,8 @@ function buildFrameEmbed(partieNumber, cacheBust) {
       "- Chaque tentative incorrecte : **-2 pts**\n" +
       "- Chaque indice utilisé : **-3 pts**\n\n" +
       "Le classement de la saison est mis à jour après chaque manche, et un DM vous est envoyé pour récapituler vos points et votre classement.\n\n" +
-      "**Merci de ne pas spoiler, sinon c'est pas drôle !**",
+      "**Merci de ne pas spoiler, sinon c'est pas drôle !**\n\n" +
+      "🤖 Vérifiez vos scores avec la commande `/frame`",
     // Route dynamique servant uniquement l'image de la partie active. Le
     // paramètre v= est un cache-buster ignoré par le serveur (impossible
     // d'obtenir une image future en le modifiant) — il DOIT être unique à
@@ -179,13 +181,13 @@ async function postEphemeral(webhookUrl, content) {
   }
 }
 
-async function postEphemeralEmbed(webhookUrl, embed) {
+async function postEphemeralEmbed(webhookUrl, embed, components = []) {
   if (!webhookUrl) return;
   try {
     await fetch(`${webhookUrl}/messages/@original`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ embeds: [embed] }),
+      body: JSON.stringify({ embeds: [embed], components }),
     });
   } catch (err) {
     console.error("[Frame] Échec PATCH réponse éphémère (embed):", err.message);
@@ -361,7 +363,19 @@ export async function handleModalSubmit(
 
 // ── Commande /frame : scores personnels du joueur ────────────────
 
-function buildFrameStatsEmbed({ pseudo, currentManche, currentSolved, currentInteracted, currentScore, pastManches, seasonId, seasonTotal }) {
+function buildFrameStatsEmbed({
+  pseudo,
+  currentManche,
+  currentSolved,
+  currentInteracted,
+  currentScore,
+  solvedCount,
+  totalParticipants,
+  perfectCount,
+  pastManches,
+  seasonId,
+  seasonTotal,
+}) {
   const lines = [];
 
   lines.push(`**Manche ${currentManche} (actuelle) :**`);
@@ -374,6 +388,10 @@ function buildFrameStatsEmbed({ pseudo, currentManche, currentSolved, currentInt
   } else {
     lines.push("- Vous n'avez pas encore commencé cette manche");
   }
+  lines.push(
+    `- ${solvedCount} joueur${solvedCount > 1 ? "s" : ""} (sur ${totalParticipants}) ${solvedCount > 1 ? "ont" : "a"} trouvé pour le moment, ` +
+      `et ${perfectCount} joueur${perfectCount > 1 ? "s" : ""} ${perfectCount > 1 ? "ont" : "a"} 10pts`,
+  );
 
   for (const m of pastManches) {
     lines.push("");
@@ -397,6 +415,17 @@ function buildFrameStatsEmbed({ pseudo, currentManche, currentSolved, currentInt
   };
 }
 
+function buildFrameStatsComponents() {
+  return [
+    {
+      type: 1,
+      components: [
+        { type: 2, style: 2, label: "🔄 Rafraîchir", custom_id: "frame_stats_refresh" },
+      ],
+    },
+  ];
+}
+
 export async function handleFrameStatsCommand(webhookUrl, discordId, username) {
   try {
     const state = await readState();
@@ -405,16 +434,22 @@ export async function handleFrameStatsCommand(webhookUrl, discordId, username) {
       return;
     }
 
-    const [participant, seasonResults, seasonManches, currentInteracted] = await Promise.all([
-      readParticipant(state.gameId, discordId),
-      getPlayerSeasonResults(state.seasonId, discordId),
-      getSeasonManches(state.seasonId),
-      hasPlayerInteracted(state.gameId, discordId),
-    ]);
+    const [participant, seasonResults, seasonManches, currentInteracted, gameRanking, inProgress] =
+      await Promise.all([
+        readParticipant(state.gameId, discordId),
+        getPlayerSeasonResults(state.seasonId, discordId),
+        getSeasonManches(state.seasonId),
+        hasPlayerInteracted(state.gameId, discordId),
+        computeGameRanking(state.gameId),
+        listGamePlayersInProgress(state.gameId),
+      ]);
 
     const currentManche = state.currentIndex + 1;
     const currentSolved = !!participant?.solved;
     const currentScore = participant?.score ?? 0;
+    const solvedCount = gameRanking.length;
+    const totalParticipants = solvedCount + inProgress.length;
+    const perfectCount = gameRanking.filter((r) => r.score === 10).length;
 
     const pastGameIds = seasonManches.filter((gameId) => gameId !== state.gameId);
     const pastManches = (
@@ -440,12 +475,15 @@ export async function handleFrameStatsCommand(webhookUrl, discordId, username) {
       currentSolved,
       currentInteracted,
       currentScore,
+      solvedCount,
+      totalParticipants,
+      perfectCount,
       pastManches,
       seasonId: state.seasonId,
       seasonTotal,
     });
 
-    await postEphemeralEmbed(webhookUrl, embed);
+    await postEphemeralEmbed(webhookUrl, embed, buildFrameStatsComponents());
   } catch (err) {
     await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
   }

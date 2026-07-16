@@ -7284,6 +7284,26 @@ export default async function handler(req, res) {
     return;
   }
 
+  // ── Jeu Frame : bouton "Rafraîchir" sur /frame ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id === "frame_stats_refresh"
+  ) {
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    // type 6 = DEFERRED_UPDATE_MESSAGE : met à jour ce même message éphémère
+    // (au lieu d'en créer un nouveau, cf. type 5 pour la commande initiale).
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleFrameStatsCommand(webhookUrl, discordId, username));
+    return;
+  }
+
   // ── Jeu Frame : boutons indices ──
   if (
     body.type === 3 &&
