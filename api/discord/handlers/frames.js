@@ -213,22 +213,20 @@ export async function handleHintButton(
 
 // ── DM de fin de manche ──────────────────────────────────────
 
-function buildDmText({
-  partieNumber,
-  titre,
-  score,
-  gameRank,
-  gameTotal,
-  seasonScore,
-  seasonRank,
-  seasonTotal,
-}) {
+// Classement figé (l'ordre d'arrivée), jamais rafraîchi ensuite — contrairement
+// à un "classement : Xe/Y" affiché dans un DM déjà envoyé, qui deviendrait
+// faux dès qu'un joueur supplémentaire résout la partie après coup.
+function ordinal(n) {
+  return `${n}${n === 1 ? "ᵉʳ" : "ᵉ"}`;
+}
+
+function buildDmText({ partieNumber, titre, score, gameRank, seasonScore }) {
   return [
     `**Trouvez le film : Manche ${partieNumber}**`,
     "",
-    `🎬 **${titre}** — vous avez trouvé !`,
-    `Score de cette manche : **${score} pts** (classement : ${gameRank}ᵉ/${gameTotal})`,
-    `Score total de la saison : **${seasonScore} pts** (classement général : ${seasonRank}ᵉ/${seasonTotal})`,
+    `🎬 **${titre}** — vous êtes le ${ordinal(gameRank)} à avoir trouvé !`,
+    `Score de cette manche : **${score} pts**`,
+    `Score total de la saison : **${seasonScore} pts**`,
   ].join("\n");
 }
 
@@ -322,7 +320,6 @@ export async function handleModalSubmit(
     ]);
     const gameRank = findRank(gameRanking, discordId);
     const seasonEntry = seasonRanking.find((e) => e.discordId === discordId);
-    const seasonRank = findRank(seasonRanking, discordId);
 
     await postEphemeral(
       webhookUrl,
@@ -336,10 +333,7 @@ export async function handleModalSubmit(
         titre: frameEntry.titre,
         score,
         gameRank,
-        gameTotal: gameRanking.length,
         seasonScore: seasonEntry?.totalScore ?? score,
-        seasonRank,
-        seasonTotal: seasonRanking.length,
       }),
     );
   } catch (err) {
