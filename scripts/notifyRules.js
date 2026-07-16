@@ -31,6 +31,9 @@ const CLAN_ROLE_NAMES = {
 const DRY_RUN = process.argv.includes("--dry-run");
 const FORCE = process.argv.includes("--force");
 const NO_PING = process.argv.includes("--no-ping");
+const TAG_FILTER = process.argv
+  .find((arg) => arg.startsWith("--tag="))
+  ?.slice("--tag=".length);
 
 const ROLE_CACHE = new Map();
 
@@ -137,6 +140,7 @@ async function main() {
 
   for (let i = 0; i < CLAN_TAGS.length; i++) {
     const tag = CLAN_TAGS[i];
+    if (TAG_FILTER && tag !== TAG_FILTER) continue;
     const rulesText = rulesBlocks[i];
 
     const channelId = process.env[`DISCORD_CHANNEL_MEMBERS_${tag}`];
