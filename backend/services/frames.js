@@ -26,9 +26,18 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
 import { fetchRaceLog, fetchCurrentRace } from "./clashApi.js";
-import { computeCurrentSeasonId, computeSeasonMancheTotal } from "./dateUtils.js";
+import { computeCurrentSeasonId, countRemainingWednesdays } from "./dateUtils.js";
 
-export { computeSeasonMancheTotal } from "./dateUtils.js";
+// X = manche déjà attribuée + mercredis restants avant la fin de la saison
+// calendaire (countRemainingWednesdays, dateUtils.js). Gère nativement le
+// cas d'un jeu démarré en cours de saison (ex. saison démarrée le 2026-07-06,
+// mais 1ʳᵉ manche postée seulement le 2026-07-15, mercredi suivant) : X
+// reflète alors le nombre réel de manches restantes pour CE jeu, pas le
+// nombre total de mercredis de la saison entière (qui aurait compté aussi
+// les mercredis déjà passés avant le premier post).
+export function computeSeasonMancheTotal(seasonManche, now = new Date()) {
+  return seasonManche + countRemainingWednesdays(now);
+}
 import { FAMILY_CLAN_TAGS } from "./warHistory.js";
 import { getOrSet } from "./cache.js";
 
@@ -252,9 +261,10 @@ export async function startNewGame(channelId) {
   const frameEntry = frames[currentIndex];
   const seasonId = await getCurrentSeasonId();
   const gameId = path.parse(frameEntry.image).name;
+  const now = new Date();
 
   const seasonManche = await assignSeasonMancheNumber(seasonId, gameId);
-  const seasonMancheTotal = computeSeasonMancheTotal();
+  const seasonMancheTotal = computeSeasonMancheTotal(seasonManche, now);
 
   const newState = {
     currentIndex,
@@ -262,7 +272,7 @@ export async function startNewGame(channelId) {
     seasonId,
     seasonManche,
     seasonMancheTotal,
-    startedAt: new Date().toISOString(),
+    startedAt: now.toISOString(),
     channelId,
     messageId: null,
   };

@@ -10,8 +10,7 @@ import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
 import { Redis } from "@upstash/redis";
-import { readState, writeState } from "../backend/services/frames.js";
-import { computeSeasonMancheTotal } from "../backend/services/dateUtils.js";
+import { readState, writeState, computeSeasonMancheTotal } from "../backend/services/frames.js";
 
 const redis = new Redis({
   url: process.env.KV_REST_API_URL,
@@ -49,7 +48,7 @@ const seqKey = (seasonId) => `frame:season:${seasonId}:manche_seq`;
   await redis.set(seqKey(seasonId), String(seq));
 
   const seasonManche = Number(await redis.hget(numbersKey(seasonId), gameId));
-  const seasonMancheTotal = computeSeasonMancheTotal();
+  const seasonMancheTotal = computeSeasonMancheTotal(seasonManche);
   await writeState({ ...state, seasonManche, seasonMancheTotal });
 
   console.log(

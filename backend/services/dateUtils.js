@@ -202,8 +202,16 @@ export function countWednesdaysInRange(start, end) {
   return count;
 }
 
-/** X : nombre total de manches Frame (mercredis) de la saison calendaire en cours. */
-export function computeSeasonMancheTotal(now = new Date()) {
-  const { start, end } = getCurrentSeasonBounds(now);
-  return countWednesdaysInRange(start, end);
+/** Nombre de mercredis STRICTEMENT après `now` avant la fin de la saison
+ * calendaire en cours (borne de fin exclue). Volontairement séparé du
+ * nombre de manches déjà jouées (inconnu de dateUtils.js, qui n'a aucune
+ * notion d'état de partie) — voir computeSeasonMancheTotal() dans
+ * frames.js, qui combine les deux pour obtenir X de façon robuste même si
+ * le jeu démarre en cours de saison (mercredis déjà passés non comptés). */
+export function countRemainingWednesdays(now = new Date()) {
+  const { end } = getCurrentSeasonBounds(now);
+  const tomorrow = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1),
+  );
+  return countWednesdaysInRange(tomorrow, end);
 }

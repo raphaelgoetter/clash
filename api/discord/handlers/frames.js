@@ -136,7 +136,7 @@ export async function postFrame(channelId, { dryRun = false } = {}) {
     const gameId = frameEntry.image.replace(/\.[^.]+$/, "");
     const seasonId = await getCurrentSeasonId();
     const seasonManche = await previewSeasonManche(seasonId);
-    const seasonMancheTotal = computeSeasonMancheTotal();
+    const seasonMancheTotal = computeSeasonMancheTotal(seasonManche);
     const embed = buildFrameEmbed({ seasonId, seasonManche, seasonMancheTotal, cacheBust: Date.now() });
     const components = buildFrameComponents(gameId);
     return { dryRun: true, frameEntry, embed, components };
