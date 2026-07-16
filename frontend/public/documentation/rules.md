@@ -35,8 +35,8 @@
 
 ### PROMOTION :
 
-:blue_crown: En fin de semaine, si 2600 pts marqués → Promotion au rang "Aîné".
-:blue_crown: En fin de saison → Accès dans le clan 1 "La Resistance" pour les meilleurs joueurs (Discord obligatoire)
+<:blue_crown:1294923219668566047> En fin de semaine, si 2600 pts marqués → Promotion au rang "Aîné".
+<:blue_crown:1294923219668566047> En fin de saison → Accès dans le clan 1 "La Resistance" pour les meilleurs joueurs (Discord obligatoire)
 ```
 
 ```md
