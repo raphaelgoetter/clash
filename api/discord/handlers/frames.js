@@ -19,6 +19,7 @@ import {
   markSolved,
   archiveSolve,
   computeGameRanking,
+  computeArrivalOrder,
   computeSeasonRanking,
   listGamePlayersInProgress,
   getPlayerSeasonResults,
@@ -407,11 +408,11 @@ export async function handleModalSubmit(
       participant.solvedAt,
     );
 
-    const [gameRanking, seasonRanking] = await Promise.all([
-      computeGameRanking(gameId),
+    const [arrivalOrder, seasonRanking] = await Promise.all([
+      computeArrivalOrder(gameId),
       computeSeasonRanking(state.seasonId),
     ]);
-    const gameRank = findRank(gameRanking, discordId);
+    const gameRank = findRank(arrivalOrder, discordId);
     const seasonEntry = seasonRanking.find((e) => e.discordId === discordId);
 
     await postEphemeral(

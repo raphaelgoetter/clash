@@ -462,6 +462,12 @@ export async function hasPlayerInteracted(gameId, discordId) {
 
 // ── Classements ──────────────────────────────────────────────────
 
+// Classement PAR SCORE (score desc, égalité départagée par solvedAt croissant
+// — le plus rapide gagne le duel). Utilisé pour l'affichage "Votre classement
+// : X/Y" (via findTiedRank). ⚠️ Ne PAS utiliser pour "vous êtes le Xe à avoir
+// trouvé" (voir computeArrivalOrder ci-dessous) : un joueur avec moins de
+// points peut apparaître mieux classé qu'un joueur arrivé après lui mais
+// avec un meilleur score, ce qui rendrait ce numéro d'ordre faux.
 export async function computeGameRanking(gameId) {
   const all = await hgetallJson(participantsKey(gameId));
   return Object.values(all)
@@ -473,6 +479,22 @@ export async function computeGameRanking(gameId) {
       solvedAt: p.solvedAt,
     }))
     .sort((a, b) => b.score - a.score || new Date(a.solvedAt) - new Date(b.solvedAt));
+}
+
+// Ordre chronologique PUR (uniquement solvedAt, jamais le score) — c'est la
+// seule liste valable pour "vous êtes le Xe à avoir trouvé !" dans le DM de
+// fin de manche (voir buildDmText/handleModalSubmit).
+export async function computeArrivalOrder(gameId) {
+  const all = await hgetallJson(participantsKey(gameId));
+  return Object.values(all)
+    .filter((p) => p?.solved)
+    .map((p) => ({
+      discordId: p.discordId,
+      username: p.username,
+      score: p.score,
+      solvedAt: p.solvedAt,
+    }))
+    .sort((a, b) => new Date(a.solvedAt) - new Date(b.solvedAt));
 }
 
 // Tous les joueurs ayant interagi avec la partie mais pas encore résolu —
@@ -508,15 +530,19 @@ export async function computeSeasonRanking(seasonId) {
   return ranking.sort((a, b) => b.totalScore - a.totalScore || a.pseudo.localeCompare(b.pseudo));
 }
 
+// Position (1-indexée) dans la liste déjà triée passée en paramètre — ne
+// fait aucune hypothèse sur le tri utilisé. Pour "vous êtes le Xe à avoir
+// trouvé", appeler avec computeArrivalOrder() (tri par solvedAt), jamais
+// computeGameRanking() (tri par score).
 export function findRank(sortedList, discordId) {
   const idx = sortedList.findIndex((e) => e.discordId === discordId);
   return idx === -1 ? null : idx + 1;
 }
 
 // Classement avec ex-aequo ("1224" : les scores égaux partagent le même
-// rang, le rang suivant saute en conséquence) — contrairement à findRank()
-// qui donne juste la position dans la liste triée (utile pour "vous êtes le
-// Xe à avoir trouvé", où c'est l'ordre d'arrivée qui compte, pas le score).
+// rang, le rang suivant saute en conséquence) — pour l'affichage "Votre
+// classement : X/Y" (score), à utiliser avec computeGameRanking()/
+// computeSeasonRanking(), jamais computeArrivalOrder().
 export function findTiedRank(sortedList, discordId, scoreKey) {
   const entry = sortedList.find((e) => e.discordId === discordId);
   if (!entry) return null;
