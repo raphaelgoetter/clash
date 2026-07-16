@@ -374,6 +374,25 @@ export async function archiveSolve(state, frameEntry, discordId, username, score
   return result;
 }
 
+// Tous les résultats archivés d'un joueur pour une saison donnée (une
+// entrée par manche trouvée). Utilisé par /frame pour afficher l'historique
+// personnel — un seul HGETALL (déjà utilisé ailleurs), filtré côté code sur
+// le suffixe ":<discordId>" du champ (`<gameId>:<discordId>`).
+export async function getPlayerSeasonResults(seasonId, discordId) {
+  const all = await hgetallJson(archivedKey(seasonId));
+  return Object.entries(all)
+    .filter(([field]) => field.endsWith(`:${discordId}`))
+    .map(([, result]) => result);
+}
+
+// Position (1-indexée) d'une partie dans frames.json — c'est ce numéro qui
+// est affiché comme "Manche N" partout dans le jeu (post, DM, /frame).
+export async function getMancheNumber(gameId) {
+  const frames = await loadFrames();
+  const idx = frames.findIndex((f) => path.parse(f.image).name === gameId);
+  return idx === -1 ? null : idx + 1;
+}
+
 // ── Classements ──────────────────────────────────────────────────
 
 export async function computeGameRanking(gameId) {

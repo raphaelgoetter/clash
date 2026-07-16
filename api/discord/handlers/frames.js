@@ -1,7 +1,8 @@
 // ============================================================
 // frames.js — Handlers Discord pour le jeu "Frame" (devine le film)
-// Embed, boutons, modal, DM. Pas de commande slash associée : la
-// publication passe uniquement par scripts/postFrame.js.
+// Embed, boutons, modal, DM. La publication d'une partie passe uniquement
+// par scripts/postFrame.js — seule la commande /frame (scores personnels
+// du joueur qui l'exécute) est une vraie commande slash.
 // ============================================================
 
 import {
@@ -18,6 +19,8 @@ import {
   archiveSolve,
   computeGameRanking,
   computeSeasonRanking,
+  getPlayerSeasonResults,
+  getMancheNumber,
   findRank,
 } from "../../../backend/services/frames.js";
 
@@ -171,6 +174,19 @@ async function postEphemeral(webhookUrl, content) {
     });
   } catch (err) {
     console.error("[Frame] Échec PATCH réponse éphémère:", err.message);
+  }
+}
+
+async function postEphemeralEmbed(webhookUrl, embed) {
+  if (!webhookUrl) return;
+  try {
+    await fetch(`${webhookUrl}/messages/@original`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ embeds: [embed] }),
+    });
+  } catch (err) {
+    console.error("[Frame] Échec PATCH réponse éphémère (embed):", err.message);
   }
 }
 
@@ -336,6 +352,84 @@ export async function handleModalSubmit(
         seasonScore: seasonEntry?.totalScore ?? score,
       }),
     );
+  } catch (err) {
+    await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
+  }
+}
+
+// ── Commande /frame : scores personnels du joueur ────────────────
+
+function buildFrameStatsEmbed({ currentManche, currentSolved, currentScore, pastResults, seasonId, seasonTotal }) {
+  const lines = [];
+
+  lines.push(`**Manche ${currentManche} (actuelle) :**`);
+  if (currentSolved) {
+    lines.push("- Vous avez trouvé le nom du film !");
+    lines.push(`- Vous avez marqué ${currentScore} points`);
+  } else {
+    lines.push("- Vous n'avez pas encore trouvé le nom du film !");
+    lines.push("- Vous n'avez pas marqué de points");
+  }
+
+  for (const p of pastResults) {
+    lines.push("");
+    lines.push(`**Manche ${p.manche} :**`);
+    lines.push("- Vous avez trouvé le nom du film !");
+    lines.push(`- Vous avez marqué ${p.score} points`);
+  }
+
+  lines.push("");
+  lines.push(`**Score de la saison (S${seasonId}) :**`);
+  lines.push(`- Vous avez accumulé ${seasonTotal} points cette saison`);
+
+  return {
+    title: "🎬  Trouvez le film : vos scores.",
+    description: lines.join("\n"),
+    color: FRAME_COLOR,
+  };
+}
+
+export async function handleFrameStatsCommand(webhookUrl, discordId) {
+  try {
+    const state = await readState();
+    if (!state) {
+      await postEphemeral(webhookUrl, "⚠️ Aucune partie Frame n'a encore été lancée.");
+      return;
+    }
+
+    const [participant, seasonResults] = await Promise.all([
+      readParticipant(state.gameId, discordId),
+      getPlayerSeasonResults(state.seasonId, discordId),
+    ]);
+
+    const currentManche = state.currentIndex + 1;
+    const currentSolved = !!participant?.solved;
+    const currentScore = participant?.score ?? 0;
+
+    const pastResultsRaw = seasonResults.filter((r) => r.gameId !== state.gameId);
+    const pastResults = (
+      await Promise.all(
+        pastResultsRaw.map(async (r) => ({
+          manche: await getMancheNumber(r.gameId),
+          score: r.score,
+        })),
+      )
+    )
+      .filter((p) => p.manche != null)
+      .sort((a, b) => b.manche - a.manche);
+
+    const seasonTotal = seasonResults.reduce((sum, r) => sum + r.score, 0);
+
+    const embed = buildFrameStatsEmbed({
+      currentManche,
+      currentSolved,
+      currentScore,
+      pastResults,
+      seasonId: state.seasonId,
+      seasonTotal,
+    });
+
+    await postEphemeralEmbed(webhookUrl, embed);
   } catch (err) {
     await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
   }

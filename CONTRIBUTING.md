@@ -592,6 +592,18 @@ Nettoyage : `startNewGame()` supprime la progression (indices/tentatives/partici
 
 Le score total et le classement général affichés en DM ne portent que sur la **saison Clash Royale en cours** (voir [Saison](#saison)), pas un cumul indéfini. `getCurrentSeasonId()` (`backend/services/frames.js`) réutilise `computeCurrentSeasonId(currentRace, raceLog)` de `dateUtils.js`, avec 3 tentatives (délai croissant) pour absorber un aléa réseau transitoire côté API Clash Royale. Chaque résultat archivé dans `frame:archived:<seasonId>` garde le `seasonId` de la saison où il a été joué ; le classement de saison vit dans un ZSET dédié par `seasonId` (`frame:season:<seasonId>`), donc aucun recalcul ni remise à zéro manuelle n'est nécessaire au changement de saison — chaque nouvelle saison utilise simplement une nouvelle clé.
 
+### Commande `/frame` — scores personnels
+
+Seule commande slash du jeu (tout le reste passe par les boutons/modal du post hebdomadaire ou par des scripts). N'a aucune option : elle affiche à l'appelant (réponse éphémère) sa propre progression, déterminée à partir de son `discordId` — pas de paramètre à saisir.
+
+Contenu affiché (`handleFrameStatsCommand()`, `api/discord/handlers/frames.js`) :
+
+- **Manche en cours** : trouvée ou non, score obtenu (ou "pas encore trouvé"/"pas de points").
+- **Manches précédentes de la saison** (`getPlayerSeasonResults()`) : uniquement celles où le joueur a trouvé la réponse — triées de la plus récente à la plus ancienne. Le numéro de manche est recalculé via `getMancheNumber()` (position dans `frames.json`, pas un compteur séparé).
+- **Score total de la saison** : somme de tous les résultats archivés (`frame:archived:<seasonId>`) du joueur, saison en cours uniquement (voir "Scores et classements par saison" ci-dessus).
+
+À relancer `node scripts/registerCommands.js` après toute modification (nouvelle option, changement de description) — comme pour toute commande.
+
 ### Scripts npm
 
 | Commande                   | Effet                                                                                                                                                                                                  |

@@ -480,6 +480,11 @@ const commands = [
       },
     ],
   },
+  {
+    name: "frame",
+    description: "Affiche vos scores au jeu Frame (devine le film).",
+    options: [],
+  },
 ];
 
 async function registerAtUrl(url) {

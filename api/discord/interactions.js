@@ -40,6 +40,7 @@ import {
   buildAnswerModal as buildFrameAnswerModal,
   handleHintButton as handleFrameHintButton,
   handleModalSubmit as handleFrameModalSubmit,
+  handleFrameStatsCommand,
 } from "./handlers/frames.js";
 import { isJoinedThisWar } from "../../backend/services/arrivalUtils.js";
 import {
@@ -3315,6 +3316,9 @@ export default async function handler(req, res) {
             "Commande : `/recap saison:-1`\n" +
             "Usage : récap GDC de la saison passée — 10 moins bons scoreurs de La Resistance, " +
             "10 meilleurs de Les Resistants. Option `saison` : -1 (défaut) ou -2\n\n" +
+            "**Frame**\n" +
+            "Commande : `/frame`\n" +
+            "Usage : affiche tes scores au jeu Frame (devine le film) — manche en cours, historique de la saison, total\n\n" +
             "**Help**\n" +
             "Commande : `/help`\n" +
             "Usage : affiche cette fenêtre",
@@ -7263,6 +7267,15 @@ export default async function handler(req, res) {
       }
     });
 
+    return;
+  }
+
+  // ── Jeu Frame : commande /frame (scores personnels) ──
+  if (body.type === 2 && body.data?.name === "frame") {
+    const discordId = body.member?.user?.id;
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleFrameStatsCommand(webhookUrl, discordId));
     return;
   }
 
