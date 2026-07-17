@@ -63,7 +63,7 @@ import {
  * @param {boolean} discordLinked
  * @returns {object}
  */
-export function analyzePlayer(
+export async function analyzePlayer(
   player,
   battleLog,
   lastSeen = null,
@@ -99,9 +99,7 @@ export function analyzePlayer(
   const allCardsCol = [...baseCardsCol, ...towerTroopsCol];
   const tourLevel = computeTourLevel(baseCardsCol);
 
-  const matchupAverage = computeMatchupFromBattleLog(battleLog, {
-    playerTourLevel: tourLevel,
-  });
+  const matchupAverage = await computeMatchupFromBattleLog(battleLog);
 
   const sumNormLevels = allCardsCol.reduce((s, c) => s + normLevel(c), 0);
   // Tour troops exclues des évolutions et héros (ils ne peuvent pas être évolués)
@@ -232,7 +230,7 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
     }
   }
 
-  const analysis = analyzePlayer(
+  const analysis = await analyzePlayer(
     player,
     battleLog || [],
     lastSeen,

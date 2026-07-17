@@ -338,7 +338,7 @@ router.get("/player/:tag", async (req, res) => {
           : [];
         const battleLog = await fetchBattleLog(tag);
         const allDecks = summarizeDecks(battleLog, Infinity);
-        const warDecks = summarizeWarDecks(filterWarBattles(battleLog), 4);
+        const warDecks = await summarizeWarDecks(filterWarBattles(battleLog), 4);
 
         return {
           player,
@@ -362,7 +362,7 @@ router.get("/player/:tag/war-decks", async (req, res) => {
     if (!tag) return res.status(400).json({ error: "Tag joueur invalide." });
 
     const battleLog = await fetchBattleLog(tag);
-    const warDecks = summarizeWarDecks(filterWarBattles(battleLog), 4);
+    const warDecks = await summarizeWarDecks(filterWarBattles(battleLog), 4);
     res.json({ tag, warDecks });
   } catch (err) {
     const status = err.message?.includes("404") ? 404 : 500;

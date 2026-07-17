@@ -184,7 +184,7 @@ assert.strictEqual(
   "expandDuelRounds should expand duel colosseum rounds",
 );
 
-const matchupDecks = summarizeWarDecksForMatchup(
+const matchupDecks = await summarizeWarDecksForMatchup(
   [
     {
       type: "riverRacePvp",
@@ -257,94 +257,88 @@ assert.strictEqual(
   "The third duel round should be scored 1-0",
 );
 
-const extremeMatchupHigh = computeBattleMatchup(
-  {
-    type: "riverRacePvp",
-    team: [
-      {
-        cards: Array.from({ length: 8 }, () => ({
-          level: 1,
-          rarity: "common",
-        })),
-        crowns: 0,
-      },
-    ],
-    opponent: [
-      {
-        cards: Array.from({ length: 8 }, () => ({
-          level: 16,
-          rarity: "legendary",
-        })),
-        crowns: 0,
-      },
-    ],
-  },
-  { playerTourLevel: 10, opponentTourLevel: 13 },
-);
+// Le nouveau moteur (matchupEngine.js) n'a ici aucun nom de carte à identifier
+// (cartes sans "name") : seul Layer 4 (écart de niveau, cf. computeLevelDifferentialLayer)
+// contribue, plafonné à ±50 (3%/point) → scoreA atteint bien l'extrême 0/100.
+const extremeMatchupHigh = await computeBattleMatchup({
+  type: "riverRacePvp",
+  team: [
+    {
+      cards: Array.from({ length: 8 }, () => ({
+        level: 1,
+        rarity: "common",
+      })),
+      crowns: 0,
+    },
+  ],
+  opponent: [
+    {
+      cards: Array.from({ length: 8 }, () => ({
+        level: 16,
+        rarity: "legendary",
+      })),
+      crowns: 0,
+    },
+  ],
+});
 assert.ok(
   extremeMatchupHigh >= 0.99,
   `Extreme disadvantage should produce a very high matchup, got ${extremeMatchupHigh}`,
 );
 
-const extremeMatchupLow = computeBattleMatchup(
-  {
-    type: "riverRacePvp",
-    team: [
-      {
-        cards: Array.from({ length: 8 }, () => ({
-          level: 16,
-          rarity: "legendary",
-        })),
-        crowns: 0,
-      },
-    ],
-    opponent: [
-      {
-        cards: Array.from({ length: 8 }, () => ({
-          level: 1,
-          rarity: "common",
-        })),
-        crowns: 0,
-      },
-    ],
-  },
-  { playerTourLevel: 13, opponentTourLevel: 10 },
-);
+const extremeMatchupLow = await computeBattleMatchup({
+  type: "riverRacePvp",
+  team: [
+    {
+      cards: Array.from({ length: 8 }, () => ({
+        level: 16,
+        rarity: "legendary",
+      })),
+      crowns: 0,
+    },
+  ],
+  opponent: [
+    {
+      cards: Array.from({ length: 8 }, () => ({
+        level: 1,
+        rarity: "common",
+      })),
+      crowns: 0,
+    },
+  ],
+});
 assert.ok(
   extremeMatchupLow <= 0.01,
   `Extreme advantage should produce a very low matchup, got ${extremeMatchupLow}`,
 );
 
-const measuredMatchup = computeBattleMatchup(
-  {
-    type: "riverRacePvp",
-    team: [
-      {
-        cards: Array.from({ length: 8 }, () => ({
-          level: 13,
-          rarity: "rare",
-        })),
-        crowns: 0,
-      },
-    ],
-    opponent: [
-      {
-        cards: Array.from({ length: 8 }, () => ({
-          level: 15,
-          rarity: "legendary",
-        })),
-        crowns: 3,
-      },
-    ],
-  },
-  { playerTourLevel: 13, opponentTourLevel: 15 },
-);
+const measuredMatchup = await computeBattleMatchup({
+  type: "riverRacePvp",
+  team: [
+    {
+      cards: Array.from({ length: 8 }, () => ({
+        level: 13,
+        rarity: "rare",
+      })),
+      crowns: 0,
+    },
+  ],
+  opponent: [
+    {
+      cards: Array.from({ length: 8 }, () => ({
+        level: 15,
+        rarity: "legendary",
+      })),
+      crowns: 3,
+    },
+  ],
+});
 assert.ok(
   measuredMatchup >= 0.8,
   `Une vraie grosse différence de deck/tour doit donner un matchup élevé, got ${measuredMatchup}`,
 );
 
-const rootLevelRoundDecks = summarizeWarDecksForMatchup(
+const rootLevelRoundDecks = await summarizeWarDecksForMatchup(
   [
     {
       type: "riverRaceDuel",
@@ -396,7 +390,7 @@ assert.strictEqual(
   "The third round should be scored 1-0 for root-level rounds",
 );
 
-const displaynoneCaseDecks = summarizeWarDecksForMatchup(
+const displaynoneCaseDecks = await summarizeWarDecksForMatchup(
   [
     {
       type: "riverRacePvp",
@@ -482,7 +476,7 @@ assert.deepStrictEqual(
   "J3 deck scores must preserve the 3-round duel against Aegon Targaryen",
 );
 
-const duelFirstDecks = summarizeWarDecksForMatchup(
+const duelFirstDecks = await summarizeWarDecksForMatchup(
   [
     {
       type: "riverRaceDuel",
@@ -545,7 +539,7 @@ assert.strictEqual(
   "The final PvP match should still be labeled Deck 4",
 );
 
-const multiDayMatchupDecks = summarizeWarDecksForMatchup(
+const multiDayMatchupDecks = await summarizeWarDecksForMatchup(
   [
     {
       type: "riverRacePvp",
@@ -581,7 +575,7 @@ assert.ok(
   "Matchup summary should contain the older day",
 );
 
-const multiDayLabels = summarizeWarDecksForMatchup(
+const multiDayLabels = await summarizeWarDecksForMatchup(
   [
     {
       type: "riverRacePvp",
@@ -606,7 +600,7 @@ assert.deepStrictEqual(
   "Deck labels should restart at 1 for a new GDC day",
 );
 
-const sameDayLabels = summarizeWarDecksForMatchup(
+const sameDayLabels = await summarizeWarDecksForMatchup(
   [
     {
       type: "riverRacePvp",
@@ -699,7 +693,7 @@ assert.deepStrictEqual(
   "Deck labels should restart at 1 for each new GDC day",
 );
 
-const warDeckSummary = summarizeWarDecks(
+const warDeckSummary = await summarizeWarDecks(
   [
     {
       type: "riverRacePvP",
@@ -1233,7 +1227,7 @@ const sampleBattleLog = [
   { battleTime: gameNow, type: "riverracepvp" },
   { battleTime: gameNow, type: "challenge" },
 ];
-const result = analyzePlayer(
+const result = await analyzePlayer(
   {
     name: "test",
     tag: "#TEST",

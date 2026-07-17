@@ -182,41 +182,50 @@
           <div data-layout="duo" data-split="2-1">
             <div>
               <p>
-                Calcule le matchup GDC d’un joueur à partir de ses decks, ses
-                adversaires et ses performances récentes.
+                Calcule le matchup GDC d’un joueur à partir des decks joués
+                lors de ses combats de guerre récents et des decks adverses
+                rencontrés.
               </p>
               <p>
                 Le matchup est une note en pourcentage qui reflète la difficulté
                 moyenne des combats de guerre du joueur.
               </p>
-              <p>Barème détaillé :</p>
+              <p>
+                Le calcul est purement tactique : il compare les 8 cartes de
+                chaque deck (win conditions, counters, niveaux), pas les
+                statistiques de compte des joueurs.
+              </p>
+              <p>Barème détaillé (4 étapes appliquées à une base de 50 %) :</p>
               <ol>
                 <li>
-                  <strong>deckScore</strong> (±15) : écart de niveaux de cartes
-                  du deck. Max atteint dès qu’il y a un écart d’au moins `10`
-                  points entre les deux niveaux de deck.
+                  <strong>Archétype</strong> (±15) : avantage macro entre les
+                  styles de jeu des deux decks (ex. Beatdown bat Siege/Control,
+                  Cycle bat Beatdown…), déterminé par leurs win conditions.
                 </li>
                 <li>
-                  <strong>collectionScore</strong> (±10) : écart de niveau de
-                  collection (inclus niveaux totaux des cartes + Évolutions +
-                  Héros possédés). Max atteint pour un écart de collection de
-                  `100` points ou plus.
+                  <strong>Counters directs</strong> (±25) : présence, dans le
+                  deck adverse, d’un hard counter ou d’au moins deux soft
+                  counters à la win condition du deck évalué (ou absence totale
+                  de counter).
                 </li>
                 <li>
-                  <strong>cw2Score</strong> (±5) : écart de victoires CW2. Max
-                  atteint pour une différence de `50 %` ou plus.
+                  <strong>Structure du deck</strong> (±15) : quelques règles
+                  d’intégrité (ex. deck Bait face à peu de petits sorts adverses,
+                  gros tank face à l’absence de tank killer ou de bâtiment
+                  défensif chez l’adversaire).
                 </li>
                 <li>
-                  <strong>winRateScore</strong> (±5) : écart de winrate. Max
-                  atteint pour une différence de `50 %` ou plus.
-                </li>
-                <li>
-                  <strong>trophyScore</strong> (±15) : écart de trophées. Max
-                  atteint pour une différence de `1000` ou plus.
+                  <strong>Écart de niveau de cartes</strong> (±50) : différence
+                  de niveaux normalisés (rareté incluse) entre les deux decks,
+                  3 % par point d’écart.
                 </li>
               </ol>
-              <p>Formule :</p>
-              <pre><code>matchup = clamp(50 + deckScore + collectionScore + cw2Score + winRateScore + trophyScore, 0, 100)</code></pre>
+              <p>
+                Si la win condition d’un deck n’est pas reconnue dans le
+                catalogue de counters, les étapes Archétype et Counters directs
+                sont neutralisées pour ce combat (seules Structure et Écart de
+                niveau s’appliquent encore).
+              </p>
               <p>Interprétation :</p>
               <ul>
                 <li>

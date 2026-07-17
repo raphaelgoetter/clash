@@ -9,6 +9,8 @@ import {
   countEvolved,
   countHeroes,
 } from "./collectionConstants.js";
+import { computeDeckMatchupScore } from "./matchupEngine.js";
+import { getWinConditionsCatalog } from "./matchupCatalog.js";
 
 /**
  * Clan War battle types in the Clash Royale API.
@@ -191,31 +193,6 @@ export function hasDuelOnWarDay(battleLog, clanTag, realDay) {
   return false;
 }
 
-function normalizeDeckStrength(deckCards) {
-  if (!Array.isArray(deckCards)) return 0;
-  return deckCards.reduce((acc, card) => {
-    const level = Number(card?.level ?? card?.lvl ?? 0);
-    if (!Number.isFinite(level) || level <= 0) return acc;
-    return acc + normLevel(card);
-  }, 0);
-}
-
-function computeTowerLevelFactor(playerTourLevel, opponentTourLevel) {
-  if (
-    !Number.isFinite(playerTourLevel) ||
-    !Number.isFinite(opponentTourLevel)
-  ) {
-    return 0;
-  }
-  const towerDiff = Math.max(
-    -3,
-    Math.min(3, opponentTourLevel - playerTourLevel),
-  );
-  // Les écarts de niveau de tour doivent avoir un impact plus marqué,
-  // pour que les adversaires nettement supérieurs puissent rendre le matchup extrême.
-  return towerDiff > 0 ? towerDiff * 0.3 : towerDiff * 0.1;
-}
-
 function estimateTowerLevelFromHp(hp) {
   if (!Number.isFinite(hp) || hp <= 0) return null;
   if (hp >= 7728) return 16;
@@ -250,16 +227,14 @@ function computeBattleTourLevel(entry) {
   return null;
 }
 
-function deckStrengthFromBattle(battle) {
-  const playerCards = Array.isArray(battle?.team?.[0]?.cards)
-    ? battle.team[0].cards
-    : [];
-  const opponentCards = Array.isArray(battle?.opponent?.[0]?.cards)
-    ? battle.opponent[0].cards
-    : [];
+function deckCardsFromBattle(battle) {
   return {
-    player: normalizeDeckStrength(playerCards),
-    opponent: normalizeDeckStrength(opponentCards),
+    player: Array.isArray(battle?.team?.[0]?.cards)
+      ? battle.team[0].cards
+      : [],
+    opponent: Array.isArray(battle?.opponent?.[0]?.cards)
+      ? battle.opponent[0].cards
+      : [],
   };
 }
 
@@ -267,77 +242,32 @@ export function clampValue(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-export function computeBattleMatchup(battle, options = {}) {
-  const {
-    playerWinRate = null,
-    opponentWinRate = null,
-    playerCollectionLevel = null,
-    opponentCollectionLevel = null,
-    playerCw2Wins = null,
-    opponentCw2Wins = null,
-    playerTrophies = null,
-    opponentTrophies = null,
-  } = options;
-
-  const { player, opponent } = deckStrengthFromBattle(battle);
-  const deckScore = clampValue(opponent - player, -10, 10) * 1.5;
-
-  const collectionScore =
-    Number.isFinite(playerCollectionLevel) &&
-    Number.isFinite(opponentCollectionLevel)
-      ? clampValue(
-          (opponentCollectionLevel - playerCollectionLevel) / 100,
-          -1,
-          1,
-        ) * 10
-      : 0;
-
-  const cw2Score =
-    Number.isFinite(playerCw2Wins) && Number.isFinite(opponentCw2Wins)
-      ? clampValue(
-          (opponentCw2Wins - playerCw2Wins) / Math.max(1, opponentCw2Wins),
-          -0.5,
-          0.5,
-        ) * 10
-      : 0;
-
-  const normalizedPlayerWinRate = Number.isFinite(playerWinRate)
-    ? playerWinRate > 1
-      ? playerWinRate / 100
-      : playerWinRate
-    : null;
-  const normalizedOpponentWinRate = Number.isFinite(opponentWinRate)
-    ? opponentWinRate > 1
-      ? opponentWinRate / 100
-      : opponentWinRate
-    : null;
-  const winRateBaseline = Number.isFinite(normalizedOpponentWinRate)
-    ? normalizedOpponentWinRate
-    : 0.5;
-  const winRateScore = Number.isFinite(normalizedPlayerWinRate)
-    ? clampValue(winRateBaseline - normalizedPlayerWinRate, -0.5, 0.5) * 10
-    : 0;
-
-  const trophyScore =
-    Number.isFinite(playerTrophies) && Number.isFinite(opponentTrophies)
-      ? clampValue((opponentTrophies - playerTrophies) / 1000, -1, 1) * 15
-      : 0;
-
-  const totalScore =
-    deckScore + collectionScore + cw2Score + winRateScore + trophyScore;
-  const matchup = 0.5 + totalScore / 100;
-
-  return Number(clampValue(matchup, 0, 1).toFixed(3));
+/**
+ * %matchup d'une bataille : difficulté du combat pour le joueur (0 = confortable,
+ * 1 = très tendu). Moteur tactique deck-vs-deck (matchupEngine.js) : scoreA
+ * (avantage du deck joueur, 0-100) y est calculé puis inversé ici.
+ * @param {object} battle
+ * @param {{winConditionsByName: Map, normalizeCardName: Function}|null} catalog
+ *   Catalogue déjà résolu (évite un lookup de cache répété en boucle) ; si
+ *   omis, il est chargé ici via getWinConditionsCatalog().
+ */
+export async function computeBattleMatchup(battle, catalog = null) {
+  const resolvedCatalog = catalog ?? (await getWinConditionsCatalog());
+  const { player, opponent } = deckCardsFromBattle(battle);
+  const { scoreA } = computeDeckMatchupScore(player, opponent, resolvedCatalog);
+  const difficulty = (100 - scoreA) / 100;
+  return Number(clampValue(difficulty, 0, 1).toFixed(3));
 }
 
-export function computeMatchupFromBattleLog(battleLog, options = {}) {
+export async function computeMatchupFromBattleLog(battleLog) {
   const battles = Array.isArray(battleLog) ? battleLog : [];
   if (battles.length === 0) return null;
   const warBattles = filterWarBattles(battles);
   const samples = warBattles.length > 0 ? warBattles : battles;
 
-  const matchups = samples.map((battle) =>
-    computeBattleMatchup(battle, options),
+  const catalog = await getWinConditionsCatalog();
+  const matchups = await Promise.all(
+    samples.map((battle) => computeBattleMatchup(battle, catalog)),
   );
   const total = matchups.reduce((sum, value) => sum + value, 0);
   return Number((total / matchups.length).toFixed(3));
@@ -385,17 +315,6 @@ function getFirstEntry(entry) {
   if (Array.isArray(entry)) return entry[0] || null;
   if (entry && typeof entry === "object") return entry;
   return null;
-}
-
-function normalizePlayerTag(tag) {
-  if (!tag) return null;
-  const raw = String(tag).trim().toUpperCase();
-  return raw.startsWith("#") ? raw.slice(1) : raw;
-}
-
-function getOpponentTag(battle) {
-  const oppEntry = getFirstEntry(battle.opponent);
-  return normalizePlayerTag(oppEntry?.tag);
 }
 
 function getRoundArray(entry, battle, isOpponent = false) {
@@ -571,17 +490,17 @@ export function summarizeDecks(battleLog, limit = 4, dayKey = null) {
     }));
 }
 
-export function summarizeWarDecksForMatchup(
+export async function summarizeWarDecksForMatchup(
   battleLog,
   limit = 64,
   dayKey = null,
   clanTag = null,
-  options = {},
 ) {
   const warBattles = expandDuelRounds(filterWarBattles(battleLog ?? []));
   const entries = [];
   let deckIndex = 0;
   const dayDeckCounts = new Map();
+  const catalog = await getWinConditionsCatalog();
 
   for (const battle of warBattles) {
     const teamEntry = getFirstEntry(battle.team);
@@ -595,33 +514,8 @@ export function summarizeWarDecksForMatchup(
     const deckChunks = getDeckChunksForBattle(battle);
     if (!deckChunks.length) continue;
 
-    const opponentTag = getOpponentTag(battle);
-    const opponentMeta = opponentTag
-      ? (options.opponentStatsByTag?.get?.(opponentTag) ??
-        options.opponentStatsByTag?.[opponentTag] ??
-        null)
-      : null;
     const opponentTourLevel = computeBattleTourLevel(oppEntry);
-    const matchupOptions = { ...options, opponentTourLevel };
-    if (opponentMeta) {
-      matchupOptions.opponentWinRate =
-        opponentMeta.activityIndicators?.winRate ??
-        opponentMeta.playerWinRate ??
-        matchupOptions.opponentWinRate;
-      matchupOptions.opponentCollectionLevel =
-        opponentMeta.overview?.collectionLevel ??
-        opponentMeta.playerCollectionLevel ??
-        matchupOptions.opponentCollectionLevel;
-      matchupOptions.opponentCw2Wins =
-        opponentMeta.overview?.clanWarWins ??
-        opponentMeta.playerCw2Wins ??
-        matchupOptions.opponentCw2Wins;
-      matchupOptions.opponentTrophies =
-        opponentMeta.overview?.trophies ??
-        opponentMeta.playerTrophies ??
-        matchupOptions.opponentTrophies;
-    }
-    const matchup = computeBattleMatchup(battle, matchupOptions);
+    const matchup = await computeBattleMatchup(battle, catalog);
     const opponentName = String(oppEntry?.name ?? oppEntry?.tag ?? "?").trim();
     const myCrowns = getMyBattleCrowns(battle);
     const oppCrowns =
@@ -692,17 +586,18 @@ export function summarizeWarDecksForMatchup(
   return entries;
 }
 
-export function summarizeWarDecks(battleLog, limit = 4, dayKey = null) {
+export async function summarizeWarDecks(battleLog, limit = 4, dayKey = null) {
   const decks = new Map();
   const warBattles = expandDuelRounds(filterWarBattles(battleLog ?? []));
+  const catalog = await getWinConditionsCatalog();
 
-  warBattles.forEach((battle, battleIndex) => {
-    if (dayKey && warDayKey(battle?.battleTime) !== dayKey) return;
+  for (const [battleIndex, battle] of warBattles.entries()) {
+    if (dayKey && warDayKey(battle?.battleTime) !== dayKey) continue;
     const cards = Array.isArray(battle?.team?.[0]?.cards)
       ? battle.team[0].cards
       : [];
     const deckChunks = chunkArray(cards, 8).filter((chunk) => chunk.length > 0);
-    if (!deckChunks.length) return;
+    if (!deckChunks.length) continue;
 
     const duelRounds = Array.isArray(battle?.team?.[0]?.rounds)
       ? battle.team[0].rounds
@@ -711,7 +606,7 @@ export function summarizeWarDecks(battleLog, limit = 4, dayKey = null) {
       ? battle.opponent[0].rounds
       : null;
     const battleWon = isWarWin(battle);
-    const matchup = computeBattleMatchup(battle);
+    const matchup = await computeBattleMatchup(battle, catalog);
 
     deckChunks.forEach((deckCards, deckIndex) => {
       const signature = deckCards
@@ -776,7 +671,7 @@ export function summarizeWarDecks(battleLog, limit = 4, dayKey = null) {
 
       decks.set(signature, existing);
     });
-  });
+  }
 
   return [...decks.values()]
     .sort((a, b) => {
