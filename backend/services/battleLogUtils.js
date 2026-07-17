@@ -227,15 +227,28 @@ function computeBattleTourLevel(entry) {
   return null;
 }
 
+// Pour un duel (3 decks/rounds), l'API renvoie dans team[0].cards /
+// opponent[0].cards les cartes de TOUS les rounds concaténées (ex. 16 cartes
+// pour un duel à 2 rounds joués). expandDuelRounds() ne fait qu'ajouter
+// _roundIndex sans découper ces tableaux — il faut donc extraire ici le
+// chunk de 8 cartes correspondant au round exact, des deux côtés (le deck
+// adverse change aussi d'un round à l'autre), sous peine de calculer le
+// matchup sur le mauvais deck adverse (identique pour tous les rounds).
 function deckCardsFromBattle(battle) {
-  return {
-    player: Array.isArray(battle?.team?.[0]?.cards)
-      ? battle.team[0].cards
-      : [],
-    opponent: Array.isArray(battle?.opponent?.[0]?.cards)
-      ? battle.opponent[0].cards
-      : [],
-  };
+  const teamCards = Array.isArray(battle?.team?.[0]?.cards)
+    ? battle.team[0].cards
+    : [];
+  const opponentCards = Array.isArray(battle?.opponent?.[0]?.cards)
+    ? battle.opponent[0].cards
+    : [];
+  if (battle?._roundIndex !== undefined) {
+    const start = battle._roundIndex * 8;
+    return {
+      player: teamCards.slice(start, start + 8),
+      opponent: opponentCards.slice(start, start + 8),
+    };
+  }
+  return { player: teamCards, opponent: opponentCards };
 }
 
 export function clampValue(value, min, max) {
