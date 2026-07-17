@@ -2345,6 +2345,9 @@ async function sendDiscordWebhookFile(webhookUrl, image, options = {}) {
         useIndexedFile = true;
       }
     }
+    if (options?.components) {
+      payload.components = options.components;
+    }
     form.append("payload_json", JSON.stringify(payload));
     const blob = new Blob([image.buffer], { type: contentType });
     if (useIndexedFile) {
@@ -2932,6 +2935,182 @@ async function writeDiscordLinks(links, sha, message) {
   } catch {
     return false;
   }
+}
+
+// Récupère l'analyse + les decks de guerre (avec breakdown matchup) pour un tag joueur.
+// Partagé entre /matchup et les interactions du bouton "ℹ️ Détails".
+async function fetchWarDecksForTag(tag) {
+  const apiResp = await fetch(
+    `${TRUST_ROYALE_URL}/api/player/${encodeURIComponent(tag)}/analysis?fast=true`,
+    { headers: { Accept: "application/json" } },
+  );
+  if (!apiResp.ok) {
+    throw new Error(
+      apiResp.status === 404
+        ? `Joueur \`${tag}\` introuvable.`
+        : `Erreur API (${apiResp.status}).`,
+    );
+  }
+  const analysis = await apiResp.json();
+  let warDecks = [];
+  try {
+    const battleLogResp = await fetch(
+      `${TRUST_ROYALE_URL}/api/player/${encodeURIComponent(tag)}/battlelog`,
+      { headers: { Accept: "application/json" } },
+    );
+    if (battleLogResp.ok) {
+      const battleLog = await battleLogResp.json();
+      warDecks = await summarizeWarDecksForMatchup(
+        battleLog ?? [],
+        64,
+        null,
+        analysis.overview.clan?.tag,
+      );
+    } else {
+      warDecks = await summarizeWarDecksForMatchup(
+        analysis.battleLog ?? [],
+        64,
+        null,
+        analysis.overview.clan?.tag,
+      );
+    }
+  } catch {
+    warDecks = await summarizeWarDecksForMatchup(
+      analysis.battleLog ?? [],
+      64,
+      null,
+      analysis.overview.clan?.tag,
+    );
+  }
+  return { analysis, warDecks };
+}
+
+function buildMatchupDetailButtonRow(tag) {
+  const cleanTag = String(tag || "")
+    .replace(/^#/, "")
+    .toUpperCase();
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: 2,
+          emoji: { name: "ℹ️" },
+          label: "Détails",
+          custom_id: `matchup_detail:${cleanTag}`,
+        },
+      ],
+    },
+  ];
+}
+
+function buildMatchupDetailSelectRow(tag, warDecks) {
+  const cleanTag = String(tag || "")
+    .replace(/^#/, "")
+    .toUpperCase();
+  const options = (Array.isArray(warDecks) ? warDecks : [])
+    .slice(0, 25)
+    .map((deck, index) => {
+      const match = deck.matches?.[0] ?? {};
+      const dayLabel = getWarDayLabel(match.dayKey);
+      const typeLabel = getWarMatchTypeLabel(match.type);
+      const deckLabel = [deck.label, typeLabel].filter(Boolean).join(" ");
+      const matchupPct = Number.isFinite(match.matchup)
+        ? `${Math.round(match.matchup * 100)}%`
+        : "?";
+      return {
+        label: `${dayLabel} · ${deckLabel} vs ${match.opponentName || "?"}`.slice(
+          0,
+          100,
+        ),
+        description: `${match.score || "?"} · ${matchupPct} de difficulté`.slice(
+          0,
+          100,
+        ),
+        value: String(index),
+      };
+    });
+  if (options.length === 0) return null;
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 3,
+          custom_id: `matchup_detail_select:${cleanTag}`,
+          placeholder: "Choisis un match pour voir le détail",
+          options,
+        },
+      ],
+    },
+  ];
+}
+
+function buildMatchupDetailEmbed(warDecks, index) {
+  const deck = Array.isArray(warDecks) ? warDecks[index] : null;
+  const match = deck?.matches?.[0];
+  const detail = match?.matchupDetail;
+  if (!deck || !match || !detail) return null;
+
+  const dayLabel = getWarDayLabel(match.dayKey);
+  const typeLabel = getWarMatchTypeLabel(match.type);
+  const deckLabel = [deck.label, typeLabel].filter(Boolean).join(" ");
+  const matchupPct = Number.isFinite(match.matchup)
+    ? Math.round(match.matchup * 100)
+    : "?";
+  const resultEmoji = match.result === "win" ? "✅" : "❌";
+  const wcA = detail.winConditionsA?.length
+    ? detail.winConditionsA.join(", ")
+    : "Inconnue";
+  const wcB = detail.winConditionsB?.length
+    ? detail.winConditionsB.join(", ")
+    : "Inconnue";
+  const fmtLayer = (value) =>
+    `${Number.isFinite(value) && value > 0 ? "+" : ""}${value ?? 0}`;
+
+  return {
+    title: `⚡ Détail — ${dayLabel} · ${deckLabel} vs ${match.opponentName || "?"}`,
+    description: `${resultEmoji} ${match.score || "?"} · **${matchupPct}%** de difficulté (score brut : ${detail.scoreA}/100 pour toi)`,
+    color: 0xe67e22,
+    fields: [
+      {
+        name: "Win conditions",
+        value: `Toi : **${wcA}**\nAdversaire : **${wcB}**`,
+        inline: false,
+      },
+      {
+        name: "🎯 Archétype (±15)",
+        value: fmtLayer(detail.breakdown?.layer1),
+        inline: true,
+      },
+      {
+        name: "⚔️ Counters directs (±25)",
+        value: fmtLayer(detail.breakdown?.layer2),
+        inline: true,
+      },
+      {
+        name: "🏗️ Structure du deck (±15)",
+        value: fmtLayer(detail.breakdown?.layer3),
+        inline: true,
+      },
+      {
+        name: "📊 Écart de niveau (±50)",
+        value: fmtLayer(detail.breakdown?.layer4),
+        inline: true,
+      },
+      {
+        name: "Ton deck",
+        value: (deck.cardNames || []).join(", ") || "?",
+        inline: false,
+      },
+      {
+        name: "Deck adverse",
+        value: (detail.opponentCardNames || []).join(", ") || "?",
+        inline: false,
+      },
+    ],
+  };
 }
 
 export default async function handler(req, res) {
@@ -3666,56 +3845,20 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
-        const apiResp = await fetch(
-          `${TRUST_ROYALE_URL}/api/player/${encodeURIComponent(tag)}/analysis?fast=true`,
-          { headers: { Accept: "application/json" } },
-        );
-
-        if (!apiResp.ok) {
-          const msg =
-            apiResp.status === 404
-              ? `Joueur \`${tag}\` introuvable.`
-              : `Erreur API (${apiResp.status}).`;
+        let analysis;
+        let warDecks;
+        try {
+          ({ analysis, warDecks } = await fetchWarDecksForTag(tag));
+        } catch (err) {
           await fetch(webhookUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ content: msg, flags: 64 }),
+            body: JSON.stringify({ content: err.message, flags: 64 }),
           });
           return;
         }
 
-        const analysis = await apiResp.json();
-        let warDecks = [];
-        try {
-          const battleLogResp = await fetch(
-            `${TRUST_ROYALE_URL}/api/player/${encodeURIComponent(tag)}/battlelog`,
-            { headers: { Accept: "application/json" } },
-          );
-          if (battleLogResp.ok) {
-            const battleLog = await battleLogResp.json();
-            warDecks = await summarizeWarDecksForMatchup(
-              battleLog ?? [],
-              64,
-              null,
-              analysis.overview.clan?.tag,
-            );
-          } else {
-            warDecks = await summarizeWarDecksForMatchup(
-              analysis.battleLog ?? [],
-              64,
-              null,
-              analysis.overview.clan?.tag,
-            );
-          }
-        } catch {
-          warDecks = await summarizeWarDecksForMatchup(
-            analysis.battleLog ?? [],
-            64,
-            null,
-            analysis.overview.clan?.tag,
-          );
-        }
-
+        const detailComponents = buildMatchupDetailButtonRow(tag);
         let deckImage = null;
         const warDecksField = formatWarDecksField(warDecks);
         try {
@@ -3792,6 +3935,7 @@ export default async function handler(req, res) {
           );
           imageResponse = await sendDiscordWebhookFile(webhookUrl, deckImage, {
             embed: embedWithImage,
+            components: detailComponents,
           });
           console.log(
             "Discord webhook response ok=",
@@ -3826,7 +3970,10 @@ export default async function handler(req, res) {
           const textResponse = await fetch(webhookUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ embeds: [dataEmbed] }),
+            body: JSON.stringify({
+              embeds: [dataEmbed],
+              components: detailComponents,
+            }),
           });
           if (!textResponse.ok) {
             const responseText = await textResponse
@@ -3859,6 +4006,119 @@ export default async function handler(req, res) {
           body: JSON.stringify({
             content: `Erreur lors de l'analyse : ${err.message}`,
             flags: 64,
+          }),
+        });
+      }
+    });
+    return;
+  }
+
+  // Bouton "ℹ️ Détails" sur /matchup : ouvre un menu déroulant (message
+  // éphémère) pour choisir un match et en voir le détail (layers, win
+  // conditions, decks complets).
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("matchup_detail:")
+  ) {
+    const tag = `#${body.data.custom_id.split(":")[1] || ""}`;
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    if (!webhookUrl) {
+      return res
+        .status(200)
+        .json({ type: 4, data: { content: "Erreur interne.", flags: 64 } });
+    }
+
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+
+    runBackground(async () => {
+      try {
+        const { warDecks } = await fetchWarDecksForTag(tag);
+        const components = buildMatchupDetailSelectRow(tag, warDecks);
+        if (!components) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: "Aucun match à détailler pour le moment.",
+            }),
+          });
+          return;
+        }
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: "Choisis un match pour voir le détail du calcul :",
+            components,
+          }),
+        });
+      } catch (err) {
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: `Erreur : ${err.message}` }),
+        });
+      }
+    });
+    return;
+  }
+
+  // Sélection d'un match dans le menu déroulant "ℹ️ Détails" : met à jour le
+  // message éphémère avec le breakdown complet, en gardant le menu actif
+  // pour pouvoir enchaîner sur un autre match.
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("matchup_detail_select:")
+  ) {
+    const tag = `#${body.data.custom_id.split(":")[1] || ""}`;
+    const selectedIndex = Number(body.data.values?.[0]);
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    const originalWebhookUrl = webhookUrl
+      ? `${webhookUrl}/messages/@original`
+      : null;
+    if (!originalWebhookUrl) {
+      return res
+        .status(200)
+        .json({ type: 4, data: { content: "Erreur interne.", flags: 64 } });
+    }
+
+    res.status(200).json({ type: 6 });
+
+    runBackground(async () => {
+      try {
+        const { warDecks } = await fetchWarDecksForTag(tag);
+        const embed = buildMatchupDetailEmbed(warDecks, selectedIndex);
+        const components = buildMatchupDetailSelectRow(tag, warDecks) || [];
+        const patchBody = embed
+          ? { content: "", embeds: [embed], components }
+          : {
+              content:
+                "Ce match n'est plus disponible (données mises à jour depuis).",
+              embeds: [],
+              components,
+            };
+        const r = await fetch(originalWebhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(patchBody),
+        });
+        if (!r.ok) {
+          const txt = await r.text().catch(() => "");
+          console.error(
+            `[matchup_detail_select] PATCH Discord HTTP ${r.status}:`,
+            txt.slice(0, 300),
+          );
+        }
+      } catch (err) {
+        await fetch(originalWebhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur : ${err.message}`,
+            embeds: [],
+            components: [],
           }),
         });
       }

@@ -243,20 +243,38 @@ export function clampValue(value, min, max) {
 }
 
 /**
- * %matchup d'une bataille : difficulté du combat pour le joueur (0 = confortable,
- * 1 = très tendu). Moteur tactique deck-vs-deck (matchupEngine.js) : scoreA
- * (avantage du deck joueur, 0-100) y est calculé puis inversé ici.
+ * Détail complet du %matchup d'une bataille : le scalaire `matchup` (difficulté,
+ * 0-1, cf. computeBattleMatchup) accompagné du breakdown par layer, des win
+ * conditions identifiées et des noms de cartes des deux decks — utilisé pour
+ * l'affichage détaillé (bouton "ℹ️ Détails" de /matchup).
  * @param {object} battle
  * @param {{winConditionsByName: Map, normalizeCardName: Function}|null} catalog
  *   Catalogue déjà résolu (évite un lookup de cache répété en boucle) ; si
  *   omis, il est chargé ici via getWinConditionsCatalog().
  */
-export async function computeBattleMatchup(battle, catalog = null) {
+export async function computeDeckMatchupDetail(battle, catalog = null) {
   const resolvedCatalog = catalog ?? (await getWinConditionsCatalog());
   const { player, opponent } = deckCardsFromBattle(battle);
-  const { scoreA } = computeDeckMatchupScore(player, opponent, resolvedCatalog);
-  const difficulty = (100 - scoreA) / 100;
-  return Number(clampValue(difficulty, 0, 1).toFixed(3));
+  const { scoreA, breakdown, winConditionsA, winConditionsB } =
+    computeDeckMatchupScore(player, opponent, resolvedCatalog);
+  const difficulty = Number(
+    clampValue((100 - scoreA) / 100, 0, 1).toFixed(3),
+  );
+  const cardName = (card) => String(card?.name ?? "").trim();
+  return {
+    matchup: difficulty,
+    scoreA,
+    breakdown,
+    winConditionsA,
+    winConditionsB,
+    playerCardNames: player.map(cardName).filter(Boolean),
+    opponentCardNames: opponent.map(cardName).filter(Boolean),
+  };
+}
+
+export async function computeBattleMatchup(battle, catalog = null) {
+  const detail = await computeDeckMatchupDetail(battle, catalog);
+  return detail.matchup;
 }
 
 export async function computeMatchupFromBattleLog(battleLog) {
@@ -515,7 +533,8 @@ export async function summarizeWarDecksForMatchup(
     if (!deckChunks.length) continue;
 
     const opponentTourLevel = computeBattleTourLevel(oppEntry);
-    const matchup = await computeBattleMatchup(battle, catalog);
+    const matchupDetail = await computeDeckMatchupDetail(battle, catalog);
+    const matchup = matchupDetail.matchup;
     const opponentName = String(oppEntry?.name ?? oppEntry?.tag ?? "?").trim();
     const myCrowns = getMyBattleCrowns(battle);
     const oppCrowns =
@@ -575,6 +594,7 @@ export async function summarizeWarDecksForMatchup(
             oppCrowns,
             result,
             matchup,
+            matchupDetail,
             dayKey: effectiveDayKey,
             type: battle.type ?? null,
           },
