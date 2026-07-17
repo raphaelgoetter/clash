@@ -158,6 +158,32 @@
       ]
     },
     {
+      "name": "Balloon",
+      "archetype": "Cycle",
+      "hardCounters": [
+        "Inferno Tower",
+        "Tesla",
+        "Electro Wizard",
+        "Minion Horde",
+        "Bats",
+        "Minions"
+      ],
+      "softCounters": [
+        "Musketeer",
+        "Mega Minion",
+        "Inferno Dragon",
+        "Hunter",
+        "Archer Queen",
+        "Archers",
+        "Baby Dragon",
+        "Flying Machine",
+        "Phoenix",
+        "Firecracker",
+        "Dart Goblin",
+        "Spear Goblins"
+      ]
+    },
+    {
       "name": "Hog Rider",
       "archetype": "Cycle",
       "hardCounters": [
