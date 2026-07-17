@@ -8744,9 +8744,10 @@
           "start": "2026-07-16T09:56:00.000Z",
           "end": "2026-07-17T09:55:59.999Z"
         },
-        "snapshotTime": "2026-07-17T06:46:51.018Z",
+        "snapshotTime": "2026-07-17T07:39:10.153Z",
         "snapshotBackupTime": "2026-07-16T10:38:26.495Z",
         "decks": {
+          "#2QVU9JQ8P": 4,
           "#808C9PU": 4,
           "#8CQ80LJ8V": 4,
           "#8VP9UJV9L": 4,
@@ -8766,7 +8767,6 @@
           "#VYQRPY090": 4,
           "#YGP0RQC0Q": 4,
           "#YQGCRQ0": 4,
-          "#2QVU9JQ8P": 3,
           "#9U9YVU80": 3,
           "#8JGU9UUJJ": 2
         },
@@ -8796,7 +8796,7 @@
           "#UVGPPVQ8Q": 600,
           "#VJRLG9UVR": 0,
           "#808C9PU": 400,
-          "#2QVU9JQ8P": 300,
+          "#2QVU9JQ8P": 400,
           "#R2YP2UJRL": 0,
           "#C0RRPJYV9": 0,
           "#VQJVPCC8V": 0,
@@ -8843,9 +8843,9 @@
           "#9U9YVU80": 65250,
           "#CJJUGGL98": 43372,
           "#8CQ80LJ8V": 105510,
-          "#YQGCRQ0": 135711,
+          "#YQGCRQ0": 135743,
           "#V9RL22GYQ": 2291,
-          "#UVGPPVQ8Q": 23375,
+          "#UVGPPVQ8Q": 23399,
           "#9GP9LQ9P": 39176,
           "#UV8R8RYVR": 10962,
           "#LCQ2J0VGC": 39722,
@@ -8862,7 +8862,7 @@
           "#JVRP8QPRU": 22175,
           "#8JGU9UUJJ": 184939,
           "#9YRU2QJJ": 18794,
-          "#8VP9UJV9L": 39027,
+          "#8VP9UJV9L": 39043,
           "#LUYP8YP9": 48962,
           "#GYCJPJL0L": 15760,
           "#CVYLYLC8V": 34063,
@@ -8876,7 +8876,7 @@
           "#VQJVPCC8V": 16434,
           "#JR0U8Q008": 8985,
           "#R2YP2UJRL": 8880,
-          "#2QVU9JQ8P": 14037,
+          "#2QVU9JQ8P": 14047,
           "#J008G9CLJ": 8445,
           "#LJPP988L": 19517,
           "#VJRLG9UVR": 2416,
@@ -8913,7 +8913,7 @@
           "#UVGPPVQ8Q": 4,
           "#VJRLG9UVR": 0,
           "#808C9PU": 4,
-          "#2QVU9JQ8P": 3,
+          "#2QVU9JQ8P": 4,
           "#R2YP2UJRL": 0,
           "#C0RRPJYV9": 0,
           "#VQJVPCC8V": 0,
@@ -8943,7 +8943,7 @@
           "#VJPV0CURJ": 0,
           "#9VQYC9GJQ": 0
         },
-        "snapshotCount": 84
+        "snapshotCount": 85
       },
       {
         "warDay": "friday",
