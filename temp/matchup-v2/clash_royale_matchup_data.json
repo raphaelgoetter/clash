@@ -1,0 +1,551 @@
+{
+  "winConditions": [
+    {
+      "name": "Golem",
+      "archetype": "Beatdown",
+      "hardCounters": [
+        "Inferno Tower",
+        "P.E.K.K.A",
+        "Inferno Dragon",
+        "Mighty Miner",
+        "Elite Barbarians",
+        "Mini P.E.K.K.A"
+      ],
+      "softCounters": [
+        "Goblin Cage",
+        "Tesla",
+        "Cannon",
+        "Tombstone",
+        "Barbarians",
+        "Hunter",
+        "Lumberjack",
+        "Prince",
+        "Skeleton Army",
+        "Goblin Gang",
+        "Guards",
+        "Rascals",
+        "Minion Horde",
+        "Zappies",
+        "Fisherman"
+      ]
+    },
+    {
+      "name": "Giant",
+      "archetype": "Beatdown",
+      "hardCounters": [
+        "P.E.K.K.A",
+        "Inferno Tower",
+        "Inferno Dragon",
+        "Mighty Miner",
+        "Mini P.E.K.K.A",
+        "Elite Barbarians"
+      ],
+      "softCounters": [
+        "Goblin Cage",
+        "Tesla",
+        "Cannon",
+        "Tombstone",
+        "Barbarians",
+        "Hunter",
+        "Lumberjack",
+        "Prince",
+        "Skeleton Army",
+        "Goblin Gang",
+        "Guards",
+        "Minions",
+        "Bats",
+        "Minion Horde"
+      ]
+    },
+    {
+      "name": "Electro Giant",
+      "archetype": "Beatdown",
+      "hardCounters": [
+        "P.E.K.K.A",
+        "Mini P.E.K.K.A",
+        "Elite Barbarians",
+        "Mighty Miner",
+        "Goblin Cage",
+        "Tesla",
+        "Cannon"
+      ],
+      "softCounters": [
+        "Barbarians",
+        "Prince",
+        "Lumberjack",
+        "Tombstone",
+        "Inferno Tower",
+        "Bowler",
+        "Hunter",
+        "Rascals"
+      ]
+    },
+    {
+      "name": "Elixir Golem",
+      "archetype": "Beatdown",
+      "hardCounters": [
+        "Valkyrie",
+        "Bowler",
+        "Executioner",
+        "Mega Knight",
+        "Wizard",
+        "Bomb Tower",
+        "Poison"
+      ],
+      "softCounters": [
+        "Mini P.E.K.K.A",
+        "P.E.K.K.A",
+        "Elite Barbarians",
+        "Musketeer",
+        "Electro Wizard",
+        "Dart Goblin",
+        "Magic Archer",
+        "Baby Dragon",
+        "Skeleton Army",
+        "Goblin Gang",
+        "Barbarians"
+      ]
+    },
+    {
+      "name": "Goblin Giant",
+      "archetype": "Beatdown",
+      "hardCounters": [
+        "P.E.K.K.A",
+        "Inferno Tower",
+        "Mini P.E.K.K.A",
+        "Elite Barbarians",
+        "Inferno Dragon",
+        "Mighty Miner"
+      ],
+      "softCounters": [
+        "Goblin Cage",
+        "Tesla",
+        "Cannon",
+        "Tombstone",
+        "Barbarians",
+        "Hunter",
+        "Prince",
+        "Lumberjack",
+        "Skeleton Army",
+        "Goblin Gang",
+        "Guards"
+      ]
+    },
+    {
+      "name": "Lava Hound",
+      "archetype": "Beatdown",
+      "hardCounters": [
+        "Inferno Tower",
+        "Inferno Dragon",
+        "Executioner",
+        "Wizard",
+        "Minion Horde",
+        "Hunter"
+      ],
+      "softCounters": [
+        "Musketeer",
+        "Electro Wizard",
+        "Mega Minion",
+        "Minions",
+        "Bats",
+        "Archer Queen",
+        "Archers",
+        "Dart Goblin",
+        "Spear Goblins",
+        "Flying Machine",
+        "Phoenix",
+        "Ram Rider"
+      ]
+    },
+    {
+      "name": "Hog Rider",
+      "archetype": "Cycle",
+      "hardCounters": [
+        "Tornado",
+        "Cannon",
+        "Tesla",
+        "Goblin Cage",
+        "Bomb Tower",
+        "Tombstone"
+      ],
+      "softCounters": [
+        "Mini P.E.K.K.A",
+        "P.E.K.K.A",
+        "Elite Barbarians",
+        "Hunter",
+        "Skeleton Army",
+        "Goblin Gang",
+        "Barbarians",
+        "Fisherman",
+        "Lumberjack",
+        "Prince",
+        "Bowler",
+        "Ram Rider",
+        "Mega Knight"
+      ]
+    },
+    {
+      "name": "Royal Giant",
+      "archetype": "Cycle",
+      "hardCounters": [
+        "P.E.K.K.A",
+        "Inferno Tower",
+        "Mini P.E.K.K.A",
+        "Elite Barbarians",
+        "Inferno Dragon",
+        "Mighty Miner",
+        "Barbarians"
+      ],
+      "softCounters": [
+        "Goblin Cage",
+        "Tesla",
+        "Cannon",
+        "Tombstone",
+        "Fisherman",
+        "Hunter",
+        "Lumberjack",
+        "Prince",
+        "Skeleton Army",
+        "Goblin Gang",
+        "Guards",
+        "Minion Horde"
+      ]
+    },
+    {
+      "name": "Wall Breakers",
+      "archetype": "Cycle",
+      "hardCounters": [
+        "The Log",
+        "Barbarian Barrel",
+        "Arrows",
+        "Cannon",
+        "Tesla",
+        "Tombstone",
+        "Goblins"
+      ],
+      "softCounters": [
+        "Skeletons",
+        "Electro Wizard",
+        "Ice Wizard",
+        "Dart Goblin",
+        "Archers",
+        "Guards",
+        "Valkyrie",
+        "Royal Ghost",
+        "Bandit",
+        "Fire Spirit"
+      ]
+    },
+    {
+      "name": "Ram Rider",
+      "archetype": "Bridge Spam",
+      "hardCounters": [
+        "Electro Wizard",
+        "P.E.K.K.A",
+        "Mini P.E.K.K.A",
+        "Elite Barbarians",
+        "Cannon",
+        "Tesla",
+        "Tombstone",
+        "Goblin Cage"
+      ],
+      "softCounters": [
+        "Barbarians",
+        "Bowler",
+        "Mega Knight",
+        "Skeleton Army",
+        "Goblin Gang",
+        "Zappies",
+        "Electro Dragon",
+        "Ice Wizard",
+        "Hunter",
+        "Prince"
+      ]
+    },
+    {
+      "name": "Battle Ram",
+      "archetype": "Bridge Spam",
+      "hardCounters": [
+        "Tombstone",
+        "Cannon",
+        "Tesla",
+        "Goblin Cage",
+        "Bomb Tower",
+        "Electro Wizard",
+        "The Log",
+        "Barbarian Barrel"
+      ],
+      "softCounters": [
+        "Barbarians",
+        "Skeleton Army",
+        "Goblin Gang",
+        "Mini P.E.K.K.A",
+        "P.E.K.K.A",
+        "Bowler",
+        "Mega Knight",
+        "Dark Prince",
+        "Valkyrie",
+        "Bandit"
+      ]
+    },
+    {
+      "name": "Royal Hogs",
+      "archetype": "Bridge Spam",
+      "hardCounters": [
+        "Mega Knight",
+        "Valkyrie",
+        "Fireball",
+        "Bomb Tower",
+        "Bowler",
+        "Executioner",
+        "Wizard"
+      ],
+      "softCounters": [
+        "Dark Prince",
+        "Royal Delivery",
+        "Fire Spirit",
+        "Skeleton King",
+        "Elite Barbarians",
+        "Barbarians",
+        "Goblin Cage",
+        "Tesla",
+        "Cannon",
+        "Mini P.E.K.K.A"
+      ]
+    },
+    {
+      "name": "Miner",
+      "archetype": "Control",
+      "hardCounters": [
+        "Knight",
+        "Goblins",
+        "Mini P.E.K.K.A",
+        "Ice Golem",
+        "Guards"
+      ],
+      "softCounters": [
+        "Skeletons",
+        "Goblin Gang",
+        "Skeleton Army",
+        "Bats",
+        "Minions",
+        "Valkyrie",
+        "Dark Prince",
+        "Lumberjack",
+        "Royal Ghost"
+      ]
+    },
+    {
+      "name": "Goblin Drill",
+      "archetype": "Control",
+      "hardCounters": [
+        "Valkyrie",
+        "Dark Prince",
+        "Bowler",
+        "Executioner",
+        "Royal Ghost",
+        "Knight"
+      ],
+      "softCounters": [
+        "Mini P.E.K.K.A",
+        "Goblins",
+        "Guards",
+        "Bomber",
+        "Skeleton Army",
+        "Barbarians",
+        "Elite Barbarians",
+        "Prince"
+      ]
+    },
+    {
+      "name": "Graveyard",
+      "archetype": "Control",
+      "hardCounters": [
+        "Poison",
+        "Mother Witch",
+        "Valkyrie",
+        "Bowler",
+        "Executioner",
+        "Baby Dragon"
+      ],
+      "softCounters": [
+        "Dart Goblin",
+        "Guards",
+        "Minions",
+        "Archer Queen",
+        "Goblins",
+        "Skeleton Army",
+        "Witch",
+        "Night Witch",
+        "Skeleton King",
+        "Minion Horde"
+      ]
+    },
+    {
+      "name": "P.E.K.K.A",
+      "archetype": "Control",
+      "hardCounters": [
+        "Inferno Tower",
+        "Inferno Dragon",
+        "Skeleton Army",
+        "Goblin Gang",
+        "Witch",
+        "Tombstone",
+        "Guards"
+      ],
+      "softCounters": [
+        "Goblins",
+        "Skeletons",
+        "Ice Golem",
+        "Minions",
+        "Bats",
+        "Minion Horde",
+        "Zappies",
+        "Electro Wizard",
+        "Night Witch"
+      ]
+    },
+    {
+      "name": "Mega Knight",
+      "archetype": "Control",
+      "hardCounters": [
+        "P.E.K.K.A",
+        "Inferno Tower",
+        "Knight",
+        "Mini P.E.K.K.A",
+        "Elite Barbarians",
+        "Mighty Miner",
+        "Prince"
+      ],
+      "softCounters": [
+        "Valkyrie",
+        "Goblin Cage",
+        "Ice Golem",
+        "Guards",
+        "Dark Prince",
+        "Inferno Dragon",
+        "Bandit",
+        "Cannon Cart",
+        "Ice Wizard"
+      ]
+    },
+    {
+      "name": "Goblin Barrel",
+      "archetype": "Bait",
+      "hardCounters": [
+        "The Log",
+        "Barbarian Barrel",
+        "Arrows",
+        "Royal Delivery"
+      ],
+      "softCounters": [
+        "Zap",
+        "Giant Snowball",
+        "Valkyrie",
+        "Dark Prince",
+        "Fire Spirit",
+        "Electro Wizard",
+        "Bowler",
+        "Skeleton Army",
+        "Goblins",
+        "Guards"
+      ]
+    },
+    {
+      "name": "Skeleton Barrel",
+      "archetype": "Bait",
+      "hardCounters": [
+        "Arrows",
+        "The Log",
+        "Zap",
+        "Giant Snowball",
+        "Barbarian Barrel"
+      ],
+      "softCounters": [
+        "Tesla",
+        "Cannon",
+        "Musketeer",
+        "Electro Wizard",
+        "Valkyrie",
+        "Wizard",
+        "Executioner",
+        "Witch",
+        "Bats",
+        "Minions",
+        "Dart Goblin"
+      ]
+    },
+    {
+      "name": "X-Bow",
+      "archetype": "Siege",
+      "hardCounters": [
+        "Royal Giant",
+        "Golem",
+        "Rocket",
+        "Giant",
+        "P.E.K.K.A",
+        "Mega Knight",
+        "Electro Giant",
+        "Earthquake"
+      ],
+      "softCounters": [
+        "Knight",
+        "Valkyrie",
+        "Ice Golem",
+        "Battle Ram",
+        "Goblin Cage",
+        "Bowler",
+        "Dark Prince",
+        "Elixir Golem",
+        "Barbarians",
+        "Royal Recruits"
+      ]
+    },
+    {
+      "name": "Mortar",
+      "archetype": "Siege",
+      "hardCounters": [
+        "Royal Giant",
+        "Golem",
+        "Giant",
+        "P.E.K.K.A",
+        "Mega Knight",
+        "Musketeer",
+        "Minion Horde",
+        "Minions"
+      ],
+      "softCounters": [
+        "Knight",
+        "Ice Golem",
+        "Cannon Cart",
+        "Valkyrie",
+        "Bandit",
+        "Dark Prince",
+        "Guards",
+        "Goblins",
+        "Tombstone"
+      ]
+    },
+    {
+      "name": "Three Musketeers",
+      "archetype": "Split-Push",
+      "hardCounters": [
+        "Fireball",
+        "Lightning",
+        "Rocket",
+        "Poison",
+        "Mega Knight",
+        "Valkyrie"
+      ],
+      "softCounters": [
+        "Dark Prince",
+        "Bowler",
+        "Executioner",
+        "Royal Delivery",
+        "Fire Spirit",
+        "Barbarian Barrel",
+        "Mini P.E.K.K.A"
+      ]
+    }
+  ]
+}
