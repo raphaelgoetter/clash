@@ -148,7 +148,7 @@ export function computeCounterLayer(
 // absorbe les cas extrêmes, donc pas besoin de plafonner ici.
 function escalatingExcessPenalty(count, baseline, unitPoints) {
   const excess = Math.max(0, count - baseline);
-  return -unitPoints * (excess * (excess + 1)) / 2;
+  return (-unitPoints * (excess * (excess + 1))) / 2;
 }
 
 // LAYER 3 — Intégrité structurelle / utilité (±7.5%)
@@ -309,7 +309,7 @@ function describeCounterLayer(
   const theirHardHit = winConditionsB.filter(
     (wc) => countMatchesAgainstNames(deckACards, wc.hardCounters, catalog) > 0,
   ).length;
-  return `toi: ${yourHardHit}/${winConditionsA.length} contrée(s) dur, eux: ${theirHardHit}/${winConditionsB.length} contrée(s) dur`;
+  return `toi: ${yourHardHit}/${winConditionsA.length} contré, lui: ${theirHardHit}/${winConditionsB.length} contré`;
 }
 
 function describeUtilityLayer(
@@ -333,7 +333,7 @@ function describeUtilityLayer(
   );
   const all = [
     ...tagsA.map((t) => `toi: ${t}`),
-    ...tagsB.map((t) => `eux: ${t}`),
+    ...tagsB.map((t) => `lui: ${t}`),
   ];
   return all.length > 0 ? all.join(" · ") : "aucune règle déclenchée";
 }
@@ -342,7 +342,7 @@ function describeLevelDifferentialLayer(deckACards, deckBCards) {
   const sum = (cards) =>
     toArray(cards).reduce((total, card) => total + normLevel(card), 0);
   const diff = sum(deckACards) - sum(deckBCards);
-  return `${diff > 0 ? "+" : ""}${diff} niveaux normalisés`;
+  return `${diff > 0 ? "+" : ""}${diff} niveaux`;
 }
 
 // ------------------------------------------------------------
@@ -366,7 +366,13 @@ export function computeDeckMatchupScore(deckACards, deckBCards, catalog) {
     ? computeArchetypeLayer(winConditionsA, winConditionsB)
     : 0;
   const layer2 = bothKnown
-    ? computeCounterLayer(winConditionsA, deckACards, winConditionsB, deckBCards, catalog)
+    ? computeCounterLayer(
+        winConditionsA,
+        deckACards,
+        winConditionsB,
+        deckBCards,
+        catalog,
+      )
     : 0;
   const layer3 = computeUtilityLayer(
     winConditionsA,
