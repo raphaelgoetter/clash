@@ -9092,7 +9092,7 @@
           "start": "2026-07-17T09:56:00.000Z",
           "end": "2026-07-18T09:55:59.999Z"
         },
-        "snapshotTime": "2026-07-18T03:01:50.813Z",
+        "snapshotTime": "2026-07-18T04:57:09.069Z",
         "snapshotBackupTime": "2026-07-17T10:32:35.809Z",
         "decks": {
           "#8CQ80LJ8V": 4,
@@ -9101,6 +9101,7 @@
           "#9YRU2QJJ": 4,
           "#C0RRPJYV9": 4,
           "#J008G9CLJ": 4,
+          "#JR0U8Q008": 4,
           "#JVRP8QPRU": 4,
           "#LCQ2J0VGC": 4,
           "#UC9LU0L90": 4,
@@ -9135,7 +9136,7 @@
           "#88JY2CG8J": 0,
           "#2VURUYUP9": 0,
           "#220VL2VRLG": 0,
-          "#JR0U8Q008": 0,
+          "#JR0U8Q008": 800,
           "#20C8C00808": 0,
           "#9VQYC9GJQ": 0,
           "#CLVU02QLP": 0,
@@ -9171,7 +9172,10 @@
         "duelsTodayByTag": {
           "#LCQ2J0VGC": 1,
           "#8CQ80LJ8V": 1,
-          "#YQGCRQ0": 1
+          "#YQGCRQ0": 1,
+          "#URJ0YLPLP": 1,
+          "#VLVLQR0UP": 1,
+          "#JR0U8Q008": 1
         },
         "_totalDonationsByTag": {
           "#G2VVUJLLQ": 41551,
@@ -9206,13 +9210,13 @@
           "#220VL2VRLG": 3211,
           "#808C9PU": 32745,
           "#VQJVPCC8V": 16434,
-          "#JR0U8Q008": 8985,
+          "#JR0U8Q008": 9003,
           "#R2YP2UJRL": 8880,
           "#2QVU9JQ8P": 14047,
           "#LJPP988L": 19517,
           "#J008G9CLJ": 8503,
           "#VJRLG9UVR": 2468,
-          "#VJPV0CURJ": 120,
+          "#VJPV0CURJ": 136,
           "#20002JY8J0": 1246,
           "#20G8R9R8CJ": 1186,
           "#LCCQV08LR": 53
@@ -9241,7 +9245,7 @@
           "#88JY2CG8J": 0,
           "#2VURUYUP9": 0,
           "#220VL2VRLG": 0,
-          "#JR0U8Q008": 0,
+          "#JR0U8Q008": 4,
           "#20C8C00808": 0,
           "#9VQYC9GJQ": 0,
           "#CLVU02QLP": 0,
@@ -9275,7 +9279,7 @@
           "#V0VLJQCJU": 8
         },
         "periodPointsEarned": 16175,
-        "snapshotCount": 55
+        "snapshotCount": 59
       },
       {
         "warDay": "saturday",
