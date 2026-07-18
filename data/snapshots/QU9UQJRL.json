@@ -9431,16 +9431,17 @@
           "start": "2026-07-18T09:56:00.000Z",
           "end": "2026-07-19T09:55:59.999Z"
         },
-        "snapshotTime": "2026-07-18T15:19:58.340Z",
+        "snapshotTime": "2026-07-18T16:17:53.760Z",
         "snapshotBackupTime": "2026-07-18T10:28:30.977Z",
         "decks": {
           "#9YRU2QJJ": 4,
+          "#C0RRPJYV9": 4,
           "#J008G9CLJ": 4,
           "#JVRP8QPRU": 4,
           "#UC9LU0L90": 4,
           "#V0VLJQCJU": 4,
           "#9U9YVU80": 3,
-          "#C0RRPJYV9": 1
+          "#UVGPPVQ8Q": 2
         },
         "hourlyCumul": [],
         "_cumulFame": {
@@ -9491,8 +9492,8 @@
           "#V9RL22GYQ": 1025,
           "#JVRP8QPRU": 1700,
           "#VYQRPY090": 1100,
-          "#UVGPPVQ8Q": 1200,
-          "#C0RRPJYV9": 1400,
+          "#UVGPPVQ8Q": 1500,
+          "#C0RRPJYV9": 1800,
           "#J008G9CLJ": 1950,
           "#LCQ2J0VGC": 1450,
           "#8CQ80LJ8V": 1700,
@@ -9507,7 +9508,7 @@
           "#G2VVUJLLQ": 41595,
           "#9U9YVU80": 65529,
           "#V9RL22GYQ": 2423,
-          "#UVGPPVQ8Q": 23469,
+          "#UVGPPVQ8Q": 23477,
           "#UV8R8RYVR": 11036,
           "#LCQ2J0VGC": 39773,
           "#V0VLJQCJU": 50616,
@@ -9519,8 +9520,8 @@
           "#YGP0RQC0Q": 13329,
           "#88JY2CG8J": 47970,
           "#UYRR99RL8": 5934,
-          "#JVRP8QPRU": 22267,
-          "#9YRU2QJJ": 18876,
+          "#JVRP8QPRU": 22285,
+          "#9YRU2QJJ": 18884,
           "#8JGU9UUJJ": 185067,
           "#8VP9UJV9L": 39103,
           "#LUYP8YP9": 48962,
@@ -9595,15 +9596,15 @@
           "#V9RL22GYQ": 8,
           "#JVRP8QPRU": 12,
           "#VYQRPY090": 8,
-          "#UVGPPVQ8Q": 8,
-          "#C0RRPJYV9": 9,
+          "#UVGPPVQ8Q": 10,
+          "#C0RRPJYV9": 12,
           "#J008G9CLJ": 12,
           "#LCQ2J0VGC": 8,
           "#8CQ80LJ8V": 8,
           "#V0VLJQCJU": 12
         },
         "periodPointsEarned": 11625,
-        "snapshotCount": 24
+        "snapshotCount": 29
       },
       {
         "warDay": "sunday",
