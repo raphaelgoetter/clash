@@ -501,6 +501,34 @@
       ]
     },
     {
+      "name": "Suspicious Bush",
+      "archetype": "Bait",
+      "hardCounters": [
+        "The Log",
+        "Barbarian Barrel",
+        "Arrows",
+        "Zap",
+        "Giant Snowball",
+        "Electro Spirit"
+      ],
+      "softCounters": [
+        "Cannon",
+        "Tombstone",
+        "Goblin Cage",
+        "Bomb Tower",
+        "Furnace",
+        "Inferno Tower",
+        "Mortar",
+        "Royal Delivery",
+        "Ice Wizard",
+        "Electro Wizard",
+        "Bomber",
+        "Void",
+        "Vines",
+        "Fireball"
+      ]
+    },
+    {
       "name": "Three Musketeers",
       "archetype": "Split-Push",
       "hardCounters": [
