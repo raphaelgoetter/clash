@@ -159,7 +159,19 @@ function escalatingExcessPenalty(count, baseline, unitPoints) {
 // Retourne { shift, tags } — tags = courtes étiquettes des règles
 // déclenchées, utilisées uniquement pour générer les mini-explications de
 // l'embed Discord (cf. describeUtilityLayer). Le shift seul alimente le score.
-function utilityShiftFor(winConditionsX, deckXCards, deckYCards, catalog) {
+// xLabel/yLabel ("toi"/"lui") servent uniquement à attribuer correctement
+// chaque FAIT individuel dans les tags générés — une règle croisée (Bait,
+// Split-Push, Heavy Beatdown) implique toujours deux faits sur deux decks
+// différents (ex. "toi: 0 gros sort, lui: Split-push"), donc un seul préfixe
+// global ne suffit pas à décrire qui fait quoi.
+function utilityShiftFor(
+  winConditionsX,
+  deckXCards,
+  deckYCards,
+  catalog,
+  xLabel = "toi",
+  yLabel = "lui",
+) {
   let shift = 0;
   const tags = [];
 
@@ -172,10 +184,10 @@ function utilityShiftFor(winConditionsX, deckXCards, deckYCards, catalog) {
     );
     if (smallSpellsInY < 1) {
       shift += 6;
-      tags.push("Bait: 0 petit sort adverse");
+      tags.push(`${yLabel}: 0 petit sort, ${xLabel}: Bait`);
     } else if (smallSpellsInY >= 2) {
       shift -= 6;
-      tags.push(`Bait: ${smallSpellsInY} petits sorts adverses`);
+      tags.push(`${yLabel}: ${smallSpellsInY} petits sorts, ${xLabel}: Bait`);
     }
   }
 
@@ -185,7 +197,7 @@ function utilityShiftFor(winConditionsX, deckXCards, deckYCards, catalog) {
     const bigSpellsInY = countMatchesInSet(deckYCards, BIG_SPELLS_SET, catalog);
     if (bigSpellsInY === 0) {
       shift += 6;
-      tags.push("Split-push: 0 gros sort adverse");
+      tags.push(`${yLabel}: 0 gros sort, ${xLabel}: Split-push`);
     }
   }
 
@@ -205,17 +217,20 @@ function utilityShiftFor(winConditionsX, deckXCards, deckYCards, catalog) {
     );
     if (tankKillersInY === 0 && defensiveBuildingsInY === 0) {
       shift += 10;
-      tags.push("Gros tank: aucun tank killer/bâtiment adverse");
+      tags.push(
+        `${yLabel}: aucun tank killer/bâtiment, ${xLabel}: Gros tank`,
+      );
     }
   }
 
   // Deck trop "dispersé" (auto-pénalité, indépendante de deckYCards) : trop
   // de win conditions, de sorts ou de bâtiments dénote un manque de focus
   // (ou un sur-matching du catalogue) — défavorable pour X, en échelle.
+  // Fait unilatéral (ne concerne que X) : pas de yLabel ici.
   const wcPenalty = escalatingExcessPenalty(winConditionsX.length, 2, 3);
   if (wcPenalty !== 0) {
     shift += wcPenalty;
-    tags.push(`${winConditionsX.length} WC: dispersion`);
+    tags.push(`${xLabel}: ${winConditionsX.length} WC (dispersion)`);
   }
 
   const spellsInX =
@@ -224,7 +239,7 @@ function utilityShiftFor(winConditionsX, deckXCards, deckYCards, catalog) {
   const spellPenalty = escalatingExcessPenalty(spellsInX, 3, 3);
   if (spellPenalty !== 0) {
     shift += spellPenalty;
-    tags.push(`${spellsInX} sorts: dispersion`);
+    tags.push(`${xLabel}: ${spellsInX} sorts (dispersion)`);
   }
 
   const buildingsInX = countMatchesInSet(
@@ -235,7 +250,7 @@ function utilityShiftFor(winConditionsX, deckXCards, deckYCards, catalog) {
   const buildingPenalty = escalatingExcessPenalty(buildingsInX, 2, 3);
   if (buildingPenalty !== 0) {
     shift += buildingPenalty;
-    tags.push(`${buildingsInX} bâtiments: dispersion`);
+    tags.push(`${xLabel}: ${buildingsInX} bâtiments (dispersion)`);
   }
 
   return { shift, tags };
@@ -291,7 +306,7 @@ function describeArchetypeLayer(winConditionsA, winConditionsB, bothKnown) {
   const archsB = [...new Set(winConditionsB.map((wc) => wc.archetype))].join(
     "+",
   );
-  return `${archsA} vs ${archsB}`;
+  return `toi: ${archsA}, lui: ${archsB}`;
 }
 
 function describeCounterLayer(
@@ -303,13 +318,21 @@ function describeCounterLayer(
   bothKnown,
 ) {
   if (!bothKnown) return "win condition inconnue";
-  const yourHardHit = winConditionsA.filter(
-    (wc) => countMatchesAgainstNames(deckBCards, wc.hardCounters, catalog) > 0,
-  ).length;
-  const theirHardHit = winConditionsB.filter(
-    (wc) => countMatchesAgainstNames(deckACards, wc.hardCounters, catalog) > 0,
-  ).length;
-  return `toi: ${yourHardHit}/${winConditionsA.length} contré, lui: ${theirHardHit}/${winConditionsB.length} contré`;
+  // Nombre de cartes-counters trouvées chez l'adversaire pour CHAQUE win
+  // condition du camp évalué (une win condition peut cumuler plusieurs
+  // counters présents à la fois) : "toi" = ce que tu subis (leurs counters
+  // à ta/tes WC), "lui" = ce qu'il subit (tes counters à sa/ses WC).
+  const sumMatches = (winConditions, opponentDeck, field) =>
+    winConditions.reduce(
+      (sum, wc) =>
+        sum + countMatchesAgainstNames(opponentDeck, wc[field], catalog),
+      0,
+    );
+  const yourHard = sumMatches(winConditionsA, deckBCards, "hardCounters");
+  const yourSoft = sumMatches(winConditionsA, deckBCards, "softCounters");
+  const theirHard = sumMatches(winConditionsB, deckACards, "hardCounters");
+  const theirSoft = sumMatches(winConditionsB, deckACards, "softCounters");
+  return `toi: ${yourHard} hard-counter(s), ${yourSoft} soft-counter(s) subi(s) · lui: ${theirHard} hard-counter(s), ${theirSoft} soft-counter(s) subi(s)`;
 }
 
 function describeUtilityLayer(
@@ -324,25 +347,28 @@ function describeUtilityLayer(
     deckACards,
     deckBCards,
     catalog,
+    "toi",
+    "lui",
   );
   const { tags: tagsB } = utilityShiftFor(
     winConditionsB,
     deckBCards,
     deckACards,
     catalog,
+    "lui",
+    "toi",
   );
-  const all = [
-    ...tagsA.map((t) => `toi: ${t}`),
-    ...tagsB.map((t) => `lui: ${t}`),
-  ];
+  const all = [...tagsA, ...tagsB];
   return all.length > 0 ? all.join(" · ") : "aucune règle déclenchée";
 }
 
 function describeLevelDifferentialLayer(deckACards, deckBCards) {
   const sum = (cards) =>
     toArray(cards).reduce((total, card) => total + normLevel(card), 0);
-  const diff = sum(deckACards) - sum(deckBCards);
-  return `${diff > 0 ? "+" : ""}${diff} niveaux`;
+  const sumA = sum(deckACards);
+  const sumB = sum(deckBCards);
+  const diff = sumA - sumB;
+  return `toi: ${sumA}, lui: ${sumB} (${diff > 0 ? "+" : ""}${diff})`;
 }
 
 // ------------------------------------------------------------
