@@ -458,6 +458,19 @@
       ]
     },
     {
+      "name": "Boss Bandit",
+      "archetype": "Control",
+      "hardCounters": [
+        "P.E.K.K.A",
+        "Mini P.E.K.K.A",
+        "Guards",
+        "Goblin Gang",
+        "Skeleton Army",
+        "Ronin"
+      ],
+      "softCounters": ["Valkyrie", "Elite Barbarians", "Barbarians", "Knight"]
+    },
+    {
       "name": "Goblin Barrel",
       "archetype": "Bait",
       "hardCounters": [
