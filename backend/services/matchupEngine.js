@@ -11,15 +11,7 @@
 // ============================================================
 
 import { normLevel } from "./collectionConstants.js";
-import {
-  ARCHETYPE_ADVANTAGE,
-  SMALL_SPELLS_SET,
-  BIG_SPELLS_SET,
-  DEFENSIVE_BUILDINGS_SET,
-  TANK_KILLERS_SET,
-  HEAVY_BEATDOWN_WIN_CONDITIONS_SET,
-  SPLIT_PUSH_TRIGGER_CARDS_SET,
-} from "./matchupCatalog.js";
+import { ARCHETYPE_ADVANTAGE } from "./matchupCatalog.js";
 
 export function clampValue(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -63,8 +55,29 @@ function countMatchesAgainstNames(deckCards, rawNames, catalog) {
   return countMatchesInSet(deckCards, targetSet, catalog);
 }
 
+// Une win condition avec `variants` (ex. Balloon) change d'archetype et de
+// hard/soft-counters selon la carte compagne présente dans le MÊME deck
+// (ex. Balloon + Lava Hound = profil "LavaLoon", Beatdown ; Balloon seul =
+// profil "Cycle" par défaut). Retourne la première variante dont une des
+// cartes `companion` est trouvée dans deckCards, sinon l'entrée de base.
+function resolveWinConditionVariant(entry, deckCards, catalog) {
+  if (!entry.variants || entry.variants.length === 0) return entry;
+  for (const variant of entry.variants) {
+    if (countMatchesAgainstNames(deckCards, variant.companion, catalog) > 0) {
+      return {
+        name: entry.name,
+        archetype: variant.archetype,
+        hardCounters: variant.hardCounters,
+        softCounters: variant.softCounters,
+      };
+    }
+  }
+  return entry;
+}
+
 /**
- * Toutes les win conditions du catalogue présentes dans le deck (0, 1 ou plusieurs).
+ * Toutes les win conditions du catalogue présentes dans le deck (0, 1 ou plusieurs),
+ * résolues à leur variante (cf. resolveWinConditionVariant) si applicable.
  */
 export function identifyWinConditions(deckCards, catalog) {
   const { winConditionsByName, normalizeCardName } = catalog;
@@ -75,7 +88,7 @@ export function identifyWinConditions(deckCards, catalog) {
     if (!key || seen.has(key)) continue;
     const entry = winConditionsByName.get(key);
     if (entry) {
-      matches.push(entry);
+      matches.push(resolveWinConditionVariant(entry, deckCards, catalog));
       seen.add(key);
     }
   }
@@ -164,20 +177,56 @@ function escalatingExcessPenalty(count, baseline, unitPoints) {
   return (-unitPoints * (excess * (excess + 1))) / 2;
 }
 
-// LAYER 3 — Intégrité structurelle / utilité (±10%)
+// LAYER 3 — Intégrité structurelle / utilité (±clamp, ±10 par défaut)
+// Interpréteur générique des règles de catalog.structureRules (compilées
+// depuis data/clash-royale-matchup-structure-rules.json, cf. matchupCatalog.js
+// buildStructureRules) — aucune règle métier n'est plus codée en dur ici,
+// ce qui permet d'ajouter/ajuster une règle Layer 3 sans redéploiement,
+// comme pour le catalogue de counters.
 // Scanne les cartes brutes du deck : reste actif même si l'un des deux
-// decks n'a aucune win condition reconnue dans le catalogue. Inclut aussi
-// une auto-pénalité en échelle pour un deck trop "dispersé" (>2 win
-// conditions, >3 sorts ou >2 bâtiments) — indépendante du deck adverse,
-// contrairement aux règles Bait/Split-Push/Heavy Beatdown ci-dessus.
+// decks n'a aucune win condition reconnue dans le catalogue.
 // Retourne { shift, tags } — tags = courtes étiquettes des règles
 // déclenchées, utilisées uniquement pour générer les mini-explications de
 // l'embed Discord (cf. describeUtilityLayer). Le shift seul alimente le score.
-// xLabel/yLabel ("toi"/"lui") servent uniquement à attribuer correctement
-// chaque FAIT individuel dans les tags générés — une règle croisée (Bait,
-// Split-Push, Heavy Beatdown) implique toujours deux faits sur deux decks
-// différents (ex. "toi: 0 gros sort, lui: Split-push"), donc un seul préfixe
-// global ne suffit pas à décrire qui fait quoi.
+// xLabel/yLabel ("toi"/"lui") résolvent {self}/{opponent} dans les templates
+// `label` des règles — une règle croisée (Bait, Split-Push, Heavy Beatdown)
+// implique toujours deux faits sur deux decks différents (ex. "toi: 0 gros
+// sort, lui: Split-push"), donc un seul préfixe global ne suffit pas.
+function formatRuleLabel(template, vars) {
+  return String(template ?? "").replace(/\{(\w+)\}/g, (match, key) =>
+    key in vars ? String(vars[key]) : match,
+  );
+}
+
+function sumCardSets(deckCards, cardSetNames, structureRules, catalog) {
+  let total = 0;
+  for (const setName of cardSetNames) {
+    total += countMatchesInSet(
+      deckCards,
+      structureRules.cardSets[setName] ?? new Set(),
+      catalog,
+    );
+  }
+  return total;
+}
+
+function thresholdMatches(op, count, value) {
+  switch (op) {
+    case "lt":
+      return count < value;
+    case "lte":
+      return count <= value;
+    case "gt":
+      return count > value;
+    case "gte":
+      return count >= value;
+    case "eq":
+      return count === value;
+    default:
+      return false;
+  }
+}
+
 function utilityShiftFor(
   winConditionsX,
   deckXCards,
@@ -186,88 +235,72 @@ function utilityShiftFor(
   xLabel = "toi",
   yLabel = "lui",
 ) {
+  const structureRules = catalog.structureRules ?? {
+    cardSets: {},
+    crossRules: [],
+    dispersionRules: [],
+    clamp: 10,
+  };
   let shift = 0;
   const tags = [];
 
-  const runsBait = winConditionsX.some((wc) => wc.archetype === "Bait");
-  if (runsBait) {
-    const smallSpellsInY = countMatchesInSet(
-      deckYCards,
-      SMALL_SPELLS_SET,
-      catalog,
-    );
-    if (smallSpellsInY < 1) {
-      shift += 6;
-      tags.push(`${yLabel}: 0 petit sort, ${xLabel}: Bait`);
-    } else if (smallSpellsInY >= 2) {
-      shift -= 6;
-      tags.push(`${yLabel}: ${smallSpellsInY} petits sorts, ${xLabel}: Bait`);
-    }
-  }
-
-  const splitPushCard = findMatchInSet(
-    deckXCards,
-    SPLIT_PUSH_TRIGGER_CARDS_SET,
-    catalog,
-  );
-  if (splitPushCard) {
-    const bigSpellsInY = countMatchesInSet(deckYCards, BIG_SPELLS_SET, catalog);
-    if (bigSpellsInY === 0) {
-      shift += 6;
-      tags.push(`${yLabel}: 0 gros sort, ${xLabel}: ${splitPushCard} (push)`);
-    }
-  }
-
-  const runsHeavyBeatdown =
-    countMatchesInSet(deckXCards, HEAVY_BEATDOWN_WIN_CONDITIONS_SET, catalog) >
-    0;
-  if (runsHeavyBeatdown) {
-    const tankKillersInY = countMatchesInSet(
-      deckYCards,
-      TANK_KILLERS_SET,
-      catalog,
-    );
-    const defensiveBuildingsInY = countMatchesInSet(
-      deckYCards,
-      DEFENSIVE_BUILDINGS_SET,
-      catalog,
-    );
-    if (tankKillersInY === 0 && defensiveBuildingsInY === 0) {
-      shift += 10;
-      tags.push(
-        `${yLabel}: aucun tank killer/bâtiment, ${xLabel}: Gros tank`,
+  for (const rule of structureRules.crossRules) {
+    let triggerCard = true;
+    if (rule.trigger?.type === "archetype") {
+      if (!winConditionsX.some((wc) => wc.archetype === rule.trigger.value)) {
+        continue;
+      }
+    } else if (rule.trigger?.type === "cardSet") {
+      triggerCard = findMatchInSet(
+        deckXCards,
+        structureRules.cardSets[rule.trigger.value] ?? new Set(),
+        catalog,
       );
+      if (!triggerCard) continue;
+    } else {
+      continue;
+    }
+
+    const count = sumCardSets(
+      deckYCards,
+      rule.watch?.cardSets ?? [],
+      structureRules,
+      catalog,
+    );
+    for (const threshold of rule.thresholds ?? []) {
+      if (!thresholdMatches(threshold.op, count, threshold.value)) continue;
+      shift += threshold.shift;
+      tags.push(
+        formatRuleLabel(threshold.label, {
+          self: xLabel,
+          opponent: yLabel,
+          count,
+          triggerCard: typeof triggerCard === "string" ? triggerCard : "",
+        }),
+      );
+      break; // un seul palier déclenché par règle, par construction
     }
   }
 
-  // Deck trop "dispersé" (auto-pénalité, indépendante de deckYCards) : trop
-  // de win conditions, de sorts ou de bâtiments dénote un manque de focus
-  // (ou un sur-matching du catalogue) — défavorable pour X, en échelle.
-  // Fait unilatéral (ne concerne que X) : pas de yLabel ici.
-  const wcPenalty = escalatingExcessPenalty(winConditionsX.length, 2, 3);
-  if (wcPenalty !== 0) {
-    shift += wcPenalty;
-    tags.push(`${xLabel}: ${winConditionsX.length} WC (dispersion)`);
-  }
-
-  const spellsInX =
-    countMatchesInSet(deckXCards, SMALL_SPELLS_SET, catalog) +
-    countMatchesInSet(deckXCards, BIG_SPELLS_SET, catalog);
-  const spellPenalty = escalatingExcessPenalty(spellsInX, 3, 3);
-  if (spellPenalty !== 0) {
-    shift += spellPenalty;
-    tags.push(`${xLabel}: ${spellsInX} sorts (dispersion)`);
-  }
-
-  const buildingsInX = countMatchesInSet(
-    deckXCards,
-    DEFENSIVE_BUILDINGS_SET,
-    catalog,
-  );
-  const buildingPenalty = escalatingExcessPenalty(buildingsInX, 2, 3);
-  if (buildingPenalty !== 0) {
-    shift += buildingPenalty;
-    tags.push(`${xLabel}: ${buildingsInX} bâtiments (dispersion)`);
+  // Auto-pénalités de dispersion (indépendantes de deckYCards) : trop de
+  // win conditions, de sorts ou de bâtiments dénote un manque de focus —
+  // défavorable pour X, en échelle triangulaire. Fait unilatéral (ne
+  // concerne que X) : pas de yLabel ici.
+  for (const rule of structureRules.dispersionRules) {
+    const count =
+      rule.metric === "winConditionCount"
+        ? winConditionsX.length
+        : sumCardSets(
+            deckXCards,
+            rule.cardSets ?? [],
+            structureRules,
+            catalog,
+          );
+    const penalty = escalatingExcessPenalty(count, rule.baseline, rule.unitPoints);
+    if (penalty !== 0) {
+      shift += penalty;
+      tags.push(formatRuleLabel(rule.label, { self: xLabel, count }));
+    }
   }
 
   return { shift, tags };
@@ -280,6 +313,7 @@ export function computeUtilityLayer(
   deckBCards,
   catalog,
 ) {
+  const clamp = catalog.structureRules?.clamp ?? 10;
   const { shift: shiftA } = utilityShiftFor(
     winConditionsA,
     deckACards,
@@ -292,7 +326,7 @@ export function computeUtilityLayer(
     deckACards,
     catalog,
   );
-  return clampValue(shiftA - shiftB, -10, 10);
+  return clampValue(shiftA - shiftB, -clamp, clamp);
 }
 
 // LAYER 4 — Différentiel de niveau de cartes (±20%, 2%/point)

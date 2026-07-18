@@ -13,14 +13,56 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const LOCAL_PATH = path.resolve(
+const CATALOG_LOCAL_PATH = path.resolve(
   __dirname,
   "../../data/clash-royale-matchup-catalog.json",
 );
+const CATALOG_REPO_PATH = "data/clash-royale-matchup-catalog.json";
+const RULES_LOCAL_PATH = path.resolve(
+  __dirname,
+  "../../data/clash-royale-matchup-structure-rules.json",
+);
+const RULES_REPO_PATH = "data/clash-royale-matchup-structure-rules.json";
 
 let _cache = null;
 let _cacheTime = 0;
 const TTL = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Charge un fichier JSON depuis GitHub Contents API (si GITHUB_REPO/GITHUB_TOKEN
+ * définis) sinon depuis le disque local. Retourne `null` en cas d'échec — à
+ * charge de l'appelant de définir un repli neutre.
+ */
+async function loadJsonFile(repoPath, localPath) {
+  const repo = process.env.GITHUB_REPO;
+  const token = process.env.GITHUB_TOKEN;
+
+  if (!repo || !token) {
+    try {
+      const raw = await fs.readFile(localPath, "utf8");
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${repo}/contents/${repoPath}`,
+      {
+        headers: {
+          Authorization: `token ${token}`,
+          Accept: "application/vnd.github+json",
+        },
+      },
+    );
+    if (!res.ok) return null;
+    const json = await res.json();
+    return JSON.parse(Buffer.from(json.content, "base64").toString("utf8"));
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Normalise un nom de carte pour comparaison : minuscule, sans ponctuation
@@ -35,6 +77,24 @@ export function normalizeCardName(name) {
     .replace(/[.'’]/g, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+// Une "variante" redéfinit archetype/hardCounters/softCounters d'une win
+// condition quand une carte compagne précise est aussi présente dans le
+// même deck (ex. Balloon + Lava Hound = "LavaLoon", profil Beatdown propre,
+// distinct du Balloon "Cycle" seul). `companion` accepte un nom unique ou
+// une liste (n'importe laquelle suffit à déclencher la variante).
+function buildVariants(rawVariants) {
+  if (!Array.isArray(rawVariants)) return [];
+  return rawVariants.map((v) => ({
+    id: v?.id,
+    companion: Array.isArray(v?.companion)
+      ? v.companion
+      : [v?.companion].filter(Boolean),
+    archetype: v?.archetype,
+    hardCounters: Array.isArray(v?.hardCounters) ? v.hardCounters : [],
+    softCounters: Array.isArray(v?.softCounters) ? v.softCounters : [],
+  }));
 }
 
 function buildWinConditionsByName(rawCatalog) {
@@ -54,77 +114,23 @@ function buildWinConditionsByName(rawCatalog) {
       softCounters: Array.isArray(entry.softCounters)
         ? entry.softCounters
         : [],
+      variants: buildVariants(entry.variants),
     });
   }
   return byName;
 }
 
-/**
- * Retourne { winConditionsByName, normalizeCardName }.
- * winConditionsByName : Map<nomNormalisé, {name, archetype, hardCounters, softCounters}>.
- * Utilise GitHub Contents API en production, le fichier local en dev.
- * En cas d'erreur, retourne un catalogue vide (Layers 1/2 se neutralisent alors partout).
- */
-export async function getWinConditionsCatalog() {
-  if (_cache !== null && Date.now() - _cacheTime < TTL) return _cache;
-
-  const repo = process.env.GITHUB_REPO;
-  const token = process.env.GITHUB_TOKEN;
-
-  // Fallback local : utilisé quand les variables GitHub ne sont pas définies
-  if (!repo || !token) {
-    try {
-      const raw = await fs.readFile(LOCAL_PATH, "utf8");
-      const winConditionsByName = buildWinConditionsByName(JSON.parse(raw));
-      _cache = { winConditionsByName, normalizeCardName };
-      _cacheTime = Date.now();
-      return _cache;
-    } catch {
-      _cache = { winConditionsByName: new Map(), normalizeCardName };
-      _cacheTime = Date.now();
-      return _cache;
-    }
-  }
-
-  try {
-    const res = await fetch(
-      `https://api.github.com/repos/${repo}/contents/data/clash-royale-matchup-catalog.json`,
-      {
-        headers: {
-          Authorization: `token ${token}`,
-          Accept: "application/vnd.github+json",
-        },
-      },
-    );
-    if (!res.ok) {
-      _cache = { winConditionsByName: new Map(), normalizeCardName };
-      _cacheTime = Date.now();
-      return _cache;
-    }
-    const json = await res.json();
-    const rawCatalog = JSON.parse(
-      Buffer.from(json.content, "base64").toString("utf8"),
-    );
-    const winConditionsByName = buildWinConditionsByName(rawCatalog);
-    _cache = { winConditionsByName, normalizeCardName };
-    _cacheTime = Date.now();
-    return _cache;
-  } catch {
-    _cache = { winConditionsByName: new Map(), normalizeCardName };
-    _cacheTime = Date.now();
-    return _cache;
-  }
+function toNormalizedSet(names) {
+  return new Set(
+    (Array.isArray(names) ? names : []).map((name) => normalizeCardName(name)),
+  );
 }
 
-// ------------------------------------------------------------
-// Données statiques (Layers 1 et 3) — recopiées telles quelles du
-// system prompt fourni (temp/matchup-v2/gemini-code-1784305026864.md).
-// Ce ne sont pas des "counters" éditables à chaud : toute évolution de
-// ces règles de structure passe par un déploiement.
-// ------------------------------------------------------------
-
 // Layer 1 — avantage d'archétype directionnel : ARCHETYPE_ADVANTAGE[X]
-// contient les archétypes contre lesquels X a l'avantage (+10%).
+// contient les archétypes contre lesquels X a l'avantage (+5%). Donnée
+// figée en JS (contrairement au Layer 3, ne bénéficie pas du hot-reload) :
+// périmètre volontairement restreint, cf. demande utilisateur qui ne visait
+// que le Layer 3 ("Structure du deck").
 export const ARCHETYPE_ADVANTAGE = {
   Beatdown: ["Siege", "Control"],
   Cycle: ["Beatdown"],
@@ -133,56 +139,51 @@ export const ARCHETYPE_ADVANTAGE = {
   Siege: ["Bait", "Bridge Spam"],
 };
 
-// Layer 3 — catégories utilitaires
-export const SMALL_SPELLS = [
-  "The Log",
-  "Zap",
-  "Arrows",
-  "Barbarian Barrel",
-  "Giant Snowball",
-  "Rage",
-];
-
-export const BIG_SPELLS = ["Fireball", "Poison", "Lightning", "Rocket", "Void"];
-
-export const DEFENSIVE_BUILDINGS = [
-  "Cannon",
-  "Tesla",
-  "Inferno Tower",
-  "Bomb Tower",
-  "Tombstone",
-  "Goblin Cage",
-];
-
-export const TANK_KILLERS = [
-  "Mini P.E.K.K.A",
-  "P.E.K.K.A",
-  "Hunter",
-  "Mighty Miner",
-  "Inferno Dragon",
-  "Elite Barbarians",
-];
-
-export const HEAVY_BEATDOWN_WIN_CONDITIONS = [
-  "Golem",
-  "Giant",
-  "Electro Giant",
-  "Lava Hound",
-];
-
-export const SPLIT_PUSH_TRIGGER_CARDS = ["Three Musketeers", "Royal Hogs"];
-
-function toNormalizedSet(names) {
-  return new Set(names.map((name) => normalizeCardName(name)));
+/**
+ * Compile data/clash-royale-matchup-structure-rules.json (Layer 3) en une
+ * forme directement exploitable par matchupEngine.js : cardSets → Set de
+ * noms normalisés, règles conservées telles quelles (interprétées par le
+ * moteur). En cas d'échec de chargement, retourne des règles vides — le
+ * Layer 3 se neutralise alors partout (même logique de repli que pour le
+ * catalogue de counters).
+ */
+function buildStructureRules(raw) {
+  const cardSets = {};
+  for (const [key, names] of Object.entries(raw?.cardSets ?? {})) {
+    cardSets[key] = toNormalizedSet(names);
+  }
+  return {
+    cardSets,
+    crossRules: Array.isArray(raw?.crossRules) ? raw.crossRules : [],
+    dispersionRules: Array.isArray(raw?.dispersionRules)
+      ? raw.dispersionRules
+      : [],
+    clamp: Number.isFinite(raw?.layerClamp) ? raw.layerClamp : 10,
+  };
 }
 
-export const SMALL_SPELLS_SET = toNormalizedSet(SMALL_SPELLS);
-export const BIG_SPELLS_SET = toNormalizedSet(BIG_SPELLS);
-export const DEFENSIVE_BUILDINGS_SET = toNormalizedSet(DEFENSIVE_BUILDINGS);
-export const TANK_KILLERS_SET = toNormalizedSet(TANK_KILLERS);
-export const HEAVY_BEATDOWN_WIN_CONDITIONS_SET = toNormalizedSet(
-  HEAVY_BEATDOWN_WIN_CONDITIONS,
-);
-export const SPLIT_PUSH_TRIGGER_CARDS_SET = toNormalizedSet(
-  SPLIT_PUSH_TRIGGER_CARDS,
-);
+/**
+ * Retourne { winConditionsByName, normalizeCardName, structureRules }.
+ * winConditionsByName : Map<nomNormalisé, {name, archetype, hardCounters, softCounters}>
+ * (Layers 1/2 s'appuient dessus). structureRules : cardSets/crossRules/dispersionRules/clamp
+ * compilés depuis data/clash-royale-matchup-structure-rules.json (Layer 3).
+ * Les deux fichiers sont lus via GitHub Contents API en production (fichier
+ * local en dev), avec le même cache 5 min — éditer l'un ou l'autre sur
+ * GitHub est pris en compte par /matchup sans redéploiement.
+ */
+export async function getWinConditionsCatalog() {
+  if (_cache !== null && Date.now() - _cacheTime < TTL) return _cache;
+
+  const [rawCatalog, rawRules] = await Promise.all([
+    loadJsonFile(CATALOG_REPO_PATH, CATALOG_LOCAL_PATH),
+    loadJsonFile(RULES_REPO_PATH, RULES_LOCAL_PATH),
+  ]);
+
+  _cache = {
+    winConditionsByName: buildWinConditionsByName(rawCatalog),
+    normalizeCardName,
+    structureRules: buildStructureRules(rawRules),
+  };
+  _cacheTime = Date.now();
+  return _cache;
+}

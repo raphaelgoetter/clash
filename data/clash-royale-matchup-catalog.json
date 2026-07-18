@@ -157,27 +157,91 @@
     {
       "name": "Balloon",
       "archetype": "Cycle",
-      "hardCounters": [
-        "Inferno Tower",
-        "Tesla",
-        "Electro Wizard",
-        "Minion Horde",
-        "Bats",
-        "Minions"
-      ],
+      "hardCounters": ["Lava Hound", "Minion Horde", "Mega Minion", "Bats"],
       "softCounters": [
-        "Musketeer",
-        "Mega Minion",
-        "Inferno Dragon",
+        "Ice Wizard",
+        "Three Musketeers",
+        "Minions",
         "Hunter",
-        "Archer Queen",
-        "Archers",
-        "Baby Dragon",
-        "Flying Machine",
-        "Phoenix",
-        "Firecracker",
-        "Dart Goblin",
-        "Spear Goblins"
+        "Musketeer",
+        "Firecracker"
+      ],
+      "variants": [
+        {
+          "id": "lavaloon",
+          "companion": "Lava Hound",
+          "archetype": "Beatdown",
+          "hardCounters": [
+            "Electro Dragon",
+            "Three Musketeers",
+            "Inferno Dragon",
+            "Minions",
+            "Minion Horde",
+            "Inferno Tower",
+            "Archers",
+            "Electro Wizard",
+            "Mega Minion",
+            "Archer Queen"
+          ],
+          "softCounters": [
+            "Musketeer",
+            "Bats",
+            "Tesla",
+            "Witch",
+            "Mother Witch",
+            "Firecracker",
+            "Skeleton Dragons",
+            "Furnace",
+            "Baby Dragon",
+            "Hunter",
+            "Flying Machine",
+            "Dart Goblin",
+            "Spear Goblins",
+            "Goblin Gang",
+            "Phoenix"
+          ]
+        },
+        {
+          "id": "giantBalloon",
+          "companion": "Giant",
+          "archetype": "Beatdown",
+          "hardCounters": [
+            "Executioner",
+            "Firecracker",
+            "Wizard",
+            "Rocket",
+            "Inferno Dragon",
+            "Electro Dragon"
+          ],
+          "softCounters": [
+            "Witch",
+            "Musketeer",
+            "Archers",
+            "Mega Minion",
+            "Baby Dragon"
+          ]
+        },
+        {
+          "id": "freezeOrPekkaLoon",
+          "companion": ["Freeze", "P.E.K.K.A"],
+          "archetype": "Control",
+          "hardCounters": [
+            "Inferno Dragon",
+            "Rocket",
+            "Inferno Tower",
+            "Spirit Empress",
+            "Electro Dragon"
+          ],
+          "softCounters": [
+            "Prince",
+            "Magic Archer",
+            "Firecracker",
+            "Rascals",
+            "Baby Dragon",
+            "Archers",
+            "Musketeer"
+          ]
+        }
       ]
     },
     {

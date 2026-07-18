@@ -1,0 +1,85 @@
+{
+  "_comment": "Règles du Layer 3 (Structure du deck) du calcul de %matchup. Source de vérité unique, éditable à la main, prise en compte par /matchup au prochain lancement (cache 5 min, même mécanisme que clash-royale-matchup-catalog.json). Toute la somme des shifts de ce layer est ensuite bornée à ±layerClamp.",
+
+  "cardSets": {
+    "smallSpells": ["The Log", "Zap", "Arrows", "Barbarian Barrel", "Giant Snowball", "Rage"],
+    "bigSpells": ["Fireball", "Poison", "Lightning", "Rocket", "Void"],
+    "defensiveBuildings": ["Cannon", "Tesla", "Inferno Tower", "Bomb Tower", "Tombstone", "Goblin Cage"],
+    "tankKillers": ["Mini P.E.K.K.A", "P.E.K.K.A", "Hunter", "Mighty Miner", "Inferno Dragon", "Elite Barbarians"],
+    "heavyBeatdownWinConditions": ["Golem", "Giant", "Electro Giant", "Lava Hound"],
+    "splitPushTriggerCards": ["Three Musketeers", "Royal Hogs"],
+    "heavyDpsCounters": ["Ronin"],
+    "heavyDpsThreats": ["P.E.K.K.A", "Mini P.E.K.K.A", "Prince", "Mega Knight", "Boss Bandit", "Bandit", "Golden Knight"]
+  },
+
+  "_crossRulesHelp": "Chaque règle se déclenche si `trigger` matche le deck évalué (self), puis compte les cartes du deck adverse (opponent) présentes dans `watch.cardSets`. Le premier `thresholds[]` dont la condition (op/value sur ce compte) est vraie s'applique. `{self}`/`{opponent}` = 'toi'/'lui' (ou l'inverse selon le camp évalué), `{count}` = nombre trouvé, `{triggerCard}` = nom de la carte qui a déclenché un trigger de type cardSet.",
+  "crossRules": [
+    {
+      "id": "bait",
+      "description": "toi: Bait / lui: 0 petit sort -> +6% pour toi. toi: Bait / lui: 2+ petits sorts -> -6% pour toi.",
+      "trigger": { "type": "archetype", "value": "Bait" },
+      "watch": { "cardSets": ["smallSpells"] },
+      "thresholds": [
+        { "op": "lt", "value": 1, "shift": 6, "label": "{opponent}: 0 petit sort, {self}: Bait" },
+        { "op": "gte", "value": 2, "shift": -6, "label": "{opponent}: {count} petits sorts, {self}: Bait" }
+      ]
+    },
+    {
+      "id": "splitPush",
+      "description": "toi: carte de push agressif (Three Musketeers, Royal Hogs) / lui: 0 gros sort -> +6% pour toi.",
+      "trigger": { "type": "cardSet", "value": "splitPushTriggerCards" },
+      "watch": { "cardSets": ["bigSpells"] },
+      "thresholds": [
+        { "op": "eq", "value": 0, "shift": 6, "label": "{opponent}: 0 gros sort, {self}: {triggerCard} (push)" }
+      ]
+    },
+    {
+      "id": "heavyBeatdown",
+      "description": "toi: win condition Heavy Beatdown (Golem, Giant, Electro Giant, Lava Hound) / lui: 0 tank killer et 0 bâtiment défensif -> +10% pour toi.",
+      "trigger": { "type": "cardSet", "value": "heavyBeatdownWinConditions" },
+      "watch": { "cardSets": ["tankKillers", "defensiveBuildings"] },
+      "thresholds": [
+        { "op": "eq", "value": 0, "shift": 10, "label": "{opponent}: aucun tank killer/bâtiment, {self}: Gros tank" }
+      ]
+    },
+    {
+      "id": "heavyDpsCounter",
+      "description": "toi: Ronin dans le deck / lui: au moins 1 carte à gros DPS (P.E.K.K.A, Mini P.E.K.K.A, Prince, Mega Knight, Boss Bandit, Bandit, Golden Knight) -> +6% pour toi (Ronin la hard-counter).",
+      "trigger": { "type": "cardSet", "value": "heavyDpsCounters" },
+      "watch": { "cardSets": ["heavyDpsThreats"] },
+      "thresholds": [
+        { "op": "gte", "value": 1, "shift": 6, "label": "{opponent}: {count} gros DPS, {self}: {triggerCard} (hard-counter)" }
+      ]
+    }
+  ],
+
+  "_dispersionRulesHelp": "Auto-pénalité en échelle triangulaire (indépendante du deck adverse) : au-delà de `baseline` occurrences, chaque unité supplémentaire coûte `unitPoints` de plus que la précédente (1, 2, 3, 4... points cumulés). `metric` = 'winConditionCount' (nombre de win conditions reconnues), ou `cardSets` = somme des cartes du deck dans ces catégories.",
+  "dispersionRules": [
+    {
+      "id": "winConditions",
+      "description": "Plus de 2 win conditions reconnues dans le deck.",
+      "metric": "winConditionCount",
+      "baseline": 2,
+      "unitPoints": 3,
+      "label": "{self}: {count} WC (dispersion)"
+    },
+    {
+      "id": "spells",
+      "description": "Plus de 3 sorts (petits + gros) dans le deck.",
+      "cardSets": ["smallSpells", "bigSpells"],
+      "baseline": 3,
+      "unitPoints": 3,
+      "label": "{self}: {count} sorts (dispersion)"
+    },
+    {
+      "id": "buildings",
+      "description": "Plus de 2 bâtiments défensifs dans le deck.",
+      "cardSets": ["defensiveBuildings"],
+      "baseline": 2,
+      "unitPoints": 3,
+      "label": "{self}: {count} bâtiments (dispersion)"
+    }
+  ],
+
+  "layerClamp": 10
+}

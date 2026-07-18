@@ -20,12 +20,67 @@ console.log("Running matchupEngine tests...");
 // pour que ces tests restent stables quels que soient les counters ajoutés.
 // ------------------------------------------------------------
 
+// Règles Layer 3 de fixture — même forme/valeurs que
+// data/clash-royale-matchup-structure-rules.json au moment de l'écriture de
+// ces tests, mais copiées ici pour rester indépendantes d'un fichier édité
+// à la main par l'utilisateur (cf. buildFixtureCatalog ci-dessous).
+function buildFixtureStructureRules() {
+  const toSet = (names) => new Set(names.map(normalizeCardName));
+  return {
+    cardSets: {
+      smallSpells: toSet(["The Log", "Zap", "Arrows", "Barbarian Barrel", "Giant Snowball", "Rage"]),
+      bigSpells: toSet(["Fireball", "Poison", "Lightning", "Rocket", "Void"]),
+      defensiveBuildings: toSet(["Cannon", "Tesla", "Inferno Tower", "Bomb Tower", "Tombstone", "Goblin Cage"]),
+      tankKillers: toSet(["Mini P.E.K.K.A", "P.E.K.K.A", "Hunter", "Mighty Miner", "Inferno Dragon", "Elite Barbarians"]),
+      heavyBeatdownWinConditions: toSet(["Golem", "Giant", "Electro Giant", "Lava Hound"]),
+      splitPushTriggerCards: toSet(["Three Musketeers", "Royal Hogs"]),
+    },
+    crossRules: [
+      {
+        id: "bait",
+        trigger: { type: "archetype", value: "Bait" },
+        watch: { cardSets: ["smallSpells"] },
+        thresholds: [
+          { op: "lt", value: 1, shift: 6, label: "{opponent}: 0 petit sort, {self}: Bait" },
+          { op: "gte", value: 2, shift: -6, label: "{opponent}: {count} petits sorts, {self}: Bait" },
+        ],
+      },
+      {
+        id: "splitPush",
+        trigger: { type: "cardSet", value: "splitPushTriggerCards" },
+        watch: { cardSets: ["bigSpells"] },
+        thresholds: [
+          { op: "eq", value: 0, shift: 6, label: "{opponent}: 0 gros sort, {self}: {triggerCard} (push)" },
+        ],
+      },
+      {
+        id: "heavyBeatdown",
+        trigger: { type: "cardSet", value: "heavyBeatdownWinConditions" },
+        watch: { cardSets: ["tankKillers", "defensiveBuildings"] },
+        thresholds: [
+          { op: "eq", value: 0, shift: 10, label: "{opponent}: aucun tank killer/bâtiment, {self}: Gros tank" },
+        ],
+      },
+    ],
+    dispersionRules: [
+      { id: "winConditions", metric: "winConditionCount", baseline: 2, unitPoints: 3, label: "{self}: {count} WC (dispersion)" },
+      { id: "spells", cardSets: ["smallSpells", "bigSpells"], baseline: 3, unitPoints: 3, label: "{self}: {count} sorts (dispersion)" },
+      { id: "buildings", cardSets: ["defensiveBuildings"], baseline: 2, unitPoints: 3, label: "{self}: {count} bâtiments (dispersion)" },
+    ],
+    clamp: 10,
+  };
+}
+
 function buildFixtureCatalog(entries) {
   const winConditionsByName = new Map();
   for (const entry of entries) {
     winConditionsByName.set(normalizeCardName(entry.name), entry);
   }
-  return { winConditionsByName, normalizeCardName };
+  return {
+    winConditionsByName,
+    normalizeCardName,
+    structureRules: buildFixtureStructureRules(),
+  };
 }
 
 const catalog = buildFixtureCatalog([
