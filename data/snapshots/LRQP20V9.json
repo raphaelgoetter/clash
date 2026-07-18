@@ -15171,7 +15171,7 @@
           "start": "2026-07-18T09:36:00.000Z",
           "end": "2026-07-19T09:35:59.999Z"
         },
-        "snapshotTime": "2026-07-18T21:16:06.695Z",
+        "snapshotTime": "2026-07-18T22:16:19.551Z",
         "snapshotBackupTime": "2026-07-18T10:28:29.961Z",
         "decks": {
           "#202R9VUJCU": 4,
@@ -15189,6 +15189,7 @@
           "#LV0VUJVU": 4,
           "#PL9CL8V20": 4,
           "#PP09UGJLL": 4,
+          "#Q8GYUQ8GG": 4,
           "#QCJJ8JG0": 4,
           "#QYGYV8R8Y": 4,
           "#RJJ99Y9J": 4,
@@ -15262,7 +15263,7 @@
           "#82JPJ9J98": 2300,
           "#22RGGVYP": 2000,
           "#8QVRJYVYU": 1800,
-          "#Q8GYUQ8GG": 1500,
+          "#Q8GYUQ8GG": 2200,
           "#2G0Q0CV9L": 1500,
           "#CGJP0YYUJ": 2500,
           "#GYU0VLGL": 1900
@@ -15287,10 +15288,11 @@
           "#VGJ9LL8VC": 1,
           "#8YGY2RPCC": 1,
           "#PP09UGJLL": 1,
-          "#VPGYR2990": 1
+          "#VPGYR2990": 1,
+          "#Q8GYUQ8GG": 1
         },
         "_totalDonationsByTag": {
-          "#VGJ9LL8VC": 52503,
+          "#VGJ9LL8VC": 52521,
           "#GGRLYR8PL": 22432,
           "#LV0VUJVU": 89982,
           "#2YGYYPYV": 95824,
@@ -15303,11 +15305,11 @@
           "#LRPQL8VCL": 30534,
           "#PG9QUCP": 98991,
           "#QYGYV8R8Y": 32836,
-          "#GYU0VLGL": 99007,
+          "#GYU0VLGL": 99025,
           "#8QVRJYVYU": 86291,
           "#U2UYYCQVG": 2967,
           "#GLV9Q2P09": 58599,
-          "#Q8GYUQ8GG": 56647,
+          "#Q8GYUQ8GG": 56667,
           "#8Q2UQL2R": 50896,
           "#GGVQJLG9": 300872,
           "#JCCQY0U9G": 19582,
@@ -15402,13 +15404,13 @@
           "#82JPJ9J98": 12,
           "#22RGGVYP": 12,
           "#8QVRJYVYU": 11,
-          "#Q8GYUQ8GG": 8,
+          "#Q8GYUQ8GG": 12,
           "#2G0Q0CV9L": 8,
           "#CGJP0YYUJ": 12,
           "#GYU0VLGL": 12
         },
         "periodPointsEarned": 27450,
-        "snapshotCount": 98
+        "snapshotCount": 102
       },
       {
         "warDay": "sunday",
