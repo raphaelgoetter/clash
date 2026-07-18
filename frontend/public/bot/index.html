@@ -195,29 +195,36 @@
                 chaque deck (win conditions, counters, niveaux), pas les
                 statistiques de compte des joueurs.
               </p>
-              <p>Barème détaillé (4 étapes appliquées à une base de 50 %) :</p>
+              <p>
+                Barème détaillé (4 étapes appliquées à une base de 50 %,
+                calibrées pour que 0 % et 100 % ne soient atteints que si les
+                4 s’alignent simultanément à l’extrême) :
+              </p>
               <ol>
                 <li>
-                  <strong>Archétype</strong> (±15) : avantage macro entre les
+                  <strong>Archétype</strong> (±5) : avantage macro entre les
                   styles de jeu des deux decks (ex. Beatdown bat Siege/Control,
                   Cycle bat Beatdown…), déterminé par leurs win conditions.
                 </li>
                 <li>
-                  <strong>Counters directs</strong> (±25) : présence, dans le
-                  deck adverse, d’un hard counter ou d’au moins deux soft
-                  counters à la win condition du deck évalué (ou absence totale
-                  de counter).
+                  <strong>Counters directs</strong> (±12,5) : présence, dans
+                  le deck adverse, d’un hard counter ou d’au moins deux soft
+                  counters à la win condition du deck évalué (ou absence
+                  totale de counter).
                 </li>
                 <li>
-                  <strong>Structure du deck</strong> (±15) : quelques règles
+                  <strong>Structure du deck</strong> (±7,5) : quelques règles
                   d’intégrité (ex. deck Bait face à peu de petits sorts adverses,
                   gros tank face à l’absence de tank killer ou de bâtiment
-                  défensif chez l’adversaire).
+                  défensif chez l’adversaire), plus une pénalité en échelle
+                  pour un deck trop dispersé (plus de 2 win conditions, plus
+                  de 3 sorts ou plus de 2 bâtiments) — chaque carte
+                  supplémentaire pèse plus que la précédente.
                 </li>
                 <li>
-                  <strong>Écart de niveau de cartes</strong> (±50) : différence
+                  <strong>Écart de niveau de cartes</strong> (±25) : différence
                   de niveaux normalisés (rareté incluse) entre les deux decks,
-                  3 % par point d’écart.
+                  1,5 % par point d’écart.
                 </li>
               </ol>
               <p>

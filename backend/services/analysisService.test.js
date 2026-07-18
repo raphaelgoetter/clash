@@ -259,7 +259,9 @@ assert.strictEqual(
 
 // Le nouveau moteur (matchupEngine.js) n'a ici aucun nom de carte à identifier
 // (cartes sans "name") : seul Layer 4 (écart de niveau, cf. computeLevelDifferentialLayer)
-// contribue, plafonné à ±50 (3%/point) → scoreA atteint bien l'extrême 0/100.
+// contribue, plafonné à ±25 (1.5%/point — les 4 layers sont calibrés pour que
+// leur somme de maxima vaille 50, afin que 0/100 ne soient atteints QUE si
+// tous s'alignent en même temps) → scoreA plafonne à 25/75, pas 0/100.
 const extremeMatchupHigh = await computeBattleMatchup({
   type: "riverRacePvp",
   team: [
@@ -282,8 +284,8 @@ const extremeMatchupHigh = await computeBattleMatchup({
   ],
 });
 assert.ok(
-  extremeMatchupHigh >= 0.99,
-  `Extreme disadvantage should produce a very high matchup, got ${extremeMatchupHigh}`,
+  extremeMatchupHigh >= 0.75,
+  `Extreme disadvantage should produce a high matchup, got ${extremeMatchupHigh}`,
 );
 
 const extremeMatchupLow = await computeBattleMatchup({
@@ -308,8 +310,8 @@ const extremeMatchupLow = await computeBattleMatchup({
   ],
 });
 assert.ok(
-  extremeMatchupLow <= 0.01,
-  `Extreme advantage should produce a very low matchup, got ${extremeMatchupLow}`,
+  extremeMatchupLow <= 0.25,
+  `Extreme advantage should produce a low matchup, got ${extremeMatchupLow}`,
 );
 
 const measuredMatchup = await computeBattleMatchup({
@@ -334,7 +336,7 @@ const measuredMatchup = await computeBattleMatchup({
   ],
 });
 assert.ok(
-  measuredMatchup >= 0.8,
+  measuredMatchup >= 0.7,
   `Une vraie grosse différence de deck/tour doit donner un matchup élevé, got ${measuredMatchup}`,
 );
 

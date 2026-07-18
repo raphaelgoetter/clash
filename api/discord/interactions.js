@@ -3066,8 +3066,13 @@ function buildMatchupDetailEmbed(warDecks, index) {
   const wcB = detail.winConditionsB?.length
     ? detail.winConditionsB.join(", ")
     : "Inconnue";
-  const fmtLayer = (value) =>
-    `${Number.isFinite(value) && value > 0 ? "+" : ""}${value ?? 0}`;
+  // Affichage dans le SENS DE LA DIFFICULTÉ (comme le %final) : positif =
+  // défavorable au joueur, négatif = favorable. C'est l'inverse du signe
+  // interne du moteur (scoreA = avantage du joueur) — cf. matchupEngine.js.
+  const fmtLayer = (value) => {
+    const displayed = -(Number.isFinite(value) ? value : 0);
+    return `${displayed > 0 ? "+" : ""}${displayed}`;
+  };
 
   return {
     title: `⚡ Détail — ${dayLabel} · ${deckLabel} vs ${match.opponentName || "?"}`,
@@ -3080,22 +3085,22 @@ function buildMatchupDetailEmbed(warDecks, index) {
         inline: false,
       },
       {
-        name: "🎯 Archétype (±15)",
+        name: "🎯 Archétype (±5)",
         value: fmtLayer(detail.breakdown?.layer1),
         inline: true,
       },
       {
-        name: "⚔️ Counters directs (±25)",
+        name: "⚔️ Counters directs (±12.5)",
         value: fmtLayer(detail.breakdown?.layer2),
         inline: true,
       },
       {
-        name: "🏗️ Structure du deck (±15)",
+        name: "🏗️ Structure du deck (±7.5)",
         value: fmtLayer(detail.breakdown?.layer3),
         inline: true,
       },
       {
-        name: "📊 Écart de niveau (±50)",
+        name: "📊 Écart de niveau (±25)",
         value: fmtLayer(detail.breakdown?.layer4),
         inline: true,
       },

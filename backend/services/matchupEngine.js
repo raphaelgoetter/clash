@@ -69,13 +69,27 @@ export function identifyWinConditions(deckCards, catalog) {
 }
 
 // ------------------------------------------------------------
-// LAYER 1 — Archétype macro-matchup (±15%, atteint ±10 par construction)
+// Calibrage des 4 layers : la somme de leurs maxima doit valoir exactement
+// 50 (la moitié de l'amplitude totale scoreA ∈ [0,100] depuis la baseline
+// 50), pour que 0% et 100% ne soient atteints QUE si les 4 layers sont
+// simultanément à leur maximum dans le même sens. Avec des maxima non
+// calibrés (ex. la précédente version où leur somme valait 100), le score
+// sature (clamp) dès que 2-3 layers s'alignent, bien avant que tous soient
+// réellement extrêmes — deux combinaisons très différentes peuvent alors
+// afficher exactement le même 0%/100%, perdant toute granularité.
+// Répartition (proportionnelle aux poids du system prompt d'origine,
+// L1:L2:L3:L4 = 10:25:15:50 → mise à l'échelle ×0.5 pour sommer à 50) :
+//   L1 Archétype        : ±5   (effectif, cf. construction ci-dessous)
+//   L2 Counters directs : ±12.5
+//   L3 Structure du deck: ±7.5
+//   L4 Écart de niveau  : ±25
 // ------------------------------------------------------------
 
+// LAYER 1 — Archétype macro-matchup (±5% effectif par construction)
 function archetypeAdvantageShift(archetypeX, archetypeY) {
   if (!archetypeX || !archetypeY) return 0;
-  if (ARCHETYPE_ADVANTAGE[archetypeX]?.includes(archetypeY)) return 10;
-  if (ARCHETYPE_ADVANTAGE[archetypeY]?.includes(archetypeX)) return -10;
+  if (ARCHETYPE_ADVANTAGE[archetypeX]?.includes(archetypeY)) return 5;
+  if (ARCHETYPE_ADVANTAGE[archetypeY]?.includes(archetypeX)) return -5;
   return 0;
 }
 
@@ -87,27 +101,24 @@ export function computeArchetypeLayer(winConditionsA, winConditionsB) {
       shifts.push(archetypeAdvantageShift(wcA.archetype, wcB.archetype));
     }
   }
-  return clampValue(average(shifts), -15, 15);
+  return clampValue(average(shifts), -7.5, 7.5);
 }
 
-// ------------------------------------------------------------
-// LAYER 2 — Win condition vs counters directs (±25%)
-// ------------------------------------------------------------
-
+// LAYER 2 — Win condition vs counters directs (±12.5%)
 function counterShiftFor(winCondition, opponentDeckCards, catalog) {
   const hardHits = countMatchesAgainstNames(
     opponentDeckCards,
     winCondition.hardCounters,
     catalog,
   );
-  if (hardHits > 0) return -15;
+  if (hardHits > 0) return -7.5;
   const softHits = countMatchesAgainstNames(
     opponentDeckCards,
     winCondition.softCounters,
     catalog,
   );
-  if (softHits >= 2) return -10;
-  if (softHits === 0) return 15;
+  if (softHits >= 2) return -5;
+  if (softHits === 0) return 7.5;
   // Exactement 1 soft counter : zone grise non couverte par le texte source
   // (qui ne traite que 0 counter et ≥2 soft counters) → neutre.
   return 0;
@@ -127,15 +138,25 @@ export function computeCounterLayer(
   const shiftsB = winConditionsB.map((wc) =>
     counterShiftFor(wc, deckACards, catalog),
   );
-  return clampValue(average(shiftsA) - average(shiftsB), -25, 25);
+  return clampValue(average(shiftsA) - average(shiftsB), -12.5, 12.5);
 }
 
-// ------------------------------------------------------------
-// LAYER 3 — Intégrité structurelle / utilité (±15%)
-// Scanne les cartes brutes du deck : reste actif même si l'un des deux
-// decks n'a aucune win condition reconnue dans le catalogue.
-// ------------------------------------------------------------
+// Pénalité de dispersion en échelle triangulaire : chaque unité au-delà de
+// `baseline` coûte plus que la précédente (1, 2, 3, 4... points cumulés),
+// pour que 3 WC pique un peu, 4 WC pique nettement plus, 5 WC beaucoup plus
+// — pas un simple palier fixe. Le clamp final de computeUtilityLayer (±7.5)
+// absorbe les cas extrêmes, donc pas besoin de plafonner ici.
+function escalatingExcessPenalty(count, baseline, unitPoints) {
+  const excess = Math.max(0, count - baseline);
+  return -unitPoints * (excess * (excess + 1)) / 2;
+}
 
+// LAYER 3 — Intégrité structurelle / utilité (±7.5%)
+// Scanne les cartes brutes du deck : reste actif même si l'un des deux
+// decks n'a aucune win condition reconnue dans le catalogue. Inclut aussi
+// une auto-pénalité en échelle pour un deck trop "dispersé" (>2 win
+// conditions, >3 sorts ou >2 bâtiments) — indépendante du deck adverse,
+// contrairement aux règles Bait/Split-Push/Heavy Beatdown ci-dessus.
 function utilityShiftFor(winConditionsX, deckXCards, deckYCards, catalog) {
   let shift = 0;
 
@@ -146,15 +167,15 @@ function utilityShiftFor(winConditionsX, deckXCards, deckYCards, catalog) {
       SMALL_SPELLS_SET,
       catalog,
     );
-    if (smallSpellsInY < 1) shift += 10;
-    else if (smallSpellsInY >= 2) shift -= 10;
+    if (smallSpellsInY < 1) shift += 5;
+    else if (smallSpellsInY >= 2) shift -= 5;
   }
 
   const runsSplitPushTrigger =
     countMatchesInSet(deckXCards, SPLIT_PUSH_TRIGGER_CARDS_SET, catalog) > 0;
   if (runsSplitPushTrigger) {
     const bigSpellsInY = countMatchesInSet(deckYCards, BIG_SPELLS_SET, catalog);
-    if (bigSpellsInY === 0) shift += 10;
+    if (bigSpellsInY === 0) shift += 5;
   }
 
   const runsHeavyBeatdown =
@@ -171,8 +192,25 @@ function utilityShiftFor(winConditionsX, deckXCards, deckYCards, catalog) {
       DEFENSIVE_BUILDINGS_SET,
       catalog,
     );
-    if (tankKillersInY === 0 && defensiveBuildingsInY === 0) shift += 15;
+    if (tankKillersInY === 0 && defensiveBuildingsInY === 0) shift += 7.5;
   }
+
+  // Deck trop "dispersé" (auto-pénalité, indépendante de deckYCards) : trop
+  // de win conditions, de sorts ou de bâtiments dénote un manque de focus
+  // (ou un sur-matching du catalogue) — défavorable pour X, en échelle.
+  shift += escalatingExcessPenalty(winConditionsX.length, 2, 2.5);
+
+  const spellsInX =
+    countMatchesInSet(deckXCards, SMALL_SPELLS_SET, catalog) +
+    countMatchesInSet(deckXCards, BIG_SPELLS_SET, catalog);
+  shift += escalatingExcessPenalty(spellsInX, 3, 2.5);
+
+  const buildingsInX = countMatchesInSet(
+    deckXCards,
+    DEFENSIVE_BUILDINGS_SET,
+    catalog,
+  );
+  shift += escalatingExcessPenalty(buildingsInX, 2, 2.5);
 
   return shift;
 }
@@ -186,28 +224,20 @@ export function computeUtilityLayer(
 ) {
   const shiftA = utilityShiftFor(winConditionsA, deckACards, deckBCards, catalog);
   const shiftB = utilityShiftFor(winConditionsB, deckBCards, deckACards, catalog);
-  return clampValue(shiftA - shiftB, -15, 15);
+  return clampValue(shiftA - shiftB, -7.5, 7.5);
 }
 
-// ------------------------------------------------------------
-// LAYER 4 — Différentiel de niveau de cartes (±50%, 3%/point)
+// LAYER 4 — Différentiel de niveau de cartes (±25%, 1.5%/point)
 // Utilise normLevel() (offset de rareté, cf. collectionConstants.js) plutôt
 // que le niveau brut 1-16 du texte source, pour rester cohérent avec le
 // reste du codebase où toute comparaison de force de deck passe déjà par
 // normLevel() — le niveau brut pénaliserait injustement les decks riches
 // en légendaires/champions. Écart assumé par rapport au texte source.
-//
-// Poids (3%/point) et plafond (±50) ajustés sur demande explicite : un écart
-// de niveau extrême doit pouvoir, à lui seul, faire basculer le score à 0
-// ou 100 — symétrique avec les Layers 1+2+3 combinés, dont la somme des
-// maxima atteint déjà ±50 (10 effectif pour L1 + 25 pour L2 + 15 pour L3).
-// ------------------------------------------------------------
-
 export function computeLevelDifferentialLayer(deckACards, deckBCards) {
   const sum = (cards) =>
     toArray(cards).reduce((total, card) => total + normLevel(card), 0);
   const diff = sum(deckACards) - sum(deckBCards);
-  return clampValue(diff * 3, -50, 50);
+  return clampValue(diff * 1.5, -25, 25);
 }
 
 // ------------------------------------------------------------
