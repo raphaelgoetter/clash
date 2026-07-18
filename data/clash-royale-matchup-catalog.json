@@ -17,7 +17,6 @@
         "Cannon",
         "Tombstone",
         "Barbarians",
-        "Hunter",
         "Lumberjack",
         "Prince",
         "Skeleton Army",
@@ -37,7 +36,9 @@
         "Inferno Tower",
         "Inferno Dragon",
         "Mighty Miner",
+        "Skeleton Army",
         "Mini P.E.K.K.A",
+        "Minion Horde",
         "Elite Barbarians"
       ],
       "softCounters": [
@@ -46,15 +47,12 @@
         "Cannon",
         "Tombstone",
         "Barbarians",
-        "Hunter",
         "Lumberjack",
         "Prince",
-        "Skeleton Army",
         "Goblin Gang",
         "Guards",
         "Minions",
-        "Bats",
-        "Minion Horde"
+        "Bats"
       ]
     },
     {
@@ -66,6 +64,7 @@
         "Elite Barbarians",
         "Mighty Miner",
         "Goblin Cage",
+        "Inferno Tower",
         "Tesla",
         "Cannon"
       ],
@@ -74,7 +73,6 @@
         "Prince",
         "Lumberjack",
         "Tombstone",
-        "Inferno Tower",
         "Bowler",
         "Hunter",
         "Rascals"
@@ -98,7 +96,6 @@
         "Musketeer",
         "Electro Wizard",
         "Dart Goblin",
-        "Magic Archer",
         "Baby Dragon",
         "Skeleton Army",
         "Goblin Gang",
@@ -198,7 +195,6 @@
         "Mini P.E.K.K.A",
         "P.E.K.K.A",
         "Elite Barbarians",
-        "Hunter",
         "Skeleton Army",
         "Goblin Gang",
         "Barbarians",
@@ -341,7 +337,7 @@
     },
     {
       "name": "Miner",
-      "archetype": "Control",
+      "archetype": "Cycle",
       "hardCounters": [
         "Knight",
         "Goblins",
@@ -409,7 +405,7 @@
     },
     {
       "name": "P.E.K.K.A",
-      "archetype": "Control",
+      "archetype": "Bridge Spam",
       "hardCounters": [
         "Inferno Tower",
         "Inferno Dragon",
