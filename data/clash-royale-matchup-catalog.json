@@ -615,5 +615,92 @@
         "Mini P.E.K.K.A"
       ]
     }
+  ],
+
+  "_pseudoWinConditionsComment": "Pas de vraies win conditions (non tag \"Win Con\" par RoyaleAPI) : ne comptent que si AUCUNE vraie win condition n'est trouvée dans le deck (repli, cf. matchupEngine.js identifyWinConditions), pour éviter un 'win condition inconnue' qui neutralise les Layers 1/2 sur des decks à forte pression via ces cartes (ex. Mini P.E.K.K.A + Boss Bandit sans autre win condition reconnue).",
+  "pseudoWinConditions": [
+    {
+      "name": "P.E.K.K.A",
+      "archetype": "Bridge Spam",
+      "hardCounters": [
+        "Inferno Tower",
+        "Inferno Dragon",
+        "Skeleton Army",
+        "Goblin Gang",
+        "Witch",
+        "Tombstone",
+        "Guards",
+        "Ronin"
+      ],
+      "softCounters": [
+        "Goblins",
+        "Skeletons",
+        "Ice Golem",
+        "Minions",
+        "Bats",
+        "Minion Horde",
+        "Zappies",
+        "Electro Wizard",
+        "Night Witch"
+      ]
+    },
+    {
+      "name": "Mini P.E.K.K.A",
+      "archetype": "Cycle",
+      "hardCounters": [
+        "Skeleton Army",
+        "Goblin Gang",
+        "Minion Horde",
+        "Guards",
+        "Zappies",
+        "Ronin"
+      ],
+      "softCounters": [
+        "Ice Golem",
+        "Bats",
+        "Minions",
+        "Cannon",
+        "Tesla",
+        "Electro Wizard"
+      ]
+    },
+    {
+      "name": "Mega Knight",
+      "archetype": "Control",
+      "hardCounters": [
+        "P.E.K.K.A",
+        "Inferno Tower",
+        "Knight",
+        "Mini P.E.K.K.A",
+        "Elite Barbarians",
+        "Mighty Miner",
+        "Prince",
+        "Ronin"
+      ],
+      "softCounters": [
+        "Valkyrie",
+        "Goblin Cage",
+        "Ice Golem",
+        "Guards",
+        "Dark Prince",
+        "Inferno Dragon",
+        "Bandit",
+        "Cannon Cart",
+        "Ice Wizard"
+      ]
+    },
+    {
+      "name": "Boss Bandit",
+      "archetype": "Control",
+      "hardCounters": [
+        "P.E.K.K.A",
+        "Mini P.E.K.K.A",
+        "Guards",
+        "Goblin Gang",
+        "Skeleton Army",
+        "Ronin"
+      ],
+      "softCounters": ["Valkyrie", "Elite Barbarians", "Barbarians", "Knight"]
+    }
   ]
 }

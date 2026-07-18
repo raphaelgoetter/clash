@@ -97,12 +97,9 @@ function buildVariants(rawVariants) {
   }));
 }
 
-function buildWinConditionsByName(rawCatalog) {
-  const winConditions = Array.isArray(rawCatalog?.winConditions)
-    ? rawCatalog.winConditions
-    : [];
+function buildEntriesByName(entries) {
   const byName = new Map();
-  for (const entry of winConditions) {
+  for (const entry of Array.isArray(entries) ? entries : []) {
     const key = normalizeCardName(entry?.name);
     if (!key || byName.has(key)) continue;
     byName.set(key, {
@@ -163,10 +160,15 @@ function buildStructureRules(raw) {
 }
 
 /**
- * Retourne { winConditionsByName, normalizeCardName, structureRules }.
+ * Retourne { winConditionsByName, pseudoWinConditionsByName, normalizeCardName, structureRules }.
  * winConditionsByName : Map<nomNormalisé, {name, archetype, hardCounters, softCounters}>
- * (Layers 1/2 s'appuient dessus). structureRules : cardSets/crossRules/dispersionRules/clamp
- * compilés depuis data/clash-royale-matchup-structure-rules.json (Layer 3).
+ * — les vraies win conditions (tag "Win Con" RoyaleAPI), utilisées en priorité par Layers 1/2.
+ * pseudoWinConditionsByName : même forme, pour des cartes à forts dégâts (P.E.K.K.A, Mini
+ * P.E.K.K.A, Mega Knight, Boss Bandit...) qui ne sont pas de vraies win conditions mais évitent
+ * un "win condition inconnue" (Layers 1/2 neutralisés) quand un deck n'a AUCUNE vraie win
+ * condition reconnue — cf. matchupEngine.js identifyWinConditions (repli uniquement).
+ * structureRules : cardSets/crossRules/dispersionRules/clamp compilés depuis
+ * data/clash-royale-matchup-structure-rules.json (Layer 3).
  * Les deux fichiers sont lus via GitHub Contents API en production (fichier
  * local en dev), avec le même cache 5 min — éditer l'un ou l'autre sur
  * GitHub est pris en compte par /matchup sans redéploiement.
@@ -180,7 +182,10 @@ export async function getWinConditionsCatalog() {
   ]);
 
   _cache = {
-    winConditionsByName: buildWinConditionsByName(rawCatalog),
+    winConditionsByName: buildEntriesByName(rawCatalog?.winConditions),
+    pseudoWinConditionsByName: buildEntriesByName(
+      rawCatalog?.pseudoWinConditions,
+    ),
     normalizeCardName,
     structureRules: buildStructureRules(rawRules),
   };

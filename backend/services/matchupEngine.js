@@ -78,6 +78,14 @@ function resolveWinConditionVariant(entry, deckCards, catalog) {
 /**
  * Toutes les win conditions du catalogue présentes dans le deck (0, 1 ou plusieurs),
  * résolues à leur variante (cf. resolveWinConditionVariant) si applicable.
+ * Si AUCUNE vraie win condition n'est trouvée, se rabat sur les pseudo win
+ * conditions du catalogue (cartes à forts dégâts type P.E.K.K.A/Boss Bandit
+ * — pas de vraie win condition au sens RoyaleAPI, mais souvent le vrai
+ * moteur de pression du deck) pour éviter de neutraliser les Layers 1/2
+ * ("win condition inconnue") sur des decks pourtant tout à fait identifiables.
+ * Plusieurs pseudo win conditions trouvées → moyennées comme les vraies
+ * (cf. computeArchetypeLayer/computeCounterLayer, aucun traitement spécial).
+ * Marquées `pseudo: true` pour être signalées dans l'affichage (cf. plus bas).
  */
 export function identifyWinConditions(deckCards, catalog) {
   const { winConditionsByName, normalizeCardName } = catalog;
@@ -90,6 +98,20 @@ export function identifyWinConditions(deckCards, catalog) {
     if (entry) {
       matches.push(resolveWinConditionVariant(entry, deckCards, catalog));
       seen.add(key);
+    }
+  }
+  if (matches.length > 0) return matches;
+
+  const pseudoWinConditionsByName = catalog.pseudoWinConditionsByName;
+  if (!pseudoWinConditionsByName) return matches;
+  const seenPseudo = new Set();
+  for (const card of toArray(deckCards)) {
+    const key = normalizeCardName(card?.name);
+    if (!key || seenPseudo.has(key)) continue;
+    const entry = pseudoWinConditionsByName.get(key);
+    if (entry) {
+      matches.push({ ...entry, pseudo: true });
+      seenPseudo.add(key);
     }
   }
   return matches;
@@ -485,7 +507,11 @@ export function computeDeckMatchupScore(deckACards, deckBCards, catalog) {
       ),
       layer4: describeLevelDifferentialLayer(deckACards, deckBCards),
     },
-    winConditionsA: winConditionsA.map((wc) => wc.name),
-    winConditionsB: winConditionsB.map((wc) => wc.name),
+    winConditionsA: winConditionsA.map((wc) =>
+      wc.pseudo ? `${wc.name} (pseudo)` : wc.name,
+    ),
+    winConditionsB: winConditionsB.map((wc) =>
+      wc.pseudo ? `${wc.name} (pseudo)` : wc.name,
+    ),
   };
 }
