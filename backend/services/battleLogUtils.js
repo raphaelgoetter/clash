@@ -268,7 +268,7 @@ export function clampValue(value, min, max) {
 export async function computeDeckMatchupDetail(battle, catalog = null) {
   const resolvedCatalog = catalog ?? (await getWinConditionsCatalog());
   const { player, opponent } = deckCardsFromBattle(battle);
-  const { scoreA, breakdown, winConditionsA, winConditionsB } =
+  const { scoreA, breakdown, reasons, winConditionsA, winConditionsB } =
     computeDeckMatchupScore(player, opponent, resolvedCatalog);
   const difficulty = Number(
     clampValue((100 - scoreA) / 100, 0, 1).toFixed(3),
@@ -278,6 +278,7 @@ export async function computeDeckMatchupDetail(battle, catalog = null) {
     matchup: difficulty,
     scoreA,
     breakdown,
+    reasons,
     winConditionsA,
     winConditionsB,
     playerCardNames: player.map(cardName).filter(Boolean),

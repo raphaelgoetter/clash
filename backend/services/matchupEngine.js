@@ -157,8 +157,12 @@ function escalatingExcessPenalty(count, baseline, unitPoints) {
 // une auto-pénalité en échelle pour un deck trop "dispersé" (>2 win
 // conditions, >3 sorts ou >2 bâtiments) — indépendante du deck adverse,
 // contrairement aux règles Bait/Split-Push/Heavy Beatdown ci-dessus.
+// Retourne { shift, tags } — tags = courtes étiquettes des règles
+// déclenchées, utilisées uniquement pour générer les mini-explications de
+// l'embed Discord (cf. describeUtilityLayer). Le shift seul alimente le score.
 function utilityShiftFor(winConditionsX, deckXCards, deckYCards, catalog) {
   let shift = 0;
+  const tags = [];
 
   const runsBait = winConditionsX.some((wc) => wc.archetype === "Bait");
   if (runsBait) {
@@ -167,15 +171,23 @@ function utilityShiftFor(winConditionsX, deckXCards, deckYCards, catalog) {
       SMALL_SPELLS_SET,
       catalog,
     );
-    if (smallSpellsInY < 1) shift += 5;
-    else if (smallSpellsInY >= 2) shift -= 5;
+    if (smallSpellsInY < 1) {
+      shift += 5;
+      tags.push("Bait: 0 petit sort adverse");
+    } else if (smallSpellsInY >= 2) {
+      shift -= 5;
+      tags.push(`Bait: ${smallSpellsInY} petits sorts adverses`);
+    }
   }
 
   const runsSplitPushTrigger =
     countMatchesInSet(deckXCards, SPLIT_PUSH_TRIGGER_CARDS_SET, catalog) > 0;
   if (runsSplitPushTrigger) {
     const bigSpellsInY = countMatchesInSet(deckYCards, BIG_SPELLS_SET, catalog);
-    if (bigSpellsInY === 0) shift += 5;
+    if (bigSpellsInY === 0) {
+      shift += 5;
+      tags.push("Split-push: 0 gros sort adverse");
+    }
   }
 
   const runsHeavyBeatdown =
@@ -192,27 +204,42 @@ function utilityShiftFor(winConditionsX, deckXCards, deckYCards, catalog) {
       DEFENSIVE_BUILDINGS_SET,
       catalog,
     );
-    if (tankKillersInY === 0 && defensiveBuildingsInY === 0) shift += 7.5;
+    if (tankKillersInY === 0 && defensiveBuildingsInY === 0) {
+      shift += 7.5;
+      tags.push("Gros tank: aucun tank killer/bâtiment adverse");
+    }
   }
 
   // Deck trop "dispersé" (auto-pénalité, indépendante de deckYCards) : trop
   // de win conditions, de sorts ou de bâtiments dénote un manque de focus
   // (ou un sur-matching du catalogue) — défavorable pour X, en échelle.
-  shift += escalatingExcessPenalty(winConditionsX.length, 2, 2.5);
+  const wcPenalty = escalatingExcessPenalty(winConditionsX.length, 2, 2.5);
+  if (wcPenalty !== 0) {
+    shift += wcPenalty;
+    tags.push(`${winConditionsX.length} WC: dispersion`);
+  }
 
   const spellsInX =
     countMatchesInSet(deckXCards, SMALL_SPELLS_SET, catalog) +
     countMatchesInSet(deckXCards, BIG_SPELLS_SET, catalog);
-  shift += escalatingExcessPenalty(spellsInX, 3, 2.5);
+  const spellPenalty = escalatingExcessPenalty(spellsInX, 3, 2.5);
+  if (spellPenalty !== 0) {
+    shift += spellPenalty;
+    tags.push(`${spellsInX} sorts: dispersion`);
+  }
 
   const buildingsInX = countMatchesInSet(
     deckXCards,
     DEFENSIVE_BUILDINGS_SET,
     catalog,
   );
-  shift += escalatingExcessPenalty(buildingsInX, 2, 2.5);
+  const buildingPenalty = escalatingExcessPenalty(buildingsInX, 2, 2.5);
+  if (buildingPenalty !== 0) {
+    shift += buildingPenalty;
+    tags.push(`${buildingsInX} bâtiments: dispersion`);
+  }
 
-  return shift;
+  return { shift, tags };
 }
 
 export function computeUtilityLayer(
@@ -222,8 +249,18 @@ export function computeUtilityLayer(
   deckBCards,
   catalog,
 ) {
-  const shiftA = utilityShiftFor(winConditionsA, deckACards, deckBCards, catalog);
-  const shiftB = utilityShiftFor(winConditionsB, deckBCards, deckACards, catalog);
+  const { shift: shiftA } = utilityShiftFor(
+    winConditionsA,
+    deckACards,
+    deckBCards,
+    catalog,
+  );
+  const { shift: shiftB } = utilityShiftFor(
+    winConditionsB,
+    deckBCards,
+    deckACards,
+    catalog,
+  );
   return clampValue(shiftA - shiftB, -7.5, 7.5);
 }
 
@@ -238,6 +275,74 @@ export function computeLevelDifferentialLayer(deckACards, deckBCards) {
     toArray(cards).reduce((total, card) => total + normLevel(card), 0);
   const diff = sum(deckACards) - sum(deckBCards);
   return clampValue(diff * 1.5, -25, 25);
+}
+
+// ------------------------------------------------------------
+// Mini-explications (breakdown.reasons) — courtes étiquettes sans phrase,
+// affichées entre parenthèses à côté de chaque layer dans l'embed Discord.
+// Ne participent pas au calcul du score, purement descriptif.
+// ------------------------------------------------------------
+
+function describeArchetypeLayer(winConditionsA, winConditionsB, bothKnown) {
+  if (!bothKnown) return "win condition inconnue";
+  const archsA = [...new Set(winConditionsA.map((wc) => wc.archetype))].join(
+    "+",
+  );
+  const archsB = [...new Set(winConditionsB.map((wc) => wc.archetype))].join(
+    "+",
+  );
+  return `${archsA} vs ${archsB}`;
+}
+
+function describeCounterLayer(
+  winConditionsA,
+  deckACards,
+  winConditionsB,
+  deckBCards,
+  catalog,
+  bothKnown,
+) {
+  if (!bothKnown) return "win condition inconnue";
+  const yourHardHit = winConditionsA.filter(
+    (wc) => countMatchesAgainstNames(deckBCards, wc.hardCounters, catalog) > 0,
+  ).length;
+  const theirHardHit = winConditionsB.filter(
+    (wc) => countMatchesAgainstNames(deckACards, wc.hardCounters, catalog) > 0,
+  ).length;
+  return `toi: ${yourHardHit}/${winConditionsA.length} contrée(s) dur, eux: ${theirHardHit}/${winConditionsB.length} contrée(s) dur`;
+}
+
+function describeUtilityLayer(
+  winConditionsA,
+  deckACards,
+  winConditionsB,
+  deckBCards,
+  catalog,
+) {
+  const { tags: tagsA } = utilityShiftFor(
+    winConditionsA,
+    deckACards,
+    deckBCards,
+    catalog,
+  );
+  const { tags: tagsB } = utilityShiftFor(
+    winConditionsB,
+    deckBCards,
+    deckACards,
+    catalog,
+  );
+  const all = [
+    ...tagsA.map((t) => `toi: ${t}`),
+    ...tagsB.map((t) => `eux: ${t}`),
+  ];
+  return all.length > 0 ? all.join(" · ") : "aucune règle déclenchée";
+}
+
+function describeLevelDifferentialLayer(deckACards, deckBCards) {
+  const sum = (cards) =>
+    toArray(cards).reduce((total, card) => total + normLevel(card), 0);
+  const diff = sum(deckACards) - sum(deckBCards);
+  return `${diff > 0 ? "+" : ""}${diff} niveaux normalisés`;
 }
 
 // ------------------------------------------------------------
@@ -278,6 +383,25 @@ export function computeDeckMatchupScore(deckACards, deckBCards, catalog) {
     scoreA,
     scoreB: 100 - scoreA,
     breakdown: { layer1, layer2, layer3, layer4 },
+    reasons: {
+      layer1: describeArchetypeLayer(winConditionsA, winConditionsB, bothKnown),
+      layer2: describeCounterLayer(
+        winConditionsA,
+        deckACards,
+        winConditionsB,
+        deckBCards,
+        catalog,
+        bothKnown,
+      ),
+      layer3: describeUtilityLayer(
+        winConditionsA,
+        deckACards,
+        winConditionsB,
+        deckBCards,
+        catalog,
+      ),
+      layer4: describeLevelDifferentialLayer(deckACards, deckBCards),
+    },
     winConditionsA: winConditionsA.map((wc) => wc.name),
     winConditionsB: winConditionsB.map((wc) => wc.name),
   };
