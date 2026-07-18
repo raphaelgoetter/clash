@@ -404,69 +404,6 @@
       ]
     },
     {
-      "name": "P.E.K.K.A",
-      "archetype": "Bridge Spam",
-      "hardCounters": [
-        "Inferno Tower",
-        "Inferno Dragon",
-        "Skeleton Army",
-        "Goblin Gang",
-        "Witch",
-        "Tombstone",
-        "Guards",
-        "Ronin"
-      ],
-      "softCounters": [
-        "Goblins",
-        "Skeletons",
-        "Ice Golem",
-        "Minions",
-        "Bats",
-        "Minion Horde",
-        "Zappies",
-        "Electro Wizard",
-        "Night Witch"
-      ]
-    },
-    {
-      "name": "Mega Knight",
-      "archetype": "Control",
-      "hardCounters": [
-        "P.E.K.K.A",
-        "Inferno Tower",
-        "Knight",
-        "Mini P.E.K.K.A",
-        "Elite Barbarians",
-        "Mighty Miner",
-        "Prince",
-        "Ronin"
-      ],
-      "softCounters": [
-        "Valkyrie",
-        "Goblin Cage",
-        "Ice Golem",
-        "Guards",
-        "Dark Prince",
-        "Inferno Dragon",
-        "Bandit",
-        "Cannon Cart",
-        "Ice Wizard"
-      ]
-    },
-    {
-      "name": "Boss Bandit",
-      "archetype": "Control",
-      "hardCounters": [
-        "P.E.K.K.A",
-        "Mini P.E.K.K.A",
-        "Guards",
-        "Goblin Gang",
-        "Skeleton Army",
-        "Ronin"
-      ],
-      "softCounters": ["Valkyrie", "Elite Barbarians", "Barbarians", "Knight"]
-    },
-    {
       "name": "Goblin Barrel",
       "archetype": "Bait",
       "hardCounters": [
