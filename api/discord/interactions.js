@@ -3076,33 +3076,18 @@ function buildMatchupDetailEmbed(warDecks, index) {
 
   return {
     title: `⚡ Détail — ${dayLabel} · ${deckLabel} vs ${match.opponentName || "?"}`,
-    description: `${resultEmoji} ${match.score || "?"} · **${matchupPct}%** de difficulté (score brut : ${detail.scoreA}/100 pour toi)`,
+    description: `${resultEmoji} ${match.score || "?"} · **${matchupPct}%** de difficulté`,
     color: 0xe67e22,
     fields: [
       {
-        name: "Win conditions",
-        value: `Toi : **${wcA}**\nAdversaire : **${wcB}**`,
+        name: "Détail du calcul",
+        value: [
+          `🎯 Archétype (±5) : ${fmtLayer(detail.breakdown?.layer1)}%`,
+          `⚔️ Counters directs (±12.5) : ${fmtLayer(detail.breakdown?.layer2)}%`,
+          `🏗️ Structure du deck (±7.5) : ${fmtLayer(detail.breakdown?.layer3)}%`,
+          `📊 Écart de niveau (±25) : ${fmtLayer(detail.breakdown?.layer4)}%`,
+        ].join("\n"),
         inline: false,
-      },
-      {
-        name: "🎯 Archétype (±5)",
-        value: fmtLayer(detail.breakdown?.layer1),
-        inline: true,
-      },
-      {
-        name: "⚔️ Counters directs (±12.5)",
-        value: fmtLayer(detail.breakdown?.layer2),
-        inline: true,
-      },
-      {
-        name: "🏗️ Structure du deck (±7.5)",
-        value: fmtLayer(detail.breakdown?.layer3),
-        inline: true,
-      },
-      {
-        name: "📊 Écart de niveau (±25)",
-        value: fmtLayer(detail.breakdown?.layer4),
-        inline: true,
       },
       {
         name: "Ton deck",
@@ -3112,6 +3097,11 @@ function buildMatchupDetailEmbed(warDecks, index) {
       {
         name: "Deck adverse",
         value: (detail.opponentCardNames || []).join(", ") || "?",
+        inline: false,
+      },
+      {
+        name: "Win conditions",
+        value: `Toi : **${wcA}**\nAdversaire : **${wcB}**`,
         inline: false,
       },
     ],
