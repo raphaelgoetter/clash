@@ -263,17 +263,18 @@ export function computeUtilityLayer(
   return clampValue(shiftA - shiftB, -10, 10);
 }
 
-// LAYER 4 — Différentiel de niveau de cartes (±20%, 1.2%/point)
+// LAYER 4 — Différentiel de niveau de cartes (±20%, 2%/point)
 // Utilise normLevel() (offset de rareté, cf. collectionConstants.js) plutôt
 // que le niveau brut 1-16 du texte source, pour rester cohérent avec le
 // reste du codebase où toute comparaison de force de deck passe déjà par
 // normLevel() — le niveau brut pénaliserait injustement les decks riches
 // en légendaires/champions. Écart assumé par rapport au texte source.
+// Plafond atteint dès un écart cumulé de 10 points normalisés (20/2).
 export function computeLevelDifferentialLayer(deckACards, deckBCards) {
   const sum = (cards) =>
     toArray(cards).reduce((total, card) => total + normLevel(card), 0);
   const diff = sum(deckACards) - sum(deckBCards);
-  return clampValue(diff * 1.2, -20, 20);
+  return clampValue(diff * 2, -20, 20);
 }
 
 // ------------------------------------------------------------
