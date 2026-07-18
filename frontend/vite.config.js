@@ -30,6 +30,10 @@ export default defineConfig({
           req.url = "/decks/index.html";
           return next();
         }
+        if (url === "/matchup" || url === "/matchup/") {
+          req.url = "/matchup/index.html";
+          return next();
+        }
         // URLs path-based : /player/TAG et /clan/TAG → index.html (SPA)
         if (/^\/(player|clan)\//.test(url)) {
           req.url = "/index.html";

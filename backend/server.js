@@ -17,6 +17,7 @@ import compression from "compression";
 import playerRoutes from "./routes/player.js";
 import clanRoutes, { ALLOWED_CLANS } from "./routes/clan.js";
 import deckRoutes from "./routes/decks.js";
+import matchupRoutes from "./routes/matchup.js";
 import discordRoutes from "./routes/discord.js";
 import { clearAll } from "./services/cache.js";
 import { fetchClan, fetchPlayer } from "./services/clashApi.js";
@@ -240,6 +241,7 @@ app.get("/api/debug", (_req, res) => {
 app.use("/api/player", playerRoutes);
 app.use("/api/clan", clanRoutes);
 app.use("/api/decks", deckRoutes);
+app.use("/api/matchup", matchupRoutes);
 // Discord interactions endpoint (slash commands)
 app.use("/api/discord", discordRoutes);
 

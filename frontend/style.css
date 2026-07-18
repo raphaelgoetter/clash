@@ -2541,7 +2541,8 @@ a.member-link:hover div:first-child {
   align-items: stretch;
 }
 
-.bot {
+.bot,
+.matchup {
   text-decoration: none;
 
   &:hover {

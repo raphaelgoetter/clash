@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TrustRoyale - Matchup Clash Royale</title>
+    <meta
+      name="description"
+      content="Consultez l'archetype, les hard-counters et les soft-counters de chaque win condition Clash Royale."
+    />
+    <link rel="canonical" href="https://trustroyale.vercel.app/matchup" />
+    <meta property="og:title" content="TrustRoyale - Matchup Clash Royale" />
+    <meta
+      property="og:description"
+      content="Consultez l'archetype, les hard-counters et les soft-counters de chaque win condition Clash Royale."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://trustroyale.vercel.app/matchup" />
+    <meta
+      property="og:image"
+      content="https://trustroyale.vercel.app/favicon.svg"
+    />
+    <meta property="og:site_name" content="TrustRoyale" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="TrustRoyale - Matchup Clash Royale" />
+    <meta
+      name="twitter:description"
+      content="Consultez l'archetype, les hard-counters et les soft-counters de chaque win condition Clash Royale."
+    />
+    <meta
+      name="twitter:image"
+      content="https://trustroyale.vercel.app/favicon.svg"
+    />
+    <meta name="theme-color" content="#16213D" />
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="/matchup/matchup.css" />
+  </head>
+  <body>
+    <main class="matchup-page">
+      <header class="matchup-hero">
+        <a class="matchup-brand" href="/">
+          <img src="/favicon.svg" alt="Logo TrustRoyale" />
+          <span>TrustRoyale</span>
+        </a>
+        <h1>Matchup</h1>
+        <p>
+          Choisissez une win condition pour voir son archetype, ses
+          hard-counters et ses soft-counters.
+        </p>
+      </header>
+
+      <div id="status" class="matchup-status"></div>
+
+      <section class="matchup-panel">
+        <div class="matchup-panel-head">
+          <h2>Win conditions</h2>
+        </div>
+        <div id="wincon-grid" class="wincon-grid"></div>
+      </section>
+
+      <section id="matchup-detail" class="matchup-panel matchup-hidden">
+        <div class="matchup-panel-head">
+          <h2 id="detail-title"></h2>
+          <span id="detail-archetype" class="matchup-card-type"></span>
+        </div>
+        <h3 class="matchup-detail-subtitle">Hard-counters</h3>
+        <ul id="detail-hard" class="matchup-card-list"></ul>
+        <h3 class="matchup-detail-subtitle">Soft-counters</h3>
+        <ul id="detail-soft" class="matchup-card-list"></ul>
+      </section>
+    </main>
+
+    <footer class="matchup-banner">
+      <a
+        href="https://discord.com/users/333264132277010432"
+        target="_blank"
+        rel="noopener"
+      >
+        Un oubli ? Une erreur ? Une suggestion ? Me contacter sur Discord par
+        MP (displaynone)
+      </a>
+    </footer>
+
+    <script type="module" src="/matchup/matchup.js"></script>
+  </body>
+</html>
