@@ -42,6 +42,20 @@ function countMatchesInSet(deckCards, normalizedSet, catalog) {
   return count;
 }
 
+// Retourne le nom (tel qu'écrit dans le deck) de la première carte trouvée
+// dans normalizedSet — utilisé pour nommer explicitement la carte qui
+// déclenche une règle plutôt qu'un libellé d'archétype potentiellement
+// trompeur (ex. Royal Hogs déclenche la règle "push agressif" bien que son
+// archétype catalogue soit "Bridge Spam", pas "Split-Push").
+function findMatchInSet(deckCards, normalizedSet, catalog) {
+  for (const card of toArray(deckCards)) {
+    if (normalizedSet.has(catalog.normalizeCardName(card?.name))) {
+      return card?.name;
+    }
+  }
+  return null;
+}
+
 function countMatchesAgainstNames(deckCards, rawNames, catalog) {
   const targetSet = new Set(
     rawNames.map((name) => catalog.normalizeCardName(name)),
@@ -191,13 +205,16 @@ function utilityShiftFor(
     }
   }
 
-  const runsSplitPushTrigger =
-    countMatchesInSet(deckXCards, SPLIT_PUSH_TRIGGER_CARDS_SET, catalog) > 0;
-  if (runsSplitPushTrigger) {
+  const splitPushCard = findMatchInSet(
+    deckXCards,
+    SPLIT_PUSH_TRIGGER_CARDS_SET,
+    catalog,
+  );
+  if (splitPushCard) {
     const bigSpellsInY = countMatchesInSet(deckYCards, BIG_SPELLS_SET, catalog);
     if (bigSpellsInY === 0) {
       shift += 6;
-      tags.push(`${yLabel}: 0 gros sort, ${xLabel}: Split-push`);
+      tags.push(`${yLabel}: 0 gros sort, ${xLabel}: ${splitPushCard} (push)`);
     }
   }
 
