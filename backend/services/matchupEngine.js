@@ -367,9 +367,16 @@ export function computeLevelDifferentialLayer(deckACards, deckBCards) {
 
 // ------------------------------------------------------------
 // Mini-explications (breakdown.reasons) — courtes étiquettes sans phrase,
-// affichées entre parenthèses à côté de chaque layer dans l'embed Discord.
-// Ne participent pas au calcul du score, purement descriptif.
+// affichées sous chaque layer dans l'embed Discord (une ligne par donnée,
+// préfixée de l'emoji couronne du camp concerné). Ne participent pas au
+// calcul du score, purement descriptif — seul consommateur : l'embed
+// buildMatchupDetailEmbed (api/discord/interactions.js), d'où le couplage
+// direct à des emoji Discord (pas de préoccupation de neutralité ici).
 // ------------------------------------------------------------
+
+const CROWN_SELF = "<:blue_crown:1294923219668566047>"; // "toi"
+const CROWN_OPPONENT = "<:crownred:1526218168320786514>"; // "lui"
+const REASON_INDENT = "   ";
 
 function describeArchetypeLayer(winConditionsA, winConditionsB, bothKnown) {
   if (!bothKnown) return "win condition inconnue";
@@ -379,7 +386,10 @@ function describeArchetypeLayer(winConditionsA, winConditionsB, bothKnown) {
   const archsB = [...new Set(winConditionsB.map((wc) => wc.archetype))].join(
     "+",
   );
-  return `toi: ${archsA}, lui: ${archsB}`;
+  return [
+    `${REASON_INDENT}${CROWN_SELF} ${archsA}`,
+    `${REASON_INDENT}${CROWN_OPPONENT} ${archsB}`,
+  ].join("\n");
 }
 
 function describeCounterLayer(
@@ -393,8 +403,9 @@ function describeCounterLayer(
   if (!bothKnown) return "win condition inconnue";
   // Nombre de cartes-counters trouvées chez l'adversaire pour CHAQUE win
   // condition du camp évalué (une win condition peut cumuler plusieurs
-  // counters présents à la fois) : "toi" = ce que tu subis (leurs counters
-  // à ta/tes WC), "lui" = ce qu'il subit (tes counters à sa/ses WC).
+  // counters présents à la fois) : CROWN_SELF = ce que tu subis (leurs
+  // counters à ta/tes WC), CROWN_OPPONENT = ce qu'il subit (tes counters
+  // à sa/ses WC).
   const sumMatches = (winConditions, opponentDeck, field) =>
     winConditions.reduce(
       (sum, wc) =>
@@ -405,7 +416,10 @@ function describeCounterLayer(
   const yourSoft = sumMatches(winConditionsA, deckBCards, "softCounters");
   const theirHard = sumMatches(winConditionsB, deckACards, "hardCounters");
   const theirSoft = sumMatches(winConditionsB, deckACards, "softCounters");
-  return `toi: ${yourHard} hard-counter(s), ${yourSoft} soft-counter(s) subi(s) · lui: ${theirHard} hard-counter(s), ${theirSoft} soft-counter(s) subi(s)`;
+  return [
+    `${REASON_INDENT}${CROWN_SELF} ${yourHard} hard-counter(s), ${yourSoft} soft-counter(s) subi(s)`,
+    `${REASON_INDENT}${CROWN_OPPONENT} ${theirHard} hard-counter(s), ${theirSoft} soft-counter(s) subi(s)`,
+  ].join("\n");
 }
 
 function describeUtilityLayer(
@@ -420,19 +434,21 @@ function describeUtilityLayer(
     deckACards,
     deckBCards,
     catalog,
-    "toi",
-    "lui",
+    CROWN_SELF,
+    CROWN_OPPONENT,
   );
   const { tags: tagsB } = utilityShiftFor(
     winConditionsB,
     deckBCards,
     deckACards,
     catalog,
-    "lui",
-    "toi",
+    CROWN_OPPONENT,
+    CROWN_SELF,
   );
   const all = [...tagsA, ...tagsB];
-  return all.length > 0 ? all.join(" · ") : "aucune règle déclenchée";
+  return all.length > 0
+    ? all.map((tag) => `${REASON_INDENT}${tag}`).join("\n")
+    : "aucune règle déclenchée";
 }
 
 function describeLevelDifferentialLayer(deckACards, deckBCards) {
@@ -441,7 +457,10 @@ function describeLevelDifferentialLayer(deckACards, deckBCards) {
   const sumA = sum(deckACards);
   const sumB = sum(deckBCards);
   const diff = sumA - sumB;
-  return `toi: ${sumA}, lui: ${sumB} (${diff > 0 ? "+" : ""}${diff})`;
+  return [
+    `${REASON_INDENT}${CROWN_SELF} ${sumA}`,
+    `${REASON_INDENT}${CROWN_OPPONENT} ${sumB} (${diff > 0 ? "+" : ""}${diff})`,
+  ].join("\n");
 }
 
 // ------------------------------------------------------------

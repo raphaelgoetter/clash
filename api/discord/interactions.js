@@ -3082,10 +3082,10 @@ function buildMatchupDetailEmbed(warDecks, index) {
       {
         name: "Détail du calcul :",
         value: [
-          `**🎯 Archétype (±5)** : **${fmtLayer(detail.breakdown?.layer1)}%** (${detail.reasons?.layer1 ?? "?"})`,
-          `**⚔️ Counters directs (±15)** : **${fmtLayer(detail.breakdown?.layer2)}%** (${detail.reasons?.layer2 ?? "?"})`,
-          `**🏗️ Structure du deck (±15)** : **${fmtLayer(detail.breakdown?.layer3)}%** (${detail.reasons?.layer3 ?? "?"})`,
-          `**📊 Écart de niveau (±15)** : **${fmtLayer(detail.breakdown?.layer4)}%** (${detail.reasons?.layer4 ?? "?"})`,
+          `**🎯 Archétype (±5)** : **${fmtLayer(detail.breakdown?.layer1)}%**\n${detail.reasons?.layer1 ?? "?"}`,
+          `**⚔️ Counters directs (±15)** : **${fmtLayer(detail.breakdown?.layer2)}%**\n${detail.reasons?.layer2 ?? "?"}`,
+          `**🏗️ Structure du deck (±15)** : **${fmtLayer(detail.breakdown?.layer3)}%**\n${detail.reasons?.layer3 ?? "?"}`,
+          `**📊 Écart de niveau (±15)** : **${fmtLayer(detail.breakdown?.layer4)}%**\n${detail.reasons?.layer4 ?? "?"}`,
         ].join("\n"),
         inline: false,
       },
