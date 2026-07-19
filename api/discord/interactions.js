@@ -49,6 +49,10 @@ import {
 } from "../../backend/services/analysisService.js";
 import { loadClanCache } from "../../backend/services/clanCache.js";
 import { summarizePointsPerDeckWeeks } from "../../backend/services/warScoring.js";
+import {
+  CROWN_SELF,
+  CROWN_OPPONENT,
+} from "../../backend/services/matchupEngine.js";
 
 const _require = createRequire(import.meta.url);
 const COLLECTION_LEVELS = _require("../../data/collection_levels.json");
@@ -3074,21 +3078,23 @@ function buildMatchupDetailEmbed(warDecks, index) {
     return `${displayed > 0 ? "+" : ""}${displayed}`;
   };
 
+  // Archétype et Counters restent groupés (tous deux liés aux win conditions),
+  // séparés par une ligne vide de Structure puis d'Écart de niveau — cf.
+  // capture d'écran utilisateur. Les bornes (±5/±15/±15/±15) ne sont plus
+  // rappelées ici : elles sont documentées dans la doc de la commande.
+  const archetypeAndCounters = [
+    `**🎯 Archétype** : **${fmtLayer(detail.breakdown?.layer1)}%**\n${detail.reasons?.layer1 ?? "?"}`,
+    `**⚔️ Counters directs** : **${fmtLayer(detail.breakdown?.layer2)}%**\n${detail.reasons?.layer2 ?? "?"}`,
+  ].join("\n");
+  const structure = `**🏗️ Structure du deck** : **${fmtLayer(detail.breakdown?.layer3)}%**\n${detail.reasons?.layer3 ?? "?"}`;
+  const levelGap = `**📊 Écart de niveau** : **${fmtLayer(detail.breakdown?.layer4)}%**\n${detail.reasons?.layer4 ?? "?"}`;
+  const calcDetail = [archetypeAndCounters, structure, levelGap].join("\n\n");
+
   return {
     title: `⚡ Détail — ${dayLabel} · ${deckLabel} vs ${match.opponentName || "?"}`,
-    description: `${resultEmoji} ${match.score || "?"} · **${matchupPct}%** de difficulté`,
+    description: `${resultEmoji} ${match.score || "?"} · **${matchupPct}%** de difficulté\n\n${calcDetail}`,
     color: 0xe67e22,
     fields: [
-      {
-        name: "Détail du calcul :",
-        value: [
-          `**🎯 Archétype (±5)** : **${fmtLayer(detail.breakdown?.layer1)}%**\n${detail.reasons?.layer1 ?? "?"}`,
-          `**⚔️ Counters directs (±15)** : **${fmtLayer(detail.breakdown?.layer2)}%**\n${detail.reasons?.layer2 ?? "?"}`,
-          `**🏗️ Structure du deck (±15)** : **${fmtLayer(detail.breakdown?.layer3)}%**\n${detail.reasons?.layer3 ?? "?"}`,
-          `**📊 Écart de niveau (±15)** : **${fmtLayer(detail.breakdown?.layer4)}%**\n${detail.reasons?.layer4 ?? "?"}`,
-        ].join("\n"),
-        inline: false,
-      },
       {
         name: "Ton deck :",
         value: `- ${(deck.cardNames || []).join(", ") || "?"}`,
@@ -3101,7 +3107,10 @@ function buildMatchupDetailEmbed(warDecks, index) {
       },
       {
         name: "Win conditions :",
-        value: [`- Toi : **${wcA}**`, `- Adversaire : **${wcB}**`].join("\n"),
+        value: [
+          `- ${CROWN_SELF} **${wcA}**`,
+          `- ${CROWN_OPPONENT} **${wcB}**`,
+        ].join("\n"),
         inline: false,
       },
     ],

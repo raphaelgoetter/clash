@@ -374,9 +374,9 @@ export function computeLevelDifferentialLayer(deckACards, deckBCards) {
 // direct à des emoji Discord (pas de préoccupation de neutralité ici).
 // ------------------------------------------------------------
 
-const CROWN_SELF = "<:blue_crown:1294923219668566047>"; // "toi"
-const CROWN_OPPONENT = "<:crownred:1526218168320786514>"; // "lui"
-const REASON_INDENT = "   ";
+export const CROWN_SELF = "<:crown:1518889526460682280>"; // "toi"
+export const CROWN_OPPONENT = "<:crownred:1526218168320786514>"; // "lui"
+const REASON_INDENT = "- ";
 
 function describeArchetypeLayer(winConditionsA, winConditionsB, bothKnown) {
   if (!bothKnown) return "win condition inconnue";
