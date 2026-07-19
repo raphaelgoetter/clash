@@ -129,8 +129,8 @@ export function identifyWinConditions(deckCards, catalog) {
 // Répartition (ajustée manuellement, somme = 50) :
 //   L1 Archétype        : ±5   (effectif, cf. construction ci-dessous)
 //   L2 Counters directs : ±15
-//   L3 Structure du deck: ±10
-//   L4 Écart de niveau  : ±20
+//   L3 Structure du deck: ±15
+//   L4 Écart de niveau  : ±15
 // ------------------------------------------------------------
 
 // LAYER 1 — Archétype macro-matchup (±5% effectif par construction)
@@ -192,14 +192,14 @@ export function computeCounterLayer(
 // Pénalité de dispersion en échelle triangulaire : chaque unité au-delà de
 // `baseline` coûte plus que la précédente (1, 2, 3, 4... points cumulés),
 // pour que 3 WC pique un peu, 4 WC pique nettement plus, 5 WC beaucoup plus
-// — pas un simple palier fixe. Le clamp final de computeUtilityLayer (±10)
+// — pas un simple palier fixe. Le clamp final de computeUtilityLayer (±15)
 // absorbe les cas extrêmes, donc pas besoin de plafonner ici.
 function escalatingExcessPenalty(count, baseline, unitPoints) {
   const excess = Math.max(0, count - baseline);
   return (-unitPoints * (excess * (excess + 1))) / 2;
 }
 
-// LAYER 3 — Intégrité structurelle / utilité (±clamp, ±10 par défaut)
+// LAYER 3 — Intégrité structurelle / utilité (±clamp, ±15 par défaut)
 // Interpréteur générique des règles de catalog.structureRules (compilées
 // depuis data/clash-royale-matchup-structure-rules.json, cf. matchupCatalog.js
 // buildStructureRules) — aucune règle métier n'est plus codée en dur ici,
@@ -351,18 +351,18 @@ export function computeUtilityLayer(
   return clampValue(shiftA - shiftB, -clamp, clamp);
 }
 
-// LAYER 4 — Différentiel de niveau de cartes (±20%, 2%/point)
+// LAYER 4 — Différentiel de niveau de cartes (±15%, 2%/point)
 // Utilise normLevel() (offset de rareté, cf. collectionConstants.js) plutôt
 // que le niveau brut 1-16 du texte source, pour rester cohérent avec le
 // reste du codebase où toute comparaison de force de deck passe déjà par
 // normLevel() — le niveau brut pénaliserait injustement les decks riches
 // en légendaires/champions. Écart assumé par rapport au texte source.
-// Plafond atteint dès un écart cumulé de 10 points normalisés (20/2).
+// Plafond atteint dès un écart cumulé de 7.5 points normalisés (15/2).
 export function computeLevelDifferentialLayer(deckACards, deckBCards) {
   const sum = (cards) =>
     toArray(cards).reduce((total, card) => total + normLevel(card), 0);
   const diff = sum(deckACards) - sum(deckBCards);
-  return clampValue(diff * 2, -20, 20);
+  return clampValue(diff * 2, -15, 15);
 }
 
 // ------------------------------------------------------------

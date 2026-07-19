@@ -67,7 +67,7 @@ function buildFixtureStructureRules() {
       { id: "spells", cardSets: ["smallSpells", "bigSpells"], baseline: 3, unitPoints: 3, label: "{self}: {count} sorts (dispersion)" },
       { id: "buildings", cardSets: ["defensiveBuildings"], baseline: 2, unitPoints: 3, label: "{self}: {count} bâtiments (dispersion)" },
     ],
-    clamp: 10,
+    clamp: 15,
   };
 }
 
@@ -225,7 +225,7 @@ const miner = catalog.winConditionsByName.get("miner");
 }
 
 // ------------------------------------------------------------
-// 5. Écart de niveau extrême → layer4 === -20 (cap atteint, 1.2%/point)
+// 5. Écart de niveau extrême → layer4 === -15 (cap atteint, 2%/point)
 // ------------------------------------------------------------
 {
   const lowDeck = filler(8).map((c) => ({ ...c, level: 1, rarity: "Common" }));
@@ -235,8 +235,8 @@ const miner = catalog.winConditionsByName.get("miner");
     rarity: "Legendary",
   }));
   const layer4 = computeLevelDifferentialLayer(lowDeck, highDeck);
-  assert.strictEqual(layer4, -20, `Expected capped layer4 = -20, got ${layer4}`);
-  console.log("✓ extreme level gap → layer4 capped at -20");
+  assert.strictEqual(layer4, -15, `Expected capped layer4 = -15, got ${layer4}`);
+  console.log("✓ extreme level gap → layer4 capped at -15");
 }
 
 // ------------------------------------------------------------

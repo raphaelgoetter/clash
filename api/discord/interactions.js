@@ -3084,8 +3084,8 @@ function buildMatchupDetailEmbed(warDecks, index) {
         value: [
           `**🎯 Archétype (±5)** : **${fmtLayer(detail.breakdown?.layer1)}%** (${detail.reasons?.layer1 ?? "?"})`,
           `**⚔️ Counters directs (±15)** : **${fmtLayer(detail.breakdown?.layer2)}%** (${detail.reasons?.layer2 ?? "?"})`,
-          `**🏗️ Structure du deck (±10)** : **${fmtLayer(detail.breakdown?.layer3)}%** (${detail.reasons?.layer3 ?? "?"})`,
-          `**📊 Écart de niveau (±20)** : **${fmtLayer(detail.breakdown?.layer4)}%** (${detail.reasons?.layer4 ?? "?"})`,
+          `**🏗️ Structure du deck (±15)** : **${fmtLayer(detail.breakdown?.layer3)}%** (${detail.reasons?.layer3 ?? "?"})`,
+          `**📊 Écart de niveau (±15)** : **${fmtLayer(detail.breakdown?.layer4)}%** (${detail.reasons?.layer4 ?? "?"})`,
         ].join("\n"),
         inline: false,
       },
