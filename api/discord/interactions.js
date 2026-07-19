@@ -3078,17 +3078,14 @@ function buildMatchupDetailEmbed(warDecks, index) {
     return `${displayed > 0 ? "+" : ""}${displayed}`;
   };
 
-  // Archétype et Counters restent groupés (tous deux liés aux win conditions),
-  // séparés par une ligne vide de Structure puis d'Écart de niveau — cf.
-  // capture d'écran utilisateur. Les bornes (±5/±15/±15/±15) ne sont plus
-  // rappelées ici : elles sont documentées dans la doc de la commande.
-  const archetypeAndCounters = [
+  // Chaque layer séparé par une ligne vide. Les bornes (±5/±15/±15/±15) ne
+  // sont plus rappelées ici : elles sont documentées dans la doc de la commande.
+  const calcDetail = [
     `**🎯 Archétype** : **${fmtLayer(detail.breakdown?.layer1)}%**\n${detail.reasons?.layer1 ?? "?"}`,
     `**⚔️ Counters directs** : **${fmtLayer(detail.breakdown?.layer2)}%**\n${detail.reasons?.layer2 ?? "?"}`,
-  ].join("\n");
-  const structure = `**🏗️ Structure du deck** : **${fmtLayer(detail.breakdown?.layer3)}%**\n${detail.reasons?.layer3 ?? "?"}`;
-  const levelGap = `**📊 Écart de niveau** : **${fmtLayer(detail.breakdown?.layer4)}%**\n${detail.reasons?.layer4 ?? "?"}`;
-  const calcDetail = [archetypeAndCounters, structure, levelGap].join("\n\n");
+    `**🏗️ Structure du deck** : **${fmtLayer(detail.breakdown?.layer3)}%**\n${detail.reasons?.layer3 ?? "?"}`,
+    `**📊 Écart de niveau** : **${fmtLayer(detail.breakdown?.layer4)}%**\n${detail.reasons?.layer4 ?? "?"}`,
+  ].join("\n\n");
 
   return {
     title: `⚡ Détail — ${dayLabel} · ${deckLabel} vs ${match.opponentName || "?"}`,
