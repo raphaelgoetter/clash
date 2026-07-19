@@ -133,15 +133,19 @@ function filler(count, offset = 0) {
 }
 
 // computeCounterLayer exige les deux côtés connus (sinon neutre, cf. règle
-// "win condition inconnue" gérée en amont par computeDeckMatchupScore). Pour
-// isoler la contribution d'un seul côté dans les tests 1 et 2, le deck A
-// inclut toujours "Skeletons" — l'unique soft counter de Miner dans la
-// fixture — ce qui neutralise volontairement le côté B (exactement 1 soft
-// counter = zone grise = 0, cf. règle du cas "exactement 1 soft counter").
+// "win condition inconnue" gérée en amont par computeDeckMatchupScore). Dans
+// les tests 1 et 2, le deck A inclut toujours "Skeletons" — l'unique soft
+// counter de Miner dans la fixture — pour que le côté B (Miner) contribue
+// une valeur non nulle et connue (échelle triangulaire, cf. counterShiftFor :
+// 1 soft counter isolé = pénalité -3 depuis la baseline +9 → shift = 6),
+// permettant de vérifier le calcul complet plutôt qu'un côté neutre à 0.
 const miner = catalog.winConditionsByName.get("miner");
 
 // ------------------------------------------------------------
-// 1. Win condition connue avec hard counter présent → layer2 = -9
+// 1. Win condition connue avec hard counter présent → layer2 = -5
+// (hogRider subit 1 hard counter (Cannon) chez l'adverse : pénalité -8 depuis
+// +9 → shift = 1 ; miner subit 1 soft counter (Skeletons) chez nous :
+// pénalité -3 → shift = 6 ; layer2 = 1 - 6 = -5)
 // ------------------------------------------------------------
 {
   const hogRider = catalog.winConditionsByName.get("hog rider");
@@ -154,14 +158,16 @@ const miner = catalog.winConditionsByName.get("miner");
   );
   assert.strictEqual(
     layer2,
-    -9,
-    `Hard counter present should shift -9, got ${layer2}`,
+    -5,
+    `Hard counter present should shift to -5, got ${layer2}`,
   );
-  console.log("✓ hard counter present → layer2 = -9");
+  console.log("✓ hard counter present → layer2 = -5");
 }
 
 // ------------------------------------------------------------
-// 2. Win condition connue sans aucun counter → layer2 = +9
+// 2. Win condition connue sans aucun counter → layer2 = 3
+// (hogRider ne subit aucun counter → shift = 9 ; miner subit 1 soft counter
+// (Skeletons) chez nous → shift = 6 ; layer2 = 9 - 6 = 3)
 // ------------------------------------------------------------
 {
   const hogRider = catalog.winConditionsByName.get("hog rider");
@@ -174,10 +180,10 @@ const miner = catalog.winConditionsByName.get("miner");
   );
   assert.strictEqual(
     layer2,
-    9,
-    `No counter present should shift +9, got ${layer2}`,
+    3,
+    `No counter present should shift to 3, got ${layer2}`,
   );
-  console.log("✓ no counter present → layer2 = +9");
+  console.log("✓ no counter present → layer2 = 3");
 }
 
 // ------------------------------------------------------------
@@ -215,12 +221,12 @@ const miner = catalog.winConditionsByName.get("miner");
     pekkaDeck,
     catalog,
   );
-  // Hog Rider vs pekkaDeck : 1 soft counter (P.E.K.K.A) → zone grise → 0
-  // Miner vs pekkaDeck : aucun counter → +9
-  // avgA = (0 + 9) / 2 = 4.5
-  // P.E.K.K.A vs dualDeck : aucun counter → +9 → avgB = 9
-  // layer2 = avgA - avgB = 4.5 - 9 = -4.5
-  assert.strictEqual(layer2, -4.5, `Expected averaged layer2 = -4.5, got ${layer2}`);
+  // Hog Rider vs pekkaDeck : 1 soft counter (P.E.K.K.A) → pénalité -3 → shift = 6
+  // Miner vs pekkaDeck : aucun counter → shift = 9
+  // avgA = (6 + 9) / 2 = 7.5
+  // P.E.K.K.A vs dualDeck : aucun counter → shift = 9 → avgB = 9
+  // layer2 = avgA - avgB = 7.5 - 9 = -1.5
+  assert.strictEqual(layer2, -1.5, `Expected averaged layer2 = -1.5, got ${layer2}`);
   console.log("✓ dual win condition → layer1/layer2 averaged correctly");
 }
 
@@ -351,8 +357,10 @@ const miner = catalog.winConditionsByName.get("miner");
 // ------------------------------------------------------------
 {
   // Hog Rider (A) dur-countered par Cannon dans le deck Miner (B) :
-  // layer1 = -5 (Control bat Cycle), layer2 = clamp(-9 - 9, -15, 15) = -15.
-  // scoreA = 50 - 5 - 15 = 30.
+  // layer1 = -5 (Control bat Cycle).
+  // layer2 : hogRider subit 1 hard counter (Cannon) → pénalité -8 → shift = 1 ;
+  // miner ne subit aucun counter (pas de Skeletons ici) → shift = 9 ;
+  // layer2 = 1 - 9 = -8. scoreA = 50 - 5 - 8 = 37.
   const hogDeck = [card("Hog Rider"), ...filler(7, 1600)];
   const minerDeckWithCannon = [card("Miner"), card("Cannon"), ...filler(6, 1700)];
   const { scoreA: disadvantaged } = computeDeckMatchupScore(
@@ -362,12 +370,12 @@ const miner = catalog.winConditionsByName.get("miner");
   );
   assert.strictEqual(
     disadvantaged,
-    30,
-    `Deck A hard countered should score 30, got ${disadvantaged}`,
+    37,
+    `Deck A hard countered should score 37, got ${disadvantaged}`,
   );
 
   // Mêmes decks inversés : par symétrie du moteur, scoreA doit devenir
-  // 100 - 30 = 70 (Deck A == ancien Deck B, désormais avantagé).
+  // 100 - 37 = 63 (Deck A == ancien Deck B, désormais avantagé).
   const { scoreA: advantaged } = computeDeckMatchupScore(
     minerDeckWithCannon,
     hogDeck,
@@ -375,8 +383,8 @@ const miner = catalog.winConditionsByName.get("miner");
   );
   assert.strictEqual(
     advantaged,
-    70,
-    `Swapping the decks should mirror the score to 70, got ${advantaged}`,
+    63,
+    `Swapping the decks should mirror the score to 63, got ${advantaged}`,
   );
   console.log("✓ scoreA convention: higher = more advantage for Deck A");
 }

@@ -152,24 +152,38 @@ export function computeArchetypeLayer(winConditionsA, winConditionsB) {
   return clampValue(average(shifts), -7.5, 7.5);
 }
 
+// Pénalité en échelle triangulaire : chaque unité au-delà de `baseline`
+// coûte plus que la précédente (1, 2, 3, 4... points cumulés) — pas un
+// simple palier fixe. Utilisée par Layer 2 (counters, cf. counterShiftFor)
+// et Layer 3 (dispersion de deck, cf. utilityShiftFor).
+function escalatingExcessPenalty(count, baseline, unitPoints) {
+  const excess = Math.max(0, count - baseline);
+  return (-unitPoints * (excess * (excess + 1))) / 2;
+}
+
 // LAYER 2 — Win condition vs counters directs (±15%)
+// Échelle triangulaire (comme la dispersion du Layer 3) plutôt qu'un seuil
+// binaire : l'ancien design (hardHits>0 → -9 fixe, quel que soit le nombre,
+// et soft-counters ignorés dès qu'un seul hard-counter existe) notait pareil
+// "1 hard-counter" et "1 hard + 4 soft-counters" — contre-intuitif quand le
+// deck adverse répond nettement plus largement. Un hard-counter pèse plus
+// lourd qu'un soft (poids 8 vs 3) mais aucun des deux ne sature plus
+// immédiatement à lui seul : l'accumulation continue de compter.
 function counterShiftFor(winCondition, opponentDeckCards, catalog) {
   const hardHits = countMatchesAgainstNames(
     opponentDeckCards,
     winCondition.hardCounters,
     catalog,
   );
-  if (hardHits > 0) return -9;
   const softHits = countMatchesAgainstNames(
     opponentDeckCards,
     winCondition.softCounters,
     catalog,
   );
-  if (softHits >= 2) return -6;
-  if (softHits === 0) return 9;
-  // Exactement 1 soft counter : zone grise non couverte par le texte source
-  // (qui ne traite que 0 counter et ≥2 soft counters) → neutre.
-  return 0;
+  const penalty =
+    escalatingExcessPenalty(hardHits, 0, 8) +
+    escalatingExcessPenalty(softHits, 0, 3);
+  return clampValue(9 + penalty, -9, 9);
 }
 
 export function computeCounterLayer(
@@ -187,16 +201,6 @@ export function computeCounterLayer(
     counterShiftFor(wc, deckACards, catalog),
   );
   return clampValue(average(shiftsA) - average(shiftsB), -15, 15);
-}
-
-// Pénalité de dispersion en échelle triangulaire : chaque unité au-delà de
-// `baseline` coûte plus que la précédente (1, 2, 3, 4... points cumulés),
-// pour que 3 WC pique un peu, 4 WC pique nettement plus, 5 WC beaucoup plus
-// — pas un simple palier fixe. Le clamp final de computeUtilityLayer (±15)
-// absorbe les cas extrêmes, donc pas besoin de plafonner ici.
-function escalatingExcessPenalty(count, baseline, unitPoints) {
-  const excess = Math.max(0, count - baseline);
-  return (-unitPoints * (excess * (excess + 1))) / 2;
 }
 
 // LAYER 3 — Intégrité structurelle / utilité (±clamp, ±15 par défaut)
