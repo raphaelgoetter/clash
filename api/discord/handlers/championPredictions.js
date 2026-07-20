@@ -32,7 +32,7 @@ import { resolveMembersChannelId } from "../../../backend/services/discordChanne
 const DISCORD_APP_ID = process.env.DISCORD_APP_ID;
 const CHAMPION_COLOR = 0x9b59b6;
 const CHAMPION_GOLD = 0xf1c40f;
-const CROWN_CHAMPION = "<:blue_crown:1294923219668566047>";
+const CROWN_CHAMPION = "<:crown:1518889526460682280>";
 const CROWN_OTHER = "<:emoji_51:1526217126187237426>";
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -284,7 +284,11 @@ export async function handleSelectInteraction(webhookUrl, body) {
     }
 
     const discordId = body.member?.user?.id;
-    const discordName = body.member?.user?.username || "Inconnu";
+    const discordName =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
     if (!discordId) {
       await postError(webhookUrl, "Impossible d'identifier votre compte Discord.");
       return;

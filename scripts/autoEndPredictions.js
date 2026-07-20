@@ -74,7 +74,7 @@ function formatFame(n) {
   return Number.isFinite(n) ? n.toLocaleString("fr-FR") : "0";
 }
 
-const CROWN_CHAMPION = "<:blue_crown:1294923219668566047>";
+const CROWN_CHAMPION = "<:crown:1518889526460682280>";
 const CROWN_OTHER = "<:emoji_51:1526217126187237426>";
 
 async function main() {
