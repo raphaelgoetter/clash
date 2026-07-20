@@ -111,6 +111,41 @@ body {
   display: none;
 }
 
+/* Sélecteur de variante (compagnon) dans le panneau de détail */
+.matchup-variant-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 18px;
+}
+
+.matchup-variant-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.matchup-variant-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.matchup-variant-btn.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #16213d;
+  font-weight: 700;
+}
+
 /* Grille de win conditions cliquables */
 .wincon-grid {
   display: grid;

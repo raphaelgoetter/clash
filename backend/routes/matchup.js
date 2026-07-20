@@ -49,18 +49,25 @@ router.get("/catalog", async (req, res) => {
         : { url: null, rarity: null };
     };
 
+    const buildCounters = (names) =>
+      (names || []).map((name) => ({ name, icon: buildIcon(name) }));
+
     const winConditions = [...winConditionsByName.values()]
       .map((wc) => ({
         name: wc.name,
         archetype: wc.archetype,
         icon: buildIcon(wc.name),
-        hardCounters: wc.hardCounters.map((name) => ({
-          name,
-          icon: buildIcon(name),
-        })),
-        softCounters: wc.softCounters.map((name) => ({
-          name,
-          icon: buildIcon(name),
+        hardCounters: buildCounters(wc.hardCounters),
+        softCounters: buildCounters(wc.softCounters),
+        // Variantes (ex. Balloon + Lava Hound = "LavaLoon") : archetype et
+        // hard/soft-counters propres à la présence d'une carte compagne dans
+        // le même deck — cf. resolveWinConditionVariant (matchupEngine.js).
+        variants: (wc.variants || []).map((variant) => ({
+          id: variant.id,
+          companion: buildCounters(variant.companion),
+          archetype: variant.archetype,
+          hardCounters: buildCounters(variant.hardCounters),
+          softCounters: buildCounters(variant.softCounters),
         })),
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
