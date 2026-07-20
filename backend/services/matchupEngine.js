@@ -267,6 +267,7 @@ function utilityShiftFor(
     cardSets: {},
     crossRules: [],
     dispersionRules: [],
+    selfRules: [],
     clamp: 10,
   };
   let shift = 0;
@@ -307,6 +308,28 @@ function utilityShiftFor(
         }),
       );
       break; // un seul palier déclenché par règle, par construction
+    }
+  }
+
+  // Auto-pénalités "self" (indépendantes de deckYCards) : carence dans le
+  // propre deck de X (0 ou 1 seule carte aérienne/anti-air/basse élixir, 0
+  // bâtiment, 0 sort) — mêmes thresholds op/value/shift/label que les
+  // crossRules, mais comptés directement sur deckXCards, sans trigger ni
+  // watch côté adverse. Fait unilatéral : pas de yLabel ici.
+  for (const rule of structureRules.selfRules ?? []) {
+    const count = sumCardSets(
+      deckXCards,
+      rule.watch?.cardSets ?? [],
+      structureRules,
+      catalog,
+    );
+    for (const threshold of rule.thresholds ?? []) {
+      if (!thresholdMatches(threshold.op, count, threshold.value)) continue;
+      shift += threshold.shift;
+      tags.push(
+        formatRuleLabel(threshold.label, { self: xLabel, count }),
+      );
+      break;
     }
   }
 

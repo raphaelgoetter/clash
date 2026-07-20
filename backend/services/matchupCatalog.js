@@ -155,6 +155,7 @@ function buildStructureRules(raw) {
     dispersionRules: Array.isArray(raw?.dispersionRules)
       ? raw.dispersionRules
       : [],
+    selfRules: Array.isArray(raw?.selfRules) ? raw.selfRules : [],
     clamp: Number.isFinite(raw?.layerClamp) ? raw.layerClamp : 10,
   };
 }

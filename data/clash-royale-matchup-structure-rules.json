@@ -2,14 +2,122 @@
   "_comment": "Règles du Layer 3 (Structure du deck) du calcul de %matchup. Source de vérité unique, éditable à la main, prise en compte par /matchup au prochain lancement (cache 5 min, même mécanisme que clash-royale-matchup-catalog.json). Toute la somme des shifts de ce layer est ensuite bornée à ±layerClamp.",
 
   "cardSets": {
-    "smallSpells": ["The Log", "Zap", "Arrows", "Barbarian Barrel", "Giant Snowball", "Rage"],
+    "smallSpells": [
+      "The Log",
+      "Zap",
+      "Arrows",
+      "Barbarian Barrel",
+      "Giant Snowball",
+      "Rage"
+    ],
     "bigSpells": ["Fireball", "Poison", "Lightning", "Rocket", "Void"],
-    "defensiveBuildings": ["Cannon", "Tesla", "Inferno Tower", "Bomb Tower", "Tombstone", "Goblin Cage"],
-    "tankKillers": ["Mini P.E.K.K.A", "P.E.K.K.A", "Hunter", "Mighty Miner", "Inferno Dragon", "Elite Barbarians"],
-    "heavyBeatdownWinConditions": ["Golem", "Giant", "Electro Giant", "Lava Hound"],
+    "defensiveBuildings": [
+      "Cannon",
+      "Tesla",
+      "Inferno Tower",
+      "Bomb Tower",
+      "Tombstone",
+      "Goblin Cage"
+    ],
+    "tankKillers": [
+      "Mini P.E.K.K.A",
+      "P.E.K.K.A",
+      "Hunter",
+      "Mighty Miner",
+      "Inferno Dragon",
+      "Elite Barbarians"
+    ],
+    "heavyBeatdownWinConditions": [
+      "Golem",
+      "Giant",
+      "Electro Giant",
+      "Lava Hound"
+    ],
     "splitPushTriggerCards": ["Three Musketeers", "Royal Hogs"],
     "heavyDpsCounters": ["Ronin"],
-    "heavyDpsThreats": ["P.E.K.K.A", "Mini P.E.K.K.A", "Prince", "Mega Knight", "Boss Bandit", "Bandit", "Golden Knight"]
+    "heavyDpsThreats": [
+      "P.E.K.K.A",
+      "Mini P.E.K.K.A",
+      "Prince",
+      "Mega Knight",
+      "Boss Bandit",
+      "Bandit",
+      "Golden Knight"
+    ],
+    "_airCardsComment": "Troupes aériennes déployées (hors sorts/projectiles type Goblin Barrel/Rocket).",
+    "airCards": [
+      "Balloon",
+      "Lava Hound",
+      "Minions",
+      "Minion Horde",
+      "Mega Minion",
+      "Baby Dragon",
+      "Inferno Dragon",
+      "Electro Dragon",
+      "Skeleton Dragons",
+      "Phoenix",
+      "Flying Machine",
+      "Bats"
+    ],
+    "_antiAirCardsComment": "Troupes/bâtiments capables de cibler l'air (hors sorts). Liste large, à vérifier/corriger au besoin.",
+    "antiAirCards": [
+      "Musketeer",
+      "Archers",
+      "Archer Queen",
+      "Magic Archer",
+      "Electro Wizard",
+      "Wizard",
+      "Ice Wizard",
+      "Baby Dragon",
+      "Mega Minion",
+      "Minions",
+      "Minion Horde",
+      "Bats",
+      "Executioner",
+      "Firecracker",
+      "Dart Goblin",
+      "Spear Goblins",
+      "Flying Machine",
+      "Phoenix",
+      "Tesla",
+      "Inferno Tower",
+      "Electro Dragon",
+      "Inferno Dragon",
+      "Zappies",
+      "Night Witch"
+    ],
+    "lowElixirCards": [
+      "Skeletons",
+      "Ice Spirit",
+      "Electro Spirit",
+      "Fire Spirit",
+      "Heal Spirit",
+      "Goblins",
+      "Spear Goblins",
+      "Bomber",
+      "Ice Golem",
+      "Zap",
+      "The Log",
+      "Giant Snowball",
+      "Barbarian Barrel",
+      "Bats",
+      "Wall Breakers",
+      "Suspicious Bush"
+    ],
+    "allBuildings": [
+      "Cannon",
+      "Tesla",
+      "Inferno Tower",
+      "Bomb Tower",
+      "Tombstone",
+      "Goblin Cage",
+      "X-Bow",
+      "Mortar",
+      "Goblin Hut",
+      "Barbarian Hut",
+      "Furnace",
+      "Elixir Collector"
+    ]
   },
 
   "_crossRulesHelp": "Chaque règle se déclenche si `trigger` matche le deck évalué (self), puis compte les cartes du deck adverse (opponent) présentes dans `watch.cardSets`. Le premier `thresholds[]` dont la condition (op/value sur ce compte) est vraie s'applique. `{self}`/`{opponent}` = 'toi'/'lui' (ou l'inverse selon le camp évalué), `{count}` = nombre trouvé, `{triggerCard}` = nom de la carte qui a déclenché un trigger de type cardSet.",
@@ -20,8 +128,18 @@
       "trigger": { "type": "archetype", "value": "Bait" },
       "watch": { "cardSets": ["smallSpells"] },
       "thresholds": [
-        { "op": "lt", "value": 1, "shift": 6, "label": "{opponent} 0 petit sort\n- {self} Bait" },
-        { "op": "gte", "value": 2, "shift": -6, "label": "{opponent} {count} petits sorts\n- {self} Bait" }
+        {
+          "op": "lt",
+          "value": 1,
+          "shift": 6,
+          "label": "{opponent} 0 petit sort\n- {self} Bait"
+        },
+        {
+          "op": "gte",
+          "value": 2,
+          "shift": -6,
+          "label": "{opponent} {count} petits sorts\n- {self} Bait"
+        }
       ]
     },
     {
@@ -30,7 +148,12 @@
       "trigger": { "type": "cardSet", "value": "splitPushTriggerCards" },
       "watch": { "cardSets": ["bigSpells"] },
       "thresholds": [
-        { "op": "eq", "value": 0, "shift": 6, "label": "{opponent} 0 gros sort\n- {self} {triggerCard} (push)" }
+        {
+          "op": "eq",
+          "value": 0,
+          "shift": 6,
+          "label": "{opponent} 0 gros sort\n- {self} {triggerCard} (push)"
+        }
       ]
     },
     {
@@ -39,7 +162,12 @@
       "trigger": { "type": "cardSet", "value": "heavyBeatdownWinConditions" },
       "watch": { "cardSets": ["tankKillers", "defensiveBuildings"] },
       "thresholds": [
-        { "op": "eq", "value": 0, "shift": 10, "label": "{opponent} aucun tank killer/bâtiment\n- {self} Gros tank" }
+        {
+          "op": "eq",
+          "value": 0,
+          "shift": 10,
+          "label": "{opponent} aucun tank killer/bâtiment\n- {self} Gros tank"
+        }
       ]
     },
     {
@@ -48,7 +176,12 @@
       "trigger": { "type": "cardSet", "value": "heavyDpsCounters" },
       "watch": { "cardSets": ["heavyDpsThreats"] },
       "thresholds": [
-        { "op": "gte", "value": 1, "shift": 6, "label": "{opponent} {count} gros DPS\n- {self} {triggerCard} (hard-counter)" }
+        {
+          "op": "gte",
+          "value": 1,
+          "shift": 6,
+          "label": "{opponent} {count} gros DPS\n- {self} {triggerCard} (hard-counter)"
+        }
       ]
     }
   ],
@@ -78,6 +211,83 @@
       "baseline": 2,
       "unitPoints": 4,
       "label": "{self} {count} bâtiments (dispersion)"
+    }
+  ],
+
+  "_selfRulesHelp": "Carences du deck évalué lui-même (indépendant de l'adversaire) : compte les cartes de `watch.cardSets` dans le deck, applique le premier `thresholds[]` dont la condition est vraie. Toujours des pénalités (shift négatif).",
+  "selfRules": [
+    {
+      "id": "airCardScarcity",
+      "description": "0 (ou 1 seule) carte aérienne dans le deck.",
+      "watch": { "cardSets": ["airCards"] },
+      "thresholds": [
+        {
+          "op": "eq",
+          "value": 0,
+          "shift": -4,
+          "label": "{self} 0 carte aérienne"
+        },
+        {
+          "op": "eq",
+          "value": 1,
+          "shift": -2,
+          "label": "{self} 1 carte aérienne"
+        }
+      ]
+    },
+    {
+      "id": "antiAirScarcity",
+      "description": "0 (ou 1 seule) carte anti-aérienne dans le deck.",
+      "watch": { "cardSets": ["antiAirCards"] },
+      "thresholds": [
+        {
+          "op": "eq",
+          "value": 0,
+          "shift": -4,
+          "label": "{self} 0 carte anti-air"
+        },
+        {
+          "op": "eq",
+          "value": 1,
+          "shift": -2,
+          "label": "{self} 1 carte anti-air"
+        }
+      ]
+    },
+    {
+      "id": "noBuilding",
+      "description": "0 bâtiment dans le deck.",
+      "watch": { "cardSets": ["allBuildings"] },
+      "thresholds": [
+        { "op": "eq", "value": 0, "shift": -3, "label": "{self} 0 bâtiment" }
+      ]
+    },
+    {
+      "id": "noSpell",
+      "description": "0 sort dans le deck.",
+      "watch": { "cardSets": ["smallSpells", "bigSpells"] },
+      "thresholds": [
+        { "op": "eq", "value": 0, "shift": -3, "label": "{self} 0 sort" }
+      ]
+    },
+    {
+      "id": "lowElixirScarcity",
+      "description": "0 (ou 1 seule) carte à moins de 3 élixir dans le deck.",
+      "watch": { "cardSets": ["lowElixirCards"] },
+      "thresholds": [
+        {
+          "op": "eq",
+          "value": 0,
+          "shift": -4,
+          "label": "{self} 0 carte <3 élixir"
+        },
+        {
+          "op": "eq",
+          "value": 1,
+          "shift": -2,
+          "label": "{self} 1 carte <3 élixir"
+        }
+      ]
     }
   ],
 

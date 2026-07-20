@@ -67,6 +67,15 @@ function buildFixtureStructureRules() {
       { id: "spells", cardSets: ["smallSpells", "bigSpells"], baseline: 3, unitPoints: 3, label: "{self}: {count} sorts (dispersion)" },
       { id: "buildings", cardSets: ["defensiveBuildings"], baseline: 2, unitPoints: 3, label: "{self}: {count} bâtiments (dispersion)" },
     ],
+    selfRules: [
+      {
+        id: "noSmallSpell",
+        watch: { cardSets: ["smallSpells"] },
+        thresholds: [
+          { op: "eq", value: 0, shift: -4, label: "{self}: 0 petit sort (fixture)" },
+        ],
+      },
+    ],
     clamp: 15,
   };
 }
@@ -261,7 +270,10 @@ const miner = catalog.winConditionsByName.get("miner");
   );
   assert.strictEqual(layer3BaitNoSpell, 6, "Bait vs 0 small spell should be +6");
 
-  // Bait vs 2+ petits sorts adverses → -6
+  // Bait vs 2+ petits sorts adverses → -6 (crossRule bait) auquel s'ajoute
+  // la carence "0 petit sort" du deck Bait lui-même (fixture selfRule,
+  // cf. buildFixtureStructureRules) → -4, soit -10. Le deck adverse, lui,
+  // a 2 petits sorts (The Log, Zap) donc n'est pas pénalisé pour carence.
   const layer3BaitTwoSpells = computeUtilityLayer(
     [goblinBarrel],
     [card("Goblin Barrel"), ...filler(7, 900)],
@@ -271,8 +283,8 @@ const miner = catalog.winConditionsByName.get("miner");
   );
   assert.strictEqual(
     layer3BaitTwoSpells,
-    -6,
-    "Bait vs 2+ small spells should be -6",
+    -10,
+    "Bait vs 2+ small spells should be -10 (crossRule -6 + selfRule -4)",
   );
 
   // Three Musketeers vs pas de big spell → +6
@@ -305,6 +317,22 @@ const miner = catalog.winConditionsByName.get("miner");
     "Heavy tank vs no tank killer/defensive building should be +10",
   );
   console.log("✓ layer3 rules (Bait, split-push, heavy beatdown) match spec");
+
+  // selfRules : carence dans son propre deck (0 petit sort, fixture) → -4,
+  // indépendant du deck adverse (qui en a 1, donc pas de pénalité côté B).
+  const layer3SelfRule = computeUtilityLayer(
+    [],
+    filler(8, 1500),
+    [],
+    [card("Zap"), ...filler(7, 1600)],
+    catalog,
+  );
+  assert.strictEqual(
+    layer3SelfRule,
+    -4,
+    "0 small spell in own deck should self-penalize by -4",
+  );
+  console.log("✓ layer3 selfRules (deck-only carence) match spec");
 }
 
 // ------------------------------------------------------------
