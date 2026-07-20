@@ -128,9 +128,9 @@ export function identifyWinConditions(deckCards, catalog) {
 // toute granularité.
 // Répartition (ajustée manuellement, somme = 50) :
 //   L1 Archétype        : ±5   (effectif, cf. construction ci-dessous)
-//   L2 Counters directs : ±15
-//   L3 Structure du deck: ±15
-//   L4 Écart de niveau  : ±15
+//   L2 Counters directs : ±25
+//   L3 Structure du deck: ±10
+//   L4 Écart de niveau  : ±10
 // ------------------------------------------------------------
 
 // LAYER 1 — Archétype macro-matchup (±5% effectif par construction)
@@ -161,14 +161,16 @@ function escalatingExcessPenalty(count, baseline, unitPoints) {
   return (-unitPoints * (excess * (excess + 1))) / 2;
 }
 
-// LAYER 2 — Win condition vs counters directs (±15%)
+// LAYER 2 — Win condition vs counters directs (±25%)
 // Échelle triangulaire (comme la dispersion du Layer 3) plutôt qu'un seuil
-// binaire : l'ancien design (hardHits>0 → -9 fixe, quel que soit le nombre,
-// et soft-counters ignorés dès qu'un seul hard-counter existe) notait pareil
-// "1 hard-counter" et "1 hard + 4 soft-counters" — contre-intuitif quand le
-// deck adverse répond nettement plus largement. Un hard-counter pèse plus
-// lourd qu'un soft (poids 8 vs 3) mais aucun des deux ne sature plus
-// immédiatement à lui seul : l'accumulation continue de compter.
+// binaire : l'ancien design (hardHits>0 → shift fixe, quel que soit le
+// nombre, et soft-counters ignorés dès qu'un seul hard-counter existe)
+// notait pareil "1 hard-counter" et "1 hard + 4 soft-counters" — contre-
+// intuitif quand le deck adverse répond nettement plus largement. Un
+// hard-counter pèse plus lourd qu'un soft (poids 14 vs 5) mais aucun des
+// deux ne sature plus immédiatement à lui seul : l'accumulation continue
+// de compter. Baseline/clamp par WC (±15) et poids mis à l'échelle
+// proportionnellement au clamp final (±25 vs l'ancien ±15, ×5/3).
 function counterShiftFor(winCondition, opponentDeckCards, catalog) {
   const hardHits = countMatchesAgainstNames(
     opponentDeckCards,
@@ -181,9 +183,9 @@ function counterShiftFor(winCondition, opponentDeckCards, catalog) {
     catalog,
   );
   const penalty =
-    escalatingExcessPenalty(hardHits, 0, 8) +
-    escalatingExcessPenalty(softHits, 0, 3);
-  return clampValue(9 + penalty, -9, 9);
+    escalatingExcessPenalty(hardHits, 0, 14) +
+    escalatingExcessPenalty(softHits, 0, 5);
+  return clampValue(15 + penalty, -15, 15);
 }
 
 export function computeCounterLayer(
@@ -200,10 +202,10 @@ export function computeCounterLayer(
   const shiftsB = winConditionsB.map((wc) =>
     counterShiftFor(wc, deckACards, catalog),
   );
-  return clampValue(average(shiftsA) - average(shiftsB), -15, 15);
+  return clampValue(average(shiftsA) - average(shiftsB), -25, 25);
 }
 
-// LAYER 3 — Intégrité structurelle / utilité (±clamp, ±15 par défaut)
+// LAYER 3 — Intégrité structurelle / utilité (±clamp, ±10 par défaut)
 // Interpréteur générique des règles de catalog.structureRules (compilées
 // depuis data/clash-royale-matchup-structure-rules.json, cf. matchupCatalog.js
 // buildStructureRules) — aucune règle métier n'est plus codée en dur ici,
@@ -355,18 +357,18 @@ export function computeUtilityLayer(
   return clampValue(shiftA - shiftB, -clamp, clamp);
 }
 
-// LAYER 4 — Différentiel de niveau de cartes (±15%, 2%/point)
+// LAYER 4 — Différentiel de niveau de cartes (±10%, 2%/point)
 // Utilise normLevel() (offset de rareté, cf. collectionConstants.js) plutôt
 // que le niveau brut 1-16 du texte source, pour rester cohérent avec le
 // reste du codebase où toute comparaison de force de deck passe déjà par
 // normLevel() — le niveau brut pénaliserait injustement les decks riches
 // en légendaires/champions. Écart assumé par rapport au texte source.
-// Plafond atteint dès un écart cumulé de 7.5 points normalisés (15/2).
+// Plafond atteint dès un écart cumulé de 5 points normalisés (10/2).
 export function computeLevelDifferentialLayer(deckACards, deckBCards) {
   const sum = (cards) =>
     toArray(cards).reduce((total, card) => total + normLevel(card), 0);
   const diff = sum(deckACards) - sum(deckBCards);
-  return clampValue(diff * 2, -15, 15);
+  return clampValue(diff * 2, -10, 10);
 }
 
 // ------------------------------------------------------------

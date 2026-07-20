@@ -3078,7 +3078,7 @@ function buildMatchupDetailEmbed(warDecks, index) {
     return `${displayed > 0 ? "+" : ""}${displayed}`;
   };
 
-  // Chaque layer séparé par une ligne vide. Les bornes (±5/±15/±15/±15) ne
+  // Chaque layer séparé par une ligne vide. Les bornes (±5/±25/±10/±10) ne
   // sont plus rappelées ici : elles sont documentées dans la doc de la commande.
   const calcDetail = [
     `**🎯 Archétype** : **${fmtLayer(detail.breakdown?.layer1)}%**\n${detail.reasons?.layer1 ?? "?"}`,

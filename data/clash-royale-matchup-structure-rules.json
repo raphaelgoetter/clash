@@ -16,39 +16,39 @@
   "crossRules": [
     {
       "id": "bait",
-      "description": "toi: Bait / lui: 0 petit sort -> +9% pour toi. toi: Bait / lui: 2+ petits sorts -> -9% pour toi.",
+      "description": "toi: Bait / lui: 0 petit sort -> +6% pour toi. toi: Bait / lui: 2+ petits sorts -> -6% pour toi.",
       "trigger": { "type": "archetype", "value": "Bait" },
       "watch": { "cardSets": ["smallSpells"] },
       "thresholds": [
-        { "op": "lt", "value": 1, "shift": 9, "label": "{opponent} 0 petit sort\n- {self} Bait" },
-        { "op": "gte", "value": 2, "shift": -9, "label": "{opponent} {count} petits sorts\n- {self} Bait" }
+        { "op": "lt", "value": 1, "shift": 6, "label": "{opponent} 0 petit sort\n- {self} Bait" },
+        { "op": "gte", "value": 2, "shift": -6, "label": "{opponent} {count} petits sorts\n- {self} Bait" }
       ]
     },
     {
       "id": "splitPush",
-      "description": "toi: carte de push agressif (Three Musketeers, Royal Hogs) / lui: 0 gros sort -> +9% pour toi.",
+      "description": "toi: carte de push agressif (Three Musketeers, Royal Hogs) / lui: 0 gros sort -> +6% pour toi.",
       "trigger": { "type": "cardSet", "value": "splitPushTriggerCards" },
       "watch": { "cardSets": ["bigSpells"] },
       "thresholds": [
-        { "op": "eq", "value": 0, "shift": 9, "label": "{opponent} 0 gros sort\n- {self} {triggerCard} (push)" }
+        { "op": "eq", "value": 0, "shift": 6, "label": "{opponent} 0 gros sort\n- {self} {triggerCard} (push)" }
       ]
     },
     {
       "id": "heavyBeatdown",
-      "description": "toi: win condition Heavy Beatdown (Golem, Giant, Electro Giant, Lava Hound) / lui: 0 tank killer et 0 bâtiment défensif -> +15% pour toi.",
+      "description": "toi: win condition Heavy Beatdown (Golem, Giant, Electro Giant, Lava Hound) / lui: 0 tank killer et 0 bâtiment défensif -> +10% pour toi.",
       "trigger": { "type": "cardSet", "value": "heavyBeatdownWinConditions" },
       "watch": { "cardSets": ["tankKillers", "defensiveBuildings"] },
       "thresholds": [
-        { "op": "eq", "value": 0, "shift": 15, "label": "{opponent} aucun tank killer/bâtiment\n- {self} Gros tank" }
+        { "op": "eq", "value": 0, "shift": 10, "label": "{opponent} aucun tank killer/bâtiment\n- {self} Gros tank" }
       ]
     },
     {
       "id": "heavyDpsCounter",
-      "description": "toi: Ronin dans le deck / lui: au moins 1 carte à gros DPS (P.E.K.K.A, Mini P.E.K.K.A, Prince, Mega Knight, Boss Bandit, Bandit, Golden Knight) -> +9% pour toi (Ronin la hard-counter).",
+      "description": "toi: Ronin dans le deck / lui: au moins 1 carte à gros DPS (P.E.K.K.A, Mini P.E.K.K.A, Prince, Mega Knight, Boss Bandit, Bandit, Golden Knight) -> +6% pour toi (Ronin la hard-counter).",
       "trigger": { "type": "cardSet", "value": "heavyDpsCounters" },
       "watch": { "cardSets": ["heavyDpsThreats"] },
       "thresholds": [
-        { "op": "gte", "value": 1, "shift": 9, "label": "{opponent} {count} gros DPS\n- {self} {triggerCard} (hard-counter)" }
+        { "op": "gte", "value": 1, "shift": 6, "label": "{opponent} {count} gros DPS\n- {self} {triggerCard} (hard-counter)" }
       ]
     }
   ],
@@ -60,7 +60,7 @@
       "description": "Plus de 2 win conditions reconnues dans le deck.",
       "metric": "winConditionCount",
       "baseline": 2,
-      "unitPoints": 5,
+      "unitPoints": 4,
       "label": "{self} {count} WC (dispersion)"
     },
     {
@@ -68,7 +68,7 @@
       "description": "Plus de 3 sorts (petits + gros) dans le deck.",
       "cardSets": ["smallSpells", "bigSpells"],
       "baseline": 3,
-      "unitPoints": 5,
+      "unitPoints": 4,
       "label": "{self} {count} sorts (dispersion)"
     },
     {
@@ -76,10 +76,10 @@
       "description": "Plus de 2 bâtiments défensifs dans le deck.",
       "cardSets": ["defensiveBuildings"],
       "baseline": 2,
-      "unitPoints": 5,
+      "unitPoints": 4,
       "label": "{self} {count} bâtiments (dispersion)"
     }
   ],
 
-  "layerClamp": 15
+  "layerClamp": 10
 }

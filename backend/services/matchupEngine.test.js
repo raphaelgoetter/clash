@@ -142,10 +142,10 @@ function filler(count, offset = 0) {
 const miner = catalog.winConditionsByName.get("miner");
 
 // ------------------------------------------------------------
-// 1. Win condition connue avec hard counter présent → layer2 = -5
-// (hogRider subit 1 hard counter (Cannon) chez l'adverse : pénalité -8 depuis
-// +9 → shift = 1 ; miner subit 1 soft counter (Skeletons) chez nous :
-// pénalité -3 → shift = 6 ; layer2 = 1 - 6 = -5)
+// 1. Win condition connue avec hard counter présent → layer2 = -9
+// (hogRider subit 1 hard counter (Cannon) chez l'adverse : pénalité -14 depuis
+// +15 → shift = 1 ; miner subit 1 soft counter (Skeletons) chez nous :
+// pénalité -5 → shift = 10 ; layer2 = 1 - 10 = -9)
 // ------------------------------------------------------------
 {
   const hogRider = catalog.winConditionsByName.get("hog rider");
@@ -158,16 +158,16 @@ const miner = catalog.winConditionsByName.get("miner");
   );
   assert.strictEqual(
     layer2,
-    -5,
-    `Hard counter present should shift to -5, got ${layer2}`,
+    -9,
+    `Hard counter present should shift to -9, got ${layer2}`,
   );
-  console.log("✓ hard counter present → layer2 = -5");
+  console.log("✓ hard counter present → layer2 = -9");
 }
 
 // ------------------------------------------------------------
-// 2. Win condition connue sans aucun counter → layer2 = 3
-// (hogRider ne subit aucun counter → shift = 9 ; miner subit 1 soft counter
-// (Skeletons) chez nous → shift = 6 ; layer2 = 9 - 6 = 3)
+// 2. Win condition connue sans aucun counter → layer2 = 5
+// (hogRider ne subit aucun counter → shift = 15 ; miner subit 1 soft counter
+// (Skeletons) chez nous → shift = 10 ; layer2 = 15 - 10 = 5)
 // ------------------------------------------------------------
 {
   const hogRider = catalog.winConditionsByName.get("hog rider");
@@ -180,10 +180,10 @@ const miner = catalog.winConditionsByName.get("miner");
   );
   assert.strictEqual(
     layer2,
-    3,
-    `No counter present should shift to 3, got ${layer2}`,
+    5,
+    `No counter present should shift to 5, got ${layer2}`,
   );
-  console.log("✓ no counter present → layer2 = 3");
+  console.log("✓ no counter present → layer2 = 5");
 }
 
 // ------------------------------------------------------------
@@ -221,17 +221,17 @@ const miner = catalog.winConditionsByName.get("miner");
     pekkaDeck,
     catalog,
   );
-  // Hog Rider vs pekkaDeck : 1 soft counter (P.E.K.K.A) → pénalité -3 → shift = 6
-  // Miner vs pekkaDeck : aucun counter → shift = 9
-  // avgA = (6 + 9) / 2 = 7.5
-  // P.E.K.K.A vs dualDeck : aucun counter → shift = 9 → avgB = 9
-  // layer2 = avgA - avgB = 7.5 - 9 = -1.5
-  assert.strictEqual(layer2, -1.5, `Expected averaged layer2 = -1.5, got ${layer2}`);
+  // Hog Rider vs pekkaDeck : 1 soft counter (P.E.K.K.A) → pénalité -5 → shift = 10
+  // Miner vs pekkaDeck : aucun counter → shift = 15
+  // avgA = (10 + 15) / 2 = 12.5
+  // P.E.K.K.A vs dualDeck : aucun counter → shift = 15 → avgB = 15
+  // layer2 = avgA - avgB = 12.5 - 15 = -2.5
+  assert.strictEqual(layer2, -2.5, `Expected averaged layer2 = -2.5, got ${layer2}`);
   console.log("✓ dual win condition → layer1/layer2 averaged correctly");
 }
 
 // ------------------------------------------------------------
-// 5. Écart de niveau extrême → layer4 === -15 (cap atteint, 2%/point)
+// 5. Écart de niveau extrême → layer4 === -10 (cap atteint, 2%/point)
 // ------------------------------------------------------------
 {
   const lowDeck = filler(8).map((c) => ({ ...c, level: 1, rarity: "Common" }));
@@ -241,8 +241,8 @@ const miner = catalog.winConditionsByName.get("miner");
     rarity: "Legendary",
   }));
   const layer4 = computeLevelDifferentialLayer(lowDeck, highDeck);
-  assert.strictEqual(layer4, -15, `Expected capped layer4 = -15, got ${layer4}`);
-  console.log("✓ extreme level gap → layer4 capped at -15");
+  assert.strictEqual(layer4, -10, `Expected capped layer4 = -10, got ${layer4}`);
+  console.log("✓ extreme level gap → layer4 capped at -10");
 }
 
 // ------------------------------------------------------------
@@ -358,9 +358,9 @@ const miner = catalog.winConditionsByName.get("miner");
 {
   // Hog Rider (A) dur-countered par Cannon dans le deck Miner (B) :
   // layer1 = -5 (Control bat Cycle).
-  // layer2 : hogRider subit 1 hard counter (Cannon) → pénalité -8 → shift = 1 ;
-  // miner ne subit aucun counter (pas de Skeletons ici) → shift = 9 ;
-  // layer2 = 1 - 9 = -8. scoreA = 50 - 5 - 8 = 37.
+  // layer2 : hogRider subit 1 hard counter (Cannon) → pénalité -14 → shift = 1 ;
+  // miner ne subit aucun counter (pas de Skeletons ici) → shift = 15 ;
+  // layer2 = 1 - 15 = -14. scoreA = 50 - 5 - 14 = 31.
   const hogDeck = [card("Hog Rider"), ...filler(7, 1600)];
   const minerDeckWithCannon = [card("Miner"), card("Cannon"), ...filler(6, 1700)];
   const { scoreA: disadvantaged } = computeDeckMatchupScore(
@@ -370,12 +370,12 @@ const miner = catalog.winConditionsByName.get("miner");
   );
   assert.strictEqual(
     disadvantaged,
-    37,
-    `Deck A hard countered should score 37, got ${disadvantaged}`,
+    31,
+    `Deck A hard countered should score 31, got ${disadvantaged}`,
   );
 
   // Mêmes decks inversés : par symétrie du moteur, scoreA doit devenir
-  // 100 - 37 = 63 (Deck A == ancien Deck B, désormais avantagé).
+  // 100 - 31 = 69 (Deck A == ancien Deck B, désormais avantagé).
   const { scoreA: advantaged } = computeDeckMatchupScore(
     minerDeckWithCannon,
     hogDeck,
@@ -383,8 +383,8 @@ const miner = catalog.winConditionsByName.get("miner");
   );
   assert.strictEqual(
     advantaged,
-    63,
-    `Swapping the decks should mirror the score to 63, got ${advantaged}`,
+    69,
+    `Swapping the decks should mirror the score to 69, got ${advantaged}`,
   );
   console.log("✓ scoreA convention: higher = more advantage for Deck A");
 }

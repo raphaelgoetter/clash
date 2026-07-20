@@ -207,32 +207,53 @@
                   Cycle bat Beatdown…), déterminé par leurs win conditions.
                 </li>
                 <li>
-                  <strong>Counters directs</strong> (±15) : présence, dans
-                  le deck adverse, d’un hard counter ou d’au moins deux soft
-                  counters à la win condition du deck évalué (ou absence
-                  totale de counter).
+                  <strong>Counters directs</strong> (±25) : pénalité en
+                  échelle selon le nombre de hard-counters et de
+                  soft-counters à la win condition du deck évalué présents
+                  chez l’adversaire (un hard-counter pèse plus qu’un
+                  soft-counter, et chaque counter supplémentaire pèse plus
+                  que le précédent) — l’absence totale de counter donne le
+                  maximum.
                 </li>
                 <li>
                   <strong>Structure du deck</strong> (±10) : quelques règles
-                  d’intégrité (ex. deck Bait face à peu de petits sorts adverses,
-                  gros tank face à l’absence de tank killer ou de bâtiment
-                  défensif chez l’adversaire), plus une pénalité en échelle
-                  pour un deck trop dispersé (plus de 2 win conditions, plus
-                  de 3 sorts ou plus de 2 bâtiments) — chaque carte
-                  supplémentaire pèse plus que la précédente.
+                  d’intégrité (ex. deck Bait face à peu de petits sorts
+                  adverses, gros tank face à l’absence de tank killer ou de
+                  bâtiment défensif chez l’adversaire, Ronin qui contre les
+                  cartes à gros dégâts comme P.E.K.K.A/Mega Knight/Boss
+                  Bandit), plus une pénalité en échelle pour un deck trop
+                  dispersé (plus de 2 win conditions, plus de 3 sorts ou
+                  plus de 2 bâtiments) — chaque carte supplémentaire pèse
+                  plus que la précédente.
                 </li>
                 <li>
-                  <strong>Écart de niveau de cartes</strong> (±20) : différence
+                  <strong>Écart de niveau de cartes</strong> (±10) : différence
                   de niveaux normalisés (rareté incluse) entre les deux decks,
-                  2 % par point d’écart (plafond atteint dès 10 points
+                  2 % par point d’écart (plafond atteint dès 5 points
                   d’écart cumulé).
                 </li>
               </ol>
               <p>
                 Si la win condition d’un deck n’est pas reconnue dans le
-                catalogue de counters, les étapes Archétype et Counters directs
-                sont neutralisées pour ce combat (seules Structure et Écart de
+                catalogue de counters, le calcul se rabat sur une liste de
+                cartes à forts dégâts (P.E.K.K.A, Mini P.E.K.K.A, Mega
+                Knight, Boss Bandit) pour éviter de neutraliser le calcul ;
+                si vraiment aucune win condition n’est identifiable des deux
+                côtés, les étapes Archétype et Counters directs sont
+                neutralisées pour ce combat (seules Structure et Écart de
                 niveau s’appliquent encore).
+              </p>
+              <p>
+                Certaines win conditions (ex. Balloon) changent d’archetype
+                et de counters selon la carte qui les accompagne dans le
+                deck (Lava Hound, Giant, Freeze/P.E.K.K.A…) — détail
+                consultable sur la <a href="/matchup/">page Matchup</a>.
+              </p>
+              <p>
+                Un bouton <strong>ℹ️ Détails</strong> sous la réponse permet
+                de choisir un combat précis et d’afficher le détail complet
+                du calcul (valeur de chaque étape, decks des deux joueurs,
+                win conditions identifiées).
               </p>
               <p>Interprétation :</p>
               <ul>
