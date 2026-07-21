@@ -11,9 +11,18 @@
       "Rage",
       "Royal Delivery",
       "Vines",
-      "Void"
+      "Goblin Curse",
+      "Void",
+      "Tornado"
     ],
-    "bigSpells": ["Fireball", "Poison", "Lightning", "Rocket", "Void"],
+    "bigSpells": [
+      "Fireball",
+      "Poison",
+      "Lightning",
+      "Rocket",
+      "Freeze",
+      "Earthquake"
+    ],
     "defensiveBuildings": [
       "Cannon",
       "Tesla",
@@ -95,7 +104,8 @@
       "Barbarian Barrel",
       "Bats",
       "Wall Breakers",
-      "Suspicious Bush"
+      "Suspicious Bush",
+      "Rage"
     ],
     "allBuildings": [
       "Cannon",
@@ -108,7 +118,6 @@
       "Mortar",
       "Goblin Hut",
       "Barbarian Hut",
-      "Furnace",
       "Elixir Collector"
     ]
   },
