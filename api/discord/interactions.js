@@ -3078,10 +3078,11 @@ function buildMatchupDetailEmbed(warDecks, index) {
     return `${displayed > 0 ? "+" : ""}${displayed}`;
   };
 
-  // Barre de 20 cases proportionnelle au %matchup (arrondi au plus proche).
+  // Barre de 18 cases proportionnelle au %matchup (arrondi au plus proche).
+  // 18 plutôt que 20 : 20 emoji ne tiennent pas sur une largeur d'écran mobile.
   const difficultyBar = (() => {
     if (typeof matchupPct !== "number") return null;
-    const total = 20;
+    const total = 18;
     const filled = Math.max(
       0,
       Math.min(total, Math.round((total * matchupPct) / 100)),

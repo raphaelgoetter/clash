@@ -55,6 +55,22 @@ function countMatchesAgainstNames(deckCards, rawNames, catalog) {
   return countMatchesInSet(deckCards, targetSet, catalog);
 }
 
+// Comme countMatchesAgainstNames, mais retourne les noms (tels qu'écrits
+// dans le deck) de TOUTES les cartes trouvées plutôt qu'un simple compte —
+// utilisé pour nommer explicitement les counters dans describeCounterLayer.
+function findAllMatchesAgainstNames(deckCards, rawNames, catalog) {
+  const targetSet = new Set(
+    rawNames.map((name) => catalog.normalizeCardName(name)),
+  );
+  const found = [];
+  for (const card of toArray(deckCards)) {
+    if (targetSet.has(catalog.normalizeCardName(card?.name))) {
+      found.push(card.name);
+    }
+  }
+  return found;
+}
+
 // Une win condition avec `variants` (ex. Balloon) change d'archetype et de
 // hard/soft-counters selon la carte compagne présente dans le MÊME deck
 // (ex. Balloon + Lava Hound = profil "LavaLoon", Beatdown ; Balloon seul =
@@ -426,6 +442,33 @@ function describeArchetypeLayer(winConditionsA, winConditionsB, bothKnown) {
   ].join("\n");
 }
 
+// Une ligne par win condition (et non un total agrégé par camp) : avec
+// plusieurs win conditions d'un même côté, le score moyenne un shift PAR WC
+// (cf. computeCounterLayer) — un total sommé masquerait qu'une WC totalement
+// non-répondue (shift max) peut tirer la moyenne vers le haut malgré un
+// total de counters identique côté adverse. Le hard prime sur le soft (même
+// logique que counterShiftFor : un hard-counter présent suffit à qualifier
+// la WC de "hard-countée", les soft ne sont alors même pas comptés).
+function describeCounterLayerLine(wc, opponentDeckCards, catalog, label) {
+  const hardMatches = findAllMatchesAgainstNames(
+    opponentDeckCards,
+    wc.hardCounters,
+    catalog,
+  );
+  if (hardMatches.length > 0) {
+    return `${REASON_INDENT}${label} ${wc.name} : hard-countée (${hardMatches.join(", ")})`;
+  }
+  const softMatches = findAllMatchesAgainstNames(
+    opponentDeckCards,
+    wc.softCounters,
+    catalog,
+  );
+  if (softMatches.length > 0) {
+    return `${REASON_INDENT}${label} ${wc.name} : ${softMatches.length} soft-counter(s) (${softMatches.join(", ")})`;
+  }
+  return `${REASON_INDENT}${label} ${wc.name} : aucun counter`;
+}
+
 function describeCounterLayer(
   winConditionsA,
   deckACards,
@@ -435,25 +478,13 @@ function describeCounterLayer(
   bothKnown,
 ) {
   if (!bothKnown) return "win condition inconnue";
-  // Nombre de cartes-counters trouvées chez l'adversaire pour CHAQUE win
-  // condition du camp évalué (une win condition peut cumuler plusieurs
-  // counters présents à la fois) : CROWN_SELF = ce que tu subis (leurs
-  // counters à ta/tes WC), CROWN_OPPONENT = ce qu'il subit (tes counters
-  // à sa/ses WC).
-  const sumMatches = (winConditions, opponentDeck, field) =>
-    winConditions.reduce(
-      (sum, wc) =>
-        sum + countMatchesAgainstNames(opponentDeck, wc[field], catalog),
-      0,
-    );
-  const yourHard = sumMatches(winConditionsA, deckBCards, "hardCounters");
-  const yourSoft = sumMatches(winConditionsA, deckBCards, "softCounters");
-  const theirHard = sumMatches(winConditionsB, deckACards, "hardCounters");
-  const theirSoft = sumMatches(winConditionsB, deckACards, "softCounters");
-  return [
-    `${REASON_INDENT}${CROWN_SELF} ${yourHard} hard-counter(s), ${yourSoft} soft-counter(s) subi(s)`,
-    `${REASON_INDENT}${CROWN_OPPONENT} ${theirHard} hard-counter(s), ${theirSoft} soft-counter(s) subi(s)`,
-  ].join("\n");
+  const linesA = winConditionsA.map((wc) =>
+    describeCounterLayerLine(wc, deckBCards, catalog, CROWN_SELF),
+  );
+  const linesB = winConditionsB.map((wc) =>
+    describeCounterLayerLine(wc, deckACards, catalog, CROWN_OPPONENT),
+  );
+  return [...linesA, ...linesB].join("\n");
 }
 
 function describeUtilityLayer(
