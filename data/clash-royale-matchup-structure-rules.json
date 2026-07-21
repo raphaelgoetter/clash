@@ -47,7 +47,24 @@
       "Lava Hound"
     ],
     "splitPushTriggerCards": ["Three Musketeers", "Royal Hogs"],
-    "heavyDpsCounters": ["Ronin"],
+    "heavyDpsHardCounters": [
+      "Ronin",
+      "P.E.K.K.A",
+      "Mini P.E.K.K.A",
+      "Minion Horde"
+    ],
+    "heavyDpsSoftCounters": [
+      "Prince",
+      "Mega Knight",
+      "Boss Bandit",
+      "Bandit",
+      "Golden Knight",
+      "Knight",
+      "Valkyrie",
+      "Skeleton Army",
+      "Goblin Gang",
+      "Minions"
+    ],
     "heavyDpsThreats": [
       "P.E.K.K.A",
       "Mini P.E.K.K.A",
@@ -173,9 +190,9 @@
       ]
     },
     {
-      "id": "heavyDpsCounter",
-      "description": "toi: Ronin dans le deck / lui: au moins 1 carte à gros DPS (P.E.K.K.A, Mini P.E.K.K.A, Prince, Mega Knight, Boss Bandit, Bandit, Golden Knight) -> +6% pour toi (Ronin la hard-counter).",
-      "trigger": { "type": "cardSet", "value": "heavyDpsCounters" },
+      "id": "heavyDpsHardCounter",
+      "description": "toi: Ronin/P.E.K.K.A/Mini P.E.K.K.A dans le deck / lui: au moins 1 carte à gros DPS (P.E.K.K.A, Mini P.E.K.K.A, Prince, Mega Knight, Boss Bandit, Bandit, Golden Knight) -> +6% pour toi (hard-counter).",
+      "trigger": { "type": "cardSet", "value": "heavyDpsHardCounters" },
       "watch": { "cardSets": ["heavyDpsThreats"] },
       "thresholds": [
         {
@@ -183,6 +200,20 @@
           "value": 1,
           "shift": 6,
           "label": "{opponent} {count} gros DPS\n- {self} {triggerCard} (hard-counter)"
+        }
+      ]
+    },
+    {
+      "id": "heavyDpsSoftCounter",
+      "description": "toi: Prince/Mega Knight/Boss Bandit/Bandit/Golden Knight/Knight/Valkyrie/Skeleton Army/Goblin Gang dans le deck / lui: au moins 1 carte à gros DPS -> +3% pour toi (soft-counter).",
+      "trigger": { "type": "cardSet", "value": "heavyDpsSoftCounters" },
+      "watch": { "cardSets": ["heavyDpsThreats"] },
+      "thresholds": [
+        {
+          "op": "gte",
+          "value": 1,
+          "shift": 3,
+          "label": "{opponent} {count} gros DPS\n- {self} {triggerCard} (soft-counter)"
         }
       ]
     }
