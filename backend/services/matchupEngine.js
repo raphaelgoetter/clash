@@ -313,16 +313,21 @@ function utilityShiftFor(
 
   // Auto-pénalités "self" (indépendantes de deckYCards) : carence dans le
   // propre deck de X (0 ou 1 seule carte aérienne/anti-air/basse élixir, 0
-  // bâtiment, 0 sort) — mêmes thresholds op/value/shift/label que les
-  // crossRules, mais comptés directement sur deckXCards, sans trigger ni
-  // watch côté adverse. Fait unilatéral : pas de yLabel ici.
+  // bâtiment, 0 sort, 0 win condition reconnue) — mêmes thresholds
+  // op/value/shift/label que les crossRules, mais comptés directement sur
+  // deckXCards (ou winConditionsX.length via `metric: "winConditionCount"`,
+  // même convention que dispersionRules), sans trigger ni watch côté
+  // adverse. Fait unilatéral : pas de yLabel ici.
   for (const rule of structureRules.selfRules ?? []) {
-    const count = sumCardSets(
-      deckXCards,
-      rule.watch?.cardSets ?? [],
-      structureRules,
-      catalog,
-    );
+    const count =
+      rule.metric === "winConditionCount"
+        ? winConditionsX.length
+        : sumCardSets(
+            deckXCards,
+            rule.watch?.cardSets ?? [],
+            structureRules,
+            catalog,
+          );
     for (const threshold of rule.thresholds ?? []) {
       if (!thresholdMatches(threshold.op, count, threshold.value)) continue;
       shift += threshold.shift;

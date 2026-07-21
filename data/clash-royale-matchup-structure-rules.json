@@ -8,7 +8,10 @@
       "Arrows",
       "Barbarian Barrel",
       "Giant Snowball",
-      "Rage"
+      "Rage",
+      "Royal Delivery",
+      "Vines",
+      "Void"
     ],
     "bigSpells": ["Fireball", "Poison", "Lightning", "Rocket", "Void"],
     "defensiveBuildings": [
@@ -17,7 +20,8 @@
       "Inferno Tower",
       "Bomb Tower",
       "Tombstone",
-      "Goblin Cage"
+      "Goblin Cage",
+      "Earthquake"
     ],
     "tankKillers": [
       "Mini P.E.K.K.A",
@@ -44,21 +48,6 @@
       "Bandit",
       "Golden Knight"
     ],
-    "_airCardsComment": "Troupes aériennes déployées (hors sorts/projectiles type Goblin Barrel/Rocket).",
-    "airCards": [
-      "Balloon",
-      "Lava Hound",
-      "Minions",
-      "Minion Horde",
-      "Mega Minion",
-      "Baby Dragon",
-      "Inferno Dragon",
-      "Electro Dragon",
-      "Skeleton Dragons",
-      "Phoenix",
-      "Flying Machine",
-      "Bats"
-    ],
     "_antiAirCardsComment": "Troupes/bâtiments capables de cibler l'air (hors sorts). Liste large, à vérifier/corriger au besoin.",
     "antiAirCards": [
       "Musketeer",
@@ -84,7 +73,11 @@
       "Electro Dragon",
       "Inferno Dragon",
       "Zappies",
-      "Night Witch"
+      "Night Witch",
+      "Fire Spirits",
+      "Skeleton Dragons",
+      "Electro Spirit",
+      "Ice Spirit"
     ],
     "lowElixirCards": [
       "Skeletons",
@@ -217,25 +210,6 @@
   "_selfRulesHelp": "Carences du deck évalué lui-même (indépendant de l'adversaire) : compte les cartes de `watch.cardSets` dans le deck, applique le premier `thresholds[]` dont la condition est vraie. Toujours des pénalités (shift négatif).",
   "selfRules": [
     {
-      "id": "airCardScarcity",
-      "description": "0 (ou 1 seule) carte aérienne dans le deck.",
-      "watch": { "cardSets": ["airCards"] },
-      "thresholds": [
-        {
-          "op": "eq",
-          "value": 0,
-          "shift": -4,
-          "label": "{self} 0 carte aérienne"
-        },
-        {
-          "op": "eq",
-          "value": 1,
-          "shift": -2,
-          "label": "{self} 1 carte aérienne"
-        }
-      ]
-    },
-    {
       "id": "antiAirScarcity",
       "description": "0 (ou 1 seule) carte anti-aérienne dans le deck.",
       "watch": { "cardSets": ["antiAirCards"] },
@@ -286,6 +260,19 @@
           "value": 1,
           "shift": -2,
           "label": "{self} 1 carte <3 élixir"
+        }
+      ]
+    },
+    {
+      "id": "noWinCondition",
+      "description": "0 win condition (même pseudo) reconnue dans le deck.",
+      "metric": "winConditionCount",
+      "thresholds": [
+        {
+          "op": "eq",
+          "value": 0,
+          "shift": -6,
+          "label": "{self} 0 win condition"
         }
       ]
     }
