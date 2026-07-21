@@ -3078,6 +3078,17 @@ function buildMatchupDetailEmbed(warDecks, index) {
     return `${displayed > 0 ? "+" : ""}${displayed}`;
   };
 
+  // Barre de 20 cases proportionnelle au %matchup (arrondi au plus proche).
+  const difficultyBar = (() => {
+    if (typeof matchupPct !== "number") return null;
+    const total = 20;
+    const filled = Math.max(
+      0,
+      Math.min(total, Math.round((total * matchupPct) / 100)),
+    );
+    return "🟦".repeat(filled) + "🟥".repeat(total - filled);
+  })();
+
   // Chaque layer séparé par une ligne vide. Les bornes (±5/±25/±10/±10) ne
   // sont plus rappelées ici : elles sont documentées dans la doc de la commande.
   const calcDetail = [
@@ -3089,7 +3100,7 @@ function buildMatchupDetailEmbed(warDecks, index) {
 
   return {
     title: `⚡ Détail — ${dayLabel} · ${deckLabel} vs ${match.opponentName || "?"}`,
-    description: `${resultEmoji} ${match.score || "?"} · **${matchupPct}%** de difficulté\n\n${calcDetail}`,
+    description: `${resultEmoji} ${match.score || "?"} · **${matchupPct}%** de difficulté${difficultyBar ? `\n${difficultyBar}` : ""}\n\n${calcDetail}`,
     color: 0xe67e22,
     fields: [
       {
