@@ -16,7 +16,8 @@ jobs:
       DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
       DISCORD_APP_ID: ${{ secrets.DISCORD_APP_ID }}
       DISCORD_CHANNEL_FRAME_PUBLIC: ${{ secrets.DISCORD_CHANNEL_FRAME_PUBLIC }}
-      BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+      KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
+      KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4

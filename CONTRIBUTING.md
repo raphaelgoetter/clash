@@ -624,7 +624,11 @@ L'affichage "Manche N" est partout devenu **"Saison S · Manche N/X"** (post heb
 ```text
 DISCORD_CHANNEL_FRAME_TEST=      # salon de test personnel
 DISCORD_CHANNEL_FRAME_PUBLIC=    # salon "Général"
+KV_REST_API_URL=                 # Upstash Redis (voir "Stockage — Upstash Redis" ci-dessus)
+KV_REST_API_TOKEN=
 ```
+
+⚠️ Le workflow `.github/workflows/frames.yml` (cron `npm run frame:public`) a besoin de `KV_REST_API_URL`/`KV_REST_API_TOKEN` en plus des secrets Discord habituels — ce ne sont **pas** les mêmes que `BLOB_READ_WRITE_TOKEN` (utilisé par `predictions.yml`, pas par Frame). À ajouter dans Settings → Secrets and variables → Actions du dépôt GitHub, avec les mêmes valeurs que dans `.env` local, sinon le post hebdomadaire échoue avec `[Upstash Redis] The 'url'/'token' property is missing`.
 
 ---
 
