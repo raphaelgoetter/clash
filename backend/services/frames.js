@@ -103,6 +103,13 @@ async function hgetallJson(key) {
 const STATE_KEY = "frame:state";
 const HINT_KEYS = ["indice1", "indice2"];
 
+// SET durable, jamais nettoyé (contrairement aux clés scopées par saison) :
+// tous les gameId ayant un jour été postés, toutes saisons confondues. Sert
+// de garde-fou anti-spoiler pour getFrameImageByGameId().
+function postedGamesKey() {
+  return "frame:posted_games";
+}
+
 function participantsKey(gameId) {
   return `frame:participants:${gameId}`;
 }
@@ -161,6 +168,15 @@ export async function loadFrames() {
   return framesCache;
 }
 
+async function readFrameImageFile(frameEntry) {
+  try {
+    const buffer = await fs.readFile(path.join(FRAMES_IMAGES_DIR, frameEntry.image));
+    return { buffer, filename: frameEntry.image };
+  } catch {
+    return null;
+  }
+}
+
 // Sert uniquement l'image de la partie active — jamais une image future ou
 // passée par nom de fichier, pour ne pas laisser deviner les prochaines
 // semaines via l'URL (data/frames/images n'est pas exposé statiquement).
@@ -170,12 +186,24 @@ export async function getCurrentFrameImage() {
   const frames = await loadFrames();
   const frameEntry = frames[state.currentIndex];
   if (!frameEntry) return null;
-  try {
-    const buffer = await fs.readFile(path.join(FRAMES_IMAGES_DIR, frameEntry.image));
-    return { buffer, filename: frameEntry.image };
-  } catch {
-    return null;
-  }
+  return readFrameImageFile(frameEntry);
+}
+
+// Sert l'image d'UNE manche précise, identifiée par son gameId — utilisé
+// pour que les anciens posts Discord continuent d'afficher LEUR image même
+// après que la partie ait avancé (getCurrentFrameImage() sert toujours
+// l'image de la partie ACTIVE, donc un ancien message dont Discord revalide
+// le cache se remettrait sinon à afficher l'image de la manche en cours).
+// Le gameId doit figurer dans postedGamesKey() (rempli par startNewGame()) —
+// jamais un gameId qui n'a encore jamais été posté, pour ne pas laisser
+// deviner l'image d'une semaine future via l'URL.
+export async function getFrameImageByGameId(gameId) {
+  const wasPosted = Number(await getRedis().sismember(postedGamesKey(), gameId));
+  if (!wasPosted) return null;
+  const frames = await loadFrames();
+  const frameEntry = frames.find((f) => path.parse(f.image).name === gameId);
+  if (!frameEntry) return null;
+  return readFrameImageFile(frameEntry);
 }
 
 // ── État de la partie en cours (métadonnées uniquement) ──────────
@@ -278,6 +306,7 @@ export async function startNewGame(channelId) {
   };
 
   await writeState(newState);
+  await getRedis().sadd(postedGamesKey(), gameId);
 
   // Purge la progression (indices/tentatives/participants) de la partie
   // précédente — données jetables une fois la partie terminée. Les

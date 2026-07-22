@@ -21,7 +21,7 @@ import matchupRoutes from "./routes/matchup.js";
 import discordRoutes from "./routes/discord.js";
 import { clearAll } from "./services/cache.js";
 import { fetchClan, fetchPlayer } from "./services/clashApi.js";
-import { getCurrentFrameImage } from "./services/frames.js";
+import { getCurrentFrameImage, getFrameImageByGameId } from "./services/frames.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -245,11 +245,19 @@ app.use("/api/matchup", matchupRoutes);
 // Discord interactions endpoint (slash commands)
 app.use("/api/discord", discordRoutes);
 
-// Jeu Frame : sert uniquement l'image de la partie active (jamais une image
-// future/passée par nom de fichier) — data/frames/images n'est pas exposé
-// statiquement, seule cette route y donne accès.
-app.get("/api/frames/image", async (_req, res) => {
-  const image = await getCurrentFrameImage().catch(() => null);
+// Jeu Frame : sert l'image d'une manche précise (?gameId=), ou par défaut
+// celle de la partie active — jamais une image future par nom de fichier
+// deviné (data/frames/images n'est pas exposé statiquement, seule cette
+// route y donne accès). Le paramètre gameId permet aux anciens posts
+// Discord de continuer à afficher LEUR image même après que la partie ait
+// avancé (voir getFrameImageByGameId, gardé par un registre des gameId déjà
+// postés — jamais une manche qui n'a pas encore eu lieu).
+app.get("/api/frames/image", async (req, res) => {
+  const { gameId } = req.query;
+  const image = await (gameId
+    ? getFrameImageByGameId(String(gameId))
+    : getCurrentFrameImage()
+  ).catch(() => null);
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", "image/webp");
   res.setHeader("Cache-Control", "no-store");

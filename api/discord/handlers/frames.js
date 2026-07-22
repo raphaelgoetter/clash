@@ -42,7 +42,7 @@ const HINT_LABELS = {
 
 // ── Embed / composants du post ────────────────────────────────
 
-function buildFrameEmbed({ seasonId, seasonManche, seasonMancheTotal, cacheBust }) {
+function buildFrameEmbed({ seasonId, seasonManche, seasonMancheTotal, gameId, cacheBust }) {
   return {
     title: "🎬 Le jeu du mercredi : Trouvez le film !",
     description:
@@ -56,13 +56,14 @@ function buildFrameEmbed({ seasonId, seasonManche, seasonMancheTotal, cacheBust 
       "Le classement de la saison est mis à jour après chaque manche, et un DM vous est envoyé pour récapituler vos points et votre classement.\n\n" +
       "**Merci de ne pas spoiler, sinon c'est pas drôle !**\n\n" +
       "🤖 Vérifiez vos scores avec la commande `/frame`",
-    // Route dynamique servant uniquement l'image de la partie active. Le
-    // paramètre v= est un cache-buster ignoré par le serveur (impossible
-    // d'obtenir une image future en le modifiant) — il DOIT être unique à
-    // chaque publication (jamais gameId, qui se répète après un reset ou un
-    // tour de boucle) car le proxy d'images de Discord met en cache par URL
-    // complète et resservirait indéfiniment une image périmée sinon.
-    image: { url: `${TRUST_ROYALE_URL}/api/frames/image?v=${cacheBust}` },
+    // gameId= épingle l'image de CETTE manche précise, pour que ce post
+    // continue d'afficher LA BONNE image même une fois la partie suivante
+    // démarrée (sinon la route servirait l'image de la partie active, cf.
+    // getFrameImageByGameId dans frames.js — bug réel constaté : d'anciens
+    // messages se remettaient à afficher l'image de la manche en cours dès
+    // que Discord revalidait son cache). v= reste un simple cache-buster
+    // pour forcer un fetch frais au moment de la publication.
+    image: { url: `${TRUST_ROYALE_URL}/api/frames/image?gameId=${gameId}&v=${cacheBust}` },
     color: FRAME_COLOR,
     footer: {
       text: "Prochaine manche : dans une semaine. Bonne chance tout le monde !",
@@ -138,7 +139,7 @@ export async function postFrame(channelId, { dryRun = false } = {}) {
     const seasonId = await getCurrentSeasonId();
     const seasonManche = await previewSeasonManche(seasonId);
     const seasonMancheTotal = computeSeasonMancheTotal(seasonManche);
-    const embed = buildFrameEmbed({ seasonId, seasonManche, seasonMancheTotal, cacheBust: Date.now() });
+    const embed = buildFrameEmbed({ seasonId, seasonManche, seasonMancheTotal, gameId, cacheBust: Date.now() });
     const components = buildFrameComponents(gameId);
     return { dryRun: true, frameEntry, embed, components };
   }
@@ -151,6 +152,7 @@ export async function postFrame(channelId, { dryRun = false } = {}) {
     seasonId: state.seasonId,
     seasonManche: state.seasonManche,
     seasonMancheTotal: state.seasonMancheTotal,
+    gameId: state.gameId,
     cacheBust: Date.now(),
   });
   const components = buildFrameComponents(state.gameId);
@@ -199,6 +201,7 @@ export async function repostFrame(channelId) {
     seasonId: state.seasonId,
     seasonManche: state.seasonManche,
     seasonMancheTotal: state.seasonMancheTotal,
+    gameId: state.gameId,
     cacheBust: Date.now(),
   });
   const components = buildFrameComponents(state.gameId);
