@@ -13,6 +13,7 @@ jobs:
   post-frame:
     runs-on: ubuntu-latest
     env:
+      CLASH_API_KEY: ${{ secrets.CLASH_API_KEY }}
       DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
       DISCORD_APP_ID: ${{ secrets.DISCORD_APP_ID }}
       DISCORD_CHANNEL_FRAME_PUBLIC: ${{ secrets.DISCORD_CHANNEL_FRAME_PUBLIC }}
