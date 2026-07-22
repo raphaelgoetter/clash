@@ -34,6 +34,11 @@ if (!channelId) {
     const result = await postFrame(channelId, { dryRun: DRY_RUN });
 
     if (DRY_RUN) {
+      if (result.seasonRecapEmbed) {
+        console.log("DRY-RUN — récap de fin de saison qui serait posté AVANT la manche :");
+        console.log(JSON.stringify({ embeds: [result.seasonRecapEmbed] }, null, 2));
+        console.log("");
+      }
       console.log(`DRY-RUN — prochaine partie (salon ${channelId}) :`);
       console.log(`  Film : ${result.frameEntry.titre} (${result.frameEntry.image})`);
       console.log(JSON.stringify({ embeds: [result.embed], components: result.components }, null, 2));

@@ -595,6 +595,14 @@ Nettoyage : `startNewGame()` supprime la progression (indices/tentatives/partici
 
 Le score total et le classement général affichés en DM ne portent que sur la **saison Clash Royale en cours** (voir [Saison](#saison)), pas un cumul indéfini. `getCurrentSeasonId()` (`backend/services/frames.js`) réutilise `computeCurrentSeasonId(currentRace, raceLog)` de `dateUtils.js`, avec 3 tentatives (délai croissant) pour absorber un aléa réseau transitoire côté API Clash Royale. Chaque résultat archivé dans `frame:archived:<seasonId>` garde le `seasonId` de la saison où il a été joué ; le classement de saison vit dans un ZSET dédié par `seasonId` (`frame:season:<seasonId>`), donc aucun recalcul ni remise à zéro manuelle n'est nécessaire au changement de saison — chaque nouvelle saison utilise simplement une nouvelle clé.
 
+### Récapitulatif de fin de saison
+
+Quand `postFrame()` détecte que le `seasonId` a changé depuis la dernière partie (comparaison `previousState.seasonId` vs `getCurrentSeasonId()`, avant tout appel à `startNewGame()`), un embed récapitulatif de la saison écoulée est posté dans le salon **avant** le post normal de la nouvelle manche 1 — jamais de DM, uniquement ce post public (`postSeasonRecap()`/`buildSeasonRecapEmbed()`, `api/discord/handlers/frames.js`).
+
+Contenu : classement final de `computeSeasonRanking(endedSeasonId)`, félicitations au(x) vainqueur(s) (gestion des ex-aequo — plusieurs co-champions possibles), classement complet avec médailles 🥇🥈🥉 uniquement pour un rang non partagé (`findTiedRank`, sinon numéro simple). Deux règles de troncage explicites : les scores à **0 pt sont exclus**, et la liste est plafonnée à **20 joueurs** (au-delà, note "... et X autres joueurs"). Si personne n'a marqué le moindre point sur la saison écoulée, aucun récap n'est posté.
+
+Prévisualisable sans rien poster via `npm run frame:public:dry` (ou `frame:test:dry`) : si un changement de saison serait détecté, le récap apparaît dans la sortie console avant l'embed de la nouvelle manche.
+
 ### Commande `/frame` — scores personnels
 
 Seule commande slash du jeu (tout le reste passe par les boutons/modal du post hebdomadaire ou par des scripts). N'a aucune option : elle affiche à l'appelant (réponse éphémère) sa propre progression, déterminée à partir de son `discordId` — pas de paramètre à saisir.

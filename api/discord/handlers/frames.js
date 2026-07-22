@@ -125,6 +125,71 @@ export function buildAnswerModal(gameId) {
   };
 }
 
+// ── Récapitulatif de fin de saison ──────────────────────────────
+// Posté juste avant la manche 1 d'une nouvelle saison (voir postFrame), pour
+// féliciter le vainqueur et rappeler le classement final de la saison
+// écoulée. Tronqué à 20 joueurs (au-delà, note "... et X autres joueurs") et
+// les scores à 0 pt sont exclus — décisions explicites de l'utilisateur.
+
+const SEASON_RECAP_MAX_PLAYERS = 20;
+const SEASON_RECAP_MEDALS = ["🥇", "🥈", "🥉"];
+
+function buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId) {
+  const nonZero = seasonRanking.filter((r) => r.totalScore > 0);
+  const shown = nonZero.slice(0, SEASON_RECAP_MAX_PLAYERS);
+  const hiddenCount = nonZero.length - shown.length;
+
+  const topScore = shown[0]?.totalScore;
+  const winners = shown.filter((r) => r.totalScore === topScore);
+  const winnerNames = winners.map((w) => w.pseudo).join(" et ");
+
+  const lines = [
+    winners.length > 1
+      ? `🥇 ${winnerNames} remportent la saison avec ${topScore} pts !`
+      : `🥇 ${winnerNames} remporte la saison avec ${topScore} pts !`,
+    "",
+    "**Classement final :**",
+    ...shown.map((entry) => {
+      const rank = findTiedRank(shown, entry.discordId, "totalScore");
+      const tiedCount = shown.filter((e) => e.totalScore === entry.totalScore).length;
+      const label = tiedCount === 1 && rank <= 3 ? SEASON_RECAP_MEDALS[rank - 1] : `${rank}.`;
+      return `${label} ${entry.pseudo} — ${entry.totalScore} pts`;
+    }),
+  ];
+  if (hiddenCount > 0) {
+    lines.push(`... et ${hiddenCount} autre${hiddenCount > 1 ? "s" : ""} joueur${hiddenCount > 1 ? "s" : ""}`);
+  }
+  lines.push("", `Bravo à tous ! Rendez-vous juste après pour le lancement de la Saison ${newSeasonId}.`);
+
+  return {
+    title: `🏆 Fin de la Saison ${endedSeasonId} !`,
+    description:
+      `Merci aux ${seasonRanking.length} joueur${seasonRanking.length > 1 ? "s" : ""} qui ont participé à « Trouvez le film » cette saison !\n\n` +
+      lines.join("\n"),
+    color: FRAME_COLOR,
+  };
+}
+
+async function postSeasonRecap(channelId, endedSeasonId, newSeasonId) {
+  const token = process.env.DISCORD_TOKEN;
+  const seasonRanking = await computeSeasonRanking(endedSeasonId);
+  if (seasonRanking.length === 0) return; // rien à récapituler (saison sans le moindre point marqué)
+
+  const embed = buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId);
+  const res = await fetch(
+    `https://discord.com/api/v10/channels/${channelId}/messages`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ embeds: [embed] }),
+    },
+  );
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    throw new Error(`Erreur envoi récap de saison (${res.status}): ${errText}`);
+  }
+}
+
 // ── Publication (appelée uniquement par scripts/postFrame.js) ──
 // En dry-run, aucune écriture d'état ni appel Discord — la prochaine image
 // est seulement prévisualisée, sans faire avancer la partie.
@@ -141,11 +206,26 @@ export async function postFrame(channelId, { dryRun = false } = {}) {
     const seasonMancheTotal = computeSeasonMancheTotal(seasonManche);
     const embed = buildFrameEmbed({ seasonId, seasonManche, seasonMancheTotal, gameId, cacheBust: Date.now() });
     const components = buildFrameComponents(gameId);
-    return { dryRun: true, frameEntry, embed, components };
+
+    let seasonRecapEmbed = null;
+    if (state?.seasonId != null && seasonId != null && state.seasonId !== seasonId) {
+      const seasonRanking = await computeSeasonRanking(state.seasonId);
+      if (seasonRanking.length > 0) {
+        seasonRecapEmbed = buildSeasonRecapEmbed(seasonRanking, state.seasonId, seasonId);
+      }
+    }
+
+    return { dryRun: true, frameEntry, embed, components, seasonRecapEmbed };
   }
 
   const token = process.env.DISCORD_TOKEN;
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
+
+  const previousState = await readState();
+  const newSeasonId = await getCurrentSeasonId();
+  if (previousState?.seasonId != null && newSeasonId != null && previousState.seasonId !== newSeasonId) {
+    await postSeasonRecap(channelId, previousState.seasonId, newSeasonId);
+  }
 
   const { state, frameEntry } = await startNewGame(channelId);
   const embed = buildFrameEmbed({
