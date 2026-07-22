@@ -35,7 +35,13 @@ import {
     `Jeu Frame — Partie ${state.currentIndex + 1} (${frameEntry.titre}) — Saison ${state.seasonId}\n`,
   );
 
-  if (gameRanking.length === 0 && inProgress.length === 0) {
+  const touchedIds = new Set([
+    ...gameRanking.map((e) => e.discordId),
+    ...inProgress.map((p) => p.discordId),
+  ]);
+  const notPlayedYet = seasonRanking.filter((s) => !touchedIds.has(s.discordId));
+
+  if (gameRanking.length === 0 && inProgress.length === 0 && notPlayedYet.length === 0) {
     console.log("Personne n'a encore interagi avec cette partie.");
     return;
   }
@@ -50,12 +56,22 @@ import {
     };
   });
 
-  const inProgressRows = inProgress.map((p) => ({
+  const inProgressRows = inProgress.map((p) => {
+    const seasonEntry = seasonRanking.find((s) => s.discordId === p.discordId);
+    return {
+      "#": "-",
+      Joueur: p.username,
+      "Score partie": "-",
+      "Score saison": seasonEntry?.totalScore ?? "-",
+    };
+  });
+
+  const notPlayedRows = notPlayedYet.map((s) => ({
     "#": "-",
-    Joueur: p.username,
-    "Score partie": "-",
-    "Score saison": "-",
+    Joueur: s.pseudo,
+    "Score partie": "n'a pas joué",
+    "Score saison": s.totalScore,
   }));
 
-  console.table([...solvedRows, ...inProgressRows]);
+  console.table([...solvedRows, ...inProgressRows, ...notPlayedRows]);
 })();
