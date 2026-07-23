@@ -78,12 +78,12 @@ const RESISTANTS_BODY = `La Guerre de Clans commence ! 🔥
 
 ### OUBLIS :
 
-🔸 1 ou plusieurs combats non joués sans prévenir → rétrogradation ou exclusion (orientation vers le clan formation).
+🔸 En fin de semaine GDC, si moins de 12 combats joués → rétrogradation ou exclusion (selon le rôle).
 -# Excuses/explications possibles sur discord ou dans le chat du clan.
 
 ### PROMOTION :
 
-<:blue_crown:1294923219668566047> Plus de 2600 points dans la semaine → promotion au rang "Aîné".
+<:crown:1518889526460682280> Plus de 2600 points dans la semaine → promotion au rang "Aîné".
 
 🎯 L'objectif n'est pas de gagner tous ses combats, "juste" de faire ses 4 combats chaque jour, car **tous les combats comptent pour le clan**. Un combat même perdu rapporte des points !
 

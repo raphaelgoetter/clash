@@ -16,7 +16,7 @@
 
 ### PROMOTION :
 
-<:blue_crown:1526537739003232399> Saison entière avec 100% des combats réalisés → promotion au rang "Aîné".
+<:crown:1518889526460682280> Saison entière avec 100% des combats réalisés → promotion au rang "Aîné".
 ```
 
 ```md
@@ -35,8 +35,8 @@
 
 ### PROMOTION :
 
-<:blue_crown:1526537739003232399> En fin de semaine, si 2600 pts marqués → Promotion au rang "Aîné".
-<:blue_crown:1526537739003232399> En fin de saison → Accès dans le clan 1 "La Resistance" pour les meilleurs joueurs (Discord obligatoire)
+<:crown:1518889526460682280> En fin de semaine, si 2600 pts marqués → Promotion au rang "Aîné".
+<:crown:1518889526460682280> En fin de saison → Accès dans le clan 1 "La Resistance" pour les meilleurs joueurs (Discord obligatoire)
 ```
 
 ```md
@@ -56,5 +56,5 @@
 
 ### Promotion
 
-<:blue_crown:1526537739003232399> Une semaine entière avec au-moins 12 combats GDC (sur 16) → Promotion au rang "Aîné". Si joueur régulier en GDC et motivé → Accès possible dans le clan 2 "Les Resistants"
+<:crown:1518889526460682280> Une semaine entière avec au-moins 12 combats GDC (sur 16) → Promotion au rang "Aîné". Si joueur régulier en GDC et motivé → Accès possible dans le clan 2 "Les Resistants"
 ```
