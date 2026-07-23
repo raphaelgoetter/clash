@@ -14514,7 +14514,7 @@
           "start": "2026-07-23T09:36:00.000Z",
           "end": "2026-07-24T09:35:59.999Z"
         },
-        "snapshotTime": "2026-07-23T22:20:37.939Z",
+        "snapshotTime": "2026-07-23T23:19:07.567Z",
         "snapshotBackupTime": "2026-07-23T09:48:30.069Z",
         "decks": {
           "#202R9VUJCU": 4,
@@ -14529,6 +14529,7 @@
           "#99VQ2LR02": 4,
           "#9VQYC9GJQ": 4,
           "#CGJP0YYUJ": 4,
+          "#GGRLYR8PL": 4,
           "#GGVQJLG9": 4,
           "#JCCQY0U9G": 4,
           "#LRPQL8VCL": 4,
@@ -14542,8 +14543,7 @@
           "#RJY2R282V": 2,
           "#ULVPUU9C2": 2,
           "#VPGYR2990": 2,
-          "#GGLCLQ82L": 1,
-          "#GGRLYR8PL": 1
+          "#GGLCLQ82L": 1
         },
         "hourlyCumul": [],
         "_cumulFame": {
@@ -14562,7 +14562,7 @@
           "#GGVQJLG9": 700,
           "#RJY2R282V": 200,
           "#88QP9CJU": 0,
-          "#GGRLYR8PL": 100,
+          "#GGRLYR8PL": 800,
           "#2GPUQY9P9": 0,
           "#UL820L92Y": 0,
           "#LQPRLQJCQ": 0,
@@ -14646,7 +14646,8 @@
           "#VPGYR2990": 1,
           "#QYGYV8R8Y": 1,
           "#8P29RRU2": 1,
-          "#2U9QL8Q89": 1
+          "#2U9QL8Q89": 1,
+          "#GGRLYR8PL": 1
         },
         "_totalDonationsByTag": {
           "#VGJ9LL8VC": 53608,
@@ -14654,7 +14655,7 @@
           "#LRPQL8VCL": 30752,
           "#99VQ2LR02": 312537,
           "#PP09UGJLL": 77141,
-          "#GGRLYR8PL": 22544,
+          "#GGRLYR8PL": 22580,
           "#CGJP0YYUJ": 3201,
           "#2YGYYPYV": 96366,
           "#LV0VUJVU": 90335,
@@ -14709,7 +14710,7 @@
           "#GGVQJLG9": 4,
           "#RJY2R282V": 2,
           "#88QP9CJU": 0,
-          "#GGRLYR8PL": 1,
+          "#GGRLYR8PL": 4,
           "#2GPUQY9P9": 0,
           "#UL820L92Y": 0,
           "#LQPRLQJCQ": 0,
@@ -14764,7 +14765,7 @@
           "#98UULQY8": 0,
           "#UP9YJV080": 0
         },
-        "snapshotCount": 95
+        "snapshotCount": 98
       },
       {
         "warDay": "friday",
