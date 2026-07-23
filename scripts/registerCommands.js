@@ -485,6 +485,11 @@ const commands = [
     description: "Affiche vos scores au jeu Frame (devine le film).",
     options: [],
   },
+  {
+    name: "anagram",
+    description: "Affiche vos scores au jeu Anagram (devine la carte).",
+    options: [],
+  },
 ];
 
 async function registerAtUrl(url) {

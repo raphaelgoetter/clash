@@ -641,6 +641,80 @@ KV_REST_API_TOKEN=
 
 ---
 
+## Jeu Anagram (devine la carte)
+
+Second mini-jeu hebdomadaire indépendant, sur le modèle exact de Frame (Modal Discord, DM de fin de manche, scores par manche/saison, `/anagram` en miroir de `/frame`) — voir [Jeu Frame](#jeu-frame-devine-le-film) pour tous les mécanismes partagés (Modal `type:9`/`MODAL_SUBMIT type:5`, stockage Upstash Redis et ses pièges, gestion de saison CR). Cette section ne documente que ce qui est **spécifique** à Anagram.
+
+### Barème — score par position d'arrivée
+
+Contrairement à Frame (pénalités par tentative/indice), le score d'Anagram dépend **uniquement du rang d'arrivée**, sans aucun indice ni pénalité de tentative :
+
+- 1er joueur à trouver : **10 pts**, 2e : **9 pts**, 3e : **8 pts**, ... 10e : **1 pt**
+- 11e joueur et suivants : **0 pt** (plancher, jamais négatif)
+
+La position est attribuée de façon atomique et immuable au moment de la résolution (`assignArrivalPosition()`, `backend/services/anagrams.js` — même pattern `INCR` + `HSETNX` idempotent que `assignSeasonMancheNumber()` de Frame, scopé par `gameId`). Conséquence importante : **position et score sont structurellement la même donnée** — contrairement à Frame, qui a eu un bug réel car son DM "vous êtes le Xe à avoir trouvé" utilisait par erreur le classement trié par score au lieu de l'ordre d'arrivée (`computeGameRanking` vs `computeArrivalOrder`). Anagram n'a qu'**une seule** fonction de classement par manche (`computeGameRanking()`, triée par `position` croissante) : cette classe de bug ne peut pas s'y reproduire.
+
+### Réponse
+
+Réponse libre uniquement (pas d'indice), insensible à la casse et aux accents (`normalizeAnswer()`, `backend/services/textNormalize.js` — partagée avec Frame, seule fonction commune aux deux jeux). `checkAnswer()` vérifie une **égalité stricte** normalisée contre `entry.accept` (contrairement à Frame, qui accepte une sous-chaîne) : une correspondance par sous-chaîne accepterait à tort "Barbares" seul pour "Barbares d'élite", ce qui viderait le jeu de son intérêt sur des noms de cartes courts.
+
+### Données (anagrams.json)
+
+- `data/anagrams/anagrams.json` — liste de 54 anagrammes (`ID`, `anagram`, `answer`, `accept[]`, `cardKey`), éditée à la main. `cardKey` est le nom **anglais** exact de la carte tel que renvoyé par l'API Clash Royale (`fetchCards()`) — ajouté manuellement (aucune localisation FR fournie par l'API), sert uniquement à résoudre l'image de la carte après résolution. La partie suivante boucle au début une fois toutes les entrées épuisées.
+- Pas de route à protéger côté anti-spoiler : l'anagramme est un texte publié en clair dans l'embed (contrairement à l'image de Frame). L'image de carte, elle, n'est révélée qu'après résolution (réponse éphémère de révélation), jamais exposée avant.
+
+### Résolution de l'image de carte
+
+`getCardImageUrl(cardKey)` (`backend/services/anagrams.js`) réutilise le cache `getOrSet("clashCardDefinitions", () => fetchCards(), 24h)` **volontairement partagé** avec `backend/routes/matchup.js`/`backend/routes/decks.js` (le cache de `cache.js` est en mémoire, par process, pas namespacé par fichier). Si `cardKey` ne correspond à aucune carte de l'API (typo, carte retirée du jeu), dégrade proprement : `console.warn` + pas d'image dans le message de révélation, jamais de plantage.
+
+### Stockage — Upstash Redis (`anagram:*`)
+
+Même stockage que Frame, préfixe `anagram:` au lieu de `frame:`, **aucun partage de données entre les deux jeux**. Différences de schéma :
+
+| Clé Redis | Type | Contenu |
+| --- | --- | --- |
+| `anagram:position_seq:<gameId>` | STRING (compteur) | Dernière position d'arrivée attribuée pour cette manche (`INCR`) |
+| `anagram:positions:<gameId>` | HASH | `discordId → position` (1, 2, 3...), idempotent `HSETNX` |
+| `anagram:attempts:<gameId>:<discordId>` | STRING (compteur) | Tentatives incorrectes — informatif uniquement, n'entre pas dans le score |
+
+Pas d'équivalent à `frame:hints:*` (aucun indice) ni à `frame:posted_games` (aucune route d'image à protéger). Pas de clé Redis dédiée "déjà posté cette semaine" : `alreadyPostedThisWeek()` compare la date de `anagram:state.startedAt` à aujourd'hui — un seul writer (`startNewGame()`), pas de redondance.
+
+### Post hebdomadaire à horaire aléatoire (samedi, 7h-19h UTC)
+
+GitHub Actions ne permet pas nativement un cron à plage aléatoire. Le workflow `.github/workflows/anagrams.yml` se déclenche toutes les 2h le samedi (`cron: "0 7-19/2 * * 6"`, 7 créneaux : 7, 9, 11, 13, 15, 17, 19h UTC). À chaque déclenchement, `postAnagram()` (`api/discord/handlers/anagrams.js`) décide de poster ou non :
+
+1. `alreadyPostedThisWeek()` — si un post a déjà eu lieu cette semaine (même date UTC que `anagram:state.startedAt`), on ne repost pas.
+2. `computeWeeklySlotIndex()` — détermine le créneau courant (1 à 7).
+3. `shouldPostThisSlot(slotIndex)` — tirage au sort, probabilité `1/(créneaux restants)` : 1/7 au premier créneau, 1/6 au suivant, ..., **1/1 (garanti) au dernier créneau (19h)** si aucun post n'a encore eu lieu.
+
+`--force` (`npm run anagram:test`/`anagram:public:force`) bypasse entièrement ce gating — utilisé pour les tests manuels en salon de test et le rattrapage si le cron a raté toute sa fenêtre un samedi donné.
+
+### Commande `/anagram` — scores personnels
+
+Miroir exact de `/frame` (voir [Commande `/frame`](#commande-frame--scores-personnels)) : réponse éphémère, bouton "🔄 Rafraîchir", manche en cours + historique de la saison + score total. Seule différence d'affichage : le classement de la manche en cours n'a pas besoin de `findTiedRank` (les positions sont garanties uniques, `entry.position` est directement le rang) — `findTiedRank` reste utilisé pour le classement de **saison** (ZSET, où des ex-aequo sont possibles sur plusieurs manches cumulées).
+
+### Récapitulatif de fin de saison (Anagram)
+
+Identique à Frame (voir [Récapitulatif de fin de saison](#récapitulatif-de-fin-de-saison)) : posté juste avant la manche 1 d'une nouvelle saison si `seasonId` a changé, mêmes règles de troncage (20 joueurs max, exclusion des 0 pt).
+
+### Scripts npm (Anagram)
+
+| Commande | Effet |
+| --- | --- |
+| `npm run anagram:test` | Poste manuellement une nouvelle partie sur le salon de test, en ignorant le gating hebdomadaire (`--force`). |
+| `npm run anagram:test:dry` | Aperçu console de la prochaine partie (+ récap de saison éventuel), sans écrire d'état ni poster sur Discord. |
+| `npm run anagram:public` | Poste sur le salon public si le gating hebdomadaire (jour + tirage au sort) le permet — utilisé par le cron `anagrams.yml`. |
+| `npm run anagram:public:dry` | Équivalent dry-run de `anagram:public`. |
+| `npm run anagram:public:force` | Poste sur le salon public en ignorant le gating — rattrapage manuel si le cron a raté toute sa fenêtre. |
+| `npm run anagram:scores` | Classement de la partie en cours (position, score partie, score saison) + joueurs n'ayant pas encore joué. |
+| `npm run anagram:reset` | Remet le jeu à zéro : plus de partie active, historique et scores effacés. **Destructif**. |
+
+### Variables d'environnement requises (Anagram)
+
+Aucune nouvelle variable : Anagram réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` (mêmes salons que Frame, décision explicite pour ne pas multiplier les salons) et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (même instance Upstash Redis, espace de clés `anagram:*` totalement séparé de `frame:*`). Le workflow `.github/workflows/anagrams.yml` réutilise aussi les mêmes secrets GitHub Actions que `frames.yml` (déjà configurés, rien à ajouter).
+
+---
+
 ## Détection des arrivées en cours de GDC
 
 ### Contexte

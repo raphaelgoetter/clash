@@ -2,6 +2,8 @@ import assert from "assert";
 import {
   getFirstMondayOfMonth,
   getCurrentSeasonBounds,
+  countWeekdayOccurrencesInRange,
+  countRemainingWeekdayOccurrences,
   countWednesdaysInRange,
   countRemainingWednesdays,
 } from "./dateUtils.js";
@@ -84,6 +86,26 @@ async function main() {
       "X doit refléter les manches réellement restantes pour ce jeu, pas le total calendaire de la saison",
     );
   }
+
+  // countWeekdayOccurrencesInRange — samedis de la saison 134 (jeu Anagram)
+  assert.strictEqual(
+    countWeekdayOccurrencesInRange(
+      new Date("2026-07-06T00:00:00Z"),
+      new Date("2026-08-03T00:00:00Z"),
+      6, // samedi
+    ),
+    4, // 11, 18, 25 juillet + 1er août
+  );
+
+  // countRemainingWeekdayOccurrences — samedi, cohérent avec countRemainingWednesdays
+  assert.strictEqual(countRemainingWeekdayOccurrences(new Date("2026-07-11T13:00:00Z"), 6), 3);
+  assert.strictEqual(countRemainingWeekdayOccurrences(new Date("2026-08-01T13:00:00Z"), 6), 0);
+
+  // countWednesdaysInRange/countRemainingWednesdays restent de simples wrappers (weekday=3)
+  assert.strictEqual(
+    countWednesdaysInRange(new Date("2026-07-06T00:00:00Z"), new Date("2026-08-03T00:00:00Z")),
+    countWeekdayOccurrencesInRange(new Date("2026-07-06T00:00:00Z"), new Date("2026-08-03T00:00:00Z"), 3),
+  );
 
   console.log("✓ dateUtils service tests passed");
 }

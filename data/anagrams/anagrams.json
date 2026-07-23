@@ -1,0 +1,531 @@
+[
+  {
+    "ID": 1,
+    "anagram": "Colombienne digitale",
+    "answer": "Malédiction gobeline",
+    "accept": [
+      "Malédiction gobeline",
+      "Malediction gobeline"
+    ],
+    "cardKey": "Goblin Curse"
+  },
+  {
+    "ID": 2,
+    "anagram": "Cousins pieux subis",
+    "answer": "Buisson suspicieux",
+    "accept": [
+      "Buisson suspicieux"
+    ],
+    "cardKey": "Suspicious Bush"
+  },
+  {
+    "ID": 3,
+    "anagram": "Délibérer basta",
+    "answer": "Barbares d'élite",
+    "accept": [
+      "Barbares d'élite",
+      "Barbares d elite",
+      "Barbares d élite",
+      "Barbares delite",
+      "Barbares d'elite"
+    ],
+    "cardKey": "Elite Barbarians"
+  },
+  {
+    "ID": 4,
+    "anagram": "Suiveurs chaos",
+    "answer": "Chauves-souris",
+    "accept": [
+      "Chauves-souris",
+      "Chauves souris"
+    ],
+    "cardKey": "Bats"
+  },
+  {
+    "ID": 5,
+    "anagram": "Crois loyal",
+    "answer": "Colis royal",
+    "accept": [
+      "colis royal"
+    ],
+    "cardKey": "Royal Delivery"
+  },
+  {
+    "ID": 6,
+    "anagram": "Dantesques grelots",
+    "answer": "Dragons squelettes",
+    "accept": [
+      "Dragons squelettes"
+    ],
+    "cardKey": "Skeleton Dragons"
+  },
+  {
+    "ID": 7,
+    "anagram": "Pétroliers etc",
+    "answer": "Électro-esprit",
+    "accept": [
+      "Électro-esprit",
+      "Electro-esprit",
+      "Electro esprit",
+      "Électro esprit"
+    ],
+    "cardKey": "Electro Spirit"
+  },
+  {
+    "ID": 8,
+    "anagram": "Plage discrète",
+    "answer": "Esprit de glace",
+    "accept": [
+      "Esprit de glace"
+    ],
+    "cardKey": "Ice Spirit"
+  },
+  {
+    "ID": 9,
+    "anagram": "Prestigieuse nord",
+    "answer": "Esprit de guérison",
+    "accept": [
+      "Esprit de guérison",
+      "Esprit de guerison"
+    ],
+    "cardKey": "Heal Spirit"
+  },
+  {
+    "ID": 10,
+    "anagram": "Squattée flûtes",
+    "answer": "Fût à squelettes",
+    "accept": [
+      "Fût à squelettes",
+      "Fut a squelettes",
+      "Fut a squelette"
+    ],
+    "cardKey": "Skeleton Barrel"
+  },
+  {
+    "ID": 11,
+    "anagram": "Leggings abondé",
+    "answer": "Gang de gobelins",
+    "accept": [
+      "Gang de gobelins"
+    ],
+    "cardKey": "Goblin Gang"
+  },
+  {
+    "ID": 12,
+    "anagram": "Grillades droguée oh",
+    "answer": "Horde de gargouilles",
+    "accept": [
+      "Horde de gargouilles"
+    ],
+    "cardKey": "Gargoyles"
+  },
+  {
+    "ID": 13,
+    "anagram": "Cannibales logés",
+    "answer": "Gobelins à lances",
+    "accept": [
+      "Gobelins à lances",
+      "Gobelins a lances"
+    ],
+    "cardKey": "Spear Goblins"
+  },
+  {
+    "ID": 14,
+    "anagram": "Déménage le bougie",
+    "answer": "Méga boule de neige",
+    "accept": [
+      "Méga boule de neige",
+      "Mega boule de neige"
+    ],
+    "cardKey": "Giant Snowball"
+  },
+  {
+    "ID": 15,
+    "anagram": "Créoles rayure",
+    "answer": "Recrues royale",
+    "accept": [
+      "Recrues royale",
+      "Recrues royales"
+    ],
+    "cardKey": "Royal Recruits"
+  },
+  {
+    "ID": 16,
+    "anagram": "Barbacane bardée",
+    "answer": "Cabane de barbare",
+    "accept": [
+      "Cabane de barbare",
+      "Cabane de barbares"
+    ],
+    "cardKey": "Barbarian Hut"
+  },
+  {
+    "ID": 17,
+    "anagram": "Bagel congédié",
+    "answer": "Cage de gobelin",
+    "accept": [
+      "Cage de gobelin"
+    ],
+    "cardKey": "Goblin Cage"
+  },
+  {
+    "ID": 18,
+    "anagram": "Bible démocrate",
+    "answer": "Bélier de combat",
+    "accept": [
+      "Bélier de combat",
+      "Belier de combat"
+    ],
+    "cardKey": "Battle Ram"
+  },
+  {
+    "ID": 19,
+    "anagram": "Chanvre couche douche",
+    "answer": "Chevaucheur de cochon",
+    "accept": [
+      "Chevaucheur de cochon"
+    ],
+    "cardKey": "Hog Rider"
+  },
+  {
+    "ID": 20,
+    "anagram": "Choux à croyons",
+    "answer": "Cochons royaux",
+    "accept": [
+      "Cochons royaux"
+    ],
+    "cardKey": "Royal Hogs"
+  },
+  {
+    "ID": 21,
+    "anagram": "Lecture dix collier",
+    "answer": "Collecteur d'élixir",
+    "accept": [
+      "Collecteur d'élixir",
+      "Collecteur d elixir",
+      "Collecteur d'elixir",
+      "Collecteur delixir"
+    ],
+    "cardKey": "Elixir Collector"
+  },
+  {
+    "ID": 22,
+    "anagram": "Embrouillées dingos",
+    "answer": "Démolisseur gobelin",
+    "accept": [
+      "Démolisseur gobelin",
+      "Demolisseur gobelin"
+    ],
+    "cardKey": "Goblin Demolisher"
+  },
+  {
+    "ID": 23,
+    "anagram": "Absorbance lainage",
+    "answer": "Gobelin à sarbacane",
+    "accept": [
+      "Gobelin à sarbacane",
+      "Gobelin a sarbacane"
+    ],
+    "cardKey": "Dart Goblin"
+  },
+  {
+    "ID": 24,
+    "anagram": "Graisseuse remuée",
+    "answer": "Guérisseuse armée",
+    "accept": [
+      "Guérisseuse armée",
+      "Guerisseuse armee"
+    ],
+    "cardKey": "Battle Healer"
+  },
+  {
+    "ID": 25,
+    "anagram": "Chevaline amont",
+    "answer": "Machine volante",
+    "accept": [
+      "Machine volante"
+    ],
+    "cardKey": "Flying Machine"
+  },
+  {
+    "ID": 26,
+    "anagram": "Arômes touristiques",
+    "answer": "Trois mousquetaires",
+    "accept": [
+      "Trois mousquetaires"
+    ],
+    "cardKey": "Three Musketeers"
+  },
+  {
+    "ID": 27,
+    "anagram": "Démasquées lettrée",
+    "answer": "Armée de squelettes",
+    "accept": [
+      "Armée de squelettes",
+      "Armee de squelettes"
+    ],
+    "cardKey": "Skeleton Army"
+  },
+  {
+    "ID": 28,
+    "anagram": "Acharnent atroce",
+    "answer": "Charrette à canon",
+    "accept": [
+      "Charrette à canon",
+      "Charrette a canon"
+    ],
+    "cardKey": "Cannon Cart"
+  },
+  {
+    "ID": 29,
+    "anagram": "Bourgeoise enflé",
+    "answer": "Foreuse gobeline",
+    "accept": [
+      "Foreuse gobeline"
+    ],
+    "cardKey": "Goblin Drill"
+  },
+  {
+    "ID": 30,
+    "anagram": "Exercent bien pur",
+    "answer": "Prince ténébreux",
+    "accept": [
+      "Prince ténébreux",
+      "Prince tenebreux"
+    ],
+    "cardKey": "Dark Prince"
+  },
+  {
+    "ID": 31,
+    "anagram": "Squattent gelée",
+    "answer": "Squelette géant",
+    "accept": [
+      "Squelette géant",
+      "Squelette geant"
+    ],
+    "cardKey": "Giant Skeleton"
+  },
+  {
+    "ID": 32,
+    "anagram": "Marquage riche",
+    "answer": "Archer magique",
+    "accept": [
+      "Archer magique"
+    ],
+    "cardKey": "Magic Archer"
+  },
+  {
+    "ID": 33,
+    "anagram": "Refonder glande",
+    "answer": "Dragon de l'enfer",
+    "accept": [
+      "Dragon de l'enfer",
+      "Dragon de l enfer",
+      "Dragon de lenfer"
+    ],
+    "cardKey": "Inferno Dragon"
+  },
+  {
+    "ID": 34,
+    "anagram": "Inchangée mobile",
+    "answer": "Machine gobeline",
+    "accept": [
+      "Machine gobeline"
+    ],
+    "cardKey": "Goblin Machine"
+  },
+  {
+    "ID": 35,
+    "anagram": "Mémoires carie",
+    "answer": "Mamie sorcière",
+    "accept": [
+      "Mamie sorcière",
+      "Mamie sorciere"
+    ],
+    "cardKey": "Mother Witch"
+  },
+  {
+    "ID": 36,
+    "anagram": "Modèles ovales",
+    "answer": "Molosse de lave",
+    "accept": [
+      "Molosse de lave"
+    ],
+    "cardKey": "Lava Hound"
+  },
+  {
+    "ID": 37,
+    "anagram": "Accorder église",
+    "answer": "Sorcier de glace",
+    "accept": [
+      "Sorcier de glace"
+    ],
+    "cardKey": "Ice Wizard"
+  },
+  {
+    "ID": 38,
+    "anagram": "Considérait réélu",
+    "answer": "Sorcière de la nuit",
+    "accept": [
+      "Sorcière de la nuit",
+      "Sorciere de la nuit"
+    ],
+    "cardKey": "Night Witch"
+  },
+  {
+    "ID": 39,
+    "anagram": "Immunité rare",
+    "answer": "Maître Mineur",
+    "accept": [
+      "Maître Mineur",
+      "Maitre Mineur"
+    ],
+    "cardKey": "Miner"
+  },
+  {
+    "ID": 40,
+    "anagram": "Charnière dressé",
+    "answer": "Reine des archers",
+    "accept": [
+      "Reine des archers"
+    ],
+    "cardKey": "Archer Queen"
+  },
+  {
+    "ID": 41,
+    "anagram": "Orteils quête",
+    "answer": "Roi squelette",
+    "accept": [
+      "Roi squelette"
+    ],
+    "cardKey": "Skeleton King"
+  },
+  {
+    "ID": 42,
+    "anagram": "Chaudes usage delà",
+    "answer": "Duchesse à la dague",
+    "accept": [
+      "Duchesse à la dague",
+      "Duchesse a la dague"
+    ],
+    "cardKey": "Dagger Duchess"
+  },
+  {
+    "ID": 43,
+    "anagram": "Précipitent",
+    "answer": "Petit Prince",
+    "accept": [
+      "Petit Prince"
+    ],
+    "cardKey": "Little Prince"
+  },
+  {
+    "ID": 44,
+    "anagram": "Malgache virée",
+    "answer": "Méga chevalier",
+    "accept": [
+      "Méga chevalier",
+      "Mega chevalier"
+    ],
+    "cardKey": "Mega Knight"
+  },
+  {
+    "ID": 45,
+    "anagram": "Frontale mayo",
+    "answer": "Fantôme royal",
+    "accept": [
+      "Fantôme royal",
+      "Fantome royal"
+    ],
+    "cardKey": "Royal Ghost"
+  },
+  {
+    "ID": 46,
+    "anagram": "Grenade bob",
+    "answer": "Bébé dragon",
+    "accept": [
+      "Bébé dragon",
+      "Bebe dragon"
+    ],
+    "cardKey": "Baby Dragon"
+  },
+  {
+    "ID": 47,
+    "anagram": "Mature boobs",
+    "answer": "Tour à bombes",
+    "accept": [
+      "Tour à bombes",
+      "Tour a bombes"
+    ],
+    "cardKey": "Bomb Tower"
+  },
+  {
+    "ID": 48,
+    "anagram": "Baromètre pile",
+    "answer": "Pierre tombale",
+    "accept": [
+      "Pierre tombale"
+    ],
+    "cardKey": "Tombstone"
+  },
+  {
+    "ID": 49,
+    "anagram": "Structure école",
+    "answer": "Électrocuteurs",
+    "accept": [
+      "Électrocuteurs",
+      "Electrocuteurs"
+    ],
+    "cardKey": "Zappies"
+  },
+  {
+    "ID": 50,
+    "anagram": "Mouillage gager",
+    "answer": "Méga gargouille",
+    "accept": [
+      "Méga gargouille",
+      "Mega gargouille"
+    ],
+    "cardKey": "Gargoyles"
+  },
+  {
+    "ID": 51,
+    "anagram": "Quatrième sou",
+    "answer": "Mousquetaire",
+    "accept": [
+      "Mousquetaire"
+    ],
+    "cardKey": "Musketeer"
+  },
+  {
+    "ID": 52,
+    "anagram": "Archive drôle",
+    "answer": "Chevalier d'or",
+    "accept": [
+      "Chevalier d'or",
+      "Chevalier d or",
+      "Chevalier dor"
+    ],
+    "cardKey": "Golden Knight"
+  },
+  {
+    "ID": 53,
+    "anagram": "Queue argentin",
+    "answer": "Géante runique",
+    "accept": [
+      "Géante runique",
+      "Geante runique"
+    ],
+    "cardKey": "Rune Giant"
+  },
+  {
+    "ID": 54,
+    "anagram": "Dévolu fessée chefs",
+    "answer": "Cheffe des voleuses",
+    "accept": [
+      "Cheffe des voleuses",
+      "Cheffe des voleuses"
+    ],
+    "cardKey": "Boss Bandit"
+  }
+]

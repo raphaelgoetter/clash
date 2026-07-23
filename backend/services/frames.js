@@ -40,6 +40,7 @@ export function computeSeasonMancheTotal(seasonManche, now = new Date()) {
 }
 import { FAMILY_CLAN_TAGS } from "./warHistory.js";
 import { getOrSet } from "./cache.js";
+import { normalizeAnswer } from "./textNormalize.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FRAMES_DIR = path.resolve(__dirname, "..", "..", "data", "frames");
@@ -320,16 +321,11 @@ export async function startNewGame(channelId) {
 }
 
 // ── Normalisation et vérification de la réponse ─────────────────
-
-export function normalizeAnswer(str) {
-  return String(str ?? "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+// normalizeAnswer est partagée avec le jeu Anagram (backend/services/anagrams.js)
+// — voir textNormalize.js. checkAnswer reste propre à Frame : correspondance
+// par SOUS-CHAÎNE + liste refuse négative (pertinent pour un titre de film où
+// l'utilisateur peut taper juste un extrait) — Anagram utilise une égalité
+// stricte, sémantique différente, donc pas de partage sur cette fonction.
 
 export function checkAnswer(frameEntry, rawAnswer) {
   const normalized = normalizeAnswer(rawAnswer);

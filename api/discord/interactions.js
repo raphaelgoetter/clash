@@ -42,6 +42,11 @@ import {
   handleModalSubmit as handleFrameModalSubmit,
   handleFrameStatsCommand,
 } from "./handlers/frames.js";
+import {
+  buildAnswerModal as buildAnagramAnswerModal,
+  handleModalSubmit as handleAnagramModalSubmit,
+  handleAnagramStatsCommand,
+} from "./handlers/anagrams.js";
 import { isJoinedThisWar } from "../../backend/services/arrivalUtils.js";
 import {
   summarizeWarDecks,
@@ -3468,6 +3473,9 @@ export default async function handler(req, res) {
             "**Frame**\n" +
             "Commande : `/frame`\n" +
             "Usage : affiche tes scores au jeu Frame (devine le film) — manche en cours, historique de la saison, total\n\n" +
+            "**Anagram**\n" +
+            "Commande : `/anagram`\n" +
+            "Usage : affiche tes scores au jeu Anagram (devine la carte) — manche en cours, historique de la saison, total\n\n" +
             "**Help**\n" +
             "Commande : `/help`\n" +
             "Usage : affiche cette fenêtre",
@@ -7557,6 +7565,78 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleFrameModalSubmit(webhookUrl, gameId, discordId, username, rawAnswer));
+    return;
+  }
+
+  // ── Jeu Anagram : commande /anagram (scores personnels) ──
+  if (body.type === 2 && body.data?.name === "anagram") {
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleAnagramStatsCommand(webhookUrl, discordId, username));
+    return;
+  }
+
+  // ── Jeu Anagram : bouton "Rafraîchir" sur /anagram ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id === "anagram_stats_refresh"
+  ) {
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    // type 6 = DEFERRED_UPDATE_MESSAGE : met à jour ce même message éphémère
+    // (au lieu d'en créer un nouveau, cf. type 5 pour la commande initiale).
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleAnagramStatsCommand(webhookUrl, discordId, username));
+    return;
+  }
+
+  // ── Jeu Anagram : bouton "Répondre" → ouverture de la Modal ──
+  // Réponse synchrone immédiate obligatoire : l'ouverture d'une Modal ne
+  // peut pas être différée (pas de runBackground ici). Pas de bouton indice
+  // pour ce jeu (contrairement à Frame).
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("anagram_answer:")
+  ) {
+    const gameId = body.data.custom_id.split(":")[1];
+    return res.status(200).json({ type: 9, data: buildAnagramAnswerModal(gameId) });
+  }
+
+  // ── Jeu Anagram : soumission de la Modal (réponse du joueur) ──
+  // body.type === 5 ici est un MODAL_SUBMIT (InteractionType), à ne pas
+  // confondre avec le type de réponse 5 (DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE)
+  // utilisé plus haut dans ce fichier — deux enums Discord distinctes qui
+  // partagent des valeurs numériques.
+  if (
+    body.type === 5 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("anagram_answer_modal:")
+  ) {
+    const gameId = body.data.custom_id.split(":")[1];
+    const rawAnswer = body.data.components?.[0]?.components?.[0]?.value || "";
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleAnagramModalSubmit(webhookUrl, gameId, discordId, username, rawAnswer));
     return;
   }
 

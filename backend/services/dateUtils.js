@@ -158,13 +158,14 @@ export function parseWeekId(weekId) {
 }
 
 // ============================================================
-// Bornes calendaires d'une saison — jeu Frame
+// Bornes calendaires d'une saison — jeux Frame (mercredi) et Anagram (samedi)
 //
 // Calcul purement calendaire (mois civil), indépendant de l'API Clash
-// Royale : sert uniquement à prédire le nombre total de manches Frame
-// (mercredis) de la saison en cours, pour l'affichage "Manche N/X". Ne pas
-// confondre avec seasonId/computeCurrentSeasonId ci-dessus, qui restent la
-// seule source de vérité pour l'identifiant de saison lui-même.
+// Royale : sert uniquement à prédire le nombre total de manches (Frame :
+// mercredis, Anagram : samedis) de la saison en cours, pour l'affichage
+// "Manche N/X". Ne pas confondre avec seasonId/computeCurrentSeasonId
+// ci-dessus, qui restent la seule source de vérité pour l'identifiant de
+// saison lui-même.
 // ============================================================
 
 /** Premier lundi (UTC minuit) du mois donné. `monthIndex` accepte des
@@ -191,27 +192,40 @@ export function getCurrentSeasonBounds(now = new Date()) {
   return { start, end };
 }
 
-/** Nombre de mercredis dans [start, end) (borne de fin exclue). */
-export function countWednesdaysInRange(start, end) {
+/** Nombre d'occurrences du jour de semaine `weekday` (0=dimanche..6=samedi)
+ * dans [start, end) (borne de fin exclue). */
+export function countWeekdayOccurrencesInRange(start, end, weekday) {
   let count = 0;
   const cursor = new Date(start.getTime());
   while (cursor.getTime() < end.getTime()) {
-    if (cursor.getUTCDay() === 3) count++;
+    if (cursor.getUTCDay() === weekday) count++;
     cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
   return count;
 }
 
-/** Nombre de mercredis STRICTEMENT après `now` avant la fin de la saison
- * calendaire en cours (borne de fin exclue). Volontairement séparé du
- * nombre de manches déjà jouées (inconnu de dateUtils.js, qui n'a aucune
+/** Nombre d'occurrences de `weekday` STRICTEMENT après `now` avant la fin de
+ * la saison calendaire en cours (borne de fin exclue). Volontairement séparé
+ * du nombre de manches déjà jouées (inconnu de dateUtils.js, qui n'a aucune
  * notion d'état de partie) — voir computeSeasonMancheTotal() dans
- * frames.js, qui combine les deux pour obtenir X de façon robuste même si
- * le jeu démarre en cours de saison (mercredis déjà passés non comptés). */
-export function countRemainingWednesdays(now = new Date()) {
+ * frames.js/anagrams.js, qui combine les deux pour obtenir X de façon
+ * robuste même si le jeu démarre en cours de saison (occurrences déjà
+ * passées non comptées). */
+export function countRemainingWeekdayOccurrences(now, weekday) {
   const { end } = getCurrentSeasonBounds(now);
   const tomorrow = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1),
   );
-  return countWednesdaysInRange(tomorrow, end);
+  return countWeekdayOccurrencesInRange(tomorrow, end, weekday);
+}
+
+/** Nombre de mercredis dans [start, end) (borne de fin exclue). */
+export function countWednesdaysInRange(start, end) {
+  return countWeekdayOccurrencesInRange(start, end, 3);
+}
+
+/** Nombre de mercredis STRICTEMENT après `now` avant la fin de la saison
+ * calendaire en cours — voir countRemainingWeekdayOccurrences(). */
+export function countRemainingWednesdays(now = new Date()) {
+  return countRemainingWeekdayOccurrences(now, 3);
 }
