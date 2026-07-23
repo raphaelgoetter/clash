@@ -44,13 +44,12 @@ function buildAnagramEmbed({ seasonId, seasonManche, seasonMancheTotal, anagram 
     description:
       `**Saison ${seasonId} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
       "Devinez le nom de la carte Clash Royale à partir de son anagramme :\n\n" +
-      `**${anagram}**\n\n` +
-      "Cliquez sur le bouton «Répondre» pour soumettre votre réponse.\n\n" +
+      `# ${anagram.toUpperCase()}\n\n` +
+      "Cliquez sur le bouton «Répondre» pour soumettre votre réponse. _(les accents ne comptent pas)_\n\n" +
       "**Barème** — vos points dépendent de votre rang d'arrivée :\n" +
-      "- 1er à trouver : **10 pts**, 2e : **9 pts**, 3e : **8 pts**...\n" +
-      "- 0 pt à partir du 11e joueur\n\n" +
+      "- 1er à trouver : **10 pts**, 2e : **9 pts**, 3e : **8 pts**...\n\n" +
       "Le classement de la saison est mis à jour après chaque manche, et un DM vous est envoyé pour récapituler vos points et votre classement.\n\n" +
-      "**Merci de ne pas spoiler, sinon c'est pas drôle !**\n\n" +
+      "**Merci de ne pas spoiler ni tricher, sinon c'est pas drôle !**\n\n" +
       "🤖 Vérifiez vos scores avec la commande `/anagram`",
     color: ANAGRAM_COLOR,
     footer: {
