@@ -240,7 +240,9 @@ const miner = catalog.winConditionsByName.get("miner");
 }
 
 // ------------------------------------------------------------
-// 5. Écart de niveau extrême → layer4 === -10 (cap atteint, 2%/point)
+// 5. Écart de niveau extrême → layer4 plafonne à -10 (2%/point), puis
+// "écart exceptionnel" au-delà de 15 points cumulés (paliers de 5,
+// bonus = le seuil : 15→-25, 20→-30, 25→-35, 30→-40).
 // ------------------------------------------------------------
 {
   const lowDeck = filler(8).map((c) => ({ ...c, level: 1, rarity: "Common" }));
@@ -250,8 +252,38 @@ const miner = catalog.winConditionsByName.get("miner");
     rarity: "Legendary",
   }));
   const layer4 = computeLevelDifferentialLayer(lowDeck, highDeck);
-  assert.strictEqual(layer4, -10, `Expected capped layer4 = -10, got ${layer4}`);
-  console.log("✓ extreme level gap → layer4 capped at -10");
+  assert.strictEqual(layer4, -40, `Expected exceptional-gap layer4 = -40, got ${layer4}`);
+  console.log("✓ extreme level gap → layer4 exceptional tier at -40");
+
+  // Écarts contrôlés (7 cartes neutres niveau 11 + 1 carte qui porte tout
+  // l'écart) pour vérifier précisément chaque palier et ses bornes.
+  const neutral = filler(7).map((c) => ({ ...c, level: 11, rarity: "Common" }));
+  const deckWithGap = (delta) => [
+    ...neutral,
+    { name: "Gap", level: 11 + delta, rarity: "Common" },
+  ];
+  const baseline = [...neutral, { name: "Gap", level: 11, rarity: "Common" }];
+  const gapCases = [
+    [5, -10], // plafond normal atteint (2%/point)
+    [14, -10], // juste avant le premier palier exceptionnel
+    [15, -25], // 10 (normal) + 15 (exceptionnel)
+    [19, -25],
+    [20, -30],
+    [24, -30],
+    [25, -35],
+    [29, -35],
+    [30, -40],
+    [50, -40], // plafonne au dernier palier, pas d'escalade au-delà
+  ];
+  for (const [delta, expected] of gapCases) {
+    const value = computeLevelDifferentialLayer(baseline, deckWithGap(delta));
+    assert.strictEqual(
+      value,
+      expected,
+      `Gap of ${delta} points should give layer4 = ${expected}, got ${value}`,
+    );
+  }
+  console.log("✓ exceptional-gap tiers (15/20/25/30) match spec at every boundary");
 }
 
 // ------------------------------------------------------------

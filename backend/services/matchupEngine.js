@@ -407,12 +407,31 @@ export function computeUtilityLayer(
 // reste du codebase où toute comparaison de force de deck passe déjà par
 // normLevel() — le niveau brut pénaliserait injustement les decks riches
 // en légendaires/champions. Écart assumé par rapport au texte source.
-// Plafond atteint dès un écart cumulé de 5 points normalisés (10/2).
+// Plafond "normal" atteint dès un écart cumulé de 5 points normalisés (10/2).
+//
+// "Écart exceptionnel" : au-delà de 15 points cumulés, un bonus fixe
+// s'ajoute PAR-DESSUS le plafond normal de ±10 (paliers de 5 points, bonus =
+// le seuil lui-même : 15→+15, 20→+20, 25→+25, 30→+30, soit ±25/±30/±35/±40
+// au total) — un écart de niveau vraiment extrême doit pouvoir dominer le
+// score à lui seul, quitte à dépasser la répartition ±50 normale des 4
+// layers. Seul le clamp final [0,100] de computeDeckMatchupScore fait
+// encore office de garde-fou dans ce cas.
+const EXCEPTIONAL_GAP_TIERS = [
+  { threshold: 30, extra: 30 },
+  { threshold: 25, extra: 25 },
+  { threshold: 20, extra: 20 },
+  { threshold: 15, extra: 15 },
+];
+
 export function computeLevelDifferentialLayer(deckACards, deckBCards) {
   const sum = (cards) =>
     toArray(cards).reduce((total, card) => total + normLevel(card), 0);
   const diff = sum(deckACards) - sum(deckBCards);
-  return clampValue(diff * 2, -10, 10);
+  const absDiff = Math.abs(diff);
+  const base = clampValue(absDiff * 2, 0, 10);
+  const tier = EXCEPTIONAL_GAP_TIERS.find((t) => absDiff >= t.threshold);
+  const magnitude = base + (tier ? tier.extra : 0);
+  return diff < 0 ? -magnitude : magnitude;
 }
 
 // ------------------------------------------------------------
