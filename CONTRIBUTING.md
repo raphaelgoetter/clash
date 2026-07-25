@@ -178,56 +178,54 @@ Ces valeurs sont issues du barème de Clan Wars de Clash Royale.
 ### Matchup GDC
 
 Le matchup GDC mesure la difficulté moyenne des combats d'un joueur sur ses récents combats de guerre.
-Il est calculé en analysant les derniers combats de guerre (ou, à défaut, tous les combats compétitifs disponibles) et en associant cinq critères pondérés.
+Le calcul est purement tactique : il compare les 8 cartes des deux decks réellement joués (win conditions,
+counters, structure, niveaux) — pas les statistiques de compte des joueurs (trophées, winrate, collection…,
+ancien algorithme abandonné).
 
 Généralités :
 
-- Le matchup d’un combat est calculé à partir d’une base de `50%` et d’un total de critères compris entre `-50` et `+50`.
+- Le matchup d'un combat est calculé à partir d'une base `scoreA = 50` (avantage du deck A) et de 4 layers
+  pondérés, calibrés pour que leur somme de maxima vaille `50` — 0 %/100 % ne sont atteints que si les 4
+  s'alignent simultanément à l'extrême (sauf "écart exceptionnel" du Layer 4, cf. ci-dessous, qui peut à lui
+  seul dominer le score).
+- `matchup` (difficulté affichée, 0-1) = `(100 - scoreA) / 100`.
 - `analysis.matchup.average` est la moyenne des matchups de combat sur les batailles GDC récentes.
-- Si le `battleLog` ne contient aucune bataille de guerre, la moyenne est calculée sur les derniers combats compétitifs disponibles.
+- Si le `battleLog` ne contient aucune bataille de guerre, la moyenne est calculée sur les derniers combats
+  compétitifs disponibles.
 
-#### Critères et pondération
+#### Layers et pondération
 
-- `deckScore` (±15) :
-  - Écart de niveau des cartes dans le deck joué.
-  - Max atteint dès qu’il y a un écart d’au moins `10` points entre les deux forces de deck.
-- `collectionScore` (±10) :
-  - Écart de niveau de collection (total de toutes les cartes + nombre d'évo et de héros)
-  - Max atteint pour un écart de collection de `100` points ou plus.
-- `cw2Score` (±5) :
-  - Écart relatif de victoires CW2.
-  - Max atteint pour une différence de `50 %` ou plus.
-- `winRateScore` (±5) :
-  - Écart de winrate.
-  - Max atteint pour une différence de `50` points de pourcentage ou plus.
-- `trophyScore` (±15) :
-  - Écart de trophées.
-  - Max atteint pour une différence de `1000` ou plus.
+1. **Archétype** (±5) — `computeArchetypeLayer()` : avantage macro entre les archétypes des win conditions
+   des deux decks (Beatdown bat Siege/Control, Cycle bat Beatdown… cf. `ARCHETYPE_ADVANTAGE`).
+2. **Counters directs** (±25) — `computeCounterLayer()`/`counterShiftFor()` : pénalité en échelle
+   triangulaire selon les hard-counters (poids 14) et soft-counters (poids 5) trouvés chez l'adversaire
+   pour chaque win condition, depuis une baseline `+15` (aucun counter présent).
+3. **Structure du deck** (±10) — `computeUtilityLayer()` : interpréteur générique de règles entièrement
+   data-driven (`data/clash-royale-matchup-structure-rules.json`, hot-reload sans redéploiement) :
+   `crossRules` (Bait, Split-Push, Heavy Beatdown, Ronin/gros DPS hard+soft), `dispersionRules` (deck trop
+   dispersé : trop de win conditions/sorts/bâtiments), `selfRules` (carence du deck lui-même : anti-air,
+   bâtiment, sort, cartes < 3 élixir, ou 0 win condition reconnue).
+4. **Écart de niveau** (±10, + "écart exceptionnel") — `computeLevelDifferentialLayer()` : 2 % par point
+   d'écart de niveau normalisé (`normLevel()`), plafond normal atteint dès 5 points cumulés. Au-delà de
+   15 points cumulés, un bonus fixe s'ajoute PAR-DESSUS ce plafond, par palier de 5 points (15→±25,
+   20→±30, 25→±35, 30→±40 au total) — un écart de niveau vraiment extrême doit pouvoir dominer le score à
+   lui seul, au-delà de la répartition ±50 normale ; seul le clamp final `[0, 100]` reste garde-fou.
 
-#### Formule de calcul
-
-```text
-deckScore = clamp(opponentDeckStrength - playerDeckStrength, -10, 10) × 1.5
-collectionScore = clamp((opponentCollectionLevel - playerCollectionLevel) / 100, -1, 1) × 10
-cw2Score = clamp((opponentCw2Wins - playerCw2Wins) / max(1, opponentCw2Wins), -0.5, 0.5) × 10
-winRateScore = clamp(opponentWinRateBaseline - playerWinRate, -0.5, 0.5) × 10
-trophyScore = clamp((opponentTrophies - playerTrophies) / 1000, -1, 1) × 15
-
-total = deckScore + collectionScore + cw2Score + winRateScore + trophyScore
-Tension combat (%) = clamp(50 + total, 0, 100)
-```
-
-#### Interprétation
-
-- `0%` : matchup très confortable.
-- `50%` : matchup moyen, combat équilibré.
-- `100%` : matchup très tendu (opposant très supérieur)
+Si aucune vraie win condition (au sens du catalogue) n'est reconnue dans un deck, le calcul se rabat sur des
+"pseudo win conditions" (cartes à forts dégâts type P.E.K.K.A/Mini P.E.K.K.A/Mega Knight/Boss Bandit,
+moyennées si plusieurs trouvées) pour éviter de neutraliser les Layers 1/2. Si vraiment aucune win condition
+n'est identifiable des deux côtés, ces deux layers sont neutralisés pour ce combat (seuls Structure et
+Écart de niveau s'appliquent encore).
 
 #### Source de vérité
 
-- Fonction de référence : `backend/services/battleLogUtils.js`
-- Formule principale : `computeBattleMatchup()`
-- Agrégation : `computeMatchupFromBattleLog()`
+- Moteur pur (synchrone, sans appel LLM) : `backend/services/matchupEngine.js` — `computeDeckMatchupScore()`
+- Catalogue win conditions/counters (+ variantes type LavaLoon) : `data/clash-royale-matchup-catalog.json`,
+  chargé via `backend/services/matchupCatalog.js` (GitHub Contents API + cache 5 min, fallback fichier
+  local en dev)
+- Règles du Layer 3 : `data/clash-royale-matchup-structure-rules.json`
+- Intégration battle log : `backend/services/battleLogUtils.js` — `computeBattleMatchup()`,
+  `computeMatchupFromBattleLog()`
 
 ### Niveau de Tour du Roi
 
