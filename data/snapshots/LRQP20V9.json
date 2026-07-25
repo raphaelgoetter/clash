@@ -14986,7 +14986,7 @@
           "start": "2026-07-24T09:36:00.000Z",
           "end": "2026-07-25T09:35:59.999Z"
         },
-        "snapshotTime": "2026-07-25T06:46:00.155Z",
+        "snapshotTime": "2026-07-25T07:38:51.740Z",
         "snapshotBackupTime": "2026-07-24T09:47:18.278Z",
         "decks": {
           "#202R9VUJCU": 4,
@@ -15015,6 +15015,7 @@
           "#VGJ9LL8VC": 4,
           "#YRGJGR8R": 4,
           "#VLVLQR0UP": 2,
+          "#VPGYR2990": 2,
           "#YGP000RP8": 2,
           "#GGLCLQ82L": 1
         },
@@ -15060,7 +15061,7 @@
           "#82JPJ9J98": 1000,
           "#8YGY2RPCC": 875,
           "#YGP000RP8": 800,
-          "#VPGYR2990": 500,
+          "#VPGYR2990": 700,
           "#UYP0YCQ9": 500,
           "#2G0Q0CV9L": 500,
           "#VGJ9LL8VC": 1350,
@@ -15120,7 +15121,9 @@
           "#8YGY2RPCC": 1,
           "#9CYUGPQ0C": 1,
           "#GJV2UG9P0": 1,
-          "#2L8RPQRJ9": 1
+          "#2L8RPQRJ9": 1,
+          "#RJJ99Y9J": 1,
+          "#VPGYR2990": 1
         },
         "_totalDonationsByTag": {
           "#PP09UGJLL": 77355,
@@ -15138,7 +15141,7 @@
           "#88QP9CJU": 236975,
           "#8QVRJYVYU": 86489,
           "#U2UYYCQVG": 2995,
-          "#GGVQJLG9": 301335,
+          "#GGVQJLG9": 301353,
           "#Q8GYUQ8GG": 57613,
           "#JCCQY0U9G": 19634,
           "#8980QGLLJ": 48489,
@@ -15158,7 +15161,7 @@
           "#8Y90VQYP9": 57914,
           "#YRGJGR8R": 168406,
           "#UYP0YCQ9": 240909,
-          "#VPGYR2990": 14158,
+          "#VPGYR2990": 14202,
           "#8R0LR8GYC": 59581,
           "#VLVLQR0UP": 11579,
           "#9VQYC9GJQ": 102090,
@@ -15208,7 +15211,7 @@
           "#82JPJ9J98": 8,
           "#8YGY2RPCC": 8,
           "#YGP000RP8": 6,
-          "#VPGYR2990": 4,
+          "#VPGYR2990": 6,
           "#UYP0YCQ9": 4,
           "#2G0Q0CV9L": 4,
           "#VGJ9LL8VC": 8,
@@ -15239,7 +15242,7 @@
           "#8Y90VQYP9": 8
         },
         "periodPointsEarned": 27675,
-        "snapshotCount": 105
+        "snapshotCount": 107
       },
       {
         "warDay": "saturday",
