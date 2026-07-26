@@ -3079,20 +3079,23 @@ function buildMatchupDetailEmbed(warDecks, index) {
   // défavorable au joueur, négatif = favorable. C'est l'inverse du signe
   // interne du moteur (scoreA = avantage du joueur) — cf. matchupEngine.js.
   const fmtLayer = (value) => {
-    const displayed = -(Number.isFinite(value) ? value : 0);
+    const displayed = Math.round(-(Number.isFinite(value) ? value : 0));
     return `${displayed > 0 ? "+" : ""}${displayed}`;
   };
 
   // Barre de 18 cases proportionnelle au %matchup (arrondi au plus proche).
   // 18 plutôt que 20 : 20 emoji ne tiennent pas sur une largeur d'écran mobile.
+  // Le rouge (difficulté/adversaire) est proportionnel au %, le bleu (confort/
+  // toi) est le complément — à 71% de difficulté, la barre doit être
+  // majoritairement rouge, pas bleue.
   const difficultyBar = (() => {
     if (typeof matchupPct !== "number") return null;
     const total = 18;
-    const filled = Math.max(
+    const redFilled = Math.max(
       0,
       Math.min(total, Math.round((total * matchupPct) / 100)),
     );
-    return "🟦".repeat(filled) + "🟥".repeat(total - filled);
+    return "🟦".repeat(total - redFilled) + "🟥".repeat(redFilled);
   })();
 
   // Chaque layer séparé par une ligne vide. Les bornes (±5/±25/±10/±10) ne
