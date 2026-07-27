@@ -34,6 +34,7 @@ import {
   handleEnd as handleChampionEnd,
   handleCount as handleChampionCount,
   handleHistory as handleChampionHistory,
+  handleHistoryPage as handleChampionHistoryPage,
   handleSelectInteraction as handleChampionSelect,
 } from "./handlers/championPredictions.js";
 import {
@@ -6993,6 +6994,21 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleChampionSelect(webhookUrl, body));
+    return;
+  }
+
+  // ── MessageComponent : bouton "Précédents" du registre des champions ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("champion_history_page:")
+  ) {
+    const [, clanVal, offsetStr] = body.data.custom_id.split(":");
+    const offset = parseInt(offsetStr, 10) || 0;
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    const originalWebhookUrl = webhookUrl ? `${webhookUrl}/messages/@original` : null;
+    runBackground(() => handleChampionHistoryPage(originalWebhookUrl, clanVal, offset));
     return;
   }
 

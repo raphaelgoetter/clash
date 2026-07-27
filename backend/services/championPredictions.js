@@ -538,12 +538,30 @@ export async function getActiveSessionByClan(clanTag) {
   return latest;
 }
 
-export async function getHistory(clanTag, limit = 10) {
+export async function getHistory(clanTag, limit = 10, offset = 0) {
   const registry = await readChampionRegistry();
   const clean = clanTag.replace(/^#/, "").toUpperCase();
 
-  const chronological = registry
-    .filter((e) => e.clanTag === clean)
+  // Une même semaine peut avoir été archivée plusieurs fois (backfill rejoué) :
+  // on fusionne les entrées par weekId pour ne compter chaque semaine qu'une fois.
+  const byWeek = new Map();
+  for (const e of registry) {
+    if (e.clanTag !== clean) continue;
+    const existing = byWeek.get(e.weekId);
+    if (!existing) {
+      byWeek.set(e.weekId, { ...e, champions: [...(e.champions || [])] });
+      continue;
+    }
+    const seenTags = new Set(existing.champions.map((c) => c.tag));
+    for (const c of e.champions || []) {
+      if (!seenTags.has(c.tag)) {
+        existing.champions.push(c);
+        seenTags.add(c.tag);
+      }
+    }
+  }
+
+  const chronological = [...byWeek.values()]
     .sort((a, b) => (a.seasonId - b.seasonId) || (a.sectionIndex - b.sectionIndex));
 
   const totalCount = {};
@@ -566,9 +584,13 @@ export async function getHistory(clanTag, limit = 10) {
     }
   }
 
-  return chronological
-    .sort((a, b) => (b.seasonId - a.seasonId) || (b.sectionIndex - a.sectionIndex))
-    .slice(0, limit);
+  const descending = [...chronological]
+    .sort((a, b) => (b.seasonId - a.seasonId) || (b.sectionIndex - a.sectionIndex));
+
+  return {
+    entries: descending.slice(offset, offset + limit),
+    hasMore: descending.length > offset + limit,
+  };
 }
 
 export { resolveClan };

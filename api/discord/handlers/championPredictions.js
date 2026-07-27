@@ -247,22 +247,57 @@ export async function handleHistory(webhookUrl, clanVal) {
       await backfillChampionRegistry(clanTag, raceLog);
     }
 
-    const history = await getHistory(clanTag, 10);
+    const { entries: history, hasMore } = await getHistory(clanTag, 10, 0);
 
     if (history.length === 0) {
       await postError(webhookUrl, `Aucun historique de champion pour ${resolved.name}.`);
       return;
     }
 
-    const embed = buildHistoryEmbed(resolved.name, history);
+    const embed = buildHistoryEmbed(resolved.name, history, { offset: 0 });
+    const components = hasMore ? [buildHistoryPaginationRow(clanVal, 10)] : [];
 
     await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ embeds: [embed] }),
+      body: JSON.stringify({ embeds: [embed], components }),
     });
   } catch (err) {
     await postError(webhookUrl, `Erreur : ${err.message}`);
+  }
+}
+
+// Bouton "Précédents" — édite le message existant pour afficher la page
+// suivante (semaines plus anciennes) du registre.
+export async function handleHistoryPage(originalWebhookUrl, clanVal, offset) {
+  if (!originalWebhookUrl) return;
+  try {
+    const resolved = resolveClan(clanVal);
+    const { entries: history, hasMore } = await getHistory(resolved.tag, 10, offset);
+
+    if (history.length === 0) {
+      await fetch(originalWebhookUrl, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ components: [] }),
+      });
+      return;
+    }
+
+    const embed = buildHistoryEmbed(resolved.name, history, { offset });
+    const components = hasMore ? [buildHistoryPaginationRow(clanVal, offset + 10)] : [];
+
+    await fetch(originalWebhookUrl, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ embeds: [embed], components }),
+    });
+  } catch (err) {
+    await fetch(originalWebhookUrl, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: `⚠️ Erreur : ${err.message}` }),
+    }).catch(() => {});
   }
 }
 
@@ -476,7 +511,7 @@ function buildCountEmbed(clanName, weekId, counts, totalVotes, endsAt) {
   };
 }
 
-function buildHistoryEmbed(clanName, history) {
+function buildHistoryEmbed(clanName, history, { offset = 0 } = {}) {
   const lines = history.map((entry) => {
     const weekLabel = entry.weekId || `S${entry.seasonId}W${entry.sectionIndex + 1}`;
     const champions = entry.champions || (entry.champion ? [entry.champion] : null);
@@ -486,21 +521,37 @@ function buildHistoryEmbed(clanName, history) {
     const list = champions
       .map((c) => {
         let line = `🏆 **${c.name}** — ${formatFame(c.fame)} pts`;
-        if (c.totalCount >= 3) line += ` · 👑 ${c.totalCount}x champion`;
-        if (c.streak >= 2) line += ` · 🔥 ${c.streak}x d'affilée`;
+        if (c.totalCount >= 3) line += ` · ${"⭐".repeat(c.totalCount)}`;
+        if (c.streak >= 2) line += ` · ${"🔥".repeat(c.streak)}`;
         return line;
       })
       .join("\n");
     return `**${weekLabel}**\n${list}`;
   });
 
+  const footerTitle = offset === 0 ? "Les 10 derniers champions" : "Champions précédents";
+
   return {
     title: `📜 Registre des Champions — ${clanName}`,
     color: CHAMPION_COLOR,
     description: lines.join("\n\n") || "Aucun champion enregistré.",
     footer: {
-      text: "Les 10 derniers champions",
+      text: `${footerTitle}\n⭐ nombre de titres (dès 3) · 🔥 semaines consécutives (dès 2)`,
     },
+  };
+}
+
+function buildHistoryPaginationRow(clanVal, nextOffset) {
+  return {
+    type: 1,
+    components: [
+      {
+        type: 2,
+        style: 2,
+        label: "Précédents",
+        custom_id: `champion_history_page:${clanVal}:${nextOffset}`,
+      },
+    ],
   };
 }
 

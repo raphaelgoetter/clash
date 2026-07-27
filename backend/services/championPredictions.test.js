@@ -20,6 +20,10 @@ const fixture = [
     champions: [{ tag: "P1", name: "Alice", fame: 3050 }] },
   { clanTag: CLAN_TAG, weekId: "S133W5", seasonId: 133, sectionIndex: 4,
     champions: [{ tag: "P1", name: "Alice", fame: 3100 }, { tag: "P3", name: "Carl", fame: 3100 }] },
+  // Doublon volontaire de S133W5 (simule un backfill rejoué) : ne doit pas
+  // être compté comme une semaine supplémentaire ni casser le calcul de série.
+  { clanTag: CLAN_TAG, weekId: "S133W5", seasonId: 133, sectionIndex: 4,
+    champions: [{ tag: "P1", name: "Alice", fame: 3100 }, { tag: "P3", name: "Carl", fame: 3100 }] },
 ];
 
 async function main() {
@@ -28,10 +32,14 @@ async function main() {
 
   try {
     await writeChampionRegistry(fixture);
-    const history = await getHistory(CLAN_TAG, 10);
+    const { entries: history, hasMore } = await getHistory(CLAN_TAG, 10);
 
-    assert.strictEqual(history.length, 5, "les 5 semaines de la fixture doivent être retournées");
+    assert.strictEqual(
+      history.length, 5,
+      "le doublon de S133W5 doit être fusionné, il ne doit rester que 5 semaines distinctes",
+    );
     assert.strictEqual(history[0].weekId, "S133W5", "l'historique doit être trié en ordre décroissant");
+    assert.strictEqual(hasMore, false, "aucune page suivante quand tout tient dans la limite");
 
     const byWeek = Object.fromEntries(history.map((e) => [e.weekId, e]));
     const champByTag = (weekId, tag) => byWeek[weekId].champions.find((c) => c.tag === tag);
@@ -51,6 +59,17 @@ async function main() {
     // Carl (P3) : ex-æquo avec Alice sur S133W5, champion une seule fois
     assert.strictEqual(champByTag("S133W5", "P3").totalCount, 1);
     assert.strictEqual(champByTag("S133W5", "P3").streak, 1);
+
+    // Pagination : page 1 (limit=3, offset=0) puis page 2 (offset=3)
+    const page1 = await getHistory(CLAN_TAG, 3, 0);
+    assert.strictEqual(page1.entries.length, 3);
+    assert.deepStrictEqual(page1.entries.map((e) => e.weekId), ["S133W5", "S133W4", "S133W3"]);
+    assert.strictEqual(page1.hasMore, true, "il reste 2 semaines plus anciennes");
+
+    const page2 = await getHistory(CLAN_TAG, 3, 3);
+    assert.strictEqual(page2.entries.length, 2);
+    assert.deepStrictEqual(page2.entries.map((e) => e.weekId), ["S133W2", "S133W1"]);
+    assert.strictEqual(page2.hasMore, false, "plus rien après la page 2");
 
     console.log("✓ championPredictions.test.js passed");
   } finally {
