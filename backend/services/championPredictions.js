@@ -544,16 +544,19 @@ export async function getHistory(clanTag, limit = 10, offset = 0) {
 
   // Une même semaine peut avoir été archivée plusieurs fois (backfill rejoué) :
   // on fusionne les entrées par weekId pour ne compter chaque semaine qu'une fois.
+  // Les entrées les plus anciennes utilisent encore le schéma legacy `champion`
+  // (objet unique) au lieu de `champions` (tableau) — on le normalise ici.
   const byWeek = new Map();
   for (const e of registry) {
     if (e.clanTag !== clean) continue;
+    const rawChampions = e.champions || (e.champion ? [e.champion] : []);
     const existing = byWeek.get(e.weekId);
     if (!existing) {
-      byWeek.set(e.weekId, { ...e, champions: [...(e.champions || [])] });
+      byWeek.set(e.weekId, { ...e, champions: [...rawChampions] });
       continue;
     }
     const seenTags = new Set(existing.champions.map((c) => c.tag));
-    for (const c of e.champions || []) {
+    for (const c of rawChampions) {
       if (!seenTags.has(c.tag)) {
         existing.champions.push(c);
         seenTags.add(c.tag);

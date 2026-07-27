@@ -8,6 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REGISTRY_FILE = path.resolve(__dirname, "..", "..", "data", "champion-registry.json");
 const TMP_REGISTRY_FILE = "/tmp/champion-registry.json";
 const CLAN_TAG = "TESTCLAN1";
+const LEGACY_CLAN_TAG = "TESTCLAN2";
 
 const fixture = [
   { clanTag: CLAN_TAG, weekId: "S133W1", seasonId: 133, sectionIndex: 0,
@@ -26,12 +27,22 @@ const fixture = [
     champions: [{ tag: "P1", name: "Alice", fame: 3100 }, { tag: "P3", name: "Carl", fame: 3100 }] },
 ];
 
+// Entrées au format legacy (champ `champion` singulier, avant la migration vers
+// `champions` pluriel) — le registre de clans peu actifs peut encore en contenir,
+// hors de portée du race log donc jamais réécrites par backfillChampionRegistry.
+const legacyFixture = [
+  { clanTag: LEGACY_CLAN_TAG, weekId: "S131W3", seasonId: 131, sectionIndex: 2,
+    champion: { tag: "P4", name: "Dan", fame: 3200 } },
+  { clanTag: LEGACY_CLAN_TAG, weekId: "S131W4", seasonId: 131, sectionIndex: 3,
+    champion: { tag: "P4", name: "Dan", fame: 3100 } },
+];
+
 async function main() {
   const originalLocal = await fs.readFile(REGISTRY_FILE, "utf-8").catch(() => null);
   const originalTmp = await fs.readFile(TMP_REGISTRY_FILE, "utf-8").catch(() => null);
 
   try {
-    await writeChampionRegistry(fixture);
+    await writeChampionRegistry([...fixture, ...legacyFixture]);
     const { entries: history, hasMore } = await getHistory(CLAN_TAG, 10);
 
     assert.strictEqual(
@@ -70,6 +81,18 @@ async function main() {
     assert.strictEqual(page2.entries.length, 2);
     assert.deepStrictEqual(page2.entries.map((e) => e.weekId), ["S133W2", "S133W1"]);
     assert.strictEqual(page2.hasMore, false, "plus rien après la page 2");
+
+    // Schéma legacy `champion` (singulier) : doit être normalisé en `champions`
+    // et rester exploitable pour l'affichage et les stats.
+    const legacyHistory = (await getHistory(LEGACY_CLAN_TAG, 10)).entries;
+    assert.strictEqual(legacyHistory.length, 2);
+    const legacyByWeek = Object.fromEntries(legacyHistory.map((e) => [e.weekId, e]));
+    assert.strictEqual(
+      legacyByWeek["S131W3"].champions[0].name, "Dan",
+      "l'entrée legacy doit être exposée via champions[], pas juste champion",
+    );
+    assert.strictEqual(legacyByWeek["S131W3"].champions[0].totalCount, 2);
+    assert.strictEqual(legacyByWeek["S131W4"].champions[0].streak, 2);
 
     console.log("✓ championPredictions.test.js passed");
   } finally {
