@@ -935,25 +935,45 @@ async function postWarSummary(
     totalFame = apiDayFame;
     isExactFame = true;
   } else if (isLastDay && apiWeekFame !== null) {
-    // J4 : période de collecte terminée. On utilise dans l'ordre :
-    // 1. periodPointsEarned stocké dans le snapshot + total raceLog (si J4 inclus)
-    // 2. raceLog total − cumul pré-reset J3 (si total suffisant)
-    // 3. Snapshot pré-reset (fallback si raceLog pas encore à jour avec J4) — cf. #238
+    // J4 : période de collecte terminée. apiWeekFame (sum participants[].fame) et
+    // _cumulFame/_cumulFamePreReset partagent la même base de calcul ; periodPointsEarned
+    // (race.periodLogs) est une métrique distincte qui peut rester figée avec une valeur
+    // obsolète (snapshot.js gèle periodPointsEarned au premier écrit et ne le recalcule
+    // jamais — vu en prod : mêmes valeurs J1-J3 dupliquées sur 3 semaines d'affilée).
+    // On calcule donc un delta de référence basé sur le cumul fame (même ordre de repli
+    // que l'ancienne logique), et on ne fait confiance à periodPointsEarned que s'il
+    // reste cohérent avec cette référence — sinon on utilise directement le cumul fame.
     const j1j2j3Sum = allWeekDays
       .slice(0, 3)
       .reduce((s, d) => s + (d.periodPointsEarned ?? 0), 0);
-    if (j1j2j3Sum > 0 && apiWeekFame > j1j2j3Sum) {
-      totalFame = Math.max(0, apiWeekFame - j1j2j3Sum);
-      isExactFame = true;
-    } else if (
+
+    let cumulDelta = null;
+    if (
       prevDayEntry?._cumulFamePreReset &&
       Object.keys(prevDayEntry._cumulFamePreReset).length > 0
     ) {
       const prevCumul = sumValues(prevDayEntry._cumulFamePreReset);
-      if (apiWeekFame > prevCumul) {
-        totalFame = Math.max(0, apiWeekFame - prevCumul);
-        isExactFame = true;
-      }
+      if (apiWeekFame > prevCumul) cumulDelta = apiWeekFame - prevCumul;
+    } else if (Object.keys(dayEntry._cumulFame ?? {}).length > 0) {
+      cumulDelta = computeDailyFame(dayEntry, prevDayEntry);
+    }
+
+    const periodSumDelta =
+      j1j2j3Sum > 0 && apiWeekFame > j1j2j3Sum
+        ? apiWeekFame - j1j2j3Sum
+        : null;
+    const periodSumIsConsistent =
+      periodSumDelta != null &&
+      (cumulDelta == null ||
+        Math.abs(periodSumDelta - cumulDelta) <=
+          Math.max(500, cumulDelta * 0.15));
+
+    if (periodSumIsConsistent) {
+      totalFame = periodSumDelta;
+      isExactFame = true;
+    } else if (cumulDelta != null) {
+      totalFame = Math.max(0, cumulDelta);
+      isExactFame = true;
     }
 
     // Fallback snapshot pré-reset : raceLog[0] ne contient pas encore J4
