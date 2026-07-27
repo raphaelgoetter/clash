@@ -38,19 +38,24 @@ const ANAGRAM_COLOR = 0x9b59b6;
 
 // ── Embed / composants du post ────────────────────────────────
 
-function buildAnagramEmbed({ seasonId, seasonManche, seasonMancheTotal, anagram }) {
+function buildAnagramEmbed({
+  seasonId,
+  seasonManche,
+  seasonMancheTotal,
+  anagram,
+}) {
   return {
-    title: "🔤 Le jeu du samedi : Trouvez la carte !",
+    title: "🔤 Le jeu du samedi : Trouve la carte !",
     description:
       `**Saison ${seasonId} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
-      "Devinez le nom de la carte Clash Royale à partir de son anagramme :\n\n" +
+      "Devine le nom de la carte Clash Royale à partir de son anagramme :\n\n" +
       `# ${anagram.toUpperCase()}\n\n` +
-      "Cliquez sur le bouton «Répondre» pour soumettre votre réponse. _(les accents ne comptent pas)_\n\n" +
-      "**Barème** — vos points dépendent de votre rang d'arrivée :\n" +
+      "Clique sur le bouton «Répondre» pour soumettre ta réponse. _(les accents ne comptent pas)_\n\n" +
+      "**Barème** — tes points dépendent de ton rang d'arrivée :\n" +
       "- 1er à trouver : **10 pts**, 2e : **9 pts**, 3e : **8 pts**...\n\n" +
-      "Le classement de la saison est mis à jour après chaque manche, et un DM vous est envoyé pour récapituler vos points et votre classement.\n\n" +
+      "Le classement de la saison est mis à jour après chaque manche, et un MP te sera envoyé pour récapituler tes points et ton classement.\n\n" +
       "**Merci de ne pas spoiler ni tricher, sinon c'est pas drôle !**\n\n" +
-      "🤖 Vérifiez vos scores avec la commande `/anagram`",
+      "🤖 Vérifie tes scores avec la commande `/anagram`",
     color: ANAGRAM_COLOR,
     footer: {
       text: "Prochaine manche : un samedi, à une heure surprise !",
@@ -125,20 +130,30 @@ function buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId) {
     "**Classement final :**",
     ...shown.map((entry) => {
       const rank = findTiedRank(shown, entry.discordId, "totalScore");
-      const tiedCount = shown.filter((e) => e.totalScore === entry.totalScore).length;
-      const label = tiedCount === 1 && rank <= 3 ? SEASON_RECAP_MEDALS[rank - 1] : `${rank}.`;
+      const tiedCount = shown.filter(
+        (e) => e.totalScore === entry.totalScore,
+      ).length;
+      const label =
+        tiedCount === 1 && rank <= 3
+          ? SEASON_RECAP_MEDALS[rank - 1]
+          : `${rank}.`;
       return `${label} ${entry.pseudo} — ${entry.totalScore} pts`;
     }),
   ];
   if (hiddenCount > 0) {
-    lines.push(`... et ${hiddenCount} autre${hiddenCount > 1 ? "s" : ""} joueur${hiddenCount > 1 ? "s" : ""}`);
+    lines.push(
+      `... et ${hiddenCount} autre${hiddenCount > 1 ? "s" : ""} joueur${hiddenCount > 1 ? "s" : ""}`,
+    );
   }
-  lines.push("", `Bravo à tous ! Rendez-vous juste après pour le lancement de la Saison ${newSeasonId}.`);
+  lines.push(
+    "",
+    `Bravo à tous ! Rendez-vous juste après pour le lancement de la Saison ${newSeasonId}.`,
+  );
 
   return {
     title: `🏆 Fin de la Saison ${endedSeasonId} !`,
     description:
-      `Merci aux ${seasonRanking.length} joueur${seasonRanking.length > 1 ? "s" : ""} qui ont participé à « Trouvez la carte » cette saison !\n\n` +
+      `Merci aux ${seasonRanking.length} joueur${seasonRanking.length > 1 ? "s" : ""} qui ont participé à « Trouve la carte » cette saison !\n\n` +
       lines.join("\n"),
     color: ANAGRAM_COLOR,
   };
@@ -149,12 +164,19 @@ async function postSeasonRecap(channelId, endedSeasonId, newSeasonId) {
   const seasonRanking = await computeSeasonRanking(endedSeasonId);
   if (seasonRanking.length === 0) return; // rien à récapituler
 
-  const embed = buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId);
+  const embed = buildSeasonRecapEmbed(
+    seasonRanking,
+    endedSeasonId,
+    newSeasonId,
+  );
   const res = await fetch(
     `https://discord.com/api/v10/channels/${channelId}/messages`,
     {
       method: "POST",
-      headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bot ${token}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ embeds: [embed] }),
     },
   );
@@ -170,7 +192,10 @@ async function postSeasonRecap(channelId, endedSeasonId, newSeasonId) {
 // `force` bypasse le gating hebdomadaire (jour + tirage aléatoire) — utilisé
 // pour les tests manuels et le rattrapage si le cron a raté toute sa fenêtre.
 
-export async function postAnagram(channelId, { dryRun = false, force = false } = {}) {
+export async function postAnagram(
+  channelId,
+  { dryRun = false, force = false } = {},
+) {
   if (dryRun) {
     const anagrams = await loadAnagrams();
     const state = await readState();
@@ -180,14 +205,27 @@ export async function postAnagram(channelId, { dryRun = false, force = false } =
     const seasonId = await getCurrentSeasonId();
     const seasonManche = await previewSeasonManche(seasonId);
     const seasonMancheTotal = computeSeasonMancheTotal(seasonManche);
-    const embed = buildAnagramEmbed({ seasonId, seasonManche, seasonMancheTotal, anagram: entry.anagram });
+    const embed = buildAnagramEmbed({
+      seasonId,
+      seasonManche,
+      seasonMancheTotal,
+      anagram: entry.anagram,
+    });
     const components = buildAnagramComponents(gameId);
 
     let seasonRecapEmbed = null;
-    if (state?.seasonId != null && seasonId != null && state.seasonId !== seasonId) {
+    if (
+      state?.seasonId != null &&
+      seasonId != null &&
+      state.seasonId !== seasonId
+    ) {
       const seasonRanking = await computeSeasonRanking(state.seasonId);
       if (seasonRanking.length > 0) {
-        seasonRecapEmbed = buildSeasonRecapEmbed(seasonRanking, state.seasonId, seasonId);
+        seasonRecapEmbed = buildSeasonRecapEmbed(
+          seasonRanking,
+          state.seasonId,
+          seasonId,
+        );
       }
     }
 
@@ -213,7 +251,11 @@ export async function postAnagram(channelId, { dryRun = false, force = false } =
 
   const previousState = await readState();
   const newSeasonId = await getCurrentSeasonId();
-  if (previousState?.seasonId != null && newSeasonId != null && previousState.seasonId !== newSeasonId) {
+  if (
+    previousState?.seasonId != null &&
+    newSeasonId != null &&
+    previousState.seasonId !== newSeasonId
+  ) {
     await postSeasonRecap(channelId, previousState.seasonId, newSeasonId);
   }
 
@@ -274,7 +316,10 @@ async function postEphemeralEmbed(webhookUrl, embed, components = []) {
       body: JSON.stringify({ embeds: [embed], components }),
     });
   } catch (err) {
-    console.error("[Anagram] Échec PATCH réponse éphémère (embed):", err.message);
+    console.error(
+      "[Anagram] Échec PATCH réponse éphémère (embed):",
+      err.message,
+    );
   }
 }
 
@@ -284,11 +329,19 @@ function ordinal(n) {
   return `${n}${n === 1 ? "ᵉʳ" : "ᵉ"}`;
 }
 
-function buildDmText({ seasonId, seasonManche, seasonMancheTotal, reponse, score, position, seasonScore }) {
+function buildDmText({
+  seasonId,
+  seasonManche,
+  seasonMancheTotal,
+  reponse,
+  score,
+  position,
+  seasonScore,
+}) {
   return [
-    `**Trouvez la carte : Saison ${seasonId} · Manche ${seasonManche}/${seasonMancheTotal}**`,
+    `**Trouve la carte : Saison ${seasonId} · Manche ${seasonManche}/${seasonMancheTotal}**`,
     "",
-    `🃏 **${reponse}** — vous êtes le ${ordinal(position)} à avoir trouvé !`,
+    `🃏 **${reponse}** — tu es le ${ordinal(position)} à avoir trouvé !`,
     `Score de cette manche : **${score} pts**`,
     `Score total de la saison : **${seasonScore} pts**`,
   ].join("\n");
@@ -347,7 +400,7 @@ export async function handleModalSubmit(
 
     const existing = await readParticipant(gameId, discordId);
     if (existing?.solved) {
-      await postEphemeral(webhookUrl, "Vous avez déjà trouvé la réponse !");
+      await postEphemeral(webhookUrl, "Tu as déjà trouvé la réponse !");
       return;
     }
 
@@ -359,12 +412,16 @@ export async function handleModalSubmit(
       await recordAttempt(gameId, discordId, username, false);
       await postEphemeral(
         webhookUrl,
-        "❌ Mauvaise réponse ! Réessayez avec le bouton Répondre.",
+        "❌ Mauvaise réponse ! Réessaie avec le bouton Répondre.",
       );
       return;
     }
 
-    const { participant, score } = await markSolved(gameId, discordId, username);
+    const { participant, score } = await markSolved(
+      gameId,
+      discordId,
+      username,
+    );
     await archiveSolve(
       state,
       entry,
@@ -382,7 +439,7 @@ export async function handleModalSubmit(
     await postEphemeralEmbed(webhookUrl, {
       title: "🃏 Bravo !",
       description:
-        `C'était bien **${entry.answer}** — vous êtes le ${ordinal(participant.position)} à avoir trouvé !\n` +
+        `C'était bien **${entry.answer}** — tu es le ${ordinal(participant.position)} à avoir trouvé !\n` +
         `Score de cette manche : **${score} pts**`,
       ...(imageUrl ? { image: { url: imageUrl } } : {}),
       color: ANAGRAM_COLOR,
@@ -425,15 +482,19 @@ function buildAnagramStatsEmbed({
 }) {
   const lines = [];
 
-  lines.push(`**Saison ${seasonId} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`);
+  lines.push(
+    `**Saison ${seasonId} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`,
+  );
   if (currentSolved) {
-    lines.push(`- Vous avez trouvé le nom de la carte (${ordinal(currentPosition)} à trouver) !`);
-    lines.push(`- Vous avez marqué ${currentScore} points`);
+    lines.push(
+      `- Tu as trouvé le nom de la carte (${ordinal(currentPosition)} à trouver) !`,
+    );
+    lines.push(`- Tu as marqué ${currentScore} points`);
   } else if (currentInteracted) {
-    lines.push("- Vous n'avez pas encore trouvé le nom de la carte !");
-    lines.push("- Vous n'avez pas marqué de points");
+    lines.push("- Tu n'as pas encore trouvé le nom de la carte !");
+    lines.push("- Tu n'as pas marqué de points");
   } else {
-    lines.push("- Vous n'avez pas encore commencé cette manche");
+    lines.push("- Tu n'as pas encore commencé cette manche");
   }
   lines.push(
     `- ${solvedCount} joueur${solvedCount > 1 ? "s" : ""} (sur ${totalParticipants}) ${solvedCount > 1 ? "ont" : "a"} trouvé pour le moment`,
@@ -441,20 +502,22 @@ function buildAnagramStatsEmbed({
 
   for (const m of pastManches) {
     lines.push("");
-    lines.push(`**Saison ${seasonId} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`);
+    lines.push(
+      `**Saison ${seasonId} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`,
+    );
     if (m.played) {
-      lines.push("- Vous avez trouvé le nom de la carte !");
-      lines.push(`- Vous avez marqué ${m.score} points`);
+      lines.push("- Tu as trouvé le nom de la carte !");
+      lines.push(`- Tu as marqué ${m.score} points`);
     } else {
-      lines.push("- Vous n'avez pas joué cette manche");
+      lines.push("- Tu n'as pas joué cette manche");
     }
   }
 
   lines.push("");
   lines.push(`**Score de la saison (S${seasonId}) :**`);
-  lines.push(`- Vous avez accumulé ${seasonTotal} points cette saison`);
+  lines.push(`- Tu as accumulé ${seasonTotal} points cette saison`);
   if (seasonRank != null) {
-    lines.push(`- Votre classement : ${seasonRank} / ${seasonRankTotal}`);
+    lines.push(`- Ton classement : ${seasonRank} / ${seasonRankTotal}`);
   }
 
   return {
@@ -469,30 +532,49 @@ function buildAnagramStatsComponents() {
     {
       type: 1,
       components: [
-        { type: 2, style: 2, label: "🔄 Rafraîchir", custom_id: "anagram_stats_refresh" },
+        {
+          type: 2,
+          style: 2,
+          label: "🔄 Rafraîchir",
+          custom_id: "anagram_stats_refresh",
+        },
       ],
     },
   ];
 }
 
-export async function handleAnagramStatsCommand(webhookUrl, discordId, username) {
+export async function handleAnagramStatsCommand(
+  webhookUrl,
+  discordId,
+  username,
+) {
   try {
     const state = await readState();
     if (!state) {
-      await postEphemeral(webhookUrl, "⚠️ Aucune partie Anagram n'a encore été lancée.");
+      await postEphemeral(
+        webhookUrl,
+        "⚠️ Aucune partie Anagram n'a encore été lancée.",
+      );
       return;
     }
 
-    const [participant, seasonResults, seasonManches, currentInteracted, gameRanking, inProgress, seasonRanking] =
-      await Promise.all([
-        readParticipant(state.gameId, discordId),
-        getPlayerSeasonResults(state.seasonId, discordId),
-        getSeasonManches(state.seasonId),
-        hasPlayerInteracted(state.gameId, discordId),
-        computeGameRanking(state.gameId),
-        listGamePlayersInProgress(state.gameId),
-        computeSeasonRanking(state.seasonId),
-      ]);
+    const [
+      participant,
+      seasonResults,
+      seasonManches,
+      currentInteracted,
+      gameRanking,
+      inProgress,
+      seasonRanking,
+    ] = await Promise.all([
+      readParticipant(state.gameId, discordId),
+      getPlayerSeasonResults(state.seasonId, discordId),
+      getSeasonManches(state.seasonId),
+      hasPlayerInteracted(state.gameId, discordId),
+      computeGameRanking(state.gameId),
+      listGamePlayersInProgress(state.gameId),
+      computeSeasonRanking(state.seasonId),
+    ]);
 
     const currentSeasonManche = state.seasonManche;
     const seasonMancheTotal = state.seasonMancheTotal;
@@ -503,10 +585,14 @@ export async function handleAnagramStatsCommand(webhookUrl, discordId, username)
     const totalParticipants = solvedCount + inProgress.length;
 
     const hasSeasonRank = seasonResults.length > 0;
-    const seasonRank = hasSeasonRank ? findTiedRank(seasonRanking, discordId, "totalScore") : null;
+    const seasonRank = hasSeasonRank
+      ? findTiedRank(seasonRanking, discordId, "totalScore")
+      : null;
     const seasonRankTotal = seasonRanking.length;
 
-    const pastGameIds = seasonManches.filter((gameId) => gameId !== state.gameId);
+    const pastGameIds = seasonManches.filter(
+      (gameId) => gameId !== state.gameId,
+    );
     const pastManches = (
       await Promise.all(
         pastGameIds.map(async (gameId) => {
