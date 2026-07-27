@@ -255,7 +255,7 @@ export async function handleHistory(webhookUrl, clanVal) {
     }
 
     const embed = buildHistoryEmbed(resolved.name, history, { offset: 0 });
-    const components = hasMore ? [buildHistoryPaginationRow(clanVal, 10)] : [];
+    const components = buildHistoryPaginationRow(clanVal, 0, hasMore);
 
     await fetch(webhookUrl, {
       method: "POST",
@@ -285,7 +285,7 @@ export async function handleHistoryPage(originalWebhookUrl, clanVal, offset) {
     }
 
     const embed = buildHistoryEmbed(resolved.name, history, { offset });
-    const components = hasMore ? [buildHistoryPaginationRow(clanVal, offset + 10)] : [];
+    const components = buildHistoryPaginationRow(clanVal, offset, hasMore);
 
     await fetch(originalWebhookUrl, {
       method: "PATCH",
@@ -541,18 +541,25 @@ function buildHistoryEmbed(clanName, history, { offset = 0 } = {}) {
   };
 }
 
-function buildHistoryPaginationRow(clanVal, nextOffset) {
-  return {
-    type: 1,
-    components: [
-      {
-        type: 2,
-        style: 2,
-        label: "Précédents",
-        custom_id: `champion_history_page:${clanVal}:${nextOffset}`,
-      },
-    ],
-  };
+function buildHistoryPaginationRow(clanVal, offset, hasMore) {
+  const buttons = [];
+  if (offset > 0) {
+    buttons.push({
+      type: 2,
+      style: 2,
+      label: "Suivants",
+      custom_id: `champion_history_page:${clanVal}:${Math.max(0, offset - 10)}`,
+    });
+  }
+  if (hasMore) {
+    buttons.push({
+      type: 2,
+      style: 2,
+      label: "Précédents",
+      custom_id: `champion_history_page:${clanVal}:${offset + 10}`,
+    });
+  }
+  return buttons.length > 0 ? [{ type: 1, components: buttons }] : [];
 }
 
 // ── Erreur ────────────────────────────────────────────────────
