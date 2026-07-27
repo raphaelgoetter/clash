@@ -541,8 +541,32 @@ export async function getActiveSessionByClan(clanTag) {
 export async function getHistory(clanTag, limit = 10) {
   const registry = await readChampionRegistry();
   const clean = clanTag.replace(/^#/, "").toUpperCase();
-  return registry
+
+  const chronological = registry
     .filter((e) => e.clanTag === clean)
+    .sort((a, b) => (a.seasonId - b.seasonId) || (a.sectionIndex - b.sectionIndex));
+
+  const totalCount = {};
+  for (const entry of chronological) {
+    for (const c of entry.champions || []) {
+      totalCount[c.tag] = (totalCount[c.tag] || 0) + 1;
+    }
+  }
+
+  const streakByTag = {};
+  for (const entry of chronological) {
+    const currentTags = new Set((entry.champions || []).map((c) => c.tag));
+    for (const c of entry.champions || []) {
+      streakByTag[c.tag] = (streakByTag[c.tag] || 0) + 1;
+      c.streak = streakByTag[c.tag];
+      c.totalCount = totalCount[c.tag];
+    }
+    for (const tag of Object.keys(streakByTag)) {
+      if (!currentTags.has(tag)) streakByTag[tag] = 0;
+    }
+  }
+
+  return chronological
     .sort((a, b) => (b.seasonId - a.seasonId) || (b.sectionIndex - a.sectionIndex))
     .slice(0, limit);
 }

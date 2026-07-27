@@ -484,7 +484,12 @@ function buildHistoryEmbed(clanName, history) {
       return `**${weekLabel}**\n❓ Champion inconnu`;
     }
     const list = champions
-      .map((c) => `🏆 **${c.name}** — ${formatFame(c.fame)} pts`)
+      .map((c) => {
+        let line = `🏆 **${c.name}** — ${formatFame(c.fame)} pts`;
+        if (c.totalCount >= 3) line += ` · 👑 ${c.totalCount}x champion`;
+        if (c.streak >= 2) line += ` · 🔥 ${c.streak}x d'affilée`;
+        return line;
+      })
       .join("\n");
     return `**${weekLabel}**\n${list}`;
   });
