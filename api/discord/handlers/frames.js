@@ -74,7 +74,7 @@ function buildFrameEmbed({
     },
     color: FRAME_COLOR,
     footer: {
-      text: "Prochaine manche : dans une semaine. Bonne chance tout le monde !",
+      text: "Nouvelle manche : mercredi prochain. Bonne chance tout le monde !",
     },
   };
 }

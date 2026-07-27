@@ -58,7 +58,7 @@ function buildAnagramEmbed({
       "🤖 Vérifie tes scores avec la commande `/anagram`",
     color: ANAGRAM_COLOR,
     footer: {
-      text: "Prochaine manche : un samedi, à une heure surprise !",
+      text: "Nouvelle manche : samedi prochain, à une heure surprise !",
     },
   };
 }
