@@ -547,7 +547,7 @@ function buildHistoryPaginationRow(clanVal, offset, hasMore) {
     buttons.push({
       type: 2,
       style: 2,
-      label: "Suivants",
+      label: "↑ Suivants",
       custom_id: `champion_history_page:${clanVal}:${Math.max(0, offset - 10)}`,
     });
   }
@@ -555,7 +555,7 @@ function buildHistoryPaginationRow(clanVal, offset, hasMore) {
     buttons.push({
       type: 2,
       style: 2,
-      label: "Précédents",
+      label: "↓ Précédents",
       custom_id: `champion_history_page:${clanVal}:${offset + 10}`,
     });
   }
