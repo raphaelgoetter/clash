@@ -61,21 +61,24 @@ Aucun changement de code n'est nécessaire pour étendre le test à un autre cla
 
 Tous les horaires ci-dessous sont définis en UTC dans les workflows (`.github/workflows/`). L'heure de Paris correspond à UTC+2 en été (CEST) et UTC+1 en hiver (CET).
 
-| Script                                                  | Workflow                 | Jour(s)                                       | Horaire UTC       | Horaire Paris (été/hiver) | Salon Discord                         |
-| ------------------------------------------------------- | ------------------------ | --------------------------------------------- | ----------------- | ------------------------- | ------------------------------------- |
-| `collectSnapshots.js` (`npm run snapshot`)              | `snapshot.yml`           | Tous les jours                                | Toutes les heures | —                         | Aucun post (données uniquement)       |
-| `notifyMemberChanges.js` (`npm run notify-members`)     | `snapshot.yml`           | Tous les jours                                | Toutes les heures | —                         | Salon membres (ou thread test clan 2) |
-| `refreshClanCache.js` (`npm run cache`)                 | `snapshot.yml`           | Tous les jours                                | Toutes les heures | —                         | Aucun post (cache statique)           |
-| `preResetSnapshot.js`                                   | `pre-reset-snapshot.yml` | Ven, Sam, Dim, Lun                            | 07:30             | 09:30 / 08:30             | Aucun post (données uniquement)       |
-| `notifyWarSummary.js`                                   | `war-summary.yml`        | Tous les jours (poste ven/sam/dim/lun)        | 10:05             | 12:05 / 11:05             | Salon membres (ou thread test clan 2) |
-| `notifyClanStatus.js`                                   | `war-summary.yml`        | Tous les jours (idem)                         | 10:05             | 12:05 / 11:05             | Salon staff (`DISCORD_CHANNEL_STAFF`) |
-| `notifyLastSeen.js`                                     | `last-seen.yml`          | Tous les jours                                | 10:08             | 12:08 / 11:08             | Salon membres (ou thread test clan 2) |
-| `notifyGdcLaunch.js`                                    | `gdc-launch.yml`         | Jeudi                                         | 10:30             | 12:30 / 11:30             | Salon membres principal               |
-| `notifyPreWarSummary.js` (`npm run pre-war-summary`)    | `pre-war-summary.yml`    | Mercredi                                      | 14:00             | 16:00 / 15:00             | Salon membres principal               |
-| `notifyRules.js`                                        | `rules.yml`              | Mardi (le script ne poste que le 1er du mois) | 14:00             | 16:00 / 15:00             | Salon membres principal               |
-| `autoStartPredictions.js` (`npm run predictions:start`) | `predictions.yml`        | Mardi                                         | 08:00             | 10:00 / 09:00             | Salon membres principal               |
-| `autoEndPredictions.js` (`npm run predictions:end`)     | `predictions.yml`        | Lundi                                         | 12:00             | 14:00 / 13:00             | Salon membres principal               |
-| `postFrame.js` (`npm run frame:public`)                 | `frames.yml`             | Mercredi                                      | 08:00             | 10:00 / 09:00             | Salon "Général"                       |
+| Script                                                   | Workflow                 | Jour(s)                                       | Horaire UTC                | Horaire Paris (été/hiver)  | Salon Discord                          |
+| --------------------------------------------------------- | -------------------------- | ------------------------------------------------ | ----------------------------- | ------------------------------ | ----------------------------------------- |
+| `collectSnapshots.js` (`npm run snapshot`)               | `snapshot.yml`           | Tous les jours                                | Toutes les heures          | —                          | Aucun post (données uniquement)        |
+| `notifyMemberChanges.js` (`npm run notify-members`)      | `snapshot.yml`           | Tous les jours                                | Toutes les heures          | —                          | Salon membres (ou thread test clan 2)  |
+| `refreshClanCache.js` (`npm run cache`)                  | `snapshot.yml`           | Tous les jours                                | Toutes les heures          | —                          | Aucun post (cache statique)            |
+| `preResetSnapshot.js`                                    | `pre-reset-snapshot.yml` | Ven, Sam, Dim, Lun                            | 07:30                      | 09:30 / 08:30              | Aucun post (données uniquement)        |
+| `notifyWarSummary.js`                                    | `war-summary.yml`        | Tous les jours (poste ven/sam/dim/lun)        | 10:05                      | 12:05 / 11:05              | Salon membres (ou thread test clan 2)  |
+| `notifyClanStatus.js`                                    | `war-summary.yml`        | Tous les jours (idem)                         | 10:05                      | 12:05 / 11:05              | Salon staff (`DISCORD_CHANNEL_STAFF`)  |
+| `notifyLastSeen.js`                                      | `last-seen.yml`          | Tous les jours                                | 10:08                      | 12:08 / 11:08              | Salon membres (ou thread test clan 2)  |
+| `notifyGdcLaunch.js`                                     | `gdc-launch.yml`         | Jeudi                                         | 10:30                      | 12:30 / 11:30              | Salon membres principal                |
+| `notifyPreWarSummary.js` (`npm run pre-war-summary`)     | `pre-war-summary.yml`    | Mercredi                                      | 14:00                      | 16:00 / 15:00              | Salon membres principal                |
+| `notifyRules.js`                                         | `rules.yml`              | Mardi (le script ne poste que le 1er du mois) | 14:00                      | 16:00 / 15:00              | Salon membres principal                |
+| `autoStartPredictions.js` (`npm run predictions:start`)  | `predictions.yml`        | Mardi                                         | 08:00                      | 10:00 / 09:00              | Salon membres principal                |
+| `autoEndPredictions.js` (`npm run predictions:end`)      | `predictions.yml`        | Lundi                                         | 12:00                      | 14:00 / 13:00              | Salon membres principal                |
+| `postFrame.js` (`npm run frame:public`)                  | `frames.yml`             | Mercredi                                      | 08:00                      | 10:00 / 09:00              | Salon "Général"                        |
+| `postAnagram.js` (`npm run anagram:public`)              | `anagrams.yml`           | Samedi                                        | 07:00-19:00 (aléatoire)\*  | 09:00-21:00 / 08:00-20:00  | Salon "Général"                        |
+
+\* `anagrams.yml` se déclenche toutes les 2h (7, 9, 11, 13, 15, 17, 19h UTC — 7 créneaux). À chaque déclenchement, un tirage au sort décide de poster ou non, avec une probabilité croissante garantissant un post au plus tard au dernier créneau (19h UTC) si aucun post n'a encore eu lieu cette semaine — voir [Post hebdomadaire à horaire aléatoire](#post-hebdomadaire-à-horaire-aléatoire-samedi-7h-19h-utc) dans la section Jeu Anagram.
 
 ---
 
