@@ -42,20 +42,26 @@ const HINT_LABELS = {
 
 // ── Embed / composants du post ────────────────────────────────
 
-function buildFrameEmbed({ seasonId, seasonManche, seasonMancheTotal, gameId, cacheBust }) {
+function buildFrameEmbed({
+  seasonId,
+  seasonManche,
+  seasonMancheTotal,
+  gameId,
+  cacheBust,
+}) {
   return {
-    title: "🎬 Le jeu du mercredi : Trouvez le film !",
+    title: "🎬 Le jeu du mercredi : Trouve le film !",
     description:
       `**Saison ${seasonId} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
-      "Devinez le titre d'un film à partir d'une image.\n\n" +
-      "Cliquez sur le bouton «Répondre» pour soumettre votre réponse, ou prenez un indice pour vous aider.\n\n" +
+      "Devine le titre d'un film à partir d'une image.\n\n" +
+      "Clique sur le bouton «Répondre» pour soumettre ta réponse, ou prends un indice pour t'aider.\n\n" +
       "**Barème**\n" +
       "- Réponse exacte du 1er coup sans indice : **10 pts**\n" +
       "- Chaque tentative incorrecte : **-2 pts**\n" +
       "- Chaque indice utilisé : **-3 pts**\n\n" +
-      "Le classement de la saison est mis à jour après chaque manche, et un DM vous est envoyé pour récapituler vos points et votre classement.\n\n" +
+      "Le classement de la saison est mis à jour après chaque manche, et un MP te sera envoyé pour récapituler tes points et ton classement.\n\n" +
       "**Merci de ne pas spoiler, sinon c'est pas drôle !**\n\n" +
-      "🤖 Vérifiez vos scores avec la commande `/frame`",
+      "🤖 Vérifie tes scores avec la commande `/frame`",
     // gameId= épingle l'image de CETTE manche précise, pour que ce post
     // continue d'afficher LA BONNE image même une fois la partie suivante
     // démarrée (sinon la route servirait l'image de la partie active, cf.
@@ -63,10 +69,12 @@ function buildFrameEmbed({ seasonId, seasonManche, seasonMancheTotal, gameId, ca
     // messages se remettaient à afficher l'image de la manche en cours dès
     // que Discord revalidait son cache). v= reste un simple cache-buster
     // pour forcer un fetch frais au moment de la publication.
-    image: { url: `${TRUST_ROYALE_URL}/api/frames/image?gameId=${gameId}&v=${cacheBust}` },
+    image: {
+      url: `${TRUST_ROYALE_URL}/api/frames/image?gameId=${gameId}&v=${cacheBust}`,
+    },
     color: FRAME_COLOR,
     footer: {
-      text: "Prochaine manche : dans une semaine. Bonne chance tout le monde !",
+      text: "Nouvelle manche : mercredi prochain. Bonne chance tout le monde !",
     },
   };
 }
@@ -114,7 +122,7 @@ export function buildAnswerModal(gameId) {
             type: 4,
             custom_id: "frame_answer_input",
             style: 1,
-            label: "Votre réponse",
+            label: "Ta réponse",
             placeholder: "Titre du film...",
             required: true,
             max_length: 100,
@@ -151,20 +159,30 @@ function buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId) {
     "**Classement final :**",
     ...shown.map((entry) => {
       const rank = findTiedRank(shown, entry.discordId, "totalScore");
-      const tiedCount = shown.filter((e) => e.totalScore === entry.totalScore).length;
-      const label = tiedCount === 1 && rank <= 3 ? SEASON_RECAP_MEDALS[rank - 1] : `${rank}.`;
+      const tiedCount = shown.filter(
+        (e) => e.totalScore === entry.totalScore,
+      ).length;
+      const label =
+        tiedCount === 1 && rank <= 3
+          ? SEASON_RECAP_MEDALS[rank - 1]
+          : `${rank}.`;
       return `${label} ${entry.pseudo} — ${entry.totalScore} pts`;
     }),
   ];
   if (hiddenCount > 0) {
-    lines.push(`... et ${hiddenCount} autre${hiddenCount > 1 ? "s" : ""} joueur${hiddenCount > 1 ? "s" : ""}`);
+    lines.push(
+      `... et ${hiddenCount} autre${hiddenCount > 1 ? "s" : ""} joueur${hiddenCount > 1 ? "s" : ""}`,
+    );
   }
-  lines.push("", `Bravo à tous ! Rendez-vous juste après pour le lancement de la Saison ${newSeasonId}.`);
+  lines.push(
+    "",
+    `Bravo à tous ! Rendez-vous juste après pour le lancement de la Saison ${newSeasonId}.`,
+  );
 
   return {
     title: `🏆 Fin de la Saison ${endedSeasonId} !`,
     description:
-      `Merci aux ${seasonRanking.length} joueur${seasonRanking.length > 1 ? "s" : ""} qui ont participé à « Trouvez le film » cette saison !\n\n` +
+      `Merci aux ${seasonRanking.length} joueur${seasonRanking.length > 1 ? "s" : ""} qui ont participé à « Trouve le film » cette saison !\n\n` +
       lines.join("\n"),
     color: FRAME_COLOR,
   };
@@ -175,12 +193,19 @@ async function postSeasonRecap(channelId, endedSeasonId, newSeasonId) {
   const seasonRanking = await computeSeasonRanking(endedSeasonId);
   if (seasonRanking.length === 0) return; // rien à récapituler (saison sans le moindre point marqué)
 
-  const embed = buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId);
+  const embed = buildSeasonRecapEmbed(
+    seasonRanking,
+    endedSeasonId,
+    newSeasonId,
+  );
   const res = await fetch(
     `https://discord.com/api/v10/channels/${channelId}/messages`,
     {
       method: "POST",
-      headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bot ${token}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ embeds: [embed] }),
     },
   );
@@ -204,14 +229,28 @@ export async function postFrame(channelId, { dryRun = false } = {}) {
     const seasonId = await getCurrentSeasonId();
     const seasonManche = await previewSeasonManche(seasonId);
     const seasonMancheTotal = computeSeasonMancheTotal(seasonManche);
-    const embed = buildFrameEmbed({ seasonId, seasonManche, seasonMancheTotal, gameId, cacheBust: Date.now() });
+    const embed = buildFrameEmbed({
+      seasonId,
+      seasonManche,
+      seasonMancheTotal,
+      gameId,
+      cacheBust: Date.now(),
+    });
     const components = buildFrameComponents(gameId);
 
     let seasonRecapEmbed = null;
-    if (state?.seasonId != null && seasonId != null && state.seasonId !== seasonId) {
+    if (
+      state?.seasonId != null &&
+      seasonId != null &&
+      state.seasonId !== seasonId
+    ) {
       const seasonRanking = await computeSeasonRanking(state.seasonId);
       if (seasonRanking.length > 0) {
-        seasonRecapEmbed = buildSeasonRecapEmbed(seasonRanking, state.seasonId, seasonId);
+        seasonRecapEmbed = buildSeasonRecapEmbed(
+          seasonRanking,
+          state.seasonId,
+          seasonId,
+        );
       }
     }
 
@@ -223,7 +262,11 @@ export async function postFrame(channelId, { dryRun = false } = {}) {
 
   const previousState = await readState();
   const newSeasonId = await getCurrentSeasonId();
-  if (previousState?.seasonId != null && newSeasonId != null && previousState.seasonId !== newSeasonId) {
+  if (
+    previousState?.seasonId != null &&
+    newSeasonId != null &&
+    previousState.seasonId !== newSeasonId
+  ) {
     await postSeasonRecap(channelId, previousState.seasonId, newSeasonId);
   }
 
@@ -366,7 +409,7 @@ export async function handleHintButton(
     if (existing?.solved) {
       await postEphemeral(
         webhookUrl,
-        `💡 **${label}** : ${value}\n_Vous avez déjà trouvé, cet indice ne change plus votre score._`,
+        `💡 **${label}** : ${value}\n_Tu as déjà trouvé, cet indice ne change plus ton score._`,
       );
       return;
     }
@@ -397,11 +440,19 @@ function ordinal(n) {
   return `${n}${n === 1 ? "ᵉʳ" : "ᵉ"}`;
 }
 
-function buildDmText({ seasonId, seasonManche, seasonMancheTotal, titre, score, gameRank, seasonScore }) {
+function buildDmText({
+  seasonId,
+  seasonManche,
+  seasonMancheTotal,
+  titre,
+  score,
+  gameRank,
+  seasonScore,
+}) {
   return [
-    `**Trouvez le film : Saison ${seasonId} · Manche ${seasonManche}/${seasonMancheTotal}**`,
+    `**Trouve le film : Saison ${seasonId} · Manche ${seasonManche}/${seasonMancheTotal}**`,
     "",
-    `🎬 **${titre}** — vous êtes le ${ordinal(gameRank)} à avoir trouvé !`,
+    `🎬 **${titre}** — tu es le ${ordinal(gameRank)} à avoir trouvé !`,
     `Score de cette manche : **${score} pts**`,
     `Score total de la saison : **${seasonScore} pts**`,
   ].join("\n");
@@ -460,7 +511,7 @@ export async function handleModalSubmit(
 
     const existing = await readParticipant(gameId, discordId);
     if (existing?.solved) {
-      await postEphemeral(webhookUrl, "Vous avez déjà trouvé la réponse !");
+      await postEphemeral(webhookUrl, "Tu as déjà trouvé la réponse !");
       return;
     }
 
@@ -472,7 +523,7 @@ export async function handleModalSubmit(
       await recordAttempt(gameId, discordId, username, false);
       await postEphemeral(
         webhookUrl,
-        "❌ Mauvaise réponse ! (-2 pts). Réessayez avec le bouton Répondre.",
+        "❌ Mauvaise réponse ! (-2 pts). Réessaye avec le bouton Répondre.",
       );
       return;
     }
@@ -541,38 +592,42 @@ function buildFrameStatsEmbed({
 }) {
   const lines = [];
 
-  lines.push(`**Saison ${seasonId} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`);
+  lines.push(
+    `**Saison ${seasonId} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`,
+  );
   if (currentSolved) {
-    lines.push("- Vous avez trouvé le nom du film !");
-    lines.push(`- Vous avez marqué ${currentScore} points`);
-    lines.push(`- Votre classement : ${currentRank} / ${solvedCount}`);
+    lines.push("- Tu as trouvé le nom du film !");
+    lines.push(`- Tu as marqué ${currentScore} points`);
+    lines.push(`- Ton classement : ${currentRank} / ${solvedCount}`);
   } else if (currentInteracted) {
-    lines.push("- Vous n'avez pas encore trouvé le nom du film !");
-    lines.push("- Vous n'avez pas marqué de points");
+    lines.push("- Tu n'as pas encore trouvé le nom du film !");
+    lines.push("- Tu n'as pas marqué de points");
   } else {
-    lines.push("- Vous n'avez pas encore commencé cette manche");
+    lines.push("- Tu n'as pas encore commencé cette manche");
   }
   lines.push(
     `- ${solvedCount} joueur${solvedCount > 1 ? "s" : ""} (sur ${totalParticipants}) ${solvedCount > 1 ? "ont" : "a"} trouvé pour le moment, ` +
-      `et ${perfectCount} joueur${perfectCount > 1 ? "s" : ""} ${perfectCount > 1 ? "ont" : "a"} 10pts`,
+      `et ${perfectCount} joueur${perfectCount > 1 ? "s" : ""} ${perfectCount > 1 ? "ont" : "a"} 10 pts`,
   );
 
   for (const m of pastManches) {
     lines.push("");
-    lines.push(`**Saison ${seasonId} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`);
+    lines.push(
+      `**Saison ${seasonId} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`,
+    );
     if (m.played) {
-      lines.push("- Vous avez trouvé le nom du film !");
-      lines.push(`- Vous avez marqué ${m.score} points`);
+      lines.push("- Tu as trouvé le nom du film !");
+      lines.push(`- Tu as marqué ${m.score} points`);
     } else {
-      lines.push("- Vous n'avez pas joué cette manche");
+      lines.push("- Tu n'as pas joué cette manche");
     }
   }
 
   lines.push("");
   lines.push(`**Score de la saison (S${seasonId}) :**`);
-  lines.push(`- Vous avez accumulé ${seasonTotal} points cette saison`);
+  lines.push(`- Tu as accumulé ${seasonTotal} points cette saison`);
   if (seasonRank != null) {
-    lines.push(`- Votre classement : ${seasonRank} / ${seasonRankTotal}`);
+    lines.push(`- Ton classement : ${seasonRank} / ${seasonRankTotal}`);
   }
 
   return {
@@ -587,7 +642,12 @@ function buildFrameStatsComponents() {
     {
       type: 1,
       components: [
-        { type: 2, style: 2, label: "🔄 Rafraîchir", custom_id: "frame_stats_refresh" },
+        {
+          type: 2,
+          style: 2,
+          label: "🔄 Rafraîchir",
+          custom_id: "frame_stats_refresh",
+        },
       ],
     },
   ];
@@ -597,20 +657,30 @@ export async function handleFrameStatsCommand(webhookUrl, discordId, username) {
   try {
     const state = await readState();
     if (!state) {
-      await postEphemeral(webhookUrl, "⚠️ Aucune partie Frame n'a encore été lancée.");
+      await postEphemeral(
+        webhookUrl,
+        "⚠️ Aucune partie Frame n'a encore été lancée.",
+      );
       return;
     }
 
-    const [participant, seasonResults, seasonManches, currentInteracted, gameRanking, inProgress, seasonRanking] =
-      await Promise.all([
-        readParticipant(state.gameId, discordId),
-        getPlayerSeasonResults(state.seasonId, discordId),
-        getSeasonManches(state.seasonId),
-        hasPlayerInteracted(state.gameId, discordId),
-        computeGameRanking(state.gameId),
-        listGamePlayersInProgress(state.gameId),
-        computeSeasonRanking(state.seasonId),
-      ]);
+    const [
+      participant,
+      seasonResults,
+      seasonManches,
+      currentInteracted,
+      gameRanking,
+      inProgress,
+      seasonRanking,
+    ] = await Promise.all([
+      readParticipant(state.gameId, discordId),
+      getPlayerSeasonResults(state.seasonId, discordId),
+      getSeasonManches(state.seasonId),
+      hasPlayerInteracted(state.gameId, discordId),
+      computeGameRanking(state.gameId),
+      listGamePlayersInProgress(state.gameId),
+      computeSeasonRanking(state.seasonId),
+    ]);
 
     const currentSeasonManche = state.seasonManche;
     const seasonMancheTotal = state.seasonMancheTotal;
@@ -619,13 +689,19 @@ export async function handleFrameStatsCommand(webhookUrl, discordId, username) {
     const solvedCount = gameRanking.length;
     const totalParticipants = solvedCount + inProgress.length;
     const perfectCount = gameRanking.filter((r) => r.score === 10).length;
-    const currentRank = currentSolved ? findTiedRank(gameRanking, discordId, "score") : null;
+    const currentRank = currentSolved
+      ? findTiedRank(gameRanking, discordId, "score")
+      : null;
 
     const hasSeasonRank = seasonResults.length > 0;
-    const seasonRank = hasSeasonRank ? findTiedRank(seasonRanking, discordId, "totalScore") : null;
+    const seasonRank = hasSeasonRank
+      ? findTiedRank(seasonRanking, discordId, "totalScore")
+      : null;
     const seasonRankTotal = seasonRanking.length;
 
-    const pastGameIds = seasonManches.filter((gameId) => gameId !== state.gameId);
+    const pastGameIds = seasonManches.filter(
+      (gameId) => gameId !== state.gameId,
+    );
     const pastManches = (
       await Promise.all(
         pastGameIds.map(async (gameId) => {
