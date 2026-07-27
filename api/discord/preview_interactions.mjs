@@ -3730,6 +3730,7 @@ export default async function handler(req, res) {
           const missing = nextReq.cards - have;
           tourFooter = `Prochain niveau de tour : manque ${missing} carte${missing > 1 ? "s" : ""} niveau ${nextReq.level}+`;
         }
+        tourFooter += " • Les troupes de tour comptent dans les cartes";
 
         // Formatage de la distribution (4 niveaux par ligne)
         const distLines = [];
@@ -3780,17 +3781,17 @@ export default async function handler(req, res) {
           // Ligne 1 : cartes | évolutions | héros
           {
             name: "Cartes :",
-            value: `${allCards.length} / ${TOTAL_CARDS}`,
+            value: String(allCards.length),
             inline: true,
           },
           {
             name: "Évolutions :",
-            value: `${evolvedCount} / ${TOTAL_EVOLUTIONS}`,
+            value: String(evolvedCount),
             inline: true,
           },
           {
             name: "Héros :",
-            value: `${heroCount} / ${TOTAL_HEROES}`,
+            value: String(heroCount),
             inline: true,
           },
           // Ligne 2 : tour du roi | niveau de collection

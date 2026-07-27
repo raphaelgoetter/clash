@@ -6326,6 +6326,7 @@ export default async function handler(req, res) {
           const plural = missing > 1 ? "s" : "";
           tourFooter = `Prochain niveau de tour : manque ${missing} carte${plural} niveau ${level}+`;
         }
+        tourFooter += " • Les troupes de tour comptent dans les cartes";
 
         // Formatage de la distribution (4 niveaux par ligne)
         const distLines = [];
@@ -6376,17 +6377,17 @@ export default async function handler(req, res) {
           // Ligne 1 : cartes | évolutions | héros
           {
             name: "Cartes :",
-            value: `${col.cardCount} / ${col.totals.cards}`,
+            value: String(col.cardCount),
             inline: true,
           },
           {
             name: "Évolutions :",
-            value: `${col.evolvedCount} / ${col.totals.evolutions}`,
+            value: String(col.evolvedCount),
             inline: true,
           },
           {
             name: "Héros :",
-            value: `${col.heroCount} / ${col.totals.heroes}`,
+            value: String(col.heroCount),
             inline: true,
           },
           // Ligne 2 : tour du roi | niveau de collection
