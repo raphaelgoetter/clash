@@ -15903,7 +15903,7 @@
           "start": "2026-07-26T09:36:00.000Z",
           "end": "2026-07-27T09:35:59.999Z"
         },
-        "snapshotTime": "2026-07-27T01:34:07.161Z",
+        "snapshotTime": "2026-07-27T03:03:22.582Z",
         "snapshotBackupTime": "2026-07-26T09:40:16.924Z",
         "decks": {
           "#202R9VUJCU": 4,
@@ -15917,6 +15917,7 @@
           "#8YGY2RPCC": 4,
           "#99VQ2LR02": 4,
           "#9VQYC9GJQ": 4,
+          "#CGJP0YYUJ": 4,
           "#GGRLYR8PL": 4,
           "#GGVQJLG9": 4,
           "#JCCQY0U9G": 4,
@@ -16006,7 +16007,7 @@
           "#GGVQJLG9": 2550,
           "#GGRLYR8PL": 2800,
           "#LRPQL8VCL": 2750,
-          "#CGJP0YYUJ": 2500,
+          "#CGJP0YYUJ": 3300,
           "#99VQ2LR02": 3300,
           "#UR2QLPV20": 0,
           "#R2C89LVU": 0,
@@ -16041,7 +16042,9 @@
           "#UPC0Y0LRQ": 1,
           "#8P29RRU2": 1,
           "#82UPUGYP": 1,
-          "#8R0LR8GYC": 1
+          "#8R0LR8GYC": 1,
+          "#GJV2UG9P0": 1,
+          "#CGJP0YYUJ": 1
         },
         "_totalDonationsByTag": {
           "#LV0VUJVU": 90429,
@@ -16057,7 +16060,7 @@
           "#GGRLYR8PL": 22602,
           "#QYGYV8R8Y": 33232,
           "#GGVQJLG9": 301539,
-          "#88QP9CJU": 236983,
+          "#88QP9CJU": 237019,
           "#8QVRJYVYU": 86525,
           "#U2UYYCQVG": 3023,
           "#Q8GYUQ8GG": 57701,
@@ -16071,7 +16074,7 @@
           "#82JPJ9J98": 220798,
           "#2U9QL8Q89": 48450,
           "#8GGQLU28": 102222,
-          "#YGP000RP8": 116167,
+          "#YGP000RP8": 116203,
           "#2L8RPQRJ9": 62881,
           "#UPC0Y0LRQ": 11063,
           "#ULVPUU9C2": 7000,
@@ -16160,14 +16163,14 @@
           "#GGVQJLG9": 16,
           "#GGRLYR8PL": 16,
           "#LRPQL8VCL": 16,
-          "#CGJP0YYUJ": 12,
+          "#CGJP0YYUJ": 16,
           "#99VQ2LR02": 16,
           "#UR2QLPV20": 0,
           "#R2C89LVU": 0,
           "#YQGCRQ0": 4
         },
         "periodPointsEarned": 25900,
-        "snapshotCount": 105
+        "snapshotCount": 109
       }
     ],
     "donationBaseline": {
