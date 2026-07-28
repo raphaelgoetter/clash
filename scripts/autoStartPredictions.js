@@ -37,7 +37,10 @@ const ROLE_CACHE = new Map();
 let roleCacheLoaded = false;
 
 function normalizeRoleName(value) {
-  return String(value ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+  return String(value ?? "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
 }
 
 async function getClanRoleId(clanTag) {
@@ -48,9 +51,12 @@ async function getClanRoleId(clanTag) {
   if (!ROLE_CACHE.has(cacheKey)) {
     try {
       const token = process.env.DISCORD_TOKEN;
-      const res = await fetch(`${DISCORD_API}/guilds/${DISCORD_GUILD_ID}/roles`, {
-        headers: { Authorization: `Bot ${token}` },
-      });
+      const res = await fetch(
+        `${DISCORD_API}/guilds/${DISCORD_GUILD_ID}/roles`,
+        {
+          headers: { Authorization: `Bot ${token}` },
+        },
+      );
       if (!res.ok) {
         console.warn(`Impossible de récupérer les rôles (${res.status})`);
         ROLE_CACHE.set(cacheKey, []);
@@ -90,8 +96,7 @@ async function main() {
     try {
       const { getTopScorers, openSession, formatParisDate } =
         await import("../backend/services/championPredictions.js");
-      const { fetchRaceLog } =
-        await import("../backend/services/clashApi.js");
+      const { fetchRaceLog } = await import("../backend/services/clashApi.js");
       const { computePrevWeekId, computeCurrentWeekId, parseWeekId } =
         await import("../backend/services/dateUtils.js");
 
@@ -160,7 +165,7 @@ async function main() {
         title: `🔮 Pronostics GDC — ${clanName}`,
         color: 0x9b59b6,
         description:
-          `Devinez qui sera le **Champion** de la semaine **${targetWeekId}** qui arrive. Tout le monde peut voter !\n` +
+          `Devinez qui sera le **Champion** de la semaine **${targetWeekId}** à venir. Tout le monde peut voter !\n` +
           `*Le Champion est le joueur qui marquera le plus de points GDC.*\n\n` +
           `**Challengers** (top 8 scoreurs semaine ${prevWeekId}) :\n` +
           lines.join("\n") +
@@ -203,9 +208,7 @@ async function main() {
       if (content) body.content = content;
 
       if (DRY_RUN) {
-        console.log(
-          `[${clanTag}] DRY-RUN : message simulé pour ${channelId}`,
-        );
+        console.log(`[${clanTag}] DRY-RUN : message simulé pour ${channelId}`);
         console.log(JSON.stringify(body, null, 2));
         continue;
       }
@@ -240,7 +243,10 @@ async function main() {
   }
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+if (
+  process.argv[1] &&
+  fileURLToPath(import.meta.url) === path.resolve(process.argv[1])
+) {
   main().catch((err) => {
     console.error("Erreur fatale:", err);
     process.exit(1);

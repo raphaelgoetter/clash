@@ -20,13 +20,8 @@ import {
   computeChampionVoters,
   getChampionChallengerTags,
 } from "../../../backend/services/championPredictions.js";
-import {
-  fetchRaceLog,
-  fetchClan,
-} from "../../../backend/services/clashApi.js";
-import {
-  computePrevWeekId,
-} from "../../../backend/services/dateUtils.js";
+import { fetchRaceLog, fetchClan } from "../../../backend/services/clashApi.js";
+import { computePrevWeekId } from "../../../backend/services/dateUtils.js";
 import { resolveMembersChannelId } from "../../../backend/services/discordChannels.js";
 
 const DISCORD_APP_ID = process.env.DISCORD_APP_ID;
@@ -52,19 +47,25 @@ async function postToClanChannel(clanTag, webhookUrl, payload) {
   const token = process.env.DISCORD_TOKEN;
 
   if (channelId && token) {
-    const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bot ${token}`,
-        "Content-Type": "application/json",
+    const res = await fetch(
+      `https://discord.com/api/v10/channels/${channelId}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bot ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       },
-      body: JSON.stringify(payload),
-    });
+    );
     if (res.ok) {
       await fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: `✅ Posté dans <#${channelId}>`, flags: 64 }),
+        body: JSON.stringify({
+          content: `✅ Posté dans <#${channelId}>`,
+          flags: 64,
+        }),
       });
       return;
     }
@@ -120,26 +121,38 @@ export async function handleStart(webhookUrl, clanVal) {
 
     const raceLog = await fetchRaceLog(clanTag);
     if (!Array.isArray(raceLog) || raceLog.length === 0) {
-      await postError(webhookUrl, "Impossible de récupérer le race log du clan.");
+      await postError(
+        webhookUrl,
+        "Impossible de récupérer le race log du clan.",
+      );
       return;
     }
 
     const prevWeekId = computePrevWeekId(raceLog);
     if (!prevWeekId) {
-      await postError(webhookUrl, "Impossible de déterminer la semaine précédente.");
+      await postError(
+        webhookUrl,
+        "Impossible de déterminer la semaine précédente.",
+      );
       return;
     }
 
     const topScorers = await getTopScorers(clanTag, 8);
     if (!Array.isArray(topScorers) || topScorers.length === 0) {
-      await postError(webhookUrl, "Aucun participant trouvé pour la semaine précédente.");
+      await postError(
+        webhookUrl,
+        "Aucun participant trouvé pour la semaine précédente.",
+      );
       return;
     }
 
-    const { computeCurrentWeekId, parseWeekId } = await import("../../../backend/services/dateUtils.js");
-    const { fetchCurrentRace } = await import("../../../backend/services/clashApi.js");
+    const { computeCurrentWeekId, parseWeekId } =
+      await import("../../../backend/services/dateUtils.js");
+    const { fetchCurrentRace } =
+      await import("../../../backend/services/clashApi.js");
     const currentRace = await fetchCurrentRace(clanTag).catch(() => null);
-    const targetWeekId = computeCurrentWeekId(currentRace, raceLog) || prevWeekId;
+    const targetWeekId =
+      computeCurrentWeekId(currentRace, raceLog) || prevWeekId;
 
     const now = new Date();
     const endsAt = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
@@ -156,16 +169,32 @@ export async function handleStart(webhookUrl, clanVal) {
     const weekId = targetWeekId;
 
     try {
-      await openSession(clanTag, weekId, seasonId, sectionIndex, topScorers, endsAt.toISOString());
+      await openSession(
+        clanTag,
+        weekId,
+        seasonId,
+        sectionIndex,
+        topScorers,
+        endsAt.toISOString(),
+      );
     } catch (err) {
       await postError(webhookUrl, err.message);
       return;
     }
 
-    const embed = buildStartEmbed(clanName, prevWeekId, targetWeekId, topScorers, endsAt);
+    const embed = buildStartEmbed(
+      clanName,
+      prevWeekId,
+      targetWeekId,
+      topScorers,
+      endsAt,
+    );
     const selectMenu = buildChallengerSelect(clanTag, weekId, topScorers);
 
-    await postToClanChannel(clanTag, webhookUrl, { embeds: [embed], components: [selectMenu] });
+    await postToClanChannel(clanTag, webhookUrl, {
+      embeds: [embed],
+      components: [selectMenu],
+    });
   } catch (err) {
     await postError(webhookUrl, `Erreur : ${err.message}`);
   }
@@ -178,7 +207,10 @@ export async function handleEnd(webhookUrl, clanVal) {
 
     const active = await getActiveSessionByClan(clanTag);
     if (!active) {
-      await postError(webhookUrl, "Aucune session de pronostics trouvée pour ce clan.");
+      await postError(
+        webhookUrl,
+        "Aucune session de pronostics trouvée pour ce clan.",
+      );
       return;
     }
 
@@ -214,18 +246,30 @@ export async function handleCount(webhookUrl, clanVal) {
 
     const active = await getActiveSessionByClan(clanTag);
     if (!active) {
-      await postError(webhookUrl, `Aucune session de vote en cours pour le clan ${resolved.name}.`);
+      await postError(
+        webhookUrl,
+        `Aucune session de vote en cours pour le clan ${resolved.name}.`,
+      );
       return;
     }
 
     const { weekId } = active;
     const data = await getVoteCounts(clanTag, weekId);
     if (!data) {
-      await postError(webhookUrl, `Aucune session de vote en cours pour le clan ${resolved.name}.`);
+      await postError(
+        webhookUrl,
+        `Aucune session de vote en cours pour le clan ${resolved.name}.`,
+      );
       return;
     }
 
-    const embed = buildCountEmbed(resolved.name, weekId, data.counts, data.totalVotes, data.session.endsAt);
+    const embed = buildCountEmbed(
+      resolved.name,
+      weekId,
+      data.counts,
+      data.totalVotes,
+      data.session.endsAt,
+    );
 
     await fetch(webhookUrl, {
       method: "POST",
@@ -250,7 +294,10 @@ export async function handleHistory(webhookUrl, clanVal) {
     const { entries: history, hasMore } = await getHistory(clanTag, 10, 0);
 
     if (history.length === 0) {
-      await postError(webhookUrl, `Aucun historique de champion pour ${resolved.name}.`);
+      await postError(
+        webhookUrl,
+        `Aucun historique de champion pour ${resolved.name}.`,
+      );
       return;
     }
 
@@ -273,7 +320,11 @@ export async function handleHistoryPage(originalWebhookUrl, clanVal, offset) {
   if (!originalWebhookUrl) return;
   try {
     const resolved = resolveClan(clanVal);
-    const { entries: history, hasMore } = await getHistory(resolved.tag, 10, offset);
+    const { entries: history, hasMore } = await getHistory(
+      resolved.tag,
+      10,
+      offset,
+    );
 
     if (history.length === 0) {
       await fetch(originalWebhookUrl, {
@@ -325,7 +376,10 @@ export async function handleSelectInteraction(webhookUrl, body) {
       body.member?.user?.username ||
       "Inconnu";
     if (!discordId) {
-      await postError(webhookUrl, "Impossible d'identifier votre compte Discord.");
+      await postError(
+        webhookUrl,
+        "Impossible d'identifier votre compte Discord.",
+      );
       return;
     }
 
@@ -333,9 +387,11 @@ export async function handleSelectInteraction(webhookUrl, body) {
 
     // Message éphémère de confirmation
     const sessionData2 = await getSessionData(clanTag, weekId);
-    const displayName = selectedTag === "__other__"
-      ? "Autre (pas dans la liste)"
-      : (sessionData2?.challengers?.find((c) => c.tag === selectedTag)?.name || selectedTag);
+    const displayName =
+      selectedTag === "__other__"
+        ? "Autre (pas dans la liste)"
+        : sessionData2?.challengers?.find((c) => c.tag === selectedTag)?.name ||
+          selectedTag;
     const msg = `Votre vote pour **${displayName}** est enregistré ! ✓`;
 
     await fetch(webhookUrl, {
@@ -350,22 +406,28 @@ export async function handleSelectInteraction(webhookUrl, body) {
 
 // ── Constructeurs d'embed ─────────────────────────────────────
 
-function buildStartEmbed(clanName, prevWeekId, targetWeekId, topScorers, endsAt) {
-  const lines = topScorers.map((p, idx) =>
-    `${ordinal(idx + 1)} **${p.name}** — ${formatFame(p.fame)} pts`,
+function buildStartEmbed(
+  clanName,
+  prevWeekId,
+  targetWeekId,
+  topScorers,
+  endsAt,
+) {
+  const lines = topScorers.map(
+    (p, idx) => `${ordinal(idx + 1)} **${p.name}** — ${formatFame(p.fame)} pts`,
   );
 
   const endParis = formatParisDate(endsAt);
 
   const description =
-    `Devinez qui sera le **Champion** de la semaine **${targetWeekId}** qui arrive. Tout le monde peut voter !\n`
-    + `*Le Champion est le joueur qui marquera le plus de points GDC.*\n\n`
-    + `**Challengers** (top 8 scoreurs semaine ${prevWeekId}) :\n`
-    + lines.join("\n")
-    + `\n${ordinal(9)} **Autre** (pas dans la liste)\n\n`
-    + `📅 **Votez jusqu'au ${endParis}**\n`
-    + `Sélectionnez votre challenger dans le menu ci-dessous, ou utilisez \`/champion\`.\n`
-    + `📌 *Épinglez ce message pour que tout le monde puisse voter facilement.*`;
+    `Devinez qui sera le **Champion** de la semaine **${targetWeekId}** à venir. Tout le monde peut voter !\n` +
+    `*Le Champion est le joueur qui marquera le plus de points GDC.*\n\n` +
+    `**Challengers** (top 8 scoreurs semaine ${prevWeekId}) :\n` +
+    lines.join("\n") +
+    `\n${ordinal(9)} **Autre** (pas dans la liste)\n\n` +
+    `📅 **Votez jusqu'au ${endParis}**\n` +
+    `Sélectionnez votre challenger dans le menu ci-dessous, ou utilisez \`/champion\`.\n` +
+    `📌 *Épinglez ce message pour que tout le monde puisse voter facilement.*`;
 
   return {
     title: `🔮 Pronostics GDC — ${clanName}`,
@@ -425,7 +487,11 @@ function buildResultEmbed(
   if (realChampions && realChampions.length > 0) {
     description += `**Véritable Champion de la semaine ${weekId} :**\n`;
 
-    const championsWithVoters = computeChampionVoters(realChampions, challengers, votes);
+    const championsWithVoters = computeChampionVoters(
+      realChampions,
+      challengers,
+      votes,
+    );
     const champLines = championsWithVoters.map((c) => {
       let line = `🏆 **${c.name}** — ${formatFame(c.fame)} pts`;
       if (c.voters.length > 0) {
@@ -450,7 +516,9 @@ function buildResultEmbed(
   const maxVotes = voteResult.length > 0 ? voteResult[0].votes : 0;
   const lines = voteResult.map((entry) => {
     const name = findName(entry.challengerTag);
-    const crown = championTags.has(entry.challengerTag) ? CROWN_CHAMPION : CROWN_OTHER;
+    const crown = championTags.has(entry.challengerTag)
+      ? CROWN_CHAMPION
+      : CROWN_OTHER;
     const votesStr = entry.votes === 1 ? "1 vote" : `${entry.votes} votes`;
     const bar = voteBar(entry.votes, maxVotes);
     return `${crown} ${name}\n   ${bar} ${votesStr}`;
@@ -465,12 +533,15 @@ function buildResultEmbed(
 
   if (!realChampions || realChampions.length === 0) {
     const winnerVoters = winnerTag
-      ? votes.filter((v) => v.challengerTag === winnerTag).map((v) => v.discordName)
+      ? votes
+          .filter((v) => v.challengerTag === winnerTag)
+          .map((v) => v.discordName)
       : [];
     if (totalVotes > 0) {
       const list = winnerVoters.slice(0, 100).join(", ");
       description += `Vous avez majoritairement voté pour **${winnerName}** : ${list}`;
-      if (winnerVoters.length > 100) description += `… (+${winnerVoters.length - 100} autres)`;
+      if (winnerVoters.length > 100)
+        description += `… (+${winnerVoters.length - 100} autres)`;
     }
     description += `\n`;
   }
@@ -504,17 +575,19 @@ function buildCountEmbed(clanName, weekId, counts, totalVotes, endsAt) {
     title: `🗳️ Pronostics en cours — ${clanName}`,
     color: CHAMPION_COLOR,
     description:
-      `**Semaine ${weekId}**\n\n`
-      + lines.join("\n")
-      + `\n\n📊 **${totalVotes}** vote${totalVotes > 1 ? "s" : ""} au total`
-      + `\n📅 Vote ouvert jusqu'au ${endParis}`,
+      `**Semaine ${weekId}**\n\n` +
+      lines.join("\n") +
+      `\n\n📊 **${totalVotes}** vote${totalVotes > 1 ? "s" : ""} au total` +
+      `\n📅 Vote ouvert jusqu'au ${endParis}`,
   };
 }
 
 function buildHistoryEmbed(clanName, history, { offset = 0 } = {}) {
   const lines = history.map((entry) => {
-    const weekLabel = entry.weekId || `S${entry.seasonId}W${entry.sectionIndex + 1}`;
-    const champions = entry.champions || (entry.champion ? [entry.champion] : null);
+    const weekLabel =
+      entry.weekId || `S${entry.seasonId}W${entry.sectionIndex + 1}`;
+    const champions =
+      entry.champions || (entry.champion ? [entry.champion] : null);
     if (!champions || champions.length === 0) {
       return `**${weekLabel}**\n❓ Champion inconnu`;
     }
@@ -529,7 +602,8 @@ function buildHistoryEmbed(clanName, history, { offset = 0 } = {}) {
     return `**${weekLabel}**\n${list}`;
   });
 
-  const footerTitle = offset === 0 ? "Les 10 derniers champions" : "Champions précédents";
+  const footerTitle =
+    offset === 0 ? "Les 10 derniers champions" : "Champions précédents";
 
   return {
     title: `📜 Registre des Champions — ${clanName}`,
