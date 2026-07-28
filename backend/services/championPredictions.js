@@ -267,7 +267,10 @@ export async function getTopScorers(clanTag, limit = 9) {
   if (!Array.isArray(participants)) return [];
 
   const currentMembers = await fetchClanMembers(cleanTag).catch(() => []);
-  const currentTags = new Set(currentMembers.map((m) => m.tag?.toUpperCase()));
+  const currentNameByTag = new Map(
+    currentMembers.map((m) => [m.tag?.toUpperCase(), m.name]),
+  );
+  const currentTags = new Set(currentNameByTag.keys());
   const activeParticipants = currentTags.size > 0
     ? participants.filter((p) => currentTags.has(p.tag?.toUpperCase()))
     : participants;
@@ -277,7 +280,7 @@ export async function getTopScorers(clanTag, limit = 9) {
 
   return sorted.slice(0, limit).map((p) => ({
     tag: p.tag,
-    name: p.name || p.tag,
+    name: currentNameByTag.get(p.tag?.toUpperCase()) || p.name || p.tag,
     fame: p.fame || 0,
     decksUsed: p.decksUsed || 0,
   }));
