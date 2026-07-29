@@ -207,6 +207,13 @@ export async function getFrameImageByGameId(gameId) {
   return readFrameImageFile(frameEntry);
 }
 
+// Titre du film pour une manche précise — utilisé par le récap de fin de
+// saison pour rappeler la liste des films de la saison écoulée.
+export async function getFrameTitle(gameId) {
+  const frames = await loadFrames();
+  return frames.find((f) => path.parse(f.image).name === gameId)?.titre ?? null;
+}
+
 // ── État de la partie en cours (métadonnées uniquement) ──────────
 
 export async function readState() {

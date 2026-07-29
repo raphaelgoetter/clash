@@ -26,6 +26,7 @@ import {
   getSeasonManches,
   hasPlayerInteracted,
   getSeasonMancheNumber,
+  getFrameTitle,
   previewSeasonManche,
   computeSeasonMancheTotal,
   findRank,
@@ -143,7 +144,7 @@ export function buildAnswerModal(gameId) {
 const SEASON_RECAP_MAX_PLAYERS = 20;
 const SEASON_RECAP_MEDALS = ["🥇", "🥈", "🥉"];
 
-function buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId) {
+function buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId, manchesPlayed) {
   const nonZero = seasonRanking.filter((r) => r.totalScore > 0);
   const shown = nonZero.slice(0, SEASON_RECAP_MAX_PLAYERS);
   const hiddenCount = nonZero.length - shown.length;
@@ -175,6 +176,13 @@ function buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId) {
       `... et ${hiddenCount} autre${hiddenCount > 1 ? "s" : ""} joueur${hiddenCount > 1 ? "s" : ""}`,
     );
   }
+  if (manchesPlayed?.length > 0) {
+    lines.push(
+      "",
+      "**Manches de la saison :**",
+      ...manchesPlayed.map((m) => `Manche ${m.seasonManche} : ${m.label}`),
+    );
+  }
   lines.push(
     "",
     `Bravo à tous ! Rendez-vous juste après pour le lancement de la Saison ${toPublicSeasonId(newSeasonId)}.`,
@@ -189,15 +197,32 @@ function buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId) {
   };
 }
 
+// Liste triée (Manche 1, 2, 3...) des films de la saison écoulée, pour le
+// récap de fin de saison — voir getFrameTitle() (backend/services/frames.js).
+async function getSeasonManchesPlayed(seasonId) {
+  const gameIds = await getSeasonManches(seasonId);
+  const manches = await Promise.all(
+    gameIds.map(async (gameId) => ({
+      seasonManche: await getSeasonMancheNumber(seasonId, gameId),
+      label: await getFrameTitle(gameId),
+    })),
+  );
+  return manches
+    .filter((m) => m.seasonManche != null && m.label != null)
+    .sort((a, b) => a.seasonManche - b.seasonManche);
+}
+
 async function postSeasonRecap(channelId, endedSeasonId, newSeasonId) {
   const token = process.env.DISCORD_TOKEN;
   const seasonRanking = await computeSeasonRanking(endedSeasonId);
   if (seasonRanking.length === 0) return; // rien à récapituler (saison sans le moindre point marqué)
 
+  const manchesPlayed = await getSeasonManchesPlayed(endedSeasonId);
   const embed = buildSeasonRecapEmbed(
     seasonRanking,
     endedSeasonId,
     newSeasonId,
+    manchesPlayed,
   );
   const res = await fetch(
     `https://discord.com/api/v10/channels/${channelId}/messages`,
@@ -247,10 +272,12 @@ export async function postFrame(channelId, { dryRun = false } = {}) {
     ) {
       const seasonRanking = await computeSeasonRanking(state.seasonId);
       if (seasonRanking.length > 0) {
+        const manchesPlayed = await getSeasonManchesPlayed(state.seasonId);
         seasonRecapEmbed = buildSeasonRecapEmbed(
           seasonRanking,
           state.seasonId,
           seasonId,
+          manchesPlayed,
         );
       }
     }

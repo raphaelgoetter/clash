@@ -328,6 +328,13 @@ export async function getCardImageUrl(cardKey) {
   return match.iconUrls?.medium ?? null;
 }
 
+// Réponse (nom de la carte) pour une manche précise — utilisé par le récap
+// de fin de saison pour rappeler la liste des cartes de la saison écoulée.
+export async function getAnagramAnswer(gameId) {
+  const anagrams = await loadAnagrams();
+  return anagrams.find((a) => String(a.ID) === gameId)?.answer ?? null;
+}
+
 // ── Normalisation et vérification de la réponse ─────────────────
 // normalizeAnswer partagée avec Frame (textNormalize.js). checkAnswer est en
 // revanche propre à Anagram : égalité STRICTE contre la liste accept (pas de
