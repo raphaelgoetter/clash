@@ -14,6 +14,7 @@ import {
 } from "./charts.js";
 import { renderRaceGroupCard } from "./warGroup.js";
 import { getLeagueName } from "../backend/services/warLeagues.js";
+import { toPublicWeekId } from "../backend/services/dateUtils.js";
 
 // ── DOM references ───────────────────────────────────────────
 const searchInput = document.getElementById("search-input");
@@ -2019,7 +2020,7 @@ function renderCurrentWarCard(
   cardCurrentWar.classList.remove("hidden");
 
   const weekLabel = weekId
-    ? ` <span class="card-week-id">(${weekId.toLowerCase()})</span>`
+    ? ` <span class="card-week-id">(${toPublicWeekId(weekId).toLowerCase()})</span>`
     : "";
   cardCurrentWar.querySelector(".card-title").innerHTML =
     `⚔️ ${"Guerre de clan en cours"} ${weekLabel}`;
@@ -2249,7 +2250,7 @@ function renderClanLiteBest(lastWarBest, members, prevWeekId = null) {
   if (!card) return;
 
   const weekLabel = prevWeekId
-    ? ` <span class="card-week-id">(${prevWeekId.toUpperCase()})</span>`
+    ? ` <span class="card-week-id">(${toPublicWeekId(prevWeekId).toUpperCase()})</span>`
     : "";
   card.querySelector(".card-title").innerHTML =
     `🏅 ${"Meilleures performances (dernière GDC)"}${weekLabel}`;
@@ -2292,7 +2293,7 @@ function renderTopPlayersCard(topPlayers, prevWeekId = null) {
   const card = document.getElementById("card-top-players");
   const listEl = document.getElementById("top-players-list");
   const weekLabel = prevWeekId
-    ? ` <span class="card-week-id">(${prevWeekId.toUpperCase()})</span>`
+    ? ` <span class="card-week-id">(${toPublicWeekId(prevWeekId).toUpperCase()})</span>`
     : "";
   card.querySelector(".card-title").innerHTML =
     `🏅 ${"Meilleures performances (dernière GDC)"}${weekLabel}`;
@@ -2339,7 +2340,7 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
   const card = document.getElementById("card-uncomplete");
   const listEl = document.getElementById("uncomplete-list");
   const weekLabel = prevWeekId
-    ? ` <span class="card-week-id">(${prevWeekId.toUpperCase()})</span>`
+    ? ` <span class="card-week-id">(${toPublicWeekId(prevWeekId).toUpperCase()})</span>`
     : "";
   card.querySelector(".card-title").innerHTML =
     `🤷 ${"Combats manquants (dernière GDC)"}${weekLabel}`;
@@ -2577,7 +2578,7 @@ function renderClanWarCard(
     ended,
   } = clanWarSummary;
   const weekLabel = weekId
-    ? ` <span class="card-week-id">(${weekId.toLowerCase()})</span>`
+    ? ` <span class="card-week-id">(${toPublicWeekId(weekId).toLowerCase()})</span>`
     : "";
   const endedLabel = ended ? " (terminée)" : "";
   card.querySelector(".card-title").innerHTML =

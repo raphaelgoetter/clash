@@ -184,6 +184,20 @@ export function parseWeekId(weekId) {
   return { seasonId: Number(match[1]), sectionIndex: Number(match[2]) - 1 };
 }
 
+/**
+ * Traduit un weekId technique ("S134W3") en équivalent affichable avec le
+ * numéro de "Saison" public (ex. "S85W3") — voir toPublicSeasonId(). Usage
+ * strictement limité à l'affichage ; le weekId d'origine (source de vérité)
+ * ne doit jamais être remplacé par cette valeur pour un calcul ou une clé.
+ * @param {string|null} weekId
+ * @returns {string|null}
+ */
+export function toPublicWeekId(weekId) {
+  const parsed = parseWeekId(weekId);
+  if (!parsed) return weekId ?? null;
+  return `S${toPublicSeasonId(parsed.seasonId)}W${parsed.sectionIndex + 1}`;
+}
+
 // ============================================================
 // Bornes calendaires d'une saison — jeux Frame (mercredi) et Anagram (samedi)
 //
