@@ -33,7 +33,6 @@ import {
   parseClashDate,
   MS_PER_DAY,
 } from "../services/analysisService.js";
-import { buildDebugSnapshotInfo } from "../services/debugSnapshotInfo.js";
 import { computeGroupStandings } from "../services/warStandings.js";
 import { computeTopPlayers } from "../services/topplayers.js";
 import { computeUncomplete } from "../services/uncomplete.js";
@@ -2720,7 +2719,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     return { ...current, totalDecksUsed, days };
   };
 
-  let debugSnapshotInfo = null;
   clanWarSummary = mergeWarSummariesBackend(clanWarSummary, fallbackWarSummary);
 
   if (clanWarSummary && Array.isArray(clanWarSummary.days)) {
@@ -2825,9 +2823,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           pointsPerDeck: latestCompletedPointsPerDeck,
         }
       : null;
-  const snapshotFileDebug = await getSnapshotFileDebug(clanTag).catch(
-    () => null,
-  );
 
   return {
     lastWarSummary: computedLastWarSummary,
@@ -2872,7 +2867,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     warCurrentWeekId: clanWarSummary?.weekId ?? null,
     warSnapshotDays, // derived from snapshot files (null if missing)
     snapshotTakenAt: warSnapshotTakenAt,
-    snapshotFileDebug,
     currentWarDays: clanWarSummary?.days ?? null, // expose the per-day summary for debug/insights
     raceGroup: currentRace?.clans
       ? (() => {
@@ -2994,13 +2988,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             buildCurrentWarDays([], null, currentRace, clanTag)?.daysFromThu ??
             0;
 
-          let debugSnapshotInfoRoot = null;
           const groupWithProjections = currentRace.clans.map((c) => {
             let rivalParticipants = null;
             const cTagNorm = (c.tag ?? "").toUpperCase();
             const isOwn = cTagNorm === ownTagNorm;
-            let debugSnapshotInfo = null;
-            // (déjà défini plus haut)
             // raceData = currentRace (clan propre uniquement) ; pour les rivaux, utiliser c.participants directement
             const raceData = currentRace;
             // allParts toujours défini
@@ -3010,29 +3001,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                   rivalParticipants = c.participants ?? [];
                   return rivalParticipants;
                 })();
-            // Ajout debug-panel modulaire
-            if (isOwn && warDayIndex > 0) {
-              debugSnapshotInfo = buildDebugSnapshotInfo({
-                weekSnaps,
-                warDayIndex,
-                currentMemberTags,
-                allParts,
-                warSnapshotDays,
-                clanTag,
-                currentRaceClanFame: currentRace?.clan?.fame ?? null,
-                fallbackWarDays:
-                  typeof prevSnaps !== "undefined" && prevSnaps.length > 0
-                    ? prevSnaps
-                    : (existingCache?.debugSnapshotInfo?.weekSnaps ??
-                      existingCache?.clanWarSummary?.days ??
-                      existingCache?.lastWarSummary?.debugSnapshotInfo
-                        ?.weekSnaps ??
-                      existingCache?.lastWarSummary?.days ??
-                      []),
-              });
-            }
-            if (debugSnapshotInfo && !debugSnapshotInfoRoot)
-              debugSnapshotInfoRoot = debugSnapshotInfo;
             const extra = isOwn ? clan : raceGroupRivalData[cTagNorm] || null;
             // (déjà défini plus haut)
 
@@ -3250,8 +3218,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               c.warParticipationEstimate = participationGdcEstimee;
             }
 
-            // Expose le debugSnapshotInfo à la racine de la réponse
-            // (déjà défini plus haut)
             return {
               tag: c.tag ?? null,
               name: c.name ?? null,
@@ -3263,11 +3229,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
               prevWarFame: isOwn
                 ? ownPrevWarFame
                 : (rivalPrevWarByTag[cTagNorm] ?? null),
-              // Ajout debug-panel.
-              // `debugSnapshotInfo` contient désormais les scores journaliers par jour de guerre :
-              //   scoreJeudi, scoreVendredi, scoreSamedi, scoreDimanche
-              // et un objet structuré dailyScores { jeudi, vendredi, samedi, dimanche }.
-              debugSnapshotInfo: isOwn ? debugSnapshotInfo : undefined,
               lastWarFame: isOwn
                 ? ownLastWarFame
                 : (rivalLastWarByTag[cTagNorm] ?? null),
@@ -3352,17 +3313,12 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             });
           }
 
-          debugSnapshotInfo = debugSnapshotInfoRoot;
-          if (debugSnapshotInfo && clanWarSummary) {
-            clanWarSummary.debugSnapshotInfo = debugSnapshotInfo;
-          }
           return groupWithProjections;
         })()
       : null,
     rateLimited: memberRateLimited,
     raceLogUnavailable,
     analysisCacheUpdatedAt: new Date().toISOString(),
-    debugSnapshotInfo,
   };
 }
 

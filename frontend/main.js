@@ -505,7 +505,6 @@ async function handleSearch(force = false) {
         snapshotTakenAt:
           data.snapshotTakenAt ?? data.warSnapshotTakenAt ?? null,
       });
-      updateDebugPanel(data, "player");
     } else if (isLiteClan) {
       // Clan hors-famille : endpoint lite (données natives uniquement, sans fiabilité)
       renderClanOverview({
@@ -529,7 +528,6 @@ async function handleSearch(force = false) {
       renderClanOverview(data);
       renderClanMembers(data);
       updateFavBtnState(tag);
-      updateDebugPanel(data, "clan");
       showCacheNote(fromCache, null, {
         source: fromCache ? "cached" : "live",
         updatedAt: new Date().toISOString(),
@@ -615,7 +613,6 @@ async function handleSearch(force = false) {
             data.fallbackReason === "rateLimited" ||
             data.raceLogUnavailable);
         if (shouldWarn) showError("Limite de requêtes Clash API dépassée – données partielles affichées, réessayez dans quelques secondes.");
-        updateDebugPanel(effectiveData, "clan");
         updateFavBtnState(tag);
         showCacheNote(false, data.snapshotDate, {
           source: data.rateLimited ? "live (degraded)" : "live",
@@ -715,7 +712,6 @@ async function refreshLiveClanOverview(tag, staticData = null) {
         ),
       };
       renderClanOverview(effectiveData);
-      updateDebugPanel(effectiveData, "clan");
       updateFavBtnState(tag);
       showCacheNote(false, data.snapshotDate, {
         source: data.rateLimited ? "live (degraded)" : "live",
@@ -3173,7 +3169,6 @@ function renderClanMembers(data) {
   } else {
     renderMembersPlaceholder();
   }
-  updateDebugPanel(data, "clan");
 }
 
 // Affiche un skeleton dans le tableau membres pendant le chargement live.
@@ -3699,203 +3694,8 @@ function escHtml(s) {
     .replace(/"/g, "&quot;");
 }
 
-// ── Debug / log panel (dev mode) ──────────────────────────────────
-const DEBUG_STORAGE_KEY = "trustroyale-debug";
-let debugEnabled = localStorage.getItem(DEBUG_STORAGE_KEY) === "true";
-
-function initDebugUI() {
-  const toggle = document.getElementById("debug-toggle");
-  const panel = document.getElementById("debug-panel");
-  if (!toggle || !panel) return;
-
-  toggle.addEventListener("click", () => {
-    debugEnabled = !debugEnabled;
-    localStorage.setItem(DEBUG_STORAGE_KEY, debugEnabled ? "true" : "false");
-    setDebugPanelVisible(debugEnabled);
-    updateDebugPanel(null, "none");
-  });
-
-  setDebugPanelVisible(debugEnabled);
-  updateDebugPanel(null, "none");
-}
-
-function setDebugPanelVisible(on) {
-  const panel = document.getElementById("debug-panel");
-  const toggle = document.getElementById("debug-toggle");
-  if (!panel || !toggle) return;
-  panel.classList.toggle("hidden", !on);
-  toggle.classList.toggle("active", on);
-}
-
-function updateDebugPanel(data, mode) {
-  // Ajout : infos snapshot J-1 pour le clan courant
-  let snapshotDebugHtml = "";
-  const buildSnapshotDebugHtml = (info) => {
-    if (!info) return "";
-    const hasSnapshotData =
-      info.snapshotTime ||
-      info.snapshotBackupTime ||
-      info.snapshotCount != null ||
-      info.cumulFameSnapshot != null ||
-      info.delta != null ||
-      info.diffMin != null ||
-      info.warning;
-    if (!hasSnapshotData) return "";
-    const snapshotBackupTimeLabel = info.snapshotBackupTime
-      ? escHtml(info.snapshotBackupTime)
-      : info.snapshotTime
-        ? "n/a (snapshot principal)"
-        : "—";
-    return `
-      <div style="margin-top:1rem;padding:.5em 1em;background:#222;border-radius:6px">
-        <div><strong>Snapshot J-1 :</strong></div>
-        <div>⏰ <b>snapshotTime</b> : <code>${escHtml(info.snapshotTime || "—")}</code></div>
-        <div>⏰ <b>snapshotBackupTime</b> : <code>${snapshotBackupTimeLabel}</code></div>
-        <div>🎯 <b>Cumul points live effectif</b> : <b>${info.effectiveCumulFameLive ?? info.cumulFameLive}</b></div>
-        <div>📊 <b>Decks live aujourd'hui</b> : <b>${info.cumulDecksLive ?? "—"}</b></div>
-        <div>📦 <b>Cumul snapshot J-1</b> : <b>${info.cumulFameSnapshot ?? "—"}</b></div>
-        ${info.snapshotCount != null ? `<div>📊 <b>Decks snapshot J-1</b> : <b>${info.snapshotCount}</b></div>` : ""}
-        <div>🟡 <b>scoreJeudi</b> : <b>${info.scoreJeudi ?? "—"}</b></div>
-        <div>🟡 <b>scoreVendredi</b> : <b>${info.scoreVendredi ?? "—"}</b></div>
-        <div>🟡 <b>scoreSamedi</b> : <b>${info.scoreSamedi ?? "—"}</b></div>
-        <div>🟡 <b>scoreDimanche</b> : <b>${info.scoreDimanche ?? "—"}</b></div>
-        <div>🧮 <b>Delta (live - J-1)</b> : <b>${info.delta ?? "—"}</b></div>
-        <div>👥 <b>Joueurs live avec decks</b> : <b>${info.livePlayersWithDecks ?? "—"}</b></div>
-        <div>⚠️ <b>Joueurs avec decks sans variation de fame</b> : <b>${info.livePlayersWithDecksAndNoFameDiff ?? "—"}</b></div>
-        <div>📏 <b>Écart snapshot/reset</b> : <b>${info.diffMin ?? "—"} min</b></div>
-        ${info.warning ? `<div style='color:#ffb300'><b>${escHtml(info.warning)}</b></div>` : ""}
-        ${info.preResetSnapshotMissing ? `<div style='margin-top:.5rem;padding:.4em .75em;background:#1f1000;border-radius:6px;border:1px solid #7a4a00;color:#ffb300'>⚠️ <b>Snapshot pré-reset manquant</b> — le workflow CI n'a pas tourné à temps avant le reset (normal si fonctionnalité récemment activée).</div>` : ""}
-        ${
-          info.snapshotPreResetTime
-            ? `
-        <div style="margin-top:.75rem;padding:.5em .75em;background:#0d1f0d;border-radius:6px;border:1px solid #2d5a2d">
-          <div><strong>📸 Snapshot pré-reset (T−2 min)</strong></div>
-          <div>⏰ <b>snapshotPreResetTime</b> : <code>${escHtml(info.snapshotPreResetTime)}</code></div>
-          <div>🃏 <b>Decks pré-reset</b> : <b>${info.preResetDecksTotal ?? "—"}</b>${info.preResetVsSnapshotDiff != null ? ` <span style="color:${info.preResetVsSnapshotDiff > 0 ? "#57f287" : info.preResetVsSnapshotDiff < 0 ? "#ed4245" : "#aaa"}">(${info.preResetVsSnapshotDiff > 0 ? "+" : ""}${info.preResetVsSnapshotDiff} vs snapshot régulier)</span>` : ""}</div>
-          <div>🎯 <b>Fame J-1 pré-reset</b> : <b>${info.preResetFameTotal != null ? Math.round(info.preResetFameTotal).toLocaleString("fr-FR") : "—"}</b></div>
-          ${
-            info.preResetMissingDecks && info.preResetMissingDecks.length > 0
-              ? `<div>⚠️ <b>Manquants à T−2 min (${info.preResetMissingDecks.length})</b> : ${info.preResetMissingDecks.map((p) => escHtml(`${p.name} −${p.missing}`)).join(", ")}</div>`
-              : `<div>✅ <b>Manquants à T−2 min</b> : aucun</div>`
-          }
-        </div>`
-            : ""
-        }
-      </div>
-    `;
-  };
-
-  // 1. Cherche dans raceGroup (prioritaire si présent)
-  if (data?.raceGroup && Array.isArray(data.raceGroup)) {
-    const ownClan = data.raceGroup.find((c) => c.debugSnapshotInfo);
-    if (ownClan && ownClan.debugSnapshotInfo) {
-      snapshotDebugHtml = buildSnapshotDebugHtml(ownClan.debugSnapshotInfo);
-    }
-  }
-  // 2. Sinon, cherche dans data.debugSnapshotInfo (mode direct)
-  if (!snapshotDebugHtml && data?.debugSnapshotInfo) {
-    snapshotDebugHtml = buildSnapshotDebugHtml(data.debugSnapshotInfo);
-  }
-  // 3. Sinon, cherche dans data.clanWarSummary.debugSnapshotInfo (mode résumé)
-  if (!snapshotDebugHtml && data?.clanWarSummary?.debugSnapshotInfo) {
-    snapshotDebugHtml = buildSnapshotDebugHtml(
-      data.clanWarSummary.debugSnapshotInfo,
-    );
-  }
-  const panel = document.getElementById("debug-panel");
-  if (!panel) return;
-
-  if (!debugEnabled) {
-    panel.innerHTML = `
-      <h3>Debug mode</h3>
-      <p style="margin:0;opacity:.8">Click the 🐞 button to enable debug output.</p>
-    `;
-    return;
-  }
-
-  const payload = {
-    mode,
-    now: new Date().toISOString(),
-    snapshotDate: data?.snapshotDate ?? null,
-    snapshotTakenAt: data?.snapshotTakenAt ?? null,
-    warCurrentWeekId:
-      data?.warCurrentWeekId ?? data?.clanWarSummary?.weekId ?? null,
-    warDayLabel:
-      data?.clanWarSummary?.days?.find((d) => d.isToday)?.label ?? null,
-    warDayIndex:
-      typeof data?.clanWarSummary?.daysFromThu === "number"
-        ? data.clanWarSummary.daysFromThu + 1
-        : null,
-    source:
-      data?.fromCache != null ? (data.fromCache ? "cache" : "api") : "live",
-    warSnapshotDays: data?.warSnapshotDays ?? null,
-    currentWarDays: data?.currentWarDays ?? null,
-    clanWarSummary: data?.clanWarSummary ?? null,
-    clanName: data?.clan?.name ?? null,
-    clanTag: data?.clan?.tag ?? null,
-    snapshotFileDebug: data?.snapshotFileDebug ?? null,
-    debugSnapshotInfo:
-      data?.debugSnapshotInfo ??
-      data?.clanWarSummary?.debugSnapshotInfo ??
-      null,
-  };
-
-  const sourceSelected = payload.snapshotFileDebug?.selectedSource;
-  const sourceFile =
-    sourceSelected === "tmp"
-      ? payload.snapshotFileDebug?.tmpFile
-      : payload.snapshotFileDebug?.dataFile;
-  const sourceSize =
-    sourceSelected === "tmp"
-      ? payload.snapshotFileDebug?.tmpSize
-      : payload.snapshotFileDebug?.dataSize;
-  const sourceTime =
-    sourceSelected === "tmp"
-      ? payload.snapshotFileDebug?.tmpLatestSnapshotTime
-      : (payload.snapshotFileDebug?.dataLatestSnapshotTime ??
-        payload.snapshotFileDebug?.dataMtime);
-
-  panel.innerHTML = `
-    <h3>Debug info (mode : ${escHtml(payload.mode)}, source : ${escHtml(payload.source)})</h3>
-    <div style="font-size:.88rem;line-height:1.35;">
-      ${
-        payload.clanName || payload.clanTag
-          ? `
-      <div><strong>clan :</strong> ${escHtml(payload.clanName ? `${payload.clanName} ${payload.clanTag ? `(${payload.clanTag})` : ""}` : payload.clanTag)}</div>
-      `
-          : ""
-      }
-      <div><strong>now :</strong> ${escHtml(payload.now)}</div>
-      <div><strong>snapshotDate :</strong> ${escHtml(payload.snapshotDate ?? "—")}</div>
-      <div><strong>warCurrentWeekId :</strong> ${escHtml(payload.warCurrentWeekId ?? "—")}</div>
-      ${payload.warDayLabel && payload.warDayIndex ? `<div><strong>WarDay :</strong> ${escHtml(translateWarDayLabel(payload.warDayLabel))} (J${escHtml(String(payload.warDayIndex))})</div>` : ""}
-      <div><strong>warSnapshotDays :</strong> ${payload.warSnapshotDays ? JSON.stringify(payload.warSnapshotDays) : "—"}</div>
-      ${
-        payload.snapshotFileDebug
-          ? `
-        <div style="margin:1rem 0;border-top:1px solid #444"></div>
-        <div><strong>snapshot Source :</strong> ${escHtml(payload.snapshotFileDebug.selectedSource)} <code>${escHtml(sourceFile)}</code> ${escHtml(sourceSize ?? "—")} bytes</div>
-        <div><strong>snapshot file latest time :</strong> ${escHtml(sourceTime ?? "—")}</div>
-        <div><strong>snapshot J-1 source time :</strong> ${escHtml(payload.debugSnapshotInfo?.snapshotTime ?? payload.debugSnapshotInfo?.snapshotBackupTime ?? "—")}</div>
-        <div><strong>snapshot J-1 score :</strong> ${escHtml(payload.debugSnapshotInfo?.snapshotJ1DailyFame != null ? payload.debugSnapshotInfo.snapshotJ1DailyFame : "—")}</div>
-        <div style="margin:.75rem 0;border-top:1px solid #444"></div>
-        <div><strong>snapshot data :</strong> <code>${escHtml(payload.snapshotFileDebug.dataFile)}</code> ${escHtml(payload.snapshotFileDebug.dataSize ?? "—")} bytes</div>
-        <div><strong>snapshot data Time :</strong> ${escHtml(payload.snapshotFileDebug.dataLatestSnapshotTime ?? payload.snapshotFileDebug.dataMtime ?? "—")}</div>
-        ${payload.snapshotFileDebug.snapshotDaySources ? `<div style="margin-top:.75rem"><strong>snapshot day sources :</strong><br>${payload.snapshotFileDebug.snapshotDaySources.map((s) => `<code>${escHtml(s.week)} ${escHtml(s.sources.join(", "))}</code>`).join("<br>")}</div>` : ""}
-        ${payload.snapshotFileDebug.backupDaysUsed > 0 ? `<div style="margin-top:.75rem;padding:.5rem 0.75rem;background:#031828;color:#9cd7ff;border:1px solid #0b5ea1;border-radius:6px;display:inline-flex;align-items:center;gap:.5rem"><strong style="font-weight:700;">backup days used :</strong><span>${escHtml(payload.snapshotFileDebug.backupDaysUsed)} day(s)</span></div>` : ""}
-      `
-          : ""
-      }
-    </div>
-    ${snapshotDebugHtml}
-  `;
-}
-
-// Initialize debug UI once the DOM is ready
+// Run search immediately on load if the page has a query tag/mode.
 window.addEventListener("DOMContentLoaded", () => {
-  initDebugUI();
-
-  // If the page has a query tag/mode, run search immediately to populate debug and data.
   const { mode, tag } = getUrlState();
   if (mode && tag) {
     applyUrlState(mode, tag);
