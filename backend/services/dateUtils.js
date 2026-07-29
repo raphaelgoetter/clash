@@ -132,6 +132,33 @@ export function computeCurrentSeasonId(currentRace, raceLog) {
 }
 
 /**
+ * Écart entre le seasonId technique de l'API Clash Royale (source de vérité,
+ * utilisé pour tous les calculs et clés de stockage — ne jamais y toucher)
+ * et le numéro de "Saison" public communiqué par Supercell/RoyaleAPI (celui
+ * affiché en jeu, ex. "Saison 86").
+ *
+ * Origine : au lancement du Pass Royale (Saison 1 publique, juillet 2019),
+ * le compteur interne Supercell en était déjà à sa 50e réinitialisation de
+ * trophées depuis 2016 — d'où l'écart constant de 49 observé depuis.
+ * Vérifié empiriquement le 2026-07-29 : seasonId API 134 = Saison 85
+ * publique en cours, 135 = Saison 86 à venir (annonce RoyaleAPI).
+ */
+export const PUBLIC_SEASON_OFFSET = 49;
+
+/**
+ * Traduit un seasonId technique de l'API en numéro de "Saison" public
+ * (celui affiché en jeu et communiqué par Supercell/RoyaleAPI).
+ * Usage strictement limité à l'affichage — ne jamais utiliser la valeur
+ * retournée pour un calcul, une clé de stockage ou une comparaison.
+ * @param {number|null} seasonId
+ * @returns {number|null}
+ */
+export function toPublicSeasonId(seasonId) {
+  if (seasonId == null) return null;
+  return seasonId - PUBLIC_SEASON_OFFSET;
+}
+
+/**
  * Calcule le weekId de la dernière semaine terminée (ex. "S130W4").
  *
  * @param {Array} raceLog  Guerres terminées — raceLog[0] = la plus récente

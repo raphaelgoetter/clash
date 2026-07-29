@@ -11,6 +11,7 @@ import { Resvg } from "@resvg/resvg-js";
 import { getLeagueName } from "../../backend/services/warLeagues.js";
 import { roundProjectedFame } from "../../backend/services/projectionFormat.js";
 import { getDiscordLinks } from "../../backend/services/discordLinks.js";
+import { toPublicSeasonId } from "../../backend/services/dateUtils.js";
 import {
   fetchClan,
   fetchClanMembers,
@@ -670,7 +671,7 @@ function buildRecapComponents(seasonOffset, sortMode) {
 
 function buildRecapFooter({ seasonId, observedAt, clan1, clan2 }) {
   const suffix = observedAt ? ` Fait le ${observedAt}.` : "";
-  let text = `Récapitulatif Saison S${seasonId}.${suffix}`;
+  let text = `Récapitulatif Saison S${toPublicSeasonId(seasonId)}.${suffix}`;
 
   const MAX_NAMES_PER_CLAN = 10;
   const excludedGroups = [clan1, clan2]
@@ -718,7 +719,7 @@ function buildRecapPayload({
   return {
     embeds: [
       {
-        title: `<:stats:1499284927894650950> Récap GDC : saison S${seasonId}`,
+        title: `<:stats:1499284927894650950> Récap GDC : saison S${toPublicSeasonId(seasonId)}`,
         color: 0x5865f2,
         description,
         footer: {

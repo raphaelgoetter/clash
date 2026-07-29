@@ -31,6 +31,7 @@ import {
   findRank,
   findTiedRank,
 } from "../../../backend/services/frames.js";
+import { toPublicSeasonId } from "../../../backend/services/dateUtils.js";
 
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 const FRAME_COLOR = 0x2ecc71;
@@ -52,7 +53,7 @@ function buildFrameEmbed({
   return {
     title: "🎬 Le jeu du mercredi : Trouve le film !",
     description:
-      `**Saison ${seasonId} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
+      `**Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
       "Devine le titre d'un film à partir d'une image.\n\n" +
       "Clique sur le bouton «Répondre» pour soumettre ta réponse, ou prends un indice pour t'aider.\n\n" +
       "**Barème**\n" +
@@ -176,11 +177,11 @@ function buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId) {
   }
   lines.push(
     "",
-    `Bravo à tous ! Rendez-vous juste après pour le lancement de la Saison ${newSeasonId}.`,
+    `Bravo à tous ! Rendez-vous juste après pour le lancement de la Saison ${toPublicSeasonId(newSeasonId)}.`,
   );
 
   return {
-    title: `🏆 Fin de la Saison ${endedSeasonId} !`,
+    title: `🏆 Fin de la Saison ${toPublicSeasonId(endedSeasonId)} !`,
     description:
       `Merci aux ${seasonRanking.length} joueur${seasonRanking.length > 1 ? "s" : ""} qui ont participé à « Trouve le film » cette saison !\n\n` +
       lines.join("\n"),
@@ -450,7 +451,7 @@ function buildDmText({
   seasonScore,
 }) {
   return [
-    `**Trouve le film : Saison ${seasonId} · Manche ${seasonManche}/${seasonMancheTotal}**`,
+    `**Trouve le film : Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
     "",
     `🎬 **${titre}** — tu es le ${ordinal(gameRank)} à avoir trouvé !`,
     `Score de cette manche : **${score} pts**`,
@@ -593,7 +594,7 @@ function buildFrameStatsEmbed({
   const lines = [];
 
   lines.push(
-    `**Saison ${seasonId} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`,
+    `**Saison ${toPublicSeasonId(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`,
   );
   if (currentSolved) {
     lines.push("- Tu as trouvé le nom du film !");
@@ -613,7 +614,7 @@ function buildFrameStatsEmbed({
   for (const m of pastManches) {
     lines.push("");
     lines.push(
-      `**Saison ${seasonId} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`,
+      `**Saison ${toPublicSeasonId(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`,
     );
     if (m.played) {
       lines.push("- Tu as trouvé le nom du film !");
@@ -624,7 +625,7 @@ function buildFrameStatsEmbed({
   }
 
   lines.push("");
-  lines.push(`**Score de la saison (S${seasonId}) :**`);
+  lines.push(`**Score de la saison (S${toPublicSeasonId(seasonId)}) :**`);
   lines.push(`- Tu as accumulé ${seasonTotal} points cette saison`);
   if (seasonRank != null) {
     lines.push(`- Ton classement : ${seasonRank} / ${seasonRankTotal}`);
