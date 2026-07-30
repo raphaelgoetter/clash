@@ -10115,10 +10115,12 @@
           "start": "2026-07-30T09:56:00.000Z",
           "end": "2026-07-31T09:55:59.999Z"
         },
-        "snapshotTime": null,
+        "snapshotTime": "2026-07-30T11:36:44.077Z",
         "snapshotBackupTime": "2026-07-30T10:42:55.644Z",
         "decks": {
-          "#G2VVUJLLQ": 4
+          "#20CY2LRU2": 4,
+          "#G2VVUJLLQ": 4,
+          "#9YRU2QJJ": 1
         },
         "hourlyCumul": [],
         "_cumulFame": {
@@ -10133,12 +10135,12 @@
           "#CJJUGGL98": 0,
           "#UUG22PU0Q": 0,
           "#URJ0YLPLP": 0,
-          "#9YRU2QJJ": 0,
+          "#9YRU2QJJ": 200,
           "#9GP9LQ9P": 0,
           "#VPGCQPR9U": 0,
           "#YGP0RQC0Q": 0,
           "#UV8R8RYVR": 0,
-          "#20CY2LRU2": 0,
+          "#20CY2LRU2": 500,
           "#YQGCRQ0": 0,
           "#GYCJPJL0L": 0,
           "#P89LCQGP0": 0,
@@ -10189,7 +10191,9 @@
           "#V9RL22GYQ": 0,
           "#G2VVUJLLQ": 700
         },
-        "duelsTodayByTag": {},
+        "duelsTodayByTag": {
+          "#20CY2LRU2": 1
+        },
         "_totalDonationsByTag": {},
         "duelsComplete": true,
         "periodType": "colosseum",
@@ -10205,12 +10209,12 @@
           "#CJJUGGL98": 0,
           "#UUG22PU0Q": 0,
           "#URJ0YLPLP": 0,
-          "#9YRU2QJJ": 0,
+          "#9YRU2QJJ": 1,
           "#9GP9LQ9P": 0,
           "#VPGCQPR9U": 0,
           "#YGP0RQC0Q": 0,
           "#UV8R8RYVR": 0,
-          "#20CY2LRU2": 0,
+          "#20CY2LRU2": 4,
           "#YQGCRQ0": 0,
           "#GYCJPJL0L": 0,
           "#P89LCQGP0": 0,
@@ -10261,12 +10265,15 @@
           "#V9RL22GYQ": 0,
           "#G2VVUJLLQ": 4
         },
-        "snapshotCount": 4
+        "snapshotCount": 9
       },
       {
         "warDay": "friday",
         "realDay": "2026-07-31",
-        "gdcPeriod": null,
+        "gdcPeriod": {
+          "start": "2026-07-31T09:56:00.000Z",
+          "end": "2026-08-01T09:55:59.999Z"
+        },
         "snapshotTime": null,
         "snapshotBackupTime": null,
         "decks": {},
@@ -10281,7 +10288,10 @@
       {
         "warDay": "saturday",
         "realDay": "2026-08-01",
-        "gdcPeriod": null,
+        "gdcPeriod": {
+          "start": "2026-08-01T09:56:00.000Z",
+          "end": "2026-08-02T09:55:59.999Z"
+        },
         "snapshotTime": null,
         "snapshotBackupTime": null,
         "decks": {},
@@ -10296,7 +10306,10 @@
       {
         "warDay": "sunday",
         "realDay": "2026-08-02",
-        "gdcPeriod": null,
+        "gdcPeriod": {
+          "start": "2026-08-02T09:56:00.000Z",
+          "end": "2026-08-03T09:55:59.999Z"
+        },
         "snapshotTime": null,
         "snapshotBackupTime": null,
         "decks": {},
