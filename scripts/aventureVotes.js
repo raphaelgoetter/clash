@@ -38,8 +38,8 @@ import { loadHistoire, readState, assignJourNumber, listVotes } from "../backend
     const votants = votes.filter((v) => v.choixId === c.id);
     const label = `${c.emoji ? c.emoji + " " : ""}${c.label}`;
     console.log(`${label} — ${votants.length} vote${votants.length > 1 ? "s" : ""}`);
-    for (const v of votants) {
-      console.log(`  • ${v.username}`);
+    if (votants.length > 0) {
+      console.log(`  ${votants.map((v) => v.username).join(", ")}`);
     }
   }
 
