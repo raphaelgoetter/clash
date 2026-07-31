@@ -195,7 +195,7 @@ async function patchOriginal(webhookUrl, payload) {
 // vieux de plusieurs heures — voir champion_history_page dans
 // interactions.js pour ce même principe.
 
-export async function handleVoteButton(webhookUrl, chapitreId, choixId, discordId) {
+export async function handleVoteButton(webhookUrl, chapitreId, choixId, discordId, username) {
   try {
     const state = await readState();
     // Vote hors-jeu (chapitre déjà remplacé, ou histoire terminée) : on ne
@@ -213,7 +213,7 @@ export async function handleVoteButton(webhookUrl, chapitreId, choixId, discordI
       return;
     }
 
-    await recordVote(chapitreId, discordId, choixId);
+    await recordVote(chapitreId, discordId, choixId, username);
 
     const histoire = await loadHistoire();
     const chapitreEntry = histoire.chapitres[chapitreId];

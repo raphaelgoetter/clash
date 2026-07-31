@@ -750,6 +750,7 @@ Même instance et mêmes conventions que le jeu Frame (voir "Stockage — Upstas
 | --- | --- | --- |
 | `aventure:state` | STRING | `{ chapitreId, channelId, messageId, publishedAt, termine }` — chapitre actuellement affiché |
 | `aventure:votes:<chapitreId>` | HASH | `discordId → choixId` — jetable, effacé après résolution du chapitre |
+| `aventure:vote_usernames:<chapitreId>` | HASH | `discordId → pseudo` — jetable, uniquement pour l'affichage admin (`npm run aventure:votes`), jamais utilisé pour la résolution du vote |
 | `aventure:jour_seq` | STRING (compteur) | Dernier numéro de jour attribué (`INCR` atomique) |
 | `aventure:jours` | HASH | `chapitreId → numéro de jour` (idempotent, `HSETNX`) |
 | `aventure:historique` | HASH | `chapitreId → { jour, choixGagnantId, resolvedAt }` — jamais nettoyé, alimente le bouton Historique |

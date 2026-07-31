@@ -9,7 +9,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { loadHistoire, readState, assignJourNumber, tallyVotes } from "../backend/services/aventure.js";
+import { loadHistoire, readState, assignJourNumber, listVotes } from "../backend/services/aventure.js";
 
 (async () => {
   const state = await readState();
@@ -25,8 +25,7 @@ import { loadHistoire, readState, assignJourNumber, tallyVotes } from "../backen
   const histoire = await loadHistoire();
   const chapitreEntry = histoire.chapitres[state.chapitreId];
   const jour = await assignJourNumber(state.chapitreId);
-  const counts = await tallyVotes(state.chapitreId);
-  const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
+  const votes = await listVotes(state.chapitreId);
 
   console.log(`${chapitreEntry.titre} (jour ${jour})\n`);
 
@@ -35,11 +34,14 @@ import { loadHistoire, readState, assignJourNumber, tallyVotes } from "../backen
     return;
   }
 
-  const rows = chapitreEntry.choix.map((c) => ({
-    Choix: `${c.emoji ? c.emoji + " " : ""}${c.label}`,
-    Votes: counts[c.id] || 0,
-  }));
+  for (const c of chapitreEntry.choix) {
+    const votants = votes.filter((v) => v.choixId === c.id);
+    const label = `${c.emoji ? c.emoji + " " : ""}${c.label}`;
+    console.log(`${label} — ${votants.length} vote${votants.length > 1 ? "s" : ""}`);
+    for (const v of votants) {
+      console.log(`  • ${v.username}`);
+    }
+  }
 
-  console.table(rows);
-  console.log(`Total : ${total} vote${total > 1 ? "s" : ""}.`);
+  console.log(`\nTotal : ${votes.length} vote${votes.length > 1 ? "s" : ""}.`);
 })();

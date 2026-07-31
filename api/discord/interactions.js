@@ -8034,11 +8034,16 @@ export default async function handler(req, res) {
   ) {
     const [, chapitreId, choixId] = body.data.custom_id.split(":");
     const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
     // type 6 = DEFERRED_UPDATE_MESSAGE : édite le message public lui-même
     // (le message d'origine du clic), jamais de réponse éphémère ici.
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleAventureVote(webhookUrl, chapitreId, choixId, discordId));
+    runBackground(() => handleAventureVote(webhookUrl, chapitreId, choixId, discordId, username));
     return;
   }
 

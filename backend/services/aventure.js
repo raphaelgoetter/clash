@@ -106,6 +106,10 @@ function votesKey(chapitreId) {
   return `aventure:votes:${chapitreId}`;
 }
 
+function voteUsernamesKey(chapitreId) {
+  return `aventure:vote_usernames:${chapitreId}`;
+}
+
 // ── Lecture de l'histoire (statique, jamais mutée) ────────────────
 
 let histoireCache = null;
@@ -130,10 +134,16 @@ export async function writeState(state) {
 // ── Votes ──────────────────────────────────────────────────────────
 // Un membre ne peut avoir qu'une entrée par chapitre : revoter écrase
 // simplement l'ancienne valeur via HSET, pas besoin de logique de
-// changement de vote dédiée.
+// changement de vote dédiée. Le pseudo est stocké à part (comme
+// frame:usernames:<gameId> dans frames.js) uniquement pour l'affichage
+// admin (scripts/aventureVotes.js) — jamais utilisé pour la logique de
+// résolution, qui ne dépend que des choixId.
 
-export async function recordVote(chapitreId, discordId, choixId) {
+export async function recordVote(chapitreId, discordId, choixId, username) {
   await getRedis().hset(votesKey(chapitreId), { [discordId]: choixId });
+  if (username) {
+    await getRedis().hset(voteUsernamesKey(chapitreId), { [discordId]: username });
+  }
 }
 
 export async function tallyVotes(chapitreId) {
@@ -145,8 +155,22 @@ export async function tallyVotes(chapitreId) {
   return counts;
 }
 
+// Détail des votants (discordId, choixId, pseudo) — utilisé uniquement par
+// scripts/aventureVotes.js pour l'affichage admin en terminal.
+export async function listVotes(chapitreId) {
+  const [votes, usernames] = await Promise.all([
+    hgetallRaw(votesKey(chapitreId)),
+    hgetallRaw(voteUsernamesKey(chapitreId)),
+  ]);
+  return Object.entries(votes).map(([discordId, choixId]) => ({
+    discordId,
+    choixId,
+    username: usernames[discordId] || discordId,
+  }));
+}
+
 async function clearVotes(chapitreId) {
-  await getRedis().del(votesKey(chapitreId));
+  await getRedis().del(votesKey(chapitreId), voteUsernamesKey(chapitreId));
 }
 
 // ── Détermination du vainqueur ──────────────────────────────────────
@@ -258,4 +282,5 @@ export async function resolveAndAdvance(state) {
 export async function resetAventure() {
   await getRedis().del(STATE_KEY, JOUR_SEQ_KEY, JOURS_KEY, HISTORIQUE_KEY);
   await scanDelete("aventure:votes:*");
+  await scanDelete("aventure:vote_usernames:*");
 }
