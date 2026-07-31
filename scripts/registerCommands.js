@@ -60,6 +60,20 @@ const commands = [
     ],
   },
   {
+    name: "combats",
+    description:
+      "Affiche le suivi jour par jour des combats de GDC d'un joueur (semaine en cours + précédente).",
+    options: [
+      {
+        type: 3, // STRING
+        name: "tag",
+        description: "Tag du joueur (ex : #ABC123)",
+        required: true,
+        autocomplete: true,
+      },
+    ],
+  },
+  {
     name: "discord-link",
     description: "Lie un ou plusieurs tags Clash Royale à ton compte Discord.",
     options: [

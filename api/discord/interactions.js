@@ -51,6 +51,8 @@ import { isJoinedThisWar } from "../../backend/services/arrivalUtils.js";
 import {
   summarizeWarDecks,
   summarizeWarDecksForMatchup,
+  getWarMatchPoints,
+  computeCombatsByDay,
 } from "../../backend/services/analysisService.js";
 import { loadClanCache } from "../../backend/services/clanCache.js";
 import { summarizePointsPerDeckWeeks } from "../../backend/services/warScoring.js";
@@ -1059,6 +1061,7 @@ const TAG_AUTOCOMPLETE_COMMANDS = new Set([
   "stats",
   "matchup",
   "collection",
+  "combats",
 ]);
 const TAG_NAME_CACHE_TTL = 6 * 60 * 60 * 1000;
 const tagNameCache = new Map();
@@ -2442,16 +2445,6 @@ function formatWarDecksField(warDecks) {
     .sort((a, b) => b.dayKey.localeCompare(a.dayKey))
     .slice(0, maxDays);
 
-  const getWarMatchPoints = (match) => {
-    const type = String(match.type || "").toLowerCase();
-    const result = match.result === "win" ? "win" : "loss";
-    if (type === "riverracepvp") return result === "win" ? 200 : 100;
-    if (type === "riverraceboat") return result === "win" ? 125 : 75;
-    if (type === "riverraceduel" || type === "riverraceduelcolosseum")
-      return result === "win" ? 250 : 100;
-    return 0;
-  };
-
   const groupBlocks = sortedDays.map((group, groupIndex) => {
     const isOldestDay = groupIndex === sortedDays.length - 1;
     const deckLabels = [...group.decks.keys()].slice(0, maxDecks);
@@ -3755,6 +3748,178 @@ export default async function handler(req, res) {
           color: COLOR_MAP[color] ?? 0x808080,
           description: `${tag} · <:xp:1498645264079257730> ${analysis.overview.expLevel ?? "N/A"} · <:trophy:1498645869224792105> ${analysis.overview.trophies ?? 0}`,
           fields,
+        };
+
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ embeds: [embed] }),
+        });
+      } catch (err) {
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur lors de l'analyse : ${err.message}`,
+            flags: 64,
+          }),
+        });
+      }
+    });
+    return;
+  }
+
+  // Commande /combats — suivi jour par jour des combats de GDC d'un joueur
+  // (semaine en cours + semaine précédente).
+  if (body.type === 2 && body.data?.name === "combats") {
+    const tagOption = body.data.options?.find((o) => o.name === "tag");
+    const rawTag = tagOption?.value?.trim();
+    if (!rawTag) {
+      return res.status(200).json({
+        type: 4,
+        data: {
+          content: "Veuillez fournir un tag de joueur (ex: `#ABC123`).",
+          flags: 64,
+        },
+      });
+    }
+
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    if (!webhookUrl) {
+      console.error("Discord webhook URL non construite pour /combats");
+      return res.status(200).json({
+        type: 4,
+        data: {
+          content:
+            "Configuration Discord incomplète : impossible de répondre à l'interaction.",
+          flags: 64,
+        },
+      });
+    }
+
+    res.status(200).json({ type: 5 });
+    const tag = rawTag.startsWith("#") ? rawTag : `#${rawTag}`;
+
+    runBackground(async () => {
+      try {
+        let analysis;
+        let warDecks;
+        try {
+          ({ analysis, warDecks } = await fetchWarDecksForTag(tag));
+        } catch (err) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: err.message, flags: 64 }),
+          });
+          return;
+        }
+
+        // currentWarDays est null hors période GDC (calendrier lun-mer),
+        // cf. buildCurrentWarDays() — source de vérité, pas besoin de
+        // recalculer un état de période séparé pour un joueur.
+        const isWarPeriod = analysis.currentWarDays != null;
+        const combatsByDay = computeCombatsByDay(warDecks);
+        const combatsByDayKey = new Map(combatsByDay.map((d) => [d.dayKey, d]));
+
+        const warHistory = analysis.warHistory;
+        const currentWeek = warHistory?.weeks?.find((w) => w.isCurrent);
+        const lastWeekEntry = warHistory?.weeks?.find((w) => !w.isCurrent);
+
+        const currentClanName =
+          analysis.overview.clan?.name ||
+          analysis.overview.clan?.tag ||
+          "Aucun";
+        const currentClanTag = analysis.overview.clan?.tag || null;
+        const currentClanLink = currentClanTag
+          ? `[${currentClanName}](${trustClanUrl(currentClanTag)})`
+          : currentClanName;
+
+        let currentWeekLines = ["Pas de GDC en cours."];
+        if (isWarPeriod) {
+          currentWeekLines = analysis.currentWarDays.days.map((day) => {
+            const label = getWarDayLabel(day.key);
+            const stats = combatsByDayKey.get(day.key);
+            if (day.isFuture) return `${label} : à venir`;
+            if (!stats || stats.decks === 0) return `${label} : pas encore joué`;
+            return `${label} : ${stats.decks} deck${stats.decks === 1 ? "" : "s"} (${stats.wins} victoire${stats.wins === 1 ? "" : "s"}, ${stats.losses} défaite${stats.losses === 1 ? "" : "s"}) · ${stats.points} pts`;
+          });
+        }
+        const currentTotalDecks = currentWeek?.decksUsed ?? 0;
+        const currentTotalPoints = currentWeek?.fame ?? 0;
+        const currentPointsPerDeck = currentTotalDecks
+          ? Math.round(currentTotalPoints / currentTotalDecks)
+          : null;
+        currentWeekLines.push(
+          `**Total semaine actuelle : ${currentTotalPoints} pts**${
+            currentPointsPerDeck !== null
+              ? ` (${currentPointsPerDeck} pts/deck)`
+              : ""
+          }`,
+        );
+
+        const lastWeekDays = Array.isArray(analysis.warLastWeekDays)
+          ? analysis.warLastWeekDays
+          : [];
+        const lastWeekLines = lastWeekDays.length
+          ? lastWeekDays.map((day) => {
+              const label = getWarDayLabel(day.date);
+              if (day.decks === null || day.decks === undefined) {
+                return `${label} : pas de données`;
+              }
+              if (day.decks === 0) return `${label} : 0 deck`;
+              return `${label} : ${day.decks} deck${day.decks === 1 ? "" : "s"}${
+                Number.isFinite(day.points) ? ` · ${day.points} pts` : ""
+              }`;
+            })
+          : ["Aucune donnée disponible pour la semaine précédente."];
+        const lastTotalDecks = lastWeekEntry?.decksUsed ?? 0;
+        const lastTotalPoints = lastWeekEntry?.fame ?? 0;
+        const lastPointsPerDeck = lastTotalDecks
+          ? Math.round(lastTotalPoints / lastTotalDecks)
+          : null;
+        const lastWeekLabel = toPublicWeekId(analysis.warLastWeekId) || "";
+        if (lastWeekEntry) {
+          lastWeekLines.push(
+            `**Total semaine dernière${lastWeekLabel ? ` (${lastWeekLabel})` : ""} : ${lastTotalPoints} pts**${
+              lastPointsPerDeck !== null ? ` (${lastPointsPerDeck} pts/deck)` : ""
+            }`,
+          );
+        }
+
+        const fields = [
+          {
+            name: "Combats semaine actuelle :",
+            value: currentWeekLines.join("\n"),
+            inline: false,
+          },
+          {
+            name: "Combats semaine dernière :",
+            value: lastWeekLines.join("\n"),
+            inline: false,
+          },
+        ];
+
+        const matchupAverage = Number.isFinite(analysis.matchup?.average)
+          ? `${Math.round(analysis.matchup.average * 100)}%`
+          : null;
+        if (matchupAverage) {
+          fields.push({
+            name: "Matchup moyen de la semaine :",
+            value: `⚡ ${matchupAverage}`,
+            inline: false,
+          });
+        }
+
+        const embed = {
+          title: `<:cards:1499284927894650950> Combats GDC : ${analysis.overview.name}${analysis.isNew ? " 🆕" : ""}`,
+          url: trustPlayerUrl(tag),
+          color: 0x3498db,
+          description: `${tag} · Clan : ${currentClanLink}`,
+          fields,
+          footer: {
+            text: "Voir le détail combat par combat avec /matchup",
+          },
         };
 
         await fetch(webhookUrl, {

@@ -88,12 +88,16 @@ router.get("/:tag/analysis", async (req, res) => {
       const warSnapshotDays = analysis.warSnapshotDays || null;
       const warCurrentWeekId = analysis.warCurrentWeekId || null;
       const warSnapshotTakenAt = analysis.warSnapshotTakenAt || null;
+      const warLastWeekDays = analysis.warLastWeekDays || null;
+      const warLastWeekId = analysis.warLastWeekId || null;
       return res.json({
         ...analysis,
         snapshotDate: null,
         warSnapshotDays,
         warCurrentWeekId,
         warSnapshotTakenAt,
+        warLastWeekDays,
+        warLastWeekId,
         warResetUtcMinutes,
       });
     }
@@ -175,6 +179,48 @@ router.get("/:tag/analysis", async (req, res) => {
       }
     }
 
+    // Semaine précédente : decks + points exacts par jour, depuis les snapshots.
+    // Pas d'estimation victoires/défaites ici (contrairement à la semaine en
+    // cours) : le riverracelog ne donne que des totaux hebdomadaires, donc le
+    // détail jour par jour ne peut venir que des snapshots persistés, qui ne
+    // tracent que decks joués et fame cumulée — pas le résultat des combats.
+    let warLastWeekDays = null;
+    let warLastWeekId = null;
+    const lastWeek = (analysis.warHistory?.weeks ?? []).find(
+      (w) => !w.isCurrent,
+    );
+    if (lastWeek) {
+      try {
+        const { getSnapshotsForWeek } = await import(
+          "../services/snapshot.js"
+        );
+        warLastWeekId = `S${lastWeek.seasonId}W${lastWeek.sectionIndex + 1}`;
+        const playerTag = analysis.overview?.tag ?? tag;
+        const weekSnaps = await getSnapshotsForWeek(
+          lastWeek.clanTag,
+          warLastWeekId,
+        );
+        let prevCumul = 0;
+        warLastWeekDays = weekSnaps.map((day) => {
+          const decks = Object.prototype.hasOwnProperty.call(
+            day.decks ?? {},
+            playerTag,
+          )
+            ? day.decks[playerTag]
+            : null;
+          const cumul = day._cumulFame?.[playerTag];
+          let points = null;
+          if (cumul !== undefined) {
+            points = Math.max(0, cumul - prevCumul);
+            prevCumul = cumul;
+          }
+          return { date: day.realDay, warDay: day.warDay, decks, points };
+        });
+      } catch (_) {
+        /* silencieux */
+      }
+    }
+
     const warResetUtcMinutes = clanTag
       ? warResetOffsetMs(clanTag) / 60000
       : null;
@@ -186,6 +232,8 @@ router.get("/:tag/analysis", async (req, res) => {
       warSnapshotDays,
       warCurrentWeekId,
       warSnapshotTakenAt,
+      warLastWeekDays,
+      warLastWeekId,
       warResetUtcMinutes,
     });
   } catch (err) {

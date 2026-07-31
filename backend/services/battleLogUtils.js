@@ -620,6 +620,52 @@ export async function summarizeWarDecksForMatchup(
   return entries;
 }
 
+/**
+ * Points GDC gagnés/perdus pour un combat, selon le barème "Barème des
+ * médailles GDC" (CONTRIBUTING.md) : PvP 200/100, Bateau 125/75, Duel 250/100.
+ */
+export function getWarMatchPoints(match) {
+  const type = String(match.type || "").toLowerCase();
+  const result = match.result === "win" ? "win" : "loss";
+  if (type === "riverracepvp") return result === "win" ? 200 : 100;
+  if (type === "riverraceboat") return result === "win" ? 125 : 75;
+  if (type === "riverraceduel" || type === "riverraceduelcolosseum")
+    return result === "win" ? 250 : 100;
+  return 0;
+}
+
+/**
+ * Regroupe les combats GDC d'un battlelog reconstruit (`summarizeWarDecksForMatchup`)
+ * par jour de guerre, pour obtenir un décompte exact victoires/défaites/points.
+ * @param {object[]} warDecks - sortie de summarizeWarDecksForMatchup()
+ * @returns {{ dayKey: string, decks: number, wins: number, losses: number, points: number }[]}
+ */
+export function computeCombatsByDay(warDecks) {
+  if (!Array.isArray(warDecks)) return [];
+
+  const byDay = new Map();
+  for (const deck of warDecks) {
+    const matches = Array.isArray(deck.matches) ? deck.matches : [];
+    for (const match of matches) {
+      const dayKey = match.dayKey || "";
+      const day = byDay.get(dayKey) ?? {
+        dayKey,
+        decks: 0,
+        wins: 0,
+        losses: 0,
+        points: 0,
+      };
+      day.decks += 1;
+      if (match.result === "win") day.wins += 1;
+      else day.losses += 1;
+      day.points += getWarMatchPoints(match);
+      byDay.set(dayKey, day);
+    }
+  }
+
+  return [...byDay.values()].sort((a, b) => a.dayKey.localeCompare(b.dayKey));
+}
+
 export async function summarizeWarDecks(battleLog, limit = 4, dayKey = null) {
   const decks = new Map();
   const warBattles = expandDuelRounds(filterWarBattles(battleLog ?? []));
