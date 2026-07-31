@@ -2425,7 +2425,7 @@ function getWarDayEmoji(dayKey) {
 function getCombatsDayBadge(decks, { pending = false } = {}) {
   if (decks == null) return "";
   if (decks >= 4) return SCORE_BADGES.success;
-  if (decks === 0 && pending) return SCORE_BADGES.warning;
+  if (pending) return SCORE_BADGES.warning;
   return SCORE_BADGES.error;
 }
 
@@ -3880,6 +3880,20 @@ export default async function handler(req, res) {
             return `${emoji} ${label} ${badge} : ${decks} deck${decks === 1 ? "" : "s"} (${wins} victoire${wins === 1 ? "" : "s"}) · ${points} pts`;
           });
         }
+        // ⚠️ Limite connue : le regroupement par jour ci-dessus repose sur
+        // warDayKey(battleTime), et battleTime d'un Duel correspond à
+        // l'heure de FIN du combat (un Duel dure plusieurs minutes, jusqu'à
+        // 3 rounds). Un Duel commencé juste avant le reset du clan et
+        // terminé juste après peut donc s'afficher sur le mauvais jour.
+        // Vérifié en conditions réelles (tag #U2UYYCQVG, saison Colisée) :
+        // le compteur decksUsedToday de l'API Clash Royale ne permet PAS de
+        // trancher ce cas de façon fiable (résultats contradictoires selon
+        // les joueurs testés, semaine Colisée aux mécaniques de deck/jour
+        // potentiellement différentes). Aucune correction fiable identifiée
+        // à ce jour — le total hebdomadaire affiché plus bas reste exact
+        // dans tous les cas (source : currentWeek.fame/decksUsed, pas une
+        // somme des jours), seul ce détail par jour peut occasionnellement
+        // afficher un combat sur le mauvais jour.
         const currentTotalDecks = currentWeek?.decksUsed ?? 0;
         const currentTotalPoints = currentWeek?.fame ?? 0;
         const currentPointsPerDeck = currentTotalDecks
