@@ -1107,6 +1107,7 @@ async function readClanCacheMembers(clanTag) {
         tag: member.tag || `#${normalizeTag(member.tag)}`,
         arrivalStreakInCurrentClan: member.arrivalStreakInCurrentClan,
         arrivalTotalWeeks: member.arrivalTotalWeeks,
+        firstSeenAt: member.firstSeenAt,
       },
     ]),
   );
@@ -5618,6 +5619,12 @@ export default async function handler(req, res) {
           }
         }
 
+        const warStartMs = (() => {
+          const iso = weekSnaps[0]?.gdcPeriod?.start;
+          const ts = iso ? Date.parse(iso) : NaN;
+          return Number.isFinite(ts) ? ts : null;
+        })();
+
         const failedPlayers = Array.from(snapshotMembersByTag.entries())
           .map(([normalizedTag, member]) => ({
             name: member.name || "Inconnu",
@@ -5628,6 +5635,7 @@ export default async function handler(req, res) {
               : 0,
             arrivalStreak: member.arrivalStreakInCurrentClan,
             arrivalWeeks: member.arrivalTotalWeeks,
+            firstSeenAt: member.firstSeenAt,
             day1Decks: day1DecksByTag.has(normalizedTag)
               ? day1DecksByTag.get(normalizedTag)
               : null,
@@ -5646,7 +5654,21 @@ export default async function handler(req, res) {
               : false,
           }))
           .filter((p) => {
-            const isNewArrival = isJoinedThisWar(p.arrivalStreak, p.day1Decks);
+            // isJoinedThisWar() se base sur streakInCurrentClan===0 et
+            // day1Decks===0 pour deviner une arrivée en cours de semaine —
+            // mais un membre arrivé pendant les jours d'entraînement (avant
+            // le début du J1) a aussi streak=0 tout en ayant eu toute la
+            // GDC pour jouer. On recoupe avec firstSeenAt (date réelle
+            // d'arrivée dans le clan) : si elle précède le début du J1, le
+            // joueur était bien présent pour toute la semaine et ne doit
+            // pas être exempté.
+            const joinedBeforeWarStart =
+              warStartMs != null &&
+              p.firstSeenAt &&
+              Date.parse(p.firstSeenAt) < warStartMs;
+            const isNewArrival =
+              !joinedBeforeWarStart &&
+              isJoinedThisWar(p.arrivalStreak, p.day1Decks);
             return p.decks < 4 && !isNewArrival;
           })
           .sort((a, b) =>
