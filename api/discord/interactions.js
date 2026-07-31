@@ -3370,15 +3370,38 @@ export default async function handler(req, res) {
             "<:interrogation:1493849417520906271> TrustRoyale — Guide des commandes",
           color: 0x5865f2,
           description:
+            "## Commandes joueur\n\n" +
             "**Trust**\n" +
             "Commande : `/trust tag:#TAG`\n" +
             "Usage : donne le score de fiabilité d'un joueur à partir de son tag\n\n" +
             "**Stats**\n" +
             "Commande : `/stats tag:#TAG`\n" +
             "Usage : affiche les statistiques GDC détaillées d'un membre de la famille\n\n" +
+            "**Combats**\n" +
+            "Commande : `/combats tag:#TAG`\n" +
+            "Usage : affiche le suivi jour par jour des combats de GDC d'un joueur (semaine en cours + précédente)\n\n" +
+            "**Collection**\n" +
+            "Commande : `/collection tag:#TAG`\n" +
+            "Usage : statistiques de collection (cartes, niveaux, évolutions, héros, niveau de collection)\n\n" +
+            "**Discord Link**\n" +
+            "Commande : `/discord-link tag:#TAG [tag2] [tag3]`\n" +
+            "Usage : lie ton tag Clash à Discord (à faire par un membre)\n\n" +
+            "**Discord Check**\n" +
+            "Commande : `/discord-check clan:N`\n" +
+            "Usage : vérifie la présence Discord des membres d'un clan\n\n" +
+            "**Frame**\n" +
+            "Commande : `/frame`\n" +
+            "Usage : affiche tes scores au jeu Frame (devine le film) — manche en cours, historique de la saison, total\n\n" +
+            "**Anagram**\n" +
+            "Commande : `/anagram`\n" +
+            "Usage : affiche tes scores au jeu Anagram (devine la carte) — manche en cours, historique de la saison, total\n\n" +
+            "## Commandes clan\n\n" +
             "**Trust Clan**\n" +
             "Commande : `/trust-clan clan:N`\n" +
             "Usage : liste les membres risqués du clan\n\n" +
+            "**Late**\n" +
+            "Commande : `/late clan:N`\n" +
+            "Usage : liste les retardataires GDC actuels (à faire avant reset)\n\n" +
             "**Promote**\n" +
             "Commande : `/promote clan:N`\n" +
             "Usage : liste les joueurs ≥ 2600 pts semaine précédente\n\n" +
@@ -3388,15 +3411,12 @@ export default async function handler(req, res) {
             "**Fail**\n" +
             "Commande : `/fail clan:N`\n" +
             "Usage : affiche les joueurs qui ont manqué une journée de GDC hier\n\n" +
-            "**Late**\n" +
-            "Commande : `/late clan:N`\n" +
-            "Usage : liste les retardataires GDC actuels (à faire avant reset)\n\n" +
-            "**Late Ping**\n" +
-            "Commande : `/late-ping clan:N`\n" +
-            "Usage : liste les retardataires GDC actuels avec ping Discord des membres liés (réservé au staff)\n\n" +
-            "**Compare**\n" +
-            "Commande : `/compare clan:N`\n" +
-            "Usage : compare les 5 clans du groupe GDC\n\n" +
+            "**Top Players**\n" +
+            "Commande : `/top-players number:[3|5|10] period:[week|season|all-time]`\n" +
+            "Usage : meilleurs joueurs de toute la famille (semaine, saison précédente ou tous les temps)\n\n" +
+            "**Chelem**\n" +
+            "Commande : `/chelem clan:N [season:X]`\n" +
+            "Usage : joueurs ayant fait 16/16 decks toutes semaines d'une saison entière\n\n" +
             "**Family**\n" +
             "Commande : `/family`\n" +
             "Usage : affiche un résumé des clans de la famille\n\n" +
@@ -3406,45 +3426,19 @@ export default async function handler(req, res) {
             "**Stats Clan**\n" +
             "Commande : `/stats-clan clan:N`\n" +
             "Usage : statistiques GDC détaillées de tous les membres, avec boutons pour changer le tri\n\n" +
-            "**Chelem**\n" +
-            "Commande : `/chelem clan:N [season:X]`\n" +
-            "Usage : joueurs ayant fait 16/16 decks toutes semaines d'une saison entière\n\n" +
-            "**Top Players**\n" +
-            "Commande : `/top-players number:[3|5|10] period:[week|season|all-time]`\n" +
-            "Usage : meilleurs joueurs de toute la famille (semaine, saison précédente ou tous les temps)\n\n" +
-            "**Top Clans**\n" +
-            "Commande : `/top-clans [start:N]`\n" +
-            "Usage : affiche 30 clans du classement France GDC à partir du rang N (défaut : 1)\n\n" +
-            "**Collection**\n" +
-            "Commande : `/collection tag:#TAG`\n" +
-            "Usage : statistiques de collection (cartes, niveaux, évolutions, héros, niveau de collection)\n\n" +
-            "**Pronostics GDC**\n" +
-            "Vote via le menu déroulant sous le message de pronostics\n\n" +
-            "**Décompte Votes**\n" +
-            "Commande : `/champion-count clan:CLAN`\n" +
-            "Usage : état des votes en cours\n\n" +
-            "**Historique Champions**\n" +
-            "Commande : `/champion-history clan:CLAN`\n" +
-            "Usage : historique des champions GDC passés\n\n" +
-            "**Discord Link**\n" +
-            "Commande : `/discord-link tag:#TAG [tag2] [tag3]`\n" +
-            "Usage : lie ton tag Clash à Discord (à faire par un membre)\n\n" +
-            "**Discord Check**\n" +
-            "Commande : `/discord-check clan:N`\n" +
-            "Usage : vérifie la présence Discord des membres d'un clan\n\n" +
             "**Recap**\n" +
             "Commande : `/recap saison:-1`\n" +
             "Usage : récap GDC de la saison passée — 10 moins bons scoreurs de La Resistance, " +
             "10 meilleurs de Les Resistants. Option `saison` : -1 (défaut) ou -2\n\n" +
-            "**Frame**\n" +
-            "Commande : `/frame`\n" +
-            "Usage : affiche tes scores au jeu Frame (devine le film) — manche en cours, historique de la saison, total\n\n" +
-            "**Anagram**\n" +
-            "Commande : `/anagram`\n" +
-            "Usage : affiche tes scores au jeu Anagram (devine la carte) — manche en cours, historique de la saison, total\n\n" +
-            "**Help**\n" +
-            "Commande : `/help`\n" +
-            "Usage : affiche cette fenêtre",
+            "**Compare**\n" +
+            "Commande : `/compare clan:N`\n" +
+            "Usage : compare les 5 clans du groupe GDC\n\n" +
+            "**Top Clans**\n" +
+            "Commande : `/top-clans [start:N]`\n" +
+            "Usage : affiche 30 clans du classement France GDC à partir du rang N (défaut : 1)\n\n" +
+            "**Historique Champions**\n" +
+            "Commande : `/champion-history clan:CLAN`\n" +
+            "Usage : historique des champions GDC passés",
         };
 
         await fetch(webhookUrl, {
