@@ -15,6 +15,7 @@ dotenv.config({ path: "./.env" });
 import fetch from "node-fetch";
 import { FAMILY_CLAN_TAGS } from "../backend/services/warHistory.js";
 import { resolveMembersChannelId } from "../backend/services/discordChannels.js";
+import { toPublicWeekId } from "../backend/services/dateUtils.js";
 
 const CLAN_NAMES = {
   Y8JUPC9C: "La Resistance",
@@ -140,7 +141,7 @@ async function main() {
 
       // Message champion — affiché en priorité, avant la liste des votes
       if (realChampion && realChampion.length > 0) {
-        description += `**Véritable Champion de la semaine ${weekId} :**\n`;
+        description += `**Véritable Champion de la semaine ${toPublicWeekId(weekId)} :**\n`;
 
         const championsWithVoters = computeChampionVoters(
           realChampion,
@@ -203,7 +204,7 @@ async function main() {
         color: 0xf1c40f,
         description,
         footer: {
-          text: `Semaine ${weekId}`,
+          text: `Semaine ${toPublicWeekId(weekId)}`,
         },
       };
 
