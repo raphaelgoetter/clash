@@ -348,9 +348,14 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
           analysis.warHistory,
         );
       }
-    } catch (_) {
+    } catch (err) {
+      console.error(
+        `[playerAnalysis] Échec récupération warHistory pour ${player.tag}:`,
+        err,
+      );
       analysis.warHistory = null;
       analysis.warScore = analysis.reliability;
+      analysis.warHistoryDegraded = true;
     }
   } else {
     analysis.warHistory = null;

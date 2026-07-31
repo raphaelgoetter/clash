@@ -498,6 +498,7 @@ async function buildRecapClanSection(
       clanName: clanFallbackName,
       members: [],
       excluded: [],
+      raceLogUnavailable: false,
     };
   }
 
@@ -555,6 +556,7 @@ async function buildRecapClanSection(
     clanName: data.clan?.name || clanFallbackName,
     members: merged.slice(0, 10),
     excluded,
+    raceLogUnavailable: !!data.raceLogUnavailable,
   };
 }
 
@@ -590,7 +592,7 @@ const RECAP_INDENT = "⠀⠀";
 // en bas de liste (idx le plus élevé), que ce soit clan1 (pires) ou clan2
 // (meilleurs) : direction "desc" place les plus forts en tête, "asc" les
 // plus faibles en tête.
-function buildRecapRows(members, sortMode, direction) {
+function buildRecapRows(members, sortMode, direction, reliabilityUnavailable) {
   const metricOf = (m) => {
     if (sortMode === "pointsPerDeck") {
       return Number.isFinite(m.pointsPerDeck) ? m.pointsPerDeck : -1;
@@ -611,7 +613,7 @@ function buildRecapRows(members, sortMode, direction) {
     const newIcon = m.isNew ? " 🆕" : "";
 
     const statParts = [];
-    if (Number.isFinite(m.reliability)) {
+    if (!reliabilityUnavailable && Number.isFinite(m.reliability)) {
       const icon = RELIABILITY_ICON[m.color] ?? "⚪";
       statParts.push(`${icon} ${Math.round(m.reliability)}%`);
     }
@@ -689,6 +691,15 @@ function buildRecapFooter({ seasonId, observedAt, clan1, clan2 }) {
     text += `\nExclus car moins de 16 decks joués — ${excludedGroups.join(" · ")}.`;
   }
 
+  if (clan1.raceLogUnavailable || clan2.raceLogUnavailable) {
+    text +=
+      "\n⚠️ Fiabilité indisponible temporairement pour " +
+      [clan1.raceLogUnavailable && clan1.clanName, clan2.raceLogUnavailable && clan2.clanName]
+        .filter(Boolean)
+        .join(" et ") +
+      " (données partielles) — réessaie dans quelques instants.";
+  }
+
   return text;
 }
 
@@ -706,8 +717,18 @@ function buildRecapPayload({
   // "desc" pour les 2 : le meilleur de chaque groupe en tête, le pire tout en
   // bas — pour clan1 (bottom scoreurs), ça place le plus faible (le vrai
   // problème) en dernière ligne, la plus visible.
-  const clan1Rows = buildRecapRows(clan1.members, sortMode, "desc");
-  const clan2Rows = buildRecapRows(clan2.members, sortMode, "desc");
+  const clan1Rows = buildRecapRows(
+    clan1.members,
+    sortMode,
+    "desc",
+    clan1.raceLogUnavailable,
+  );
+  const clan2Rows = buildRecapRows(
+    clan2.members,
+    sortMode,
+    "desc",
+    clan2.raceLogUnavailable,
+  );
 
   const description =
     `**${clan1.clanName} (bottom scoreurs) :**\n` +
@@ -1729,6 +1750,13 @@ async function buildClanReportPayload(resolved) {
     const lastWarSummary = analysis.lastWarSummary || null;
     const hasReliabilityDetails =
       isFamilyClan && !analysis.isLite && !usedLiteFallback;
+
+    if (hasReliabilityDetails && analysis.raceLogUnavailable) {
+      return {
+        kind: "error",
+        content: `⚠️ Données partielles pour ${clan.name || "ce clan"} : l'API Clash Royale n'a pas répondu pour l'historique de guerre du clan, les scores de fiabilité affichés seraient incorrects. Réessaie la commande dans quelques instants.`,
+      };
+    }
 
     const TYPE_FR = {
       open: "Ouvert",
@@ -3303,6 +3331,19 @@ export default async function handler(req, res) {
         }
 
         const analysis = await apiResp.json();
+
+        if (analysis.warHistoryDegraded) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `⚠️ Données partielles pour \`${tag}\` : l'API Clash Royale n'a pas répondu pour l'historique de guerre, la fiabilité affichée serait incorrecte. Réessaie la commande dans quelques instants.`,
+              flags: 64,
+            }),
+          });
+          return;
+        }
+
         const score = analysis.warScore ?? analysis.reliability;
         const { total, maxScore, pct, color, verdict } = score;
         const icon = RELIABILITY_ICON[color] ?? "⚪";
@@ -3599,6 +3640,19 @@ export default async function handler(req, res) {
         }
 
         const analysis = await apiResp.json();
+
+        if (analysis.warHistoryDegraded) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `⚠️ Données partielles pour \`${tag}\` : l'API Clash Royale n'a pas répondu pour l'historique de guerre, la fiabilité affichée serait incorrecte. Réessaie la commande dans quelques instants.`,
+              flags: 64,
+            }),
+          });
+          return;
+        }
+
         const score = analysis.warScore ?? analysis.reliability;
         const { pct, color, verdict } = score;
         const icon = RELIABILITY_ICON[color] ?? "⚪";
@@ -3833,6 +3887,18 @@ export default async function handler(req, res) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ content: err.message, flags: 64 }),
+          });
+          return;
+        }
+
+        if (analysis.warHistoryDegraded) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `⚠️ Données partielles pour \`${tag}\` : l'API Clash Royale n'a pas répondu pour l'historique de guerre. Réessaie la commande dans quelques instants.`,
+              flags: 64,
+            }),
           });
           return;
         }
@@ -4360,6 +4426,19 @@ export default async function handler(req, res) {
           return;
         }
         const analysis = await apiResp.json();
+
+        if (analysis.raceLogUnavailable) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `⚠️ Données partielles pour ${resolved.name} : l'API Clash Royale n'a pas répondu pour l'historique de guerre du clan, les scores de fiabilité affichés seraient incorrects. Réessaie la commande dans quelques instants.`,
+              flags: 64,
+            }),
+          });
+          return;
+        }
+
         const members = analysis.members || [];
 
         const filtered = members
@@ -5771,6 +5850,9 @@ export default async function handler(req, res) {
               );
               if (!apiResp.ok) throw new Error(`API joueur ${apiResp.status}`);
               const analysis = await apiResp.json();
+              if (analysis.warHistoryDegraded) {
+                throw new Error("Historique de guerre temporairement indisponible");
+              }
               const weeks = Array.isArray(analysis.warHistory?.weeks)
                 ? analysis.warHistory.weeks.filter(
                     (w) => !w.isCurrent && Number(w.decksUsed) > 0,
@@ -6945,6 +7027,19 @@ export default async function handler(req, res) {
         }
 
         const data = await apiResp.json();
+
+        if (data.raceLogUnavailable) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `⚠️ Données partielles pour ${resolved.name} : l'API Clash Royale n'a pas répondu pour l'historique de guerre du clan, les scores de fiabilité affichés seraient incorrects. Réessaie la commande dans quelques instants.`,
+              flags: 64,
+            }),
+          });
+          return;
+        }
+
         setCachedStatsClanAnalysis(resolved.tag, data);
         const members = Array.isArray(data.members) ? data.members : [];
         const clanInfo = data.clan || {};
@@ -7301,6 +7396,18 @@ export default async function handler(req, res) {
           return;
         }
         data = await apiResp.json();
+
+        if (data.raceLogUnavailable) {
+          await fetch(originalWebhookUrl, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `⚠️ Données partielles pour ${resolved.name} : l'API Clash Royale n'a pas répondu pour l'historique de guerre du clan. Réessaie dans quelques instants.`,
+            }),
+          });
+          return;
+        }
+
         setCachedStatsClanAnalysis(clanTag, data);
       } catch (err) {
         const message =

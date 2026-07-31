@@ -1139,8 +1139,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     currentRace = null;
   }
 
-  // If both are missing, we are in degraded mode.
-  raceLogUnavailable = !raceLog && !currentRace;
+  // Le fallback de fiabilité par membre (ligne ~1798) est déclenché par
+  // l'absence de `raceLog` seul — currentRace ne compense pas cette perte,
+  // donc on ne doit pas effacer le flag quand seul raceLog a échoué.
+  raceLogUnavailable = raceLogUnavailable || !raceLog;
 
   const currentRaceIndicatesWarDay =
     currentRace?.periodType === "warDay" ||
