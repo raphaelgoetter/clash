@@ -3875,7 +3875,8 @@ export default async function handler(req, res) {
             if (day.isFuture) return `${emoji} ${label} : à venir`;
             const decks = stats?.decks ?? 0;
             const badge = getCombatsDayBadge(decks, { pending: true });
-            if (decks === 0) return `${emoji} ${label} ${badge} : pas encore joué`;
+            if (decks === 0)
+              return `${emoji} ${label} ${badge} : pas encore joué`;
             return `${emoji} ${label} ${badge} : ${decks} deck${decks === 1 ? "" : "s"} (${stats.wins} victoire${stats.wins === 1 ? "" : "s"}, ${stats.losses} défaite${stats.losses === 1 ? "" : "s"}) · ${stats.points} pts`;
           });
         }
@@ -3918,7 +3919,9 @@ export default async function handler(req, res) {
         if (lastWeekEntry) {
           lastWeekLines.push(
             `**Total semaine dernière${lastWeekLabel ? ` (${lastWeekLabel})` : ""} : ${lastTotalPoints} pts**${
-              lastPointsPerDeck !== null ? ` (${lastPointsPerDeck} pts/deck)` : ""
+              lastPointsPerDeck !== null
+                ? ` (${lastPointsPerDeck} pts/deck)`
+                : ""
             }`,
           );
         }
@@ -3955,7 +3958,7 @@ export default async function handler(req, res) {
           title: `<:cards:1499284927894650950> Combats GDC : ${analysis.overview.name}${analysis.isNew ? " 🆕" : ""}`,
           url: trustPlayerUrl(tag),
           color: 0x3498db,
-          description: `${tag} · Clan : ${currentClanLink}${resetTime ? ` · Reset : ${resetTime} (heure de Paris)` : ""}`,
+          description: `${tag} · ${currentClanLink}${resetTime ? ` · Reset : ${resetTime}` : ""}`,
           fields,
           footer: {
             text: "Voir le détail combat par combat avec /matchup",
@@ -4894,7 +4897,9 @@ export default async function handler(req, res) {
           url: clanUrl,
           color: 0xf1c40f,
           description,
-          footer: { text: `Combats non joués · Semaine : ${toPublicWeekId(weekId)}` },
+          footer: {
+            text: `Combats non joués · Semaine : ${toPublicWeekId(weekId)}`,
+          },
         };
 
         await fetch(webhookUrl, {
