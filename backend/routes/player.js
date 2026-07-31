@@ -217,32 +217,45 @@ router.get("/:tag/analysis", async (req, res) => {
           return { date: day.realDay, warDay: day.warDay, decks, points };
         });
 
-        // Si un seul jour de la semaine n'a pas de snapshot exploitable, sa
-        // valeur peut être déduite exactement (pas une estimation) par
+        // La valeur d'un ou plusieurs jours sans snapshot exploitable peut
+        // parfois être déduite exactement (pas une estimation) par
         // différence avec le total hebdomadaire exact du riverracelog
         // (lastWeek.decksUsed / lastWeek.fame) : les 4 jours somment
         // forcément au total de la semaine.
+        // - reste nul, quel que soit le nombre de jours manquants : un
+        //   nombre de decks/points ne pouvant pas être négatif, la seule
+        //   solution est que chaque jour manquant vaille exactement 0 ;
+        // - reste positif avec un seul jour manquant : ce jour vaut ce
+        //   reste (sinon ambiguïté sur la répartition entre plusieurs jours).
         const missingDecksDays = warLastWeekDays.filter(
           (d) => d.decks === null,
         );
-        if (missingDecksDays.length === 1 && Number.isFinite(lastWeek.decksUsed)) {
+        if (missingDecksDays.length > 0 && Number.isFinite(lastWeek.decksUsed)) {
           const knownDecksSum = warLastWeekDays.reduce(
             (sum, d) => sum + (d.decks ?? 0),
             0,
           );
           const remainder = lastWeek.decksUsed - knownDecksSum;
-          if (remainder >= 0) missingDecksDays[0].decks = remainder;
+          if (remainder === 0) {
+            for (const d of missingDecksDays) d.decks = 0;
+          } else if (missingDecksDays.length === 1 && remainder > 0) {
+            missingDecksDays[0].decks = remainder;
+          }
         }
         const missingPointsDays = warLastWeekDays.filter(
           (d) => d.points === null,
         );
-        if (missingPointsDays.length === 1 && Number.isFinite(lastWeek.fame)) {
+        if (missingPointsDays.length > 0 && Number.isFinite(lastWeek.fame)) {
           const knownPointsSum = warLastWeekDays.reduce(
             (sum, d) => sum + (d.points ?? 0),
             0,
           );
           const remainder = lastWeek.fame - knownPointsSum;
-          if (remainder >= 0) missingPointsDays[0].points = remainder;
+          if (remainder === 0) {
+            for (const d of missingPointsDays) d.points = 0;
+          } else if (missingPointsDays.length === 1 && remainder > 0) {
+            missingPointsDays[0].points = remainder;
+          }
         }
       } catch (_) {
         /* silencieux */
