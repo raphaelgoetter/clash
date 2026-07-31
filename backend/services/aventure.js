@@ -165,7 +165,7 @@ export async function listVotes(chapitreId) {
   return Object.entries(votes).map(([discordId, choixId]) => ({
     discordId,
     choixId,
-    username: usernames[discordId] || discordId,
+    username: usernames[discordId] || null,
   }));
 }
 

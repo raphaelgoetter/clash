@@ -11,6 +11,25 @@ dotenv.config({ path: "./.env" });
 
 import { loadHistoire, readState, assignJourNumber, listVotes } from "../backend/services/aventure.js";
 
+// Même pattern que les résolutions de pseudo déjà utilisées ailleurs dans
+// api/discord/interactions.js (ex: /late-ping) : un seul appel groupé,
+// jamais un appel par membre.
+async function fetchGuildMembersById() {
+  const guildId = process.env.DISCORD_GUILD_ID;
+  const botToken = process.env.DISCORD_TOKEN;
+  if (!guildId || !botToken) return new Map();
+  try {
+    const res = await fetch(
+      `https://discord.com/api/v10/guilds/${guildId}/members?limit=1000`,
+      { headers: { Authorization: `Bot ${botToken}` } },
+    );
+    const members = res.ok ? await res.json() : [];
+    return new Map(members.map((m) => [m.user?.id, m]));
+  } catch {
+    return new Map();
+  }
+}
+
 (async () => {
   const state = await readState();
   if (!state) {
@@ -26,6 +45,20 @@ import { loadHistoire, readState, assignJourNumber, listVotes } from "../backend
   const chapitreEntry = histoire.chapitres[state.chapitreId];
   const jour = await assignJourNumber(state.chapitreId);
   const votes = await listVotes(state.chapitreId);
+
+  // Les votes enregistrés avant l'ajout du stockage du pseudo (ou dont le
+  // pseudo n'a pour une raison ou une autre pas été sauvegardé) n'ont pas
+  // de username en base — on les résout ici via l'API Discord (liste des
+  // membres du serveur), sans jamais réécrire les votes existants.
+  const missing = votes.filter((v) => !v.username);
+  if (missing.length > 0) {
+    const memberById = await fetchGuildMembersById();
+    for (const v of missing) {
+      const member = memberById.get(v.discordId);
+      v.username =
+        member?.nick || member?.user?.global_name || member?.user?.username || v.discordId;
+    }
+  }
 
   console.log(`${chapitreEntry.titre} (jour ${jour})\n`);
 
