@@ -384,67 +384,6 @@ const commands = [
     ],
   },
   {
-    name: "champion-start",
-    description:
-      "[TEST] Lance les pronostics GDC : top 8 scoreurs, ouvre les votes pour 2 jours.",
-    options: [
-      {
-        type: 3, // STRING
-        name: "clan",
-        description: "Choisir le clan",
-        required: true,
-        choices: [
-          { name: "La Resistance", value: "1" },
-          { name: "Les Resistants", value: "2" },
-          { name: "Les Revoltes", value: "3" },
-        ],
-      },
-    ],
-  },
-  {
-    name: "champion-end",
-    description:
-      "[TEST] Clôture les pronostics, affiche le challenger gagnant et le vrai Champion.",
-    options: [
-      {
-        type: 3, // STRING
-        name: "clan",
-        description: "Choisir le clan",
-        required: true,
-        choices: [
-          { name: "La Resistance", value: "1" },
-          { name: "Les Resistants", value: "2" },
-          { name: "Les Revoltes", value: "3" },
-        ],
-      },
-    ],
-  },
-  {
-    name: "champion",
-    description:
-      "Vote pour un challenger dans les pronostics GDC en cours.",
-    options: [
-      {
-        type: 3, // STRING
-        name: "select",
-        description: "Nom ou tag du challenger",
-        required: true,
-        autocomplete: true,
-      },
-      {
-        type: 3, // STRING
-        name: "clan",
-        description: "Clan (1=La Resistance, 2=Les Resistants, 3=Les Revoltes)",
-        required: false,
-        choices: [
-          { name: "La Resistance", value: "1" },
-          { name: "Les Resistants", value: "2" },
-          { name: "Les Revoltes", value: "3" },
-        ],
-      },
-    ],
-  },
-  {
     name: "champion-count",
     description:
       "Affiche le décompte des votes pour les pronostics GDC en cours.",

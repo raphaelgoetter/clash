@@ -46,7 +46,6 @@ Scripts concernés : `notifyWarSummary.js` (résumé quotidien/hebdo), `notifyMe
 Postent toujours dans le salon principal (appellent `resolveMembersChannelId(clanTag, { thread: false })`), quel que soit le clan — choix volontaire pour ne pas noyer les votes dans le thread de test :
 
 - `autoStartPredictions.js` / `autoEndPredictions.js` (cron `predictions.yml`)
-- Les commandes Discord manuelles `/champion-start` et `/champion-end` (`api/discord/handlers/championPredictions.js`) : elles postent directement dans le salon résolu via l'API Discord (token bot), avec une confirmation éphémère à l'endroit où la commande a été tapée — au lieu de répondre dans le salon/thread d'où la commande est lancée.
 
 Scripts **non concernés** (restent dans le salon principal ou le salon staff) : `notifyPreWarSummary.js`, `notifyGdcLaunch.js`, `notifyRules.js`, `notifyClanStatus.js`.
 

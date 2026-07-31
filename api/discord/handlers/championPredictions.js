@@ -5,30 +5,19 @@
 
 import {
   getTopScorers,
-  getRealChampion,
-  openSession,
   castVote,
   getVoteCounts,
   getSessionData,
   getActiveSessionByClan,
-  closeSessionAndArchive,
   getHistory,
   backfillChampionRegistry,
   resolveClan,
   formatParisDate,
-  computeNextPredictionsStart,
-  computeChampionVoters,
-  getChampionChallengerTags,
 } from "../../../backend/services/championPredictions.js";
-import { fetchRaceLog, fetchClan } from "../../../backend/services/clashApi.js";
-import { computePrevWeekId } from "../../../backend/services/dateUtils.js";
-import { resolveMembersChannelId } from "../../../backend/services/discordChannels.js";
+import { fetchRaceLog } from "../../../backend/services/clashApi.js";
 
 const DISCORD_APP_ID = process.env.DISCORD_APP_ID;
 const CHAMPION_COLOR = 0x9b59b6;
-const CHAMPION_GOLD = 0xf1c40f;
-const CROWN_CHAMPION = "<:crown:1518889526460682280>";
-const CROWN_OTHER = "<:emoji_51:1526217126187237426>";
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -36,48 +25,6 @@ function buildWebhookUrl(body) {
   const token = body.token || body.interaction?.token;
   if (!DISCORD_APP_ID || !token) return null;
   return `https://discord.com/api/v10/webhooks/${DISCORD_APP_ID}/${token}`;
-}
-
-// Poste toujours dans le salon principal du clan (jamais le thread test),
-// comme les scripts cron autoStartPredictions.js / autoEndPredictions.js.
-// Si le salon n'est pas configuré, retombe sur une réponse à l'endroit où
-// la commande a été tapée.
-async function postToClanChannel(clanTag, webhookUrl, payload) {
-  const channelId = resolveMembersChannelId(clanTag, { thread: false });
-  const token = process.env.DISCORD_TOKEN;
-
-  if (channelId && token) {
-    const res = await fetch(
-      `https://discord.com/api/v10/channels/${channelId}/messages`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bot ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      },
-    );
-    if (res.ok) {
-      await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          content: `✅ Posté dans <#${channelId}>`,
-          flags: 64,
-        }),
-      });
-      return;
-    }
-    const errBody = await res.text();
-    console.error(`[${clanTag}] Erreur envoi salon (${res.status}):`, errBody);
-  }
-
-  await fetch(webhookUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
 }
 
 function decodeCustomId(customId) {
@@ -110,134 +57,6 @@ function topScorerLine(p, idx) {
 }
 
 // ── Commandes ─────────────────────────────────────────────────
-
-export async function handleStart(webhookUrl, clanVal) {
-  try {
-    const resolved = resolveClan(clanVal);
-    const clanTag = resolved.tag;
-
-    const clanResp = await fetchClan(clanTag);
-    const clanName = clanResp?.name || resolved.name;
-
-    const raceLog = await fetchRaceLog(clanTag);
-    if (!Array.isArray(raceLog) || raceLog.length === 0) {
-      await postError(
-        webhookUrl,
-        "Impossible de récupérer le race log du clan.",
-      );
-      return;
-    }
-
-    const prevWeekId = computePrevWeekId(raceLog);
-    if (!prevWeekId) {
-      await postError(
-        webhookUrl,
-        "Impossible de déterminer la semaine précédente.",
-      );
-      return;
-    }
-
-    const topScorers = await getTopScorers(clanTag, 8);
-    if (!Array.isArray(topScorers) || topScorers.length === 0) {
-      await postError(
-        webhookUrl,
-        "Aucun participant trouvé pour la semaine précédente.",
-      );
-      return;
-    }
-
-    const { computeCurrentWeekId, parseWeekId } =
-      await import("../../../backend/services/dateUtils.js");
-    const { fetchCurrentRace } =
-      await import("../../../backend/services/clashApi.js");
-    const currentRace = await fetchCurrentRace(clanTag).catch(() => null);
-    const targetWeekId =
-      computeCurrentWeekId(currentRace, raceLog) || prevWeekId;
-
-    const now = new Date();
-    const endsAt = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
-    endsAt.setUTCHours(8, 0, 0, 0);
-    if (endsAt <= now) {
-      endsAt.setUTCDate(endsAt.getUTCDate() + 1);
-    }
-
-    const lastRace = raceLog[0];
-    const { seasonId, sectionIndex } = parseWeekId(targetWeekId) ?? {
-      seasonId: lastRace?.seasonId || 0,
-      sectionIndex: lastRace?.sectionIndex || 0,
-    };
-    const weekId = targetWeekId;
-
-    try {
-      await openSession(
-        clanTag,
-        weekId,
-        seasonId,
-        sectionIndex,
-        topScorers,
-        endsAt.toISOString(),
-      );
-    } catch (err) {
-      await postError(webhookUrl, err.message);
-      return;
-    }
-
-    const embed = buildStartEmbed(
-      clanName,
-      prevWeekId,
-      targetWeekId,
-      topScorers,
-      endsAt,
-    );
-    const selectMenu = buildChallengerSelect(clanTag, weekId, topScorers);
-
-    await postToClanChannel(clanTag, webhookUrl, {
-      embeds: [embed],
-      components: [selectMenu],
-    });
-  } catch (err) {
-    await postError(webhookUrl, `Erreur : ${err.message}`);
-  }
-}
-
-export async function handleEnd(webhookUrl, clanVal) {
-  try {
-    const resolved = resolveClan(clanVal);
-    const clanTag = resolved.tag;
-
-    const active = await getActiveSessionByClan(clanTag);
-    if (!active) {
-      await postError(
-        webhookUrl,
-        "Aucune session de pronostics trouvée pour ce clan.",
-      );
-      return;
-    }
-
-    const { weekId } = active;
-
-    const realChampion = await getRealChampion(clanTag, weekId);
-    const result = await closeSessionAndArchive(clanTag, weekId, realChampion);
-
-    const nextStartText = formatParisDate(computeNextPredictionsStart());
-
-    const embed = buildResultEmbed(
-      resolved.name,
-      weekId,
-      result.session.challengers,
-      result.voteResult,
-      result.winnerTag,
-      result.totalVotes,
-      realChampion,
-      result.session.votes,
-      nextStartText,
-    );
-
-    await postToClanChannel(clanTag, webhookUrl, { embeds: [embed] });
-  } catch (err) {
-    await postError(webhookUrl, `Erreur : ${err.message}`);
-  }
-}
 
 export async function handleCount(webhookUrl, clanVal) {
   try {
@@ -405,157 +224,6 @@ export async function handleSelectInteraction(webhookUrl, body) {
 }
 
 // ── Constructeurs d'embed ─────────────────────────────────────
-
-function buildStartEmbed(
-  clanName,
-  prevWeekId,
-  targetWeekId,
-  topScorers,
-  endsAt,
-) {
-  const lines = topScorers.map(
-    (p, idx) => `${ordinal(idx + 1)} **${p.name}** — ${formatFame(p.fame)} pts`,
-  );
-
-  const endParis = formatParisDate(endsAt);
-
-  const description =
-    `Devinez qui sera le **Champion** de la semaine **${targetWeekId}** à venir. Tout le monde peut voter !\n` +
-    `*Le Champion est le joueur qui marquera le plus de points GDC.*\n\n` +
-    `**Challengers** (top 8 scoreurs semaine ${prevWeekId}) :\n` +
-    lines.join("\n") +
-    `\n${ordinal(9)} **Autre** (pas dans la liste)\n\n` +
-    `📅 **Votez jusqu'au ${endParis}**\n` +
-    `Sélectionnez votre challenger dans le menu ci-dessous, ou utilisez \`/champion\`.\n` +
-    `📌 *Épinglez ce message pour que tout le monde puisse voter facilement.*`;
-
-  return {
-    title: `🔮 Pronostics GDC — ${clanName}`,
-    color: CHAMPION_COLOR,
-    description,
-  };
-}
-
-function buildChallengerSelect(clanTag, weekId, topScorers) {
-  return {
-    type: 1,
-    components: [
-      {
-        type: 3,
-        custom_id: `champion_vote:${clanTag}:${weekId}`,
-        placeholder: "Choisissez votre challenger...",
-        options: [
-          ...topScorers.map((p, idx) => ({
-            label: `${idx + 1}. ${p.name}`,
-            value: p.tag,
-            description: `${formatFame(p.fame)} pts · ${p.decksUsed} decks`,
-          })),
-          {
-            label: `9. Autre (pas dans la liste)`,
-            value: "__other__",
-            description: "Vote pour un joueur différent",
-          },
-        ],
-      },
-    ],
-  };
-}
-
-function buildResultEmbed(
-  clanName,
-  weekId,
-  challengers,
-  voteResult,
-  winnerTag,
-  totalVotes,
-  realChampions,
-  votes = [],
-  nextStartText = null,
-) {
-  // Trouver le nom via les challengers
-  const findName = (tag) => {
-    if (tag === "__other__") return "Autre joueur";
-    const c = challengers.find((ch) => ch.tag === tag);
-    return c ? c.name : tag;
-  };
-
-  const winnerName = winnerTag ? findName(winnerTag) : "Personne";
-
-  let description = "";
-
-  // Message champion — affiché en priorité, avant la liste des votes
-  if (realChampions && realChampions.length > 0) {
-    description += `**Véritable Champion de la semaine ${weekId} :**\n`;
-
-    const championsWithVoters = computeChampionVoters(
-      realChampions,
-      challengers,
-      votes,
-    );
-    const champLines = championsWithVoters.map((c) => {
-      let line = `🏆 **${c.name}** — ${formatFame(c.fame)} pts`;
-      if (c.voters.length > 0) {
-        const list = c.voters.slice(0, 100).join(", ");
-        line += ` (votants : ${list}${c.voters.length > 100 ? `… (+${c.voters.length - 100} autres)` : ""})`;
-      }
-      return line;
-    });
-    description += champLines.join("\n") + `\n\n`;
-
-    const matched = realChampions.some((c) => c.tag === winnerTag);
-    if (matched) {
-      description += `🎉 **Les votants ont eu raison !** Le challenger majoritaire était bien le Champion !\n\n`;
-    } else {
-      description += `😅 Le challenger majoritaire **${winnerName}** n'était pas le bon cette fois.\n\n`;
-    }
-  }
-
-  // Liste des votes — couronne bleue pour le vrai champion, rouge sinon
-  // (pas de trophée sur le plus voté : il n'est pas forcément le champion)
-  const championTags = getChampionChallengerTags(realChampions, challengers);
-  const maxVotes = voteResult.length > 0 ? voteResult[0].votes : 0;
-  const lines = voteResult.map((entry) => {
-    const name = findName(entry.challengerTag);
-    const crown = championTags.has(entry.challengerTag)
-      ? CROWN_CHAMPION
-      : CROWN_OTHER;
-    const votesStr = entry.votes === 1 ? "1 vote" : `${entry.votes} votes`;
-    const bar = voteBar(entry.votes, maxVotes);
-    return `${crown} ${name}\n   ${bar} ${votesStr}`;
-  });
-  description += lines.join("\n") + `\n\n`;
-
-  if (totalVotes === 0) {
-    description += "😴 Personne n'a voté cette semaine.";
-  } else {
-    description += `🗳️ **${totalVotes}** vote${totalVotes > 1 ? "s" : ""} au total.\n\n`;
-  }
-
-  if (!realChampions || realChampions.length === 0) {
-    const winnerVoters = winnerTag
-      ? votes
-          .filter((v) => v.challengerTag === winnerTag)
-          .map((v) => v.discordName)
-      : [];
-    if (totalVotes > 0) {
-      const list = winnerVoters.slice(0, 100).join(", ");
-      description += `Vous avez majoritairement voté pour **${winnerName}** : ${list}`;
-      if (winnerVoters.length > 100)
-        description += `… (+${winnerVoters.length - 100} autres)`;
-    }
-    description += `\n`;
-  }
-
-  if (nextStartText) {
-    description += `\n📅 **Prochaine édition : ${nextStartText} !**`;
-  }
-
-  return {
-    title: `🔮 Résultat des Pronostics — ${clanName}`,
-    color: CHAMPION_GOLD,
-    description,
-  };
-}
 
 function buildCountEmbed(clanName, weekId, counts, totalVotes, endsAt) {
   const sorted = Object.entries(counts)

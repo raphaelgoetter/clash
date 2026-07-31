@@ -31,8 +31,6 @@ import {
 } from "../../backend/services/collectionConstants.js";
 import { getOrSet } from "../../backend/services/cache.js";
 import {
-  handleStart as handleChampionStart,
-  handleEnd as handleChampionEnd,
   handleCount as handleChampionCount,
   handleHistory as handleChampionHistory,
   handleHistoryPage as handleChampionHistoryPage,
@@ -424,9 +422,8 @@ const RECAP_CLANS = {
 // pagination possible (limite dure de l'API Clash Royale, testée en live) —
 // ça couvre au mieux 2 saisons pleines, donc /recap ne propose que -1/-2.
 async function resolveRecapSeasonId(raceLog, currentRace, offset) {
-  const { computeCurrentSeasonId } = await import(
-    "../../backend/services/dateUtils.js"
-  );
+  const { computeCurrentSeasonId } =
+    await import("../../backend/services/dateUtils.js");
   const currentSeasonId = computeCurrentSeasonId(currentRace, raceLog);
   const seasonCounts = {};
   for (const r of raceLog) {
@@ -476,9 +473,8 @@ async function buildRecapClanSection(
   direction,
   applyMinDecksFilter,
 ) {
-  const { fetchCurrentRace } = await import(
-    "../../backend/services/clashApi.js"
-  );
+  const { fetchCurrentRace } =
+    await import("../../backend/services/clashApi.js");
 
   const [raceLog, currentRace] = await Promise.all([
     fetchRaceLog(`#${clanTag}`),
@@ -506,9 +502,7 @@ async function buildRecapClanSection(
     headers: { Accept: "application/json" },
   });
   if (!apiResp.ok) {
-    throw new Error(
-      `Erreur API clan ${clanFallbackName} (${apiResp.status})`,
-    );
+    throw new Error(`Erreur API clan ${clanFallbackName} (${apiResp.status})`);
   }
   const data = await apiResp.json();
   const currentMembers = Array.isArray(data.members) ? data.members : [];
@@ -814,9 +808,8 @@ function setCachedCompareAnalysis(clanTag, data) {
 async function computeCalendarIsWarPeriod(clanTag, data) {
   // Garde calendaire locale : ne pas se fier à data.isWarPeriod qui peut venir
   // d'un cache statique généré pendant la GDC (lun–mer : false, jeu–dim : true).
-  const { warResetOffsetMs } = await import(
-    "../../backend/services/dateUtils.js"
-  );
+  const { warResetOffsetMs } =
+    await import("../../backend/services/dateUtils.js");
   const dow = new Date(Date.now() - warResetOffsetMs(clanTag)).getUTCDay();
   return (dow === 0 || dow >= 4) && data?.isWarPeriod === true;
 }
@@ -839,9 +832,7 @@ const FR_MONTHS = [
 // Heure de l'observation (Paris) — réutilise le décalage UTC→Paris déjà
 // exposé par dateUtils.js (parisOffsetMs), pas de dépendance au fuseau du runtime.
 async function formatParisObservationTime(date = new Date()) {
-  const { parisOffsetMs } = await import(
-    "../../backend/services/dateUtils.js"
-  );
+  const { parisOffsetMs } = await import("../../backend/services/dateUtils.js");
   const paris = new Date(date.getTime() + parisOffsetMs(date));
   const day = paris.getUTCDate();
   const month = FR_MONTHS[paris.getUTCMonth()];
@@ -878,7 +869,12 @@ function sortCompareRaceGroup(raceGroup, sortMode, isWarPeriod, isColosseum) {
   });
 }
 
-function buildCompareFooter({ sortMode, isWarPeriod, anyClinched, observedAt }) {
+function buildCompareFooter({
+  sortMode,
+  isWarPeriod,
+  anyClinched,
+  observedAt,
+}) {
   const suffix = observedAt ? ` Fait le ${observedAt}.` : "";
   if (!isWarPeriod) return `Trié par Total Dernière GDC.${suffix}`;
   if (sortMode === "current") return `Trié par Points actuels.${suffix}`;
@@ -1304,9 +1300,8 @@ async function buildLateReportPayload(resolved, clanVal) {
 
   try {
     console.log("[/late] start, clan:", resolved.tag);
-    const { fetchCurrentRace, fetchClanMembers } = await import(
-      "../../backend/services/clashApi.js"
-    );
+    const { fetchCurrentRace, fetchClanMembers } =
+      await import("../../backend/services/clashApi.js");
     console.log("[/late] import OK");
 
     const [race, currentMembers, { links }] = await withTimeout(
@@ -1321,9 +1316,8 @@ async function buildLateReportPayload(resolved, clanVal) {
 
     const participants = race?.clan?.participants ?? [];
 
-    const { warResetOffsetMs } = await import(
-      "../../backend/services/dateUtils.js"
-    );
+    const { warResetOffsetMs } =
+      await import("../../backend/services/dateUtils.js");
     const resetUtcMs = warResetOffsetMs(resolved.tag);
     // Garde calendaire : hors jeu–dim (après reset lundi), jamais en mode GDC
     // même si l'API retourne encore periodType='warDay' transitoirement.
@@ -3031,14 +3025,13 @@ function buildMatchupDetailSelectRow(tag, warDecks) {
         ? `${Math.round(match.matchup * 100)}%`
         : "?";
       return {
-        label: `${dayLabel} · ${deckLabel} vs ${match.opponentName || "?"}`.slice(
-          0,
-          100,
-        ),
-        description: `${match.score || "?"} · ${matchupPct} de difficulté`.slice(
-          0,
-          100,
-        ),
+        label:
+          `${dayLabel} · ${deckLabel} vs ${match.opponentName || "?"}`.slice(
+            0,
+            100,
+          ),
+        description:
+          `${match.score || "?"} · ${matchupPct} de difficulté`.slice(0, 100),
         value: String(index),
       };
     });
@@ -3179,61 +3172,6 @@ export default async function handler(req, res) {
       .map((id) => id.trim())
       .filter(Boolean),
   );
-
-  // Autocomplete pour /champion select: — challengers de la session active
-  if (body.type === 4 && body.data?.name === "champion") {
-    const focused = body.data.options?.find((o) => o.focused);
-    if (focused?.name !== "select") {
-      return res.status(200).json({ type: 8, data: { choices: [] } });
-    }
-
-    const clanOpt = body.data.options?.find((o) => o.name === "clan");
-    const clanVal = clanOpt?.value || "1";
-    const CLAN_MAP = {
-      1: { tag: "Y8JUPC9C" },
-      la: { tag: "Y8JUPC9C" },
-      2: { tag: "LRQP20V9" },
-      les: { tag: "LRQP20V9" },
-      3: { tag: "QU9UQJRL" },
-    };
-    const resolved =
-      CLAN_MAP[String(clanVal).trim().toLowerCase()] ?? CLAN_MAP["1"];
-
-    try {
-      const { getActiveSessionByClan } =
-        await import("../../backend/services/championPredictions.js");
-      const active = await getActiveSessionByClan(resolved.tag);
-      if (!active) {
-        return res.status(200).json({ type: 8, data: { choices: [] } });
-      }
-
-      const input = (focused.value || "").toLowerCase();
-      const challengerChoices = active.session.challengers
-        .filter(
-          (c) =>
-            !input ||
-            c.name.toLowerCase().includes(input) ||
-            c.tag.toLowerCase().includes(input),
-        )
-        .map((c, idx) => ({
-          name: `${idx + 1}. ${c.name} — ${Number.isFinite(c.fame) ? c.fame.toLocaleString("fr-FR") : "0"} pts`,
-          value: c.tag,
-        }))
-        .slice(0, 24);
-
-      // Ajouter "Autre" comme dernier choix
-      challengerChoices.push({
-        name: `9. Autre (pas dans la liste)`,
-        value: "__other__",
-      });
-
-      return res
-        .status(200)
-        .json({ type: 8, data: { choices: challengerChoices } });
-    } catch {
-      return res.status(200).json({ type: 8, data: { choices: [] } });
-    }
-  }
 
   if (body.type === 4 && TAG_AUTOCOMPLETE_COMMANDS.has(body.data?.name)) {
     if (
@@ -3457,8 +3395,7 @@ export default async function handler(req, res) {
             "Commande : `/collection tag:#TAG`\n" +
             "Usage : statistiques de collection (cartes, niveaux, évolutions, héros, niveau de collection)\n\n" +
             "**Pronostics GDC**\n" +
-            "Commande : `/champion select:NOM` ou menu déroulant\n" +
-            "Usage : vote pour un challenger dans les pronostics en cours\n\n" +
+            "Vote via le menu déroulant sous le message de pronostics\n\n" +
             "**Décompte Votes**\n" +
             "Commande : `/champion-count clan:CLAN`\n" +
             "Usage : état des votes en cours\n\n" +
@@ -4209,7 +4146,8 @@ export default async function handler(req, res) {
 
         const filtered = members
           .filter(
-            (m) => m.verdictKey === "highRisk" || m.verdictKey === "extremeRisk",
+            (m) =>
+              m.verdictKey === "highRisk" || m.verdictKey === "extremeRisk",
           )
           .sort((a, b) => {
             // Risque le plus élevé en premier (score le plus bas = plus risqué)
@@ -4218,7 +4156,9 @@ export default async function handler(req, res) {
             if (scoreA !== scoreB) return scoreA - scoreB;
             // En cas d'égalité, trier par verdict (extrême avant high)
             const severity = { extremeRisk: 0, highRisk: 1 };
-            return (severity[a.verdictKey] || 0) - (severity[b.verdictKey] || 0);
+            return (
+              (severity[a.verdictKey] || 0) - (severity[b.verdictKey] || 0)
+            );
           });
 
         if (filtered.length === 0) {
@@ -4248,7 +4188,8 @@ export default async function handler(req, res) {
           const newTag = m.isNew ? " 🆕" : "";
           const emoji = VERDICT_EMOJI[m.verdictKey] ?? RELIABILITY_ICON.red;
           const pct = Math.round(Number(m.reliability ?? 0));
-          const verdictLabel = VERDICT_SHORT_LABEL[m.verdictKey] || m.verdict || "";
+          const verdictLabel =
+            VERDICT_SHORT_LABEL[m.verdictKey] || m.verdict || "";
           const playerUrl = trustPlayerUrl(m.tag);
           return `- [${m.name}](${playerUrl})${newTag} · ${emoji} ${verdictLabel} (${pct}%)`;
         });
@@ -5410,7 +5351,9 @@ export default async function handler(req, res) {
         // les commandes.
         const mergedDaySnapDecks = (snap) => {
           const merged = { ...(snap?.decks || {}) };
-          for (const [tag, value] of Object.entries(snap?.decksPreReset || {})) {
+          for (const [tag, value] of Object.entries(
+            snap?.decksPreReset || {},
+          )) {
             if (!Number.isFinite(value)) continue;
             if (!Number.isFinite(merged[tag]) || value > merged[tag]) {
               merged[tag] = value;
@@ -5420,10 +5363,12 @@ export default async function handler(req, res) {
         };
 
         const decksByTag = new Map(
-          Object.entries(mergedDaySnapDecks(prevDaySnap)).map(([tag, value]) => [
-            normalizeTag(tag),
-            Number.isFinite(value) ? Math.max(0, Math.min(4, value)) : 0,
-          ]),
+          Object.entries(mergedDaySnapDecks(prevDaySnap)).map(
+            ([tag, value]) => [
+              normalizeTag(tag),
+              Number.isFinite(value) ? Math.max(0, Math.min(4, value)) : 0,
+            ],
+          ),
         );
 
         const day1Snap = weekSnaps[0];
@@ -5456,7 +5401,9 @@ export default async function handler(req, res) {
             // marque personne comme parti pour ne pas afficher de faux
             // positifs en cas d'erreur réseau ponctuelle.
             hasLeft: currentMemberTags
-              ? !currentMemberTags.has(normalizeTag(member.tag || normalizedTag))
+              ? !currentMemberTags.has(
+                  normalizeTag(member.tag || normalizedTag),
+                )
               : false,
           }))
           .filter((p) => {
@@ -5533,14 +5480,18 @@ export default async function handler(req, res) {
               const avgPerDeck = totalDecks
                 ? Math.round(totalFame / totalDecks)
                 : 0;
-              const status = player.hasLeft ? "Parti" : formatStatus(player.role);
+              const status = player.hasLeft
+                ? "Parti"
+                : formatStatus(player.role);
               const isNew =
                 Number.isFinite(player.arrivalWeeks) &&
                 player.arrivalWeeks <= 1;
               const newTag = isNew ? " 🆕" : "";
               return `- [${player.name}](${trustPlayerUrl(tag)})${newTag} (${status}) manque ${4 - player.decks} :\n  Historique : ${decksLine}\n  Pts/deck moyen : ${avgPerDeck}`;
             } catch (err) {
-              const status = player.hasLeft ? "Parti" : formatStatus(player.role);
+              const status = player.hasLeft
+                ? "Parti"
+                : formatStatus(player.role);
               return `- [${player.name}](${trustPlayerUrl(tag)}) (${status}) manque ${4 - player.decks} : données historiques indisponibles`;
             }
           }),
@@ -6026,9 +5977,7 @@ export default async function handler(req, res) {
           data,
         );
         const sortMode = isWarPeriod ? "projection" : "current";
-        const observedAt = await formatParisObservationTime(
-          new Date(cachedAt),
-        );
+        const observedAt = await formatParisObservationTime(new Date(cachedAt));
         const payload = buildComparePayload({
           data,
           resolved,
@@ -6863,7 +6812,12 @@ export default async function handler(req, res) {
           return;
         }
 
-        setCachedRecapData(seasonOffset, { clan1, clan2, seasonId, observedAt });
+        setCachedRecapData(seasonOffset, {
+          clan1,
+          clan2,
+          seasonId,
+          observedAt,
+        });
 
         const payload = buildRecapPayload({
           clan1,
@@ -6897,24 +6851,6 @@ export default async function handler(req, res) {
   if (body.type === 2) {
     const cmd = body.data?.name;
 
-    if (cmd === "champion-start") {
-      const clanOpt = body.data.options?.find((o) => o.name === "clan");
-      const clanVal = clanOpt?.value || "1";
-      res.status(200).json({ type: 5 });
-      const webhookUrl = buildDiscordWebhookUrl(body);
-      runBackground(() => handleChampionStart(webhookUrl, clanVal));
-      return;
-    }
-
-    if (cmd === "champion-end") {
-      const clanOpt = body.data.options?.find((o) => o.name === "clan");
-      const clanVal = clanOpt?.value || "1";
-      res.status(200).json({ type: 5 });
-      const webhookUrl = buildDiscordWebhookUrl(body);
-      runBackground(() => handleChampionEnd(webhookUrl, clanVal));
-      return;
-    }
-
     if (cmd === "champion-count") {
       const clanOpt = body.data.options?.find((o) => o.name === "clan");
       const clanVal = clanOpt?.value || "1";
@@ -6930,58 +6866,6 @@ export default async function handler(req, res) {
       res.status(200).json({ type: 5 });
       const webhookUrl = buildDiscordWebhookUrl(body);
       runBackground(() => handleChampionHistory(webhookUrl, clanVal));
-      return;
-    }
-
-    if (cmd === "champion") {
-      const selectOpt = body.data.options?.find((o) => o.name === "select");
-      const clanOpt = body.data.options?.find((o) => o.name === "clan");
-      const clanVal = clanOpt?.value || "1";
-      let rawTag = selectOpt?.value?.trim();
-      res.status(200).json({ type: 5, data: { flags: 64 } });
-      const webhookUrl = buildDiscordWebhookUrl(body);
-      runBackground(async () => {
-        try {
-          const { resolveClan, getActiveSessionByClan, castVote } =
-            await import("../../backend/services/championPredictions.js");
-
-          const resolved = resolveClan(clanVal);
-          const active = await getActiveSessionByClan(resolved.tag);
-          if (!active) throw new Error("Aucune session de vote ouverte.");
-          const { weekId, session } = active;
-
-          // Vérifier que le tag correspond à un challenger valide
-          const matchedChallenger = session.challengers.find(
-            (c) =>
-              c.tag === rawTag ||
-              c.tag.toUpperCase() === (rawTag || "").toUpperCase() ||
-              c.name.toLowerCase() === (rawTag || "").toLowerCase(),
-          );
-          if (!matchedChallenger) {
-            throw new Error(`Challenger invalide. Utilisez le menu déroulant.`);
-          }
-          rawTag = matchedChallenger.tag;
-
-          const discordId = body.member?.user?.id;
-          const discordName = body.member?.user?.username || "Inconnu";
-          await castVote(resolved.tag, weekId, discordId, discordName, rawTag);
-
-          await fetch(webhookUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              content: `Votre vote est enregistré ! ✓`,
-              flags: 64,
-            }),
-          });
-        } catch (err) {
-          await fetch(webhookUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ content: `⚠️ ${err.message}`, flags: 64 }),
-          });
-        }
-      });
       return;
     }
   }
@@ -7008,8 +6892,12 @@ export default async function handler(req, res) {
     const offset = parseInt(offsetStr, 10) || 0;
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    const originalWebhookUrl = webhookUrl ? `${webhookUrl}/messages/@original` : null;
-    runBackground(() => handleChampionHistoryPage(originalWebhookUrl, clanVal, offset));
+    const originalWebhookUrl = webhookUrl
+      ? `${webhookUrl}/messages/@original`
+      : null;
+    runBackground(() =>
+      handleChampionHistoryPage(originalWebhookUrl, clanVal, offset),
+    );
     return;
   }
 
@@ -7059,10 +6947,7 @@ export default async function handler(req, res) {
     if (!shouldFetch) {
       const clanInfo = cachedData.clan || {};
       const clanName = clanInfo.name || resolved.name;
-      const isWarPeriod = await computeCalendarIsWarPeriod(
-        clanTag,
-        cachedData,
-      );
+      const isWarPeriod = await computeCalendarIsWarPeriod(clanTag, cachedData);
       return res.status(200).json({
         type: 7,
         data: buildStatsClanPayload({
@@ -7506,7 +7391,9 @@ export default async function handler(req, res) {
       "Inconnu";
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleFrameStatsCommand(webhookUrl, discordId, username));
+    runBackground(() =>
+      handleFrameStatsCommand(webhookUrl, discordId, username),
+    );
     return;
   }
 
@@ -7526,7 +7413,9 @@ export default async function handler(req, res) {
     // (au lieu d'en créer un nouveau, cf. type 5 pour la commande initiale).
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleFrameStatsCommand(webhookUrl, discordId, username));
+    runBackground(() =>
+      handleFrameStatsCommand(webhookUrl, discordId, username),
+    );
     return;
   }
 
@@ -7548,7 +7437,9 @@ export default async function handler(req, res) {
 
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleFrameHintButton(webhookUrl, gameId, hintKey, discordId, username));
+    runBackground(() =>
+      handleFrameHintButton(webhookUrl, gameId, hintKey, discordId, username),
+    );
     return;
   }
 
@@ -7561,7 +7452,9 @@ export default async function handler(req, res) {
     body.data.custom_id.startsWith("frame_answer:")
   ) {
     const gameId = body.data.custom_id.split(":")[1];
-    return res.status(200).json({ type: 9, data: buildFrameAnswerModal(gameId) });
+    return res
+      .status(200)
+      .json({ type: 9, data: buildFrameAnswerModal(gameId) });
   }
 
   // ── Jeu Frame : soumission de la Modal (réponse du joueur) ──
@@ -7585,7 +7478,15 @@ export default async function handler(req, res) {
 
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleFrameModalSubmit(webhookUrl, gameId, discordId, username, rawAnswer));
+    runBackground(() =>
+      handleFrameModalSubmit(
+        webhookUrl,
+        gameId,
+        discordId,
+        username,
+        rawAnswer,
+      ),
+    );
     return;
   }
 
@@ -7599,7 +7500,9 @@ export default async function handler(req, res) {
       "Inconnu";
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleAnagramStatsCommand(webhookUrl, discordId, username));
+    runBackground(() =>
+      handleAnagramStatsCommand(webhookUrl, discordId, username),
+    );
     return;
   }
 
@@ -7619,7 +7522,9 @@ export default async function handler(req, res) {
     // (au lieu d'en créer un nouveau, cf. type 5 pour la commande initiale).
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleAnagramStatsCommand(webhookUrl, discordId, username));
+    runBackground(() =>
+      handleAnagramStatsCommand(webhookUrl, discordId, username),
+    );
     return;
   }
 
@@ -7633,7 +7538,9 @@ export default async function handler(req, res) {
     body.data.custom_id.startsWith("anagram_answer:")
   ) {
     const gameId = body.data.custom_id.split(":")[1];
-    return res.status(200).json({ type: 9, data: buildAnagramAnswerModal(gameId) });
+    return res
+      .status(200)
+      .json({ type: 9, data: buildAnagramAnswerModal(gameId) });
   }
 
   // ── Jeu Anagram : soumission de la Modal (réponse du joueur) ──
@@ -7657,7 +7564,15 @@ export default async function handler(req, res) {
 
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleAnagramModalSubmit(webhookUrl, gameId, discordId, username, rawAnswer));
+    runBackground(() =>
+      handleAnagramModalSubmit(
+        webhookUrl,
+        gameId,
+        discordId,
+        username,
+        rawAnswer,
+      ),
+    );
     return;
   }
 
