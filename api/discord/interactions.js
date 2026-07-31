@@ -11,7 +11,7 @@ import { Resvg } from "@resvg/resvg-js";
 import { getLeagueName } from "../../backend/services/warLeagues.js";
 import { roundProjectedFame } from "../../backend/services/projectionFormat.js";
 import { getDiscordLinks } from "../../backend/services/discordLinks.js";
-import { toPublicSeasonId } from "../../backend/services/dateUtils.js";
+import { toPublicSeasonId, toPublicWeekId } from "../../backend/services/dateUtils.js";
 import {
   fetchClan,
   fetchClanMembers,
@@ -3522,7 +3522,7 @@ export default async function handler(req, res) {
           color: 0x5865f2,
           description,
           footer: {
-            text: `Quota : ${min} · Semaine : ${weekId}`,
+            text: `Quota : ${min} · Semaine : ${toPublicWeekId(weekId)}`,
           },
         };
 
@@ -4493,7 +4493,7 @@ export default async function handler(req, res) {
             return null;
           })();
 
-          footer = `😎 Meilleurs joueurs de la semaine précédente (${weekRef ?? "S?-W?"})`;
+          footer = `😎 Meilleurs joueurs de la semaine précédente (${weekRef ? toPublicWeekId(weekRef) : "S?-W?"})`;
 
           const weekSorted = allTeams.sort(
             (a, b) =>
@@ -4689,7 +4689,7 @@ export default async function handler(req, res) {
           url: clanUrl,
           color: 0xf1c40f,
           description,
-          footer: { text: `Combats non joués · Semaine : ${weekId}` },
+          footer: { text: `Combats non joués · Semaine : ${toPublicWeekId(weekId)}` },
         };
 
         await fetch(webhookUrl, {

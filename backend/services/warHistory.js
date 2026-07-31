@@ -10,6 +10,7 @@ import {
   computeCurrentWeekId,
   parseClashDate,
   MS_PER_DAY,
+  toPublicSeasonId,
 } from "./dateUtils.js";
 import { filterWarBattles } from "./battleLogUtils.js";
 
@@ -124,7 +125,7 @@ export function buildWarHistory(
       const p = standing.clan?.participants?.find((x) => x.tag === normalized);
       if (p) {
         weeks.push({
-          label: `S${race.seasonId}·W${race.sectionIndex + 1}`,
+          label: `S${toPublicSeasonId(race.seasonId)}·W${race.sectionIndex + 1}`,
           seasonId: race.seasonId,
           sectionIndex: race.sectionIndex,
           fame: p.fame ?? 0,
