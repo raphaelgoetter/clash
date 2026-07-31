@@ -25,6 +25,7 @@ import {
   fetchRaceLog,
   fetchCurrentRace,
   fetchBattleLog,
+  fetchClanMembers,
 } from "../backend/services/clashApi.js";
 import { loadSnapshots } from "../backend/services/snapshot.js";
 import {
@@ -32,6 +33,7 @@ import {
   RACE_FINISH_LINE,
 } from "../backend/services/warStandings.js";
 import { resolveMembersChannelId } from "../backend/services/discordChannels.js";
+import { isJoinedThisWar } from "../backend/services/arrivalUtils.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CACHE_DIR = path.join(
@@ -436,7 +438,32 @@ async function readClanMemberNames(tag) {
         name: members[playerTag]?.name || member.name || playerTag,
         role: member.role ?? members[playerTag]?.role ?? null,
         donations: members[playerTag]?.donations ?? member.donations ?? null,
+        arrivalStreakInCurrentClan: member.arrivalStreakInCurrentClan,
+        arrivalTotalWeeks: member.arrivalTotalWeeks,
+        firstSeenAt: member.firstSeenAt,
       };
+    }
+
+    // Le bundle cache statique (rafraîchi ~1x/heure) peut ne pas encore
+    // connaître un membre arrivé très récemment. On complète avec la liste
+    // live pour ne jamais faire disparaître un joueur en échec de la liste
+    // juste parce qu'il vient de rejoindre le clan (même logique que /fail).
+    try {
+      const liveMembers = await fetchClanMembers(`#${tag}`);
+      for (const member of Array.isArray(liveMembers) ? liveMembers : []) {
+        const playerTag = normalizePlayerTag(member?.tag);
+        if (!playerTag || members[playerTag]) continue;
+        members[playerTag] = {
+          name: member.name || playerTag,
+          role: member.role ?? null,
+          donations: member.donations ?? null,
+          arrivalStreakInCurrentClan: undefined,
+          arrivalTotalWeeks: undefined,
+          firstSeenAt: undefined,
+        };
+      }
+    } catch (_) {
+      // appel live échoué — on garde la liste du cache disque telle quelle
     }
 
     return members;
@@ -859,8 +886,9 @@ async function postWarSummary(
   let liveBoatTotal = 0;
   let clinchedInfo = null;
   let apiDayFame = null; // pointsEarned depuis periodLogs (source de vérité J1-J3)
+  let race = null; // réutilisé plus bas pour le recoupement live des decks manquants
   try {
-    const race = await fetchCurrentRace(tag);
+    race = await fetchCurrentRace(tag);
     const participants = race?.clan?.participants ?? [];
     if (participants.length > 0) {
       liveTodayCumul = participants.reduce((s, p) => s + (p.fame ?? 0), 0);
@@ -1167,20 +1195,114 @@ async function postWarSummary(
     // systématiquement le plus fiable — on prend le max des deux par joueur
     // (les deux sont des sous-estimations possibles, jamais des surestimations,
     // donc le max est toujours la valeur la plus proche de la réalité).
+    // Le snapshot disque du jour est écrit par un cron GitHub Actions puis
+    // commité : entre la capture (~2 min avant le reset) et ce run (~25 min
+    // après), il peut rester un léger décalage. On recoupe donc avec les
+    // compteurs live de l'API (toujours à jour) : en soustrayant du cumul
+    // hebdomadaire live les jours antérieurs (déjà stables), on isole le
+    // total du jour recherché et on garde le max avec la valeur disque
+    // (même logique que la commande /fail).
+    const dayIndex = WAR_DAY_NUMBER[warDay] - 1;
+    const mergedDaySnapDecks = (snap) => {
+      const merged = { ...(snap?.decks || {}) };
+      for (const [t, v] of Object.entries(snap?.decksPreReset || {})) {
+        if (!Number.isFinite(v)) continue;
+        if (!Number.isFinite(merged[t]) || v > merged[t]) merged[t] = v;
+      }
+      return merged;
+    };
+    const priorDaysTotalByTag = new Map();
+    for (let i = 0; i < dayIndex; i++) {
+      for (const [rawTag, value] of Object.entries(
+        mergedDaySnapDecks(allWeekDays?.[i]),
+      )) {
+        if (!Number.isFinite(value)) continue;
+        const tagNorm = normalizePlayerTag(rawTag);
+        const clamped = Math.max(0, Math.min(4, value));
+        priorDaysTotalByTag.set(
+          tagNorm,
+          (priorDaysTotalByTag.get(tagNorm) || 0) + clamped,
+        );
+      }
+    }
+
+    let liveParticipants = null;
+    try {
+      if (!isLastDay) {
+        liveParticipants = race?.clan?.participants ?? null;
+      } else {
+        const finalRaceLog = await fetchRaceLog(tag);
+        const standing = (finalRaceLog?.[0]?.standings ?? []).find(
+          (s) => s.clan?.tag === `#${tag}`,
+        );
+        liveParticipants = standing?.clan?.participants ?? null;
+      }
+    } catch (_) {
+      liveParticipants = null;
+    }
+
+    const liveDecksByTag = new Map();
+    if (Array.isArray(liveParticipants)) {
+      for (const p of liveParticipants) {
+        const tagNorm = normalizePlayerTag(p.tag);
+        const cumulative = Number(p.decksUsed) || 0;
+        const today = !isLastDay ? Number(p.decksUsedToday) || 0 : 0;
+        const priorDays = priorDaysTotalByTag.get(tagNorm) || 0;
+        liveDecksByTag.set(
+          tagNorm,
+          Math.max(0, Math.min(4, cumulative - today - priorDays)),
+        );
+      }
+    }
+
+    // day1Decks sert à isJoinedThisWar() pour ne pas pénaliser un membre
+    // arrivé en cours de GDC — voir plus bas.
+    const day1SnapMerged = mergedDaySnapDecks(allWeekDays?.[0]);
+    const warStartMs = (() => {
+      const iso = allWeekDays?.[0]?.gdcPeriod?.start;
+      const ts = iso ? Date.parse(iso) : NaN;
+      return Number.isFinite(ts) ? ts : null;
+    })();
+
     const missingPlayers = Object.entries(memberNames)
-      .map(([tagNorm, { name, role }]) => {
-        const decksCount = Math.max(
+      .map(([tagNorm, member]) => {
+        const diskDecks = Math.max(
           Number(dayEntry.decks?.[tagNorm]) || 0,
           Number(dayEntry.decksPreReset?.[tagNorm]) || 0,
         );
+        const decksCount = Math.max(
+          diskDecks,
+          liveDecksByTag.has(tagNorm) ? liveDecksByTag.get(tagNorm) : 0,
+        );
+        let day1Decks = Number.isFinite(day1SnapMerged[tagNorm])
+          ? Math.max(0, Math.min(4, day1SnapMerged[tagNorm]))
+          : null;
+        if (dayIndex === 0) day1Decks = decksCount;
         return {
           tag: tagNorm,
-          name,
-          role,
+          name: member.name,
+          role: member.role,
           missing: Math.max(0, 4 - decksCount),
+          arrivalStreak: member.arrivalStreakInCurrentClan,
+          firstSeenAt: member.firstSeenAt,
+          day1Decks,
         };
       })
-      .filter((p) => p.missing > 0)
+      .filter((p) => {
+        // Même garde que /fail : isJoinedThisWar() se base sur streak===0 et
+        // day1Decks===0, ce qui inclut à tort un membre arrivé pendant les
+        // jours d'entraînement (avant le début de J1). On recoupe avec
+        // firstSeenAt : s'il précède le début de J1, le joueur était bien
+        // présent pour toute la semaine et ne doit pas être exempté.
+        const joinedBeforeWarStart =
+          warStartMs != null &&
+          p.firstSeenAt &&
+          Date.parse(p.firstSeenAt) < warStartMs;
+        const isNewArrival =
+          !joinedBeforeWarStart &&
+          isJoinedThisWar(p.arrivalStreak, p.day1Decks);
+        return p.missing > 0 && !isNewArrival;
+      })
       .sort(
         (a, b) => b.missing - a.missing || a.name.localeCompare(b.name, "fr"),
       );
