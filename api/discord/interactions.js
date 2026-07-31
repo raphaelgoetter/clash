@@ -3882,9 +3882,8 @@ export default async function handler(req, res) {
               return `${emoji} ${label} ${badge} : pas encore joué`;
             if (decks === 0) return `${emoji} ${label} ${badge} : 0 deck`;
             const wins = stats?.wins ?? 0;
-            const losses = stats?.losses ?? decks;
             const points = stats?.points ?? 0;
-            return `${emoji} ${label} ${badge} : ${decks} deck${decks === 1 ? "" : "s"} (${wins} victoire${wins === 1 ? "" : "s"}, ${losses} défaite${losses === 1 ? "" : "s"}) · ${points} pts`;
+            return `${emoji} ${label} ${badge} : ${decks} deck${decks === 1 ? "" : "s"} (${wins} victoire${wins === 1 ? "" : "s"}) · ${points} pts`;
           });
         }
         const currentTotalDecks = currentWeek?.decksUsed ?? 0;
