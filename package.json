@@ -45,6 +45,7 @@
     "aventure:public": "node scripts/postAventure.js --public",
     "aventure:public:dry": "node scripts/postAventure.js --public --dry-run",
     "aventure:reset": "node scripts/resetAventure.js",
+    "aventure:votes": "node scripts/aventureVotes.js",
     "rules": "node scripts/notifyRules.js",
     "rules:dry": "node scripts/notifyRules.js --dry-run",
     "rules:dry:noping": "node scripts/notifyRules.js --dry-run --no-ping",

@@ -763,6 +763,7 @@ Même instance et mêmes conventions que le jeu Frame (voir "Stockage — Upstas
 | `npm run aventure:public` | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `aventure.yml`. |
 | `npm run aventure:public:dry` | Équivalent dry-run de `aventure:public`. |
 | `npm run aventure:reset` | Remet l'aventure à zéro : plus de chapitre actif, votes/numérotation/historique effacés. **Destructif**. |
+| `npm run aventure:votes` | Affiche le décompte des votes du chapitre actif (choix, compteur, total) sans passer par Discord. |
 
 ### Variables d'environnement requises (Aventure)
 
