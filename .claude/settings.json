@@ -12,7 +12,8 @@
       "Bash(rg -n \"parisOffsetMs\" /Users/raphael/Git/clash/**/*.js)",
       "Bash(rg -rn \"parisOffsetMs\" /Users/raphael/Git/clash --glob '*.js')",
       "Bash(node --check scripts/notifyGdcLaunch.js)",
-      "Bash(node scripts/notifyGdcLaunch.js --dry-run)"
+      "Bash(node scripts/notifyGdcLaunch.js --dry-run)",
+      "Bash(curl -s \"https://trustroyale.vercel.app/api/player/%238R0LR8GYC/analysis?fast=true\")"
     ]
   }
 }

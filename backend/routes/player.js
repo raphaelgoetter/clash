@@ -253,6 +253,16 @@ router.get("/:tag/analysis", async (req, res) => {
       ? warResetOffsetMs(clanTag) / 60000
       : null;
 
+    // Persiste l'enrichissement sur l'objet `analysis` mis en cache par
+    // getOrSet (référence partagée, pas un clone) : sans ça, un hit de
+    // cache ultérieur (fast=true) renvoie ces champs à null puisqu'ils ne
+    // sont recalculés que dans ce chemin "lent".
+    analysis.warSnapshotDays = warSnapshotDays;
+    analysis.warCurrentWeekId = warCurrentWeekId;
+    analysis.warSnapshotTakenAt = warSnapshotTakenAt;
+    analysis.warLastWeekDays = warLastWeekDays;
+    analysis.warLastWeekId = warLastWeekId;
+
     // keep API shape consistent with clan route
     res.json({
       ...analysis,
