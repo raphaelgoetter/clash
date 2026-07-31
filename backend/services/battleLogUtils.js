@@ -659,11 +659,16 @@ export function computeCombatsByDay(warDecks) {
         wins: 0,
         losses: 0,
         points: 0,
+        boatAttacks: 0,
+        hasDuel: false,
       };
+      const type = String(match.type || "").toLowerCase();
       day.decks += 1;
       if (match.result === "win") day.wins += 1;
       else day.losses += 1;
       day.points += getWarMatchPoints(match);
+      if (type === "riverraceboat") day.boatAttacks += 1;
+      if (DUEL_BATTLE_TYPES.has(type)) day.hasDuel = true;
       byDay.set(dayKey, day);
     }
   }

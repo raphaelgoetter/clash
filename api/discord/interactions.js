@@ -3940,7 +3940,24 @@ export default async function handler(req, res) {
             if (decks === 0) return `${badge} ${label} : 0 deck`;
             const wins = stats?.wins ?? 0;
             const points = stats?.points ?? 0;
-            return `${badge} ${label} : ${decks} deck${decks === 1 ? "" : "s"} (${wins} victoire${wins === 1 ? "" : "s"}) · ${points} pts`;
+            let line = `${badge} ${label} : ${decks} deck${decks === 1 ? "" : "s"} (${wins} victoire${wins === 1 ? "" : "s"}) · ${points} pts`;
+            // Warnings uniquement sur un jour clos (jamais "aujourd'hui",
+            // jamais "à venir", déjà retournés plus haut) avec au moins un
+            // deck joué (déjà garanti à ce stade).
+            if (!isToday) {
+              const warnings = [];
+              const boatAttacks = stats?.boatAttacks ?? 0;
+              if (boatAttacks > 0) {
+                warnings.push(
+                  `⚠️ ${boatAttacks} attaque${boatAttacks === 1 ? "" : "s"} bateau`,
+                );
+              }
+              if (!stats?.hasDuel) {
+                warnings.push("⚠️ Aucun duel joué");
+              }
+              if (warnings.length) line += `\n   ${warnings.join(" · ")}`;
+            }
+            return line;
           });
         }
         // ⚠️ Limite connue : le regroupement par jour ci-dessus repose sur
