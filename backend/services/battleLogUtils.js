@@ -294,7 +294,12 @@ export async function computeBattleMatchup(battle, catalog = null) {
 export async function computeMatchupFromBattleLog(battleLog) {
   const battles = Array.isArray(battleLog) ? battleLog : [];
   if (battles.length === 0) return null;
-  const warBattles = filterWarBattles(battles);
+  // expandDuelRounds() est indispensable ici : un Duel brut du battlelog
+  // agrège les cartes des jusqu'à 3 rounds dans un seul tableau team[0].cards
+  // (pas un deck de 8 cartes propre). Sans cette expansion,
+  // deckCardsFromBattle() (via _roundIndex) reçoit un "deck" agrégé de plus
+  // de 8 cartes et produit un score de matchup incohérent.
+  const warBattles = expandDuelRounds(filterWarBattles(battles));
   const samples = warBattles.length > 0 ? warBattles : battles;
 
   const catalog = await getWinConditionsCatalog();
