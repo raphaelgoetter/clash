@@ -31,7 +31,7 @@ function buildAventureEmbed(chapitreEntry, jour) {
     title: chapitreEntry.titre,
     description: chapitreEntry.texte,
     color: AVENTURE_COLOR,
-    footer: { text: `Jour ${jour} de l'aventure` },
+    footer: { text: `Jour ${jour} de l’aventure` },
   };
 }
 
@@ -229,7 +229,7 @@ export async function handleVoteButton(webhookUrl, chapitreId, choixId, discordI
 
 function buildHistoriqueListEmbed() {
   return {
-    title: "📜 Historique de l'aventure",
+    title: "📜 Historique de l’aventure",
     description: "Choisis un jour à revivre dans le menu ci-dessous.",
     color: AVENTURE_COLOR,
   };
@@ -296,7 +296,7 @@ export async function handleHistoriquePage(webhookUrl, offset) {
     const components = await buildHistoriqueListComponents(histoire, offset);
     if (!components) {
       await patchOriginal(webhookUrl, {
-        content: "Aucun chapitre précédent pour l'instant, reviens demain !",
+        content: "Aucun chapitre précédent pour l’instant, reviens demain !",
         embeds: [],
         components: [],
       });
@@ -327,7 +327,7 @@ export async function handleHistoriqueSelect(webhookUrl, body) {
     if (gagnant) {
       lignes.push(`**Choix retenu ce jour-là :** ${gagnant.emoji ? `${gagnant.emoji} ` : ""}${gagnant.label}`);
     } else {
-      lignes.push("**Fin de l'aventure.**");
+      lignes.push("**Fin de l’aventure.**");
     }
 
     const embed = {

@@ -2,68 +2,542 @@
   "debut": "chapitre_1",
   "chapitres": {
     "chapitre_1": {
-      "titre": "Jour 1 — L'Arène du Code",
-      "texte": "Vous franchissez les portes de l'arène. Au loin, Displaynone ricane en lançant un `display: none !important;` sur la porte de sortie. La foule retient son souffle : comment allez-vous réagir ?",
-      "resume_historique": "La communauté est entrée dans l'arène malgré la malédiction CSS de Displaynone.",
+      "titre": "Jour 1 — L’appel du Grand Conseil",
+      "texte": "🛡️ Vous êtes les champions de votre clan, convoqués en urgence par le **Grand Conseil des Arènes**, présidé par le facétieux **Père Fouras**. Depuis plusieurs semaines, des pans entiers du royaume disparaissent sans prévenir : une Tour Princesse perd ses couleurs, une Arène entière s’efface de la mémoire des joueurs, des Coffres Légendaires s’évaporent avant même d’être ouverts.\n\n*Dans un coin de la salle, un Barbare d’élite s’endort debout contre son bouclier, pendant qu’un Gobelin tente discrètement de lui voler ses sandales.*\n\nLe coupable ? **Displaynone**, un ancien archiviste royal banni pour avoir tenté d’effacer un chapitre honteux de l’Histoire — et qui, depuis son exil, a appris à effacer bien plus que des mots.\n\n> « Retrouvez-le avant qu’il n’efface l’Arène tout entière ! » tranche Père Fouras, pendant qu’**Apoplexy**, chef d’un clan rival, ricane dans son coin : « Vous n’y arriverez jamais. »\n\nVotre éclaireur **Rico** a repéré deux pistes.",
+      "resume_historique": "Le Grand Conseil charge le clan de retrouver Displaynone avant qu’il n’efface l’Arène.",
       "choix": [
-        { "id": "option_a", "label": "Poser un PEKKA", "emoji": "⚔️", "prochain_chapitre": "chapitre_2_bourrin" },
-        { "id": "option_b", "label": "Inspecter l'élément", "emoji": "🔍", "prochain_chapitre": "chapitre_2_tactique" }
+        {
+          "id": "option_a",
+          "label": "Explorer la Forêt Ombragée",
+          "emoji": "🌲",
+          "prochain_chapitre": "chapitre_2_foret"
+        },
+        {
+          "id": "option_b",
+          "label": "Foncer vers la Citadelle Écroulée",
+          "emoji": "🏰",
+          "prochain_chapitre": "chapitre_2_citadelle"
+        }
       ]
     },
-    "chapitre_2_bourrin": {
-      "titre": "Jour 2 — Charge frontale",
-      "texte": "Le PEKKA fonce droit sur le mur invisible. Il s'écrase contre un `overflow: hidden` mal placé et reste coincé, un bras qui dépasse du viewport. Displaynone applaudit méchamment. Il va falloir ruser.",
-      "resume_historique": "Le PEKKA a chargé tête baissée et s'est retrouvé piégé par un overflow: hidden.",
+    "chapitre_2_foret": {
+      "titre": "Jour 2 — Une rencontre dans les bois",
+      "texte": "🌲 La Forêt Ombragée grouille de Sbires errants, livrés à eux-mêmes depuis que leur camp d’origine s’est… évaporé. Rico repère des traces de lutte près d’un ruisseau : vous y découvrez **Aurel**, un ancien archiviste du Conseil, blessé et à moitié conscient.\n\n*Un peu plus loin, un Chevaucheur de cochon fonce en hurlant à travers les fougères sans la moindre idée d’où il va, ni pourquoi. Personne ne l’arrête, tout le monde a l’habitude.*\n\nIl reconnaît immédiatement la marque du sortilège qui l’a mis à terre.\n\n> « Cette signature… c’est celle de Displaynone. On travaillait ensemble, avant qu’il ne devienne… autre chose, » murmure-t-il en grimaçant.",
+      "resume_historique": "Le clan trouve Aurel, un ancien collègue de Displaynone, blessé dans la Forêt Ombragée.",
       "choix": [
-        { "id": "option_a", "label": "Envoyer un Bûcheron", "emoji": "🪓", "prochain_chapitre": "chapitre_3_confrontation" },
-        { "id": "option_b", "label": "Rage-quit temporaire", "emoji": "😤", "prochain_chapitre": "chapitre_3_repli" }
+        {
+          "id": "option_a",
+          "label": "Soigner Aurel et l’écouter",
+          "emoji": "🩹",
+          "prochain_chapitre": "chapitre_3_alliee"
+        },
+        {
+          "id": "option_b",
+          "label": "Continuer sans s’attarder",
+          "emoji": "🥾",
+          "prochain_chapitre": "chapitre_3_solitaire"
+        }
       ]
     },
-    "chapitre_2_tactique": {
-      "titre": "Jour 2 — Le DevTools sacré",
-      "texte": "Vous ouvrez l'inspecteur d'éléments ancestral. Sous la couche de CSS cassé, vous repérez la vraie faiblesse de Displaynone : son `z-index` est ridiculement bas. Un plan commence à se dessiner.",
-      "resume_historique": "L'inspection a révélé le point faible caché de Displaynone : un z-index trop bas.",
+    "chapitre_2_citadelle": {
+      "titre": "Jour 2 — Les gardiens de pierre",
+      "texte": "🏰 La Citadelle Écroulée se dresse devant vous, à moitié engloutie par le néant. Ses gardiens ancestraux — des **armures de Chevalier** animées par une antique magie — ont été corrompus par le sortilège : leurs contours clignotent, disparaissent puis réapparaissent, comme si elles n’étaient plus tout à fait sûres d’exister.\n\n*Sur les remparts, un vieux Canon rouillé tire un boulet toutes les dix minutes pile, sans viser personne en particulier — une tradition locale que même les gardes ont oublié d’expliquer.*\n\nElles vous barrent la route, lances tremblantes, mi-présentes, mi-fantomatiques.",
+      "resume_historique": "Le clan atteint la Citadelle Écroulée, gardée par des armures de Chevalier corrompues.",
       "choix": [
-        { "id": "option_a", "label": "Exploiter le z-index", "emoji": "🧠", "prochain_chapitre": "chapitre_3_confrontation" },
-        { "id": "option_b", "label": "Prévenir tout le clan", "emoji": "📣", "prochain_chapitre": "chapitre_3_renfort" }
+        {
+          "id": "option_a",
+          "label": "Affronter les gardiens de front",
+          "emoji": "⚔️",
+          "prochain_chapitre": "chapitre_3_victoire_couteuse"
+        },
+        {
+          "id": "option_b",
+          "label": "Se faufiler dans les ruines",
+          "emoji": "🥷",
+          "prochain_chapitre": "chapitre_3_infiltration"
+        }
       ]
     },
-    "chapitre_3_confrontation": {
-      "titre": "Jour 3 — Face à face",
-      "texte": "Displaynone se dresse devant vous, une console d'erreurs rouges tourbillonnant autour de lui. « Vous ne passerez jamais le build de production ! » hurle-t-il en balançant un `!important` chargé à bloc.",
-      "resume_historique": "La communauté a affronté Displaynone en pleine arène, sans détour.",
+    "chapitre_3_alliee": {
+      "titre": "Jour 3 — Le fragment d’Aurel",
+      "texte": "🩹 Une fois ses blessures pansées à grand renfort d’Élixir, **Aurel** se joint à votre clan. En guise de remerciement, il vous tend un fragment de mémoire : un vestige d’archive qui, dit-il, peut révéler des passages que même le sortilège ne peut effacer complètement.\n\n*Non loin de là, une Sorcière prépare une soupe à l’Élixir dans un chaudron bien trop grand pour une seule personne, en débattant toute seule des mérites comparés du Zap et du Gel.*\n\n> « Displaynone n’a jamais réussi à corrompre ce qu’on a écrit à deux, » sourit-il tristement.",
+      "resume_historique": "Aurel rejoint le clan et offre un fragment capable de révéler des passages cachés.",
       "choix": [
-        { "id": "option_a", "label": "Attaquer de front", "emoji": "🗡️", "prochain_chapitre": "chapitre_final_victoire" },
-        { "id": "option_b", "label": "Négocier un merge", "emoji": "🤝", "prochain_chapitre": "chapitre_final_defaite" }
+        {
+          "id": "option_a",
+          "label": "Faire confiance au fragment d’Aurel",
+          "emoji": "🧭",
+          "prochain_chapitre": "chapitre_4_avantage"
+        },
+        {
+          "id": "option_b",
+          "label": "Faire confiance à votre instinct",
+          "emoji": "🤔",
+          "prochain_chapitre": "chapitre_4_difficulte"
+        }
       ]
     },
-    "chapitre_3_repli": {
-      "titre": "Jour 3 — Stratégie de repli",
-      "texte": "Vous reculez pour souffler. Displaynone en profite pour poser un deuxième `display: none` sur votre ligne de défense. Ce n'était peut-être pas la meilleure idée...",
-      "resume_historique": "Un repli tactique a laissé Displaynone poser un deuxième piège CSS.",
+    "chapitre_3_solitaire": {
+      "titre": "Jour 3 — Les Gobelins évanescents",
+      "texte": "⏳ Pressés par le temps, vous laissez Aurel derrière vous. Mauvaise idée : à peine une heure plus tard, une bande de **Gobelins évanescents** — des chapardeurs capables de disparaître en un clin d’œil — vous délestent de la moitié de vos réserves d’Élixir avant de s’évaporer dans les fourrés.\n\n*Dans une taverne voisine, cinq Barbares trinquent bruyamment à la santé de Mariechou, sans que personne ne sache vraiment pourquoi ni qui elle est — la rumeur enfle plus vite que la note à payer.*\n\nRico, furieux, ramasse ce qu’il reste de votre stock.",
+      "resume_historique": "Sans l’aide d’Aurel, le clan se fait dépouiller par des Gobelins évanescents.",
       "choix": [
-        { "id": "option_a", "label": "Contre-attaquer", "emoji": "🗡️", "prochain_chapitre": "chapitre_final_victoire" },
-        { "id": "option_b", "label": "Fuir l'arène", "emoji": "🏃", "prochain_chapitre": "chapitre_final_defaite" }
+        {
+          "id": "option_a",
+          "label": "Les pourchasser pour récupérer l’Élixir",
+          "emoji": "🏃",
+          "prochain_chapitre": "chapitre_4_difficulte"
+        },
+        {
+          "id": "option_b",
+          "label": "Laisser filer, le temps presse",
+          "emoji": "⏳",
+          "prochain_chapitre": "chapitre_4_avantage"
+        }
       ]
     },
-    "chapitre_3_renfort": {
-      "titre": "Jour 3 — L'appel aux renforts",
-      "texte": "Tout le clan répond présent. Displaynone, submergé par le nombre de decks qui arrivent en même temps, panique et tente un dernier `!important` désespéré.",
-      "resume_historique": "Le clan tout entier a répondu à l'appel pour affronter Displaynone en nombre.",
+    "chapitre_3_victoire_couteuse": {
+      "titre": "Jour 3 — Une victoire à quel prix",
+      "texte": "⚔️ Le combat contre les armures de Chevalier est rude : leurs coups, tantôt bien réels, tantôt fantomatiques, sont impossibles à anticiper. Vous l’emportez, épuisés, réserves d’Élixir à moitié vidées.\n\n*Pendant que vous reprenez votre souffle, un Bûcheron passe en trombe, furieux d’avoir égaré sa hache pour la troisième fois de la semaine.*\n\nEn reprenant votre souffle, **Mariechou** — arrivée en renfort avec le reste du clan — remarque qu’un mur effondré révèle une inscription ancienne, gravée avant même le règne du Roi actuel.",
+      "resume_historique": "Le clan vainc les gardiens au prix de lourdes pertes, révélant une inscription ancienne.",
       "choix": [
-        { "id": "option_a", "label": "Porter le coup de grâce", "emoji": "🗡️", "prochain_chapitre": "chapitre_final_victoire" },
-        { "id": "option_b", "label": "Laisser une chance à Displaynone", "emoji": "🤝", "prochain_chapitre": "chapitre_final_defaite" }
+        {
+          "id": "option_a",
+          "label": "Prendre le temps d’étudier l’inscription",
+          "emoji": "📜",
+          "prochain_chapitre": "chapitre_4_avantage"
+        },
+        {
+          "id": "option_b",
+          "label": "Repartir, la citadelle n’est pas sûre",
+          "emoji": "🚪",
+          "prochain_chapitre": "chapitre_4_difficulte"
+        }
       ]
     },
-    "chapitre_final_victoire": {
-      "titre": "Jour 4 — Victoire ! Displaynone est vaincu",
-      "texte": "Dans un dernier cri, Displaynone voit son `!important` renvoyer une erreur 404. Son code s'effondre, ligne par ligne, jusqu'à disparaître complètement de l'arène. La communauté a gagné : plus aucun élément ne sera jamais caché sans raison. Merci à tous les héros qui ont voté chaque jour pour écrire cette histoire !",
-      "resume_historique": "Displaynone a été vaincu : victoire finale de la communauté."
+    "chapitre_3_infiltration": {
+      "titre": "Jour 3 — Repérés",
+      "texte": "🥷 Votre infiltration silencieuse tourne court : une armure sentinelle, plus vive que les autres, déclenche une alarme spectrale. Un frisson traverse la citadelle entière — quelque part, loin d’ici, Displaynone sait désormais que des champions marchent vers lui.\n\n*Quelque part au-dessus de vous, un Sorcier des glaces éternue si fort qu’il gèle accidentellement trois de ses propres gardes — un incident qui, dans cette citadelle, arrive plus souvent qu’on ne le pense.*",
+      "resume_historique": "L’infiltration échoue : Displaynone sait maintenant que le clan est en chemin.",
+      "choix": [
+        {
+          "id": "option_a",
+          "label": "Continuer comme si de rien n’était",
+          "emoji": "😬",
+          "prochain_chapitre": "chapitre_4_difficulte"
+        },
+        {
+          "id": "option_b",
+          "label": "Semer de fausses pistes",
+          "emoji": "🌀",
+          "prochain_chapitre": "chapitre_4_avantage"
+        }
+      ]
     },
-    "chapitre_final_defaite": {
-      "titre": "Jour 4 — Défaite... pour cette fois",
-      "texte": "Displaynone esquive au dernier moment et disparaît dans un `display: none` final, ricanant qu'il reviendra dans une prochaine mise à jour. L'arène retombe dans le silence. Ce n'est que partie remise, héros de TrustRoyale...",
-      "resume_historique": "Displaynone a échappé à la communauté et s'est évaporé dans le code."
+    "chapitre_4_avantage": {
+      "titre": "Jour 4 — Une longueur d’avance",
+      "texte": "🧭 Malgré les embûches, votre clan garde la tête froide et une longueur d’avance sur les événements. Grâce au fragment d’Aurel, deux chemins possibles vers la Tour du Néant se dessinent : un pont suspendu au-dessus d’un gouffre, plus rapide mais exposé, ou des marais engloutis, plus sûrs mais réputés pour cacher d’étranges vestiges.\n\n*Au loin, on entend le cri strident d’un Chevaucheur de cochon qui semble avoir enfin trouvé où il allait — ou pas, difficile à dire à cette distance.*",
+      "resume_historique": "En position de force, le clan choisit sa route vers la Tour du Néant.",
+      "choix": [
+        {
+          "id": "option_a",
+          "label": "Traverser le Pont des Ombres",
+          "emoji": "🌉",
+          "prochain_chapitre": "chapitre_5_avantage_pont"
+        },
+        {
+          "id": "option_b",
+          "label": "Contourner par les Marais Effacés",
+          "emoji": "🐸",
+          "prochain_chapitre": "chapitre_5_avantage_marais"
+        }
+      ]
+    },
+    "chapitre_4_difficulte": {
+      "titre": "Jour 4 — Sur les nerfs",
+      "texte": "😮‍💨 Fatigués et en retard sur leur plan, vos champions doivent malgré tout choisir une route vers la Tour du Néant. Deux options subsistent : forcer le passage par le Pont des Ombres, quitte à s’épuiser encore davantage, ou marquer une pause dans les Marais Effacés pour reconstituer vos réserves d’Élixir — au risque de laisser le temps filer.\n\n*Un Mineur, visiblement perdu, ressort du sol juste à côté de vous, regarde autour de lui d’un air gêné, puis replonge sans un mot d’excuse.*",
+      "resume_historique": "En difficulté, le clan doit malgré tout choisir sa route vers la Tour du Néant.",
+      "choix": [
+        {
+          "id": "option_a",
+          "label": "Forcer le passage par le Pont des Ombres",
+          "emoji": "🌉",
+          "prochain_chapitre": "chapitre_5_difficulte_pont"
+        },
+        {
+          "id": "option_b",
+          "label": "Faire une pause dans les Marais Effacés",
+          "emoji": "🐸",
+          "prochain_chapitre": "chapitre_5_difficulte_marais"
+        }
+      ]
+    },
+    "chapitre_5_avantage_pont": {
+      "titre": "Jour 5 — Le Pont des Ombres",
+      "texte": "🌉 Le pont grince sous vos pas, suspendu au-dessus d’un gouffre où la réalité elle-même semble s’effilocher. À mi-chemin, un **Golem disloqué** — deux fois plus massif qu’à l’accoutumée, des pans entiers de son corps de pierre clignotant puis s’évanouissant — surgit des planches et vous bloque le passage en grondant.\n\n*Sous le pont, trois Squelettes jouent aux dés avec ce qui ressemble fortement à l’un de leurs propres orteils — l’un d’eux triche ouvertement, et personne ne semble s’en soucier.*",
+      "resume_historique": "Le clan affronte un Golem disloqué au milieu du Pont des Ombres.",
+      "choix": [
+        {
+          "id": "option_a",
+          "label": "Grimper sur les cordages pour le contourner",
+          "emoji": "🧗",
+          "prochain_chapitre": "chapitre_6_avantage"
+        },
+        {
+          "id": "option_b",
+          "label": "Le charger avec vos meilleures troupes",
+          "emoji": "🛡️",
+          "prochain_chapitre": "chapitre_6_avantage"
+        }
+      ]
+    },
+    "chapitre_5_avantage_marais": {
+      "titre": "Jour 5 — Les Marais Effacés",
+      "texte": "🐸 Les Marais Effacés portent bien leur nom : des pans entiers de paysage y clignotent, présents un instant, absents le suivant. Rico y repêche des pages de journal flottant à la surface de l’eau, visiblement arrachées aux archives royales — des notes de la main même de Displaynone, avant sa chute.\n\n*Une grenouille — une vraie, pas une carte — observe la scène depuis un nénuphar avec un air profondément désapprobateur, comme si elle en avait déjà vu d’autres.*",
+      "resume_historique": "Le clan trouve des pages du journal personnel de Displaynone dans les marais.",
+      "choix": [
+        {
+          "id": "option_a",
+          "label": "Lire les pages en chemin",
+          "emoji": "📖",
+          "prochain_chapitre": "chapitre_6_avantage"
+        },
+        {
+          "id": "option_b",
+          "label": "Les garder pour Aurel, plus tard",
+          "emoji": "🎒",
+          "prochain_chapitre": "chapitre_6_avantage"
+        }
+      ]
+    },
+    "chapitre_5_difficulte_pont": {
+      "titre": "Jour 5 — Le Pont des Ombres, à bout de forces",
+      "texte": "🌉 Épuisé par les jours précédents, le clan aborde le Pont des Ombres sans la moindre marge d’erreur. Un **Golem disloqué** surgit des planches vermoulues — et cette fois, réserves d’Élixir au plus bas, le combat s’annonce beaucoup plus incertain.\n\n*Quelque part en contrebas, un Mousquetaire s’entraîne à viser des bouteilles vides, en rate huit sur dix, et blâme le vent à chaque fois.*",
+      "resume_historique": "Affaibli, le clan affronte un Golem disloqué sur le Pont des Ombres, sans marge d’erreur.",
+      "choix": [
+        {
+          "id": "option_a",
+          "label": "Tenter le tout pour le tout",
+          "emoji": "🎲",
+          "prochain_chapitre": "chapitre_6_difficulte"
+        },
+        {
+          "id": "option_b",
+          "label": "Battre en retraite prudente",
+          "emoji": "🛑",
+          "prochain_chapitre": "chapitre_6_difficulte"
+        }
+      ]
+    },
+    "chapitre_5_difficulte_marais": {
+      "titre": "Jour 5 — Les Marais Effacés, sous tension",
+      "texte": "🐸 La pause dans les Marais Effacés tourne au cauchemar : le sol lui-même se dérobe par endroits, des pans entiers de boue et de roseaux disparaissant sans prévenir. Vous progressez à tâtons, sur les nerfs, chaque pas pouvant être le dernier sur la terre ferme.\n\n*Un Ballon flotte paisiblement au-dessus du chaos ambiant, totalement indifférent à la panique générale, occupé à admirer le coucher de soleil.*",
+      "resume_historique": "La pause dans les marais tourne court : le sol s’efface par endroits.",
+      "choix": [
+        {
+          "id": "option_a",
+          "label": "Avancer coûte que coûte",
+          "emoji": "😤",
+          "prochain_chapitre": "chapitre_6_difficulte"
+        },
+        {
+          "id": "option_b",
+          "label": "Suivre les zones stables repérées par vos archers",
+          "emoji": "🏹",
+          "prochain_chapitre": "chapitre_6_difficulte"
+        }
+      ]
+    },
+    "chapitre_6_avantage": {
+      "titre": "Jour 6 — De l’autre côté",
+      "texte": "🌤️ Peu importe le chemin emprunté, vous voilà enfin de l’autre côté, en un seul morceau et le moral au beau fixe. Au loin se dessine une silhouette familière : celle d’**Aurel**, qui vous a devancés par un raccourci que lui seul connaissait.\n\n*Non loin, Rico raconte pour la douzième fois à qui veut l’entendre comment il a jadis failli dresser un Molosse de lave — personne ne le croit, mais tout le monde adore l’histoire.*\n\n> « J’ai retrouvé une trace du **Fragment Joker Ultime** ! » annonce-t-il, essoufflé mais radieux.",
+      "resume_historique": "Le clan franchit l’obstacle sans encombre ; Aurel a retrouvé une trace du Fragment Joker Ultime.",
+      "choix": [
+        {
+          "id": "option_a",
+          "label": "Suivre immédiatement la piste du Fragment",
+          "emoji": "🃏",
+          "prochain_chapitre": "chapitre_7_avantage_a"
+        },
+        {
+          "id": "option_b",
+          "label": "Camper une nuit pour souffler avant de continuer",
+          "emoji": "🏕️",
+          "prochain_chapitre": "chapitre_7_avantage_b"
+        }
+      ]
+    },
+    "chapitre_6_difficulte": {
+      "titre": "Jour 6 — Les nerfs à vif",
+      "texte": "😤 Vous vous en sortez, mais de justesse : troupes éreintées, Élixir au plus bas. **Aurel** vous rejoint enfin, lui aussi marqué par le voyage, mais porteur d’une nouvelle : il a retrouvé la trace d’un antique **Fragment Joker Ultime**, capable — peut-être — d’inverser le sortilège. Encore faudrait-il avoir la force d’aller le chercher.\n\n*Au loin, une Pétardière tire un feu d’artifice en plein jour, visiblement juste pour le plaisir, sans la moindre cible à proximité.*",
+      "resume_historique": "Épuisé, le clan retrouve Aurel, qui a repéré la trace d’un Fragment capable de tout inverser.",
+      "choix": [
+        {
+          "id": "option_a",
+          "label": "Foncer vers le Fragment avant qu’il ne soit trop tard",
+          "emoji": "🃏",
+          "prochain_chapitre": "chapitre_7_difficulte_a"
+        },
+        {
+          "id": "option_b",
+          "label": "Prendre le temps de vous reposer d’abord",
+          "emoji": "😴",
+          "prochain_chapitre": "chapitre_7_difficulte_b"
+        }
+      ]
+    },
+    "chapitre_7_avantage_a": {
+      "titre": "Jour 7 — Ce qu’Aurel n’avait jamais dit",
+      "texte": "📜 En chemin vers le Fragment, **Aurel** se confie enfin : Displaynone n’a jamais voulu détruire le royaume. Il voulait effacer un seul événement — une **Guerre de Clans truquée**, étouffée par le Conseil pour protéger sa réputation — et n’a plus jamais réussi à s’arrêter depuis.\n\n*Pendant la conversation, un Bandit traverse la scène en courant, disparaît, puis réapparaît deux secondes plus tard de l’autre côté sans que personne ne comprenne comment.*\n\n> « Il n’est pas notre ennemi, » dit Aurel. « Il est juste… perdu dans son propre sortilège. »",
+      "resume_historique": "Aurel révèle la vérité : Displaynone voulait effacer un scandale, pas détruire le royaume.",
+      "choix": [
+        {
+          "id": "option_a",
+          "label": "Se promettre de tenter de le sauver",
+          "emoji": "💙",
+          "prochain_chapitre": "chapitre_8_avantage"
+        },
+        {
+          "id": "option_b",
+          "label": "Rester concentrés sur la mission",
+          "emoji": "🎯",
+          "prochain_chapitre": "chapitre_8_avantage"
+        }
+      ]
+    },
+    "chapitre_7_avantage_b": {
+      "titre": "Jour 7 — La veillée",
+      "texte": "🏕️ Autour du feu de camp, Aurel raconte les vieilles archives, les Guerres de Clans légendaires, et finit par avouer la vérité sur Displaynone : un scandale de GDC étouffé par le Conseil qu’il voulait simplement faire disparaître, avant de perdre le contrôle de son propre sortilège.\n\n*Autour d’un feu voisin, des Gobelins à lance tentent d’apprendre une chanson à trois voix — le résultat est, au mieux, discutable.*\n\nRico, pour une fois silencieux, écoute sans un mot.",
+      "resume_historique": "Autour du feu, Aurel raconte la vérité sur la chute de Displaynone.",
+      "choix": [
+        {
+          "id": "option_a",
+          "label": "Se promettre de tenter de le sauver",
+          "emoji": "💙",
+          "prochain_chapitre": "chapitre_8_avantage"
+        },
+        {
+          "id": "option_b",
+          "label": "Rester concentrés sur la mission",
+          "emoji": "🎯",
+          "prochain_chapitre": "chapitre_8_avantage"
+        }
+      ]
+    },
+    "chapitre_7_difficulte_a": {
+      "titre": "Jour 7 — Course contre la montre",
+      "texte": "🏃 Pas le temps pour les confidences : vous foncez vers le Fragment. En chemin, Aurel hurle malgré tout des bribes de vérité par-dessus le vent — Displaynone ne voulait qu’effacer un vieux scandale de GDC, avant de perdre pied dans son propre sortilège. Vous l’entendez à peine, trop concentrés sur votre survie.\n\n*Un Bélier de bataille passe en trombe à côté de vous, ses deux Barbares embarqués hurlant des encouragements qui ne s’adressent visiblement à personne en particulier.*",
+      "resume_historique": "En pleine course, Aurel tente d’expliquer la vraie histoire de Displaynone.",
+      "choix": [
+        {
+          "id": "option_a",
+          "label": "Essayer de comprendre, pour mieux le raisonner",
+          "emoji": "💭",
+          "prochain_chapitre": "chapitre_8_difficulte"
+        },
+        {
+          "id": "option_b",
+          "label": "Ignorer, seul le résultat compte",
+          "emoji": "⚡",
+          "prochain_chapitre": "chapitre_8_difficulte"
+        }
+      ]
+    },
+    "chapitre_7_difficulte_b": {
+      "titre": "Jour 7 — Repos forcé",
+      "texte": "😴 Le repos est bref mais nécessaire. Aurel en profite pour raconter, à voix basse, ce qu’il sait de la chute de Displaynone : un scandale de GDC étouffé, une vérité qu’il voulait effacer, et un sortilège qui a fini par le dévorer tout entier.\n\n*Une Guérisseuse de combat soigne consciencieusement un Gobelin qui n’a absolument rien, simplement parce qu’il le lui a demandé très gentiment.*\n\nLe clan repart, un peu plus lourd de ce savoir.",
+      "resume_historique": "Pendant le repos forcé, Aurel raconte la vraie histoire de la chute de Displaynone.",
+      "choix": [
+        {
+          "id": "option_a",
+          "label": "Essayer de comprendre, pour mieux le raisonner",
+          "emoji": "💭",
+          "prochain_chapitre": "chapitre_8_difficulte"
+        },
+        {
+          "id": "option_b",
+          "label": "Ignorer, seul le résultat compte",
+          "emoji": "⚡",
+          "prochain_chapitre": "chapitre_8_difficulte"
+        }
+      ]
+    },
+    "chapitre_8_avantage": {
+      "titre": "Jour 8 — Aux portes de la Tour du Néant",
+      "texte": "🃏 Le **Fragment Joker Ultime** en poche, vous atteignez enfin les portes de la **Tour du Néant**, l’antre de Displaynone. L’endroit n’est qu’un vide grondant, ponctué de fragments d’Arène qui flottent, immobiles, comme suspendus entre existence et oubli.\n\n*Sur le chemin, un Buisson suspect vous observe passer sans bouger d’un pouce — vous préférez ne pas vérifier ce qu’il y a vraiment dedans.*\n\nC’est ici que tout se jouera.",
+      "resume_historique": "Fragment en poche, le clan atteint les portes de la Tour du Néant.",
+      "choix": [
+        {
+          "id": "option_a",
+          "label": "Entrer maintenant, la surprise est votre meilleur atout",
+          "emoji": "🚪",
+          "prochain_chapitre": "chapitre_9_avantage"
+        },
+        {
+          "id": "option_b",
+          "label": "Observer d’abord les points faibles",
+          "emoji": "👁️",
+          "prochain_chapitre": "chapitre_9_avantage"
+        }
+      ]
+    },
+    "chapitre_8_difficulte": {
+      "titre": "Jour 8 — Aux portes de la Tour du Néant, sur les rotules",
+      "texte": "😮‍💨 Vous atteignez la **Tour du Néant** fourbus, sans grand plan et avec un Fragment dont vous ne maîtrisez qu’à moitié l’usage. Le vide grondant qui sert d’antre à Displaynone n’a jamais semblé aussi immense — ni aussi hostile.\n\n*Quelque part derrière vous, Apoplexy jure avoir vu passer un Golem d’Élixir déguisé en rocher — personne ne le prend au sérieux, mais personne ne va vérifier non plus.*",
+      "resume_historique": "Épuisé et peu préparé, le clan atteint enfin la Tour du Néant.",
+      "choix": [
+        {
+          "id": "option_a",
+          "label": "Entrer quand même, il n’y a plus le choix",
+          "emoji": "🚪",
+          "prochain_chapitre": "chapitre_9_difficulte"
+        },
+        {
+          "id": "option_b",
+          "label": "Tenter un dernier repli stratégique",
+          "emoji": "🛑",
+          "prochain_chapitre": "chapitre_9_difficulte"
+        }
+      ]
+    },
+    "chapitre_9_avantage": {
+      "titre": "Jour 9 — Face à Displaynone",
+      "texte": "⚔️ Displaynone vous attend au centre du vide, entouré de fragments de bataille volés — des Guerres de Clans entières, effacées de la mémoire de leurs participants, flottant autour de lui comme des trophées.\n\n*Sur l’un des fragments flottants autour de Displaynone, on distingue vaguement un Petit Prince en pleine sieste, parfaitement indifférent à l’affrontement qui s’annonce.*\n\n> « Encore des héros venus m’effacer à mon tour ? » ricane-t-il, sans grande conviction.\n\nLe moment est venu de choisir votre approche finale.",
+      "resume_historique": "Le clan affronte enfin Displaynone, entouré des souvenirs de GDC qu’il a effacés.",
+      "choix": [
+        {
+          "id": "option_a",
+          "label": "Attaquer de front, sans détour",
+          "emoji": "⚔️",
+          "prochain_chapitre": "chapitre_10_avantage_attaque"
+        },
+        {
+          "id": "option_b",
+          "label": "Utiliser le Fragment pour le raisonner",
+          "emoji": "🃏",
+          "prochain_chapitre": "chapitre_10_avantage_ruse"
+        }
+      ]
+    },
+    "chapitre_9_difficulte": {
+      "titre": "Jour 9 — Face à Displaynone, à bout de souffle",
+      "texte": "⚡ Displaynone vous attend, et il a eu le temps de se préparer : des fragments de bataille corrompus tourbillonnent autour de lui en une tempête menaçante.\n\n*Loin derrière, un Géant électrique trébuche sur un caillou et s’excuse platement — même corrompu par la panique ambiante, la politesse a la vie dure.*\n\n> « Vous voilà enfin, » siffle-t-il, presque déçu de vous voir dans un tel état.\n\nLe clan doit choisir son approche finale, sans grande marge d’erreur.",
+      "resume_historique": "Épuisé, le clan affronte un Displaynone qui a eu le temps de se préparer.",
+      "choix": [
+        {
+          "id": "option_a",
+          "label": "Attaquer de front, quitte à tout risquer",
+          "emoji": "⚔️",
+          "prochain_chapitre": "chapitre_10_difficulte_attaque"
+        },
+        {
+          "id": "option_b",
+          "label": "Utiliser le Fragment, votre seul espoir",
+          "emoji": "🃏",
+          "prochain_chapitre": "chapitre_10_difficulte_ruse"
+        }
+      ]
+    },
+    "chapitre_10_avantage_attaque": {
+      "titre": "Jour 10 — L’assaut final",
+      "texte": "💥 Vos troupes chargent en formation parfaite — **PEKKA** en tête, **Sorcières** et **Archers** en soutien, exactement comme à l’entraînement. Displaynone recule, ses défenses vacillent.\n\n*Au beau milieu de la charge, un Sbire s’arrête net pour redresser sa cape, juge le résultat satisfaisant, puis reprend sa course comme si de rien n’était.*\n\nLa victoire est à portée de main, mais un dernier choix s’impose : porter le coup décisif maintenant, ou temporiser pour garantir un combat plus sûr encore.",
+      "resume_historique": "L’assaut final contre Displaynone tourne à l’avantage du clan.",
+      "choix": [
+        {
+          "id": "option_a",
+          "label": "Porter le coup décisif immédiatement",
+          "emoji": "💥",
+          "prochain_chapitre": "chapitre_fin_victoire_heroique"
+        },
+        {
+          "id": "option_b",
+          "label": "Temporiser pour un combat plus sûr",
+          "emoji": "🛡️",
+          "prochain_chapitre": "chapitre_fin_victoire_amere"
+        }
+      ]
+    },
+    "chapitre_10_avantage_ruse": {
+      "titre": "Jour 10 — Le Fragment Joker Ultime",
+      "texte": "🃏 Vous brandissez le **Fragment Joker Ultime** face à Displaynone. Un instant, son ricanement vacille — quelque chose en lui, tout au fond, se souvient encore de qui il était avant la chute.\n\n*Dans un coin du vide, une Princesse continue calmement de décocher des flèches sur rien de particulier, en attendant que quelqu’un lui explique ce qui se passe vraiment.*\n\n> « Aurel ? » murmure-t-il, presque humain à nouveau.\n\nLa décision finale vous revient.",
+      "resume_historique": "Le Fragment fait vaciller Displaynone, qui semble se souvenir de qui il était.",
+      "choix": [
+        {
+          "id": "option_a",
+          "label": "Tenter la rédemption complète",
+          "emoji": "💙",
+          "prochain_chapitre": "chapitre_fin_redemption"
+        },
+        {
+          "id": "option_b",
+          "label": "Profiter de sa faiblesse pour porter le coup fatal",
+          "emoji": "⚔️",
+          "prochain_chapitre": "chapitre_fin_victoire_heroique"
+        }
+      ]
+    },
+    "chapitre_10_difficulte_attaque": {
+      "titre": "Jour 10 — L’assaut désespéré",
+      "texte": "⚔️ Sans réserves ni plan clair, vous foncez malgré tout. Le combat est chaotique, vos troupes tombent puis se relèvent à moitié effacées, mais Displaynone, submergé par le nombre, finit par plier.\n\n*Un Trois Mousquetaires, réduit à un seul Mousquetaire faute d’effectifs, continue bravement le combat en criant des ordres à des coéquipiers qui ne sont plus là depuis longtemps.*\n\nLa victoire a un goût amer : il faudra des semaines pour réparer ce qui a été perdu aujourd’hui.",
+      "resume_historique": "L’assaut désespéré l’emporte, mais à un prix très lourd pour le clan.",
+      "choix": [
+        {
+          "id": "option_a",
+          "label": "Achever Displaynone sans plus attendre",
+          "emoji": "⚔️",
+          "prochain_chapitre": "chapitre_fin_victoire_amere"
+        },
+        {
+          "id": "option_b",
+          "label": "Se replier avant que tout ne s’effondre",
+          "emoji": "🏃",
+          "prochain_chapitre": "chapitre_fin_echappe"
+        }
+      ]
+    },
+    "chapitre_10_difficulte_ruse": {
+      "titre": "Jour 10 — Le pari du Fragment",
+      "texte": "🃏 Épuisés, vous n’avez plus la force d’un combat frontal. C’est le Fragment, et lui seul, qui devra faire la différence.\n\n*Non loin, un Molosse de lave regarde la scène avec ce qui ressemble fortement à de l’empathie — ou alors il a juste faim, difficile à dire avec un Molosse.*\n\n**Aurel** s’avance, prêt à canaliser toute son énergie restante dans le rituel — au risque de s’effacer lui-même dans le processus.",
+      "resume_historique": "À bout de forces, le clan mise tout sur le Fragment et le sacrifice d’Aurel.",
+      "choix": [
+        {
+          "id": "option_a",
+          "label": "Laisser Aurel tenter le sacrifice",
+          "emoji": "💔",
+          "prochain_chapitre": "chapitre_fin_sacrifice"
+        },
+        {
+          "id": "option_b",
+          "label": "Refuser et fuir avec ce que vous savez déjà",
+          "emoji": "🏃",
+          "prochain_chapitre": "chapitre_fin_echappe"
+        }
+      ]
+    },
+    "chapitre_fin_redemption": {
+      "titre": "Jour 11 — Le retour de Léandre",
+      "texte": "✨ Le **Fragment Joker Ultime** s’illumine, et pour la première fois depuis des années, Displaynone redevient **Léandre**, l’archiviste qu’il était avant sa chute. Les fragments de batailles effacées reprennent leur place dans la mémoire du royaume, un à un.\n\nAurel le prend dans ses bras, submergé par l’émotion. Le Grand Conseil, gêné, promet enfin de rendre publique la vérité qu’il avait étouffée. Père Fouras lui-même verse une larme, tandis qu’Apoplexy, pour une fois sans un mot, s’incline.\n\nVotre clan rentre en héros — et en artisans d’une paix bien plus durable qu’une simple victoire. 🏆\n\n*Quelque part dans la foule en liesse, cinq Barbares entament un toast improvisé à la santé de tout le monde à la fois, y compris Displaynone, ce qui provoque un léger malaise général.*\n\nMerci à tous les héros qui ont voté chaque jour pour écrire cette histoire !",
+      "resume_historique": "Fin — Rédemption : Displaynone redevient Léandre, la vérité éclate enfin."
+    },
+    "chapitre_fin_victoire_heroique": {
+      "titre": "Jour 11 — La chute de Displaynone",
+      "texte": "🏆 Displaynone s’effondre dans un dernier tourbillon de fragments corrompus, vaincu. L’Arène, peu à peu, retrouve ses couleurs, ses ponts, ses souvenirs. Le Grand Conseil célèbre votre clan comme les sauveurs du royaume.\n\nQuelque part, pourtant, un dernier murmure s’échappe du vide :\n\n> « Ce n’est que partie remise… »\n\nMais pour l’instant, c’est bel et bien la victoire.\n\n*Un Chevaucheur de cochon traverse la foule en liesse en hurlant de joie, sans que personne ne sache s’il fête la victoire ou s’il vient juste de retrouver son chemin.*\n\nMerci à tous les héros qui ont voté chaque jour pour écrire cette histoire !",
+      "resume_historique": "Fin — Victoire héroïque : Displaynone est vaincu, l’Arène retrouve ses couleurs."
+    },
+    "chapitre_fin_victoire_amere": {
+      "titre": "Jour 11 — Une victoire à reconstruire",
+      "texte": "⚔️ Displaynone est vaincu, mais le prix à payer est lourd : des pans entiers de l’Arène resteront à jamais changés, certains souvenirs ne reviendront jamais tout à fait.\n\nLe Grand Conseil célèbre votre clan malgré tout, avec un mélange de gratitude et de gêne. La victoire est réelle — mais il faudra des lunes pour panser toutes les plaies.\n\n*Un Bûcheron répare consciencieusement une palissade cassée en chantonnant, comme si reconstruire un royaume entier n’était finalement qu’une question de patience et de bons outils.*\n\nMerci à tous les héros qui ont voté chaque jour pour écrire cette histoire !",
+      "resume_historique": "Fin — Victoire amère : Displaynone est vaincu, mais à un prix très lourd."
+    },
+    "chapitre_fin_sacrifice": {
+      "titre": "Jour 11 — Le sacrifice d’Aurel",
+      "texte": "💔 Aurel canalise tout ce qu’il lui reste dans le Fragment. Un éclair de lumière engloutit Displaynone… et Aurel avec lui.\n\nQuand le silence retombe, Displaynone a disparu — et Aurel aussi, son nom déjà en train de s’effacer doucement des mémoires, comme un dernier clin d’œil ironique du sort.\n\nLe clan rentre en silence, avec une victoire qu’il n’est pas certain de vouloir fêter.\n\n*Dans le silence qui suit, on jure avoir entendu, l’espace d’un instant, un Chevaucheur de cochon pousser un cri au loin — comme un dernier clin d’œil du royaume à ceux qui ne reviendront pas.*\n\nMerci à tous les héros qui ont voté chaque jour pour écrire cette histoire !",
+      "resume_historique": "Fin — Sacrifice : Aurel s’efface avec Displaynone pour sauver le royaume."
+    },
+    "chapitre_fin_echappe": {
+      "titre": "Jour 11 — Il s’échappe…",
+      "texte": "🌀 Au dernier moment, Displaynone se dissout dans un dernier éclat de rire amer et disparaît, échappant à votre clan. L’Arène retrouve une partie de ses couleurs, mais pas toutes.\n\nLe Grand Conseil vous remercie du bout des lèvres — la menace n’est que repoussée, pas éteinte. Quelque part, dans un recoin oublié du royaume, Displaynone prépare déjà son prochain sortilège…\n\n*Pendant ce temps, bien loin de là, cinq Barbares n’ont toujours pas fini leur toast à la santé de Mariechou — certaines choses, décidément, ne changent jamais.*\n\nMerci à tous les héros qui ont voté chaque jour pour écrire cette histoire !",
+      "resume_historique": "Fin — Displaynone s’échappe : la menace n’est que repoussée, pas éteinte."
     }
   }
 }
