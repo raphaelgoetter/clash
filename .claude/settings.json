@@ -31,7 +31,10 @@
       "Bash(node /private/tmp/claude-501/-Users-raphael-Git-clash/f5f0ea3a-d41e-45ad-8da6-237780463795/scratchpad/check_typo.js)",
       "Bash(rg -n \"content: \\\\`|content: \\\\\"|title:\" /Users/raphael/Git/clash/api/discord/handlers/frames.js)",
       "Bash(node --check /Users/raphael/Git/clash/api/discord/handlers/aventure.js)",
-      "Bash(node /private/tmp/claude-501/-Users-raphael-Git-clash/f5f0ea3a-d41e-45ad-8da6-237780463795/scratchpad/add_asides.js)"
+      "Bash(node /private/tmp/claude-501/-Users-raphael-Git-clash/f5f0ea3a-d41e-45ad-8da6-237780463795/scratchpad/add_asides.js)",
+      "Bash(node /private/tmp/claude-501/-Users-raphael-Git-clash/f5f0ea3a-d41e-45ad-8da6-237780463795/scratchpad/list_messages.js)",
+      "Bash(node temp/list_messages.js)",
+      "Bash(git -C /Users/raphael/Git/clash status --short temp/)"
     ]
   }
 }
