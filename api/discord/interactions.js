@@ -2403,29 +2403,26 @@ function getWarDayLabel(dayKey) {
   return WAR_DAY_SHORT_LABELS_BY_UTC_DAY[date.getUTCDay()] || dayKey;
 }
 
-const WAR_DAY_NUMBER_EMOJI_BY_UTC_DAY = {
-  4: "1️⃣",
-  5: "2️⃣",
-  6: "3️⃣",
-  0: "4️⃣",
-};
-
-function getWarDayEmoji(dayKey) {
-  if (!dayKey) return "";
-  const date = new Date(`${dayKey}T00:00:00Z`);
-  return WAR_DAY_NUMBER_EMOJI_BY_UTC_DAY[date.getUTCDay()] || "";
-}
+// TODO: emoji temporaire pour un jour de GDC à venir, en attendant que le
+// bon emoji custom soit créé — remplacer <:warn:1506174837519945800> une
+// fois disponible.
+const FUTURE_DAY_BADGE = "<:warn:1506174837519945800>";
 
 /**
- * Badge de statut pour une journée GDC selon le nombre de decks joués :
- * 4/4 = succès, 0 deck sur une journée encore en cours = warning (pas
- * encore joué, pourrait encore l'être), tout le reste (1-3 decks, ou 0
- * deck sur une semaine terminée) = erreur.
+ * Badge de statut pour une journée GDC, affiché à la place des anciens
+ * emojis numérotés (1️⃣2️⃣3️⃣4️⃣) directement à côté du libellé "J1"/"J2"/etc :
+ * - jour à venir : badge temporaire FUTURE_DAY_BADGE (cf. TODO ci-dessus) ;
+ * - jour en cours ("aujourd'hui") : toujours warning, quel que soit le
+ *   nombre de decks déjà joués (la journée n'est pas terminée) ;
+ * - jour passé : succès si 4/4 decks joués, erreur si moins de 4 (y
+ *   compris 0 confirmé), warning si aucune donnée disponible (decks
+ *   inconnu, ex. semaine dernière sans snapshot exploitable).
  */
-function getCombatsDayBadge(decks, { pending = false } = {}) {
-  if (decks == null) return "";
+function getCombatsDayBadge(decks, { isFuture = false, isToday = false } = {}) {
+  if (isFuture) return FUTURE_DAY_BADGE;
+  if (isToday) return SCORE_BADGES.warning;
+  if (decks == null) return SCORE_BADGES.warning;
   if (decks >= 4) return SCORE_BADGES.success;
-  if (pending) return SCORE_BADGES.warning;
   return SCORE_BADGES.error;
 }
 
@@ -3863,21 +3860,21 @@ export default async function handler(req, res) {
         let currentWeekLines = ["Pas de GDC en cours."];
         if (isWarPeriod) {
           currentWeekLines = analysis.currentWarDays.days.map((day) => {
-            const emoji = getWarDayEmoji(day.key);
             const label = getWarDayLabel(day.key);
             const stats = combatsByDayKey.get(day.key);
-            if (day.isFuture) return `${emoji} ${label} : à venir`;
+            if (day.isFuture) {
+              const badge = getCombatsDayBadge(null, { isFuture: true });
+              return `${badge} ${label} : à venir`;
+            }
             const decks = stats?.decks ?? 0;
-            // Seul "aujourd'hui" peut encore être joué : un jour passé à 0
-            // deck est un manquement confirmé (erreur), pas une attente.
-            const isPending = Boolean(day.isToday);
-            const badge = getCombatsDayBadge(decks, { pending: isPending });
-            if (decks === 0 && isPending)
-              return `${emoji} ${label} ${badge} : pas encore joué`;
-            if (decks === 0) return `${emoji} ${label} ${badge} : 0 deck`;
+            const isToday = Boolean(day.isToday);
+            const badge = getCombatsDayBadge(decks, { isToday });
+            if (decks === 0 && isToday)
+              return `${badge} ${label} : pas encore joué`;
+            if (decks === 0) return `${badge} ${label} : 0 deck`;
             const wins = stats?.wins ?? 0;
             const points = stats?.points ?? 0;
-            return `${emoji} ${label} ${badge} : ${decks} deck${decks === 1 ? "" : "s"} (${wins} victoire${wins === 1 ? "" : "s"}) · ${points} pts`;
+            return `${badge} ${label} : ${decks} deck${decks === 1 ? "" : "s"} (${wins} victoire${wins === 1 ? "" : "s"}) · ${points} pts`;
           });
         }
         // ⚠️ Limite connue : le regroupement par jour ci-dessus repose sur
@@ -3912,14 +3909,13 @@ export default async function handler(req, res) {
           : [];
         const lastWeekLines = lastWeekDays.length
           ? lastWeekDays.map((day) => {
-              const emoji = getWarDayEmoji(day.date);
               const label = getWarDayLabel(day.date);
+              const badge = getCombatsDayBadge(day.decks, {});
               if (day.decks === null || day.decks === undefined) {
-                return `${emoji} ${label} : pas de données`;
+                return `${badge} ${label} : pas de données`;
               }
-              const badge = getCombatsDayBadge(day.decks, { pending: false });
-              if (day.decks === 0) return `${emoji} ${label} ${badge} : 0 deck`;
-              return `${emoji} ${label} ${badge} : ${day.decks} deck${day.decks === 1 ? "" : "s"}${
+              if (day.decks === 0) return `${badge} ${label} : 0 deck`;
+              return `${badge} ${label} : ${day.decks} deck${day.decks === 1 ? "" : "s"}${
                 Number.isFinite(day.points) ? ` · ${day.points} pts` : ""
               }`;
             })
