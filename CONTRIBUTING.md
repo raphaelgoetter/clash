@@ -49,7 +49,7 @@ Postent toujours dans le salon principal (appellent `resolveMembersChannelId(cla
 
 Scripts **non concernés** (restent dans le salon principal ou le salon staff) : `notifyPreWarSummary.js`, `notifyGdcLaunch.js`, `notifyRules.js`, `notifyClanStatus.js`.
 
-Actuellement seul le clan 2 (`LRQP20V9`) a sa variable `DISCORD_THREAD_MEMBERS_LRQP20V9` renseignée (thread `1523295989044088964`), à titre de test. Pour étendre à un autre clan :
+Le test mené sur le clan 2 (`LRQP20V9`, thread `1523295989044088964`) n'a finalement pas été retenu : ses scripts postent de nouveau dans le salon membres principal. Aucun clan n'a donc actuellement de `DISCORD_THREAD_MEMBERS_<TAG>` renseignée. Pour activer ce mécanisme sur un clan :
 
 1. Renseigner `DISCORD_THREAD_MEMBERS_<TAG>` dans `.env` (local).
 2. Ajouter le secret GitHub Actions du même nom dans les workflows concernés (`snapshot.yml`, `last-seen.yml`, `war-summary.yml`).
@@ -63,12 +63,12 @@ Tous les horaires ci-dessous sont définis en UTC dans les workflows (`.github/w
 | Script                                                   | Workflow                 | Jour(s)                                       | Horaire UTC                | Horaire Paris (été/hiver)  | Salon Discord                          |
 | --------------------------------------------------------- | -------------------------- | ------------------------------------------------ | ----------------------------- | ------------------------------ | ----------------------------------------- |
 | `collectSnapshots.js` (`npm run snapshot`)               | `snapshot.yml`           | Tous les jours                                | Toutes les heures          | —                          | Aucun post (données uniquement)        |
-| `notifyMemberChanges.js` (`npm run notify-members`)      | `snapshot.yml`           | Tous les jours                                | Toutes les heures          | —                          | Salon membres (ou thread test clan 2)  |
+| `notifyMemberChanges.js` (`npm run notify-members`)      | `snapshot.yml`           | Tous les jours                                | Toutes les heures          | —                          | Salon membres principal                |
 | `refreshClanCache.js` (`npm run cache`)                  | `snapshot.yml`           | Tous les jours                                | Toutes les heures          | —                          | Aucun post (cache statique)            |
 | `preResetSnapshot.js`                                    | `pre-reset-snapshot.yml` | Ven, Sam, Dim, Lun                            | 07:30                      | 09:30 / 08:30              | Aucun post (données uniquement)        |
-| `notifyWarSummary.js`                                    | `war-summary.yml`        | Tous les jours (poste ven/sam/dim/lun)        | 10:05                      | 12:05 / 11:05              | Salon membres (ou thread test clan 2)  |
+| `notifyWarSummary.js`                                    | `war-summary.yml`        | Tous les jours (poste ven/sam/dim/lun)        | 10:05                      | 12:05 / 11:05              | Salon membres principal                |
 | `notifyClanStatus.js`                                    | `war-summary.yml`        | Tous les jours (idem)                         | 10:05                      | 12:05 / 11:05              | Salon staff (`DISCORD_CHANNEL_STAFF`)  |
-| `notifyLastSeen.js`                                      | `last-seen.yml`          | Tous les jours                                | 10:08                      | 12:08 / 11:08              | Salon membres (ou thread test clan 2)  |
+| `notifyLastSeen.js`                                      | `last-seen.yml`          | Tous les jours                                | 10:08                      | 12:08 / 11:08              | Salon membres principal                |
 | `notifyGdcLaunch.js`                                     | `gdc-launch.yml`         | Jeudi                                         | 10:30                      | 12:30 / 11:30              | Salon membres principal                |
 | `notifyPreWarSummary.js` (`npm run pre-war-summary`)     | `pre-war-summary.yml`    | Mercredi                                      | 14:00                      | 16:00 / 15:00              | Salon membres principal                |
 | `notifyRules.js`                                         | `rules.yml`              | Mardi (le script ne poste que le 1er du mois) | 14:00                      | 16:00 / 15:00              | Salon membres principal                |

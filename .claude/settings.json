@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx vitest *)"
+      "Bash(npx vitest *)",
+      "Bash(rg -n \"DISCORD_THREAD_MEMBERS_LRQP20V9|thread test clan 2\" .env .github/workflows/*.yml CONTRIBUTING.md)"
     ]
   }
 }
