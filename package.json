@@ -40,6 +40,11 @@
     "anagram:public:force": "node scripts/postAnagram.js --public --force",
     "anagram:reset": "node scripts/resetAnagram.js",
     "anagram:scores": "node scripts/anagramScores.js",
+    "aventure:test": "node scripts/postAventure.js",
+    "aventure:test:dry": "node scripts/postAventure.js --dry-run",
+    "aventure:public": "node scripts/postAventure.js --public",
+    "aventure:public:dry": "node scripts/postAventure.js --public --dry-run",
+    "aventure:reset": "node scripts/resetAventure.js",
     "rules": "node scripts/notifyRules.js",
     "rules:dry": "node scripts/notifyRules.js --dry-run",
     "rules:dry:noping": "node scripts/notifyRules.js --dry-run --no-ping",
@@ -48,7 +53,7 @@
     "cache:clear": "rm -f frontend/public/clan-cache/*.json",
     "deploy": "npm run cache:clear && npm run build && vercel --prod --confirm --force",
     "build": "cd frontend && npm run build && cd .. && vercel --prod",
-    "test": "node backend/services/analysisService.test.js && node backend/services/matchupEngine.test.js && node backend/services/snapshot.test.js && node backend/services/notifyWarSummary.test.js && node backend/services/notifyLastSeen.test.js && node backend/services/notifyClanStatus.test.js && node backend/services/dateUtils.test.js && node backend/services/championPredictions.test.js"
+    "test": "node backend/services/analysisService.test.js && node backend/services/matchupEngine.test.js && node backend/services/snapshot.test.js && node backend/services/notifyWarSummary.test.js && node backend/services/notifyLastSeen.test.js && node backend/services/notifyClanStatus.test.js && node backend/services/dateUtils.test.js && node backend/services/championPredictions.test.js && node backend/services/aventure.test.js"
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.3.0",

@@ -51,6 +51,12 @@ import {
   handleModalSubmit as handleAnagramModalSubmit,
   handleAnagramStatsCommand,
 } from "./handlers/anagrams.js";
+import {
+  handleVoteButton as handleAventureVote,
+  handleHistoriqueOpen as handleAventureHistoriqueOpen,
+  handleHistoriquePage as handleAventureHistoriquePage,
+  handleHistoriqueSelect as handleAventureHistoriqueSelect,
+} from "./handlers/aventure.js";
 import { isJoinedThisWar } from "../../backend/services/arrivalUtils.js";
 import {
   summarizeWarDecks,
@@ -8017,6 +8023,61 @@ export default async function handler(req, res) {
         rawAnswer,
       ),
     );
+    return;
+  }
+
+  // ── Aventure interactive : bouton de vote ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("aventure_vote:")
+  ) {
+    const [, chapitreId, choixId] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    // type 6 = DEFERRED_UPDATE_MESSAGE : édite le message public lui-même
+    // (le message d'origine du clic), jamais de réponse éphémère ici.
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleAventureVote(webhookUrl, chapitreId, choixId, discordId));
+    return;
+  }
+
+  // ── Aventure interactive : bouton "Historique" ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id === "aventure_historique_open"
+  ) {
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleAventureHistoriqueOpen(webhookUrl));
+    return;
+  }
+
+  // ── Aventure interactive : pagination et retour de l'historique (même
+  // handler pour les deux, il reconstruit simplement la page demandée) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    (body.data.custom_id.startsWith("aventure_historique_page:") ||
+      body.data.custom_id.startsWith("aventure_historique_back:"))
+  ) {
+    const offset = parseInt(body.data.custom_id.split(":")[1], 10) || 0;
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleAventureHistoriquePage(webhookUrl, offset));
+    return;
+  }
+
+  // ── Aventure interactive : select menu de l'historique ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("aventure_historique_select:")
+  ) {
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleAventureHistoriqueSelect(webhookUrl, body));
     return;
   }
 

@@ -1,0 +1,69 @@
+{
+  "debut": "chapitre_1",
+  "chapitres": {
+    "chapitre_1": {
+      "titre": "Jour 1 — L'Arène du Code",
+      "texte": "Vous franchissez les portes de l'arène. Au loin, Displaynone ricane en lançant un `display: none !important;` sur la porte de sortie. La foule retient son souffle : comment allez-vous réagir ?",
+      "resume_historique": "La communauté est entrée dans l'arène malgré la malédiction CSS de Displaynone.",
+      "choix": [
+        { "id": "option_a", "label": "Poser un PEKKA", "emoji": "⚔️", "prochain_chapitre": "chapitre_2_bourrin" },
+        { "id": "option_b", "label": "Inspecter l'élément", "emoji": "🔍", "prochain_chapitre": "chapitre_2_tactique" }
+      ]
+    },
+    "chapitre_2_bourrin": {
+      "titre": "Jour 2 — Charge frontale",
+      "texte": "Le PEKKA fonce droit sur le mur invisible. Il s'écrase contre un `overflow: hidden` mal placé et reste coincé, un bras qui dépasse du viewport. Displaynone applaudit méchamment. Il va falloir ruser.",
+      "resume_historique": "Le PEKKA a chargé tête baissée et s'est retrouvé piégé par un overflow: hidden.",
+      "choix": [
+        { "id": "option_a", "label": "Envoyer un Bûcheron", "emoji": "🪓", "prochain_chapitre": "chapitre_3_confrontation" },
+        { "id": "option_b", "label": "Rage-quit temporaire", "emoji": "😤", "prochain_chapitre": "chapitre_3_repli" }
+      ]
+    },
+    "chapitre_2_tactique": {
+      "titre": "Jour 2 — Le DevTools sacré",
+      "texte": "Vous ouvrez l'inspecteur d'éléments ancestral. Sous la couche de CSS cassé, vous repérez la vraie faiblesse de Displaynone : son `z-index` est ridiculement bas. Un plan commence à se dessiner.",
+      "resume_historique": "L'inspection a révélé le point faible caché de Displaynone : un z-index trop bas.",
+      "choix": [
+        { "id": "option_a", "label": "Exploiter le z-index", "emoji": "🧠", "prochain_chapitre": "chapitre_3_confrontation" },
+        { "id": "option_b", "label": "Prévenir tout le clan", "emoji": "📣", "prochain_chapitre": "chapitre_3_renfort" }
+      ]
+    },
+    "chapitre_3_confrontation": {
+      "titre": "Jour 3 — Face à face",
+      "texte": "Displaynone se dresse devant vous, une console d'erreurs rouges tourbillonnant autour de lui. « Vous ne passerez jamais le build de production ! » hurle-t-il en balançant un `!important` chargé à bloc.",
+      "resume_historique": "La communauté a affronté Displaynone en pleine arène, sans détour.",
+      "choix": [
+        { "id": "option_a", "label": "Attaquer de front", "emoji": "🗡️", "prochain_chapitre": "chapitre_final_victoire" },
+        { "id": "option_b", "label": "Négocier un merge", "emoji": "🤝", "prochain_chapitre": "chapitre_final_defaite" }
+      ]
+    },
+    "chapitre_3_repli": {
+      "titre": "Jour 3 — Stratégie de repli",
+      "texte": "Vous reculez pour souffler. Displaynone en profite pour poser un deuxième `display: none` sur votre ligne de défense. Ce n'était peut-être pas la meilleure idée...",
+      "resume_historique": "Un repli tactique a laissé Displaynone poser un deuxième piège CSS.",
+      "choix": [
+        { "id": "option_a", "label": "Contre-attaquer", "emoji": "🗡️", "prochain_chapitre": "chapitre_final_victoire" },
+        { "id": "option_b", "label": "Fuir l'arène", "emoji": "🏃", "prochain_chapitre": "chapitre_final_defaite" }
+      ]
+    },
+    "chapitre_3_renfort": {
+      "titre": "Jour 3 — L'appel aux renforts",
+      "texte": "Tout le clan répond présent. Displaynone, submergé par le nombre de decks qui arrivent en même temps, panique et tente un dernier `!important` désespéré.",
+      "resume_historique": "Le clan tout entier a répondu à l'appel pour affronter Displaynone en nombre.",
+      "choix": [
+        { "id": "option_a", "label": "Porter le coup de grâce", "emoji": "🗡️", "prochain_chapitre": "chapitre_final_victoire" },
+        { "id": "option_b", "label": "Laisser une chance à Displaynone", "emoji": "🤝", "prochain_chapitre": "chapitre_final_defaite" }
+      ]
+    },
+    "chapitre_final_victoire": {
+      "titre": "Jour 4 — Victoire ! Displaynone est vaincu",
+      "texte": "Dans un dernier cri, Displaynone voit son `!important` renvoyer une erreur 404. Son code s'effondre, ligne par ligne, jusqu'à disparaître complètement de l'arène. La communauté a gagné : plus aucun élément ne sera jamais caché sans raison. Merci à tous les héros qui ont voté chaque jour pour écrire cette histoire !",
+      "resume_historique": "Displaynone a été vaincu : victoire finale de la communauté."
+    },
+    "chapitre_final_defaite": {
+      "titre": "Jour 4 — Défaite... pour cette fois",
+      "texte": "Displaynone esquive au dernier moment et disparaît dans un `display: none` final, ricanant qu'il reviendra dans une prochaine mise à jour. L'arène retombe dans le silence. Ce n'est que partie remise, héros de TrustRoyale...",
+      "resume_historique": "Displaynone a échappé à la communauté et s'est évaporé dans le code."
+    }
+  }
+}

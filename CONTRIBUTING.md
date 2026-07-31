@@ -715,6 +715,63 @@ Aucune nouvelle variable : Anagram réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISC
 
 ---
 
+## Aventure interactive (livre dont vous êtes le héros)
+
+Mini-jeu narratif communautaire, indépendant du Clash Royale : chaque jour à 08:00 UTC, un chapitre est publié dans un salon dédié, les membres votent par boutons pour orienter la suite. Pas de commande slash associée — la publication/suppression passe uniquement par `scripts/postAventure.js` (manuel ou cron), les boutons/select menu restent gérés par `api/discord/interactions.js`. Univers Clash Royale, ton humoristique, boss final **Displaynone** (un sorcier/codeur qui attaque avec du CSS/JS cassé).
+
+### Déroulement
+
+Un seul message actif à la fois dans le salon dédié. Chaque jour, `postChapter()` (`api/discord/handlers/aventure.js`) :
+
+1. Résout le vote du chapitre actif (s'il y en a un) : le choix avec le plus de votes gagne, égalité départagée par l'ordre d'apparition dans le tableau `choix` de `histoire.json` — cette même règle couvre nativement le cas "personne n'a voté" (égalité totale à 0, le premier choix l'emporte par défaut). Voir `determineWinningChoix()` (`backend/services/aventure.js`), fonction pure testée dans `aventure.test.js`.
+2. Supprime le message Discord de la veille (`DELETE /channels/{id}/messages/{id}`, `Authorization: Bot <token>`) — un échec (message déjà supprimé, permission) est loggé mais ne bloque jamais la publication du nouveau chapitre.
+3. Publie le chapitre suivant (déterminé par `prochain_chapitre` du choix gagnant), avec un bouton par choix affichant son compteur de votes en temps réel dans le label, recalculé à chaque publication et à chaque clic.
+
+Un chapitre **sans** `choix` (tableau vide ou absent) marque la fin de l'histoire : le message reste affiché indéfiniment, et les runs suivants du cron deviennent des no-op silencieux (`aventure:state.termine`).
+
+### Résolution du vote
+
+Un membre ne peut voter qu'une fois par chapitre, mais peut changer d'avis en cliquant un autre bouton : le vote est stocké `discordId → choixId` (`aventure:votes:<chapitreId>`, HASH Redis), revoter écrase simplement l'ancienne valeur (`HSET`). Le clic sur un bouton de vote édite directement le message public en place (`DEFERRED_UPDATE_MESSAGE` puis `PATCH .../messages/@original`) — chaque clic est une nouvelle interaction avec son propre token, valable pour éditer le message d'origine du composant même si celui-ci est vieux de plusieurs heures (même principe que la pagination des pronostics GDC, `champion_history_page`).
+
+### Bouton Historique
+
+Le bouton permanent `[📜 Historique]` répond par un message éphémère contenant un select menu listant les jours passés (25 par page max, limite Discord ; pagination façon "Plus récents/Plus anciens" si l'histoire dépasse 25 jours). Sélectionner un jour affiche le texte complet du chapitre (relu en direct depuis `histoire.json`, jamais dupliqué en Redis) et le choix qui avait gagné ce jour-là (`aventure:historique`, HASH `chapitreId → { jour, choixGagnantId, resolvedAt }`).
+
+### Données (histoire.json)
+
+- `data/aventure/histoire.json` — contenu narratif édité à la main : `debut` (id du premier chapitre) + `chapitres` (objet `id → { titre, texte, resume_historique, choix? }`). Chaque `choix` a un `id`, un `label`, un `emoji` (optionnel) et un `prochain_chapitre` (id d'un autre chapitre). `resume_historique` sert de description à l'option du select menu Historique (≤ 100 caractères, limite Discord) — le `texte` complet n'est affiché qu'après sélection.
+- Maximum **5 choix par chapitre** (limite Discord : 5 boutons par ligne).
+
+### Stockage — Upstash Redis (`aventure:*`)
+
+Même instance et mêmes conventions que le jeu Frame (voir "Stockage — Upstash Redis" ci-dessus : `automaticDeserialization: false` obligatoire, sérialisation JSON manuelle, client construit paresseusement). Espace de clés `aventure:*`, totalement séparé de `frame:*`/`anagram:*` :
+
+| Clé Redis | Type | Contenu |
+| --- | --- | --- |
+| `aventure:state` | STRING | `{ chapitreId, channelId, messageId, publishedAt, termine }` — chapitre actuellement affiché |
+| `aventure:votes:<chapitreId>` | HASH | `discordId → choixId` — jetable, effacé après résolution du chapitre |
+| `aventure:jour_seq` | STRING (compteur) | Dernier numéro de jour attribué (`INCR` atomique) |
+| `aventure:jours` | HASH | `chapitreId → numéro de jour` (idempotent, `HSETNX`) |
+| `aventure:historique` | HASH | `chapitreId → { jour, choixGagnantId, resolvedAt }` — jamais nettoyé, alimente le bouton Historique |
+
+### Scripts npm (Aventure)
+
+| Commande | Effet |
+| --- | --- |
+| `npm run aventure:test` | Poste manuellement le chapitre du jour sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`). |
+| `npm run aventure:test:dry` | Aperçu console du prochain chapitre, sans écrire d'état ni poster sur Discord. |
+| `npm run aventure:public` | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `aventure.yml`. |
+| `npm run aventure:public:dry` | Équivalent dry-run de `aventure:public`. |
+| `npm run aventure:reset` | Remet l'aventure à zéro : plus de chapitre actif, votes/numérotation/historique effacés. **Destructif**. |
+
+### Variables d'environnement requises (Aventure)
+
+Aucune nouvelle variable : l'Aventure réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` (mêmes salons que Frame et Anagram, décision explicite pour ne pas multiplier les salons) et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (même instance Upstash Redis, espace de clés `aventure:*` totalement séparé de `frame:*`/`anagram:*`). La suppression quotidienne du message de la veille (`DELETE /channels/.../messages/{aventure:state.messageId}`) ne cible jamais que le message tracké par `aventure:state` — elle ne touche jamais aux messages Frame/Anagram, même postés dans le même salon.
+
+Le workflow `.github/workflows/aventure.yml` (cron quotidien `npm run aventure:public`) réutilise les mêmes secrets GitHub Actions que `frames.yml`/`anagrams.yml` (déjà configurés, rien à ajouter).
+
+---
+
 ## Détection des arrivées en cours de GDC
 
 ### Contexte

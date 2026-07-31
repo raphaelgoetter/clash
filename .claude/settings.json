@@ -23,7 +23,11 @@
       "Bash(awk 'NR==892,NR==1000' /Users/raphael/Git/clash/api/discord/interactions.js)",
       "Bash(awk 'NR==3230,NR==3320' /Users/raphael/Git/clash/api/discord/interactions.js)",
       "Bash(git add *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(node backend/services/aventure.test.js)",
+      "Bash(git -C /Users/raphael/Git/clash status --short)",
+      "Bash(git -C /Users/raphael/Git/clash stash)",
+      "Bash(git -C /Users/raphael/Git/clash stash pop)"
     ]
   }
 }
