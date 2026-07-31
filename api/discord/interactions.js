@@ -5508,6 +5508,25 @@ export default async function handler(req, res) {
           });
           return;
         }
+        // Le cache disque (bundle régénéré ~1x/heure) peut ne pas encore
+        // connaître un membre arrivé très récemment. On complète avec la
+        // liste live (déjà récupérée plus haut) pour ne jamais faire
+        // disparaître un joueur en échec juste parce qu'il vient de
+        // rejoindre le clan.
+        if (Array.isArray(currentMembers)) {
+          for (const m of currentMembers) {
+            const tag = normalizeTag(m.tag);
+            if (!snapshotMembersByTag.has(tag)) {
+              snapshotMembersByTag.set(tag, {
+                name: m.name || tag,
+                role: m.role || "member",
+                tag: m.tag || `#${tag}`,
+                arrivalStreakInCurrentClan: undefined,
+                arrivalTotalWeeks: undefined,
+              });
+            }
+          }
+        }
 
         // dayEntry.decks (cron horaire + correction post-reset) et
         // decksPreReset (figé ~2 min avant le reset, jamais corrigé après)
@@ -5536,6 +5555,56 @@ export default async function handler(req, res) {
           ),
         );
 
+        // Le snapshot disque du jour le plus récent est écrit par un cron
+        // GitHub Actions puis déployé sur Vercel : entre la capture et la
+        // mise en ligne du commit, il peut y avoir 15-20 min de décalage.
+        // Si /fail est lancée dans cette fenêtre, on lit un total figé
+        // avant les derniers combats du jour (faux positifs). On recoupe
+        // donc avec les compteurs live de l'API (toujours à jour) : en
+        // soustrayant du cumul hebdomadaire live les jours antérieurs
+        // (déjà stables, hors fenêtre à risque), on isole le total du
+        // jour recherché et on garde le max avec la valeur disque.
+        const priorDaysTotalByTag = new Map();
+        for (let i = 0; i < prevDayIndex; i++) {
+          for (const [rawTag, value] of Object.entries(
+            mergedDaySnapDecks(weekSnaps[i]),
+          )) {
+            if (!Number.isFinite(value)) continue;
+            const tag = normalizeTag(rawTag);
+            const clamped = Math.max(0, Math.min(4, value));
+            priorDaysTotalByTag.set(
+              tag,
+              (priorDaysTotalByTag.get(tag) || 0) + clamped,
+            );
+          }
+        }
+
+        let liveCumulativeParticipants = null;
+        if (isWarDay) {
+          liveCumulativeParticipants = race?.clan?.participants || null;
+        } else {
+          const normalizedClanTag = `#${resolved.tag}`;
+          const standing = raceLog?.[0]?.standings?.find(
+            (s) => s.clan?.tag === normalizedClanTag,
+          );
+          liveCumulativeParticipants = standing?.clan?.participants || null;
+        }
+
+        if (Array.isArray(liveCumulativeParticipants)) {
+          for (const p of liveCumulativeParticipants) {
+            const tag = normalizeTag(p.tag);
+            const cumulative = Number(p.decksUsed) || 0;
+            const today = isWarDay ? Number(p.decksUsedToday) || 0 : 0;
+            const priorDays = priorDaysTotalByTag.get(tag) || 0;
+            const isolated = Math.max(
+              0,
+              Math.min(4, cumulative - today - priorDays),
+            );
+            const diskValue = decksByTag.has(tag) ? decksByTag.get(tag) : 0;
+            decksByTag.set(tag, Math.max(diskValue, isolated));
+          }
+        }
+
         const day1Snap = weekSnaps[0];
         const day1DecksByTag = new Map(
           Object.entries(mergedDaySnapDecks(day1Snap)).map(([tag, value]) => [
@@ -5543,6 +5612,11 @@ export default async function handler(req, res) {
             Number.isFinite(value) ? Math.max(0, Math.min(4, value)) : 0,
           ]),
         );
+        if (prevDayIndex === 0) {
+          for (const [tag, value] of decksByTag.entries()) {
+            day1DecksByTag.set(tag, value);
+          }
+        }
 
         const failedPlayers = Array.from(snapshotMembersByTag.entries())
           .map(([normalizedTag, member]) => ({

@@ -5,7 +5,9 @@
       "Bash(rg -n \"DISCORD_THREAD_MEMBERS_LRQP20V9|thread test clan 2\" .env .github/workflows/*.yml CONTRIBUTING.md)",
       "Bash(node --check backend/services/warHistory.js)",
       "Bash(node --check backend/routes/player.js)",
-      "Bash(xargs -I{} basename {})"
+      "Bash(xargs -I{} basename {})",
+      "Bash(python3 -c ' *)",
+      "Bash(node -e ' *)"
     ]
   }
 }
