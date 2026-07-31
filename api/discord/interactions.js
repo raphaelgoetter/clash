@@ -694,7 +694,10 @@ function buildRecapFooter({ seasonId, observedAt, clan1, clan2 }) {
   if (clan1.raceLogUnavailable || clan2.raceLogUnavailable) {
     text +=
       "\n⚠️ Fiabilité indisponible temporairement pour " +
-      [clan1.raceLogUnavailable && clan1.clanName, clan2.raceLogUnavailable && clan2.clanName]
+      [
+        clan1.raceLogUnavailable && clan1.clanName,
+        clan2.raceLogUnavailable && clan2.clanName,
+      ]
         .filter(Boolean)
         .join(" et ") +
       " (données partielles) — réessaie dans quelques instants.";
@@ -3953,7 +3956,7 @@ export default async function handler(req, res) {
                 );
               }
               if (!stats?.hasDuel) {
-                warnings.push("⚠️ Aucun duel joué");
+                warnings.push("⚠️ 0 duel");
               }
               if (warnings.length) line += ` · ${warnings.join(" · ")}`;
             }
@@ -5868,7 +5871,9 @@ export default async function handler(req, res) {
               if (!apiResp.ok) throw new Error(`API joueur ${apiResp.status}`);
               const analysis = await apiResp.json();
               if (analysis.warHistoryDegraded) {
-                throw new Error("Historique de guerre temporairement indisponible");
+                throw new Error(
+                  "Historique de guerre temporairement indisponible",
+                );
               }
               const weeks = Array.isArray(analysis.warHistory?.weeks)
                 ? analysis.warHistory.weeks.filter(
