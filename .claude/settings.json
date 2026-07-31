@@ -16,7 +16,14 @@
       "Bash(curl -s \"https://trustroyale.vercel.app/api/player/%238R0LR8GYC/analysis?fast=true\")",
       "Bash(node -c api/discord/interactions.js)",
       "Bash(curl -s \"https://trustroyale.vercel.app/api/clan/%23LRQP20V9/analysis?fast=true\" -o /tmp/clan_analysis.json)",
-      "Bash(rg -n \"\\\\.matchup\\\\s*=|matchup:\\\\s*\\\\{|computeMatchupFromBattleLog|computeBattleMatchup\" /Users/raphael/Git/clash/backend/services/*.js)"
+      "Bash(rg -n \"\\\\.matchup\\\\s*=|matchup:\\\\s*\\\\{|computeMatchupFromBattleLog|computeBattleMatchup\" /Users/raphael/Git/clash/backend/services/*.js)",
+      "Bash(awk 'NR==5907,NR==6268' /Users/raphael/Git/clash/api/discord/interactions.js)",
+      "Bash(awk 'NR==7118,NR==7712' /Users/raphael/Git/clash/api/discord/interactions.js)",
+      "Bash(awk 'NR==5400,NR==5858' /Users/raphael/Git/clash/api/discord/interactions.js)",
+      "Bash(awk 'NR==892,NR==1000' /Users/raphael/Git/clash/api/discord/interactions.js)",
+      "Bash(awk 'NR==3230,NR==3320' /Users/raphael/Git/clash/api/discord/interactions.js)",
+      "Bash(git add *)",
+      "Bash(git push *)"
     ]
   }
 }
