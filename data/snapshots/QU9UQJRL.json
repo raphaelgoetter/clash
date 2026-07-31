@@ -10474,13 +10474,14 @@
           "start": "2026-07-31T09:56:00.000Z",
           "end": "2026-08-01T09:55:59.999Z"
         },
-        "snapshotTime": "2026-07-31T16:33:24.696Z",
+        "snapshotTime": "2026-07-31T17:31:18.236Z",
         "snapshotBackupTime": "2026-07-31T10:53:13.338Z",
         "decks": {
           "#2YV89UGJQ": 4,
           "#8VP9UJV9L": 4,
           "#988JLGQQL": 4,
           "#9U9YVU80": 4,
+          "#9YRU2QJJ": 4,
           "#C0RRPJYV9": 4,
           "#G2VVUJLLQ": 4,
           "#JVRP8QPRU": 4,
@@ -10488,6 +10489,7 @@
           "#V9RL22GYQ": 4,
           "#VJPV0CURJ": 4,
           "#20CY2LRU2": 2,
+          "#LQPRLQJCQ": 2,
           "#UC9LU0L90": 2,
           "#UV8R8RYVR": 2,
           "#8JGU9UUJJ": 1,
@@ -10538,7 +10540,7 @@
           "#20G8R9R8CJ": 0,
           "#LJYGJYCYC": 0,
           "#CVYLYLC8V": 0,
-          "#LQPRLQJCQ": 100,
+          "#LQPRLQJCQ": 400,
           "#VLVLQR0UP": 100,
           "#UYRR99RL8": 100,
           "#VJPV0CURJ": 1000,
@@ -10554,7 +10556,7 @@
           "#UQV9PV0L": 500,
           "#9U9YVU80": 1250,
           "#2YV89UGJQ": 1000,
-          "#9YRU2QJJ": 600,
+          "#9YRU2QJJ": 1100,
           "#8VP9UJV9L": 1000,
           "#G2VVUJLLQ": 1400,
           "#UVGPPVQ8Q": 1300,
@@ -10570,7 +10572,8 @@
           "#LQ0QV2UUP": 1,
           "#VVPQYJLQV": 1,
           "#J008G9CLJ": 1,
-          "#LCQ2J0VGC": 1
+          "#LCQ2J0VGC": 1,
+          "#9YRU2QJJ": 1
         },
         "_totalDonationsByTag": {},
         "duelsComplete": true,
@@ -10619,7 +10622,7 @@
           "#20G8R9R8CJ": 0,
           "#LJYGJYCYC": 0,
           "#CVYLYLC8V": 0,
-          "#LQPRLQJCQ": 1,
+          "#LQPRLQJCQ": 3,
           "#VLVLQR0UP": 1,
           "#UYRR99RL8": 1,
           "#VJPV0CURJ": 7,
@@ -10635,7 +10638,7 @@
           "#UQV9PV0L": 2,
           "#9U9YVU80": 8,
           "#2YV89UGJQ": 8,
-          "#9YRU2QJJ": 4,
+          "#9YRU2QJJ": 8,
           "#8VP9UJV9L": 8,
           "#G2VVUJLLQ": 8,
           "#UVGPPVQ8Q": 8,
@@ -10646,7 +10649,7 @@
           "#8UC00RRC": 0
         },
         "periodPointsEarned": 16175,
-        "snapshotCount": 48
+        "snapshotCount": 54
       },
       {
         "warDay": "saturday",
