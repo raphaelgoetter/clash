@@ -7,7 +7,12 @@
       "Bash(node --check backend/routes/player.js)",
       "Bash(xargs -I{} basename {})",
       "Bash(python3 -c ' *)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(rg -n \":warning:|<:warning|⚠️.*[0-9]{15,}|<:.*warning\" /Users/raphael/Git/clash/api/discord/interactions.js)",
+      "Bash(rg -n \"parisOffsetMs\" /Users/raphael/Git/clash/**/*.js)",
+      "Bash(rg -rn \"parisOffsetMs\" /Users/raphael/Git/clash --glob '*.js')",
+      "Bash(node --check scripts/notifyGdcLaunch.js)",
+      "Bash(node scripts/notifyGdcLaunch.js --dry-run)"
     ]
   }
 }

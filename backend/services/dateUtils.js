@@ -45,6 +45,30 @@ export function warResetOffsetMs(clanTag = null) {
 }
 
 /**
+ * Formate l'heure de reset GDC d'un clan en heure de Paris (ex. "9h44"),
+ * en tenant compte du changement d'heure été/hiver.
+ * @param {string|null} [clanTag]  Tag du clan (avec ou sans '#'). Fallback 09:40 si absent de CLAN_RESET_TIMES.
+ * @returns {string}
+ */
+export function formatResetTimeParis(clanTag = null) {
+  const cfg = clanTag
+    ? CLAN_RESET_TIMES[String(clanTag).replace("#", "").toUpperCase()]
+    : null;
+  const h = cfg?.h ?? 9;
+  const m = cfg?.m ?? 40;
+  const now = new Date();
+  const resetUtc = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+    h,
+    m,
+  );
+  const resetParis = new Date(resetUtc + parisOffsetMs(new Date(resetUtc)));
+  return `${resetParis.getUTCHours()}h${String(resetParis.getUTCMinutes()).padStart(2, "0")}`;
+}
+
+/**
  * Parse a Clash Royale timestamp string (YYYYMMDDTHHmmss.000Z) into a Date.
  * @param {string} ts
  * @returns {Date}

@@ -11,7 +11,11 @@ import { Resvg } from "@resvg/resvg-js";
 import { getLeagueName } from "../../backend/services/warLeagues.js";
 import { roundProjectedFame } from "../../backend/services/projectionFormat.js";
 import { getDiscordLinks } from "../../backend/services/discordLinks.js";
-import { toPublicSeasonId, toPublicWeekId } from "../../backend/services/dateUtils.js";
+import {
+  toPublicSeasonId,
+  toPublicWeekId,
+  formatResetTimeParis,
+} from "../../backend/services/dateUtils.js";
 import {
   fetchClan,
   fetchClanMembers,
@@ -2399,6 +2403,32 @@ function getWarDayLabel(dayKey) {
   return WAR_DAY_SHORT_LABELS_BY_UTC_DAY[date.getUTCDay()] || dayKey;
 }
 
+const WAR_DAY_NUMBER_EMOJI_BY_UTC_DAY = {
+  4: "1️⃣",
+  5: "2️⃣",
+  6: "3️⃣",
+  0: "4️⃣",
+};
+
+function getWarDayEmoji(dayKey) {
+  if (!dayKey) return "";
+  const date = new Date(`${dayKey}T00:00:00Z`);
+  return WAR_DAY_NUMBER_EMOJI_BY_UTC_DAY[date.getUTCDay()] || "";
+}
+
+/**
+ * Badge de statut pour une journée GDC selon le nombre de decks joués :
+ * 4/4 = succès, 0 deck sur une journée encore en cours = warning (pas
+ * encore joué, pourrait encore l'être), tout le reste (1-3 decks, ou 0
+ * deck sur une semaine terminée) = erreur.
+ */
+function getCombatsDayBadge(decks, { pending = false } = {}) {
+  if (decks == null) return "";
+  if (decks >= 4) return SCORE_BADGES.success;
+  if (decks === 0 && pending) return SCORE_BADGES.warning;
+  return SCORE_BADGES.error;
+}
+
 function getWarMatchTypeLabel(type) {
   const normalized = String(type || "").toLowerCase();
   if (normalized === "riverracepvp") return "(PvP)";
@@ -3839,11 +3869,14 @@ export default async function handler(req, res) {
         let currentWeekLines = ["Pas de GDC en cours."];
         if (isWarPeriod) {
           currentWeekLines = analysis.currentWarDays.days.map((day) => {
+            const emoji = getWarDayEmoji(day.key);
             const label = getWarDayLabel(day.key);
             const stats = combatsByDayKey.get(day.key);
-            if (day.isFuture) return `${label} : à venir`;
-            if (!stats || stats.decks === 0) return `${label} : pas encore joué`;
-            return `${label} : ${stats.decks} deck${stats.decks === 1 ? "" : "s"} (${stats.wins} victoire${stats.wins === 1 ? "" : "s"}, ${stats.losses} défaite${stats.losses === 1 ? "" : "s"}) · ${stats.points} pts`;
+            if (day.isFuture) return `${emoji} ${label} : à venir`;
+            const decks = stats?.decks ?? 0;
+            const badge = getCombatsDayBadge(decks, { pending: true });
+            if (decks === 0) return `${emoji} ${label} ${badge} : pas encore joué`;
+            return `${emoji} ${label} ${badge} : ${decks} deck${decks === 1 ? "" : "s"} (${stats.wins} victoire${stats.wins === 1 ? "" : "s"}, ${stats.losses} défaite${stats.losses === 1 ? "" : "s"}) · ${stats.points} pts`;
           });
         }
         const currentTotalDecks = currentWeek?.decksUsed ?? 0;
@@ -3864,12 +3897,14 @@ export default async function handler(req, res) {
           : [];
         const lastWeekLines = lastWeekDays.length
           ? lastWeekDays.map((day) => {
+              const emoji = getWarDayEmoji(day.date);
               const label = getWarDayLabel(day.date);
               if (day.decks === null || day.decks === undefined) {
-                return `${label} : pas de données`;
+                return `${emoji} ${label} : pas de données`;
               }
-              if (day.decks === 0) return `${label} : 0 deck`;
-              return `${label} : ${day.decks} deck${day.decks === 1 ? "" : "s"}${
+              const badge = getCombatsDayBadge(day.decks, { pending: false });
+              if (day.decks === 0) return `${emoji} ${label} ${badge} : 0 deck`;
+              return `${emoji} ${label} ${badge} : ${day.decks} deck${day.decks === 1 ? "" : "s"}${
                 Number.isFinite(day.points) ? ` · ${day.points} pts` : ""
               }`;
             })
@@ -3912,11 +3947,15 @@ export default async function handler(req, res) {
           });
         }
 
+        const resetTime = currentClanTag
+          ? formatResetTimeParis(currentClanTag)
+          : null;
+
         const embed = {
           title: `<:cards:1499284927894650950> Combats GDC : ${analysis.overview.name}${analysis.isNew ? " 🆕" : ""}`,
           url: trustPlayerUrl(tag),
           color: 0x3498db,
-          description: `${tag} · Clan : ${currentClanLink}`,
+          description: `${tag} · Clan : ${currentClanLink}${resetTime ? ` · Reset : ${resetTime} (heure de Paris)` : ""}`,
           fields,
           footer: {
             text: "Voir le détail combat par combat avec /matchup",

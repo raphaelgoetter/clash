@@ -44,10 +44,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 import { fetchCurrentRace } from "../backend/services/clashApi.js";
-import {
-  parisOffsetMs,
-  CLAN_RESET_TIMES,
-} from "../backend/services/dateUtils.js";
+import { formatResetTimeParis } from "../backend/services/dateUtils.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -201,25 +198,6 @@ async function getClanRoleId(clanTag) {
     (r) => normalizeRoleName(r?.name) === normalizeRoleName(roleName),
   );
   return role?.id ?? null;
-}
-
-// ── Reset time in Paris ────────────────────────────────────────
-
-function formatResetTimeParis(clanTag) {
-  const cfg = CLAN_RESET_TIMES[clanTag];
-  if (!cfg) return "09:40";
-  const now = new Date();
-  const resetUtc = Date.UTC(
-    now.getUTCFullYear(),
-    now.getUTCMonth(),
-    now.getUTCDate(),
-    cfg.h,
-    cfg.m,
-  );
-  const resetParis = new Date(resetUtc + parisOffsetMs(new Date(resetUtc)));
-  const h = resetParis.getUTCHours();
-  const m = resetParis.getUTCMinutes();
-  return `${h}h${String(m).padStart(2, "0")}`;
 }
 
 // ── Week dedup key ─────────────────────────────────────────────
