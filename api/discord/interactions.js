@@ -3955,7 +3955,7 @@ export default async function handler(req, res) {
               if (!stats?.hasDuel) {
                 warnings.push("⚠️ Aucun duel joué");
               }
-              if (warnings.length) line += `\n   ${warnings.join(" · ")}`;
+              if (warnings.length) line += ` · ${warnings.join(" · ")}`;
             }
             return line;
           });
