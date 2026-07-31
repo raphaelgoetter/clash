@@ -216,6 +216,34 @@ router.get("/:tag/analysis", async (req, res) => {
           }
           return { date: day.realDay, warDay: day.warDay, decks, points };
         });
+
+        // Si un seul jour de la semaine n'a pas de snapshot exploitable, sa
+        // valeur peut être déduite exactement (pas une estimation) par
+        // différence avec le total hebdomadaire exact du riverracelog
+        // (lastWeek.decksUsed / lastWeek.fame) : les 4 jours somment
+        // forcément au total de la semaine.
+        const missingDecksDays = warLastWeekDays.filter(
+          (d) => d.decks === null,
+        );
+        if (missingDecksDays.length === 1 && Number.isFinite(lastWeek.decksUsed)) {
+          const knownDecksSum = warLastWeekDays.reduce(
+            (sum, d) => sum + (d.decks ?? 0),
+            0,
+          );
+          const remainder = lastWeek.decksUsed - knownDecksSum;
+          if (remainder >= 0) missingDecksDays[0].decks = remainder;
+        }
+        const missingPointsDays = warLastWeekDays.filter(
+          (d) => d.points === null,
+        );
+        if (missingPointsDays.length === 1 && Number.isFinite(lastWeek.fame)) {
+          const knownPointsSum = warLastWeekDays.reduce(
+            (sum, d) => sum + (d.points ?? 0),
+            0,
+          );
+          const remainder = lastWeek.fame - knownPointsSum;
+          if (remainder >= 0) missingPointsDays[0].points = remainder;
+        }
       } catch (_) {
         /* silencieux */
       }

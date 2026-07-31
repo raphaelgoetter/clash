@@ -3874,10 +3874,17 @@ export default async function handler(req, res) {
             const stats = combatsByDayKey.get(day.key);
             if (day.isFuture) return `${emoji} ${label} : à venir`;
             const decks = stats?.decks ?? 0;
-            const badge = getCombatsDayBadge(decks, { pending: true });
-            if (decks === 0)
+            // Seul "aujourd'hui" peut encore être joué : un jour passé à 0
+            // deck est un manquement confirmé (erreur), pas une attente.
+            const isPending = Boolean(day.isToday);
+            const badge = getCombatsDayBadge(decks, { pending: isPending });
+            if (decks === 0 && isPending)
               return `${emoji} ${label} ${badge} : pas encore joué`;
-            return `${emoji} ${label} ${badge} : ${decks} deck${decks === 1 ? "" : "s"} (${stats.wins} victoire${stats.wins === 1 ? "" : "s"}, ${stats.losses} défaite${stats.losses === 1 ? "" : "s"}) · ${stats.points} pts`;
+            if (decks === 0) return `${emoji} ${label} ${badge} : 0 deck`;
+            const wins = stats?.wins ?? 0;
+            const losses = stats?.losses ?? decks;
+            const points = stats?.points ?? 0;
+            return `${emoji} ${label} ${badge} : ${decks} deck${decks === 1 ? "" : "s"} (${wins} victoire${wins === 1 ? "" : "s"}, ${losses} défaite${losses === 1 ? "" : "s"}) · ${points} pts`;
           });
         }
         const currentTotalDecks = currentWeek?.decksUsed ?? 0;
