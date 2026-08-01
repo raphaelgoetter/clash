@@ -639,15 +639,18 @@
               </p>
               <p>
                 Seuls les joueurs en défaut sont affichés, triés du plus
-                grand nombre de decks manquants au plus petit. Pour chaque
-                joueur en défaut, la commande détaille le nombre de decks
-                manquants et un badge par journée (✅/⚠️/❌), comme dans
-                <code>/combats</code>.
+                grand nombre de decks manquants au plus petit. Le calcul ne
+                porte que sur les journées déjà closes&#8239;: la journée en
+                cours n'est jamais comptée contre un joueur tant qu'elle
+                n'est pas terminée. Pour chaque joueur en défaut, la commande
+                détaille le nombre de decks joués par journée et un badge
+                (✅/⚠️/❌), comme dans <code>/combats</code>.
               </p>
               <p>
                 Seule la semaine en cours est prise en compte (pas la semaine
                 précédente). Les joueurs arrivés en cours de semaine sont
-                inclus comme les autres.
+                inclus comme les autres, mais uniquement jugés à partir de
+                leur jour d'arrivée.
               </p>
               <p>
                 <strong>Quand utiliser cette commande&#8239;:</strong> Pour

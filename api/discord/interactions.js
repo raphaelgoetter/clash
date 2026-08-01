@@ -4164,13 +4164,40 @@ export default async function handler(req, res) {
         // inclus comme tout le monde : totalDecksUsed vaut 0 pour eux dans
         // ce cas (cf. buildCurrentWarDays), donc ils remontent normalement
         // s'ils n'ont pas encore joué depuis leur arrivée.
+        //
+        // maxDecksElapsed compte la journée du jour comme pleinement écoulée
+        // (utile pour d'autres usages), mais tant qu'elle n'est pas terminée
+        // il est normal qu'un joueur n'ait pas encore joué ses 4 decks —
+        // on ne doit donc juger un joueur QUE sur les jours déjà clos
+        // (ni aujourd'hui, ni les jours à venir). decksUsedToday (source
+        // live, fiable) est retiré du total pour isoler les decks joués sur
+        // les jours clos, comparés à leur maximum théorique.
         const missing = members
           .filter((m) => m.warDays)
-          .map((m) => ({
-            member: m,
-            missingCount:
-              m.warDays.maxDecksElapsed - (m.warDays.totalDecksUsed ?? 0),
-          }))
+          .map((m) => {
+            const wd = m.warDays;
+            const todayDay = wd.days.find((d) => d.isToday);
+            const todayCount = todayDay?.count ?? 0;
+            // Un joueur arrivé en cours de semaine (arrivedOnDay) n'est
+            // jugé qu'à partir de son jour d'arrivée, jamais sur les jours
+            // précédents (auxquels il n'a pas pu participer).
+            const arrivedOnDay = wd.arrivedMidWar ? wd.arrivedOnDay : 1;
+            const completedDaysCount = Math.max(
+              0,
+              wd.daysFromThu - (arrivedOnDay - 1),
+            );
+            const completedMax = completedDaysCount * 4;
+            const completedUsed = Math.max(
+              0,
+              (wd.totalDecksUsed ?? 0) - todayCount,
+            );
+            return {
+              member: m,
+              missingCount: completedMax - completedUsed,
+              completedMax,
+              completedUsed,
+            };
+          })
           .filter((x) => x.missingCount > 0)
           .sort(
             (a, b) =>
@@ -4194,19 +4221,23 @@ export default async function handler(req, res) {
           return;
         }
 
-        const rows = missing.map(({ member, missingCount }) => {
-          const dayBadges = member.warDays.days
-            .map((day) => {
-              const label = getWarDayLabel(day.key);
-              const badge = getCombatsDayBadge(day.count, {
-                isFuture: day.isFuture,
-                isToday: day.isToday,
-              });
-              return `${badge} ${label}`;
-            })
-            .join(" · ");
-          return `**${member.name}** — ${missingCount} deck${missingCount === 1 ? "" : "s"} manquant${missingCount === 1 ? "" : "s"} (${member.warDays.totalDecksUsed ?? 0}/${member.warDays.maxDecksElapsed})\n${dayBadges}`;
-        });
+        const rows = missing.map(
+          ({ member, missingCount, completedUsed, completedMax }) => {
+            const dayBadges = member.warDays.days
+              .map((day) => {
+                const label = getWarDayLabel(day.key);
+                const badge = getCombatsDayBadge(day.count, {
+                  isFuture: day.isFuture,
+                  isToday: day.isToday,
+                });
+                if (day.isFuture) return `${badge} ${label}`;
+                const count = day.count ?? 0;
+                return `${badge} ${label} (${count}/4)`;
+              })
+              .join(" · ");
+            return `**${member.name}** — ${missingCount} deck${missingCount === 1 ? "" : "s"} manquant${missingCount === 1 ? "" : "s"} (${completedUsed}/${completedMax} sur les jours clos)\n${dayBadges}`;
+          },
+        );
 
         // Pagination (sécurité, normalement tout tient sur une page) : même
         // logique de chunking que /stats-clan.
@@ -4227,11 +4258,20 @@ export default async function handler(req, res) {
         }
         if (currentPage.length > 0) pages.push(currentPage);
 
+        // ⚠️ Limite connue (même source que /combats) : le détail par jour
+        // vient du battle log de chaque joueur (fenêtre limitée aux combats
+        // récents), qui peut ponctuellement sous-estimer un jour ancien.
+        // Le nombre de decks manquants ci-dessus, lui, reste fiable : il est
+        // calculé à partir du total hebdomadaire live (decksUsed/decksUsedToday),
+        // pas d'une somme des jours.
+        const caveat =
+          "-# ⚠️ Le détail par jour peut ponctuellement sous-estimer les decks joués (historique de combats limité) — le nombre de decks manquants reste fiable.\n\n";
+
         const embed = {
           title: `⚠️ Decks manquants GDC : ${clanName}`,
           url: trustClanUrl(resolved.tag),
           color: 0xe67e22,
-          description: pages[0].join("\n\n"),
+          description: caveat + pages[0].join("\n\n"),
           footer: {
             text: `${missing.length} joueur${missing.length === 1 ? "" : "s"} en défaut${pages.length > 1 ? ` · page 1/${pages.length}` : ""} · Détail complet avec /combats`,
           },
