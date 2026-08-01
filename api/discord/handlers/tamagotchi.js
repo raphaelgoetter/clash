@@ -127,8 +127,28 @@ async function pickVoterNames(voters, jour) {
   return [FLAVOR_NAMES[start], FLAVOR_NAMES[(start + 1) % FLAVOR_NAMES.length]];
 }
 
+// Chaque ligne du message de Mohamed Light préfixée par "> " — rendu Discord
+// en citation multi-lignes (contrairement à ">>>" qui citerait aussi la
+// mini-explication ajoutée après, qui doit rester du texte normal).
+function quoteBlock(text) {
+  return text
+    .split("\n")
+    .map((line) => `> ${line}`)
+    .join("\n");
+}
+
+function buildDay1Intro() {
+  return [
+    "**VOUS AVEZ REÇU UN NOUVEAU MESSAGE !**",
+    "",
+    quoteBlock(DAY1_INTRO),
+    "",
+    "Collaborez ensemble pour vous occuper du Bébé Dragon et subvenir à ses besoins.",
+  ].join("\n");
+}
+
 async function buildNarrative(jour, gauges, voters, estPremierJour) {
-  if (estPremierJour) return DAY1_INTRO;
+  if (estPremierJour) return buildDay1Intro();
 
   const narratifs = await loadNarratifs();
   const intro = pickFlavor(narratifs.intro_cocasse, jour);
