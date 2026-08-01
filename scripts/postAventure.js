@@ -9,6 +9,7 @@
 //   node scripts/postAventure.js --public        — poste sur le salon public
 //   node scripts/postAventure.js --dry-run       — simulation, sans écrire ni poster
 //   node scripts/postAventure.js --public --dry-run
+//   node scripts/postAventure.js --no-ping       — poste sans pinger @MINI JEUX (Jour 1 uniquement)
 
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
@@ -17,6 +18,7 @@ import { postChapter } from "../api/discord/handlers/aventure.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
+const NO_PING = process.argv.includes("--no-ping");
 
 // Réutilise les salons du jeu Frame (même principe que le jeu Anagram,
 // voir CONTRIBUTING.md) plutôt que de provisionner de nouveaux salons
@@ -34,7 +36,7 @@ if (!channelId) {
 
 (async () => {
   try {
-    const result = await postChapter(channelId, { dryRun: DRY_RUN });
+    const result = await postChapter(channelId, { dryRun: DRY_RUN, noPing: NO_PING });
 
     if (result.termine) {
       console.log("Histoire déjà terminée, rien à poster.");
@@ -44,6 +46,7 @@ if (!channelId) {
     if (DRY_RUN) {
       console.log(`DRY-RUN — prochain chapitre (salon ${channelId}) :`);
       console.log(`  Chapitre : ${result.chapitreId} — ${result.chapitreEntry.titre}`);
+      console.log(`  Ping @MINI JEUX : ${result.pingRoleId ? "oui" : "non"}`);
       console.log(JSON.stringify({ embeds: [result.embed], components: result.components }, null, 2));
       return;
     }

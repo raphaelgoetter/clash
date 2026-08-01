@@ -13,6 +13,7 @@
 //                                                  utile pour tester ou rattraper
 //                                                  un créneau manqué
 //   node scripts/postAnagram.js --public --dry-run
+//   node scripts/postAnagram.js --no-ping      — poste sans pinger @MINI JEUX
 
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
@@ -22,6 +23,7 @@ import { postAnagram } from "../api/discord/handlers/anagrams.js";
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
 const FORCE = process.argv.includes("--force");
+const NO_PING = process.argv.includes("--no-ping");
 
 const channelId = PUBLIC
   ? process.env.DISCORD_CHANNEL_FRAME_PUBLIC
@@ -36,7 +38,7 @@ if (!channelId) {
 
 (async () => {
   try {
-    const result = await postAnagram(channelId, { dryRun: DRY_RUN, force: FORCE });
+    const result = await postAnagram(channelId, { dryRun: DRY_RUN, force: FORCE, noPing: NO_PING });
 
     if (DRY_RUN) {
       if (result.seasonRecapEmbed) {
@@ -46,6 +48,7 @@ if (!channelId) {
       }
       console.log(`DRY-RUN — prochaine partie (salon ${channelId}) :`);
       console.log(`  Anagramme : ${result.entry.anagram} (réponse : ${result.entry.answer})`);
+      console.log(`  Ping @MINI JEUX : ${result.pingRoleId ? "oui" : "non"}`);
       console.log(JSON.stringify({ embeds: [result.embed], components: result.components }, null, 2));
       return;
     }

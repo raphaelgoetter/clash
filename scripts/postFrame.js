@@ -8,6 +8,7 @@
 //   node scripts/postFrame.js                — poste sur le salon de test
 //   node scripts/postFrame.js --public        — poste sur le salon public
 //   node scripts/postFrame.js --dry-run       — simulation, sans écrire ni poster
+//   node scripts/postFrame.js --no-ping       — poste sans pinger @MINI JEUX
 //   node scripts/postFrame.js --public --dry-run
 
 import dotenv from "dotenv";
@@ -17,6 +18,7 @@ import { postFrame } from "../api/discord/handlers/frames.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
+const NO_PING = process.argv.includes("--no-ping");
 
 const channelId = PUBLIC
   ? process.env.DISCORD_CHANNEL_FRAME_PUBLIC
@@ -31,7 +33,7 @@ if (!channelId) {
 
 (async () => {
   try {
-    const result = await postFrame(channelId, { dryRun: DRY_RUN });
+    const result = await postFrame(channelId, { dryRun: DRY_RUN, noPing: NO_PING });
 
     if (DRY_RUN) {
       if (result.seasonRecapEmbed) {
@@ -41,6 +43,7 @@ if (!channelId) {
       }
       console.log(`DRY-RUN — prochaine partie (salon ${channelId}) :`);
       console.log(`  Film : ${result.frameEntry.titre} (${result.frameEntry.image})`);
+      console.log(`  Ping @MINI JEUX : ${result.pingRoleId ? "oui" : "non"}`);
       console.log(JSON.stringify({ embeds: [result.embed], components: result.components }, null, 2));
       return;
     }

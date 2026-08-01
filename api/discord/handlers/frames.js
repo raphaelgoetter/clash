@@ -33,6 +33,7 @@ import {
   findTiedRank,
 } from "../../../backend/services/frames.js";
 import { toPublicSeasonId } from "../../../backend/services/dateUtils.js";
+import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
 
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 const FRAME_COLOR = 0x2ecc71;
@@ -212,7 +213,7 @@ async function getSeasonManchesPlayed(seasonId) {
     .sort((a, b) => a.seasonManche - b.seasonManche);
 }
 
-async function postSeasonRecap(channelId, endedSeasonId, newSeasonId) {
+async function postSeasonRecap(channelId, endedSeasonId, newSeasonId, { noPing = false } = {}) {
   const token = process.env.DISCORD_TOKEN;
   const seasonRanking = await computeSeasonRanking(endedSeasonId);
   if (seasonRanking.length === 0) return; // rien à récapituler (saison sans le moindre point marqué)
@@ -224,6 +225,7 @@ async function postSeasonRecap(channelId, endedSeasonId, newSeasonId) {
     newSeasonId,
     manchesPlayed,
   );
+  const roleId = noPing ? null : await getRoleIdByName(MINI_JEUX_ROLE_NAME);
   const res = await fetch(
     `https://discord.com/api/v10/channels/${channelId}/messages`,
     {
@@ -232,7 +234,7 @@ async function postSeasonRecap(channelId, endedSeasonId, newSeasonId) {
         Authorization: `Bot ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ embeds: [embed] }),
+      body: JSON.stringify({ embeds: [embed], ...buildRolePingFields(roleId) }),
     },
   );
   if (!res.ok) {
@@ -245,7 +247,7 @@ async function postSeasonRecap(channelId, endedSeasonId, newSeasonId) {
 // En dry-run, aucune écriture d'état ni appel Discord — la prochaine image
 // est seulement prévisualisée, sans faire avancer la partie.
 
-export async function postFrame(channelId, { dryRun = false } = {}) {
+export async function postFrame(channelId, { dryRun = false, noPing = false } = {}) {
   if (dryRun) {
     const frames = await loadFrames();
     const state = await readState();
@@ -263,6 +265,7 @@ export async function postFrame(channelId, { dryRun = false } = {}) {
       cacheBust: Date.now(),
     });
     const components = buildFrameComponents(gameId);
+    const pingRoleId = noPing ? null : await getRoleIdByName(MINI_JEUX_ROLE_NAME);
 
     let seasonRecapEmbed = null;
     if (
@@ -282,7 +285,7 @@ export async function postFrame(channelId, { dryRun = false } = {}) {
       }
     }
 
-    return { dryRun: true, frameEntry, embed, components, seasonRecapEmbed };
+    return { dryRun: true, frameEntry, embed, components, seasonRecapEmbed, pingRoleId };
   }
 
   const token = process.env.DISCORD_TOKEN;
@@ -295,7 +298,7 @@ export async function postFrame(channelId, { dryRun = false } = {}) {
     newSeasonId != null &&
     previousState.seasonId !== newSeasonId
   ) {
-    await postSeasonRecap(channelId, previousState.seasonId, newSeasonId);
+    await postSeasonRecap(channelId, previousState.seasonId, newSeasonId, { noPing });
   }
 
   const { state, frameEntry } = await startNewGame(channelId);
@@ -307,6 +310,7 @@ export async function postFrame(channelId, { dryRun = false } = {}) {
     cacheBust: Date.now(),
   });
   const components = buildFrameComponents(state.gameId);
+  const roleId = noPing ? null : await getRoleIdByName(MINI_JEUX_ROLE_NAME);
 
   const res = await fetch(
     `https://discord.com/api/v10/channels/${channelId}/messages`,
@@ -316,7 +320,7 @@ export async function postFrame(channelId, { dryRun = false } = {}) {
         Authorization: `Bot ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ embeds: [embed], components }),
+      body: JSON.stringify({ embeds: [embed], components, ...buildRolePingFields(roleId) }),
     },
   );
 
