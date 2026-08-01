@@ -15506,7 +15506,7 @@
           "start": "2026-08-01T09:36:00.000Z",
           "end": "2026-08-02T09:35:59.999Z"
         },
-        "snapshotTime": "2026-08-01T17:20:46.102Z",
+        "snapshotTime": "2026-08-01T18:19:33.335Z",
         "snapshotBackupTime": "2026-08-01T09:38:25.811Z",
         "decks": {
           "#29QRJRLY0": 4,
@@ -15529,10 +15529,10 @@
           "#U2UYYCQVG": 4,
           "#VGJ9LL8VC": 4,
           "#VPGYR2990": 4,
+          "#YRGJGR8R": 4,
+          "#2YP8VVG0": 3,
           "#UPC0Y0LRQ": 3,
-          "#YRGJGR8R": 3,
           "#2L220JPU2": 1,
-          "#2YP8VVG0": 1,
           "#829L90UU": 1
         },
         "hourlyCumul": [],
@@ -15582,13 +15582,13 @@
           "#8R0LR8GYC": 400,
           "#U2UYYCQVG": 1100,
           "#2L8RPQRJ9": 500,
-          "#2YP8VVG0": 600,
+          "#2YP8VVG0": 800,
           "#ULVPUU9C2": 800,
           "#VRQYP2RRV": 800,
           "#VJVQ8YQCP": 800,
           "#LV0VUJVU": 1350,
           "#829L90UU": 800,
-          "#YRGJGR8R": 1100,
+          "#YRGJGR8R": 1200,
           "#J008G9CLJ": 1200,
           "#UP9YJV080": 800,
           "#VPGYR2990": 1400,
@@ -15649,7 +15649,9 @@
           "#UPC0Y0LRQ": 1,
           "#2U9QL8Q89": 1,
           "#9CYUGPQ0C": 1,
-          "#GGRLYR8PL": 1
+          "#GGRLYR8PL": 1,
+          "#VY8YG2UYQ": 1,
+          "#99VQ2LR02": 1
         },
         "_totalDonationsByTag": {},
         "duelsComplete": true,
@@ -15700,13 +15702,13 @@
           "#8R0LR8GYC": 4,
           "#U2UYYCQVG": 7,
           "#2L8RPQRJ9": 4,
-          "#2YP8VVG0": 5,
+          "#2YP8VVG0": 7,
           "#ULVPUU9C2": 8,
           "#VRQYP2RRV": 8,
           "#VJVQ8YQCP": 8,
           "#LV0VUJVU": 12,
           "#829L90UU": 6,
-          "#YRGJGR8R": 11,
+          "#YRGJGR8R": 12,
           "#J008G9CLJ": 12,
           "#UP9YJV080": 8,
           "#VPGYR2990": 12,
@@ -15739,7 +15741,7 @@
           "#8QVRJYVYU": 12
         },
         "periodPointsEarned": 27450,
-        "snapshotCount": 89
+        "snapshotCount": 92
       },
       {
         "warDay": "sunday",
