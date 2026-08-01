@@ -6,7 +6,7 @@
   "actions": {
     "nourrir": {
       "label": "Nourrir",
-      "emoji": "🥩",
+      "emoji": "🍭",
       "impact": { "estomac": 25, "energie": -10, "moral": 0 }
     },
     "bretzel": {
