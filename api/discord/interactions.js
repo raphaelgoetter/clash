@@ -4160,10 +4160,10 @@ export default async function handler(req, res) {
           return;
         }
 
-        // Les joueurs arrivés en cours de semaine (arrivedMidWar) sont
-        // inclus comme tout le monde : totalDecksUsed vaut 0 pour eux dans
-        // ce cas (cf. buildCurrentWarDays), donc ils remontent normalement
-        // s'ils n'ont pas encore joué depuis leur arrivée.
+        // Les joueurs arrivés en cours de semaine sont inclus comme tout le
+        // monde : totalDecksUsed vaut 0 pour eux dans ce cas (cf.
+        // buildCurrentWarDays), donc ils remontent normalement s'ils n'ont
+        // pas encore joué depuis leur arrivée.
         //
         // maxDecksElapsed compte la journée du jour comme pleinement écoulée
         // (utile pour d'autres usages), mais tant qu'elle n'est pas terminée
@@ -4172,19 +4172,29 @@ export default async function handler(req, res) {
         // (ni aujourd'hui, ni les jours à venir). decksUsedToday (source
         // live, fiable) est retiré du total pour isoler les decks joués sur
         // les jours clos, comparés à leur maximum théorique.
+        const MS_PER_DAY = 24 * 60 * 60 * 1000;
         const missing = members
           .filter((m) => m.warDays)
           .map((m) => {
             const wd = m.warDays;
             const todayDay = wd.days.find((d) => d.isToday);
             const todayCount = todayDay?.count ?? 0;
-            // Un joueur arrivé en cours de semaine (arrivedOnDay) n'est
-            // jugé qu'à partir de son jour d'arrivée, jamais sur les jours
-            // précédents (auxquels il n'a pas pu participer).
-            const arrivedOnDay = wd.arrivedMidWar ? wd.arrivedOnDay : 1;
+            // Jour réel d'arrivée dans le clan (0=jeudi … 3=dimanche),
+            // déduit de firstSeenAt/warStartMs plutôt que du champ
+            // arrivedOnDay du backend (qui suppose toujours une arrivée
+            // "aujourd'hui", donc faux pour un joueur arrivé plus tôt dans
+            // la semaine — il ne serait alors jamais jugé). Un joueur
+            // présent avant le début de la GDC est jugé depuis le jour 1.
+            let arrivalDayIndex = 0;
+            if (wd.warStartMs != null && m.firstSeenAt) {
+              const diffDays = Math.floor(
+                (Date.parse(m.firstSeenAt) - wd.warStartMs) / MS_PER_DAY,
+              );
+              arrivalDayIndex = Math.min(3, Math.max(0, diffDays));
+            }
             const completedDaysCount = Math.max(
               0,
-              wd.daysFromThu - (arrivedOnDay - 1),
+              wd.daysFromThu - arrivalDayIndex,
             );
             const completedMax = completedDaysCount * 4;
             const completedUsed = Math.max(
