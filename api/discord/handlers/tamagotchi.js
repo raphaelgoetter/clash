@@ -8,6 +8,7 @@
 
 import {
   loadTamagotchiConfig,
+  loadNarratifs,
   readState,
   writeState,
   recordVote,
@@ -71,6 +72,23 @@ function formatGaugeImpact({ estomac, energie, moral }) {
 }
 
 // ── Texte narratif ────────────────────────────────────────────────
+// Les variantes de phrases vivent dans data/tamagotchi/narratifs.json (pas
+// dans le code) pour être facilement enrichies sans toucher au JS. La
+// sélection est déterministe (indexée par le jour, pas Math.random()) : le
+// narratif ne doit jamais changer entre deux ré-affichages du MÊME jour
+// (ex. après chaque clic de vote qui repatch l'embed), seulement d'un jour
+// à l'autre.
+
+function pickFlavor(pool, seed) {
+  if (!pool?.length) return "";
+  return pool[((seed % pool.length) + pool.length) % pool.length];
+}
+
+function gaugeCategory(kind, value) {
+  if (value < 30) return `${kind}_bas`;
+  if (value > 80) return `${kind}_haut`;
+  return `${kind}_normal`;
+}
 
 async function pickVoterNames(voters, jour) {
   if (voters?.length) {
@@ -86,36 +104,36 @@ async function pickVoterNames(voters, jour) {
   return [FLAVOR_NAMES[start], FLAVOR_NAMES[(start + 1) % FLAVOR_NAMES.length]];
 }
 
-function narrateGauge(kind, value) {
-  if (kind === "estomac") {
-    if (value < 30) return "🔥 L'estomac de Lilith gargouille dangereusement, affamée elle recommence à cracher de petites flammes sur le mobilier du serveur.";
-    if (value > 80) return "🔥 Lilith a une aérophagie enflammée carabinée et somnole, trop repue pour bouger.";
-    return "🔥 L'estomac de Lilith est à l'aise, elle digère tranquillement.";
-  }
-  if (kind === "energie") {
-    if (value < 30) return "⚡ En plein burn-out, Lilith refuse d'obéir et fixe le vide d'un air épuisé.";
-    if (value > 80) return "⚡ Lilith enchaîne les hyperactivités nocturnes et manque de renverser une tourelle en jouant.";
-    return "⚡ Sa forme est correcte, ni trop fatiguée ni trop électrique.";
-  }
-  if (value < 30) return "🥨 Le moral en berne, Lilith déprime dans son coin et regrette son maître.";
-  if (value > 80) return "🥨 Beaucoup trop gâtée, Lilith devient incontrôlable et exige des câlins toutes les cinq minutes.";
-  return "🥨 Le moral de Lilith est stable, elle a même l'air de bonne humeur.";
-}
-
 async function buildNarrative(jour, gauges, voters, estPremierJour) {
   if (estPremierJour) return DAY1_INTRO;
 
-  const lines = [narrateGauge("estomac", gauges.estomac), narrateGauge("energie", gauges.energie), narrateGauge("moral", gauges.moral)];
+  const narratifs = await loadNarratifs();
+  const intro = pickFlavor(narratifs.intro_cocasse, jour);
+
+  const lines = [
+    pickFlavor(narratifs[gaugeCategory("estomac", gauges.estomac)], jour + 1),
+    pickFlavor(narratifs[gaugeCategory("energie", gauges.energie)], jour + 2),
+    pickFlavor(narratifs[gaugeCategory("moral", gauges.moral)], jour + 3),
+  ];
+
   const names = await pickVoterNames(voters, jour);
   if (names.length) {
-    lines.push(`Merci à ${names.join(" et ")} pour les soins prodigués hier — Lilith a trouvé un os de dragon dans l'arène et se met à jouer avec ${names[0]} !`);
+    const template = pickFlavor(narratifs.cloture_soins, jour + 4);
+    lines.push(template.replaceAll("{noms}", names.join(" et ")).replaceAll("{premier}", names[0]));
   }
-  return lines.join(" ");
+
+  return `${intro}\n\n${lines.join(" ")}`;
 }
+
+const RATING_LABELS = {
+  parfaite: "✅ Parfaite (+1 ⭐)",
+  moyenne: "⚠️ Moyenne (+0 ⭐)",
+  catastrophe: "❌ Catastrophe (-1 ⭐)",
+};
 
 // ── Embed / composants du jour ────────────────────────────────────
 
-async function buildTamagotchiEmbed(jour, gauges, config, event, starTotal, estPremierJour, voters) {
+async function buildTamagotchiEmbed(jour, gauges, config, event, starTotal, estPremierJour, voters, previousRating) {
   const narrative = await buildNarrative(jour, gauges, voters, estPremierJour);
   const lines = [narrative, ""];
   if (event) {
@@ -131,8 +149,14 @@ async function buildTamagotchiEmbed(jour, gauges, config, event, starTotal, estP
     renderGaugeLine("⚡ Énergie", gauges.energie),
     renderGaugeLine("🥨 Moral", gauges.moral),
     "",
-    `⭐ Étoiles de dressage : ${starTotal}/${config.duree_jours}`,
   );
+  // Rend visible POURQUOI le score a (ou n'a pas) bougé : sans ça, une seule
+  // jauge hors zone (donnant 0 étoile, pas de malus) est facilement confondue
+  // avec un score qui "n'augmente jamais".
+  if (previousRating) {
+    lines.push(`Bilan d'hier : ${RATING_LABELS[previousRating.rating] || previousRating.rating}`, "");
+  }
+  lines.push(`⭐ Étoiles de dressage : ${starTotal}/${config.duree_jours}`);
 
   return {
     title: `Jour ${jour}/${config.duree_jours}`,
@@ -175,10 +199,10 @@ function buildTamagotchiComponentsWithCounts(jour, config, voteCounts) {
   ];
 }
 
-async function buildDayPayload(jour, gauges, config, event, starTotal, estPremierJour, voters) {
+async function buildDayPayload(jour, gauges, config, event, starTotal, estPremierJour, voters, previousRating) {
   const voteCounts = estPremierJour ? {} : await tallyVotes(jour);
   return {
-    embed: await buildTamagotchiEmbed(jour, gauges, config, event, starTotal, estPremierJour, voters),
+    embed: await buildTamagotchiEmbed(jour, gauges, config, event, starTotal, estPremierJour, voters, previousRating),
     components: buildTamagotchiComponentsWithCounts(jour, config, voteCounts),
   };
 }
@@ -267,6 +291,7 @@ export async function postTamagotchi(channelId, { dryRun = false, noPing = false
       gauges,
       starTotal: 0,
       lastEvent: null,
+      lastRating: null,
       dayVoters: [],
       embed,
       components,
@@ -291,6 +316,7 @@ export async function postTamagotchi(channelId, { dryRun = false, noPing = false
       gauges: closure.gaugesClosing,
       starTotal: starTotalApres,
       lastEvent: state.lastEvent,
+      lastRating: closure.rating,
       dayVoters: closure.voters,
       embed,
       components: [],
@@ -303,7 +329,7 @@ export async function postTamagotchi(channelId, { dryRun = false, noPing = false
 
   const event = eventForDay(jour, config.evenements_possibles);
   const gauges = event ? applyGaugeDelta(closure.gaugesClosing, event.modificateur_jauges) : closure.gaugesClosing;
-  const { embed, components } = await buildDayPayload(jour, gauges, config, event, starTotalApres, false, closure.voters);
+  const { embed, components } = await buildDayPayload(jour, gauges, config, event, starTotalApres, false, closure.voters, closure.rating);
 
   if (dryRun) {
     return { dryRun: true, jour, embed, components, event, starTotal: starTotalApres };
@@ -313,6 +339,7 @@ export async function postTamagotchi(channelId, { dryRun = false, noPing = false
     gauges,
     starTotal: starTotalApres,
     lastEvent: event,
+    lastRating: closure.rating,
     dayVoters: closure.voters,
     embed,
     components,
@@ -324,7 +351,7 @@ export async function postTamagotchi(channelId, { dryRun = false, noPing = false
 // Supprime l'ancien message (tolérant), poste le nouveau, écrit l'état.
 // Mirroring postChapter() dans api/discord/handlers/aventure.js.
 async function publishAndWriteState(channelId, previousState, {
-  jour, gauges, starTotal, lastEvent, dayVoters, embed, components, noPing, estPremierJour, termine = false,
+  jour, gauges, starTotal, lastEvent, lastRating, dayVoters, embed, components, noPing, estPremierJour, termine = false,
 }) {
   const token = process.env.DISCORD_TOKEN;
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
@@ -365,6 +392,7 @@ async function publishAndWriteState(channelId, previousState, {
     termine,
     starTotal,
     lastEvent,
+    lastRating,
     dayVoters,
   });
 
@@ -419,14 +447,19 @@ export async function handleVoteButton(webhookUrl, jour, actionId, discordId, us
 
     const config = await loadTamagotchiConfig();
     const voteCounts = await tallyVotes(state.jour);
+    // lastRating n'est jamais renseigné pour le Jour 1 (aucun jour précédent
+    // à clôturer) et toujours renseigné à partir du Jour 2 — repère fiable
+    // pour reconstruire le MÊME embed que celui posté initialement ce jour-là.
+    const estPremierJour = state.lastRating == null;
     const embed = await buildTamagotchiEmbed(
       state.jour,
       state.gauges,
       config,
       state.lastEvent,
       state.starTotal,
-      state.jour === 1 && !state.lastEvent && state.starTotal === 0,
+      estPremierJour,
       state.dayVoters,
+      state.lastRating,
     );
     const components = buildTamagotchiComponentsWithCounts(state.jour, config, voteCounts);
 

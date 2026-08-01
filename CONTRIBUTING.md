@@ -810,6 +810,7 @@ Le total d'étoiles de dressage détermine le palier (`computeFinalTier()`) : **
 
 - `data/tamagotchi/tamagotchi.json` — config statique éditée à la main : durée, zones idéales, jauges initiales, `actions` (impact par jauge de chaque bouton, `inspecter` marqué `is_info_action: true` pour être exclu du calcul d'impact) et `evenements_possibles` (3 événements, ordre = ordre de déclenchement Jours 3/6/9). Chargée une fois et mise en cache (`loadTamagotchiConfig()`), jamais mutée à l'exécution.
 - `frontend/public/images/tamagotchi/tama-01.webp` à `tama-10.webp` — une illustration par jour, servie en asset statique (même principe que `frontend/public/images/banner1.webp`/`banner2.webp`) et référencée directement par URL (`tamagotchiImageUrl()`, `api/discord/handlers/tamagotchi.js`) dans le champ `image` de l'embed. Contrairement au jeu Frame, aucun besoin de masquer l'URL (pas un jeu de devinette) : pas de route API dédiée, juste un fichier public.
+- `data/tamagotchi/narratifs.json` — pools de variantes de texte (une intro "lore inutile" façon météo/horoscope, 3 variantes par état de jauge × 3 jauges, et des phrases de clôture citant les votants) séparées du code pour être enrichies sans y toucher. Sélection déterministe par jour (`pickFlavor()`, indexé sur `jour`, jamais `Math.random()`) : le texte reste identique à chaque ré-affichage du même jour (ex. après un clic de vote) et ne varie qu'd'un jour à l'autre.
 
 ### Stockage — Upstash Redis (`tamagotchi:*`)
 

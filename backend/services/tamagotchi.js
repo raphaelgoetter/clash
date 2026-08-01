@@ -19,14 +19,9 @@ import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CONFIG_JSON_PATH = path.resolve(
-  __dirname,
-  "..",
-  "..",
-  "data",
-  "tamagotchi",
-  "tamagotchi.json",
-);
+const TAMAGOTCHI_DIR = path.resolve(__dirname, "..", "..", "data", "tamagotchi");
+const CONFIG_JSON_PATH = path.join(TAMAGOTCHI_DIR, "tamagotchi.json");
+const NARRATIFS_JSON_PATH = path.join(TAMAGOTCHI_DIR, "narratifs.json");
 
 // Construction paresseuse (pas au chargement du module) : avec les imports
 // ES hoistés, "import ... from tamagotchi.js" s'exécute avant le
@@ -107,6 +102,18 @@ export async function loadTamagotchiConfig() {
   const txt = await fs.readFile(CONFIG_JSON_PATH, "utf-8");
   configCache = JSON.parse(txt);
   return configCache;
+}
+
+// Pools de textes narratifs (variantes par état de jauge + phrases de
+// clôture/lore inutile) — séparés de tamagotchi.json car purement
+// cosmétiques, n'affectent jamais la logique de jeu.
+let narratifsCache = null;
+
+export async function loadNarratifs() {
+  if (narratifsCache) return narratifsCache;
+  const txt = await fs.readFile(NARRATIFS_JSON_PATH, "utf-8");
+  narratifsCache = JSON.parse(txt);
+  return narratifsCache;
 }
 
 // ── État courant ───────────────────────────────────────────────────
