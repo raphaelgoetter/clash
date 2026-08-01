@@ -57,7 +57,6 @@ import {
   handleHistoriquePage as handleAventureHistoriquePage,
   handleHistoriqueSelect as handleAventureHistoriqueSelect,
 } from "./handlers/aventure.js";
-import { isJoinedThisWar } from "../../backend/services/arrivalUtils.js";
 import {
   summarizeWarDecks,
   summarizeWarDecksForMatchup,
@@ -4161,12 +4160,12 @@ export default async function handler(req, res) {
           return;
         }
 
-        // Un joueur arrivé en cours de semaine (arrivedMidWar) n'a pas le
-        // même nombre de jours éligibles : maxDecksElapsed ne serait pas
-        // comparable pour lui, on l'exclut plutôt que d'afficher un
-        // chiffre trompeur.
+        // Les joueurs arrivés en cours de semaine (arrivedMidWar) sont
+        // inclus comme tout le monde : totalDecksUsed vaut 0 pour eux dans
+        // ce cas (cf. buildCurrentWarDays), donc ils remontent normalement
+        // s'ils n'ont pas encore joué depuis leur arrivée.
         const missing = members
-          .filter((m) => m.warDays && !m.warDays.arrivedMidWar)
+          .filter((m) => m.warDays)
           .map((m) => ({
             member: m,
             missingCount:
@@ -5954,25 +5953,6 @@ export default async function handler(req, res) {
           }
         }
 
-        const day1Snap = weekSnaps[0];
-        const day1DecksByTag = new Map(
-          Object.entries(mergedDaySnapDecks(day1Snap)).map(([tag, value]) => [
-            normalizeTag(tag),
-            Number.isFinite(value) ? Math.max(0, Math.min(4, value)) : 0,
-          ]),
-        );
-        if (prevDayIndex === 0) {
-          for (const [tag, value] of decksByTag.entries()) {
-            day1DecksByTag.set(tag, value);
-          }
-        }
-
-        const warStartMs = (() => {
-          const iso = weekSnaps[0]?.gdcPeriod?.start;
-          const ts = iso ? Date.parse(iso) : NaN;
-          return Number.isFinite(ts) ? ts : null;
-        })();
-
         const failedPlayers = Array.from(snapshotMembersByTag.entries())
           .map(([normalizedTag, member]) => ({
             name: member.name || "Inconnu",
@@ -5984,9 +5964,6 @@ export default async function handler(req, res) {
             arrivalStreak: member.arrivalStreakInCurrentClan,
             arrivalWeeks: member.arrivalTotalWeeks,
             firstSeenAt: member.firstSeenAt,
-            day1Decks: day1DecksByTag.has(normalizedTag)
-              ? day1DecksByTag.get(normalizedTag)
-              : null,
             // snapshotMembersByTag vient du cache disque (potentiellement
             // périmé de plusieurs heures) : un joueur exclu du clan entre
             // deux rafraîchissements y traîne encore. On ne le retire pas de
@@ -6001,24 +5978,10 @@ export default async function handler(req, res) {
                 )
               : false,
           }))
-          .filter((p) => {
-            // isJoinedThisWar() se base sur streakInCurrentClan===0 et
-            // day1Decks===0 pour deviner une arrivée en cours de semaine —
-            // mais un membre arrivé pendant les jours d'entraînement (avant
-            // le début du J1) a aussi streak=0 tout en ayant eu toute la
-            // GDC pour jouer. On recoupe avec firstSeenAt (date réelle
-            // d'arrivée dans le clan) : si elle précède le début du J1, le
-            // joueur était bien présent pour toute la semaine et ne doit
-            // pas être exempté.
-            const joinedBeforeWarStart =
-              warStartMs != null &&
-              p.firstSeenAt &&
-              Date.parse(p.firstSeenAt) < warStartMs;
-            const isNewArrival =
-              !joinedBeforeWarStart &&
-              isJoinedThisWar(p.arrivalStreak, p.day1Decks);
-            return p.decks < 4 && !isNewArrival;
-          })
+          // Les joueurs arrivés en cours de semaine sont inclus comme les
+          // autres (annotés 🆕 plus bas via arrivalWeeks) : un membre qui
+          // vient de rejoindre doit quand même jouer ses decks du jour.
+          .filter((p) => p.decks < 4)
           .sort((a, b) =>
             a.name.localeCompare(b.name, "fr", {
               numeric: true,
