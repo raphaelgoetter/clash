@@ -575,6 +575,20 @@ export function buildCurrentWarDays(
     days[daysFromThu].liveCount = days[daysFromThu].count;
   }
 
+  // Horodatage réel (UTC) du reset du jeudi qui ouvre la semaine de GDC en
+  // cours, utilisable par les appelants pour distinguer un membre présent
+  // avant le début de la GDC (firstSeenAt < warStartMs) d'un membre
+  // réellement arrivé en cours de semaine. thuGdcMs conserve l'heure de
+  // "now" (juste décalée de N jours) : on tronque d'abord au début de
+  // journée (minuit, temps décalé) avant de réappliquer le décalage, sinon
+  // l'horodatage obtenu ne correspond pas à l'heure réelle du reset.
+  const thuGdcDayStartMs = Date.UTC(
+    new Date(thuGdcMs).getUTCFullYear(),
+    new Date(thuGdcMs).getUTCMonth(),
+    new Date(thuGdcMs).getUTCDate(),
+  );
+  const warStartMs = thuGdcDayStartMs + warResetOffsetMs(clanTag);
+
   return {
     days,
     totalDecksUsed,
@@ -582,5 +596,6 @@ export function buildCurrentWarDays(
     maxDecksWeek,
     isReliableTotal,
     daysFromThu,
+    warStartMs,
   };
 }

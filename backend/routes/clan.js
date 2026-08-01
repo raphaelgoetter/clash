@@ -2129,8 +2129,22 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         },
         clanTag,
       );
+      // streakInCurrentClan<=1 et 0 deck ne suffisent pas à conclure à une
+      // arrivée en cours de semaine : un membre présent depuis les jours
+      // d'entraînement (avant le reset du jeudi) a aussi streak=0 tout en
+      // ayant eu toute la GDC pour jouer. On recoupe avec firstSeenAt (date
+      // réelle d'arrivée dans le clan, indépendante du battle log) : si elle
+      // précède le début de la semaine (warStartMs), le joueur était bien
+      // présent depuis le début et ne doit pas être exempté (sinon un
+      // membre à 0 combat depuis longtemps disparaîtrait à tort des
+      // rapports comme /combats-clan ou /fail).
+      const joinedBeforeWarStart =
+        summary?.warStartMs != null &&
+        firstSeenAt &&
+        Date.parse(firstSeenAt) < summary.warStartMs;
       if (
         summary &&
+        !joinedBeforeWarStart &&
         summary.daysFromThu > 0 &&
         (warHistory?.streakInCurrentClan ?? 0) <= 1 &&
         (raceTotalDecks ?? 0) === 0
