@@ -4231,6 +4231,22 @@ export default async function handler(req, res) {
 
         const currentDayNum = (missing[0].member.warDays.daysFromThu ?? 0) + 1;
 
+        const MAX_MEMBERS_LISTED = 20;
+        if (missing.length > MAX_MEMBERS_LISTED) {
+          const embed = {
+            title: `<:sweat:1504139431106576405> Decks manquants GDC J${currentDayNum} : ${clanName}`,
+            url: trustClanUrl(resolved.tag),
+            color: 0xe67e22,
+            description: `${missing.length} joueurs manquent des decks cette semaine — trop nombreux pour être listés ici. Voir le détail joueur par joueur avec /combats.`,
+          };
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ embeds: [embed] }),
+          });
+          return;
+        }
+
         const rows = missing.map(({ member, missingCount }) => {
           const dayBadges = member.warDays.days
             .map((day) => {
