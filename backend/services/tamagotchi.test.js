@@ -9,17 +9,42 @@ import {
 } from "./tamagotchi.js";
 
 const ACTIONS = {
-  nourrir: { label: "Nourrir", emoji: "🥩", impact: { estomac: 25, energie: -10, moral: 0 } },
-  bretzel: { label: "Bretzel", emoji: "🥨", impact: { estomac: 15, energie: -5, moral: 20 } },
-  sieste: { label: "Sieste", emoji: "😴", impact: { estomac: -10, energie: 30, moral: -10 } },
-  jouer: { label: "Entraînement", emoji: "🎾", impact: { estomac: -20, energie: -20, moral: 25 } },
+  nourrir: {
+    label: "Nourrir",
+    emoji: "🍭",
+    impact: { estomac: 25, energie: -10, moral: 0 },
+  },
+  bretzel: {
+    label: "Bretzel",
+    emoji: "🥨",
+    impact: { estomac: 15, energie: -5, moral: 20 },
+  },
+  sieste: {
+    label: "Sieste",
+    emoji: "😴",
+    impact: { estomac: -10, energie: 30, moral: -10 },
+  },
+  jouer: {
+    label: "Entraînement",
+    emoji: "🎾",
+    impact: { estomac: -20, energie: -20, moral: 25 },
+  },
   inspecter: { label: "Inspecter", emoji: "🔍", is_info_action: true },
 };
 
 const EVENEMENTS = [
-  { id: "strasbourg", modificateur_jauges: { moral: 15, estomac: 0, energie: 0 } },
-  { id: "canicule", modificateur_jauges: { energie: -10, estomac: 0, moral: 0 } },
-  { id: "choucroute", modificateur_jauges: { energie: -15, estomac: 35, moral: 0 } },
+  {
+    id: "strasbourg",
+    modificateur_jauges: { moral: 15, estomac: 0, energie: 0 },
+  },
+  {
+    id: "canicule",
+    modificateur_jauges: { energie: -10, estomac: 0, moral: 0 },
+  },
+  {
+    id: "choucroute",
+    modificateur_jauges: { energie: -15, estomac: 35, moral: 0 },
+  },
 ];
 
 async function main() {
@@ -30,7 +55,11 @@ async function main() {
 
   // ── computeDayImpact ──
   // Zéro vote -> impact nul (l'événement peut quand même s'appliquer séparément)
-  assert.deepStrictEqual(computeDayImpact({}, ACTIONS), { estomac: 0, energie: 0, moral: 0 });
+  assert.deepStrictEqual(computeDayImpact({}, ACTIONS), {
+    estomac: 0,
+    energie: 0,
+    moral: 0,
+  });
 
   // Une seule action votée à 100% -> son impact s'applique intégralement
   assert.deepStrictEqual(computeDayImpact({ nourrir: 4 }, ACTIONS), {
@@ -46,48 +75,75 @@ async function main() {
   assert.strictEqual(impact5050.moral, 10); // (0+20)/2
 
   // Inspecter (is_info_action) n'entre jamais dans le calcul même si présent
-  assert.deepStrictEqual(computeDayImpact({ nourrir: 3, inspecter: 100 }, ACTIONS), {
-    estomac: 25,
-    energie: -10,
-    moral: 0,
-  });
+  assert.deepStrictEqual(
+    computeDayImpact({ nourrir: 3, inspecter: 100 }, ACTIONS),
+    {
+      estomac: 25,
+      energie: -10,
+      moral: 0,
+    },
+  );
 
   // ── applyGaugeDelta ──
   assert.deepStrictEqual(
-    applyGaugeDelta({ estomac: 95, energie: 50, moral: 5 }, { estomac: 20, energie: 0, moral: -20 }),
+    applyGaugeDelta(
+      { estomac: 95, energie: 50, moral: 5 },
+      { estomac: 20, energie: 0, moral: -20 },
+    ),
     { estomac: 100, energie: 50, moral: 0 },
   );
   // Arrondi d'un delta fractionnaire
   assert.deepStrictEqual(
-    applyGaugeDelta({ estomac: 50, energie: 50, moral: 50 }, { estomac: 20, energie: -7.5, moral: 10 }),
+    applyGaugeDelta(
+      { estomac: 50, energie: 50, moral: 50 },
+      { estomac: 20, energie: -7.5, moral: 10 },
+    ),
     { estomac: 70, energie: 43, moral: 60 }, // Math.round(42.5) = 43 (arrondi JS "round half to +Infinity")
   );
 
   // ── rateDay ──
   const zones = { min: 40, max: 70 };
   // Bornes exactes incluses -> en zone
-  assert.deepStrictEqual(rateDay({ estomac: 40, energie: 70, moral: 55 }, zones), {
-    rating: "parfaite",
-    starDelta: 1,
-  });
+  assert.deepStrictEqual(
+    rateDay({ estomac: 40, energie: 70, moral: 55 }, zones),
+    {
+      rating: "parfaite",
+      starDelta: 1,
+    },
+  );
   // Juste hors bornes
-  assert.deepStrictEqual(rateDay({ estomac: 39, energie: 70, moral: 55 }, zones).rating, "moyenne");
-  assert.deepStrictEqual(rateDay({ estomac: 71, energie: 70, moral: 55 }, zones).rating, "moyenne");
+  assert.deepStrictEqual(
+    rateDay({ estomac: 39, energie: 70, moral: 55 }, zones).rating,
+    "moyenne",
+  );
+  assert.deepStrictEqual(
+    rateDay({ estomac: 71, energie: 70, moral: 55 }, zones).rating,
+    "moyenne",
+  );
   // 1 jauge hors zone -> journée moyenne, pas de pénalité
-  assert.deepStrictEqual(rateDay({ estomac: 90, energie: 70, moral: 55 }, zones), {
-    rating: "moyenne",
-    starDelta: 0,
-  });
+  assert.deepStrictEqual(
+    rateDay({ estomac: 90, energie: 70, moral: 55 }, zones),
+    {
+      rating: "moyenne",
+      starDelta: 0,
+    },
+  );
   // 2 jauges hors zone -> catastrophe
-  assert.deepStrictEqual(rateDay({ estomac: 90, energie: 10, moral: 55 }, zones), {
-    rating: "catastrophe",
-    starDelta: -1,
-  });
+  assert.deepStrictEqual(
+    rateDay({ estomac: 90, energie: 10, moral: 55 }, zones),
+    {
+      rating: "catastrophe",
+      starDelta: -1,
+    },
+  );
   // 3 jauges hors zone -> catastrophe
-  assert.deepStrictEqual(rateDay({ estomac: 90, energie: 10, moral: 95 }, zones), {
-    rating: "catastrophe",
-    starDelta: -1,
-  });
+  assert.deepStrictEqual(
+    rateDay({ estomac: 90, energie: 10, moral: 95 }, zones),
+    {
+      rating: "catastrophe",
+      starDelta: -1,
+    },
+  );
 
   // ── eventForDay ──
   assert.strictEqual(eventForDay(3, EVENEMENTS).id, "strasbourg");

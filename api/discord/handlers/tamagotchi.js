@@ -20,7 +20,11 @@ import {
   computeDayImpact,
   computeFinalTier,
 } from "../../../backend/services/tamagotchi.js";
-import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
+import {
+  getRoleIdByName,
+  buildRolePingFields,
+  MINI_JEUX_ROLE_NAME,
+} from "../../../backend/services/discordRoles.js";
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
 
 const TAMAGOTCHI_COLOR = 0xe67e22;
@@ -46,9 +50,9 @@ const FLAVOR_NAMES = [
 ];
 
 const DAY1_INTRO =
-  "« Wesh la famille ! Je pars 10 jours visiter la Petite France à Strasbourg et déguster des tartes flambées. " +
-  "Je vous confie Lilith mon Bébé Dragon de compétition. Il est très difficile : gardez ses jauges équilibrées ! " +
-  "Si vous me le rendez en mauvais état le 10ᵉ jour… je débarque dans votre arène avec un deck Mineur-Poison. " +
+  "« Wesh la famille ! Je pars 10 jours visiter la Petite France à Strasbourg et déguster des tartes flambées.\n" +
+  "Je vous confie Lilith mon Bébé Dragon de compétition. Il est très difficile : gardez ses jauges équilibrées !\n" +
+  "Je reviendrai le 11e jour pour récupérer ma Lilith. Attention, si vous me la rendez en mauvais état… je débarque dans votre arène avec un deck Mineur-Poison et je défonce tout.\n" +
   "Bon courage ! » — Mohamed Light";
 
 // ── Rendu des jauges ─────────────────────────────────────────────
@@ -90,6 +94,25 @@ function gaugeCategory(kind, value) {
   return `${kind}_normal`;
 }
 
+// Icône affichée devant chaque jauge — l'Estomac reste fixe (🍭, symbolise la
+// nourriture), l'Énergie et le Moral varient selon le niveau pour que l'état
+// se lise d'un coup d'œil, sans avoir à lire le pourcentage.
+const GAUGE_ICONS = {
+  estomac_bas: "🍭",
+  estomac_normal: "🍭",
+  estomac_haut: "🍭",
+  energie_bas: "🪫",
+  energie_normal: "⚡",
+  energie_haut: "🔋",
+  moral_bas: "🥱",
+  moral_normal: "😐",
+  moral_haut: "😋",
+};
+
+function gaugeIcon(kind, value) {
+  return GAUGE_ICONS[gaugeCategory(kind, value)];
+}
+
 async function pickVoterNames(voters, jour) {
   if (voters?.length) {
     const picked = voters.slice(0, 2);
@@ -119,10 +142,12 @@ async function buildNarrative(jour, gauges, voters, estPremierJour) {
   const names = await pickVoterNames(voters, jour);
   if (names.length) {
     const template = pickFlavor(narratifs.cloture_soins, jour + 4);
-    lines.push(template.replaceAll("{noms}", names.join(" et ")).replaceAll("{premier}", names[0]));
+    // Rattachée à la ligne Moral (même paragraphe), pas une ligne à part.
+    lines[lines.length - 1] +=
+      ` ${template.replaceAll("{noms}", names.join(" et ")).replaceAll("{premier}", names[0])}`;
   }
 
-  return `${intro}\n\n${lines.join(" ")}`;
+  return `${intro}\n\n${lines.join("\n")}`;
 }
 
 const RATING_LABELS = {
@@ -133,7 +158,16 @@ const RATING_LABELS = {
 
 // ── Embed / composants du jour ────────────────────────────────────
 
-async function buildTamagotchiEmbed(jour, gauges, config, event, starTotal, estPremierJour, voters, previousRating) {
+async function buildTamagotchiEmbed(
+  jour,
+  gauges,
+  config,
+  event,
+  starTotal,
+  estPremierJour,
+  voters,
+  previousRating,
+) {
   const narrative = await buildNarrative(jour, gauges, voters, estPremierJour);
   const lines = [narrative, ""];
   if (event) {
@@ -145,16 +179,25 @@ async function buildTamagotchiEmbed(jour, gauges, config, event, starTotal, estP
     );
   }
   lines.push(
-    renderGaugeLine("🔥 Estomac", gauges.estomac),
-    renderGaugeLine("⚡ Énergie", gauges.energie),
-    renderGaugeLine("🥨 Moral", gauges.moral),
+    renderGaugeLine(
+      `${gaugeIcon("estomac", gauges.estomac)} Estomac`,
+      gauges.estomac,
+    ),
+    renderGaugeLine(
+      `${gaugeIcon("energie", gauges.energie)} Énergie`,
+      gauges.energie,
+    ),
+    renderGaugeLine(`${gaugeIcon("moral", gauges.moral)} Moral`, gauges.moral),
     "",
   );
   // Rend visible POURQUOI le score a (ou n'a pas) bougé : sans ça, une seule
   // jauge hors zone (donnant 0 étoile, pas de malus) est facilement confondue
   // avec un score qui "n'augmente jamais".
   if (previousRating) {
-    lines.push(`Bilan d'hier : ${RATING_LABELS[previousRating.rating] || previousRating.rating}`, "");
+    lines.push(
+      `Bilan d'hier : ${RATING_LABELS[previousRating.rating] || previousRating.rating}`,
+      "",
+    );
   }
   lines.push(`⭐ Étoiles de dressage : ${starTotal}/${config.duree_jours}`);
 
@@ -172,7 +215,9 @@ async function buildTamagotchiEmbed(jour, gauges, config, event, starTotal, estP
 }
 
 function buildTamagotchiComponentsWithCounts(jour, config, voteCounts) {
-  const actionIds = Object.keys(config.actions).filter((id) => !config.actions[id].is_info_action);
+  const actionIds = Object.keys(config.actions).filter(
+    (id) => !config.actions[id].is_info_action,
+  );
   const inspecter = config.actions.inspecter;
 
   return [
@@ -192,17 +237,47 @@ function buildTamagotchiComponentsWithCounts(jour, config, voteCounts) {
     {
       type: 1,
       components: [
-        { type: 2, style: 2, label: inspecter.label, emoji: { name: inspecter.emoji }, custom_id: "tamagotchi_inspecter" },
-        { type: 2, style: 2, label: "Règles du jeu", emoji: { name: "📖" }, custom_id: "tamagotchi_regles" },
+        {
+          type: 2,
+          style: 2,
+          label: inspecter.label,
+          emoji: { name: inspecter.emoji },
+          custom_id: "tamagotchi_inspecter",
+        },
+        {
+          type: 2,
+          style: 2,
+          label: "Règles du jeu",
+          emoji: { name: "📖" },
+          custom_id: "tamagotchi_regles",
+        },
       ],
     },
   ];
 }
 
-async function buildDayPayload(jour, gauges, config, event, starTotal, estPremierJour, voters, previousRating) {
+async function buildDayPayload(
+  jour,
+  gauges,
+  config,
+  event,
+  starTotal,
+  estPremierJour,
+  voters,
+  previousRating,
+) {
   const voteCounts = estPremierJour ? {} : await tallyVotes(jour);
   return {
-    embed: await buildTamagotchiEmbed(jour, gauges, config, event, starTotal, estPremierJour, voters, previousRating),
+    embed: await buildTamagotchiEmbed(
+      jour,
+      gauges,
+      config,
+      event,
+      starTotal,
+      estPremierJour,
+      voters,
+      previousRating,
+    ),
     components: buildTamagotchiComponentsWithCounts(jour, config, voteCounts),
   };
 }
@@ -247,12 +322,15 @@ function buildFinalTierEmbed(starTotal, tier, config) {
 function buildReglesEmbed(config) {
   const actionLines = Object.entries(config.actions)
     .filter(([, action]) => !action.is_info_action)
-    .map(([, action]) => `${action.emoji} **${action.label}** — ${formatGaugeImpact(action.impact)}`);
+    .map(
+      ([, action]) =>
+        `${action.emoji} **${action.label}** — ${formatGaugeImpact(action.impact)}`,
+    );
 
   return {
     title: "📖 Règles du jeu — Tamagotchi",
     description: [
-      `Garde les 3 jauges de Lilith (Estomac 🔥, Énergie ⚡, Moral 🥨) dans la **zone verte (${config.zones_ideales.min}-${config.zones_ideales.max}%)** au moment de la clôture quotidienne (08:00 UTC).`,
+      `Garde les 3 jauges de Lilith (Estomac 🍭, Énergie ⚡, Moral 😐) dans la **zone verte (${config.zones_ideales.min}-${config.zones_ideales.max}%)** au moment de la clôture quotidienne (08:00 UTC).`,
       "",
       "**Impacts des actions :**",
       ...actionLines,
@@ -267,7 +345,10 @@ function buildReglesEmbed(config) {
 
 // ── Publication quotidienne (appelée uniquement par scripts/postTamagotchi.js) ──
 
-export async function postTamagotchi(channelId, { dryRun = false, noPing = false } = {}) {
+export async function postTamagotchi(
+  channelId,
+  { dryRun = false, noPing = false } = {},
+) {
   const config = await loadTamagotchiConfig();
   const state = await readState();
 
@@ -280,10 +361,20 @@ export async function postTamagotchi(channelId, { dryRun = false, noPing = false
   if (estPremierJour) {
     const jour = 1;
     const gauges = config.jauges_initiales;
-    const { embed, components } = await buildDayPayload(jour, gauges, config, null, 0, true, []);
+    const { embed, components } = await buildDayPayload(
+      jour,
+      gauges,
+      config,
+      null,
+      0,
+      true,
+      [],
+    );
 
     if (dryRun) {
-      const pingRoleId = !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
+      const pingRoleId = !noPing
+        ? await getRoleIdByName(MINI_JEUX_ROLE_NAME)
+        : null;
       return { dryRun: true, jour, embed, components, pingRoleId };
     }
     return publishAndWriteState(channelId, null, {
@@ -300,8 +391,12 @@ export async function postTamagotchi(channelId, { dryRun = false, noPing = false
     });
   }
 
-  const closure = dryRun ? await previewCloseDay(state, config) : await closeDayAndAdvance(state, config);
-  const starTotalApres = dryRun ? state.starTotal + closure.rating.starDelta : closure.starTotalApres;
+  const closure = dryRun
+    ? await previewCloseDay(state, config)
+    : await closeDayAndAdvance(state, config);
+  const starTotalApres = dryRun
+    ? state.starTotal + closure.rating.starDelta
+    : closure.starTotalApres;
   const jour = state.jour + 1;
 
   if (jour > config.duree_jours) {
@@ -309,7 +404,13 @@ export async function postTamagotchi(channelId, { dryRun = false, noPing = false
     const embed = buildFinalTierEmbed(starTotalApres, tier, config);
 
     if (dryRun) {
-      return { dryRun: true, final: true, tier, starTotal: starTotalApres, embed };
+      return {
+        dryRun: true,
+        final: true,
+        tier,
+        starTotal: starTotalApres,
+        embed,
+      };
     }
     const result = await publishAndWriteState(channelId, state, {
       jour: state.jour,
@@ -328,11 +429,29 @@ export async function postTamagotchi(channelId, { dryRun = false, noPing = false
   }
 
   const event = eventForDay(jour, config.evenements_possibles);
-  const gauges = event ? applyGaugeDelta(closure.gaugesClosing, event.modificateur_jauges) : closure.gaugesClosing;
-  const { embed, components } = await buildDayPayload(jour, gauges, config, event, starTotalApres, false, closure.voters, closure.rating);
+  const gauges = event
+    ? applyGaugeDelta(closure.gaugesClosing, event.modificateur_jauges)
+    : closure.gaugesClosing;
+  const { embed, components } = await buildDayPayload(
+    jour,
+    gauges,
+    config,
+    event,
+    starTotalApres,
+    false,
+    closure.voters,
+    closure.rating,
+  );
 
   if (dryRun) {
-    return { dryRun: true, jour, embed, components, event, starTotal: starTotalApres };
+    return {
+      dryRun: true,
+      jour,
+      embed,
+      components,
+      event,
+      starTotal: starTotalApres,
+    };
   }
   return publishAndWriteState(channelId, state, {
     jour,
@@ -350,9 +469,23 @@ export async function postTamagotchi(channelId, { dryRun = false, noPing = false
 
 // Supprime l'ancien message (tolérant), poste le nouveau, écrit l'état.
 // Mirroring postChapter() dans api/discord/handlers/aventure.js.
-async function publishAndWriteState(channelId, previousState, {
-  jour, gauges, starTotal, lastEvent, lastRating, dayVoters, embed, components, noPing, estPremierJour, termine = false,
-}) {
+async function publishAndWriteState(
+  channelId,
+  previousState,
+  {
+    jour,
+    gauges,
+    starTotal,
+    lastEvent,
+    lastRating,
+    dayVoters,
+    embed,
+    components,
+    noPing,
+    estPremierJour,
+    termine = false,
+  },
+) {
   const token = process.env.DISCORD_TOKEN;
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
 
@@ -363,20 +496,38 @@ async function publishAndWriteState(channelId, previousState, {
         { method: "DELETE", headers: { Authorization: `Bot ${token}` } },
       );
       if (!delRes.ok && delRes.status !== 404) {
-        console.warn(`[Tamagotchi] Échec suppression du message de la veille (${delRes.status}), publication quand même.`);
+        console.warn(
+          `[Tamagotchi] Échec suppression du message de la veille (${delRes.status}), publication quand même.`,
+        );
       }
     } catch (err) {
-      console.warn("[Tamagotchi] Erreur réseau à la suppression du message de la veille:", err.message);
+      console.warn(
+        "[Tamagotchi] Erreur réseau à la suppression du message de la veille:",
+        err.message,
+      );
     }
   }
 
-  const roleId = estPremierJour && !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
+  const roleId =
+    estPremierJour && !noPing
+      ? await getRoleIdByName(MINI_JEUX_ROLE_NAME)
+      : null;
 
-  const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
-    method: "POST",
-    headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ embeds: [embed], components, ...buildRolePingFields(roleId) }),
-  });
+  const res = await fetch(
+    `https://discord.com/api/v10/channels/${channelId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bot ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        embeds: [embed],
+        components,
+        ...buildRolePingFields(roleId),
+      }),
+    },
+  );
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
     throw new Error(`Erreur envoi salon Discord (${res.status}): ${errText}`);
@@ -421,12 +572,20 @@ async function patchOriginal(webhookUrl, payload) {
 // n'est jamais édité via "@original" ici mais via un second appel PATCH
 // direct au salon (Bot token), découplé de la réponse éphémère.
 
-export async function handleVoteButton(webhookUrl, jour, actionId, discordId, username, botToken) {
+export async function handleVoteButton(
+  webhookUrl,
+  jour,
+  actionId,
+  discordId,
+  username,
+  botToken,
+) {
   try {
     const state = await readState();
     if (!state || state.termine || String(state.jour) !== String(jour)) {
       await patchOriginal(webhookUrl, {
-        content: "Le vote du jour a déjà été clôturé, la journée a changé — regarde le nouveau message !",
+        content:
+          "Le vote du jour a déjà été clôturé, la journée a changé — regarde le nouveau message !",
         embeds: [],
         components: [],
       });
@@ -441,7 +600,11 @@ export async function handleVoteButton(webhookUrl, jour, actionId, discordId, us
         : result.status === "already_recorded"
           ? "Tu as déjà voté cette action aujourd'hui, c'est noté !"
           : "Vote enregistré, merci d'avoir pris soin de Lilith aujourd'hui !";
-    await patchOriginal(webhookUrl, { content: confirmText, embeds: [], components: [] });
+    await patchOriginal(webhookUrl, {
+      content: confirmText,
+      embeds: [],
+      components: [],
+    });
 
     if (result.status === "rejected") return;
 
@@ -461,13 +624,23 @@ export async function handleVoteButton(webhookUrl, jour, actionId, discordId, us
       state.dayVoters,
       state.lastRating,
     );
-    const components = buildTamagotchiComponentsWithCounts(state.jour, config, voteCounts);
+    const components = buildTamagotchiComponentsWithCounts(
+      state.jour,
+      config,
+      voteCounts,
+    );
 
-    await fetch(`https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`, {
-      method: "PATCH",
-      headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ embeds: [embed], components }),
-    });
+    await fetch(
+      `https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bot ${botToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ embeds: [embed], components }),
+      },
+    );
   } catch (err) {
     console.error("[Tamagotchi] Échec traitement du vote:", err.message);
   }
@@ -479,7 +652,11 @@ export async function handleInspecter(webhookUrl) {
   try {
     const state = await readState();
     if (!state || state.termine) {
-      await patchOriginal(webhookUrl, { content: "Aucune journée active en ce moment.", embeds: [], components: [] });
+      await patchOriginal(webhookUrl, {
+        content: "Aucune journée active en ce moment.",
+        embeds: [],
+        components: [],
+      });
       return;
     }
     const config = await loadTamagotchiConfig();
