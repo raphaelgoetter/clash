@@ -10834,10 +10834,11 @@
           "start": "2026-08-01T09:56:00.000Z",
           "end": "2026-08-02T09:55:59.999Z"
         },
-        "snapshotTime": "2026-08-01T21:17:21.425Z",
+        "snapshotTime": "2026-08-01T22:18:04.536Z",
         "snapshotBackupTime": null,
         "decks": {
           "#2YV89UGJQ": 4,
+          "#8CQ80LJ8V": 4,
           "#8VP9UJV9L": 4,
           "#9U9YVU80": 4,
           "#C0RRPJYV9": 4,
@@ -10855,7 +10856,8 @@
           "#988JLGQQL": 1,
           "#CJJUGGL98": 1,
           "#LQPRLQJCQ": 1,
-          "#UV8R8RYVR": 1
+          "#UV8R8RYVR": 1,
+          "#UYRR99RL8": 1
         },
         "hourlyCumul": [],
         "_cumulFame": {
@@ -10904,7 +10906,7 @@
           "#CVYLYLC8V": 0,
           "#VLVLQR0UP": 100,
           "#UV8R8RYVR": 400,
-          "#UYRR99RL8": 300,
+          "#UYRR99RL8": 500,
           "#LQPRLQJCQ": 500,
           "#LUYP8YP9": 400,
           "#8JGU9UUJJ": 1100,
@@ -10924,7 +10926,7 @@
           "#G2VVUJLLQ": 1600,
           "#UVGPPVQ8Q": 1800,
           "#8VP9UJV9L": 1600,
-          "#8CQ80LJ8V": 1800,
+          "#8CQ80LJ8V": 2700,
           "#V9RL22GYQ": 2000,
           "#V0VLJQCJU": 2100,
           "#2QCQVJ8Y2": 0,
@@ -10938,7 +10940,8 @@
           "#LCQ2J0VGC": 1,
           "#9U9YVU80": 1,
           "#LQ0QV2UUP": 1,
-          "#YYV208R8Q": 1
+          "#YYV208R8Q": 1,
+          "#8CQ80LJ8V": 1
         },
         "_totalDonationsByTag": {},
         "duelsComplete": true,
@@ -10989,7 +10992,7 @@
           "#CVYLYLC8V": 0,
           "#VLVLQR0UP": 1,
           "#UV8R8RYVR": 3,
-          "#UYRR99RL8": 2,
+          "#UYRR99RL8": 3,
           "#LQPRLQJCQ": 4,
           "#LUYP8YP9": 4,
           "#8JGU9UUJJ": 8,
@@ -11009,14 +11012,14 @@
           "#G2VVUJLLQ": 10,
           "#UVGPPVQ8Q": 12,
           "#8VP9UJV9L": 12,
-          "#8CQ80LJ8V": 8,
+          "#8CQ80LJ8V": 12,
           "#V9RL22GYQ": 12,
           "#V0VLJQCJU": 12,
           "#2QCQVJ8Y2": 0,
           "#VYPL0Q90P": 0
         },
         "periodPointsEarned": 11625,
-        "snapshotCount": 58
+        "snapshotCount": 63
       },
       {
         "warDay": "sunday",
