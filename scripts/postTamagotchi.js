@@ -19,7 +19,10 @@ import { postTamagotchi } from "../api/discord/handlers/tamagotchi.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
-const NO_PING = process.argv.includes("--no-ping");
+// Ping @MINI JEUX réservé au vrai lancement public (Jour 1) — jamais sur le
+// salon de test, même sans --no-ping explicite, pour ne pas déranger le
+// serveur à chaque itération de test pendant le développement du jeu.
+const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;
 
 // Réutilise les salons du jeu Frame (même principe qu'Anagram et Aventure,
 // voir CONTRIBUTING.md) plutôt que de provisionner de nouveaux salons

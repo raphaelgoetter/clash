@@ -61,6 +61,15 @@ function renderGaugeLine(label, value) {
   return `${label} : ${renderGaugeBar(value)}`;
 }
 
+// Format lisible d'un objet {estomac, energie, moral} en "Estomac +25, Énergie
+// -10, Moral +0" — réutilisé pour les impacts d'action (Règles du jeu) et le
+// modificateur d'un événement, pour qu'on puisse toujours deviner son effet
+// sans avoir à ouvrir tamagotchi.json.
+function formatGaugeImpact({ estomac, energie, moral }) {
+  const fmt = (v) => `${v >= 0 ? "+" : ""}${v}`;
+  return `Estomac ${fmt(estomac)}, Énergie ${fmt(energie)}, Moral ${fmt(moral)}`;
+}
+
 // ── Texte narratif ────────────────────────────────────────────────
 
 async function pickVoterNames(voters, jour) {
@@ -110,7 +119,12 @@ async function buildTamagotchiEmbed(jour, gauges, config, event, starTotal, estP
   const narrative = await buildNarrative(jour, gauges, voters, estPremierJour);
   const lines = [narrative, ""];
   if (event) {
-    lines.push(`**📯 Événement du jour : ${event.titre}**`, event.description, "");
+    lines.push(
+      `**📯 Événement du jour : ${event.titre}**`,
+      event.description,
+      `Effet : ${formatGaugeImpact(event.modificateur_jauges)}`,
+      "",
+    );
   }
   lines.push(
     renderGaugeLine("🔥 Estomac", gauges.estomac),
@@ -209,10 +223,7 @@ function buildFinalTierEmbed(starTotal, tier, config) {
 function buildReglesEmbed(config) {
   const actionLines = Object.entries(config.actions)
     .filter(([, action]) => !action.is_info_action)
-    .map(([, action]) => {
-      const { estomac, energie, moral } = action.impact;
-      return `${action.emoji} **${action.label}** — Estomac ${estomac >= 0 ? "+" : ""}${estomac}, Énergie ${energie >= 0 ? "+" : ""}${energie}, Moral ${moral >= 0 ? "+" : ""}${moral}`;
-    });
+    .map(([, action]) => `${action.emoji} **${action.label}** — ${formatGaugeImpact(action.impact)}`);
 
   return {
     title: "📖 Règles du jeu — Tamagotchi",
