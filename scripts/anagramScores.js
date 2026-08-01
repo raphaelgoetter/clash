@@ -15,6 +15,7 @@ import {
   computeSeasonRanking,
   listGamePlayersInProgress,
 } from "../backend/services/anagrams.js";
+import { resolveDisplayName } from "../backend/services/discordUsers.js";
 
 (async () => {
   const state = await readState();
@@ -46,32 +47,38 @@ import {
     return;
   }
 
-  const solvedRows = gameRanking.map((e) => {
-    const seasonEntry = seasonRanking.find((s) => s.discordId === e.discordId);
-    return {
-      "#": e.position,
-      Joueur: e.username,
-      "Score partie": e.score,
-      "Score saison": seasonEntry?.totalScore ?? e.score,
-    };
-  });
+  const solvedRows = await Promise.all(
+    gameRanking.map(async (e) => {
+      const seasonEntry = seasonRanking.find((s) => s.discordId === e.discordId);
+      return {
+        "#": e.position,
+        Joueur: await resolveDisplayName(e.discordId, e.username),
+        "Score partie": e.score,
+        "Score saison": seasonEntry?.totalScore ?? e.score,
+      };
+    }),
+  );
 
-  const inProgressRows = inProgress.map((p) => {
-    const seasonEntry = seasonRanking.find((s) => s.discordId === p.discordId);
-    return {
+  const inProgressRows = await Promise.all(
+    inProgress.map(async (p) => {
+      const seasonEntry = seasonRanking.find((s) => s.discordId === p.discordId);
+      return {
+        "#": "-",
+        Joueur: await resolveDisplayName(p.discordId, p.username),
+        "Score partie": "-",
+        "Score saison": seasonEntry?.totalScore ?? "-",
+      };
+    }),
+  );
+
+  const notPlayedRows = await Promise.all(
+    notPlayedYet.map(async (s) => ({
       "#": "-",
-      Joueur: p.username,
-      "Score partie": "-",
-      "Score saison": seasonEntry?.totalScore ?? "-",
-    };
-  });
-
-  const notPlayedRows = notPlayedYet.map((s) => ({
-    "#": "-",
-    Joueur: s.pseudo,
-    "Score partie": "n'a pas joué",
-    "Score saison": s.totalScore,
-  }));
+      Joueur: await resolveDisplayName(s.discordId, s.pseudo),
+      "Score partie": "n'a pas joué",
+      "Score saison": s.totalScore,
+    })),
+  );
 
   console.table([...solvedRows, ...inProgressRows, ...notPlayedRows]);
 })();

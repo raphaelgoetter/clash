@@ -16,6 +16,7 @@ import fetch from "node-fetch";
 import { FAMILY_CLAN_TAGS } from "../backend/services/warHistory.js";
 import { resolveMembersChannelId } from "../backend/services/discordChannels.js";
 import { toPublicWeekId } from "../backend/services/dateUtils.js";
+import { resolveDisplayName } from "../backend/services/discordUsers.js";
 
 const CLAN_NAMES = {
   Y8JUPC9C: "La Resistance",
@@ -148,14 +149,21 @@ async function main() {
           result.session.challengers,
           result.session.votes,
         );
-        const champLines = championsWithVoters.map((c) => {
-          let line = `🏆 **${c.name}** — ${formatFame(c.fame)} pts`;
-          if (c.voters.length > 0) {
-            const list = c.voters.slice(0, 100).join(", ");
-            line += ` (votants : ${list}${c.voters.length > 100 ? `… (+${c.voters.length - 100} autres)` : ""})`;
-          }
-          return line;
-        });
+        const champLines = await Promise.all(
+          championsWithVoters.map(async (c) => {
+            let line = `🏆 **${c.name}** — ${formatFame(c.fame)} pts`;
+            if (c.voters.length > 0) {
+              const names = await Promise.all(
+                c.voters
+                  .slice(0, 100)
+                  .map((v) => resolveDisplayName(v.discordId, v.discordName)),
+              );
+              const list = names.join(", ");
+              line += ` (votants : ${list}${c.voters.length > 100 ? `… (+${c.voters.length - 100} autres)` : ""})`;
+            }
+            return line;
+          }),
+        );
         description += champLines.join("\n") + `\n\n`;
 
         const matched = realChampion.some((c) => c.tag === result.winnerTag);
@@ -185,12 +193,15 @@ async function main() {
 
       if (!realChampion || realChampion.length === 0) {
         const winnerVoters = result.winnerTag
-          ? result.session.votes
-              .filter((v) => v.challengerTag === result.winnerTag)
-              .map((v) => v.discordName)
+          ? result.session.votes.filter((v) => v.challengerTag === result.winnerTag)
           : [];
         if (result.totalVotes > 0) {
-          const list = winnerVoters.slice(0, 100).join(", ");
+          const names = await Promise.all(
+            winnerVoters
+              .slice(0, 100)
+              .map((v) => resolveDisplayName(v.discordId, v.discordName)),
+          );
+          const list = names.join(", ");
           description += `Vous avez majoritairement voté pour **${winnerName}** : ${list}`;
           if (winnerVoters.length > 100) description += `… (+${winnerVoters.length - 100} autres)`;
         }

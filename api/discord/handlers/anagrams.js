@@ -36,8 +36,22 @@ import {
 } from "../../../backend/services/anagrams.js";
 import { toPublicSeasonId } from "../../../backend/services/dateUtils.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
+import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
 
 const ANAGRAM_COLOR = 0x9b59b6;
+
+// Remplace le pseudo figé de chaque entrée par le pseudo Discord actuel
+// (résolution live, repli sur le pseudo stocké en cas d'échec) — voir
+// discordUsers.js. Utilisé uniquement pour l'affichage (récap de saison),
+// jamais pour la logique de classement elle-même (discordId reste la clé).
+async function resolveRankingPseudos(ranking) {
+  return Promise.all(
+    ranking.map(async (entry) => ({
+      ...entry,
+      pseudo: await resolveDisplayName(entry.discordId, entry.pseudo),
+    })),
+  );
+}
 
 // ── Embed / composants du post ────────────────────────────────
 
@@ -189,9 +203,10 @@ async function postSeasonRecap(channelId, endedSeasonId, newSeasonId, { noPing =
   const seasonRanking = await computeSeasonRanking(endedSeasonId);
   if (seasonRanking.length === 0) return; // rien à récapituler
 
+  const resolvedRanking = await resolveRankingPseudos(seasonRanking);
   const manchesPlayed = await getSeasonManchesPlayed(endedSeasonId);
   const embed = buildSeasonRecapEmbed(
-    seasonRanking,
+    resolvedRanking,
     endedSeasonId,
     newSeasonId,
     manchesPlayed,
@@ -250,9 +265,10 @@ export async function postAnagram(
     ) {
       const seasonRanking = await computeSeasonRanking(state.seasonId);
       if (seasonRanking.length > 0) {
+        const resolvedRanking = await resolveRankingPseudos(seasonRanking);
         const manchesPlayed = await getSeasonManchesPlayed(state.seasonId);
         seasonRecapEmbed = buildSeasonRecapEmbed(
-          seasonRanking,
+          resolvedRanking,
           state.seasonId,
           seasonId,
           manchesPlayed,

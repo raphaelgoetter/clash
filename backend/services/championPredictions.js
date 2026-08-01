@@ -185,8 +185,8 @@ export async function writeChampionRegistry(data) {
  * forcément l'un des champions ex-æquo.
  * @param {Array<{tag:string,name:string,fame:number}>} realChampions
  * @param {Array<{tag:string}>} challengers
- * @param {Array<{challengerTag:string,discordName:string}>} votes
- * @returns {Array<{tag:string,name:string,fame:number,voters:string[]}>}
+ * @param {Array<{challengerTag:string,discordId:string,discordName:string}>} votes
+ * @returns {Array<{tag:string,name:string,fame:number,voters:{discordId:string,discordName:string}[]}>}
  */
 export function computeChampionVoters(realChampions, challengers, votes) {
   if (!Array.isArray(realChampions)) return [];
@@ -194,8 +194,13 @@ export function computeChampionVoters(realChampions, challengers, votes) {
   return realChampions.map((c) => {
     const isListed = challengers.some((ch) => ch.tag === c.tag);
     const voterTag = isListed ? c.tag : (realChampions.length === 1 ? "__other__" : null);
+    // discordId conservé (pas seulement discordName) pour permettre à
+    // l'appelant de résoudre le pseudo Discord ACTUEL à l'affichage (voir
+    // discordUsers.js) — le pseudo stocké ici n'est qu'un repli figé.
     const voters = voterTag
-      ? votes.filter((v) => v.challengerTag === voterTag).map((v) => v.discordName)
+      ? votes
+          .filter((v) => v.challengerTag === voterTag)
+          .map((v) => ({ discordId: v.discordId, discordName: v.discordName }))
       : [];
     return { ...c, voters, voterTag };
   });
