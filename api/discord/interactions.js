@@ -4055,8 +4055,12 @@ export default async function handler(req, res) {
           ? formatResetTimeParis(currentClanTag)
           : null;
 
+        const currentDayLabel = isWarPeriod
+          ? ` J${(analysis.currentWarDays.daysFromThu ?? 0) + 1}`
+          : "";
+
         const embed = {
-          title: `<:cards:1499284927894650950> Combats GDC : ${analysis.overview.name}${analysis.isNew ? " 🆕" : ""}`,
+          title: `<:cards:1499284927894650950> Combats GDC${currentDayLabel} : ${analysis.overview.name}${analysis.isNew ? " 🆕" : ""}`,
           url: trustPlayerUrl(tag),
           color: 0x3498db,
           description: `${tag} · ${currentClanLink}${resetTime ? ` · Reset : ${resetTime}` : ""}`,
