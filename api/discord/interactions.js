@@ -4258,14 +4258,16 @@ export default async function handler(req, res) {
         }
         if (currentPage.length > 0) pages.push(currentPage);
 
-        // ⚠️ Limite connue (même source que /combats) : le détail par jour
-        // vient du battle log de chaque joueur (fenêtre limitée aux combats
-        // récents), qui peut ponctuellement sous-estimer un jour ancien.
-        // Le nombre de decks manquants ci-dessus, lui, reste fiable : il est
-        // calculé à partir du total hebdomadaire live (decksUsed/decksUsedToday),
-        // pas d'une somme des jours.
+        // ⚠️ Limite résiduelle connue (même source que /combats) : le détail
+        // par jour vient du battle log de chaque joueur, plafonné aux ~25-30
+        // combats les plus récents côté API Clash Royale — un jour ancien
+        // peut donc ponctuellement être sous-estimé si beaucoup de combats
+        // (GDC ou non) ont eu lieu depuis. Le nombre de decks manquants
+        // ci-dessus reste fiable : il est calculé à partir du total
+        // hebdomadaire live (decksUsed/decksUsedToday), pas d'une somme des
+        // jours.
         const caveat =
-          "-# ⚠️ Le détail par jour peut ponctuellement sous-estimer les decks joués (historique de combats limité) — le nombre de decks manquants reste fiable.\n\n";
+          "-# ⚠️ Le détail par jour peut, rarement, sous-estimer un jour ancien (historique de combats limité) — le nombre de decks manquants reste fiable.\n\n";
 
         const embed = {
           title: `⚠️ Decks manquants GDC : ${clanName}`,

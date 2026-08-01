@@ -550,8 +550,13 @@ export function buildCurrentWarDays(
     isFuture: i > daysFromThu,
   }));
 
-  // Compte les combats GDC par jour depuis le battle log (potentiellement tronqué)
-  for (const b of filterWarBattles(battleLog)) {
+  // Compte les combats GDC par jour depuis le battle log (potentiellement
+  // tronqué). expandDuelRounds() est indispensable : un Duel brut du
+  // battlelog ne compte que pour 1 entrée alors qu'il vaut jusqu'à 3 decks
+  // joués (jusqu'à 3 rounds) — sans cette expansion, un jour avec des Duels
+  // affiche un compte de decks très inférieur à la réalité (même bug que
+  // celui déjà corrigé dans computeMatchupFromBattleLog()).
+  for (const b of expandDuelRounds(filterWarBattles(battleLog))) {
     const key = warDayKey(b.battleTime, clanTag);
     const day = days.find((d) => d.key === key);
     if (day) day.count++;
