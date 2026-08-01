@@ -7,8 +7,10 @@
 // structurelles :
 //
 // 1. Le score dépend UNIQUEMENT de la position d'arrivée (1er = 10pts, 2e =
-//    9pts, ... 10e = 1pt, 11e+ = 0pt), attribuée atomiquement au moment de la
-//    résolution (INCR + HSETNX, même pattern que assignSeasonMancheNumber).
+//    9pts, ... 10e et suivants = 1pt — quiconque trouve marque au moins 1
+//    point, seuls ceux qui ne trouvent jamais restent à 0), attribuée
+//    atomiquement au moment de la résolution (INCR + HSETNX, même pattern
+//    que assignSeasonMancheNumber).
 //    Contrairement à Frame, position et rang sont donc structurellement la
 //    même donnée : un seul computeGameRanking() suffit, pas besoin d'un
 //    computeArrivalOrder() séparé (Frame a eu un bug réel car son DM "vous
@@ -349,7 +351,11 @@ export function checkAnswer(entry, rawAnswer) {
 // ── Scoring par position d'arrivée ────────────────────────────────
 
 export function computeScore(position) {
-  return Math.max(0, 11 - position); // 1er=10, 2e=9, ..., 10e=1, 11e+=0
+  // 1er=10, 2e=9, ..., 10e=1, 11e et suivants=1 (plancher à 1, pas 0) — tout
+  // joueur qui trouve la réponse marque au moins 1 point, seuls ceux qui ne
+  // trouvent jamais restent à 0 (aucune position ne leur est attribuée, ils
+  // n'apparaissent simplement pas dans le classement de la manche).
+  return Math.max(1, 11 - position);
 }
 
 // ── Progression par joueur ────────────────────────────────────────

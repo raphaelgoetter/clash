@@ -649,8 +649,8 @@ Second mini-jeu hebdomadaire indépendant, sur le modèle exact de Frame (Modal 
 
 Contrairement à Frame (pénalités par tentative/indice), le score d'Anagram dépend **uniquement du rang d'arrivée**, sans aucun indice ni pénalité de tentative :
 
-- 1er joueur à trouver : **10 pts**, 2e : **9 pts**, 3e : **8 pts**, ... 10e : **1 pt**
-- 11e joueur et suivants : **0 pt** (plancher, jamais négatif)
+- 1er joueur à trouver : **10 pts**, 2e : **9 pts**, 3e : **8 pts**, ... 10e et suivants : **1 pt** (plancher à 1, pas 0 — tout joueur qui trouve la réponse marque au moins 1 point)
+- Un joueur qui ne trouve jamais la réponse : **0 pt** (aucune position ne lui est attribuée, il n'apparaît simplement pas dans le classement de la manche)
 
 La position est attribuée de façon atomique et immuable au moment de la résolution (`assignArrivalPosition()`, `backend/services/anagrams.js` — même pattern `INCR` + `HSETNX` idempotent que `assignSeasonMancheNumber()` de Frame, scopé par `gameId`). Conséquence importante : **position et score sont structurellement la même donnée** — contrairement à Frame, qui a eu un bug réel car son DM "vous êtes le Xe à avoir trouvé" utilisait par erreur le classement trié par score au lieu de l'ordre d'arrivée (`computeGameRanking` vs `computeArrivalOrder`). Anagram n'a qu'**une seule** fonction de classement par manche (`computeGameRanking()`, triée par `position` croissante) : cette classe de bug ne peut pas s'y reproduire.
 
