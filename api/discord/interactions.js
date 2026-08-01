@@ -58,6 +58,11 @@ import {
   handleHistoriqueSelect as handleAventureHistoriqueSelect,
 } from "./handlers/aventure.js";
 import {
+  handleVoteButton as handleTamagotchiVote,
+  handleInspecter as handleTamagotchiInspecter,
+  handleRegles as handleTamagotchiRegles,
+} from "./handlers/tamagotchi.js";
+import {
   summarizeWarDecks,
   summarizeWarDecksForMatchup,
   getWarMatchPoints,
@@ -8305,6 +8310,46 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleAventureHistoriqueSelect(webhookUrl, body));
+    return;
+  }
+
+  // ── Tamagoshi : boutons d'action (vote) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("tamagotchi_vote:")
+  ) {
+    const [, jour, actionId] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    // type 5 = DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE (éphémère) : on répond
+    // toujours en privé à l'auteur du clic (confirmation/rejet du vote), le
+    // message public est mis à jour séparément via un PATCH direct au salon.
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() =>
+      handleTamagotchiVote(webhookUrl, jour, actionId, discordId, username, process.env.DISCORD_TOKEN),
+    );
+    return;
+  }
+
+  // ── Tamagoshi : bouton "Inspecter" (éphémère, ne consomme pas le vote) ──
+  if (body.type === 3 && body.data?.custom_id === "tamagotchi_inspecter") {
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleTamagotchiInspecter(webhookUrl));
+    return;
+  }
+
+  // ── Tamagoshi : bouton "Règles du jeu" (éphémère, statique) ──
+  if (body.type === 3 && body.data?.custom_id === "tamagotchi_regles") {
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleTamagotchiRegles(webhookUrl));
     return;
   }
 

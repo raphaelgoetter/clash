@@ -1,0 +1,53 @@
+{
+  "duree_jours": 10,
+  "cron_time": "0 8 * * *",
+  "zones_ideales": { "min": 40, "max": 70 },
+  "jauges_initiales": { "estomac": 50, "energie": 50, "moral": 50 },
+  "actions": {
+    "nourrir": {
+      "label": "Nourrir",
+      "emoji": "🥩",
+      "impact": { "estomac": 25, "energie": -10, "moral": 0 }
+    },
+    "bretzel": {
+      "label": "Bretzel",
+      "emoji": "🥨",
+      "impact": { "estomac": 15, "energie": -5, "moral": 20 }
+    },
+    "sieste": {
+      "label": "Sieste",
+      "emoji": "😴",
+      "impact": { "estomac": -10, "energie": 30, "moral": -10 }
+    },
+    "jouer": {
+      "label": "Entraînement",
+      "emoji": "🎾",
+      "impact": { "estomac": -20, "energie": -20, "moral": 25 }
+    },
+    "inspecter": {
+      "label": "Inspecter",
+      "emoji": "🔍",
+      "is_info_action": true
+    }
+  },
+  "evenements_possibles": [
+    {
+      "id": "strasbourg",
+      "titre": "Carte postale de Strasbourg",
+      "description": "Mohamed Light a envoyé une photo depuis la Cathédrale. Le dragon est ravi !",
+      "modificateur_jauges": { "moral": 15, "estomac": 0, "energie": 0 }
+    },
+    {
+      "id": "canicule",
+      "titre": "Canicule sur le serveur",
+      "description": "Il fait une chaleur étouffante aujourd'hui sur le serveur, Lilith est exténué.",
+      "modificateur_jauges": { "energie": -10, "estomac": 0, "moral": 0 }
+    },
+    {
+      "id": "choucroute",
+      "titre": "Livraison mystère d'Alsace",
+      "description": "Un colis contenant de la choucroute arrive sur le serveur ! Lilith se régale.",
+      "modificateur_jauges": { "energie": -15, "estomac": 35, "moral": 0 }
+    }
+  ]
+}

@@ -774,6 +774,71 @@ Le workflow `.github/workflows/aventure.yml` (cron quotidien `npm run aventure:p
 
 ---
 
+## Tamagoshi (bébé dragon "Lilith")
+
+Mini-jeu communautaire quotidien indépendant du Clash Royale : Mohamed Light confie son Bébé Dragon "Lilith" à la communauté pendant 10 jours. Les membres doivent maintenir 3 jauges (Estomac 🔥, Énergie ⚡, Moral 🥨, 0-100%) dans la « zone verte » (40-70%) via des votes par bouton, avec un Cron quotidien à 08:00 UTC. Pas de commande slash associée — la publication/suppression passe uniquement par `scripts/postTamagotchi.js` (manuel ou cron), les boutons restent gérés par `api/discord/interactions.js`.
+
+### Déroulement
+
+Un seul message actif à la fois dans le salon dédié. Chaque jour, `postTamagotchi()` (`api/discord/handlers/tamagotchi.js`) :
+
+1. Clôture le jour actif (s'il y en a un) : tallie les votes du jour, calcule l'impact pondéré (voir "Résolution du vote" ci-dessous), en déduit les jauges de fin de journée, note la journée (Parfaite/Moyenne/Catastrophe → +1/0/-1 étoile de dressage) et écrit un bilan dans l'historique interne.
+2. Calcule les jauges d'ouverture du jour suivant : jauges de fin de journée + modificateur de l'événement programmé ce jour-là, s'il y en a un (voir "Événements programmés").
+3. Supprime le message Discord de la veille (`DELETE /channels/{id}/messages/{id}`, tolérant un échec) et publie le nouveau jour, avec un bouton par action affichant son compteur de votes en temps réel.
+
+Au Jour 10, au lieu d'ouvrir un nouveau jour, le message de fin de partie est posté (palier S/B/F selon le total d'étoiles) et `tamagotchi:state.termine` passe à `true` — les runs suivants du cron deviennent des no-op silencieux, même principe que `aventure:state.termine`.
+
+### Résolution du vote
+
+Un membre ne peut voter qu'une fois par jour parmi les 4 actions (Nourrir, Bretzel, Sieste, Entraînement), et **ce vote n'est pas modifiable** : revoter la même action est un no-op, voter une action différente est rejeté (`recordVote()`, `backend/services/tamagotchi.js`) — contrairement à l'Aventure, où revoter écrase le choix précédent. Le clic sur un bouton d'action répond toujours en éphémère à l'auteur (confirmation ou rejet du vote, `DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE` puis `PATCH .../messages/@original`) ; le message public (compteurs de votes) est mis à jour séparément par un `PATCH /channels/{id}/messages/{id}` direct avec le token du bot, découplé de la réponse éphémère.
+
+L'impact d'une journée est une **moyenne pondérée par part de votes** (`computeDayImpact()`) : chaque action votée contribue à l'impact proportionnellement à sa part des votes exprimés, jamais une somme brute — l'amplitude du changement d'une journée reste donc toujours bornée par l'amplitude d'une seule action, quel que soit le nombre de votants. Sans aucun vote, l'impact d'action est nul (l'événement du jour, s'il y en a un, s'applique quand même).
+
+### Boutons Inspecter et Règles du jeu
+
+`[🔍 Inspecter]` et `[📖 Règles du jeu]` sont des actions d'information : elles répondent en éphémère et **ne consomment jamais le vote quotidien** du membre, contrairement aux 4 boutons d'action — utilisables librement à tout moment par n'importe qui. Inspecter calcule une projection des jauges de clôture du lendemain à partir de la répartition actuelle des votes (sans appliquer l'événement, qui n'est pas encore connu). Règles du jeu affiche un rappel statique des impacts de chaque action et de la zone idéale, généré depuis `tamagotchi.json`.
+
+### Événements programmés
+
+3 événements fixes tirés de `tamagotchi.json.evenements_possibles`, déclenchés dans l'ordre du tableau aux Jours 3, 6 et 9 (`eventForDay()`) — aucun autre jour n'a d'événement. L'événement modifie les jauges une seule fois, en entrée du jour concerné (jamais en sortie du jour précédent), donc il n'influence jamais la notation (Parfaite/Moyenne/Catastrophe) du jour où il a été calculé, seulement les jauges d'ouverture du jour où il s'applique.
+
+### Fin de partie (Jour 10)
+
+Le total d'étoiles de dressage détermine le palier (`computeFinalTier()`) : **S-Tier** (8-10 étoiles, annonce narrative flatteuse — pas de rôle Discord réel créé/attribué), **B-Tier** (4-7 étoiles, message de remerciement), **F-Tier** (< 4 étoiles, "défi d'arène" en habillage narratif uniquement — aucune mécanique de mini-boss développée). Décisions explicites pour rester dans le scope d'un système de jauges/votes.
+
+### Données (tamagotchi.json)
+
+- `data/tamagotchi/tamagotchi.json` — config statique éditée à la main : durée, zones idéales, jauges initiales, `actions` (impact par jauge de chaque bouton, `inspecter` marqué `is_info_action: true` pour être exclu du calcul d'impact) et `evenements_possibles` (3 événements, ordre = ordre de déclenchement Jours 3/6/9). Chargée une fois et mise en cache (`loadTamagotchiConfig()`), jamais mutée à l'exécution.
+- `frontend/public/images/tamagotchi/tama-01.webp` à `tama-10.webp` — une illustration par jour, servie en asset statique (même principe que `frontend/public/images/banner1.webp`/`banner2.webp`) et référencée directement par URL (`tamagotchiImageUrl()`, `api/discord/handlers/tamagotchi.js`) dans le champ `image` de l'embed. Contrairement au jeu Frame, aucun besoin de masquer l'URL (pas un jeu de devinette) : pas de route API dédiée, juste un fichier public.
+
+### Stockage — Upstash Redis (`tamagotchi:*`)
+
+Même instance et mêmes conventions que Frame/Anagram/Aventure (`automaticDeserialization: false`, sérialisation JSON manuelle). Espace de clés `tamagotchi:*`, totalement séparé des autres jeux. Contrairement à l'Aventure (arbre de chapitres ramifié), la progression est strictement linéaire (Jour 1 à 10) : un simple compteur entier `jour` dans l'état suffit, pas de table jour→séquence dédiée.
+
+| Clé Redis | Type | Contenu |
+| --- | --- | --- |
+| `tamagotchi:state` | STRING | `{ jour, gauges, channelId, messageId, publishedAt, termine, starTotal, lastEvent, dayVoters }` — jour actuellement affiché |
+| `tamagotchi:votes:<jour>` | HASH | `discordId → actionId` — jetable, effacé après clôture du jour |
+| `tamagotchi:vote_usernames:<jour>` | HASH | `discordId → pseudo` — jetable, uniquement pour l'affichage admin (`npm run tamagotchi:status`) et le texte narratif, jamais utilisé pour la logique de vote |
+| `tamagotchi:historique` | HASH | `jour → { gaugesAvant, gaugesApres, voteCounts, voters, impact, event, rating, starDelta, starTotalApres, resolvedAt }` — jamais nettoyé, bilan interne uniquement (pas de bouton Discord dédié pour ce jeu) |
+
+### Scripts npm (Tamagoshi)
+
+| Commande | Effet |
+| --- | --- |
+| `npm run tamagotchi:test` | Poste manuellement le jour du Tamagoshi sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`). |
+| `npm run tamagotchi:test:dry` | Aperçu console du prochain jour (ou du message de fin de partie au Jour 10), sans écrire d'état ni poster sur Discord. |
+| `npm run tamagotchi:public` | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `tamagotchi.yml`. |
+| `npm run tamagotchi:public:dry` | Équivalent dry-run de `tamagotchi:public`. |
+| `npm run tamagotchi:reset` | Remet le Tamagoshi à zéro : plus de journée active, votes/historique effacés. **Destructif**. |
+| `npm run tamagotchi:status` | Affiche l'état courant (jauges, étoiles, décompte des votes du jour) sans passer par Discord. |
+
+### Variables d'environnement requises (Tamagoshi)
+
+Aucune nouvelle variable : le Tamagoshi réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` (mêmes salons que Frame/Anagram/Aventure, décision explicite pour ne pas multiplier les salons) et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (même instance Upstash Redis, espace de clés `tamagotchi:*` totalement séparé). Le workflow `.github/workflows/tamagotchi.yml` (cron quotidien `npm run tamagotchi:public`) réutilise les mêmes secrets GitHub Actions que les autres jeux (déjà configurés, rien à ajouter).
+
+---
+
 ## Détection des arrivées en cours de GDC
 
 ### Contexte
