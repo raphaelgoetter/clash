@@ -12,7 +12,7 @@
     "bretzel": {
       "label": "Bretzel",
       "emoji": "🥨",
-      "impact": { "estomac": 15, "energie": -5, "moral": 20 }
+      "impact": { "estomac": 15, "energie": -5, "moral": 15 }
     },
     "sieste": {
       "label": "Sieste",
@@ -41,7 +41,7 @@
       "id": "canicule",
       "titre": "Canicule sur le serveur",
       "description": "Il fait une chaleur étouffante aujourd'hui sur le serveur, Lilith est exténué.",
-      "modificateur_jauges": { "energie": -10, "estomac": 0, "moral": 0 }
+      "modificateur_jauges": { "energie": -10, "estomac": 0, "moral": -10 }
     },
     {
       "id": "choucroute",
