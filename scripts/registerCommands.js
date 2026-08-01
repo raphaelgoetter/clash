@@ -291,6 +291,24 @@ const commands = [
     ],
   },
   {
+    name: "combats-clan",
+    description:
+      "Liste les joueurs n'ayant pas joué leurs 4 decks/jour cette semaine de GDC.",
+    options: [
+      {
+        type: 3, // STRING
+        name: "clan",
+        description: "1=La Resistance, 2=Les Resistants, 3=Les Revoltes",
+        required: true,
+        choices: [
+          { name: "La Resistance", value: "1" },
+          { name: "Les Resistants", value: "2" },
+          { name: "Les Revoltes", value: "3" },
+        ],
+      },
+    ],
+  },
+  {
     name: "recap",
     description:
       "Récap GDC : 10 moins bons scoreurs La Resistance / 10 meilleurs Les Resistants.",

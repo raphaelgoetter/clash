@@ -91,6 +91,9 @@
           <li class="summary-item"><a href="#chelem">/chelem</a></li>
           <li class="summary-item"><a href="#clan-command">/clan</a></li>
           <li class="summary-item"><a href="#stats-clan">/stats-clan</a></li>
+          <li class="summary-item">
+            <a href="#combats-clan">/combats-clan</a>
+          </li>
           <li class="summary-item"><a href="#recap">/recap</a></li>
           <li class="summary-item"><a href="#compare">/compare</a></li>
           <li class="summary-item"><a href="#top-clans">/top-clans</a></li>
@@ -621,6 +624,41 @@
               <p><strong>Option :</strong> <code>clan:N</code></p>
             </div>
             <img src="/images/bot-22.webp" alt="" width="300" />
+          </div>
+        </div>
+
+        <!-- Combats Clan -->
+        <div class="card">
+          <h3 id="combats-clan" class="card-title">/combats-clan</h3>
+          <div data-layout="duo" data-split="2-1">
+            <div>
+              <p>
+                C'est l'équivalent de <code>/combats</code> mais pour un clan
+                entier&#8239;: elle liste les joueurs n'ayant pas encore joué
+                leurs 4 decks chaque jour de la semaine de GDC en cours.
+              </p>
+              <p>
+                Seuls les joueurs en défaut sont affichés, triés du plus
+                grand nombre de decks manquants au plus petit. Pour chaque
+                joueur en défaut, la commande détaille le nombre de decks
+                manquants et un badge par journée (✅/⚠️/❌), comme dans
+                <code>/combats</code>.
+              </p>
+              <p>
+                Seule la semaine en cours est prise en compte (pas la semaine
+                précédente), et un joueur arrivé en cours de semaine n'est
+                pas comptabilisé.
+              </p>
+              <p>
+                <strong>Quand utiliser cette commande&#8239;:</strong> Pour
+                repérer rapidement, en un coup d'œil sur tout un clan, qui
+                doit encore jouer ses combats de la semaine, en complément de
+                <code>/late</code> et <code>/combats</code>.
+              </p>
+              <p><strong>Commande :</strong> <code>/combats-clan</code></p>
+              <p><strong>Option :</strong> <code>clan:N</code></p>
+            </div>
+            <img src="/images/bot-19.webp" alt="" width="300" />
           </div>
         </div>
 

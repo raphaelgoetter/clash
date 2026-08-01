@@ -4086,6 +4086,195 @@ export default async function handler(req, res) {
     return;
   }
 
+  // ── /combats-clan ──
+  if (body.type === 2 && body.data?.name === "combats-clan") {
+    const clanOpt = body.data.options?.find((o) => o.name === "clan");
+
+    const CLAN_MAP = {
+      1: { name: "La Resistance", tag: "Y8JUPC9C" },
+      2: { name: "Les Resistants", tag: "LRQP20V9" },
+      3: { name: "Les Revoltes", tag: "QU9UQJRL" },
+    };
+
+    const clanVal = (clanOpt?.value || "1").toString().trim();
+    const resolved = CLAN_MAP[clanVal] ?? CLAN_MAP["1"];
+
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    if (!webhookUrl) {
+      console.error("Discord webhook URL non construite pour /combats-clan");
+      return res.status(200).json({
+        type: 4,
+        data: {
+          content:
+            "Configuration Discord incomplète : impossible de répondre à l'interaction.",
+          flags: 64,
+        },
+      });
+    }
+
+    res.status(200).json({ type: 5 });
+
+    runBackground(async () => {
+      try {
+        const endpoint = `${TRUST_ROYALE_URL}/api/clan/${encodeURIComponent(resolved.tag)}/analysis?fast=true`;
+
+        const abortCtrl = new AbortController();
+        const abortTimer = setTimeout(() => abortCtrl.abort(), 20000);
+        let apiResp;
+        try {
+          apiResp = await fetch(endpoint, {
+            headers: { Accept: "application/json" },
+            signal: abortCtrl.signal,
+          });
+        } finally {
+          clearTimeout(abortTimer);
+        }
+
+        if (!apiResp.ok) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `Erreur API (${apiResp.status}). Réessayez dans quelques instants.`,
+              flags: 64,
+            }),
+          });
+          return;
+        }
+
+        const data = await apiResp.json();
+        const members = Array.isArray(data.members) ? data.members : [];
+        const clanName = data.clan?.name || resolved.name;
+
+        // Hors période de GDC : aucun membre n'a de warDays exploitable
+        // (buildCurrentWarDays() renvoie null hors calendrier GDC).
+        const anyWarDays = members.some((m) => m.warDays != null);
+        if (!anyWarDays) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `Pas de GDC en cours pour ${clanName}.`,
+              flags: 64,
+            }),
+          });
+          return;
+        }
+
+        // Un joueur arrivé en cours de semaine (arrivedMidWar) n'a pas le
+        // même nombre de jours éligibles : maxDecksElapsed ne serait pas
+        // comparable pour lui, on l'exclut plutôt que d'afficher un
+        // chiffre trompeur.
+        const missing = members
+          .filter((m) => m.warDays && !m.warDays.arrivedMidWar)
+          .map((m) => ({
+            member: m,
+            missingCount:
+              m.warDays.maxDecksElapsed - (m.warDays.totalDecksUsed ?? 0),
+          }))
+          .filter((x) => x.missingCount > 0)
+          .sort(
+            (a, b) =>
+              b.missingCount - a.missingCount ||
+              a.member.name.localeCompare(b.member.name),
+          );
+
+        if (missing.length === 0) {
+          const embed = {
+            title: `✅ Decks manquants GDC : ${clanName}`,
+            url: trustClanUrl(resolved.tag),
+            color: 0x2ecc71,
+            description:
+              "Tout le monde a joué ses decks du jour cette semaine !",
+          };
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ embeds: [embed] }),
+          });
+          return;
+        }
+
+        const rows = missing.map(({ member, missingCount }) => {
+          const dayBadges = member.warDays.days
+            .map((day) => {
+              const label = getWarDayLabel(day.key);
+              const badge = getCombatsDayBadge(day.count, {
+                isFuture: day.isFuture,
+                isToday: day.isToday,
+              });
+              return `${badge} ${label}`;
+            })
+            .join(" · ");
+          return `**${member.name}** — ${missingCount} deck${missingCount === 1 ? "" : "s"} manquant${missingCount === 1 ? "" : "s"} (${member.warDays.totalDecksUsed ?? 0}/${member.warDays.maxDecksElapsed})\n${dayBadges}`;
+        });
+
+        // Pagination (sécurité, normalement tout tient sur une page) : même
+        // logique de chunking que /stats-clan.
+        const DESC_MAX = 4096;
+        const pages = [];
+        let currentPage = [];
+        let currentLen = 0;
+        for (const row of rows) {
+          const rowLen = row.length + 2;
+          if (currentLen + rowLen > DESC_MAX && currentPage.length > 0) {
+            pages.push(currentPage);
+            currentPage = [row];
+            currentLen = rowLen;
+          } else {
+            currentPage.push(row);
+            currentLen += rowLen;
+          }
+        }
+        if (currentPage.length > 0) pages.push(currentPage);
+
+        const embed = {
+          title: `⚠️ Decks manquants GDC : ${clanName}`,
+          url: trustClanUrl(resolved.tag),
+          color: 0xe67e22,
+          description: pages[0].join("\n\n"),
+          footer: {
+            text: `${missing.length} joueur${missing.length === 1 ? "" : "s"} en défaut${pages.length > 1 ? ` · page 1/${pages.length}` : ""} · Détail complet avec /combats`,
+          },
+        };
+
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ embeds: [embed] }),
+        });
+
+        for (let i = 1; i < pages.length; i++) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              embeds: [
+                {
+                  color: 0xe67e22,
+                  description: pages[i].join("\n\n"),
+                  footer: {
+                    text: `${missing.length} joueur${missing.length === 1 ? "" : "s"} en défaut · page ${i + 1}/${pages.length} · Détail complet avec /combats`,
+                  },
+                },
+              ],
+            }),
+          });
+        }
+      } catch (err) {
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur lors de l'analyse : ${err.message}`,
+            flags: 64,
+          }),
+        });
+      }
+    });
+    return;
+  }
+
   // Commande /matchup
   if (body.type === 2 && body.data?.name === "matchup") {
     const tagOption = body.data.options?.find((o) => o.name === "tag");
