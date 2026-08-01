@@ -10474,11 +10474,13 @@
           "start": "2026-07-31T09:56:00.000Z",
           "end": "2026-08-01T09:55:59.999Z"
         },
-        "snapshotTime": "2026-08-01T07:44:24.332Z",
+        "snapshotTime": "2026-08-01T08:45:56.253Z",
         "snapshotBackupTime": "2026-07-31T10:53:13.338Z",
         "decks": {
           "#20CY2LRU2": 4,
+          "#2QVU9JQ8P": 4,
           "#2YV89UGJQ": 4,
+          "#808C9PU": 4,
           "#8CQ80LJ8V": 4,
           "#8VP9UJV9L": 4,
           "#988JLGQQL": 4,
@@ -10487,6 +10489,7 @@
           "#C0RRPJYV9": 4,
           "#G2VVUJLLQ": 4,
           "#JVRP8QPRU": 4,
+          "#LJPP988L": 4,
           "#UC9LU0L90": 4,
           "#UVGPPVQ8Q": 4,
           "#V0VLJQCJU": 4,
@@ -10546,10 +10549,10 @@
           "#VLVLQR0UP": 100,
           "#UYRR99RL8": 300,
           "#VJPV0CURJ": 1000,
-          "#LJPP988L": 400,
+          "#LJPP988L": 800,
           "#8JGU9UUJJ": 500,
-          "#808C9PU": 400,
-          "#2QVU9JQ8P": 400,
+          "#808C9PU": 800,
+          "#2QVU9JQ8P": 800,
           "#LUYP8YP9": 400,
           "#JVRP8QPRU": 1000,
           "#UC9LU0L90": 1100,
@@ -10578,7 +10581,10 @@
           "#9YRU2QJJ": 1,
           "#8CQ80LJ8V": 1,
           "#YQGCRQ0": 1,
-          "#LUYP8YP9": 1
+          "#LUYP8YP9": 1,
+          "#LJPP988L": 1,
+          "#808C9PU": 1,
+          "#2QVU9JQ8P": 1
         },
         "_totalDonationsByTag": {},
         "duelsComplete": true,
@@ -10631,10 +10637,10 @@
           "#VLVLQR0UP": 1,
           "#UYRR99RL8": 2,
           "#VJPV0CURJ": 7,
-          "#LJPP988L": 4,
+          "#LJPP988L": 8,
           "#8JGU9UUJJ": 5,
-          "#808C9PU": 4,
-          "#2QVU9JQ8P": 4,
+          "#808C9PU": 8,
+          "#2QVU9JQ8P": 8,
           "#LUYP8YP9": 4,
           "#JVRP8QPRU": 8,
           "#UC9LU0L90": 8,
@@ -10654,7 +10660,7 @@
           "#8UC00RRC": 0
         },
         "periodPointsEarned": 16175,
-        "snapshotCount": 66
+        "snapshotCount": 78
       },
       {
         "warDay": "saturday",
