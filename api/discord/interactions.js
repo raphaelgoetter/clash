@@ -4194,8 +4194,6 @@ export default async function handler(req, res) {
             return {
               member: m,
               missingCount: completedMax - completedUsed,
-              completedMax,
-              completedUsed,
             };
           })
           .filter((x) => x.missingCount > 0)
@@ -4221,23 +4219,23 @@ export default async function handler(req, res) {
           return;
         }
 
-        const rows = missing.map(
-          ({ member, missingCount, completedUsed, completedMax }) => {
-            const dayBadges = member.warDays.days
-              .map((day) => {
-                const label = getWarDayLabel(day.key);
-                const badge = getCombatsDayBadge(day.count, {
-                  isFuture: day.isFuture,
-                  isToday: day.isToday,
-                });
-                if (day.isFuture) return `${badge} ${label}`;
-                const count = day.count ?? 0;
-                return `${badge} ${label} (${count}/4)`;
-              })
-              .join(" · ");
-            return `**[${member.name}](${trustPlayerUrl(member.tag)})** (${member.tag}) — ${missingCount} deck${missingCount === 1 ? "" : "s"} manquant${missingCount === 1 ? "" : "s"} (${completedUsed}/${completedMax} sur les jours clos)\n${dayBadges}`;
-          },
-        );
+        const currentDayNum = (missing[0].member.warDays.daysFromThu ?? 0) + 1;
+
+        const rows = missing.map(({ member, missingCount }) => {
+          const dayBadges = member.warDays.days
+            .map((day) => {
+              const label = getWarDayLabel(day.key);
+              const badge = getCombatsDayBadge(day.count, {
+                isFuture: day.isFuture,
+                isToday: day.isToday,
+              });
+              if (day.isFuture) return `${badge} ${label}`;
+              const count = day.count ?? 0;
+              return `${badge} ${label} (${count}/4)`;
+            })
+            .join(" · ");
+          return `**[${member.name}](${trustPlayerUrl(member.tag)})** (${member.tag}) — ${missingCount} deck${missingCount === 1 ? "" : "s"} manquant${missingCount === 1 ? "" : "s"} (J${currentDayNum} en cours)\n${dayBadges}`;
+        });
 
         // Pagination (sécurité, normalement tout tient sur une page) : même
         // logique de chunking que /stats-clan.
@@ -4270,7 +4268,7 @@ export default async function handler(req, res) {
           "-# ⚠️ Le détail par jour peut, rarement, sous-estimer un jour ancien (historique de combats limité) — le nombre de decks manquants reste fiable.\n\n";
 
         const embed = {
-          title: `⚠️ Decks manquants GDC : ${clanName}`,
+          title: `<:sweat:1504139431106576405> Decks manquants GDC J${currentDayNum} : ${clanName}`,
           url: trustClanUrl(resolved.tag),
           color: 0xe67e22,
           description: caveat + pages[0].join("\n\n"),
