@@ -40,7 +40,7 @@
     {
       "id": "canicule",
       "titre": "Canicule sur le serveur",
-      "description": "Il fait une chaleur étouffante aujourd'hui sur le serveur, Lilith est exténué.",
+      "description": "Il fait une chaleur étouffante aujourd'hui sur le serveur, Lilith est exténuée.",
       "modificateur_jauges": { "energie": -10, "estomac": 0, "moral": -10 }
     },
     {
