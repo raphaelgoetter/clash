@@ -4235,7 +4235,7 @@ export default async function handler(req, res) {
                 return `${badge} ${label} (${count}/4)`;
               })
               .join(" · ");
-            return `**${member.name}** — ${missingCount} deck${missingCount === 1 ? "" : "s"} manquant${missingCount === 1 ? "" : "s"} (${completedUsed}/${completedMax} sur les jours clos)\n${dayBadges}`;
+            return `**[${member.name}](${trustPlayerUrl(member.tag)})** (${member.tag}) — ${missingCount} deck${missingCount === 1 ? "" : "s"} manquant${missingCount === 1 ? "" : "s"} (${completedUsed}/${completedMax} sur les jours clos)\n${dayBadges}`;
           },
         );
 
