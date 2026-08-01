@@ -16,6 +16,7 @@ jobs:
       CLASH_API_KEY: ${{ secrets.CLASH_API_KEY }}
       DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
       DISCORD_APP_ID: ${{ secrets.DISCORD_APP_ID }}
+      DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
       DISCORD_CHANNEL_FRAME_PUBLIC: ${{ secrets.DISCORD_CHANNEL_FRAME_PUBLIC }}
       KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
       KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}

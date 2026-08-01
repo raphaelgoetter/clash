@@ -20,6 +20,7 @@ import {
   getHistoriqueEntry,
   listHistorique,
 } from "../../../backend/services/aventure.js";
+import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
 
 const AVENTURE_COLOR = 0xe74c3c;
 const HISTORIQUE_PAGE_SIZE = 25; // limite Discord : 25 options max par select menu
@@ -76,13 +77,17 @@ async function buildChapitrePayload(chapitreId, chapitreEntry, jour) {
 
 // ── Publication quotidienne (appelée uniquement par scripts/postAventure.js) ──
 
-export async function postChapter(channelId, { dryRun = false } = {}) {
+export async function postChapter(channelId, { dryRun = false, noPing = false } = {}) {
   const histoire = await loadHistoire();
   const state = await readState();
 
   if (state?.termine) {
     return { termine: true };
   }
+
+  // Le ping @MINI JEUX n'a lieu que pour le tout premier chapitre (lancement
+  // de l'aventure) — jamais aux avancées quotidiennes suivantes.
+  const estPremierChapitre = !state;
 
   const chapitreId = state
     ? (dryRun ? await previewNextChapitreId(state) : (await resolveAndAdvance(state)).nextChapitreId)
@@ -105,7 +110,9 @@ export async function postChapter(channelId, { dryRun = false } = {}) {
   if (dryRun) {
     const jour = await previewJourNumber();
     const { embed, components } = await buildChapitrePayload(chapitreId, chapitreEntry, jour);
-    return { dryRun: true, chapitreId, chapitreEntry, jour, embed, components, estFinal };
+    const pingRoleId =
+      estPremierChapitre && !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
+    return { dryRun: true, chapitreId, chapitreEntry, jour, embed, components, estFinal, pingRoleId };
   }
 
   const token = process.env.DISCORD_TOKEN;
@@ -134,6 +141,9 @@ export async function postChapter(channelId, { dryRun = false } = {}) {
     }
   }
 
+  const roleId =
+    estPremierChapitre && !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
+
   const res = await fetch(
     `https://discord.com/api/v10/channels/${channelId}/messages`,
     {
@@ -142,7 +152,7 @@ export async function postChapter(channelId, { dryRun = false } = {}) {
         Authorization: `Bot ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ embeds: [embed], components }),
+      body: JSON.stringify({ embeds: [embed], components, ...buildRolePingFields(roleId) }),
     },
   );
   if (!res.ok) {

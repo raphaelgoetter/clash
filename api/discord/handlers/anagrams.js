@@ -35,6 +35,7 @@ import {
   findTiedRank,
 } from "../../../backend/services/anagrams.js";
 import { toPublicSeasonId } from "../../../backend/services/dateUtils.js";
+import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
 
 const ANAGRAM_COLOR = 0x9b59b6;
 
@@ -183,7 +184,7 @@ async function getSeasonManchesPlayed(seasonId) {
     .sort((a, b) => a.seasonManche - b.seasonManche);
 }
 
-async function postSeasonRecap(channelId, endedSeasonId, newSeasonId) {
+async function postSeasonRecap(channelId, endedSeasonId, newSeasonId, { noPing = false } = {}) {
   const token = process.env.DISCORD_TOKEN;
   const seasonRanking = await computeSeasonRanking(endedSeasonId);
   if (seasonRanking.length === 0) return; // rien à récapituler
@@ -195,6 +196,7 @@ async function postSeasonRecap(channelId, endedSeasonId, newSeasonId) {
     newSeasonId,
     manchesPlayed,
   );
+  const roleId = noPing ? null : await getRoleIdByName(MINI_JEUX_ROLE_NAME);
   const res = await fetch(
     `https://discord.com/api/v10/channels/${channelId}/messages`,
     {
@@ -203,7 +205,7 @@ async function postSeasonRecap(channelId, endedSeasonId, newSeasonId) {
         Authorization: `Bot ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ embeds: [embed] }),
+      body: JSON.stringify({ embeds: [embed], ...buildRolePingFields(roleId) }),
     },
   );
   if (!res.ok) {
@@ -220,7 +222,7 @@ async function postSeasonRecap(channelId, endedSeasonId, newSeasonId) {
 
 export async function postAnagram(
   channelId,
-  { dryRun = false, force = false } = {},
+  { dryRun = false, force = false, noPing = false } = {},
 ) {
   if (dryRun) {
     const anagrams = await loadAnagrams();
@@ -238,6 +240,7 @@ export async function postAnagram(
       anagram: entry.anagram,
     });
     const components = buildAnagramComponents(gameId);
+    const pingRoleId = noPing ? null : await getRoleIdByName(MINI_JEUX_ROLE_NAME);
 
     let seasonRecapEmbed = null;
     if (
@@ -257,7 +260,7 @@ export async function postAnagram(
       }
     }
 
-    return { dryRun: true, entry, embed, components, seasonRecapEmbed };
+    return { dryRun: true, entry, embed, components, seasonRecapEmbed, pingRoleId };
   }
 
   if (!force) {
@@ -284,7 +287,7 @@ export async function postAnagram(
     newSeasonId != null &&
     previousState.seasonId !== newSeasonId
   ) {
-    await postSeasonRecap(channelId, previousState.seasonId, newSeasonId);
+    await postSeasonRecap(channelId, previousState.seasonId, newSeasonId, { noPing });
   }
 
   const { state, entry } = await startNewGame(channelId);
@@ -295,6 +298,7 @@ export async function postAnagram(
     anagram: entry.anagram,
   });
   const components = buildAnagramComponents(state.gameId);
+  const roleId = noPing ? null : await getRoleIdByName(MINI_JEUX_ROLE_NAME);
 
   const res = await fetch(
     `https://discord.com/api/v10/channels/${channelId}/messages`,
@@ -304,7 +308,7 @@ export async function postAnagram(
         Authorization: `Bot ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ embeds: [embed], components }),
+      body: JSON.stringify({ embeds: [embed], components, ...buildRolePingFields(roleId) }),
     },
   );
 
