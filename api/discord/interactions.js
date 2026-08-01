@@ -8337,11 +8337,22 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ── Tamagoshi : bouton "Inspecter" (éphémère, ne consomme pas le vote) ──
-  if (body.type === 3 && body.data?.custom_id === "tamagotchi_inspecter") {
+  // ── Tamagoshi : bouton "Projections" (consomme le vote du jour, sans jamais impacter les jauges) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("tamagotchi_inspecter:")
+  ) {
+    const jour = body.data.custom_id.split(":")[1];
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleTamagotchiInspecter(webhookUrl));
+    runBackground(() => handleTamagotchiInspecter(webhookUrl, jour, discordId, username));
     return;
   }
 

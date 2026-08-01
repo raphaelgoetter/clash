@@ -1,6 +1,6 @@
 // ============================================================
 // tamagotchi.js — Handlers Discord pour le Tamagotchi communautaire
-// "Bébé Dragon Lilith". Embed, boutons d'action (vote), Inspecter et
+// "Bébé Dragon Lilith". Embed, boutons d'action (vote), Projections et
 // Règles du jeu. La publication/suppression quotidienne passe uniquement
 // par scripts/postTamagotchi.js (postTamagotchi) — les boutons restent gérés
 // par api/discord/interactions.js.
@@ -89,8 +89,8 @@ function pickFlavor(pool, seed) {
 }
 
 function gaugeCategory(kind, value) {
-  if (value < 30) return `${kind}_bas`;
-  if (value > 80) return `${kind}_haut`;
+  if (value <= 30) return `${kind}_bas`;
+  if (value >= 80) return `${kind}_haut`;
   return `${kind}_normal`;
 }
 
@@ -262,7 +262,7 @@ function buildTamagotchiComponentsWithCounts(jour, config, voteCounts) {
           style: 2,
           label: inspecter.label,
           emoji: { name: inspecter.emoji },
-          custom_id: "tamagotchi_inspecter",
+          custom_id: `tamagotchi_inspecter:${jour}`,
         },
         {
           type: 2,
@@ -355,9 +355,9 @@ function buildReglesEmbed(config) {
       "**Impacts des actions :**",
       ...actionLines,
       "",
-      "🔍 **Inspecter** et 📖 **Règles du jeu** sont des actions d'information : elles ne consomment pas ton vote du jour et ne modifient jamais les jauges.",
+      "🔮 **Projections** ne modifie jamais les jauges, mais consomme ton vote du jour comme les 4 actions ci-dessus (c'est un choix, pas une simple consultation). Seul 📖 **Règles du jeu** est consultable librement, sans jamais consommer ton vote.",
       "",
-      "Un membre ne peut voter qu'une seule fois par jour parmi les 4 actions ci-dessus, et ce vote n'est pas modifiable.",
+      "Un membre ne peut voter qu'une seule fois par jour parmi Nourrir, Bretzel, Sieste, Entraînement et Projections, et ce vote n'est pas modifiable.",
     ].join("\n"),
     color: TAMAGOTCHI_COLOR,
   };
@@ -666,38 +666,72 @@ export async function handleVoteButton(
   }
 }
 
-// ── Bouton [🔍 Inspecter] — éphémère, ne consomme pas le vote ─────
+// ── Bouton [🔮 Projections] — consomme le vote du jour (comme les 4 actions),
+// mais n'a jamais d'impact sur les jauges au Cron (is_info_action dans
+// tamagotchi.json l'exclut de computeDayImpact) : voter Projections revient à
+// "s'abstenir" tout en consultant la projection. Ack routeur en type 5
+// éphémère, comme le bouton de vote — voir handleVoteButton pour le même
+// principe de garde (jour périmé) et de rejet (vote déjà posé ailleurs).
 
-export async function handleInspecter(webhookUrl) {
+export async function handleInspecter(webhookUrl, jour, discordId, username) {
   try {
     const state = await readState();
-    if (!state || state.termine) {
+    if (!state || state.termine || String(state.jour) !== String(jour)) {
       await patchOriginal(webhookUrl, {
-        content: "Aucune journée active en ce moment.",
+        content: "Le vote du jour a déjà été clôturé, la journée a changé — regarde le nouveau message !",
         embeds: [],
         components: [],
       });
       return;
     }
+
+    const result = await recordVote(state.jour, discordId, "inspecter", username);
+    if (result.status === "rejected") {
+      await patchOriginal(webhookUrl, {
+        content: "Tu as déjà voté aujourd'hui pour une autre action, ton vote est définitif jusqu'à demain !",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+
     const config = await loadTamagotchiConfig();
     const voteCounts = await tallyVotes(state.jour);
     const impact = computeDayImpact(voteCounts, config.actions);
     const projected = applyGaugeDelta(state.gauges, impact);
 
+    // Ne compte que les 4 actions réelles (Projections elle-même n'a aucun
+    // impact, la compter ici donnerait l'impression à tort qu'un vote a déjà
+    // influencé la projection).
+    const realActionIds = Object.keys(config.actions).filter((id) => !config.actions[id].is_info_action);
+    const totalRealVotes = realActionIds.reduce((sum, id) => sum + (voteCounts[id] || 0), 0);
+
+    // Avertissement affiché seulement au moment où le vote est réellement
+    // consommé (1er clic du jour) — inutile de le répéter à chaque reclic
+    // (already_recorded), qui reste purement informatif à ce stade.
+    const voteNotice =
+      result.status === "recorded"
+        ? "⚠️ Ce choix consomme ton vote du jour — tu ne pourras plus voter Nourrir/Bretzel/Sieste/Entraînement aujourd'hui."
+        : "(Tu as déjà voté Projections aujourd'hui — ton vote reste enregistré.)";
+
     const embed = {
-      title: "🔍 Projection — clôture demain 08:00 UTC",
+      title: "🔮 Projections — clôture demain 08:00 UTC",
       description: [
-        renderGaugeLine("🔥 Estomac", projected.estomac),
-        renderGaugeLine("⚡ Énergie", projected.energie),
-        renderGaugeLine("🥨 Moral", projected.moral),
+        renderGaugeLine(`${gaugeIcon("estomac", projected.estomac)} Estomac`, projected.estomac),
+        renderGaugeLine(`${gaugeIcon("energie", projected.energie)} Énergie`, projected.energie),
+        renderGaugeLine(`${gaugeIcon("moral", projected.moral)} Moral`, projected.moral),
         "",
-        "Basé sur la répartition actuelle des votes — partage ces infos au serveur pour vous coordonner !",
+        totalRealVotes === 0
+          ? "Personne n'a encore voté une action aujourd'hui — ces valeurs sont celles de la clôture d'hier, inchangées tant qu'aucun vote n'est enregistré."
+          : "Basé sur la répartition actuelle des votes — partage ces infos au serveur pour vous coordonner !",
+        "",
+        voteNotice,
       ].join("\n"),
       color: TAMAGOTCHI_COLOR,
     };
     await patchOriginal(webhookUrl, { embeds: [embed], components: [] });
   } catch (err) {
-    console.error("[Tamagotchi] Échec Inspecter:", err.message);
+    console.error("[Tamagotchi] Échec Projections:", err.message);
   }
 }
 
