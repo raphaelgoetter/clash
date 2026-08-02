@@ -37,6 +37,13 @@
       "bonus_ressources": 2
     },
     {
+      "jour": 5,
+      "id": "evenement",
+      "nom": "Une incroyable découverte !",
+      "emoji": "🤷‍♂️",
+      "description": "Vos éclaireurs ont trouvé un objet étrange sur la plage qui semble provenir d’un autre monde. Il pourrait bien s’agir d’un artefact magique extrêmement puissant ! Ah ben non en fait c'est juste un bout de bois tordu."
+    },
+    {
       "jour": 6,
       "id": "ouragan",
       "nom": "Ouragan Monstrueux",
