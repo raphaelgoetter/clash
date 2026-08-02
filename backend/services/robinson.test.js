@@ -14,6 +14,7 @@ import {
   isSurvivalVictory,
   eventForDay,
   computeEpaveBonus,
+  computePoissonsPourrisLoss,
 } from "./robinson.js";
 
 const CONFIG = { radeau_sections_max: 5, points_par_section: 5 };
@@ -25,6 +26,7 @@ const EVENEMENTS = [
   { jour: 4, id: "colis_royal", condition_votants_veille: 12, bonus_ressources: 2 },
   { jour: 7, id: "epave", points_base: 26, points_min: 10 },
   { jour: 9, id: "indigestion_royale" },
+  { jour: 2, id: "poissons_pourris", condition_votants_veille_max: 10 },
 ];
 
 function rngSequence(values) {
@@ -142,6 +144,24 @@ async function main() {
   assert.strictEqual(eventForDay(7, EVENEMENTS, 20)?.id, "epave");
   // Événement non conditionnel (Indigestion Royale, jour 9).
   assert.strictEqual(eventForDay(9, EVENEMENTS)?.id, "indigestion_royale");
+  // Événement conditionnel à seuil MAXIMUM (Poissons Pourris, jour 2) : ne se
+  // déclenche que si la mobilisation de la veille est SOUS le seuil.
+  assert.strictEqual(eventForDay(2, EVENEMENTS, 9)?.id, "poissons_pourris"); // sous le seuil -> déclenché
+  assert.strictEqual(eventForDay(2, EVENEMENTS, 1)?.id, "poissons_pourris");
+  assert.strictEqual(eventForDay(2, EVENEMENTS, 10), null); // pile au seuil -> pas déclenché
+  assert.strictEqual(eventForDay(2, EVENEMENTS, 15), null); // au-dessus -> pas déclenché
+  assert.strictEqual(eventForDay(2, EVENEMENTS)?.id, "poissons_pourris"); // previousDayVoters par défaut = 0 -> sous le seuil -> déclenché
+
+  // ── computePoissonsPourrisLoss — pic à V=3 (perte 7), symétrique des deux côtés ──
+  assert.strictEqual(computePoissonsPourrisLoss(9), 1);
+  assert.strictEqual(computePoissonsPourrisLoss(8), 2);
+  assert.strictEqual(computePoissonsPourrisLoss(7), 3);
+  assert.strictEqual(computePoissonsPourrisLoss(6), 4);
+  assert.strictEqual(computePoissonsPourrisLoss(5), 5);
+  assert.strictEqual(computePoissonsPourrisLoss(4), 6);
+  assert.strictEqual(computePoissonsPourrisLoss(3), 7);
+  assert.strictEqual(computePoissonsPourrisLoss(2), 6);
+  assert.strictEqual(computePoissonsPourrisLoss(1), 5);
 
   // ── computeEpaveBonus — dégressif selon les votants de la veille, plancher points_min ──
   const epave = { points_base: 26, points_min: 10 };

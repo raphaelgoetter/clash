@@ -217,6 +217,15 @@ export async function grantEqualResources(amount) {
   return { poisson: Number(poisson), eau: Number(eau), bois: Number(bois) };
 }
 
+// Perte directe de Poisson (Poissons Pourris) — même mécanique que la
+// consommation nocturne : DECRBY puis plancher 0, jamais négatif.
+export async function spoilPoisson(amount) {
+  if (amount <= 0) return readStocks();
+  const poisson = await decrementFlooredAtZero(STOCK_KEYS.poisson, amount);
+  const [eau, bois] = await Promise.all([getRedis().get(STOCK_KEYS.eau), getRedis().get(STOCK_KEYS.bois)]);
+  return { poisson, eau: Number(eau) || 0, bois: Number(bois) || 0 };
+}
+
 // Consommation quotidienne — contrairement au Radeau, on veut vraiment
 // plafonner à 0 (pas annuler l'opération) : DECRBY puis SET 0 si négatif.
 async function decrementFlooredAtZero(key, amount) {
@@ -388,6 +397,9 @@ export function eventForDay(jour, evenements, previousDayVoters = 0) {
   if (candidate.condition_votants_veille != null && previousDayVoters < candidate.condition_votants_veille) {
     return null;
   }
+  if (candidate.condition_votants_veille_max != null && previousDayVoters >= candidate.condition_votants_veille_max) {
+    return null;
+  }
   return candidate;
 }
 
@@ -397,6 +409,15 @@ export function eventForDay(jour, evenements, previousDayVoters = 0) {
 // CONTRIBUTING.md, section Robinson, pour le raisonnement complet).
 export function computeEpaveBonus(event, previousDayVoters) {
   return Math.max(event.points_min, event.points_base - previousDayVoters);
+}
+
+// Perte de Poisson de l'événement Poissons Pourris — pic à V=3 (perte
+// maximale de 7), puis redescend des deux côtés : plus sévère à mesure que
+// la mobilisation baisse jusqu'à un certain point, mais un groupe
+// vraiment minuscule (V=1 ou 2) a de toute façon un stock trop faible pour
+// justifier une perte aussi lourde que celle d'un groupe de 3-4.
+export function computePoissonsPourrisLoss(previousDayVoters) {
+  return Math.min(10 - previousDayVoters, 4 + previousDayVoters);
 }
 
 // ── Historique (bilans quotidiens) ────────────────────────────────

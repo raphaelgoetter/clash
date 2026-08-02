@@ -32,6 +32,8 @@ import {
   computeDailyConsumption,
   computeRaftSections,
   computeEpaveBonus,
+  computePoissonsPourrisLoss,
+  spoilPoisson,
   isSurvivalVictory,
   eventForDay,
   previewCloseDay,
@@ -319,6 +321,12 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false }
           bois: closure.stocksApres.bois + bonus,
         }
       : await grantEqualResources(bonus);
+  }
+  if (event?.id === "poissons_pourris") {
+    const perte = computePoissonsPourrisLoss(closure.V);
+    stocksPourEmbed = dryRun
+      ? { ...closure.stocksApres, poisson: Math.max(0, closure.stocksApres.poisson - perte) }
+      : await spoilPoisson(perte);
   }
 
   const embed = await buildRobinsonEmbed(jourSuivant, stocksPourEmbed, radeauPointsPourEmbed, config, event, false, closure.voters);

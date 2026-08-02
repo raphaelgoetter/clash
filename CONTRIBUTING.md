@@ -870,8 +870,9 @@ Pêcher/Eau/Bois tirent **0 à 5** unités (~16,7 % chacun, `rollHarvestAmount()
 
 ### Événements programmés (Robinson)
 
-6 événements tirés de `robinson.json.evenements` (`eventForDay(jour, evenements, previousDayVoters)`) modifient le jour concerné. `previousDayVoters` (le `V` du jour qui vient de se clôturer) sert à la fois de **condition d'activation** (événements conditionnels) et de **paramètre de montant** (événements dégressifs) :
+7 événements tirés de `robinson.json.evenements` (`eventForDay(jour, evenements, previousDayVoters)`) modifient le jour concerné. `previousDayVoters` (le `V` du jour qui vient de se clôturer) sert de **condition d'activation** (`condition_votants_veille` = seuil minimum, `condition_votants_veille_max` = seuil maximum — Colis Royal se déclenche *au-dessus*, Poissons Pourris se déclenche *en-dessous*) et de **paramètre de montant** (événements dégressifs) :
 
+- **Poissons Pourris !** (Jour 2, **conditionnel**) : ne se déclenche **que si** le Jour 1 a réuni **moins de** `condition_votants_veille_max` (10) votants — sinon le Jour 2 reste normal. Une partie du stock de Poisson est perdue (`spoilPoisson()`, `DECRBY` plancher 0), montant calculé par `computePoissonsPourrisLoss(V)` = `min(10 − V, 4 + V)` : la perte grimpe à mesure que la mobilisation baisse (V=9 → −1, ... V=3 → −7, le pic), puis **redescend** pour les groupes minuscules (V=2 → −6, V=1 → −5) — un groupe de 1-2 votants a de toute façon un stock trop faible pour justifier une perte aussi lourde que celle d'un groupe de 3-4. Ne concerne jamais les groupes de 10 votants et plus ; par construction (seuil sur le Jour 1 uniquement), c'est un durcissement ciblé pour les petits groupes en difficulté dès le début de partie.
 - **Grosse Canicule** (Jour 3) : Collecter de l'eau utilise un tirage dédié 0/1 (50/50, `rollCappedEventAmount()`) au lieu du tirage normal.
 - **Colis Royal** (Jour 4, **conditionnel**) : ne se déclenche **que si** le Jour 3 a réuni au moins `condition_votants_veille` (12) votants — sinon le Jour 4 reste un jour normal, sans rien afficher de spécial. S'il se déclenche, offre `bonus_ressources` (2) unités de **chacune** des 3 ressources d'un coup (`grantEqualResources()`, `INCRBY` atomique sur les 3 clés de stock), récompense pour une mobilisation collective forte. Le seuil binaire crée mécaniquement un effet de seuil (un groupe de 11 votants n'en profite jamais, un groupe de 12 en profite systématiquement) : `bonus_ressources` a été volontairement réduit de 3 à 2 par simulation pour atténuer cet écart sans le supprimer.
 - **Ouragan Monstrueux** (Jour 6) : Pêcher et Récolter du bois utilisent le même tirage dédié 0/1.
@@ -879,9 +880,9 @@ Pêcher/Eau/Bois tirent **0 à 5** unités (~16,7 % chacun, `rollHarvestAmount()
 - **Invasion de Gobelins** (Jour 8) : le bouton Explorer est retiré des composants ce jour-là (`isExplorerDisabled()`). À la clôture, **après** la consommation automatique, si le stock de Bois restant est `< 5`, les Gobelins volent 5 Poissons (plancher 0).
 - **Indigestion Royale** (Jour 9, **toujours déclenché**) : Collecter de l'eau (et seulement l'eau — jamais le Bois) utilise le tirage dédié 0/1. Placé volontairement tard dans la partie et sans jamais toucher au Bois : cet événement ne baisse que la survie passive (Jour 11), sans affecter le taux de victoire par Radeau — les parties orientées Radeau sont presque toujours déjà tranchées avant le Jour 9 (confirmé par simulation : taux de victoire Radeau strictement identique avec ou sans cet événement).
 
-Les dons de Colis Royal/Épave sont appliqués **une seule fois**, au moment de la publication du jour concerné (jamais liés à un vote, jamais répétés sur un reclic) — voir `postRobinson()` dans `api/discord/handlers/robinson.js`.
+Les dons/pertes de Poissons Pourris, Colis Royal et Épave sont appliqués **une seule fois**, au moment de la publication du jour concerné (jamais liés à un vote, jamais répétés sur un reclic) — voir `postRobinson()` dans `api/discord/handlers/robinson.js`.
 
-⚠️ Ces 5 événements ne sont **jamais** listés dans l'embed `[📖 Règles du jeu]` (`buildReglesEmbed()`) — volontairement, pour qu'ils restent une surprise en cours de partie. Seul le barème des actions et la condition de défaite y figurent.
+⚠️ Ces 7 événements ne sont **jamais** listés dans l'embed `[📖 Règles du jeu]` (`buildReglesEmbed()`) — volontairement, pour qu'ils restent une surprise en cours de partie. Seul le barème des actions et la condition de défaite y figurent.
 
 ### Victoire anticipée (Radeau)
 

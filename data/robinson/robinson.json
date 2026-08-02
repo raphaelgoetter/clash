@@ -13,25 +13,19 @@
   },
   "evenements": [
     {
+      "jour": 2,
+      "id": "poissons_pourris",
+      "nom": "Poissons Pourris !",
+      "emoji": "🐟",
+      "description": "Au réveil, une odeur infecte s’échappe de la réserve de poisson — une partie de la pêche d’hier a mal tourné pendant la nuit et doit être jetée. Plus la mobilisation était faible hier, plus la perte est lourde.",
+      "condition_votants_veille_max": 10
+    },
+    {
       "jour": 3,
       "id": "canicule",
       "nom": "Grosse Canicule",
       "emoji": "🔥",
       "description": "Un soleil de plomb écrase l’île aujourd’hui — même les Barbares les plus baraqués du camp renoncent à sortir chercher de l’eau. Collecter de l’eau ne rapportera qu’une petite gorgée par volontaire (1 unité maximum aujourd’hui)."
-    },
-    {
-      "jour": 6,
-      "id": "ouragan",
-      "nom": "Ouragan Monstrueux",
-      "emoji": "🌪️",
-      "description": "Un ouragan monstrueux s’abat sur la plage, retournant les pirogues et couchant les arbres. La mer est trop déchaînée pour pêcher sereinement, et ramasser du bois sous des rafales pareilles relève de l’exploit — chaque volontaire ne rapportera qu’une maigre récolte (1 unité maximum aujourd’hui, pour la Pêche comme pour le Bois)."
-    },
-    {
-      "jour": 8,
-      "id": "gobelins",
-      "nom": "Invasion de Gobelins",
-      "emoji": "🧌",
-      "description": "Des Gobelins rôdent autour du campement, attirés par l’odeur du poisson séché. Trop dangereux d’explorer l’île aujourd’hui — et si le camp n’a pas au moins 5 Bois en réserve ce soir pour fortifier les abris, ils risquent de filer avec une partie des provisions !"
     },
     {
       "jour": 4,
@@ -43,6 +37,13 @@
       "bonus_ressources": 2
     },
     {
+      "jour": 6,
+      "id": "ouragan",
+      "nom": "Ouragan Monstrueux",
+      "emoji": "🌪️",
+      "description": "Un ouragan monstrueux s’abat sur la plage, retournant les pirogues et couchant les arbres. La mer est trop déchaînée pour pêcher sereinement, et ramasser du bois sous des rafales pareilles relève de l’exploit — chaque volontaire ne rapportera qu’une maigre récolte (1 unité maximum aujourd’hui, pour la Pêche comme pour le Bois)."
+    },
+    {
       "jour": 7,
       "id": "epave",
       "nom": "Épave échouée",
@@ -50,6 +51,13 @@
       "description": "Une épave charrie jusqu’au rivage des morceaux de coque déjà taillés — de quoi avancer significativement la construction du Radeau sans lever le petit doigt !",
       "points_base": 26,
       "points_min": 10
+    },
+    {
+      "jour": 8,
+      "id": "gobelins",
+      "nom": "Invasion de Gobelins",
+      "emoji": "🧌",
+      "description": "Des Gobelins rôdent autour du campement, attirés par l’odeur du poisson séché. Trop dangereux d’explorer l’île aujourd’hui — et si le camp n’a pas au moins 5 Bois en réserve ce soir pour fortifier les abris, ils risquent de filer avec une partie des provisions !"
     },
     {
       "jour": 9,
