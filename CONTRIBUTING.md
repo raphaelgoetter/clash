@@ -844,7 +844,7 @@ Aucune nouvelle variable : le Tamagoshi réutilise `DISCORD_CHANNEL_FRAME_TEST`/
 
 Mini-jeu communautaire quotidien indépendant du Clash Royale : la communauté est naufragée sur une île pendant 10 jours, jusqu'à l'arrivée des secours au Jour 11. Les membres votent chaque jour une action (Pêcher, Collecter de l'eau, Récolter du bois, Explorer, Construire le Radeau) pour alimenter 3 stocks de ressources (Nourriture, Eau, Bois) consommés automatiquement chaque nuit. Pas de commande slash associée — la publication/suppression passe uniquement par `scripts/postRobinson.js` (manuel ou cron), les boutons restent gérés par `api/discord/interactions.js`.
 
-### Déroulement
+### Déroulement (Robinson)
 
 Un seul message actif à la fois dans le salon dédié. Contrairement à l'Aventure et au Tamagoshi (où tout l'impact d'une journée est calculé une seule fois, séquentiellement, au cron), **les récoltes et le coût du Radeau sont appliqués en continu pendant la journée**, à chaque clic, avec un retour immédiat au joueur en éphémère (« Tu as pêché 2 poissons ! ») — voir "Résolution du vote et concurrence" ci-dessous pour le détail technique. Seule la **consommation automatique** reste calculée une fois par jour, au cron :
 
@@ -862,19 +862,31 @@ Les stocks de ressources (`robinson:stock:poisson/eau/bois`) et les points de Ra
 
 Le clic sur un bouton d'action répond toujours en éphémère à l'auteur (`DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE` puis `PATCH .../messages/@original`, comme le Tamagoshi) avec le résultat exact du tirage ; le message public (stocks, radeau, compteurs de votes) est mis à jour séparément par un `PATCH /channels/{id}/messages/{id}` direct avec le token du bot.
 
-### Tirages et événements programmés
+### Tirages et équilibrage
 
-Pêcher/Eau/Bois tirent 0 à 3 unités (25 % chacun, `rollHarvestAmount()`) ; Explorer tire toujours 3 unités d'une seule et même ressource, tirée au hasard parmi les 3 (`rollExplorerYield()`) — jamais une répartition entre plusieurs ressources. 3 événements fixes tirés de `robinson.json.evenements` (Jours 3/6/8, `eventForDay()`) modifient les tirages du jour concerné :
+Pêcher/Eau/Bois tirent **0 à 5** unités (~16,7 % chacun, `rollHarvestAmount()`) ; Explorer tire toujours 3 unités d'une seule et même ressource, tirée au hasard parmi les 3 (`rollExplorerYield()`) — jamais une répartition entre plusieurs ressources.
 
-- **Grosse Canicule** (Jour 3) : Collecter de l'eau utilise un tirage dédié 0/1 (50/50, `rollCappedEventAmount()`) au lieu du tirage normal 0-3.
+⚠️ Ce barème (0-5, moyenne 2,5 — initialement 0-3) est le résultat d'un équilibrage par **simulation Monte Carlo** (plusieurs milliers de parties simulées avec les vraies fonctions du jeu, plusieurs stratégies de vote testées), documenté en détail dans l'historique de conception. Le calcul brut (consommation `V`/`V`/`⌈V/2⌉` vs récolte moyenne par vote dédié) rend le jeu **mathématiquement imperdable-à-l'envers** avec le barème initial 0-3 : couvrir Nourriture *et* Eau demanderait à elles seules 133 % des votes disponibles. Le barème 0-5 cible une survie passive dans la fourchette **50-80 %** selon le nombre de votants — volontairement toujours difficile, jamais un long fleuve tranquille. Ne pas réduire ce barème sans revalider par simulation : le jeu redevient vite ingagnable.
+
+### Événements programmés (Robinson)
+
+5 événements tirés de `robinson.json.evenements` (`eventForDay(jour, evenements, previousDayVoters)`) modifient le jour concerné. `previousDayVoters` (le `V` du jour qui vient de se clôturer) sert à la fois de **condition d'activation** (événements conditionnels) et de **paramètre de montant** (événements dégressifs) :
+
+- **Grosse Canicule** (Jour 3) : Collecter de l'eau utilise un tirage dédié 0/1 (50/50, `rollCappedEventAmount()`) au lieu du tirage normal.
+- **Colis Royal** (Jour 4, **conditionnel**) : ne se déclenche **que si** le Jour 3 a réuni au moins `condition_votants_veille` (12) votants — sinon le Jour 4 reste un jour normal, sans rien afficher de spécial. S'il se déclenche, offre `bonus_ressources` (3) unités de **chacune** des 3 ressources d'un coup (`grantEqualResources()`, `INCRBY` atomique sur les 3 clés de stock), récompense pour une mobilisation collective forte.
 - **Ouragan Monstrueux** (Jour 6) : Pêcher et Récolter du bois utilisent le même tirage dédié 0/1.
+- **Épave échouée** (Jour 7, **toujours déclenché**) : offre des points de Radeau **directs** (jamais de bois brut — convertir du bois en points coûte encore un vote, donc un don de bois seul n'aide pas le goulot d'étranglement réel, qui est le nombre de votes disponibles, pas la ressource). Montant dégressif selon `previousDayVoters` : `max(points_min, points_base − V)` (`computeEpaveBonus()`), soit 26−V plafonné à 10 minimum — un petit groupe (V=6) reçoit +20 points, un grand groupe (V=15) seulement +11, pour compenser le fait qu'un petit groupe a structurellement moins de votes/jour à consacrer au Radeau.
 - **Invasion de Gobelins** (Jour 8) : le bouton Explorer est retiré des composants ce jour-là (`isExplorerDisabled()`). À la clôture, **après** la consommation automatique, si le stock de Bois restant est `< 5`, les Gobelins volent 5 Poissons (plancher 0).
 
-⚠️ Ces 3 événements ne sont **jamais** listés dans l'embed `[📖 Règles du jeu]` (`buildReglesEmbed()`) — volontairement, pour qu'ils restent une surprise en cours de partie. Seul le barème des actions et la condition de défaite y figurent.
+Les dons de Colis Royal/Épave sont appliqués **une seule fois**, au moment de la publication du jour concerné (jamais liés à un vote, jamais répétés sur un reclic) — voir `postRobinson()` dans `api/discord/handlers/robinson.js`.
+
+⚠️ Ces 5 événements ne sont **jamais** listés dans l'embed `[📖 Règles du jeu]` (`buildReglesEmbed()`) — volontairement, pour qu'ils restent une surprise en cours de partie. Seul le barème des actions et la condition de défaite y figurent.
 
 ### Victoire anticipée (Radeau)
 
-Construire le Radeau coûte `bois_par_point_radeau` (2) Bois pour `+1` point de construction ; `points_par_section` (5) points forment 1 section, `radeau_sections_max` (5) sections achèvent le Radeau (25 points au total). La victoire par le Radeau n'est **jamais annoncée en temps réel** au clic qui complète la 5ᵉ section (cohérent avec « aucune publication en dehors du cron » déjà appliqué à l'Aventure/au Tamagoshi) : elle est détectée et révélée au cron suivant, qui court-circuite alors entièrement la consommation et la vérification de défaite de ce jour-là.
+Construire le Radeau coûte `bois_par_point_radeau` (**1**, initialement 2) Bois pour `+1` point de construction ; `points_par_section` (**4**, initialement 5) points forment 1 section, `radeau_sections_max` (5) sections achèvent le Radeau (**20** points au total, initialement 25). La victoire par le Radeau n'est **jamais annoncée en temps réel** au clic qui complète la 5ᵉ section (cohérent avec « aucune publication en dehors du cron » déjà appliqué à l'Aventure/au Tamagoshi) : elle est détectée et révélée au cron suivant, qui court-circuite alors entièrement la consommation et la vérification de défaite de ce jour-là — y compris si c'est un don d'Épave qui vient de faire franchir le seuil.
+
+D'après simulation (stratégie : survie pure jusqu'au Jour 7, puis ~35 % des votes redirigés vers le Radeau après l'Épave), la victoire par Radeau atteint **65-93 %** pour les groupes de 6 à 12 votants, et retombe autour de **45-50 %** pour les très grands groupes (15+) — ces derniers gardent en compensation une meilleure survie passive de base.
 
 ### Données (robinson.json)
 

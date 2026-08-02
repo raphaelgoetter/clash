@@ -31,10 +31,13 @@ import {
   isExplorerDisabled,
   computeDailyConsumption,
   computeRaftSections,
+  computeEpaveBonus,
   isSurvivalVictory,
   eventForDay,
   previewCloseDay,
   closeDayAndAdvance,
+  grantRadeauPoints,
+  grantEqualResources,
 } from "../../../backend/services/robinson.js";
 import {
   getRoleIdByName,
@@ -293,8 +296,32 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false }
     return { ...result, final: true, outcome: "victoire_jour11" };
   }
 
-  const event = eventForDay(jourSuivant, config.evenements);
-  const embed = await buildRobinsonEmbed(jourSuivant, closure.stocksApres, closure.radeauPoints, config, event, false, closure.voters);
+  // eventForDay reçoit le nombre de votants de la veille (closure.V) : les
+  // événements conditionnels (Colis Royal) ou à montant dégressif (Épave)
+  // en ont besoin. Les dons sont appliqués une seule fois, à l'arrivée du
+  // jour concerné — jamais liés à un vote, jamais répétés à un reclic.
+  const event = eventForDay(jourSuivant, config.evenements, closure.V);
+  let stocksPourEmbed = closure.stocksApres;
+  let radeauPointsPourEmbed = closure.radeauPoints;
+
+  if (event?.id === "epave") {
+    const bonus = computeEpaveBonus(event, closure.V);
+    radeauPointsPourEmbed = dryRun
+      ? closure.radeauPoints + bonus
+      : await grantRadeauPoints(bonus);
+  }
+  if (event?.id === "colis_royal") {
+    const bonus = event.bonus_ressources ?? 3;
+    stocksPourEmbed = dryRun
+      ? {
+          poisson: closure.stocksApres.poisson + bonus,
+          eau: closure.stocksApres.eau + bonus,
+          bois: closure.stocksApres.bois + bonus,
+        }
+      : await grantEqualResources(bonus);
+  }
+
+  const embed = await buildRobinsonEmbed(jourSuivant, stocksPourEmbed, radeauPointsPourEmbed, config, event, false, closure.voters);
   const components = buildRobinsonComponents(jourSuivant, config, {}, event);
 
   if (dryRun) {

@@ -1,8 +1,8 @@
 {
   "duree_jours": 10,
   "radeau_sections_max": 5,
-  "bois_par_point_radeau": 2,
-  "points_par_section": 5,
+  "bois_par_point_radeau": 1,
+  "points_par_section": 4,
   "stocks_initiaux": { "poisson": 10, "eau": 10, "bois": 6 },
   "actions": {
     "peche": { "label": "Pêcher", "emoji": "🎣", "resource": "poisson" },
@@ -32,6 +32,24 @@
       "nom": "Invasion de Gobelins",
       "emoji": "🧌",
       "description": "Des Gobelins rôdent autour du campement, attirés par l’odeur du poisson séché. Trop dangereux d’explorer l’île aujourd’hui — et si le camp n’a pas au moins 5 Bois en réserve ce soir pour fortifier les abris, ils risquent de filer avec une partie des provisions !"
+    },
+    {
+      "jour": 4,
+      "id": "colis_royal",
+      "nom": "Colis Royal",
+      "emoji": "🎁",
+      "description": "Une bourrasque étrange dépose un colis scellé aux couleurs royales sur la plage — une récompense pour la belle mobilisation d’hier ! Le camp se partage son contenu : +3 Nourriture, +3 Eau, +3 Bois.",
+      "condition_votants_veille": 12,
+      "bonus_ressources": 3
+    },
+    {
+      "jour": 7,
+      "id": "epave",
+      "nom": "Épave échouée",
+      "emoji": "🪸",
+      "description": "Une épave charrie jusqu’au rivage des morceaux de coque déjà taillés — de quoi avancer significativement la construction du Radeau sans lever le petit doigt !",
+      "points_base": 26,
+      "points_min": 10
     }
   ]
 }

@@ -13,6 +13,7 @@ import {
   isRaftVictory,
   isSurvivalVictory,
   eventForDay,
+  computeEpaveBonus,
 } from "./robinson.js";
 
 const CONFIG = { radeau_sections_max: 5, points_par_section: 5 };
@@ -21,6 +22,8 @@ const EVENEMENTS = [
   { jour: 3, id: "canicule" },
   { jour: 6, id: "ouragan" },
   { jour: 8, id: "gobelins" },
+  { jour: 4, id: "colis_royal", condition_votants_veille: 12, bonus_ressources: 3 },
+  { jour: 7, id: "epave", points_base: 26, points_min: 10 },
 ];
 
 function rngSequence(values) {
@@ -29,11 +32,13 @@ function rngSequence(values) {
 }
 
 async function main() {
-  // ── rollHarvestAmount — tirage 0/1/2/3, 25% chacun ──
+  // ── rollHarvestAmount — tirage 0 à 5, ~16,7% chacun ──
   assert.strictEqual(rollHarvestAmount(rngSequence([0])), 0);
-  assert.strictEqual(rollHarvestAmount(rngSequence([0.3])), 1);
-  assert.strictEqual(rollHarvestAmount(rngSequence([0.6])), 2);
-  assert.strictEqual(rollHarvestAmount(rngSequence([0.9])), 3);
+  assert.strictEqual(rollHarvestAmount(rngSequence([0.2])), 1);
+  assert.strictEqual(rollHarvestAmount(rngSequence([0.4])), 2);
+  assert.strictEqual(rollHarvestAmount(rngSequence([0.6])), 3);
+  assert.strictEqual(rollHarvestAmount(rngSequence([0.7])), 4);
+  assert.strictEqual(rollHarvestAmount(rngSequence([0.99])), 5);
 
   // ── rollCappedEventAmount — tirage dédié 0/1, 50/50 ──
   assert.strictEqual(rollCappedEventAmount(rngSequence([0])), 0);
@@ -123,6 +128,22 @@ async function main() {
   assert.strictEqual(eventForDay(8, EVENEMENTS).id, "gobelins");
   assert.strictEqual(eventForDay(9, EVENEMENTS), null);
   assert.strictEqual(eventForDay(1, EVENEMENTS), null);
+  // Événement conditionnel (Colis Royal, jour 4) : ne se déclenche que si
+  // la mobilisation de la veille atteint le seuil.
+  assert.strictEqual(eventForDay(4, EVENEMENTS, 12)?.id, "colis_royal"); // pile au seuil -> déclenché
+  assert.strictEqual(eventForDay(4, EVENEMENTS, 15)?.id, "colis_royal");
+  assert.strictEqual(eventForDay(4, EVENEMENTS, 11), null); // sous le seuil -> journée normale
+  assert.strictEqual(eventForDay(4, EVENEMENTS), null); // previousDayVoters par défaut = 0 -> pas déclenché
+  // Événement non conditionnel (Épave, jour 7) : toujours déclenché, peu importe V.
+  assert.strictEqual(eventForDay(7, EVENEMENTS, 0)?.id, "epave");
+  assert.strictEqual(eventForDay(7, EVENEMENTS, 20)?.id, "epave");
+
+  // ── computeEpaveBonus — dégressif selon les votants de la veille, plancher points_min ──
+  const epave = { points_base: 26, points_min: 10 };
+  assert.strictEqual(computeEpaveBonus(epave, 6), 20);
+  assert.strictEqual(computeEpaveBonus(epave, 15), 11);
+  assert.strictEqual(computeEpaveBonus(epave, 20), 10); // 26-20=6 < points_min -> plancher à 10
+  assert.strictEqual(computeEpaveBonus(epave, 0), 26);
 
   console.log("✓ robinson service tests passed");
 }

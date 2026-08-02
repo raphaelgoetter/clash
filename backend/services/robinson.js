@@ -197,6 +197,26 @@ export async function attemptRaftContribution(boisCost) {
   return { success: true, boisRestant: nouveauStock, points };
 }
 
+// Dons directs des événements dynamiques (Épave, Colis Royal) — appliqués
+// une seule fois, à l'arrivée du jour concerné, jamais liés à un vote.
+// INCRBY atomique comme partout ailleurs dans ce fichier.
+
+export async function grantRadeauPoints(amount) {
+  if (amount <= 0) return readRadeauPoints();
+  return Number(await getRedis().incrby(RADEAU_POINTS_KEY, amount));
+}
+
+export async function grantEqualResources(amount) {
+  if (amount <= 0) return readStocks();
+  const redis = getRedis();
+  const [poisson, eau, bois] = await Promise.all([
+    redis.incrby(STOCK_KEYS.poisson, amount),
+    redis.incrby(STOCK_KEYS.eau, amount),
+    redis.incrby(STOCK_KEYS.bois, amount),
+  ]);
+  return { poisson: Number(poisson), eau: Number(eau), bois: Number(bois) };
+}
+
 // Consommation quotidienne — contrairement au Radeau, on veut vraiment
 // plafonner à 0 (pas annuler l'opération) : DECRBY puis SET 0 si négatif.
 async function decrementFlooredAtZero(key, amount) {
@@ -273,9 +293,11 @@ async function clearVotes(jour) {
 
 // ── Fonctions pures de logique de jeu (aucun I/O, testées unitairement) ──
 
-// Tirage normal 0/1/2/3, 25% chacun.
+// Tirage normal 0 à 5, ~16,7% chacun (équilibrage validé par simulation :
+// voir CONTRIBUTING.md, section Robinson — moyenne 2,5, calibrée pour une
+// survie passive dans la fourchette 50-80% selon le nombre de votants).
 export function rollHarvestAmount(rng = Math.random) {
-  return Math.floor(rng() * 4);
+  return Math.floor(rng() * 6);
 }
 
 // Tirage dédié des jours Canicule/Ouragan pour la ressource plafonnée —
@@ -355,8 +377,25 @@ export function isSurvivalVictory(jour, dureeJours) {
   return jour > dureeJours;
 }
 
-export function eventForDay(jour, evenements) {
-  return evenements.find((e) => e.jour === jour) ?? null;
+// `previousDayVoters` (V du jour qui vient de se clôturer) permet de filtrer
+// les événements CONDITIONNELS (ex: Colis Royal, qui ne se déclenche que si
+// la mobilisation de la veille était suffisante) — si la condition n'est
+// pas remplie, le jour reste normal (aucun événement), sans jamais planter.
+export function eventForDay(jour, evenements, previousDayVoters = 0) {
+  const candidate = evenements.find((e) => e.jour === jour) ?? null;
+  if (!candidate) return null;
+  if (candidate.condition_votants_veille != null && previousDayVoters < candidate.condition_votants_veille) {
+    return null;
+  }
+  return candidate;
+}
+
+// Bonus de points de l'événement Épave — dégressif selon le nombre de
+// votants de la veille, pour favoriser les petits groupes qui ont
+// structurellement moins de votes/jour à consacrer au Radeau (voir
+// CONTRIBUTING.md, section Robinson, pour le raisonnement complet).
+export function computeEpaveBonus(event, previousDayVoters) {
+  return Math.max(event.points_min, event.points_base - previousDayVoters);
 }
 
 // ── Historique (bilans quotidiens) ────────────────────────────────
