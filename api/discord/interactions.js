@@ -65,6 +65,7 @@ import {
 import {
   handleVoteButton as handleRobinsonVote,
   handleJournal as handleRobinsonJournal,
+  handleRegles as handleRobinsonRegles,
 } from "./handlers/robinson.js";
 import {
   summarizeWarDecks,
@@ -8469,6 +8470,14 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleRobinsonJournal(webhookUrl));
+    return;
+  }
+
+  // ── Robinson : bouton "Règles du jeu" (éphémère, statique) ──
+  if (body.type === 3 && body.data?.custom_id === "robinson_regles") {
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleRobinsonRegles(webhookUrl));
     return;
   }
 

@@ -8,6 +8,7 @@
 
 import {
   loadRobinsonConfig,
+  loadNarratifs,
   readState,
   writeState,
   initEconomy,
@@ -21,6 +22,7 @@ import {
   getVoteDetail,
   tallyVotes,
   countUniqueVoters,
+  listVotes,
   listHistorique,
   rollHarvestAmount,
   rollCappedEventAmount,
@@ -39,6 +41,7 @@ import {
   buildRolePingFields,
   MINI_JEUX_ROLE_NAME,
 } from "../../../backend/services/discordRoles.js";
+import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
 
 const ROBINSON_COLOR = 0x1abc9c;
 const RESOURCE_LABELS = { poisson: "poisson(s)", eau: "eau", bois: "bois" };
@@ -51,6 +54,63 @@ function robinsonImageUrl(jour) {
   return `${TRUST_ROYALE_URL}/images/robinson/rob-${String(jour).padStart(2, "0")}.webp`;
 }
 
+// Pitch affiché uniquement au Jour 1 — plante le décor et rappelle le
+// principe en 2 phrases, avant de renvoyer vers le bouton Règles du jeu pour
+// le détail complet (barème, consommation, événements).
+const DAY1_INTRO =
+  "⛵ **Naufrage général !** Le navire qui emmenait le clan vers le prochain tournoi d’Arène a sombré cette nuit dans la tempête. Par miracle, tout le monde s’est échoué sain et sauf sur une île déserte — sans le moindre Coffre à l’horizon.\n\n" +
+  "Tenez 10 jours, le temps que les secours repèrent l’épave, ou évadez-vous plus tôt en achevant un Radeau. Chaque membre vote une fois par jour ; si une ressource tombe à 0 deux jours de suite, c’est le naufrage définitif. Besoin d’un rappel ? Clique sur *Règles du jeu*.";
+
+// ── Texte narratif ────────────────────────────────────────────────
+// Les variantes de phrases vivent dans data/robinson/narratifs.json (pas
+// dans le code), même principe que data/tamagotchi/narratifs.json. La
+// sélection est déterministe (indexée par le jour, pas Math.random()) : le
+// narratif ne doit jamais changer entre deux ré-affichages du MÊME jour (ex.
+// après chaque clic de vote qui repatch l'embed), seulement d'un jour à
+// l'autre — même si la catégorie de stock (bas/normal/haut), elle, peut
+// légitimement changer en cours de journée si le stock franchit un seuil.
+
+function pickFlavor(pool, seed) {
+  if (!pool?.length) return "";
+  return pool[((seed % pool.length) + pool.length) % pool.length];
+}
+
+function stockCategory(resource, value) {
+  if (value <= 3) return `${resource}_bas`;
+  if (value >= 12) return `${resource}_haut`;
+  return `${resource}_normal`;
+}
+
+async function pickVoterNames(voters) {
+  if (!voters?.length) return [];
+  const picked = voters.slice(0, 2);
+  const resolved = await Promise.all(
+    picked.map((v) => resolveDisplayName(v.discordId, v.username)),
+  );
+  return resolved.filter(Boolean);
+}
+
+async function buildNarrative(jour, stocks, voters, estPremierJour) {
+  if (estPremierJour) return DAY1_INTRO;
+
+  const narratifs = await loadNarratifs();
+  const intro = pickFlavor(narratifs.intro_cocasse, jour);
+
+  const lines = [
+    pickFlavor(narratifs[stockCategory("poisson", stocks.poisson)], jour + 1),
+    pickFlavor(narratifs[stockCategory("eau", stocks.eau)], jour + 2),
+    pickFlavor(narratifs[stockCategory("bois", stocks.bois)], jour + 3),
+  ];
+
+  const names = await pickVoterNames(voters);
+  if (names.length) {
+    const template = pickFlavor(narratifs.cloture_votants, jour + 4);
+    lines.push(template.replaceAll("{noms}", names.join(" et ")).replaceAll("{premier}", names[0]));
+  }
+
+  return `${intro}\n\n${lines.join("\n")}`;
+}
+
 // ── Embed / composants du jour ────────────────────────────────────
 
 function formatStockLine(emoji, label, value) {
@@ -58,21 +118,22 @@ function formatStockLine(emoji, label, value) {
   return `${emoji} ${label} : **${value}**${alerte}`;
 }
 
-function buildRobinsonEmbed(jour, stocks, radeauPoints, config, event, estPremierJour) {
+async function buildRobinsonEmbed(jour, stocks, radeauPoints, config, event, estPremierJour, voters) {
   const sections = computeRaftSections(radeauPoints, config.points_par_section);
   const raftBar = "🟩".repeat(sections) + "⬜".repeat(config.radeau_sections_max - sections);
 
-  const lines = [
-    event
-      ? `**${event.emoji} Événement du jour : ${event.nom}**\n${event.description}`
-      : "☀️ Calme plat sur l’île aujourd’hui.",
-    "",
+  const narrative = await buildNarrative(jour, stocks, voters, estPremierJour);
+  const lines = [narrative, ""];
+  if (event) {
+    lines.push(`**${event.emoji} Événement du jour : ${event.nom}**`, event.description, "");
+  }
+  lines.push(
     formatStockLine("🐟", "Nourriture", stocks.poisson),
     formatStockLine("💧", "Eau", stocks.eau),
     formatStockLine("🪵", "Bois", stocks.bois),
     "",
     `🛶 Radeau : [${raftBar}] (${sections}/${config.radeau_sections_max} sections)`,
-  ];
+  );
 
   return {
     title: `🏝️ Robinson — Jour ${jour}/${config.duree_jours}`,
@@ -115,6 +176,13 @@ function buildRobinsonComponents(jour, config, voteCounts, event) {
           label: "Journal de Bord",
           emoji: { name: "📜" },
           custom_id: "robinson_journal",
+        },
+        {
+          type: 2,
+          style: 2,
+          label: "Règles du jeu",
+          emoji: { name: "📖" },
+          custom_id: "robinson_regles",
         },
       ],
     },
@@ -165,7 +233,7 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false }
   if (estPremierJour) {
     const jour = 1;
     const stocks = config.stocks_initiaux;
-    const embed = buildRobinsonEmbed(jour, stocks, 0, config, null, true);
+    const embed = await buildRobinsonEmbed(jour, stocks, 0, config, null, true, []);
     const components = buildRobinsonComponents(jour, config, {}, null);
 
     if (dryRun) {
@@ -178,6 +246,7 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false }
       jour,
       event: null,
       zeroStreaks: { poisson: 0, eau: 0, bois: 0 },
+      dayVoters: [],
       embed,
       components,
       noPing,
@@ -196,6 +265,7 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false }
       jour: state.jour,
       event: state.event,
       zeroStreaks: closure.zeroStreaksApres,
+      dayVoters: [],
       embed,
       components: [],
       noPing: true,
@@ -213,6 +283,7 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false }
       jour: state.jour,
       event: state.event,
       zeroStreaks: closure.zeroStreaksApres,
+      dayVoters: [],
       embed,
       components: [],
       noPing: true,
@@ -223,7 +294,7 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false }
   }
 
   const event = eventForDay(jourSuivant, config.evenements);
-  const embed = buildRobinsonEmbed(jourSuivant, closure.stocksApres, closure.radeauPoints, config, event, false);
+  const embed = await buildRobinsonEmbed(jourSuivant, closure.stocksApres, closure.radeauPoints, config, event, false, closure.voters);
   const components = buildRobinsonComponents(jourSuivant, config, {}, event);
 
   if (dryRun) {
@@ -234,6 +305,7 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false }
     jour: jourSuivant,
     event,
     zeroStreaks: closure.zeroStreaksApres,
+    dayVoters: closure.voters,
     embed,
     components,
     noPing: true,
@@ -246,7 +318,7 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false }
 async function publishAndWriteState(
   channelId,
   previousState,
-  { jour, event, zeroStreaks, embed, components, noPing, estPremierJour, termine = false },
+  { jour, event, zeroStreaks, dayVoters, embed, components, noPing, estPremierJour, termine = false },
 ) {
   const token = process.env.DISCORD_TOKEN;
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
@@ -294,6 +366,7 @@ async function publishAndWriteState(
     termine,
     event,
     zeroStreaks,
+    dayVoters,
   });
 
   return { jour, embed, message, termine };
@@ -323,7 +396,7 @@ async function refreshPublicMessage(state, config, botToken) {
     readRadeauPoints(),
     tallyVotes(state.jour),
   ]);
-  const embed = buildRobinsonEmbed(state.jour, stocks, radeauPoints, config, state.event, state.jour === 1);
+  const embed = await buildRobinsonEmbed(state.jour, stocks, radeauPoints, config, state.event, state.jour === 1, state.dayVoters);
   const components = buildRobinsonComponents(state.jour, config, voteCounts, state.event);
 
   await fetch(
@@ -551,5 +624,50 @@ export async function handleJournal(webhookUrl) {
     await patchOriginal(webhookUrl, { embeds: [embed], components: [] });
   } catch (err) {
     console.error("[Robinson] Échec Journal de Bord:", err.message);
+  }
+}
+
+// ── Bouton [📖 Règles du jeu] — éphémère, statique ────────────────
+// Ne consomme jamais le vote du jour, contenu généré depuis robinson.json,
+// aucune lecture/écriture d'état (même principe que Tamagotchi).
+
+function buildReglesEmbed(config) {
+  const actionLines = Object.entries(config.actions).map(([id, action]) => {
+    if (id === "radeau") {
+      return `${action.emoji} **${action.label}** — coûte ${config.bois_par_point_radeau} Bois pour +1 point de construction (${config.points_par_section} points = 1 section, ${config.radeau_sections_max} sections = évasion !). Refusé sans consommer ton vote si le stock de Bois est insuffisant.`;
+    }
+    if (id === "explorer") {
+      return `${action.emoji} **${action.label}** — rapporte toujours 3 ressources au total, réparties au hasard entre Nourriture, Eau et Bois.`;
+    }
+    return `${action.emoji} **${action.label}** — rapporte de 0 à 3 ${RESOURCE_LABELS[action.resource]} au hasard (25 % de chances chacun).`;
+  });
+
+  return {
+    title: "📖 Règles du jeu — Robinson",
+    description: [
+      "Naufragés sur une île, survivez 10 jours jusqu’à l’arrivée des secours au Jour 11, ou évadez-vous plus tôt en achevant le Radeau.",
+      "",
+      "**Actions (1 vote par membre et par jour) :**",
+      ...actionLines,
+      "",
+      "**Consommation automatique chaque nuit** (V = votants uniques du jour) : −V Nourriture, −V Eau, −⌈V/2⌉ Bois.",
+      "",
+      "**Défaite :** une ressource à 0 pendant 2 jours consécutifs met fin à l’aventure.",
+      "",
+      "**Événements programmés :** Jour 3 (Canicule — Eau plafonnée), Jour 6 (Ouragan — Pêche et Bois plafonnés), Jour 8 (Gobelins — Explorer bloqué, et vol de 5 Poissons si le stock de Bois est sous 5 à la clôture).",
+      "",
+      "Un vote n’est pas modifiable une fois qu’il a réellement abouti.",
+    ].join("\n"),
+    color: ROBINSON_COLOR,
+  };
+}
+
+export async function handleRegles(webhookUrl) {
+  try {
+    const config = await loadRobinsonConfig();
+    const embed = buildReglesEmbed(config);
+    await patchOriginal(webhookUrl, { embeds: [embed], components: [] });
+  } catch (err) {
+    console.error("[Robinson] Échec Règles du jeu:", err.message);
   }
 }

@@ -29,7 +29,9 @@ import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "robinson", "robinson.json");
+const ROBINSON_DIR = path.resolve(__dirname, "..", "..", "data", "robinson");
+const CONFIG_JSON_PATH = path.join(ROBINSON_DIR, "robinson.json");
+const NARRATIFS_JSON_PATH = path.join(ROBINSON_DIR, "narratifs.json");
 
 let _redis = null;
 function getRedis() {
@@ -121,6 +123,19 @@ export async function loadRobinsonConfig() {
   const txt = await fs.readFile(CONFIG_JSON_PATH, "utf-8");
   configCache = JSON.parse(txt);
   return configCache;
+}
+
+// Pools de textes narratifs (variantes par état de stock + phrases de
+// clôture citant les votants) — séparés de tamagotchi.json car purement
+// cosmétiques, n'affectent jamais la logique de jeu. Même principe que
+// data/tamagotchi/narratifs.json.
+let narratifsCache = null;
+
+export async function loadNarratifs() {
+  if (narratifsCache) return narratifsCache;
+  const txt = await fs.readFile(NARRATIFS_JSON_PATH, "utf-8");
+  narratifsCache = JSON.parse(txt);
+  return narratifsCache;
 }
 
 // ── État séquentiel (muté uniquement au cron, jamais en concurrence) ──
@@ -392,7 +407,7 @@ async function computeClosure(state, config, { write }) {
     return { outcome: "victoire_radeau", stocksApres: stocks, radeauPoints, zeroStreaksApres: state.zeroStreaks };
   }
 
-  const V = await countUniqueVoters(state.jour);
+  const [V, voters] = await Promise.all([countUniqueVoters(state.jour), listVotes(state.jour)]);
   const stocksAvant = await readStocks();
   const consumption = computeDailyConsumption(V);
 
@@ -437,7 +452,7 @@ async function computeClosure(state, config, { write }) {
     await clearVotes(state.jour);
   }
 
-  return { outcome, stocksApres, radeauPoints, zeroStreaksApres: streaks, V };
+  return { outcome, stocksApres, radeauPoints, zeroStreaksApres: streaks, V, voters };
 }
 
 // Lecture seule (aucune écriture Redis) — utilisée par la branche --dry-run,

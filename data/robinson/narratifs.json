@@ -1,0 +1,53 @@
+{
+  "intro_cocasse": [
+    "🌅 Un nouveau jour se lève sur l’île. Le camp s’organise tant bien que mal.",
+    "🐚 Quelqu’un a trouvé un coquillage en forme de squelette sur la plage — ça ne nourrit personne, mais le moral est bon.",
+    "🦜 Un perroquet égaré tourne autour du campement en répétant « Trois étoiles ! Trois étoiles ! » depuis ce matin.",
+    "🏖️ Journée calme sur l’île — juste le bruit des vagues et quelqu’un qui répare la tente avec des feuilles de palmier.",
+    "🔥 Le feu de camp crépite tranquillement. Quelqu’un raconte pour la centième fois comment il a survécu à une Guerre de Clans légendaire.",
+    "🌴 Les cocotiers se balancent doucement. Rien à signaler, si ce n’est la faim qui commence à se faire sentir chez certains.",
+    "🦀 Un crabe s’est invité dans le campement cette nuit et a volé une chaussette. Personne ne l’a revu depuis.",
+    "🐒 Un singe curieux observe le camp depuis les arbres, visiblement pas pressé de se rendre utile."
+  ],
+  "poisson_bas": [
+    "🐟 Les réserves de poisson s’amenuisent dangereusement — il serait temps d’aller pêcher.",
+    "🐟 Le garde-manger sent surtout… le vide, côté poisson."
+  ],
+  "poisson_normal": [
+    "🐟 Les réserves de nourriture tiennent le coup, sans plus.",
+    "🐟 De quoi tenir encore un peu, pas de quoi se relâcher."
+  ],
+  "poisson_haut": [
+    "🐟 Le garde-manger déborde presque de poissons séchés — de quoi voir venir.",
+    "🐟 Personne ne mourra de faim aujourd’hui, c’est déjà ça."
+  ],
+  "eau_bas": [
+    "💧 Les gourdes sonnent creux — la soif commence à se faire sentir.",
+    "💧 Plus une goutte en réserve ou presque, il faudrait s’en occuper vite."
+  ],
+  "eau_normal": [
+    "💧 De l’eau en réserve, sans excès.",
+    "💧 Les gourdes ne sont ni pleines ni vides — ça ira pour aujourd’hui."
+  ],
+  "eau_haut": [
+    "💧 Les réserves d’eau sont bien remplies, le camp peut souffler.",
+    "💧 De quoi étancher la soif de tout le monde sans compter."
+  ],
+  "bois_bas": [
+    "🪵 Le tas de bois a fondu comme neige au soleil.",
+    "🪵 Plus grand-chose à brûler ce soir — il va falloir s’y remettre."
+  ],
+  "bois_normal": [
+    "🪵 Le tas de bois tient encore debout.",
+    "🪵 De quoi tenir un peu, sans marge énorme."
+  ],
+  "bois_haut": [
+    "🪵 Le tas de bois atteint des sommets impressionnants.",
+    "🪵 De quoi construire la moitié d’un Radeau rien qu’avec ce qu’il y a en stock."
+  ],
+  "cloture_votants": [
+    "Merci à {noms} pour leur aide précieuse hier !",
+    "{premier} a particulièrement brillé au campement hier.",
+    "Sans {noms}, la journée d’hier aurait été bien plus dure."
+  ]
+}
