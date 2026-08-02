@@ -284,14 +284,14 @@ export function rollCappedEventAmount(rng = Math.random) {
   return Math.floor(rng() * 2);
 }
 
-// Explorer : 3 tirages indépendants uniformes parmi les 3 ressources —
-// jamais affecté par Canicule/Ouragan (seules Eau / Pêche+Bois le sont).
+// Explorer : toujours 3 unités d'une seule et même ressource, tirée au
+// hasard (pas une répartition entre les 3) — jamais affecté par
+// Canicule/Ouragan (seules Eau / Pêche+Bois le sont).
 export function rollExplorerYield(rng = Math.random) {
   const resources = ["poisson", "eau", "bois"];
+  const picked = resources[Math.floor(rng() * 3)];
   const yields = { poisson: 0, eau: 0, bois: 0 };
-  for (let i = 0; i < 3; i++) {
-    yields[resources[Math.floor(rng() * 3)]] += 1;
-  }
+  yields[picked] = 3;
   return yields;
 }
 

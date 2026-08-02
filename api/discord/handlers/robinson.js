@@ -414,12 +414,8 @@ async function refreshPublicMessage(state, config, botToken) {
 
 function formatHarvestConfirmation(actionId, config, detail) {
   if (actionId === "explorer") {
-    const parts = Object.entries(detail.yields)
-      .filter(([, n]) => n > 0)
-      .map(([resourceId, n]) => `${n} ${RESOURCE_LABELS[resourceId]}`);
-    return parts.length
-      ? `🔍 Exploration réussie : tu ramènes ${parts.join(", ")} !`
-      : "🔍 Exploration infructueuse cette fois-ci…";
+    const [resourceId] = Object.entries(detail.yields).find(([, n]) => n > 0) ?? [];
+    return `🔍 Exploration réussie : tu ramènes 3 ${RESOURCE_LABELS[resourceId]} !`;
   }
   const action = config.actions[actionId];
   if (detail.amount === 0) {
@@ -637,7 +633,7 @@ function buildReglesEmbed(config) {
       return `${action.emoji} **${action.label}** — coûte ${config.bois_par_point_radeau} Bois pour +1 point de construction (${config.points_par_section} points = 1 section, ${config.radeau_sections_max} sections = évasion !). Refusé sans consommer ton vote si le stock de Bois est insuffisant.`;
     }
     if (id === "explorer") {
-      return `${action.emoji} **${action.label}** — rapporte toujours 3 ressources au total, réparties au hasard entre Nourriture, Eau et Bois.`;
+      return `${action.emoji} **${action.label}** — rapporte toujours 3 unités d’une seule ressource, tirée au hasard parmi Nourriture, Eau et Bois.`;
     }
     return `${action.emoji} **${action.label}** — rapporte de 0 à 3 ${RESOURCE_LABELS[action.resource]} au hasard (25 % de chances chacun).`;
   });
@@ -654,9 +650,7 @@ function buildReglesEmbed(config) {
       "",
       "**Défaite :** une ressource à 0 pendant 2 jours consécutifs met fin à l’aventure.",
       "",
-      "**Événements programmés :** Jour 3 (Canicule — Eau plafonnée), Jour 6 (Ouragan — Pêche et Bois plafonnés), Jour 8 (Gobelins — Explorer bloqué, et vol de 5 Poissons si le stock de Bois est sous 5 à la clôture).",
-      "",
-      "Un vote n’est pas modifiable une fois qu’il a réellement abouti.",
+      "Un vote n’est pas modifiable une fois qu’il a réellement abouti. Attention, des événements imprévus peuvent frapper l’île à tout moment…",
     ].join("\n"),
     color: ROBINSON_COLOR,
   };

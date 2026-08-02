@@ -41,12 +41,17 @@ async function main() {
   assert.strictEqual(rollCappedEventAmount(rngSequence([0.5])), 1);
   assert.strictEqual(rollCappedEventAmount(rngSequence([0.99])), 1);
 
-  // ── rollExplorerYield — somme toujours 3, jamais plus de 3 par ressource ──
+  // ── rollExplorerYield — toujours 3 unités d'une seule et même ressource ──
   for (let i = 0; i < 200; i++) {
     const y = rollExplorerYield(Math.random);
+    const values = [y.poisson, y.eau, y.bois];
+    assert.strictEqual(values.filter((v) => v === 3).length, 1); // exactement une ressource à 3
+    assert.strictEqual(values.filter((v) => v === 0).length, 2); // les deux autres à 0
     assert.strictEqual(y.poisson + y.eau + y.bois, 3);
-    assert.ok(y.poisson <= 3 && y.eau <= 3 && y.bois <= 3);
   }
+  assert.deepStrictEqual(rollExplorerYield(rngSequence([0])), { poisson: 3, eau: 0, bois: 0 });
+  assert.deepStrictEqual(rollExplorerYield(rngSequence([0.4])), { poisson: 0, eau: 3, bois: 0 });
+  assert.deepStrictEqual(rollExplorerYield(rngSequence([0.7])), { poisson: 0, eau: 0, bois: 3 });
 
   // ── harvestCapForEvent ──
   assert.strictEqual(harvestCapForEvent({ id: "canicule" }, "eau"), true);

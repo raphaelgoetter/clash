@@ -864,11 +864,13 @@ Le clic sur un bouton d'action répond toujours en éphémère à l'auteur (`DEF
 
 ### Tirages et événements programmés
 
-Pêcher/Eau/Bois tirent 0 à 3 unités (25 % chacun, `rollHarvestAmount()`) ; Explorer tire toujours 3 unités au total, réparties par 3 tirages indépendants uniformes entre les 3 ressources (`rollExplorerYield()`). 3 événements fixes tirés de `robinson.json.evenements` (Jours 3/6/8, `eventForDay()`) modifient les tirages du jour concerné :
+Pêcher/Eau/Bois tirent 0 à 3 unités (25 % chacun, `rollHarvestAmount()`) ; Explorer tire toujours 3 unités d'une seule et même ressource, tirée au hasard parmi les 3 (`rollExplorerYield()`) — jamais une répartition entre plusieurs ressources. 3 événements fixes tirés de `robinson.json.evenements` (Jours 3/6/8, `eventForDay()`) modifient les tirages du jour concerné :
 
 - **Grosse Canicule** (Jour 3) : Collecter de l'eau utilise un tirage dédié 0/1 (50/50, `rollCappedEventAmount()`) au lieu du tirage normal 0-3.
 - **Ouragan Monstrueux** (Jour 6) : Pêcher et Récolter du bois utilisent le même tirage dédié 0/1.
 - **Invasion de Gobelins** (Jour 8) : le bouton Explorer est retiré des composants ce jour-là (`isExplorerDisabled()`). À la clôture, **après** la consommation automatique, si le stock de Bois restant est `< 5`, les Gobelins volent 5 Poissons (plancher 0).
+
+⚠️ Ces 3 événements ne sont **jamais** listés dans l'embed `[📖 Règles du jeu]` (`buildReglesEmbed()`) — volontairement, pour qu'ils restent une surprise en cours de partie. Seul le barème des actions et la condition de défaite y figurent.
 
 ### Victoire anticipée (Radeau)
 
