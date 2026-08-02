@@ -4,9 +4,13 @@ permissions:
   contents: read
 
 on:
-  # Quotidien 08:00 UTC
-  schedule:
-    - cron: "0 8 * * *"
+  # Cron désactivé pendant la phase de test (voir CONTRIBUTING.md) : l'état
+  # du jeu (tamagotchi:state) est partagé entre les runs manuels de test et
+  # ce workflow public — un run automatique en pleine session de test avance
+  # et publie sur le salon PUBLIC sans prévenir. Ne réactiver le `schedule`
+  # ci-dessous qu'une fois le jeu validé et prêt à être lancé pour de vrai.
+  # schedule:
+  #   - cron: "0 8 * * *"
   workflow_dispatch: {}
 
 jobs:
