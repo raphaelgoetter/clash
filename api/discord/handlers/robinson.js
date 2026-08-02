@@ -662,7 +662,7 @@ function buildReglesEmbed(config) {
     if (id === "explorer") {
       return `${action.emoji} **${action.label}** — rapporte toujours 3 unités d’une seule ressource, tirée au hasard parmi Nourriture, Eau et Bois.`;
     }
-    return `${action.emoji} **${action.label}** — rapporte de 0 à 3 ${RESOURCE_LABELS[action.resource]} au hasard (25 % de chances chacun).`;
+    return `${action.emoji} **${action.label}** — rapporte de 0 à 5 ${RESOURCE_LABELS[action.resource]} au hasard (~16,7 % de chances chacun).`;
   });
 
   return {

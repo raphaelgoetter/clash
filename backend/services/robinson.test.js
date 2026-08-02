@@ -22,8 +22,9 @@ const EVENEMENTS = [
   { jour: 3, id: "canicule" },
   { jour: 6, id: "ouragan" },
   { jour: 8, id: "gobelins" },
-  { jour: 4, id: "colis_royal", condition_votants_veille: 12, bonus_ressources: 3 },
+  { jour: 4, id: "colis_royal", condition_votants_veille: 12, bonus_ressources: 2 },
   { jour: 7, id: "epave", points_base: 26, points_min: 10 },
+  { jour: 9, id: "indigestion_royale" },
 ];
 
 function rngSequence(values) {
@@ -65,6 +66,8 @@ async function main() {
   assert.strictEqual(harvestCapForEvent({ id: "ouragan" }, "bois"), true);
   assert.strictEqual(harvestCapForEvent({ id: "ouragan" }, "eau"), false);
   assert.strictEqual(harvestCapForEvent({ id: "gobelins" }, "peche"), false);
+  assert.strictEqual(harvestCapForEvent({ id: "indigestion_royale" }, "eau"), true);
+  assert.strictEqual(harvestCapForEvent({ id: "indigestion_royale" }, "peche"), false);
   assert.strictEqual(harvestCapForEvent(null, "eau"), false);
 
   // ── isExplorerDisabled ──
@@ -126,7 +129,7 @@ async function main() {
   assert.strictEqual(eventForDay(3, EVENEMENTS).id, "canicule");
   assert.strictEqual(eventForDay(6, EVENEMENTS).id, "ouragan");
   assert.strictEqual(eventForDay(8, EVENEMENTS).id, "gobelins");
-  assert.strictEqual(eventForDay(9, EVENEMENTS), null);
+  assert.strictEqual(eventForDay(5, EVENEMENTS), null);
   assert.strictEqual(eventForDay(1, EVENEMENTS), null);
   // Événement conditionnel (Colis Royal, jour 4) : ne se déclenche que si
   // la mobilisation de la veille atteint le seuil.
@@ -137,6 +140,8 @@ async function main() {
   // Événement non conditionnel (Épave, jour 7) : toujours déclenché, peu importe V.
   assert.strictEqual(eventForDay(7, EVENEMENTS, 0)?.id, "epave");
   assert.strictEqual(eventForDay(7, EVENEMENTS, 20)?.id, "epave");
+  // Événement non conditionnel (Indigestion Royale, jour 9).
+  assert.strictEqual(eventForDay(9, EVENEMENTS)?.id, "indigestion_royale");
 
   // ── computeEpaveBonus — dégressif selon les votants de la veille, plancher points_min ──
   const epave = { points_base: 26, points_min: 10 };

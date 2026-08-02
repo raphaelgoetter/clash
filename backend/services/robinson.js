@@ -322,6 +322,7 @@ export function harvestCapForEvent(event, actionId) {
   if (!event) return false;
   if (event.id === "canicule") return actionId === "eau";
   if (event.id === "ouragan") return actionId === "peche" || actionId === "bois";
+  if (event.id === "indigestion_royale") return actionId === "eau";
   return false;
 }
 

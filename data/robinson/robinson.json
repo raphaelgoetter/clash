@@ -17,14 +17,14 @@
       "id": "canicule",
       "nom": "Grosse Canicule",
       "emoji": "🔥",
-      "description": "Un soleil de plomb écrase l’île aujourd’hui — même les Barbares les plus baraqués du camp renoncent à sortir chercher de l’eau. Collecter de l’eau ne rapportera qu’une petite gorgée par volontaire."
+      "description": "Un soleil de plomb écrase l’île aujourd’hui — même les Barbares les plus baraqués du camp renoncent à sortir chercher de l’eau. Collecter de l’eau ne rapportera qu’une petite gorgée par volontaire (1 unité maximum aujourd’hui)."
     },
     {
       "jour": 6,
       "id": "ouragan",
       "nom": "Ouragan Monstrueux",
       "emoji": "🌪️",
-      "description": "Un ouragan monstrueux s’abat sur la plage, retournant les pirogues et couchant les arbres. La mer est trop déchaînée pour pêcher sereinement, et ramasser du bois sous des rafales pareilles relève de l’exploit — chaque volontaire ne rapportera qu’une maigre récolte."
+      "description": "Un ouragan monstrueux s’abat sur la plage, retournant les pirogues et couchant les arbres. La mer est trop déchaînée pour pêcher sereinement, et ramasser du bois sous des rafales pareilles relève de l’exploit — chaque volontaire ne rapportera qu’une maigre récolte (1 unité maximum aujourd’hui, pour la Pêche comme pour le Bois)."
     },
     {
       "jour": 8,
@@ -38,9 +38,9 @@
       "id": "colis_royal",
       "nom": "Colis Royal",
       "emoji": "🎁",
-      "description": "Une bourrasque étrange dépose un colis scellé aux couleurs royales sur la plage — une récompense pour la belle mobilisation d’hier ! Le camp se partage son contenu : +3 Nourriture, +3 Eau, +3 Bois.",
+      "description": "Une bourrasque étrange dépose un colis scellé aux couleurs royales sur la plage — une récompense pour la belle mobilisation d’hier ! Le camp se partage son contenu : +2 Nourriture, +2 Eau, +2 Bois.",
       "condition_votants_veille": 12,
-      "bonus_ressources": 3
+      "bonus_ressources": 2
     },
     {
       "jour": 7,
@@ -50,6 +50,13 @@
       "description": "Une épave charrie jusqu’au rivage des morceaux de coque déjà taillés — de quoi avancer significativement la construction du Radeau sans lever le petit doigt !",
       "points_base": 26,
       "points_min": 10
+    },
+    {
+      "jour": 9,
+      "id": "indigestion_royale",
+      "nom": "Indigestion Royale",
+      "emoji": "🤢",
+      "description": "Le Géant Royal, mal remis d’un festin bien trop généreux, a vomi dans la source d’eau douce de l’île. Le camp devra faire preuve de courage — Collecter de l’eau ne rapportera qu’une petite gorgée par volontaire (1 unité maximum aujourd’hui)."
     }
   ]
 }
