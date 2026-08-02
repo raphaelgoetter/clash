@@ -3938,19 +3938,36 @@ export default async function handler(req, res) {
 
         let currentWeekLines = ["Pas de GDC en cours."];
         if (isWarPeriod) {
-          currentWeekLines = analysis.currentWarDays.days.map((day) => {
+          currentWeekLines = analysis.currentWarDays.days.map((day, idx) => {
             const label = getWarDayLabel(day.key);
             const stats = combatsByDayKey.get(day.key);
             if (day.isFuture) {
               const badge = getCombatsDayBadge(null, { isFuture: true });
               return `${badge} ${label} : à venir`;
             }
-            const decks = stats?.decks ?? 0;
+            const battleLogDecks = stats?.decks ?? 0;
+            // Le battle log (source de `stats`) est capé aux ~25-30 derniers
+            // combats côté API Clash Royale : un jour ancien peut en sortir
+            // complètement au fil de la semaine si beaucoup de combats plus
+            // récents s'accumulent. Le snapshot horaire (warSnapshotDays),
+            // lui, est persisté et ne s'efface jamais : on lui fait
+            // confiance dès qu'il indique plus de decks que le battle log.
+            const snapshotDecks = Array.isArray(analysis.warSnapshotDays)
+              ? analysis.warSnapshotDays[idx]
+              : null;
+            const decks =
+              snapshotDecks != null
+                ? Math.max(snapshotDecks, battleLogDecks)
+                : battleLogDecks;
+            const battleLogIncomplete = decks > battleLogDecks;
             const isToday = Boolean(day.isToday);
             const badge = getCombatsDayBadge(decks, { isToday });
             if (decks === 0 && isToday)
               return `${badge} ${label} : pas encore joué`;
             if (decks === 0) return `${badge} ${label} : 0 deck`;
+            if (battleLogIncomplete) {
+              return `${badge} ${label} : ${decks} deck${decks === 1 ? "" : "s"} (détail indisponible)`;
+            }
             const wins = stats?.wins ?? 0;
             const points = stats?.points ?? 0;
             let line = `${badge} ${label} : ${decks} deck${decks === 1 ? "" : "s"} (${wins} victoire${wins === 1 ? "" : "s"}) · ${points} pts`;
