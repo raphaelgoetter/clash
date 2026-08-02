@@ -4151,6 +4151,26 @@ export default async function handler(req, res) {
         }
 
         const data = await apiResp.json();
+
+        // Un rate limit de l'API Clash Royale pendant la récupération du
+        // battle log des membres (fréquent avec ~50 combattants à requêter
+        // d'un coup) fait retomber le détail par jour à 0 partout (battle
+        // log vide, cf. buildCurrentWarDays) sans casser le total fiable
+        // (source live currentriverrace) — d'où des decks manquants
+        // corrects mais un détail par jour totalement faux. On préfère
+        // bloquer plutôt qu'afficher des jours à 0 trompeurs.
+        if (data.rateLimited) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `⚠️ L'API Clash Royale a limité les requêtes pendant l'analyse de ${data.clan?.name || resolved.name} : le détail par jour serait peu fiable. Réessaie la commande dans quelques instants.`,
+              flags: 64,
+            }),
+          });
+          return;
+        }
+
         const members = Array.isArray(data.members) ? data.members : [];
         const clanName = data.clan?.name || resolved.name;
 
