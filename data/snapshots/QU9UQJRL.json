@@ -11224,10 +11224,11 @@
           "start": "2026-08-02T09:56:00.000Z",
           "end": "2026-08-03T09:55:59.999Z"
         },
-        "snapshotTime": "2026-08-02T22:18:02.818Z",
+        "snapshotTime": "2026-08-02T23:19:03.337Z",
         "snapshotBackupTime": "2026-08-02T10:31:26.771Z",
         "decks": {
           "#2YV89UGJQ": 4,
+          "#8CQ80LJ8V": 4,
           "#8VP9UJV9L": 4,
           "#9U9YVU80": 4,
           "#9YRU2QJJ": 4,
@@ -11316,7 +11317,7 @@
           "#9U9YVU80": 2750,
           "#V9RL22GYQ": 2700,
           "#V0VLJQCJU": 2800,
-          "#8CQ80LJ8V": 2700,
+          "#8CQ80LJ8V": 3500,
           "#28QVCVLR": 0,
           "#QY0LG0R0P": 0
         },
@@ -11328,7 +11329,8 @@
           "#J008G9CLJ": 1,
           "#2YV89UGJQ": 1,
           "#LQ0QV2UUP": 1,
-          "#VVPQYJLQV": 1
+          "#VVPQYJLQV": 1,
+          "#8CQ80LJ8V": 1
         },
         "_totalDonationsByTag": {},
         "duelsComplete": true,
@@ -11405,12 +11407,12 @@
           "#9U9YVU80": 16,
           "#V9RL22GYQ": 16,
           "#V0VLJQCJU": 16,
-          "#8CQ80LJ8V": 12,
+          "#8CQ80LJ8V": 16,
           "#28QVCVLR": 0,
           "#QY0LG0R0P": 0
         },
         "periodPointsEarned": 13325,
-        "snapshotCount": 48
+        "snapshotCount": 52
       }
     ],
     "donationBaseline": {
