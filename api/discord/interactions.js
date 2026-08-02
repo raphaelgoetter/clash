@@ -3938,13 +3938,10 @@ export default async function handler(req, res) {
 
         let currentWeekLines = ["Pas de GDC en cours."];
         if (isWarPeriod) {
-          currentWeekLines = analysis.currentWarDays.days.map((day, idx) => {
+          const dayEntries = analysis.currentWarDays.days.map((day, idx) => {
             const label = getWarDayLabel(day.key);
+            if (day.isFuture) return { label, isFuture: true };
             const stats = combatsByDayKey.get(day.key);
-            if (day.isFuture) {
-              const badge = getCombatsDayBadge(null, { isFuture: true });
-              return `${badge} ${label} : à venir`;
-            }
             const battleLogDecks = stats?.decks ?? 0;
             // Le battle log (source de `stats`) est capé aux ~25-30 derniers
             // combats côté API Clash Royale : un jour ancien peut en sortir
@@ -3960,29 +3957,67 @@ export default async function handler(req, res) {
                 ? Math.max(snapshotDecks, battleLogDecks)
                 : battleLogDecks;
             const battleLogIncomplete = decks > battleLogDecks;
-            const isToday = Boolean(day.isToday);
-            const badge = getCombatsDayBadge(decks, { isToday });
-            if (decks === 0 && isToday)
-              return `${badge} ${label} : pas encore joué`;
-            if (decks === 0) return `${badge} ${label} : 0 deck`;
-            if (battleLogIncomplete) {
-              return `${badge} ${label} : ${decks} deck${decks === 1 ? "" : "s"} (détail indisponible)`;
+            return {
+              label,
+              isFuture: false,
+              isToday: Boolean(day.isToday),
+              decks,
+              battleLogIncomplete,
+              wins: battleLogIncomplete ? null : (stats?.wins ?? 0),
+              points: battleLogIncomplete ? null : (stats?.points ?? 0),
+              boatAttacks: stats?.boatAttacks ?? 0,
+              hasDuel: stats?.hasDuel,
+            };
+          });
+
+          // Un jour dont le détail est indisponible (battle log tronqué,
+          // cf. ci-dessus) peut parfois voir ses points déduits exactement
+          // par différence avec le total hebdomadaire exact
+          // (currentWeek.fame) : si un seul jour est concerné, son total de
+          // points est forcément le reste des points déjà connus sur les
+          // autres jours. Pas de déduction des victoires en revanche (le
+          // détail combat par combat de ce jour reste, lui, indisponible).
+          if (Number.isFinite(currentWeek?.fame)) {
+            const incompleteDays = dayEntries.filter(
+              (d) => !d.isFuture && d.battleLogIncomplete && d.decks > 0,
+            );
+            if (incompleteDays.length === 1) {
+              const knownPointsSum = dayEntries.reduce(
+                (sum, d) => sum + (Number.isFinite(d.points) ? d.points : 0),
+                0,
+              );
+              const remainder = currentWeek.fame - knownPointsSum;
+              if (remainder >= 0) incompleteDays[0].points = remainder;
             }
-            const wins = stats?.wins ?? 0;
-            const points = stats?.points ?? 0;
-            let line = `${badge} ${label} : ${decks} deck${decks === 1 ? "" : "s"} (${wins} victoire${wins === 1 ? "" : "s"}) · ${points} pts`;
+          }
+
+          currentWeekLines = dayEntries.map((d) => {
+            if (d.isFuture) {
+              const badge = getCombatsDayBadge(null, { isFuture: true });
+              return `${badge} ${d.label} : à venir`;
+            }
+            const badge = getCombatsDayBadge(d.decks, { isToday: d.isToday });
+            if (d.decks === 0 && d.isToday)
+              return `${badge} ${d.label} : pas encore joué`;
+            if (d.decks === 0) return `${badge} ${d.label} : 0 deck`;
+            if (d.battleLogIncomplete) {
+              const pointsSuffix = Number.isFinite(d.points)
+                ? ` · ${d.points} pts`
+                : "";
+              return `${badge} ${d.label} : ${d.decks} deck${d.decks === 1 ? "" : "s"}${pointsSuffix} (détail indisponible)`;
+            }
+            let line = `${badge} ${d.label} : ${d.decks} deck${d.decks === 1 ? "" : "s"} (${d.wins} victoire${d.wins === 1 ? "" : "s"}) · ${d.points} pts`;
             // Warnings uniquement sur un jour clos (jamais "aujourd'hui",
             // jamais "à venir", déjà retournés plus haut) avec au moins un
             // deck joué (déjà garanti à ce stade).
-            if (!isToday) {
+            if (!d.isToday) {
               const warnings = [];
-              const boatAttacks = stats?.boatAttacks ?? 0;
-              if (boatAttacks > 0) {
+              if (d.boatAttacks > 0) {
                 warnings.push(
-                  `⚠️ ${boatAttacks} attaque${boatAttacks === 1 ? "" : "s"} bateau`,
+                  `⚠️ ${d.boatAttacks} attaque${d.boatAttacks === 1 ? "" : "s"} bateau`,
                 );
               }
-              if (!stats?.hasDuel) {
+              if (!d.hasDuel) {
                 warnings.push("⚠️ 0 duel");
               }
               if (warnings.length) line += ` · ${warnings.join(" · ")}`;
