@@ -1,0 +1,37 @@
+{
+  "duree_jours": 10,
+  "radeau_sections_max": 5,
+  "bois_par_point_radeau": 2,
+  "points_par_section": 5,
+  "stocks_initiaux": { "poisson": 10, "eau": 10, "bois": 6 },
+  "actions": {
+    "peche": { "label": "Pêcher", "emoji": "🎣", "resource": "poisson" },
+    "eau": { "label": "Collecter de l’eau", "emoji": "💧", "resource": "eau" },
+    "bois": { "label": "Récolter du bois", "emoji": "🪵", "resource": "bois" },
+    "explorer": { "label": "Explorer l’île", "emoji": "🔍" },
+    "radeau": { "label": "Construire le Radeau", "emoji": "🛶" }
+  },
+  "evenements": [
+    {
+      "jour": 3,
+      "id": "canicule",
+      "nom": "Grosse Canicule",
+      "emoji": "🔥",
+      "description": "Un soleil de plomb écrase l’île aujourd’hui — même les Barbares les plus baraqués du camp renoncent à sortir chercher de l’eau. Collecter de l’eau ne rapportera qu’une petite gorgée par volontaire."
+    },
+    {
+      "jour": 6,
+      "id": "ouragan",
+      "nom": "Ouragan Monstrueux",
+      "emoji": "🌪️",
+      "description": "Un ouragan monstrueux s’abat sur la plage, retournant les pirogues et couchant les arbres. La mer est trop déchaînée pour pêcher sereinement, et ramasser du bois sous des rafales pareilles relève de l’exploit — chaque volontaire ne rapportera qu’une maigre récolte."
+    },
+    {
+      "jour": 8,
+      "id": "gobelins",
+      "nom": "Invasion de Gobelins",
+      "emoji": "🧌",
+      "description": "Des Gobelins rôdent autour du campement, attirés par l’odeur du poisson séché. Trop dangereux d’explorer l’île aujourd’hui — et si le camp n’a pas au moins 5 Bois en réserve ce soir pour fortifier les abris, ils risquent de filer avec une partie des provisions !"
+    }
+  ]
+}

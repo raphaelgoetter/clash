@@ -840,6 +840,76 @@ Aucune nouvelle variable : le Tamagoshi réutilise `DISCORD_CHANNEL_FRAME_TEST`/
 
 ---
 
+## Robinson (survie insulaire communautaire)
+
+Mini-jeu communautaire quotidien indépendant du Clash Royale : la communauté est naufragée sur une île pendant 10 jours, jusqu'à l'arrivée des secours au Jour 11. Les membres votent chaque jour une action (Pêcher, Collecter de l'eau, Récolter du bois, Explorer, Construire le Radeau) pour alimenter 3 stocks de ressources (Nourriture, Eau, Bois) consommés automatiquement chaque nuit. Pas de commande slash associée — la publication/suppression passe uniquement par `scripts/postRobinson.js` (manuel ou cron), les boutons restent gérés par `api/discord/interactions.js`.
+
+### Déroulement
+
+Un seul message actif à la fois dans le salon dédié. Contrairement à l'Aventure et au Tamagoshi (où tout l'impact d'une journée est calculé une seule fois, séquentiellement, au cron), **les récoltes et le coût du Radeau sont appliqués en continu pendant la journée**, à chaque clic, avec un retour immédiat au joueur en éphémère (« Tu as pêché 2 poissons ! ») — voir "Résolution du vote et concurrence" ci-dessous pour le détail technique. Seule la **consommation automatique** reste calculée une fois par jour, au cron :
+
+1. `postRobinson()` (`api/discord/handlers/robinson.js`) clôture le jour actif : si le Radeau est déjà achevé (voir "Victoire anticipée"), la partie s'arrête là, sans consommation. Sinon, `V` = nombre de votants uniques du jour (`HLEN robinson:votes:<jour>`), consommation automatique `-V` Nourriture, `-V` Eau, `-⌈V/2⌉` Bois (plancher 0), puis vérification Gobelins si l'événement du jour est actif, puis mise à jour des compteurs de jours consécutifs à 0 par ressource.
+2. Si une ressource est à 0 pour la 2ᵉ journée consécutive → défaite immédiate. Si le Jour 11 est atteint → victoire (secours arrivés).
+3. Sinon, le jour suivant s'ouvre : événement programmé éventuel (voir plus bas), suppression du message de la veille (`DELETE`, tolérant), publication du nouveau jour.
+
+`robinson:state.termine` passe à `true` dès qu'une issue (victoire Radeau, victoire Jour 11, défaite) est atteinte — les runs suivants du cron deviennent des no-op silencieux, même principe que `aventure:state.termine`/`tamagotchi:state.termine`.
+
+### Résolution du vote et concurrence
+
+Un membre ne peut voter qu'une fois par jour parmi les 5 actions, et **ce vote n'est pas modifiable** une fois qu'il a réellement abouti (comme le Tamagoshi). La réservation du slot de vote utilise `HSETNX` (pas `HGET` puis `HSET`) car le Radeau doit pouvoir **libérer** une réservation ratée : si le stock de Bois est insuffisant au moment du clic, le vote est rejeté *sans consommer le slot* (`releaseVoteSlot()`), le joueur peut réessayer plus tard dans la journée si le stock remonte — contrairement à un vote posé sur une action différente, qui reste définitif jusqu'au lendemain.
+
+Les stocks de ressources (`robinson:stock:poisson/eau/bois`) et les points de Radeau (`robinson:radeau_points`) vivent dans des **clés Redis numériques séparées, mutées uniquement via `INCRBY`/`DECRBY`** — jamais un blob JSON relu-modifié-réécrit, qui perdrait des mises à jour si deux membres cliquent en même temps (le second `SET` écraserait le premier). Le coût du Radeau (le seul cas pouvant échouer) utilise le pattern « décrémenter puis vérifier, compenser si négatif » (`attemptRaftContribution()`) : sûr sans script Lua, personne d'autre ne lisant le stock de Bois de façon atomiquement sensible entre les deux appels du même flux.
+
+Le clic sur un bouton d'action répond toujours en éphémère à l'auteur (`DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE` puis `PATCH .../messages/@original`, comme le Tamagoshi) avec le résultat exact du tirage ; le message public (stocks, radeau, compteurs de votes) est mis à jour séparément par un `PATCH /channels/{id}/messages/{id}` direct avec le token du bot.
+
+### Tirages et événements programmés
+
+Pêcher/Eau/Bois tirent 0 à 3 unités (25 % chacun, `rollHarvestAmount()`) ; Explorer tire toujours 3 unités au total, réparties par 3 tirages indépendants uniformes entre les 3 ressources (`rollExplorerYield()`). 3 événements fixes tirés de `robinson.json.evenements` (Jours 3/6/8, `eventForDay()`) modifient les tirages du jour concerné :
+
+- **Grosse Canicule** (Jour 3) : Collecter de l'eau utilise un tirage dédié 0/1 (50/50, `rollCappedEventAmount()`) au lieu du tirage normal 0-3.
+- **Ouragan Monstrueux** (Jour 6) : Pêcher et Récolter du bois utilisent le même tirage dédié 0/1.
+- **Invasion de Gobelins** (Jour 8) : le bouton Explorer est retiré des composants ce jour-là (`isExplorerDisabled()`). À la clôture, **après** la consommation automatique, si le stock de Bois restant est `< 5`, les Gobelins volent 5 Poissons (plancher 0).
+
+### Victoire anticipée (Radeau)
+
+Construire le Radeau coûte `bois_par_point_radeau` (2) Bois pour `+1` point de construction ; `points_par_section` (5) points forment 1 section, `radeau_sections_max` (5) sections achèvent le Radeau (25 points au total). La victoire par le Radeau n'est **jamais annoncée en temps réel** au clic qui complète la 5ᵉ section (cohérent avec « aucune publication en dehors du cron » déjà appliqué à l'Aventure/au Tamagoshi) : elle est détectée et révélée au cron suivant, qui court-circuite alors entièrement la consommation et la vérification de défaite de ce jour-là.
+
+### Données (robinson.json)
+
+- `data/robinson/robinson.json` — config statique éditée à la main : durée, coûts du Radeau, stocks initiaux, et `evenements` (3 événements, chacun portant son propre champ `jour` — contrairement à `tamagotchi.json` qui indexe ses événements positionnellement). Chargée une fois et mise en cache (`loadRobinsonConfig()`), jamais mutée à l'exécution.
+- `frontend/public/images/robinson/rob-01.webp` à `rob-10.webp` — une illustration par jour, servie en asset statique (même principe que `tama-01.webp`…`tama-10.webp` du Tamagoshi) et référencée directement par URL (`robinsonImageUrl()`, `api/discord/handlers/robinson.js`) dans le champ `image` de l'embed. L'embed de fin de partie (victoire Radeau, victoire Jour 11, défaite) réutilise systématiquement l'illustration du dernier jour (`rob-10.webp`).
+
+### Stockage — Upstash Redis (`robinson:*`)
+
+Même instance et mêmes conventions que les autres jeux (`automaticDeserialization: false`, sérialisation JSON manuelle). Espace de clés `robinson:*`, totalement séparé.
+
+| Clé Redis | Type | Contenu |
+| --- | --- | --- |
+| `robinson:state` | STRING | `{ jour, channelId, messageId, publishedAt, termine, event, zeroStreaks }` — jour actuellement affiché, muté uniquement au cron |
+| `robinson:stock:poisson` / `:eau` / `:bois` | STRING (compteur) | Stocks courants — mutés en continu via `INCRBY`/`DECRBY`, jamais un `GET` puis recalcul |
+| `robinson:radeau_points` | STRING (compteur) | Points de construction cumulés du Radeau |
+| `robinson:votes:<jour>` | HASH | `discordId → actionId` — jetable, effacé après clôture du jour |
+| `robinson:vote_details:<jour>` | HASH | `discordId → { actionId, amount\|yields\|pointsAdded, at }` — résultat exact du tirage, pour réafficher le même résultat sur un reclic idempotent sans re-tirer |
+| `robinson:vote_usernames:<jour>` | HASH | `discordId → pseudo` — jetable, uniquement pour l'affichage admin (`npm run robinson:status`), jamais utilisé pour la logique de vote |
+| `robinson:historique` | HASH | `jour → { V, stocksAvant, stocksApres, consumption, gobelinsVoleur, event, outcome, resolvedAt }` — jamais nettoyé, alimente le bouton Journal de Bord |
+
+### Scripts npm (Robinson)
+
+| Commande | Effet |
+| --- | --- |
+| `npm run robinson:test` | Poste manuellement le jour de Robinson sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`). |
+| `npm run robinson:test:dry` | Aperçu console du prochain jour (ou du message de fin de partie), sans écrire d'état ni poster sur Discord. |
+| `npm run robinson:public` | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `robinson.yml`. |
+| `npm run robinson:public:dry` | Équivalent dry-run de `robinson:public`. |
+| `npm run robinson:reset` | Remet Robinson à zéro : plus de jour actif, stocks/votes/historique effacés. **Destructif**. |
+| `npm run robinson:status` | Affiche l'état courant (stocks, radeau, décompte des votes du jour) sans passer par Discord. |
+
+### Variables d'environnement requises (Robinson)
+
+Aucune nouvelle variable : Robinson réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (même instance Upstash Redis, espace de clés `robinson:*` totalement séparé). Le workflow `.github/workflows/robinson.yml` réutilise les mêmes secrets GitHub Actions que les autres jeux (déjà configurés, rien à ajouter). Comme pour le Tamagoshi, le `schedule` du cron reste **commenté** (seul `workflow_dispatch` actif) tant que le jeu est en phase de test — à réactiver une fois validé.
+
+---
+
 ## Détection des arrivées en cours de GDC
 
 ### Contexte

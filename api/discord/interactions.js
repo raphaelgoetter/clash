@@ -63,6 +63,10 @@ import {
   handleRegles as handleTamagotchiRegles,
 } from "./handlers/tamagotchi.js";
 import {
+  handleVoteButton as handleRobinsonVote,
+  handleJournal as handleRobinsonJournal,
+} from "./handlers/robinson.js";
+import {
   summarizeWarDecks,
   summarizeWarDecksForMatchup,
   getWarMatchPoints,
@@ -8433,6 +8437,38 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleTamagotchiRegles(webhookUrl));
+    return;
+  }
+
+  // ── Robinson : boutons d'action (vote) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("robinson_vote:")
+  ) {
+    const [, jour, actionId] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    // type 5 = DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE (éphémère) : chaque
+    // récolte a un résultat individuel à révéler en privé, le message public
+    // est mis à jour séparément par un PATCH direct au salon (comme Tamagotchi).
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() =>
+      handleRobinsonVote(webhookUrl, jour, actionId, discordId, username, process.env.DISCORD_TOKEN),
+    );
+    return;
+  }
+
+  // ── Robinson : bouton "Journal de Bord" (lecture seule, hors-vote) ──
+  if (body.type === 3 && body.data?.custom_id === "robinson_journal") {
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleRobinsonJournal(webhookUrl));
     return;
   }
 
