@@ -17,8 +17,8 @@ export const MS_PER_DAY = 1000 * 60 * 60 * 24;
  */
 export const CLAN_RESET_TIMES = {
   Y8JUPC9C: { h: 9, m: 33 }, // La Resistance (Clan 1) — reset spécifique 09:33 UTC
-  LRQP20V9: { h: 9, m: 36 }, // Les Resistants (Clan 2) — reset spécifique 09:36 UTC
-  QU9UQJRL: { h: 9, m: 56 }, // Les Revoltes (Clan 3) — reset spécifique 09:56 UTC
+  LRQP20V9: { h: 9, m: 37 }, // Les Resistants (Clan 2) — reset spécifique 09:37 UTC
+  QU9UQJRL: { h: 9, m: 51 }, // Les Revoltes (Clan 3) — reset spécifique 09:51 UTC
 };
 
 /** Décalage UTC→Paris en ms pour une date donnée (+3 600 000 hiver, +7 200 000 été) */
@@ -253,7 +253,10 @@ export function getCurrentSeasonBounds(now = new Date()) {
     now.getTime() >= candidate.getTime()
       ? candidate
       : getFirstMondayOfMonth(year, monthIndex - 1);
-  const end = getFirstMondayOfMonth(start.getUTCFullYear(), start.getUTCMonth() + 1);
+  const end = getFirstMondayOfMonth(
+    start.getUTCFullYear(),
+    start.getUTCMonth() + 1,
+  );
   return { start, end };
 }
 
