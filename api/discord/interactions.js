@@ -5048,8 +5048,8 @@ export default async function handler(req, res) {
             throw new Error("Impossible de déterminer la saison cible.");
           }
 
-          title = `🏆 <:topplayers:1493708397407899648> Meilleurs joueurs`;
-          footer = `😎 Meilleurs joueurs de la saison précédente (S${selectedSeason})`;
+          title = `🏆 <:topplayers:1493708397407899648> Meilleurs joueurs sur toute la saison S${toPublicSeasonId(selectedSeason)}`;
+          footer = `😎 Meilleurs joueurs de la saison précédente (S${toPublicSeasonId(selectedSeason)})`;
 
           const seasonTotals = new Map();
 
@@ -5146,7 +5146,6 @@ export default async function handler(req, res) {
             players = allTimeSorted.filter((p) => p.fame >= cutoffFame);
           }
         } else {
-          title = `<:topplayers:1493708397407899648> Meilleurs joueurs`;
           const weekRef = (function () {
             for (const clan of CLANS) {
               const raceLog = clanRaceLogs[clan.tag];
@@ -5155,8 +5154,10 @@ export default async function handler(req, res) {
             }
             return null;
           })();
+          const publicWeekLabel = weekRef ? toPublicWeekId(weekRef) : "S?-W?";
 
-          footer = `😎 Meilleurs joueurs de la semaine précédente (${weekRef ? toPublicWeekId(weekRef) : "S?-W?"})`;
+          title = `<:topplayers:1493708397407899648> Meilleurs joueurs de la semaine ${publicWeekLabel}`;
+          footer = `😎 Meilleurs joueurs de la semaine précédente (${publicWeekLabel})`;
 
           const weekSorted = allTeams.sort(
             (a, b) =>
