@@ -97,6 +97,8 @@ async function scanDelete(pattern) {
 const STATE_KEY = "bossraid:state";
 const DERNIER_ROLE_KEY = "bossraid:dernier_role";
 const HISTORIQUE_KEY = "bossraid:historique";
+const MANCHES_KEY = "bossraid:manches";
+const MANCHE_SEQ_KEY = "bossraid:manche_seq";
 
 function votesKey(jour) {
   return `bossraid:votes:${jour}`;
@@ -475,6 +477,29 @@ export async function listHistorique({ limit = 10, offset = 0 } = {}) {
     .sort((a, b) => b.jour - a.jour);
   const hasMore = entries.length > offset + limit;
   return { entries: entries.slice(offset, offset + limit), hasMore };
+}
+
+// ── Manches (bilans de fin de Raid) ────────────────────────────────
+// Le jeu est destiné à être rejoué plusieurs fois dans l'année (un Raid =
+// une "manche"). Contrairement à HISTORIQUE_KEY (bilans quotidiens d'UNE
+// manche, écrasés d'une manche à l'autre puisque les jours 1-10 se
+// répètent), MANCHES_KEY est un HASH permanent indexé par un numéro de
+// manche strictement croissant (`MANCHE_SEQ_KEY`, `INCR` atomique) —
+// jamais nettoyé par resetBossRaid(), pour que le récap de fin de Raid
+// puisse comparer la manche qui vient de se terminer aux précédentes.
+
+export async function archiveManche(record) {
+  const manche = Number(await getRedis().incr(MANCHE_SEQ_KEY));
+  await getRedis().hset(MANCHES_KEY, { [manche]: toJson({ manche, ...record }) });
+  return manche;
+}
+
+// Trié de la manche la plus récente à la plus ancienne.
+export async function listManches({ limit = 10 } = {}) {
+  const all = await hgetallJson(MANCHES_KEY);
+  return Object.values(all)
+    .sort((a, b) => b.manche - a.manche)
+    .slice(0, limit);
 }
 
 // ── Remise à zéro ────────────────────────────────────────────────────

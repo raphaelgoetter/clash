@@ -19,6 +19,8 @@ import {
   activeEventForDay,
   previewCloture,
   closeDayAndAdvance,
+  archiveManche,
+  listManches,
 } from "../../../backend/services/bossraid.js";
 import {
   getRoleIdByName,
@@ -120,13 +122,35 @@ function buildComponents(jour, phase, voteCounts, config) {
   return [voteRow, utilityRow];
 }
 
-function buildOutcomeEmbed(totalDegatsCumules, config) {
+// Le jeu est rejoué plusieurs fois dans l'année : la manche qui vient de se
+// terminer est comparée aux précédentes (manches, currentManche — voir
+// archiveManche()/listManches() dans bossraid.js), avec un 🏆 sur le
+// meilleur total de dégâts toutes manches confondues.
+
+function formatMancheLine(record, isCurrent, isBest) {
+  const marker = isBest ? "🏆 " : "";
+  const suffix = isCurrent ? " *(cette manche)*" : "";
+  return `${marker}Manche ${record.manche} — **${record.totalDegatsCumules}** dégâts${suffix}`;
+}
+
+function buildManchesSection(manches, currentManche) {
+  if (!manches.length) return [];
+  const best = manches.reduce((a, b) => (b.totalDegatsCumules > a.totalDegatsCumules ? b : a));
+  return [
+    "",
+    "**📊 Manches précédentes**",
+    ...manches.map((m) => formatMancheLine(m, m.manche === currentManche, m.manche === best.manche)),
+  ];
+}
+
+function buildOutcomeEmbed(totalDegatsCumules, config, manches = [], currentManche = null) {
   return {
     title: "🏆 Boss Raid terminé !",
     description: [
       `Après ${config.duree_jours} jours de combat acharné, le Boss Colossal se retire enfin — le clan a tenu bon jusqu’au bout !`,
       "",
       `💥 **Dégâts totaux infligés au Boss : ${totalDegatsCumules}**`,
+      ...buildManchesSection(manches, currentManche),
       "",
       "Merci à tous les combattants qui ont participé à ce Raid !",
     ].join("\n"),
@@ -197,7 +221,19 @@ export async function postBossRaid(channelId, { dryRun = false, noPing = false }
 
   // Fin de partie (10 jours écoulés) — score final, plus aucun vote possible.
   if (jourSuivant > config.duree_jours) {
-    const embed = buildOutcomeEmbed(closure.totalDegatsApres, config);
+    // Archivage AVANT lecture de la liste : la manche qui vient de se
+    // terminer apparaît alors dans son propre récap comparatif (marquée
+    // "cette manche"). Jamais archivé en dry-run (aucune écriture).
+    let currentManche = null;
+    if (!dryRun) {
+      currentManche = await archiveManche({
+        totalDegatsCumules: closure.totalDegatsApres,
+        bossStatsFinal: closure.bossStatsApres,
+        resolvedAt: new Date().toISOString(),
+      });
+    }
+    const manches = await listManches({ limit: 10 });
+    const embed = buildOutcomeEmbed(closure.totalDegatsApres, config, manches, currentManche);
     if (dryRun) return { dryRun: true, final: true, embed, closure };
     const result = await publishAndWriteState(channelId, state, {
       phase: "combat",

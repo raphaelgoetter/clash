@@ -40,6 +40,9 @@ import {
   closeDayAndAdvance,
   grantRadeauPoints,
   grantEqualResources,
+  computeMancheScore,
+  archiveManche,
+  listManches,
 } from "../../../backend/services/robinson.js";
 import {
   getRoleIdByName,
@@ -194,13 +197,46 @@ function buildRobinsonComponents(jour, config, voteCounts, event) {
   ];
 }
 
-function buildOutcomeEmbed(outcome, config) {
+// Le jeu est rejoué plusieurs fois dans l'année : la manche qui vient de se
+// terminer est comparée aux précédentes (manches, currentManche — voir
+// archiveManche()/listManches()/computeMancheScore() dans robinson.js),
+// avec un 🏆 sur la meilleure manche toutes issues confondues.
+
+function outcomeLabel(outcome) {
+  if (outcome === "victoire_radeau") return "🛶 Victoire (Radeau)";
+  if (outcome === "victoire_jour11") return "🚢 Victoire (Jour 11)";
+  return "💀 Défaite";
+}
+
+function formatMancheLine(record, config, isCurrent, isBest) {
+  const marker = isBest ? "🏆 " : "";
+  const suffix = isCurrent ? " *(cette manche)*" : "";
+  return `${marker}Manche ${record.manche} — ${outcomeLabel(record.outcome)}, jour ${record.jour}${suffix}`;
+}
+
+function buildManchesSection(manches, config, currentManche) {
+  if (!manches.length) return [];
+  const best = manches.reduce((a, b) =>
+    computeMancheScore(b.outcome, b.jour, config.duree_jours) > computeMancheScore(a.outcome, a.jour, config.duree_jours) ? b : a,
+  );
+  return [
+    "",
+    "**📊 Manches précédentes**",
+    ...manches.map((m) => formatMancheLine(m, config, m.manche === currentManche, m.manche === best.manche)),
+  ];
+}
+
+function buildOutcomeEmbed(outcome, config, manches = [], currentManche = null) {
   const image = { url: robinsonImageUrl(config.duree_jours) };
+  const manchesLines = buildManchesSection(manches, config, currentManche);
+
   if (outcome === "victoire_radeau") {
     return {
       title: "🛶 Victoire anticipée — le Radeau est achevé !",
-      description:
+      description: [
         "Contre toute attente, la communauté a fini de construire le Radeau avant l’arrivée des secours ! Direction le large — l’île est enfin derrière vous.",
+        ...manchesLines,
+      ].join("\n"),
       color: 0xf1c40f,
       image,
     };
@@ -208,16 +244,20 @@ function buildOutcomeEmbed(outcome, config) {
   if (outcome === "victoire_jour11") {
     return {
       title: "🚢 Les secours sont arrivés !",
-      description:
+      description: [
         "Après 10 jours de survie acharnée, un bateau apparaît enfin à l’horizon ! Bravo à tous les naufragés — vous avez survécu à l’île.",
+        ...manchesLines,
+      ].join("\n"),
       color: 0xf1c40f,
       image,
     };
   }
   return {
     title: "💀 Naufrage définitif…",
-    description:
+    description: [
       "Une ressource critique est tombée à 0 deux jours de suite — l’île a eu raison du campement. L’aventure s’arrête ici.",
+      ...manchesLines,
+    ].join("\n"),
     color: 0x2c3e50,
     image,
   };
@@ -264,7 +304,17 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false }
   // Fin de partie (victoire par le Radeau ou défaite) — jamais annoncée en
   // temps réel au clic, toujours révélée ici, au cron.
   if (closure.outcome === "victoire_radeau" || closure.outcome === "defaite") {
-    const embed = buildOutcomeEmbed(closure.outcome, config);
+    let currentManche = null;
+    if (!dryRun) {
+      currentManche = await archiveManche({
+        outcome: closure.outcome,
+        jour: state.jour,
+        radeauPoints: closure.radeauPoints,
+        resolvedAt: new Date().toISOString(),
+      });
+    }
+    const manches = await listManches({ limit: 10 });
+    const embed = buildOutcomeEmbed(closure.outcome, config, manches, currentManche);
     if (dryRun) return { dryRun: true, final: true, outcome: closure.outcome, embed };
     const result = await publishAndWriteState(channelId, state, {
       jour: state.jour,
@@ -282,7 +332,17 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false }
 
   const jourSuivant = state.jour + 1;
   if (isSurvivalVictory(jourSuivant, config.duree_jours)) {
-    const embed = buildOutcomeEmbed("victoire_jour11", config);
+    let currentManche = null;
+    if (!dryRun) {
+      currentManche = await archiveManche({
+        outcome: "victoire_jour11",
+        jour: jourSuivant,
+        radeauPoints: closure.radeauPoints,
+        resolvedAt: new Date().toISOString(),
+      });
+    }
+    const manches = await listManches({ limit: 10 });
+    const embed = buildOutcomeEmbed("victoire_jour11", config, manches, currentManche);
     if (dryRun) return { dryRun: true, final: true, outcome: "victoire_jour11", embed };
     const result = await publishAndWriteState(channelId, state, {
       jour: state.jour,

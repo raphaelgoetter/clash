@@ -806,6 +806,10 @@ L'impact d'une journée est une **moyenne pondérée par part de votes** (`compu
 
 Le total d'étoiles de dressage détermine le palier (`computeFinalTier()`) : **S-Tier** (8-10 étoiles, annonce narrative flatteuse — pas de rôle Discord réel créé/attribué), **B-Tier** (4-7 étoiles, message de remerciement), **F-Tier** (< 4 étoiles, "défi d'arène" en habillage narratif uniquement — aucune mécanique de mini-boss développée). Décisions explicites pour rester dans le scope d'un système de jauges/votes.
 
+### Manches (comparaison entre parties) — Tamagoshi
+
+Le Tamagoshi (comme Robinson et Boss Raid) est destiné à être rejoué plusieurs fois dans l'année — chaque partie complète est une **manche**. `tamagotchi:manches` (HASH permanent, jamais nettoyé par `resetTamagotchi()`) archive le bilan de chaque manche terminée, indexé par un numéro strictement croissant (`tamagotchi:manche_seq`, `INCR` atomique) : `archiveManche({ starTotal, tier, resolvedAt })`. À l'écran de fin (Jour 10), l'embed liste les 10 dernières manches (`listManches()`) avec un 🏆 sur le meilleur total d'étoiles toutes manches confondues — la manche qui vient de se terminer y apparaît elle-même, marquée *(cette manche)*. Rien n'est archivé en dry-run (aucune écriture Redis).
+
 ### Données (tamagotchi.json)
 
 - `data/tamagotchi/tamagotchi.json` — config statique éditée à la main : durée, zones idéales, jauges initiales, `actions` (impact par jauge de chaque bouton, `inspecter` marqué `is_info_action: true` pour être exclu du calcul d'impact) et `evenements_possibles` (3 événements, ordre = ordre de déclenchement Jours 3/6/9). Chargée une fois et mise en cache (`loadTamagotchiConfig()`), jamais mutée à l'exécution.
@@ -821,7 +825,9 @@ Même instance et mêmes conventions que Frame/Anagram/Aventure (`automaticDeser
 | `tamagotchi:state` | STRING | `{ jour, gauges, channelId, messageId, publishedAt, termine, starTotal, lastEvent, dayVoters }` — jour actuellement affiché |
 | `tamagotchi:votes:<jour>` | HASH | `discordId → actionId` — jetable, effacé après clôture du jour |
 | `tamagotchi:vote_usernames:<jour>` | HASH | `discordId → pseudo` — jetable, uniquement pour l'affichage admin (`npm run tamagotchi:status`) et le texte narratif, jamais utilisé pour la logique de vote |
-| `tamagotchi:historique` | HASH | `jour → { gaugesAvant, gaugesApres, voteCounts, voters, impact, event, rating, starDelta, starTotalApres, resolvedAt }` — jamais nettoyé, bilan interne uniquement (pas de bouton Discord dédié pour ce jeu) |
+| `tamagotchi:historique` | HASH | `jour → { gaugesAvant, gaugesApres, voteCounts, voters, impact, event, rating, starDelta, starTotalApres, resolvedAt }` — bilans quotidiens de la manche EN COURS, écrasés d'une manche à l'autre (les jours 1-10 se répètent) |
+| `tamagotchi:manches` | HASH | `manche → { manche, starTotal, tier, resolvedAt }` — un bilan par manche TERMINÉE, jamais nettoyé (persiste entre les manches, y compris après `npm run tamagotchi:reset`) |
+| `tamagotchi:manche_seq` | STRING (compteur) | Numéro de la prochaine manche à archiver, incrémenté (`INCR`) à chaque fin de partie réelle (jamais en dry-run) |
 
 ### Scripts npm (Tamagoshi)
 
@@ -831,7 +837,7 @@ Même instance et mêmes conventions que Frame/Anagram/Aventure (`automaticDeser
 | `npm run tamagotchi:test:dry` | Aperçu console du prochain jour (ou du message de fin de partie au Jour 10), sans écrire d'état ni poster sur Discord. |
 | `npm run tamagotchi:public` | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `tamagotchi.yml`. |
 | `npm run tamagotchi:public:dry` | Équivalent dry-run de `tamagotchi:public`. |
-| `npm run tamagotchi:reset` | Remet le Tamagoshi à zéro : plus de journée active, votes/historique effacés. **Destructif**. |
+| `npm run tamagotchi:reset` | Remet le Tamagoshi à zéro : plus de journée active, votes/historique de la manche en cours effacés. **Destructif** — mais préserve `tamagotchi:manches` (l'archive des manches passées n'est jamais effacée). |
 | `npm run tamagotchi:status` | Affiche l'état courant (jauges, étoiles, décompte des votes du jour) sans passer par Discord. |
 
 ### Variables d'environnement requises (Tamagoshi)
@@ -890,6 +896,12 @@ Construire le Radeau coûte `bois_par_point_radeau` (**1**, initialement 2) Bois
 
 D'après simulation (stratégie : survie pure jusqu'au Jour 7, puis ~30 % des votes redirigés vers le Radeau après l'Épave), la victoire par Radeau atteint **93 %** pour un petit groupe (V=6) et reste dans une fourchette **59-78 %** pour les groupes de 10 à 20 votants — cohérent avec la cible ~75 %. La survie passive (Jour 11, sans stratégie Radeau) se situe désormais entre **46 % et 58 %** pour la tranche 10-20 votants (hors le pic ponctuel à V=12 dû à l'effet de seuil du Colis Royal, voir plus haut), contre 65-83 % avant l'ajout de l'Indigestion Royale — plus proche de la cible basse (~50 %) demandée pour cette tranche.
 
+### Manches (comparaison entre parties) — Robinson
+
+Robinson (comme le Tamagoshi et Boss Raid) est destiné à être rejoué plusieurs fois dans l'année — chaque partie complète est une **manche**. `robinson:manches` (HASH permanent, jamais nettoyé par `resetRobinson()`) archive le bilan de chaque manche terminée, indexé par un numéro strictement croissant (`robinson:manche_seq`, `INCR` atomique) : `archiveManche({ outcome, jour, radeauPoints, resolvedAt })`.
+
+Robinson n'a pas de score numérique naturel (c'est une survie, pas un score attack) : `computeMancheScore(outcome, jour, dureeJours)` encode donc une hiérarchie explicite pour classer les manches entre elles — toute victoire bat toute défaite ; entre victoires Radeau, plus tôt = meilleur (`1000 + (dureeJours + 1 − jour)`, l'évasion rapide est valorisée) ; les victoires Jour 11 sont toutes à égalité (`500` flat, aucune notion de vitesse) ; entre défaites, plus de jours survécus = meilleur (`jour` brut). À l'écran de fin, l'embed liste les 10 dernières manches (`listManches()`) avec un 🏆 sur la meilleure selon ce score — la manche qui vient de se terminer y apparaît elle-même, marquée *(cette manche)*. Rien n'est archivé en dry-run.
+
 ### Données (robinson.json)
 
 - `data/robinson/robinson.json` — config statique éditée à la main : durée, coûts du Radeau, stocks initiaux, et `evenements` (3 événements, chacun portant son propre champ `jour` — contrairement à `tamagotchi.json` qui indexe ses événements positionnellement). Chargée une fois et mise en cache (`loadRobinsonConfig()`), jamais mutée à l'exécution.
@@ -907,7 +919,9 @@ Même instance et mêmes conventions que les autres jeux (`automaticDeserializat
 | `robinson:votes:<jour>` | HASH | `discordId → actionId` — jetable, effacé après clôture du jour |
 | `robinson:vote_details:<jour>` | HASH | `discordId → { actionId, amount\|yields\|pointsAdded, at }` — résultat exact du tirage, pour réafficher le même résultat sur un reclic idempotent sans re-tirer |
 | `robinson:vote_usernames:<jour>` | HASH | `discordId → pseudo` — jetable, uniquement pour l'affichage admin (`npm run robinson:status`), jamais utilisé pour la logique de vote |
-| `robinson:historique` | HASH | `jour → { V, stocksAvant, stocksApres, consumption, gobelinsVoleur, event, outcome, resolvedAt }` — jamais nettoyé, alimente le bouton Journal de Bord |
+| `robinson:historique` | HASH | `jour → { V, stocksAvant, stocksApres, consumption, gobelinsVoleur, event, outcome, resolvedAt }` — bilans quotidiens de la manche EN COURS, alimente le bouton Journal de Bord, effacé par `resetRobinson()` |
+| `robinson:manches` | HASH | `manche → { manche, outcome, jour, radeauPoints, resolvedAt }` — un bilan par manche TERMINÉE, jamais nettoyé (persiste entre les manches, y compris après `npm run robinson:reset`) |
+| `robinson:manche_seq` | STRING (compteur) | Numéro de la prochaine manche à archiver, incrémenté (`INCR`) à chaque fin de partie réelle (jamais en dry-run) |
 
 ### Scripts npm (Robinson)
 
@@ -917,7 +931,7 @@ Même instance et mêmes conventions que les autres jeux (`automaticDeserializat
 | `npm run robinson:test:dry` | Aperçu console du prochain jour (ou du message de fin de partie), sans écrire d'état ni poster sur Discord. |
 | `npm run robinson:public` | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `robinson.yml`. |
 | `npm run robinson:public:dry` | Équivalent dry-run de `robinson:public`. |
-| `npm run robinson:reset` | Remet Robinson à zéro : plus de jour actif, stocks/votes/historique effacés. **Destructif**. |
+| `npm run robinson:reset` | Remet Robinson à zéro : plus de jour actif, stocks/votes/historique de la manche en cours effacés. **Destructif** — mais préserve `robinson:manches` (l'archive des manches passées n'est jamais effacée). |
 | `npm run robinson:status` | Affiche l'état courant (stocks, radeau, décompte des votes du jour) sans passer par Discord. |
 
 ### Variables d'environnement requises (Robinson)
@@ -976,6 +990,10 @@ Chaque Chevalier protège jusqu'à 2 unités à distance (Sorcier/Archères) : `
 
 Titre `⚔️ Boss Raid — Jour X/10` (ou `— Un Boss Colossal approche…` au jour d'annonce). Bilan de la veille (dégâts infligés, Ultime déclenchée le cas échéant) affiché uniquement après une clôture réelle — absent du premier post de combat (Jour 1). Barres `🟥`/`⬜` sur 10 segments pour la Défense et la Résistance courantes. Événement du jour révélé dans cet embed seulement à partir du jour concerné. Composants : row 1 = 5 boutons de vote (`{emoji} {label} (n)`, un seul par rôle, masquée hors phase combat) ; row 2 = `[📖 Règles & Rôles]` + `[📜 Journal]`.
 
+### Manches (comparaison entre parties) — Boss Raid
+
+Boss Raid (comme Robinson et le Tamagoshi) est destiné à être rejoué plusieurs fois dans l'année — chaque Raid complet est une **manche**. `bossraid:manches` (HASH permanent, jamais nettoyé par `resetBossRaid()`) archive le bilan de chaque manche terminée, indexé par un numéro strictement croissant (`bossraid:manche_seq`, `INCR` atomique) : `archiveManche({ totalDegatsCumules, bossStatsFinal, resolvedAt })`. Score comparatif naturel (contrairement à Robinson) : le total de dégâts cumulés, plus haut = meilleur. À l'écran de fin, l'embed liste les 10 dernières manches (`listManches()`) avec un 🏆 sur le meilleur total toutes manches confondues — la manche qui vient de se terminer y apparaît elle-même, marquée *(cette manche)*. Rien n'est archivé en dry-run.
+
 ### Données (boss_raid.json)
 
 `data/bossraid/boss_raid.json` — config statique éditée à la main : `duree_jours`, `boss_stats_initiales`, `roles.<id>` (label, emoji, plage de dégâts, `protection_slots`/`chance_debuff`/`reduction_stat`/`is_info_action` selon le rôle) et `evenements_boss` (3 événements fixes, un par `jour`). Chargée une fois et mise en cache (`loadBossRaidConfig()`), jamais mutée à l'exécution.
@@ -993,7 +1011,9 @@ Même instance et mêmes conventions que les autres jeux. Espace de clés `bossr
 | `bossraid:votes:<jour>` | HASH | `discordId → roleId` — écrasable, jetable, effacé après clôture du jour |
 | `bossraid:vote_at:<jour>` | HASH | `discordId → ISO timestamp` — horodatage de la dernière mise à jour du vote, sert à l'ordre de protection Chevalier |
 | `bossraid:vote_usernames:<jour>` | HASH | `discordId → pseudo` — jetable, uniquement pour l'affichage admin (`npm run bossraid:status`) |
-| `bossraid:historique` | HASH | `jour → { voteCounts, totalVotes, protection, allIn, event, totalDamageDuJour, totalDegatsApres, bossStatsAvant, bossStatsApres, voleuseDebuffs, resolvedAt }` — jamais nettoyé, alimente le bouton Journal |
+| `bossraid:historique` | HASH | `jour → { voteCounts, totalVotes, protection, allIn, event, totalDamageDuJour, totalDegatsApres, bossStatsAvant, bossStatsApres, voleuseDebuffs, resolvedAt }` — bilans quotidiens de la manche EN COURS, alimente le bouton Journal, effacé par `resetBossRaid()` |
+| `bossraid:manches` | HASH | `manche → { manche, totalDegatsCumules, bossStatsFinal, resolvedAt }` — un bilan par manche TERMINÉE, jamais nettoyé (persiste entre les manches, y compris après `npm run bossraid:reset`) |
+| `bossraid:manche_seq` | STRING (compteur) | Numéro de la prochaine manche à archiver, incrémenté (`INCR`) à chaque fin de Raid réel (jamais en dry-run) |
 
 ### Scripts npm (Boss Raid)
 
@@ -1003,7 +1023,7 @@ Même instance et mêmes conventions que les autres jeux. Espace de clés `bossr
 | `npm run bossraid:test:dry` | Aperçu console du prochain jour (ou du message de fin de Raid), sans écrire d'état ni poster sur Discord. |
 | `npm run bossraid:public` | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `bossraid.yml`. |
 | `npm run bossraid:public:dry` | Équivalent dry-run de `bossraid:public`. |
-| `npm run bossraid:reset` | Remet Boss Raid à zéro : plus de partie active, votes/dernier rôle/historique effacés. **Destructif**. |
+| `npm run bossraid:reset` | Remet Boss Raid à zéro : plus de partie active, votes/dernier rôle/historique de la manche en cours effacés. **Destructif** — mais préserve `bossraid:manches` (l'archive des manches passées n'est jamais effacée). |
 | `npm run bossraid:status` | Affiche l'état courant (posture du Boss, score cumulé, décompte des votes du jour) sans passer par Discord. |
 
 ### Variables d'environnement requises (Boss Raid)

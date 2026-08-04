@@ -15,6 +15,7 @@ import {
   eventForDay,
   computeEpaveBonus,
   computePoissonsPourrisLoss,
+  computeMancheScore,
 } from "./robinson.js";
 
 const CONFIG = { radeau_sections_max: 5, points_par_section: 5 };
@@ -169,6 +170,18 @@ async function main() {
   assert.strictEqual(computeEpaveBonus(epave, 15), 11);
   assert.strictEqual(computeEpaveBonus(epave, 20), 10); // 26-20=6 < points_min -> plancher à 10
   assert.strictEqual(computeEpaveBonus(epave, 0), 26);
+
+  // ── computeMancheScore — classement entre manches (jeu rejoué dans l'année) ──
+  assert.strictEqual(computeMancheScore("victoire_radeau", 5, 10), 1006); // 1000 + (11-5)
+  assert.strictEqual(computeMancheScore("victoire_radeau", 1, 10), 1010); // le plus rapide possible
+  assert.strictEqual(computeMancheScore("victoire_radeau", 11, 10), 1000); // bonus de vitesse à 0, jamais négatif
+  assert.strictEqual(computeMancheScore("victoire_jour11", 11, 10), 500); // toujours à égalité entre elles
+  assert.strictEqual(computeMancheScore("victoire_jour11", 11, 20), 500); // indépendant de dureeJours
+  assert.strictEqual(computeMancheScore("defaite", 7, 10), 7); // jours survécus
+  assert.strictEqual(computeMancheScore("defaite", 1, 10), 1);
+  // Hiérarchie stricte : toute victoire Radeau > toute victoire Jour 11 > toute défaite.
+  assert.ok(computeMancheScore("victoire_radeau", 11, 10) > computeMancheScore("victoire_jour11", 11, 10));
+  assert.ok(computeMancheScore("victoire_jour11", 11, 10) > computeMancheScore("defaite", 10, 10));
 
   console.log("✓ robinson service tests passed");
 }

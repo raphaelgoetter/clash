@@ -19,6 +19,8 @@ import {
   applyGaugeDelta,
   computeDayImpact,
   computeFinalTier,
+  archiveManche,
+  listManches,
 } from "../../../backend/services/tamagotchi.js";
 import {
   getRoleIdByName,
@@ -303,17 +305,41 @@ async function buildDayPayload(
 }
 
 // ── Embed de fin de partie (Jour 10) ──────────────────────────────
+// Le jeu est rejoué plusieurs fois dans l'année : la manche qui vient de se
+// terminer est comparée aux précédentes (manches, currentManche — voir
+// archiveManche()/listManches() dans tamagotchi.js), avec un 🏆 sur le
+// meilleur total d'étoiles toutes manches confondues.
 
-function buildFinalTierEmbed(starTotal, tier, config) {
+function formatMancheLine(record, isCurrent, isBest) {
+  const marker = isBest ? "🏆 " : "";
+  const suffix = isCurrent ? " *(cette manche)*" : "";
+  return `${marker}Manche ${record.manche} — ${record.starTotal}⭐ (${record.tier})${suffix}`;
+}
+
+function buildManchesSection(manches, currentManche) {
+  if (!manches.length) return [];
+  const best = manches.reduce((a, b) => (b.starTotal > a.starTotal ? b : a));
+  return [
+    "",
+    "**📊 Manches précédentes**",
+    ...manches.map((m) => formatMancheLine(m, m.manche === currentManche, m.manche === best.manche)),
+  ];
+}
+
+function buildFinalTierEmbed(starTotal, tier, config, manches = [], currentManche = null) {
   const image = { url: tamagotchiImageUrl(config.duree_jours) };
+  const manchesLines = buildManchesSection(manches, currentManche);
 
   if (tier === "S") {
     return {
       title: "🐉 Fin de l'aventure — Mohamed Light est impressionné !",
-      description:
+      description: [
         `Lilith rentre en pleine forme, l'écaille brillante et le sourire aux crocs. Mohamed Light décerne au serveur ` +
-        `le titre honorifique **🐉 Éleveur de Champion** — un immense bravo à toute la communauté !\n\n` +
+          `le titre honorifique **🐉 Éleveur de Champion** — un immense bravo à toute la communauté !`,
+        "",
         `⭐ Étoiles de dressage finales : ${starTotal}/${config.duree_jours}`,
+        ...manchesLines,
+      ].join("\n"),
       color: 0xf1c40f,
       image,
     };
@@ -321,19 +347,25 @@ function buildFinalTierEmbed(starTotal, tier, config) {
   if (tier === "B") {
     return {
       title: "🐉 Fin de l'aventure — Lilith rentre saine et sauve",
-      description:
-        `Le Bébé Dragon rentre un peu fatigué, mais indemne. Mohamed Light vous remercie chaleureusement d'avoir pris soin de Lilith !\n\n` +
+      description: [
+        `Le Bébé Dragon rentre un peu fatigué, mais indemne. Mohamed Light vous remercie chaleureusement d'avoir pris soin de Lilith !`,
+        "",
         `⭐ Étoiles de dressage finales : ${starTotal}/${config.duree_jours}`,
+        ...manchesLines,
+      ].join("\n"),
       color: TAMAGOTCHI_COLOR,
       image,
     };
   }
   return {
     title: "🐉 Fin de l'aventure — Lilith crache de la fumée noire",
-    description:
+    description: [
       `Mohamed Light retrouve son Bébé Dragon dans un sale état. Furieux, il lance un défi d'arène au serveur — ` +
-      `préparez-vous à affronter un deck Mineur-Poison !\n\n` +
+        `préparez-vous à affronter un deck Mineur-Poison !`,
+      "",
       `⭐ Étoiles de dressage finales : ${starTotal}/${config.duree_jours}`,
+      ...manchesLines,
+    ].join("\n"),
     color: 0x2c3e50,
     image,
   };
@@ -421,7 +453,16 @@ export async function postTamagotchi(
 
   if (jour > config.duree_jours) {
     const tier = computeFinalTier(starTotalApres);
-    const embed = buildFinalTierEmbed(starTotalApres, tier, config);
+
+    // Archivage de la manche AVANT lecture de la liste : la manche qui
+    // vient de se terminer apparaît alors dans son propre récap comparatif
+    // (marquée "cette manche"). Jamais archivé en dry-run (aucune écriture).
+    let currentManche = null;
+    if (!dryRun) {
+      currentManche = await archiveManche({ starTotal: starTotalApres, tier, resolvedAt: new Date().toISOString() });
+    }
+    const manches = await listManches({ limit: 10 });
+    const embed = buildFinalTierEmbed(starTotalApres, tier, config, manches, currentManche);
 
     if (dryRun) {
       return {

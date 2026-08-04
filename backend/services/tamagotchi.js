@@ -66,6 +66,15 @@ async function hgetallRaw(key) {
   return pairsToObject((await getRedis().hgetall(key)) || []);
 }
 
+async function hgetallJson(key) {
+  const raw = await hgetallRaw(key);
+  const result = {};
+  for (const [field, value] of Object.entries(raw)) {
+    result[field] = fromJson(value);
+  }
+  return result;
+}
+
 async function scanKeys(pattern) {
   const keys = [];
   let cursor = "0";
@@ -84,6 +93,8 @@ async function scanDelete(pattern) {
 
 const STATE_KEY = "tamagotchi:state";
 const HISTORIQUE_KEY = "tamagotchi:historique";
+const MANCHES_KEY = "tamagotchi:manches";
+const MANCHE_SEQ_KEY = "tamagotchi:manche_seq";
 
 function votesKey(jour) {
   return `tamagotchi:votes:${jour}`;
@@ -247,6 +258,29 @@ export async function writeHistoriqueEntry(jour, record) {
 export async function getHistoriqueEntry(jour) {
   const raw = await getRedis().hget(HISTORIQUE_KEY, String(jour));
   return fromJson(raw);
+}
+
+// ── Manches (bilans de fin de partie) ────────────────────────────
+// Le jeu est destiné à être rejoué plusieurs fois dans l'année (une partie
+// = une "manche"). Contrairement à HISTORIQUE_KEY (bilans quotidiens d'UNE
+// manche, écrasés d'une manche à l'autre puisque les jours 1-10 se
+// répètent), MANCHES_KEY est un HASH permanent indexé par un numéro de
+// manche strictement croissant (`MANCHE_SEQ_KEY`, `INCR` atomique) —
+// jamais nettoyé par resetTamagotchi(), pour que le récap de fin de partie
+// puisse comparer la manche qui vient de se terminer aux précédentes.
+
+export async function archiveManche(record) {
+  const manche = Number(await getRedis().incr(MANCHE_SEQ_KEY));
+  await getRedis().hset(MANCHES_KEY, { [manche]: toJson({ manche, ...record }) });
+  return manche;
+}
+
+// Trié de la manche la plus récente à la plus ancienne.
+export async function listManches({ limit = 10 } = {}) {
+  const all = await hgetallJson(MANCHES_KEY);
+  return Object.values(all)
+    .sort((a, b) => b.manche - a.manche)
+    .slice(0, limit);
 }
 
 // ── Résolution/clôture du jour courant ──────────────────────────────

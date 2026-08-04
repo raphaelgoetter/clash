@@ -97,6 +97,8 @@ async function scanDelete(pattern) {
 
 const STATE_KEY = "robinson:state";
 const HISTORIQUE_KEY = "robinson:historique";
+const MANCHES_KEY = "robinson:manches";
+const MANCHE_SEQ_KEY = "robinson:manche_seq";
 const RADEAU_POINTS_KEY = "robinson:radeau_points";
 const STOCK_KEYS = {
   poisson: "robinson:stock:poisson",
@@ -420,6 +422,19 @@ export function computePoissonsPourrisLoss(previousDayVoters) {
   return Math.min(10 - previousDayVoters, 4 + previousDayVoters);
 }
 
+// Score comparatif d'une manche, pour classer les parties entre elles (le
+// jeu est rejoué plusieurs fois dans l'année) — Robinson n'a pas de score
+// numérique naturel (c'est une survie, pas un score attack comme Boss
+// Raid), donc ce barème encode une hiérarchie explicite : toute victoire
+// bat toute défaite ; entre victoires Radeau, plus tôt = meilleur (évasion
+// rapide) ; les victoires Jour 11 sont toutes à égalité (aucune notion de
+// vitesse) ; entre défaites, plus de jours survécus = meilleur.
+export function computeMancheScore(outcome, jour, dureeJours) {
+  if (outcome === "victoire_radeau") return 1000 + Math.max(0, dureeJours + 1 - jour);
+  if (outcome === "victoire_jour11") return 500;
+  return jour; // défaite : jours survécus avant le naufrage
+}
+
 // ── Historique (bilans quotidiens) ────────────────────────────────
 
 export async function writeHistoriqueEntry(jour, record) {
@@ -438,6 +453,29 @@ export async function listHistorique({ limit = 10, offset = 0 } = {}) {
     .sort((a, b) => b.jour - a.jour);
   const hasMore = entries.length > offset + limit;
   return { entries: entries.slice(offset, offset + limit), hasMore };
+}
+
+// ── Manches (bilans de fin de partie) ────────────────────────────
+// Le jeu est destiné à être rejoué plusieurs fois dans l'année (une partie
+// = une "manche"). Contrairement à HISTORIQUE_KEY (bilans quotidiens d'UNE
+// manche, écrasés d'une manche à l'autre puisque les jours 1-10 se
+// répètent), MANCHES_KEY est un HASH permanent indexé par un numéro de
+// manche strictement croissant (`MANCHE_SEQ_KEY`, `INCR` atomique) —
+// jamais nettoyé par resetRobinson(), pour que le récap de fin de partie
+// puisse comparer la manche qui vient de se terminer aux précédentes.
+
+export async function archiveManche(record) {
+  const manche = Number(await getRedis().incr(MANCHE_SEQ_KEY));
+  await getRedis().hset(MANCHES_KEY, { [manche]: toJson({ manche, ...record }) });
+  return manche;
+}
+
+// Trié de la manche la plus récente à la plus ancienne.
+export async function listManches({ limit = 10 } = {}) {
+  const all = await hgetallJson(MANCHES_KEY);
+  return Object.values(all)
+    .sort((a, b) => b.manche - a.manche)
+    .slice(0, limit);
 }
 
 // ── Résolution/clôture du jour courant ──────────────────────────────
