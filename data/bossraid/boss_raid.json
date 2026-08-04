@@ -1,0 +1,34 @@
+{
+  "duree_jours": 10,
+  "boss_stats_initiales": { "defense": 5, "resistance": 5 },
+  "roles": {
+    "chevalier": { "label": "Chevalier", "emoji": "🛡️", "protection_slots": 2 },
+    "voleuse": { "label": "Voleuse", "emoji": "🗡️", "degats_min": 30, "degats_max": 40, "chance_debuff": 0.25 },
+    "sorcier": { "label": "Sorcier", "emoji": "🔮", "degats_min": 80, "degats_max": 100, "reduction_stat": "resistance" },
+    "archeres": { "label": "Archères", "emoji": "🏹", "degats_min": 70, "degats_max": 90, "reduction_stat": "defense" },
+    "espion": { "label": "Espion", "emoji": "🔍", "is_info_action": true }
+  },
+  "evenements_boss": [
+    {
+      "jour": 3,
+      "id": "frappe_lethale",
+      "nom": "Frappe Léthale",
+      "emoji": "⚡",
+      "description": "Le Boss balaie l’horizon d’un souffle dévastateur — les unités à distance non protégées par un Chevalier ne toucheront tout simplement pas leur cible aujourd’hui (0% de dégâts au lieu de 50%) !"
+    },
+    {
+      "jour": 6,
+      "id": "bouclier_acier",
+      "nom": "Bouclier d’Acier",
+      "emoji": "🧱",
+      "description": "Une carapace d’acier trempé enserre le Boss pour la journée — sa Défense grimpe à 10/10, rendant les tirs des Archères bien plus difficiles à faire passer !"
+    },
+    {
+      "jour": 9,
+      "id": "miroir_mana",
+      "nom": "Miroir de Mana",
+      "emoji": "🪞",
+      "description": "Le Boss déploie un miroir occulte qui renvoie une partie de la magie lancée contre lui — les Sorciers subissent une réduction supplémentaire de 50% sur leurs dégâts aujourd’hui."
+    }
+  ]
+}

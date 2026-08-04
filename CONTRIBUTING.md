@@ -926,6 +926,92 @@ Aucune nouvelle variable : Robinson réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DIS
 
 ---
 
+## Boss Raid (score attack communautaire)
+
+Mini-jeu communautaire quotidien indépendant du Clash Royale : le clan affronte un Boss Colossal invulnérable pendant 10 jours de combat (précédés d'un jour d'annonce), avec pour objectif d'accumuler le maximum de dégâts cumulés. Chaque membre vote un rôle par jour (Chevalier, Voleuse, Sorcier, Archères, Espion) ; contrairement à Robinson, **aucun tirage n'a lieu au clic** — le vote reste modifiable jusqu'au cron de 08:00 UTC, exactement comme l'Aventure. Pas de commande slash associée — la publication/suppression passe uniquement par `scripts/postBossRaid.js` (manuel ou cron), les boutons restent gérés par `api/discord/interactions.js`.
+
+### Déroulement (Boss Raid)
+
+Un seul message actif à la fois dans le salon dédié, en 3 phases :
+
+1. **Jour d'annonce** (`bossraid:state.phase === "annonce"`) : premier `postBossRaid()`, publie le lore + la posture initiale du Boss, ping `@MINI JEUX`. Seul le bouton `[📖 Règles & Rôles]` est visible — aucun vote possible.
+2. **Transition vers le Jour 1/10** : deuxième `postBossRaid()`, détecte `phase === "annonce"` et publie directement le Jour 1 avec les 5 boutons de vote, sans clôture (rien n'a pu être voté avant) ni ping.
+3. **Clôture quotidienne** (jours suivants) : `postBossRaid()` clôture le jour actif (`closeDayAndAdvance()`), calcule les dégâts et la nouvelle posture du Boss, publie le bilan + le jour suivant. Au-delà du Jour 10 (`jourSuivant > duree_jours`), publie l'embed de fin de Raid (score total, aucun composant) et passe `termine: true` — les runs suivants du cron deviennent des no-op silencieux, même principe que les autres jeux.
+
+### Résolution du vote — hybride Aventure/Robinson
+
+Le vote est **modifiable jusqu'au cron** (comme l'Aventure) : `recordVote()` fait un simple `HSET` écrasable sur `bossraid:votes:<jour>`, **pas** de `HSETNX` ni de logique de réservation/libération de slot comme Robinson — aucune action de vote ne peut « échouer ». Conséquence directe : **aucun tirage aléatoire n'a lieu au clic**, toute la logique de dégâts/protection/All-In/événements est calculée **une seule fois à la clôture**, dans la fonction pure `computeCloture()` (`backend/services/bossraid.js`).
+
+Le clic sur un bouton de vote (sauf Espion) répond en `type: 6` (`DEFERRED_UPDATE_MESSAGE`) et édite le message public **en place** — comme l'Aventure, jamais d'éphémère. Le bouton **Espion** est la seule exception : il répond en éphémère (`type: 5`) avec une **projection live** des dégâts du jour en cours, calculée par `previewCloture()` (écriture Redis nulle) — la même fonction qu'appelle `postBossRaid.js --dry-run`, garantissant que la projection Espion et la simulation dry-run ne divergent jamais. Le vote Espion compte quand même dans le dénominateur All-In (`recordVote(jour, discordId, "espion", ...)`), et son compteur public est rafraîchi séparément par un `PATCH` direct (token du bot), même découplage que Tamagotchi/Robinson pour un vote confirmé en éphémère.
+
+⚠️ **Contraste volontaire avec Robinson** : la posture du Boss (Défense/Résistance) et le score cumulé vivent dans le même blob JSON `bossraid:state` que l'Aventure/le Tamagoshi (`GET`/`SET` simple), **pas** dans des clés atomiques `INCRBY`/`DECRBY` séparées comme les stocks de Robinson. Ce n'est pas un oubli : rien n'est jamais écrit avant la clôture, donc il n'y a aucune écriture concurrente à sécuriser (contrairement à Robinson, où les récoltes sont appliquées en direct par des clics potentiellement simultanés).
+
+### Contrainte Chevalier — pas 2 jours de suite
+
+`bossraid:dernier_role` (HASH `discordId → roleId`) retient le dernier rôle **finalisé** de chaque membre, muté **uniquement au cron** (jamais pendant la fenêtre de vote). Au clic sur `[🛡️ Chevalier]`, `isChevalierVoteAllowed(dernierRole)` compare au rôle du jour **précédemment clos** — pas au choix courant du même jour, donc un membre peut changer d'avis plusieurs fois le même jour sans pénalité, seule la limite inter-jours compte. En cas de refus, l'ack `type: 6` reste sans PATCH (message public inchangé) et un message de suivi **éphémère séparé** (`postFollowup()`, `POST {webhookUrl}` + `flags: 64`) explique le refus à l'auteur du clic — le vote n'est jamais enregistré.
+
+### Protection Chevalier — ordre en cas de pénurie de slots
+
+Chaque Chevalier protège jusqu'à 2 unités à distance (Sorcier/Archères) : `capacite = nbChevaliers × 2`. Si le nombre de distants dépasse la capacité, les slots vont aux votants dont le vote a été fixé/mis à jour le **plus tôt** ce jour-là (`computeProtection()`, tri par `bossraid:vote_at:<jour>` croissant) — approximation la plus fidèle d'un « ordre d'arrivée » alors que les votes sont modifiables jusqu'au cron. Non protégé : malus **-50%** sur les dégâts (**-100%** si l'événement Frappe Léthale est actif ce jour-là) ; protégé : jamais de malus, quel que soit l'événement.
+
+### Mécanique All-In (Ultimes d'équipe)
+
+À la clôture, si un rôle d'attaque (Archères/Sorcier/Voleuse) réunit **strictement plus de 50%** de l'ensemble des votes du jour — les 5 rôles votables inclus, Chevalier et Espion comptent dans le dénominateur (`detectAllIn()`) — toute l'équipe déclenche son Ultime pour la journée :
+
+- **🏹 Volée Céleste** (Archères) : ignore la Défense du Boss **et** la protection Chevalier — 100% de dégâts pour **tous** les votants Archères, protégés ou non. L'emporte même sur Bouclier d'Acier le même jour (testé en priorité dans `computeArcheresDamage()`).
+- **🔮 Surcharge Arcane** (Sorcier) : double (`×2`) les dégâts magiques de tous les votants Sorcier, appliqué après les autres réductions. Composé avec Miroir de Mana (`×0,5`) le même jour → net `×1`, simple multiplication, aucun cas spécial codé.
+- **🗡️ Coup à la Gorge** (Voleuse) : la Défense **et** la Résistance du Boss tombent à **0/10** pour le lendemain, **inconditionnellement** (`computeBossStatsNextDay()`) — écrase les debuffs individuels tirés par les votes Voleuse du même jour, qui restent visibles dans l'historique mais n'influencent jamais le résultat.
+
+### Événements du Boss
+
+3 événements fixes tirés de `boss_raid.json.evenements_boss` (`activeEventForDay(jour, evenements)`, lookup exact — pas de condition comme Robinson, un jour donne toujours le même événement) :
+
+- **⚡ Frappe Léthale** (Jour 3) : le malus de non-protection passe de -50% à **-100%** (0 dégât) pour Sorcier/Archères non protégés.
+- **🧱 Bouclier d'Acier** (Jour 6) : Défense effective = **10/10** pour le calcul des dégâts de ce jour **seulement** — ne modifie jamais la valeur persistée dans `bossraid:state.bossStats`, la progression naturelle (debuffs Voleuse) reprend normalement le lendemain.
+- **🪞 Miroir de Mana** (Jour 9) : réduction **supplémentaire** de 50% sur les dégâts de tous les votants Sorcier ce jour-là (s'additionne multiplicativement aux autres réductions).
+
+⚠️ Ces 3 événements ne sont **jamais** listés dans l'embed `[📖 Règles & Rôles]` — volontairement, pour qu'ils restent une surprise. Seul le bouton **Espion** révèle en exclusivité, en éphémère, l'événement prévu pour le **lendemain** (`activeEventForDay(jour + 1, ...)`), jamais celui du jour même.
+
+### Interface (embed)
+
+Titre `⚔️ Boss Raid — Jour X/10` (ou `— Un Boss Colossal approche…` au jour d'annonce). Bilan de la veille (dégâts infligés, Ultime déclenchée le cas échéant) affiché uniquement après une clôture réelle — absent du premier post de combat (Jour 1). Barres `🟥`/`⬜` sur 10 segments pour la Défense et la Résistance courantes. Événement du jour révélé dans cet embed seulement à partir du jour concerné. Composants : row 1 = 5 boutons de vote (`{emoji} {label} (n)`, un seul par rôle, masquée hors phase combat) ; row 2 = `[📖 Règles & Rôles]` + `[📜 Journal]`.
+
+### Données (boss_raid.json)
+
+`data/bossraid/boss_raid.json` — config statique éditée à la main : `duree_jours`, `boss_stats_initiales`, `roles.<id>` (label, emoji, plage de dégâts, `protection_slots`/`chance_debuff`/`reduction_stat`/`is_info_action` selon le rôle) et `evenements_boss` (3 événements fixes, un par `jour`). Chargée une fois et mise en cache (`loadBossRaidConfig()`), jamais mutée à l'exécution.
+
+`frontend/public/images/boss/boss-01.webp` à `boss-10.webp` — une illustration par jour de combat, servie en asset statique (même principe que `rob-01.webp`…`rob-10.webp` de Robinson) et référencée directement par URL (`bossRaidImageUrl()`, `api/discord/handlers/bossraid.js`) dans le champ `image` de l'embed. Affichée uniquement à partir du Jour 1 (jamais au jour d'annonce, qui n'a pas d'illustration dédiée). L'embed de fin de Raid réutilise systématiquement l'illustration du dernier jour (`boss-10.webp`).
+
+### Stockage — Upstash Redis (`bossraid:*`)
+
+Même instance et mêmes conventions que les autres jeux. Espace de clés `bossraid:*`, totalement séparé.
+
+| Clé Redis | Type | Contenu |
+| --- | --- | --- |
+| `bossraid:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, bossStats: {defense, resistance}, totalDegatsCumules }` — muté uniquement au cron |
+| `bossraid:dernier_role` | HASH | `discordId → roleId` — dernier rôle finalisé, muté uniquement au cron |
+| `bossraid:votes:<jour>` | HASH | `discordId → roleId` — écrasable, jetable, effacé après clôture du jour |
+| `bossraid:vote_at:<jour>` | HASH | `discordId → ISO timestamp` — horodatage de la dernière mise à jour du vote, sert à l'ordre de protection Chevalier |
+| `bossraid:vote_usernames:<jour>` | HASH | `discordId → pseudo` — jetable, uniquement pour l'affichage admin (`npm run bossraid:status`) |
+| `bossraid:historique` | HASH | `jour → { voteCounts, totalVotes, protection, allIn, event, totalDamageDuJour, totalDegatsApres, bossStatsAvant, bossStatsApres, voleuseDebuffs, resolvedAt }` — jamais nettoyé, alimente le bouton Journal |
+
+### Scripts npm (Boss Raid)
+
+| Commande | Effet |
+| --- | --- |
+| `npm run bossraid:test` | Poste manuellement le jour de Boss Raid sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`). |
+| `npm run bossraid:test:dry` | Aperçu console du prochain jour (ou du message de fin de Raid), sans écrire d'état ni poster sur Discord. |
+| `npm run bossraid:public` | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `bossraid.yml`. |
+| `npm run bossraid:public:dry` | Équivalent dry-run de `bossraid:public`. |
+| `npm run bossraid:reset` | Remet Boss Raid à zéro : plus de partie active, votes/dernier rôle/historique effacés. **Destructif**. |
+| `npm run bossraid:status` | Affiche l'état courant (posture du Boss, score cumulé, décompte des votes du jour) sans passer par Discord. |
+
+### Variables d'environnement requises (Boss Raid)
+
+Aucune nouvelle variable : Boss Raid réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (même instance Upstash Redis, espace de clés `bossraid:*` totalement séparé). Le workflow `.github/workflows/bossraid.yml` réutilise les mêmes secrets GitHub Actions que les autres jeux (déjà configurés, rien à ajouter). Comme pour les autres jeux en phase de test, le `schedule` du cron reste **commenté** (seul `workflow_dispatch` actif) — à réactiver une fois le jeu validé.
+
+---
+
 ## Détection des arrivées en cours de GDC
 
 ### Contexte

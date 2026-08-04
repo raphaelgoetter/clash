@@ -58,6 +58,12 @@
     "robinson:public:dry": "node scripts/postRobinson.js --public --dry-run",
     "robinson:reset": "node scripts/resetRobinson.js",
     "robinson:status": "node scripts/robinsonStatus.js",
+    "bossraid:test": "node scripts/postBossRaid.js",
+    "bossraid:test:dry": "node scripts/postBossRaid.js --dry-run",
+    "bossraid:public": "node scripts/postBossRaid.js --public",
+    "bossraid:public:dry": "node scripts/postBossRaid.js --public --dry-run",
+    "bossraid:reset": "node scripts/resetBossRaid.js",
+    "bossraid:status": "node scripts/bossRaidStatus.js",
     "rules": "node scripts/notifyRules.js",
     "rules:dry": "node scripts/notifyRules.js --dry-run",
     "rules:dry:noping": "node scripts/notifyRules.js --dry-run --no-ping",
@@ -66,7 +72,7 @@
     "cache:clear": "rm -f frontend/public/clan-cache/*.json",
     "deploy": "npm run cache:clear && npm run build && vercel --prod --confirm --force",
     "build": "cd frontend && npm run build && cd .. && vercel --prod",
-    "test": "node backend/services/analysisService.test.js && node backend/services/matchupEngine.test.js && node backend/services/snapshot.test.js && node backend/services/notifyWarSummary.test.js && node backend/services/notifyLastSeen.test.js && node backend/services/notifyClanStatus.test.js && node backend/services/dateUtils.test.js && node backend/services/championPredictions.test.js && node backend/services/aventure.test.js && node backend/services/tamagotchi.test.js && node backend/services/robinson.test.js"
+    "test": "node backend/services/analysisService.test.js && node backend/services/matchupEngine.test.js && node backend/services/snapshot.test.js && node backend/services/notifyWarSummary.test.js && node backend/services/notifyLastSeen.test.js && node backend/services/notifyClanStatus.test.js && node backend/services/dateUtils.test.js && node backend/services/championPredictions.test.js && node backend/services/aventure.test.js && node backend/services/tamagotchi.test.js && node backend/services/robinson.test.js && node backend/services/bossraid.test.js"
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.3.0",

@@ -1,0 +1,38 @@
+name: Boss Raid — score attack communautaire
+
+permissions:
+  contents: read
+
+on:
+  # Cron désactivé pendant la phase de test (voir CONTRIBUTING.md) : l'état
+  # du jeu (bossraid:state) est partagé entre les runs manuels de test et
+  # ce workflow public — un run automatique en pleine session de test avance
+  # et publie sur le salon PUBLIC sans prévenir. Ne réactiver le `schedule`
+  # ci-dessous qu'une fois le jeu validé et prêt à être lancé pour de vrai.
+  # schedule:
+  #   - cron: "0 8 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  post-jour:
+    runs-on: ubuntu-latest
+    env:
+      DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+      DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+      DISCORD_CHANNEL_FRAME_PUBLIC: ${{ secrets.DISCORD_CHANNEL_FRAME_PUBLIC }}
+      KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
+      KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Poste le jour de Boss Raid (salon public)
+        run: npm run bossraid:public

@@ -68,6 +68,12 @@ import {
   handleRegles as handleRobinsonRegles,
 } from "./handlers/robinson.js";
 import {
+  handleVoteButton as handleBossRaidVote,
+  handleEspion as handleBossRaidEspion,
+  handleRegles as handleBossRaidRegles,
+  handleJournal as handleBossRaidJournal,
+} from "./handlers/bossraid.js";
+import {
   summarizeWarDecks,
   summarizeWarDecksForMatchup,
   getWarMatchPoints,
@@ -8479,6 +8485,65 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleRobinsonRegles(webhookUrl));
+    return;
+  }
+
+  // ── Boss Raid : boutons de vote (Chevalier/Voleuse/Sorcier/Archères) ──
+  // Vote modifiable jusqu'au cron (comme Aventure) : type 6, édite le
+  // message public en place, jamais d'éphémère ici.
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("bossraid_vote:")
+  ) {
+    const [, jour, roleId] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleBossRaidVote(webhookUrl, jour, roleId, discordId, username));
+    return;
+  }
+
+  // ── Boss Raid : bouton Espion — exception, réponse éphémère avec
+  // projection live des dégâts du jour + événement du lendemain ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("bossraid_espion:")
+  ) {
+    const [, jour] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() =>
+      handleBossRaidEspion(webhookUrl, jour, discordId, username, process.env.DISCORD_TOKEN),
+    );
+    return;
+  }
+
+  // ── Boss Raid : bouton "Règles & Rôles" (éphémère, statique) ──
+  if (body.type === 3 && body.data?.custom_id === "bossraid_regles") {
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleBossRaidRegles(webhookUrl));
+    return;
+  }
+
+  // ── Boss Raid : bouton "Journal" (lecture seule, hors-vote) ──
+  if (body.type === 3 && body.data?.custom_id === "bossraid_journal") {
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleBossRaidJournal(webhookUrl));
     return;
   }
 
