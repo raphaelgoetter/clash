@@ -399,7 +399,7 @@ function buildReglesEmbed(config) {
 
 export async function postTamagotchi(
   channelId,
-  { dryRun = false, noPing = false } = {},
+  { dryRun = false, noPing = false, isPublic = false } = {},
 ) {
   const config = await loadTamagotchiConfig();
   const state = await readState();
@@ -456,9 +456,12 @@ export async function postTamagotchi(
 
     // Archivage de la manche AVANT lecture de la liste : la manche qui
     // vient de se terminer apparaît alors dans son propre récap comparatif
-    // (marquée "cette manche"). Jamais archivé en dry-run (aucune écriture).
+    // (marquée "cette manche"). Jamais archivé en dry-run NI sur le salon de
+    // test (isPublic) — seule une vraie publication sur le salon public
+    // compte comme une manche réelle, pour ne jamais polluer l'archive avec
+    // des parties de test (voir CONTRIBUTING.md, section Manches).
     let currentManche = null;
-    if (!dryRun) {
+    if (!dryRun && isPublic) {
       currentManche = await archiveManche({ starTotal: starTotalApres, tier, resolvedAt: new Date().toISOString() });
     }
     const manches = await listManches({ limit: 10 });

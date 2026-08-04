@@ -161,7 +161,7 @@ function buildOutcomeEmbed(totalDegatsCumules, config, manches = [], currentManc
 
 // ── Publication quotidienne (appelée uniquement par scripts/postBossRaid.js) ──
 
-export async function postBossRaid(channelId, { dryRun = false, noPing = false } = {}) {
+export async function postBossRaid(channelId, { dryRun = false, noPing = false, isPublic = false } = {}) {
   const config = await loadBossRaidConfig();
   const state = await readState();
 
@@ -223,9 +223,12 @@ export async function postBossRaid(channelId, { dryRun = false, noPing = false }
   if (jourSuivant > config.duree_jours) {
     // Archivage AVANT lecture de la liste : la manche qui vient de se
     // terminer apparaît alors dans son propre récap comparatif (marquée
-    // "cette manche"). Jamais archivé en dry-run (aucune écriture).
+    // "cette manche"). Jamais archivé en dry-run NI sur le salon de test
+    // (isPublic) — seule une vraie publication sur le salon public compte
+    // comme une manche réelle, pour ne jamais polluer l'archive avec des
+    // parties de test (voir CONTRIBUTING.md, section Manches).
     let currentManche = null;
-    if (!dryRun) {
+    if (!dryRun && isPublic) {
       currentManche = await archiveManche({
         totalDegatsCumules: closure.totalDegatsApres,
         bossStatsFinal: closure.bossStatsApres,

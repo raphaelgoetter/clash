@@ -41,7 +41,7 @@ if (!channelId) {
 
 (async () => {
   try {
-    const result = await postBossRaid(channelId, { dryRun: DRY_RUN, noPing: NO_PING });
+    const result = await postBossRaid(channelId, { dryRun: DRY_RUN, noPing: NO_PING, isPublic: PUBLIC });
 
     if (result.termine) {
       console.log("Raid déjà terminé, rien à poster.");

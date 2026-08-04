@@ -566,9 +566,17 @@ export async function closeDayAndAdvance(state, config) {
 
 // ── Remise à zéro ────────────────────────────────────────────────────
 
-export async function resetRobinson() {
+// `clearManches: false` par défaut — l'archive des manches passées (parties
+// réellement jouées au fil de l'année) survit à un reset normal, pour ne
+// jamais l'effacer par erreur en cours de partie réelle. Seul un reset
+// explicite (`--manches`, voir scripts/resetRobinson.js) l'efface, utile en
+// phase de test pour ne pas polluer l'archive avec des manches de test.
+export async function resetRobinson({ clearManches = false } = {}) {
   await getRedis().del(STATE_KEY, HISTORIQUE_KEY, RADEAU_POINTS_KEY, ...Object.values(STOCK_KEYS));
   await scanDelete("robinson:votes:*");
   await scanDelete("robinson:vote_details:*");
   await scanDelete("robinson:vote_usernames:*");
+  if (clearManches) {
+    await getRedis().del(MANCHES_KEY, MANCHE_SEQ_KEY);
+  }
 }

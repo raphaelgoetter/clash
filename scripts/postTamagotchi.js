@@ -40,7 +40,7 @@ if (!channelId) {
 
 (async () => {
   try {
-    const result = await postTamagotchi(channelId, { dryRun: DRY_RUN, noPing: NO_PING });
+    const result = await postTamagotchi(channelId, { dryRun: DRY_RUN, noPing: NO_PING, isPublic: PUBLIC });
 
     if (result.termine) {
       console.log("Défi déjà terminé, rien à poster.");

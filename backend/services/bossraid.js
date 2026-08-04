@@ -504,9 +504,17 @@ export async function listManches({ limit = 10 } = {}) {
 
 // ── Remise à zéro ────────────────────────────────────────────────────
 
-export async function resetBossRaid() {
+// `clearManches: false` par défaut — l'archive des manches passées (parties
+// réellement jouées au fil de l'année) survit à un reset normal, pour ne
+// jamais l'effacer par erreur en cours de partie réelle. Seul un reset
+// explicite (`--manches`, voir scripts/resetBossRaid.js) l'efface, utile en
+// phase de test pour ne pas polluer l'archive avec des manches de test.
+export async function resetBossRaid({ clearManches = false } = {}) {
   await getRedis().del(STATE_KEY, DERNIER_ROLE_KEY, HISTORIQUE_KEY);
   await scanDelete("bossraid:votes:*");
   await scanDelete("bossraid:vote_at:*");
   await scanDelete("bossraid:vote_usernames:*");
+  if (clearManches) {
+    await getRedis().del(MANCHES_KEY, MANCHE_SEQ_KEY);
+  }
 }

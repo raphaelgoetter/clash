@@ -330,8 +330,16 @@ export async function closeDayAndAdvance(state, config) {
 
 // ── Remise à zéro ────────────────────────────────────────────────────
 
-export async function resetTamagotchi() {
+// `clearManches: false` par défaut — l'archive des manches passées (parties
+// réellement jouées au fil de l'année) survit à un reset normal, pour ne
+// jamais l'effacer par erreur en cours de partie réelle. Seul un reset
+// explicite (`--manches`, voir scripts/resetTamagotchi.js) l'efface, utile
+// en phase de test pour ne pas polluer l'archive avec des manches de test.
+export async function resetTamagotchi({ clearManches = false } = {}) {
   await getRedis().del(STATE_KEY, HISTORIQUE_KEY);
   await scanDelete("tamagotchi:votes:*");
   await scanDelete("tamagotchi:vote_usernames:*");
+  if (clearManches) {
+    await getRedis().del(MANCHES_KEY, MANCHE_SEQ_KEY);
+  }
 }

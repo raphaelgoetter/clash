@@ -265,7 +265,7 @@ function buildOutcomeEmbed(outcome, config, manches = [], currentManche = null) 
 
 // ── Publication quotidienne (appelée uniquement par scripts/postRobinson.js) ──
 
-export async function postRobinson(channelId, { dryRun = false, noPing = false } = {}) {
+export async function postRobinson(channelId, { dryRun = false, noPing = false, isPublic = false } = {}) {
   const config = await loadRobinsonConfig();
   const state = await readState();
 
@@ -304,8 +304,11 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false }
   // Fin de partie (victoire par le Radeau ou défaite) — jamais annoncée en
   // temps réel au clic, toujours révélée ici, au cron.
   if (closure.outcome === "victoire_radeau" || closure.outcome === "defaite") {
+    // Jamais archivé en dry-run NI sur le salon de test (isPublic) — seule
+    // une vraie publication sur le salon public compte comme une manche
+    // réelle (voir CONTRIBUTING.md, section Manches).
     let currentManche = null;
-    if (!dryRun) {
+    if (!dryRun && isPublic) {
       currentManche = await archiveManche({
         outcome: closure.outcome,
         jour: state.jour,
@@ -333,7 +336,7 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false }
   const jourSuivant = state.jour + 1;
   if (isSurvivalVictory(jourSuivant, config.duree_jours)) {
     let currentManche = null;
-    if (!dryRun) {
+    if (!dryRun && isPublic) {
       currentManche = await archiveManche({
         outcome: "victoire_jour11",
         jour: jourSuivant,

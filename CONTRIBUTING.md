@@ -808,7 +808,9 @@ Le total d'étoiles de dressage détermine le palier (`computeFinalTier()`) : **
 
 ### Manches (comparaison entre parties) — Tamagoshi
 
-Le Tamagoshi (comme Robinson et Boss Raid) est destiné à être rejoué plusieurs fois dans l'année — chaque partie complète est une **manche**. `tamagotchi:manches` (HASH permanent, jamais nettoyé par `resetTamagotchi()`) archive le bilan de chaque manche terminée, indexé par un numéro strictement croissant (`tamagotchi:manche_seq`, `INCR` atomique) : `archiveManche({ starTotal, tier, resolvedAt })`. À l'écran de fin (Jour 10), l'embed liste les 10 dernières manches (`listManches()`) avec un 🏆 sur le meilleur total d'étoiles toutes manches confondues — la manche qui vient de se terminer y apparaît elle-même, marquée *(cette manche)*. Rien n'est archivé en dry-run (aucune écriture Redis).
+Le Tamagoshi (comme Robinson et Boss Raid) est destiné à être rejoué plusieurs fois dans l'année — chaque partie complète est une **manche**. `tamagotchi:manches` (HASH permanent, jamais nettoyé par `resetTamagotchi()`) archive le bilan de chaque manche terminée, indexé par un numéro strictement croissant (`tamagotchi:manche_seq`, `INCR` atomique) : `archiveManche({ starTotal, tier, resolvedAt })`. À l'écran de fin (Jour 10), l'embed liste les 10 dernières manches (`listManches()`) avec un 🏆 sur le meilleur total d'étoiles toutes manches confondues — la manche qui vient de se terminer y apparaît elle-même, marquée *(cette manche)*.
+
+⚠️ L'archivage n'a lieu que pour une **vraie publication sur le salon public** (`postTamagotchi(channelId, { isPublic: true })`, déclenché uniquement par `npm run tamagotchi:public`/le workflow GitHub) — jamais en dry-run, ni sur le salon de test (`npm run tamagotchi:test`), même si la partie de test va jusqu'au bout. Convention volontaire : les scripts npm servent toujours à tester, seul `--public` (donc en pratique le workflow GitHub, cron ou `workflow_dispatch`) représente une manche réelle. Ça évite de polluer l'archive avec des parties de test sans avoir à y penser à chaque reset — `npm run tamagotchi:reset:manches` (`--manches`) reste disponible comme filet de sécurité manuel (ex. `--public` lancé par erreur), mais ne devrait normalement jamais être nécessaire.
 
 ### Données (tamagotchi.json)
 
@@ -837,7 +839,8 @@ Même instance et mêmes conventions que Frame/Anagram/Aventure (`automaticDeser
 | `npm run tamagotchi:test:dry` | Aperçu console du prochain jour (ou du message de fin de partie au Jour 10), sans écrire d'état ni poster sur Discord. |
 | `npm run tamagotchi:public` | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `tamagotchi.yml`. |
 | `npm run tamagotchi:public:dry` | Équivalent dry-run de `tamagotchi:public`. |
-| `npm run tamagotchi:reset` | Remet le Tamagoshi à zéro : plus de journée active, votes/historique de la manche en cours effacés. **Destructif** — mais préserve `tamagotchi:manches` (l'archive des manches passées n'est jamais effacée). |
+| `npm run tamagotchi:reset` | Remet le Tamagoshi à zéro : plus de journée active, votes/historique de la manche en cours effacés. **Destructif** — préserve toujours `tamagotchi:manches` (l'archive des manches passées, qui ne s'alimente de toute façon qu'en `--public`, voir "Manches" plus haut). |
+| `npm run tamagotchi:reset:manches` | Identique, mais efface aussi `tamagotchi:manches`/`tamagotchi:manche_seq`. **Destructif**, à réserver au filet de sécurité (ex. un `--public` lancé par erreur pendant les tests). |
 | `npm run tamagotchi:status` | Affiche l'état courant (jauges, étoiles, décompte des votes du jour) sans passer par Discord. |
 
 ### Variables d'environnement requises (Tamagoshi)
@@ -900,7 +903,9 @@ D'après simulation (stratégie : survie pure jusqu'au Jour 7, puis ~30 % des vo
 
 Robinson (comme le Tamagoshi et Boss Raid) est destiné à être rejoué plusieurs fois dans l'année — chaque partie complète est une **manche**. `robinson:manches` (HASH permanent, jamais nettoyé par `resetRobinson()`) archive le bilan de chaque manche terminée, indexé par un numéro strictement croissant (`robinson:manche_seq`, `INCR` atomique) : `archiveManche({ outcome, jour, radeauPoints, resolvedAt })`.
 
-Robinson n'a pas de score numérique naturel (c'est une survie, pas un score attack) : `computeMancheScore(outcome, jour, dureeJours)` encode donc une hiérarchie explicite pour classer les manches entre elles — toute victoire bat toute défaite ; entre victoires Radeau, plus tôt = meilleur (`1000 + (dureeJours + 1 − jour)`, l'évasion rapide est valorisée) ; les victoires Jour 11 sont toutes à égalité (`500` flat, aucune notion de vitesse) ; entre défaites, plus de jours survécus = meilleur (`jour` brut). À l'écran de fin, l'embed liste les 10 dernières manches (`listManches()`) avec un 🏆 sur la meilleure selon ce score — la manche qui vient de se terminer y apparaît elle-même, marquée *(cette manche)*. Rien n'est archivé en dry-run.
+Robinson n'a pas de score numérique naturel (c'est une survie, pas un score attack) : `computeMancheScore(outcome, jour, dureeJours)` encode donc une hiérarchie explicite pour classer les manches entre elles — toute victoire bat toute défaite ; entre victoires Radeau, plus tôt = meilleur (`1000 + (dureeJours + 1 − jour)`, l'évasion rapide est valorisée) ; les victoires Jour 11 sont toutes à égalité (`500` flat, aucune notion de vitesse) ; entre défaites, plus de jours survécus = meilleur (`jour` brut). À l'écran de fin, l'embed liste les 10 dernières manches (`listManches()`) avec un 🏆 sur la meilleure selon ce score — la manche qui vient de se terminer y apparaît elle-même, marquée *(cette manche)*.
+
+⚠️ L'archivage n'a lieu que pour une **vraie publication sur le salon public** (`postRobinson(channelId, { isPublic: true })`, déclenché uniquement par `npm run robinson:public`/le workflow GitHub) — jamais en dry-run, ni sur le salon de test (`npm run robinson:test`), même si la partie de test va jusqu'au bout. Convention volontaire : les scripts npm servent toujours à tester, seul `--public` (donc en pratique le workflow GitHub, cron ou `workflow_dispatch`) représente une manche réelle. Ça évite de polluer l'archive avec des parties de test sans avoir à y penser à chaque reset — `npm run robinson:reset:manches` (`--manches`) reste disponible comme filet de sécurité manuel (ex. `--public` lancé par erreur), mais ne devrait normalement jamais être nécessaire.
 
 ### Données (robinson.json)
 
@@ -931,7 +936,8 @@ Même instance et mêmes conventions que les autres jeux (`automaticDeserializat
 | `npm run robinson:test:dry` | Aperçu console du prochain jour (ou du message de fin de partie), sans écrire d'état ni poster sur Discord. |
 | `npm run robinson:public` | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `robinson.yml`. |
 | `npm run robinson:public:dry` | Équivalent dry-run de `robinson:public`. |
-| `npm run robinson:reset` | Remet Robinson à zéro : plus de jour actif, stocks/votes/historique de la manche en cours effacés. **Destructif** — mais préserve `robinson:manches` (l'archive des manches passées n'est jamais effacée). |
+| `npm run robinson:reset` | Remet Robinson à zéro : plus de jour actif, stocks/votes/historique de la manche en cours effacés. **Destructif** — préserve toujours `robinson:manches` (l'archive des manches passées, qui ne s'alimente de toute façon qu'en `--public`, voir "Manches" plus haut). |
+| `npm run robinson:reset:manches` | Identique, mais efface aussi `robinson:manches`/`robinson:manche_seq`. **Destructif**, à réserver au filet de sécurité (ex. un `--public` lancé par erreur pendant les tests). |
 | `npm run robinson:status` | Affiche l'état courant (stocks, radeau, décompte des votes du jour) sans passer par Discord. |
 
 ### Variables d'environnement requises (Robinson)
@@ -992,7 +998,9 @@ Titre `⚔️ Boss Raid — Jour X/10` (ou `— Un Boss Colossal approche…` au
 
 ### Manches (comparaison entre parties) — Boss Raid
 
-Boss Raid (comme Robinson et le Tamagoshi) est destiné à être rejoué plusieurs fois dans l'année — chaque Raid complet est une **manche**. `bossraid:manches` (HASH permanent, jamais nettoyé par `resetBossRaid()`) archive le bilan de chaque manche terminée, indexé par un numéro strictement croissant (`bossraid:manche_seq`, `INCR` atomique) : `archiveManche({ totalDegatsCumules, bossStatsFinal, resolvedAt })`. Score comparatif naturel (contrairement à Robinson) : le total de dégâts cumulés, plus haut = meilleur. À l'écran de fin, l'embed liste les 10 dernières manches (`listManches()`) avec un 🏆 sur le meilleur total toutes manches confondues — la manche qui vient de se terminer y apparaît elle-même, marquée *(cette manche)*. Rien n'est archivé en dry-run.
+Boss Raid (comme Robinson et le Tamagoshi) est destiné à être rejoué plusieurs fois dans l'année — chaque Raid complet est une **manche**. `bossraid:manches` (HASH permanent, jamais nettoyé par `resetBossRaid()`) archive le bilan de chaque manche terminée, indexé par un numéro strictement croissant (`bossraid:manche_seq`, `INCR` atomique) : `archiveManche({ totalDegatsCumules, bossStatsFinal, resolvedAt })`. Score comparatif naturel (contrairement à Robinson) : le total de dégâts cumulés, plus haut = meilleur. À l'écran de fin, l'embed liste les 10 dernières manches (`listManches()`) avec un 🏆 sur le meilleur total toutes manches confondues — la manche qui vient de se terminer y apparaît elle-même, marquée *(cette manche)*.
+
+⚠️ L'archivage n'a lieu que pour une **vraie publication sur le salon public** (`postBossRaid(channelId, { isPublic: true })`, déclenché uniquement par `npm run bossraid:public`/le workflow GitHub) — jamais en dry-run, ni sur le salon de test (`npm run bossraid:test`), même si le Raid de test va jusqu'au bout. Convention volontaire : les scripts npm servent toujours à tester, seul `--public` (donc en pratique le workflow GitHub, cron ou `workflow_dispatch`) représente une manche réelle. Ça évite de polluer l'archive avec des parties de test sans avoir à y penser à chaque reset — `npm run bossraid:reset:manches` (`--manches`) reste disponible comme filet de sécurité manuel (ex. `--public` lancé par erreur), mais ne devrait normalement jamais être nécessaire.
 
 ### Données (boss_raid.json)
 
@@ -1023,7 +1031,8 @@ Même instance et mêmes conventions que les autres jeux. Espace de clés `bossr
 | `npm run bossraid:test:dry` | Aperçu console du prochain jour (ou du message de fin de Raid), sans écrire d'état ni poster sur Discord. |
 | `npm run bossraid:public` | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `bossraid.yml`. |
 | `npm run bossraid:public:dry` | Équivalent dry-run de `bossraid:public`. |
-| `npm run bossraid:reset` | Remet Boss Raid à zéro : plus de partie active, votes/dernier rôle/historique de la manche en cours effacés. **Destructif** — mais préserve `bossraid:manches` (l'archive des manches passées n'est jamais effacée). |
+| `npm run bossraid:reset` | Remet Boss Raid à zéro : plus de partie active, votes/dernier rôle/historique de la manche en cours effacés. **Destructif** — préserve toujours `bossraid:manches` (l'archive des manches passées, qui ne s'alimente de toute façon qu'en `--public`, voir "Manches" plus haut). |
+| `npm run bossraid:reset:manches` | Identique, mais efface aussi `bossraid:manches`/`bossraid:manche_seq`. **Destructif**, à réserver au filet de sécurité (ex. un `--public` lancé par erreur pendant les tests). |
 | `npm run bossraid:status` | Affiche l'état courant (posture du Boss, score cumulé, décompte des votes du jour) sans passer par Discord. |
 
 ### Variables d'environnement requises (Boss Raid)
