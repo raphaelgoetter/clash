@@ -130,7 +130,6 @@
       "#VPGYR2990",
       "#LV0VUJVU",
       "#U2UYYCQVG",
-      "#PP09UGJLL",
       "#ULVPUU9C2",
       "#2G0Q0CV9L",
       "#202R9VUJCU",
@@ -267,7 +266,8 @@
       "#J008G9CLJ",
       "#JCCQY0U9G",
       "#2U9QL8Q89",
-      "#YRGJGR8R"
+      "#YRGJGR8R",
+      "#PP09UGJLL"
     ],
     "promotions": [],
     "demotions": []
@@ -405,7 +405,9 @@
       "#2YV89UGJQ",
       "#C0RRPJYV9"
     ],
-    "promotions": [],
+    "promotions": [
+      "#YRGJGR8R"
+    ],
     "demotions": []
   }
 }
