@@ -97,8 +97,12 @@ async function main() {
       const { getTopScorers, openSession, formatParisDate } =
         await import("../backend/services/championPredictions.js");
       const { fetchRaceLog } = await import("../backend/services/clashApi.js");
-      const { computePrevWeekId, computeCurrentWeekId, parseWeekId } =
-        await import("../backend/services/dateUtils.js");
+      const {
+        computePrevWeekId,
+        computeCurrentWeekId,
+        parseWeekId,
+        toPublicWeekId,
+      } = await import("../backend/services/dateUtils.js");
 
       const raceLog = await fetchRaceLog(clanTag);
       if (!Array.isArray(raceLog) || raceLog.length === 0) {
@@ -165,9 +169,9 @@ async function main() {
         title: `🔮 Pronostics GDC — ${clanName}`,
         color: 0x9b59b6,
         description:
-          `Devinez qui sera le **Champion** de la semaine **${targetWeekId}** à venir. Tout le monde peut voter !\n` +
+          `Devinez qui sera le **Champion** de la semaine **${toPublicWeekId(targetWeekId)}** à venir. Tout le monde peut voter !\n` +
           `*Le Champion est le joueur qui marquera le plus de points GDC.*\n\n` +
-          `**Challengers** (top 8 scoreurs semaine ${prevWeekId}) :\n` +
+          `**Challengers** (top 8 scoreurs semaine ${toPublicWeekId(prevWeekId)}) :\n` +
           lines.join("\n") +
           `\n${ordinal(9)} **Autre** (pas dans la liste)\n\n` +
           `📅 **Votez jusqu'au ${endParis}**\n` +
