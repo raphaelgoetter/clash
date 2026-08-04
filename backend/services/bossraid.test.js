@@ -168,11 +168,11 @@ async function main() {
     0,
   );
 
-  // ── rollRegenAmount — régénération nocturne, 1 ou 2, 50/50 ──
-  assert.strictEqual(rollRegenAmount(rngSequence([0])), 1);
-  assert.strictEqual(rollRegenAmount(rngSequence([0.49])), 1);
-  assert.strictEqual(rollRegenAmount(rngSequence([0.5])), 2);
-  assert.strictEqual(rollRegenAmount(rngSequence([0.99])), 2);
+  // ── rollRegenAmount — régénération nocturne, 0 ou 1, 30% de chances de +1 ──
+  assert.strictEqual(rollRegenAmount(rngSequence([0])), 0);
+  assert.strictEqual(rollRegenAmount(rngSequence([0.69])), 0);
+  assert.strictEqual(rollRegenAmount(rngSequence([0.7])), 1);
+  assert.strictEqual(rollRegenAmount(rngSequence([0.99])), 1);
 
   // ── computeBossStatsNextDay — debuffs (plancher 0) PUIS régénération (plafond 10) ──
   const NO_REGEN = { defense: 0, resistance: 0 };
@@ -218,7 +218,7 @@ async function main() {
   {
     const votesRaw = { u1: "chevalier", u2: "voleuse", u3: "sorcier", u4: "archeres", u5: "espion" };
     const voteAtRaw = { u3: "2020-01-01T00:00:01Z", u4: "2020-01-01T00:00:02Z" };
-    const rng = rngSequence([0, 0.5, 0, 0, 0, 0]); // dmg voleuse, debuff voleuse (pas déclenché), dmg sorcier, dmg archeres, regen défense, regen résistance
+    const rng = rngSequence([0, 0.5, 0, 0, 0.9, 0.5]); // dmg voleuse, debuff voleuse (pas déclenché), dmg sorcier, dmg archeres, regen défense (+1), regen résistance (+0)
     const r = computeCloture({
       jour: 1,
       votesRaw,
@@ -236,8 +236,8 @@ async function main() {
     assert.strictEqual(r.totalDamageDuJour, 105);
     assert.strictEqual(r.totalDegatsApres, 105);
     assert.deepStrictEqual(r.voleuseDebuffs, []);
-    assert.deepStrictEqual(r.regen, { defense: 1, resistance: 1 });
-    assert.deepStrictEqual(r.bossStatsApres, { defense: 6, resistance: 6 }); // 5+1 régénération (aucun debuff ce jour-là)
+    assert.deepStrictEqual(r.regen, { defense: 1, resistance: 0 });
+    assert.deepStrictEqual(r.bossStatsApres, { defense: 6, resistance: 5 }); // 5+1 régénération défense, résistance inchangée
   }
 
   // (b) All-In Archères + Bouclier d'Acier simultanés (jour 6)
@@ -248,7 +248,7 @@ async function main() {
       u2: "2020-01-01T00:00:02Z",
       u3: "2020-01-01T00:00:03Z",
     };
-    const rng = rngSequence([0, 0, 0, 0, 0]); // 3 tirages Archères (borne min 70), regen défense, regen résistance
+    const rng = rngSequence([0, 0, 0, 0.9, 0.9]); // 3 tirages Archères (borne min 70), regen défense (+1), regen résistance (+1)
     const r = computeCloture({
       jour: 6,
       votesRaw,

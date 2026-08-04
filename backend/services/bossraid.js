@@ -296,10 +296,15 @@ export function computeArcheresDamage({ base, defense, protege, frappeLethaleAct
 
 // Régénération nocturne du Boss — sans ça, Défense/Résistance ne peuvent
 // que stagner ou diminuer sur 10 jours (aucune autre source de hausse).
-// +1 ou +2, 50/50, comme les autres tirages du jeu (rollCappedEventAmount
-// côté Robinson) — un tirage indépendant par stat.
+// +0 ou +1, 30% de chances de +1 (moyenne 0,3/stat/jour) — un tirage
+// indépendant par stat. Barème validé par simulation Monte Carlo (voir
+// CONTRIBUTING.md, section Boss Raid) : le barème initial (+1/+2, moyenne
+// 1,5) écrasait totalement la pression des debuffs Voleuse quel que soit
+// le nombre de votants — Défense/Résistance grimpaient à ~9/10 dès le
+// Jour 4-5. Ce barème cible une moyenne proche de 5/10 sur les 10 jours
+// pour des groupes de 8 à 16 votants.
 export function rollRegenAmount(rng = Math.random) {
-  return rng() < 0.5 ? 1 : 2;
+  return rng() < 0.7 ? 0 : 1;
 }
 
 // Nouvelle posture du Boss pour le lendemain. Coup à la Gorge (All-In

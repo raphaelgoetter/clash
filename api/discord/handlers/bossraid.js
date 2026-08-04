@@ -143,10 +143,15 @@ async function buildCombatEmbed(jour, bossStats, totalDegatsCumules, closure, ev
     lines.push(`**Bilan du Jour ${jour - 1}**`, `💥 Dégâts infligés : **${closure.totalDamageDuJour}**`);
     if (closure.allIn) {
       lines.push(`⚡ **Ultime déclenchée : ${ULTIMATE_NAMES[closure.allIn]} !** ${ULTIMATE_EFFECTS[closure.allIn]}.`);
-    } else {
+    } else if (closure.regen.defense > 0 || closure.regen.resistance > 0) {
       // Pas de ligne de régénération lors d'un Coup à la Gorge : Kiki tombe
       // à 0/0 ce jour-là, la régénération ne reprend qu'à partir de demain.
       lines.push(`🔄 Kiki récupère pendant la nuit : **+${closure.regen.defense}** Défense, **+${closure.regen.resistance}** Résistance.`);
+    } else {
+      // Barème 30% de chances par stat (voir CONTRIBUTING.md) : aucune
+      // régénération reste le cas le plus fréquent (~49% des jours), une
+      // phrase dédiée plutôt qu'un "+0 / +0" qui n'apporterait rien.
+      lines.push("😮‍💨 Kiki n’a pas eu le temps de récupérer cette nuit — trop secoué par les combats.");
     }
     lines.push("");
   }
@@ -613,7 +618,7 @@ function buildReglesEmbed(config) {
     `**${ULTIMATE_NAMES.sorcier}** — ${ULTIMATE_EFFECTS.sorcier}.`,
     `**${ULTIMATE_NAMES.voleuse}** — ${ULTIMATE_EFFECTS.voleuse}.`,
     "",
-    "🔄 **Régénération** : chaque nuit, Kiki récupère naturellement 1 ou 2 points de Défense et 1 ou 2 points de Résistance (tirages indépendants, plafonnés à 10/10) — sans pression suffisante des Voleuses, il finit par se rétablir entièrement.",
+    "🔄 **Régénération** : chaque nuit, Kiki a 30% de chances de récupérer +1 point de Défense, et 30% de chances (indépendamment) de récupérer +1 point de Résistance (plafonnés à 10/10) — sans pression suffisante des Voleuses, il finit par se rétablir petit à petit.",
     "",
     "Le Boss réserve aussi quelques surprises en cours de route…",
   );
