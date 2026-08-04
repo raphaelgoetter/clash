@@ -149,26 +149,38 @@ function buildDay1Intro() {
   ].join("\n");
 }
 
+// "normal" n'a volontairement aucun pool de texte associé (contrairement à
+// GAUGE_ICONS, qui a besoin d'une icône même en normal) : rien
+// d'intéressant à raconter sur une jauge ordinaire, la ligne est alors
+// simplement omise plutôt que de meubler avec une phrase creuse.
 async function buildNarrative(jour, gauges, voters, estPremierJour) {
   if (estPremierJour) return buildDay1Intro();
 
   const narratifs = await loadNarratifs();
   const intro = pickFlavor(narratifs.intro_cocasse, jour);
 
-  const lines = [
-    pickFlavor(narratifs[gaugeCategory("estomac", gauges.estomac)], jour + 1),
-    pickFlavor(narratifs[gaugeCategory("energie", gauges.energie)], jour + 2),
-    pickFlavor(narratifs[gaugeCategory("moral", gauges.moral)], jour + 3),
-  ];
+  const lines = [];
+  const estomacKey = gaugeCategory("estomac", gauges.estomac);
+  if (!estomacKey.endsWith("_normal")) lines.push(pickFlavor(narratifs[estomacKey], jour + 1));
+  const energieKey = gaugeCategory("energie", gauges.energie);
+  if (!energieKey.endsWith("_normal")) lines.push(pickFlavor(narratifs[energieKey], jour + 2));
+  const moralKey = gaugeCategory("moral", gauges.moral);
+  if (!moralKey.endsWith("_normal")) lines.push(pickFlavor(narratifs[moralKey], jour + 3));
 
   const names = await pickVoterNames(voters, jour);
   if (names.length) {
     const template = pickFlavor(narratifs.cloture_soins, jour + 4);
-    // Rattachée à la ligne Moral (même paragraphe), pas une ligne à part.
-    lines[lines.length - 1] +=
-      ` ${template.replaceAll("{noms}", names.join(" et ")).replaceAll("{premier}", names[0])}`;
+    const phrase = template.replaceAll("{noms}", names.join(" et ")).replaceAll("{premier}", names[0]);
+    // Rattachée à la dernière ligne (même paragraphe) si possible, sinon
+    // ligne à part (les 3 jauges peuvent toutes être "normal" ce jour-là).
+    if (lines.length) {
+      lines[lines.length - 1] += ` ${phrase}`;
+    } else {
+      lines.push(phrase);
+    }
   }
 
+  if (!lines.length) return intro;
   return `${intro}\n\n${lines.join("\n")}`;
 }
 

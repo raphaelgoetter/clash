@@ -1,0 +1,35 @@
+{
+  "intro_cocasse": [
+    "⚔️ Le camp aiguise ses armes dans la ferveur du petit matin, prêt pour une nouvelle offensive contre Kiki.",
+    "🔩 Un grincement métallique sinistre a résonné depuis le campement de Kiki toute la nuit — personne n’a fermé l’œil.",
+    "🍖 Le Chevalier de garde a englouti toutes les réserves de viande séchée en prévision de la bataille.",
+    "🏹 Les Archères s’échauffent en visant des cibles improvisées taillées dans des boucliers cassés.",
+    "🔮 Un Sorcier a passé la nuit à répéter ses formules, au grand dam de ses voisins de tente.",
+    "🗡️ Une Voleuse a été aperçue en train d’inspecter discrètement l’armure de Kiki pendant qu’il somnolait.",
+    "🎪 Un montreur de gobelins ambulant propose ses services au camp — personne n’ose accepter.",
+    "📯 Le clairon du matin résonne un peu faux, mais suffit à réveiller les troupes.",
+    "🏕️ Le camp se réorganise après une nuit agitée — quelqu’un jure avoir vu Kiki jouer avec un papillon.",
+    "🩹 L’infirmerie improvisée déborde déjà de bandages, la journée n’a pourtant pas commencé."
+  ],
+  "defense_bas": [
+    "🛡️ L’armure de Kiki montre des fissures inquiétantes — les Archères pourraient bien en profiter.",
+    "🛡️ Kiki encaisse mal les coups ces derniers temps, sa garde est clairement affaiblie."
+  ],
+  "defense_haut": [
+    "🛡️ Kiki semble quasiment increvable aujourd’hui — son armure est impressionnante.",
+    "🛡️ Difficile de percer une armure aussi épaisse — les Archères vont devoir redoubler d’efforts."
+  ],
+  "resistance_bas": [
+    "🔮 Les protections magiques de Kiki vacillent — les Sorciers sentent l’opportunité.",
+    "🔮 La résistance arcanique de Kiki est au plus bas, un sort bien placé pourrait faire des ravages."
+  ],
+  "resistance_haut": [
+    "🔮 Kiki semble quasiment immunisé à la magie aujourd’hui.",
+    "🔮 Une résistance arcanique redoutable — les sorts peinent à faire effet sur Kiki."
+  ],
+  "cloture_combattants": [
+    "Merci à {noms} pour leurs coups décisifs sur Kiki hier !",
+    "{premier} s’est particulièrement illustré au combat contre Kiki hier.",
+    "Sans {noms}, la journée d’hier aurait été bien moins spectaculaire."
+  ]
+}

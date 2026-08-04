@@ -5,6 +5,7 @@ import {
   activeEventForDay,
   rollDamageInRange,
   rollVoleuseDebuff,
+  rollRegenAmount,
   applyStatReduction,
   protectionMultiplier,
   computeVoleuseDamage,
@@ -167,19 +168,42 @@ async function main() {
     0,
   );
 
-  // ── computeBossStatsNextDay ──
-  assert.deepStrictEqual(computeBossStatsNextDay({ defense: 5, resistance: 5 }, [], null), { defense: 5, resistance: 5 });
+  // ── rollRegenAmount — régénération nocturne, 1 ou 2, 50/50 ──
+  assert.strictEqual(rollRegenAmount(rngSequence([0])), 1);
+  assert.strictEqual(rollRegenAmount(rngSequence([0.49])), 1);
+  assert.strictEqual(rollRegenAmount(rngSequence([0.5])), 2);
+  assert.strictEqual(rollRegenAmount(rngSequence([0.99])), 2);
+
+  // ── computeBossStatsNextDay — debuffs (plancher 0) PUIS régénération (plafond 10) ──
+  const NO_REGEN = { defense: 0, resistance: 0 };
+  assert.deepStrictEqual(computeBossStatsNextDay({ defense: 5, resistance: 5 }, [], null, NO_REGEN), { defense: 5, resistance: 5 });
   assert.deepStrictEqual(
-    computeBossStatsNextDay({ defense: 5, resistance: 5 }, ["defense", "defense", "resistance"], null),
+    computeBossStatsNextDay({ defense: 5, resistance: 5 }, ["defense", "defense", "resistance"], null, NO_REGEN),
     { defense: 3, resistance: 4 },
   );
   assert.deepStrictEqual(
-    computeBossStatsNextDay({ defense: 1, resistance: 5 }, ["defense", "defense"], null),
+    computeBossStatsNextDay({ defense: 1, resistance: 5 }, ["defense", "defense"], null, NO_REGEN),
     { defense: 0, resistance: 5 }, // plancher 0
   );
   assert.deepStrictEqual(
-    computeBossStatsNextDay({ defense: 8, resistance: 8 }, ["defense", "resistance"], "voleuse"),
-    { defense: 0, resistance: 0 }, // Coup à la Gorge écrase tout, malgré des debuffs présents
+    computeBossStatsNextDay({ defense: 8, resistance: 8 }, ["defense", "resistance"], "voleuse", { defense: 5, resistance: 5 }),
+    { defense: 0, resistance: 0 }, // Coup à la Gorge écrase tout, ignore même un regen généreux
+  );
+  assert.deepStrictEqual(
+    computeBossStatsNextDay({ defense: 5, resistance: 5 }, [], null, { defense: 2, resistance: 1 }),
+    { defense: 7, resistance: 6 }, // régénération pure, pas de debuff ce jour-là
+  );
+  assert.deepStrictEqual(
+    computeBossStatsNextDay({ defense: 9, resistance: 9 }, [], null, { defense: 2, resistance: 2 }),
+    { defense: 10, resistance: 10 }, // plafond 10, le surplus de régénération est perdu
+  );
+  assert.deepStrictEqual(
+    computeBossStatsNextDay({ defense: 5, resistance: 5 }, ["defense", "defense", "resistance"], null, { defense: 2, resistance: 2 }),
+    { defense: 5, resistance: 6 }, // (5-2)+2=5, (5-1)+2=6 — la régénération compense une partie des debuffs
+  );
+  assert.deepStrictEqual(
+    computeBossStatsNextDay({ defense: 1, resistance: 5 }, ["defense", "defense"], null, { defense: 1, resistance: 0 }),
+    { defense: 1, resistance: 5 }, // plancher 0 puis régénération : 0+1=1
   );
 
   // ── isChevalierVoteAllowed ──
@@ -194,7 +218,7 @@ async function main() {
   {
     const votesRaw = { u1: "chevalier", u2: "voleuse", u3: "sorcier", u4: "archeres", u5: "espion" };
     const voteAtRaw = { u3: "2020-01-01T00:00:01Z", u4: "2020-01-01T00:00:02Z" };
-    const rng = rngSequence([0, 0.5, 0, 0]); // dmg voleuse, debuff voleuse (pas déclenché), dmg sorcier, dmg archeres
+    const rng = rngSequence([0, 0.5, 0, 0, 0, 0]); // dmg voleuse, debuff voleuse (pas déclenché), dmg sorcier, dmg archeres, regen défense, regen résistance
     const r = computeCloture({
       jour: 1,
       votesRaw,
@@ -212,7 +236,8 @@ async function main() {
     assert.strictEqual(r.totalDamageDuJour, 105);
     assert.strictEqual(r.totalDegatsApres, 105);
     assert.deepStrictEqual(r.voleuseDebuffs, []);
-    assert.deepStrictEqual(r.bossStatsApres, { defense: 5, resistance: 5 });
+    assert.deepStrictEqual(r.regen, { defense: 1, resistance: 1 });
+    assert.deepStrictEqual(r.bossStatsApres, { defense: 6, resistance: 6 }); // 5+1 régénération (aucun debuff ce jour-là)
   }
 
   // (b) All-In Archères + Bouclier d'Acier simultanés (jour 6)
@@ -223,7 +248,7 @@ async function main() {
       u2: "2020-01-01T00:00:02Z",
       u3: "2020-01-01T00:00:03Z",
     };
-    const rng = rngSequence([0, 0, 0]); // 3 tirages Archères, tous à la borne min (70)
+    const rng = rngSequence([0, 0, 0, 0, 0]); // 3 tirages Archères (borne min 70), regen défense, regen résistance
     const r = computeCloture({
       jour: 6,
       votesRaw,
@@ -240,7 +265,7 @@ async function main() {
     // Volée Céleste ignore Défense (même à 10 via Bouclier) ET la protection : 70 x 3
     assert.strictEqual(r.totalDamageDuJour, 210);
     assert.strictEqual(r.totalDegatsApres, 260);
-    assert.deepStrictEqual(r.bossStatsApres, { defense: 5, resistance: 5 }); // pas de debuff Voleuse ce jour-là
+    assert.deepStrictEqual(r.bossStatsApres, { defense: 6, resistance: 6 }); // pas de debuff Voleuse, +1 régénération chacune
   }
 
   // (c) All-In Voleuse (Coup à la Gorge) avec debuffs individuels redondants

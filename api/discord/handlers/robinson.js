@@ -98,17 +98,22 @@ async function pickVoterNames(voters) {
   return resolved.filter(Boolean);
 }
 
+// "normal" n'a volontairement aucun pool de texte associé : rien
+// d'intéressant à raconter sur un stock ordinaire, la ligne est alors
+// simplement omise plutôt que de meubler avec une phrase creuse.
 async function buildNarrative(jour, stocks, voters, estPremierJour) {
   if (estPremierJour) return DAY1_INTRO;
 
   const narratifs = await loadNarratifs();
   const intro = pickFlavor(narratifs.intro_cocasse, jour);
 
-  const lines = [
-    pickFlavor(narratifs[stockCategory("poisson", stocks.poisson)], jour + 1),
-    pickFlavor(narratifs[stockCategory("eau", stocks.eau)], jour + 2),
-    pickFlavor(narratifs[stockCategory("bois", stocks.bois)], jour + 3),
-  ];
+  const lines = [];
+  const poissonKey = stockCategory("poisson", stocks.poisson);
+  if (!poissonKey.endsWith("_normal")) lines.push(pickFlavor(narratifs[poissonKey], jour + 1));
+  const eauKey = stockCategory("eau", stocks.eau);
+  if (!eauKey.endsWith("_normal")) lines.push(pickFlavor(narratifs[eauKey], jour + 2));
+  const boisKey = stockCategory("bois", stocks.bois);
+  if (!boisKey.endsWith("_normal")) lines.push(pickFlavor(narratifs[boisKey], jour + 3));
 
   const names = await pickVoterNames(voters);
   if (names.length) {
@@ -116,6 +121,7 @@ async function buildNarrative(jour, stocks, voters, estPremierJour) {
     lines.push(template.replaceAll("{noms}", names.join(" et ")).replaceAll("{premier}", names[0]));
   }
 
+  if (!lines.length) return intro;
   return `${intro}\n\n${lines.join("\n")}`;
 }
 

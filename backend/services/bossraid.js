@@ -30,7 +30,9 @@ import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "bossraid", "boss_raid.json");
+const BOSSRAID_DIR = path.resolve(__dirname, "..", "..", "data", "bossraid");
+const CONFIG_JSON_PATH = path.join(BOSSRAID_DIR, "boss_raid.json");
+const NARRATIFS_JSON_PATH = path.join(BOSSRAID_DIR, "narratifs.json");
 
 let _redis = null;
 function getRedis() {
@@ -119,6 +121,19 @@ export async function loadBossRaidConfig() {
   const txt = await fs.readFile(CONFIG_JSON_PATH, "utf-8");
   configCache = JSON.parse(txt);
   return configCache;
+}
+
+// Pools de textes narratifs (variantes par posture du Boss + phrases de
+// clôture citant les combattants) — séparés de boss_raid.json car purement
+// cosmétiques, n'affectent jamais la logique de jeu. Même principe que
+// data/robinson/narratifs.json et data/tamagotchi/narratifs.json.
+let narratifsCache = null;
+
+export async function loadNarratifs() {
+  if (narratifsCache) return narratifsCache;
+  const txt = await fs.readFile(NARRATIFS_JSON_PATH, "utf-8");
+  narratifsCache = JSON.parse(txt);
+  return narratifsCache;
 }
 
 // ── État de la partie (muté uniquement au cron, jamais en concurrence) ──
@@ -279,12 +294,22 @@ export function computeArcheresDamage({ base, defense, protege, frappeLethaleAct
   return degats;
 }
 
+// Régénération nocturne du Boss — sans ça, Défense/Résistance ne peuvent
+// que stagner ou diminuer sur 10 jours (aucune autre source de hausse).
+// +1 ou +2, 50/50, comme les autres tirages du jeu (rollCappedEventAmount
+// côté Robinson) — un tirage indépendant par stat.
+export function rollRegenAmount(rng = Math.random) {
+  return rng() < 0.5 ? 1 : 2;
+}
+
 // Nouvelle posture du Boss pour le lendemain. Coup à la Gorge (All-In
 // Voleuse) écrase tout à {0,0} INCONDITIONNELLEMENT, même si des debuffs
 // individuels ont été tirés le même jour (ils restent visibles dans le
 // bilan mais n'influencent jamais le résultat final, jamais recalculés en
-// silence).
-export function computeBossStatsNextDay(bossStatsAvant, voleuseDebuffs, allIn) {
+// silence) — la régénération (`regen`) est ignorée elle aussi ce jour-là,
+// elle ne reprend qu'à partir du lendemain. Sinon : debuffs Voleuse
+// (plancher 0) PUIS régénération (plafond 10), dans cet ordre.
+export function computeBossStatsNextDay(bossStatsAvant, voleuseDebuffs, allIn, regen) {
   if (allIn === "voleuse") return { defense: 0, resistance: 0 };
   let defense = bossStatsAvant.defense;
   let resistance = bossStatsAvant.resistance;
@@ -292,6 +317,8 @@ export function computeBossStatsNextDay(bossStatsAvant, voleuseDebuffs, allIn) {
     if (stat === "defense") defense = Math.max(0, defense - 1);
     else if (stat === "resistance") resistance = Math.max(0, resistance - 1);
   }
+  defense = Math.min(10, defense + regen.defense);
+  resistance = Math.min(10, resistance + regen.resistance);
   return { defense, resistance };
 }
 
@@ -380,10 +407,15 @@ export function computeCloture({ jour, votesRaw, voteAtRaw, bossStatsAvant, tota
     }
   }
 
+  // Tirée systématiquement (même lors d'un Coup à la Gorge, où le résultat
+  // est simplement ignoré par computeBossStatsNextDay) — consommation rng
+  // prévisible, pas de branche conditionnelle sur le nombre de tirages.
+  const regen = { defense: rollRegenAmount(rng), resistance: rollRegenAmount(rng) };
   const bossStatsApres = computeBossStatsNextDay(
     bossStatsAvant,
     voleuseDebuffs.map((d) => d.stat),
     allIn,
+    regen,
   );
   const totalDegatsApres = totalDegatsAvant + totalDamageDuJour;
 
@@ -397,6 +429,7 @@ export function computeCloture({ jour, votesRaw, voteAtRaw, bossStatsAvant, tota
     totalDamageDuJour,
     totalDegatsApres,
     voleuseDebuffs,
+    regen,
     bossStatsApres,
   };
 }
@@ -404,12 +437,13 @@ export function computeCloture({ jour, votesRaw, voteAtRaw, bossStatsAvant, tota
 // ── Wrappers I/O — appelés uniquement par postBossRaid()/handleEspion() ──
 
 async function loadCloture(jour, config) {
-  const [votesRaw, voteAtRaw, state] = await Promise.all([
+  const [votesRaw, voteAtRaw, usernamesRaw, state] = await Promise.all([
     hgetallRaw(votesKey(jour)),
     hgetallRaw(voteAtKey(jour)),
+    hgetallRaw(voteUsernamesKey(jour)),
     readState(),
   ]);
-  return computeCloture({
+  const result = computeCloture({
     jour,
     votesRaw,
     voteAtRaw,
@@ -418,6 +452,13 @@ async function loadCloture(jour, config) {
     config,
     rng: Math.random,
   });
+  // Pseudo rattaché après coup (jamais dans computeCloture, qui reste pure)
+  // — sert uniquement au texte narratif ("Merci à {noms}..."), lu AVANT que
+  // clearVotes() ne supprime bossraid:vote_usernames:<jour>.
+  return {
+    ...result,
+    perVoteDetails: result.perVoteDetails.map((d) => ({ ...d, username: usernamesRaw[d.discordId] || null })),
+  };
 }
 
 // Lecture seule (aucune écriture Redis) — utilisée par le bouton Espion
@@ -449,6 +490,7 @@ export async function closeDayAndAdvance(jour, config) {
     bossStatsAvant: state.bossStats,
     bossStatsApres: result.bossStatsApres,
     voleuseDebuffs: result.voleuseDebuffs,
+    regen: result.regen,
     resolvedAt: new Date().toISOString(),
   });
   if (Object.keys(votesRaw).length) {

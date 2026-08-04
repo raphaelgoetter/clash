@@ -25,13 +25,6 @@
     "🍭 Trop gavée, Lilith émet de petits hoquets enflammés à intervalles réguliers.",
     "🍭 Repue au point de bailler entre chaque bouchée refusée, Lilith fait la sieste digestive."
   ],
-  "estomac_normal": [
-    "🍭 L'estomac de Lilith est à l'aise, elle digère tranquillement.",
-    "🍭 Bien nourrie sans excès, Lilith trottine d'un pas léger dans l'arène.",
-    "🍭 Le ventre ni trop plein ni trop vide, Lilith savoure calmement son repas de la matinée.",
-    "🍭 Lilith se sent parfaitement rassasiée et garde un œil vif sur les alentours.",
-    "🍭 Un appétit tout à fait raisonnable aujourd'hui : Lilith grignote sans excès."
-  ],
   "energie_bas": [
     "🪫 En plein burn-out, Lilith refuse d'obéir et fixe le vide d'un air épuisé.",
     "🪫 Les paupières lourdes, Lilith traîne la patte et bâille toutes les cinq minutes.",
@@ -46,13 +39,6 @@
     "🔋 Lilith a visiblement trop d'énergie : elle réorganise le mobilier de l'arène à sa façon.",
     "🔋 Électrique au possible, Lilith grimpe aux murs (littéralement) et refuse de se poser."
   ],
-  "energie_normal": [
-    "⚡ Sa forme est correcte, ni trop fatiguée ni trop électrique.",
-    "⚡ Lilith garde un rythme tranquille, tout juste assez d'énergie pour surveiller son territoire.",
-    "⚡ Ni léthargique ni surexcitée, Lilith vaque à ses occupations de bébé dragon avec sérénité.",
-    "⚡ Lilith alterne petites siestes et courtes explorations, un bon équilibre du jour.",
-    "⚡ Son niveau d'énergie est stable, parfait pour un peu d'entraînement sans se blesser."
-  ],
   "moral_bas": [
     "🥱 Le moral en berne, Lilith déprime dans son coin et regrette son maître.",
     "🥱 Lilith fixe l'horizon d'un air triste, visiblement nostalgique des tartes flambées de Mohamed Light.",
@@ -66,13 +52,6 @@
     "😋 Lilith est tellement heureuse qu'elle distribue des léchouilles enflammées à qui s'approche.",
     "😋 Sur un petit nuage, Lilith chantonne (très faux) en trottinant dans l'arène.",
     "😋 Grisée de bonheur, Lilith refuse désormais de faire quoi que ce soit sans un câlin préalable."
-  ],
-  "moral_normal": [
-    "😐 Le moral de Lilith est stable, elle a même l'air de bonne humeur.",
-    "😐 Lilith semble sereine, ni grognon ni surexcitée, une belle journée en perspective.",
-    "😐 D'humeur égale, Lilith observe le clan avec un intérêt tranquille.",
-    "😐 Lilith affiche un joli sourire de dragon satisfait, sans excès.",
-    "😐 Tout va bien du côté du moral : Lilith profite calmement de la journée."
   ],
   "cloture_soins": [
     "Merci à {noms} pour les soins prodigués hier — Lilith a trouvé un os de dragon dans l'arène et se met à jouer avec {premier} !",

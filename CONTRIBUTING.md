@@ -982,6 +982,12 @@ Chaque Chevalier protège jusqu'à 2 unités à distance (Sorcier/Archères) : `
 - **🔮 Surcharge Arcane** (Sorcier) : double (`×2`) les dégâts magiques de tous les votants Sorcier, appliqué après les autres réductions. Composé avec Miroir de Mana (`×0,5`) le même jour → net `×1`, simple multiplication, aucun cas spécial codé.
 - **🗡️ Coup à la Gorge** (Voleuse) : la Défense **et** la Résistance du Boss tombent à **0/10** pour le lendemain, **inconditionnellement** (`computeBossStatsNextDay()`) — écrase les debuffs individuels tirés par les votes Voleuse du même jour, qui restent visibles dans l'historique mais n'influencent jamais le résultat.
 
+### Régénération nocturne de Kiki
+
+Sans ce mécanisme, Défense et Résistance ne pourraient que stagner ou diminuer sur 10 jours (aucune autre source de hausse dans le jeu). À chaque clôture, `rollRegenAmount()` tire indépendamment **+1 ou +2** (50/50) pour la Défense et pour la Résistance, appliqué **après** les debuffs Voleuse et **plafonné à 10** (`computeBossStatsNextDay()`) — un tirage systématique, y compris les jours sans aucun vote Voleuse. Documenté explicitement dans l'embed [📖 Règles & Rôles] (mécanique de base, pas une surprise) et rappelé dans le bilan de chaque jour (`🔄 Kiki récupère pendant la nuit : +X Défense, +Y Résistance`).
+
+Seule exception : lors d'un **Coup à la Gorge** (All-In Voleuse), la régénération est **tirée mais ignorée** ce jour-là — `computeBossStatsNextDay()` retourne `{0, 0}` inconditionnellement avant même de considérer `regen` (le tirage a quand même lieu, pour une consommation de `rng` prévisible dans `computeCloture()`, sans branche conditionnelle sur le nombre d'appels). La régénération reprend normalement dès le lendemain, à partir de 0/10.
+
 ### Événements du Boss
 
 3 événements fixes tirés de `boss_raid.json.evenements_boss` (`activeEventForDay(jour, evenements)`, lookup exact — pas de condition comme Robinson, un jour donne toujours le même événement) :
@@ -1008,6 +1014,8 @@ Boss Raid (comme Robinson et le Tamagoshi) est destiné à être rejoué plusieu
 
 `frontend/public/images/boss/boss-01.webp` à `boss-10.webp` — une illustration par jour de combat, servie en asset statique (même principe que `rob-01.webp`…`rob-10.webp` de Robinson) et référencée directement par URL (`bossRaidImageUrl()`, `api/discord/handlers/bossraid.js`) dans le champ `image` de l'embed. Affichée uniquement à partir du Jour 1 (jamais au jour d'annonce, qui n'a pas d'illustration dédiée). L'embed de fin de Raid réutilise systématiquement l'illustration du dernier jour (`boss-10.webp`).
 
+`data/bossraid/narratifs.json` — pools de variantes de texte (une intro "lore inutile" façon ambiance de camp, 2 variantes par état notable de Défense/Résistance, et des phrases de clôture citant les combattants les plus offensifs de la veille) séparées du code pour être enrichies sans y toucher. Même principe que `data/robinson/narratifs.json`/`data/tamagotchi/narratifs.json`, y compris la règle **"normal" = aucune ligne** : un état ordinaire (Défense/Résistance 4-6/10) n'a volontairement aucun pool de texte associé, la ligne est simplement omise plutôt que de meubler avec une phrase creuse — seuls les états notables (`_bas` ≤3, `_haut` ≥7) ont du texte. Sélection déterministe par jour (`pickFlavor()`, indexé sur `jour`, jamais `Math.random()`).
+
 ### Stockage — Upstash Redis (`bossraid:*`)
 
 Même instance et mêmes conventions que les autres jeux. Espace de clés `bossraid:*`, totalement séparé.
@@ -1019,7 +1027,7 @@ Même instance et mêmes conventions que les autres jeux. Espace de clés `bossr
 | `bossraid:votes:<jour>` | HASH | `discordId → roleId` — écrasable, jetable, effacé après clôture du jour |
 | `bossraid:vote_at:<jour>` | HASH | `discordId → ISO timestamp` — horodatage de la dernière mise à jour du vote, sert à l'ordre de protection Chevalier |
 | `bossraid:vote_usernames:<jour>` | HASH | `discordId → pseudo` — jetable, uniquement pour l'affichage admin (`npm run bossraid:status`) |
-| `bossraid:historique` | HASH | `jour → { voteCounts, totalVotes, protection, allIn, event, totalDamageDuJour, totalDegatsApres, bossStatsAvant, bossStatsApres, voleuseDebuffs, resolvedAt }` — bilans quotidiens de la manche EN COURS, alimente le bouton Journal, effacé par `resetBossRaid()` |
+| `bossraid:historique` | HASH | `jour → { voteCounts, totalVotes, protection, allIn, event, totalDamageDuJour, totalDegatsApres, bossStatsAvant, bossStatsApres, voleuseDebuffs, regen, resolvedAt }` — bilans quotidiens de la manche EN COURS, alimente le bouton Journal, effacé par `resetBossRaid()` |
 | `bossraid:manches` | HASH | `manche → { manche, totalDegatsCumules, bossStatsFinal, resolvedAt }` — un bilan par manche TERMINÉE, jamais nettoyé (persiste entre les manches, y compris après `npm run bossraid:reset`) |
 | `bossraid:manche_seq` | STRING (compteur) | Numéro de la prochaine manche à archiver, incrémenté (`INCR`) à chaque fin de Raid réel (jamais en dry-run) |
 
