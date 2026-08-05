@@ -316,29 +316,16 @@ async function main() {
         )
       : 0;
 
-    const previousScore = Number.isFinite(previousBaseline?.scoreClan)
-      ? previousBaseline.scoreClan
-      : previousEntry && previousEntry.date
-        ? null
-        : null;
-
-    const baselineScore = Number.isFinite(previousBaseline?.scoreClan)
-      ? previousBaseline.scoreClan
-      : null;
-
-    const scoreClanDelta = formatDelta(scoreClan, baselineScore);
-
     const riskMembers = getRiskyMembers(memberEntries);
     const inactiveMembers = getInactiveMembers(memberEntries, now);
 
     const baseline =
-      previousBaseline ??
-      (previousEntry &&
+      previousEntry &&
       previousEntry.date &&
       now.getTime() - parseClashDate(previousEntry.date).getTime() >=
         6 * MS_PER_DAY
         ? previousEntry
-        : null);
+        : previousBaseline;
 
     const summary = {
       membersCount,
@@ -378,14 +365,7 @@ async function main() {
         rank: rank ?? null,
         scoreClan,
       },
-      baseline:
-        previousBaseline ??
-        (previousEntry &&
-        previousEntry.date &&
-        now.getTime() - parseClashDate(previousEntry.date).getTime() >=
-          6 * MS_PER_DAY
-          ? previousEntry
-          : null),
+      baseline,
     };
   }
 
