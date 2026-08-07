@@ -42,15 +42,14 @@ if (!channelId) {
         console.log("");
       }
       console.log(`DRY-RUN — prochaine partie (salon ${channelId}) :`);
-      console.log(`  Carte gauche : ${result.entryA.answer} (${result.entryA.id})`);
-      console.log(`  Carte droite : ${result.entryB.answer} (${result.entryB.id})`);
+      console.log(`  Carte : ${result.entry.answer} (${result.entry.id})`);
       console.log(`  Ping @MINI JEUX : ${result.pingRoleId ? "oui" : "non"}`);
       console.log(JSON.stringify({ embeds: [result.embed], components: result.components }, null, 2));
       return;
     }
 
     console.log(
-      `Partie postée dans ${channelId} — "${result.entryA.answer}" & "${result.entryB.answer}" (message ${result.message.id})`,
+      `Partie postée dans ${channelId} — "${result.entry.answer}" (message ${result.message.id})`,
     );
   } catch (err) {
     console.error("Échec de la publication Zoom carte :", err.message);

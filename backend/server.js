@@ -22,7 +22,7 @@ import discordRoutes from "./routes/discord.js";
 import { clearAll } from "./services/cache.js";
 import { fetchClan, fetchPlayer } from "./services/clashApi.js";
 import { getCurrentFrameImage, getFrameImageByGameId } from "./services/frames.js";
-import { getZoomCompositeImage, getZoomSlotImage } from "./services/zoomImage.js";
+import { getZoomCardImage, getZoomHintImage, getZoomRevealImage } from "./services/zoomImage.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -265,21 +265,17 @@ app.get("/api/frames/image", async (req, res) => {
   res.send(image.buffer);
 });
 
-// Jeu Zoom carte : sert l'image d'une manche précise (2 cartes composées en
-// une seule image), ou le crop dézoomé d'un seul slot (indice, ?slot=A|B),
-// ou la révélation complète d'un slot (?slot=A|B&reveal=1) — jamais un fichier
-// brut de data/zoom/images (non exposé statiquement, seule cette route y
-// donne accès). Anti-spoiler : getZoomCompositeImage/getZoomSlotImage
-// vérifient toutes les deux que gameId a réellement été posté (voir
+// Jeu Zoom carte : sert l'image en zoom extrême de la manche en cours
+// (embed public), ou dézoomée (indice, ?stage=hint), ou la carte entière
+// (révélation, ?stage=reveal) — jamais un fichier brut de data/zoom/images
+// (non exposé statiquement, seule cette route y donne accès). Anti-spoiler :
+// les trois fonctions vérifient que gameId a réellement été posté (voir
 // isGamePosted dans services/zoom.js), même garde-fou que Frame.
 app.get("/api/zoom/image", async (req, res) => {
-  const { gameId, slot, reveal } = req.query;
+  const { gameId, stage } = req.query;
   if (!gameId) return res.status(400).end();
-  const image = await (
-    slot
-      ? getZoomSlotImage(String(gameId), String(slot), { reveal: reveal === "1" })
-      : getZoomCompositeImage(String(gameId))
-  ).catch(() => null);
+  const getImage = stage === "hint" ? getZoomHintImage : stage === "reveal" ? getZoomRevealImage : getZoomCardImage;
+  const image = await getImage(String(gameId)).catch(() => null);
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", "image/png");
   res.setHeader("Cache-Control", "no-store");

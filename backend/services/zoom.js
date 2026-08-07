@@ -1,22 +1,18 @@
 // ============================================================
-// zoom.js — Jeu "Zoom carte" (devine 2 cartes à partir d'un zoom extrême sur
-// leurs icônes). Couche métier : lecture du catalogue, état de la partie,
+// zoom.js — Jeu "Zoom carte" (devine une carte à partir d'un zoom extrême
+// sur son icône). Couche métier : lecture du catalogue, état de la partie,
 // scoring, classements. Miroir structurel de frames.js/anagrams.js (même
 // stockage Upstash Redis, mêmes pièges — automaticDeserialization/HGETALL,
-// client paresseux — voir les commentaires détaillés dans frames.js), avec
-// une différence structurelle majeure :
+// client paresseux — voir les commentaires détaillés dans frames.js).
 //
-// Chaque manche affiche 2 cartes ("slots" A et B, gauche/droite) au lieu
-// d'une seule. Chaque slot a son propre compteur d'indice, ses propres
-// tentatives et son propre statut résolu — un joueur peut marquer des
-// points en ne trouvant qu'une seule des deux cartes (score partiel), pas
-// besoin des deux. Le score d'une manche pour un joueur est la somme des
-// scores de ses slots résolus.
-//
-// checkAnswer utilise une égalité STRICTE (comme anagrams.js), pas une
-// correspondance par sous-chaîne comme Frame — les noms de cartes sont
-// courts, un fragment comme "Barbares" accepterait à tort "Barbares
-// d'élite".
+// Deux différences par rapport à Frame :
+// - checkAnswer utilise une égalité STRICTE (comme anagrams.js), pas une
+//   correspondance par sous-chaîne — les noms de cartes sont courts.
+// - La sélection de la prochaine manche est ALÉATOIRE (sac à tirage sans
+//   répétition tant que le catalogue entier n'a pas été joué), pas
+//   séquentielle — voir pickNextZoomCard. Un ordre séquentiel sur un
+//   catalogue trié alphabétiquement (data/zoom/zoom.json) rendrait le jeu
+//   totalement prévisible.
 // ============================================================
 
 import fs from "fs/promises";
@@ -33,7 +29,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ZOOM_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "zoom", "zoom.json");
 
 const FRIDAY = 5;
-export const SLOTS = ["A", "B"];
 
 // Construction paresseuse (pas au chargement du module) — voir frames.js
 // pour la raison exacte (ordre des imports ES vs dotenv.config()).
@@ -89,8 +84,8 @@ const STATE_KEY = "zoom:state";
 
 // SET durable, jamais nettoyé (contrairement aux clés scopées par saison) :
 // tous les gameId ayant un jour été postés, toutes saisons confondues. Sert
-// de garde-fou anti-spoiler pour getZoomImageByGameId (backend/services/
-// zoomImage.js) — même pattern que frame:posted_games (frames.js).
+// de garde-fou anti-spoiler pour backend/services/zoomImage.js — même
+// pattern que frame:posted_games (frames.js).
 function postedGamesKey() {
   return "zoom:posted_games";
 }
@@ -100,11 +95,11 @@ function participantsKey(gameId) {
 function usernamesKey(gameId) {
   return `zoom:usernames:${gameId}`;
 }
-function hintKey(gameId, discordId, slot) {
-  return `zoom:hint:${gameId}:${discordId}:${slot}`;
+function hintKey(gameId, discordId) {
+  return `zoom:hint:${gameId}:${discordId}`;
 }
-function attemptsKey(gameId, discordId, slot) {
-  return `zoom:attempts:${gameId}:${discordId}:${slot}`;
+function attemptsKey(gameId, discordId) {
+  return `zoom:attempts:${gameId}:${discordId}`;
 }
 function seasonKey(seasonId) {
   return `zoom:season:${seasonId}`;
@@ -151,17 +146,8 @@ export async function loadZoomCatalog() {
   return zoomCatalogCache;
 }
 
-// Une manche = une paire d'entrées du catalogue, identifiées par leurs id
-// respectifs et jointes par "__" (jamais un caractère présent dans un id,
-// qui n'est composé que de [a-z0-9-] — voir slugifyCardKey dans
-// scripts/generateZoomCatalog.js). Utilisé partout où l'on a besoin des 2
-// entrées jouées d'une manche (embed, vérification de réponse, image).
-export function resolveZoomPair(catalog, gameId) {
-  const [idA, idB] = String(gameId).split("__");
-  return {
-    entryA: catalog.find((e) => e.id === idA) ?? null,
-    entryB: catalog.find((e) => e.id === idB) ?? null,
-  };
+export function resolveZoomEntry(catalog, gameId) {
+  return catalog.find((e) => e.id === gameId) ?? null;
 }
 
 // ── État de la partie en cours (métadonnées uniquement) ──────────
@@ -180,8 +166,9 @@ async function cleanupGameScratchData(gameId) {
   await scanDelete(`zoom:attempts:${gameId}:*`);
 }
 
-// Remet le jeu à zéro : plus de partie active (la prochaine repart au début
-// du catalogue) et historique/scores entièrement effacés.
+// Remet le jeu à zéro : plus de partie active, historique/scores effacés, et
+// l'ordre de tirage aléatoire est réinitialisé (une nouvelle partie repart
+// sur un sac fraîchement mélangé).
 export async function resetGame() {
   await getRedis().del(STATE_KEY);
   await scanDelete("zoom:participants:*");
@@ -194,8 +181,9 @@ export async function resetGame() {
 
 // ── Saison Clash Royale en cours ────────────────────────────────
 // Dupliquée à l'identique depuis frames.js/anagrams.js (seule la clé de
-// cache change) — pas de valeur à extraire tant que ça reste 3 copies
-// quasi-identiques (voir la remarque équivalente en tête d'anagrams.js).
+// cache change) — pas de valeur à extraire tant que ça reste quelques
+// copies quasi-identiques (voir la remarque équivalente en tête
+// d'anagrams.js).
 export async function getCurrentSeasonId() {
   const { value } = await getOrSet(
     "zoom:seasonId",
@@ -215,25 +203,38 @@ export async function getCurrentSeasonId() {
   return value;
 }
 
-// ── Sélection de la paire et démarrage d'une partie ──────────────
-
-// Progression par ID (pas par index de tableau) : reste correcte même si
-// data/zoom/zoom.json est régénéré/complété plus tard (scripts/
-// generateZoomCatalog.js peut réordonner ou insérer des entrées sans casser
-// la rotation, contrairement à une progression par index qui suppose un
-// fichier strictement append-only comme frames.json/anagrams.json).
-export function pickNextZoomPair(state, catalog) {
-  const n = catalog.length;
-  const prevSecondId = state?.gameId?.split("__")?.[1] ?? null;
-  const prevIndexB = prevSecondId ? catalog.findIndex((e) => e.id === prevSecondId) : -1;
-  const idxA = (prevIndexB + 1) % n;
-  let idxB = (idxA + 1) % n;
-  // Évite 2 variantes de LA MÊME carte dans une manche (ex. Golem base +
-  // Golem évolution en même temps).
-  while (catalog[idxB].cardKey === catalog[idxA].cardKey && idxB !== idxA) {
-    idxB = (idxB + 1) % n;
+// ── Sélection ALÉATOIRE de la prochaine carte (sac à tirage) ─────
+// Mélange de Fisher-Yates de tous les id du catalogue, consommé dans l'ordre
+// jusqu'à épuisement puis re-mélangé — garantit qu'aucune carte ne revient
+// avant que toutes les autres soient passées, tout en restant imprévisible
+// (contrairement à une simple progression d'index sur un catalogue trié
+// alphabétiquement). Le tirage est persisté dans l'état Redis (state.order/
+// state.orderIndex) pour survivre d'une manche à l'autre.
+function shuffle(array) {
+  const result = [...array];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
   }
-  return { idxA, idxB };
+  return result;
+}
+
+export function pickNextZoomCard(state, catalog) {
+  const allIds = catalog.map((e) => e.id);
+  const exhausted = !state?.order?.length || state.orderIndex + 1 >= state.order.length;
+
+  if (!exhausted) {
+    const orderIndex = state.orderIndex + 1;
+    return { order: state.order, orderIndex, id: state.order[orderIndex] };
+  }
+
+  let order = shuffle(allIds);
+  // Évite une répétition immédiate à la jonction entre deux sacs (le dernier
+  // tirage du sac précédent ne doit pas être aussi le premier du nouveau).
+  if (state?.gameId && order[0] === state.gameId && order.length > 1) {
+    [order[0], order[1]] = [order[1], order[0]];
+  }
+  return { order, orderIndex: 0, id: order[0] };
 }
 
 // Attribue le numéro de manche relatif à la saison — identique en structure
@@ -252,8 +253,7 @@ async function assignSeasonMancheNumber(seasonId, gameId) {
 }
 
 // X = manche déjà attribuée + vendredis restants avant la fin de la saison
-// calendaire — même principe que Frame (mercredis) / Anagram (samedis), voir
-// le commentaire détaillé équivalent dans frames.js.
+// calendaire — même principe que Frame (mercredis) / Anagram (samedis).
 function countRemainingFridays(now = new Date()) {
   return countRemainingWeekdayOccurrences(now, FRIDAY);
 }
@@ -264,10 +264,7 @@ export function computeSeasonMancheTotal(seasonManche, now = new Date()) {
 export async function startNewGame(channelId) {
   const catalog = await loadZoomCatalog();
   const previousState = await readState();
-  const { idxA, idxB } = pickNextZoomPair(previousState, catalog);
-  const entryA = catalog[idxA];
-  const entryB = catalog[idxB];
-  const gameId = `${entryA.id}__${entryB.id}`;
+  const { order, orderIndex, id: gameId } = pickNextZoomCard(previousState, catalog);
   const seasonId = await getCurrentSeasonId();
   const now = new Date();
 
@@ -276,6 +273,8 @@ export async function startNewGame(channelId) {
 
   const newState = {
     gameId,
+    order,
+    orderIndex,
     seasonId,
     seasonManche,
     seasonMancheTotal,
@@ -287,21 +286,16 @@ export async function startNewGame(channelId) {
   await writeState(newState);
   await getRedis().sadd(postedGamesKey(), gameId);
 
-  // Purge la progression (indices/tentatives/participants) de la partie
-  // précédente — données jetables une fois la partie terminée. Les
-  // résultats archivés (zoom:season:*, nécessaires au total de la saison)
-  // ne sont eux jamais supprimés ici.
   if (previousState?.gameId && previousState.gameId !== newState.gameId) {
     await cleanupGameScratchData(previousState.gameId);
   }
 
-  return { state: newState, entryA, entryB };
+  const entry = resolveZoomEntry(catalog, gameId);
+  return { state: newState, entry };
 }
 
-// Garde-fou anti-spoiler pour backend/services/zoomImage.js — un gameId
-// n'est servable que s'il a réellement été posté un jour (jamais une
-// manche future devinée par construction d'id). Même pattern que
-// getFrameImageByGameId (frames.js).
+// Garde-fou anti-spoiler pour backend/services/zoomImage.js — même pattern
+// que getFrameImageByGameId (frames.js).
 export async function isGamePosted(gameId) {
   return Number(await getRedis().sismember(postedGamesKey(), gameId)) === 1;
 }
@@ -317,17 +311,15 @@ export function checkAnswer(entry, rawAnswer) {
   return (entry.accept || []).map(normalizeAnswer).includes(normalized);
 }
 
-// ── Scoring par slot ────────────────────────────────────────────
-// hintUsed est un booléen (un seul palier d'indice, contrairement à Frame
-// qui en a 2) — le terme de pénalité vaut donc 0 ou 3, jamais plus.
+// ── Scoring ──────────────────────────────────────────────────────
+// Un seul palier d'indice (contrairement à Frame qui en a 2) — hintUsed est
+// un booléen, le terme de pénalité vaut donc 0 ou 3.
 
 export function computeScore(attemptsIncorrects, hintUsed) {
   return Math.max(0, 10 - 2 * attemptsIncorrects - (hintUsed ? 3 : 0));
 }
 
-// ── Progression par joueur, par SLOT ──────────────────────────────
-// HSET/SETNX/INCR sont des primitives atomiques côté Redis : deux joueurs
-// (ou deux clics rapprochés du même joueur) n'entrent jamais en collision.
+// ── Progression par joueur ────────────────────────────────────────
 
 export async function readParticipant(gameId, discordId) {
   return fromJson(await getRedis().hget(participantsKey(gameId), discordId));
@@ -337,83 +329,63 @@ async function touchUsername(gameId, discordId, username) {
   await getRedis().hset(usernamesKey(gameId), { [discordId]: username });
 }
 
-async function slotHintUsed(gameId, discordId, slot) {
-  return (await getRedis().get(hintKey(gameId, discordId, slot))) === "1";
+async function hintUsedFor(gameId, discordId) {
+  return (await getRedis().get(hintKey(gameId, discordId))) === "1";
 }
 
-async function countSlotAttempts(gameId, discordId, slot) {
-  const n = await getRedis().get(attemptsKey(gameId, discordId, slot));
+async function countAttempts(gameId, discordId) {
+  const n = await getRedis().get(attemptsKey(gameId, discordId));
   return Number(n) || 0;
 }
 
-export async function recordSlotAttempt(gameId, discordId, slot, username, isCorrect) {
+export async function recordAttempt(gameId, discordId, username, isCorrect) {
   await touchUsername(gameId, discordId, username);
   if (isCorrect) return; // la tentative gagnante n'est jamais comptée comme incorrecte
-  await getRedis().incr(attemptsKey(gameId, discordId, slot));
+  await getRedis().incr(attemptsKey(gameId, discordId));
 }
 
 // Un seul palier d'indice : un simple flag SETNX suffit (pas besoin de
 // SADD/SCARD comme Frame, qui a 2 indices indépendants par manche).
-export async function recordSlotHintUsed(gameId, discordId, slot, username) {
+export async function recordHintUsed(gameId, discordId, username) {
   await touchUsername(gameId, discordId, username);
-  const wasSet = Number(await getRedis().setnx(hintKey(gameId, discordId, slot), "1"));
+  const wasSet = Number(await getRedis().setnx(hintKey(gameId, discordId), "1"));
   return { alreadyUsed: wasSet === 0 };
 }
 
-// Idempotent PAR SLOT : si ce slot est déjà résolu, renvoie le résultat
-// existant sans rien réécrire. Met aussi à jour le total combiné et le
-// statut "fullySolved" (les 2 slots résolus) du participant.
-export async function markSlotSolved(gameId, discordId, slot, username) {
+// Idempotent : si déjà résolu, renvoie le résultat existant sans rien
+// réécrire. Sinon calcule le score à partir des compteurs indice/tentatives.
+export async function markSolved(gameId, discordId, username) {
   const existing = await readParticipant(gameId, discordId);
-  if (existing?.slots?.[slot]?.solved) {
-    return {
-      participant: existing,
-      score: existing.slots[slot].score,
-      fullySolved: !!existing.fullySolved,
-      justCompleted: false,
-    };
+  if (existing?.solved) {
+    return { participant: existing, score: existing.score };
   }
 
   const [hintUsed, attempts] = await Promise.all([
-    slotHintUsed(gameId, discordId, slot),
-    countSlotAttempts(gameId, discordId, slot),
+    hintUsedFor(gameId, discordId),
+    countAttempts(gameId, discordId),
   ]);
   const score = computeScore(attempts, hintUsed);
-  const solvedAt = new Date().toISOString();
-  const otherSlot = slot === "A" ? "B" : "A";
-  const otherSlotState = existing?.slots?.[otherSlot];
-  const otherSolved = !!otherSlotState?.solved;
-
   const participant = {
     discordId,
     username,
-    slots: {
-      ...(existing?.slots ?? {}),
-      [slot]: { solved: true, solvedAt, score, attempts, hintUsed },
-    },
-    totalScore: (otherSlotState?.score ?? 0) + score,
-    fullySolved: otherSolved,
-    fullySolvedAt: otherSolved ? solvedAt : null,
+    attempts,
+    solved: true,
+    solvedAt: new Date().toISOString(),
+    score,
   };
-
   await getRedis().hset(participantsKey(gameId), { [discordId]: toJson(participant) });
-  return { participant, score, fullySolved: otherSolved, justCompleted: otherSolved };
+  return { participant, score };
 }
 
 // ── Résultats archivés (classement de la saison) ─────────────────
-// Archivage PAR SLOT dès qu'il est résolu (pas seulement quand les 2 slots
-// le sont) : un joueur qui ne trouve qu'une seule des 2 cartes garde ses
-// points au classement de saison, il n'a pas besoin de finir la manche en
-// entier.
 
-export async function archiveSlotSolve(state, entry, discordId, username, slot, score, solvedAt) {
+export async function archiveSolve(state, entry, discordId, username, score, solvedAt) {
   const archKey = archivedKey(state.seasonId);
-  const field = `${state.gameId}:${discordId}:${slot}`;
+  const field = `${state.gameId}:${discordId}`;
 
   const result = {
     gameId: state.gameId,
     seasonId: state.seasonId,
-    slot,
     cardKey: entry.cardKey,
     variant: entry.variant,
     answer: entry.answer,
@@ -434,14 +406,10 @@ export async function archiveSlotSolve(state, entry, discordId, username, slot, 
   return result;
 }
 
-// Tous les résultats archivés d'un joueur pour une saison donnée (une entrée
-// par SLOT résolu, pas par manche) — utilisé par /zoom pour l'historique
-// personnel. Le regroupement par manche (somme des 2 slots) est fait par la
-// couche d'affichage (api/discord/handlers/zoom.js), pas ici.
 export async function getPlayerSeasonResults(seasonId, discordId) {
   const all = await hgetallJson(archivedKey(seasonId));
   return Object.entries(all)
-    .filter(([field]) => field.endsWith(`:${discordId}:A`) || field.endsWith(`:${discordId}:B`))
+    .filter(([field]) => field.endsWith(`:${discordId}`))
     .map(([, result]) => result);
 }
 
@@ -460,17 +428,14 @@ export async function previewSeasonManche(seasonId) {
   return seq + 1;
 }
 
-// "Label" français d'une manche pour le récap de fin de saison — les 2
-// réponses jointes, ex. "Bébé dragon & Reine des archers".
+// Nom français de la carte d'une manche donnée — pour le récap de fin de
+// saison (liste des manches jouées).
 export async function getZoomRoundLabel(gameId) {
   const catalog = await loadZoomCatalog();
-  const { entryA, entryB } = resolveZoomPair(catalog, gameId);
-  if (!entryA || !entryB) return null;
-  return `${entryA.answer} & ${entryB.answer}`;
+  const entry = resolveZoomEntry(catalog, gameId);
+  return entry?.answer ?? null;
 }
 
-// Un joueur a-t-il interagi avec cette manche (indice pris ou tentative),
-// qu'il ait résolu ou non ?
 export async function hasPlayerInteracted(gameId, discordId) {
   const username = await getRedis().hget(usernamesKey(gameId), discordId);
   return username != null;
@@ -478,54 +443,37 @@ export async function hasPlayerInteracted(gameId, discordId) {
 
 // ── Classements ──────────────────────────────────────────────────
 
-// Classement PAR MANCHE : inclut les résolutions PARTIELLES (un seul slot
-// trouvé), contrairement à Frame qui n'inclut que les joueurs ayant
-// complètement résolu la manche — la progression partielle est une donnée
-// significative ici.
 export async function computeGameRanking(gameId) {
   const all = await hgetallJson(participantsKey(gameId));
   return Object.values(all)
-    .filter((p) => (p?.totalScore ?? 0) > 0)
-    .map((p) => ({
-      discordId: p.discordId,
-      username: p.username,
-      totalScore: p.totalScore,
-      fullySolved: p.fullySolved,
-      slots: p.slots,
-    }))
-    .sort((a, b) => {
-      if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
-      const aLast = a.fullySolvedAt || a.slots?.A?.solvedAt || a.slots?.B?.solvedAt;
-      const bLast = b.fullySolvedAt || b.slots?.A?.solvedAt || b.slots?.B?.solvedAt;
-      return new Date(aLast) - new Date(bLast);
-    });
+    .filter((p) => p?.solved)
+    .map((p) => ({ discordId: p.discordId, username: p.username, score: p.score, solvedAt: p.solvedAt }))
+    .sort((a, b) => b.score - a.score || new Date(a.solvedAt) - new Date(b.solvedAt));
 }
 
-// Ordre d'arrivée des joueurs ayant trouvé les 2 cartes (fullySolved) — pour
-// le DM "tu es le Nᵉ à avoir tout trouvé !". Une résolution partielle n'est
-// pas un événement d'"arrivée" pertinent à classer.
-export async function computeFullSolveArrivalOrder(gameId) {
+// Ordre chronologique pur (arrivée), utilisé pour le DM "tu es le Nᵉ à
+// trouver" — voir le même distinguo que Frame (computeGameRanking trie par
+// score, pas par ordre d'arrivée).
+export async function computeArrivalOrder(gameId) {
   const all = await hgetallJson(participantsKey(gameId));
   return Object.values(all)
-    .filter((p) => p?.fullySolved)
-    .map((p) => ({ discordId: p.discordId, username: p.username, totalScore: p.totalScore, fullySolvedAt: p.fullySolvedAt }))
-    .sort((a, b) => new Date(a.fullySolvedAt) - new Date(b.fullySolvedAt));
+    .filter((p) => p?.solved)
+    .map((p) => ({ discordId: p.discordId, username: p.username, score: p.score, solvedAt: p.solvedAt }))
+    .sort((a, b) => new Date(a.solvedAt) - new Date(b.solvedAt));
 }
 
-// Tous les joueurs ayant interagi avec la partie mais n'ayant trouvé aucune
-// carte (ni A ni B) — pour l'affichage "en cours" du récap.
 export async function listGamePlayersInProgress(gameId) {
   const [participants, usernames] = await Promise.all([
     hgetallJson(participantsKey(gameId)),
     hgetallRaw(usernamesKey(gameId)),
   ]);
-  const anySolvedIds = new Set(
+  const solvedIds = new Set(
     Object.values(participants)
-      .filter((p) => (p?.totalScore ?? 0) > 0)
+      .filter((p) => p?.solved)
       .map((p) => p.discordId),
   );
   return Object.entries(usernames)
-    .filter(([discordId]) => !anySolvedIds.has(discordId))
+    .filter(([discordId]) => !solvedIds.has(discordId))
     .map(([discordId, username]) => ({ discordId, username }))
     .sort((a, b) => a.username.localeCompare(b.username));
 }
@@ -544,13 +492,11 @@ export async function computeSeasonRanking(seasonId) {
   return ranking.sort((a, b) => b.totalScore - a.totalScore || a.pseudo.localeCompare(b.pseudo));
 }
 
-// Position (1-indexée) dans la liste déjà triée passée en paramètre.
 export function findRank(sortedList, discordId) {
   const idx = sortedList.findIndex((e) => e.discordId === discordId);
   return idx === -1 ? null : idx + 1;
 }
 
-// Classement avec ex-aequo ("1224").
 export function findTiedRank(sortedList, discordId, scoreKey) {
   const entry = sortedList.find((e) => e.discordId === discordId);
   if (!entry) return null;

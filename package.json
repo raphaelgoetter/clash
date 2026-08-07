@@ -41,7 +41,7 @@
     "anagram:reset": "node scripts/resetAnagram.js",
     "anagram:scores": "node scripts/anagramScores.js",
     "zoom:catalog": "node scripts/generateZoomCatalog.js",
-    "zoom:test": "node scripts/postZoom.js",
+    "zoom:test": "node scripts/postZoom.js --no-ping",
     "zoom:test:dry": "node scripts/postZoom.js --dry-run",
     "zoom:public": "node scripts/postZoom.js --public",
     "zoom:public:dry": "node scripts/postZoom.js --public --dry-run",

@@ -1,33 +1,34 @@
 // ============================================================
-// zoom.js — Handlers Discord pour le jeu "Zoom carte" (devine 2 cartes à
-// partir d'un zoom extrême sur leurs icônes). Embed, boutons, modal, DM.
-// La publication d'une partie passe uniquement par scripts/postZoom.js —
-// seule la commande /zoom (scores personnels du joueur qui l'exécute) est
-// une vraie commande slash. Miroir structurel de
-// api/discord/handlers/frames.js, adapté pour 2 slots indépendants (voir
-// backend/services/zoom.js).
+// zoom.js — Handlers Discord pour le jeu "Zoom carte" (devine une carte
+// zoomée à l'extrême). Embed, bouton indice, modal, DM. La publication
+// d'une partie passe uniquement par scripts/postZoom.js — seule la commande
+// /zoom (scores personnels du joueur qui l'exécute) est une vraie commande
+// slash. Miroir structurel de api/discord/handlers/frames.js, avec deux
+// différences : un seul palier d'indice (-3 pts, pas 2 comme Frame), et
+// l'indice est une IMAGE (dézoom) plutôt qu'un texte — la réponse au clic
+// est donc un embed éphémère avec image, jamais un simple texte.
 // ============================================================
 
 import {
   loadZoomCatalog,
-  resolveZoomPair,
+  resolveZoomEntry,
   getCurrentSeasonId,
   readState,
   writeState,
   readParticipant,
   startNewGame,
-  pickNextZoomPair,
   checkAnswer,
-  recordSlotAttempt,
-  recordSlotHintUsed,
-  markSlotSolved,
-  archiveSlotSolve,
+  recordAttempt,
+  recordHintUsed,
+  markSolved,
+  archiveSolve,
   computeGameRanking,
-  computeFullSolveArrivalOrder,
+  computeArrivalOrder,
   computeSeasonRanking,
   listGamePlayersInProgress,
   getPlayerSeasonResults,
   getSeasonManches,
+  hasPlayerInteracted,
   getSeasonMancheNumber,
   getZoomRoundLabel,
   previewSeasonManche,
@@ -41,7 +42,6 @@ import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
 
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 const ZOOM_COLOR = 0xe67e22;
-const SLOT_LABELS = { A: "gauche", B: "droite" };
 
 // Remplace le pseudo figé de chaque entrée par le pseudo Discord actuel —
 // voir le commentaire équivalent dans frames.js.
@@ -61,17 +61,16 @@ function buildZoomEmbed({ seasonId, seasonManche, seasonMancheTotal, gameId, cac
     title: "🔍 Le jeu du vendredi : Zoom carte !",
     description:
       `**Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
-      "Deux cartes zoomées à l'extrême. Devine leurs noms !\n\n" +
-      "Clique sur «Répondre» pour soumettre tes réponses, ou prends un indice sur une carte pour la dézoomer.\n\n" +
-      "**Barème (par carte)**\n" +
+      "Une carte zoomée à l'extrême. Devine son nom !\n\n" +
+      "Clique sur le bouton «Répondre» pour soumettre ta réponse, ou prends un indice pour dézoomer.\n\n" +
+      "**Barème**\n" +
       "- Réponse exacte du 1er coup sans indice : **10 pts**\n" +
       "- Chaque tentative incorrecte : **-2 pts**\n" +
       "- Indice utilisé : **-3 pts**\n\n" +
-      "Pas besoin de trouver les 2 cartes pour marquer des points : chacune compte séparément.\n\n" +
       "**Merci de ne pas spoiler, sinon c'est pas drôle !**\n\n" +
       "🤖 Vérifie tes scores avec la commande `/zoom`",
-    // gameId= épingle l'image de CETTE manche précise (voir le même
-    // raisonnement détaillé dans frames.js — getFrameImageByGameId).
+    // gameId= épingle l'image de CETTE manche précise, même raisonnement que
+    // Frame (getFrameImageByGameId) — voir frames.js.
     image: {
       url: `${TRUST_ROYALE_URL}/api/zoom/image?gameId=${gameId}&v=${cacheBust}`,
     },
@@ -87,70 +86,34 @@ function buildZoomComponents(gameId) {
     {
       type: 1,
       components: [
-        { type: 2, style: 2, label: "🔍 Indice carte gauche", custom_id: `zoom_hintA:${gameId}` },
-        { type: 2, style: 2, label: "🔍 Indice carte droite", custom_id: `zoom_hintB:${gameId}` },
+        { type: 2, style: 2, label: "🔍 Indice", custom_id: `zoom_hint:${gameId}` },
         { type: 2, style: 1, label: "📝 Répondre", custom_id: `zoom_answer:${gameId}` },
       ],
     },
   ];
 }
 
-// Modal à 2 champs. Un slot déjà résolu par CE joueur est pré-rempli et
-// rendu facultatif, pour permettre de re-cliquer "Répondre" et ne compléter
-// que le slot manquant sans revalider celui déjà trouvé.
-export function buildAnswerModal(gameId, participant) {
-  const solvedA = !!participant?.slots?.A?.solved;
-  const solvedB = !!participant?.slots?.B?.solved;
+export function buildAnswerModal(gameId) {
   return {
     custom_id: `zoom_answer_modal:${gameId}`,
-    title: "Quelles sont ces cartes ?",
+    title: "Quelle est cette carte ?",
     components: [
       {
         type: 1,
         components: [
           {
             type: 4,
-            custom_id: "zoom_answer_left",
+            custom_id: "zoom_answer_input",
             style: 1,
-            label: "Carte de gauche",
+            label: "Ta réponse",
             placeholder: "Nom de la carte...",
-            required: !solvedA,
-            value: solvedA ? "✅ déjà trouvé" : "",
-            max_length: 60,
-          },
-        ],
-      },
-      {
-        type: 1,
-        components: [
-          {
-            type: 4,
-            custom_id: "zoom_answer_right",
-            style: 1,
-            label: "Carte de droite",
-            placeholder: "Nom de la carte...",
-            required: !solvedB,
-            value: solvedB ? "✅ déjà trouvé" : "",
+            required: true,
             max_length: 60,
           },
         ],
       },
     ],
   };
-}
-
-// Lit l'état du joueur avant de construire la modal (pour le pré-remplissage
-// des slots déjà résolus) — repli sur une modal "tout requis, sans
-// pré-remplissage" si la lecture Redis échoue, pour ne jamais bloquer
-// l'ouverture de la modal (contrainte des 3 secondes de Discord).
-export async function buildAnswerModalForPlayer(gameId, discordId) {
-  let participant = null;
-  try {
-    participant = await readParticipant(gameId, discordId);
-  } catch (err) {
-    console.error("[Zoom] Lecture participant échouée avant ouverture modal:", err.message);
-  }
-  return buildAnswerModal(gameId, participant);
 }
 
 // ── Récapitulatif de fin de saison ──────────────────────────────
@@ -236,10 +199,11 @@ export async function postZoom(channelId, { dryRun = false, noPing = false } = {
   if (dryRun) {
     const catalog = await loadZoomCatalog();
     const state = await readState();
-    const { idxA, idxB } = pickNextZoomPair(state, catalog);
-    const entryA = catalog[idxA];
-    const entryB = catalog[idxB];
-    const gameId = `${entryA.id}__${entryB.id}`;
+    // Aperçu uniquement : pige un id au hasard dans le catalogue sans muter
+    // l'état (le vrai tirage, avec sac sans répétition, a lieu dans
+    // startNewGame). Un aperçu n'a pas besoin d'être fidèle au tirage réel.
+    const previewEntry = catalog[Math.floor(Math.random() * catalog.length)];
+    const gameId = previewEntry.id;
     const seasonId = await getCurrentSeasonId();
     const seasonManche = await previewSeasonManche(seasonId);
     const seasonMancheTotal = computeSeasonMancheTotal(seasonManche);
@@ -257,7 +221,7 @@ export async function postZoom(channelId, { dryRun = false, noPing = false } = {
       }
     }
 
-    return { dryRun: true, entryA, entryB, embed, components, seasonRecapEmbed, pingRoleId };
+    return { dryRun: true, entry: previewEntry, embed, components, seasonRecapEmbed, pingRoleId };
   }
 
   const token = process.env.DISCORD_TOKEN;
@@ -269,7 +233,7 @@ export async function postZoom(channelId, { dryRun = false, noPing = false } = {
     await postSeasonRecap(channelId, previousState.seasonId, newSeasonId, { noPing });
   }
 
-  const { state, entryA, entryB } = await startNewGame(channelId);
+  const { state, entry } = await startNewGame(channelId);
   const embed = buildZoomEmbed({
     seasonId: state.seasonId,
     seasonManche: state.seasonManche,
@@ -295,12 +259,12 @@ export async function postZoom(channelId, { dryRun = false, noPing = false } = {
   state.messageId = message.id;
   await writeState(state);
 
-  return { state, entryA, entryB, message };
+  return { state, entry, message };
 }
 
-// Reposte la manche ACTIVE dans un autre salon, sans faire avancer la partie
-// ni toucher aux données déjà enregistrées — voir repostFrame dans
-// frames.js pour le raisonnement complet.
+// Reposte la manche ACTIVE (même gameId) dans un autre salon, sans faire
+// avancer la partie ni toucher aux données déjà enregistrées — voir
+// repostFrame dans frames.js pour le raisonnement complet.
 export async function repostZoom(channelId) {
   const token = process.env.DISCORD_TOKEN;
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
@@ -363,13 +327,13 @@ async function postEphemeralEmbed(webhookUrl, embed, components = []) {
   }
 }
 
-// ── Boutons indice ────────────────────────────────────────────
+// ── Bouton indice ────────────────────────────────────────────
 // Contrairement à Frame (indice textuel), l'indice ici est une IMAGE — le
 // message public partagé par tout le salon ne peut pas être modifié par un
 // clic individuel, la réponse est donc un embed éphémère avec le crop
-// dézoomé de CE seul slot (jamais un PATCH du message d'origine).
+// dézoomé, jamais un PATCH du message d'origine.
 
-export async function handleHintButton(webhookUrl, gameId, slot, discordId, username) {
+export async function handleHintButton(webhookUrl, gameId, discordId, username) {
   try {
     const state = await readState();
     if (!state || state.gameId !== gameId) {
@@ -377,19 +341,18 @@ export async function handleHintButton(webhookUrl, gameId, slot, discordId, user
       return;
     }
 
-    const label = SLOT_LABELS[slot] || slot;
     const existing = await readParticipant(gameId, discordId);
-    if (existing?.slots?.[slot]?.solved) {
-      await postEphemeral(webhookUrl, `🔍 Tu as déjà trouvé la carte de ${label} !`);
+    if (existing?.solved) {
+      await postEphemeral(webhookUrl, "🔍 Tu as déjà trouvé la réponse !");
       return;
     }
 
-    const { alreadyUsed } = await recordSlotHintUsed(gameId, discordId, slot, username);
+    const { alreadyUsed } = await recordHintUsed(gameId, discordId, username);
     const suffix = alreadyUsed ? "_Indice déjà révélé._" : "_Indice révélé (-3 pts)._";
 
     await postEphemeralEmbed(webhookUrl, {
-      description: `🔍 **Carte de ${label}** — un peu moins zoomée...\n${suffix}`,
-      image: { url: `${TRUST_ROYALE_URL}/api/zoom/image?gameId=${gameId}&slot=${slot}&v=${Date.now()}` },
+      description: `🔍 Un peu moins zoomée...\n${suffix}`,
+      image: { url: `${TRUST_ROYALE_URL}/api/zoom/image?gameId=${gameId}&stage=hint&v=${Date.now()}` },
       color: ZOOM_COLOR,
     });
   } catch (err) {
@@ -398,20 +361,17 @@ export async function handleHintButton(webhookUrl, gameId, slot, discordId, user
 }
 
 // ── DM de fin de manche ──────────────────────────────────────
-// Envoyé uniquement quand les 2 slots sont résolus (voir justCompleted dans
-// handleModalSubmit) — une résolution partielle n'a pas de DM dédié, la
-// confirmation éphémère suffit.
 
 function ordinal(n) {
   return `${n}${n === 1 ? "ᵉʳ" : "ᵉ"}`;
 }
 
-function buildDmText({ seasonId, seasonManche, seasonMancheTotal, answerA, answerB, totalScore, gameRank, seasonScore }) {
+function buildDmText({ seasonId, seasonManche, seasonMancheTotal, answer, score, gameRank, seasonScore }) {
   return [
     `**Zoom carte : Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
     "",
-    `🔍 **${answerA}** & **${answerB}** — tu es le ${ordinal(gameRank)} à avoir tout trouvé !`,
-    `Score de cette manche : **${totalScore} pts**`,
+    `🔍 **${answer}** — tu es le ${ordinal(gameRank)} à avoir trouvé !`,
+    `Score de cette manche : **${score} pts**`,
     `Score total de la saison : **${seasonScore} pts**`,
   ].join("\n");
 }
@@ -439,12 +399,9 @@ async function sendZoomDM(discordId, text) {
   }
 }
 
-// ── Soumission de la modal (réponses du joueur) ──────────────────
-// Chaque slot est résolu indépendamment : une réponse correcte sur un slot
-// ne dépend pas de l'autre, et un joueur peut soumettre la modal plusieurs
-// fois pour compléter le slot qu'il n'avait pas encore trouvé.
+// ── Soumission de la modal (réponse du joueur) ──────────────────
 
-export async function handleModalSubmit(webhookUrl, gameId, discordId, username, rawLeft, rawRight) {
+export async function handleModalSubmit(webhookUrl, gameId, discordId, username, rawAnswer) {
   try {
     const state = await readState();
     if (!state || state.gameId !== gameId) {
@@ -452,62 +409,46 @@ export async function handleModalSubmit(webhookUrl, gameId, discordId, username,
       return;
     }
 
-    const catalog = await loadZoomCatalog();
-    const { entryA, entryB } = resolveZoomPair(catalog, gameId);
     const existing = await readParticipant(gameId, discordId);
-
-    const lines = [];
-    let completion = null;
-
-    for (const [slot, entry, raw] of [
-      ["A", entryA, rawLeft],
-      ["B", entryB, rawRight],
-    ]) {
-      const label = SLOT_LABELS[slot];
-      if (existing?.slots?.[slot]?.solved) {
-        lines.push(`✅ Carte de ${label} : déjà trouvée (**${entry.answer}**)`);
-        continue;
-      }
-      if (!raw?.trim()) {
-        lines.push(`➖ Carte de ${label} : pas de réponse soumise`);
-        continue;
-      }
-      if (!checkAnswer(entry, raw)) {
-        await recordSlotAttempt(gameId, discordId, slot, username, false);
-        lines.push(`❌ Carte de ${label} : mauvaise réponse (-2 pts)`);
-        continue;
-      }
-
-      const { participant, score, justCompleted } = await markSlotSolved(gameId, discordId, slot, username);
-      await archiveSlotSolve(state, entry, discordId, username, slot, score, new Date().toISOString());
-      lines.push(`🎉 Carte de ${label} : **${entry.answer}** trouvée ! (+${score} pts)`);
-      if (justCompleted) completion = { participant };
+    if (existing?.solved) {
+      await postEphemeral(webhookUrl, "Tu as déjà trouvé la réponse !");
+      return;
     }
 
-    await postEphemeral(webhookUrl, lines.join("\n"));
+    const catalog = await loadZoomCatalog();
+    const entry = resolveZoomEntry(catalog, gameId);
+    const correct = checkAnswer(entry, rawAnswer);
 
-    if (completion) {
-      const [arrivalOrder, seasonRanking] = await Promise.all([
-        computeFullSolveArrivalOrder(gameId),
-        computeSeasonRanking(state.seasonId),
-      ]);
-      const gameRank = findRank(arrivalOrder, discordId);
-      const seasonEntry = seasonRanking.find((e) => e.discordId === discordId);
-
-      await sendZoomDM(
-        discordId,
-        buildDmText({
-          seasonId: state.seasonId,
-          seasonManche: state.seasonManche,
-          seasonMancheTotal: state.seasonMancheTotal,
-          answerA: entryA.answer,
-          answerB: entryB.answer,
-          totalScore: completion.participant.totalScore,
-          gameRank,
-          seasonScore: seasonEntry?.totalScore ?? completion.participant.totalScore,
-        }),
-      );
+    if (!correct) {
+      await recordAttempt(gameId, discordId, username, false);
+      await postEphemeral(webhookUrl, "❌ Mauvaise réponse ! (-2 pts). Réessaye avec le bouton Répondre.");
+      return;
     }
+
+    const { participant, score } = await markSolved(gameId, discordId, username);
+    await archiveSolve(state, entry, discordId, username, score, participant.solvedAt);
+
+    const [arrivalOrder, seasonRanking] = await Promise.all([
+      computeArrivalOrder(gameId),
+      computeSeasonRanking(state.seasonId),
+    ]);
+    const gameRank = findRank(arrivalOrder, discordId);
+    const seasonEntry = seasonRanking.find((e) => e.discordId === discordId);
+
+    await postEphemeral(webhookUrl, `🎉 Bravo, c'était bien **${entry.answer}** !`);
+
+    await sendZoomDM(
+      discordId,
+      buildDmText({
+        seasonId: state.seasonId,
+        seasonManche: state.seasonManche,
+        seasonMancheTotal: state.seasonMancheTotal,
+        answer: entry.answer,
+        score,
+        gameRank,
+        seasonScore: seasonEntry?.totalScore ?? score,
+      }),
+    );
   } catch (err) {
     await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
   }
@@ -519,11 +460,13 @@ function buildZoomStatsEmbed({
   pseudo,
   currentSeasonManche,
   seasonMancheTotal,
-  slotsStatus,
-  currentTotalScore,
+  currentSolved,
+  currentInteracted,
+  currentScore,
   currentRank,
   solvedCount,
   totalParticipants,
+  perfectCount,
   pastManches,
   seasonId,
   seasonTotal,
@@ -533,27 +476,27 @@ function buildZoomStatsEmbed({
   const lines = [];
 
   lines.push(`**Saison ${toPublicSeasonId(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`);
-  for (const slot of ["A", "B"]) {
-    const s = slotsStatus[slot];
-    lines.push(
-      s.solved
-        ? `- Carte de ${SLOT_LABELS[slot]} : trouvée (+${s.score} pts)`
-        : `- Carte de ${SLOT_LABELS[slot]} : pas encore trouvée`,
-    );
-  }
-  if (currentTotalScore > 0) {
-    lines.push(`- Ton classement sur cette manche : ${currentRank} / ${solvedCount}`);
+  if (currentSolved) {
+    lines.push("- Tu as trouvé le nom de la carte !");
+    lines.push(`- Tu as marqué ${currentScore} points`);
+    lines.push(`- Ton classement : ${currentRank} / ${solvedCount}`);
+  } else if (currentInteracted) {
+    lines.push("- Tu n'as pas encore trouvé le nom de la carte !");
+    lines.push("- Tu n'as pas marqué de points");
+  } else {
+    lines.push("- Tu n'as pas encore commencé cette manche");
   }
   lines.push(
-    `- ${totalParticipants} joueur${totalParticipants > 1 ? "s" : ""} ${totalParticipants > 1 ? "ont" : "a"} interagi avec cette manche, ` +
-      `${solvedCount} ${solvedCount > 1 ? "ont" : "a"} marqué au moins 1 point`,
+    `- ${solvedCount} joueur${solvedCount > 1 ? "s" : ""} (sur ${totalParticipants}) ${solvedCount > 1 ? "ont" : "a"} trouvé pour le moment, ` +
+      `et ${perfectCount} joueur${perfectCount > 1 ? "s" : ""} ${perfectCount > 1 ? "ont" : "a"} 10 pts`,
   );
 
   for (const m of pastManches) {
     lines.push("");
     lines.push(`**Saison ${toPublicSeasonId(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`);
     if (m.played) {
-      lines.push(`- Tu as marqué ${m.totalScore} points (${m.slotsFound}/2 carte${m.slotsFound > 1 ? "s" : ""} trouvée${m.slotsFound > 1 ? "s" : ""})`);
+      lines.push("- Tu as trouvé le nom de la carte !");
+      lines.push(`- Tu as marqué ${m.score} points`);
     } else {
       lines.push("- Tu n'as pas joué cette manche");
     }
@@ -590,48 +533,38 @@ export async function handleZoomStatsCommand(webhookUrl, discordId, username) {
       return;
     }
 
-    const [participant, seasonResults, seasonManches, gameRanking, inProgress, seasonRanking] = await Promise.all([
+    const [participant, seasonResults, seasonManches, currentInteracted, gameRanking, inProgress, seasonRanking] = await Promise.all([
       readParticipant(state.gameId, discordId),
       getPlayerSeasonResults(state.seasonId, discordId),
       getSeasonManches(state.seasonId),
+      hasPlayerInteracted(state.gameId, discordId),
       computeGameRanking(state.gameId),
       listGamePlayersInProgress(state.gameId),
       computeSeasonRanking(state.seasonId),
     ]);
 
-    const slotsStatus = {
-      A: { solved: !!participant?.slots?.A?.solved, score: participant?.slots?.A?.score ?? 0 },
-      B: { solved: !!participant?.slots?.B?.solved, score: participant?.slots?.B?.score ?? 0 },
-    };
-    const currentTotalScore = participant?.totalScore ?? 0;
+    const currentSeasonManche = state.seasonManche;
+    const seasonMancheTotal = state.seasonMancheTotal;
+    const currentSolved = !!participant?.solved;
+    const currentScore = participant?.score ?? 0;
     const solvedCount = gameRanking.length;
     const totalParticipants = solvedCount + inProgress.length;
-    const currentRank = currentTotalScore > 0 ? findTiedRank(gameRanking, discordId, "totalScore") : null;
+    const perfectCount = gameRanking.filter((r) => r.score === 10).length;
+    const currentRank = currentSolved ? findTiedRank(gameRanking, discordId, "score") : null;
 
     const hasSeasonRank = seasonResults.length > 0;
     const seasonRank = hasSeasonRank ? findTiedRank(seasonRanking, discordId, "totalScore") : null;
     const seasonRankTotal = seasonRanking.length;
 
-    // Regroupe les résultats archivés (1 entrée par slot résolu) par manche —
-    // voir le commentaire de getPlayerSeasonResults dans zoom.js.
-    const byGameId = new Map();
-    for (const r of seasonResults) {
-      const acc = byGameId.get(r.gameId) ?? { totalScore: 0, slotsFound: 0 };
-      acc.totalScore += r.score;
-      acc.slotsFound += 1;
-      byGameId.set(r.gameId, acc);
-    }
-
     const pastGameIds = seasonManches.filter((gameId) => gameId !== state.gameId);
     const pastManches = (
       await Promise.all(
         pastGameIds.map(async (gameId) => {
-          const agg = byGameId.get(gameId);
+          const result = seasonResults.find((r) => r.gameId === gameId);
           return {
             seasonManche: await getSeasonMancheNumber(state.seasonId, gameId),
-            played: !!agg,
-            totalScore: agg?.totalScore ?? 0,
-            slotsFound: agg?.slotsFound ?? 0,
+            played: !!result,
+            score: result?.score ?? 0,
           };
         }),
       )
@@ -643,13 +576,15 @@ export async function handleZoomStatsCommand(webhookUrl, discordId, username) {
 
     const embed = buildZoomStatsEmbed({
       pseudo: username,
-      currentSeasonManche: state.seasonManche,
-      seasonMancheTotal: state.seasonMancheTotal,
-      slotsStatus,
-      currentTotalScore,
+      currentSeasonManche,
+      seasonMancheTotal,
+      currentSolved,
+      currentInteracted,
+      currentScore,
       currentRank,
       solvedCount,
       totalParticipants,
+      perfectCount,
       pastManches,
       seasonId: state.seasonId,
       seasonTotal,

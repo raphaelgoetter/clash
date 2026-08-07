@@ -3,7 +3,7 @@
     "id": "archer-queen-base",
     "cardKey": "Archer Queen",
     "variant": "base",
-    "answer": "Reine des Archers",
+    "answer": "Reine des Archères",
     "accept": ["Reine des Archères"],
     "image": "archer-queen-base.png",
     "width": 285,
@@ -147,7 +147,7 @@
       "y": 0.28
     },
     "zoomStages": {
-      "stage0": 2.4
+      "stage0": 3.93
     }
   },
   {
@@ -202,7 +202,7 @@
       "y": 0.45
     },
     "zoomStages": {
-      "stage0": 2.2
+      "stage0": 3.6
     }
   },
   {
@@ -257,7 +257,7 @@
       "y": 0.4
     },
     "zoomStages": {
-      "stage0": 1.6
+      "stage0": 2.62
     }
   },
   {
@@ -276,7 +276,7 @@
       "y": 0.4
     },
     "zoomStages": {
-      "stage0": 1.6
+      "stage0": 2.62
     }
   },
   {
@@ -367,7 +367,7 @@
       "y": 0.55
     },
     "zoomStages": {
-      "stage0": 2.3
+      "stage0": 3.76
     }
   },
   {
@@ -398,7 +398,7 @@
       "y": 0.5
     },
     "zoomStages": {
-      "stage0": 2.2
+      "stage0": 3.6
     }
   },
   {
@@ -417,7 +417,7 @@
       "y": 0.5
     },
     "zoomStages": {
-      "stage0": 2.2
+      "stage0": 3.6
     }
   },
   {
@@ -472,7 +472,7 @@
       "y": 0.4
     },
     "zoomStages": {
-      "stage0": 2.2
+      "stage0": 3.6
     }
   },
   {
@@ -539,7 +539,7 @@
       "y": 0.42
     },
     "zoomStages": {
-      "stage0": 2
+      "stage0": 3.27
     }
   },
   {
@@ -678,7 +678,7 @@
       "y": 0.42
     },
     "zoomStages": {
-      "stage0": 2
+      "stage0": 3.27
     }
   },
   {
@@ -697,7 +697,7 @@
       "y": 0.42
     },
     "zoomStages": {
-      "stage0": 2
+      "stage0": 3.27
     }
   },
   {
@@ -740,7 +740,7 @@
       "y": 0.42
     },
     "zoomStages": {
-      "stage0": 2
+      "stage0": 3.27
     }
   },
   {
@@ -807,7 +807,7 @@
       "y": 0.32
     },
     "zoomStages": {
-      "stage0": 2.2
+      "stage0": 3.6
     }
   },
   {
@@ -826,7 +826,7 @@
       "y": 0.32
     },
     "zoomStages": {
-      "stage0": 2.2
+      "stage0": 3.6
     }
   },
   {
@@ -845,7 +845,7 @@
       "y": 0.28
     },
     "zoomStages": {
-      "stage0": 2.3
+      "stage0": 3.76
     }
   }
 ]

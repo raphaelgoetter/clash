@@ -728,62 +728,69 @@ Aucune nouvelle variable : Anagram réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISC
 
 ## Jeu Zoom carte (devine les cartes zoomées)
 
-Troisième mini-jeu hebdomadaire indépendant, sur le modèle de Frame/Anagram (voir [Jeu Frame](#jeu-frame-devine-le-film) pour les mécanismes partagés : Modal `type:9`/`MODAL_SUBMIT type:5`, stockage Upstash Redis et ses pièges, gestion de saison CR). Différence structurelle majeure : **chaque manche affiche 2 cartes** (icônes zoomées à l'extrême, cartes de base/évoluées/héros mélangées dans le même pool), et le score de chacune se calcule **indépendamment** — pas besoin de trouver les 2 pour marquer des points.
+Troisième mini-jeu hebdomadaire indépendant, sur le modèle de Frame (voir [Jeu Frame](#jeu-frame-devine-le-film) pour les mécanismes partagés : Modal `type:9`/`MODAL_SUBMIT type:5`, stockage Upstash Redis et ses pièges, gestion de saison CR). Une manche = une carte de `data/zoom/zoom.json` (base/évoluée/héros mélangées dans le même pool), zoomée à l'extrême sur son icône.
 
-### Barème — score partiel par carte ("slot")
+> Une version antérieure affichait 2 cartes par manche avec score partiel indépendant ("slots" A/B) — abandonnée après le premier test réel : le roster de 62 cartes est trop petit pour 2 cartes/manche sans épuiser le pool en quelques semaines. Toute trace de `slot`/`entryA`/`entryB` dans du code plus ancien ou des commentaires fait référence à cette version révolue.
 
-Chaque manche a 2 "slots" indépendants (`A` = carte de gauche, `B` = carte de droite), chacun avec son propre indice, ses propres tentatives et son propre statut résolu :
+### Barème (Zoom carte)
 
-- Réponse exacte du 1er coup sans indice sur un slot : **10 pts**
-- Chaque tentative incorrecte sur ce slot : **-2 pts**
-- Indice utilisé sur ce slot (un seul palier, contrairement aux 2 indices de Frame) : **-3 pts**
-- Score de la manche pour un joueur = somme des scores de ses slots résolus (0, 1 ou 2 cartes trouvées)
+- Réponse exacte du 1er coup sans indice : **10 pts**
+- Chaque tentative incorrecte : **-2 pts**
+- Indice utilisé (un seul palier, contrairement aux 2 indices de Frame) : **-3 pts**
 
 `computeScore(attemptsIncorrects, hintUsed)` (`backend/services/zoom.js`) est identique à celle de Frame, sauf que `hintUsed` est un booléen (un seul palier) et non un compteur.
 
 ### Réponse (Zoom carte)
 
-Modal à 2 champs ("Carte de gauche"/"Carte de droite"), chacun validé indépendamment par `checkAnswer()` — égalité **stricte** normalisée (comme Anagram, pas de sous-chaîne comme Frame). Un slot déjà résolu par le joueur est pré-rempli (`"✅ déjà trouvé"`) et rendu facultatif dans la modal, pour permettre de recliquer "Répondre" et ne compléter que le slot manquant sans revalider l'autre.
+Modal à 1 champ, validée par `checkAnswer()` — égalité **stricte** normalisée (comme Anagram, pas de sous-chaîne comme Frame) : un nom de carte est court, une correspondance par sous-chaîne accepterait à tort un fragment.
+
+### Sélection de la manche : tirage aléatoire sans répétition (sac de Fisher-Yates)
+
+`data/zoom/zoom.json` est trié alphabétiquement par `id` — une sélection séquentielle (comme Frame/Anagram, `index+1 % n`) rendrait donc le jeu totalement prévisible (constaté en test réel : l'ordre alphabétique se voyait). `pickNextZoomCard()` (`backend/services/zoom.js`) tire à la place dans un **sac mélangé** (Fisher-Yates) : tout le catalogue est consommé dans un ordre aléatoire avant d'être re-mélangé, garantissant qu'aucune carte ne revient avant que toutes les autres soient passées, tout en restant imprévisible. Le tirage (`order`/`orderIndex`) est persisté dans `zoom:state` pour survivre d'une manche à l'autre ; `resetGame()` l'efface (une nouvelle partie repart sur un sac frais).
 
 ### Données (`data/zoom/zoom.json` + `data/zoom/images/`)
 
 Contrairement à Anagram (image CDN résolue à la volée) et comme Frame (image stockée localement), les icônes sont téléchargées **une fois** via `scripts/generateZoomCatalog.js` (usage ponctuel, hors flux hebdomadaire) plutôt que requêtées à chaque manche :
 
-- Cartes source : les 54 entrées de `data/anagrams/anagrams.json` (`cardKey`/`answer`/`accept` copiés tels quels — même carte, même nom).
+- Pool de cartes : les `cardKey` uniques de `data/anagrams/anagrams.json` (même liste que le jeu Anagram, décision explicite — pas encore étendu aux 122 cartes du jeu).
+- Noms français : `data/cardNames.json` (source de vérité partagée, voir [Noms français des cartes](#noms-français-des-cartes-datacardnamesjson)) — **jamais** `anagrams.json` directement, pour ne pas dupliquer une donnée corrigeable à un seul endroit. Resynchronisés à chaque exécution du script, même sans retélécharger l'image.
 - Icônes de base : `fetchCards()` (catalogue générique Clash Royale, universel).
 - Icônes évoluées/héros : `fetchPlayer(tag)` d'un compte de référence — **ces variantes ne sont exposées par l'API QUE sur les cartes que CE joueur a personnellement évoluées** (`evolutionLevel > 0`/`>= 2`), ce n'est pas une métadonnée statique par carte comme l'icône de base. Le script filtre via `countEvolved`/`countHeroes` (`backend/services/collectionConstants.js`, même logique que la page Collection).
-- `data/zoom/zoom.json` — un objet par variante jouable (`id`, `cardKey`, `variant: "base"|"evolution"|"hero"`, `answer`, `accept`, `image`, `width`/`height`, `sourceUrl`, `fetchedAt`, et optionnellement `focal`/`zoomStages` pour surcharger le crop par défaut sur une carte précise).
+- `data/zoom/zoom.json` — un objet par variante jouable (`id`, `cardKey`, `variant: "base"|"evolution"|"hero"`, `answer`, `accept`, `image`, `width`/`height`, `sourceUrl`, `fetchedAt`, et optionnellement `focal`/`zoomStages` pour surcharger le crop par défaut sur une carte précise, réglé à la main après une passe de QA visuelle).
 - `data/zoom/images/*.png` — octets téléchargés, jamais exposés statiquement (seule la route `/api/zoom/image` y donne accès, voir ci-dessous).
-- Idempotent : relancer le script ne re-télécharge que si l'URL source a changé ; ne supprime jamais une entrée existante.
+- Idempotent et purgé : relancer le script ne re-télécharge que si l'URL source a changé ; toute entrée dont le `cardKey` n'est plus dans le pool source (carte retirée d'`anagrams.json`) est supprimée du catalogue et son image effacée — sûr tant qu'aucune manche n'a encore été postée en production.
 
 ### Synthèse d'image (`backend/services/zoomImage.js`)
 
-Aucune nouvelle dépendance : réutilise `@resvg/resvg-js` (déjà présent, utilisé par `buildWarDecksImage` dans `api/discord/interactions.js`) pour rasteriser un SVG contenant des `<image href="data:...">` en PNG. Contrairement à `buildWarDecksImage` (qui télécharge des icônes distantes à chaque appel), les octets sont lus directement dans `data/zoom/images/` — aucun réseau au moment de servir une manche.
+Aucune nouvelle dépendance : réutilise `@resvg/resvg-js` (déjà présent, utilisé par `buildWarDecksImage` dans `api/discord/interactions.js`) pour rasteriser un SVG contenant une `<image href="data:...">` en PNG. Contrairement à `buildWarDecksImage` (qui télécharge des icônes distantes à chaque appel), les octets sont lus directement dans `data/zoom/images/` — aucun réseau au moment de servir une manche.
 
-- `getZoomCompositeImage(gameId)` — image publique de l'embed, les 2 cartes en zoom extrême, composées côte à côte en une seule image (fixe pour toute la durée de la manche : un embed Discord est partagé par tout le salon, il ne peut pas varier par joueur).
-- `getZoomSlotImage(gameId, slot, { reveal })` — crop d'un seul slot : dézoomé (indice) ou révélation complète (juste les octets du fichier source, sans SVG).
-- Formule de crop : point focal normalisé `(fx, fy)` + facteur de zoom `Z`, une `<image>` surdimensionnée est positionnée pour que ce point atterrisse au centre de la cellule cible, `<clipPath>` explicite pour rogner. Valeurs par défaut `(0.5, 0.45)`, `Z≈2.75` (zoom extrême) / `Z≈1.35` (dézoom indice), surchageables par carte via `zoom.json`.
+- `getZoomCardImage(gameId)` — image publique de l'embed, zoom extrême (fixe pour toute la durée de la manche : un embed Discord est partagé par tout le salon, il ne peut pas varier par joueur).
+- `getZoomHintImage(gameId)` — crop dézoomé (indice).
+- `getZoomRevealImage(gameId)` — carte entière (juste les octets du fichier source, sans SVG).
+- Formule de crop : point focal normalisé `(fx, fy)` + facteur de zoom `Z`, une `<image>` surdimensionnée est positionnée pour que ce point atterrisse au centre de la cellule cible, `<clipPath>` explicite pour rogner. Valeurs par défaut `(0.5, 0.45)`, `Z=4.5` (zoom extrême) / `Z=2.3` (dézoom indice), surchargeables par carte via `zoom.json`. ⚠️ Ces valeurs ont déjà été revues une fois à la hausse après un premier test réel où le zoom par défaut (`Z=2.75`) rendait la réponse évidente sans même utiliser l'indice — toute nouvelle carte ajoutée au pool mérite une vérification visuelle avant publication.
 
 ### Anti-spoiler : bouton indice = message éphémère, jamais une édition du post public
 
-Contrairement à Frame (indice textuel révélé en clair dans un message éphémère), l'indice de Zoom carte est une **image** — cliquer sur "Indice carte gauche/droite" ne peut pas modifier l'embed public (partagé par tout le salon), il répond donc par un **embed éphémère** avec le crop dézoomé de ce seul slot (`GET /api/zoom/image?gameId=...&slot=A`), jamais un PATCH du message d'origine.
+Contrairement à Frame (indice textuel révélé en clair dans un message éphémère), l'indice de Zoom carte est une **image** — cliquer sur "Indice" ne peut pas modifier l'embed public (partagé par tout le salon), il répond donc par un **embed éphémère** avec le crop dézoomé (`GET /api/zoom/image?gameId=...&stage=hint`), jamais un PATCH du message d'origine.
 
 `GET /api/zoom/image` (`backend/server.js`, juste après la route équivalente de Frame) vérifie `isGamePosted(gameId)` (registre Redis `zoom:posted_games`, jamais nettoyé, même garde-fou anti-spoiler que `frame:posted_games`) avant de servir quoi que ce soit — jamais l'image d'une manche future devinée par construction d'id.
 
-⚠️ Limite acceptée : l'URL de l'indice (`?gameId=X&slot=A`) est reconstructible par quiconque a vu la manche postée, sans cliquer le bouton ni perdre les 3 pts — aucune authentification possible sur une simple requête d'image d'embed (même modèle de confiance que l'URL d'image de Frame).
+⚠️ Limite acceptée : l'URL de l'indice (`?gameId=X&stage=hint`) est reconstructible par quiconque a vu la manche postée, sans cliquer le bouton ni perdre les 3 pts — aucune authentification possible sur une simple requête d'image d'embed (même modèle de confiance que l'URL d'image de Frame).
 
 ### Stockage — Upstash Redis (`zoom:*`)
 
-Même stockage que Frame/Anagram, préfixe `zoom:`. Différence de schéma : tout est scopé **par slot** (`A`/`B`) en plus du `gameId`/`discordId` habituels :
+Même stockage que Frame, préfixe `zoom:` :
 
 | Clé Redis | Type | Contenu |
 | --- | --- | --- |
-| `zoom:hint:<gameId>:<discordId>:<slot>` | STRING (flag) | Indice utilisé sur ce slot (`SETNX`, un seul palier donc pas besoin de `SADD`/`SCARD` comme Frame) |
-| `zoom:attempts:<gameId>:<discordId>:<slot>` | STRING (compteur) | Tentatives incorrectes sur ce slot |
-| `zoom:participants:<gameId>` | HASH | `discordId → { slots: {A, B}, totalScore, fullySolved }` |
-| `zoom:archived:<seasonId>` | HASH | Un champ par **slot résolu** (`<gameId>:<discordId>:<slot>`) — pas par manche entière : un joueur qui ne trouve qu'une carte garde ses points de saison |
+| `zoom:state` | STRING (JSON) | État de la manche active, `gameId`/`order`/`orderIndex` inclus (sac de tirage aléatoire) |
+| `zoom:hint:<gameId>:<discordId>` | STRING (flag) | Indice utilisé (`SETNX`, un seul palier donc pas besoin de `SADD`/`SCARD` comme Frame) |
+| `zoom:attempts:<gameId>:<discordId>` | STRING (compteur) | Tentatives incorrectes |
+| `zoom:participants:<gameId>` | HASH | `discordId → { solved, solvedAt, score, attempts }` |
+| `zoom:archived:<seasonId>` | HASH | Un champ par manche résolue (`<gameId>:<discordId>`) |
+| `zoom:posted_games` | SET | Registre anti-spoiler, jamais nettoyé |
 
-`gameId` = `"<idA>__<idB>"` (les 2 id du catalogue joints par `__`). La sélection de la prochaine manche (`pickNextZoomPair`) dérive de l'**id** du 2ᵉ slot de la manche précédente (pas d'un index de tableau) — reste correcte même si `zoom.json` est régénéré/complété plus tard par `generateZoomCatalog.js`.
+`gameId` = `id` de l'entrée du catalogue directement (pas de composition, contrairement à l'ancienne version 2-cartes).
 
 ### Publication hebdomadaire (vendredi 18h UTC)
 
@@ -791,24 +798,24 @@ Même stockage que Frame/Anagram, préfixe `zoom:`. Différence de schéma : tou
 
 ### Commande `/zoom` — scores personnels
 
-Miroir de `/frame`/`/anagram`, adapté pour afficher le statut des 2 slots séparément (trouvé/pas trouvé + points) plutôt qu'un statut unique. L'historique de saison (`getPlayerSeasonResults`) renvoie une entrée par slot résolu — c'est la couche d'affichage (`handleZoomStatsCommand`) qui regroupe par `gameId` et somme les 2 scores, pas le service métier.
+Miroir de `/frame` (voir [Commande `/frame`](#commande-frame--scores-personnels)).
 
 ### Récapitulatif de fin de saison (Zoom carte)
 
-Identique à Frame (voir [Récapitulatif de fin de saison](#récapitulatif-de-fin-de-saison)) : posté juste avant la manche 1 d'une nouvelle saison si `seasonId` a changé, mêmes règles de troncage (20 joueurs max, exclusion des 0 pt). Le libellé de chaque manche (`getZoomRoundLabel`) joint les 2 réponses, ex. `"Bébé dragon & Reine des archers"`.
+Identique à Frame (voir [Récapitulatif de fin de saison](#récapitulatif-de-fin-de-saison)) : posté juste avant la manche 1 d'une nouvelle saison si `seasonId` a changé, mêmes règles de troncage (20 joueurs max, exclusion des 0 pt). Le libellé de chaque manche (`getZoomRoundLabel`) est directement `entry.answer`.
 
 ### Scripts npm (Zoom carte)
 
 | Commande | Effet |
 | --- | --- |
 | `npm run zoom:catalog` | Génère/complète `data/zoom/zoom.json` et télécharge les icônes manquantes dans `data/zoom/images/`. Usage ponctuel, jamais dans le flux hebdomadaire. |
-| `npm run zoom:test` | Poste manuellement une nouvelle partie sur le salon de test. |
+| `npm run zoom:test` | Poste manuellement une nouvelle partie sur le salon de test, **sans ping** (`--no-ping` par défaut — contrairement à `frame:test`/`anagram:test`, décision explicite pour pouvoir tester en salon réel sans spammer `@MINI JEUX`). |
 | `npm run zoom:test:dry` | Aperçu console de la prochaine partie (+ récap de saison éventuel), sans écrire d'état ni poster sur Discord. |
-| `npm run zoom:public` | Poste sur le salon public — utilisé par le cron `zoom.yml`. |
+| `npm run zoom:public` | Poste sur le salon public (avec ping) — utilisé par le cron `zoom.yml`. |
 | `npm run zoom:public:dry` | Équivalent dry-run de `zoom:public`. |
-| `npm run zoom:scores` | Classement de la partie en cours (statut par slot, score partie, score saison) + joueurs n'ayant pas encore joué. |
+| `npm run zoom:scores` | Classement de la partie en cours (score partie, score saison) + joueurs n'ayant pas encore joué. |
 | `npm run zoom:move` | Reposte la manche active dans un autre salon sans faire avancer la partie. |
-| `npm run zoom:reset` | Remet le jeu à zéro : plus de partie active, historique et scores effacés. **Destructif**. |
+| `npm run zoom:reset` | Remet le jeu à zéro : plus de partie active, historique et scores effacés, sac de tirage réinitialisé. **Destructif**. |
 
 ### Variables d'environnement requises (Zoom carte)
 

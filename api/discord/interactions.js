@@ -52,7 +52,7 @@ import {
   handleAnagramStatsCommand,
 } from "./handlers/anagrams.js";
 import {
-  buildAnswerModalForPlayer as buildZoomAnswerModalForPlayer,
+  buildAnswerModal as buildZoomAnswerModal,
   handleHintButton as handleZoomHintButton,
   handleModalSubmit as handleZoomModalSubmit,
   handleZoomStatsCommand,
@@ -8381,15 +8381,13 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ── Jeu Zoom carte : boutons indices (carte gauche/droite) ──
+  // ── Jeu Zoom carte : bouton indice ──
   if (
     body.type === 3 &&
     typeof body.data?.custom_id === "string" &&
-    (body.data.custom_id.startsWith("zoom_hintA:") ||
-      body.data.custom_id.startsWith("zoom_hintB:"))
+    body.data.custom_id.startsWith("zoom_hint:")
   ) {
-    const [prefix, gameId] = body.data.custom_id.split(":");
-    const slot = prefix === "zoom_hintA" ? "A" : "B";
+    const gameId = body.data.custom_id.split(":")[1];
     const discordId = body.member?.user?.id;
     const username =
       body.member?.nick ||
@@ -8400,30 +8398,26 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() =>
-      handleZoomHintButton(webhookUrl, gameId, slot, discordId, username),
+      handleZoomHintButton(webhookUrl, gameId, discordId, username),
     );
     return;
   }
 
   // ── Jeu Zoom carte : bouton "Répondre" → ouverture de la Modal ──
   // Réponse synchrone immédiate obligatoire : l'ouverture d'une Modal ne
-  // peut pas être différée (pas de runBackground ici). Contrairement à
-  // Frame/Anagram, cette modal a besoin de savoir quels slots ce joueur a
-  // déjà résolus (pour les pré-remplir/désactiver) — une seule lecture
-  // Redis rapide avant de répondre, avec repli sur une modal par défaut en
-  // cas d'échec (voir buildAnswerModalForPlayer dans handlers/zoom.js).
+  // peut pas être différée (pas de runBackground ici).
   if (
     body.type === 3 &&
     typeof body.data?.custom_id === "string" &&
     body.data.custom_id.startsWith("zoom_answer:")
   ) {
     const gameId = body.data.custom_id.split(":")[1];
-    const discordId = body.member?.user?.id;
-    const modal = await buildZoomAnswerModalForPlayer(gameId, discordId);
-    return res.status(200).json({ type: 9, data: modal });
+    return res
+      .status(200)
+      .json({ type: 9, data: buildZoomAnswerModal(gameId) });
   }
 
-  // ── Jeu Zoom carte : soumission de la Modal (réponses du joueur) ──
+  // ── Jeu Zoom carte : soumission de la Modal (réponse du joueur) ──
   // body.type === 5 ici est un MODAL_SUBMIT (InteractionType), à ne pas
   // confondre avec le type de réponse 5 (DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE)
   // utilisé plus haut dans ce fichier — deux enums Discord distinctes qui
@@ -8434,8 +8428,7 @@ export default async function handler(req, res) {
     body.data.custom_id.startsWith("zoom_answer_modal:")
   ) {
     const gameId = body.data.custom_id.split(":")[1];
-    const rawLeft = body.data.components?.[0]?.components?.[0]?.value || "";
-    const rawRight = body.data.components?.[1]?.components?.[0]?.value || "";
+    const rawAnswer = body.data.components?.[0]?.components?.[0]?.value || "";
     const discordId = body.member?.user?.id;
     const username =
       body.member?.nick ||
@@ -8451,8 +8444,7 @@ export default async function handler(req, res) {
         gameId,
         discordId,
         username,
-        rawLeft,
-        rawRight,
+        rawAnswer,
       ),
     );
     return;
