@@ -281,7 +281,7 @@ function buildTamagotchiComponentsWithCounts(jour, config, voteCounts) {
         {
           type: 2,
           style: 2,
-          label: "Règles du jeu",
+          label: "Règles",
           emoji: { name: "📖" },
           custom_id: "tamagotchi_regles",
         },
