@@ -35,10 +35,11 @@ const CLAN_RULES = {
     name: "La Resistance",
     roleName: "LA RESISTANCE ★",
   },
-  LRQP20V9: {
-    name: "Les Resistants",
-    roleName: "LES RESISTANTS ★",
-  },
+  // Désactivé temporairement — à réactiver quand demandé.
+  // LRQP20V9: {
+  //   name: "Les Resistants",
+  //   roleName: "LES RESISTANTS ★",
+  // },
 };
 
 function normalizeClanTag(tag) {
