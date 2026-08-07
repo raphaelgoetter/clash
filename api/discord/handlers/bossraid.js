@@ -180,7 +180,7 @@ function buildComponents(jour, phase, voteCounts, config) {
   const utilityRow = {
     type: 1,
     components: [
-      { type: 2, style: 2, label: "Règles & Rôles", emoji: { name: "📖" }, custom_id: "bossraid_regles" },
+      { type: 2, style: 2, label: "Règles", emoji: { name: "📖" }, custom_id: "bossraid_regles" },
       { type: 2, style: 2, label: "Journal", emoji: { name: "📜" }, custom_id: "bossraid_journal" },
     ],
   };

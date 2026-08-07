@@ -187,14 +187,14 @@ function buildRobinsonComponents(jour, config, voteCounts, event) {
         {
           type: 2,
           style: 2,
-          label: "Journal de Bord",
+          label: "Journal",
           emoji: { name: "📜" },
           custom_id: "robinson_journal",
         },
         {
           type: 2,
           style: 2,
-          label: "Règles du jeu",
+          label: "Règles",
           emoji: { name: "📖" },
           custom_id: "robinson_regles",
         },

@@ -6,10 +6,10 @@
   "stocks_initiaux": { "poisson": 10, "eau": 10, "bois": 6 },
   "actions": {
     "peche": { "label": "Pêcher", "emoji": "🎣", "resource": "poisson" },
-    "eau": { "label": "Collecter de l’eau", "emoji": "💧", "resource": "eau" },
-    "bois": { "label": "Récolter du bois", "emoji": "🪵", "resource": "bois" },
-    "explorer": { "label": "Explorer l’île", "emoji": "🔍" },
-    "radeau": { "label": "Construire le Radeau", "emoji": "🛶" }
+    "eau": { "label": "Eau", "emoji": "💧", "resource": "eau" },
+    "bois": { "label": "Bois", "emoji": "🪵", "resource": "bois" },
+    "explorer": { "label": "Explorer", "emoji": "🔍" },
+    "radeau": { "label": "Radeau", "emoji": "🛶" }
   },
   "evenements": [
     {
