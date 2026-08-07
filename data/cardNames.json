@@ -1,0 +1,612 @@
+[
+  {
+    "cardKey": "Archer Queen",
+    "rarity": "champion",
+    "fr": "Reine des Archères"
+  },
+  {
+    "cardKey": "Archers",
+    "rarity": "common",
+    "fr": "Archères"
+  },
+  {
+    "cardKey": "Arrows",
+    "rarity": "common",
+    "fr": "Flèches"
+  },
+  {
+    "cardKey": "Baby Dragon",
+    "rarity": "epic",
+    "fr": "Bébé dragon"
+  },
+  {
+    "cardKey": "Balloon",
+    "rarity": "epic",
+    "fr": "Ballon"
+  },
+  {
+    "cardKey": "Bandit",
+    "rarity": "legendary",
+    "fr": "Voleuse"
+  },
+  {
+    "cardKey": "Barbarian Barrel",
+    "rarity": "epic",
+    "fr": "Fût à barbare"
+  },
+  {
+    "cardKey": "Barbarian Hut",
+    "rarity": "rare",
+    "fr": "Cabane de barbare"
+  },
+  {
+    "cardKey": "Barbarians",
+    "rarity": "common",
+    "fr": "Barbares"
+  },
+  {
+    "cardKey": "Bats",
+    "rarity": "common",
+    "fr": "Chauves-souris"
+  },
+  {
+    "cardKey": "Battle Healer",
+    "rarity": "rare",
+    "fr": "Guérisseuse armée"
+  },
+  {
+    "cardKey": "Battle Ram",
+    "rarity": "rare",
+    "fr": "Bélier de combat"
+  },
+  {
+    "cardKey": "Berserker",
+    "rarity": "common",
+    "fr": "Berserker"
+  },
+  {
+    "cardKey": "Bomb Tower",
+    "rarity": "rare",
+    "fr": "Tour à bombes"
+  },
+  {
+    "cardKey": "Bomber",
+    "rarity": "common",
+    "fr": "Bombardier"
+  },
+  {
+    "cardKey": "Boss Bandit",
+    "rarity": "champion",
+    "fr": "Cheffe des voleuses"
+  },
+  {
+    "cardKey": "Bowler",
+    "rarity": "epic",
+    "fr": "Bouliste"
+  },
+  {
+    "cardKey": "Cannon",
+    "rarity": "common",
+    "fr": "Canon"
+  },
+  {
+    "cardKey": "Cannon Cart",
+    "rarity": "epic",
+    "fr": "Charrette à canon"
+  },
+  {
+    "cardKey": "Clone",
+    "rarity": "epic",
+    "fr": "Clonage"
+  },
+  {
+    "cardKey": "Dark Prince",
+    "rarity": "epic",
+    "fr": "Prince ténébreux"
+  },
+  {
+    "cardKey": "Dart Goblin",
+    "rarity": "rare",
+    "fr": "Gobelin à sarbacane"
+  },
+  {
+    "cardKey": "Earthquake",
+    "rarity": "rare",
+    "fr": "Séisme"
+  },
+  {
+    "cardKey": "Electro Dragon",
+    "rarity": "epic",
+    "fr": "Électro-dragon"
+  },
+  {
+    "cardKey": "Electro Giant",
+    "rarity": "epic",
+    "fr": "Électro-géant"
+  },
+  {
+    "cardKey": "Electro Spirit",
+    "rarity": "common",
+    "fr": "Électro-esprit"
+  },
+  {
+    "cardKey": "Electro Wizard",
+    "rarity": "legendary",
+    "fr": "Électro-sorcier"
+  },
+  {
+    "cardKey": "Elite Barbarians",
+    "rarity": "common",
+    "fr": "Barbares d'élite"
+  },
+  {
+    "cardKey": "Elixir Collector",
+    "rarity": "rare",
+    "fr": "Extracteur d'élixir"
+  },
+  {
+    "cardKey": "Elixir Golem",
+    "rarity": "rare",
+    "fr": "Golem élixir"
+  },
+  {
+    "cardKey": "Executioner",
+    "rarity": "epic",
+    "fr": "Bourreau"
+  },
+  {
+    "cardKey": "Fire Spirit",
+    "rarity": "common",
+    "fr": "Esprit de feu"
+  },
+  {
+    "cardKey": "Fireball",
+    "rarity": "rare",
+    "fr": "Boule de feu"
+  },
+  {
+    "cardKey": "Firecracker",
+    "rarity": "common",
+    "fr": "Artificière"
+  },
+  {
+    "cardKey": "Fisherman",
+    "rarity": "legendary",
+    "fr": "Pêcheur"
+  },
+  {
+    "cardKey": "Flying Machine",
+    "rarity": "rare",
+    "fr": "Machine volante"
+  },
+  {
+    "cardKey": "Freeze",
+    "rarity": "epic",
+    "fr": "Gel"
+  },
+  {
+    "cardKey": "Furnace",
+    "rarity": "rare",
+    "fr": "Fournaise"
+  },
+  {
+    "cardKey": "Giant",
+    "rarity": "rare",
+    "fr": "Géant"
+  },
+  {
+    "cardKey": "Giant Skeleton",
+    "rarity": "epic",
+    "fr": "Squelette géant"
+  },
+  {
+    "cardKey": "Giant Snowball",
+    "rarity": "common",
+    "fr": "Méga boule de neige"
+  },
+  {
+    "cardKey": "Goblin Barrel",
+    "rarity": "epic",
+    "fr": "Fût à gobelins"
+  },
+  {
+    "cardKey": "Goblin Cage",
+    "rarity": "rare",
+    "fr": "Cage gobeline"
+  },
+  {
+    "cardKey": "Goblin Curse",
+    "rarity": "epic",
+    "fr": "Malédiction gobeline"
+  },
+  {
+    "cardKey": "Goblin Demolisher",
+    "rarity": "rare",
+    "fr": "Gobelin explosif"
+  },
+  {
+    "cardKey": "Goblin Drill",
+    "rarity": "epic",
+    "fr": "Foreuse gobeline"
+  },
+  {
+    "cardKey": "Goblin Gang",
+    "rarity": "common",
+    "fr": "Gang de gobelins"
+  },
+  {
+    "cardKey": "Goblin Giant",
+    "rarity": "epic",
+    "fr": "Gobelin géant"
+  },
+  {
+    "cardKey": "Goblin Hut",
+    "rarity": "rare",
+    "fr": "Cabane de gobelin"
+  },
+  {
+    "cardKey": "Goblin Machine",
+    "rarity": "legendary",
+    "fr": "Machine gobeline"
+  },
+  {
+    "cardKey": "Goblins",
+    "rarity": "common",
+    "fr": "Gobelins"
+  },
+  {
+    "cardKey": "Goblinstein",
+    "rarity": "champion",
+    "fr": "Gobelinstein"
+  },
+  {
+    "cardKey": "Golden Knight",
+    "rarity": "champion",
+    "fr": "Chevalier d'or"
+  },
+  {
+    "cardKey": "Golem",
+    "rarity": "epic",
+    "fr": "Golem"
+  },
+  {
+    "cardKey": "Graveyard",
+    "rarity": "legendary",
+    "fr": "Cimetière"
+  },
+  {
+    "cardKey": "Guards",
+    "rarity": "epic",
+    "fr": "Gardes"
+  },
+  {
+    "cardKey": "Heal Spirit",
+    "rarity": "rare",
+    "fr": "Esprit de guérison"
+  },
+  {
+    "cardKey": "Hog Rider",
+    "rarity": "rare",
+    "fr": "Chevaucheur de cochon"
+  },
+  {
+    "cardKey": "Hunter",
+    "rarity": "epic",
+    "fr": "Chasseur"
+  },
+  {
+    "cardKey": "Ice Golem",
+    "rarity": "rare",
+    "fr": "Golem de glace"
+  },
+  {
+    "cardKey": "Ice Spirit",
+    "rarity": "common",
+    "fr": "Esprit de glace"
+  },
+  {
+    "cardKey": "Ice Wizard",
+    "rarity": "legendary",
+    "fr": "Sorcier de glace"
+  },
+  {
+    "cardKey": "Inferno Dragon",
+    "rarity": "legendary",
+    "fr": "Dragon de l'enfer"
+  },
+  {
+    "cardKey": "Inferno Tower",
+    "rarity": "rare",
+    "fr": "Tour de l'enfer"
+  },
+  {
+    "cardKey": "Knight",
+    "rarity": "common",
+    "fr": "Chevalier"
+  },
+  {
+    "cardKey": "Lava Hound",
+    "rarity": "legendary",
+    "fr": "Molosse de lave"
+  },
+  {
+    "cardKey": "Lightning",
+    "rarity": "epic",
+    "fr": "Foudre"
+  },
+  {
+    "cardKey": "Little Prince",
+    "rarity": "champion",
+    "fr": "Petit Prince"
+  },
+  {
+    "cardKey": "Lumberjack",
+    "rarity": "legendary",
+    "fr": "Bûcheron"
+  },
+  {
+    "cardKey": "Magic Archer",
+    "rarity": "legendary",
+    "fr": "Archer magique"
+  },
+  {
+    "cardKey": "Mega Knight",
+    "rarity": "legendary",
+    "fr": "Méga chevalier"
+  },
+  {
+    "cardKey": "Mega Minion",
+    "rarity": "rare",
+    "fr": "Méga gargouille"
+  },
+  {
+    "cardKey": "Mighty Miner",
+    "rarity": "champion",
+    "fr": "Maitre Mineur"
+  },
+  {
+    "cardKey": "Miner",
+    "rarity": "legendary",
+    "fr": "Mineur"
+  },
+  {
+    "cardKey": "Mini P.E.K.K.A",
+    "rarity": "rare",
+    "fr": "Mini P.E.K.K.A"
+  },
+  {
+    "cardKey": "Minion Horde",
+    "rarity": "common",
+    "fr": "Horde de gargouilles"
+  },
+  {
+    "cardKey": "Minions",
+    "rarity": "common",
+    "fr": "Gargouilles"
+  },
+  {
+    "cardKey": "Mirror",
+    "rarity": "epic",
+    "fr": "Miroir"
+  },
+  {
+    "cardKey": "Monk",
+    "rarity": "champion",
+    "fr": "Moine"
+  },
+  {
+    "cardKey": "Mortar",
+    "rarity": "common",
+    "fr": "Mortier"
+  },
+  {
+    "cardKey": "Mother Witch",
+    "rarity": "legendary",
+    "fr": "Mamie sorcière"
+  },
+  {
+    "cardKey": "Musketeer",
+    "rarity": "rare",
+    "fr": "Mousquetaire"
+  },
+  {
+    "cardKey": "Night Witch",
+    "rarity": "legendary",
+    "fr": "Sorcière de la nuit"
+  },
+  {
+    "cardKey": "P.E.K.K.A",
+    "rarity": "epic",
+    "fr": "P.E.K.K.A"
+  },
+  {
+    "cardKey": "Phoenix",
+    "rarity": "legendary",
+    "fr": "Phénix"
+  },
+  {
+    "cardKey": "Poison",
+    "rarity": "epic",
+    "fr": "Poison"
+  },
+  {
+    "cardKey": "Prince",
+    "rarity": "epic",
+    "fr": "Prince"
+  },
+  {
+    "cardKey": "Princess",
+    "rarity": "legendary",
+    "fr": "Princesse"
+  },
+  {
+    "cardKey": "Rage",
+    "rarity": "epic",
+    "fr": "Rage"
+  },
+  {
+    "cardKey": "Ram Rider",
+    "rarity": "legendary",
+    "fr": "Cavabélier"
+  },
+  {
+    "cardKey": "Rascals",
+    "rarity": "common",
+    "fr": "Fripons"
+  },
+  {
+    "cardKey": "Rocket",
+    "rarity": "rare",
+    "fr": "Roquette"
+  },
+  {
+    "cardKey": "Ronin",
+    "rarity": "legendary",
+    "fr": "Ronin"
+  },
+  {
+    "cardKey": "Royal Delivery",
+    "rarity": "common",
+    "fr": "Colis royal"
+  },
+  {
+    "cardKey": "Royal Ghost",
+    "rarity": "legendary",
+    "fr": "Fantôme royal"
+  },
+  {
+    "cardKey": "Royal Giant",
+    "rarity": "common",
+    "fr": "Géant royal"
+  },
+  {
+    "cardKey": "Royal Hogs",
+    "rarity": "rare",
+    "fr": "Cochons royaux"
+  },
+  {
+    "cardKey": "Royal Recruits",
+    "rarity": "common",
+    "fr": "Recrues royales"
+  },
+  {
+    "cardKey": "Rune Giant",
+    "rarity": "epic",
+    "fr": "Géante runique"
+  },
+  {
+    "cardKey": "Skeleton Army",
+    "rarity": "epic",
+    "fr": "Armée de squelettes"
+  },
+  {
+    "cardKey": "Skeleton Barrel",
+    "rarity": "common",
+    "fr": "Fût à squelettes"
+  },
+  {
+    "cardKey": "Skeleton Dragons",
+    "rarity": "common",
+    "fr": "Dragons squelettes"
+  },
+  {
+    "cardKey": "Skeleton King",
+    "rarity": "champion",
+    "fr": "Roi squelette"
+  },
+  {
+    "cardKey": "Skeletons",
+    "rarity": "common",
+    "fr": "Squelettes"
+  },
+  {
+    "cardKey": "Sparky",
+    "rarity": "legendary",
+    "fr": "Zappy"
+  },
+  {
+    "cardKey": "Spear Goblins",
+    "rarity": "common",
+    "fr": "Gobelins à lances"
+  },
+  {
+    "cardKey": "Spirit Empress",
+    "rarity": "legendary",
+    "fr": "Impératrice spirituelle"
+  },
+  {
+    "cardKey": "Suspicious Bush",
+    "rarity": "rare",
+    "fr": "Buisson suspicieux"
+  },
+  {
+    "cardKey": "Tesla",
+    "rarity": "common",
+    "fr": "Tesla"
+  },
+  {
+    "cardKey": "The Log",
+    "rarity": "legendary",
+    "fr": "La bûche"
+  },
+  {
+    "cardKey": "Three Musketeers",
+    "rarity": "rare",
+    "fr": "Trois mousquetaires"
+  },
+  {
+    "cardKey": "Tombstone",
+    "rarity": "rare",
+    "fr": "Pierre tombale"
+  },
+  {
+    "cardKey": "Tornado",
+    "rarity": "epic",
+    "fr": "Tornade"
+  },
+  {
+    "cardKey": "Valkyrie",
+    "rarity": "rare",
+    "fr": "Valkyrie"
+  },
+  {
+    "cardKey": "Vines",
+    "rarity": "epic",
+    "fr": "Ronces"
+  },
+  {
+    "cardKey": "Void",
+    "rarity": "epic",
+    "fr": "Néant"
+  },
+  {
+    "cardKey": "Wall Breakers",
+    "rarity": "epic",
+    "fr": "Sapeurs"
+  },
+  {
+    "cardKey": "Witch",
+    "rarity": "epic",
+    "fr": "Sorcière"
+  },
+  {
+    "cardKey": "Wizard",
+    "rarity": "rare",
+    "fr": "Sorcier"
+  },
+  {
+    "cardKey": "X-Bow",
+    "rarity": "epic",
+    "fr": "Arc-X"
+  },
+  {
+    "cardKey": "Zap",
+    "rarity": "common",
+    "fr": "Électrocution"
+  },
+  {
+    "cardKey": "Zappies",
+    "rarity": "rare",
+    "fr": "Électrocuteurs"
+  }
+]

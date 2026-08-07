@@ -52,6 +52,12 @@ import {
   handleAnagramStatsCommand,
 } from "./handlers/anagrams.js";
 import {
+  buildAnswerModalForPlayer as buildZoomAnswerModalForPlayer,
+  handleHintButton as handleZoomHintButton,
+  handleModalSubmit as handleZoomModalSubmit,
+  handleZoomStatsCommand,
+} from "./handlers/zoom.js";
+import {
   handleVoteButton as handleAventureVote,
   handleHistoriqueOpen as handleAventureHistoriqueOpen,
   handleHistoriquePage as handleAventureHistoriquePage,
@@ -8332,6 +8338,121 @@ export default async function handler(req, res) {
         discordId,
         username,
         rawAnswer,
+      ),
+    );
+    return;
+  }
+
+  // ── Jeu Zoom carte : commande /zoom (scores personnels) ──
+  if (body.type === 2 && body.data?.name === "zoom") {
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() =>
+      handleZoomStatsCommand(webhookUrl, discordId, username),
+    );
+    return;
+  }
+
+  // ── Jeu Zoom carte : bouton "Rafraîchir" sur /zoom ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id === "zoom_stats_refresh"
+  ) {
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    // type 6 = DEFERRED_UPDATE_MESSAGE : met à jour ce même message éphémère
+    // (au lieu d'en créer un nouveau, cf. type 5 pour la commande initiale).
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() =>
+      handleZoomStatsCommand(webhookUrl, discordId, username),
+    );
+    return;
+  }
+
+  // ── Jeu Zoom carte : boutons indices (carte gauche/droite) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    (body.data.custom_id.startsWith("zoom_hintA:") ||
+      body.data.custom_id.startsWith("zoom_hintB:"))
+  ) {
+    const [prefix, gameId] = body.data.custom_id.split(":");
+    const slot = prefix === "zoom_hintA" ? "A" : "B";
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() =>
+      handleZoomHintButton(webhookUrl, gameId, slot, discordId, username),
+    );
+    return;
+  }
+
+  // ── Jeu Zoom carte : bouton "Répondre" → ouverture de la Modal ──
+  // Réponse synchrone immédiate obligatoire : l'ouverture d'une Modal ne
+  // peut pas être différée (pas de runBackground ici). Contrairement à
+  // Frame/Anagram, cette modal a besoin de savoir quels slots ce joueur a
+  // déjà résolus (pour les pré-remplir/désactiver) — une seule lecture
+  // Redis rapide avant de répondre, avec repli sur une modal par défaut en
+  // cas d'échec (voir buildAnswerModalForPlayer dans handlers/zoom.js).
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("zoom_answer:")
+  ) {
+    const gameId = body.data.custom_id.split(":")[1];
+    const discordId = body.member?.user?.id;
+    const modal = await buildZoomAnswerModalForPlayer(gameId, discordId);
+    return res.status(200).json({ type: 9, data: modal });
+  }
+
+  // ── Jeu Zoom carte : soumission de la Modal (réponses du joueur) ──
+  // body.type === 5 ici est un MODAL_SUBMIT (InteractionType), à ne pas
+  // confondre avec le type de réponse 5 (DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE)
+  // utilisé plus haut dans ce fichier — deux enums Discord distinctes qui
+  // partagent des valeurs numériques.
+  if (
+    body.type === 5 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("zoom_answer_modal:")
+  ) {
+    const gameId = body.data.custom_id.split(":")[1];
+    const rawLeft = body.data.components?.[0]?.components?.[0]?.value || "";
+    const rawRight = body.data.components?.[1]?.components?.[0]?.value || "";
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() =>
+      handleZoomModalSubmit(
+        webhookUrl,
+        gameId,
+        discordId,
+        username,
+        rawLeft,
+        rawRight,
       ),
     );
     return;

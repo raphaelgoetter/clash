@@ -538,6 +538,17 @@ DISCORD_TOKEN=
 
 ---
 
+## Noms français des cartes (`data/cardNames.json`)
+
+Source de vérité anglais↔français des noms de cartes Clash Royale, partagée par tous les mini-jeux qui en ont besoin (Anagram, Zoom carte) — évite que chaque jeu retraduise/duplique les mêmes noms avec le risque de divergence que ça implique (constaté : plusieurs noms erronés trouvés dans `anagrams.json` avant la création de ce fichier, dont un vrai bug de `cardKey` qui cassait l'image de révélation).
+
+- Un objet par carte du catalogue officiel (`{ cardKey, rarity, fr }`), `cardKey` étant le nom anglais exact renvoyé par l'API Clash Royale (`fetchCards()`).
+- **Fichier édité à la main** une fois généré — `scripts/generateCardNames.js` (usage ponctuel) ne fait que compléter les cartes absentes du fichier existant ; il ne touche jamais une entrée déjà présente, corrections manuelles y compris. Résolution pour une carte manquante, par ordre de priorité : liens interlangues du wiki Fandom FR (`clashroyale.fandom.com/fr`, vérifiés dans les deux sens contre le nom anglais authentique de l'API) puis repli sur `data/anagrams/anagrams.json` si la carte est trop récente pour avoir une page sur le wiki. Toute valeur ajoutée automatiquement reste une proposition à relire, pas une certitude — le wiki peut se tromper (cf. l'exemple `Goblin Cage` ci-dessus).
+- Certaines cartes très récentes n'ont pas de nom trouvé automatiquement (`fr: null` à la génération) — à compléter à la main, voir la liste affichée en fin d'exécution du script.
+- `scripts/generateZoomCatalog.js` source ses noms français exclusivement d'ici (jamais d'`anagrams.json` directement) et resynchronise `answer`/`accept` à chaque exécution, même sans retélécharger l'image (coût nul). `anagrams.json`, en revanche, n'est pas resynchronisé automatiquement (voir la mise en garde ci-dessous) : une correction dans `cardNames.json` doit être reportée à la main sur `anagrams.json` si elle concerne une carte qui y est présente, en vérifiant que l'anagramme existante reste valide pour les nouvelles lettres (sinon la modifier casse le puzzle — voir `checkAnswer`/le champ `anagram` de chaque entrée).
+
+---
+
 ## Jeu Frame (devine le film)
 
 Mini-jeu hebdomadaire indépendant du Clash Royale : chaque mercredi 08:00 UTC, une image tirée d'un film connu est postée sur le salon public, les membres devinent le titre. Pas de commande slash associée — la publication passe uniquement par `scripts/postFrame.js` (manuel ou cron), les boutons/modal restent gérés par `api/discord/interactions.js`.
@@ -712,6 +723,96 @@ Identique à Frame (voir [Récapitulatif de fin de saison](#récapitulatif-de-fi
 ### Variables d'environnement requises (Anagram)
 
 Aucune nouvelle variable : Anagram réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` (mêmes salons que Frame, décision explicite pour ne pas multiplier les salons) et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (même instance Upstash Redis, espace de clés `anagram:*` totalement séparé de `frame:*`). Le workflow `.github/workflows/anagrams.yml` réutilise aussi les mêmes secrets GitHub Actions que `frames.yml` (déjà configurés, rien à ajouter).
+
+---
+
+## Jeu Zoom carte (devine les cartes zoomées)
+
+Troisième mini-jeu hebdomadaire indépendant, sur le modèle de Frame/Anagram (voir [Jeu Frame](#jeu-frame-devine-le-film) pour les mécanismes partagés : Modal `type:9`/`MODAL_SUBMIT type:5`, stockage Upstash Redis et ses pièges, gestion de saison CR). Différence structurelle majeure : **chaque manche affiche 2 cartes** (icônes zoomées à l'extrême, cartes de base/évoluées/héros mélangées dans le même pool), et le score de chacune se calcule **indépendamment** — pas besoin de trouver les 2 pour marquer des points.
+
+### Barème — score partiel par carte ("slot")
+
+Chaque manche a 2 "slots" indépendants (`A` = carte de gauche, `B` = carte de droite), chacun avec son propre indice, ses propres tentatives et son propre statut résolu :
+
+- Réponse exacte du 1er coup sans indice sur un slot : **10 pts**
+- Chaque tentative incorrecte sur ce slot : **-2 pts**
+- Indice utilisé sur ce slot (un seul palier, contrairement aux 2 indices de Frame) : **-3 pts**
+- Score de la manche pour un joueur = somme des scores de ses slots résolus (0, 1 ou 2 cartes trouvées)
+
+`computeScore(attemptsIncorrects, hintUsed)` (`backend/services/zoom.js`) est identique à celle de Frame, sauf que `hintUsed` est un booléen (un seul palier) et non un compteur.
+
+### Réponse (Zoom carte)
+
+Modal à 2 champs ("Carte de gauche"/"Carte de droite"), chacun validé indépendamment par `checkAnswer()` — égalité **stricte** normalisée (comme Anagram, pas de sous-chaîne comme Frame). Un slot déjà résolu par le joueur est pré-rempli (`"✅ déjà trouvé"`) et rendu facultatif dans la modal, pour permettre de recliquer "Répondre" et ne compléter que le slot manquant sans revalider l'autre.
+
+### Données (`data/zoom/zoom.json` + `data/zoom/images/`)
+
+Contrairement à Anagram (image CDN résolue à la volée) et comme Frame (image stockée localement), les icônes sont téléchargées **une fois** via `scripts/generateZoomCatalog.js` (usage ponctuel, hors flux hebdomadaire) plutôt que requêtées à chaque manche :
+
+- Cartes source : les 54 entrées de `data/anagrams/anagrams.json` (`cardKey`/`answer`/`accept` copiés tels quels — même carte, même nom).
+- Icônes de base : `fetchCards()` (catalogue générique Clash Royale, universel).
+- Icônes évoluées/héros : `fetchPlayer(tag)` d'un compte de référence — **ces variantes ne sont exposées par l'API QUE sur les cartes que CE joueur a personnellement évoluées** (`evolutionLevel > 0`/`>= 2`), ce n'est pas une métadonnée statique par carte comme l'icône de base. Le script filtre via `countEvolved`/`countHeroes` (`backend/services/collectionConstants.js`, même logique que la page Collection).
+- `data/zoom/zoom.json` — un objet par variante jouable (`id`, `cardKey`, `variant: "base"|"evolution"|"hero"`, `answer`, `accept`, `image`, `width`/`height`, `sourceUrl`, `fetchedAt`, et optionnellement `focal`/`zoomStages` pour surcharger le crop par défaut sur une carte précise).
+- `data/zoom/images/*.png` — octets téléchargés, jamais exposés statiquement (seule la route `/api/zoom/image` y donne accès, voir ci-dessous).
+- Idempotent : relancer le script ne re-télécharge que si l'URL source a changé ; ne supprime jamais une entrée existante.
+
+### Synthèse d'image (`backend/services/zoomImage.js`)
+
+Aucune nouvelle dépendance : réutilise `@resvg/resvg-js` (déjà présent, utilisé par `buildWarDecksImage` dans `api/discord/interactions.js`) pour rasteriser un SVG contenant des `<image href="data:...">` en PNG. Contrairement à `buildWarDecksImage` (qui télécharge des icônes distantes à chaque appel), les octets sont lus directement dans `data/zoom/images/` — aucun réseau au moment de servir une manche.
+
+- `getZoomCompositeImage(gameId)` — image publique de l'embed, les 2 cartes en zoom extrême, composées côte à côte en une seule image (fixe pour toute la durée de la manche : un embed Discord est partagé par tout le salon, il ne peut pas varier par joueur).
+- `getZoomSlotImage(gameId, slot, { reveal })` — crop d'un seul slot : dézoomé (indice) ou révélation complète (juste les octets du fichier source, sans SVG).
+- Formule de crop : point focal normalisé `(fx, fy)` + facteur de zoom `Z`, une `<image>` surdimensionnée est positionnée pour que ce point atterrisse au centre de la cellule cible, `<clipPath>` explicite pour rogner. Valeurs par défaut `(0.5, 0.45)`, `Z≈2.75` (zoom extrême) / `Z≈1.35` (dézoom indice), surchageables par carte via `zoom.json`.
+
+### Anti-spoiler : bouton indice = message éphémère, jamais une édition du post public
+
+Contrairement à Frame (indice textuel révélé en clair dans un message éphémère), l'indice de Zoom carte est une **image** — cliquer sur "Indice carte gauche/droite" ne peut pas modifier l'embed public (partagé par tout le salon), il répond donc par un **embed éphémère** avec le crop dézoomé de ce seul slot (`GET /api/zoom/image?gameId=...&slot=A`), jamais un PATCH du message d'origine.
+
+`GET /api/zoom/image` (`backend/server.js`, juste après la route équivalente de Frame) vérifie `isGamePosted(gameId)` (registre Redis `zoom:posted_games`, jamais nettoyé, même garde-fou anti-spoiler que `frame:posted_games`) avant de servir quoi que ce soit — jamais l'image d'une manche future devinée par construction d'id.
+
+⚠️ Limite acceptée : l'URL de l'indice (`?gameId=X&slot=A`) est reconstructible par quiconque a vu la manche postée, sans cliquer le bouton ni perdre les 3 pts — aucune authentification possible sur une simple requête d'image d'embed (même modèle de confiance que l'URL d'image de Frame).
+
+### Stockage — Upstash Redis (`zoom:*`)
+
+Même stockage que Frame/Anagram, préfixe `zoom:`. Différence de schéma : tout est scopé **par slot** (`A`/`B`) en plus du `gameId`/`discordId` habituels :
+
+| Clé Redis | Type | Contenu |
+| --- | --- | --- |
+| `zoom:hint:<gameId>:<discordId>:<slot>` | STRING (flag) | Indice utilisé sur ce slot (`SETNX`, un seul palier donc pas besoin de `SADD`/`SCARD` comme Frame) |
+| `zoom:attempts:<gameId>:<discordId>:<slot>` | STRING (compteur) | Tentatives incorrectes sur ce slot |
+| `zoom:participants:<gameId>` | HASH | `discordId → { slots: {A, B}, totalScore, fullySolved }` |
+| `zoom:archived:<seasonId>` | HASH | Un champ par **slot résolu** (`<gameId>:<discordId>:<slot>`) — pas par manche entière : un joueur qui ne trouve qu'une carte garde ses points de saison |
+
+`gameId` = `"<idA>__<idB>"` (les 2 id du catalogue joints par `__`). La sélection de la prochaine manche (`pickNextZoomPair`) dérive de l'**id** du 2ᵉ slot de la manche précédente (pas d'un index de tableau) — reste correcte même si `zoom.json` est régénéré/complété plus tard par `generateZoomCatalog.js`.
+
+### Publication hebdomadaire (vendredi 18h UTC)
+
+`.github/workflows/zoom.yml` (`cron: "0 18 * * 5"`) — horaire fixe comme Frame (contrairement au tirage aléatoire d'Anagram), exécute `npm run zoom:public`.
+
+### Commande `/zoom` — scores personnels
+
+Miroir de `/frame`/`/anagram`, adapté pour afficher le statut des 2 slots séparément (trouvé/pas trouvé + points) plutôt qu'un statut unique. L'historique de saison (`getPlayerSeasonResults`) renvoie une entrée par slot résolu — c'est la couche d'affichage (`handleZoomStatsCommand`) qui regroupe par `gameId` et somme les 2 scores, pas le service métier.
+
+### Récapitulatif de fin de saison (Zoom carte)
+
+Identique à Frame (voir [Récapitulatif de fin de saison](#récapitulatif-de-fin-de-saison)) : posté juste avant la manche 1 d'une nouvelle saison si `seasonId` a changé, mêmes règles de troncage (20 joueurs max, exclusion des 0 pt). Le libellé de chaque manche (`getZoomRoundLabel`) joint les 2 réponses, ex. `"Bébé dragon & Reine des archers"`.
+
+### Scripts npm (Zoom carte)
+
+| Commande | Effet |
+| --- | --- |
+| `npm run zoom:catalog` | Génère/complète `data/zoom/zoom.json` et télécharge les icônes manquantes dans `data/zoom/images/`. Usage ponctuel, jamais dans le flux hebdomadaire. |
+| `npm run zoom:test` | Poste manuellement une nouvelle partie sur le salon de test. |
+| `npm run zoom:test:dry` | Aperçu console de la prochaine partie (+ récap de saison éventuel), sans écrire d'état ni poster sur Discord. |
+| `npm run zoom:public` | Poste sur le salon public — utilisé par le cron `zoom.yml`. |
+| `npm run zoom:public:dry` | Équivalent dry-run de `zoom:public`. |
+| `npm run zoom:scores` | Classement de la partie en cours (statut par slot, score partie, score saison) + joueurs n'ayant pas encore joué. |
+| `npm run zoom:move` | Reposte la manche active dans un autre salon sans faire avancer la partie. |
+| `npm run zoom:reset` | Remet le jeu à zéro : plus de partie active, historique et scores effacés. **Destructif**. |
+
+### Variables d'environnement requises (Zoom carte)
+
+Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (espace de clés `zoom:*` totalement séparé). Le workflow `.github/workflows/zoom.yml` réutilise les mêmes secrets GitHub Actions que `frames.yml`/`anagrams.yml` (déjà configurés, rien à ajouter).
 
 ---
 

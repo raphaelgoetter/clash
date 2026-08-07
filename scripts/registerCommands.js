@@ -461,6 +461,11 @@ const commands = [
     description: "Affiche vos scores au jeu Anagram (devine la carte).",
     options: [],
   },
+  {
+    name: "zoom",
+    description: "Affiche vos scores au jeu Zoom carte (devine les cartes zoomées).",
+    options: [],
+  },
 ];
 
 async function registerAtUrl(url) {
