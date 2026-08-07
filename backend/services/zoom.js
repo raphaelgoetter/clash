@@ -8,11 +8,10 @@
 // Deux différences par rapport à Frame :
 // - checkAnswer utilise une égalité STRICTE (comme anagrams.js), pas une
 //   correspondance par sous-chaîne — les noms de cartes sont courts.
-// - La sélection de la prochaine manche est ALÉATOIRE (sac à tirage sans
-//   répétition tant que le catalogue entier n'a pas été joué), pas
-//   séquentielle — voir pickNextZoomCard. Un ordre séquentiel sur un
-//   catalogue trié alphabétiquement (data/zoom/zoom.json) rendrait le jeu
-//   totalement prévisible.
+// - La progression est séquentielle comme Frame (pickNextZoomIndex), mais
+//   sur un catalogue MÉLANGÉ une fois pour toutes (voir
+//   scripts/generateZoomCatalog.js) plutôt que trié alphabétiquement —
+//   un ordre alphabétique aurait rendu le jeu totalement prévisible.
 // ============================================================
 
 import fs from "fs/promises";
@@ -166,9 +165,8 @@ async function cleanupGameScratchData(gameId) {
   await scanDelete(`zoom:attempts:${gameId}:*`);
 }
 
-// Remet le jeu à zéro : plus de partie active, historique/scores effacés, et
-// l'ordre de tirage aléatoire est réinitialisé (une nouvelle partie repart
-// sur un sac fraîchement mélangé).
+// Remet le jeu à zéro : plus de partie active (la prochaine partie repart au
+// début de data/zoom/zoom.json), historique/scores effacés.
 export async function resetGame() {
   await getRedis().del(STATE_KEY);
   await scanDelete("zoom:participants:*");
@@ -203,38 +201,17 @@ export async function getCurrentSeasonId() {
   return value;
 }
 
-// ── Sélection ALÉATOIRE de la prochaine carte (sac à tirage) ─────
-// Mélange de Fisher-Yates de tous les id du catalogue, consommé dans l'ordre
-// jusqu'à épuisement puis re-mélangé — garantit qu'aucune carte ne revient
-// avant que toutes les autres soient passées, tout en restant imprévisible
-// (contrairement à une simple progression d'index sur un catalogue trié
-// alphabétiquement). Le tirage est persisté dans l'état Redis (state.order/
-// state.orderIndex) pour survivre d'une manche à l'autre.
-function shuffle(array) {
-  const result = [...array];
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [result[i], result[j]] = [result[j], result[i]];
-  }
-  return result;
-}
-
-export function pickNextZoomCard(state, catalog) {
-  const allIds = catalog.map((e) => e.id);
-  const exhausted = !state?.order?.length || state.orderIndex + 1 >= state.order.length;
-
-  if (!exhausted) {
-    const orderIndex = state.orderIndex + 1;
-    return { order: state.order, orderIndex, id: state.order[orderIndex] };
-  }
-
-  let order = shuffle(allIds);
-  // Évite une répétition immédiate à la jonction entre deux sacs (le dernier
-  // tirage du sac précédent ne doit pas être aussi le premier du nouveau).
-  if (state?.gameId && order[0] === state.gameId && order.length > 1) {
-    [order[0], order[1]] = [order[1], order[0]];
-  }
-  return { order, orderIndex: 0, id: order[0] };
+// ── Sélection de la prochaine carte : progression séquentielle ───
+// Même pattern que Frame/Anagram (pickNextFrameIndex) : avance d'une
+// position dans data/zoom/zoom.json et boucle au début une fois le
+// catalogue épuisé. Le "hasard" ne vient pas d'un tirage au moment de
+// poster (plus simple, pas d'état supplémentaire à maintenir en Redis) mais
+// du fait que le FICHIER lui-même a été mélangé une fois — voir
+// scripts/generateZoomCatalog.js, qui préserve cet ordre à chaque
+// régénération plutôt que de retrier alphabétiquement.
+export function pickNextZoomIndex(state, catalog) {
+  const prevIndex = state?.gameId ? catalog.findIndex((e) => e.id === state.gameId) : -1;
+  return (prevIndex + 1) % catalog.length;
 }
 
 // Attribue le numéro de manche relatif à la saison — identique en structure
@@ -264,7 +241,8 @@ export function computeSeasonMancheTotal(seasonManche, now = new Date()) {
 export async function startNewGame(channelId) {
   const catalog = await loadZoomCatalog();
   const previousState = await readState();
-  const { order, orderIndex, id: gameId } = pickNextZoomCard(previousState, catalog);
+  const currentIndex = pickNextZoomIndex(previousState, catalog);
+  const gameId = catalog[currentIndex].id;
   const seasonId = await getCurrentSeasonId();
   const now = new Date();
 
@@ -273,8 +251,6 @@ export async function startNewGame(channelId) {
 
   const newState = {
     gameId,
-    order,
-    orderIndex,
     seasonId,
     seasonManche,
     seasonMancheTotal,

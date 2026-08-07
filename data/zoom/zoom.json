@@ -1,307 +1,15 @@
 [
   {
-    "id": "archer-queen-base",
-    "cardKey": "Archer Queen",
-    "variant": "base",
-    "answer": "Reine des Archères",
-    "accept": ["Reine des Archeres", "Reine des Archers"],
-    "image": "archer-queen-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/p7OQmOAFTery7zCzlpDdm-LOD1kINTm42AwIHchZfWk.png",
-    "fetchedAt": "2026-08-07T13:35:10.298Z"
-  },
-  {
     "id": "baby-dragon-base",
     "cardKey": "Baby Dragon",
     "variant": "base",
     "answer": "Bébé dragon",
-    "accept": ["Bebe dragon"],
+    "accept": ["Bébé dragon"],
     "image": "baby-dragon-base.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/cjC9n4AvEZJ3urkVh-rwBkJ-aRSsydIMqSAV48hAih0.png",
     "fetchedAt": "2026-08-07T13:35:10.432Z"
-  },
-  {
-    "id": "baby-dragon-evolution",
-    "cardKey": "Baby Dragon",
-    "variant": "evolution",
-    "answer": "Bébé dragon",
-    "accept": ["Bebe dragon"],
-    "image": "baby-dragon-evolution.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cardevolutions/300/cjC9n4AvEZJ3urkVh-rwBkJ-aRSsydIMqSAV48hAih0.png",
-    "fetchedAt": "2026-08-07T13:35:10.454Z"
-  },
-  {
-    "id": "barbarian-hut-base",
-    "cardKey": "Barbarian Hut",
-    "variant": "base",
-    "answer": "Cabane de barbare",
-    "accept": ["Cabane de barbare"],
-    "image": "barbarian-hut-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/ho0nOG2y3Ch86elHHcocQs8Fv_QNe0cFJ2CijsxABZA.png",
-    "fetchedAt": "2026-08-07T13:35:09.630Z"
-  },
-  {
-    "id": "bats-base",
-    "cardKey": "Bats",
-    "variant": "base",
-    "answer": "Chauves-souris",
-    "accept": ["Chauves-souris", "Chauves souris"],
-    "image": "bats-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/EnIcvO21hxiNpoI-zO6MDjLmzwPbq8Z4JPo2OKoVUjU.png",
-    "fetchedAt": "2026-08-07T13:35:09.287Z"
-  },
-  {
-    "id": "bats-evolution",
-    "cardKey": "Bats",
-    "variant": "evolution",
-    "answer": "Chauves-souris",
-    "accept": ["Chauves-souris", "Chauves souris"],
-    "image": "bats-evolution.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cardevolutions/300/EnIcvO21hxiNpoI-zO6MDjLmzwPbq8Z4JPo2OKoVUjU.png",
-    "fetchedAt": "2026-08-07T13:35:09.312Z"
-  },
-  {
-    "id": "battle-healer-base",
-    "cardKey": "Battle Healer",
-    "variant": "base",
-    "answer": "Guérisseuse armée",
-    "accept": ["Guerisseuse armee"],
-    "image": "battle-healer-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/KdwXcoigS2Kg-cgA7BJJIANbUJG6SNgjetRQ-MegZ08.png",
-    "fetchedAt": "2026-08-07T13:35:09.870Z"
-  },
-  {
-    "id": "battle-ram-base",
-    "cardKey": "Battle Ram",
-    "variant": "base",
-    "answer": "Bélier de combat",
-    "accept": ["Belier de combat"],
-    "image": "battle-ram-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/dyc50V2cplKi4H7pq1B3I36pl_sEH5DQrNHboS_dbbM.png",
-    "fetchedAt": "2026-08-07T13:35:09.694Z"
-  },
-  {
-    "id": "battle-ram-evolution",
-    "cardKey": "Battle Ram",
-    "variant": "evolution",
-    "answer": "Bélier de combat",
-    "accept": ["Belier de combat"],
-    "image": "battle-ram-evolution.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cardevolutions/300/dyc50V2cplKi4H7pq1B3I36pl_sEH5DQrNHboS_dbbM.png",
-    "fetchedAt": "2026-08-07T13:35:09.716Z"
-  },
-  {
-    "id": "bomb-tower-base",
-    "cardKey": "Bomb Tower",
-    "variant": "base",
-    "answer": "Tour à bombes",
-    "accept": ["Tour a bombes"],
-    "image": "bomb-tower-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/rirYRyHPc97emRjoH-c1O8uZCBzPVnToaGuNGusF3TQ.png",
-    "fetchedAt": "2026-08-07T13:35:10.473Z"
-  },
-  {
-    "id": "boss-bandit-base",
-    "cardKey": "Boss Bandit",
-    "variant": "base",
-    "answer": "Cheffe des voleuses",
-    "accept": ["Cheffe des voleuses"],
-    "image": "boss-bandit-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/nuceG9o7rAyvyc7D3sp2QSiRYtSOEgraq0NJkDf729s.png",
-    "fetchedAt": "2026-08-07T13:35:10.623Z"
-  },
-  {
-    "id": "cannon-cart-base",
-    "cardKey": "Cannon Cart",
-    "variant": "base",
-    "answer": "Charrette à canon",
-    "accept": ["Charrette a canon"],
-    "image": "cannon-cart-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/aqwxRz8HXzqlMCO4WMXNA1txynjXTsLinknqsgZLbok.png",
-    "fetchedAt": "2026-08-07T13:35:09.977Z",
-    "focal": {
-      "x": 0.62,
-      "y": 0.28
-    },
-    "zoomStages": {
-      "stage0": 3.93
-    }
-  },
-  {
-    "id": "dark-prince-base",
-    "cardKey": "Dark Prince",
-    "variant": "base",
-    "answer": "Prince ténébreux",
-    "accept": ["Prince tenebreux"],
-    "image": "dark-prince-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/M7fXlrKXHu2IvpSGpk36kXVstslbR08Bbxcy0jQcln8.png",
-    "fetchedAt": "2026-08-07T13:35:10.039Z"
-  },
-  {
-    "id": "dark-prince-hero",
-    "cardKey": "Dark Prince",
-    "variant": "hero",
-    "answer": "Prince ténébreux",
-    "accept": ["Prince tenebreux"],
-    "image": "dark-prince-hero.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cardheroes/300/M7fXlrKXHu2IvpSGpk36kXVstslbR08Bbxcy0jQcln8.png",
-    "fetchedAt": "2026-08-07T13:35:10.061Z"
-  },
-  {
-    "id": "dart-goblin-base",
-    "cardKey": "Dart Goblin",
-    "variant": "base",
-    "answer": "Gobelin à sarbacane",
-    "accept": ["Gobelin a sarbacane"],
-    "image": "dart-goblin-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/BmpK3bqEAviflqHCdxxnfm-_l3pRPJw3qxHkwS55nCY.png",
-    "fetchedAt": "2026-08-07T13:35:09.850Z"
-  },
-  {
-    "id": "electro-spirit-base",
-    "cardKey": "Electro Spirit",
-    "variant": "base",
-    "answer": "Électro-esprit",
-    "accept": ["Electro-esprit", "Electro esprit"],
-    "image": "electro-spirit-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/WKd4-IAFsgPpMo7dDi9sujmYjRhOMEWiE07OUJpvD9g.png",
-    "fetchedAt": "2026-08-07T13:35:09.379Z",
-    "focal": {
-      "x": 0.45,
-      "y": 0.45
-    },
-    "zoomStages": {
-      "stage0": 3.6
-    }
-  },
-  {
-    "id": "elite-barbarians-base",
-    "cardKey": "Elite Barbarians",
-    "variant": "base",
-    "answer": "Barbares d'élite",
-    "accept": ["Barbares d'elite", "Barbares elite"],
-    "image": "elite-barbarians-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/C88C5JH_F3lLZj6K-tLcMo5DPjrFmvzIb1R2M6xCfTE.png",
-    "fetchedAt": "2026-08-07T13:35:09.266Z"
-  },
-  {
-    "id": "flying-machine-base",
-    "cardKey": "Flying Machine",
-    "variant": "base",
-    "answer": "Machine volante",
-    "accept": ["Machine volante"],
-    "image": "flying-machine-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/hzKNE3QwFcrSrDDRuVW3QY_OnrDPijSiIp-PsWgFevE.png",
-    "fetchedAt": "2026-08-07T13:35:09.893Z"
-  },
-  {
-    "id": "giant-skeleton-base",
-    "cardKey": "Giant Skeleton",
-    "variant": "base",
-    "answer": "Squelette géant",
-    "accept": ["Squelette geant"],
-    "image": "giant-skeleton-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/0p0gd0XaVRu1Hb1iSG1hTYbz2AN6aEiZnhaAib5O8Z8.png",
-    "fetchedAt": "2026-08-07T13:35:10.082Z"
-  },
-  {
-    "id": "giant-snowball-base",
-    "cardKey": "Giant Snowball",
-    "variant": "base",
-    "answer": "Méga boule de neige",
-    "accept": ["Mega boule de neige"],
-    "image": "giant-snowball-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/7MaJLa6hK9WN2_VIshuh5DIDfGwm0wEv98gXtAxLDPs.png",
-    "fetchedAt": "2026-08-07T13:35:09.562Z",
-    "focal": {
-      "x": 0.5,
-      "y": 0.4
-    },
-    "zoomStages": {
-      "stage0": 2.62
-    }
-  },
-  {
-    "id": "giant-snowball-evolution",
-    "cardKey": "Giant Snowball",
-    "variant": "evolution",
-    "answer": "Méga boule de neige",
-    "accept": ["Mega boule de neige"],
-    "image": "giant-snowball-evolution.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cardevolutions/300/7MaJLa6hK9WN2_VIshuh5DIDfGwm0wEv98gXtAxLDPs.png",
-    "fetchedAt": "2026-08-07T13:35:09.587Z",
-    "focal": {
-      "x": 0.5,
-      "y": 0.4
-    },
-    "zoomStages": {
-      "stage0": 2.62
-    }
-  },
-  {
-    "id": "goblin-curse-base",
-    "cardKey": "Goblin Curse",
-    "variant": "base",
-    "answer": "Malédiction gobeline",
-    "accept": ["Malediction gobeline"],
-    "image": "goblin-curse-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/OQPfGgT5mHEUvPuKKt0plZT0PNtIjCqUgQ3Rm86dQ2k.png",
-    "fetchedAt": "2026-08-07T13:35:09.214Z"
-  },
-  {
-    "id": "goblin-drill-base",
-    "cardKey": "Goblin Drill",
-    "variant": "base",
-    "answer": "Foreuse gobeline",
-    "accept": ["Foreuse gobeline"],
-    "image": "goblin-drill-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/eN2TKUYbih-26yBi0xy5LVFOA0zDftgDqxxnVfdIg1o.png",
-    "fetchedAt": "2026-08-07T13:35:09.997Z"
   },
   {
     "id": "goblin-drill-evolution",
@@ -316,90 +24,119 @@
     "fetchedAt": "2026-08-07T13:35:10.021Z"
   },
   {
-    "id": "goblin-gang-base",
-    "cardKey": "Goblin Gang",
+    "id": "lava-hound-base",
+    "cardKey": "Lava Hound",
     "variant": "base",
-    "answer": "Gang de gobelins",
-    "accept": ["Gang de gobelins"],
-    "image": "goblin-gang-base.png",
+    "answer": "Molosse de lave",
+    "accept": ["Molosse de lave"],
+    "image": "lava-hound-base.png",
     "width": 285,
     "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/NHflxzVAQT4oAz7eDfdueqpictb5vrWezn1nuqFhE4w.png",
-    "fetchedAt": "2026-08-07T13:35:09.520Z"
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/unicRQ975sBY2oLtfgZbAI56ZvaWz7azj-vXTLxc0r8.png",
+    "fetchedAt": "2026-08-07T13:35:10.209Z"
   },
   {
-    "id": "goblin-machine-base",
-    "cardKey": "Goblin Machine",
-    "variant": "base",
-    "answer": "Machine gobeline",
-    "accept": ["Machine gobeline"],
-    "image": "goblin-machine-base.png",
+    "id": "giant-snowball-evolution",
+    "cardKey": "Giant Snowball",
+    "variant": "evolution",
+    "answer": "Méga boule de neige",
+    "accept": ["Méga boule de neige"],
+    "image": "giant-snowball-evolution.png",
     "width": 285,
     "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/-iLlotr6GCFndL_1BSBqWBb6DnsHBhLerd5EblZDNfU.png",
-    "fetchedAt": "2026-08-07T13:35:10.168Z"
+    "sourceUrl": "https://api-assets.clashroyale.com/cardevolutions/300/7MaJLa6hK9WN2_VIshuh5DIDfGwm0wEv98gXtAxLDPs.png",
+    "fetchedAt": "2026-08-07T13:35:09.587Z",
+    "focal": {
+      "x": 0.5,
+      "y": 0.4
+    },
+    "zoomStages": {
+      "stage0": 2.62
+    }
+  },
+  {
+    "id": "three-musketeers-base",
+    "cardKey": "Three Musketeers",
+    "variant": "base",
+    "answer": "Trois mousquetaires",
+    "accept": ["Trois mousquetaires"],
+    "image": "three-musketeers-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/_J2GhbkX3vswaFk1wG-dopwiHyNc_YiPhwroiKF3Mek.png",
+    "fetchedAt": "2026-08-07T13:35:09.913Z"
+  },
+  {
+    "id": "elite-barbarians-base",
+    "cardKey": "Elite Barbarians",
+    "variant": "base",
+    "answer": "Barbares d'élite",
+    "accept": ["Barbares d'élite"],
+    "image": "elite-barbarians-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/C88C5JH_F3lLZj6K-tLcMo5DPjrFmvzIb1R2M6xCfTE.png",
+    "fetchedAt": "2026-08-07T13:35:09.266Z"
+  },
+  {
+    "id": "battle-ram-base",
+    "cardKey": "Battle Ram",
+    "variant": "base",
+    "answer": "Bélier de combat",
+    "accept": ["Bélier de combat"],
+    "image": "battle-ram-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/dyc50V2cplKi4H7pq1B3I36pl_sEH5DQrNHboS_dbbM.png",
+    "fetchedAt": "2026-08-07T13:35:09.694Z"
+  },
+  {
+    "id": "musketeer-base",
+    "cardKey": "Musketeer",
+    "variant": "base",
+    "answer": "Mousquetaire",
+    "accept": ["Mousquetaire"],
+    "image": "musketeer-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/Tex1C48UTq9FKtAX-3tzG0FJmc9jzncUZG3bb5Vf-Ds.png",
+    "fetchedAt": "2026-08-07T13:35:10.554Z"
+  },
+  {
+    "id": "giant-skeleton-base",
+    "cardKey": "Giant Skeleton",
+    "variant": "base",
+    "answer": "Squelette géant",
+    "accept": ["Squelette géant"],
+    "image": "giant-skeleton-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/0p0gd0XaVRu1Hb1iSG1hTYbz2AN6aEiZnhaAib5O8Z8.png",
+    "fetchedAt": "2026-08-07T13:35:10.082Z"
+  },
+  {
+    "id": "battle-healer-base",
+    "cardKey": "Battle Healer",
+    "variant": "base",
+    "answer": "Guérisseuse armée",
+    "accept": ["Guérisseuse armée"],
+    "image": "battle-healer-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/KdwXcoigS2Kg-cgA7BJJIANbUJG6SNgjetRQ-MegZ08.png",
+    "fetchedAt": "2026-08-07T13:35:09.870Z"
   },
   {
     "id": "golden-knight-base",
     "cardKey": "Golden Knight",
     "variant": "base",
     "answer": "Chevalier d'or",
-    "accept": ["Chevalier d'or", "Chevalier or"],
+    "accept": ["Chevalier d'or"],
     "image": "golden-knight-base.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/WJd207D0O1sN-l1FTb8P9KhYL2oF5jY26vRUfTUW3FQ.png",
     "fetchedAt": "2026-08-07T13:35:10.579Z"
-  },
-  {
-    "id": "heal-spirit-base",
-    "cardKey": "Heal Spirit",
-    "variant": "base",
-    "answer": "Esprit de guérison",
-    "accept": ["Esprit de guerison"],
-    "image": "heal-spirit-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/GITl06sa2nGRLPvboyXbGEv5E3I-wAwn1Eqa5esggbc.png",
-    "fetchedAt": "2026-08-07T13:35:09.454Z",
-    "focal": {
-      "x": 0.5,
-      "y": 0.55
-    },
-    "zoomStages": {
-      "stage0": 3.76
-    }
-  },
-  {
-    "id": "hog-rider-base",
-    "cardKey": "Hog Rider",
-    "variant": "base",
-    "answer": "Chevaucheur de cochon",
-    "accept": ["Chevaucheur de cochon"],
-    "image": "hog-rider-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/Ubu0oUl8tZkusnkZf8Xv9Vno5IO29Y-jbZ4fhoNJ5oc.png",
-    "fetchedAt": "2026-08-07T13:35:09.736Z"
-  },
-  {
-    "id": "ice-spirit-base",
-    "cardKey": "Ice Spirit",
-    "variant": "base",
-    "answer": "Esprit de glace",
-    "accept": ["Esprit de glace"],
-    "image": "ice-spirit-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/lv1budiafU9XmSdrDkk0NYyqASAFYyZ06CPysXKZXlA.png",
-    "fetchedAt": "2026-08-07T13:35:09.402Z",
-    "focal": {
-      "x": 0.5,
-      "y": 0.5
-    },
-    "zoomStages": {
-      "stage0": 3.6
-    }
   },
   {
     "id": "ice-spirit-evolution",
@@ -421,169 +158,42 @@
     }
   },
   {
-    "id": "ice-wizard-base",
-    "cardKey": "Ice Wizard",
+    "id": "hog-rider-base",
+    "cardKey": "Hog Rider",
     "variant": "base",
-    "answer": "Sorcier de glace",
-    "accept": ["Sorcier de glace"],
-    "image": "ice-wizard-base.png",
+    "answer": "Chevaucheur de cochon",
+    "accept": ["Chevaucheur de cochon"],
+    "image": "hog-rider-base.png",
     "width": 285,
     "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/W3dkw0HTw9n1jB-zbknY2w3wHuyuLxSRIAV5fUT1SEY.png",
-    "fetchedAt": "2026-08-07T13:35:10.229Z"
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/Ubu0oUl8tZkusnkZf8Xv9Vno5IO29Y-jbZ4fhoNJ5oc.png",
+    "fetchedAt": "2026-08-07T13:35:09.736Z"
   },
   {
-    "id": "inferno-dragon-base",
-    "cardKey": "Inferno Dragon",
+    "id": "electro-spirit-base",
+    "cardKey": "Electro Spirit",
     "variant": "base",
-    "answer": "Dragon de l'enfer",
-    "accept": ["Dragon de l'enfer", "Dragon de l enfer"],
-    "image": "inferno-dragon-base.png",
+    "answer": "Électro-esprit",
+    "accept": ["Électro-esprit"],
+    "image": "electro-spirit-base.png",
     "width": 285,
     "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/y5HDbKtTbWG6En6TGWU0xoVIGs1-iQpIP4HC-VM7u8A.png",
-    "fetchedAt": "2026-08-07T13:35:10.147Z"
-  },
-  {
-    "id": "lava-hound-base",
-    "cardKey": "Lava Hound",
-    "variant": "base",
-    "answer": "Molosse de lave",
-    "accept": ["Molosse de lave"],
-    "image": "lava-hound-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/unicRQ975sBY2oLtfgZbAI56ZvaWz7azj-vXTLxc0r8.png",
-    "fetchedAt": "2026-08-07T13:35:10.209Z"
-  },
-  {
-    "id": "little-prince-base",
-    "cardKey": "Little Prince",
-    "variant": "base",
-    "answer": "Petit Prince",
-    "accept": ["Petit Prince"],
-    "image": "little-prince-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/dY-gSseki6KBpkIG17safHH5YlB8SErFZO9OXbJxf9w.png",
-    "fetchedAt": "2026-08-07T13:35:10.345Z",
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/WKd4-IAFsgPpMo7dDi9sujmYjRhOMEWiE07OUJpvD9g.png",
+    "fetchedAt": "2026-08-07T13:35:09.379Z",
     "focal": {
-      "x": 0.42,
-      "y": 0.4
+      "x": 0.45,
+      "y": 0.45
     },
     "zoomStages": {
       "stage0": 3.6
     }
   },
   {
-    "id": "magic-archer-base",
-    "cardKey": "Magic Archer",
-    "variant": "base",
-    "answer": "Archer magique",
-    "accept": ["Archer magique"],
-    "image": "magic-archer-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/Avli3W7BxU9HQ2SoLiXnBgGx25FoNXUSFm7OcAk68ek.png",
-    "fetchedAt": "2026-08-07T13:35:10.103Z"
-  },
-  {
-    "id": "magic-archer-hero",
-    "cardKey": "Magic Archer",
-    "variant": "hero",
-    "answer": "Archer magique",
-    "accept": ["Archer magique"],
-    "image": "magic-archer-hero.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cardheroes/300/Avli3W7BxU9HQ2SoLiXnBgGx25FoNXUSFm7OcAk68ek.png",
-    "fetchedAt": "2026-08-07T13:35:10.125Z"
-  },
-  {
-    "id": "mega-knight-base",
-    "cardKey": "Mega Knight",
-    "variant": "base",
-    "answer": "Méga chevalier",
-    "accept": ["Mega chevalier"],
-    "image": "mega-knight-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/O2NycChSNhn_UK9nqBXUhhC_lILkiANzPuJjtjoz0CE.png",
-    "fetchedAt": "2026-08-07T13:35:10.366Z"
-  },
-  {
-    "id": "mega-minion-base",
-    "cardKey": "Mega Minion",
-    "variant": "base",
-    "answer": "Méga gargouille",
-    "accept": ["Mega gargouille"],
-    "image": "mega-minion-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/-T_e4YLbuhPBKbYnBwQfXgynNpp5eOIN_0RracYwL9c.png",
-    "fetchedAt": "2026-08-07T14:39:12.821Z"
-  },
-  {
-    "id": "mighty-miner-base",
-    "cardKey": "Mighty Miner",
-    "variant": "base",
-    "answer": "Maitre Mineur",
-    "accept": ["Maitre Mineur"],
-    "image": "mighty-miner-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/Cd9R56yraxTvJiD8xJ2qT2OdsHyh94FqOAarXpbyelo.png",
-    "fetchedAt": "2026-08-07T14:39:12.795Z",
-    "focal": {
-      "x": 0.5,
-      "y": 0.42
-    },
-    "zoomStages": {
-      "stage0": 3.27
-    }
-  },
-  {
-    "id": "minion-horde-base",
-    "cardKey": "Minion Horde",
-    "variant": "base",
-    "answer": "Horde de gargouilles",
-    "accept": ["Horde de gargouilles"],
-    "image": "minion-horde-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/Wyjq5l0IXHTkX9Rmpap6HaH08MvjbxFp1xBO9a47YSI.png",
-    "fetchedAt": "2026-08-07T14:39:12.761Z"
-  },
-  {
-    "id": "mother-witch-base",
-    "cardKey": "Mother Witch",
-    "variant": "base",
-    "answer": "Mamie sorcière",
-    "accept": ["Mamie sorciere"],
-    "image": "mother-witch-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/fO-Xah8XZkYKaSK9SCp3wnzwxtvIhun9NVY-zzte1Ng.png",
-    "fetchedAt": "2026-08-07T13:35:10.188Z"
-  },
-  {
-    "id": "musketeer-base",
-    "cardKey": "Musketeer",
-    "variant": "base",
-    "answer": "Mousquetaire",
-    "accept": ["Mousquetaire"],
-    "image": "musketeer-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/Tex1C48UTq9FKtAX-3tzG0FJmc9jzncUZG3bb5Vf-Ds.png",
-    "fetchedAt": "2026-08-07T13:35:10.554Z"
-  },
-  {
     "id": "night-witch-base",
     "cardKey": "Night Witch",
     "variant": "base",
     "answer": "Sorcière de la nuit",
-    "accept": ["Sorciere de la nuit"],
+    "accept": ["Sorcière de la nuit"],
     "image": "night-witch-base.png",
     "width": 285,
     "height": 420,
@@ -591,52 +201,42 @@
     "fetchedAt": "2026-08-07T13:35:10.253Z"
   },
   {
-    "id": "royal-delivery-base",
-    "cardKey": "Royal Delivery",
+    "id": "giant-snowball-base",
+    "cardKey": "Giant Snowball",
     "variant": "base",
-    "answer": "Colis royal",
-    "accept": ["Colis royal"],
-    "image": "royal-delivery-base.png",
+    "answer": "Méga boule de neige",
+    "accept": ["Méga boule de neige"],
+    "image": "giant-snowball-base.png",
     "width": 285,
     "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/LPg7AGjGI3_xmi7gLLgGC50yKM1jJ2teWkZfoHJcIZo.png",
-    "fetchedAt": "2026-08-07T13:35:09.334Z"
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/7MaJLa6hK9WN2_VIshuh5DIDfGwm0wEv98gXtAxLDPs.png",
+    "fetchedAt": "2026-08-07T13:35:09.562Z",
+    "focal": {
+      "x": 0.5,
+      "y": 0.4
+    },
+    "zoomStages": {
+      "stage0": 2.62
+    }
   },
   {
-    "id": "royal-ghost-base",
-    "cardKey": "Royal Ghost",
+    "id": "cannon-cart-base",
+    "cardKey": "Cannon Cart",
     "variant": "base",
-    "answer": "Fantôme royal",
-    "accept": ["Fantome royal"],
-    "image": "royal-ghost-base.png",
+    "answer": "Charrette à canon",
+    "accept": ["Charrette à canon"],
+    "image": "cannon-cart-base.png",
     "width": 285,
     "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/3En2cz0ISQAaMTHY3hj3rTveFN2kJYq-H4VxvdJNvCM.png",
-    "fetchedAt": "2026-08-07T13:35:10.387Z"
-  },
-  {
-    "id": "royal-ghost-evolution",
-    "cardKey": "Royal Ghost",
-    "variant": "evolution",
-    "answer": "Fantôme royal",
-    "accept": ["Fantome royal"],
-    "image": "royal-ghost-evolution.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cardevolutions/300/3En2cz0ISQAaMTHY3hj3rTveFN2kJYq-H4VxvdJNvCM.png",
-    "fetchedAt": "2026-08-07T13:35:10.411Z"
-  },
-  {
-    "id": "royal-hogs-base",
-    "cardKey": "Royal Hogs",
-    "variant": "base",
-    "answer": "Cochons royaux",
-    "accept": ["Cochons royaux"],
-    "image": "royal-hogs-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/ASSQJG_MoVq9e81HZzo4bynMnyLNpNJMfSLb3hqydOw.png",
-    "fetchedAt": "2026-08-07T13:35:09.757Z"
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/aqwxRz8HXzqlMCO4WMXNA1txynjXTsLinknqsgZLbok.png",
+    "fetchedAt": "2026-08-07T13:35:09.977Z",
+    "focal": {
+      "x": 0.62,
+      "y": 0.28
+    },
+    "zoomStages": {
+      "stage0": 3.93
+    }
   },
   {
     "id": "royal-hogs-evolution",
@@ -651,11 +251,97 @@
     "fetchedAt": "2026-08-07T13:35:09.782Z"
   },
   {
+    "id": "inferno-dragon-base",
+    "cardKey": "Inferno Dragon",
+    "variant": "base",
+    "answer": "Dragon de l'enfer",
+    "accept": ["Dragon de l'enfer"],
+    "image": "inferno-dragon-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/y5HDbKtTbWG6En6TGWU0xoVIGs1-iQpIP4HC-VM7u8A.png",
+    "fetchedAt": "2026-08-07T13:35:10.147Z"
+  },
+  {
+    "id": "mother-witch-base",
+    "cardKey": "Mother Witch",
+    "variant": "base",
+    "answer": "Mamie sorcière",
+    "accept": ["Mamie sorcière"],
+    "image": "mother-witch-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/fO-Xah8XZkYKaSK9SCp3wnzwxtvIhun9NVY-zzte1Ng.png",
+    "fetchedAt": "2026-08-07T13:35:10.188Z"
+  },
+  {
+    "id": "heal-spirit-base",
+    "cardKey": "Heal Spirit",
+    "variant": "base",
+    "answer": "Esprit de guérison",
+    "accept": ["Esprit de guérison"],
+    "image": "heal-spirit-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/GITl06sa2nGRLPvboyXbGEv5E3I-wAwn1Eqa5esggbc.png",
+    "fetchedAt": "2026-08-07T13:35:09.454Z",
+    "focal": {
+      "x": 0.5,
+      "y": 0.55
+    },
+    "zoomStages": {
+      "stage0": 3.76
+    }
+  },
+  {
+    "id": "skeleton-barrel-evolution",
+    "cardKey": "Skeleton Barrel",
+    "variant": "evolution",
+    "answer": "Fût à squelettes",
+    "accept": ["Fût à squelettes"],
+    "image": "skeleton-barrel-evolution.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cardevolutions/300/vCB4DWCcrGbTkarjcOiVz4aNDx6GWLm0yUepg9E1MGo.png",
+    "fetchedAt": "2026-08-07T13:35:09.498Z"
+  },
+  {
+    "id": "barbarian-hut-base",
+    "cardKey": "Barbarian Hut",
+    "variant": "base",
+    "answer": "Cabane de barbare",
+    "accept": ["Cabane de barbare"],
+    "image": "barbarian-hut-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/ho0nOG2y3Ch86elHHcocQs8Fv_QNe0cFJ2CijsxABZA.png",
+    "fetchedAt": "2026-08-07T13:35:09.630Z"
+  },
+  {
+    "id": "ice-spirit-base",
+    "cardKey": "Ice Spirit",
+    "variant": "base",
+    "answer": "Esprit de glace",
+    "accept": ["Esprit de glace"],
+    "image": "ice-spirit-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/lv1budiafU9XmSdrDkk0NYyqASAFYyZ06CPysXKZXlA.png",
+    "fetchedAt": "2026-08-07T13:35:09.402Z",
+    "focal": {
+      "x": 0.5,
+      "y": 0.5
+    },
+    "zoomStages": {
+      "stage0": 3.6
+    }
+  },
+  {
     "id": "rune-giant-base",
     "cardKey": "Rune Giant",
     "variant": "base",
     "answer": "Géante runique",
-    "accept": ["Geante runique"],
+    "accept": ["Géante runique"],
     "image": "rune-giant-base.png",
     "width": 285,
     "height": 420,
@@ -663,30 +349,59 @@
     "fetchedAt": "2026-08-07T13:35:10.602Z"
   },
   {
-    "id": "skeleton-army-base",
-    "cardKey": "Skeleton Army",
+    "id": "archer-queen-base",
+    "cardKey": "Archer Queen",
     "variant": "base",
-    "answer": "Armée de squelettes",
-    "accept": ["Armee de squelettes"],
-    "image": "skeleton-army-base.png",
+    "answer": "Reine des Archères",
+    "accept": ["Reine des Archères"],
+    "image": "archer-queen-base.png",
     "width": 285,
     "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/fAOToOi1pRy7svN2xQS6mDkhQw2pj9m_17FauaNqyl4.png",
-    "fetchedAt": "2026-08-07T13:35:09.933Z",
-    "focal": {
-      "x": 0.48,
-      "y": 0.42
-    },
-    "zoomStages": {
-      "stage0": 3.27
-    }
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/p7OQmOAFTery7zCzlpDdm-LOD1kINTm42AwIHchZfWk.png",
+    "fetchedAt": "2026-08-07T13:35:10.298Z"
+  },
+  {
+    "id": "goblin-machine-base",
+    "cardKey": "Goblin Machine",
+    "variant": "base",
+    "answer": "Machine gobeline",
+    "accept": ["Machine gobeline"],
+    "image": "goblin-machine-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/-iLlotr6GCFndL_1BSBqWBb6DnsHBhLerd5EblZDNfU.png",
+    "fetchedAt": "2026-08-07T13:35:10.168Z"
+  },
+  {
+    "id": "dart-goblin-base",
+    "cardKey": "Dart Goblin",
+    "variant": "base",
+    "answer": "Gobelin à sarbacane",
+    "accept": ["Gobelin à sarbacane"],
+    "image": "dart-goblin-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/BmpK3bqEAviflqHCdxxnfm-_l3pRPJw3qxHkwS55nCY.png",
+    "fetchedAt": "2026-08-07T13:35:09.850Z"
+  },
+  {
+    "id": "mega-knight-base",
+    "cardKey": "Mega Knight",
+    "variant": "base",
+    "answer": "Méga chevalier",
+    "accept": ["Méga chevalier"],
+    "image": "mega-knight-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/O2NycChSNhn_UK9nqBXUhhC_lILkiANzPuJjtjoz0CE.png",
+    "fetchedAt": "2026-08-07T13:35:10.366Z"
   },
   {
     "id": "skeleton-army-evolution",
     "cardKey": "Skeleton Army",
     "variant": "evolution",
     "answer": "Armée de squelettes",
-    "accept": ["Armee de squelettes"],
+    "accept": ["Armée de squelettes"],
     "image": "skeleton-army-evolution.png",
     "width": 285,
     "height": 420,
@@ -701,28 +416,112 @@
     }
   },
   {
-    "id": "skeleton-barrel-base",
-    "cardKey": "Skeleton Barrel",
+    "id": "goblin-gang-base",
+    "cardKey": "Goblin Gang",
     "variant": "base",
-    "answer": "Fût à squelettes",
-    "accept": ["Fut a squelettes"],
-    "image": "skeleton-barrel-base.png",
+    "answer": "Gang de gobelins",
+    "accept": ["Gang de gobelins"],
+    "image": "goblin-gang-base.png",
     "width": 285,
     "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/vCB4DWCcrGbTkarjcOiVz4aNDx6GWLm0yUepg9E1MGo.png",
-    "fetchedAt": "2026-08-07T13:35:09.475Z"
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/NHflxzVAQT4oAz7eDfdueqpictb5vrWezn1nuqFhE4w.png",
+    "fetchedAt": "2026-08-07T13:35:09.520Z"
   },
   {
-    "id": "skeleton-barrel-evolution",
-    "cardKey": "Skeleton Barrel",
+    "id": "battle-ram-evolution",
+    "cardKey": "Battle Ram",
     "variant": "evolution",
-    "answer": "Fût à squelettes",
-    "accept": ["Fut a squelettes"],
-    "image": "skeleton-barrel-evolution.png",
+    "answer": "Bélier de combat",
+    "accept": ["Bélier de combat"],
+    "image": "battle-ram-evolution.png",
     "width": 285,
     "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cardevolutions/300/vCB4DWCcrGbTkarjcOiVz4aNDx6GWLm0yUepg9E1MGo.png",
-    "fetchedAt": "2026-08-07T13:35:09.498Z"
+    "sourceUrl": "https://api-assets.clashroyale.com/cardevolutions/300/dyc50V2cplKi4H7pq1B3I36pl_sEH5DQrNHboS_dbbM.png",
+    "fetchedAt": "2026-08-07T13:35:09.716Z"
+  },
+  {
+    "id": "royal-ghost-evolution",
+    "cardKey": "Royal Ghost",
+    "variant": "evolution",
+    "answer": "Fantôme royal",
+    "accept": ["Fantôme royal"],
+    "image": "royal-ghost-evolution.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cardevolutions/300/3En2cz0ISQAaMTHY3hj3rTveFN2kJYq-H4VxvdJNvCM.png",
+    "fetchedAt": "2026-08-07T13:35:10.411Z"
+  },
+  {
+    "id": "magic-archer-base",
+    "cardKey": "Magic Archer",
+    "variant": "base",
+    "answer": "Archer magique",
+    "accept": ["Archer magique"],
+    "image": "magic-archer-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/Avli3W7BxU9HQ2SoLiXnBgGx25FoNXUSFm7OcAk68ek.png",
+    "fetchedAt": "2026-08-07T13:35:10.103Z"
+  },
+  {
+    "id": "goblin-drill-base",
+    "cardKey": "Goblin Drill",
+    "variant": "base",
+    "answer": "Foreuse gobeline",
+    "accept": ["Foreuse gobeline"],
+    "image": "goblin-drill-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/eN2TKUYbih-26yBi0xy5LVFOA0zDftgDqxxnVfdIg1o.png",
+    "fetchedAt": "2026-08-07T13:35:09.997Z"
+  },
+  {
+    "id": "goblin-curse-base",
+    "cardKey": "Goblin Curse",
+    "variant": "base",
+    "answer": "Malédiction gobeline",
+    "accept": ["Malédiction gobeline"],
+    "image": "goblin-curse-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/OQPfGgT5mHEUvPuKKt0plZT0PNtIjCqUgQ3Rm86dQ2k.png",
+    "fetchedAt": "2026-08-07T13:35:09.214Z"
+  },
+  {
+    "id": "royal-ghost-base",
+    "cardKey": "Royal Ghost",
+    "variant": "base",
+    "answer": "Fantôme royal",
+    "accept": ["Fantôme royal"],
+    "image": "royal-ghost-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/3En2cz0ISQAaMTHY3hj3rTveFN2kJYq-H4VxvdJNvCM.png",
+    "fetchedAt": "2026-08-07T13:35:10.387Z"
+  },
+  {
+    "id": "baby-dragon-evolution",
+    "cardKey": "Baby Dragon",
+    "variant": "evolution",
+    "answer": "Bébé dragon",
+    "accept": ["Bébé dragon"],
+    "image": "baby-dragon-evolution.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cardevolutions/300/cjC9n4AvEZJ3urkVh-rwBkJ-aRSsydIMqSAV48hAih0.png",
+    "fetchedAt": "2026-08-07T13:35:10.454Z"
+  },
+  {
+    "id": "bats-base",
+    "cardKey": "Bats",
+    "variant": "base",
+    "answer": "Chauves-souris",
+    "accept": ["Chauves-souris"],
+    "image": "bats-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/EnIcvO21hxiNpoI-zO6MDjLmzwPbq8Z4JPo2OKoVUjU.png",
+    "fetchedAt": "2026-08-07T13:35:09.287Z"
   },
   {
     "id": "skeleton-dragons-base",
@@ -744,30 +543,6 @@
     }
   },
   {
-    "id": "skeleton-king-base",
-    "cardKey": "Skeleton King",
-    "variant": "base",
-    "answer": "Roi squelette",
-    "accept": ["Roi squelette"],
-    "image": "skeleton-king-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/dCd69_wN9f8DxwuqOGtR4QgWhHIPIaTNxZ1e23RzAAc.png",
-    "fetchedAt": "2026-08-07T13:35:10.322Z"
-  },
-  {
-    "id": "spear-goblins-base",
-    "cardKey": "Spear Goblins",
-    "variant": "base",
-    "answer": "Gobelins à lances",
-    "accept": ["Gobelins a lances"],
-    "image": "spear-goblins-base.png",
-    "width": 285,
-    "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/FSDFotjaXidI4ku_WFpVCTWS1hKGnFh1sxX0lxM43_E.png",
-    "fetchedAt": "2026-08-07T13:35:09.541Z"
-  },
-  {
     "id": "suspicious-bush-base",
     "cardKey": "Suspicious Bush",
     "variant": "base",
@@ -780,16 +555,121 @@
     "fetchedAt": "2026-08-07T13:35:09.243Z"
   },
   {
-    "id": "three-musketeers-base",
-    "cardKey": "Three Musketeers",
+    "id": "zappies-base",
+    "cardKey": "Zappies",
     "variant": "base",
-    "answer": "Trois mousquetaires",
-    "accept": ["Trois mousquetaires"],
-    "image": "three-musketeers-base.png",
+    "answer": "Électrocuteurs",
+    "accept": ["Électrocuteurs"],
+    "image": "zappies-base.png",
     "width": 285,
     "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/_J2GhbkX3vswaFk1wG-dopwiHyNc_YiPhwroiKF3Mek.png",
-    "fetchedAt": "2026-08-07T13:35:09.913Z"
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/QZfHRpLRmutZbCr5fpLnTpIp89vLI6NrAwzGZ8tHEc4.png",
+    "fetchedAt": "2026-08-07T13:35:10.533Z",
+    "focal": {
+      "x": 0.5,
+      "y": 0.28
+    },
+    "zoomStages": {
+      "stage0": 3.76
+    }
+  },
+  {
+    "id": "skeleton-army-base",
+    "cardKey": "Skeleton Army",
+    "variant": "base",
+    "answer": "Armée de squelettes",
+    "accept": ["Armée de squelettes"],
+    "image": "skeleton-army-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/fAOToOi1pRy7svN2xQS6mDkhQw2pj9m_17FauaNqyl4.png",
+    "fetchedAt": "2026-08-07T13:35:09.933Z",
+    "focal": {
+      "x": 0.48,
+      "y": 0.42
+    },
+    "zoomStages": {
+      "stage0": 3.27
+    }
+  },
+  {
+    "id": "ice-wizard-base",
+    "cardKey": "Ice Wizard",
+    "variant": "base",
+    "answer": "Sorcier de glace",
+    "accept": ["Sorcier de glace"],
+    "image": "ice-wizard-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/W3dkw0HTw9n1jB-zbknY2w3wHuyuLxSRIAV5fUT1SEY.png",
+    "fetchedAt": "2026-08-07T13:35:10.229Z"
+  },
+  {
+    "id": "royal-delivery-base",
+    "cardKey": "Royal Delivery",
+    "variant": "base",
+    "answer": "Colis royal",
+    "accept": ["Colis royal"],
+    "image": "royal-delivery-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/LPg7AGjGI3_xmi7gLLgGC50yKM1jJ2teWkZfoHJcIZo.png",
+    "fetchedAt": "2026-08-07T13:35:09.334Z"
+  },
+  {
+    "id": "minion-horde-base",
+    "cardKey": "Minion Horde",
+    "variant": "base",
+    "answer": "Horde de gargouilles",
+    "accept": ["Horde de gargouilles"],
+    "image": "minion-horde-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/Wyjq5l0IXHTkX9Rmpap6HaH08MvjbxFp1xBO9a47YSI.png",
+    "fetchedAt": "2026-08-07T14:39:12.761Z"
+  },
+  {
+    "id": "bomb-tower-base",
+    "cardKey": "Bomb Tower",
+    "variant": "base",
+    "answer": "Tour à bombes",
+    "accept": ["Tour à bombes"],
+    "image": "bomb-tower-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/rirYRyHPc97emRjoH-c1O8uZCBzPVnToaGuNGusF3TQ.png",
+    "fetchedAt": "2026-08-07T13:35:10.473Z"
+  },
+  {
+    "id": "skeleton-king-base",
+    "cardKey": "Skeleton King",
+    "variant": "base",
+    "answer": "Roi squelette",
+    "accept": ["Roi squelette"],
+    "image": "skeleton-king-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/dCd69_wN9f8DxwuqOGtR4QgWhHIPIaTNxZ1e23RzAAc.png",
+    "fetchedAt": "2026-08-07T13:35:10.322Z"
+  },
+  {
+    "id": "mighty-miner-base",
+    "cardKey": "Mighty Miner",
+    "variant": "base",
+    "answer": "Maitre Mineur",
+    "accept": ["Maitre Mineur"],
+    "image": "mighty-miner-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/Cd9R56yraxTvJiD8xJ2qT2OdsHyh94FqOAarXpbyelo.png",
+    "fetchedAt": "2026-08-07T14:39:12.795Z",
+    "focal": {
+      "x": 0.5,
+      "y": 0.42
+    },
+    "zoomStages": {
+      "stage0": 3.27
+    }
   },
   {
     "id": "tombstone-base",
@@ -811,6 +691,90 @@
     }
   },
   {
+    "id": "dark-prince-base",
+    "cardKey": "Dark Prince",
+    "variant": "base",
+    "answer": "Prince ténébreux",
+    "accept": ["Prince ténébreux"],
+    "image": "dark-prince-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/M7fXlrKXHu2IvpSGpk36kXVstslbR08Bbxcy0jQcln8.png",
+    "fetchedAt": "2026-08-07T13:35:10.039Z"
+  },
+  {
+    "id": "mega-minion-base",
+    "cardKey": "Mega Minion",
+    "variant": "base",
+    "answer": "Méga gargouille",
+    "accept": ["Méga gargouille"],
+    "image": "mega-minion-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/-T_e4YLbuhPBKbYnBwQfXgynNpp5eOIN_0RracYwL9c.png",
+    "fetchedAt": "2026-08-07T14:39:12.821Z"
+  },
+  {
+    "id": "flying-machine-base",
+    "cardKey": "Flying Machine",
+    "variant": "base",
+    "answer": "Machine volante",
+    "accept": ["Machine volante"],
+    "image": "flying-machine-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/hzKNE3QwFcrSrDDRuVW3QY_OnrDPijSiIp-PsWgFevE.png",
+    "fetchedAt": "2026-08-07T13:35:09.893Z"
+  },
+  {
+    "id": "bats-evolution",
+    "cardKey": "Bats",
+    "variant": "evolution",
+    "answer": "Chauves-souris",
+    "accept": ["Chauves-souris"],
+    "image": "bats-evolution.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cardevolutions/300/EnIcvO21hxiNpoI-zO6MDjLmzwPbq8Z4JPo2OKoVUjU.png",
+    "fetchedAt": "2026-08-07T13:35:09.312Z"
+  },
+  {
+    "id": "dark-prince-hero",
+    "cardKey": "Dark Prince",
+    "variant": "hero",
+    "answer": "Prince ténébreux",
+    "accept": ["Prince ténébreux"],
+    "image": "dark-prince-hero.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cardheroes/300/M7fXlrKXHu2IvpSGpk36kXVstslbR08Bbxcy0jQcln8.png",
+    "fetchedAt": "2026-08-07T13:35:10.061Z"
+  },
+  {
+    "id": "boss-bandit-base",
+    "cardKey": "Boss Bandit",
+    "variant": "base",
+    "answer": "Cheffe des voleuses",
+    "accept": ["Cheffe des voleuses"],
+    "image": "boss-bandit-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/nuceG9o7rAyvyc7D3sp2QSiRYtSOEgraq0NJkDf729s.png",
+    "fetchedAt": "2026-08-07T13:35:10.623Z"
+  },
+  {
+    "id": "spear-goblins-base",
+    "cardKey": "Spear Goblins",
+    "variant": "base",
+    "answer": "Gobelins à lances",
+    "accept": ["Gobelins à lances"],
+    "image": "spear-goblins-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/FSDFotjaXidI4ku_WFpVCTWS1hKGnFh1sxX0lxM43_E.png",
+    "fetchedAt": "2026-08-07T13:35:09.541Z"
+  },
+  {
     "id": "tombstone-hero",
     "cardKey": "Tombstone",
     "variant": "hero",
@@ -830,22 +794,58 @@
     }
   },
   {
-    "id": "zappies-base",
-    "cardKey": "Zappies",
-    "variant": "base",
-    "answer": "Électrocuteurs",
-    "accept": ["Electrocuteurs"],
-    "image": "zappies-base.png",
+    "id": "magic-archer-hero",
+    "cardKey": "Magic Archer",
+    "variant": "hero",
+    "answer": "Archer magique",
+    "accept": ["Archer magique"],
+    "image": "magic-archer-hero.png",
     "width": 285,
     "height": 420,
-    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/QZfHRpLRmutZbCr5fpLnTpIp89vLI6NrAwzGZ8tHEc4.png",
-    "fetchedAt": "2026-08-07T13:35:10.533Z",
+    "sourceUrl": "https://api-assets.clashroyale.com/cardheroes/300/Avli3W7BxU9HQ2SoLiXnBgGx25FoNXUSFm7OcAk68ek.png",
+    "fetchedAt": "2026-08-07T13:35:10.125Z"
+  },
+  {
+    "id": "royal-hogs-base",
+    "cardKey": "Royal Hogs",
+    "variant": "base",
+    "answer": "Cochons royaux",
+    "accept": ["Cochons royaux"],
+    "image": "royal-hogs-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/ASSQJG_MoVq9e81HZzo4bynMnyLNpNJMfSLb3hqydOw.png",
+    "fetchedAt": "2026-08-07T13:35:09.757Z"
+  },
+  {
+    "id": "little-prince-base",
+    "cardKey": "Little Prince",
+    "variant": "base",
+    "answer": "Petit Prince",
+    "accept": ["Petit Prince"],
+    "image": "little-prince-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/dY-gSseki6KBpkIG17safHH5YlB8SErFZO9OXbJxf9w.png",
+    "fetchedAt": "2026-08-07T13:35:10.345Z",
     "focal": {
-      "x": 0.5,
-      "y": 0.28
+      "x": 0.42,
+      "y": 0.4
     },
     "zoomStages": {
-      "stage0": 3.76
+      "stage0": 3.6
     }
+  },
+  {
+    "id": "skeleton-barrel-base",
+    "cardKey": "Skeleton Barrel",
+    "variant": "base",
+    "answer": "Fût à squelettes",
+    "accept": ["Fût à squelettes"],
+    "image": "skeleton-barrel-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/vCB4DWCcrGbTkarjcOiVz4aNDx6GWLm0yUepg9E1MGo.png",
+    "fetchedAt": "2026-08-07T13:35:09.475Z"
   }
 ]

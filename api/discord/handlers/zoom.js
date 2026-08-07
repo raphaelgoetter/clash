@@ -17,6 +17,7 @@ import {
   writeState,
   readParticipant,
   startNewGame,
+  pickNextZoomIndex,
   checkAnswer,
   recordAttempt,
   recordHintUsed,
@@ -199,10 +200,8 @@ export async function postZoom(channelId, { dryRun = false, noPing = false } = {
   if (dryRun) {
     const catalog = await loadZoomCatalog();
     const state = await readState();
-    // Aperçu uniquement : pige un id au hasard dans le catalogue sans muter
-    // l'état (le vrai tirage, avec sac sans répétition, a lieu dans
-    // startNewGame). Un aperçu n'a pas besoin d'être fidèle au tirage réel.
-    const previewEntry = catalog[Math.floor(Math.random() * catalog.length)];
+    const previewIndex = pickNextZoomIndex(state, catalog);
+    const previewEntry = catalog[previewIndex];
     const gameId = previewEntry.id;
     const seasonId = await getCurrentSeasonId();
     const seasonManche = await previewSeasonManche(seasonId);

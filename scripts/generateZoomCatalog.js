@@ -31,6 +31,13 @@
 // que son fichier image — sûr tant que Zoom carte n'est pas encore en
 // production (aucune manche déjà postée ne référence ces id).
 //
+// Ordre du fichier : NE JAMAIS retrier alphabétiquement — la position de
+// chaque carte dans le fichier détermine l'ordre de passage des manches
+// (pickNextZoomIndex, backend/services/zoom.js, progression séquentielle
+// comme Frame). data/zoom/zoom.json a été mélangé une fois manuellement ;
+// ce script préserve cet ordre à chaque régénération et n'insère les
+// nouvelles cartes (jamais vues avant) que dans un ordre aléatoire.
+//
 // Usage :
 //   node scripts/generateZoomCatalog.js
 
@@ -66,6 +73,15 @@ function slugifyCardKey(cardKey) {
 // fixes) — évite d'ajouter une dépendance juste pour lire des dimensions.
 function readPngDimensions(buffer) {
   return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
+}
+
+function shuffle(array) {
+  const result = [...array];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
 }
 
 async function downloadBytes(url) {
@@ -194,10 +210,28 @@ async function main() {
     console.log(`  🗑️  ${entry.id} retiré (cardKey "${entry.cardKey}" plus dans le pool source).`);
   }
 
-  nextCatalog.sort((a, b) => a.id.localeCompare(b.id));
-  await fs.writeFile(ZOOM_JSON_PATH, `${JSON.stringify(nextCatalog, null, 2)}\n`);
+  // Préserve l'ordre PHYSIQUE existant du fichier (jamais retrié
+  // alphabétiquement) : la position de chaque carte dans data/zoom/zoom.json
+  // détermine l'ordre de passage des manches (pickNextZoomIndex,
+  // backend/services/zoom.js, même principe que Frame/Anagram) — le fichier
+  // a été mélangé une fois manuellement, un tri alphabétique le rendrait de
+  // nouveau totalement prévisible. Les cartes nouvellement ajoutées (jamais
+  // vues dans l'ancien fichier) sont insérées dans un ordre aléatoire plutôt
+  // qu'accolées en bloc à la fin.
+  const byId = new Map(nextCatalog.map((e) => [e.id, e]));
+  const ordered = [];
+  for (const entry of existingCatalog) {
+    if (byId.has(entry.id)) {
+      ordered.push(byId.get(entry.id));
+      byId.delete(entry.id);
+    }
+  }
+  const newOnes = shuffle([...byId.values()]);
+  const finalCatalog = [...ordered, ...newOnes];
 
-  const byVariant = nextCatalog.reduce((acc, e) => {
+  await fs.writeFile(ZOOM_JSON_PATH, `${JSON.stringify(finalCatalog, null, 2)}\n`);
+
+  const byVariant = finalCatalog.reduce((acc, e) => {
     acc[e.variant] = (acc[e.variant] || 0) + 1;
     return acc;
   }, {});
@@ -205,7 +239,7 @@ async function main() {
   console.log("");
   console.log(`Catalogue écrit : ${ZOOM_JSON_PATH}`);
   console.log(
-    `  base=${byVariant.base || 0} évolution=${byVariant.evolution || 0} héros=${byVariant.hero || 0} (total ${nextCatalog.length})`,
+    `  base=${byVariant.base || 0} évolution=${byVariant.evolution || 0} héros=${byVariant.hero || 0} (total ${finalCatalog.length})`,
   );
   console.log(`  ${written} téléchargées, ${unchanged} inchangées (nom resynchronisé), ${pruned.length} retirées, ${skipped} ignorées.`);
 }

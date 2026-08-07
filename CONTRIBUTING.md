@@ -744,9 +744,9 @@ Troisième mini-jeu hebdomadaire indépendant, sur le modèle de Frame (voir [Je
 
 Modal à 1 champ, validée par `checkAnswer()` — égalité **stricte** normalisée (comme Anagram, pas de sous-chaîne comme Frame) : un nom de carte est court, une correspondance par sous-chaîne accepterait à tort un fragment.
 
-### Sélection de la manche : tirage aléatoire sans répétition (sac de Fisher-Yates)
+### Sélection de la manche : progression séquentielle sur un fichier mélangé
 
-`data/zoom/zoom.json` est trié alphabétiquement par `id` — une sélection séquentielle (comme Frame/Anagram, `index+1 % n`) rendrait donc le jeu totalement prévisible (constaté en test réel : l'ordre alphabétique se voyait). `pickNextZoomCard()` (`backend/services/zoom.js`) tire à la place dans un **sac mélangé** (Fisher-Yates) : tout le catalogue est consommé dans un ordre aléatoire avant d'être re-mélangé, garantissant qu'aucune carte ne revient avant que toutes les autres soient passées, tout en restant imprévisible. Le tirage (`order`/`orderIndex`) est persisté dans `zoom:state` pour survivre d'une manche à l'autre ; `resetGame()` l'efface (une nouvelle partie repart sur un sac frais).
+Même pattern que Frame/Anagram : `pickNextZoomIndex()` (`backend/services/zoom.js`) avance simplement d'une position dans `data/zoom/zoom.json` (`index+1 % n`) et boucle au début une fois le catalogue épuisé — pas d'état supplémentaire à maintenir en Redis. Le "hasard" ne vient pas d'un tirage effectué au moment de poster, mais du fait que **le fichier lui-même a été mélangé une fois** (un premier essai avait trié `zoom.json` alphabétiquement par `id`, ce qui rendait le jeu totalement prévisible — l'ordre se voyait clairement en test réel). `scripts/generateZoomCatalog.js` préserve cet ordre à chaque régénération (ne retrie jamais alphabétiquement) et insère les cartes nouvellement ajoutées dans un ordre aléatoire plutôt qu'en bloc à la fin. `resetGame()` ne touche pas au fichier : une nouvelle partie repart simplement au début de son ordre actuel.
 
 ### Données (`data/zoom/zoom.json` + `data/zoom/images/`)
 
@@ -783,7 +783,7 @@ Même stockage que Frame, préfixe `zoom:` :
 
 | Clé Redis | Type | Contenu |
 | --- | --- | --- |
-| `zoom:state` | STRING (JSON) | État de la manche active, `gameId`/`order`/`orderIndex` inclus (sac de tirage aléatoire) |
+| `zoom:state` | STRING (JSON) | État de la manche active (`gameId` + métadonnées de saison) |
 | `zoom:hint:<gameId>:<discordId>` | STRING (flag) | Indice utilisé (`SETNX`, un seul palier donc pas besoin de `SADD`/`SCARD` comme Frame) |
 | `zoom:attempts:<gameId>:<discordId>` | STRING (compteur) | Tentatives incorrectes |
 | `zoom:participants:<gameId>` | HASH | `discordId → { solved, solvedAt, score, attempts }` |
@@ -815,7 +815,7 @@ Identique à Frame (voir [Récapitulatif de fin de saison](#récapitulatif-de-fi
 | `npm run zoom:public:dry` | Équivalent dry-run de `zoom:public`. |
 | `npm run zoom:scores` | Classement de la partie en cours (score partie, score saison) + joueurs n'ayant pas encore joué. |
 | `npm run zoom:move` | Reposte la manche active dans un autre salon sans faire avancer la partie. |
-| `npm run zoom:reset` | Remet le jeu à zéro : plus de partie active, historique et scores effacés, sac de tirage réinitialisé. **Destructif**. |
+| `npm run zoom:reset` | Remet le jeu à zéro : plus de partie active (repart au début de `zoom.json`), historique et scores effacés. **Destructif**. |
 
 ### Variables d'environnement requises (Zoom carte)
 
