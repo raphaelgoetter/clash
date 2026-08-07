@@ -10722,7 +10722,7 @@
           "start": "2026-08-06T09:51:00.000Z",
           "end": "2026-08-07T09:50:59.999Z"
         },
-        "snapshotTime": "2026-08-07T04:02:50.971Z",
+        "snapshotTime": "2026-08-07T05:31:33.450Z",
         "snapshotBackupTime": "2026-08-06T09:55:02.071Z",
         "decks": {
           "#8JGU9UUJJ": 4,
@@ -10732,6 +10732,7 @@
           "#G2VVUJLLQ": 4,
           "#J008G9CLJ": 4,
           "#JVRP8QPRU": 4,
+          "#QY0LG0R0P": 4,
           "#UVGPPVQ8Q": 4,
           "#YRGJGR8R": 4,
           "#28QVCVLR": 3,
@@ -10771,7 +10772,7 @@
           "#8CQ80LJ8V": 0,
           "#988JLGQQL": 0,
           "#20JYCU0GQ8": 0,
-          "#QY0LG0R0P": 0,
+          "#QY0LG0R0P": 650,
           "#28QVCVLR": 400,
           "#YRGJGR8R": 400,
           "#UQV9PV0L": 0,
@@ -10789,16 +10790,17 @@
         "duelsTodayByTag": {
           "#9YRU2QJJ": 1,
           "#J008G9CLJ": 1,
-          "#VLVLQR0UP": 1
+          "#VLVLQR0UP": 1,
+          "#QY0LG0R0P": 1
         },
         "_totalDonationsByTag": {
           "#G2VVUJLLQ": 42998,
           "#CJJUGGL98": 44205,
           "#9U9YVU80": 67773,
-          "#8CQ80LJ8V": 105994,
-          "#8UC00RRC": 159280,
+          "#8CQ80LJ8V": 106002,
+          "#8UC00RRC": 159306,
           "#V9RL22GYQ": 3550,
-          "#UVGPPVQ8Q": 24672,
+          "#UVGPPVQ8Q": 24680,
           "#UV8R8RYVR": 11818,
           "#9YRU2QJJ": 21074,
           "#J8JV8LUUG": 29312,
@@ -10810,7 +10812,7 @@
           "#UYRR99RL8": 5974,
           "#88JY2CG8J": 48614,
           "#JVRP8QPRU": 24026,
-          "#QY0LG0R0P": 198313,
+          "#QY0LG0R0P": 198339,
           "#20CY2LRU2": 61640,
           "#8JGU9UUJJ": 185823,
           "#8VP9UJV9L": 40766,
@@ -10876,7 +10878,7 @@
           "#8CQ80LJ8V": 0,
           "#988JLGQQL": 0,
           "#20JYCU0GQ8": 0,
-          "#QY0LG0R0P": 0,
+          "#QY0LG0R0P": 4,
           "#28QVCVLR": 3,
           "#YRGJGR8R": 4,
           "#UQV9PV0L": 0,
@@ -10891,7 +10893,7 @@
           "#LJYGJYCYC": 0,
           "#V9RL22GYQ": 0
         },
-        "snapshotCount": 40
+        "snapshotCount": 44
       },
       {
         "warDay": "friday",
