@@ -366,17 +366,23 @@ function ordinal(n) {
   return `${n}${n === 1 ? "ᵉʳ" : "ᵉ"}`;
 }
 
-function buildDmText({ seasonId, seasonManche, seasonMancheTotal, answer, score, gameRank, seasonScore }) {
-  return [
-    `**Zoom carte : Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
-    "",
-    `🔍 **${answer}** — tu es le ${ordinal(gameRank)} à avoir trouvé !`,
-    `Score de cette manche : **${score} pts**`,
-    `Score total de la saison : **${seasonScore} pts**`,
-  ].join("\n");
+// Embed (pas un simple texte) pour pouvoir inclure l'image de révélation de
+// la carte — un DM classique { content } ne permet pas d'image.
+function buildDmEmbed({ seasonId, seasonManche, seasonMancheTotal, gameId, answer, score, gameRank, seasonScore }) {
+  return {
+    description: [
+      `**Zoom carte : Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
+      "",
+      `🔍 **${answer}** — tu es le ${ordinal(gameRank)} à avoir trouvé !`,
+      `Score de cette manche : **${score} pts**`,
+      `Score total de la saison : **${seasonScore} pts**`,
+    ].join("\n"),
+    image: { url: `${TRUST_ROYALE_URL}/api/zoom/image?gameId=${gameId}&stage=reveal&v=${Date.now()}` },
+    color: ZOOM_COLOR,
+  };
 }
 
-async function sendZoomDM(discordId, text) {
+async function sendZoomDM(discordId, embed) {
   const token = process.env.DISCORD_TOKEN;
   if (!token) return false;
   try {
@@ -390,7 +396,7 @@ async function sendZoomDM(discordId, text) {
     await fetch(`https://discord.com/api/v10/channels/${dmChannelId}/messages`, {
       method: "POST",
       headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ content: text }),
+      body: JSON.stringify({ embeds: [embed] }),
     });
     return true;
   } catch (err) {
@@ -439,10 +445,11 @@ export async function handleModalSubmit(webhookUrl, gameId, discordId, username,
 
     await sendZoomDM(
       discordId,
-      buildDmText({
+      buildDmEmbed({
         seasonId: state.seasonId,
         seasonManche: state.seasonManche,
         seasonMancheTotal: state.seasonMancheTotal,
+        gameId,
         answer: entry.answer,
         score,
         gameRank,
