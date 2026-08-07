@@ -29,15 +29,19 @@ const PADDING = 24;
 
 // Point focal et facteurs de zoom par défaut — chaque entrée du catalogue
 // peut les surcharger (entry.focal / entry.zoomStages) si le crop générique
-// rend mal sur une carte précise (icônes fines/hautes notamment). Valeurs
-// alignées sur le mockup visuel initialement validé (zoom ~4.5-5.5 selon les
-// cartes) — un premier passage en production avait démarré avec des valeurs
-// bien plus prudentes (~2.75) par crainte du flou à la résolution source
-// (285×420), corrigé après retour direct : le rendu restait trop lisible
-// même sans indice.
+// rend mal sur une carte précise (icônes fines/hautes notamment).
+//
+// Historique des réglages (deux corrections après retours en conditions
+// réelles) : parti à 2.75 par prudence sur le flou (résolution source
+// 285×420) → trop lisible même sans indice, monté à 4.5 → toujours trop
+// facile car le point focal par défaut (centre légèrement haut) atterrit
+// quasi systématiquement sur l'œil du personnage, l'élément le plus
+// reconnaissable d'une composition de carte Clash Royale, peu importe le
+// niveau de zoom appliqué autour. Monter le zoom à 6.0 s'éloigne enfin
+// suffisamment de l'œil pour ne plus le montrer entièrement dans la cellule.
 const DEFAULT_FOCAL = { x: 0.5, y: 0.45 };
-const DEFAULT_STAGE0_SCALE = 4.5; // zoom extrême, image publique
-const DEFAULT_STAGE1_SCALE = 2.3; // dézoom, indice
+const DEFAULT_STAGE0_SCALE = 6.0; // zoom extrême, image publique
+const DEFAULT_STAGE1_SCALE = 3.1; // dézoom, indice
 
 // Cache mémoire des icônes lues sur disque, encodées en base64 — équivalent
 // local (sans réseau) de CARD_ICON_CACHE/fetchImageDataUrl dans
