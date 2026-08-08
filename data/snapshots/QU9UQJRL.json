@@ -11054,7 +11054,7 @@
           "start": "2026-08-07T09:51:00.000Z",
           "end": "2026-08-08T09:50:59.999Z"
         },
-        "snapshotTime": "2026-08-08T08:12:38.022Z",
+        "snapshotTime": "2026-08-08T09:13:56.416Z",
         "snapshotBackupTime": "2026-08-07T10:18:15.817Z",
         "decks": {
           "#20CY2LRU2": 4,
@@ -11075,6 +11075,8 @@
           "#V0VLJQCJU": 4,
           "#VJRPJJC8G": 4,
           "#YRGJGR8R": 4,
+          "#PL9CL8V20": 3,
+          "#V9RL22GYQ": 3,
           "#GYCJPJL0L": 1,
           "#PVLC202UP": 1,
           "#UYRR99RL8": 1,
@@ -11116,7 +11118,7 @@
           "#LUYP8YP9": 400,
           "#28QVCVLR": 800,
           "#YRGJGR8R": 800,
-          "#PL9CL8V20": 400,
+          "#PL9CL8V20": 700,
           "#J008G9CLJ": 800,
           "#8VP9UJV9L": 800,
           "#G2VVUJLLQ": 500,
@@ -11126,7 +11128,7 @@
           "#20CY2LRU2": 1000,
           "#UVGPPVQ8Q": 1100,
           "#PVLC202UP": 800,
-          "#V9RL22GYQ": 600,
+          "#V9RL22GYQ": 1000,
           "#QY0LG0R0P": 1250,
           "#8JGU9UUJJ": 1400,
           "#9U9YVU80": 1600,
@@ -11140,7 +11142,8 @@
           "#808C9PU": 1,
           "#2QVU9JQ8P": 1,
           "#VLVLQR0UP": 1,
-          "#8CQ80LJ8V": 1
+          "#8CQ80LJ8V": 1,
+          "#LUYP8YP9": 1
         },
         "_totalDonationsByTag": {
           "#9U9YVU80": 67837,
@@ -11149,8 +11152,8 @@
           "#8UC00RRC": 159354,
           "#CJJUGGL98": 44237,
           "#22RGGVYP": 26360,
-          "#V9RL22GYQ": 3606,
-          "#UVGPPVQ8Q": 24764,
+          "#V9RL22GYQ": 3650,
+          "#UVGPPVQ8Q": 24774,
           "#UV8R8RYVR": 11826,
           "#9YRU2QJJ": 21208,
           "#J8JV8LUUG": 29312,
@@ -11176,7 +11179,7 @@
           "#988JLGQQL": 717,
           "#V828LU2PL": 3258,
           "#URJ0YLPLP": 23159,
-          "#VJPV0CURJ": 797,
+          "#VJPV0CURJ": 805,
           "#808C9PU": 33110,
           "#VQJVPCC8V": 16710,
           "#PVLC202UP": 5984,
@@ -11231,7 +11234,7 @@
           "#LUYP8YP9": 4,
           "#28QVCVLR": 7,
           "#YRGJGR8R": 8,
-          "#PL9CL8V20": 4,
+          "#PL9CL8V20": 7,
           "#J008G9CLJ": 8,
           "#8VP9UJV9L": 8,
           "#G2VVUJLLQ": 4,
@@ -11241,13 +11244,13 @@
           "#20CY2LRU2": 8,
           "#UVGPPVQ8Q": 8,
           "#PVLC202UP": 5,
-          "#V9RL22GYQ": 4,
+          "#V9RL22GYQ": 7,
           "#QY0LG0R0P": 8,
           "#8JGU9UUJJ": 8,
           "#9U9YVU80": 8,
           "#8CQ80LJ8V": 8
         },
-        "snapshotCount": 76
+        "snapshotCount": 82
       },
       {
         "warDay": "saturday",
