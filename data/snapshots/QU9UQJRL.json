@@ -11739,14 +11739,17 @@
           "start": "2026-08-09T09:51:00.000Z",
           "end": "2026-08-10T09:50:59.999Z"
         },
-        "snapshotTime": "2026-08-09T16:07:18.266Z",
+        "snapshotTime": "2026-08-09T17:09:35.384Z",
         "snapshotBackupTime": "2026-08-09T10:10:08.581Z",
         "decks": {
           "#20CY2LRU2": 4,
+          "#8UC00RRC": 4,
           "#9U9YVU80": 4,
           "#J008G9CLJ": 4,
           "#PVLC202UP": 4,
+          "#V0VLJQCJU": 4,
           "#V9RL22GYQ": 4,
+          "#YRGJGR8R": 4,
           "#UC9LU0L90": 3,
           "#G2VVUJLLQ": 2,
           "#LQPRLQJCQ": 2,
@@ -11773,7 +11776,7 @@
           "#LJYGJYCYC": 0,
           "#GYCJPJL0L": 125,
           "#LQPRLQJCQ": 500,
-          "#8UC00RRC": 500,
+          "#8UC00RRC": 1000,
           "#VYPL0Q90P": 700,
           "#UYRR99RL8": 500,
           "#8PVCGYP98": 500,
@@ -11793,9 +11796,9 @@
           "#808C9PU": 1200,
           "#2QVU9JQ8P": 1200,
           "#28QVCVLR": 1200,
-          "#YRGJGR8R": 1200,
+          "#YRGJGR8R": 1600,
           "#J008G9CLJ": 1600,
-          "#V0VLJQCJU": 1300,
+          "#V0VLJQCJU": 1900,
           "#20CY2LRU2": 2000,
           "#UVGPPVQ8Q": 1900,
           "#JVRP8QPRU": 1800,
@@ -11806,7 +11809,8 @@
           "#9U9YVU80": 3000
         },
         "duelsTodayByTag": {
-          "#J008G9CLJ": 1
+          "#J008G9CLJ": 1,
+          "#YRGJGR8R": 1
         },
         "_totalDonationsByTag": {
           "#9U9YVU80": 68117,
@@ -11821,7 +11825,7 @@
           "#J8JV8LUUG": 29312,
           "#UQ9U8YQPC": 2136,
           "#9YRU2QJJ": 21273,
-          "#LQPRLQJCQ": 56084,
+          "#LQPRLQJCQ": 56092,
           "#V0VLJQCJU": 52075,
           "#PL9CL8V20": 37808,
           "#LJYGJYCYC": 83394,
@@ -11879,7 +11883,7 @@
           "#LJYGJYCYC": 0,
           "#GYCJPJL0L": 1,
           "#LQPRLQJCQ": 3,
-          "#8UC00RRC": 4,
+          "#8UC00RRC": 8,
           "#VYPL0Q90P": 4,
           "#UYRR99RL8": 3,
           "#8PVCGYP98": 4,
@@ -11899,9 +11903,9 @@
           "#808C9PU": 12,
           "#2QVU9JQ8P": 12,
           "#28QVCVLR": 11,
-          "#YRGJGR8R": 12,
+          "#YRGJGR8R": 16,
           "#J008G9CLJ": 16,
-          "#V0VLJQCJU": 8,
+          "#V0VLJQCJU": 12,
           "#20CY2LRU2": 16,
           "#UVGPPVQ8Q": 14,
           "#JVRP8QPRU": 12,
@@ -11911,7 +11915,7 @@
           "#8CQ80LJ8V": 12,
           "#9U9YVU80": 16
         },
-        "snapshotCount": 30
+        "snapshotCount": 42
       }
     ],
     "donationBaseline": {
