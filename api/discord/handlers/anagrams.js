@@ -35,7 +35,11 @@ import {
   findTiedRank,
 } from "../../../backend/services/anagrams.js";
 import { toPublicSeasonId } from "../../../backend/services/dateUtils.js";
-import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
+import {
+  getRoleIdByName,
+  buildRolePingFields,
+  MINI_JEUX_ROLE_NAME,
+} from "../../../backend/services/discordRoles.js";
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
 
 const ANAGRAM_COLOR = 0x9b59b6;
@@ -62,7 +66,7 @@ function buildAnagramEmbed({
   anagram,
 }) {
   return {
-    title: "🔤 Le jeu du samedi : Trouve la carte !",
+    title: "🔤 Le jeu du samedi : Anagramme !",
     description:
       `**Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
       "Devine le nom de la carte Clash Royale à partir de son anagramme :\n\n" +
@@ -112,7 +116,7 @@ export function buildAnswerModal(gameId) {
             custom_id: "anagram_answer_input",
             style: 1,
             label: "Nom de la carte",
-            placeholder: "Nom de la carte...",
+            placeholder: "Nom de la carte…",
             required: true,
             max_length: 100,
           },
@@ -130,7 +134,12 @@ export function buildAnswerModal(gameId) {
 const SEASON_RECAP_MAX_PLAYERS = 20;
 const SEASON_RECAP_MEDALS = ["🥇", "🥈", "🥉"];
 
-function buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId, manchesPlayed) {
+function buildSeasonRecapEmbed(
+  seasonRanking,
+  endedSeasonId,
+  newSeasonId,
+  manchesPlayed,
+) {
   const nonZero = seasonRanking.filter((r) => r.totalScore > 0);
   const shown = nonZero.slice(0, SEASON_RECAP_MAX_PLAYERS);
   const hiddenCount = nonZero.length - shown.length;
@@ -177,7 +186,7 @@ function buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId, manche
   return {
     title: `🏆 Fin de la Saison ${toPublicSeasonId(endedSeasonId)} !`,
     description:
-      `Merci aux ${seasonRanking.length} joueur${seasonRanking.length > 1 ? "s" : ""} qui ont participé à « Trouve la carte » cette saison !\n\n` +
+      `Merci aux ${seasonRanking.length} joueur${seasonRanking.length > 1 ? "s" : ""} qui ont participé à « Anagramme » cette saison !\n\n` +
       lines.join("\n"),
     color: ANAGRAM_COLOR,
   };
@@ -198,7 +207,12 @@ async function getSeasonManchesPlayed(seasonId) {
     .sort((a, b) => a.seasonManche - b.seasonManche);
 }
 
-async function postSeasonRecap(channelId, endedSeasonId, newSeasonId, { noPing = false } = {}) {
+async function postSeasonRecap(
+  channelId,
+  endedSeasonId,
+  newSeasonId,
+  { noPing = false } = {},
+) {
   const token = process.env.DISCORD_TOKEN;
   const seasonRanking = await computeSeasonRanking(endedSeasonId);
   if (seasonRanking.length === 0) return; // rien à récapituler
@@ -255,7 +269,9 @@ export async function postAnagram(
       anagram: entry.anagram,
     });
     const components = buildAnagramComponents(gameId);
-    const pingRoleId = noPing ? null : await getRoleIdByName(MINI_JEUX_ROLE_NAME);
+    const pingRoleId = noPing
+      ? null
+      : await getRoleIdByName(MINI_JEUX_ROLE_NAME);
 
     let seasonRecapEmbed = null;
     if (
@@ -276,7 +292,14 @@ export async function postAnagram(
       }
     }
 
-    return { dryRun: true, entry, embed, components, seasonRecapEmbed, pingRoleId };
+    return {
+      dryRun: true,
+      entry,
+      embed,
+      components,
+      seasonRecapEmbed,
+      pingRoleId,
+    };
   }
 
   if (!force) {
@@ -303,7 +326,9 @@ export async function postAnagram(
     newSeasonId != null &&
     previousState.seasonId !== newSeasonId
   ) {
-    await postSeasonRecap(channelId, previousState.seasonId, newSeasonId, { noPing });
+    await postSeasonRecap(channelId, previousState.seasonId, newSeasonId, {
+      noPing,
+    });
   }
 
   const { state, entry } = await startNewGame(channelId);
@@ -324,7 +349,11 @@ export async function postAnagram(
         Authorization: `Bot ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ embeds: [embed], components, ...buildRolePingFields(roleId) }),
+      body: JSON.stringify({
+        embeds: [embed],
+        components,
+        ...buildRolePingFields(roleId),
+      }),
     },
   );
 
@@ -387,7 +416,7 @@ function buildDmText({
   seasonScore,
 }) {
   return [
-    `**Trouve la carte : Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
+    `**Anagramme : Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
     "",
     `🃏 **${reponse}** — tu es le ${ordinal(position)} à avoir trouvé !`,
     `Score de cette manche : **${score} pts**`,
