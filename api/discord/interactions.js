@@ -194,6 +194,29 @@ const FR_VERDICTS = {
 const FAMILY_CLAN_TAGS = new Set(["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"]);
 const ALLOWED_CLAN_TAGS = new Set(FAMILY_CLAN_TAGS);
 
+const CLAN_TYPE_FR = {
+  open: "Ouvert",
+  inviteOnly: "Sur invitation",
+  closed: "Fermé",
+};
+
+const CLAN_STATUS_ICON = {
+  open: "<:success:1499002702208958577>",
+  inviteOnly: "<:warning:1499002725965500577>",
+  closed: "<:error:1499002755841265826>",
+};
+
+function clanStatusLabel(type) {
+  const icon = CLAN_STATUS_ICON[type] ?? "";
+  const label = CLAN_TYPE_FR[type] ?? type ?? "—";
+  return icon ? `${icon} ${label}` : label;
+}
+
+function findClanLeaderValue(members) {
+  const leader = (members || []).find((m) => m.role === "leader");
+  return leader ? `[${leader.name}](${trustPlayerUrl(leader.tag)})` : "—";
+}
+
 function buildDiscordWebhookUrl(body) {
   const token = body.token || body.interaction?.token;
   if (!process.env.DISCORD_APP_ID || !token) return null;
@@ -1788,12 +1811,6 @@ async function buildClanReportPayload(resolved) {
       };
     }
 
-    const TYPE_FR = {
-      open: "Ouvert",
-      inviteOnly: "Sur invitation",
-      closed: "Fermé",
-    };
-
     const fmt = (n) =>
       typeof n === "number" ? n.toLocaleString("fr-FR") : "—";
     const fmtInt = (n) =>
@@ -1892,10 +1909,7 @@ async function buildClanReportPayload(resolved) {
     }
 
     function findLeaderValue() {
-      const leader = (hasReliabilityDetails ? members : liteMembers).find(
-        (m) => m.role === "leader",
-      );
-      return leader ? `[${leader.name}](${trustPlayerUrl(leader.tag)})` : "—";
+      return findClanLeaderValue(hasReliabilityDetails ? members : liteMembers);
     }
 
     // Champ 6 : Fiabilité (clan famille) ou Chef (clan externe)
@@ -1928,16 +1942,7 @@ async function buildClanReportPayload(resolved) {
       // Rangée 2 : Statut | Requis | Fiabilité/Chef
       {
         name: "Statut",
-        value: (() => {
-          const STATUS_ICON = {
-            open: "<:success:1499002702208958577>",
-            inviteOnly: "<:warning:1499002725965500577>",
-            closed: "<:error:1499002755841265826>",
-          };
-          const icon = STATUS_ICON[clan.type] ?? "";
-          const label = TYPE_FR[clan.type] ?? clan.type ?? "—";
-          return icon ? `${icon} ${label}` : label;
-        })(),
+        value: clanStatusLabel(clan.type),
         inline: true,
       },
       {
@@ -7261,12 +7266,16 @@ export default async function handler(req, res) {
 
             const analysis = await apiResp.json();
             const clan = analysis.clan || {};
+            const leaderMembers = analysis.members || [];
             return {
               name: clan.name || name,
               tag,
               description: clan.description || "",
               members: clan.members ?? clan.memberCount ?? "—",
               clanWarTrophies: clan.clanWarTrophies ?? 0,
+              type: clan.type,
+              requiredTrophies: clan.requiredTrophies,
+              leaderValue: findClanLeaderValue(leaderMembers),
               isFamilyClan: true,
               usedLiteFallback,
             };
@@ -7301,6 +7310,25 @@ export default async function handler(req, res) {
               {
                 name: "Ligue",
                 value: warLeagueLabel(clanResult.clanWarTrophies, true),
+                inline: true,
+              },
+              {
+                name: "Statut",
+                value: clanStatusLabel(clanResult.type),
+                inline: true,
+              },
+              {
+                name: "Requis",
+                value: `<:trophy:1498645869224792105> ${
+                  typeof clanResult.requiredTrophies === "number"
+                    ? clanResult.requiredTrophies.toLocaleString("fr-FR")
+                    : "—"
+                }`,
+                inline: true,
+              },
+              {
+                name: "Chef",
+                value: clanResult.leaderValue,
                 inline: true,
               },
             ],
