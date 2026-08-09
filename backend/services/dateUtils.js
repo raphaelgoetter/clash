@@ -21,6 +21,70 @@ export const CLAN_RESET_TIMES = {
   QU9UQJRL: { h: 9, m: 51 }, // Les Revoltes (Clan 3) — reset spécifique 09:51 UTC
 };
 
+/**
+ * Heure de reset hebdomadaire des dons (UTC) — moment où Supercell remet à 0
+ * les compteurs `donations`/`donationsReceived` de l'API (distinct du reset
+ * GDC quotidien ci-dessus). C'est un reset hebdomadaire unique, pas par clan.
+ *
+ * ⚠️ SOURCE DE VÉRITÉ : seul endroit à modifier si Supercell change l'heure
+ * de ce reset. Valeur vérifiée le 2026-08-09 : dimanche 21h30 UTC (23h30
+ * heure de Paris en été).
+ * @type {{weekday: number, h: number, m: number}}
+ */
+export const DONATION_WEEKLY_RESET_UTC = { weekday: 0, h: 21, m: 30 }; // weekday: 0 = dimanche
+
+/**
+ * Timestamp UTC (ms) du dernier reset hebdomadaire des dons survenu au plus
+ * tard à `now` (voir DONATION_WEEKLY_RESET_UTC).
+ * @param {Date} [now]
+ * @returns {number}
+ */
+export function lastDonationResetUtcMs(now = new Date()) {
+  const { weekday, h, m } = DONATION_WEEKLY_RESET_UTC;
+  const cursor = new Date(now.getTime());
+  for (let i = 0; i < 8; i++) {
+    const candidate = Date.UTC(
+      cursor.getUTCFullYear(),
+      cursor.getUTCMonth(),
+      cursor.getUTCDate(),
+      h,
+      m,
+    );
+    if (
+      cursor.getUTCDay() === weekday &&
+      candidate <= now.getTime()
+    ) {
+      return candidate;
+    }
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+  }
+  // Ne devrait jamais arriver (une semaine complète suffit toujours à trouver
+  // une occurrence), mais on évite de renvoyer undefined en cas de bug.
+  throw new Error("lastDonationResetUtcMs: reset hebdomadaire introuvable");
+}
+
+/**
+ * Indique si `now` se situe bien après le dernier reset hebdomadaire des
+ * dons (voir DONATION_WEEKLY_RESET_UTC) — donc que le compteur API brut
+ * `donations` reflète les dons de la semaine en cours et non un reliquat
+ * pré-reset. Faux uniquement dans la fenêtre dimanche 00:00→21:30 UTC, avant
+ * que le reset du jour n'ait eu lieu.
+ * @param {Date} [now]
+ * @returns {boolean}
+ */
+export function hasWeeklyDonationResetOccurred(now = new Date()) {
+  const { weekday, h, m } = DONATION_WEEKLY_RESET_UTC;
+  if (now.getUTCDay() !== weekday) return true;
+  const resetUtc = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+    h,
+    m,
+  );
+  return now.getTime() >= resetUtc;
+}
+
 /** Décalage UTC→Paris en ms pour une date donnée (+3 600 000 hiver, +7 200 000 été) */
 export function parisOffsetMs(date = new Date()) {
   const p = new Date(

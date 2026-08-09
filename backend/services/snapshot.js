@@ -1229,12 +1229,14 @@ export async function updateSnapshotDonations(clanTag, totalDonationsByTag) {
  * semaine, avant que les dons ne commencent à s'accumuler. Contrairement à
  * updateSnapshotDonations (limité aux 4 jours de guerre via getWarDayInfo),
  * cette fonction est appelée tous les jours — y compris lundi/mardi/mercredi —
- * pour aligner la fenêtre de mesure sur le cycle réel lundi→lundi des dons
- * plutôt que sur le cycle jeudi→dimanche de la GDC.
+ * pour aligner la fenêtre de mesure sur le cycle réel du reset hebdomadaire
+ * des dons (dimanche 21h30 UTC — DONATION_WEEKLY_RESET_UTC dans
+ * dateUtils.js, source de vérité) plutôt que sur le cycle jeudi→dimanche de
+ * la GDC.
  *
  * First-write-wins : une fois le baseline capturé pour une semaine donnée, les
  * appels suivants sont des no-op, pour garder la valeur la plus proche du
- * reset du lundi.
+ * reset hebdomadaire.
  */
 export async function recordDonationBaseline(
   clanTag,

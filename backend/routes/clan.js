@@ -1387,7 +1387,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
   }
 
   // Mettre à jour le snapshot avec les totalDonations (cumul à vie) des profils
-  // fraîchement récupérés, avant que le reset API du lundi 00:00 ne mette
+  // fraîchement récupérés, avant que le reset API hebdomadaire (dimanche
+  // 21h30 UTC — DONATION_WEEKLY_RESET_UTC dans dateUtils.js) ne mette
   // donations à 0. Utilisé par notifyWarSummary.js pour calculer les dons hebdo.
   if (membersToFetch.length > 0) {
     const totalDonationsByTag = {};
@@ -1416,7 +1417,8 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       }
 
       // Baseline début de semaine (tous les jours, y compris hors GDC) pour un
-      // delta hebdo aligné sur le cycle réel lundi→lundi des dons, et non
+      // delta hebdo aligné sur le cycle réel du reset des dons (dimanche
+      // 21h30 UTC — DONATION_WEEKLY_RESET_UTC dans dateUtils.js), et non
       // limité aux 4 jours de guerre.
       if (currentRace) {
         const weekId =

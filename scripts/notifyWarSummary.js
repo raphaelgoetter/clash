@@ -20,6 +20,7 @@ import {
   computeCurrentWeekId,
   warResetOffsetMs,
   warDayKey,
+  hasWeeklyDonationResetOccurred,
 } from "../backend/services/dateUtils.js";
 import {
   fetchRaceLog,
@@ -631,10 +632,18 @@ function buildWeeklyZeroActivityLists(
 ) {
   const weekDays = Array.isArray(allWeekDays) ? allWeekDays : [];
 
+  // Le reset hebdo Supercell du compteur `donations` a lieu dimanche 21h30
+  // UTC (DONATION_WEEKLY_RESET_UTC dans dateUtils.js — source de vérité).
+  // Une fois ce reset passé, `member.donations` ne décrit plus la semaine
+  // qu'on résume mais la semaine SUIVANTE (qui vient de démarrer) : on ne
+  // peut alors plus s'y fier en repli (voir plus bas) — seul le delta
+  // totalDonations reste valable.
+  const donationResetOccurred = hasWeeklyDonationResetOccurred();
+
   // Calculer les dons hebdo depuis _totalDonationsByTag des snapshots :
   // delta totalDonations(dernier jour) - totalDonations(baseline début de
-  // semaine). Contrairement à donations (remis à 0 le lundi), totalDonations
-  // est un cumul à vie qui ne se réinitialise jamais.
+  // semaine). Contrairement à donations (remis à 0 chaque dimanche 21h30
+  // UTC), totalDonations est un cumul à vie qui ne se réinitialise jamais.
   const donationDays = weekDays.filter(
     (d) =>
       d._totalDonationsByTag &&
@@ -651,17 +660,29 @@ function buildWeeklyZeroActivityLists(
         0,
       );
 
-      let weeklyDonations = member?.donations ?? null;
+      // Repli brut sur le compteur API `donations` — uniquement fiable TANT
+      // QUE le reset hebdo n'a pas encore eu lieu (voir donationResetOccurred
+      // plus haut) : il représente alors encore le cumul de la semaine qu'on
+      // résume. Une fois le reset passé, ce compteur redémarre à 0 pour la
+      // semaine SUIVANTE — l'utiliser donnerait un faux "zéro dons" généralisé
+      // pour la semaine qu'on est censé résumer.
+      let weeklyDonations =
+        !donationResetOccurred && member?.donations != null
+          ? member.donations
+          : null;
       const baselineFirst = donationBaseline?.totalDonationsByTag?.[tag];
       const last = lastDonationDay?._totalDonationsByTag?.[tag];
       if (typeof last === "number" && typeof baselineFirst === "number") {
-        // Delta aligné sur le cycle réel lundi→lundi des dons (couvre toute
-        // la semaine, y compris lundi-mercredi hors GDC).
+        // Delta basé sur totalDonations (cumul à vie, jamais remis à zéro) :
+        // aligné sur le cycle réel dimanche 21h30→21h30 UTC des dons (couvre
+        // toute la semaine, y compris lundi-mercredi hors GDC), donc fiable
+        // même si le reset API n'a pas encore eu lieu.
         weeklyDonations = Math.max(0, last - baselineFirst);
       } else if (hasSnapshotDonationData) {
         // Repli : semaine sans baseline (donnée pas encore disponible) ou
         // joueur absent du baseline — ancien comportement, delta limité à la
-        // fenêtre jeu→dim.
+        // fenêtre jeu→dim (également basé sur totalDonations, donc fiable
+        // indépendamment du reset).
         const firstWarDay = firstDonationDay._totalDonationsByTag[tag];
         if (typeof last === "number" && typeof firstWarDay === "number") {
           weeklyDonations = Math.max(0, last - firstWarDay);
