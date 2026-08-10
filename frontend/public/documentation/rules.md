@@ -44,11 +44,11 @@
 
 ### ⚔️ Clan adulte, chill & skill
 
-:small_blue_diamond: Les Revoltes est un clan pour joueurs actifs et compétitifs qui cherchent du lien social et à progresser sans la contrainte des guerres de clan qui n'y sont pas obligatoires. La participation à notre communauté Discord est obligatoire pour tous les membres.
+:small_blue_diamond: Les Revoltes est un clan pour joueurs actifs et compétitifs qui cherchent du lien social et à progresser sans la contrainte des guerres de clan qui n'y sont pas nécessaires. La participation à notre communauté Discord est obligatoire pour tous les membres.
 
 ### Dons et échanges
 
-🎁 Il est demandé d'être un minimum actif et de participer à la vie de la Famille : discuter sur Discord, aider les autres, donner des cartes, participer aux tournois de la famille ainsi qu'aux diverses activités.
+🎁 Il est demandé d'être un minimum actif et de participer à la vie de la Famille en choisissant [un rôle Discord](https://discord.com/channels/877491247189749771/1532052458199846962) et ainsi participer aux entraînements, aux tournois ainsi qu'aux diverses activités proposées.
 
 ### Sanctions
 
