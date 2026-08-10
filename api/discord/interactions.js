@@ -193,6 +193,9 @@ const FR_VERDICTS = {
 
 const FAMILY_CLAN_TAGS = new Set(["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"]);
 const ALLOWED_CLAN_TAGS = new Set(FAMILY_CLAN_TAGS);
+// Clans famille où la GDC n'est plus obligatoire : /clan masque les données
+// de fiabilité GDC et affiche à la place trophées, Discord et nouveaux membres.
+const NO_WAR_FAMILY_CLAN_TAGS = new Set(["QU9UQJRL"]);
 
 const CLAN_TYPE_FR = {
   open: "Ouvert",
@@ -1727,6 +1730,7 @@ function buildClanComponents(clanTag) {
 
 async function buildClanReportPayload(resolved) {
   const isFamilyClan = ALLOWED_CLAN_TAGS.has(resolved.tag.toUpperCase());
+  const isNoWarClan = NO_WAR_FAMILY_CLAN_TAGS.has(resolved.tag.toUpperCase());
 
   try {
     const analysisEndpoint = `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(
@@ -1816,15 +1820,16 @@ async function buildClanReportPayload(resolved) {
     const fmtInt = (n) =>
       Number.isFinite(n) ? Math.round(n).toLocaleString("fr-FR") : "—";
     const avgScore = summary.avgScore ?? 0;
-    const embedColor = hasReliabilityDetails
-      ? avgScore >= 75
-        ? COLOR_MAP.green
-        : avgScore >= 56
-          ? COLOR_MAP.yellow
-          : avgScore >= 31
-            ? COLOR_MAP.orange
-            : COLOR_MAP.red
-      : 0x99aab5;
+    const embedColor =
+      hasReliabilityDetails && !isNoWarClan
+        ? avgScore >= 75
+          ? COLOR_MAP.green
+          : avgScore >= 56
+            ? COLOR_MAP.yellow
+            : avgScore >= 31
+              ? COLOR_MAP.orange
+              : COLOR_MAP.red
+        : 0x99aab5;
 
     const MEMBER_LIMIT = 10;
     const topReliable = hasReliabilityDetails
@@ -1870,6 +1875,23 @@ async function buildClanReportPayload(resolved) {
           .slice(0, MEMBER_LIMIT)
       : [];
 
+    const rosterForNoWarStats = hasReliabilityDetails ? members : liteMembers;
+
+    function avgTrophiesPerPlayer(list) {
+      if (!Array.isArray(list) || list.length === 0) return null;
+      const sum = list.reduce((s, m) => s + (Number(m.trophies) || 0), 0);
+      return sum / list.length;
+    }
+
+    let discordLinkedCount = 0;
+    if (isNoWarClan) {
+      const { links } = await readDiscordLinks();
+      discordLinkedCount = rosterForNoWarStats.filter((m) => {
+        const tag = m.tag?.startsWith("#") ? m.tag : `#${m.tag}`;
+        return Boolean(links[tag]);
+      }).length;
+    }
+
     function memberLine(m) {
       const icon = RELIABILITY_ICON[m.color] ?? RELIABILITY_ICON.orange;
       const pct = Math.round(Number(m.reliability ?? 0));
@@ -1912,14 +1934,15 @@ async function buildClanReportPayload(resolved) {
       return findClanLeaderValue(hasReliabilityDetails ? members : liteMembers);
     }
 
-    // Champ 6 : Fiabilité (clan famille) ou Chef (clan externe)
-    const sixthField = hasReliabilityDetails
-      ? {
-          name: "Fiabilité",
-          value: `<:warn:1506174837519945800> **${avgScore}%**`,
-          inline: true,
-        }
-      : { name: "Chef", value: findLeaderValue(), inline: true };
+    // Champ 6 : Fiabilité (clan famille avec GDC obligatoire) ou Chef (clan externe / sans GDC obligatoire)
+    const sixthField =
+      hasReliabilityDetails && !isNoWarClan
+        ? {
+            name: "Fiabilité",
+            value: `<:warn:1506174837519945800> **${avgScore}%**`,
+            inline: true,
+          }
+        : { name: "Chef", value: findLeaderValue(), inline: true };
 
     const clanUrl = trustClanUrl(resolved.tag);
     const fields = [
@@ -1951,17 +1974,29 @@ async function buildClanReportPayload(resolved) {
         inline: true,
       },
       sixthField,
-      {
-        name: "Moyenne/joueur",
-        value: `${fmtInt(lastWarSummary?.averagePerPlayer)} pts`,
-        inline: true,
-      },
-      {
-        name: "Points/deck",
-        value: `${fmtInt(lastWarSummary?.pointsPerDeck)} pts`,
-        inline: true,
-      },
-      hasReliabilityDetails
+      isNoWarClan
+        ? {
+            name: "Trophées/joueur",
+            value: `<:trophy:1498645869224792105> ${fmtInt(avgTrophiesPerPlayer(rosterForNoWarStats))}`,
+            inline: true,
+          }
+        : {
+            name: "Moyenne/joueur",
+            value: `${fmtInt(lastWarSummary?.averagePerPlayer)} pts`,
+            inline: true,
+          },
+      isNoWarClan
+        ? {
+            name: "Discord",
+            value: `<:discord:1526507049779990601> ${discordLinkedCount}/${clan.members ?? "?"}`,
+            inline: true,
+          }
+        : {
+            name: "Points/deck",
+            value: `${fmtInt(lastWarSummary?.pointsPerDeck)} pts`,
+            inline: true,
+          },
+      hasReliabilityDetails && !isNoWarClan
         ? { name: "Chef", value: findLeaderValue(), inline: true }
         : { name: "​", value: "​", inline: true },
     ];
@@ -1969,16 +2004,18 @@ async function buildClanReportPayload(resolved) {
     // Rangée 3 : listes membres (uniquement pour les clans famille)
     if (hasReliabilityDetails) {
       fields.push({ name: "​", value: "​", inline: false });
-      fields.push({
-        name: `Top fiables (${topReliable.length})`,
-        value: formatMemberListValue(topReliable, "Aucun"),
-        inline: true,
-      });
-      fields.push({
-        name: `Top risqués (${topRisky.length})`,
-        value: formatMemberListValue(topRisky, "Aucun ✅"),
-        inline: true,
-      });
+      if (!isNoWarClan) {
+        fields.push({
+          name: `Top fiables (${topReliable.length})`,
+          value: formatMemberListValue(topReliable, "Aucun"),
+          inline: true,
+        });
+        fields.push({
+          name: `Top risqués (${topRisky.length})`,
+          value: formatMemberListValue(topRisky, "Aucun ✅"),
+          inline: true,
+        });
+      }
       fields.push({
         name: `Nouveaux (${newMembers.length})`,
         value: formatMemberListValue(newMembers, "Aucun"),
