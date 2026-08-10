@@ -34,15 +34,33 @@ const ACTIONS = {
 
 const EVENEMENTS = [
   {
+    id: "sans_appetit",
+    jour: 2,
+    modificateur_jauges: { estomac: -10, energie: 0, moral: 0 },
+  },
+  {
     id: "strasbourg",
+    jour: 3,
     modificateur_jauges: { moral: 15, estomac: 0, energie: 0 },
   },
   {
+    id: "nouveau_jouet",
+    jour: 5,
+    modificateur_jauges: { moral: 10, estomac: 0, energie: 0 },
+  },
+  {
     id: "canicule",
-    modificateur_jauges: { energie: -10, estomac: 0, moral: 0 },
+    jour: 6,
+    modificateur_jauges: { energie: -10, estomac: 0, moral: -10 },
+  },
+  {
+    id: "indigestion_bonbons",
+    jour: 8,
+    modificateur_jauges: { moral: -10, estomac: 10, energie: 0 },
   },
   {
     id: "choucroute",
+    jour: 9,
     modificateur_jauges: { energie: -15, estomac: 35, moral: 0 },
   },
 ];
@@ -146,11 +164,15 @@ async function main() {
   );
 
   // ── eventForDay ──
+  assert.strictEqual(eventForDay(2, EVENEMENTS).id, "sans_appetit");
   assert.strictEqual(eventForDay(3, EVENEMENTS).id, "strasbourg");
+  assert.strictEqual(eventForDay(5, EVENEMENTS).id, "nouveau_jouet");
   assert.strictEqual(eventForDay(6, EVENEMENTS).id, "canicule");
+  assert.strictEqual(eventForDay(8, EVENEMENTS).id, "indigestion_bonbons");
   assert.strictEqual(eventForDay(9, EVENEMENTS).id, "choucroute");
   assert.strictEqual(eventForDay(1, EVENEMENTS), null);
-  assert.strictEqual(eventForDay(5, EVENEMENTS), null);
+  assert.strictEqual(eventForDay(4, EVENEMENTS), null);
+  assert.strictEqual(eventForDay(7, EVENEMENTS), null);
   assert.strictEqual(eventForDay(10, EVENEMENTS), null);
 
   // ── computeFinalTier ──

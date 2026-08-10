@@ -232,13 +232,12 @@ export function rateDay(gaugesAfter, zonesIdeales) {
   return { rating: "catastrophe", starDelta: -1 };
 }
 
-// Ordre fixe du cahier des charges : le 1er événement arrive Jour 3, le 2e
-// Jour 6, le 3e Jour 9. Tout autre jour : pas d'événement.
-const EVENT_DAY_INDEX = { 3: 0, 6: 1, 9: 2 };
-
+// Le jour d'apparition vit dans la donnée elle-même (champ `jour` de chaque
+// événement, voir data/tamagotchi/tamagotchi.json) plutôt que dans un mapping
+// séparé côté code : ajouter/déplacer un événement ne demande alors qu'une
+// édition du JSON, jamais de toucher au JS.
 export function eventForDay(jour, evenementsPossibles) {
-  const idx = EVENT_DAY_INDEX[jour];
-  return idx != null ? evenementsPossibles[idx] ?? null : null;
+  return evenementsPossibles.find((e) => e.jour === jour) ?? null;
 }
 
 export function computeFinalTier(starTotal) {

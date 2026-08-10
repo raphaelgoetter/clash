@@ -32,21 +32,45 @@
   },
   "evenements_possibles": [
     {
+      "id": "sans_appetit",
+      "jour": 2,
+      "titre": "Journée sans appétit",
+      "description": "Le départ de Mohamed Light lui pèse encore, Lilith mange à peine.",
+      "modificateur_jauges": { "estomac": -10, "energie": 0, "moral": 0 }
+    },
+    {
       "id": "strasbourg",
+      "jour": 3,
       "titre": "Carte postale de Strasbourg",
-      "description": "Mohamed Light a envoyé une photo depuis la Cathédrale. Le dragon est ravi !",
+      "description": "Mohamed Light a envoyé une photo depuis la Cathédrale de Strasbourg. Bébé dragon est ravi !",
       "modificateur_jauges": { "moral": 15, "estomac": 0, "energie": 0 }
     },
     {
+      "id": "nouveau_jouet",
+      "jour": 5,
+      "titre": "Nouveau jouet",
+      "description": "Un membre du serveur a bricolé un jouet pour Lilith, un bûcher humain, elle adore !",
+      "modificateur_jauges": { "moral": 10, "estomac": 0, "energie": 0 }
+    },
+    {
       "id": "canicule",
+      "jour": 6,
       "titre": "Canicule sur le serveur",
-      "description": "Il fait une chaleur étouffante aujourd'hui sur le serveur, Lilith est exténuée.",
+      "description": "Il fait une chaleur étouffante aujourd'hui sur le serveur, même Lilith qui devrait être habituée est exténuée.",
       "modificateur_jauges": { "energie": -10, "estomac": 0, "moral": -10 }
     },
     {
+      "id": "indigestion_bonbons",
+      "jour": 8,
+      "titre": "Indigestion de bonbons",
+      "description": "Lilith a englouti trop de sucreries : le ventre plein, mais l'humeur en dents de scie.",
+      "modificateur_jauges": { "moral": -10, "estomac": 10, "energie": 0 }
+    },
+    {
       "id": "choucroute",
+      "jour": 9,
       "titre": "Livraison mystère d'Alsace",
-      "description": "Un colis contenant de la choucroute arrive sur le serveur ! Lilith se régale.",
+      "description": "Un colis contenant de la choucroute arrive sur le serveur ! Lilith se régale… un peu trop.",
       "modificateur_jauges": { "energie": -15, "estomac": 35, "moral": 0 }
     }
   ]
