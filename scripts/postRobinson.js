@@ -11,6 +11,7 @@
 //   node scripts/postRobinson.js --dry-run       — simulation, sans écrire ni poster
 //   node scripts/postRobinson.js --public --dry-run
 //   node scripts/postRobinson.js --no-ping       — poste sans pinger @MINI JEUX (Jour 1 uniquement)
+//   node scripts/postRobinson.js --require-active — ne fait rien si aucune partie n'est déjà lancée (cron)
 
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
@@ -19,6 +20,10 @@ import { postRobinson } from "../api/discord/handlers/robinson.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
+// Réservé au cron quotidien (voir .github/workflows/robinson.yml) : le
+// Jour 1 doit toujours être déclenché manuellement (workflow_dispatch), le
+// cron ne fait qu'avancer une partie déjà en cours.
+const REQUIRE_ACTIVE = process.argv.includes("--require-active");
 // Ping @MINI JEUX réservé au vrai lancement public (Jour 1) — jamais sur le
 // salon de test, même sans --no-ping explicite, pour ne pas déranger le
 // serveur à chaque itération de test pendant le développement du jeu.
@@ -40,7 +45,12 @@ if (!channelId) {
 
 (async () => {
   try {
-    const result = await postRobinson(channelId, { dryRun: DRY_RUN, noPing: NO_PING, isPublic: PUBLIC });
+    const result = await postRobinson(channelId, { dryRun: DRY_RUN, noPing: NO_PING, isPublic: PUBLIC, requireActiveState: REQUIRE_ACTIVE });
+
+    if (result.skipped) {
+      console.log("Aucune partie active, rien à poster (cron sans lancement manuel préalable).");
+      return;
+    }
 
     if (result.termine) {
       console.log("Partie déjà terminée, rien à poster.");

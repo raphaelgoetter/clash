@@ -4,13 +4,14 @@ permissions:
   contents: read
 
 on:
-  # Cron désactivé pendant la phase de test (voir CONTRIBUTING.md) : l'état
-  # du jeu (tamagotchi:state) est partagé entre les runs manuels de test et
-  # ce workflow public — un run automatique en pleine session de test avance
-  # et publie sur le salon PUBLIC sans prévenir. Ne réactiver le `schedule`
-  # ci-dessous qu'une fois le jeu validé et prêt à être lancé pour de vrai.
-  # schedule:
-  #   - cron: "0 8 * * *"
+  # Le Jour 1 se lance uniquement à la main (workflow_dispatch). Le cron ne
+  # fait qu'avancer une partie déjà en cours (voir --require-active passé au
+  # script ci-dessous) : tant qu'aucun lancement manuel n'a eu lieu, il ne se
+  # passe rien, ce qui évite qu'un run automatique ne démarre une partie
+  # publique sans prévenir pendant une session de test sur le salon de test
+  # (l'état est partagé entre les deux, voir CONTRIBUTING.md).
+  schedule:
+    - cron: "0 8 * * *"
   workflow_dispatch: {}
 
 jobs:
@@ -35,4 +36,4 @@ jobs:
         run: npm ci
 
       - name: Poste le jour du Tamagoshi (salon public)
-        run: npm run tamagotchi:public
+        run: npm run tamagotchi:public -- ${{ github.event_name == 'schedule' && '--require-active' || '' }}

@@ -12,6 +12,7 @@
 //   node scripts/postBossRaid.js --dry-run       — simulation, sans écrire ni poster
 //   node scripts/postBossRaid.js --public --dry-run
 //   node scripts/postBossRaid.js --no-ping       — poste sans pinger @MINI JEUX (jour d'annonce uniquement)
+//   node scripts/postBossRaid.js --require-active — ne fait rien si aucun Raid n'est déjà lancé (cron)
 
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
@@ -20,6 +21,10 @@ import { postBossRaid } from "../api/discord/handlers/bossraid.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
+// Réservé au cron quotidien (voir .github/workflows/bossraid.yml) : le jour
+// d'annonce doit toujours être déclenché manuellement (workflow_dispatch), le
+// cron ne fait qu'avancer un Raid déjà en cours.
+const REQUIRE_ACTIVE = process.argv.includes("--require-active");
 // Ping @MINI JEUX réservé au vrai lancement public (jour d'annonce) — jamais
 // sur le salon de test, même sans --no-ping explicite, pour ne pas déranger
 // le serveur à chaque itération de test pendant le développement du jeu.
@@ -41,7 +46,12 @@ if (!channelId) {
 
 (async () => {
   try {
-    const result = await postBossRaid(channelId, { dryRun: DRY_RUN, noPing: NO_PING, isPublic: PUBLIC });
+    const result = await postBossRaid(channelId, { dryRun: DRY_RUN, noPing: NO_PING, isPublic: PUBLIC, requireActiveState: REQUIRE_ACTIVE });
+
+    if (result.skipped) {
+      console.log("Aucun Raid actif, rien à poster (cron sans lancement manuel préalable).");
+      return;
+    }
 
     if (result.termine) {
       console.log("Raid déjà terminé, rien à poster.");

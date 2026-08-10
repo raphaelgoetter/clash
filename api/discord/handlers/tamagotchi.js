@@ -411,13 +411,20 @@ function buildReglesEmbed(config) {
 
 export async function postTamagotchi(
   channelId,
-  { dryRun = false, noPing = false, isPublic = false } = {},
+  { dryRun = false, noPing = false, isPublic = false, requireActiveState = false } = {},
 ) {
   const config = await loadTamagotchiConfig();
   const state = await readState();
 
   if (state?.termine) {
     return { termine: true };
+  }
+
+  // Le cron quotidien ne fait qu'avancer une partie déjà lancée manuellement
+  // — il ne doit jamais démarrer le Jour 1 tout seul (voir workflow_dispatch
+  // vs schedule dans .github/workflows/tamagotchi.yml).
+  if (!state && requireActiveState) {
+    return { skipped: true };
   }
 
   const estPremierJour = !state;

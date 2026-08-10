@@ -271,12 +271,19 @@ function buildOutcomeEmbed(outcome, config, manches = [], currentManche = null) 
 
 // ── Publication quotidienne (appelée uniquement par scripts/postRobinson.js) ──
 
-export async function postRobinson(channelId, { dryRun = false, noPing = false, isPublic = false } = {}) {
+export async function postRobinson(channelId, { dryRun = false, noPing = false, isPublic = false, requireActiveState = false } = {}) {
   const config = await loadRobinsonConfig();
   const state = await readState();
 
   if (state?.termine) {
     return { termine: true };
+  }
+
+  // Le cron quotidien ne fait qu'avancer une partie déjà lancée manuellement
+  // — il ne doit jamais démarrer le Jour 1 tout seul (voir workflow_dispatch
+  // vs schedule dans .github/workflows/robinson.yml).
+  if (!state && requireActiveState) {
+    return { skipped: true };
   }
 
   const estPremierJour = !state;

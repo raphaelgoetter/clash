@@ -240,12 +240,19 @@ function buildOutcomeEmbed(totalDegatsCumules, config, manches = [], currentManc
 
 // ── Publication quotidienne (appelée uniquement par scripts/postBossRaid.js) ──
 
-export async function postBossRaid(channelId, { dryRun = false, noPing = false, isPublic = false } = {}) {
+export async function postBossRaid(channelId, { dryRun = false, noPing = false, isPublic = false, requireActiveState = false } = {}) {
   const config = await loadBossRaidConfig();
   const state = await readState();
 
   if (state?.termine) {
     return { termine: true };
+  }
+
+  // Le cron quotidien ne fait qu'avancer un Raid déjà lancé manuellement — il
+  // ne doit jamais poster l'annonce/Jour 1 tout seul (voir workflow_dispatch
+  // vs schedule dans .github/workflows/bossraid.yml).
+  if (!state && requireActiveState) {
+    return { skipped: true };
   }
 
   // 1) Aucun état -> jour d'annonce (pas de vote possible, ping éventuel)
