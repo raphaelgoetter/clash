@@ -64,7 +64,7 @@
       "jour": 8,
       "titre": "Indigestion de bonbons",
       "description": "Lilith a englouti trop de sucreries : le ventre plein, mais l'humeur en dents de scie.",
-      "modificateur_jauges": { "moral": -10, "estomac": 10, "energie": 0 }
+      "modificateur_jauges": { "moral": -10, "estomac": 15, "energie": 0 }
     },
     {
       "id": "choucroute",

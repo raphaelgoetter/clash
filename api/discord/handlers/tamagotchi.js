@@ -67,11 +67,15 @@ const GAUGE_SEGMENTS = 8;
 
 export function renderGaugeBar(value) {
   const filled = Math.max(0, Math.min(GAUGE_SEGMENTS, Math.round((value / 100) * GAUGE_SEGMENTS)));
-  return `${"🟩".repeat(filled)}${"🟥".repeat(GAUGE_SEGMENTS - filled)} ${value}%`;
+  return `${"🟩".repeat(filled)}${"🟥".repeat(GAUGE_SEGMENTS - filled)}`;
 }
 
+// Libellé + pourcentage sur leur propre ligne, barre sur la ligne suivante —
+// sur mobile, un seul retour à la ligne automatique au milieu de la barre
+// suffit à casser sa lisibilité (ex. "🟩🟩🟩🟩" puis "🟥🟥🟥🟥 50%" sur la
+// ligne d'après). Séparer explicitement les deux évite ce retour au milieu.
 function renderGaugeLine(label, value) {
-  return `${label} : ${renderGaugeBar(value)}`;
+  return `${label} : ${value}%\n${renderGaugeBar(value)}`;
 }
 
 // Format lisible d'un objet {estomac, energie, moral} en "Estomac +25, Énergie

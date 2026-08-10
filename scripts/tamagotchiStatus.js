@@ -37,9 +37,9 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
 
   const config = await loadTamagotchiConfig();
   console.log(`Jour ${state.jour}/${config.duree_jours} — ⭐ ${state.starTotal} étoile(s) de dressage\n`);
-  console.log(`🔥 Estomac : ${renderGaugeBar(state.gauges.estomac)}`);
-  console.log(`⚡ Énergie : ${renderGaugeBar(state.gauges.energie)}`);
-  console.log(`🥨 Moral   : ${renderGaugeBar(state.gauges.moral)}\n`);
+  console.log(`🔥 Estomac : ${renderGaugeBar(state.gauges.estomac)} ${state.gauges.estomac}%`);
+  console.log(`⚡ Énergie : ${renderGaugeBar(state.gauges.energie)} ${state.gauges.energie}%`);
+  console.log(`🥨 Moral   : ${renderGaugeBar(state.gauges.moral)} ${state.gauges.moral}%\n`);
 
   const votes = await listVotes(state.jour);
   // Pseudo actuel résolu en direct pour chaque votant (jamais celui figé au
@@ -79,8 +79,8 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
     const gaugesProjetees = event ? applyGaugeDelta(closure.gaugesClosing, event.modificateur_jauges) : closure.gaugesClosing;
     console.log(`→ Jour ${jourSuivant}/${config.duree_jours} :`);
     if (event) console.log(`  📯 Événement : ${event.titre}`);
-    console.log(`  🍭 Estomac : ${renderGaugeBar(gaugesProjetees.estomac)}`);
-    console.log(`  ⚡ Énergie : ${renderGaugeBar(gaugesProjetees.energie)}`);
-    console.log(`  🥨 Moral   : ${renderGaugeBar(gaugesProjetees.moral)}`);
+    console.log(`  🍭 Estomac : ${renderGaugeBar(gaugesProjetees.estomac)} ${gaugesProjetees.estomac}%`);
+    console.log(`  ⚡ Énergie : ${renderGaugeBar(gaugesProjetees.energie)} ${gaugesProjetees.energie}%`);
+    console.log(`  🥨 Moral   : ${renderGaugeBar(gaugesProjetees.moral)} ${gaugesProjetees.moral}%`);
   }
 })();
