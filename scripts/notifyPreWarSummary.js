@@ -10,6 +10,7 @@ import fetch from "node-fetch";
 import { MS_PER_DAY, parseClashDate } from "../backend/services/dateUtils.js";
 import { computeMemberReliability } from "../backend/services/playerAnalysis.js";
 import { fetchClanWarRankings } from "../backend/services/clashApi.js";
+import { getRoleIdByName } from "../backend/services/discordRoles.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CACHE_DIR = path.join(
@@ -20,11 +21,21 @@ const CACHE_DIR = path.join(
   "clan-cache",
 );
 const LOG_FILE = path.join(__dirname, "..", "data", "pre-gdc-weekly-log.json");
+const DISCORD_LINKS_FILE = path.join(
+  __dirname,
+  "..",
+  "data",
+  "discord-links.json",
+);
 const DISCORD_API = "https://discord.com/api/v10";
 const DRY_RUN = process.argv.includes("--dry-run");
-// QU9UQJRL (Les Revoltes, Clan 3) exclu : GDC non obligatoire dans ce clan.
-const CLAN_TAGS = ["Y8JUPC9C", "LRQP20V9"];
+const CLAN_TAGS = ["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"];
+// QU9UQJRL (Les Revoltes, Clan 3) : GDC non obligatoire dans ce clan, résumé
+// allégé (pas de Fiabilité / À risque / Inactifs, cf. buildEmbed()).
+const NO_WAR_CLAN_TAGS = new Set(["QU9UQJRL"]);
 const MAX_CLAN_SIZE = 50;
+// Rôles Discord auxquels les membres peuvent s'abonner librement.
+const ACTIVITY_ROLE_NAMES = ["ENTRAÎNEMENT", "TOURNOIS", "MULTI-COMPTES"];
 
 function normalizeTag(tag) {
   if (!tag) return "";
@@ -96,6 +107,72 @@ function getRiskyMembers(members) {
     })
     .filter((entry) => ["highRisk", "extremeRisk"].includes(entry.verdictKey))
     .sort((a, b) => a.score - b.score);
+}
+
+// Croise les membres du clan avec les liens Discord (data/discord-links.json)
+// et les membres du serveur Discord (avec leurs rôles) pour déterminer, par
+// membre, s'il est lié à Discord et s'il a au moins un des rôles d'activité.
+// Même logique de croisement que /discord-check (api/discord/interactions.js),
+// adaptée à la source membres de ce script (cache clan local).
+function getDiscordAndRolesStats(members, links, guildMemberById, roleIds) {
+  const targetRoleIds = new Set(roleIds.filter(Boolean));
+  const missingLinked = [];
+  const missingRoles = [];
+  let linkedCount = 0;
+  let rolesCount = 0;
+
+  for (const member of members) {
+    const profile = member.profile ?? member;
+    const name = profile.name ?? member.name ?? "inconnu";
+    const tag = normalizeTag(profile.tag ?? member.tag ?? "");
+    const entry = { name, tag };
+
+    const discordId = links[`#${tag}`];
+    const guildMember = discordId ? guildMemberById.get(discordId) : null;
+
+    if (guildMember) {
+      linkedCount += 1;
+    } else {
+      missingLinked.push(entry);
+    }
+
+    const hasActivityRole =
+      guildMember &&
+      targetRoleIds.size > 0 &&
+      (guildMember.roles ?? []).some((roleId) => targetRoleIds.has(roleId));
+    if (hasActivityRole) {
+      rolesCount += 1;
+    } else {
+      missingRoles.push(entry);
+    }
+  }
+
+  return { linkedCount, missingLinked, rolesCount, missingRoles };
+}
+
+async function fetchGuildMemberById(token, guildId) {
+  if (!token || !guildId) return new Map();
+  try {
+    const res = await fetch(
+      `${DISCORD_API}/guilds/${guildId}/members?limit=1000`,
+      { headers: { Authorization: `Bot ${token}` } },
+    );
+    if (!res.ok) return new Map();
+    const guildMembers = await res.json();
+    return new Map(guildMembers.map((m) => [m.user?.id, m]));
+  } catch {
+    return new Map();
+  }
+}
+
+// Comme formatList(), mais pour "manque X, Y, Z" : ne renvoie une liste
+// nominative que si le nombre de manquants est ≤ max, sinon rien (le
+// compte X/50 suffit déjà à communiquer le manque).
+function formatMissing(entries, max = 5) {
+  if (!entries.length) return "";
+  if (entries.length > max) return "";
+  const names = entries.map((entry) => entry.name ?? entry.tag ?? "inconnu");
+  return ` (manque ${names.join(", ")})`;
 }
 
 function getPlayerUrl(tag) {
@@ -189,25 +266,45 @@ async function fetchRankingsByLocation(clans) {
   return rankByLocation;
 }
 
-function buildEmbed(clanName, summary, riskValue, inactiveValue) {
+function buildEmbed(
+  clanName,
+  summary,
+  riskValue,
+  inactiveValue,
+  discordStats,
+  rolesStats,
+  isNoWarClan,
+) {
   const lines = [
     `<:members:1506175789731811399> **Membres :** ${summary.membersCount}/${MAX_CLAN_SIZE}${summary.membersWarning}${summary.membersDelta}`,
     `<:key:1514255039764631662> **Statut du clan :** ${summary.status}`,
     `<:trophy2:1493677804733337621> **Trophées GDC :** ${summary.clanWarTrophies}${summary.trophiesDelta}`,
     `<:stats:1499284927894650950> **Classement France :** ${summary.rankLabel}${summary.rankDelta}`,
-    `<:warn:1506174837519945800> **Fiabilité :** ${summary.scoreClan}%${summary.scoreClanDelta}`,
   ];
 
-  const formattedRisk =
-    riskValue && riskValue.includes("\n")
-      ? `<:sweat:1504139431106576405> **À risque :**\n${riskValue}`
-      : `<:sweat:1504139431106576405> **À risque :** ${riskValue || "aucun"}`;
-  const formattedInactive =
-    inactiveValue && inactiveValue.includes("\n")
-      ? `<:eyeclosed:1504138067580158053> **Inactifs :**\n${inactiveValue}`
-      : `<:eyeclosed:1504138067580158053> **Inactifs :** ${inactiveValue || "aucun"}`;
+  if (!isNoWarClan) {
+    lines.push(
+      `<:warn:1506174837519945800> **Fiabilité :** ${summary.scoreClan}%${summary.scoreClanDelta}`,
+    );
+  }
 
-  lines.push(formattedRisk, formattedInactive);
+  lines.push(
+    `<:discord:1526507049779990601> **Discord :** ${discordStats.linkedCount}/${MAX_CLAN_SIZE}${formatMissing(discordStats.missingLinked)}`,
+    `🎭 **Rôles :** ${rolesStats.rolesCount}/${MAX_CLAN_SIZE}${formatMissing(rolesStats.missingRoles)}`,
+  );
+
+  if (!isNoWarClan) {
+    const formattedRisk =
+      riskValue && riskValue.includes("\n")
+        ? `<:sweat:1504139431106576405> **À risque :**\n${riskValue}`
+        : `<:sweat:1504139431106576405> **À risque :** ${riskValue || "aucun"}`;
+    const formattedInactive =
+      inactiveValue && inactiveValue.includes("\n")
+        ? `<:eyeclosed:1504138067580158053> **Inactifs :**\n${inactiveValue}`
+        : `<:eyeclosed:1504138067580158053> **Inactifs :** ${inactiveValue || "aucun"}`;
+
+    lines.push(formattedRisk, formattedInactive);
+  }
 
   return {
     title: `Résumé pré-GDC pour ${clanName}`,
@@ -259,6 +356,13 @@ async function main() {
     }
     clans.push({ clanTag, cache });
   }
+
+  const discordLinks = await readJson(DISCORD_LINKS_FILE, {});
+  const guildId = process.env.DISCORD_GUILD_ID;
+  const [guildMemberById, activityRoleIds] = await Promise.all([
+    fetchGuildMemberById(token, guildId),
+    Promise.all(ACTIVITY_ROLE_NAMES.map((name) => getRoleIdByName(name))),
+  ]);
 
   const rankingsByLocation = await fetchRankingsByLocation(
     clans.map((entry) => entry.cache),
@@ -344,7 +448,23 @@ async function main() {
 
     const riskValue = formatList(riskMembers, 10);
     const inactiveValue = formatList(inactiveMembers, 10);
-    const embed = buildEmbed(clan.name, summary, riskValue, inactiveValue);
+    const { linkedCount, missingLinked, rolesCount, missingRoles } =
+      getDiscordAndRolesStats(
+        memberEntries,
+        discordLinks,
+        guildMemberById,
+        activityRoleIds,
+      );
+    const isNoWarClan = NO_WAR_CLAN_TAGS.has(clanTag);
+    const embed = buildEmbed(
+      clan.name,
+      summary,
+      riskValue,
+      inactiveValue,
+      { linkedCount, missingLinked },
+      { rolesCount, missingRoles },
+      isNoWarClan,
+    );
 
     const channelId =
       process.env[`DISCORD_CHANNEL_MEMBERS_${normalizeTag(clanTag)}`];
