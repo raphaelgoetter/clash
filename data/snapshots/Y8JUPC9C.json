@@ -16853,7 +16853,7 @@
           "start": "2026-08-09T09:57:00.000Z",
           "end": "2026-08-10T09:56:59.999Z"
         },
-        "snapshotTime": "2026-08-10T05:30:31.079Z",
+        "snapshotTime": "2026-08-10T06:27:24.012Z",
         "snapshotBackupTime": "2026-08-09T10:10:06.576Z",
         "decks": {
           "#202VQJY8RU": 4,
@@ -16889,6 +16889,7 @@
           "#LCQ2J0VGC": 4,
           "#P9R8Y90P8": 4,
           "#PG0Q0YYGY": 4,
+          "#QCJJ8JG0": 4,
           "#QQLYUL0R": 4,
           "#UJ2LQU2V9": 4,
           "#UJ89GUUUY": 4,
@@ -16937,7 +16938,7 @@
           "#99VY0090": 2650,
           "#LCQ2J0VGC": 2550,
           "#PG0Q0YYGY": 2550,
-          "#QCJJ8JG0": 2050,
+          "#QCJJ8JG0": 2950,
           "#9CYUGPQ0C": 2600,
           "#9GG9GRC0G": 2750,
           "#VYPYYQLY8": 2950,
@@ -16995,14 +16996,15 @@
           "#8UL8JRCJ": 1,
           "#QQLYUL0R": 1,
           "#GJV2UG9P0": 1,
-          "#809G8YC8": 1
+          "#809G8YC8": 1,
+          "#QCJJ8JG0": 1
         },
         "_totalDonationsByTag": {
-          "#QCJJ8JG0": 51810,
+          "#QCJJ8JG0": 51864,
           "#8VQLJLR0": 56256,
           "#99VY0090": 116857,
           "#9GG9GRC0G": 108508,
-          "#GJ8RV8802": 31665,
+          "#GJ8RV8802": 31693,
           "#QQLYUL0R": 106267,
           "#J8RU2RJ8C": 103481,
           "#9VQ0J29Y": 105050,
@@ -17028,7 +17030,7 @@
           "#JLU88JR28": 13030,
           "#2GUPJ99G2": 169911,
           "#9CYUGPQ0C": 240764,
-          "#888Y29GY": 70422,
+          "#888Y29GY": 70430,
           "#CYRGPVGVG": 55537,
           "#GV098C29R": 45340,
           "#80CCLY20L": 158473,
@@ -17037,12 +17039,12 @@
           "#UJQL9PCRJ": 13684,
           "#UJ2LQU2V9": 15544,
           "#9YQ8RVU2P": 71692,
-          "#8PP9JQCLY": 198394,
+          "#8PP9JQCLY": 198456,
           "#VYPYYQLY8": 28958,
           "#8UL8JRCJ": 91617,
           "#YRYPUR822": 108139,
-          "#RJJ99Y9J": 62019,
-          "#C0VQRUP2": 238067,
+          "#RJJ99Y9J": 62037,
+          "#C0VQRUP2": 238101,
           "#GVGVR0J2U": 28722,
           "#GJV2UG9P0": 70493,
           "#8P9CL92LC": 19875
@@ -17086,7 +17088,7 @@
           "#99VY0090": 16,
           "#LCQ2J0VGC": 16,
           "#PG0Q0YYGY": 16,
-          "#QCJJ8JG0": 12,
+          "#QCJJ8JG0": 16,
           "#9CYUGPQ0C": 16,
           "#9GG9GRC0G": 16,
           "#VYPYYQLY8": 16,
@@ -17105,7 +17107,7 @@
           "#QQLYUL0R": 16,
           "#888Y29GY": 16
         },
-        "snapshotCount": 167
+        "snapshotCount": 171
       }
     ],
     "donationBaseline": {
