@@ -161,16 +161,21 @@ async function buildNarrative(jour, gauges, voters, estPremierJour) {
 
   const lines = [];
   const estomacKey = gaugeCategory("estomac", gauges.estomac);
-  if (!estomacKey.endsWith("_normal")) lines.push(pickFlavor(narratifs[estomacKey], jour + 1));
+  if (!estomacKey.endsWith("_normal"))
+    lines.push(pickFlavor(narratifs[estomacKey], jour + 1));
   const energieKey = gaugeCategory("energie", gauges.energie);
-  if (!energieKey.endsWith("_normal")) lines.push(pickFlavor(narratifs[energieKey], jour + 2));
+  if (!energieKey.endsWith("_normal"))
+    lines.push(pickFlavor(narratifs[energieKey], jour + 2));
   const moralKey = gaugeCategory("moral", gauges.moral);
-  if (!moralKey.endsWith("_normal")) lines.push(pickFlavor(narratifs[moralKey], jour + 3));
+  if (!moralKey.endsWith("_normal"))
+    lines.push(pickFlavor(narratifs[moralKey], jour + 3));
 
   const names = await pickVoterNames(voters, jour);
   if (names.length) {
     const template = pickFlavor(narratifs.cloture_soins, jour + 4);
-    const phrase = template.replaceAll("{noms}", names.join(" et ")).replaceAll("{premier}", names[0]);
+    const phrase = template
+      .replaceAll("{noms}", names.join(" et "))
+      .replaceAll("{premier}", names[0]);
     // Rattachée à la dernière ligne (même paragraphe) si possible, sinon
     // ligne à part (les 3 jauges peuvent toutes être "normal" ce jour-là).
     if (lines.length) {
@@ -334,11 +339,19 @@ function buildManchesSection(manches, currentManche) {
   return [
     "",
     "**📊 Manches précédentes**",
-    ...manches.map((m) => formatMancheLine(m, m.manche === currentManche, m.manche === best.manche)),
+    ...manches.map((m) =>
+      formatMancheLine(m, m.manche === currentManche, m.manche === best.manche),
+    ),
   ];
 }
 
-function buildFinalTierEmbed(starTotal, tier, config, manches = [], currentManche = null) {
+function buildFinalTierEmbed(
+  starTotal,
+  tier,
+  config,
+  manches = [],
+  currentManche = null,
+) {
   const image = { url: tamagotchiImageUrl(config.duree_jours) };
   const manchesLines = buildManchesSection(manches, currentManche);
 
@@ -401,7 +414,7 @@ function buildReglesEmbed(config) {
       "",
       "🔮 **Projections** ne modifie jamais les jauges, mais consomme ton vote du jour comme les 4 actions ci-dessus (c'est un choix, pas une simple consultation). Seul 📖 **Règles du jeu** est consultable librement, sans jamais consommer ton vote.",
       "",
-      "Un membre ne peut voter qu'une seule fois par jour parmi Nourrir, Bretzel, Sieste, Entraînement et Projections, et ce vote n'est pas modifiable.",
+      "Un membre ne peut voter qu'une seule fois par jour parmi Nourrir, Bretzel, Sieste, Jouer et Projections, et ce vote n'est pas modifiable.",
     ].join("\n"),
     color: TAMAGOTCHI_COLOR,
   };
@@ -411,7 +424,12 @@ function buildReglesEmbed(config) {
 
 export async function postTamagotchi(
   channelId,
-  { dryRun = false, noPing = false, isPublic = false, requireActiveState = false } = {},
+  {
+    dryRun = false,
+    noPing = false,
+    isPublic = false,
+    requireActiveState = false,
+  } = {},
 ) {
   const config = await loadTamagotchiConfig();
   const state = await readState();
@@ -481,10 +499,20 @@ export async function postTamagotchi(
     // des parties de test (voir CONTRIBUTING.md, section Manches).
     let currentManche = null;
     if (!dryRun && isPublic) {
-      currentManche = await archiveManche({ starTotal: starTotalApres, tier, resolvedAt: new Date().toISOString() });
+      currentManche = await archiveManche({
+        starTotal: starTotalApres,
+        tier,
+        resolvedAt: new Date().toISOString(),
+      });
     }
     const manches = await listManches({ limit: 10 });
-    const embed = buildFinalTierEmbed(starTotalApres, tier, config, manches, currentManche);
+    const embed = buildFinalTierEmbed(
+      starTotalApres,
+      tier,
+      config,
+      manches,
+      currentManche,
+    );
 
     if (dryRun) {
       return {
@@ -741,17 +769,24 @@ export async function handleInspecter(webhookUrl, jour, discordId, username) {
     const state = await readState();
     if (!state || state.termine || String(state.jour) !== String(jour)) {
       await patchOriginal(webhookUrl, {
-        content: "Le vote du jour a déjà été clôturé, la journée a changé — regarde le nouveau message !",
+        content:
+          "Le vote du jour a déjà été clôturé, la journée a changé — regarde le nouveau message !",
         embeds: [],
         components: [],
       });
       return;
     }
 
-    const result = await recordVote(state.jour, discordId, "inspecter", username);
+    const result = await recordVote(
+      state.jour,
+      discordId,
+      "inspecter",
+      username,
+    );
     if (result.status === "rejected") {
       await patchOriginal(webhookUrl, {
-        content: "Tu as déjà voté aujourd'hui pour une autre action, ton vote est définitif jusqu'à demain !",
+        content:
+          "Tu as déjà voté aujourd'hui pour une autre action, ton vote est définitif jusqu'à demain !",
         embeds: [],
         components: [],
       });
@@ -766,23 +801,37 @@ export async function handleInspecter(webhookUrl, jour, discordId, username) {
     // Ne compte que les 4 actions réelles (Projections elle-même n'a aucun
     // impact, la compter ici donnerait l'impression à tort qu'un vote a déjà
     // influencé la projection).
-    const realActionIds = Object.keys(config.actions).filter((id) => !config.actions[id].is_info_action);
-    const totalRealVotes = realActionIds.reduce((sum, id) => sum + (voteCounts[id] || 0), 0);
+    const realActionIds = Object.keys(config.actions).filter(
+      (id) => !config.actions[id].is_info_action,
+    );
+    const totalRealVotes = realActionIds.reduce(
+      (sum, id) => sum + (voteCounts[id] || 0),
+      0,
+    );
 
     // Avertissement affiché seulement au moment où le vote est réellement
     // consommé (1er clic du jour) — inutile de le répéter à chaque reclic
     // (already_recorded), qui reste purement informatif à ce stade.
     const voteNotice =
       result.status === "recorded"
-        ? "⚠️ Ce choix consomme ton vote du jour — tu ne pourras plus voter Nourrir/Bretzel/Sieste/Entraînement aujourd'hui."
+        ? "⚠️ Ce choix consomme ton vote du jour — tu ne pourras plus voter Nourrir/Bretzel/Sieste/Jouer aujourd'hui."
         : "(Tu as déjà voté Projections aujourd'hui — ton vote reste enregistré.)";
 
     const embed = {
       title: "🔮 Projections — clôture demain 08:00 UTC",
       description: [
-        renderGaugeLine(`${gaugeIcon("estomac", projected.estomac)} Estomac`, projected.estomac),
-        renderGaugeLine(`${gaugeIcon("energie", projected.energie)} Énergie`, projected.energie),
-        renderGaugeLine(`${gaugeIcon("moral", projected.moral)} Moral`, projected.moral),
+        renderGaugeLine(
+          `${gaugeIcon("estomac", projected.estomac)} Estomac`,
+          projected.estomac,
+        ),
+        renderGaugeLine(
+          `${gaugeIcon("energie", projected.energie)} Énergie`,
+          projected.energie,
+        ),
+        renderGaugeLine(
+          `${gaugeIcon("moral", projected.moral)} Moral`,
+          projected.moral,
+        ),
         "",
         totalRealVotes === 0
           ? "Personne n'a encore voté une action aujourd'hui — ces valeurs sont celles de la clôture d'hier, inchangées tant qu'aucun vote n'est enregistré."
