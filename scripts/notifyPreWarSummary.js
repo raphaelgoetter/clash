@@ -297,8 +297,8 @@ function buildEmbed(
   }
 
   lines.push(
-    `<:discord:1526507049779990601> **Discord :** ${discordStats.linkedCount}/${MAX_CLAN_SIZE}${formatMissing(discordStats.missingLinked)}`,
-    `🎭 **Rôles :** ${rolesStats.rolesCount}/${MAX_CLAN_SIZE}${formatMissing(rolesStats.missingRoles)}`,
+    `<:discord:1526507049779990601> **Discord :** ${discordStats.linkedCount}/${summary.membersCount}${formatMissing(discordStats.missingLinked)}`,
+    `🎭 **Rôles :** ${rolesStats.rolesCount}/${summary.membersCount}${formatMissing(rolesStats.missingRoles)}`,
   );
 
   if (!isNoWarClan) {

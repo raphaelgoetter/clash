@@ -111,6 +111,42 @@ export async function fetchClan(tag) {
   return get(`/clans/${encodeTag(tag)}`);
 }
 
+/**
+ * Search clans by location/name/member count. Note: search results do NOT
+ * include the clan `description` field (only available via fetchClan) — use
+ * fetchClan(tag) per candidate if filtering on description is needed.
+ * @param {object} params
+ * @param {number|string} [params.locationId]
+ * @param {string} [params.name]
+ * @param {number} [params.minMembers]
+ * @param {number} [params.maxMembers]
+ * @param {number} [params.limit] - max 1000 per page.
+ * @param {string} [params.after] - pagination cursor from a previous page.
+ * @returns {Promise<{items: Array, cursorAfter: string|null}>}
+ */
+export async function searchClans({
+  locationId,
+  name,
+  minMembers,
+  maxMembers,
+  limit,
+  after,
+} = {}) {
+  const query = new URLSearchParams();
+  if (locationId != null) query.set("locationId", locationId);
+  if (name) query.set("name", name);
+  if (minMembers != null) query.set("minMembers", minMembers);
+  if (maxMembers != null) query.set("maxMembers", maxMembers);
+  if (limit != null) query.set("limit", limit);
+  if (after) query.set("after", after);
+
+  const data = await get(`/clans?${query.toString()}`);
+  return {
+    items: Array.isArray(data.items) ? data.items : [],
+    cursorAfter: data.paging?.cursors?.after ?? null,
+  };
+}
+
 /** Fetch the list of members in a clan. */
 export async function fetchClanMembers(tag) {
   const data = await get(`/clans/${encodeTag(tag)}/members`);

@@ -67,7 +67,6 @@ const DRY_RUN = process.argv.includes("--dry-run");
 const FORCE = process.argv.includes("--force");
 const WEEKLY_ONLY = process.argv.includes("--weekly-only");
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-const MAX_CLAN_SIZE = 50;
 // Rôles Discord auxquels les membres peuvent s'abonner librement.
 const ACTIVITY_ROLE_NAMES = ["ENTRAÎNEMENT", "TOURNOIS", "MULTI-COMPTES"];
 
@@ -1664,15 +1663,16 @@ async function postWarSummary(
         guildMemberById,
         activityRoleIds,
       );
+    const clanMemberCount = Object.keys(memberNames).length;
     weeklyFields.push(
       {
         name: "<:discord:1526507049779990601> Discord",
-        value: `${linkedCount}/${MAX_CLAN_SIZE}${formatMissing(missingLinked)}`,
+        value: `${linkedCount}/${clanMemberCount}${formatMissing(missingLinked)}`,
         inline: false,
       },
       {
         name: "🎭 Rôles",
-        value: `${rolesCount}/${MAX_CLAN_SIZE}${formatMissing(missingRoles)}`,
+        value: `${rolesCount}/${clanMemberCount}${formatMissing(missingRoles)}`,
         inline: false,
       },
     );
