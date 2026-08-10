@@ -1526,8 +1526,18 @@ async function postWarSummary(
   }
 
   if (weekly) {
+    // GDC non obligatoire dans Les Revoltes (clan 3) : bilan hebdo allégé,
+    // uniquement Zéro GDC et zéro don / Discord / Rôles (pas de stats de
+    // performance GDC, qui n'ont pas de sens pour un clan sans obligation).
+    const isNoWarClan = tag === "QU9UQJRL";
     const weeklyFields = [];
-    if (weekly.totalFameWeek !== null) {
+    if (weekly.totalFameWeek === null) {
+      throw new Error(
+        `Bilan de semaine incomplet pour ${tag} (${dayEntry.realDay})`,
+      );
+    }
+
+    if (!isNoWarClan) {
       const fameLabel = weekly.isColosseum
         ? "<:trophy:1498645869224792105> Points totaux (Colisée)"
         : "<:trophy:1498645869224792105> Points totaux";
@@ -1536,41 +1546,37 @@ async function postWarSummary(
         value: `${apiWeekFame !== null ? "" : "≈"}${fmt(weekly.totalFameWeek)} pts`,
         inline: false,
       });
-    } else {
-      throw new Error(
-        `Bilan de semaine incomplet pour ${tag} (${dayEntry.realDay})`,
-      );
-    }
 
-    const pct = Math.round((weekly.totalDecksWeek / DECKS_MAX_WEEK) * 100);
-    weeklyFields.push({
-      name: "<:cards:1493711279121104926> Decks semaine",
-      value: `${fmt(weekly.totalDecksWeek)} / ${fmt(DECKS_MAX_WEEK)} (${pct}%)`,
-      inline: false,
-    });
-
-    weeklyFields.push({
-      name: "<:battle:1493710671244689449> Moyenne / jour",
-      value: `${weekly.avgDecksPerDay.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} decks`,
-      inline: false,
-    });
-
-    if (weekly.totalDecksWeek > 0) {
-      const avgPointsPerDeck = weekly.totalFameWeek / weekly.totalDecksWeek;
+      const pct = Math.round((weekly.totalDecksWeek / DECKS_MAX_WEEK) * 100);
       weeklyFields.push({
-        name: "<:stats:1499284927894650950> Points moyens / deck",
-        value: `${avgPointsPerDeck.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} pts`,
+        name: "<:cards:1493711279121104926> Decks semaine",
+        value: `${fmt(weekly.totalDecksWeek)} / ${fmt(DECKS_MAX_WEEK)} (${pct}%)`,
         inline: false,
       });
-    }
 
-    if (liveBoatTotal > 0) {
-      const boatNames = liveBoatAttackers.map((p) => p.name).join(", ");
       weeklyFields.push({
-        name: "<:boat:1495083435612438729> Attaques bateau",
-        value: `${liveBoatTotal} attaque${liveBoatTotal > 1 ? "s" : ""} — ${boatNames}`,
+        name: "<:battle:1493710671244689449> Moyenne / jour",
+        value: `${weekly.avgDecksPerDay.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} decks`,
         inline: false,
       });
+
+      if (weekly.totalDecksWeek > 0) {
+        const avgPointsPerDeck = weekly.totalFameWeek / weekly.totalDecksWeek;
+        weeklyFields.push({
+          name: "<:stats:1499284927894650950> Points moyens / deck",
+          value: `${avgPointsPerDeck.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} pts`,
+          inline: false,
+        });
+      }
+
+      if (liveBoatTotal > 0) {
+        const boatNames = liveBoatAttackers.map((p) => p.name).join(", ");
+        weeklyFields.push({
+          name: "<:boat:1495083435612438729> Attaques bateau",
+          value: `${liveBoatTotal} attaque${liveBoatTotal > 1 ? "s" : ""} — ${boatNames}`,
+          inline: false,
+        });
+      }
     }
 
     // Zéro GDC et zéro don : dans un field si ≤ 1024, sinon dans la description (4096)
@@ -1601,7 +1607,7 @@ async function postWarSummary(
       }
     }
 
-    if (tag !== "QU9UQJRL" && weeklyDuelMissingInfo.players.length > 0) {
+    if (!isNoWarClan && weeklyDuelMissingInfo.players.length > 0) {
       const totalMissingDuels = weeklyDuelMissingInfo.players.reduce(
         (sum, player) => sum + player.missingDuels,
         0,
@@ -1623,7 +1629,7 @@ async function postWarSummary(
       );
     }
 
-    if (clanRank !== null) {
+    if (!isNoWarClan && clanRank !== null) {
       const rankValue =
         clanRank === 1
           ? `${fmtRank(clanRank)} / 5 — ✅ Première place`
@@ -1635,7 +1641,7 @@ async function postWarSummary(
       });
     }
 
-    if (trophyChange !== null) {
+    if (!isNoWarClan && trophyChange !== null) {
       const sign = trophyChange >= 0 ? "+" : "";
       weeklyFields.push({
         name: "<:topplayers:1493708397407899648> Trophées de guerre",
