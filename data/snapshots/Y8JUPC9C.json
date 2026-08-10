@@ -16853,13 +16853,14 @@
           "start": "2026-08-09T09:57:00.000Z",
           "end": "2026-08-10T09:56:59.999Z"
         },
-        "snapshotTime": "2026-08-10T01:31:21.811Z",
+        "snapshotTime": "2026-08-10T02:45:43.671Z",
         "snapshotBackupTime": "2026-08-09T10:10:06.576Z",
         "decks": {
           "#202VQJY8RU": 4,
           "#2902YQRQL": 4,
           "#2GUPJ99G2": 4,
           "#2PG80VRY": 4,
+          "#809G8YC8": 4,
           "#80CCLY20L": 4,
           "#82UPUGYP": 4,
           "#82URJC8CR": 4,
@@ -16880,6 +16881,7 @@
           "#CYRGPVGVG": 4,
           "#G9LPGQUG": 4,
           "#GJ8RV8802": 4,
+          "#GJV2UG9P0": 4,
           "#GVGVR0J2U": 4,
           "#GYU0VLGL": 4,
           "#J8RU2RJ8C": 4,
@@ -16913,7 +16915,7 @@
           "#8PP9JQCLY": 2000,
           "#VQP8PU2V": 2100,
           "#8UL8JRCJ": 2600,
-          "#GJV2UG9P0": 1750,
+          "#GJV2UG9P0": 2550,
           "#UJQL9PCRJ": 2500,
           "#2GUPJ99G2": 2300,
           "#2CL028C80": 1800,
@@ -16929,7 +16931,7 @@
           "#8RYQ8Y0GY": 2750,
           "#UJ89GUUUY": 2750,
           "#C0VQRUP2": 2650,
-          "#809G8YC8": 2000,
+          "#809G8YC8": 2650,
           "#9VQ0J29Y": 2800,
           "#L2RQPGRY": 2600,
           "#99VY0090": 2650,
@@ -16991,7 +16993,9 @@
           "#P9R8Y90P8": 1,
           "#C2RL8UVYV": 1,
           "#8UL8JRCJ": 1,
-          "#QQLYUL0R": 1
+          "#QQLYUL0R": 1,
+          "#GJV2UG9P0": 1,
+          "#809G8YC8": 1
         },
         "_totalDonationsByTag": {
           "#QCJJ8JG0": 51810,
@@ -17008,7 +17012,7 @@
           "#G9LPGQUG": 67264,
           "#2PG80VRY": 204265,
           "#82URJC8CR": 135144,
-          "#809G8YC8": 96222,
+          "#809G8YC8": 96230,
           "#8QL2J8PQ": 189675,
           "#8RYQ8Y0GY": 54173,
           "#P9R8Y90P8": 41217,
@@ -17060,7 +17064,7 @@
           "#8PP9JQCLY": 16,
           "#VQP8PU2V": 16,
           "#8UL8JRCJ": 16,
-          "#GJV2UG9P0": 12,
+          "#GJV2UG9P0": 16,
           "#UJQL9PCRJ": 16,
           "#2GUPJ99G2": 16,
           "#2CL028C80": 12,
@@ -17076,7 +17080,7 @@
           "#8RYQ8Y0GY": 16,
           "#UJ89GUUUY": 16,
           "#C0VQRUP2": 16,
-          "#809G8YC8": 12,
+          "#809G8YC8": 16,
           "#9VQ0J29Y": 16,
           "#L2RQPGRY": 16,
           "#99VY0090": 16,
@@ -17101,7 +17105,7 @@
           "#QQLYUL0R": 16,
           "#888Y29GY": 16
         },
-        "snapshotCount": 159
+        "snapshotCount": 167
       }
     ],
     "donationBaseline": {
