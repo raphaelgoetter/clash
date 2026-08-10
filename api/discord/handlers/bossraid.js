@@ -31,7 +31,9 @@ import {
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
 
 const BOSSRAID_COLOR = 0xc0392b;
-const ULTIMATE_NAMES = {
+// Exportées pour être réutilisées telles quelles par scripts/bossRaidStatus.js
+// (projection du jour suivant), plutôt que de dupliquer ces libellés.
+export const ULTIMATE_NAMES = {
   archeres: "🏹 Volée Céleste",
   sorcier: "🔮 Surcharge Arcane",
   voleuse: "🗡️ Coup à la Gorge",
@@ -39,7 +41,7 @@ const ULTIMATE_NAMES = {
 // Rappel systématique de l'effet à chaque affichage du nom d'une Ultime
 // (bilan du jour, projection Espion, Journal) — le nom seul ne suffit pas à
 // comprendre ce qui vient de se passer.
-const ULTIMATE_EFFECTS = {
+export const ULTIMATE_EFFECTS = {
   archeres: "les Archères ignorent la Défense du Boss et la protection du Chevalier, 100% dégâts pour toutes",
   sorcier: "les dégâts magiques de tous les Sorciers sont doublés",
   voleuse: "la Défense et la Résistance du Boss tombent à 0/10 pour demain",

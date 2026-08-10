@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // bossRaidStatus.js
 // Affiche l'état courant de Boss Raid (phase, jour, posture du Boss, score
-// cumulé, votes du jour) sans avoir besoin d'ouvrir Discord — pratique pour
+// cumulé, votes du jour) ainsi qu'une projection du Jour suivant basée sur
+// les votes actuels, sans avoir besoin d'ouvrir Discord — pratique pour
 // suivre l'avancement avant de décider de relancer manuellement
 // `npm run bossraid:public`. Comme pour l'Aventure/le Tamagoshi/Robinson, ce
 // script tient lieu d'affichage admin (le bouton Journal ne montre lui que
@@ -17,7 +18,10 @@ import {
   readState,
   tallyVotes,
   listVotes,
+  previewCloture,
+  activeEventForDay,
 } from "../backend/services/bossraid.js";
+import { ULTIMATE_NAMES, ULTIMATE_EFFECTS } from "../api/discord/handlers/bossraid.js";
 import { resolveDisplayName } from "../backend/services/discordUsers.js";
 
 (async () => {
@@ -65,4 +69,23 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
   }
 
   console.log(`\nTotal : ${votes.length} votant${votes.length > 1 ? "s" : ""} aujourd'hui.`);
+
+  // Projection : clôture le jour EN COURS avec les votes actuels (lecture
+  // seule, previewCloture n'écrit rien) — même calcul que le bouton Espion.
+  // Ne préjuge pas des votes qui arriveront encore avant 08:00 UTC.
+  const projection = await previewCloture(state.jour, config);
+  console.log(`\n🔮 Projection si la clôture avait lieu maintenant :`);
+  console.log(`💥 Dégâts infligés aujourd'hui : ${projection.totalDamageDuJour}`);
+  if (projection.allIn) {
+    console.log(`⚡ Ultime déclenchée : ${ULTIMATE_NAMES[projection.allIn]} — ${ULTIMATE_EFFECTS[projection.allIn]}.`);
+  }
+  console.log(`\n→ Jour ${state.jour + 1}/${config.duree_jours} :`);
+  console.log(`  🛡️ Défense    : ${projection.bossStatsApres.defense}/10`);
+  console.log(`  🔮 Résistance : ${projection.bossStatsApres.resistance}/10`);
+  console.log(`  🏆 Dégâts cumulés : ${projection.totalDegatsApres}`);
+
+  const lendemain = activeEventForDay(state.jour + 1, config.evenements_boss);
+  if (lendemain) {
+    console.log(`  📯 Événement prévu : ${lendemain.emoji} ${lendemain.nom} — ${lendemain.description}`);
+  }
 })();

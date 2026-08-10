@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // tamagotchiStatus.js
-// Affiche l'état courant du Tamagoshi (jauges, étoiles, votes du jour) sans
-// avoir besoin d'ouvrir Discord — pratique pour suivre l'avancement avant de
+// Affiche l'état courant du Tamagoshi (jauges, étoiles, votes du jour) ainsi
+// qu'une projection du Jour suivant basée sur les votes actuels, sans avoir
+// besoin d'ouvrir Discord — pratique pour suivre l'avancement avant de
 // décider de relancer manuellement `npm run tamagotchi:public`. Ce jeu n'a
 // pas de bouton "Historique" dans Discord, ce script en tient lieu côté
 // admin (comme scripts/aventureVotes.js pour l'Aventure).
@@ -11,7 +12,15 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { loadTamagotchiConfig, readState, tallyVotes, listVotes } from "../backend/services/tamagotchi.js";
+import {
+  loadTamagotchiConfig,
+  readState,
+  tallyVotes,
+  listVotes,
+  previewCloseDay,
+  eventForDay,
+  applyGaugeDelta,
+} from "../backend/services/tamagotchi.js";
 import { renderGaugeBar } from "../api/discord/handlers/tamagotchi.js";
 import { resolveDisplayName } from "../backend/services/discordUsers.js";
 
@@ -53,4 +62,25 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
   }
 
   console.log(`\nTotal : ${votes.length} vote${votes.length > 1 ? "s" : ""} aujourd'hui.`);
+
+  // Projection : clôture le jour EN COURS avec les votes actuels (lecture
+  // seule, previewCloseDay n'écrit rien) — même calcul que --dry-run, sans
+  // consommer les votes. Ne préjuge pas des votes qui arriveront encore
+  // avant 08:00 UTC.
+  const closure = await previewCloseDay(state, config);
+  const jourSuivant = state.jour + 1;
+  console.log(`\n🔮 Projection si la clôture avait lieu maintenant :`);
+  console.log(`Bilan du Jour ${state.jour} : ${closure.rating.rating} (${closure.rating.starDelta >= 0 ? "+" : ""}${closure.rating.starDelta} ⭐)`);
+
+  if (jourSuivant > config.duree_jours) {
+    console.log(`→ Jour ${jourSuivant} : fin de partie, ${state.starTotal + closure.rating.starDelta} étoile(s) au total.`);
+  } else {
+    const event = eventForDay(jourSuivant, config.evenements_possibles);
+    const gaugesProjetees = event ? applyGaugeDelta(closure.gaugesClosing, event.modificateur_jauges) : closure.gaugesClosing;
+    console.log(`→ Jour ${jourSuivant}/${config.duree_jours} :`);
+    if (event) console.log(`  📯 Événement : ${event.titre}`);
+    console.log(`  🍭 Estomac : ${renderGaugeBar(gaugesProjetees.estomac)}`);
+    console.log(`  ⚡ Énergie : ${renderGaugeBar(gaugesProjetees.energie)}`);
+    console.log(`  🥨 Moral   : ${renderGaugeBar(gaugesProjetees.moral)}`);
+  }
 })();

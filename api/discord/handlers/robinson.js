@@ -208,7 +208,8 @@ function buildRobinsonComponents(jour, config, voteCounts, event) {
 // archiveManche()/listManches()/computeMancheScore() dans robinson.js),
 // avec un 🏆 sur la meilleure manche toutes issues confondues.
 
-function outcomeLabel(outcome) {
+// Exportée pour scripts/robinsonStatus.js (projection du Jour suivant).
+export function outcomeLabel(outcome) {
   if (outcome === "victoire_radeau") return "🛶 Victoire (Radeau)";
   if (outcome === "victoire_jour11") return "🚢 Victoire (Jour 11)";
   return "💀 Défaite";
@@ -409,7 +410,10 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
   const components = buildRobinsonComponents(jourSuivant, config, {}, event);
 
   if (dryRun) {
-    return { dryRun: true, jour: jourSuivant, embed, components, event };
+    // stocks/radeauPoints exposés en plus de l'embed pour scripts/robinsonStatus.js
+    // (projection numérique du Jour suivant), qui a besoin des valeurs brutes
+    // plutôt que de reparser le texte de l'embed.
+    return { dryRun: true, jour: jourSuivant, embed, components, event, stocks: stocksPourEmbed, radeauPoints: radeauPointsPourEmbed };
   }
 
   return publishAndWriteState(channelId, state, {

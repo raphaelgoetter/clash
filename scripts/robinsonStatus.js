@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // robinsonStatus.js
-// Affiche l'état courant de Robinson (stocks, radeau, votes du jour) sans
-// avoir besoin d'ouvrir Discord — pratique pour suivre l'avancement avant de
+// Affiche l'état courant de Robinson (stocks, radeau, votes du jour) ainsi
+// qu'une projection du Jour suivant basée sur les votes actuels, sans avoir
+// besoin d'ouvrir Discord — pratique pour suivre l'avancement avant de
 // décider de relancer manuellement `npm run robinson:public`. Comme pour
 // l'Aventure/le Tamagoshi, ce script tient lieu d'affichage admin (le bouton
 // Journal de Bord ne montre lui que les besoins et l'historique, jamais le
@@ -21,6 +22,7 @@ import {
   tallyVotes,
   listVotes,
 } from "../backend/services/robinson.js";
+import { postRobinson, outcomeLabel } from "../api/discord/handlers/robinson.js";
 import { resolveDisplayName } from "../backend/services/discordUsers.js";
 
 (async () => {
@@ -64,4 +66,22 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
   }
 
   console.log(`\nTotal : ${votes.length} votant${votes.length > 1 ? "s" : ""} aujourd'hui.`);
+
+  // Projection : réutilise postRobinson() en --dry-run (lecture seule, aucune
+  // écriture Redis, aucun appel Discord) pour ne pas dupliquer la logique des
+  // événements (bonus Épave/Colis Royal/Poissons pourris) — canal factice, la
+  // publication n'est jamais atteinte en dry-run. Ne préjuge pas des votes
+  // qui arriveront encore avant 08:00 UTC.
+  const projection = await postRobinson("dry-run", { dryRun: true, noPing: true, isPublic: false });
+  console.log(`\n🔮 Projection si la clôture avait lieu maintenant :`);
+  if (projection.final) {
+    console.log(`→ Fin de partie : ${outcomeLabel(projection.outcome)}`);
+  } else {
+    const sectionsProjetees = computeRaftSections(projection.radeauPoints, config.points_par_section);
+    console.log(`→ Jour ${projection.jour}/${config.duree_jours}${projection.event ? ` — événement : ${projection.event.nom}` : ""} :`);
+    console.log(`  🐟 Nourriture : ${projection.stocks.poisson}`);
+    console.log(`  💧 Eau        : ${projection.stocks.eau}`);
+    console.log(`  🪵 Bois       : ${projection.stocks.bois}`);
+    console.log(`  🛶 Radeau     : ${projection.radeauPoints} pts (${sectionsProjetees}/${config.radeau_sections_max} sections)`);
+  }
 })();
