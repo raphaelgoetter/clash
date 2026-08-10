@@ -59,9 +59,15 @@ const DAY1_INTRO =
 
 // ── Rendu des jauges ─────────────────────────────────────────────
 
+// 8 paliers (nombre pair) plutôt que 5 ou 7 : à 50% pile, value/segment tombe
+// sur un entier exact (4/8) sans arrondi, contrairement à un nombre impair de
+// paliers où 50% tombe systématiquement sur une moitié (arrondie vers le
+// haut) et penche donc visuellement vers le vert.
+const GAUGE_SEGMENTS = 8;
+
 export function renderGaugeBar(value) {
-  const filled = Math.max(0, Math.min(5, Math.round(value / 20)));
-  return `${"🟩".repeat(filled)}${"🟥".repeat(5 - filled)} ${value}%`;
+  const filled = Math.max(0, Math.min(GAUGE_SEGMENTS, Math.round((value / 100) * GAUGE_SEGMENTS)));
+  return `${"🟩".repeat(filled)}${"🟥".repeat(GAUGE_SEGMENTS - filled)} ${value}%`;
 }
 
 function renderGaugeLine(label, value) {
