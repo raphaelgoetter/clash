@@ -38,6 +38,7 @@ import {
 } from "../backend/services/warStandings.js";
 import { resolveMembersChannelId } from "../backend/services/discordChannels.js";
 import { isJoinedThisWar } from "../backend/services/arrivalUtils.js";
+import { getRoleIdByName } from "../backend/services/discordRoles.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CACHE_DIR = path.join(
@@ -54,12 +55,21 @@ const CLINCH_LOG_FILE = path.join(
   "data",
   "war-clinch-log.json",
 );
+const DISCORD_LINKS_FILE = path.join(
+  __dirname,
+  "..",
+  "data",
+  "discord-links.json",
+);
 
 const DISCORD_API = "https://discord.com/api/v10";
 const DRY_RUN = process.argv.includes("--dry-run");
 const FORCE = process.argv.includes("--force");
 const WEEKLY_ONLY = process.argv.includes("--weekly-only");
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const MAX_CLAN_SIZE = 50;
+// Rôles Discord auxquels les membres peuvent s'abonner librement.
+const ACTIVITY_ROLE_NAMES = ["ENTRAÎNEMENT", "TOURNOIS", "MULTI-COMPTES"];
 
 const CLAN_FILTER = (() => {
   const idx = process.argv.indexOf("--clan");
@@ -406,6 +416,91 @@ async function readClanMemberNames(tag) {
   } catch {
     return {};
   }
+}
+
+let discordLinksCache = null;
+async function loadDiscordLinks() {
+  if (discordLinksCache) return discordLinksCache;
+  if (!existsSync(DISCORD_LINKS_FILE)) {
+    discordLinksCache = {};
+    return discordLinksCache;
+  }
+  try {
+    discordLinksCache = JSON.parse(
+      await readFile(DISCORD_LINKS_FILE, "utf-8"),
+    );
+  } catch {
+    discordLinksCache = {};
+  }
+  return discordLinksCache;
+}
+
+let guildMemberByIdCache = null;
+async function loadGuildMemberById() {
+  if (guildMemberByIdCache) return guildMemberByIdCache;
+  const guildId = process.env.DISCORD_GUILD_ID;
+  const token = process.env.DISCORD_TOKEN;
+  if (!guildId || !token) {
+    guildMemberByIdCache = new Map();
+    return guildMemberByIdCache;
+  }
+  try {
+    const res = await fetch(
+      `${DISCORD_API}/guilds/${guildId}/members?limit=1000`,
+      { headers: { Authorization: `Bot ${token}` } },
+    );
+    const guildMembers = res.ok ? await res.json() : [];
+    guildMemberByIdCache = new Map(
+      guildMembers.map((m) => [m.user?.id, m]),
+    );
+  } catch {
+    guildMemberByIdCache = new Map();
+  }
+  return guildMemberByIdCache;
+}
+
+// Croise les membres du clan (memberNames, cf. readClanMemberNames) avec les
+// liens Discord (data/discord-links.json) et les membres du serveur Discord
+// (avec leurs rôles) pour déterminer, par membre, s'il est lié à Discord et
+// s'il a au moins un des rôles d'activité.
+function computeDiscordAndRolesStats(memberNames, links, guildMemberById, roleIds) {
+  const targetRoleIds = new Set(roleIds.filter(Boolean));
+  const missingLinked = [];
+  const missingRoles = [];
+  let linkedCount = 0;
+  let rolesCount = 0;
+
+  for (const [tag, info] of Object.entries(memberNames)) {
+    const entry = { name: info?.name || tag, tag };
+    const discordId = links[tag];
+    const guildMember = discordId ? guildMemberById.get(discordId) : null;
+
+    if (guildMember) {
+      linkedCount += 1;
+    } else {
+      missingLinked.push(entry);
+    }
+
+    const hasActivityRole =
+      guildMember &&
+      targetRoleIds.size > 0 &&
+      (guildMember.roles ?? []).some((roleId) => targetRoleIds.has(roleId));
+    if (hasActivityRole) {
+      rolesCount += 1;
+    } else {
+      missingRoles.push(entry);
+    }
+  }
+
+  return { linkedCount, missingLinked, rolesCount, missingRoles };
+}
+
+// "manque X, Y, Z" seulement si le nombre de manquants est ≤ max, sinon rien
+// (le compte X/50 suffit déjà à communiquer le manque).
+function formatMissing(entries, max = 5) {
+  if (!entries.length || entries.length > max) return "";
+  const names = entries.map((entry) => entry.name ?? entry.tag ?? "inconnu");
+  return ` (manque ${names.join(", ")})`;
 }
 
 /**
@@ -1310,7 +1405,7 @@ async function postWarSummary(
     }
   }
 
-  if (dailyDuelMissingInfo.players.length > 0) {
+  if (tag !== "QU9UQJRL" && dailyDuelMissingInfo.players.length > 0) {
     const totalMissingDuels = dailyDuelMissingInfo.players.reduce(
       (sum, player) => sum + player.missingDuels,
       0,
@@ -1549,6 +1644,33 @@ async function postWarSummary(
       });
     }
 
+    const [discordLinks, guildMemberById] = await Promise.all([
+      loadDiscordLinks(),
+      loadGuildMemberById(),
+    ]);
+    const activityRoleIds = await Promise.all(
+      ACTIVITY_ROLE_NAMES.map((name) => getRoleIdByName(name)),
+    );
+    const { linkedCount, missingLinked, rolesCount, missingRoles } =
+      computeDiscordAndRolesStats(
+        memberNames,
+        discordLinks,
+        guildMemberById,
+        activityRoleIds,
+      );
+    weeklyFields.push(
+      {
+        name: "<:discord:1526507049779990601> Discord",
+        value: `${linkedCount}/${MAX_CLAN_SIZE}${formatMissing(missingLinked)}`,
+        inline: false,
+      },
+      {
+        name: "🎭 Rôles",
+        value: `${rolesCount}/${MAX_CLAN_SIZE}${formatMissing(missingRoles)}`,
+        inline: false,
+      },
+    );
+
     const weeklyEmbed = {
       title: `<:stats:1499284927894650950> ${clanName} · Bilan de la semaine`,
       description: `Résumé de la semaine${allWeekDays[0]?.week ? ` ${allWeekDays[0].week}` : ""}${zeroBothDescription}`,
@@ -1587,8 +1709,6 @@ async function main() {
 
   for (const tag of ALLOWED_CLANS) {
     if (CLAN_FILTER && tag !== CLAN_FILTER) continue;
-    // GDC non obligatoire dans Les Revoltes (clan 3) : résumés journalier/hebdo désactivés.
-    if (tag === "QU9UQJRL") continue;
     try {
       const endedDay = getEndedWarDay(now, tag);
       if (!endedDay) {

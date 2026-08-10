@@ -29,7 +29,15 @@ const DISCORD_LINKS_FILE = path.join(
 );
 const DISCORD_API = "https://discord.com/api/v10";
 const DRY_RUN = process.argv.includes("--dry-run");
-const CLAN_TAGS = ["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"];
+// --clan=TAG : limite l'envoi à un seul clan (utile pour un renvoi ciblé
+// sans reposter le résumé des autres clans).
+const CLAN_FILTER_ARG = process.argv.find((a) => a.startsWith("--clan="));
+const CLAN_FILTER = CLAN_FILTER_ARG
+  ? CLAN_FILTER_ARG.slice("--clan=".length).toUpperCase().replace(/^#/, "")
+  : null;
+const CLAN_TAGS = ["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"].filter(
+  (tag) => !CLAN_FILTER || tag === CLAN_FILTER,
+);
 // QU9UQJRL (Les Revoltes, Clan 3) : GDC non obligatoire dans ce clan, résumé
 // allégé (pas de Fiabilité / À risque / Inactifs, cf. buildEmbed()).
 const NO_WAR_CLAN_TAGS = new Set(["QU9UQJRL"]);
