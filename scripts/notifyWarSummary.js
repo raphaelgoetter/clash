@@ -4,8 +4,11 @@
 // chaque channel de clan. Doit être exécuté après le reset UTC du clan.
 //
 // Usage :
-//   node scripts/notifyWarSummary.js           — mode normal (poste sur Discord)
-//   node scripts/notifyWarSummary.js --dry-run — affiche l'embed sans poster
+//   node scripts/notifyWarSummary.js                — mode normal (poste sur Discord)
+//   node scripts/notifyWarSummary.js --dry-run       — affiche l'embed sans poster
+//   node scripts/notifyWarSummary.js --clan TAG      — limite à un seul clan
+//   node scripts/notifyWarSummary.js --force         — ignore l'anti-doublon (repost)
+//   node scripts/notifyWarSummary.js --weekly-only   — ne poste que le bilan hebdo (pas le résumé journalier)
 
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
@@ -55,76 +58,8 @@ const CLINCH_LOG_FILE = path.join(
 const DISCORD_API = "https://discord.com/api/v10";
 const DRY_RUN = process.argv.includes("--dry-run");
 const FORCE = process.argv.includes("--force");
+const WEEKLY_ONLY = process.argv.includes("--weekly-only");
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-const ROLE_CACHE = new Map();
-const CLAN_ROLE_NAMES = {
-  Y8JUPC9C: "LA RESISTANCE ★",
-  LRQP20V9: "LES RESISTANTS ★",
-  QU9UQJRL: "LES REVOLTES ★",
-};
-
-function normalizeRoleName(value) {
-  return String(value ?? "")
-    .trim()
-    .replace(/\s+/g, " ")
-    .toLowerCase();
-}
-
-async function fetchGuildRoles(token) {
-  const guildId = process.env.DISCORD_GUILD_ID;
-  if (!guildId) {
-    console.warn(
-      "[notifyWarSummary] Variable manquante: DISCORD_GUILD_ID, rôle Discord désactivé.",
-    );
-    const cacheKey = `roles:undefined`;
-    if (ROLE_CACHE.has(cacheKey)) {
-      return ROLE_CACHE.get(cacheKey);
-    }
-    ROLE_CACHE.set(cacheKey, []);
-    return [];
-  }
-
-  const cacheKey = `roles:${guildId}`;
-  if (ROLE_CACHE.has(cacheKey)) {
-    return ROLE_CACHE.get(cacheKey);
-  }
-
-  const res = await fetch(`${DISCORD_API}/guilds/${guildId}/roles`, {
-    headers: { Authorization: `Bot ${token}` },
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Discord API ${res.status}: ${err}`);
-  }
-
-  const roles = await res.json();
-  ROLE_CACHE.set(cacheKey, Array.isArray(roles) ? roles : []);
-  return ROLE_CACHE.get(cacheKey);
-}
-
-async function resolveClanRoleMention(token, clanTag) {
-  const roleName = CLAN_ROLE_NAMES[clanTag];
-  if (!roleName) return {};
-
-  const roles = await fetchGuildRoles(token);
-  if (!roles.length) {
-    console.warn(
-      `[notifyWarSummary] Envoi sans mention du rôle Discord: ${roleName}.`,
-    );
-    return {};
-  }
-
-  const role = roles.find(
-    (entry) => normalizeRoleName(entry?.name) === normalizeRoleName(roleName),
-  );
-  if (!role?.id) {
-    console.warn(`[notifyWarSummary] Rôle Discord introuvable: ${roleName}.`);
-    return {};
-  }
-
-  return { id: role.id, mention: `<@&${role.id}>` };
-}
 
 const CLAN_FILTER = (() => {
   const idx = process.argv.indexOf("--clan");
@@ -954,11 +889,17 @@ async function postWarSummary(
 
   // Snapshot pré-reset (T-2 min) : source de vérité exacte.
   // _cumulFamePreReset est le cumul hebdomadaire capturé avant tout deck de la nouvelle journée.
+  // Si le reset réel du clan (CLAN_RESET_TIMES, à recaler chaque saison) est déjà passé au
+  // moment du snapshot T-2 min, l'API renvoie une fame déjà remise à 0 pour la nouvelle
+  // journée : la capture a des clés mais une somme nulle. Un cumul hebdo réellement nul après
+  // des decks joués est quasi impossible → on rejette cette capture pour retomber sur
+  // _cumulFame (cumul déjà accumulé au fil de la journée) ou apiWeekFame (raceLog).
   const cumulFamePreReset = dayEntry._cumulFamePreReset ?? null;
   const hasPreResetSnapshot =
     Boolean(dayEntry.snapshotPreResetTime) &&
     cumulFamePreReset !== null &&
-    Object.keys(cumulFamePreReset).length > 0;
+    Object.keys(cumulFamePreReset).length > 0 &&
+    sumValues(cumulFamePreReset) > 0;
 
   const hasFameData =
     liveTodayCumul !== null ||
@@ -1485,7 +1426,9 @@ async function postWarSummary(
     return;
   }
 
-  await sendDiscordEmbed(tag, channelId, token, dailyEmbed);
+  if (!WEEKLY_ONLY) {
+    await sendDiscordEmbed(tag, channelId, token, dailyEmbed);
+  }
 
   if (weekly) {
     const weeklyFields = [];
@@ -1614,14 +1557,10 @@ async function postWarSummary(
       footer: { text: `Constat fait le ${postDateFR}` },
     };
 
-    const role = await resolveClanRoleMention(token, tag);
     const payload = {
-      content: role?.mention ?? null,
+      content: null,
       embeds: [weeklyEmbed],
-      allowed_mentions: {
-        parse: [],
-        roles: role?.id ? [role.id] : [],
-      },
+      allowed_mentions: { parse: [] },
     };
 
     await sendDiscordPayload(tag, channelId, token, payload);
