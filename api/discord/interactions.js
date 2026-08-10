@@ -1893,6 +1893,7 @@ async function buildClanReportPayload(resolved) {
     }
 
     function memberLine(m) {
+      if (isNoWarClan) return `- [${m.name}](${trustPlayerUrl(m.tag)})`;
       const icon = RELIABILITY_ICON[m.color] ?? RELIABILITY_ICON.orange;
       const pct = Math.round(Number(m.reliability ?? 0));
       return `- [${m.name}](${trustPlayerUrl(m.tag)}) · ${icon} ${pct}%`;
