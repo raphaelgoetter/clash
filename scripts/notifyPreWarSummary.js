@@ -22,7 +22,8 @@ const CACHE_DIR = path.join(
 const LOG_FILE = path.join(__dirname, "..", "data", "pre-gdc-weekly-log.json");
 const DISCORD_API = "https://discord.com/api/v10";
 const DRY_RUN = process.argv.includes("--dry-run");
-const CLAN_TAGS = ["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"];
+// QU9UQJRL (Les Revoltes, Clan 3) exclu : GDC non obligatoire dans ce clan.
+const CLAN_TAGS = ["Y8JUPC9C", "LRQP20V9"];
 const MAX_CLAN_SIZE = 50;
 
 function normalizeTag(tag) {

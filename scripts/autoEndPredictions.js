@@ -93,6 +93,8 @@ async function main() {
   const nextStartText = formatParisDate(nextStart);
 
   for (const clanTag of FAMILY_CLAN_TAGS) {
+    // GDC non obligatoire dans Les Revoltes (clan 3) : pronostics désactivés.
+    if (clanTag === "QU9UQJRL") continue;
     const channelId = resolveMembersChannelId(clanTag, { thread: false });
     if (!channelId) {
       console.warn(`[${clanTag}] Pas de channel configuré, ignoré.`);

@@ -51,7 +51,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // ── Constants ──────────────────────────────────────────────────
 
 const DISCORD_API = "https://discord.com/api/v10";
-const CLAN_TAGS = ["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"];
+// QU9UQJRL (Les Revoltes, Clan 3) exclu : GDC non obligatoire dans ce clan.
+const CLAN_TAGS = ["Y8JUPC9C", "LRQP20V9"];
 const LOG_FILE = path.resolve(__dirname, "..", "data", "gdc-launch-log.json");
 
 const CLAN_ROLE_NAMES = {

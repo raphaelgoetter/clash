@@ -42,19 +42,19 @@
 ```md
 ## Règles de GDC "Les Revoltes" (clan 3)
 
-### ⚔️ Guerre de clan optionnelle mais conseillée
+### ⚔️ Clan adulte, chill & skill
 
-4️⃣ Les Revoltes est un clan d'entraînement à la GDC. Il est donc demandé de faire ses combats, mais ce n'est pas obligatoire. L'objectif est de compter au-moins 4 combats (sur 16) au cours d'une semaine de GDC.
+:small_blue_diamond: Les Revoltes est un clan pour joueurs actifs et compétitifs qui cherchent du lien social et à progresser sans la contrainte des guerres de clan qui n'y sont pas obligatoires. La participation à notre communauté Discord est obligatoire pour tous les membres.
 
 ### Dons et échanges
 
-🎁 Il est demandé d'être un minimum actif : participer aux discussions, donner des cartes, échanger à l'aide des jetons.
+🎁 Il est demandé d'être un minimum actif et de participer à la vie de la Famille : discuter sur Discord, aider les autres, donner des cartes, participer aux tournois de la famille ainsi qu'aux diverses activités.
 
 ### Sanctions
 
-🔸 Une semaine entière avec zéro combats GDC _et_ zéro dons → Rétrogradation ou exclusion vers le clan 4 "La Trève" (temporaire si raison exceptionnelle).
+🔸 Une semaine entière sans connexion, ou sans participation à la communauté (ex. zéro dons) → Rétrogradation ou exclusion (temporaire si raison exceptionnelle).
 
 ### Promotion
 
-<:crown:1518889526460682280> Une semaine entière avec au-moins 12 combats GDC (sur 16) → Promotion au rang "Aîné". Si joueur régulier en GDC et motivé → Accès possible dans le clan 2 "Les Resistants"
+<:crown:1518889526460682280> Participation active et régulière sur Discord → Promotion au rang "Aîné". Si joueur régulier et motivé pour les Guerres de Clan → Accès possible dans le clan 2 "Les Resistants"
 ```

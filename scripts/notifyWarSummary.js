@@ -1648,6 +1648,8 @@ async function main() {
 
   for (const tag of ALLOWED_CLANS) {
     if (CLAN_FILTER && tag !== CLAN_FILTER) continue;
+    // GDC non obligatoire dans Les Revoltes (clan 3) : résumés journalier/hebdo désactivés.
+    if (tag === "QU9UQJRL") continue;
     try {
       const endedDay = getEndedWarDay(now, tag);
       if (!endedDay) {
