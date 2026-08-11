@@ -62,7 +62,7 @@ const EVENEMENTS = [
   {
     id: "choucroute",
     jour: 9,
-    modificateur_jauges: { energie: -15, estomac: 35, moral: 0 },
+    modificateur_jauges: { energie: -15, estomac: 20, moral: 0 },
   },
 ];
 

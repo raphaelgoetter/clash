@@ -74,7 +74,7 @@
       "jour": 9,
       "titre": "Livraison mystère d'Alsace",
       "description": "Un colis contenant de la choucroute arrive sur le serveur ! Lilith se régale… un peu trop.",
-      "modificateur_jauges": { "energie": -15, "estomac": 35, "moral": 0 }
+      "modificateur_jauges": { "energie": -15, "estomac": 20, "moral": 0 }
     }
   ]
 }
