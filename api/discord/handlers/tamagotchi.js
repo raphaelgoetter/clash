@@ -29,6 +29,7 @@ import {
   MINI_JEUX_ROLE_NAME,
 } from "../../../backend/services/discordRoles.js";
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
+import { formatUtcTimeAsParis } from "../../../backend/services/dateUtils.js";
 
 const TAMAGOTCHI_COLOR = 0xe67e22;
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
@@ -289,7 +290,7 @@ async function buildTamagotchiEmbed(
     footer: {
       text: estPremierJour
         ? "Mohamed Light vous confie Lilith — bon courage !"
-        : "Votez avant 08:00 UTC demain pour orienter la journée.",
+        : `Votez avant ${formatUtcTimeAsParis(8)} (heure de Paris) demain pour orienter la journée.`,
     },
   };
 }
@@ -448,7 +449,7 @@ function buildReglesEmbed(config) {
   return {
     title: "📖 Règles du jeu — Tamagotchi",
     description: [
-      `Garde les 3 jauges de Lilith (Estomac 🍭, Énergie ⚡, Moral 😐) dans la **zone verte (${config.zones_ideales.min}-${config.zones_ideales.max}%)** au moment de la clôture quotidienne (08:00 UTC).`,
+      `Garde les 3 jauges de Lilith (Estomac 🍭, Énergie ⚡, Moral 😐) dans la **zone verte (${config.zones_ideales.min}-${config.zones_ideales.max}%)** au moment de la clôture quotidienne (${formatUtcTimeAsParis(8)}, heure de Paris).`,
       "",
       "**Impacts des actions :**",
       ...actionLines,
@@ -868,7 +869,7 @@ export async function handleInspecter(webhookUrl, jour, discordId, username) {
         : "(Tu as déjà voté Projections aujourd'hui — ton vote reste enregistré.)";
 
     const embed = {
-      title: "🔮 Projections — clôture demain 08:00 UTC",
+      title: `🔮 Projections — clôture demain ${formatUtcTimeAsParis(8)} (heure de Paris)`,
       description: [
         renderGaugeLine(
           `${gaugeIcon("estomac", projected.estomac)} Estomac`,

@@ -29,6 +29,7 @@ import {
   MINI_JEUX_ROLE_NAME,
 } from "../../../backend/services/discordRoles.js";
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
+import { formatUtcTimeAsParis } from "../../../backend/services/dateUtils.js";
 
 const BOSSRAID_COLOR = 0xc0392b;
 // Exportées pour être réutilisées telles quelles par scripts/bossRaidStatus.js
@@ -133,7 +134,7 @@ function buildAnnonceEmbed(config) {
       "Chevaliers, Voleuses, Sorciers, Archères, Espions — chaque rôle compte. Besoin d’un rappel des règles ? Clique sur *Règles & Rôles* ci-dessous.",
     ].join("\n"),
     color: BOSSRAID_COLOR,
-    footer: { text: "Le combat commence demain à 08:00 UTC." },
+    footer: { text: `Le combat commence demain à ${formatUtcTimeAsParis(8)} (heure de Paris).` },
   };
 }
 
@@ -174,7 +175,7 @@ async function buildCombatEmbed(jour, bossStats, totalDegatsCumules, closure, ev
     description: lines.join("\n"),
     color: BOSSRAID_COLOR,
     image: { url: bossRaidImageUrl(jour) },
-    footer: { text: "Votez avant 08:00 UTC demain pour orienter la journée. Vote modifiable jusqu’à la clôture." },
+    footer: { text: `Votez avant ${formatUtcTimeAsParis(8)} (heure de Paris) demain pour orienter la journée. Vote modifiable jusqu’à la clôture.` },
   };
 }
 
@@ -517,7 +518,7 @@ export async function handleEspion(webhookUrl, jour, discordId, username, botTok
     const lendemain = activeEventForDay(Number(jour) + 1, config.evenements_boss);
 
     const lines = [
-      `🔍 **Projection actuelle du Jour ${jour}** (basée sur les votes en cours, sujette à changement jusqu’à 08:00 UTC) :`,
+      `🔍 **Projection actuelle du Jour ${jour}** (basée sur les votes en cours, sujette à changement jusqu’à ${formatUtcTimeAsParis(8)}, heure de Paris) :`,
       `💥 Dégâts projetés : **${projection.totalDamageDuJour}**`,
     ];
     if (projection.allIn) {
@@ -592,7 +593,7 @@ function buildReglesEmbed(config) {
   const lines = [
     "Le clan affronte Kiki, un P.E.K.K.A. colossal, pendant 10 jours de combat. Objectif : accumuler le maximum de dégâts cumulés.",
     "",
-    "**Rôles (1 vote par membre et par jour, modifiable jusqu’à 08:00 UTC) :**",
+    `**Rôles (1 vote par membre et par jour, modifiable jusqu’à ${formatUtcTimeAsParis(8)}, heure de Paris) :**`,
   ];
 
   const chevalier = config.roles.chevalier;

@@ -109,6 +109,28 @@ export function warResetOffsetMs(clanTag = null) {
 }
 
 /**
+ * Convertit une heure UTC (ex. 08:00, l'heure des cron quotidiens des
+ * mini-jeux) en heure de Paris affichable (ex. "10h00"), en tenant compte du
+ * changement d'heure été/hiver — jamais figée en dur dans les messages
+ * publics, sous peine de devenir fausse à chaque bascule CET/CEST.
+ * @param {number} h  Heure UTC (0-23)
+ * @param {number} [m]  Minute UTC (0-59)
+ * @returns {string}
+ */
+export function formatUtcTimeAsParis(h, m = 0) {
+  const now = new Date();
+  const utcTimestamp = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+    h,
+    m,
+  );
+  const paris = new Date(utcTimestamp + parisOffsetMs(new Date(utcTimestamp)));
+  return `${paris.getUTCHours()}h${String(paris.getUTCMinutes()).padStart(2, "0")}`;
+}
+
+/**
  * Formate l'heure de reset GDC d'un clan en heure de Paris (ex. "9h44"),
  * en tenant compte du changement d'heure été/hiver.
  * @param {string|null} [clanTag]  Tag du clan (avec ou sans '#'). Fallback 09:40 si absent de CLAN_RESET_TIMES.
@@ -118,18 +140,7 @@ export function formatResetTimeParis(clanTag = null) {
   const cfg = clanTag
     ? CLAN_RESET_TIMES[String(clanTag).replace("#", "").toUpperCase()]
     : null;
-  const h = cfg?.h ?? 9;
-  const m = cfg?.m ?? 40;
-  const now = new Date();
-  const resetUtc = Date.UTC(
-    now.getUTCFullYear(),
-    now.getUTCMonth(),
-    now.getUTCDate(),
-    h,
-    m,
-  );
-  const resetParis = new Date(resetUtc + parisOffsetMs(new Date(resetUtc)));
-  return `${resetParis.getUTCHours()}h${String(resetParis.getUTCMinutes()).padStart(2, "0")}`;
+  return formatUtcTimeAsParis(cfg?.h ?? 9, cfg?.m ?? 40);
 }
 
 /**

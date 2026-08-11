@@ -50,6 +50,7 @@ import {
   MINI_JEUX_ROLE_NAME,
 } from "../../../backend/services/discordRoles.js";
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
+import { formatUtcTimeAsParis } from "../../../backend/services/dateUtils.js";
 
 const ROBINSON_COLOR = 0x1abc9c;
 const RESOURCE_LABELS = { poisson: "poisson(s)", eau: "eau", bois: "bois" };
@@ -157,7 +158,7 @@ async function buildRobinsonEmbed(jour, stocks, radeauPoints, config, event, est
     footer: {
       text: estPremierJour
         ? "Naufragés ! Survivez ensemble jusqu’au Jour 11, ou évadez-vous avant en finissant le Radeau."
-        : "Votez avant 08:00 UTC demain pour orienter la journée.",
+        : `Votez avant ${formatUtcTimeAsParis(8)} (heure de Paris) demain pour orienter la journée.`,
     },
   };
 }
@@ -721,7 +722,7 @@ export async function handleJournal(webhookUrl) {
     const lines = [
       `**Votants aujourd’hui : ${V}**`,
       "",
-      "**Besoins pour la clôture de 08:00 UTC :**",
+      `**Besoins pour la clôture de ${formatUtcTimeAsParis(8)} (heure de Paris) :**`,
       `🐟 Nourriture : ${besoin.poisson} nécessaire${manque.poisson > 0 ? ` — **il en manque ${manque.poisson}**` : " (couvert)"}`,
       `💧 Eau : ${besoin.eau} nécessaire${manque.eau > 0 ? ` — **il en manque ${manque.eau}**` : " (couvert)"}`,
       `🪵 Bois : ${besoin.bois} nécessaire${manque.bois > 0 ? ` — **il en manque ${manque.bois}**` : " (couvert)"}`,
