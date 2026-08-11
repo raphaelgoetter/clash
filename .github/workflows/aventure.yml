@@ -4,9 +4,13 @@ permissions:
   contents: read
 
 on:
-  # Quotidien 08:00 UTC
-  schedule:
-    - cron: "0 8 * * *"
+  # Cron désactivé : l'Aventure est terminée (partie jouée jusqu'au bout) et
+  # aucune suite n'est prévue pour l'instant — inutile de consommer un run
+  # quotidien pour rien (postAventure() détecte state.termine et ne poste
+  # rien, mais autant ne pas déclencher le workflow du tout). workflow_dispatch
+  # reste disponible si une nouvelle Aventure est relancée un jour.
+  # schedule:
+  #   - cron: "0 8 * * *"
   workflow_dispatch: {}
 
 jobs:
