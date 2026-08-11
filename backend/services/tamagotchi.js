@@ -104,6 +104,12 @@ function voteUsernamesKey(jour) {
   return `tamagotchi:vote_usernames:${jour}`;
 }
 
+const PILULE_TOTAL_KEY = "tamagotchi:pilule_total_used";
+
+function piluleUsedDayKey(jour) {
+  return `tamagotchi:pilule_used:${jour}`;
+}
+
 // ── Lecture de la config (statique, jamais mutée) ─────────────────
 
 let configCache = null;
@@ -160,6 +166,15 @@ export async function recordVote(jour, discordId, actionId, username) {
   return { status: "rejected", existing };
 }
 
+// Libère le vote du jour d'un joueur — utilisé uniquement quand un vote
+// "réservé" (ex. Pilule) échoue ensuite pour une raison indépendante du
+// joueur (déjà utilisée par quelqu'un d'autre, quota épuisé) : il n'a alors
+// pas réellement voté, il doit pouvoir revoter une vraie action. Même
+// précédent que releaseVoteSlot() dans backend/services/robinson.js.
+export async function releaseVote(jour, discordId) {
+  await getRedis().hdel(votesKey(jour), discordId);
+}
+
 export async function tallyVotes(jour) {
   const raw = await hgetallRaw(votesKey(jour));
   const counts = {};
@@ -185,6 +200,46 @@ export async function listVotes(jour) {
 
 async function clearVotes(jour) {
   await getRedis().del(votesKey(jour), voteUsernamesKey(jour));
+}
+
+// ── Pilule (filet de sécurité rare, Jours 4-10) ──────────────────────
+// Contrairement aux votes normaux (par joueur), la Pilule est une ressource
+// PARTAGÉE : au plus 1 réussite par jour (premier arrivé), et au plus
+// `cap` réussites cumulées sur toute la manche. SETNX quotidien d'abord (sans
+// effet de bord si échec), puis INCR du total (compensé s'il dépasse le
+// plafond) — cette ordre minimise la surface de compensation à un seul cas.
+export async function claimPilule(jour, cap) {
+  const redis = getRedis();
+  const dayClaimed = Number(await redis.setnx(piluleUsedDayKey(jour), "1"));
+  if (!dayClaimed) {
+    return { claimed: false, reason: "already_used_today" };
+  }
+  const totalUsed = Number(await redis.incr(PILULE_TOTAL_KEY));
+  if (totalUsed > cap) {
+    await redis.decr(PILULE_TOTAL_KEY);
+    return { claimed: false, reason: "total_exhausted" };
+  }
+  return { claimed: true, totalUsed };
+}
+
+// Lecture seule pour l'affichage (bouton Discord, script de statut) — séparée
+// de claimPilule() pour ne jamais muter l'état en construisant un embed.
+// Note : si le quota total a été atteint un jour donné, la clé du jour reste
+// "posée" (harmless, rien ne peut plus réussir de toute façon) — c'est pour
+// ça que l'appelant doit toujours vérifier `exhausted` avant `usedToday`.
+export async function readPiluleState(jour, cap) {
+  const redis = getRedis();
+  const [usedTodayRaw, totalUsedRaw] = await Promise.all([
+    redis.get(piluleUsedDayKey(jour)),
+    redis.get(PILULE_TOTAL_KEY),
+  ]);
+  const totalUsed = Number(totalUsedRaw) || 0;
+  return {
+    usedToday: usedTodayRaw != null,
+    totalUsed,
+    remaining: Math.max(0, cap - totalUsed),
+    exhausted: totalUsed >= cap,
+  };
 }
 
 // ── Fonctions pures de logique de jeu (aucun I/O, testées unitairement) ──
@@ -229,6 +284,18 @@ export function applyActionOverrides(actionsConfig, actionsModifiees) {
   for (const [id, overrideImpact] of Object.entries(actionsModifiees)) {
     if (!out[id]) continue;
     out[id] = { ...out[id], impact: { ...out[id].impact, ...overrideImpact } };
+  }
+  return out;
+}
+
+// Delta de la Pilule : rapproche chaque jauge de `target` d'au plus `maxStep`
+// points, sans jamais la dépasser (ex. valeur=79, target=55, maxStep=10 ->
+// -10 ; valeur=58, target=55, maxStep=10 -> -3, atteint la cible pile).
+// Résultat destiné à applyGaugeDelta() ci-dessous (pas de clamp/arrondi ici).
+export function computePiluleDelta(gauges, target, maxStep) {
+  const out = {};
+  for (const gauge of Object.keys(gauges)) {
+    out[gauge] = Math.max(-maxStep, Math.min(maxStep, target - gauges[gauge]));
   }
   return out;
 }
@@ -356,9 +423,14 @@ export async function closeDayAndAdvance(state, config) {
 // explicite (`--manches`, voir scripts/resetTamagotchi.js) l'efface, utile
 // en phase de test pour ne pas polluer l'archive avec des manches de test.
 export async function resetTamagotchi({ clearManches = false } = {}) {
-  await getRedis().del(STATE_KEY, HISTORIQUE_KEY);
+  // PILULE_TOTAL_KEY et les clés pilule_used:<jour> sont nettoyées
+  // inconditionnellement (même hors --manches) : les numéros de jour se
+  // répètent d'une manche à l'autre, une clé résiduelle bloquerait
+  // silencieusement le Jour 4 de la manche suivante.
+  await getRedis().del(STATE_KEY, HISTORIQUE_KEY, PILULE_TOTAL_KEY);
   await scanDelete("tamagotchi:votes:*");
   await scanDelete("tamagotchi:vote_usernames:*");
+  await scanDelete("tamagotchi:pilule_used:*");
   if (clearManches) {
     await getRedis().del(MANCHES_KEY, MANCHE_SEQ_KEY);
   }

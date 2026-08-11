@@ -67,6 +67,7 @@ import {
   handleVoteButton as handleTamagotchiVote,
   handleInspecter as handleTamagotchiInspecter,
   handleRegles as handleTamagotchiRegles,
+  handlePilule as handleTamagotchiPilule,
 } from "./handlers/tamagotchi.js";
 import {
   handleVoteButton as handleRobinsonVote,
@@ -8624,6 +8625,30 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleTamagotchiRegles(webhookUrl));
+    return;
+  }
+
+  // ── Tamagoshi : bouton "Pilule" (Jours 4-10, effet instantané, 1/jour + 2/manche max) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("tamagotchi_pilule:")
+  ) {
+    const jour = body.data.custom_id.split(":")[1];
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    // Comme tamagotchi_vote: (pas tamagotchi_inspecter:) : la Pilule mute les
+    // jauges et doit repatcher le message public, elle a donc besoin du bot
+    // token.
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() =>
+      handleTamagotchiPilule(webhookUrl, jour, discordId, username, process.env.DISCORD_TOKEN),
+    );
     return;
   }
 

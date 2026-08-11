@@ -28,6 +28,16 @@
       "label": "Projections",
       "emoji": "🔮",
       "is_info_action": true
+    },
+    "pilule": {
+      "label": "Pilule",
+      "emoji": "💊",
+      "is_info_action": true,
+      "day_min": 4,
+      "day_max": 10,
+      "target": 55,
+      "max_step": 10,
+      "total_cap": 2
     }
   },
   "evenements_possibles": [

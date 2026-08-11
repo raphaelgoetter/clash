@@ -12,6 +12,7 @@ import {
   readState,
   writeState,
   recordVote,
+  releaseVote,
   tallyVotes,
   previewCloseDay,
   closeDayAndAdvance,
@@ -22,6 +23,9 @@ import {
   computeFinalTier,
   archiveManche,
   listManches,
+  claimPilule,
+  readPiluleState,
+  computePiluleDelta,
 } from "../../../backend/services/tamagotchi.js";
 import {
   getRoleIdByName,
@@ -298,13 +302,26 @@ async function buildTamagotchiEmbed(
   };
 }
 
-function buildTamagotchiComponentsWithCounts(jour, config, voteCounts) {
+// Évite une lecture Redis inutile hors de la fenêtre [day_min, day_max] —
+// factorisé ici car appelé par les 3 sites qui reconstruisent l'embed du
+// jour (post quotidien, repatch après vote normal, repatch après Pilule).
+async function loadPiluleStateIfActive(jour, config) {
+  const pilule = config.actions.pilule;
+  if (!pilule || jour < pilule.day_min || jour > pilule.day_max) return null;
+  return readPiluleState(jour, pilule.total_cap);
+}
+
+// `piluleState` (nullable) est précalculé par l'appelant via
+// readPiluleState() — cette fonction reste synchrone/pure (aucun I/O), pour
+// que les 3 sites d'appel gardent le contrôle de quand lire Redis.
+function buildTamagotchiComponentsWithCounts(jour, config, voteCounts, piluleState) {
   const actionIds = Object.keys(config.actions).filter(
     (id) => !config.actions[id].is_info_action,
   );
   const inspecter = config.actions.inspecter;
+  const pilule = config.actions.pilule;
 
-  return [
+  const rows = [
     {
       type: 1,
       components: actionIds.map((id) => {
@@ -338,6 +355,34 @@ function buildTamagotchiComponentsWithCounts(jour, config, voteCounts) {
       ],
     },
   ];
+
+  // Rangée Pilule : uniquement Jours [day_min, day_max], et seulement si
+  // l'appelant a fourni son état (jamais construit à l'aveugle). `exhausted`
+  // est vérifié AVANT `usedToday` — voir readPiluleState() côté service pour
+  // pourquoi (la clé du jour peut rester "posée" même quota épuisé).
+  if (pilule && piluleState && jour >= pilule.day_min && jour <= pilule.day_max) {
+    const disabled = piluleState.exhausted || piluleState.usedToday;
+    const label = piluleState.exhausted
+      ? "Pilule — épuisée"
+      : piluleState.usedToday
+        ? "Pilule — déjà utilisée aujourd'hui"
+        : `Pilule (${piluleState.remaining}/${pilule.total_cap})`;
+    rows.push({
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: 2,
+          label: label.slice(0, 80),
+          emoji: { name: pilule.emoji },
+          disabled,
+          custom_id: `tamagotchi_pilule:${jour}`,
+        },
+      ],
+    });
+  }
+
+  return rows;
 }
 
 async function buildDayPayload(
@@ -350,7 +395,10 @@ async function buildDayPayload(
   voters,
   previousRating,
 ) {
-  const voteCounts = estPremierJour ? {} : await tallyVotes(jour);
+  const [voteCounts, piluleState] = await Promise.all([
+    estPremierJour ? Promise.resolve({}) : tallyVotes(jour),
+    loadPiluleStateIfActive(jour, config),
+  ]);
   return {
     embed: await buildTamagotchiEmbed(
       jour,
@@ -362,7 +410,7 @@ async function buildDayPayload(
       voters,
       previousRating,
     ),
-    components: buildTamagotchiComponentsWithCounts(jour, config, voteCounts),
+    components: buildTamagotchiComponentsWithCounts(jour, config, voteCounts, piluleState),
   };
 }
 
@@ -459,7 +507,9 @@ function buildReglesEmbed(config) {
       "",
       "🔮 **Projections** t'affiche en privé un aperçu des jauges telles qu'elles seraient si la journée se clôturait maintenant, selon les votes déjà exprimés — pratique pour coordonner le groupe. Elle ne modifie jamais les jauges, mais consomme ton vote du jour comme les 4 actions ci-dessus (c'est un choix, pas une simple consultation). Seul 📖 **Règles du jeu** est consultable librement, sans jamais consommer ton vote.",
       "",
-      "Un membre ne peut voter qu'une seule fois par jour parmi Nourrir, Bretzel, Sieste, Jouer et Projections, et ce vote n'est pas modifiable.",
+      `💊 **Pilule** (Jours ${config.actions.pilule.day_min} à ${config.actions.pilule.day_max}) rapproche instantanément les 3 jauges de Lilith de l'équilibre (${config.actions.pilule.target}%, dans la limite de ±${config.actions.pilule.max_step} points par jauge) — effet appliqué immédiatement, pas seulement à la clôture. Elle consomme ton vote du jour comme les autres actions, sauf si elle a déjà été utilisée (auquel cas ton vote est libéré, tu peux revoter). Usage très limité : une seule utilisation réussie par jour, et ${config.actions.pilule.total_cap} utilisations maximum sur toute la manche.`,
+      "",
+      "Un membre ne peut voter qu'une seule fois par jour parmi Nourrir, Bretzel, Sieste, Jouer, Projections et Pilule, et ce vote n'est pas modifiable.",
       "",
       `**⭐ Étoiles de dressage :** à chaque clôture, si les 3 jauges sont dans la zone verte c'est ${RATING_LABELS.parfaite} ; si une seule jauge est hors zone c'est ${RATING_LABELS.moyenne} ; si deux ou trois jauges sont hors zone c'est ${RATING_LABELS.catastrophe}.`,
       "C'est ce score cumulé sur les 10 jours que Mohamed Light regardera à son retour : 8 étoiles ou plus et il est impressionné, en dessous de 4 il est furieux et débarque dans l'arène avec un deck Mineur-Poison.",
@@ -773,7 +823,10 @@ export async function handleVoteButton(
     if (result.status === "rejected") return;
 
     const config = await loadTamagotchiConfig();
-    const voteCounts = await tallyVotes(state.jour);
+    const [voteCounts, piluleState] = await Promise.all([
+      tallyVotes(state.jour),
+      loadPiluleStateIfActive(state.jour, config),
+    ]);
     // lastRating n'est jamais renseigné pour le Jour 1 (aucun jour précédent
     // à clôturer) et toujours renseigné à partir du Jour 2 — repère fiable
     // pour reconstruire le MÊME embed que celui posté initialement ce jour-là.
@@ -792,6 +845,7 @@ export async function handleVoteButton(
       state.jour,
       config,
       voteCounts,
+      piluleState,
     );
 
     await fetch(
@@ -807,6 +861,135 @@ export async function handleVoteButton(
     );
   } catch (err) {
     console.error("[Tamagotchi] Échec traitement du vote:", err.message);
+  }
+}
+
+// ── Bouton [💊 Pilule] — filet de sécurité rare (Jours 4-10, voir tamagotchi.json).
+// Contrairement aux 4 actions normales, son effet est INSTANTANÉ (mutate
+// state.gauges directement, pas seulement à la clôture) et GARANTI (pas dilué
+// par computeDayImpact — is_info_action l'exclut du blend). Consomme le vote
+// du jour du joueur SEULEMENT si elle est effectivement appliquée : si la
+// réclamation échoue (déjà utilisée aujourd'hui / quota de manche épuisé),
+// le vote est libéré via releaseVote() pour que le joueur puisse revoter une
+// vraie action — même précédent que releaseVoteSlot() dans Robinson (Radeau).
+export async function handlePilule(webhookUrl, jour, discordId, username, botToken) {
+  try {
+    const state = await readState();
+    if (!state || state.termine || String(state.jour) !== String(jour)) {
+      await patchOriginal(webhookUrl, {
+        content:
+          "Le vote du jour a déjà été clôturé, la journée a changé — regarde le nouveau message !",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+
+    const config = await loadTamagotchiConfig();
+    const pilule = config.actions.pilule;
+    // Défense en profondeur : le bouton ne devrait jamais être rendu hors de
+    // [day_min, day_max], mais un custom_id périmé/forgé ne doit pas la
+    // contourner.
+    if (state.jour < pilule.day_min || state.jour > pilule.day_max) {
+      await patchOriginal(webhookUrl, {
+        content: "La Pilule n'est pas disponible aujourd'hui.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+
+    const voteResult = await recordVote(state.jour, discordId, "pilule", username);
+    if (voteResult.status === "rejected") {
+      await patchOriginal(webhookUrl, {
+        content:
+          "Tu as déjà voté aujourd'hui pour une autre action, ton vote est définitif jusqu'à demain !",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    if (voteResult.status === "already_recorded") {
+      await patchOriginal(webhookUrl, {
+        content: "Tu as déjà utilisé la Pilule aujourd'hui, c'est noté !",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+
+    // Premier vote Pilule du joueur ce jour-là — tente la réclamation partagée.
+    const claim = await claimPilule(state.jour, pilule.total_cap);
+    if (!claim.claimed) {
+      await releaseVote(state.jour, discordId);
+      const message =
+        claim.reason === "total_exhausted"
+          ? `La Pilule a déjà été utilisée ${pilule.total_cap} fois cette manche, elle n'est plus disponible.`
+          : "La Pilule vient d'être utilisée par quelqu'un d'autre aujourd'hui !";
+      await patchOriginal(webhookUrl, { content: message, embeds: [], components: [] });
+      return;
+    }
+
+    // Réclamation gagnée — applique l'effet. Re-lit l'état juste avant
+    // d'écrire pour réduire (sans l'éliminer) la fenêtre de course avec le
+    // cron quotidien : handlePilule est le premier code à muter state.gauges
+    // hors du flux de clôture (closeDayAndAdvance).
+    const freshState = await readState();
+    if (!freshState || freshState.termine || String(freshState.jour) !== String(jour)) {
+      await patchOriginal(webhookUrl, {
+        content: "Le jour a changé pendant l'opération, réessaie sur le nouveau message.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+
+    const delta = computePiluleDelta(freshState.gauges, pilule.target, pilule.max_step);
+    const newGauges = applyGaugeDelta(freshState.gauges, delta);
+    await writeState({ ...freshState, gauges: newGauges });
+
+    await patchOriginal(webhookUrl, {
+      content: "💊 Pilule administrée, les jauges de Lilith ont été rééquilibrées !",
+      embeds: [],
+      components: [],
+    });
+
+    // Repatch le message public — même découplage (PATCH direct au bot
+    // token) que handleVoteButton, pour refléter les nouvelles jauges ET
+    // l'état à jour du bouton Pilule (utilisée aujourd'hui / épuisée).
+    const voteCounts = await tallyVotes(freshState.jour);
+    const piluleState = await readPiluleState(freshState.jour, pilule.total_cap);
+    const estPremierJour = freshState.lastRating == null;
+    const embed = await buildTamagotchiEmbed(
+      freshState.jour,
+      newGauges,
+      config,
+      freshState.lastEvent,
+      freshState.starTotal,
+      estPremierJour,
+      freshState.dayVoters,
+      freshState.lastRating,
+    );
+    const components = buildTamagotchiComponentsWithCounts(
+      freshState.jour,
+      config,
+      voteCounts,
+      piluleState,
+    );
+
+    await fetch(
+      `https://discord.com/api/v10/channels/${freshState.channelId}/messages/${freshState.messageId}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bot ${botToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ embeds: [embed], components }),
+      },
+    );
+  } catch (err) {
+    console.error("[Tamagotchi] Échec traitement Pilule:", err.message);
   }
 }
 

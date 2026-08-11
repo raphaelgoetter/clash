@@ -20,6 +20,7 @@ import {
   previewCloseDay,
   eventForDay,
   applyGaugeDelta,
+  readPiluleState,
 } from "../backend/services/tamagotchi.js";
 import { renderGaugeBar, formatGaugeImpact, formatActionOverrides } from "../api/discord/handlers/tamagotchi.js";
 import { resolveDisplayName } from "../backend/services/discordUsers.js";
@@ -62,6 +63,17 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
   }
 
   console.log(`\nTotal : ${votes.length} vote${votes.length > 1 ? "s" : ""} aujourd'hui.`);
+
+  const pilule = config.actions.pilule;
+  if (state.jour >= pilule.day_min && state.jour <= pilule.day_max) {
+    const piluleState = await readPiluleState(state.jour, pilule.total_cap);
+    const statut = piluleState.exhausted
+      ? "épuisée pour cette manche"
+      : piluleState.usedToday
+        ? "déjà utilisée aujourd'hui"
+        : "disponible";
+    console.log(`\n💊 Pilule : ${statut} — ${piluleState.totalUsed}/${pilule.total_cap} utilisée(s) cette manche`);
+  }
 
   // Projection : clôture le jour EN COURS avec les votes actuels (lecture
   // seule, previewCloseDay n'écrit rien) — même calcul que --dry-run, sans

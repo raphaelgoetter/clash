@@ -4,6 +4,7 @@ import {
   computeDayImpact,
   applyGaugeDelta,
   applyActionOverrides,
+  computePiluleDelta,
   rateDay,
   eventForDay,
   computeFinalTier,
@@ -194,6 +195,34 @@ async function main() {
     energie: -10,
     moral: 0,
   });
+
+  // ── computePiluleDelta ──
+  // Écart < maxStep : atteint la cible pile, pas de dépassement.
+  assert.deepStrictEqual(computePiluleDelta({ estomac: 50, energie: 50, moral: 50 }, 55, 10), {
+    estomac: 5,
+    energie: 5,
+    moral: 5,
+  });
+  // Écart > maxStep dans les deux sens : plafonné à ±maxStep.
+  assert.deepStrictEqual(computePiluleDelta({ estomac: 20, energie: 95, moral: 55 }, 55, 10), {
+    estomac: 10,
+    energie: -10,
+    moral: 0,
+  });
+  // Cas concret : Moral à 79% (projection réelle observée en cours de manche).
+  assert.deepStrictEqual(computePiluleDelta({ estomac: 55, energie: 41, moral: 79 }, 55, 10), {
+    estomac: 0,
+    energie: 10,
+    moral: -10,
+  });
+  // Combiné à applyGaugeDelta (chemin réel utilisé par handlePilule).
+  assert.deepStrictEqual(
+    applyGaugeDelta(
+      { estomac: 20, energie: 95, moral: 55 },
+      computePiluleDelta({ estomac: 20, energie: 95, moral: 55 }, 55, 10),
+    ),
+    { estomac: 30, energie: 85, moral: 55 },
+  );
 
   // ── eventForDay ──
   assert.strictEqual(eventForDay(2, EVENEMENTS).id, "sans_appetit");
