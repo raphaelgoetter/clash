@@ -457,9 +457,12 @@ function buildReglesEmbed(config) {
       "**Impacts des actions :**",
       ...actionLines,
       "",
-      "🔮 **Projections** ne modifie jamais les jauges, mais consomme ton vote du jour comme les 4 actions ci-dessus (c'est un choix, pas une simple consultation). Seul 📖 **Règles du jeu** est consultable librement, sans jamais consommer ton vote.",
+      "🔮 **Projections** t'affiche en privé un aperçu des jauges telles qu'elles seraient si la journée se clôturait maintenant, selon les votes déjà exprimés — pratique pour coordonner le groupe. Elle ne modifie jamais les jauges, mais consomme ton vote du jour comme les 4 actions ci-dessus (c'est un choix, pas une simple consultation). Seul 📖 **Règles du jeu** est consultable librement, sans jamais consommer ton vote.",
       "",
       "Un membre ne peut voter qu'une seule fois par jour parmi Nourrir, Bretzel, Sieste, Jouer et Projections, et ce vote n'est pas modifiable.",
+      "",
+      `**⭐ Étoiles de dressage :** à chaque clôture, si les 3 jauges sont dans la zone verte c'est ${RATING_LABELS.parfaite} ; si une seule jauge est hors zone c'est ${RATING_LABELS.moyenne} ; si deux ou trois jauges sont hors zone c'est ${RATING_LABELS.catastrophe}.`,
+      "C'est ce score cumulé sur les 10 jours que Mohamed Light regardera à son retour : 8 étoiles ou plus et il est impressionné, en dessous de 4 il est furieux et débarque dans l'arène avec un deck Mineur-Poison.",
     ].join("\n"),
     color: TAMAGOTCHI_COLOR,
   };
