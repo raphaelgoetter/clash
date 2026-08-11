@@ -1,6 +1,6 @@
 // ============================================================
 // tamagotchi.js — Handlers Discord pour le Tamagotchi communautaire
-// "Bébé Dragon Lilith". Embed, boutons d'action (vote), Projections et
+// "Bébé Dragon Lilith". Embed, boutons d'action (vote), Projection et
 // Règles du jeu. La publication/suppression quotidienne passe uniquement
 // par scripts/postTamagotchi.js (postTamagotchi) — les boutons restent gérés
 // par api/discord/interactions.js.
@@ -314,7 +314,12 @@ async function loadPiluleStateIfActive(jour, config) {
 // `piluleState` (nullable) est précalculé par l'appelant via
 // readPiluleState() — cette fonction reste synchrone/pure (aucun I/O), pour
 // que les 3 sites d'appel gardent le contrôle de quand lire Redis.
-function buildTamagotchiComponentsWithCounts(jour, config, voteCounts, piluleState) {
+function buildTamagotchiComponentsWithCounts(
+  jour,
+  config,
+  voteCounts,
+  piluleState,
+) {
   const actionIds = Object.keys(config.actions).filter(
     (id) => !config.actions[id].is_info_action,
   );
@@ -360,7 +365,12 @@ function buildTamagotchiComponentsWithCounts(jour, config, voteCounts, piluleSta
   // l'appelant a fourni son état (jamais construit à l'aveugle). `exhausted`
   // est vérifié AVANT `usedToday` — voir readPiluleState() côté service pour
   // pourquoi (la clé du jour peut rester "posée" même quota épuisé).
-  if (pilule && piluleState && jour >= pilule.day_min && jour <= pilule.day_max) {
+  if (
+    pilule &&
+    piluleState &&
+    jour >= pilule.day_min &&
+    jour <= pilule.day_max
+  ) {
     const disabled = piluleState.exhausted || piluleState.usedToday;
     const label = piluleState.exhausted
       ? "Pilule — épuisée"
@@ -410,7 +420,12 @@ async function buildDayPayload(
       voters,
       previousRating,
     ),
-    components: buildTamagotchiComponentsWithCounts(jour, config, voteCounts, piluleState),
+    components: buildTamagotchiComponentsWithCounts(
+      jour,
+      config,
+      voteCounts,
+      piluleState,
+    ),
   };
 }
 
@@ -505,11 +520,11 @@ function buildReglesEmbed(config) {
       "**Impacts des actions :**",
       ...actionLines,
       "",
-      "🔮 **Projections** t'affiche en privé un aperçu des jauges telles qu'elles seraient si la journée se clôturait maintenant, selon les votes déjà exprimés — pratique pour coordonner le groupe. Elle ne modifie jamais les jauges, mais consomme ton vote du jour comme les 4 actions ci-dessus (c'est un choix, pas une simple consultation). Seul 📖 **Règles du jeu** est consultable librement, sans jamais consommer ton vote.",
+      "🔮 **Projection** t'affiche en privé un aperçu des jauges telles qu'elles seraient si la journée se clôturait maintenant, selon les votes déjà exprimés — pratique pour coordonner le groupe. Elle ne modifie jamais les jauges, mais consomme ton vote du jour comme les 4 actions ci-dessus (c'est un choix, pas une simple consultation). Seul 📖 **Règles du jeu** est consultable librement, sans jamais consommer ton vote.",
       "",
       `💊 **Pilule** (Jours ${config.actions.pilule.day_min} à ${config.actions.pilule.day_max}) rapproche instantanément les 3 jauges de Lilith de l'équilibre (${config.actions.pilule.target}%, dans la limite de ±${config.actions.pilule.max_step} points par jauge) — effet appliqué immédiatement, pas seulement à la clôture. Elle consomme ton vote du jour comme les autres actions, sauf si elle a déjà été utilisée (auquel cas ton vote est libéré, tu peux revoter). Usage très limité : une seule utilisation réussie par jour, et ${config.actions.pilule.total_cap} utilisations maximum sur toute la manche.`,
       "",
-      "Un membre ne peut voter qu'une seule fois par jour parmi Nourrir, Bretzel, Sieste, Jouer, Projections et Pilule, et ce vote n'est pas modifiable.",
+      "Un membre ne peut voter qu'une seule fois par jour parmi Nourrir, Bretzel, Sieste, Jouer, Projection et Pilule, et ce vote n'est pas modifiable.",
       "",
       `**⭐ Étoiles de dressage :** à chaque clôture, si les 3 jauges sont dans la zone verte c'est ${RATING_LABELS.parfaite} ; si une seule jauge est hors zone c'est ${RATING_LABELS.moyenne} ; si deux ou trois jauges sont hors zone c'est ${RATING_LABELS.catastrophe}.`,
       "C'est ce score cumulé sur les 10 jours que Mohamed Light regardera à son retour : 8 étoiles ou plus et il est impressionné, en dessous de 4 il est furieux et débarque dans l'arène avec un deck Mineur-Poison.",
@@ -872,7 +887,13 @@ export async function handleVoteButton(
 // réclamation échoue (déjà utilisée aujourd'hui / quota de manche épuisé),
 // le vote est libéré via releaseVote() pour que le joueur puisse revoter une
 // vraie action — même précédent que releaseVoteSlot() dans Robinson (Radeau).
-export async function handlePilule(webhookUrl, jour, discordId, username, botToken) {
+export async function handlePilule(
+  webhookUrl,
+  jour,
+  discordId,
+  username,
+  botToken,
+) {
   try {
     const state = await readState();
     if (!state || state.termine || String(state.jour) !== String(jour)) {
@@ -899,7 +920,12 @@ export async function handlePilule(webhookUrl, jour, discordId, username, botTok
       return;
     }
 
-    const voteResult = await recordVote(state.jour, discordId, "pilule", username);
+    const voteResult = await recordVote(
+      state.jour,
+      discordId,
+      "pilule",
+      username,
+    );
     if (voteResult.status === "rejected") {
       await patchOriginal(webhookUrl, {
         content:
@@ -926,7 +952,11 @@ export async function handlePilule(webhookUrl, jour, discordId, username, botTok
         claim.reason === "total_exhausted"
           ? `La Pilule a déjà été utilisée ${pilule.total_cap} fois cette manche, elle n'est plus disponible.`
           : "La Pilule vient d'être utilisée par quelqu'un d'autre aujourd'hui !";
-      await patchOriginal(webhookUrl, { content: message, embeds: [], components: [] });
+      await patchOriginal(webhookUrl, {
+        content: message,
+        embeds: [],
+        components: [],
+      });
       return;
     }
 
@@ -935,21 +965,31 @@ export async function handlePilule(webhookUrl, jour, discordId, username, botTok
     // cron quotidien : handlePilule est le premier code à muter state.gauges
     // hors du flux de clôture (closeDayAndAdvance).
     const freshState = await readState();
-    if (!freshState || freshState.termine || String(freshState.jour) !== String(jour)) {
+    if (
+      !freshState ||
+      freshState.termine ||
+      String(freshState.jour) !== String(jour)
+    ) {
       await patchOriginal(webhookUrl, {
-        content: "Le jour a changé pendant l'opération, réessaie sur le nouveau message.",
+        content:
+          "Le jour a changé pendant l'opération, réessaie sur le nouveau message.",
         embeds: [],
         components: [],
       });
       return;
     }
 
-    const delta = computePiluleDelta(freshState.gauges, pilule.target, pilule.max_step);
+    const delta = computePiluleDelta(
+      freshState.gauges,
+      pilule.target,
+      pilule.max_step,
+    );
     const newGauges = applyGaugeDelta(freshState.gauges, delta);
     await writeState({ ...freshState, gauges: newGauges });
 
     await patchOriginal(webhookUrl, {
-      content: "💊 Pilule administrée, les jauges de Lilith ont été rééquilibrées !",
+      content:
+        "💊 Pilule administrée, les jauges de Lilith ont été rééquilibrées !",
       embeds: [],
       components: [],
     });
@@ -958,7 +998,10 @@ export async function handlePilule(webhookUrl, jour, discordId, username, botTok
     // token) que handleVoteButton, pour refléter les nouvelles jauges ET
     // l'état à jour du bouton Pilule (utilisée aujourd'hui / épuisée).
     const voteCounts = await tallyVotes(freshState.jour);
-    const piluleState = await readPiluleState(freshState.jour, pilule.total_cap);
+    const piluleState = await readPiluleState(
+      freshState.jour,
+      pilule.total_cap,
+    );
     const estPremierJour = freshState.lastRating == null;
     const embed = await buildTamagotchiEmbed(
       freshState.jour,
@@ -993,9 +1036,9 @@ export async function handlePilule(webhookUrl, jour, discordId, username, botTok
   }
 }
 
-// ── Bouton [🔮 Projections] — consomme le vote du jour (comme les 4 actions),
+// ── Bouton [🔮 Projection] — consomme le vote du jour (comme les 4 actions),
 // mais n'a jamais d'impact sur les jauges au Cron (is_info_action dans
-// tamagotchi.json l'exclut de computeDayImpact) : voter Projections revient à
+// tamagotchi.json l'exclut de computeDayImpact) : voter Projection revient à
 // "s'abstenir" tout en consultant la projection. Ack routeur en type 5
 // éphémère, comme le bouton de vote — voir handleVoteButton pour le même
 // principe de garde (jour périmé) et de rejet (vote déjà posé ailleurs).
@@ -1041,7 +1084,7 @@ export async function handleInspecter(webhookUrl, jour, discordId, username) {
     const impact = computeDayImpact(voteCounts, actionsConfig);
     const projected = applyGaugeDelta(state.gauges, impact);
 
-    // Ne compte que les 4 actions réelles (Projections elle-même n'a aucun
+    // Ne compte que les 4 actions réelles (Projection elle-même n'a aucun
     // impact, la compter ici donnerait l'impression à tort qu'un vote a déjà
     // influencé la projection).
     const realActionIds = Object.keys(config.actions).filter(
@@ -1058,10 +1101,10 @@ export async function handleInspecter(webhookUrl, jour, discordId, username) {
     const voteNotice =
       result.status === "recorded"
         ? "⚠️ Ce choix consomme ton vote du jour — tu ne pourras plus voter Nourrir/Bretzel/Sieste/Jouer aujourd'hui."
-        : "(Tu as déjà voté Projections aujourd'hui — ton vote reste enregistré.)";
+        : "(Tu as déjà voté Projection aujourd'hui — ton vote reste enregistré.)";
 
     const embed = {
-      title: `🔮 Projections — clôture demain ${formatUtcTimeAsParis(8)} (heure de Paris)`,
+      title: `🔮 Projection — clôture demain ${formatUtcTimeAsParis(8)} (heure de Paris)`,
       description: [
         renderGaugeLine(
           `${gaugeIcon("estomac", projected.estomac)} Estomac`,
@@ -1086,7 +1129,7 @@ export async function handleInspecter(webhookUrl, jour, discordId, username) {
     };
     await patchOriginal(webhookUrl, { embeds: [embed], components: [] });
   } catch (err) {
-    console.error("[Tamagotchi] Échec Projections:", err.message);
+    console.error("[Tamagotchi] Échec Projection:", err.message);
   }
 }
 
