@@ -286,7 +286,7 @@ async function buildTamagotchiEmbed(
   lines.push(`⭐ Étoiles de dressage : ${starTotal}/${config.duree_jours}`);
 
   return {
-    title: `Jour ${jour}/${config.duree_jours}`,
+    title: `🐉 Tamagotchi — Jour ${jour}/${config.duree_jours}`,
     description: lines.join("\n"),
     color: TAMAGOTCHI_COLOR,
     image: { url: tamagotchiImageUrl(jour) },
