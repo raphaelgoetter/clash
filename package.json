@@ -79,6 +79,7 @@
     "rules:dry": "node scripts/notifyRules.js --dry-run",
     "rules:dry:noping": "node scripts/notifyRules.js --dry-run --no-ping",
     "cache": "node scripts/refreshClanCache.js",
+    "find-discord-clans": "node scripts/findDiscordClans.js",
     "prebuild": "npm run cache",
     "cache:clear": "rm -f frontend/public/clan-cache/*.json",
     "deploy": "npm run cache:clear && npm run build && vercel --prod --confirm --force",

@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 // findDiscordClans.js
 // Script ponctuel : liste les clans français dont la description mentionne
-// "discord" et qui comptent moins de N joueurs actifs (connectés récemment).
+// "discord" (hors clans de type "famille" ou explicitement exclus) et qui
+// comptent entre MIN_ACTIVE et MAX_ACTIVE joueurs actifs (connectés récemment).
 // Usage:
 //   node scripts/findDiscordClans.js
-//   node scripts/findDiscordClans.js --max-active=10 --active-days=3
+//   node scripts/findDiscordClans.js --max-active=10 --min-active=1 --active-days=3
 
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
@@ -32,8 +33,19 @@ function parseIntArg(name, fallback) {
   return Number.isFinite(value) ? value : fallback;
 }
 
-const MAX_ACTIVE = parseIntArg("max-active", 15);
+const MAX_ACTIVE = parseIntArg("max-active", 18);
+const MIN_ACTIVE = parseIntArg("min-active", 3);
 const ACTIVE_DAYS = parseIntArg("active-days", 2);
+
+// Clans passés en revue manuellement et écartés d'office (non pertinents
+// malgré la correspondance sur les critères automatiques).
+const EXCLUDED_CLAN_TAGS = new Set([
+  "#LCCCL0VV", // CHEZ ♥️MEL♥️
+  "#R2V0P09J", // La Terre 2 Feu
+  "#GJUQR2QP", // SX-Ladder
+  "#LVV8PQ88", // FranceNova 2
+  "#G0R9L9GQ", // 'QLF' BATTALION
+]);
 
 /** Run async tasks with limited concurrency to avoid rate-limiting. */
 async function pooledAllSettled(tasks, concurrency = CONCURRENCY) {
@@ -124,12 +136,14 @@ async function main() {
       return;
     }
     const clan = result.value;
-    if (clan.description?.toLowerCase().includes("discord")) {
-      discordClans.push(clan);
-    }
+    const description = clan.description?.toLowerCase() ?? "";
+    if (EXCLUDED_CLAN_TAGS.has(clan.tag)) return;
+    if (!description.includes("discord")) return;
+    if (description.includes("famille")) return;
+    discordClans.push(clan);
   });
   console.log(
-    `${discordClans.length} clans FR mentionnent "discord" dans leur description. Vérification de l'activité des membres...`,
+    `${discordClans.length} clans FR mentionnent "discord" (hors "famille" et exclusions manuelles) dans leur description. Vérification de l'activité des membres...`,
   );
 
   const memberResults = await pooledAllSettled(
@@ -147,7 +161,7 @@ async function main() {
     }
     const members = result.value;
     const activeCount = countActiveMembers(members);
-    if (activeCount < MAX_ACTIVE) {
+    if (activeCount >= MIN_ACTIVE && activeCount <= MAX_ACTIVE) {
       matches.push({
         tag: clan.tag,
         name: clan.name,
@@ -163,7 +177,7 @@ async function main() {
   await writeFile(OUTPUT_FILE, JSON.stringify(matches, null, 2));
 
   console.log(
-    `\n${matches.length} clan(s) FR avec "discord" en description et < ${MAX_ACTIVE} joueurs actifs (< ${ACTIVE_DAYS}j) :\n`,
+    `\n${matches.length} clan(s) FR avec "discord" en description et entre ${MIN_ACTIVE} et ${MAX_ACTIVE} joueurs actifs (< ${ACTIVE_DAYS}j) :\n`,
   );
   for (const clan of matches) {
     console.log(
