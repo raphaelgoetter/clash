@@ -216,6 +216,23 @@ export function computeDayImpact(voteCounts, actionsConfig) {
   return impact;
 }
 
+// Un événement peut temporairement changer ce que rapporte une action pour
+// la journée (ex. Indigestion de bonbons, Jour 8 : Nourrir/Bretzel remplissent
+// moins l'Estomac) via `actionsModifiees`, plutôt qu'un simple delta de
+// jauges appliqué une fois — l'effet dure toute la journée puisqu'il change
+// directement le calcul de computeDayImpact(). Fusion superficielle : seuls
+// les axes précisés dans l'override remplacent ceux de l'action de base, les
+// autres axes (et les actions non listées) restent inchangés.
+export function applyActionOverrides(actionsConfig, actionsModifiees) {
+  if (!actionsModifiees) return actionsConfig;
+  const out = { ...actionsConfig };
+  for (const [id, overrideImpact] of Object.entries(actionsModifiees)) {
+    if (!out[id]) continue;
+    out[id] = { ...out[id], impact: { ...out[id].impact, ...overrideImpact } };
+  }
+  return out;
+}
+
 export function applyGaugeDelta(gauges, delta) {
   const out = {};
   for (const gauge of Object.keys(gauges)) {
@@ -292,7 +309,11 @@ async function computeClosure(state, config) {
     tallyVotes(state.jour),
     listVotes(state.jour),
   ]);
-  const impact = computeDayImpact(voteCounts, config.actions);
+  // state.lastEvent est l'événement du jour qu'on clôture ici (écrit quand ce
+  // jour a démarré, voir postTamagotchi()) — c'est lui, pas l'événement du
+  // jour suivant, qui doit influencer le calcul d'impact de CE jour.
+  const actionsConfig = applyActionOverrides(config.actions, state.lastEvent?.actions_modifiees);
+  const impact = computeDayImpact(voteCounts, actionsConfig);
   const gaugesClosing = applyGaugeDelta(state.gauges, impact);
   const rating = rateDay(gaugesClosing, config.zones_ideales);
   return { voteCounts, voters, impact, gaugesClosing, rating };

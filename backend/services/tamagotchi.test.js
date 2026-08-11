@@ -3,6 +3,7 @@ import {
   clampGauge,
   computeDayImpact,
   applyGaugeDelta,
+  applyActionOverrides,
   rateDay,
   eventForDay,
   computeFinalTier,
@@ -56,7 +57,7 @@ const EVENEMENTS = [
   {
     id: "indigestion_bonbons",
     jour: 8,
-    modificateur_jauges: { moral: -10, estomac: 10, energie: 0 },
+    actions_modifiees: { nourrir: { estomac: 10 }, bretzel: { estomac: 5 } },
   },
   {
     id: "choucroute",
@@ -162,6 +163,37 @@ async function main() {
       starDelta: -1,
     },
   );
+
+  // ── applyActionOverrides ──
+  // Sans override : renvoie la config telle quelle.
+  assert.deepStrictEqual(applyActionOverrides(ACTIONS, undefined), ACTIONS);
+
+  // Fusion superficielle par axe : seul l'axe précisé change, les autres
+  // axes de l'action modifiée (et les actions non listées) restent intacts.
+  const overridden = applyActionOverrides(ACTIONS, {
+    nourrir: { estomac: 10 },
+    bretzel: { estomac: 5 },
+  });
+  assert.deepStrictEqual(overridden.nourrir.impact, {
+    estomac: 10,
+    energie: -10,
+    moral: 0,
+  });
+  assert.deepStrictEqual(overridden.bretzel.impact, {
+    estomac: 5,
+    energie: -5,
+    moral: 20,
+  });
+  assert.deepStrictEqual(overridden.sieste.impact, ACTIONS.sieste.impact);
+  assert.deepStrictEqual(overridden.jouer.impact, ACTIONS.jouer.impact);
+
+  // Un vote 100% Nourrir un jour d'Indigestion de bonbons ne rapporte que
+  // +10 Estomac (au lieu de +25) — computeDayImpact doit refléter l'override.
+  assert.deepStrictEqual(computeDayImpact({ nourrir: 4 }, overridden), {
+    estomac: 10,
+    energie: -10,
+    moral: 0,
+  });
 
   // ── eventForDay ──
   assert.strictEqual(eventForDay(2, EVENEMENTS).id, "sans_appetit");

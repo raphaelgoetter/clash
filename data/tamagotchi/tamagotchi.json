@@ -63,8 +63,11 @@
       "id": "indigestion_bonbons",
       "jour": 8,
       "titre": "Indigestion de bonbons",
-      "description": "Lilith a englouti trop de sucreries : le ventre plein, mais l'humeur en dents de scie.",
-      "modificateur_jauges": { "moral": -10, "estomac": 15, "energie": 0 }
+      "description": "Lilith a trop mangé de sucreries hier soir et vomit la moitié de ce qu'elle ingurgite aujourd'hui : Nourrir et Bretzel la remplissent moins.",
+      "actions_modifiees": {
+        "nourrir": { "estomac": 10 },
+        "bretzel": { "estomac": 5 }
+      }
     },
     {
       "id": "choucroute",

@@ -17,6 +17,7 @@ import {
   closeDayAndAdvance,
   eventForDay,
   applyGaugeDelta,
+  applyActionOverrides,
   computeDayImpact,
   computeFinalTier,
   archiveManche,
@@ -82,9 +83,36 @@ function renderGaugeLine(label, value) {
 // -10, Moral +0" — réutilisé pour les impacts d'action (Règles du jeu) et le
 // modificateur d'un événement, pour qu'on puisse toujours deviner son effet
 // sans avoir à ouvrir tamagotchi.json.
-function formatGaugeImpact({ estomac, energie, moral }) {
+// Exportée avec formatActionOverrides ci-dessous pour être réutilisée telle
+// quelle par scripts/tamagotchiStatus.js (projection du Jour suivant), plutôt
+// que de dupliquer ce formatage.
+export function formatGaugeImpact({ estomac, energie, moral }) {
   const fmt = (v) => `${v >= 0 ? "+" : ""}${v}`;
   return `Estomac ${fmt(estomac)}, Énergie ${fmt(energie)}, Moral ${fmt(moral)}`;
+}
+
+const GAUGE_LABELS = { estomac: "Estomac", energie: "Énergie", moral: "Moral" };
+
+// Pendant du formatGaugeImpact ci-dessus, mais pour un événement qui modifie
+// temporairement l'impact d'une ou plusieurs actions (ex. Indigestion de
+// bonbons, Jour 8) plutôt que d'appliquer un delta de jauges une fois pour
+// toutes. Affiche l'ancienne ET la nouvelle valeur — sans ça, le nerf est
+// invisible tant qu'on n'a pas comparé au bouton Règles du jeu, et se lit
+// comme un bug plutôt qu'un défi du jour.
+export function formatActionOverrides(actionsModifiees, actionsConfig) {
+  const fmt = (v) => `${v >= 0 ? "+" : ""}${v}`;
+  return Object.entries(actionsModifiees)
+    .map(([id, override]) => {
+      const action = actionsConfig[id];
+      const changes = Object.entries(override)
+        .map(
+          ([gauge, value]) =>
+            `${GAUGE_LABELS[gauge]} ${fmt(value)} (au lieu de ${fmt(action.impact[gauge])})`,
+        )
+        .join(", ");
+      return `${action.emoji} ${action.label} : ${changes}`;
+    })
+    .join(" · ");
 }
 
 // ── Texte narratif ────────────────────────────────────────────────
@@ -220,10 +248,13 @@ async function buildTamagotchiEmbed(
   const narrative = await buildNarrative(jour, gauges, voters, estPremierJour);
   const lines = [narrative, ""];
   if (event) {
+    const effet = event.actions_modifiees
+      ? formatActionOverrides(event.actions_modifiees, config.actions)
+      : formatGaugeImpact(event.modificateur_jauges);
     lines.push(
       `**📯 Événement du jour : ${event.titre}**`,
       event.description,
-      `Effet : ${formatGaugeImpact(event.modificateur_jauges)}`,
+      `Effet : ${effet}`,
       "",
     );
   }
@@ -550,7 +581,12 @@ export async function postTamagotchi(
   }
 
   const event = eventForDay(jour, config.evenements_possibles);
-  const gauges = event
+  // Un événement à actions_modifiees (ex. Indigestion de bonbons) n'a aucun
+  // effet instantané sur les jauges au démarrage du jour — son effet ne se
+  // fera sentir qu'à la clôture de CE jour, via computeClosure() côté service
+  // (voir applyActionOverrides()), donc pas de modificateur_jauges à appliquer
+  // ici pour ce type d'événement.
+  const gauges = event?.modificateur_jauges
     ? applyGaugeDelta(closure.gaugesClosing, event.modificateur_jauges)
     : closure.gaugesClosing;
   const { embed, components } = await buildDayPayload(
@@ -805,7 +841,11 @@ export async function handleInspecter(webhookUrl, jour, discordId, username) {
 
     const config = await loadTamagotchiConfig();
     const voteCounts = await tallyVotes(state.jour);
-    const impact = computeDayImpact(voteCounts, config.actions);
+    // state.lastEvent est l'événement du jour EN COURS (celui qu'on projette
+    // ici) — un éventuel actions_modifiees doit influencer la projection
+    // live, sinon le bouton mentirait pile le jour où le nerf compte le plus.
+    const actionsConfig = applyActionOverrides(config.actions, state.lastEvent?.actions_modifiees);
+    const impact = computeDayImpact(voteCounts, actionsConfig);
     const projected = applyGaugeDelta(state.gauges, impact);
 
     // Ne compte que les 4 actions réelles (Projections elle-même n'a aucun
