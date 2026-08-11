@@ -68,7 +68,10 @@ const DAY1_INTRO =
 const GAUGE_SEGMENTS = 8;
 
 export function renderGaugeBar(value) {
-  const filled = Math.max(0, Math.min(GAUGE_SEGMENTS, Math.round((value / 100) * GAUGE_SEGMENTS)));
+  const filled = Math.max(
+    0,
+    Math.min(GAUGE_SEGMENTS, Math.round((value / 100) * GAUGE_SEGMENTS)),
+  );
   return `${"🟩".repeat(filled)}${"🟥".repeat(GAUGE_SEGMENTS - filled)}`;
 }
 
@@ -229,8 +232,8 @@ async function buildNarrative(jour, gauges, voters, estPremierJour) {
 }
 
 const RATING_LABELS = {
-  parfaite: "✅ Parfaite (+1 ⭐)",
-  moyenne: "⚠️ Moyenne (+0 ⭐)",
+  parfaite: "✅ Parfait (+1 ⭐)",
+  moyenne: "⚠️ Moyen (+0 ⭐)",
   catastrophe: "❌ Catastrophe (-1 ⭐)",
 };
 
@@ -845,7 +848,10 @@ export async function handleInspecter(webhookUrl, jour, discordId, username) {
     // state.lastEvent est l'événement du jour EN COURS (celui qu'on projette
     // ici) — un éventuel actions_modifiees doit influencer la projection
     // live, sinon le bouton mentirait pile le jour où le nerf compte le plus.
-    const actionsConfig = applyActionOverrides(config.actions, state.lastEvent?.actions_modifiees);
+    const actionsConfig = applyActionOverrides(
+      config.actions,
+      state.lastEvent?.actions_modifiees,
+    );
     const impact = computeDayImpact(voteCounts, actionsConfig);
     const projected = applyGaugeDelta(state.gauges, impact);
 
