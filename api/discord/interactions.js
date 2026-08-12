@@ -2750,7 +2750,7 @@ function formatRecentBattlesField(recentBattles) {
         ? `${Math.round(match.matchup * 100)}%`
         : "?";
       const deckLabel = deck.label || `Deck ${deckIndex + 1}`;
-      return `• ${typeLabel} ${deckLabel} : <:members:1506175789731811399> ${opponentName} ${resultEmoji} ${score} ⚡ ${matchup}`;
+      return `• ${deckLabel} ${typeLabel} : <:members:1506175789731811399> ${opponentName} ${resultEmoji} ${score} ⚡ ${matchup}`;
     });
     const groupLines = groupIndex > 0 ? [""] : [];
     groupLines.push(`**${dateLabel}**`, ...lines);
