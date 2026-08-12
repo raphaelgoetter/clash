@@ -43,7 +43,12 @@ const CLAN_TAGS = ["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"].filter(
 const NO_WAR_CLAN_TAGS = new Set(["QU9UQJRL"]);
 const MAX_CLAN_SIZE = 50;
 // Rôles Discord auxquels les membres peuvent s'abonner librement.
-const ACTIVITY_ROLE_NAMES = ["ENTRAÎNEMENT", "TOURNOIS", "MULTI-COMPTES"];
+const ACTIVITY_ROLE_NAMES = [
+  "ENTRAÎNEMENT",
+  "TOURNOIS",
+  "MULTI-COMPTES",
+  "MINI-JEUX",
+];
 
 function normalizeTag(tag) {
   if (!tag) return "";

@@ -68,7 +68,12 @@ const FORCE = process.argv.includes("--force");
 const WEEKLY_ONLY = process.argv.includes("--weekly-only");
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 // Rôles Discord auxquels les membres peuvent s'abonner librement.
-const ACTIVITY_ROLE_NAMES = ["ENTRAÎNEMENT", "TOURNOIS", "MULTI-COMPTES"];
+const ACTIVITY_ROLE_NAMES = [
+  "ENTRAÎNEMENT",
+  "TOURNOIS",
+  "MULTI-COMPTES",
+  "MINI-JEUX",
+];
 
 const CLAN_FILTER = (() => {
   const idx = process.argv.indexOf("--clan");
