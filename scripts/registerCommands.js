@@ -46,9 +46,23 @@ const commands = [
     ],
   },
   {
-    name: "matchup",
+    name: "matchup-gdc",
     description:
       "Calcule le matchup GDC d'un joueur selon ses decks et ses adversaires.",
+    options: [
+      {
+        type: 3, // STRING
+        name: "tag",
+        description: "Tag du joueur (ex : #ABC123)",
+        required: true,
+        autocomplete: true,
+      },
+    ],
+  },
+  {
+    name: "matchup",
+    description:
+      "Affiche les 6 derniers combats d'un joueur (tous types) avec le détail des decks.",
     options: [
       {
         type: 3, // STRING

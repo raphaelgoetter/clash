@@ -73,6 +73,7 @@
           <li class="summary-group">Commandes liées au joueur</li>
           <li class="summary-item"><a href="#trust">/trust</a></li>
           <li class="summary-item"><a href="#stats">/stats</a></li>
+          <li class="summary-item"><a href="#matchup-gdc">/matchup-gdc</a></li>
           <li class="summary-item"><a href="#matchup">/matchup</a></li>
           <li class="summary-item"><a href="#combats">/combats</a></li>
           <li class="summary-item"><a href="#collection">/collection</a></li>
@@ -180,15 +181,15 @@
           </div>
         </div>
 
-        <!-- Matchup -->
+        <!-- Matchup GDC -->
         <div class="card">
-          <h3 id="matchup" class="card-title">/matchup</h3>
+          <h3 id="matchup-gdc" class="card-title">/matchup-gdc</h3>
           <div data-layout="duo" data-split="2-1">
             <div>
               <p>
                 Calcule le matchup GDC d’un joueur à partir des decks joués
                 lors de ses combats de guerre récents et des decks adverses
-                rencontrés.
+                rencontrés. Les decks sont regroupés par jour de GDC (J1 à J4).
               </p>
               <p>
                 Le matchup est une note en pourcentage qui reflète la difficulté
@@ -282,10 +283,50 @@
                 évaluer la difficulté des combats d’un joueur lors de ses
                 précédents matchs.
               </p>
-              <p><strong>Commande :</strong> <code>/matchup</code></p>
+              <p><strong>Commande :</strong> <code>/matchup-gdc</code></p>
               <p><strong>Option :</strong> <code>tag:#TAG</code></p>
             </div>
             <img src="/images/bot-21.webp" alt="" width="300" />
+          </div>
+        </div>
+
+        <!-- Matchup (tous types) -->
+        <div class="card">
+          <h3 id="matchup" class="card-title">/matchup</h3>
+          <div data-layout="duo" data-split="2-1">
+            <div>
+              <p>
+                Affiche les 6 derniers combats bruts d’un joueur, tous types
+                confondus (GDC, Ladder, Amical, Challenge…), avec le deck
+                joué à chaque combat et le score de matchup associé.
+              </p>
+              <p>
+                Contrairement à <code>/matchup-gdc</code>, aucun filtre par
+                type ni regroupement des decks identiques : chaque ligne
+                correspond à un combat distinct, du plus récent au plus
+                ancien, avec le type de combat précisé (GDC/Ladder/Amical/
+                Challenge/Autre).
+              </p>
+              <p>
+                Le calcul du score de matchup (0-100 %) est strictement
+                identique à celui de <code>/matchup-gdc</code> — voir le
+                détail des 4 étapes de calcul dans la carte
+                <a href="#matchup-gdc">/matchup-gdc</a> ci-dessus.
+              </p>
+              <p>
+                Un bouton <strong>ℹ️ Détails</strong> sous la réponse permet
+                de choisir un combat précis et d’afficher le détail complet
+                du calcul (valeur de chaque étape, decks des deux joueurs,
+                win conditions identifiées).
+              </p>
+              <p>
+                <strong>Quand utiliser cette commande&#8239;:</strong> Pour
+                un aperçu rapide de l’activité récente d’un joueur, sans se
+                limiter aux combats de guerre.
+              </p>
+              <p><strong>Commande :</strong> <code>/matchup</code></p>
+              <p><strong>Option :</strong> <code>tag:#TAG</code></p>
+            </div>
           </div>
         </div>
 
@@ -320,7 +361,7 @@
                 <strong>Quand utiliser cette commande&#8239;:</strong> Pour
                 suivre rapidement l’activité de GDC d’un joueur au jour le
                 jour, en complément de <code>/stats</code> et
-                <code>/matchup</code>.
+                <code>/matchup-gdc</code>.
               </p>
               <p><strong>Commande :</strong> <code>/combats</code></p>
               <p><strong>Option :</strong> <code>tag:#TAG</code></p>

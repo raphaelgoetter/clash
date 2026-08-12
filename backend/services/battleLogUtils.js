@@ -78,6 +78,20 @@ export function filterCompetitiveBattles(battleLog) {
 }
 
 /**
+ * Categorise a single battle type string into one of 5 buckets.
+ * @param {string} type
+ * @returns {"gdc"|"ladder"|"challenge"|"friendly"|"other"}
+ */
+export function categorizeBattleType(type) {
+  const t = (type ?? "").toLowerCase();
+  if (WAR_BATTLE_TYPES.has(t)) return "gdc";
+  if (LADDER_TYPES.has(t)) return "ladder";
+  if (CHALLENGE_TYPES.has(t)) return "challenge";
+  if (FRIENDLY_TYPES.has(t)) return "friendly";
+  return "other";
+}
+
+/**
  * Categorise all entries of a raw battle log into 4 buckets.
  * Returns counts per category + total entries.
  *
@@ -91,12 +105,22 @@ export function categorizeBattleLog(rawBattleLog) {
     friendly = 0,
     other = 0;
   for (const b of rawBattleLog) {
-    const t = (b.type ?? "").toLowerCase();
-    if (WAR_BATTLE_TYPES.has(t)) gdc++;
-    else if (LADDER_TYPES.has(t)) ladder++;
-    else if (CHALLENGE_TYPES.has(t)) challenge++;
-    else if (FRIENDLY_TYPES.has(t)) friendly++;
-    else other++;
+    switch (categorizeBattleType(b.type)) {
+      case "gdc":
+        gdc++;
+        break;
+      case "ladder":
+        ladder++;
+        break;
+      case "challenge":
+        challenge++;
+        break;
+      case "friendly":
+        friendly++;
+        break;
+      default:
+        other++;
+    }
   }
   return {
     total: rawBattleLog.length,
@@ -620,6 +644,85 @@ export async function summarizeWarDecksForMatchup(
         ],
       });
     }
+  }
+
+  return entries;
+}
+
+/**
+ * Synthèse des N derniers combats bruts d'un joueur, tous types confondus
+ * (GDC, Ladder, Amical, Challenge...) — contrairement à
+ * summarizeWarDecksForMatchup(), aucun filtre par type ni regroupement par
+ * signature de deck : chaque combat produit sa propre entrée, dans l'ordre
+ * chronologique le plus récent en premier. Utilisée par /matchup (à ne pas
+ * confondre avec /matchup-gdc qui reste sur summarizeWarDecksForMatchup()).
+ * @param {object[]} battleLog
+ * @param {number} [limit=6]
+ * @param {string|null} [clanTag=null]
+ */
+export async function summarizeRecentBattlesForMatchup(
+  battleLog,
+  limit = 6,
+  clanTag = null,
+) {
+  const sorted = [...(battleLog ?? [])].sort(
+    (a, b) => parseClashDate(b.battleTime) - parseClashDate(a.battleTime),
+  );
+  const battles = expandDuelRounds(sorted);
+  const catalog = await getWinConditionsCatalog();
+  const entries = [];
+
+  for (const battle of battles) {
+    if (entries.length >= limit) break;
+
+    const deckChunks = getDeckChunksForBattle(battle);
+    const chunk = deckChunks[0];
+    if (!chunk || chunk.length === 0) continue;
+
+    const oppEntry = getFirstEntry(battle.opponent);
+    const opponentTourLevel = computeBattleTourLevel(oppEntry);
+    const matchupDetail = await computeDeckMatchupDetail(battle, catalog);
+    const opponentName = String(oppEntry?.name ?? oppEntry?.tag ?? "?").trim();
+    const myCrowns = getMyBattleCrowns(battle);
+    const oppCrowns =
+      battle._roundIndex !== undefined
+        ? (battle._roundCrownsOpp ?? 0)
+        : (battle.opponent?.[0]?.crowns ?? 0);
+    const score = `${myCrowns}-${oppCrowns}`;
+    const result = isWarWin(battle) ? "win" : "loss";
+
+    const cardNames = chunk
+      .map((card) => String(card?.name ?? card?.id ?? "").trim())
+      .filter(Boolean);
+    const cardIds = chunk
+      .map((card) => String(card?.id ?? "").trim())
+      .filter(Boolean);
+
+    entries.push({
+      label: `Deck ${entries.length + 1}`,
+      cards: formatWarDeckCards(chunk),
+      cardNames,
+      cardIds,
+      plays: 1,
+      wins: result === "win" ? 1 : 0,
+      matchup: matchupDetail.matchup,
+      winRate: result === "win" ? 100 : 0,
+      matches: [
+        {
+          opponentName,
+          opponentTourLevel,
+          score,
+          myCrowns,
+          oppCrowns,
+          result,
+          matchup: matchupDetail.matchup,
+          matchupDetail,
+          battleTime: battle.battleTime ?? null,
+          dayKey: warDayKey(battle?.battleTime, clanTag),
+          type: battle.type ?? null,
+        },
+      ],
+    });
   }
 
   return entries;

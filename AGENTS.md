@@ -104,7 +104,8 @@ Ne pas confondre `description` (4096) et `field.value` (1024) — pour une longu
 |---|---|
 | `/trust tag:#TAG` | Analyse fiabilité joueur |
 | `/stats tag:#TAG` | Statistiques GDC détaillées |
-| `/matchup tag:#TAG` | Calcule le matchup GDC d'un joueur |
+| `/matchup-gdc tag:#TAG` | Calcule le matchup GDC d'un joueur |
+| `/matchup tag:#TAG` | Matchup des 6 derniers combats du joueur, tous types |
 | `/discord-link tag:#TAG` | Lie un tag Clash au compte Discord |
 | `/discord-check clan:N` | Vérifie présence Discord des membres |
 | `/promote clan:N` | Joueurs éligibles à la promotion (2600 pts) |

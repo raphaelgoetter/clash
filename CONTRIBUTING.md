@@ -188,6 +188,12 @@ Le calcul est purement tactique : il compare les 8 cartes des deux decks réelle
 counters, structure, niveaux) — pas les statistiques de compte des joueurs (trophées, winrate, collection…,
 ancien algorithme abandonné).
 
+Ce moteur est partagé par deux commandes Discord : `/matchup-gdc` (combats de guerre uniquement, decks
+regroupés par jour de GDC — `summarizeWarDecksForMatchup()`) et `/matchup` (6 derniers combats bruts du
+joueur, tous types confondus — GDC, Ladder, Amical, Challenge —, une ligne par combat sans regroupement,
+via `summarizeRecentBattlesForMatchup()`). Le calcul de difficulté lui-même (`computeDeckMatchupDetail()`)
+est identique dans les deux cas : il ne dépend pas du type de combat.
+
 Généralités :
 
 - Le matchup d'un combat est calculé à partir d'une base `scoreA = 50` (avantage du deck A) et de 4 layers
@@ -231,7 +237,8 @@ n'est identifiable des deux côtés, ces deux layers sont neutralisés pour ce c
   local en dev)
 - Règles du Layer 3 : `data/clash-royale-matchup-structure-rules.json`
 - Intégration battle log : `backend/services/battleLogUtils.js` — `computeBattleMatchup()`,
-  `computeMatchupFromBattleLog()`
+  `computeMatchupFromBattleLog()`, `summarizeWarDecksForMatchup()` (GDC), `summarizeRecentBattlesForMatchup()`
+  (tous types)
 
 ### Niveau de Tour du Roi
 

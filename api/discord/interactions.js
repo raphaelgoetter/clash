@@ -15,6 +15,7 @@ import {
   toPublicSeasonId,
   toPublicWeekId,
   formatResetTimeParis,
+  parseClashDate,
 } from "../../backend/services/dateUtils.js";
 import {
   fetchClan,
@@ -83,6 +84,8 @@ import {
 import {
   summarizeWarDecks,
   summarizeWarDecksForMatchup,
+  summarizeRecentBattlesForMatchup,
+  categorizeBattleType,
   getWarMatchPoints,
   computeCombatsByDay,
 } from "../../backend/services/analysisService.js";
@@ -1142,6 +1145,7 @@ const TAG_AUTOCOMPLETE_COMMANDS = new Set([
   "trust",
   "stats",
   "matchup",
+  "matchup-gdc",
   "collection",
   "combats",
 ]);
@@ -2130,7 +2134,7 @@ function escapeText(value) {
     .replace(/>/g, "&gt;");
 }
 
-async function buildWarDecksImage(warDecks) {
+async function buildWarDecksImage(warDecks, { maxRows = 4, kind = "gdc" } = {}) {
   if (!Array.isArray(warDecks) || warDecks.length === 0) return null;
   let cardDefinitions = [];
   try {
@@ -2148,7 +2152,7 @@ async function buildWarDecksImage(warDecks) {
       .map((card) => [String(card.id), card]),
   );
 
-  const rows = warDecks.slice(0, 4);
+  const rows = warDecks.slice(0, maxRows);
   const cardWidth = 152;
   const cardHeight = 204;
   const cardGap = 8;
@@ -2257,7 +2261,9 @@ async function buildWarDecksImage(warDecks) {
       const matchup = Number.isFinite(match.matchup)
         ? `${Math.round(match.matchup * 100)}%`
         : "?";
-      const line = `- 👥 ${opponentName} ${resultIcon} ${score} ⚡ ${matchup}`;
+      const typeSuffix =
+        kind === "recent" ? ` · ${getBattleTypeLabel(match.type)}` : "";
+      const line = `- 👥 ${opponentName} ${resultIcon} ${score} ⚡ ${matchup}${typeSuffix}`;
       const lineY = labelY + 12 + index * textLineHeight;
       return `<text x="${padding}" y="${lineY}" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#e2e8f0">${escapeText(line)}</text>`;
     });
@@ -2269,7 +2275,7 @@ async function buildWarDecksImage(warDecks) {
   });
 
   const svg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Decks GDC">
+<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${kind === "recent" ? "Derniers decks" : "Decks GDC"}">
   <rect width="100%" height="100%" rx="24" fill="#0f172a" />
   ${deckRows.join("")}
 </svg>`;
@@ -2537,6 +2543,37 @@ function getWarMatchTypeLabel(type) {
   return "";
 }
 
+const BATTLE_CATEGORY_LABELS = {
+  gdc: "GDC",
+  ladder: "Ladder",
+  challenge: "Challenge",
+  friendly: "Amical",
+  other: "Autre",
+};
+
+// Libellé de type utilisé sur /matchup (tous types) : sous-type GDC précis
+// (PvP/Bateau/Duel) si le combat est un combat de guerre, sinon la
+// catégorie générale (Ladder/Amical/Challenge/Autre).
+function getBattleTypeLabel(type) {
+  const category = categorizeBattleType(type);
+  if (category === "gdc") {
+    const warLabel = getWarMatchTypeLabel(type);
+    return warLabel ? `(${BATTLE_CATEGORY_LABELS.gdc} ${warLabel.slice(1, -1)})` : "(GDC)";
+  }
+  return `(${BATTLE_CATEGORY_LABELS[category] ?? BATTLE_CATEGORY_LABELS.other})`;
+}
+
+// Date courte (JJ/MM) pour une ligne de /matchup (tous types), là où
+// getWarDayLabel() n'a de sens que pour un jour de GDC (J1..J4).
+function formatRecentMatchDate(battleTime) {
+  if (!battleTime) return "?";
+  const date = parseClashDate(battleTime);
+  if (Number.isNaN(date.getTime())) return "?";
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  return `${day}/${month}`;
+}
+
 function formatWarDecksField(warDecks) {
   if (!Array.isArray(warDecks)) return null;
 
@@ -2672,6 +2709,35 @@ function formatWarDecksField(warDecks) {
   }
 
   return value;
+}
+
+// Pendant de formatWarDecksField() pour /matchup : liste plate des derniers
+// combats bruts (sortie de summarizeRecentBattlesForMatchup), sans
+// regroupement par jour de GDC — chaque ligne précise déjà son propre type
+// de combat (GDC/Ladder/Amical/...) puisqu'ils sont mélangés.
+function formatRecentBattlesField(recentBattles) {
+  if (!Array.isArray(recentBattles) || recentBattles.length === 0) {
+    return null;
+  }
+
+  const lines = recentBattles.map((deck, deckIndex) => {
+    const match = deck.matches?.[0] ?? {};
+    const dateLabel = formatRecentMatchDate(match.battleTime);
+    const typeLabel = getBattleTypeLabel(match.type);
+    const opponentName = escapeText(match.opponentName || "?");
+    const resultEmoji =
+      match.result === "win"
+        ? "<:success:1499002702208958577>"
+        : "<:error:1499002755841265826>";
+    const score = escapeText(match.score || "?");
+    const matchup = Number.isFinite(match.matchup)
+      ? `${Math.round(match.matchup * 100)}%`
+      : "?";
+    const deckLabel = deck.label || `Deck ${deckIndex + 1}`;
+    return `• ${dateLabel} ${typeLabel} ${deckLabel} : <:members:1506175789731811399> ${opponentName} ${resultEmoji} ${score} ⚡ ${matchup}`;
+  });
+
+  return lines.join("\n");
 }
 
 function buildScoreBreakdownCodeBlock(score) {
@@ -3066,7 +3132,7 @@ async function writeDiscordLinks(links, sha, message) {
 }
 
 // Récupère l'analyse + les decks de guerre (avec breakdown matchup) pour un tag joueur.
-// Partagé entre /matchup et les interactions du bouton "ℹ️ Détails".
+// Partagé entre /matchup-gdc et les interactions du bouton "ℹ️ Détails" (kind="gdc").
 async function fetchWarDecksForTag(tag) {
   const apiResp = await fetch(
     `${TRUST_ROYALE_URL}/api/player/${encodeURIComponent(tag)}/analysis?fast=true`,
@@ -3113,7 +3179,58 @@ async function fetchWarDecksForTag(tag) {
   return { analysis, warDecks };
 }
 
-function buildMatchupDetailButtonRow(tag) {
+// Récupère l'analyse + les 6 derniers combats bruts (tous types) pour un tag
+// joueur. Partagé entre /matchup et les interactions du bouton "ℹ️ Détails"
+// (kind="recent"). Pendant de fetchWarDecksForTag() ci-dessus, mais sans
+// filtre GDC ni regroupement par deck (cf. summarizeRecentBattlesForMatchup).
+async function fetchRecentBattlesForTag(tag) {
+  const apiResp = await fetch(
+    `${TRUST_ROYALE_URL}/api/player/${encodeURIComponent(tag)}/analysis?fast=true`,
+    { headers: { Accept: "application/json" } },
+  );
+  if (!apiResp.ok) {
+    throw new Error(
+      apiResp.status === 404
+        ? `Joueur \`${tag}\` introuvable.`
+        : `Erreur API (${apiResp.status}).`,
+    );
+  }
+  const analysis = await apiResp.json();
+  let warDecks = [];
+  try {
+    const battleLogResp = await fetch(
+      `${TRUST_ROYALE_URL}/api/player/${encodeURIComponent(tag)}/battlelog`,
+      { headers: { Accept: "application/json" } },
+    );
+    if (battleLogResp.ok) {
+      const battleLog = await battleLogResp.json();
+      warDecks = await summarizeRecentBattlesForMatchup(
+        battleLog ?? [],
+        6,
+        analysis.overview.clan?.tag,
+      );
+    } else {
+      warDecks = await summarizeRecentBattlesForMatchup(
+        analysis.battleLog ?? [],
+        6,
+        analysis.overview.clan?.tag,
+      );
+    }
+  } catch {
+    warDecks = await summarizeRecentBattlesForMatchup(
+      analysis.battleLog ?? [],
+      6,
+      analysis.overview.clan?.tag,
+    );
+  }
+  return { analysis, warDecks };
+}
+
+// kind distingue les deux commandes qui partagent ce flux "ℹ️ Détails" :
+// "gdc" pour /matchup-gdc (fetchWarDecksForTag), "recent" pour /matchup
+// (fetchRecentBattlesForTag) — encodé dans le custom_id pour que les
+// handlers d'interaction sachent quelle source re-fetcher.
+function buildMatchupDetailButtonRow(tag, kind = "gdc") {
   const cleanTag = String(tag || "")
     .replace(/^#/, "")
     .toUpperCase();
@@ -3126,14 +3243,14 @@ function buildMatchupDetailButtonRow(tag) {
           style: 2,
           emoji: { name: "ℹ️" },
           label: "Détails",
-          custom_id: `matchup_detail:${cleanTag}`,
+          custom_id: `matchup_detail:${kind}:${cleanTag}`,
         },
       ],
     },
   ];
 }
 
-function buildMatchupDetailSelectRow(tag, warDecks) {
+function buildMatchupDetailSelectRow(tag, warDecks, kind = "gdc") {
   const cleanTag = String(tag || "")
     .replace(/^#/, "")
     .toUpperCase();
@@ -3141,8 +3258,14 @@ function buildMatchupDetailSelectRow(tag, warDecks) {
     .slice(0, 25)
     .map((deck, index) => {
       const match = deck.matches?.[0] ?? {};
-      const dayLabel = getWarDayLabel(match.dayKey);
-      const typeLabel = getWarMatchTypeLabel(match.type);
+      const dayLabel =
+        kind === "recent"
+          ? formatRecentMatchDate(match.battleTime)
+          : getWarDayLabel(match.dayKey);
+      const typeLabel =
+        kind === "recent"
+          ? getBattleTypeLabel(match.type)
+          : getWarMatchTypeLabel(match.type);
       const deckLabel = [deck.label, typeLabel].filter(Boolean).join(" ");
       const matchupPct = Number.isFinite(match.matchup)
         ? `${Math.round(match.matchup * 100)}%`
@@ -3165,7 +3288,7 @@ function buildMatchupDetailSelectRow(tag, warDecks) {
       components: [
         {
           type: 3,
-          custom_id: `matchup_detail_select:${cleanTag}`,
+          custom_id: `matchup_detail_select:${kind}:${cleanTag}`,
           placeholder: "Choisis un match pour voir le détail",
           options,
         },
@@ -3174,14 +3297,20 @@ function buildMatchupDetailSelectRow(tag, warDecks) {
   ];
 }
 
-function buildMatchupDetailEmbed(warDecks, index) {
+function buildMatchupDetailEmbed(warDecks, index, kind = "gdc") {
   const deck = Array.isArray(warDecks) ? warDecks[index] : null;
   const match = deck?.matches?.[0];
   const detail = match?.matchupDetail;
   if (!deck || !match || !detail) return null;
 
-  const dayLabel = getWarDayLabel(match.dayKey);
-  const typeLabel = getWarMatchTypeLabel(match.type);
+  const dayLabel =
+    kind === "recent"
+      ? formatRecentMatchDate(match.battleTime)
+      : getWarDayLabel(match.dayKey);
+  const typeLabel =
+    kind === "recent"
+      ? getBattleTypeLabel(match.type)
+      : getWarMatchTypeLabel(match.type);
   const deckLabel = [deck.label, typeLabel].filter(Boolean).join(" ");
   const matchupPct = Number.isFinite(match.matchup)
     ? Math.round(match.matchup * 100)
@@ -3489,6 +3618,12 @@ export default async function handler(req, res) {
             "**Stats**\n" +
             "Commande : `/stats tag:#TAG`\n" +
             "Usage : affiche les statistiques GDC détaillées d'un membre de la famille\n\n" +
+            "**Matchup GDC**\n" +
+            "Commande : `/matchup-gdc tag:#TAG`\n" +
+            "Usage : calcule le matchup GDC d'un joueur (decks regroupés par jour de GDC)\n\n" +
+            "**Matchup**\n" +
+            "Commande : `/matchup tag:#TAG`\n" +
+            "Usage : affiche les 6 derniers combats d'un joueur, tous types confondus (GDC, Ladder, Amical, Challenge...)\n\n" +
             "**Combats**\n" +
             "Commande : `/combats tag:#TAG`\n" +
             "Usage : affiche le suivi jour par jour des combats de GDC d'un joueur (semaine en cours + précédente)\n\n" +
@@ -3880,7 +4015,7 @@ export default async function handler(req, res) {
         }
 
         if (warDecksField) {
-          // /stats ne doit plus afficher les decks GDC, ce bloc est réservé à /matchup.
+          // /stats ne doit plus afficher les decks GDC, ce bloc est réservé à /matchup-gdc.
         }
 
         const discordLinks = await getDiscordLinks();
@@ -4184,7 +4319,7 @@ export default async function handler(req, res) {
           description: `${tag} · ${currentClanLink}${resetTime ? ` · Reset : ${resetTime}` : ""}`,
           fields,
           footer: {
-            text: "Voir le détail combat par combat avec /matchup",
+            text: "Voir le détail combat par combat avec /matchup-gdc",
           },
         };
 
@@ -4482,8 +4617,8 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Commande /matchup
-  if (body.type === 2 && body.data?.name === "matchup") {
+  // Commande /matchup-gdc
+  if (body.type === 2 && body.data?.name === "matchup-gdc") {
     const tagOption = body.data.options?.find((o) => o.name === "tag");
     const rawTag = tagOption?.value?.trim();
     if (!rawTag) {
@@ -4498,7 +4633,7 @@ export default async function handler(req, res) {
 
     const webhookUrl = buildDiscordWebhookUrl(body);
     if (!webhookUrl) {
-      console.error("Discord webhook URL non construite pour /matchup");
+      console.error("Discord webhook URL non construite pour /matchup-gdc");
       return res.status(200).json({
         type: 4,
         data: {
@@ -4527,7 +4662,7 @@ export default async function handler(req, res) {
           return;
         }
 
-        const detailComponents = buildMatchupDetailButtonRow(tag);
+        const detailComponents = buildMatchupDetailButtonRow(tag, "gdc");
         let deckImage = null;
         const warDecksField = formatWarDecksField(warDecks);
         try {
@@ -4634,7 +4769,7 @@ export default async function handler(req, res) {
           }
         } else {
           console.log(
-            "No deckImage generated for /matchup, sending embed only",
+            "No deckImage generated for /matchup-gdc, sending embed only",
           );
           const textResponse = await fetch(webhookUrl, {
             method: "POST",
@@ -4682,15 +4817,189 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Bouton "ℹ️ Détails" sur /matchup : ouvre un menu déroulant (message
-  // éphémère) pour choisir un match et en voir le détail (layers, win
-  // conditions, decks complets).
+  // Commande /matchup — 6 derniers combats bruts du joueur, tous types
+  // confondus (GDC/Ladder/Amical/Challenge...), pendant de /matchup-gdc.
+  if (body.type === 2 && body.data?.name === "matchup") {
+    const tagOption = body.data.options?.find((o) => o.name === "tag");
+    const rawTag = tagOption?.value?.trim();
+    if (!rawTag) {
+      return res.status(200).json({
+        type: 4,
+        data: {
+          content: "Veuillez fournir un tag de joueur (ex: `#ABC123`).",
+          flags: 64,
+        },
+      });
+    }
+
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    if (!webhookUrl) {
+      console.error("Discord webhook URL non construite pour /matchup");
+      return res.status(200).json({
+        type: 4,
+        data: {
+          content:
+            "Configuration Discord incomplète : impossible de répondre à l'interaction.",
+          flags: 64,
+        },
+      });
+    }
+
+    res.status(200).json({ type: 5 });
+    const tag = rawTag.startsWith("#") ? rawTag : `#${rawTag}`;
+
+    runBackground(async () => {
+      try {
+        let analysis;
+        let warDecks;
+        try {
+          ({ analysis, warDecks } = await fetchRecentBattlesForTag(tag));
+        } catch (err) {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: err.message, flags: 64 }),
+          });
+          return;
+        }
+
+        const detailComponents = buildMatchupDetailButtonRow(tag, "recent");
+        let deckImage = null;
+        const recentBattlesField = formatRecentBattlesField(warDecks);
+        try {
+          deckImage = await buildWarDecksImage(warDecks, {
+            maxRows: 6,
+            kind: "recent",
+          });
+        } catch {
+          deckImage = null;
+        }
+        if (!deckImage && Array.isArray(warDecks) && warDecks.length > 0) {
+          deckImage = buildWarDecksTextFallbackImage(warDecks);
+        }
+
+        const fields = [];
+        if (!Array.isArray(warDecks) || warDecks.length === 0) {
+          fields.push({
+            name: "Aucun combat :",
+            value:
+              "⚠️ Aucun combat trouvé dans le battlelog (25 derniers combats).",
+            inline: false,
+          });
+        }
+
+        const displayedAverageMatchupValue =
+          computeAverageMatchupFromWarDecks(warDecks);
+        const averageMatchup = Number.isFinite(displayedAverageMatchupValue)
+          ? `${Math.round(displayedAverageMatchupValue * 100)}%`
+          : null;
+        const title = averageMatchup
+          ? `⚡ Derniers combats · ${analysis.overview.name} : ${averageMatchup}`
+          : `⚡ Derniers combats · ${analysis.overview.name}`;
+        const matchupLinkField = {
+          name: "Le ⚡% correspond à la difficulté de l'affrontement. Calcul :",
+          value: "https://trustroyale.vercel.app/bot/#matchup",
+          inline: false,
+        };
+
+        const dataEmbed = {
+          title,
+          url: trustPlayerUrl(tag),
+          color: 0xe67e22,
+          description: recentBattlesField || undefined,
+          fields: [...fields, matchupLinkField],
+        };
+
+        let imageResponse = null;
+        if (deckImage?.buffer) {
+          const embedWithImage = {
+            ...dataEmbed,
+            image: {
+              url: `attachment://${deckImage.filename || "matchup-decks.png"}`,
+            },
+          };
+
+          imageResponse = await sendDiscordWebhookFile(webhookUrl, deckImage, {
+            embed: embedWithImage,
+            components: detailComponents,
+          });
+          if (!imageResponse.ok) {
+            const responseText = await imageResponse
+              .text()
+              .catch(() => "<no body>");
+            console.error(
+              "Discord file webhook failed:",
+              imageResponse.status,
+              imageResponse.statusText,
+              responseText,
+            );
+            await fetch(webhookUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                content:
+                  "Échec de l'envoi de l'image. Veuillez vérifier les logs du serveur.",
+                flags: 64,
+              }),
+            });
+          }
+        } else {
+          const textResponse = await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              embeds: [dataEmbed],
+              components: detailComponents,
+            }),
+          });
+          if (!textResponse.ok) {
+            const responseText = await textResponse
+              .text()
+              .catch(() => "<no body>");
+            console.error(
+              "Discord text webhook failed:",
+              textResponse.status,
+              textResponse.statusText,
+              responseText,
+            );
+            const fallbackText = recentBattlesField
+              ? `Matchup moyen : ${averageMatchup ?? "N/A"}\n\n${recentBattlesField}`
+              : `Matchup moyen : ${averageMatchup ?? "N/A"}`;
+            const safeFallback =
+              fallbackText.length > 1900
+                ? `${fallbackText.slice(0, 1897)}...`
+                : fallbackText;
+            await fetch(webhookUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ content: safeFallback }),
+            });
+          }
+        }
+      } catch (err) {
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Erreur lors de l'analyse : ${err.message}`,
+            flags: 64,
+          }),
+        });
+      }
+    });
+    return;
+  }
+
+  // Bouton "ℹ️ Détails" sur /matchup-gdc et /matchup : ouvre un menu
+  // déroulant (message éphémère) pour choisir un match et en voir le détail
+  // (layers, win conditions, decks complets). custom_id : matchup_detail:<kind>:<tag>
   if (
     body.type === 3 &&
     typeof body.data?.custom_id === "string" &&
     body.data.custom_id.startsWith("matchup_detail:")
   ) {
-    const tag = `#${body.data.custom_id.split(":")[1] || ""}`;
+    const [, kind, tagHex] = body.data.custom_id.split(":");
+    const tag = `#${tagHex || ""}`;
     const webhookUrl = buildDiscordWebhookUrl(body);
     if (!webhookUrl) {
       return res
@@ -4702,8 +5011,11 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
-        const { warDecks } = await fetchWarDecksForTag(tag);
-        const components = buildMatchupDetailSelectRow(tag, warDecks);
+        const { warDecks } =
+          kind === "recent"
+            ? await fetchRecentBattlesForTag(tag)
+            : await fetchWarDecksForTag(tag);
+        const components = buildMatchupDetailSelectRow(tag, warDecks, kind);
         if (!components) {
           await fetch(webhookUrl, {
             method: "POST",
@@ -4741,7 +5053,8 @@ export default async function handler(req, res) {
     typeof body.data?.custom_id === "string" &&
     body.data.custom_id.startsWith("matchup_detail_select:")
   ) {
-    const tag = `#${body.data.custom_id.split(":")[1] || ""}`;
+    const [, kind, tagHex] = body.data.custom_id.split(":");
+    const tag = `#${tagHex || ""}`;
     const selectedIndex = Number(body.data.values?.[0]);
     const webhookUrl = buildDiscordWebhookUrl(body);
     const originalWebhookUrl = webhookUrl
@@ -4757,9 +5070,13 @@ export default async function handler(req, res) {
 
     runBackground(async () => {
       try {
-        const { warDecks } = await fetchWarDecksForTag(tag);
-        const embed = buildMatchupDetailEmbed(warDecks, selectedIndex);
-        const components = buildMatchupDetailSelectRow(tag, warDecks) || [];
+        const { warDecks } =
+          kind === "recent"
+            ? await fetchRecentBattlesForTag(tag)
+            : await fetchWarDecksForTag(tag);
+        const embed = buildMatchupDetailEmbed(warDecks, selectedIndex, kind);
+        const components =
+          buildMatchupDetailSelectRow(tag, warDecks, kind) || [];
         const patchBody = embed
           ? { content: "", embeds: [embed], components }
           : {
