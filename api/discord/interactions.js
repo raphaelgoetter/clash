@@ -2163,12 +2163,18 @@ async function buildWarDecksImage(warDecks, { maxRows = 4, kind = "gdc" } = {}) 
   const textLineHeight = 16;
   const deckSpacing = 0;
   const width = padding * 2 + 8 * cardWidth + 7 * cardGap;
+  // Sur /matchup (kind="recent"), les lignes "adversaire/score/matchup%"
+  // sont déjà affichées dans la description de l'embed (formatRecentBattlesField)
+  // — les omettre ici évite la redondance et garde l'image aussi compacte que
+  // possible en hauteur (6 decks empilés sur une image height-bound côté
+  // Discord font vite rétrécir les cartes si l'image devient trop haute).
+  const showMatchLines = kind !== "recent";
   const height =
     padding * 2 +
     topLabelHeight +
     rows.reduce((sum, deck) => {
       const matches = Array.isArray(deck.matches) ? deck.matches : [];
-      const matchCount = Math.min(matches.length, 4);
+      const matchCount = showMatchLines ? Math.min(matches.length, 4) : 0;
       const matchBlock =
         matchCount > 0 ? matchTopSpacing + matchCount * textLineHeight : 0;
       return sum + cardHeight + matchBlock + deckSpacing;
@@ -2224,7 +2230,7 @@ async function buildWarDecksImage(warDecks, { maxRows = 4, kind = "gdc" } = {}) 
   const deckRows = rows.map((deck, deckIndex) => {
     const yStart = rows.slice(0, deckIndex).reduce((sum, prevDeck) => {
       const matches = Array.isArray(prevDeck.matches) ? prevDeck.matches : [];
-      const matchCount = Math.min(matches.length, 4);
+      const matchCount = showMatchLines ? Math.min(matches.length, 4) : 0;
       return (
         sum +
         cardHeight +
@@ -2250,7 +2256,9 @@ async function buildWarDecksImage(warDecks, { maxRows = 4, kind = "gdc" } = {}) 
       .join("");
 
     const labelY = yStart + cardHeight + 6;
-    const matchLines = Array.isArray(deck.matches) ? deck.matches : [];
+    const matchLines = showMatchLines && Array.isArray(deck.matches)
+      ? deck.matches
+      : [];
     const renderedMatchLines = matchLines.slice(0, 4).map((match, index) => {
       const opponentName = escapeText(match.opponentName || "?");
       const score = escapeText(match.score || "?");
@@ -2261,9 +2269,7 @@ async function buildWarDecksImage(warDecks, { maxRows = 4, kind = "gdc" } = {}) 
       const matchup = Number.isFinite(match.matchup)
         ? `${Math.round(match.matchup * 100)}%`
         : "?";
-      const typeSuffix =
-        kind === "recent" ? ` · ${getBattleTypeLabel(match.type)}` : "";
-      const line = `- 👥 ${opponentName} ${resultIcon} ${score} ⚡ ${matchup}${typeSuffix}`;
+      const line = `- 👥 ${opponentName} ${resultIcon} ${score} ⚡ ${matchup}`;
       const lineY = labelY + 12 + index * textLineHeight;
       return `<text x="${padding}" y="${lineY}" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#e2e8f0">${escapeText(line)}</text>`;
     });
