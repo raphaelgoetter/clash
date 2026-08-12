@@ -136,9 +136,9 @@ function pickFlavor(pool, seed) {
   return pool[((seed % pool.length) + pool.length) % pool.length];
 }
 
-function gaugeCategory(kind, value) {
-  if (value <= 30) return `${kind}_bas`;
-  if (value >= 80) return `${kind}_haut`;
+function gaugeCategory(kind, value, zones) {
+  if (value < zones.min) return `${kind}_bas`;
+  if (value > zones.max) return `${kind}_haut`;
   return `${kind}_normal`;
 }
 
@@ -157,8 +157,8 @@ const GAUGE_ICONS = {
   moral_haut: "😋",
 };
 
-function gaugeIcon(kind, value) {
-  return GAUGE_ICONS[gaugeCategory(kind, value)];
+function gaugeIcon(kind, value, zones) {
+  return GAUGE_ICONS[gaugeCategory(kind, value, zones)];
 }
 
 async function pickVoterNames(voters, jour) {
@@ -199,20 +199,20 @@ function buildDay1Intro() {
 // GAUGE_ICONS, qui a besoin d'une icône même en normal) : rien
 // d'intéressant à raconter sur une jauge ordinaire, la ligne est alors
 // simplement omise plutôt que de meubler avec une phrase creuse.
-async function buildNarrative(jour, gauges, voters, estPremierJour) {
+async function buildNarrative(jour, gauges, voters, estPremierJour, zones) {
   if (estPremierJour) return buildDay1Intro();
 
   const narratifs = await loadNarratifs();
   const intro = pickFlavor(narratifs.intro_cocasse, jour);
 
   const lines = [];
-  const estomacKey = gaugeCategory("estomac", gauges.estomac);
+  const estomacKey = gaugeCategory("estomac", gauges.estomac, zones);
   if (!estomacKey.endsWith("_normal"))
     lines.push(pickFlavor(narratifs[estomacKey], jour + 1));
-  const energieKey = gaugeCategory("energie", gauges.energie);
+  const energieKey = gaugeCategory("energie", gauges.energie, zones);
   if (!energieKey.endsWith("_normal"))
     lines.push(pickFlavor(narratifs[energieKey], jour + 2));
-  const moralKey = gaugeCategory("moral", gauges.moral);
+  const moralKey = gaugeCategory("moral", gauges.moral, zones);
   if (!moralKey.endsWith("_normal"))
     lines.push(pickFlavor(narratifs[moralKey], jour + 3));
 
@@ -253,7 +253,13 @@ async function buildTamagotchiEmbed(
   voters,
   previousRating,
 ) {
-  const narrative = await buildNarrative(jour, gauges, voters, estPremierJour);
+  const narrative = await buildNarrative(
+    jour,
+    gauges,
+    voters,
+    estPremierJour,
+    config.zones_ideales,
+  );
   const lines = [narrative, ""];
   if (event) {
     const effet = event.actions_modifiees
@@ -268,14 +274,17 @@ async function buildTamagotchiEmbed(
   }
   lines.push(
     renderGaugeLine(
-      `${gaugeIcon("estomac", gauges.estomac)} Estomac`,
+      `${gaugeIcon("estomac", gauges.estomac, config.zones_ideales)} Estomac`,
       gauges.estomac,
     ),
     renderGaugeLine(
-      `${gaugeIcon("energie", gauges.energie)} Énergie`,
+      `${gaugeIcon("energie", gauges.energie, config.zones_ideales)} Énergie`,
       gauges.energie,
     ),
-    renderGaugeLine(`${gaugeIcon("moral", gauges.moral)} Moral`, gauges.moral),
+    renderGaugeLine(
+      `${gaugeIcon("moral", gauges.moral, config.zones_ideales)} Moral`,
+      gauges.moral,
+    ),
     "",
   );
   // Rend visible POURQUOI le score a (ou n'a pas) bougé : sans ça, une seule
@@ -1107,15 +1116,15 @@ export async function handleInspecter(webhookUrl, jour, discordId, username) {
       title: `🔮 Projection — clôture demain ${formatUtcTimeAsParis(8)} (heure de Paris)`,
       description: [
         renderGaugeLine(
-          `${gaugeIcon("estomac", projected.estomac)} Estomac`,
+          `${gaugeIcon("estomac", projected.estomac, config.zones_ideales)} Estomac`,
           projected.estomac,
         ),
         renderGaugeLine(
-          `${gaugeIcon("energie", projected.energie)} Énergie`,
+          `${gaugeIcon("energie", projected.energie, config.zones_ideales)} Énergie`,
           projected.energie,
         ),
         renderGaugeLine(
-          `${gaugeIcon("moral", projected.moral)} Moral`,
+          `${gaugeIcon("moral", projected.moral, config.zones_ideales)} Moral`,
           projected.moral,
         ),
         "",
