@@ -2717,33 +2717,47 @@ function formatWarDecksField(warDecks) {
   return value;
 }
 
-// Pendant de formatWarDecksField() pour /matchup : liste plate des derniers
-// combats bruts (sortie de summarizeRecentBattlesForMatchup), sans
-// regroupement par jour de GDC — chaque ligne précise déjà son propre type
-// de combat (GDC/Ladder/Amical/...) puisqu'ils sont mélangés.
+// Pendant de formatWarDecksField() pour /matchup : liste des derniers combats
+// bruts (sortie de summarizeRecentBattlesForMatchup) groupés par date (titre
+// **JJ/MM**, comme /matchup-gdc regroupe par jour de GDC **J1**..**J4**) —
+// contrairement à /matchup-gdc, chaque ligne précise aussi son propre type
+// de combat (GDC/Ladder/Amical/...) puisqu'ils sont mélangés au sein d'une
+// même date.
 function formatRecentBattlesField(recentBattles) {
   if (!Array.isArray(recentBattles) || recentBattles.length === 0) {
     return null;
   }
 
-  const lines = recentBattles.map((deck, deckIndex) => {
+  const dateGroups = new Map();
+  recentBattles.forEach((deck, deckIndex) => {
     const match = deck.matches?.[0] ?? {};
     const dateLabel = formatRecentMatchDate(match.battleTime);
-    const typeLabel = getBattleTypeLabel(match.type);
-    const opponentName = escapeText(match.opponentName || "?");
-    const resultEmoji =
-      match.result === "win"
-        ? "<:success:1499002702208958577>"
-        : "<:error:1499002755841265826>";
-    const score = escapeText(match.score || "?");
-    const matchup = Number.isFinite(match.matchup)
-      ? `${Math.round(match.matchup * 100)}%`
-      : "?";
-    const deckLabel = deck.label || `Deck ${deckIndex + 1}`;
-    return `• ${dateLabel} ${typeLabel} ${deckLabel} : <:members:1506175789731811399> ${opponentName} ${resultEmoji} ${score} ⚡ ${matchup}`;
+    const group = dateGroups.get(dateLabel) ?? [];
+    group.push({ deck, deckIndex, match });
+    dateGroups.set(dateLabel, group);
   });
 
-  return lines.join("\n");
+  const blocks = [...dateGroups.entries()].map(([dateLabel, entries], groupIndex) => {
+    const lines = entries.map(({ deck, deckIndex, match }) => {
+      const typeLabel = getBattleTypeLabel(match.type);
+      const opponentName = escapeText(match.opponentName || "?");
+      const resultEmoji =
+        match.result === "win"
+          ? "<:success:1499002702208958577>"
+          : "<:error:1499002755841265826>";
+      const score = escapeText(match.score || "?");
+      const matchup = Number.isFinite(match.matchup)
+        ? `${Math.round(match.matchup * 100)}%`
+        : "?";
+      const deckLabel = deck.label || `Deck ${deckIndex + 1}`;
+      return `• ${typeLabel} ${deckLabel} : <:members:1506175789731811399> ${opponentName} ${resultEmoji} ${score} ⚡ ${matchup}`;
+    });
+    const groupLines = groupIndex > 0 ? [""] : [];
+    groupLines.push(`**${dateLabel}**`, ...lines);
+    return groupLines.join("\n");
+  });
+
+  return blocks.join("\n");
 }
 
 function buildScoreBreakdownCodeBlock(score) {
