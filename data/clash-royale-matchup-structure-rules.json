@@ -63,6 +63,7 @@
       "Valkyrie",
       "Skeleton Army",
       "Goblin Gang",
+      "Elite Barbarians",
       "Minions"
     ],
     "heavyDpsThreats": [
@@ -72,6 +73,7 @@
       "Mega Knight",
       "Boss Bandit",
       "Bandit",
+      "Elite Barbarians",
       "Golden Knight"
     ],
     "_antiAirCardsComment": "Troupes/bâtiments capables de cibler l'air (hors sorts). Liste large, à vérifier/corriger au besoin.",
@@ -120,20 +122,23 @@
       "Giant Snowball",
       "Barbarian Barrel",
       "Bats",
+      "Berserker",
       "Wall Breakers",
       "Suspicious Bush",
-      "Rage"
+      "Rage",
+      "Goblin Curse"
     ],
     "allBuildings": [
+      "Tombstone",
       "Cannon",
+      "Goblin Hut",
+      "Goblin Cage",
+      "Bomb Tower",
+      "Mortar",
+      "Goblin Drill",
       "Tesla",
       "Inferno Tower",
-      "Bomb Tower",
-      "Tombstone",
-      "Goblin Cage",
       "X-Bow",
-      "Mortar",
-      "Goblin Hut",
       "Barbarian Hut",
       "Elixir Collector"
     ]
