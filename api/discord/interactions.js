@@ -3137,9 +3137,7 @@ async function writeDiscordLinks(links, sha, message) {
   }
 }
 
-// Récupère l'analyse + les decks de guerre (avec breakdown matchup) pour un tag joueur.
-// Partagé entre /matchup-gdc et les interactions du bouton "ℹ️ Détails" (kind="gdc").
-async function fetchWarDecksForTag(tag) {
+async function fetchWarDecksForTagUncached(tag) {
   const apiResp = await fetch(
     `${TRUST_ROYALE_URL}/api/player/${encodeURIComponent(tag)}/analysis?fast=true`,
     { headers: { Accept: "application/json" } },
@@ -3185,11 +3183,25 @@ async function fetchWarDecksForTag(tag) {
   return { analysis, warDecks };
 }
 
-// Récupère l'analyse + les 6 derniers combats bruts (tous types) pour un tag
-// joueur. Partagé entre /matchup et les interactions du bouton "ℹ️ Détails"
-// (kind="recent"). Pendant de fetchWarDecksForTag() ci-dessus, mais sans
-// filtre GDC ni regroupement par deck (cf. summarizeRecentBattlesForMatchup).
-async function fetchRecentBattlesForTag(tag) {
+// Récupère l'analyse + les decks de guerre (avec breakdown matchup) pour un tag joueur.
+// Partagé entre /matchup-gdc et les interactions du bouton "ℹ️ Détails" (kind="gdc").
+// Mis en cache le temps de la fenêtre d'interaction (getOrSet, TTL 15 min) : sans ça,
+// un re-fetch à chaque clic peut retourner un battlelog légèrement différent (nouveau
+// combat entre-temps) et désynchroniser les indices affichés dans le menu "Détails" de
+// ceux du message d'origine — cf. bug identique et bien plus visible sur /matchup
+// (fetchRecentBattlesForTag), où le battlelog Ladder change bien plus vite qu'un
+// battlelog GDC.
+async function fetchWarDecksForTag(tag) {
+  const cleanTag = String(tag || "")
+    .replace(/^#/, "")
+    .toUpperCase();
+  const { value } = await getOrSet(`matchup_gdc:${cleanTag}`, () =>
+    fetchWarDecksForTagUncached(tag),
+  );
+  return value;
+}
+
+async function fetchRecentBattlesForTagUncached(tag) {
   const apiResp = await fetch(
     `${TRUST_ROYALE_URL}/api/player/${encodeURIComponent(tag)}/analysis?fast=true`,
     { headers: { Accept: "application/json" } },
@@ -3230,6 +3242,25 @@ async function fetchRecentBattlesForTag(tag) {
     );
   }
   return { analysis, warDecks };
+}
+
+// Récupère l'analyse + les 6 derniers combats bruts (tous types) pour un tag
+// joueur. Partagé entre /matchup et les interactions du bouton "ℹ️ Détails"
+// (kind="recent"). Pendant de fetchWarDecksForTag() ci-dessus, mais sans
+// filtre GDC ni regroupement par deck (cf. summarizeRecentBattlesForMatchup).
+// Mis en cache (getOrSet, TTL 15 min, clé par tag) : le "Détails" doit montrer
+// EXACTEMENT les 6 combats affichés dans le message d'origine, or un joueur
+// actif en Ladder peut jouer un nouveau combat entre la commande et le clic
+// sur le bouton — sans cache, un re-fetch décale la fenêtre des "6 derniers
+// combats" et désynchronise les indices (Deck 1 du message ≠ Deck 1 du détail).
+async function fetchRecentBattlesForTag(tag) {
+  const cleanTag = String(tag || "")
+    .replace(/^#/, "")
+    .toUpperCase();
+  const { value } = await getOrSet(`matchup_recent:${cleanTag}`, () =>
+    fetchRecentBattlesForTagUncached(tag),
+  );
+  return value;
 }
 
 // kind distingue les deux commandes qui partagent ce flux "ℹ️ Détails" :
