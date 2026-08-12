@@ -529,6 +529,8 @@ function buildReglesEmbed(config) {
       "**Impacts des actions :**",
       ...actionLines,
       "",
+      `Ces impacts sont partagés entre les actions votées, proportionnellement au nombre de votes de chacune — plus il y a de votants dans la journée, plus l'effet global est fort (jusqu'à ${config.votants_reference} votants, où l'impact atteint sa pleine puissance). En dessous, l'effet est affaibli : mobiliser du monde compte vraiment !`,
+      "",
       "🔮 **Projection** t'affiche en privé un aperçu des jauges telles qu'elles seraient si la journée se clôturait maintenant, selon les votes déjà exprimés — pratique pour coordonner le groupe. Elle ne modifie jamais les jauges, mais consomme ton vote du jour comme les 4 actions ci-dessus (c'est un choix, pas une simple consultation). Seul 📖 **Règles du jeu** est consultable librement, sans jamais consommer ton vote.",
       "",
       `💊 **Pilule** (Jours ${config.actions.pilule.day_min} à ${config.actions.pilule.day_max}) rapproche instantanément les 3 jauges de Lilith de l'équilibre (${config.actions.pilule.target}%, dans la limite de ±${config.actions.pilule.max_step} points par jauge) — effet appliqué immédiatement, pas seulement à la clôture. Elle consomme ton vote du jour comme les autres actions, sauf si elle a déjà été utilisée (auquel cas ton vote est libéré, tu peux revoter). Usage très limité : une seule utilisation réussie par jour, et ${config.actions.pilule.total_cap} utilisations maximum sur toute la manche.`,
@@ -1090,7 +1092,11 @@ export async function handleInspecter(webhookUrl, jour, discordId, username) {
       config.actions,
       state.lastEvent?.actions_modifiees,
     );
-    const impact = computeDayImpact(voteCounts, actionsConfig);
+    const impact = computeDayImpact(
+      voteCounts,
+      actionsConfig,
+      config.votants_reference,
+    );
     const projected = applyGaugeDelta(state.gauges, impact);
 
     // Ne compte que les 4 actions réelles (Projection elle-même n'a aucun

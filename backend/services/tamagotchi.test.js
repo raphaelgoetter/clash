@@ -104,6 +104,47 @@ async function main() {
     },
   );
 
+  // ── computeDayImpact avec facteur de participation (votantsReference) ──
+  // Sans le paramètre : comportement inchangé (voir assertions ci-dessus),
+  // seul le RATIO compte, jamais le volume — c'est justement ce que le
+  // facteur de participation corrige quand il est fourni.
+  // "1 Bretzel + 2 Sieste" et "2 Bretzel + 4 Sieste" ont le même ratio mais
+  // pas le même volume : avec une référence de 12 votants, le second doit
+  // produire un impact deux fois plus fort que le premier.
+  const impactFaibleParticipation = computeDayImpact(
+    { bretzel: 1, sieste: 2 },
+    ACTIONS,
+    12,
+  );
+  const impactDoubleParticipation = computeDayImpact(
+    { bretzel: 2, sieste: 4 },
+    ACTIONS,
+    12,
+  );
+  assert.strictEqual(
+    impactDoubleParticipation.estomac,
+    impactFaibleParticipation.estomac * 2,
+  );
+  assert.strictEqual(
+    impactDoubleParticipation.energie,
+    impactFaibleParticipation.energie * 2,
+  );
+  assert.strictEqual(
+    impactDoubleParticipation.moral,
+    impactFaibleParticipation.moral * 2,
+  );
+
+  // À la référence (ou au-delà) : identique au calcul sans facteur, jamais
+  // de survitaminage au-delà de la magnitude déclarée des actions.
+  assert.deepStrictEqual(
+    computeDayImpact({ nourrir: 12 }, ACTIONS, 12),
+    computeDayImpact({ nourrir: 12 }, ACTIONS),
+  );
+  assert.deepStrictEqual(
+    computeDayImpact({ nourrir: 20 }, ACTIONS, 12),
+    computeDayImpact({ nourrir: 20 }, ACTIONS),
+  );
+
   // ── applyGaugeDelta ──
   assert.deepStrictEqual(
     applyGaugeDelta(

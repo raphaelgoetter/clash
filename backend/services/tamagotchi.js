@@ -254,18 +254,30 @@ export function clampGauge(value) {
 // quand même séparément). Ainsi l'amplitude de l'impact d'une journée reste
 // toujours bornée par l'amplitude d'une seule action, quel que soit le
 // nombre de votants.
-export function computeDayImpact(voteCounts, actionsConfig) {
+// `votantsReference` (optionnel) introduit un facteur de participation :
+// sans lui (ou à 0), le résultat ne dépend que du RATIO entre actions votées
+// — "1 Bretzel + 2 Sieste" produit alors exactement le même impact que
+// "2+4" ou "300+600", aucune incitation à voter en nombre. Avec lui, le
+// résultat est multiplié par min(total_votes / votantsReference, 1) : en
+// dessous de la référence, l'effet est proportionnellement affaibli (plus de
+// votants = plus d'impact) ; à la référence ou au-delà, l'effet est
+// identique à un partage de vote sans ce facteur (jamais de survitaminage
+// au-delà de la magnitude déclarée des actions).
+export function computeDayImpact(voteCounts, actionsConfig, votantsReference) {
   const actionIds = Object.keys(actionsConfig).filter(
     (id) => !actionsConfig[id].is_info_action,
   );
   const total = actionIds.reduce((sum, id) => sum + (voteCounts[id] || 0), 0);
   const impact = { estomac: 0, energie: 0, moral: 0 };
   if (total === 0) return impact;
+  const participation = votantsReference
+    ? Math.min(total / votantsReference, 1)
+    : 1;
   for (const id of actionIds) {
     const share = (voteCounts[id] || 0) / total;
     const actionImpact = actionsConfig[id].impact || {};
     for (const gauge of Object.keys(impact)) {
-      impact[gauge] += share * (actionImpact[gauge] || 0);
+      impact[gauge] += participation * share * (actionImpact[gauge] || 0);
     }
   }
   return impact;
@@ -380,7 +392,7 @@ async function computeClosure(state, config) {
   // jour a démarré, voir postTamagotchi()) — c'est lui, pas l'événement du
   // jour suivant, qui doit influencer le calcul d'impact de CE jour.
   const actionsConfig = applyActionOverrides(config.actions, state.lastEvent?.actions_modifiees);
-  const impact = computeDayImpact(voteCounts, actionsConfig);
+  const impact = computeDayImpact(voteCounts, actionsConfig, config.votants_reference);
   const gaugesClosing = applyGaugeDelta(state.gauges, impact);
   const rating = rateDay(gaugesClosing, config.zones_ideales);
   return { voteCounts, voters, impact, gaugesClosing, rating };
