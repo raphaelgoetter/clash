@@ -54,7 +54,10 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
 
   const voteCounts = await tallyVotes(state.jour);
   for (const [id, action] of Object.entries(config.actions)) {
-    if (action.is_info_action) continue;
+    // Pilule a son propre bloc dédié ci-dessous (quota de la manche, pas un
+    // simple compteur de votes) — seule elle est exclue ici, Projection
+    // (inspecter) doit apparaître comme les 4 actions réelles.
+    if (id === "pilule") continue;
     const votants = votes.filter((v) => v.actionId === id);
     console.log(`${action.emoji} ${action.label} — ${voteCounts[id] || 0} vote${(voteCounts[id] || 0) > 1 ? "s" : ""}`);
     if (votants.length > 0) {

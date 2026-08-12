@@ -355,7 +355,7 @@ function buildTamagotchiComponentsWithCounts(
         {
           type: 2,
           style: 2,
-          label: inspecter.label,
+          label: `${inspecter.label} (${voteCounts.inspecter || 0})`.slice(0, 80),
           emoji: { name: inspecter.emoji },
           custom_id: `tamagotchi_inspecter:${jour}`,
         },
