@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // findDiscordClans.js
 // Script ponctuel : liste les clans français dont la description mentionne
-// "discord" (hors clans de type "famille" ou explicitement exclus) et qui
+// "discord" (hors clans de type "famille"/"family" ou explicitement exclus) et qui
 // comptent entre MIN_ACTIVE et MAX_ACTIVE joueurs actifs (connectés récemment).
 // Les clans déjà contactés (data/discord-clans-contacted.json, tenu à jour à
 // la main) sont retirés de cette liste et recensés à part dans le résultat.
@@ -163,11 +163,11 @@ async function main() {
     const description = clan.description?.toLowerCase() ?? "";
     if (EXCLUDED_CLAN_TAGS.has(clan.tag)) return;
     if (!description.includes("discord")) return;
-    if (description.includes("famille")) return;
+    if (description.includes("famille") || description.includes("family")) return;
     discordClans.push(clan);
   });
   console.log(
-    `${discordClans.length} clans FR mentionnent "discord" (hors "famille" et exclusions manuelles) dans leur description. Vérification de l'activité des membres...`,
+    `${discordClans.length} clans FR mentionnent "discord" (hors "famille"/"family" et exclusions manuelles) dans leur description. Vérification de l'activité des membres...`,
   );
 
   const memberResults = await pooledAllSettled(
