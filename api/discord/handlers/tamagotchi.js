@@ -355,7 +355,10 @@ function buildTamagotchiComponentsWithCounts(
         {
           type: 2,
           style: 2,
-          label: `${inspecter.label} (${voteCounts.inspecter || 0})`.slice(0, 80),
+          label: `${inspecter.label} (${voteCounts.inspecter || 0})`.slice(
+            0,
+            80,
+          ),
           emoji: { name: inspecter.emoji },
           custom_id: `tamagotchi_inspecter:${jour}`,
         },
@@ -531,7 +534,7 @@ function buildReglesEmbed(config) {
       `Chaque impact est réparti au prorata des votes reçus, puis multiplié par la participation du jour : effet plein à partir de ${config.votants_reference} votants, réduit en dessous — mobiliser du monde compte vraiment.`,
       "",
       "🔮 **Projection** t'affiche en privé les jauges telles qu'elles seraient si la clôture avait lieu maintenant, selon les votes déjà exprimés — n'affecte jamais les jauges, mais consomme ton vote du jour comme une action normale.",
-      `💊 **Pilule** (Jours ${config.actions.pilule.day_min}-${config.actions.pilule.day_max}) rapproche *instantanément* (pas besoin d'attendre la clôture) chaque jauge de ${config.actions.pilule.target}%, jusqu'à ${config.actions.pilule.max_step} points. Consomme ton vote sauf si elle a déjà été utilisée (vote alors libéré, tu peux revoter une action normale). Rare : ${config.actions.pilule.total_cap} utilisations réussies max sur toute la manche, dont 1 seule par jour.`,
+      `💊 **Pilule** (Jours ${config.actions.pilule.day_min}-${config.actions.pilule.day_max}) rapproche *instantanément* chaque jauge vers la moyenne, jusqu'à ${config.actions.pilule.max_step}%. Consomme ton vote sauf si elle a déjà été utilisée. Item Rare : ${config.actions.pilule.total_cap} utilisations max sur toute la manche (1 seule par jour).`,
       "Chacune consomme ton vote du jour comme une action normale (1 vote/jour, définitif) — sauf 📖 Règles, toujours libre.",
       "",
       `**⭐ Étoiles :** 3 jauges en zone = ${RATING_LABELS.parfaite} ; 1 hors zone = ${RATING_LABELS.moyenne} ; 2-3 hors zone = ${RATING_LABELS.catastrophe}. Sur 10 jours : 8+ impressionne Mohamed Light, moins de 4 et il débarque furieux avec un deck Mineur-Poison.`,
