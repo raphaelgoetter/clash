@@ -1053,7 +1053,13 @@ export async function handlePilule(
 // éphémère, comme le bouton de vote — voir handleVoteButton pour le même
 // principe de garde (jour périmé) et de rejet (vote déjà posé ailleurs).
 
-export async function handleInspecter(webhookUrl, jour, discordId, username) {
+export async function handleInspecter(
+  webhookUrl,
+  jour,
+  discordId,
+  username,
+  botToken,
+) {
   try {
     const state = await readState();
     if (!state || state.termine || String(state.jour) !== String(jour)) {
@@ -1142,6 +1148,40 @@ export async function handleInspecter(webhookUrl, jour, discordId, username) {
       color: TAMAGOTCHI_COLOR,
     };
     await patchOriginal(webhookUrl, { embeds: [embed], components: [] });
+
+    // Voter Projection consomme le vote du jour comme les 4 actions
+    // normales — le message public (compteur "Projection (N)") doit donc
+    // être repatché ici aussi, sinon il reste figé jusqu'au prochain clic
+    // sur une autre action.
+    const piluleState = await loadPiluleStateIfActive(state.jour, config);
+    const estPremierJour = state.lastRating == null;
+    const publicEmbed = await buildTamagotchiEmbed(
+      state.jour,
+      state.gauges,
+      config,
+      state.lastEvent,
+      state.starTotal,
+      estPremierJour,
+      state.dayVoters,
+      state.lastRating,
+    );
+    const publicComponents = buildTamagotchiComponentsWithCounts(
+      state.jour,
+      config,
+      voteCounts,
+      piluleState,
+    );
+    await fetch(
+      `https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bot ${botToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ embeds: [publicEmbed], components: publicComponents }),
+      },
+    );
   } catch (err) {
     console.error("[Tamagotchi] Échec Projection:", err.message);
   }

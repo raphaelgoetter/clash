@@ -8984,7 +8984,9 @@ export default async function handler(req, res) {
       "Inconnu";
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleTamagotchiInspecter(webhookUrl, jour, discordId, username));
+    runBackground(() =>
+      handleTamagotchiInspecter(webhookUrl, jour, discordId, username, process.env.DISCORD_TOKEN),
+    );
     return;
   }
 
