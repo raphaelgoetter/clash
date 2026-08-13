@@ -68,7 +68,7 @@
       "jour": 6,
       "titre": "Grosse canicule sur le serveur",
       "description": "Il fait une chaleur étouffante aujourd'hui sur le serveur, même Lilith qui devrait être habituée est exténuée.",
-      "modificateur_jauges": { "energie": -20, "estomac": 0, "moral": 0 }
+      "modificateur_jauges": { "energie": -20, "estomac": -10, "moral": 0 }
     },
     {
       "id": "indigestion_bonbons",
