@@ -44,13 +44,17 @@ function parseIntArg(name, fallback) {
   return Number.isFinite(value) ? value : fallback;
 }
 
-const MAX_ACTIVE = parseIntArg("max-active", 18);
-const MIN_ACTIVE = parseIntArg("min-active", 3);
+const MAX_ACTIVE = parseIntArg("max-active", 30);
+const MIN_ACTIVE = parseIntArg("min-active", 10);
 const ACTIVE_DAYS = parseIntArg("active-days", 2);
 
 // Clans passés en revue manuellement et écartés d'office (non pertinents
-// malgré la correspondance sur les critères automatiques).
+// malgré la correspondance sur les critères automatiques), plus les 3 clans
+// de la famille elle-même (jamais une cible de scouting).
 const EXCLUDED_CLAN_TAGS = new Set([
+  "#Y8JUPC9C", // La Resistance (famille)
+  "#LRQP20V9", // Les Resistants (famille)
+  "#QU9UQJRL", // Les Revoltes (famille)
   "#LCCCL0VV", // CHEZ ♥️MEL♥️
   "#R2V0P09J", // La Terre 2 Feu
   "#GJUQR2QP", // SX-Ladder
