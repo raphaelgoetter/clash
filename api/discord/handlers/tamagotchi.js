@@ -1107,7 +1107,21 @@ export async function handleInspecter(
       actionsConfig,
       config.votants_reference,
     );
-    const projected = applyGaugeDelta(state.gauges, impact);
+    const projectedClosing = applyGaugeDelta(state.gauges, impact);
+    // La décroissance (config.decroissance) est un mécanisme connu/documenté
+    // dans les Règles, contrairement à l'événement du lendemain qui doit
+    // rester une surprise — on l'inclut donc ici (event forcé à null) pour
+    // que la Projection corresponde à ce qui sera réellement affiché demain,
+    // hors événement.
+    const jourSuivant = state.jour + 1;
+    const decayApplies =
+      jourSuivant <= config.duree_jours &&
+      config.decroissance &&
+      jourSuivant >= config.decroissance.jour_min;
+    const projected =
+      jourSuivant <= config.duree_jours
+        ? computeDayOpenGauges(projectedClosing, jourSuivant, null, config)
+        : projectedClosing;
 
     // Ne compte que les 4 actions réelles (Projection elle-même n'a aucun
     // impact, la compter ici donnerait l'impression à tort qu'un vote a déjà
@@ -1145,8 +1159,13 @@ export async function handleInspecter(
         ),
         "",
         totalRealVotes === 0
-          ? "Personne n'a encore voté une action aujourd'hui — ces valeurs sont celles de la clôture d'hier, inchangées tant qu'aucun vote n'est enregistré."
+          ? decayApplies
+            ? `Personne n'a encore voté une action aujourd'hui — mais la décroissance du Jour ${jourSuivant} s'appliquera quand même, même sans vote.`
+            : "Personne n'a encore voté une action aujourd'hui — ces valeurs sont celles de la clôture d'hier, inchangées tant qu'aucun vote n'est enregistré."
           : "Basé sur la répartition actuelle des votes — partage ces infos au serveur pour vous coordonner !",
+        ...(decayApplies
+          ? [`📉 Décroissance du Jour ${jourSuivant} déjà comptée — seul l'événement du lendemain reste une surprise.`]
+          : []),
         "",
         voteNotice,
       ].join("\n"),
