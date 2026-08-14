@@ -16047,7 +16047,7 @@
           "start": "2026-08-14T09:57:00.000Z",
           "end": "2026-08-15T09:56:59.999Z"
         },
-        "snapshotTime": "2026-08-14T13:27:48.130Z",
+        "snapshotTime": "2026-08-14T14:21:57.709Z",
         "snapshotBackupTime": "2026-08-14T10:20:57.484Z",
         "decks": {
           "#2G0Q0CV9L": 4,
@@ -16057,6 +16057,7 @@
           "#8VQLJLR0": 4,
           "#99VY0090": 4,
           "#9CQC0YUR8": 4,
+          "#9VQ0J29Y": 4,
           "#GYU0VLGL": 4,
           "#JLU88JR28": 4,
           "#LCQ2J0VGC": 4,
@@ -16133,7 +16134,7 @@
           "#9CQC0YUR8": 1600,
           "#9YQ8RVU2P": 800,
           "#GVGVR0J2U": 800,
-          "#9VQ0J29Y": 900,
+          "#9VQ0J29Y": 1700,
           "#2G0Q0CV9L": 1450
         },
         "duelsTodayByTag": {
@@ -16148,7 +16149,8 @@
           "#LCQ2J0VGC": 1,
           "#82UPUGYP": 1,
           "#8VQLJLR0": 1,
-          "#88GG0LQU": 1
+          "#88GG0LQU": 1,
+          "#9VQ0J29Y": 1
         },
         "_totalDonationsByTag": {
           "#GJ8RV8802": 32366,
@@ -16266,11 +16268,11 @@
           "#9CQC0YUR8": 8,
           "#9YQ8RVU2P": 4,
           "#GVGVR0J2U": 4,
-          "#9VQ0J29Y": 4,
+          "#9VQ0J29Y": 8,
           "#2G0Q0CV9L": 8
         },
         "periodPointsEarned": 29500,
-        "snapshotCount": 58
+        "snapshotCount": 62
       },
       {
         "warDay": "saturday",
