@@ -76,6 +76,13 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
         ? "déjà utilisée aujourd'hui"
         : "disponible";
     console.log(`\n💊 Pilule : ${statut} — ${piluleState.totalUsed}/${pilule.total_cap} utilisée(s) cette manche`);
+    // Un vote Pilule reste dans le hash de votes uniquement si le claim a
+    // réussi (voir handlePilule : sinon il est libéré) — donc tout votant
+    // "pilule" trouvé ici l'a bien utilisée aujourd'hui.
+    const votantsPilule = votes.filter((v) => v.actionId === "pilule");
+    if (votantsPilule.length > 0) {
+      console.log(`  ${votantsPilule.map((v) => v.username).join(", ")}`);
+    }
   }
 
   // Projection : clôture le jour EN COURS avec les votes actuels (lecture
