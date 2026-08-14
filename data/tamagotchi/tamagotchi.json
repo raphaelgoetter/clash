@@ -5,7 +5,7 @@
   "votants_reference": 12,
   "decroissance": {
     "jour_min": 6,
-    "modificateur_jauges": { "estomac": -6, "energie": -6, "moral": -6 }
+    "modificateur_jauges": { "estomac": -4, "energie": -4, "moral": -4 }
   },
   "jauges_initiales": { "estomac": 50, "energie": 50, "moral": 50 },
   "actions": {
