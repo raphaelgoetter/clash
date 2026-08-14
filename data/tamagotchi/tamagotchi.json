@@ -3,6 +3,10 @@
   "cron_time": "0 8 * * *",
   "zones_ideales": { "min": 40, "max": 70 },
   "votants_reference": 12,
+  "decroissance": {
+    "jour_min": 6,
+    "modificateur_jauges": { "estomac": -6, "energie": -6, "moral": -6 }
+  },
   "jauges_initiales": { "estomac": 50, "energie": 50, "moral": 50 },
   "actions": {
     "nourrir": {
@@ -68,7 +72,7 @@
       "jour": 6,
       "titre": "Grosse canicule sur le serveur",
       "description": "Il fait une chaleur étouffante aujourd'hui sur le serveur, même Lilith qui devrait être habituée est exténuée.",
-      "modificateur_jauges": { "energie": -20, "estomac": -10, "moral": 0 }
+      "modificateur_jauges": { "energie": -10, "estomac": -10, "moral": -10 }
     },
     {
       "id": "indigestion_bonbons",
@@ -85,7 +89,7 @@
       "jour": 9,
       "titre": "Livraison mystère d'Alsace",
       "description": "Un colis contenant de la choucroute arrive sur le serveur ! Lilith se régale… un peu trop.",
-      "modificateur_jauges": { "energie": -15, "estomac": 20, "moral": 10 }
+      "modificateur_jauges": { "energie": -15, "estomac": 20, "moral": 0 }
     }
   ]
 }

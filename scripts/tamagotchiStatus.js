@@ -19,7 +19,7 @@ import {
   listVotes,
   previewCloseDay,
   eventForDay,
-  applyGaugeDelta,
+  computeDayOpenGauges,
   readPiluleState,
 } from "../backend/services/tamagotchi.js";
 import { renderGaugeBar, formatGaugeImpact, formatActionOverrides } from "../api/discord/handlers/tamagotchi.js";
@@ -94,15 +94,16 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
     // Un événement à actions_modifiees (ex. Indigestion de bonbons) n'a pas
     // d'effet instantané au démarrage du jour suivant — même garde qu'en prod
     // (voir postTamagotchi()) : rien à appliquer ici pour ce type d'événement.
-    const gaugesProjetees = event?.modificateur_jauges
-      ? applyGaugeDelta(closure.gaugesClosing, event.modificateur_jauges)
-      : closure.gaugesClosing;
+    const gaugesProjetees = computeDayOpenGauges(closure.gaugesClosing, jourSuivant, event, config);
     console.log(`→ Jour ${jourSuivant}/${config.duree_jours} :`);
     if (event) {
       const effet = event.actions_modifiees
         ? formatActionOverrides(event.actions_modifiees, config.actions)
         : formatGaugeImpact(event.modificateur_jauges);
       console.log(`  📯 Événement : ${event.titre} — ${effet}`);
+    }
+    if (config.decroissance && jourSuivant >= config.decroissance.jour_min) {
+      console.log(`  📉 Lilith s'essouffle : ${formatGaugeImpact(config.decroissance.modificateur_jauges)}`);
     }
     console.log(`  🍭 Estomac : ${renderGaugeBar(gaugesProjetees.estomac)} ${gaugesProjetees.estomac}%`);
     console.log(`  ⚡ Énergie : ${renderGaugeBar(gaugesProjetees.energie)} ${gaugesProjetees.energie}%`);

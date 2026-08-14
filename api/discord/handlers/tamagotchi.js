@@ -18,6 +18,7 @@ import {
   closeDayAndAdvance,
   eventForDay,
   applyGaugeDelta,
+  computeDayOpenGauges,
   applyActionOverrides,
   computeDayImpact,
   computeFinalTier,
@@ -533,6 +534,12 @@ function buildReglesEmbed(config) {
       ...actionLines,
       `Chaque impact est réparti au prorata des votes reçus, puis multiplié par la participation du jour : effet plein à partir de ${config.votants_reference} votants, réduit en dessous — mobiliser du monde compte vraiment.`,
       "",
+      ...(config.decroissance
+        ? [
+            `📉 À partir du Jour ${config.decroissance.jour_min}, Mohamed Light commence sérieusement à lui manquer : chaque jour perd automatiquement ${formatGaugeImpact(config.decroissance.modificateur_jauges)}, en plus des votes et des événements.`,
+            "",
+          ]
+        : []),
       "🔮 **Projection** t'affiche en privé les jauges telles qu'elles seraient si la clôture avait lieu maintenant, selon les votes déjà exprimés — n'affecte jamais les jauges, mais consomme ton vote du jour comme une action normale.",
       `💊 **Pilule** (Jours ${config.actions.pilule.day_min}-${config.actions.pilule.day_max}) rapproche *instantanément* chaque jauge vers la moyenne, jusqu'à ${config.actions.pilule.max_step}%. Consomme ton vote sauf si elle a déjà été utilisée. Item Rare : ${config.actions.pilule.total_cap} utilisations max sur toute la manche (1 seule par jour).`,
       "Chacune consomme ton vote du jour comme une action normale (1 vote/jour, définitif) — sauf 📖 Règles, toujours libre.",
@@ -668,9 +675,7 @@ export async function postTamagotchi(
   // fera sentir qu'à la clôture de CE jour, via computeClosure() côté service
   // (voir applyActionOverrides()), donc pas de modificateur_jauges à appliquer
   // ici pour ce type d'événement.
-  const gauges = event?.modificateur_jauges
-    ? applyGaugeDelta(closure.gaugesClosing, event.modificateur_jauges)
-    : closure.gaugesClosing;
+  const gauges = computeDayOpenGauges(closure.gaugesClosing, jour, event, config);
   const { embed, components } = await buildDayPayload(
     jour,
     gauges,

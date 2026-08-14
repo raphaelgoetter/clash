@@ -336,6 +336,23 @@ export function eventForDay(jour, evenementsPossibles) {
   return evenementsPossibles.find((e) => e.jour === jour) ?? null;
 }
 
+// Jauges d'ouverture d'un jour : applique d'abord l'éventuel événement du
+// jour (modificateur_jauges, un delta ponctuel), puis la décroissance
+// passive (config.decroissance) si le jour l'atteint déjà — les deux
+// cumulent le même jour plutôt que de s'annuler. Centralisé ici pour que
+// postTamagotchi() (clôture réelle) et tamagotchiStatus.js (projection)
+// appliquent exactement la même règle, sans dupliquer la logique.
+export function computeDayOpenGauges(gaugesClosing, jour, event, config) {
+  let gauges = event?.modificateur_jauges
+    ? applyGaugeDelta(gaugesClosing, event.modificateur_jauges)
+    : gaugesClosing;
+  const decroissance = config.decroissance;
+  if (decroissance && jour >= decroissance.jour_min) {
+    gauges = applyGaugeDelta(gauges, decroissance.modificateur_jauges);
+  }
+  return gauges;
+}
+
 export function computeFinalTier(starTotal) {
   if (starTotal >= 8) return "S";
   if (starTotal >= 4) return "B";

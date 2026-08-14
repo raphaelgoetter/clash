@@ -7,6 +7,7 @@ import {
   computePiluleDelta,
   rateDay,
   eventForDay,
+  computeDayOpenGauges,
   computeFinalTier,
 } from "./tamagotchi.js";
 
@@ -276,6 +277,32 @@ async function main() {
   assert.strictEqual(eventForDay(4, EVENEMENTS), null);
   assert.strictEqual(eventForDay(7, EVENEMENTS), null);
   assert.strictEqual(eventForDay(10, EVENEMENTS), null);
+
+  // ── computeDayOpenGauges ──
+  const decroissance = {
+    decroissance: { jour_min: 6, modificateur_jauges: { estomac: -6, energie: -6, moral: -6 } },
+  };
+  // Avant jour_min : aucune décroissance, même avec un événement présent.
+  assert.deepStrictEqual(
+    computeDayOpenGauges({ estomac: 50, energie: 50, moral: 50 }, 5, eventForDay(5, EVENEMENTS), decroissance),
+    { estomac: 50, energie: 50, moral: 60 },
+  );
+  // À partir de jour_min : décroissance appliquée même sans événement ce jour-là.
+  assert.deepStrictEqual(
+    computeDayOpenGauges({ estomac: 50, energie: 50, moral: 50 }, 7, null, decroissance),
+    { estomac: 44, energie: 44, moral: 44 },
+  );
+  // Événement ET décroissance le même jour : les deux deltas cumulent
+  // (canicule Jour 6 : énergie -10/moral -10, puis décroissance -6 partout).
+  assert.deepStrictEqual(
+    computeDayOpenGauges({ estomac: 50, energie: 50, moral: 50 }, 6, eventForDay(6, EVENEMENTS), decroissance),
+    { estomac: 44, energie: 34, moral: 34 },
+  );
+  // Sans config.decroissance : comportement identique à avant (rétro-compatible).
+  assert.deepStrictEqual(
+    computeDayOpenGauges({ estomac: 50, energie: 50, moral: 50 }, 7, null, {}),
+    { estomac: 50, energie: 50, moral: 50 },
+  );
 
   // ── computeFinalTier ──
   assert.strictEqual(computeFinalTier(10), "S");
