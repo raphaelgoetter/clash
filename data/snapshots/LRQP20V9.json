@@ -15655,12 +15655,13 @@
           "start": "2026-08-15T09:37:00.000Z",
           "end": "2026-08-16T09:36:59.999Z"
         },
-        "snapshotTime": "2026-08-15T18:03:52.243Z",
+        "snapshotTime": "2026-08-15T19:06:08.451Z",
         "snapshotBackupTime": "2026-08-15T10:04:44.661Z",
         "decks": {
           "#202R9VUJCU": 4,
           "#2YP8VVG0": 4,
           "#82JPJ9J98": 4,
+          "#8GVRUYUP": 4,
           "#8QVRJYVYU": 4,
           "#8R0LR8GYC": 4,
           "#8Y90VQYP9": 4,
@@ -15673,7 +15674,8 @@
           "#VGJ9LL8VC": 4,
           "#VPGYR2990": 4,
           "#YLGC82PJR": 4,
-          "#8GVRUYUP": 3
+          "#V202QV00C": 3,
+          "#LLRY2V8CJ": 2
         },
         "hourlyCumul": [],
         "_cumulFame": {
@@ -15710,8 +15712,8 @@
           "#8Y90VQYP9": 1500,
           "#9VQYC9GJQ": 900,
           "#8R0LR8GYC": 1300,
-          "#LLRY2V8CJ": 950,
-          "#8GVRUYUP": 1400,
+          "#LLRY2V8CJ": 1150,
+          "#8GVRUYUP": 1500,
           "#Q8GYUQ8GG": 1000,
           "#UPC0Y0LRQ": 1700,
           "#LV0VUJVU": 1600,
@@ -15731,7 +15733,8 @@
           "#8YGY2RPCC": 1600,
           "#YLGC82PJR": 2400,
           "#8QVRJYVYU": 2250,
-          "#V2VLPPQCV": 450
+          "#V2VLPPQCV": 450,
+          "#V202QV00C": 300
         },
         "duelsTodayByTag": {
           "#PG9QUCP": 1,
@@ -15750,7 +15753,9 @@
           "#82JPJ9J98": 1,
           "#RJY2R282V": 1,
           "#VPGYR2990": 1,
-          "#8R0LR8GYC": 1
+          "#8R0LR8GYC": 1,
+          "#PCPGLGUYV": 1,
+          "#LLRY2V8CJ": 1
         },
         "_totalDonationsByTag": {
           "#22UVQ2Y8U": 19029,
@@ -15768,7 +15773,7 @@
           "#PG9QUCP": 101830,
           "#Q8GYUQ8GG": 59471,
           "#8QVRJYVYU": 87206,
-          "#2YP8VVG0": 6907,
+          "#2YP8VVG0": 6915,
           "#YLGC82PJR": 3300,
           "#8GVRUYUP": 57395,
           "#202R9VUJCU": 34561,
@@ -15791,7 +15796,8 @@
           "#8P9CL92LC": 20009,
           "#9VQYC9GJQ": 102906,
           "#UP9YJV080": 14514,
-          "#V2VLPPQCV": 22180
+          "#V2VLPPQCV": 22198,
+          "#V202QV00C": 3686
         },
         "duelsComplete": true,
         "periodType": "warDay",
@@ -15829,8 +15835,8 @@
           "#8Y90VQYP9": 12,
           "#9VQYC9GJQ": 8,
           "#8R0LR8GYC": 12,
-          "#LLRY2V8CJ": 8,
-          "#8GVRUYUP": 11,
+          "#LLRY2V8CJ": 10,
+          "#8GVRUYUP": 12,
           "#Q8GYUQ8GG": 8,
           "#UPC0Y0LRQ": 12,
           "#LV0VUJVU": 12,
@@ -15850,10 +15856,11 @@
           "#8YGY2RPCC": 8,
           "#YLGC82PJR": 12,
           "#8QVRJYVYU": 12,
-          "#V2VLPPQCV": 4
+          "#V2VLPPQCV": 4,
+          "#V202QV00C": 3
         },
         "periodPointsEarned": 18600,
-        "snapshotCount": 63
+        "snapshotCount": 69
       },
       {
         "warDay": "sunday",
