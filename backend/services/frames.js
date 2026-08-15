@@ -348,9 +348,12 @@ export function checkAnswer(frameEntry, rawAnswer) {
 }
 
 // ── Scoring ──────────────────────────────────────────────────────
+// Score plancher à 1 (et non 0) : trouver la bonne réponse doit toujours
+// rapporter au moins un point, même après de nombreuses tentatives
+// incorrectes et l'utilisation des indices.
 
 export function computeScore(attemptsIncorrects, hintsUsedCount) {
-  return Math.max(0, 10 - 2 * attemptsIncorrects - 3 * hintsUsedCount);
+  return Math.max(1, 10 - 2 * attemptsIncorrects - 3 * hintsUsedCount);
 }
 
 // ── Progression par joueur ────────────────────────────────────────

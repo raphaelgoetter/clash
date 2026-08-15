@@ -289,10 +289,12 @@ export function checkAnswer(entry, rawAnswer) {
 
 // ── Scoring ──────────────────────────────────────────────────────
 // Un seul palier d'indice (contrairement à Frame qui en a 2) — hintUsed est
-// un booléen, le terme de pénalité vaut donc 0 ou 3.
+// un booléen, le terme de pénalité vaut donc 0 ou 3. Score plancher à 1 (et
+// non 0) : trouver la bonne réponse doit toujours rapporter au moins un
+// point, même après de nombreuses tentatives incorrectes et l'indice.
 
 export function computeScore(attemptsIncorrects, hintUsed) {
-  return Math.max(0, 10 - 2 * attemptsIncorrects - (hintUsed ? 3 : 0));
+  return Math.max(1, 10 - 2 * attemptsIncorrects - (hintUsed ? 3 : 0));
 }
 
 // ── Progression par joueur ────────────────────────────────────────
