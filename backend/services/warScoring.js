@@ -550,13 +550,13 @@ export function computeWarReliabilityFallback(
     ? Math.floor((Date.now() - new Date(lastWarDay).getTime()) / MS_PER_DAY)
     : null;
 
-  // 1. War Activity (0-8) — uniquement basé sur les semaines GDC récupérées.
-  // La fenêtre de référence est fixe à 5 semaines : les semaines manquantes
-  // comptent comme 0 et le score atteint son maximum à partir de 5 semaines récupérées.
+  // 1. War Activity (0-8) — uniquement basé sur les semaines où le joueur a réellement joué.
+  // La fenêtre de référence est fixe à 5 semaines : les semaines sans deck joué
+  // comptent comme 0 et le score atteint son maximum à partir de 5 semaines jouées.
   const completedHistoryWeeks = (warHistory?.weeks ?? [])
-    .filter((w) => !w.isCurrent && typeof w.decksUsed === "number")
+    .filter((w) => !w.isCurrent && (w.decksUsed ?? 0) > 0)
     .slice(0, 5);
-  const recoveredWeekSlots = Array.from(
+  const playedWeekSlots = Array.from(
     { length: 5 },
     (_, index) =>
       completedHistoryWeeks[index] ?? {
@@ -564,9 +564,9 @@ export function computeWarReliabilityFallback(
         label: `slot${index + 1}`,
       },
   );
-  const recoveredWeeksCount = completedHistoryWeeks.length;
-  const activiteGDC = r(Math.min(8, (recoveredWeeksCount / 5) * 8));
-  const warHistoryActivityDetail = recoveredWeekSlots
+  const playedWeeksCount = completedHistoryWeeks.length;
+  const activiteGDC = r(Math.min(8, (playedWeeksCount / 5) * 8));
+  const warHistoryActivityDetail = playedWeekSlots
     .map((w) => `${w.decksUsed || 0}/16`)
     .join(" · ");
 
@@ -637,7 +637,7 @@ export function computeWarReliabilityFallback(
   const warActivityQuality = scoreQuality(activiteGDC, 8);
   const regularityQuality = scoreQuality(regulariteGDC, 10);
 
-  const warActivitySummaryLine = `Activité de guerre : ${warActivityQuality} (${activiteGDC}/8, ${recoveredWeeksCount}/5 semaines récupérées : ${warHistoryActivityDetail}).`;
+  const warActivitySummaryLine = `Activité de guerre : ${warActivityQuality} (${activiteGDC}/8, ${playedWeeksCount}/5 semaines jouées : ${warHistoryActivityDetail}).`;
 
   const regularitySummaryLine = `Régularité : ${regularityQuality} (${regulariteGDC}/10, ${regularityWindow.fullWeekCount}/5 semaines complètes : ${regulariteGDCDetail}).`;
 
@@ -676,7 +676,7 @@ export function computeWarReliabilityFallback(
         score: activiteGDC,
         max: 8,
         detail: warHistoryActivityDetail,
-        explanation: `Basé sur ${recoveredWeeksCount} semaine(s) récupérée(s) depuis l'écran d'historique GDC. Dernière guerre : ${lastWarDay || "aucune"}${daysSinceLastWar !== null ? ` (il y a ${daysSinceLastWar} jour(s))` : ""}.`,
+        explanation: `Basé sur ${playedWeeksCount} semaine(s) jouée(s) sur les 5 dernières semaines d'historique GDC. Dernière guerre : ${lastWarDay || "aucune"}${daysSinceLastWar !== null ? ` (il y a ${daysSinceLastWar} jour(s))` : ""}.`,
       },
       {
         key: "regularity",

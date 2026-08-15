@@ -223,7 +223,7 @@ function translateUI() {
         </tbody>
       </table>
       <p class="explainer-thresholds">${"<span class='c-green'>■ ≥ 76 %</span> Très fiable &nbsp; <span class='c-yellow'>■ 56–75 %</span> Risque faible &nbsp; <span class='c-orange'>■ 31–55 %</span> Risque élevé &nbsp; <span class='c-red'>■ ≤ 30 %</span> Risque extrême"}</p>
-      <p class="explainer-note"><em>${"Si aucun historique Guerre de clans n'est disponible, une formule de fallback est utilisée"}</em>: ${"Régularité (10, avec 5 semaines et 0 pour les semaines non récupérées), Badge CW2 (10), Activité guerre (8, basée sur 5 semaines récupérées, maximum à 5 semaines), Points / deck (4, sur les 3 dernières semaines terminées si l'historique est disponible), Last Seen (3, requiert environ 16 decks de guerre), Expérience (3) et Discord (2)."}</p>
+      <p class="explainer-note"><em>${"Si aucun historique Guerre de clans n'est disponible, une formule de fallback est utilisée"}</em>: ${"Régularité (10, avec 5 semaines et 0 pour les semaines non récupérées), Badge CW2 (10), Activité guerre (8, basée sur le nombre de semaines réellement jouées, maximum à 5 semaines), Points / deck (4, sur les 3 dernières semaines terminées si l'historique est disponible), Last Seen (3, requiert environ 16 decks de guerre), Expérience (3) et Discord (2)."}</p>
     `;
   }
   const cardUncomplete = document.querySelector("#card-uncomplete .card-title");

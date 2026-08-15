@@ -406,7 +406,7 @@ Critères :
 
 - Régularité : 10. Calculée sur 5 semaines fixes, avec une semaine complète valant 1 et les semaines incomplètes ou manquantes valant 0.
 - Badge CW2 : 10. Cap à 250 victoires CW2.
-- Activité GDC : 8. Basée uniquement sur le nombre de semaines GDC récupérées, avec maximum atteint à partir de 5 semaines récupérées.
+- Activité GDC : 8. Basée uniquement sur le nombre de semaines réellement jouées (au moins un deck), avec maximum atteint à partir de 5 semaines jouées.
 - Points / deck : 4. Efficacité GDC sur les 3 dernières semaines terminées quand l’historique est disponible.
 - Dernière connexion : 3. Ajoutée si lastSeen est disponible.
 - Expérience : 3. Basée sur les trophées actuels.
