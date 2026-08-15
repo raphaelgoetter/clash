@@ -15287,7 +15287,7 @@
           "start": "2026-08-14T09:37:00.000Z",
           "end": "2026-08-15T09:36:59.999Z"
         },
-        "snapshotTime": "2026-08-15T06:06:04.036Z",
+        "snapshotTime": "2026-08-15T07:11:02.290Z",
         "snapshotBackupTime": "2026-08-14T10:20:58.709Z",
         "decks": {
           "#202R9VUJCU": 4,
@@ -15307,6 +15307,7 @@
           "#GGVQJLG9": 4,
           "#LLRY2V8CJ": 4,
           "#LV0VUJVU": 4,
+          "#Q8GYUQ8GG": 4,
           "#RJY2R282V": 4,
           "#UPC0Y0LRQ": 4,
           "#VGJ9LL8VC": 4,
@@ -15353,7 +15354,7 @@
           "#VGJ9LL8VC": 1400,
           "#YGP000RP8": 800,
           "#202R9VUJCU": 1300,
-          "#Q8GYUQ8GG": 500,
+          "#Q8GYUQ8GG": 1000,
           "#9VQYC9GJQ": 900,
           "#UPC0Y0LRQ": 1050,
           "#8R0LR8GYC": 900,
@@ -15399,7 +15400,8 @@
           "#8YGY2RPCC": 1,
           "#2YGYYPYV": 1,
           "#CGJP0YYUJ": 1,
-          "#2L8RPQRJ9": 1
+          "#2L8RPQRJ9": 1,
+          "#Q8GYUQ8GG": 1
         },
         "_totalDonationsByTag": {
           "#88QP9CJU": 237709,
@@ -15415,8 +15417,8 @@
           "#U2UYYCQVG": 3075,
           "#GGVQJLG9": 303415,
           "#PG9QUCP": 101793,
-          "#Q8GYUQ8GG": 59437,
-          "#8QVRJYVYU": 87163,
+          "#Q8GYUQ8GG": 59461,
+          "#8QVRJYVYU": 87187,
           "#2YP8VVG0": 6907,
           "#YLGC82PJR": 3300,
           "#8GVRUYUP": 57349,
@@ -15428,7 +15430,7 @@
           "#8GGQLU28": 103145,
           "#LLRY2V8CJ": 38586,
           "#YGP000RP8": 117273,
-          "#8Y90VQYP9": 59607,
+          "#8Y90VQYP9": 59649,
           "#2L8RPQRJ9": 63255,
           "#CJ9VYC9RP": 619,
           "#UPC0Y0LRQ": 11407,
@@ -15478,7 +15480,7 @@
           "#VGJ9LL8VC": 8,
           "#YGP000RP8": 6,
           "#202R9VUJCU": 8,
-          "#Q8GYUQ8GG": 4,
+          "#Q8GYUQ8GG": 8,
           "#9VQYC9GJQ": 8,
           "#UPC0Y0LRQ": 8,
           "#8R0LR8GYC": 8,
@@ -15500,7 +15502,7 @@
           "#L08LQRUY0": 0
         },
         "periodPointsEarned": 18900,
-        "snapshotCount": 98
+        "snapshotCount": 102
       },
       {
         "warDay": "saturday",
