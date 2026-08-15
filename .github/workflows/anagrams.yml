@@ -4,13 +4,16 @@ permissions:
   contents: read
 
 on:
-  # Samedi, toutes les 2h de 7h à 19h UTC (7 déclenchements : 7,9,11,13,15,17,19h).
-  # Le script décide à chaque déclenchement s'il poste réellement (tirage au
-  # sort, probabilité croissante garantissant un post au plus tard à 19h) —
-  # voir alreadyPostedThisWeek/computeWeeklySlotIndex/shouldPostThisSlot dans
-  # backend/services/anagrams.js.
+  # Samedi, 2 déclenchements : 10h et 18h UTC. Le script décide à chaque
+  # déclenchement s'il poste réellement (1 chance sur 2 au premier créneau,
+  # garanti au second si rien n'a encore été posté) — voir
+  # alreadyPostedThisWeek/computeWeeklySlotIndex/shouldPostThisSlot dans
+  # backend/services/anagrams.js. Volontairement limité à 2 créneaux (plutôt
+  # que d'en étaler beaucoup sur la journée) : GitHub Actions retarde parfois
+  # les déclenchements planifiés, et plus il y a de créneaux, plus ce risque
+  # cumulé pousse mécaniquement le tirage vers le dernier créneau garanti.
   schedule:
-    - cron: "0 7-19/2 * * 6"
+    - cron: "0 10,18 * * 6"
   workflow_dispatch: {}
 
 jobs:

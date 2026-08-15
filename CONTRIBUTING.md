@@ -79,9 +79,9 @@ Tous les horaires ci-dessous sont définis en UTC dans les workflows (`.github/w
 | `autoStartPredictions.js` (`npm run predictions:start`)  | `predictions.yml`        | Mardi                                         | 08:00                      | 10:00 / 09:00              | Salon membres principal                |
 | `autoEndPredictions.js` (`npm run predictions:end`)      | `predictions.yml`        | Lundi                                         | 12:00                      | 14:00 / 13:00              | Salon membres principal                |
 | `postFrame.js` (`npm run frame:public`)                  | `frames.yml`             | Mercredi                                      | 08:00                      | 10:00 / 09:00              | Salon "Général"                        |
-| `postAnagram.js` (`npm run anagram:public`)              | `anagrams.yml`           | Samedi                                        | 07:00-19:00 (aléatoire)\*  | 09:00-21:00 / 08:00-20:00  | Salon "Général"                        |
+| `postAnagram.js` (`npm run anagram:public`)              | `anagrams.yml`           | Samedi                                        | 10:00 ou 18:00 (aléatoire)\* | 12:00-20:00 / 11:00-19:00 | Salon "Général"                        |
 
-\* `anagrams.yml` se déclenche toutes les 2h (7, 9, 11, 13, 15, 17, 19h UTC — 7 créneaux). À chaque déclenchement, un tirage au sort décide de poster ou non, avec une probabilité croissante garantissant un post au plus tard au dernier créneau (19h UTC) si aucun post n'a encore eu lieu cette semaine — voir [Post hebdomadaire à horaire aléatoire](#post-hebdomadaire-à-horaire-aléatoire-samedi-7h-19h-utc) dans la section Jeu Anagram.
+\* `anagrams.yml` se déclenche à 10h et 18h UTC (2 créneaux). À chaque déclenchement, un tirage au sort décide de poster ou non : 1 chance sur 2 au premier créneau, garanti au second (18h UTC) si aucun post n'a encore eu lieu cette semaine — voir [Post hebdomadaire à horaire aléatoire](#post-hebdomadaire-à-horaire-aléatoire-samedi-10h-ou-18h-utc) dans la section Jeu Anagram.
 
 ---
 
@@ -701,13 +701,15 @@ Même stockage que Frame, préfixe `anagram:` au lieu de `frame:`, **aucun parta
 
 Pas d'équivalent à `frame:hints:*` (aucun indice) ni à `frame:posted_games` (aucune route d'image à protéger). Pas de clé Redis dédiée "déjà posté cette semaine" : `alreadyPostedThisWeek()` compare la date de `anagram:state.startedAt` à aujourd'hui — un seul writer (`startNewGame()`), pas de redondance.
 
-### Post hebdomadaire à horaire aléatoire (samedi, 7h-19h UTC)
+### Post hebdomadaire à horaire aléatoire (samedi, 10h ou 18h UTC)
 
-GitHub Actions ne permet pas nativement un cron à plage aléatoire. Le workflow `.github/workflows/anagrams.yml` se déclenche toutes les 2h le samedi (`cron: "0 7-19/2 * * 6"`, 7 créneaux : 7, 9, 11, 13, 15, 17, 19h UTC). À chaque déclenchement, `postAnagram()` (`api/discord/handlers/anagrams.js`) décide de poster ou non :
+GitHub Actions ne permet pas nativement un cron à plage aléatoire. Le workflow `.github/workflows/anagrams.yml` se déclenche 2 fois le samedi (`cron: "0 10,18 * * 6"`, 10h et 18h UTC). À chaque déclenchement, `postAnagram()` (`api/discord/handlers/anagrams.js`) décide de poster ou non :
 
 1. `alreadyPostedThisWeek()` — si un post a déjà eu lieu cette semaine (même date UTC que `anagram:state.startedAt`), on ne repost pas.
-2. `computeWeeklySlotIndex()` — détermine le créneau courant (1 à 7).
-3. `shouldPostThisSlot(slotIndex)` — tirage au sort, probabilité `1/(créneaux restants)` : 1/7 au premier créneau, 1/6 au suivant, ..., **1/1 (garanti) au dernier créneau (19h)** si aucun post n'a encore eu lieu.
+2. `computeWeeklySlotIndex()` — détermine le créneau courant (1 ou 2).
+3. `shouldPostThisSlot(slotIndex)` — tirage au sort, probabilité `1/(créneaux restants)` : 1/2 au premier créneau (10h), **1/1 (garanti) au second créneau (18h)** si aucun post n'a encore eu lieu.
+
+Volontairement limité à 2 créneaux (plutôt que d'en étaler beaucoup sur la journée, comme les 7 créneaux de 7h à 19h utilisés initialement) : GitHub Actions retarde parfois les déclenchements planifiés (cf. commentaire dans `pre-reset-snapshot.yml`), et plus il y a de créneaux dans la journée, plus ce risque cumulé pousse mécaniquement le tirage vers le dernier créneau garanti — biais observé en pratique (posts quasi systématiquement en soirée avec 7 créneaux).
 
 `--force` (`npm run anagram:test`/`anagram:public:force`) bypasse entièrement ce gating — utilisé pour les tests manuels en salon de test et le rattrapage si le cron a raté toute sa fenêtre un samedi donné.
 

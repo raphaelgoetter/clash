@@ -17,9 +17,15 @@
 //    êtes le Xe à avoir trouvé" utilisait par erreur le classement par score
 //    au lieu de l'ordre d'arrivée — cette classe de bug ne peut pas se
 //    reproduire ici).
-// 2. Post hebdomadaire à horaire ALÉATOIRE (samedi, 7h-19h UTC, cron toutes
-//    les 2h + tirage au sort applicatif) plutôt qu'à heure fixe — voir
-//    alreadyPostedThisWeek/computeWeeklySlotIndex/shouldPostThisSlot.
+// 2. Post hebdomadaire à horaire ALÉATOIRE (samedi, 10h ou 18h UTC, cron à
+//    ces deux horaires + tirage au sort applicatif) plutôt qu'à heure fixe —
+//    voir alreadyPostedThisWeek/computeWeeklySlotIndex/shouldPostThisSlot.
+//    Volontairement réduit à seulement 2 créneaux (au lieu de 7 sur toute la
+//    journée) : GitHub Actions peut retarder ou sauter des déclenchements
+//    planifiés (cf. commentaire dans pre-reset-snapshot.yml), et plus il y a
+//    de créneaux dans la journée, plus ce risque cumulé pousse mécaniquement
+//    le tirage vers le dernier créneau garanti (biais observé en pratique
+//    avec 7 créneaux : posts quasi systématiquement en soirée).
 // ============================================================
 
 import fs from "fs/promises";
@@ -38,8 +44,8 @@ const ANAGRAMS_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "anagrams
 const SATURDAY = 6;
 const CARD_DEF_CACHE_TTL = 24 * 60 * 60 * 1000;
 // Doit rester synchronisé avec le cron de .github/workflows/anagrams.yml
-// ("0 7-19/2 * * 6").
-export const ANAGRAM_CRON_HOURS = [7, 9, 11, 13, 15, 17, 19];
+// ("0 10,18 * * 6").
+export const ANAGRAM_CRON_HOURS = [10, 18];
 
 // Construction paresseuse (pas au chargement du module) — voir frames.js
 // pour la raison exacte (ordre des imports ES vs dotenv.config()).
@@ -272,12 +278,12 @@ export async function startNewGame(channelId) {
   return { state: newState, entry };
 }
 
-// ── Gating hebdomadaire (horaire aléatoire, samedi 7h-19h UTC) ───
+// ── Gating hebdomadaire (horaire aléatoire, samedi 10h ou 18h UTC) ───
 // GitHub Actions ne permet pas nativement un cron à plage aléatoire : le
-// workflow se déclenche toutes les 2h (ANAGRAM_CRON_HOURS), et à chaque
-// déclenchement le tirage ci-dessous décide de poster ou non, avec une
-// probabilité croissante garantissant un post au plus tard au dernier
-// créneau (19h) si aucun post n'a encore eu lieu cette semaine.
+// workflow se déclenche à 10h et 18h (ANAGRAM_CRON_HOURS), et à chaque
+// déclenchement le tirage ci-dessous décide de poster ou non — 1 chance sur
+// 2 au premier créneau, garanti au second si aucun post n'a encore eu lieu
+// cette semaine.
 
 function todayUtcDateString(date) {
   return date.toISOString().slice(0, 10);
@@ -291,7 +297,7 @@ export async function alreadyPostedThisWeek(now = new Date()) {
   return todayUtcDateString(new Date(state.startedAt)) === todayUtcDateString(now);
 }
 
-// Nombre de créneaux déjà "consommés" à l'heure courante (1..7) — robuste à
+// Nombre de créneaux déjà "consommés" à l'heure courante (1..2) — robuste à
 // un léger retard de déclenchement GitHub Actions (reste dans le même
 // créneau tant que l'heure suivante n'est pas atteinte).
 export function computeWeeklySlotIndex(now = new Date()) {
@@ -301,7 +307,7 @@ export function computeWeeklySlotIndex(now = new Date()) {
 }
 
 export function shouldPostThisSlot(slotIndex, rng = Math.random) {
-  const remaining = ANAGRAM_CRON_HOURS.length - slotIndex + 1; // 7,6,...,1
+  const remaining = ANAGRAM_CRON_HOURS.length - slotIndex + 1; // 2,1
   return rng() < 1 / remaining; // dernier créneau : 1/1, garanti
 }
 
