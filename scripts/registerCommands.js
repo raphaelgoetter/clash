@@ -480,6 +480,11 @@ const commands = [
     description: "Affiche vos scores au jeu Zoom carte (devine les cartes zoomées).",
     options: [],
   },
+  {
+    name: "justecarte",
+    description: "Affiche vos scores au jeu La Juste Carte (devine la carte par ses stats).",
+    options: [],
+  },
 ];
 
 async function registerAtUrl(url) {

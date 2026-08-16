@@ -7,7 +7,16 @@
   {
     "cardKey": "Archers",
     "rarity": "common",
-    "fr": "Archères"
+    "fr": "Archères",
+    "elixir": 3,
+    "hp": 304,
+    "damage": 112,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 5,
+      "rank": 8
+    }
   },
   {
     "cardKey": "Arrows",
@@ -17,17 +26,44 @@
   {
     "cardKey": "Baby Dragon",
     "rarity": "epic",
-    "fr": "Bébé dragon"
+    "fr": "Bébé dragon",
+    "elixir": 4,
+    "hp": 1152,
+    "damage": 161,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 3.5,
+      "rank": 6.5
+    }
   },
   {
     "cardKey": "Balloon",
     "rarity": "epic",
-    "fr": "Ballon"
+    "fr": "Ballon",
+    "elixir": 5,
+    "hp": 1679,
+    "damage": 640,
+    "range": {
+      "kind": "melee",
+      "category": "short",
+      "value": null,
+      "rank": 1
+    }
   },
   {
     "cardKey": "Bandit",
     "rarity": "legendary",
-    "fr": "Voleuse"
+    "fr": "Voleuse",
+    "elixir": 3,
+    "hp": 906,
+    "damage": 194,
+    "range": {
+      "kind": "melee",
+      "category": "short",
+      "value": null,
+      "rank": 1
+    }
   },
   {
     "cardKey": "Barbarian Barrel",
@@ -42,27 +78,72 @@
   {
     "cardKey": "Barbarians",
     "rarity": "common",
-    "fr": "Barbares"
+    "fr": "Barbares",
+    "elixir": 5,
+    "hp": 670,
+    "damage": 192,
+    "range": {
+      "kind": "melee",
+      "category": "short",
+      "value": null,
+      "rank": 1
+    }
   },
   {
     "cardKey": "Bats",
     "rarity": "common",
-    "fr": "Chauves-souris"
+    "fr": "Chauves-souris",
+    "elixir": 2,
+    "hp": 81,
+    "damage": 81,
+    "range": {
+      "kind": "melee",
+      "category": "medium",
+      "value": null,
+      "rank": 2
+    }
   },
   {
     "cardKey": "Battle Healer",
     "rarity": "rare",
-    "fr": "Guérisseuse armée"
+    "fr": "Guérisseuse armée",
+    "elixir": 4,
+    "hp": 1717,
+    "damage": 148,
+    "range": {
+      "kind": "melee",
+      "category": "long",
+      "value": null,
+      "rank": 3
+    }
   },
   {
     "cardKey": "Battle Ram",
     "rarity": "rare",
-    "fr": "Bélier de combat"
+    "fr": "Bélier de combat",
+    "elixir": 4,
+    "hp": 967,
+    "damage": 286,
+    "range": {
+      "kind": "melee",
+      "category": "short",
+      "value": null,
+      "rank": 1
+    }
   },
   {
     "cardKey": "Berserker",
     "rarity": "common",
-    "fr": "Berserker"
+    "fr": "Berserker",
+    "elixir": 2,
+    "hp": 896,
+    "damage": 102,
+    "range": {
+      "kind": "melee",
+      "category": "short",
+      "value": null,
+      "rank": 1
+    }
   },
   {
     "cardKey": "Bomb Tower",
@@ -72,7 +153,16 @@
   {
     "cardKey": "Bomber",
     "rarity": "common",
-    "fr": "Bombardier"
+    "fr": "Bombardier",
+    "elixir": 2,
+    "hp": 304,
+    "damage": 225,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 4.5,
+      "rank": 7.5
+    }
   },
   {
     "cardKey": "Boss Bandit",
@@ -82,7 +172,16 @@
   {
     "cardKey": "Bowler",
     "rarity": "epic",
-    "fr": "Bouliste"
+    "fr": "Bouliste",
+    "elixir": 5,
+    "hp": 2081,
+    "damage": 289,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 4,
+      "rank": 7
+    }
   },
   {
     "cardKey": "Cannon",
@@ -92,7 +191,16 @@
   {
     "cardKey": "Cannon Cart",
     "rarity": "epic",
-    "fr": "Charrette à canon"
+    "fr": "Charrette à canon",
+    "elixir": 5,
+    "hp": 1809,
+    "damage": 212,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 5.5,
+      "rank": 8.5
+    }
   },
   {
     "cardKey": "Clone",
@@ -102,12 +210,30 @@
   {
     "cardKey": "Dark Prince",
     "rarity": "epic",
-    "fr": "Prince ténébreux"
+    "fr": "Prince ténébreux",
+    "elixir": 4,
+    "hp": 1440,
+    "damage": 266,
+    "range": {
+      "kind": "melee",
+      "category": "medium",
+      "value": null,
+      "rank": 2
+    }
   },
   {
     "cardKey": "Dart Goblin",
     "rarity": "rare",
-    "fr": "Gobelin à sarbacane"
+    "fr": "Gobelin à sarbacane",
+    "elixir": 3,
+    "hp": 261,
+    "damage": 151,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 6.5,
+      "rank": 9.5
+    }
   },
   {
     "cardKey": "Earthquake",
@@ -117,27 +243,72 @@
   {
     "cardKey": "Electro Dragon",
     "rarity": "epic",
-    "fr": "Électro-dragon"
+    "fr": "Électro-dragon",
+    "elixir": 5,
+    "hp": 949,
+    "damage": 192,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 3.5,
+      "rank": 6.5
+    }
   },
   {
     "cardKey": "Electro Giant",
     "rarity": "epic",
-    "fr": "Électro-géant"
+    "fr": "Électro-géant",
+    "elixir": 7,
+    "hp": 3855,
+    "damage": 163,
+    "range": {
+      "kind": "melee",
+      "category": "medium",
+      "value": null,
+      "rank": 2
+    }
   },
   {
     "cardKey": "Electro Spirit",
     "rarity": "common",
-    "fr": "Électro-esprit"
+    "fr": "Électro-esprit",
+    "elixir": 1,
+    "hp": 230,
+    "damage": 99,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 2.5,
+      "rank": 5.5
+    }
   },
   {
     "cardKey": "Electro Wizard",
     "rarity": "legendary",
-    "fr": "Électro-sorcier"
+    "fr": "Électro-sorcier",
+    "elixir": 4,
+    "hp": 714,
+    "damage": 115,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 5,
+      "rank": 8
+    }
   },
   {
     "cardKey": "Elite Barbarians",
     "rarity": "common",
-    "fr": "Barbares d'élite"
+    "fr": "Barbares d'élite",
+    "elixir": 6,
+    "hp": 1341,
+    "damage": 384,
+    "range": {
+      "kind": "melee",
+      "category": "medium",
+      "value": null,
+      "rank": 2
+    }
   },
   {
     "cardKey": "Elixir Collector",
@@ -147,17 +318,44 @@
   {
     "cardKey": "Elixir Golem",
     "rarity": "rare",
-    "fr": "Golem élixir"
+    "fr": "Golem élixir",
+    "elixir": 3,
+    "hp": 1569,
+    "damage": 253,
+    "range": {
+      "kind": "melee",
+      "category": "short",
+      "value": null,
+      "rank": 1
+    }
   },
   {
     "cardKey": "Executioner",
     "rarity": "epic",
-    "fr": "Bourreau"
+    "fr": "Bourreau",
+    "elixir": 5,
+    "hp": 1280,
+    "damage": 168,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 4.5,
+      "rank": 7.5
+    }
   },
   {
     "cardKey": "Fire Spirit",
     "rarity": "common",
-    "fr": "Esprit de feu"
+    "fr": "Esprit de feu",
+    "elixir": 1,
+    "hp": 230,
+    "damage": 207,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 2.5,
+      "rank": 5.5
+    }
   },
   {
     "cardKey": "Fireball",
@@ -167,17 +365,44 @@
   {
     "cardKey": "Firecracker",
     "rarity": "common",
-    "fr": "Artificière"
+    "fr": "Artificière",
+    "elixir": 3,
+    "hp": 304,
+    "damage": 64,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 6,
+      "rank": 9
+    }
   },
   {
     "cardKey": "Fisherman",
     "rarity": "legendary",
-    "fr": "Pêcheur"
+    "fr": "Pêcheur",
+    "elixir": 3,
+    "hp": 870,
+    "damage": 194,
+    "range": {
+      "kind": "melee",
+      "category": "medium",
+      "value": null,
+      "rank": 2
+    }
   },
   {
     "cardKey": "Flying Machine",
     "rarity": "rare",
-    "fr": "Machine volante"
+    "fr": "Machine volante",
+    "elixir": 4,
+    "hp": 614,
+    "damage": 171,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 6,
+      "rank": 9
+    }
   },
   {
     "cardKey": "Freeze",
@@ -187,17 +412,44 @@
   {
     "cardKey": "Furnace",
     "rarity": "rare",
-    "fr": "Fournaise"
+    "fr": "Fournaise",
+    "elixir": 4,
+    "hp": 727,
+    "damage": 179,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 6,
+      "rank": 9
+    }
   },
   {
     "cardKey": "Giant",
     "rarity": "rare",
-    "fr": "Géant"
+    "fr": "Géant",
+    "elixir": 5,
+    "hp": 4090,
+    "damage": 253,
+    "range": {
+      "kind": "melee",
+      "category": "medium",
+      "value": null,
+      "rank": 2
+    }
   },
   {
     "cardKey": "Giant Skeleton",
     "rarity": "epic",
-    "fr": "Squelette géant"
+    "fr": "Squelette géant",
+    "elixir": 6,
+    "hp": 3617,
+    "damage": 276,
+    "range": {
+      "kind": "melee",
+      "category": "short",
+      "value": null,
+      "rank": 1
+    }
   },
   {
     "cardKey": "Giant Snowball",
@@ -222,7 +474,16 @@
   {
     "cardKey": "Goblin Demolisher",
     "rarity": "rare",
-    "fr": "Gobelin explosif"
+    "fr": "Gobelin explosif",
+    "elixir": 4,
+    "hp": 1300,
+    "damage": 186,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 5,
+      "rank": 8
+    }
   },
   {
     "cardKey": "Goblin Drill",
@@ -252,7 +513,16 @@
   {
     "cardKey": "Goblins",
     "rarity": "common",
-    "fr": "Gobelins"
+    "fr": "Gobelins",
+    "elixir": 2,
+    "hp": 202,
+    "damage": 120,
+    "range": {
+      "kind": "melee",
+      "category": "short",
+      "value": null,
+      "rank": 1
+    }
   },
   {
     "cardKey": "Goblinstein",
@@ -267,7 +537,16 @@
   {
     "cardKey": "Golem",
     "rarity": "epic",
-    "fr": "Golem"
+    "fr": "Golem",
+    "elixir": 8,
+    "hp": 5120,
+    "damage": 312,
+    "range": {
+      "kind": "melee",
+      "category": "short",
+      "value": null,
+      "rank": 1
+    }
   },
   {
     "cardKey": "Graveyard",
@@ -277,37 +556,100 @@
   {
     "cardKey": "Guards",
     "rarity": "epic",
-    "fr": "Gardes"
+    "fr": "Gardes",
+    "elixir": 3,
+    "hp": 337,
+    "damage": 117,
+    "range": {
+      "kind": "melee",
+      "category": "long",
+      "value": null,
+      "rank": 3
+    }
   },
   {
     "cardKey": "Heal Spirit",
     "rarity": "rare",
-    "fr": "Esprit de guérison"
+    "fr": "Esprit de guérison",
+    "elixir": 1,
+    "hp": 230,
+    "damage": 110,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 2.5,
+      "rank": 5.5
+    }
   },
   {
     "cardKey": "Hog Rider",
     "rarity": "rare",
-    "fr": "Chevaucheur de cochon"
+    "fr": "Chevaucheur de cochon",
+    "elixir": 4,
+    "hp": 1697,
+    "damage": 317,
+    "range": {
+      "kind": "melee",
+      "category": "short",
+      "value": null,
+      "rank": 1
+    }
   },
   {
     "cardKey": "Hunter",
     "rarity": "epic",
-    "fr": "Chasseur"
+    "fr": "Chasseur",
+    "elixir": 4,
+    "hp": 885,
+    "damage": 84,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 4,
+      "rank": 7
+    }
   },
   {
     "cardKey": "Ice Golem",
     "rarity": "rare",
-    "fr": "Golem de glace"
+    "fr": "Golem de glace",
+    "elixir": 2,
+    "hp": 1315,
+    "damage": 84,
+    "range": {
+      "kind": "melee",
+      "category": "short",
+      "value": null,
+      "rank": 1
+    }
   },
   {
     "cardKey": "Ice Spirit",
     "rarity": "common",
-    "fr": "Esprit de glace"
+    "fr": "Esprit de glace",
+    "elixir": 1,
+    "hp": 230,
+    "damage": 110,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 2.5,
+      "rank": 5.5
+    }
   },
   {
     "cardKey": "Ice Wizard",
     "rarity": "legendary",
-    "fr": "Sorcier de glace"
+    "fr": "Sorcier de glace",
+    "elixir": 3,
+    "hp": 688,
+    "damage": 89,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 5.5,
+      "rank": 8.5
+    }
   },
   {
     "cardKey": "Inferno Dragon",
@@ -322,12 +664,30 @@
   {
     "cardKey": "Knight",
     "rarity": "common",
-    "fr": "Chevalier"
+    "fr": "Chevalier",
+    "elixir": 3,
+    "hp": 1766,
+    "damage": 202,
+    "range": {
+      "kind": "melee",
+      "category": "medium",
+      "value": null,
+      "rank": 2
+    }
   },
   {
     "cardKey": "Lava Hound",
     "rarity": "legendary",
-    "fr": "Molosse de lave"
+    "fr": "Molosse de lave",
+    "elixir": 7,
+    "hp": 3581,
+    "damage": 53,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 3.5,
+      "rank": 6.5
+    }
   },
   {
     "cardKey": "Lightning",
@@ -342,22 +702,58 @@
   {
     "cardKey": "Lumberjack",
     "rarity": "legendary",
-    "fr": "Bûcheron"
+    "fr": "Bûcheron",
+    "elixir": 4,
+    "hp": 1282,
+    "damage": 256,
+    "range": {
+      "kind": "melee",
+      "category": "short",
+      "value": null,
+      "rank": 1
+    }
   },
   {
     "cardKey": "Magic Archer",
     "rarity": "legendary",
-    "fr": "Archer magique"
+    "fr": "Archer magique",
+    "elixir": 4,
+    "hp": 529,
+    "damage": 143,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 7,
+      "rank": 10
+    }
   },
   {
     "cardKey": "Mega Knight",
     "rarity": "legendary",
-    "fr": "Méga chevalier"
+    "fr": "Méga chevalier",
+    "elixir": 7,
+    "hp": 3993,
+    "damage": 268,
+    "range": {
+      "kind": "melee",
+      "category": "medium",
+      "value": null,
+      "rank": 2
+    }
   },
   {
     "cardKey": "Mega Minion",
     "rarity": "rare",
-    "fr": "Méga gargouille"
+    "fr": "Méga gargouille",
+    "elixir": 3,
+    "hp": 837,
+    "damage": 311,
+    "range": {
+      "kind": "melee",
+      "category": "long",
+      "value": null,
+      "rank": 3
+    }
   },
   {
     "cardKey": "Mighty Miner",
@@ -367,22 +763,58 @@
   {
     "cardKey": "Miner",
     "rarity": "legendary",
-    "fr": "Mineur"
+    "fr": "Mineur",
+    "elixir": 3,
+    "hp": 1210,
+    "damage": 194,
+    "range": {
+      "kind": "melee",
+      "category": "medium",
+      "value": null,
+      "rank": 2
+    }
   },
   {
     "cardKey": "Mini P.E.K.K.A",
     "rarity": "rare",
-    "fr": "Mini P.E.K.K.A"
+    "fr": "Mini P.E.K.K.A",
+    "elixir": 4,
+    "hp": 1390,
+    "damage": 755,
+    "range": {
+      "kind": "melee",
+      "category": "short",
+      "value": null,
+      "rank": 1
+    }
   },
   {
     "cardKey": "Minion Horde",
     "rarity": "common",
-    "fr": "Horde de gargouilles"
+    "fr": "Horde de gargouilles",
+    "elixir": 5,
+    "hp": 230,
+    "damage": 107,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 2.5,
+      "rank": 5.5
+    }
   },
   {
     "cardKey": "Minions",
     "rarity": "common",
-    "fr": "Gargouilles"
+    "fr": "Gargouilles",
+    "elixir": 3,
+    "hp": 230,
+    "damage": 107,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 2.5,
+      "rank": 5.5
+    }
   },
   {
     "cardKey": "Mirror",
@@ -402,27 +834,72 @@
   {
     "cardKey": "Mother Witch",
     "rarity": "legendary",
-    "fr": "Mamie sorcière"
+    "fr": "Mamie sorcière",
+    "elixir": 4,
+    "hp": 529,
+    "damage": 133,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 5.5,
+      "rank": 8.5
+    }
   },
   {
     "cardKey": "Musketeer",
     "rarity": "rare",
-    "fr": "Mousquetaire"
+    "fr": "Mousquetaire",
+    "elixir": 4,
+    "hp": 721,
+    "damage": 217,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 6,
+      "rank": 9
+    }
   },
   {
     "cardKey": "Night Witch",
     "rarity": "legendary",
-    "fr": "Sorcière de la nuit"
+    "fr": "Sorcière de la nuit",
+    "elixir": 4,
+    "hp": 906,
+    "damage": 314,
+    "range": {
+      "kind": "melee",
+      "category": "long",
+      "value": null,
+      "rank": 3
+    }
   },
   {
     "cardKey": "P.E.K.K.A",
     "rarity": "epic",
-    "fr": "P.E.K.K.A"
+    "fr": "P.E.K.K.A",
+    "elixir": 7,
+    "hp": 3760,
+    "damage": 816,
+    "range": {
+      "kind": "melee",
+      "category": "medium",
+      "value": null,
+      "rank": 2
+    }
   },
   {
     "cardKey": "Phoenix",
     "rarity": "legendary",
-    "fr": "Phénix"
+    "fr": "Phénix",
+    "elixir": 4,
+    "hp": 1052,
+    "damage": 217,
+    "range": {
+      "kind": "melee",
+      "category": "long",
+      "value": null,
+      "rank": 3
+    }
   },
   {
     "cardKey": "Poison",
@@ -432,12 +909,30 @@
   {
     "cardKey": "Prince",
     "rarity": "epic",
-    "fr": "Prince"
+    "fr": "Prince",
+    "elixir": 5,
+    "hp": 1920,
+    "damage": 391,
+    "range": {
+      "kind": "melee",
+      "category": "long",
+      "value": null,
+      "rank": 3
+    }
   },
   {
     "cardKey": "Princess",
     "rarity": "legendary",
-    "fr": "Princesse"
+    "fr": "Princesse",
+    "elixir": 3,
+    "hp": 261,
+    "damage": 168,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 9,
+      "rank": 12
+    }
   },
   {
     "cardKey": "Rage",
@@ -472,42 +967,114 @@
   {
     "cardKey": "Royal Ghost",
     "rarity": "legendary",
-    "fr": "Fantôme royal"
+    "fr": "Fantôme royal",
+    "elixir": 3,
+    "hp": 1210,
+    "damage": 261,
+    "range": {
+      "kind": "melee",
+      "category": "medium",
+      "value": null,
+      "rank": 2
+    }
   },
   {
     "cardKey": "Royal Giant",
     "rarity": "common",
-    "fr": "Géant royal"
+    "fr": "Géant royal",
+    "elixir": 6,
+    "hp": 3164,
+    "damage": 307,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 5,
+      "rank": 8
+    }
   },
   {
     "cardKey": "Royal Hogs",
     "rarity": "rare",
-    "fr": "Cochons royaux"
+    "fr": "Cochons royaux",
+    "elixir": 5,
+    "hp": 837,
+    "damage": 74,
+    "range": {
+      "kind": "melee",
+      "category": "short",
+      "value": null,
+      "rank": 1
+    }
   },
   {
     "cardKey": "Royal Recruits",
     "rarity": "common",
-    "fr": "Recrues royales"
+    "fr": "Recrues royales",
+    "elixir": 7,
+    "hp": 787,
+    "damage": 133,
+    "range": {
+      "kind": "melee",
+      "category": "long",
+      "value": null,
+      "rank": 3
+    }
   },
   {
     "cardKey": "Rune Giant",
     "rarity": "epic",
-    "fr": "Géante runique"
+    "fr": "Géante runique",
+    "elixir": 4,
+    "hp": 2662,
+    "damage": 120,
+    "range": {
+      "kind": "melee",
+      "category": "medium",
+      "value": null,
+      "rank": 2
+    }
   },
   {
     "cardKey": "Skeleton Army",
     "rarity": "epic",
-    "fr": "Armée de squelettes"
+    "fr": "Armée de squelettes",
+    "elixir": 3,
+    "hp": 81,
+    "damage": 81,
+    "range": {
+      "kind": "melee",
+      "category": "short",
+      "value": null,
+      "rank": 1
+    }
   },
   {
     "cardKey": "Skeleton Barrel",
     "rarity": "common",
-    "fr": "Fût à squelettes"
+    "fr": "Fût à squelettes",
+    "elixir": 3,
+    "hp": 532,
+    "damage": 145,
+    "range": {
+      "kind": "melee",
+      "category": "short",
+      "value": null,
+      "rank": 1
+    }
   },
   {
     "cardKey": "Skeleton Dragons",
     "rarity": "common",
-    "fr": "Dragons squelettes"
+    "fr": "Dragons squelettes",
+    "elixir": 4,
+    "hp": 560,
+    "damage": 161,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 3.5,
+      "rank": 6.5
+    }
   },
   {
     "cardKey": "Skeleton King",
@@ -517,17 +1084,44 @@
   {
     "cardKey": "Skeletons",
     "rarity": "common",
-    "fr": "Squelettes"
+    "fr": "Squelettes",
+    "elixir": 1,
+    "hp": 81,
+    "damage": 81,
+    "range": {
+      "kind": "melee",
+      "category": "short",
+      "value": null,
+      "rank": 1
+    }
   },
   {
     "cardKey": "Sparky",
     "rarity": "legendary",
-    "fr": "Zappy"
+    "fr": "Zappy",
+    "elixir": 6,
+    "hp": 1451,
+    "damage": 1331,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 5,
+      "rank": 8
+    }
   },
   {
     "cardKey": "Spear Goblins",
     "rarity": "common",
-    "fr": "Gobelins à lances"
+    "fr": "Gobelins à lances",
+    "elixir": 2,
+    "hp": 133,
+    "damage": 81,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 5,
+      "rank": 8
+    }
   },
   {
     "cardKey": "Spirit Empress",
@@ -567,7 +1161,16 @@
   {
     "cardKey": "Valkyrie",
     "rarity": "rare",
-    "fr": "Valkyrie"
+    "fr": "Valkyrie",
+    "elixir": 4,
+    "hp": 1907,
+    "damage": 266,
+    "range": {
+      "kind": "melee",
+      "category": "medium",
+      "value": null,
+      "rank": 2
+    }
   },
   {
     "cardKey": "Vines",
@@ -582,17 +1185,44 @@
   {
     "cardKey": "Wall Breakers",
     "rarity": "epic",
-    "fr": "Sapeurs"
+    "fr": "Sapeurs",
+    "elixir": 2,
+    "hp": 330,
+    "damage": 350,
+    "range": {
+      "kind": "melee",
+      "category": "short",
+      "value": null,
+      "rank": 1
+    }
   },
   {
     "cardKey": "Witch",
     "rarity": "epic",
-    "fr": "Sorcière"
+    "fr": "Sorcière",
+    "elixir": 5,
+    "hp": 839,
+    "damage": 135,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 5.5,
+      "rank": 8.5
+    }
   },
   {
     "cardKey": "Wizard",
     "rarity": "rare",
-    "fr": "Sorcier"
+    "fr": "Sorcier",
+    "elixir": 5,
+    "hp": 755,
+    "damage": 281,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 5.5,
+      "rank": 8.5
+    }
   },
   {
     "cardKey": "X-Bow",
@@ -607,6 +1237,15 @@
   {
     "cardKey": "Zappies",
     "rarity": "rare",
-    "fr": "Électrocuteurs"
+    "fr": "Électrocuteurs",
+    "elixir": 4,
+    "hp": 529,
+    "damage": 117,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 4.5,
+      "rank": 7.5
+    }
   }
 ]
