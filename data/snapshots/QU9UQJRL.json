@@ -12150,7 +12150,7 @@
           "start": "2026-08-16T09:51:00.000Z",
           "end": "2026-08-17T09:50:59.999Z"
         },
-        "snapshotTime": "2026-08-16T18:03:34.881Z",
+        "snapshotTime": "2026-08-16T19:06:07.051Z",
         "snapshotBackupTime": "2026-08-16T10:04:24.714Z",
         "decks": {
           "#8CQ80LJ8V": 4,
@@ -12161,6 +12161,7 @@
           "#V9RL22GYQ": 4,
           "#YRGJGR8R": 4,
           "#UVGPPVQ8Q": 3,
+          "#9U9YVU80": 1,
           "#UYRR99RL8": 1
         },
         "hourlyCumul": [],
@@ -12214,7 +12215,7 @@
           "#PL9CL8V20": 1200,
           "#J008G9CLJ": 1200,
           "#R0Q2RJPJG": 1350,
-          "#9U9YVU80": 1400,
+          "#9U9YVU80": 1500,
           "#UC9LU0L90": 1600,
           "#V0VLJQCJU": 2500,
           "#UVGPPVQ8Q": 2400,
@@ -12231,7 +12232,7 @@
         },
         "_totalDonationsByTag": {
           "#8CQ80LJ8V": 106192,
-          "#9U9YVU80": 69122,
+          "#9U9YVU80": 69168,
           "#G2VVUJLLQ": 43752,
           "#8UC00RRC": 159668,
           "#CJJUGGL98": 44348,
@@ -12242,19 +12243,19 @@
           "#9YRU2QJJ": 21696,
           "#J8JV8LUUG": 29364,
           "#LQPRLQJCQ": 56198,
-          "#V0VLJQCJU": 52777,
+          "#V0VLJQCJU": 52803,
           "#PL9CL8V20": 37808,
           "#LJYGJYCYC": 83410,
           "#UYRR99RL8": 6036,
           "#VJRPJJC8G": 11393,
-          "#88JY2CG8J": 48852,
+          "#88JY2CG8J": 48878,
           "#R0Q2RJPJG": 37185,
           "#JVRP8QPRU": 24760,
           "#QY0LG0R0P": 198499,
           "#20CY2LRU2": 62272,
           "#8JGU9UUJJ": 186089,
           "#8VP9UJV9L": 41552,
-          "#YRGJGR8R": 172378,
+          "#YRGJGR8R": 172408,
           "#LUYP8YP9": 49553,
           "#GYCJPJL0L": 16514,
           "#UC9LU0L90": 180,
@@ -12274,7 +12275,7 @@
           "#VJRLG9UVR": 2679,
           "#VYPL0Q90P": 343,
           "#20002JY8J0": 1476,
-          "#8CRP8QLL": 64653
+          "#8CRP8QLL": 64663
         },
         "duelsComplete": true,
         "periodType": "warDay",
@@ -12328,7 +12329,7 @@
           "#PL9CL8V20": 12,
           "#J008G9CLJ": 12,
           "#R0Q2RJPJG": 8,
-          "#9U9YVU80": 9,
+          "#9U9YVU80": 10,
           "#UC9LU0L90": 12,
           "#V0VLJQCJU": 16,
           "#UVGPPVQ8Q": 15,
@@ -12338,7 +12339,7 @@
           "#8CRP8QLL": 0
         },
         "periodPointsEarned": 11900,
-        "snapshotCount": 32
+        "snapshotCount": 33
       }
     ],
     "donationBaseline": {
