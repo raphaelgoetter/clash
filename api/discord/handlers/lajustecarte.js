@@ -120,8 +120,13 @@ function buildJusteCarteEmbed({ seasonId, seasonManche, seasonMancheTotal }) {
 }
 
 // Même ligne que le bouton de réponse (comme zoom.js buildZoomComponents) :
-// le bouton indice reste toujours visible et cliquable, sur le post public
-// comme sur chaque réponse éphémère (reproposer/comparaison).
+// les boutons indice et "cartes non incluses" restent toujours visibles et
+// cliquables, sur le post public comme sur chaque réponse éphémère
+// (reproposer/comparaison) — pas besoin de connaître/taper `/justecarte`
+// pour savoir quelles cartes sont absentes du pool. custom_id sans gameId
+// pour ce dernier bouton : la liste ne dépend pas de la manche en cours,
+// même routing/handler réutilisé que le bouton équivalent sur `/justecarte`
+// (handleExcludedListButton).
 function buildGameComponents(gameId, answerLabel) {
   return [
     {
@@ -138,6 +143,12 @@ function buildGameComponents(gameId, answerLabel) {
           style: 1,
           label: answerLabel,
           custom_id: `lajustecarte_answer:${gameId}`,
+        },
+        {
+          type: 2,
+          style: 2,
+          label: "📋 Cartes non incluses",
+          custom_id: "lajustecarte_excluded_list",
         },
       ],
     },
