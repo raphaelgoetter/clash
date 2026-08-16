@@ -86,7 +86,12 @@ function buildJusteCarteEmbed({ seasonId, seasonManche, seasonMancheTotal }) {
       "**Merci de ne pas spoiler ni tricher, sinon c'est pas drôle !**\n\n" +
       "🤖 Vérifie tes scores avec la commande `/justecarte`",
     color: JUSTECARTE_COLOR,
-    image: { url: `${TRUST_ROYALE_URL}/images/banner-justecarte.webp` },
+    // Cache-buster (?v=) — même pattern que frames.js/zoom.js : Discord met
+    // en cache l'aperçu d'un embed PAR URL, y compris un échec de fetch
+    // (ex. déploiement Vercel pas encore propagé au moment du tout premier
+    // post) ; sans paramètre variable, un aperçu cassé une fois resterait
+    // cassé indéfiniment sur cette URL.
+    image: { url: `${TRUST_ROYALE_URL}/images/banner-justecarte.webp?v=${Date.now()}` },
     footer: {
       text: `Nouvelle manche : dimanche prochain, ${formatUtcTimeAsParis(JUSTECARTE_CRON_UTC_HOUR)} (heure de Paris) !`,
     },
