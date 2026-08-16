@@ -376,10 +376,24 @@ export function computeScore(attemptNumber) {
 // sous-chaîne, sur un nom court "Barbares" accepterait à tort "Barbares
 // d'élite"... ici sans risque direct vu qu'aucune paire de cartes n'a ce
 // problème, mais la règle reste la plus sûre par défaut).
+//
+// Repli "compact" (espaces retirés après normalizeAnswer) si l'égalité
+// stricte échoue : normalizeAnswer transforme toute ponctuation (points,
+// apostrophes) en espace, donc "P.E.K.K.A" devient "p e k k a" et "Barbares
+// d'élite" devient "barbares d elite" — un joueur qui tape "pekka" ou
+// "barbares delite" (sans le séparateur) échouerait sinon l'égalité stricte
+// alors que c'est manifestement la bonne carte. Repli seulement (jamais la
+// clause principale) : reste une correspondance par MOT complet compacté,
+// pas une sous-chaîne arbitraire — n'introduit pas le risque "Barbares"
+// matchant "Barbares d'élite" documenté ci-dessus (les mots réels diffèrent
+// toujours, seuls les séparateurs internes sont ignorés).
 export function resolveGuess(catalog, rawName) {
   const normalized = normalizeAnswer(rawName);
   if (!normalized) return null;
-  return catalog.find((c) => normalizeAnswer(c.fr) === normalized) ?? null;
+  const exact = catalog.find((c) => normalizeAnswer(c.fr) === normalized);
+  if (exact) return exact;
+  const compact = normalized.replace(/\s+/g, "");
+  return catalog.find((c) => normalizeAnswer(c.fr).replace(/\s+/g, "") === compact) ?? null;
 }
 
 // ── Progression par joueur ────────────────────────────────────────
