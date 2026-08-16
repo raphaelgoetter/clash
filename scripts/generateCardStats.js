@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 // generateCardStats.js
-// Enrichit data/cardNames.json avec les stats de combat (elixir, hp, dps,
+// Enrichit data/cardNames.json avec les stats de combat (elixir, hp, damage,
 // range) nécessaires au jeu "La Juste Carte" — devine une carte à partir
-// d'indices comparatifs PV/Portée/DPS/Élixir. Usage PONCTUEL, jamais dans
+// d'indices comparatifs PV/Portée/Dégâts/Élixir. Usage PONCTUEL, jamais dans
 // un flux hebdomadaire (comme generateCardNames.js).
 //
 // Décision : cardNames.json reste le SEUL fichier source de vérité pour les
 // cartes (au lieu d'un catalogue dérivé séparé) — ce script ne fait
-// qu'AJOUTER les champs elixir/hp/dps/range aux entrées qui n'en ont pas
+// qu'AJOUTER les champs elixir/hp/damage/range aux entrées qui n'en ont pas
 // encore, sans jamais toucher fr/rarity ni écraser des stats déjà
 // présentes (mêmes garanties que generateCardNames.js pour `fr` : une
 // entrée déjà remplie, y compris corrigée à la main, n'est plus jamais
@@ -24,16 +24,23 @@
 //   - Coût d'élixir    : fetchCards() (API officielle Clash Royale) —
 //     source retenue pour le jeu, la colonne "Cost" du wiki ne sert qu'en
 //     garde-fou de cohérence (avertissement en cas d'écart, jamais stocké).
-//   - PV / DPS / Portée : un SEUL appel à l'API MediaWiki de
+//   - PV / Dégâts / Portée : un SEUL appel à l'API MediaWiki de
 //     clashroyale.fandom.com (action=parse&page=Cards&prop=wikitext),
 //     section "Troops" du wikitext uniquement (repérée par le marqueur de
 //     template {{StatisticsSubheader|Troops}} jusqu'au marqueur suivant).
 //     Le texte au-dessus de cette table précise explicitement que ces
 //     valeurs sont déjà au niveau **Tournament Standard** — aucun calcul de
 //     niveau à faire ici.
+//   - Dégâts = colonne "Damage" (dégât par coup), PAS "Damage Per Second" —
+//     décision explicite : la colonne DPS vaut "N/A" pour toute carte sans
+//     cadence d'attaque régulière (Esprits, Battle Ram, Wall Breakers...),
+//     alors que ces cartes ont bien une valeur de dégât par coup exploitable
+//     pour la comparaison. Utiliser "Damage" maximise donc le pool de cartes
+//     éligibles sans rien perdre en équité (une seule valeur par carte dans
+//     les deux cas).
 //
 // Filtrage du pool éligible (vérifié empiriquement sur le wikitext du
-// 2026-08 — 99 lignes de troupes "de base", 64 retenues) :
+// 2026-08 — 99 lignes de troupes "de base", 71 retenues) :
 //   1. Liens wiki PIPED ([[VraieCarte|NomAffiché]]) ignorés silencieusement :
 //      ce sont des sous-unités générées (Bush Goblins, Golemite, Lava Pup,
 //      Elixir Blob, Rascal Boy/Girl, etc.), pas des cartes du jeu — la carte
@@ -43,17 +50,14 @@
 //      Goblinstein, Golden Knight, Little Prince, Mighty Miner, Monk,
 //      Skeleton King) exclue — même si mécaniquement listée dans la table
 //      Troops, l'énoncé du jeu exclut les héros/champions.
-//   3. Valeur "composite" ou variable : si le champ brut PV, DPS ou Portée
-//      contient un "/" (mode double, ex. Goblin Gang "202/133"), OU un "-"
-//      (dégât progressif/plage min-max, ex. Inferno Dragon "87-1,055" —
-//      DPS qui grimpe avec le temps de ciblage, aucune valeur unique fixe
-//      représentative), OU si le DPS brut vaut "N/A" (carte sans dégât
-//      soutenu, seulement dégât de charge/mort — ex. Battle Ram, les 4
-//      Esprits, Skeleton Barrel, Suspicious Bush, Wall Breakers — "N/A"
-//      contient d'ailleurs un "/", la même détection générique couvre ce
-//      cas aussi sans liste figée à maintenir à la main) → carte exclue,
-//      aucune valeur unique représentative fiable pour une comparaison
-//      équitable.
+//   3. Valeur "composite" ou variable : si le champ brut PV, Dégâts ou
+//      Portée contient un "/" (mode double, ex. Goblin Gang "202/133"), OU
+//      un "-" (dégât progressif/plage min-max, ex. Inferno Dragon "35-422"
+//      — dégât qui grimpe avec le temps de ciblage, aucune valeur unique
+//      fixe représentative), OU si le champ Dégâts brut vaut "N/A" (carte
+//      sans aucune attaque directe, ex. Suspicious Bush — un simple buisson
+//      décoratif tant qu'il n'a pas éclos) → carte exclue, aucune valeur
+//      unique représentative fiable pour une comparaison équitable.
 //
 // Usage : node scripts/generateCardStats.js
 
@@ -119,17 +123,19 @@ function parseRange(raw) {
   return { kind: "ranged", category: null, value, rank: 3 + value };
 }
 
+// Colonne "Damage" (dégât par coup, index 4 du tableau) — PAS "Damage Per
+// Second" (index 6) : voir en-tête de fichier pour la justification.
 function parseTroopRows(wikitext) {
   const rows = [];
   for (const m of wikitext.matchAll(ROW_PATTERN)) {
-    const [, link, cost, hp, , , dps, , range] = m;
-    rows.push({ link: link.trim(), rawCost: cost.trim(), rawHp: hp.trim(), rawDps: dps.trim(), rawRange: range.trim() });
+    const [, link, cost, hp, damage, , , , range] = m;
+    rows.push({ link: link.trim(), rawCost: cost.trim(), rawHp: hp.trim(), rawDamage: damage.trim(), rawRange: range.trim() });
   }
   return rows;
 }
 
 function hasStats(entry) {
-  return entry.elixir != null && entry.hp != null && entry.dps != null && entry.range != null;
+  return entry.elixir != null && entry.hp != null && entry.damage != null && entry.range != null;
 }
 
 async function main() {
@@ -176,17 +182,17 @@ async function main() {
       continue;
     }
 
-    const isComposite = [row.rawHp, row.rawDps, row.rawRange].some((raw) => raw.includes("/") || raw.includes("-"));
+    const isComposite = [row.rawHp, row.rawDamage, row.rawRange].some((raw) => raw.includes("/") || raw.includes("-"));
     if (isComposite) {
-      excludedComposite.push({ cardKey: entry.cardKey, hp: row.rawHp, dps: row.rawDps, range: row.rawRange });
+      excludedComposite.push({ cardKey: entry.cardKey, hp: row.rawHp, damage: row.rawDamage, range: row.rawRange });
       continue;
     }
 
     const hp = parseLeadingNumber(row.rawHp);
-    const dps = parseLeadingNumber(row.rawDps);
+    const damage = parseLeadingNumber(row.rawDamage);
     const range = parseRange(row.rawRange);
-    if (hp == null || dps == null || !range) {
-      console.warn(`  ⚠️  "${entry.cardKey}" : stats illisibles (hp="${row.rawHp}" dps="${row.rawDps}" range="${row.rawRange}") — carte ignorée.`);
+    if (hp == null || damage == null || !range) {
+      console.warn(`  ⚠️  "${entry.cardKey}" : stats illisibles (hp="${row.rawHp}" damage="${row.rawDamage}" range="${row.rawRange}") — carte ignorée.`);
       continue;
     }
 
@@ -202,7 +208,7 @@ async function main() {
 
     entry.elixir = elixir;
     entry.hp = hp;
-    entry.dps = dps;
+    entry.damage = damage;
     entry.range = range;
     added.push(entry.cardKey);
   }
@@ -219,9 +225,9 @@ async function main() {
   console.log(`  Déjà présentes (non modifiées) : ${alreadyPresent.length}`);
   console.log(`  Ignorées — liens vers des sous-unités : ${excludedPiped.length} (${excludedPiped.join(", ") || "aucune"})`);
   console.log(`  Exclues — champions/héros : ${excludedChampion.length} (${excludedChampion.join(", ") || "aucune"})`);
-  console.log(`  Exclues — stats composites, variables ou sans DPS soutenu : ${excludedComposite.length}`);
+  console.log(`  Exclues — stats composites, variables ou sans dégât direct : ${excludedComposite.length}`);
   for (const c of excludedComposite) {
-    console.log(`    - ${c.cardKey} (hp="${c.hp}" dps="${c.dps}" range="${c.range}")`);
+    console.log(`    - ${c.cardKey} (hp="${c.hp}" damage="${c.damage}" range="${c.range}")`);
   }
   if (excludedNotFound.length > 0) {
     console.log(`  ⚠️  Introuvables dans data/cardNames.json : ${excludedNotFound.join(", ")} — vérifier si le fichier est à jour.`);

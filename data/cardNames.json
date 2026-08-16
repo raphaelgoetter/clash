@@ -10,7 +10,7 @@
     "fr": "Archères",
     "elixir": 3,
     "hp": 304,
-    "dps": 124,
+    "damage": 112,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -29,7 +29,7 @@
     "fr": "Bébé dragon",
     "elixir": 4,
     "hp": 1152,
-    "dps": 107,
+    "damage": 161,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -43,7 +43,7 @@
     "fr": "Ballon",
     "elixir": 5,
     "hp": 1679,
-    "dps": 320,
+    "damage": 640,
     "range": {
       "kind": "melee",
       "category": "short",
@@ -57,7 +57,7 @@
     "fr": "Voleuse",
     "elixir": 3,
     "hp": 906,
-    "dps": 194,
+    "damage": 194,
     "range": {
       "kind": "melee",
       "category": "short",
@@ -81,7 +81,7 @@
     "fr": "Barbares",
     "elixir": 5,
     "hp": 670,
-    "dps": 147,
+    "damage": 192,
     "range": {
       "kind": "melee",
       "category": "short",
@@ -95,7 +95,7 @@
     "fr": "Chauves-souris",
     "elixir": 2,
     "hp": 81,
-    "dps": 62,
+    "damage": 81,
     "range": {
       "kind": "melee",
       "category": "medium",
@@ -109,7 +109,7 @@
     "fr": "Guérisseuse armée",
     "elixir": 4,
     "hp": 1717,
-    "dps": 98,
+    "damage": 148,
     "range": {
       "kind": "melee",
       "category": "long",
@@ -120,7 +120,16 @@
   {
     "cardKey": "Battle Ram",
     "rarity": "rare",
-    "fr": "Bélier de combat"
+    "fr": "Bélier de combat",
+    "elixir": 4,
+    "hp": 967,
+    "damage": 286,
+    "range": {
+      "kind": "melee",
+      "category": "short",
+      "value": null,
+      "rank": 1
+    }
   },
   {
     "cardKey": "Berserker",
@@ -128,7 +137,7 @@
     "fr": "Berserker",
     "elixir": 2,
     "hp": 896,
-    "dps": 170,
+    "damage": 102,
     "range": {
       "kind": "melee",
       "category": "short",
@@ -147,7 +156,7 @@
     "fr": "Bombardier",
     "elixir": 2,
     "hp": 304,
-    "dps": 125,
+    "damage": 225,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -166,7 +175,7 @@
     "fr": "Bouliste",
     "elixir": 5,
     "hp": 2081,
-    "dps": 115,
+    "damage": 289,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -185,7 +194,7 @@
     "fr": "Charrette à canon",
     "elixir": 5,
     "hp": 1809,
-    "dps": 236,
+    "damage": 212,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -204,7 +213,7 @@
     "fr": "Prince ténébreux",
     "elixir": 4,
     "hp": 1440,
-    "dps": 204,
+    "damage": 266,
     "range": {
       "kind": "melee",
       "category": "medium",
@@ -218,7 +227,7 @@
     "fr": "Gobelin à sarbacane",
     "elixir": 3,
     "hp": 261,
-    "dps": 188,
+    "damage": 151,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -237,7 +246,7 @@
     "fr": "Électro-dragon",
     "elixir": 5,
     "hp": 949,
-    "dps": 91,
+    "damage": 192,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -251,7 +260,7 @@
     "fr": "Électro-géant",
     "elixir": 7,
     "hp": 3855,
-    "dps": 77,
+    "damage": 163,
     "range": {
       "kind": "melee",
       "category": "medium",
@@ -262,7 +271,16 @@
   {
     "cardKey": "Electro Spirit",
     "rarity": "common",
-    "fr": "Électro-esprit"
+    "fr": "Électro-esprit",
+    "elixir": 1,
+    "hp": 230,
+    "damage": 99,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 2.5,
+      "rank": 5.5
+    }
   },
   {
     "cardKey": "Electro Wizard",
@@ -270,7 +288,7 @@
     "fr": "Électro-sorcier",
     "elixir": 4,
     "hp": 714,
-    "dps": 126,
+    "damage": 115,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -284,7 +302,7 @@
     "fr": "Barbares d'élite",
     "elixir": 6,
     "hp": 1341,
-    "dps": 274,
+    "damage": 384,
     "range": {
       "kind": "melee",
       "category": "medium",
@@ -303,7 +321,7 @@
     "fr": "Golem élixir",
     "elixir": 3,
     "hp": 1569,
-    "dps": 230,
+    "damage": 253,
     "range": {
       "kind": "melee",
       "category": "short",
@@ -317,7 +335,7 @@
     "fr": "Bourreau",
     "elixir": 5,
     "hp": 1280,
-    "dps": 140,
+    "damage": 168,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -328,7 +346,16 @@
   {
     "cardKey": "Fire Spirit",
     "rarity": "common",
-    "fr": "Esprit de feu"
+    "fr": "Esprit de feu",
+    "elixir": 1,
+    "hp": 230,
+    "damage": 207,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 2.5,
+      "rank": 5.5
+    }
   },
   {
     "cardKey": "Fireball",
@@ -341,7 +368,7 @@
     "fr": "Artificière",
     "elixir": 3,
     "hp": 304,
-    "dps": 106,
+    "damage": 64,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -355,7 +382,7 @@
     "fr": "Pêcheur",
     "elixir": 3,
     "hp": 870,
-    "dps": 149,
+    "damage": 194,
     "range": {
       "kind": "melee",
       "category": "medium",
@@ -369,7 +396,7 @@
     "fr": "Machine volante",
     "elixir": 4,
     "hp": 614,
-    "dps": 155,
+    "damage": 171,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -388,7 +415,7 @@
     "fr": "Fournaise",
     "elixir": 4,
     "hp": 727,
-    "dps": 105,
+    "damage": 179,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -402,7 +429,7 @@
     "fr": "Géant",
     "elixir": 5,
     "hp": 4090,
-    "dps": 168,
+    "damage": 253,
     "range": {
       "kind": "melee",
       "category": "medium",
@@ -416,7 +443,7 @@
     "fr": "Squelette géant",
     "elixir": 6,
     "hp": 3617,
-    "dps": 212,
+    "damage": 276,
     "range": {
       "kind": "melee",
       "category": "short",
@@ -450,7 +477,7 @@
     "fr": "Gobelin explosif",
     "elixir": 4,
     "hp": 1300,
-    "dps": 169,
+    "damage": 186,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -489,7 +516,7 @@
     "fr": "Gobelins",
     "elixir": 2,
     "hp": 202,
-    "dps": 109,
+    "damage": 120,
     "range": {
       "kind": "melee",
       "category": "short",
@@ -513,7 +540,7 @@
     "fr": "Golem",
     "elixir": 8,
     "hp": 5120,
-    "dps": 124,
+    "damage": 312,
     "range": {
       "kind": "melee",
       "category": "short",
@@ -532,7 +559,7 @@
     "fr": "Gardes",
     "elixir": 3,
     "hp": 337,
-    "dps": 117,
+    "damage": 117,
     "range": {
       "kind": "melee",
       "category": "long",
@@ -543,7 +570,16 @@
   {
     "cardKey": "Heal Spirit",
     "rarity": "rare",
-    "fr": "Esprit de guérison"
+    "fr": "Esprit de guérison",
+    "elixir": 1,
+    "hp": 230,
+    "damage": 110,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 2.5,
+      "rank": 5.5
+    }
   },
   {
     "cardKey": "Hog Rider",
@@ -551,7 +587,7 @@
     "fr": "Chevaucheur de cochon",
     "elixir": 4,
     "hp": 1697,
-    "dps": 198,
+    "damage": 317,
     "range": {
       "kind": "melee",
       "category": "short",
@@ -565,7 +601,7 @@
     "fr": "Chasseur",
     "elixir": 4,
     "hp": 885,
-    "dps": 381,
+    "damage": 84,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -579,7 +615,7 @@
     "fr": "Golem de glace",
     "elixir": 2,
     "hp": 1315,
-    "dps": 33,
+    "damage": 84,
     "range": {
       "kind": "melee",
       "category": "short",
@@ -590,7 +626,16 @@
   {
     "cardKey": "Ice Spirit",
     "rarity": "common",
-    "fr": "Esprit de glace"
+    "fr": "Esprit de glace",
+    "elixir": 1,
+    "hp": 230,
+    "damage": 110,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 2.5,
+      "rank": 5.5
+    }
   },
   {
     "cardKey": "Ice Wizard",
@@ -598,7 +643,7 @@
     "fr": "Sorcier de glace",
     "elixir": 3,
     "hp": 688,
-    "dps": 52,
+    "damage": 89,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -622,7 +667,7 @@
     "fr": "Chevalier",
     "elixir": 3,
     "hp": 1766,
-    "dps": 168,
+    "damage": 202,
     "range": {
       "kind": "melee",
       "category": "medium",
@@ -636,7 +681,7 @@
     "fr": "Molosse de lave",
     "elixir": 7,
     "hp": 3581,
-    "dps": 40,
+    "damage": 53,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -660,7 +705,7 @@
     "fr": "Bûcheron",
     "elixir": 4,
     "hp": 1282,
-    "dps": 320,
+    "damage": 256,
     "range": {
       "kind": "melee",
       "category": "short",
@@ -674,7 +719,7 @@
     "fr": "Archer magique",
     "elixir": 4,
     "hp": 529,
-    "dps": 130,
+    "damage": 143,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -688,7 +733,7 @@
     "fr": "Méga chevalier",
     "elixir": 7,
     "hp": 3993,
-    "dps": 157,
+    "damage": 268,
     "range": {
       "kind": "melee",
       "category": "medium",
@@ -702,7 +747,7 @@
     "fr": "Méga gargouille",
     "elixir": 3,
     "hp": 837,
-    "dps": 207,
+    "damage": 311,
     "range": {
       "kind": "melee",
       "category": "long",
@@ -721,7 +766,7 @@
     "fr": "Mineur",
     "elixir": 3,
     "hp": 1210,
-    "dps": 149,
+    "damage": 194,
     "range": {
       "kind": "melee",
       "category": "medium",
@@ -735,7 +780,7 @@
     "fr": "Mini P.E.K.K.A",
     "elixir": 4,
     "hp": 1390,
-    "dps": 471,
+    "damage": 755,
     "range": {
       "kind": "melee",
       "category": "short",
@@ -749,7 +794,7 @@
     "fr": "Horde de gargouilles",
     "elixir": 5,
     "hp": 230,
-    "dps": 97,
+    "damage": 107,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -763,7 +808,7 @@
     "fr": "Gargouilles",
     "elixir": 3,
     "hp": 230,
-    "dps": 97,
+    "damage": 107,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -792,7 +837,7 @@
     "fr": "Mamie sorcière",
     "elixir": 4,
     "hp": 529,
-    "dps": 133,
+    "damage": 133,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -806,7 +851,7 @@
     "fr": "Mousquetaire",
     "elixir": 4,
     "hp": 721,
-    "dps": 217,
+    "damage": 217,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -820,7 +865,7 @@
     "fr": "Sorcière de la nuit",
     "elixir": 4,
     "hp": 906,
-    "dps": 241,
+    "damage": 314,
     "range": {
       "kind": "melee",
       "category": "long",
@@ -834,7 +879,7 @@
     "fr": "P.E.K.K.A",
     "elixir": 7,
     "hp": 3760,
-    "dps": 453,
+    "damage": 816,
     "range": {
       "kind": "melee",
       "category": "medium",
@@ -848,7 +893,7 @@
     "fr": "Phénix",
     "elixir": 4,
     "hp": 1052,
-    "dps": 217,
+    "damage": 217,
     "range": {
       "kind": "melee",
       "category": "long",
@@ -867,7 +912,7 @@
     "fr": "Prince",
     "elixir": 5,
     "hp": 1920,
-    "dps": 279,
+    "damage": 391,
     "range": {
       "kind": "melee",
       "category": "long",
@@ -881,7 +926,7 @@
     "fr": "Princesse",
     "elixir": 3,
     "hp": 261,
-    "dps": 56,
+    "damage": 168,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -925,7 +970,7 @@
     "fr": "Fantôme royal",
     "elixir": 3,
     "hp": 1210,
-    "dps": 145,
+    "damage": 261,
     "range": {
       "kind": "melee",
       "category": "medium",
@@ -939,7 +984,7 @@
     "fr": "Géant royal",
     "elixir": 6,
     "hp": 3164,
-    "dps": 180,
+    "damage": 307,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -953,7 +998,7 @@
     "fr": "Cochons royaux",
     "elixir": 5,
     "hp": 837,
-    "dps": 61,
+    "damage": 74,
     "range": {
       "kind": "melee",
       "category": "short",
@@ -967,7 +1012,7 @@
     "fr": "Recrues royales",
     "elixir": 7,
     "hp": 787,
-    "dps": 102,
+    "damage": 133,
     "range": {
       "kind": "melee",
       "category": "long",
@@ -981,7 +1026,7 @@
     "fr": "Géante runique",
     "elixir": 4,
     "hp": 2662,
-    "dps": 80,
+    "damage": 120,
     "range": {
       "kind": "melee",
       "category": "medium",
@@ -995,7 +1040,7 @@
     "fr": "Armée de squelettes",
     "elixir": 3,
     "hp": 81,
-    "dps": 73,
+    "damage": 81,
     "range": {
       "kind": "melee",
       "category": "short",
@@ -1006,7 +1051,16 @@
   {
     "cardKey": "Skeleton Barrel",
     "rarity": "common",
-    "fr": "Fût à squelettes"
+    "fr": "Fût à squelettes",
+    "elixir": 3,
+    "hp": 532,
+    "damage": 145,
+    "range": {
+      "kind": "melee",
+      "category": "short",
+      "value": null,
+      "rank": 1
+    }
   },
   {
     "cardKey": "Skeleton Dragons",
@@ -1014,7 +1068,7 @@
     "fr": "Dragons squelettes",
     "elixir": 4,
     "hp": 560,
-    "dps": 84,
+    "damage": 161,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -1033,7 +1087,7 @@
     "fr": "Squelettes",
     "elixir": 1,
     "hp": 81,
-    "dps": 73,
+    "damage": 81,
     "range": {
       "kind": "melee",
       "category": "short",
@@ -1047,7 +1101,7 @@
     "fr": "Zappy",
     "elixir": 6,
     "hp": 1451,
-    "dps": 332,
+    "damage": 1331,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -1061,7 +1115,7 @@
     "fr": "Gobelins à lances",
     "elixir": 2,
     "hp": 133,
-    "dps": 47,
+    "damage": 81,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -1110,7 +1164,7 @@
     "fr": "Valkyrie",
     "elixir": 4,
     "hp": 1907,
-    "dps": 177,
+    "damage": 266,
     "range": {
       "kind": "melee",
       "category": "medium",
@@ -1131,7 +1185,16 @@
   {
     "cardKey": "Wall Breakers",
     "rarity": "epic",
-    "fr": "Sapeurs"
+    "fr": "Sapeurs",
+    "elixir": 2,
+    "hp": 330,
+    "damage": 350,
+    "range": {
+      "kind": "melee",
+      "category": "short",
+      "value": null,
+      "rank": 1
+    }
   },
   {
     "cardKey": "Witch",
@@ -1139,7 +1202,7 @@
     "fr": "Sorcière",
     "elixir": 5,
     "hp": 839,
-    "dps": 122,
+    "damage": 135,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -1153,7 +1216,7 @@
     "fr": "Sorcier",
     "elixir": 5,
     "hp": 755,
-    "dps": 200,
+    "damage": 281,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -1177,7 +1240,7 @@
     "fr": "Électrocuteurs",
     "elixir": 4,
     "hp": 529,
-    "dps": 55,
+    "damage": 117,
     "range": {
       "kind": "ranged",
       "category": null,

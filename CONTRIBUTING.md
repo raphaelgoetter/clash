@@ -840,7 +840,7 @@ Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHAN
 
 Quatrième mini-jeu hebdomadaire indépendant, sur le modèle de Frame/Anagram (voir [Jeu Frame](#jeu-frame-devine-le-film) pour les mécanismes partagés : Modal `type:9`/`MODAL_SUBMIT type:5`, stockage Upstash Redis et ses pièges, gestion de saison CR). Différence structurelle majeure : contrairement aux 3 autres jeux (une seule tentative résout la manche), ici chaque joueur soumet **plusieurs propositions successives** contre une carte secrète — ce n'est pas une course entre joueurs, chacun joue sa propre partie à son rythme.
 
-Une carte Clash Royale secrète est tirée chaque semaine. Le joueur propose le nom (français) d'une autre carte, et le jeu compare les deux sur 4 stats — PV, Portée, DPS, Élixir — en indiquant pour chacune si la **proposition** est plus haute (⬆️), plus basse (⬇️) ou identique (✅) à la carte secrète.
+Une carte Clash Royale secrète est tirée chaque semaine. Le joueur propose le nom (français) d'une autre carte, et le jeu compare les deux sur 4 stats — PV, Portée, Dégâts, Élixir — en indiquant pour chacune si la **proposition** est plus haute (⬆️), plus basse (⬇️) ou identique (✅) à la carte secrète.
 
 ### Barème (La Juste Carte)
 
@@ -864,8 +864,8 @@ Modal à 1 champ (pas d'autocomplete possible dans une Modal Discord), résolue 
 | Tentative du joueur | Indices visibles |
 | --- | --- |
 | 1ère | PV, Portée |
-| 2e | PV, Portée, DPS |
-| 3e et suivantes | PV, Portée, DPS, Élixir |
+| 2e | PV, Portée, Dégâts |
+| 3e et suivantes | PV, Portée, Dégâts, Élixir |
 
 `compareCard(secretEntry, guessEntry, attemptNumber)` (fonction pure) calcule les 4 comparateurs puis ne renvoie que le sous-ensemble débloqué à ce numéro de tentative. Le sens de la flèche décrit la **proposition** relativement à la carte secrète ("PV ⬆️" = ta proposition a un PV plus élevé que la carte secrète) — comparateur `guessValue > secretValue ? "up" : "down"`, pas l'inverse.
 
@@ -873,18 +873,19 @@ Portée : les troupes de mêlée sont comparées sur une catégorie ordinale (`s
 
 ### Données — stats ajoutées directement dans `data/cardNames.json`
 
-Contrairement à Zoom (catalogue dérivé séparé), **aucun fichier dédié** : `scripts/generateCardStats.js` ajoute les champs `elixir`/`hp`/`dps`/`range` directement aux entrées de `data/cardNames.json` (voir [Noms français des cartes](#noms-français-des-cartes-datacardnamesjson)) qui sont éligibles au jeu — les autres entrées (sorts, bâtiments, champions, troupes de tour) restent sans ces champs. C'est justement cette présence qui sert de filtre du pool de jeu à l'exécution (`loadCatalog()`), aucun champ `type`/`eligible` séparé à maintenir.
+Contrairement à Zoom (catalogue dérivé séparé), **aucun fichier dédié** : `scripts/generateCardStats.js` ajoute les champs `elixir`/`hp`/`damage`/`range` directement aux entrées de `data/cardNames.json` (voir [Noms français des cartes](#noms-français-des-cartes-datacardnamesjson)) qui sont éligibles au jeu — les autres entrées (sorts, bâtiments, champions, troupes de tour) restent sans ces champs. C'est justement cette présence qui sert de filtre du pool de jeu à l'exécution (`loadCatalog()`), aucun champ `type`/`eligible` séparé à maintenir.
 
 Sources :
 
 - Élixir : `fetchCards()` (API officielle Clash Royale) — la colonne "Cost" du wiki ne sert qu'en garde-fou de cohérence (avertissement console en cas d'écart, jamais stocké).
-- PV/DPS/Portée : un seul appel à l'API MediaWiki de `clashroyale.fandom.com/wiki/Cards` (`action=parse&page=Cards&prop=wikitext`), section "Troops" du wikitext uniquement. Ces valeurs y sont déjà au niveau **Tournament Standard** (précisé explicitement dans le texte au-dessus de la table) — aucun calcul de niveau à faire.
+- PV/Dégâts/Portée : un seul appel à l'API MediaWiki de `clashroyale.fandom.com/wiki/Cards` (`action=parse&page=Cards&prop=wikitext`), section "Troops" du wikitext uniquement. Ces valeurs y sont déjà au niveau **Tournament Standard** (précisé explicitement dans le texte au-dessus de la table) — aucun calcul de niveau à faire.
+- `damage` = colonne **"Damage"** (dégât par coup), volontairement pas "Damage Per Second" : la colonne DPS vaut `N/A` pour toute carte sans cadence d'attaque régulière (Esprits, Battle Ram, Wall Breakers...) alors que ces cartes ont bien un dégât par coup exploitable — utiliser "Damage" maximise le pool sans rien perdre en équité (toujours une seule valeur par carte).
 
-Exclusions du pool (64 cartes éligibles sur 99 lignes de troupes "de base" au 2026-08) :
+Exclusions du pool (71 cartes éligibles sur 99 lignes de troupes "de base" au 2026-08) :
 
 - Sous-unités générées (liens wiki *piped*, ex. Bush Goblins, Golemite, Lava Pup) — la vraie carte a sa propre ligne, sauf `Rascals` qui n'en a aucune et disparaît donc naturellement du pool.
 - Champions/héros (`rarity === "champion"`, 8 cartes) — exclus même si mécaniquement listés dans la table Troops.
-- Cartes à stats "composites" ou sans DPS soutenu — détection générique : si le champ brut PV, DPS ou Portée contient un `/` (mode double, ex. Goblin Gang "202/133", ou DPS "N/A" qui contient lui-même un `/`) → exclue, aucune valeur unique fiable pour une comparaison équitable (Battle Ram, les 4 Esprits, Goblin Gang/Giant/Machine, Ram Rider, Skeleton Barrel, Spirit Empress, Suspicious Bush, Three Musketeers, Wall Breakers).
+- Cartes à stats "composites", variables, ou sans dégât direct — détection générique : si le champ brut PV, Dégâts ou Portée contient un `/` (mode double, ex. Goblin Gang "202/133") ou un `-` (dégât progressif, ex. Inferno Dragon "35-422") → exclue, aucune valeur unique fiable pour une comparaison équitable (Goblin Gang/Giant/Machine, Inferno Dragon, Ram Rider, Spirit Empress, Suspicious Bush — aucune attaque directe —, Three Musketeers).
 
 Comme `generateCardNames.js` pour `fr` : le script ne fait qu'**ajouter** les 4 champs aux entrées qui n'en ont pas encore, jamais réécrire une entrée déjà complétée (y compris après correction manuelle). Usage ponctuel : `node scripts/generateCardStats.js` (ou `npm run justecarte:stats`).
 
@@ -928,7 +929,7 @@ Contrairement à Anagram (DM à chaque manche, puisqu'une seule tentative la ré
 
 | Commande | Effet |
 | --- | --- |
-| `npm run justecarte:stats` | Ajoute les stats (elixir/hp/dps/range) aux cartes éligibles de `data/cardNames.json`. Usage ponctuel, jamais dans le flux hebdomadaire. |
+| `npm run justecarte:stats` | Ajoute les stats (elixir/hp/damage/range) aux cartes éligibles de `data/cardNames.json`. Usage ponctuel, jamais dans le flux hebdomadaire. |
 | `npm run justecarte:test` | Poste manuellement une nouvelle partie sur le salon de test, **sans ping** (`--no-ping` par défaut, comme `zoom:test`). |
 | `npm run justecarte:test:dry` | Aperçu console de la prochaine partie (+ récap de saison éventuel), sans écrire d'état ni poster sur Discord. |
 | `npm run justecarte:public` | Poste sur le salon public (avec ping) — utilisé par le cron `lajustecarte.yml`. |

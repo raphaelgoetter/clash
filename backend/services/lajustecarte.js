@@ -1,6 +1,6 @@
 // ============================================================
 // lajustecarte.js — Jeu "La Juste Carte" (devine la carte Clash Royale à
-// partir d'indices comparatifs PV/Portée/DPS/Élixir). Couche métier :
+// partir d'indices comparatifs PV/Portée/Dégâts/Élixir). Couche métier :
 // catalogue, état de la partie, comparaison de stats, scoring, classements.
 // Miroir structurel d'anagrams.js (même stockage Upstash Redis, mêmes
 // pièges — automaticDeserialization/HGETALL, client paresseux — voir les
@@ -9,7 +9,7 @@
 //
 // 1. Pas de fichier de pool dédié : le catalogue est un SOUS-ENSEMBLE de
 //    data/cardNames.json — les entrées auxquelles scripts/generateCardStats.js
-//    a ajouté les 4 champs elixir/hp/dps/range (uniquement les troupes
+//    a ajouté les 4 champs elixir/hp/damage/range (uniquement les troupes
 //    éligibles, voir ce script pour le détail des exclusions). cardNames.json
 //    reste trié alphabétiquement (contrainte de generateCardNames.js), donc
 //    contrairement à Frame/Anagram/Zoom, l'ordre de rotation hebdomadaire ne
@@ -143,7 +143,7 @@ export async function loadCatalog() {
   if (catalogCache) return catalogCache;
   const txt = await fs.readFile(CARD_NAMES_PATH, "utf-8");
   const all = JSON.parse(txt);
-  catalogCache = all.filter((c) => c.elixir != null && c.hp != null && c.dps != null && c.range != null);
+  catalogCache = all.filter((c) => c.elixir != null && c.hp != null && c.damage != null && c.range != null);
   return catalogCache;
 }
 
@@ -317,20 +317,21 @@ export async function getCardImageUrl(cardKey) {
 
 // ── Comparaison de stats et révélation progressive ────────────────
 
-const ALL_STATS = ["hp", "range", "dps", "elixir"];
+const ALL_STATS = ["hp", "range", "damage", "elixir"];
 
-// Essai 1 → PV+Portée, essai 2 → +DPS, essai 3 et suivants → +Élixir.
+// Essai 1 → PV+Portée, essai 2 → +Dégâts, essai 3 et suivants → +Élixir.
 function visibleStatsForAttempt(attemptNumber) {
   if (attemptNumber <= 1) return ["hp", "range"];
-  if (attemptNumber === 2) return ["hp", "range", "dps"];
+  if (attemptNumber === 2) return ["hp", "range", "damage"];
   return ALL_STATS;
 }
 
 // Le sens de la flèche décrit la PROPOSITION relativement à la carte
-// secrète (pas l'inverse) : "HP ⬆️" se lit "ta carte a un PV plus élevé que
+// secrète (pas l'inverse) : "PV ⬆️" se lit "ta carte a un PV plus élevé que
 // la carte secrète". Vérifié sur l'exemple de l'énoncé (secrète Barbares
-// hp=670/dps=147/élixir=5, proposition Berserker hp=896/dps=170/élixir=2 →
-// attendu HP⬆️ DPS⬆️ Élixir⬇️ : guess > secret ⇒ ⬆️ dans les 3 cas).
+// hp=670/dégâts=147/élixir=5, proposition Berserker hp=896/dégâts=170/
+// élixir=2 → attendu PV⬆️ Dégâts⬆️ Élixir⬇️ : guess > secret ⇒ ⬆️ dans les
+// 3 cas).
 function compareValue(secretValue, guessValue) {
   if (guessValue === secretValue) return "equal";
   return guessValue > secretValue ? "up" : "down";
@@ -344,12 +345,13 @@ function compareValue(secretValue, guessValue) {
 // scripts/generateCardStats.js pour la construction de ce rang unique
 // (mêlée short/medium/long = 1/2/3, distance = 3 + valeur chiffrée,
 // garantit qu'une troupe à distance passe toujours devant la mêlée la plus
-// longue).
+// longue). `damage` = dégât par coup (colonne "Damage" du wiki), pas un DPS
+// — voir scripts/generateCardStats.js pour la justification.
 export function compareCard(secretEntry, guessEntry, attemptNumber) {
   const all = {
     hp: compareValue(secretEntry.hp, guessEntry.hp),
     range: compareValue(secretEntry.range.rank, guessEntry.range.rank),
-    dps: compareValue(secretEntry.dps, guessEntry.dps),
+    damage: compareValue(secretEntry.damage, guessEntry.damage),
     elixir: compareValue(secretEntry.elixir, guessEntry.elixir),
   };
   const visible = visibleStatsForAttempt(attemptNumber);

@@ -1,6 +1,6 @@
 // ============================================================
 // lajustecarte.js — Handlers Discord pour le jeu "La Juste Carte" (devine la
-// carte Clash Royale à partir d'indices comparatifs PV/Portée/DPS/Élixir).
+// carte Clash Royale à partir d'indices comparatifs PV/Portée/Dégâts/Élixir).
 // Embed, boutons, modal, DM. La publication d'une partie passe uniquement
 // par scripts/postJusteCarte.js — seule la commande /justecarte (scores
 // personnels du joueur qui l'exécute) est une vraie commande slash. Miroir
@@ -45,7 +45,7 @@ import {
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
 
 const JUSTECARTE_COLOR = 0x2ecc71;
-const STAT_LABELS = { hp: "PV", range: "Portée", dps: "DPS", elixir: "Élixir" };
+const STAT_LABELS = { hp: "PV", range: "Portée", damage: "Dégâts", elixir: "Élixir" };
 const ARROW_BY_RESULT = { up: "⬆️", down: "⬇️", equal: "✅" };
 
 // Remplace le pseudo figé de chaque entrée par le pseudo Discord actuel
