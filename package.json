@@ -55,6 +55,7 @@
     "justecarte:public:dry": "node scripts/postJusteCarte.js --public --dry-run",
     "justecarte:reset": "node scripts/resetJusteCarte.js",
     "justecarte:scores": "node scripts/justeCarteScores.js",
+    "justecarte:order": "node scripts/justeCarteOrder.js",
     "aventure:test": "node scripts/postAventure.js",
     "aventure:test:dry": "node scripts/postAventure.js --dry-run",
     "aventure:public": "node scripts/postAventure.js --public",

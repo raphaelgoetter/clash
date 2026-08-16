@@ -892,6 +892,8 @@ Comme `generateCardNames.js` pour `fr` : le script ne fait qu'**ajouter** les 4 
 
 Contrairement à Frame/Anagram/Zoom (l'ordre physique du fichier pilote la progression), `data/cardNames.json` doit rester trié alphabétiquement (contrainte de `generateCardNames.js`) : la prochaine carte secrète serait donc devinable à l'avance si on s'y fiait. L'ordre de passage est mélangé une fois puis **persisté dans Redis** (`lajustecarte:order`, `loadPlayOrder()`) ; les cartes nouvellement ajoutées par `generateCardStats.js` sont insérées à la suite, mélangées entre elles, sans perturber l'ordre déjà en cours. `pickNextIndex()` avance simplement d'une position dans cet ordre (`index+1 % n`), boucle une fois épuisé.
 
+Cet ordre n'est visible nulle part côté joueur (le fichier reste alphabétique, l'embed public ne révèle jamais la carte à venir) : `npm run justecarte:order` (`scripts/justeCarteOrder.js`) affiche la rotation complète pour un admin — outil de lecture qui révèle toutes les cartes à venir, jamais exposé aux joueurs (même modèle de confiance que `justecarte:scores`). S'il n'existe pas encore d'ordre (avant la toute première partie), le script en génère un et le persiste, exactement comme le ferait la première publication.
+
 ### Stockage — Upstash Redis (`lajustecarte:*`)
 
 | Clé Redis | Type | Contenu |
@@ -932,6 +934,7 @@ Contrairement à Anagram (DM à chaque manche, puisqu'une seule tentative la ré
 | `npm run justecarte:public` | Poste sur le salon public (avec ping) — utilisé par le cron `lajustecarte.yml`. |
 | `npm run justecarte:public:dry` | Équivalent dry-run de `justecarte:public`. |
 | `npm run justecarte:scores` | Classement de la partie en cours (tentatives, score partie, score saison) + joueurs n'ayant pas encore joué. |
+| `npm run justecarte:order` | Affiche l'ordre de rotation complet des cartes secrètes à venir. **Outil admin** — révèle toutes les cartes futures, jamais à exposer aux joueurs. |
 | `npm run justecarte:reset` | Remet le jeu à zéro : plus de partie active, ordre de rotation remélangé à la prochaine partie, historique et scores effacés. **Destructif**. |
 
 ### Variables d'environnement requises (La Juste Carte)

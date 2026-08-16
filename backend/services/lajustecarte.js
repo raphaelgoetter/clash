@@ -212,7 +212,12 @@ function shuffle(array) {
   return result;
 }
 
-async function loadPlayOrder(catalog) {
+// Exportée (contrairement aux autres fonctions internes de cette section) :
+// c'est le seul moyen d'inspecter la rotation à venir, utilisé par
+// scripts/justeCarteOrder.js — outil admin en lecture, jamais exposé aux
+// joueurs (même modèle de confiance que justeCarteScores.js, qui révèle
+// déjà la carte secrète en cours à quiconque exécute le script localement).
+export async function loadPlayOrder(catalog) {
   const stored = fromJson(await getRedis().get(ORDER_KEY)) || [];
   const catalogKeySet = new Set(catalog.map((c) => c.cardKey));
   const kept = stored.filter((k) => catalogKeySet.has(k));
