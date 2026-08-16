@@ -9,6 +9,12 @@
 // contrairement à Anagram, ce jeu accepte PLUSIEURS propositions successives
 // par joueur avant résolution — chaque réponse éphémère (sauf victoire)
 // inclut donc un bouton pour reproposer une carte.
+//
+// Pas d'autocomplete sur le nom de carte : les Modals Discord ne le
+// supportent pas (limitation de la plateforme). Une commande slash avec
+// option autocomplete aurait été possible mais jugée trop complexe pour le
+// gain (ajout d'une commande dédiée ou fusion avec /justecarte) — décision
+// explicite de rester sur le flux bouton/Modal, comme les 3 autres jeux.
 // ============================================================
 
 import {
@@ -21,6 +27,7 @@ import {
   resolveGuess,
   compareCard,
   recordAttempt,
+  getGuessHistory,
   markSolved,
   archiveSolve,
   computeGameRanking,
@@ -356,22 +363,29 @@ async function sendJusteCarteDM(discordId, text) {
 
 // ── Formatage des indices comparatifs ──────────────────────────
 
-function buildComparisonEmbed(guessEntry, comparison, attemptNumber) {
+function formatHistoryLine(history) {
+  return history.length > 0 ? `_Tu as déjà proposé : ${history.join(", ")}_\n\n` : "";
+}
+
+function buildComparisonEmbed(guessEntry, comparison, attemptNumber, history) {
   const lines = Object.entries(comparison).map(([stat, result]) => `**${STAT_LABELS[stat]}** ${ARROW_BY_RESULT[result]}`);
   return {
     title: `❌ Ce n'est pas ${guessEntry.fr}`,
     description:
       `Proposition n°${attemptNumber} :\n\n${lines.join("\n")}\n\n` +
       "_⬆️ = ta proposition est plus élevée que la carte secrète sur cette stat, ⬇️ = plus basse, ✅ = identique._\n\n" +
+      formatHistoryLine(history) +
       "Réessaie avec le bouton ci-dessous !",
     color: JUSTECARTE_COLOR,
   };
 }
 
-function buildUnknownCardEmbed(rawAnswer) {
+function buildUnknownCardEmbed(rawAnswer, history) {
   return {
     title: "🤔 Carte inconnue",
-    description: `Je ne reconnais pas « ${rawAnswer} » — vérifie l'orthographe (le nom doit être en français) et réessaie. Cette tentative n'a pas été comptabilisée.`,
+    description:
+      `Je ne reconnais pas « ${rawAnswer} » — vérifie l'orthographe (le nom doit être en français) et réessaie. Cette tentative n'a pas été comptabilisée.\n\n` +
+      formatHistoryLine(history),
     color: JUSTECARTE_COLOR,
   };
 }
@@ -397,17 +411,19 @@ export async function handleModalSubmit(webhookUrl, gameId, discordId, username,
     const guessEntry = resolveGuess(catalog, rawAnswer);
 
     if (!guessEntry) {
-      await postEphemeralEmbed(webhookUrl, buildUnknownCardEmbed(rawAnswer), buildRetryComponents(gameId));
+      const history = await getGuessHistory(gameId, discordId);
+      await postEphemeralEmbed(webhookUrl, buildUnknownCardEmbed(rawAnswer, history), buildRetryComponents(gameId));
       return;
     }
 
-    const attemptNumber = await recordAttempt(gameId, discordId, username);
+    const attemptNumber = await recordAttempt(gameId, discordId, username, guessEntry.fr);
 
     if (guessEntry.cardKey !== secretEntry.cardKey) {
       const comparison = compareCard(secretEntry, guessEntry, attemptNumber);
+      const history = await getGuessHistory(gameId, discordId);
       await postEphemeralEmbed(
         webhookUrl,
-        buildComparisonEmbed(guessEntry, comparison, attemptNumber),
+        buildComparisonEmbed(guessEntry, comparison, attemptNumber, history),
         buildRetryComponents(gameId),
       );
       return;

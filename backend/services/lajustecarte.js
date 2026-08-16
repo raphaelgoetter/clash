@@ -393,18 +393,27 @@ async function touchUsername(gameId, discordId, username) {
 }
 
 export async function countAttempts(gameId, discordId) {
-  const n = await getRedis().get(attemptsKey(gameId, discordId));
-  return Number(n) || 0;
+  return Number(await getRedis().llen(attemptsKey(gameId, discordId))) || 0;
 }
 
-// Incrémente le compteur de tentatives VALIDES (nom de carte reconnu, juste
-// ou fausse) du joueur et renvoie le nouveau total — ce numéro pilote à la
-// fois la révélation progressive des indices (compareCard) et, à la
+// Historique des cartes VALIDES déjà proposées par ce joueur sur cette
+// manche (nom FR, dans l'ordre), pour rappel affiché dans les embeds
+// éphémères ("tu as déjà proposé : ..."). Jamais un nom non reconnu (voir
+// recordAttempt ci-dessous).
+export async function getGuessHistory(gameId, discordId) {
+  return (await getRedis().lrange(attemptsKey(gameId, discordId), 0, -1)) || [];
+}
+
+// Ajoute la carte proposée (nom FR) à l'historique des tentatives VALIDES
+// (nom de carte reconnu, juste ou fausse) du joueur — une simple LIST Redis
+// sert à la fois de compteur (sa longueur, renvoyée par RPUSH) et d'historique
+// affichable, sans structure séparée à maintenir. Le nombre renvoyé pilote à
+// la fois la révélation progressive des indices (compareCard) et, à la
 // victoire, le calcul du score (computeScore). Jamais appelé pour un nom de
 // carte non reconnu (voir handleModalSubmit côté handler Discord).
-export async function recordAttempt(gameId, discordId, username) {
+export async function recordAttempt(gameId, discordId, username, guessedFr) {
   await touchUsername(gameId, discordId, username);
-  return Number(await getRedis().incr(attemptsKey(gameId, discordId)));
+  return Number(await getRedis().rpush(attemptsKey(gameId, discordId), guessedFr));
 }
 
 // Idempotent : si déjà résolu, renvoie le résultat existant sans rien

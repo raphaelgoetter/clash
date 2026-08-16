@@ -840,6 +840,8 @@ Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHAN
 
 Quatrième mini-jeu hebdomadaire indépendant, sur le modèle de Frame/Anagram (voir [Jeu Frame](#jeu-frame-devine-le-film) pour les mécanismes partagés : Modal `type:9`/`MODAL_SUBMIT type:5`, stockage Upstash Redis et ses pièges, gestion de saison CR). Différence structurelle majeure : contrairement aux 3 autres jeux (une seule tentative résout la manche), ici chaque joueur soumet **plusieurs propositions successives** contre une carte secrète — ce n'est pas une course entre joueurs, chacun joue sa propre partie à son rythme.
 
+Pas d'autocomplete sur le nom de carte proposé : les Modals Discord ne le supportent pas (limitation de la plateforme). Une commande slash dédiée avec option autocomplete a été envisagée puis écartée (complexité jugée disproportionnée par rapport au gain) — le joueur tape le nom en clair dans la Modal, `resolveGuess()` tolère accents/casse mais pas les fautes d'orthographe.
+
 Une carte Clash Royale secrète est tirée chaque semaine. Le joueur propose le nom (français) d'une autre carte, et le jeu compare les deux sur 4 stats — PV, Portée, Dégâts, Élixir — en indiquant pour chacune si la **proposition** est plus haute (⬆️), plus basse (⬇️) ou identique (✅) à la carte secrète.
 
 ### Barème (La Juste Carte)
@@ -856,7 +858,7 @@ Une carte Clash Royale secrète est tirée chaque semaine. Le joueur propose le 
 Modal à 1 champ (pas d'autocomplete possible dans une Modal Discord), résolue par `resolveGuess()` — égalité **stricte** normalisée (`normalizeAnswer`, comme Anagram) contre le nom français de chaque carte du catalogue. Trois issues possibles, à distinguer explicitement dans `handleModalSubmit` (`api/discord/handlers/lajustecarte.js`) :
 
 1. **Nom non reconnu** — aucun état modifié (ni compteur de tentatives, ni score), le joueur est invité à corriger l'orthographe. C'est la différence clé avec Anagram, qui ne connaît que "correct"/"incorrect".
-2. **Carte reconnue mais fausse** — la tentative est comptabilisée (`recordAttempt`, `INCR` du compteur du joueur), les indices comparatifs débloqués à ce stade sont renvoyés, avec un bouton pour reproposer.
+2. **Carte reconnue mais fausse** — la tentative est ajoutée à l'historique du joueur (`recordAttempt`, `RPUSH`), les indices comparatifs débloqués à ce stade sont renvoyés avec le rappel des cartes déjà proposées (`getGuessHistory`) et un bouton pour reproposer.
 3. **Carte trouvée** — `markSolved()` (idempotent) fige le score au numéro de tentative courant, `archiveSolve()` alimente le classement de saison, embed de victoire avec l'image de la carte, DM envoyé (voir plus bas).
 
 ### Révélation progressive des indices
@@ -902,7 +904,7 @@ Cet ordre n'est visible nulle part côté joueur (le fichier reste alphabétique
 | `lajustecarte:state` | STRING (JSON) | État de la manche active (`gameId` = cardKey de la carte secrète + métadonnées de saison) |
 | `lajustecarte:order` | STRING (JSON) | Ordre de rotation mélangé, persisté (voir ci-dessus) |
 | `lajustecarte:usernames:<gameId>` | HASH | `discordId → pseudo` |
-| `lajustecarte:attempts:<gameId>:<discordId>` | STRING (compteur) | Tentatives **valides** (nom de carte reconnu) — jamais incrémenté sur un nom inconnu |
+| `lajustecarte:attempts:<gameId>:<discordId>` | LIST | Historique des cartes **valides** proposées (nom FR, dans l'ordre) — sa longueur (`RPUSH`/`LLEN`) sert aussi de compteur de tentatives ; jamais complétée sur un nom inconnu |
 | `lajustecarte:participants:<gameId>` | HASH | `discordId → { solved, solvedAt, score, attempts }` |
 | `lajustecarte:season:<seasonId>` | ZSET | Score cumulé de la saison |
 | `lajustecarte:archived:<seasonId>` | HASH | Un champ par manche résolue (`<gameId>:<discordId>`), idempotence |
