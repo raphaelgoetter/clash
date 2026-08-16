@@ -16532,7 +16532,7 @@
           "start": "2026-08-15T09:57:00.000Z",
           "end": "2026-08-16T09:56:59.999Z"
         },
-        "snapshotTime": "2026-08-16T05:07:34.457Z",
+        "snapshotTime": "2026-08-16T06:06:58.404Z",
         "snapshotBackupTime": "2026-08-15T10:04:42.652Z",
         "decks": {
           "#202VQJY8RU": 4,
@@ -16558,11 +16558,13 @@
           "#G9LPGQUG": 4,
           "#GJ8RV8802": 4,
           "#GJV2UG9P0": 4,
+          "#GV098C29R": 4,
           "#GYU0VLGL": 4,
           "#JLU88JR28": 4,
           "#LCQ2J0VGC": 4,
           "#P9R8Y90P8": 4,
           "#PG0Q0YYGY": 4,
+          "#QCJJ8JG0": 4,
           "#QQLYUL0R": 4,
           "#UJ2LQU2V9": 4,
           "#UJ89GUUUY": 4,
@@ -16570,8 +16572,7 @@
           "#URG0Q9R0Y": 4,
           "#VQP8PU2V": 4,
           "#YRYPUR822": 4,
-          "#L2RQPGRY": 3,
-          "#GV098C29R": 2
+          "#L2RQPGRY": 3
         },
         "hourlyCumul": [],
         "_cumulFame": {
@@ -16616,10 +16617,10 @@
           "#8RYQ8Y0GY": 2050,
           "#UJ89GUUUY": 1950,
           "#CGJP0YYUJ": 2050,
-          "#QCJJ8JG0": 1250,
+          "#QCJJ8JG0": 2050,
           "#9CYUGPQ0C": 1700,
           "#QQLYUL0R": 2200,
-          "#GV098C29R": 1500,
+          "#GV098C29R": 1700,
           "#GJV2UG9P0": 1700,
           "#LCQ2J0VGC": 2000,
           "#PG0Q0YYGY": 1850,
@@ -16676,13 +16677,14 @@
           "#UPY8VCYGP": 1,
           "#GJV2UG9P0": 1,
           "#QQLYUL0R": 1,
-          "#CGJP0YYUJ": 1
+          "#CGJP0YYUJ": 1,
+          "#QCJJ8JG0": 1
         },
         "_totalDonationsByTag": {
           "#82URJC8CR": 135406,
           "#GJ8RV8802": 32586,
           "#P9R8Y90P8": 41709,
-          "#QCJJ8JG0": 52031,
+          "#QCJJ8JG0": 52091,
           "#2902YQRQL": 60147,
           "#J8RU2RJ8C": 103600,
           "#8QL2J8PQ": 189837,
@@ -16702,13 +16704,13 @@
           "#99VY0090": 116949,
           "#9CQC0YUR8": 83164,
           "#GYU0VLGL": 104265,
-          "#VQP8PU2V": 587721,
+          "#VQP8PU2V": 587789,
           "#2CL028C80": 224671,
           "#202VQJY8RU": 16916,
           "#UJ89GUUUY": 48506,
           "#LCQ2J0VGC": 40968,
           "#9CYUGPQ0C": 241372,
-          "#GV098C29R": 45952,
+          "#GV098C29R": 46010,
           "#U008V0PQ8": 26361,
           "#PG0Q0YYGY": 40516,
           "#JLU88JR28": 13106,
@@ -16727,7 +16729,7 @@
           "#2G0Q0CV9L": 82510,
           "#RJJ99Y9J": 62245,
           "#GVGVR0J2U": 28814,
-          "#C0VQRUP2": 238507,
+          "#C0VQRUP2": 238537,
           "#GJV2UG9P0": 70493
         },
         "duelsComplete": true,
@@ -16774,10 +16776,10 @@
           "#8RYQ8Y0GY": 12,
           "#UJ89GUUUY": 12,
           "#CGJP0YYUJ": 12,
-          "#QCJJ8JG0": 8,
+          "#QCJJ8JG0": 12,
           "#9CYUGPQ0C": 12,
           "#QQLYUL0R": 12,
-          "#GV098C29R": 10,
+          "#GV098C29R": 12,
           "#GJV2UG9P0": 12,
           "#LCQ2J0VGC": 12,
           "#PG0Q0YYGY": 12,
@@ -16799,7 +16801,7 @@
           "#9VQ0J29Y": 12
         },
         "periodPointsEarned": 32950,
-        "snapshotCount": 145
+        "snapshotCount": 151
       },
       {
         "warDay": "sunday",
