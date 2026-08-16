@@ -45,7 +45,10 @@ import {
   getCardImageUrl,
   findTiedRank,
 } from "../../../backend/services/lajustecarte.js";
-import { toPublicSeasonId, formatUtcTimeAsParis } from "../../../backend/services/dateUtils.js";
+import {
+  toPublicSeasonId,
+  formatUtcTimeAsParis,
+} from "../../../backend/services/dateUtils.js";
 import {
   getRoleIdByName,
   buildRolePingFields,
@@ -54,9 +57,20 @@ import {
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
 
 const JUSTECARTE_COLOR = 0x2ecc71;
-const STAT_LABELS = { hp: "PV", range: "Portée", damage: "Dégâts", elixir: "Élixir" };
+const STAT_LABELS = {
+  hp: "PV",
+  range: "Portée",
+  damage: "Dégâts",
+  elixir: "Élixir",
+};
 const ARROW_BY_RESULT = { up: "⬆️", down: "⬇️", equal: "✅" };
-const RARITY_LABELS = { common: "Commune", rare: "Rare", epic: "Épique", legendary: "Légendaire", champion: "Champion" };
+const RARITY_LABELS = {
+  common: "Commune",
+  rare: "Rare",
+  epic: "Épique",
+  legendary: "Légendaire",
+  champion: "Champion",
+};
 
 // Remplace le pseudo figé de chaque entrée par le pseudo Discord actuel
 // (résolution live, repli sur le pseudo stocké en cas d'échec) — voir
@@ -94,7 +108,9 @@ function buildJusteCarteEmbed({ seasonId, seasonManche, seasonMancheTotal }) {
     // (ex. déploiement Vercel pas encore propagé au moment du tout premier
     // post) ; sans paramètre variable, un aperçu cassé une fois resterait
     // cassé indéfiniment sur cette URL.
-    image: { url: `${TRUST_ROYALE_URL}/images/banner-justecarte.webp?v=${Date.now()}` },
+    image: {
+      url: `${TRUST_ROYALE_URL}/images/banner-justecarte.webp?v=${Date.now()}`,
+    },
     footer: {
       text: `Nouvelle manche : dimanche prochain, ${formatUtcTimeAsParis(JUSTECARTE_CRON_UTC_HOUR)} (heure de Paris) !`,
     },
@@ -109,19 +125,29 @@ function buildGameComponents(gameId, answerLabel) {
     {
       type: 1,
       components: [
-        { type: 2, style: 2, label: "💡 Indice : rareté", custom_id: `lajustecarte_hint:${gameId}` },
-        { type: 2, style: 1, label: answerLabel, custom_id: `lajustecarte_answer:${gameId}` },
+        {
+          type: 2,
+          style: 2,
+          label: "💡 Indice : rareté",
+          custom_id: `lajustecarte_hint:${gameId}`,
+        },
+        {
+          type: 2,
+          style: 1,
+          label: answerLabel,
+          custom_id: `lajustecarte_answer:${gameId}`,
+        },
       ],
     },
   ];
 }
 
 function buildJusteCarteComponents(gameId) {
-  return buildGameComponents(gameId, "🔎 Proposer une carte");
+  return buildGameComponents(gameId, "🔎 Proposition");
 }
 
 function buildRetryComponents(gameId) {
-  return buildGameComponents(gameId, "🔁 Reproposer une carte");
+  return buildGameComponents(gameId, "🔁 Reproposer");
 }
 
 // Contenu de la Modal ouverte par le bouton — voir anagrams.js pour le
@@ -158,7 +184,12 @@ export function buildAnswerModal(gameId) {
 const SEASON_RECAP_MAX_PLAYERS = 20;
 const SEASON_RECAP_MEDALS = ["🥇", "🥈", "🥉"];
 
-function buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId, manchesPlayed) {
+function buildSeasonRecapEmbed(
+  seasonRanking,
+  endedSeasonId,
+  newSeasonId,
+  manchesPlayed,
+) {
   const nonZero = seasonRanking.filter((r) => r.totalScore > 0);
   const shown = nonZero.slice(0, SEASON_RECAP_MAX_PLAYERS);
   const hiddenCount = nonZero.length - shown.length;
@@ -175,18 +206,32 @@ function buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId, manche
     "**Classement final :**",
     ...shown.map((entry) => {
       const rank = findTiedRank(shown, entry.discordId, "totalScore");
-      const tiedCount = shown.filter((e) => e.totalScore === entry.totalScore).length;
-      const label = tiedCount === 1 && rank <= 3 ? SEASON_RECAP_MEDALS[rank - 1] : `${rank}.`;
+      const tiedCount = shown.filter(
+        (e) => e.totalScore === entry.totalScore,
+      ).length;
+      const label =
+        tiedCount === 1 && rank <= 3
+          ? SEASON_RECAP_MEDALS[rank - 1]
+          : `${rank}.`;
       return `${label} ${entry.pseudo} — ${entry.totalScore} pts`;
     }),
   ];
   if (hiddenCount > 0) {
-    lines.push(`... et ${hiddenCount} autre${hiddenCount > 1 ? "s" : ""} joueur${hiddenCount > 1 ? "s" : ""}`);
+    lines.push(
+      `... et ${hiddenCount} autre${hiddenCount > 1 ? "s" : ""} joueur${hiddenCount > 1 ? "s" : ""}`,
+    );
   }
   if (manchesPlayed?.length > 0) {
-    lines.push("", "**Manches de la saison :**", ...manchesPlayed.map((m) => `Manche ${m.seasonManche} : ${m.label}`));
+    lines.push(
+      "",
+      "**Manches de la saison :**",
+      ...manchesPlayed.map((m) => `Manche ${m.seasonManche} : ${m.label}`),
+    );
   }
-  lines.push("", `Bravo à tous ! Rendez-vous juste après pour le lancement de la Saison ${toPublicSeasonId(newSeasonId)}.`);
+  lines.push(
+    "",
+    `Bravo à tous ! Rendez-vous juste après pour le lancement de la Saison ${toPublicSeasonId(newSeasonId)}.`,
+  );
 
   return {
     title: `🏆 Fin de la Saison ${toPublicSeasonId(endedSeasonId)} !`,
@@ -212,20 +257,36 @@ async function getSeasonManchesPlayed(seasonId) {
     .sort((a, b) => a.seasonManche - b.seasonManche);
 }
 
-async function postSeasonRecap(channelId, endedSeasonId, newSeasonId, { noPing = false } = {}) {
+async function postSeasonRecap(
+  channelId,
+  endedSeasonId,
+  newSeasonId,
+  { noPing = false } = {},
+) {
   const token = process.env.DISCORD_TOKEN;
   const seasonRanking = await computeSeasonRanking(endedSeasonId);
   if (seasonRanking.length === 0) return; // rien à récapituler
 
   const resolvedRanking = await resolveRankingPseudos(seasonRanking);
   const manchesPlayed = await getSeasonManchesPlayed(endedSeasonId);
-  const embed = buildSeasonRecapEmbed(resolvedRanking, endedSeasonId, newSeasonId, manchesPlayed);
+  const embed = buildSeasonRecapEmbed(
+    resolvedRanking,
+    endedSeasonId,
+    newSeasonId,
+    manchesPlayed,
+  );
   const roleId = noPing ? null : await getRoleIdByName(MINI_JEUX_ROLE_NAME);
-  const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
-    method: "POST",
-    headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ embeds: [embed], ...buildRolePingFields(roleId) }),
-  });
+  const res = await fetch(
+    `https://discord.com/api/v10/channels/${channelId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bot ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ embeds: [embed], ...buildRolePingFields(roleId) }),
+    },
+  );
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
     throw new Error(`Erreur envoi récap de saison (${res.status}): ${errText}`);
@@ -239,24 +300,42 @@ async function postSeasonRecap(channelId, endedSeasonId, newSeasonId, { noPing =
 // Frame et Zoom, la seule porte d'entrée est le déclenchement du cron
 // GitHub Actions (dimanche 16h UTC) — voir .github/workflows/lajustecarte.yml.
 
-export async function postJusteCarte(channelId, { dryRun = false, noPing = false } = {}) {
+export async function postJusteCarte(
+  channelId,
+  { dryRun = false, noPing = false } = {},
+) {
   if (dryRun) {
     const catalog = await loadCatalog();
     const state = await readState();
     const seasonId = await getCurrentSeasonId();
     const seasonManche = await previewSeasonManche(seasonId);
     const seasonMancheTotal = computeSeasonMancheTotal(seasonManche);
-    const embed = buildJusteCarteEmbed({ seasonId, seasonManche, seasonMancheTotal });
+    const embed = buildJusteCarteEmbed({
+      seasonId,
+      seasonManche,
+      seasonMancheTotal,
+    });
     const components = buildJusteCarteComponents("preview");
-    const pingRoleId = noPing ? null : await getRoleIdByName(MINI_JEUX_ROLE_NAME);
+    const pingRoleId = noPing
+      ? null
+      : await getRoleIdByName(MINI_JEUX_ROLE_NAME);
 
     let seasonRecapEmbed = null;
-    if (state?.seasonId != null && seasonId != null && state.seasonId !== seasonId) {
+    if (
+      state?.seasonId != null &&
+      seasonId != null &&
+      state.seasonId !== seasonId
+    ) {
       const seasonRanking = await computeSeasonRanking(state.seasonId);
       if (seasonRanking.length > 0) {
         const resolvedRanking = await resolveRankingPseudos(seasonRanking);
         const manchesPlayed = await getSeasonManchesPlayed(state.seasonId);
-        seasonRecapEmbed = buildSeasonRecapEmbed(resolvedRanking, state.seasonId, seasonId, manchesPlayed);
+        seasonRecapEmbed = buildSeasonRecapEmbed(
+          resolvedRanking,
+          state.seasonId,
+          seasonId,
+          manchesPlayed,
+        );
       }
     }
 
@@ -266,7 +345,14 @@ export async function postJusteCarte(channelId, { dryRun = false, noPing = false
     // de rotation persisté en Redis si de nouvelles cartes ont été ajoutées
     // — un dry-run doit rester strictement en lecture seule, donc ce calcul
     // est réservé à startNewGame() (appelé uniquement en publication réelle).
-    return { dryRun: true, catalogSize: catalog.length, embed, components, seasonRecapEmbed, pingRoleId };
+    return {
+      dryRun: true,
+      catalogSize: catalog.length,
+      embed,
+      components,
+      seasonRecapEmbed,
+      pingRoleId,
+    };
   }
 
   const token = process.env.DISCORD_TOKEN;
@@ -274,8 +360,14 @@ export async function postJusteCarte(channelId, { dryRun = false, noPing = false
 
   const previousState = await readState();
   const newSeasonId = await getCurrentSeasonId();
-  if (previousState?.seasonId != null && newSeasonId != null && previousState.seasonId !== newSeasonId) {
-    await postSeasonRecap(channelId, previousState.seasonId, newSeasonId, { noPing });
+  if (
+    previousState?.seasonId != null &&
+    newSeasonId != null &&
+    previousState.seasonId !== newSeasonId
+  ) {
+    await postSeasonRecap(channelId, previousState.seasonId, newSeasonId, {
+      noPing,
+    });
   }
 
   const { state, entry } = await startNewGame(channelId);
@@ -287,11 +379,21 @@ export async function postJusteCarte(channelId, { dryRun = false, noPing = false
   const components = buildJusteCarteComponents(state.gameId);
   const roleId = noPing ? null : await getRoleIdByName(MINI_JEUX_ROLE_NAME);
 
-  const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
-    method: "POST",
-    headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ embeds: [embed], components, ...buildRolePingFields(roleId) }),
-  });
+  const res = await fetch(
+    `https://discord.com/api/v10/channels/${channelId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bot ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        embeds: [embed],
+        components,
+        ...buildRolePingFields(roleId),
+      }),
+    },
+  );
 
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
@@ -316,7 +418,10 @@ async function postEphemeral(webhookUrl, content) {
       body: JSON.stringify({ content }),
     });
   } catch (err) {
-    console.error("[La Juste Carte] Échec PATCH réponse éphémère:", err.message);
+    console.error(
+      "[La Juste Carte] Échec PATCH réponse éphémère:",
+      err.message,
+    );
   }
 }
 
@@ -329,7 +434,10 @@ async function postEphemeralEmbed(webhookUrl, embed, components = []) {
       body: JSON.stringify({ embeds: [embed], components }),
     });
   } catch (err) {
-    console.error("[La Juste Carte] Échec PATCH réponse éphémère (embed):", err.message);
+    console.error(
+      "[La Juste Carte] Échec PATCH réponse éphémère (embed):",
+      err.message,
+    );
   }
 }
 
@@ -338,7 +446,15 @@ async function postEphemeralEmbed(webhookUrl, embed, components = []) {
 // ici un DM à chaque proposition serait intrusif vu qu'un joueur peut en
 // soumettre plusieurs de suite — envoyé une seule fois, à la victoire.
 
-function buildDmText({ seasonId, seasonManche, seasonMancheTotal, reponse, score, attempts, seasonScore }) {
+function buildDmText({
+  seasonId,
+  seasonManche,
+  seasonMancheTotal,
+  reponse,
+  score,
+  attempts,
+  seasonScore,
+}) {
   return [
     `**La Juste Carte : Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
     "",
@@ -352,18 +468,30 @@ async function sendJusteCarteDM(discordId, text) {
   const token = process.env.DISCORD_TOKEN;
   if (!token) return false;
   try {
-    const dmRes = await fetch("https://discord.com/api/v10/users/@me/channels", {
-      method: "POST",
-      headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ recipient_id: discordId }),
-    });
+    const dmRes = await fetch(
+      "https://discord.com/api/v10/users/@me/channels",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bot ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ recipient_id: discordId }),
+      },
+    );
     if (!dmRes.ok) return false;
     const { id: dmChannelId } = await dmRes.json();
-    await fetch(`https://discord.com/api/v10/channels/${dmChannelId}/messages`, {
-      method: "POST",
-      headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ content: text }),
-    });
+    await fetch(
+      `https://discord.com/api/v10/channels/${dmChannelId}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bot ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ content: text }),
+      },
+    );
     return true;
   } catch (err) {
     console.error("[La Juste Carte] Échec envoi DM:", err.message);
@@ -374,11 +502,15 @@ async function sendJusteCarteDM(discordId, text) {
 // ── Formatage des indices comparatifs ──────────────────────────
 
 function formatHistoryLine(history) {
-  return history.length > 0 ? `_Tu as déjà proposé : ${history.join(", ")}_\n\n` : "";
+  return history.length > 0
+    ? `_Tu as déjà proposé : ${history.join(", ")}_\n\n`
+    : "";
 }
 
 function buildComparisonEmbed(guessEntry, comparison, attemptNumber, history) {
-  const lines = Object.entries(comparison).map(([stat, result]) => `**${STAT_LABELS[stat]}** ${ARROW_BY_RESULT[result]}`);
+  const lines = Object.entries(comparison).map(
+    ([stat, result]) => `**${STAT_LABELS[stat]}** ${ARROW_BY_RESULT[result]}`,
+  );
   return {
     title: `❌ Ce n'est pas ${guessEntry.fr} (essai ${attemptNumber})`,
     description:
@@ -402,7 +534,13 @@ function buildUnknownCardEmbed(rawAnswer, history) {
 
 // ── Soumission de la modal (réponse du joueur) ──────────────────
 
-export async function handleModalSubmit(webhookUrl, gameId, discordId, username, rawAnswer) {
+export async function handleModalSubmit(
+  webhookUrl,
+  gameId,
+  discordId,
+  username,
+  rawAnswer,
+) {
   try {
     const state = await readState();
     if (!state || state.gameId !== gameId) {
@@ -422,11 +560,20 @@ export async function handleModalSubmit(webhookUrl, gameId, discordId, username,
 
     if (!guessEntry) {
       const history = await getGuessHistory(gameId, discordId);
-      await postEphemeralEmbed(webhookUrl, buildUnknownCardEmbed(rawAnswer, history), buildRetryComponents(gameId));
+      await postEphemeralEmbed(
+        webhookUrl,
+        buildUnknownCardEmbed(rawAnswer, history),
+        buildRetryComponents(gameId),
+      );
       return;
     }
 
-    const attemptNumber = await recordAttempt(gameId, discordId, username, guessEntry.fr);
+    const attemptNumber = await recordAttempt(
+      gameId,
+      discordId,
+      username,
+      guessEntry.fr,
+    );
 
     if (guessEntry.cardKey !== secretEntry.cardKey) {
       const comparison = compareCard(secretEntry, guessEntry, attemptNumber);
@@ -440,8 +587,22 @@ export async function handleModalSubmit(webhookUrl, gameId, discordId, username,
     }
 
     const hintUsed = await hintUsedFor(gameId, discordId);
-    const { participant, score } = await markSolved(gameId, discordId, username, attemptNumber, hintUsed);
-    await archiveSolve(state, secretEntry, discordId, username, score, participant.attempts, participant.solvedAt);
+    const { participant, score } = await markSolved(
+      gameId,
+      discordId,
+      username,
+      attemptNumber,
+      hintUsed,
+    );
+    await archiveSolve(
+      state,
+      secretEntry,
+      discordId,
+      username,
+      score,
+      participant.attempts,
+      participant.solvedAt,
+    );
 
     const seasonRanking = await computeSeasonRanking(state.seasonId);
     const seasonEntry = seasonRanking.find((e) => e.discordId === discordId);
@@ -479,7 +640,12 @@ export async function handleModalSubmit(webhookUrl, gameId, discordId, username,
 // ré-afficher l'indice ne coûte jamais rien de plus — recordHintUsed le
 // signale via alreadyUsed pour adapter le message, sans bloquer le clic.
 
-export async function handleHintButton(webhookUrl, gameId, discordId, username) {
+export async function handleHintButton(
+  webhookUrl,
+  gameId,
+  discordId,
+  username,
+) {
   try {
     const state = await readState();
     if (!state || state.gameId !== gameId) {
@@ -489,14 +655,19 @@ export async function handleHintButton(webhookUrl, gameId, discordId, username) 
 
     const existing = await readParticipant(gameId, discordId);
     if (existing?.solved) {
-      await postEphemeral(webhookUrl, "💡 Tu as déjà trouvé la carte secrète !");
+      await postEphemeral(
+        webhookUrl,
+        "💡 Tu as déjà trouvé la carte secrète !",
+      );
       return;
     }
 
     const catalog = await loadCatalog();
     const secretEntry = catalog.find((c) => c.cardKey === gameId);
     const { alreadyUsed } = await recordHintUsed(gameId, discordId, username);
-    const suffix = alreadyUsed ? "_Indice déjà révélé, aucun point supplémentaire déduit._" : "_Indice révélé (-3 pts sur le score final)._";
+    const suffix = alreadyUsed
+      ? "_Indice déjà révélé, aucun point supplémentaire déduit._"
+      : "_Indice révélé (-3 pts sur le score final)._";
 
     await postEphemeralEmbed(webhookUrl, {
       title: "💡 Indice : rareté",
@@ -528,22 +699,34 @@ function buildJusteCarteStatsEmbed({
 }) {
   const lines = [];
 
-  lines.push(`**Saison ${toPublicSeasonId(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`);
+  lines.push(
+    `**Saison ${toPublicSeasonId(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`,
+  );
   if (currentSolved) {
-    lines.push(`- Tu as trouvé la carte secrète en ${currentAttempts} proposition${currentAttempts > 1 ? "s" : ""} !`);
+    lines.push(
+      `- Tu as trouvé la carte secrète en ${currentAttempts} proposition${currentAttempts > 1 ? "s" : ""} !`,
+    );
     lines.push(`- Tu as marqué ${currentScore} points`);
   } else if (currentInteracted) {
-    lines.push(`- Tu n'as pas encore trouvé la carte secrète (${currentAttempts} proposition${currentAttempts > 1 ? "s" : ""} pour le moment)`);
+    lines.push(
+      `- Tu n'as pas encore trouvé la carte secrète (${currentAttempts} proposition${currentAttempts > 1 ? "s" : ""} pour le moment)`,
+    );
   } else {
     lines.push("- Tu n'as pas encore commencé cette manche");
   }
-  lines.push(`- ${solvedCount} joueur${solvedCount > 1 ? "s" : ""} (sur ${totalParticipants}) ${solvedCount > 1 ? "ont" : "a"} trouvé pour le moment`);
+  lines.push(
+    `- ${solvedCount} joueur${solvedCount > 1 ? "s" : ""} (sur ${totalParticipants}) ${solvedCount > 1 ? "ont" : "a"} trouvé pour le moment`,
+  );
 
   for (const m of pastManches) {
     lines.push("");
-    lines.push(`**Saison ${toPublicSeasonId(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`);
+    lines.push(
+      `**Saison ${toPublicSeasonId(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`,
+    );
     if (m.played) {
-      lines.push(`- Tu as trouvé la carte secrète en ${m.attempts} proposition${m.attempts > 1 ? "s" : ""} !`);
+      lines.push(
+        `- Tu as trouvé la carte secrète en ${m.attempts} proposition${m.attempts > 1 ? "s" : ""} !`,
+      );
       lines.push(`- Tu as marqué ${m.score} points`);
     } else {
       lines.push("- Tu n'as pas joué cette manche");
@@ -580,24 +763,38 @@ function buildJusteCarteStatsComponents() {
   ];
 }
 
-export async function handleJusteCarteStatsCommand(webhookUrl, discordId, username) {
+export async function handleJusteCarteStatsCommand(
+  webhookUrl,
+  discordId,
+  username,
+) {
   try {
     const state = await readState();
     if (!state) {
-      await postEphemeral(webhookUrl, "⚠️ Aucune partie La Juste Carte n'a encore été lancée.");
+      await postEphemeral(
+        webhookUrl,
+        "⚠️ Aucune partie La Juste Carte n'a encore été lancée.",
+      );
       return;
     }
 
-    const [participant, seasonResults, seasonManches, currentInteracted, gameRanking, inProgress, seasonRanking] =
-      await Promise.all([
-        readParticipant(state.gameId, discordId),
-        getPlayerSeasonResults(state.seasonId, discordId),
-        getSeasonManches(state.seasonId),
-        hasPlayerInteracted(state.gameId, discordId),
-        computeGameRanking(state.gameId),
-        listGamePlayersInProgress(state.gameId),
-        computeSeasonRanking(state.seasonId),
-      ]);
+    const [
+      participant,
+      seasonResults,
+      seasonManches,
+      currentInteracted,
+      gameRanking,
+      inProgress,
+      seasonRanking,
+    ] = await Promise.all([
+      readParticipant(state.gameId, discordId),
+      getPlayerSeasonResults(state.seasonId, discordId),
+      getSeasonManches(state.seasonId),
+      hasPlayerInteracted(state.gameId, discordId),
+      computeGameRanking(state.gameId),
+      listGamePlayersInProgress(state.gameId),
+      computeSeasonRanking(state.seasonId),
+    ]);
 
     const currentSeasonManche = state.seasonManche;
     const seasonMancheTotal = state.seasonMancheTotal;
@@ -608,10 +805,14 @@ export async function handleJusteCarteStatsCommand(webhookUrl, discordId, userna
     const totalParticipants = solvedCount + inProgress.length;
 
     const hasSeasonRank = seasonResults.length > 0;
-    const seasonRank = hasSeasonRank ? findTiedRank(seasonRanking, discordId, "totalScore") : null;
+    const seasonRank = hasSeasonRank
+      ? findTiedRank(seasonRanking, discordId, "totalScore")
+      : null;
     const seasonRankTotal = seasonRanking.length;
 
-    const pastGameIds = seasonManches.filter((gameId) => gameId !== state.gameId);
+    const pastGameIds = seasonManches.filter(
+      (gameId) => gameId !== state.gameId,
+    );
     const pastManches = (
       await Promise.all(
         pastGameIds.map(async (gameId) => {
@@ -647,7 +848,11 @@ export async function handleJusteCarteStatsCommand(webhookUrl, discordId, userna
       seasonRankTotal,
     });
 
-    await postEphemeralEmbed(webhookUrl, embed, buildJusteCarteStatsComponents());
+    await postEphemeralEmbed(
+      webhookUrl,
+      embed,
+      buildJusteCarteStatsComponents(),
+    );
   } catch (err) {
     await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
   }
