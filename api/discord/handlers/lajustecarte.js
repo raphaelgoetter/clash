@@ -378,10 +378,10 @@ function formatHistoryLine(history) {
 function buildComparisonEmbed(guessEntry, comparison, attemptNumber, history) {
   const lines = Object.entries(comparison).map(([stat, result]) => `**${STAT_LABELS[stat]}** ${ARROW_BY_RESULT[result]}`);
   return {
-    title: `❌ Ce n'est pas ${guessEntry.fr}`,
+    title: `❌ Ce n'est pas ${guessEntry.fr} (essai ${attemptNumber})`,
     description:
-      `Proposition n°${attemptNumber} :\n\n${lines.join("\n")}\n\n` +
-      "_⬆️ = ta proposition est plus élevée que la carte secrète sur cette stat, ⬇️ = plus basse, ✅ = identique._\n\n" +
+      `Stats de la carte secrète par rapport à la tienne :\n\n${lines.join("\n")}\n\n` +
+      "_⬆️ = carte secrète plus forte, ⬇️ = plus basse, ✅ = identique._\n\n" +
       formatHistoryLine(history) +
       "Réessaie avec le bouton ci-dessous !",
     color: JUSTECARTE_COLOR,

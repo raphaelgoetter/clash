@@ -326,15 +326,14 @@ function visibleStatsForAttempt(attemptNumber) {
   return ALL_STATS;
 }
 
-// Le sens de la flèche décrit la PROPOSITION relativement à la carte
-// secrète (pas l'inverse) : "PV ⬆️" se lit "ta carte a un PV plus élevé que
-// la carte secrète". Vérifié sur l'exemple de l'énoncé (secrète Barbares
-// hp=670/dégâts=147/élixir=5, proposition Berserker hp=896/dégâts=170/
-// élixir=2 → attendu PV⬆️ Dégâts⬆️ Élixir⬇️ : guess > secret ⇒ ⬆️ dans les
-// 3 cas).
+// Le sens de la flèche décrit la CARTE SECRÈTE relativement à la
+// proposition : "PV ⬆️" se lit "la carte secrète a un PV plus élevé que ta
+// proposition" (retour utilisateur : la lecture inverse — "ma proposition
+// est plus haute" — prêtait à confusion, l'intuition naturelle est que la
+// flèche pointe vers où se trouve la cible).
 function compareValue(secretValue, guessValue) {
   if (guessValue === secretValue) return "equal";
-  return guessValue > secretValue ? "up" : "down";
+  return secretValue > guessValue ? "up" : "down";
 }
 
 // Fonction pure : ne dépend d'aucun état Redis, testable indépendamment.

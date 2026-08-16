@@ -869,7 +869,7 @@ Modal à 1 champ (pas d'autocomplete possible dans une Modal Discord), résolue 
 | 2e | PV, Portée, Dégâts |
 | 3e et suivantes | PV, Portée, Dégâts, Élixir |
 
-`compareCard(secretEntry, guessEntry, attemptNumber)` (fonction pure) calcule les 4 comparateurs puis ne renvoie que le sous-ensemble débloqué à ce numéro de tentative. Le sens de la flèche décrit la **proposition** relativement à la carte secrète ("PV ⬆️" = ta proposition a un PV plus élevé que la carte secrète) — comparateur `guessValue > secretValue ? "up" : "down"`, pas l'inverse.
+`compareCard(secretEntry, guessEntry, attemptNumber)` (fonction pure) calcule les 4 comparateurs puis ne renvoie que le sous-ensemble débloqué à ce numéro de tentative. Le sens de la flèche décrit la **carte secrète** relativement à la proposition ("PV ⬆️" = la carte secrète a un PV plus élevé que ta proposition) — comparateur `secretValue > guessValue ? "up" : "down"`. Sens inversé une fois en test réel : la lecture "ma proposition est plus haute" prêtait à confusion, l'intuition naturelle est que la flèche pointe vers où se trouve la cible.
 
 Portée : les troupes de mêlée sont comparées sur une catégorie ordinale (`short` < `medium` < `long`), pas sur une valeur chiffrée ; les troupes à distance sur leur portée réelle. Les deux échelles sont fusionnées via un champ `range.rank` précalculé (mêlée = 1/2/3, distance = `3 + valeur`), qui garantit qu'une troupe à distance, même la plus courte, passe toujours devant la troupe de mêlée la plus longue. `compareCard` compare toujours `range.rank`, jamais la catégorie/valeur brute directement.
 
