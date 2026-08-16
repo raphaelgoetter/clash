@@ -28,6 +28,8 @@ import {
   compareCard,
   recordAttempt,
   getGuessHistory,
+  recordHintUsed,
+  hintUsedFor,
   markSolved,
   archiveSolve,
   computeGameRanking,
@@ -54,6 +56,7 @@ import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
 const JUSTECARTE_COLOR = 0x2ecc71;
 const STAT_LABELS = { hp: "PV", range: "Portée", damage: "Dégâts", elixir: "Élixir" };
 const ARROW_BY_RESULT = { up: "⬆️", down: "⬇️", equal: "✅" };
+const RARITY_LABELS = { common: "Commune", rare: "Rare", epic: "Épique", legendary: "Légendaire", champion: "Champion" };
 
 // Remplace le pseudo figé de chaque entrée par le pseudo Discord actuel
 // (résolution live, repli sur le pseudo stocké en cas d'échec) — voir
@@ -82,7 +85,7 @@ function buildJusteCarteEmbed({ seasonId, seasonManche, seasonMancheTotal }) {
     description:
       `**Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
       "Une carte Clash Royale secrète est en jeu ! Propose le nom d'une carte : le jeu te dira, stat par stat, si la carte secrète est plus forte, plus faible ou identique à ta proposition. À chaque proposition, tu as droit à un indice supplémentaire.\n\n" +
-      "**Barème :** tu commences avec 10 points, la 1ère proposition est gratuite. À partir de la 2e, chaque proposition coûte 1 point.\n\n" +
+      "**Barème :** tu commences avec 10 points, la 1ère proposition est gratuite. À partir de la 2e, chaque proposition coûte 1 point. L'indice «rareté» (bouton) coûte 3 points, une seule fois.\n\n" +
       "**Merci de ne pas spoiler ni tricher, sinon c'est pas drôle !**\n\n" +
       "🤖 Vérifie tes scores avec la commande `/justecarte`",
     color: JUSTECARTE_COLOR,
@@ -98,28 +101,27 @@ function buildJusteCarteEmbed({ seasonId, seasonManche, seasonMancheTotal }) {
   };
 }
 
-function buildAnswerButton(gameId, label) {
+// Même ligne que le bouton de réponse (comme zoom.js buildZoomComponents) :
+// le bouton indice reste toujours visible et cliquable, sur le post public
+// comme sur chaque réponse éphémère (reproposer/comparaison).
+function buildGameComponents(gameId, answerLabel) {
   return [
     {
       type: 1,
       components: [
-        {
-          type: 2,
-          style: 1,
-          label,
-          custom_id: `lajustecarte_answer:${gameId}`,
-        },
+        { type: 2, style: 2, label: "💡 Indice : rareté", custom_id: `lajustecarte_hint:${gameId}` },
+        { type: 2, style: 1, label: answerLabel, custom_id: `lajustecarte_answer:${gameId}` },
       ],
     },
   ];
 }
 
 function buildJusteCarteComponents(gameId) {
-  return buildAnswerButton(gameId, "🔎 Proposer une carte");
+  return buildGameComponents(gameId, "🔎 Proposer une carte");
 }
 
 function buildRetryComponents(gameId) {
-  return buildAnswerButton(gameId, "🔁 Reproposer une carte");
+  return buildGameComponents(gameId, "🔁 Reproposer une carte");
 }
 
 // Contenu de la Modal ouverte par le bouton — voir anagrams.js pour le
@@ -437,7 +439,8 @@ export async function handleModalSubmit(webhookUrl, gameId, discordId, username,
       return;
     }
 
-    const { participant, score } = await markSolved(gameId, discordId, username, attemptNumber);
+    const hintUsed = await hintUsedFor(gameId, discordId);
+    const { participant, score } = await markSolved(gameId, discordId, username, attemptNumber, hintUsed);
     await archiveSolve(state, secretEntry, discordId, username, score, participant.attempts, participant.solvedAt);
 
     const seasonRanking = await computeSeasonRanking(state.seasonId);
@@ -448,7 +451,7 @@ export async function handleModalSubmit(webhookUrl, gameId, discordId, username,
       title: "🃏 Bravo !",
       description:
         `C'était bien **${secretEntry.fr}** — trouvée en ${participant.attempts} proposition${participant.attempts > 1 ? "s" : ""} !\n` +
-        `Score de cette manche : **${score} pts**`,
+        `Score de cette manche : **${score} pts**${hintUsed ? " _(indice rareté utilisé : -3 pts)_" : ""}`,
       ...(imageUrl ? { image: { url: imageUrl } } : {}),
       color: JUSTECARTE_COLOR,
     });
@@ -465,6 +468,41 @@ export async function handleModalSubmit(webhookUrl, gameId, discordId, username,
         seasonScore: seasonEntry?.totalScore ?? score,
       }),
     );
+  } catch (err) {
+    await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
+  }
+}
+
+// ── Bouton "Indice : rareté" ──────────────────────────────
+// Idempotent (comme handleHintButton dans zoom.js) : la pénalité de -3 pts
+// n'est appliquée qu'à la victoire (voir computeScore/markSolved), donc
+// ré-afficher l'indice ne coûte jamais rien de plus — recordHintUsed le
+// signale via alreadyUsed pour adapter le message, sans bloquer le clic.
+
+export async function handleHintButton(webhookUrl, gameId, discordId, username) {
+  try {
+    const state = await readState();
+    if (!state || state.gameId !== gameId) {
+      await postEphemeral(webhookUrl, "⚠️ Cette manche est terminée.");
+      return;
+    }
+
+    const existing = await readParticipant(gameId, discordId);
+    if (existing?.solved) {
+      await postEphemeral(webhookUrl, "💡 Tu as déjà trouvé la carte secrète !");
+      return;
+    }
+
+    const catalog = await loadCatalog();
+    const secretEntry = catalog.find((c) => c.cardKey === gameId);
+    const { alreadyUsed } = await recordHintUsed(gameId, discordId, username);
+    const suffix = alreadyUsed ? "_Indice déjà révélé, aucun point supplémentaire déduit._" : "_Indice révélé (-3 pts sur le score final)._";
+
+    await postEphemeralEmbed(webhookUrl, {
+      title: "💡 Indice : rareté",
+      description: `La carte secrète est **${RARITY_LABELS[secretEntry.rarity] ?? secretEntry.rarity}**.\n\n${suffix}`,
+      color: JUSTECARTE_COLOR,
+    });
   } catch (err) {
     await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
   }

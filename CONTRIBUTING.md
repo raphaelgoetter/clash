@@ -849,9 +849,18 @@ Une carte Clash Royale secrète est tirée chaque semaine. Le joueur propose le 
 - Le joueur commence avec 10 points.
 - La 1ère proposition est **gratuite** (aucune pénalité, quel que soit le résultat).
 - À partir de la 2e proposition, chaque tentative coûte 1 point.
-- Un joueur qui trouve marque toujours **au moins 1 point**, même après plus de 10 essais.
+- Bouton **"💡 Indice : rareté"** (voir plus bas) : coûte 3 points, une seule fois par manche.
+- Un joueur qui trouve marque toujours **au moins 1 point**, même après plus de 10 essais et l'indice utilisé.
 
-`computeScore(attemptNumber)` (`backend/services/lajustecarte.js`) = `Math.max(1, 11 - attemptNumber)` — une seule formule couvre les 3 règles ci-dessus (la "1ère gratuite" est une conséquence de la formule à `attemptNumber=1`, pas une branche à part).
+`computeScore(attemptNumber, hintUsed)` (`backend/services/lajustecarte.js`) = `Math.max(1, 11 - attemptNumber - (hintUsed ? 3 : 0))` — une seule formule couvre toutes les règles ci-dessus (la "1ère gratuite" est une conséquence de la formule à `attemptNumber=1`, pas une branche à part).
+
+### Indice "rareté" (bouton, -3 pts)
+
+Sur le même modèle que Zoom (`handleHintButton`, `recordHintUsed`) : bouton toujours visible à côté du bouton de réponse (post public **et** chaque réponse éphémère de reproposition — `buildGameComponents()`), custom_id `lajustecarte_hint:<gameId>`. Cliquer révèle la **rareté** de la carte secrète (Commune/Rare/Épique/Légendaire/Champion) dans un message éphémère, indépendamment du numéro de tentative en cours.
+
+- Idempotent : `recordHintUsed()` utilise `SETNX` sur `lajustecarte:hint:<gameId>:<discordId>` — un 2e clic ré-affiche la rareté gratuitement (`alreadyUsed: true`), aucune pénalité supplémentaire.
+- La pénalité de -3 pts n'est appliquée qu'**à la victoire** (`hintUsedFor()` relu au moment de `markSolved()`, pas mémorisé plus tôt) : peu importe quand l'indice a été pris pendant la manche, seul son usage ou non au moment de trouver compte pour le calcul final.
+- `participant.hintUsed` est stocké sur le résultat archivé, pour traçabilité (pas encore affiché dans `/justecarte`, à ajouter si besoin).
 
 ### Réponse — flux à 3 issues (pas 2 comme Anagram)
 
@@ -866,8 +875,8 @@ Modal à 1 champ (pas d'autocomplete possible dans une Modal Discord), résolue 
 | Tentative du joueur | Indices visibles |
 | --- | --- |
 | 1ère | PV, Portée |
-| 2e | PV, Portée, Dégâts |
-| 3e et suivantes | PV, Portée, Dégâts, Élixir |
+| 2e | PV, Portée, Élixir |
+| 3e et suivantes | PV, Portée, Élixir, Dégâts |
 
 `compareCard(secretEntry, guessEntry, attemptNumber)` (fonction pure) calcule les 4 comparateurs puis ne renvoie que le sous-ensemble débloqué à ce numéro de tentative. Le sens de la flèche décrit la **carte secrète** relativement à la proposition ("PV ⬆️" = la carte secrète a un PV plus élevé que ta proposition) — comparateur `secretValue > guessValue ? "up" : "down"`. Sens inversé une fois en test réel : la lecture "ma proposition est plus haute" prêtait à confusion, l'intuition naturelle est que la flèche pointe vers où se trouve la cible.
 
@@ -904,7 +913,8 @@ Cet ordre n'est visible nulle part côté joueur (le fichier reste alphabétique
 | `lajustecarte:order` | STRING (JSON) | Ordre de rotation mélangé, persisté (voir ci-dessus) |
 | `lajustecarte:usernames:<gameId>` | HASH | `discordId → pseudo` |
 | `lajustecarte:attempts:<gameId>:<discordId>` | LIST | Historique des cartes **valides** proposées (nom FR, dans l'ordre) — sa longueur (`RPUSH`/`LLEN`) sert aussi de compteur de tentatives ; jamais complétée sur un nom inconnu |
-| `lajustecarte:participants:<gameId>` | HASH | `discordId → { solved, solvedAt, score, attempts }` |
+| `lajustecarte:hint:<gameId>:<discordId>` | STRING (flag) | Indice rareté utilisé (`SETNX`, idempotent) |
+| `lajustecarte:participants:<gameId>` | HASH | `discordId → { solved, solvedAt, score, attempts, hintUsed }` |
 | `lajustecarte:season:<seasonId>` | ZSET | Score cumulé de la saison |
 | `lajustecarte:archived:<seasonId>` | HASH | Un champ par manche résolue (`<gameId>:<discordId>`), idempotence |
 

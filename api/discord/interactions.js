@@ -61,6 +61,7 @@ import {
 import {
   buildAnswerModal as buildJusteCarteAnswerModal,
   handleModalSubmit as handleJusteCarteModalSubmit,
+  handleHintButton as handleJusteCarteHintButton,
   handleJusteCarteStatsCommand,
 } from "./handlers/lajustecarte.js";
 import {
@@ -8924,6 +8925,28 @@ export default async function handler(req, res) {
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() =>
       handleJusteCarteStatsCommand(webhookUrl, discordId, username),
+    );
+    return;
+  }
+
+  // ── Jeu La Juste Carte : bouton "Indice : rareté" ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("lajustecarte_hint:")
+  ) {
+    const gameId = body.data.custom_id.split(":")[1];
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() =>
+      handleJusteCarteHintButton(webhookUrl, gameId, discordId, username),
     );
     return;
   }

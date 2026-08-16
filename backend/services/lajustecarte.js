@@ -101,6 +101,9 @@ function usernamesKey(gameId) {
 function attemptsKey(gameId, discordId) {
   return `lajustecarte:attempts:${gameId}:${discordId}`;
 }
+function hintKey(gameId, discordId) {
+  return `lajustecarte:hint:${gameId}:${discordId}`;
+}
 function seasonKey(seasonId) {
   return `lajustecarte:season:${seasonId}`;
 }
@@ -160,6 +163,7 @@ export async function writeState(state) {
 async function cleanupGameScratchData(gameId) {
   await getRedis().del(participantsKey(gameId), usernamesKey(gameId));
   await scanDelete(`lajustecarte:attempts:${gameId}:*`);
+  await scanDelete(`lajustecarte:hint:${gameId}:*`);
 }
 
 // Remet le jeu à zéro : plus de partie active, ordre de rotation remélangé
@@ -169,6 +173,7 @@ export async function resetGame() {
   await scanDelete("lajustecarte:participants:*");
   await scanDelete("lajustecarte:usernames:*");
   await scanDelete("lajustecarte:attempts:*");
+  await scanDelete("lajustecarte:hint:*");
   await scanDelete("lajustecarte:season:*");
   await scanDelete("lajustecarte:archived:*");
 }
@@ -317,12 +322,12 @@ export async function getCardImageUrl(cardKey) {
 
 // ── Comparaison de stats et révélation progressive ────────────────
 
-const ALL_STATS = ["hp", "range", "damage", "elixir"];
+const ALL_STATS = ["hp", "range", "elixir", "damage"];
 
-// Essai 1 → PV+Portée, essai 2 → +Dégâts, essai 3 et suivants → +Élixir.
+// Essai 1 → PV+Portée, essai 2 → +Élixir, essai 3 et suivants → +Dégâts.
 function visibleStatsForAttempt(attemptNumber) {
   if (attemptNumber <= 1) return ["hp", "range"];
-  if (attemptNumber === 2) return ["hp", "range", "damage"];
+  if (attemptNumber === 2) return ["hp", "range", "elixir"];
   return ALL_STATS;
 }
 
@@ -360,13 +365,15 @@ export function compareCard(secretEntry, guessEntry, attemptNumber) {
 }
 
 // 1er essai gratuit (aucune pénalité visible) : essai 1 → 11-1=10. À partir
-// de l'essai 2, chaque tentative coûte 1 point. Plancher à 1 quel que soit
-// le nombre d'essais — une seule formule couvre les deux règles de
-// l'énoncé ("1ère gratuite" + "-1/essai ensuite" + "plancher 1"), pas de
-// branche "1er essai gratuit" séparée à coder : à attemptNumber=1, la
-// formule ne retranche déjà rien de visible (11-1=10, le max théorique).
-export function computeScore(attemptNumber) {
-  return Math.max(1, 11 - attemptNumber);
+// de l'essai 2, chaque tentative coûte 1 point. Indice "rareté" (bouton,
+// voir recordHintUsed) : -3 pts fixes, une seule fois, quel que soit le
+// moment où il est utilisé. Plancher à 1 quel que soit le nombre d'essais
+// et l'usage de l'indice — une seule formule couvre toutes les règles de
+// l'énoncé, pas de branche "1er essai gratuit" séparée à coder : à
+// attemptNumber=1 sans indice, la formule ne retranche déjà rien de visible
+// (11-1=10, le max théorique).
+export function computeScore(attemptNumber, hintUsed = false) {
+  return Math.max(1, 11 - attemptNumber - (hintUsed ? 3 : 0));
 }
 
 // Résout le nom de carte tapé par le joueur (FR, accents/casse tolérés) en
@@ -429,22 +436,40 @@ export async function recordAttempt(gameId, discordId, username, guessedFr) {
   return Number(await getRedis().rpush(attemptsKey(gameId, discordId), guessedFr));
 }
 
+// Indice "rareté" (bouton) — SETNX idempotent : la 1ère fois renvoie
+// alreadyUsed=false (le handler Discord applique la pénalité de -3 pts au
+// moment de markSolved), tout appel suivant renvoie alreadyUsed=true sans
+// rien réécrire (ré-afficher l'indice ne coûte rien de plus).
+export async function recordHintUsed(gameId, discordId, username) {
+  await touchUsername(gameId, discordId, username);
+  const wasSet = Number(await getRedis().setnx(hintKey(gameId, discordId), "1"));
+  return { alreadyUsed: !wasSet };
+}
+
+export async function hintUsedFor(gameId, discordId) {
+  return (await getRedis().get(hintKey(gameId, discordId))) === "1";
+}
+
 // Idempotent : si déjà résolu, renvoie le résultat existant sans rien
 // réécrire. attemptNumber doit être le total renvoyé par recordAttempt()
-// pour CETTE tentative gagnante (déjà incrémenté avant l'appel).
-export async function markSolved(gameId, discordId, username, attemptNumber) {
+// pour CETTE tentative gagnante (déjà incrémenté avant l'appel). hintUsed
+// doit refléter l'état AU MOMENT de la résolution (hintUsedFor), pas la
+// dernière valeur connue — l'indice peut avoir été pris n'importe quand
+// avant de trouver.
+export async function markSolved(gameId, discordId, username, attemptNumber, hintUsed) {
   const existing = await readParticipant(gameId, discordId);
   if (existing?.solved) {
     return { participant: existing, score: existing.score };
   }
 
-  const score = computeScore(attemptNumber);
+  const score = computeScore(attemptNumber, hintUsed);
   const participant = {
     discordId,
     username,
     attempts: attemptNumber,
     solved: true,
     solvedAt: new Date().toISOString(),
+    hintUsed: !!hintUsed,
     score,
   };
   await getRedis().hset(participantsKey(gameId), { [discordId]: toJson(participant) });
