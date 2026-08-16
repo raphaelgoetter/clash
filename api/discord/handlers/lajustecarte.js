@@ -25,6 +25,8 @@ import {
   readParticipant,
   startNewGame,
   resolveGuess,
+  resolveAnyCard,
+  getExcludedCards,
   compareCard,
   recordAttempt,
   getGuessHistory,
@@ -532,6 +534,23 @@ function buildUnknownCardEmbed(rawAnswer, history) {
   };
 }
 
+// Cas distinct du précédent : le nom tapé correspond à une VRAIE carte
+// Clash Royale (sort, bâtiment, évolution, troupe de tour, ou stats trop
+// variables pour une comparaison équitable — voir scripts/generateCardStats.js),
+// juste absente du pool de ce jeu. Sans cette distinction, un joueur qui
+// tape correctement "Gobelin géant" reçoit le même message générique qu'une
+// faute de frappe, sans comprendre pourquoi ça ne marche jamais.
+function buildExcludedCardEmbed(entry, history) {
+  return {
+    title: "🚫 Carte non incluse dans ce jeu",
+    description:
+      `**${entry.fr}** existe dans Clash Royale, mais ne fait pas partie du pool de La Juste Carte (sort, bâtiment, évolution, troupe de tour, ou stats trop variables/multiples pour une comparaison équitable). Cette tentative n'a pas été comptabilisée.\n\n` +
+      `Vois la liste complète avec le bouton "📋 Cartes non incluses" sur la commande \`/justecarte\`.\n\n` +
+      formatHistoryLine(history),
+    color: JUSTECARTE_COLOR,
+  };
+}
+
 // ── Soumission de la modal (réponse du joueur) ──────────────────
 
 export async function handleModalSubmit(
@@ -560,11 +579,11 @@ export async function handleModalSubmit(
 
     if (!guessEntry) {
       const history = await getGuessHistory(gameId, discordId);
-      await postEphemeralEmbed(
-        webhookUrl,
-        buildUnknownCardEmbed(rawAnswer, history),
-        buildRetryComponents(gameId),
-      );
+      const knownButExcluded = await resolveAnyCard(rawAnswer);
+      const embed = knownButExcluded
+        ? buildExcludedCardEmbed(knownButExcluded, history)
+        : buildUnknownCardEmbed(rawAnswer, history);
+      await postEphemeralEmbed(webhookUrl, embed, buildRetryComponents(gameId));
       return;
     }
 
@@ -758,9 +777,36 @@ function buildJusteCarteStatsComponents() {
           label: "🔄 Rafraîchir",
           custom_id: "lajustecarte_stats_refresh",
         },
+        {
+          type: 2,
+          style: 2,
+          label: "📋 Cartes non incluses",
+          custom_id: "lajustecarte_excluded_list",
+        },
       ],
     },
   ];
+}
+
+// Liste (dérivée en direct de data/cardNames.json, jamais périmée) des
+// cartes qui existent dans Clash Royale mais ne font pas partie du pool de
+// jeu — sorts/bâtiments/évolutions/troupes de tour, et quelques troupes à
+// stats composites/multiples (voir scripts/generateCardStats.js). Réponse
+// à la demande d'un joueur qui a proposé une carte réelle absente du jeu
+// (ex. "Gobelin géant") et voulait savoir laquelle sans deviner au hasard.
+export async function handleExcludedListButton(webhookUrl) {
+  try {
+    const excluded = await getExcludedCards();
+    await postEphemeralEmbed(webhookUrl, {
+      title: "📋 Cartes non incluses dans La Juste Carte",
+      description:
+        `Ces ${excluded.length} cartes existent dans Clash Royale mais ne font pas partie du pool de ce jeu (sorts, bâtiments, évolutions, troupes de tour, ou stats trop variables/multiples pour une comparaison équitable) :\n\n` +
+        excluded.map((c) => c.fr).join(", "),
+      color: JUSTECARTE_COLOR,
+    });
+  } catch (err) {
+    await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
+  }
 }
 
 export async function handleJusteCarteStatsCommand(

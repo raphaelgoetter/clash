@@ -62,6 +62,7 @@ import {
   buildAnswerModal as buildJusteCarteAnswerModal,
   handleModalSubmit as handleJusteCarteModalSubmit,
   handleHintButton as handleJusteCarteHintButton,
+  handleExcludedListButton as handleJusteCarteExcludedListButton,
   handleJusteCarteStatsCommand,
 } from "./handlers/lajustecarte.js";
 import {
@@ -8926,6 +8927,21 @@ export default async function handler(req, res) {
     runBackground(() =>
       handleJusteCarteStatsCommand(webhookUrl, discordId, username),
     );
+    return;
+  }
+
+  // ── Jeu La Juste Carte : bouton "Cartes non incluses" sur /justecarte ──
+  // Nouvelle réponse éphémère séparée (pas une mise à jour du message de
+  // stats en place, contrairement au bouton "Rafraîchir" ci-dessus) — type 5
+  // comme pour une commande initiale.
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id === "lajustecarte_excluded_list"
+  ) {
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleJusteCarteExcludedListButton(webhookUrl));
     return;
   }
 

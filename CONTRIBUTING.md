@@ -864,11 +864,18 @@ Sur le même modèle que Zoom (`handleHintButton`, `recordHintUsed`) : bouton to
 
 ### Réponse — flux à 3 issues (pas 2 comme Anagram)
 
-Modal à 1 champ (pas d'autocomplete possible dans une Modal Discord), résolue par `resolveGuess()` — égalité **stricte** normalisée (`normalizeAnswer`, comme Anagram) contre le nom français de chaque carte du catalogue. Trois issues possibles, à distinguer explicitement dans `handleModalSubmit` (`api/discord/handlers/lajustecarte.js`) :
+Modal à 1 champ (pas d'autocomplete possible dans une Modal Discord), résolue par `resolveGuess()` — égalité **stricte** normalisée (`normalizeAnswer`, comme Anagram) contre le nom français de chaque carte du catalogue **éligible**. Trois issues possibles, à distinguer explicitement dans `handleModalSubmit` (`api/discord/handlers/lajustecarte.js`) :
 
-1. **Nom non reconnu** — aucun état modifié (ni compteur de tentatives, ni score), le joueur est invité à corriger l'orthographe. C'est la différence clé avec Anagram, qui ne connaît que "correct"/"incorrect".
+1. **Nom non reconnu** — aucun état modifié (ni compteur de tentatives, ni score). Deux sous-cas distingués dans le message renvoyé (`resolveAnyCard()`, qui résout contre la liste COMPLÈTE de `data/cardNames.json`, y compris les cartes non éligibles) : une vraie faute de frappe ("carte inconnue, vérifie l'orthographe") vs une carte réelle mais absente du pool ("🚫 carte non incluse dans ce jeu", avec pointeur vers le bouton "📋 Cartes non incluses" de `/justecarte`) — évite qu'un joueur qui tape correctement "Gobelin géant" pense à une faute de frappe alors que la carte n'est simplement pas dans le jeu.
 2. **Carte reconnue mais fausse** — la tentative est ajoutée à l'historique du joueur (`recordAttempt`, `RPUSH`), les indices comparatifs débloqués à ce stade sont renvoyés avec le rappel des cartes déjà proposées (`getGuessHistory`) et un bouton pour reproposer.
 3. **Carte trouvée** — `markSolved()` (idempotent) fige le score au numéro de tentative courant, `archiveSolve()` alimente le classement de saison, embed de victoire avec l'image de la carte, DM envoyé (voir plus bas).
+
+### Cartes non incluses — visibles à la demande
+
+`getExcludedCards()` dérive en direct (jamais périmée, pas de liste dupliquée à maintenir) les cartes de `data/cardNames.json` sans les 4 champs de stats (sorts, bâtiments, évolutions, troupes de tour, et les quelques troupes à stats composites/multiples de `scripts/generateCardStats.js`) — 45 cartes actuellement. Deux points d'accès :
+
+- Automatiquement dans le message d'erreur quand un joueur propose une de ces cartes (voir ci-dessus).
+- À la demande, bouton **"📋 Cartes non incluses"** sur `/justecarte` (`handleExcludedListButton`) — liste complète, triée alphabétiquement.
 
 ### Révélation progressive des indices
 

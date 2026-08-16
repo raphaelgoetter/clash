@@ -140,14 +140,34 @@ async function scanDelete(pattern) {
 
 // ── Catalogue (sous-ensemble de data/cardNames.json) ────────────
 
+let fullListCache = null;
 let catalogCache = null;
+
+// Liste COMPLÈTE de data/cardNames.json (122 cartes, y compris sorts,
+// bâtiments, évolutions, troupes de tour, champions/troupes à stats
+// composites exclus du jeu) — sert uniquement à distinguer une vraie faute
+// de frappe d'une carte connue mais non éligible (resolveAnyCard) et à
+// lister les cartes absentes du pool (getExcludedCards).
+async function loadFullCardList() {
+  if (fullListCache) return fullListCache;
+  const txt = await fs.readFile(CARD_NAMES_PATH, "utf-8");
+  fullListCache = JSON.parse(txt);
+  return fullListCache;
+}
 
 export async function loadCatalog() {
   if (catalogCache) return catalogCache;
-  const txt = await fs.readFile(CARD_NAMES_PATH, "utf-8");
-  const all = JSON.parse(txt);
+  const all = await loadFullCardList();
   catalogCache = all.filter((c) => c.elixir != null && c.hp != null && c.damage != null && c.range != null);
   return catalogCache;
+}
+
+// Cartes de data/cardNames.json qui NE font PAS partie du pool de jeu
+// (aucun des 4 champs de stats) — triées par nom FR, pour affichage aux
+// joueurs (bouton "Cartes non incluses" sur /justecarte).
+export async function getExcludedCards() {
+  const all = await loadFullCardList();
+  return all.filter((c) => c.damage == null).sort((a, b) => a.fr.localeCompare(b.fr, "fr"));
 }
 
 // ── État de la partie en cours (métadonnées uniquement) ──────────
@@ -393,13 +413,27 @@ export function computeScore(attemptNumber, hintUsed = false) {
 // pas une sous-chaîne arbitraire — n'introduit pas le risque "Barbares"
 // matchant "Barbares d'élite" documenté ci-dessus (les mots réels diffèrent
 // toujours, seuls les séparateurs internes sont ignorés).
-export function resolveGuess(catalog, rawName) {
+function matchByFrName(list, rawName) {
   const normalized = normalizeAnswer(rawName);
   if (!normalized) return null;
-  const exact = catalog.find((c) => normalizeAnswer(c.fr) === normalized);
+  const exact = list.find((c) => normalizeAnswer(c.fr) === normalized);
   if (exact) return exact;
   const compact = normalized.replace(/\s+/g, "");
-  return catalog.find((c) => normalizeAnswer(c.fr).replace(/\s+/g, "") === compact) ?? null;
+  return list.find((c) => normalizeAnswer(c.fr).replace(/\s+/g, "") === compact) ?? null;
+}
+
+export function resolveGuess(catalog, rawName) {
+  return matchByFrName(catalog, rawName);
+}
+
+// Résout un nom contre la liste COMPLÈTE (122 cartes), y compris les cartes
+// non éligibles au jeu — sert uniquement à distinguer, dans le message
+// d'erreur, une vraie faute de frappe ("gonel") d'une carte réelle mais
+// exclue du pool ("Gobelin géant") : le joueur mérite un message différent
+// dans ces deux cas plutôt qu'un générique "carte inconnue" à chaque fois.
+export async function resolveAnyCard(rawName) {
+  const fullList = await loadFullCardList();
+  return matchByFrName(fullList, rawName);
 }
 
 // ── Progression par joueur ────────────────────────────────────────
