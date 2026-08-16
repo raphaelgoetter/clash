@@ -836,6 +836,110 @@ Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHAN
 
 ---
 
+## Jeu La Juste Carte (devine la carte par ses stats)
+
+Quatrième mini-jeu hebdomadaire indépendant, sur le modèle de Frame/Anagram (voir [Jeu Frame](#jeu-frame-devine-le-film) pour les mécanismes partagés : Modal `type:9`/`MODAL_SUBMIT type:5`, stockage Upstash Redis et ses pièges, gestion de saison CR). Différence structurelle majeure : contrairement aux 3 autres jeux (une seule tentative résout la manche), ici chaque joueur soumet **plusieurs propositions successives** contre une carte secrète — ce n'est pas une course entre joueurs, chacun joue sa propre partie à son rythme.
+
+Une carte Clash Royale secrète est tirée chaque semaine. Le joueur propose le nom (français) d'une autre carte, et le jeu compare les deux sur 4 stats — PV, Portée, DPS, Élixir — en indiquant pour chacune si la **proposition** est plus haute (⬆️), plus basse (⬇️) ou identique (✅) à la carte secrète.
+
+### Barème (La Juste Carte)
+
+- Le joueur commence avec 10 points.
+- La 1ère proposition est **gratuite** (aucune pénalité, quel que soit le résultat).
+- À partir de la 2e proposition, chaque tentative coûte 1 point.
+- Un joueur qui trouve marque toujours **au moins 1 point**, même après plus de 10 essais.
+
+`computeScore(attemptNumber)` (`backend/services/lajustecarte.js`) = `Math.max(1, 11 - attemptNumber)` — une seule formule couvre les 3 règles ci-dessus (la "1ère gratuite" est une conséquence de la formule à `attemptNumber=1`, pas une branche à part).
+
+### Réponse — flux à 3 issues (pas 2 comme Anagram)
+
+Modal à 1 champ (pas d'autocomplete possible dans une Modal Discord), résolue par `resolveGuess()` — égalité **stricte** normalisée (`normalizeAnswer`, comme Anagram) contre le nom français de chaque carte du catalogue. Trois issues possibles, à distinguer explicitement dans `handleModalSubmit` (`api/discord/handlers/lajustecarte.js`) :
+
+1. **Nom non reconnu** — aucun état modifié (ni compteur de tentatives, ni score), le joueur est invité à corriger l'orthographe. C'est la différence clé avec Anagram, qui ne connaît que "correct"/"incorrect".
+2. **Carte reconnue mais fausse** — la tentative est comptabilisée (`recordAttempt`, `INCR` du compteur du joueur), les indices comparatifs débloqués à ce stade sont renvoyés, avec un bouton pour reproposer.
+3. **Carte trouvée** — `markSolved()` (idempotent) fige le score au numéro de tentative courant, `archiveSolve()` alimente le classement de saison, embed de victoire avec l'image de la carte, DM envoyé (voir plus bas).
+
+### Révélation progressive des indices
+
+| Tentative du joueur | Indices visibles |
+| --- | --- |
+| 1ère | PV, Portée |
+| 2e | PV, Portée, DPS |
+| 3e et suivantes | PV, Portée, DPS, Élixir |
+
+`compareCard(secretEntry, guessEntry, attemptNumber)` (fonction pure) calcule les 4 comparateurs puis ne renvoie que le sous-ensemble débloqué à ce numéro de tentative. Le sens de la flèche décrit la **proposition** relativement à la carte secrète ("PV ⬆️" = ta proposition a un PV plus élevé que la carte secrète) — comparateur `guessValue > secretValue ? "up" : "down"`, pas l'inverse.
+
+Portée : les troupes de mêlée sont comparées sur une catégorie ordinale (`short` < `medium` < `long`), pas sur une valeur chiffrée ; les troupes à distance sur leur portée réelle. Les deux échelles sont fusionnées via un champ `range.rank` précalculé (mêlée = 1/2/3, distance = `3 + valeur`), qui garantit qu'une troupe à distance, même la plus courte, passe toujours devant la troupe de mêlée la plus longue. `compareCard` compare toujours `range.rank`, jamais la catégorie/valeur brute directement.
+
+### Données — stats ajoutées directement dans `data/cardNames.json`
+
+Contrairement à Zoom (catalogue dérivé séparé), **aucun fichier dédié** : `scripts/generateCardStats.js` ajoute les champs `elixir`/`hp`/`dps`/`range` directement aux entrées de `data/cardNames.json` (voir [Noms français des cartes](#noms-français-des-cartes-datacardnamesjson)) qui sont éligibles au jeu — les autres entrées (sorts, bâtiments, champions, troupes de tour) restent sans ces champs. C'est justement cette présence qui sert de filtre du pool de jeu à l'exécution (`loadCatalog()`), aucun champ `type`/`eligible` séparé à maintenir.
+
+Sources :
+
+- Élixir : `fetchCards()` (API officielle Clash Royale) — la colonne "Cost" du wiki ne sert qu'en garde-fou de cohérence (avertissement console en cas d'écart, jamais stocké).
+- PV/DPS/Portée : un seul appel à l'API MediaWiki de `clashroyale.fandom.com/wiki/Cards` (`action=parse&page=Cards&prop=wikitext`), section "Troops" du wikitext uniquement. Ces valeurs y sont déjà au niveau **Tournament Standard** (précisé explicitement dans le texte au-dessus de la table) — aucun calcul de niveau à faire.
+
+Exclusions du pool (64 cartes éligibles sur 99 lignes de troupes "de base" au 2026-08) :
+
+- Sous-unités générées (liens wiki *piped*, ex. Bush Goblins, Golemite, Lava Pup) — la vraie carte a sa propre ligne, sauf `Rascals` qui n'en a aucune et disparaît donc naturellement du pool.
+- Champions/héros (`rarity === "champion"`, 8 cartes) — exclus même si mécaniquement listés dans la table Troops.
+- Cartes à stats "composites" ou sans DPS soutenu — détection générique : si le champ brut PV, DPS ou Portée contient un `/` (mode double, ex. Goblin Gang "202/133", ou DPS "N/A" qui contient lui-même un `/`) → exclue, aucune valeur unique fiable pour une comparaison équitable (Battle Ram, les 4 Esprits, Goblin Gang/Giant/Machine, Ram Rider, Skeleton Barrel, Spirit Empress, Suspicious Bush, Three Musketeers, Wall Breakers).
+
+Comme `generateCardNames.js` pour `fr` : le script ne fait qu'**ajouter** les 4 champs aux entrées qui n'en ont pas encore, jamais réécrire une entrée déjà complétée (y compris après correction manuelle). Usage ponctuel : `node scripts/generateCardStats.js` (ou `npm run justecarte:stats`).
+
+### Ordre de rotation hebdomadaire — persisté en Redis, pas dans le fichier
+
+Contrairement à Frame/Anagram/Zoom (l'ordre physique du fichier pilote la progression), `data/cardNames.json` doit rester trié alphabétiquement (contrainte de `generateCardNames.js`) : la prochaine carte secrète serait donc devinable à l'avance si on s'y fiait. L'ordre de passage est mélangé une fois puis **persisté dans Redis** (`lajustecarte:order`, `loadPlayOrder()`) ; les cartes nouvellement ajoutées par `generateCardStats.js` sont insérées à la suite, mélangées entre elles, sans perturber l'ordre déjà en cours. `pickNextIndex()` avance simplement d'une position dans cet ordre (`index+1 % n`), boucle une fois épuisé.
+
+### Stockage — Upstash Redis (`lajustecarte:*`)
+
+| Clé Redis | Type | Contenu |
+| --- | --- | --- |
+| `lajustecarte:state` | STRING (JSON) | État de la manche active (`gameId` = cardKey de la carte secrète + métadonnées de saison) |
+| `lajustecarte:order` | STRING (JSON) | Ordre de rotation mélangé, persisté (voir ci-dessus) |
+| `lajustecarte:usernames:<gameId>` | HASH | `discordId → pseudo` |
+| `lajustecarte:attempts:<gameId>:<discordId>` | STRING (compteur) | Tentatives **valides** (nom de carte reconnu) — jamais incrémenté sur un nom inconnu |
+| `lajustecarte:participants:<gameId>` | HASH | `discordId → { solved, solvedAt, score, attempts }` |
+| `lajustecarte:season:<seasonId>` | ZSET | Score cumulé de la saison |
+| `lajustecarte:archived:<seasonId>` | HASH | Un champ par manche résolue (`<gameId>:<discordId>`), idempotence |
+
+Pas d'équivalent à `anagram:positions`/`position_seq` : aucune notion de rang d'arrivée collectif, le score de chaque joueur ne dépend que de son propre numéro de tentative.
+
+### Publication hebdomadaire (dimanche 16h UTC)
+
+`.github/workflows/lajustecarte.yml` (`cron: "0 16 * * 0"`) — horaire fixe comme Frame/Zoom (pas de tirage aléatoire comme Anagram), exécute `npm run justecarte:public`.
+
+### Commande `/justecarte` — scores personnels
+
+Miroir de `/anagram` (voir [Commande `/anagram`](#commande-anagram--scores-personnels) dans la section Anagram), adapté pour afficher le nombre de tentatives au lieu d'un rang d'arrivée.
+
+### Récapitulatif de fin de saison (La Juste Carte)
+
+Identique à Frame/Anagram (voir [Récapitulatif de fin de saison](#récapitulatif-de-fin-de-saison)) : posté juste avant la manche 1 d'une nouvelle saison si `seasonId` a changé, mêmes règles de troncage (20 joueurs max, exclusion des 0 pt).
+
+### DM — uniquement à la victoire
+
+Contrairement à Anagram (DM à chaque manche, puisqu'une seule tentative la résout), un DM à chaque proposition serait intrusif ici vu qu'un joueur peut en soumettre plusieurs de suite : `sendJusteCarteDM` n'est appelé qu'une fois, au moment où le joueur trouve la carte secrète.
+
+### Scripts npm (La Juste Carte)
+
+| Commande | Effet |
+| --- | --- |
+| `npm run justecarte:stats` | Ajoute les stats (elixir/hp/dps/range) aux cartes éligibles de `data/cardNames.json`. Usage ponctuel, jamais dans le flux hebdomadaire. |
+| `npm run justecarte:test` | Poste manuellement une nouvelle partie sur le salon de test, **sans ping** (`--no-ping` par défaut, comme `zoom:test`). |
+| `npm run justecarte:test:dry` | Aperçu console de la prochaine partie (+ récap de saison éventuel), sans écrire d'état ni poster sur Discord. |
+| `npm run justecarte:public` | Poste sur le salon public (avec ping) — utilisé par le cron `lajustecarte.yml`. |
+| `npm run justecarte:public:dry` | Équivalent dry-run de `justecarte:public`. |
+| `npm run justecarte:scores` | Classement de la partie en cours (tentatives, score partie, score saison) + joueurs n'ayant pas encore joué. |
+| `npm run justecarte:reset` | Remet le jeu à zéro : plus de partie active, ordre de rotation remélangé à la prochaine partie, historique et scores effacés. **Destructif**. |
+
+### Variables d'environnement requises (La Juste Carte)
+
+Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (espace de clés `lajustecarte:*` totalement séparé). Le workflow `.github/workflows/lajustecarte.yml` réutilise les mêmes secrets GitHub Actions que `frames.yml`/`anagrams.yml`/`zoom.yml` (déjà configurés, rien à ajouter).
+
+---
+
 ## Aventure interactive (livre dont vous êtes le héros)
 
 Mini-jeu narratif communautaire, indépendant du Clash Royale : chaque jour à 08:00 UTC, un chapitre est publié dans un salon dédié, les membres votent par boutons pour orienter la suite. Pas de commande slash associée — la publication/suppression passe uniquement par `scripts/postAventure.js` (manuel ou cron), les boutons/select menu restent gérés par `api/discord/interactions.js`. Univers Clash Royale, ton humoristique, boss final **Displaynone** (un sorcier/codeur qui attaque avec du CSS/JS cassé).

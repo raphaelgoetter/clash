@@ -59,6 +59,11 @@ import {
   handleZoomStatsCommand,
 } from "./handlers/zoom.js";
 import {
+  buildAnswerModal as buildJusteCarteAnswerModal,
+  handleModalSubmit as handleJusteCarteModalSubmit,
+  handleJusteCarteStatsCommand,
+} from "./handlers/lajustecarte.js";
+import {
   handleVoteButton as handleAventureVote,
   handleHistoriqueOpen as handleAventureHistoriqueOpen,
   handleHistoriquePage as handleAventureHistoriquePage,
@@ -8875,6 +8880,93 @@ export default async function handler(req, res) {
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() =>
       handleZoomModalSubmit(
+        webhookUrl,
+        gameId,
+        discordId,
+        username,
+        rawAnswer,
+      ),
+    );
+    return;
+  }
+
+  // ── Jeu La Juste Carte : commande /justecarte (scores personnels) ──
+  if (body.type === 2 && body.data?.name === "justecarte") {
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() =>
+      handleJusteCarteStatsCommand(webhookUrl, discordId, username),
+    );
+    return;
+  }
+
+  // ── Jeu La Juste Carte : bouton "Rafraîchir" sur /justecarte ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id === "lajustecarte_stats_refresh"
+  ) {
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    // type 6 = DEFERRED_UPDATE_MESSAGE : met à jour ce même message éphémère
+    // (au lieu d'en créer un nouveau, cf. type 5 pour la commande initiale).
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() =>
+      handleJusteCarteStatsCommand(webhookUrl, discordId, username),
+    );
+    return;
+  }
+
+  // ── Jeu La Juste Carte : bouton "Proposer/Reproposer une carte" → Modal ──
+  // Réponse synchrone immédiate obligatoire : l'ouverture d'une Modal ne
+  // peut pas être différée (pas de runBackground ici). Même custom_id que
+  // le bouton du post initial et que le bouton "Reproposer" renvoyé après
+  // chaque tentative infructueuse — les deux rouvrent la même Modal.
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("lajustecarte_answer:")
+  ) {
+    const gameId = body.data.custom_id.split(":")[1];
+    return res
+      .status(200)
+      .json({ type: 9, data: buildJusteCarteAnswerModal(gameId) });
+  }
+
+  // ── Jeu La Juste Carte : soumission de la Modal (réponse du joueur) ──
+  // body.type === 5 ici est un MODAL_SUBMIT (InteractionType), à ne pas
+  // confondre avec le type de réponse 5 (DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE)
+  // utilisé plus haut dans ce fichier — deux enums Discord distinctes qui
+  // partagent des valeurs numériques.
+  if (
+    body.type === 5 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("lajustecarte_answer_modal:")
+  ) {
+    const gameId = body.data.custom_id.split(":")[1];
+    const rawAnswer = body.data.components?.[0]?.components?.[0]?.value || "";
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() =>
+      handleJusteCarteModalSubmit(
         webhookUrl,
         gameId,
         discordId,
