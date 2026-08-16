@@ -14,8 +14,10 @@
 // réécrite automatiquement).
 //
 // Seules les cartes ÉLIGIBLES au jeu reçoivent ces 4 champs ; les autres
-// (sorts, bâtiments, évolutions, troupes de tour, champions/héros) restent
-// sans stats — c'est justement CE critère (présence des 4 champs) qui sert
+// (sorts, bâtiments, évolutions, troupes de tour) restent sans stats — les
+// CHAMPIONS SONT inclus (l'énoncé du jeu n'exclut que les évolutions et les
+// troupes de tour, pas les champions — décision confirmée explicitement) —
+// c'est justement CE critère (présence des 4 champs) qui sert
 // de filtre du pool de jeu à l'exécution (backend/services/lajustecarte.js),
 // aucun champ "type"/"eligible" séparé à maintenir.
 //
@@ -40,17 +42,13 @@
 //     les deux cas).
 //
 // Filtrage du pool éligible (vérifié empiriquement sur le wikitext du
-// 2026-08 — 99 lignes de troupes "de base", 71 retenues) :
+// 2026-08 — 99 lignes de troupes "de base", 77 retenues) :
 //   1. Liens wiki PIPED ([[VraieCarte|NomAffiché]]) ignorés silencieusement :
 //      ce sont des sous-unités générées (Bush Goblins, Golemite, Lava Pup,
 //      Elixir Blob, Rascal Boy/Girl, etc.), pas des cartes du jeu — la carte
 //      réelle a sa propre ligne en lien NON-piped (sauf "Rascals", qui n'a
 //      AUCUNE ligne non-piped propre et disparaît donc naturellement).
-//   2. rarity === "champion" (8 cartes : Archer Queen, Boss Bandit,
-//      Goblinstein, Golden Knight, Little Prince, Mighty Miner, Monk,
-//      Skeleton King) exclue — même si mécaniquement listée dans la table
-//      Troops, l'énoncé du jeu exclut les héros/champions.
-//   3. Valeur "composite" ou variable : si le champ brut PV, Dégâts ou
+//   2. Valeur "composite" ou variable : si le champ brut PV, Dégâts ou
 //      Portée contient un "/" (mode double, ex. Goblin Gang "202/133"), OU
 //      un "-" (dégât progressif/plage min-max, ex. Inferno Dragon "35-422"
 //      — dégât qui grimpe avec le temps de ciblage, aucune valeur unique
@@ -155,7 +153,6 @@ async function main() {
   const added = [];
   const alreadyPresent = [];
   const excludedPiped = [];
-  const excludedChampion = [];
   const excludedComposite = [];
   const excludedNotFound = [];
   const elixirMismatches = [];
@@ -169,11 +166,6 @@ async function main() {
     const entry = byNormalizedCardKey.get(normalize(row.link));
     if (!entry) {
       excludedNotFound.push(row.link);
-      continue;
-    }
-
-    if (entry.rarity === "champion") {
-      excludedChampion.push(entry.cardKey);
       continue;
     }
 
@@ -224,7 +216,6 @@ async function main() {
 
   console.log(`  Déjà présentes (non modifiées) : ${alreadyPresent.length}`);
   console.log(`  Ignorées — liens vers des sous-unités : ${excludedPiped.length} (${excludedPiped.join(", ") || "aucune"})`);
-  console.log(`  Exclues — champions/héros : ${excludedChampion.length} (${excludedChampion.join(", ") || "aucune"})`);
   console.log(`  Exclues — stats composites, variables ou sans dégât direct : ${excludedComposite.length}`);
   for (const c of excludedComposite) {
     console.log(`    - ${c.cardKey} (hp="${c.hp}" damage="${c.damage}" range="${c.range}")`);

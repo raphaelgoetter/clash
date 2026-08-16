@@ -875,7 +875,7 @@ Portée : les troupes de mêlée sont comparées sur une catégorie ordinale (`s
 
 ### Données — stats ajoutées directement dans `data/cardNames.json`
 
-Contrairement à Zoom (catalogue dérivé séparé), **aucun fichier dédié** : `scripts/generateCardStats.js` ajoute les champs `elixir`/`hp`/`damage`/`range` directement aux entrées de `data/cardNames.json` (voir [Noms français des cartes](#noms-français-des-cartes-datacardnamesjson)) qui sont éligibles au jeu — les autres entrées (sorts, bâtiments, champions, troupes de tour) restent sans ces champs. C'est justement cette présence qui sert de filtre du pool de jeu à l'exécution (`loadCatalog()`), aucun champ `type`/`eligible` séparé à maintenir.
+Contrairement à Zoom (catalogue dérivé séparé), **aucun fichier dédié** : `scripts/generateCardStats.js` ajoute les champs `elixir`/`hp`/`damage`/`range` directement aux entrées de `data/cardNames.json` (voir [Noms français des cartes](#noms-français-des-cartes-datacardnamesjson)) qui sont éligibles au jeu — les autres entrées (sorts, bâtiments, évolutions, troupes de tour) restent sans ces champs. Les **champions sont inclus** (seuls les évolutions et les troupes de tour sont exclues de fait, un champion n'est PAS un "héros" au sens de l'énoncé du jeu — décision confirmée explicitement). C'est justement cette présence des 4 champs qui sert de filtre du pool de jeu à l'exécution (`loadCatalog()`), aucun champ `type`/`eligible` séparé à maintenir.
 
 Sources :
 
@@ -883,11 +883,10 @@ Sources :
 - PV/Dégâts/Portée : un seul appel à l'API MediaWiki de `clashroyale.fandom.com/wiki/Cards` (`action=parse&page=Cards&prop=wikitext`), section "Troops" du wikitext uniquement. Ces valeurs y sont déjà au niveau **Tournament Standard** (précisé explicitement dans le texte au-dessus de la table) — aucun calcul de niveau à faire.
 - `damage` = colonne **"Damage"** (dégât par coup), volontairement pas "Damage Per Second" : la colonne DPS vaut `N/A` pour toute carte sans cadence d'attaque régulière (Esprits, Battle Ram, Wall Breakers...) alors que ces cartes ont bien un dégât par coup exploitable — utiliser "Damage" maximise le pool sans rien perdre en équité (toujours une seule valeur par carte).
 
-Exclusions du pool (71 cartes éligibles sur 99 lignes de troupes "de base" au 2026-08) :
+Exclusions du pool (77 cartes éligibles sur 99 lignes de troupes "de base" au 2026-08, dont 6 champions : Archer Queen, Boss Bandit, Goblinstein, Golden Knight, Little Prince, Skeleton King) :
 
 - Sous-unités générées (liens wiki *piped*, ex. Bush Goblins, Golemite, Lava Pup) — la vraie carte a sa propre ligne, sauf `Rascals` qui n'en a aucune et disparaît donc naturellement du pool.
-- Champions/héros (`rarity === "champion"`, 8 cartes) — exclus même si mécaniquement listés dans la table Troops.
-- Cartes à stats "composites", variables, ou sans dégât direct — détection générique : si le champ brut PV, Dégâts ou Portée contient un `/` (mode double, ex. Goblin Gang "202/133") ou un `-` (dégât progressif, ex. Inferno Dragon "35-422") → exclue, aucune valeur unique fiable pour une comparaison équitable (Goblin Gang/Giant/Machine, Inferno Dragon, Ram Rider, Spirit Empress, Suspicious Bush — aucune attaque directe —, Three Musketeers).
+- Cartes à stats "composites", variables, ou sans dégât direct — détection générique : si le champ brut PV, Dégâts ou Portée contient un `/` (mode double, ex. Goblin Gang "202/133") ou un `-` (dégât progressif, ex. Inferno Dragon "35-422") → exclue, aucune valeur unique fiable pour une comparaison équitable (Goblin Gang/Giant/Machine, Inferno Dragon, Mighty Miner, Monk, Ram Rider, Spirit Empress, Suspicious Bush — aucune attaque directe —, Three Musketeers). Deux champions (Mighty Miner, Monk) tombent dans cette exclusion pour la même raison technique que les autres cartes, pas parce que ce sont des champions.
 
 Comme `generateCardNames.js` pour `fr` : le script ne fait qu'**ajouter** les 4 champs aux entrées qui n'en ont pas encore, jamais réécrire une entrée déjà complétée (y compris après correction manuelle). Usage ponctuel : `node scripts/generateCardStats.js` (ou `npm run justecarte:stats`).
 

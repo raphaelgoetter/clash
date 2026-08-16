@@ -2,7 +2,16 @@
   {
     "cardKey": "Archer Queen",
     "rarity": "champion",
-    "fr": "Reine des Archères"
+    "fr": "Reine des Archères",
+    "elixir": 5,
+    "hp": 1000,
+    "damage": 225,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 5,
+      "rank": 8
+    }
   },
   {
     "cardKey": "Archers",
@@ -167,7 +176,16 @@
   {
     "cardKey": "Boss Bandit",
     "rarity": "champion",
-    "fr": "Cheffe des voleuses"
+    "fr": "Cheffe des voleuses",
+    "elixir": 6,
+    "hp": 2624,
+    "damage": 245,
+    "range": {
+      "kind": "melee",
+      "category": "short",
+      "value": null,
+      "rank": 1
+    }
   },
   {
     "cardKey": "Bowler",
@@ -527,12 +545,30 @@
   {
     "cardKey": "Goblinstein",
     "rarity": "champion",
-    "fr": "Gobelinstein"
+    "fr": "Gobelinstein",
+    "elixir": 5,
+    "hp": 721,
+    "damage": 92,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 5.5,
+      "rank": 8.5
+    }
   },
   {
     "cardKey": "Golden Knight",
     "rarity": "champion",
-    "fr": "Chevalier d'or"
+    "fr": "Chevalier d'or",
+    "elixir": 4,
+    "hp": 1799,
+    "damage": 161,
+    "range": {
+      "kind": "melee",
+      "category": "medium",
+      "value": null,
+      "rank": 2
+    }
   },
   {
     "cardKey": "Golem",
@@ -697,7 +733,16 @@
   {
     "cardKey": "Little Prince",
     "rarity": "champion",
-    "fr": "Petit Prince"
+    "fr": "Petit Prince",
+    "elixir": 3,
+    "hp": 698,
+    "damage": 104,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 5.5,
+      "rank": 8.5
+    }
   },
   {
     "cardKey": "Lumberjack",
@@ -1079,7 +1124,16 @@
   {
     "cardKey": "Skeleton King",
     "rarity": "champion",
-    "fr": "Roi squelette"
+    "fr": "Roi squelette",
+    "elixir": 4,
+    "hp": 2298,
+    "damage": 204,
+    "range": {
+      "kind": "melee",
+      "category": "medium",
+      "value": null,
+      "rank": 2
+    }
   },
   {
     "cardKey": "Skeletons",
