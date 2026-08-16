@@ -69,6 +69,8 @@ async function resolveRankingPseudos(ranking) {
 
 // ── Embed / composants du post ────────────────────────────────
 
+const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
+
 // Doit rester synchronisé avec le cron de .github/workflows/lajustecarte.yml
 // ("0 16 * * 0") — jamais figé en dur dans le texte affiché, sous peine de
 // devenir faux à chaque bascule CET/CEST (voir formatUtcTimeAsParis).
@@ -84,6 +86,7 @@ function buildJusteCarteEmbed({ seasonId, seasonManche, seasonMancheTotal }) {
       "**Merci de ne pas spoiler ni tricher, sinon c'est pas drôle !**\n\n" +
       "🤖 Vérifie tes scores avec la commande `/justecarte`",
     color: JUSTECARTE_COLOR,
+    image: { url: `${TRUST_ROYALE_URL}/images/banner-justecarte.webp` },
     footer: {
       text: `Nouvelle manche : dimanche prochain, ${formatUtcTimeAsParis(JUSTECARTE_CRON_UTC_HOUR)} (heure de Paris) !`,
     },
