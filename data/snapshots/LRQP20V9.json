@@ -16045,7 +16045,7 @@
           "start": "2026-08-16T09:37:00.000Z",
           "end": "2026-08-17T09:36:59.999Z"
         },
-        "snapshotTime": "2026-08-17T07:21:19.796Z",
+        "snapshotTime": "2026-08-17T08:13:09.033Z",
         "snapshotBackupTime": "2026-08-16T10:04:23.728Z",
         "decks": {
           "#202R9VUJCU": 4,
@@ -16067,6 +16067,7 @@
           "#JR0U8Q008": 4,
           "#LRPQL8VCL": 4,
           "#LV0VUJVU": 4,
+          "#Q8GYUQ8GG": 4,
           "#RJY2R282V": 4,
           "#U0Q0P2YGU": 4,
           "#UPC0Y0LRQ": 4,
@@ -16126,7 +16127,7 @@
           "#LV0VUJVU": 2300,
           "#YGP000RP8": 2100,
           "#2L8RPQRJ9": 2150,
-          "#Q8GYUQ8GG": 1700,
+          "#Q8GYUQ8GG": 2500,
           "#UPC0Y0LRQ": 2200,
           "#GGVQJLG9": 2500,
           "#88QP9CJU": 2650,
@@ -16181,11 +16182,14 @@
           "#JR0U8Q008": 1,
           "#20UVJ0JQCU": 1,
           "#8R0LR8GYC": 1,
-          "#2L8RPQRJ9": 1
+          "#2L8RPQRJ9": 1,
+          "#CGJP0YYUJ": 1,
+          "#200YYG2Q08": 1,
+          "#Q8GYUQ8GG": 1
         },
         "_totalDonationsByTag": {
           "#29QRJRLY0": 43700,
-          "#VGJ9LL8VC": 57718,
+          "#VGJ9LL8VC": 57736,
           "#8P29RRU2": 363199,
           "#LRPQL8VCL": 32203,
           "#RJY2R282V": 47825,
@@ -16197,12 +16201,12 @@
           "#U2UYYCQVG": 3075,
           "#GGVQJLG9": 303705,
           "#PG9QUCP": 101830,
-          "#Q8GYUQ8GG": 59551,
+          "#Q8GYUQ8GG": 59577,
           "#2YP8VVG0": 6915,
           "#YLGC82PJR": 3300,
           "#8GVRUYUP": 57415,
           "#V202QV00C": 3686,
-          "#202R9VUJCU": 34761,
+          "#202R9VUJCU": 34769,
           "#8YGY2RPCC": 334833,
           "#829L90UU": 21057,
           "#GGLCLQ82L": 10591,
@@ -16221,7 +16225,7 @@
           "#8R0LR8GYC": 59581,
           "#L08LQRUY0": 8052,
           "#8P9CL92LC": 20019,
-          "#9VQYC9GJQ": 103024,
+          "#9VQYC9GJQ": 103032,
           "#UP9YJV080": 14514,
           "#RLR8P0Y8": 60176,
           "#J008G9CLJ": 10988,
@@ -16279,7 +16283,7 @@
           "#LV0VUJVU": 16,
           "#YGP000RP8": 16,
           "#2L8RPQRJ9": 16,
-          "#Q8GYUQ8GG": 12,
+          "#Q8GYUQ8GG": 16,
           "#UPC0Y0LRQ": 16,
           "#GGVQJLG9": 16,
           "#88QP9CJU": 16,
@@ -16306,7 +16310,7 @@
           "#VCJVLVV2J": 4
         },
         "periodPointsEarned": 17400,
-        "snapshotCount": 124
+        "snapshotCount": 128
       }
     ],
     "donationBaseline": {
