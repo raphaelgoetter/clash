@@ -17016,7 +17016,7 @@
           "start": "2026-08-16T09:57:00.000Z",
           "end": "2026-08-17T09:56:59.999Z"
         },
-        "snapshotTime": "2026-08-16T23:03:13.038Z",
+        "snapshotTime": "2026-08-17T00:09:09.491Z",
         "snapshotBackupTime": "2026-08-16T10:04:22.472Z",
         "decks": {
           "#2G0Q0CV9L": 4,
@@ -17053,6 +17053,7 @@
           "#YRYPUR822": 4,
           "#2902YQRQL": 3,
           "#L2RQPGRY": 3,
+          "#JLU88JR28": 2,
           "#VQP8PU2V": 2,
           "#202VQJY8RU": 1,
           "#UJ2LQU2V9": 1,
@@ -17082,7 +17083,7 @@
           "#99VY0090": 2250,
           "#2CL028C80": 1500,
           "#J8RU2RJ8C": 1550,
-          "#JLU88JR28": 1600,
+          "#JLU88JR28": 1800,
           "#8PP9JQCLY": 2200,
           "#L2RQPGRY": 2000,
           "#202VQJY8RU": 1700,
@@ -17158,7 +17159,9 @@
           "#P9R8Y90P8": 1,
           "#GJ8RV8802": 1,
           "#888Y29GY": 1,
-          "#U008V0PQ8": 1
+          "#U008V0PQ8": 1,
+          "#VYPYYQLY8": 1,
+          "#JLU88JR28": 1
         },
         "_totalDonationsByTag": {
           "#2PG80VRY": 204783,
@@ -17192,8 +17195,8 @@
           "#9CYUGPQ0C": 241473,
           "#U008V0PQ8": 26371,
           "#PG0Q0YYGY": 40516,
-          "#JLU88JR28": 13106,
-          "#2GUPJ99G2": 170401,
+          "#JLU88JR28": 13126,
+          "#2GUPJ99G2": 170429,
           "#888Y29GY": 70596,
           "#URG0Q9R0Y": 23695,
           "#CYRGPVGVG": 55565,
@@ -17235,7 +17238,7 @@
           "#99VY0090": 16,
           "#2CL028C80": 12,
           "#J8RU2RJ8C": 12,
-          "#JLU88JR28": 12,
+          "#JLU88JR28": 14,
           "#8PP9JQCLY": 16,
           "#L2RQPGRY": 13,
           "#202VQJY8RU": 13,
@@ -17280,7 +17283,7 @@
           "#9VQ0J29Y": 16
         },
         "periodPointsEarned": 32700,
-        "snapshotCount": 140
+        "snapshotCount": 142
       }
     ],
     "donationBaseline": {
