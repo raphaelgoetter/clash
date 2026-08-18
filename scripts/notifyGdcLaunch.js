@@ -17,10 +17,8 @@
 //      pour ne pas poster deux fois la même semaine.
 //   2. Appelle l'API Clash Royale (currentriverrace) pour
 //      détecter si la semaine est un Colisée.
-//   3. Récupère le rôle Discord du clan via l'API Discord pour
-//      mentionner les membres (@LES RESISTANTS ★ / @LES REVOLTES ★).
-//   4. Construit le message text + embed Colisée si nécessaire.
-//   5. Poste sur le channel du clan.
+//   3. Construit le message text + embed Colisée si nécessaire.
+//   4. Poste sur le channel du clan (sans ping de rôle).
 //
 // Usage :
 //   node scripts/notifyGdcLaunch.js              # poste réellement
@@ -31,7 +29,7 @@
 // Workflow : .github/workflows/gdc-launch.yml
 //
 // Dépendances env :
-//   DISCORD_TOKEN, DISCORD_GUILD_ID
+//   DISCORD_TOKEN
 //   DISCORD_CHANNEL_MEMBERS_Y8JUPC9C, DISCORD_CHANNEL_MEMBERS_LRQP20V9, DISCORD_CHANNEL_MEMBERS_QU9UQJRL
 //   CLASH_API_KEY
 //
@@ -54,12 +52,6 @@ const DISCORD_API = "https://discord.com/api/v10";
 // QU9UQJRL (Les Revoltes, Clan 3) exclu : GDC non obligatoire dans ce clan.
 const CLAN_TAGS = ["Y8JUPC9C", "LRQP20V9"];
 const LOG_FILE = path.resolve(__dirname, "..", "data", "gdc-launch-log.json");
-
-const CLAN_ROLE_NAMES = {
-  Y8JUPC9C: "LA RESISTANCE ★",
-  LRQP20V9: "LES RESISTANTS ★",
-  QU9UQJRL: "LES REVOLTES ★",
-};
 
 // ── Message templates ──────────────────────────────────────────
 
@@ -153,54 +145,6 @@ async function saveLog(log) {
   await fs.writeFile(LOG_FILE, JSON.stringify(log, null, 2) + "\n");
 }
 
-// ── Role mention ───────────────────────────────────────────────
-
-const ROLE_CACHE = new Map();
-
-function normalizeRoleName(value) {
-  return String(value ?? "")
-    .trim()
-    .replace(/\s+/g, " ")
-    .toLowerCase();
-}
-
-async function getClanRoleId(clanTag) {
-  const roleName = CLAN_ROLE_NAMES[clanTag];
-  if (!roleName) return null;
-
-  const guildId = process.env.DISCORD_GUILD_ID;
-  if (!guildId) return null;
-
-  const cacheKey = `roles:${guildId}`;
-  if (!ROLE_CACHE.has(cacheKey)) {
-    try {
-      const res = await fetch(`${DISCORD_API}/guilds/${guildId}/roles`, {
-        headers: {
-          Authorization: `Bot ${process.env.DISCORD_TOKEN}`,
-        },
-      });
-      if (!res.ok) {
-        console.warn(
-          `[notifyGdcLaunch] Impossible de récupérer les rôles (${res.status})`,
-        );
-        ROLE_CACHE.set(cacheKey, []);
-      } else {
-        const roles = await res.json();
-        ROLE_CACHE.set(cacheKey, Array.isArray(roles) ? roles : []);
-      }
-    } catch (err) {
-      console.warn(`[notifyGdcLaunch] Erreur rôles:`, err.message);
-      ROLE_CACHE.set(cacheKey, []);
-    }
-  }
-
-  const roles = ROLE_CACHE.get(cacheKey);
-  const role = roles.find(
-    (r) => normalizeRoleName(r?.name) === normalizeRoleName(roleName),
-  );
-  return role?.id ?? null;
-}
-
 // ── Week dedup key ─────────────────────────────────────────────
 
 function getWeekKey() {
@@ -264,16 +208,10 @@ async function main() {
       console.warn(`[WARN] ${tag}: fetchCurrentRace échoué:`, err.message);
     }
 
-    // Rôle et message
-    const roleId = await getClanRoleId(tag);
     const resetTime = formatResetTimeParis(tag);
-    const body = buildMessageBody(tag, isColosseum, resetTime);
-    const content = roleId
-      ? `<@&${roleId}>\n\n${body}`
-      : `@${CLAN_ROLE_NAMES[tag]}\n\n${body}`;
+    const content = buildMessageBody(tag, isColosseum, resetTime);
 
     const payload = { content, allowed_mentions: { parse: [] } };
-    if (roleId) payload.allowed_mentions.roles = [roleId];
     if (isColosseum) {
       payload.embeds = [
         {
