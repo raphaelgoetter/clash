@@ -3,9 +3,9 @@
     "name": "Les Resistants",
     "tag": "#LRQP20V9",
     "description": "Clan #2 ☆.Resistance (Top 🇫🇷) ⚔️Guerre de clan obligatoire (tolérance 12/16) 🤝 Présentation en arrivant 💬Discord kPdQN8zfjM",
-    "clanScore": 127312,
+    "clanScore": 127128,
     "clanWarTrophies": 3937,
-    "members": 45,
+    "members": 44,
     "type": "open",
     "requiredTrophies": 8000,
     "badge": 16000036,
@@ -18,62 +18,6 @@
     }
   },
   "membersRaw": {
-    "#8P29RRU2": {
-      "profile": {
-        "tag": "#8P29RRU2",
-        "name": "Ivax Jeanpierre",
-        "role": "elder",
-        "trophies": 14000,
-        "bestTrophies": 14000,
-        "expLevel": 86,
-        "totalDonations": 363371,
-        "donations": 172,
-        "warDayWins": 273,
-        "cw2Progress": 1476,
-        "clan": {
-          "tag": "#LRQP20V9",
-          "name": "Les Resistants"
-        },
-        "arena": "Spirit Square",
-        "stats": {
-          "battleCount": 34483,
-          "threeCrownWins": 6159
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 40,
-        "warBattles": 13
-      },
-      "fetchedAt": "2026-08-18T08:09:15.386Z"
-    },
-    "#22UVQ2Y8U": {
-      "profile": {
-        "tag": "#22UVQ2Y8U",
-        "name": "Léopard",
-        "role": "member",
-        "trophies": 14000,
-        "bestTrophies": 14000,
-        "expLevel": 59,
-        "totalDonations": 19085,
-        "donations": 26,
-        "warDayWins": 0,
-        "cw2Progress": 93,
-        "clan": {
-          "tag": "#LRQP20V9",
-          "name": "Les Resistants"
-        },
-        "arena": "Spirit Square",
-        "stats": {
-          "battleCount": 9425,
-          "threeCrownWins": 1084
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 0
-      },
-      "fetchedAt": "2026-08-18T08:09:15.386Z"
-    },
     "#VGJ9LL8VC": {
       "profile": {
         "tag": "#VGJ9LL8VC",
@@ -100,35 +44,35 @@
         "totalBattles": 30,
         "warBattles": 1
       },
-      "fetchedAt": "2026-08-18T08:09:15.386Z"
+      "fetchedAt": "2026-08-18T09:10:04.152Z"
     },
-    "#GGRLYR8PL": {
+    "#8P29RRU2": {
       "profile": {
-        "tag": "#GGRLYR8PL",
-        "name": "Jules ❤️ nonore",
-        "role": "coLeader",
+        "tag": "#8P29RRU2",
+        "name": "Ivax Jeanpierre",
+        "role": "elder",
         "trophies": 14000,
         "bestTrophies": 14000,
-        "expLevel": 84,
-        "totalDonations": 23311,
-        "donations": 0,
-        "warDayWins": 0,
-        "cw2Progress": 651,
+        "expLevel": 86,
+        "totalDonations": 363371,
+        "donations": 172,
+        "warDayWins": 273,
+        "cw2Progress": 1476,
         "clan": {
           "tag": "#LRQP20V9",
           "name": "Les Resistants"
         },
         "arena": "Spirit Square",
         "stats": {
-          "battleCount": 6428,
-          "threeCrownWins": 801
+          "battleCount": 34486,
+          "threeCrownWins": 6160
         }
       },
       "battleLogSummary": {
-        "totalBattles": 30,
-        "warBattles": 0
+        "totalBattles": 40,
+        "warBattles": 13
       },
-      "fetchedAt": "2026-08-18T08:09:15.386Z"
+      "fetchedAt": "2026-08-18T09:10:04.152Z"
     },
     "#2YGYYPYV": {
       "profile": {
@@ -156,7 +100,63 @@
         "totalBattles": 30,
         "warBattles": 14
       },
-      "fetchedAt": "2026-08-18T08:09:15.386Z"
+      "fetchedAt": "2026-08-18T09:10:04.152Z"
+    },
+    "#22UVQ2Y8U": {
+      "profile": {
+        "tag": "#22UVQ2Y8U",
+        "name": "Léopard",
+        "role": "member",
+        "trophies": 14000,
+        "bestTrophies": 14000,
+        "expLevel": 59,
+        "totalDonations": 19085,
+        "donations": 26,
+        "warDayWins": 0,
+        "cw2Progress": 93,
+        "clan": {
+          "tag": "#LRQP20V9",
+          "name": "Les Resistants"
+        },
+        "arena": "Spirit Square",
+        "stats": {
+          "battleCount": 9425,
+          "threeCrownWins": 1084
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 30,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-08-18T09:10:04.152Z"
+    },
+    "#GGRLYR8PL": {
+      "profile": {
+        "tag": "#GGRLYR8PL",
+        "name": "Jules ❤️ nonore",
+        "role": "coLeader",
+        "trophies": 14000,
+        "bestTrophies": 14000,
+        "expLevel": 84,
+        "totalDonations": 23311,
+        "donations": 0,
+        "warDayWins": 0,
+        "cw2Progress": 651,
+        "clan": {
+          "tag": "#LRQP20V9",
+          "name": "Les Resistants"
+        },
+        "arena": "Spirit Square",
+        "stats": {
+          "battleCount": 6428,
+          "threeCrownWins": 801
+        }
+      },
+      "battleLogSummary": {
+        "totalBattles": 30,
+        "warBattles": 0
+      },
+      "fetchedAt": "2026-08-18T09:10:04.152Z"
     },
     "#RJY2R282V": {
       "profile": {
@@ -184,7 +184,7 @@
         "totalBattles": 30,
         "warBattles": 6
       },
-      "fetchedAt": "2026-08-18T08:09:15.386Z"
+      "fetchedAt": "2026-08-18T09:10:04.152Z"
     },
     "#29QRJRLY0": {
       "profile": {
@@ -212,7 +212,7 @@
         "totalBattles": 30,
         "warBattles": 18
       },
-      "fetchedAt": "2026-08-18T08:09:15.386Z"
+      "fetchedAt": "2026-08-18T09:10:04.152Z"
     },
     "#LRPQL8VCL": {
       "profile": {
@@ -240,7 +240,7 @@
         "totalBattles": 30,
         "warBattles": 16
       },
-      "fetchedAt": "2026-08-18T08:09:15.386Z"
+      "fetchedAt": "2026-08-18T09:10:04.152Z"
     },
     "#LV0VUJVU": {
       "profile": {
@@ -268,7 +268,7 @@
         "totalBattles": 30,
         "warBattles": 8
       },
-      "fetchedAt": "2026-08-18T08:09:15.386Z"
+      "fetchedAt": "2026-08-18T09:10:04.153Z"
     },
     "#88QP9CJU": {
       "profile": {
@@ -296,7 +296,7 @@
         "totalBattles": 30,
         "warBattles": 16
       },
-      "fetchedAt": "2026-08-18T08:09:15.386Z"
+      "fetchedAt": "2026-08-18T09:10:04.153Z"
     },
     "#RLR8P0Y8": {
       "profile": {
@@ -324,7 +324,7 @@
         "totalBattles": 30,
         "warBattles": 0
       },
-      "fetchedAt": "2026-08-18T08:09:15.386Z"
+      "fetchedAt": "2026-08-18T09:10:04.153Z"
     },
     "#U2UYYCQVG": {
       "profile": {
@@ -352,7 +352,7 @@
         "totalBattles": 30,
         "warBattles": 0
       },
-      "fetchedAt": "2026-08-18T08:09:15.386Z"
+      "fetchedAt": "2026-08-18T09:10:04.153Z"
     },
     "#GGVQJLG9": {
       "profile": {
@@ -380,7 +380,7 @@
         "totalBattles": 34,
         "warBattles": 7
       },
-      "fetchedAt": "2026-08-18T08:09:15.386Z"
+      "fetchedAt": "2026-08-18T09:10:04.153Z"
     },
     "#PG9QUCP": {
       "profile": {
@@ -408,7 +408,7 @@
         "totalBattles": 30,
         "warBattles": 22
       },
-      "fetchedAt": "2026-08-18T08:09:15.386Z"
+      "fetchedAt": "2026-08-18T09:10:04.153Z"
     },
     "#Q8GYUQ8GG": {
       "profile": {
@@ -436,7 +436,7 @@
         "totalBattles": 34,
         "warBattles": 20
       },
-      "fetchedAt": "2026-08-18T08:09:15.386Z"
+      "fetchedAt": "2026-08-18T09:10:04.153Z"
     },
     "#2YP8VVG0": {
       "profile": {
@@ -464,7 +464,7 @@
         "totalBattles": 40,
         "warBattles": 0
       },
-      "fetchedAt": "2026-08-18T08:09:15.391Z"
+      "fetchedAt": "2026-08-18T09:10:04.160Z"
     },
     "#YLGC82PJR": {
       "profile": {
@@ -492,7 +492,7 @@
         "totalBattles": 30,
         "warBattles": 6
       },
-      "fetchedAt": "2026-08-18T08:09:15.391Z"
+      "fetchedAt": "2026-08-18T09:10:04.160Z"
     },
     "#VCJVLVV2J": {
       "profile": {
@@ -520,7 +520,7 @@
         "totalBattles": 30,
         "warBattles": 4
       },
-      "fetchedAt": "2026-08-18T08:09:15.391Z"
+      "fetchedAt": "2026-08-18T09:10:04.160Z"
     },
     "#8GVRUYUP": {
       "profile": {
@@ -548,7 +548,7 @@
         "totalBattles": 34,
         "warBattles": 12
       },
-      "fetchedAt": "2026-08-18T08:09:15.392Z"
+      "fetchedAt": "2026-08-18T09:10:04.160Z"
     },
     "#202R9VUJCU": {
       "profile": {
@@ -558,8 +558,8 @@
         "trophies": 12654,
         "bestTrophies": 12690,
         "expLevel": 54,
-        "totalDonations": 34917,
-        "donations": 180,
+        "totalDonations": 34927,
+        "donations": 190,
         "warDayWins": 0,
         "cw2Progress": 258,
         "clan": {
@@ -568,7 +568,7 @@
         },
         "arena": "Ultimate Clash Pit",
         "stats": {
-          "battleCount": 5977,
+          "battleCount": 5979,
           "threeCrownWins": 1542
         }
       },
@@ -576,7 +576,7 @@
         "totalBattles": 30,
         "warBattles": 12
       },
-      "fetchedAt": "2026-08-18T08:09:15.392Z"
+      "fetchedAt": "2026-08-18T09:10:04.160Z"
     },
     "#8YGY2RPCC": {
       "profile": {
@@ -604,7 +604,7 @@
         "totalBattles": 36,
         "warBattles": 28
       },
-      "fetchedAt": "2026-08-18T08:09:15.392Z"
+      "fetchedAt": "2026-08-18T09:10:04.160Z"
     },
     "#GGLCLQ82L": {
       "profile": {
@@ -632,7 +632,7 @@
         "totalBattles": 30,
         "warBattles": 1
       },
-      "fetchedAt": "2026-08-18T08:09:15.392Z"
+      "fetchedAt": "2026-08-18T09:10:04.160Z"
     },
     "#V2VLPPQCV": {
       "profile": {
@@ -660,7 +660,7 @@
         "totalBattles": 38,
         "warBattles": 0
       },
-      "fetchedAt": "2026-08-18T08:09:15.392Z"
+      "fetchedAt": "2026-08-18T09:10:04.160Z"
     },
     "#82JPJ9J98": {
       "profile": {
@@ -688,7 +688,7 @@
         "totalBattles": 30,
         "warBattles": 38
       },
-      "fetchedAt": "2026-08-18T08:09:15.392Z"
+      "fetchedAt": "2026-08-18T09:10:04.160Z"
     },
     "#2U9QL8Q89": {
       "profile": {
@@ -716,7 +716,7 @@
         "totalBattles": 30,
         "warBattles": 37
       },
-      "fetchedAt": "2026-08-18T08:09:15.392Z"
+      "fetchedAt": "2026-08-18T09:10:04.160Z"
     },
     "#20CG99G08J": {
       "profile": {
@@ -744,7 +744,7 @@
         "totalBattles": 30,
         "warBattles": 0
       },
-      "fetchedAt": "2026-08-18T08:09:15.392Z"
+      "fetchedAt": "2026-08-18T09:10:04.160Z"
     },
     "#8GGQLU28": {
       "profile": {
@@ -772,7 +772,7 @@
         "totalBattles": 30,
         "warBattles": 12
       },
-      "fetchedAt": "2026-08-18T08:09:15.392Z"
+      "fetchedAt": "2026-08-18T09:10:04.160Z"
     },
     "#LLRY2V8CJ": {
       "profile": {
@@ -800,7 +800,7 @@
         "totalBattles": 30,
         "warBattles": 23
       },
-      "fetchedAt": "2026-08-18T08:09:15.392Z"
+      "fetchedAt": "2026-08-18T09:10:04.160Z"
     },
     "#YGP000RP8": {
       "profile": {
@@ -828,7 +828,7 @@
         "totalBattles": 30,
         "warBattles": 25
       },
-      "fetchedAt": "2026-08-18T08:09:15.395Z"
+      "fetchedAt": "2026-08-18T09:10:04.164Z"
     },
     "#8Y90VQYP9": {
       "profile": {
@@ -848,7 +848,7 @@
         },
         "arena": "Royal Road",
         "stats": {
-          "battleCount": 12278,
+          "battleCount": 12280,
           "threeCrownWins": 4057
         }
       },
@@ -856,7 +856,7 @@
         "totalBattles": 32,
         "warBattles": 31
       },
-      "fetchedAt": "2026-08-18T08:09:15.395Z"
+      "fetchedAt": "2026-08-18T09:10:04.164Z"
     },
     "#2L8RPQRJ9": {
       "profile": {
@@ -884,7 +884,7 @@
         "totalBattles": 30,
         "warBattles": 36
       },
-      "fetchedAt": "2026-08-18T08:09:15.395Z"
+      "fetchedAt": "2026-08-18T09:10:04.164Z"
     },
     "#CJ9VYC9RP": {
       "profile": {
@@ -912,7 +912,7 @@
         "totalBattles": 30,
         "warBattles": 8
       },
-      "fetchedAt": "2026-08-18T08:09:15.395Z"
+      "fetchedAt": "2026-08-18T09:10:04.165Z"
     },
     "#UPC0Y0LRQ": {
       "profile": {
@@ -940,7 +940,7 @@
         "totalBattles": 30,
         "warBattles": 32
       },
-      "fetchedAt": "2026-08-18T08:09:15.395Z"
+      "fetchedAt": "2026-08-18T09:10:04.165Z"
     },
     "#ULVPUU9C2": {
       "profile": {
@@ -968,7 +968,7 @@
         "totalBattles": 30,
         "warBattles": 12
       },
-      "fetchedAt": "2026-08-18T08:09:15.395Z"
+      "fetchedAt": "2026-08-18T09:10:04.165Z"
     },
     "#UYP0YCQ9": {
       "profile": {
@@ -996,7 +996,7 @@
         "totalBattles": 30,
         "warBattles": 42
       },
-      "fetchedAt": "2026-08-18T08:09:15.395Z"
+      "fetchedAt": "2026-08-18T09:10:04.165Z"
     },
     "#VPGYR2990": {
       "profile": {
@@ -1024,7 +1024,7 @@
         "totalBattles": 30,
         "warBattles": 8
       },
-      "fetchedAt": "2026-08-18T08:09:15.395Z"
+      "fetchedAt": "2026-08-18T09:10:04.165Z"
     },
     "#VLVLQR0UP": {
       "profile": {
@@ -1052,7 +1052,7 @@
         "totalBattles": 33,
         "warBattles": 22
       },
-      "fetchedAt": "2026-08-18T08:09:15.402Z"
+      "fetchedAt": "2026-08-18T09:10:04.173Z"
     },
     "#8P9CL92LC": {
       "profile": {
@@ -1080,7 +1080,7 @@
         "totalBattles": 30,
         "warBattles": 12
       },
-      "fetchedAt": "2026-08-18T08:09:15.402Z"
+      "fetchedAt": "2026-08-18T09:10:04.173Z"
     },
     "#8R0LR8GYC": {
       "profile": {
@@ -1108,7 +1108,7 @@
         "totalBattles": 30,
         "warBattles": 41
       },
-      "fetchedAt": "2026-08-18T08:09:15.402Z"
+      "fetchedAt": "2026-08-18T09:10:04.173Z"
     },
     "#L08LQRUY0": {
       "profile": {
@@ -1136,7 +1136,7 @@
         "totalBattles": 29,
         "warBattles": 0
       },
-      "fetchedAt": "2026-08-18T08:09:15.402Z"
+      "fetchedAt": "2026-08-18T09:10:04.173Z"
     },
     "#9VQYC9GJQ": {
       "profile": {
@@ -1164,7 +1164,7 @@
         "totalBattles": 30,
         "warBattles": 8
       },
-      "fetchedAt": "2026-08-18T08:09:15.402Z"
+      "fetchedAt": "2026-08-18T09:10:04.173Z"
     },
     "#UP9YJV080": {
       "profile": {
@@ -1192,35 +1192,7 @@
         "totalBattles": 30,
         "warBattles": 40
       },
-      "fetchedAt": "2026-08-18T08:09:15.402Z"
-    },
-    "#J008G9CLJ": {
-      "profile": {
-        "tag": "#J008G9CLJ",
-        "name": "headless",
-        "role": "coLeader",
-        "trophies": 6166,
-        "bestTrophies": 6465,
-        "expLevel": 36,
-        "totalDonations": 10998,
-        "donations": 10,
-        "warDayWins": 0,
-        "cw2Progress": 196,
-        "clan": {
-          "tag": "#LRQP20V9",
-          "name": "Les Resistants"
-        },
-        "arena": "Royal Crypt",
-        "stats": {
-          "battleCount": 4212,
-          "threeCrownWins": 761
-        }
-      },
-      "battleLogSummary": {
-        "totalBattles": 37,
-        "warBattles": 10
-      },
-      "fetchedAt": "2026-08-18T08:09:15.402Z"
+      "fetchedAt": "2026-08-18T09:10:04.173Z"
     },
     "#UGU9JG2QC": {
       "profile": {
@@ -1248,7 +1220,7 @@
         "totalBattles": 22,
         "warBattles": 16
       },
-      "fetchedAt": "2026-08-18T08:09:15.402Z"
+      "fetchedAt": "2026-08-18T09:10:04.173Z"
     },
     "#U0Q0P2YGU": {
       "profile": {
@@ -1276,7 +1248,7 @@
         "totalBattles": 11,
         "warBattles": 8
       },
-      "fetchedAt": "2026-08-18T08:09:15.406Z"
+      "fetchedAt": "2026-08-18T09:10:04.173Z"
     }
   },
   "members": [
@@ -2831,6 +2803,172 @@
       "scoreVersion": "2026-07-05-v3-fr"
     },
     {
+      "name": "☆. Apocalm",
+      "tag": "#UP9YJV080",
+      "role": "coLeader",
+      "trophies": 6866,
+      "donations": 0,
+      "totalDonations": 14514,
+      "donationsReceived": 0,
+      "expLevel": 0,
+      "reliability": 61,
+      "reliabilitySource": "history",
+      "verdict": "Risque faible",
+      "verdictKey": "lowRisk",
+      "color": "yellow",
+      "isNew": false,
+      "firstSeenAt": "2026-01-01T00:00:00.000Z",
+      "discord": true,
+      "warDays": null,
+      "warHistory": {
+        "weeks": [
+          {
+            "label": "S135·W3 (live)",
+            "seasonId": 135,
+            "sectionIndex": 2,
+            "fame": 0,
+            "decksUsed": 0,
+            "boatAttacks": 0,
+            "clanTag": "#LRQP20V9",
+            "clanName": "Les Resistants",
+            "isCurrent": true,
+            "sourceKind": "currentRaceLog"
+          },
+          {
+            "label": "S86·W2",
+            "seasonId": 135,
+            "sectionIndex": 1,
+            "fame": 1300,
+            "decksUsed": 12,
+            "boatAttacks": 0,
+            "clanTag": "#LRQP20V9",
+            "clanName": "Les Resistants",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S86·W1",
+            "seasonId": 135,
+            "sectionIndex": 0,
+            "fame": 1300,
+            "decksUsed": 12,
+            "boatAttacks": 0,
+            "clanTag": "#LRQP20V9",
+            "clanName": "Les Resistants",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S85·W4",
+            "seasonId": 134,
+            "sectionIndex": 3,
+            "fame": 1700,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#LRQP20V9",
+            "clanName": "Les Resistants",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S85·W3",
+            "seasonId": 134,
+            "sectionIndex": 2,
+            "fame": 1600,
+            "decksUsed": 12,
+            "boatAttacks": 0,
+            "clanTag": "#LRQP20V9",
+            "clanName": "Les Resistants",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S85·W2",
+            "seasonId": 134,
+            "sectionIndex": 1,
+            "fame": 1500,
+            "decksUsed": 12,
+            "boatAttacks": 0,
+            "clanTag": "#LRQP20V9",
+            "clanName": "Les Resistants",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S85·W1",
+            "seasonId": 134,
+            "sectionIndex": 0,
+            "fame": 1800,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#LRQP20V9",
+            "clanName": "Les Resistants",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S84·W5",
+            "seasonId": 133,
+            "sectionIndex": 4,
+            "fame": 2700,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#LRQP20V9",
+            "clanName": "Les Resistants",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S84·W4",
+            "seasonId": 133,
+            "sectionIndex": 3,
+            "fame": 1900,
+            "decksUsed": 12,
+            "boatAttacks": 0,
+            "clanTag": "#LRQP20V9",
+            "clanName": "Les Resistants",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S84·W3",
+            "seasonId": 133,
+            "sectionIndex": 2,
+            "fame": 1900,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#LRQP20V9",
+            "clanName": "Les Resistants",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S84·W2",
+            "seasonId": 133,
+            "sectionIndex": 1,
+            "fame": 3000,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#LRQP20V9",
+            "clanName": "Les Resistants",
+            "sourceKind": "clanRaceLog"
+          }
+        ],
+        "totalFame": 18700,
+        "avgFame": 1870,
+        "maxFame": 3000,
+        "participation": 10,
+        "completedParticipation": 10,
+        "totalWeeks": 10,
+        "streakInCurrentClan": 10,
+        "streakInFamily": 10,
+        "historicalWinRate": 0.3357142857142857,
+        "noFurtherData": false
+      },
+      "arrivalStreakInCurrentClan": 10,
+      "arrivalTotalWeeks": 10,
+      "avgFame": 1870,
+      "maxFame": 3000,
+      "totalDecks": 140,
+      "pointsPerDeck": 134,
+      "warDecks": null,
+      "joinDate": null,
+      "lastSeen": "20260817T090402.000Z",
+      "lastWarDecks": 12,
+      "scoreVersion": "2026-07-05-v3-fr"
+    },
+    {
       "name": "Nexus-YC™️",
       "tag": "#U2UYYCQVG",
       "role": "member",
@@ -3187,20 +3325,20 @@
       "pointsPerDeck": 141,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260817T152128.000Z",
+      "lastSeen": "20260818T081521.000Z",
       "lastWarDecks": 15,
       "scoreVersion": "2026-07-05-v3-fr"
     },
     {
-      "name": "☆. Apocalm",
-      "tag": "#UP9YJV080",
+      "name": "☆. Apoplexy",
+      "tag": "#UYP0YCQ9",
       "role": "coLeader",
-      "trophies": 6866,
+      "trophies": 9642,
       "donations": 0,
-      "totalDonations": 14514,
+      "totalDonations": 241109,
       "donationsReceived": 0,
       "expLevel": 0,
-      "reliability": 66,
+      "reliability": 65,
       "reliabilitySource": "history",
       "verdict": "Risque faible",
       "verdictKey": "lowRisk",
@@ -3238,7 +3376,7 @@
             "label": "S86·W1",
             "seasonId": 135,
             "sectionIndex": 0,
-            "fame": 1300,
+            "fame": 1750,
             "decksUsed": 12,
             "boatAttacks": 0,
             "clanTag": "#LRQP20V9",
@@ -3249,7 +3387,7 @@
             "label": "S85·W4",
             "seasonId": 134,
             "sectionIndex": 3,
-            "fame": 1700,
+            "fame": 1850,
             "decksUsed": 16,
             "boatAttacks": 0,
             "clanTag": "#LRQP20V9",
@@ -3260,7 +3398,7 @@
             "label": "S85·W3",
             "seasonId": 134,
             "sectionIndex": 2,
-            "fame": 1600,
+            "fame": 1800,
             "decksUsed": 12,
             "boatAttacks": 0,
             "clanTag": "#LRQP20V9",
@@ -3271,89 +3409,89 @@
             "label": "S85·W2",
             "seasonId": 134,
             "sectionIndex": 1,
-            "fame": 1500,
+            "fame": 1950,
             "decksUsed": 12,
             "boatAttacks": 0,
-            "clanTag": "#LRQP20V9",
-            "clanName": "Les Resistants",
+            "clanTag": "#Y8JUPC9C",
+            "clanName": "La Resistance",
             "sourceKind": "clanRaceLog"
           },
           {
             "label": "S85·W1",
             "seasonId": 134,
             "sectionIndex": 0,
-            "fame": 1800,
+            "fame": 2250,
             "decksUsed": 16,
             "boatAttacks": 0,
-            "clanTag": "#LRQP20V9",
-            "clanName": "Les Resistants",
+            "clanTag": "#Y8JUPC9C",
+            "clanName": "La Resistance",
             "sourceKind": "clanRaceLog"
           },
           {
             "label": "S84·W5",
             "seasonId": 133,
             "sectionIndex": 4,
-            "fame": 2700,
+            "fame": 1950,
             "decksUsed": 16,
             "boatAttacks": 0,
-            "clanTag": "#LRQP20V9",
-            "clanName": "Les Resistants",
+            "clanTag": "#Y8JUPC9C",
+            "clanName": "La Resistance",
             "sourceKind": "clanRaceLog"
           },
           {
             "label": "S84·W4",
             "seasonId": 133,
             "sectionIndex": 3,
-            "fame": 1900,
+            "fame": 1650,
             "decksUsed": 12,
             "boatAttacks": 0,
-            "clanTag": "#LRQP20V9",
-            "clanName": "Les Resistants",
+            "clanTag": "#Y8JUPC9C",
+            "clanName": "La Resistance",
             "sourceKind": "clanRaceLog"
           },
           {
             "label": "S84·W3",
             "seasonId": 133,
             "sectionIndex": 2,
-            "fame": 1900,
+            "fame": 2100,
             "decksUsed": 16,
             "boatAttacks": 0,
-            "clanTag": "#LRQP20V9",
-            "clanName": "Les Resistants",
+            "clanTag": "#Y8JUPC9C",
+            "clanName": "La Resistance",
             "sourceKind": "clanRaceLog"
           },
           {
             "label": "S84·W2",
             "seasonId": 133,
             "sectionIndex": 1,
-            "fame": 3000,
+            "fame": 2500,
             "decksUsed": 16,
             "boatAttacks": 0,
-            "clanTag": "#LRQP20V9",
-            "clanName": "Les Resistants",
+            "clanTag": "#Y8JUPC9C",
+            "clanName": "La Resistance",
             "sourceKind": "clanRaceLog"
           }
         ],
-        "totalFame": 18700,
-        "avgFame": 1870,
-        "maxFame": 3000,
+        "totalFame": 19100,
+        "avgFame": 1910,
+        "maxFame": 2500,
         "participation": 10,
         "completedParticipation": 10,
         "totalWeeks": 10,
-        "streakInCurrentClan": 10,
+        "streakInCurrentClan": 4,
         "streakInFamily": 10,
-        "historicalWinRate": 0.3357142857142857,
+        "historicalWinRate": 0.38571428571428573,
         "noFurtherData": false
       },
-      "arrivalStreakInCurrentClan": 10,
+      "arrivalStreakInCurrentClan": 4,
       "arrivalTotalWeeks": 10,
-      "avgFame": 1870,
-      "maxFame": 3000,
+      "avgFame": 1910,
+      "maxFame": 2500,
       "totalDecks": 140,
-      "pointsPerDeck": 134,
+      "pointsPerDeck": 136,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260817T090402.000Z",
+      "lastSeen": "20260817T085431.000Z",
       "lastWarDecks": 12,
       "scoreVersion": "2026-07-05-v3-fr"
     },
@@ -3521,338 +3659,6 @@
       "joinDate": null,
       "lastSeen": "20260817T070413.000Z",
       "lastWarDecks": 16,
-      "scoreVersion": "2026-07-05-v3-fr"
-    },
-    {
-      "name": "☆. Apoplexy",
-      "tag": "#UYP0YCQ9",
-      "role": "coLeader",
-      "trophies": 9642,
-      "donations": 0,
-      "totalDonations": 241109,
-      "donationsReceived": 0,
-      "expLevel": 0,
-      "reliability": 70,
-      "reliabilitySource": "history",
-      "verdict": "Risque faible",
-      "verdictKey": "lowRisk",
-      "color": "yellow",
-      "isNew": false,
-      "firstSeenAt": "2026-01-01T00:00:00.000Z",
-      "discord": true,
-      "warDays": null,
-      "warHistory": {
-        "weeks": [
-          {
-            "label": "S135·W3 (live)",
-            "seasonId": 135,
-            "sectionIndex": 2,
-            "fame": 0,
-            "decksUsed": 0,
-            "boatAttacks": 0,
-            "clanTag": "#LRQP20V9",
-            "clanName": "Les Resistants",
-            "isCurrent": true,
-            "sourceKind": "currentRaceLog"
-          },
-          {
-            "label": "S86·W2",
-            "seasonId": 135,
-            "sectionIndex": 1,
-            "fame": 1300,
-            "decksUsed": 12,
-            "boatAttacks": 0,
-            "clanTag": "#LRQP20V9",
-            "clanName": "Les Resistants",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S86·W1",
-            "seasonId": 135,
-            "sectionIndex": 0,
-            "fame": 1750,
-            "decksUsed": 12,
-            "boatAttacks": 0,
-            "clanTag": "#LRQP20V9",
-            "clanName": "Les Resistants",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S85·W4",
-            "seasonId": 134,
-            "sectionIndex": 3,
-            "fame": 1850,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#LRQP20V9",
-            "clanName": "Les Resistants",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S85·W3",
-            "seasonId": 134,
-            "sectionIndex": 2,
-            "fame": 1800,
-            "decksUsed": 12,
-            "boatAttacks": 0,
-            "clanTag": "#LRQP20V9",
-            "clanName": "Les Resistants",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S85·W2",
-            "seasonId": 134,
-            "sectionIndex": 1,
-            "fame": 1950,
-            "decksUsed": 12,
-            "boatAttacks": 0,
-            "clanTag": "#Y8JUPC9C",
-            "clanName": "La Resistance",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S85·W1",
-            "seasonId": 134,
-            "sectionIndex": 0,
-            "fame": 2250,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#Y8JUPC9C",
-            "clanName": "La Resistance",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S84·W5",
-            "seasonId": 133,
-            "sectionIndex": 4,
-            "fame": 1950,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#Y8JUPC9C",
-            "clanName": "La Resistance",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S84·W4",
-            "seasonId": 133,
-            "sectionIndex": 3,
-            "fame": 1650,
-            "decksUsed": 12,
-            "boatAttacks": 0,
-            "clanTag": "#Y8JUPC9C",
-            "clanName": "La Resistance",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S84·W3",
-            "seasonId": 133,
-            "sectionIndex": 2,
-            "fame": 2100,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#Y8JUPC9C",
-            "clanName": "La Resistance",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S84·W2",
-            "seasonId": 133,
-            "sectionIndex": 1,
-            "fame": 2500,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#Y8JUPC9C",
-            "clanName": "La Resistance",
-            "sourceKind": "clanRaceLog"
-          }
-        ],
-        "totalFame": 19100,
-        "avgFame": 1910,
-        "maxFame": 2500,
-        "participation": 10,
-        "completedParticipation": 10,
-        "totalWeeks": 10,
-        "streakInCurrentClan": 4,
-        "streakInFamily": 10,
-        "historicalWinRate": 0.38571428571428573,
-        "noFurtherData": false
-      },
-      "arrivalStreakInCurrentClan": 4,
-      "arrivalTotalWeeks": 10,
-      "avgFame": 1910,
-      "maxFame": 2500,
-      "totalDecks": 140,
-      "pointsPerDeck": 136,
-      "warDecks": null,
-      "joinDate": null,
-      "lastSeen": "20260817T085431.000Z",
-      "lastWarDecks": 12,
-      "scoreVersion": "2026-07-05-v3-fr"
-    },
-    {
-      "name": "headless",
-      "tag": "#J008G9CLJ",
-      "role": "coLeader",
-      "trophies": 6166,
-      "donations": 10,
-      "totalDonations": 10998,
-      "donationsReceived": 120,
-      "expLevel": 0,
-      "reliability": 70,
-      "reliabilitySource": "history",
-      "verdict": "Risque faible",
-      "verdictKey": "lowRisk",
-      "color": "yellow",
-      "isNew": false,
-      "firstSeenAt": "2026-01-01T00:00:00.000Z",
-      "discord": true,
-      "warDays": null,
-      "warHistory": {
-        "weeks": [
-          {
-            "label": "S135·W3 (live)",
-            "seasonId": 135,
-            "sectionIndex": 2,
-            "fame": 0,
-            "decksUsed": 0,
-            "boatAttacks": 0,
-            "clanTag": "#LRQP20V9",
-            "clanName": "Les Resistants",
-            "isCurrent": true,
-            "sourceKind": "currentRaceLog"
-          },
-          {
-            "label": "S86·W2",
-            "seasonId": 135,
-            "sectionIndex": 1,
-            "fame": 1200,
-            "decksUsed": 12,
-            "boatAttacks": 0,
-            "clanTag": "#QU9UQJRL",
-            "clanName": "Les Revoltes",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S86·W1",
-            "seasonId": 135,
-            "sectionIndex": 0,
-            "fame": 1600,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#QU9UQJRL",
-            "clanName": "Les Revoltes",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S85·W4",
-            "seasonId": 134,
-            "sectionIndex": 3,
-            "fame": 1600,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#LRQP20V9",
-            "clanName": "Les Resistants",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S85·W3",
-            "seasonId": 134,
-            "sectionIndex": 2,
-            "fame": 1600,
-            "decksUsed": 12,
-            "boatAttacks": 0,
-            "clanTag": "#QU9UQJRL",
-            "clanName": "Les Revoltes",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S85·W2",
-            "seasonId": 134,
-            "sectionIndex": 1,
-            "fame": 2350,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#QU9UQJRL",
-            "clanName": "Les Revoltes",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S85·W1",
-            "seasonId": 134,
-            "sectionIndex": 0,
-            "fame": 2700,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#QU9UQJRL",
-            "clanName": "Les Revoltes",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S84·W5",
-            "seasonId": 133,
-            "sectionIndex": 4,
-            "fame": 2200,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#QU9UQJRL",
-            "clanName": "Les Revoltes",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S84·W4",
-            "seasonId": 133,
-            "sectionIndex": 3,
-            "fame": 2400,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#QU9UQJRL",
-            "clanName": "Les Revoltes",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S84·W3",
-            "seasonId": 133,
-            "sectionIndex": 2,
-            "fame": 2700,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#QU9UQJRL",
-            "clanName": "Les Revoltes",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S84·W2",
-            "seasonId": 133,
-            "sectionIndex": 1,
-            "fame": 2500,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#QU9UQJRL",
-            "clanName": "Les Revoltes",
-            "sourceKind": "clanRaceLog"
-          }
-        ],
-        "totalFame": 20850,
-        "avgFame": 2085,
-        "maxFame": 2700,
-        "participation": 10,
-        "completedParticipation": 10,
-        "totalWeeks": 10,
-        "streakInCurrentClan": 1,
-        "streakInFamily": 10,
-        "historicalWinRate": 0.375,
-        "noFurtherData": false
-      },
-      "arrivalStreakInCurrentClan": 1,
-      "arrivalTotalWeeks": 10,
-      "avgFame": 2085,
-      "maxFame": 2700,
-      "totalDecks": 152,
-      "pointsPerDeck": 137,
-      "warDecks": null,
-      "joinDate": null,
-      "lastSeen": "20260818T053146.000Z",
-      "lastWarDecks": 4,
       "scoreVersion": "2026-07-05-v3-fr"
     },
     {
@@ -4604,7 +4410,7 @@
       "pointsPerDeck": 144,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260818T012238.000Z",
+      "lastSeen": "20260818T081415.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-07-05-v3-fr"
     },
@@ -4938,7 +4744,7 @@
       "pointsPerDeck": 148,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260818T054428.000Z",
+      "lastSeen": "20260818T084633.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-07-05-v3-fr"
     },
@@ -5438,7 +5244,7 @@
       "pointsPerDeck": 158,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260818T040104.000Z",
+      "lastSeen": "20260818T084832.000Z",
       "lastWarDecks": 14,
       "scoreVersion": "2026-07-05-v3-fr"
     },
@@ -5771,6 +5577,174 @@
       "warDecks": null,
       "joinDate": null,
       "lastSeen": "20260818T071506.000Z",
+      "lastWarDecks": 16,
+      "scoreVersion": "2026-07-05-v3-fr"
+    },
+    {
+      "name": "☆. Proton",
+      "tag": "#UPC0Y0LRQ",
+      "role": "leader",
+      "trophies": 10392,
+      "donations": 26,
+      "totalDonations": 11451,
+      "donationsReceived": 40,
+      "expLevel": 0,
+      "reliability": 87,
+      "reliabilitySource": "history",
+      "verdict": "Très fiable",
+      "verdictKey": "highReliability",
+      "color": "green",
+      "isNew": false,
+      "firstSeenAt": "2026-01-01T00:00:00.000Z",
+      "discord": true,
+      "warDays": null,
+      "warHistory": {
+        "weeks": [
+          {
+            "label": "S135·W3 (live)",
+            "seasonId": 135,
+            "sectionIndex": 2,
+            "fame": 0,
+            "decksUsed": 0,
+            "boatAttacks": 0,
+            "clanTag": "#LRQP20V9",
+            "clanName": "Les Resistants",
+            "isCurrent": true,
+            "sourceKind": "currentRaceLog"
+          },
+          {
+            "label": "S86·W2",
+            "seasonId": 135,
+            "sectionIndex": 1,
+            "fame": 2200,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#LRQP20V9",
+            "clanName": "Les Resistants",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S86·W1",
+            "seasonId": 135,
+            "sectionIndex": 0,
+            "fame": 2000,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#LRQP20V9",
+            "clanName": "Les Resistants",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S85·W4",
+            "seasonId": 134,
+            "sectionIndex": 3,
+            "fame": 2300,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#LRQP20V9",
+            "clanName": "Les Resistants",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S85·W3",
+            "seasonId": 134,
+            "sectionIndex": 2,
+            "fame": 2150,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#LRQP20V9",
+            "clanName": "Les Resistants",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S85·W2",
+            "seasonId": 134,
+            "sectionIndex": 1,
+            "fame": 2150,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#LRQP20V9",
+            "clanName": "Les Resistants",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S85·W1",
+            "seasonId": 134,
+            "sectionIndex": 0,
+            "fame": 2150,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#LRQP20V9",
+            "clanName": "Les Resistants",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S84·W5",
+            "seasonId": 133,
+            "sectionIndex": 4,
+            "fame": 2300,
+            "decksUsed": 16,
+            "boatAttacks": 0,
+            "clanTag": "#LRQP20V9",
+            "clanName": "Les Resistants",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S84·W4",
+            "seasonId": 133,
+            "sectionIndex": 3,
+            "fame": 0,
+            "decksUsed": 0,
+            "boatAttacks": 0,
+            "clanTag": "#LRQP20V9",
+            "clanName": "Les Resistants",
+            "sourceKind": "clanRaceLog",
+            "transferRisk": true
+          },
+          {
+            "label": "S84·W3",
+            "seasonId": 133,
+            "sectionIndex": 2,
+            "fame": 500,
+            "decksUsed": 4,
+            "boatAttacks": 0,
+            "clanTag": "#LRQP20V9",
+            "clanName": "Les Resistants",
+            "sourceKind": "clanRaceLog"
+          },
+          {
+            "label": "S84·W2",
+            "seasonId": 133,
+            "sectionIndex": 1,
+            "fame": 900,
+            "decksUsed": 4,
+            "boatAttacks": 0,
+            "clanTag": "#LRQP20V9",
+            "clanName": "Les Resistants",
+            "sourceKind": "clanRaceLog",
+            "ignored": true
+          }
+        ],
+        "totalFame": 15750,
+        "avgFame": 1969,
+        "maxFame": 2300,
+        "participation": 8,
+        "completedParticipation": 8,
+        "totalWeeks": 9,
+        "streakInCurrentClan": 10,
+        "streakInFamily": 10,
+        "historicalWinRate": 0.3706896551724138,
+        "noFurtherData": false
+      },
+      "arrivalStreakInCurrentClan": 10,
+      "arrivalTotalWeeks": 9,
+      "avgFame": 1969,
+      "maxFame": 2300,
+      "totalDecks": 116,
+      "pointsPerDeck": 136,
+      "warDecks": null,
+      "joinDate": null,
+      "lastSeen": "20260817T083822.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-07-05-v3-fr"
     },
@@ -6275,174 +6249,6 @@
       "scoreVersion": "2026-07-05-v3-fr"
     },
     {
-      "name": "☆. Proton",
-      "tag": "#UPC0Y0LRQ",
-      "role": "leader",
-      "trophies": 10392,
-      "donations": 26,
-      "totalDonations": 11451,
-      "donationsReceived": 40,
-      "expLevel": 0,
-      "reliability": 92,
-      "reliabilitySource": "history",
-      "verdict": "Très fiable",
-      "verdictKey": "highReliability",
-      "color": "green",
-      "isNew": false,
-      "firstSeenAt": "2026-01-01T00:00:00.000Z",
-      "discord": true,
-      "warDays": null,
-      "warHistory": {
-        "weeks": [
-          {
-            "label": "S135·W3 (live)",
-            "seasonId": 135,
-            "sectionIndex": 2,
-            "fame": 0,
-            "decksUsed": 0,
-            "boatAttacks": 0,
-            "clanTag": "#LRQP20V9",
-            "clanName": "Les Resistants",
-            "isCurrent": true,
-            "sourceKind": "currentRaceLog"
-          },
-          {
-            "label": "S86·W2",
-            "seasonId": 135,
-            "sectionIndex": 1,
-            "fame": 2200,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#LRQP20V9",
-            "clanName": "Les Resistants",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S86·W1",
-            "seasonId": 135,
-            "sectionIndex": 0,
-            "fame": 2000,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#LRQP20V9",
-            "clanName": "Les Resistants",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S85·W4",
-            "seasonId": 134,
-            "sectionIndex": 3,
-            "fame": 2300,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#LRQP20V9",
-            "clanName": "Les Resistants",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S85·W3",
-            "seasonId": 134,
-            "sectionIndex": 2,
-            "fame": 2150,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#LRQP20V9",
-            "clanName": "Les Resistants",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S85·W2",
-            "seasonId": 134,
-            "sectionIndex": 1,
-            "fame": 2150,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#LRQP20V9",
-            "clanName": "Les Resistants",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S85·W1",
-            "seasonId": 134,
-            "sectionIndex": 0,
-            "fame": 2150,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#LRQP20V9",
-            "clanName": "Les Resistants",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S84·W5",
-            "seasonId": 133,
-            "sectionIndex": 4,
-            "fame": 2300,
-            "decksUsed": 16,
-            "boatAttacks": 0,
-            "clanTag": "#LRQP20V9",
-            "clanName": "Les Resistants",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S84·W4",
-            "seasonId": 133,
-            "sectionIndex": 3,
-            "fame": 0,
-            "decksUsed": 0,
-            "boatAttacks": 0,
-            "clanTag": "#LRQP20V9",
-            "clanName": "Les Resistants",
-            "sourceKind": "clanRaceLog",
-            "transferRisk": true
-          },
-          {
-            "label": "S84·W3",
-            "seasonId": 133,
-            "sectionIndex": 2,
-            "fame": 500,
-            "decksUsed": 4,
-            "boatAttacks": 0,
-            "clanTag": "#LRQP20V9",
-            "clanName": "Les Resistants",
-            "sourceKind": "clanRaceLog"
-          },
-          {
-            "label": "S84·W2",
-            "seasonId": 133,
-            "sectionIndex": 1,
-            "fame": 900,
-            "decksUsed": 4,
-            "boatAttacks": 0,
-            "clanTag": "#LRQP20V9",
-            "clanName": "Les Resistants",
-            "sourceKind": "clanRaceLog",
-            "ignored": true
-          }
-        ],
-        "totalFame": 15750,
-        "avgFame": 1969,
-        "maxFame": 2300,
-        "participation": 8,
-        "completedParticipation": 8,
-        "totalWeeks": 9,
-        "streakInCurrentClan": 10,
-        "streakInFamily": 10,
-        "historicalWinRate": 0.3706896551724138,
-        "noFurtherData": false
-      },
-      "arrivalStreakInCurrentClan": 10,
-      "arrivalTotalWeeks": 9,
-      "avgFame": 1969,
-      "maxFame": 2300,
-      "totalDecks": 116,
-      "pointsPerDeck": 136,
-      "warDecks": null,
-      "joinDate": null,
-      "lastSeen": "20260817T083822.000Z",
-      "lastWarDecks": 16,
-      "scoreVersion": "2026-07-05-v3-fr"
-    },
-    {
       "name": "Ta-Kilote",
       "tag": "#29QRJRLY0",
       "role": "elder",
@@ -6770,7 +6576,7 @@
       "pointsPerDeck": 139,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260818T080828.000Z",
+      "lastSeen": "20260818T090335.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-07-05-v3-fr"
     },
@@ -6779,8 +6585,8 @@
       "tag": "#202R9VUJCU",
       "role": "elder",
       "trophies": 12654,
-      "donations": 180,
-      "totalDonations": 34917,
+      "donations": 190,
+      "totalDonations": 34927,
       "donationsReceived": 120,
       "expLevel": 0,
       "reliability": 94,
@@ -6892,7 +6698,7 @@
       "pointsPerDeck": 141,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260818T054626.000Z",
+      "lastSeen": "20260818T083615.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-07-05-v3-fr"
     },
@@ -7557,7 +7363,7 @@
       "trophies": 14000,
       "donations": 280,
       "totalDonations": 57946,
-      "donationsReceived": 150,
+      "donationsReceived": 160,
       "expLevel": 0,
       "reliability": 100,
       "reliabilitySource": "history",
@@ -7712,18 +7518,18 @@
       "pointsPerDeck": 183,
       "warDecks": null,
       "joinDate": null,
-      "lastSeen": "20260818T063132.000Z",
+      "lastSeen": "20260818T090857.000Z",
       "lastWarDecks": 16,
       "scoreVersion": "2026-07-05-v3-fr"
     }
   ],
   "summary": {
     "green": 23,
-    "yellow": 10,
+    "yellow": 9,
     "orange": 7,
     "red": 5,
     "avgScore": 69,
-    "total": 45
+    "total": 44
   },
   "isWarPeriod": true,
   "isColosseum": false,
@@ -8607,8 +8413,8 @@
         "name": "headless",
         "tag": "#J008G9CLJ",
         "decks": 4,
-        "role": "coLeader",
-        "inClan": true,
+        "role": "member",
+        "inClan": false,
         "daily": [
           null,
           null,
@@ -8926,12 +8732,6 @@
         "missingDuels": 3
       },
       {
-        "name": "headless",
-        "tag": "#J008G9CLJ",
-        "role": "coLeader",
-        "missingDuels": 3
-      },
-      {
         "name": "Nëxūs✰",
         "tag": "#VCJVLVV2J",
         "role": "member",
@@ -8973,7 +8773,7 @@
     "totalDecksUsed": 0,
     "maxDecksElapsed": 800,
     "maxDecksWeek": 800,
-    "participantCount": 45,
+    "participantCount": 44,
     "daysFromThu": 4,
     "days": [
       {
@@ -9056,7 +8856,7 @@
       "tag": "#LRQP20V9",
       "name": "Les Resistants",
       "rank": null,
-      "members": 45,
+      "members": 44,
       "clanWarTrophies": 3937,
       "clanScore": 0,
       "prevWarFame": 74400,
@@ -9131,5 +8931,5 @@
   ],
   "rateLimited": false,
   "raceLogUnavailable": false,
-  "analysisCacheUpdatedAt": "2026-08-18T08:09:16.340Z"
+  "analysisCacheUpdatedAt": "2026-08-18T09:10:04.979Z"
 }
