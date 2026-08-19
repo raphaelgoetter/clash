@@ -164,15 +164,7 @@ function buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId, manche
   const shown = nonZero.slice(0, SEASON_RECAP_MAX_PLAYERS);
   const hiddenCount = nonZero.length - shown.length;
 
-  const topScore = shown[0]?.totalScore;
-  const winners = shown.filter((r) => r.totalScore === topScore);
-  const winnerNames = winners.map((w) => w.pseudo).join(" et ");
-
   const lines = [
-    winners.length > 1
-      ? `🥇 ${winnerNames} remportent la saison avec ${topScore} pts !`
-      : `🥇 ${winnerNames} remporte la saison avec ${topScore} pts !`,
-    "",
     "**Classement final :**",
     ...shown.map((entry) => {
       const rank = findTiedRank(shown, entry.discordId, "totalScore");
@@ -204,9 +196,9 @@ function buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId, manche
   );
 
   return {
-    title: `🏆 Fin de la Saison ${toPublicSeasonId(endedSeasonId)} !`,
+    title: `🏆 Fin de la Saison ${toPublicSeasonId(endedSeasonId)} « Trouve le film » !`,
     description:
-      `Merci aux ${seasonRanking.length} joueur${seasonRanking.length > 1 ? "s" : ""} qui ont participé à « Trouve le film » cette saison !\n\n` +
+      `Merci aux ${seasonRanking.length} joueur${seasonRanking.length > 1 ? "s" : ""} qui ont participé à ce mini-jeu cette saison.\n\n` +
       lines.join("\n"),
     color: FRAME_COLOR,
   };
