@@ -1,7 +1,7 @@
 // ============================================================
 // tamagotchi.js — Handlers Discord pour le Tamagotchi communautaire
-// "Bébé Dragon Lilith". Embed, boutons d'action (vote), Projection et
-// Règles du jeu. La publication/suppression quotidienne passe uniquement
+// "Bébé Dragon Lilith". Embed, boutons d'action (vote) et Règles du jeu.
+// La publication/suppression quotidienne passe uniquement
 // par scripts/postTamagotchi.js (postTamagotchi) — les boutons restent gérés
 // par api/discord/interactions.js.
 // ============================================================
@@ -19,9 +19,8 @@ import {
   eventForDay,
   applyGaugeDelta,
   computeDayOpenGauges,
-  applyActionOverrides,
-  computeDayImpact,
   computeFinalTier,
+  capTierByConfiance,
   archiveManche,
   listManches,
   claimPilule,
@@ -200,7 +199,7 @@ function buildDay1Intro() {
 // GAUGE_ICONS, qui a besoin d'une icône même en normal) : rien
 // d'intéressant à raconter sur une jauge ordinaire, la ligne est alors
 // simplement omise plutôt que de meubler avec une phrase creuse.
-async function buildNarrative(jour, gauges, voters, estPremierJour, zones) {
+async function buildNarrative(jour, gauges, voters, estPremierJour, zones, confiance, confianceConfig) {
   if (estPremierJour) return buildDay1Intro();
 
   const narratifs = await loadNarratifs();
@@ -216,6 +215,16 @@ async function buildNarrative(jour, gauges, voters, estPremierJour, zones) {
   const moralKey = gaugeCategory("moral", gauges.moral, zones);
   if (!moralKey.endsWith("_normal"))
     lines.push(pickFlavor(narratifs[moralKey], jour + 3));
+
+  // Confiance : pas de bande "zone" comme les 3 jauges (elle part de 100 et ne
+  // fait que baisser/se reconstruire lentement) — un seul seuil "bas", repris
+  // du plafond de palier le plus haut (là où la Confiance commence déjà à
+  // coûter cher en fin de manche), pour rester cohérent sans dupliquer le
+  // nombre en dur ici.
+  if (confiance != null && confianceConfig?.plafond_tier?.length && narratifs.confiance_bas?.length) {
+    const seuil = Math.max(...confianceConfig.plafond_tier.map((p) => p.sous));
+    if (confiance < seuil) lines.push(pickFlavor(narratifs.confiance_bas, jour + 5));
+  }
 
   const names = await pickVoterNames(voters, jour);
   if (names.length) {
@@ -253,6 +262,7 @@ async function buildTamagotchiEmbed(
   estPremierJour,
   voters,
   previousRating,
+  confiance,
 ) {
   const narrative = await buildNarrative(
     jour,
@@ -260,6 +270,8 @@ async function buildTamagotchiEmbed(
     voters,
     estPremierJour,
     config.zones_ideales,
+    confiance,
+    config.confiance,
   );
   const lines = [narrative, ""];
   if (event) {
@@ -288,6 +300,13 @@ async function buildTamagotchiEmbed(
     ),
     "",
   );
+  // Confiance : pas de gaugeIcon/zones (pas de bande cible, juste un
+  // "combien il en reste" à sens unique) — visible chaque jour pour que
+  // voter Câliner de temps en temps ait un sens compris de tous, pas une
+  // règle cachée.
+  if (confiance != null) {
+    lines.push(renderGaugeLine("🤝 Confiance", confiance), "");
+  }
   // Rend visible POURQUOI le score a (ou n'a pas) bougé : sans ça, une seule
   // jauge hors zone (donnant 0 étoile, pas de malus) est facilement confondue
   // avec un score qui "n'augmente jamais".
@@ -333,7 +352,6 @@ function buildTamagotchiComponentsWithCounts(
   const actionIds = Object.keys(config.actions).filter(
     (id) => !config.actions[id].is_info_action,
   );
-  const inspecter = config.actions.inspecter;
   const pilule = config.actions.pilule;
 
   const rows = [
@@ -353,16 +371,6 @@ function buildTamagotchiComponentsWithCounts(
     {
       type: 1,
       components: [
-        {
-          type: 2,
-          style: 2,
-          label: `${inspecter.label} (${voteCounts.inspecter || 0})`.slice(
-            0,
-            80,
-          ),
-          emoji: { name: inspecter.emoji },
-          custom_id: `tamagotchi_inspecter:${jour}`,
-        },
         {
           type: 2,
           style: 2,
@@ -417,6 +425,7 @@ async function buildDayPayload(
   estPremierJour,
   voters,
   previousRating,
+  confiance,
 ) {
   const [voteCounts, piluleState] = await Promise.all([
     estPremierJour ? Promise.resolve({}) : tallyVotes(jour),
@@ -432,6 +441,7 @@ async function buildDayPayload(
       estPremierJour,
       voters,
       previousRating,
+      confiance,
     ),
     components: buildTamagotchiComponentsWithCounts(
       jour,
@@ -466,15 +476,28 @@ function buildManchesSection(manches, currentManche) {
   ];
 }
 
+// `tierBrut` (palier calculé sur les seules étoiles) et `confianceFinale`
+// permettent d'expliquer un plafonnement par la Confiance — sans cette
+// ligne, un palier plafonné en silence ressemblerait à un bug plutôt qu'à
+// une conséquence du peu de Câliner voté pendant la manche.
 function buildFinalTierEmbed(
   starTotal,
   tier,
   config,
   manches = [],
   currentManche = null,
+  tierBrut = tier,
+  confianceFinale = null,
 ) {
   const image = { url: tamagotchiImageUrl(config.duree_jours) };
   const manchesLines = buildManchesSection(manches, currentManche);
+  const confianceLine =
+    tier !== tierBrut && confianceFinale != null
+      ? [
+          "",
+          `🤝 Confiance finale : ${confianceFinale}/100 — trop basse pour dépasser le palier ${tier} malgré ${starTotal} étoiles.`,
+        ]
+      : [];
 
   if (tier === "S") {
     return {
@@ -484,6 +507,7 @@ function buildFinalTierEmbed(
           `le titre honorifique **🐉 Éleveur de Champion** — un immense bravo à toute la communauté !`,
         "",
         `⭐ Étoiles de dressage finales : ${starTotal}/${config.duree_jours}`,
+        ...confianceLine,
         ...manchesLines,
       ].join("\n"),
       color: 0xf1c40f,
@@ -497,6 +521,7 @@ function buildFinalTierEmbed(
         `Le Bébé Dragon rentre un peu fatigué, mais indemne. Mohamed Light vous remercie chaleureusement d'avoir pris soin de Lilith !`,
         "",
         `⭐ Étoiles de dressage finales : ${starTotal}/${config.duree_jours}`,
+        ...confianceLine,
         ...manchesLines,
       ].join("\n"),
       color: TAMAGOTCHI_COLOR,
@@ -510,6 +535,7 @@ function buildFinalTierEmbed(
         `préparez-vous à affronter un deck Mineur-Poison !`,
       "",
       `⭐ Étoiles de dressage finales : ${starTotal}/${config.duree_jours}`,
+      ...confianceLine,
       ...manchesLines,
     ].join("\n"),
     color: 0x2c3e50,
@@ -534,17 +560,22 @@ function buildReglesEmbed(config) {
       ...actionLines,
       `Chaque impact est réparti au prorata des votes reçus, puis multiplié par la participation du jour : effet plein à partir de ${config.votants_reference} votants, réduit en dessous — mobiliser du monde compte vraiment.`,
       "",
-      ...(config.decroissance
+      ...(config.fatigue
         ? [
-            `📉 À partir du Jour ${config.decroissance.jour_min}, Mohamed Light commence sérieusement à lui manquer : chaque jour perd automatiquement ${formatGaugeImpact(config.decroissance.modificateur_jauges)}, en plus des votes et des événements.`,
+            `😵 **Fatigue** : l'action qui a récolté le plus de votes hier voit son effet réduit aujourd'hui (×${config.fatigue.facteur}) — impossible de répéter indéfiniment la même stratégie gagnante, il faut varier d'un jour à l'autre.`,
             "",
           ]
         : []),
-      "🔮 **Projection** t'affiche en privé les jauges telles qu'elles seraient si la clôture avait lieu maintenant, selon les votes déjà exprimés — n'affecte jamais les jauges, mais consomme ton vote du jour comme une action normale.",
+      ...(config.confiance
+        ? [
+            `🤝 **Confiance** (${config.confiance.depart}/100 au départ) baisse d'elle-même sur les jours ⚠️ Moyen ou ❌ Catastrophe, et ne remonte QUE via 🤗 **Câliner** (léger coût Estomac, aucun autre effet). Un mauvais jour laisse une trace qu'aucune autre action ne peut effacer — et une Confiance trop basse en fin de manche plafonne le palier final, même avec beaucoup d'étoiles.`,
+            "",
+          ]
+        : []),
       `💊 **Pilule** (Jours ${config.actions.pilule.day_min}-${config.actions.pilule.day_max}) rapproche *instantanément* chaque jauge vers la moyenne, jusqu'à ${config.actions.pilule.max_step}%. Consomme ton vote sauf si elle a déjà été utilisée. Item Rare : ${config.actions.pilule.total_cap} utilisations max sur toute la manche (1 seule par jour).`,
       "Chacune consomme ton vote du jour comme une action normale (1 vote/jour, définitif) — sauf 📖 Règles, toujours libre.",
       "",
-      `**⭐ Étoiles :** 3 jauges en zone = ${RATING_LABELS.parfaite} ; 1 hors zone = ${RATING_LABELS.moyenne} ; 2-3 hors zone = ${RATING_LABELS.catastrophe}. Sur 10 jours : 8+ impressionne Mohamed Light, moins de 4 et il débarque furieux avec un deck Mineur-Poison.`,
+      `**⭐ Étoiles :** 3 jauges en zone = ${RATING_LABELS.parfaite} ; 1 hors zone = ${RATING_LABELS.moyenne} ; 2-3 hors zone = ${RATING_LABELS.catastrophe}. Sur 10 jours : 8+ impressionne Mohamed Light, moins de 4 et il débarque furieux avec un deck Mineur-Poison — sauf si la Confiance finale est trop basse pour dépasser un palier, quel que soit le total d'étoiles.`,
     ].join("\n"),
     color: TAMAGOTCHI_COLOR,
   };
@@ -588,6 +619,8 @@ export async function postTamagotchi(
       0,
       true,
       [],
+      null,
+      config.confiance?.depart ?? null,
     );
 
     if (dryRun) {
@@ -603,6 +636,8 @@ export async function postTamagotchi(
       lastEvent: null,
       lastRating: null,
       dayVoters: [],
+      confiance: config.confiance?.depart ?? null,
+      actionFatiguee: null,
       embed,
       components,
       noPing,
@@ -619,7 +654,11 @@ export async function postTamagotchi(
   const jour = state.jour + 1;
 
   if (jour > config.duree_jours) {
-    const tier = computeFinalTier(starTotalApres);
+    const tierBrut = computeFinalTier(starTotalApres);
+    // La Confiance finale plafonne le palier — un mauvais début de manche
+    // (jours Moyen/Catastrophe non compensés par Câliner) laisse une trace
+    // qu'aucun bon score d'étoiles ne peut effacer.
+    const tier = capTierByConfiance(tierBrut, closure.confianceApres, config.confiance);
 
     // Archivage de la manche AVANT lecture de la liste : la manche qui
     // vient de se terminer apparaît alors dans son propre récap comparatif
@@ -642,6 +681,8 @@ export async function postTamagotchi(
       config,
       manches,
       currentManche,
+      tierBrut,
+      closure.confianceApres,
     );
 
     if (dryRun) {
@@ -660,6 +701,8 @@ export async function postTamagotchi(
       lastEvent: state.lastEvent,
       lastRating: closure.rating,
       dayVoters: closure.voters,
+      confiance: closure.confianceApres,
+      actionFatiguee: closure.actionFatigueeSuivante,
       embed,
       components: [],
       noPing: true,
@@ -685,6 +728,7 @@ export async function postTamagotchi(
     false,
     closure.voters,
     closure.rating,
+    closure.confianceApres,
   );
 
   if (dryRun) {
@@ -704,6 +748,8 @@ export async function postTamagotchi(
     lastEvent: event,
     lastRating: closure.rating,
     dayVoters: closure.voters,
+    confiance: closure.confianceApres,
+    actionFatiguee: closure.actionFatigueeSuivante,
     embed,
     components,
     noPing: true,
@@ -723,6 +769,8 @@ async function publishAndWriteState(
     lastEvent,
     lastRating,
     dayVoters,
+    confiance,
+    actionFatiguee,
     embed,
     components,
     noPing,
@@ -789,6 +837,8 @@ async function publishAndWriteState(
     lastEvent,
     lastRating,
     dayVoters,
+    confiance,
+    actionFatiguee,
   });
 
   return { jour, embed, message, termine };
@@ -870,6 +920,7 @@ export async function handleVoteButton(
       estPremierJour,
       state.dayVoters,
       state.lastRating,
+      state.confiance,
     );
     const components = buildTamagotchiComponentsWithCounts(
       state.jour,
@@ -1027,6 +1078,7 @@ export async function handlePilule(
       estPremierJour,
       freshState.dayVoters,
       freshState.lastRating,
+      freshState.confiance,
     );
     const components = buildTamagotchiComponentsWithCounts(
       freshState.jour,
@@ -1048,166 +1100,6 @@ export async function handlePilule(
     );
   } catch (err) {
     console.error("[Tamagotchi] Échec traitement Pilule:", err.message);
-  }
-}
-
-// ── Bouton [🔮 Projection] — consomme le vote du jour (comme les 4 actions),
-// mais n'a jamais d'impact sur les jauges au Cron (is_info_action dans
-// tamagotchi.json l'exclut de computeDayImpact) : voter Projection revient à
-// "s'abstenir" tout en consultant la projection. Ack routeur en type 5
-// éphémère, comme le bouton de vote — voir handleVoteButton pour le même
-// principe de garde (jour périmé) et de rejet (vote déjà posé ailleurs).
-
-export async function handleInspecter(
-  webhookUrl,
-  jour,
-  discordId,
-  username,
-  botToken,
-) {
-  try {
-    const state = await readState();
-    if (!state || state.termine || String(state.jour) !== String(jour)) {
-      await patchOriginal(webhookUrl, {
-        content:
-          "Le vote du jour a déjà été clôturé, la journée a changé — regarde le nouveau message !",
-        embeds: [],
-        components: [],
-      });
-      return;
-    }
-
-    const result = await recordVote(
-      state.jour,
-      discordId,
-      "inspecter",
-      username,
-    );
-    if (result.status === "rejected") {
-      await patchOriginal(webhookUrl, {
-        content:
-          "Tu as déjà voté aujourd'hui pour une autre action, ton vote est définitif jusqu'à demain !",
-        embeds: [],
-        components: [],
-      });
-      return;
-    }
-
-    const config = await loadTamagotchiConfig();
-    const voteCounts = await tallyVotes(state.jour);
-    // state.lastEvent est l'événement du jour EN COURS (celui qu'on projette
-    // ici) — un éventuel actions_modifiees doit influencer la projection
-    // live, sinon le bouton mentirait pile le jour où le nerf compte le plus.
-    const actionsConfig = applyActionOverrides(
-      config.actions,
-      state.lastEvent?.actions_modifiees,
-    );
-    const impact = computeDayImpact(
-      voteCounts,
-      actionsConfig,
-      config.votants_reference,
-    );
-    const projectedClosing = applyGaugeDelta(state.gauges, impact);
-    // La décroissance (config.decroissance) est un mécanisme connu/documenté
-    // dans les Règles, contrairement à l'événement du lendemain qui doit
-    // rester une surprise — on l'inclut donc ici (event forcé à null) pour
-    // que la Projection corresponde à ce qui sera réellement affiché demain,
-    // hors événement.
-    const jourSuivant = state.jour + 1;
-    const decayApplies =
-      jourSuivant <= config.duree_jours &&
-      config.decroissance &&
-      jourSuivant >= config.decroissance.jour_min;
-    const projected =
-      jourSuivant <= config.duree_jours
-        ? computeDayOpenGauges(projectedClosing, jourSuivant, null, config)
-        : projectedClosing;
-
-    // Ne compte que les 4 actions réelles (Projection elle-même n'a aucun
-    // impact, la compter ici donnerait l'impression à tort qu'un vote a déjà
-    // influencé la projection).
-    const realActionIds = Object.keys(config.actions).filter(
-      (id) => !config.actions[id].is_info_action,
-    );
-    const totalRealVotes = realActionIds.reduce(
-      (sum, id) => sum + (voteCounts[id] || 0),
-      0,
-    );
-
-    // Avertissement affiché seulement au moment où le vote est réellement
-    // consommé (1er clic du jour) — inutile de le répéter à chaque reclic
-    // (already_recorded), qui reste purement informatif à ce stade.
-    const voteNotice =
-      result.status === "recorded"
-        ? "⚠️ Ce choix consomme ton vote du jour — tu ne pourras plus voter Nourrir/Bretzel/Sieste/Jouer aujourd'hui."
-        : "(Tu as déjà voté Projection aujourd'hui — ton vote reste enregistré.)";
-
-    const embed = {
-      title: `🔮 Projection — clôture demain ${formatUtcTimeAsParis(8)} (heure de Paris)`,
-      description: [
-        renderGaugeLine(
-          `${gaugeIcon("estomac", projected.estomac, config.zones_ideales)} Estomac`,
-          projected.estomac,
-        ),
-        renderGaugeLine(
-          `${gaugeIcon("energie", projected.energie, config.zones_ideales)} Énergie`,
-          projected.energie,
-        ),
-        renderGaugeLine(
-          `${gaugeIcon("moral", projected.moral, config.zones_ideales)} Moral`,
-          projected.moral,
-        ),
-        "",
-        totalRealVotes === 0
-          ? decayApplies
-            ? `Personne n'a encore voté une action aujourd'hui — mais la décroissance du Jour ${jourSuivant} s'appliquera quand même, même sans vote.`
-            : "Personne n'a encore voté une action aujourd'hui — ces valeurs sont celles de la clôture d'hier, inchangées tant qu'aucun vote n'est enregistré."
-          : "Basé sur la répartition actuelle des votes — partage ces infos au serveur pour vous coordonner !",
-        ...(decayApplies
-          ? [`📉 Décroissance du Jour ${jourSuivant} déjà comptée — seul l'événement du lendemain reste une surprise.`]
-          : []),
-        "",
-        voteNotice,
-      ].join("\n"),
-      color: TAMAGOTCHI_COLOR,
-    };
-    await patchOriginal(webhookUrl, { embeds: [embed], components: [] });
-
-    // Voter Projection consomme le vote du jour comme les 4 actions
-    // normales — le message public (compteur "Projection (N)") doit donc
-    // être repatché ici aussi, sinon il reste figé jusqu'au prochain clic
-    // sur une autre action.
-    const piluleState = await loadPiluleStateIfActive(state.jour, config);
-    const estPremierJour = state.lastRating == null;
-    const publicEmbed = await buildTamagotchiEmbed(
-      state.jour,
-      state.gauges,
-      config,
-      state.lastEvent,
-      state.starTotal,
-      estPremierJour,
-      state.dayVoters,
-      state.lastRating,
-    );
-    const publicComponents = buildTamagotchiComponentsWithCounts(
-      state.jour,
-      config,
-      voteCounts,
-      piluleState,
-    );
-    await fetch(
-      `https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bot ${botToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ embeds: [publicEmbed], components: publicComponents }),
-      },
-    );
-  } catch (err) {
-    console.error("[Tamagotchi] Échec Projection:", err.message);
   }
 }
 

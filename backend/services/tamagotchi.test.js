@@ -2,9 +2,13 @@ import assert from "assert";
 import {
   clampGauge,
   computeDayImpact,
+  dominantAction,
   applyGaugeDelta,
   applyActionOverrides,
   computePiluleDelta,
+  computeCalinerConfianceBonus,
+  computeConfianceDelta,
+  capTierByConfiance,
   rateDay,
   eventForDay,
   computeDayOpenGauges,
@@ -31,6 +35,12 @@ const ACTIONS = {
     label: "Entraînement",
     emoji: "🎾",
     impact: { estomac: -20, energie: -20, moral: 25 },
+  },
+  caliner: {
+    label: "Câliner",
+    emoji: "🤗",
+    impact: { estomac: -5, energie: 0, moral: 0 },
+    confiance_bonus: 15,
   },
   inspecter: { label: "Inspecter", emoji: "🔍", is_info_action: true },
 };
@@ -145,6 +155,34 @@ async function main() {
     computeDayImpact({ nourrir: 20 }, ACTIONS, 12),
     computeDayImpact({ nourrir: 20 }, ACTIONS),
   );
+
+  // ── computeDayImpact avec fatigue ──
+  // Sans fatigue (paramètre omis) : comportement inchangé.
+  assert.deepStrictEqual(
+    computeDayImpact({ nourrir: 4 }, ACTIONS, undefined, null),
+    computeDayImpact({ nourrir: 4 }, ACTIONS),
+  );
+  // Nourrir fatiguée (dominante hier) -> son impact est divisé par le facteur,
+  // même à 100% des votes aujourd'hui.
+  assert.deepStrictEqual(
+    computeDayImpact({ nourrir: 4 }, ACTIONS, undefined, { actionId: "nourrir", facteur: 0.5 }),
+    { estomac: 12.5, energie: -5, moral: 0 },
+  );
+  // La fatigue ne touche que l'action désignée, pas les autres.
+  assert.deepStrictEqual(
+    computeDayImpact({ nourrir: 5, bretzel: 5 }, ACTIONS, undefined, { actionId: "nourrir", facteur: 0.5 }),
+    { estomac: (25 * 0.5 + 15) / 2, energie: (-10 * 0.5 - 5) / 2, moral: (0 + 20) / 2 },
+  );
+
+  // ── dominantAction ──
+  const REAL_IDS = ["nourrir", "bretzel", "sieste", "jouer", "caliner"];
+  assert.strictEqual(dominantAction({ nourrir: 5, sieste: 2 }, REAL_IDS), "nourrir");
+  // Égalité stricte -> pas de fatigue arbitraire.
+  assert.strictEqual(dominantAction({ nourrir: 3, sieste: 3 }, REAL_IDS), null);
+  // Aucun vote -> null.
+  assert.strictEqual(dominantAction({}, REAL_IDS), null);
+  // Câliner peut aussi devenir l'action dominante (et donc se fatiguer).
+  assert.strictEqual(dominantAction({ caliner: 4, nourrir: 1 }, REAL_IDS), "caliner");
 
   // ── applyGaugeDelta ──
   assert.deepStrictEqual(
@@ -265,6 +303,54 @@ async function main() {
     ),
     { estomac: 30, energie: 85, moral: 55 },
   );
+
+  // ── computeCalinerConfianceBonus ──
+  const CONFIANCE_CONFIG = {
+    depart: 100,
+    malus_moyen: -10,
+    malus_catastrophe: -25,
+    plafond_tier: [
+      { sous: 20, max: "F" },
+      { sous: 50, max: "B" },
+    ],
+  };
+  // Câliner à 100% des votes -> bonus plein (participation 4/4 = 1).
+  assert.strictEqual(computeCalinerConfianceBonus({ caliner: 4 }, ACTIONS, undefined, null), 15);
+  // Câliner minoritaire -> bonus proportionnel à sa part.
+  assert.strictEqual(
+    computeCalinerConfianceBonus({ caliner: 1, nourrir: 3 }, ACTIONS, undefined, null),
+    15 * 0.25,
+  );
+  // Câliner elle-même fatiguée (dominante hier) -> son bonus est aussi réduit.
+  assert.strictEqual(
+    computeCalinerConfianceBonus({ caliner: 4 }, ACTIONS, undefined, { actionId: "caliner", facteur: 0.5 }),
+    7.5,
+  );
+  // Aucun vote Câliner -> aucun bonus.
+  assert.strictEqual(computeCalinerConfianceBonus({ nourrir: 4 }, ACTIONS, undefined, null), 0);
+  // Aucun vote du tout -> aucun bonus (pas de division par zéro).
+  assert.strictEqual(computeCalinerConfianceBonus({}, ACTIONS, undefined, null), 0);
+
+  // ── computeConfianceDelta ──
+  assert.strictEqual(computeConfianceDelta("parfaite", 0, CONFIANCE_CONFIG), 0);
+  assert.strictEqual(computeConfianceDelta("moyenne", 0, CONFIANCE_CONFIG), -10);
+  assert.strictEqual(computeConfianceDelta("catastrophe", 0, CONFIANCE_CONFIG), -25);
+  // Le bonus Câliner s'ajoute au malus du jour (peut compenser en partie).
+  assert.strictEqual(computeConfianceDelta("catastrophe", 15, CONFIANCE_CONFIG), -10);
+
+  // ── capTierByConfiance ──
+  // Confiance confortable -> aucun plafonnement.
+  assert.strictEqual(capTierByConfiance("S", 80, CONFIANCE_CONFIG), "S");
+  // Sous 50 -> jamais mieux que B, même avec assez d'étoiles pour S.
+  assert.strictEqual(capTierByConfiance("S", 45, CONFIANCE_CONFIG), "B");
+  // Sous 20 -> plafonné à F, quel que soit le palier calculé sur les étoiles.
+  assert.strictEqual(capTierByConfiance("S", 10, CONFIANCE_CONFIG), "F");
+  assert.strictEqual(capTierByConfiance("B", 10, CONFIANCE_CONFIG), "F");
+  // Le plafond ne fait jamais REMONTER un palier déjà plus bas que lui.
+  assert.strictEqual(capTierByConfiance("F", 80, CONFIANCE_CONFIG), "F");
+  // Sans plafond_tier configuré : palier renvoyé tel quel.
+  assert.strictEqual(capTierByConfiance("S", 5, {}), "S");
+  assert.strictEqual(capTierByConfiance("S", 5, undefined), "S");
 
   // ── eventForDay ──
   assert.strictEqual(eventForDay(2, EVENEMENTS).id, "sans_appetit");

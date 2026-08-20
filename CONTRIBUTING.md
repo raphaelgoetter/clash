@@ -1023,47 +1023,55 @@ Le workflow `.github/workflows/aventure.yml` (cron quotidien `npm run aventure:p
 
 ## Tamagoshi (bébé dragon "Lilith")
 
-Mini-jeu communautaire quotidien indépendant du Clash Royale : Mohamed Light confie son Bébé Dragon "Lilith" à la communauté pendant 10 jours. Les membres doivent maintenir 3 jauges (Estomac 🔥, Énergie ⚡, Moral 🥨, 0-100%) dans la « zone verte » (40-70%) via des votes par bouton, avec un Cron quotidien à 08:00 UTC. Pas de commande slash associée — la publication/suppression passe uniquement par `scripts/postTamagotchi.js` (manuel ou cron), les boutons restent gérés par `api/discord/interactions.js`.
+Mini-jeu communautaire quotidien indépendant du Clash Royale : Mohamed Light confie son Bébé Dragon "Lilith" à la communauté pendant 10 jours. Les membres doivent maintenir 3 jauges (Estomac 🔥, Énergie ⚡, Moral 🥨, 0-100%) dans la « zone verte » (40-70%) via des votes par bouton, avec un Cron quotidien à 08:00 UTC. Pas de commande slash associée — la publication/suppression passe uniquement par `scripts/postTamagotchi.js` (manuel ou cron), les boutons restent gérés par `api/discord/interactions.js`. Le jeu est rejoué plusieurs fois dans l'année (une **manche** = une partie complète de 10 jours) ; les mécaniques ci-dessous ont été retravaillées entre la manche 1 (2026-08) et la manche 2 suite au constat que le jeu restait trop facile en répétant une même stratégie tout du long.
 
 ### Déroulement
 
 Un seul message actif à la fois dans le salon dédié. Chaque jour, `postTamagotchi()` (`api/discord/handlers/tamagotchi.js`) :
 
-1. Clôture le jour actif (s'il y en a un) : tallie les votes du jour, calcule l'impact pondéré (voir "Résolution du vote" ci-dessous), en déduit les jauges de fin de journée, note la journée (Parfaite/Moyenne/Catastrophe → +1/0/-1 étoile de dressage) et écrit un bilan dans l'historique interne.
-2. Calcule les jauges d'ouverture du jour suivant : jauges de fin de journée + modificateur de l'événement programmé ce jour-là, s'il y en a un (voir "Événements programmés").
+1. Clôture le jour actif (s'il y en a un) : tallie les votes du jour, calcule l'impact pondéré (voir "Résolution du vote" ci-dessous), en déduit les jauges de fin de journée, note la journée (Parfaite/Moyenne/Catastrophe → +1/0/-1 étoile de dressage), met à jour la Confiance et l'action fatiguée du lendemain (voir plus bas), et écrit un bilan dans l'historique interne.
+2. Calcule les jauges d'ouverture du jour suivant (`computeDayOpenGauges()`) : jauges de fin de journée + modificateur de l'éventuel événement programmé ce jour-là (voir "Événements programmés").
 3. Supprime le message Discord de la veille (`DELETE /channels/{id}/messages/{id}`, tolérant un échec) et publie le nouveau jour, avec un bouton par action affichant son compteur de votes en temps réel.
 
-Au Jour 10, au lieu d'ouvrir un nouveau jour, le message de fin de partie est posté (palier S/B/F selon le total d'étoiles) et `tamagotchi:state.termine` passe à `true` — les runs suivants du cron deviennent des no-op silencieux, même principe que `aventure:state.termine`.
+Au Jour 10, au lieu d'ouvrir un nouveau jour, le message de fin de partie est posté (palier S/B/F selon le total d'étoiles, éventuellement plafonné par la Confiance — voir "Fin de partie") et `tamagotchi:state.termine` passe à `true` — les runs suivants du cron deviennent des no-op silencieux, même principe que `aventure:state.termine`.
 
 ### Résolution du vote
 
-Un membre ne peut voter qu'une fois par jour parmi les 5 actions (Nourrir, Bretzel, Sieste, Entraînement, **Projections**), et **ce vote n'est pas modifiable** : revoter la même action est un no-op, voter une action différente est rejeté (`recordVote()`, `backend/services/tamagotchi.js`) — contrairement à l'Aventure, où revoter écrase le choix précédent. Le clic sur un bouton d'action répond toujours en éphémère à l'auteur (confirmation ou rejet du vote, `DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE` puis `PATCH .../messages/@original`) ; le message public (compteurs de votes) est mis à jour séparément par un `PATCH /channels/{id}/messages/{id}` direct avec le token du bot, découplé de la réponse éphémère. Projections fait exception : elle consomme le vote comme les 4 autres mais n'a aucun impact sur les jauges (`is_info_action: true`), donc aucun besoin de repatcher le message public après ce choix.
+Un membre ne peut voter qu'une fois par jour parmi les actions réelles (Nourrir, Sieste, Jouer, Câliner), et **ce vote n'est pas modifiable** : revoter la même action est un no-op, voter une action différente est rejeté (`recordVote()`, `backend/services/tamagotchi.js`) — contrairement à l'Aventure, où revoter écrase le choix précédent. Le clic sur un bouton d'action répond toujours en éphémère à l'auteur (confirmation ou rejet du vote, `DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE` puis `PATCH .../messages/@original`) ; le message public (compteurs de votes) est mis à jour séparément par un `PATCH /channels/{id}/messages/{id}` direct avec le token du bot, découplé de la réponse éphémère.
 
-L'impact d'une journée est une **moyenne pondérée par part de votes** (`computeDayImpact()`) : chaque action votée contribue à l'impact proportionnellement à sa part des votes exprimés, jamais une somme brute — l'amplitude du changement d'une journée reste donc toujours bornée par l'amplitude d'une seule action, quel que soit le nombre de votants. Sans aucun vote, l'impact d'action est nul (l'événement du jour, s'il y en a un, s'applique quand même).
+Bretzel et le bouton Projection (ex-5ᵉ/6ᵉ choix de vote) ont été retirés en Manche 2 : Bretzel s'est avéré redondant une fois la Fatigue en place (jamais utilisé dans une stratégie optimale, vérifié par simulation), et Projection n'apportait qu'une commodité de coordination au prix d'un bouton en plus — `npm run tamagotchi:status` remplit déjà ce rôle côté admin.
 
-### Boutons Projections et Règles du jeu
+L'impact d'une journée est une **moyenne pondérée par part de votes** (`computeDayImpact()`) : chaque action votée contribue à l'impact proportionnellement à sa part des votes exprimés, multipliée par un **facteur de participation** (`min(total_votes / votants_reference, 1)`, `tamagotchi.json.votants_reference`) — en dessous de la référence, l'effet est affaibli proportionnellement (plus de votants = plus d'impact réel, pas seulement un ratio) ; à la référence ou au-delà, l'effet est identique à une simple moyenne pondérée. Sans aucun vote, l'impact est nul (l'événement du jour, s'il y en a un, s'applique quand même).
 
-`[🔮 Projections]` est un 5ᵉ choix de vote à part entière : il **consomme le vote quotidien** du membre exactement comme Nourrir/Bretzel/Sieste/Entraînement (même garde anti-double-vote via `recordVote()`), mais n'a **aucun impact sur les jauges au Cron** (`is_info_action: true` dans `tamagotchi.json`, exclu de `computeDayImpact()`) — voter Projections revient à consulter la projection des jauges de clôture du lendemain (à partir de la répartition actuelle des votes, sans l'événement du lendemain qui n'est pas encore connu) tout en "s'abstenant" pour la journée. Seul `[📖 Règles du jeu]` reste une action d'information pure, consultable librement sans jamais consommer le vote : elle affiche un rappel statique des impacts de chaque action et de la zone idéale, généré depuis `tamagotchi.json`.
+**Fatigue** (`tamagotchi.json.fatigue.facteur`, `dominantAction()`) : l'action qui a recueilli le plus de votes un jour donné (Câliner incluse) voit son impact réduit de ce facteur le jour suivant (`computeDayImpact(..., fatigue)`) — empêche de répéter indéfiniment la même stratégie gagnante d'un jour sur l'autre. Égalité stricte entre deux actions -> aucune fatiguée ce jour-là. L'action fatiguée du lendemain est persistée dans `tamagotchi:state.actionFatiguee`.
+
+### Câliner et Confiance
+
+**Câliner** (🤗) est une action comme les autres (aucun impact notable sur les 3 jauges hormis un léger coût Estomac), mais c'est la SEULE à faire remonter la **Confiance** (`tamagotchi:state.confiance`, 4ᵉ jauge à sens unique visible dans l'embed, 100 au départ). La Confiance baisse d'elle-même sur les jours Moyenne/Catastrophe (`config.confiance.malus_moyen`/`malus_catastrophe`) et ne peut être compensée par AUCUNE des 3 jauges de gameplay — seul un vote Câliner (`computeCalinerConfianceBonus()`, elle-même soumise à la Fatigue) la fait remonter, au prix d'un vote non dépensé ailleurs. Objectif : rendre certaines conséquences non-compensables par un simple rééquilibrage des jauges le lendemain.
+
+### Bouton Règles du jeu
+
+`[📖 Règles du jeu]` est une action d'information pure, consultable librement sans jamais consommer le vote : elle affiche un rappel des impacts de chaque action, de la zone idéale, de la Fatigue et de la Confiance, généré depuis `tamagotchi.json`.
 
 ### Événements programmés
 
-3 événements fixes tirés de `tamagotchi.json.evenements_possibles`, déclenchés dans l'ordre du tableau aux Jours 3, 6 et 9 (`eventForDay()`) — aucun autre jour n'a d'événement. L'événement modifie les jauges une seule fois, en entrée du jour concerné (jamais en sortie du jour précédent), donc il n'influence jamais la notation (Parfaite/Moyenne/Catastrophe) du jour où il a été calculé, seulement les jauges d'ouverture du jour où il s'applique.
+Les événements vivent dans `tamagotchi.json.evenements_possibles`, chacun portant son propre champ `jour` (`eventForDay()` cherche l'entrée dont `jour` correspond, pas un index positionnel — ajouter/déplacer un événement ne demande qu'une édition du JSON). Un événement modifie les jauges une seule fois, en entrée du jour concerné (jamais en sortie du jour précédent, sauf type `actions_modifiees` ci-dessous), donc il n'influence jamais la notation du jour où il a été calculé, seulement les jauges d'ouverture du jour où il s'applique. Un événement peut aussi être un nerf temporaire d'action(s) plutôt qu'un delta de jauges (`actions_modifiees`, ex. Jour 8 : Nourrir remplit moins bien l'Estomac ce jour-là) — via `applyActionOverrides()`, effectif pendant toute la clôture du jour concerné.
 
 ### Fin de partie (Jour 10)
 
-Le total d'étoiles de dressage détermine le palier (`computeFinalTier()`) : **S-Tier** (8-10 étoiles, annonce narrative flatteuse — pas de rôle Discord réel créé/attribué), **B-Tier** (4-7 étoiles, message de remerciement), **F-Tier** (< 4 étoiles, "défi d'arène" en habillage narratif uniquement — aucune mécanique de mini-boss développée). Décisions explicites pour rester dans le scope d'un système de jauges/votes.
+Le total d'étoiles de dressage détermine un premier palier (`computeFinalTier()`) : **S-Tier** (8-10 étoiles), **B-Tier** (4-7 étoiles), **F-Tier** (< 4 étoiles) — annonces narratives, pas de rôle Discord réel créé/attribué. Ce palier est ensuite **plafonné par la Confiance finale** (`capTierByConfiance()`, seuils dans `tamagotchi.json.confiance.plafond_tier`) : une Confiance trop basse empêche le palier S, une Confiance très basse plafonne même à F, quel que soit le nombre d'étoiles — un mauvais début de manche (jours Moyenne/Catastrophe non compensés par Câliner) laisse une trace qu'aucun bon jour de jauges ne peut effacer. Le récap final indique explicitement quand ce plafonnement a joué.
 
 ### Manches (comparaison entre parties) — Tamagoshi
 
-Le Tamagoshi (comme Robinson et Boss Raid) est destiné à être rejoué plusieurs fois dans l'année — chaque partie complète est une **manche**. `tamagotchi:manches` (HASH permanent, jamais nettoyé par `resetTamagotchi()`) archive le bilan de chaque manche terminée, indexé par un numéro strictement croissant (`tamagotchi:manche_seq`, `INCR` atomique) : `archiveManche({ starTotal, tier, resolvedAt })`. À l'écran de fin (Jour 10), l'embed liste les 10 dernières manches (`listManches()`) avec un 🏆 sur le meilleur total d'étoiles toutes manches confondues — la manche qui vient de se terminer y apparaît elle-même, marquée *(cette manche)*.
+`tamagotchi:manches` (HASH permanent, jamais nettoyé par `resetTamagotchi()`) archive le bilan de chaque manche terminée, indexé par un numéro strictement croissant (`tamagotchi:manche_seq`, `INCR` atomique) : `archiveManche({ starTotal, tier, resolvedAt })`. À l'écran de fin (Jour 10), l'embed liste les 10 dernières manches (`listManches()`) avec un 🏆 sur le meilleur total d'étoiles toutes manches confondues — la manche qui vient de se terminer y apparaît elle-même, marquée *(cette manche)*.
 
 ⚠️ L'archivage n'a lieu que pour une **vraie publication sur le salon public** (`postTamagotchi(channelId, { isPublic: true })`, déclenché uniquement par `npm run tamagotchi:public`/le workflow GitHub) — jamais en dry-run, ni sur le salon de test (`npm run tamagotchi:test`), même si la partie de test va jusqu'au bout. Convention volontaire : les scripts npm servent toujours à tester, seul `--public` (donc en pratique le workflow GitHub, cron ou `workflow_dispatch`) représente une manche réelle. Ça évite de polluer l'archive avec des parties de test sans avoir à y penser à chaque reset — `npm run tamagotchi:reset:manches` (`--manches`) reste disponible comme filet de sécurité manuel (ex. `--public` lancé par erreur), mais ne devrait normalement jamais être nécessaire.
 
 ### Données (tamagotchi.json)
 
-- `data/tamagotchi/tamagotchi.json` — config statique éditée à la main : durée, zones idéales, jauges initiales, `actions` (impact par jauge de chaque bouton, `inspecter` marqué `is_info_action: true` pour être exclu du calcul d'impact) et `evenements_possibles` (3 événements, ordre = ordre de déclenchement Jours 3/6/9). Chargée une fois et mise en cache (`loadTamagotchiConfig()`), jamais mutée à l'exécution.
+- `data/tamagotchi/tamagotchi.json` — config statique éditée à la main : durée, zones idéales, jauges initiales, `votants_reference`, `fatigue.facteur`, `confiance` (`depart`/`malus_moyen`/`malus_catastrophe`/`plafond_tier`), `actions` (impact par jauge de chaque bouton — `pilule` marquée `is_info_action: true` pour être exclue du calcul d'impact ; `caliner` porte en plus `confiance_bonus`) et `evenements_possibles` (chaque entrée porte son propre champ `jour`, pas d'ordre positionnel). Chargée une fois et mise en cache (`loadTamagotchiConfig()`), jamais mutée à l'exécution.
 - `frontend/public/images/tamagotchi/tama-01.webp` à `tama-10.webp` — une illustration par jour, servie en asset statique (même principe que `frontend/public/images/banner1.webp`/`banner2.webp`) et référencée directement par URL (`tamagotchiImageUrl()`, `api/discord/handlers/tamagotchi.js`) dans le champ `image` de l'embed. Contrairement au jeu Frame, aucun besoin de masquer l'URL (pas un jeu de devinette) : pas de route API dédiée, juste un fichier public.
-- `data/tamagotchi/narratifs.json` — pools de variantes de texte (une intro "lore inutile" façon météo/horoscope, 3 variantes par état de jauge × 3 jauges, et des phrases de clôture citant les votants) séparées du code pour être enrichies sans y toucher. Sélection déterministe par jour (`pickFlavor()`, indexé sur `jour`, jamais `Math.random()`) : le texte reste identique à chaque ré-affichage du même jour (ex. après un clic de vote) et ne varie qu'd'un jour à l'autre.
+- `data/tamagotchi/narratifs.json` — pools de variantes de texte (une intro "lore inutile" façon météo/horoscope, 3 variantes par état notable de jauge × 3 jauges + Confiance, et des phrases de clôture citant les votants) séparées du code pour être enrichies sans y toucher. Sélection déterministe par jour (`pickFlavor()`, indexé sur `jour`, jamais `Math.random()`) : le texte reste identique à chaque ré-affichage du même jour (ex. après un clic de vote) et ne varie qu'd'un jour à l'autre.
 
 ### Stockage — Upstash Redis (`tamagotchi:*`)
 
@@ -1071,12 +1079,18 @@ Même instance et mêmes conventions que Frame/Anagram/Aventure (`automaticDeser
 
 | Clé Redis | Type | Contenu |
 | --- | --- | --- |
-| `tamagotchi:state` | STRING | `{ jour, gauges, channelId, messageId, publishedAt, termine, starTotal, lastEvent, dayVoters }` — jour actuellement affiché |
+| `tamagotchi:state` | STRING | `{ jour, gauges, confiance, actionFatiguee, channelId, messageId, publishedAt, termine, starTotal, lastEvent, lastRating, dayVoters }` — jour actuellement affiché |
 | `tamagotchi:votes:<jour>` | HASH | `discordId → actionId` — jetable, effacé après clôture du jour |
 | `tamagotchi:vote_usernames:<jour>` | HASH | `discordId → pseudo` — jetable, uniquement pour l'affichage admin (`npm run tamagotchi:status`) et le texte narratif, jamais utilisé pour la logique de vote |
-| `tamagotchi:historique` | HASH | `jour → { gaugesAvant, gaugesApres, voteCounts, voters, impact, event, rating, starDelta, starTotalApres, resolvedAt }` — bilans quotidiens de la manche EN COURS, écrasés d'une manche à l'autre (les jours 1-10 se répètent) |
+| `tamagotchi:historique` | HASH | `jour → { gaugesAvant, gaugesApres, voteCounts, voters, impact, event, rating, starDelta, starTotalApres, confianceAvant, confianceApres, actionFatiguee, resolvedAt }` — bilans quotidiens de la manche EN COURS, écrasés d'une manche à l'autre (les jours 1-10 se répètent) |
 | `tamagotchi:manches` | HASH | `manche → { manche, starTotal, tier, resolvedAt }` — un bilan par manche TERMINÉE, jamais nettoyé (persiste entre les manches, y compris après `npm run tamagotchi:reset`) |
 | `tamagotchi:manche_seq` | STRING (compteur) | Numéro de la prochaine manche à archiver, incrémenté (`INCR`) à chaque fin de partie réelle (jamais en dry-run) |
+| `tamagotchi:pilule_total_used` | STRING (compteur) | Nombre total d'utilisations réussies de la Pilule sur la manche en cours, plafonné par `actions.pilule.total_cap` |
+| `tamagotchi:pilule_used:<jour>` | STRING | Posée (SETNX) dès la 1ʳᵉ utilisation réussie de la Pilule ce jour-là — au plus 1 réussite/jour |
+
+### Pilule (filet de sécurité rare, Jours `pilule.day_min`-`pilule.day_max`)
+
+Action à part (`is_info_action: true`, exclue de `computeDayImpact()`) : effet **instantané** (rapproche chaque jauge de la moyenne d'au plus `max_step` points dès le clic, `computePiluleDelta()`), pas seulement à la clôture. Ressource partagée et rare : au plus 1 réussite par jour (SETNX, premier arrivé) ET au plus `total_cap` réussites cumulées sur toute la manche (`claimPilule()`). Consomme le vote quotidien du joueur **seulement si l'effet est effectivement appliqué** — si la réclamation échoue (déjà utilisée aujourd'hui / quota épuisé), le vote est libéré (`releaseVote()`) pour qu'il puisse revoter une vraie action, même précédent que `releaseVoteSlot()` dans Robinson.
 
 ### Scripts npm (Tamagoshi)
 
@@ -1088,7 +1102,7 @@ Même instance et mêmes conventions que Frame/Anagram/Aventure (`automaticDeser
 | `npm run tamagotchi:public:dry` | Équivalent dry-run de `tamagotchi:public`. |
 | `npm run tamagotchi:reset` | Remet le Tamagoshi à zéro : plus de journée active, votes/historique de la manche en cours effacés. **Destructif** — préserve toujours `tamagotchi:manches` (l'archive des manches passées, qui ne s'alimente de toute façon qu'en `--public`, voir "Manches" plus haut). |
 | `npm run tamagotchi:reset:manches` | Identique, mais efface aussi `tamagotchi:manches`/`tamagotchi:manche_seq`. **Destructif**, à réserver au filet de sécurité (ex. un `--public` lancé par erreur pendant les tests). |
-| `npm run tamagotchi:status` | Affiche l'état courant (jauges, étoiles, décompte des votes du jour) sans passer par Discord. |
+| `npm run tamagotchi:status` | Affiche l'état courant (jauges, Confiance, action fatiguée, étoiles, décompte des votes du jour) ainsi qu'une projection du jour suivant, sans passer par Discord. |
 
 ### Variables d'environnement requises (Tamagoshi)
 

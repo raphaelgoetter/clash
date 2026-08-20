@@ -256,14 +256,19 @@ export function clampGauge(value) {
 // nombre de votants.
 // `votantsReference` (optionnel) introduit un facteur de participation :
 // sans lui (ou à 0), le résultat ne dépend que du RATIO entre actions votées
-// — "1 Bretzel + 2 Sieste" produit alors exactement le même impact que
+// — "1 Câliner + 2 Sieste" produit alors exactement le même impact que
 // "2+4" ou "300+600", aucune incitation à voter en nombre. Avec lui, le
 // résultat est multiplié par min(total_votes / votantsReference, 1) : en
 // dessous de la référence, l'effet est proportionnellement affaibli (plus de
 // votants = plus d'impact) ; à la référence ou au-delà, l'effet est
 // identique à un partage de vote sans ce facteur (jamais de survitaminage
 // au-delà de la magnitude déclarée des actions).
-export function computeDayImpact(voteCounts, actionsConfig, votantsReference) {
+// `fatigue` (optionnel) : { actionId, facteur } — l'action qui a dominé les
+// votes la VEILLE voit sa part multipliée par `facteur` (ex. 0.5) en plus de
+// la participation. Force un changement de stratégie d'un jour à l'autre :
+// répéter benoîtement la même action gagnante ne marche plus deux jours de
+// suite. Rétro-compatible : omis, comportement inchangé.
+export function computeDayImpact(voteCounts, actionsConfig, votantsReference, fatigue) {
   const actionIds = Object.keys(actionsConfig).filter(
     (id) => !actionsConfig[id].is_info_action,
   );
@@ -275,17 +280,40 @@ export function computeDayImpact(voteCounts, actionsConfig, votantsReference) {
     : 1;
   for (const id of actionIds) {
     const share = (voteCounts[id] || 0) / total;
+    const fatigueFactor = fatigue && id === fatigue.actionId ? fatigue.facteur : 1;
     const actionImpact = actionsConfig[id].impact || {};
     for (const gauge of Object.keys(impact)) {
-      impact[gauge] += participation * share * (actionImpact[gauge] || 0);
+      impact[gauge] += participation * fatigueFactor * share * (actionImpact[gauge] || 0);
     }
   }
   return impact;
 }
 
+// Action qui a recueilli le plus de votes ce jour-là (Câliner incluse — elle
+// doit pouvoir se fatiguer aussi, sinon elle devient une cible de vote
+// éternellement "sûre"). Égalité stricte (ou aucun vote) -> null : pas de
+// fatigue arbitraire à appliquer sur un ex-aequo.
+export function dominantAction(voteCounts, actionIds) {
+  let best = null;
+  let bestCount = 0;
+  let tie = false;
+  for (const id of actionIds) {
+    const n = voteCounts[id] || 0;
+    if (n === 0) continue;
+    if (n > bestCount) {
+      best = id;
+      bestCount = n;
+      tie = false;
+    } else if (n === bestCount) {
+      tie = true;
+    }
+  }
+  return tie ? null : best;
+}
+
 // Un événement peut temporairement changer ce que rapporte une action pour
-// la journée (ex. Indigestion de bonbons, Jour 8 : Nourrir/Bretzel remplissent
-// moins l'Estomac) via `actionsModifiees`, plutôt qu'un simple delta de
+// la journée (ex. Pénurie de vivres, Jour 8 : Nourrir remplit moins l'Estomac)
+// via `actionsModifiees`, plutôt qu'un simple delta de
 // jauges appliqué une fois — l'effet dure toute la journée puisqu'il change
 // directement le calcul de computeDayImpact(). Fusion superficielle : seuls
 // les axes précisés dans l'override remplacent ceux de l'action de base, les
@@ -359,6 +387,61 @@ export function computeFinalTier(starTotal) {
   return "F";
 }
 
+// ── Confiance (jauge à sens unique, non compensable par les 3 jauges) ────
+// Baisse sur les jours "Moyenne"/"Catastrophe", ne remonte QUE via l'action
+// Câliner (elle-même sujette à la fatigue, voir `fatigue` ci-dessus, sinon
+// la spammer une fois les jauges stabilisées deviendrait une échappatoire
+// triviale). Plafonne le palier de fin de manche (capTierByConfiance) plutôt
+// que d'interférer avec le calcul quotidien des jauges — un mauvais début de
+// manche laisse une trace qu'aucun bon jour de jauges ne peut effacer.
+
+// Même formule share × participation × fatigue que computeDayImpact, mais
+// appliquée au bonus de Confiance de Câliner plutôt qu'aux 3 jauges.
+export function computeCalinerConfianceBonus(voteCounts, actionsConfig, votantsReference, fatigue) {
+  const caliner = actionsConfig.caliner;
+  if (!caliner?.confiance_bonus) return 0;
+  const actionIds = Object.keys(actionsConfig).filter(
+    (id) => !actionsConfig[id].is_info_action,
+  );
+  const total = actionIds.reduce((sum, id) => sum + (voteCounts[id] || 0), 0);
+  if (total === 0) return 0;
+  const participation = votantsReference
+    ? Math.min(total / votantsReference, 1)
+    : 1;
+  const share = (voteCounts.caliner || 0) / total;
+  const fatigueFactor = fatigue && fatigue.actionId === "caliner" ? fatigue.facteur : 1;
+  return participation * fatigueFactor * share * caliner.confiance_bonus;
+}
+
+export function computeConfianceDelta(ratingLabel, calinerBonus, confianceConfig) {
+  const malus =
+    ratingLabel === "moyenne"
+      ? confianceConfig.malus_moyen
+      : ratingLabel === "catastrophe"
+        ? confianceConfig.malus_catastrophe
+        : 0;
+  return malus + calinerBonus;
+}
+
+const TIER_ORDER = ["F", "B", "S"]; // du pire au meilleur
+
+// Cherche le seuil `plafond_tier` le plus restrictif franchi (trié par
+// `sous` croissant -> premier trouvé = le plus bas donc le plus sévère), et
+// renvoie le pire des deux paliers entre celui calculé sur les étoiles et le
+// plafond trouvé. Sans config.confiance (ou plafond_tier vide) : le palier
+// d'origine est renvoyé tel quel.
+export function capTierByConfiance(tier, confianceFinale, confianceConfig) {
+  const plafonds = confianceConfig?.plafond_tier;
+  if (!plafonds?.length) return tier;
+  const tries = [...plafonds].sort((a, b) => a.sous - b.sous);
+  for (const { sous, max } of tries) {
+    if (confianceFinale < sous) {
+      return TIER_ORDER.indexOf(max) < TIER_ORDER.indexOf(tier) ? max : tier;
+    }
+  }
+  return tier;
+}
+
 // ── Historique (bilans quotidiens) ────────────────────────────────
 // Bookkeeping interne uniquement (récap final, texte narratif) — pas de
 // bouton Discord dédié pour ce jeu, contrairement à l'Historique d'Aventure.
@@ -409,10 +492,29 @@ async function computeClosure(state, config) {
   // jour a démarré, voir postTamagotchi()) — c'est lui, pas l'événement du
   // jour suivant, qui doit influencer le calcul d'impact de CE jour.
   const actionsConfig = applyActionOverrides(config.actions, state.lastEvent?.actions_modifiees);
-  const impact = computeDayImpact(voteCounts, actionsConfig, config.votants_reference);
+  // state.actionFatiguee = action dominante du jour PRÉCÉDENT (posée par le
+  // computeClosure() d'hier) — c'est elle qui est pénalisée aujourd'hui.
+  const fatigue =
+    config.fatigue && state.actionFatiguee
+      ? { actionId: state.actionFatiguee, facteur: config.fatigue.facteur }
+      : null;
+  const impact = computeDayImpact(voteCounts, actionsConfig, config.votants_reference, fatigue);
   const gaugesClosing = applyGaugeDelta(state.gauges, impact);
   const rating = rateDay(gaugesClosing, config.zones_ideales);
-  return { voteCounts, voters, impact, gaugesClosing, rating };
+
+  let confianceApres = state.confiance;
+  if (config.confiance) {
+    const calinerBonus = computeCalinerConfianceBonus(voteCounts, actionsConfig, config.votants_reference, fatigue);
+    const delta = computeConfianceDelta(rating.rating, calinerBonus, config.confiance);
+    confianceApres = clampGauge(Math.round((state.confiance ?? config.confiance.depart) + delta));
+  }
+
+  // Action dominante DE CE JOUR (celui qu'on clôture ici) — devient
+  // actionFatiguee pour la clôture du jour SUIVANT, pas celui-ci.
+  const actionIds = Object.keys(config.actions).filter((id) => !config.actions[id].is_info_action);
+  const actionFatigueeSuivante = config.fatigue ? dominantAction(voteCounts, actionIds) : null;
+
+  return { voteCounts, voters, impact, gaugesClosing, rating, confianceApres, actionFatigueeSuivante };
 }
 
 // Lecture seule (aucune écriture Redis) — utilisée par la branche --dry-run,
@@ -423,7 +525,8 @@ export async function previewCloseDay(state, config) {
 }
 
 export async function closeDayAndAdvance(state, config) {
-  const { voteCounts, voters, impact, gaugesClosing, rating } = await computeClosure(state, config);
+  const { voteCounts, voters, impact, gaugesClosing, rating, confianceApres, actionFatigueeSuivante } =
+    await computeClosure(state, config);
   const starTotalApres = state.starTotal + rating.starDelta;
 
   await writeHistoriqueEntry(state.jour, {
@@ -437,11 +540,14 @@ export async function closeDayAndAdvance(state, config) {
     rating: rating.rating,
     starDelta: rating.starDelta,
     starTotalApres,
+    confianceAvant: state.confiance,
+    confianceApres,
+    actionFatiguee: state.actionFatiguee ?? null,
     resolvedAt: new Date().toISOString(),
   });
   await clearVotes(state.jour);
 
-  return { gaugesClosing, rating, starTotalApres, voteCounts, voters };
+  return { gaugesClosing, rating, starTotalApres, voteCounts, voters, confianceApres, actionFatigueeSuivante };
 }
 
 // ── Remise à zéro ────────────────────────────────────────────────────

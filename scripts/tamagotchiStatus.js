@@ -20,6 +20,8 @@ import {
   previewCloseDay,
   eventForDay,
   computeDayOpenGauges,
+  computeFinalTier,
+  capTierByConfiance,
   readPiluleState,
 } from "../backend/services/tamagotchi.js";
 import { renderGaugeBar, formatGaugeImpact, formatActionOverrides } from "../api/discord/handlers/tamagotchi.js";
@@ -40,7 +42,16 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
   console.log(`Jour ${state.jour}/${config.duree_jours} — ⭐ ${state.starTotal} étoile(s) de dressage\n`);
   console.log(`🔥 Estomac : ${renderGaugeBar(state.gauges.estomac)} ${state.gauges.estomac}%`);
   console.log(`⚡ Énergie : ${renderGaugeBar(state.gauges.energie)} ${state.gauges.energie}%`);
-  console.log(`🥨 Moral   : ${renderGaugeBar(state.gauges.moral)} ${state.gauges.moral}%\n`);
+  console.log(`🥨 Moral   : ${renderGaugeBar(state.gauges.moral)} ${state.gauges.moral}%`);
+  if (config.confiance && state.confiance != null) {
+    console.log(`🤝 Confiance : ${renderGaugeBar(state.confiance)} ${state.confiance}%`);
+  }
+  if (config.fatigue) {
+    console.log(
+      `😵 Action fatiguée aujourd'hui : ${state.actionFatiguee ? config.actions[state.actionFatiguee]?.label ?? state.actionFatiguee : "aucune"}`,
+    );
+  }
+  console.log("");
 
   const votes = await listVotes(state.jour);
   // Pseudo actuel résolu en direct pour chaque votant (jamais celui figé au
@@ -55,8 +66,7 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
   const voteCounts = await tallyVotes(state.jour);
   for (const [id, action] of Object.entries(config.actions)) {
     // Pilule a son propre bloc dédié ci-dessous (quota de la manche, pas un
-    // simple compteur de votes) — seule elle est exclue ici, Projection
-    // (inspecter) doit apparaître comme les 4 actions réelles.
+    // simple compteur de votes) — seule elle est exclue de cette boucle.
     if (id === "pilule") continue;
     const votants = votes.filter((v) => v.actionId === id);
     console.log(`${action.emoji} ${action.label} — ${voteCounts[id] || 0} vote${(voteCounts[id] || 0) > 1 ? "s" : ""}`);
@@ -93,9 +103,21 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
   const jourSuivant = state.jour + 1;
   console.log(`\n🔮 Projection si la clôture avait lieu maintenant :`);
   console.log(`Bilan du Jour ${state.jour} : ${closure.rating.rating} (${closure.rating.starDelta >= 0 ? "+" : ""}${closure.rating.starDelta} ⭐)`);
+  if (config.confiance) {
+    console.log(`  🤝 Confiance projetée : ${closure.confianceApres}/100`);
+  }
+  if (config.fatigue) {
+    console.log(
+      `  😵 Action fatiguée demain : ${closure.actionFatigueeSuivante ? config.actions[closure.actionFatigueeSuivante]?.label ?? closure.actionFatigueeSuivante : "aucune"}`,
+    );
+  }
 
   if (jourSuivant > config.duree_jours) {
-    console.log(`→ Jour ${jourSuivant} : fin de partie, ${state.starTotal + closure.rating.starDelta} étoile(s) au total.`);
+    const starTotalFinal = state.starTotal + closure.rating.starDelta;
+    const tierBrut = computeFinalTier(starTotalFinal);
+    const tier = capTierByConfiance(tierBrut, closure.confianceApres, config.confiance);
+    const plafondNote = tier !== tierBrut ? ` (plafonné depuis ${tierBrut} par la Confiance)` : "";
+    console.log(`→ Jour ${jourSuivant} : fin de partie, ${starTotalFinal} étoile(s) au total — palier ${tier}${plafondNote}.`);
   } else {
     const event = eventForDay(jourSuivant, config.evenements_possibles);
     // Un événement à actions_modifiees (ex. Indigestion de bonbons) n'a pas

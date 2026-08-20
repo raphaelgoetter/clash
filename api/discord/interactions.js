@@ -73,7 +73,6 @@ import {
 } from "./handlers/aventure.js";
 import {
   handleVoteButton as handleTamagotchiVote,
-  handleInspecter as handleTamagotchiInspecter,
   handleRegles as handleTamagotchiRegles,
   handlePilule as handleTamagotchiPilule,
 } from "./handlers/tamagotchi.js";
@@ -9100,27 +9099,6 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ── Tamagoshi : bouton "Projections" (consomme le vote du jour, sans jamais impacter les jauges) ──
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id.startsWith("tamagotchi_inspecter:")
-  ) {
-    const jour = body.data.custom_id.split(":")[1];
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() =>
-      handleTamagotchiInspecter(webhookUrl, jour, discordId, username, process.env.DISCORD_TOKEN),
-    );
-    return;
-  }
-
   // ── Tamagoshi : bouton "Règles du jeu" (éphémère, statique) ──
   if (body.type === 3 && body.data?.custom_id === "tamagotchi_regles") {
     res.status(200).json({ type: 5, data: { flags: 64 } });
@@ -9142,9 +9120,8 @@ export default async function handler(req, res) {
       body.member?.user?.global_name ||
       body.member?.user?.username ||
       "Inconnu";
-    // Comme tamagotchi_vote: (pas tamagotchi_inspecter:) : la Pilule mute les
-    // jauges et doit repatcher le message public, elle a donc besoin du bot
-    // token.
+    // Comme tamagotchi_vote: : la Pilule mute les jauges et doit repatcher
+    // le message public, elle a donc besoin du bot token.
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() =>

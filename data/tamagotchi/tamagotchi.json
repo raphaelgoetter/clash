@@ -3,9 +3,17 @@
   "cron_time": "0 8 * * *",
   "zones_ideales": { "min": 40, "max": 70 },
   "votants_reference": 12,
-  "decroissance": {
-    "jour_min": 6,
-    "modificateur_jauges": { "estomac": -4, "energie": -4, "moral": -4 }
+  "fatigue": {
+    "facteur": 0.5
+  },
+  "confiance": {
+    "depart": 100,
+    "malus_moyen": -10,
+    "malus_catastrophe": -25,
+    "plafond_tier": [
+      { "sous": 20, "max": "F" },
+      { "sous": 50, "max": "B" }
+    ]
   },
   "jauges_initiales": { "estomac": 50, "energie": 50, "moral": 50 },
   "actions": {
@@ -13,11 +21,6 @@
       "label": "Nourrir",
       "emoji": "🍭",
       "impact": { "estomac": 25, "energie": -10, "moral": 0 }
-    },
-    "bretzel": {
-      "label": "Bretzel",
-      "emoji": "🥨",
-      "impact": { "estomac": 15, "energie": -20, "moral": -10 }
     },
     "sieste": {
       "label": "Sieste",
@@ -29,10 +32,11 @@
       "emoji": "🎾",
       "impact": { "estomac": -20, "energie": -20, "moral": 25 }
     },
-    "inspecter": {
-      "label": "Projection",
-      "emoji": "🔮",
-      "is_info_action": true
+    "caliner": {
+      "label": "Câliner",
+      "emoji": "🤗",
+      "impact": { "estomac": -5, "energie": 0, "moral": 0 },
+      "confiance_bonus": 15
     },
     "pilule": {
       "label": "Pilule",
@@ -47,49 +51,34 @@
   },
   "evenements_possibles": [
     {
-      "id": "sans_appetit",
-      "jour": 2,
-      "titre": "Journée sans appétit",
-      "description": "Le départ de Mohamed Light lui pèse encore, Lilith mange à peine.",
-      "modificateur_jauges": { "estomac": -10, "energie": 0, "moral": 0 }
-    },
-    {
-      "id": "strasbourg",
-      "jour": 3,
-      "titre": "Carte postale de Strasbourg",
-      "description": "Mohamed Light a envoyé une photo depuis la Cathédrale de Strasbourg. Bébé dragon est ravi !",
-      "modificateur_jauges": { "moral": 15, "estomac": 0, "energie": 0 }
-    },
-    {
-      "id": "nouveau_jouet",
+      "id": "averse_glaciale",
       "jour": 5,
-      "titre": "Nouveau jouet",
-      "description": "Un membre du serveur a bricolé un jouet pour Lilith, un bûcher humain, elle adore !",
-      "modificateur_jauges": { "moral": 10, "estomac": 0, "energie": 0 }
+      "titre": "Averse glaciale sur l'arène",
+      "description": "Une pluie froide et soudaine s'abat sur l'arène toute la nuit. Lilith grelotte, trempée, et boude.",
+      "modificateur_jauges": { "energie": -15, "estomac": 0, "moral": -15 }
     },
     {
-      "id": "canicule",
-      "jour": 6,
-      "titre": "Grosse canicule sur le serveur",
-      "description": "Il fait une chaleur étouffante aujourd'hui sur le serveur, même Lilith qui devrait être habituée est exténuée.",
-      "modificateur_jauges": { "energie": -10, "estomac": 0, "moral": -10 }
+      "id": "visite_gobelins",
+      "jour": 7,
+      "titre": "Visite nocturne des gobelins",
+      "description": "Des gobelins chapardeurs ont piqué une bonne partie des réserves de nourriture cette nuit.",
+      "modificateur_jauges": { "estomac": -15, "energie": -10, "moral": 0 }
     },
     {
-      "id": "indigestion_bonbons",
+      "id": "penurie_vivres",
       "jour": 8,
-      "titre": "Indigestion de bonbons",
-      "description": "Lilith a trop mangé de sucreries hier soir et vomit la moitié de ce qu'elle ingurgite aujourd'hui : Nourrir et Bretzel la remplissent moins.",
+      "titre": "Pénurie de vivres",
+      "description": "Les réserves de nourriture de l'arène s'épuisent sérieusement : Nourrir remplit beaucoup moins bien Lilith aujourd'hui.",
       "actions_modifiees": {
-        "nourrir": { "estomac": 10 },
-        "bretzel": { "estomac": 5 }
+        "nourrir": { "estomac": 12 }
       }
     },
     {
-      "id": "choucroute",
+      "id": "tempete_alsacienne",
       "jour": 9,
-      "titre": "Livraison mystère d'Alsace",
-      "description": "Un colis contenant de la choucroute arrive sur le serveur ! Lilith se régale… un peu trop.",
-      "modificateur_jauges": { "energie": -15, "estomac": 20, "moral": 0 }
+      "titre": "Tempête sur l'Alsace",
+      "description": "Un orage électrique pousse un chargement de victuailles jusqu'à l'arène, mais le vacarme épuise et angoisse Lilith.",
+      "modificateur_jauges": { "estomac": 10, "energie": -20, "moral": -5 }
     }
   ]
 }
