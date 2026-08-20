@@ -7,7 +7,7 @@
     "facteur": 0.5
   },
   "confiance": {
-    "depart": 100,
+    "depart": 30,
     "malus_moyen": -10,
     "malus_catastrophe": -25,
     "plafond_tier": [
