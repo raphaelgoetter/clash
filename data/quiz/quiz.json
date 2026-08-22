@@ -1,0 +1,59 @@
+{
+  "manches": [
+    {
+      "id": "staff-histoire",
+      "theme": "Staff & histoire du serveur",
+      "questions": [
+        {
+          "type": "qcm",
+          "enonce": "Qui des 4 est le gestionnaire le plus ancien de la famille ?",
+          "image": "quizz/quizz-01.webp",
+          "choix": ["Aurel", "Apoplexy", "Displaynone", "Mohamed Light"],
+          "bonne_reponse": 1
+        },
+        {
+          "type": "qcm",
+          "enonce": "Qui parmi les 4 est le créateur du serveur ?",
+          "image": "quizz/quizz-02.webp",
+          "choix": ["Aurel", "Rico", "Apoplexy", "Détective Conan"],
+          "bonne_reponse": 3
+        },
+        {
+          "type": "qcm",
+          "enonce": "Qui parmi les 4 a banni le plus de personnes sur ce serveur ?",
+          "image": "quizz/quizz-03.webp",
+          "choix": ["Rico", "Aurel", "MEE6", "TrustRoyale"],
+          "bonne_reponse": 1
+        },
+        {
+          "type": "qcm",
+          "enonce": "Qui parmi les 4 a rejoint la gestion en étant mineur ?",
+          "image": "quizz/quizz-04.webp",
+          "choix": ["Filoux", "Mariechou", "Aurel", "Jules"],
+          "bonne_reponse": 2
+        },
+        {
+          "type": "qcm",
+          "enonce": "Qui parmi les 4 n'est plus dans la famille depuis plus de 2 ans ?",
+          "image": "quizz/quizz-05.webp",
+          "choix": ["Detective Conan", "Kikootz", "Mohamed Light", "Natoux"],
+          "bonne_reponse": 0
+        },
+        {
+          "type": "qcm",
+          "enonce": "Qui parmi les 4 est le propriétaire actuel du serveur Discord de notre famille ?",
+          "image": "quizz/quizz-06.webp",
+          "choix": ["Aurel", "Apoplexy", "Détective Conan", "Rico"],
+          "bonne_reponse": 3
+        },
+        {
+          "type": "qcm",
+          "enonce": "Qui parmi les 4 est le dernier à avoir rejoint notre staff ?",
+          "image": "quizz/quizz-07.webp",
+          "choix": ["Azzgameuse", "Displaynone", "Lepamowi", "Mariechou"],
+          "bonne_reponse": 0
+        }
+      ]
+    }
+  ]
+}

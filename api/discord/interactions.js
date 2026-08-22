@@ -76,6 +76,7 @@ import {
   handleRegles as handleTamagotchiRegles,
   handlePilule as handleTamagotchiPilule,
 } from "./handlers/tamagotchi.js";
+import { handleQuizVote } from "./handlers/quiz.js";
 import {
   handleVoteButton as handleRobinsonVote,
   handleJournal as handleRobinsonJournal,
@@ -9096,6 +9097,28 @@ export default async function handler(req, res) {
     runBackground(() =>
       handleTamagotchiVote(webhookUrl, jour, actionId, discordId, username, process.env.DISCORD_TOKEN),
     );
+    return;
+  }
+
+  // ── Quiz thématique : boutons de vote ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("quiz_vote:")
+  ) {
+    const [, manche, jour, choiceIndex] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    // type 5 = DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE (éphémère) : confirmation
+    // privée uniquement — contrairement à Tamagoshi, le message public n'est
+    // JAMAIS repatché (aucun compteur de votes affiché avant la révélation).
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleQuizVote(webhookUrl, manche, jour, choiceIndex, discordId, username));
     return;
   }
 

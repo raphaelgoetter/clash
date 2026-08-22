@@ -1,0 +1,37 @@
+name: Quiz thématique
+
+permissions:
+  contents: read
+
+on:
+  # Le Jour 1 se lance uniquement à la main (workflow_dispatch). Le cron ne
+  # fait qu'avancer une manche déjà en cours (voir --require-active passé au
+  # script ci-dessous) : tant qu'aucun lancement manuel n'a eu lieu, il ne se
+  # passe rien.
+  schedule:
+    - cron: "0 8 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  post-jour:
+    runs-on: ubuntu-latest
+    env:
+      DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+      DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+      DISCORD_CHANNEL_FRAME_PUBLIC: ${{ secrets.DISCORD_CHANNEL_FRAME_PUBLIC }}
+      KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
+      KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Poste le jour du Quiz (salon public)
+        run: npm run quiz:public -- ${{ github.event_name == 'schedule' && '--require-active' || '' }}
