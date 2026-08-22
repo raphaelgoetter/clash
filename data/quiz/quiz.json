@@ -6,7 +6,7 @@
       "questions": [
         {
           "type": "qcm",
-          "enonce": "Qui des 4 est le gestionnaire le plus ancien de la famille ?",
+          "enonce": "Qui parmi les 4 est le gestionnaire le plus ancien de la famille ?",
           "image": "quizz/quizz-01.webp",
           "choix": ["Aurel", "Apoplexy", "Displaynone", "Mohamed Light"],
           "bonne_reponse": 1
