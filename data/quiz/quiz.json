@@ -54,6 +54,61 @@
           "bonne_reponse": 0
         }
       ]
+    },
+    {
+      "id": "Nombres",
+      "theme": "Nombres marquants dans la famille",
+      "questions": [
+        {
+          "type": "qcm",
+          "enonce": "Sur les 2 rencontres en tournoi amicales face à des clans amis, notre team en a gagné combien ?",
+          "image": "quizz/quizz-01.webp",
+          "choix": ["0", "1", "2", "Les 2"],
+          "bonne_reponse": 1
+        },
+        {
+          "type": "qcm",
+          "enonce": "Quel nombre de clans la famille Resistance à déjà eu en même temps ?",
+          "image": "quizz/quizz-02.webp",
+          "choix": ["4", "5", "7", "9"],
+          "bonne_reponse": 1
+        },
+        {
+          "type": "qcm",
+          "enonce": "Quel est le meilleur top France GDC obtenu par le clan 1 en GDC ?",
+          "image": "quizz/quizz-03.webp",
+          "choix": ["112", "13", "118", "79"],
+          "bonne_reponse": 3
+        },
+        {
+          "type": "qcm",
+          "enonce": "Quel est le meilleur score obtenu en Colisée, tous clans confondus ?",
+          "image": "quizz/quizz-04.webp",
+          "choix": ["125 900", "131 250", "129 400", "133 150"],
+          "bonne_reponse": 1
+        },
+        {
+          "type": "qcm",
+          "enonce": "Environ combien de membres ont déjà rejoint le serveur",
+          "image": "quizz/quizz-05.webp",
+          "choix": ["360", "380", "400", "700"],
+          "bonne_reponse": 3
+        },
+        {
+          "type": "qcm",
+          "enonce": "Combien de personnes sont bannies de ce serveur ?",
+          "image": "quizz/quizz-06.webp",
+          "choix": ["12", "35", "58", "0"],
+          "bonne_reponse": 2
+        },
+        {
+          "type": "qcm",
+          "enonce": "Quelle a été la meilleure place de La Resistance dans le top monde en GDC ?",
+          "image": "quizz/quizz-07.webp",
+          "choix": ["638", "726", "889", "1189"],
+          "bonne_reponse": 2
+        }
+      ]
     }
   ]
 }
