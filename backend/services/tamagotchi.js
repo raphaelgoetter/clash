@@ -479,7 +479,7 @@ export async function listManches({ limit = 10 } = {}) {
 }
 
 // ── Résolution/clôture du jour courant ──────────────────────────────
-// Appelée uniquement par postTamagotchi() (api/discord/handlers/tamagotchi.js)
+// Appelée uniquement par postTamagotchi() (api/discord/_handlers/tamagotchi.js)
 // au moment du cron quotidien. Toute la logique métier vit ici, jamais dans
 // le handler ni dans interactions.js.
 

@@ -15,7 +15,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { postQuiz } from "../api/discord/handlers/quiz.js";
+import { postQuiz } from "../api/discord/_handlers/quiz.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");

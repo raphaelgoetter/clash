@@ -3,7 +3,7 @@
 // Clash Royale à partir d'une anagramme). Embed, boutons, modal, DM. La
 // publication d'une partie passe uniquement par scripts/postAnagram.js —
 // seule la commande /anagram (scores personnels du joueur qui l'exécute)
-// est une vraie commande slash. Miroir de api/discord/handlers/frames.js.
+// est une vraie commande slash. Miroir de api/discord/_handlers/frames.js.
 // ============================================================
 
 import {

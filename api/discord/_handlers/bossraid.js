@@ -51,7 +51,7 @@ const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 
 // Illustration du jour — fichiers statiques frontend/public/images/boss/
 // (boss-01.webp à boss-10.webp), servis tels quels par Vercel, même
-// principe que robinsonImageUrl() dans api/discord/handlers/robinson.js.
+// principe que robinsonImageUrl() dans api/discord/_handlers/robinson.js.
 // Affichée uniquement à partir du Jour 1 (jamais au jour d'annonce).
 function bossRaidImageUrl(jour) {
   return `${TRUST_ROYALE_URL}/images/boss/boss-${String(jour).padStart(2, "0")}.webp`;
@@ -360,7 +360,7 @@ export async function postBossRaid(channelId, { dryRun = false, noPing = false, 
 }
 
 // Supprime l'ancien message (tolérant), poste le nouveau, écrit l'état.
-// Mirroring publishAndWriteState() dans api/discord/handlers/robinson.js.
+// Mirroring publishAndWriteState() dans api/discord/_handlers/robinson.js.
 async function publishAndWriteState(
   channelId,
   previousState,

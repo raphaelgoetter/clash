@@ -243,7 +243,7 @@ export async function listHistorique({ limit = 25, offset = 0 } = {}) {
 }
 
 // ── Résolution du chapitre courant et avancée de l'histoire ─────────
-// Appelée uniquement par postChapter() (api/discord/handlers/aventure.js)
+// Appelée uniquement par postChapter() (api/discord/_handlers/aventure.js)
 // au moment du cron quotidien. Toute la logique métier vit ici, jamais
 // dans le handler ni dans interactions.js.
 

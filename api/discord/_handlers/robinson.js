@@ -58,7 +58,7 @@ const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 
 // Illustration du jour — fichiers statiques frontend/public/images/robinson/
 // (rob-01.webp à rob-10.webp), servis tels quels par Vercel, même principe
-// que tamagotchiImageUrl() dans api/discord/handlers/tamagotchi.js.
+// que tamagotchiImageUrl() dans api/discord/_handlers/tamagotchi.js.
 function robinsonImageUrl(jour) {
   return `${TRUST_ROYALE_URL}/images/robinson/rob-${String(jour).padStart(2, "0")}.webp`;
 }
@@ -430,7 +430,7 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
 }
 
 // Supprime l'ancien message (tolérant), poste le nouveau, écrit l'état.
-// Mirroring publishAndWriteState() dans api/discord/handlers/tamagotchi.js.
+// Mirroring publishAndWriteState() dans api/discord/_handlers/tamagotchi.js.
 async function publishAndWriteState(
   channelId,
   previousState,

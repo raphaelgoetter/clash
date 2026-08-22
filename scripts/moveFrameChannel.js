@@ -16,7 +16,7 @@ if (!channelId) {
   process.exit(1);
 }
 
-const { repostFrame } = await import("../api/discord/handlers/frames.js");
+const { repostFrame } = await import("../api/discord/_handlers/frames.js");
 
 (async () => {
   try {

@@ -16,7 +16,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { postRobinson } from "../api/discord/handlers/robinson.js";
+import { postRobinson } from "../api/discord/_handlers/robinson.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");

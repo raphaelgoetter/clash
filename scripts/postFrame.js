@@ -14,7 +14,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { postFrame } from "../api/discord/handlers/frames.js";
+import { postFrame } from "../api/discord/_handlers/frames.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");

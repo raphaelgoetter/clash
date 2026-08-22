@@ -3,7 +3,7 @@
 // zoomée à l'extrême). Embed, bouton indice, modal, DM. La publication
 // d'une partie passe uniquement par scripts/postZoom.js — seule la commande
 // /zoom (scores personnels du joueur qui l'exécute) est une vraie commande
-// slash. Miroir structurel de api/discord/handlers/frames.js, avec deux
+// slash. Miroir structurel de api/discord/_handlers/frames.js, avec deux
 // différences : un seul palier d'indice (-3 pts, pas 2 comme Frame), et
 // l'indice est une IMAGE (dézoom) plutôt qu'un texte — la réponse au clic
 // est donc un embed éphémère avec image, jamais un simple texte.

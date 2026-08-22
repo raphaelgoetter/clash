@@ -16,7 +16,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { postTamagotchi } from "../api/discord/handlers/tamagotchi.js";
+import { postTamagotchi } from "../api/discord/_handlers/tamagotchi.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");

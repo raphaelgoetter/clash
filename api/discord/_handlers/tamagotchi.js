@@ -758,7 +758,7 @@ export async function postTamagotchi(
 }
 
 // Supprime l'ancien message (tolérant), poste le nouveau, écrit l'état.
-// Mirroring postChapter() dans api/discord/handlers/aventure.js.
+// Mirroring postChapter() dans api/discord/_handlers/aventure.js.
 async function publishAndWriteState(
   channelId,
   previousState,

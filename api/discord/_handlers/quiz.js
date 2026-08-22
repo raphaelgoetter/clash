@@ -44,36 +44,61 @@ function quizImageUrl(relativePath) {
   return relativePath ? `${TRUST_ROYALE_URL}/images/${relativePath}` : null;
 }
 
+// "JJ/MM/AAAA HH:mm" (heure de Paris) — horaire de POST, calculé au moment de
+// la construction de l'embed (le délai jusqu'à l'envoi effectif est
+// négligeable), affiché en footer pour dater le jour posté.
+function formatPostedAtParis(date = new Date()) {
+  return date.toLocaleString("fr-FR", {
+    timeZone: "Europe/Paris",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 // ── Embed / composants d'une question ─────────────────────────────
+// Les propositions de réponses vivent dans l'EMBED (lettre + texte), jamais
+// sur les boutons — ceux-ci n'affichent qu'un label générique "Réponse A/B/…"
+// (voir buildQuestionComponents) pour ne jamais laisser deviner le nombre de
+// caractères d'une réponse ni gêner la lecture sur mobile.
 
 function buildQuestionEmbed(mancheConfig, question, jour) {
   const image = quizImageUrl(question.image);
+  const choicesLines = question.choix.map((label, idx) => `**${QCM_LETTERS[idx]}.** ${label}`);
   return {
     title: `❓ Quiz — ${mancheConfig.theme} — Jour ${jour}/${TOTAL_QUESTIONS}`,
     description: [
-      question.enonce,
+      `# ${question.enonce}`,
+      "",
+      ...choicesLines,
       "",
       "Vote via les boutons ci-dessous — un seul vote possible, définitif. Aucun résultat ni compteur n'est visible avant la révélation finale.",
     ].join("\n"),
     color: QUIZ_COLOR,
     ...(image ? { image: { url: image } } : {}),
     footer: {
-      text: `Vote avant ${formatUtcTimeAsParis(8)} (heure de Paris) demain.`,
+      text: [
+        `Vote avant ${formatUtcTimeAsParis(8)} (heure de Paris) demain.`,
+        `Heure du quiz : ${formatPostedAtParis()}`,
+      ].join("\n"),
     },
   };
 }
 
-// Aucun compteur dans le label (contrairement à Tamagoshi) : le nombre de
-// boutons est dérivé directement de la longueur de `choix`, aucune branche
-// dédiée n'est nécessaire pour supporter QCM (4) vs vrai/faux (2).
+// Boutons génériques ("Réponse A", "Réponse B", …) — le texte des réponses
+// est réservé à l'embed (voir ci-dessus). Le nombre de boutons est dérivé
+// directement de la longueur de `choix`, aucune branche dédiée n'est
+// nécessaire pour supporter QCM (4) vs vrai/faux (2).
 function buildQuestionComponents(manche, jour, question) {
   return [
     {
       type: 1,
-      components: question.choix.map((label, idx) => ({
+      components: question.choix.map((_, idx) => ({
         type: 2,
         style: 2,
-        label: (question.type === "qcm" ? `${QCM_LETTERS[idx]}. ${label}` : label).slice(0, 80),
+        label: `Réponse ${QCM_LETTERS[idx]}`,
         custom_id: `quiz_vote:${manche}:${jour}:${idx}`,
       })),
     },

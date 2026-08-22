@@ -479,7 +479,7 @@ export async function listManches({ limit = 10 } = {}) {
 }
 
 // ── Résolution/clôture du jour courant ──────────────────────────────
-// Appelée uniquement par postRobinson() (api/discord/handlers/robinson.js)
+// Appelée uniquement par postRobinson() (api/discord/_handlers/robinson.js)
 // au moment du cron quotidien.
 
 async function computeClosure(state, config, { write }) {

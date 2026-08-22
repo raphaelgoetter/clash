@@ -14,7 +14,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { postJusteCarte } from "../api/discord/handlers/lajustecarte.js";
+import { postJusteCarte } from "../api/discord/_handlers/lajustecarte.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");

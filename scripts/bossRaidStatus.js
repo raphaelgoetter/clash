@@ -21,7 +21,7 @@ import {
   previewCloture,
   activeEventForDay,
 } from "../backend/services/bossraid.js";
-import { ULTIMATE_NAMES, ULTIMATE_EFFECTS } from "../api/discord/handlers/bossraid.js";
+import { ULTIMATE_NAMES, ULTIMATE_EFFECTS } from "../api/discord/_handlers/bossraid.js";
 import { resolveDisplayName } from "../backend/services/discordUsers.js";
 
 (async () => {

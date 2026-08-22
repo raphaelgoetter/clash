@@ -17,7 +17,7 @@ if (!channelId) {
   process.exit(1);
 }
 
-const { repostZoom } = await import("../api/discord/handlers/zoom.js");
+const { repostZoom } = await import("../api/discord/_handlers/zoom.js");
 
 (async () => {
   try {

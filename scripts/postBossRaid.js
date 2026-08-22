@@ -17,7 +17,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { postBossRaid } from "../api/discord/handlers/bossraid.js";
+import { postBossRaid } from "../api/discord/_handlers/bossraid.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");

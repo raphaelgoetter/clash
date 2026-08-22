@@ -18,7 +18,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { postAnagram } from "../api/discord/handlers/anagrams.js";
+import { postAnagram } from "../api/discord/_handlers/anagrams.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");

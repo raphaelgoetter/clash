@@ -24,7 +24,7 @@ import {
   capTierByConfiance,
   readPiluleState,
 } from "../backend/services/tamagotchi.js";
-import { renderGaugeBar, formatGaugeImpact, formatActionOverrides } from "../api/discord/handlers/tamagotchi.js";
+import { renderGaugeBar, formatGaugeImpact, formatActionOverrides } from "../api/discord/_handlers/tamagotchi.js";
 import { resolveDisplayName } from "../backend/services/discordUsers.js";
 
 (async () => {

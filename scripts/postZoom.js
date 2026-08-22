@@ -14,7 +14,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { postZoom } from "../api/discord/handlers/zoom.js";
+import { postZoom } from "../api/discord/_handlers/zoom.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");

@@ -619,7 +619,7 @@ Le score total et le classement général affichés en DM ne portent que sur la 
 
 ### Récapitulatif de fin de saison
 
-Quand `postFrame()` détecte que le `seasonId` a changé depuis la dernière partie (comparaison `previousState.seasonId` vs `getCurrentSeasonId()`, avant tout appel à `startNewGame()`), un embed récapitulatif de la saison écoulée est posté dans le salon **avant** le post normal de la nouvelle manche 1 — jamais de DM, uniquement ce post public (`postSeasonRecap()`/`buildSeasonRecapEmbed()`, `api/discord/handlers/frames.js`).
+Quand `postFrame()` détecte que le `seasonId` a changé depuis la dernière partie (comparaison `previousState.seasonId` vs `getCurrentSeasonId()`, avant tout appel à `startNewGame()`), un embed récapitulatif de la saison écoulée est posté dans le salon **avant** le post normal de la nouvelle manche 1 — jamais de DM, uniquement ce post public (`postSeasonRecap()`/`buildSeasonRecapEmbed()`, `api/discord/_handlers/frames.js`).
 
 Contenu : classement final de `computeSeasonRanking(endedSeasonId)`, félicitations au(x) vainqueur(s) (gestion des ex-aequo — plusieurs co-champions possibles), classement complet avec médailles 🥇🥈🥉 uniquement pour un rang non partagé (`findTiedRank`, sinon numéro simple). Deux règles de troncage explicites : les scores à **0 pt sont exclus**, et la liste est plafonnée à **20 joueurs** (au-delà, note "... et X autres joueurs"). Si personne n'a marqué le moindre point sur la saison écoulée, aucun récap n'est posté.
 
@@ -629,7 +629,7 @@ Prévisualisable sans rien poster via `npm run frame:public:dry` (ou `frame:test
 
 Seule commande slash du jeu (tout le reste passe par les boutons/modal du post hebdomadaire ou par des scripts). N'a aucune option : elle affiche à l'appelant (réponse éphémère) sa propre progression, déterminée à partir de son `discordId` — pas de paramètre à saisir.
 
-Contenu affiché (`handleFrameStatsCommand()`, `api/discord/handlers/frames.js`) :
+Contenu affiché (`handleFrameStatsCommand()`, `api/discord/_handlers/frames.js`) :
 
 - **Manche en cours** : trouvée ou non, score obtenu (ou "pas encore trouvé"/"pas de points").
 - **Manches précédentes de la saison** (`getPlayerSeasonResults()`) : uniquement celles où le joueur a trouvé la réponse — triées de la plus récente à la plus ancienne. Le numéro de manche vient de `getSeasonMancheNumber(seasonId, gameId)` (`frame:season:<seasonId>:manche_numbers`, voir "Stockage — Upstash Redis" ci-dessus).
@@ -703,7 +703,7 @@ Pas d'équivalent à `frame:hints:*` (aucun indice) ni à `frame:posted_games` (
 
 ### Post hebdomadaire à horaire aléatoire (samedi, 10h ou 18h UTC)
 
-GitHub Actions ne permet pas nativement un cron à plage aléatoire. Le workflow `.github/workflows/anagrams.yml` se déclenche 2 fois le samedi (`cron: "0 10,18 * * 6"`, 10h et 18h UTC). À chaque déclenchement, `postAnagram()` (`api/discord/handlers/anagrams.js`) décide de poster ou non :
+GitHub Actions ne permet pas nativement un cron à plage aléatoire. Le workflow `.github/workflows/anagrams.yml` se déclenche 2 fois le samedi (`cron: "0 10,18 * * 6"`, 10h et 18h UTC). À chaque déclenchement, `postAnagram()` (`api/discord/_handlers/anagrams.js`) décide de poster ou non :
 
 1. `alreadyPostedThisWeek()` — si un post a déjà eu lieu cette semaine (même date UTC que `anagram:state.startedAt`), on ne repost pas.
 2. `computeWeeklySlotIndex()` — détermine le créneau courant (1 ou 2).
@@ -864,7 +864,7 @@ Sur le même modèle que Zoom (`handleHintButton`, `recordHintUsed`) : bouton to
 
 ### Réponse — flux à 3 issues (pas 2 comme Anagram)
 
-Modal à 1 champ (pas d'autocomplete possible dans une Modal Discord), résolue par `resolveGuess()` — égalité **stricte** normalisée (`normalizeAnswer`, comme Anagram) contre le nom français de chaque carte du catalogue **éligible**. Trois issues possibles, à distinguer explicitement dans `handleModalSubmit` (`api/discord/handlers/lajustecarte.js`) :
+Modal à 1 champ (pas d'autocomplete possible dans une Modal Discord), résolue par `resolveGuess()` — égalité **stricte** normalisée (`normalizeAnswer`, comme Anagram) contre le nom français de chaque carte du catalogue **éligible**. Trois issues possibles, à distinguer explicitement dans `handleModalSubmit` (`api/discord/_handlers/lajustecarte.js`) :
 
 1. **Nom non reconnu** — aucun état modifié (ni compteur de tentatives, ni score). Deux sous-cas distingués dans le message renvoyé (`resolveAnyCard()`, qui résout contre la liste COMPLÈTE de `data/cardNames.json`, y compris les cartes non éligibles) : une vraie faute de frappe ("carte inconnue, vérifie l'orthographe") vs une carte réelle mais absente du pool ("🚫 carte non incluse dans ce jeu", avec pointeur vers le bouton "📋 Cartes non incluses" de `/justecarte`) — évite qu'un joueur qui tape correctement "Gobelin géant" pense à une faute de frappe alors que la carte n'est simplement pas dans le jeu.
 2. **Carte reconnue mais fausse** — la tentative est ajoutée à l'historique du joueur (`recordAttempt`, `RPUSH`), les indices comparatifs débloqués à ce stade sont renvoyés avec le rappel des cartes déjà proposées (`getGuessHistory`) et un bouton pour reproposer.
@@ -968,7 +968,7 @@ Mini-jeu narratif communautaire, indépendant du Clash Royale : chaque jour à 0
 
 ### Déroulement
 
-Un seul message actif à la fois dans le salon dédié. Chaque jour, `postChapter()` (`api/discord/handlers/aventure.js`) :
+Un seul message actif à la fois dans le salon dédié. Chaque jour, `postChapter()` (`api/discord/_handlers/aventure.js`) :
 
 1. Résout le vote du chapitre actif (s'il y en a un) : le choix avec le plus de votes gagne, égalité départagée par l'ordre d'apparition dans le tableau `choix` de `histoire.json` — cette même règle couvre nativement le cas "personne n'a voté" (égalité totale à 0, le premier choix l'emporte par défaut). Voir `determineWinningChoix()` (`backend/services/aventure.js`), fonction pure testée dans `aventure.test.js`.
 2. Supprime le message Discord de la veille (`DELETE /channels/{id}/messages/{id}`, `Authorization: Bot <token>`) — un échec (message déjà supprimé, permission) est loggé mais ne bloque jamais la publication du nouveau chapitre.
@@ -1027,7 +1027,7 @@ Mini-jeu communautaire quotidien indépendant du Clash Royale : Mohamed Light co
 
 ### Déroulement
 
-Un seul message actif à la fois dans le salon dédié. Chaque jour, `postTamagotchi()` (`api/discord/handlers/tamagotchi.js`) :
+Un seul message actif à la fois dans le salon dédié. Chaque jour, `postTamagotchi()` (`api/discord/_handlers/tamagotchi.js`) :
 
 1. Clôture le jour actif (s'il y en a un) : tallie les votes du jour, calcule l'impact pondéré (voir "Résolution du vote" ci-dessous), en déduit les jauges de fin de journée, note la journée (Parfaite/Moyenne/Catastrophe → +1/0/-1 étoile de dressage), met à jour la Confiance et l'action fatiguée du lendemain (voir plus bas), et écrit un bilan dans l'historique interne.
 2. Calcule les jauges d'ouverture du jour suivant (`computeDayOpenGauges()`) : jauges de fin de journée + modificateur de l'éventuel événement programmé ce jour-là (voir "Événements programmés").
@@ -1070,7 +1070,7 @@ Le total d'étoiles de dressage détermine un premier palier (`computeFinalTier(
 ### Données (tamagotchi.json)
 
 - `data/tamagotchi/tamagotchi.json` — config statique éditée à la main : durée, zones idéales, jauges initiales, `votants_reference`, `fatigue.facteur`, `confiance` (`depart`/`malus_moyen`/`malus_catastrophe`/`plafond_tier`), `actions` (impact par jauge de chaque bouton — `pilule` marquée `is_info_action: true` pour être exclue du calcul d'impact ; `caliner` porte en plus `confiance_bonus`) et `evenements_possibles` (chaque entrée porte son propre champ `jour`, pas d'ordre positionnel). Chargée une fois et mise en cache (`loadTamagotchiConfig()`), jamais mutée à l'exécution.
-- `frontend/public/images/tamagotchi/tama-01.webp` à `tama-10.webp` — une illustration par jour, servie en asset statique (même principe que `frontend/public/images/banner1.webp`/`banner2.webp`) et référencée directement par URL (`tamagotchiImageUrl()`, `api/discord/handlers/tamagotchi.js`) dans le champ `image` de l'embed. Contrairement au jeu Frame, aucun besoin de masquer l'URL (pas un jeu de devinette) : pas de route API dédiée, juste un fichier public.
+- `frontend/public/images/tamagotchi/tama-01.webp` à `tama-10.webp` — une illustration par jour, servie en asset statique (même principe que `frontend/public/images/banner1.webp`/`banner2.webp`) et référencée directement par URL (`tamagotchiImageUrl()`, `api/discord/_handlers/tamagotchi.js`) dans le champ `image` de l'embed. Contrairement au jeu Frame, aucun besoin de masquer l'URL (pas un jeu de devinette) : pas de route API dédiée, juste un fichier public.
 - `data/tamagotchi/narratifs.json` — pools de variantes de texte (une intro "lore inutile" façon météo/horoscope, 3 variantes par état notable de jauge × 3 jauges + Confiance, et des phrases de clôture citant les votants) séparées du code pour être enrichies sans y toucher. Sélection déterministe par jour (`pickFlavor()`, indexé sur `jour`, jamais `Math.random()`) : le texte reste identique à chaque ré-affichage du même jour (ex. après un clic de vote) et ne varie qu'd'un jour à l'autre.
 
 ### Stockage — Upstash Redis (`tamagotchi:*`)
@@ -1118,7 +1118,7 @@ Mini-jeu communautaire quotidien indépendant du Clash Royale : la communauté e
 
 Un seul message actif à la fois dans le salon dédié. Contrairement à l'Aventure et au Tamagoshi (où tout l'impact d'une journée est calculé une seule fois, séquentiellement, au cron), **les récoltes et le coût du Radeau sont appliqués en continu pendant la journée**, à chaque clic, avec un retour immédiat au joueur en éphémère (« Tu as pêché 2 poissons ! ») — voir "Résolution du vote et concurrence" ci-dessous pour le détail technique. Seule la **consommation automatique** reste calculée une fois par jour, au cron :
 
-1. `postRobinson()` (`api/discord/handlers/robinson.js`) clôture le jour actif : si le Radeau est déjà achevé (voir "Victoire anticipée"), la partie s'arrête là, sans consommation. Sinon, `V` = nombre de votants uniques du jour (`HLEN robinson:votes:<jour>`), consommation automatique `-V` Nourriture, `-V` Eau, `-⌈V/2⌉` Bois (plancher 0), puis vérification Gobelins si l'événement du jour est actif, puis mise à jour des compteurs de jours consécutifs à 0 par ressource.
+1. `postRobinson()` (`api/discord/_handlers/robinson.js`) clôture le jour actif : si le Radeau est déjà achevé (voir "Victoire anticipée"), la partie s'arrête là, sans consommation. Sinon, `V` = nombre de votants uniques du jour (`HLEN robinson:votes:<jour>`), consommation automatique `-V` Nourriture, `-V` Eau, `-⌈V/2⌉` Bois (plancher 0), puis vérification Gobelins si l'événement du jour est actif, puis mise à jour des compteurs de jours consécutifs à 0 par ressource.
 2. Si une ressource est à 0 pour la 2ᵉ journée consécutive → défaite immédiate. Si le Jour 11 est atteint → victoire (secours arrivés).
 3. Sinon, le jour suivant s'ouvre : événement programmé éventuel (voir plus bas), suppression du message de la veille (`DELETE`, tolérant), publication du nouveau jour.
 
@@ -1150,7 +1150,7 @@ Pêcher/Eau/Bois tirent **0 à 5** unités (~16,7 % chacun, `rollHarvestAmount()
 - **Invasion de Gobelins** (Jour 8) : le bouton Explorer est retiré des composants ce jour-là (`isExplorerDisabled()`). À la clôture, **après** la consommation automatique, si le stock de Bois restant est `< 5`, les Gobelins volent 5 Poissons (plancher 0).
 - **Indigestion Royale** (Jour 9, **toujours déclenché**) : Collecter de l'eau (et seulement l'eau — jamais le Bois) utilise le tirage dédié 0/1. Placé volontairement tard dans la partie et sans jamais toucher au Bois : cet événement ne baisse que la survie passive (Jour 11), sans affecter le taux de victoire par Radeau — les parties orientées Radeau sont presque toujours déjà tranchées avant le Jour 9 (confirmé par simulation : taux de victoire Radeau strictement identique avec ou sans cet événement).
 
-Les dons/pertes de Poissons Pourris, Colis Royal et Épave sont appliqués **une seule fois**, au moment de la publication du jour concerné (jamais liés à un vote, jamais répétés sur un reclic) — voir `postRobinson()` dans `api/discord/handlers/robinson.js`.
+Les dons/pertes de Poissons Pourris, Colis Royal et Épave sont appliqués **une seule fois**, au moment de la publication du jour concerné (jamais liés à un vote, jamais répétés sur un reclic) — voir `postRobinson()` dans `api/discord/_handlers/robinson.js`.
 
 ⚠️ Ces 7 événements ne sont **jamais** listés dans l'embed `[📖 Règles du jeu]` (`buildReglesEmbed()`) — volontairement, pour qu'ils restent une surprise en cours de partie. Seul le barème des actions et la condition de défaite y figurent.
 
@@ -1171,7 +1171,7 @@ Robinson n'a pas de score numérique naturel (c'est une survie, pas un score att
 ### Données (robinson.json)
 
 - `data/robinson/robinson.json` — config statique éditée à la main : durée, coûts du Radeau, stocks initiaux, et `evenements` (3 événements, chacun portant son propre champ `jour` — contrairement à `tamagotchi.json` qui indexe ses événements positionnellement). Chargée une fois et mise en cache (`loadRobinsonConfig()`), jamais mutée à l'exécution.
-- `frontend/public/images/robinson/rob-01.webp` à `rob-10.webp` — une illustration par jour, servie en asset statique (même principe que `tama-01.webp`…`tama-10.webp` du Tamagoshi) et référencée directement par URL (`robinsonImageUrl()`, `api/discord/handlers/robinson.js`) dans le champ `image` de l'embed. L'embed de fin de partie (victoire Radeau, victoire Jour 11, défaite) réutilise systématiquement l'illustration du dernier jour (`rob-10.webp`).
+- `frontend/public/images/robinson/rob-01.webp` à `rob-10.webp` — une illustration par jour, servie en asset statique (même principe que `tama-01.webp`…`tama-10.webp` du Tamagoshi) et référencée directement par URL (`robinsonImageUrl()`, `api/discord/_handlers/robinson.js`) dans le champ `image` de l'embed. L'embed de fin de partie (victoire Radeau, victoire Jour 11, défaite) réutilise systématiquement l'illustration du dernier jour (`rob-10.webp`).
 
 ### Stockage — Upstash Redis (`robinson:*`)
 
@@ -1275,7 +1275,7 @@ Boss Raid (comme Robinson et le Tamagoshi) est destiné à être rejoué plusieu
 
 `data/bossraid/boss_raid.json` — config statique éditée à la main : `duree_jours`, `boss_stats_initiales`, `roles.<id>` (label, emoji, plage de dégâts, `protection_slots`/`chance_debuff`/`reduction_stat`/`is_info_action` selon le rôle) et `evenements_boss` (3 événements fixes, un par `jour`). Chargée une fois et mise en cache (`loadBossRaidConfig()`), jamais mutée à l'exécution.
 
-`frontend/public/images/boss/boss-01.webp` à `boss-10.webp` — une illustration par jour de combat, servie en asset statique (même principe que `rob-01.webp`…`rob-10.webp` de Robinson) et référencée directement par URL (`bossRaidImageUrl()`, `api/discord/handlers/bossraid.js`) dans le champ `image` de l'embed. Affichée uniquement à partir du Jour 1 (jamais au jour d'annonce, qui n'a pas d'illustration dédiée). L'embed de fin de Raid réutilise systématiquement l'illustration du dernier jour (`boss-10.webp`).
+`frontend/public/images/boss/boss-01.webp` à `boss-10.webp` — une illustration par jour de combat, servie en asset statique (même principe que `rob-01.webp`…`rob-10.webp` de Robinson) et référencée directement par URL (`bossRaidImageUrl()`, `api/discord/_handlers/bossraid.js`) dans le champ `image` de l'embed. Affichée uniquement à partir du Jour 1 (jamais au jour d'annonce, qui n'a pas d'illustration dédiée). L'embed de fin de Raid réutilise systématiquement l'illustration du dernier jour (`boss-10.webp`).
 
 `data/bossraid/narratifs.json` — pools de variantes de texte (une intro "lore inutile" façon ambiance de camp, 2 variantes par état notable de Défense/Résistance, et des phrases de clôture citant les combattants les plus offensifs de la veille) séparées du code pour être enrichies sans y toucher. Même principe que `data/robinson/narratifs.json`/`data/tamagotchi/narratifs.json`, y compris la règle **"normal" = aucune ligne** : un état ordinaire (Défense/Résistance 4-6/10) n'a volontairement aucun pool de texte associé, la ligne est simplement omise plutôt que de meubler avec une phrase creuse — seuls les états notables (`_bas` ≤3, `_haut` ≥7) ont du texte. Sélection déterministe par jour (`pickFlavor()`, indexé sur `jour`, jamais `Math.random()`).
 

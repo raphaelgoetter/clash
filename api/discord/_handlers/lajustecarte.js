@@ -4,7 +4,7 @@
 // Embed, boutons, modal, DM. La publication d'une partie passe uniquement
 // par scripts/postJusteCarte.js — seule la commande /justecarte (scores
 // personnels du joueur qui l'exécute) est une vraie commande slash. Miroir
-// structurel de api/discord/handlers/anagrams.js, avec un flux de réponse à
+// structurel de api/discord/_handlers/anagrams.js, avec un flux de réponse à
 // 3 issues (nom inconnu / carte connue mais fausse / trouvée) au lieu de 2 :
 // contrairement à Anagram, ce jeu accepte PLUSIEURS propositions successives
 // par joueur avant résolution — chaque réponse éphémère (sauf victoire)

@@ -14,7 +14,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { postChapter } from "../api/discord/handlers/aventure.js";
+import { postChapter } from "../api/discord/_handlers/aventure.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");

@@ -22,7 +22,7 @@ import {
   tallyVotes,
   listVotes,
 } from "../backend/services/robinson.js";
-import { postRobinson, outcomeLabel } from "../api/discord/handlers/robinson.js";
+import { postRobinson, outcomeLabel } from "../api/discord/_handlers/robinson.js";
 import { resolveDisplayName } from "../backend/services/discordUsers.js";
 
 (async () => {

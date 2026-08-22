@@ -40,54 +40,54 @@ import {
   handleHistory as handleChampionHistory,
   handleHistoryPage as handleChampionHistoryPage,
   handleSelectInteraction as handleChampionSelect,
-} from "./handlers/championPredictions.js";
+} from "./_handlers/championPredictions.js";
 import {
   buildAnswerModal as buildFrameAnswerModal,
   handleHintButton as handleFrameHintButton,
   handleModalSubmit as handleFrameModalSubmit,
   handleFrameStatsCommand,
-} from "./handlers/frames.js";
+} from "./_handlers/frames.js";
 import {
   buildAnswerModal as buildAnagramAnswerModal,
   handleModalSubmit as handleAnagramModalSubmit,
   handleAnagramStatsCommand,
-} from "./handlers/anagrams.js";
+} from "./_handlers/anagrams.js";
 import {
   buildAnswerModal as buildZoomAnswerModal,
   handleHintButton as handleZoomHintButton,
   handleModalSubmit as handleZoomModalSubmit,
   handleZoomStatsCommand,
-} from "./handlers/zoom.js";
+} from "./_handlers/zoom.js";
 import {
   buildAnswerModal as buildJusteCarteAnswerModal,
   handleModalSubmit as handleJusteCarteModalSubmit,
   handleHintButton as handleJusteCarteHintButton,
   handleExcludedListButton as handleJusteCarteExcludedListButton,
   handleJusteCarteStatsCommand,
-} from "./handlers/lajustecarte.js";
+} from "./_handlers/lajustecarte.js";
 import {
   handleVoteButton as handleAventureVote,
   handleHistoriqueOpen as handleAventureHistoriqueOpen,
   handleHistoriquePage as handleAventureHistoriquePage,
   handleHistoriqueSelect as handleAventureHistoriqueSelect,
-} from "./handlers/aventure.js";
+} from "./_handlers/aventure.js";
 import {
   handleVoteButton as handleTamagotchiVote,
   handleRegles as handleTamagotchiRegles,
   handlePilule as handleTamagotchiPilule,
-} from "./handlers/tamagotchi.js";
-import { handleQuizVote } from "./handlers/quiz.js";
+} from "./_handlers/tamagotchi.js";
+import { handleQuizVote } from "./_handlers/quiz.js";
 import {
   handleVoteButton as handleRobinsonVote,
   handleJournal as handleRobinsonJournal,
   handleRegles as handleRobinsonRegles,
-} from "./handlers/robinson.js";
+} from "./_handlers/robinson.js";
 import {
   handleVoteButton as handleBossRaidVote,
   handleEspion as handleBossRaidEspion,
   handleRegles as handleBossRaidRegles,
   handleJournal as handleBossRaidJournal,
-} from "./handlers/bossraid.js";
+} from "./_handlers/bossraid.js";
 import {
   summarizeWarDecks,
   summarizeWarDecksForMatchup,
