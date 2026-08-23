@@ -38,6 +38,14 @@ if (!channelId) {
   try {
     const result = await postChapter(channelId, { dryRun: DRY_RUN, noPing: NO_PING });
 
+    if (result.wrongChannel) {
+      console.error(
+        `Une aventure est déjà active sur un AUTRE salon (${result.activeChannelId}) — rien n'est posté ici pour éviter tout mélange. ` +
+          `Si c'était une aventure de test oubliée, lance "npm run aventure:reset" puis relance sur le bon salon.`,
+      );
+      process.exit(1);
+    }
+
     if (result.termine) {
       console.log("Histoire déjà terminée, rien à poster.");
       return;

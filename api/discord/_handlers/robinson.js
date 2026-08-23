@@ -281,6 +281,16 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
     return { termine: true };
   }
 
+  // Garde-fou : une partie active sur un AUTRE salon ne doit JAMAIS être
+  // reprise ici — sinon une partie de test oubliée active fuiterait dans le
+  // salon public au prochain cron (et inversement). Voir l'incident réel du
+  // 23/08/2026 sur Quiz, même cause (état partagé test/public sans contrôle
+  // de salon), qui a motivé ce garde-fou sur tous les jeux à avancée
+  // quotidienne.
+  if (state && state.channelId !== channelId) {
+    return { wrongChannel: true, activeChannelId: state.channelId };
+  }
+
   // Le cron quotidien ne fait qu'avancer une partie déjà lancée manuellement
   // — il ne doit jamais démarrer le Jour 1 tout seul (voir workflow_dispatch
   // vs schedule dans .github/workflows/robinson.yml).
