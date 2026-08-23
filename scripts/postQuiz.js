@@ -49,6 +49,14 @@ if (!channelId) {
       return;
     }
 
+    if (result.wrongChannel) {
+      console.error(
+        `Une manche est déjà active sur un AUTRE salon (${result.activeChannelId}) — rien n'est posté ici pour éviter tout mélange. ` +
+          `Si c'était une manche de test oubliée, lance "npm run quiz:reset" puis relance sur le bon salon.`,
+      );
+      process.exit(1);
+    }
+
     // `result.termine` seul (sans `final`) signifie que la manche était déjà
     // close par un appel PRÉCÉDENT — rien à reposter. Quand cet appel-ci vient
     // de poster la révélation, le handler ajoute `final: true` en plus (voir

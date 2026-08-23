@@ -213,6 +213,17 @@ export async function postQuiz(channelId, { dryRun = false, noPing = false, isPu
 
   if (state?.termine) return { termine: true };
 
+  // Garde-fou : une manche active sur un AUTRE salon ne doit JAMAIS être
+  // reprise ici. Sans ce contrôle, une manche oubliée active sur le salon de
+  // test serait avancée (et son message supprimé) puis republiée sur le
+  // salon public par le cron --require-active suivant — et inversement, un
+  // `quiz:test` lancé par erreur pourrait couper une vraie manche publique en
+  // cours. Incident réel du 23/08/2026 : un état de test resté actif a fuité
+  // dans le salon public de cette façon.
+  if (state && state.channelId !== channelId) {
+    return { wrongChannel: true, activeChannelId: state.channelId };
+  }
+
   // Le cron quotidien ne fait qu'avancer une manche déjà lancée manuellement
   // — il ne doit jamais démarrer le Jour 1 tout seul.
   if (!state && requireActiveState) return { skipped: true };

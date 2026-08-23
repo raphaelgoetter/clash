@@ -251,6 +251,15 @@ export async function postBossRaid(channelId, { dryRun = false, noPing = false, 
     return { termine: true };
   }
 
+  // Garde-fou : un Raid actif sur un AUTRE salon ne doit JAMAIS être repris
+  // ici — sinon un Raid de test oublié actif fuiterait dans le salon public
+  // au prochain cron (et inversement). Voir l'incident réel du 23/08/2026 sur
+  // Quiz, même cause (état partagé test/public sans contrôle de salon), qui a
+  // motivé ce garde-fou sur tous les jeux à avancée quotidienne.
+  if (state && state.channelId !== channelId) {
+    return { wrongChannel: true, activeChannelId: state.channelId };
+  }
+
   // Le cron quotidien ne fait qu'avancer un Raid déjà lancé manuellement — il
   // ne doit jamais poster l'annonce/Jour 1 tout seul (voir workflow_dispatch
   // vs schedule dans .github/workflows/bossraid.yml).

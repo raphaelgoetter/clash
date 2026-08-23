@@ -85,6 +85,16 @@ export async function postChapter(channelId, { dryRun = false, noPing = false } 
     return { termine: true };
   }
 
+  // Garde-fou : une aventure active sur un AUTRE salon ne doit JAMAIS être
+  // reprise ici — sinon une aventure de test oubliée active fuiterait dans le
+  // salon public au prochain déclenchement (et inversement). Voir l'incident
+  // réel du 23/08/2026 sur Quiz, même cause (état partagé test/public sans
+  // contrôle de salon), qui a motivé ce garde-fou sur tous les jeux à
+  // avancée quotidienne.
+  if (state && state.channelId !== channelId) {
+    return { wrongChannel: true, activeChannelId: state.channelId };
+  }
+
   // Le ping @MINI JEUX n'a lieu que pour le tout premier chapitre (lancement
   // de l'aventure) — jamais aux avancées quotidiennes suivantes.
   const estPremierChapitre = !state;

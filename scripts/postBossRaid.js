@@ -53,6 +53,14 @@ if (!channelId) {
       return;
     }
 
+    if (result.wrongChannel) {
+      console.error(
+        `Un Raid est déjà actif sur un AUTRE salon (${result.activeChannelId}) — rien n'est posté ici pour éviter tout mélange. ` +
+          `Si c'était un Raid de test oublié, lance "npm run bossraid:reset" puis relance sur le bon salon.`,
+      );
+      process.exit(1);
+    }
+
     if (result.termine) {
       console.log("Raid déjà terminé, rien à poster.");
       return;
