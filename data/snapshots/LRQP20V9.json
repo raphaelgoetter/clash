@@ -16332,7 +16332,7 @@
           "start": "2026-08-23T09:37:00.000Z",
           "end": "2026-08-24T09:36:59.999Z"
         },
-        "snapshotTime": "2026-08-23T16:04:18.123Z",
+        "snapshotTime": "2026-08-23T17:05:15.293Z",
         "snapshotBackupTime": "2026-08-23T10:04:52.789Z",
         "decks": {
           "#202R9VUJCU": 4,
@@ -16345,6 +16345,7 @@
           "#8P29RRU2": 4,
           "#8Y90VQYP9": 4,
           "#9VQYC9GJQ": 4,
+          "#GGRLYR8PL": 4,
           "#GGVQJLG9": 4,
           "#Q8GYUQ8GG": 4,
           "#VCJVLVV2J": 4,
@@ -16417,7 +16418,7 @@
           "#8P29RRU2": 2450,
           "#UPC0Y0LRQ": 1750,
           "#YL9CVPQJV": 1800,
-          "#GGRLYR8PL": 1850,
+          "#GGRLYR8PL": 2550,
           "#2U9QL8Q89": 2500,
           "#LV0VUJVU": 1950,
           "#8YGY2RPCC": 1950,
@@ -16446,12 +16447,14 @@
           "#8P29RRU2": 1,
           "#2U9QL8Q89": 1,
           "#8QVRJYVYU": 1,
-          "#200YYG2Q08": 1
+          "#200YYG2Q08": 1,
+          "#PCPGLGUYV": 1,
+          "#GGRLYR8PL": 1
         },
         "_totalDonationsByTag": {
           "#2PLYPPV9Y": 22222,
           "#22UVQ2Y8U": 19105,
-          "#VGJ9LL8VC": 58966,
+          "#VGJ9LL8VC": 58974,
           "#RJY2R282V": 47941,
           "#8P29RRU2": 363889,
           "#LV0VUJVU": 91674,
@@ -16480,7 +16483,7 @@
           "#YL9CVPQJV": 33547,
           "#20CG99G08J": 143,
           "#LLRY2V8CJ": 38596,
-          "#YGP000RP8": 118251,
+          "#YGP000RP8": 118269,
           "#8Y90VQYP9": 60197,
           "#UPC0Y0LRQ": 11575,
           "#2L8RPQRJ9": 63735,
@@ -16566,7 +16569,7 @@
           "#8P29RRU2": 16,
           "#UPC0Y0LRQ": 12,
           "#YL9CVPQJV": 12,
-          "#GGRLYR8PL": 12,
+          "#GGRLYR8PL": 16,
           "#2U9QL8Q89": 16,
           "#LV0VUJVU": 12,
           "#8YGY2RPCC": 12,
@@ -16581,7 +16584,7 @@
           "#VCJVLVV2J": 16
         },
         "periodPointsEarned": 17400,
-        "snapshotCount": 59
+        "snapshotCount": 63
       }
     ],
     "donationBaseline": {
