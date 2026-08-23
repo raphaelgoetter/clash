@@ -17244,7 +17244,7 @@
           "start": "2026-08-23T09:57:00.000Z",
           "end": "2026-08-24T09:56:59.999Z"
         },
-        "snapshotTime": "2026-08-23T18:03:38.748Z",
+        "snapshotTime": "2026-08-23T19:06:18.251Z",
         "snapshotBackupTime": "2026-08-23T10:04:51.642Z",
         "decks": {
           "#202VQJY8RU": 4,
@@ -17259,6 +17259,7 @@
           "#9CYUGPQ0C": 4,
           "#9YQ8RVU2P": 4,
           "#C0VQRUP2": 4,
+          "#C2RL8UVYV": 4,
           "#CYRGPVGVG": 4,
           "#G9LPGQUG": 4,
           "#GVGVR0J2U": 4,
@@ -17271,6 +17272,7 @@
           "#YU8CCVCJ0": 4,
           "#99VY0090": 2,
           "#J8RU2RJ8C": 2,
+          "#LCQ2J0VGC": 2,
           "#9VQ0J29Y": 1,
           "#PG0Q0YYGY": 1
         },
@@ -17340,9 +17342,9 @@
           "#GJV2UG9P0": 2250,
           "#8UL8JRCJ": 2300,
           "#8RYQ8Y0GY": 2900,
-          "#C2RL8UVYV": 2400,
+          "#C2RL8UVYV": 2900,
           "#9YQ8RVU2P": 3200,
-          "#LCQ2J0VGC": 2400,
+          "#LCQ2J0VGC": 2900,
           "#G9LPGQUG": 3300,
           "#YU8CCVCJ0": 3050,
           "#QCJJ8JG0": 2500
@@ -17368,7 +17370,9 @@
           "#VYPYYQLY8": 1,
           "#UJ2LQU2V9": 1,
           "#202VQJY8RU": 1,
-          "#9CYUGPQ0C": 1
+          "#9CYUGPQ0C": 1,
+          "#C2RL8UVYV": 1,
+          "#LCQ2J0VGC": 1
         },
         "_totalDonationsByTag": {
           "#C2RL8UVYV": 47787,
@@ -17393,7 +17397,7 @@
           "#YU8CCVCJ0": 22080,
           "#2PG80VRY": 205153,
           "#9CQC0YUR8": 83494,
-          "#GYU0VLGL": 105392,
+          "#GYU0VLGL": 105408,
           "#VQP8PU2V": 589220,
           "#GV098C29R": 46661,
           "#202VQJY8RU": 17084,
@@ -17489,15 +17493,15 @@
           "#GJV2UG9P0": 12,
           "#8UL8JRCJ": 12,
           "#8RYQ8Y0GY": 16,
-          "#C2RL8UVYV": 12,
+          "#C2RL8UVYV": 16,
           "#9YQ8RVU2P": 16,
-          "#LCQ2J0VGC": 12,
+          "#LCQ2J0VGC": 14,
           "#G9LPGQUG": 16,
           "#YU8CCVCJ0": 16,
           "#QCJJ8JG0": 12
         },
         "periodPointsEarned": 32700,
-        "snapshotCount": 94
+        "snapshotCount": 100
       }
     ],
     "donationBaseline": {
