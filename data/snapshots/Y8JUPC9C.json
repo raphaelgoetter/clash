@@ -17244,7 +17244,7 @@
           "start": "2026-08-23T09:57:00.000Z",
           "end": "2026-08-24T09:56:59.999Z"
         },
-        "snapshotTime": "2026-08-23T19:06:18.251Z",
+        "snapshotTime": "2026-08-23T20:03:01.617Z",
         "snapshotBackupTime": "2026-08-23T10:04:51.642Z",
         "decks": {
           "#202VQJY8RU": 4,
@@ -17264,6 +17264,8 @@
           "#G9LPGQUG": 4,
           "#GVGVR0J2U": 4,
           "#GYU0VLGL": 4,
+          "#LCQ2J0VGC": 4,
+          "#RJJ99Y9J": 4,
           "#UJ2LQU2V9": 4,
           "#UJ89GUUUY": 4,
           "#UJQL9PCRJ": 4,
@@ -17272,7 +17274,6 @@
           "#YU8CCVCJ0": 4,
           "#99VY0090": 2,
           "#J8RU2RJ8C": 2,
-          "#LCQ2J0VGC": 2,
           "#9VQ0J29Y": 1,
           "#PG0Q0YYGY": 1
         },
@@ -17321,7 +17322,7 @@
           "#8QL2J8PQ": 1850,
           "#UJQL9PCRJ": 2700,
           "#2CL028C80": 1900,
-          "#RJJ99Y9J": 1900,
+          "#RJJ99Y9J": 2700,
           "#202VQJY8RU": 2400,
           "#888Y29GY": 1950,
           "#URG0Q9R0Y": 2800,
@@ -17344,7 +17345,7 @@
           "#8RYQ8Y0GY": 2900,
           "#C2RL8UVYV": 2900,
           "#9YQ8RVU2P": 3200,
-          "#LCQ2J0VGC": 2900,
+          "#LCQ2J0VGC": 3200,
           "#G9LPGQUG": 3300,
           "#YU8CCVCJ0": 3050,
           "#QCJJ8JG0": 2500
@@ -17372,13 +17373,14 @@
           "#202VQJY8RU": 1,
           "#9CYUGPQ0C": 1,
           "#C2RL8UVYV": 1,
-          "#LCQ2J0VGC": 1
+          "#LCQ2J0VGC": 1,
+          "#RJJ99Y9J": 1
         },
         "_totalDonationsByTag": {
           "#C2RL8UVYV": 47787,
-          "#82UPUGYP": 130748,
-          "#8RYQ8Y0GY": 55460,
-          "#GJ8RV8802": 33462,
+          "#82UPUGYP": 130768,
+          "#8RYQ8Y0GY": 55480,
+          "#GJ8RV8802": 33480,
           "#9VQ0J29Y": 106324,
           "#J8RU2RJ8C": 103682,
           "#99VY0090": 117197,
@@ -17399,8 +17401,8 @@
           "#9CQC0YUR8": 83494,
           "#GYU0VLGL": 105408,
           "#VQP8PU2V": 589220,
-          "#GV098C29R": 46661,
-          "#202VQJY8RU": 17084,
+          "#GV098C29R": 46689,
+          "#202VQJY8RU": 17094,
           "#9CYUGPQ0C": 242003,
           "#2CL028C80": 225163,
           "#U008V0PQ8": 26499,
@@ -17472,7 +17474,7 @@
           "#8QL2J8PQ": 12,
           "#UJQL9PCRJ": 16,
           "#2CL028C80": 12,
-          "#RJJ99Y9J": 12,
+          "#RJJ99Y9J": 16,
           "#202VQJY8RU": 16,
           "#888Y29GY": 12,
           "#URG0Q9R0Y": 16,
@@ -17495,13 +17497,13 @@
           "#8RYQ8Y0GY": 16,
           "#C2RL8UVYV": 16,
           "#9YQ8RVU2P": 16,
-          "#LCQ2J0VGC": 14,
+          "#LCQ2J0VGC": 16,
           "#G9LPGQUG": 16,
           "#YU8CCVCJ0": 16,
           "#QCJJ8JG0": 12
         },
         "periodPointsEarned": 32700,
-        "snapshotCount": 100
+        "snapshotCount": 106
       }
     ],
     "donationBaseline": {
