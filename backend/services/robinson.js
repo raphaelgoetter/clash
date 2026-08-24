@@ -326,6 +326,29 @@ export function rollCappedEventAmount(rng = Math.random) {
   return Math.floor(rng() * 2);
 }
 
+// Chef Explorateur du jour (Jour 2+, mécanique du 24/08) : garantit un
+// résultat non-nul sur Pêcher/Eau/Bois — jamais de 0, relance jusqu'à un
+// résultat >= 1 (Uniforme{1..5}, moyenne 3 au lieu de 2,5). Uniquement
+// utilisé sur les actions de récolte directes : Explorer ne tombe déjà
+// jamais à 0, et Radeau ne "trouve" pas de ressource par nature — un Chef
+// qui vote Radeau perd simplement le bénéfice de son tirage garanti.
+export function rollHarvestAmountGuaranteed(rng = Math.random) {
+  let amount;
+  do {
+    amount = rollHarvestAmount(rng);
+  } while (amount === 0);
+  return amount;
+}
+
+// Tirage du Chef parmi les votants RÉELS de la veille (jamais un non-votant)
+// — récompense la régularité, pas le hasard pur. `previousDayVoters` vient
+// de `listVotes()` (tableau `{ discordId, actionId, username }`). Renvoie
+// `null` si personne n'a voté la veille (pas de Chef ce jour-là).
+export function pickChefExplorateur(previousDayVoters, rng = Math.random) {
+  if (!previousDayVoters || previousDayVoters.length === 0) return null;
+  return previousDayVoters[Math.floor(rng() * previousDayVoters.length)].discordId;
+}
+
 // Explorer : toujours 3 unités d'une seule et même ressource, tirée au
 // hasard (pas une répartition entre les 3) — jamais affecté par
 // Canicule/Ouragan (seules Eau / Pêche+Bois le sont).

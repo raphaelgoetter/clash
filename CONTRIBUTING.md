@@ -1081,6 +1081,14 @@ Pêcher/Eau/Bois tirent **0 à 5** unités (~16,7 % chacun, `rollHarvestAmount()
 
 ⚠️ Le barème 0-5 place la moyenne de récolte *exactement* au point d'équilibre statistique avec la consommation (`V`/`V`/`⌈V/2⌉` = 100 % des votes disponibles en moyenne, sans aucune marge) — un design volontairement tendu, mais qui s'est révélé beaucoup plus fragile que documenté à l'origine : une re-simulation du 24/08 (stratégie de vote réactive au stock affiché dans le Journal, pas un simple ratio théorique figé) donnait une survie passive proche de **1-7 % à V=10-20**, très loin de la fourchette 46-58 % annoncée précédemment — écart qui n'a pas pu être retracé à un changement de code (les valeurs de `robinson.json` sont identiques depuis leur commit d'introduction), donc vraisemblablement un biais ou un bug de la simulation Monte Carlo d'origine, jamais committée dans le dépôt. Deux ajustements ont été faits le 24/08 pour corriger le tir **sans toucher au barème de tirage ni aux stocks initiaux** (les deux leviers les plus sensibles, cf. ci-dessus) : `ZERO_STREAK_LIMIT` passé de 2 à 3 jours, et les événements Jour 5 / Jour 9 inversés en bonus (voir "Événements programmés" ci-dessous). Avec ces trois changements, la re-simulation retombe autour de **75 % (V=8) → 61-63 % (V=10-12) → 53 % (V=14) → 35-45 % (V=16-20)** — cohérent avec la cible 50-70 % pour un groupe d'une douzaine de votants, avec la même décroissance progressive selon la taille du groupe que le design d'origine prévoyait déjà.
 
+### Chef Explorateur du jour
+
+Mécanique ajoutée le 24/08 pour favoriser l'implication et la régularité des votants, indépendante des 8 événements programmés ci-dessous (elle peut se cumuler avec n'importe lequel d'entre eux). À l'ouverture de chaque jour à partir du **Jour 2**, `pickChefExplorateur()` tire au sort un `discordId` parmi les **votants réels de la veille** (`closure.voters`, jamais un non-votant — récompense la régularité, pas le hasard pur) et le stocke dans `robinson:state.chefExplorateurId`. Annoncé dès la publication du jour dans l'embed public (`👑 Chef explorateur du jour : @Untel`), pas seulement révélé après coup. Aucun tirage ni annonce si personne n'a voté la veille (`pickChefExplorateur([])` → `null`).
+
+Si le Chef vote une action de récolte directe (Pêcher/Eau/Bois) aujourd'hui, son tirage est **garanti non-nul** : `rollHarvestAmountGuaranteed()` relance jusqu'à un résultat ≥ 1 (Uniforme{1..5}, moyenne 3 au lieu de 2,5) — ou, un jour à plafond (Canicule/Ouragan), le tirage devient simplement 1 fixe au lieu du 0/1 habituel. Le bonus ne s'applique **ni à Explorer** (qui ne tombe déjà jamais à 0) **ni au Radeau** (qui ne "trouve" pas de ressource par nature) : un Chef qui vote Radeau perd simplement le bénéfice de son tirage garanti, décision assumée (voir le message de confirmation éphémère, préfixé `👑 Chef explorateur du jour :` uniquement sur les actions concernées).
+
+D'après simulation (stratégie de vote dynamique réactive au stock, même méthodologie que ci-dessus) : **+4 à +7 points de survie passive**, l'effet étant mécaniquement plus fort pour un petit groupe (+6-7 pts à V=8-12, un seul vote garanti pèse plus sur un total V plus petit) que pour un gros (+3-4 pts à V=16-20) — une propriété auto-équilibrante plutôt qu'un réglage explicite.
+
 ### Événements programmés (Robinson)
 
 8 événements tirés de `robinson.json.evenements` (`eventForDay(jour, evenements, previousDayVoters)`) modifient le jour concerné. `previousDayVoters` (le `V` du jour qui vient de se clôturer) sert de **condition d'activation** (`condition_votants_veille` = seuil minimum, `condition_votants_veille_max` = seuil maximum — Colis Royal se déclenche *au-dessus*, Poissons Pourris se déclenche *en-dessous*) et de **paramètre de montant** (événements dégressifs) :
@@ -1123,7 +1131,7 @@ Même instance et mêmes conventions que les autres jeux (`automaticDeserializat
 
 | Clé Redis | Type | Contenu |
 | --- | --- | --- |
-| `robinson:state` | STRING | `{ jour, channelId, messageId, publishedAt, termine, event, zeroStreaks }` — jour actuellement affiché, muté uniquement au cron |
+| `robinson:state` | STRING | `{ jour, channelId, messageId, publishedAt, termine, event, chefExplorateurId, zeroStreaks }` — jour actuellement affiché, muté uniquement au cron |
 | `robinson:stock:poisson` / `:eau` / `:bois` | STRING (compteur) | Stocks courants — mutés en continu via `INCRBY`/`DECRBY`, jamais un `GET` puis recalcul |
 | `robinson:radeau_points` | STRING (compteur) | Points de construction cumulés du Radeau |
 | `robinson:votes:<jour>` | HASH | `discordId → actionId` — jetable, effacé après clôture du jour |

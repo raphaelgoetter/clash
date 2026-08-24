@@ -25,8 +25,10 @@ import {
   listVotes,
   listHistorique,
   rollHarvestAmount,
+  rollHarvestAmountGuaranteed,
   rollCappedEventAmount,
   rollExplorerYield,
+  pickChefExplorateur,
   harvestCapForEvent,
   isExplorerDisabled,
   computeDailyConsumption,
@@ -134,7 +136,7 @@ function formatStockLine(emoji, label, value) {
   return `${emoji} ${label} : **${value}**${alerte}`;
 }
 
-async function buildRobinsonEmbed(jour, stocks, radeauPoints, config, event, estPremierJour, voters) {
+async function buildRobinsonEmbed(jour, stocks, radeauPoints, config, event, estPremierJour, voters, chefExplorateurId) {
   const sections = computeRaftSections(radeauPoints, config.points_par_section);
   const raftBar = "🟩".repeat(sections) + "⬜".repeat(config.radeau_sections_max - sections);
 
@@ -148,6 +150,16 @@ async function buildRobinsonEmbed(jour, stocks, radeauPoints, config, event, est
       lines.push(`🐟 -${event.perte} Poisson perdu${event.perte > 1 ? "s" : ""} cette nuit.`);
     }
     lines.push("");
+  }
+  // Chef Explorateur du jour (mécanique du 24/08) : annoncé dès l'ouverture
+  // du jour pour que la personne désignée sache dès le matin. Choisi parmi
+  // les votants RÉELS de la veille (jamais un non-votant) — voir
+  // pickChefExplorateur(). Aucune annonce si personne n'a voté hier.
+  if (chefExplorateurId) {
+    lines.push(
+      `👑 **Chef explorateur du jour :** <@${chefExplorateurId}> est sûr de trouver au moins une ressource aujourd’hui (Pêcher/Eau/Bois) !`,
+      "",
+    );
   }
   lines.push(
     formatStockLine("🐟", "Nourriture", stocks.poisson),
@@ -401,6 +413,12 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
   let stocksPourEmbed = closure.stocksApres;
   let radeauPointsPourEmbed = closure.radeauPoints;
   let eventPourEmbed = event;
+  // Chef Explorateur du jour : tiré parmi les votants RÉELS de la veille
+  // (closure.voters), null si personne n'a voté — pas de Chef ce jour-là.
+  // Jamais calculé en dry-run : ce serait un tirage au sort différent à
+  // chaque appel de `npm run robinson:status`, sans rapport avec le Chef qui
+  // sera réellement désigné au prochain cron.
+  const chefExplorateurId = dryRun ? null : pickChefExplorateur(closure.voters);
 
   if (event?.id === "epave") {
     const bonus = computeEpaveBonus(event, closure.V);
@@ -446,7 +464,7 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
       : await grantResource("eau", bonus);
   }
 
-  const embed = await buildRobinsonEmbed(jourSuivant, stocksPourEmbed, radeauPointsPourEmbed, config, eventPourEmbed, false, closure.voters);
+  const embed = await buildRobinsonEmbed(jourSuivant, stocksPourEmbed, radeauPointsPourEmbed, config, eventPourEmbed, false, closure.voters, chefExplorateurId);
   const components = buildRobinsonComponents(jourSuivant, config, {}, event);
 
   if (dryRun) {
@@ -459,6 +477,7 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
   return publishAndWriteState(channelId, state, {
     jour: jourSuivant,
     event: eventPourEmbed,
+    chefExplorateurId,
     zeroStreaks: closure.zeroStreaksApres,
     dayVoters: closure.voters,
     embed,
@@ -473,7 +492,7 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
 async function publishAndWriteState(
   channelId,
   previousState,
-  { jour, event, zeroStreaks, dayVoters, embed, components, noPing, estPremierJour, termine = false },
+  { jour, event, chefExplorateurId = null, zeroStreaks, dayVoters, embed, components, noPing, estPremierJour, termine = false },
 ) {
   const token = process.env.DISCORD_TOKEN;
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
@@ -522,6 +541,7 @@ async function publishAndWriteState(
     publishedAt: new Date().toISOString(),
     termine,
     event,
+    chefExplorateurId,
     zeroStreaks,
     dayVoters,
   });
@@ -556,7 +576,7 @@ export async function refreshPublicMessage(state, config, botToken) {
     readRadeauPoints(),
     tallyVotes(state.jour),
   ]);
-  const embed = await buildRobinsonEmbed(state.jour, stocks, radeauPoints, config, state.event, state.jour === 1, state.dayVoters);
+  const embed = await buildRobinsonEmbed(state.jour, stocks, radeauPoints, config, state.event, state.jour === 1, state.dayVoters, state.chefExplorateurId);
   const components = buildRobinsonComponents(state.jour, config, voteCounts, state.event);
 
   await fetch(
@@ -581,7 +601,8 @@ function formatHarvestConfirmation(actionId, config, detail) {
   if (detail.amount === 0) {
     return `${action.emoji} ${action.label} : bredouille cette fois-ci, rien à ramener !`;
   }
-  return `${action.emoji} ${action.label} : tu récoltes ${detail.amount} ${RESOURCE_LABELS[action.resource]} !`;
+  const prefix = detail.isChef ? "👑 Chef explorateur du jour : " : "";
+  return `${prefix}${action.emoji} ${action.label} : tu récoltes ${detail.amount} ${RESOURCE_LABELS[action.resource]} !`;
 }
 
 // ── Bouton de vote — actions de récolte (Pêcher/Eau/Bois/Explorer) ──
@@ -624,11 +645,18 @@ async function handleHarvestVote(webhookUrl, state, config, actionId, discordId,
     detail = { actionId, yields, at: new Date().toISOString() };
   } else {
     const resourceId = config.actions[actionId].resource;
+    // Chef Explorateur du jour : tirage garanti non-nul, jamais de "bredouille"
+    // — uniquement sur les actions de récolte directes (pas Explorer, qui ne
+    // tombe déjà jamais à 0 ; pas Radeau, géré par une fonction séparée qui
+    // n'appelle jamais ce tirage).
+    const isChef = state.chefExplorateurId === discordId;
     const amount = harvestCapForEvent(state.event, actionId)
-      ? rollCappedEventAmount(Math.random)
-      : rollHarvestAmount(Math.random);
+      ? (isChef ? 1 : rollCappedEventAmount(Math.random))
+      : isChef
+        ? rollHarvestAmountGuaranteed(Math.random)
+        : rollHarvestAmount(Math.random);
     await harvestResource(resourceId, amount);
-    detail = { actionId, amount, at: new Date().toISOString() };
+    detail = { actionId, amount, at: new Date().toISOString(), isChef };
   }
   await writeVoteDetail(state.jour, discordId, detail);
 

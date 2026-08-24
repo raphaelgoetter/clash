@@ -41,8 +41,8 @@
       "id": "evenement",
       "nom": "Une incroyable découverte !",
       "emoji": "🤷‍♂️",
-      "description": "Vos éclaireurs ont trouvé un objet étrange sur la plage qui semble provenir d’un autre monde. Il pourrait bien s’agir d’un artefact magique extrêmement puissant ! Ah ben non en fait c'est juste un bout de bois tordu — mais autour, toute une cargaison échouée bien plus utile : le camp récupère +3 Nourriture, +3 Eau, +3 Bois.",
-      "bonus_ressources": 3
+      "description": "Vos éclaireurs ont trouvé un objet étrange sur la plage qui semble provenir d’un autre monde. Il pourrait bien s’agir d’un artefact magique extrêmement puissant ! Ah ben non en fait c'est juste un bout de bois tordu — mais autour, toute une cargaison échouée bien plus utile : le camp récupère +2 Nourriture, +2 Eau, +2 Bois.",
+      "bonus_ressources": 2
     },
     {
       "jour": 6,

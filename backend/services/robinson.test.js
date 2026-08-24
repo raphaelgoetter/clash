@@ -1,8 +1,10 @@
 import assert from "assert";
 import {
   rollHarvestAmount,
+  rollHarvestAmountGuaranteed,
   rollCappedEventAmount,
   rollExplorerYield,
+  pickChefExplorateur,
   harvestCapForEvent,
   isExplorerDisabled,
   computeDailyConsumption,
@@ -49,6 +51,26 @@ async function main() {
   assert.strictEqual(rollCappedEventAmount(rngSequence([0.49])), 0);
   assert.strictEqual(rollCappedEventAmount(rngSequence([0.5])), 1);
   assert.strictEqual(rollCappedEventAmount(rngSequence([0.99])), 1);
+
+  // ── rollHarvestAmountGuaranteed — Chef Explorateur, jamais 0 ──
+  assert.strictEqual(rollHarvestAmountGuaranteed(rngSequence([0.2])), 1); // pas de 0 à relancer
+  assert.strictEqual(rollHarvestAmountGuaranteed(rngSequence([0, 0, 0.4])), 2); // relance 2 fois puis 0.4 -> 2
+  assert.strictEqual(rollHarvestAmountGuaranteed(rngSequence([0, 0.99])), 5);
+  for (let i = 0; i < 200; i++) {
+    assert.notStrictEqual(rollHarvestAmountGuaranteed(Math.random), 0);
+  }
+
+  // ── pickChefExplorateur — tiré parmi les votants de la veille, jamais un non-votant ──
+  const VOTANTS = [
+    { discordId: "a", actionId: "peche" },
+    { discordId: "b", actionId: "eau" },
+    { discordId: "c", actionId: "bois" },
+  ];
+  assert.strictEqual(pickChefExplorateur(VOTANTS, rngSequence([0])), "a");
+  assert.strictEqual(pickChefExplorateur(VOTANTS, rngSequence([0.4])), "b");
+  assert.strictEqual(pickChefExplorateur(VOTANTS, rngSequence([0.99])), "c");
+  assert.strictEqual(pickChefExplorateur([], rngSequence([0])), null); // personne n'a voté hier -> pas de Chef
+  assert.strictEqual(pickChefExplorateur(null, rngSequence([0])), null);
 
   // ── rollExplorerYield — toujours 3 unités d'une seule et même ressource ──
   for (let i = 0; i < 200; i++) {
