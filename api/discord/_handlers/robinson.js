@@ -538,8 +538,11 @@ async function patchOriginal(webhookUrl, payload) {
 
 // Relit l'état public frais (stocks, radeau, compteurs de votes) et
 // rafraîchit le message du salon en PATCH direct (bot token, pas webhook) —
-// même découplage que handleVoteButton dans tamagotchi.js.
-async function refreshPublicMessage(state, config, botToken) {
+// même découplage que handleVoteButton dans tamagotchi.js. Exportée pour
+// scripts/robinsonRefresh.js : permet de corriger un texte statique (embed,
+// intro) sur le message déjà publié sans avancer le jour ni toucher aux
+// votes/stocks — contrairement à postRobinson(), qui clôturerait la journée.
+export async function refreshPublicMessage(state, config, botToken) {
   const [stocks, radeauPoints, voteCounts] = await Promise.all([
     readStocks(),
     readRadeauPoints(),

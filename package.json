@@ -70,6 +70,8 @@
     "robinson:reset": "node scripts/resetRobinson.js",
     "robinson:reset:manches": "node scripts/resetRobinson.js --manches",
     "robinson:status": "node scripts/robinsonStatus.js",
+    "robinson:refresh": "node scripts/robinsonRefresh.js",
+    "robinson:refresh:dry": "node scripts/robinsonRefresh.js --dry-run",
     "bossraid:test": "node scripts/postBossRaid.js",
     "bossraid:test:dry": "node scripts/postBossRaid.js --dry-run",
     "bossraid:public": "node scripts/postBossRaid.js --public",
