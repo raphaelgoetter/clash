@@ -6,9 +6,9 @@
 // Stockage : Upstash Redis (même instance et mêmes conventions que
 // backend/services/tamagotchi.js) — espace de clés `robinson:*`.
 //
-// ⚠️ Différence structurelle majeure avec Aventure/Tamagotchi : chez eux,
-// tout l'impact d'une journée est calculé une seule fois, séquentiellement,
-// au cron. Ici, les récoltes (et le coût du Radeau) sont appliquées EN
+// ⚠️ Différence structurelle majeure avec Tamagotchi : chez lui, tout
+// l'impact d'une journée est calculé une seule fois, séquentiellement, au
+// cron. Ici, les récoltes (et le coût du Radeau) sont appliquées EN
 // CONTINU pendant la journée, à chaque clic, par des membres potentiellement
 // concurrents. Un blob JSON muté en lire-modifier-écrire perdrait des mises
 // à jour (deux clics simultanés liraient le même stock de départ, le second

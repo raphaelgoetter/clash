@@ -4,8 +4,8 @@
 // cumulé, votes du jour) ainsi qu'une projection du Jour suivant basée sur
 // les votes actuels, sans avoir besoin d'ouvrir Discord — pratique pour
 // suivre l'avancement avant de décider de relancer manuellement
-// `npm run bossraid:public`. Comme pour l'Aventure/le Tamagoshi/Robinson, ce
-// script tient lieu d'affichage admin (le bouton Journal ne montre lui que
+// `npm run bossraid:public`. Comme pour le Tamagoshi/Robinson, ce script
+// tient lieu d'affichage admin (le bouton Journal ne montre lui que
 // le score et l'historique, jamais le détail des votants).
 //
 // Usage : node scripts/bossRaidStatus.js

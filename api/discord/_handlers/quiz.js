@@ -158,7 +158,7 @@ async function buildRevealEmbed(manche, mancheConfig, ranking, manchesHistory) {
 async function publishAndWriteState(
   channelId,
   previousState,
-  { manche, mancheIndex, mancheId, theme, jour, embed, components, estPremierJour, noPing, termine = false },
+  { manche, mancheIndex, mancheId, theme, jour, embed, components, noPing, termine = false },
 ) {
   const token = process.env.DISCORD_TOKEN;
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
@@ -177,9 +177,10 @@ async function publishAndWriteState(
     }
   }
 
-  // Ping @MINI-JEUX réservé au lancement du Jour 1, jamais les jours
-  // suivants ni la révélation.
-  const roleId = estPremierJour && !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
+  // Contrairement aux autres jeux collaboratifs, le Quiz pingue à chaque
+  // post (Jour 1, jours suivants, révélation finale) — seul --no-ping
+  // (tests) le désactive.
+  const roleId = !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
 
   const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
     method: "POST",
@@ -261,7 +262,6 @@ export async function postQuiz(channelId, { dryRun = false, noPing = false, isPu
       jour,
       embed,
       components: buildQuestionComponents(manche, jour, question),
-      estPremierJour: true,
       noPing,
     });
   }
@@ -304,8 +304,7 @@ export async function postQuiz(channelId, { dryRun = false, noPing = false, isPu
       jour: state.jour,
       embed,
       components: [],
-      estPremierJour: false,
-      noPing: true,
+      noPing,
       termine: true,
     });
     // `final: true` distingue explicitement "la révélation vient d'être
@@ -330,8 +329,7 @@ export async function postQuiz(channelId, { dryRun = false, noPing = false, isPu
     jour,
     embed,
     components,
-    estPremierJour: false,
-    noPing: true,
+    noPing,
   });
 }
 

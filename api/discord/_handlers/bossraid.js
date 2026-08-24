@@ -343,7 +343,7 @@ export async function postBossRaid(channelId, { dryRun = false, noPing = false, 
       totalDegatsCumules: closure.totalDegatsApres,
       embed,
       components: [],
-      noPing: true,
+      noPing,
       estAnnonce: false,
       termine: true,
     });
@@ -394,8 +394,9 @@ async function publishAndWriteState(
     }
   }
 
-  // Ping réservé au tout premier post (jour d'annonce) — jamais ensuite.
-  const roleId = estAnnonce && !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
+  // Ping réservé au jour d'annonce (lancement) et à la fin de manche —
+  // jamais pour les jours intermédiaires.
+  const roleId = (estAnnonce || termine) && !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
 
   const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
     method: "POST",
@@ -463,9 +464,9 @@ async function renderCombatPayload(state, config) {
 }
 
 // ── Boutons de vote (Chevalier/Voleuse/Sorcier/Archères) ────────────
-// Vote MODIFIABLE jusqu'au cron (comme Aventure) : pas de tirage au clic,
-// juste un HSET écrasable + réaffichage du message public en place (type 6,
-// géré par le routeur), aucun éphémère ici.
+// Vote MODIFIABLE jusqu'au cron : pas de tirage au clic, juste un HSET
+// écrasable + réaffichage du message public en place (type 6, géré par le
+// routeur), aucun éphémère ici.
 
 export async function handleVoteButton(webhookUrl, jour, roleId, discordId, username) {
   try {
@@ -474,8 +475,7 @@ export async function handleVoteButton(webhookUrl, jour, roleId, discordId, user
 
     if (!state || state.termine || state.phase !== "combat" || String(state.jour) !== String(jour)) {
       // Jour changé entre le clic et le traitement : on réaffiche l'état
-      // courant sans enregistrer un vote périmé (même principe que
-      // handleVoteButton dans aventure.js).
+      // courant sans enregistrer un vote périmé.
       if (state && state.phase === "combat" && !state.termine) {
         const { embed, components } = await renderCombatPayload(state, config);
         await patchOriginal(webhookUrl, { embeds: [embed], components });

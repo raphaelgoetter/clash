@@ -23,7 +23,9 @@ import { postAnagram } from "../api/discord/_handlers/anagrams.js";
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
 const FORCE = process.argv.includes("--force");
-const NO_PING = process.argv.includes("--no-ping");
+// Jamais de ping sur le salon de test, même sans --no-ping explicite (voir
+// postTamagotchi.js pour le même garde-fou).
+const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;
 
 const channelId = PUBLIC
   ? process.env.DISCORD_CHANNEL_FRAME_PUBLIC

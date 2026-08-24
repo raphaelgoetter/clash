@@ -4,8 +4,8 @@
 // courant, votes, formule d'impact, notation du jour, historique.
 //
 // Stockage : Upstash Redis (même instance et mêmes conventions que
-// backend/services/aventure.js) — espace de clés `tamagotchi:*`, totalement
-// séparé de `frame:*`/`anagram:*`/`aventure:*`.
+// backend/services/robinson.js) — espace de clés `tamagotchi:*`, totalement
+// séparé de `frame:*`/`anagram:*`.
 //
 // ⚠️ automaticDeserialization désactivée volontairement : le SDK convertit
 // par défaut toute valeur "numérique" en Number JS, y compris les IDs
@@ -144,8 +144,7 @@ export async function writeState(state) {
 }
 
 // ── Votes ──────────────────────────────────────────────────────────
-// Contrairement à Aventure (revoter écrase le choix précédent), le vote
-// Tamagotchi n'est PAS modifiable une fois posé : revoter la MÊME action est
+// Le vote Tamagotchi n'est PAS modifiable une fois posé : revoter la MÊME action est
 // un no-op idempotent ("already_recorded"), voter une action DIFFÉRENTE est
 // rejeté sans écriture ("rejected"). Le pseudo est stocké à part, uniquement
 // pour l'affichage (scripts/tamagotchiStatus.js et texte narratif), jamais
@@ -444,7 +443,7 @@ export function capTierByConfiance(tier, confianceFinale, confianceConfig) {
 
 // ── Historique (bilans quotidiens) ────────────────────────────────
 // Bookkeeping interne uniquement (récap final, texte narratif) — pas de
-// bouton Discord dédié pour ce jeu, contrairement à l'Historique d'Aventure.
+// bouton Discord dédié pour ce jeu.
 
 export async function writeHistoriqueEntry(jour, record) {
   await getRedis().hset(HISTORIQUE_KEY, { [jour]: toJson(record) });

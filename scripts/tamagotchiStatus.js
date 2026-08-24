@@ -5,7 +5,7 @@
 // besoin d'ouvrir Discord — pratique pour suivre l'avancement avant de
 // décider de relancer manuellement `npm run tamagotchi:public`. Ce jeu n'a
 // pas de bouton "Historique" dans Discord, ce script en tient lieu côté
-// admin (comme scripts/aventureVotes.js pour l'Aventure).
+// admin.
 //
 // Usage : node scripts/tamagotchiStatus.js
 

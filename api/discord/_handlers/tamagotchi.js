@@ -715,7 +715,7 @@ export async function postTamagotchi(
       actionFatiguee: closure.actionFatigueeSuivante,
       embed,
       components: [],
-      noPing: true,
+      noPing,
       estPremierJour: false,
       termine: true,
     });
@@ -762,13 +762,12 @@ export async function postTamagotchi(
     actionFatiguee: closure.actionFatigueeSuivante,
     embed,
     components,
-    noPing: true,
+    noPing,
     estPremierJour: false,
   });
 }
 
 // Supprime l'ancien message (tolérant), poste le nouveau, écrit l'état.
-// Mirroring postChapter() dans api/discord/_handlers/aventure.js.
 async function publishAndWriteState(
   channelId,
   previousState,
@@ -810,8 +809,10 @@ async function publishAndWriteState(
     }
   }
 
+  // Ping réservé au lancement (Jour 1) et à la fin de manche — jamais pour
+  // les jours intermédiaires.
   const roleId =
-    estPremierJour && !noPing
+    (estPremierJour || termine) && !noPing
       ? await getRoleIdByName(MINI_JEUX_ROLE_NAME)
       : null;
 
@@ -872,9 +873,9 @@ async function patchOriginal(webhookUrl, payload) {
 // ── Bouton de vote ────────────────────────────────────────────────
 // Ack routeur : type 5 (DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE, éphémère) car
 // on doit toujours répondre en privé à l'auteur du clic (confirmation ou
-// rejet d'un vote déjà posé) — contrairement à Aventure, le message public
-// n'est jamais édité via "@original" ici mais via un second appel PATCH
-// direct au salon (Bot token), découplé de la réponse éphémère.
+// rejet d'un vote déjà posé) — le message public n'est jamais édité via
+// "@original" ici mais via un second appel PATCH direct au salon (Bot
+// token), découplé de la réponse éphémère.
 
 export async function handleVoteButton(
   webhookUrl,

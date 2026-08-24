@@ -29,9 +29,9 @@ const REQUIRE_ACTIVE = process.argv.includes("--require-active");
 // serveur à chaque itération de test pendant le développement du jeu.
 const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;
 
-// Réutilise les salons du jeu Frame (même principe qu'Anagram/Aventure/
-// Tamagoshi, voir CONTRIBUTING.md) plutôt que de provisionner de nouveaux
-// salons Discord dédiés à Robinson.
+// Réutilise les salons du jeu Frame (même principe qu'Anagram/Tamagoshi,
+// voir CONTRIBUTING.md) plutôt que de provisionner de nouveaux salons
+// Discord dédiés à Robinson.
 const channelId = PUBLIC
   ? process.env.DISCORD_CHANNEL_FRAME_PUBLIC
   : process.env.DISCORD_CHANNEL_FRAME_TEST;

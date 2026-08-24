@@ -2,8 +2,8 @@
 // discordUsers.js — Résolution du pseudo Discord ACTUEL d'un membre
 // (surnom serveur, repli global_name/username), pour ne plus dépendre des
 // pseudos figés stockés en base au moment de l'interaction (Frame, Anagram,
-// Aventure, Pronostics Champions capturent tous le pseudo une seule fois et
-// ne le rafraîchissent jamais si le joueur change de surnom ensuite).
+// Pronostics Champions capturent tous le pseudo une seule fois et ne le
+// rafraîchissent jamais si le joueur change de surnom ensuite).
 //
 // Même principe que discordRoles.js (déjà dans ce repo) : cache mémoire par
 // process, jamais d'exception — un pseudo non résolvable (joueur ayant

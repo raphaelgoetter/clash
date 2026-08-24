@@ -4,19 +4,18 @@
 // partie (phase/jour/posture du Boss/score cumulé), votes, clôture
 // quotidienne, historique.
 //
-// Stockage : Upstash Redis (mêmes conventions que robinson.js/aventure.js)
+// Stockage : Upstash Redis (mêmes conventions que robinson.js)
 // — espace de clés `bossraid:*`.
 //
 // ⚠️ Différence structurelle avec Robinson : ici le vote est MODIFIABLE
-// jusqu'au cron (comme Aventure — HSET écrasable, pas HSETNX) et AUCUN
-// tirage aléatoire n'a lieu au clic. Toute la logique de dégâts/événements/
-// All-In est calculée UNE SEULE FOIS à la clôture, dans computeCloture() —
-// une fonction pure. Conséquence directe : la posture du Boss
-// (Défense/Résistance) et le score cumulé vivent dans le même blob JSON
-// `bossraid:state` qu'Aventure/Tamagotchi (mutés uniquement au cron), PAS
-// dans des clés atomiques séparées comme les stocks de Robinson — il n'y a
-// jamais d'écriture concurrente à sécuriser puisque rien n'est écrit avant
-// la clôture.
+// jusqu'au cron (HSET écrasable, pas HSETNX) et AUCUN tirage aléatoire n'a
+// lieu au clic. Toute la logique de dégâts/événements/All-In est calculée
+// UNE SEULE FOIS à la clôture, dans computeCloture() — une fonction pure.
+// Conséquence directe : la posture du Boss (Défense/Résistance) et le score
+// cumulé vivent dans le même blob JSON `bossraid:state` que Tamagotchi
+// (muté uniquement au cron), PAS dans des clés atomiques séparées comme les
+// stocks de Robinson — il n'y a jamais d'écriture concurrente à sécuriser
+// puisque rien n'est écrit avant la clôture.
 //
 // ⚠️ automaticDeserialization désactivée volontairement : le SDK convertit
 // par défaut toute valeur "numérique" en Number JS, y compris les IDs
@@ -147,8 +146,8 @@ export async function writeState(state) {
 }
 
 // ── Votes ──────────────────────────────────────────────────────────
-// HSET écrasable (comme aventure.js, PAS HSETNX comme robinson.js) : le vote
-// est modifiable jusqu'au cron, aucune notion de "slot réservé" à libérer.
+// HSET écrasable (PAS HSETNX comme robinson.js) : le vote est modifiable
+// jusqu'au cron, aucune notion de "slot réservé" à libérer.
 // vote_at (horodatage de la DERNIÈRE mise à jour) sert uniquement à
 // départager l'ordre de protection Chevalier quand les distants sont plus
 // nombreux que les slots disponibles (voir computeProtection).

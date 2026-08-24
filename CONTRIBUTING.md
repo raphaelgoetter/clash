@@ -643,7 +643,7 @@ L'affichage "Manche N" est partout devenu **"Saison S · Manche N/X"** (post heb
 
 | Commande                   | Effet                                                                                                                                                                                                  |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `npm run frame:test`       | Poste manuellement une nouvelle partie sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`).                                                                                                            |
+| `npm run frame:test`       | Poste manuellement une nouvelle partie sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`), **sans ping** (le salon de test ne pingue jamais `@MINI JEUX`, même sans `--no-ping` explicite).           |
 | `npm run frame:test:dry`   | Aperçu console de la prochaine partie, sans écrire d'état ni poster sur Discord.                                                                                                                       |
 | `npm run frame:public`     | Poste sur le salon public "Général" (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `frames.yml`.                                                                                               |
 | `npm run frame:public:dry` | Équivalent dry-run de `frame:public`.                                                                                                                                                                  |
@@ -725,7 +725,7 @@ Identique à Frame (voir [Récapitulatif de fin de saison](#récapitulatif-de-fi
 
 | Commande | Effet |
 | --- | --- |
-| `npm run anagram:test` | Poste manuellement une nouvelle partie sur le salon de test, en ignorant le gating hebdomadaire (`--force`). |
+| `npm run anagram:test` | Poste manuellement une nouvelle partie sur le salon de test, en ignorant le gating hebdomadaire (`--force`), **sans ping** (le salon de test ne pingue jamais `@MINI JEUX`, même sans `--no-ping` explicite). |
 | `npm run anagram:test:dry` | Aperçu console de la prochaine partie (+ récap de saison éventuel), sans écrire d'état ni poster sur Discord. |
 | `npm run anagram:public` | Poste sur le salon public si le gating hebdomadaire (jour + tirage au sort) le permet — utilisé par le cron `anagrams.yml`. |
 | `npm run anagram:public:dry` | Équivalent dry-run de `anagram:public`. |
@@ -822,7 +822,7 @@ Identique à Frame (voir [Récapitulatif de fin de saison](#récapitulatif-de-fi
 | Commande | Effet |
 | --- | --- |
 | `npm run zoom:catalog` | Génère/complète `data/zoom/zoom.json` et télécharge les icônes manquantes dans `data/zoom/images/`. Usage ponctuel, jamais dans le flux hebdomadaire. |
-| `npm run zoom:test` | Poste manuellement une nouvelle partie sur le salon de test, **sans ping** (`--no-ping` par défaut — contrairement à `frame:test`/`anagram:test`, décision explicite pour pouvoir tester en salon réel sans spammer `@MINI JEUX`). |
+| `npm run zoom:test` | Poste manuellement une nouvelle partie sur le salon de test, **sans ping** (le salon de test ne pingue jamais `@MINI JEUX`, même sans `--no-ping` explicite). |
 | `npm run zoom:test:dry` | Aperçu console de la prochaine partie (+ récap de saison éventuel), sans écrire d'état ni poster sur Discord. |
 | `npm run zoom:public` | Poste sur le salon public (avec ping) — utilisé par le cron `zoom.yml`. |
 | `npm run zoom:public:dry` | Équivalent dry-run de `zoom:public`. |
@@ -948,7 +948,7 @@ Contrairement à Anagram (DM à chaque manche, puisqu'une seule tentative la ré
 | Commande | Effet |
 | --- | --- |
 | `npm run justecarte:stats` | Ajoute les stats (elixir/hp/damage/range) aux cartes éligibles de `data/cardNames.json`. Usage ponctuel, jamais dans le flux hebdomadaire. |
-| `npm run justecarte:test` | Poste manuellement une nouvelle partie sur le salon de test, **sans ping** (`--no-ping` par défaut, comme `zoom:test`). |
+| `npm run justecarte:test` | Poste manuellement une nouvelle partie sur le salon de test, **sans ping** (le salon de test ne pingue jamais `@MINI JEUX`, même sans `--no-ping` explicite, comme `zoom:test`). |
 | `npm run justecarte:test:dry` | Aperçu console de la prochaine partie (+ récap de saison éventuel), sans écrire d'état ni poster sur Discord. |
 | `npm run justecarte:public` | Poste sur le salon public (avec ping) — utilisé par le cron `lajustecarte.yml`. |
 | `npm run justecarte:public:dry` | Équivalent dry-run de `justecarte:public`. |
@@ -959,65 +959,6 @@ Contrairement à Anagram (DM à chaque manche, puisqu'une seule tentative la ré
 ### Variables d'environnement requises (La Juste Carte)
 
 Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (espace de clés `lajustecarte:*` totalement séparé). Le workflow `.github/workflows/lajustecarte.yml` réutilise les mêmes secrets GitHub Actions que `frames.yml`/`anagrams.yml`/`zoom.yml` (déjà configurés, rien à ajouter).
-
----
-
-## Aventure interactive (livre dont vous êtes le héros)
-
-Mini-jeu narratif communautaire, indépendant du Clash Royale : chaque jour à 08:00 UTC, un chapitre est publié dans un salon dédié, les membres votent par boutons pour orienter la suite. Pas de commande slash associée — la publication/suppression passe uniquement par `scripts/postAventure.js` (manuel ou cron), les boutons/select menu restent gérés par `api/discord/interactions.js`. Univers Clash Royale, ton humoristique, boss final **Displaynone** (un sorcier/codeur qui attaque avec du CSS/JS cassé).
-
-### Déroulement
-
-Un seul message actif à la fois dans le salon dédié. Chaque jour, `postChapter()` (`api/discord/_handlers/aventure.js`) :
-
-1. Résout le vote du chapitre actif (s'il y en a un) : le choix avec le plus de votes gagne, égalité départagée par l'ordre d'apparition dans le tableau `choix` de `histoire.json` — cette même règle couvre nativement le cas "personne n'a voté" (égalité totale à 0, le premier choix l'emporte par défaut). Voir `determineWinningChoix()` (`backend/services/aventure.js`), fonction pure testée dans `aventure.test.js`.
-2. Supprime le message Discord de la veille (`DELETE /channels/{id}/messages/{id}`, `Authorization: Bot <token>`) — un échec (message déjà supprimé, permission) est loggé mais ne bloque jamais la publication du nouveau chapitre.
-3. Publie le chapitre suivant (déterminé par `prochain_chapitre` du choix gagnant), avec un bouton par choix affichant son compteur de votes en temps réel dans le label, recalculé à chaque publication et à chaque clic.
-
-Un chapitre **sans** `choix` (tableau vide ou absent) marque la fin de l'histoire : le message reste affiché indéfiniment, et les runs suivants du cron deviennent des no-op silencieux (`aventure:state.termine`).
-
-### Résolution du vote
-
-Un membre ne peut voter qu'une fois par chapitre, mais peut changer d'avis en cliquant un autre bouton : le vote est stocké `discordId → choixId` (`aventure:votes:<chapitreId>`, HASH Redis), revoter écrase simplement l'ancienne valeur (`HSET`). Le clic sur un bouton de vote édite directement le message public en place (`DEFERRED_UPDATE_MESSAGE` puis `PATCH .../messages/@original`) — chaque clic est une nouvelle interaction avec son propre token, valable pour éditer le message d'origine du composant même si celui-ci est vieux de plusieurs heures (même principe que la pagination des pronostics GDC, `champion_history_page`).
-
-### Bouton Historique
-
-Le bouton permanent `[📜 Historique]` répond par un message éphémère contenant un select menu listant les jours passés (25 par page max, limite Discord ; pagination façon "Plus récents/Plus anciens" si l'histoire dépasse 25 jours). Sélectionner un jour affiche le texte complet du chapitre (relu en direct depuis `histoire.json`, jamais dupliqué en Redis) et le choix qui avait gagné ce jour-là (`aventure:historique`, HASH `chapitreId → { jour, choixGagnantId, resolvedAt }`).
-
-### Données (histoire.json)
-
-- `data/aventure/histoire.json` — contenu narratif édité à la main : `debut` (id du premier chapitre) + `chapitres` (objet `id → { titre, texte, resume_historique, choix? }`). Chaque `choix` a un `id`, un `label`, un `emoji` (optionnel) et un `prochain_chapitre` (id d'un autre chapitre). `resume_historique` sert de description à l'option du select menu Historique (≤ 100 caractères, limite Discord) — le `texte` complet n'est affiché qu'après sélection.
-- Maximum **5 choix par chapitre** (limite Discord : 5 boutons par ligne).
-
-### Stockage — Upstash Redis (`aventure:*`)
-
-Même instance et mêmes conventions que le jeu Frame (voir "Stockage — Upstash Redis" ci-dessus : `automaticDeserialization: false` obligatoire, sérialisation JSON manuelle, client construit paresseusement). Espace de clés `aventure:*`, totalement séparé de `frame:*`/`anagram:*` :
-
-| Clé Redis | Type | Contenu |
-| --- | --- | --- |
-| `aventure:state` | STRING | `{ chapitreId, channelId, messageId, publishedAt, termine }` — chapitre actuellement affiché |
-| `aventure:votes:<chapitreId>` | HASH | `discordId → choixId` — jetable, effacé après résolution du chapitre |
-| `aventure:vote_usernames:<chapitreId>` | HASH | `discordId → pseudo` — jetable, uniquement pour l'affichage admin (`npm run aventure:votes`), jamais utilisé pour la résolution du vote |
-| `aventure:jour_seq` | STRING (compteur) | Dernier numéro de jour attribué (`INCR` atomique) |
-| `aventure:jours` | HASH | `chapitreId → numéro de jour` (idempotent, `HSETNX`) |
-| `aventure:historique` | HASH | `chapitreId → { jour, choixGagnantId, resolvedAt }` — jamais nettoyé, alimente le bouton Historique |
-
-### Scripts npm (Aventure)
-
-| Commande | Effet |
-| --- | --- |
-| `npm run aventure:test` | Poste manuellement le chapitre du jour sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`). |
-| `npm run aventure:test:dry` | Aperçu console du prochain chapitre, sans écrire d'état ni poster sur Discord. |
-| `npm run aventure:public` | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `aventure.yml`. |
-| `npm run aventure:public:dry` | Équivalent dry-run de `aventure:public`. |
-| `npm run aventure:reset` | Remet l'aventure à zéro : plus de chapitre actif, votes/numérotation/historique effacés. **Destructif**. |
-| `npm run aventure:votes` | Affiche le décompte des votes du chapitre actif (choix, compteur, total) sans passer par Discord. |
-
-### Variables d'environnement requises (Aventure)
-
-Aucune nouvelle variable : l'Aventure réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` (mêmes salons que Frame et Anagram, décision explicite pour ne pas multiplier les salons) et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (même instance Upstash Redis, espace de clés `aventure:*` totalement séparé de `frame:*`/`anagram:*`). La suppression quotidienne du message de la veille (`DELETE /channels/.../messages/{aventure:state.messageId}`) ne cible jamais que le message tracké par `aventure:state` — elle ne touche jamais aux messages Frame/Anagram, même postés dans le même salon.
-
-Le workflow `.github/workflows/aventure.yml` (cron quotidien `npm run aventure:public`) réutilise les mêmes secrets GitHub Actions que `frames.yml`/`anagrams.yml` (déjà configurés, rien à ajouter).
 
 ---
 
@@ -1033,11 +974,11 @@ Un seul message actif à la fois dans le salon dédié. Chaque jour, `postTamago
 2. Calcule les jauges d'ouverture du jour suivant (`computeDayOpenGauges()`) : jauges de fin de journée + modificateur de l'éventuel événement programmé ce jour-là (voir "Événements programmés").
 3. Supprime le message Discord de la veille (`DELETE /channels/{id}/messages/{id}`, tolérant un échec) et publie le nouveau jour, avec un bouton par action affichant son compteur de votes en temps réel.
 
-Au Jour 10, au lieu d'ouvrir un nouveau jour, le message de fin de partie est posté (palier S/B/F selon le total d'étoiles, éventuellement plafonné par la Confiance — voir "Fin de partie") et `tamagotchi:state.termine` passe à `true` — les runs suivants du cron deviennent des no-op silencieux, même principe que `aventure:state.termine`.
+Au Jour 10, au lieu d'ouvrir un nouveau jour, le message de fin de partie est posté (palier S/B/F selon le total d'étoiles, éventuellement plafonné par la Confiance — voir "Fin de partie") et `tamagotchi:state.termine` passe à `true` — les runs suivants du cron deviennent des no-op silencieux.
 
 ### Résolution du vote
 
-Un membre ne peut voter qu'une fois par jour parmi les actions réelles (Nourrir, Sieste, Jouer, Câliner), et **ce vote n'est pas modifiable** : revoter la même action est un no-op, voter une action différente est rejeté (`recordVote()`, `backend/services/tamagotchi.js`) — contrairement à l'Aventure, où revoter écrase le choix précédent. Le clic sur un bouton d'action répond toujours en éphémère à l'auteur (confirmation ou rejet du vote, `DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE` puis `PATCH .../messages/@original`) ; le message public (compteurs de votes) est mis à jour séparément par un `PATCH /channels/{id}/messages/{id}` direct avec le token du bot, découplé de la réponse éphémère.
+Un membre ne peut voter qu'une fois par jour parmi les actions réelles (Nourrir, Sieste, Jouer, Câliner), et **ce vote n'est pas modifiable** : revoter la même action est un no-op, voter une action différente est rejeté (`recordVote()`, `backend/services/tamagotchi.js`). Le clic sur un bouton d'action répond toujours en éphémère à l'auteur (confirmation ou rejet du vote, `DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE` puis `PATCH .../messages/@original`) ; le message public (compteurs de votes) est mis à jour séparément par un `PATCH /channels/{id}/messages/{id}` direct avec le token du bot, découplé de la réponse éphémère.
 
 Bretzel et le bouton Projection (ex-5ᵉ/6ᵉ choix de vote) ont été retirés en Manche 2 : Bretzel s'est avéré redondant une fois la Fatigue en place (jamais utilisé dans une stratégie optimale, vérifié par simulation), et Projection n'apportait qu'une commodité de coordination au prix d'un bouton en plus — `npm run tamagotchi:status` remplit déjà ce rôle côté admin.
 
@@ -1075,7 +1016,7 @@ Le total d'étoiles de dressage détermine un premier palier (`computeFinalTier(
 
 ### Stockage — Upstash Redis (`tamagotchi:*`)
 
-Même instance et mêmes conventions que Frame/Anagram/Aventure (`automaticDeserialization: false`, sérialisation JSON manuelle). Espace de clés `tamagotchi:*`, totalement séparé des autres jeux. Contrairement à l'Aventure (arbre de chapitres ramifié), la progression est strictement linéaire (Jour 1 à 10) : un simple compteur entier `jour` dans l'état suffit, pas de table jour→séquence dédiée.
+Même instance et mêmes conventions que Frame/Anagram (`automaticDeserialization: false`, sérialisation JSON manuelle). Espace de clés `tamagotchi:*`, totalement séparé des autres jeux. La progression est strictement linéaire (Jour 1 à 10) : un simple compteur entier `jour` dans l'état suffit, pas de table jour→séquence dédiée.
 
 | Clé Redis | Type | Contenu |
 | --- | --- | --- |
@@ -1106,7 +1047,7 @@ Action à part (`is_info_action: true`, exclue de `computeDayImpact()`) : effet 
 
 ### Variables d'environnement requises (Tamagoshi)
 
-Aucune nouvelle variable : le Tamagoshi réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` (mêmes salons que Frame/Anagram/Aventure, décision explicite pour ne pas multiplier les salons) et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (même instance Upstash Redis, espace de clés `tamagotchi:*` totalement séparé). Le workflow `.github/workflows/tamagotchi.yml` (cron quotidien `npm run tamagotchi:public`) réutilise les mêmes secrets GitHub Actions que les autres jeux (déjà configurés, rien à ajouter).
+Aucune nouvelle variable : le Tamagoshi réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` (mêmes salons que Frame/Anagram, décision explicite pour ne pas multiplier les salons) et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (même instance Upstash Redis, espace de clés `tamagotchi:*` totalement séparé). Le workflow `.github/workflows/tamagotchi.yml` (cron quotidien `npm run tamagotchi:public`) réutilise les mêmes secrets GitHub Actions que les autres jeux (déjà configurés, rien à ajouter).
 
 ---
 
@@ -1116,13 +1057,13 @@ Mini-jeu communautaire quotidien indépendant du Clash Royale : la communauté e
 
 ### Déroulement (Robinson)
 
-Un seul message actif à la fois dans le salon dédié. Contrairement à l'Aventure et au Tamagoshi (où tout l'impact d'une journée est calculé une seule fois, séquentiellement, au cron), **les récoltes et le coût du Radeau sont appliqués en continu pendant la journée**, à chaque clic, avec un retour immédiat au joueur en éphémère (« Tu as pêché 2 poissons ! ») — voir "Résolution du vote et concurrence" ci-dessous pour le détail technique. Seule la **consommation automatique** reste calculée une fois par jour, au cron :
+Un seul message actif à la fois dans le salon dédié. Contrairement au Tamagoshi (où tout l'impact d'une journée est calculé une seule fois, séquentiellement, au cron), **les récoltes et le coût du Radeau sont appliqués en continu pendant la journée**, à chaque clic, avec un retour immédiat au joueur en éphémère (« Tu as pêché 2 poissons ! ») — voir "Résolution du vote et concurrence" ci-dessous pour le détail technique. Seule la **consommation automatique** reste calculée une fois par jour, au cron :
 
 1. `postRobinson()` (`api/discord/_handlers/robinson.js`) clôture le jour actif : si le Radeau est déjà achevé (voir "Victoire anticipée"), la partie s'arrête là, sans consommation. Sinon, `V` = nombre de votants uniques du jour (`HLEN robinson:votes:<jour>`), consommation automatique `-V` Nourriture, `-V` Eau, `-⌈V/2⌉` Bois (plancher 0), puis vérification Gobelins si l'événement du jour est actif, puis mise à jour des compteurs de jours consécutifs à 0 par ressource.
 2. Si une ressource est à 0 pour la 2ᵉ journée consécutive → défaite immédiate. Si le Jour 11 est atteint → victoire (secours arrivés).
 3. Sinon, le jour suivant s'ouvre : événement programmé éventuel (voir plus bas), suppression du message de la veille (`DELETE`, tolérant), publication du nouveau jour.
 
-`robinson:state.termine` passe à `true` dès qu'une issue (victoire Radeau, victoire Jour 11, défaite) est atteinte — les runs suivants du cron deviennent des no-op silencieux, même principe que `aventure:state.termine`/`tamagotchi:state.termine`.
+`robinson:state.termine` passe à `true` dès qu'une issue (victoire Radeau, victoire Jour 11, défaite) est atteinte — les runs suivants du cron deviennent des no-op silencieux, même principe que `tamagotchi:state.termine`.
 
 ### Résolution du vote et concurrence
 
@@ -1156,7 +1097,7 @@ Les dons/pertes de Poissons Pourris, Colis Royal et Épave sont appliqués **une
 
 ### Victoire anticipée (Radeau)
 
-Construire le Radeau coûte `bois_par_point_radeau` (**1**, initialement 2) Bois pour `+1` point de construction ; `points_par_section` (**4**, initialement 5) points forment 1 section, `radeau_sections_max` (5) sections achèvent le Radeau (**20** points au total, initialement 25). La victoire par le Radeau n'est **jamais annoncée en temps réel** au clic qui complète la 5ᵉ section (cohérent avec « aucune publication en dehors du cron » déjà appliqué à l'Aventure/au Tamagoshi) : elle est détectée et révélée au cron suivant, qui court-circuite alors entièrement la consommation et la vérification de défaite de ce jour-là — y compris si c'est un don d'Épave qui vient de faire franchir le seuil.
+Construire le Radeau coûte `bois_par_point_radeau` (**1**, initialement 2) Bois pour `+1` point de construction ; `points_par_section` (**4**, initialement 5) points forment 1 section, `radeau_sections_max` (5) sections achèvent le Radeau (**20** points au total, initialement 25). La victoire par le Radeau n'est **jamais annoncée en temps réel** au clic qui complète la 5ᵉ section (cohérent avec « aucune publication en dehors du cron » déjà appliqué au Tamagoshi) : elle est détectée et révélée au cron suivant, qui court-circuite alors entièrement la consommation et la vérification de défaite de ce jour-là — y compris si c'est un don d'Épave qui vient de faire franchir le seuil.
 
 D'après simulation (stratégie : survie pure jusqu'au Jour 7, puis ~30 % des votes redirigés vers le Radeau après l'Épave), la victoire par Radeau atteint **93 %** pour un petit groupe (V=6) et reste dans une fourchette **59-78 %** pour les groupes de 10 à 20 votants — cohérent avec la cible ~75 %. La survie passive (Jour 11, sans stratégie Radeau) se situe désormais entre **46 % et 58 %** pour la tranche 10-20 votants (hors le pic ponctuel à V=12 dû à l'effet de seuil du Colis Royal, voir plus haut), contre 65-83 % avant l'ajout de l'Indigestion Royale — plus proche de la cible basse (~50 %) demandée pour cette tranche.
 
@@ -1209,7 +1150,7 @@ Aucune nouvelle variable : Robinson réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DIS
 
 ## Boss Raid (score attack communautaire)
 
-Mini-jeu communautaire quotidien indépendant du Clash Royale : le clan affronte un Boss Colossal invulnérable pendant 10 jours de combat (précédés d'un jour d'annonce), avec pour objectif d'accumuler le maximum de dégâts cumulés. Chaque membre vote un rôle par jour (Chevalier, Voleuse, Sorcier, Archères, Espion) ; contrairement à Robinson, **aucun tirage n'a lieu au clic** — le vote reste modifiable jusqu'au cron de 08:00 UTC, exactement comme l'Aventure. Pas de commande slash associée — la publication/suppression passe uniquement par `scripts/postBossRaid.js` (manuel ou cron), les boutons restent gérés par `api/discord/interactions.js`.
+Mini-jeu communautaire quotidien indépendant du Clash Royale : le clan affronte un Boss Colossal invulnérable pendant 10 jours de combat (précédés d'un jour d'annonce), avec pour objectif d'accumuler le maximum de dégâts cumulés. Chaque membre vote un rôle par jour (Chevalier, Voleuse, Sorcier, Archères, Espion) ; contrairement à Robinson, **aucun tirage n'a lieu au clic** — le vote reste modifiable jusqu'au cron de 08:00 UTC. Pas de commande slash associée — la publication/suppression passe uniquement par `scripts/postBossRaid.js` (manuel ou cron), les boutons restent gérés par `api/discord/interactions.js`.
 
 ### Déroulement (Boss Raid)
 
@@ -1217,15 +1158,15 @@ Un seul message actif à la fois dans le salon dédié, en 3 phases :
 
 1. **Jour d'annonce** (`bossraid:state.phase === "annonce"`) : premier `postBossRaid()`, publie le lore + la posture initiale du Boss, ping `@MINI JEUX`. Seul le bouton `[📖 Règles & Rôles]` est visible — aucun vote possible.
 2. **Transition vers le Jour 1/10** : deuxième `postBossRaid()`, détecte `phase === "annonce"` et publie directement le Jour 1 avec les 5 boutons de vote, sans clôture (rien n'a pu être voté avant) ni ping.
-3. **Clôture quotidienne** (jours suivants) : `postBossRaid()` clôture le jour actif (`closeDayAndAdvance()`), calcule les dégâts et la nouvelle posture du Boss, publie le bilan + le jour suivant. Au-delà du Jour 10 (`jourSuivant > duree_jours`), publie l'embed de fin de Raid (score total, aucun composant) et passe `termine: true` — les runs suivants du cron deviennent des no-op silencieux, même principe que les autres jeux.
+3. **Clôture quotidienne** (jours suivants) : `postBossRaid()` clôture le jour actif (`closeDayAndAdvance()`), calcule les dégâts et la nouvelle posture du Boss, publie le bilan + le jour suivant (jamais de ping). Au-delà du Jour 10 (`jourSuivant > duree_jours`), publie l'embed de fin de Raid (score total, aucun composant), ping `@MINI JEUX`, et passe `termine: true` — les runs suivants du cron deviennent des no-op silencieux, même principe que les autres jeux.
 
-### Résolution du vote — hybride Aventure/Robinson
+### Résolution du vote — vote modifiable, calcul unique à la clôture
 
-Le vote est **modifiable jusqu'au cron** (comme l'Aventure) : `recordVote()` fait un simple `HSET` écrasable sur `bossraid:votes:<jour>`, **pas** de `HSETNX` ni de logique de réservation/libération de slot comme Robinson — aucune action de vote ne peut « échouer ». Conséquence directe : **aucun tirage aléatoire n'a lieu au clic**, toute la logique de dégâts/protection/All-In/événements est calculée **une seule fois à la clôture**, dans la fonction pure `computeCloture()` (`backend/services/bossraid.js`).
+Le vote est **modifiable jusqu'au cron** : `recordVote()` fait un simple `HSET` écrasable sur `bossraid:votes:<jour>`, **pas** de `HSETNX` ni de logique de réservation/libération de slot comme Robinson — aucune action de vote ne peut « échouer ». Conséquence directe : **aucun tirage aléatoire n'a lieu au clic**, toute la logique de dégâts/protection/All-In/événements est calculée **une seule fois à la clôture**, dans la fonction pure `computeCloture()` (`backend/services/bossraid.js`).
 
-Le clic sur un bouton de vote (sauf Espion) répond en `type: 6` (`DEFERRED_UPDATE_MESSAGE`) et édite le message public **en place** — comme l'Aventure, jamais d'éphémère. Le bouton **Espion** est la seule exception : il répond en éphémère (`type: 5`) avec une **projection live** des dégâts du jour en cours, calculée par `previewCloture()` (écriture Redis nulle) — la même fonction qu'appelle `postBossRaid.js --dry-run`, garantissant que la projection Espion et la simulation dry-run ne divergent jamais. Le vote Espion compte quand même dans le dénominateur All-In (`recordVote(jour, discordId, "espion", ...)`), et son compteur public est rafraîchi séparément par un `PATCH` direct (token du bot), même découplage que Tamagotchi/Robinson pour un vote confirmé en éphémère.
+Le clic sur un bouton de vote (sauf Espion) répond en `type: 6` (`DEFERRED_UPDATE_MESSAGE`) et édite le message public **en place**, jamais d'éphémère. Le bouton **Espion** est la seule exception : il répond en éphémère (`type: 5`) avec une **projection live** des dégâts du jour en cours, calculée par `previewCloture()` (écriture Redis nulle) — la même fonction qu'appelle `postBossRaid.js --dry-run`, garantissant que la projection Espion et la simulation dry-run ne divergent jamais. Le vote Espion compte quand même dans le dénominateur All-In (`recordVote(jour, discordId, "espion", ...)`), et son compteur public est rafraîchi séparément par un `PATCH` direct (token du bot), même découplage que Tamagotchi/Robinson pour un vote confirmé en éphémère.
 
-⚠️ **Contraste volontaire avec Robinson** : la posture du Boss (Défense/Résistance) et le score cumulé vivent dans le même blob JSON `bossraid:state` que l'Aventure/le Tamagoshi (`GET`/`SET` simple), **pas** dans des clés atomiques `INCRBY`/`DECRBY` séparées comme les stocks de Robinson. Ce n'est pas un oubli : rien n'est jamais écrit avant la clôture, donc il n'y a aucune écriture concurrente à sécuriser (contrairement à Robinson, où les récoltes sont appliquées en direct par des clics potentiellement simultanés).
+⚠️ **Contraste volontaire avec Robinson** : la posture du Boss (Défense/Résistance) et le score cumulé vivent dans le même blob JSON `bossraid:state` que le Tamagoshi (`GET`/`SET` simple), **pas** dans des clés atomiques `INCRBY`/`DECRBY` séparées comme les stocks de Robinson. Ce n'est pas un oubli : rien n'est jamais écrit avant la clôture, donc il n'y a aucune écriture concurrente à sécuriser (contrairement à Robinson, où les récoltes sont appliquées en direct par des clics potentiellement simultanés).
 
 ### Contrainte Chevalier — pas 2 jours de suite
 

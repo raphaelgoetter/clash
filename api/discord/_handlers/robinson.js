@@ -351,7 +351,7 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
       dayVoters: [],
       embed,
       components: [],
-      noPing: true,
+      noPing,
       estPremierJour: false,
       termine: true,
     });
@@ -379,7 +379,7 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
       dayVoters: [],
       embed,
       components: [],
-      noPing: true,
+      noPing,
       estPremierJour: false,
       termine: true,
     });
@@ -465,7 +465,9 @@ async function publishAndWriteState(
     }
   }
 
-  const roleId = estPremierJour && !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
+  // Ping réservé au lancement (Jour 1) et à la fin de manche — jamais pour
+  // les jours intermédiaires.
+  const roleId = (estPremierJour || termine) && !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
 
   const res = await fetch(
     `https://discord.com/api/v10/channels/${channelId}/messages`,

@@ -6,11 +6,12 @@
 // ============================================================
 
 // Rôle pingé aux annonces de lancement/récap des mini-jeux (Frame, Anagram,
-// Aventure, Zoom, La Juste Carte) — nom unique, pas de variable d'env dédiée
-// nécessaire. Doit correspondre EXACTEMENT au nom du rôle sur le serveur
-// Discord (vérifié le 2026-08-16 : "MINI-JEUX" avec un tiret, pas un espace
-// — un désalignement ici fait échouer le ping silencieusement pour les 4
-// jeux à la fois, sans erreur visible, voir getRoleIdByName ci-dessous).
+// Zoom, La Juste Carte, Tamagotchi, Robinson, Boss Raid, Quiz) — nom unique,
+// pas de variable d'env dédiée nécessaire. Doit correspondre EXACTEMENT au
+// nom du rôle sur le serveur Discord (vérifié le 2026-08-16 : "MINI-JEUX"
+// avec un tiret, pas un espace — un désalignement ici fait échouer le ping
+// silencieusement pour tous les jeux à la fois, sans erreur visible, voir
+// getRoleIdByName ci-dessous).
 export const MINI_JEUX_ROLE_NAME = "MINI-JEUX";
 
 let rolesCache = null; // Role[] | null
