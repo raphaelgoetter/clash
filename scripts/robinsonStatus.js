@@ -72,7 +72,7 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
   // événements (bonus Épave/Colis Royal/Poissons pourris) — canal factice, la
   // publication n'est jamais atteinte en dry-run. Ne préjuge pas des votes
   // qui arriveront encore avant 08:00 UTC.
-  const projection = await postRobinson("dry-run", { dryRun: true, noPing: true, isPublic: false });
+  const projection = await postRobinson(state.channelId, { dryRun: true, noPing: true, isPublic: false });
   console.log(`\n🔮 Projection si la clôture avait lieu maintenant :`);
   if (projection.final) {
     console.log(`→ Fin de partie : ${outcomeLabel(projection.outcome)}`);
