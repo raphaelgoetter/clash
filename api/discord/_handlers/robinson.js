@@ -778,6 +778,8 @@ function buildReglesEmbed(config) {
       "",
       "**Défaite :** une ressource à 0 pendant 2 jours consécutifs met fin à l’aventure.",
       "",
+      "📜 **Journal de Bord** — consulte les besoins du jour et l’historique des jours précédents. Simple lecture, ça ne consomme jamais ton vote : clique dessus autant de fois que tu veux.",
+      "",
       "Un vote n’est pas modifiable une fois qu’il a réellement abouti. Attention, des événements imprévus peuvent frapper l’île à tout moment…",
     ].join("\n"),
     color: ROBINSON_COLOR,
