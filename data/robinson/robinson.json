@@ -41,7 +41,8 @@
       "id": "evenement",
       "nom": "Une incroyable découverte !",
       "emoji": "🤷‍♂️",
-      "description": "Vos éclaireurs ont trouvé un objet étrange sur la plage qui semble provenir d’un autre monde. Il pourrait bien s’agir d’un artefact magique extrêmement puissant ! Ah ben non en fait c'est juste un bout de bois tordu."
+      "description": "Vos éclaireurs ont trouvé un objet étrange sur la plage qui semble provenir d’un autre monde. Il pourrait bien s’agir d’un artefact magique extrêmement puissant ! Ah ben non en fait c'est juste un bout de bois tordu — mais autour, toute une cargaison échouée bien plus utile : le camp récupère +3 Nourriture, +3 Eau, +3 Bois.",
+      "bonus_ressources": 3
     },
     {
       "jour": 6,
@@ -71,7 +72,8 @@
       "id": "indigestion_royale",
       "nom": "Indigestion Royale",
       "emoji": "🤢",
-      "description": "Le Géant Royal, mal remis d’un festin bien trop généreux, a vomi dans la source d’eau douce de l’île. Le camp devra faire preuve de courage — Collecter de l’eau ne rapportera qu’une petite gorgée par volontaire (1 unité maximum aujourd’hui)."
+      "description": "Le Géant Royal, mal remis d’un festin bien trop généreux, est pris de remords et fait livrer discrètement un tonneau d’eau fraîche au campement pour se faire pardonner. +2 Eau offerts d’office aujourd’hui.",
+      "bonus_eau": 2
     }
   ]
 }

@@ -69,8 +69,8 @@ async function main() {
   assert.strictEqual(harvestCapForEvent({ id: "ouragan" }, "bois"), true);
   assert.strictEqual(harvestCapForEvent({ id: "ouragan" }, "eau"), false);
   assert.strictEqual(harvestCapForEvent({ id: "gobelins" }, "peche"), false);
-  assert.strictEqual(harvestCapForEvent({ id: "indigestion_royale" }, "eau"), true);
-  assert.strictEqual(harvestCapForEvent({ id: "indigestion_royale" }, "peche"), false);
+  // Indigestion Royale ne plafonne plus rien depuis son inversion en bonus (+2 Eau).
+  assert.strictEqual(harvestCapForEvent({ id: "indigestion_royale" }, "eau"), false);
   assert.strictEqual(harvestCapForEvent(null, "eau"), false);
 
   // ── isExplorerDisabled ──
@@ -104,9 +104,14 @@ async function main() {
     streaks: { poisson: 1, eau: 0, bois: 0 },
     defeated: false,
   });
-  // 2e jour consécutif à 0 -> streak=2, défaite
+  // 2e jour consécutif à 0 -> streak=2, toujours pas de défaite (limite portée à 3)
   assert.deepStrictEqual(updateZeroStreaks({ poisson: 1, eau: 0, bois: 0 }, { poisson: 0, eau: 2, bois: 1 }), {
     streaks: { poisson: 2, eau: 0, bois: 0 },
+    defeated: false,
+  });
+  // 3e jour consécutif à 0 -> streak=3, défaite
+  assert.deepStrictEqual(updateZeroStreaks({ poisson: 2, eau: 0, bois: 0 }, { poisson: 0, eau: 2, bois: 1 }), {
+    streaks: { poisson: 3, eau: 0, bois: 0 },
     defeated: true,
   });
   // À 0 puis remonte puis retombe -> le streak repasse à 1, pas 2 (bien réinitialisé entre-temps)

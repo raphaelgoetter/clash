@@ -219,6 +219,15 @@ export async function grantEqualResources(amount) {
   return { poisson: Number(poisson), eau: Number(eau), bois: Number(bois) };
 }
 
+// Don direct sur une seule ressource (Indigestion Royale, inversée en bonus
+// d'Eau) — même principe que grantEqualResources, mais une seule clé.
+export async function grantResource(resourceId, amount) {
+  if (amount <= 0) return readStocks();
+  const nouveauStock = Number(await getRedis().incrby(STOCK_KEYS[resourceId], amount));
+  const autres = await readStocks();
+  return { ...autres, [resourceId]: nouveauStock };
+}
+
 // Perte directe de Poisson (Poissons Pourris) — même mécanique que la
 // consommation nocturne : DECRBY puis plancher 0, jamais négatif.
 export async function spoilPoisson(amount) {
@@ -333,7 +342,6 @@ export function harvestCapForEvent(event, actionId) {
   if (!event) return false;
   if (event.id === "canicule") return actionId === "eau";
   if (event.id === "ouragan") return actionId === "peche" || actionId === "bois";
-  if (event.id === "indigestion_royale") return actionId === "eau";
   return false;
 }
 
@@ -355,10 +363,10 @@ export function applyFlooredDelta(stocks, consumption) {
   return out;
 }
 
-const ZERO_STREAK_LIMIT = 2;
+const ZERO_STREAK_LIMIT = 3;
 
 // Cœur de la détection de défaite : incrémente le compteur d'une ressource
-// tombée à 0, le remet à 0 sinon. Défaite dès qu'un compteur atteint 2.
+// tombée à 0, le remet à 0 sinon. Défaite dès qu'un compteur atteint 3.
 export function updateZeroStreaks(prevStreaks, stocksAfter) {
   const streaks = {};
   let defeated = false;

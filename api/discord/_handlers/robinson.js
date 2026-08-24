@@ -40,6 +40,7 @@ import {
   closeDayAndAdvance,
   grantRadeauPoints,
   grantEqualResources,
+  grantResource,
   computeMancheScore,
   archiveManche,
   listManches,
@@ -68,7 +69,7 @@ function robinsonImageUrl(jour) {
 // le détail complet (barème, consommation, événements).
 const DAY1_INTRO =
   "⛵ **Naufrage général !** Le navire qui emmenait le clan vers le prochain tournoi d’Arène a sombré cette nuit dans la tempête. Par miracle, tout le monde s’est échoué sain et sauf sur une île déserte — sans le moindre Coffre à l’horizon.\n\n" +
-  "Tenez 10 jours, le temps que les secours repèrent l’épave, ou évadez-vous plus tôt en achevant un Radeau. Chaque membre vote une fois par jour ; si une ressource tombe à 0 deux jours de suite, c’est le naufrage définitif. Besoin d’un rappel ? Clique sur *Règles du jeu*.";
+  "Tenez 10 jours, le temps que les secours repèrent l’épave, ou évadez-vous plus tôt en achevant un Radeau. Chaque membre vote une fois par jour ; si une ressource tombe à 0 trois jours de suite, c’est le naufrage définitif. Besoin d’un rappel ? Clique sur *Règles du jeu*.";
 
 // ── Texte narratif ────────────────────────────────────────────────
 // Les variantes de phrases vivent dans data/robinson/narratifs.json (pas
@@ -263,7 +264,7 @@ function buildOutcomeEmbed(outcome, config, manches = [], currentManche = null) 
   return {
     title: "💀 Naufrage définitif…",
     description: [
-      "Une ressource critique est tombée à 0 deux jours de suite — l’île a eu raison du campement. L’aventure s’arrête ici.",
+      "Une ressource critique est tombée à 0 trois jours de suite — l’île a eu raison du campement. L’aventure s’arrête ici.",
       ...manchesLines,
     ].join("\n"),
     color: 0x2c3e50,
@@ -415,6 +416,26 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
     stocksPourEmbed = dryRun
       ? { ...closure.stocksApres, poisson: Math.max(0, closure.stocksApres.poisson - perte) }
       : await spoilPoisson(perte);
+  }
+  // "Une incroyable découverte !" (Jour 5) — inversé en petit bonus inconditionnel,
+  // même mécanique que Colis Royal (dons une seule fois, jamais liés à un vote).
+  if (event?.id === "evenement") {
+    const bonus = event.bonus_ressources ?? 3;
+    stocksPourEmbed = dryRun
+      ? {
+          poisson: stocksPourEmbed.poisson + bonus,
+          eau: stocksPourEmbed.eau + bonus,
+          bois: stocksPourEmbed.bois + bonus,
+        }
+      : await grantEqualResources(bonus);
+  }
+  // Indigestion Royale (Jour 9) — inversée en petit bonus d'Eau (au lieu du
+  // plafond pénalisant qui s'appliquait auparavant sur l'action Eau).
+  if (event?.id === "indigestion_royale") {
+    const bonus = event.bonus_eau ?? 2;
+    stocksPourEmbed = dryRun
+      ? { ...stocksPourEmbed, eau: stocksPourEmbed.eau + bonus }
+      : await grantResource("eau", bonus);
   }
 
   const embed = await buildRobinsonEmbed(jourSuivant, stocksPourEmbed, radeauPointsPourEmbed, config, event, false, closure.voters);
@@ -776,7 +797,7 @@ function buildReglesEmbed(config) {
       "",
       "**Consommation automatique chaque nuit** (V = votants uniques du jour) : −V Nourriture, −V Eau, −⌈V/2⌉ Bois.",
       "",
-      "**Défaite :** une ressource à 0 pendant 2 jours consécutifs met fin à l’aventure.",
+      "**Défaite :** une ressource à 0 pendant 3 jours consécutifs met fin à l’aventure.",
       "",
       "📜 **Journal de Bord** — consulte les besoins du jour et l’historique des jours précédents. Simple lecture, ça ne consomme jamais ton vote : clique dessus autant de fois que tu veux.",
       "",
