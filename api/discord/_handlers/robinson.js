@@ -141,7 +141,13 @@ async function buildRobinsonEmbed(jour, stocks, radeauPoints, config, event, est
   const narrative = await buildNarrative(jour, stocks, voters, estPremierJour);
   const lines = [narrative, ""];
   if (event) {
-    lines.push(`**${event.emoji} Événement du jour : ${event.nom}**`, event.description, "");
+    lines.push(`**${event.emoji} Événement du jour : ${event.nom}**`, event.description);
+    // Perte réelle de Poissons Pourris, calculée dynamiquement selon V — le
+    // texte statique de robinson.json ne peut pas l'inclure d'avance.
+    if (event.perte != null) {
+      lines.push(`🐟 -${event.perte} Poisson perdu${event.perte > 1 ? "s" : ""} cette nuit.`);
+    }
+    lines.push("");
   }
   lines.push(
     formatStockLine("🐟", "Nourriture", stocks.poisson),
@@ -394,6 +400,7 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
   const event = eventForDay(jourSuivant, config.evenements, closure.V);
   let stocksPourEmbed = closure.stocksApres;
   let radeauPointsPourEmbed = closure.radeauPoints;
+  let eventPourEmbed = event;
 
   if (event?.id === "epave") {
     const bonus = computeEpaveBonus(event, closure.V);
@@ -416,6 +423,7 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
     stocksPourEmbed = dryRun
       ? { ...closure.stocksApres, poisson: Math.max(0, closure.stocksApres.poisson - perte) }
       : await spoilPoisson(perte);
+    eventPourEmbed = { ...event, perte };
   }
   // "Une incroyable découverte !" (Jour 5) — inversé en petit bonus inconditionnel,
   // même mécanique que Colis Royal (dons une seule fois, jamais liés à un vote).
@@ -438,19 +446,19 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
       : await grantResource("eau", bonus);
   }
 
-  const embed = await buildRobinsonEmbed(jourSuivant, stocksPourEmbed, radeauPointsPourEmbed, config, event, false, closure.voters);
+  const embed = await buildRobinsonEmbed(jourSuivant, stocksPourEmbed, radeauPointsPourEmbed, config, eventPourEmbed, false, closure.voters);
   const components = buildRobinsonComponents(jourSuivant, config, {}, event);
 
   if (dryRun) {
     // stocks/radeauPoints exposés en plus de l'embed pour scripts/robinsonStatus.js
     // (projection numérique du Jour suivant), qui a besoin des valeurs brutes
     // plutôt que de reparser le texte de l'embed.
-    return { dryRun: true, jour: jourSuivant, embed, components, event, stocks: stocksPourEmbed, radeauPoints: radeauPointsPourEmbed };
+    return { dryRun: true, jour: jourSuivant, embed, components, event: eventPourEmbed, stocks: stocksPourEmbed, radeauPoints: radeauPointsPourEmbed };
   }
 
   return publishAndWriteState(channelId, state, {
     jour: jourSuivant,
-    event,
+    event: eventPourEmbed,
     zeroStreaks: closure.zeroStreaksApres,
     dayVoters: closure.voters,
     embed,

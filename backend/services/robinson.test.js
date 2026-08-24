@@ -168,6 +168,10 @@ async function main() {
   assert.strictEqual(computePoissonsPourrisLoss(3), 7);
   assert.strictEqual(computePoissonsPourrisLoss(2), 6);
   assert.strictEqual(computePoissonsPourrisLoss(1), 5);
+  // Plancher à 1 pour V=10 à 13 (atteignable depuis que le seuil de
+  // désactivation est passé à 14) — sans lui, 10-V deviendrait négatif.
+  assert.strictEqual(computePoissonsPourrisLoss(10), 1);
+  assert.strictEqual(computePoissonsPourrisLoss(13), 1);
 
   // ── computeEpaveBonus — dégressif selon les votants de la veille, plancher points_min ──
   const epave = { points_base: 26, points_min: 10 };

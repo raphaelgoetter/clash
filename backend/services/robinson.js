@@ -426,8 +426,12 @@ export function computeEpaveBonus(event, previousDayVoters) {
 // la mobilisation baisse jusqu'à un certain point, mais un groupe
 // vraiment minuscule (V=1 ou 2) a de toute façon un stock trop faible pour
 // justifier une perte aussi lourde que celle d'un groupe de 3-4.
+// Plancher à 1 (`Math.max`) : `10 - V` devient négatif au-delà de V=10, or le
+// seuil de désactivation (`condition_votants_veille_max`) a été relevé à 14
+// le 24/08 — sans ce plancher, un groupe de 10-13 votants verrait une perte
+// négative (donc un gain de Poisson), contraire à l'intention de l'événement.
 export function computePoissonsPourrisLoss(previousDayVoters) {
-  return Math.min(10 - previousDayVoters, 4 + previousDayVoters);
+  return Math.max(1, Math.min(10 - previousDayVoters, 4 + previousDayVoters));
 }
 
 // Score comparatif d'une manche, pour classer les parties entre elles (le

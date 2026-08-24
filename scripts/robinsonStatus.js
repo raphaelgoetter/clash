@@ -78,7 +78,9 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
     console.log(`→ Fin de partie : ${outcomeLabel(projection.outcome)}`);
   } else {
     const sectionsProjetees = computeRaftSections(projection.radeauPoints, config.points_par_section);
-    console.log(`→ Jour ${projection.jour}/${config.duree_jours}${projection.event ? ` — événement : ${projection.event.nom}` : ""} :`);
+    const detailEvenement =
+      projection.event?.perte != null ? ` (-${projection.event.perte} Poisson)` : "";
+    console.log(`→ Jour ${projection.jour}/${config.duree_jours}${projection.event ? ` — événement : ${projection.event.nom}${detailEvenement}` : ""} :`);
     console.log(`  🐟 Nourriture : ${projection.stocks.poisson}`);
     console.log(`  💧 Eau        : ${projection.stocks.eau}`);
     console.log(`  🪵 Bois       : ${projection.stocks.bois}`);
