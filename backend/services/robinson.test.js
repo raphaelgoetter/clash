@@ -180,20 +180,26 @@ async function main() {
   assert.strictEqual(eventForDay(2, EVENEMENTS, 15), null); // au-dessus -> pas déclenché
   assert.strictEqual(eventForDay(2, EVENEMENTS)?.id, "poissons_pourris"); // previousDayVoters par défaut = 0 -> sous le seuil -> déclenché
 
-  // ── computePoissonsPourrisLoss — pic à V=3 (perte 7), symétrique des deux côtés ──
-  assert.strictEqual(computePoissonsPourrisLoss(9), 1);
-  assert.strictEqual(computePoissonsPourrisLoss(8), 2);
-  assert.strictEqual(computePoissonsPourrisLoss(7), 3);
-  assert.strictEqual(computePoissonsPourrisLoss(6), 4);
-  assert.strictEqual(computePoissonsPourrisLoss(5), 5);
-  assert.strictEqual(computePoissonsPourrisLoss(4), 6);
-  assert.strictEqual(computePoissonsPourrisLoss(3), 7);
-  assert.strictEqual(computePoissonsPourrisLoss(2), 6);
-  assert.strictEqual(computePoissonsPourrisLoss(1), 5);
-  // Plancher à 1 pour V=10 à 13 (atteignable depuis que le seuil de
-  // désactivation est passé à 14) — sans lui, 10-V deviendrait négatif.
-  assert.strictEqual(computePoissonsPourrisLoss(10), 1);
-  assert.strictEqual(computePoissonsPourrisLoss(13), 1);
+  // ── computePoissonsPourrisLoss — la courbe est calée sur `threshold`, jamais figée ──
+  // threshold=10 (valeur historique) : pic à V=3 (perte 7), symétrique des deux côtés.
+  assert.strictEqual(computePoissonsPourrisLoss(9, 10), 1);
+  assert.strictEqual(computePoissonsPourrisLoss(8, 10), 2);
+  assert.strictEqual(computePoissonsPourrisLoss(7, 10), 3);
+  assert.strictEqual(computePoissonsPourrisLoss(6, 10), 4);
+  assert.strictEqual(computePoissonsPourrisLoss(5, 10), 5);
+  assert.strictEqual(computePoissonsPourrisLoss(4, 10), 6);
+  assert.strictEqual(computePoissonsPourrisLoss(3, 10), 7);
+  assert.strictEqual(computePoissonsPourrisLoss(2, 10), 6);
+  assert.strictEqual(computePoissonsPourrisLoss(1, 10), 5);
+  // Plancher à 1 au-delà du croisement (10-V devient négatif) — sans lui,
+  // l'événement inverserait en gain de Poisson.
+  assert.strictEqual(computePoissonsPourrisLoss(10, 10), 1);
+  assert.strictEqual(computePoissonsPourrisLoss(13, 10), 1);
+  // threshold=14 (config actuelle, relevée le 24/08) : pic recalé à V=5 (perte 9),
+  // atterrissage en douceur (plancher 1) juste avant 14 au lieu de 9.
+  assert.strictEqual(computePoissonsPourrisLoss(5, 14), 9);
+  assert.strictEqual(computePoissonsPourrisLoss(9, 14), 5);
+  assert.strictEqual(computePoissonsPourrisLoss(13, 14), 1);
 
   // ── computeEpaveBonus — dégressif selon les votants de la veille, plancher points_min ──
   const epave = { points_base: 26, points_min: 10 };

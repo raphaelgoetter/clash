@@ -437,7 +437,7 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
       : await grantEqualResources(bonus);
   }
   if (event?.id === "poissons_pourris") {
-    const perte = computePoissonsPourrisLoss(closure.V);
+    const perte = computePoissonsPourrisLoss(closure.V, event.condition_votants_veille_max);
     stocksPourEmbed = dryRun
       ? { ...closure.stocksApres, poisson: Math.max(0, closure.stocksApres.poisson - perte) }
       : await spoilPoisson(perte);
