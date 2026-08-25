@@ -419,13 +419,15 @@ async function sendGoblinHuntersDM(discordId, embed) {
   }
 }
 
-async function sendRoleDM(joueur, config) {
+async function sendRoleDM(joueur, config, joueurs) {
   const camp = config.camps[joueur.camp];
   const roleLabel = joueur.role ? config.roles[joueur.role].label : null;
+  const gobelinsLine = otherGobelinsLine(joueur, joueurs);
   const embed = {
     title: "👺 Goblin Hunters — ton rôle secret",
     description: [
       `Tu es un(e) ${camp.emoji} **${camp.label.slice(0, -1)}**${roleLabel ? ` (rôle spécial : **${roleLabel}**)` : ""}.`,
+      ...(gobelinsLine ? ["", gobelinsLine] : []),
       "",
       "🤫 Garde ce rôle secret — le jeu n'a d'intérêt que si tu sais bluffer !",
     ].join("\n"),
@@ -597,7 +599,7 @@ export async function postGoblinHunters(
 
     const { joueurs } = await launchGame(channelId, config);
     for (const j of joueurs) {
-      await sendRoleDM(j, config);
+      await sendRoleDM(j, config, joueurs);
     }
     const embed = await buildJourEmbed(1, joueurs, config, null);
     const components = buildJourComponents(1, config);
@@ -1104,6 +1106,19 @@ export async function handleTargetSelect(
 // seule trace persistante des rencontres passées, le plateau public
 // n'affichant que les positions COURANTES.
 
+// Les Gobelins se connaissent entre eux dès le lancement (décision de
+// design actée — voir mémoire projet) : sans ça, leur seul avantage
+// structurel (savoir qui est dans leur camp) n'existe que sur le papier et
+// jamais en jeu. Liste les autres membres du camp (vivants ET éliminés, le
+// roster étant figé) — `null` si le joueur n'est pas un Gobelin.
+function otherGobelinsLine(joueur, joueurs) {
+  if (joueur.camp !== "gobelin") return null;
+  const autres = joueurs.filter((j) => j.camp === "gobelin" && j.discordId !== joueur.discordId);
+  if (!autres.length) return "Tu es le seul Gobelin restant.";
+  const noms = autres.map((j) => (j.alive ? `**${j.username}**` : `**${j.username}** (☠️ éliminé)`));
+  return `Les autres Gobelins sont : ${noms.join(", ")}.`;
+}
+
 function formatIndiceLine(entry, config) {
   const lieu = config.lieux[entry.lieu];
   if (entry.type === "enquete") {
@@ -1147,9 +1162,12 @@ export async function handleJournal(webhookUrl, discordId) {
       ? `**${joueur.pv}/${joueur.pvMax} PV**`
       : `☠️ éliminé(e) (jour ${joueur.campReveleAt})`;
 
+    const gobelinsLine = otherGobelinsLine(joueur, state.joueurs);
+
     const lines = [
       `${camp.emoji} **Camp** : ${camp.label.slice(0, -1)}`,
       `**Rôle spécial** : ${roleLabel}`,
+      ...(gobelinsLine ? [gobelinsLine] : []),
       `**Dernière position connue** : ${lieu.emoji} ${lieu.label}`,
       `**État** : ${statut}`,
     ];
