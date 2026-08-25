@@ -16,8 +16,9 @@ import {
   unregisterPlayer,
   countInscriptions,
   recordAction,
-  recordVoteChateau,
+  readPlayerAction,
   isLieuRepeatAllowed,
+  isVoteLocked,
   previewCloture,
   closeDayAndAdvance,
   launchGame,
@@ -25,7 +26,7 @@ import {
   computeMinorityCount,
   assignCampsAndRoles,
   buildInitialRoster,
-  listHistorique,
+  readPlayerIndices,
   archiveManche,
   listManches,
 } from "../../../backend/services/goblinhunters.js";
@@ -255,7 +256,7 @@ function buildReglesEmbed(config) {
   const lines = [
     "Deux camps s'affrontent en secret : les **Chasseurs** (majorité) et les **Gobelins infiltrés** (minorité). Chaque jour, choisis un lieu — il détermine ton action.",
     "",
-    `${config.lieux.chateau.emoji} **${config.lieux.chateau.label}** — vote d'accusation public. En cas d'égalité, personne n'est éliminé.`,
+    `${config.lieux.chateau.emoji} **${config.lieux.chateau.label}** — vote d'accusation public. **Définitif dès validation, impossible de changer d'avis ensuite.** En cas d'égalité, personne n'est éliminé.`,
     `${config.lieux.camp_entrainement.emoji} **${config.lieux.camp_entrainement.label}** — attaque (1 dégât, 2 pour le Bûcheron). Cible restreinte aux joueurs vus ici la veille.`,
     `${config.lieux.tour_de_guet.emoji} **${config.lieux.tour_de_guet.label}** — enquête sur le camp d'un joueur vu ici la veille.`,
     `${config.lieux.taverne.emoji} **${config.lieux.taverne.label}** — protection tant que moins de ${config.taverne_seuil_protection} joueurs s'y trouvent le même jour.`,
@@ -339,11 +340,15 @@ export async function postGoblinHunters(channelId, { dryRun = false, noPing = fa
     return { skipped: true };
   }
 
-  // 1) Aucun état -> ouverture de la fenêtre d'inscription
+  // 1) Aucun état -> ouverture de la fenêtre d'inscription. Interroge le
+  // vrai compteur (pas 0 en dur) : en production personne n'est encore
+  // inscrit à ce stade, mais le flux de test recommandé seed le faux pool
+  // AVANT d'ouvrir (voir goblinhunters:seed-test-pool, CONTRIBUTING.md).
   if (!state) {
     const closingAt = addDays(new Date(), config.fenetre_inscription_jours).toISOString();
+    const initialCount = await countInscriptions();
     const embed = buildAnnonceInscriptionEmbed(config, closingAt);
-    const components = buildInscriptionComponents(0);
+    const components = buildInscriptionComponents(initialCount);
 
     if (dryRun) {
       const pingRoleId = !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
@@ -597,6 +602,15 @@ export async function handleLieuButton(webhookUrl, jour, lieu, slot, discordId, 
       });
       return;
     }
+    const existingAction = await readPlayerAction(jour, discordId);
+    if (isVoteLocked(existingAction, slot)) {
+      await patchOriginal(webhookUrl, {
+        content: "🔒 Tu as déjà voté aujourd'hui — ton accusation est définitive, impossible d'en changer ou de choisir un autre lieu.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
 
     const lieuAction = config.lieux[lieu]?.action;
 
@@ -676,17 +690,31 @@ export async function handleTargetSelect(webhookUrl, jour, lieu, slot, discordId
     const config = await loadGoblinHuntersConfig();
     const cibleId = selectedValue === "__none__" ? null : selectedValue;
 
-    if (lieu === "chateau") {
-      await recordVoteChateau(jour, discordId, cibleId, username);
-    } else {
-      await recordAction(jour, discordId, slot, { lieu, cibleId }, username);
+    // Défense en profondeur : réévalue le verrou de vote ici aussi (en plus
+    // du contrôle déjà fait dans handleLieuButton) au cas où le select
+    // menu éphémère aurait été ouvert avant un vote castée entre-temps.
+    const existingAction = await readPlayerAction(jour, discordId);
+    if (isVoteLocked(existingAction, slot)) {
+      await patchOriginal(webhookUrl, {
+        content: "🔒 Tu as déjà voté aujourd'hui — ton accusation est définitive, impossible d'en changer.",
+        embeds: [],
+        components: [],
+      });
+      return;
     }
+
+    // Le vote du Château passe par le même recordAction() que tout autre
+    // lieu (pas de stockage séparé) — sinon voter n'écrase jamais une
+    // action précédente et inversement, permettant de cumuler les deux le
+    // même jour (bug corrigé, voir computeVoteTally dans goblinhunters.js).
+    await recordAction(jour, discordId, slot, { lieu, cibleId }, username);
 
     const joueur = state.joueurs.find((j) => j.discordId === discordId);
     const followup = joueur?.role === "eclaireur" && slot === "primary" ? buildEclaireurSecondButtonRow(jour) : [];
     const cibleUsername = state.joueurs.find((j) => j.discordId === cibleId)?.username || "?";
+    const modifiabilite = lieu === "chateau" ? "**Vote définitif, non modifiable.**" : "Modifiable jusqu'à la clôture.";
     await patchOriginal(webhookUrl, {
-      content: `${config.lieux[lieu].emoji} Action enregistrée — cible : **${cibleUsername}**. Modifiable jusqu'à la clôture.`,
+      content: `${config.lieux[lieu].emoji} Action enregistrée — cible : **${cibleUsername}**. ${modifiabilite}`,
       embeds: [],
       components: followup,
     });
@@ -695,24 +723,55 @@ export async function handleTargetSelect(webhookUrl, jour, lieu, slot, discordId
   }
 }
 
-// ── Bouton [📜 Journal] — lecture seule, hors-vote ─────────────────
+// ── Bouton [📜 Journal] — ÉPHÉMÈRE ET PERSONNEL, jamais public ─────
+// Contrairement aux autres jeux (Journal = historique public), ici le
+// Journal affiche exclusivement des infos privées au joueur qui clique :
+// son rôle/camp secrets, sa dernière position connue, ses PV, et son carnet
+// d'indices personnel cumulé sur toute la partie (computeIndicesForDay) —
+// seule trace persistante des rencontres passées, le plateau public
+// n'affichant que les positions COURANTES.
 
-function formatHistoriqueLine(entry) {
-  const victoire = entry.victory ? ` — 🏆 ${entry.victory}` : "";
-  return `Jour ${entry.jour} : ${entry.deathIdCombat ? "⚔️ mort au combat" : ""}${entry.eliminationsParVote ? " ⚖️ mort par vote" : ""}${!entry.deathIdCombat && !entry.eliminationsParVote ? "🕊️ aucune mort" : ""}${victoire}`;
+function formatIndiceLine(entry, config) {
+  if (entry.campReporte) {
+    const camp = config.camps[entry.campReporte];
+    return `Jour ${entry.jour} — **${entry.cibleUsername}** = ${camp.emoji} ${camp.label.slice(0, -1)}`;
+  }
+  const lieu = config.lieux[entry.lieu];
+  return `Jour ${entry.jour} — **${entry.cibleUsername}** = vu(e) à ${lieu.emoji} ${lieu.label}`;
 }
 
-export async function handleJournal(webhookUrl) {
+export async function handleJournal(webhookUrl, discordId) {
   try {
     const state = await readState();
     if (!state || state.phase === "inscription") {
       await patchOriginal(webhookUrl, { content: "Aucune partie Goblin Hunters en cours pour le moment.", embeds: [], components: [] });
       return;
     }
-    const { entries } = await listHistorique({ limit: 10 });
-    const lines = [`Jour actuel : **${state.jour}**`];
-    if (entries.length) lines.push("", "**Jours précédents :**", ...entries.map(formatHistoriqueLine));
-    const embed = { title: "📜 Journal — Goblin Hunters", description: lines.join("\n"), color: GOBLINHUNTERS_COLOR };
+    const joueur = state.joueurs.find((j) => j.discordId === discordId);
+    if (!joueur) {
+      await patchOriginal(webhookUrl, { content: "Tu ne participes pas à cette partie.", embeds: [], components: [] });
+      return;
+    }
+
+    const config = await loadGoblinHuntersConfig();
+    const camp = config.camps[joueur.camp];
+    const roleLabel = joueur.role ? config.roles[joueur.role].label : "aucun (rôle de base)";
+    const lieu = config.lieux[joueur.position];
+    const statut = joueur.alive ? `**${joueur.pv}/${joueur.pvMax} PV**` : `☠️ éliminé(e) (jour ${joueur.campReveleAt})`;
+
+    const lines = [
+      `${camp.emoji} **Camp** : ${camp.label.slice(0, -1)}`,
+      `**Rôle spécial** : ${roleLabel}`,
+      `**Dernière position connue** : ${lieu.emoji} ${lieu.label}`,
+      `**État** : ${statut}`,
+      "",
+      "**🔍 Indices récoltés**",
+    ];
+
+    const indices = await readPlayerIndices(discordId);
+    lines.push(...(indices.length ? indices.map((e) => formatIndiceLine(e, config)) : ["Aucun pour l'instant."]));
+
+    const embed = { title: "📜 Ton Journal — Goblin Hunters", description: lines.join("\n"), color: GOBLINHUNTERS_COLOR };
     await patchOriginal(webhookUrl, { embeds: [embed], components: [] });
   } catch (err) {
     console.error("[GoblinHunters] Échec Journal:", err.message);

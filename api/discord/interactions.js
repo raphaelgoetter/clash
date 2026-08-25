@@ -9268,9 +9268,10 @@ export default async function handler(req, res) {
     return;
   }
   if (body.type === 3 && body.data?.custom_id === "goblinhunters_journal") {
+    const discordId = body.member?.user?.id;
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleGoblinHuntersJournal(webhookUrl));
+    runBackground(() => handleGoblinHuntersJournal(webhookUrl, discordId));
     return;
   }
 

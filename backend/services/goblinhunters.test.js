@@ -14,6 +14,8 @@ import {
   checkVictory,
   computeCloture,
   isLieuRepeatAllowed,
+  isVoteLocked,
+  computeIndicesForDay,
 } from "./goblinhunters.js";
 
 const CONFIG = {
@@ -67,10 +69,25 @@ async function main() {
   }
 
   // ── computeVoteTally / resolveVoteElimination (égalité -> personne) ──
-  assert.deepStrictEqual(computeVoteTally({ a: "x", b: "x", c: "y" }), { x: 2, y: 1 });
+  // Le vote est dérivé de actionsRaw (lieu:"chateau"), pas d'un stockage
+  // séparé (bug corrigé : cumuler vote + action le même jour était possible).
+  const actionsVote = {
+    a: { primary: { lieu: "chateau", cibleId: "x" } },
+    b: { primary: { lieu: "chateau", cibleId: "x" } },
+    c: { primary: { lieu: "chateau", cibleId: "y" } },
+    d: { primary: { lieu: "camp_entrainement", cibleId: "z" } }, // pas un vote -> ignoré
+  };
+  assert.deepStrictEqual(computeVoteTally(actionsVote), { x: 2, y: 1 });
   assert.strictEqual(resolveVoteElimination({ x: 2, y: 1 }), "x");
   assert.strictEqual(resolveVoteElimination({ x: 2, y: 2 }), null); // égalité -> personne éliminé
   assert.strictEqual(resolveVoteElimination({}), null);
+
+  // ── Un joueur ne peut pas cumuler vote + autre action le même jour : le
+  // dernier lieu choisi écrase le précédent dans le même slot ──
+  {
+    const actionsExclusives = { a: { primary: { lieu: "taverne", cibleId: null } } }; // dernier choix : Taverne
+    assert.deepStrictEqual(computeVoteTally(actionsExclusives), {}); // aucun vote actif, malgré un vote antérieur possible
+  }
 
   // ── Taverne : protection sous le seuil, nulle à/au-dessus ──
   const actionsTaverne = {
@@ -136,6 +153,42 @@ async function main() {
     assert.strictEqual(investigation2.campReporte, "gobelin");
   }
 
+  // ── computeIndicesForDay : carnet privé (enquête = camp, combat = lieu seul) ──
+  {
+    const joueursAvant = [
+      joueur("enqueteur"),
+      joueur("attaquant", { role: "bucheron" }),
+      joueur("cible_enquete", { camp: "gobelin", role: "infiltre", position: "tour_de_guet" }),
+      joueur("cible_combat", { position: "camp_entrainement" }),
+    ];
+    const actionsRaw = {
+      enqueteur: { primary: { lieu: "tour_de_guet", cibleId: "cible_enquete" } },
+      attaquant: { primary: { lieu: "camp_entrainement", cibleId: "cible_combat" } },
+    };
+    const investigations = computeInvestigations(actionsRaw, joueursAvant);
+    const indices = computeIndicesForDay(4, actionsRaw, investigations, joueursAvant, CONFIG);
+
+    assert.strictEqual(indices.enqueteur.length, 1);
+    assert.deepStrictEqual(indices.enqueteur[0], {
+      jour: 4,
+      cibleId: "cible_enquete",
+      cibleUsername: "cible_enquete",
+      lieu: "tour_de_guet",
+      campReporte: "chasseur", // Infiltré -> faux positif
+    });
+
+    assert.strictEqual(indices.attaquant.length, 1);
+    assert.deepStrictEqual(indices.attaquant[0], {
+      jour: 4,
+      cibleId: "cible_combat",
+      cibleUsername: "cible_combat",
+      lieu: "camp_entrainement",
+      campReporte: null, // le combat ne révèle jamais de camp
+    });
+
+    assert.strictEqual(indices.cible_enquete, undefined); // aucune action -> aucun indice généré pour lui
+  }
+
   // ── computeNewPositions : pass automatique -> Château ──
   {
     const joueursAvant = [joueur("actif", { position: "taverne" }), joueur("passif", { position: "camp_entrainement" })];
@@ -169,13 +222,24 @@ async function main() {
   assert.strictEqual(isLieuRepeatAllowed("chateau", "taverne", 2), true); // lieu différent -> autorisé
   assert.strictEqual(isLieuRepeatAllowed("camp_entrainement", "camp_entrainement", 5), false);
 
+  // ── isVoteLocked : un vote castée au Château devient définitif ──
+  assert.strictEqual(isVoteLocked(undefined, "primary"), false); // aucune action ce jour -> pas de verrou
+  assert.strictEqual(isVoteLocked({ primary: { lieu: "chateau", cibleId: "x" } }, "primary"), true);
+  assert.strictEqual(isVoteLocked({ primary: { lieu: "chateau", cibleId: null } }, "primary"), false); // pas de cible -> pas encore un vote réel
+  assert.strictEqual(isVoteLocked({ primary: { lieu: "taverne" } }, "primary"), false); // autre lieu -> jamais verrouillé
+  // Le verrou est spécifique au slot : le primary verrouillé n'empêche pas
+  // l'Éclaireur de soumettre un secondary différent.
+  assert.strictEqual(isVoteLocked({ primary: { lieu: "chateau", cibleId: "x" } }, "secondary"), false);
+
   // ── computeCloture : jour 1, aucune élimination possible (vote/combat no-op) ──
   {
     const joueursAvant = [joueur("a", { camp: "gobelin" }), joueur("b")];
     const result = computeCloture({
       jour: 1,
-      actionsRaw: {},
-      votesRaw: { a: "b", b: "a" }, // voté quand même, mais jour 1 -> ignoré
+      actionsRaw: {
+        a: { primary: { lieu: "chateau", cibleId: "b" } }, // voté quand même, mais jour 1 -> ignoré
+        b: { primary: { lieu: "chateau", cibleId: "a" } },
+      },
       joueursAvant,
       config: CONFIG,
     });

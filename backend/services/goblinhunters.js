@@ -96,6 +96,7 @@ async function scanDelete(pattern) {
 const STATE_KEY = "goblinhunters:state";
 const INSCRIPTIONS_KEY = "goblinhunters:inscriptions";
 const HISTORIQUE_KEY = "goblinhunters:historique";
+const INDICES_KEY = "goblinhunters:indices";
 const MANCHES_KEY = "goblinhunters:manches";
 const MANCHE_SEQ_KEY = "goblinhunters:manche_seq";
 
@@ -104,12 +105,6 @@ function actionsKey(jour) {
 }
 function actionUsernamesKey(jour) {
   return `goblinhunters:action_usernames:${jour}`;
-}
-function votesKey(jour) {
-  return `goblinhunters:votes:${jour}`;
-}
-function voteUsernamesKey(jour) {
-  return `goblinhunters:vote_usernames:${jour}`;
 }
 
 // ── Lecture de la config (statique, jamais mutée) ─────────────────
@@ -238,9 +233,12 @@ export function buildInitialRoster(inscriptions, assignments, combatConfig) {
 
 // ── Actions du jour (lieu + cible éventuelle) ───────────────────────
 // HSET écrasable (comme les votes de Bossraid) : modifiable jusqu'à la
-// clôture, dernier clic gagne. `slot` = "primary" ou "secondary" (2e action
-// de l'Éclaireur uniquement) — le contrôle du rôle autorisant "secondary"
-// se fait côté handler Discord (accès à state.joueurs), pas ici.
+// clôture, dernier clic gagne — SAUF le vote du Château, rendu définitif dès
+// validation par un garde côté handler (isVoteLocked/handleLieuButton), pas
+// ici : cette fonction reste volontairement "bête", elle écrit toujours ce
+// qu'on lui donne. `slot` = "primary" ou "secondary" (2e action de
+// l'Éclaireur uniquement) — le contrôle du rôle autorisant "secondary" se
+// fait aussi côté handler Discord (accès à state.joueurs), pas ici.
 
 export async function recordAction(jour, discordId, slot, { lieu, cibleId = null }, username) {
   const existingRaw = await getRedis().hget(actionsKey(jour), discordId);
@@ -255,6 +253,27 @@ export async function recordAction(jour, discordId, slot, { lieu, cibleId = null
 
 export async function readActions(jour) {
   return hgetallJson(actionsKey(jour));
+}
+
+// Lecture ciblée d'un seul joueur (évite de récupérer tout le hash du jour
+// juste pour vérifier son propre choix courant, ex. dans isVoteLocked côté
+// handler).
+export async function readPlayerAction(jour, discordId) {
+  return fromJson(await getRedis().hget(actionsKey(jour), discordId));
+}
+
+// Vote définitif : une fois un vote castée au Château (slot donné), plus
+// aucun changement possible sur ce slot pour le reste du jour — ni vers une
+// autre cible, ni vers un autre lieu. Décidé avec l'utilisateur : contraste
+// volontaire avec les 4 autres lieux qui restent modifiables jusqu'à la
+// clôture (dernier clic gagne) — voter est un engagement public, pas un
+// brouillon qu'on peut retirer sans conséquence. Vérifié au clic dans le
+// handler (handleLieuButton/handleTargetSelect), même esprit que
+// isLieuRepeatAllowed — recordAction() lui-même reste "bête" (écrit toujours
+// ce qu'on lui donne), la garde vit entièrement côté appelant.
+export function isVoteLocked(existingAction, slot) {
+  const current = existingAction?.[slot];
+  return Boolean(current?.lieu === "chateau" && current.cibleId);
 }
 
 // Anti-camping : impossible de choisir le même lieu que celui occupé la
@@ -274,32 +293,29 @@ async function clearActions(jour) {
   await getRedis().del(actionsKey(jour), actionUsernamesKey(jour));
 }
 
-// ── Vote d'accusation (Château) ─────────────────────────────────────
-// HSET écrasable (PAS HSETNX) : contrairement au vote de Robinson (qui
-// consomme une ressource partagée limitée et doit donc être verrouillé),
-// l'accusation ici est juste l'action du jour comme les autres lieux —
-// modifiable jusqu'à la clôture, même sémantique que le vote de Bossraid.
-
-export async function recordVoteChateau(jour, discordId, cibleId, username) {
-  await getRedis().hset(votesKey(jour), { [discordId]: cibleId });
-  if (username) {
-    await getRedis().hset(voteUsernamesKey(jour), { [discordId]: username });
-  }
-}
-
-export async function tallyVotesChateau(jour) {
-  return hgetallRaw(votesKey(jour));
-}
-
-async function clearVotesChateau(jour) {
-  await getRedis().del(votesKey(jour), voteUsernamesKey(jour));
-}
-
 // ── Fonctions pures de résolution (aucun I/O, testées unitairement) ──
 
-export function computeVoteTally(votesRaw) {
+// Le vote du Château N'A PAS de stockage Redis séparé — voter est juste
+// l'action du jour comme n'importe quel autre lieu, enregistrée dans le
+// même hash `goblinhunters:actions:<jour>` via recordAction(). ⚠️ Correction
+// d'un bug réel : une première version stockait le vote dans une clé
+// distincte (`goblinhunters:votes:<jour>`), ce qui permettait de cumuler un
+// vote ET une action normale le même jour (les deux stockages ne
+// s'écrasaient jamais l'un l'autre) — en violation directe de la règle 1
+// action/jour. En dérivant le vote de la même source que les autres
+// actions, choisir un autre lieu écrase bien le vote de la veille et
+// inversement. Primary regardé en priorité, secondary seulement pour
+// l'Éclaireur si primary n'est pas un vote.
+function extractVote(action) {
+  if (action?.primary?.lieu === "chateau" && action.primary.cibleId) return action.primary.cibleId;
+  if (action?.secondary?.lieu === "chateau" && action.secondary.cibleId) return action.secondary.cibleId;
+  return null;
+}
+
+export function computeVoteTally(actionsRaw) {
   const counts = {};
-  for (const cibleId of Object.values(votesRaw)) {
+  for (const action of Object.values(actionsRaw)) {
+    const cibleId = extractVote(action);
     if (!cibleId) continue;
     counts[cibleId] = (counts[cibleId] || 0) + 1;
   }
@@ -422,6 +438,43 @@ export function computeInvestigations(actionsRaw, joueursAvant) {
   });
 }
 
+// Indices personnels accumulés par joueur sur toute la partie (carnet privé,
+// affiché uniquement au joueur concerné via le bouton Journal). Le plateau
+// public ne montre que les positions COURANTES (regénéré à chaque clôture,
+// aucun historique) — sans ce carnet, un joueur perdrait toute trace de ses
+// rencontres passées dès le lendemain. Deux sources par jour : les enquêtes
+// (résultat de camp, `campReporte` non nul) et les rencontres de
+// combat/sabotage (lieu seulement, jamais de camp — une attaque ne révèle
+// rien sur le camp de la cible).
+export function computeIndicesForDay(jour, actionsRaw, investigations, joueursAvant, config) {
+  const usernameById = new Map(joueursAvant.map((j) => [j.discordId, j.username]));
+  const indicesByPlayer = {};
+  const push = (discordId, entry) => {
+    (indicesByPlayer[discordId] ??= []).push({ jour, ...entry });
+  };
+
+  for (const inv of investigations) {
+    push(inv.investigatorId, {
+      cibleId: inv.cibleId,
+      cibleUsername: usernameById.get(inv.cibleId) || "?",
+      lieu: "tour_de_guet",
+      campReporte: inv.campReporte,
+    });
+  }
+
+  const attacks = computeAttacksFromActions(actionsRaw, joueursAvant, config);
+  for (const a of attacks) {
+    push(a.attackerId, {
+      cibleId: a.targetId,
+      cibleUsername: usernameById.get(a.targetId) || "?",
+      lieu: a.lieu,
+      campReporte: null,
+    });
+  }
+
+  return indicesByPlayer;
+}
+
 // Nouvelle position affichée pour chaque joueur vivant : le lieu de sa
 // dernière action soumise (secondary si Éclaireur ayant joué 2 fois),
 // retombe au Château par défaut (pass automatique, décidé avec l'utilisateur).
@@ -453,8 +506,9 @@ export function checkVictory(joueursApres, jourCourant, dureeJours) {
 // et attaquants possibles du combat qui suit), puis combat — reproduit le
 // classique enchaînement jour/nuit du genre.
 
-export function computeCloture({ jour, actionsRaw, votesRaw, joueursAvant, config, rng = Math.random }) {
-  const eliminationsParVote = jour > 1 ? resolveVoteElimination(computeVoteTally(votesRaw)) : null;
+export function computeCloture({ jour, actionsRaw, joueursAvant, config, rng = Math.random }) {
+  const voteTally = computeVoteTally(actionsRaw);
+  const eliminationsParVote = jour > 1 ? resolveVoteElimination(voteTally) : null;
 
   const joueursApresVote = joueursAvant.map((j) =>
     j.discordId === eliminationsParVote ? { ...j, alive: false, campReveleAt: jour } : j,
@@ -497,16 +551,29 @@ export function computeCloture({ jour, actionsRaw, votesRaw, joueursAvant, confi
     eliminationsParVote,
     deathIdCombat,
     investigations,
-    voteTally: computeVoteTally(votesRaw),
+    voteTally,
     victory,
   };
+}
+
+// ── Indices personnels (carnet privé, HASH permanent sur toute la manche) ──
+
+export async function appendIndices(indicesByPlayer) {
+  for (const [discordId, entries] of Object.entries(indicesByPlayer)) {
+    const existing = fromJson(await getRedis().hget(INDICES_KEY, discordId)) || [];
+    await getRedis().hset(INDICES_KEY, { [discordId]: toJson([...existing, ...entries]) });
+  }
+}
+
+export async function readPlayerIndices(discordId) {
+  return fromJson(await getRedis().hget(INDICES_KEY, discordId)) || [];
 }
 
 // ── Wrappers I/O — appelés uniquement par postGoblinHunters()/cron ──
 
 async function loadCloture(jour, config) {
-  const [actionsRaw, votesRaw, state] = await Promise.all([readActions(jour), tallyVotesChateau(jour), readState()]);
-  return computeCloture({ jour, actionsRaw, votesRaw, joueursAvant: state.joueurs, config, rng: Math.random });
+  const [actionsRaw, state] = await Promise.all([readActions(jour), readState()]);
+  return computeCloture({ jour, actionsRaw, joueursAvant: state.joueurs, config, rng: Math.random });
 }
 
 // Lecture seule (aucune écriture Redis) — bouton preview + `--dry-run`.
@@ -529,9 +596,16 @@ export async function closeDayAndAdvance(jour, config) {
     resolvedAt: new Date().toISOString(),
   });
 
+  // Indices personnels : recalculés depuis les MÊMES actions/investigations
+  // que la clôture (state.joueurs = joueursAvant, avant écrasement par
+  // result.joueursApres ci-dessous) — jamais depuis result.joueursApres, qui
+  // pourrait déjà refléter une élimination du jour et fausser les pseudos.
+  const actionsRaw = await readActions(jour);
+  const indicesByPlayer = computeIndicesForDay(jour, actionsRaw, result.investigations, state.joueurs, config);
+  await appendIndices(indicesByPlayer);
+
   await writeState({ ...state, jour: jour + 1, joueurs: result.joueursApres });
   await clearActions(jour);
-  await clearVotesChateau(jour);
 
   return result;
 }
@@ -602,9 +676,12 @@ export async function listManches({ limit = 10 } = {}) {
 // ── Remise à zéro ────────────────────────────────────────────────────
 
 export async function resetGoblinHunters({ clearManches = false } = {}) {
-  await getRedis().del(STATE_KEY, INSCRIPTIONS_KEY, HISTORIQUE_KEY);
+  await getRedis().del(STATE_KEY, INSCRIPTIONS_KEY, HISTORIQUE_KEY, INDICES_KEY);
   await scanDelete("goblinhunters:actions:*");
   await scanDelete("goblinhunters:action_usernames:*");
+  // Clés d'une version antérieure du vote Château (stockage séparé, retiré
+  // suite à un bug — voir computeVoteTally) : filet de sécurité pour purger
+  // d'éventuelles clés résiduelles d'avant la correction, plus jamais écrites.
   await scanDelete("goblinhunters:votes:*");
   await scanDelete("goblinhunters:vote_usernames:*");
   if (clearManches) {
