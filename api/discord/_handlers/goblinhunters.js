@@ -17,6 +17,7 @@ import {
   countInscriptions,
   recordAction,
   recordVoteChateau,
+  isLieuRepeatAllowed,
   previewCloture,
   closeDayAndAdvance,
   launchGame,
@@ -262,6 +263,7 @@ function buildReglesEmbed(config) {
     "",
     `Chaque joueur a **${config.combat.pv_base} PV** (le Bûcheron : ${config.roles.bucheron.pv} PV, plus fragile mais plus offensif). Maximum **1 mort par combat et par jour**, tous joueurs confondus.`,
     `Aucune élimination possible le Jour 1 (vote et combat désactivés).`,
+    `🚫 Impossible de rester au même lieu 2 jours de suite (à partir du Jour 2) — il faut bouger.`,
     "",
     "Victoire des Gobelins à la parité, des Chasseurs si tous les Gobelins sont éliminés, sinon des Chasseurs par défaut au dernier jour.",
   ];
@@ -585,6 +587,14 @@ export async function handleLieuButton(webhookUrl, jour, lieu, slot, discordId, 
     }
     if (slot === "secondary" && joueur.role !== "eclaireur") {
       await patchOriginal(webhookUrl, { content: "Seul l'Éclaireur peut soumettre une 2ᵉ action.", embeds: [], components: [] });
+      return;
+    }
+    if (!isLieuRepeatAllowed(joueur.position, lieu, jour)) {
+      await patchOriginal(webhookUrl, {
+        content: `🚫 Tu étais déjà à ${config.lieux[lieu].label} hier — impossible d'y rester 2 jours de suite, choisis un autre lieu.`,
+        embeds: [],
+        components: [],
+      });
       return;
     }
 

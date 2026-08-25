@@ -13,6 +13,7 @@ import {
   computeNewPositions,
   checkVictory,
   computeCloture,
+  isLieuRepeatAllowed,
 } from "./goblinhunters.js";
 
 const CONFIG = {
@@ -161,6 +162,12 @@ async function main() {
     checkVictory([joueur("a", { camp: "gobelin" }), joueur("b", { camp: "chasseur" }), joueur("c", { camp: "chasseur" })], 5, 10),
     null,
   );
+
+  // ── isLieuRepeatAllowed : anti-camping, Jour 1 exclu ──
+  assert.strictEqual(isLieuRepeatAllowed("chateau", "chateau", 1), true); // Jour 1 : spawn initial, jamais bloquant
+  assert.strictEqual(isLieuRepeatAllowed("chateau", "chateau", 2), false); // même lieu que la veille -> refusé
+  assert.strictEqual(isLieuRepeatAllowed("chateau", "taverne", 2), true); // lieu différent -> autorisé
+  assert.strictEqual(isLieuRepeatAllowed("camp_entrainement", "camp_entrainement", 5), false);
 
   // ── computeCloture : jour 1, aucune élimination possible (vote/combat no-op) ──
   {

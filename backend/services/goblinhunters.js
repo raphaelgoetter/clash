@@ -257,6 +257,19 @@ export async function readActions(jour) {
   return hgetallJson(actionsKey(jour));
 }
 
+// Anti-camping : impossible de choisir le même lieu que celui occupé la
+// veille (Jour 1 exclu — la position de spawn initiale au Château ne compte
+// pas comme un choix actif). Décidé pour dynamiser le jeu : sans ça, rester
+// au Château en continu offre une immunité totale et gratuite au combat (le
+// ciblage étant restreint au dernier lieu connu, voir computeAttacksFromActions),
+// contrairement à la Taverne qui au moins plafonne sa protection sous un
+// seuil. Même principe que isChevalierVoteAllowed() dans bossraid.js — un
+// garde-fou vérifié au clic, pas une contrainte de résolution à la clôture.
+export function isLieuRepeatAllowed(previousPosition, lieu, jour) {
+  if (Number(jour) <= 1) return true;
+  return previousPosition !== lieu;
+}
+
 async function clearActions(jour) {
   await getRedis().del(actionsKey(jour), actionUsernamesKey(jour));
 }
