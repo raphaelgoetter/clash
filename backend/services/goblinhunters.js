@@ -322,12 +322,18 @@ export function computeVoteTally(actionsRaw) {
   return counts;
 }
 
-// Égalité entre plusieurs cibles au score maximum -> personne n'est
-// éliminé (décision actée avec l'utilisateur, contrairement au tirage au
-// sort utilisé pour départager une égalité en combat).
-export function resolveVoteElimination(voteTally) {
+// Quorum minimum (2 votants par défaut, config.vote_quorum_min) : sans ça,
+// un seul joueur qui se rend seul au Château peut exécuter n'importe qui
+// unilatéralement (son unique vote est mécaniquement "le score maximum").
+// Bug repéré en revue avec l'utilisateur, jamais volontaire. Égalité entre
+// plusieurs cibles au score maximum -> personne n'est éliminé (décision
+// actée avec l'utilisateur, contrairement au tirage au sort utilisé pour
+// départager une égalité en combat).
+export function resolveVoteElimination(voteTally, quorumMin = 2) {
   const entries = Object.entries(voteTally);
   if (!entries.length) return null;
+  const totalVotes = entries.reduce((sum, [, c]) => sum + c, 0);
+  if (totalVotes < quorumMin) return null;
   const maxCount = Math.max(...entries.map(([, c]) => c));
   const top = entries.filter(([, c]) => c === maxCount);
   return top.length === 1 ? top[0][0] : null;
@@ -358,8 +364,7 @@ export function computeTavernProtection(occupants, seuil) {
 // clôture précédente) — pas de ciblage libre. Le select menu Discord ne
 // propose déjà que ces cibles valides, cette fonction re-filtre quand même
 // par défense (ex. cible éliminée par le vote la même clôture, voir
-// computeCloture). "clairiere_mystique" est traitée comme une variante
-// discrète de combat (voir resolveCombat) : même filtrage de ciblage.
+// computeCloture).
 function resolveEligibleAttacks(actionsRaw, joueursAvant, lieuxCombat) {
   const positionById = new Map(joueursAvant.map((j) => [j.discordId, j.position]));
   const aliveById = new Map(joueursAvant.map((j) => [j.discordId, j.alive]));
@@ -378,23 +383,75 @@ function resolveEligibleAttacks(actionsRaw, joueursAvant, lieuxCombat) {
 }
 
 // Dégâts par attaque : 1 dégât de base, 2 pour le Bûcheron (rôle de
-// l'attaquant, pas de la cible). "clairiere_mystique" ignore la protection
-// Taverne de la cible (attaque discrète qui contourne la surveillance) —
-// seule différence mécanique avec "camp_entrainement".
-export function computeAttacksFromActions(actionsRaw, joueursAvant, config) {
+// l'attaquant, pas de la cible). Le Camp d'Entraînement est le SEUL lieu de
+// combat — la Clairière mystique ne fait plus partie du combat depuis sa
+// refonte en révélation de position (voir computeClairiereReveals), décidée
+// avec l'utilisateur pour lui donner une identité propre plutôt qu'une
+// simple variante du Camp d'Entraînement sans vraie contrepartie.
+// Filet de sécurité (Camp d'Entraînement/Tour de Guet) : si un joueur a
+// choisi ce lieu mais n'a résolu aucune interaction (personne d'éligible
+// n'était là hier, ou sa cible a été éliminée par le vote à la même
+// clôture), il agit quand même sur un joueur vivant tiré au hasard plutôt
+// que de perdre son action pour rien. Décidé avec l'utilisateur : sans ce
+// filet, personne n'a jamais intérêt à être le premier à visiter ces lieux
+// (s'exposer sans aucune contrepartie tant que personne d'autre n'y est
+// jamais allé avant) — ces deux lieux pouvaient donc rester morts toute la
+// partie si tout le monde jouait "rationnellement" (3 lieux sûrs suffisent
+// à alterner indéfiniment sans jamais s'y risquer).
+function fallbackActorsFor(actionsRaw, lieu, joueursAvant, resolvedActorIds) {
+  const aliveById = new Map(joueursAvant.map((j) => [j.discordId, j.alive]));
+  const actors = [];
+  for (const [discordId, action] of Object.entries(actionsRaw)) {
+    if (resolvedActorIds.has(discordId) || !aliveById.get(discordId)) continue;
+    if (action?.primary?.lieu === lieu || action?.secondary?.lieu === lieu) actors.push(discordId);
+  }
+  return actors;
+}
+
+function pickRandomTarget(joueursAvant, excludeId, rng) {
+  const candidates = joueursAvant.filter((j) => j.alive && j.discordId !== excludeId);
+  return candidates.length ? shuffle(candidates, rng)[0] : null;
+}
+
+export function computeAttacksFromActions(actionsRaw, joueursAvant, config, rng = Math.random) {
   const roleById = new Map(joueursAvant.map((j) => [j.discordId, j.role]));
-  const attacks = resolveEligibleAttacks(actionsRaw, joueursAvant, ["camp_entrainement", "clairiere_mystique"]);
+  const attacks = resolveEligibleAttacks(actionsRaw, joueursAvant, ["camp_entrainement"]);
+
+  const resolvedIds = new Set(attacks.map((a) => a.attackerId));
+  for (const attackerId of fallbackActorsFor(actionsRaw, "camp_entrainement", joueursAvant, resolvedIds)) {
+    const target = pickRandomTarget(joueursAvant, attackerId, rng);
+    if (target) attacks.push({ attackerId, targetId: target.discordId, lieu: "camp_entrainement" });
+  }
+
   return attacks.map((a) => ({
     ...a,
     degats: roleById.get(a.attackerId) === "bucheron" ? config.roles.bucheron.degats : config.combat.degats_base,
-    discret: a.lieu === "clairiere_mystique",
   }));
+}
+
+// Clairière mystique : révèle la position COURANTE de 2 joueurs vivants
+// tirés au hasard (jamais soi-même) — aucune cible à choisir, aucune
+// restriction de co-location (ce n'est pas une confrontation). Décidé avec
+// l'utilisateur : donne à ce lieu une utilité propre (renseignement) plutôt
+// qu'une attaque redondante avec le Camp d'Entraînement.
+export function computeClairiereReveals(actionsRaw, joueursApres, rng = Math.random) {
+  const aliveById = new Map(joueursApres.map((j) => [j.discordId, j.alive]));
+  const aliveOthers = (excludeId) => joueursApres.filter((j) => j.alive && j.discordId !== excludeId);
+  const revealsByPlayer = {};
+  for (const [discordId, action] of Object.entries(actionsRaw)) {
+    if (!aliveById.get(discordId)) continue; // éliminé ce même jour (vote/combat) -> pas de vision
+    const visite = action?.primary?.lieu === "clairiere_mystique" || action?.secondary?.lieu === "clairiere_mystique";
+    if (!visite) continue;
+    const picks = shuffle(aliveOthers(discordId), rng).slice(0, 2);
+    revealsByPlayer[discordId] = picks.map((j) => ({ cibleId: j.discordId, cibleUsername: j.username, lieu: j.position }));
+  }
+  return revealsByPlayer;
 }
 
 export function sumDamagePerTarget(attacks, protectedSet) {
   const totals = {};
   for (const a of attacks) {
-    if (!a.discret && protectedSet.has(a.targetId)) continue; // protégé par la Taverne, attaque bloquée
+    if (protectedSet.has(a.targetId)) continue; // protégé par la Taverne, attaque bloquée
     totals[a.targetId] = (totals[a.targetId] || 0) + a.degats;
   }
   return totals;
@@ -428,14 +485,26 @@ export function resolveCombat(pvBefore, damagePerTarget, rng = Math.random) {
 
 // Enquête (Tour de Guet) : révèle le camp de la cible, sauf sur l'Infiltré
 // qui renvoie toujours "chasseur" (faux positif classique du genre).
-export function computeInvestigations(actionsRaw, joueursAvant) {
+export function computeInvestigations(actionsRaw, joueursAvant, rng = Math.random) {
   const joueurById = new Map(joueursAvant.map((j) => [j.discordId, j]));
   const attacks = resolveEligibleAttacks(actionsRaw, joueursAvant, ["tour_de_guet"]);
-  return attacks.map(({ attackerId, targetId }) => {
+  const results = attacks.map(({ attackerId, targetId }) => {
     const cible = joueurById.get(targetId);
     const campReporte = cible.role === "infiltre" ? "chasseur" : cible.camp;
     return { investigatorId: attackerId, cibleId: targetId, campReporte };
   });
+
+  // Même filet de sécurité que le combat (voir fallbackActorsFor) : une
+  // enquête sans cible éligible se rabat sur un joueur vivant au hasard.
+  const resolvedIds = new Set(results.map((r) => r.investigatorId));
+  for (const investigatorId of fallbackActorsFor(actionsRaw, "tour_de_guet", joueursAvant, resolvedIds)) {
+    const target = pickRandomTarget(joueursAvant, investigatorId, rng);
+    if (!target) continue;
+    const campReporte = target.role === "infiltre" ? "chasseur" : target.camp;
+    results.push({ investigatorId, cibleId: target.discordId, campReporte });
+  }
+
+  return results;
 }
 
 // Indices personnels accumulés par joueur sur toute la partie (carnet privé,
@@ -446,7 +515,23 @@ export function computeInvestigations(actionsRaw, joueursAvant) {
 // (résultat de camp, `campReporte` non nul) et les rencontres de
 // combat/sabotage (lieu seulement, jamais de camp — une attaque ne révèle
 // rien sur le camp de la cible).
-export function computeIndicesForDay(jour, actionsRaw, investigations, joueursAvant, config) {
+// `type` distingue les 3 sources d'indices, formatées différemment côté
+// handler (voir formatIndiceLine) :
+// - "enquete" : camp révélé (Tour de Guet), `lieu` = "tour_de_guet" (là où
+//   l'enquête a eu lieu).
+// - "combat" : aucun camp révélé, `lieu` = "camp_entrainement" (là où
+//   l'affrontement a eu lieu).
+// - "reveal" : aucun camp révélé, `lieu` = la position COURANTE de la
+//   cible (pas le lieu de l'interaction — la Clairière n'implique aucune
+//   co-location, voir computeClairiereReveals).
+// `attacks` doit venir du MÊME appel que celui qui a servi à la résolution
+// des PV (result.attacks de computeCloture) — ne jamais le recalculer
+// séparément ici : computeAttacksFromActions pioche désormais une cible au
+// hasard (filet de sécurité, voir fallbackActorsFor) via `rng`, un second
+// calcul indépendant tirerait potentiellement une cible DIFFÉRENTE de celle
+// réellement appliquée en combat, désynchronisant le carnet d'indices de ce
+// qui s'est vraiment passé.
+export function computeIndicesForDay(jour, attacks, investigations, clairiereReveals, joueursAvant) {
   const usernameById = new Map(joueursAvant.map((j) => [j.discordId, j.username]));
   const indicesByPlayer = {};
   const push = (discordId, entry) => {
@@ -455,6 +540,7 @@ export function computeIndicesForDay(jour, actionsRaw, investigations, joueursAv
 
   for (const inv of investigations) {
     push(inv.investigatorId, {
+      type: "enquete",
       cibleId: inv.cibleId,
       cibleUsername: usernameById.get(inv.cibleId) || "?",
       lieu: "tour_de_guet",
@@ -462,14 +548,20 @@ export function computeIndicesForDay(jour, actionsRaw, investigations, joueursAv
     });
   }
 
-  const attacks = computeAttacksFromActions(actionsRaw, joueursAvant, config);
   for (const a of attacks) {
     push(a.attackerId, {
+      type: "combat",
       cibleId: a.targetId,
       cibleUsername: usernameById.get(a.targetId) || "?",
       lieu: a.lieu,
       campReporte: null,
     });
+  }
+
+  for (const [discordId, reveals] of Object.entries(clairiereReveals)) {
+    for (const r of reveals) {
+      push(discordId, { type: "reveal", cibleId: r.cibleId, cibleUsername: r.cibleUsername, lieu: r.lieu, campReporte: null });
+    }
   }
 
   return indicesByPlayer;
@@ -508,19 +600,20 @@ export function checkVictory(joueursApres, jourCourant, dureeJours) {
 
 export function computeCloture({ jour, actionsRaw, joueursAvant, config, rng = Math.random }) {
   const voteTally = computeVoteTally(actionsRaw);
-  const eliminationsParVote = jour > 1 ? resolveVoteElimination(voteTally) : null;
+  const eliminationsParVote = jour > 1 ? resolveVoteElimination(voteTally, config.vote_quorum_min) : null;
 
   const joueursApresVote = joueursAvant.map((j) =>
     j.discordId === eliminationsParVote ? { ...j, alive: false, campReveleAt: jour } : j,
   );
 
   let deathIdCombat = null;
+  let attacks = [];
   let pvApres = Object.fromEntries(joueursApresVote.filter((j) => j.alive).map((j) => [j.discordId, j.pv]));
 
   if (jour > 1) {
     const occupants = computeTavernOccupants(actionsRaw);
     const protectedSet = computeTavernProtection(occupants, config.taverne_seuil_protection);
-    const attacks = computeAttacksFromActions(actionsRaw, joueursApresVote, config);
+    attacks = computeAttacksFromActions(actionsRaw, joueursApresVote, config, rng);
     const damagePerTarget = sumDamagePerTarget(attacks, protectedSet);
     const pvBefore = Object.fromEntries(joueursApresVote.filter((j) => j.alive).map((j) => [j.discordId, j.pv]));
     const combatResult = resolveCombat(pvBefore, damagePerTarget, rng);
@@ -528,7 +621,7 @@ export function computeCloture({ jour, actionsRaw, joueursAvant, config, rng = M
     deathIdCombat = combatResult.deathId;
   }
 
-  const investigations = computeInvestigations(actionsRaw, joueursApresVote);
+  const investigations = computeInvestigations(actionsRaw, joueursApresVote, rng);
   const newPositions = computeNewPositions(actionsRaw, joueursApresVote);
 
   const joueursApres = joueursApresVote.map((j) => {
@@ -544,13 +637,21 @@ export function computeCloture({ jour, actionsRaw, joueursAvant, config, rng = M
     };
   });
 
+  // Calculée sur joueursApres (positions FINALES de ce jour, éliminations du
+  // jour déjà appliquées) : révèle où les cibles ont fini la journée, pas où
+  // elles étaient avant — un joueur éliminé le jour même (vote ou combat)
+  // n'est ni éligible comme cible, ni comme voyant (aliveById filtre les deux).
+  const clairiereReveals = computeClairiereReveals(actionsRaw, joueursApres, rng);
+
   const victory = checkVictory(joueursApres, jour, config.duree_jours);
 
   return {
     joueursApres,
     eliminationsParVote,
     deathIdCombat,
+    attacks,
     investigations,
+    clairiereReveals,
     voteTally,
     victory,
   };
@@ -596,12 +697,18 @@ export async function closeDayAndAdvance(jour, config) {
     resolvedAt: new Date().toISOString(),
   });
 
-  // Indices personnels : recalculés depuis les MÊMES actions/investigations
-  // que la clôture (state.joueurs = joueursAvant, avant écrasement par
-  // result.joueursApres ci-dessous) — jamais depuis result.joueursApres, qui
-  // pourrait déjà refléter une élimination du jour et fausser les pseudos.
-  const actionsRaw = await readActions(jour);
-  const indicesByPlayer = computeIndicesForDay(jour, actionsRaw, result.investigations, state.joueurs, config);
+  // Indices personnels : réutilise result.attacks/investigations TELS QUELS
+  // (mêmes objets que ceux qui ont résolu les PV/enquêtes de cette clôture,
+  // jamais recalculés séparément — voir l'avertissement sur
+  // computeIndicesForDay). state.joueurs = joueursAvant (pseudos d'avant
+  // élimination), jamais result.joueursApres.
+  const indicesByPlayer = computeIndicesForDay(
+    jour,
+    result.attacks,
+    result.investigations,
+    result.clairiereReveals,
+    state.joueurs,
+  );
   await appendIndices(indicesByPlayer);
 
   await writeState({ ...state, jour: jour + 1, joueurs: result.joueursApres });

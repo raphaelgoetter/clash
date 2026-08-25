@@ -643,7 +643,7 @@ L'affichage "Manche N" est partout devenu **"Saison S · Manche N/X"** (post heb
 
 | Commande                   | Effet                                                                                                                                                                                                  |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `npm run frame:test`       | Poste manuellement une nouvelle partie sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`), **sans ping** (le salon de test ne pingue jamais `@MINI JEUX`, même sans `--no-ping` explicite).           |
+| `npm run frame:test`       | Poste manuellement une nouvelle partie sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`), **sans ping** (le salon de test ne pingue jamais `@MINI-JEUX`, même sans `--no-ping` explicite).           |
 | `npm run frame:test:dry`   | Aperçu console de la prochaine partie, sans écrire d'état ni poster sur Discord.                                                                                                                       |
 | `npm run frame:public`     | Poste sur le salon public "Général" (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `frames.yml`.                                                                                               |
 | `npm run frame:public:dry` | Équivalent dry-run de `frame:public`.                                                                                                                                                                  |
@@ -725,7 +725,7 @@ Identique à Frame (voir [Récapitulatif de fin de saison](#récapitulatif-de-fi
 
 | Commande | Effet |
 | --- | --- |
-| `npm run anagram:test` | Poste manuellement une nouvelle partie sur le salon de test, en ignorant le gating hebdomadaire (`--force`), **sans ping** (le salon de test ne pingue jamais `@MINI JEUX`, même sans `--no-ping` explicite). |
+| `npm run anagram:test` | Poste manuellement une nouvelle partie sur le salon de test, en ignorant le gating hebdomadaire (`--force`), **sans ping** (le salon de test ne pingue jamais `@MINI-JEUX`, même sans `--no-ping` explicite). |
 | `npm run anagram:test:dry` | Aperçu console de la prochaine partie (+ récap de saison éventuel), sans écrire d'état ni poster sur Discord. |
 | `npm run anagram:public` | Poste sur le salon public si le gating hebdomadaire (jour + tirage au sort) le permet — utilisé par le cron `anagrams.yml`. |
 | `npm run anagram:public:dry` | Équivalent dry-run de `anagram:public`. |
@@ -822,7 +822,7 @@ Identique à Frame (voir [Récapitulatif de fin de saison](#récapitulatif-de-fi
 | Commande | Effet |
 | --- | --- |
 | `npm run zoom:catalog` | Génère/complète `data/zoom/zoom.json` et télécharge les icônes manquantes dans `data/zoom/images/`. Usage ponctuel, jamais dans le flux hebdomadaire. |
-| `npm run zoom:test` | Poste manuellement une nouvelle partie sur le salon de test, **sans ping** (le salon de test ne pingue jamais `@MINI JEUX`, même sans `--no-ping` explicite). |
+| `npm run zoom:test` | Poste manuellement une nouvelle partie sur le salon de test, **sans ping** (le salon de test ne pingue jamais `@MINI-JEUX`, même sans `--no-ping` explicite). |
 | `npm run zoom:test:dry` | Aperçu console de la prochaine partie (+ récap de saison éventuel), sans écrire d'état ni poster sur Discord. |
 | `npm run zoom:public` | Poste sur le salon public (avec ping) — utilisé par le cron `zoom.yml`. |
 | `npm run zoom:public:dry` | Équivalent dry-run de `zoom:public`. |
@@ -948,7 +948,7 @@ Contrairement à Anagram (DM à chaque manche, puisqu'une seule tentative la ré
 | Commande | Effet |
 | --- | --- |
 | `npm run justecarte:stats` | Ajoute les stats (elixir/hp/damage/range) aux cartes éligibles de `data/cardNames.json`. Usage ponctuel, jamais dans le flux hebdomadaire. |
-| `npm run justecarte:test` | Poste manuellement une nouvelle partie sur le salon de test, **sans ping** (le salon de test ne pingue jamais `@MINI JEUX`, même sans `--no-ping` explicite, comme `zoom:test`). |
+| `npm run justecarte:test` | Poste manuellement une nouvelle partie sur le salon de test, **sans ping** (le salon de test ne pingue jamais `@MINI-JEUX`, même sans `--no-ping` explicite, comme `zoom:test`). |
 | `npm run justecarte:test:dry` | Aperçu console de la prochaine partie (+ récap de saison éventuel), sans écrire d'état ni poster sur Discord. |
 | `npm run justecarte:public` | Poste sur le salon public (avec ping) — utilisé par le cron `lajustecarte.yml`. |
 | `npm run justecarte:public:dry` | Équivalent dry-run de `justecarte:public`. |
@@ -1167,9 +1167,9 @@ Mini-jeu communautaire quotidien indépendant du Clash Royale : le clan affronte
 
 Un seul message actif à la fois dans le salon dédié, en 3 phases :
 
-1. **Jour d'annonce** (`bossraid:state.phase === "annonce"`) : premier `postBossRaid()`, publie le lore + la posture initiale du Boss, ping `@MINI JEUX`. Seul le bouton `[📖 Règles & Rôles]` est visible — aucun vote possible.
+1. **Jour d'annonce** (`bossraid:state.phase === "annonce"`) : premier `postBossRaid()`, publie le lore + la posture initiale du Boss, ping `@MINI-JEUX`. Seul le bouton `[📖 Règles & Rôles]` est visible — aucun vote possible.
 2. **Transition vers le Jour 1/10** : deuxième `postBossRaid()`, détecte `phase === "annonce"` et publie directement le Jour 1 avec les 5 boutons de vote, sans clôture (rien n'a pu être voté avant) ni ping.
-3. **Clôture quotidienne** (jours suivants) : `postBossRaid()` clôture le jour actif (`closeDayAndAdvance()`), calcule les dégâts et la nouvelle posture du Boss, publie le bilan + le jour suivant (jamais de ping). Au-delà du Jour 10 (`jourSuivant > duree_jours`), publie l'embed de fin de Raid (score total, aucun composant), ping `@MINI JEUX`, et passe `termine: true` — les runs suivants du cron deviennent des no-op silencieux, même principe que les autres jeux.
+3. **Clôture quotidienne** (jours suivants) : `postBossRaid()` clôture le jour actif (`closeDayAndAdvance()`), calcule les dégâts et la nouvelle posture du Boss, publie le bilan + le jour suivant (jamais de ping). Au-delà du Jour 10 (`jourSuivant > duree_jours`), publie l'embed de fin de Raid (score total, aucun composant), ping `@MINI-JEUX`, et passe `termine: true` — les runs suivants du cron deviennent des no-op silencieux, même principe que les autres jeux.
 
 ### Résolution du vote — vote modifiable, calcul unique à la clôture
 
@@ -1272,13 +1272,13 @@ Mini-jeu à identité secrète façon Shadow Hunters/Loups-Garous, adapté au ry
 
 Un seul message actif à la fois dans le salon dédié, en 3 phases :
 
-1. **Fenêtre d'inscription** (`goblinhunters:state.phase === "inscription"`) : `postGoblinHunters()` ouvre l'inscription (`[✅ S'inscrire]`/`[✖️ Se désinscrire]`), ping `@MINI JEUX`. Rappel quotidien avec le décompte des inscrits tant que la fenêtre (3 jours) n'est pas close. À la clôture : si moins de `effectif_min` (8) inscrits, la fenêtre est **prolongée de 3 jours** (pas d'annulation) ; sinon la partie est lancée (`launchGame()`) — roster figé, camps/rôles attribués, DM de rôle envoyé à chacun, inscriptions vidées.
+1. **Fenêtre d'inscription** (`goblinhunters:state.phase === "inscription"`) : `postGoblinHunters()` ouvre l'inscription (`[✅ S'inscrire]`/`[✖️ Se désinscrire]`), ping `@MINI-JEUX`. Rappel quotidien avec le décompte des inscrits tant que la fenêtre (3 jours) n'est pas close. À la clôture : si moins de `effectif_min` (8) inscrits, la fenêtre est **prolongée de 3 jours** (pas d'annulation) ; sinon la partie est lancée (`launchGame()`) — roster figé, camps/rôles attribués, DM de rôle envoyé à chacun, inscriptions vidées.
 2. **Jour de jeu** (jours 1 à 10) : chaque joueur vivant choisit un lieu (bouton éphémère), qui détermine son action — vote au Château, combat au Camp d'Entraînement, enquête à la Tour de Guet, protection à la Taverne, sabotage à la Clairière mystique. Modifiable jusqu'à la clôture du lendemain (dernier clic gagne, `recordAction()`/`recordVoteChateau()` en `HSET` écrasable). Rien n'est publié publiquement en cours de journée.
-3. **Clôture quotidienne** : `postGoblinHunters()` clôture le jour actif (`closeDayAndAdvance()`), résout vote + combat + enquêtes + nouvelles positions, envoie les DM d'enquête, publie le bilan + le jour suivant (jamais de ping). Si une condition de victoire est atteinte ou que J10 est dépassé, publie l'embed de fin de partie (révélation complète des camps/rôles), ping `@MINI JEUX`, et passe `termine: true` — les runs suivants deviennent des no-op silencieux, même principe que les autres jeux.
+3. **Clôture quotidienne** : `postGoblinHunters()` clôture le jour actif (`closeDayAndAdvance()`), résout vote + combat + enquêtes + nouvelles positions, envoie les DM d'enquête, publie le bilan + le jour suivant (jamais de ping). Si une condition de victoire est atteinte ou que J10 est dépassé, publie l'embed de fin de partie (révélation complète des camps/rôles), ping `@MINI-JEUX`, et passe `termine: true` — les runs suivants deviennent des no-op silencieux, même principe que les autres jeux.
 
 ### Ciblage — restreint au dernier plateau connu, sauf le vote
 
-La cible d'un **combat** (Camp d'Entraînement/Clairière mystique) ou d'une **enquête** (Tour de Guet) doit être positionnée au lieu choisi sur le **dernier plateau connu** (`joueursAvant`, figé depuis la clôture précédente) — le select menu ne propose que ces cibles valides, `computeAttacksFromActions()`/`computeInvestigations()` re-filtrent quand même par défense. Le **vote du Château** reste volontairement libre sur tout joueur vivant (accusation villageoise publique, pas une confrontation physique). Conséquence directe : le Jour 1, aucune cible de combat/enquête n'existe encore (tout le monde démarre au Château) — le lieu affiche alors « aucune cible disponible », sans que ce soit un bug : c'est cohérent avec le garde-fou explicite qui désactive de toute façon vote et combat ce jour-là.
+La cible d'un **combat** (Camp d'Entraînement, seul lieu de combat depuis la refonte de la Clairière — voir plus bas) ou d'une **enquête** (Tour de Guet) doit être positionnée au lieu choisi sur le **dernier plateau connu** (`joueursAvant`, figé depuis la clôture précédente) — le select menu ne propose que ces cibles valides, `computeAttacksFromActions()`/`computeInvestigations()` re-filtrent quand même par défense. Le **vote du Château** reste volontairement libre sur tout joueur vivant (accusation villageoise publique, pas une confrontation physique), et la **Clairière mystique** n'a aucune notion de ciblage — elle tire 2 joueurs au hasard, sans co-location requise. Conséquence directe : le Jour 1, aucune cible de combat/enquête n'existe encore (tout le monde démarre au Château) — le lieu affiche alors « aucune cible disponible », sans que ce soit un bug : c'est cohérent avec le garde-fou explicite qui désactive de toute façon vote et combat ce jour-là.
 
 ### Vote du Château — même stockage que les autres lieux (bug corrigé)
 
@@ -1287,6 +1287,24 @@ La cible d'un **combat** (Camp d'Entraînement/Clairière mystique) ou d'une **e
 ### Vote définitif — pas de changement une fois castée
 
 Contrairement aux 4 autres lieux (modifiables jusqu'à la clôture, dernier clic gagne), le vote du Château est **définitif dès validation** — décidé avec l'utilisateur : voter est un engagement public, pas un brouillon qu'on peut retirer sans conséquence. `isVoteLocked(existingAction, slot)` (`backend/services/goblinhunters.js`) vérifie si le `slot` concerné contient déjà `{lieu:"chateau", cibleId}` ; si oui, tout nouveau choix sur ce slot est refusé — que ce soit un changement de cible du vote OU un changement de lieu vers autre chose. Vérifié au clic dans `handleLieuButton` (avant même d'afficher le select de cible) et re-vérifié en défense dans `handleTargetSelect` — même esprit que `isLieuRepeatAllowed()`, mais `recordAction()` lui-même reste "bête" (n'écrit jamais de garde), toute la logique vit côté appelant. Le verrou est spécifique au `slot` : le primary verrouillé n'empêche pas l'Éclaireur de soumettre un secondary différent (une 2ᵉ action sur un autre lieu reste possible après avoir voté).
+
+### Quorum de vote — 2 votants minimum (bug corrigé)
+
+⚠️ Repéré en revue avec l'utilisateur : `resolveVoteElimination()` ne vérifiait à l'origine que « une seule cible au score maximum ? » — avec un seul votant, son unique vote *est* mécaniquement le score maximum, donc il gagnait. Un joueur seul au Château pouvait exécuter n'importe qui unilatéralement. Corrigé par un quorum minimum (`config.vote_quorum_min`, 2 par défaut) : si le total de votes castés ce jour-là (toutes cibles confondues) est sous ce seuil, `resolveVoteElimination()` renvoie `null` avant même de regarder qui a le plus de voix.
+
+### Clairière mystique — révélation de position, pas un combat (refonte)
+
+⚠️ Design initial insatisfaisant, repéré par l'utilisateur : la Clairière faisait exactement la même chose que le Camp d'Entraînement (mêmes dégâts, même ciblage), avec pour seule différence d'ignorer la protection Taverne — un avantage marginal, sans vraie contrepartie, qui ne justifiait pas un lieu à part. Refondue en pur renseignement : `computeClairiereReveals(actionsRaw, joueursApres, rng)` révèle, à la clôture, la position COURANTE de 2 joueurs vivants tirés au hasard (jamais soi-même, jamais un joueur déjà éliminé ce jour-là) — **aucune cible à choisir**, aucune restriction de co-location (ce n'est pas une confrontation, `lieuAction === "vision"` traité comme la Taverne : action enregistrée directement au clic). Résultat livré en DM (`sendClairiereDM`) et ajouté au carnet d'indices personnel (voir section Journal). Conséquence directe : le **Camp d'Entraînement est désormais le seul lieu de combat** du jeu — plus de redondance entre les deux lieux.
+
+⚠️ Le DM (plutôt que le message éphémère du clic) n'est pas un choix arbitraire : la révélation ne se calcule qu'à la **clôture** (le lendemain), une fois toutes les actions du jour connues — impossible de l'inclure dans la réponse éphémère du clic, dont le token webhook Discord expire bien avant que le résultat n'existe (~15 min, contre potentiellement 24h avant la clôture suivante). Même contrainte, même solution que pour les résultats d'enquête (`sendInvestigationDM`).
+
+### Filet de sécurité Camp d'Entraînement / Tour de Guet — cible aléatoire si personne d'éligible
+
+⚠️ Problème structurel repéré par l'utilisateur, distinct de celui de la Clairière : avec seulement 3 lieux "sûrs" (Château/Taverne/Clairière) et la règle anti-camping qui n'interdit que de répéter le lieu de la **veille**, un joueur peut alterner indéfiniment entre ces 3 lieux sans jamais visiter le Camp d'Entraînement ni la Tour de Guet. Or ces deux lieux n'apportaient jamais rien tant que personne d'autre n'y était déjà allé — s'exposer en premier n'avait donc aucune contrepartie, et une population de joueurs "rationnels" pouvait les laisser morts toute la partie.
+
+Corrigé par un filet de sécurité identique sur les deux lieux (`fallbackActorsFor()`, `backend/services/goblinhunters.js`) : si un joueur a choisi ce lieu mais n'a résolu aucune interaction (personne d'éligible n'était là hier, OU sa cible a été éliminée par le vote à la même clôture), il agit quand même sur un joueur vivant tiré au hasard — jamais un coup pour rien. `computeAttacksFromActions()`/`computeInvestigations()` prennent désormais un `rng` optionnel pour ce tirage.
+
+⚠️ **Piège évité** : `computeIndicesForDay()` ne recalcule plus `computeAttacksFromActions()` en interne — elle reçoit désormais `result.attacks` directement depuis `computeCloture()` (le MÊME tirage `rng` que celui qui a servi à appliquer les dégâts). Un second appel indépendant avec un `rng` par défaut différent aurait pu tirer une cible différente de celle réellement touchée, désynchronisant le carnet d'indices personnel de ce qui s'est vraiment passé — vérifié par un test bout en bout (combat réel + indices comparés).
 
 ### Plafond anti-snowball — 1 mort par combat maximum par jour
 
@@ -1308,10 +1326,11 @@ Sans plafond, plusieurs Gobelins attaquant le même jour pourraient éliminer pl
 
 Contrairement au bouton Journal des autres jeux (Robinson, Boss Raid — historique public des jours passés), celui de Goblin Hunters est **exclusivement personnel** : il affiche, uniquement au joueur qui clique, son camp/rôle secrets, sa dernière position connue, ses PV, et un **carnet d'indices** cumulé sur toute la partie. Motivation : le plateau public ne montre que les positions COURANTES (régénéré à chaque clôture, aucun historique) — sans ce carnet privé, un joueur perdrait toute trace de ses rencontres passées dès le lendemain.
 
-Deux sources alimentent le carnet à chaque clôture (`computeIndicesForDay()`, `backend/services/goblinhunters.js`) :
+Trois sources alimentent le carnet à chaque clôture (`computeIndicesForDay()`, `backend/services/goblinhunters.js`), distinguées par un champ `type` (formatage différent côté `formatIndiceLine()`) :
 
-- **Enquête** (Tour de Guet) : révèle le camp de la cible (`campReporte`), y compris le faux positif de l'Infiltré.
-- **Combat/sabotage** (Camp d'Entraînement/Clairière mystique) : révèle seulement le **lieu** où la cible a été croisée (`campReporte: null`) — une attaque ne renseigne jamais sur le camp.
+- `type: "enquete"` (Tour de Guet) : révèle le camp de la cible (`campReporte`), y compris le faux positif de l'Infiltré.
+- `type: "combat"` (Camp d'Entraînement) : révèle seulement le **lieu de l'affrontement** (`campReporte: null`) — une attaque ne renseigne jamais sur le camp.
+- `type: "reveal"` (Clairière mystique) : révèle la **position courante** de la cible (`lieu` = où elle se trouve, pas où l'interaction a eu lieu — il n'y en a pas), sans jamais de camp non plus. Seule source qui ne nécessite aucune co-location (voir `computeClairiereReveals()`).
 
 Stocké dans `goblinhunters:indices` (HASH permanent `discordId → JSON[]`, un tableau qui grandit à chaque clôture via `appendIndices()`), effacé par `resetGoblinHunters()` comme le reste de la manche en cours. `readPlayerIndices(discordId)` lit le carnet d'un seul joueur sans charger celui des autres. Le routage dans `interactions.js` passe désormais `discordId` à `handleJournal()` (auparavant appelé sans argument, contenu générique).
 

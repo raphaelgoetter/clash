@@ -16,11 +16,13 @@ import {
   isLieuRepeatAllowed,
   isVoteLocked,
   computeIndicesForDay,
+  computeClairiereReveals,
 } from "./goblinhunters.js";
 
 const CONFIG = {
   duree_jours: 10,
   taverne_seuil_protection: 3,
+  vote_quorum_min: 2,
   combat: { pv_base: 3, degats_base: 1 },
   roles: { bucheron: { degats: 2 } },
 };
@@ -82,6 +84,13 @@ async function main() {
   assert.strictEqual(resolveVoteElimination({ x: 2, y: 2 }), null); // égalité -> personne éliminé
   assert.strictEqual(resolveVoteElimination({}), null);
 
+  // ── Quorum minimum (2 votants par défaut) : un vote solo ne doit PAS
+  // suffire à éliminer sa cible (bug repéré en revue, corrigé) ──
+  assert.strictEqual(resolveVoteElimination({ x: 1 }), null); // 1 seul votant -> sous le quorum
+  assert.strictEqual(resolveVoteElimination({ x: 1, y: 1 }), null); // 2 votants mais égalité -> personne
+  assert.strictEqual(resolveVoteElimination({ x: 2 }), "x"); // 2 votants pour la même cible -> quorum atteint
+  assert.strictEqual(resolveVoteElimination({ x: 1 }, 1), "x"); // quorum personnalisé à 1 -> autorisé
+
   // ── Un joueur ne peut pas cumuler vote + autre action le même jour : le
   // dernier lieu choisi écrase le précédent dans le même slot ──
   {
@@ -115,6 +124,25 @@ async function main() {
     assert.strictEqual(attacks.length, 1);
     assert.strictEqual(attacks[0].targetId, "cible_present");
     assert.strictEqual(attacks[0].degats, 2); // Bûcheron
+  }
+
+  // ── Filet de sécurité (Camp d'Entraînement) : personne d'éligible ->
+  // frappe un joueur au hasard plutôt que de perdre l'action pour rien ──
+  {
+    const joueursAvant = [joueur("attaquant"), joueur("v1"), joueur("v2"), joueur("mort", { alive: false })];
+    const actions = { attaquant: { primary: { lieu: "camp_entrainement", cibleId: null } } }; // personne au Camp hier
+    const rng = rngSequence([0.9]);
+    const attacks = computeAttacksFromActions(actions, joueursAvant, CONFIG, rng);
+    assert.strictEqual(attacks.length, 1);
+    assert.notStrictEqual(attacks[0].targetId, "attaquant"); // jamais soi-même
+    assert.notStrictEqual(attacks[0].targetId, "mort"); // jamais un joueur déjà mort
+  }
+  {
+    // Attaquant seul en vie (aucune autre cible possible) -> pas de filet,
+    // pas de crash.
+    const joueursAvant = [joueur("seul")];
+    const actions = { seul: { primary: { lieu: "camp_entrainement", cibleId: null } } };
+    assert.deepStrictEqual(computeAttacksFromActions(actions, joueursAvant, CONFIG), []);
   }
 
   // ── resolveCombat : plafond 1 mort/jour, égalité -> rng ──
@@ -153,6 +181,17 @@ async function main() {
     assert.strictEqual(investigation2.campReporte, "gobelin");
   }
 
+  // ── Filet de sécurité (Tour de Guet) : personne d'éligible -> enquête
+  // sur un joueur au hasard plutôt que de perdre l'action pour rien ──
+  {
+    const joueursAvant = [joueur("enqueteur"), joueur("v1", { camp: "gobelin" }), joueur("mort", { alive: false })];
+    const actions = { enqueteur: { primary: { lieu: "tour_de_guet", cibleId: null } } }; // personne à la Tour hier
+    const rng = rngSequence([0.9]);
+    const [investigation] = computeInvestigations(actions, joueursAvant, rng);
+    assert.strictEqual(investigation.cibleId, "v1"); // seul candidat vivant hors soi-même
+    assert.strictEqual(investigation.campReporte, "gobelin");
+  }
+
   // ── computeIndicesForDay : carnet privé (enquête = camp, combat = lieu seul) ──
   {
     const joueursAvant = [
@@ -166,11 +205,13 @@ async function main() {
       attaquant: { primary: { lieu: "camp_entrainement", cibleId: "cible_combat" } },
     };
     const investigations = computeInvestigations(actionsRaw, joueursAvant);
-    const indices = computeIndicesForDay(4, actionsRaw, investigations, joueursAvant, CONFIG);
+    const attacks = computeAttacksFromActions(actionsRaw, joueursAvant, CONFIG);
+    const indices = computeIndicesForDay(4, attacks, investigations, {}, joueursAvant);
 
     assert.strictEqual(indices.enqueteur.length, 1);
     assert.deepStrictEqual(indices.enqueteur[0], {
       jour: 4,
+      type: "enquete",
       cibleId: "cible_enquete",
       cibleUsername: "cible_enquete",
       lieu: "tour_de_guet",
@@ -180,6 +221,7 @@ async function main() {
     assert.strictEqual(indices.attaquant.length, 1);
     assert.deepStrictEqual(indices.attaquant[0], {
       jour: 4,
+      type: "combat",
       cibleId: "cible_combat",
       cibleUsername: "cible_combat",
       lieu: "camp_entrainement",
@@ -187,6 +229,31 @@ async function main() {
     });
 
     assert.strictEqual(indices.cible_enquete, undefined); // aucune action -> aucun indice généré pour lui
+  }
+
+  // ── computeClairiereReveals : 2 joueurs au hasard, jamais soi-même, jamais un mort ──
+  {
+    const joueursApres = [
+      joueur("visiteur", { position: "clairiere_mystique" }),
+      joueur("v1"),
+      joueur("v2"),
+      joueur("mort", { alive: false }),
+    ];
+    const actionsRaw = { visiteur: { primary: { lieu: "clairiere_mystique", cibleId: null } } };
+    const rng = rngSequence([0.1, 0.9, 0.5]);
+    const reveals = computeClairiereReveals(actionsRaw, joueursApres, rng);
+    assert.strictEqual(reveals.visiteur.length, 2);
+    const revealedIds = reveals.visiteur.map((r) => r.cibleId);
+    assert.ok(!revealedIds.includes("visiteur")); // jamais soi-même
+    assert.ok(!revealedIds.includes("mort")); // jamais un joueur déjà éliminé ce jour
+  }
+  {
+    // Un joueur éliminé le jour même (vote/combat) n'a pas de vision, même
+    // s'il avait choisi la Clairière.
+    const joueursApres = [joueur("visiteur_mort", { position: "clairiere_mystique", alive: false }), joueur("v1")];
+    const actionsRaw = { visiteur_mort: { primary: { lieu: "clairiere_mystique", cibleId: null } } };
+    const reveals = computeClairiereReveals(actionsRaw, joueursApres);
+    assert.strictEqual(reveals.visiteur_mort, undefined);
   }
 
   // ── computeNewPositions : pass automatique -> Château ──

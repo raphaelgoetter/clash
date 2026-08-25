@@ -257,10 +257,10 @@ function buildReglesEmbed(config) {
     "Deux camps s'affrontent en secret : les **Chasseurs** (majorité) et les **Gobelins infiltrés** (minorité). Chaque jour, choisis un lieu — il détermine ton action.",
     "",
     `${config.lieux.chateau.emoji} **${config.lieux.chateau.label}** — vote d'accusation public. **Définitif dès validation, impossible de changer d'avis ensuite.** En cas d'égalité, personne n'est éliminé.`,
-    `${config.lieux.camp_entrainement.emoji} **${config.lieux.camp_entrainement.label}** — attaque (1 dégât, 2 pour le Bûcheron). Cible restreinte aux joueurs vus ici la veille.`,
-    `${config.lieux.tour_de_guet.emoji} **${config.lieux.tour_de_guet.label}** — enquête sur le camp d'un joueur vu ici la veille.`,
+    `${config.lieux.camp_entrainement.emoji} **${config.lieux.camp_entrainement.label}** — attaque (1 dégât, 2 pour le Bûcheron) un joueur vu ici la veille ; si personne n'y était, tu frappes un joueur vivant tiré au hasard.`,
+    `${config.lieux.tour_de_guet.emoji} **${config.lieux.tour_de_guet.label}** — enquête sur le camp d'un joueur vu ici la veille ; si personne n'y était, l'enquête porte sur un joueur vivant tiré au hasard.`,
     `${config.lieux.taverne.emoji} **${config.lieux.taverne.label}** — protection tant que moins de ${config.taverne_seuil_protection} joueurs s'y trouvent le même jour.`,
-    `${config.lieux.clairiere_mystique.emoji} **${config.lieux.clairiere_mystique.label}** — attaque discrète, ignore la protection de la Taverne.`,
+    `${config.lieux.clairiere_mystique.emoji} **${config.lieux.clairiere_mystique.label}** — révèle en privé la position actuelle de 2 joueurs tirés au hasard (jamais toi-même), sans confrontation.`,
     "",
     `Chaque joueur a **${config.combat.pv_base} PV** (le Bûcheron : ${config.roles.bucheron.pv} PV, plus fragile mais plus offensif). Maximum **1 mort par combat et par jour**, tous joueurs confondus.`,
     `Aucune élimination possible le Jour 1 (vote et combat désactivés).`,
@@ -320,6 +320,17 @@ async function sendInvestigationDM(investigation, joueursApres, config) {
     color: GOBLINHUNTERS_COLOR,
   };
   await sendGoblinHuntersDM(investigation.investigatorId, embed);
+}
+
+async function sendClairiereDM(discordId, reveals, config) {
+  if (!reveals?.length) return;
+  const lines = reveals.map((r) => `**${r.cibleUsername}** se trouve à ${config.lieux[r.lieu].emoji} ${config.lieux[r.lieu].label}.`);
+  const embed = {
+    title: "🌫️ Clairière mystique — ta vision",
+    description: lines.join("\n"),
+    color: GOBLINHUNTERS_COLOR,
+  };
+  await sendGoblinHuntersDM(discordId, embed);
 }
 
 // ── Publication quotidienne (appelée uniquement par scripts/postGoblinHunters.js) ──
@@ -423,6 +434,9 @@ export async function postGoblinHunters(channelId, { dryRun = false, noPing = fa
   if (!dryRun) {
     for (const investigation of closure.investigations) {
       await sendInvestigationDM(investigation, closure.joueursApres, config);
+    }
+    for (const [discordId, reveals] of Object.entries(closure.clairiereReveals || {})) {
+      await sendClairiereDM(discordId, reveals, config);
     }
   }
 
@@ -614,20 +628,22 @@ export async function handleLieuButton(webhookUrl, jour, lieu, slot, discordId, 
 
     const lieuAction = config.lieux[lieu]?.action;
 
-    // Taverne : aucune cible nécessaire, action enregistrée directement.
-    if (lieuAction === "protection") {
+    // Taverne/Clairière : aucune cible nécessaire, action enregistrée
+    // directement (la Clairière révèle 2 joueurs au hasard à la clôture,
+    // voir computeClairiereReveals — pas de choix à faire ici).
+    if (lieuAction === "protection" || lieuAction === "vision") {
       await recordAction(jour, discordId, slot, { lieu }, username);
       const followup = joueur.role === "eclaireur" && slot === "primary" ? buildEclaireurSecondButtonRow(jour) : [];
-      await patchOriginal(webhookUrl, {
-        content: `🍺 Tu te rends à la Taverne (protection si le lieu n'est pas surpeuplé aujourd'hui).`,
-        embeds: [],
-        components: followup,
-      });
+      const confirmation =
+        lieuAction === "protection"
+          ? "🍺 Tu te rends à la Taverne (protection si le lieu n'est pas surpeuplé aujourd'hui)."
+          : "🌫️ Tu te rends à la Clairière mystique — la position de 2 joueurs au hasard te sera révélée demain.";
+      await patchOriginal(webhookUrl, { content: confirmation, embeds: [], components: followup });
       return;
     }
 
     // Château (vote) : cible libre sur tout joueur vivant (hors soi-même).
-    // Combat/Enquête/Clairière : cible restreinte au dernier plateau connu.
+    // Combat/Enquête : cible restreinte au dernier plateau connu.
     const candidats =
       lieu === "chateau"
         ? state.joueurs.filter((j) => j.alive && j.discordId !== discordId)
@@ -636,8 +652,12 @@ export async function handleLieuButton(webhookUrl, jour, lieu, slot, discordId, 
     if (!candidats.length) {
       await recordAction(jour, discordId, slot, { lieu, cibleId: null }, username);
       const followup = joueur.role === "eclaireur" && slot === "primary" ? buildEclaireurSecondButtonRow(jour) : [];
+      // Personne vu ici hier, mais l'action n'est pas perdue pour autant :
+      // le filet de sécurité (fallbackActorsFor, backend/services/goblinhunters.js)
+      // choisira une cible au hasard à la clôture — cibleId reste null ici,
+      // c'est le tirage à la clôture qui tranche, jamais au clic.
       await patchOriginal(webhookUrl, {
-        content: `${config.lieux[lieu].emoji} Tu te rends à ${config.lieux[lieu].label}, mais personne à cibler pour l'instant.`,
+        content: `${config.lieux[lieu].emoji} Tu te rends à ${config.lieux[lieu].label} — personne repéré ici pour l'instant, tu agiras sur un joueur choisi au hasard à la clôture.`,
         embeds: [],
         components: followup,
       });
@@ -732,12 +752,15 @@ export async function handleTargetSelect(webhookUrl, jour, lieu, slot, discordId
 // n'affichant que les positions COURANTES.
 
 function formatIndiceLine(entry, config) {
-  if (entry.campReporte) {
-    const camp = config.camps[entry.campReporte];
-    return `Jour ${entry.jour} — **${entry.cibleUsername}** = ${camp.emoji} ${camp.label.slice(0, -1)}`;
-  }
   const lieu = config.lieux[entry.lieu];
-  return `Jour ${entry.jour} — **${entry.cibleUsername}** = vu(e) à ${lieu.emoji} ${lieu.label}`;
+  if (entry.type === "enquete") {
+    const camp = config.camps[entry.campReporte];
+    return `Jour ${entry.jour} — 🔭 **${entry.cibleUsername}** = ${camp.emoji} ${camp.label.slice(0, -1)}`;
+  }
+  if (entry.type === "reveal") {
+    return `Jour ${entry.jour} — 🌫️ **${entry.cibleUsername}** se trouvait à ${lieu.emoji} ${lieu.label}`;
+  }
+  return `Jour ${entry.jour} — ⚔️ **${entry.cibleUsername}** croisé(e) au combat (${lieu.emoji} ${lieu.label})`;
 }
 
 export async function handleJournal(webhookUrl, discordId) {

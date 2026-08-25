@@ -6,6 +6,7 @@
   "minority_table": { "8": 3, "9": 3, "10": 3, "11": 4, "12": 4, "13": 4, "14": 5 },
   "combat": { "pv_base": 3, "degats_base": 1 },
   "taverne_seuil_protection": 3,
+  "vote_quorum_min": 2,
   "camps": {
     "chasseur": { "label": "Chasseurs", "emoji": "🗡️" },
     "gobelin": { "label": "Gobelins", "emoji": "👺" }
@@ -15,7 +16,7 @@
     "camp_entrainement": { "label": "Camp d'Entraînement", "emoji": "⚔️", "action": "combat" },
     "tour_de_guet": { "label": "Tour de Guet", "emoji": "🔭", "action": "enquete" },
     "taverne": { "label": "Taverne", "emoji": "🍺", "action": "protection" },
-    "clairiere_mystique": { "label": "Clairière mystique", "emoji": "🌫️", "action": "sabotage" }
+    "clairiere_mystique": { "label": "Clairière mystique", "emoji": "🌫️", "action": "vision" }
   },
   "roles": {
     "eclaireur": { "camp": "chasseur", "label": "Éclaireur", "emoji": "🧭", "actions_par_jour": 2 },
