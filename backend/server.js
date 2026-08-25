@@ -23,7 +23,10 @@ import { clearAll } from "./services/cache.js";
 import { fetchClan, fetchPlayer } from "./services/clashApi.js";
 import { getCurrentFrameImage, getFrameImageByGameId } from "./services/frames.js";
 import { getZoomCardImage, getZoomHintImage, getZoomRevealImage } from "./services/zoomImage.js";
-import { getBoardImage as getGoblinHuntersBoardImage } from "./services/goblinhuntersImage.js";
+import {
+  getBoardImage as getGoblinHuntersBoardImage,
+  getEndImage as getGoblinHuntersEndImage,
+} from "./services/goblinhuntersImage.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -295,6 +298,18 @@ app.get("/api/goblinhunters/image", async (req, res) => {
   const image = await getGoblinHuntersBoardImage().catch(() => null);
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", "image/png");
+  res.setHeader("Cache-Control", "no-store");
+  res.send(image.buffer);
+});
+
+// Jeu Goblin Hunters : illustration statique de fin de partie (servie telle
+// quelle, jamais composée via resvg contrairement au plateau — voir
+// goblinhuntersImage.js). Pas de paramètre : un seul fichier, inchangé
+// pendant toute la manche.
+app.get("/api/goblinhunters/end-image", async (req, res) => {
+  const image = await getGoblinHuntersEndImage().catch(() => null);
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "no-store");
   res.send(image.buffer);
 });

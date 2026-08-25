@@ -257,12 +257,10 @@ function buildTargetSelectRow(candidats, jour, lieu, slot) {
           type: 3,
           custom_id: `goblinhunters_target:${jour}:${lieu}:${slot}`,
           placeholder: "Choisis une cible",
-          options: candidats
-            .slice(0, 25)
-            .map((j) => ({
-              label: j.username.slice(0, 100),
-              value: j.discordId,
-            })),
+          options: candidats.slice(0, 25).map((j) => ({
+            label: j.username.slice(0, 100),
+            value: j.discordId,
+          })),
         },
       ],
     },
@@ -295,14 +293,15 @@ function buildOutcomeEmbed(
   const victoireTexte = {
     gobelins_parite: `${config.camps.gobelin.emoji} Les **Gobelins** l'emportent — parité atteinte !`,
     chasseurs_gobelins_elimines: `${config.camps.chasseur.emoji} Les **Chasseurs** l'emportent — tous les Gobelins ont été démasqués !`,
-    chasseurs_survie: `${config.camps.chasseur.emoji} Les **Chasseurs** l'emportent par défaut — le village a tenu ${config.duree_jours} jours !`,
+    chasseurs_survie: `${config.camps.chasseur.emoji} Les **Chasseurs** l'emportent — le village a tenu ${config.duree_jours} jours !`,
   }[victory];
 
   const reveal = joueursApres
-    .map(
-      (j) =>
-        `${config.camps[j.camp].emoji} **${j.username}** — ${config.camps[j.camp].label.slice(0, -1)}`,
-    )
+    .map((j) => {
+      const statutSymbole = j.alive ? "✅" : "☠️";
+      const roleTexte = j.role ? ` (${config.roles[j.role].label})` : "";
+      return `${statutSymbole} ${config.camps[j.camp].emoji} **${j.username}** — ${config.camps[j.camp].label.slice(0, -1)}${roleTexte}`;
+    })
     .join("\n");
 
   const mancheLines = manches.length
@@ -326,6 +325,7 @@ function buildOutcomeEmbed(
       ...mancheLines,
     ].join("\n"),
     color: 0xf1c40f,
+    image: { url: `${TRUST_ROYALE_URL}/api/goblinhunters/end-image` },
   };
 }
 
@@ -333,7 +333,7 @@ function buildReglesEmbed(config) {
   const lines = [
     "Deux camps s'affrontent en secret : les **Chasseurs** (majorité) et les **Gobelins infiltrés** (minorité). Chaque jour, choisis un lieu — il détermine ton action. **Choix définitif dès validation, impossible de changer d'avis ensuite (aucun lieu n'est modifiable une fois choisi).**",
     "",
-    "**Lieux** (tous les 5 lieux comptent comme une action — même la Taverne ou la Clairière) :",
+    "**Lieux** (tous les 5 lieux comptent comme une action) :",
     `${config.lieux.chateau.emoji} **${config.lieux.chateau.label}** — vote d'accusation public. En cas d'égalité, personne n'est éliminé.`,
     `${config.lieux.camp_entrainement.emoji} **${config.lieux.camp_entrainement.label}** — attaque (1 dégât, 2 pour le Bûcheron) un joueur vu ici la veille ; si personne n'y était, tu frappes un joueur vivant tiré au hasard.`,
     `${config.lieux.tour_de_guet.emoji} **${config.lieux.tour_de_guet.label}** — révèle le camp d'un joueur vu ici la veille ; si personne n'y était, l'enquête porte sur un joueur vivant tiré au hasard.`,

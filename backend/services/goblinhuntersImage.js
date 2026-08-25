@@ -33,6 +33,7 @@ import { readState } from "./goblinhunters.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BOARD_IMAGE_PATH = path.resolve(__dirname, "..", "..", "data", "goblinhunters", "images", "board.jpg");
+const END_IMAGE_PATH = path.resolve(__dirname, "..", "..", "data", "goblinhunters", "images", "end.webp");
 
 // Dimensions natives de board.jpg (voir data/goblinhunters/images/board.jpg)
 // — à ajuster si l'asset est remplacé par une image de résolution différente.
@@ -167,4 +168,20 @@ export async function getBoardImage() {
   if (!state?.joueurs) return null;
   const svg = await buildBoardSvg(state.joueurs);
   return rasterize(svg);
+}
+
+// Illustration statique de fin de partie — servie TELLE QUELLE (pas de
+// composition SVG/resvg ici, contrairement au plateau) : le format WebP
+// fonctionne très bien pour un fichier servi directement par une route
+// Express, seule sa décodabilité PAR resvg à l'intérieur d'un `<image>`
+// embarqué posait problème (voir board.jpg plus haut) — deux contraintes
+// différentes, pas de conflit ici. Mise en cache mémoire après la première
+// lecture, comme le reste des assets de ce module.
+let endImageCache = null;
+
+export async function getEndImage() {
+  if (!endImageCache) {
+    endImageCache = { buffer: await fs.readFile(END_IMAGE_PATH), mimeType: "image/webp" };
+  }
+  return endImageCache;
 }
