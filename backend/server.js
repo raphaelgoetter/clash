@@ -23,6 +23,7 @@ import { clearAll } from "./services/cache.js";
 import { fetchClan, fetchPlayer } from "./services/clashApi.js";
 import { getCurrentFrameImage, getFrameImageByGameId } from "./services/frames.js";
 import { getZoomCardImage, getZoomHintImage, getZoomRevealImage } from "./services/zoomImage.js";
+import { getBoardImage as getGoblinHuntersBoardImage } from "./services/goblinhuntersImage.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -276,6 +277,22 @@ app.get("/api/zoom/image", async (req, res) => {
   if (!gameId) return res.status(400).end();
   const getImage = stage === "hint" ? getZoomHintImage : stage === "reveal" ? getZoomRevealImage : getZoomCardImage;
   const image = await getImage(String(gameId)).catch(() => null);
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", "image/png");
+  res.setHeader("Cache-Control", "no-store");
+  res.send(image.buffer);
+});
+
+// Jeu Goblin Hunters : sert l'image du plateau (positions publiques). Le
+// paramètre jour n'est PAS une clé de lookup (contrairement à gameId côté
+// Frame/Zoom) : le rendu reflète toujours l'état COURANT de la partie —
+// l'ancien message est supprimé avant chaque repost, donc aucune image
+// passée ne reste jamais référencée ailleurs. jour sert uniquement à
+// invalider le cache Discord (voir goblinhuntersImage.js).
+app.get("/api/goblinhunters/image", async (req, res) => {
+  const { jour } = req.query;
+  if (!jour) return res.status(400).end();
+  const image = await getGoblinHuntersBoardImage().catch(() => null);
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", "image/png");
   res.setHeader("Cache-Control", "no-store");

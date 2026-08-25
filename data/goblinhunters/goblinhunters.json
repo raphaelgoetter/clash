@@ -1,0 +1,25 @@
+{
+  "duree_jours": 10,
+  "effectif_min": 8,
+  "effectif_max": 14,
+  "fenetre_inscription_jours": 3,
+  "minority_table": { "8": 3, "9": 3, "10": 3, "11": 4, "12": 4, "13": 4, "14": 5 },
+  "combat": { "pv_base": 3, "degats_base": 1 },
+  "taverne_seuil_protection": 3,
+  "camps": {
+    "chasseur": { "label": "Chasseurs", "emoji": "🗡️" },
+    "gobelin": { "label": "Gobelins", "emoji": "👺" }
+  },
+  "lieux": {
+    "chateau": { "label": "Château", "emoji": "🏰", "action": "vote" },
+    "camp_entrainement": { "label": "Camp d'Entraînement", "emoji": "⚔️", "action": "combat" },
+    "tour_de_guet": { "label": "Tour de Guet", "emoji": "🔭", "action": "enquete" },
+    "taverne": { "label": "Taverne", "emoji": "🍺", "action": "protection" },
+    "clairiere_mystique": { "label": "Clairière mystique", "emoji": "🌫️", "action": "sabotage" }
+  },
+  "roles": {
+    "eclaireur": { "camp": "chasseur", "label": "Éclaireur", "emoji": "🧭", "actions_par_jour": 2 },
+    "bucheron": { "camp": "chasseur", "label": "Bûcheron", "emoji": "🪓", "pv": 2, "degats": 2 },
+    "infiltre": { "camp": "gobelin", "label": "Infiltré", "emoji": "🎭" }
+  }
+}

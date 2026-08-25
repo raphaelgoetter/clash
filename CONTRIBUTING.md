@@ -1137,7 +1137,7 @@ Même instance et mêmes conventions que les autres jeux (`automaticDeserializat
 | `robinson:votes:<jour>` | HASH | `discordId → actionId` — jetable, effacé après clôture du jour |
 | `robinson:vote_details:<jour>` | HASH | `discordId → { actionId, amount\|yields\|pointsAdded, at }` — résultat exact du tirage, pour réafficher le même résultat sur un reclic idempotent sans re-tirer |
 | `robinson:vote_usernames:<jour>` | HASH | `discordId → pseudo` — jetable, uniquement pour l'affichage admin (`npm run robinson:status`), jamais utilisé pour la logique de vote |
-| `robinson:historique` | HASH | `jour → { V, stocksAvant, stocksApres, consumption, gobelinsVoleur, event, outcome, resolvedAt }` — bilans quotidiens de la manche EN COURS, alimente le bouton Journal de Bord, effacé par `resetRobinson()` |
+| `robinson:historique` | HASH | `jour → { V, radeauVotes, stocksAvant, stocksApres, consumption, gobelinsVoleur, event, outcome, resolvedAt }` — bilans quotidiens de la manche EN COURS, alimente le bouton Journal de Bord, effacé par `resetRobinson()`. `radeauVotes` (ajouté le 25/08) absent sur les entrées antérieures, affiché de façon tolérante par `formatHistoriqueLine()` |
 | `robinson:manches` | HASH | `manche → { manche, outcome, jour, radeauPoints, resolvedAt }` — un bilan par manche TERMINÉE, jamais nettoyé (persiste entre les manches, y compris après `npm run robinson:reset`) |
 | `robinson:manche_seq` | STRING (compteur) | Numéro de la prochaine manche à archiver, incrémenté (`INCR`) à chaque fin de partie réelle (jamais en dry-run) |
 
@@ -1261,6 +1261,70 @@ Même instance et mêmes conventions que les autres jeux. Espace de clés `bossr
 ### Variables d'environnement requises (Boss Raid)
 
 Aucune nouvelle variable : Boss Raid réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (même instance Upstash Redis, espace de clés `bossraid:*` totalement séparé). Le workflow `.github/workflows/bossraid.yml` réutilise les mêmes secrets GitHub Actions que les autres jeux (déjà configurés, rien à ajouter). Comme pour les autres jeux en phase de test, le `schedule` du cron reste **commenté** (seul `workflow_dispatch` actif) — à réactiver une fois le jeu validé.
+
+---
+
+## Jeu Goblin Hunters (identité secrète, camps cachés)
+
+Mini-jeu à identité secrète façon Shadow Hunters/Loups-Garous, adapté au rythme asynchrone quotidien du bot : deux camps s'affrontent en secret, les **Chasseurs** (majorité) et les **Gobelins infiltrés** (minorité, ratio 1/3 arrondi selon l'effectif), sur une partie de **10 jours maximum**. Modèle de référence = **Boss Raid**, pas Robinson : rien n'est appliqué en direct pendant la journée (positions/PV/votes/actions) — tout se résout **une seule fois à la clôture**, dans la fonction pure `computeCloture()` (`backend/services/goblinhunters.js`). Pas de commande slash associée — la publication/clôture passe uniquement par `scripts/postGoblinHunters.js` (manuel ou cron), les boutons et le select menu restent gérés par `api/discord/interactions.js`.
+
+### Déroulement (Goblin Hunters)
+
+Un seul message actif à la fois dans le salon dédié, en 3 phases :
+
+1. **Fenêtre d'inscription** (`goblinhunters:state.phase === "inscription"`) : `postGoblinHunters()` ouvre l'inscription (`[✅ S'inscrire]`/`[✖️ Se désinscrire]`), ping `@MINI JEUX`. Rappel quotidien avec le décompte des inscrits tant que la fenêtre (3 jours) n'est pas close. À la clôture : si moins de `effectif_min` (8) inscrits, la fenêtre est **prolongée de 3 jours** (pas d'annulation) ; sinon la partie est lancée (`launchGame()`) — roster figé, camps/rôles attribués, DM de rôle envoyé à chacun, inscriptions vidées.
+2. **Jour de jeu** (jours 1 à 10) : chaque joueur vivant choisit un lieu (bouton éphémère), qui détermine son action — vote au Château, combat au Camp d'Entraînement, enquête à la Tour de Guet, protection à la Taverne, sabotage à la Clairière mystique. Modifiable jusqu'à la clôture du lendemain (dernier clic gagne, `recordAction()`/`recordVoteChateau()` en `HSET` écrasable). Rien n'est publié publiquement en cours de journée.
+3. **Clôture quotidienne** : `postGoblinHunters()` clôture le jour actif (`closeDayAndAdvance()`), résout vote + combat + enquêtes + nouvelles positions, envoie les DM d'enquête, publie le bilan + le jour suivant (jamais de ping). Si une condition de victoire est atteinte ou que J10 est dépassé, publie l'embed de fin de partie (révélation complète des camps/rôles), ping `@MINI JEUX`, et passe `termine: true` — les runs suivants deviennent des no-op silencieux, même principe que les autres jeux.
+
+### Ciblage — restreint au dernier plateau connu, sauf le vote
+
+La cible d'un **combat** (Camp d'Entraînement/Clairière mystique) ou d'une **enquête** (Tour de Guet) doit être positionnée au lieu choisi sur le **dernier plateau connu** (`joueursAvant`, figé depuis la clôture précédente) — le select menu ne propose que ces cibles valides, `computeAttacksFromActions()`/`computeInvestigations()` re-filtrent quand même par défense. Le **vote du Château** reste volontairement libre sur tout joueur vivant (accusation villageoise publique, pas une confrontation physique). Conséquence directe : le Jour 1, aucune cible de combat/enquête n'existe encore (tout le monde démarre au Château) — le lieu affiche alors « aucune cible disponible », sans que ce soit un bug : c'est cohérent avec le garde-fou explicite qui désactive de toute façon vote et combat ce jour-là.
+
+### Plafond anti-snowball — 1 mort par combat maximum par jour
+
+Sans plafond, plusieurs Gobelins attaquant le même jour pourraient éliminer plusieurs Chasseurs d'un coup et faire s'effondrer la partie en 2-3 jours. `resolveCombat()` calcule les PV bruts de toutes les cibles touchées, mais si **plusieurs** deviennent mortelles le même jour, seule celle ayant reçu le **plus de dégâts** meurt réellement (égalité → tirage au sort) — les autres sont plafonnées à **1 PV minimum**, pas éliminées. Le vote du Château suit une règle différente et volontairement plus douce, décidée avec l'utilisateur : en cas d'égalité entre plusieurs cibles, **personne** n'est éliminé (`resolveVoteElimination()`, pas de tirage au sort). Jusqu'à 2 morts par jour-cycle au total (1 vote + 1 combat), plafonds indépendants — même enchaînement que le classique jour/nuit du genre. **Jour 1** : aucune élimination possible, ni vote ni combat (garde-fou explicite dans `computeCloture()`).
+
+### Rôles et combat
+
+1 exemplaire de chaque rôle spécial, quel que soit l'effectif (`assignCampsAndRoles()`) : **Éclaireur** (Chasseur, 2 actions/jour au lieu d'une), **Bûcheron** (Chasseur, 2 PV/2 dégâts fixes au lieu de 3 PV/1 dégât — glass cannon), **Infiltré** (Gobelin, l'enquête sur lui renvoie toujours `"chasseur"`, faux positif classique du genre). Les Gobelins connaissent l'identité des autres Gobelins dès la distribution des rôles (structurel, pas un rôle dédié). Combat **déterministe** (pas de RNG comme Boss Raid) : dégâts fixes selon le rôle de l'attaquant, seul le départage d'un plafond anti-snowball est aléatoire.
+
+### Taverne — protection sous seuil uniquement
+
+`computeTavernProtection()` : la protection ne tient que **sous** `taverne_seuil_protection` (3 par défaut, `data/goblinhunters/goblinhunters.json`) — au-dessus, surpeuplée, elle ne protège plus personne ce jour-là. Garde-fou décidé avec l'utilisateur contre le camping massif de la Taverne (sinon le camp majoritaire n'a aucune raison d'en bouger et la partie stagne jusqu'à J10). S'y rendre consomme l'action du jour comme n'importe quel autre lieu — aucun état supplémentaire à faire vivre sur la durée.
+
+### Image du plateau
+
+`backend/services/goblinhuntersImage.js` — même technique que `zoomImage.js` : `data/goblinhunters/images/board.png` encodé en `data:image/png;base64,...`, injecté dans un `<image href="...">` de fond, rastérisé en PNG via `@resvg/resvg-js`. ⚠️ **PNG, pas WebP** : l'asset original livré était un `.webp` ; un premier test avait semblé le valider (aucune exception levée), mais une vérification **visuelle** du rendu a révélé que resvg/usvg ne sait en réalité pas décoder un `<image>` WebP embarqué en data URI — il ignore silencieusement le fond sans jamais lever d'erreur. `board.webp` (asset original) est conservé pour archive, `board.png` (converti une fois via `sips -s format png`) est le seul fichier utilisé au rendu — toujours vérifier visuellement un rendu resvg avant de le considérer fonctionnel. Chaque joueur **vivant** apparaît en pastille positionnée sur son lieu courant (couleur neutre + initiale — **jamais** colorée par camp, ça fuiterait le secret), les joueurs **éliminés** apparaissent en bande grisée en bas de l'image avec la couleur de leur camp révélé (jamais le rôle précis). Servie par la route Express `GET /api/goblinhunters/image?jour=` (`backend/server.js`), référencée par URL dans l'embed — jamais un attachment Discord, même principe que Frame/Zoom. Le rendu reflète toujours l'état **courant** de la partie (pas un instantané historique par jour) : l'ancien message est supprimé avant chaque repost, `jour` ne sert qu'à invalider le cache Discord. Les coordonnées de chaque lieu (`LIEU_ANCHORS`) sont calibrées à l'œil sur l'aperçu généré — à affiner par itération visuelle si besoin, comme l'historique de réglage documenté dans `zoomImage.js`.
+
+### Stockage — Upstash Redis (`goblinhunters:*`)
+
+Même instance et mêmes conventions que les autres jeux (`automaticDeserialization: false`). Espace de clés `goblinhunters:*`, totalement séparé.
+
+| Clé Redis | Type | Contenu |
+| --- | --- | --- |
+| `goblinhunters:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, closingAt?, joueurs? }` — `joueurs` = roster complet (camp, rôle, PV, position, vivant, camp révélé) une fois la partie lancée |
+| `goblinhunters:inscriptions` | HASH | `discordId → { username, registeredAt }` — vidée au lancement de la partie |
+| `goblinhunters:actions:<jour>` | HASH | `discordId → { primary: {lieu, cibleId}, secondary? }` — écrasable, jetable, effacé après clôture du jour |
+| `goblinhunters:votes:<jour>` | HASH | `discordId → cibleId` — vote d'accusation du Château, écrasable, jetable |
+| `goblinhunters:historique` | HASH | `jour → { eliminationsParVote, deathIdCombat, investigations, voteTally, victory, resolvedAt }` — bilans quotidiens de la manche EN COURS, effacé par `resetGoblinHunters()` |
+| `goblinhunters:manches` | HASH | `manche → { manche, victory, jourFinal, resolvedAt }` — un bilan par manche TERMINÉE, jamais nettoyé |
+| `goblinhunters:manche_seq` | STRING (compteur) | Numéro de la prochaine manche à archiver, incrémenté (`INCR`) à chaque fin de partie réelle (jamais en dry-run) |
+
+### Scripts npm (Goblin Hunters)
+
+| Commande | Effet |
+| --- | --- |
+| `npm run goblinhunters:test` | Poste manuellement l'étape courante sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`). |
+| `npm run goblinhunters:test:dry` | Aperçu console de la prochaine étape, sans écrire d'état ni poster sur Discord. |
+| `npm run goblinhunters:public` | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `goblinhunters.yml`. |
+| `npm run goblinhunters:public:dry` | Équivalent dry-run de `goblinhunters:public`. |
+| `npm run goblinhunters:reset` | Remet Goblin Hunters à zéro : plus de partie active, inscriptions/actions/votes/historique de la manche en cours effacés. **Destructif** — préserve toujours `goblinhunters:manches`. |
+| `npm run goblinhunters:reset:manches` | Identique, mais efface aussi `goblinhunters:manches`/`goblinhunters:manche_seq`. **Destructif**, à réserver au filet de sécurité. |
+| `npm run goblinhunters:status` | Affiche l'état courant (phase, roster complet avec camps/rôles/PV/positions, progression des actions du jour) sans passer par Discord. ⚠️ **Sortie admin uniquement** — spoile les camps/rôles, ne jamais la partager avec les joueurs en cours de partie. |
+
+### Variables d'environnement requises (Goblin Hunters)
+
+Aucune nouvelle variable : Goblin Hunters réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (même instance Upstash Redis, espace de clés `goblinhunters:*` totalement séparé). Le workflow `.github/workflows/goblinhunters.yml` réutilise les mêmes secrets GitHub Actions que les autres jeux (déjà configurés, rien à ajouter).
 
 ---
 

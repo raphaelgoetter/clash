@@ -525,9 +525,11 @@ async function computeClosure(state, config, { write }) {
   // La victoire par Radeau court-circuite tout : aucune consommation ni
   // vérification de défaite ce jour-là (décision explicite validée).
   if (isRaftVictory(radeauPoints, config)) {
+    const [V, voters] = await Promise.all([countUniqueVoters(state.jour), listVotes(state.jour)]);
     const stocks = await readStocks();
     const record = {
-      V: await countUniqueVoters(state.jour),
+      V,
+      radeauVotes: voters.filter((v) => v.actionId === "radeau").length,
       stocksAvant: stocks,
       stocksApres: stocks,
       consumption: null,
@@ -577,6 +579,7 @@ async function computeClosure(state, config, { write }) {
   if (write) {
     await writeHistoriqueEntry(state.jour, {
       V,
+      radeauVotes: voters.filter((v) => v.actionId === "radeau").length,
       stocksAvant,
       stocksApres,
       consumption,

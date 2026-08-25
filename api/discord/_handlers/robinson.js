@@ -764,7 +764,10 @@ function formatHistoriqueLine(entry) {
   if (entry.outcome === "victoire_jour11") return `Jour ${entry.jour} : 🚢 Les secours sont arrivés !`;
   if (entry.outcome === "defaite") return `Jour ${entry.jour} : 💀 Naufrage.`;
   const vol = entry.gobelinsVoleur ? " — 🧌 les Gobelins ont volé 5 Poissons" : "";
-  return `Jour ${entry.jour} : ${entry.V} votant${entry.V > 1 ? "s" : ""}${vol}`;
+  // radeauVotes absent sur les entrées enregistrées avant le 25/08 (champ
+  // ajouté après coup) — omis proprement plutôt que d'afficher "undefined".
+  const radeau = entry.radeauVotes != null ? `, ${entry.radeauVotes} vote${entry.radeauVotes > 1 ? "s" : ""} radeau` : "";
+  return `Jour ${entry.jour} : ${entry.V} joueur${entry.V > 1 ? "s" : ""}${radeau}${vol}`;
 }
 
 export async function handleJournal(webhookUrl) {
@@ -792,7 +795,7 @@ export async function handleJournal(webhookUrl) {
     };
 
     const lines = [
-      `**Votants aujourd’hui : ${V}**`,
+      `**Joueurs aujourd’hui : ${V}**`,
       "",
       `**Besoins pour la clôture de ${formatUtcTimeAsParis(8)} (heure de Paris) :**`,
       `🐟 Nourriture : ${besoin.poisson} nécessaire${manque.poisson > 0 ? ` — **il en manque ${manque.poisson}**` : " (couvert)"}`,

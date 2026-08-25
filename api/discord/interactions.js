@@ -83,6 +83,15 @@ import {
   handleJournal as handleBossRaidJournal,
 } from "./_handlers/bossraid.js";
 import {
+  handleRegisterButton as handleGoblinHuntersRegister,
+  handleUnregisterButton as handleGoblinHuntersUnregister,
+  handleLieuButton as handleGoblinHuntersLieu,
+  handleEclaireurSecond as handleGoblinHuntersSecond,
+  handleTargetSelect as handleGoblinHuntersTarget,
+  handleRegles as handleGoblinHuntersRegles,
+  handleJournal as handleGoblinHuntersJournal,
+} from "./_handlers/goblinhunters.js";
+import {
   summarizeWarDecks,
   summarizeWarDecksForMatchup,
   summarizeRecentBattlesForMatchup,
@@ -9183,6 +9192,85 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleBossRaidJournal(webhookUrl));
+    return;
+  }
+
+  // ── Goblin Hunters : boutons S'inscrire / Se désinscrire ──
+  if (body.type === 3 && body.data?.custom_id === "goblinhunters_register") {
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleGoblinHuntersRegister(webhookUrl, discordId, username));
+    return;
+  }
+  if (body.type === 3 && body.data?.custom_id === "goblinhunters_unregister") {
+    const discordId = body.member?.user?.id;
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleGoblinHuntersUnregister(webhookUrl, discordId));
+    return;
+  }
+
+  // ── Goblin Hunters : choix de lieu (custom_id: goblinhunters_lieu:<jour>:<lieu>:<slot>) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("goblinhunters_lieu:")
+  ) {
+    const [, jour, lieu, slot] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleGoblinHuntersLieu(webhookUrl, jour, lieu, slot, discordId, username));
+    return;
+  }
+
+  // ── Goblin Hunters : bouton "Choisir ma 2ᵉ action" (Éclaireur uniquement) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("goblinhunters_second:")
+  ) {
+    const [, jour] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleGoblinHuntersSecond(webhookUrl, jour, discordId));
+    return;
+  }
+
+  // ── Goblin Hunters : select de cible (édite le message éphémère en place) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("goblinhunters_target:")
+  ) {
+    const [, jour, lieu, slot] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+    const selected = body.data.values?.[0];
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleGoblinHuntersTarget(webhookUrl, jour, lieu, slot, discordId, username, selected));
+    return;
+  }
+
+  // ── Goblin Hunters : boutons "Règles" / "Journal" (éphémères, statiques) ──
+  if (body.type === 3 && body.data?.custom_id === "goblinhunters_regles") {
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleGoblinHuntersRegles(webhookUrl));
+    return;
+  }
+  if (body.type === 3 && body.data?.custom_id === "goblinhunters_journal") {
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleGoblinHuntersJournal(webhookUrl));
     return;
   }
 

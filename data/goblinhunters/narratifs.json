@@ -1,0 +1,42 @@
+{
+  "intro_cocasse": [
+    "🌫️ Le brouillard s'accroche encore aux toits du village quand les premiers volets s'ouvrent.",
+    "🔔 La cloche du Château sonne le début d'une nouvelle journée de méfiance.",
+    "🍺 La Taverne a fermé tard hier soir — certains regards échangés n'annoncent rien de bon.",
+    "🌲 Un cri étouffé s'est fait entendre du côté de la Clairière mystique cette nuit, sans que personne n'ose vérifier.",
+    "🏹 Le Camp d'Entraînement porte encore les traces des affrontements de la veille.",
+    "🔭 La Tour de Guet n'a pas quitté des yeux le village de la nuit.",
+    "🚪 Chacun observe son voisin d'un œil un peu plus noir qu'hier.",
+    "🕯️ Une bougie est restée allumée toute la nuit au Château — personne ne sait qui l'a oubliée là.",
+    "👣 Des traces de pas suspectes ont été relevées entre deux lieux du village.",
+    "🌙 La nuit a été calme en apparence — trop calme, peut-être."
+  ],
+  "mort_combat": [
+    "⚔️ Un combat a éclaté au Camp d'Entraînement — un habitant n'a pas survécu à ses blessures.",
+    "🩸 Le Camp d'Entraînement porte les traces d'un affrontement fatal.",
+    "🗡️ Une lame a tranché plus profond que prévu cette nuit."
+  ],
+  "mort_vote": [
+    "⚖️ Le village s'est prononcé au Château — la sentence a été exécutée sans appel.",
+    "🔥 Une accusation a suffi à sceller un destin devant le Château.",
+    "📯 Le verdict du Château est tombé, sans retour possible."
+  ],
+  "pas_de_mort": [
+    "🕊️ Étonnamment, personne n'a péri aujourd'hui.",
+    "😮‍💨 Le village retient son souffle — mais tout le monde est encore là.",
+    "🤝 Aucune sentence, aucun coup fatal — juste de la méfiance en suspens."
+  ],
+  "vote_egalite": [
+    "⚖️ Les voix se sont trop dispersées au Château — personne n'est désigné aujourd'hui.",
+    "🤷 Le Château n'a pas su trancher — l'accusation reste sans suite."
+  ],
+  "victoire_gobelins": [
+    "👺 Les Gobelins ont fini par prendre le dessus — le village leur appartient désormais."
+  ],
+  "victoire_chasseurs_elimination": [
+    "🗡️ Le dernier Gobelin est tombé — les Chasseurs ont purgé le village."
+  ],
+  "victoire_chasseurs_survie": [
+    "🏰 Les dix jours sont écoulés sans que les Gobelins n'aient jamais pris l'avantage — les Chasseurs l'emportent par défaut."
+  ]
+}
