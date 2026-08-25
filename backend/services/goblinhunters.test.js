@@ -17,6 +17,8 @@ import {
   isActionLocked,
   computeIndicesForDay,
   computeClairiereReveals,
+  resolveExplosifRetaliation,
+  resolveGuetApensReveal,
 } from "./goblinhunters.js";
 
 const CONFIG = {
@@ -24,7 +26,7 @@ const CONFIG = {
   taverne_seuil_protection: 3,
   vote_quorum_min: 2,
   combat: { pv_base: 3, degats_base: 1 },
-  roles: { bucheron: { degats: 2 } },
+  roles: { bucheron: { degats: 2 }, explosif: { degats_riposte: 1 } },
 };
 
 function rngSequence(values) {
@@ -65,9 +67,24 @@ async function main() {
     assert.strictEqual(assignments.filter((a) => a.role === "infiltre").length, 1);
     assert.strictEqual(assignments.filter((a) => a.role === "eclaireur").length, 1);
     assert.strictEqual(assignments.filter((a) => a.role === "bucheron").length, 1);
+    assert.strictEqual(assignments.filter((a) => a.role === "explosif").length, 1);
+    assert.strictEqual(assignments.filter((a) => a.role === "guet_apens").length, 1);
     assert.ok(assignments.find((a) => a.role === "infiltre").camp === "gobelin");
     assert.ok(assignments.find((a) => a.role === "eclaireur").camp === "chasseur");
     assert.ok(assignments.find((a) => a.role === "bucheron").camp === "chasseur");
+    assert.ok(assignments.find((a) => a.role === "explosif").camp === "gobelin");
+    assert.ok(assignments.find((a) => a.role === "guet_apens").camp === "chasseur");
+  }
+  {
+    // Effectif plancher (8 -> 3 Gobelins/5 Chasseurs, table minority_table) :
+    // les 2 rôles Gobelins et les 3 rôles Chasseurs doivent quand même tenir.
+    const ids = Array.from({ length: 8 }, (_, i) => `q${i}`);
+    const assignments = assignCampsAndRoles(ids, 3, rngSequence([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]));
+    assert.strictEqual(assignments.filter((a) => a.role === "infiltre").length, 1);
+    assert.strictEqual(assignments.filter((a) => a.role === "explosif").length, 1);
+    assert.strictEqual(assignments.filter((a) => a.role === "eclaireur").length, 1);
+    assert.strictEqual(assignments.filter((a) => a.role === "bucheron").length, 1);
+    assert.strictEqual(assignments.filter((a) => a.role === "guet_apens").length, 1);
   }
 
   // ── computeVoteTally / resolveVoteElimination (égalité -> personne) ──
@@ -298,6 +315,115 @@ async function main() {
   // Le verrou est spécifique au slot : le primary verrouillé n'empêche pas
   // l'Éclaireur de soumettre un secondary différent.
   assert.strictEqual(isActionLocked({ primary: { lieu: "chateau", cibleId: "x" } }, "secondary"), false);
+
+  // ── resolveGuetApensReveal : mort au combat -> révèle le camp de(s)
+  // attaquant(s), jamais au vote (pas d'attaquant identifiable) ──
+  {
+    const joueursAvant = [
+      joueur("guetteur", { role: "guet_apens" }),
+      joueur("attaquant_gobelin", { camp: "gobelin" }),
+    ];
+    const attacks = [{ attackerId: "attaquant_gobelin", targetId: "guetteur", lieu: "camp_entrainement", degats: 1 }];
+    const reveal = resolveGuetApensReveal({ deathIdCombat: "guetteur", attacks, joueursAvant });
+    assert.deepStrictEqual(reveal, {
+      guetApensId: "guetteur",
+      attackers: [{ attackerId: "attaquant_gobelin", campReporte: "gobelin" }],
+    });
+  }
+  {
+    // Pas Guet-Apens -> pas de révélation.
+    const joueursAvant = [joueur("normal"), joueur("attaquant", { camp: "gobelin" })];
+    const attacks = [{ attackerId: "attaquant", targetId: "normal", lieu: "camp_entrainement", degats: 1 }];
+    assert.strictEqual(resolveGuetApensReveal({ deathIdCombat: "normal", attacks, joueursAvant }), null);
+  }
+  {
+    // Mort au vote (pas de deathIdCombat) -> jamais de révélation, même si
+    // la victime est Guet-Apens.
+    const joueursAvant = [joueur("guetteur", { role: "guet_apens" })];
+    assert.strictEqual(resolveGuetApensReveal({ deathIdCombat: null, attacks: [], joueursAvant }), null);
+  }
+
+  // ── resolveExplosifRetaliation : riposte 1 dégât sur un Chasseur, jamais
+  // sur un tir ami Gobelin, jamais mortelle ──
+  {
+    // Mort au combat -> riposte sur l'attaquant, uniquement s'il est Chasseur.
+    const joueursAvant = [
+      joueur("boom", { camp: "gobelin", role: "explosif" }),
+      joueur("chasseur1"),
+      joueur("gobelin_ami", { camp: "gobelin" }),
+    ];
+    const attacks = [
+      { attackerId: "chasseur1", targetId: "boom", lieu: "camp_entrainement", degats: 1 },
+      { attackerId: "gobelin_ami", targetId: "boom", lieu: "camp_entrainement", degats: 1 }, // tir ami -> jamais ciblé
+    ];
+    const retaliation = resolveExplosifRetaliation({
+      eliminationsParVote: null,
+      deathIdCombat: "boom",
+      actionsRaw: {},
+      attacks,
+      joueursAvant,
+    });
+    assert.deepStrictEqual(retaliation, { gobelinId: "boom", targetId: "chasseur1" });
+  }
+  {
+    // Mort au vote -> riposte sur un votant Chasseur tiré au hasard parmi
+    // ceux qui ont voté contre lui (les votants Gobelins, s'il y en a, sont
+    // exclus des cibles).
+    const joueursAvant = [
+      joueur("boom", { camp: "gobelin", role: "explosif" }),
+      joueur("chasseur1"),
+      joueur("chasseur2"),
+    ];
+    const actionsRaw = {
+      chasseur1: { primary: { lieu: "chateau", cibleId: "boom" } },
+      chasseur2: { primary: { lieu: "chateau", cibleId: "boom" } },
+    };
+    const rng = rngSequence([0.9]);
+    const retaliation = resolveExplosifRetaliation({
+      eliminationsParVote: "boom",
+      deathIdCombat: null,
+      actionsRaw,
+      attacks: [],
+      joueursAvant,
+      rng,
+    });
+    assert.strictEqual(retaliation.gobelinId, "boom");
+    assert.ok(["chasseur1", "chasseur2"].includes(retaliation.targetId));
+  }
+  {
+    // Le mort n'est pas l'Explosif -> pas de riposte.
+    const joueursAvant = [joueur("normal", { camp: "gobelin" }), joueur("chasseur1")];
+    assert.strictEqual(
+      resolveExplosifRetaliation({
+        eliminationsParVote: "normal",
+        deathIdCombat: null,
+        actionsRaw: { chasseur1: { primary: { lieu: "chateau", cibleId: "normal" } } },
+        attacks: [],
+        joueursAvant,
+      }),
+      null,
+    );
+  }
+  {
+    // computeCloture bout en bout : la riposte de l'Explosif ne cause jamais
+    // de 2e mort le même jour, même si la cible est déjà à 1 PV avant la
+    // riposte (décision explicite : "2e option", jamais de kill via la riposte).
+    const joueursAvant = [
+      joueur("boom", { camp: "gobelin", role: "explosif" }),
+      joueur("voteur_gobelin", { camp: "gobelin" }),
+      joueur("chasseur1", { pv: 1 }), // déjà à 1 PV, avant même toute riposte
+    ];
+    const actionsRaw = {
+      voteur_gobelin: { primary: { lieu: "chateau", cibleId: "boom" } },
+      chasseur1: { primary: { lieu: "chateau", cibleId: "boom" } }, // quorum 2, seul votant Chasseur -> seule cible possible
+    };
+    const result = computeCloture({ jour: 2, actionsRaw, joueursAvant, config: CONFIG });
+    assert.strictEqual(result.eliminationsParVote, "boom");
+    assert.deepStrictEqual(result.explosifRetaliation, { gobelinId: "boom", targetId: "chasseur1" });
+    const chasseur1Apres = result.joueursApres.find((j) => j.discordId === "chasseur1");
+    assert.strictEqual(chasseur1Apres.alive, true);
+    assert.strictEqual(chasseur1Apres.pv, 1); // clampé, jamais négatif/nul
+  }
 
   // ── computeCloture : jour 1, aucune élimination possible (vote/combat no-op) ──
   {

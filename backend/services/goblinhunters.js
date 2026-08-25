@@ -191,9 +191,12 @@ function shuffle(array, rng) {
   return copy;
 }
 
-// 1 exemplaire de chaque rôle spécial (Éclaireur/Bûcheron côté Chasseurs,
-// Infiltré côté Gobelins), quel que soit l'effectif — voir goblinhunters.json.
-// Retourne [{discordId, camp, role}], role = null pour les joueurs de base.
+// 1 exemplaire de chaque rôle spécial (Éclaireur/Bûcheron/Guet-Apens côté
+// Chasseurs, Infiltré/Explosif côté Gobelins), quel que soit l'effectif —
+// voir goblinhunters.json. Effectif mini 8 -> minorité mini 3 (table 8→3) et
+// majorité mini 5 (8-3) : les 2 rôles Gobelins et les 3 rôles Chasseurs
+// tiennent toujours, même à l'effectif plancher. Retourne
+// [{discordId, camp, role}], role = null pour les joueurs de base.
 export function assignCampsAndRoles(playerIds, minorityCount, rng = Math.random) {
   const shuffled = shuffle(playerIds, rng);
   const gobelins = shuffled.slice(0, minorityCount);
@@ -205,10 +208,12 @@ export function assignCampsAndRoles(playerIds, minorityCount, rng = Math.random)
 
   const gobelinsShuffled = shuffle(gobelins, rng);
   if (gobelinsShuffled[0]) assignments.get(gobelinsShuffled[0]).role = "infiltre";
+  if (gobelinsShuffled[1]) assignments.get(gobelinsShuffled[1]).role = "explosif";
 
   const chasseursShuffled = shuffle(chasseurs, rng);
   if (chasseursShuffled[0]) assignments.get(chasseursShuffled[0]).role = "eclaireur";
   if (chasseursShuffled[1]) assignments.get(chasseursShuffled[1]).role = "bucheron";
+  if (chasseursShuffled[2]) assignments.get(chasseursShuffled[2]).role = "guet_apens";
 
   return [...assignments.values()];
 }
@@ -572,6 +577,72 @@ export function computeIndicesForDay(jour, attacks, investigations, clairiereRev
   return indicesByPlayer;
 }
 
+// Riposte du Gobelin explosif : à sa mort (vote OU combat), inflige
+// `config.roles.explosif.degats_riposte` (1 par défaut) à un Chasseur —
+// jamais mortelle (clampée à 1 PV minimum). Décidé explicitement avec
+// l'utilisateur : contrairement au plafond anti-snowball du combat classique
+// (1 mort max/jour, départagé par rng si plusieurs cibles seraient
+// mortelles), la riposte ne doit JAMAIS pouvoir causer une 2e mort le même
+// jour, quel que soit l'état de PV de la cible avant riposte (ex. déjà
+// plafonnée à 1 PV par le combat normal ce même jour) — plus simple à
+// raisonner qu'une intégration dans le plafond de resolveCombat(), et
+// suffisant puisque la riposte n'est de toute façon jamais injectée dans
+// `damagePerTarget`/resolveCombat(), elle s'applique en aval, sur le pv déjà
+// résolu. Cible : l'attaquant qui l'a achevé au combat (uniquement si
+// Chasseur — pas de riposte sur un tir ami Gobelin via le filet de
+// sécurité), sinon un votant Chasseur tiré au hasard s'il est éliminé au
+// vote (pas d'attaquant unique dans ce cas). `attacks` doit venir du même
+// appel que la résolution des PV (même avertissement que pour
+// computeIndicesForDay : ne jamais recalculer computeAttacksFromActions()
+// séparément).
+export function resolveExplosifRetaliation({ eliminationsParVote, deathIdCombat, actionsRaw, attacks, joueursAvant, rng = Math.random }) {
+  const byId = new Map(joueursAvant.map((j) => [j.discordId, j]));
+  let gobelinId = null;
+  let candidates = [];
+
+  const votedOut = eliminationsParVote ? byId.get(eliminationsParVote) : null;
+  if (votedOut?.role === "explosif") {
+    gobelinId = votedOut.discordId;
+    candidates = Object.entries(actionsRaw)
+      .filter(([voterId, action]) => extractVote(action) === gobelinId && byId.get(voterId)?.camp === "chasseur")
+      .map(([voterId]) => voterId);
+  }
+
+  const combatDead = deathIdCombat ? byId.get(deathIdCombat) : null;
+  if (combatDead?.role === "explosif") {
+    gobelinId = combatDead.discordId;
+    candidates = [
+      ...new Set(
+        attacks
+          .filter((a) => a.targetId === gobelinId && byId.get(a.attackerId)?.camp === "chasseur")
+          .map((a) => a.attackerId),
+      ),
+    ];
+  }
+
+  if (!gobelinId || !candidates.length) return null;
+  const targetId = candidates[Math.floor(rng() * candidates.length)];
+  return { gobelinId, targetId };
+}
+
+// Révélation du Guet-Apens : mort au combat -> révèle le camp du/des
+// attaquant(s) qui l'ont achevé (plusieurs possibles si ciblé par plusieurs
+// attaques le même jour, cf. sumDamagePerTarget). Ne se déclenche qu'au
+// combat, jamais au vote (pas d'attaquant identifiable dans un vote
+// collectif). `attacks` = même contrainte que resolveExplosifRetaliation
+// ci-dessus (résultat du même appel que la résolution des PV).
+export function resolveGuetApensReveal({ deathIdCombat, attacks, joueursAvant }) {
+  const byId = new Map(joueursAvant.map((j) => [j.discordId, j]));
+  const dead = deathIdCombat ? byId.get(deathIdCombat) : null;
+  if (dead?.role !== "guet_apens") return null;
+  const attackerIds = [...new Set(attacks.filter((a) => a.targetId === deathIdCombat).map((a) => a.attackerId))];
+  if (!attackerIds.length) return null;
+  return {
+    guetApensId: deathIdCombat,
+    attackers: attackerIds.map((id) => ({ attackerId: id, campReporte: byId.get(id)?.camp })),
+  };
+}
+
 // Nouvelle position affichée pour chaque joueur vivant : le lieu de sa
 // dernière action soumise (secondary si Éclaireur ayant joué 2 fois),
 // retombe au Château par défaut (pass automatique, décidé avec l'utilisateur).
@@ -626,12 +697,21 @@ export function computeCloture({ jour, actionsRaw, joueursAvant, config, rng = M
     deathIdCombat = combatResult.deathId;
   }
 
+  const explosifRetaliation =
+    jour > 1
+      ? resolveExplosifRetaliation({ eliminationsParVote, deathIdCombat, actionsRaw, attacks, joueursAvant, rng })
+      : null;
+  const guetApensReveal = jour > 1 ? resolveGuetApensReveal({ deathIdCombat, attacks, joueursAvant }) : null;
+
   const investigations = computeInvestigations(actionsRaw, joueursApresVote, rng);
   const newPositions = computeNewPositions(actionsRaw, joueursApresVote);
 
   const joueursApres = joueursApresVote.map((j) => {
     if (!j.alive) return j;
-    const pv = pvApres[j.discordId] ?? j.pv;
+    let pv = pvApres[j.discordId] ?? j.pv;
+    if (explosifRetaliation?.targetId === j.discordId) {
+      pv = Math.max(pv - config.roles.explosif.degats_riposte, 1);
+    }
     const meurt = j.discordId === deathIdCombat;
     return {
       ...j,
@@ -658,6 +738,8 @@ export function computeCloture({ jour, actionsRaw, joueursAvant, config, rng = M
     investigations,
     clairiereReveals,
     voteTally,
+    explosifRetaliation,
+    guetApensReveal,
     victory,
   };
 }
@@ -698,6 +780,8 @@ export async function closeDayAndAdvance(jour, config) {
     deathIdCombat: result.deathIdCombat,
     investigations: result.investigations,
     voteTally: result.voteTally,
+    explosifRetaliation: result.explosifRetaliation,
+    guetApensReveal: result.guetApensReveal,
     victory: result.victory,
     resolvedAt: new Date().toISOString(),
   });

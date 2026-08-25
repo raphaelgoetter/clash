@@ -21,6 +21,8 @@
   "roles": {
     "eclaireur": { "camp": "chasseur", "label": "Éclaireur", "emoji": "🧭", "actions_par_jour": 2 },
     "bucheron": { "camp": "chasseur", "label": "Bûcheron", "emoji": "🪓", "pv": 2, "degats": 2 },
-    "infiltre": { "camp": "gobelin", "label": "Infiltré", "emoji": "🎭" }
+    "guet_apens": { "camp": "chasseur", "label": "Guet-Apens", "emoji": "🪤" },
+    "infiltre": { "camp": "gobelin", "label": "Infiltré", "emoji": "🎭" },
+    "explosif": { "camp": "gobelin", "label": "Gobelin explosif", "emoji": "💣", "degats_riposte": 1 }
   }
 }

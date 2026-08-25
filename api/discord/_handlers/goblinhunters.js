@@ -179,6 +179,27 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
     if (combatLine) lines.push(`⚔️ Tombé(e) au combat : ${combatLine}`);
     if (!voteLine && !combatLine)
       lines.push("Personne n'a été éliminé aujourd'hui.");
+
+    // Guet-Apens/Explosif : effets déclenchés à la mort d'un rôle spécial,
+    // annoncés publiquement au même titre que le reveal de camp habituel
+    // (même logique de transparence que "Révélation à l'élimination").
+    if (closure.guetApensReveal) {
+      for (const { attackerId, campReporte } of closure.guetApensReveal.attackers) {
+        const attacker = joueursApres.find((p) => p.discordId === attackerId);
+        const camp = config.camps[campReporte];
+        lines.push(
+          `🪤 Piège du Guet-Apens : **${attacker?.username || "?"}** est démasqué(e) — camp ${camp.emoji} **${camp.label.slice(0, -1)}** !`,
+        );
+      }
+    }
+    if (closure.explosifRetaliation) {
+      const gobelin = joueursApres.find((p) => p.discordId === closure.explosifRetaliation.gobelinId);
+      const target = joueursApres.find((p) => p.discordId === closure.explosifRetaliation.targetId);
+      lines.push(
+        `💣 **${gobelin?.username || "?"}** explose en mourant — **${target?.username || "?"}** encaisse ${config.roles.explosif.degats_riposte} dégât.`,
+      );
+    }
+
     lines.push("");
   }
 
@@ -353,6 +374,29 @@ function buildOutcomeEmbed(
   };
 }
 
+// Description en une phrase de ce que fait un rôle spécial — réutilisée dans
+// les Règles ET dans le DM de rôle (sur demande explicite : le DM ne
+// donnait auparavant que le libellé du rôle, jamais ce qu'il fait
+// concrètement). Générée depuis la config plutôt qu'écrite en dur, pour ne
+// jamais désynchroniser d'un futur réglage des chiffres (PV/dégâts/etc.).
+function roleDescription(roleKey, config) {
+  const r = config.roles[roleKey];
+  switch (roleKey) {
+    case "eclaireur":
+      return `soumet ${r.actions_par_jour} actions par jour au lieu d'une.`;
+    case "bucheron":
+      return `${r.pv} PV et ${r.degats} dégâts par coup au lieu de ${config.combat.pv_base} PV et ${config.combat.degats_base} dégât : plus offensif, plus fragile.`;
+    case "guet_apens":
+      return "si tu meurs au combat à l'Arène, le camp de qui t'a achevé est révélé publiquement.";
+    case "infiltre":
+      return 'l\'enquête menée sur toi à la Tour de Guet renvoie toujours "Chasseur".';
+    case "explosif":
+      return `si tu meurs (vote ou combat), tu infliges automatiquement ${r.degats_riposte} dégât à un Chasseur avant de partir — jamais mortel.`;
+    default:
+      return "";
+  }
+}
+
 function buildReglesEmbed(config) {
   const lines = [
     "Deux camps s'affrontent en secret : les **Chasseurs** (majorité) et les **Gobelins infiltrés** (minorité). Chaque jour, choisis un lieu — il détermine ton action. **Choix définitif dès validation, impossible de changer d'avis ensuite (aucun lieu n'est modifiable une fois choisi).**",
@@ -365,9 +409,10 @@ function buildReglesEmbed(config) {
     `${config.lieux.clairiere_mystique.emoji} **${config.lieux.clairiere_mystique.label}** — révèle en privé la position actuelle de 2 joueurs tirés au hasard (jamais toi-même), sans confrontation.`,
     "",
     "**Rôles spéciaux** (1 exemplaire de chacun, distribué au hasard, le reste des joueurs est en rôle de base) :",
-    `${config.roles.eclaireur.emoji} **${config.roles.eclaireur.label}** (camp ${config.camps[config.roles.eclaireur.camp].label}) — soumet ${config.roles.eclaireur.actions_par_jour} actions par jour au lieu d'une.`,
-    `${config.roles.bucheron.emoji} **${config.roles.bucheron.label}** (camp ${config.camps[config.roles.bucheron.camp].label}) — ${config.roles.bucheron.pv} PV et ${config.roles.bucheron.degats} dégâts par coup au lieu de ${config.combat.pv_base} PV et ${config.combat.degats_base} dégât : plus offensif, plus fragile.`,
-    `${config.roles.infiltre.emoji} **${config.roles.infiltre.label}** (camp ${config.camps[config.roles.infiltre.camp].label}) — l'enquête menée sur lui à la Tour de Guet renvoie toujours "Chasseur".`,
+    ...Object.keys(config.roles).map(
+      (roleKey) =>
+        `${config.roles[roleKey].emoji} **${config.roles[roleKey].label}** (camp ${config.camps[config.roles[roleKey].camp].label}) — ${roleDescription(roleKey, config)}`,
+    ),
     "",
     `Chaque joueur a **${config.combat.pv_base} PV**. Maximum **1 mort par combat et par jour**, tous joueurs confondus.`,
     `Aucune élimination possible le Jour 1 (vote et combat désactivés).`,
@@ -422,11 +467,15 @@ async function sendGoblinHuntersDM(discordId, embed) {
 async function sendRoleDM(joueur, config, joueurs) {
   const camp = config.camps[joueur.camp];
   const roleLabel = joueur.role ? config.roles[joueur.role].label : null;
+  const roleLine = joueur.role
+    ? `${config.roles[joueur.role].emoji} **${roleLabel}** — ${roleDescription(joueur.role, config)}`
+    : null;
   const gobelinsLine = otherGobelinsLine(joueur, joueurs);
   const embed = {
     title: "👺 Goblin Hunters — ton rôle secret",
     description: [
       `Tu es un(e) ${camp.emoji} **${camp.label.slice(0, -1)}**${roleLabel ? ` (rôle spécial : **${roleLabel}**)` : ""}.`,
+      ...(roleLine ? ["", roleLine] : []),
       ...(gobelinsLine ? ["", gobelinsLine] : []),
       "",
       "🤫 Garde ce rôle secret — le jeu n'a d'intérêt que si tu sais bluffer !",
