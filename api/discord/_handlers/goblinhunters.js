@@ -402,7 +402,7 @@ function roleDescription(roleKey, config) {
     case "eclaireur":
       return `permet ${r.actions_par_jour} actions par jour au lieu d'une.`;
     case "bucheron":
-      return `${r.pv} PV et ${r.degats} dégâts par coup au lieu de ${config.combat.pv_base} PV et ${config.combat.degats_base} dégâttous joueurs confondu.`;
+      return `${r.pv} PV et ${r.degats} dégâts par coup au lieu de ${config.combat.pv_base} PV et ${config.combat.degats_base} dégât.`;
     case "guet_apens":
       return "si tu meurs au combat à l'Arène, le camp de qui t'a achevé est révélé publiquement.";
     case "infiltre":
