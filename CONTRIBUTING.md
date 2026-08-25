@@ -1314,6 +1314,10 @@ Sans plafond, plusieurs Gobelins attaquant le même jour pourraient éliminer pl
 
 1 exemplaire de chaque rôle spécial, quel que soit l'effectif (`assignCampsAndRoles()`) : **Éclaireur** (Chasseur, 2 actions/jour au lieu d'une), **Bûcheron** (Chasseur, 2 PV/2 dégâts fixes au lieu de 3 PV/1 dégât — glass cannon), **Infiltré** (Gobelin, l'enquête sur lui renvoie toujours `"chasseur"`, faux positif classique du genre). Les Gobelins connaissent l'identité des autres Gobelins dès la distribution des rôles (structurel, pas un rôle dédié). Combat **déterministe** (pas de RNG comme Boss Raid) : dégâts fixes selon le rôle de l'attaquant, seul le départage d'un plafond anti-snowball est aléatoire.
 
+⚠️ Les 3 rôles spéciaux sont listés explicitement dans `buildReglesEmbed()` (bouton `[📖 Règles]`) — un oubli initial les avait omis, repéré par l'utilisateur sur une vraie partie en test (seul le PV du Bûcheron était mentionné en passant, sans jamais dire ce qu'était un Bûcheron ni mentionner l'Éclaireur/l'Infiltré).
+
+⚠️ Le nombre total de Gobelins n'est **pas un secret** : il découle mécaniquement de l'effectif de départ via `minority_table` (config publique, table 8→3…14→5) — n'importe quel joueur peut donc déjà le calculer lui-même. L'embed de jour affiche en conséquence le vrai décompte de Gobelins vivants (`👺 Gobelins en vie : **N**`), pas un `?` — un premier jet affichait `?` par réflexe "mystère façon Loups-Garous", incohérent avec le fait que le total de départ est public dès l'inscription. Seul reste secret : **qui** est Gobelin.
+
 ### Taverne — protection sous seuil uniquement
 
 `computeTavernProtection()` : la protection ne tient que **sous** `taverne_seuil_protection` (3 par défaut, `data/goblinhunters/goblinhunters.json`) — au-dessus, surpeuplée, elle ne protège plus personne ce jour-là. Garde-fou décidé avec l'utilisateur contre le camping massif de la Taverne (sinon le camp majoritaire n'a aucune raison d'en bouger et la partie stagne jusqu'à J10). S'y rendre consomme l'action du jour comme n'importe quel autre lieu — aucun état supplémentaire à faire vivre sur la durée.

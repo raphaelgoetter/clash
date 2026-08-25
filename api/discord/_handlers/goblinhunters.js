@@ -151,11 +151,16 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
     lines.push("");
   }
 
+  // Le total de Gobelins n'est PAS un secret : il découle mécaniquement de
+  // l'effectif de départ via la table de ratio publique (goblinhunters.json),
+  // donc n'importe quel joueur peut déjà le calculer lui-même — masquer le
+  // compte en vie serait une fausse pudeur, pas un vrai secret (repéré par
+  // l'utilisateur sur un "?" affiché à tort).
   const vivants = joueursApres.filter((j) => j.alive);
   const chasseursVivants = vivants.filter((j) => j.camp === "chasseur").length;
   const gobelinsVivants = vivants.filter((j) => j.camp === "gobelin").length;
   lines.push(
-    `${config.camps.chasseur.emoji} Chasseurs en vie : **${chasseursVivants}** — ${config.camps.gobelin.emoji} Gobelins en vie (estimation du village) : **?**`,
+    `${config.camps.chasseur.emoji} Chasseurs en vie : **${chasseursVivants}** — ${config.camps.gobelin.emoji} Gobelins en vie : **${gobelinsVivants}**`,
   );
 
   return {
@@ -262,7 +267,12 @@ function buildReglesEmbed(config) {
     `${config.lieux.taverne.emoji} **${config.lieux.taverne.label}** — protection tant que moins de ${config.taverne_seuil_protection} joueurs s'y trouvent le même jour.`,
     `${config.lieux.clairiere_mystique.emoji} **${config.lieux.clairiere_mystique.label}** — révèle en privé la position actuelle de 2 joueurs tirés au hasard (jamais toi-même), sans confrontation.`,
     "",
-    `Chaque joueur a **${config.combat.pv_base} PV** (le Bûcheron : ${config.roles.bucheron.pv} PV, plus fragile mais plus offensif). Maximum **1 mort par combat et par jour**, tous joueurs confondus.`,
+    "**Rôles spéciaux** (1 exemplaire de chacun, distribué au hasard, le reste des joueurs est en rôle de base) :",
+    `${config.roles.eclaireur.emoji} **${config.roles.eclaireur.label}** (camp ${config.camps[config.roles.eclaireur.camp].label}) — soumet ${config.roles.eclaireur.actions_par_jour} actions par jour au lieu d'une.`,
+    `${config.roles.bucheron.emoji} **${config.roles.bucheron.label}** (camp ${config.camps[config.roles.bucheron.camp].label}) — ${config.roles.bucheron.pv} PV et ${config.roles.bucheron.degats} dégâts par coup au lieu de ${config.combat.pv_base} PV et ${config.combat.degats_base} dégât : plus offensif, plus fragile.`,
+    `${config.roles.infiltre.emoji} **${config.roles.infiltre.label}** (camp ${config.camps[config.roles.infiltre.camp].label}) — l'enquête menée sur lui à la Tour de Guet renvoie toujours "Chasseur".`,
+    "",
+    `Chaque joueur a **${config.combat.pv_base} PV**. Maximum **1 mort par combat et par jour**, tous joueurs confondus.`,
     `Aucune élimination possible le Jour 1 (vote et combat désactivés).`,
     `🚫 Impossible de rester au même lieu 2 jours de suite (à partir du Jour 2) — il faut bouger.`,
     "",
