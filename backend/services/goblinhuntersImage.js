@@ -1,21 +1,22 @@
 // ============================================================
 // goblinhuntersImage.js — Synthèse de l'image du plateau pour Goblin
-// Hunters : compose le décor statique (data/goblinhunters/images/board.png)
+// Hunters : compose le décor statique (data/goblinhunters/images/board.jpg)
 // avec les pastilles des joueurs vivants positionnées par lieu, et une
 // bande de pastilles grisées pour les joueurs éliminés (camp révélé,
 // jamais le rôle précis). Même technique que zoomImage.js : SVG avec un
 // `<image href="data:...">` de fond, rastérisé en PNG via @resvg/resvg-js.
 //
-// ⚠️ PNG, pas WebP : un premier test avait semblé valider le WebP embarqué
-// (le rendu ne levait aucune exception), mais une vérification VISUELLE du
-// PNG produit a révélé que l'image de fond restait silencieusement absente
-// (seul le fond de couleur uni apparaissait) — resvg/usvg ne sait pas
-// décoder un `<image>` WebP embarqué en data URI, sans jamais lever
-// d'erreur. `data/goblinhunters/images/board.webp` (l'asset original fourni)
-// est conservé pour archive ; `board.png` (converti une fois, `sips -s
-// format png`) est le seul fichier réellement utilisé au rendu. Toujours
-// VÉRIFIER VISUELLEMENT un rendu resvg avant de le considérer fonctionnel —
-// l'absence d'exception ne garantit rien ici.
+// ⚠️ JPEG, ni WebP ni AVIF : les deux ont été testés et échouent tous les
+// deux SILENCIEUSEMENT (aucune exception levée, l'image de fond reste
+// simplement absente du rendu — seule une vérification VISUELLE du PNG
+// produit l'a révélé, jamais fier de la seule absence d'exception).
+// resvg/usvg ne sait décoder que PNG/JPEG/GIF en `<image>` embarqué. PNG
+// fonctionne mais pèse ~2,3 Mo (bien trop gros pour un asset de repo) ;
+// JPEG (recompressé manuellement par l'utilisateur après une première passe
+// à qualité 85 via `sips -s format jpeg -s formatOptions 85`, ~273 Ko
+// actuellement) sans artefact visible, c'est le format retenu. `board.webp`
+// (asset original fourni) est conservé pour archive uniquement, jamais
+// utilisé au rendu.
 //
 // ⚠️ Les pastilles des joueurs VIVANTS ne doivent JAMAIS être colorées par
 // camp (ça fuiterait le secret que le jeu entier repose sur) — couleur
@@ -31,15 +32,15 @@ import { Resvg } from "@resvg/resvg-js";
 import { readState } from "./goblinhunters.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const BOARD_IMAGE_PATH = path.resolve(__dirname, "..", "..", "data", "goblinhunters", "images", "board.png");
+const BOARD_IMAGE_PATH = path.resolve(__dirname, "..", "..", "data", "goblinhunters", "images", "board.jpg");
 
-// Dimensions natives de board.png (voir data/goblinhunters/images/board.png)
+// Dimensions natives de board.jpg (voir data/goblinhunters/images/board.jpg)
 // — à ajuster si l'asset est remplacé par une image de résolution différente.
 const BOARD_WIDTH = 1672;
 const BOARD_HEIGHT = 941;
 const BACKGROUND = "#0f172a";
 
-// Coordonnées normalisées [0,1] du centre de chaque lieu sur board.png —
+// Coordonnées normalisées [0,1] du centre de chaque lieu sur board.jpg —
 // calibrées à l'œil sur l'aperçu généré, dans le même esprit que
 // DEFAULT_FOCAL de zoomImage.js. À affiner par itération visuelle réelle
 // (comme l'historique de réglage documenté dans zoomImage.js) si le rendu
@@ -67,7 +68,7 @@ let boardDataUrlCache = null;
 async function loadBoardDataUrl() {
   if (boardDataUrlCache) return boardDataUrlCache;
   const buffer = await fs.readFile(BOARD_IMAGE_PATH);
-  boardDataUrlCache = `data:image/png;base64,${buffer.toString("base64")}`;
+  boardDataUrlCache = `data:image/jpeg;base64,${buffer.toString("base64")}`;
   return boardDataUrlCache;
 }
 
