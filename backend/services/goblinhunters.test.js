@@ -126,7 +126,7 @@ async function main() {
     assert.strictEqual(attacks[0].degats, 2); // Bûcheron
   }
 
-  // ── Filet de sécurité (Camp d'Entraînement) : personne d'éligible ->
+  // ── Filet de sécurité (Arène) : personne d'éligible ->
   // frappe un joueur au hasard plutôt que de perdre l'action pour rien ──
   {
     const joueursAvant = [joueur("attaquant"), joueur("v1"), joueur("v2"), joueur("mort", { alive: false })];

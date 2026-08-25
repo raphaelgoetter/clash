@@ -265,7 +265,7 @@ export async function readPlayerAction(jour, discordId) {
 // Action définitive : une fois un choix validé pour un slot donné (primary
 // ou secondary), plus aucun changement possible sur ce slot pour le reste du
 // jour — quel que soit le lieu, y compris si aucune cible n'a été trouvée
-// (Camp d'Entraînement/Tour de Guet sans candidat, cibleId: null quand même
+// (Arène/Tour de Guet sans candidat, cibleId: null quand même
 // enregistré). Décidé avec l'utilisateur, en élargissant une première
 // version qui ne verrouillait que le vote du Château — chaque action est un
 // engagement, pas un brouillon qu'on peut retirer sans conséquence. Vérifié
@@ -388,12 +388,12 @@ function resolveEligibleAttacks(actionsRaw, joueursAvant, lieuxCombat) {
 }
 
 // Dégâts par attaque : 1 dégât de base, 2 pour le Bûcheron (rôle de
-// l'attaquant, pas de la cible). Le Camp d'Entraînement est le SEUL lieu de
+// l'attaquant, pas de la cible). L'Arène est le SEUL lieu de
 // combat — la Clairière mystique ne fait plus partie du combat depuis sa
 // refonte en révélation de position (voir computeClairiereReveals), décidée
 // avec l'utilisateur pour lui donner une identité propre plutôt qu'une
-// simple variante du Camp d'Entraînement sans vraie contrepartie.
-// Filet de sécurité (Camp d'Entraînement/Tour de Guet) : si un joueur a
+// simple variante de l'Arène sans vraie contrepartie.
+// Filet de sécurité (Arène/Tour de Guet) : si un joueur a
 // choisi ce lieu mais n'a résolu aucune interaction (personne d'éligible
 // n'était là hier, ou sa cible a été éliminée par le vote à la même
 // clôture), il agit quand même sur un joueur vivant tiré au hasard plutôt
@@ -438,7 +438,7 @@ export function computeAttacksFromActions(actionsRaw, joueursAvant, config, rng 
 // tirés au hasard (jamais soi-même) — aucune cible à choisir, aucune
 // restriction de co-location (ce n'est pas une confrontation). Décidé avec
 // l'utilisateur : donne à ce lieu une utilité propre (renseignement) plutôt
-// qu'une attaque redondante avec le Camp d'Entraînement.
+// qu'une attaque redondante avec l'Arène.
 export function computeClairiereReveals(actionsRaw, joueursApres, rng = Math.random) {
   const aliveById = new Map(joueursApres.map((j) => [j.discordId, j.alive]));
   const aliveOthers = (excludeId) => joueursApres.filter((j) => j.alive && j.discordId !== excludeId);

@@ -160,7 +160,7 @@ function formatBilanLigne(joueurId, joueursApres, config) {
   const j = joueursApres.find((p) => p.discordId === joueurId);
   if (!j) return null;
   const camp = config.camps[j.camp];
-  return `**${j.username}** était bien un(e) ${camp.emoji} **${camp.label.slice(0, -1)}**.`;
+  return `**${j.username}** était un(e) ${camp.emoji} **${camp.label.slice(0, -1)}**.`;
 }
 
 async function buildJourEmbed(jour, joueursApres, config, closure) {
@@ -203,7 +203,8 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
   // de partie très serrée (ex. 1 Gobelin / 2 Chasseurs).
   const narratifs = await loadNarratifs();
   const chasseursPresDeLaVictoire = gobelinsVivants === 1;
-  const gobelinsPresDeLaParite = gobelinsVivants > 0 && gobelinsVivants === chasseursVivants - 1;
+  const gobelinsPresDeLaParite =
+    gobelinsVivants > 0 && gobelinsVivants === chasseursVivants - 1;
   if (chasseursPresDeLaVictoire && gobelinsPresDeLaParite) {
     lines.push(pickFlavor(narratifs.tension_double, jour));
   } else if (chasseursPresDeLaVictoire) {

@@ -13,7 +13,7 @@
   },
   "lieux": {
     "chateau": { "label": "Château", "emoji": "🏰", "action": "vote" },
-    "camp_entrainement": { "label": "Camp d'Entraînement", "emoji": "⚔️", "action": "combat" },
+    "camp_entrainement": { "label": "Arène", "emoji": "⚔️", "action": "combat" },
     "tour_de_guet": { "label": "Tour de Guet", "emoji": "🔭", "action": "enquete" },
     "taverne": { "label": "Taverne", "emoji": "🍺", "action": "protection" },
     "clairiere_mystique": { "label": "Clairière mystique", "emoji": "🌫️", "action": "vision" }
