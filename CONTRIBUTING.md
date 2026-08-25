@@ -1266,7 +1266,7 @@ Aucune nouvelle variable : Boss Raid réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DI
 
 ## Jeu Goblin Hunters (identité secrète, camps cachés)
 
-Mini-jeu à identité secrète façon Shadow Hunters/Loups-Garous, adapté au rythme asynchrone quotidien du bot : deux camps s'affrontent en secret, les **Chasseurs** (majorité) et les **Gobelins infiltrés** (minorité, ratio 1/3 arrondi selon l'effectif), sur une partie de **10 jours maximum**. Modèle de référence = **Boss Raid**, pas Robinson : rien n'est appliqué en direct pendant la journée (positions/PV/votes/actions) — tout se résout **une seule fois à la clôture**, dans la fonction pure `computeCloture()` (`backend/services/goblinhunters.js`). Pas de commande slash associée — la publication/clôture passe uniquement par `scripts/postGoblinHunters.js` (manuel ou cron), les boutons et le select menu restent gérés par `api/discord/interactions.js`.
+Mini-jeu à identité secrète façon Shadow Hunters/Loups-Garous, adapté au rythme asynchrone quotidien du bot : deux camps s'affrontent en secret, les **Villageois** (majorité) et les **Gobelins infiltrés** (minorité, ratio 1/3 arrondi selon l'effectif), sur une partie de **10 jours maximum**. Modèle de référence = **Boss Raid**, pas Robinson : rien n'est appliqué en direct pendant la journée (positions/PV/votes/actions) — tout se résout **une seule fois à la clôture**, dans la fonction pure `computeCloture()` (`backend/services/goblinhunters.js`). Pas de commande slash associée — la publication/clôture passe uniquement par `scripts/postGoblinHunters.js` (manuel ou cron), les boutons et le select menu restent gérés par `api/discord/interactions.js`.
 
 ### Déroulement (Goblin Hunters)
 
@@ -1310,17 +1310,17 @@ Corrigé par un filet de sécurité identique sur les deux lieux (`fallbackActor
 
 ### Plafond anti-snowball — 1 mort par combat maximum par jour
 
-Sans plafond, plusieurs Gobelins attaquant le même jour pourraient éliminer plusieurs Chasseurs d'un coup et faire s'effondrer la partie en 2-3 jours. `resolveCombat()` calcule les PV bruts de toutes les cibles touchées, mais si **plusieurs** deviennent mortelles le même jour, seule celle ayant reçu le **plus de dégâts** meurt réellement (égalité → tirage au sort) — les autres sont plafonnées à **1 PV minimum**, pas éliminées. Le vote du Château suit une règle différente et volontairement plus douce, décidée avec l'utilisateur : en cas d'égalité entre plusieurs cibles, **personne** n'est éliminé (`resolveVoteElimination()`, pas de tirage au sort). Jusqu'à 2 morts par jour-cycle au total (1 vote + 1 combat), plafonds indépendants — même enchaînement que le classique jour/nuit du genre. **Jour 1** : aucune élimination possible, ni vote ni combat (garde-fou explicite dans `computeCloture()`).
+Sans plafond, plusieurs Gobelins attaquant le même jour pourraient éliminer plusieurs Villageois d'un coup et faire s'effondrer la partie en 2-3 jours. `resolveCombat()` calcule les PV bruts de toutes les cibles touchées, mais si **plusieurs** deviennent mortelles le même jour, seule celle ayant reçu le **plus de dégâts** meurt réellement (égalité → tirage au sort) — les autres sont plafonnées à **1 PV minimum**, pas éliminées. Le vote du Château suit une règle différente et volontairement plus douce, décidée avec l'utilisateur : en cas d'égalité entre plusieurs cibles, **personne** n'est éliminé (`resolveVoteElimination()`, pas de tirage au sort). Jusqu'à 2 morts par jour-cycle au total (1 vote + 1 combat), plafonds indépendants — même enchaînement que le classique jour/nuit du genre. **Jour 1** : aucune élimination possible, ni vote ni combat (garde-fou explicite dans `computeCloture()`).
 
 ### Rôles et combat
 
-1 exemplaire de chaque rôle spécial par camp, quel que soit l'effectif (`assignCampsAndRoles()`) — 3 côté Chasseurs, 2 côté Gobelins :
+1 exemplaire de chaque rôle spécial par camp, quel que soit l'effectif (`assignCampsAndRoles()`) — 3 côté Villageois, 2 côté Gobelins :
 
-- **Éclaireur** (Chasseur) — 2 actions/jour au lieu d'une.
-- **Bûcheron** (Chasseur) — 2 PV/2 dégâts fixes au lieu de 3 PV/1 dégât — glass cannon.
-- **Guet-Apens** (Chasseur) — s'il meurt au combat à l'Arène, le camp de son ou ses attaquant(s) est révélé publiquement.
+- **Éclaireur** (Villageois) — 2 actions/jour au lieu d'une.
+- **Bûcheron** (Villageois) — 2 PV/2 dégâts fixes au lieu de 3 PV/1 dégât — glass cannon.
+- **Guet-Apens** (Villageois) — s'il meurt au combat à l'Arène, le camp de son ou ses attaquant(s) est révélé publiquement.
 - **Infiltré** (Gobelin) — l'enquête menée sur lui à la Tour de Guet renvoie toujours `"chasseur"`, faux positif classique du genre.
-- **Gobelin explosif** (Gobelin) — à sa mort (vote OU combat), inflige `config.roles.explosif.degats_riposte` (1 par défaut) à un Chasseur, jamais mortel.
+- **Gobelin explosif** (Gobelin) — à sa mort (vote OU combat), inflige `config.roles.explosif.degats_riposte` (1 par défaut) à un Villageois, jamais mortel.
 
 Les Gobelins connaissent l'identité des autres Gobelins dès la distribution des rôles (structurel, pas un rôle dédié — voir `otherGobelinsLine()` ci-dessus). Combat **déterministe** (pas de RNG comme Boss Raid) : dégâts fixes selon le rôle de l'attaquant, seul le départage d'un plafond anti-snowball est aléatoire.
 
@@ -1328,11 +1328,11 @@ Les Gobelins connaissent l'identité des autres Gobelins dès la distribution de
 
 **Guet-Apens et Gobelin explosif** (2026-08-25, ajoutés sur demande explicite après une simulation Monte-Carlo d'équilibrage à 14 joueurs — voir mémoire projet `goblinhunters_game_design.md`) : deux rôles volontairement simples et symétriques (un par camp), qui ne changent aucun chiffre de combat/vote existant — seulement des effets déclenchés à la mort, pour ne pas rejouer sur l'équilibre déjà mesuré. `resolveGuetApensReveal({ deathIdCombat, attacks, joueursAvant })` et `resolveExplosifRetaliation({ eliminationsParVote, deathIdCombat, actionsRaw, attacks, joueursAvant, rng })` sont deux fonctions pures dans `backend/services/goblinhunters.js`, appelées dans `computeCloture()` juste après la résolution du combat, testées isolément dans `goblinhunters.test.js`. Les deux réutilisent `attacks` du MÊME appel que la résolution des PV (même contrainte que `computeIndicesForDay`, voir plus haut) — jamais recalculé séparément.
 
-- La riposte de l'Explosif est **volontairement plafonnée à ne jamais tuer** (`Math.max(pv - degats_riposte, 1)`), décision explicite avec l'utilisateur (option retenue face à l'alternative "elle pourrait provoquer une 2e mort le même jour") — appliquée en aval du combat classique plutôt qu'injectée dans `resolveCombat()`, donc jamais en conflit avec son propre plafond anti-snowball (1 mort/jour). Cible : l'attaquant qui l'a achevé au combat (uniquement s'il est Chasseur — pas de riposte sur un tir ami Gobelin via le filet de sécurité), ou un votant Chasseur tiré au hasard s'il est éliminé au vote (pas d'attaquant unique dans ce cas).
+- La riposte de l'Explosif est **volontairement plafonnée à ne jamais tuer** (`Math.max(pv - degats_riposte, 1)`), décision explicite avec l'utilisateur (option retenue face à l'alternative "elle pourrait provoquer une 2e mort le même jour") — appliquée en aval du combat classique plutôt qu'injectée dans `resolveCombat()`, donc jamais en conflit avec son propre plafond anti-snowball (1 mort/jour). Cible : l'attaquant qui l'a achevé au combat (uniquement s'il est Villageois — pas de riposte sur un tir ami Gobelin via le filet de sécurité), ou un votant Villageois tiré au hasard s'il est éliminé au vote (pas d'attaquant unique dans ce cas).
 - Le Guet-Apens ne se déclenche qu'au combat (l'Arène implique un attaquant identifiable), jamais au vote (pas d'attaquant unique dans un vote collectif). S'il est ciblé par plusieurs attaques le même jour, tous les attaquants sont révélés (pas seulement celui qui a porté le coup fatal).
 - Les deux effets sont annoncés **publiquement** dans le bilan du jour (`buildJourEmbed()`), au même titre que le reveal de camp habituel à l'élimination — pas de DM privé, pas de nouvel indice dans le carnet Journal.
 
-⚠️ **Bug de design trouvé après coup (2026-08-25)** : "les Gobelins se connaissent entre eux" était une décision actée dès la conception, mais jamais traduite en code — `sendRoleDM()` n'envoyait que le camp/rôle du joueur lui-même, sans jamais lister ses coéquipiers. Repéré par l'utilisateur sur une simulation d'équilibrage (une simulation Monte-Carlo supposant les Gobelins coordonnés donnait un tout autre résultat que le jeu réellement codé, où ils étaient en réalité aussi isolés que les Chasseurs). Corrigé : `otherGobelinsLine(joueur, joueurs)` (helper partagé) liste les autres membres du camp Gobelin — vivants **et** éliminés, marqués `☠️` — dans le DM de rôle (`sendRoleDM`, à l'appel de `launchGame()`) et dans le Journal personnel (`handleJournal`, relit `state.joueurs` à chaque clic donc reste à jour si un Gobelin meurt en cours de partie). Renvoie `null` pour un Chasseur (aucune ligne ajoutée).
+⚠️ **Bug de design trouvé après coup (2026-08-25)** : "les Gobelins se connaissent entre eux" était une décision actée dès la conception, mais jamais traduite en code — `sendRoleDM()` n'envoyait que le camp/rôle du joueur lui-même, sans jamais lister ses coéquipiers. Repéré par l'utilisateur sur une simulation d'équilibrage (une simulation Monte-Carlo supposant les Gobelins coordonnés donnait un tout autre résultat que le jeu réellement codé, où ils étaient en réalité aussi isolés que les Villageois). Corrigé : `otherGobelinsLine(joueur, joueurs)` (helper partagé) liste les autres membres du camp Gobelin — vivants **et** éliminés, marqués `☠️` — dans le DM de rôle (`sendRoleDM`, à l'appel de `launchGame()`) et dans le Journal personnel (`handleJournal`, relit `state.joueurs` à chaque clic donc reste à jour si un Gobelin meurt en cours de partie). Renvoie `null` pour un Villageois (aucune ligne ajoutée).
 
 ⚠️ Le nombre total de Gobelins n'est **pas un secret** : il découle mécaniquement de l'effectif de départ via `minority_table` (config publique, table 8→3…14→5) — n'importe quel joueur peut donc déjà le calculer lui-même. L'embed de jour affiche en conséquence le vrai décompte de Gobelins vivants (`👺 Gobelins en vie : **N**`), pas un `?` — un premier jet affichait `?` par réflexe "mystère façon Loups-Garous", incohérent avec le fait que le total de départ est public dès l'inscription. Seul reste secret : **qui** est Gobelin.
 
@@ -1370,12 +1370,12 @@ La liste "Révélation des identités" précise, pour chaque joueur : un symbole
 
 ### Messages de tension — victoire imminente
 
-`buildJourEmbed()` ajoute une ligne narrative supplémentaire quand une victoire devient possible **dès la clôture du jour affiché**, en plus du "Chasseurs/Gobelins en vie" déjà public :
+`buildJourEmbed()` ajoute une ligne narrative supplémentaire quand une victoire devient possible **dès la clôture du jour affiché**, en plus du "Villageois/Gobelins en vie" déjà public :
 
-- **1 seul Gobelin en vie** (`gobelinsVivants === 1`) → pool `tension_gobelin_dernier` (les Chasseurs peuvent gagner par élimination totale).
+- **1 seul Gobelin en vie** (`gobelinsVivants === 1`) → pool `tension_gobelin_dernier` (les Villageois peuvent gagner par élimination totale).
 - **Gobelins à 1 mort de la parité** (`gobelinsVivants === chasseursVivants - 1`, avec au moins 1 Gobelin vivant) → pool `tension_parite_proche`.
-- **Les deux à la fois** (fin de partie très serrée, ex. 1 Gobelin / 2 Chasseurs) → pool dédié `tension_double`, plutôt que de choisir arbitrairement l'un des deux messages précédents.
-- **Approche du Jour 10** (`jour >= config.duree_jours - 1`, donc les 2 derniers jours) → pool `tension_derniers_jours`, indépendant du compte de joueurs, rappelle l'échéance de victoire par défaut des Chasseurs.
+- **Les deux à la fois** (fin de partie très serrée, ex. 1 Gobelin / 2 Villageois) → pool dédié `tension_double`, plutôt que de choisir arbitrairement l'un des deux messages précédents.
+- **Approche du Jour 10** (`jour >= config.duree_jours - 1`, donc les 2 derniers jours) → pool `tension_derniers_jours`, indépendant du compte de joueurs, rappelle l'échéance de victoire par défaut des Villageois.
 
 Ce ne sont jamais des fuites d'info : les comptes par camp sont déjà publics (voir plus haut), ces messages ne font que les mettre en avant narrativement. Sélection déterministe par jour (`pickFlavor()`), textes dans `data/goblinhunters/narratifs.json`.
 

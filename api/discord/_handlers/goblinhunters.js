@@ -160,7 +160,7 @@ function formatBilanLigne(joueurId, joueursApres, config) {
   const j = joueursApres.find((p) => p.discordId === joueurId);
   if (!j) return null;
   const camp = config.camps[j.camp];
-  return `**${j.username}** était un(e) ${camp.emoji} **${camp.label.slice(0, -1)}**.`;
+  return `**${j.username}** était un(e) ${camp.emoji} **${camp.labelSingulier}**.`;
 }
 
 async function buildJourEmbed(jour, joueursApres, config, closure) {
@@ -188,7 +188,7 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
         const attacker = joueursApres.find((p) => p.discordId === attackerId);
         const camp = config.camps[campReporte];
         lines.push(
-          `🪤 Piège du Guet-Apens : **${attacker?.username || "?"}** est démasqué(e) — camp ${camp.emoji} **${camp.label.slice(0, -1)}** !`,
+          `🪤 Piège du Guet-Apens : **${attacker?.username || "?"}** est démasqué(e) — camp ${camp.emoji} **${camp.labelSingulier}** !`,
         );
       }
     }
@@ -212,16 +212,16 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
   const chasseursVivants = vivants.filter((j) => j.camp === "chasseur").length;
   const gobelinsVivants = vivants.filter((j) => j.camp === "gobelin").length;
   lines.push(
-    `${config.camps.chasseur.emoji} Chasseurs en vie : **${chasseursVivants}** — ${config.camps.gobelin.emoji} Gobelins en vie : **${gobelinsVivants}**`,
+    `${config.camps.chasseur.emoji} Villageois en vie : **${chasseursVivants}** — ${config.camps.gobelin.emoji} Gobelins en vie : **${gobelinsVivants}**`,
   );
 
   // Messages de tension informatifs : préviennent quand une victoire devient
   // possible DÈS AUJOURD'HUI pour l'un des deux camps (comptes déjà publics,
   // voir plus haut — ce n'est qu'une mise en avant, pas une fuite d'info).
-  // Un seul Gobelin restant -> les Chasseurs peuvent gagner par élimination
+  // Un seul Gobelin restant -> les Villageois peuvent gagner par élimination
   // totale ; les Gobelins à 1 mort près de la parité -> ils peuvent gagner
   // dès aujourd'hui aussi. Les deux peuvent se produire en même temps en fin
-  // de partie très serrée (ex. 1 Gobelin / 2 Chasseurs).
+  // de partie très serrée (ex. 1 Gobelin / 2 Villageois).
   const narratifs = await loadNarratifs();
   const chasseursPresDeLaVictoire = gobelinsVivants === 1;
   const gobelinsPresDeLaParite =
@@ -234,7 +234,7 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
     lines.push(pickFlavor(narratifs.tension_parite_proche, jour));
   }
   // Approche du Jour 10 : rappel de l'échéance (victoire par défaut des
-  // Chasseurs si rien ne bouge), indépendant du compte de joueurs.
+  // Villageois si rien ne bouge), indépendant du compte de joueurs.
   if (jour >= config.duree_jours - 1) {
     lines.push(pickFlavor(narratifs.tension_derniers_jours, jour));
   }
@@ -337,15 +337,15 @@ function buildOutcomeEmbed(
 ) {
   const victoireTexte = {
     gobelins_parite: `${config.camps.gobelin.emoji} Les **Gobelins** l'emportent — parité atteinte !`,
-    chasseurs_gobelins_elimines: `${config.camps.chasseur.emoji} Les **Chasseurs** l'emportent — tous les Gobelins ont été démasqués !`,
-    chasseurs_survie: `${config.camps.chasseur.emoji} Les **Chasseurs** l'emportent — le village a tenu ${config.duree_jours} jours !`,
+    chasseurs_gobelins_elimines: `${config.camps.chasseur.emoji} Les **Villageois** l'emportent — tous les Gobelins ont été démasqués !`,
+    chasseurs_survie: `${config.camps.chasseur.emoji} Les **Villageois** l'emportent — le village a tenu ${config.duree_jours} jours !`,
   }[victory];
 
   const reveal = joueursApres
     .map((j) => {
       const statutSymbole = j.alive ? "✅" : "☠️";
       const roleTexte = j.role ? ` (${config.roles[j.role].label})` : "";
-      return `${statutSymbole} ${config.camps[j.camp].emoji} **${j.username}** — ${config.camps[j.camp].label.slice(0, -1)}${roleTexte}`;
+      return `${statutSymbole} ${config.camps[j.camp].emoji} **${j.username}** — ${config.camps[j.camp].labelSingulier}${roleTexte}`;
     })
     .join("\n");
 
@@ -389,9 +389,9 @@ function roleDescription(roleKey, config) {
     case "guet_apens":
       return "si tu meurs au combat à l'Arène, le camp de qui t'a achevé est révélé publiquement.";
     case "infiltre":
-      return 'l\'enquête menée sur toi à la Tour de Guet renvoie toujours "Chasseur".';
+      return 'l\'enquête menée sur toi à la Tour de Guet renvoie toujours "Villageois".';
     case "explosif":
-      return `si tu meurs (vote ou combat), tu infliges automatiquement ${r.degats_riposte} dégât à un Chasseur avant de partir — jamais mortel.`;
+      return `si tu meurs (vote ou combat), tu infliges automatiquement ${r.degats_riposte} dégât à un Villageois avant de partir — jamais mortel.`;
     default:
       return "";
   }
@@ -399,7 +399,7 @@ function roleDescription(roleKey, config) {
 
 function buildReglesEmbed(config) {
   const lines = [
-    "Deux camps s'affrontent en secret : les **Chasseurs** (majorité) et les **Gobelins infiltrés** (minorité). Chaque jour, choisis un lieu — il détermine ton action. **Choix définitif dès validation, impossible de changer d'avis ensuite (aucun lieu n'est modifiable une fois choisi).**",
+    "Deux camps s'affrontent en secret : les **Villageois** (majorité) et les **Gobelins infiltrés** (minorité). Chaque jour, choisis un lieu — il détermine ton action. **Choix définitif dès validation, impossible de changer d'avis ensuite (aucun lieu n'est modifiable une fois choisi).**",
     "",
     "**Lieux** (tous les 5 lieux comptent comme une action) :",
     `${config.lieux.chateau.emoji} **${config.lieux.chateau.label}** — vote d'accusation public. En cas d'égalité, personne n'est éliminé.`,
@@ -418,7 +418,7 @@ function buildReglesEmbed(config) {
     `Aucune élimination possible le Jour 1 (vote et combat désactivés).`,
     `🚫 Impossible de rester au même lieu 2 jours de suite (à partir du Jour 2) — il faut bouger.`,
     "",
-    "Victoire des Gobelins à la parité, des Chasseurs si tous les Gobelins sont éliminés, sinon des Chasseurs par défaut au dernier jour.",
+    "Victoire des Gobelins à la parité, des Villageois si tous les Gobelins sont éliminés, sinon des Villageois par défaut au dernier jour.",
   ];
   return {
     title: "📖 Règles — Goblin Hunters",
@@ -474,7 +474,7 @@ async function sendRoleDM(joueur, config, joueurs) {
   const embed = {
     title: "👺 Goblin Hunters — ton rôle secret",
     description: [
-      `Tu es un(e) ${camp.emoji} **${camp.label.slice(0, -1)}**${roleLabel ? ` (rôle spécial : **${roleLabel}**)` : ""}.`,
+      `Tu es un(e) ${camp.emoji} **${camp.labelSingulier}**${roleLabel ? ` (rôle spécial : **${roleLabel}**)` : ""}.`,
       ...(roleLine ? ["", roleLine] : []),
       ...(gobelinsLine ? ["", gobelinsLine] : []),
       "",
@@ -1172,7 +1172,7 @@ function formatIndiceLine(entry, config) {
   const lieu = config.lieux[entry.lieu];
   if (entry.type === "enquete") {
     const camp = config.camps[entry.campReporte];
-    return `Jour ${entry.jour} — 🔭 **${entry.cibleUsername}** = ${camp.emoji} ${camp.label.slice(0, -1)}`;
+    return `Jour ${entry.jour} — 🔭 **${entry.cibleUsername}** = ${camp.emoji} ${camp.labelSingulier}`;
   }
   if (entry.type === "reveal") {
     return `Jour ${entry.jour} — 🌫️ **${entry.cibleUsername}** se trouvait à ${lieu.emoji} ${lieu.label}`;
@@ -1214,7 +1214,7 @@ export async function handleJournal(webhookUrl, discordId) {
     const gobelinsLine = otherGobelinsLine(joueur, state.joueurs);
 
     const lines = [
-      `${camp.emoji} **Camp** : ${camp.label.slice(0, -1)}`,
+      `${camp.emoji} **Camp** : ${camp.labelSingulier}`,
       `**Rôle spécial** : ${roleLabel}`,
       ...(gobelinsLine ? [gobelinsLine] : []),
       `**Dernière position connue** : ${lieu.emoji} ${lieu.label}`,

@@ -76,8 +76,8 @@ async function main() {
     assert.ok(assignments.find((a) => a.role === "guet_apens").camp === "chasseur");
   }
   {
-    // Effectif plancher (8 -> 3 Gobelins/5 Chasseurs, table minority_table) :
-    // les 2 rôles Gobelins et les 3 rôles Chasseurs doivent quand même tenir.
+    // Effectif plancher (8 -> 3 Gobelins/5 Villageois, table minority_table) :
+    // les 2 rôles Gobelins et les 3 rôles Villageois doivent quand même tenir.
     const ids = Array.from({ length: 8 }, (_, i) => `q${i}`);
     const assignments = assignCampsAndRoles(ids, 3, rngSequence([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]));
     assert.strictEqual(assignments.filter((a) => a.role === "infiltre").length, 1);
@@ -343,10 +343,10 @@ async function main() {
     assert.strictEqual(resolveGuetApensReveal({ deathIdCombat: null, attacks: [], joueursAvant }), null);
   }
 
-  // ── resolveExplosifRetaliation : riposte 1 dégât sur un Chasseur, jamais
+  // ── resolveExplosifRetaliation : riposte 1 dégât sur un Villageois, jamais
   // sur un tir ami Gobelin, jamais mortelle ──
   {
-    // Mort au combat -> riposte sur l'attaquant, uniquement s'il est Chasseur.
+    // Mort au combat -> riposte sur l'attaquant, uniquement s'il est Villageois.
     const joueursAvant = [
       joueur("boom", { camp: "gobelin", role: "explosif" }),
       joueur("chasseur1"),
@@ -366,7 +366,7 @@ async function main() {
     assert.deepStrictEqual(retaliation, { gobelinId: "boom", targetId: "chasseur1" });
   }
   {
-    // Mort au vote -> riposte sur un votant Chasseur tiré au hasard parmi
+    // Mort au vote -> riposte sur un votant Villageois tiré au hasard parmi
     // ceux qui ont voté contre lui (les votants Gobelins, s'il y en a, sont
     // exclus des cibles).
     const joueursAvant = [
@@ -415,7 +415,7 @@ async function main() {
     ];
     const actionsRaw = {
       voteur_gobelin: { primary: { lieu: "chateau", cibleId: "boom" } },
-      chasseur1: { primary: { lieu: "chateau", cibleId: "boom" } }, // quorum 2, seul votant Chasseur -> seule cible possible
+      chasseur1: { primary: { lieu: "chateau", cibleId: "boom" } }, // quorum 2, seul votant Villageois -> seule cible possible
     };
     const result = computeCloture({ jour: 2, actionsRaw, joueursAvant, config: CONFIG });
     assert.strictEqual(result.eliminationsParVote, "boom");

@@ -1,6 +1,6 @@
 // ============================================================
 // goblinhunters.js — Goblin Hunters, jeu à identité secrète/camps cachés
-// (Chasseurs vs Gobelins infiltrés) façon Shadow Hunters/Loups-Garous,
+// (Villageois vs Gobelins infiltrés) façon Shadow Hunters/Loups-Garous,
 // adapté au rythme asynchrone quotidien du bot. Couche métier : config
 // statique, inscriptions, attribution des camps/rôles, actions du jour,
 // résolution de clôture (combat + vote + enquêtes + positions), historique.
@@ -192,9 +192,9 @@ function shuffle(array, rng) {
 }
 
 // 1 exemplaire de chaque rôle spécial (Éclaireur/Bûcheron/Guet-Apens côté
-// Chasseurs, Infiltré/Explosif côté Gobelins), quel que soit l'effectif —
+// Villageois, Infiltré/Explosif côté Gobelins), quel que soit l'effectif —
 // voir goblinhunters.json. Effectif mini 8 -> minorité mini 3 (table 8→3) et
-// majorité mini 5 (8-3) : les 2 rôles Gobelins et les 3 rôles Chasseurs
+// majorité mini 5 (8-3) : les 2 rôles Gobelins et les 3 rôles Villageois
 // tiennent toujours, même à l'effectif plancher. Retourne
 // [{discordId, camp, role}], role = null pour les joueurs de base.
 export function assignCampsAndRoles(playerIds, minorityCount, rng = Math.random) {
@@ -578,7 +578,7 @@ export function computeIndicesForDay(jour, attacks, investigations, clairiereRev
 }
 
 // Riposte du Gobelin explosif : à sa mort (vote OU combat), inflige
-// `config.roles.explosif.degats_riposte` (1 par défaut) à un Chasseur —
+// `config.roles.explosif.degats_riposte` (1 par défaut) à un Villageois —
 // jamais mortelle (clampée à 1 PV minimum). Décidé explicitement avec
 // l'utilisateur : contrairement au plafond anti-snowball du combat classique
 // (1 mort max/jour, départagé par rng si plusieurs cibles seraient
@@ -589,8 +589,8 @@ export function computeIndicesForDay(jour, attacks, investigations, clairiereRev
 // suffisant puisque la riposte n'est de toute façon jamais injectée dans
 // `damagePerTarget`/resolveCombat(), elle s'applique en aval, sur le pv déjà
 // résolu. Cible : l'attaquant qui l'a achevé au combat (uniquement si
-// Chasseur — pas de riposte sur un tir ami Gobelin via le filet de
-// sécurité), sinon un votant Chasseur tiré au hasard s'il est éliminé au
+// Villageois — pas de riposte sur un tir ami Gobelin via le filet de
+// sécurité), sinon un votant Villageois tiré au hasard s'il est éliminé au
 // vote (pas d'attaquant unique dans ce cas). `attacks` doit venir du même
 // appel que la résolution des PV (même avertissement que pour
 // computeIndicesForDay : ne jamais recalculer computeAttacksFromActions()

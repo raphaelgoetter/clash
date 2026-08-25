@@ -8,8 +8,8 @@
   "taverne_seuil_protection": 3,
   "vote_quorum_min": 2,
   "camps": {
-    "chasseur": { "label": "Chasseurs", "emoji": "🗡️" },
-    "gobelin": { "label": "Gobelins", "emoji": "👺" }
+    "chasseur": { "label": "Villageois", "labelSingulier": "Villageois", "emoji": "🗡️" },
+    "gobelin": { "label": "Gobelins", "labelSingulier": "Gobelin", "emoji": "👺" }
   },
   "lieux": {
     "chateau": { "label": "Château", "emoji": "🏰", "action": "vote" },
