@@ -1384,6 +1384,7 @@ Même instance et mêmes conventions que les autres jeux (`automaticDeserializat
 | `npm run goblinhunters:test:dry` | Aperçu console de la prochaine étape, sans écrire d'état ni poster sur Discord. Pendant la phase inscription, affiche aussi la répartition camps/rôles qu'un lancement produirait (sans l'appliquer). |
 | `npm run goblinhunters:test:force-close` | ⚠️ **TESTS UNIQUEMENT**, jamais câblé dans `goblinhunters.yml` — ignore l'échéance réelle de la fenêtre d'inscription (3 jours) pour déclencher immédiatement le lancement dès l'effectif minimum atteint. Combinable avec `--dry-run` pour prévisualiser sans lancer pour de vrai. |
 | `npm run goblinhunters:seed-test-pool` | ⚠️ **TESTS UNIQUEMENT** — inscrit un faux pool de 8 joueurs (IDs `test_fake_1`…`test_fake_8`, tout l'effectif minimum) pour pouvoir tester entièrement seul dans le salon de test, sans second testeur. Les DM de rôle échouent proprement pour ces faux comptes au lancement (catch déjà en place), sans incidence sur le reste. Accepte un nombre différent en argument (`node scripts/seedGoblinHuntersTestPool.js 4`). |
+| `npm run goblinhunters:scatter-test-pool` | ⚠️ **TESTS UNIQUEMENT**, à lancer une fois la partie démarrée (`goblinhunters:test:force-close`) — répartit les faux joueurs sur les 5 lieux (round-robin déterministe) au lieu de les laisser tous groupés au Château, où le pass automatique les ramènerait sinon indéfiniment (aucun ne clique jamais de bouton). Effet immédiat sur `state.joueurs[].position` **et** persistant (soumet une action "reste ici" en leur nom pour le jour en cours) — à relancer chaque jour de test pour qu'ils restent en place plutôt que de retomber au Château à la clôture suivante. |
 | `npm run goblinhunters:public` | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `goblinhunters.yml`. |
 | `npm run goblinhunters:public:dry` | Équivalent dry-run de `goblinhunters:public`. |
 | `npm run goblinhunters:reset` | Remet Goblin Hunters à zéro : plus de partie active, inscriptions/actions/votes/historique de la manche en cours effacés. **Destructif** — préserve toujours `goblinhunters:manches`. |
@@ -1395,8 +1396,9 @@ Même instance et mêmes conventions que les autres jeux (`automaticDeserializat
 1. `npm run goblinhunters:seed-test-pool` — inscrit 8 faux joueurs (effectif minimum atteint, aucun second testeur nécessaire).
 2. `npm run goblinhunters:test` — ouvre la fenêtre d'inscription sur le salon de test.
 3. `npm run goblinhunters:test:force-close` — clôture immédiatement les inscriptions et lance la partie (les DM de rôle échouent silencieusement pour les faux comptes, sans incidence).
-4. Chaque jour : clique un bouton de lieu (+ cible si besoin) dans le salon de test — un seul faux compte visible dans le roster peut être ciblé/ignoré à volonté puisqu'il ne soumettra jamais d'action lui-même — puis `npm run goblinhunters:test` clôture le jour et publie le suivant. Pas de contrainte d'horaire une fois la partie lancée, contrairement à la fenêtre d'inscription.
-5. `npm run goblinhunters:reset` une fois le test terminé.
+4. `npm run goblinhunters:scatter-test-pool` — répartit les faux joueurs sur les 5 lieux (sinon ils restent tous groupés au Château, aucune cible co-localisée disponible pour tester le combat/l'enquête). À **relancer chaque jour de test** (avant l'étape 5) pour qu'ils restent à leur place plutôt que de retomber au Château au pass automatique.
+5. Chaque jour : clique un bouton de lieu (+ cible si besoin) dans le salon de test, puis `npm run goblinhunters:test` clôture le jour et publie le suivant. Pas de contrainte d'horaire une fois la partie lancée, contrairement à la fenêtre d'inscription.
+6. `npm run goblinhunters:reset` une fois le test terminé.
 
 ### Déroulement en production (Goblin Hunters)
 

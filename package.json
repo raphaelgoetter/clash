@@ -88,6 +88,7 @@
     "goblinhunters:reset:manches": "node scripts/resetGoblinHunters.js --manches",
     "goblinhunters:status": "node scripts/goblinHuntersStatus.js",
     "goblinhunters:seed-test-pool": "node scripts/seedGoblinHuntersTestPool.js",
+    "goblinhunters:scatter-test-pool": "node scripts/scatterGoblinHuntersTestPool.js",
     "quiz:test": "node scripts/postQuiz.js",
     "quiz:test:dry": "node scripts/postQuiz.js --dry-run",
     "quiz:public": "node scripts/postQuiz.js --public",
