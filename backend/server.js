@@ -26,6 +26,7 @@ import { getZoomCardImage, getZoomHintImage, getZoomRevealImage } from "./servic
 import {
   getBoardImage as getGoblinHuntersBoardImage,
   getEndImage as getGoblinHuntersEndImage,
+  getStartImage as getGoblinHuntersStartImage,
 } from "./services/goblinhuntersImage.js";
 
 const app = express();
@@ -308,6 +309,16 @@ app.get("/api/goblinhunters/image", async (req, res) => {
 // pendant toute la manche.
 app.get("/api/goblinhunters/end-image", async (req, res) => {
   const image = await getGoblinHuntersEndImage().catch(() => null);
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "no-store");
+  res.send(image.buffer);
+});
+
+// Jeu Goblin Hunters : illustration statique d'inscription (même principe
+// que end-image ci-dessus).
+app.get("/api/goblinhunters/start-image", async (req, res) => {
+  const image = await getGoblinHuntersStartImage().catch(() => null);
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "no-store");

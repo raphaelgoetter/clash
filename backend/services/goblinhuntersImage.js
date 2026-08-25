@@ -34,6 +34,7 @@ import { readState } from "./goblinhunters.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BOARD_IMAGE_PATH = path.resolve(__dirname, "..", "..", "data", "goblinhunters", "images", "board.jpg");
 const END_IMAGE_PATH = path.resolve(__dirname, "..", "..", "data", "goblinhunters", "images", "end.webp");
+const START_IMAGE_PATH = path.resolve(__dirname, "..", "..", "data", "goblinhunters", "images", "start.webp");
 
 // Dimensions natives de board.jpg (voir data/goblinhunters/images/board.jpg)
 // — à ajuster si l'asset est remplacé par une image de résolution différente.
@@ -184,4 +185,16 @@ export async function getEndImage() {
     endImageCache = { buffer: await fs.readFile(END_IMAGE_PATH), mimeType: "image/webp" };
   }
   return endImageCache;
+}
+
+// Illustration statique d'inscription — même principe que getEndImage() ci-
+// dessus (servie telle quelle, WebP sans souci puisqu'aucune composition
+// resvg n'entre en jeu ici).
+let startImageCache = null;
+
+export async function getStartImage() {
+  if (!startImageCache) {
+    startImageCache = { buffer: await fs.readFile(START_IMAGE_PATH), mimeType: "image/webp" };
+  }
+  return startImageCache;
 }

@@ -43,6 +43,10 @@ function boardImageUrl(jour) {
   return `${TRUST_ROYALE_URL}/api/goblinhunters/image?jour=${jour}&v=${Date.now()}`;
 }
 
+function startImageUrl() {
+  return `${TRUST_ROYALE_URL}/api/goblinhunters/start-image`;
+}
+
 function addDays(date, days) {
   const d = new Date(date);
   d.setUTCDate(d.getUTCDate() + days);
@@ -93,10 +97,16 @@ function buildAnnonceInscriptionEmbed(config, closingAt) {
       `Effectif requis : **${config.effectif_min} à ${config.effectif_max} joueurs**.`,
     ].join("\n"),
     color: GOBLINHUNTERS_COLOR,
+    image: { url: startImageUrl() },
     footer: { text: `Clôture des inscriptions : ${formatDateFr(closingAt)}.` },
   };
 }
 
+// L'image d'inscription est répétée sur les 3 gabarits (annonce/rappel/
+// prolongation), pas seulement l'annonce initiale : le message d'inscription
+// est PATCHé en place à chaque inscription/désinscription en réutilisant
+// toujours le gabarit "rappel" (voir refreshInscriptionMessage) — sans
+// l'image ici aussi, elle disparaîtrait du message dès le premier clic.
 function buildInscriptionRappelEmbed(config, count, closingAt) {
   return {
     title: "👺 Goblin Hunters — inscriptions en cours",
@@ -106,6 +116,7 @@ function buildInscriptionRappelEmbed(config, count, closingAt) {
       "Inscris-toi via le bouton ci-dessous si ce n'est pas déjà fait !",
     ].join("\n"),
     color: GOBLINHUNTERS_COLOR,
+    image: { url: startImageUrl() },
     footer: { text: `Clôture des inscriptions : ${formatDateFr(closingAt)}.` },
   };
 }
@@ -119,6 +130,7 @@ function buildInscriptionReportEmbed(config, count, closingAt) {
       "Les inscriptions sont prolongées — parles-en autour de toi !",
     ].join("\n"),
     color: GOBLINHUNTERS_COLOR,
+    image: { url: startImageUrl() },
     footer: { text: `Nouvelle clôture : ${formatDateFr(closingAt)}.` },
   };
 }
@@ -184,7 +196,8 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
     // annoncés publiquement au même titre que le reveal de camp habituel
     // (même logique de transparence que "Révélation à l'élimination").
     if (closure.guetApensReveal) {
-      for (const { attackerId, campReporte } of closure.guetApensReveal.attackers) {
+      for (const { attackerId, campReporte } of closure.guetApensReveal
+        .attackers) {
         const attacker = joueursApres.find((p) => p.discordId === attackerId);
         const camp = config.camps[campReporte];
         lines.push(
@@ -193,8 +206,12 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
       }
     }
     if (closure.explosifRetaliation) {
-      const gobelin = joueursApres.find((p) => p.discordId === closure.explosifRetaliation.gobelinId);
-      const target = joueursApres.find((p) => p.discordId === closure.explosifRetaliation.targetId);
+      const gobelin = joueursApres.find(
+        (p) => p.discordId === closure.explosifRetaliation.gobelinId,
+      );
+      const target = joueursApres.find(
+        (p) => p.discordId === closure.explosifRetaliation.targetId,
+      );
       lines.push(
         `💣 **${gobelin?.username || "?"}** explose en mourant — **${target?.username || "?"}** encaisse ${config.roles.explosif.degats_riposte} dégât.`,
       );
@@ -383,9 +400,9 @@ function roleDescription(roleKey, config) {
   const r = config.roles[roleKey];
   switch (roleKey) {
     case "eclaireur":
-      return `soumet ${r.actions_par_jour} actions par jour au lieu d'une.`;
+      return `permet ${r.actions_par_jour} actions par jour au lieu d'une.`;
     case "bucheron":
-      return `${r.pv} PV et ${r.degats} dégâts par coup au lieu de ${config.combat.pv_base} PV et ${config.combat.degats_base} dégât : plus offensif, plus fragile.`;
+      return `${r.pv} PV et ${r.degats} dégâts par coup au lieu de ${config.combat.pv_base} PV et ${config.combat.degats_base} dégâttous joueurs confondu.`;
     case "guet_apens":
       return "si tu meurs au combat à l'Arène, le camp de qui t'a achevé est révélé publiquement.";
     case "infiltre":
@@ -399,24 +416,24 @@ function roleDescription(roleKey, config) {
 
 function buildReglesEmbed(config) {
   const lines = [
-    "Deux camps s'affrontent en secret : les **Villageois** (majorité) et les **Gobelins infiltrés** (minorité). Chaque jour, choisis un lieu — il détermine ton action. **Choix définitif dès validation, impossible de changer d'avis ensuite (aucun lieu n'est modifiable une fois choisi).**",
+    "Deux camps s'affrontent en secret : les **Villageois** (majorité) et les **Gobelins infiltrés** (minorité). Chaque jour, choisis un lieu — il détermine ton action.",
     "",
     "**Lieux** (tous les 5 lieux comptent comme une action) :",
     `${config.lieux.chateau.emoji} **${config.lieux.chateau.label}** — vote d'accusation public. En cas d'égalité, personne n'est éliminé.`,
-    `${config.lieux.camp_entrainement.emoji} **${config.lieux.camp_entrainement.label}** — attaque (1 dégât, 2 pour le Bûcheron) un joueur vu ici la veille ; si personne n'y était, tu frappes un joueur vivant tiré au hasard.`,
-    `${config.lieux.tour_de_guet.emoji} **${config.lieux.tour_de_guet.label}** — révèle le camp d'un joueur vu ici la veille ; si personne n'y était, l'enquête porte sur un joueur vivant tiré au hasard.`,
-    `${config.lieux.taverne.emoji} **${config.lieux.taverne.label}** — protection tant que moins de ${config.taverne_seuil_protection} joueurs s'y trouvent le même jour.`,
-    `${config.lieux.clairiere_mystique.emoji} **${config.lieux.clairiere_mystique.label}** — révèle en privé la position actuelle de 2 joueurs tirés au hasard (jamais toi-même), sans confrontation.`,
+    `${config.lieux.camp_entrainement.emoji} **${config.lieux.camp_entrainement.label}** — attaque (1 dégât) un joueur vu ici la veille; si personne n'y était, tu frappes un joueur tiré au hasard.`,
+    `${config.lieux.tour_de_guet.emoji} **${config.lieux.tour_de_guet.label}** — révèle le camp d'un joueur vu ici la veille; si personne n'y était, révèle un joueur tiré au hasard.`,
+    `${config.lieux.taverne.emoji} **${config.lieux.taverne.label}** — protection des attaques tant que moins de ${config.taverne_seuil_protection} joueurs s'y trouvent le même jour.`,
+    `${config.lieux.clairiere_mystique.emoji} **${config.lieux.clairiere_mystique.label}** — révèle la position actuelle de 2 joueurs tirés au hasard.`,
     "",
-    "**Rôles spéciaux** (1 exemplaire de chacun, distribué au hasard, le reste des joueurs est en rôle de base) :",
+    "**Rôles spéciaux** (1 exemplaire de chacun) :",
     ...Object.keys(config.roles).map(
       (roleKey) =>
         `${config.roles[roleKey].emoji} **${config.roles[roleKey].label}** (camp ${config.camps[config.roles[roleKey].camp].label}) — ${roleDescription(roleKey, config)}`,
     ),
     "",
-    `Chaque joueur a **${config.combat.pv_base} PV**. Maximum **1 mort par combat et par jour**, tous joueurs confondus.`,
+    `Chaque joueur a **${config.combat.pv_base} PV**. Maximum **1 mort par combat et par jour**.`,
     `Aucune élimination possible le Jour 1 (vote et combat désactivés).`,
-    `🚫 Impossible de rester au même lieu 2 jours de suite (à partir du Jour 2) — il faut bouger.`,
+    `🚫 Impossible de rester au même lieu 2 jours de suite.`,
     "",
     "Victoire des Gobelins à la parité, des Villageois si tous les Gobelins sont éliminés, sinon des Villageois par défaut au dernier jour.",
   ];
@@ -1162,9 +1179,13 @@ export async function handleTargetSelect(
 // roster étant figé) — `null` si le joueur n'est pas un Gobelin.
 function otherGobelinsLine(joueur, joueurs) {
   if (joueur.camp !== "gobelin") return null;
-  const autres = joueurs.filter((j) => j.camp === "gobelin" && j.discordId !== joueur.discordId);
+  const autres = joueurs.filter(
+    (j) => j.camp === "gobelin" && j.discordId !== joueur.discordId,
+  );
   if (!autres.length) return "Tu es le seul Gobelin restant.";
-  const noms = autres.map((j) => (j.alive ? `**${j.username}**` : `**${j.username}** (☠️ éliminé)`));
+  const noms = autres.map((j) =>
+    j.alive ? `**${j.username}**` : `**${j.username}** (☠️ éliminé)`,
+  );
   return `Les autres Gobelins sont : ${noms.join(", ")}.`;
 }
 

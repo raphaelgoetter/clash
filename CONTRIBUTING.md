@@ -1368,6 +1368,10 @@ Stocké dans `goblinhunters:indices` (HASH permanent `discordId → JSON[]`, un 
 
 La liste "Révélation des identités" précise, pour chaque joueur : un symbole vivant/mort (✅/☠️, distinct du camp/rôle) et le rôle spécial le cas échéant (`(Éclaireur)`/`(Bûcheron)`/`(Infiltré)`) — les deux ajoutés sur demande explicite, absents de la version initiale qui ne montrait que le camp.
 
+### Image d'inscription
+
+Même principe que l'image de fin de partie : `getStartImage()` (`backend/services/goblinhuntersImage.js`) sert `data/goblinhunters/images/start.webp` **tel quel** (aucune composition resvg), route dédiée `GET /api/goblinhunters/start-image` (`backend/server.js`), sans paramètre. Référencée sur les **3** gabarits d'inscription (`buildAnnonceInscriptionEmbed()`, `buildInscriptionRappelEmbed()`, `buildInscriptionReportEmbed()`), pas seulement l'annonce initiale — le message d'inscription est PATCHé en place à chaque inscription/désinscription en réutilisant toujours le gabarit "rappel" (`refreshInscriptionMessage()`, compteur live sur le bouton) ; sans l'image sur les 3 gabarits, elle disparaîtrait du message dès le premier clic S'inscrire/Se désinscrire.
+
 ### Messages de tension — victoire imminente
 
 `buildJourEmbed()` ajoute une ligne narrative supplémentaire quand une victoire devient possible **dès la clôture du jour affiché**, en plus du "Villageois/Gobelins en vie" déjà public :
