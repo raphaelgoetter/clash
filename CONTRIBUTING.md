@@ -1315,12 +1315,26 @@ Même instance et mêmes conventions que les autres jeux (`automaticDeserializat
 | Commande | Effet |
 | --- | --- |
 | `npm run goblinhunters:test` | Poste manuellement l'étape courante sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`). |
-| `npm run goblinhunters:test:dry` | Aperçu console de la prochaine étape, sans écrire d'état ni poster sur Discord. |
+| `npm run goblinhunters:test:dry` | Aperçu console de la prochaine étape, sans écrire d'état ni poster sur Discord. Pendant la phase inscription, affiche aussi la répartition camps/rôles qu'un lancement produirait (sans l'appliquer). |
+| `npm run goblinhunters:test:force-close` | ⚠️ **TESTS UNIQUEMENT**, jamais câblé dans `goblinhunters.yml` — ignore l'échéance réelle de la fenêtre d'inscription (3 jours) pour déclencher immédiatement le lancement dès l'effectif minimum atteint. Combinable avec `--dry-run` pour prévisualiser sans lancer pour de vrai. |
+| `npm run goblinhunters:seed-test-pool` | ⚠️ **TESTS UNIQUEMENT** — inscrit un faux pool de 8 joueurs (IDs `test_fake_1`…`test_fake_8`, tout l'effectif minimum) pour pouvoir tester entièrement seul dans le salon de test, sans second testeur. Les DM de rôle échouent proprement pour ces faux comptes au lancement (catch déjà en place), sans incidence sur le reste. Accepte un nombre différent en argument (`node scripts/seedGoblinHuntersTestPool.js 4`). |
 | `npm run goblinhunters:public` | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `goblinhunters.yml`. |
 | `npm run goblinhunters:public:dry` | Équivalent dry-run de `goblinhunters:public`. |
 | `npm run goblinhunters:reset` | Remet Goblin Hunters à zéro : plus de partie active, inscriptions/actions/votes/historique de la manche en cours effacés. **Destructif** — préserve toujours `goblinhunters:manches`. |
 | `npm run goblinhunters:reset:manches` | Identique, mais efface aussi `goblinhunters:manches`/`goblinhunters:manche_seq`. **Destructif**, à réserver au filet de sécurité. |
 | `npm run goblinhunters:status` | Affiche l'état courant (phase, roster complet avec camps/rôles/PV/positions, progression des actions du jour) sans passer par Discord. ⚠️ **Sortie admin uniquement** — spoile les camps/rôles, ne jamais la partager avec les joueurs en cours de partie. |
+
+### Tester une partie complète (Goblin Hunters)
+
+1. `npm run goblinhunters:seed-test-pool` — inscrit 8 faux joueurs (effectif minimum atteint, aucun second testeur nécessaire).
+2. `npm run goblinhunters:test` — ouvre la fenêtre d'inscription sur le salon de test.
+3. `npm run goblinhunters:test:force-close` — clôture immédiatement les inscriptions et lance la partie (les DM de rôle échouent silencieusement pour les faux comptes, sans incidence).
+4. Chaque jour : clique un bouton de lieu (+ cible si besoin) dans le salon de test — un seul faux compte visible dans le roster peut être ciblé/ignoré à volonté puisqu'il ne soumettra jamais d'action lui-même — puis `npm run goblinhunters:test` clôture le jour et publie le suivant. Pas de contrainte d'horaire une fois la partie lancée, contrairement à la fenêtre d'inscription.
+5. `npm run goblinhunters:reset` une fois le test terminé.
+
+### Déroulement en production (Goblin Hunters)
+
+Même principe que les autres jeux collaboratifs : seule l'ouverture de la fenêtre d'inscription est déclenchée à la main (`workflow_dispatch` sur `goblinhunters.yml`, ou `npm run goblinhunters:public`) — tout le reste (rappels quotidiens pendant l'inscription, lancement une fois l'effectif atteint et la fenêtre close, clôture de chaque jour de jeu) est pris en charge automatiquement par le cron de 08:00 UTC (`--require-active`, ne fait jamais rien tant qu'aucune fenêtre d'inscription n'a été ouverte manuellement) — voir `Déroulement (Goblin Hunters)` plus haut et `.github/workflows/goblinhunters.yml`, calqué sur `bossraid.yml`.
 
 ### Variables d'environnement requises (Goblin Hunters)
 

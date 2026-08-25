@@ -9202,14 +9202,14 @@ export default async function handler(req, res) {
       body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleGoblinHuntersRegister(webhookUrl, discordId, username));
+    runBackground(() => handleGoblinHuntersRegister(webhookUrl, discordId, username, process.env.DISCORD_TOKEN));
     return;
   }
   if (body.type === 3 && body.data?.custom_id === "goblinhunters_unregister") {
     const discordId = body.member?.user?.id;
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleGoblinHuntersUnregister(webhookUrl, discordId));
+    runBackground(() => handleGoblinHuntersUnregister(webhookUrl, discordId, process.env.DISCORD_TOKEN));
     return;
   }
 

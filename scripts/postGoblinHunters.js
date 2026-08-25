@@ -13,6 +13,8 @@
 //   node scripts/postGoblinHunters.js --public --dry-run
 //   node scripts/postGoblinHunters.js --no-ping       — poste sans pinger @MINI JEUX (inscription/lancement/fin uniquement)
 //   node scripts/postGoblinHunters.js --require-active — ne fait rien si aucune partie n'est déjà lancée (cron)
+//   node scripts/postGoblinHunters.js --force-close   — TESTS UNIQUEMENT : ignore l'échéance réelle de la fenêtre
+//                                                        d'inscription (3 jours) pour déclencher le lancement immédiatement
 
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
@@ -25,6 +27,7 @@ const PUBLIC = process.argv.includes("--public");
 // fenêtre d'inscription doit toujours être ouverte manuellement
 // (workflow_dispatch), le cron ne fait qu'avancer une partie déjà en cours.
 const REQUIRE_ACTIVE = process.argv.includes("--require-active");
+const FORCE_CLOSE = process.argv.includes("--force-close");
 const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;
 
 // Réutilise les salons du jeu Frame (même principe qu'Anagram/Boss Raid/
@@ -47,6 +50,7 @@ if (!channelId) {
       noPing: NO_PING,
       isPublic: PUBLIC,
       requireActiveState: REQUIRE_ACTIVE,
+      forceClose: FORCE_CLOSE,
     });
 
     if (result.skipped) {
@@ -74,7 +78,10 @@ if (!channelId) {
       } else if (result.phase === "inscription") {
         console.log(result.report ? "  Fenêtre d'inscription prolongée." : "  Fenêtre d'inscription.");
       } else if (result.phase === "lancement") {
-        console.log(`  Lancement de la partie (${result.joueursCount} inscrits).`);
+        console.log(`  Lancement de la partie (${result.joueursCount} inscrits) :`);
+        for (const j of result.joueurs || []) {
+          console.log(`    ${j.username} — ${j.camp}${j.role ? ` (${j.role})` : ""}`);
+        }
       } else {
         console.log(`  Jour ${result.jour}.`);
       }

@@ -20,6 +20,10 @@ import {
   previewCloture,
   closeDayAndAdvance,
   launchGame,
+  listInscriptions,
+  computeMinorityCount,
+  assignCampsAndRoles,
+  buildInitialRoster,
   listHistorique,
   archiveManche,
   listManches,
@@ -107,12 +111,12 @@ function buildInscriptionReportEmbed(config, count, closingAt) {
   };
 }
 
-function buildInscriptionComponents() {
+function buildInscriptionComponents(count = 0) {
   return [
     {
       type: 1,
       components: [
-        { type: 2, style: 3, label: "S'inscrire", emoji: { name: "✅" }, custom_id: "goblinhunters_register" },
+        { type: 2, style: 3, label: `S'inscrire (${count})`, emoji: { name: "✅" }, custom_id: "goblinhunters_register" },
         { type: 2, style: 4, label: "Se désinscrire", emoji: { name: "✖️" }, custom_id: "goblinhunters_unregister" },
         { type: 2, style: 2, label: "Règles", emoji: { name: "📖" }, custom_id: "goblinhunters_regles" },
       ],
@@ -317,7 +321,7 @@ async function sendInvestigationDM(investigation, joueursApres, config) {
 
 // ── Publication quotidienne (appelée uniquement par scripts/postGoblinHunters.js) ──
 
-export async function postGoblinHunters(channelId, { dryRun = false, noPing = false, isPublic = false, requireActiveState = false } = {}) {
+export async function postGoblinHunters(channelId, { dryRun = false, noPing = false, isPublic = false, requireActiveState = false, forceClose = false } = {}) {
   const config = await loadGoblinHuntersConfig();
   const state = await readState();
 
@@ -337,7 +341,7 @@ export async function postGoblinHunters(channelId, { dryRun = false, noPing = fa
   if (!state) {
     const closingAt = addDays(new Date(), config.fenetre_inscription_jours).toISOString();
     const embed = buildAnnonceInscriptionEmbed(config, closingAt);
-    const components = buildInscriptionComponents();
+    const components = buildInscriptionComponents(0);
 
     if (dryRun) {
       const pingRoleId = !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
@@ -358,9 +362,12 @@ export async function postGoblinHunters(channelId, { dryRun = false, noPing = fa
     const now = new Date();
     const count = await countInscriptions();
 
-    if (new Date(state.closingAt) > now) {
+    // --force-close (tests uniquement, jamais câblé dans le workflow GitHub
+    // Actions) : ignore l'échéance réelle de closingAt pour ce run, sans la
+    // réécrire — évite d'attendre 3 jours pour tester le lancement.
+    if (!forceClose && new Date(state.closingAt) > now) {
       const embed = buildInscriptionRappelEmbed(config, count, state.closingAt);
-      const components = buildInscriptionComponents();
+      const components = buildInscriptionComponents(count);
       if (dryRun) return { dryRun: true, phase: "inscription", embed, components };
       return publishAndWriteState(channelId, state, { embed, components, noPing: true, estAnnonce: false, extraState: {} });
     }
@@ -368,12 +375,28 @@ export async function postGoblinHunters(channelId, { dryRun = false, noPing = fa
     if (count < config.effectif_min) {
       const closingAt = addDays(now, config.fenetre_inscription_jours).toISOString();
       const embed = buildInscriptionReportEmbed(config, count, closingAt);
-      const components = buildInscriptionComponents();
+      const components = buildInscriptionComponents(count);
       if (dryRun) return { dryRun: true, phase: "inscription", report: true, embed, components };
       return publishAndWriteState(channelId, state, { embed, components, noPing, estAnnonce: true, extraState: { closingAt } });
     }
 
-    if (dryRun) return { dryRun: true, phase: "lancement", joueursCount: count };
+    if (dryRun) {
+      // Aperçu du lancement SANS écrire d'état ni envoyer de DM : reproduit
+      // la même logique que launchGame() (backend/services/goblinhunters.js)
+      // en lecture seule, pour valider la répartition des camps/rôles avant
+      // le vrai lancement (ex. avec --force-close en test).
+      const inscriptions = await listInscriptions();
+      const playerIds = inscriptions.map((i) => i.discordId);
+      const minorityCount = computeMinorityCount(playerIds.length, config.minority_table);
+      const assignments = assignCampsAndRoles(playerIds, minorityCount);
+      const joueursPreview = buildInitialRoster(inscriptions, assignments, {
+        pv_base: config.combat.pv_base,
+        bucheronOverride: { pv: config.roles.bucheron.pv },
+      });
+      const embed = await buildJourEmbed(1, joueursPreview, config, null);
+      const components = buildJourComponents(1, config);
+      return { dryRun: true, phase: "lancement", joueursCount: count, embed, components, joueurs: joueursPreview };
+    }
 
     const { joueurs } = await launchGame(channelId, config);
     for (const j of joueurs) {
@@ -486,8 +509,34 @@ async function patchOriginal(webhookUrl, payload) {
 }
 
 // ── Boutons d'inscription ───────────────────────────────────────────
+// Réponse éphémère à l'auteur du clic (confirmation) + PATCH direct du
+// message public (token du bot) pour rafraîchir le compteur affiché sur le
+// bouton [✅ S'inscrire (n)] — même découplage que le bouton Espion de
+// Boss Raid (recordVote en éphémère, compteur public rafraîchi séparément).
 
-export async function handleRegisterButton(webhookUrl, discordId, username) {
+async function refreshInscriptionMessage(botToken, config) {
+  if (!botToken) return;
+  try {
+    const state = await readState();
+    if (!state || state.phase !== "inscription" || !state.channelId || !state.messageId) return;
+    const count = await countInscriptions();
+    // Réutilise toujours le gabarit "rappel" (compteur en avant) pour le
+    // rafraîchissement live, même si le message actuellement affiché était
+    // l'annonce initiale ou une prolongation — on ne retrace pas quelle
+    // variante est postée, et le compteur à jour prime sur le texte exact.
+    const embed = buildInscriptionRappelEmbed(config, count, state.closingAt);
+    const components = buildInscriptionComponents(count);
+    await fetch(`https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`, {
+      method: "PATCH",
+      headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ embeds: [embed], components }),
+    });
+  } catch (err) {
+    console.error("[GoblinHunters] Échec rafraîchissement du compteur d'inscription:", err.message);
+  }
+}
+
+export async function handleRegisterButton(webhookUrl, discordId, username, botToken) {
   try {
     const config = await loadGoblinHuntersConfig();
     const result = await registerPlayer(discordId, username, config.effectif_max);
@@ -497,16 +546,21 @@ export async function handleRegisterButton(webhookUrl, discordId, username) {
       full: `Désolé, l'effectif maximum (${config.effectif_max}) est atteint.`,
     };
     await patchOriginal(webhookUrl, { content: messages[result.status], embeds: [], components: [] });
+    if (result.status === "registered") await refreshInscriptionMessage(botToken, config);
   } catch (err) {
     console.error("[GoblinHunters] Échec inscription:", err.message);
   }
 }
 
-export async function handleUnregisterButton(webhookUrl, discordId) {
+export async function handleUnregisterButton(webhookUrl, discordId, botToken) {
   try {
     const result = await unregisterPlayer(discordId);
     const content = result.status === "unregistered" ? "✖️ Tu as été désinscrit(e)." : "Tu n'étais pas inscrit(e).";
     await patchOriginal(webhookUrl, { content, embeds: [], components: [] });
+    if (result.status === "unregistered") {
+      const config = await loadGoblinHuntersConfig();
+      await refreshInscriptionMessage(botToken, config);
+    }
   } catch (err) {
     console.error("[GoblinHunters] Échec désinscription:", err.message);
   }
