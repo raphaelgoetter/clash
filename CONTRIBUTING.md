@@ -1352,6 +1352,17 @@ Stocké dans `goblinhunters:indices` (HASH permanent `discordId → JSON[]`, un 
 
 La liste "Révélation des identités" précise, pour chaque joueur : un symbole vivant/mort (✅/☠️, distinct du camp/rôle) et le rôle spécial le cas échéant (`(Éclaireur)`/`(Bûcheron)`/`(Infiltré)`) — les deux ajoutés sur demande explicite, absents de la version initiale qui ne montrait que le camp.
 
+### Messages de tension — victoire imminente
+
+`buildJourEmbed()` ajoute une ligne narrative supplémentaire quand une victoire devient possible **dès la clôture du jour affiché**, en plus du "Chasseurs/Gobelins en vie" déjà public :
+
+- **1 seul Gobelin en vie** (`gobelinsVivants === 1`) → pool `tension_gobelin_dernier` (les Chasseurs peuvent gagner par élimination totale).
+- **Gobelins à 1 mort de la parité** (`gobelinsVivants === chasseursVivants - 1`, avec au moins 1 Gobelin vivant) → pool `tension_parite_proche`.
+- **Les deux à la fois** (fin de partie très serrée, ex. 1 Gobelin / 2 Chasseurs) → pool dédié `tension_double`, plutôt que de choisir arbitrairement l'un des deux messages précédents.
+- **Approche du Jour 10** (`jour >= config.duree_jours - 1`, donc les 2 derniers jours) → pool `tension_derniers_jours`, indépendant du compte de joueurs, rappelle l'échéance de victoire par défaut des Chasseurs.
+
+Ce ne sont jamais des fuites d'info : les comptes par camp sont déjà publics (voir plus haut), ces messages ne font que les mettre en avant narrativement. Sélection déterministe par jour (`pickFlavor()`), textes dans `data/goblinhunters/narratifs.json`.
+
 ### Stockage — Upstash Redis (`goblinhunters:*`)
 
 Même instance et mêmes conventions que les autres jeux (`automaticDeserialization: false`). Espace de clés `goblinhunters:*`, totalement séparé.

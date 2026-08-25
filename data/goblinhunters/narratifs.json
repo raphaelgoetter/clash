@@ -30,6 +30,24 @@
     "⚖️ Les voix se sont trop dispersées au Château — personne n'est désigné aujourd'hui.",
     "🤷 Le Château n'a pas su trancher — l'accusation reste sans suite."
   ],
+  "tension_gobelin_dernier": [
+    "🗡️ Il ne reste plus qu'un seul Gobelin en vie — les Chasseurs pourraient l'emporter dès aujourd'hui !",
+    "🔥 Un seul Gobelin se cache encore parmi nous — la traque touche peut-être à sa fin.",
+    "🎯 Plus qu'une seule tête à démasquer pour que le village respire enfin."
+  ],
+  "tension_parite_proche": [
+    "👺 Les Gobelins ne sont plus qu'à une victime de la parité — une élimination de plus et le village bascule.",
+    "⚠️ L'équilibre des forces devient critique — chaque décision compte désormais.",
+    "🌒 Le village sent que l'avantage pourrait changer de camp aujourd'hui même."
+  ],
+  "tension_double": [
+    "💀 La situation est à son comble : une seule élimination aujourd'hui pourrait suffire à faire basculer la partie, dans un sens comme dans l'autre.",
+    "⚡ Chasseurs comme Gobelins ne sont qu'à un pas de la victoire — la journée s'annonce décisive."
+  ],
+  "tension_derniers_jours": [
+    "⏳ Le temps presse — si les Gobelins ne referment pas l'écart avant la fin, les Chasseurs l'emporteront par défaut.",
+    "📯 Les derniers jours de la partie commencent — chaque décision pèse désormais plus lourd."
+  ],
   "victoire_gobelins": [
     "👺 Les Gobelins ont fini par prendre le dessus — le village leur appartient désormais."
   ],

@@ -194,6 +194,29 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
     `${config.camps.chasseur.emoji} Chasseurs en vie : **${chasseursVivants}** — ${config.camps.gobelin.emoji} Gobelins en vie : **${gobelinsVivants}**`,
   );
 
+  // Messages de tension informatifs : préviennent quand une victoire devient
+  // possible DÈS AUJOURD'HUI pour l'un des deux camps (comptes déjà publics,
+  // voir plus haut — ce n'est qu'une mise en avant, pas une fuite d'info).
+  // Un seul Gobelin restant -> les Chasseurs peuvent gagner par élimination
+  // totale ; les Gobelins à 1 mort près de la parité -> ils peuvent gagner
+  // dès aujourd'hui aussi. Les deux peuvent se produire en même temps en fin
+  // de partie très serrée (ex. 1 Gobelin / 2 Chasseurs).
+  const narratifs = await loadNarratifs();
+  const chasseursPresDeLaVictoire = gobelinsVivants === 1;
+  const gobelinsPresDeLaParite = gobelinsVivants > 0 && gobelinsVivants === chasseursVivants - 1;
+  if (chasseursPresDeLaVictoire && gobelinsPresDeLaParite) {
+    lines.push(pickFlavor(narratifs.tension_double, jour));
+  } else if (chasseursPresDeLaVictoire) {
+    lines.push(pickFlavor(narratifs.tension_gobelin_dernier, jour));
+  } else if (gobelinsPresDeLaParite) {
+    lines.push(pickFlavor(narratifs.tension_parite_proche, jour));
+  }
+  // Approche du Jour 10 : rappel de l'échéance (victoire par défaut des
+  // Chasseurs si rien ne bouge), indépendant du compte de joueurs.
+  if (jour >= config.duree_jours - 1) {
+    lines.push(pickFlavor(narratifs.tension_derniers_jours, jour));
+  }
+
   return {
     title: `👺 Goblin Hunters — Jour ${jour}/${config.duree_jours}`,
     description: lines.join("\n"),
