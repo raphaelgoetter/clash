@@ -1330,7 +1330,9 @@ Sans plafond, plusieurs Gobelins attaquant le même jour pourraient éliminer pl
 
 ### Journal personnel — éphémère et privé, jamais un historique public
 
-Contrairement au bouton Journal des autres jeux (Robinson, Boss Raid — historique public des jours passés), celui de Goblin Hunters est **exclusivement personnel** : il affiche, uniquement au joueur qui clique, son camp/rôle secrets, sa dernière position connue, ses PV, et un **carnet d'indices** cumulé sur toute la partie. Motivation : le plateau public ne montre que les positions COURANTES (régénéré à chaque clôture, aucun historique) — sans ce carnet privé, un joueur perdrait toute trace de ses rencontres passées dès le lendemain.
+Contrairement au bouton Journal des autres jeux (Robinson, Boss Raid — historique public des jours passés), celui de Goblin Hunters est **exclusivement personnel** : il affiche, uniquement au joueur qui clique, son camp/rôle secrets, sa dernière position connue, ses PV, le **choix déjà validé pour le jour en cours** (voir ci-dessous), et un **carnet d'indices** cumulé sur toute la partie. Motivation : le plateau public ne montre que les positions COURANTES (régénéré à chaque clôture, aucun historique) — sans ce carnet privé, un joueur perdrait toute trace de ses rencontres passées dès le lendemain.
+
+**Choix du jour en cours** (ajouté sur demande explicite, retour en test réel) : puisque chaque action est **définitive dès validation** (`isActionLocked()`) mais n'est appliquée au plateau public qu'à la clôture du lendemain, un joueur n'avait aucun moyen de se rappeler ce qu'il venait de choisir en attendant. `handleJournal()` lit désormais aussi `readPlayerAction(state.jour, discordId)` — l'action de la journée EN COURS, pas encore résolue — et l'affiche (`🌫️ Clairière mystique`, `⚔️ Camp d'Entraînement → **Cible**`, etc., primary et secondary pour l'Éclaireur). Uniquement affiché si le joueur est vivant ; absent s'il n'a encore rien soumis aujourd'hui.
 
 Trois sources alimentent le carnet à chaque clôture (`computeIndicesForDay()`, `backend/services/goblinhunters.js`), distinguées par un champ `type` (formatage différent côté `formatIndiceLine()`) :
 

@@ -333,6 +333,7 @@ function buildReglesEmbed(config) {
   const lines = [
     "Deux camps s'affrontent en secret : les **Chasseurs** (majorité) et les **Gobelins infiltrés** (minorité). Chaque jour, choisis un lieu — il détermine ton action. **Choix définitif dès validation, impossible de changer d'avis ensuite (aucun lieu n'est modifiable une fois choisi).**",
     "",
+    "**Lieux** (tous les 5 lieux comptent comme une action — même la Taverne ou la Clairière) :",
     `${config.lieux.chateau.emoji} **${config.lieux.chateau.label}** — vote d'accusation public. En cas d'égalité, personne n'est éliminé.`,
     `${config.lieux.camp_entrainement.emoji} **${config.lieux.camp_entrainement.label}** — attaque (1 dégât, 2 pour le Bûcheron) un joueur vu ici la veille ; si personne n'y était, tu frappes un joueur vivant tiré au hasard.`,
     `${config.lieux.tour_de_guet.emoji} **${config.lieux.tour_de_guet.label}** — révèle le camp d'un joueur vu ici la veille ; si personne n'y était, l'enquête porte sur un joueur vivant tiré au hasard.`,
@@ -1127,9 +1128,33 @@ export async function handleJournal(webhookUrl, discordId) {
       `**Rôle spécial** : ${roleLabel}`,
       `**Dernière position connue** : ${lieu.emoji} ${lieu.label}`,
       `**État** : ${statut}`,
-      "",
-      "**🔍 Indices récoltés**",
     ];
+
+    // Choix déjà validé pour AUJOURD'HUI (pas encore appliqué au plateau
+    // public — ça n'arrive qu'à la clôture) : puisque chaque choix est
+    // définitif dès validation (isActionLocked), le rappeler ici évite au
+    // joueur de devoir s'en souvenir lui-même en attendant demain.
+    if (joueur.alive) {
+      const todaysAction = await readPlayerAction(state.jour, discordId);
+      const joueurById = new Map(state.joueurs.map((j) => [j.discordId, j]));
+      const formatChoice = (choice) => {
+        if (!choice) return null;
+        const choiceLieu = config.lieux[choice.lieu];
+        const cibleUsername = choice.cibleId
+          ? joueurById.get(choice.cibleId)?.username
+          : null;
+        return `${choiceLieu.emoji} ${choiceLieu.label}${cibleUsername ? ` → **${cibleUsername}**` : ""}`;
+      };
+      const choix = [
+        formatChoice(todaysAction?.primary),
+        formatChoice(todaysAction?.secondary),
+      ].filter(Boolean);
+      lines.push(
+        `**Choix du Jour ${state.jour}** : ${choix.length ? choix.join(" + ") : "aucun soumis pour l'instant"}`,
+      );
+    }
+
+    lines.push("", "**🔍 Indices récoltés**");
 
     const indices = await readPlayerIndices(discordId);
     lines.push(
