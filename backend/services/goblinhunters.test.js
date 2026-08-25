@@ -14,7 +14,7 @@ import {
   checkVictory,
   computeCloture,
   isLieuRepeatAllowed,
-  isVoteLocked,
+  isActionLocked,
   computeIndicesForDay,
   computeClairiereReveals,
 } from "./goblinhunters.js";
@@ -289,14 +289,15 @@ async function main() {
   assert.strictEqual(isLieuRepeatAllowed("chateau", "taverne", 2), true); // lieu différent -> autorisé
   assert.strictEqual(isLieuRepeatAllowed("camp_entrainement", "camp_entrainement", 5), false);
 
-  // ── isVoteLocked : un vote castée au Château devient définitif ──
-  assert.strictEqual(isVoteLocked(undefined, "primary"), false); // aucune action ce jour -> pas de verrou
-  assert.strictEqual(isVoteLocked({ primary: { lieu: "chateau", cibleId: "x" } }, "primary"), true);
-  assert.strictEqual(isVoteLocked({ primary: { lieu: "chateau", cibleId: null } }, "primary"), false); // pas de cible -> pas encore un vote réel
-  assert.strictEqual(isVoteLocked({ primary: { lieu: "taverne" } }, "primary"), false); // autre lieu -> jamais verrouillé
+  // ── isActionLocked : toute action validée devient définitive, quel que
+  // soit le lieu (élargi depuis un verrou initialement limité au vote) ──
+  assert.strictEqual(isActionLocked(undefined, "primary"), false); // aucune action ce jour -> pas de verrou
+  assert.strictEqual(isActionLocked({ primary: { lieu: "chateau", cibleId: "x" } }, "primary"), true);
+  assert.strictEqual(isActionLocked({ primary: { lieu: "taverne" } }, "primary"), true); // n'importe quel lieu verrouille
+  assert.strictEqual(isActionLocked({ primary: { lieu: "camp_entrainement", cibleId: null } }, "primary"), true); // même sans cible trouvée (filet de sécurité à la clôture) -> déjà définitif
   // Le verrou est spécifique au slot : le primary verrouillé n'empêche pas
   // l'Éclaireur de soumettre un secondary différent.
-  assert.strictEqual(isVoteLocked({ primary: { lieu: "chateau", cibleId: "x" } }, "secondary"), false);
+  assert.strictEqual(isActionLocked({ primary: { lieu: "chateau", cibleId: "x" } }, "secondary"), false);
 
   // ── computeCloture : jour 1, aucune élimination possible (vote/combat no-op) ──
   {

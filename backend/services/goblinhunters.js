@@ -234,7 +234,7 @@ export function buildInitialRoster(inscriptions, assignments, combatConfig) {
 // ── Actions du jour (lieu + cible éventuelle) ───────────────────────
 // HSET écrasable (comme les votes de Bossraid) : modifiable jusqu'à la
 // clôture, dernier clic gagne — SAUF le vote du Château, rendu définitif dès
-// validation par un garde côté handler (isVoteLocked/handleLieuButton), pas
+// validation par un garde côté handler (isActionLocked/handleLieuButton), pas
 // ici : cette fonction reste volontairement "bête", elle écrit toujours ce
 // qu'on lui donne. `slot` = "primary" ou "secondary" (2e action de
 // l'Éclaireur uniquement) — le contrôle du rôle autorisant "secondary" se
@@ -256,24 +256,29 @@ export async function readActions(jour) {
 }
 
 // Lecture ciblée d'un seul joueur (évite de récupérer tout le hash du jour
-// juste pour vérifier son propre choix courant, ex. dans isVoteLocked côté
+// juste pour vérifier son propre choix courant, ex. dans isActionLocked côté
 // handler).
 export async function readPlayerAction(jour, discordId) {
   return fromJson(await getRedis().hget(actionsKey(jour), discordId));
 }
 
-// Vote définitif : une fois un vote castée au Château (slot donné), plus
-// aucun changement possible sur ce slot pour le reste du jour — ni vers une
-// autre cible, ni vers un autre lieu. Décidé avec l'utilisateur : contraste
-// volontaire avec les 4 autres lieux qui restent modifiables jusqu'à la
-// clôture (dernier clic gagne) — voter est un engagement public, pas un
-// brouillon qu'on peut retirer sans conséquence. Vérifié au clic dans le
-// handler (handleLieuButton/handleTargetSelect), même esprit que
-// isLieuRepeatAllowed — recordAction() lui-même reste "bête" (écrit toujours
-// ce qu'on lui donne), la garde vit entièrement côté appelant.
-export function isVoteLocked(existingAction, slot) {
-  const current = existingAction?.[slot];
-  return Boolean(current?.lieu === "chateau" && current.cibleId);
+// Action définitive : une fois un choix validé pour un slot donné (primary
+// ou secondary), plus aucun changement possible sur ce slot pour le reste du
+// jour — quel que soit le lieu, y compris si aucune cible n'a été trouvée
+// (Camp d'Entraînement/Tour de Guet sans candidat, cibleId: null quand même
+// enregistré). Décidé avec l'utilisateur, en élargissant une première
+// version qui ne verrouillait que le vote du Château — chaque action est un
+// engagement, pas un brouillon qu'on peut retirer sans conséquence. Vérifié
+// au clic dans le handler (handleLieuButton/handleTargetSelect), même esprit
+// que isLieuRepeatAllowed — recordAction() lui-même reste "bête" (écrit
+// toujours ce qu'on lui donne, sans jamais vérifier s'il écrase quelque
+// chose), la garde vit entièrement côté appelant. Comme recordAction()
+// n'écrit JAMAIS d'état "partiel" (le clic initial sur un lieu à cible ne
+// persiste rien tant que la cible n'est pas choisie), la présence de
+// `existingAction[slot]` suffit à elle seule à détecter un choix déjà
+// finalisé — pas besoin de vérifier le lieu ni la cible comme avant.
+export function isActionLocked(existingAction, slot) {
+  return existingAction?.[slot] != null;
 }
 
 // Anti-camping : impossible de choisir le même lieu que celui occupé la
