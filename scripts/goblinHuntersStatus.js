@@ -26,7 +26,7 @@ import { loadGoblinHuntersConfig, readState, listInscriptions, readActions } fro
     const inscriptions = await listInscriptions();
     console.log(`Phase : inscription — clôture le ${state.closingAt}`);
     console.log(`${inscriptions.length}/${config.effectif_max} inscrits (minimum ${config.effectif_min}) :\n`);
-    inscriptions.forEach((i) => console.log(`  ${i.username} (${i.discordId})`));
+    inscriptions.forEach((i) => console.log(`  ${i.username}`));
     return;
   }
 

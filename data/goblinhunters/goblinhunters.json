@@ -1,9 +1,9 @@
 {
   "duree_jours": 10,
   "effectif_min": 8,
-  "effectif_max": 14,
+  "effectif_max": 16,
   "fenetre_inscription_jours": 3,
-  "minority_table": { "8": 3, "9": 3, "10": 3, "11": 4, "12": 4, "13": 4, "14": 5 },
+  "minority_table": { "8": 3, "9": 3, "10": 3, "11": 4, "12": 4, "13": 4, "14": 5, "15": 5, "16": 5 },
   "combat": { "pv_base": 3, "degats_base": 1 },
   "taverne_seuil_protection": 3,
   "vote_quorum_min": 2,
