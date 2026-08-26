@@ -530,7 +530,7 @@ async function sendClairiereDM(discordId, reveals, config) {
       `**${r.cibleUsername}** se trouve à ${config.lieux[r.lieu].emoji} ${config.lieux[r.lieu].label}.`,
   );
   const embed = {
-    title: "🌫️ Clairière mystique — ta vision",
+    title: "🌫️ Clairière — ta vision",
     description: lines.join("\n"),
     color: GOBLINHUNTERS_COLOR,
   };
@@ -1018,7 +1018,7 @@ export async function handleLieuButton(
       const confirmation =
         lieuAction === "protection"
           ? "🍺 Tu te rends à la Taverne (protection si le lieu n'est pas surpeuplé aujourd'hui). **Choix définitif pour aujourd'hui.**"
-          : "🌫️ Tu te rends à la Clairière mystique — la position de 2 joueurs au hasard te sera révélée demain. **Choix définitif pour aujourd'hui.**";
+          : "🌫️ Tu te rends à la Clairière — la position de 2 joueurs au hasard te sera révélée demain. **Choix définitif pour aujourd'hui.**";
       await patchOriginal(webhookUrl, {
         content: confirmation,
         embeds: [],
@@ -1317,18 +1317,17 @@ export async function handleRegles(webhookUrl) {
 
 function buildMessagerieEmbed(messages, { alive, alreadySent }) {
   const lines = messages.length
-    ? messages.map((m) => `🗨️ *Jour ${m.jour}* : "${m.content}"`)
-    : ["Aucun message pour l'instant — sois le premier à écrire !"];
+    ? messages.map((m) => `- Jour ${m.jour} : "${m.content}"`)
+    : ["- Aucun message pour l'instant."];
   const footer = !alive
     ? "Tu es éliminé(e), tu ne peux plus poster de message."
     : alreadySent
       ? "Tu as déjà envoyé ton message du jour — reviens demain."
-      : "Un message par jour et par joueur, toujours anonyme.";
+      : "Un message par jour et par joueur (anonyme).";
   return {
     title: "📬 Messagerie du village",
     description: [
-      "Les 3 derniers messages anonymes postés — impossible de savoir qui écrit quoi.",
-      "",
+      "Les 3 derniers messages postés :",
       ...lines,
       "",
       footer,
@@ -1392,7 +1391,9 @@ export async function handleMessagerie(webhookUrl, discordId) {
     }
     const joueur = state.joueurs.find((j) => j.discordId === discordId);
     const alive = joueur?.alive === true;
-    const alreadySent = alive ? await hasSentMessageToday(state.jour, discordId) : false;
+    const alreadySent = alive
+      ? await hasSentMessageToday(state.jour, discordId)
+      : false;
     const messages = await listRecentMessages();
     const embed = buildMessagerieEmbed(messages, { alive, alreadySent });
     const components = buildMessagerieComponents({ alive, alreadySent });
@@ -1407,15 +1408,26 @@ export async function handleMessagerie(webhookUrl, discordId) {
 // jamais la garde réelle), sur le jour COURANT relu depuis l'état, jamais un
 // jour capturé au moment de l'ouverture de la modal (la partie a pu avancer
 // entre-temps si le joueur a mis du temps à écrire).
-export async function handleMessagerieSubmit(webhookUrl, discordId, rawMessage) {
+export async function handleMessagerieSubmit(
+  webhookUrl,
+  discordId,
+  rawMessage,
+) {
   try {
     const content = (rawMessage || "").trim();
     if (!content) {
-      await patchOriginal(webhookUrl, { content: "Message vide, rien n'a été envoyé.", embeds: [], components: [] });
+      await patchOriginal(webhookUrl, {
+        content: "Message vide, rien n'a été envoyé.",
+        embeds: [],
+        components: [],
+      });
       return;
     }
     const state = await readState();
-    const joueur = state?.phase === "jeu" ? state.joueurs.find((j) => j.discordId === discordId) : null;
+    const joueur =
+      state?.phase === "jeu"
+        ? state.joueurs.find((j) => j.discordId === discordId)
+        : null;
     if (!joueur?.alive) {
       await patchOriginal(webhookUrl, {
         content: "Tu ne peux pas envoyer de message pour le moment.",
@@ -1433,7 +1445,11 @@ export async function handleMessagerieSubmit(webhookUrl, discordId, rawMessage) 
       });
       return;
     }
-    await patchOriginal(webhookUrl, { content: "📬 Message envoyé anonymement !", embeds: [], components: [] });
+    await patchOriginal(webhookUrl, {
+      content: "📬 Message envoyé anonymement !",
+      embeds: [],
+      components: [],
+    });
   } catch (err) {
     console.error("[GoblinHunters] Échec envoi Messagerie:", err.message);
   }

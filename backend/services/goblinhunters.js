@@ -27,7 +27,13 @@ import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const GOBLINHUNTERS_DIR = path.resolve(__dirname, "..", "..", "data", "goblinhunters");
+const GOBLINHUNTERS_DIR = path.resolve(
+  __dirname,
+  "..",
+  "..",
+  "data",
+  "goblinhunters",
+);
 const CONFIG_JSON_PATH = path.join(GOBLINHUNTERS_DIR, "goblinhunters.json");
 const NARRATIFS_JSON_PATH = path.join(GOBLINHUNTERS_DIR, "narratifs.json");
 
@@ -81,7 +87,10 @@ async function scanKeys(pattern) {
   const keys = [];
   let cursor = "0";
   do {
-    const [next, batch] = await getRedis().scan(cursor, { match: pattern, count: 200 });
+    const [next, batch] = await getRedis().scan(cursor, {
+      match: pattern,
+      count: 200,
+    });
     cursor = next;
     keys.push(...batch);
   } while (cursor !== "0");
@@ -169,7 +178,10 @@ export async function unregisterPlayer(discordId) {
 
 export async function listInscriptions() {
   const raw = await hgetallJson(INSCRIPTIONS_KEY);
-  return Object.entries(raw).map(([discordId, detail]) => ({ discordId, ...detail }));
+  return Object.entries(raw).map(([discordId, detail]) => ({
+    discordId,
+    ...detail,
+  }));
 }
 
 export async function countInscriptions() {
@@ -201,31 +213,45 @@ function shuffle(array, rng) {
 // majorité mini 5 (8-3) : les 2 rôles Gobelins et les 3 rôles Villageois
 // tiennent toujours, même à l'effectif plancher. Retourne
 // [{discordId, camp, role}], role = null pour les joueurs de base.
-export function assignCampsAndRoles(playerIds, minorityCount, rng = Math.random) {
+export function assignCampsAndRoles(
+  playerIds,
+  minorityCount,
+  rng = Math.random,
+) {
   const shuffled = shuffle(playerIds, rng);
   const gobelins = shuffled.slice(0, minorityCount);
   const chasseurs = shuffled.slice(minorityCount);
 
   const assignments = new Map();
-  for (const id of gobelins) assignments.set(id, { discordId: id, camp: "gobelin", role: null });
-  for (const id of chasseurs) assignments.set(id, { discordId: id, camp: "chasseur", role: null });
+  for (const id of gobelins)
+    assignments.set(id, { discordId: id, camp: "gobelin", role: null });
+  for (const id of chasseurs)
+    assignments.set(id, { discordId: id, camp: "chasseur", role: null });
 
   const gobelinsShuffled = shuffle(gobelins, rng);
-  if (gobelinsShuffled[0]) assignments.get(gobelinsShuffled[0]).role = "infiltre";
-  if (gobelinsShuffled[1]) assignments.get(gobelinsShuffled[1]).role = "explosif";
+  if (gobelinsShuffled[0])
+    assignments.get(gobelinsShuffled[0]).role = "infiltre";
+  if (gobelinsShuffled[1])
+    assignments.get(gobelinsShuffled[1]).role = "explosif";
 
   const chasseursShuffled = shuffle(chasseurs, rng);
-  if (chasseursShuffled[0]) assignments.get(chasseursShuffled[0]).role = "eclaireur";
-  if (chasseursShuffled[1]) assignments.get(chasseursShuffled[1]).role = "bucheron";
-  if (chasseursShuffled[2]) assignments.get(chasseursShuffled[2]).role = "guet_apens";
+  if (chasseursShuffled[0])
+    assignments.get(chasseursShuffled[0]).role = "eclaireur";
+  if (chasseursShuffled[1])
+    assignments.get(chasseursShuffled[1]).role = "bucheron";
+  if (chasseursShuffled[2])
+    assignments.get(chasseursShuffled[2]).role = "guet_apens";
 
   return [...assignments.values()];
 }
 
 export function buildInitialRoster(inscriptions, assignments, combatConfig) {
-  const usernameById = new Map(inscriptions.map((i) => [i.discordId, i.username]));
+  const usernameById = new Map(
+    inscriptions.map((i) => [i.discordId, i.username]),
+  );
   return assignments.map(({ discordId, camp, role }) => {
-    const roleConfig = role === "bucheron" ? combatConfig.bucheronOverride : null;
+    const roleConfig =
+      role === "bucheron" ? combatConfig.bucheronOverride : null;
     return {
       discordId,
       username: usernameById.get(discordId) || discordId,
@@ -249,7 +275,13 @@ export function buildInitialRoster(inscriptions, assignments, combatConfig) {
 // l'Éclaireur uniquement) — le contrôle du rôle autorisant "secondary" se
 // fait aussi côté handler Discord (accès à state.joueurs), pas ici.
 
-export async function recordAction(jour, discordId, slot, { lieu, cibleId = null }, username) {
+export async function recordAction(
+  jour,
+  discordId,
+  slot,
+  { lieu, cibleId = null },
+  username,
+) {
   const existingRaw = await getRedis().hget(actionsKey(jour), discordId);
   const existing = fromJson(existingRaw) || {};
   existing[slot] = { lieu, cibleId };
@@ -321,8 +353,10 @@ async function clearActions(jour) {
 // inversement. Primary regardé en priorité, secondary seulement pour
 // l'Éclaireur si primary n'est pas un vote.
 function extractVote(action) {
-  if (action?.primary?.lieu === "chateau" && action.primary.cibleId) return action.primary.cibleId;
-  if (action?.secondary?.lieu === "chateau" && action.secondary.cibleId) return action.secondary.cibleId;
+  if (action?.primary?.lieu === "chateau" && action.primary.cibleId)
+    return action.primary.cibleId;
+  if (action?.secondary?.lieu === "chateau" && action.secondary.cibleId)
+    return action.secondary.cibleId;
   return null;
 }
 
@@ -358,7 +392,10 @@ export function resolveVoteElimination(voteTally, quorumMin = 2) {
 export function computeTavernOccupants(actionsRaw) {
   const occupants = new Set();
   for (const [discordId, action] of Object.entries(actionsRaw)) {
-    if (action?.primary?.lieu === "taverne" || action?.secondary?.lieu === "taverne") {
+    if (
+      action?.primary?.lieu === "taverne" ||
+      action?.secondary?.lieu === "taverne"
+    ) {
       occupants.add(discordId);
     }
   }
@@ -380,7 +417,9 @@ export function computeTavernProtection(occupants, seuil) {
 // par défense (ex. cible éliminée par le vote la même clôture, voir
 // computeCloture).
 function resolveEligibleAttacks(actionsRaw, joueursAvant, lieuxCombat) {
-  const positionById = new Map(joueursAvant.map((j) => [j.discordId, j.position]));
+  const positionById = new Map(
+    joueursAvant.map((j) => [j.discordId, j.position]),
+  );
   const aliveById = new Map(joueursAvant.map((j) => [j.discordId, j.alive]));
   const attacks = [];
   for (const [attackerId, action] of Object.entries(actionsRaw)) {
@@ -398,7 +437,7 @@ function resolveEligibleAttacks(actionsRaw, joueursAvant, lieuxCombat) {
 
 // Dégâts par attaque : 1 dégât de base, 2 pour le Bûcheron (rôle de
 // l'attaquant, pas de la cible). L'Arène est le SEUL lieu de
-// combat — la Clairière mystique ne fait plus partie du combat depuis sa
+// combat — la Clairière ne fait plus partie du combat depuis sa
 // refonte en révélation de position (voir computeClairiereReveals), décidée
 // avec l'utilisateur pour lui donner une identité propre plutôt qu'une
 // simple variante de l'Arène sans vraie contrepartie.
@@ -417,47 +456,81 @@ function fallbackActorsFor(actionsRaw, lieu, joueursAvant, resolvedActorIds) {
   const actors = [];
   for (const [discordId, action] of Object.entries(actionsRaw)) {
     if (resolvedActorIds.has(discordId) || !aliveById.get(discordId)) continue;
-    if (action?.primary?.lieu === lieu || action?.secondary?.lieu === lieu) actors.push(discordId);
+    if (action?.primary?.lieu === lieu || action?.secondary?.lieu === lieu)
+      actors.push(discordId);
   }
   return actors;
 }
 
 function pickRandomTarget(joueursAvant, excludeId, rng) {
-  const candidates = joueursAvant.filter((j) => j.alive && j.discordId !== excludeId);
+  const candidates = joueursAvant.filter(
+    (j) => j.alive && j.discordId !== excludeId,
+  );
   return candidates.length ? shuffle(candidates, rng)[0] : null;
 }
 
-export function computeAttacksFromActions(actionsRaw, joueursAvant, config, rng = Math.random) {
+export function computeAttacksFromActions(
+  actionsRaw,
+  joueursAvant,
+  config,
+  rng = Math.random,
+) {
   const roleById = new Map(joueursAvant.map((j) => [j.discordId, j.role]));
-  const attacks = resolveEligibleAttacks(actionsRaw, joueursAvant, ["camp_entrainement"]);
+  const attacks = resolveEligibleAttacks(actionsRaw, joueursAvant, [
+    "camp_entrainement",
+  ]);
 
   const resolvedIds = new Set(attacks.map((a) => a.attackerId));
-  for (const attackerId of fallbackActorsFor(actionsRaw, "camp_entrainement", joueursAvant, resolvedIds)) {
+  for (const attackerId of fallbackActorsFor(
+    actionsRaw,
+    "camp_entrainement",
+    joueursAvant,
+    resolvedIds,
+  )) {
     const target = pickRandomTarget(joueursAvant, attackerId, rng);
-    if (target) attacks.push({ attackerId, targetId: target.discordId, lieu: "camp_entrainement" });
+    if (target)
+      attacks.push({
+        attackerId,
+        targetId: target.discordId,
+        lieu: "camp_entrainement",
+      });
   }
 
   return attacks.map((a) => ({
     ...a,
-    degats: roleById.get(a.attackerId) === "bucheron" ? config.roles.bucheron.degats : config.combat.degats_base,
+    degats:
+      roleById.get(a.attackerId) === "bucheron"
+        ? config.roles.bucheron.degats
+        : config.combat.degats_base,
   }));
 }
 
-// Clairière mystique : révèle la position COURANTE de 2 joueurs vivants
+// Clairière : révèle la position COURANTE de 2 joueurs vivants
 // tirés au hasard (jamais soi-même) — aucune cible à choisir, aucune
 // restriction de co-location (ce n'est pas une confrontation). Décidé avec
 // l'utilisateur : donne à ce lieu une utilité propre (renseignement) plutôt
 // qu'une attaque redondante avec l'Arène.
-export function computeClairiereReveals(actionsRaw, joueursApres, rng = Math.random) {
+export function computeClairiereReveals(
+  actionsRaw,
+  joueursApres,
+  rng = Math.random,
+) {
   const aliveById = new Map(joueursApres.map((j) => [j.discordId, j.alive]));
-  const aliveOthers = (excludeId) => joueursApres.filter((j) => j.alive && j.discordId !== excludeId);
+  const aliveOthers = (excludeId) =>
+    joueursApres.filter((j) => j.alive && j.discordId !== excludeId);
   const revealsByPlayer = {};
   for (const [discordId, action] of Object.entries(actionsRaw)) {
     if (!aliveById.get(discordId)) continue; // éliminé ce même jour (vote/combat) -> pas de vision
-    const visite = action?.primary?.lieu === "clairiere_mystique" || action?.secondary?.lieu === "clairiere_mystique";
+    const visite =
+      action?.primary?.lieu === "clairiere_mystique" ||
+      action?.secondary?.lieu === "clairiere_mystique";
     if (!visite) continue;
     const picks = shuffle(aliveOthers(discordId), rng).slice(0, 2);
-    revealsByPlayer[discordId] = picks.map((j) => ({ cibleId: j.discordId, cibleUsername: j.username, lieu: j.position }));
+    revealsByPlayer[discordId] = picks.map((j) => ({
+      cibleId: j.discordId,
+      cibleUsername: j.username,
+      lieu: j.position,
+    }));
   }
   return revealsByPlayer;
 }
@@ -486,9 +559,16 @@ export function resolveCombat(pvBefore, damagePerTarget, rng = Math.random) {
     return { pvAfter: rawPvAfter, deathId: candidates[0]?.[0] ?? null };
   }
 
-  const maxDamage = Math.max(...candidates.map(([id]) => damagePerTarget[id] || 0));
-  const topCandidates = candidates.filter(([id]) => (damagePerTarget[id] || 0) === maxDamage);
-  const [deathId] = topCandidates.length === 1 ? topCandidates[0] : topCandidates[Math.floor(rng() * topCandidates.length)];
+  const maxDamage = Math.max(
+    ...candidates.map(([id]) => damagePerTarget[id] || 0),
+  );
+  const topCandidates = candidates.filter(
+    ([id]) => (damagePerTarget[id] || 0) === maxDamage,
+  );
+  const [deathId] =
+    topCandidates.length === 1
+      ? topCandidates[0]
+      : topCandidates[Math.floor(rng() * topCandidates.length)];
 
   const pvAfter = { ...rawPvAfter };
   for (const [id] of candidates) {
@@ -499,9 +579,15 @@ export function resolveCombat(pvBefore, damagePerTarget, rng = Math.random) {
 
 // Enquête (Tour de Guet) : révèle le camp de la cible, sauf sur l'Infiltré
 // qui renvoie toujours "chasseur" (faux positif classique du genre).
-export function computeInvestigations(actionsRaw, joueursAvant, rng = Math.random) {
+export function computeInvestigations(
+  actionsRaw,
+  joueursAvant,
+  rng = Math.random,
+) {
   const joueurById = new Map(joueursAvant.map((j) => [j.discordId, j]));
-  const attacks = resolveEligibleAttacks(actionsRaw, joueursAvant, ["tour_de_guet"]);
+  const attacks = resolveEligibleAttacks(actionsRaw, joueursAvant, [
+    "tour_de_guet",
+  ]);
   const results = attacks.map(({ attackerId, targetId }) => {
     const cible = joueurById.get(targetId);
     const campReporte = cible.role === "infiltre" ? "chasseur" : cible.camp;
@@ -511,7 +597,12 @@ export function computeInvestigations(actionsRaw, joueursAvant, rng = Math.rando
   // Même filet de sécurité que le combat (voir fallbackActorsFor) : une
   // enquête sans cible éligible se rabat sur un joueur vivant au hasard.
   const resolvedIds = new Set(results.map((r) => r.investigatorId));
-  for (const investigatorId of fallbackActorsFor(actionsRaw, "tour_de_guet", joueursAvant, resolvedIds)) {
+  for (const investigatorId of fallbackActorsFor(
+    actionsRaw,
+    "tour_de_guet",
+    joueursAvant,
+    resolvedIds,
+  )) {
     const target = pickRandomTarget(joueursAvant, investigatorId, rng);
     if (!target) continue;
     const campReporte = target.role === "infiltre" ? "chasseur" : target.camp;
@@ -545,8 +636,16 @@ export function computeInvestigations(actionsRaw, joueursAvant, rng = Math.rando
 // calcul indépendant tirerait potentiellement une cible DIFFÉRENTE de celle
 // réellement appliquée en combat, désynchronisant le carnet d'indices de ce
 // qui s'est vraiment passé.
-export function computeIndicesForDay(jour, attacks, investigations, clairiereReveals, joueursAvant) {
-  const usernameById = new Map(joueursAvant.map((j) => [j.discordId, j.username]));
+export function computeIndicesForDay(
+  jour,
+  attacks,
+  investigations,
+  clairiereReveals,
+  joueursAvant,
+) {
+  const usernameById = new Map(
+    joueursAvant.map((j) => [j.discordId, j.username]),
+  );
   const indicesByPlayer = {};
   const push = (discordId, entry) => {
     (indicesByPlayer[discordId] ??= []).push({ jour, ...entry });
@@ -574,7 +673,13 @@ export function computeIndicesForDay(jour, attacks, investigations, clairiereRev
 
   for (const [discordId, reveals] of Object.entries(clairiereReveals)) {
     for (const r of reveals) {
-      push(discordId, { type: "reveal", cibleId: r.cibleId, cibleUsername: r.cibleUsername, lieu: r.lieu, campReporte: null });
+      push(discordId, {
+        type: "reveal",
+        cibleId: r.cibleId,
+        cibleUsername: r.cibleUsername,
+        lieu: r.lieu,
+        campReporte: null,
+      });
     }
   }
 
@@ -599,7 +704,14 @@ export function computeIndicesForDay(jour, attacks, investigations, clairiereRev
 // appel que la résolution des PV (même avertissement que pour
 // computeIndicesForDay : ne jamais recalculer computeAttacksFromActions()
 // séparément).
-export function resolveExplosifRetaliation({ eliminationsParVote, deathIdCombat, actionsRaw, attacks, joueursAvant, rng = Math.random }) {
+export function resolveExplosifRetaliation({
+  eliminationsParVote,
+  deathIdCombat,
+  actionsRaw,
+  attacks,
+  joueursAvant,
+  rng = Math.random,
+}) {
   const byId = new Map(joueursAvant.map((j) => [j.discordId, j]));
   let gobelinId = null;
   let candidates = [];
@@ -608,7 +720,11 @@ export function resolveExplosifRetaliation({ eliminationsParVote, deathIdCombat,
   if (votedOut?.role === "explosif") {
     gobelinId = votedOut.discordId;
     candidates = Object.entries(actionsRaw)
-      .filter(([voterId, action]) => extractVote(action) === gobelinId && byId.get(voterId)?.camp === "chasseur")
+      .filter(
+        ([voterId, action]) =>
+          extractVote(action) === gobelinId &&
+          byId.get(voterId)?.camp === "chasseur",
+      )
       .map(([voterId]) => voterId);
   }
 
@@ -618,7 +734,11 @@ export function resolveExplosifRetaliation({ eliminationsParVote, deathIdCombat,
     candidates = [
       ...new Set(
         attacks
-          .filter((a) => a.targetId === gobelinId && byId.get(a.attackerId)?.camp === "chasseur")
+          .filter(
+            (a) =>
+              a.targetId === gobelinId &&
+              byId.get(a.attackerId)?.camp === "chasseur",
+          )
           .map((a) => a.attackerId),
       ),
     ];
@@ -635,27 +755,45 @@ export function resolveExplosifRetaliation({ eliminationsParVote, deathIdCombat,
 // combat, jamais au vote (pas d'attaquant identifiable dans un vote
 // collectif). `attacks` = même contrainte que resolveExplosifRetaliation
 // ci-dessus (résultat du même appel que la résolution des PV).
-export function resolveGuetApensReveal({ deathIdCombat, attacks, joueursAvant }) {
+export function resolveGuetApensReveal({
+  deathIdCombat,
+  attacks,
+  joueursAvant,
+}) {
   const byId = new Map(joueursAvant.map((j) => [j.discordId, j]));
   const dead = deathIdCombat ? byId.get(deathIdCombat) : null;
   if (dead?.role !== "guet_apens") return null;
-  const attackerIds = [...new Set(attacks.filter((a) => a.targetId === deathIdCombat).map((a) => a.attackerId))];
+  const attackerIds = [
+    ...new Set(
+      attacks
+        .filter((a) => a.targetId === deathIdCombat)
+        .map((a) => a.attackerId),
+    ),
+  ];
   if (!attackerIds.length) return null;
   return {
     guetApensId: deathIdCombat,
-    attackers: attackerIds.map((id) => ({ attackerId: id, campReporte: byId.get(id)?.camp })),
+    attackers: attackerIds.map((id) => ({
+      attackerId: id,
+      campReporte: byId.get(id)?.camp,
+    })),
   };
 }
 
 // Nouvelle position affichée pour chaque joueur vivant : le lieu de sa
 // dernière action soumise (secondary si Éclaireur ayant joué 2 fois),
 // retombe au Château par défaut (pass automatique, décidé avec l'utilisateur).
-export function computeNewPositions(actionsRaw, joueursAvant, defaultLieu = "chateau") {
+export function computeNewPositions(
+  actionsRaw,
+  joueursAvant,
+  defaultLieu = "chateau",
+) {
   const positions = {};
   for (const j of joueursAvant) {
     if (!j.alive) continue;
     const action = actionsRaw[j.discordId];
-    positions[j.discordId] = action?.secondary?.lieu || action?.primary?.lieu || defaultLieu;
+    positions[j.discordId] =
+      action?.secondary?.lieu || action?.primary?.lieu || defaultLieu;
   }
   return positions;
 }
@@ -665,7 +803,8 @@ export function checkVictory(joueursApres, jourCourant, dureeJours) {
   const gobelinsVivants = vivants.filter((j) => j.camp === "gobelin").length;
   const chasseursVivants = vivants.filter((j) => j.camp === "chasseur").length;
 
-  if (gobelinsVivants > 0 && gobelinsVivants >= chasseursVivants) return "gobelins_parite";
+  if (gobelinsVivants > 0 && gobelinsVivants >= chasseursVivants)
+    return "gobelins_parite";
   if (gobelinsVivants === 0) return "chasseurs_gobelins_elimines";
   if (jourCourant >= dureeJours) return "chasseurs_survie";
   return null;
@@ -678,24 +817,45 @@ export function checkVictory(joueursApres, jourCourant, dureeJours) {
 // et attaquants possibles du combat qui suit), puis combat — reproduit le
 // classique enchaînement jour/nuit du genre.
 
-export function computeCloture({ jour, actionsRaw, joueursAvant, config, rng = Math.random }) {
+export function computeCloture({
+  jour,
+  actionsRaw,
+  joueursAvant,
+  config,
+  rng = Math.random,
+}) {
   const voteTally = computeVoteTally(actionsRaw);
-  const eliminationsParVote = jour > 1 ? resolveVoteElimination(voteTally, config.vote_quorum_min) : null;
+  const eliminationsParVote =
+    jour > 1 ? resolveVoteElimination(voteTally, config.vote_quorum_min) : null;
 
   const joueursApresVote = joueursAvant.map((j) =>
-    j.discordId === eliminationsParVote ? { ...j, alive: false, campReveleAt: jour } : j,
+    j.discordId === eliminationsParVote
+      ? { ...j, alive: false, campReveleAt: jour }
+      : j,
   );
 
   let deathIdCombat = null;
   let attacks = [];
-  let pvApres = Object.fromEntries(joueursApresVote.filter((j) => j.alive).map((j) => [j.discordId, j.pv]));
+  let pvApres = Object.fromEntries(
+    joueursApresVote.filter((j) => j.alive).map((j) => [j.discordId, j.pv]),
+  );
 
   if (jour > 1) {
     const occupants = computeTavernOccupants(actionsRaw);
-    const protectedSet = computeTavernProtection(occupants, config.taverne_seuil_protection);
-    attacks = computeAttacksFromActions(actionsRaw, joueursApresVote, config, rng);
+    const protectedSet = computeTavernProtection(
+      occupants,
+      config.taverne_seuil_protection,
+    );
+    attacks = computeAttacksFromActions(
+      actionsRaw,
+      joueursApresVote,
+      config,
+      rng,
+    );
     const damagePerTarget = sumDamagePerTarget(attacks, protectedSet);
-    const pvBefore = Object.fromEntries(joueursApresVote.filter((j) => j.alive).map((j) => [j.discordId, j.pv]));
+    const pvBefore = Object.fromEntries(
+      joueursApresVote.filter((j) => j.alive).map((j) => [j.discordId, j.pv]),
+    );
     const combatResult = resolveCombat(pvBefore, damagePerTarget, rng);
     pvApres = combatResult.pvAfter;
     deathIdCombat = combatResult.deathId;
@@ -703,11 +863,25 @@ export function computeCloture({ jour, actionsRaw, joueursAvant, config, rng = M
 
   const explosifRetaliation =
     jour > 1
-      ? resolveExplosifRetaliation({ eliminationsParVote, deathIdCombat, actionsRaw, attacks, joueursAvant, rng })
+      ? resolveExplosifRetaliation({
+          eliminationsParVote,
+          deathIdCombat,
+          actionsRaw,
+          attacks,
+          joueursAvant,
+          rng,
+        })
       : null;
-  const guetApensReveal = jour > 1 ? resolveGuetApensReveal({ deathIdCombat, attacks, joueursAvant }) : null;
+  const guetApensReveal =
+    jour > 1
+      ? resolveGuetApensReveal({ deathIdCombat, attacks, joueursAvant })
+      : null;
 
-  const investigations = computeInvestigations(actionsRaw, joueursApresVote, rng);
+  const investigations = computeInvestigations(
+    actionsRaw,
+    joueursApresVote,
+    rng,
+  );
   const newPositions = computeNewPositions(actionsRaw, joueursApresVote);
 
   const joueursApres = joueursApresVote.map((j) => {
@@ -730,7 +904,11 @@ export function computeCloture({ jour, actionsRaw, joueursAvant, config, rng = M
   // jour déjà appliquées) : révèle où les cibles ont fini la journée, pas où
   // elles étaient avant — un joueur éliminé le jour même (vote ou combat)
   // n'est ni éligible comme cible, ni comme voyant (aliveById filtre les deux).
-  const clairiereReveals = computeClairiereReveals(actionsRaw, joueursApres, rng);
+  const clairiereReveals = computeClairiereReveals(
+    actionsRaw,
+    joueursApres,
+    rng,
+  );
 
   const victory = checkVictory(joueursApres, jour, config.duree_jours);
 
@@ -752,8 +930,11 @@ export function computeCloture({ jour, actionsRaw, joueursAvant, config, rng = M
 
 export async function appendIndices(indicesByPlayer) {
   for (const [discordId, entries] of Object.entries(indicesByPlayer)) {
-    const existing = fromJson(await getRedis().hget(INDICES_KEY, discordId)) || [];
-    await getRedis().hset(INDICES_KEY, { [discordId]: toJson([...existing, ...entries]) });
+    const existing =
+      fromJson(await getRedis().hget(INDICES_KEY, discordId)) || [];
+    await getRedis().hset(INDICES_KEY, {
+      [discordId]: toJson([...existing, ...entries]),
+    });
   }
 }
 
@@ -797,8 +978,17 @@ export async function listRecentMessages() {
 // ── Wrappers I/O — appelés uniquement par postGoblinHunters()/cron ──
 
 async function loadCloture(jour, config) {
-  const [actionsRaw, state] = await Promise.all([readActions(jour), readState()]);
-  return computeCloture({ jour, actionsRaw, joueursAvant: state.joueurs, config, rng: Math.random });
+  const [actionsRaw, state] = await Promise.all([
+    readActions(jour),
+    readState(),
+  ]);
+  return computeCloture({
+    jour,
+    actionsRaw,
+    joueursAvant: state.joueurs,
+    config,
+    rng: Math.random,
+  });
 }
 
 // Lecture seule (aucune écriture Redis) — bouton preview + `--dry-run`.
@@ -849,7 +1039,10 @@ export async function closeDayAndAdvance(jour, config) {
 export async function launchGame(channelId, config) {
   const inscriptions = await listInscriptions();
   const playerIds = inscriptions.map((i) => i.discordId);
-  const minorityCount = computeMinorityCount(playerIds.length, config.minority_table);
+  const minorityCount = computeMinorityCount(
+    playerIds.length,
+    config.minority_table,
+  );
   const assignments = assignCampsAndRoles(playerIds, minorityCount);
   const joueurs = buildInitialRoster(inscriptions, assignments, {
     pv_base: config.combat.pv_base,
@@ -895,7 +1088,9 @@ export async function listHistorique({ limit = 10, offset = 0 } = {}) {
 
 export async function archiveManche(record) {
   const manche = Number(await getRedis().incr(MANCHE_SEQ_KEY));
-  await getRedis().hset(MANCHES_KEY, { [manche]: toJson({ manche, ...record }) });
+  await getRedis().hset(MANCHES_KEY, {
+    [manche]: toJson({ manche, ...record }),
+  });
   return manche;
 }
 
@@ -909,7 +1104,13 @@ export async function listManches({ limit = 10 } = {}) {
 // ── Remise à zéro ────────────────────────────────────────────────────
 
 export async function resetGoblinHunters({ clearManches = false } = {}) {
-  await getRedis().del(STATE_KEY, INSCRIPTIONS_KEY, HISTORIQUE_KEY, INDICES_KEY, MESSAGES_KEY);
+  await getRedis().del(
+    STATE_KEY,
+    INSCRIPTIONS_KEY,
+    HISTORIQUE_KEY,
+    INDICES_KEY,
+    MESSAGES_KEY,
+  );
   await scanDelete("goblinhunters:actions:*");
   await scanDelete("goblinhunters:action_usernames:*");
   await scanDelete("goblinhunters:messages_sent:*");

@@ -64,22 +64,22 @@ Aucun changement de code n'est nécessaire pour étendre le test à un autre cla
 
 Tous les horaires ci-dessous sont définis en UTC dans les workflows (`.github/workflows/`). L'heure de Paris correspond à UTC+2 en été (CEST) et UTC+1 en hiver (CET).
 
-| Script                                                   | Workflow                 | Jour(s)                                       | Horaire UTC                | Horaire Paris (été/hiver)  | Salon Discord                          |
-| --------------------------------------------------------- | -------------------------- | ------------------------------------------------ | ----------------------------- | ------------------------------ | ----------------------------------------- |
-| `collectSnapshots.js` (`npm run snapshot`)               | `snapshot.yml`           | Tous les jours                                | Toutes les heures          | —                          | Aucun post (données uniquement)        |
-| `notifyMemberChanges.js` (`npm run notify-members`)      | `snapshot.yml`           | Tous les jours                                | Toutes les heures          | —                          | Salon membres principal                |
-| `refreshClanCache.js` (`npm run cache`)                  | `snapshot.yml`           | Tous les jours                                | Toutes les heures          | —                          | Aucun post (cache statique)            |
-| `preResetSnapshot.js`                                    | `pre-reset-snapshot.yml` | Ven, Sam, Dim, Lun                            | 07:30                      | 09:30 / 08:30              | Aucun post (données uniquement)        |
-| `notifyWarSummary.js`                                    | `war-summary.yml`        | Tous les jours (poste ven/sam/dim/lun)        | 10:05                      | 12:05 / 11:05              | Salon membres principal                |
-| `notifyClanStatus.js`                                    | `war-summary.yml`        | Tous les jours (idem)                         | 10:05                      | 12:05 / 11:05              | Salon staff (`DISCORD_CHANNEL_STAFF`)  |
-| `notifyLastSeen.js`                                      | `last-seen.yml`          | Tous les jours                                | 10:08                      | 12:08 / 11:08              | Salon membres principal                |
-| `notifyGdcLaunch.js`                                     | `gdc-launch.yml`         | Jeudi                                         | 10:30                      | 12:30 / 11:30              | Salon membres principal                |
-| `notifyPreWarSummary.js` (`npm run pre-war-summary`)     | `pre-war-summary.yml`    | Mercredi                                      | 14:00                      | 16:00 / 15:00              | Salon membres principal                |
-| `notifyRules.js`                                         | `rules.yml`              | Mardi (le script ne poste que le 1er du mois) | 14:00                      | 16:00 / 15:00              | Salon membres principal                |
-| `autoStartPredictions.js` (`npm run predictions:start`)  | `predictions.yml`        | Mardi                                         | 08:00                      | 10:00 / 09:00              | Salon membres principal                |
-| `autoEndPredictions.js` (`npm run predictions:end`)      | `predictions.yml`        | Lundi                                         | 12:00                      | 14:00 / 13:00              | Salon membres principal                |
-| `postFrame.js` (`npm run frame:public`)                  | `frames.yml`             | Mercredi                                      | 08:00                      | 10:00 / 09:00              | Salon "Général"                        |
-| `postAnagram.js` (`npm run anagram:public`)              | `anagrams.yml`           | Samedi                                        | 10:00 ou 18:00 (aléatoire)\* | 12:00-20:00 / 11:00-19:00 | Salon "Général"                        |
+| Script                                                  | Workflow                 | Jour(s)                                       | Horaire UTC                  | Horaire Paris (été/hiver) | Salon Discord                         |
+| ------------------------------------------------------- | ------------------------ | --------------------------------------------- | ---------------------------- | ------------------------- | ------------------------------------- |
+| `collectSnapshots.js` (`npm run snapshot`)              | `snapshot.yml`           | Tous les jours                                | Toutes les heures            | —                         | Aucun post (données uniquement)       |
+| `notifyMemberChanges.js` (`npm run notify-members`)     | `snapshot.yml`           | Tous les jours                                | Toutes les heures            | —                         | Salon membres principal               |
+| `refreshClanCache.js` (`npm run cache`)                 | `snapshot.yml`           | Tous les jours                                | Toutes les heures            | —                         | Aucun post (cache statique)           |
+| `preResetSnapshot.js`                                   | `pre-reset-snapshot.yml` | Ven, Sam, Dim, Lun                            | 07:30                        | 09:30 / 08:30             | Aucun post (données uniquement)       |
+| `notifyWarSummary.js`                                   | `war-summary.yml`        | Tous les jours (poste ven/sam/dim/lun)        | 10:05                        | 12:05 / 11:05             | Salon membres principal               |
+| `notifyClanStatus.js`                                   | `war-summary.yml`        | Tous les jours (idem)                         | 10:05                        | 12:05 / 11:05             | Salon staff (`DISCORD_CHANNEL_STAFF`) |
+| `notifyLastSeen.js`                                     | `last-seen.yml`          | Tous les jours                                | 10:08                        | 12:08 / 11:08             | Salon membres principal               |
+| `notifyGdcLaunch.js`                                    | `gdc-launch.yml`         | Jeudi                                         | 10:30                        | 12:30 / 11:30             | Salon membres principal               |
+| `notifyPreWarSummary.js` (`npm run pre-war-summary`)    | `pre-war-summary.yml`    | Mercredi                                      | 14:00                        | 16:00 / 15:00             | Salon membres principal               |
+| `notifyRules.js`                                        | `rules.yml`              | Mardi (le script ne poste que le 1er du mois) | 14:00                        | 16:00 / 15:00             | Salon membres principal               |
+| `autoStartPredictions.js` (`npm run predictions:start`) | `predictions.yml`        | Mardi                                         | 08:00                        | 10:00 / 09:00             | Salon membres principal               |
+| `autoEndPredictions.js` (`npm run predictions:end`)     | `predictions.yml`        | Lundi                                         | 12:00                        | 14:00 / 13:00             | Salon membres principal               |
+| `postFrame.js` (`npm run frame:public`)                 | `frames.yml`             | Mercredi                                      | 08:00                        | 10:00 / 09:00             | Salon "Général"                       |
+| `postAnagram.js` (`npm run anagram:public`)             | `anagrams.yml`           | Samedi                                        | 10:00 ou 18:00 (aléatoire)\* | 12:00-20:00 / 11:00-19:00 | Salon "Général"                       |
 
 \* `anagrams.yml` se déclenche à 10h et 18h UTC (2 créneaux). À chaque déclenchement, un tirage au sort décide de poster ou non : 1 chance sur 2 au premier créneau, garanti au second (18h UTC) si aucun post n'a encore eu lieu cette semaine — voir [Post hebdomadaire à horaire aléatoire](#post-hebdomadaire-à-horaire-aléatoire-samedi-10h-ou-18h-utc) dans la section Jeu Anagram.
 
@@ -573,7 +573,7 @@ Mini-jeu hebdomadaire indépendant du Clash Royale : chaque mercredi 08:00 UTC, 
 
 ### Réponse via Modal Discord
 
-Le bot ne fonctionne qu'en webhook HTTP (pas de connexion Gateway, pas d'intent `MESSAGE_CONTENT`), donc il ne peut pas lire les messages tapés librement dans un salon. Le bouton "Répondre" ouvre une **Modal** Discord (réponse `type: 9`, `custom_id: frame_answer_modal:<gameId>`) contenant le champ texte ; la soumission arrive en tant qu'interaction entrante `body.type === 5` (`MODAL_SUBMIT`) — à ne pas confondre avec le `type: 5` de *réponse* (`DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE`) utilisé ailleurs dans `interactions.js`, deux enums Discord distinctes qui partagent des valeurs numériques.
+Le bot ne fonctionne qu'en webhook HTTP (pas de connexion Gateway, pas d'intent `MESSAGE_CONTENT`), donc il ne peut pas lire les messages tapés librement dans un salon. Le bouton "Répondre" ouvre une **Modal** Discord (réponse `type: 9`, `custom_id: frame_answer_modal:<gameId>`) contenant le champ texte ; la soumission arrive en tant qu'interaction entrante `body.type === 5` (`MODAL_SUBMIT`) — à ne pas confondre avec le `type: 5` de _réponse_ (`DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE`) utilisé ailleurs dans `interactions.js`, deux enums Discord distinctes qui partagent des valeurs numériques.
 
 ### Correspondance de la réponse
 
@@ -593,8 +593,8 @@ Le jeu stockait initialement son état sur Vercel Blob (même pattern que `champ
 
 Schéma des clés (`backend/services/frames.js`) :
 
-| Clé Redis                                | Type              | Contenu                                                                                                                                                           |
-| ----------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Clé Redis                                | Type              | Contenu                                                                                                                                                         |
+| ---------------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `frame:state`                            | STRING            | Métadonnées de la partie active (JSON) — inclut `seasonManche`/`seasonMancheTotal` (voir ci-dessous)                                                            |
 | `frame:participants:<gameId>`            | HASH              | `discordId → participant` (doc final, écrit seulement à la résolution)                                                                                          |
 | `frame:usernames:<gameId>`               | HASH              | `discordId → pseudo` (mis à jour à chaque indice/tentative)                                                                                                     |
@@ -693,10 +693,10 @@ Réponse libre uniquement (pas d'indice), insensible à la casse et aux accents 
 
 Même stockage que Frame, préfixe `anagram:` au lieu de `frame:`, **aucun partage de données entre les deux jeux**. Différences de schéma :
 
-| Clé Redis | Type | Contenu |
-| --- | --- | --- |
-| `anagram:position_seq:<gameId>` | STRING (compteur) | Dernière position d'arrivée attribuée pour cette manche (`INCR`) |
-| `anagram:positions:<gameId>` | HASH | `discordId → position` (1, 2, 3...), idempotent `HSETNX` |
+| Clé Redis                               | Type              | Contenu                                                                   |
+| --------------------------------------- | ----------------- | ------------------------------------------------------------------------- |
+| `anagram:position_seq:<gameId>`         | STRING (compteur) | Dernière position d'arrivée attribuée pour cette manche (`INCR`)          |
+| `anagram:positions:<gameId>`            | HASH              | `discordId → position` (1, 2, 3...), idempotent `HSETNX`                  |
 | `anagram:attempts:<gameId>:<discordId>` | STRING (compteur) | Tentatives incorrectes — informatif uniquement, n'entre pas dans le score |
 
 Pas d'équivalent à `frame:hints:*` (aucun indice) ni à `frame:posted_games` (aucune route d'image à protéger). Pas de clé Redis dédiée "déjà posté cette semaine" : `alreadyPostedThisWeek()` compare la date de `anagram:state.startedAt` à aujourd'hui — un seul writer (`startNewGame()`), pas de redondance.
@@ -723,15 +723,15 @@ Identique à Frame (voir [Récapitulatif de fin de saison](#récapitulatif-de-fi
 
 ### Scripts npm (Anagram)
 
-| Commande | Effet |
-| --- | --- |
-| `npm run anagram:test` | Poste manuellement une nouvelle partie sur le salon de test, en ignorant le gating hebdomadaire (`--force`), **sans ping** (le salon de test ne pingue jamais `@MINI-JEUX`, même sans `--no-ping` explicite). |
-| `npm run anagram:test:dry` | Aperçu console de la prochaine partie (+ récap de saison éventuel), sans écrire d'état ni poster sur Discord. |
-| `npm run anagram:public` | Poste sur le salon public si le gating hebdomadaire (jour + tirage au sort) le permet — utilisé par le cron `anagrams.yml`. |
-| `npm run anagram:public:dry` | Équivalent dry-run de `anagram:public`. |
-| `npm run anagram:public:force` | Poste sur le salon public en ignorant le gating — rattrapage manuel si le cron a raté toute sa fenêtre. |
-| `npm run anagram:scores` | Classement de la partie en cours (position, score partie, score saison) + joueurs n'ayant pas encore joué. |
-| `npm run anagram:reset` | Remet le jeu à zéro : plus de partie active, historique et scores effacés. **Destructif**. |
+| Commande                       | Effet                                                                                                                                                                                                         |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run anagram:test`         | Poste manuellement une nouvelle partie sur le salon de test, en ignorant le gating hebdomadaire (`--force`), **sans ping** (le salon de test ne pingue jamais `@MINI-JEUX`, même sans `--no-ping` explicite). |
+| `npm run anagram:test:dry`     | Aperçu console de la prochaine partie (+ récap de saison éventuel), sans écrire d'état ni poster sur Discord.                                                                                                 |
+| `npm run anagram:public`       | Poste sur le salon public si le gating hebdomadaire (jour + tirage au sort) le permet — utilisé par le cron `anagrams.yml`.                                                                                   |
+| `npm run anagram:public:dry`   | Équivalent dry-run de `anagram:public`.                                                                                                                                                                       |
+| `npm run anagram:public:force` | Poste sur le salon public en ignorant le gating — rattrapage manuel si le cron a raté toute sa fenêtre.                                                                                                       |
+| `npm run anagram:scores`       | Classement de la partie en cours (position, score partie, score saison) + joueurs n'ayant pas encore joué.                                                                                                    |
+| `npm run anagram:reset`        | Remet le jeu à zéro : plus de partie active, historique et scores effacés. **Destructif**.                                                                                                                    |
 
 ### Variables d'environnement requises (Anagram)
 
@@ -794,14 +794,14 @@ Contrairement à Frame (indice textuel révélé en clair dans un message éphé
 
 Même stockage que Frame, préfixe `zoom:` :
 
-| Clé Redis | Type | Contenu |
-| --- | --- | --- |
-| `zoom:state` | STRING (JSON) | État de la manche active (`gameId` + métadonnées de saison) |
-| `zoom:hint:<gameId>:<discordId>` | STRING (flag) | Indice utilisé (`SETNX`, un seul palier donc pas besoin de `SADD`/`SCARD` comme Frame) |
-| `zoom:attempts:<gameId>:<discordId>` | STRING (compteur) | Tentatives incorrectes |
-| `zoom:participants:<gameId>` | HASH | `discordId → { solved, solvedAt, score, attempts }` |
-| `zoom:archived:<seasonId>` | HASH | Un champ par manche résolue (`<gameId>:<discordId>`) |
-| `zoom:posted_games` | SET | Registre anti-spoiler, jamais nettoyé |
+| Clé Redis                            | Type              | Contenu                                                                                |
+| ------------------------------------ | ----------------- | -------------------------------------------------------------------------------------- |
+| `zoom:state`                         | STRING (JSON)     | État de la manche active (`gameId` + métadonnées de saison)                            |
+| `zoom:hint:<gameId>:<discordId>`     | STRING (flag)     | Indice utilisé (`SETNX`, un seul palier donc pas besoin de `SADD`/`SCARD` comme Frame) |
+| `zoom:attempts:<gameId>:<discordId>` | STRING (compteur) | Tentatives incorrectes                                                                 |
+| `zoom:participants:<gameId>`         | HASH              | `discordId → { solved, solvedAt, score, attempts }`                                    |
+| `zoom:archived:<seasonId>`           | HASH              | Un champ par manche résolue (`<gameId>:<discordId>`)                                   |
+| `zoom:posted_games`                  | SET               | Registre anti-spoiler, jamais nettoyé                                                  |
 
 `gameId` = `id` de l'entrée du catalogue directement (pas de composition, contrairement à l'ancienne version 2-cartes).
 
@@ -819,16 +819,16 @@ Identique à Frame (voir [Récapitulatif de fin de saison](#récapitulatif-de-fi
 
 ### Scripts npm (Zoom carte)
 
-| Commande | Effet |
-| --- | --- |
-| `npm run zoom:catalog` | Génère/complète `data/zoom/zoom.json` et télécharge les icônes manquantes dans `data/zoom/images/`. Usage ponctuel, jamais dans le flux hebdomadaire. |
-| `npm run zoom:test` | Poste manuellement une nouvelle partie sur le salon de test, **sans ping** (le salon de test ne pingue jamais `@MINI-JEUX`, même sans `--no-ping` explicite). |
-| `npm run zoom:test:dry` | Aperçu console de la prochaine partie (+ récap de saison éventuel), sans écrire d'état ni poster sur Discord. |
-| `npm run zoom:public` | Poste sur le salon public (avec ping) — utilisé par le cron `zoom.yml`. |
-| `npm run zoom:public:dry` | Équivalent dry-run de `zoom:public`. |
-| `npm run zoom:scores` | Classement de la partie en cours (score partie, score saison) + joueurs n'ayant pas encore joué. |
-| `npm run zoom:move` | Reposte la manche active dans un autre salon sans faire avancer la partie. |
-| `npm run zoom:reset` | Remet le jeu à zéro : plus de partie active (repart au début de `zoom.json`), historique et scores effacés. **Destructif**. |
+| Commande                  | Effet                                                                                                                                                         |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run zoom:catalog`    | Génère/complète `data/zoom/zoom.json` et télécharge les icônes manquantes dans `data/zoom/images/`. Usage ponctuel, jamais dans le flux hebdomadaire.         |
+| `npm run zoom:test`       | Poste manuellement une nouvelle partie sur le salon de test, **sans ping** (le salon de test ne pingue jamais `@MINI-JEUX`, même sans `--no-ping` explicite). |
+| `npm run zoom:test:dry`   | Aperçu console de la prochaine partie (+ récap de saison éventuel), sans écrire d'état ni poster sur Discord.                                                 |
+| `npm run zoom:public`     | Poste sur le salon public (avec ping) — utilisé par le cron `zoom.yml`.                                                                                       |
+| `npm run zoom:public:dry` | Équivalent dry-run de `zoom:public`.                                                                                                                          |
+| `npm run zoom:scores`     | Classement de la partie en cours (score partie, score saison) + joueurs n'ayant pas encore joué.                                                              |
+| `npm run zoom:move`       | Reposte la manche active dans un autre salon sans faire avancer la partie.                                                                                    |
+| `npm run zoom:reset`      | Remet le jeu à zéro : plus de partie active (repart au début de `zoom.json`), historique et scores effacés. **Destructif**.                                   |
 
 ### Variables d'environnement requises (Zoom carte)
 
@@ -879,11 +879,11 @@ Modal à 1 champ (pas d'autocomplete possible dans une Modal Discord), résolue 
 
 ### Révélation progressive des indices
 
-| Tentative du joueur | Indices visibles |
-| --- | --- |
-| 1ère | PV, Portée |
-| 2e | PV, Portée, Élixir |
-| 3e et suivantes | PV, Portée, Élixir, Dégâts |
+| Tentative du joueur | Indices visibles           |
+| ------------------- | -------------------------- |
+| 1ère                | PV, Portée                 |
+| 2e                  | PV, Portée, Élixir         |
+| 3e et suivantes     | PV, Portée, Élixir, Dégâts |
 
 `compareCard(secretEntry, guessEntry, attemptNumber)` (fonction pure) calcule les 4 comparateurs puis ne renvoie que le sous-ensemble débloqué à ce numéro de tentative. Le sens de la flèche décrit la **carte secrète** relativement à la proposition ("PV ⬆️" = la carte secrète a un PV plus élevé que ta proposition) — comparateur `secretValue > guessValue ? "up" : "down"`. Sens inversé une fois en test réel : la lecture "ma proposition est plus haute" prêtait à confusion, l'intuition naturelle est que la flèche pointe vers où se trouve la cible.
 
@@ -901,7 +901,7 @@ Sources :
 
 Exclusions du pool (77 cartes éligibles sur 99 lignes de troupes "de base" au 2026-08, dont 6 champions : Archer Queen, Boss Bandit, Goblinstein, Golden Knight, Little Prince, Skeleton King) :
 
-- Sous-unités générées (liens wiki *piped*, ex. Bush Goblins, Golemite, Lava Pup) — la vraie carte a sa propre ligne, sauf `Rascals` qui n'en a aucune et disparaît donc naturellement du pool.
+- Sous-unités générées (liens wiki _piped_, ex. Bush Goblins, Golemite, Lava Pup) — la vraie carte a sa propre ligne, sauf `Rascals` qui n'en a aucune et disparaît donc naturellement du pool.
 - Cartes à stats "composites", variables, ou sans dégât direct — détection générique : si le champ brut PV, Dégâts ou Portée contient un `/` (mode double, ex. Goblin Gang "202/133") ou un `-` (dégât progressif, ex. Inferno Dragon "35-422") → exclue, aucune valeur unique fiable pour une comparaison équitable (Goblin Gang/Giant/Machine, Inferno Dragon, Mighty Miner, Monk, Ram Rider, Spirit Empress, Suspicious Bush — aucune attaque directe —, Three Musketeers). Deux champions (Mighty Miner, Monk) tombent dans cette exclusion pour la même raison technique que les autres cartes, pas parce que ce sont des champions.
 
 Comme `generateCardNames.js` pour `fr` : le script ne fait qu'**ajouter** les 4 champs aux entrées qui n'en ont pas encore, jamais réécrire une entrée déjà complétée (y compris après correction manuelle). Usage ponctuel : `node scripts/generateCardStats.js` (ou `npm run justecarte:stats`).
@@ -914,16 +914,16 @@ Cet ordre n'est visible nulle part côté joueur (le fichier reste alphabétique
 
 ### Stockage — Upstash Redis (`lajustecarte:*`)
 
-| Clé Redis | Type | Contenu |
-| --- | --- | --- |
-| `lajustecarte:state` | STRING (JSON) | État de la manche active (`gameId` = cardKey de la carte secrète + métadonnées de saison) |
-| `lajustecarte:order` | STRING (JSON) | Ordre de rotation mélangé, persisté (voir ci-dessus) |
-| `lajustecarte:usernames:<gameId>` | HASH | `discordId → pseudo` |
-| `lajustecarte:attempts:<gameId>:<discordId>` | LIST | Historique des cartes **valides** proposées (nom FR, dans l'ordre) — sa longueur (`RPUSH`/`LLEN`) sert aussi de compteur de tentatives ; jamais complétée sur un nom inconnu |
-| `lajustecarte:hint:<gameId>:<discordId>` | STRING (flag) | Indice rareté utilisé (`SETNX`, idempotent) |
-| `lajustecarte:participants:<gameId>` | HASH | `discordId → { solved, solvedAt, score, attempts, hintUsed }` |
-| `lajustecarte:season:<seasonId>` | ZSET | Score cumulé de la saison |
-| `lajustecarte:archived:<seasonId>` | HASH | Un champ par manche résolue (`<gameId>:<discordId>`), idempotence |
+| Clé Redis                                    | Type          | Contenu                                                                                                                                                                      |
+| -------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lajustecarte:state`                         | STRING (JSON) | État de la manche active (`gameId` = cardKey de la carte secrète + métadonnées de saison)                                                                                    |
+| `lajustecarte:order`                         | STRING (JSON) | Ordre de rotation mélangé, persisté (voir ci-dessus)                                                                                                                         |
+| `lajustecarte:usernames:<gameId>`            | HASH          | `discordId → pseudo`                                                                                                                                                         |
+| `lajustecarte:attempts:<gameId>:<discordId>` | LIST          | Historique des cartes **valides** proposées (nom FR, dans l'ordre) — sa longueur (`RPUSH`/`LLEN`) sert aussi de compteur de tentatives ; jamais complétée sur un nom inconnu |
+| `lajustecarte:hint:<gameId>:<discordId>`     | STRING (flag) | Indice rareté utilisé (`SETNX`, idempotent)                                                                                                                                  |
+| `lajustecarte:participants:<gameId>`         | HASH          | `discordId → { solved, solvedAt, score, attempts, hintUsed }`                                                                                                                |
+| `lajustecarte:season:<seasonId>`             | ZSET          | Score cumulé de la saison                                                                                                                                                    |
+| `lajustecarte:archived:<seasonId>`           | HASH          | Un champ par manche résolue (`<gameId>:<discordId>`), idempotence                                                                                                            |
 
 Pas d'équivalent à `anagram:positions`/`position_seq` : aucune notion de rang d'arrivée collectif, le score de chaque joueur ne dépend que de son propre numéro de tentative.
 
@@ -945,16 +945,16 @@ Contrairement à Anagram (DM à chaque manche, puisqu'une seule tentative la ré
 
 ### Scripts npm (La Juste Carte)
 
-| Commande | Effet |
-| --- | --- |
-| `npm run justecarte:stats` | Ajoute les stats (elixir/hp/damage/range) aux cartes éligibles de `data/cardNames.json`. Usage ponctuel, jamais dans le flux hebdomadaire. |
-| `npm run justecarte:test` | Poste manuellement une nouvelle partie sur le salon de test, **sans ping** (le salon de test ne pingue jamais `@MINI-JEUX`, même sans `--no-ping` explicite, comme `zoom:test`). |
-| `npm run justecarte:test:dry` | Aperçu console de la prochaine partie (+ récap de saison éventuel), sans écrire d'état ni poster sur Discord. |
-| `npm run justecarte:public` | Poste sur le salon public (avec ping) — utilisé par le cron `lajustecarte.yml`. |
-| `npm run justecarte:public:dry` | Équivalent dry-run de `justecarte:public`. |
-| `npm run justecarte:scores` | Classement de la partie en cours (tentatives, score partie, score saison) + joueurs n'ayant pas encore joué. |
-| `npm run justecarte:order` | Affiche l'ordre de rotation complet des cartes secrètes à venir. **Outil admin** — révèle toutes les cartes futures, jamais à exposer aux joueurs. |
-| `npm run justecarte:reset` | Remet le jeu à zéro : plus de partie active, ordre de rotation remélangé à la prochaine partie, historique et scores effacés. **Destructif**. |
+| Commande                        | Effet                                                                                                                                                                            |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run justecarte:stats`      | Ajoute les stats (elixir/hp/damage/range) aux cartes éligibles de `data/cardNames.json`. Usage ponctuel, jamais dans le flux hebdomadaire.                                       |
+| `npm run justecarte:test`       | Poste manuellement une nouvelle partie sur le salon de test, **sans ping** (le salon de test ne pingue jamais `@MINI-JEUX`, même sans `--no-ping` explicite, comme `zoom:test`). |
+| `npm run justecarte:test:dry`   | Aperçu console de la prochaine partie (+ récap de saison éventuel), sans écrire d'état ni poster sur Discord.                                                                    |
+| `npm run justecarte:public`     | Poste sur le salon public (avec ping) — utilisé par le cron `lajustecarte.yml`.                                                                                                  |
+| `npm run justecarte:public:dry` | Équivalent dry-run de `justecarte:public`.                                                                                                                                       |
+| `npm run justecarte:scores`     | Classement de la partie en cours (tentatives, score partie, score saison) + joueurs n'ayant pas encore joué.                                                                     |
+| `npm run justecarte:order`      | Affiche l'ordre de rotation complet des cartes secrètes à venir. **Outil admin** — révèle toutes les cartes futures, jamais à exposer aux joueurs.                               |
+| `npm run justecarte:reset`      | Remet le jeu à zéro : plus de partie active, ordre de rotation remélangé à la prochaine partie, historique et scores effacés. **Destructif**.                                    |
 
 ### Variables d'environnement requises (La Juste Carte)
 
@@ -1004,7 +1004,7 @@ Le total d'étoiles de dressage détermine un premier palier (`computeFinalTier(
 
 ### Manches (comparaison entre parties) — Tamagoshi
 
-`tamagotchi:manches` (HASH permanent, jamais nettoyé par `resetTamagotchi()`) archive le bilan de chaque manche terminée, indexé par un numéro strictement croissant (`tamagotchi:manche_seq`, `INCR` atomique) : `archiveManche({ starTotal, tier, resolvedAt })`. À l'écran de fin (Jour 10), l'embed liste les 10 dernières manches (`listManches()`) avec un 🏆 sur le meilleur total d'étoiles toutes manches confondues — la manche qui vient de se terminer y apparaît elle-même, marquée *(cette manche)*.
+`tamagotchi:manches` (HASH permanent, jamais nettoyé par `resetTamagotchi()`) archive le bilan de chaque manche terminée, indexé par un numéro strictement croissant (`tamagotchi:manche_seq`, `INCR` atomique) : `archiveManche({ starTotal, tier, resolvedAt })`. À l'écran de fin (Jour 10), l'embed liste les 10 dernières manches (`listManches()`) avec un 🏆 sur le meilleur total d'étoiles toutes manches confondues — la manche qui vient de se terminer y apparaît elle-même, marquée _(cette manche)_.
 
 ⚠️ L'archivage n'a lieu que pour une **vraie publication sur le salon public** (`postTamagotchi(channelId, { isPublic: true })`, déclenché uniquement par `npm run tamagotchi:public`/le workflow GitHub) — jamais en dry-run, ni sur le salon de test (`npm run tamagotchi:test`), même si la partie de test va jusqu'au bout. Convention volontaire : les scripts npm servent toujours à tester, seul `--public` (donc en pratique le workflow GitHub, cron ou `workflow_dispatch`) représente une manche réelle. Ça évite de polluer l'archive avec des parties de test sans avoir à y penser à chaque reset — `npm run tamagotchi:reset:manches` (`--manches`) reste disponible comme filet de sécurité manuel (ex. `--public` lancé par erreur), mais ne devrait normalement jamais être nécessaire.
 
@@ -1018,16 +1018,16 @@ Le total d'étoiles de dressage détermine un premier palier (`computeFinalTier(
 
 Même instance et mêmes conventions que Frame/Anagram (`automaticDeserialization: false`, sérialisation JSON manuelle). Espace de clés `tamagotchi:*`, totalement séparé des autres jeux. La progression est strictement linéaire (Jour 1 à 10) : un simple compteur entier `jour` dans l'état suffit, pas de table jour→séquence dédiée.
 
-| Clé Redis | Type | Contenu |
-| --- | --- | --- |
-| `tamagotchi:state` | STRING | `{ jour, gauges, confiance, actionFatiguee, channelId, messageId, publishedAt, termine, starTotal, lastEvent, lastRating, dayVoters }` — jour actuellement affiché |
-| `tamagotchi:votes:<jour>` | HASH | `discordId → actionId` — jetable, effacé après clôture du jour |
-| `tamagotchi:vote_usernames:<jour>` | HASH | `discordId → pseudo` — jetable, uniquement pour l'affichage admin (`npm run tamagotchi:status`) et le texte narratif, jamais utilisé pour la logique de vote |
-| `tamagotchi:historique` | HASH | `jour → { gaugesAvant, gaugesApres, voteCounts, voters, impact, event, rating, starDelta, starTotalApres, confianceAvant, confianceApres, actionFatiguee, resolvedAt }` — bilans quotidiens de la manche EN COURS, écrasés d'une manche à l'autre (les jours 1-10 se répètent) |
-| `tamagotchi:manches` | HASH | `manche → { manche, starTotal, tier, resolvedAt }` — un bilan par manche TERMINÉE, jamais nettoyé (persiste entre les manches, y compris après `npm run tamagotchi:reset`) |
-| `tamagotchi:manche_seq` | STRING (compteur) | Numéro de la prochaine manche à archiver, incrémenté (`INCR`) à chaque fin de partie réelle (jamais en dry-run) |
-| `tamagotchi:pilule_total_used` | STRING (compteur) | Nombre total d'utilisations réussies de la Pilule sur la manche en cours, plafonné par `actions.pilule.total_cap` |
-| `tamagotchi:pilule_used:<jour>` | STRING | Posée (SETNX) dès la 1ʳᵉ utilisation réussie de la Pilule ce jour-là — au plus 1 réussite/jour |
+| Clé Redis                          | Type              | Contenu                                                                                                                                                                                                                                                                        |
+| ---------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `tamagotchi:state`                 | STRING            | `{ jour, gauges, confiance, actionFatiguee, channelId, messageId, publishedAt, termine, starTotal, lastEvent, lastRating, dayVoters }` — jour actuellement affiché                                                                                                             |
+| `tamagotchi:votes:<jour>`          | HASH              | `discordId → actionId` — jetable, effacé après clôture du jour                                                                                                                                                                                                                 |
+| `tamagotchi:vote_usernames:<jour>` | HASH              | `discordId → pseudo` — jetable, uniquement pour l'affichage admin (`npm run tamagotchi:status`) et le texte narratif, jamais utilisé pour la logique de vote                                                                                                                   |
+| `tamagotchi:historique`            | HASH              | `jour → { gaugesAvant, gaugesApres, voteCounts, voters, impact, event, rating, starDelta, starTotalApres, confianceAvant, confianceApres, actionFatiguee, resolvedAt }` — bilans quotidiens de la manche EN COURS, écrasés d'une manche à l'autre (les jours 1-10 se répètent) |
+| `tamagotchi:manches`               | HASH              | `manche → { manche, starTotal, tier, resolvedAt }` — un bilan par manche TERMINÉE, jamais nettoyé (persiste entre les manches, y compris après `npm run tamagotchi:reset`)                                                                                                     |
+| `tamagotchi:manche_seq`            | STRING (compteur) | Numéro de la prochaine manche à archiver, incrémenté (`INCR`) à chaque fin de partie réelle (jamais en dry-run)                                                                                                                                                                |
+| `tamagotchi:pilule_total_used`     | STRING (compteur) | Nombre total d'utilisations réussies de la Pilule sur la manche en cours, plafonné par `actions.pilule.total_cap`                                                                                                                                                              |
+| `tamagotchi:pilule_used:<jour>`    | STRING            | Posée (SETNX) dès la 1ʳᵉ utilisation réussie de la Pilule ce jour-là — au plus 1 réussite/jour                                                                                                                                                                                 |
 
 ### Pilule (filet de sécurité rare, Jours `pilule.day_min`-`pilule.day_max`)
 
@@ -1035,15 +1035,15 @@ Action à part (`is_info_action: true`, exclue de `computeDayImpact()`) : effet 
 
 ### Scripts npm (Tamagoshi)
 
-| Commande | Effet |
-| --- | --- |
-| `npm run tamagotchi:test` | Poste manuellement le jour du Tamagoshi sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`). |
-| `npm run tamagotchi:test:dry` | Aperçu console du prochain jour (ou du message de fin de partie au Jour 10), sans écrire d'état ni poster sur Discord. |
-| `npm run tamagotchi:public` | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `tamagotchi.yml`. |
-| `npm run tamagotchi:public:dry` | Équivalent dry-run de `tamagotchi:public`. |
-| `npm run tamagotchi:reset` | Remet le Tamagoshi à zéro : plus de journée active, votes/historique de la manche en cours effacés. **Destructif** — préserve toujours `tamagotchi:manches` (l'archive des manches passées, qui ne s'alimente de toute façon qu'en `--public`, voir "Manches" plus haut). |
-| `npm run tamagotchi:reset:manches` | Identique, mais efface aussi `tamagotchi:manches`/`tamagotchi:manche_seq`. **Destructif**, à réserver au filet de sécurité (ex. un `--public` lancé par erreur pendant les tests). |
-| `npm run tamagotchi:status` | Affiche l'état courant (jauges, Confiance, action fatiguée, étoiles, décompte des votes du jour) ainsi qu'une projection du jour suivant, sans passer par Discord. |
+| Commande                           | Effet                                                                                                                                                                                                                                                                     |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run tamagotchi:test`          | Poste manuellement le jour du Tamagoshi sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`).                                                                                                                                                                              |
+| `npm run tamagotchi:test:dry`      | Aperçu console du prochain jour (ou du message de fin de partie au Jour 10), sans écrire d'état ni poster sur Discord.                                                                                                                                                    |
+| `npm run tamagotchi:public`        | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `tamagotchi.yml`.                                                                                                                                                                        |
+| `npm run tamagotchi:public:dry`    | Équivalent dry-run de `tamagotchi:public`.                                                                                                                                                                                                                                |
+| `npm run tamagotchi:reset`         | Remet le Tamagoshi à zéro : plus de journée active, votes/historique de la manche en cours effacés. **Destructif** — préserve toujours `tamagotchi:manches` (l'archive des manches passées, qui ne s'alimente de toute façon qu'en `--public`, voir "Manches" plus haut). |
+| `npm run tamagotchi:reset:manches` | Identique, mais efface aussi `tamagotchi:manches`/`tamagotchi:manche_seq`. **Destructif**, à réserver au filet de sécurité (ex. un `--public` lancé par erreur pendant les tests).                                                                                        |
+| `npm run tamagotchi:status`        | Affiche l'état courant (jauges, Confiance, action fatiguée, étoiles, décompte des votes du jour) ainsi qu'une projection du jour suivant, sans passer par Discord.                                                                                                        |
 
 ### Variables d'environnement requises (Tamagoshi)
 
@@ -1067,7 +1067,7 @@ Un seul message actif à la fois dans le salon dédié. Contrairement au Tamagos
 
 ### Résolution du vote et concurrence
 
-Un membre ne peut voter qu'une fois par jour parmi les 5 actions, et **ce vote n'est pas modifiable** une fois qu'il a réellement abouti (comme le Tamagoshi). La réservation du slot de vote utilise `HSETNX` (pas `HGET` puis `HSET`) car le Radeau doit pouvoir **libérer** une réservation ratée : si le stock de Bois est insuffisant au moment du clic, le vote est rejeté *sans consommer le slot* (`releaseVoteSlot()`), le joueur peut réessayer plus tard dans la journée si le stock remonte — contrairement à un vote posé sur une action différente, qui reste définitif jusqu'au lendemain.
+Un membre ne peut voter qu'une fois par jour parmi les 5 actions, et **ce vote n'est pas modifiable** une fois qu'il a réellement abouti (comme le Tamagoshi). La réservation du slot de vote utilise `HSETNX` (pas `HGET` puis `HSET`) car le Radeau doit pouvoir **libérer** une réservation ratée : si le stock de Bois est insuffisant au moment du clic, le vote est rejeté _sans consommer le slot_ (`releaseVoteSlot()`), le joueur peut réessayer plus tard dans la journée si le stock remonte — contrairement à un vote posé sur une action différente, qui reste définitif jusqu'au lendemain.
 
 Les stocks de ressources (`robinson:stock:poisson/eau/bois`) et les points de Radeau (`robinson:radeau_points`) vivent dans des **clés Redis numériques séparées, mutées uniquement via `INCRBY`/`DECRBY`** — jamais un blob JSON relu-modifié-réécrit, qui perdrait des mises à jour si deux membres cliquent en même temps (le second `SET` écraserait le premier). Le coût du Radeau (le seul cas pouvant échouer) utilise le pattern « décrémenter puis vérifier, compenser si négatif » (`attemptRaftContribution()`) : sûr sans script Lua, personne d'autre ne lisant le stock de Bois de façon atomiquement sensible entre les deux appels du même flux.
 
@@ -1077,9 +1077,9 @@ Le clic sur un bouton d'action répond toujours en éphémère à l'auteur (`DEF
 
 Pêcher/Eau/Bois tirent **0 à 5** unités (~16,7 % chacun, `rollHarvestAmount()`) ; Explorer tire toujours 3 unités d'une seule et même ressource, tirée au hasard parmi les 3 (`rollExplorerYield()`) — jamais une répartition entre plusieurs ressources.
 
-⚠️ Ce barème (0-5, moyenne 2,5 — initialement 0-3) est le résultat d'un équilibrage par **simulation Monte Carlo** (plusieurs milliers de parties simulées avec les vraies fonctions du jeu, plusieurs stratégies de vote testées). Le calcul brut (consommation `V`/`V`/`⌈V/2⌉` vs récolte moyenne par vote dédié) rend le jeu **mathématiquement imperdable-à-l'envers** avec le barème initial 0-3 : couvrir Nourriture *et* Eau demanderait à elles seules 133 % des votes disponibles. Attention, ce garde-fou est fragile : redescendre à une moyenne de 2 (barème 0-4) fait retomber la survie passive à **1-16 %** pour tout groupe de 8 votants ou plus (confirmé par simulation) — quasiment le même effondrement que le barème 0-3 initial. Ne pas réduire ce barème sans revalider par simulation : le jeu redevient vite ingagnable.
+⚠️ Ce barème (0-5, moyenne 2,5 — initialement 0-3) est le résultat d'un équilibrage par **simulation Monte Carlo** (plusieurs milliers de parties simulées avec les vraies fonctions du jeu, plusieurs stratégies de vote testées). Le calcul brut (consommation `V`/`V`/`⌈V/2⌉` vs récolte moyenne par vote dédié) rend le jeu **mathématiquement imperdable-à-l'envers** avec le barème initial 0-3 : couvrir Nourriture _et_ Eau demanderait à elles seules 133 % des votes disponibles. Attention, ce garde-fou est fragile : redescendre à une moyenne de 2 (barème 0-4) fait retomber la survie passive à **1-16 %** pour tout groupe de 8 votants ou plus (confirmé par simulation) — quasiment le même effondrement que le barème 0-3 initial. Ne pas réduire ce barème sans revalider par simulation : le jeu redevient vite ingagnable.
 
-⚠️ Le barème 0-5 place la moyenne de récolte *exactement* au point d'équilibre statistique avec la consommation (`V`/`V`/`⌈V/2⌉` = 100 % des votes disponibles en moyenne, sans aucune marge) — un design volontairement tendu, mais qui s'est révélé beaucoup plus fragile que documenté à l'origine : une re-simulation du 24/08 (stratégie de vote réactive au stock affiché dans le Journal, pas un simple ratio théorique figé) donnait une survie passive proche de **1-7 % à V=10-20**, très loin de la fourchette 46-58 % annoncée précédemment — écart qui n'a pas pu être retracé à un changement de code (les valeurs de `robinson.json` sont identiques depuis leur commit d'introduction), donc vraisemblablement un biais ou un bug de la simulation Monte Carlo d'origine, jamais committée dans le dépôt. Deux ajustements ont été faits le 24/08 pour corriger le tir **sans toucher au barème de tirage ni aux stocks initiaux** (les deux leviers les plus sensibles, cf. ci-dessus) : `ZERO_STREAK_LIMIT` passé de 2 à 3 jours, et les événements Jour 5 / Jour 9 inversés en bonus (voir "Événements programmés" ci-dessous). Avec ces trois changements, la re-simulation retombe autour de **75 % (V=8) → 61-63 % (V=10-12) → 53 % (V=14) → 35-45 % (V=16-20)** — cohérent avec la cible 50-70 % pour un groupe d'une douzaine de votants, avec la même décroissance progressive selon la taille du groupe que le design d'origine prévoyait déjà.
+⚠️ Le barème 0-5 place la moyenne de récolte _exactement_ au point d'équilibre statistique avec la consommation (`V`/`V`/`⌈V/2⌉` = 100 % des votes disponibles en moyenne, sans aucune marge) — un design volontairement tendu, mais qui s'est révélé beaucoup plus fragile que documenté à l'origine : une re-simulation du 24/08 (stratégie de vote réactive au stock affiché dans le Journal, pas un simple ratio théorique figé) donnait une survie passive proche de **1-7 % à V=10-20**, très loin de la fourchette 46-58 % annoncée précédemment — écart qui n'a pas pu être retracé à un changement de code (les valeurs de `robinson.json` sont identiques depuis leur commit d'introduction), donc vraisemblablement un biais ou un bug de la simulation Monte Carlo d'origine, jamais committée dans le dépôt. Deux ajustements ont été faits le 24/08 pour corriger le tir **sans toucher au barème de tirage ni aux stocks initiaux** (les deux leviers les plus sensibles, cf. ci-dessus) : `ZERO_STREAK_LIMIT` passé de 2 à 3 jours, et les événements Jour 5 / Jour 9 inversés en bonus (voir "Événements programmés" ci-dessous). Avec ces trois changements, la re-simulation retombe autour de **75 % (V=8) → 61-63 % (V=10-12) → 53 % (V=14) → 35-45 % (V=16-20)** — cohérent avec la cible 50-70 % pour un groupe d'une douzaine de votants, avec la même décroissance progressive selon la taille du groupe que le design d'origine prévoyait déjà.
 
 ### Chef Explorateur du jour
 
@@ -1091,7 +1091,7 @@ D'après simulation (stratégie de vote dynamique réactive au stock, même mét
 
 ### Événements programmés (Robinson)
 
-8 événements tirés de `robinson.json.evenements` (`eventForDay(jour, evenements, previousDayVoters)`) modifient le jour concerné. `previousDayVoters` (le `V` du jour qui vient de se clôturer) sert de **condition d'activation** (`condition_votants_veille` = seuil minimum, `condition_votants_veille_max` = seuil maximum — Colis Royal se déclenche *au-dessus*, Poissons Pourris se déclenche *en-dessous*) et de **paramètre de montant** (événements dégressifs) :
+8 événements tirés de `robinson.json.evenements` (`eventForDay(jour, evenements, previousDayVoters)`) modifient le jour concerné. `previousDayVoters` (le `V` du jour qui vient de se clôturer) sert de **condition d'activation** (`condition_votants_veille` = seuil minimum, `condition_votants_veille_max` = seuil maximum — Colis Royal se déclenche _au-dessus_, Poissons Pourris se déclenche _en-dessous_) et de **paramètre de montant** (événements dégressifs) :
 
 - **Poissons Pourris !** (Jour 2, **conditionnel**) : ne se déclenche **que si** le Jour 1 a réuni **moins de** `condition_votants_veille_max` (**14**, initialement 10 — relevé le 24/08) votants — sinon le Jour 2 reste normal. Une partie du stock de Poisson est perdue (`spoilPoisson()`, `DECRBY` plancher 0), montant calculé par `computePoissonsPourrisLoss(V, threshold)` = `max(1, min(threshold − V, 4 + V))`, où `threshold` **doit** être `event.condition_votants_veille_max` (jamais une valeur codée en dur — voir l'incident ci-dessous). La courbe grimpe à mesure que la mobilisation baisse, jusqu'à un pic à mi-parcours du seuil (`(threshold−4)/2`), puis **redescend** pour les groupes minuscules (V=2, V=1) — un groupe de 1-2 votants a de toute façon un stock trop faible pour justifier une perte aussi lourde que celle d'un groupe intermédiaire. Le `Math.max(1, …)` assure un atterrissage en douceur (perte plancher −1) juste avant que l'événement ne se désactive, quel que soit `threshold`. Avec la config actuelle (seuil 14) : pic à V=5 (−9), V=9 → −5, V=13 → −1 (juste avant l'exemption à 14). ⚠️ Le 24/08, le seuil a été relevé de 10 à 14 sans recaler cette formule (restée à `threshold` codé en dur à `10`) : l'atterrissage en douceur se produisait alors toujours autour de V=9 (perte −1) au lieu de V=13, un groupe de 9-13 votants s'en tirait donc avec un simple −1 alors qu'il aurait dû subir une perte proche du pic — corrigé le jour même en passant `threshold` en paramètre plutôt qu'en dur.
 - **Grosse Canicule** (Jour 3) : Collecter de l'eau utilise un tirage dédié 0/1 (50/50, `rollCappedEventAmount()`) au lieu du tirage normal.
@@ -1116,7 +1116,7 @@ D'après une simulation antérieure au 24/08 (stratégie : survie pure jusqu'au 
 
 Robinson (comme le Tamagoshi et Boss Raid) est destiné à être rejoué plusieurs fois dans l'année — chaque partie complète est une **manche**. `robinson:manches` (HASH permanent, jamais nettoyé par `resetRobinson()`) archive le bilan de chaque manche terminée, indexé par un numéro strictement croissant (`robinson:manche_seq`, `INCR` atomique) : `archiveManche({ outcome, jour, radeauPoints, resolvedAt })`.
 
-Robinson n'a pas de score numérique naturel (c'est une survie, pas un score attack) : `computeMancheScore(outcome, jour, dureeJours)` encode donc une hiérarchie explicite pour classer les manches entre elles — toute victoire bat toute défaite ; entre victoires Radeau, plus tôt = meilleur (`1000 + (dureeJours + 1 − jour)`, l'évasion rapide est valorisée) ; les victoires Jour 11 sont toutes à égalité (`500` flat, aucune notion de vitesse) ; entre défaites, plus de jours survécus = meilleur (`jour` brut). À l'écran de fin, l'embed liste les 10 dernières manches (`listManches()`) avec un 🏆 sur la meilleure selon ce score — la manche qui vient de se terminer y apparaît elle-même, marquée *(cette manche)*.
+Robinson n'a pas de score numérique naturel (c'est une survie, pas un score attack) : `computeMancheScore(outcome, jour, dureeJours)` encode donc une hiérarchie explicite pour classer les manches entre elles — toute victoire bat toute défaite ; entre victoires Radeau, plus tôt = meilleur (`1000 + (dureeJours + 1 − jour)`, l'évasion rapide est valorisée) ; les victoires Jour 11 sont toutes à égalité (`500` flat, aucune notion de vitesse) ; entre défaites, plus de jours survécus = meilleur (`jour` brut). À l'écran de fin, l'embed liste les 10 dernières manches (`listManches()`) avec un 🏆 sur la meilleure selon ce score — la manche qui vient de se terminer y apparaît elle-même, marquée _(cette manche)_.
 
 ⚠️ L'archivage n'a lieu que pour une **vraie publication sur le salon public** (`postRobinson(channelId, { isPublic: true })`, déclenché uniquement par `npm run robinson:public`/le workflow GitHub) — jamais en dry-run, ni sur le salon de test (`npm run robinson:test`), même si la partie de test va jusqu'au bout. Convention volontaire : les scripts npm servent toujours à tester, seul `--public` (donc en pratique le workflow GitHub, cron ou `workflow_dispatch`) représente une manche réelle. Ça évite de polluer l'archive avec des parties de test sans avoir à y penser à chaque reset — `npm run robinson:reset:manches` (`--manches`) reste disponible comme filet de sécurité manuel (ex. `--public` lancé par erreur), mais ne devrait normalement jamais être nécessaire.
 
@@ -1129,29 +1129,29 @@ Robinson n'a pas de score numérique naturel (c'est une survie, pas un score att
 
 Même instance et mêmes conventions que les autres jeux (`automaticDeserialization: false`, sérialisation JSON manuelle). Espace de clés `robinson:*`, totalement séparé.
 
-| Clé Redis | Type | Contenu |
-| --- | --- | --- |
-| `robinson:state` | STRING | `{ jour, channelId, messageId, publishedAt, termine, event, chefExplorateurId, zeroStreaks }` — jour actuellement affiché, muté uniquement au cron |
-| `robinson:stock:poisson` / `:eau` / `:bois` | STRING (compteur) | Stocks courants — mutés en continu via `INCRBY`/`DECRBY`, jamais un `GET` puis recalcul |
-| `robinson:radeau_points` | STRING (compteur) | Points de construction cumulés du Radeau |
-| `robinson:votes:<jour>` | HASH | `discordId → actionId` — jetable, effacé après clôture du jour |
-| `robinson:vote_details:<jour>` | HASH | `discordId → { actionId, amount\|yields\|pointsAdded, at }` — résultat exact du tirage, pour réafficher le même résultat sur un reclic idempotent sans re-tirer |
-| `robinson:vote_usernames:<jour>` | HASH | `discordId → pseudo` — jetable, uniquement pour l'affichage admin (`npm run robinson:status`), jamais utilisé pour la logique de vote |
-| `robinson:historique` | HASH | `jour → { V, radeauVotes, stocksAvant, stocksApres, consumption, gobelinsVoleur, event, outcome, resolvedAt }` — bilans quotidiens de la manche EN COURS, alimente le bouton Journal de Bord, effacé par `resetRobinson()`. `radeauVotes` (ajouté le 25/08) absent sur les entrées antérieures, affiché de façon tolérante par `formatHistoriqueLine()` |
-| `robinson:manches` | HASH | `manche → { manche, outcome, jour, radeauPoints, resolvedAt }` — un bilan par manche TERMINÉE, jamais nettoyé (persiste entre les manches, y compris après `npm run robinson:reset`) |
-| `robinson:manche_seq` | STRING (compteur) | Numéro de la prochaine manche à archiver, incrémenté (`INCR`) à chaque fin de partie réelle (jamais en dry-run) |
+| Clé Redis                                   | Type              | Contenu                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `robinson:state`                            | STRING            | `{ jour, channelId, messageId, publishedAt, termine, event, chefExplorateurId, zeroStreaks }` — jour actuellement affiché, muté uniquement au cron                                                                                                                                                                                                      |
+| `robinson:stock:poisson` / `:eau` / `:bois` | STRING (compteur) | Stocks courants — mutés en continu via `INCRBY`/`DECRBY`, jamais un `GET` puis recalcul                                                                                                                                                                                                                                                                 |
+| `robinson:radeau_points`                    | STRING (compteur) | Points de construction cumulés du Radeau                                                                                                                                                                                                                                                                                                                |
+| `robinson:votes:<jour>`                     | HASH              | `discordId → actionId` — jetable, effacé après clôture du jour                                                                                                                                                                                                                                                                                          |
+| `robinson:vote_details:<jour>`              | HASH              | `discordId → { actionId, amount\|yields\|pointsAdded, at }` — résultat exact du tirage, pour réafficher le même résultat sur un reclic idempotent sans re-tirer                                                                                                                                                                                         |
+| `robinson:vote_usernames:<jour>`            | HASH              | `discordId → pseudo` — jetable, uniquement pour l'affichage admin (`npm run robinson:status`), jamais utilisé pour la logique de vote                                                                                                                                                                                                                   |
+| `robinson:historique`                       | HASH              | `jour → { V, radeauVotes, stocksAvant, stocksApres, consumption, gobelinsVoleur, event, outcome, resolvedAt }` — bilans quotidiens de la manche EN COURS, alimente le bouton Journal de Bord, effacé par `resetRobinson()`. `radeauVotes` (ajouté le 25/08) absent sur les entrées antérieures, affiché de façon tolérante par `formatHistoriqueLine()` |
+| `robinson:manches`                          | HASH              | `manche → { manche, outcome, jour, radeauPoints, resolvedAt }` — un bilan par manche TERMINÉE, jamais nettoyé (persiste entre les manches, y compris après `npm run robinson:reset`)                                                                                                                                                                    |
+| `robinson:manche_seq`                       | STRING (compteur) | Numéro de la prochaine manche à archiver, incrémenté (`INCR`) à chaque fin de partie réelle (jamais en dry-run)                                                                                                                                                                                                                                         |
 
 ### Scripts npm (Robinson)
 
-| Commande | Effet |
-| --- | --- |
-| `npm run robinson:test` | Poste manuellement le jour de Robinson sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`). |
-| `npm run robinson:test:dry` | Aperçu console du prochain jour (ou du message de fin de partie), sans écrire d'état ni poster sur Discord. |
-| `npm run robinson:public` | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `robinson.yml`. |
-| `npm run robinson:public:dry` | Équivalent dry-run de `robinson:public`. |
-| `npm run robinson:reset` | Remet Robinson à zéro : plus de jour actif, stocks/votes/historique de la manche en cours effacés. **Destructif** — préserve toujours `robinson:manches` (l'archive des manches passées, qui ne s'alimente de toute façon qu'en `--public`, voir "Manches" plus haut). |
-| `npm run robinson:reset:manches` | Identique, mais efface aussi `robinson:manches`/`robinson:manche_seq`. **Destructif**, à réserver au filet de sécurité (ex. un `--public` lancé par erreur pendant les tests). |
-| `npm run robinson:status` | Affiche l'état courant (stocks, radeau, décompte des votes du jour) sans passer par Discord. |
+| Commande                         | Effet                                                                                                                                                                                                                                                                  |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run robinson:test`          | Poste manuellement le jour de Robinson sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`).                                                                                                                                                                            |
+| `npm run robinson:test:dry`      | Aperçu console du prochain jour (ou du message de fin de partie), sans écrire d'état ni poster sur Discord.                                                                                                                                                            |
+| `npm run robinson:public`        | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `robinson.yml`.                                                                                                                                                                       |
+| `npm run robinson:public:dry`    | Équivalent dry-run de `robinson:public`.                                                                                                                                                                                                                               |
+| `npm run robinson:reset`         | Remet Robinson à zéro : plus de jour actif, stocks/votes/historique de la manche en cours effacés. **Destructif** — préserve toujours `robinson:manches` (l'archive des manches passées, qui ne s'alimente de toute façon qu'en `--public`, voir "Manches" plus haut). |
+| `npm run robinson:reset:manches` | Identique, mais efface aussi `robinson:manches`/`robinson:manche_seq`. **Destructif**, à réserver au filet de sécurité (ex. un `--public` lancé par erreur pendant les tests).                                                                                         |
+| `npm run robinson:status`        | Affiche l'état courant (stocks, radeau, décompte des votes du jour) sans passer par Discord.                                                                                                                                                                           |
 
 ### Variables d'environnement requises (Robinson)
 
@@ -1219,7 +1219,7 @@ Titre `⚔️ Boss Raid — Jour X/10` (ou `— Un Boss Colossal approche…` au
 
 ### Manches (comparaison entre parties) — Boss Raid
 
-Boss Raid (comme Robinson et le Tamagoshi) est destiné à être rejoué plusieurs fois dans l'année — chaque Raid complet est une **manche**. `bossraid:manches` (HASH permanent, jamais nettoyé par `resetBossRaid()`) archive le bilan de chaque manche terminée, indexé par un numéro strictement croissant (`bossraid:manche_seq`, `INCR` atomique) : `archiveManche({ totalDegatsCumules, bossStatsFinal, resolvedAt })`. Score comparatif naturel (contrairement à Robinson) : le total de dégâts cumulés, plus haut = meilleur. À l'écran de fin, l'embed liste les 10 dernières manches (`listManches()`) avec un 🏆 sur le meilleur total toutes manches confondues — la manche qui vient de se terminer y apparaît elle-même, marquée *(cette manche)*.
+Boss Raid (comme Robinson et le Tamagoshi) est destiné à être rejoué plusieurs fois dans l'année — chaque Raid complet est une **manche**. `bossraid:manches` (HASH permanent, jamais nettoyé par `resetBossRaid()`) archive le bilan de chaque manche terminée, indexé par un numéro strictement croissant (`bossraid:manche_seq`, `INCR` atomique) : `archiveManche({ totalDegatsCumules, bossStatsFinal, resolvedAt })`. Score comparatif naturel (contrairement à Robinson) : le total de dégâts cumulés, plus haut = meilleur. À l'écran de fin, l'embed liste les 10 dernières manches (`listManches()`) avec un 🏆 sur le meilleur total toutes manches confondues — la manche qui vient de se terminer y apparaît elle-même, marquée _(cette manche)_.
 
 ⚠️ L'archivage n'a lieu que pour une **vraie publication sur le salon public** (`postBossRaid(channelId, { isPublic: true })`, déclenché uniquement par `npm run bossraid:public`/le workflow GitHub) — jamais en dry-run, ni sur le salon de test (`npm run bossraid:test`), même si le Raid de test va jusqu'au bout. Convention volontaire : les scripts npm servent toujours à tester, seul `--public` (donc en pratique le workflow GitHub, cron ou `workflow_dispatch`) représente une manche réelle. Ça évite de polluer l'archive avec des parties de test sans avoir à y penser à chaque reset — `npm run bossraid:reset:manches` (`--manches`) reste disponible comme filet de sécurité manuel (ex. `--public` lancé par erreur), mais ne devrait normalement jamais être nécessaire.
 
@@ -1235,28 +1235,28 @@ Boss Raid (comme Robinson et le Tamagoshi) est destiné à être rejoué plusieu
 
 Même instance et mêmes conventions que les autres jeux. Espace de clés `bossraid:*`, totalement séparé.
 
-| Clé Redis | Type | Contenu |
-| --- | --- | --- |
-| `bossraid:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, bossStats: {defense, resistance}, totalDegatsCumules }` — muté uniquement au cron |
-| `bossraid:dernier_role` | HASH | `discordId → roleId` — dernier rôle finalisé, muté uniquement au cron |
-| `bossraid:votes:<jour>` | HASH | `discordId → roleId` — écrasable, jetable, effacé après clôture du jour |
-| `bossraid:vote_at:<jour>` | HASH | `discordId → ISO timestamp` — horodatage de la dernière mise à jour du vote, sert à l'ordre de protection Chevalier |
-| `bossraid:vote_usernames:<jour>` | HASH | `discordId → pseudo` — jetable, uniquement pour l'affichage admin (`npm run bossraid:status`) |
-| `bossraid:historique` | HASH | `jour → { voteCounts, totalVotes, protection, allIn, event, totalDamageDuJour, totalDegatsApres, bossStatsAvant, bossStatsApres, voleuseDebuffs, regen, resolvedAt }` — bilans quotidiens de la manche EN COURS, alimente le bouton Journal, effacé par `resetBossRaid()` |
-| `bossraid:manches` | HASH | `manche → { manche, totalDegatsCumules, bossStatsFinal, resolvedAt }` — un bilan par manche TERMINÉE, jamais nettoyé (persiste entre les manches, y compris après `npm run bossraid:reset`) |
-| `bossraid:manche_seq` | STRING (compteur) | Numéro de la prochaine manche à archiver, incrémenté (`INCR`) à chaque fin de Raid réel (jamais en dry-run) |
+| Clé Redis                        | Type              | Contenu                                                                                                                                                                                                                                                                   |
+| -------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bossraid:state`                 | STRING            | `{ phase, jour, channelId, messageId, publishedAt, termine, bossStats: {defense, resistance}, totalDegatsCumules }` — muté uniquement au cron                                                                                                                             |
+| `bossraid:dernier_role`          | HASH              | `discordId → roleId` — dernier rôle finalisé, muté uniquement au cron                                                                                                                                                                                                     |
+| `bossraid:votes:<jour>`          | HASH              | `discordId → roleId` — écrasable, jetable, effacé après clôture du jour                                                                                                                                                                                                   |
+| `bossraid:vote_at:<jour>`        | HASH              | `discordId → ISO timestamp` — horodatage de la dernière mise à jour du vote, sert à l'ordre de protection Chevalier                                                                                                                                                       |
+| `bossraid:vote_usernames:<jour>` | HASH              | `discordId → pseudo` — jetable, uniquement pour l'affichage admin (`npm run bossraid:status`)                                                                                                                                                                             |
+| `bossraid:historique`            | HASH              | `jour → { voteCounts, totalVotes, protection, allIn, event, totalDamageDuJour, totalDegatsApres, bossStatsAvant, bossStatsApres, voleuseDebuffs, regen, resolvedAt }` — bilans quotidiens de la manche EN COURS, alimente le bouton Journal, effacé par `resetBossRaid()` |
+| `bossraid:manches`               | HASH              | `manche → { manche, totalDegatsCumules, bossStatsFinal, resolvedAt }` — un bilan par manche TERMINÉE, jamais nettoyé (persiste entre les manches, y compris après `npm run bossraid:reset`)                                                                               |
+| `bossraid:manche_seq`            | STRING (compteur) | Numéro de la prochaine manche à archiver, incrémenté (`INCR`) à chaque fin de Raid réel (jamais en dry-run)                                                                                                                                                               |
 
 ### Scripts npm (Boss Raid)
 
-| Commande | Effet |
-| --- | --- |
-| `npm run bossraid:test` | Poste manuellement le jour de Boss Raid sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`). |
-| `npm run bossraid:test:dry` | Aperçu console du prochain jour (ou du message de fin de Raid), sans écrire d'état ni poster sur Discord. |
-| `npm run bossraid:public` | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `bossraid.yml`. |
-| `npm run bossraid:public:dry` | Équivalent dry-run de `bossraid:public`. |
-| `npm run bossraid:reset` | Remet Boss Raid à zéro : plus de partie active, votes/dernier rôle/historique de la manche en cours effacés. **Destructif** — préserve toujours `bossraid:manches` (l'archive des manches passées, qui ne s'alimente de toute façon qu'en `--public`, voir "Manches" plus haut). |
-| `npm run bossraid:reset:manches` | Identique, mais efface aussi `bossraid:manches`/`bossraid:manche_seq`. **Destructif**, à réserver au filet de sécurité (ex. un `--public` lancé par erreur pendant les tests). |
-| `npm run bossraid:status` | Affiche l'état courant (posture du Boss, score cumulé, décompte des votes du jour) sans passer par Discord. |
+| Commande                         | Effet                                                                                                                                                                                                                                                                            |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run bossraid:test`          | Poste manuellement le jour de Boss Raid sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`).                                                                                                                                                                                     |
+| `npm run bossraid:test:dry`      | Aperçu console du prochain jour (ou du message de fin de Raid), sans écrire d'état ni poster sur Discord.                                                                                                                                                                        |
+| `npm run bossraid:public`        | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `bossraid.yml`.                                                                                                                                                                                 |
+| `npm run bossraid:public:dry`    | Équivalent dry-run de `bossraid:public`.                                                                                                                                                                                                                                         |
+| `npm run bossraid:reset`         | Remet Boss Raid à zéro : plus de partie active, votes/dernier rôle/historique de la manche en cours effacés. **Destructif** — préserve toujours `bossraid:manches` (l'archive des manches passées, qui ne s'alimente de toute façon qu'en `--public`, voir "Manches" plus haut). |
+| `npm run bossraid:reset:manches` | Identique, mais efface aussi `bossraid:manches`/`bossraid:manche_seq`. **Destructif**, à réserver au filet de sécurité (ex. un `--public` lancé par erreur pendant les tests).                                                                                                   |
+| `npm run bossraid:status`        | Affiche l'état courant (posture du Boss, score cumulé, décompte des votes du jour) sans passer par Discord.                                                                                                                                                                      |
 
 ### Variables d'environnement requises (Boss Raid)
 
@@ -1273,12 +1273,12 @@ Mini-jeu à identité secrète façon Shadow Hunters/Loups-Garous, adapté au ry
 Un seul message actif à la fois dans le salon dédié, en 3 phases :
 
 1. **Fenêtre d'inscription** (`goblinhunters:state.phase === "inscription"`) : `postGoblinHunters()` ouvre l'inscription (`[✅ S'inscrire]`/`[✖️ Se désinscrire]`), ping `@MINI-JEUX`. Rappel quotidien avec le décompte des inscrits tant que la fenêtre (3 jours) n'est pas close. À la clôture : si moins de `effectif_min` (8) inscrits, la fenêtre est **prolongée de 3 jours** (pas d'annulation) ; sinon la partie est lancée (`launchGame()`) — roster figé, camps/rôles attribués, DM de rôle envoyé à chacun, inscriptions vidées.
-2. **Jour de jeu** (jours 1 à 10) : chaque joueur vivant choisit un lieu (bouton éphémère), qui détermine son action — vote au Château, combat à l'Arène, enquête à la Tour de Guet, protection à la Taverne, révélation de position à la Clairière mystique. **Définitif dès validation** (`isActionLocked()`, aucun changement d'avis possible sur aucun lieu — voir plus bas), enregistré via `recordAction()` en `HSET` (écrasable seulement tant qu'aucune valeur n'a encore été écrite pour ce slot). Rien n'est publié publiquement en cours de journée.
+2. **Jour de jeu** (jours 1 à 10) : chaque joueur vivant choisit un lieu (bouton éphémère), qui détermine son action — vote au Château, combat à l'Arène, enquête à la Tour de Guet, protection à la Taverne, révélation de position à la Clairière. **Définitif dès validation** (`isActionLocked()`, aucun changement d'avis possible sur aucun lieu — voir plus bas), enregistré via `recordAction()` en `HSET` (écrasable seulement tant qu'aucune valeur n'a encore été écrite pour ce slot). Rien n'est publié publiquement en cours de journée.
 3. **Clôture quotidienne** : `postGoblinHunters()` clôture le jour actif (`closeDayAndAdvance()`), résout vote + combat + enquêtes + nouvelles positions, envoie les DM d'enquête, publie le bilan + le jour suivant (jamais de ping). Si une condition de victoire est atteinte ou que J10 est dépassé, publie l'embed de fin de partie (révélation complète des camps/rôles), ping `@MINI-JEUX`, et passe `termine: true` — les runs suivants deviennent des no-op silencieux, même principe que les autres jeux.
 
 ### Ciblage — restreint au dernier plateau connu, sauf le vote
 
-La cible d'un **combat** (Arène, seul lieu de combat depuis la refonte de la Clairière — voir plus bas) ou d'une **enquête** (Tour de Guet) doit être positionnée au lieu choisi sur le **dernier plateau connu** (`joueursAvant`, figé depuis la clôture précédente) — le select menu ne propose que ces cibles valides, `computeAttacksFromActions()`/`computeInvestigations()` re-filtrent quand même par défense. Le **vote du Château** reste volontairement libre sur tout joueur vivant (accusation villageoise publique, pas une confrontation physique), et la **Clairière mystique** n'a aucune notion de ciblage — elle tire 2 joueurs au hasard, sans co-location requise. Conséquence directe : le Jour 1, aucune cible de combat/enquête n'existe encore (tout le monde démarre au Château) — le lieu affiche alors « aucune cible disponible », sans que ce soit un bug : c'est cohérent avec le garde-fou explicite qui désactive de toute façon vote et combat ce jour-là.
+La cible d'un **combat** (Arène, seul lieu de combat depuis la refonte de la Clairière — voir plus bas) ou d'une **enquête** (Tour de Guet) doit être positionnée au lieu choisi sur le **dernier plateau connu** (`joueursAvant`, figé depuis la clôture précédente) — le select menu ne propose que ces cibles valides, `computeAttacksFromActions()`/`computeInvestigations()` re-filtrent quand même par défense. Le **vote du Château** reste volontairement libre sur tout joueur vivant (accusation villageoise publique, pas une confrontation physique), et la **Clairière** n'a aucune notion de ciblage — elle tire 2 joueurs au hasard, sans co-location requise. Conséquence directe : le Jour 1, aucune cible de combat/enquête n'existe encore (tout le monde démarre au Château) — le lieu affiche alors « aucune cible disponible », sans que ce soit un bug : c'est cohérent avec le garde-fou explicite qui désactive de toute façon vote et combat ce jour-là.
 
 ### Vote du Château — même stockage que les autres lieux (bug corrigé)
 
@@ -1292,9 +1292,9 @@ La cible d'un **combat** (Arène, seul lieu de combat depuis la refonte de la Cl
 
 ### Quorum de vote — 2 votants minimum (bug corrigé)
 
-⚠️ Repéré en revue avec l'utilisateur : `resolveVoteElimination()` ne vérifiait à l'origine que « une seule cible au score maximum ? » — avec un seul votant, son unique vote *est* mécaniquement le score maximum, donc il gagnait. Un joueur seul au Château pouvait exécuter n'importe qui unilatéralement. Corrigé par un quorum minimum (`config.vote_quorum_min`, 2 par défaut) : si le total de votes castés ce jour-là (toutes cibles confondues) est sous ce seuil, `resolveVoteElimination()` renvoie `null` avant même de regarder qui a le plus de voix.
+⚠️ Repéré en revue avec l'utilisateur : `resolveVoteElimination()` ne vérifiait à l'origine que « une seule cible au score maximum ? » — avec un seul votant, son unique vote _est_ mécaniquement le score maximum, donc il gagnait. Un joueur seul au Château pouvait exécuter n'importe qui unilatéralement. Corrigé par un quorum minimum (`config.vote_quorum_min`, 2 par défaut) : si le total de votes castés ce jour-là (toutes cibles confondues) est sous ce seuil, `resolveVoteElimination()` renvoie `null` avant même de regarder qui a le plus de voix.
 
-### Clairière mystique — révélation de position, pas un combat (refonte)
+### Clairière — révélation de position, pas un combat (refonte)
 
 ⚠️ Design initial insatisfaisant, repéré par l'utilisateur : la Clairière faisait exactement la même chose que l'Arène (mêmes dégâts, même ciblage), avec pour seule différence d'ignorer la protection Taverne — un avantage marginal, sans vraie contrepartie, qui ne justifiait pas un lieu à part. Refondue en pur renseignement : `computeClairiereReveals(actionsRaw, joueursApres, rng)` révèle, à la clôture, la position COURANTE de 2 joueurs vivants tirés au hasard (jamais soi-même, jamais un joueur déjà éliminé ce jour-là) — **aucune cible à choisir**, aucune restriction de co-location (ce n'est pas une confrontation, `lieuAction === "vision"` traité comme la Taverne : action enregistrée directement au clic). Résultat livré en DM (`sendClairiereDM`) et ajouté au carnet d'indices personnel (voir section Journal). Conséquence directe : le **Arène est désormais le seul lieu de combat** du jeu — plus de redondance entre les deux lieux.
 
@@ -1348,13 +1348,13 @@ Les Gobelins connaissent l'identité des autres Gobelins dès la distribution de
 
 Contrairement au bouton Journal des autres jeux (Robinson, Boss Raid — historique public des jours passés), celui de Goblin Hunters est **exclusivement personnel** : il affiche, uniquement au joueur qui clique, son camp/rôle secrets, la liste des autres Gobelins si le joueur en est un (`otherGobelinsLine()`, voir "Rôles et combat" ci-dessus), sa dernière position connue, ses PV, le **choix déjà validé pour le jour en cours** (voir ci-dessous), et un **carnet d'indices** cumulé sur toute la partie. Motivation : le plateau public ne montre que les positions COURANTES (régénéré à chaque clôture, aucun historique) — sans ce carnet privé, un joueur perdrait toute trace de ses rencontres passées dès le lendemain.
 
-**Choix du jour en cours** (ajouté sur demande explicite, retour en test réel) : puisque chaque action est **définitive dès validation** (`isActionLocked()`) mais n'est appliquée au plateau public qu'à la clôture du lendemain, un joueur n'avait aucun moyen de se rappeler ce qu'il venait de choisir en attendant. `handleJournal()` lit désormais aussi `readPlayerAction(state.jour, discordId)` — l'action de la journée EN COURS, pas encore résolue — et l'affiche (`🌫️ Clairière mystique`, `⚔️ Arène → **Cible**`, etc., primary et secondary pour l'Éclaireur). Uniquement affiché si le joueur est vivant ; absent s'il n'a encore rien soumis aujourd'hui.
+**Choix du jour en cours** (ajouté sur demande explicite, retour en test réel) : puisque chaque action est **définitive dès validation** (`isActionLocked()`) mais n'est appliquée au plateau public qu'à la clôture du lendemain, un joueur n'avait aucun moyen de se rappeler ce qu'il venait de choisir en attendant. `handleJournal()` lit désormais aussi `readPlayerAction(state.jour, discordId)` — l'action de la journée EN COURS, pas encore résolue — et l'affiche (`🌫️ Clairière`, `⚔️ Arène → **Cible**`, etc., primary et secondary pour l'Éclaireur). Uniquement affiché si le joueur est vivant ; absent s'il n'a encore rien soumis aujourd'hui.
 
 Trois sources alimentent le carnet à chaque clôture (`computeIndicesForDay()`, `backend/services/goblinhunters.js`), distinguées par un champ `type` (formatage différent côté `formatIndiceLine()`) :
 
 - `type: "enquete"` (Tour de Guet) : révèle le camp de la cible (`campReporte`), y compris le faux positif de l'Infiltré.
 - `type: "combat"` (Arène) : révèle seulement le **lieu de l'affrontement** (`campReporte: null`) — une attaque ne renseigne jamais sur le camp.
-- `type: "reveal"` (Clairière mystique) : révèle la **position courante** de la cible (`lieu` = où elle se trouve, pas où l'interaction a eu lieu — il n'y en a pas), sans jamais de camp non plus. Seule source qui ne nécessite aucune co-location (voir `computeClairiereReveals()`).
+- `type: "reveal"` (Clairière) : révèle la **position courante** de la cible (`lieu` = où elle se trouve, pas où l'interaction a eu lieu — il n'y en a pas), sans jamais de camp non plus. Seule source qui ne nécessite aucune co-location (voir `computeClairiereReveals()`).
 
 Stocké dans `goblinhunters:indices` (HASH permanent `discordId → JSON[]`, un tableau qui grandit à chaque clôture via `appendIndices()`), effacé par `resetGoblinHunters()` comme le reste de la manche en cours. `readPlayerIndices(discordId)` lit le carnet d'un seul joueur sans charger celui des autres. Le routage dans `interactions.js` passe désormais `discordId` à `handleJournal()` (auparavant appelé sans argument, contenu générique).
 
@@ -1400,31 +1400,31 @@ Ce ne sont jamais des fuites d'info : les comptes par camp sont déjà publics (
 
 Même instance et mêmes conventions que les autres jeux (`automaticDeserialization: false`). Espace de clés `goblinhunters:*`, totalement séparé.
 
-| Clé Redis | Type | Contenu |
-| --- | --- | --- |
-| `goblinhunters:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, closingAt?, joueurs? }` — `joueurs` = roster complet (camp, rôle, PV, position, vivant, camp révélé) une fois la partie lancée |
-| `goblinhunters:inscriptions` | HASH | `discordId → { username, registeredAt }` — vidée au lancement de la partie |
-| `goblinhunters:actions:<jour>` | HASH | `discordId → { primary: {lieu, cibleId}, secondary? }` — écrasable, jetable, effacé après clôture du jour. Le vote d'accusation du Château **n'a pas de clé séparée** : voter est juste `{lieu:"chateau", cibleId}` dans cette même structure (`computeVoteTally()` l'en extrait) — voir "Vote du Château" plus bas pour l'incident que ça corrige. |
-| `goblinhunters:historique` | HASH | `jour → { eliminationsParVote, deathIdCombat, investigations, voteTally, victory, resolvedAt }` — bilans quotidiens de la manche EN COURS, effacé par `resetGoblinHunters()` |
-| `goblinhunters:manches` | HASH | `manche → { manche, victory, jourFinal, resolvedAt }` — un bilan par manche TERMINÉE, jamais nettoyé |
-| `goblinhunters:manche_seq` | STRING (compteur) | Numéro de la prochaine manche à archiver, incrémenté (`INCR`) à chaque fin de partie réelle (jamais en dry-run) |
-| `goblinhunters:messages` | LIST | Les 3 derniers messages anonymes (`{ content, jour }`, jamais de `discordId`), `RPUSH` + `LTRIM(-3,-1)` à chaque envoi |
-| `goblinhunters:messages_sent:<jour>` | HASH | `discordId → "1"` — quota 1 message/jour/joueur, séparé du contenu pour ne jamais pouvoir croiser auteur/message |
+| Clé Redis                            | Type              | Contenu                                                                                                                                                                                                                                                                                                                                             |
+| ------------------------------------ | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `goblinhunters:state`                | STRING            | `{ phase, jour, channelId, messageId, publishedAt, termine, closingAt?, joueurs? }` — `joueurs` = roster complet (camp, rôle, PV, position, vivant, camp révélé) une fois la partie lancée                                                                                                                                                          |
+| `goblinhunters:inscriptions`         | HASH              | `discordId → { username, registeredAt }` — vidée au lancement de la partie                                                                                                                                                                                                                                                                          |
+| `goblinhunters:actions:<jour>`       | HASH              | `discordId → { primary: {lieu, cibleId}, secondary? }` — écrasable, jetable, effacé après clôture du jour. Le vote d'accusation du Château **n'a pas de clé séparée** : voter est juste `{lieu:"chateau", cibleId}` dans cette même structure (`computeVoteTally()` l'en extrait) — voir "Vote du Château" plus bas pour l'incident que ça corrige. |
+| `goblinhunters:historique`           | HASH              | `jour → { eliminationsParVote, deathIdCombat, investigations, voteTally, victory, resolvedAt }` — bilans quotidiens de la manche EN COURS, effacé par `resetGoblinHunters()`                                                                                                                                                                        |
+| `goblinhunters:manches`              | HASH              | `manche → { manche, victory, jourFinal, resolvedAt }` — un bilan par manche TERMINÉE, jamais nettoyé                                                                                                                                                                                                                                                |
+| `goblinhunters:manche_seq`           | STRING (compteur) | Numéro de la prochaine manche à archiver, incrémenté (`INCR`) à chaque fin de partie réelle (jamais en dry-run)                                                                                                                                                                                                                                     |
+| `goblinhunters:messages`             | LIST              | Les 3 derniers messages anonymes (`{ content, jour }`, jamais de `discordId`), `RPUSH` + `LTRIM(-3,-1)` à chaque envoi                                                                                                                                                                                                                              |
+| `goblinhunters:messages_sent:<jour>` | HASH              | `discordId → "1"` — quota 1 message/jour/joueur, séparé du contenu pour ne jamais pouvoir croiser auteur/message                                                                                                                                                                                                                                    |
 
 ### Scripts npm (Goblin Hunters)
 
-| Commande | Effet |
-| --- | --- |
-| `npm run goblinhunters:test` | Poste manuellement l'étape courante sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`). |
-| `npm run goblinhunters:test:dry` | Aperçu console de la prochaine étape, sans écrire d'état ni poster sur Discord. Pendant la phase inscription, affiche aussi la répartition camps/rôles qu'un lancement produirait (sans l'appliquer). |
-| `npm run goblinhunters:test:force-close` | ⚠️ **TESTS UNIQUEMENT**, jamais câblé dans `goblinhunters.yml` — ignore l'échéance réelle de la fenêtre d'inscription (3 jours) pour déclencher immédiatement le lancement dès l'effectif minimum atteint. Combinable avec `--dry-run` pour prévisualiser sans lancer pour de vrai. |
-| `npm run goblinhunters:seed-test-pool` | ⚠️ **TESTS UNIQUEMENT** — inscrit un faux pool de 8 joueurs (IDs `test_fake_1`…`test_fake_8`, tout l'effectif minimum) pour pouvoir tester entièrement seul dans le salon de test, sans second testeur. Les DM de rôle échouent proprement pour ces faux comptes au lancement (catch déjà en place), sans incidence sur le reste. Accepte un nombre différent en argument (`node scripts/seedGoblinHuntersTestPool.js 4`). |
+| Commande                                  | Effet                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run goblinhunters:test`              | Poste manuellement l'étape courante sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `npm run goblinhunters:test:dry`          | Aperçu console de la prochaine étape, sans écrire d'état ni poster sur Discord. Pendant la phase inscription, affiche aussi la répartition camps/rôles qu'un lancement produirait (sans l'appliquer).                                                                                                                                                                                                                                                                                                                                                                         |
+| `npm run goblinhunters:test:force-close`  | ⚠️ **TESTS UNIQUEMENT**, jamais câblé dans `goblinhunters.yml` — ignore l'échéance réelle de la fenêtre d'inscription (3 jours) pour déclencher immédiatement le lancement dès l'effectif minimum atteint. Combinable avec `--dry-run` pour prévisualiser sans lancer pour de vrai.                                                                                                                                                                                                                                                                                           |
+| `npm run goblinhunters:seed-test-pool`    | ⚠️ **TESTS UNIQUEMENT** — inscrit un faux pool de 8 joueurs (IDs `test_fake_1`…`test_fake_8`, tout l'effectif minimum) pour pouvoir tester entièrement seul dans le salon de test, sans second testeur. Les DM de rôle échouent proprement pour ces faux comptes au lancement (catch déjà en place), sans incidence sur le reste. Accepte un nombre différent en argument (`node scripts/seedGoblinHuntersTestPool.js 4`).                                                                                                                                                    |
 | `npm run goblinhunters:scatter-test-pool` | ⚠️ **TESTS UNIQUEMENT**, à lancer une fois la partie démarrée (`goblinhunters:test:force-close`) — répartit les faux joueurs sur les 5 lieux (round-robin déterministe) au lieu de les laisser tous groupés au Château, où le pass automatique les ramènerait sinon indéfiniment (aucun ne clique jamais de bouton). Effet immédiat sur `state.joueurs[].position` **et** persistant (soumet une action "reste ici" en leur nom pour le jour en cours) — à relancer chaque jour de test pour qu'ils restent en place plutôt que de retomber au Château à la clôture suivante. |
-| `npm run goblinhunters:public` | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `goblinhunters.yml`. |
-| `npm run goblinhunters:public:dry` | Équivalent dry-run de `goblinhunters:public`. |
-| `npm run goblinhunters:reset` | Remet Goblin Hunters à zéro : plus de partie active, inscriptions/actions/votes/historique de la manche en cours effacés. **Destructif** — préserve toujours `goblinhunters:manches`. |
-| `npm run goblinhunters:reset:manches` | Identique, mais efface aussi `goblinhunters:manches`/`goblinhunters:manche_seq`. **Destructif**, à réserver au filet de sécurité. |
-| `npm run goblinhunters:status` | Affiche l'état courant (phase, roster complet avec camps/rôles/PV/positions, progression des actions du jour) sans passer par Discord. ⚠️ **Sortie admin uniquement** — spoile les camps/rôles, ne jamais la partager avec les joueurs en cours de partie. |
+| `npm run goblinhunters:public`            | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `goblinhunters.yml`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `npm run goblinhunters:public:dry`        | Équivalent dry-run de `goblinhunters:public`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `npm run goblinhunters:reset`             | Remet Goblin Hunters à zéro : plus de partie active, inscriptions/actions/votes/historique de la manche en cours effacés. **Destructif** — préserve toujours `goblinhunters:manches`.                                                                                                                                                                                                                                                                                                                                                                                         |
+| `npm run goblinhunters:reset:manches`     | Identique, mais efface aussi `goblinhunters:manches`/`goblinhunters:manche_seq`. **Destructif**, à réserver au filet de sécurité.                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `npm run goblinhunters:status`            | Affiche l'état courant (phase, roster complet avec camps/rôles/PV/positions, progression des actions du jour) sans passer par Discord. ⚠️ **Sortie admin uniquement** — spoile les camps/rôles, ne jamais la partager avec les joueurs en cours de partie.                                                                                                                                                                                                                                                                                                                    |
 
 ### Tester une partie complète (Goblin Hunters)
 
