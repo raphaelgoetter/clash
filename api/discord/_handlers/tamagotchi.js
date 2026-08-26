@@ -57,11 +57,17 @@ const FLAVOR_NAMES = [
   "Kayzor",
 ];
 
-const DAY1_INTRO =
-  "« Wesh la famille ! Je pars 10 jours visiter la Petite France à Strasbourg et déguster des tartes flambées.\n" +
-  "Je vous confie Lilith mon Bébé Dragon de compétition. Il est très difficile : gardez ses jauges équilibrées !\n" +
-  "Je reviendrai le 11e jour pour récupérer ma Lilith. Attention, si vous me la rendez en mauvais état… je débarque dans votre arène avec un deck Mineur-Poison et je défonce tout.\n" +
-  "Bon courage ! » — Mohamed Light";
+// Interpolé sur `duree_jours` (jamais codé en dur) : sinon ce texte se
+// désynchronise silencieusement à chaque fois que la durée d'une manche
+// change (ex. 10 -> 7 jours).
+function buildDay1IntroText(dureeJours) {
+  return (
+    `« Wesh la famille ! Je pars ${dureeJours} jours visiter la Petite France à Strasbourg et déguster des tartes flambées.\n` +
+    "Je vous confie Lilith mon Bébé Dragon de compétition. Il est très difficile : gardez ses jauges équilibrées !\n" +
+    `Je reviendrai le ${dureeJours + 1}e jour pour récupérer ma Lilith. Attention, si vous me la rendez en mauvais état… je débarque dans votre arène avec un deck Mineur-Poison et je défonce tout.\n` +
+    "Bon courage ! » — Mohamed Light"
+  );
+}
 
 // ── Rendu des jauges ─────────────────────────────────────────────
 
@@ -185,11 +191,11 @@ function quoteBlock(text) {
     .join("\n");
 }
 
-function buildDay1Intro() {
+function buildDay1Intro(dureeJours) {
   return [
     "**VOUS AVEZ REÇU UN NOUVEAU MESSAGE !**",
     "",
-    quoteBlock(DAY1_INTRO),
+    quoteBlock(buildDay1IntroText(dureeJours)),
     "",
     "Collaborez ensemble pour vous occuper du Bébé Dragon et subvenir à ses besoins.",
   ].join("\n");
@@ -199,8 +205,8 @@ function buildDay1Intro() {
 // GAUGE_ICONS, qui a besoin d'une icône même en normal) : rien
 // d'intéressant à raconter sur une jauge ordinaire, la ligne est alors
 // simplement omise plutôt que de meubler avec une phrase creuse.
-async function buildNarrative(jour, gauges, voters, estPremierJour, zones, confiance, confianceConfig) {
-  if (estPremierJour) return buildDay1Intro();
+async function buildNarrative(jour, gauges, voters, estPremierJour, zones, confiance, confianceConfig, dureeJours) {
+  if (estPremierJour) return buildDay1Intro(dureeJours);
 
   const narratifs = await loadNarratifs();
   const intro = pickFlavor(narratifs.intro_cocasse, jour);
@@ -272,6 +278,7 @@ async function buildTamagotchiEmbed(
     config.zones_ideales,
     confiance,
     config.confiance,
+    config.duree_jours,
   );
   const lines = [narrative, ""];
   if (event) {
@@ -452,7 +459,7 @@ async function buildDayPayload(
   };
 }
 
-// ── Embed de fin de partie (Jour 10) ──────────────────────────────
+// ── Embed de fin de partie (dernier jour, config.duree_jours) ─────
 // Le jeu est rejoué plusieurs fois dans l'année : la manche qui vient de se
 // terminer est comparée aux précédentes (manches, currentManche — voir
 // archiveManche()/listManches() dans tamagotchi.js), avec un 🏆 sur le
@@ -550,6 +557,10 @@ function buildReglesEmbed(config) {
       ([, action]) =>
         `${action.emoji} **${action.label}** — ${formatGaugeImpact(action.impact)}`,
     );
+  // Seuils affichés dynamiquement (config.paliers) : jamais 8/4 codés en dur,
+  // pensés pour 10 jours — une manche plus courte a un max d'étoiles différent.
+  const seuilS = config.paliers?.find((p) => p.tier === "S")?.seuil ?? 8;
+  const seuilB = config.paliers?.find((p) => p.tier === "B")?.seuil ?? 4;
 
   return {
     title: "📖 Règles du jeu — Tamagotchi",
@@ -575,7 +586,7 @@ function buildReglesEmbed(config) {
       `💊 **Pilule** (Jours ${config.actions.pilule.day_min}-${config.actions.pilule.day_max}) rapproche *instantanément* chaque jauge vers la moyenne, jusqu'à ${config.actions.pilule.max_step}%. Consomme ton vote sauf si elle a déjà été utilisée. Item Rare : ${config.actions.pilule.total_cap} utilisations max sur toute la manche (1 seule par jour).`,
       "Chacune consomme ton vote du jour comme une action normale (1 vote/jour, définitif) — sauf 📖 Règles, toujours libre.",
       "",
-      `**⭐ Étoiles :** 3 jauges en zone = ${RATING_LABELS.parfaite} ; 1 hors zone = ${RATING_LABELS.moyenne} ; 2-3 hors zone = ${RATING_LABELS.catastrophe}. Sur 10 jours : 8+ impressionne Mohamed Light, moins de 4 et il débarque furieux avec un deck Mineur-Poison — sauf si la Confiance finale est trop basse pour dépasser un palier, quel que soit le total d'étoiles.`,
+      `**⭐ Étoiles :** 3 jauges en zone = ${RATING_LABELS.parfaite} ; 1 hors zone = ${RATING_LABELS.moyenne} ; 2-3 hors zone = ${RATING_LABELS.catastrophe}. Sur ${config.duree_jours} jours : ${seuilS}+ impressionne Mohamed Light, moins de ${seuilB} et il débarque furieux avec un deck Mineur-Poison — sauf si la Confiance finale est trop basse pour dépasser un palier, quel que soit le total d'étoiles.`,
     ].join("\n"),
     color: TAMAGOTCHI_COLOR,
   };
@@ -664,7 +675,7 @@ export async function postTamagotchi(
   const jour = state.jour + 1;
 
   if (jour > config.duree_jours) {
-    const tierBrut = computeFinalTier(starTotalApres);
+    const tierBrut = computeFinalTier(starTotalApres, config.paliers);
     // La Confiance finale plafonne le palier — un mauvais début de manche
     // (jours Moyen/Catastrophe non compensés par Câliner) laisse une trace
     // qu'aucun bon score d'étoiles ne peut effacer.

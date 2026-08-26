@@ -1,5 +1,5 @@
 {
-  "duree_jours": 10,
+  "duree_jours": 7,
   "cron_time": "0 8 * * *",
   "zones_ideales": { "min": 40, "max": 70 },
   "votants_reference": 12,
@@ -15,6 +15,10 @@
       { "sous": 50, "max": "B" }
     ]
   },
+  "paliers": [
+    { "seuil": 6, "tier": "S" },
+    { "seuil": 3, "tier": "B" }
+  ],
   "jauges_initiales": { "estomac": 50, "energie": 50, "moral": 50 },
   "actions": {
     "nourrir": {
@@ -42,8 +46,8 @@
       "label": "Pilule",
       "emoji": "💊",
       "is_info_action": true,
-      "day_min": 4,
-      "day_max": 10,
+      "day_min": 3,
+      "day_max": 7,
       "target": 55,
       "max_step": 10,
       "total_cap": 2
@@ -52,21 +56,14 @@
   "evenements_possibles": [
     {
       "id": "averse_glaciale",
-      "jour": 5,
+      "jour": 4,
       "titre": "Averse glaciale sur l'arène",
       "description": "Une pluie froide et soudaine s'abat sur l'arène toute la nuit. Lilith grelotte, trempée, et boude.",
       "modificateur_jauges": { "energie": -15, "estomac": 0, "moral": -15 }
     },
     {
-      "id": "visite_gobelins",
-      "jour": 7,
-      "titre": "Visite nocturne des gobelins",
-      "description": "Des gobelins chapardeurs ont piqué une bonne partie des réserves de nourriture cette nuit.",
-      "modificateur_jauges": { "estomac": -15, "energie": -10, "moral": 0 }
-    },
-    {
       "id": "penurie_vivres",
-      "jour": 8,
+      "jour": 5,
       "titre": "Pénurie de vivres",
       "description": "Les réserves de nourriture de l'arène s'épuisent sérieusement : Nourrir remplit beaucoup moins bien Lilith aujourd'hui.",
       "actions_modifiees": {
@@ -75,7 +72,7 @@
     },
     {
       "id": "tempete_alsacienne",
-      "jour": 9,
+      "jour": 6,
       "titre": "Tempête sur l'Alsace",
       "description": "Un orage électrique pousse un chargement de victuailles jusqu'à l'arène, mais le vacarme épuise et angoisse Lilith.",
       "modificateur_jauges": { "estomac": 10, "energie": -20, "moral": -5 }

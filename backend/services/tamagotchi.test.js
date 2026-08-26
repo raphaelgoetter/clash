@@ -398,6 +398,23 @@ async function main() {
   assert.strictEqual(computeFinalTier(3), "F");
   assert.strictEqual(computeFinalTier(-5), "F");
 
+  // Seuils configurables (ex. manche à 7 jours, pas les 8/4 par défaut pensés
+  // pour 10 jours).
+  const PALIERS_7J = [
+    { seuil: 6, tier: "S" },
+    { seuil: 3, tier: "B" },
+  ];
+  assert.strictEqual(computeFinalTier(7, PALIERS_7J), "S");
+  assert.strictEqual(computeFinalTier(6, PALIERS_7J), "S");
+  assert.strictEqual(computeFinalTier(5, PALIERS_7J), "B");
+  assert.strictEqual(computeFinalTier(3, PALIERS_7J), "B");
+  assert.strictEqual(computeFinalTier(2, PALIERS_7J), "F");
+  // L'ordre des seuils dans le tableau n'a pas d'importance (triés en interne).
+  assert.strictEqual(
+    computeFinalTier(6, [{ seuil: 3, tier: "B" }, { seuil: 6, tier: "S" }]),
+    "S",
+  );
+
   console.log("✓ tamagotchi service tests passed");
 }
 

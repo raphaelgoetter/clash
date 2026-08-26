@@ -114,7 +114,7 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
 
   if (jourSuivant > config.duree_jours) {
     const starTotalFinal = state.starTotal + closure.rating.starDelta;
-    const tierBrut = computeFinalTier(starTotalFinal);
+    const tierBrut = computeFinalTier(starTotalFinal, config.paliers);
     const tier = capTierByConfiance(tierBrut, closure.confianceApres, config.confiance);
     const plafondNote = tier !== tierBrut ? ` (plafonné depuis ${tierBrut} par la Confiance)` : "";
     console.log(`→ Jour ${jourSuivant} : fin de partie, ${starTotalFinal} étoile(s) au total — palier ${tier}${plafondNote}.`);

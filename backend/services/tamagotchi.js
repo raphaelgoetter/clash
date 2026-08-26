@@ -380,9 +380,20 @@ export function computeDayOpenGauges(gaugesClosing, jour, event, config) {
   return gauges;
 }
 
-export function computeFinalTier(starTotal) {
-  if (starTotal >= 8) return "S";
-  if (starTotal >= 4) return "B";
+// `paliers` (optionnel) : seuils configurables (`tamagotchi.json.paliers`),
+// pour ne pas coder en dur des seuils pensés pour 10 jours — une manche plus
+// courte (ex. 7 jours) a un total d'étoiles maximum différent. Rétro-compatible :
+// omis, mêmes seuils qu'avant (8/10 -> S, 4/10 -> B).
+const DEFAULT_PALIERS = [
+  { seuil: 8, tier: "S" },
+  { seuil: 4, tier: "B" },
+];
+
+export function computeFinalTier(starTotal, paliers = DEFAULT_PALIERS) {
+  const tries = [...paliers].sort((a, b) => b.seuil - a.seuil);
+  for (const { seuil, tier } of tries) {
+    if (starTotal >= seuil) return tier;
+  }
   return "F";
 }
 
