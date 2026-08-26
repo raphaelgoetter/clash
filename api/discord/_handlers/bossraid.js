@@ -1,7 +1,7 @@
 // ============================================================
 // bossraid.js — Handlers Discord pour Boss Raid (score attack
 // communautaire contre un Boss Colossal). Embed, boutons de vote,
-// bouton Espion (projection live), Règles & Rôles, Journal.
+// bouton Espionne (projection live), Règles & Rôles, Journal.
 // La publication/suppression quotidienne passe uniquement par
 // scripts/postBossRaid.js (postBossRaid) — les boutons restent gérés par
 // api/discord/interactions.js.
@@ -40,7 +40,7 @@ export const ULTIMATE_NAMES = {
   voleuse: "🗡️ Coup à la Gorge",
 };
 // Rappel systématique de l'effet à chaque affichage du nom d'une Ultime
-// (bilan du jour, projection Espion, Journal) — le nom seul ne suffit pas à
+// (bilan du jour, projection Espionne, Journal) — le nom seul ne suffit pas à
 // comprendre ce qui vient de se passer.
 export const ULTIMATE_EFFECTS = {
   archeres:
@@ -87,7 +87,7 @@ function statTier(value) {
 }
 
 // Combattants les plus offensifs du jour clos (plus haut total de dégâts) —
-// Chevalier/Espion (0 dégât) n'apparaissent jamais ici.
+// Chevalier/Espionne (0 dégât) n'apparaissent jamais ici.
 async function pickFighterNames(perVoteDetails) {
   const attackers = (perVoteDetails || [])
     .filter((d) => d.degats > 0)
@@ -138,7 +138,7 @@ function buildAnnonceEmbed(config) {
       "",
       `🛡️ Défense initiale : **${config.boss_stats_initiales.defense}/10** — 🔮 Résistance initiale : **${config.boss_stats_initiales.resistance}/10**.`,
       "",
-      "Chevaliers, Voleuses, Sorciers, Archères, Espions — chaque rôle compte. Besoin d’un rappel des règles ? Clique sur *Règles* ci-dessous.",
+      "Chevaliers, Voleuses, Sorciers, Archères, Espionnes — chaque rôle compte. Besoin d’un rappel des règles ? Clique sur *Règles* ci-dessous.",
     ].join("\n"),
     color: BOSSRAID_COLOR,
     // ?v=2 : casse le cache Discord (qui met en cache par URL l'échec d'un
@@ -649,8 +649,8 @@ export async function handleVoteButton(
   }
 }
 
-// ── Bouton Espion — exception : réponse éphémère avec projection live ──
-// Le vote Espion compte dans le dénominateur All-In comme n'importe quel
+// ── Bouton Espionne — exception : réponse éphémère avec projection live ──
+// Le vote Espionne compte dans le dénominateur All-In comme n'importe quel
 // autre vote (recordVote), mais sa réponse est privée : projection des
 // dégâts du jour EN COURS (previewCloture, écriture nulle) + révélation de
 // l'événement prévu pour le LENDEMAIN, exclusivité de ce bouton.
@@ -710,7 +710,7 @@ export async function handleEspion(
       components: [],
     });
 
-    // Le vote Espion fait aussi avancer le compteur "Espion (n)" du message
+    // Le vote Espionne fait aussi avancer le compteur "Espion (n)" du message
     // public — rafraîchi séparément en PATCH direct (bot token), même
     // découplage que Tamagotchi/Robinson pour un vote confirmé en éphémère.
     const { embed, components } = await renderCombatPayload(state, config);
@@ -726,7 +726,7 @@ export async function handleEspion(
       },
     );
   } catch (err) {
-    console.error("[BossRaid] Échec Espion:", err.message);
+    console.error("[BossRaid] Échec Espionne:", err.message);
   }
 }
 
@@ -777,14 +777,14 @@ export async function handleJournal(webhookUrl) {
 // ── Bouton [📖 Règles & Rôles] — éphémère, statique, hors-vote ─────
 // Ne consomme jamais le vote du jour, contenu généré depuis boss_raid.json.
 // Les 3 événements du Boss ne sont volontairement jamais listés ici — même
-// principe que Robinson, ils restent une surprise (sauf pour l'Espion, qui
+// principe que Robinson, ils restent une surprise (sauf pour l'Espionne, qui
 // révèle l'événement du lendemain en exclusivité).
 
 function buildReglesEmbed(config) {
   const lines = [
     "Le clan affronte Kiki, un P.E.K.K.A. colossal, pendant 10 jours de combat. Objectif : accumuler le maximum de dégâts cumulés.",
     "",
-    `**Rôles (1 vote par membre et par jour, modifiable jusqu’à ${formatUtcTimeAsParis(8)}, heure de Paris) :**`,
+    `**Rôles (1 vote par membre et par jour, modifiable jusqu’à ${formatUtcTimeAsParis(8)}):**`,
   ];
 
   const chevalier = config.roles.chevalier;
@@ -809,7 +809,7 @@ function buildReglesEmbed(config) {
 
   const espion = config.roles.espion;
   lines.push(
-    `${espion.emoji} **${espion.label}** — 0 dégât. Réponse privée avec une projection des dégâts du jour et un indice sur l’événement du lendemain.`,
+    `${espion.emoji} **${espion.label}** — 0 dégât. Affiche la projection des dégâts du jour et un indice sur l’événement du lendemain.`,
   );
 
   lines.push(
