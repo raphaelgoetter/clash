@@ -1161,15 +1161,15 @@ Aucune nouvelle variable : Robinson réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DIS
 
 ## Boss Raid (score attack communautaire)
 
-Mini-jeu communautaire quotidien indépendant du Clash Royale : le clan affronte un Boss Colossal invulnérable pendant 10 jours de combat (précédés d'un jour d'annonce), avec pour objectif d'accumuler le maximum de dégâts cumulés. Chaque membre vote un rôle par jour (Chevalier, Voleuse, Sorcier, Archères, Espion) ; contrairement à Robinson, **aucun tirage n'a lieu au clic** — le vote reste modifiable jusqu'au cron de 08:00 UTC. Pas de commande slash associée — la publication/suppression passe uniquement par `scripts/postBossRaid.js` (manuel ou cron), les boutons restent gérés par `api/discord/interactions.js`.
+Mini-jeu communautaire quotidien indépendant du Clash Royale : le clan affronte un Boss Colossal invulnérable pendant 7 jours de combat (`duree_jours` dans `boss_raid.json`, précédés d'un jour d'annonce), avec pour objectif d'accumuler le maximum de dégâts cumulés. Chaque membre vote un rôle par jour (Chevalier, Voleuse, Sorcier, Archères, Espion) ; contrairement à Robinson, **aucun tirage n'a lieu au clic** — le vote reste modifiable jusqu'au cron de 08:00 UTC. Pas de commande slash associée — la publication/suppression passe uniquement par `scripts/postBossRaid.js` (manuel ou cron), les boutons restent gérés par `api/discord/interactions.js`.
 
 ### Déroulement (Boss Raid)
 
 Un seul message actif à la fois dans le salon dédié, en 3 phases :
 
 1. **Jour d'annonce** (`bossraid:state.phase === "annonce"`) : premier `postBossRaid()`, publie le lore + la posture initiale du Boss, ping `@MINI-JEUX`. Seul le bouton `[📖 Règles & Rôles]` est visible — aucun vote possible.
-2. **Transition vers le Jour 1/10** : deuxième `postBossRaid()`, détecte `phase === "annonce"` et publie directement le Jour 1 avec les 5 boutons de vote, sans clôture (rien n'a pu être voté avant) ni ping.
-3. **Clôture quotidienne** (jours suivants) : `postBossRaid()` clôture le jour actif (`closeDayAndAdvance()`), calcule les dégâts et la nouvelle posture du Boss, publie le bilan + le jour suivant (jamais de ping). Au-delà du Jour 10 (`jourSuivant > duree_jours`), publie l'embed de fin de Raid (score total, aucun composant), ping `@MINI-JEUX`, et passe `termine: true` — les runs suivants du cron deviennent des no-op silencieux, même principe que les autres jeux.
+2. **Transition vers le Jour 1/7** : deuxième `postBossRaid()`, détecte `phase === "annonce"` et publie directement le Jour 1 avec les 5 boutons de vote, sans clôture (rien n'a pu être voté avant) ni ping.
+3. **Clôture quotidienne** (jours suivants) : `postBossRaid()` clôture le jour actif (`closeDayAndAdvance()`), calcule les dégâts et la nouvelle posture du Boss, publie le bilan + le jour suivant (jamais de ping). Au-delà du Jour 7 (`jourSuivant > duree_jours`), publie l'embed de fin de Raid (score total, aucun composant), ping `@MINI-JEUX`, et passe `termine: true` — les runs suivants du cron deviennent des no-op silencieux, même principe que les autres jeux.
 
 ### Résolution du vote — vote modifiable, calcul unique à la clôture
 
@@ -1215,7 +1215,7 @@ Seule exception : lors d'un **Coup à la Gorge** (All-In Voleuse), la régénér
 
 ### Interface (embed)
 
-Titre `⚔️ Boss Raid — Jour X/10` (ou `— Un Boss Colossal approche…` au jour d'annonce). Bilan de la veille (dégâts infligés, Ultime déclenchée le cas échéant) affiché uniquement après une clôture réelle — absent du premier post de combat (Jour 1). Barres `🟥`/`⬜` sur 10 segments pour la Défense et la Résistance courantes. Événement du jour révélé dans cet embed seulement à partir du jour concerné. Composants : row 1 = 5 boutons de vote (`{emoji} {label} (n)`, un seul par rôle, masquée hors phase combat) ; row 2 = `[📖 Règles & Rôles]` + `[📜 Journal]`.
+Titre `⚔️ Boss Raid — Jour X/7` (ou `— Un Boss Colossal approche…` au jour d'annonce). Bilan de la veille (dégâts infligés, Ultime déclenchée le cas échéant) affiché uniquement après une clôture réelle — absent du premier post de combat (Jour 1). Barres `🟥`/`⬜` sur 10 segments pour la Défense et la Résistance courantes. Événement du jour révélé dans cet embed seulement à partir du jour concerné. Composants : row 1 = 5 boutons de vote (`{emoji} {label} (n)`, un seul par rôle, masquée hors phase combat) ; row 2 = `[📖 Règles & Rôles]` + `[📜 Journal]`.
 
 ### Manches (comparaison entre parties) — Boss Raid
 
@@ -1227,7 +1227,7 @@ Boss Raid (comme Robinson et le Tamagoshi) est destiné à être rejoué plusieu
 
 `data/bossraid/boss_raid.json` — config statique éditée à la main : `duree_jours`, `boss_stats_initiales`, `roles.<id>` (label, emoji, plage de dégâts, `protection_slots`/`chance_debuff`/`reduction_stat`/`is_info_action` selon le rôle) et `evenements_boss` (3 événements fixes, un par `jour`). Chargée une fois et mise en cache (`loadBossRaidConfig()`), jamais mutée à l'exécution.
 
-`frontend/public/images/boss/boss-01.webp` à `boss-10.webp` — une illustration par jour de combat, servie en asset statique (même principe que `rob-01.webp`…`rob-10.webp` de Robinson) et référencée directement par URL (`bossRaidImageUrl()`, `api/discord/_handlers/bossraid.js`) dans le champ `image` de l'embed. Affichée uniquement à partir du Jour 1 (jamais au jour d'annonce, qui n'a pas d'illustration dédiée). L'embed de fin de Raid réutilise systématiquement l'illustration du dernier jour (`boss-10.webp`).
+`frontend/public/images/boss/boss-01.webp` à `boss-10.webp` — une illustration par jour de combat, servie en asset statique (même principe que `rob-01.webp`…`rob-10.webp` de Robinson) et référencée directement par URL (`bossRaidImageUrl()`, `api/discord/_handlers/bossraid.js`) dans le champ `image` de l'embed. Affichée uniquement à partir du Jour 1 (jamais au jour d'annonce, qui n'a pas d'illustration dédiée). Avec `duree_jours: 7`, seules `boss-01.webp` à `boss-07.webp` sont actuellement utilisées (`boss-08/09/10.webp` restent en réserve, inutilisées) ; l'embed de fin de Raid réutilise systématiquement l'illustration du dernier jour joué (`bossRaidImageUrl(config.duree_jours)`).
 
 `data/bossraid/narratifs.json` — pools de variantes de texte (une intro "lore inutile" façon ambiance de camp, 2 variantes par état notable de Défense/Résistance, et des phrases de clôture citant les combattants les plus offensifs de la veille) séparées du code pour être enrichies sans y toucher. Même principe que `data/robinson/narratifs.json`/`data/tamagotchi/narratifs.json`, y compris la règle **"normal" = aucune ligne** : un état ordinaire (Défense/Résistance 4-6/10) n'a volontairement aucun pool de texte associé, la ligne est simplement omise plutôt que de meubler avec une phrase creuse — seuls les états notables (`_bas` ≤3, `_haut` ≥7) ont du texte. Sélection déterministe par jour (`pickFlavor()`, indexé sur `jour`, jamais `Math.random()`).
 

@@ -134,7 +134,7 @@ function buildAnnonceEmbed(config) {
   return {
     title: "⚔️ Boss Raid — Kiki le P.E.K.K.A. approche…",
     description: [
-      "Un P.E.K.K.A. répondant au doux nom de **Kiki** s’apprête à fondre sur le clan ! Rassemblez vos forces : 10 jours de combat commencent dès demain.",
+      `Un P.E.K.K.A. répondant au doux nom de **Kiki** s’apprête à fondre sur le clan ! Rassemblez vos forces : ${config.duree_jours} jours de combat commencent dès demain.`,
       "",
       `🛡️ Défense initiale : **${config.boss_stats_initiales.defense}/10** — 🔮 Résistance initiale : **${config.boss_stats_initiales.resistance}/10**.`,
       "",
@@ -782,7 +782,7 @@ export async function handleJournal(webhookUrl) {
 
 function buildReglesEmbed(config) {
   const lines = [
-    "Le clan affronte Kiki, un P.E.K.K.A. colossal, pendant 10 jours de combat. Objectif : accumuler le maximum de dégâts cumulés.",
+    `Le clan affronte Kiki, un P.E.K.K.A. colossal, pendant ${config.duree_jours} jours de combat. Objectif : accumuler le maximum de dégâts cumulés.`,
     "",
     `**Rôles (1 vote par membre et par jour, modifiable jusqu’à ${formatUtcTimeAsParis(8)}):**`,
   ];

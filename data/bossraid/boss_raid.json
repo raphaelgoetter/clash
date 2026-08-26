@@ -1,5 +1,5 @@
 {
-  "duree_jours": 10,
+  "duree_jours": 7,
   "boss_stats_initiales": { "defense": 5, "resistance": 5 },
   "roles": {
     "chevalier": { "label": "Chevalier", "emoji": "🛡️", "protection_slots": 2 },
@@ -10,21 +10,21 @@
   },
   "evenements_boss": [
     {
-      "jour": 3,
+      "jour": 2,
       "id": "frappe_lethale",
       "nom": "Frappe Léthale",
       "emoji": "⚡",
       "description": "Kiki assène un coup d’épée si puissant que le sol tremble sur tout le champ de bataille — les unités à distance non protégées par un Chevalier ne toucheront tout simplement pas leur cible aujourd’hui (0% de dégâts au lieu de 50%) !"
     },
     {
-      "jour": 6,
+      "jour": 4,
       "id": "bouclier_acier",
       "nom": "Bouclier d’Acier",
       "emoji": "🧱",
       "description": "Une plaque d’acier trempé vient renforcer l’armure de Kiki pour la journée — sa Défense grimpe à 10/10, rendant les tirs des Archères bien plus difficiles à faire passer !"
     },
     {
-      "jour": 9,
+      "jour": 6,
       "id": "miroir_mana",
       "nom": "Miroir de Mana",
       "emoji": "🪞",
