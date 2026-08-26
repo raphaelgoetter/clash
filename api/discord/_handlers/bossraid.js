@@ -43,7 +43,8 @@ export const ULTIMATE_NAMES = {
 // (bilan du jour, projection Espion, Journal) — le nom seul ne suffit pas à
 // comprendre ce qui vient de se passer.
 export const ULTIMATE_EFFECTS = {
-  archeres: "les Archères ignorent la Défense du Boss et la protection du Chevalier, 100% dégâts pour toutes",
+  archeres:
+    "les Archères ignorent la Défense du Boss et la protection du Chevalier, 100% dégâts pour toutes",
   sorcier: "les dégâts magiques de tous les Sorciers sont doublés",
   voleuse: "la Défense et la Résistance du Boss tombent à 0/10 pour demain",
 };
@@ -93,7 +94,9 @@ async function pickFighterNames(perVoteDetails) {
     .sort((a, b) => b.degats - a.degats);
   if (!attackers.length) return [];
   const picked = attackers.slice(0, 2);
-  const resolved = await Promise.all(picked.map((d) => resolveDisplayName(d.discordId, d.username)));
+  const resolved = await Promise.all(
+    picked.map((d) => resolveDisplayName(d.discordId, d.username)),
+  );
   return resolved.filter(Boolean);
 }
 
@@ -104,14 +107,18 @@ async function buildNarrative(jour, bossStats, closure) {
 
   const lines = [];
   const defenseTier = statTier(bossStats.defense);
-  if (defenseTier !== "normal") lines.push(pickFlavor(narratifs[`defense_${defenseTier}`], jour + 1));
+  if (defenseTier !== "normal")
+    lines.push(pickFlavor(narratifs[`defense_${defenseTier}`], jour + 1));
   const resistanceTier = statTier(bossStats.resistance);
-  if (resistanceTier !== "normal") lines.push(pickFlavor(narratifs[`resistance_${resistanceTier}`], jour + 2));
+  if (resistanceTier !== "normal")
+    lines.push(pickFlavor(narratifs[`resistance_${resistanceTier}`], jour + 2));
 
   const names = await pickFighterNames(closure.perVoteDetails);
   if (names.length) {
     const template = pickFlavor(narratifs.cloture_combattants, jour + 3);
-    const phrase = template.replaceAll("{noms}", names.join(" et ")).replaceAll("{premier}", names[0]);
+    const phrase = template
+      .replaceAll("{noms}", names.join(" et "))
+      .replaceAll("{premier}", names[0]);
     if (lines.length) {
       lines[lines.length - 1] += ` ${phrase}`;
     } else {
@@ -131,36 +138,59 @@ function buildAnnonceEmbed(config) {
       "",
       `🛡️ Défense initiale : **${config.boss_stats_initiales.defense}/10** — 🔮 Résistance initiale : **${config.boss_stats_initiales.resistance}/10**.`,
       "",
-      "Chevaliers, Voleuses, Sorciers, Archères, Espions — chaque rôle compte. Besoin d’un rappel des règles ? Clique sur *Règles & Rôles* ci-dessous.",
+      "Chevaliers, Voleuses, Sorciers, Archères, Espions — chaque rôle compte. Besoin d’un rappel des règles ? Clique sur *Règles* ci-dessous.",
     ].join("\n"),
     color: BOSSRAID_COLOR,
-    footer: { text: `Le combat commence demain à ${formatUtcTimeAsParis(8)} (heure de Paris).` },
+    image: { url: `${TRUST_ROYALE_URL}/images/boss/boss-start.webp` },
+    footer: {
+      text: `Le combat commence demain à ${formatUtcTimeAsParis(8)} (heure de Paris).`,
+    },
   };
 }
 
-async function buildCombatEmbed(jour, bossStats, totalDegatsCumules, closure, event, config) {
+async function buildCombatEmbed(
+  jour,
+  bossStats,
+  totalDegatsCumules,
+  closure,
+  event,
+  config,
+) {
   const narrative = await buildNarrative(jour, bossStats, closure);
   const lines = [narrative, ""];
 
   if (closure) {
-    lines.push(`**Bilan du Jour ${jour - 1}**`, `💥 Dégâts infligés : **${closure.totalDamageDuJour}**`);
+    lines.push(
+      `**Bilan du Jour ${jour - 1}**`,
+      `💥 Dégâts infligés : **${closure.totalDamageDuJour}**`,
+    );
     if (closure.allIn) {
-      lines.push(`⚡ **Ultime déclenchée : ${ULTIMATE_NAMES[closure.allIn]} !** ${ULTIMATE_EFFECTS[closure.allIn]}.`);
+      lines.push(
+        `⚡ **Ultime déclenchée : ${ULTIMATE_NAMES[closure.allIn]} !** ${ULTIMATE_EFFECTS[closure.allIn]}.`,
+      );
     } else if (closure.regen.defense > 0 || closure.regen.resistance > 0) {
       // Pas de ligne de régénération lors d'un Coup à la Gorge : Kiki tombe
       // à 0/0 ce jour-là, la régénération ne reprend qu'à partir de demain.
-      lines.push(`🔄 Kiki récupère pendant la nuit : **+${closure.regen.defense}** Défense, **+${closure.regen.resistance}** Résistance.`);
+      lines.push(
+        `🔄 Kiki récupère pendant la nuit : **+${closure.regen.defense}** Défense, **+${closure.regen.resistance}** Résistance.`,
+      );
     } else {
       // Barème 30% de chances par stat (voir CONTRIBUTING.md) : aucune
       // régénération reste le cas le plus fréquent (~49% des jours), une
       // phrase dédiée plutôt qu'un "+0 / +0" qui n'apporterait rien.
-      lines.push("😮‍💨 Kiki n’a pas eu le temps de récupérer cette nuit — trop secoué par les combats.");
+      lines.push(
+        "😮‍💨 Kiki n’a pas eu le temps de récupérer cette nuit — trop secoué par les combats.",
+      );
     }
     lines.push("");
   }
 
   if (event) {
-    lines.push(`**${event.emoji} Événement du jour : ${event.nom}**`, event.description, "");
+    lines.push(
+      `**${event.emoji} Événement du jour : ${event.nom}**`,
+      event.description,
+      "",
+    );
   }
 
   lines.push(
@@ -175,7 +205,9 @@ async function buildCombatEmbed(jour, bossStats, totalDegatsCumules, closure, ev
     description: lines.join("\n"),
     color: BOSSRAID_COLOR,
     image: { url: bossRaidImageUrl(jour) },
-    footer: { text: `Votez avant ${formatUtcTimeAsParis(8)} (heure de Paris) demain pour orienter la journée. Vote modifiable jusqu’à la clôture.` },
+    footer: {
+      text: `Votez avant ${formatUtcTimeAsParis(8)} (heure de Paris) demain pour orienter la journée. Vote modifiable jusqu’à la clôture.`,
+    },
   };
 }
 
@@ -183,8 +215,20 @@ function buildComponents(jour, phase, voteCounts, config) {
   const utilityRow = {
     type: 1,
     components: [
-      { type: 2, style: 2, label: "Règles", emoji: { name: "📖" }, custom_id: "bossraid_regles" },
-      { type: 2, style: 2, label: "Journal", emoji: { name: "📜" }, custom_id: "bossraid_journal" },
+      {
+        type: 2,
+        style: 3,
+        label: "Règles",
+        emoji: { name: "📖" },
+        custom_id: "bossraid_regles",
+      },
+      {
+        type: 2,
+        style: 2,
+        label: "Journal",
+        emoji: { name: "📜" },
+        custom_id: "bossraid_journal",
+      },
     ],
   };
 
@@ -197,7 +241,10 @@ function buildComponents(jour, phase, voteCounts, config) {
       style: 2,
       label: `${role.label} (${voteCounts[roleId] || 0})`.slice(0, 80),
       emoji: { name: role.emoji },
-      custom_id: roleId === "espion" ? `bossraid_espion:${jour}` : `bossraid_vote:${jour}:${roleId}`,
+      custom_id:
+        roleId === "espion"
+          ? `bossraid_espion:${jour}`
+          : `bossraid_vote:${jour}:${roleId}`,
     })),
   };
 
@@ -217,15 +264,24 @@ function formatMancheLine(record, isCurrent, isBest) {
 
 function buildManchesSection(manches, currentManche) {
   if (!manches.length) return [];
-  const best = manches.reduce((a, b) => (b.totalDegatsCumules > a.totalDegatsCumules ? b : a));
+  const best = manches.reduce((a, b) =>
+    b.totalDegatsCumules > a.totalDegatsCumules ? b : a,
+  );
   return [
     "",
     "**📊 Manches précédentes**",
-    ...manches.map((m) => formatMancheLine(m, m.manche === currentManche, m.manche === best.manche)),
+    ...manches.map((m) =>
+      formatMancheLine(m, m.manche === currentManche, m.manche === best.manche),
+    ),
   ];
 }
 
-function buildOutcomeEmbed(totalDegatsCumules, config, manches = [], currentManche = null) {
+function buildOutcomeEmbed(
+  totalDegatsCumules,
+  config,
+  manches = [],
+  currentManche = null,
+) {
   return {
     title: "🏆 Boss Raid terminé !",
     description: [
@@ -243,7 +299,15 @@ function buildOutcomeEmbed(totalDegatsCumules, config, manches = [], currentManc
 
 // ── Publication quotidienne (appelée uniquement par scripts/postBossRaid.js) ──
 
-export async function postBossRaid(channelId, { dryRun = false, noPing = false, isPublic = false, requireActiveState = false } = {}) {
+export async function postBossRaid(
+  channelId,
+  {
+    dryRun = false,
+    noPing = false,
+    isPublic = false,
+    requireActiveState = false,
+  } = {},
+) {
   const config = await loadBossRaidConfig();
   const state = await readState();
 
@@ -273,7 +337,9 @@ export async function postBossRaid(channelId, { dryRun = false, noPing = false, 
     const components = buildComponents(null, "annonce", {}, config);
 
     if (dryRun) {
-      const pingRoleId = !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
+      const pingRoleId = !noPing
+        ? await getRoleIdByName(MINI_JEUX_ROLE_NAME)
+        : null;
       return { dryRun: true, phase: "annonce", embed, components, pingRoleId };
     }
 
@@ -293,10 +359,18 @@ export async function postBossRaid(channelId, { dryRun = false, noPing = false, 
   if (state.phase === "annonce") {
     const jour = 1;
     const event = activeEventForDay(jour, config.evenements_boss);
-    const embed = await buildCombatEmbed(jour, state.bossStats, state.totalDegatsCumules, null, event, config);
+    const embed = await buildCombatEmbed(
+      jour,
+      state.bossStats,
+      state.totalDegatsCumules,
+      null,
+      event,
+      config,
+    );
     const components = buildComponents(jour, "combat", {}, config);
 
-    if (dryRun) return { dryRun: true, phase: "combat", jour, embed, components, event };
+    if (dryRun)
+      return { dryRun: true, phase: "combat", jour, embed, components, event };
 
     return publishAndWriteState(channelId, state, {
       phase: "combat",
@@ -334,7 +408,12 @@ export async function postBossRaid(channelId, { dryRun = false, noPing = false, 
       });
     }
     const manches = await listManches({ limit: 10 });
-    const embed = buildOutcomeEmbed(closure.totalDegatsApres, config, manches, currentManche);
+    const embed = buildOutcomeEmbed(
+      closure.totalDegatsApres,
+      config,
+      manches,
+      currentManche,
+    );
     if (dryRun) return { dryRun: true, final: true, embed, closure };
     const result = await publishAndWriteState(channelId, state, {
       phase: "combat",
@@ -351,10 +430,25 @@ export async function postBossRaid(channelId, { dryRun = false, noPing = false, 
   }
 
   const event = activeEventForDay(jourSuivant, config.evenements_boss);
-  const embed = await buildCombatEmbed(jourSuivant, closure.bossStatsApres, closure.totalDegatsApres, closure, event, config);
+  const embed = await buildCombatEmbed(
+    jourSuivant,
+    closure.bossStatsApres,
+    closure.totalDegatsApres,
+    closure,
+    event,
+    config,
+  );
   const components = buildComponents(jourSuivant, "combat", {}, config);
 
-  if (dryRun) return { dryRun: true, jour: jourSuivant, embed, components, event, closure };
+  if (dryRun)
+    return {
+      dryRun: true,
+      jour: jourSuivant,
+      embed,
+      components,
+      event,
+      closure,
+    };
 
   return publishAndWriteState(channelId, state, {
     phase: "combat",
@@ -373,7 +467,17 @@ export async function postBossRaid(channelId, { dryRun = false, noPing = false, 
 async function publishAndWriteState(
   channelId,
   previousState,
-  { phase, jour, bossStats, totalDegatsCumules, embed, components, noPing, estAnnonce, termine = false },
+  {
+    phase,
+    jour,
+    bossStats,
+    totalDegatsCumules,
+    embed,
+    components,
+    noPing,
+    estAnnonce,
+    termine = false,
+  },
 ) {
   const token = process.env.DISCORD_TOKEN;
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
@@ -390,19 +494,35 @@ async function publishAndWriteState(
         );
       }
     } catch (err) {
-      console.warn("[BossRaid] Erreur réseau à la suppression du message de la veille:", err.message);
+      console.warn(
+        "[BossRaid] Erreur réseau à la suppression du message de la veille:",
+        err.message,
+      );
     }
   }
 
   // Ping réservé au jour d'annonce (lancement) et à la fin de manche —
   // jamais pour les jours intermédiaires.
-  const roleId = (estAnnonce || termine) && !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
+  const roleId =
+    (estAnnonce || termine) && !noPing
+      ? await getRoleIdByName(MINI_JEUX_ROLE_NAME)
+      : null;
 
-  const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
-    method: "POST",
-    headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ embeds: [embed], components, ...buildRolePingFields(roleId) }),
-  });
+  const res = await fetch(
+    `https://discord.com/api/v10/channels/${channelId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bot ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        embeds: [embed],
+        components,
+        ...buildRolePingFields(roleId),
+      }),
+    },
+  );
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
     throw new Error(`Erreur envoi salon Discord (${res.status}): ${errText}`);
@@ -458,8 +578,20 @@ async function postFollowup(webhookUrl, payload) {
 async function renderCombatPayload(state, config) {
   const voteCounts = await tallyVotes(state.jour);
   const event = activeEventForDay(state.jour, config.evenements_boss);
-  const embed = await buildCombatEmbed(state.jour, state.bossStats, state.totalDegatsCumules, null, event, config);
-  const components = buildComponents(state.jour, state.phase, voteCounts, config);
+  const embed = await buildCombatEmbed(
+    state.jour,
+    state.bossStats,
+    state.totalDegatsCumules,
+    null,
+    event,
+    config,
+  );
+  const components = buildComponents(
+    state.jour,
+    state.phase,
+    voteCounts,
+    config,
+  );
   return { embed, components };
 }
 
@@ -468,12 +600,23 @@ async function renderCombatPayload(state, config) {
 // écrasable + réaffichage du message public en place (type 6, géré par le
 // routeur), aucun éphémère ici.
 
-export async function handleVoteButton(webhookUrl, jour, roleId, discordId, username) {
+export async function handleVoteButton(
+  webhookUrl,
+  jour,
+  roleId,
+  discordId,
+  username,
+) {
   try {
     const state = await readState();
     const config = await loadBossRaidConfig();
 
-    if (!state || state.termine || state.phase !== "combat" || String(state.jour) !== String(jour)) {
+    if (
+      !state ||
+      state.termine ||
+      state.phase !== "combat" ||
+      String(state.jour) !== String(jour)
+    ) {
       // Jour changé entre le clic et le traitement : on réaffiche l'état
       // courant sans enregistrer un vote périmé.
       if (state && state.phase === "combat" && !state.termine) {
@@ -487,7 +630,8 @@ export async function handleVoteButton(webhookUrl, jour, roleId, discordId, user
       const dernierRole = await readDernierRole(discordId);
       if (!isChevalierVoteAllowed(dernierRole)) {
         await postFollowup(webhookUrl, {
-          content: "🛡️ Tu as protégé le camp hier — impossible de voter Chevalier 2 jours de suite, choisis un autre rôle aujourd’hui !",
+          content:
+            "🛡️ Tu as protégé le camp hier — impossible de voter Chevalier 2 jours de suite, choisis un autre rôle aujourd’hui !",
         });
         return;
       }
@@ -508,12 +652,24 @@ export async function handleVoteButton(webhookUrl, jour, roleId, discordId, user
 // dégâts du jour EN COURS (previewCloture, écriture nulle) + révélation de
 // l'événement prévu pour le LENDEMAIN, exclusivité de ce bouton.
 
-export async function handleEspion(webhookUrl, jour, discordId, username, botToken) {
+export async function handleEspion(
+  webhookUrl,
+  jour,
+  discordId,
+  username,
+  botToken,
+) {
   try {
     const state = await readState();
-    if (!state || state.termine || state.phase !== "combat" || String(state.jour) !== String(jour)) {
+    if (
+      !state ||
+      state.termine ||
+      state.phase !== "combat" ||
+      String(state.jour) !== String(jour)
+    ) {
       await patchOriginal(webhookUrl, {
-        content: "Le vote du jour a déjà été clôturé, la journée a changé — regarde le nouveau message !",
+        content:
+          "Le vote du jour a déjà été clôturé, la journée a changé — regarde le nouveau message !",
         embeds: [],
         components: [],
       });
@@ -524,14 +680,19 @@ export async function handleEspion(webhookUrl, jour, discordId, username, botTok
     await recordVote(jour, discordId, "espion", username);
 
     const projection = await previewCloture(Number(jour), config);
-    const lendemain = activeEventForDay(Number(jour) + 1, config.evenements_boss);
+    const lendemain = activeEventForDay(
+      Number(jour) + 1,
+      config.evenements_boss,
+    );
 
     const lines = [
       `🔍 **Projection actuelle du Jour ${jour}** (basée sur les votes en cours, sujette à changement jusqu’à ${formatUtcTimeAsParis(8)}, heure de Paris) :`,
       `💥 Dégâts projetés : **${projection.totalDamageDuJour}**`,
     ];
     if (projection.allIn) {
-      lines.push(`⚡ Ultime en cours de déclenchement : **${ULTIMATE_NAMES[projection.allIn]}** — ${ULTIMATE_EFFECTS[projection.allIn]}.`);
+      lines.push(
+        `⚡ Ultime en cours de déclenchement : **${ULTIMATE_NAMES[projection.allIn]}** — ${ULTIMATE_EFFECTS[projection.allIn]}.`,
+      );
     }
     lines.push(
       "",
@@ -540,17 +701,27 @@ export async function handleEspion(webhookUrl, jour, discordId, username, botTok
         : "Aucun événement spécial prévu pour demain.",
     );
 
-    await patchOriginal(webhookUrl, { content: lines.join("\n"), embeds: [], components: [] });
+    await patchOriginal(webhookUrl, {
+      content: lines.join("\n"),
+      embeds: [],
+      components: [],
+    });
 
     // Le vote Espion fait aussi avancer le compteur "Espion (n)" du message
     // public — rafraîchi séparément en PATCH direct (bot token), même
     // découplage que Tamagotchi/Robinson pour un vote confirmé en éphémère.
     const { embed, components } = await renderCombatPayload(state, config);
-    await fetch(`https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`, {
-      method: "PATCH",
-      headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ embeds: [embed], components }),
-    });
+    await fetch(
+      `https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bot ${botToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ embeds: [embed], components }),
+      },
+    );
   } catch (err) {
     console.error("[BossRaid] Échec Espion:", err.message);
   }
@@ -582,10 +753,18 @@ export async function handleJournal(webhookUrl) {
       `🛡️ Défense actuelle : ${state.bossStats.defense}/10 — 🔮 Résistance actuelle : ${state.bossStats.resistance}/10`,
     ];
     if (entries.length > 0) {
-      lines.push("", "**Jours précédents :**", ...entries.map(formatHistoriqueLine));
+      lines.push(
+        "",
+        "**Jours précédents :**",
+        ...entries.map(formatHistoriqueLine),
+      );
     }
 
-    const embed = { title: "📜 Journal du Raid", description: lines.join("\n"), color: BOSSRAID_COLOR };
+    const embed = {
+      title: "📜 Journal du Raid",
+      description: lines.join("\n"),
+      color: BOSSRAID_COLOR,
+    };
     await patchOriginal(webhookUrl, { embeds: [embed], components: [] });
   } catch (err) {
     console.error("[BossRaid] Échec Journal:", err.message);
@@ -632,7 +811,7 @@ function buildReglesEmbed(config) {
 
   lines.push(
     "",
-    "**Ultimes d’équipe (\"All-In\")** : si un rôle d’attaque réunit plus de 50% des votes du jour, toute l’équipe déclenche son Ultime pour la journée :",
+    '**Ultimes d’équipe ("All-In")** : si un rôle d’attaque réunit plus de 50% des votes du jour, toute l’équipe déclenche son Ultime pour la journée :',
     `**${ULTIMATE_NAMES.archeres}** — ${ULTIMATE_EFFECTS.archeres}.`,
     `**${ULTIMATE_NAMES.sorcier}** — ${ULTIMATE_EFFECTS.sorcier}.`,
     `**${ULTIMATE_NAMES.voleuse}** — ${ULTIMATE_EFFECTS.voleuse}.`,
@@ -642,7 +821,11 @@ function buildReglesEmbed(config) {
     "Le Boss réserve aussi quelques surprises en cours de route…",
   );
 
-  return { title: "📖 Règles & Rôles — Boss Raid", description: lines.join("\n"), color: BOSSRAID_COLOR };
+  return {
+    title: "📖 Règles & Rôles — Boss Raid",
+    description: lines.join("\n"),
+    color: BOSSRAID_COLOR,
+  };
 }
 
 export async function handleRegles(webhookUrl) {
