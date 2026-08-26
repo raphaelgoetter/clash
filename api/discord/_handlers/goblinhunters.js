@@ -467,7 +467,7 @@ function buildReglesEmbed(config) {
         `${config.roles[roleKey].emoji} **${config.roles[roleKey].label}** (camp ${config.camps[config.roles[roleKey].camp].label}) — ${roleDescription(roleKey, config)}`,
     ),
     "",
-    `Chaque joueur a **${config.combat.pv_base} PV**. Maximum **1 mort par combat et par jour**.`,
+    `Villageois : **${config.combat.pv_base} PV**. Gobelins : **${config.combat.pv_base + (config.combat.gobelin_pv_bonus ?? 0)} PV** (plus résistants). Maximum **1 mort par combat et par jour**.`,
     `Aucune élimination possible le Jour 1 (vote et combat désactivés).`,
     `🚫 Impossible de rester au même lieu 2 jours de suite.`,
     `📬 Bouton **Messagerie** : 1 message anonyme par jour, les 3 derniers restent affichés.`,
@@ -741,6 +741,7 @@ export async function postGoblinHunters(
       const assignments = assignCampsAndRoles(playerIds, minorityCount);
       const joueursPreview = buildInitialRoster(inscriptions, assignments, {
         pv_base: config.combat.pv_base,
+        gobelinPvBonus: config.combat.gobelin_pv_bonus,
         bucheronOverride: { pv: config.roles.bucheron.pv },
       });
       const embed = await buildJourEmbed(1, joueursPreview, config, null);

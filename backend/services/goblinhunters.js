@@ -245,6 +245,13 @@ export function assignCampsAndRoles(
   return [...assignments.values()];
 }
 
+// Les Gobelins ont `gobelinPvBonus` PV de plus que les Villageois (avantage
+// décidé avec l'utilisateur après simulation — compense leur infériorité
+// numérique une fois la minorité relevée et la durée réduite à 7 jours,
+// voir mémoire projet). S'applique à TOUS les Gobelins, quel que soit leur
+// rôle (Infiltré/Explosif compris, aucun des deux n'a de PV dédié) — jamais
+// au Bûcheron dont le `bucheronOverride.pv` reste prioritaire (rôle Villageois
+// uniquement, jamais concerné par ce bonus).
 export function buildInitialRoster(inscriptions, assignments, combatConfig) {
   const usernameById = new Map(
     inscriptions.map((i) => [i.discordId, i.username]),
@@ -252,13 +259,17 @@ export function buildInitialRoster(inscriptions, assignments, combatConfig) {
   return assignments.map(({ discordId, camp, role }) => {
     const roleConfig =
       role === "bucheron" ? combatConfig.bucheronOverride : null;
+    const basePv =
+      combatConfig.pv_base +
+      (camp === "gobelin" ? (combatConfig.gobelinPvBonus ?? 0) : 0);
+    const pv = roleConfig?.pv ?? basePv;
     return {
       discordId,
       username: usernameById.get(discordId) || discordId,
       camp,
       role,
-      pv: roleConfig?.pv ?? combatConfig.pv_base,
-      pvMax: roleConfig?.pv ?? combatConfig.pv_base,
+      pv,
+      pvMax: pv,
       position: "chateau",
       alive: true,
       campReveleAt: null,
@@ -1141,6 +1152,7 @@ export async function launchGame(channelId, config) {
   const assignments = assignCampsAndRoles(playerIds, minorityCount);
   const joueurs = buildInitialRoster(inscriptions, assignments, {
     pv_base: config.combat.pv_base,
+    gobelinPvBonus: config.combat.gobelin_pv_bonus,
     bucheronOverride: { pv: config.roles.bucheron.pv },
   });
 

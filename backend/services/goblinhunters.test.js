@@ -22,6 +22,7 @@ import {
   knownEnqueteTargets,
   computeTourDeGuetOccupants,
   isTourDeGuetOvercrowded,
+  buildInitialRoster,
 } from "./goblinhunters.js";
 
 const CONFIG = {
@@ -88,6 +89,39 @@ async function main() {
     assert.strictEqual(assignments.filter((a) => a.role === "eclaireur").length, 1);
     assert.strictEqual(assignments.filter((a) => a.role === "bucheron").length, 1);
     assert.strictEqual(assignments.filter((a) => a.role === "guet_apens").length, 1);
+  }
+
+  // ── buildInitialRoster : bonus de PV Gobelin (avantage décidé avec
+  // l'utilisateur pour compenser leur infériorité numérique) ──
+  {
+    const inscriptions = [
+      { discordId: "v1", username: "v1" },
+      { discordId: "g1", username: "g1" },
+      { discordId: "b1", username: "b1" },
+    ];
+    const assignments = [
+      { discordId: "v1", camp: "chasseur", role: null },
+      { discordId: "g1", camp: "gobelin", role: null },
+      { discordId: "b1", camp: "chasseur", role: "bucheron" },
+    ];
+    const roster = buildInitialRoster(inscriptions, assignments, {
+      pv_base: 2,
+      gobelinPvBonus: 1,
+      bucheronOverride: { pv: 1 },
+    });
+    const byId = Object.fromEntries(roster.map((j) => [j.discordId, j]));
+    assert.strictEqual(byId.v1.pv, 2); // Villageois de base -> pv_base tel quel
+    assert.strictEqual(byId.g1.pv, 3); // Gobelin -> pv_base + bonus
+    assert.strictEqual(byId.b1.pv, 1); // Bûcheron -> son override prime, jamais le bonus Gobelin (camp chasseur de toute façon)
+    assert.strictEqual(byId.g1.pvMax, byId.g1.pv);
+  }
+  {
+    // Sans gobelinPvBonus (undefined/0) -> comportement identique à avant,
+    // aucune régression pour un appelant qui ne le passerait pas.
+    const inscriptions = [{ discordId: "g1", username: "g1" }];
+    const assignments = [{ discordId: "g1", camp: "gobelin", role: null }];
+    const roster = buildInitialRoster(inscriptions, assignments, { pv_base: 3 });
+    assert.strictEqual(roster[0].pv, 3);
   }
 
   // ── computeVoteTally / resolveVoteElimination (égalité -> personne) ──
