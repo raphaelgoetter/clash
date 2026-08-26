@@ -141,7 +141,10 @@ function buildAnnonceEmbed(config) {
       "Chevaliers, Voleuses, Sorciers, Archères, Espions — chaque rôle compte. Besoin d’un rappel des règles ? Clique sur *Règles* ci-dessous.",
     ].join("\n"),
     color: BOSSRAID_COLOR,
-    image: { url: `${TRUST_ROYALE_URL}/images/boss/boss-start.webp` },
+    // ?v=2 : casse le cache Discord (qui met en cache par URL l'échec d'un
+    // premier fetch raté juste après déploiement) — changer ce numéro si
+    // l'image ne réapparaît toujours pas après un nouveau post.
+    image: { url: `${TRUST_ROYALE_URL}/images/boss/boss-start.webp?v=2` },
     footer: {
       text: `Le combat commence demain à ${formatUtcTimeAsParis(8)} (heure de Paris).`,
     },
