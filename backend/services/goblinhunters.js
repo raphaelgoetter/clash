@@ -410,6 +410,33 @@ export function computeTavernProtection(occupants, seuil) {
   return new Set(occupants);
 }
 
+// Même idée que la Taverne, appliquée à la Tour de Guet : sur demande
+// explicite après le constat que le Jour 1 pousse mécaniquement TOUT le monde
+// vers la Tour (seul lieu avec une vraie valeur ce jour-là, voir le filet de
+// sécurité de computeInvestigations — une enquête sans cible éligible se
+// rabat toujours sur un tirage au hasard), ce qui viderait l'Arène/la
+// Clairière de tout intérêt dès le Jour 2. Si plus de la moitié des joueurs
+// vivants s'y trouvent le même jour (ratio configurable,
+// `tour_de_guet_seuil_ratio`), la Tour est trop encombrée pour observer quoi
+// que ce soit — aucune enquête n'aboutit ce jour-là, pour tout le monde.
+export function computeTourDeGuetOccupants(actionsRaw) {
+  const occupants = new Set();
+  for (const [discordId, action] of Object.entries(actionsRaw)) {
+    if (
+      action?.primary?.lieu === "tour_de_guet" ||
+      action?.secondary?.lieu === "tour_de_guet"
+    ) {
+      occupants.add(discordId);
+    }
+  }
+  return occupants;
+}
+
+export function isTourDeGuetOvercrowded(occupantsCount, aliveCount, ratio = 0.5) {
+  if (aliveCount === 0 || occupantsCount === 0) return false;
+  return occupantsCount > aliveCount * ratio;
+}
+
 // Ciblage restreint : la cible d'un combat/enquête doit être positionnée au
 // lieu choisi sur le DERNIER PLATEAU CONNU (joueursAvant, figé depuis la
 // clôture précédente) — pas de ciblage libre. Le select menu Discord ne
@@ -462,9 +489,19 @@ function fallbackActorsFor(actionsRaw, lieu, joueursAvant, resolvedActorIds) {
   return actors;
 }
 
-function pickRandomTarget(joueursAvant, excludeId, rng) {
+// `extraExcludeIds` (optionnel) : utilisé uniquement par le filet de sécurité
+// de l'enquête (voir computeInvestigations) pour ne jamais retirer au hasard
+// une cible dont le camp est déjà connu de cet enquêteur — sans ça, le tirage
+// aveugle pouvait révéler 2 fois le même camp au même joueur (repéré en test
+// réel, gaspille l'action pour une info déjà en poche). Jamais utilisé pour
+// le combat (computeAttacksFromActions) : réattaquer quelqu'un déjà croisé
+// n'a pas le même problème, une attaque ne révèle jamais de camp.
+function pickRandomTarget(joueursAvant, excludeId, rng, extraExcludeIds = null) {
   const candidates = joueursAvant.filter(
-    (j) => j.alive && j.discordId !== excludeId,
+    (j) =>
+      j.alive &&
+      j.discordId !== excludeId &&
+      !(extraExcludeIds && extraExcludeIds.has(j.discordId)),
   );
   return candidates.length ? shuffle(candidates, rng)[0] : null;
 }
@@ -579,37 +616,65 @@ export function resolveCombat(pvBefore, damagePerTarget, rng = Math.random) {
 
 // Enquête (Tour de Guet) : révèle le camp de la cible, sauf sur l'Infiltré
 // qui renvoie toujours "chasseur" (faux positif classique du genre).
+// `knownTargetsByInvestigator` (optionnel, {discordId: Set<cibleId>}) :
+// camps déjà révélés à CET enquêteur lors d'enquêtes précédentes (dérivé de
+// son carnet d'indices, voir knownEnqueteTargets()) — exclu à la fois du
+// résultat déliberé (défense en profondeur, le select menu Discord filtre
+// déjà ces cibles côté handler) et du tirage du filet de sécurité (là où le
+// doublon était réellement observé : le tirage aveugle pouvait retomber sur
+// une cible déjà connue, gaspillant l'action pour une info déjà en poche).
 export function computeInvestigations(
   actionsRaw,
   joueursAvant,
   rng = Math.random,
+  knownTargetsByInvestigator = {},
 ) {
   const joueurById = new Map(joueursAvant.map((j) => [j.discordId, j]));
   const attacks = resolveEligibleAttacks(actionsRaw, joueursAvant, [
     "tour_de_guet",
   ]);
-  const results = attacks.map(({ attackerId, targetId }) => {
+  const results = [];
+  const resolvedIds = new Set();
+  for (const { attackerId, targetId } of attacks) {
+    if (knownTargetsByInvestigator[attackerId]?.has(targetId)) continue;
     const cible = joueurById.get(targetId);
     const campReporte = cible.role === "infiltre" ? "chasseur" : cible.camp;
-    return { investigatorId: attackerId, cibleId: targetId, campReporte };
-  });
+    results.push({ investigatorId: attackerId, cibleId: targetId, campReporte });
+    resolvedIds.add(attackerId);
+  }
 
   // Même filet de sécurité que le combat (voir fallbackActorsFor) : une
-  // enquête sans cible éligible se rabat sur un joueur vivant au hasard.
-  const resolvedIds = new Set(results.map((r) => r.investigatorId));
+  // enquête sans cible éligible (ou dont la seule cible éligible était déjà
+  // connue, ci-dessus) se rabat sur un joueur vivant au hasard — jamais un
+  // déjà connu non plus.
   for (const investigatorId of fallbackActorsFor(
     actionsRaw,
     "tour_de_guet",
     joueursAvant,
     resolvedIds,
   )) {
-    const target = pickRandomTarget(joueursAvant, investigatorId, rng);
+    const target = pickRandomTarget(
+      joueursAvant,
+      investigatorId,
+      rng,
+      knownTargetsByInvestigator[investigatorId],
+    );
     if (!target) continue;
     const campReporte = target.role === "infiltre" ? "chasseur" : target.camp;
     results.push({ investigatorId, cibleId: target.discordId, campReporte });
   }
 
   return results;
+}
+
+// Camps déjà révélés à un joueur par ses enquêtes précédentes — dérivé de son
+// carnet d'indices (`readPlayerIndices()`), réutilisé à la fois côté handler
+// (filtrer le select menu de la Tour de Guet) et côté service (exclure du
+// filet de sécurité, voir computeInvestigations ci-dessus).
+export function knownEnqueteTargets(indices) {
+  return new Set(
+    indices.filter((e) => e.type === "enquete").map((e) => e.cibleId),
+  );
 }
 
 // Indices personnels accumulés par joueur sur toute la partie (carnet privé,
@@ -823,6 +888,7 @@ export function computeCloture({
   joueursAvant,
   config,
   rng = Math.random,
+  knownTargetsByInvestigator = {},
 }) {
   const voteTally = computeVoteTally(actionsRaw);
   const eliminationsParVote =
@@ -877,11 +943,20 @@ export function computeCloture({
       ? resolveGuetApensReveal({ deathIdCombat, attacks, joueursAvant })
       : null;
 
-  const investigations = computeInvestigations(
-    actionsRaw,
-    joueursApresVote,
-    rng,
+  const tourDeGuetOccupants = computeTourDeGuetOccupants(actionsRaw);
+  const tourDeGuetSurpeuplee = isTourDeGuetOvercrowded(
+    tourDeGuetOccupants.size,
+    joueursApresVote.filter((j) => j.alive).length,
+    config.tour_de_guet_seuil_ratio,
   );
+  const investigations = tourDeGuetSurpeuplee
+    ? []
+    : computeInvestigations(
+        actionsRaw,
+        joueursApresVote,
+        rng,
+        knownTargetsByInvestigator,
+      );
   const newPositions = computeNewPositions(actionsRaw, joueursApresVote);
 
   const joueursApres = joueursApresVote.map((j) => {
@@ -922,6 +997,7 @@ export function computeCloture({
     voteTally,
     explosifRetaliation,
     guetApensReveal,
+    tourDeGuetSurpeuplee,
     victory,
   };
 }
@@ -977,17 +1053,35 @@ export async function listRecentMessages() {
 
 // ── Wrappers I/O — appelés uniquement par postGoblinHunters()/cron ──
 
+// Camps déjà connus de chaque joueur vivant (via ses enquêtes précédentes) —
+// lu depuis son carnet d'indices, pour ne jamais laisser le filet de sécurité
+// de la Tour de Guet révéler 2 fois le même camp au même enquêteur (voir
+// computeInvestigations()/knownEnqueteTargets()).
+async function loadKnownTargetsByInvestigator(joueurs) {
+  const vivants = joueurs.filter((j) => j.alive);
+  const indicesByPlayer = await Promise.all(
+    vivants.map((j) => readPlayerIndices(j.discordId)),
+  );
+  return Object.fromEntries(
+    vivants.map((j, i) => [j.discordId, knownEnqueteTargets(indicesByPlayer[i])]),
+  );
+}
+
 async function loadCloture(jour, config) {
   const [actionsRaw, state] = await Promise.all([
     readActions(jour),
     readState(),
   ]);
+  const knownTargetsByInvestigator = await loadKnownTargetsByInvestigator(
+    state.joueurs,
+  );
   return computeCloture({
     jour,
     actionsRaw,
     joueursAvant: state.joueurs,
     config,
     rng: Math.random,
+    knownTargetsByInvestigator,
   });
 }
 
@@ -1009,6 +1103,7 @@ export async function closeDayAndAdvance(jour, config) {
     voteTally: result.voteTally,
     explosifRetaliation: result.explosifRetaliation,
     guetApensReveal: result.guetApensReveal,
+    tourDeGuetSurpeuplee: result.tourDeGuetSurpeuplee,
     victory: result.victory,
     resolvedAt: new Date().toISOString(),
   });

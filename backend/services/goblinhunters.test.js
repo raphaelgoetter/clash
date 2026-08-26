@@ -19,6 +19,9 @@ import {
   computeClairiereReveals,
   resolveExplosifRetaliation,
   resolveGuetApensReveal,
+  knownEnqueteTargets,
+  computeTourDeGuetOccupants,
+  isTourDeGuetOvercrowded,
 } from "./goblinhunters.js";
 
 const CONFIG = {
@@ -207,6 +210,102 @@ async function main() {
     const [investigation] = computeInvestigations(actions, joueursAvant, rng);
     assert.strictEqual(investigation.cibleId, "v1"); // seul candidat vivant hors soi-même
     assert.strictEqual(investigation.campReporte, "gobelin");
+  }
+
+  // ── Tour de Guet surpeuplée : plus de la moitié des vivants -> aucune
+  // enquête n'aboutit ce jour-là (même esprit que la protection Taverne) ──
+  {
+    assert.strictEqual(isTourDeGuetOvercrowded(0, 10), false); // personne -> jamais surpeuplée
+    assert.strictEqual(isTourDeGuetOvercrowded(5, 10), false); // exactement la moitié -> pas "plus de"
+    assert.strictEqual(isTourDeGuetOvercrowded(6, 10), true); // strictement plus de la moitié
+    assert.strictEqual(isTourDeGuetOvercrowded(3, 5), true); // 3/5 = 60% > 50%
+    assert.strictEqual(isTourDeGuetOvercrowded(0, 0), false); // aucun vivant -> pas de crash
+    assert.strictEqual(isTourDeGuetOvercrowded(3, 10, 0.2), true); // ratio personnalisé (seuil = 2)
+    assert.strictEqual(isTourDeGuetOvercrowded(2, 10, 0.2), false); // pile au seuil -> pas "plus de"
+  }
+  {
+    const actionsRaw = {
+      a: { primary: { lieu: "tour_de_guet", cibleId: null } },
+      b: { primary: { lieu: "tour_de_guet", cibleId: null } },
+      c: { primary: { lieu: "chateau", cibleId: null } },
+    };
+    assert.deepStrictEqual(computeTourDeGuetOccupants(actionsRaw), new Set(["a", "b"]));
+  }
+  {
+    // computeCloture bout en bout : 5 enquêteurs sur 8 vivants (>50%) ->
+    // aucune investigation renvoyée, même via le filet de sécurité.
+    const joueursAvant = Array.from({ length: 8 }, (_, i) => joueur(`p${i}`));
+    const actionsRaw = Object.fromEntries(
+      Array.from({ length: 5 }, (_, i) => [`p${i}`, { primary: { lieu: "tour_de_guet", cibleId: null } }]),
+    );
+    const result = computeCloture({ jour: 2, actionsRaw, joueursAvant, config: CONFIG });
+    assert.deepStrictEqual(result.investigations, []);
+    assert.strictEqual(result.tourDeGuetSurpeuplee, true);
+  }
+  {
+    // Sous le seuil (4/8 = exactement la moitié, pas "plus de") -> les
+    // enquêtes aboutissent normalement.
+    const joueursAvant = Array.from({ length: 8 }, (_, i) => joueur(`p${i}`));
+    const actionsRaw = Object.fromEntries(
+      Array.from({ length: 4 }, (_, i) => [`p${i}`, { primary: { lieu: "tour_de_guet", cibleId: null } }]),
+    );
+    const result = computeCloture({ jour: 2, actionsRaw, joueursAvant, config: CONFIG });
+    assert.strictEqual(result.tourDeGuetSurpeuplee, false);
+    assert.strictEqual(result.investigations.length, 4);
+  }
+
+  // ── knownEnqueteTargets : dérive les cibles déjà connues du carnet d'indices ──
+  {
+    const indices = [
+      { type: "enquete", cibleId: "a", campReporte: "gobelin" },
+      { type: "combat", cibleId: "b", campReporte: null }, // pas une enquête -> ignoré
+      { type: "enquete", cibleId: "c", campReporte: "chasseur" },
+    ];
+    assert.deepStrictEqual(knownEnqueteTargets(indices), new Set(["a", "c"]));
+    assert.deepStrictEqual(knownEnqueteTargets([]), new Set());
+  }
+
+  // ── Filet de sécurité (Tour de Guet) : ne doit JAMAIS retomber sur une
+  // cible dont le camp est déjà connu de cet enquêteur (bug repéré en test
+  // réel — même cible révélée 2 fois de suite) ──
+  {
+    const joueursAvant = [
+      joueur("enqueteur"),
+      joueur("deja_connu", { camp: "gobelin" }),
+      joueur("inconnu", { camp: "chasseur" }),
+    ];
+    const actions = { enqueteur: { primary: { lieu: "tour_de_guet", cibleId: null } } };
+    const knownTargetsByInvestigator = { enqueteur: new Set(["deja_connu"]) };
+    // rng choisirait "deja_connu" en 1er sans l'exclusion (ordre de shuffle
+    // déterministe avec ce rng constant) -> vérifie qu'il est bien sauté.
+    for (const seed of [0.1, 0.5, 0.9]) {
+      const [investigation] = computeInvestigations(
+        actions,
+        joueursAvant,
+        rngSequence([seed]),
+        knownTargetsByInvestigator,
+      );
+      assert.strictEqual(investigation.cibleId, "inconnu");
+    }
+  }
+
+  // ── Résultat délibéré (cible choisie sur le plateau) déjà connu -> écarté,
+  // filet de sécurité prend le relais sur une cible encore inconnue ──
+  {
+    const joueursAvant = [
+      joueur("enqueteur"),
+      joueur("deja_connu", { camp: "gobelin", position: "tour_de_guet" }),
+      joueur("inconnu", { camp: "chasseur" }), // pas au bon lieu mais servira de repli
+    ];
+    const actions = { enqueteur: { primary: { lieu: "tour_de_guet", cibleId: "deja_connu" } } };
+    const knownTargetsByInvestigator = { enqueteur: new Set(["deja_connu"]) };
+    const [investigation] = computeInvestigations(
+      actions,
+      joueursAvant,
+      rngSequence([0.1]),
+      knownTargetsByInvestigator,
+    );
+    assert.strictEqual(investigation.cibleId, "inconnu"); // jamais "deja_connu"
   }
 
   // ── computeIndicesForDay : carnet privé (enquête = camp, combat = lieu seul) ──

@@ -16,6 +16,7 @@
   },
   "combat": { "pv_base": 3, "degats_base": 1 },
   "taverne_seuil_protection": 3,
+  "tour_de_guet_seuil_ratio": 0.5,
   "vote_quorum_min": 2,
   "camps": {
     "chasseur": {

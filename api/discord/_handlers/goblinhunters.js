@@ -27,6 +27,7 @@ import {
   assignCampsAndRoles,
   buildInitialRoster,
   readPlayerIndices,
+  knownEnqueteTargets,
   archiveManche,
   listManches,
   hasSentMessageToday,
@@ -217,6 +218,14 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
       );
       lines.push(
         `💣 **${gobelin?.username || "?"}** explose en mourant — **${target?.username || "?"}** encaisse ${config.roles.explosif.degats_riposte} dégât.`,
+      );
+    }
+    // Tour de Guet surpeuplée (plus de la moitié des vivants) : aucune
+    // enquête n'a abouti — sans cette ligne, les enquêteurs n'auraient aucune
+    // explication au silence inhabituel de leur DM habituel.
+    if (closure.tourDeGuetSurpeuplee) {
+      lines.push(
+        "🔭 La Tour de Guet était trop encombrée hier — personne n'a rien pu observer.",
       );
     }
 
@@ -448,7 +457,7 @@ function buildReglesEmbed(config) {
     "**Lieux** (tous les 5 lieux comptent comme une action) :",
     `${config.lieux.chateau.emoji} **${config.lieux.chateau.label}** — vote d'accusation public. En cas d'égalité, personne n'est éliminé.`,
     `${config.lieux.camp_entrainement.emoji} **${config.lieux.camp_entrainement.label}** — attaque (1 dégât) un joueur vu ici la veille; si personne n'y était, tu frappes un joueur tiré au hasard.`,
-    `${config.lieux.tour_de_guet.emoji} **${config.lieux.tour_de_guet.label}** — révèle le camp d'un joueur vu ici la veille; si personne n'y était, révèle un joueur tiré au hasard.`,
+    `${config.lieux.tour_de_guet.emoji} **${config.lieux.tour_de_guet.label}** — révèle le camp d'un joueur vu ici la veille; si personne n'y était, révèle un joueur tiré au hasard. Inefficace si plus de ${Math.round((config.tour_de_guet_seuil_ratio ?? 0.5) * 100)}% des vivants s'y trouvent le même jour.`,
     `${config.lieux.taverne.emoji} **${config.lieux.taverne.label}** — protection des attaques tant que moins de ${config.taverne_seuil_protection} joueurs s'y trouvent le même jour.`,
     `${config.lieux.clairiere_mystique.emoji} **${config.lieux.clairiere_mystique.label}** — révèle la position actuelle de 2 joueurs tirés au hasard.`,
     "",
@@ -1126,12 +1135,21 @@ export async function handleLieuButton(
 
     // Château (vote) : cible libre sur tout joueur vivant (hors soi-même).
     // Combat/Enquête : cible restreinte au dernier plateau connu.
-    const candidats =
+    let candidats =
       lieu === "chateau"
         ? state.joueurs.filter((j) => j.alive && j.discordId !== discordId)
         : state.joueurs.filter(
             (j) => j.alive && j.discordId !== discordId && j.position === lieu,
           );
+
+    // Tour de Guet : jamais reproposer une cible dont le camp est déjà connu
+    // (bug repéré en test réel — "displaynone" révélé 2 fois au même joueur).
+    // Le filet de sécurité applique la même exclusion à la clôture, voir
+    // computeInvestigations()/knownEnqueteTargets().
+    if (lieu === "tour_de_guet") {
+      const known = knownEnqueteTargets(await readPlayerIndices(discordId));
+      candidats = candidats.filter((j) => !known.has(j.discordId));
+    }
 
     if (!candidats.length) {
       await recordAction(
