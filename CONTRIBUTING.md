@@ -1368,6 +1368,7 @@ Bouton `[📬 Messagerie]` sur l'embed de jour (3e bouton de la ligne Règles/Jo
 - **Bornage à 3 messages** : `RPUSH` + `LTRIM(-3, -1)` à chaque envoi — pas de structure de purge séparée à maintenir, la LIST Redis se borne elle-même.
 - **Le quota est revérifié à l'écriture**, jamais fait confiance au seul fait que le bouton "Écrire" soit visible (l'affichage n'est qu'une aide UX, pas la garde réelle) — et sur le **jour courant relu depuis l'état**, jamais un jour capturé au moment de l'ouverture de la Modal (la partie a pu avancer si le joueur a mis du temps à écrire).
 - Nettoyé par `resetGoblinHunters()` comme le reste de la manche en cours (`goblinhunters:messages` + tous les `goblinhunters:messages_sent:*`).
+- Mentionnée dans `buildReglesEmbed()` (bouton `[📖 Règles]`), une ligne courte cohérente avec le style condensé du reste des Règles.
 
 ⚠️ Fonctions I/O (`hasSentMessageToday`, `recordMessage`, `listRecentMessages`) volontairement non couvertes par `goblinhunters.test.js`, cohérent avec le reste du fichier : seules les fonctions **pures** (aucun accès Redis) y sont testées, jamais les wrappers I/O (`recordAction`, `registerPlayer`, etc. ne le sont pas non plus). Vérifié à la place par relecture de code + test isolé du rendu de l'embed (les 3 états : vide/rempli, vivant/éliminé, déjà envoyé/pas encore) et de la Modal exportée (`buildMessagerieModal()`), sans toucher au Redis réel — une partie était en cours au moment de l'implémentation, écrire un message de test dans `goblinhunters:messages` l'aurait fait apparaître pour de vrais joueurs.
 

@@ -444,6 +444,7 @@ function buildReglesEmbed(config) {
     `Chaque joueur a **${config.combat.pv_base} PV**. Maximum **1 mort par combat et par jour**.`,
     `Aucune élimination possible le Jour 1 (vote et combat désactivés).`,
     `🚫 Impossible de rester au même lieu 2 jours de suite.`,
+    `📬 Bouton **Messagerie** : 1 message anonyme par jour, les 3 derniers restent affichés.`,
     "",
     "Victoire des Gobelins à la parité, des Villageois si tous les Gobelins sont éliminés, sinon des Villageois par défaut au dernier jour.",
   ];
