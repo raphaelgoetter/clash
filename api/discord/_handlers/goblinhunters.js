@@ -29,6 +29,9 @@ import {
   readPlayerIndices,
   archiveManche,
   listManches,
+  hasSentMessageToday,
+  recordMessage,
+  listRecentMessages,
 } from "../../../backend/services/goblinhunters.js";
 import {
   getRoleIdByName,
@@ -299,6 +302,13 @@ function buildJourComponents(jour, config) {
           label: "Journal",
           emoji: { name: "📜" },
           custom_id: "goblinhunters_journal",
+        },
+        {
+          type: 2,
+          style: 2,
+          label: "Messagerie",
+          emoji: { name: "📬" },
+          custom_id: "goblinhunters_messagerie",
         },
       ],
     },
@@ -1295,5 +1305,136 @@ export async function handleRegles(webhookUrl) {
     await patchOriginal(webhookUrl, { embeds: [embed], components: [] });
   } catch (err) {
     console.error("[GoblinHunters] Échec Règles:", err.message);
+  }
+}
+
+// ── Bouton [📬 Messagerie] — mur de messages anonymes, 1/jour/joueur ──────
+// Ni un lieu ni une action de clôture : contrairement au reste du jeu, la
+// Messagerie est LIVE (pas résolue le lendemain via computeCloture) — un
+// message posté apparaît immédiatement pour tout le monde au prochain clic.
+// L'anonymat est structurel côté service (goblinhunters.js ne stocke jamais
+// le discordId de l'auteur avec le contenu), pas juste un masquage ici.
+
+function buildMessagerieEmbed(messages, { alive, alreadySent }) {
+  const lines = messages.length
+    ? messages.map((m) => `🗨️ *Jour ${m.jour}* : "${m.content}"`)
+    : ["Aucun message pour l'instant — sois le premier à écrire !"];
+  const footer = !alive
+    ? "Tu es éliminé(e), tu ne peux plus poster de message."
+    : alreadySent
+      ? "Tu as déjà envoyé ton message du jour — reviens demain."
+      : "Un message par jour et par joueur, toujours anonyme.";
+  return {
+    title: "📬 Messagerie du village",
+    description: [
+      "Les 3 derniers messages anonymes postés — impossible de savoir qui écrit quoi.",
+      "",
+      ...lines,
+      "",
+      footer,
+    ].join("\n"),
+    color: GOBLINHUNTERS_COLOR,
+  };
+}
+
+function buildMessagerieComponents({ alive, alreadySent }) {
+  if (!alive || alreadySent) return [];
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: 1,
+          label: "✍️ Écrire un message",
+          custom_id: "goblinhunters_messagerie_write",
+        },
+      ],
+    },
+  ];
+}
+
+// Contenu de la Modal ouverte par le bouton "Écrire un message" — voir
+// anagrams.js pour le mécanisme détaillé (réponse synchrone type:9).
+export function buildMessagerieModal() {
+  return {
+    custom_id: "goblinhunters_messagerie_modal",
+    title: "Message anonyme",
+    components: [
+      {
+        type: 1,
+        components: [
+          {
+            type: 4,
+            custom_id: "goblinhunters_messagerie_input",
+            style: 1,
+            label: "Ton message (anonyme, 1/jour)",
+            placeholder: "Ex. : Qui était à la Taverne hier soir ?",
+            required: true,
+            max_length: 200,
+          },
+        ],
+      },
+    ],
+  };
+}
+
+export async function handleMessagerie(webhookUrl, discordId) {
+  try {
+    const state = await readState();
+    if (!state || state.phase !== "jeu") {
+      await patchOriginal(webhookUrl, {
+        content: "Aucune partie Goblin Hunters en cours pour le moment.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    const joueur = state.joueurs.find((j) => j.discordId === discordId);
+    const alive = joueur?.alive === true;
+    const alreadySent = alive ? await hasSentMessageToday(state.jour, discordId) : false;
+    const messages = await listRecentMessages();
+    const embed = buildMessagerieEmbed(messages, { alive, alreadySent });
+    const components = buildMessagerieComponents({ alive, alreadySent });
+    await patchOriginal(webhookUrl, { embeds: [embed], components });
+  } catch (err) {
+    console.error("[GoblinHunters] Échec Messagerie:", err.message);
+  }
+}
+
+// Soumission de la Modal — le quota (1/jour) est revérifié ici en autorité
+// (le bouton "Écrire" n'est qu'une aide visuelle côté handleMessagerie,
+// jamais la garde réelle), sur le jour COURANT relu depuis l'état, jamais un
+// jour capturé au moment de l'ouverture de la modal (la partie a pu avancer
+// entre-temps si le joueur a mis du temps à écrire).
+export async function handleMessagerieSubmit(webhookUrl, discordId, rawMessage) {
+  try {
+    const content = (rawMessage || "").trim();
+    if (!content) {
+      await patchOriginal(webhookUrl, { content: "Message vide, rien n'a été envoyé.", embeds: [], components: [] });
+      return;
+    }
+    const state = await readState();
+    const joueur = state?.phase === "jeu" ? state.joueurs.find((j) => j.discordId === discordId) : null;
+    if (!joueur?.alive) {
+      await patchOriginal(webhookUrl, {
+        content: "Tu ne peux pas envoyer de message pour le moment.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    const result = await recordMessage(state.jour, discordId, content);
+    if (result.status === "already_sent") {
+      await patchOriginal(webhookUrl, {
+        content: "Tu as déjà envoyé ton message du jour — reviens demain.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    await patchOriginal(webhookUrl, { content: "📬 Message envoyé anonymement !", embeds: [], components: [] });
+  } catch (err) {
+    console.error("[GoblinHunters] Échec envoi Messagerie:", err.message);
   }
 }

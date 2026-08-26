@@ -99,12 +99,16 @@ const HISTORIQUE_KEY = "goblinhunters:historique";
 const INDICES_KEY = "goblinhunters:indices";
 const MANCHES_KEY = "goblinhunters:manches";
 const MANCHE_SEQ_KEY = "goblinhunters:manche_seq";
+const MESSAGES_KEY = "goblinhunters:messages";
 
 function actionsKey(jour) {
   return `goblinhunters:actions:${jour}`;
 }
 function actionUsernamesKey(jour) {
   return `goblinhunters:action_usernames:${jour}`;
+}
+function messagesSentKey(jour) {
+  return `goblinhunters:messages_sent:${jour}`;
 }
 
 // ── Lecture de la config (statique, jamais mutée) ─────────────────
@@ -757,6 +761,39 @@ export async function readPlayerIndices(discordId) {
   return fromJson(await getRedis().hget(INDICES_KEY, discordId)) || [];
 }
 
+// ── Messagerie anonyme (bouton "Messagerie", 1 message/jour/joueur) ────────
+// Live, pas résolue à la clôture (contrairement au reste du jeu) : un simple
+// LIST Redis borné aux 3 derniers messages (RPUSH + LTRIM), jamais associé au
+// discordId de l'auteur dans le contenu stocké — l'anonymat est structurel,
+// pas juste un masquage à l'affichage. Le quota quotidien (1/jour/joueur) vit
+// dans un HASH séparé par jour (`messagesSentKey`), jamais dans le contenu du
+// message lui-même, pour ne jamais pouvoir fuiter "qui a écrit quoi" même en
+// lisant le contenu brut de MESSAGES_KEY.
+
+export async function hasSentMessageToday(jour, discordId) {
+  return !!(await getRedis().hget(messagesSentKey(jour), discordId));
+}
+
+// Check-then-act non atomique (même niveau de rigueur que registerPlayer()
+// ci-dessus pour ce type d'action à faible enjeu) : un double-clic strictement
+// simultané pourrait en théorie laisser passer 2 messages le même jour, accepté.
+export async function recordMessage(jour, discordId, content) {
+  const already = await hasSentMessageToday(jour, discordId);
+  if (already) return { status: "already_sent" };
+  await getRedis().rpush(MESSAGES_KEY, toJson({ content, jour }));
+  await getRedis().ltrim(MESSAGES_KEY, -3, -1);
+  await getRedis().hset(messagesSentKey(jour), { [discordId]: "1" });
+  return { status: "sent" };
+}
+
+// RPUSH + LTRIM garantit au plus 3 entrées, LRANGE 0 -1 les renvoie donc déjà
+// dans l'ordre chronologique (plus ancien -> plus récent), même convention
+// de lecture que le carnet d'indices du Journal.
+export async function listRecentMessages() {
+  const raw = (await getRedis().lrange(MESSAGES_KEY, 0, -1)) || [];
+  return raw.map(fromJson).filter(Boolean);
+}
+
 // ── Wrappers I/O — appelés uniquement par postGoblinHunters()/cron ──
 
 async function loadCloture(jour, config) {
@@ -872,9 +909,10 @@ export async function listManches({ limit = 10 } = {}) {
 // ── Remise à zéro ────────────────────────────────────────────────────
 
 export async function resetGoblinHunters({ clearManches = false } = {}) {
-  await getRedis().del(STATE_KEY, INSCRIPTIONS_KEY, HISTORIQUE_KEY, INDICES_KEY);
+  await getRedis().del(STATE_KEY, INSCRIPTIONS_KEY, HISTORIQUE_KEY, INDICES_KEY, MESSAGES_KEY);
   await scanDelete("goblinhunters:actions:*");
   await scanDelete("goblinhunters:action_usernames:*");
+  await scanDelete("goblinhunters:messages_sent:*");
   // Clés d'une version antérieure du vote Château (stockage séparé, retiré
   // suite à un bug — voir computeVoteTally) : filet de sécurité pour purger
   // d'éventuelles clés résiduelles d'avant la correction, plus jamais écrites.

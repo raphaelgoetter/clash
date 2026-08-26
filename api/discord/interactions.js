@@ -90,6 +90,9 @@ import {
   handleTargetSelect as handleGoblinHuntersTarget,
   handleRegles as handleGoblinHuntersRegles,
   handleJournal as handleGoblinHuntersJournal,
+  handleMessagerie as handleGoblinHuntersMessagerie,
+  handleMessagerieSubmit as handleGoblinHuntersMessagerieSubmit,
+  buildMessagerieModal as buildGoblinHuntersMessagerieModal,
 } from "./_handlers/goblinhunters.js";
 import {
   summarizeWarDecks,
@@ -9272,6 +9275,35 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleGoblinHuntersJournal(webhookUrl, discordId));
+    return;
+  }
+
+  // ── Goblin Hunters : bouton "Messagerie" (mur de messages anonymes) ──
+  if (body.type === 3 && body.data?.custom_id === "goblinhunters_messagerie") {
+    const discordId = body.member?.user?.id;
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleGoblinHuntersMessagerie(webhookUrl, discordId));
+    return;
+  }
+
+  // ── Goblin Hunters : bouton "Écrire un message" → ouverture de la Modal ──
+  // Réponse synchrone immédiate obligatoire (pas de runBackground ici), même
+  // mécanisme que le bouton "Répondre" d'Anagram.
+  if (body.type === 3 && body.data?.custom_id === "goblinhunters_messagerie_write") {
+    return res.status(200).json({ type: 9, data: buildGoblinHuntersMessagerieModal() });
+  }
+
+  // ── Goblin Hunters : soumission de la Modal Messagerie ──
+  // body.type === 5 ici est un MODAL_SUBMIT (InteractionType), à ne pas
+  // confondre avec le type de réponse 5 (DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE)
+  // utilisé plus haut dans ce fichier.
+  if (body.type === 5 && body.data?.custom_id === "goblinhunters_messagerie_modal") {
+    const discordId = body.member?.user?.id;
+    const rawMessage = body.data.components?.[0]?.components?.[0]?.value || "";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleGoblinHuntersMessagerieSubmit(webhookUrl, discordId, rawMessage));
     return;
   }
 
