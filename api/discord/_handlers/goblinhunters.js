@@ -159,7 +159,7 @@ function buildInscriptionComponents(count = 0) {
         },
         {
           type: 2,
-          style: 2,
+          style: 3,
           label: "Règles",
           emoji: { name: "📖" },
           custom_id: "goblinhunters_regles",
@@ -259,6 +259,12 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
     lines.push(pickFlavor(narratifs.tension_derniers_jours, jour));
   }
 
+  if (Number(jour) === 1) {
+    lines.push(
+      "🔒 Vote et combat n'ont aucun effet le Jour 1 — tu peux quand même te rendre au Château ou à l'Arène, mais ça ne servira à rien.",
+    );
+  }
+
   return {
     title: `👺 Goblin Hunters — Jour ${jour}/${config.duree_jours}`,
     description: lines.join("\n"),
@@ -269,6 +275,17 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
     },
   };
 }
+
+// Château (vote) et Arène (combat) n'ont strictement aucun effet le Jour 1
+// (computeCloture() ignore vote et combat tant que jour === 1, garde-fou
+// existant) — les boutons restent cliquables (un joueur peut vouloir s'y
+// rendre pour sa position, ex. accompagner quelqu'un ou juste par choix),
+// mais handleLieuButton saute l'étape de sélection de cible ce jour-là (voir
+// plus bas) : le lieu est enregistré tel quel, sans cibleId, comme
+// Taverne/Clairière. Décidé avec l'utilisateur après une première version
+// qui désactivait carrément les boutons — trop restrictif, seule l'ACTION
+// doit être nulle, pas le déplacement lui-même.
+const LIEUX_SANS_CIBLE_JOUR1 = new Set(["chateau", "camp_entrainement"]);
 
 function buildLieuButtonsRow(jour, config, slot) {
   return {
@@ -291,7 +308,7 @@ function buildJourComponents(jour, config) {
       components: [
         {
           type: 2,
-          style: 2,
+          style: 3,
           label: "Règles",
           emoji: { name: "📖" },
           custom_id: "goblinhunters_regles",
@@ -524,6 +541,61 @@ async function sendInvestigationDM(investigation, joueursApres, config) {
   await sendGoblinHuntersDM(investigation.investigatorId, embed);
 }
 
+// DM envoyé au joueur qui vient d'être éliminé (vote ou combat) — sur
+// demande explicite, "description complète de ce qu'il s'est passé". Rappelle
+// son propre camp/rôle (seule trace, l'embed public ne montre que le camp),
+// la cause précise, et les effets de mort déclenchés le concernant (Guet-
+// Apens/Explosif s'il détenait l'un de ces rôles). Ne révèle PAS qui a voté
+// contre lui ni l'identité/camp de son attaquant au combat — décision de
+// conception : préserver le mystère même après élimination, un joueur mort
+// pourrait sinon relayer cette info aux vivants hors-jeu (voir la simulation
+// d'équilibrage sur l'impact de la communication externe, mémoire projet).
+async function sendEliminationDM(discordId, cause, closure, jourClos, config) {
+  const joueur = closure.joueursApres.find((j) => j.discordId === discordId);
+  if (!joueur) return;
+  const camp = config.camps[joueur.camp];
+  const roleLabel = joueur.role ? ` (${config.roles[joueur.role].label})` : "";
+
+  const lines = [
+    `Tu as été éliminé(e) au **Jour ${jourClos}**.`,
+    `Tu étais un(e) ${camp.emoji} **${camp.labelSingulier}**${roleLabel}.`,
+  ];
+
+  if (cause === "vote") {
+    const votes = closure.voteTally?.[discordId] ?? 0;
+    lines.push(`⚖️ Le village t'a accusé(e) au Château (${votes} vote${votes > 1 ? "s" : ""}).`);
+  } else {
+    lines.push(`⚔️ Tu es tombé(e) au combat à l'Arène.`);
+  }
+
+  if (closure.guetApensReveal?.guetApensId === discordId) {
+    const camps = closure.guetApensReveal.attackers
+      .map((a) => config.camps[a.campReporte].labelSingulier)
+      .join(", ");
+    lines.push(`🪤 Ton piège de Guet-Apens s'est déclenché : le camp de qui t'a achevé(e) a été révélé publiquement (${camps}).`);
+  }
+  if (closure.explosifRetaliation?.gobelinId === discordId) {
+    const cible = closure.joueursApres.find(
+      (j) => j.discordId === closure.explosifRetaliation.targetId,
+    );
+    lines.push(
+      `💣 Tu as explosé en mourant, infligeant ${config.roles.explosif.degats_riposte} dégât à **${cible?.username || "?"}**.`,
+    );
+  }
+
+  lines.push(
+    "",
+    `Tu peux continuer à suivre la partie, mais tu ne peux plus agir. Rendez-vous au bilan final (Jour ${config.duree_jours} au plus tard) !`,
+  );
+
+  const embed = {
+    title: "☠️ Goblin Hunters — tu as été éliminé(e)",
+    description: lines.join("\n"),
+    color: GOBLINHUNTERS_COLOR,
+  };
+  await sendGoblinHuntersDM(discordId, embed);
+}
+
 async function sendClairiereDM(discordId, reveals, config) {
   if (!reveals?.length) return;
   const lines = reveals.map(
@@ -698,6 +770,12 @@ export async function postGoblinHunters(
   const jourSuivant = jourClos + 1;
 
   if (!dryRun) {
+    if (closure.eliminationsParVote) {
+      await sendEliminationDM(closure.eliminationsParVote, "vote", closure, jourClos, config);
+    }
+    if (closure.deathIdCombat) {
+      await sendEliminationDM(closure.deathIdCombat, "combat", closure, jourClos, config);
+    }
     for (const investigation of closure.investigations) {
       await sendInvestigationDM(investigation, closure.joueursApres, config);
     }
@@ -1004,20 +1082,38 @@ export async function handleLieuButton(
       });
       return;
     }
+    // Nerf Éclaireur : la 2ᵉ action doit cibler un lieu DIFFÉRENT de la 1ère
+    // — sans ça, l'Éclaireur pouvait voter 2x ou attaquer 2x le même jour,
+    // doublant un effet qui n'est censé compter qu'une fois par lieu/jour.
+    if (slot === "secondary" && existingAction?.primary?.lieu === lieu) {
+      await patchOriginal(webhookUrl, {
+        content: `🚫 Tu as déjà choisi ${config.lieux[lieu].label} pour ta 1ère action — ta 2ᵉ action doit viser un lieu différent.`,
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
 
     const lieuAction = config.lieux[lieu]?.action;
+    // Château/Arène au Jour 1 : le déplacement reste possible, mais aucune
+    // action réelle (computeCloture() ignore vote et combat tant que
+    // jour === 1) — traité comme Taverne/Clairière ci-dessous, sans étape de
+    // sélection de cible. Décidé avec l'utilisateur : seule l'ACTION doit
+    // être nulle ce jour-là, pas le choix du lieu lui-même.
+    const sansCibleJour1 = Number(jour) === 1 && LIEUX_SANS_CIBLE_JOUR1.has(lieu);
 
     // Taverne/Clairière : aucune cible nécessaire, action enregistrée
     // directement (la Clairière révèle 2 joueurs au hasard à la clôture,
     // voir computeClairiereReveals — pas de choix à faire ici).
-    if (lieuAction === "protection" || lieuAction === "vision") {
+    if (lieuAction === "protection" || lieuAction === "vision" || sansCibleJour1) {
       await recordAction(jour, discordId, slot, { lieu }, username);
       const followup =
         joueur.role === "eclaireur" && slot === "primary"
           ? buildEclaireurSecondButtonRow(jour)
           : [];
-      const confirmation =
-        lieuAction === "protection"
+      const confirmation = sansCibleJour1
+        ? `${config.lieux[lieu].emoji} Tu te rends à ${config.lieux[lieu].label} — aucun effet aujourd'hui (vote et combat désactivés le Jour 1). **Choix définitif pour aujourd'hui.**`
+        : lieuAction === "protection"
           ? "🍺 Tu te rends à la Taverne (protection si le lieu n'est pas surpeuplé aujourd'hui). **Choix définitif pour aujourd'hui.**"
           : "🌫️ Tu te rends à la Clairière — la position de 2 joueurs au hasard te sera révélée demain. **Choix définitif pour aujourd'hui.**";
       await patchOriginal(webhookUrl, {
