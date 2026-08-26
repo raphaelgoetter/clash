@@ -782,9 +782,11 @@ export async function handleJournal(webhookUrl) {
       return;
     }
 
-    const [stocks, V, { entries }] = await Promise.all([
+    const [stocks, V, radeauPoints, config, { entries }] = await Promise.all([
       readStocks(),
       countUniqueVoters(state.jour),
+      readRadeauPoints(),
+      loadRobinsonConfig(),
       listHistorique({ limit: 10 }),
     ]);
     const besoin = computeDailyConsumption(V);
@@ -793,9 +795,11 @@ export async function handleJournal(webhookUrl) {
       eau: Math.max(0, besoin.eau - stocks.eau),
       bois: Math.max(0, besoin.bois - stocks.bois),
     };
+    const sections = computeRaftSections(radeauPoints, config.points_par_section);
 
     const lines = [
       `**Joueurs aujourd’hui : ${V}**`,
+      `🛶 Radeau : ${radeauPoints} pts (${sections}/${config.radeau_sections_max} sections)`,
       "",
       `**Besoins pour la clôture de ${formatUtcTimeAsParis(8)} (heure de Paris) :**`,
       `🐟 Nourriture : ${besoin.poisson} nécessaire${manque.poisson > 0 ? ` — **il en manque ${manque.poisson}**` : " (couvert)"}`,
