@@ -372,6 +372,19 @@ export function isExplorerDisabled(event) {
   return event?.id === "gobelins";
 }
 
+// Verrou anti-rush (mécanique du 26/08, narrée par un événement dédié plutôt
+// que codée en dur) : empêche un groupe qui a assez de Bois en réserve (ce
+// qui arrive vite avec le barème 0-5) de finir les 20 points du Radeau en
+// une seule journée et de clore la partie au Jour 4-5, avant même la moitié
+// de l'aventure. La fenêtre (`jour_debut`/`jour_fin`) est lue depuis
+// `config.radeau_verrouille` — jamais une constante figée dans le code —
+// pour rester ajustable (ou désactivable, `radeauVerrouille` peut être
+// `null`/absent) sans toucher au JS.
+export function isRadeauDisabled(jour, radeauVerrouille) {
+  if (!radeauVerrouille) return false;
+  return jour >= radeauVerrouille.jour_debut && jour <= radeauVerrouille.jour_fin;
+}
+
 export function computeDailyConsumption(V) {
   return { poisson: V, eau: V, bois: Math.ceil(V / 2) };
 }
@@ -386,7 +399,7 @@ export function applyFlooredDelta(stocks, consumption) {
   return out;
 }
 
-const ZERO_STREAK_LIMIT = 3;
+export const ZERO_STREAK_LIMIT = 3;
 
 // Cœur de la détection de défaite : incrémente le compteur d'une ressource
 // tombée à 0, le remet à 0 sinon. Défaite dès qu'un compteur atteint 3.
@@ -573,25 +586,43 @@ async function computeClosure(state, config, { write }) {
     }
   }
 
-  const { streaks, defeated } = updateZeroStreaks(state.zeroStreaks, stocksApres);
+  // ⚠️ La défaite n'est PAS déterminée ici : ce `stocksApres` est encore
+  // intermédiaire (conso + Gobelins seulement), pas le stock final que les
+  // joueurs verront réellement. Un événement du jour SUIVANT (Colis Royal,
+  // Une incroyable découverte, Indigestion Royale) peut encore remonter un
+  // stock qui vient de toucher 0 — vérifier la défaite maintenant compterait
+  // un "jour à 0" invisible pour les joueurs (incident du 26/08 : l'Eau
+  // touchait 0 ici, mais le Colis Royal remontait l'affichage à 2 juste
+  // après sans jamais annuler ce zéro compté en douce). Voir
+  // `finalizeDayClosure()`, appelée par postRobinson() une fois le stock
+  // final connu — jamais en dry-run, jamais avant l'application des bonus.
+  return { stocksApres, stocksAvant, consumption, gobelinsVoleur, radeauPoints, V, voters };
+}
+
+// Finalise la clôture d'un jour une fois le stock FINAL connu (après
+// application des bonus/pertes du jour suivant par postRobinson) — seul
+// moment où la défaite est réellement déterminée, sur la valeur que les
+// joueurs voient vraiment. Écrit l'historique et vide les votes du jour
+// clos ; jamais appelée en dry-run (aucune écriture).
+export async function finalizeDayClosure(
+  jour,
+  { V, radeauVotes, stocksAvant, stocksFinal, consumption, gobelinsVoleur, event, previousZeroStreaks },
+) {
+  const { streaks, defeated } = updateZeroStreaks(previousZeroStreaks, stocksFinal);
   const outcome = defeated ? "defaite" : null;
-
-  if (write) {
-    await writeHistoriqueEntry(state.jour, {
-      V,
-      radeauVotes: voters.filter((v) => v.actionId === "radeau").length,
-      stocksAvant,
-      stocksApres,
-      consumption,
-      gobelinsVoleur,
-      event: state.event ?? null,
-      outcome,
-      resolvedAt: new Date().toISOString(),
-    });
-    await clearVotes(state.jour);
-  }
-
-  return { outcome, stocksApres, radeauPoints, zeroStreaksApres: streaks, V, voters };
+  await writeHistoriqueEntry(jour, {
+    V,
+    radeauVotes,
+    stocksAvant,
+    stocksApres: stocksFinal,
+    consumption,
+    gobelinsVoleur,
+    event,
+    outcome,
+    resolvedAt: new Date().toISOString(),
+  });
+  await clearVotes(jour);
+  return { streaks, defeated, outcome };
 }
 
 // Lecture seule (aucune écriture Redis) — utilisée par la branche --dry-run,

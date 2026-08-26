@@ -7,6 +7,7 @@ import {
   pickChefExplorateur,
   harvestCapForEvent,
   isExplorerDisabled,
+  isRadeauDisabled,
   computeDailyConsumption,
   applyFlooredDelta,
   updateZeroStreaks,
@@ -99,6 +100,16 @@ async function main() {
   assert.strictEqual(isExplorerDisabled({ id: "gobelins" }), true);
   assert.strictEqual(isExplorerDisabled({ id: "canicule" }), false);
   assert.strictEqual(isExplorerDisabled(null), false);
+
+  // ── isRadeauDisabled — verrou anti-rush narré, fenêtre lue depuis la config ──
+  const RADEAU_VERROUILLE = { jour_debut: 4, jour_fin: 5 };
+  assert.strictEqual(isRadeauDisabled(1, RADEAU_VERROUILLE), false);
+  assert.strictEqual(isRadeauDisabled(3, RADEAU_VERROUILLE), false);
+  assert.strictEqual(isRadeauDisabled(4, RADEAU_VERROUILLE), true);
+  assert.strictEqual(isRadeauDisabled(5, RADEAU_VERROUILLE), true);
+  assert.strictEqual(isRadeauDisabled(6, RADEAU_VERROUILLE), false);
+  assert.strictEqual(isRadeauDisabled(4, null), false); // aucun verrou configuré -> jamais bloqué
+  assert.strictEqual(isRadeauDisabled(4, undefined), false);
 
   // ── computeDailyConsumption ──
   assert.deepStrictEqual(computeDailyConsumption(4), { poisson: 4, eau: 4, bois: 2 });

@@ -4,6 +4,13 @@
   "bois_par_point_radeau": 1,
   "points_par_section": 4,
   "stocks_initiaux": { "poisson": 10, "eau": 10, "bois": 6 },
+  "radeau_verrouille": {
+    "jour_debut": 4,
+    "jour_fin": 5,
+    "nom": "Grosse Houle",
+    "emoji": "🌊",
+    "description": "Au large, la mer forme déjà des creux impressionnants — les premiers signes de l’ouragan qui menace l’île dans quelques jours. Impossible de travailler sereinement sur le Radeau avec un temps pareil : mieux vaut ranger les outils, l’abriter des embruns et se concentrer sur l’essentiel en attendant une accalmie."
+  },
   "actions": {
     "peche": { "label": "Pêcher", "emoji": "🎣", "resource": "poisson" },
     "eau": { "label": "Eau", "emoji": "💧", "resource": "eau" },

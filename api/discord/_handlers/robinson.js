@@ -31,6 +31,7 @@ import {
   pickChefExplorateur,
   harvestCapForEvent,
   isExplorerDisabled,
+  isRadeauDisabled,
   computeDailyConsumption,
   computeRaftSections,
   computeEpaveBonus,
@@ -40,6 +41,9 @@ import {
   eventForDay,
   previewCloseDay,
   closeDayAndAdvance,
+  finalizeDayClosure,
+  updateZeroStreaks,
+  ZERO_STREAK_LIMIT,
   grantRadeauPoints,
   grantEqualResources,
   grantResource,
@@ -151,6 +155,19 @@ async function buildRobinsonEmbed(jour, stocks, radeauPoints, config, event, est
     }
     lines.push("");
   }
+  // Verrou anti-rush narré (mécanique du 26/08) : affiché tant que le jour
+  // est dans la fenêtre de config.radeau_verrouille, en plus de
+  // l'événement du jour éventuel (les deux peuvent coexister — ex. le
+  // Colis Royal et la Grosse Houle tombent tous les deux au Jour 4).
+  if (isRadeauDisabled(jour, config.radeau_verrouille)) {
+    const { emoji, nom, description, jour_fin } = config.radeau_verrouille;
+    lines.push(
+      `**${emoji} ${nom}**`,
+      description,
+      `🛶 Radeau indisponible jusqu’au Jour ${jour_fin} inclus.`,
+      "",
+    );
+  }
   // Chef Explorateur du jour (mécanique du 24/08) : annoncé dès l'ouverture
   // du jour pour que la personne désignée sache dès le matin. Choisi parmi
   // les votants RÉELS de la veille (jamais un non-votant) — voir
@@ -184,7 +201,9 @@ async function buildRobinsonEmbed(jour, stocks, radeauPoints, config, event, est
 
 function buildRobinsonComponents(jour, config, voteCounts, event) {
   const actionIds = Object.keys(config.actions).filter(
-    (id) => !(id === "explorer" && isExplorerDisabled(event)),
+    (id) =>
+      !(id === "explorer" && isExplorerDisabled(event)) &&
+      !(id === "radeau" && isRadeauDisabled(jour, config.radeau_verrouille)),
   );
 
   return [
@@ -345,9 +364,10 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
 
   const closure = dryRun ? await previewCloseDay(state, config) : await closeDayAndAdvance(state, config);
 
-  // Fin de partie (victoire par le Radeau ou défaite) — jamais annoncée en
-  // temps réel au clic, toujours révélée ici, au cron.
-  if (closure.outcome === "victoire_radeau" || closure.outcome === "defaite") {
+  // Victoire par le Radeau : détectée par computeClosure elle-même (déjà
+  // acquise avant même la conso du jour) — court-circuite tout, y compris
+  // la défaite. Jamais annoncée en temps réel au clic, toujours révélée ici.
+  if (closure.outcome === "victoire_radeau") {
     // Jamais archivé en dry-run NI sur le salon de test (isPublic) — seule
     // une vraie publication sur le salon public compte comme une manche
     // réelle (voir CONTRIBUTING.md, section Manches).
@@ -394,7 +414,7 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
     const result = await publishAndWriteState(channelId, state, {
       jour: state.jour,
       event: state.event,
-      zeroStreaks: closure.zeroStreaksApres,
+      zeroStreaks: state.zeroStreaks,
       dayVoters: [],
       embed,
       components: [],
@@ -464,6 +484,60 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
       : await grantResource("eau", bonus);
   }
 
+  // Défaite déterminée UNIQUEMENT sur le stock FINAL (après tous les bonus/
+  // pertes ci-dessus) — jamais sur closure.stocksApres seul, qui ignore les
+  // événements du jour suivant. Sans ça, un Colis Royal (ou toute autre
+  // remontée) peut masquer à l'affichage un "jour à 0" déjà compté dans le
+  // streak — la défaite doit se baser sur ce que les joueurs voient
+  // réellement, jamais sur une valeur intermédiaire invisible (incident du
+  // 26/08 sur l'Eau). `finalizeDayClosure()` écrit aussi l'historique et
+  // vide les votes — jamais appelée en dry-run (aucune écriture).
+  let zeroStreaksApres;
+  let defeated;
+  if (dryRun) {
+    ({ streaks: zeroStreaksApres, defeated } = updateZeroStreaks(state.zeroStreaks, stocksPourEmbed));
+  } else {
+    const finalized = await finalizeDayClosure(state.jour, {
+      V: closure.V,
+      radeauVotes: closure.voters.filter((v) => v.actionId === "radeau").length,
+      stocksAvant: closure.stocksAvant,
+      stocksFinal: stocksPourEmbed,
+      consumption: closure.consumption,
+      gobelinsVoleur: closure.gobelinsVoleur,
+      event: eventPourEmbed,
+      previousZeroStreaks: state.zeroStreaks,
+    });
+    zeroStreaksApres = finalized.streaks;
+    defeated = finalized.defeated;
+  }
+
+  if (defeated) {
+    let currentManche = null;
+    if (!dryRun && isPublic) {
+      currentManche = await archiveManche({
+        outcome: "defaite",
+        jour: state.jour,
+        radeauPoints: radeauPointsPourEmbed,
+        resolvedAt: new Date().toISOString(),
+      });
+    }
+    const manches = await listManches({ limit: 10 });
+    const embedDefaite = buildOutcomeEmbed("defaite", config, manches, currentManche);
+    if (dryRun) return { dryRun: true, final: true, outcome: "defaite", embed: embedDefaite };
+    const result = await publishAndWriteState(channelId, state, {
+      jour: state.jour,
+      event: state.event,
+      zeroStreaks: zeroStreaksApres,
+      dayVoters: [],
+      embed: embedDefaite,
+      components: [],
+      noPing,
+      estPremierJour: false,
+      termine: true,
+    });
+    return { ...result, final: true, outcome: "defaite" };
+  }
+
   const embed = await buildRobinsonEmbed(jourSuivant, stocksPourEmbed, radeauPointsPourEmbed, config, eventPourEmbed, false, closure.voters, chefExplorateurId);
   const components = buildRobinsonComponents(jourSuivant, config, {}, event);
 
@@ -478,7 +552,7 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
     jour: jourSuivant,
     event: eventPourEmbed,
     chefExplorateurId,
-    zeroStreaks: closure.zeroStreaksApres,
+    zeroStreaks: zeroStreaksApres,
     dayVoters: closure.voters,
     embed,
     components,
@@ -744,6 +818,21 @@ export async function handleVoteButton(webhookUrl, jour, actionId, discordId, us
 
     const config = await loadRobinsonConfig();
 
+    // Verrou anti-rush (26/08), narré par l'événement "Grosse Houle" plutôt
+    // que codé en dur — le bouton est déjà masqué dans les composants
+    // pendant la fenêtre (buildRobinsonComponents()), ce contrôle ne sert
+    // que de filet si un joueur clique sur un vieux message affiché avant la
+    // clôture du jour.
+    if (actionId === "radeau" && isRadeauDisabled(jour, config.radeau_verrouille)) {
+      const { emoji, nom, jour_fin } = config.radeau_verrouille;
+      await patchOriginal(webhookUrl, {
+        content: `${emoji} ${nom} : le Radeau est hors de portée avec une mer pareille — reviens à partir du Jour ${jour_fin + 1} !`,
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+
     if (actionId === "radeau") {
       await handleRadeauVote(webhookUrl, state, config, discordId, username, botToken);
       return;
@@ -806,6 +895,19 @@ export async function handleJournal(webhookUrl) {
       `💧 Eau : ${besoin.eau} nécessaire${manque.eau > 0 ? ` — **il en manque ${manque.eau}**` : " (couvert)"}`,
       `🪵 Bois : ${besoin.bois} nécessaire${manque.bois > 0 ? ` — **il en manque ${manque.bois}**` : " (couvert)"}`,
     ];
+
+    // Compteurs de jours consécutifs à 0 — invisibles partout ailleurs
+    // (aucun embed public ne les affiche). N'apparaît que si au moins une
+    // ressource est déjà en streak, pour ne pas polluer l'affichage en
+    // temps normal.
+    const streakWarnings = [
+      state.zeroStreaks?.poisson > 0 ? `🐟 Nourriture : ${state.zeroStreaks.poisson}/${ZERO_STREAK_LIMIT} jours à 0` : null,
+      state.zeroStreaks?.eau > 0 ? `💧 Eau : ${state.zeroStreaks.eau}/${ZERO_STREAK_LIMIT} jours à 0` : null,
+      state.zeroStreaks?.bois > 0 ? `🪵 Bois : ${state.zeroStreaks.bois}/${ZERO_STREAK_LIMIT} jours à 0` : null,
+    ].filter(Boolean);
+    if (streakWarnings.length > 0) {
+      lines.push("", "**⚠️ Jours consécutifs à 0 (naufrage à 3) :**", ...streakWarnings);
+    }
 
     if (entries.length > 0) {
       lines.push("", "**Jours précédents :**", ...entries.map(formatHistoriqueLine));
