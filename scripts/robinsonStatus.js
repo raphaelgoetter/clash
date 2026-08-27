@@ -19,6 +19,9 @@ import {
   readStocks,
   readRadeauPoints,
   computeRaftSections,
+  computeDailyConsumption,
+  getHistoriqueEntry,
+  countUniqueVoters,
   tallyVotes,
   listVotes,
 } from "../backend/services/robinson.js";
@@ -45,6 +48,28 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
   console.log(`💧 Eau        : ${stocks.eau}`);
   console.log(`🪵 Bois       : ${stocks.bois}`);
   console.log(`🛶 Radeau     : ${radeauPoints} pts (${sections}/${config.radeau_sections_max} sections)\n`);
+
+  // Besoins ESTIMÉS sur la mobilisation d'HIER (même calcul que le bouton
+  // [📜 Journal de Bord] côté joueurs, voir robinson.js:handleJournal) —
+  // volontairement différent de la "Projection" plus bas, qui elle se base
+  // sur les votes RÉELS déjà comptés aujourd'hui (un instantané, pas une
+  // prévision). Jour 1 : pas de veille, pas de section affichée ici (le
+  // Journal garde alors le décompte du jour même, non pertinent en admin).
+  if (state.jour > 1) {
+    const veille = await getHistoriqueEntry(state.jour - 1);
+    if (veille) {
+      const besoin = computeDailyConsumption(veille.V);
+      const manque = {
+        poisson: Math.max(0, besoin.poisson - stocks.poisson),
+        eau: Math.max(0, besoin.eau - stocks.eau),
+        bois: Math.max(0, besoin.bois - stocks.bois),
+      };
+      console.log(`Besoins estimés sur les ${veille.V} joueurs d'hier :`);
+      console.log(`  🐟 Nourriture : ${besoin.poisson} nécessaire${manque.poisson > 0 ? ` — il en manque ${manque.poisson}` : " (couvert)"}`);
+      console.log(`  💧 Eau        : ${besoin.eau} nécessaire${manque.eau > 0 ? ` — il en manque ${manque.eau}` : " (couvert)"}`);
+      console.log(`  🪵 Bois       : ${besoin.bois} nécessaire${manque.bois > 0 ? ` — il en manque ${manque.bois}` : " (couvert)"}\n`);
+    }
+  }
 
   const votes = await listVotes(state.jour);
   // Pseudo actuel résolu en direct pour chaque votant (jamais celui figé au
@@ -73,7 +98,7 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
   // publication n'est jamais atteinte en dry-run. Ne préjuge pas des votes
   // qui arriveront encore avant 08:00 UTC.
   const projection = await postRobinson(state.channelId, { dryRun: true, noPing: true, isPublic: false });
-  console.log(`\n🔮 Projection si la clôture avait lieu maintenant :`);
+  console.log(`\n🔮 Projection avec les ${votes.length} votant${votes.length > 1 ? "s" : ""} RÉELS d'aujourd'hui pour l'instant (pas une prévision de fin de journée) :`);
   if (projection.skipped) {
     console.log(`→ Projection indisponible (${projection.reason ?? "raison inconnue"}).`);
   } else if (projection.final) {
