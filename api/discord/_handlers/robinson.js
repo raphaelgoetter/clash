@@ -324,8 +324,11 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
   // Garde-fou anti-double-avancée : un cron en retard qui se déclencherait
   // juste après une relance manuelle du même jour clôturerait un jour tout
   // juste ouvert, quasi sans laisser le temps de voter (incident réel du
-  // 27/08). `force` permet un rattrapage volontaire répété en test.
-  if (state && !force && isTooSoonSinceLastClosure(state.publishedAt)) {
+  // 27/08). Jamais appliqué en dry-run : une simple projection en lecture
+  // seule (scripts/robinsonStatus.js) n'écrit rien et ne peut pas causer ce
+  // problème, quelle que soit sa fréquence d'appel. `force` permet un
+  // rattrapage volontaire répété en test.
+  if (state && !dryRun && !force && isTooSoonSinceLastClosure(state.publishedAt)) {
     return { skipped: true, reason: "tooSoonSinceLastClosure", publishedAt: state.publishedAt };
   }
 

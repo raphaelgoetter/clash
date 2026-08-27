@@ -74,7 +74,9 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
   // qui arriveront encore avant 08:00 UTC.
   const projection = await postRobinson(state.channelId, { dryRun: true, noPing: true, isPublic: false });
   console.log(`\n🔮 Projection si la clôture avait lieu maintenant :`);
-  if (projection.final) {
+  if (projection.skipped) {
+    console.log(`→ Projection indisponible (${projection.reason ?? "raison inconnue"}).`);
+  } else if (projection.final) {
     console.log(`→ Fin de partie : ${outcomeLabel(projection.outcome)}`);
   } else {
     const sectionsProjetees = computeRaftSections(projection.radeauPoints, config.points_par_section);
