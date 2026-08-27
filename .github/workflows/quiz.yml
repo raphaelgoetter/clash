@@ -9,7 +9,10 @@ on:
   # script ci-dessous) : tant qu'aucun lancement manuel n'a eu lieu, il ne se
   # passe rien.
   schedule:
-    - cron: "0 8 * * *"
+    # Décalé de la ronde (0 8) : 5 crons quotidiens du dépôt tombaient tous à
+    # la même minute, la pire pour GitHub Actions (charge maximale en haut
+    # d'heure) — voir CONTRIBUTING.md, incident du 27/08.
+    - cron: "6 8 * * *"
   workflow_dispatch: {}
 
 jobs:

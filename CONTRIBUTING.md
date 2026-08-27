@@ -549,6 +549,22 @@ DISCORD_TOKEN=
 
 ---
 
+## Crons GitHub Actions (jeux quotidiens)
+
+Les 5 jeux à avancée quotidienne (Robinson, Tamagoshi, Boss Raid, Quiz, Goblin Hunters) tournent chacun sur leur propre workflow (`.github/workflows/{robinson,tamagotchi,bossraid,quiz,goblinhunters}.yml`), avec un `schedule` étalé sur la même tranche horaire mais **jamais à la même minute** :
+
+| Jeu | Cron |
+| --- | --- |
+| Boss Raid | `2 8 * * *` |
+| Goblin Hunters | `4 8 * * *` |
+| Quiz | `6 8 * * *` |
+| Robinson | `8 8 * * *` |
+| Tamagoshi | `10 8 * * *` |
+
+⚠️ **Incident du 27/08** : les 5 crons étaient initialement tous réglés sur `0 8 * * *` (pile 8h00 UTC). GitHub documente explicitement que les triggers `schedule` sont *best-effort* et que le délai augmente aux heures rondes, justement à cause de la charge — caler 5 workflows du même dépôt sur exactement la même minute aggrave mécaniquement ce risque. Résultat concret : le 27/08, aucun des 5 crons ne s'était déclenché plus d'une heure après l'horaire prévu (confirmé via l'API GitHub, `GET /repos/.../actions/workflows/{id}/runs`, aucun run pour la date du jour alors que les runs de la veille existaient bien vers 08h07-08h20 UTC). Étaler les horaires par tranches de 2 minutes ne garantit pas un déclenchement pile à l'heure (toujours best-effort côté GitHub), mais réduit la contention auto-infligée. Si un cron manqué doit être rattrapé dans l'immédiat sans attendre GitHub, chaque jeu reste déclenchable manuellement via `workflow_dispatch` (bouton "Run workflow" sur GitHub, ou `gh workflow run <fichier>.yml`).
+
+---
+
 ## Noms français des cartes (`data/cardNames.json`)
 
 Source de vérité anglais↔français des noms de cartes Clash Royale, partagée par tous les mini-jeux qui en ont besoin (Anagram, Zoom carte) — évite que chaque jeu retraduise/duplique les mêmes noms avec le risque de divergence que ça implique (constaté : plusieurs noms erronés trouvés dans `anagrams.json` avant la création de ce fichier, dont un vrai bug de `cardKey` qui cassait l'image de révélation).
