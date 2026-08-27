@@ -15,6 +15,7 @@ import {
   computeRaftSections,
   isRaftVictory,
   isSurvivalVictory,
+  isTooSoonSinceLastClosure,
   eventForDay,
   computeEpaveBonus,
   computePoissonsPourrisLoss,
@@ -165,6 +166,14 @@ async function main() {
   // ── isSurvivalVictory ──
   assert.strictEqual(isSurvivalVictory(10, 10), false);
   assert.strictEqual(isSurvivalVictory(11, 10), true);
+
+  // ── isTooSoonSinceLastClosure — garde-fou anti-double-avancée (26/08) ──
+  const NOW = new Date("2026-08-27T12:00:00Z").getTime();
+  assert.strictEqual(isTooSoonSinceLastClosure(null, NOW), false); // pas de date -> jamais bloqué
+  assert.strictEqual(isTooSoonSinceLastClosure("2026-08-27T11:00:00Z", NOW), true); // 1h -> trop tôt
+  assert.strictEqual(isTooSoonSinceLastClosure("2026-08-27T04:01:00Z", NOW), true); // ~7h59 -> encore trop tôt
+  assert.strictEqual(isTooSoonSinceLastClosure("2026-08-27T03:00:00Z", NOW), false); // 9h -> OK
+  assert.strictEqual(isTooSoonSinceLastClosure("2026-08-26T08:16:00Z", NOW), false); // ~28h (cas réel du 27/08) -> OK
 
   // ── eventForDay ──
   assert.strictEqual(eventForDay(3, EVENEMENTS).id, "canicule");

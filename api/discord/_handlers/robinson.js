@@ -38,6 +38,7 @@ import {
   computePoissonsPourrisLoss,
   spoilPoisson,
   isSurvivalVictory,
+  isTooSoonSinceLastClosure,
   eventForDay,
   previewCloseDay,
   closeDayAndAdvance,
@@ -311,12 +312,20 @@ function buildOutcomeEmbed(outcome, config, manches = [], currentManche = null) 
 
 // ── Publication quotidienne (appelée uniquement par scripts/postRobinson.js) ──
 
-export async function postRobinson(channelId, { dryRun = false, noPing = false, isPublic = false, requireActiveState = false } = {}) {
+export async function postRobinson(channelId, { dryRun = false, noPing = false, isPublic = false, requireActiveState = false, force = false } = {}) {
   const config = await loadRobinsonConfig();
   const state = await readState();
 
   if (state?.termine) {
     return { termine: true };
+  }
+
+  // Garde-fou anti-double-avancée : un cron en retard qui se déclencherait
+  // juste après une relance manuelle du même jour clôturerait un jour tout
+  // juste ouvert, quasi sans laisser le temps de voter (incident réel du
+  // 27/08). `force` permet un rattrapage volontaire répété en test.
+  if (state && !force && isTooSoonSinceLastClosure(state.publishedAt)) {
+    return { skipped: true, reason: "tooSoonSinceLastClosure", publishedAt: state.publishedAt };
   }
 
   // Garde-fou : une partie active sur un AUTRE salon ne doit JAMAIS être

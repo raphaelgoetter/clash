@@ -433,6 +433,22 @@ export function isSurvivalVictory(jour, dureeJours) {
   return jour > dureeJours;
 }
 
+// Garde-fou anti-double-avancée (26/08, incident réel) : un cron `schedule`
+// en retard (best-effort côté GitHub, voir CONTRIBUTING.md) peut encore se
+// déclencher après qu'un admin a relancé le jour à la main entretemps — sans
+// ce filet, les deux appels à postRobinson() clôtureraient chacun une
+// journée d'affilée, sautant un jour entier de vote quasi sans laisser le
+// temps aux joueurs. `MIN_HOURS_BETWEEN_CLOSURES` reste très en dessous du
+// cycle normal (~24h entre deux vraies clôtures), donc sans impact sur le
+// fonctionnement quotidien légitime.
+export const MIN_HOURS_BETWEEN_CLOSURES = 8;
+
+export function isTooSoonSinceLastClosure(publishedAt, now = Date.now()) {
+  if (!publishedAt) return false;
+  const hoursSince = (now - new Date(publishedAt).getTime()) / 3_600_000;
+  return hoursSince < MIN_HOURS_BETWEEN_CLOSURES;
+}
+
 // `previousDayVoters` (V du jour qui vient de se clôturer) permet de filtrer
 // les événements CONDITIONNELS (ex: Colis Royal, qui ne se déclenche que si
 // la mobilisation de la veille était suffisante) — si la condition n'est
