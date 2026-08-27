@@ -94,7 +94,6 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
     // le décompte du jour même (comportement historique, seule exception).
     const veille = state.jour > 1 ? await getHistoriqueEntry(state.jour - 1) : null;
     const vConsommation = veille ? veille.V : votes.length;
-    const baseConso = veille ? `${vConsommation} d'hier` : `${vConsommation} aujourd'hui, Jour 1`;
     const conso = computeDailyConsumption(vConsommation);
     // N'inclut pas le vol des Gobelins (Jour 8, conditionnel au Bois final
     // <5) : trop dépendant des autres lignes pour un calcul indépendant simple.
@@ -109,7 +108,7 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
     const detailLigne = (emoji, label, resource, consoKey) => {
       const delta = eventDelta(resource);
       const detail = delta !== 0 ? ` ${delta > 0 ? "+" : "−"} ${Math.abs(delta)} événement` : "";
-      return `  ${emoji} ${label.padEnd(10)} : ${stocks[resource]} actuel − ${conso[consoKey]} conso (${baseConso})${detail} = ${projection.stocks[resource]}`;
+      return `  ${emoji} ${label.padEnd(10)} : ${stocks[resource]} actuel − ${conso[consoKey]} conso${detail} = ${projection.stocks[resource]}`;
     };
     console.log(detailLigne("🐟", "Nourriture", "poisson", "poisson"));
     console.log(detailLigne("💧", "Eau", "eau", "eau"));
