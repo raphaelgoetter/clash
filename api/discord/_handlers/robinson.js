@@ -24,6 +24,7 @@ import {
   countUniqueVoters,
   listVotes,
   listHistorique,
+  getHistoriqueEntry,
   rollHarvestAmount,
   rollHarvestAmountGuaranteed,
   rollCappedEventAmount,
@@ -880,26 +881,35 @@ export async function handleJournal(webhookUrl) {
       return;
     }
 
-    const [stocks, V, radeauPoints, config, { entries }] = await Promise.all([
+    const [stocks, V, radeauPoints, config, { entries }, veille] = await Promise.all([
       readStocks(),
       countUniqueVoters(state.jour),
       readRadeauPoints(),
       loadRobinsonConfig(),
       listHistorique({ limit: 10 }),
+      state.jour > 1 ? getHistoriqueEntry(state.jour - 1) : null,
     ]);
-    const besoin = computeDailyConsumption(V);
+    // Le besoin projeté se base sur la mobilisation de LA VEILLE (V d'hier),
+    // pas sur le décompte du jour en cours — sinon "couvert" est trivialement
+    // vrai en tout début de journée (peu de votants encore comptés = besoin
+    // minuscule), un signal trompeur qui masque une vraie baisse de
+    // mobilisation au lieu de la révéler. Le Jour 1 n'a pas de veille : seul
+    // cas où on garde le décompte du jour même (comportement historique).
+    const vPourBesoin = state.jour > 1 && veille ? veille.V : V;
+    const besoin = computeDailyConsumption(vPourBesoin);
     const manque = {
       poisson: Math.max(0, besoin.poisson - stocks.poisson),
       eau: Math.max(0, besoin.eau - stocks.eau),
       bois: Math.max(0, besoin.bois - stocks.bois),
     };
     const sections = computeRaftSections(radeauPoints, config.points_par_section);
+    const baseBesoin = state.jour > 1 && veille ? ` (estimés sur les ${veille.V} joueurs d’hier)` : "";
 
     const lines = [
       `**Joueurs aujourd’hui : ${V}**`,
       `🛶 Radeau : ${radeauPoints} pts (${sections}/${config.radeau_sections_max} sections)`,
       "",
-      `**Besoins pour la clôture de ${formatUtcTimeAsParis(8)} (heure de Paris) :**`,
+      `**Besoins pour la clôture de ${formatUtcTimeAsParis(8)} (heure de Paris)${baseBesoin} :**`,
       `🐟 Nourriture : ${besoin.poisson} nécessaire${manque.poisson > 0 ? ` — **il en manque ${manque.poisson}**` : " (couvert)"}`,
       `💧 Eau : ${besoin.eau} nécessaire${manque.eau > 0 ? ` — **il en manque ${manque.eau}**` : " (couvert)"}`,
       `🪵 Bois : ${besoin.bois} nécessaire${manque.bois > 0 ? ` — **il en manque ${manque.bois}**` : " (couvert)"}`,
