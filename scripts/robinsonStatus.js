@@ -21,7 +21,6 @@ import {
   computeRaftSections,
   computeDailyConsumption,
   getHistoriqueEntry,
-  countUniqueVoters,
   tallyVotes,
   listVotes,
 } from "../backend/services/robinson.js";
@@ -49,28 +48,6 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
   console.log(`🪵 Bois       : ${stocks.bois}`);
   console.log(`🛶 Radeau     : ${radeauPoints} pts (${sections}/${config.radeau_sections_max} sections)\n`);
 
-  // Besoins ESTIMÉS sur la mobilisation d'HIER (même calcul que le bouton
-  // [📜 Journal de Bord] côté joueurs, voir robinson.js:handleJournal) —
-  // volontairement différent de la "Projection" plus bas, qui elle se base
-  // sur les votes RÉELS déjà comptés aujourd'hui (un instantané, pas une
-  // prévision). Jour 1 : pas de veille, pas de section affichée ici (le
-  // Journal garde alors le décompte du jour même, non pertinent en admin).
-  if (state.jour > 1) {
-    const veille = await getHistoriqueEntry(state.jour - 1);
-    if (veille) {
-      const besoin = computeDailyConsumption(veille.V);
-      const manque = {
-        poisson: Math.max(0, besoin.poisson - stocks.poisson),
-        eau: Math.max(0, besoin.eau - stocks.eau),
-        bois: Math.max(0, besoin.bois - stocks.bois),
-      };
-      console.log(`Besoins estimés sur les ${veille.V} joueurs d'hier :`);
-      console.log(`  🐟 Nourriture : ${besoin.poisson} nécessaire${manque.poisson > 0 ? ` — il en manque ${manque.poisson}` : " (couvert)"}`);
-      console.log(`  💧 Eau        : ${besoin.eau} nécessaire${manque.eau > 0 ? ` — il en manque ${manque.eau}` : " (couvert)"}`);
-      console.log(`  🪵 Bois       : ${besoin.bois} nécessaire${manque.bois > 0 ? ` — il en manque ${manque.bois}` : " (couvert)"}\n`);
-    }
-  }
-
   const votes = await listVotes(state.jour);
   // Pseudo actuel résolu en direct pour chaque votant (jamais celui figé au
   // moment du vote) — voir discordUsers.js. Repli sur le username stocké
@@ -95,10 +72,9 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
   // Projection : réutilise postRobinson() en --dry-run (lecture seule, aucune
   // écriture Redis, aucun appel Discord) pour ne pas dupliquer la logique des
   // événements (bonus Épave/Colis Royal/Poissons pourris) — canal factice, la
-  // publication n'est jamais atteinte en dry-run. Ne préjuge pas des votes
-  // qui arriveront encore avant 08:00 UTC.
+  // publication n'est jamais atteinte en dry-run.
   const projection = await postRobinson(state.channelId, { dryRun: true, noPing: true, isPublic: false });
-  console.log(`\n🔮 Projection avec les ${votes.length} votant${votes.length > 1 ? "s" : ""} RÉELS d'aujourd'hui pour l'instant (pas une prévision de fin de journée) :`);
+  console.log(`\n🔮 Projection si la clôture avait lieu maintenant :`);
   if (projection.skipped) {
     console.log(`→ Projection indisponible (${projection.reason ?? "raison inconnue"}).`);
   } else if (projection.final) {
@@ -108,9 +84,36 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
     const detailEvenement =
       projection.event?.perte != null ? ` (-${projection.event.perte} Poisson)` : "";
     console.log(`→ Jour ${projection.jour}/${config.duree_jours}${projection.event ? ` — événement : ${projection.event.nom}${detailEvenement}` : ""} :`);
-    console.log(`  🐟 Nourriture : ${projection.stocks.poisson}`);
-    console.log(`  💧 Eau        : ${projection.stocks.eau}`);
-    console.log(`  🪵 Bois       : ${projection.stocks.bois}`);
+
+    // La consommation réelle (computeClosure(), backend/services/robinson.js)
+    // se base sur la mobilisation de LA VEILLE, pas sur les votes d'aujourd'hui
+    // — sinon une baisse de participation réduirait mécaniquement le besoin
+    // d'autant, rendant le désengagement sans conséquence. On reproduit ici
+    // exactement la même base pour que ce détail corresponde à la vraie
+    // clôture, pas à un autre calcul. Jour 1 : pas de veille, on retombe sur
+    // le décompte du jour même (comportement historique, seule exception).
+    const veille = state.jour > 1 ? await getHistoriqueEntry(state.jour - 1) : null;
+    const vConsommation = veille ? veille.V : votes.length;
+    const baseConso = veille ? `${vConsommation} d'hier` : `${vConsommation} aujourd'hui, Jour 1`;
+    const conso = computeDailyConsumption(vConsommation);
+    // N'inclut pas le vol des Gobelins (Jour 8, conditionnel au Bois final
+    // <5) : trop dépendant des autres lignes pour un calcul indépendant simple.
+    const eventDelta = (resource) => {
+      const e = projection.event;
+      if (!e) return 0;
+      if ((e.id === "colis_royal" || e.id === "evenement")) return e.bonus_ressources ?? 0;
+      if (e.id === "indigestion_royale" && resource === "eau") return e.bonus_eau ?? 2;
+      if (e.id === "poissons_pourris" && resource === "poisson") return -(e.perte ?? 0);
+      return 0;
+    };
+    const detailLigne = (emoji, label, resource, consoKey) => {
+      const delta = eventDelta(resource);
+      const detail = delta !== 0 ? ` ${delta > 0 ? "+" : "−"} ${Math.abs(delta)} événement` : "";
+      return `  ${emoji} ${label.padEnd(10)} : ${stocks[resource]} actuel − ${conso[consoKey]} conso (${baseConso})${detail} = ${projection.stocks[resource]}`;
+    };
+    console.log(detailLigne("🐟", "Nourriture", "poisson", "poisson"));
+    console.log(detailLigne("💧", "Eau", "eau", "eau"));
+    console.log(detailLigne("🪵", "Bois", "bois", "bois"));
     console.log(`  🛶 Radeau     : ${projection.radeauPoints} pts (${sectionsProjetees}/${config.radeau_sections_max} sections)`);
   }
 })();

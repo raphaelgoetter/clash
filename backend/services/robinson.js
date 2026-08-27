@@ -576,7 +576,15 @@ async function computeClosure(state, config, { write }) {
 
   const [V, voters] = await Promise.all([countUniqueVoters(state.jour), listVotes(state.jour)]);
   const stocksAvant = await readStocks();
-  const consumption = computeDailyConsumption(V);
+  // Consommation basée sur la mobilisation de LA VEILLE, pas sur les votes du
+  // jour qu'on clôture — sinon une baisse de participation aujourd'hui
+  // réduit mécaniquement le besoin d'aujourd'hui d'autant, rendant le
+  // désengagement "gratuit" (production et besoin rétrécissent ensemble,
+  // jamais de vraie pénurie). Exception explicite : le Jour 1 n'a pas de
+  // veille, il garde son propre décompte (comportement historique inchangé).
+  const veille = state.jour > 1 ? await getHistoriqueEntry(state.jour - 1) : null;
+  const vConsommation = veille ? veille.V : V;
+  const consumption = computeDailyConsumption(vConsommation);
 
   let stocksApres;
   if (write) {
