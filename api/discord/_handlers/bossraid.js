@@ -209,7 +209,7 @@ async function buildCombatEmbed(
     color: BOSSRAID_COLOR,
     image: { url: bossRaidImageUrl(jour) },
     footer: {
-      text: `Votez avant ${formatUtcTimeAsParis(8)} (heure de Paris) demain pour orienter la journée. Vote modifiable jusqu’à la clôture.`,
+      text: `Votez avant ${formatUtcTimeAsParis(8)} demain pour orienter la journée. Vote modifiable jusqu’à la clôture.`,
     },
   };
 }

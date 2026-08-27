@@ -114,7 +114,7 @@ function buildJusteCarteEmbed({ seasonId, seasonManche, seasonMancheTotal }) {
       url: `${TRUST_ROYALE_URL}/images/banner-justecarte.webp?v=${Date.now()}`,
     },
     footer: {
-      text: `Nouvelle manche : dimanche prochain, ${formatUtcTimeAsParis(JUSTECARTE_CRON_UTC_HOUR)} (heure de Paris) !`,
+      text: `Nouvelle manche : dimanche prochain, ${formatUtcTimeAsParis(JUSTECARTE_CRON_UTC_HOUR)} !`,
     },
   };
 }

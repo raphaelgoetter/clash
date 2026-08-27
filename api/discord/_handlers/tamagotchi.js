@@ -205,7 +205,16 @@ function buildDay1Intro(dureeJours) {
 // GAUGE_ICONS, qui a besoin d'une icône même en normal) : rien
 // d'intéressant à raconter sur une jauge ordinaire, la ligne est alors
 // simplement omise plutôt que de meubler avec une phrase creuse.
-async function buildNarrative(jour, gauges, voters, estPremierJour, zones, confiance, confianceConfig, dureeJours) {
+async function buildNarrative(
+  jour,
+  gauges,
+  voters,
+  estPremierJour,
+  zones,
+  confiance,
+  confianceConfig,
+  dureeJours,
+) {
   if (estPremierJour) return buildDay1Intro(dureeJours);
 
   const narratifs = await loadNarratifs();
@@ -227,9 +236,14 @@ async function buildNarrative(jour, gauges, voters, estPremierJour, zones, confi
   // du plafond de palier le plus haut (là où la Confiance commence déjà à
   // coûter cher en fin de manche), pour rester cohérent sans dupliquer le
   // nombre en dur ici.
-  if (confiance != null && confianceConfig?.plafond_tier?.length && narratifs.confiance_bas?.length) {
+  if (
+    confiance != null &&
+    confianceConfig?.plafond_tier?.length &&
+    narratifs.confiance_bas?.length
+  ) {
     const seuil = Math.max(...confianceConfig.plafond_tier.map((p) => p.sous));
-    if (confiance < seuil) lines.push(pickFlavor(narratifs.confiance_bas, jour + 5));
+    if (confiance < seuil)
+      lines.push(pickFlavor(narratifs.confiance_bas, jour + 5));
   }
 
   const names = await pickVoterNames(voters, jour);
@@ -333,7 +347,7 @@ async function buildTamagotchiEmbed(
     footer: {
       text: estPremierJour
         ? "Mohamed Light vous confie Lilith — bon courage !"
-        : `Votez avant ${formatUtcTimeAsParis(8)} (heure de Paris) demain pour orienter la journée.`,
+        : `Votez avant ${formatUtcTimeAsParis(8)} demain pour orienter la journée.`,
     },
   };
 }
@@ -679,7 +693,11 @@ export async function postTamagotchi(
     // La Confiance finale plafonne le palier — un mauvais début de manche
     // (jours Moyen/Catastrophe non compensés par Câliner) laisse une trace
     // qu'aucun bon score d'étoiles ne peut effacer.
-    const tier = capTierByConfiance(tierBrut, closure.confianceApres, config.confiance);
+    const tier = capTierByConfiance(
+      tierBrut,
+      closure.confianceApres,
+      config.confiance,
+    );
 
     // Archivage de la manche AVANT lecture de la liste : la manche qui
     // vient de se terminer apparaît alors dans son propre récap comparatif
@@ -739,7 +757,12 @@ export async function postTamagotchi(
   // fera sentir qu'à la clôture de CE jour, via computeClosure() côté service
   // (voir applyActionOverrides()), donc pas de modificateur_jauges à appliquer
   // ici pour ce type d'événement.
-  const gauges = computeDayOpenGauges(closure.gaugesClosing, jour, event, config);
+  const gauges = computeDayOpenGauges(
+    closure.gaugesClosing,
+    jour,
+    event,
+    config,
+  );
   const { embed, components } = await buildDayPayload(
     jour,
     gauges,

@@ -119,16 +119,23 @@ async function buildNarrative(jour, stocks, voters, estPremierJour) {
 
   const lines = [];
   const poissonKey = stockCategory("poisson", stocks.poisson);
-  if (!poissonKey.endsWith("_normal")) lines.push(pickFlavor(narratifs[poissonKey], jour + 1));
+  if (!poissonKey.endsWith("_normal"))
+    lines.push(pickFlavor(narratifs[poissonKey], jour + 1));
   const eauKey = stockCategory("eau", stocks.eau);
-  if (!eauKey.endsWith("_normal")) lines.push(pickFlavor(narratifs[eauKey], jour + 2));
+  if (!eauKey.endsWith("_normal"))
+    lines.push(pickFlavor(narratifs[eauKey], jour + 2));
   const boisKey = stockCategory("bois", stocks.bois);
-  if (!boisKey.endsWith("_normal")) lines.push(pickFlavor(narratifs[boisKey], jour + 3));
+  if (!boisKey.endsWith("_normal"))
+    lines.push(pickFlavor(narratifs[boisKey], jour + 3));
 
   const names = await pickVoterNames(voters);
   if (names.length) {
     const template = pickFlavor(narratifs.cloture_votants, jour + 4);
-    lines.push(template.replaceAll("{noms}", names.join(" et ")).replaceAll("{premier}", names[0]));
+    lines.push(
+      template
+        .replaceAll("{noms}", names.join(" et "))
+        .replaceAll("{premier}", names[0]),
+    );
   }
 
   if (!lines.length) return intro;
@@ -138,22 +145,40 @@ async function buildNarrative(jour, stocks, voters, estPremierJour) {
 // ── Embed / composants du jour ────────────────────────────────────
 
 function formatStockLine(emoji, label, value) {
-  const alerte = value === 0 ? " ⚠️ **à 0** — encore une journée comme ça et c'est la fin !" : "";
+  const alerte =
+    value === 0
+      ? " ⚠️ **à 0** — encore une journée comme ça et c'est la fin !"
+      : "";
   return `${emoji} ${label} : **${value}**${alerte}`;
 }
 
-async function buildRobinsonEmbed(jour, stocks, radeauPoints, config, event, estPremierJour, voters, chefExplorateurId) {
+async function buildRobinsonEmbed(
+  jour,
+  stocks,
+  radeauPoints,
+  config,
+  event,
+  estPremierJour,
+  voters,
+  chefExplorateurId,
+) {
   const sections = computeRaftSections(radeauPoints, config.points_par_section);
-  const raftBar = "🟩".repeat(sections) + "⬜".repeat(config.radeau_sections_max - sections);
+  const raftBar =
+    "🟩".repeat(sections) + "⬜".repeat(config.radeau_sections_max - sections);
 
   const narrative = await buildNarrative(jour, stocks, voters, estPremierJour);
   const lines = [narrative, ""];
   if (event) {
-    lines.push(`**${event.emoji} Événement du jour : ${event.nom}**`, event.description);
+    lines.push(
+      `**${event.emoji} Événement du jour : ${event.nom}**`,
+      event.description,
+    );
     // Perte réelle de Poissons Pourris, calculée dynamiquement selon V — le
     // texte statique de robinson.json ne peut pas l'inclure d'avance.
     if (event.perte != null) {
-      lines.push(`🐟 -${event.perte} Poisson perdu${event.perte > 1 ? "s" : ""} cette nuit.`);
+      lines.push(
+        `🐟 -${event.perte} Poisson perdu${event.perte > 1 ? "s" : ""} cette nuit.`,
+      );
     }
     lines.push("");
   }
@@ -196,7 +221,7 @@ async function buildRobinsonEmbed(jour, stocks, radeauPoints, config, event, est
     footer: {
       text: estPremierJour
         ? "Naufragés ! Survivez ensemble jusqu’au Jour 11, ou évadez-vous avant en finissant le Radeau."
-        : `Votez avant ${formatUtcTimeAsParis(8)} (heure de Paris) demain pour orienter la journée.`,
+        : `Votez avant ${formatUtcTimeAsParis(8)} demain pour orienter la journée.`,
     },
   };
 }
@@ -265,16 +290,31 @@ function formatMancheLine(record, config, isCurrent, isBest) {
 function buildManchesSection(manches, config, currentManche) {
   if (!manches.length) return [];
   const best = manches.reduce((a, b) =>
-    computeMancheScore(b.outcome, b.jour, config.duree_jours) > computeMancheScore(a.outcome, a.jour, config.duree_jours) ? b : a,
+    computeMancheScore(b.outcome, b.jour, config.duree_jours) >
+    computeMancheScore(a.outcome, a.jour, config.duree_jours)
+      ? b
+      : a,
   );
   return [
     "",
     "**📊 Manches précédentes**",
-    ...manches.map((m) => formatMancheLine(m, config, m.manche === currentManche, m.manche === best.manche)),
+    ...manches.map((m) =>
+      formatMancheLine(
+        m,
+        config,
+        m.manche === currentManche,
+        m.manche === best.manche,
+      ),
+    ),
   ];
 }
 
-function buildOutcomeEmbed(outcome, config, manches = [], currentManche = null) {
+function buildOutcomeEmbed(
+  outcome,
+  config,
+  manches = [],
+  currentManche = null,
+) {
   const image = { url: robinsonImageUrl(config.duree_jours) };
   const manchesLines = buildManchesSection(manches, config, currentManche);
 
@@ -313,7 +353,16 @@ function buildOutcomeEmbed(outcome, config, manches = [], currentManche = null) 
 
 // ── Publication quotidienne (appelée uniquement par scripts/postRobinson.js) ──
 
-export async function postRobinson(channelId, { dryRun = false, noPing = false, isPublic = false, requireActiveState = false, force = false } = {}) {
+export async function postRobinson(
+  channelId,
+  {
+    dryRun = false,
+    noPing = false,
+    isPublic = false,
+    requireActiveState = false,
+    force = false,
+  } = {},
+) {
   const config = await loadRobinsonConfig();
   const state = await readState();
 
@@ -328,8 +377,17 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
   // seule (scripts/robinsonStatus.js) n'écrit rien et ne peut pas causer ce
   // problème, quelle que soit sa fréquence d'appel. `force` permet un
   // rattrapage volontaire répété en test.
-  if (state && !dryRun && !force && isTooSoonSinceLastClosure(state.publishedAt)) {
-    return { skipped: true, reason: "tooSoonSinceLastClosure", publishedAt: state.publishedAt };
+  if (
+    state &&
+    !dryRun &&
+    !force &&
+    isTooSoonSinceLastClosure(state.publishedAt)
+  ) {
+    return {
+      skipped: true,
+      reason: "tooSoonSinceLastClosure",
+      publishedAt: state.publishedAt,
+    };
   }
 
   // Garde-fou : une partie active sur un AUTRE salon ne doit JAMAIS être
@@ -354,11 +412,21 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
   if (estPremierJour) {
     const jour = 1;
     const stocks = config.stocks_initiaux;
-    const embed = await buildRobinsonEmbed(jour, stocks, 0, config, null, true, []);
+    const embed = await buildRobinsonEmbed(
+      jour,
+      stocks,
+      0,
+      config,
+      null,
+      true,
+      [],
+    );
     const components = buildRobinsonComponents(jour, config, {}, null);
 
     if (dryRun) {
-      const pingRoleId = !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
+      const pingRoleId = !noPing
+        ? await getRoleIdByName(MINI_JEUX_ROLE_NAME)
+        : null;
       return { dryRun: true, jour, embed, components, pingRoleId };
     }
 
@@ -375,7 +443,9 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
     });
   }
 
-  const closure = dryRun ? await previewCloseDay(state, config) : await closeDayAndAdvance(state, config);
+  const closure = dryRun
+    ? await previewCloseDay(state, config)
+    : await closeDayAndAdvance(state, config);
 
   // Victoire par le Radeau : détectée par computeClosure elle-même (déjà
   // acquise avant même la conso du jour) — court-circuite tout, y compris
@@ -394,8 +464,14 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
       });
     }
     const manches = await listManches({ limit: 10 });
-    const embed = buildOutcomeEmbed(closure.outcome, config, manches, currentManche);
-    if (dryRun) return { dryRun: true, final: true, outcome: closure.outcome, embed };
+    const embed = buildOutcomeEmbed(
+      closure.outcome,
+      config,
+      manches,
+      currentManche,
+    );
+    if (dryRun)
+      return { dryRun: true, final: true, outcome: closure.outcome, embed };
     const result = await publishAndWriteState(channelId, state, {
       jour: state.jour,
       event: state.event,
@@ -422,8 +498,14 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
       });
     }
     const manches = await listManches({ limit: 10 });
-    const embed = buildOutcomeEmbed("victoire_jour11", config, manches, currentManche);
-    if (dryRun) return { dryRun: true, final: true, outcome: "victoire_jour11", embed };
+    const embed = buildOutcomeEmbed(
+      "victoire_jour11",
+      config,
+      manches,
+      currentManche,
+    );
+    if (dryRun)
+      return { dryRun: true, final: true, outcome: "victoire_jour11", embed };
     const result = await publishAndWriteState(channelId, state, {
       jour: state.jour,
       event: state.event,
@@ -470,9 +552,15 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
       : await grantEqualResources(bonus);
   }
   if (event?.id === "poissons_pourris") {
-    const perte = computePoissonsPourrisLoss(closure.V, event.condition_votants_veille_max);
+    const perte = computePoissonsPourrisLoss(
+      closure.V,
+      event.condition_votants_veille_max,
+    );
     stocksPourEmbed = dryRun
-      ? { ...closure.stocksApres, poisson: Math.max(0, closure.stocksApres.poisson - perte) }
+      ? {
+          ...closure.stocksApres,
+          poisson: Math.max(0, closure.stocksApres.poisson - perte),
+        }
       : await spoilPoisson(perte);
     eventPourEmbed = { ...event, perte };
   }
@@ -508,7 +596,10 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
   let zeroStreaksApres;
   let defeated;
   if (dryRun) {
-    ({ streaks: zeroStreaksApres, defeated } = updateZeroStreaks(state.zeroStreaks, stocksPourEmbed));
+    ({ streaks: zeroStreaksApres, defeated } = updateZeroStreaks(
+      state.zeroStreaks,
+      stocksPourEmbed,
+    ));
   } else {
     const finalized = await finalizeDayClosure(state.jour, {
       V: closure.V,
@@ -535,8 +626,19 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
       });
     }
     const manches = await listManches({ limit: 10 });
-    const embedDefaite = buildOutcomeEmbed("defaite", config, manches, currentManche);
-    if (dryRun) return { dryRun: true, final: true, outcome: "defaite", embed: embedDefaite };
+    const embedDefaite = buildOutcomeEmbed(
+      "defaite",
+      config,
+      manches,
+      currentManche,
+    );
+    if (dryRun)
+      return {
+        dryRun: true,
+        final: true,
+        outcome: "defaite",
+        embed: embedDefaite,
+      };
     const result = await publishAndWriteState(channelId, state, {
       jour: state.jour,
       event: state.event,
@@ -551,14 +653,31 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
     return { ...result, final: true, outcome: "defaite" };
   }
 
-  const embed = await buildRobinsonEmbed(jourSuivant, stocksPourEmbed, radeauPointsPourEmbed, config, eventPourEmbed, false, closure.voters, chefExplorateurId);
+  const embed = await buildRobinsonEmbed(
+    jourSuivant,
+    stocksPourEmbed,
+    radeauPointsPourEmbed,
+    config,
+    eventPourEmbed,
+    false,
+    closure.voters,
+    chefExplorateurId,
+  );
   const components = buildRobinsonComponents(jourSuivant, config, {}, event);
 
   if (dryRun) {
     // stocks/radeauPoints exposés en plus de l'embed pour scripts/robinsonStatus.js
     // (projection numérique du Jour suivant), qui a besoin des valeurs brutes
     // plutôt que de reparser le texte de l'embed.
-    return { dryRun: true, jour: jourSuivant, embed, components, event: eventPourEmbed, stocks: stocksPourEmbed, radeauPoints: radeauPointsPourEmbed };
+    return {
+      dryRun: true,
+      jour: jourSuivant,
+      embed,
+      components,
+      event: eventPourEmbed,
+      stocks: stocksPourEmbed,
+      radeauPoints: radeauPointsPourEmbed,
+    };
   }
 
   return publishAndWriteState(channelId, state, {
@@ -579,7 +698,18 @@ export async function postRobinson(channelId, { dryRun = false, noPing = false, 
 async function publishAndWriteState(
   channelId,
   previousState,
-  { jour, event, chefExplorateurId = null, zeroStreaks, dayVoters, embed, components, noPing, estPremierJour, termine = false },
+  {
+    jour,
+    event,
+    chefExplorateurId = null,
+    zeroStreaks,
+    dayVoters,
+    embed,
+    components,
+    noPing,
+    estPremierJour,
+    termine = false,
+  },
 ) {
   const token = process.env.DISCORD_TOKEN;
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
@@ -596,13 +726,19 @@ async function publishAndWriteState(
         );
       }
     } catch (err) {
-      console.warn("[Robinson] Erreur réseau à la suppression du message de la veille:", err.message);
+      console.warn(
+        "[Robinson] Erreur réseau à la suppression du message de la veille:",
+        err.message,
+      );
     }
   }
 
   // Ping réservé au lancement (Jour 1) et à la fin de manche — jamais pour
   // les jours intermédiaires.
-  const roleId = (estPremierJour || termine) && !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
+  const roleId =
+    (estPremierJour || termine) && !noPing
+      ? await getRoleIdByName(MINI_JEUX_ROLE_NAME)
+      : null;
 
   const res = await fetch(
     `https://discord.com/api/v10/channels/${channelId}/messages`,
@@ -612,7 +748,11 @@ async function publishAndWriteState(
         Authorization: `Bot ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ embeds: [embed], components, ...buildRolePingFields(roleId) }),
+      body: JSON.stringify({
+        embeds: [embed],
+        components,
+        ...buildRolePingFields(roleId),
+      }),
     },
   );
   if (!res.ok) {
@@ -663,8 +803,22 @@ export async function refreshPublicMessage(state, config, botToken) {
     readRadeauPoints(),
     tallyVotes(state.jour),
   ]);
-  const embed = await buildRobinsonEmbed(state.jour, stocks, radeauPoints, config, state.event, state.jour === 1, state.dayVoters, state.chefExplorateurId);
-  const components = buildRobinsonComponents(state.jour, config, voteCounts, state.event);
+  const embed = await buildRobinsonEmbed(
+    state.jour,
+    stocks,
+    radeauPoints,
+    config,
+    state.event,
+    state.jour === 1,
+    state.dayVoters,
+    state.chefExplorateurId,
+  );
+  const components = buildRobinsonComponents(
+    state.jour,
+    config,
+    voteCounts,
+    state.event,
+  );
 
   await fetch(
     `https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`,
@@ -681,7 +835,8 @@ export async function refreshPublicMessage(state, config, botToken) {
 
 function formatHarvestConfirmation(actionId, config, detail) {
   if (actionId === "explorer") {
-    const [resourceId] = Object.entries(detail.yields).find(([, n]) => n > 0) ?? [];
+    const [resourceId] =
+      Object.entries(detail.yields).find(([, n]) => n > 0) ?? [];
     return `🔍 Exploration réussie : tu ramènes 3 ${RESOURCE_LABELS[resourceId]} !`;
   }
   const action = config.actions[actionId];
@@ -699,12 +854,21 @@ function formatHarvestConfirmation(actionId, config, detail) {
 // révéler en privé, le message public est mis à jour séparément par un
 // second PATCH direct (bot token) au salon.
 
-async function handleHarvestVote(webhookUrl, state, config, actionId, discordId, username, botToken) {
+async function handleHarvestVote(
+  webhookUrl,
+  state,
+  config,
+  actionId,
+  discordId,
+  username,
+  botToken,
+) {
   const result = await recordVote(state.jour, discordId, actionId, username);
 
   if (result.status === "rejected") {
     await patchOriginal(webhookUrl, {
-      content: "Tu as déjà voté aujourd’hui pour une autre action, ton vote est définitif jusqu’à demain !",
+      content:
+        "Tu as déjà voté aujourd’hui pour une autre action, ton vote est définitif jusqu’à demain !",
       embeds: [],
       components: [],
     });
@@ -714,7 +878,9 @@ async function handleHarvestVote(webhookUrl, state, config, actionId, discordId,
   if (result.status === "already_recorded") {
     const detail = await getVoteDetail(state.jour, discordId);
     await patchOriginal(webhookUrl, {
-      content: detail ? formatHarvestConfirmation(actionId, config, detail) : "Tu as déjà voté cette action aujourd’hui, c’est noté !",
+      content: detail
+        ? formatHarvestConfirmation(actionId, config, detail)
+        : "Tu as déjà voté cette action aujourd’hui, c’est noté !",
       embeds: [],
       components: [],
     });
@@ -727,7 +893,9 @@ async function handleHarvestVote(webhookUrl, state, config, actionId, discordId,
   if (actionId === "explorer") {
     const yields = rollExplorerYield(Math.random);
     await Promise.all(
-      Object.entries(yields).map(([resourceId, amount]) => harvestResource(resourceId, amount)),
+      Object.entries(yields).map(([resourceId, amount]) =>
+        harvestResource(resourceId, amount),
+      ),
     );
     detail = { actionId, yields, at: new Date().toISOString() };
   } else {
@@ -738,7 +906,9 @@ async function handleHarvestVote(webhookUrl, state, config, actionId, discordId,
     // n'appelle jamais ce tirage).
     const isChef = state.chefExplorateurId === discordId;
     const amount = harvestCapForEvent(state.event, actionId)
-      ? (isChef ? 1 : rollCappedEventAmount(Math.random))
+      ? isChef
+        ? 1
+        : rollCappedEventAmount(Math.random)
       : isChef
         ? rollHarvestAmountGuaranteed(Math.random)
         : rollHarvestAmount(Math.random);
@@ -761,12 +931,20 @@ async function handleHarvestVote(webhookUrl, state, config, actionId, discordId,
 // le slot de vote réservé par recordVote() est libéré (releaseVoteSlot), le
 // joueur peut réessayer plus tard dans la journée sans avoir "gâché" son vote.
 
-async function handleRadeauVote(webhookUrl, state, config, discordId, username, botToken) {
+async function handleRadeauVote(
+  webhookUrl,
+  state,
+  config,
+  discordId,
+  username,
+  botToken,
+) {
   const result = await recordVote(state.jour, discordId, "radeau", username);
 
   if (result.status === "rejected") {
     await patchOriginal(webhookUrl, {
-      content: "Tu as déjà voté aujourd’hui pour une autre action, ton vote est définitif jusqu’à demain !",
+      content:
+        "Tu as déjà voté aujourd’hui pour une autre action, ton vote est définitif jusqu’à demain !",
       embeds: [],
       components: [],
     });
@@ -782,7 +960,9 @@ async function handleRadeauVote(webhookUrl, state, config, discordId, username, 
     return;
   }
 
-  const contribution = await attemptRaftContribution(config.bois_par_point_radeau);
+  const contribution = await attemptRaftContribution(
+    config.bois_par_point_radeau,
+  );
   if (!contribution.success) {
     await releaseVoteSlot(state.jour, discordId);
     await patchOriginal(webhookUrl, {
@@ -808,12 +988,20 @@ async function handleRadeauVote(webhookUrl, state, config, discordId, username, 
   await refreshPublicMessage(state, config, botToken);
 }
 
-export async function handleVoteButton(webhookUrl, jour, actionId, discordId, username, botToken) {
+export async function handleVoteButton(
+  webhookUrl,
+  jour,
+  actionId,
+  discordId,
+  username,
+  botToken,
+) {
   try {
     const state = await readState();
     if (!state || state.termine || String(state.jour) !== String(jour)) {
       await patchOriginal(webhookUrl, {
-        content: "Le vote du jour a déjà été clôturé, la journée a changé — regarde le nouveau message !",
+        content:
+          "Le vote du jour a déjà été clôturé, la journée a changé — regarde le nouveau message !",
         embeds: [],
         components: [],
       });
@@ -822,7 +1010,8 @@ export async function handleVoteButton(webhookUrl, jour, actionId, discordId, us
 
     if (actionId === "explorer" && isExplorerDisabled(state.event)) {
       await patchOriginal(webhookUrl, {
-        content: "🧌 L’exploration est bloquée aujourd’hui à cause des Gobelins !",
+        content:
+          "🧌 L’exploration est bloquée aujourd’hui à cause des Gobelins !",
         embeds: [],
         components: [],
       });
@@ -836,7 +1025,10 @@ export async function handleVoteButton(webhookUrl, jour, actionId, discordId, us
     // pendant la fenêtre (buildRobinsonComponents()), ce contrôle ne sert
     // que de filet si un joueur clique sur un vieux message affiché avant la
     // clôture du jour.
-    if (actionId === "radeau" && isRadeauDisabled(jour, config.radeau_verrouille)) {
+    if (
+      actionId === "radeau" &&
+      isRadeauDisabled(jour, config.radeau_verrouille)
+    ) {
       const { emoji, nom, jour_fin } = config.radeau_verrouille;
       await patchOriginal(webhookUrl, {
         content: `${emoji} ${nom} : le Radeau est hors de portée avec une mer pareille — reviens à partir du Jour ${jour_fin + 1} !`,
@@ -847,11 +1039,26 @@ export async function handleVoteButton(webhookUrl, jour, actionId, discordId, us
     }
 
     if (actionId === "radeau") {
-      await handleRadeauVote(webhookUrl, state, config, discordId, username, botToken);
+      await handleRadeauVote(
+        webhookUrl,
+        state,
+        config,
+        discordId,
+        username,
+        botToken,
+      );
       return;
     }
 
-    await handleHarvestVote(webhookUrl, state, config, actionId, discordId, username, botToken);
+    await handleHarvestVote(
+      webhookUrl,
+      state,
+      config,
+      actionId,
+      discordId,
+      username,
+      botToken,
+    );
   } catch (err) {
     console.error("[Robinson] Échec traitement du vote:", err.message);
   }
@@ -862,13 +1069,20 @@ export async function handleVoteButton(webhookUrl, jour, actionId, discordId, us
 // garde de fraîcheur nécessaire, contrairement à un vote).
 
 function formatHistoriqueLine(entry) {
-  if (entry.outcome === "victoire_radeau") return `Jour ${entry.jour} : 🛶 Victoire par le Radeau !`;
-  if (entry.outcome === "victoire_jour11") return `Jour ${entry.jour} : 🚢 Les secours sont arrivés !`;
+  if (entry.outcome === "victoire_radeau")
+    return `Jour ${entry.jour} : 🛶 Victoire par le Radeau !`;
+  if (entry.outcome === "victoire_jour11")
+    return `Jour ${entry.jour} : 🚢 Les secours sont arrivés !`;
   if (entry.outcome === "defaite") return `Jour ${entry.jour} : 💀 Naufrage.`;
-  const vol = entry.gobelinsVoleur ? " — 🧌 les Gobelins ont volé 5 Poissons" : "";
+  const vol = entry.gobelinsVoleur
+    ? " — 🧌 les Gobelins ont volé 5 Poissons"
+    : "";
   // radeauVotes absent sur les entrées enregistrées avant le 25/08 (champ
   // ajouté après coup) — omis proprement plutôt que d'afficher "undefined".
-  const radeau = entry.radeauVotes != null ? `, ${entry.radeauVotes} vote${entry.radeauVotes > 1 ? "s" : ""} radeau` : "";
+  const radeau =
+    entry.radeauVotes != null
+      ? `, ${entry.radeauVotes} vote${entry.radeauVotes > 1 ? "s" : ""} radeau`
+      : "";
   return `Jour ${entry.jour} : ${entry.V} joueur${entry.V > 1 ? "s" : ""}${radeau}${vol}`;
 }
 
@@ -884,14 +1098,15 @@ export async function handleJournal(webhookUrl) {
       return;
     }
 
-    const [stocks, V, radeauPoints, config, { entries }, veille] = await Promise.all([
-      readStocks(),
-      countUniqueVoters(state.jour),
-      readRadeauPoints(),
-      loadRobinsonConfig(),
-      listHistorique({ limit: 10 }),
-      state.jour > 1 ? getHistoriqueEntry(state.jour - 1) : null,
-    ]);
+    const [stocks, V, radeauPoints, config, { entries }, veille] =
+      await Promise.all([
+        readStocks(),
+        countUniqueVoters(state.jour),
+        readRadeauPoints(),
+        loadRobinsonConfig(),
+        listHistorique({ limit: 10 }),
+        state.jour > 1 ? getHistoriqueEntry(state.jour - 1) : null,
+      ]);
     // Le besoin projeté se base sur la mobilisation de LA VEILLE (V d'hier),
     // pas sur le décompte du jour en cours — sinon "couvert" est trivialement
     // vrai en tout début de journée (peu de votants encore comptés = besoin
@@ -905,8 +1120,14 @@ export async function handleJournal(webhookUrl) {
       eau: Math.max(0, besoin.eau - stocks.eau),
       bois: Math.max(0, besoin.bois - stocks.bois),
     };
-    const sections = computeRaftSections(radeauPoints, config.points_par_section);
-    const baseBesoin = state.jour > 1 && veille ? ` (estimés sur les ${veille.V} joueurs d’hier)` : "";
+    const sections = computeRaftSections(
+      radeauPoints,
+      config.points_par_section,
+    );
+    const baseBesoin =
+      state.jour > 1 && veille
+        ? ` (estimés sur les ${veille.V} joueurs d’hier)`
+        : "";
 
     const lines = [
       `**Joueurs aujourd’hui : ${V}**`,
@@ -923,19 +1144,37 @@ export async function handleJournal(webhookUrl) {
     // ressource est déjà en streak, pour ne pas polluer l'affichage en
     // temps normal.
     const streakWarnings = [
-      state.zeroStreaks?.poisson > 0 ? `🐟 Nourriture : ${state.zeroStreaks.poisson}/${ZERO_STREAK_LIMIT} jours à 0` : null,
-      state.zeroStreaks?.eau > 0 ? `💧 Eau : ${state.zeroStreaks.eau}/${ZERO_STREAK_LIMIT} jours à 0` : null,
-      state.zeroStreaks?.bois > 0 ? `🪵 Bois : ${state.zeroStreaks.bois}/${ZERO_STREAK_LIMIT} jours à 0` : null,
+      state.zeroStreaks?.poisson > 0
+        ? `🐟 Nourriture : ${state.zeroStreaks.poisson}/${ZERO_STREAK_LIMIT} jours à 0`
+        : null,
+      state.zeroStreaks?.eau > 0
+        ? `💧 Eau : ${state.zeroStreaks.eau}/${ZERO_STREAK_LIMIT} jours à 0`
+        : null,
+      state.zeroStreaks?.bois > 0
+        ? `🪵 Bois : ${state.zeroStreaks.bois}/${ZERO_STREAK_LIMIT} jours à 0`
+        : null,
     ].filter(Boolean);
     if (streakWarnings.length > 0) {
-      lines.push("", "**⚠️ Jours consécutifs à 0 (naufrage à 3) :**", ...streakWarnings);
+      lines.push(
+        "",
+        "**⚠️ Jours consécutifs à 0 (naufrage à 3) :**",
+        ...streakWarnings,
+      );
     }
 
     if (entries.length > 0) {
-      lines.push("", "**Jours précédents :**", ...entries.map(formatHistoriqueLine));
+      lines.push(
+        "",
+        "**Jours précédents :**",
+        ...entries.map(formatHistoriqueLine),
+      );
     }
 
-    const embed = { title: "📜 Journal de Bord", description: lines.join("\n"), color: ROBINSON_COLOR };
+    const embed = {
+      title: "📜 Journal de Bord",
+      description: lines.join("\n"),
+      color: ROBINSON_COLOR,
+    };
     await patchOriginal(webhookUrl, { embeds: [embed], components: [] });
   } catch (err) {
     console.error("[Robinson] Échec Journal de Bord:", err.message);

@@ -66,7 +66,9 @@ function formatPostedAtParis(date = new Date()) {
 
 function buildQuestionEmbed(mancheConfig, question, jour) {
   const image = quizImageUrl(question.image);
-  const choicesLines = question.choix.map((label, idx) => `**${QCM_LETTERS[idx]}.** ${label}`);
+  const choicesLines = question.choix.map(
+    (label, idx) => `**${QCM_LETTERS[idx]}.** ${label}`,
+  );
   return {
     title: `❓ Quiz — ${mancheConfig.theme} — Jour ${jour}/${TOTAL_QUESTIONS}`,
     description: [
@@ -80,7 +82,7 @@ function buildQuestionEmbed(mancheConfig, question, jour) {
     ...(image ? { image: { url: image } } : {}),
     footer: {
       text: [
-        `Vote avant ${formatUtcTimeAsParis(8)} (heure de Paris) demain.`,
+        `Vote avant ${formatUtcTimeAsParis(8)} demain.`,
         `Heure du quiz : ${formatPostedAtParis()}`,
       ].join("\n"),
     },
@@ -108,28 +110,39 @@ function buildQuestionComponents(manche, jour, question) {
 // ── Embed de révélation finale (Jour 8) ───────────────────────────
 
 function formatMancheHistoryLine(record) {
-  const winners = record.winners?.length ? record.winners.join(", ") : "personne";
+  const winners = record.winners?.length
+    ? record.winners.join(", ")
+    : "personne";
   return `Manche ${record.manche} (${record.theme}) : 🏆 ${winners} — ${record.maxScore}/${TOTAL_QUESTIONS}`;
 }
 
 async function buildRevealEmbed(manche, mancheConfig, ranking, manchesHistory) {
   const resolved = await Promise.all(
-    ranking.map(async (r) => ({ ...r, username: await resolveDisplayName(r.discordId, r.username) })),
+    ranking.map(async (r) => ({
+      ...r,
+      username: await resolveDisplayName(r.discordId, r.username),
+    })),
   );
   const maxScore = resolved[0]?.score ?? 0;
-  const winners = maxScore > 0 ? resolved.filter((r) => r.score === maxScore) : [];
+  const winners =
+    maxScore > 0 ? resolved.filter((r) => r.score === maxScore) : [];
 
   const lines = [
     `**Thème : ${mancheConfig.theme}**`,
     "",
     "**Les bonnes réponses :**",
     ...mancheConfig.questions.map(
-      (q, idx) => `Jour ${idx + 1} : ${q.enonce} → **${q.choix[q.bonne_reponse]}**`,
+      (q, idx) =>
+        `Jour ${idx + 1} : ${q.enonce} → **${q.choix[q.bonne_reponse]}**`,
     ),
     "",
     "**Classement final :**",
     ...(resolved.length
-      ? resolved.slice(0, 20).map((r, i) => `${i + 1}. ${r.username} — ${r.score}/${TOTAL_QUESTIONS}`)
+      ? resolved
+          .slice(0, 20)
+          .map(
+            (r, i) => `${i + 1}. ${r.username} — ${r.score}/${TOTAL_QUESTIONS}`,
+          )
       : ["Personne n'a voté cette manche."]),
   ];
 
@@ -141,7 +154,11 @@ async function buildRevealEmbed(manche, mancheConfig, ranking, manchesHistory) {
   }
 
   if (manchesHistory.length) {
-    lines.push("", "**Vainqueurs des manches précédentes :**", ...manchesHistory.map(formatMancheHistoryLine));
+    lines.push(
+      "",
+      "**Vainqueurs des manches précédentes :**",
+      ...manchesHistory.map(formatMancheHistoryLine),
+    );
   }
 
   return {
@@ -158,7 +175,17 @@ async function buildRevealEmbed(manche, mancheConfig, ranking, manchesHistory) {
 async function publishAndWriteState(
   channelId,
   previousState,
-  { manche, mancheIndex, mancheId, theme, jour, embed, components, noPing, termine = false },
+  {
+    manche,
+    mancheIndex,
+    mancheId,
+    theme,
+    jour,
+    embed,
+    components,
+    noPing,
+    termine = false,
+  },
 ) {
   const token = process.env.DISCORD_TOKEN;
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
@@ -170,10 +197,15 @@ async function publishAndWriteState(
         { method: "DELETE", headers: { Authorization: `Bot ${token}` } },
       );
       if (!delRes.ok && delRes.status !== 404) {
-        console.warn(`[Quiz] Échec suppression du message de la veille (${delRes.status}), publication quand même.`);
+        console.warn(
+          `[Quiz] Échec suppression du message de la veille (${delRes.status}), publication quand même.`,
+        );
       }
     } catch (err) {
-      console.warn("[Quiz] Erreur réseau à la suppression du message de la veille:", err.message);
+      console.warn(
+        "[Quiz] Erreur réseau à la suppression du message de la veille:",
+        err.message,
+      );
     }
   }
 
@@ -182,11 +214,21 @@ async function publishAndWriteState(
   // (tests) le désactive.
   const roleId = !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
 
-  const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
-    method: "POST",
-    headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ embeds: [embed], components, ...buildRolePingFields(roleId) }),
-  });
+  const res = await fetch(
+    `https://discord.com/api/v10/channels/${channelId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bot ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        embeds: [embed],
+        components,
+        ...buildRolePingFields(roleId),
+      }),
+    },
+  );
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
     throw new Error(`Erreur envoi salon Discord (${res.status}): ${errText}`);
@@ -208,7 +250,15 @@ async function publishAndWriteState(
   return { jour, embed, message, termine };
 }
 
-export async function postQuiz(channelId, { dryRun = false, noPing = false, isPublic = false, requireActiveState = false } = {}) {
+export async function postQuiz(
+  channelId,
+  {
+    dryRun = false,
+    noPing = false,
+    isPublic = false,
+    requireActiveState = false,
+  } = {},
+) {
   const config = await loadQuizConfig();
   const state = await readState();
 
@@ -241,7 +291,9 @@ export async function postQuiz(channelId, { dryRun = false, noPing = false, isPu
 
     if (dryRun) {
       const manche = await previewNextMancheSeq();
-      const pingRoleId = !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
+      const pingRoleId = !noPing
+        ? await getRoleIdByName(MINI_JEUX_ROLE_NAME)
+        : null;
       return {
         dryRun: true,
         jour,
@@ -272,7 +324,12 @@ export async function postQuiz(channelId, { dryRun = false, noPing = false, isPu
   if (jour > TOTAL_QUESTIONS) {
     const ranking = await computeMancheRanking(state.manche, mancheConfig);
     const manchesHistory = await listManches({ limit: 10 });
-    const embed = await buildRevealEmbed(state.manche, mancheConfig, ranking, manchesHistory);
+    const embed = await buildRevealEmbed(
+      state.manche,
+      mancheConfig,
+      ranking,
+      manchesHistory,
+    );
 
     if (dryRun) return { dryRun: true, final: true, embed };
 
@@ -281,10 +338,16 @@ export async function postQuiz(channelId, { dryRun = false, noPing = false, isPu
     // ne jamais polluer l'archive avec des manches de test.
     if (isPublic) {
       const resolved = await Promise.all(
-        ranking.map(async (r) => ({ ...r, username: await resolveDisplayName(r.discordId, r.username) })),
+        ranking.map(async (r) => ({
+          ...r,
+          username: await resolveDisplayName(r.discordId, r.username),
+        })),
       );
       const maxScore = resolved[0]?.score ?? 0;
-      const winners = maxScore > 0 ? resolved.filter((r) => r.score === maxScore).map((r) => r.username) : [];
+      const winners =
+        maxScore > 0
+          ? resolved.filter((r) => r.score === maxScore).map((r) => r.username)
+          : [];
       await archiveManche({
         manche: state.manche,
         mancheId: state.mancheId,
@@ -351,10 +414,22 @@ async function patchOriginal(webhookUrl, payload) {
   }
 }
 
-export async function handleQuizVote(webhookUrl, manche, jour, choiceIndex, discordId, username) {
+export async function handleQuizVote(
+  webhookUrl,
+  manche,
+  jour,
+  choiceIndex,
+  discordId,
+  username,
+) {
   try {
     const state = await readState();
-    if (!state || state.termine || String(state.manche) !== String(manche) || String(state.jour) !== String(jour)) {
+    if (
+      !state ||
+      state.termine ||
+      String(state.manche) !== String(manche) ||
+      String(state.jour) !== String(jour)
+    ) {
       await patchOriginal(webhookUrl, {
         content: "Cette question est déjà close, regarde le nouveau message !",
         embeds: [],
@@ -363,7 +438,13 @@ export async function handleQuizVote(webhookUrl, manche, jour, choiceIndex, disc
       return;
     }
 
-    const result = await recordVote(manche, jour, discordId, choiceIndex, username);
+    const result = await recordVote(
+      manche,
+      jour,
+      discordId,
+      choiceIndex,
+      username,
+    );
     const content =
       result.status === "rejected"
         ? "Tu as déjà voté aujourd'hui, ton vote est définitif jusqu'à la révélation finale !"
