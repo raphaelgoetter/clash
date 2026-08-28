@@ -980,11 +980,21 @@ async function postWarSummary(
     // Appel live échoué — on tombera sur le calcul snapshot ci-dessous
   }
 
-  // Totaux du jour
-  const totalDecks = Object.values(dayEntry.decks ?? {}).reduce(
-    (a, b) => a + b,
-    0,
-  );
+  // Totaux du jour — max(dayEntry.decks, decksPreReset) par joueur, jamais
+  // dayEntry.decks seul : contrairement au détail par joueur plus bas
+  // (mergedDaySnapDecks), ce total ignorait decksPreReset jusqu'ici, donc
+  // un snapshot horaire incomplet le jour où le snapshot pré-reset manque
+  // aussi (cron GitHub désynchronisé, voir CONTRIBUTING.md) pouvait afficher
+  // un nombre trop bas sans aucun avertissement, contrairement à "Points
+  // marqués" qui a son propre garde-fou (hasFameData / isExactFame).
+  const totalDecks = (() => {
+    const merged = { ...(dayEntry.decks ?? {}) };
+    for (const [t, v] of Object.entries(dayEntry.decksPreReset ?? {})) {
+      if (!Number.isFinite(v)) continue;
+      if (!Number.isFinite(merged[t]) || v > merged[t]) merged[t] = v;
+    }
+    return Object.values(merged).reduce((a, b) => a + b, 0);
+  })();
 
   // Snapshot pré-reset (T-2 min) : source de vérité exacte.
   // _cumulFamePreReset est le cumul hebdomadaire capturé avant tout deck de la nouvelle journée.
@@ -1234,8 +1244,22 @@ async function postWarSummary(
   }
 
   {
-    let line = `${fmt(totalDecks)} decks`;
-    if (prevDecks !== null) line += ` ${fmtDelta(totalDecks - prevDecks)}`;
+    // Sans snapshot pré-reset, le total ne repose que sur la correction
+    // "backup" (snapshot.js, dans les 90 min suivant le reset) — celle-ci
+    // peut elle-même sous-compter (vu en prod le 27/08 : 125 au lieu de 200
+    // decks réels, cron pre-reset-snapshot.yml désynchronisé côté GitHub,
+    // voir CONTRIBUTING.md). Le total étant alors potentiellement faux sans
+    // qu'on puisse savoir de combien, on l'annonce comme indisponible
+    // plutôt que d'afficher un chiffre — même logique que "Points marqués"
+    // (hasFameData) qui omet déjà le champ en l'absence de donnée fiable.
+    const decksDataMissing = !dayEntry.snapshotPreResetTime;
+    let line;
+    if (decksDataMissing) {
+      line = "Données indisponibles (snapshot pré-reset manquant)";
+    } else {
+      line = `${fmt(totalDecks)} decks`;
+      if (prevDecks !== null) line += ` ${fmtDelta(totalDecks - prevDecks)}`;
+    }
     fields.push({
       name: "<:cards:1493711279121104926> Decks joués",
       value: line,
