@@ -187,8 +187,8 @@
           <div data-layout="duo" data-split="2-1">
             <div>
               <p>
-                Calcule le matchup GDC d’un joueur à partir des decks joués
-                lors de ses combats de guerre récents et des decks adverses
+                Calcule le matchup GDC d’un joueur à partir des decks joués lors
+                de ses combats de guerre récents et des decks adverses
                 rencontrés. Les decks sont regroupés par jour de GDC (J1 à J4).
               </p>
               <p>
@@ -202,8 +202,8 @@
               </p>
               <p>
                 Barème détaillé (4 étapes appliquées à une base de 50 %,
-                calibrées pour que 0 % et 100 % ne soient atteints que si les
-                4 s’alignent simultanément à l’extrême) :
+                calibrées pour que 0 % et 100 % ne soient atteints que si les 4
+                s’alignent simultanément à l’extrême) :
               </p>
               <ol>
                 <li>
@@ -212,59 +212,56 @@
                   Cycle bat Beatdown…), déterminé par leurs win conditions.
                 </li>
                 <li>
-                  <strong>Counters directs</strong> (±25) : pénalité en
-                  échelle selon le nombre de hard-counters et de
-                  soft-counters à la win condition du deck évalué présents
-                  chez l’adversaire (un hard-counter pèse plus qu’un
-                  soft-counter, et chaque counter supplémentaire pèse plus
-                  que le précédent) — l’absence totale de counter donne le
-                  maximum.
+                  <strong>Counters directs</strong> (±25) : pénalité en échelle
+                  selon le nombre de hard-counters et de soft-counters à la win
+                  condition du deck évalué présents chez l’adversaire (un
+                  hard-counter pèse plus qu’un soft-counter, et chaque counter
+                  supplémentaire pèse plus que le précédent) — l’absence totale
+                  de counter donne le maximum.
                 </li>
                 <li>
                   <strong>Structure du deck</strong> (±10) : quelques règles
                   d’intégrité (ex. deck Bait face à peu de petits sorts
                   adverses, gros tank face à l’absence de tank killer ou de
                   bâtiment défensif chez l’adversaire, Ronin qui contre les
-                  cartes à gros dégâts comme P.E.K.K.A/Mega Knight/Boss
-                  Bandit), plus une pénalité en échelle pour un deck trop
-                  dispersé (plus de 2 win conditions, plus de 3 sorts ou
-                  plus de 2 bâtiments) — chaque carte supplémentaire pèse
-                  plus que la précédente.
+                  cartes à gros dégâts comme P.E.K.K.A/Mega Knight/Boss Bandit),
+                  plus une pénalité en échelle pour un deck trop dispersé (plus
+                  de 2 win conditions, plus de 3 sorts ou plus de 2 bâtiments) —
+                  chaque carte supplémentaire pèse plus que la précédente.
                 </li>
                 <li>
                   <strong>Écart de niveau de cartes</strong> (±10) : différence
-                  de niveaux normalisés (rareté incluse) entre les deux decks,
-                  2 % par point d’écart (plafond atteint dès 5 points
-                  d’écart cumulé). Au-delà de 15 points d’écart cumulé, un
-                  bonus « écart exceptionnel » s’ajoute par-dessus ce
-                  plafond, par palier de 5 points (15→±25, 20→±30, 25→±35,
-                  30→±40 au total) : un écart de niveau vraiment extrême
-                  peut alors dominer le score à lui seul, au-delà de la
-                  répartition ±50 normale des 4 étapes — le résultat final
-                  reste toujours borné entre 0 % et 100 %.
+                  de niveaux normalisés (rareté incluse) entre les deux decks, 2
+                  % par point d’écart (plafond atteint dès 5 points d’écart
+                  cumulé). Au-delà de 15 points d’écart cumulé, un bonus « écart
+                  exceptionnel » s’ajoute par-dessus ce plafond, par palier de 5
+                  points (15→±25, 20→±30, 25→±35, 30→±40 au total) : un écart de
+                  niveau vraiment extrême peut alors dominer le score à lui
+                  seul, au-delà de la répartition ±50 normale des 4 étapes — le
+                  résultat final reste toujours borné entre 0 % et 100 %.
                 </li>
               </ol>
               <p>
                 Si la win condition d’un deck n’est pas reconnue dans le
                 catalogue de counters, le calcul se rabat sur une liste de
-                cartes à forts dégâts (P.E.K.K.A, Mini P.E.K.K.A, Mega
-                Knight, Boss Bandit) pour éviter de neutraliser le calcul ;
-                si vraiment aucune win condition n’est identifiable des deux
-                côtés, les étapes Archétype et Counters directs sont
-                neutralisées pour ce combat (seules Structure et Écart de
-                niveau s’appliquent encore).
+                cartes à forts dégâts (P.E.K.K.A, Mini P.E.K.K.A, Mega Knight,
+                Boss Bandit) pour éviter de neutraliser le calcul ; si vraiment
+                aucune win condition n’est identifiable des deux côtés, les
+                étapes Archétype et Counters directs sont neutralisées pour ce
+                combat (seules Structure et Écart de niveau s’appliquent
+                encore).
               </p>
               <p>
-                Certaines win conditions (ex. Balloon) changent d’archetype
-                et de counters selon la carte qui les accompagne dans le
-                deck (Lava Hound, Giant, Freeze/P.E.K.K.A…) — détail
-                consultable sur la <a href="/matchup/">page Matchup</a>.
+                Certaines win conditions (ex. Balloon) changent d’archetype et
+                de counters selon la carte qui les accompagne dans le deck (Lava
+                Hound, Giant, Freeze/P.E.K.K.A…) — détail consultable sur la
+                <a href="/matchup/">page Matchup</a>.
               </p>
               <p>
-                Un bouton <strong>ℹ️ Détails</strong> sous la réponse permet
-                de choisir un combat précis et d’afficher le détail complet
-                du calcul (valeur de chaque étape, decks des deux joueurs,
-                win conditions identifiées).
+                Un bouton <strong>ℹ️ Détails</strong> sous la réponse permet de
+                choisir un combat précis et d’afficher le détail complet du
+                calcul (valeur de chaque étape, decks des deux joueurs, win
+                conditions identifiées).
               </p>
               <p>Interprétation :</p>
               <ul>
@@ -297,32 +294,31 @@
             <div>
               <p>
                 Affiche les 6 derniers combats bruts d’un joueur, tous types
-                confondus (GDC, Ladder, Amical, Challenge…), avec le deck
-                joué à chaque combat et le score de matchup associé.
+                confondus (GDC, Ladder, Amical, Challenge…), avec le deck joué à
+                chaque combat et le score de matchup associé.
               </p>
               <p>
-                Contrairement à <code>/matchup-gdc</code>, aucun filtre par
-                type ni regroupement des decks identiques : chaque ligne
-                correspond à un combat distinct, du plus récent au plus
-                ancien, avec le type de combat précisé (GDC/Ladder/Amical/
-                Challenge/Autre).
+                Contrairement à <code>/matchup-gdc</code>, aucun filtre par type
+                ni regroupement des decks identiques : chaque ligne correspond à
+                un combat distinct, du plus récent au plus ancien, avec le type
+                de combat précisé (GDC/Ladder/Amical/ Challenge/Autre).
               </p>
               <p>
                 Le calcul du score de matchup (0-100 %) est strictement
-                identique à celui de <code>/matchup-gdc</code> — voir le
-                détail des 4 étapes de calcul dans la carte
+                identique à celui de <code>/matchup-gdc</code> — voir le détail
+                des 4 étapes de calcul dans la carte
                 <a href="#matchup-gdc">/matchup-gdc</a> ci-dessus.
               </p>
               <p>
-                Un bouton <strong>ℹ️ Détails</strong> sous la réponse permet
-                de choisir un combat précis et d’afficher le détail complet
-                du calcul (valeur de chaque étape, decks des deux joueurs,
-                win conditions identifiées).
+                Un bouton <strong>ℹ️ Détails</strong> sous la réponse permet de
+                choisir un combat précis et d’afficher le détail complet du
+                calcul (valeur de chaque étape, decks des deux joueurs, win
+                conditions identifiées).
               </p>
               <p>
-                <strong>Quand utiliser cette commande&#8239;:</strong> Pour
-                un aperçu rapide de l’activité récente d’un joueur, sans se
-                limiter aux combats de guerre.
+                <strong>Quand utiliser cette commande&#8239;:</strong> Pour un
+                aperçu rapide de l’activité récente d’un joueur, sans se limiter
+                aux combats de guerre.
               </p>
               <p><strong>Commande :</strong> <code>/matchup</code></p>
               <p><strong>Option :</strong> <code>tag:#TAG</code></p>
@@ -336,8 +332,8 @@
           <div data-layout="duo" data-split="2-1">
             <div>
               <p>
-                Affiche le suivi jour par jour (J1 à J4) des combats de GDC
-                d’un joueur&#8239;: semaine en cours et semaine précédente.
+                Affiche le suivi jour par jour (J1 à J4) des combats de GDC d’un
+                joueur&#8239;: semaine en cours et semaine précédente.
               </p>
               <p>
                 Pour la semaine en cours, la commande détaille par journée le
@@ -345,22 +341,21 @@
                 gagnés, reconstruits à partir des combats récents du joueur.
               </p>
               <p>
-                Pour la semaine précédente, seuls les decks joués et les
-                points par jour sont affichés (sans détail
-                victoires/défaites), car cette donnée n’est pas fiable au-delà
-                de la semaine en cours.
+                Pour la semaine précédente, seuls les decks joués et les points
+                par jour sont affichés (sans détail victoires/défaites), car
+                cette donnée n’est pas fiable au-delà de la semaine en cours.
               </p>
               <p>
                 Chaque journée est accompagnée d’un badge&#8239;: ✅ si les 4
-                decks ont été joués, ⚠️ si le joueur n’a pas encore joué (semaine
-                en cours uniquement), ❌ sinon. La commande affiche aussi le
-                matchup moyen de la semaine et l’heure du reset de GDC du
-                clan (heure de Paris).
+                decks ont été joués, ⚠️ si le joueur n’a pas encore joué
+                (semaine en cours uniquement), ❌ sinon. La commande affiche
+                aussi le matchup moyen de la semaine et l’heure du reset de GDC
+                du clan.
               </p>
               <p>
                 <strong>Quand utiliser cette commande&#8239;:</strong> Pour
-                suivre rapidement l’activité de GDC d’un joueur au jour le
-                jour, en complément de <code>/stats</code> et
+                suivre rapidement l’activité de GDC d’un joueur au jour le jour,
+                en complément de <code>/stats</code> et
                 <code>/matchup-gdc</code>.
               </p>
               <p><strong>Commande :</strong> <code>/combats</code></p>
@@ -679,24 +674,24 @@
                 leurs 4 decks chaque jour de la semaine de GDC en cours.
               </p>
               <p>
-                Seuls les joueurs en défaut sont affichés, triés du plus
-                grand nombre de decks manquants au plus petit. Le calcul ne
-                porte que sur les journées déjà closes&#8239;: la journée en
-                cours n'est jamais comptée contre un joueur tant qu'elle
-                n'est pas terminée. Pour chaque joueur en défaut, la commande
-                détaille le nombre de decks joués par journée et un badge
-                (✅/⚠️/❌), comme dans <code>/combats</code>.
+                Seuls les joueurs en défaut sont affichés, triés du plus grand
+                nombre de decks manquants au plus petit. Le calcul ne porte que
+                sur les journées déjà closes&#8239;: la journée en cours n'est
+                jamais comptée contre un joueur tant qu'elle n'est pas terminée.
+                Pour chaque joueur en défaut, la commande détaille le nombre de
+                decks joués par journée et un badge (✅/⚠️/❌), comme dans
+                <code>/combats</code>.
               </p>
               <p>
                 Seule la semaine en cours est prise en compte (pas la semaine
-                précédente). Les joueurs arrivés en cours de semaine sont
-                inclus comme les autres, mais uniquement jugés à partir de
-                leur jour d'arrivée.
+                précédente). Les joueurs arrivés en cours de semaine sont inclus
+                comme les autres, mais uniquement jugés à partir de leur jour
+                d'arrivée.
               </p>
               <p>
                 <strong>Quand utiliser cette commande&#8239;:</strong> Pour
-                repérer rapidement, en un coup d'œil sur tout un clan, qui
-                doit encore jouer ses combats de la semaine, en complément de
+                repérer rapidement, en un coup d'œil sur tout un clan, qui doit
+                encore jouer ses combats de la semaine, en complément de
                 <code>/late</code> et <code>/combats</code>.
               </p>
               <p><strong>Commande :</strong> <code>/combats-clan</code></p>

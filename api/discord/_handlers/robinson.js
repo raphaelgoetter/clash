@@ -1136,7 +1136,7 @@ export async function handleJournal(webhookUrl) {
       `**Joueurs aujourd’hui : ${V}**`,
       `🛶 Radeau : ${radeauPoints} pts (${sections}/${config.radeau_sections_max} sections)`,
       "",
-      `**Besoins pour la clôture de ${formatUtcTimeAsParis(8)} (heure de Paris)${baseBesoin} :**`,
+      `**Besoins pour la clôture de ${formatUtcTimeAsParis(8)} ${baseBesoin} :**`,
       `🐟 Nourriture : ${besoin.poisson} nécessaire${manque.poisson > 0 ? ` — **il en manque ${manque.poisson}**` : " (couvert)"}`,
       `💧 Eau : ${besoin.eau} nécessaire${manque.eau > 0 ? ` — **il en manque ${manque.eau}**` : " (couvert)"}`,
       `🪵 Bois : ${besoin.bois} nécessaire${manque.bois > 0 ? ` — **il en manque ${manque.bois}**` : " (couvert)"}`,

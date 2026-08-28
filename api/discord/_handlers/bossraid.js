@@ -146,7 +146,7 @@ function buildAnnonceEmbed(config) {
     // l'image ne réapparaît toujours pas après un nouveau post.
     image: { url: `${TRUST_ROYALE_URL}/images/boss/boss-start.webp?v=2` },
     footer: {
-      text: `Le combat commence demain à ${formatUtcTimeAsParis(8)} (heure de Paris).`,
+      text: `Le combat commence demain à ${formatUtcTimeAsParis(8)}.`,
     },
   };
 }
