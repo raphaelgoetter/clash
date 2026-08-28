@@ -18,6 +18,12 @@ on:
     # mais en pratique peut être retardé de 75–90 min en cas de forte charge.
     # Les resets des clans sont à 09:40, 09:42 et 09:57 UTC.
     # 07:30 donne 128 min de marge avant le premier T−2 min (09:38) — le script dort jusqu'au bon moment.
+    # Commit de resynchronisation (28/08) : bug GitHub documenté où `schedule`
+    # se désynchronise silencieusement pendant que `workflow_dispatch`
+    # continue de fonctionner — tout commit sur la branche par défaut force
+    # un resync côté GitHub (voir CONTRIBUTING.md, "Crons GitHub Actions").
+    # Contrairement aux jeux, une occurrence manquée ici est irrécupérable :
+    # vérifier manuellement chaque matin ven-lun tant que non confirmé résolu.
     - cron: "30 7 * * 5,6,0,1"
   workflow_dispatch:
 
