@@ -63,9 +63,9 @@
       "id": "epave",
       "nom": "Épave échouée",
       "emoji": "🪸",
-      "description": "Une épave charrie jusqu’au rivage des morceaux de coque déjà taillés — de quoi avancer significativement la construction du Radeau sans lever le petit doigt !",
-      "points_base": 26,
-      "points_min": 10
+      "description": "Une épave charrie jusqu’au rivage des morceaux de coque encore à dégrossir — un joli stock de Bois pour le Radeau, mais il faudra encore le travailler !",
+      "bois_base": 19,
+      "bois_min": 5
     },
     {
       "jour": 8,

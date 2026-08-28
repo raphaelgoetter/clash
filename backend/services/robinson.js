@@ -199,14 +199,10 @@ export async function attemptRaftContribution(boisCost) {
   return { success: true, boisRestant: nouveauStock, points };
 }
 
-// Dons directs des événements dynamiques (Épave, Colis Royal) — appliqués
-// une seule fois, à l'arrivée du jour concerné, jamais liés à un vote.
-// INCRBY atomique comme partout ailleurs dans ce fichier.
-
-export async function grantRadeauPoints(amount) {
-  if (amount <= 0) return readRadeauPoints();
-  return Number(await getRedis().incrby(RADEAU_POINTS_KEY, amount));
-}
+// Dons directs des événements dynamiques (Colis Royal, Épave depuis son
+// inversion en Bois le 28/08) — appliqués une seule fois, à l'arrivée du
+// jour concerné, jamais liés à un vote. INCRBY atomique comme partout
+// ailleurs dans ce fichier.
 
 export async function grantEqualResources(amount) {
   if (amount <= 0) return readStocks();
@@ -465,12 +461,17 @@ export function eventForDay(jour, evenements, previousDayVoters = 0) {
   return candidate;
 }
 
-// Bonus de points de l'événement Épave — dégressif selon le nombre de
-// votants de la veille, pour favoriser les petits groupes qui ont
-// structurellement moins de votes/jour à consacrer au Radeau (voir
-// CONTRIBUTING.md, section Robinson, pour le raisonnement complet).
-export function computeEpaveBonus(event, previousDayVoters) {
-  return Math.max(event.points_min, event.points_base - previousDayVoters);
+// Don de Bois brut de l'événement Épave (inversé le 28/08, initialement un
+// don de points de Radeau directs) — dégressif selon le nombre de votants
+// de la veille, pour favoriser les petits groupes qui ont structurellement
+// moins de votes/jour à consacrer au Radeau (voir CONTRIBUTING.md, section
+// Robinson, pour le raisonnement complet). Le Bois doit encore être converti
+// en points via de vrais votes Radeau (1 vote = 1 point) — contrairement à
+// l'ancien don direct, qui rendait la victoire par Radeau quasi certaine dès
+// le Jour 7 en contournant le vrai goulot d'étranglement (le nombre de votes
+// disponibles, jamais la ressource elle-même).
+export function computeEpaveBoisBonus(event, previousDayVoters) {
+  return Math.max(event.bois_min, event.bois_base - previousDayVoters);
 }
 
 // Perte de Poisson de l'événement Poissons Pourris — pic à mi-parcours du

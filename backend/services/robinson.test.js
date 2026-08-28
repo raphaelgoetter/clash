@@ -17,7 +17,7 @@ import {
   isSurvivalVictory,
   isTooSoonSinceLastClosure,
   eventForDay,
-  computeEpaveBonus,
+  computeEpaveBoisBonus,
   computePoissonsPourrisLoss,
   computeMancheScore,
 } from "./robinson.js";
@@ -29,7 +29,7 @@ const EVENEMENTS = [
   { jour: 6, id: "ouragan" },
   { jour: 8, id: "gobelins" },
   { jour: 4, id: "colis_royal", condition_votants_veille: 12, bonus_ressources: 2 },
-  { jour: 7, id: "epave", points_base: 26, points_min: 10 },
+  { jour: 7, id: "epave", bois_base: 19, bois_min: 5 },
   { jour: 9, id: "indigestion_royale" },
   { jour: 2, id: "poissons_pourris", condition_votants_veille_max: 10 },
 ];
@@ -221,12 +221,13 @@ async function main() {
   assert.strictEqual(computePoissonsPourrisLoss(9, 14), 5);
   assert.strictEqual(computePoissonsPourrisLoss(13, 14), 1);
 
-  // ── computeEpaveBonus — dégressif selon les votants de la veille, plancher points_min ──
-  const epave = { points_base: 26, points_min: 10 };
-  assert.strictEqual(computeEpaveBonus(epave, 6), 20);
-  assert.strictEqual(computeEpaveBonus(epave, 15), 11);
-  assert.strictEqual(computeEpaveBonus(epave, 20), 10); // 26-20=6 < points_min -> plancher à 10
-  assert.strictEqual(computeEpaveBonus(epave, 0), 26);
+  // ── computeEpaveBoisBonus — don de Bois (inversé le 28/08, avant : points directs) ──
+  // dégressif selon les votants de la veille, plancher bois_min.
+  const epave = { bois_base: 19, bois_min: 5 };
+  assert.strictEqual(computeEpaveBoisBonus(epave, 9), 10);
+  assert.strictEqual(computeEpaveBoisBonus(epave, 14), 5);
+  assert.strictEqual(computeEpaveBoisBonus(epave, 20), 5); // 19-20<0 < bois_min -> plancher à 5
+  assert.strictEqual(computeEpaveBoisBonus(epave, 0), 19);
 
   // ── computeMancheScore — classement entre manches (jeu rejoué dans l'année) ──
   assert.strictEqual(computeMancheScore("victoire_radeau", 5, 10), 1006); // 1000 + (11-5)

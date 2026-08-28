@@ -35,7 +35,7 @@ import {
   isRadeauDisabled,
   computeDailyConsumption,
   computeRaftSections,
-  computeEpaveBonus,
+  computeEpaveBoisBonus,
   computePoissonsPourrisLoss,
   spoilPoisson,
   isSurvivalVictory,
@@ -46,7 +46,6 @@ import {
   finalizeDayClosure,
   updateZeroStreaks,
   ZERO_STREAK_LIMIT,
-  grantRadeauPoints,
   grantEqualResources,
   grantResource,
   computeMancheScore,
@@ -535,11 +534,15 @@ export async function postRobinson(
   // sera réellement désigné au prochain cron.
   const chefExplorateurId = dryRun ? null : pickChefExplorateur(closure.voters);
 
+  // Épave (Jour 7) — inversée en don de Bois brut (au lieu de points de
+  // Radeau directs) : le Bois doit encore être converti en points via de
+  // vrais votes Radeau, ce qui réintroduit le vrai goulot d'étranglement
+  // (le nombre de votes disponibles) au lieu de le contourner.
   if (event?.id === "epave") {
-    const bonus = computeEpaveBonus(event, closure.V);
-    radeauPointsPourEmbed = dryRun
-      ? closure.radeauPoints + bonus
-      : await grantRadeauPoints(bonus);
+    const bonus = computeEpaveBoisBonus(event, closure.V);
+    stocksPourEmbed = dryRun
+      ? { ...stocksPourEmbed, bois: stocksPourEmbed.bois + bonus }
+      : await grantResource("bois", bonus);
   }
   if (event?.id === "colis_royal") {
     const bonus = event.bonus_ressources ?? 3;
