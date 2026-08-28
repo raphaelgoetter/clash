@@ -276,6 +276,22 @@ export async function isGamePosted(gameId) {
   return Number(await getRedis().sismember(postedGamesKey(), gameId)) === 1;
 }
 
+// ── Garde-fou anti-double-post ────────────────────────────────────
+// GitHub Actions peut retarder significativement un cron planifié (cf.
+// commentaire équivalent dans anagrams.js) : si on relance postZoom() à la
+// main pour rattraper un créneau manqué, il faut éviter que le run planifié,
+// arrivant en retard le même jour, ne fasse avancer la manche une seconde
+// fois. Même pattern que alreadyPostedThisWeek (anagrams.js).
+function todayUtcDateString(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+export async function alreadyPostedThisWeek(now = new Date()) {
+  const state = await readState();
+  if (!state?.startedAt) return false;
+  return todayUtcDateString(new Date(state.startedAt)) === todayUtcDateString(now);
+}
+
 // ── Normalisation et vérification de la réponse ─────────────────
 // normalizeAnswer partagée avec Frame/Anagram (textNormalize.js). checkAnswer
 // utilise une égalité STRICTE comme Anagram (pas de correspondance par

@@ -319,6 +319,22 @@ export async function startNewGame(channelId) {
   return { state: newState, entry };
 }
 
+// ── Garde-fou anti-double-post ────────────────────────────────────
+// GitHub Actions peut retarder significativement un cron planifié : si on
+// relance postJusteCarte() à la main pour rattraper un créneau manqué, il
+// faut éviter que le run planifié, arrivant en retard le même jour, ne fasse
+// avancer la manche une seconde fois. Même pattern que alreadyPostedThisWeek
+// (anagrams.js).
+function todayUtcDateString(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+export async function alreadyPostedThisWeek(now = new Date()) {
+  const state = await readState();
+  if (!state?.startedAt) return false;
+  return todayUtcDateString(new Date(state.startedAt)) === todayUtcDateString(now);
+}
+
 // ── Résolution de l'image de carte (API Clash Royale) ────────────
 
 async function loadCardDefinitions() {

@@ -46,6 +46,7 @@ import {
   computeSeasonMancheTotal,
   getCardImageUrl,
   findTiedRank,
+  alreadyPostedThisWeek,
 } from "../../../backend/services/lajustecarte.js";
 import {
   toPublicSeasonId,
@@ -301,13 +302,15 @@ async function postSeasonRecap(
 // ── Publication (appelée uniquement par scripts/postJusteCarte.js) ──
 // En dry-run, aucune écriture d'état ni appel Discord — la prochaine carte
 // est seulement prévisualisée, sans faire avancer la partie. Contrairement
-// à Anagram, pas de gating hebdomadaire applicatif (jour/tirage) : comme
-// Frame et Zoom, la seule porte d'entrée est le déclenchement du cron
-// GitHub Actions (dimanche 16h UTC) — voir .github/workflows/lajustecarte.yml.
+// à Anagram, pas de tirage aléatoire de créneau : comme Frame et Zoom, le
+// seul déclencheur est le cron GitHub Actions (dimanche 16h UTC) — voir
+// .github/workflows/lajustecarte.yml. `force` ignore le garde-fou
+// anti-double-post (alreadyPostedThisWeek) — utile pour rattraper un
+// créneau manqué à la main, jamais depuis le cron.
 
 export async function postJusteCarte(
   channelId,
-  { dryRun = false, noPing = false } = {},
+  { dryRun = false, noPing = false, force = false } = {},
 ) {
   if (dryRun) {
     const catalog = await loadCatalog();
@@ -358,6 +361,10 @@ export async function postJusteCarte(
       seasonRecapEmbed,
       pingRoleId,
     };
+  }
+
+  if (!force && (await alreadyPostedThisWeek())) {
+    return { skipped: true, reason: "already-posted-this-week" };
   }
 
   const token = process.env.DISCORD_TOKEN;

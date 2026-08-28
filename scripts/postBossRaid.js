@@ -13,6 +13,7 @@
 //   node scripts/postBossRaid.js --public --dry-run
 //   node scripts/postBossRaid.js --no-ping       — poste sans pinger @MINI JEUX (jour d'annonce uniquement)
 //   node scripts/postBossRaid.js --require-active — ne fait rien si aucun Raid n'est déjà lancé (cron)
+//   node scripts/postBossRaid.js --force          — ignore le garde-fou anti-double-avancée (jour tout juste ouvert)
 
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
@@ -25,6 +26,10 @@ const PUBLIC = process.argv.includes("--public");
 // d'annonce doit toujours être déclenché manuellement (workflow_dispatch), le
 // cron ne fait qu'avancer un Raid déjà en cours.
 const REQUIRE_ACTIVE = process.argv.includes("--require-active");
+// Contourne le garde-fou anti-double-avancée (voir backend/services/bossraid.js,
+// isTooSoonSinceLastClosure) — utile en test pour clôturer plusieurs jours
+// d'affilée sans attendre MIN_HOURS_BETWEEN_CLOSURES entre chaque appel.
+const FORCE = process.argv.includes("--force");
 // Ping @MINI JEUX réservé au vrai lancement public (jour d'annonce) — jamais
 // sur le salon de test, même sans --no-ping explicite, pour ne pas déranger
 // le serveur à chaque itération de test pendant le développement du jeu.
@@ -46,10 +51,17 @@ if (!channelId) {
 
 (async () => {
   try {
-    const result = await postBossRaid(channelId, { dryRun: DRY_RUN, noPing: NO_PING, isPublic: PUBLIC, requireActiveState: REQUIRE_ACTIVE });
+    const result = await postBossRaid(channelId, { dryRun: DRY_RUN, noPing: NO_PING, isPublic: PUBLIC, requireActiveState: REQUIRE_ACTIVE, force: FORCE });
 
     if (result.skipped) {
-      console.log("Aucun Raid actif, rien à poster (cron sans lancement manuel préalable).");
+      if (result.reason === "tooSoonSinceLastClosure") {
+        console.log(
+          `Jour ouvert trop récemment (${result.publishedAt}) pour être re-clôturé — probable double déclenchement ` +
+            `(cron en retard + relance manuelle, ou double cron). Rien n'est posté. Utilise --force si ce rattrapage est volontaire.`,
+        );
+      } else {
+        console.log("Aucun Raid actif, rien à poster (cron sans lancement manuel préalable).");
+      }
       return;
     }
 

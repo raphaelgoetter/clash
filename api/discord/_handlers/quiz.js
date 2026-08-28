@@ -23,6 +23,7 @@ import {
   computeMancheRanking,
   archiveManche,
   listManches,
+  isTooSoonSinceLastClosure,
 } from "../../../backend/services/quiz.js";
 import {
   getRoleIdByName,
@@ -257,12 +258,31 @@ export async function postQuiz(
     noPing = false,
     isPublic = false,
     requireActiveState = false,
+    force = false,
   } = {},
 ) {
   const config = await loadQuizConfig();
   const state = await readState();
 
   if (state?.termine) return { termine: true };
+
+  // Garde-fou anti-double-avancée : un cron en retard qui se déclencherait
+  // juste après une relance manuelle du même jour avancerait la manche
+  // d'une question de plus, coup sur coup (même incident/pattern que
+  // Robinson, 26/08). Jamais appliqué en dry-run. `force` permet un
+  // rattrapage volontaire en test.
+  if (
+    state &&
+    !dryRun &&
+    !force &&
+    isTooSoonSinceLastClosure(state.publishedAt)
+  ) {
+    return {
+      skipped: true,
+      reason: "tooSoonSinceLastClosure",
+      publishedAt: state.publishedAt,
+    };
+  }
 
   // Garde-fou : une manche active sur un AUTRE salon ne doit JAMAIS être
   // reprise ici. Sans ce contrôle, une manche oubliée active sur le salon de

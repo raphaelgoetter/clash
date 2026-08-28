@@ -11,6 +11,7 @@
 //   node scripts/postQuiz.js --public --dry-run
 //   node scripts/postQuiz.js --no-ping       — poste sans pinger @MINI-JEUX (Jour 1 uniquement)
 //   node scripts/postQuiz.js --require-active — ne fait rien si aucune manche n'est déjà lancée (cron)
+//   node scripts/postQuiz.js --force          — ignore le garde-fou anti-double-avancée (jour tout juste ouvert)
 
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
@@ -23,6 +24,10 @@ const PUBLIC = process.argv.includes("--public");
 // doit toujours être déclenché manuellement (workflow_dispatch), le cron ne
 // fait qu'avancer une manche déjà en cours.
 const REQUIRE_ACTIVE = process.argv.includes("--require-active");
+// Contourne le garde-fou anti-double-avancée (voir backend/services/quiz.js,
+// isTooSoonSinceLastClosure) — utile en test pour avancer plusieurs jours
+// d'affilée sans attendre MIN_HOURS_BETWEEN_CLOSURES entre chaque appel.
+const FORCE = process.argv.includes("--force");
 // Ping @MINI-JEUX réservé au vrai lancement public (Jour 1) — jamais sur le
 // salon de test, même sans --no-ping explicite.
 const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;
@@ -42,10 +47,17 @@ if (!channelId) {
 
 (async () => {
   try {
-    const result = await postQuiz(channelId, { dryRun: DRY_RUN, noPing: NO_PING, isPublic: PUBLIC, requireActiveState: REQUIRE_ACTIVE });
+    const result = await postQuiz(channelId, { dryRun: DRY_RUN, noPing: NO_PING, isPublic: PUBLIC, requireActiveState: REQUIRE_ACTIVE, force: FORCE });
 
     if (result.skipped) {
-      console.log("Aucune manche active, rien à poster (cron sans lancement manuel préalable).");
+      if (result.reason === "tooSoonSinceLastClosure") {
+        console.log(
+          `Jour ouvert trop récemment (${result.publishedAt}) pour être re-clôturé — probable double déclenchement ` +
+            `(cron en retard + relance manuelle, ou double cron). Rien n'est posté. Utilise --force si ce rattrapage est volontaire.`,
+        );
+      } else {
+        console.log("Aucune manche active, rien à poster (cron sans lancement manuel préalable).");
+      }
       return;
     }
 

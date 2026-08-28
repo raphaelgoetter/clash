@@ -15,6 +15,7 @@
 //   node scripts/postGoblinHunters.js --require-active — ne fait rien si aucune partie n'est déjà lancée (cron)
 //   node scripts/postGoblinHunters.js --force-close   — TESTS UNIQUEMENT : ignore l'échéance réelle de la fenêtre
 //                                                        d'inscription (3 jours) pour déclencher le lancement immédiatement
+//   node scripts/postGoblinHunters.js --force         — ignore le garde-fou anti-double-avancée (jour tout juste ouvert)
 
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
@@ -28,6 +29,11 @@ const PUBLIC = process.argv.includes("--public");
 // (workflow_dispatch), le cron ne fait qu'avancer une partie déjà en cours.
 const REQUIRE_ACTIVE = process.argv.includes("--require-active");
 const FORCE_CLOSE = process.argv.includes("--force-close");
+// Contourne le garde-fou anti-double-avancée (voir backend/services/goblinhunters.js,
+// isTooSoonSinceLastClosure) — utile en test pour clôturer plusieurs jours
+// d'affilée sans attendre MIN_HOURS_BETWEEN_CLOSURES entre chaque appel.
+// Distinct de --force-close (qui ignore la date limite d'inscription).
+const FORCE = process.argv.includes("--force");
 const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;
 
 // Réutilise les salons du jeu Frame (même principe qu'Anagram/Boss Raid/
@@ -51,10 +57,18 @@ if (!channelId) {
       isPublic: PUBLIC,
       requireActiveState: REQUIRE_ACTIVE,
       forceClose: FORCE_CLOSE,
+      force: FORCE,
     });
 
     if (result.skipped) {
-      console.log("Aucune partie active, rien à poster (cron sans lancement manuel préalable).");
+      if (result.reason === "tooSoonSinceLastClosure") {
+        console.log(
+          `Jour ouvert trop récemment (${result.publishedAt}) pour être re-clôturé — probable double déclenchement ` +
+            `(cron en retard + relance manuelle, ou double cron). Rien n'est posté. Utilise --force si ce rattrapage est volontaire.`,
+        );
+      } else {
+        console.log("Aucune partie active, rien à poster (cron sans lancement manuel préalable).");
+      }
       return;
     }
 

@@ -36,6 +36,7 @@ import {
   computeSeasonMancheTotal,
   findRank,
   findTiedRank,
+  alreadyPostedThisWeek,
 } from "../../../backend/services/zoom.js";
 import { toPublicSeasonId } from "../../../backend/services/dateUtils.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
@@ -188,7 +189,9 @@ async function postSeasonRecap(channelId, endedSeasonId, newSeasonId, { noPing =
 
 // ── Publication (appelée uniquement par scripts/postZoom.js) ──
 
-export async function postZoom(channelId, { dryRun = false, noPing = false } = {}) {
+// `force` ignore le garde-fou anti-double-post (alreadyPostedThisWeek) —
+// utile pour rattraper un créneau manqué à la main, jamais depuis le cron.
+export async function postZoom(channelId, { dryRun = false, noPing = false, force = false } = {}) {
   if (dryRun) {
     const catalog = await loadZoomCatalog();
     const state = await readState();
@@ -213,6 +216,10 @@ export async function postZoom(channelId, { dryRun = false, noPing = false } = {
     }
 
     return { dryRun: true, entry: previewEntry, embed, components, seasonRecapEmbed, pingRoleId };
+  }
+
+  if (!force && (await alreadyPostedThisWeek())) {
+    return { skipped: true, reason: "already-posted-this-week" };
   }
 
   const token = process.env.DISCORD_TOKEN;

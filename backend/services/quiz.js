@@ -126,6 +126,20 @@ export async function writeState(state) {
   await getRedis().set(STATE_KEY, toJson(state));
 }
 
+// Garde-fou anti-double-avancée (même incident/pattern que Robinson,
+// 26/08) : un cron `schedule` en retard peut encore se déclencher après
+// qu'un admin a relancé la manche à la main entretemps — sans ce filet, les
+// deux appels à postQuiz() avanceraient chacun d'une question d'affilée.
+// MIN_HOURS_BETWEEN_CLOSURES reste très en dessous du cycle normal (~24h),
+// donc sans impact sur le fonctionnement quotidien légitime.
+export const MIN_HOURS_BETWEEN_CLOSURES = 8;
+
+export function isTooSoonSinceLastClosure(publishedAt, now = Date.now()) {
+  if (!publishedAt) return false;
+  const hoursSince = (now - new Date(publishedAt).getTime()) / 3_600_000;
+  return hoursSince < MIN_HOURS_BETWEEN_CLOSURES;
+}
+
 // ── Sélection de la thématique ─────────────────────────────────────
 // Cycle séquentiel (jamais aléatoire), même logique que pickNextAnagramIndex
 // dans anagrams.js — ne rejoue jamais deux fois la même manche de suite.

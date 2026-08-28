@@ -22,6 +22,7 @@ import {
   closeDayAndAdvance,
   archiveManche,
   listManches,
+  isTooSoonSinceLastClosure,
 } from "../../../backend/services/bossraid.js";
 import {
   getRoleIdByName,
@@ -309,6 +310,7 @@ export async function postBossRaid(
     noPing = false,
     isPublic = false,
     requireActiveState = false,
+    force = false,
   } = {},
 ) {
   const config = await loadBossRaidConfig();
@@ -316,6 +318,23 @@ export async function postBossRaid(
 
   if (state?.termine) {
     return { termine: true };
+  }
+
+  // Garde-fou anti-double-avancée : un cron en retard qui se déclencherait
+  // juste après une relance manuelle du même jour clôturerait un jour tout
+  // juste ouvert (même incident/pattern que Robinson, 26/08). Jamais
+  // appliqué en dry-run. `force` permet un rattrapage volontaire en test.
+  if (
+    state &&
+    !dryRun &&
+    !force &&
+    isTooSoonSinceLastClosure(state.publishedAt)
+  ) {
+    return {
+      skipped: true,
+      reason: "tooSoonSinceLastClosure",
+      publishedAt: state.publishedAt,
+    };
   }
 
   // Garde-fou : un Raid actif sur un AUTRE salon ne doit JAMAIS être repris

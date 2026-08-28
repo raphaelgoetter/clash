@@ -8,6 +8,9 @@
 //   node scripts/postZoom.js                — poste sur le salon de test
 //   node scripts/postZoom.js --public        — poste sur le salon public
 //   node scripts/postZoom.js --dry-run       — simulation, sans écrire ni poster
+//   node scripts/postZoom.js --force         — ignore le garde-fou anti-double-post
+//                                               (une manche déjà postée aujourd'hui),
+//                                               utile pour rattraper un créneau manqué
 //   node scripts/postZoom.js --public --dry-run
 //   node scripts/postZoom.js --no-ping       — poste sans pinger @MINI JEUX
 
@@ -18,6 +21,7 @@ import { postZoom } from "../api/discord/_handlers/zoom.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
+const FORCE = process.argv.includes("--force");
 // Jamais de ping sur le salon de test, même sans --no-ping explicite (voir
 // postTamagotchi.js pour le même garde-fou).
 const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;
@@ -35,7 +39,7 @@ if (!channelId) {
 
 (async () => {
   try {
-    const result = await postZoom(channelId, { dryRun: DRY_RUN, noPing: NO_PING });
+    const result = await postZoom(channelId, { dryRun: DRY_RUN, noPing: NO_PING, force: FORCE });
 
     if (DRY_RUN) {
       if (result.seasonRecapEmbed) {
@@ -47,6 +51,11 @@ if (!channelId) {
       console.log(`  Carte : ${result.entry.answer} (${result.entry.id})`);
       console.log(`  Ping @MINI JEUX : ${result.pingRoleId ? "oui" : "non"}`);
       console.log(JSON.stringify({ embeds: [result.embed], components: result.components }, null, 2));
+      return;
+    }
+
+    if (result.skipped) {
+      console.log(`Pas de publication cette fois-ci — raison : ${result.reason}`);
       return;
     }
 

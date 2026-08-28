@@ -33,6 +33,7 @@ import {
   hasSentMessageToday,
   recordMessage,
   listRecentMessages,
+  isTooSoonSinceLastClosure,
 } from "../../../backend/services/goblinhunters.js";
 import {
   getRoleIdByName,
@@ -629,12 +630,31 @@ export async function postGoblinHunters(
     isPublic = false,
     requireActiveState = false,
     forceClose = false,
+    force = false,
   } = {},
 ) {
   const config = await loadGoblinHuntersConfig();
   const state = await readState();
 
   if (state?.termine) return { termine: true };
+
+  // Garde-fou anti-double-avancée : un cron en retard qui se déclencherait
+  // juste après une relance manuelle du même jour clôturerait un jour tout
+  // juste ouvert (même incident/pattern que Robinson, 26/08). Jamais
+  // appliqué en dry-run. `force` permet un rattrapage volontaire en test
+  // (distinct de `forceClose`, qui ignore la date limite d'inscription).
+  if (
+    state &&
+    !dryRun &&
+    !force &&
+    isTooSoonSinceLastClosure(state.publishedAt)
+  ) {
+    return {
+      skipped: true,
+      reason: "tooSoonSinceLastClosure",
+      publishedAt: state.publishedAt,
+    };
+  }
 
   // Garde-fou : une partie active sur un AUTRE salon ne doit jamais être
   // reprise ici (même incident/principe que Boss Raid, voir CONTRIBUTING.md).

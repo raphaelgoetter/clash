@@ -31,6 +31,7 @@ import {
   computeSeasonMancheTotal,
   findRank,
   findTiedRank,
+  alreadyPostedThisWeek,
 } from "../../../backend/services/frames.js";
 import { toPublicSeasonId } from "../../../backend/services/dateUtils.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
@@ -254,7 +255,9 @@ async function postSeasonRecap(channelId, endedSeasonId, newSeasonId, { noPing =
 // En dry-run, aucune écriture d'état ni appel Discord — la prochaine image
 // est seulement prévisualisée, sans faire avancer la partie.
 
-export async function postFrame(channelId, { dryRun = false, noPing = false } = {}) {
+// `force` ignore le garde-fou anti-double-post (alreadyPostedThisWeek) —
+// utile pour rattraper un créneau manqué à la main, jamais depuis le cron.
+export async function postFrame(channelId, { dryRun = false, noPing = false, force = false } = {}) {
   if (dryRun) {
     const frames = await loadFrames();
     const state = await readState();
@@ -294,6 +297,10 @@ export async function postFrame(channelId, { dryRun = false, noPing = false } = 
     }
 
     return { dryRun: true, frameEntry, embed, components, seasonRecapEmbed, pingRoleId };
+  }
+
+  if (!force && (await alreadyPostedThisWeek())) {
+    return { skipped: true, reason: "already-posted-this-week" };
   }
 
   const token = process.env.DISCORD_TOKEN;
