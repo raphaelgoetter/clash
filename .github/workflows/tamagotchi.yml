@@ -14,6 +14,10 @@ on:
     # Décalé de la ronde (0 8) : 5 crons quotidiens du dépôt tombaient tous à
     # la même minute, la pire pour GitHub Actions (charge maximale en haut
     # d'heure) — voir CONTRIBUTING.md, incident du 27/08.
+    # Commit de resynchronisation (28/08) : bug GitHub documenté où `schedule`
+    # se désynchronise silencieusement pendant que `workflow_dispatch`
+    # continue de fonctionner — tout commit sur la branche par défaut force
+    # un resync côté GitHub (voir CONTRIBUTING.md).
     - cron: "10 8 * * *"
   workflow_dispatch: {}
 
