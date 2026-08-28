@@ -14908,7 +14908,7 @@
           "start": "2026-08-27T09:37:00.000Z",
           "end": "2026-08-28T09:36:59.999Z"
         },
-        "snapshotTime": "2026-08-27T22:20:34.944Z",
+        "snapshotTime": "2026-08-28T01:40:18.390Z",
         "snapshotBackupTime": "2026-08-27T10:16:02.204Z",
         "decks": {
           "#202R9VUJCU": 4,
@@ -14939,6 +14939,7 @@
           "#LLRY2V8CJ": 2,
           "#VPGYR2990": 2,
           "#YGP000RP8": 2,
+          "#2PLYPPV9Y": 1,
           "#8GGQLU28": 1
         },
         "hourlyCumul": [],
@@ -14989,7 +14990,7 @@
           "#LLCLJRR8G": 0,
           "#P2YYR29QU": 0,
           "#PP09UGJLL": 0,
-          "#2PLYPPV9Y": 0,
+          "#2PLYPPV9Y": 125,
           "#PCPGLGUYV": 0,
           "#YP090GCL9": 0,
           "#V2VLPPQCV": 400,
@@ -15024,7 +15025,8 @@
           "#8GVRUYUP": 700,
           "#29QRJRLY0": 600,
           "#202R9VUJCU": 700,
-          "#PLU8LUGQ": 800
+          "#PLU8LUGQ": 800,
+          "#R99GRGVRJ": 0
         },
         "duelsTodayByTag": {
           "#8GVRUYUP": 1,
@@ -15066,7 +15068,7 @@
           "#RJY2R282V": 48066,
           "#2PLYPPV9Y": 22274,
           "#8P29RRU2": 364330,
-          "#9YRU2QJJ": 22605,
+          "#9YRU2QJJ": 22613,
           "#RLR8P0Y8": 60176,
           "#2YGYYPYV": 99091,
           "#22UVQ2Y8U": 19105,
@@ -15155,7 +15157,7 @@
           "#LLCLJRR8G": 0,
           "#P2YYR29QU": 0,
           "#PP09UGJLL": 0,
-          "#2PLYPPV9Y": 0,
+          "#2PLYPPV9Y": 1,
           "#PCPGLGUYV": 0,
           "#YP090GCL9": 0,
           "#V2VLPPQCV": 4,
@@ -15190,9 +15192,10 @@
           "#8GVRUYUP": 4,
           "#29QRJRLY0": 4,
           "#202R9VUJCU": 4,
-          "#PLU8LUGQ": 4
+          "#PLU8LUGQ": 4,
+          "#R99GRGVRJ": 0
         },
-        "snapshotCount": 106
+        "snapshotCount": 107
       },
       {
         "warDay": "friday",
