@@ -16705,7 +16705,7 @@
           "start": "2026-08-29T09:57:00.000Z",
           "end": "2026-08-30T09:56:59.999Z"
         },
-        "snapshotTime": "2026-08-29T12:09:11.701Z",
+        "snapshotTime": "2026-08-29T13:05:19.534Z",
         "snapshotBackupTime": "2026-08-29T10:05:28.312Z",
         "decks": {
           "#20RPYQR2CL": 4,
@@ -16716,6 +16716,7 @@
           "#9VQ0J29Y": 4,
           "#J8RU2RJ8C": 4,
           "#JLU88JR28": 4,
+          "#YRYPUR822": 4,
           "#YU8CCVCJ0": 4
         },
         "hourlyCumul": [],
@@ -16749,7 +16750,7 @@
           "#RJJ99Y9J": 900,
           "#20J9YCPRJQ": 900,
           "#VQP8PU2V": 1000,
-          "#YRYPUR822": 1050,
+          "#YRYPUR822": 1750,
           "#J8RU2RJ8C": 1750,
           "#80CCLY20L": 1100,
           "#U008V0PQ8": 1150,
@@ -16807,9 +16808,9 @@
           "#9CQC0YUR8": 1
         },
         "_totalDonationsByTag": {
-          "#2PG80VRY": 205795,
+          "#2PG80VRY": 205805,
           "#C2RL8UVYV": 48145,
-          "#YU8CCVCJ0": 22402,
+          "#YU8CCVCJ0": 22412,
           "#9GG9GRC0G": 109080,
           "#8VQLJLR0": 56782,
           "#8QL2J8PQ": 190971,
@@ -16823,7 +16824,7 @@
           "#82URJC8CR": 135840,
           "#QQLYUL0R": 106911,
           "#P9R8Y90P8": 42680,
-          "#20RPYQR2CL": 22734,
+          "#20RPYQR2CL": 22744,
           "#99VY0090": 117241,
           "#88GG0LQU": 46732,
           "#9CQC0YUR8": 83714,
@@ -16842,7 +16843,7 @@
           "#URG0Q9R0Y": 24284,
           "#2GUPJ99G2": 170637,
           "#UJ2LQU2V9": 16419,
-          "#888Y29GY": 71052,
+          "#888Y29GY": 71062,
           "#CYRGPVGVG": 55697,
           "#UJQL9PCRJ": 14222,
           "#80CCLY20L": 159976,
@@ -16889,7 +16890,7 @@
           "#RJJ99Y9J": 8,
           "#20J9YCPRJQ": 8,
           "#VQP8PU2V": 8,
-          "#YRYPUR822": 8,
+          "#YRYPUR822": 12,
           "#J8RU2RJ8C": 12,
           "#80CCLY20L": 8,
           "#U008V0PQ8": 8,
@@ -16936,7 +16937,7 @@
           "#8VQLJLR0": 12
         },
         "periodPointsEarned": 32950,
-        "snapshotCount": 36
+        "snapshotCount": 40
       },
       {
         "warDay": "sunday",
