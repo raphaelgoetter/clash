@@ -30,10 +30,13 @@ const PUBLIC = process.argv.includes("--public");
 const REQUIRE_ACTIVE = process.argv.includes("--require-active");
 const FORCE_CLOSE = process.argv.includes("--force-close");
 // Contourne le garde-fou anti-double-avancée (voir backend/services/goblinhunters.js,
-// isTooSoonSinceLastClosure) — utile en test pour clôturer plusieurs jours
-// d'affilée sans attendre MIN_HOURS_BETWEEN_CLOSURES entre chaque appel.
-// Distinct de --force-close (qui ignore la date limite d'inscription).
-const FORCE = process.argv.includes("--force");
+// isTooSoonSinceLastClosure) — protège uniquement le salon public contre un
+// cron en retard après une relance manuelle (le cron ne cible jamais le
+// salon de test). Sur le salon de test, aucun cron ne peut jamais entrer en
+// conflit : le garde-fou n'y sert à rien d'autre qu'à ralentir l'itération
+// manuelle, donc contourné automatiquement. Distinct de --force-close (qui
+// ignore la date limite d'inscription).
+const FORCE = process.argv.includes("--force") || !PUBLIC;
 const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;
 
 // Réutilise les salons du jeu Frame (même principe qu'Anagram/Boss Raid/

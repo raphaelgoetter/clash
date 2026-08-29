@@ -25,9 +25,12 @@ const PUBLIC = process.argv.includes("--public");
 // cron ne fait qu'avancer une partie déjà en cours.
 const REQUIRE_ACTIVE = process.argv.includes("--require-active");
 // Contourne le garde-fou anti-double-avancée (voir backend/services/blackjack.js,
-// isTooSoonSinceLastClosure) — utile en test pour clôturer plusieurs jours
-// d'affilée sans attendre MIN_HOURS_BETWEEN_CLOSURES entre chaque appel.
-const FORCE = process.argv.includes("--force");
+// isTooSoonSinceLastClosure) — protège uniquement le salon public contre un
+// cron en retard après une relance manuelle (voir .github/workflows/blackjack.yml,
+// le cron ne cible jamais le salon de test). Sur le salon de test, aucun cron
+// ne peut jamais entrer en conflit : le garde-fou n'y sert à rien d'autre
+// qu'à ralentir l'itération manuelle, donc contourné automatiquement.
+const FORCE = process.argv.includes("--force") || !PUBLIC;
 // Jamais de ping sur le salon de test, même sans --no-ping explicite (voir
 // CONTRIBUTING.md) — seul le salon public ping réellement @MINI JEUX.
 const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;

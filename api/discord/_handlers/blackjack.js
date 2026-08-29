@@ -45,12 +45,15 @@ const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 // (jour de jeu final) partagent la même illustration "table ouverte", les
 // jours intermédiaires ont l'illustration "en partie".
 function blackjackImageUrl(jour, dureeJours) {
-  const file = jour === 1 || jour === dureeJours ? "blackjack-start.webp" : "blackjack-game.webp";
+  const file =
+    jour === 1 || jour === dureeJours
+      ? "blackjack-start.webp"
+      : "blackjack-game.webp";
   return `${TRUST_ROYALE_URL}/images/blackjack/${file}`;
 }
 
 const DAY1_INTRO =
-  "🃏 **Table ouverte !** Le Croupier s'installe pour 7 jours — bats-le chaque jour pour cumuler des points. Clique sur *Règles* pour le détail.";
+  "**Table ouverte !** Le Croupier s'installe pour 7 jours — bats-le chaque jour pour cumuler des points. Clique sur *Règles* pour le détail.";
 
 // ── Cartes — rendu texte ────────────────────────────────────────────
 
@@ -79,16 +82,29 @@ function formatCardsBlock(cards, scoreLabel = null) {
 }
 
 // ── Résolution d'un jour — rendu texte partagé (recap + révélation finale) ──
-
-async function formatResultLine(r) {
-  const username = await resolveDisplayName(r.discordId, r.username);
-  const icon = r.result === "win" ? "🏆" : r.result === "push" ? "🤝" : r.status === "bust" ? "💥" : "❌";
-  return `${icon} ${username} — ${formatCards(r.cards)} (**${r.score}**)`;
-}
+// Résumé plutôt que liste exhaustive (29/08, retour utilisateur) : avec
+// beaucoup de joueurs, détailler la main de chacun rendrait le message
+// public illisible. Seuls les gagnants sont nommés (ce qu'il y a de plus
+// intéressant à voir publiquement) ; chacun retrouve le détail de SA propre
+// main dans le bouton Journal.
 
 async function formatResultsSection(results) {
   if (!results.length) return ["Personne n'a joué ce jour-là."];
-  const lines = await Promise.all(results.map(formatResultLine));
+
+  const winners = results.filter((r) => r.result === "win");
+  const pushes = results.filter((r) => r.result === "push");
+  const losers = results.filter((r) => r.result === "lose");
+
+  const lines = [`${results.length} joueur${results.length > 1 ? "s" : ""} ont joué.`];
+  if (winners.length) {
+    const names = await Promise.all(winners.map((r) => resolveDisplayName(r.discordId, r.username)));
+    lines.push(`🏆 Gagnant${names.length > 1 ? "s" : ""} (${names.length}) : ${names.join(", ")}`);
+  } else {
+    lines.push("🏆 Personne n'a battu le Croupier hier.");
+  }
+  if (pushes.length) lines.push(`🤝 Égalité : ${pushes.length}`);
+  if (losers.length) lines.push(`❌ Perdant${losers.length > 1 ? "s" : ""} : ${losers.length}`);
+
   return lines;
 }
 
@@ -150,7 +166,12 @@ function buildDayComponents(jour) {
   ];
 }
 
-async function buildDayEmbed(jour, config, dealer, { estPremierJour, previousDealer, previousResults }) {
+async function buildDayEmbed(
+  jour,
+  config,
+  dealer,
+  { estPremierJour, previousDealer, previousResults },
+) {
   const lines = [];
   if (estPremierJour) {
     lines.push(DAY1_INTRO, "");
@@ -180,16 +201,27 @@ async function buildDayEmbed(jour, config, dealer, { estPremierJour, previousDea
 // ── Embed de révélation finale (Jour 8) ───────────────────────────
 
 function formatMancheHistoryLine(record) {
-  const winners = record.winners?.length ? record.winners.join(", ") : "personne";
+  const winners = record.winners?.length
+    ? record.winners.join(", ")
+    : "personne";
   return `Manche ${record.manche} : 🏆 ${winners} — ${record.maxPoints} pts`;
 }
 
-async function buildRevealEmbed(lastDealer, lastResults, ranking, manchesHistory) {
+async function buildRevealEmbed(
+  lastDealer,
+  lastResults,
+  ranking,
+  manchesHistory,
+) {
   const resolvedRanking = await Promise.all(
-    ranking.map(async (r) => ({ ...r, username: await resolveDisplayName(r.discordId, r.username) })),
+    ranking.map(async (r) => ({
+      ...r,
+      username: await resolveDisplayName(r.discordId, r.username),
+    })),
   );
   const maxPoints = resolvedRanking[0]?.points ?? 0;
-  const winners = maxPoints > 0 ? resolvedRanking.filter((r) => r.points === maxPoints) : [];
+  const winners =
+    maxPoints > 0 ? resolvedRanking.filter((r) => r.points === maxPoints) : [];
 
   const lines = [
     `**📊 Bilan du dernier jour**`,
@@ -198,7 +230,12 @@ async function buildRevealEmbed(lastDealer, lastResults, ranking, manchesHistory
     "",
     "**Classement final :**",
     ...(resolvedRanking.length
-      ? resolvedRanking.slice(0, 20).map((r, i) => `${i + 1}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`)
+      ? resolvedRanking
+          .slice(0, 20)
+          .map(
+            (r, i) =>
+              `${i + 1}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`,
+          )
       : ["Personne n'a marqué de point cette manche."]),
   ];
 
@@ -210,7 +247,11 @@ async function buildRevealEmbed(lastDealer, lastResults, ranking, manchesHistory
   }
 
   if (manchesHistory.length) {
-    lines.push("", "**Vainqueurs des manches précédentes :**", ...manchesHistory.map(formatMancheHistoryLine));
+    lines.push(
+      "",
+      "**Vainqueurs des manches précédentes :**",
+      ...manchesHistory.map(formatMancheHistoryLine),
+    );
   }
 
   return {
@@ -237,10 +278,15 @@ async function publishAndWriteState(
         { method: "DELETE", headers: { Authorization: `Bot ${token}` } },
       );
       if (!delRes.ok && delRes.status !== 404) {
-        console.warn(`[Blackjack] Échec suppression du message de la veille (${delRes.status}), publication quand même.`);
+        console.warn(
+          `[Blackjack] Échec suppression du message de la veille (${delRes.status}), publication quand même.`,
+        );
       }
     } catch (err) {
-      console.warn("[Blackjack] Erreur réseau à la suppression du message de la veille:", err.message);
+      console.warn(
+        "[Blackjack] Erreur réseau à la suppression du message de la veille:",
+        err.message,
+      );
     }
   }
 
@@ -249,11 +295,21 @@ async function publishAndWriteState(
   // à Robinson/Tamagoshi qui ne pingent qu'au lancement/à la fin.
   const roleId = !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
 
-  const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
-    method: "POST",
-    headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ embeds: [embed], components, ...buildRolePingFields(roleId) }),
-  });
+  const res = await fetch(
+    `https://discord.com/api/v10/channels/${channelId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bot ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        embeds: [embed],
+        components,
+        ...buildRolePingFields(roleId),
+      }),
+    },
+  );
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
     throw new Error(`Erreur envoi salon Discord (${res.status}): ${errText}`);
@@ -274,7 +330,13 @@ async function publishAndWriteState(
 
 export async function postBlackjack(
   channelId,
-  { dryRun = false, noPing = false, isPublic = false, requireActiveState = false, force = false } = {},
+  {
+    dryRun = false,
+    noPing = false,
+    isPublic = false,
+    requireActiveState = false,
+    force = false,
+  } = {},
 ) {
   const config = await loadBlackjackConfig();
   const state = await readState();
@@ -283,8 +345,17 @@ export async function postBlackjack(
 
   // Garde-fou anti-double-avancée (même incident/pattern que Robinson/Quiz,
   // 26-27/08) : jamais appliqué en dry-run, contournable avec --force.
-  if (state && !dryRun && !force && isTooSoonSinceLastClosure(state.publishedAt)) {
-    return { skipped: true, reason: "tooSoonSinceLastClosure", publishedAt: state.publishedAt };
+  if (
+    state &&
+    !dryRun &&
+    !force &&
+    isTooSoonSinceLastClosure(state.publishedAt)
+  ) {
+    return {
+      skipped: true,
+      reason: "tooSoonSinceLastClosure",
+      publishedAt: state.publishedAt,
+    };
   }
 
   // Garde-fou : une partie active sur un AUTRE salon ne doit JAMAIS être
@@ -300,17 +371,32 @@ export async function postBlackjack(
 
   if (estPremierJour) {
     const jour = 1;
-    const dealer = dealerPlay(Math.random, config.croupier.min, config.croupier.max);
-    const embed = await buildDayEmbed(jour, config, dealer, { estPremierJour: true });
+    const dealer = dealerPlay(
+      Math.random,
+      config.croupier.min,
+      config.croupier.max,
+    );
+    const embed = await buildDayEmbed(jour, config, dealer, {
+      estPremierJour: true,
+    });
     const components = buildDayComponents(jour);
 
     if (dryRun) {
-      const pingRoleId = !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
+      const pingRoleId = !noPing
+        ? await getRoleIdByName(MINI_JEUX_ROLE_NAME)
+        : null;
       return { dryRun: true, jour, embed, components, pingRoleId };
     }
 
     await resetPoints();
-    return publishAndWriteState(channelId, null, { jour, dealer, embed, components, noPing, termine: false });
+    return publishAndWriteState(channelId, null, {
+      jour,
+      dealer,
+      embed,
+      components,
+      noPing,
+      termine: false,
+    });
   }
 
   // Résolution du jour actif (state.jour) face à state.dealer, déjà généré
@@ -326,19 +412,30 @@ export async function postBlackjack(
       // +1 simulé pour chaque gagnant du jour, sans écrire dans Redis — pure
       // projection pour npm run blackjack:status / --dry-run.
       for (const r of results) {
-        if (r.result === "win") pointsActuels[r.discordId] = (pointsActuels[r.discordId] || 0) + 1;
+        if (r.result === "win")
+          pointsActuels[r.discordId] = (pointsActuels[r.discordId] || 0) + 1;
       }
       const ranking = buildRanking(pointsActuels);
       const embed = await buildRevealEmbed(state.dealer, results, ranking, []);
       return { dryRun: true, final: true, embed };
     }
-    const nextDealerPreview = dealerPlay(Math.random, config.croupier.min, config.croupier.max);
+    const nextDealerPreview = dealerPlay(
+      Math.random,
+      config.croupier.min,
+      config.croupier.max,
+    );
     const embed = await buildDayEmbed(jourSuivant, config, nextDealerPreview, {
       estPremierJour: false,
       previousDealer: state.dealer,
       previousResults: results,
     });
-    return { dryRun: true, jour: jourSuivant, embed, components: buildDayComponents(jourSuivant), dealer: nextDealerPreview };
+    return {
+      dryRun: true,
+      jour: jourSuivant,
+      embed,
+      components: buildDayComponents(jourSuivant),
+      dealer: nextDealerPreview,
+    };
   }
 
   for (const r of results) {
@@ -360,10 +457,18 @@ export async function postBlackjack(
     let currentManche = null;
     if (isPublic) {
       const resolvedRanking = await Promise.all(
-        ranking.map(async (r) => ({ ...r, username: await resolveDisplayName(r.discordId, r.username) })),
+        ranking.map(async (r) => ({
+          ...r,
+          username: await resolveDisplayName(r.discordId, r.username),
+        })),
       );
       const maxPoints = resolvedRanking[0]?.points ?? 0;
-      const winners = maxPoints > 0 ? resolvedRanking.filter((r) => r.points === maxPoints).map((r) => r.username) : [];
+      const winners =
+        maxPoints > 0
+          ? resolvedRanking
+              .filter((r) => r.points === maxPoints)
+              .map((r) => r.username)
+          : [];
       currentManche = await archiveManche({
         resolvedAt: new Date().toISOString(),
         ranking: resolvedRanking,
@@ -372,7 +477,12 @@ export async function postBlackjack(
       });
     }
     const manches = await listManches({ limit: 10 });
-    const embed = await buildRevealEmbed(state.dealer, results, ranking, manches);
+    const embed = await buildRevealEmbed(
+      state.dealer,
+      results,
+      ranking,
+      manches,
+    );
     const result = await publishAndWriteState(channelId, state, {
       jour: state.jour,
       dealer: state.dealer,
@@ -384,7 +494,11 @@ export async function postBlackjack(
     return { ...result, final: true };
   }
 
-  const nextDealer = dealerPlay(Math.random, config.croupier.min, config.croupier.max);
+  const nextDealer = dealerPlay(
+    Math.random,
+    config.croupier.min,
+    config.croupier.max,
+  );
   const embed = await buildDayEmbed(jourSuivant, config, nextDealer, {
     estPremierJour: false,
     previousDealer: state.dealer,
@@ -440,10 +554,15 @@ function handStatusMessage(hand) {
 }
 
 function buildHandEmbed(jour, hand, message) {
-  const scoreLabel = hand.status === "bust" ? "Dépassement" : `Score : ${hand.score}`;
+  const scoreLabel =
+    hand.status === "bust" ? "Dépassement" : `Score : ${hand.score}`;
   return {
     title: `🃏 Ta main — Jour ${jour}`,
-    description: [...formatCardsBlock(hand.cards, scoreLabel), "", message].join("\n"),
+    description: [
+      ...formatCardsBlock(hand.cards, scoreLabel),
+      "",
+      message,
+    ].join("\n"),
     color: BLACKJACK_COLOR,
   };
 }
@@ -528,7 +647,8 @@ async function handleDrawOrStand(webhookUrl, jour, discordId, { draw }) {
     const hand = await readHand(jour, discordId);
     if (!hand) {
       await patchOriginal(webhookUrl, {
-        content: "Clique d'abord sur **Jouer** pour recevoir tes 2 premières cartes !",
+        content:
+          "Clique d'abord sur **Jouer** pour recevoir tes 2 premières cartes !",
         embeds: [],
         components: [],
       });
@@ -536,7 +656,13 @@ async function handleDrawOrStand(webhookUrl, jour, discordId, { draw }) {
     }
     if (hand.status !== "en_cours") {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(jour, hand, "Ta main est déjà terminée pour aujourd'hui.")],
+        embeds: [
+          buildHandEmbed(
+            jour,
+            hand,
+            "Ta main est déjà terminée pour aujourd'hui.",
+          ),
+        ],
         components: [],
       });
       return;
@@ -544,7 +670,13 @@ async function handleDrawOrStand(webhookUrl, jour, discordId, { draw }) {
 
     const cards = draw ? [...hand.cards, drawCard()] : hand.cards;
     const score = computeHandValue(cards);
-    const status = !draw ? "stand" : score > 21 ? "bust" : score === 21 ? "stand" : "en_cours";
+    const status = !draw
+      ? "stand"
+      : score > 21
+        ? "bust"
+        : score === 21
+          ? "stand"
+          : "en_cours";
     const updated = { ...hand, cards, score, status };
     await writeHand(jour, discordId, updated);
 
@@ -553,7 +685,10 @@ async function handleDrawOrStand(webhookUrl, jour, discordId, { draw }) {
       components: buildHandComponents(jour, updated),
     });
   } catch (err) {
-    console.error(`[Blackjack] Échec ${draw ? "Piocher" : "Arrêter"}:`, err.message);
+    console.error(
+      `[Blackjack] Échec ${draw ? "Piocher" : "Arrêter"}:`,
+      err.message,
+    );
   }
 }
 
@@ -600,29 +735,49 @@ export async function handleJournal(webhookUrl, discordId) {
 
     const ranking = buildRanking(points);
     const resolvedRanking = await Promise.all(
-      ranking.slice(0, 10).map(async (r) => ({ ...r, username: await resolveDisplayName(r.discordId, r.username) })),
+      ranking
+        .slice(0, 10)
+        .map(async (r) => ({
+          ...r,
+          username: await resolveDisplayName(r.discordId, r.username),
+        })),
     );
 
     const lines = [`**Jour ${state.jour}/${config.duree_jours}**`];
     if (hand) {
-      lines.push(`Ta main aujourd'hui : ${formatCards(hand.cards)} (**${hand.score}**) — ${handStatusMessage(hand)}`);
+      lines.push(
+        `Ta main aujourd'hui : ${formatCards(hand.cards)} (**${hand.score}**) — ${handStatusMessage(hand)}`,
+      );
     } else {
-      lines.push("Tu n'as pas encore joué aujourd'hui — clique sur **Jouer** !");
+      lines.push(
+        "Tu n'as pas encore joué aujourd'hui — clique sur **Jouer** !",
+      );
     }
 
     lines.push(
       "",
       "**Classement cumulé :**",
       ...(resolvedRanking.length
-        ? resolvedRanking.map((r, i) => `${i + 1}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`)
+        ? resolvedRanking.map(
+            (r, i) =>
+              `${i + 1}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`,
+          )
         : ["Personne n'a encore marqué de point."]),
     );
 
     if (entries.length > 0) {
-      lines.push("", "**Jours précédents :**", ...entries.map((e) => formatHistoriqueLine(e, discordId)));
+      lines.push(
+        "",
+        "**Jours précédents :**",
+        ...entries.map((e) => formatHistoriqueLine(e, discordId)),
+      );
     }
 
-    const embed = { title: "📜 Journal", description: lines.join("\n"), color: BLACKJACK_COLOR };
+    const embed = {
+      title: "📜 Journal",
+      description: lines.join("\n"),
+      color: BLACKJACK_COLOR,
+    };
     await patchOriginal(webhookUrl, { embeds: [embed], components: [] });
   } catch (err) {
     console.error("[Blackjack] Échec Journal:", err.message);

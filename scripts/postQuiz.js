@@ -25,9 +25,12 @@ const PUBLIC = process.argv.includes("--public");
 // fait qu'avancer une manche déjà en cours.
 const REQUIRE_ACTIVE = process.argv.includes("--require-active");
 // Contourne le garde-fou anti-double-avancée (voir backend/services/quiz.js,
-// isTooSoonSinceLastClosure) — utile en test pour avancer plusieurs jours
-// d'affilée sans attendre MIN_HOURS_BETWEEN_CLOSURES entre chaque appel.
-const FORCE = process.argv.includes("--force");
+// isTooSoonSinceLastClosure) — protège uniquement le salon public contre un
+// cron en retard après une relance manuelle (le cron ne cible jamais le
+// salon de test). Sur le salon de test, aucun cron ne peut jamais entrer en
+// conflit : le garde-fou n'y sert à rien d'autre qu'à ralentir l'itération
+// manuelle, donc contourné automatiquement.
+const FORCE = process.argv.includes("--force") || !PUBLIC;
 // Ping @MINI-JEUX réservé au vrai lancement public (Jour 1) — jamais sur le
 // salon de test, même sans --no-ping explicite.
 const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;
