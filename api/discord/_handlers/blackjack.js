@@ -52,6 +52,41 @@ function formatCards(cards) {
   return cards.map(formatCard).join(" ");
 }
 
+// Rendu "graphique" en plus du texte compact ci-dessus : les vrais glyphes
+// Unicode de cartes à jouer (bloc U+1F0A0-1F0DF), affichés en gros sur une
+// ligne de titre Markdown (## ). Support de police inégal selon la
+// plateforme (Discord, Windows, Android...) — jamais utilisé seul, toujours
+// doublé de formatCards() en dessous pour rester lisible même si les
+// glyphes s'affichent en tofu sur un client donné.
+const CARD_SUIT_BLOCK_BASE = { "♠️": 0x1f0a0, "♥️": 0x1f0b0, "♦️": 0x1f0c0, "♣️": 0x1f0d0 };
+// Décalage 12 (Cavalier) volontairement absent : ce bloc Unicode hérite du
+// tarot, où la Dame est le rang 13 et le Roi le 14 — un deck à 52 cartes
+// n'a pas de Cavalier, on saute directement de Valet (11) à Dame (13).
+const CARD_RANK_OFFSET = { A: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, J: 11, Q: 13, K: 14 };
+
+function cardGlyph(card) {
+  const base = CARD_SUIT_BLOCK_BASE[card.suit];
+  const offset = CARD_RANK_OFFSET[card.rank];
+  if (!base || !offset) return null;
+  return String.fromCodePoint(base + offset);
+}
+
+function formatCardsBig(cards) {
+  const glyphs = cards.map(cardGlyph).filter(Boolean);
+  if (glyphs.length !== cards.length) return null;
+  return `## ${glyphs.join(" ")}`;
+}
+
+// Bloc à 2 lignes : la version graphique (si dispo) suivie du texte compact
+// garanti lisible partout — jamais l'inverse, le texte compact ne doit
+// jamais disparaître même si les glyphes s'affichent mal.
+function formatCardsBlock(cards, scoreLabel) {
+  const big = formatCardsBig(cards);
+  const lines = big ? [big] : [];
+  lines.push(`${formatCards(cards)}  —  **${scoreLabel}**`);
+  return lines;
+}
+
 // ── Résolution d'un jour — rendu texte partagé (recap + révélation finale) ──
 
 async function formatResultLine(r) {
@@ -69,6 +104,24 @@ async function formatResultsSection(results) {
 function formatDealerLine(dealer) {
   const bustSuffix = dealer.bust ? " — **le Croupier a sauté !**" : "";
   return `🎩 **Croupier :** ${formatCards(dealer.cards)} (**${dealer.score}**)${bustSuffix}`;
+}
+
+// Section "score à battre" du jour — le Croupier joue sa main en une seule
+// fois, à l'ouverture du jour (voir dealerPlay() côté service), et son
+// résultat est révélé immédiatement : les joueurs savent exactement ce
+// qu'ils doivent battre avant même de cliquer sur Jouer.
+function buildDealerTargetSection(dealer) {
+  const lines = [
+    dealer.bust
+      ? "## 🎩 Le Croupier a sauté aujourd'hui !"
+      : `## 🎩 Score à battre aujourd'hui : ${dealer.score}`,
+    ...formatCardsBlock(dealer.cards, dealer.bust ? "Bust" : `${dealer.score}`),
+    "",
+    dealer.bust
+      ? "N'importe quel score ≤ 21 gagne 1 point aujourd'hui !"
+      : "Fais mieux que ça sans dépasser 21 pour gagner 1 point.",
+  ];
+  return lines;
 }
 
 // ── Embed / composants du jour ────────────────────────────────────
@@ -109,19 +162,19 @@ function buildDayComponents(jour) {
   ];
 }
 
-async function buildDayEmbed(jour, config, { estPremierJour, previousDealer, previousResults }) {
+async function buildDayEmbed(jour, config, dealer, { estPremierJour, previousDealer, previousResults }) {
   const lines = [];
   if (estPremierJour) {
-    lines.push(DAY1_INTRO);
+    lines.push(DAY1_INTRO, "");
   } else {
     lines.push(
       `**📊 Bilan du Jour ${jour - 1}**`,
       formatDealerLine(previousDealer),
       ...(await formatResultsSection(previousResults)),
       "",
-      "Le Croupier a déjà préparé sa main du jour, cachée jusqu'à demain — à toi de jouer !",
     );
   }
+  lines.push(...buildDealerTargetSection(dealer));
 
   return {
     title: `🃏 Blackjack — Jour ${jour}/${config.duree_jours}`,
@@ -259,7 +312,7 @@ export async function postBlackjack(
   if (estPremierJour) {
     const jour = 1;
     const dealer = dealerPlay(Math.random, config.croupier.arret_a);
-    const embed = await buildDayEmbed(jour, config, { estPremierJour: true });
+    const embed = await buildDayEmbed(jour, config, dealer, { estPremierJour: true });
     const components = buildDayComponents(jour);
 
     if (dryRun) {
@@ -291,7 +344,7 @@ export async function postBlackjack(
       return { dryRun: true, final: true, embed };
     }
     const nextDealerPreview = dealerPlay(Math.random, config.croupier.arret_a);
-    const embed = await buildDayEmbed(jourSuivant, config, {
+    const embed = await buildDayEmbed(jourSuivant, config, nextDealerPreview, {
       estPremierJour: false,
       previousDealer: state.dealer,
       previousResults: results,
@@ -343,7 +396,7 @@ export async function postBlackjack(
   }
 
   const nextDealer = dealerPlay(Math.random, config.croupier.arret_a);
-  const embed = await buildDayEmbed(jourSuivant, config, {
+  const embed = await buildDayEmbed(jourSuivant, config, nextDealer, {
     estPremierJour: false,
     previousDealer: state.dealer,
     previousResults: results,
@@ -397,7 +450,7 @@ function handStatusMessage(hand) {
 function buildHandEmbed(jour, hand, message) {
   return {
     title: `🃏 Ta main — Jour ${jour}`,
-    description: [`${formatCards(hand.cards)}  —  **Score : ${hand.score}**`, "", message].join("\n"),
+    description: [...formatCardsBlock(hand.cards, `Score : ${hand.score}`), "", message].join("\n"),
     color: BLACKJACK_COLOR,
   };
 }
@@ -412,7 +465,7 @@ function buildHandComponents(jour, hand) {
           type: 2,
           style: 2,
           label: "Piocher",
-          emoji: { name: "🂠" },
+          emoji: { name: "🎴" },
           custom_id: `blackjack_piocher:${jour}`,
         },
         {
