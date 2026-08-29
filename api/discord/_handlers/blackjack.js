@@ -37,10 +37,20 @@ import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
 import { formatUtcTimeAsParis } from "../../../backend/services/dateUtils.js";
 
 const BLACKJACK_COLOR = 0x2ecc71;
+const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
+
+// Illustration du jour — fichiers statiques frontend/public/images/blackjack/,
+// servis tels quels par Vercel, même principe que robinsonImageUrl() dans
+// api/discord/_handlers/robinson.js. Jour 1 (ouverture) et dernier jour
+// (jour de jeu final) partagent la même illustration "table ouverte", les
+// jours intermédiaires ont l'illustration "en partie".
+function blackjackImageUrl(jour, dureeJours) {
+  const file = jour === 1 || jour === dureeJours ? "blackjack-start.webp" : "blackjack-game.webp";
+  return `${TRUST_ROYALE_URL}/images/blackjack/${file}`;
+}
 
 const DAY1_INTRO =
-  "🃏 **Table ouverte !** Le Croupier s'installe pour 7 jours — chaque jour, il prépare une main secrète, et c'est à vous de le battre.\n\n" +
-  "Clique sur **Jouer** pour recevoir 2 cartes, puis **Piocher** autant de fois que tu veux pour te rapprocher de 21, ou **Arrête-toi** quand tu es satisfait. Dépasse 21 et c'est perdu pour la journée. À la clôture, ton score est comparé à celui du Croupier : le plus proche de 21 sans le dépasser gagne 1 point. Égalité = personne ne marque. Le Jour 7, le classement cumulé désigne le(s) vainqueur(s). Besoin d'un rappel ? Clique sur *Règles*.";
+  "🃏 **Table ouverte !** Le Croupier s'installe pour 7 jours — bats-le chaque jour pour cumuler des points. Clique sur *Règles* pour le détail.";
 
 // ── Cartes — rendu texte ────────────────────────────────────────────
 
@@ -52,39 +62,15 @@ function formatCards(cards) {
   return cards.map(formatCard).join(" ");
 }
 
-// Rendu "graphique" en plus du texte compact ci-dessus : les vrais glyphes
-// Unicode de cartes à jouer (bloc U+1F0A0-1F0DF), affichés en gros sur une
-// ligne de titre Markdown (## ). Support de police inégal selon la
-// plateforme (Discord, Windows, Android...) — jamais utilisé seul, toujours
-// doublé de formatCards() en dessous pour rester lisible même si les
-// glyphes s'affichent en tofu sur un client donné.
-const CARD_SUIT_BLOCK_BASE = { "♠️": 0x1f0a0, "♥️": 0x1f0b0, "♦️": 0x1f0c0, "♣️": 0x1f0d0 };
-// Décalage 12 (Cavalier) volontairement absent : ce bloc Unicode hérite du
-// tarot, où la Dame est le rang 13 et le Roi le 14 — un deck à 52 cartes
-// n'a pas de Cavalier, on saute directement de Valet (11) à Dame (13).
-const CARD_RANK_OFFSET = { A: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, J: 11, Q: 13, K: 14 };
-
-function cardGlyph(card) {
-  const base = CARD_SUIT_BLOCK_BASE[card.suit];
-  const offset = CARD_RANK_OFFSET[card.rank];
-  if (!base || !offset) return null;
-  return String.fromCodePoint(base + offset);
-}
-
-function formatCardsBig(cards) {
-  const glyphs = cards.map(cardGlyph).filter(Boolean);
-  if (glyphs.length !== cards.length) return null;
-  return `## ${glyphs.join(" ")}`;
-}
-
-// Bloc à 2 lignes : la version graphique (si dispo) suivie du texte compact
-// garanti lisible partout — jamais l'inverse, le texte compact ne doit
-// jamais disparaître même si les glyphes s'affichent mal.
+// Rendu "graphique" : la ligne de cartes (rang+couleur, ex. "9♥️ 8♣️") est
+// placée dans un titre Markdown (## ) — Discord agrandit vraiment le texte
+// ET les emoji standard dans ce contexte (contrairement au bloc Unicode
+// "Playing Cards", U+1F0A0-1F0DF, testé puis abandonné : ces glyphes n'ont
+// pas d'artwork couleur chez Discord et s'affichent minuscules même sous un
+// titre). Les couleurs ♠️♥️♦️♣️ restent de vrais emoji standard, donc
+// s'agrandissent normalement.
 function formatCardsBlock(cards, scoreLabel) {
-  const big = formatCardsBig(cards);
-  const lines = big ? [big] : [];
-  lines.push(`${formatCards(cards)}  —  **${scoreLabel}**`);
-  return lines;
+  return [`# ${formatCards(cards)}`, `**${scoreLabel}**`];
 }
 
 // ── Résolution d'un jour — rendu texte partagé (recap + révélation finale) ──
@@ -102,25 +88,27 @@ async function formatResultsSection(results) {
 }
 
 function formatDealerLine(dealer) {
-  const bustSuffix = dealer.bust ? " — **le Croupier a sauté !**" : "";
-  return `🎩 **Croupier :** ${formatCards(dealer.cards)} (**${dealer.score}**)${bustSuffix}`;
+  return `🎩 **Croupier :** ${formatCards(dealer.cards)} (**${dealer.score}**)`;
 }
 
-// Section "score à battre" du jour — le Croupier joue sa main en une seule
-// fois, à l'ouverture du jour (voir dealerPlay() côté service), et son
-// résultat est révélé immédiatement : les joueurs savent exactement ce
-// qu'ils doivent battre avant même de cliquer sur Jouer.
+// Section "score à battre" du jour — le Croupier ne joue plus une vraie main
+// (voir dealerPlay() côté service) : un score aléatoire 15-21 est tiré à
+// l'ouverture du jour, jamais de saut, révélé immédiatement — les joueurs
+// savent exactement ce qu'ils doivent battre avant même de cliquer sur Jouer.
 function buildDealerTargetSection(dealer) {
   const lines = [
-    dealer.bust
-      ? "## 🎩 Le Croupier a sauté aujourd'hui !"
-      : `## 🎩 Score à battre aujourd'hui : ${dealer.score}`,
-    ...formatCardsBlock(dealer.cards, dealer.bust ? "Bust" : `${dealer.score}`),
+    `## 🎩 Score à battre aujourd'hui : ${dealer.score}`,
+    ...formatCardsBlock(dealer.cards, `${dealer.score}`),
     "",
-    dealer.bust
-      ? "N'importe quel score ≤ 21 gagne 1 point aujourd'hui !"
-      : "Fais mieux que ça sans dépasser 21 pour gagner 1 point.",
   ];
+  // 21 est le maximum atteignable sans dépasser — impossible de faire mieux,
+  // seule une égalité (21 aussi) est jouable ce jour-là. Prévient les
+  // joueurs avant qu'ils ne cliquent sur Jouer plutôt qu'à la clôture.
+  lines.push(
+    dealer.score === 21
+      ? "😱 21 pile — impossible de faire mieux aujourd'hui, seule une égalité (21 aussi) est possible !"
+      : "Fais mieux que ça sans dépasser 21 pour gagner 1 point.",
+  );
   return lines;
 }
 
@@ -133,16 +121,11 @@ function buildDayComponents(jour) {
       components: [
         {
           type: 2,
-          style: 2,
+          style: 3, // vert (Success) — action principale du message
           label: "Jouer",
           emoji: { name: "🃏" },
           custom_id: `blackjack_jouer:${jour}`,
         },
-      ],
-    },
-    {
-      type: 1,
-      components: [
         {
           type: 2,
           style: 2,
@@ -180,6 +163,7 @@ async function buildDayEmbed(jour, config, dealer, { estPremierJour, previousDea
     title: `🃏 Blackjack — Jour ${jour}/${config.duree_jours}`,
     description: lines.join("\n"),
     color: BLACKJACK_COLOR,
+    image: { url: blackjackImageUrl(jour, config.duree_jours) },
     footer: {
       text: estPremierJour
         ? "Bats le Croupier chaque jour pendant 7 jours pour cumuler des points !"
@@ -311,7 +295,7 @@ export async function postBlackjack(
 
   if (estPremierJour) {
     const jour = 1;
-    const dealer = dealerPlay(Math.random, config.croupier.arret_a);
+    const dealer = dealerPlay(Math.random, config.croupier.min, config.croupier.max);
     const embed = await buildDayEmbed(jour, config, dealer, { estPremierJour: true });
     const components = buildDayComponents(jour);
 
@@ -343,7 +327,7 @@ export async function postBlackjack(
       const embed = await buildRevealEmbed(state.dealer, results, ranking, []);
       return { dryRun: true, final: true, embed };
     }
-    const nextDealerPreview = dealerPlay(Math.random, config.croupier.arret_a);
+    const nextDealerPreview = dealerPlay(Math.random, config.croupier.min, config.croupier.max);
     const embed = await buildDayEmbed(jourSuivant, config, nextDealerPreview, {
       estPremierJour: false,
       previousDealer: state.dealer,
@@ -395,7 +379,7 @@ export async function postBlackjack(
     return { ...result, final: true };
   }
 
-  const nextDealer = dealerPlay(Math.random, config.croupier.arret_a);
+  const nextDealer = dealerPlay(Math.random, config.croupier.min, config.croupier.max);
   const embed = await buildDayEmbed(jourSuivant, config, nextDealer, {
     estPremierJour: false,
     previousDealer: state.dealer,
@@ -448,9 +432,10 @@ function handStatusMessage(hand) {
 }
 
 function buildHandEmbed(jour, hand, message) {
+  const scoreLabel = hand.status === "bust" ? "Dépassement" : `Score : ${hand.score}`;
   return {
     title: `🃏 Ta main — Jour ${jour}`,
-    description: [...formatCardsBlock(hand.cards, `Score : ${hand.score}`), "", message].join("\n"),
+    description: [...formatCardsBlock(hand.cards, scoreLabel), "", message].join("\n"),
     color: BLACKJACK_COLOR,
   };
 }
@@ -576,7 +561,6 @@ export async function handleArreter(webhookUrl, jour, discordId) {
 
 function formatHistoriqueLine(entry, discordId) {
   const mine = entry.results?.find((r) => r.discordId === discordId);
-  const bustSuffix = entry.dealer.bust ? " (a sauté)" : "";
   const monResultat = !mine
     ? " — tu n'as pas joué"
     : mine.result === "win"
@@ -584,7 +568,7 @@ function formatHistoriqueLine(entry, discordId) {
       : mine.result === "push"
         ? " — 🤝 égalité"
         : " — ❌ tu as perdu";
-  return `Jour ${entry.jour} : Croupier **${entry.dealer.score}**${bustSuffix}${monResultat}`;
+  return `Jour ${entry.jour} : Croupier **${entry.dealer.score}**${monResultat}`;
 }
 
 export async function handleJournal(webhookUrl, discordId) {
@@ -649,11 +633,11 @@ function buildReglesEmbed(config) {
       "",
       "**Déroulement (1 main par jour, définitive) :**",
       "🃏 **Jouer** — reçois 2 cartes.",
-      "🂠 **Piocher** — reçois une carte de plus (autant de fois que tu veux).",
+      "🎴 **Piocher** — reçois une carte de plus (autant de fois que tu veux).",
       "🛑 **Arrêter** — fige ton score pour aujourd'hui.",
       "Dépasser 21 = main perdue immédiatement pour la journée.",
       "",
-      `**Le Croupier** tire une main cachée chaque jour, révélée à la clôture : il tire tant que son score est inférieur à ${config.croupier.arret_a}, puis s'arrête (il peut aussi sauter).`,
+      `**Le Croupier** tire un score aléatoire entre ${config.croupier.min} et ${config.croupier.max} chaque jour, révélé dès l'ouverture — il ne dépasse jamais 21.`,
       "",
       "**Résultat quotidien :** le plus proche de 21 sans le dépasser gagne **1 point**. Égalité = personne ne marque. Une main non jouée ne rapporte ni ne coûte rien.",
       "",

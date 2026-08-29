@@ -172,23 +172,48 @@ export function computeHandValue(cards) {
   return total;
 }
 
-// Main du Croupier — règle standard : tire tant que < arretA (17 par
-// défaut), s'arrête ensuite quel que soit le détail (main dure ou molle,
-// "stand on all 17s" — pas de distinction soft/hard ici, décision
-// explicite pour rester simple). Peut sauter comme n'importe quel joueur.
-export function dealerPlay(rng = Math.random, arretA = 17) {
-  const cards = [drawCard(rng), drawCard(rng)];
-  while (computeHandValue(cards) < arretA) {
-    cards.push(drawCard(rng));
-  }
-  const score = computeHandValue(cards);
-  return { cards, score, bust: score > 21 };
+// Score du Croupier — décision explicite (29/08, retour utilisateur) : plus
+// de simulation "tire jusqu'à 17" avec risque de saut, qui produisait un
+// Croupier trop souvent battu d'office par un bust. Un simple entier
+// aléatoire dans [min, max] (15-21 par défaut) : toujours une vraie cible à
+// battre, jamais de saut.
+export function rollDealerScore(rng = Math.random, min = 15, max = 21) {
+  return min + Math.floor(rng() * (max - min + 1));
 }
 
-// Résultat d'une main FACE au Croupier — n'est appelée que pour une main non
-// bust (le bust est toujours une défaite immédiate, jamais comparé).
+function rankForValue(value, rng) {
+  if (value === 11) return "A";
+  if (value === 10) {
+    const tens = ["10", "J", "Q", "K"];
+    return tens[Math.floor(rng() * tens.length)];
+  }
+  return String(value);
+}
+
+// Habille un score cible d'une main à 2 cartes cohérente (valeurs réelles,
+// 2 à 11 chacune) — purement cosmétique pour l'affichage, l'issue du jeu ne
+// dépend que du score lui-même.
+export function buildHandForScore(score, rng = Math.random) {
+  const minV1 = Math.max(2, score - 11);
+  const maxV1 = Math.min(11, score - 2);
+  const v1 = minV1 + Math.floor(rng() * (maxV1 - minV1 + 1));
+  const v2 = score - v1;
+  return [v1, v2].map((value) => ({
+    rank: rankForValue(value, rng),
+    suit: SUITS[Math.floor(rng() * SUITS.length)],
+    value,
+  }));
+}
+
+export function dealerPlay(rng = Math.random, min = 15, max = 21) {
+  const score = rollDealerScore(rng, min, max);
+  const cards = buildHandForScore(score, rng);
+  return { cards, score };
+}
+
+// Le Croupier ne saute plus jamais (voir dealerPlay ci-dessus) : la
+// comparaison est purement numérique.
 export function compareToDealer(playerScore, dealer) {
-  if (dealer.bust) return "win";
   if (playerScore > dealer.score) return "win";
   if (playerScore === dealer.score) return "push";
   return "lose";

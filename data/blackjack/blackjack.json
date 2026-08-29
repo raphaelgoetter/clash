@@ -1,6 +1,7 @@
 {
   "duree_jours": 7,
   "croupier": {
-    "arret_a": 17
+    "min": 15,
+    "max": 21
   }
 }

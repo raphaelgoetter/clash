@@ -2,6 +2,8 @@ import assert from "assert";
 import {
   drawCard,
   computeHandValue,
+  rollDealerScore,
+  buildHandForScore,
   dealerPlay,
   compareToDealer,
   resolveDay,
@@ -36,30 +38,35 @@ async function main() {
     25, // bust, aucun As à ramener
   );
 
-  // ── dealerPlay — tire tant que < arretA, peut sauter ──
-  const RANK_10_RNG = 9 / 13 + 0.001; // "10"
-  const RANK_8_RNG = 7 / 13 + 0.001; // "8"
-  const stand20 = dealerPlay(rngSequence([RANK_10_RNG, 0, RANK_10_RNG, 0]), 17);
-  assert.strictEqual(stand20.cards.length, 2); // 20 >= 17, aucun tirage supplémentaire
-  assert.strictEqual(stand20.score, 20);
-  assert.strictEqual(stand20.bust, false);
+  // ── rollDealerScore — entier uniforme dans [min, max], jamais de saut ──
+  assert.strictEqual(rollDealerScore(rngSequence([0]), 15, 21), 15);
+  assert.strictEqual(rollDealerScore(rngSequence([0.99]), 15, 21), 21);
+  for (let i = 0; i < 200; i++) {
+    const score = rollDealerScore(Math.random, 15, 21);
+    assert.ok(score >= 15 && score <= 21);
+  }
 
-  const bust24 = dealerPlay(
-    rngSequence([RANK_8_RNG, 0, RANK_8_RNG, 0, RANK_8_RNG, 0]),
-    17,
-  );
-  assert.strictEqual(bust24.cards.length, 3); // 16 < 17 -> tire une 3ᵉ carte -> 24
-  assert.strictEqual(bust24.score, 24);
-  assert.strictEqual(bust24.bust, true);
+  // ── buildHandForScore — 2 cartes dont la somme vaut exactement le score ──
+  for (let i = 0; i < 200; i++) {
+    const score = 15 + Math.floor(Math.random() * 7); // 15..21
+    const cards = buildHandForScore(score, Math.random);
+    assert.strictEqual(cards.length, 2);
+    assert.strictEqual(computeHandValue(cards), score);
+  }
+
+  // ── dealerPlay — jamais de saut, toujours dans [min, max] ──
+  const dealerHand = dealerPlay(rngSequence([0.5, 0.2, 0.3]), 15, 21);
+  assert.ok(dealerHand.score >= 15 && dealerHand.score <= 21);
+  assert.strictEqual(dealerHand.cards.length, 2);
+  assert.strictEqual(computeHandValue(dealerHand.cards), dealerHand.score);
 
   // ── compareToDealer ──
-  assert.strictEqual(compareToDealer(20, { score: 18, bust: false }), "win");
-  assert.strictEqual(compareToDealer(18, { score: 20, bust: false }), "lose");
-  assert.strictEqual(compareToDealer(19, { score: 19, bust: false }), "push");
-  assert.strictEqual(compareToDealer(15, { score: 24, bust: true }), "win"); // le Croupier a sauté
+  assert.strictEqual(compareToDealer(20, { score: 18 }), "win");
+  assert.strictEqual(compareToDealer(18, { score: 20 }), "lose");
+  assert.strictEqual(compareToDealer(19, { score: 19 }), "push");
 
   // ── resolveDay — une main "en_cours" à la clôture est figée, jamais ignorée ──
-  const dealer = { score: 18, bust: false };
+  const dealer = { score: 18 };
   const hands = {
     a: { cards: [], score: 20, status: "en_cours", username: "Alice" }, // jamais arrêtée -> figée -> gagne
     b: { cards: [], score: 25, status: "bust", username: "Bob" }, // bust -> perd toujours
