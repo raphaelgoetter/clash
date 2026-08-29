@@ -14,6 +14,7 @@ import {
   drawCard,
   computeHandValue,
   dealerPlay,
+  compareToDealer,
   resolveDay,
   readHand,
   writeHand,
@@ -39,18 +40,12 @@ import { formatUtcTimeAsParis } from "../../../backend/services/dateUtils.js";
 const BLACKJACK_COLOR = 0x2ecc71;
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 
-// Illustration du jour — fichiers statiques frontend/public/images/blackjack/,
-// servis tels quels par Vercel, même principe que robinsonImageUrl() dans
-// api/discord/_handlers/robinson.js. Jour 1 (ouverture) et dernier jour
-// (jour de jeu final) partagent la même illustration "table ouverte", les
-// jours intermédiaires ont l'illustration "en partie".
-function blackjackImageUrl(jour, dureeJours) {
-  const file =
-    jour === 1 || jour === dureeJours
-      ? "blackjack-start.webp"
-      : "blackjack-game.webp";
-  return `${TRUST_ROYALE_URL}/images/blackjack/${file}`;
-}
+// Illustrations statiques (frontend/public/images/blackjack/), même
+// principe que robinsonImageUrl() dans api/discord/_handlers/robinson.js.
+// "start" pour le lancement (Jour 1) et la révélation finale (Jour 8) ;
+// "game" pour les jours intermédiaires (2 à 7).
+const BLACKJACK_GAME_IMAGE_URL = `${TRUST_ROYALE_URL}/images/blackjack/blackjack-game.webp`;
+const BLACKJACK_START_IMAGE_URL = `${TRUST_ROYALE_URL}/images/blackjack/blackjack-start.webp`;
 
 const DAY1_INTRO =
   "**Table ouverte !** Le Croupier s'installe pour 7 jours — bats-le chaque jour pour cumuler des points. Clique sur *Règles* pour le détail.";
@@ -189,7 +184,7 @@ async function buildDayEmbed(
     title: `🃏 Blackjack — Jour ${jour}/${config.duree_jours}`,
     description: lines.join("\n"),
     color: BLACKJACK_COLOR,
-    image: { url: blackjackImageUrl(jour, config.duree_jours) },
+    image: { url: estPremierJour ? BLACKJACK_START_IMAGE_URL : BLACKJACK_GAME_IMAGE_URL },
     footer: {
       text: estPremierJour
         ? "Bats le Croupier chaque jour pendant 7 jours pour cumuler des points !"
@@ -258,6 +253,7 @@ async function buildRevealEmbed(
     title: "🏁 Blackjack — Révélation finale",
     description: lines.join("\n"),
     color: BLACKJACK_COLOR,
+    image: { url: BLACKJACK_START_IMAGE_URL },
   };
 }
 
@@ -537,18 +533,23 @@ async function patchOriginal(webhookUrl, payload) {
 // aucun compteur à y afficher — la main de chacun reste secrète jusqu'à la
 // clôture du lendemain.
 
-function handStatusMessage(hand) {
+// Le score du Croupier est déjà public dès l'ouverture du jour (voir
+// buildDealerTargetSection) : inutile de faire attendre la clôture pour dire
+// si la main gagne ou non, le résultat est révélé immédiatement dès que la
+// main est figée (stand ou dépassement).
+function handStatusMessage(hand, dealerScore) {
   if (hand.status === "bust") {
-    return "💥 Tu dépasses 21, ta main est perdue pour aujourd'hui. Rendez-vous demain pour une nouvelle chance !";
-  }
-  if (hand.status === "stand" && hand.score === 21 && hand.cards.length === 2) {
-    return "🎉 21 sur deux cartes, la meilleure main possible ! Rendez-vous à la clôture pour voir si le Croupier fait aussi bien.";
-  }
-  if (hand.status === "stand" && hand.score === 21) {
-    return "🎉 21 pile ! Rendez-vous à la clôture pour voir si le Croupier fait aussi bien.";
+    return `💥 Tu dépasses 21 (le Croupier était à ${dealerScore}), ta main est perdue pour aujourd'hui. Rendez-vous demain pour une nouvelle chance !`;
   }
   if (hand.status === "stand") {
-    return "🛑 Tu t'arrêtes là. Rendez-vous à la clôture pour voir si tu bats le Croupier !";
+    const natural = hand.score === 21 && hand.cards.length === 2;
+    const intro = natural
+      ? "🎉 21 sur deux cartes, la meilleure main possible !"
+      : `🛑 Tu t'arrêtes à ${hand.score}.`;
+    const result = compareToDealer(hand.score, { score: dealerScore });
+    if (result === "win") return `${intro} Le Croupier était à ${dealerScore} — tu gagnes 1 point aujourd'hui ! 🏆`;
+    if (result === "push") return `${intro} Le Croupier était aussi à ${dealerScore} — égalité, aucun point aujourd'hui.`;
+    return `${intro} Le Croupier était à ${dealerScore} — pas de point aujourd'hui.`;
   }
   return "Pioche pour te rapprocher de 21, ou arrête-toi pour figer ton score.";
 }
@@ -611,7 +612,7 @@ export async function handleJouer(webhookUrl, jour, discordId, username) {
     const existing = await readHand(jour, discordId);
     if (existing) {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(jour, existing, handStatusMessage(existing))],
+        embeds: [buildHandEmbed(jour, existing, handStatusMessage(existing, state.dealer.score))],
         components: buildHandComponents(jour, existing),
       });
       return;
@@ -624,7 +625,7 @@ export async function handleJouer(webhookUrl, jour, discordId, username) {
     await writeHand(jour, discordId, hand);
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(jour, hand, handStatusMessage(hand))],
+      embeds: [buildHandEmbed(jour, hand, handStatusMessage(hand, state.dealer.score))],
       components: buildHandComponents(jour, hand),
     });
   } catch (err) {
@@ -681,7 +682,7 @@ async function handleDrawOrStand(webhookUrl, jour, discordId, { draw }) {
     await writeHand(jour, discordId, updated);
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(jour, updated, handStatusMessage(updated))],
+      embeds: [buildHandEmbed(jour, updated, handStatusMessage(updated, state.dealer.score))],
       components: buildHandComponents(jour, updated),
     });
   } catch (err) {
@@ -746,7 +747,7 @@ export async function handleJournal(webhookUrl, discordId) {
     const lines = [`**Jour ${state.jour}/${config.duree_jours}**`];
     if (hand) {
       lines.push(
-        `Ta main aujourd'hui : ${formatCards(hand.cards)} (**${hand.score}**) — ${handStatusMessage(hand)}`,
+        `Ta main aujourd'hui : ${formatCards(hand.cards)} (**${hand.score}**) — ${handStatusMessage(hand, state.dealer.score)}`,
       );
     } else {
       lines.push(
