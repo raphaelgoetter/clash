@@ -44,8 +44,15 @@ const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 // principe que robinsonImageUrl() dans api/discord/_handlers/robinson.js.
 // "start" pour le lancement (Jour 1) et la révélation finale (Jour 8) ;
 // "game" pour les jours intermédiaires (2 à 7).
-const BLACKJACK_GAME_IMAGE_URL = `${TRUST_ROYALE_URL}/images/blackjack/blackjack-game.webp`;
-const BLACKJACK_START_IMAGE_URL = `${TRUST_ROYALE_URL}/images/blackjack/blackjack-start.webp`;
+//
+// Suffixe ?v= : Discord met en cache une image par URL EXACTE, y compris
+// après remplacement du fichier (Vercel sert bien le nouveau contenu — ETag
+// vérifié — mais Discord continue de resservir sa copie mise en cache tant
+// que l'URL ne change pas). Incrémenter IMAGE_VERSION force Discord à
+// refaire un fetch à chaque remplacement de fichier.
+const BLACKJACK_IMAGE_VERSION = 2;
+const BLACKJACK_GAME_IMAGE_URL = `${TRUST_ROYALE_URL}/images/blackjack/blackjack-game.webp?v=${BLACKJACK_IMAGE_VERSION}`;
+const BLACKJACK_START_IMAGE_URL = `${TRUST_ROYALE_URL}/images/blackjack/blackjack-start.webp?v=${BLACKJACK_IMAGE_VERSION}`;
 
 const DAY1_INTRO =
   "**Table ouverte !** Le Croupier s'installe pour 7 jours — bats-le chaque jour pour cumuler des points. Clique sur *Règles* pour le détail.";
