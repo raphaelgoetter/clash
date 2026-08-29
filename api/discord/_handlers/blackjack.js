@@ -62,42 +62,18 @@ function formatCards(cards) {
   return cards.map(formatCard).join(" ");
 }
 
-// Vrais glyphes Unicode de cartes à jouer (bloc U+1F0A0-1F0DF) — tentative
-// graphique en plus du rang+couleur fiable ci-dessous. Sans artwork couleur
-// chez Discord (contrairement aux emoji standard), leur taille de rendu sous
-// un titre Markdown dépend de la police système du client : à valider en
-// conditions réelles avec `# ` (H1, essayé après un rendu trop petit sous `## `).
-const CARD_SUIT_BLOCK_BASE = { "♠️": 0x1f0a0, "♥️": 0x1f0b0, "♦️": 0x1f0c0, "♣️": 0x1f0d0 };
-// Décalage 12 (Cavalier) volontairement absent : ce bloc Unicode hérite du
-// tarot, où la Dame est le rang 13 et le Roi le 14 — un deck à 52 cartes
-// n'a pas de Cavalier, on saute directement de Valet (11) à Dame (13).
-const CARD_RANK_OFFSET = { A: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, J: 11, Q: 13, K: 14 };
-
-function cardGlyph(card) {
-  const base = CARD_SUIT_BLOCK_BASE[card.suit];
-  const offset = CARD_RANK_OFFSET[card.rank];
-  if (!base || !offset) return null;
-  return String.fromCodePoint(base + offset);
-}
-
-function formatCardsGlyphLine(cards) {
-  const glyphs = cards.map(cardGlyph).filter(Boolean);
-  if (glyphs.length !== cards.length) return null;
-  return glyphs.join(" ");
-}
-
-// Rendu "graphique" : glyphes de cartes en titre (si dispo), suivis du
-// rang+couleur (ex. "9♥️ 8♣️") — celui-ci EST un titre Markdown à part
-// entière lui aussi (emoji de couleur standard, s'agrandit fiablement),
-// jamais retiré même si les glyphes ci-dessus s'affichent mal.
+// Les vrais glyphes Unicode de cartes à jouer (bloc U+1F0A0-1F0DF) ont été
+// essayés puis abandonnés (29/08, retour utilisateur avec capture d'écran) :
+// sans artwork couleur chez Discord, ils restent minuscules même sous un
+// titre H1 — contrairement aux emoji standard (♠️♥️♦️♣️ compris) qui
+// s'agrandissent normalement. Rang+couleur en titre Markdown (# ) reste donc
+// le seul rendu "graphique" fiable.
+//
 // scoreLabel optionnel : omis quand le score est déjà annoncé juste
 // au-dessus (ex. le titre "Score à battre aujourd'hui : N" du Croupier),
 // pour ne pas le répéter une 3ᵉ fois.
 function formatCardsBlock(cards, scoreLabel = null) {
-  const lines = [];
-  const glyphLine = formatCardsGlyphLine(cards);
-  if (glyphLine) lines.push(`# ${glyphLine}`);
-  lines.push(`# ${formatCards(cards)}`);
+  const lines = [`# ${formatCards(cards)}`];
   if (scoreLabel) lines.push(`**${scoreLabel}**`);
   return lines;
 }
@@ -451,8 +427,11 @@ function handStatusMessage(hand) {
   if (hand.status === "bust") {
     return "💥 Tu dépasses 21, ta main est perdue pour aujourd'hui. Rendez-vous demain pour une nouvelle chance !";
   }
-  if (hand.status === "stand" && hand.score === 21) {
+  if (hand.status === "stand" && hand.score === 21 && hand.cards.length === 2) {
     return "🎉 21 sur deux cartes, la meilleure main possible ! Rendez-vous à la clôture pour voir si le Croupier fait aussi bien.";
+  }
+  if (hand.status === "stand" && hand.score === 21) {
+    return "🎉 21 pile ! Rendez-vous à la clôture pour voir si le Croupier fait aussi bien.";
   }
   if (hand.status === "stand") {
     return "🛑 Tu t'arrêtes là. Rendez-vous à la clôture pour voir si tu bats le Croupier !";
