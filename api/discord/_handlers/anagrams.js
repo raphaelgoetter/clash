@@ -43,6 +43,17 @@ import {
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
 
 const ANAGRAM_COLOR = 0x9b59b6;
+const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
+
+// Illustrations statiques frontend/public/images/anagram/images/, servies
+// telles quelles par Vercel — même principe que robinsonImageUrl() dans
+// api/discord/_handlers/robinson.js.
+function anagramImageUrl() {
+  return `${TRUST_ROYALE_URL}/images/anagram/images/anagram-game.webp`;
+}
+function anagramEndImageUrl() {
+  return `${TRUST_ROYALE_URL}/images/anagram/images/anagram-end.webp`;
+}
 
 // Remplace le pseudo figé de chaque entrée par le pseudo Discord actuel
 // (résolution live, repli sur le pseudo stocké en cas d'échec) — voir
@@ -78,6 +89,7 @@ function buildAnagramEmbed({
       "**Merci de ne pas spoiler ni tricher, sinon c'est pas drôle !**\n\n" +
       "🤖 Vérifie tes scores avec la commande `/anagram`",
     color: ANAGRAM_COLOR,
+    image: { url: anagramImageUrl() },
     footer: {
       text: "Nouvelle manche : samedi prochain, à une heure surprise !",
     },
@@ -181,6 +193,7 @@ function buildSeasonRecapEmbed(
       `Merci aux ${seasonRanking.length} joueur${seasonRanking.length > 1 ? "s" : ""} qui ont participé à ce mini-jeu cette saison.\n\n` +
       lines.join("\n"),
     color: ANAGRAM_COLOR,
+    image: { url: anagramEndImageUrl() },
   };
 }
 
