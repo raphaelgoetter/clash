@@ -940,7 +940,6 @@ async function postWarSummary(
   let liveBoatAttackers = [];
   let liveBoatTotal = 0;
   let clinchedInfo = null;
-  let apiDayFame = null; // pointsEarned depuis periodLogs (source de vérité J1-J3)
   let race = null; // réutilisé plus bas pour le recoupement live des decks manquants
   try {
     race = await fetchCurrentRace(tag);
@@ -963,18 +962,6 @@ async function postWarSummary(
         (a, b) => a + b,
         0,
       );
-    }
-    // periodLogs : source de vérité directe pour les pts de la journée terminée (J1-J3).
-    // periodLogs[WAR_DAY_NUMBER[warDay] - 1] = entrée du jour concerné (ordre chronologique).
-    // Absent pour J4 après le reset lundi → apiDayFame restera null, fallback snapshot.
-    const periodLogIndex = WAR_DAY_NUMBER[warDay] - 1;
-    const periodLog = race?.periodLogs?.[periodLogIndex];
-    const ownTagNorm = `#${tag}`.toUpperCase();
-    const periodLogItem = periodLog?.items?.find(
-      (item) => (item.clan?.tag ?? "").toUpperCase() === ownTagNorm,
-    );
-    if (periodLogItem?.pointsEarned != null) {
-      apiDayFame = periodLogItem.pointsEarned;
     }
   } catch (_) {
     // Appel live échoué — on tombera sur le calcul snapshot ci-dessous
@@ -1015,23 +1002,34 @@ async function postWarSummary(
     hasPreResetSnapshot ||
     Object.keys(dayEntry._cumulFame ?? {}).length > 0;
 
-  let totalFame;
+  // computeDailyFame() calcule le delta du jour en soustrayant le cumul de la
+  // VEILLE (prevDayEntry._cumulFame) au cumul pré-reset du jour courant. Ce delta
+  // n'est donc fiable que si la veille a elle-même eu un snapshot pré-reset propre
+  // (sinon son cumul de référence peut être sous-évalué — panne de cron confirmée
+  // les 27-28/08, cf. CONTRIBUTING.md — et gonfler artificiellement le delta du
+  // jour courant, alors même que le snapshot pré-reset du jour courant est correct).
+  const hasReliablePrevBaseline =
+    !prevDayEntry || Boolean(prevDayEntry.snapshotPreResetTime);
+
+  let totalFame = null;
   let isExactFame = false;
-  if (!isLastDay && hasPreResetSnapshot) {
-    // J1-J3 : snapshot pré-reset (cumulFamePreReset) = source de vérité la plus fiable.
-    // periodLogs[n].pointsEarned peut inclure des pts de la nouvelle journée déjà en cours
-    // au moment de l'appel live (si le clan a commencé à jouer avant que le résumé soit posté).
-    // Le snapshot pré-reset est capturé à T−2 min, avant tout deck de la journée suivante.
+  let fameUnavailableReason = null;
+  if (!isLastDay && prevDayEntry && !hasReliablePrevBaseline) {
+    // Aucune source fiable : la veille n'a pas de snapshot pré-reset propre, donc
+    // tout delta basé sur son cumul serait potentiellement faux de plusieurs
+    // milliers de points (vécu le 29/08 : 36 650 affichés au lieu de ~33 300+
+    // réels). L'alternative envisagée, periodLogs[].pointsEarned de l'API, n'est
+    // PAS une source de repli valable : vérifié figé par saison (valeur identique
+    // semaine après semaine tant que la saison ne change pas) sur les 3 clans
+    // suivis — cf. `periodPointsEarned` dans data/snapshots/*.json. On annonce
+    // donc l'absence de donnée plutôt que d'afficher un chiffre non fiable.
+    fameUnavailableReason = "référence de la veille incomplète";
+  } else if (!isLastDay && hasPreResetSnapshot) {
+    // J1-J3, cas nominal : snapshot pré-reset du jour + référence de veille fiable.
     totalFame = computeDailyFame(
       { ...dayEntry, _cumulFame: cumulFamePreReset },
       prevDayEntry,
     );
-    isExactFame = true;
-  } else if (apiDayFame !== null && !isLastDay) {
-    // periodLogs disponible : source de vérité pour J1-J3 quand le snapshot pré-reset manque.
-    // On exclut J4 car periodLogs[3].pointsEarned après le reset lundi peut être incomplet
-    // (lag API : tous les pts ne sont pas encore comptabilisés au moment de l'appel).
-    totalFame = apiDayFame;
     isExactFame = true;
   } else if (isLastDay && apiWeekFame !== null) {
     // J4 : période de collecte terminée. apiWeekFame (sum participants[].fame) et
@@ -1217,13 +1215,13 @@ async function postWarSummary(
   const isColosseum = dayEntry.periodType === "colosseum";
 
   if (hasFameData) {
-    if (totalFame === null) {
-      throw new Error(
-        `Données de fame incomplètes pour ${tag} (${dayEntry.realDay})`,
-      );
-    }
     let line;
-    if (
+    if (totalFame === null) {
+      // On a délibérément renoncé à calculer un chiffre (cf. fameUnavailableReason
+      // plus haut) plutôt que d'afficher une valeur potentiellement fausse de
+      // plusieurs milliers de points.
+      line = `Données indisponibles (${fameUnavailableReason ?? "source fiable manquante"})`;
+    } else if (
       isLastDay &&
       totalFame === 0 &&
       (earlyWinByDay3 === true || clinchedInfo?.isClinchedWin === true)

@@ -95,6 +95,13 @@ import {
   buildMessagerieModal as buildGoblinHuntersMessagerieModal,
 } from "./_handlers/goblinhunters.js";
 import {
+  handleJouer as handleBlackjackJouer,
+  handlePiocher as handleBlackjackPiocher,
+  handleArreter as handleBlackjackArreter,
+  handleRegles as handleBlackjackRegles,
+  handleJournal as handleBlackjackJournal,
+} from "./_handlers/blackjack.js";
+import {
   summarizeWarDecks,
   summarizeWarDecksForMatchup,
   summarizeRecentBattlesForMatchup,
@@ -9065,6 +9072,60 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleQuizVote(webhookUrl, manche, jour, choiceIndex, discordId, username));
+    return;
+  }
+
+  // ── Blackjack : bouton "Jouer" (1ʳᵉ carte du jour, sur le message public) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("blackjack_jouer:")
+  ) {
+    const jour = body.data.custom_id.split(":")[1];
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    // type 5 = DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE (éphémère) : premier clic
+    // depuis le message public, crée le message éphémère "ta main".
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleBlackjackJouer(webhookUrl, jour, discordId, username));
+    return;
+  }
+
+  // ── Blackjack : boutons "Piocher" / "Arrêter" (sur le message éphémère) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    (body.data.custom_id.startsWith("blackjack_piocher:") ||
+      body.data.custom_id.startsWith("blackjack_arreter:"))
+  ) {
+    const [action, jour] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    // type 6 = DEFERRED_UPDATE_MESSAGE : édite en place le message éphémère
+    // déjà affiché (pas de nouveau message, comme goblinhunters_target).
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    const handler = action === "blackjack_piocher" ? handleBlackjackPiocher : handleBlackjackArreter;
+    runBackground(() => handler(webhookUrl, jour, discordId));
+    return;
+  }
+
+  // ── Blackjack : boutons "Journal" / "Règles" (éphémères) ──
+  if (body.type === 3 && body.data?.custom_id === "blackjack_journal") {
+    const discordId = body.member?.user?.id;
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleBlackjackJournal(webhookUrl, discordId));
+    return;
+  }
+  if (body.type === 3 && body.data?.custom_id === "blackjack_regles") {
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleBlackjackRegles(webhookUrl));
     return;
   }
 

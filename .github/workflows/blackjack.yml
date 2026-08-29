@@ -1,0 +1,45 @@
+name: Blackjack — bats le Croupier
+
+permissions:
+  contents: read
+
+on:
+  # Le Jour 1 se lance uniquement à la main (workflow_dispatch). Le cron ne
+  # fait qu'avancer une partie déjà en cours (voir --require-active passé au
+  # script ci-dessous) : tant qu'aucun lancement manuel n'a eu lieu, il ne se
+  # passe rien, ce qui évite qu'un run automatique ne démarre une partie
+  # publique sans prévenir pendant une session de test sur le salon de test
+  # (l'état est partagé entre les deux, voir CONTRIBUTING.md).
+  # Schedule commenté tant que le jeu est en phase de test (même pratique que
+  # les autres mini-jeux à leur création, voir CONTRIBUTING.md) — seul
+  # workflow_dispatch est actif pour l'instant. À décommenter une fois validé
+  # en conditions réelles sur le salon de test.
+  # schedule:
+  #   # Décalé de la ronde (0 8) et des autres crons quotidiens du dépôt
+  #   # (0-10 déjà pris) — voir CONTRIBUTING.md, incident du 27/08.
+  #   - cron: "12 8 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  post-jour:
+    runs-on: ubuntu-latest
+    env:
+      DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+      DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+      DISCORD_CHANNEL_FRAME_PUBLIC: ${{ secrets.DISCORD_CHANNEL_FRAME_PUBLIC }}
+      KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
+      KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Poste le jour de Blackjack (salon public)
+        run: npm run blackjack:public -- ${{ github.event_name == 'schedule' && '--require-active' || '' }}
