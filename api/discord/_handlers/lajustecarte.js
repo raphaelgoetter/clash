@@ -112,7 +112,7 @@ function buildJusteCarteEmbed({ seasonId, seasonManche, seasonMancheTotal }) {
     // post) ; sans paramètre variable, un aperçu cassé une fois resterait
     // cassé indéfiniment sur cette URL.
     image: {
-      url: `${TRUST_ROYALE_URL}/images/banner-justecarte.webp?v=${Date.now()}`,
+      url: `${TRUST_ROYALE_URL}/images/justecarte/images/justecarte-game.webp?v=${Date.now()}`,
     },
     footer: {
       text: `Nouvelle manche : dimanche prochain, ${formatUtcTimeAsParis(JUSTECARTE_CRON_UTC_HOUR)} !`,
