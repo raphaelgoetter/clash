@@ -55,7 +55,7 @@ const BLACKJACK_GAME_IMAGE_URL = `${TRUST_ROYALE_URL}/images/blackjack/blackjack
 const BLACKJACK_START_IMAGE_URL = `${TRUST_ROYALE_URL}/images/blackjack/blackjack-start.webp?v=${BLACKJACK_IMAGE_VERSION}`;
 
 const DAY1_INTRO =
-  "**Table ouverte !** Le Croupier s'installe pour 7 jours — bats-le chaque jour pour cumuler des points. Clique sur *Règles* pour le détail.";
+  "**Table ouverte !** Le Croupier s'installe pour 7 jours — bats-le chaque jour pour cumuler des points. Clique sur *Règles* pour les détails.";
 
 // ── Cartes — rendu texte ────────────────────────────────────────────
 
@@ -97,15 +97,22 @@ async function formatResultsSection(results) {
   const pushes = results.filter((r) => r.result === "push");
   const losers = results.filter((r) => r.result === "lose");
 
-  const lines = [`${results.length} joueur${results.length > 1 ? "s" : ""} ont joué.`];
+  const lines = [
+    `${results.length} joueur${results.length > 1 ? "s" : ""} ont joué.`,
+  ];
   if (winners.length) {
-    const names = await Promise.all(winners.map((r) => resolveDisplayName(r.discordId, r.username)));
-    lines.push(`🏆 Gagnant${names.length > 1 ? "s" : ""} (${names.length}) : ${names.join(", ")}`);
+    const names = await Promise.all(
+      winners.map((r) => resolveDisplayName(r.discordId, r.username)),
+    );
+    lines.push(
+      `🏆 Gagnant${names.length > 1 ? "s" : ""} (${names.length}) : ${names.join(", ")}`,
+    );
   } else {
     lines.push("🏆 Personne n'a battu le Croupier hier.");
   }
   if (pushes.length) lines.push(`🤝 Égalité : ${pushes.length}`);
-  if (losers.length) lines.push(`❌ Perdant${losers.length > 1 ? "s" : ""} : ${losers.length}`);
+  if (losers.length)
+    lines.push(`❌ Perdant${losers.length > 1 ? "s" : ""} : ${losers.length}`);
 
   return lines;
 }
@@ -191,7 +198,11 @@ async function buildDayEmbed(
     title: `🃏 Blackjack — Jour ${jour}/${config.duree_jours}`,
     description: lines.join("\n"),
     color: BLACKJACK_COLOR,
-    image: { url: estPremierJour ? BLACKJACK_START_IMAGE_URL : BLACKJACK_GAME_IMAGE_URL },
+    image: {
+      url: estPremierJour
+        ? BLACKJACK_START_IMAGE_URL
+        : BLACKJACK_GAME_IMAGE_URL,
+    },
     footer: {
       text: estPremierJour
         ? "Bats le Croupier chaque jour pendant 7 jours pour cumuler des points !"
@@ -554,8 +565,10 @@ function handStatusMessage(hand, dealerScore) {
       ? "🎉 21 sur deux cartes, la meilleure main possible !"
       : `🛑 Tu t'arrêtes à ${hand.score}.`;
     const result = compareToDealer(hand.score, { score: dealerScore });
-    if (result === "win") return `${intro} Le Croupier était à ${dealerScore} — tu gagnes 1 point aujourd'hui ! 🏆`;
-    if (result === "push") return `${intro} Le Croupier était aussi à ${dealerScore} — égalité, aucun point aujourd'hui.`;
+    if (result === "win")
+      return `${intro} Le Croupier était à ${dealerScore} — tu gagnes 1 point aujourd'hui ! 🏆`;
+    if (result === "push")
+      return `${intro} Le Croupier était aussi à ${dealerScore} — égalité, aucun point aujourd'hui.`;
     return `${intro} Le Croupier était à ${dealerScore} — pas de point aujourd'hui.`;
   }
   return "Pioche pour te rapprocher de 21, ou arrête-toi pour figer ton score.";
@@ -619,7 +632,13 @@ export async function handleJouer(webhookUrl, jour, discordId, username) {
     const existing = await readHand(jour, discordId);
     if (existing) {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(jour, existing, handStatusMessage(existing, state.dealer.score))],
+        embeds: [
+          buildHandEmbed(
+            jour,
+            existing,
+            handStatusMessage(existing, state.dealer.score),
+          ),
+        ],
         components: buildHandComponents(jour, existing),
       });
       return;
@@ -632,7 +651,9 @@ export async function handleJouer(webhookUrl, jour, discordId, username) {
     await writeHand(jour, discordId, hand);
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(jour, hand, handStatusMessage(hand, state.dealer.score))],
+      embeds: [
+        buildHandEmbed(jour, hand, handStatusMessage(hand, state.dealer.score)),
+      ],
       components: buildHandComponents(jour, hand),
     });
   } catch (err) {
@@ -689,7 +710,13 @@ async function handleDrawOrStand(webhookUrl, jour, discordId, { draw }) {
     await writeHand(jour, discordId, updated);
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(jour, updated, handStatusMessage(updated, state.dealer.score))],
+      embeds: [
+        buildHandEmbed(
+          jour,
+          updated,
+          handStatusMessage(updated, state.dealer.score),
+        ),
+      ],
       components: buildHandComponents(jour, updated),
     });
   } catch (err) {
@@ -743,12 +770,10 @@ export async function handleJournal(webhookUrl, discordId) {
 
     const ranking = buildRanking(points);
     const resolvedRanking = await Promise.all(
-      ranking
-        .slice(0, 10)
-        .map(async (r) => ({
-          ...r,
-          username: await resolveDisplayName(r.discordId, r.username),
-        })),
+      ranking.slice(0, 10).map(async (r) => ({
+        ...r,
+        username: await resolveDisplayName(r.discordId, r.username),
+      })),
     );
 
     const lines = [`**Jour ${state.jour}/${config.duree_jours}**`];
