@@ -16,6 +16,7 @@ import {
   readRadeauPoints,
   harvestResource,
   attemptRaftContribution,
+  grantFreeRadeauPoints,
   recordVote,
   releaseVoteSlot,
   writeVoteDetail,
@@ -26,10 +27,11 @@ import {
   listHistorique,
   getHistoriqueEntry,
   rollHarvestAmount,
-  rollHarvestAmountGuaranteed,
-  rollCappedEventAmount,
+  rollEventCappedAmount,
   rollExplorerYield,
+  rollCharpentierRadeauPoints,
   pickChefExplorateur,
+  pickChefCharpentier,
   harvestCapForEvent,
   isExplorerDisabled,
   isRadeauDisabled,
@@ -46,7 +48,6 @@ import {
   finalizeDayClosure,
   updateZeroStreaks,
   ZERO_STREAK_LIMIT,
-  grantEqualResources,
   grantResource,
   computeMancheScore,
   archiveManche,
@@ -73,10 +74,17 @@ function robinsonImageUrl(jour) {
 
 // Pitch affiché uniquement au Jour 1 — plante le décor et rappelle le
 // principe en 2 phrases, avant de renvoyer vers le bouton Règles du jeu pour
-// le détail complet (barème, consommation, événements).
-const DAY1_INTRO =
-  "⛵ **Naufrage général !** Le navire qui emmenait le clan vers le prochain tournoi d’Arène a sombré cette nuit dans la tempête. Par miracle, tout le monde s’est échoué sain et sauf sur une île déserte — sans le moindre Coffre à l’horizon.\n\n" +
-  "Tenez 10 jours, le temps que les secours repèrent l’épave, ou évadez-vous plus tôt en achevant un Radeau. Chaque membre vote une fois par jour ; si une ressource tombe à 0 trois jours de suite, c’est le naufrage définitif. Besoin d’un rappel ? Clique sur *Règles du jeu*.";
+// le détail complet (barème, consommation, événements). Fonction plutôt que
+// constante depuis la refonte du 29/08 : `duree_jours` et `ZERO_STREAK_LIMIT`
+// sont désormais interpolés depuis la config/le code plutôt que codés en dur
+// dans le texte, pour ne plus jamais désynchroniser ce pitch d'un futur
+// changement de durée ou de seuil de défaite.
+function buildDay1Intro(config) {
+  return (
+    "⛵ **Naufrage général !** Le navire qui emmenait le clan vers le prochain tournoi d’Arène a sombré cette nuit dans la tempête. Par miracle, tout le monde s’est échoué sain et sauf sur une île déserte — sans le moindre Coffre à l’horizon.\n\n" +
+    `Tenez ${config.duree_jours} jours, le temps que les secours repèrent l’épave, ou évadez-vous plus tôt en achevant un Radeau. Chaque membre vote une fois par jour ; si une ressource reste à 0 pendant ${ZERO_STREAK_LIMIT} jours de suite, c’est le naufrage définitif. Besoin d’un rappel ? Clique sur *Règles du jeu*.`
+  );
+}
 
 // ── Texte narratif ────────────────────────────────────────────────
 // Les variantes de phrases vivent dans data/robinson/narratifs.json (pas
@@ -110,8 +118,8 @@ async function pickVoterNames(voters) {
 // "normal" n'a volontairement aucun pool de texte associé : rien
 // d'intéressant à raconter sur un stock ordinaire, la ligne est alors
 // simplement omise plutôt que de meubler avec une phrase creuse.
-async function buildNarrative(jour, stocks, voters, estPremierJour) {
-  if (estPremierJour) return DAY1_INTRO;
+async function buildNarrative(jour, stocks, voters, estPremierJour, config) {
+  if (estPremierJour) return buildDay1Intro(config);
 
   const narratifs = await loadNarratifs();
   const intro = pickFlavor(narratifs.intro_cocasse, jour);
@@ -160,12 +168,13 @@ async function buildRobinsonEmbed(
   estPremierJour,
   voters,
   chefExplorateurId,
+  chefCharpentierId,
 ) {
   const sections = computeRaftSections(radeauPoints, config.points_par_section);
   const raftBar =
     "🟩".repeat(sections) + "⬜".repeat(config.radeau_sections_max - sections);
 
-  const narrative = await buildNarrative(jour, stocks, voters, estPremierJour);
+  const narrative = await buildNarrative(jour, stocks, voters, estPremierJour, config);
   const lines = [narrative, ""];
   if (event) {
     lines.push(
@@ -200,7 +209,17 @@ async function buildRobinsonEmbed(
   // pickChefExplorateur(). Aucune annonce si personne n'a voté hier.
   if (chefExplorateurId) {
     lines.push(
-      `👑 **Chef explorateur du jour :** <@${chefExplorateurId}> est sûr de trouver au moins une ressource aujourd’hui (Pêcher/Eau/Bois) !`,
+      `👑 **Chef explorateur du jour :** <@${chefExplorateurId}> récolte automatiquement 1 ressource de plus (jusqu’à 6 !) aujourd’hui sur Pêcher/Eau/Bois.`,
+      "",
+    );
+  }
+  // Chef Charpentier du jour (30/08, second rôle) : annoncé uniquement les
+  // jours où le Radeau est déverrouillé (avant, le rôle n'aurait aucun
+  // effet possible). Comme le Chef Explorateur, choisi parmi les votants
+  // réels de la veille — voir pickChefCharpentier().
+  if (chefCharpentierId) {
+    lines.push(
+      `🪓 **Chef charpentier du jour :** <@${chefCharpentierId}> peut construire en solo aujourd’hui — un vote Radeau de sa part ne coûte aucun Bois commun et rapporte des points doublés !`,
       "",
     );
   }
@@ -219,7 +238,7 @@ async function buildRobinsonEmbed(
     image: { url: robinsonImageUrl(jour) },
     footer: {
       text: estPremierJour
-        ? "Naufragés ! Survivez ensemble jusqu’au Jour 11, ou évadez-vous avant en finissant le Radeau."
+        ? `Naufragés ! Survivez ensemble jusqu’au Jour ${config.duree_jours + 1}, ou évadez-vous avant en finissant le Radeau.`
         : `Votez avant ${formatUtcTimeAsParis(8)} demain pour orienter la journée.`,
     },
   };
@@ -276,7 +295,12 @@ function buildRobinsonComponents(jour, config, voteCounts, event) {
 // Exportée pour scripts/robinsonStatus.js (projection du Jour suivant).
 export function outcomeLabel(outcome) {
   if (outcome === "victoire_radeau") return "🛶 Victoire (Radeau)";
-  if (outcome === "victoire_jour11") return "🚢 Victoire (Jour 11)";
+  // Libellé volontairement générique (pas "Jour X" codé en dur) : l'ID
+  // interne "victoire_jour11" date du calendrier à 10 jours (le dernier
+  // jour de survie s'appelait alors Jour 11) et n'a pas été renommé pour ne
+  // pas casser le format des manches déjà archivées — mais le libellé
+  // affiché doit rester correct quelle que soit `duree_jours` en vigueur.
+  if (outcome === "victoire_jour11") return "🚢 Victoire (survie)";
   return "💀 Défaite";
 }
 
@@ -332,7 +356,7 @@ function buildOutcomeEmbed(
     return {
       title: "🚢 Les secours sont arrivés !",
       description: [
-        "Après 10 jours de survie acharnée, un bateau apparaît enfin à l’horizon ! Bravo à tous les naufragés — vous avez survécu à l’île.",
+        `Après ${config.duree_jours} jours de survie acharnée, un bateau apparaît enfin à l’horizon ! Bravo à tous les naufragés — vous avez survécu à l’île.`,
         ...manchesLines,
       ].join("\n"),
       color: 0xf1c40f,
@@ -342,7 +366,7 @@ function buildOutcomeEmbed(
   return {
     title: "💀 Naufrage définitif…",
     description: [
-      "Une ressource critique est tombée à 0 trois jours de suite — l’île a eu raison du campement. L’aventure s’arrête ici.",
+      `Une ressource critique est restée à 0 pendant ${ZERO_STREAK_LIMIT} jours de suite — l’île a eu raison du campement. L’aventure s’arrête ici.`,
       ...manchesLines,
     ].join("\n"),
     color: 0x2c3e50,
@@ -533,6 +557,14 @@ export async function postRobinson(
   // chaque appel de `npm run robinson:status`, sans rapport avec le Chef qui
   // sera réellement désigné au prochain cron.
   const chefExplorateurId = dryRun ? null : pickChefExplorateur(closure.voters);
+  // Chef Charpentier du jour : même tirage, réservé aux jours où le Radeau
+  // est déverrouillé (voir isRadeauDisabled) — inutile de désigner quelqu'un
+  // pour un rôle qui ne peut avoir aucun effet ce jour-là. Exclut le Chef
+  // Explorateur du tirage pour éviter de cumuler les deux rôles.
+  const chefCharpentierId =
+    dryRun || isRadeauDisabled(jourSuivant, config.radeau_verrouille)
+      ? null
+      : pickChefCharpentier(closure.voters, chefExplorateurId);
 
   // Épave (Jour 7) — inversée en don de Bois brut (au lieu de points de
   // Radeau directs) : le Bois doit encore être converti en points via de
@@ -543,16 +575,6 @@ export async function postRobinson(
     stocksPourEmbed = dryRun
       ? { ...stocksPourEmbed, bois: stocksPourEmbed.bois + bonus }
       : await grantResource("bois", bonus);
-  }
-  if (event?.id === "colis_royal") {
-    const bonus = event.bonus_ressources ?? 3;
-    stocksPourEmbed = dryRun
-      ? {
-          poisson: closure.stocksApres.poisson + bonus,
-          eau: closure.stocksApres.eau + bonus,
-          bois: closure.stocksApres.bois + bonus,
-        }
-      : await grantEqualResources(bonus);
   }
   if (event?.id === "poissons_pourris") {
     const perte = computePoissonsPourrisLoss(
@@ -566,26 +588,6 @@ export async function postRobinson(
         }
       : await spoilPoisson(perte);
     eventPourEmbed = { ...event, perte };
-  }
-  // "Une incroyable découverte !" (Jour 5) — inversé en petit bonus inconditionnel,
-  // même mécanique que Colis Royal (dons une seule fois, jamais liés à un vote).
-  if (event?.id === "evenement") {
-    const bonus = event.bonus_ressources ?? 3;
-    stocksPourEmbed = dryRun
-      ? {
-          poisson: stocksPourEmbed.poisson + bonus,
-          eau: stocksPourEmbed.eau + bonus,
-          bois: stocksPourEmbed.bois + bonus,
-        }
-      : await grantEqualResources(bonus);
-  }
-  // Indigestion Royale (Jour 9) — inversée en petit bonus d'Eau (au lieu du
-  // plafond pénalisant qui s'appliquait auparavant sur l'action Eau).
-  if (event?.id === "indigestion_royale") {
-    const bonus = event.bonus_eau ?? 2;
-    stocksPourEmbed = dryRun
-      ? { ...stocksPourEmbed, eau: stocksPourEmbed.eau + bonus }
-      : await grantResource("eau", bonus);
   }
 
   // Défaite déterminée UNIQUEMENT sur le stock FINAL (après tous les bonus/
@@ -665,6 +667,7 @@ export async function postRobinson(
     false,
     closure.voters,
     chefExplorateurId,
+    chefCharpentierId,
   );
   const components = buildRobinsonComponents(jourSuivant, config, {}, event);
 
@@ -687,6 +690,7 @@ export async function postRobinson(
     jour: jourSuivant,
     event: eventPourEmbed,
     chefExplorateurId,
+    chefCharpentierId,
     zeroStreaks: zeroStreaksApres,
     dayVoters: closure.voters,
     embed,
@@ -705,6 +709,7 @@ async function publishAndWriteState(
     jour,
     event,
     chefExplorateurId = null,
+    chefCharpentierId = null,
     zeroStreaks,
     dayVoters,
     embed,
@@ -772,6 +777,7 @@ async function publishAndWriteState(
     termine,
     event,
     chefExplorateurId,
+    chefCharpentierId,
     zeroStreaks,
     dayVoters,
   });
@@ -815,6 +821,7 @@ export async function refreshPublicMessage(state, config, botToken) {
     state.jour === 1,
     state.dayVoters,
     state.chefExplorateurId,
+    state.chefCharpentierId,
   );
   const components = buildRobinsonComponents(
     state.jour,
@@ -903,18 +910,18 @@ async function handleHarvestVote(
     detail = { actionId, yields, at: new Date().toISOString() };
   } else {
     const resourceId = config.actions[actionId].resource;
-    // Chef Explorateur du jour : tirage garanti non-nul, jamais de "bredouille"
+    // Chef Explorateur du jour : +1 au tirage qui s'applique déjà ce jour-là
+    // (normal OU plafonné selon l'événement en cours) — refonte du 30/08,
+    // remplace l'ancien "garanti non-nul" (relance jusqu'à >= 1). Toujours
+    // >= 1 comme avant, mais peut désormais monter jusqu'à 6 un jour normal
     // — uniquement sur les actions de récolte directes (pas Explorer, qui ne
     // tombe déjà jamais à 0 ; pas Radeau, géré par une fonction séparée qui
     // n'appelle jamais ce tirage).
     const isChef = state.chefExplorateurId === discordId;
-    const amount = harvestCapForEvent(state.event, actionId)
-      ? isChef
-        ? 1
-        : rollCappedEventAmount(Math.random)
-      : isChef
-        ? rollHarvestAmountGuaranteed(Math.random)
-        : rollHarvestAmount(Math.random);
+    const baseRoll = harvestCapForEvent(state.event, actionId)
+      ? rollEventCappedAmount(state.event, Math.random)
+      : rollHarvestAmount(Math.random);
+    const amount = isChef ? baseRoll + 1 : baseRoll;
     await harvestResource(resourceId, amount);
     detail = { actionId, amount, at: new Date().toISOString(), isChef };
   }
@@ -960,6 +967,27 @@ async function handleRadeauVote(
       embeds: [],
       components: [],
     });
+    return;
+  }
+
+  // Chef Charpentier du jour (30/08) : son vote Radeau ne passe jamais par
+  // attemptRaftContribution() (aucun coût en Bois, ne peut jamais échouer) —
+  // un tirage de récolte classique +1, doublé, ajouté directement en points.
+  if (state.chefCharpentierId === discordId) {
+    const gain = rollCharpentierRadeauPoints(Math.random);
+    const { points } = await grantFreeRadeauPoints(gain);
+    await writeVoteDetail(state.jour, discordId, {
+      actionId: "radeau",
+      pointsAdded: gain,
+      isCharpentier: true,
+      at: new Date().toISOString(),
+    });
+    await patchOriginal(webhookUrl, {
+      content: `🪓 Chef charpentier du jour : tu construis en solo, sans toucher au Bois commun — +${gain} points de construction (total : ${points}) !`,
+      embeds: [],
+      components: [],
+    });
+    await refreshPublicMessage(state, config, botToken);
     return;
   }
 
@@ -1202,14 +1230,14 @@ function buildReglesEmbed(config) {
   return {
     title: "📖 Règles du jeu — Robinson",
     description: [
-      "Naufragés sur une île, survivez 10 jours jusqu’à l’arrivée des secours au Jour 11, ou évadez-vous plus tôt en achevant le Radeau.",
+      `Naufragés sur une île, survivez ${config.duree_jours} jours jusqu’à l’arrivée des secours au Jour ${config.duree_jours + 1}, ou évadez-vous plus tôt en achevant le Radeau.`,
       "",
       "**Actions (1 vote par membre et par jour) :**",
       ...actionLines,
       "",
       "**Consommation automatique chaque nuit** (V = votants uniques du jour) : −V Nourriture, −V Eau, −⌈V/2⌉ Bois.",
       "",
-      "**Défaite :** une ressource à 0 pendant 3 jours consécutifs met fin à l’aventure.",
+      `**Défaite :** une ressource à 0 pendant ${ZERO_STREAK_LIMIT} jours consécutifs met fin à l’aventure.`,
       "",
       "📜 **Journal de Bord** — consulte les besoins du jour et l’historique des jours précédents. Simple lecture, ça ne consomme jamais ton vote : clique dessus autant de fois que tu veux.",
       "",

@@ -1,15 +1,15 @@
 {
-  "duree_jours": 10,
+  "duree_jours": 7,
   "radeau_sections_max": 5,
   "bois_par_point_radeau": 1,
   "points_par_section": 4,
-  "stocks_initiaux": { "poisson": 10, "eau": 10, "bois": 6 },
+  "stocks_initiaux": { "poisson": 11, "eau": 11, "bois": 6 },
   "radeau_verrouille": {
-    "jour_debut": 4,
-    "jour_fin": 5,
+    "jour_debut": 3,
+    "jour_fin": 4,
     "nom": "Grosse Houle",
     "emoji": "🌊",
-    "description": "Au large, la mer forme déjà des creux impressionnants — les premiers signes de l’ouragan qui menace l’île dans quelques jours. Impossible de travailler sereinement sur le Radeau avec un temps pareil : mieux vaut ranger les outils, l’abriter des embruns et se concentrer sur l’essentiel en attendant une accalmie."
+    "description": "Au large, la mer forme déjà des creux impressionnants — les premiers signes de l’ouragan qui menace l’île dès demain. Impossible de travailler sereinement sur le Radeau avec un temps pareil : mieux vaut ranger les outils, l’abriter des embruns et se concentrer sur l’essentiel en attendant une accalmie."
   },
   "actions": {
     "peche": { "label": "Pêcher", "emoji": "🎣", "resource": "poisson" },
@@ -36,27 +36,24 @@
     },
     {
       "jour": 4,
-      "id": "colis_royal",
-      "nom": "Colis Royal",
-      "emoji": "🎁",
-      "description": "Une bourrasque étrange dépose un colis scellé aux couleurs royales sur la plage — une récompense pour la belle mobilisation d’hier ! Le camp se partage son contenu : +2 Nourriture, +2 Eau, +2 Bois.",
-      "condition_votants_veille": 12,
-      "bonus_ressources": 2
-    },
-    {
-      "jour": 5,
-      "id": "evenement",
-      "nom": "Une incroyable découverte !",
-      "emoji": "🤷‍♂️",
-      "description": "Vos éclaireurs ont trouvé un objet étrange sur la plage qui semble provenir d’un autre monde. Il pourrait bien s’agir d’un artefact magique extrêmement puissant ! Ah ben non en fait c'est juste un bout de bois tordu — mais autour, toute une cargaison échouée bien plus utile : le camp récupère +2 Nourriture, +2 Eau, +2 Bois.",
-      "bonus_ressources": 2
-    },
-    {
-      "jour": 6,
       "id": "ouragan",
       "nom": "Ouragan Monstrueux",
       "emoji": "🌪️",
       "description": "Un ouragan monstrueux s’abat sur la plage, retournant les pirogues et couchant les arbres. La mer est trop déchaînée pour pêcher sereinement, et ramasser du bois sous des rafales pareilles relève de l’exploit — chaque volontaire ne rapportera qu’une maigre récolte (1 unité maximum aujourd’hui, pour la Pêche comme pour le Bois)."
+    },
+    {
+      "jour": 5,
+      "id": "gobelins",
+      "nom": "Invasion de Gobelins",
+      "emoji": "🧌",
+      "description": "Des Gobelins rôdent autour du campement, attirés par l’odeur du poisson séché. Trop dangereux d’explorer l’île aujourd’hui — et si le camp n’a pas au moins 5 Bois en réserve ce soir pour fortifier les abris, ils risquent de filer avec une partie des provisions !"
+    },
+    {
+      "jour": 6,
+      "id": "indigestion_royale",
+      "nom": "Indigestion Royale",
+      "emoji": "🤢",
+      "description": "Le Géant Royal, mal remis d’un festin bien trop généreux, a vomi dans la source d’eau douce de l’île. Le camp devra faire preuve de courage — Collecter de l’eau ne rapportera qu’une petite gorgée par volontaire (1 unité maximum aujourd’hui)."
     },
     {
       "jour": 7,
@@ -66,21 +63,6 @@
       "description": "Une épave charrie jusqu’au rivage des morceaux de coque encore à dégrossir — un joli stock de Bois pour le Radeau, mais il faudra encore le travailler !",
       "bois_base": 19,
       "bois_min": 5
-    },
-    {
-      "jour": 8,
-      "id": "gobelins",
-      "nom": "Invasion de Gobelins",
-      "emoji": "🧌",
-      "description": "Des Gobelins rôdent autour du campement, attirés par l’odeur du poisson séché. Trop dangereux d’explorer l’île aujourd’hui — et si le camp n’a pas au moins 5 Bois en réserve ce soir pour fortifier les abris, ils risquent de filer avec une partie des provisions !"
-    },
-    {
-      "jour": 9,
-      "id": "indigestion_royale",
-      "nom": "Indigestion Royale",
-      "emoji": "🤢",
-      "description": "Le Géant Royal, mal remis d’un festin bien trop généreux, est pris de remords et fait livrer discrètement un tonneau d’eau fraîche au campement pour se faire pardonner. +2 Eau offerts d’office aujourd’hui.",
-      "bonus_eau": 2
     }
   ]
 }

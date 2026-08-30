@@ -1,10 +1,13 @@
 import assert from "assert";
 import {
   rollHarvestAmount,
-  rollHarvestAmountGuaranteed,
-  rollCappedEventAmount,
+  rollModerateCapAmount,
+  rollMildCapAmount,
+  rollEventCappedAmount,
   rollExplorerYield,
   pickChefExplorateur,
+  pickChefCharpentier,
+  rollCharpentierRadeauPoints,
   harvestCapForEvent,
   isExplorerDisabled,
   isRadeauDisabled,
@@ -48,19 +51,24 @@ async function main() {
   assert.strictEqual(rollHarvestAmount(rngSequence([0.7])), 4);
   assert.strictEqual(rollHarvestAmount(rngSequence([0.99])), 5);
 
-  // ── rollCappedEventAmount — tirage dédié 0/1, 50/50 ──
-  assert.strictEqual(rollCappedEventAmount(rngSequence([0])), 0);
-  assert.strictEqual(rollCappedEventAmount(rngSequence([0.49])), 0);
-  assert.strictEqual(rollCappedEventAmount(rngSequence([0.5])), 1);
-  assert.strictEqual(rollCappedEventAmount(rngSequence([0.99])), 1);
+  // ── rollModerateCapAmount (Canicule) — 0, 1 ou 2, ~33% chacun ──
+  assert.strictEqual(rollModerateCapAmount(rngSequence([0])), 0);
+  assert.strictEqual(rollModerateCapAmount(rngSequence([0.4])), 1);
+  assert.strictEqual(rollModerateCapAmount(rngSequence([0.99])), 2);
 
-  // ── rollHarvestAmountGuaranteed — Chef Explorateur, jamais 0 ──
-  assert.strictEqual(rollHarvestAmountGuaranteed(rngSequence([0.2])), 1); // pas de 0 à relancer
-  assert.strictEqual(rollHarvestAmountGuaranteed(rngSequence([0, 0, 0.4])), 2); // relance 2 fois puis 0.4 -> 2
-  assert.strictEqual(rollHarvestAmountGuaranteed(rngSequence([0, 0.99])), 5);
+  // ── rollMildCapAmount (Ouragan, Indigestion Royale) — 1 ou 2, jamais 0 ──
+  assert.strictEqual(rollMildCapAmount(rngSequence([0])), 1);
+  assert.strictEqual(rollMildCapAmount(rngSequence([0.49])), 1);
+  assert.strictEqual(rollMildCapAmount(rngSequence([0.5])), 2);
+  assert.strictEqual(rollMildCapAmount(rngSequence([0.99])), 2);
   for (let i = 0; i < 200; i++) {
-    assert.notStrictEqual(rollHarvestAmountGuaranteed(Math.random), 0);
+    assert.notStrictEqual(rollMildCapAmount(Math.random), 0);
   }
+
+  // ── rollEventCappedAmount — dispatch par événement ──
+  assert.strictEqual(rollEventCappedAmount({ id: "canicule" }, rngSequence([0])), 0);
+  assert.strictEqual(rollEventCappedAmount({ id: "ouragan" }, rngSequence([0])), 1);
+  assert.strictEqual(rollEventCappedAmount({ id: "indigestion_royale" }, rngSequence([0])), 1);
 
   // ── pickChefExplorateur — tiré parmi les votants de la veille, jamais un non-votant ──
   const VOTANTS = [
@@ -73,6 +81,18 @@ async function main() {
   assert.strictEqual(pickChefExplorateur(VOTANTS, rngSequence([0.99])), "c");
   assert.strictEqual(pickChefExplorateur([], rngSequence([0])), null); // personne n'a voté hier -> pas de Chef
   assert.strictEqual(pickChefExplorateur(null, rngSequence([0])), null);
+
+  // ── pickChefCharpentier — même tirage, exclut le Chef Explorateur si possible ──
+  assert.strictEqual(pickChefCharpentier(VOTANTS, "a", rngSequence([0])), "b"); // "a" exclu -> b/c restants
+  assert.strictEqual(pickChefCharpentier(VOTANTS, "a", rngSequence([0.99])), "c");
+  assert.strictEqual(pickChefCharpentier(VOTANTS, null, rngSequence([0])), "a"); // pas d'exclusion
+  const UN_SEUL_VOTANT = [{ discordId: "a", actionId: "peche" }];
+  assert.strictEqual(pickChefCharpentier(UN_SEUL_VOTANT, "a", rngSequence([0])), "a"); // cumul inévitable
+  assert.strictEqual(pickChefCharpentier([], "a", rngSequence([0])), null);
+
+  // ── rollCharpentierRadeauPoints — tirage de récolte +1, doublé (2 à 12) ──
+  assert.strictEqual(rollCharpentierRadeauPoints(rngSequence([0])), 2); // (0+1)*2
+  assert.strictEqual(rollCharpentierRadeauPoints(rngSequence([0.99])), 12); // (5+1)*2
 
   // ── rollExplorerYield — toujours 3 unités d'une seule et même ressource ──
   for (let i = 0; i < 200; i++) {
@@ -93,8 +113,8 @@ async function main() {
   assert.strictEqual(harvestCapForEvent({ id: "ouragan" }, "bois"), true);
   assert.strictEqual(harvestCapForEvent({ id: "ouragan" }, "eau"), false);
   assert.strictEqual(harvestCapForEvent({ id: "gobelins" }, "peche"), false);
-  // Indigestion Royale ne plafonne plus rien depuis son inversion en bonus (+2 Eau).
-  assert.strictEqual(harvestCapForEvent({ id: "indigestion_royale" }, "eau"), false);
+  // Indigestion Royale replafonne l'Eau (retour au durcissement, refonte du 29/08).
+  assert.strictEqual(harvestCapForEvent({ id: "indigestion_royale" }, "eau"), true);
   assert.strictEqual(harvestCapForEvent(null, "eau"), false);
 
   // ── isExplorerDisabled ──
@@ -138,14 +158,9 @@ async function main() {
     streaks: { poisson: 1, eau: 0, bois: 0 },
     defeated: false,
   });
-  // 2e jour consécutif à 0 -> streak=2, toujours pas de défaite (limite portée à 3)
+  // 2e jour consécutif à 0 -> streak=2, défaite (limite durcie à 2, refonte du 29/08)
   assert.deepStrictEqual(updateZeroStreaks({ poisson: 1, eau: 0, bois: 0 }, { poisson: 0, eau: 2, bois: 1 }), {
     streaks: { poisson: 2, eau: 0, bois: 0 },
-    defeated: false,
-  });
-  // 3e jour consécutif à 0 -> streak=3, défaite
-  assert.deepStrictEqual(updateZeroStreaks({ poisson: 2, eau: 0, bois: 0 }, { poisson: 0, eau: 2, bois: 1 }), {
-    streaks: { poisson: 3, eau: 0, bois: 0 },
     defeated: true,
   });
   // À 0 puis remonte puis retombe -> le streak repasse à 1, pas 2 (bien réinitialisé entre-temps)

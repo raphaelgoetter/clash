@@ -199,24 +199,20 @@ export async function attemptRaftContribution(boisCost) {
   return { success: true, boisRestant: nouveauStock, points };
 }
 
-// Dons directs des événements dynamiques (Colis Royal, Épave depuis son
-// inversion en Bois le 28/08) — appliqués une seule fois, à l'arrivée du
-// jour concerné, jamais liés à un vote. INCRBY atomique comme partout
-// ailleurs dans ce fichier.
-
-export async function grantEqualResources(amount) {
-  if (amount <= 0) return readStocks();
-  const redis = getRedis();
-  const [poisson, eau, bois] = await Promise.all([
-    redis.incrby(STOCK_KEYS.poisson, amount),
-    redis.incrby(STOCK_KEYS.eau, amount),
-    redis.incrby(STOCK_KEYS.bois, amount),
-  ]);
-  return { poisson: Number(poisson), eau: Number(eau), bois: Number(bois) };
+// Don du Chef Charpentier (30/08) : ajoute des points de Radeau SANS toucher
+// au Bois commun — contrairement à attemptRaftContribution(), ne peut jamais
+// échouer (rien à vérifier), un simple INCRBY suffit.
+export async function grantFreeRadeauPoints(points) {
+  const total = Number(await getRedis().incrby(RADEAU_POINTS_KEY, points));
+  return { points: total };
 }
 
-// Don direct sur une seule ressource (Indigestion Royale, inversée en bonus
-// d'Eau) — même principe que grantEqualResources, mais une seule clé.
+// Don direct sur une seule ressource — utilisé par Épave (Bois, depuis son
+// inversion le 28/08). Colis Royal et le bonus Indigestion Royale
+// utilisaient grantEqualResources() (les 3 ressources à la fois) avant
+// d'être retirés le 29/08 (refonte de durcissement, voir CONTRIBUTING.md) ;
+// fonction supprimée faute d'appelant restant. INCRBY atomique comme
+// partout ailleurs dans ce fichier.
 export async function grantResource(resourceId, amount) {
   if (amount <= 0) return readStocks();
   const nouveauStock = Number(await getRedis().incrby(STOCK_KEYS[resourceId], amount));
@@ -316,24 +312,28 @@ export function rollHarvestAmount(rng = Math.random) {
   return Math.floor(rng() * 6);
 }
 
-// Tirage dédié des jours Canicule/Ouragan pour la ressource plafonnée —
-// 0 ou 1, 50/50 (décision explicite : pas un simple min(tirage normal, 1)).
-export function rollCappedEventAmount(rng = Math.random) {
-  return Math.floor(rng() * 2);
+// Deux paliers de plafond, remplaçant depuis le 30/08 l'unique palier 0/1
+// (moyenne 0,5) : la simulation a montré que l'Ouragan (double plafond
+// Pêche+Bois) concentrait à lui seul ~35-45% de toutes les défaites à
+// V=12-16 (déficit structurel ≈ V ce jour-là, qu'AUCUN bonus fixe dégressif
+// ne peut compenser pour les gros groupes — voir CONTRIBUTING.md). Adoucir
+// le palier lui-même (au lieu d'ajouter un bonus fixe) a l'avantage de
+// s'auto-proportionner à V, contrairement aux bonus dégressifs des autres
+// événements.
+// "Modéré" (Canicule) : 0, 1 ou 2 — moyenne 1,0, peut encore tomber à 0.
+export function rollModerateCapAmount(rng = Math.random) {
+  return Math.floor(rng() * 3);
 }
-
-// Chef Explorateur du jour (Jour 2+, mécanique du 24/08) : garantit un
-// résultat non-nul sur Pêcher/Eau/Bois — jamais de 0, relance jusqu'à un
-// résultat >= 1 (Uniforme{1..5}, moyenne 3 au lieu de 2,5). Uniquement
-// utilisé sur les actions de récolte directes : Explorer ne tombe déjà
-// jamais à 0, et Radeau ne "trouve" pas de ressource par nature — un Chef
-// qui vote Radeau perd simplement le bénéfice de son tirage garanti.
-export function rollHarvestAmountGuaranteed(rng = Math.random) {
-  let amount;
-  do {
-    amount = rollHarvestAmount(rng);
-  } while (amount === 0);
-  return amount;
+// "Léger" (Ouragan, Indigestion Royale) : 1 ou 2 — moyenne 1,5, jamais 0.
+export function rollMildCapAmount(rng = Math.random) {
+  return Math.floor(rng() * 2) + 1;
+}
+// Dispatch par événement — Canicule reste le plus dur des trois (seule
+// l'Eau y est touchée, contre Pêche+Bois pour l'Ouragan), les deux autres
+// sont adoucis en "léger".
+export function rollEventCappedAmount(event, rng = Math.random) {
+  if (event?.id === "canicule") return rollModerateCapAmount(rng);
+  return rollMildCapAmount(rng); // ouragan, indigestion_royale
 }
 
 // Tirage du Chef parmi les votants RÉELS de la veille (jamais un non-votant)
@@ -343,6 +343,31 @@ export function rollHarvestAmountGuaranteed(rng = Math.random) {
 export function pickChefExplorateur(previousDayVoters, rng = Math.random) {
   if (!previousDayVoters || previousDayVoters.length === 0) return null;
   return previousDayVoters[Math.floor(rng() * previousDayVoters.length)].discordId;
+}
+
+// Chef Charpentier du jour (30/08, second rôle dédié au Radeau) : même
+// tirage que le Chef Explorateur, mais exclut son identifiant pour éviter
+// de cumuler les deux rôles sur la même personne — sauf si un seul votant
+// existait la veille, auquel cas le cumul est inévitable et accepté.
+export function pickChefCharpentier(previousDayVoters, excludeId, rng = Math.random) {
+  if (!previousDayVoters || previousDayVoters.length === 0) return null;
+  const candidats = excludeId
+    ? previousDayVoters.filter((v) => v.discordId !== excludeId)
+    : previousDayVoters;
+  const pool = candidats.length > 0 ? candidats : previousDayVoters;
+  return pool[Math.floor(rng() * pool.length)].discordId;
+}
+
+// Don du Chef Charpentier : converti directement en points de Radeau, SANS
+// coûter de Bois (contrairement à un vote Radeau normal) — un tirage de
+// récolte classique (0-5) +1, doublé (2 à 12 points, moyenne 7). Coût réel :
+// le vote de cette seule personne est retiré du pool de survie ce jour-là
+// (pas une fraction du groupe), donc un coût marginal faible et constant
+// (~1/V) plutôt qu'une ponction proportionnelle qui écraserait la survie —
+// voir CONTRIBUTING.md pour la simulation qui a invalidé une stratégie de
+// détournement de votes classique (fraction du groupe) avant ce rôle.
+export function rollCharpentierRadeauPoints(rng = Math.random) {
+  return (rollHarvestAmount(rng) + 1) * 2;
 }
 
 // Explorer : toujours 3 unités d'une seule et même ressource, tirée au
@@ -361,6 +386,7 @@ export function harvestCapForEvent(event, actionId) {
   if (!event) return false;
   if (event.id === "canicule") return actionId === "eau";
   if (event.id === "ouragan") return actionId === "peche" || actionId === "bois";
+  if (event.id === "indigestion_royale") return actionId === "eau";
   return false;
 }
 
@@ -395,10 +421,15 @@ export function applyFlooredDelta(stocks, consumption) {
   return out;
 }
 
-export const ZERO_STREAK_LIMIT = 3;
+// Refonte du 29/08 (durcissement délibéré, "chaque mauvais vote doit
+// compromettre le taux de réussite") : repassé de 3 à 2 — un seul jour de
+// répit au lieu de deux avant la défaite, combiné au retrait des dons
+// gratuits (Colis Royal, bonus Jour 5, Indigestion Royale) et au passage à
+// 7 jours. Voir CONTRIBUTING.md pour les simulations qui ont validé ce choix.
+export const ZERO_STREAK_LIMIT = 2;
 
 // Cœur de la détection de défaite : incrémente le compteur d'une ressource
-// tombée à 0, le remet à 0 sinon. Défaite dès qu'un compteur atteint 3.
+// tombée à 0, le remet à 0 sinon. Défaite dès qu'un compteur atteint 2.
 export function updateZeroStreaks(prevStreaks, stocksAfter) {
   const streaks = {};
   let defeated = false;
