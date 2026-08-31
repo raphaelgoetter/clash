@@ -12858,7 +12858,7 @@
           "start": "2026-08-30T09:51:00.000Z",
           "end": "2026-08-31T09:50:59.999Z"
         },
-        "snapshotTime": "2026-08-31T04:08:47.857Z",
+        "snapshotTime": "2026-08-31T05:07:52.833Z",
         "snapshotBackupTime": "2026-08-30T10:05:52.297Z",
         "decks": {
           "#2G0Q0CV9L": 4,
@@ -12869,8 +12869,8 @@
           "#UC9LU0L90": 4,
           "#UVGPPVQ8Q": 4,
           "#V0VLJQCJU": 4,
-          "#8JGU9UUJJ": 2,
-          "#YG0V0YVPP": 2
+          "#YG0V0YVPP": 4,
+          "#8JGU9UUJJ": 2
         },
         "hourlyCumul": [],
         "_cumulFame": {
@@ -12934,7 +12934,7 @@
           "#UYRR99RL8": 800,
           "#9U9YVU80": 1650,
           "#90YJG92CR": 2300,
-          "#YG0V0YVPP": 2200,
+          "#YG0V0YVPP": 2400,
           "#8VP9UJV9L": 1700,
           "#8JGU9UUJJ": 2100,
           "#V0VLJQCJU": 2400,
@@ -13055,7 +13055,7 @@
           "#UYRR99RL8": 6,
           "#9U9YVU80": 14,
           "#90YJG92CR": 16,
-          "#YG0V0YVPP": 14,
+          "#YG0V0YVPP": 16,
           "#8VP9UJV9L": 16,
           "#8JGU9UUJJ": 14,
           "#V0VLJQCJU": 16,
@@ -13065,7 +13065,7 @@
           "#VR8RCQGQG": 0
         },
         "periodPointsEarned": 11900,
-        "snapshotCount": 36
+        "snapshotCount": 38
       }
     ],
     "donationBaseline": {
