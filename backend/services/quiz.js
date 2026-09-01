@@ -239,6 +239,35 @@ export async function computeMancheRanking(manche, mancheConfig) {
   return Array.from(scores.values()).sort((a, b) => b.score - a.score);
 }
 
+// Détail jour par jour (score du jour + progression) — utilisé uniquement
+// par scripts/quizScores.js (admin). Contrairement à computeMancheRanking
+// (classement trié, total uniquement), renvoie la matrice complète
+// joueur × jour : `days[jour]` vaut 1 (bonne réponse), 0 (mauvaise) ou est
+// absent si le joueur n'a pas voté ce jour-là — à distinguer d'un score de 0.
+export async function computeMancheDailyScores(manche, mancheConfig, uptoJour) {
+  const perPlayer = new Map(); // discordId -> { discordId, username, days: {} }
+
+  for (let jour = 1; jour <= uptoJour; jour++) {
+    const question = mancheConfig.questions[jour - 1];
+    const votes = await listVotes(manche, jour);
+    for (const vote of votes) {
+      const entry = perPlayer.get(vote.discordId) || {
+        discordId: vote.discordId,
+        username: vote.username,
+        days: {},
+      };
+      entry.days[jour] = vote.choiceIndex === question.bonne_reponse ? 1 : 0;
+      entry.username = vote.username || entry.username;
+      perPlayer.set(vote.discordId, entry);
+    }
+  }
+
+  return Array.from(perPlayer.values()).map((entry) => ({
+    ...entry,
+    total: Object.values(entry.days).reduce((sum, v) => sum + v, 0),
+  }));
+}
+
 // ── Historique permanent des manches conclues en public ────────────
 // HASH permanent, jamais nettoyé par un reset normal — comparable à
 // MANCHES_KEY de tamagotchi.js, à ceci près que le numéro de manche est
