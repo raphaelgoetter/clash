@@ -9,11 +9,6 @@
 // en garde de scripts/goblinHuntersStatus.js).
 // ============================================================
 
-import { readState as readFrameState } from "../../../backend/services/frames.js";
-import { readState as readAnagramState } from "../../../backend/services/anagrams.js";
-import { readState as readZoomState } from "../../../backend/services/zoom.js";
-import { readState as readJusteCarteState } from "../../../backend/services/lajustecarte.js";
-
 import { readState as readQuizState, loadQuizConfig, listVotes as listQuizVotes } from "../../../backend/services/quiz.js";
 import { readState as readTamaState, loadTamagotchiConfig, listVotes as listTamaVotes } from "../../../backend/services/tamagotchi.js";
 import { readState as readRobinsonState, loadRobinsonConfig, countUniqueVoters as countRobinsonVoters } from "../../../backend/services/robinson.js";
@@ -41,10 +36,10 @@ function channelLink() {
 
 // 0 = dimanche .. 6 = samedi (Date.getUTCDay())
 const REGULAR_GAMES = [
-  { key: "frame", title: "🎬 Trouve le film !", weekday: 3, readState: readFrameState },
-  { key: "zoom", title: "🔍 Zoom carte", weekday: 5, readState: readZoomState },
-  { key: "anagram", title: "🔤 Anagram", weekday: 6, readState: readAnagramState },
-  { key: "lajustecarte", title: "🃏 La Juste Carte", weekday: 0, readState: readJusteCarteState },
+  { key: "frame", title: "🎬 Trouve le film !", weekday: 3 },
+  { key: "zoom", title: "🔍 Zoom carte", weekday: 5 },
+  { key: "anagram", title: "🔤 Anagram", weekday: 6 },
+  { key: "lajustecarte", title: "🃏 La Juste Carte", weekday: 0 },
 ];
 
 // Un seul actif à la fois par convention (voir les gardes-fous "wrongChannel"
@@ -123,7 +118,6 @@ const SPECIAL_GAMES = [
     title: "Blackjack",
     style: "Casino",
     readState: readBlackjackState,
-    image: BLACKJACK_START_IMAGE_URL,
     async detail(state) {
       const config = await loadBlackjackConfig();
       const hands = await listBlackjackHands(state.jour);
@@ -148,29 +142,24 @@ function formatEndLabel(daysUntil) {
   return `fin dans ${daysUntil}j`;
 }
 
-function buildProgressBar(current, total) {
-  if (!total || total <= 0 || !current) return "⬜".repeat(BAR_SEGMENTS);
-  const filled = Math.max(0, Math.min(BAR_SEGMENTS, Math.round((current / total) * BAR_SEGMENTS)));
-  return "🟩".repeat(filled) + "⬜".repeat(BAR_SEGMENTS - filled);
+// Indicateur neutre (pas de sémantique bonne/mauvaise, donc pas de rouge/vert) :
+// une case se remplit par jour écoulé avant la fin. daysUntil va de 0 (fin
+// aujourd'hui, 6 jours viennent de s'écouler → barre pleine) à 6 (fin dans
+// 6 jours, la semaine vient de démarrer → 1 seule case remplie).
+function buildCountdownBar(daysUntil) {
+  const filled = Math.max(0, Math.min(BAR_SEGMENTS, BAR_SEGMENTS - daysUntil));
+  return "⬛".repeat(filled) + "⬜".repeat(BAR_SEGMENTS - filled);
 }
 
-async function buildRegularGamesBlock(now) {
-  const entries = await Promise.all(
-    REGULAR_GAMES.map(async (game) => {
-      const rawState = await game.readState();
-      const state = isLiveOnPublicChannel(rawState) ? rawState : null;
-      return { ...game, state, daysUntil: daysUntilWeekday(now, game.weekday) };
-    }),
-  );
-  entries.sort((a, b) => a.daysUntil - b.daysUntil);
+function buildRegularGamesBlock(now) {
+  const entries = REGULAR_GAMES.map((game) => ({
+    ...game,
+    daysUntil: daysUntilWeekday(now, game.weekday),
+  })).sort((a, b) => a.daysUntil - b.daysUntil);
 
   const lines = entries.map((entry, index) => {
     const header = `${index + 1}. **${entry.title}** (${formatEndLabel(entry.daysUntil)})`;
-    if (!entry.state) {
-      return `${header}\n${"⬜".repeat(BAR_SEGMENTS)} · pas encore lancé cette saison`;
-    }
-    const bar = buildProgressBar(entry.state.seasonManche, entry.state.seasonMancheTotal);
-    return `${header}\n${bar} · Manche ${entry.state.seasonManche}/${entry.state.seasonMancheTotal}`;
+    return `${header}\n${buildCountdownBar(entry.daysUntil)}`;
   });
 
   return `**Les Mini-jeux réguliers du serveur**\n*(classés par ordre de fin la plus proche)*\n\n${lines.join("\n\n")}`;
@@ -186,14 +175,14 @@ async function findActiveSpecialGame() {
   return null;
 }
 
-async function buildSpecialGameField(now) {
+async function buildSpecialGameField() {
   const active = await findActiveSpecialGame();
   if (!active) {
     return { name: "🎲 Jeu spécial du moment", value: "Aucun jeu spécial en cours actuellement." };
   }
   const { game, state } = active;
   const detail = await game.detail(state);
-  const lines = [`**${game.title}**`, `- Style : ${game.style}`];
+  const lines = [`- Style : ${game.style}`];
   if (detail.phaseLabel) {
     lines.push(`- ${detail.phaseLabel}`);
   } else {
@@ -201,10 +190,7 @@ async function buildSpecialGameField(now) {
   }
   lines.push(`- ${detail.participants} participant${detail.participants > 1 ? "s" : ""}`);
 
-  return {
-    field: { name: "🎲 Jeu spécial du moment", value: lines.join("\n") },
-    image: game.image ?? null,
-  };
+  return { name: `🎲 Jeu spécial du moment: ${game.title}`, value: lines.join("\n") };
 }
 
 // Field factice (nom/valeur en espace insécable invisible) : crée un espace
@@ -219,34 +205,33 @@ function spacerField() {
 export async function buildMiniJeuxEmbed(now = new Date()) {
   const [description, special] = await Promise.all([
     buildRegularGamesBlock(now),
-    buildSpecialGameField(now),
+    buildSpecialGameField(),
   ]);
 
   const link = channelLink();
-  const fields = [spacerField(), special.field ?? special];
-  fields.push({
-    name: "📍 Salon des Mini-jeux",
-    value: link ? `[Accéder au salon](${link})` : "Salon des Mini-jeux",
-  });
+  const fields = [
+    spacerField(),
+    special,
+    {
+      name: "📍 Salon des Mini-jeux",
+      value: link ? `[Accéder au salon](${link})` : "Salon des Mini-jeux",
+    },
+  ];
 
   const { end } = getCurrentSeasonBounds(now);
   const daysUntilSeasonEnd = Math.max(0, Math.ceil((end.getTime() - now.getTime()) / 86400000));
 
-  const embed = {
+  return {
     title: "🎮 État des lieux des Mini-jeux",
     description,
     color: MINIJEUX_COLOR,
     fields,
+    // Illustration fixe de la commande (pas liée au jeu spécial actif).
+    image: { url: BLACKJACK_START_IMAGE_URL },
     footer: {
       text: `Fin de la saison mini-jeux en cours : dans ${daysUntilSeasonEnd}j !`,
     },
   };
-
-  if (special.image) {
-    embed.image = { url: special.image };
-  }
-
-  return embed;
 }
 
 async function patchOriginal(webhookUrl, payload) {
