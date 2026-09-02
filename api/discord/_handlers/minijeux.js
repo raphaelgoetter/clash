@@ -137,7 +137,7 @@ function daysUntilWeekday(now, weekday) {
 }
 
 function formatEndLabel(daysUntil) {
-  if (daysUntil === 0) return "fin aujourd'hui";
+  if (daysUntil === 0) return "⚠️ fin aujourd'hui";
   if (daysUntil === 1) return "fin demain";
   return `fin dans ${daysUntil}j`;
 }
@@ -145,10 +145,11 @@ function formatEndLabel(daysUntil) {
 // Indicateur neutre (pas de sémantique bonne/mauvaise, donc pas de rouge/vert) :
 // une case se remplit par jour écoulé avant la fin. daysUntil va de 0 (fin
 // aujourd'hui, 6 jours viennent de s'écouler → barre pleine) à 6 (fin dans
-// 6 jours, la semaine vient de démarrer → 1 seule case remplie).
+// 6 jours, la semaine vient de démarrer → 1 seule case remplie). Bleu plutôt
+// que noir : le noir se fond dans le thème sombre de Discord (peu visible).
 function buildCountdownBar(daysUntil) {
   const filled = Math.max(0, Math.min(BAR_SEGMENTS, BAR_SEGMENTS - daysUntil));
-  return "⬛".repeat(filled) + "⬜".repeat(BAR_SEGMENTS - filled);
+  return "🟦".repeat(filled) + "⬜".repeat(BAR_SEGMENTS - filled);
 }
 
 function buildRegularGamesBlock(now) {
