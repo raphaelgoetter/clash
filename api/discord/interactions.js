@@ -71,6 +71,7 @@ import {
   handlePilule as handleTamagotchiPilule,
 } from "./_handlers/tamagotchi.js";
 import { handleQuizVote } from "./_handlers/quiz.js";
+import { handleMiniJeuxCommand } from "./_handlers/minijeux.js";
 import {
   handleVoteButton as handleRobinsonVote,
   handleJournal as handleRobinsonJournal,
@@ -8940,6 +8941,16 @@ export default async function handler(req, res) {
     runBackground(() =>
       handleJusteCarteStatsCommand(webhookUrl, discordId, username),
     );
+    return;
+  }
+
+  // ── /mini-jeux : état des lieux des mini-jeux réguliers + jeu spécial
+  // du moment — réponse publique (pas de flags: 64), c'est un tableau de
+  // bord partagé, pas une info personnelle.
+  if (body.type === 2 && body.data?.name === "mini-jeux") {
+    res.status(200).json({ type: 5 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleMiniJeuxCommand(webhookUrl));
     return;
   }
 
