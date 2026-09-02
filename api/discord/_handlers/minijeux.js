@@ -163,7 +163,10 @@ function buildRegularGamesBlock(now) {
     return `${header}\n${buildCountdownBar(entry.daysUntil)}`;
   });
 
-  return `**Les Mini-jeux réguliers du serveur**\n*(classés par ordre de fin la plus proche)*\n\n${lines.join("\n\n")}`;
+  // "##" (titre markdown niveau 2) plutôt que "**gras**" : même taille de
+  // rendu que le titre du jeu spécial ci-dessous, plus imposante qu'un
+  // simple gras — voir buildSpecialGameBlock().
+  return `## Les Mini-jeux réguliers du serveur\n*(classés par ordre de fin la plus proche)*\n\n${lines.join("\n\n")}`;
 }
 
 async function findActiveSpecialGame() {
@@ -176,10 +179,14 @@ async function findActiveSpecialGame() {
   return null;
 }
 
-async function buildSpecialGameField() {
+// Bloc intégré à la description (pas un field séparé) : un field name ne
+// peut afficher qu'un texte en gras simple, jamais un titre "##" — pour que
+// ce titre ait EXACTEMENT la même taille que "Les Mini-jeux réguliers du
+// serveur" ci-dessus, les deux doivent partager le même rendu markdown.
+async function buildSpecialGameBlock() {
   const active = await findActiveSpecialGame();
   if (!active) {
-    return { name: "🎲 Jeu spécial du moment", value: "Aucun jeu spécial en cours actuellement." };
+    return "## 🎲 Jeu spécial du moment\nAucun jeu spécial en cours actuellement.";
   }
   const { game, state } = active;
   const detail = await game.detail(state);
@@ -191,28 +198,19 @@ async function buildSpecialGameField() {
   }
   lines.push(`- ${detail.participants} participant${detail.participants > 1 ? "s" : ""}`);
 
-  return { name: `🎲 Jeu spécial du moment: ${game.title}`, value: lines.join("\n") };
-}
-
-// Field factice (nom/valeur en espace insécable invisible) : crée un espace
-// vertical entre les mini-jeux réguliers et le jeu spécial, pour que ce
-// dernier ressorte comme un bloc à part plutôt que de s'enchaîner
-// directement après la liste — but recherché par l'utilisateur ("mieux
-// mettre en avant" le jeu spécial).
-function spacerField() {
-  return { name: "​", value: "​" };
+  return `## 🎲 Jeu spécial du moment: ${game.title}\n${lines.join("\n")}`;
 }
 
 export async function buildMiniJeuxEmbed(now = new Date()) {
-  const [description, special] = await Promise.all([
+  const [regularBlock, specialBlock] = await Promise.all([
     buildRegularGamesBlock(now),
-    buildSpecialGameField(),
+    buildSpecialGameBlock(),
   ]);
+
+  const description = `${regularBlock}\n\n${specialBlock}`;
 
   const link = channelLink();
   const fields = [
-    spacerField(),
-    special,
     {
       name: "📍 Salon des Mini-jeux",
       value: link ? `[Accéder au salon](${link})` : "Salon des Mini-jeux",
