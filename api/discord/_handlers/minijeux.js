@@ -55,7 +55,7 @@ const SPECIAL_GAMES = [
       const config = await loadQuizConfig();
       const dureeJours = config.manches[state.mancheIndex]?.questions.length ?? null;
       const votes = await listQuizVotes(state.manche, state.jour);
-      return { jour: state.jour, dureeJours, participants: votes.length };
+      return { jour: state.jour, dureeJours, participantsLabel: formatParticipantsToday(votes.length) };
     },
   },
   {
@@ -66,7 +66,7 @@ const SPECIAL_GAMES = [
     async detail(state) {
       const config = await loadTamagotchiConfig();
       const votes = await listTamaVotes(state.jour);
-      return { jour: state.jour, dureeJours: config.duree_jours, participants: votes.length };
+      return { jour: state.jour, dureeJours: config.duree_jours, participantsLabel: formatParticipantsToday(votes.length) };
     },
   },
   {
@@ -77,7 +77,7 @@ const SPECIAL_GAMES = [
     async detail(state) {
       const config = await loadRobinsonConfig();
       const participants = await countRobinsonVoters(state.jour);
-      return { jour: state.jour, dureeJours: config.duree_jours, participants };
+      return { jour: state.jour, dureeJours: config.duree_jours, participantsLabel: formatParticipantsToday(participants) };
     },
   },
   {
@@ -88,7 +88,7 @@ const SPECIAL_GAMES = [
     async detail(state) {
       const config = await loadBossRaidConfig();
       const participants = await countBossraidVoters(state.jour);
-      return { jour: state.jour, dureeJours: config.duree_jours, participants };
+      return { jour: state.jour, dureeJours: config.duree_jours, participantsLabel: formatParticipantsToday(participants) };
     },
   },
   {
@@ -103,14 +103,20 @@ const SPECIAL_GAMES = [
         return {
           jour: null,
           dureeJours: null,
-          participants: inscriptions.length,
+          // Déjà exprimé par phaseLabel (X/effectif_max) : pas de ligne
+          // participants séparée, ce ne serait qu'une redite.
+          participantsLabel: null,
           phaseLabel: `Inscriptions en cours (${inscriptions.length}/${config.effectif_max})`,
         };
       }
       // Jamais lire state.joueurs[].camp/role/pv ici — seul le décompte des
       // vivants est public.
       const vivants = state.joueurs.filter((j) => j.alive).length;
-      return { jour: state.jour, dureeJours: config.duree_jours, participants: vivants };
+      return {
+        jour: state.jour,
+        dureeJours: config.duree_jours,
+        participantsLabel: `${vivants} joueur${vivants > 1 ? "s" : ""} en vie`,
+      };
     },
   },
   {
@@ -121,10 +127,23 @@ const SPECIAL_GAMES = [
     async detail(state) {
       const config = await loadBlackjackConfig();
       const hands = await listBlackjackHands(state.jour);
-      return { jour: state.jour, dureeJours: config.duree_jours, participants: Object.keys(hands).length };
+      return {
+        jour: state.jour,
+        dureeJours: config.duree_jours,
+        participantsLabel: formatParticipantsToday(Object.keys(hands).length),
+      };
     },
   },
 ];
+
+// Quiz/Tamagotchi/Robinson/Boss Raid/Blackjack ne comptent que les votants
+// du JOUR courant (aucune trace des jours précédents n'est agrégée côté
+// service) — le préciser pour ne pas laisser croire à un total sur toute la
+// partie. Goblin Hunters s'exprime différemment (inscrits ou vivants), voir
+// son detail() dédié.
+function formatParticipantsToday(count) {
+  return `${count} participant${count > 1 ? "s" : ""} ce jour`;
+}
 
 function isLiveOnPublicChannel(state) {
   return Boolean(state && !state.termine && state.channelId === PUBLIC_CHANNEL_ID);
@@ -196,7 +215,9 @@ async function buildSpecialGameBlock() {
   } else {
     lines.push(`- Jour ${detail.jour}${detail.dureeJours ? `/${detail.dureeJours}` : ""}`);
   }
-  lines.push(`- ${detail.participants} participant${detail.participants > 1 ? "s" : ""}`);
+  if (detail.participantsLabel) {
+    lines.push(`- ${detail.participantsLabel}`);
+  }
 
   return `## 🎲 Jeu spécial du moment: ${game.title}\n${lines.join("\n")}`;
 }
