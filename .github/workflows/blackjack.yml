@@ -10,14 +10,10 @@ on:
   # passe rien, ce qui évite qu'un run automatique ne démarre une partie
   # publique sans prévenir pendant une session de test sur le salon de test
   # (l'état est partagé entre les deux, voir CONTRIBUTING.md).
-  # Schedule commenté tant que le jeu est en phase de test (même pratique que
-  # les autres mini-jeux à leur création, voir CONTRIBUTING.md) — seul
-  # workflow_dispatch est actif pour l'instant. À décommenter une fois validé
-  # en conditions réelles sur le salon de test.
-  # schedule:
-  #   # Décalé de la ronde (0 8) et des autres crons quotidiens du dépôt
-  #   # (0-10 déjà pris) — voir CONTRIBUTING.md, incident du 27/08.
-  #   - cron: "12 8 * * *"
+  schedule:
+    # Décalé de la ronde (0 8) et des autres crons quotidiens du dépôt
+    # (0-10 déjà pris) — voir CONTRIBUTING.md, incident du 27/08.
+    - cron: "12 8 * * *"
   workflow_dispatch: {}
 
 jobs:

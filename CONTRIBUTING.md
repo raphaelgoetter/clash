@@ -551,17 +551,18 @@ DISCORD_TOKEN=
 
 ## Crons GitHub Actions (jeux quotidiens)
 
-Les 5 jeux à avancée quotidienne (Robinson, Tamagoshi, Boss Raid, Quiz, Goblin Hunters) tournent chacun sur leur propre workflow (`.github/workflows/{robinson,tamagotchi,bossraid,quiz,goblinhunters}.yml`), avec un `schedule` étalé sur la même tranche horaire mais **jamais à la même minute** :
+Les 6 jeux à avancée quotidienne (Robinson, Tamagoshi, Boss Raid, Quiz, Goblin Hunters, Blackjack) tournent chacun sur leur propre workflow (`.github/workflows/{robinson,tamagotchi,bossraid,quiz,goblinhunters,blackjack}.yml`), avec un `schedule` étalé sur la même tranche horaire mais **jamais à la même minute** :
 
-| Jeu | Cron |
-| --- | --- |
-| Boss Raid | `2 8 * * *` |
-| Goblin Hunters | `4 8 * * *` |
-| Quiz | `6 8 * * *` |
-| Robinson | `8 8 * * *` |
-| Tamagoshi | `10 8 * * *` |
+| Jeu            | Cron         |
+| -------------- | ------------ |
+| Boss Raid      | `2 8 * * *`  |
+| Goblin Hunters | `4 8 * * *`  |
+| Quiz           | `6 8 * * *`  |
+| Robinson       | `8 8 * * *`  |
+| Tamagoshi      | `10 8 * * *` |
+| Blackjack      | `12 8 * * *` |
 
-⚠️ **Incident du 27/08** : les 5 crons étaient initialement tous réglés sur `0 8 * * *` (pile 8h00 UTC). GitHub documente explicitement que les triggers `schedule` sont *best-effort* et que le délai augmente aux heures rondes, justement à cause de la charge — caler 5 workflows du même dépôt sur exactement la même minute aggrave mécaniquement ce risque. Résultat concret : le 27/08, aucun des 5 crons ne s'était déclenché plus d'une heure après l'horaire prévu (confirmé via l'API GitHub, `GET /repos/.../actions/workflows/{id}/runs`, aucun run pour la date du jour alors que les runs de la veille existaient bien vers 08h07-08h20 UTC). Étaler les horaires par tranches de 2 minutes ne garantit pas un déclenchement pile à l'heure (toujours best-effort côté GitHub), mais réduit la contention auto-infligée.
+⚠️ **Incident du 27/08** : les 5 crons alors existants étaient initialement tous réglés sur `0 8 * * *` (pile 8h00 UTC). GitHub documente explicitement que les triggers `schedule` sont *best-effort* et que le délai augmente aux heures rondes, justement à cause de la charge — caler plusieurs workflows du même dépôt sur exactement la même minute aggrave mécaniquement ce risque. Résultat concret : le 27/08, aucun des 5 crons ne s'était déclenché plus d'une heure après l'horaire prévu (confirmé via l'API GitHub, `GET /repos/.../actions/workflows/{id}/runs`, aucun run pour la date du jour alors que les runs de la veille existaient bien vers 08h07-08h20 UTC). Étaler les horaires par tranches de 2 minutes ne garantit pas un déclenchement pile à l'heure (toujours best-effort côté GitHub), mais réduit la contention auto-infligée. Blackjack a suivi le même principe à son activation, décalé sur la minute suivante (`12 8 * * *`).
 
 ⚠️ **Incident du 27-28/08 (suite)** : le décalage des horaires n'a pas suffi — aucun des 5 crons ne s'est déclenché ni le 27/08 ni le 28/08, alors que d'autres workflows planifiés du même dépôt (`snapshot.yml`, `gdc-launch.yml`, `last-seen.yml`) ont bien tourné sur cette période (avec retard, mais tournés). Ce contre-exemple élimine l'hypothèse d'une panne globale au dépôt ou d'une simple contention de charge. La vraie cause identifiée : un **bug GitHub confirmé par leur équipe** où le trigger `schedule` d'un workflow se désynchronise silencieusement côté serveur (aucune erreur, aucun run, `workflow_dispatch` continue de fonctionner normalement sur le même fichier) — voir [community#185355](https://github.com/orgs/community/discussions/185355), où un employé GitHub (SrRyan) confirme ce mécanisme et donne le correctif officiel : *"Any commit pushed to the default branch will resync the impacted scheduled workflows."* Un premier commit de resynchronisation a été poussé le 28/08 sur les 5 fichiers concernés — si le prochain cycle (29/08) ne se déclenche toujours pas, retenter un nouveau commit et/ou commenter sur cette discussion GitHub plutôt que de repasser par un ticket support classique (fermé automatiquement sans investigation sur ce palier de compte).
 
@@ -1060,7 +1061,7 @@ Action à part (`is_info_action: true`, exclue de `computeDayImpact()`) : effet 
 | Commande                           | Effet                                                                                                                                                                                                                                                                     |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `npm run tamagotchi:test`          | Poste manuellement le jour du Tamagoshi sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`).                                                                                                                                                                              |
-| `npm run tamagotchi:test:dry`      | Aperçu console du prochain jour (ou du message de fin de partie au dernier jour), sans écrire d'état ni poster sur Discord.                                                                                                                                                    |
+| `npm run tamagotchi:test:dry`      | Aperçu console du prochain jour (ou du message de fin de partie au dernier jour), sans écrire d'état ni poster sur Discord.                                                                                                                                               |
 | `npm run tamagotchi:public`        | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `tamagotchi.yml`.                                                                                                                                                                        |
 | `npm run tamagotchi:public:dry`    | Équivalent dry-run de `tamagotchi:public`.                                                                                                                                                                                                                                |
 | `npm run tamagotchi:reset`         | Remet le Tamagoshi à zéro : plus de journée active, votes/historique de la manche en cours effacés. **Destructif** — préserve toujours `tamagotchi:manches` (l'archive des manches passées, qui ne s'alimente de toute façon qu'en `--public`, voir "Manches" plus haut). |
@@ -1347,6 +1348,77 @@ Aucune nouvelle variable : Boss Raid réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DI
 
 ---
 
+## Blackjack — bats le Croupier
+
+Mini-jeu communautaire quotidien indépendant du Clash Royale : chaque membre affronte le Croupier en solo pendant `duree_jours` (**7**) jours — 1 point de victoire par jour gagné, classement cumulé révélé au Jour 8. Pas de commande slash associée — la publication/suppression quotidienne passe uniquement par `scripts/postBlackjack.js` (`postBlackjack()`), les boutons restent gérés par `api/discord/interactions.js`.
+
+### Déroulement (Blackjack)
+
+Un seul message actif à la fois dans le salon dédié. Même principe que Tamagoshi/Robinson/Boss Raid : le Jour 1 se lance uniquement à la main (`workflow_dispatch`), le cron quotidien (`--require-active`) ne fait qu'avancer une partie déjà en cours — tant qu'aucun lancement manuel n'a eu lieu, il ne se passe rien. `postBlackjack()` clôture d'abord le jour actif (résout toutes les mains face au score du Croupier de ce jour-là, attribue les points), puis publie le jour suivant ou, au-delà du Jour 7, l'embed de révélation finale (classement, `termine: true` — les runs suivants du cron deviennent des no-op silencieux).
+
+Deux garde-fous partagés avec les autres jeux : `isTooSoonSinceLastClosure()` (même pattern que Robinson/Quiz, incident du 27/08) empêche un cron en retard de re-clôturer un jour rouvert entretemps à la main — contournable avec `--force`, appliqué automatiquement sur le salon de test (aucun cron n'y pointe jamais) ; et un refus explicite si une partie est déjà active sur un **autre** salon (`state.channelId !== channelId`), pour ne jamais la reprendre par erreur (incident réel du 23/08/2026 sur Quiz).
+
+### Score du Croupier — révélé immédiatement, jamais de saut
+
+Contrairement à une vraie main de Croupier simulée carte par carte, `dealerPlay()` tire un simple entier aléatoire dans `croupier.min`-`croupier.max` (**16-21** par défaut, `blackjack.json`) et l'habille d'une main à 2 cartes cohérente pour l'affichage (`buildHandForScore()`, purement cosmétique). Décision explicite (29/08, retour utilisateur) : l'ancienne simulation "tire jusqu'à 17" pouvait sauter, ce qui battait le Croupier trop souvent d'office et sans intérêt. Le score à battre est affiché dès l'ouverture du jour (`## 🎩 Score à battre aujourd'hui : N`) — les joueurs savent exactement leur objectif avant même de cliquer sur **Jouer**, avec un avertissement dédié si le Croupier tire 21 pile (aucune victoire possible ce jour-là, seule l'égalité l'est).
+
+### Sabot virtuel par joueur
+
+Chaque tirage (`drawCard()`) pioche un rang uniforme parmi les 13 (probabilité 4/52 = 1/13, identique à un vrai deck de 52 cartes) plutôt que de puiser dans un deck partagé qui s'épuiserait. Décision explicite : un deck unique partagé imposerait un ordre de tirage arbitraire entre joueurs concurrents, sans bénéfice pour un jeu où chacun affronte le Croupier seul, indépendamment des autres.
+
+### Main du joueur — Jouer / Piocher / Arrêter, tout en éphémère
+
+Une main par jour, définitive. 🃏 **Jouer** distribue 2 cartes (`stand` automatique sur un 21 naturel) ; 🎴 **Piocher** ajoute une carte (répétable) ; 🛑 **Arrêter** fige le score. Dépasser 21 = main perdue immédiatement (`bust`). Contrairement à Tamagoshi/Robinson, **rien n'est jamais repatché sur le message public** : tout se joue en éphémère (réponse privée au joueur via `patchOriginal()`/webhook), la main de chacun reste secrète jusqu'au bilan du lendemain — pas de compteur public à maintenir. Le résultat (gagné/perdu/égalité) est révélé au joueur dès que sa main est figée, sans attendre la clôture : le score du Croupier est déjà public depuis l'ouverture du jour, donc inutile de le faire deviner.
+
+Une main encore `en_cours` à la clôture (joueur qui n'a jamais cliqué Arrêter) est figée sur son score courant plutôt qu'ignorée (`resolveDay()`) — un joueur qui a commencé sa main mérite d'être jugé sur ce qu'il a, pas exclu du classement.
+
+### Interface (embed) et rendu des cartes
+
+Titre `🃏 Blackjack — Jour X/7`. Rang+couleur affichés en titre Markdown (`# A♠️ K♥️`) plutôt qu'en glyphes Unicode de cartes à jouer (bloc U+1F0A0-1F0DF) — essayés puis abandonnés (29/08, retour utilisateur avec capture d'écran) : sans artwork couleur chez Discord, ils restent minuscules même sous un titre H1, contrairement aux emoji standard qui s'agrandissent normalement. Le bilan de la veille (`formatResultsSection()`) reste un **résumé**, pas une liste exhaustive (29/08, retour utilisateur) : avec beaucoup de joueurs, détailler chaque main rendrait le message public illisible — seuls les gagnants sont nommés, chacun retrouve le détail de sa propre main dans le bouton Journal. Deux illustrations statiques (`data/blackjack/images/`, suffixe `?v=` pour forcer Discord à refaire un fetch après remplacement de fichier) : `blackjack-start.webp` pour le Jour 1 et la révélation finale, `blackjack-game.webp` pour les jours intermédiaires.
+
+Composants : `[🃏 Jouer]` (vert), `[📜 Journal]`, `[📖 Règles]`. Le bouton **Journal** (lecture seule) affiche la main du jour du joueur, le classement cumulé et les 10 derniers jours de l'historique — accessible à tout moment, sans limite de clics.
+
+### Manches (comparaison entre parties) — Blackjack
+
+Comme Tamagoshi/Robinson/Boss Raid, Blackjack est destiné à être rejoué plusieurs fois dans l'année — chaque partie complète de 7 jours est une **manche**. `blackjack:manches` (HASH permanent, jamais nettoyé par `resetBlackjack()`) archive le classement final de chaque manche terminée, indexé par un numéro strictement croissant (`blackjack:manche_seq`, `INCR` atomique) : `archiveManche({ ranking, winners, maxPoints, resolvedAt })`. L'embed de révélation finale liste les vainqueurs des manches précédentes.
+
+⚠️ L'archivage n'a lieu que pour une **vraie publication sur le salon public** (`postBlackjack(channelId, { isPublic: true })`, déclenché uniquement par `npm run blackjack:public`/le workflow GitHub) — jamais en dry-run, ni sur le salon de test, même si la partie de test va jusqu'au bout. Convention volontaire, identique aux autres jeux : seul `--public` représente une manche réelle. `npm run blackjack:reset:manches` (`--manches`) reste disponible comme filet de sécurité manuel, mais ne devrait normalement jamais être nécessaire.
+
+### Données (blackjack.json)
+
+`data/blackjack/blackjack.json` — config statique éditée à la main : `duree_jours` (7) et `croupier.min`/`croupier.max` (16-21, plage du score aléatoire du Croupier). Chargée une fois et mise en cache (`loadBlackjackConfig()`), jamais mutée à l'exécution.
+
+### Stockage — Upstash Redis (`blackjack:*`)
+
+Même instance et mêmes conventions que les autres jeux (`automaticDeserialization: false`, sérialisation JSON manuelle). Espace de clés `blackjack:*`, totalement séparé.
+
+| Clé Redis               | Type              | Contenu                                                                                                                                      |
+| ----------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `blackjack:state`       | STRING            | `{ jour, dealer, channelId, messageId, publishedAt, termine }` — muté uniquement au cron                                                     |
+| `blackjack:points`      | HASH              | `discordId → points` — cumul de la manche en cours (`HINCRBY`), remis à zéro à chaque nouveau Jour 1                                         |
+| `blackjack:usernames`   | HASH              | `discordId → pseudo` — repli d'affichage uniquement, jamais la source de vérité du pseudo actuel                                             |
+| `blackjack:hand:<jour>` | HASH              | `discordId → { cards, score, status, username }` — main du jour, une entrée par joueur ayant cliqué Jouer                                    |
+| `blackjack:historique`  | HASH              | `jour → { jour, dealer, results, resolvedAt }` — bilans quotidiens de la manche EN COURS, alimente le Journal, effacé par `resetBlackjack()` |
+| `blackjack:manches`     | HASH              | `manche → { manche, ranking, winners, maxPoints, resolvedAt }` — un bilan par manche TERMINÉE, jamais nettoyé                                |
+| `blackjack:manche_seq`  | STRING (compteur) | Numéro de la prochaine manche à archiver, incrémenté (`INCR`) à chaque fin de partie réelle (jamais en dry-run)                              |
+
+### Scripts npm (Blackjack)
+
+| Commande                          | Effet                                                                                                                                                       |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run blackjack:test`          | Poste manuellement le jour de Blackjack sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`).                                                                |
+| `npm run blackjack:test:dry`      | Aperçu console du prochain jour (ou de la révélation finale), sans écrire d'état ni poster sur Discord.                                                     |
+| `npm run blackjack:public`        | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `blackjack.yml`.                                                           |
+| `npm run blackjack:public:dry`    | Équivalent dry-run de `blackjack:public`.                                                                                                                   |
+| `npm run blackjack:reset`         | Remet Blackjack à zéro : plus de jour actif, points/mains/historique de la manche en cours effacés. **Destructif** — préserve toujours `blackjack:manches`. |
+| `npm run blackjack:reset:manches` | Identique, mais efface aussi `blackjack:manches`/`blackjack:manche_seq`. **Destructif**, à réserver au filet de sécurité.                                   |
+| `npm run blackjack:status`        | Affiche l'état courant (mains du jour, classement cumulé) et une projection de la clôture si elle avait lieu maintenant, sans passer par Discord.           |
+| `npm run blackjack:scores`        | Affiche uniquement le classement cumulé de la manche en cours (ou terminée), accessible sans attendre la révélation finale.                                 |
+
+### Variables d'environnement requises (Blackjack)
+
+Aucune nouvelle variable : Blackjack réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (même instance Upstash Redis, espace de clés `blackjack:*` totalement séparé). Le workflow `.github/workflows/blackjack.yml` réutilise les mêmes secrets GitHub Actions que les autres jeux (déjà configurés, rien à ajouter). Le jeu ayant été validé sur le salon de test, le `schedule` du cron (`12 8 * * *`) est actif.
+
 ## Jeu Goblin Hunters (identité secrète, camps cachés)
 
 Mini-jeu à identité secrète façon Shadow Hunters/Loups-Garous, adapté au rythme asynchrone quotidien du bot : deux camps s'affrontent en secret, les **Villageois** (majorité) et les **Gobelins infiltrés** (minorité, ratio ~2/5 arrondi selon l'effectif — voir "Rééquilibrage" plus bas), sur une partie de **7 jours maximum**. Modèle de référence = **Boss Raid**, pas Robinson : rien n'est appliqué en direct pendant la journée (positions/PV/votes/actions) — tout se résout **une seule fois à la clôture**, dans la fonction pure `computeCloture()` (`backend/services/goblinhunters.js`). Pas de commande slash associée — la publication/clôture passe uniquement par `scripts/postGoblinHunters.js` (manuel ou cron), les boutons et le select menu restent gérés par `api/discord/interactions.js`.
@@ -1410,6 +1482,7 @@ Corrigé par un filet de sécurité identique sur les deux lieux (`fallbackActor
 ⚠️ **Doublon corrigé (2026-08-26, bug repéré en test réel)** : le tirage aléatoire du filet de sécurité de la Tour de Guet pouvait retomber sur une cible **déjà connue** de cet enquêteur (son camp lui avait déjà été révélé une enquête précédente) — un joueur a reçu 2 fois le même résultat ("X appartient au camp des Gobelins") en DM. Le combat n'a pas ce problème (une attaque ne révèle jamais de camp, réattaquer la même cible n'est pas une info gaspillée), donc seule `computeInvestigations()` est concernée.
 
 Corrigé à deux niveaux, défense en profondeur :
+
 - **Côté service** (`computeInvestigations()`, `backend/services/goblinhunters.js`) : nouveau paramètre `knownTargetsByInvestigator` (`{discordId: Set<cibleId>}`), dérivé du carnet d'indices de chaque joueur vivant via `knownEnqueteTargets(indices)` (nouvelle fonction pure — filtre `type: "enquete"`, collecte les `cibleId`). Exclut ces cibles à la fois du résultat délibéré (si la cible choisie sur le plateau est déjà connue, le résultat est écarté et l'enquêteur bascule sur le filet de sécurité) et du tirage aléatoire lui-même (`pickRandomTarget()` accepte désormais un 4ᵉ paramètre optionnel `extraExcludeIds`, jamais utilisé côté combat). `loadCloture()` construit cette map via `loadKnownTargetsByInvestigator()` (N lectures `readPlayerIndices()`, une par joueur vivant — négligeable, le cron ne tourne qu'une fois/jour).
 - **Côté handler** (`handleLieuButton()`) : le select menu de la Tour de Guet filtre lui aussi les cibles déjà connues (`knownEnqueteTargets(await readPlayerIndices(discordId))`) — évite de proposer un choix inutile au clic, la vérification côté service n'est qu'un filet de défense, pas la seule garde.
 
