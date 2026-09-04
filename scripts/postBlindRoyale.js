@@ -48,7 +48,7 @@ if (!channelId) {
         console.log("");
       }
       console.log(`DRY-RUN — prochaine partie (salon ${channelId}) :`);
-      console.log(`  Carte : ${result.entry.fr} (${result.entry.cardKey}) — son : ${result.entry.sound}`);
+      console.log(`  Cartes éligibles dans le pool : ${result.catalogSize}`);
       console.log(`  Ping @MINI JEUX : ${result.pingRoleId ? "oui" : "non"}`);
       console.log(JSON.stringify({ embeds: [result.embed], components: result.components }, null, 2));
       return;

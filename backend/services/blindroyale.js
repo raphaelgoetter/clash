@@ -14,6 +14,12 @@
 // directement les entrées de data/cardNames.json qui ont un champ "sound"
 // (114/122 cartes) — voir loadBlindRoyaleCards(). gameId = cardKey
 // (identifiant déjà unique et lisible, pas besoin d'un ID numérique séparé).
+//
+// Rotation des cartes : cardNames.json étant trié alphabétiquement, la
+// progression ne peut pas être une simple avancée séquentielle dans le
+// fichier (la prochaine carte serait devinable à l'avance) — voir
+// loadPlayOrder(), même solution que lajustecarte.js (ordre mélangé une
+// fois puis persisté dans Redis).
 // ============================================================
 
 import fs from "fs/promises";
@@ -85,6 +91,7 @@ async function hgetallJson(key) {
 }
 
 const STATE_KEY = "blindroyale:state";
+const ORDER_KEY = "blindroyale:order";
 
 function participantsKey(gameId) {
   return `blindroyale:participants:${gameId}`;
@@ -167,10 +174,10 @@ async function cleanupGameScratchData(gameId) {
   await scanDelete(`blindroyale:attempts:${gameId}:*`);
 }
 
-// Remet le jeu à zéro : plus de partie active (la prochaine repart au début
-// du pool) et historique/scores entièrement effacés.
+// Remet le jeu à zéro : plus de partie active, ordre de rotation remélangé
+// à la prochaine partie, historique/scores entièrement effacés.
 export async function resetGame() {
-  await getRedis().del(STATE_KEY);
+  await getRedis().del(STATE_KEY, ORDER_KEY);
   await scanDelete("blindroyale:participants:*");
   await scanDelete("blindroyale:usernames:*");
   await scanDelete("blindroyale:hint:*");
@@ -201,12 +208,44 @@ export async function getCurrentSeasonId() {
   return value;
 }
 
-// ── Sélection de la prochaine carte : progression séquentielle ───
-// Même pattern que Zoom/Anagram : avance d'une position dans le pool et
-// boucle au début une fois épuisé.
-export function pickNextBlindRoyaleIndex(state, cards) {
+// ── Ordre de rotation hebdomadaire ────────────────────────────────
+// cardNames.json reste trié alphabétiquement (contrainte de
+// generateCardNames.js) : contrairement à Frame/Anagram/Zoom (dont les
+// catalogues JSON dédiés sont déjà mélangés une fois pour toutes à
+// l'écriture du fichier), on ne peut pas s'appuyer sur l'ordre physique du
+// fichier pour éviter que la prochaine carte secrète soit devinable à
+// l'avance — même problème que La Juste Carte (lajustecarte.js), même
+// solution : l'ordre de passage est mélangé une fois puis persisté dans
+// Redis ; les nouvelles cartes (ajoutées après coup par
+// generateCardStats.js) sont insérées à la suite, mélangées entre elles,
+// sans perturber l'ordre déjà en cours.
+function shuffle(array) {
+  const result = [...array];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+async function loadPlayOrder(cards) {
+  const stored = fromJson(await getRedis().get(ORDER_KEY)) || [];
+  const cardKeySet = new Set(cards.map((c) => c.cardKey));
+  const kept = stored.filter((k) => cardKeySet.has(k));
+  const missing = cards.map((c) => c.cardKey).filter((k) => !kept.includes(k));
+  const order = [...kept, ...shuffle(missing)];
+  if (missing.length > 0 || kept.length !== stored.length) {
+    await getRedis().set(ORDER_KEY, toJson(order));
+  }
+  return order;
+}
+
+// Avance d'une position dans l'ordre de rotation (pas dans le pool brut) et
+// boucle au début une fois épuisé — même pattern que Zoom/Anagram/Frame,
+// mais appliqué à `order` (loadPlayOrder ci-dessus), pas à `cards`.
+export function pickNextBlindRoyaleIndex(state, order) {
   const prevIndex = state?.currentIndex ?? -1;
-  return (prevIndex + 1) % cards.length;
+  return (prevIndex + 1) % order.length;
 }
 
 // Attribue le numéro de manche relatif à la saison — identique en structure
@@ -235,9 +274,10 @@ export function computeSeasonMancheTotal(seasonManche, now = new Date()) {
 
 export async function startNewGame(channelId) {
   const cards = await loadBlindRoyaleCards();
+  const order = await loadPlayOrder(cards);
   const previousState = await readState();
-  const currentIndex = pickNextBlindRoyaleIndex(previousState, cards);
-  const entry = cards[currentIndex];
+  const currentIndex = pickNextBlindRoyaleIndex(previousState, order);
+  const entry = resolveBlindRoyaleEntry(cards, order[currentIndex]);
   const gameId = entry.cardKey;
   const seasonId = await getCurrentSeasonId();
   const now = new Date();

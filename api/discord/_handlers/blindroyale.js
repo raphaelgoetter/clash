@@ -29,7 +29,6 @@ import {
   writeState,
   readParticipant,
   startNewGame,
-  pickNextBlindRoyaleIndex,
   checkAnswer,
   recordAttempt,
   recordHintUsed,
@@ -243,14 +242,17 @@ export async function postBlindRoyale(channelId, { dryRun = false, noPing = fals
   if (dryRun) {
     const cards = await loadBlindRoyaleCards();
     const state = await readState();
-    const previewIndex = pickNextBlindRoyaleIndex(state, cards);
-    const previewEntry = cards[previewIndex];
-    const gameId = previewEntry.cardKey;
     const seasonId = await getCurrentSeasonId();
     const seasonManche = await previewSeasonManche(seasonId);
     const seasonMancheTotal = computeSeasonMancheTotal(seasonManche);
     const embed = buildBlindRoyaleEmbed({ seasonId, seasonManche, seasonMancheTotal });
-    const components = buildBlindRoyaleComponents(gameId);
+    // La prochaine carte secrète n'est jamais calculée/révélée en dry-run :
+    // la sélection (loadPlayOrder, dans blindroyale.js) peut compléter
+    // l'ordre de rotation persisté en Redis si de nouvelles cartes ont été
+    // ajoutées — un dry-run doit rester strictement en lecture seule, donc
+    // ce calcul est réservé à startNewGame() (appelé uniquement en
+    // publication réelle). Voir postJusteCarte, qui a le même garde-fou.
+    const components = buildBlindRoyaleComponents("preview");
     const pingRoleId = noPing ? null : await getRoleIdByName(MINI_JEUX_ROLE_NAME);
 
     let seasonRecapEmbed = null;
@@ -263,7 +265,7 @@ export async function postBlindRoyale(channelId, { dryRun = false, noPing = fals
       }
     }
 
-    return { dryRun: true, entry: previewEntry, embed, components, seasonRecapEmbed, pingRoleId };
+    return { dryRun: true, catalogSize: cards.length, embed, components, seasonRecapEmbed, pingRoleId };
   }
 
   if (!force && (await alreadyPostedThisWeek())) {
