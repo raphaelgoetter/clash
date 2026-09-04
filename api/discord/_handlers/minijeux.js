@@ -36,6 +36,7 @@ function channelLink() {
 
 // 0 = dimanche .. 6 = samedi (Date.getUTCDay())
 const REGULAR_GAMES = [
+  { key: "blindroyale", title: "🎧 Blind Royale", weekday: 1 },
   { key: "frame", title: "🎬 Trouve le film !", weekday: 3 },
   { key: "zoom", title: "🔍 Zoom carte", weekday: 5 },
   { key: "anagram", title: "🔤 Anagram", weekday: 6 },

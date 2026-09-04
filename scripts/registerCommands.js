@@ -486,6 +486,11 @@ const commands = [
     options: [],
   },
   {
+    name: "blindroyale",
+    description: "Affiche vos scores au jeu Blind Royale (devine la carte à son cri).",
+    options: [],
+  },
+  {
     name: "mini-jeux",
     description: "Affiche l'état des lieux et l'avancement des mini-jeux et du jeu spécial en cours.",
     options: [],

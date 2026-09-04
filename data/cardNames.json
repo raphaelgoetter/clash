@@ -3,6 +3,7 @@
     "cardKey": "Archer Queen",
     "rarity": "champion",
     "fr": "Reine des Archères",
+    "sound": "archer-queen.mp3",
     "elixir": 5,
     "hp": 1000,
     "damage": 225,
@@ -17,6 +18,7 @@
     "cardKey": "Archers",
     "rarity": "common",
     "fr": "Archères",
+    "sound": "archers.mp3",
     "elixir": 3,
     "hp": 304,
     "damage": 112,
@@ -30,12 +32,14 @@
   {
     "cardKey": "Arrows",
     "rarity": "common",
-    "fr": "Flèches"
+    "fr": "Flèches",
+    "sound": "arrows.mp3"
   },
   {
     "cardKey": "Baby Dragon",
     "rarity": "epic",
     "fr": "Bébé dragon",
+    "sound": "baby-dragon.mp3",
     "elixir": 4,
     "hp": 1152,
     "damage": 161,
@@ -50,6 +54,7 @@
     "cardKey": "Balloon",
     "rarity": "epic",
     "fr": "Ballon",
+    "sound": "balloon.mp3",
     "elixir": 5,
     "hp": 1679,
     "damage": 640,
@@ -77,7 +82,8 @@
   {
     "cardKey": "Barbarian Barrel",
     "rarity": "epic",
-    "fr": "Fût à barbare"
+    "fr": "Fût à barbare",
+    "sound": "barbarian-barrel.mp3"
   },
   {
     "cardKey": "Barbarian Hut",
@@ -88,6 +94,7 @@
     "cardKey": "Barbarians",
     "rarity": "common",
     "fr": "Barbares",
+    "sound": "barbarians.mp3",
     "elixir": 5,
     "hp": 670,
     "damage": 192,
@@ -102,6 +109,7 @@
     "cardKey": "Bats",
     "rarity": "common",
     "fr": "Chauves-souris",
+    "sound": "bats.mp3",
     "elixir": 2,
     "hp": 81,
     "damage": 81,
@@ -116,6 +124,7 @@
     "cardKey": "Battle Healer",
     "rarity": "rare",
     "fr": "Guérisseuse armée",
+    "sound": "battle-healer.mp3",
     "elixir": 4,
     "hp": 1717,
     "damage": 148,
@@ -130,6 +139,7 @@
     "cardKey": "Battle Ram",
     "rarity": "rare",
     "fr": "Bélier de combat",
+    "sound": "battle-ram.mp3",
     "elixir": 4,
     "hp": 967,
     "damage": 286,
@@ -144,6 +154,7 @@
     "cardKey": "Berserker",
     "rarity": "common",
     "fr": "Berserker",
+    "sound": "berserker.mp3",
     "elixir": 2,
     "hp": 896,
     "damage": 102,
@@ -157,12 +168,14 @@
   {
     "cardKey": "Bomb Tower",
     "rarity": "rare",
-    "fr": "Tour à bombes"
+    "fr": "Tour à bombes",
+    "sound": "bomb-tower.mp3"
   },
   {
     "cardKey": "Bomber",
     "rarity": "common",
     "fr": "Bombardier",
+    "sound": "bomber.mp3",
     "elixir": 2,
     "hp": 304,
     "damage": 225,
@@ -177,6 +190,7 @@
     "cardKey": "Boss Bandit",
     "rarity": "champion",
     "fr": "Cheffe des voleuses",
+    "sound": "boss-bandit.mp3",
     "elixir": 6,
     "hp": 2624,
     "damage": 245,
@@ -191,6 +205,7 @@
     "cardKey": "Bowler",
     "rarity": "epic",
     "fr": "Bouliste",
+    "sound": "bowler.mp3",
     "elixir": 5,
     "hp": 2081,
     "damage": 289,
@@ -204,12 +219,14 @@
   {
     "cardKey": "Cannon",
     "rarity": "common",
-    "fr": "Canon"
+    "fr": "Canon",
+    "sound": "cannon.mp3"
   },
   {
     "cardKey": "Cannon Cart",
     "rarity": "epic",
     "fr": "Charrette à canon",
+    "sound": "cannon-cart.mp3",
     "elixir": 5,
     "hp": 1809,
     "damage": 212,
@@ -223,12 +240,14 @@
   {
     "cardKey": "Clone",
     "rarity": "epic",
-    "fr": "Clonage"
+    "fr": "Clonage",
+    "sound": "clone.mp3"
   },
   {
     "cardKey": "Dark Prince",
     "rarity": "epic",
     "fr": "Prince ténébreux",
+    "sound": "dark-prince.mp3",
     "elixir": 4,
     "hp": 1440,
     "damage": 266,
@@ -243,6 +262,7 @@
     "cardKey": "Dart Goblin",
     "rarity": "rare",
     "fr": "Gobelin à sarbacane",
+    "sound": "dart-goblin.mp3",
     "elixir": 3,
     "hp": 261,
     "damage": 151,
@@ -256,12 +276,14 @@
   {
     "cardKey": "Earthquake",
     "rarity": "rare",
-    "fr": "Séisme"
+    "fr": "Séisme",
+    "sound": "earthquake.mp3"
   },
   {
     "cardKey": "Electro Dragon",
     "rarity": "epic",
     "fr": "Électro-dragon",
+    "sound": "electro-dragon.mp3",
     "elixir": 5,
     "hp": 949,
     "damage": 192,
@@ -276,6 +298,7 @@
     "cardKey": "Electro Giant",
     "rarity": "epic",
     "fr": "Électro-géant",
+    "sound": "electro-giant.mp3",
     "elixir": 7,
     "hp": 3855,
     "damage": 163,
@@ -290,6 +313,7 @@
     "cardKey": "Electro Spirit",
     "rarity": "common",
     "fr": "Électro-esprit",
+    "sound": "electro-spirit.mp3",
     "elixir": 1,
     "hp": 230,
     "damage": 99,
@@ -304,6 +328,7 @@
     "cardKey": "Electro Wizard",
     "rarity": "legendary",
     "fr": "Électro-sorcier",
+    "sound": "electro-wizard.mp3",
     "elixir": 4,
     "hp": 714,
     "damage": 115,
@@ -318,6 +343,7 @@
     "cardKey": "Elite Barbarians",
     "rarity": "common",
     "fr": "Barbares d'élite",
+    "sound": "elite-barbarians.mp3",
     "elixir": 6,
     "hp": 1341,
     "damage": 384,
@@ -331,12 +357,14 @@
   {
     "cardKey": "Elixir Collector",
     "rarity": "rare",
-    "fr": "Extracteur d'élixir"
+    "fr": "Extracteur d'élixir",
+    "sound": "elixir-collector.mp3"
   },
   {
     "cardKey": "Elixir Golem",
     "rarity": "rare",
     "fr": "Golem élixir",
+    "sound": "elixir-golem.mp3",
     "elixir": 3,
     "hp": 1569,
     "damage": 253,
@@ -351,6 +379,7 @@
     "cardKey": "Executioner",
     "rarity": "epic",
     "fr": "Bourreau",
+    "sound": "executioner.mp3",
     "elixir": 5,
     "hp": 1280,
     "damage": 168,
@@ -365,6 +394,7 @@
     "cardKey": "Fire Spirit",
     "rarity": "common",
     "fr": "Esprit de feu",
+    "sound": "fire-spirit.mp3",
     "elixir": 1,
     "hp": 230,
     "damage": 207,
@@ -378,12 +408,14 @@
   {
     "cardKey": "Fireball",
     "rarity": "rare",
-    "fr": "Boule de feu"
+    "fr": "Boule de feu",
+    "sound": "fireball.mp3"
   },
   {
     "cardKey": "Firecracker",
     "rarity": "common",
     "fr": "Artificière",
+    "sound": "firecracker.mp3",
     "elixir": 3,
     "hp": 304,
     "damage": 64,
@@ -398,6 +430,7 @@
     "cardKey": "Fisherman",
     "rarity": "legendary",
     "fr": "Pêcheur",
+    "sound": "fisherman.mp3",
     "elixir": 3,
     "hp": 870,
     "damage": 194,
@@ -412,6 +445,7 @@
     "cardKey": "Flying Machine",
     "rarity": "rare",
     "fr": "Machine volante",
+    "sound": "flying-machine.mp3",
     "elixir": 4,
     "hp": 614,
     "damage": 171,
@@ -425,12 +459,14 @@
   {
     "cardKey": "Freeze",
     "rarity": "epic",
-    "fr": "Gel"
+    "fr": "Gel",
+    "sound": "freeze.mp3"
   },
   {
     "cardKey": "Furnace",
     "rarity": "rare",
     "fr": "Fournaise",
+    "sound": "furnace.mp3",
     "elixir": 4,
     "hp": 727,
     "damage": 179,
@@ -445,6 +481,7 @@
     "cardKey": "Giant",
     "rarity": "rare",
     "fr": "Géant",
+    "sound": "giant.mp3",
     "elixir": 5,
     "hp": 4090,
     "damage": 253,
@@ -459,6 +496,7 @@
     "cardKey": "Giant Skeleton",
     "rarity": "epic",
     "fr": "Squelette géant",
+    "sound": "giant-skeleton.mp3",
     "elixir": 6,
     "hp": 3617,
     "damage": 276,
@@ -472,27 +510,32 @@
   {
     "cardKey": "Giant Snowball",
     "rarity": "common",
-    "fr": "Méga boule de neige"
+    "fr": "Méga boule de neige",
+    "sound": "giant-snowball.mp3"
   },
   {
     "cardKey": "Goblin Barrel",
     "rarity": "epic",
-    "fr": "Fût à gobelins"
+    "fr": "Fût à gobelins",
+    "sound": "goblin-barrel.mp3"
   },
   {
     "cardKey": "Goblin Cage",
     "rarity": "rare",
-    "fr": "Cage gobeline"
+    "fr": "Cage gobeline",
+    "sound": "goblin-cage.mp3"
   },
   {
     "cardKey": "Goblin Curse",
     "rarity": "epic",
-    "fr": "Malédiction gobeline"
+    "fr": "Malédiction gobeline",
+    "sound": "goblin-curse.mp3"
   },
   {
     "cardKey": "Goblin Demolisher",
     "rarity": "rare",
     "fr": "Gobelin explosif",
+    "sound": "goblin-demolisher.mp3",
     "elixir": 4,
     "hp": 1300,
     "damage": 186,
@@ -506,32 +549,38 @@
   {
     "cardKey": "Goblin Drill",
     "rarity": "epic",
-    "fr": "Foreuse gobeline"
+    "fr": "Foreuse gobeline",
+    "sound": "goblin-drill.mp3"
   },
   {
     "cardKey": "Goblin Gang",
     "rarity": "common",
-    "fr": "Gang de gobelins"
+    "fr": "Gang de gobelins",
+    "sound": "goblin-gang.mp3"
   },
   {
     "cardKey": "Goblin Giant",
     "rarity": "epic",
-    "fr": "Gobelin géant"
+    "fr": "Gobelin géant",
+    "sound": "goblin-giant.mp3"
   },
   {
     "cardKey": "Goblin Hut",
     "rarity": "rare",
-    "fr": "Cabane de gobelin"
+    "fr": "Cabane de gobelin",
+    "sound": "goblin-hut.mp3"
   },
   {
     "cardKey": "Goblin Machine",
     "rarity": "legendary",
-    "fr": "Machine gobeline"
+    "fr": "Machine gobeline",
+    "sound": "goblin-machine.mp3"
   },
   {
     "cardKey": "Goblins",
     "rarity": "common",
     "fr": "Gobelins",
+    "sound": "goblins.mp3",
     "elixir": 2,
     "hp": 202,
     "damage": 120,
@@ -560,6 +609,7 @@
     "cardKey": "Golden Knight",
     "rarity": "champion",
     "fr": "Chevalier d'or",
+    "sound": "golden-knight.mp3",
     "elixir": 4,
     "hp": 1799,
     "damage": 161,
@@ -574,6 +624,7 @@
     "cardKey": "Golem",
     "rarity": "epic",
     "fr": "Golem",
+    "sound": "golem.mp3",
     "elixir": 8,
     "hp": 5120,
     "damage": 312,
@@ -587,7 +638,8 @@
   {
     "cardKey": "Graveyard",
     "rarity": "legendary",
-    "fr": "Cimetière"
+    "fr": "Cimetière",
+    "sound": "graveyard.mp3"
   },
   {
     "cardKey": "Guards",
@@ -607,6 +659,7 @@
     "cardKey": "Heal Spirit",
     "rarity": "rare",
     "fr": "Esprit de guérison",
+    "sound": "heal-spirit.mp3",
     "elixir": 1,
     "hp": 230,
     "damage": 110,
@@ -621,6 +674,7 @@
     "cardKey": "Hog Rider",
     "rarity": "rare",
     "fr": "Chevaucheur de cochon",
+    "sound": "hog-rider.mp3",
     "elixir": 4,
     "hp": 1697,
     "damage": 317,
@@ -635,6 +689,7 @@
     "cardKey": "Hunter",
     "rarity": "epic",
     "fr": "Chasseur",
+    "sound": "hunter.mp3",
     "elixir": 4,
     "hp": 885,
     "damage": 84,
@@ -649,6 +704,7 @@
     "cardKey": "Ice Golem",
     "rarity": "rare",
     "fr": "Golem de glace",
+    "sound": "ice-golem.mp3",
     "elixir": 2,
     "hp": 1315,
     "damage": 84,
@@ -663,6 +719,7 @@
     "cardKey": "Ice Spirit",
     "rarity": "common",
     "fr": "Esprit de glace",
+    "sound": "ice-spirit.mp3",
     "elixir": 1,
     "hp": 230,
     "damage": 110,
@@ -677,6 +734,7 @@
     "cardKey": "Ice Wizard",
     "rarity": "legendary",
     "fr": "Sorcier de glace",
+    "sound": "ice-wizard.mp3",
     "elixir": 3,
     "hp": 688,
     "damage": 89,
@@ -690,17 +748,20 @@
   {
     "cardKey": "Inferno Dragon",
     "rarity": "legendary",
-    "fr": "Dragon de l'enfer"
+    "fr": "Dragon de l'enfer",
+    "sound": "inferno-dragon.mp3"
   },
   {
     "cardKey": "Inferno Tower",
     "rarity": "rare",
-    "fr": "Tour de l'enfer"
+    "fr": "Tour de l'enfer",
+    "sound": "inferno-tower.mp3"
   },
   {
     "cardKey": "Knight",
     "rarity": "common",
     "fr": "Chevalier",
+    "sound": "knight.mp3",
     "elixir": 3,
     "hp": 1766,
     "damage": 202,
@@ -715,6 +776,7 @@
     "cardKey": "Lava Hound",
     "rarity": "legendary",
     "fr": "Molosse de lave",
+    "sound": "lava-hound.mp3",
     "elixir": 7,
     "hp": 3581,
     "damage": 53,
@@ -728,12 +790,14 @@
   {
     "cardKey": "Lightning",
     "rarity": "epic",
-    "fr": "Foudre"
+    "fr": "Foudre",
+    "sound": "lightning.mp3"
   },
   {
     "cardKey": "Little Prince",
     "rarity": "champion",
     "fr": "Petit Prince",
+    "sound": "little-prince.mp3",
     "elixir": 3,
     "hp": 698,
     "damage": 104,
@@ -748,6 +812,7 @@
     "cardKey": "Lumberjack",
     "rarity": "legendary",
     "fr": "Bûcheron",
+    "sound": "lumberjack.mp3",
     "elixir": 4,
     "hp": 1282,
     "damage": 256,
@@ -762,6 +827,7 @@
     "cardKey": "Magic Archer",
     "rarity": "legendary",
     "fr": "Archer magique",
+    "sound": "magic-archer.mp3",
     "elixir": 4,
     "hp": 529,
     "damage": 143,
@@ -776,6 +842,7 @@
     "cardKey": "Mega Knight",
     "rarity": "legendary",
     "fr": "Méga chevalier",
+    "sound": "mega-knight.mp3",
     "elixir": 7,
     "hp": 3993,
     "damage": 268,
@@ -790,6 +857,7 @@
     "cardKey": "Mega Minion",
     "rarity": "rare",
     "fr": "Méga gargouille",
+    "sound": "mega-minion.mp3",
     "elixir": 3,
     "hp": 837,
     "damage": 311,
@@ -803,12 +871,14 @@
   {
     "cardKey": "Mighty Miner",
     "rarity": "champion",
-    "fr": "Maitre Mineur"
+    "fr": "Maitre Mineur",
+    "sound": "mighty-miner.mp3"
   },
   {
     "cardKey": "Miner",
     "rarity": "legendary",
     "fr": "Mineur",
+    "sound": "miner.mp3",
     "elixir": 3,
     "hp": 1210,
     "damage": 194,
@@ -823,6 +893,7 @@
     "cardKey": "Mini P.E.K.K.A",
     "rarity": "rare",
     "fr": "Mini P.E.K.K.A",
+    "sound": "mini-pekka.mp3",
     "elixir": 4,
     "hp": 1390,
     "damage": 755,
@@ -837,6 +908,7 @@
     "cardKey": "Minion Horde",
     "rarity": "common",
     "fr": "Horde de gargouilles",
+    "sound": "minion-horde.mp3",
     "elixir": 5,
     "hp": 230,
     "damage": 107,
@@ -851,6 +923,7 @@
     "cardKey": "Minions",
     "rarity": "common",
     "fr": "Gargouilles",
+    "sound": "minions.mp3",
     "elixir": 3,
     "hp": 230,
     "damage": 107,
@@ -864,22 +937,26 @@
   {
     "cardKey": "Mirror",
     "rarity": "epic",
-    "fr": "Miroir"
+    "fr": "Miroir",
+    "sound": "mirror.mp3"
   },
   {
     "cardKey": "Monk",
     "rarity": "champion",
-    "fr": "Moine"
+    "fr": "Moine",
+    "sound": "monk.mp3"
   },
   {
     "cardKey": "Mortar",
     "rarity": "common",
-    "fr": "Mortier"
+    "fr": "Mortier",
+    "sound": "mortar.mp3"
   },
   {
     "cardKey": "Mother Witch",
     "rarity": "legendary",
     "fr": "Mamie sorcière",
+    "sound": "mother-witch.mp3",
     "elixir": 4,
     "hp": 529,
     "damage": 133,
@@ -894,6 +971,7 @@
     "cardKey": "Musketeer",
     "rarity": "rare",
     "fr": "Mousquetaire",
+    "sound": "musketeer.mp3",
     "elixir": 4,
     "hp": 721,
     "damage": 217,
@@ -908,6 +986,7 @@
     "cardKey": "Night Witch",
     "rarity": "legendary",
     "fr": "Sorcière de la nuit",
+    "sound": "night-witch.mp3",
     "elixir": 4,
     "hp": 906,
     "damage": 314,
@@ -922,6 +1001,7 @@
     "cardKey": "P.E.K.K.A",
     "rarity": "epic",
     "fr": "P.E.K.K.A",
+    "sound": "pekka.mp3",
     "elixir": 7,
     "hp": 3760,
     "damage": 816,
@@ -936,6 +1016,7 @@
     "cardKey": "Phoenix",
     "rarity": "legendary",
     "fr": "Phénix",
+    "sound": "phoenix.mp3",
     "elixir": 4,
     "hp": 1052,
     "damage": 217,
@@ -949,12 +1030,14 @@
   {
     "cardKey": "Poison",
     "rarity": "epic",
-    "fr": "Poison"
+    "fr": "Poison",
+    "sound": "poison.mp3"
   },
   {
     "cardKey": "Prince",
     "rarity": "epic",
     "fr": "Prince",
+    "sound": "prince.mp3",
     "elixir": 5,
     "hp": 1920,
     "damage": 391,
@@ -969,6 +1052,7 @@
     "cardKey": "Princess",
     "rarity": "legendary",
     "fr": "Princesse",
+    "sound": "princess.mp3",
     "elixir": 3,
     "hp": 261,
     "damage": 168,
@@ -982,22 +1066,26 @@
   {
     "cardKey": "Rage",
     "rarity": "epic",
-    "fr": "Rage"
+    "fr": "Rage",
+    "sound": "rage.mp3"
   },
   {
     "cardKey": "Ram Rider",
     "rarity": "legendary",
-    "fr": "Cavabélier"
+    "fr": "Cavabélier",
+    "sound": "ram-rider.mp3"
   },
   {
     "cardKey": "Rascals",
     "rarity": "common",
-    "fr": "Fripons"
+    "fr": "Fripons",
+    "sound": "rascals.mp3"
   },
   {
     "cardKey": "Rocket",
     "rarity": "rare",
-    "fr": "Roquette"
+    "fr": "Roquette",
+    "sound": "rocket.mp3"
   },
   {
     "cardKey": "Ronin",
@@ -1007,12 +1095,14 @@
   {
     "cardKey": "Royal Delivery",
     "rarity": "common",
-    "fr": "Colis royal"
+    "fr": "Colis royal",
+    "sound": "royal-delivery.mp3"
   },
   {
     "cardKey": "Royal Ghost",
     "rarity": "legendary",
     "fr": "Fantôme royal",
+    "sound": "royal-ghost.mp3",
     "elixir": 3,
     "hp": 1210,
     "damage": 261,
@@ -1027,6 +1117,7 @@
     "cardKey": "Royal Giant",
     "rarity": "common",
     "fr": "Géant royal",
+    "sound": "royal-giant.mp3",
     "elixir": 6,
     "hp": 3164,
     "damage": 307,
@@ -1041,6 +1132,7 @@
     "cardKey": "Royal Hogs",
     "rarity": "rare",
     "fr": "Cochons royaux",
+    "sound": "royal-hogs.mp3",
     "elixir": 5,
     "hp": 837,
     "damage": 74,
@@ -1055,6 +1147,7 @@
     "cardKey": "Royal Recruits",
     "rarity": "common",
     "fr": "Recrues royales",
+    "sound": "royal-recruits.mp3",
     "elixir": 7,
     "hp": 787,
     "damage": 133,
@@ -1069,6 +1162,7 @@
     "cardKey": "Rune Giant",
     "rarity": "epic",
     "fr": "Géante runique",
+    "sound": "rune-giant.mp3",
     "elixir": 4,
     "hp": 2662,
     "damage": 120,
@@ -1083,6 +1177,7 @@
     "cardKey": "Skeleton Army",
     "rarity": "epic",
     "fr": "Armée de squelettes",
+    "sound": "skeleton-army.mp3",
     "elixir": 3,
     "hp": 81,
     "damage": 81,
@@ -1097,6 +1192,7 @@
     "cardKey": "Skeleton Barrel",
     "rarity": "common",
     "fr": "Fût à squelettes",
+    "sound": "skeleton-barrel.mp3",
     "elixir": 3,
     "hp": 532,
     "damage": 145,
@@ -1111,6 +1207,7 @@
     "cardKey": "Skeleton Dragons",
     "rarity": "common",
     "fr": "Dragons squelettes",
+    "sound": "skeleton-dragons.mp3",
     "elixir": 4,
     "hp": 560,
     "damage": 161,
@@ -1125,6 +1222,7 @@
     "cardKey": "Skeleton King",
     "rarity": "champion",
     "fr": "Roi squelette",
+    "sound": "skeleton-king.mp3",
     "elixir": 4,
     "hp": 2298,
     "damage": 204,
@@ -1139,6 +1237,7 @@
     "cardKey": "Skeletons",
     "rarity": "common",
     "fr": "Squelettes",
+    "sound": "skeletons.mp3",
     "elixir": 1,
     "hp": 81,
     "damage": 81,
@@ -1167,6 +1266,7 @@
     "cardKey": "Spear Goblins",
     "rarity": "common",
     "fr": "Gobelins à lances",
+    "sound": "spear-goblins.mp3",
     "elixir": 2,
     "hp": 133,
     "damage": 81,
@@ -1180,42 +1280,50 @@
   {
     "cardKey": "Spirit Empress",
     "rarity": "legendary",
-    "fr": "Impératrice spirituelle"
+    "fr": "Impératrice spirituelle",
+    "sound": "spirit-empress.mp3"
   },
   {
     "cardKey": "Suspicious Bush",
     "rarity": "rare",
-    "fr": "Buisson suspicieux"
+    "fr": "Buisson suspicieux",
+    "sound": "suspicious-bush.mp3"
   },
   {
     "cardKey": "Tesla",
     "rarity": "common",
-    "fr": "Tesla"
+    "fr": "Tesla",
+    "sound": "tesla.mp3"
   },
   {
     "cardKey": "The Log",
     "rarity": "legendary",
-    "fr": "La bûche"
+    "fr": "La bûche",
+    "sound": "the-log.mp3"
   },
   {
     "cardKey": "Three Musketeers",
     "rarity": "rare",
-    "fr": "Trois mousquetaires"
+    "fr": "Trois mousquetaires",
+    "sound": "three-musketeers.mp3"
   },
   {
     "cardKey": "Tombstone",
     "rarity": "rare",
-    "fr": "Pierre tombale"
+    "fr": "Pierre tombale",
+    "sound": "tombstone.mp3"
   },
   {
     "cardKey": "Tornado",
     "rarity": "epic",
-    "fr": "Tornade"
+    "fr": "Tornade",
+    "sound": "tornado.mp3"
   },
   {
     "cardKey": "Valkyrie",
     "rarity": "rare",
     "fr": "Valkyrie",
+    "sound": "valkyrie.mp3",
     "elixir": 4,
     "hp": 1907,
     "damage": 266,
@@ -1240,6 +1348,7 @@
     "cardKey": "Wall Breakers",
     "rarity": "epic",
     "fr": "Sapeurs",
+    "sound": "wall-breakers.mp3",
     "elixir": 2,
     "hp": 330,
     "damage": 350,
@@ -1254,6 +1363,7 @@
     "cardKey": "Witch",
     "rarity": "epic",
     "fr": "Sorcière",
+    "sound": "witch.mp3",
     "elixir": 5,
     "hp": 839,
     "damage": 135,
@@ -1268,6 +1378,7 @@
     "cardKey": "Wizard",
     "rarity": "rare",
     "fr": "Sorcier",
+    "sound": "wizard.mp3",
     "elixir": 5,
     "hp": 755,
     "damage": 281,
@@ -1281,17 +1392,20 @@
   {
     "cardKey": "X-Bow",
     "rarity": "epic",
-    "fr": "Arc-X"
+    "fr": "Arc-X",
+    "sound": "x-bow.mp3"
   },
   {
     "cardKey": "Zap",
     "rarity": "common",
-    "fr": "Électrocution"
+    "fr": "Électrocution",
+    "sound": "zap.mp3"
   },
   {
     "cardKey": "Zappies",
     "rarity": "rare",
     "fr": "Électrocuteurs",
+    "sound": "zappies.mp3",
     "elixir": 4,
     "hp": 529,
     "damage": 117,

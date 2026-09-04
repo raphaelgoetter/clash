@@ -66,6 +66,12 @@ import {
   handleJusteCarteStatsCommand,
 } from "./_handlers/lajustecarte.js";
 import {
+  buildAnswerModal as buildBlindRoyaleAnswerModal,
+  handleHintButton as handleBlindRoyaleHintButton,
+  handleModalSubmit as handleBlindRoyaleModalSubmit,
+  handleBlindRoyaleStatsCommand,
+} from "./_handlers/blindroyale.js";
+import {
   handleVoteButton as handleTamagotchiVote,
   handleRegles as handleTamagotchiRegles,
   handlePilule as handleTamagotchiPilule,
@@ -8896,6 +8902,111 @@ export default async function handler(req, res) {
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() =>
       handleZoomModalSubmit(
+        webhookUrl,
+        gameId,
+        discordId,
+        username,
+        rawAnswer,
+      ),
+    );
+    return;
+  }
+
+  // ── Jeu Blind Royale : commande /blindroyale (scores personnels) ──
+  if (body.type === 2 && body.data?.name === "blindroyale") {
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() =>
+      handleBlindRoyaleStatsCommand(webhookUrl, discordId, username),
+    );
+    return;
+  }
+
+  // ── Jeu Blind Royale : bouton "Rafraîchir" sur /blindroyale ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id === "blindroyale_stats_refresh"
+  ) {
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    // type 6 = DEFERRED_UPDATE_MESSAGE : met à jour ce même message éphémère
+    // (au lieu d'en créer un nouveau, cf. type 5 pour la commande initiale).
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() =>
+      handleBlindRoyaleStatsCommand(webhookUrl, discordId, username),
+    );
+    return;
+  }
+
+  // ── Jeu Blind Royale : bouton indice "Rareté" ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("blindroyale_hint:")
+  ) {
+    const gameId = body.data.custom_id.split(":")[1];
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() =>
+      handleBlindRoyaleHintButton(webhookUrl, gameId, discordId, username),
+    );
+    return;
+  }
+
+  // ── Jeu Blind Royale : bouton "Répondre" → ouverture de la Modal ──
+  // Réponse synchrone immédiate obligatoire : l'ouverture d'une Modal ne
+  // peut pas être différée (pas de runBackground ici).
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("blindroyale_answer:")
+  ) {
+    const gameId = body.data.custom_id.split(":")[1];
+    return res
+      .status(200)
+      .json({ type: 9, data: buildBlindRoyaleAnswerModal(gameId) });
+  }
+
+  // ── Jeu Blind Royale : soumission de la Modal (réponse du joueur) ──
+  // body.type === 5 ici est un MODAL_SUBMIT (InteractionType), voir le
+  // commentaire équivalent dans le bloc Zoom carte ci-dessus.
+  if (
+    body.type === 5 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("blindroyale_answer_modal:")
+  ) {
+    const gameId = body.data.custom_id.split(":")[1];
+    const rawAnswer = body.data.components?.[0]?.components?.[0]?.value || "";
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() =>
+      handleBlindRoyaleModalSubmit(
         webhookUrl,
         gameId,
         discordId,
