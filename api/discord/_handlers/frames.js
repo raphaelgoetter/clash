@@ -72,7 +72,6 @@ function buildFrameEmbed({
     description:
       `**Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
       "Devine le titre d'un film à partir d'une image.\n\n" +
-      "Clique sur le bouton «Répondre» pour soumettre ta réponse, ou prends un indice pour t'aider.\n\n" +
       "**Barème**\n" +
       "- Réponse exacte du 1er coup sans indice : **10 pts**\n" +
       "- Chaque tentative incorrecte : **-2 pts**\n" +

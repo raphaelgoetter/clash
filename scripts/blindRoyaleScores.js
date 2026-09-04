@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // blindRoyaleScores.js
-// Affiche le classement de la partie Blind Royale en cours : joueur,
-// position d'arrivée, score de cette partie et score total de la saison.
+// Affiche le classement de la partie Blind Royale en cours : joueur, rang
+// (avec ex-aequo), score de cette partie et score total de la saison.
 //
 // Usage : node scripts/blindRoyaleScores.js
 
@@ -15,6 +15,7 @@ import {
   computeGameRanking,
   computeSeasonRanking,
   listGamePlayersInProgress,
+  findTiedRank,
 } from "../backend/services/blindroyale.js";
 import { resolveDisplayName } from "../backend/services/discordUsers.js";
 
@@ -52,7 +53,7 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
     gameRanking.map(async (e) => {
       const seasonEntry = seasonRanking.find((s) => s.discordId === e.discordId);
       return {
-        "#": e.position,
+        "#": findTiedRank(gameRanking, e.discordId, "score"),
         Joueur: await resolveDisplayName(e.discordId, e.username),
         "Score partie": e.score,
         "Score saison": seasonEntry?.totalScore ?? e.score,

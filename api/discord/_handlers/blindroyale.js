@@ -5,9 +5,9 @@
 // scripts/postBlindRoyale.js — seule la commande /blindroyale (scores
 // personnels du joueur qui l'exécute) est une vraie commande slash.
 //
-// Miroir structurel de zoom.js (indice à -3 pts, bouton+Modal) croisé avec
-// anagrams.js (scoring par position d'arrivée — l'écoute est illimitée et
-// gratuite, donc pas de pénalité de tentative comme Zoom).
+// Miroir structurel de zoom.js — même barème (10 pts de départ, -2 pts par
+// mauvaise réponse, -3 pts si indice utilisé), pas de notion de rang/vitesse
+// comme Anagram.
 //
 // Différence majeure avec les 4 autres jeux : le "visuel" de la manche est
 // un SON, pas une image — les embeds Discord ne savent pas jouer d'audio
@@ -37,6 +37,8 @@ import {
   markSolved,
   archiveSolve,
   computeGameRanking,
+  computeArrivalOrder,
+  findRank,
   computeSeasonRanking,
   listGamePlayersInProgress,
   getPlayerSeasonResults,
@@ -50,6 +52,7 @@ import {
   findTiedRank,
   alreadyPostedThisWeek,
   SOUNDS_DIR,
+  ILLUSTRATION_PATH,
 } from "../../../backend/services/blindroyale.js";
 import { toPublicSeasonId } from "../../../backend/services/dateUtils.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
@@ -60,6 +63,7 @@ const BLINDROYALE_COLOR = 0x1abc9c;
 // (ex. "archer-queen.mp3"), qui spoilerait la réponse dans le nom de fichier
 // affiché par Discord sous le lecteur audio.
 const ATTACHMENT_FILENAME = "carte-mystere.mp3";
+const ILLUSTRATION_FILENAME = "blindroyale.webp";
 const RARITY_LABELS = {
   common: "Commune",
   rare: "Rare",
@@ -87,14 +91,15 @@ function buildBlindRoyaleEmbed({ seasonId, seasonManche, seasonMancheTotal }) {
     description:
       `**Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
       "Un son de carte Clash Royale mystère est joint à ce message ⬇️ — écoute-le autant de fois que tu veux, puis devine de quelle carte il s'agit !\n\n" +
-      "Clique sur le bouton «Répondre» pour soumettre ta réponse, ou prends l'indice «Rareté».\n\n" +
-      "**Barème** — tes points dépendent de ton rang d'arrivée :\n" +
-      "- 1er à trouver : **10 pts**, 2e : **9 pts**, 3e : **8 pts**...\n" +
+      "**Barème**\n" +
+      "- Réponse exacte du 1er coup sans indice : **10 pts**\n" +
+      "- Chaque tentative incorrecte : **-2 pts**\n" +
       "- Indice «Rareté» utilisé : **-3 pts**\n\n" +
       "Le classement de la saison est mis à jour après chaque manche, et un MP te sera envoyé pour récapituler tes points et ton classement.\n\n" +
       "**Merci de ne pas spoiler ni tricher, sinon c'est pas drôle !**\n\n" +
       "🤖 Vérifie tes scores avec la commande `/blindroyale`",
     color: BLINDROYALE_COLOR,
+    image: { url: `attachment://${ILLUSTRATION_FILENAME}` },
     footer: {
       text: "Nouvelle manche : lundi prochain !",
     },
@@ -205,16 +210,24 @@ async function postSeasonRecap(channelId, endedSeasonId, newSeasonId, { noPing =
   }
 }
 
-// ── Envoi d'un message de salon avec pièce jointe (bot token) ────
+// ── Envoi d'un message de salon avec pièces jointes (bot token) ────
 // Équivalent de sendDiscordWebhookFile (api/discord/interactions.js), mais
 // pour POST /channels/{id}/messages avec Authorization: Bot — jamais utilisé
 // ailleurs dans le repo pour un post de salon planifié, donc pas de helper
 // partagé existant à réutiliser.
-async function postChannelMessageWithFile(channelId, token, payload, fileBuffer, filename) {
+//
+// `files` : [{ buffer, filename, contentType }, ...]. Le tableau
+// `attachments` (id ↔ filename) est nécessaire dès que l'embed référence
+// `attachment://<filename>` (ici l'illustration) — même pattern que
+// sendDiscordWebhookFile pour `files[0]`.
+async function postChannelMessageWithFiles(channelId, token, payload, files) {
   const form = new FormData();
-  form.append("payload_json", JSON.stringify(payload));
-  const blob = new Blob([fileBuffer], { type: "audio/mpeg" });
-  form.append("files[0]", blob, filename);
+  const attachments = files.map((f, i) => ({ id: i, filename: f.filename }));
+  form.append("payload_json", JSON.stringify({ ...payload, attachments }));
+  files.forEach((f, i) => {
+    const blob = new Blob([f.buffer], { type: f.contentType || "application/octet-stream" });
+    form.append(`files[${i}]`, blob, f.filename);
+  });
   return fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
     method: "POST",
     headers: { Authorization: `Bot ${token}` },
@@ -275,9 +288,15 @@ export async function postBlindRoyale(channelId, { dryRun = false, noPing = fals
   const components = buildBlindRoyaleComponents(state.gameId);
   const roleId = noPing ? null : await getRoleIdByName(MINI_JEUX_ROLE_NAME);
 
-  const fileBuffer = await fs.readFile(path.join(SOUNDS_DIR, entry.sound));
+  const [soundBuffer, illustrationBuffer] = await Promise.all([
+    fs.readFile(path.join(SOUNDS_DIR, entry.sound)),
+    fs.readFile(ILLUSTRATION_PATH),
+  ]);
   const payload = { embeds: [embed], components, ...buildRolePingFields(roleId) };
-  const res = await postChannelMessageWithFile(channelId, token, payload, fileBuffer, ATTACHMENT_FILENAME);
+  const res = await postChannelMessageWithFiles(channelId, token, payload, [
+    { buffer: soundBuffer, filename: ATTACHMENT_FILENAME, contentType: "audio/mpeg" },
+    { buffer: illustrationBuffer, filename: ILLUSTRATION_FILENAME, contentType: "image/webp" },
+  ]);
 
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
@@ -312,8 +331,14 @@ export async function repostBlindRoyale(channelId) {
   });
   const components = buildBlindRoyaleComponents(state.gameId);
 
-  const fileBuffer = await fs.readFile(path.join(SOUNDS_DIR, entry.sound));
-  const res = await postChannelMessageWithFile(channelId, token, { embeds: [embed], components }, fileBuffer, ATTACHMENT_FILENAME);
+  const [soundBuffer, illustrationBuffer] = await Promise.all([
+    fs.readFile(path.join(SOUNDS_DIR, entry.sound)),
+    fs.readFile(ILLUSTRATION_PATH),
+  ]);
+  const res = await postChannelMessageWithFiles(channelId, token, { embeds: [embed], components }, [
+    { buffer: soundBuffer, filename: ATTACHMENT_FILENAME, contentType: "audio/mpeg" },
+    { buffer: illustrationBuffer, filename: ILLUSTRATION_FILENAME, contentType: "image/webp" },
+  ]);
 
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
@@ -397,11 +422,11 @@ function ordinal(n) {
   return `${n}${n === 1 ? "ᵉʳ" : "ᵉ"}`;
 }
 
-function buildDmText({ seasonId, seasonManche, seasonMancheTotal, reponse, score, position, seasonScore, hintUsed }) {
+function buildDmText({ seasonId, seasonManche, seasonMancheTotal, reponse, score, gameRank, seasonScore, hintUsed }) {
   return [
     `**Blind Royale : Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
     "",
-    `🎧 **${reponse}** — tu es le ${ordinal(position)} à avoir trouvé !`,
+    `🎧 **${reponse}** — tu es le ${ordinal(gameRank)} à avoir trouvé !`,
     `Score de cette manche : **${score} pts**${hintUsed ? " _(indice rareté utilisé : -3 pts)_" : ""}`,
     `Score total de la saison : **${seasonScore} pts**`,
   ].join("\n");
@@ -452,22 +477,26 @@ export async function handleModalSubmit(webhookUrl, gameId, discordId, username,
 
     if (!correct) {
       await recordAttempt(gameId, discordId, username, false);
-      await postEphemeral(webhookUrl, "❌ Mauvaise réponse ! Réessaie avec le bouton Répondre.");
+      await postEphemeral(webhookUrl, "❌ Mauvaise réponse ! (-2 pts). Réessaie avec le bouton Répondre.");
       return;
     }
 
     const hintUsed = await hintUsedFor(gameId, discordId);
     const { participant, score } = await markSolved(gameId, discordId, username);
-    await archiveSolve(state, entry, discordId, username, score, participant.position, participant.solvedAt);
+    await archiveSolve(state, entry, discordId, username, score, participant.solvedAt);
 
-    const seasonRanking = await computeSeasonRanking(state.seasonId);
+    const [arrivalOrder, seasonRanking] = await Promise.all([
+      computeArrivalOrder(gameId),
+      computeSeasonRanking(state.seasonId),
+    ]);
+    const gameRank = findRank(arrivalOrder, discordId);
     const seasonEntry = seasonRanking.find((e) => e.discordId === discordId);
     const imageUrl = await getCardImageUrl(entry.cardKey);
 
     await postEphemeralEmbed(webhookUrl, {
       title: "🎧 Bravo !",
       description:
-        `C'était bien **${entry.fr}** — tu es le ${ordinal(participant.position)} à avoir trouvé !\n` +
+        `C'était bien **${entry.fr}** — tu es le ${ordinal(gameRank)} à avoir trouvé !\n` +
         `Score de cette manche : **${score} pts**${hintUsed ? " _(indice rareté utilisé : -3 pts)_" : ""}`,
       ...(imageUrl ? { image: { url: imageUrl } } : {}),
       color: BLINDROYALE_COLOR,
@@ -481,7 +510,7 @@ export async function handleModalSubmit(webhookUrl, gameId, discordId, username,
         seasonMancheTotal: state.seasonMancheTotal,
         reponse: entry.fr,
         score,
-        position: participant.position,
+        gameRank,
         seasonScore: seasonEntry?.totalScore ?? score,
         hintUsed,
       }),
@@ -500,9 +529,10 @@ function buildBlindRoyaleStatsEmbed({
   currentSolved,
   currentInteracted,
   currentScore,
-  currentPosition,
+  currentRank,
   solvedCount,
   totalParticipants,
+  perfectCount,
   pastManches,
   seasonId,
   seasonTotal,
@@ -513,8 +543,9 @@ function buildBlindRoyaleStatsEmbed({
 
   lines.push(`**Saison ${toPublicSeasonId(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`);
   if (currentSolved) {
-    lines.push(`- Tu as trouvé le nom de la carte (${ordinal(currentPosition)} à trouver) !`);
+    lines.push("- Tu as trouvé le nom de la carte !");
     lines.push(`- Tu as marqué ${currentScore} points`);
+    lines.push(`- Ton classement : ${currentRank} / ${solvedCount}`);
   } else if (currentInteracted) {
     lines.push("- Tu n'as pas encore trouvé le nom de la carte !");
     lines.push("- Tu n'as pas marqué de points");
@@ -522,7 +553,8 @@ function buildBlindRoyaleStatsEmbed({
     lines.push("- Tu n'as pas encore commencé cette manche");
   }
   lines.push(
-    `- ${solvedCount} joueur${solvedCount > 1 ? "s" : ""} (sur ${totalParticipants}) ${solvedCount > 1 ? "ont" : "a"} trouvé pour le moment`,
+    `- ${solvedCount} joueur${solvedCount > 1 ? "s" : ""} (sur ${totalParticipants}) ${solvedCount > 1 ? "ont" : "a"} trouvé pour le moment, ` +
+      `et ${perfectCount} joueur${perfectCount > 1 ? "s" : ""} ${perfectCount > 1 ? "ont" : "a"} 10 pts`,
   );
 
   for (const m of pastManches) {
@@ -581,9 +613,10 @@ export async function handleBlindRoyaleStatsCommand(webhookUrl, discordId, usern
     const seasonMancheTotal = state.seasonMancheTotal;
     const currentSolved = !!participant?.solved;
     const currentScore = participant?.score ?? 0;
-    const currentPosition = participant?.position ?? null;
     const solvedCount = gameRanking.length;
     const totalParticipants = solvedCount + inProgress.length;
+    const perfectCount = gameRanking.filter((r) => r.score === 10).length;
+    const currentRank = currentSolved ? findTiedRank(gameRanking, discordId, "score") : null;
 
     const hasSeasonRank = seasonResults.length > 0;
     const seasonRank = hasSeasonRank ? findTiedRank(seasonRanking, discordId, "totalScore") : null;
@@ -614,9 +647,10 @@ export async function handleBlindRoyaleStatsCommand(webhookUrl, discordId, usern
       currentSolved,
       currentInteracted,
       currentScore,
-      currentPosition,
+      currentRank,
       solvedCount,
       totalParticipants,
+      perfectCount,
       pastManches,
       seasonId: state.seasonId,
       seasonTotal,

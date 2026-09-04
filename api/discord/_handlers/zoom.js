@@ -64,7 +64,6 @@ function buildZoomEmbed({ seasonId, seasonManche, seasonMancheTotal, gameId, cac
     description:
       `**Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
       "Une carte zoomée à l'extrême. Devine son nom !\n\n" +
-      "Clique sur le bouton «Répondre» pour soumettre ta réponse, ou prends un indice pour dézoomer.\n\n" +
       "**Barème**\n" +
       "- Réponse exacte du 1er coup sans indice : **10 pts**\n" +
       "- Chaque tentative incorrecte : **-2 pts**\n" +

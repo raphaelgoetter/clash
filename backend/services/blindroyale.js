@@ -6,10 +6,9 @@
 // automaticDeserialization/HGETALL, client paresseux — voir les commentaires
 // détaillés dans frames.js).
 //
-// Hybride des deux : scoring par POSITION D'ARRIVÉE comme Anagram (1er =
-// 10pts, 2e = 9pts, ...) — l'écoute du son est illimitée et gratuite, donc
-// pas de pénalité de tentative comme Zoom (-2/mauvaise réponse) — PLUS un
-// indice "Rareté" à -3pts (une seule fois) comme Zoom/La Juste Carte.
+// Scoring identique à Zoom (pas de notion de vitesse/rang comme Anagram) :
+// on part de 10 pts, -2 pts par mauvaise réponse, -3 pts si l'indice
+// "Rareté" est utilisé (une seule fois).
 //
 // Pas de fichier catalogue dédié (data/blindroyale/*.json) : le pool est
 // directement les entrées de data/cardNames.json qui ont un champ "sound"
@@ -30,6 +29,7 @@ import { normalizeAnswer } from "./textNormalize.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CARD_NAMES_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "cardNames.json");
 export const SOUNDS_DIR = path.resolve(__dirname, "..", "..", "data", "card-sounds", "sounds");
+export const ILLUSTRATION_PATH = path.resolve(__dirname, "..", "..", "data", "card-sounds", "images", "blindroyale.webp");
 
 const MONDAY = 1;
 const CARD_DEF_CACHE_TTL = 24 * 60 * 60 * 1000;
@@ -98,12 +98,6 @@ function attemptsKey(gameId, discordId) {
 function hintKey(gameId, discordId) {
   return `blindroyale:hint:${gameId}:${discordId}`;
 }
-function positionSeqKey(gameId) {
-  return `blindroyale:position_seq:${gameId}`;
-}
-function positionsKey(gameId) {
-  return `blindroyale:positions:${gameId}`;
-}
 function seasonKey(seasonId) {
   return `blindroyale:season:${seasonId}`;
 }
@@ -168,9 +162,9 @@ export async function writeState(state) {
 }
 
 async function cleanupGameScratchData(gameId) {
-  await getRedis().del(participantsKey(gameId), usernamesKey(gameId), positionSeqKey(gameId), positionsKey(gameId));
-  await scanDelete(`blindroyale:attempts:${gameId}:*`);
+  await getRedis().del(participantsKey(gameId), usernamesKey(gameId));
   await scanDelete(`blindroyale:hint:${gameId}:*`);
+  await scanDelete(`blindroyale:attempts:${gameId}:*`);
 }
 
 // Remet le jeu à zéro : plus de partie active (la prochaine repart au début
@@ -179,10 +173,8 @@ export async function resetGame() {
   await getRedis().del(STATE_KEY);
   await scanDelete("blindroyale:participants:*");
   await scanDelete("blindroyale:usernames:*");
-  await scanDelete("blindroyale:attempts:*");
   await scanDelete("blindroyale:hint:*");
-  await scanDelete("blindroyale:position_seq:*");
-  await scanDelete("blindroyale:positions:*");
+  await scanDelete("blindroyale:attempts:*");
   await scanDelete("blindroyale:season:*");
   await scanDelete("blindroyale:archived:*");
 }
@@ -324,10 +316,12 @@ export function checkAnswer(entry, rawAnswer) {
   return normalizeAnswer(entry.fr) === normalized;
 }
 
-// ── Scoring : position d'arrivée (comme Anagram) + indice rareté (-3, comme
-// Zoom/La Juste Carte) ─────────────────────────────────────────────
-export function computeScore(position, hintUsed = false) {
-  return Math.max(1, 11 - position - (hintUsed ? 3 : 0));
+// ── Scoring (identique à Zoom) ────────────────────────────────────
+// Score plancher à 1 (et non 0) : trouver la bonne réponse doit toujours
+// rapporter au moins un point, même après de nombreuses tentatives
+// incorrectes et l'indice.
+export function computeScore(attemptsIncorrects, hintUsed = false) {
+  return Math.max(1, 10 - 2 * attemptsIncorrects - (hintUsed ? 3 : 0));
 }
 
 // ── Progression par joueur ────────────────────────────────────────
@@ -345,13 +339,10 @@ async function countAttempts(gameId, discordId) {
   return Number(n) || 0;
 }
 
-// Compteur informatif uniquement (affichage éventuel) — n'entre pas dans le
-// calcul du score, purement dérivé de la position d'arrivée (comme Anagram).
 export async function recordAttempt(gameId, discordId, username, isCorrect) {
   await touchUsername(gameId, discordId, username);
-  if (isCorrect) return null;
+  if (isCorrect) return; // la tentative gagnante n'est jamais comptée comme incorrecte
   await getRedis().incr(attemptsKey(gameId, discordId));
-  return null;
 }
 
 export async function hintUsedFor(gameId, discordId) {
@@ -366,44 +357,26 @@ export async function recordHintUsed(gameId, discordId, username) {
   return { alreadyUsed: wasSet === 0 };
 }
 
-// Attribution atomique et immuable de la position d'arrivée — même pattern
-// INCR + HSETNX idempotent que assignSeasonMancheNumber(), scopé par gameId.
-async function assignArrivalPosition(gameId, discordId) {
-  const existing = await getRedis().hget(positionsKey(gameId), discordId);
-  if (existing != null) return Number(existing);
-
-  const position = Number(await getRedis().incr(positionSeqKey(gameId)));
-  const wasSet = Number(await getRedis().hsetnx(positionsKey(gameId), discordId, String(position)));
-  if (!wasSet) {
-    return Number(await getRedis().hget(positionsKey(gameId), discordId));
-  }
-  return position;
-}
-
 // Idempotent : si déjà résolu, renvoie le résultat existant sans rien
-// réécrire. hintUsed doit refléter l'état AU MOMENT de la résolution (comme
-// La Juste Carte) — l'indice peut avoir été pris n'importe quand avant de
-// trouver.
+// réécrire. Sinon calcule le score à partir des compteurs indice/tentatives
+// (comme Zoom).
 export async function markSolved(gameId, discordId, username) {
   const existing = await readParticipant(gameId, discordId);
   if (existing?.solved) {
     return { participant: existing, score: existing.score };
   }
 
-  const [position, hintUsed, attempts] = await Promise.all([
-    assignArrivalPosition(gameId, discordId),
+  const [hintUsed, attempts] = await Promise.all([
     hintUsedFor(gameId, discordId),
     countAttempts(gameId, discordId),
   ]);
-  const score = computeScore(position, hintUsed);
+  const score = computeScore(attempts, hintUsed);
   const participant = {
     discordId,
     username,
     attempts,
     solved: true,
     solvedAt: new Date().toISOString(),
-    position,
-    hintUsed: !!hintUsed,
     score,
   };
   await getRedis().hset(participantsKey(gameId), { [discordId]: toJson(participant) });
@@ -412,19 +385,19 @@ export async function markSolved(gameId, discordId, username) {
 
 // ── Résultats archivés (classement de la saison) ─────────────────
 
-export async function archiveSolve(state, entry, discordId, username, score, position, solvedAt) {
+export async function archiveSolve(state, entry, discordId, username, score, solvedAt) {
   const archKey = archivedKey(state.seasonId);
   const field = `${state.gameId}:${discordId}`;
 
   const result = {
     gameId: state.gameId,
     seasonId: state.seasonId,
+    cardKey: entry.cardKey,
     reponse: entry.fr,
     postedAt: state.startedAt,
     discordId,
     pseudo: username,
     score,
-    position,
     solvedAt,
   };
 
@@ -466,21 +439,30 @@ export async function hasPlayerInteracted(gameId, discordId) {
 }
 
 // ── Classements ──────────────────────────────────────────────────
-// Classement PAR POSITION d'arrivée (croissant) — comme Anagram, position et
-// score sont structurellement la même donnée, pas besoin d'un
-// computeArrivalOrder() séparé.
+
 export async function computeGameRanking(gameId) {
   const all = await hgetallJson(participantsKey(gameId));
   return Object.values(all)
     .filter((p) => p?.solved)
-    .map((p) => ({
-      discordId: p.discordId,
-      username: p.username,
-      score: p.score,
-      position: p.position,
-      solvedAt: p.solvedAt,
-    }))
-    .sort((a, b) => a.position - b.position);
+    .map((p) => ({ discordId: p.discordId, username: p.username, score: p.score, solvedAt: p.solvedAt }))
+    .sort((a, b) => b.score - a.score || new Date(a.solvedAt) - new Date(b.solvedAt));
+}
+
+// Ordre chronologique pur (arrivée), utilisé pour le DM "tu es le Nᵉ à
+// trouver" — distinct de computeGameRanking, qui trie par score (comme
+// Zoom : deux notions différentes, contrairement à Anagram où position et
+// score sont la même donnée).
+export async function computeArrivalOrder(gameId) {
+  const all = await hgetallJson(participantsKey(gameId));
+  return Object.values(all)
+    .filter((p) => p?.solved)
+    .map((p) => ({ discordId: p.discordId, username: p.username, score: p.score, solvedAt: p.solvedAt }))
+    .sort((a, b) => new Date(a.solvedAt) - new Date(b.solvedAt));
+}
+
+export function findRank(sortedList, discordId) {
+  const idx = sortedList.findIndex((e) => e.discordId === discordId);
+  return idx === -1 ? null : idx + 1;
 }
 
 export async function listGamePlayersInProgress(gameId) {
@@ -513,9 +495,9 @@ export async function computeSeasonRanking(seasonId) {
   return ranking.sort((a, b) => b.totalScore - a.totalScore || a.pseudo.localeCompare(b.pseudo));
 }
 
-// Classement avec ex-aequo ("1224") — nécessaire uniquement pour le
-// classement de SAISON (ZSET) — voir anagrams.js pour le raisonnement
-// complet (aucun ex-aequo possible par manche, les positions sont uniques).
+// Classement avec ex-aequo ("1224") — utilisé pour le classement de SAISON
+// (ZSET) ET pour le classement de manche (comme Zoom : plusieurs joueurs
+// peuvent légitimement avoir le même score, ex. 10 pts chacun au 1er coup).
 export function findTiedRank(sortedList, discordId, scoreKey) {
   const entry = sortedList.find((e) => e.discordId === discordId);
   if (!entry) return null;

@@ -56,7 +56,7 @@
     "justecarte:reset": "node scripts/resetJusteCarte.js",
     "justecarte:scores": "node scripts/justeCarteScores.js",
     "justecarte:order": "node scripts/justeCarteOrder.js",
-    "blindroyale:test": "node scripts/postBlindRoyale.js",
+    "blindroyale:test": "node scripts/postBlindRoyale.js --force",
     "blindroyale:test:dry": "node scripts/postBlindRoyale.js --dry-run",
     "blindroyale:public": "node scripts/postBlindRoyale.js --public",
     "blindroyale:public:dry": "node scripts/postBlindRoyale.js --public --dry-run",
