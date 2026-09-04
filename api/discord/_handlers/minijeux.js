@@ -168,6 +168,15 @@ function formatEndLabel(daysUntil) {
   return `fin dans ${daysUntil}j`;
 }
 
+// Un jeu jamais lancé n'a pas de manche en cours : "fin" n'a pas de sens
+// pour lui, seule la date de son PREMIER lancement (le prochain créneau
+// hebdomadaire) est pertinente.
+function formatNextLaunchLabel(daysUntil) {
+  if (daysUntil === 0) return "premier lancement aujourd'hui";
+  if (daysUntil === 1) return "premier lancement demain";
+  return `premier lancement dans ${daysUntil}j`;
+}
+
 // Indicateur neutre (pas de sémantique bonne/mauvaise, donc pas de rouge/vert) :
 // une case se remplit par jour écoulé avant la fin. daysUntil va de 0 (fin
 // aujourd'hui, 6 jours viennent de s'écouler → barre pleine) à 6 (fin dans
@@ -192,9 +201,13 @@ async function buildRegularGamesBlock(now) {
   entries.sort((a, b) => a.daysUntil - b.daysUntil);
 
   const lines = entries.map((entry, index) => {
+    if (entry.neverStarted) {
+      // Ni "fin dans Xj" ni barre de progression : rien n'est en cours pour
+      // ce jeu, seul son premier lancement à venir a un sens.
+      return `${index + 1}. **${entry.title}** — *jamais lancé, ${formatNextLaunchLabel(entry.daysUntil)}*`;
+    }
     const header = `${index + 1}. **${entry.title}** (${formatEndLabel(entry.daysUntil)})`;
-    const note = entry.neverStarted ? "\n*(jamais lancé pour le moment)*" : "";
-    return `${header}\n${buildCountdownBar(entry.daysUntil)}${note}`;
+    return `${header}\n${buildCountdownBar(entry.daysUntil)}`;
   });
 
   // "##" (titre markdown niveau 2) plutôt que "**gras**" : même taille de
