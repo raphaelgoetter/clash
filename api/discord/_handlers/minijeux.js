@@ -9,6 +9,12 @@
 // en garde de scripts/goblinHuntersStatus.js).
 // ============================================================
 
+import { readState as readBlindRoyaleState } from "../../../backend/services/blindroyale.js";
+import { readState as readFrameState } from "../../../backend/services/frames.js";
+import { readState as readZoomState } from "../../../backend/services/zoom.js";
+import { readState as readAnagramState } from "../../../backend/services/anagrams.js";
+import { readState as readJusteCarteState } from "../../../backend/services/lajustecarte.js";
+
 import { readState as readQuizState, loadQuizConfig, listVotes as listQuizVotes } from "../../../backend/services/quiz.js";
 import { readState as readTamaState, loadTamagotchiConfig, listVotes as listTamaVotes } from "../../../backend/services/tamagotchi.js";
 import { readState as readRobinsonState, loadRobinsonConfig, countUniqueVoters as countRobinsonVoters } from "../../../backend/services/robinson.js";
@@ -36,11 +42,11 @@ function channelLink() {
 
 // 0 = dimanche .. 6 = samedi (Date.getUTCDay())
 const REGULAR_GAMES = [
-  { key: "blindroyale", title: "🎧 Blind Royale", weekday: 1 },
-  { key: "frame", title: "🎬 Trouve le film !", weekday: 3 },
-  { key: "zoom", title: "🔍 Zoom carte", weekday: 5 },
-  { key: "anagram", title: "🔤 Anagram", weekday: 6 },
-  { key: "lajustecarte", title: "🃏 La Juste Carte", weekday: 0 },
+  { key: "blindroyale", title: "🎧 Blind Royale", weekday: 1, readState: readBlindRoyaleState },
+  { key: "frame", title: "🎬 Trouve le film !", weekday: 3, readState: readFrameState },
+  { key: "zoom", title: "🔍 Zoom carte", weekday: 5, readState: readZoomState },
+  { key: "anagram", title: "🔤 Anagram", weekday: 6, readState: readAnagramState },
+  { key: "lajustecarte", title: "🃏 La Juste Carte", weekday: 0, readState: readJusteCarteState },
 ];
 
 // Un seul actif à la fois par convention (voir les gardes-fous "wrongChannel"
@@ -172,15 +178,23 @@ function buildCountdownBar(daysUntil) {
   return "🟦".repeat(filled) + "⬜".repeat(BAR_SEGMENTS - filled);
 }
 
-function buildRegularGamesBlock(now) {
-  const entries = REGULAR_GAMES.map((game) => ({
-    ...game,
-    daysUntil: daysUntilWeekday(now, game.weekday),
-  })).sort((a, b) => a.daysUntil - b.daysUntil);
+async function buildRegularGamesBlock(now) {
+  const entries = await Promise.all(
+    REGULAR_GAMES.map(async (game) => ({
+      ...game,
+      daysUntil: daysUntilWeekday(now, game.weekday),
+      // null seulement si aucune manche n'a jamais été postée pour ce jeu
+      // (readState() ne renvoie rien tant que startNewGame() n'a jamais
+      // tourné) — pas un indicateur "en pause", juste "jamais lancé".
+      neverStarted: (await game.readState()) == null,
+    })),
+  );
+  entries.sort((a, b) => a.daysUntil - b.daysUntil);
 
   const lines = entries.map((entry, index) => {
     const header = `${index + 1}. **${entry.title}** (${formatEndLabel(entry.daysUntil)})`;
-    return `${header}\n${buildCountdownBar(entry.daysUntil)}`;
+    const note = entry.neverStarted ? "\n*(jamais lancé pour le moment)*" : "";
+    return `${header}\n${buildCountdownBar(entry.daysUntil)}${note}`;
   });
 
   // "##" (titre markdown niveau 2) plutôt que "**gras**" : même taille de
