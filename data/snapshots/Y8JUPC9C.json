@@ -15826,7 +15826,7 @@
           "start": "2026-09-03T09:57:00.000Z",
           "end": "2026-09-04T09:56:59.999Z"
         },
-        "snapshotTime": "2026-09-04T05:10:06.038Z",
+        "snapshotTime": "2026-09-04T06:18:27.359Z",
         "snapshotBackupTime": "2026-09-03T10:07:13.652Z",
         "decks": {
           "#202VQJY8RU": 4,
@@ -15866,7 +15866,9 @@
           "#UJQL9PCRJ": 4,
           "#URG0Q9R0Y": 4,
           "#VGJ9LL8VC": 4,
-          "#YRYPUR822": 4
+          "#YRYPUR822": 4,
+          "#VQP8PU2V": 3,
+          "#JLU88JR28": 2
         },
         "hourlyCumul": [],
         "_cumulFame": {
@@ -15878,7 +15880,7 @@
           "#9Y28LR22": 0,
           "#9VQ0J29Y": 400,
           "#2902YQRQL": 0,
-          "#JLU88JR28": 0,
+          "#JLU88JR28": 200,
           "#U008V0PQ8": 0,
           "#UJQL9PCRJ": 700,
           "#2GUPJ99G2": 650,
@@ -15892,7 +15894,7 @@
           "#888Y29GY": 800,
           "#82UPUGYP": 0,
           "#UV092Q9RG": 0,
-          "#VQP8PU2V": 0,
+          "#VQP8PU2V": 600,
           "#2GP00R0JQ": 0,
           "#8P9CL92LC": 400,
           "#8PQYJUPP": 500,
@@ -15989,7 +15991,10 @@
           "#UJQL9PCRJ": 1,
           "#202VQJY8RU": 1,
           "#P9R8Y90P8": 1,
-          "#GYU0VLGL": 1
+          "#GYU0VLGL": 1,
+          "#VLUYR88Y8": 1,
+          "#JLU88JR28": 1,
+          "#VQP8PU2V": 1
         },
         "_totalDonationsByTag": {},
         "duelsComplete": true,
@@ -16003,7 +16008,7 @@
           "#9Y28LR22": 0,
           "#9VQ0J29Y": 4,
           "#2902YQRQL": 0,
-          "#JLU88JR28": 0,
+          "#JLU88JR28": 2,
           "#U008V0PQ8": 0,
           "#UJQL9PCRJ": 4,
           "#2GUPJ99G2": 4,
@@ -16017,7 +16022,7 @@
           "#888Y29GY": 4,
           "#82UPUGYP": 0,
           "#UV092Q9RG": 0,
-          "#VQP8PU2V": 0,
+          "#VQP8PU2V": 3,
           "#2GP00R0JQ": 0,
           "#8P9CL92LC": 4,
           "#8PQYJUPP": 4,
@@ -16075,7 +16080,7 @@
           "#CYRGPVGVG": 4,
           "#VGJ9LL8VC": 4
         },
-        "snapshotCount": 152
+        "snapshotCount": 157
       },
       {
         "warDay": "friday",
