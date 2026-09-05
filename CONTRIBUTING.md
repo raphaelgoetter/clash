@@ -572,14 +572,16 @@ Si un cron manqué doit être rattrapé dans l'immédiat sans attendre la résyn
 
 ### Historique des Jeux Spéciaux
 
-Ordre chronologique de lancement **public** des jeux collaboratifs à avancée quotidienne (durée = `duree_jours` par manche, voir chaque section dédiée plus bas). Une date ici correspond au premier `workflow_dispatch` réellement déclenché sur le salon public (Jour 1), pas à la date où le code a été écrit — un jeu peut être entièrement codé et testé sur le salon de test sans avoir encore été lancé publiquement (voir plus bas) :
+Ordre chronologique de lancement **public** des jeux collaboratifs à avancée quotidienne (durée = `duree_jours` par manche, voir chaque section dédiée plus bas).
+
+⚠️ Une date ici est celle du **premier run `workflow_dispatch` réel sur GitHub Actions** (le vrai Jour 1 public), vérifiée via `GET /repos/raphaelgoetter/clash/actions/workflows/{id}/runs?event=workflow_dispatch` — **pas** la date du commit qui a ajouté le code du jeu (celle-ci ne reflète que le début du développement/test, souvent plusieurs jours avant le lancement réel ; confondre les deux a produit une première version fausse de cet historique) :
 
 - (2026-07-31) Aventure (histoire à embranchements, pas de durée fixe en jours) — supprimé le 2026-08-24 à la demande de Raphael, ne sera plus relancé (voir [[minijeux_ping_conventions]])
-- (2026-08-01) Tamagotchi (10 jours en Manche 1, terminée le 2026-08-16 à 8/10 étoiles ; Manche 2 repensée à 7 jours, code prêt depuis le 2026-08-19 mais relance pas encore déclenchée)
-- (2026-08-02) Robinson (10 jours, durci à 7 jours le 2026-08-29)
-- (2026-08-22) Quiz (7 jours par manche/thème)
+- (2026-08-10) Tamagotchi (10 jours en Manche 1, terminée le 2026-08-16 à 8/10 étoiles ; Manche 2 repensée à 7 jours, code prêt depuis le 2026-08-19 mais relance pas encore déclenchée)
+- (2026-08-24) Robinson (10 jours au lancement, durci à 7 jours en cours de manche le 29/08)
+- (2026-08-31) Quiz (7 jours par manche/thème)
 
-**Codés mais pas encore lancés publiquement** (existent dans le repo, testés sur le salon de test, mais aucun Jour 1 déclenché sur le salon public à ce jour) : Boss Raid (7 jours), Goblin Hunters (10 jours, réduit à 7 jours le 2026-08-26), Blackjack (7 jours).
+**Codés mais pas encore lancés publiquement** (existent dans le repo, testés sur le salon de test, mais zéro run `workflow_dispatch` sur leur workflow à ce jour) : Boss Raid (7 jours), Goblin Hunters (10 jours, réduit à 7 jours le 2026-08-26), Blackjack (7 jours).
 
 ---
 
