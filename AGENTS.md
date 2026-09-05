@@ -36,9 +36,8 @@ Utiliser les outils `codegraph_*` (context, explore, search, trace, impact) pour
 `/tmp/` est le seul dossier writable. `frontend/`, `data/`, `backend/` sont read-only au déploiement.
 
 Conséquences :
-- `clanCache.js` écrit dans `/tmp/clan-cache/` (lit `/tmp` puis `frontend/public/clan-cache/` en fallback)
-- `snapshot.js` écrit dans `/tmp/clash-snapshots/` (copie persistante dans `data/snapshots/` si accessible)
-- `data/*.json` : lisible depuis le bundle, **non modifiable** sur Vercel
+- `clanCache.js` et `snapshot.js` stockent leurs données dans Upstash Redis (pas de fichier écrit) — évite d'avoir à redéployer pour publier des données fraîches
+- `data/*.json` restants (logs de notifications ponctuels) : lisibles depuis le bundle, **non modifiables** sur Vercel
 
 ## Stack, architecture, saison, scripts
 

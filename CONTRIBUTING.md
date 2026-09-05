@@ -9,7 +9,7 @@ La documentation orientée utilisateur final reste dans README.md.
 
 - `npm run dev` — lance le backend Express sur le port 3000 et le frontend Vite sur le port 5173.
 - `npm run test` — exécute les tests Node présents dans backend/services.
-- `npm run cache` — régénère le cache statique des clans dans frontend/public/clan-cache via scripts/refreshClanCache.js.
+- `npm run cache` — régénère le cache clan (Redis) via scripts/refreshClanCache.js, servi ensuite par `GET /api/clan/:tag/cache`.
 - `npm run snapshot` — collecte les snapshots quotidiens de guerre via scripts/collectSnapshots.js.
 - `npm run pre-reset-snapshot` — prend un snapshot juste avant le reset pour fiabiliser les calculs journaliers.
 - `npm run notify-members` — détecte les arrivées, départs et changements de rôle puis poste un résumé Discord.
@@ -34,10 +34,8 @@ La documentation orientée utilisateur final reste dans README.md.
 
 ### Notes sur les scripts de snapshots
 
-- Les snapshots sont écrits en priorité dans /tmp/clash-snapshots à l’exécution.
-- Quand le dossier data/snapshots est accessible, une copie persistante y est aussi écrite.
-- À la lecture, loadSnapshots() privilégie /tmp puis fusionne avec data/snapshots si les deux existent.
-- La fusion se fait jour par jour avec mergeSnapshotsByDay(), en gardant le snapshot valide le plus récent pour chaque journée.
+- Les snapshots sont stockés dans Upstash Redis (une clé `snapshots:<TAG>` par clan), lus/écrits via `loadSnapshots()`/`recordSnapshot()` dans `backend/services/snapshot.js`.
+- Source unique et partagée entre toutes les fonctions/scripts : plus besoin de redéployer pour que les données restent fraîches, et plus de logique de fusion tmp/disque (l'ancien double stockage /tmp + data/snapshots forçait un redéploiement Vercel à chaque cron horaire, ce qui gonflait le Function Storage du projet — cf. incident du 05/09).
 
 ### Thread Discord dédié aux notifications automatiques (test clan 2)
 
@@ -338,9 +336,9 @@ const DECK_UPGRADE_COSTS = {
 };
 ```
 
-### Note sur le cache statique
+### Note sur le cache clan
 
-La vue clan charge en priorité les fichiers JSON présents dans frontend/public/clan-cache pour afficher un rendu immédiat.
+La vue clan appelle en priorité `GET /api/clan/:tag/cache` (Redis) pour afficher un rendu immédiat.
 Si vous modifiez un calcul de scoring, une logique de verdict, une structure de payload clan, ou une logique dépendante des snapshots, relancez :
 
 ```bash
@@ -1868,8 +1866,7 @@ Capture persistée de l’état de guerre à un instant donné, utilisée pour r
 Où trouver la valeur :
 
 - `backend/services/snapshot.js` est la logique de lecture/écriture ;
-- `/tmp/clash-snapshots` est la destination runtime ;
-- `data/snapshots` est la copie persistante ;
+- Upstash Redis (clé `snapshots:<TAG>`) est l'unique stockage ;
 - `scripts/collectSnapshots.js` et `scripts/preResetSnapshot.js` produisent ces snapshots.
 
 Champs utiles :

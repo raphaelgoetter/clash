@@ -11,6 +11,7 @@ import { Resvg } from "@resvg/resvg-js";
 import { getLeagueName } from "../../backend/services/warLeagues.js";
 import { roundProjectedFame } from "../../backend/services/projectionFormat.js";
 import { getDiscordLinks } from "../../backend/services/discordLinks.js";
+import { loadSnapshots } from "../../backend/services/snapshot.js";
 import {
   toPublicSeasonId,
   toPublicWeekId,
@@ -1559,16 +1560,7 @@ async function buildLateReportPayload(resolved, clanVal) {
       // p a déjà été ajusté (setDate -1) donc correspond au jour GDC courant
       const realDayToday = `${p.getFullYear()}-${pad2(p.getMonth() + 1)}-${pad2(p.getDate())}`;
       try {
-        const { readFile: _rf } = await import("fs/promises");
-        const { fileURLToPath: _ftu } = await import("url");
-        const { default: _path } = await import("path");
-        const __fileDir = _path.dirname(_ftu(import.meta.url));
-        const snapPath = _path.resolve(
-          __fileDir,
-          "../../data/snapshots",
-          `${resolved.tag}.json`,
-        );
-        const snapData = JSON.parse(await _rf(snapPath, "utf-8"));
+        const snapData = await loadSnapshots(resolved.tag);
         if (Array.isArray(snapData)) {
           // _cumulFame est cumulatif sur toute la semaine GDC : on prend
           // le dernier snapshot du jour GDC précédent (realDay < realDayToday
@@ -6932,16 +6924,7 @@ export default async function handler(req, res) {
           const pad2 = (n) => String(n).padStart(2, "0");
           const realDayToday = `${p.getFullYear()}-${pad2(p.getMonth() + 1)}-${pad2(p.getDate())}`;
           try {
-            const { readFile: _rf } = await import("fs/promises");
-            const { fileURLToPath: _ftu } = await import("url");
-            const { default: _path } = await import("path");
-            const __fileDir = _path.dirname(_ftu(import.meta.url));
-            const snapPath = _path.resolve(
-              __fileDir,
-              "../../data/snapshots",
-              `${resolved.tag}.json`,
-            );
-            const snapData = JSON.parse(await _rf(snapPath, "utf-8"));
+            const snapData = await loadSnapshots(resolved.tag);
             if (Array.isArray(snapData)) {
               const prevDay = snapData
                 .flatMap((w) => w.days ?? [])

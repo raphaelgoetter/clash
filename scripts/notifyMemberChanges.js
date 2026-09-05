@@ -11,11 +11,8 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { readFile, writeFile } from "fs/promises";
-import { existsSync } from "fs";
-import { fileURLToPath } from "url";
-import path from "path";
 import fetch from "node-fetch";
+import { Redis } from "@upstash/redis";
 import { fetchClanMembers } from "../backend/services/clashApi.js";
 import { getPlayerAnalysis } from "../backend/services/playerAnalysis.js";
 import { getDiscordLinks } from "../backend/services/discordLinks.js";
@@ -23,7 +20,18 @@ import { ALLOWED_CLANS } from "../backend/routes/clan.js";
 import { resolveMembersChannelId } from "../backend/services/discordChannels.js";
 import { loadClanCache } from "../backend/services/clanCache.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+let _redis = null;
+function getRedis() {
+  if (!_redis) {
+    _redis = new Redis({
+      url: process.env.KV_REST_API_URL,
+      token: process.env.KV_REST_API_TOKEN,
+      automaticDeserialization: false,
+    });
+  }
+  return _redis;
+}
+const NOTIFIED_REDIS_KEY = "membernotifications";
 
 const DISCORD_API = "https://discord.com/api/v10";
 const DRY_RUN = process.argv.includes("--dry-run");
@@ -82,13 +90,6 @@ function debugLog(msg) {
  * @param {string} tag
  * @returns {Promise<string>}
  */
-const NOTIFIED_FILE = path.join(
-  __dirname,
-  "..",
-  "data",
-  "member-notifications.json",
-);
-
 async function readClanName(tag) {
   const data = await loadClanCache(tag);
   return data?.clan?.name ?? `#${tag}`;
@@ -96,15 +97,15 @@ async function readClanName(tag) {
 
 async function readNotifiedChanges() {
   try {
-    const raw = await readFile(NOTIFIED_FILE, "utf-8");
-    return JSON.parse(raw);
+    const raw = await getRedis().get(NOTIFIED_REDIS_KEY);
+    return raw ? JSON.parse(raw) : {};
   } catch (_) {
     return {};
   }
 }
 
 async function saveNotifiedChanges(data) {
-  await writeFile(NOTIFIED_FILE, JSON.stringify(data, null, 2));
+  await getRedis().set(NOTIFIED_REDIS_KEY, JSON.stringify(data));
 }
 
 /**

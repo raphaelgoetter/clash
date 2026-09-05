@@ -1,6 +1,7 @@
 import assert from "assert";
-import fs from "fs/promises";
-import path from "path";
+import dotenv from "dotenv";
+dotenv.config();
+import { Redis } from "@upstash/redis";
 import {
   getSnapshotsForWeeks,
   getCurrentWarDayIndex,
@@ -9,15 +10,34 @@ import {
   resolveSnapshotType,
   overrideWarSnapshotDaysWithLiveCurrentDay,
 } from "./snapshot.js";
-const TMP_DIR = path.join("/tmp", "clash-snapshots");
+
 const TEST_TAG = "TESTTAG2";
-const TEST_FILE = path.join(TMP_DIR, `${TEST_TAG}.json`);
-const TEST_DATA_FILE = path.join("data", "snapshots", `${TEST_TAG}.json`);
+
+const redis = new Redis({
+  url: process.env.KV_REST_API_URL,
+  token: process.env.KV_REST_API_TOKEN,
+  automaticDeserialization: false,
+});
+
+function redisKey(tag) {
+  return `snapshots:${tag}`;
+}
+
+async function writeFixture(tag, data) {
+  await redis.set(redisKey(tag), JSON.stringify(data));
+}
+
+async function readFixtureRaw(tag) {
+  const raw = await redis.get(redisKey(tag));
+  return raw ? JSON.parse(raw) : null;
+}
+
+async function clearFixture(tag) {
+  await redis.del(redisKey(tag));
+}
 
 async function main() {
-  await fs.mkdir(TMP_DIR, { recursive: true });
-  await fs.rm(TEST_FILE, { force: true });
-  await fs.rm(TEST_DATA_FILE, { force: true });
+  await clearFixture(TEST_TAG);
   const fixture = [
     {
       week: "S131W3",
@@ -37,7 +57,7 @@ async function main() {
     },
   ];
 
-  await fs.writeFile(TEST_FILE, JSON.stringify(fixture, null, 2), "utf-8");
+  await writeFixture(TEST_TAG, fixture);
 
   const weekSnaps = await getSnapshotsForWeeks(TEST_TAG, ["S131W3"]);
   assert.strictEqual(
@@ -79,7 +99,7 @@ async function main() {
         ],
       },
     ];
-    await fs.writeFile(TEST_FILE, JSON.stringify(fixture, null, 2), "utf-8");
+    await writeFixture(TEST_TAG, fixture);
     const colosseumSnaps = await getSnapshotsForWeeks(TEST_TAG, ["S131W3"]);
     assert.strictEqual(
       colosseumSnaps.S131W3[0].snapshotCount,
@@ -224,8 +244,8 @@ async function main() {
   }
 
   {
-    await fs.rm(TEST_DATA_FILE, { force: true });
-    await fs.writeFile(TEST_FILE, JSON.stringify([], null, 2), "utf-8");
+    await clearFixture(TEST_TAG);
+    await writeFixture(TEST_TAG, []);
     await recordSnapshot(
       TEST_TAG,
       [
@@ -289,11 +309,7 @@ async function main() {
         ],
       },
     ];
-    await fs.writeFile(
-      TEST_FILE,
-      JSON.stringify(existingFixture, null, 2),
-      "utf-8",
-    );
+    await writeFixture(TEST_TAG, existingFixture);
     await recordSnapshot(
       TEST_TAG,
       [
@@ -356,11 +372,7 @@ async function main() {
       ],
     },
   ];
-  await fs.writeFile(
-    TEST_FILE,
-    JSON.stringify(backupFixture, null, 2),
-    "utf-8",
-  );
+  await writeFixture(TEST_TAG, backupFixture);
   await recordSnapshot(
     TEST_TAG,
     [
@@ -422,11 +434,7 @@ async function main() {
     },
   ];
 
-  await fs.writeFile(
-    TEST_FILE,
-    JSON.stringify(noPrimaryFixture, null, 2),
-    "utf-8",
-  );
+  await writeFixture(TEST_TAG, noPrimaryFixture);
   await recordSnapshot(
     TEST_TAG,
     [
@@ -454,7 +462,7 @@ async function main() {
   });
 
   {
-    await fs.writeFile(TEST_FILE, JSON.stringify([], null, 2), "utf-8");
+    await writeFixture(TEST_TAG, []);
     await recordSnapshot(
       TEST_TAG,
       [
@@ -475,19 +483,11 @@ async function main() {
     assert.deepStrictEqual(fridayDuelSnap.duelsTodayByTag, { "#A": 1 });
   }
 
-  await fs.rm(TEST_FILE, { force: true });
-  await fs.rm(TEST_DATA_FILE, { force: true });
+  await clearFixture(TEST_TAG);
 
   {
     const BASELINE_TAG = "TESTTAG3";
-    const baselineTmpFile = path.join(TMP_DIR, `${BASELINE_TAG}.json`);
-    const baselineDataFile = path.join(
-      "data",
-      "snapshots",
-      `${BASELINE_TAG}.json`,
-    );
-    await fs.rm(baselineTmpFile, { force: true });
-    await fs.rm(baselineDataFile, { force: true });
+    await clearFixture(BASELINE_TAG);
 
     await recordDonationBaseline(BASELINE_TAG, "S131W3", {
       "#A": 100,
@@ -502,9 +502,9 @@ async function main() {
     const baselineWeekSnaps = await getSnapshotsForWeeks(BASELINE_TAG, [
       "S131W3",
     ]);
-    // getSnapshotsForWeeks ne retourne que les jours ; on relit le fichier
+    // getSnapshotsForWeeks ne retourne que les jours ; on relit Redis
     // directement pour vérifier le champ donationBaseline sur la semaine.
-    const raw = JSON.parse(await fs.readFile(baselineTmpFile, "utf-8"));
+    const raw = await readFixtureRaw(BASELINE_TAG);
     const week = raw.find((w) => w.week === "S131W3");
     assert.deepStrictEqual(
       week.donationBaseline.totalDonationsByTag,
@@ -517,8 +517,7 @@ async function main() {
       "recordDonationBaseline ne doit pas casser la structure des 4 jours de guerre",
     );
 
-    await fs.rm(baselineTmpFile, { force: true });
-    await fs.rm(baselineDataFile, { force: true });
+    await clearFixture(BASELINE_TAG);
   }
 
   console.log("✓ snapshot service tests passed");

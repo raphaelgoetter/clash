@@ -1010,7 +1010,7 @@ async function postWarSummary(
     // réels). L'alternative envisagée, periodLogs[].pointsEarned de l'API, n'est
     // PAS une source de repli valable : vérifié figé par saison (valeur identique
     // semaine après semaine tant que la saison ne change pas) sur les 3 clans
-    // suivis — cf. `periodPointsEarned` dans data/snapshots/*.json. On annonce
+    // suivis — cf. `periodPointsEarned` dans le cache snapshots (Redis). On annonce
     // donc l'absence de donnée plutôt que d'afficher un chiffre non fiable.
     fameUnavailableReason = "référence de la veille incomplète";
   } else if (!isLastDay && hasPreResetSnapshot) {

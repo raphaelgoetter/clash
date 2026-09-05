@@ -2,56 +2,37 @@
 // snapshot.js — helper for recording daily decksUsed snapshots from a
 // river race log.
 //
-// Storage model:
-// - runtime snapshot writes are first written to `/tmp/clash-snapshots/`
-// - when available, a durable copy is also persisted to `data/snapshots/`
-// - `loadSnapshots()` reads `/tmp` first, then falls back to `data/snapshots/`
-//
-// This ensures fast runtime access while keeping a persistent repository-backed
-// snapshot history for cron jobs and offline scripts.
+// Storage model : Upstash Redis, une clé par clan (`snapshots:<TAG>`).
+// Remplace l'ancien double stockage /tmp (éphémère, par instance/région) +
+// data/snapshots/ (copie durable committée dans le repo) : ce dernier
+// forçait un redéploiement Vercel à chaque cron horaire pour garder les
+// données fraîches côté fonction serverless, ce qui gonflait le Function
+// Storage du projet. Redis étant une source unique et partagée, la
+// logique de fusion tmp/data a disparu avec lui.
 // ============================================================
 
-import fs from "fs/promises";
-import path from "path";
-
-import { fileURLToPath } from "url";
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { Redis } from "@upstash/redis";
 
 import { parisOffsetMs, warResetOffsetMs } from "./dateUtils.js";
 import { hasDuelOnWarDay } from "./battleLogUtils.js";
-const DATA_SNAP_DIR = path.resolve(__dirname, "..", "..", "data", "snapshots");
-const TMP_SNAP_DIR = path.join("/tmp", "clash-snapshots");
+
 const RETENTION_DAYS = 60;
 
-async function ensureDirectory(dir) {
-  try {
-    await fs.mkdir(dir, { recursive: true });
-  } catch (_) {}
+let _redis = null;
+function getRedis() {
+  if (!_redis) {
+    _redis = new Redis({
+      url: process.env.KV_REST_API_URL,
+      token: process.env.KV_REST_API_TOKEN,
+      automaticDeserialization: false,
+    });
+  }
+  return _redis;
 }
 
-function snapshotFilename(clanTag, useTmp = false) {
+function redisKey(clanTag) {
   const clean = clanTag.replace(/[^A-Za-z0-9]/g, "");
-  return path.join(useTmp ? TMP_SNAP_DIR : DATA_SNAP_DIR, `${clean}.json`);
-}
-async function readJsonFile(file) {
-  const txt = await fs.readFile(file, "utf-8");
-  return JSON.parse(txt);
-}
-
-async function fileMtime(file) {
-  try {
-    return (await fs.stat(file)).mtimeMs;
-  } catch (_) {
-    return 0;
-  }
-}
-
-async function fileStat(file) {
-  try {
-    return await fs.stat(file);
-  } catch (_) {
-    return null;
-  }
+  return `snapshots:${clean}`;
 }
 
 async function extractLatestSnapshotTime(raw, clanTag = null) {
@@ -68,15 +49,6 @@ async function extractLatestSnapshotTime(raw, clanTag = null) {
     }
     return latest;
   } catch (_err) {
-    return null;
-  }
-}
-
-async function readLatestSnapshotTime(file, clanTag) {
-  try {
-    const raw = await readJsonFile(file);
-    return await extractLatestSnapshotTime(raw, clanTag);
-  } catch (_) {
     return null;
   }
 }
@@ -221,206 +193,31 @@ function normalizeSnapshots(raw, clanTag = null) {
   return convertLegacySnapshots(raw, clanTag);
 }
 
-function daySnapshotTimestamp(day) {
-  return (
-    day?.snapshotPreResetTime ||
-    day?.snapshotTime ||
-    day?.snapshotBackupTime ||
-    null
-  );
-}
-
-function isBackupDayBetter(primaryDay, backupDay) {
-  if (!isValidSnapshotDay(backupDay)) return false;
-  if (!isValidSnapshotDay(primaryDay)) return true;
-
-  // Un snapshot pré-reset (T-2 min) est la source de vérité prioritaire.
-  const primaryHasPreReset = Boolean(primaryDay?.snapshotPreResetTime);
-  const backupHasPreReset = Boolean(backupDay?.snapshotPreResetTime);
-  if (primaryHasPreReset !== backupHasPreReset) return backupHasPreReset;
-
-  const primaryTs = daySnapshotTimestamp(primaryDay);
-  const backupTs = daySnapshotTimestamp(backupDay);
-  if (!backupTs) return false;
-  if (!primaryTs) return true;
-
-  const primaryMs = Date.parse(primaryTs);
-  const backupMs = Date.parse(backupTs);
-  if (Number.isNaN(primaryMs) || Number.isNaN(backupMs)) return false;
-  return backupMs > primaryMs;
-}
-
-function hasMapData(value) {
-  return Boolean(value) && Object.keys(value).length > 0;
-}
-
-function withPreservedPreReset(selectedDay, otherDay) {
-  if (!selectedDay) return selectedDay;
-  if (!otherDay?.snapshotPreResetTime) return selectedDay;
-
-  // Si la journée retenue n'a pas de pré-reset, on conserve celui de l'autre source.
-  if (!selectedDay.snapshotPreResetTime) {
-    return {
-      ...selectedDay,
-      snapshotPreResetTime: otherDay.snapshotPreResetTime,
-      decksPreReset:
-        selectedDay.decksPreReset ??
-        (hasMapData(otherDay.decksPreReset) ? otherDay.decksPreReset : null),
-      _cumulPreReset:
-        selectedDay._cumulPreReset ??
-        (hasMapData(otherDay._cumulPreReset) ? otherDay._cumulPreReset : {}),
-      _cumulFamePreReset:
-        selectedDay._cumulFamePreReset ??
-        (hasMapData(otherDay._cumulFamePreReset)
-          ? otherDay._cumulFamePreReset
-          : {}),
-    };
-  }
-
-  return selectedDay;
-}
-
-// Select the day snapshot closest to reset by preferring the later valid
-// timestamp. This means that when tmp and data both contain a valid
-// daily snapshot, the version with the more recent `snapshotTime` /
-// `snapshotBackupTime` is used.
-
-function mergeSnapshotsByDay(
-  primaryWeeks,
-  backupWeeks,
-  annotateSource = false,
-) {
-  const primaryByWeek = new Map((primaryWeeks ?? []).map((w) => [w.week, w]));
-  const backupByWeek = new Map((backupWeeks ?? []).map((w) => [w.week, w]));
-  const orderedWeekKeys = [
-    ...(primaryWeeks ?? []).map((w) => w.week),
-    ...(backupWeeks ?? [])
-      .map((w) => w.week)
-      .filter((week) => !primaryByWeek.has(week)),
-  ];
-
-  return orderedWeekKeys.map((weekKey) => {
-    const week = primaryByWeek.get(weekKey) ?? backupByWeek.get(weekKey);
-    const backupWeek = backupByWeek.get(weekKey);
-    if (!backupWeek || !primaryByWeek.has(weekKey)) return week;
-    return {
-      ...week,
-      days: (week.days ?? []).map((day, idx) => {
-        const backupDay = backupWeek.days?.[idx] ?? null;
-        const useBackup = isBackupDayBetter(day, backupDay);
-        const selectedDay = useBackup ? backupDay : day;
-        const otherDay = useBackup ? day : backupDay;
-        const mergedDay = withPreservedPreReset(selectedDay, otherDay);
-        if (!annotateSource) return mergedDay;
-        return {
-          ...mergedDay,
-          source: useBackup ? "data" : "tmp",
-        };
-      }),
-    };
-  });
-}
-
 export async function loadSnapshots(clanTag) {
-  await ensureDirectory(TMP_SNAP_DIR);
-  const tmpFile = snapshotFilename(clanTag, true);
-  const dataFile = snapshotFilename(clanTag, false);
-
-  // Load runtime snapshots from /tmp first, then use the durable data backup.
-  // If both exist, the tmp version is merged with the data backup per day.
-  // `mergeSnapshotsByDay()` préserve en priorité un snapshot pré-reset (T-2 min)
-  // et, à défaut, conserve la capture valide la plus récente pour la journée.
-
-  const tmpMtime = await fileMtime(tmpFile);
-  const dataMtime = await fileMtime(dataFile);
-  const tmpMtimeIso = tmpMtime > 0 ? new Date(tmpMtime).toISOString() : null;
-  const dataMtimeIso = dataMtime > 0 ? new Date(dataMtime).toISOString() : null;
-  const debugMeta = {
-    clanTag,
-    tmpFile,
-    tmpMtime: tmpMtimeIso,
-    dataFile,
-    dataMtime: dataMtimeIso,
-  };
-
-  let tmpSnaps = null;
-  let dataSnaps = null;
-
-  if (tmpMtime > 0) {
-    try {
-      tmpSnaps = normalizeSnapshots(await readJsonFile(tmpFile), clanTag);
-    } catch (err) {
-      console.warn("[snapshot] loadSnapshots tmp file invalid", {
-        ...debugMeta,
-        error: err.message,
-      });
-    }
+  try {
+    const raw = await getRedis().get(redisKey(clanTag));
+    if (!raw) return [];
+    return normalizeSnapshots(JSON.parse(raw), clanTag);
+  } catch (err) {
+    console.warn("[snapshot] loadSnapshots failed", {
+      clanTag,
+      error: err.message,
+    });
+    return [];
   }
-
-  if (dataMtime > 0) {
-    try {
-      dataSnaps = normalizeSnapshots(await readJsonFile(dataFile), clanTag);
-    } catch (err) {
-      console.warn("[snapshot] loadSnapshots data file invalid", {
-        ...debugMeta,
-        error: err.message,
-      });
-    }
-  }
-
-  if (tmpSnaps && dataSnaps) {
-    console.warn(
-      "[snapshot] loadSnapshots using tmp file merged with data backup",
-      debugMeta,
-    );
-    return mergeSnapshotsByDay(tmpSnaps, dataSnaps);
-  }
-
-  if (tmpSnaps) {
-    console.warn("[snapshot] loadSnapshots using tmp file", debugMeta);
-    return tmpSnaps;
-  }
-
-  if (dataSnaps) {
-    console.warn("[snapshot] loadSnapshots using data file", debugMeta);
-    try {
-      await ensureDirectory(TMP_SNAP_DIR);
-      await fs.writeFile(tmpFile, JSON.stringify(dataSnaps, null, 2));
-    } catch (_) {
-      // ignore, /tmp may be unavailable in some environments
-    }
-    return dataSnaps;
-  }
-
-  console.warn("[snapshot] loadSnapshots no snapshot file found", debugMeta);
-  return [];
 }
 
 async function saveSnapshots(clanTag, weeks) {
-  // _cumul est persisté sur disque : il sert à calculer le delta quotidien
-  // au run suivant (baseCumul = _cumul du jour précédent). Le stripper
-  // provoquait rawDaily = cumulatif total au lieu du vrai delta du jour.
-  const payload = JSON.stringify(weeks || [], null, 2);
-  let tmpWriteOk = false;
-
-  await ensureDirectory(TMP_SNAP_DIR);
-  const tmpFile = snapshotFilename(clanTag, true);
+  // _cumul est persisté : il sert à calculer le delta quotidien au run
+  // suivant (baseCumul = _cumul du jour précédent). Le stripper provoquait
+  // rawDaily = cumulatif total au lieu du vrai delta du jour.
   try {
-    await fs.writeFile(tmpFile, payload);
-    tmpWriteOk = true;
+    await getRedis().set(redisKey(clanTag), JSON.stringify(weeks || []));
   } catch (err) {
-    // If /tmp is unavailable, continue to attempt data folder write.
-  }
-
-  // Persist a durable copy in the repository-backed snapshot folder.
-  const dataFile = snapshotFilename(clanTag, false);
-  try {
-    await ensureDirectory(DATA_SNAP_DIR);
-    await fs.writeFile(dataFile, payload);
-  } catch (err) {
-    if (!tmpWriteOk) {
-      // ignore if both write locations fail, but keep the behavior best-effort.
-    }
+    console.warn("[snapshot] saveSnapshots failed", {
+      clanTag,
+      error: err.message,
+    });
   }
 }
 
@@ -697,101 +494,25 @@ function fillWeekDays(week, clanTag = null) {
   return week;
 }
 
-function countBackupDaysUsed(primaryWeeks, backupWeeks) {
-  if (!Array.isArray(primaryWeeks) || !Array.isArray(backupWeeks)) return 0;
-  const backupByWeek = new Map((backupWeeks ?? []).map((w) => [w.week, w]));
-  let count = 0;
-  for (const week of primaryWeeks) {
-    const backupWeek = backupByWeek.get(week.week);
-    if (!backupWeek) continue;
-    const days = week.days ?? [];
-    for (let idx = 0; idx < days.length; idx += 1) {
-      const primaryDay = days[idx] ?? null;
-      const backupDay = backupWeek.days?.[idx] ?? null;
-      if (isBackupDayBetter(primaryDay, backupDay)) count += 1;
-    }
-  }
-  return count;
-}
-
+/**
+ * Retourne des métadonnées de diagnostic sur le stockage Redis d'un clan
+ * (remplace l'ancien debug tmp-vs-data, devenu sans objet avec une source
+ * de vérité unique).
+ */
 export async function getSnapshotFileDebug(clanTag) {
-  await ensureDirectory(TMP_SNAP_DIR);
-  const tmpFile = snapshotFilename(clanTag, true);
-  const dataFile = snapshotFilename(clanTag, false);
-  const tmpStat = await fileStat(tmpFile);
-  const dataStat = await fileStat(dataFile);
-  const tmpMtime = tmpStat?.mtimeMs ?? 0;
-  const dataMtime = dataStat?.mtimeMs ?? 0;
-  const tmpLatestSnapshotTime =
-    tmpMtime > 0 ? await readLatestSnapshotTime(tmpFile, clanTag) : null;
-  const dataLatestSnapshotTime =
-    dataMtime > 0 ? await readLatestSnapshotTime(dataFile, clanTag) : null;
-
-  let backupDaysUsed = 0;
-  if (tmpMtime > 0 && dataMtime > 0) {
-    try {
-      const tmpSnaps = normalizeSnapshots(await readJsonFile(tmpFile), clanTag);
-      const dataSnaps = normalizeSnapshots(
-        await readJsonFile(dataFile),
-        clanTag,
-      );
-      backupDaysUsed = countBackupDaysUsed(tmpSnaps, dataSnaps);
-      const merged = mergeSnapshotsByDay(tmpSnaps, dataSnaps, true);
-      const snapshotDaySources = merged.map((week) => ({
-        week: week.week,
-        sources: (week.days ?? []).map(
-          (day) => `${day.warDay}:${day.source ?? "tmp"}`,
-        ),
-      }));
-      return {
-        clanTag,
-        tmpFile,
-        dataFile,
-        tmpExists: tmpMtime > 0,
-        dataExists: dataMtime > 0,
-        tmpMtime: tmpMtime > 0 ? new Date(tmpMtime).toISOString() : null,
-        dataMtime: dataMtime > 0 ? new Date(dataMtime).toISOString() : null,
-        tmpLatestSnapshotTime,
-        dataLatestSnapshotTime,
-        tmpSize: tmpStat?.size ?? null,
-        dataSize: dataStat?.size ?? null,
-        selectedSource:
-          tmpMtime > 0 && tmpMtime >= dataMtime
-            ? "tmp"
-            : dataMtime > 0
-              ? "data"
-              : tmpMtime > 0
-                ? "tmp"
-                : "none",
-        backupDaysUsed,
-        snapshotDaySources,
-      };
-    } catch (_) {
-      backupDaysUsed = 0;
-    }
-  }
+  const raw = await getRedis().get(redisKey(clanTag));
+  const exists = raw != null;
+  const latestSnapshotTime = exists
+    ? await extractLatestSnapshotTime(JSON.parse(raw), clanTag)
+    : null;
 
   return {
     clanTag,
-    tmpFile,
-    dataFile,
-    tmpExists: tmpMtime > 0,
-    dataExists: dataMtime > 0,
-    tmpMtime: tmpMtime > 0 ? new Date(tmpMtime).toISOString() : null,
-    dataMtime: dataMtime > 0 ? new Date(dataMtime).toISOString() : null,
-    tmpLatestSnapshotTime,
-    dataLatestSnapshotTime,
-    tmpSize: tmpStat?.size ?? null,
-    dataSize: dataStat?.size ?? null,
-    selectedSource:
-      tmpMtime > 0 && dataMtime > 0
-        ? "merged"
-        : tmpMtime > 0
-          ? "tmp"
-          : dataMtime > 0
-            ? "data"
-            : "none",
-    backupDaysUsed,
+    storage: "redis",
+    redisKey: redisKey(clanTag),
+    exists,
+    size: exists ? raw.length : null,
+    latestSnapshotTime,
   };
 }
 
@@ -1507,9 +1228,6 @@ export async function getLastSnapshotDate(clanTag) {
     .sort();
   return allRealDays.length ? allRealDays[allRealDays.length - 1] : null;
 }
-
-// expose the directory path so callers can inspect or do manual operations
-export const SNAP_DIR_PATH = TMP_SNAP_DIR; // absolute path used internally
 
 function warDayNameFromKey(warDayKey) {
   if (!warDayKey) return null;

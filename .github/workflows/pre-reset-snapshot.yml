@@ -4,9 +4,6 @@ name: Pre-reset snapshots
 # de chaque clan. Les heures de reset sont lues depuis CLAN_RESET_TIMES (dateUtils.js).
 # Le script dort précisément jusqu'à T−2 min puis appelle l'API en < 1 seconde.
 
-permissions:
-  contents: write
-
 concurrency:
   group: snapshot-pre-reset
   cancel-in-progress: false
@@ -32,11 +29,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CLASH_API_KEY: ${{ secrets.CLASH_API_KEY }}
+      KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
+      KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-        with:
-          persist-credentials: true
 
       - name: Use Node.js
         uses: actions/setup-node@v4
@@ -48,16 +45,3 @@ jobs:
 
       - name: Run pre-reset snapshot script
         run: node scripts/preResetSnapshot.js
-
-      - name: Commit snapshot result
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/snapshots/*.json || true
-          git diff --cached --quiet || git commit -m "chore: snapshot pré-reset journalier"
-          # Le script dort ~45 min : origin/main a pu avancer (cron horaire, commits manuels).
-          # On fetch puis merge avec -X ours pour que nos données pré-reset gagnent
-          # en cas de conflit sur les JSON (le rebase échoue car les JSON divergent).
-          git fetch origin main
-          git merge -X ours origin/main
-          git push
