@@ -570,6 +570,17 @@ Les 6 jeux à avancée quotidienne (Robinson, Tamagoshi, Boss Raid, Quiz, Goblin
 
 Si un cron manqué doit être rattrapé dans l'immédiat sans attendre la résync GitHub, chaque jeu reste déclenchable manuellement via `workflow_dispatch` (bouton "Run workflow" sur GitHub, ou `gh workflow run <fichier>.yml`) — protégé côté Robinson par le garde-fou anti-double-avancée (`isTooSoonSinceLastClosure()`) qui rend ce rattrapage manuel sans risque même si le cron en retard finit par se déclencher après coup.
 
+### Historique des Jeux Spéciaux
+
+Ordre chronologique de lancement **public** des jeux collaboratifs à avancée quotidienne (durée = `duree_jours` par manche, voir chaque section dédiée plus bas). Une date ici correspond au premier `workflow_dispatch` réellement déclenché sur le salon public (Jour 1), pas à la date où le code a été écrit — un jeu peut être entièrement codé et testé sur le salon de test sans avoir encore été lancé publiquement (voir plus bas) :
+
+- (2026-07-31) Aventure (histoire à embranchements, pas de durée fixe en jours) — supprimé le 2026-08-24 à la demande de Raphael, ne sera plus relancé (voir [[minijeux_ping_conventions]])
+- (2026-08-01) Tamagotchi (10 jours en Manche 1, terminée le 2026-08-16 à 8/10 étoiles ; Manche 2 repensée à 7 jours, code prêt depuis le 2026-08-19 mais relance pas encore déclenchée)
+- (2026-08-02) Robinson (10 jours, durci à 7 jours le 2026-08-29)
+- (2026-08-22) Quiz (7 jours par manche/thème)
+
+**Codés mais pas encore lancés publiquement** (existent dans le repo, testés sur le salon de test, mais aucun Jour 1 déclenché sur le salon public à ce jour) : Boss Raid (7 jours), Goblin Hunters (10 jours, réduit à 7 jours le 2026-08-26), Blackjack (7 jours).
+
 ---
 
 ## Noms français des cartes (`data/cardNames.json`)
