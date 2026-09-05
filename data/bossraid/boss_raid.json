@@ -1,34 +1,61 @@
 {
   "duree_jours": 7,
-  "boss_stats_initiales": { "defense": 5, "resistance": 5 },
+  "boss_stats_base": { "defense": 5, "resistance": 5 },
   "roles": {
     "chevalier": { "label": "Chevalier", "emoji": "🛡️", "protection_slots": 2 },
-    "voleuse": { "label": "Voleuse", "emoji": "🗡️", "degats_min": 30, "degats_max": 40, "chance_debuff": 0.25 },
-    "sorcier": { "label": "Sorcier", "emoji": "🔮", "degats_min": 80, "degats_max": 100, "reduction_stat": "resistance" },
-    "archeres": { "label": "Archères", "emoji": "🏹", "degats_min": 70, "degats_max": 90, "reduction_stat": "defense" },
+    "voleuse": { "label": "Voleuse", "emoji": "🗡️", "degats": 20, "debuff_defense_par_vote": 1 },
+    "sorcier": { "label": "Sorcier", "emoji": "🔮", "degats": 100 },
+    "archeres": { "label": "Archères", "emoji": "🏹", "degats": 80 },
     "espion": { "label": "Espion", "emoji": "🔍", "is_info_action": true }
   },
   "evenements_boss": [
     {
       "jour": 2,
+      "id": "muraille_renforcee",
+      "nom": "Muraille Renforcée",
+      "emoji": "🧱",
+      "description": "Kiki a passé la nuit à empiler des blocs de pierre autour de son campement — sa Défense grimpe à 9/10 pour la journée, les tirs des Archères vont ricocher sans l’aide des Voleuses pour fissurer la muraille.",
+      "effects": { "defense_override": 9 }
+    },
+    {
+      "jour": 3,
       "id": "frappe_lethale",
       "nom": "Frappe Léthale",
       "emoji": "⚡",
-      "description": "Kiki assène un coup d’épée si puissant que le sol tremble sur tout le champ de bataille — les unités à distance non protégées par un Chevalier ne toucheront tout simplement pas leur cible aujourd’hui (0% de dégâts au lieu de 50%) !"
+      "description": "Kiki assène un coup d’épée si puissant que le sol tremble sur tout le champ de bataille — les unités à distance non protégées par un Chevalier ne toucheront tout simplement pas leur cible aujourd’hui (0 dégât au lieu de la moitié).",
+      "effects": { "malus_multiplier_override": 0 }
     },
     {
       "jour": 4,
-      "id": "bouclier_acier",
-      "nom": "Bouclier d’Acier",
-      "emoji": "🧱",
-      "description": "Une plaque d’acier trempé vient renforcer l’armure de Kiki pour la journée — sa Défense grimpe à 10/10, rendant les tirs des Archères bien plus difficiles à faire passer !"
-    },
-    {
-      "jour": 6,
       "id": "miroir_mana",
       "nom": "Miroir de Mana",
       "emoji": "🪞",
-      "description": "Kiki active un dispositif occulte qui renvoie une partie de la magie lancée contre lui — les Sorciers subissent une réduction supplémentaire de 50% sur leurs dégâts aujourd’hui."
+      "description": "Kiki active un dispositif occulte qui renvoie une partie de la magie lancée contre lui — les Sorciers subissent une réduction supplémentaire de 50% sur leurs dégâts aujourd’hui.",
+      "effects": { "sorcier_multiplier": 0.5 }
+    },
+    {
+      "jour": 5,
+      "id": "point_faible",
+      "nom": "Point Faible",
+      "emoji": "🩸",
+      "description": "Une estafilade mal refermée de la veille laisse Kiki presque sans défense magique — sa Résistance tombe à 1/10 pour la journée, une aubaine pour les Sorciers.",
+      "effects": { "resistance_override": 1 }
+    },
+    {
+      "jour": 6,
+      "id": "bouclier_instable",
+      "nom": "Bouclier Instable",
+      "emoji": "🌀",
+      "description": "L’armure de fortune de Kiki tient à peine — chaque Chevalier ne parvient plus à couvrir qu’une seule unité à distance aujourd’hui, au lieu de deux.",
+      "effects": { "protection_slots_override": 1 }
+    },
+    {
+      "jour": 7,
+      "id": "rage_finale",
+      "nom": "Rage du Boss",
+      "emoji": "🔥",
+      "description": "Kiki entre dans une rage folle pour ce dernier assaut et resserre sa garde contre le vol — les Voleuses ne parviennent plus à entamer sa Défense aujourd’hui, seul leur coup de lame compte encore.",
+      "effects": { "voleuse_debuff_disabled": true }
     }
   ]
 }

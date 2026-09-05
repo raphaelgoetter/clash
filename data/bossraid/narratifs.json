@@ -11,25 +11,9 @@
     "🏕️ Le camp se réorganise après une nuit agitée — quelqu’un jure avoir vu Kiki jouer avec un papillon.",
     "🩹 L’infirmerie improvisée déborde déjà de bandages, la journée n’a pourtant pas commencé."
   ],
-  "defense_bas": [
-    "🛡️ L’armure de Kiki montre des fissures inquiétantes — les Archères pourraient bien en profiter.",
-    "🛡️ Kiki encaisse mal les coups ces derniers temps, sa garde est clairement affaiblie."
-  ],
-  "defense_haut": [
-    "🛡️ Kiki semble quasiment increvable aujourd’hui — son armure est impressionnante.",
-    "🛡️ Difficile de percer une armure aussi épaisse — les Archères vont devoir redoubler d’efforts."
-  ],
-  "resistance_bas": [
-    "🔮 Les protections magiques de Kiki vacillent — les Sorciers sentent l’opportunité.",
-    "🔮 La résistance arcanique de Kiki est au plus bas, un sort bien placé pourrait faire des ravages."
-  ],
-  "resistance_haut": [
-    "🔮 Kiki semble quasiment immunisé à la magie aujourd’hui.",
-    "🔮 Une résistance arcanique redoutable — les sorts peinent à faire effet sur Kiki."
-  ],
-  "cloture_combattants": [
-    "Merci à {noms} pour leurs coups décisifs sur Kiki hier !",
-    "{premier} s’est particulièrement illustré au combat contre Kiki hier.",
-    "Sans {noms}, la journée d’hier aurait été bien moins spectaculaire."
+  "role_dominant": [
+    "Ce sont les {role} qui ont porté l’essentiel des dégâts hier.",
+    "Sans les {role}, la journée d’hier aurait été bien moins spectaculaire.",
+    "C’est du côté des {role} que la stratégie du jour a le mieux payé hier."
   ]
 }

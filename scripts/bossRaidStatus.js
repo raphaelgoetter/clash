@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // bossRaidStatus.js
-// Affiche l'état courant de Boss Raid (phase, jour, posture du Boss, score
-// cumulé, votes du jour) ainsi qu'une projection du Jour suivant basée sur
-// les votes actuels, sans avoir besoin d'ouvrir Discord — pratique pour
-// suivre l'avancement avant de décider de relancer manuellement
+// Affiche l'état courant de Boss Raid (phase, jour, événement du jour,
+// score cumulé, votes du jour) ainsi qu'une projection du Jour EN COURS
+// basée sur les votes actuels (dégâts + meilleure combinaison possible +
+// note), sans avoir besoin d'ouvrir Discord — pratique pour suivre
+// l'avancement avant de décider de relancer manuellement
 // `npm run bossraid:public`. Comme pour le Tamagoshi/Robinson, ce script
 // tient lieu d'affichage admin (le bouton Journal ne montre lui que
 // le score et l'historique, jamais le détail des votants).
@@ -20,9 +21,19 @@ import {
   listVotes,
   previewCloture,
   activeEventForDay,
+  resolveDayParams,
+  cumulativeScore,
+  ACTION_ROLES,
 } from "../backend/services/bossraid.js";
-import { ULTIMATE_NAMES, ULTIMATE_EFFECTS } from "../api/discord/_handlers/bossraid.js";
 import { resolveDisplayName } from "../backend/services/discordUsers.js";
+
+function formatScore(score) {
+  return score ?? "—";
+}
+
+function formatCombo(counts, config) {
+  return ACTION_ROLES.map((roleId) => `${counts[roleId] || 0}${config.roles[roleId].emoji}`).join(" ");
+}
 
 (async () => {
   const state = await readState();
@@ -41,11 +52,16 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
     console.log("Phase : annonce (le combat commence au prochain post).\n");
   } else {
     console.log(`Jour ${state.jour}/${config.duree_jours}\n`);
+    const dayParams = resolveDayParams(state.jour, config);
+    console.log(`🛡️ Défense du jour    : ${dayParams.defense}/10`);
+    console.log(`🔮 Résistance du jour : ${dayParams.resistance}/10`);
+    if (dayParams.event) {
+      console.log(`📅 Événement : ${dayParams.event.emoji} ${dayParams.event.nom} — ${dayParams.event.description}`);
+    }
   }
 
-  console.log(`🛡️ Défense    : ${state.bossStats.defense}/10`);
-  console.log(`🔮 Résistance : ${state.bossStats.resistance}/10`);
-  console.log(`🏆 Dégâts cumulés : ${state.totalDegatsCumules}\n`);
+  const scoreCumule = cumulativeScore(state.totalDegatsCumules, state.totalDegatsOptimalCumules);
+  console.log(`\n⚔️ Dégâts cumulés : ${state.totalDegatsCumules} — 🏆 Score cumulé : ${formatScore(scoreCumule)}\n`);
 
   if (state.phase !== "combat") return;
 
@@ -75,17 +91,20 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
   // Ne préjuge pas des votes qui arriveront encore avant 08:00 UTC.
   const projection = await previewCloture(state.jour, config);
   console.log(`\n🔮 Projection si la clôture avait lieu maintenant :`);
-  console.log(`💥 Dégâts infligés aujourd'hui : ${projection.totalDamageDuJour}`);
-  if (projection.allIn) {
-    console.log(`⚡ Ultime déclenchée : ${ULTIMATE_NAMES[projection.allIn]} — ${ULTIMATE_EFFECTS[projection.allIn]}.`);
+  if (projection.ultimateMultiplier !== 1) {
+    const pct = Math.round((projection.ultimateMultiplier - 1) * 100);
+    console.log(
+      `⚡ Ultime actif aujourd'hui : dégâts ${pct > 0 ? "+" : ""}${pct}% (score hier: ${projection.ultimate.gradeYesterday ?? "—"}, avant-hier: ${projection.ultimate.gradeDayBefore ?? "—"})`,
+    );
   }
-  console.log(`\n→ Jour ${state.jour + 1}/${config.duree_jours} :`);
-  console.log(`  🛡️ Défense    : ${projection.bossStatsApres.defense}/10`);
-  console.log(`  🔮 Résistance : ${projection.bossStatsApres.resistance}/10`);
-  console.log(`  🏆 Dégâts cumulés : ${projection.totalDegatsApres}`);
+  console.log(`Votre combinaison   : ${formatCombo(projection.actionCounts, config)} (${projection.totalDamageDuJour}pts)`);
+  console.log(`Meilleure combinaison : ${formatCombo(projection.bestCombo, config)} (${projection.bestDamage}pts)`);
+  console.log(`🎯 Note actuelle : ${formatScore(projection.score)}`);
+  console.log(`\n→ Si clôturé maintenant :`);
+  console.log(`  ⚔️ Dégâts cumulés : ${projection.totalDegatsApres}`);
 
   const lendemain = activeEventForDay(state.jour + 1, config.evenements_boss);
   if (lendemain) {
-    console.log(`  📯 Événement prévu : ${lendemain.emoji} ${lendemain.nom} — ${lendemain.description}`);
+    console.log(`  📯 Événement prévu demain : ${lendemain.emoji} ${lendemain.nom} — ${lendemain.description}`);
   }
 })();

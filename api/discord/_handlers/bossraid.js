@@ -1,10 +1,20 @@
 // ============================================================
-// bossraid.js — Handlers Discord pour Boss Raid (score attack
-// communautaire contre un Boss Colossal). Embed, boutons de vote,
-// bouton Espionne (projection live), Règles & Rôles, Journal.
-// La publication/suppression quotidienne passe uniquement par
-// scripts/postBossRaid.js (postBossRaid) — les boutons restent gérés par
-// api/discord/interactions.js.
+// bossraid.js — Handlers Discord pour Boss Raid (jeu de combinaison
+// stratégique communautaire contre un Boss Colossal). Embed, boutons de
+// vote, bouton Espionne (projection live + indice de note), Règles &
+// Rôles, Journal. La publication/suppression quotidienne passe uniquement
+// par scripts/postBossRaid.js (postBossRaid) — les boutons restent gérés
+// par api/discord/interactions.js.
+//
+// ⚠️ Refonte stratégique (voir CONTRIBUTING.md) : plus aucun aléatoire
+// nulle part, plus de régénération nocturne. Chaque jour repart de la même
+// posture de base (aucune progressbar : juste "5/10"). L'objectif devient
+// de faire coïncider la répartition des votes du jour avec la MEILLEURE
+// combinaison possible pour l'événement du jour (computeBestCombo() dans
+// backend/services/bossraid.js) — noté SS/S/A/B/C/D. Les anciennes
+// "Ultimes" déclenchées par vote (All-In) ont disparu, remplacées par un
+// bonus/malus de dégâts basé sur la PERFORMANCE des 1-2 jours précédents
+// (resolveUltimateMultiplier() — voir buildUltimateLine()).
 // ============================================================
 
 import {
@@ -18,38 +28,33 @@ import {
   readDernierRole,
   isChevalierVoteAllowed,
   activeEventForDay,
+  resolveDayParams,
   previewCloture,
   closeDayAndAdvance,
   archiveManche,
   listManches,
   isTooSoonSinceLastClosure,
+  cumulativeScore,
+  resolveUltimateMultiplier,
+  ACTION_ROLES,
 } from "../../../backend/services/bossraid.js";
 import {
   getRoleIdByName,
   buildRolePingFields,
   MINI_JEUX_ROLE_NAME,
 } from "../../../backend/services/discordRoles.js";
-import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
 import { formatUtcTimeAsParis } from "../../../backend/services/dateUtils.js";
 
 const BOSSRAID_COLOR = 0xc0392b;
-// Exportées pour être réutilisées telles quelles par scripts/bossRaidStatus.js
-// (projection du jour suivant), plutôt que de dupliquer ces libellés.
-export const ULTIMATE_NAMES = {
-  archeres: "🏹 Volée Céleste",
-  sorcier: "🔮 Surcharge Arcane",
-  voleuse: "🗡️ Coup à la Gorge",
-};
-// Rappel systématique de l'effet à chaque affichage du nom d'une Ultime
-// (bilan du jour, projection Espionne, Journal) — le nom seul ne suffit pas à
-// comprendre ce qui vient de se passer.
-export const ULTIMATE_EFFECTS = {
-  archeres:
-    "les Archères ignorent la Défense du Boss et la protection du Chevalier, 100% dégâts pour toutes",
-  sorcier: "les dégâts magiques de tous les Sorciers sont doublés",
-  voleuse: "la Défense et la Résistance du Boss tombent à 0/10 pour demain",
-};
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
+
+// Libellés pluriels pour la phrase "rôle dominant de la veille" (le label
+// singulier de la config, ex. "Voleuse", ne convient pas au pluriel).
+const ROLE_LABEL_PLURAL = {
+  voleuse: "Voleuses",
+  sorcier: "Sorciers",
+  archeres: "Archères",
+};
 
 // Illustration du jour — fichiers statiques frontend/public/images/boss/
 // (boss-01.webp à boss-10.webp), servis tels quels par Vercel, même
@@ -59,11 +64,15 @@ function bossRaidImageUrl(jour) {
   return `${TRUST_ROYALE_URL}/images/boss/boss-${String(jour).padStart(2, "0")}.webp`;
 }
 
-// ── Embed / composants du jour ────────────────────────────────────
+// ── Formatage d'une combinaison (répartition de votes sur les 4 rôles
+// d'action, dans l'ordre 🛡️🗡️🔮🏹) ─────────────────────────────────────
 
-function buildStatBar(value) {
-  const v = Math.max(0, Math.min(10, value));
-  return "🟥".repeat(v) + "⬜".repeat(10 - v);
+function formatCombo(counts, config) {
+  return ACTION_ROLES.map((roleId) => `${counts[roleId] || 0}${config.roles[roleId].emoji}`).join(" ");
+}
+
+function formatScore(score) {
+  return score ?? "—";
 }
 
 // ── Texte narratif ────────────────────────────────────────────────
@@ -78,48 +87,28 @@ function pickFlavor(pool, seed) {
   return pool[((seed % pool.length) + pool.length) % pool.length];
 }
 
-// "normal" (4-6/10) n'a volontairement aucun pool de texte associé : rien
-// d'intéressant à raconter sur une posture ordinaire, la ligne est alors
-// simplement omise plutôt que de meubler avec une phrase creuse.
-function statTier(value) {
-  if (value <= 3) return "bas";
-  if (value >= 7) return "haut";
-  return "normal";
+// Rôle ayant porté le plus de dégâts la veille (Chevalier/Espion exclus,
+// toujours à 0) — remplace l'ancien "combattants les plus offensifs
+// nommément" : les dégâts étant désormais fixes par rôle, distinguer des
+// individus n'aurait plus de sens, seul le rôle choisi compte.
+function pickDominantRole(breakdown) {
+  if (!breakdown) return null;
+  const entries = Object.entries(breakdown).filter(([, v]) => v > 0);
+  if (!entries.length) return null;
+  entries.sort((a, b) => b[1] - a[1]);
+  return entries[0][0];
 }
 
-// Combattants les plus offensifs du jour clos (plus haut total de dégâts) —
-// Chevalier/Espionne (0 dégât) n'apparaissent jamais ici.
-async function pickFighterNames(perVoteDetails) {
-  const attackers = (perVoteDetails || [])
-    .filter((d) => d.degats > 0)
-    .sort((a, b) => b.degats - a.degats);
-  if (!attackers.length) return [];
-  const picked = attackers.slice(0, 2);
-  const resolved = await Promise.all(
-    picked.map((d) => resolveDisplayName(d.discordId, d.username)),
-  );
-  return resolved.filter(Boolean);
-}
-
-async function buildNarrative(jour, bossStats, closure) {
+async function buildNarrative(jour, closure) {
   const narratifs = await loadNarratifs();
   const intro = pickFlavor(narratifs.intro_cocasse, jour);
   if (!closure) return intro; // Jour 1 : pas de bilan de la veille, juste le mot d'ambiance
 
   const lines = [];
-  const defenseTier = statTier(bossStats.defense);
-  if (defenseTier !== "normal")
-    lines.push(pickFlavor(narratifs[`defense_${defenseTier}`], jour + 1));
-  const resistanceTier = statTier(bossStats.resistance);
-  if (resistanceTier !== "normal")
-    lines.push(pickFlavor(narratifs[`resistance_${resistanceTier}`], jour + 2));
-
-  const names = await pickFighterNames(closure.perVoteDetails);
-  if (names.length) {
-    const template = pickFlavor(narratifs.cloture_combattants, jour + 3);
-    const phrase = template
-      .replaceAll("{noms}", names.join(" et "))
-      .replaceAll("{premier}", names[0]);
+  const dominantRole = pickDominantRole(closure.breakdown);
+  if (dominantRole) {
+    const template = pickFlavor(narratifs.role_dominant, jour + 3);
+    const phrase = template.replaceAll("{role}", ROLE_LABEL_PLURAL[dominantRole] || dominantRole);
     if (lines.length) {
       lines[lines.length - 1] += ` ${phrase}`;
     } else {
@@ -131,15 +120,49 @@ async function buildNarrative(jour, bossStats, closure) {
   return `${intro}\n\n${lines.join("\n")}`;
 }
 
+// ── Bilan du jour clos (combinaison optimale vs combinaison réelle) ──
+// Partagé entre l'embed de combat (bilan de la veille, condensé) et le
+// bouton Journal (même bilan, plus l'historique complet) — jamais deux
+// formats différents pour la même information.
+
+// ── Ultime — bonus/malus de dégâts basé sur les scores des 1-2 jours
+// précédents (resolveUltimateMultiplier() dans backend/services/bossraid.js).
+// `null` (donc aucune ligne) tant que le multiplicateur est neutre (1) —
+// Jour 1/2, ou score A/B hier.
+
+function buildUltimateLine(ultimate) {
+  if (ultimate.multiplier === 1.3) {
+    return "⚡ Vous avez atteint un score de S ou plus deux jours de suite, vos dégâts sont augmentés de 30% aujourd’hui !";
+  }
+  if (ultimate.multiplier === 1.1) {
+    return "⚡ Hier vous avez atteint un score de S ou plus, vos dégâts sont augmentés de 10% aujourd’hui !";
+  }
+  if (ultimate.multiplier === 0.9) {
+    return "⚡ Hier vous avez atteint un score de C ou moins, vos dégâts sont diminués de 10% aujourd’hui !";
+  }
+  return null;
+}
+
+function buildBilanLines(jourClos, closure, config) {
+  return [
+    `**Bilan du Jour ${jourClos}**`,
+    "Hier, la meilleure combinaison était :",
+    `- ${formatCombo(closure.bestCombo, config)} *(dégâts ${closure.bestDamage}pts)*`,
+    "Votre combinaison était :",
+    `- ${formatCombo(closure.actionCounts, config)} *(dégâts ${closure.totalDamageDuJour}pts)*`,
+    `- score : **${formatScore(closure.score)}**`,
+  ];
+}
+
 function buildAnnonceEmbed(config) {
   return {
     title: "⚔️ Boss Raid — Kiki le P.E.K.K.A. approche…",
     description: [
       `Un P.E.K.K.A. répondant au doux nom de **Kiki** s’apprête à fondre sur le clan ! Rassemblez vos forces : ${config.duree_jours} jours de combat commencent dès demain.`,
       "",
-      `🛡️ Défense initiale : **${config.boss_stats_initiales.defense}/10** — 🔮 Résistance initiale : **${config.boss_stats_initiales.resistance}/10**.`,
+      `🛡️ Défense de base : **${config.boss_stats_base.defense}/10** — 🔮 Résistance de base : **${config.boss_stats_base.resistance}/10**, chaque jour (sauf événement contraire).`,
       "",
-      "Chevaliers, Voleuses, Sorciers, Archères, Espionnes — chaque rôle compte. Besoin d’un rappel des règles ? Clique sur *Règles* ci-dessous.",
+      "Chevaliers, Voleuses, Sorciers, Archères, Espionnes — chaque jour impose sa propre combinaison gagnante. Besoin d’un rappel des règles ? Clique sur *Règles* ci-dessous.",
     ].join("\n"),
     color: BOSSRAID_COLOR,
     // ?v=2 : casse le cache Discord (qui met en cache par URL l'échec d'un
@@ -152,42 +175,18 @@ function buildAnnonceEmbed(config) {
   };
 }
 
-async function buildCombatEmbed(
-  jour,
-  bossStats,
-  totalDegatsCumules,
-  closure,
-  event,
-  config,
-) {
-  const narrative = await buildNarrative(jour, bossStats, closure);
+async function buildCombatEmbed(jour, jourClos, closure, event, config, state) {
+  const dayParams = resolveDayParams(jour, config);
+  const narrative = await buildNarrative(jour, closure);
   const lines = [narrative, ""];
 
   if (closure) {
-    lines.push(
-      `**Bilan du Jour ${jour - 1}**`,
-      `💥 Dégâts infligés : **${closure.totalDamageDuJour}**`,
-    );
-    if (closure.allIn) {
-      lines.push(
-        `⚡ **Ultime déclenchée : ${ULTIMATE_NAMES[closure.allIn]} !** ${ULTIMATE_EFFECTS[closure.allIn]}.`,
-      );
-    } else if (closure.regen.defense > 0 || closure.regen.resistance > 0) {
-      // Pas de ligne de régénération lors d'un Coup à la Gorge : Kiki tombe
-      // à 0/0 ce jour-là, la régénération ne reprend qu'à partir de demain.
-      lines.push(
-        `🔄 Kiki récupère pendant la nuit : **+${closure.regen.defense}** Défense, **+${closure.regen.resistance}** Résistance.`,
-      );
-    } else {
-      // Barème 30% de chances par stat (voir CONTRIBUTING.md) : aucune
-      // régénération reste le cas le plus fréquent (~49% des jours), une
-      // phrase dédiée plutôt qu'un "+0 / +0" qui n'apporterait rien.
-      lines.push(
-        "😮‍💨 Kiki n’a pas eu le temps de récupérer cette nuit — trop secoué par les combats.",
-      );
-    }
-    lines.push("");
+    lines.push(...buildBilanLines(jourClos, closure, config), "");
   }
+
+  const ultimate = await resolveUltimateMultiplier(jour);
+  const ultimateLine = buildUltimateLine(ultimate);
+  if (ultimateLine) lines.push(ultimateLine, "");
 
   if (event) {
     lines.push(
@@ -197,11 +196,12 @@ async function buildCombatEmbed(
     );
   }
 
+  const scoreCumule = cumulativeScore(state.totalDegatsCumules, state.totalDegatsOptimalCumules);
   lines.push(
-    `🛡️ Défense    : [${buildStatBar(bossStats.defense)}] (${bossStats.defense}/10)`,
-    `🔮 Résistance : [${buildStatBar(bossStats.resistance)}] (${bossStats.resistance}/10)`,
+    `🛡️ Défense    : **${dayParams.defense}/10**`,
+    `🔮 Résistance : **${dayParams.resistance}/10**`,
     "",
-    `🏆 Dégâts cumulés (${config.duree_jours} jours) : **${totalDegatsCumules}**`,
+    `⚔️ Dégâts cumulés : **${state.totalDegatsCumules}** — 🏆 Score cumulé : **${formatScore(scoreCumule)}**`,
   );
 
   return {
@@ -263,7 +263,7 @@ function buildComponents(jour, phase, voteCounts, config) {
 function formatMancheLine(record, isCurrent, isBest) {
   const marker = isBest ? "🏆 " : "";
   const suffix = isCurrent ? " *(cette manche)*" : "";
-  return `${marker}Manche ${record.manche} — **${record.totalDegatsCumules}** dégâts${suffix}`;
+  return `${marker}Manche ${record.manche} — **${record.totalDegatsCumules}** dégâts (score ${formatScore(record.scoreFinal)})${suffix}`;
 }
 
 function buildManchesSection(manches, currentManche) {
@@ -282,6 +282,7 @@ function buildManchesSection(manches, currentManche) {
 
 function buildOutcomeEmbed(
   totalDegatsCumules,
+  scoreFinal,
   config,
   manches = [],
   currentManche = null,
@@ -292,6 +293,7 @@ function buildOutcomeEmbed(
       `Après ${config.duree_jours} jours de combat acharné, Kiki le P.E.K.K.A. se retire enfin — le clan a tenu bon jusqu’au bout !`,
       "",
       `💥 **Dégâts totaux infligés à Kiki : ${totalDegatsCumules}**`,
+      `🏆 **Score final : ${formatScore(scoreFinal)}**`,
       ...buildManchesSection(manches, currentManche),
       "",
       "Merci à tous les combattants qui ont participé à ce Raid !",
@@ -368,8 +370,8 @@ export async function postBossRaid(
     return publishAndWriteState(channelId, null, {
       phase: "annonce",
       jour: null,
-      bossStats: config.boss_stats_initiales,
       totalDegatsCumules: 0,
+      totalDegatsOptimalCumules: 0,
       embed,
       components,
       noPing,
@@ -377,18 +379,11 @@ export async function postBossRaid(
     });
   }
 
-  // 2) Transition annonce -> Jour 1/10 : rien à clôturer (aucun vote possible avant), jamais de ping ici
+  // 2) Transition annonce -> Jour 1 : rien à clôturer (aucun vote possible avant), jamais de ping ici
   if (state.phase === "annonce") {
     const jour = 1;
     const event = activeEventForDay(jour, config.evenements_boss);
-    const embed = await buildCombatEmbed(
-      jour,
-      state.bossStats,
-      state.totalDegatsCumules,
-      null,
-      event,
-      config,
-    );
+    const embed = await buildCombatEmbed(jour, null, null, event, config, state);
     const components = buildComponents(jour, "combat", {}, config);
 
     if (dryRun)
@@ -397,8 +392,8 @@ export async function postBossRaid(
     return publishAndWriteState(channelId, state, {
       phase: "combat",
       jour,
-      bossStats: state.bossStats,
       totalDegatsCumules: state.totalDegatsCumules,
+      totalDegatsOptimalCumules: state.totalDegatsOptimalCumules,
       embed,
       components,
       noPing: true,
@@ -413,8 +408,9 @@ export async function postBossRaid(
 
   const jourSuivant = state.jour + 1;
 
-  // Fin de partie (10 jours écoulés) — score final, plus aucun vote possible.
+  // Fin de partie (duree_jours écoulés) — score final, plus aucun vote possible.
   if (jourSuivant > config.duree_jours) {
+    const scoreFinal = cumulativeScore(closure.totalDegatsApres, closure.totalDegatsOptimalApres);
     // Archivage AVANT lecture de la liste : la manche qui vient de se
     // terminer apparaît alors dans son propre récap comparatif (marquée
     // "cette manche"). Jamais archivé en dry-run NI sur le salon de test
@@ -425,13 +421,14 @@ export async function postBossRaid(
     if (!dryRun && isPublic) {
       currentManche = await archiveManche({
         totalDegatsCumules: closure.totalDegatsApres,
-        bossStatsFinal: closure.bossStatsApres,
+        scoreFinal,
         resolvedAt: new Date().toISOString(),
       });
     }
     const manches = await listManches({ limit: 10 });
     const embed = buildOutcomeEmbed(
       closure.totalDegatsApres,
+      scoreFinal,
       config,
       manches,
       currentManche,
@@ -440,8 +437,8 @@ export async function postBossRaid(
     const result = await publishAndWriteState(channelId, state, {
       phase: "combat",
       jour: state.jour,
-      bossStats: closure.bossStatsApres,
       totalDegatsCumules: closure.totalDegatsApres,
+      totalDegatsOptimalCumules: closure.totalDegatsOptimalApres,
       embed,
       components: [],
       noPing,
@@ -452,14 +449,12 @@ export async function postBossRaid(
   }
 
   const event = activeEventForDay(jourSuivant, config.evenements_boss);
-  const embed = await buildCombatEmbed(
-    jourSuivant,
-    closure.bossStatsApres,
-    closure.totalDegatsApres,
-    closure,
-    event,
-    config,
-  );
+  const nextState = {
+    ...state,
+    totalDegatsCumules: closure.totalDegatsApres,
+    totalDegatsOptimalCumules: closure.totalDegatsOptimalApres,
+  };
+  const embed = await buildCombatEmbed(jourSuivant, state.jour, closure, event, config, nextState);
   const components = buildComponents(jourSuivant, "combat", {}, config);
 
   if (dryRun)
@@ -475,8 +470,8 @@ export async function postBossRaid(
   return publishAndWriteState(channelId, state, {
     phase: "combat",
     jour: jourSuivant,
-    bossStats: closure.bossStatsApres,
     totalDegatsCumules: closure.totalDegatsApres,
+    totalDegatsOptimalCumules: closure.totalDegatsOptimalApres,
     embed,
     components,
     noPing: true,
@@ -492,8 +487,8 @@ async function publishAndWriteState(
   {
     phase,
     jour,
-    bossStats,
     totalDegatsCumules,
+    totalDegatsOptimalCumules,
     embed,
     components,
     noPing,
@@ -558,8 +553,8 @@ async function publishAndWriteState(
     messageId: message.id,
     publishedAt: new Date().toISOString(),
     termine,
-    bossStats,
     totalDegatsCumules,
+    totalDegatsOptimalCumules,
   });
 
   return { jour, embed, message, termine };
@@ -600,14 +595,10 @@ async function postFollowup(webhookUrl, payload) {
 async function renderCombatPayload(state, config) {
   const voteCounts = await tallyVotes(state.jour);
   const event = activeEventForDay(state.jour, config.evenements_boss);
-  const embed = await buildCombatEmbed(
-    state.jour,
-    state.bossStats,
-    state.totalDegatsCumules,
-    null,
-    event,
-    config,
-  );
+  // Le message public ne montre jamais le bilan de la veille après coup
+  // (uniquement au moment de la publication du jour) — un simple
+  // re-render suite à un clic de vote ne doit pas ressasser le bilan.
+  const embed = await buildCombatEmbed(state.jour, state.jour - 1, null, event, config, state);
   const components = buildComponents(
     state.jour,
     state.phase,
@@ -669,10 +660,11 @@ export async function handleVoteButton(
 }
 
 // ── Bouton Espionne — exception : réponse éphémère avec projection live ──
-// Le vote Espionne compte dans le dénominateur All-In comme n'importe quel
-// autre vote (recordVote), mais sa réponse est privée : projection des
-// dégâts du jour EN COURS (previewCloture, écriture nulle) + révélation de
-// l'événement prévu pour le LENDEMAIN, exclusivité de ce bouton.
+// Le vote Espionne ne compte dans aucune combinaison (0 dégât, exclu du
+// calcul de la meilleure combinaison), mais sa réponse est privée :
+// projection des dégâts + note de combinaison du jour EN COURS
+// (previewCloture, écriture nulle) + révélation de l'événement prévu pour
+// le LENDEMAIN, exclusivité de ce bouton.
 
 export async function handleEspion(
   webhookUrl,
@@ -709,13 +701,9 @@ export async function handleEspion(
 
     const lines = [
       `🔍 **Projection actuelle du Jour ${jour}** (basée sur les votes en cours, sujette à changement jusqu’à ${formatUtcTimeAsParis(8)}, heure de Paris) :`,
-      `💥 Dégâts projetés : **${projection.totalDamageDuJour}**`,
+      `💥 Dégâts projetés : **${projection.totalDamageDuJour}** *(meilleure combinaison possible : ${projection.bestDamage})*`,
+      `🎯 Indice de note actuelle : **${formatScore(projection.score)}**`,
     ];
-    if (projection.allIn) {
-      lines.push(
-        `⚡ Ultime en cours de déclenchement : **${ULTIMATE_NAMES[projection.allIn]}** — ${ULTIMATE_EFFECTS[projection.allIn]}.`,
-      );
-    }
     lines.push(
       "",
       lendemain
@@ -751,10 +739,17 @@ export async function handleEspion(
 
 // ── Bouton [📜 Journal] — lecture seule, hors-vote ─────────────────
 
+function formatUltimateSuffix(multiplier) {
+  if (multiplier === 1.3) return " — ⚡+30%";
+  if (multiplier === 1.1) return " — ⚡+10%";
+  if (multiplier === 0.9) return " — ⚡-10%";
+  return "";
+}
+
 function formatHistoriqueLine(entry) {
-  const ultimate = entry.allIn ? ` — ⚡ ${ULTIMATE_NAMES[entry.allIn]}` : "";
   const evt = entry.event ? ` — ${entry.event.emoji} ${entry.event.nom}` : "";
-  return `Jour ${entry.jour} : 💥 ${entry.totalDamageDuJour} dégâts (cumul ${entry.totalDegatsApres})${ultimate}${evt}`;
+  const ultimate = formatUltimateSuffix(entry.ultimateMultiplier);
+  return `Jour ${entry.jour} : 💥 ${entry.totalDamageDuJour}pts *(meilleure combi ${entry.bestDamage}pts)* — score ${formatScore(entry.score)}${ultimate}${evt}`;
 }
 
 export async function handleJournal(webhookUrl) {
@@ -769,11 +764,20 @@ export async function handleJournal(webhookUrl) {
       return;
     }
 
-    const { entries } = await listHistorique({ limit: 10 });
+    const config = await loadBossRaidConfig();
+    const scoreCumule = cumulativeScore(state.totalDegatsCumules, state.totalDegatsOptimalCumules);
     const lines = [
-      `🏆 Dégâts cumulés : **${state.totalDegatsCumules}**`,
-      `🛡️ Défense actuelle : ${state.bossStats.defense}/10 — 🔮 Résistance actuelle : ${state.bossStats.resistance}/10`,
+      `⚔️ Dégâts cumulés : **${state.totalDegatsCumules}** — 🏆 Score cumulé : **${formatScore(scoreCumule)}**`,
     ];
+
+    const { entries } = await listHistorique({ limit: 10 });
+    if (entries.length > 0) {
+      const dernier = entries[0];
+      lines.push(
+        "",
+        ...buildBilanLines(dernier.jour, dernier, config),
+      );
+    }
     if (entries.length > 0) {
       lines.push(
         "",
@@ -795,52 +799,51 @@ export async function handleJournal(webhookUrl) {
 
 // ── Bouton [📖 Règles & Rôles] — éphémère, statique, hors-vote ─────
 // Ne consomme jamais le vote du jour, contenu généré depuis boss_raid.json.
-// Les 3 événements du Boss ne sont volontairement jamais listés ici — même
+// Les événements du Boss ne sont volontairement jamais listés ici — même
 // principe que Robinson, ils restent une surprise (sauf pour l'Espionne, qui
 // révèle l'événement du lendemain en exclusivité).
 
 function buildReglesEmbed(config) {
   const lines = [
-    `Le clan affronte Kiki, un P.E.K.K.A. colossal, pendant ${config.duree_jours} jours de combat. Objectif : accumuler le maximum de dégâts cumulés.`,
+    `Le clan affronte Kiki, un P.E.K.K.A. colossal, pendant ${config.duree_jours} jours de combat. Objectif : accumuler le maximum de dégâts cumulés en trouvant, jour après jour, la MEILLEURE répartition des votes du clan entre les rôles.`,
+    "",
+    "🎯 **Aucun aléatoire** : tous les dégâts sont fixes. Chaque jour, une combinaison de rôles est objectivement optimale — le Journal révèle après coup quelle était cette meilleure combinaison, comparée à celle réellement votée, avec une note de **SS/S/A/B/C/D**.",
     "",
     `**Rôles (1 vote par membre et par jour, modifiable jusqu’à ${formatUtcTimeAsParis(8)}):**`,
   ];
 
   const chevalier = config.roles.chevalier;
   lines.push(
-    `${chevalier.emoji} **${chevalier.label}** — 0 dégât, protège jusqu’à ${chevalier.protection_slots} unités à distance (Sorcier/Archères). Impossible de voter Chevalier 2 jours de suite.`,
+    `${chevalier.emoji} **${chevalier.label}** — 0 dégât, protège jusqu’à ${chevalier.protection_slots} unités à distance (Sorcier/Archères) contre le malus de non-protection. Impossible de voter Chevalier 2 jours de suite.`,
   );
 
   const voleuse = config.roles.voleuse;
   lines.push(
-    `${voleuse.emoji} **${voleuse.label}** — ${voleuse.degats_min} à ${voleuse.degats_max} dégâts (jamais réduits). ${Math.round(voleuse.chance_debuff * 100)}% de chance de réduire la Défense OU la Résistance du Boss de 1 pour le lendemain.`,
+    `${voleuse.emoji} **${voleuse.label}** — ${voleuse.degats} dégâts fixes, jamais réduits ni affectés par la protection. Chaque vote Voleuse réduit aussi la Défense du Boss de **${voleuse.debuff_defense_par_vote}** point pour la journée (plancher 0) — un soutien direct aux Archères.`,
   );
 
   const sorcier = config.roles.sorcier;
   lines.push(
-    `${sorcier.emoji} **${sorcier.label}** — ${sorcier.degats_min} à ${sorcier.degats_max} dégâts, réduits par la Résistance du Boss (10%/point). Non protégé par un Chevalier : malus -50%.`,
+    `${sorcier.emoji} **${sorcier.label}** — ${sorcier.degats} dégâts de base, réduits par la Résistance du Boss (10%/point). Non protégé par un Chevalier : malus -50% (peut varier selon l’événement du jour).`,
   );
 
   const archeres = config.roles.archeres;
   lines.push(
-    `${archeres.emoji} **${archeres.label}** — ${archeres.degats_min} à ${archeres.degats_max} dégâts, réduits par la Défense du Boss (10%/point). Non protégée par un Chevalier : malus -50%.`,
+    `${archeres.emoji} **${archeres.label}** — ${archeres.degats} dégâts de base, réduits par la Défense du Boss (10%/point, après débuff Voleuse éventuel). Non protégée par un Chevalier : malus -50% (peut varier selon l’événement du jour).`,
   );
 
   const espion = config.roles.espion;
   lines.push(
-    `${espion.emoji} **${espion.label}** — 0 dégât. Affiche la projection des dégâts du jour et un indice sur l’événement du lendemain.`,
+    `${espion.emoji} **${espion.label}** — 0 dégât, ne compte dans aucune combinaison. Affiche en privé la projection des dégâts du jour, un indice de note, et l’événement prévu pour le lendemain.`,
   );
 
   lines.push(
     "",
-    '**Ultimes d’équipe ("All-In")** : si un rôle d’attaque réunit plus de 50% des votes du jour, toute l’équipe déclenche son Ultime pour la journée :',
-    `**${ULTIMATE_NAMES.archeres}** — ${ULTIMATE_EFFECTS.archeres}.`,
-    `**${ULTIMATE_NAMES.sorcier}** — ${ULTIMATE_EFFECTS.sorcier}.`,
-    `**${ULTIMATE_NAMES.voleuse}** — ${ULTIMATE_EFFECTS.voleuse}.`,
+    `🛡️ **Chaque jour repart de la même base** : Défense et Résistance du Boss reviennent à **${config.boss_stats_base.defense}/10** et **${config.boss_stats_base.resistance}/10** — sans persistance d’un jour à l’autre.`,
     "",
-    "🔄 **Régénération** : chaque nuit, Kiki a 30% de chances de récupérer +1 point de Défense, et 30% de chances (indépendamment) de récupérer +1 point de Résistance (plafonnés à 10/10) — sans pression suffisante des Voleuses, il finit par se rétablir petit à petit.",
+    "📅 **Un événement différent chaque jour** (sauf le Jour 1) bouleverse la donne — Défense/Résistance modifiées, protection affaiblie, rôle pénalisé ou renforcé… à vous de réadapter la combinaison en conséquence. Le Boss garde ses surprises, seule l’Espionne révèle l’événement du lendemain en exclusivité.",
     "",
-    "Le Boss réserve aussi quelques surprises en cours de route…",
+    "⚡ **Ultime** : un score de **S ou plus** hier octroie +10% de dégâts aujourd’hui (+30% si atteint 2 jours de suite) ; un score de **C ou moins** hier inflige -10%. Un bonus/malus commun à toute la journée, jamais d’influence sur la note (qui compare toujours au plafond théorique DU jour).",
   );
 
   return {

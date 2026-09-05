@@ -1,21 +1,26 @@
 // ============================================================
 // bossraid.js — Boss Raid, score attack communautaire contre un Boss
 // Colossal. Couche métier : lecture de la config statique, état de la
-// partie (phase/jour/posture du Boss/score cumulé), votes, clôture
-// quotidienne, historique.
+// partie (phase/jour/score cumulé), votes, clôture quotidienne, historique.
 //
 // Stockage : Upstash Redis (mêmes conventions que robinson.js)
 // — espace de clés `bossraid:*`.
 //
+// ⚠️ Refonte stratégique (voir CONTRIBUTING.md) : AUCUN aléatoire nulle part
+// dans le jeu — tous les dégâts sont fixes, le débuff Voleuse est
+// déterministe (-1 Défense/vote), il n'y a plus d'Ultimes/All-In ni de
+// régénération nocturne. Chaque jour repart de la même posture de base
+// (`boss_stats_base`, éventuellement modifiée par l'événement du jour) —
+// aucune valeur de Défense/Résistance ne persiste d'un jour à l'autre. Le
+// jeu devient un pur problème d'optimisation combinatoire : à nombre de
+// votants fixé, quelle répartition entre les 4 rôles d'action maximise les
+// dégâts du jour (`computeBestCombo()`) ? Le score (SS/S/A/B/C/D) compare
+// les dégâts réels du jour à ce plafond théorique.
+//
 // ⚠️ Différence structurelle avec Robinson : ici le vote est MODIFIABLE
-// jusqu'au cron (HSET écrasable, pas HSETNX) et AUCUN tirage aléatoire n'a
-// lieu au clic. Toute la logique de dégâts/événements/All-In est calculée
-// UNE SEULE FOIS à la clôture, dans computeCloture() — une fonction pure.
-// Conséquence directe : la posture du Boss (Défense/Résistance) et le score
-// cumulé vivent dans le même blob JSON `bossraid:state` que Tamagotchi
-// (muté uniquement au cron), PAS dans des clés atomiques séparées comme les
-// stocks de Robinson — il n'y a jamais d'écriture concurrente à sécuriser
-// puisque rien n'est écrit avant la clôture.
+// jusqu'au cron (HSET écrasable, pas HSETNX). Toute la logique de
+// dégâts/protection/événements est calculée UNE SEULE FOIS à la clôture,
+// dans computeCloture() — une fonction pure.
 //
 // ⚠️ automaticDeserialization désactivée volontairement : le SDK convertit
 // par défaut toute valeur "numérique" en Number JS, y compris les IDs
@@ -111,6 +116,13 @@ function voteUsernamesKey(jour) {
   return `bossraid:vote_usernames:${jour}`;
 }
 
+// Les 4 rôles "d'action" — participent au problème de combinaison optimale.
+// L'Espion (0 dégât, hors-combo) et le Chevalier (0 dégât direct, mais
+// compte dans la combinaison car son allocation a un coût d'opportunité)
+// sont traités différemment : Chevalier fait partie de la combinaison,
+// Espion en est totalement exclu (ni au dénominateur, ni candidat possible).
+export const ACTION_ROLES = ["chevalier", "voleuse", "sorcier", "archeres"];
+
 // ── Lecture de la config (statique, jamais mutée) ─────────────────
 
 let configCache = null;
@@ -122,9 +134,9 @@ export async function loadBossRaidConfig() {
   return configCache;
 }
 
-// Pools de textes narratifs (variantes par posture du Boss + phrases de
-// clôture citant les combattants) — séparés de boss_raid.json car purement
-// cosmétiques, n'affectent jamais la logique de jeu. Même principe que
+// Pools de textes narratifs (variantes par posture du Boss + rôle dominant
+// de la veille) — séparés de boss_raid.json car purement cosmétiques,
+// n'affectent jamais la logique de jeu. Même principe que
 // data/robinson/narratifs.json et data/tamagotchi/narratifs.json.
 let narratifsCache = null;
 
@@ -202,12 +214,14 @@ export async function readDernierRole(discordId) {
 
 // ── Fonctions pures de logique de jeu (aucun I/O, testées unitairement) ──
 
-// Répartit les slots de protection Chevalier (2 par Chevalier) entre les
-// votants à distance (Sorcier/Archères). Si leur nombre dépasse la
+// Répartit les slots de protection Chevalier entre les votants à distance
+// (Sorcier/Archères) RÉELS d'une journée. Si leur nombre dépasse la
 // capacité, les slots vont aux votants dont le vote a été fixé/mis à jour
 // le plus tôt ce jour-là (tri par vote_at croissant) — approximation la
 // plus fidèle d'un "ordre d'arrivée" alors que les votes sont modifiables
-// jusqu'au cron.
+// jusqu'au cron. Utilisée uniquement pour la clôture RÉELLE — la recherche
+// de meilleure combinaison hypothétique utilise sa propre allocation
+// optimale (voir allocateOptimalProtection).
 export function computeProtection(nbChevaliers, distantVoters, protectionSlotsParChevalier) {
   const capacite = nbChevaliers * protectionSlotsParChevalier;
   if (distantVoters.length <= capacite) {
@@ -225,34 +239,29 @@ export function computeProtection(nbChevaliers, distantVoters, protectionSlotsPa
   };
 }
 
-// All-In : le premier rôle d'attaque à dépasser STRICTEMENT 50% de
-// l'ensemble des votes du jour (les 5 rôles votables inclus, Chevalier et
-// Espion comptent dans le dénominateur) déclenche son Ultime. Un seul rôle
-// peut mathématiquement dépasser 50%, pas d'ambiguïté d'ordre de test.
-export function detectAllIn(voteCounts, totalVotes) {
-  if (!totalVotes) return null;
-  for (const roleId of ["archeres", "sorcier", "voleuse"]) {
-    if ((voteCounts[roleId] || 0) > totalVotes / 2) return roleId;
-  }
-  return null;
-}
-
 // Lookup exact (pas de condition comme Robinson) — un seul événement par
-// jour, jours 3/6/9 dans la config fournie.
+// jour. Jour 1 volontairement sans événement (aucune entrée dans la config).
 export function activeEventForDay(jour, evenementsBoss) {
   return evenementsBoss.find((e) => e.jour === jour) ?? null;
 }
 
-export function rollDamageInRange(min, max, rng = Math.random) {
-  return Math.floor(min + rng() * (max - min + 1));
-}
-
-// 25% de chance de déclenchement (r < 0.25), puis 50/50 Défense/Résistance
-// à l'intérieur de cette tranche (r < 0.125 → Défense, sinon Résistance).
-export function rollVoleuseDebuff(rng = Math.random) {
-  const r = rng();
-  if (r >= 0.25) return null;
-  return r < 0.125 ? "defense" : "resistance";
+// Résout les paramètres effectifs d'une journée : posture de base du Boss
+// (`boss_stats_base`, TOUJOURS la même, aucune persistance d'un jour à
+// l'autre) modulée par les effets de l'événement du jour éventuel. Aucun
+// aléatoire, aucun état — une pure fonction de (jour, config).
+export function resolveDayParams(jour, config) {
+  const event = activeEventForDay(jour, config.evenements_boss);
+  const effects = event?.effects || {};
+  return {
+    event,
+    defense: effects.defense_override ?? config.boss_stats_base.defense,
+    resistance: effects.resistance_override ?? config.boss_stats_base.resistance,
+    protectionSlots: effects.protection_slots_override ?? config.roles.chevalier.protection_slots,
+    malusMultiplier: effects.malus_multiplier_override ?? 0.5,
+    sorcierMultiplier: effects.sorcier_multiplier ?? 1,
+    archeresMultiplier: effects.archeres_multiplier ?? 1,
+    voleuseDebuffDisabled: Boolean(effects.voleuse_debuff_disabled),
+  };
 }
 
 export function applyStatReduction(baseDamage, statValue) {
@@ -260,70 +269,28 @@ export function applyStatReduction(baseDamage, statValue) {
   return baseDamage * (1 - clamped * 0.1);
 }
 
-// Protégé : jamais de malus, même pendant Frappe Léthale. Non protégé :
-// -50% normalement, -100% (0 dégât) si Frappe Léthale est active ce jour-là.
-export function protectionMultiplier(protege, frappeLethaleActive) {
-  if (protege) return 1;
-  return frappeLethaleActive ? 0 : 0.5;
+// Protégé : jamais de malus, quel que soit l'événement. Non protégé :
+// malus du jour (0.5 par défaut, ex. 0 lors de Frappe Léthale, voir
+// resolveDayParams).
+export function protectionMultiplier(protege, malusMultiplier) {
+  return protege ? 1 : malusMultiplier;
 }
 
-// Jamais réduite par la Résistance/Défense du Boss, jamais affectée par la
-// protection Chevalier (la Voleuse n'est pas une unité "à distance").
-export function computeVoleuseDamage(base) {
-  return base;
-}
-
-export function computeSorcierDamage({ base, resistance, protege, frappeLethaleActive, surchargeArcaneActive, miroirManaActive }) {
+export function computeSorcierDamage({ base, resistance, protege, malusMultiplier, sorcierMultiplier }) {
   let degats = applyStatReduction(base, resistance);
-  degats *= protectionMultiplier(protege, frappeLethaleActive);
-  if (surchargeArcaneActive) degats *= 2; // All-In Sorcier : x2
-  if (miroirManaActive) degats *= 0.5; // Miroir de Mana : réduction supplémentaire de 50%
+  degats *= protectionMultiplier(protege, malusMultiplier);
+  degats *= sorcierMultiplier;
   return degats;
 }
 
-// `defense` doit déjà intégrer l'effet Bouclier d'Acier (Défense effective
-// = 10 ce jour-là) — calculé par l'appelant, pas ici. Volée Céleste (All-In
-// Archères) est testée EN PREMIER et l'emporte totalement sur Bouclier
-// d'Acier : ignore Défense ET protection, 100% dégâts pour tous les votants
-// Archères ce jour-là (protégés ou non).
-export function computeArcheresDamage({ base, defense, protege, frappeLethaleActive, voleeCelesteActive }) {
-  if (voleeCelesteActive) return base;
+// `defense` doit déjà intégrer le débuff Voleuse du jour (défense effective
+// = defense_du_jour - nb_voleuses × debuff_defense_par_vote, plancher 0),
+// calculé par l'appelant (computeComboDamage), pas ici.
+export function computeArcheresDamage({ base, defense, protege, malusMultiplier, archeresMultiplier }) {
   let degats = applyStatReduction(base, defense);
-  degats *= protectionMultiplier(protege, frappeLethaleActive);
+  degats *= protectionMultiplier(protege, malusMultiplier);
+  degats *= archeresMultiplier;
   return degats;
-}
-
-// Régénération nocturne du Boss — sans ça, Défense/Résistance ne peuvent
-// que stagner ou diminuer sur 10 jours (aucune autre source de hausse).
-// +0 ou +1, 30% de chances de +1 (moyenne 0,3/stat/jour) — un tirage
-// indépendant par stat. Barème validé par simulation Monte Carlo (voir
-// CONTRIBUTING.md, section Boss Raid) : le barème initial (+1/+2, moyenne
-// 1,5) écrasait totalement la pression des debuffs Voleuse quel que soit
-// le nombre de votants — Défense/Résistance grimpaient à ~9/10 dès le
-// Jour 4-5. Ce barème cible une moyenne proche de 5/10 sur les 10 jours
-// pour des groupes de 8 à 16 votants.
-export function rollRegenAmount(rng = Math.random) {
-  return rng() < 0.7 ? 0 : 1;
-}
-
-// Nouvelle posture du Boss pour le lendemain. Coup à la Gorge (All-In
-// Voleuse) écrase tout à {0,0} INCONDITIONNELLEMENT, même si des debuffs
-// individuels ont été tirés le même jour (ils restent visibles dans le
-// bilan mais n'influencent jamais le résultat final, jamais recalculés en
-// silence) — la régénération (`regen`) est ignorée elle aussi ce jour-là,
-// elle ne reprend qu'à partir du lendemain. Sinon : debuffs Voleuse
-// (plancher 0) PUIS régénération (plafond 10), dans cet ordre.
-export function computeBossStatsNextDay(bossStatsAvant, voleuseDebuffs, allIn, regen) {
-  if (allIn === "voleuse") return { defense: 0, resistance: 0 };
-  let defense = bossStatsAvant.defense;
-  let resistance = bossStatsAvant.resistance;
-  for (const stat of voleuseDebuffs) {
-    if (stat === "defense") defense = Math.max(0, defense - 1);
-    else if (stat === "resistance") resistance = Math.max(0, resistance - 1);
-  }
-  defense = Math.min(10, defense + regen.defense);
-  resistance = Math.min(10, resistance + regen.resistance);
-  return { defense, resistance };
 }
 
 // `dernierRole` = dernier rôle FINALISÉ du membre (jour précédent), ou
@@ -332,137 +299,322 @@ export function isChevalierVoteAllowed(dernierRole) {
   return dernierRole !== "chevalier";
 }
 
-// ── Orchestrateur pur — cœur de la clôture (aucun I/O) ──────────────
-// Reproduit fidèlement l'algorithme de clôture fourni par l'utilisateur :
-// protection → All-In → dégâts par votant → debuffs Voleuse → nouvelle
-// posture → cumul. `rng` injectable pour les tests.
-
-export function computeCloture({ jour, votesRaw, voteAtRaw, bossStatsAvant, totalDegatsAvant, config, rng = Math.random }) {
-  const entries = Object.entries(votesRaw);
-  const totalVotes = entries.length;
-
-  const chevaliers = entries.filter(([, roleId]) => roleId === "chevalier");
-  const distants = entries
-    .filter(([, roleId]) => roleId === "sorcier" || roleId === "archeres")
-    .map(([discordId]) => ({ discordId, votedAt: voteAtRaw[discordId] || "" }));
-
-  const protectionSlots = config.roles.chevalier.protection_slots;
-  const protection = computeProtection(chevaliers.length, distants, protectionSlots);
-
-  const voteCounts = {};
-  for (const [, roleId] of entries) voteCounts[roleId] = (voteCounts[roleId] || 0) + 1;
-  const allIn = detectAllIn(voteCounts, totalVotes);
-
-  const event = activeEventForDay(jour, config.evenements_boss);
-  const frappeLethaleActive = event?.id === "frappe_lethale";
-  const bouclierAcierActive = event?.id === "bouclier_acier";
-  const miroirManaActive = event?.id === "miroir_mana";
-  const voleeCelesteActive = allIn === "archeres";
-  const surchargeArcaneActive = allIn === "sorcier";
-
-  const defenseEffective = bouclierAcierActive ? 10 : bossStatsAvant.defense;
-
-  let totalDamageDuJour = 0;
-  const perVoteDetails = [];
-  const voleuseDebuffs = [];
-
-  for (const [discordId, roleId] of entries) {
-    if (roleId === "chevalier" || roleId === "espion") {
-      perVoteDetails.push({ discordId, roleId, degats: 0 });
-      continue;
-    }
-    if (roleId === "voleuse") {
-      const { degats_min, degats_max } = config.roles.voleuse;
-      const base = rollDamageInRange(degats_min, degats_max, rng);
-      const degats = Math.round(computeVoleuseDamage(base));
-      totalDamageDuJour += degats;
-      perVoteDetails.push({ discordId, roleId, degats });
-      const debuff = rollVoleuseDebuff(rng);
-      if (debuff) voleuseDebuffs.push({ discordId, stat: debuff });
-      continue;
-    }
-    if (roleId === "sorcier") {
-      const { degats_min, degats_max } = config.roles.sorcier;
-      const base = rollDamageInRange(degats_min, degats_max, rng);
-      const protege = protection.protectedIds.has(discordId);
-      const degats = Math.round(
-        computeSorcierDamage({
-          base,
-          resistance: bossStatsAvant.resistance,
-          protege,
-          frappeLethaleActive,
-          surchargeArcaneActive,
-          miroirManaActive,
-        }),
-      );
-      totalDamageDuJour += degats;
-      perVoteDetails.push({ discordId, roleId, degats, protege });
-      continue;
-    }
-    if (roleId === "archeres") {
-      const { degats_min, degats_max } = config.roles.archeres;
-      const base = rollDamageInRange(degats_min, degats_max, rng);
-      const protege = protection.protectedIds.has(discordId);
-      const degats = Math.round(
-        computeArcheresDamage({ base, defense: defenseEffective, protege, frappeLethaleActive, voleeCelesteActive }),
-      );
-      totalDamageDuJour += degats;
-      perVoteDetails.push({ discordId, roleId, degats, protege });
-    }
+// Décompte des votes sur les 4 rôles d'action uniquement — l'Espion est
+// totalement exclu (ni dégât, ni candidat de la combinaison optimale).
+export function computeActionCounts(votesRaw) {
+  const counts = { chevalier: 0, voleuse: 0, sorcier: 0, archeres: 0 };
+  for (const roleId of Object.values(votesRaw)) {
+    if (roleId in counts) counts[roleId] += 1;
   }
+  return counts;
+}
 
-  // Tirée systématiquement (même lors d'un Coup à la Gorge, où le résultat
-  // est simplement ignoré par computeBossStatsNextDay) — consommation rng
-  // prévisible, pas de branche conditionnelle sur le nombre de tirages.
-  const regen = { defense: rollRegenAmount(rng), resistance: rollRegenAmount(rng) };
-  const bossStatsApres = computeBossStatsNextDay(
-    bossStatsAvant,
-    voleuseDebuffs.map((d) => d.stat),
-    allIn,
-    regen,
+// Défense effective du jour après débuff Voleuse : -1 point par vote
+// Voleuse (déterministe, aucun tirage), plancher 0. Neutralisé par
+// l'événement Rage du Boss (`voleuseDebuffDisabled`) — la Voleuse ne
+// conserve alors que son dégât fixe.
+export function computeDefenseEffective(nbVoleuses, dayParams, config) {
+  if (dayParams.voleuseDebuffDisabled) return dayParams.defense;
+  const debuff = config.roles.voleuse.debuff_defense_par_vote || 0;
+  return Math.max(0, dayParams.defense - nbVoleuses * debuff);
+}
+
+// Dégâts totaux d'une combinaison (répartition de votes sur les 4 rôles
+// d'action), étant donné combien de Sorciers/Archères sont protégés parmi
+// eux. Fonction commune aux deux usages : clôture RÉELLE (protection
+// dérivée de l'ordre d'arrivée réel, computeProtection) et recherche de
+// MEILLEURE combinaison hypothétique (protection allouée de façon optimale,
+// voir allocateOptimalProtection) — jamais deux formules de dégâts
+// différentes.
+export function computeComboDamage(counts, dayParams, config, { protectedSorcier, protectedArcheres }) {
+  const voleuseTotal = counts.voleuse * config.roles.voleuse.degats;
+  const defenseEffective = computeDefenseEffective(counts.voleuse, dayParams, config);
+
+  const sorcierProtUnit = Math.round(
+    computeSorcierDamage({
+      base: config.roles.sorcier.degats,
+      resistance: dayParams.resistance,
+      protege: true,
+      malusMultiplier: dayParams.malusMultiplier,
+      sorcierMultiplier: dayParams.sorcierMultiplier,
+    }),
   );
-  const totalDegatsApres = totalDegatsAvant + totalDamageDuJour;
+  const sorcierUnprotUnit = Math.round(
+    computeSorcierDamage({
+      base: config.roles.sorcier.degats,
+      resistance: dayParams.resistance,
+      protege: false,
+      malusMultiplier: dayParams.malusMultiplier,
+      sorcierMultiplier: dayParams.sorcierMultiplier,
+    }),
+  );
+  const archeresProtUnit = Math.round(
+    computeArcheresDamage({
+      base: config.roles.archeres.degats,
+      defense: defenseEffective,
+      protege: true,
+      malusMultiplier: dayParams.malusMultiplier,
+      archeresMultiplier: dayParams.archeresMultiplier,
+    }),
+  );
+  const archeresUnprotUnit = Math.round(
+    computeArcheresDamage({
+      base: config.roles.archeres.degats,
+      defense: defenseEffective,
+      protege: false,
+      malusMultiplier: dayParams.malusMultiplier,
+      archeresMultiplier: dayParams.archeresMultiplier,
+    }),
+  );
+
+  const sorcierUnprotectedCount = counts.sorcier - protectedSorcier;
+  const archeresUnprotectedCount = counts.archeres - protectedArcheres;
+  const sorcierTotal = sorcierProtUnit * protectedSorcier + sorcierUnprotUnit * sorcierUnprotectedCount;
+  const archeresTotal = archeresProtUnit * protectedArcheres + archeresUnprotUnit * archeresUnprotectedCount;
 
   return {
+    total: voleuseTotal + sorcierTotal + archeresTotal,
+    breakdown: { voleuse: voleuseTotal, sorcier: sorcierTotal, archeres: archeresTotal },
+    defenseEffective,
+  };
+}
+
+// Répartit la capacité de protection disponible entre Sorcier/Archères de
+// façon à MAXIMISER les dégâts — au profit du rôle dont la protection
+// rapporte le plus (delta protégé/non-protégé le plus élevé) en premier.
+// Purement hypothétique (aucune notion d'ordre d'arrivée réel) : utilisée
+// uniquement par computeBestCombo() pour établir le plafond théorique du
+// jour, jamais pour la clôture réelle (qui utilise computeProtection).
+export function allocateOptimalProtection(nSorcier, nArcheres, capacite, deltaSorcier, deltaArcheres) {
+  let remaining = Math.min(capacite, nSorcier + nArcheres);
+  let protectedSorcier = 0;
+  let protectedArcheres = 0;
+  const order = deltaSorcier >= deltaArcheres ? ["sorcier", "archeres"] : ["archeres", "sorcier"];
+  for (const role of order) {
+    const available = role === "sorcier" ? nSorcier : nArcheres;
+    const take = Math.min(available, remaining);
+    if (role === "sorcier") protectedSorcier = take;
+    else protectedArcheres = take;
+    remaining -= take;
+  }
+  return { protectedSorcier, protectedArcheres };
+}
+
+function evaluateCandidateCombo(counts, dayParams, config) {
+  const capacite = counts.chevalier * dayParams.protectionSlots;
+  const defenseEffective = computeDefenseEffective(counts.voleuse, dayParams, config);
+  const sorcierProtUnit = computeSorcierDamage({
+    base: config.roles.sorcier.degats,
+    resistance: dayParams.resistance,
+    protege: true,
+    malusMultiplier: dayParams.malusMultiplier,
+    sorcierMultiplier: dayParams.sorcierMultiplier,
+  });
+  const sorcierUnprotUnit = computeSorcierDamage({
+    base: config.roles.sorcier.degats,
+    resistance: dayParams.resistance,
+    protege: false,
+    malusMultiplier: dayParams.malusMultiplier,
+    sorcierMultiplier: dayParams.sorcierMultiplier,
+  });
+  const archeresProtUnit = computeArcheresDamage({
+    base: config.roles.archeres.degats,
+    defense: defenseEffective,
+    protege: true,
+    malusMultiplier: dayParams.malusMultiplier,
+    archeresMultiplier: dayParams.archeresMultiplier,
+  });
+  const archeresUnprotUnit = computeArcheresDamage({
+    base: config.roles.archeres.degats,
+    defense: defenseEffective,
+    protege: false,
+    malusMultiplier: dayParams.malusMultiplier,
+    archeresMultiplier: dayParams.archeresMultiplier,
+  });
+
+  const { protectedSorcier, protectedArcheres } = allocateOptimalProtection(
+    counts.sorcier,
+    counts.archeres,
+    capacite,
+    sorcierProtUnit - sorcierUnprotUnit,
+    archeresProtUnit - archeresUnprotUnit,
+  );
+
+  return computeComboDamage(counts, dayParams, config, { protectedSorcier, protectedArcheres });
+}
+
+// Recherche EXHAUSTIVE (force brute) de la répartition des `totalVotes`
+// votants d'un jour entre les 4 rôles d'action qui maximise les dégâts —
+// le "plafond théorique" du jour, servant de référence au score. O(N³/6)
+// combinaisons : totalement négligeable même pour plusieurs dizaines de
+// votants (une poignée de ms), pas besoin d'heuristique plus fine.
+export function computeBestCombo(totalVotes, dayParams, config) {
+  let best = { counts: { chevalier: 0, voleuse: 0, sorcier: 0, archeres: 0 }, total: 0, breakdown: {} };
+  for (let chevalier = 0; chevalier <= totalVotes; chevalier++) {
+    for (let voleuse = 0; voleuse <= totalVotes - chevalier; voleuse++) {
+      for (let sorcier = 0; sorcier <= totalVotes - chevalier - voleuse; sorcier++) {
+        const archeres = totalVotes - chevalier - voleuse - sorcier;
+        const counts = { chevalier, voleuse, sorcier, archeres };
+        const result = evaluateCandidateCombo(counts, dayParams, config);
+        if (result.total > best.total) {
+          best = { counts, total: result.total, breakdown: result.breakdown };
+        }
+      }
+    }
+  }
+  return { counts: best.counts, damage: best.total, breakdown: best.breakdown };
+}
+
+// Note de combinaison (SS/S/A/B/C/D) — compare les dégâts obtenus au
+// plafond théorique du jour (computeBestCombo). Seuils arbitraires mais
+// tunables ici, indépendamment du reste du moteur.
+export function gradeForRatio(ratio) {
+  if (ratio >= 0.97) return "SS";
+  if (ratio >= 0.85) return "S";
+  if (ratio >= 0.7) return "A";
+  if (ratio >= 0.55) return "B";
+  if (ratio >= 0.35) return "C";
+  return "D";
+}
+
+// Score cumulé affiché en permanence dans l'embed/Journal : compare le
+// cumul RÉEL de dégâts au cumul du plafond théorique jour par jour (pas une
+// simple moyenne des lettres quotidiennes, qui pondérerait injustement un
+// jour à faible participation autant qu'un jour à forte participation).
+// `null` tant qu'aucun jour n'a encore été clôturé (rien à comparer).
+export function cumulativeScore(totalDegatsCumules, totalDegatsOptimalCumules) {
+  if (!totalDegatsOptimalCumules) return null;
+  return gradeForRatio(totalDegatsCumules / totalDegatsOptimalCumules);
+}
+
+// ── Ultime — bonus/malus de dégâts basé sur la performance des jours
+// précédents (remplace l'ancien concept d'Ultime déclenché par vote) ──
+// SS/S hier -> +10% de dégâts aujourd'hui, SS/S hier ET avant-hier (2 jours
+// de suite) -> +30% (remplace le +10%, ne s'additionne pas). C/D hier ->
+// -10%. Tout le reste (A/B, ou pas d'historique) : neutre, aucun effet. Un
+// simple multiplicateur uniforme appliqué à TOUT le dégât du jour (voir
+// computeCloture) — ne change jamais quelle combinaison est optimale
+// (facteur commun au numérateur et au dénominateur du score), seuls les
+// totaux affichés (dégâts du jour, cumul) en profitent ou en pâtissent.
+const ULTIMATE_HIGH_GRADES = new Set(["SS", "S"]);
+const ULTIMATE_LOW_GRADES = new Set(["C", "D"]);
+
+export function computeUltimateMultiplier(gradeYesterday, gradeDayBefore) {
+  if (ULTIMATE_HIGH_GRADES.has(gradeYesterday)) {
+    return ULTIMATE_HIGH_GRADES.has(gradeDayBefore) ? 1.3 : 1.1;
+  }
+  if (ULTIMATE_LOW_GRADES.has(gradeYesterday)) return 0.9;
+  return 1;
+}
+
+// Résout l'Ultime du jour à partir des scores déjà figés des 2 jours
+// précédents (`bossraid:historique`, jamais réécrits une fois le jour clos)
+// — safe à appeler aussi bien à l'affichage (jour en cours, encore ouvert)
+// qu'à la clôture elle-même : le résultat ne peut pas changer entre les deux
+// appels puisqu'il ne dépend que de jours déjà clos. `jour <= 2` (pas assez
+// d'historique) résout naturellement en neutre via `getHistoriqueEntry`
+// retournant `null`.
+export async function resolveUltimateMultiplier(jour) {
+  const [entryHier, entryAvantHier] = await Promise.all([
+    getHistoriqueEntry(jour - 1),
+    getHistoriqueEntry(jour - 2),
+  ]);
+  const gradeYesterday = entryHier?.score ?? null;
+  const gradeDayBefore = entryAvantHier?.score ?? null;
+  return {
+    multiplier: computeUltimateMultiplier(gradeYesterday, gradeDayBefore),
+    gradeYesterday,
+    gradeDayBefore,
+  };
+}
+
+// ── Orchestrateur pur — cœur de la clôture (aucun I/O) ──────────────
+// protection → combinaison réelle (dégâts) → meilleure combinaison
+// possible à nombre de votants égal → score du jour.
+
+export function computeCloture({ jour, votesRaw, voteAtRaw, dayParams, config, totalDegatsAvant, totalDegatsOptimalAvant, ultimateMultiplier = 1 }) {
+  const voteCounts = {};
+  for (const roleId of Object.values(votesRaw)) voteCounts[roleId] = (voteCounts[roleId] || 0) + 1;
+  const totalVotes = Object.keys(votesRaw).length;
+
+  const actionCounts = computeActionCounts(votesRaw);
+  const totalVotesAction = actionCounts.chevalier + actionCounts.voleuse + actionCounts.sorcier + actionCounts.archeres;
+
+  const distants = Object.entries(votesRaw)
+    .filter(([, roleId]) => roleId === "sorcier" || roleId === "archeres")
+    .map(([discordId]) => ({ discordId, votedAt: voteAtRaw[discordId] || "" }));
+  const protection = computeProtection(actionCounts.chevalier, distants, dayParams.protectionSlots);
+
+  let protectedSorcier = 0;
+  let protectedArcheres = 0;
+  for (const [discordId, roleId] of Object.entries(votesRaw)) {
+    if (!protection.protectedIds.has(discordId)) continue;
+    if (roleId === "sorcier") protectedSorcier += 1;
+    else if (roleId === "archeres") protectedArcheres += 1;
+  }
+
+  const actual = computeComboDamage(actionCounts, dayParams, config, { protectedSorcier, protectedArcheres });
+  const best = computeBestCombo(totalVotesAction, dayParams, config);
+  // Ratio calculé AVANT application de l'Ultime : un multiplicateur commun
+  // au réel et au plafond théorique ne doit jamais influencer la note (voir
+  // computeUltimateMultiplier) — seuls les totaux affichés ci-dessous en
+  // profitent ou en pâtissent.
+  const score = best.damage > 0 ? gradeForRatio(actual.total / best.damage) : null;
+
+  const totalDamageDuJour = Math.round(actual.total * ultimateMultiplier);
+  const bestDamage = Math.round(best.damage * ultimateMultiplier);
+  const breakdown = Object.fromEntries(
+    Object.entries(actual.breakdown).map(([role, value]) => [role, Math.round(value * ultimateMultiplier)]),
+  );
+
+  return {
+    event: dayParams.event,
+    dayParams,
     voteCounts,
     totalVotes,
-    protection,
-    allIn,
-    event,
-    perVoteDetails,
+    actionCounts,
+    totalVotesAction,
+    protection: {
+      capacite: protection.capacite,
+      protectedCount: protection.protectedIds.size,
+      tousProteges: protection.tousProteges,
+    },
+    ultimateMultiplier,
     totalDamageDuJour,
-    totalDegatsApres,
-    voleuseDebuffs,
-    regen,
-    bossStatsApres,
+    breakdown,
+    bestCombo: best.counts,
+    bestDamage,
+    score,
+    totalDegatsApres: totalDegatsAvant + totalDamageDuJour,
+    totalDegatsOptimalApres: totalDegatsOptimalAvant + bestDamage,
   };
 }
 
 // ── Wrappers I/O — appelés uniquement par postBossRaid()/handleEspion() ──
 
 async function loadCloture(jour, config) {
-  const [votesRaw, voteAtRaw, usernamesRaw, state] = await Promise.all([
+  const [votesRaw, voteAtRaw, usernamesRaw, state, ultimate] = await Promise.all([
     hgetallRaw(votesKey(jour)),
     hgetallRaw(voteAtKey(jour)),
     hgetallRaw(voteUsernamesKey(jour)),
     readState(),
+    resolveUltimateMultiplier(jour),
   ]);
+  const dayParams = resolveDayParams(jour, config);
   const result = computeCloture({
     jour,
     votesRaw,
     voteAtRaw,
-    bossStatsAvant: state.bossStats,
-    totalDegatsAvant: state.totalDegatsCumules,
+    dayParams,
     config,
-    rng: Math.random,
+    totalDegatsAvant: state.totalDegatsCumules,
+    totalDegatsOptimalAvant: state.totalDegatsOptimalCumules || 0,
+    ultimateMultiplier: ultimate.multiplier,
   });
-  // Pseudo rattaché après coup (jamais dans computeCloture, qui reste pure)
-  // — sert uniquement au texte narratif ("Merci à {noms}..."), lu AVANT que
-  // clearVotes() ne supprime bossraid:vote_usernames:<jour>.
-  return {
-    ...result,
-    perVoteDetails: result.perVoteDetails.map((d) => ({ ...d, username: usernamesRaw[d.discordId] || null })),
-  };
+  // Pseudos rattachés après coup (jamais dans computeCloture, qui reste
+  // pure) — sert uniquement à l'affichage admin (bossRaidStatus.js), lu
+  // AVANT que clearVotes() ne supprime bossraid:vote_usernames:<jour>.
+  return { ...result, usernamesRaw, ultimate };
 }
 
 // Lecture seule (aucune écriture Redis) — utilisée par le bouton Espion
@@ -491,24 +643,22 @@ export function isTooSoonSinceLastClosure(publishedAt, now = Date.now()) {
 export async function closeDayAndAdvance(jour, config) {
   const votesRaw = await hgetallRaw(votesKey(jour));
   const result = await loadCloture(jour, config);
-  const state = await readState();
 
   await writeHistoriqueEntry(jour, {
+    event: result.event,
+    dayParams: result.dayParams,
     voteCounts: result.voteCounts,
     totalVotes: result.totalVotes,
-    protection: {
-      capacite: result.protection.capacite,
-      protectedCount: result.protection.protectedIds.size,
-      tousProteges: result.protection.tousProteges,
-    },
-    allIn: result.allIn,
-    event: result.event,
+    actionCounts: result.actionCounts,
+    protection: result.protection,
+    ultimateMultiplier: result.ultimateMultiplier,
     totalDamageDuJour: result.totalDamageDuJour,
+    breakdown: result.breakdown,
+    bestCombo: result.bestCombo,
+    bestDamage: result.bestDamage,
+    score: result.score,
     totalDegatsApres: result.totalDegatsApres,
-    bossStatsAvant: state.bossStats,
-    bossStatsApres: result.bossStatsApres,
-    voleuseDebuffs: result.voleuseDebuffs,
-    regen: result.regen,
+    totalDegatsOptimalApres: result.totalDegatsOptimalApres,
     resolvedAt: new Date().toISOString(),
   });
   if (Object.keys(votesRaw).length) {
@@ -542,7 +692,7 @@ export async function listHistorique({ limit = 10, offset = 0 } = {}) {
 // ── Manches (bilans de fin de Raid) ────────────────────────────────
 // Le jeu est destiné à être rejoué plusieurs fois dans l'année (un Raid =
 // une "manche"). Contrairement à HISTORIQUE_KEY (bilans quotidiens d'UNE
-// manche, écrasés d'une manche à l'autre puisque les jours 1-10 se
+// manche, écrasés d'une manche à l'autre puisque les jours 1-7 se
 // répètent), MANCHES_KEY est un HASH permanent indexé par un numéro de
 // manche strictement croissant (`MANCHE_SEQ_KEY`, `INCR` atomique) —
 // jamais nettoyé par resetBossRaid(), pour que le récap de fin de Raid

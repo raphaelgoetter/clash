@@ -1,43 +1,45 @@
 import assert from "assert";
 import {
   computeProtection,
-  detectAllIn,
   activeEventForDay,
-  rollDamageInRange,
-  rollVoleuseDebuff,
-  rollRegenAmount,
+  resolveDayParams,
   applyStatReduction,
   protectionMultiplier,
-  computeVoleuseDamage,
   computeSorcierDamage,
   computeArcheresDamage,
-  computeBossStatsNextDay,
+  computeDefenseEffective,
+  computeActionCounts,
+  computeComboDamage,
+  allocateOptimalProtection,
+  computeBestCombo,
+  gradeForRatio,
+  cumulativeScore,
+  computeUltimateMultiplier,
   isChevalierVoteAllowed,
   computeCloture,
 } from "./bossraid.js";
 
 const CONFIG = {
+  boss_stats_base: { defense: 5, resistance: 5 },
   roles: {
     chevalier: { label: "Chevalier", emoji: "🛡️", protection_slots: 2 },
-    voleuse: { label: "Voleuse", emoji: "🗡️", degats_min: 30, degats_max: 40, chance_debuff: 0.25 },
-    sorcier: { label: "Sorcier", emoji: "🔮", degats_min: 80, degats_max: 100, reduction_stat: "resistance" },
-    archeres: { label: "Archères", emoji: "🏹", degats_min: 70, degats_max: 90, reduction_stat: "defense" },
+    voleuse: { label: "Voleuse", emoji: "🗡️", degats: 20, debuff_defense_par_vote: 1 },
+    sorcier: { label: "Sorcier", emoji: "🔮", degats: 90 },
+    archeres: { label: "Archères", emoji: "🏹", degats: 80 },
     espion: { label: "Espion", emoji: "🔍", is_info_action: true },
   },
   evenements_boss: [
-    { jour: 3, id: "frappe_lethale" },
-    { jour: 6, id: "bouclier_acier" },
-    { jour: 9, id: "miroir_mana" },
+    { jour: 3, id: "frappe_lethale", effects: { malus_multiplier_override: 0 } },
+    { jour: 4, id: "muraille", effects: { defense_override: 10 } },
+    { jour: 5, id: "point_faible", effects: { resistance_override: 1 } },
+    { jour: 6, id: "miroir_mana", effects: { sorcier_multiplier: 0.5 } },
+    { jour: 7, id: "bouclier_instable", effects: { protection_slots_override: 1 } },
+    { jour: 8, id: "rage", effects: { voleuse_debuff_disabled: true } },
   ],
 };
 
-function rngSequence(values) {
-  let i = 0;
-  return () => values[i++ % values.length];
-}
-
 async function main() {
-  // ── computeProtection ──
+  // ── computeProtection (inchangé — allocation réelle par ordre d'arrivée) ──
   assert.deepStrictEqual(
     computeProtection(1, [{ discordId: "a", votedAt: "t1" }], 2),
     { capacite: 2, protectedIds: new Set(["a"]), tousProteges: true },
@@ -59,45 +61,29 @@ async function main() {
     assert.strictEqual(r.tousProteges, false);
     assert.strictEqual(r.protectedIds.size, 0);
   }
-  {
-    const distants = [{ discordId: "a", votedAt: "t1" }, { discordId: "b", votedAt: "t2" }];
-    const r = computeProtection(1, distants, 2); // égalité stricte 2 distants === capacité 2
-    assert.strictEqual(r.tousProteges, true);
-    assert.strictEqual(r.protectedIds.size, 2);
-  }
-
-  // ── detectAllIn ──
-  assert.strictEqual(detectAllIn({ archeres: 5 }, 10), null); // 50% pile -> pas déclenché (strict >)
-  assert.strictEqual(detectAllIn({ archeres: 6 }, 10), "archeres");
-  assert.strictEqual(detectAllIn({ voleuse: 6 }, 10), "voleuse");
-  assert.strictEqual(detectAllIn({ sorcier: 6 }, 10), "sorcier");
-  assert.strictEqual(detectAllIn({}, 0), null);
-  assert.strictEqual(
-    detectAllIn({ archeres: 3, sorcier: 3, voleuse: 3, chevalier: 1 }, 10),
-    null,
-  );
 
   // ── activeEventForDay ──
   assert.strictEqual(activeEventForDay(3, CONFIG.evenements_boss)?.id, "frappe_lethale");
-  assert.strictEqual(activeEventForDay(6, CONFIG.evenements_boss)?.id, "bouclier_acier");
-  assert.strictEqual(activeEventForDay(9, CONFIG.evenements_boss)?.id, "miroir_mana");
   assert.strictEqual(activeEventForDay(1, CONFIG.evenements_boss), null);
 
-  // ── rollDamageInRange ──
-  assert.strictEqual(rollDamageInRange(30, 40, rngSequence([0])), 30);
-  assert.strictEqual(rollDamageInRange(30, 40, rngSequence([0.999999])), 40);
-  assert.strictEqual(rollDamageInRange(70, 90, rngSequence([0])), 70);
-  assert.strictEqual(rollDamageInRange(70, 90, rngSequence([0.999999])), 90);
-
-  // ── rollVoleuseDebuff — 25% de déclenchement, 50/50 à l'intérieur ──
-  assert.strictEqual(rollVoleuseDebuff(rngSequence([0])), "defense");
-  assert.strictEqual(rollVoleuseDebuff(rngSequence([0.1])), "defense");
-  assert.strictEqual(rollVoleuseDebuff(rngSequence([0.124])), "defense");
-  assert.strictEqual(rollVoleuseDebuff(rngSequence([0.125])), "resistance");
-  assert.strictEqual(rollVoleuseDebuff(rngSequence([0.2])), "resistance");
-  assert.strictEqual(rollVoleuseDebuff(rngSequence([0.249])), "resistance");
-  assert.strictEqual(rollVoleuseDebuff(rngSequence([0.25])), null);
-  assert.strictEqual(rollVoleuseDebuff(rngSequence([0.5])), null);
+  // ── resolveDayParams — base sans événement, puis chaque type d'effet ──
+  {
+    const p = resolveDayParams(1, CONFIG);
+    assert.strictEqual(p.event, null);
+    assert.strictEqual(p.defense, 5);
+    assert.strictEqual(p.resistance, 5);
+    assert.strictEqual(p.protectionSlots, 2);
+    assert.strictEqual(p.malusMultiplier, 0.5);
+    assert.strictEqual(p.sorcierMultiplier, 1);
+    assert.strictEqual(p.archeresMultiplier, 1);
+    assert.strictEqual(p.voleuseDebuffDisabled, false);
+  }
+  assert.strictEqual(resolveDayParams(3, CONFIG).malusMultiplier, 0); // Frappe Léthale
+  assert.strictEqual(resolveDayParams(4, CONFIG).defense, 10); // Muraille
+  assert.strictEqual(resolveDayParams(5, CONFIG).resistance, 1); // Point Faible
+  assert.strictEqual(resolveDayParams(6, CONFIG).sorcierMultiplier, 0.5); // Miroir de Mana
+  assert.strictEqual(resolveDayParams(7, CONFIG).protectionSlots, 1); // Bouclier Instable
+  assert.strictEqual(resolveDayParams(8, CONFIG).voleuseDebuffDisabled, true); // Rage
 
   // ── applyStatReduction ──
   assert.strictEqual(applyStatReduction(100, 0), 100);
@@ -105,106 +91,107 @@ async function main() {
   assert.strictEqual(applyStatReduction(100, 10), 0);
   assert.strictEqual(applyStatReduction(100, 15), 0); // plafonné à 10
 
-  // ── protectionMultiplier ──
-  assert.strictEqual(protectionMultiplier(true, false), 1);
-  assert.strictEqual(protectionMultiplier(true, true), 1); // protégé -> jamais de malus, même Frappe Léthale
-  assert.strictEqual(protectionMultiplier(false, false), 0.5);
-  assert.strictEqual(protectionMultiplier(false, true), 0);
+  // ── protectionMultiplier — malus du jour, jamais de malus si protégé ──
+  assert.strictEqual(protectionMultiplier(true, 0.5), 1);
+  assert.strictEqual(protectionMultiplier(true, 0), 1); // protégé -> jamais de malus, même Frappe Léthale
+  assert.strictEqual(protectionMultiplier(false, 0.5), 0.5);
+  assert.strictEqual(protectionMultiplier(false, 0), 0);
 
-  // ── computeVoleuseDamage — jamais réduit ──
-  assert.strictEqual(computeVoleuseDamage(35), 35);
-
-  // ── computeSorcierDamage ──
+  // ── computeSorcierDamage — fixe, aucun aléatoire ──
   assert.strictEqual(
-    computeSorcierDamage({ base: 100, resistance: 0, protege: true, frappeLethaleActive: false, surchargeArcaneActive: false, miroirManaActive: false }),
+    computeSorcierDamage({ base: 100, resistance: 0, protege: true, malusMultiplier: 0.5, sorcierMultiplier: 1 }),
     100,
   );
   assert.strictEqual(
-    computeSorcierDamage({ base: 100, resistance: 0, protege: false, frappeLethaleActive: false, surchargeArcaneActive: false, miroirManaActive: false }),
+    computeSorcierDamage({ base: 100, resistance: 0, protege: false, malusMultiplier: 0.5, sorcierMultiplier: 1 }),
     50,
   );
   assert.strictEqual(
-    computeSorcierDamage({ base: 100, resistance: 0, protege: false, frappeLethaleActive: true, surchargeArcaneActive: false, miroirManaActive: false }),
+    computeSorcierDamage({ base: 100, resistance: 0, protege: false, malusMultiplier: 0, sorcierMultiplier: 1 }),
     0,
   );
   assert.strictEqual(
-    computeSorcierDamage({ base: 100, resistance: 0, protege: true, frappeLethaleActive: false, surchargeArcaneActive: true, miroirManaActive: false }),
-    200,
-  );
-  assert.strictEqual(
-    computeSorcierDamage({ base: 100, resistance: 0, protege: true, frappeLethaleActive: false, surchargeArcaneActive: false, miroirManaActive: true }),
+    computeSorcierDamage({ base: 100, resistance: 0, protege: true, malusMultiplier: 0.5, sorcierMultiplier: 0.5 }),
     50,
   );
-  // Composition Surcharge Arcane x2 * Miroir de Mana x0.5 = net x1
   assert.strictEqual(
-    computeSorcierDamage({ base: 100, resistance: 0, protege: true, frappeLethaleActive: false, surchargeArcaneActive: true, miroirManaActive: true }),
-    100,
-  );
-  assert.strictEqual(
-    computeSorcierDamage({ base: 100, resistance: 10, protege: true, frappeLethaleActive: false, surchargeArcaneActive: true, miroirManaActive: true }),
+    computeSorcierDamage({ base: 100, resistance: 10, protege: true, malusMultiplier: 0.5, sorcierMultiplier: 1 }),
     0,
   );
 
-  // ── computeArcheresDamage ──
-  // Volée Céleste (All-In) l'emporte sur tout, y compris Bouclier d'Acier (defense=10) et non-protection
+  // ── computeArcheresDamage — fixe, aucun aléatoire ──
   assert.strictEqual(
-    computeArcheresDamage({ base: 90, defense: 10, protege: false, frappeLethaleActive: true, voleeCelesteActive: true }),
+    computeArcheresDamage({ base: 90, defense: 0, protege: true, malusMultiplier: 0.5, archeresMultiplier: 1 }),
     90,
   );
   assert.strictEqual(
-    computeArcheresDamage({ base: 90, defense: 0, protege: true, frappeLethaleActive: false, voleeCelesteActive: false }),
-    90,
-  );
-  assert.strictEqual(
-    computeArcheresDamage({ base: 90, defense: 10, protege: true, frappeLethaleActive: false, voleeCelesteActive: false }),
+    computeArcheresDamage({ base: 90, defense: 10, protege: true, malusMultiplier: 0.5, archeresMultiplier: 1 }),
     0,
   );
   assert.strictEqual(
-    computeArcheresDamage({ base: 90, defense: 0, protege: false, frappeLethaleActive: false, voleeCelesteActive: false }),
+    computeArcheresDamage({ base: 90, defense: 0, protege: false, malusMultiplier: 0.5, archeresMultiplier: 1 }),
     45,
   );
   assert.strictEqual(
-    computeArcheresDamage({ base: 90, defense: 0, protege: false, frappeLethaleActive: true, voleeCelesteActive: false }),
+    computeArcheresDamage({ base: 90, defense: 0, protege: false, malusMultiplier: 0, archeresMultiplier: 1 }),
     0,
   );
 
-  // ── rollRegenAmount — régénération nocturne, 0 ou 1, 30% de chances de +1 ──
-  assert.strictEqual(rollRegenAmount(rngSequence([0])), 0);
-  assert.strictEqual(rollRegenAmount(rngSequence([0.69])), 0);
-  assert.strictEqual(rollRegenAmount(rngSequence([0.7])), 1);
-  assert.strictEqual(rollRegenAmount(rngSequence([0.99])), 1);
+  // ── computeDefenseEffective — débuff Voleuse déterministe (-1/vote, plancher 0) ──
+  assert.strictEqual(computeDefenseEffective(0, { defense: 5, voleuseDebuffDisabled: false }, CONFIG), 5);
+  assert.strictEqual(computeDefenseEffective(3, { defense: 5, voleuseDebuffDisabled: false }, CONFIG), 2);
+  assert.strictEqual(computeDefenseEffective(10, { defense: 5, voleuseDebuffDisabled: false }, CONFIG), 0); // plancher 0
+  assert.strictEqual(computeDefenseEffective(10, { defense: 5, voleuseDebuffDisabled: true }, CONFIG), 5); // Rage du Boss : débuff neutralisé
 
-  // ── computeBossStatsNextDay — debuffs (plancher 0) PUIS régénération (plafond 10) ──
-  const NO_REGEN = { defense: 0, resistance: 0 };
-  assert.deepStrictEqual(computeBossStatsNextDay({ defense: 5, resistance: 5 }, [], null, NO_REGEN), { defense: 5, resistance: 5 });
+  // ── computeActionCounts — l'Espion est totalement exclu ──
   assert.deepStrictEqual(
-    computeBossStatsNextDay({ defense: 5, resistance: 5 }, ["defense", "defense", "resistance"], null, NO_REGEN),
-    { defense: 3, resistance: 4 },
+    computeActionCounts({ u1: "chevalier", u2: "voleuse", u3: "sorcier", u4: "archeres", u5: "espion" }),
+    { chevalier: 1, voleuse: 1, sorcier: 1, archeres: 1 },
   );
-  assert.deepStrictEqual(
-    computeBossStatsNextDay({ defense: 1, resistance: 5 }, ["defense", "defense"], null, NO_REGEN),
-    { defense: 0, resistance: 5 }, // plancher 0
-  );
-  assert.deepStrictEqual(
-    computeBossStatsNextDay({ defense: 8, resistance: 8 }, ["defense", "resistance"], "voleuse", { defense: 5, resistance: 5 }),
-    { defense: 0, resistance: 0 }, // Coup à la Gorge écrase tout, ignore même un regen généreux
-  );
-  assert.deepStrictEqual(
-    computeBossStatsNextDay({ defense: 5, resistance: 5 }, [], null, { defense: 2, resistance: 1 }),
-    { defense: 7, resistance: 6 }, // régénération pure, pas de debuff ce jour-là
-  );
-  assert.deepStrictEqual(
-    computeBossStatsNextDay({ defense: 9, resistance: 9 }, [], null, { defense: 2, resistance: 2 }),
-    { defense: 10, resistance: 10 }, // plafond 10, le surplus de régénération est perdu
-  );
-  assert.deepStrictEqual(
-    computeBossStatsNextDay({ defense: 5, resistance: 5 }, ["defense", "defense", "resistance"], null, { defense: 2, resistance: 2 }),
-    { defense: 5, resistance: 6 }, // (5-2)+2=5, (5-1)+2=6 — la régénération compense une partie des debuffs
-  );
-  assert.deepStrictEqual(
-    computeBossStatsNextDay({ defense: 1, resistance: 5 }, ["defense", "defense"], null, { defense: 1, resistance: 0 }),
-    { defense: 1, resistance: 5 }, // plancher 0 puis régénération : 0+1=1
-  );
+  assert.deepStrictEqual(computeActionCounts({ u1: "espion" }), { chevalier: 0, voleuse: 0, sorcier: 0, archeres: 0 });
+
+  // ── computeComboDamage — combinaison agrégée (jour 1, sans événement) ──
+  {
+    const dayParams = resolveDayParams(1, CONFIG);
+    const counts = { chevalier: 1, voleuse: 2, sorcier: 1, archeres: 1 };
+    // Défense effective = 5 - 2 = 3. Sorcier protégé = round(90*0.5) = 45.
+    // Archères protégée = round(80*(1-0.3)) = 56. Voleuse = 2*20 = 40.
+    const r = computeComboDamage(counts, dayParams, CONFIG, { protectedSorcier: 1, protectedArcheres: 1 });
+    assert.strictEqual(r.defenseEffective, 3);
+    assert.deepStrictEqual(r.breakdown, { voleuse: 40, sorcier: 45, archeres: 56 });
+    assert.strictEqual(r.total, 141);
+  }
+
+  // ── allocateOptimalProtection — priorité au rôle à plus forte plus-value ──
+  assert.deepStrictEqual(allocateOptimalProtection(2, 3, 3, 10, 5), { protectedSorcier: 2, protectedArcheres: 1 });
+  assert.deepStrictEqual(allocateOptimalProtection(2, 3, 0, 10, 5), { protectedSorcier: 0, protectedArcheres: 0 });
+  assert.deepStrictEqual(allocateOptimalProtection(2, 3, 10, 10, 5), { protectedSorcier: 2, protectedArcheres: 3 });
+  assert.deepStrictEqual(allocateOptimalProtection(2, 3, 3, 5, 10), { protectedSorcier: 0, protectedArcheres: 3 });
+
+  // ── gradeForRatio ──
+  assert.strictEqual(gradeForRatio(1), "SS");
+  assert.strictEqual(gradeForRatio(0.97), "SS");
+  assert.strictEqual(gradeForRatio(0.9), "S");
+  assert.strictEqual(gradeForRatio(0.75), "A");
+  assert.strictEqual(gradeForRatio(0.6), "B");
+  assert.strictEqual(gradeForRatio(0.4), "C");
+  assert.strictEqual(gradeForRatio(0.1), "D");
+
+  // ── cumulativeScore ──
+  assert.strictEqual(cumulativeScore(0, 0), null); // rien à comparer avant la 1ère clôture
+  assert.strictEqual(cumulativeScore(100, 100), "SS");
+  assert.strictEqual(cumulativeScore(50, 100), "C");
+
+  // ── computeUltimateMultiplier — bonus/malus basé sur les 2 derniers scores ──
+  assert.strictEqual(computeUltimateMultiplier(null, null), 1); // pas d'historique (jour 1/2)
+  assert.strictEqual(computeUltimateMultiplier("A", "SS"), 1); // hier neutre -> peu importe avant-hier
+  assert.strictEqual(computeUltimateMultiplier("S", "A"), 1.1); // S hier seul
+  assert.strictEqual(computeUltimateMultiplier("SS", "B"), 1.1); // SS hier seul
+  assert.strictEqual(computeUltimateMultiplier("SS", "S"), 1.3); // SS/S 2 jours de suite
+  assert.strictEqual(computeUltimateMultiplier("S", "SS"), 1.3);
+  assert.strictEqual(computeUltimateMultiplier("C", "SS"), 0.9); // C hier -> malus, peu importe avant-hier
+  assert.strictEqual(computeUltimateMultiplier("D", null), 0.9);
+  assert.strictEqual(computeUltimateMultiplier("B", "SS"), 1); // B/A hier -> neutre
 
   // ── isChevalierVoteAllowed ──
   assert.strictEqual(isChevalierVoteAllowed(undefined), true);
@@ -212,82 +199,131 @@ async function main() {
   assert.strictEqual(isChevalierVoteAllowed("sorcier"), true);
   assert.strictEqual(isChevalierVoteAllowed("chevalier"), false);
 
-  // ── computeCloture — scénarios bout-en-bout ──
-
-  // (a) Jour normal (jour 1, pas d'événement, pas d'All-In)
+  // ── computeBestCombo — plafond théorique, vérifié à la main sur petit N ──
   {
-    const votesRaw = { u1: "chevalier", u2: "voleuse", u3: "sorcier", u4: "archeres", u5: "espion" };
-    const voteAtRaw = { u3: "2020-01-01T00:00:01Z", u4: "2020-01-01T00:00:02Z" };
-    const rng = rngSequence([0, 0.5, 0, 0, 0.9, 0.5]); // dmg voleuse, debuff voleuse (pas déclenché), dmg sorcier, dmg archeres, regen défense (+1), regen résistance (+0)
+    // N=1, jour 1 (sans événement) : Sorcier seul (non protégé, malus 0.5)
+    // = round(90*0.5*0.5) = 23, meilleur que Voleuse seule (20) ou Archères
+    // seule non protégée (round(80*0.5*0.5)=20).
+    const dayParams = resolveDayParams(1, CONFIG);
+    const best = computeBestCombo(1, dayParams, CONFIG);
+    assert.strictEqual(best.damage, 23);
+    assert.deepStrictEqual(best.counts, { chevalier: 0, voleuse: 0, sorcier: 1, archeres: 0 });
+  }
+  {
+    // N=3, jour 3 (Frappe Léthale, malus=0 : un distant non protégé ne fait
+    // RIEN) : la combinaison optimale doit sacrifier un vote en Chevalier
+    // pour protéger les 2 autres plutôt que de laisser un distant à 0
+    // dégât. 1 Chevalier (capacité 2) + 2 Sorciers protégés = 2*45 = 90,
+    // strictement meilleur que toute répartition sans Chevalier (au mieux
+    // 3 Voleuses = 60) ou mal dimensionnée (1 Chevalier + Sorcier + Archères
+    // protégés = 45+40 = 85).
+    const dayParams = resolveDayParams(3, CONFIG);
+    const best = computeBestCombo(3, dayParams, CONFIG);
+    assert.strictEqual(best.damage, 90);
+    assert.deepStrictEqual(best.counts, { chevalier: 1, voleuse: 0, sorcier: 2, archeres: 0 });
+  }
+  {
+    // La recherche exhaustive doit toujours répartir la totalité des votants.
+    const dayParams = resolveDayParams(5, CONFIG);
+    const best = computeBestCombo(9, dayParams, CONFIG);
+    const sum = best.counts.chevalier + best.counts.voleuse + best.counts.sorcier + best.counts.archeres;
+    assert.strictEqual(sum, 9);
+  }
+
+  // ── computeCloture — scénarios bout-en-bout (déterministe, aucun rng) ──
+
+  // (a) Jour 3 (Frappe Léthale) : la communauté a justement voté la
+  // combinaison optimale (1 Chevalier + 2 Sorciers) -> score SS.
+  {
+    const votesRaw = { u1: "chevalier", u2: "sorcier", u3: "sorcier" };
+    const voteAtRaw = { u2: "2020-01-01T00:00:01Z", u3: "2020-01-01T00:00:02Z" };
+    const dayParams = resolveDayParams(3, CONFIG);
     const r = computeCloture({
-      jour: 1,
+      jour: 3,
       votesRaw,
       voteAtRaw,
-      bossStatsAvant: { defense: 5, resistance: 5 },
+      dayParams,
+      config: CONFIG,
       totalDegatsAvant: 0,
-      config: CONFIG,
-      rng,
+      totalDegatsOptimalAvant: 0,
     });
-    assert.strictEqual(r.allIn, null);
-    assert.strictEqual(r.event, null);
-    assert.strictEqual(r.totalVotes, 5);
-    assert.strictEqual(r.protection.tousProteges, true); // 1 Chevalier -> capacité 2, 2 distants
-    // Voleuse 30 (flat) + Sorcier 80 réduit à 40 (résistance 5, protégé) + Archères 70 réduit à 35 (défense 5, protégé)
-    assert.strictEqual(r.totalDamageDuJour, 105);
-    assert.strictEqual(r.totalDegatsApres, 105);
-    assert.deepStrictEqual(r.voleuseDebuffs, []);
-    assert.deepStrictEqual(r.regen, { defense: 1, resistance: 0 });
-    assert.deepStrictEqual(r.bossStatsApres, { defense: 6, resistance: 5 }); // 5+1 régénération défense, résistance inchangée
+    assert.strictEqual(r.totalVotes, 3);
+    assert.strictEqual(r.totalVotesAction, 3);
+    assert.strictEqual(r.protection.tousProteges, true);
+    assert.strictEqual(r.totalDamageDuJour, 90);
+    assert.strictEqual(r.bestDamage, 90);
+    assert.strictEqual(r.score, "SS");
+    assert.strictEqual(r.totalDegatsApres, 90);
+    assert.strictEqual(r.totalDegatsOptimalApres, 90);
   }
 
-  // (b) All-In Archères + Bouclier d'Acier simultanés (jour 6)
+  // (b) Même jour, mais répartition très sous-optimale (tout le monde
+  // Voleuse, aucun distant protégé) -> score strictement inférieur au
+  // plafond théorique du jour, sans avoir à recalculer ce plafond à la main.
   {
-    const votesRaw = { u1: "archeres", u2: "archeres", u3: "archeres", u4: "chevalier" };
-    const voteAtRaw = {
-      u1: "2020-01-01T00:00:01Z",
-      u2: "2020-01-01T00:00:02Z",
-      u3: "2020-01-01T00:00:03Z",
-    };
-    const rng = rngSequence([0, 0, 0, 0.9, 0.9]); // 3 tirages Archères (borne min 70), regen défense (+1), regen résistance (+1)
-    const r = computeCloture({
-      jour: 6,
-      votesRaw,
-      voteAtRaw,
-      bossStatsAvant: { defense: 5, resistance: 5 },
-      totalDegatsAvant: 50,
-      config: CONFIG,
-      rng,
-    });
-    assert.strictEqual(r.allIn, "archeres");
-    assert.strictEqual(r.event.id, "bouclier_acier");
-    assert.strictEqual(r.protection.tousProteges, false); // 3 distants, capacité 2 (1 Chevalier)
-    assert.strictEqual(r.protection.protectedIds.size, 2);
-    // Volée Céleste ignore Défense (même à 10 via Bouclier) ET la protection : 70 x 3
-    assert.strictEqual(r.totalDamageDuJour, 210);
-    assert.strictEqual(r.totalDegatsApres, 260);
-    assert.deepStrictEqual(r.bossStatsApres, { defense: 6, resistance: 6 }); // pas de debuff Voleuse, +1 régénération chacune
-  }
-
-  // (c) All-In Voleuse (Coup à la Gorge) avec debuffs individuels redondants
-  {
-    const votesRaw = { u1: "voleuse", u2: "voleuse", u3: "voleuse", u4: "chevalier" };
+    const votesRaw = { u1: "voleuse", u2: "voleuse", u3: "voleuse" };
     const voteAtRaw = {};
-    // Pour chaque Voleuse : tirage dégâts (0 -> 30), tirage debuff (0 -> "defense")
-    const rng = rngSequence([0, 0, 0, 0, 0, 0]);
+    const dayParams = resolveDayParams(3, CONFIG);
     const r = computeCloture({
-      jour: 1,
+      jour: 3,
       votesRaw,
       voteAtRaw,
-      bossStatsAvant: { defense: 5, resistance: 5 },
-      totalDegatsAvant: 0,
+      dayParams,
       config: CONFIG,
-      rng,
+      totalDegatsAvant: 0,
+      totalDegatsOptimalAvant: 0,
     });
-    assert.strictEqual(r.allIn, "voleuse");
-    assert.strictEqual(r.totalDamageDuJour, 90); // 30 x 3
-    assert.strictEqual(r.voleuseDebuffs.length, 3); // les debuffs individuels sont bien tirés et visibles...
-    // ...mais n'influencent jamais le résultat : Coup à la Gorge écrase à {0,0} inconditionnellement
-    assert.deepStrictEqual(r.bossStatsApres, { defense: 0, resistance: 0 });
+    assert.strictEqual(r.totalDamageDuJour, 60); // 3 x 20, aucun distant à protéger
+    assert.ok(r.bestDamage > r.totalDamageDuJour);
+    assert.notStrictEqual(r.score, "SS");
+  }
+
+  // (c) Espion exclu de tout calcul : présent dans voteCounts (affichage du
+  // bouton) mais absent d'actionCounts/totalVotesAction et sans impact sur
+  // les dégâts ni sur la meilleure combinaison.
+  {
+    const votesRaw = { u1: "chevalier", u2: "sorcier", u3: "sorcier", u4: "espion" };
+    const voteAtRaw = { u2: "2020-01-01T00:00:01Z", u3: "2020-01-01T00:00:02Z" };
+    const dayParams = resolveDayParams(3, CONFIG);
+    const r = computeCloture({
+      jour: 3,
+      votesRaw,
+      voteAtRaw,
+      dayParams,
+      config: CONFIG,
+      totalDegatsAvant: 0,
+      totalDegatsOptimalAvant: 0,
+    });
+    assert.strictEqual(r.totalVotes, 4);
+    assert.strictEqual(r.totalVotesAction, 3);
+    assert.strictEqual(r.voteCounts.espion, 1);
+    assert.strictEqual(r.totalDamageDuJour, 90); // identique au scénario (a), l'Espion ne change rien
+    assert.strictEqual(r.bestDamage, 90);
+  }
+
+  // (d) Ultime actif (+10%, streak de S/SS la veille) : dégâts réels ET
+  // plafond théorique scalés à l'identique -> la note reste SS (le
+  // multiplicateur ne doit JAMAIS influencer le ratio réel/optimal).
+  {
+    const votesRaw = { u1: "chevalier", u2: "sorcier", u3: "sorcier" };
+    const voteAtRaw = { u2: "2020-01-01T00:00:01Z", u3: "2020-01-01T00:00:02Z" };
+    const dayParams = resolveDayParams(3, CONFIG);
+    const r = computeCloture({
+      jour: 3,
+      votesRaw,
+      voteAtRaw,
+      dayParams,
+      config: CONFIG,
+      totalDegatsAvant: 100,
+      totalDegatsOptimalAvant: 100,
+      ultimateMultiplier: 1.1,
+    });
+    assert.strictEqual(r.totalDamageDuJour, 99); // round(90 * 1.1)
+    assert.strictEqual(r.bestDamage, 99);
+    assert.strictEqual(r.score, "SS"); // ratio inchangé malgré le multiplicateur
+    assert.strictEqual(r.totalDegatsApres, 199);
+    assert.strictEqual(r.totalDegatsOptimalApres, 199);
+    assert.deepStrictEqual(r.breakdown, { voleuse: 0, sorcier: 99, archeres: 0 });
   }
 
   console.log("✓ bossraid service tests passed");
