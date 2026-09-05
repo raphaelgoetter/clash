@@ -4,7 +4,7 @@
   "roles": {
     "chevalier": { "label": "Chevalier", "emoji": "🛡️", "protection_slots": 2 },
     "voleuse": { "label": "Voleuse", "emoji": "🗡️", "degats": 20, "debuff_defense_par_vote": 1 },
-    "sorcier": { "label": "Sorcier", "emoji": "🔮", "degats": 100 },
+    "sorcier": { "label": "Sorcier", "emoji": "🔮", "degats": 140 },
     "archeres": { "label": "Archères", "emoji": "🏹", "degats": 80 },
     "espion": { "label": "Espion", "emoji": "🔍", "is_info_action": true }
   },

@@ -1290,9 +1290,11 @@ Contrairement à l'ancienne version (plages de dégâts, débuff Voleuse à 25% 
 
 - **🛡️ Chevalier** — 0 dégât. Protège jusqu'à `protection_slots` (2 par défaut) unités à distance (Sorcier/Archères) contre le malus de non-protection. Compte quand même dans la combinaison (coût d'opportunité réel).
 - **🗡️ Voleuse** — `degats` fixes (20) + réduit la Défense effective du Boss de `debuff_defense_par_vote` (1) point **par vote Voleuse**, plafonné à 0, pour le calcul des dégâts Archères **du jour même** (voir `computeDefenseEffective()`). Jamais réduite par la protection Chevalier (elle n'est pas une unité à distance).
-- **🔮 Sorcier** — `degats` de base (100), réduits par la Résistance du Boss (10%/point, `applyStatReduction()`). Non protégé : malus `malusMultiplier` (0.5 par défaut, peut être modifié par l'événement du jour — ex. 0 lors de Frappe Léthale).
+- **🔮 Sorcier** — `degats` de base (140, supérieur aux 80 des Archères — sans soutien type Voleuse sur sa propre stat, il compense par un potentiel brut plus élevé), réduits par la Résistance du Boss (10%/point, `applyStatReduction()`). Non protégé : malus `malusMultiplier` (0.5 par défaut, peut être modifié par l'événement du jour — ex. 0 lors de Frappe Léthale).
 - **🏹 Archères** — `degats` de base (80), réduits par la Défense **effective** du Boss (après débuff Voleuse). Même malus de non-protection que le Sorcier.
 - **🔍 Espion** — 0 dégât, `is_info_action`, **totalement exclu** de toute combinaison (ni dénominateur, ni candidat possible dans la recherche de meilleure combinaison, voir plus bas) — un vote Espion n'a aucun coût d'opportunité pour le score du jour.
+
+⚠️ **Équilibrage du 06/09** : à 100 dégâts de base, le Sorcier était totalement absent de la combinaison optimale dès qu'il y avait assez de votants pour rentabiliser l'investissement Voleuse (Défense à 0 → Archères protégées à 80 dégâts pleins, largement supérieur au Sorcier bloqué à 50 protégé, Résistance 5 jamais affaiblie par aucun mécanisme). Passé à 140 (`computeBestCombo` vérifié sur les 7 jours × plusieurs tailles de groupe) : le Sorcier redevient l'optimum sur petits/moyens groupes (où « gâcher » des votes en Voleuse pour activer les Archères n'est pas rentable), tandis que la combinaison Voleuse+Archères reprend le dessus à grand N (où le débuff Défense est vite plafonné et profite à un grand nombre d'Archères). Aucun changement de mécanique, un seul nombre modifié dans `boss_raid.json`.
 
 ### La combinaison optimale — cœur du jeu
 
