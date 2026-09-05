@@ -14,15 +14,9 @@ import path from "path";
 import fetch from "node-fetch";
 import { warResetOffsetMs } from "../backend/services/dateUtils.js";
 import { fetchClan } from "../backend/services/clashApi.js";
+import { loadClanCache } from "../backend/services/clanCache.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CACHE_DIR = path.join(
-  __dirname,
-  "..",
-  "frontend",
-  "public",
-  "clan-cache",
-);
 const LOG_FILE = path.join(__dirname, "..", "data", "clan-status-log.json");
 
 const DISCORD_API = "https://discord.com/api/v10";
@@ -213,10 +207,7 @@ export function buildClanStatusPayload(issue, role) {
 }
 
 async function readClanCache(tag) {
-  const filePath = path.join(CACHE_DIR, `${tag}.json`);
-  if (!existsSync(filePath)) return null;
-  const raw = await readFile(filePath, "utf-8");
-  return JSON.parse(raw);
+  return loadClanCache(tag);
 }
 
 async function readLog() {

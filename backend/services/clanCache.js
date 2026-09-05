@@ -1,43 +1,30 @@
 // ============================================================
-// clanCache.js — cache de données clan statiques pour le frontend
+// clanCache.js — cache de données clan pour le frontend
 //
-// ⚠️  VERCEL SERVERLESS : le système de fichiers est en LECTURE SEULE
-// partout sauf dans /tmp. Toute écriture en dehors de /tmp échoue
-// silencieusement. Règle générale : écrire dans /tmp/<sous-dossier>/,
-// lire d'abord /tmp puis le bundle statique en fallback.
+// Stockage : Upstash Redis (même instance que quiz.js/tamagotchi.js),
+// espace de clés `clancache:*`. Remplace l'ancien double stockage
+// fichier (/tmp + bundle statique frontend/public/clan-cache) : ce
+// dernier forçait un redéploiement Vercel à chaque régénération
+// horaire du cache, ce qui gonflait le Function Storage du projet.
 // ============================================================
 
-import fs from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
+import { Redis } from "@upstash/redis";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// Répertoire statique bundlé (lecture uniquement sur Vercel, pré-généré par npm run cache)
-const BUNDLE_DIR = path.resolve(
-  __dirname,
-  "..",
-  "..",
-  "frontend",
-  "public",
-  "clan-cache",
-);
-// Répertoire d'écriture : /tmp est le seul dossier writable sur Vercel Serverless
-const WRITE_DIR = path.join("/tmp", "clan-cache");
-
-async function ensureDir() {
-  try {
-    await fs.mkdir(WRITE_DIR, { recursive: true });
-  } catch (_) {}
+let _redis = null;
+function getRedis() {
+  if (!_redis) {
+    _redis = new Redis({
+      url: process.env.KV_REST_API_URL,
+      token: process.env.KV_REST_API_TOKEN,
+      automaticDeserialization: false,
+    });
+  }
+  return _redis;
 }
 
-function writeFilename(clanTag) {
+function redisKey(clanTag) {
   const clean = clanTag.replace(/[^A-Za-z0-9]/g, "");
-  return path.join(WRITE_DIR, `${clean}.json`);
-}
-
-function bundleFilename(clanTag) {
-  const clean = clanTag.replace(/[^A-Za-z0-9]/g, "");
-  return path.join(BUNDLE_DIR, `${clean}.json`);
+  return `clancache:${clean}`;
 }
 
 function stripClanCachePayload(payload) {
@@ -60,35 +47,17 @@ function stripClanCachePayload(payload) {
 }
 
 export async function loadClanCache(clanTag) {
-  await ensureDir();
-  // Priorité au fichier écrit par la fonction live (/tmp) — plus récent.
-  // Fallback sur le fichier bundlé (pré-généré par npm run cache).
-  for (const file of [writeFilename(clanTag), bundleFilename(clanTag)]) {
-    try {
-      const txt = await fs.readFile(file, "utf-8");
-      return JSON.parse(txt);
-    } catch (_) {
-      // fichier absent ou illisible, essayer le suivant
-    }
+  try {
+    const raw = await getRedis().get(redisKey(clanTag));
+    return raw ? JSON.parse(raw) : null;
+  } catch (_) {
+    return null;
   }
-  return null;
 }
 
 export async function saveClanCache(clanTag, payload) {
-  await ensureDir();
-  const file = writeFilename(clanTag);
   const data = stripClanCachePayload(payload);
   try {
-    await fs.writeFile(file, JSON.stringify(data, null, 2));
+    await getRedis().set(redisKey(clanTag), JSON.stringify(data));
   } catch (_) {}
-}
-
-// Écrit dans le bundle statique (frontend/public/clan-cache/).
-// Réservé aux scripts CI (refreshClanCache.js) — jamais appelé depuis une fonction Vercel.
-export async function saveClanCacheToBundle(clanTag, payload) {
-  const clean = clanTag.replace(/[^A-Za-z0-9]/g, "");
-  const file = path.join(BUNDLE_DIR, `${clean}.json`);
-  const data = stripClanCachePayload(payload);
-  await fs.mkdir(BUNDLE_DIR, { recursive: true });
-  await fs.writeFile(file, JSON.stringify(data, null, 2));
 }

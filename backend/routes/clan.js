@@ -157,6 +157,26 @@ router.get("/:tag", async (req, res) => {
 });
 
 /**
+ * GET /api/clan/:tag/cache
+ * Sert le cache clan pré-calculé (Redis, régénéré chaque heure par le cron
+ * `npm run cache`) sans appel live à l'API Clash Royale. Utilisé par le
+ * frontend comme affichage instantané / fallback hors-ligne.
+ */
+router.get("/:tag/cache", async (req, res) => {
+  let clanTag = req.params.tag;
+  if (clanTag.startsWith("#")) clanTag = clanTag.slice(1);
+  clanTag = clanTag.toUpperCase();
+
+  if (!ALLOWED_CLANS.includes(clanTag)) {
+    return res.status(400).json({ error: "Clan not in allowed list" });
+  }
+
+  const cached = await loadClanCache(clanTag);
+  if (!cached) return res.status(404).json({ error: "No cache available" });
+  res.json(cached);
+});
+
+/**
  * Récupère le classement national d'un clan depuis le cache mémoire partagé (TTL 60 min).
  * Ne jamais stocker ce résultat dans le cache disque — il est toujours récupéré en live.
  */

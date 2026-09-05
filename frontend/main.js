@@ -455,7 +455,7 @@ initApp();
 async function loadStaticClan(tag) {
   try {
     const clean = tag.replace(/[^A-Za-z0-9]/g, "");
-    const res = await fetch(`/clan-cache/${clean}.json`);
+    const res = await fetch(`/api/clan/${clean}/cache`);
     if (!res.ok) return null;
     return await res.json();
   } catch (_) {

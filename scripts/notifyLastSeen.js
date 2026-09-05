@@ -15,15 +15,9 @@ import path from "path";
 import fetch from "node-fetch";
 import { parseClashDate, MS_PER_DAY } from "../backend/services/dateUtils.js";
 import { resolveMembersChannelId } from "../backend/services/discordChannels.js";
+import { loadClanCache } from "../backend/services/clanCache.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CACHE_DIR = path.join(
-  __dirname,
-  "..",
-  "frontend",
-  "public",
-  "clan-cache",
-);
 const LOG_FILE = path.join(__dirname, "..", "data", "last-seen-log.json");
 
 const DISCORD_API = "https://discord.com/api/v10";
@@ -210,10 +204,7 @@ export function buildInactiveEmbed(clanTag, clanName, warnings, errors) {
 }
 
 async function readClanCache(tag) {
-  const filePath = path.join(CACHE_DIR, `${tag}.json`);
-  if (!existsSync(filePath)) return null;
-  const raw = await readFile(filePath, "utf-8");
-  return JSON.parse(raw);
+  return loadClanCache(tag);
 }
 
 async function readLog() {

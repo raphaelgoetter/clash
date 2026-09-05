@@ -39,15 +39,9 @@ import {
 import { resolveMembersChannelId } from "../backend/services/discordChannels.js";
 import { isJoinedThisWar } from "../backend/services/arrivalUtils.js";
 import { getRoleIdByName } from "../backend/services/discordRoles.js";
+import { loadClanCache } from "../backend/services/clanCache.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CACHE_DIR = path.join(
-  __dirname,
-  "..",
-  "frontend",
-  "public",
-  "clan-cache",
-);
 const LOG_FILE = path.join(__dirname, "..", "data", "war-summary-log.json");
 const CLINCH_LOG_FILE = path.join(
   __dirname,
@@ -173,11 +167,8 @@ function getEndedWarDay(now = new Date(), clanTag = null) {
  * Lit le nom du clan depuis le cache persisté.
  */
 async function readClanName(tag) {
-  const filePath = path.join(CACHE_DIR, `${tag}.json`);
-  if (!existsSync(filePath)) return `#${tag}`;
-  const raw = await readFile(filePath, "utf-8");
-  const data = JSON.parse(raw);
-  return data.clan?.name ?? `#${tag}`;
+  const data = await loadClanCache(tag);
+  return data?.clan?.name ?? `#${tag}`;
 }
 
 function normalizePlayerTag(tag) {
@@ -359,11 +350,9 @@ function computeMissingDuelsFromSnapshots(
 }
 
 async function readClanMemberNames(tag) {
-  const filePath = path.join(CACHE_DIR, `${tag}.json`);
-  if (!existsSync(filePath)) return {};
   try {
-    const raw = await readFile(filePath, "utf-8");
-    const data = JSON.parse(raw);
+    const data = await loadClanCache(tag);
+    if (!data) return {};
     const members = {};
 
     const membersRaw = data.membersRaw || {};

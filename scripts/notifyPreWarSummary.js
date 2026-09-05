@@ -11,15 +11,9 @@ import { MS_PER_DAY, parseClashDate } from "../backend/services/dateUtils.js";
 import { computeMemberReliability } from "../backend/services/playerAnalysis.js";
 import { fetchClanWarRankings } from "../backend/services/clashApi.js";
 import { getRoleIdByName } from "../backend/services/discordRoles.js";
+import { loadClanCache } from "../backend/services/clanCache.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CACHE_DIR = path.join(
-  __dirname,
-  "..",
-  "frontend",
-  "public",
-  "clan-cache",
-);
 const LOG_FILE = path.join(__dirname, "..", "data", "pre-gdc-weekly-log.json");
 const DISCORD_LINKS_FILE = path.join(
   __dirname,
@@ -69,8 +63,7 @@ async function writeJson(filePath, data) {
 }
 
 async function readClanCache(clanTag) {
-  const cacheFile = path.join(CACHE_DIR, `${normalizeTag(clanTag)}.json`);
-  return readJson(cacheFile, null);
+  return loadClanCache(normalizeTag(clanTag));
 }
 
 function parseMemberLastSeen(member) {
