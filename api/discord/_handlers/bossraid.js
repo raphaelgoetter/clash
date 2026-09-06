@@ -70,7 +70,9 @@ function bossRaidImageUrl(jour) {
 // d'action, dans l'ordre 🛡️🗡️🔮🏹👑) ─────────────────────────────────────
 
 function formatCombo(counts, config) {
-  return ACTION_ROLES.map((roleId) => `${counts[roleId] || 0}${config.roles[roleId].emoji}`).join(" ");
+  return ACTION_ROLES.map(
+    (roleId) => `${counts[roleId] || 0}${config.roles[roleId].emoji}`,
+  ).join(" ");
 }
 
 function formatScore(score) {
@@ -110,7 +112,10 @@ async function buildNarrative(jour, closure) {
   const dominantRole = pickDominantRole(closure.breakdown);
   if (dominantRole) {
     const template = pickFlavor(narratifs.role_dominant, jour + 3);
-    const phrase = template.replaceAll("{role}", ROLE_LABEL_PLURAL[dominantRole] || dominantRole);
+    const phrase = template.replaceAll(
+      "{role}",
+      ROLE_LABEL_PLURAL[dominantRole] || dominantRole,
+    );
     if (lines.length) {
       lines[lines.length - 1] += ` ${phrase}`;
     } else {
@@ -160,11 +165,11 @@ function buildAnnonceEmbed(config) {
   return {
     title: "⚔️ Boss Raid — Kiki le P.E.K.K.A. approche…",
     description: [
-      `Un P.E.K.K.A. répondant au doux nom de **Kiki** s’apprête à fondre sur le clan ! Rassemblez vos forces : ${config.duree_jours} jours de combat commencent dès demain.`,
+      `Un P.E.K.K.A. pas gentil du tout répondant au doux nom de **Kiki** s’apprête à fondre sur le clan ! Rassemblez vos forces : ${config.duree_jours} jours de combat commencent dès demain.`,
       "",
-      `🛡️ Défense de base : **${config.boss_stats_base.defense}/10** — 🔮 Résistance de base : **${config.boss_stats_base.resistance}/10**, chaque jour (sauf événement contraire).`,
+      `🛡️ Défense de base : **${config.boss_stats_base.defense}/10** — 🔮 Résistance de base : **${config.boss_stats_base.resistance}/10**.`,
       "",
-      "Chevaliers, Voleuses, Sorciers, Archères, Princesses — chaque jour impose sa propre combinaison gagnante. Besoin d’un rappel des règles ? Clique sur *Règles* ci-dessous.",
+      "Chevaliers, Voleuses, Sorciers, Archères, Princesses — chaque jour impose sa propre combinaison gagnante. Plus d'infos ? Clique sur *Règles* ci-dessous.",
     ].join("\n"),
     color: BOSSRAID_COLOR,
     // ?v=2 : casse le cache Discord (qui met en cache par URL l'échec d'un
@@ -198,7 +203,10 @@ async function buildCombatEmbed(jour, jourClos, closure, event, config, state) {
     );
   }
 
-  const scoreCumule = cumulativeScore(state.totalDegatsCumules, state.totalDegatsOptimalCumules);
+  const scoreCumule = cumulativeScore(
+    state.totalDegatsCumules,
+    state.totalDegatsOptimalCumules,
+  );
   lines.push(
     `🛡️ Défense    : **${dayParams.defense}/10**`,
     `🔮 Résistance : **${dayParams.resistance}/10**`,
@@ -385,7 +393,14 @@ export async function postBossRaid(
   if (state.phase === "annonce") {
     const jour = 1;
     const event = activeEventForDay(jour, config.evenements_boss);
-    const embed = await buildCombatEmbed(jour, null, null, event, config, state);
+    const embed = await buildCombatEmbed(
+      jour,
+      null,
+      null,
+      event,
+      config,
+      state,
+    );
     const components = buildComponents(jour, "combat", {}, config);
 
     if (dryRun)
@@ -412,7 +427,10 @@ export async function postBossRaid(
 
   // Fin de partie (duree_jours écoulés) — score final, plus aucun vote possible.
   if (jourSuivant > config.duree_jours) {
-    const scoreFinal = cumulativeScore(closure.totalDegatsApres, closure.totalDegatsOptimalApres);
+    const scoreFinal = cumulativeScore(
+      closure.totalDegatsApres,
+      closure.totalDegatsOptimalApres,
+    );
     // Archivage AVANT lecture de la liste : la manche qui vient de se
     // terminer apparaît alors dans son propre récap comparatif (marquée
     // "cette manche"). Jamais archivé en dry-run NI sur le salon de test
@@ -456,7 +474,14 @@ export async function postBossRaid(
     totalDegatsCumules: closure.totalDegatsApres,
     totalDegatsOptimalCumules: closure.totalDegatsOptimalApres,
   };
-  const embed = await buildCombatEmbed(jourSuivant, state.jour, closure, event, config, nextState);
+  const embed = await buildCombatEmbed(
+    jourSuivant,
+    state.jour,
+    closure,
+    event,
+    config,
+    nextState,
+  );
   const components = buildComponents(jourSuivant, "combat", {}, config);
 
   if (dryRun)
@@ -600,7 +625,14 @@ async function renderCombatPayload(state, config) {
   // Le message public ne montre jamais le bilan de la veille après coup
   // (uniquement au moment de la publication du jour) — un simple
   // re-render suite à un clic de vote ne doit pas ressasser le bilan.
-  const embed = await buildCombatEmbed(state.jour, state.jour - 1, null, event, config, state);
+  const embed = await buildCombatEmbed(
+    state.jour,
+    state.jour - 1,
+    null,
+    event,
+    config,
+    state,
+  );
   const components = buildComponents(
     state.jour,
     state.phase,
@@ -702,10 +734,10 @@ export async function handlePrincesse(
     );
 
     const lines = [
-      `👑 **Projection actuelle du Jour ${jour}** (basée sur les votes en cours, sujette à changement jusqu’à ${formatUtcTimeAsParis(8)}, heure de Paris) :`,
-      `💥 Dégâts projetés : **${projection.totalDamageDuJour}** *(meilleure combinaison possible : ${projection.bestDamage})*`,
+      `👑 **Projection actuelle du Jour ${jour}** (basée sur les votes en cours) :`,
+      `💥 Dégâts projetés : **${projection.totalDamageDuJour}**`,
       `🎯 Indice de note actuelle : **${formatScore(projection.score)}**`,
-      `⚔️ Ton vote ajoute **${config.roles.princesse.degats}** dégâts fixes — insensibles à la Défense, la Résistance et la protection du Chevalier.`,
+      `⚔️ Ton vote ajoute **${config.roles.princesse.degats}** dégâts fixes — insensibles à la Défense et la Résistance.`,
     ];
     lines.push(
       "",
@@ -768,7 +800,10 @@ export async function handleJournal(webhookUrl) {
     }
 
     const config = await loadBossRaidConfig();
-    const scoreCumule = cumulativeScore(state.totalDegatsCumules, state.totalDegatsOptimalCumules);
+    const scoreCumule = cumulativeScore(
+      state.totalDegatsCumules,
+      state.totalDegatsOptimalCumules,
+    );
     const lines = [
       `⚔️ Dégâts cumulés : **${state.totalDegatsCumules}** — 🏆 Score cumulé : **${formatScore(scoreCumule)}**`,
     ];
@@ -776,10 +811,7 @@ export async function handleJournal(webhookUrl) {
     const { entries } = await listHistorique({ limit: 10 });
     if (entries.length > 0) {
       const dernier = entries[0];
-      lines.push(
-        "",
-        ...buildBilanLines(dernier.jour, dernier, config),
-      );
+      lines.push("", ...buildBilanLines(dernier.jour, dernier, config));
     }
     if (entries.length > 0) {
       lines.push(
@@ -816,12 +848,12 @@ function buildReglesEmbed(config) {
   const lines = [
     "Objectif : accumuler le max de dégâts en trouvant chaque jour la MEILLEURE combinaison de rôles. Dégâts fixes, aucun aléatoire — note **SS/S/A/B/C/D** dans le Journal.",
     "",
-    `**Rôles** *(1 vote/jour, modifiable jusqu’à ${formatUtcTimeAsParis(8)})* :`,
+    `**Rôles** :`,
     `${chevalier.emoji} **${chevalier.label}** — 0 dégât. Protège ${chevalier.protection_slots} distants (Sorcier/Archères). Pas 2 jours de suite.`,
-    `${voleuse.emoji} **${voleuse.label}** — ${voleuse.degats} dégâts + -${voleuse.debuff_defense_par_vote} Défense/vote (soutient les Archères).`,
+    `${voleuse.emoji} **${voleuse.label}** — ${voleuse.degats} dégâts, -${voleuse.debuff_defense_par_vote} Défense/vote.`,
     `${sorcier.emoji} **${sorcier.label}** — ${sorcier.degats} dégâts, réduits par la Résistance. -50% si non protégé.`,
     `${archeres.emoji} **${archeres.label}** — ${archeres.degats} dégâts, réduits par la Défense. -50% si non protégée.`,
-    `${princesse.emoji} **${princesse.label}** — ${princesse.degats} dégât, insensible à tout. + projection privée & événement du lendemain.`,
+    `${princesse.emoji} **${princesse.label}** — ${princesse.degats} dégât, insensible à Def/Res. + projection privée & événement du lendemain.`,
     "",
     "📅 Événement différent chaque jour (sauf J1).",
     "⚡ Si score d'hier S (ou mieux) = +10% dégâts (+30% si 2j de suite) ; Si score C (ou moins) = -10%.",
