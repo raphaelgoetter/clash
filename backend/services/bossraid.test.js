@@ -26,7 +26,7 @@ const CONFIG = {
     voleuse: { label: "Voleuse", emoji: "🗡️", degats: 20, debuff_defense_par_vote: 1 },
     sorcier: { label: "Sorcier", emoji: "🔮", degats: 90 },
     archeres: { label: "Archères", emoji: "🏹", degats: 80 },
-    espion: { label: "Espion", emoji: "🔍", is_info_action: true },
+    princesse: { label: "Princesse", emoji: "👑", degats: 25 },
   },
   evenements_boss: [
     { jour: 3, id: "frappe_lethale", effects: { malus_multiplier_override: 0 } },
@@ -143,23 +143,45 @@ async function main() {
   assert.strictEqual(computeDefenseEffective(10, { defense: 5, voleuseDebuffDisabled: false }, CONFIG), 0); // plancher 0
   assert.strictEqual(computeDefenseEffective(10, { defense: 5, voleuseDebuffDisabled: true }, CONFIG), 5); // Rage du Boss : débuff neutralisé
 
-  // ── computeActionCounts — l'Espion est totalement exclu ──
+  // ── computeActionCounts — 5 rôles d'action, Princesse incluse (elle
+  // inflige désormais un dégât fixe, elle n'est plus hors-combo) ──
   assert.deepStrictEqual(
-    computeActionCounts({ u1: "chevalier", u2: "voleuse", u3: "sorcier", u4: "archeres", u5: "espion" }),
-    { chevalier: 1, voleuse: 1, sorcier: 1, archeres: 1 },
+    computeActionCounts({ u1: "chevalier", u2: "voleuse", u3: "sorcier", u4: "archeres", u5: "princesse" }),
+    { chevalier: 1, voleuse: 1, sorcier: 1, archeres: 1, princesse: 1 },
   );
-  assert.deepStrictEqual(computeActionCounts({ u1: "espion" }), { chevalier: 0, voleuse: 0, sorcier: 0, archeres: 0 });
+  assert.deepStrictEqual(
+    computeActionCounts({ u1: "princesse" }),
+    { chevalier: 0, voleuse: 0, sorcier: 0, archeres: 0, princesse: 1 },
+  );
 
   // ── computeComboDamage — combinaison agrégée (jour 1, sans événement) ──
   {
     const dayParams = resolveDayParams(1, CONFIG);
-    const counts = { chevalier: 1, voleuse: 2, sorcier: 1, archeres: 1 };
+    const counts = { chevalier: 1, voleuse: 2, sorcier: 1, archeres: 1, princesse: 0 };
     // Défense effective = 5 - 2 = 3. Sorcier protégé = round(90*0.5) = 45.
     // Archères protégée = round(80*(1-0.3)) = 56. Voleuse = 2*20 = 40.
     const r = computeComboDamage(counts, dayParams, CONFIG, { protectedSorcier: 1, protectedArcheres: 1 });
     assert.strictEqual(r.defenseEffective, 3);
-    assert.deepStrictEqual(r.breakdown, { voleuse: 40, sorcier: 45, archeres: 56 });
+    assert.deepStrictEqual(r.breakdown, { voleuse: 40, princesse: 0, sorcier: 45, archeres: 56 });
     assert.strictEqual(r.total, 141);
+  }
+
+  // ── computeComboDamage — Princesse : dégât fixe, insensible à TOUT
+  // (malus, protection, Défense/Résistance, multiplicateurs d'événement) ──
+  {
+    const counts = { chevalier: 0, voleuse: 0, sorcier: 0, archeres: 0, princesse: 3 };
+    const dayParamsDur = {
+      defense: 10, resistance: 10, protectionSlots: 0,
+      malusMultiplier: 0, sorcierMultiplier: 0.1, archeresMultiplier: 0.1, voleuseDebuffDisabled: true,
+    };
+    const dayParamsFacile = {
+      defense: 0, resistance: 0, protectionSlots: 10,
+      malusMultiplier: 1, sorcierMultiplier: 5, archeresMultiplier: 5, voleuseDebuffDisabled: false,
+    };
+    const rDur = computeComboDamage(counts, dayParamsDur, CONFIG, { protectedSorcier: 0, protectedArcheres: 0 });
+    const rFacile = computeComboDamage(counts, dayParamsFacile, CONFIG, { protectedSorcier: 0, protectedArcheres: 0 });
+    assert.strictEqual(rDur.breakdown.princesse, 75); // 3 x 25, identique quel que soit le contexte
+    assert.strictEqual(rFacile.breakdown.princesse, 75);
   }
 
   // ── allocateOptimalProtection — priorité au rôle à plus forte plus-value ──
@@ -170,11 +192,11 @@ async function main() {
 
   // ── gradeForRatio ──
   assert.strictEqual(gradeForRatio(1), "SS");
-  assert.strictEqual(gradeForRatio(0.97), "SS");
+  assert.strictEqual(gradeForRatio(0.98), "SS");
   assert.strictEqual(gradeForRatio(0.9), "S");
-  assert.strictEqual(gradeForRatio(0.75), "A");
+  assert.strictEqual(gradeForRatio(0.8), "A");
   assert.strictEqual(gradeForRatio(0.6), "B");
-  assert.strictEqual(gradeForRatio(0.4), "C");
+  assert.strictEqual(gradeForRatio(0.5), "C");
   assert.strictEqual(gradeForRatio(0.1), "D");
 
   // ── cumulativeScore ──
@@ -201,32 +223,34 @@ async function main() {
 
   // ── computeBestCombo — plafond théorique, vérifié à la main sur petit N ──
   {
-    // N=1, jour 1 (sans événement) : Sorcier seul (non protégé, malus 0.5)
-    // = round(90*0.5*0.5) = 23, meilleur que Voleuse seule (20) ou Archères
-    // seule non protégée (round(80*0.5*0.5)=20).
+    // N=1, jour 1 (sans événement) : Princesse seule (25, insensible à
+    // tout) bat désormais le Sorcier seul non protégé (round(90*0.5*0.5) =
+    // 23) — sans aucun coût d'investissement (pas de Chevalier à
+    // dimensionner), elle devient l'option "par défaut" dès que sa valeur
+    // fixe dépasse toutes les alternatives non protégées disponibles.
     const dayParams = resolveDayParams(1, CONFIG);
     const best = computeBestCombo(1, dayParams, CONFIG);
-    assert.strictEqual(best.damage, 23);
-    assert.deepStrictEqual(best.counts, { chevalier: 0, voleuse: 0, sorcier: 1, archeres: 0 });
+    assert.strictEqual(best.damage, 25);
+    assert.deepStrictEqual(best.counts, { chevalier: 0, voleuse: 0, sorcier: 0, archeres: 0, princesse: 1 });
   }
   {
     // N=3, jour 3 (Frappe Léthale, malus=0 : un distant non protégé ne fait
     // RIEN) : la combinaison optimale doit sacrifier un vote en Chevalier
     // pour protéger les 2 autres plutôt que de laisser un distant à 0
     // dégât. 1 Chevalier (capacité 2) + 2 Sorciers protégés = 2*45 = 90,
-    // strictement meilleur que toute répartition sans Chevalier (au mieux
-    // 3 Voleuses = 60) ou mal dimensionnée (1 Chevalier + Sorcier + Archères
-    // protégés = 45+40 = 85).
+    // toujours meilleur que 3 Princesses (3*25=75) ou toute répartition
+    // mélangée (ex. 1 Chevalier + 1 Sorcier protégé + 1 Princesse = 70).
     const dayParams = resolveDayParams(3, CONFIG);
     const best = computeBestCombo(3, dayParams, CONFIG);
     assert.strictEqual(best.damage, 90);
-    assert.deepStrictEqual(best.counts, { chevalier: 1, voleuse: 0, sorcier: 2, archeres: 0 });
+    assert.deepStrictEqual(best.counts, { chevalier: 1, voleuse: 0, sorcier: 2, archeres: 0, princesse: 0 });
   }
   {
     // La recherche exhaustive doit toujours répartir la totalité des votants.
     const dayParams = resolveDayParams(5, CONFIG);
     const best = computeBestCombo(9, dayParams, CONFIG);
-    const sum = best.counts.chevalier + best.counts.voleuse + best.counts.sorcier + best.counts.archeres;
+    const sum =
+      best.counts.chevalier + best.counts.voleuse + best.counts.sorcier + best.counts.archeres + best.counts.princesse;
     assert.strictEqual(sum, 9);
   }
 
@@ -278,11 +302,11 @@ async function main() {
     assert.notStrictEqual(r.score, "SS");
   }
 
-  // (c) Espion exclu de tout calcul : présent dans voteCounts (affichage du
-  // bouton) mais absent d'actionCounts/totalVotesAction et sans impact sur
-  // les dégâts ni sur la meilleure combinaison.
+  // (c) Princesse compte désormais réellement : un vote Princesse ajoute
+  // son dégât fixe (25, insensible à tout) et entre dans totalVotesAction —
+  // plus aucune exclusion façon "Espion" historique.
   {
-    const votesRaw = { u1: "chevalier", u2: "sorcier", u3: "sorcier", u4: "espion" };
+    const votesRaw = { u1: "chevalier", u2: "sorcier", u3: "sorcier", u4: "princesse" };
     const voteAtRaw = { u2: "2020-01-01T00:00:01Z", u3: "2020-01-01T00:00:02Z" };
     const dayParams = resolveDayParams(3, CONFIG);
     const r = computeCloture({
@@ -295,10 +319,10 @@ async function main() {
       totalDegatsOptimalAvant: 0,
     });
     assert.strictEqual(r.totalVotes, 4);
-    assert.strictEqual(r.totalVotesAction, 3);
-    assert.strictEqual(r.voteCounts.espion, 1);
-    assert.strictEqual(r.totalDamageDuJour, 90); // identique au scénario (a), l'Espion ne change rien
-    assert.strictEqual(r.bestDamage, 90);
+    assert.strictEqual(r.totalVotesAction, 4); // Princesse comptée désormais
+    assert.strictEqual(r.actionCounts.princesse, 1);
+    assert.strictEqual(r.voteCounts.princesse, 1);
+    assert.strictEqual(r.totalDamageDuJour, 115); // 90 (2 Sorciers protégés, capacité 2) + 25 (Princesse)
   }
 
   // (d) Ultime actif (+10%, streak de S/SS la veille) : dégâts réels ET
@@ -323,7 +347,7 @@ async function main() {
     assert.strictEqual(r.score, "SS"); // ratio inchangé malgré le multiplicateur
     assert.strictEqual(r.totalDegatsApres, 199);
     assert.strictEqual(r.totalDegatsOptimalApres, 199);
-    assert.deepStrictEqual(r.breakdown, { voleuse: 0, sorcier: 99, archeres: 0 });
+    assert.deepStrictEqual(r.breakdown, { voleuse: 0, princesse: 0, sorcier: 99, archeres: 0 });
   }
 
   console.log("✓ bossraid service tests passed");

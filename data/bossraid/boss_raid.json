@@ -3,10 +3,15 @@
   "boss_stats_base": { "defense": 5, "resistance": 5 },
   "roles": {
     "chevalier": { "label": "Chevalier", "emoji": "🛡️", "protection_slots": 2 },
-    "voleuse": { "label": "Voleuse", "emoji": "🗡️", "degats": 20, "debuff_defense_par_vote": 1 },
+    "voleuse": {
+      "label": "Voleuse",
+      "emoji": "🗡️",
+      "degats": 20,
+      "debuff_defense_par_vote": 1
+    },
     "sorcier": { "label": "Sorcier", "emoji": "🔮", "degats": 140 },
     "archeres": { "label": "Archères", "emoji": "🏹", "degats": 80 },
-    "espion": { "label": "Espion", "emoji": "🔍", "is_info_action": true }
+    "princesse": { "label": "Princesse", "emoji": "👑", "degats": 25 }
   },
   "evenements_boss": [
     {
@@ -14,16 +19,16 @@
       "id": "muraille_renforcee",
       "nom": "Muraille Renforcée",
       "emoji": "🧱",
-      "description": "Kiki a passé la nuit à empiler des blocs de pierre autour de son campement — sa Défense grimpe à 9/10 pour la journée, les tirs des Archères vont ricocher sans l’aide des Voleuses pour fissurer la muraille.",
-      "effects": { "defense_override": 9 }
+      "description": "Kiki se retranche derrière une muraille de pierre ET une aura protectrice — Défense ET Résistance grimpent à 9/10 pour la journée, ses deux flancs sont bien gardés aujourd’hui.",
+      "effects": { "defense_override": 9, "resistance_override": 9 }
     },
     {
       "jour": 3,
       "id": "frappe_lethale",
       "nom": "Frappe Léthale",
       "emoji": "⚡",
-      "description": "Kiki assène un coup d’épée si puissant que le sol tremble sur tout le champ de bataille — les unités à distance non protégées par un Chevalier ne toucheront tout simplement pas leur cible aujourd’hui (0 dégât au lieu de la moitié).",
-      "effects": { "malus_multiplier_override": 0 }
+      "description": "Kiki assène un coup d’épée si puissant que le sol tremble ET désorganise les rangs — les unités à distance non protégées ne toucheront tout simplement pas leur cible aujourd’hui (0 dégât au lieu de la moitié), et chaque Chevalier ne parvient plus à couvrir qu’une seule unité au lieu de deux.",
+      "effects": { "malus_multiplier_override": 0, "protection_slots_override": 1 }
     },
     {
       "jour": 4,
@@ -46,16 +51,16 @@
       "id": "bouclier_instable",
       "nom": "Bouclier Instable",
       "emoji": "🌀",
-      "description": "L’armure de fortune de Kiki tient à peine — chaque Chevalier ne parvient plus à couvrir qu’une seule unité à distance aujourd’hui, au lieu de deux.",
-      "effects": { "protection_slots_override": 1 }
+      "description": "L’armure de fortune de Kiki tient à peine ET il repère instantanément les moins bien protégés — chaque Chevalier ne couvre plus qu’une seule unité au lieu de deux, et une frappe non parée ne fait plus que 30% de ses dégâts habituels (au lieu de 50%).",
+      "effects": { "protection_slots_override": 1, "malus_multiplier_override": 0.3 }
     },
     {
       "jour": 7,
       "id": "rage_finale",
       "nom": "Rage du Boss",
       "emoji": "🔥",
-      "description": "Kiki entre dans une rage folle pour ce dernier assaut et resserre sa garde contre le vol — les Voleuses ne parviennent plus à entamer sa Défense aujourd’hui, seul leur coup de lame compte encore.",
-      "effects": { "voleuse_debuff_disabled": true }
+      "description": "Kiki entre dans une rage aveugle pour ce dernier assaut — sa fureur brouille les sorts (Résistance à 8/10) et resserre sa garde contre le vol (les Voleuses ne parviennent plus à entamer sa Défense aujourd’hui, seul leur coup de lame compte encore).",
+      "effects": { "voleuse_debuff_disabled": true, "resistance_override": 8 }
     }
   ]
 }

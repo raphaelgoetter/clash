@@ -87,7 +87,7 @@ function formatCombo(counts, config) {
   console.log(`\nTotal : ${votes.length} votant${votes.length > 1 ? "s" : ""} aujourd'hui.`);
 
   // Projection : clôture le jour EN COURS avec les votes actuels (lecture
-  // seule, previewCloture n'écrit rien) — même calcul que le bouton Espion.
+  // seule, previewCloture n'écrit rien) — même calcul que le bouton Princesse.
   // Ne préjuge pas des votes qui arriveront encore avant 08:00 UTC.
   const projection = await previewCloture(state.jour, config);
   console.log(`\n🔮 Projection si la clôture avait lieu maintenant :`);

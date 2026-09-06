@@ -1,7 +1,7 @@
 // ============================================================
 // bossraid.js — Handlers Discord pour Boss Raid (jeu de combinaison
 // stratégique communautaire contre un Boss Colossal). Embed, boutons de
-// vote, bouton Espionne (projection live + indice de note), Règles &
+// vote, bouton Princesse (projection live + indice de note), Règles &
 // Rôles, Journal. La publication/suppression quotidienne passe uniquement
 // par scripts/postBossRaid.js (postBossRaid) — les boutons restent gérés
 // par api/discord/interactions.js.
@@ -54,6 +54,7 @@ const ROLE_LABEL_PLURAL = {
   voleuse: "Voleuses",
   sorcier: "Sorciers",
   archeres: "Archères",
+  princesse: "Princesses",
 };
 
 // Illustration du jour — fichiers statiques frontend/public/images/boss/
@@ -64,8 +65,8 @@ function bossRaidImageUrl(jour) {
   return `${TRUST_ROYALE_URL}/images/boss/boss-${String(jour).padStart(2, "0")}.webp`;
 }
 
-// ── Formatage d'une combinaison (répartition de votes sur les 4 rôles
-// d'action, dans l'ordre 🛡️🗡️🔮🏹) ─────────────────────────────────────
+// ── Formatage d'une combinaison (répartition de votes sur les 5 rôles
+// d'action, dans l'ordre 🛡️🗡️🔮🏹👑) ─────────────────────────────────────
 
 function formatCombo(counts, config) {
   return ACTION_ROLES.map((roleId) => `${counts[roleId] || 0}${config.roles[roleId].emoji}`).join(" ");
@@ -87,7 +88,7 @@ function pickFlavor(pool, seed) {
   return pool[((seed % pool.length) + pool.length) % pool.length];
 }
 
-// Rôle ayant porté le plus de dégâts la veille (Chevalier/Espion exclus,
+// Rôle ayant porté le plus de dégâts la veille (Chevalier/Princesse exclus,
 // toujours à 0) — remplace l'ancien "combattants les plus offensifs
 // nommément" : les dégâts étant désormais fixes par rôle, distinguer des
 // individus n'aurait plus de sens, seul le rôle choisi compte.
@@ -162,7 +163,7 @@ function buildAnnonceEmbed(config) {
       "",
       `🛡️ Défense de base : **${config.boss_stats_base.defense}/10** — 🔮 Résistance de base : **${config.boss_stats_base.resistance}/10**, chaque jour (sauf événement contraire).`,
       "",
-      "Chevaliers, Voleuses, Sorciers, Archères, Espionnes — chaque jour impose sa propre combinaison gagnante. Besoin d’un rappel des règles ? Clique sur *Règles* ci-dessous.",
+      "Chevaliers, Voleuses, Sorciers, Archères, Princesses — chaque jour impose sa propre combinaison gagnante. Besoin d’un rappel des règles ? Clique sur *Règles* ci-dessous.",
     ].join("\n"),
     color: BOSSRAID_COLOR,
     // ?v=2 : casse le cache Discord (qui met en cache par URL l'échec d'un
@@ -246,8 +247,8 @@ function buildComponents(jour, phase, voteCounts, config) {
       label: `${role.label} (${voteCounts[roleId] || 0})`.slice(0, 80),
       emoji: { name: role.emoji },
       custom_id:
-        roleId === "espion"
-          ? `bossraid_espion:${jour}`
+        roleId === "princesse"
+          ? `bossraid_princesse:${jour}`
           : `bossraid_vote:${jour}:${roleId}`,
     })),
   };
@@ -659,14 +660,14 @@ export async function handleVoteButton(
   }
 }
 
-// ── Bouton Espionne — exception : réponse éphémère avec projection live ──
-// Le vote Espionne ne compte dans aucune combinaison (0 dégât, exclu du
+// ── Bouton Princesse — exception : réponse éphémère avec projection live ──
+// Le vote Princesse ne compte dans aucune combinaison (0 dégât, exclu du
 // calcul de la meilleure combinaison), mais sa réponse est privée :
 // projection des dégâts + note de combinaison du jour EN COURS
 // (previewCloture, écriture nulle) + révélation de l'événement prévu pour
 // le LENDEMAIN, exclusivité de ce bouton.
 
-export async function handleEspion(
+export async function handlePrincesse(
   webhookUrl,
   jour,
   discordId,
@@ -691,7 +692,7 @@ export async function handleEspion(
     }
 
     const config = await loadBossRaidConfig();
-    await recordVote(jour, discordId, "espion", username);
+    await recordVote(jour, discordId, "princesse", username);
 
     const projection = await previewCloture(Number(jour), config);
     const lendemain = activeEventForDay(
@@ -700,9 +701,10 @@ export async function handleEspion(
     );
 
     const lines = [
-      `🔍 **Projection actuelle du Jour ${jour}** (basée sur les votes en cours, sujette à changement jusqu’à ${formatUtcTimeAsParis(8)}, heure de Paris) :`,
+      `👑 **Projection actuelle du Jour ${jour}** (basée sur les votes en cours, sujette à changement jusqu’à ${formatUtcTimeAsParis(8)}, heure de Paris) :`,
       `💥 Dégâts projetés : **${projection.totalDamageDuJour}** *(meilleure combinaison possible : ${projection.bestDamage})*`,
       `🎯 Indice de note actuelle : **${formatScore(projection.score)}**`,
+      `⚔️ Ton vote ajoute **${config.roles.princesse.degats}** dégâts fixes — insensibles à la Défense, la Résistance et la protection du Chevalier.`,
     ];
     lines.push(
       "",
@@ -717,9 +719,9 @@ export async function handleEspion(
       components: [],
     });
 
-    // Le vote Espionne fait aussi avancer le compteur "Espion (n)" du message
-    // public — rafraîchi séparément en PATCH direct (bot token), même
-    // découplage que Tamagotchi/Robinson pour un vote confirmé en éphémère.
+    // Le vote Princesse fait aussi avancer le compteur "Princesse (n)" du
+    // message public — rafraîchi séparément en PATCH direct (bot token),
+    // même découplage que Tamagotchi/Robinson pour un vote confirmé en éphémère.
     const { embed, components } = await renderCombatPayload(state, config);
     await fetch(
       `https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`,
@@ -733,7 +735,7 @@ export async function handleEspion(
       },
     );
   } catch (err) {
-    console.error("[BossRaid] Échec Espionne:", err.message);
+    console.error("[BossRaid] Échec Princesse:", err.message);
   }
 }
 
@@ -800,8 +802,8 @@ export async function handleJournal(webhookUrl) {
 // ── Bouton [📖 Règles & Rôles] — éphémère, statique, hors-vote ─────
 // Ne consomme jamais le vote du jour, contenu généré depuis boss_raid.json.
 // Les événements du Boss ne sont volontairement jamais listés ici — même
-// principe que Robinson, ils restent une surprise (sauf pour l'Espionne, qui
-// révèle l'événement du lendemain en exclusivité).
+// principe que Robinson, ils restent une surprise (sauf pour la Princesse,
+// qui révèle l'événement du lendemain en exclusivité).
 
 function buildReglesEmbed(config) {
   const lines = [
@@ -832,16 +834,16 @@ function buildReglesEmbed(config) {
     `${archeres.emoji} **${archeres.label}** — ${archeres.degats} dégâts de base, réduits par la Défense du Boss (10%/point, après débuff Voleuse éventuel). Non protégée par un Chevalier : malus -50% (peut varier selon l’événement du jour).`,
   );
 
-  const espion = config.roles.espion;
+  const princesse = config.roles.princesse;
   lines.push(
-    `${espion.emoji} **${espion.label}** — 0 dégât, ne compte dans aucune combinaison. Affiche en privé la projection des dégâts du jour, un indice de note, et l’événement prévu pour le lendemain.`,
+    `${princesse.emoji} **${princesse.label}** — ${princesse.degats} dégâts fixes, jamais réduits : insensible à la Défense, à la Résistance, à la protection du Chevalier et à tout malus/multiplicateur d’événement. Affiche aussi en privé la projection des dégâts du jour, un indice de note, et l’événement prévu pour le lendemain.`,
   );
 
   lines.push(
     "",
     `🛡️ **Chaque jour repart de la même base** : Défense et Résistance du Boss reviennent à **${config.boss_stats_base.defense}/10** et **${config.boss_stats_base.resistance}/10** — sans persistance d’un jour à l’autre.`,
     "",
-    "📅 **Un événement différent chaque jour** (sauf le Jour 1) bouleverse la donne — Défense/Résistance modifiées, protection affaiblie, rôle pénalisé ou renforcé… à vous de réadapter la combinaison en conséquence. Le Boss garde ses surprises, seule l’Espionne révèle l’événement du lendemain en exclusivité.",
+    "📅 **Un événement différent chaque jour** (sauf le Jour 1) bouleverse la donne — Défense/Résistance modifiées, protection affaiblie, rôle pénalisé ou renforcé… à vous de réadapter la combinaison en conséquence. Le Boss garde ses surprises, seule la Princesse révèle l’événement du lendemain en exclusivité.",
     "",
     "⚡ **Ultime** : un score de **S ou plus** hier octroie +10% de dégâts aujourd’hui (+30% si atteint 2 jours de suite) ; un score de **C ou moins** hier inflige -10%. Un bonus/malus commun à toute la journée, jamais d’influence sur la note (qui compare toujours au plafond théorique DU jour).",
   );

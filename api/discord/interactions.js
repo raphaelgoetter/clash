@@ -86,7 +86,7 @@ import {
 } from "./_handlers/robinson.js";
 import {
   handleVoteButton as handleBossRaidVote,
-  handleEspion as handleBossRaidEspion,
+  handlePrincesse as handleBossRaidPrincesse,
   handleRegles as handleBossRaidRegles,
   handleJournal as handleBossRaidJournal,
 } from "./_handlers/bossraid.js";
@@ -9326,12 +9326,12 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ── Boss Raid : bouton Espion — exception, réponse éphémère avec
+  // ── Boss Raid : bouton Princesse — exception, réponse éphémère avec
   // projection live des dégâts du jour + événement du lendemain ──
   if (
     body.type === 3 &&
     typeof body.data?.custom_id === "string" &&
-    body.data.custom_id.startsWith("bossraid_espion:")
+    body.data.custom_id.startsWith("bossraid_princesse:")
   ) {
     const [, jour] = body.data.custom_id.split(":");
     const discordId = body.member?.user?.id;
@@ -9343,7 +9343,7 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() =>
-      handleBossRaidEspion(webhookUrl, jour, discordId, username, process.env.DISCORD_TOKEN),
+      handleBossRaidPrincesse(webhookUrl, jour, discordId, username, process.env.DISCORD_TOKEN),
     );
     return;
   }

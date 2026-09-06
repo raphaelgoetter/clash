@@ -961,7 +961,7 @@ async function patchOriginal(webhookUrl, payload) {
 // ── Boutons d'inscription ───────────────────────────────────────────
 // Réponse éphémère à l'auteur du clic (confirmation) + PATCH direct du
 // message public (token du bot) pour rafraîchir le compteur affiché sur le
-// bouton [✅ S'inscrire (n)] — même découplage que le bouton Espion de
+// bouton [✅ S'inscrire (n)] — même découplage que le bouton Princesse de
 // Boss Raid (recordVote en éphémère, compteur public rafraîchi séparément).
 
 async function refreshInscriptionMessage(botToken, config) {

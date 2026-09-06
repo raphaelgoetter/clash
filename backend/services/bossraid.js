@@ -116,12 +116,15 @@ function voteUsernamesKey(jour) {
   return `bossraid:vote_usernames:${jour}`;
 }
 
-// Les 4 rôles "d'action" — participent au problème de combinaison optimale.
-// L'Espion (0 dégât, hors-combo) et le Chevalier (0 dégât direct, mais
-// compte dans la combinaison car son allocation a un coût d'opportunité)
-// sont traités différemment : Chevalier fait partie de la combinaison,
-// Espion en est totalement exclu (ni au dénominateur, ni candidat possible).
-export const ACTION_ROLES = ["chevalier", "voleuse", "sorcier", "archeres"];
+// Les 5 rôles "d'action" — participent au problème de combinaison optimale
+// (l'Espion historique n'existe plus : la Princesse inflige désormais un
+// dégât fixe elle aussi, en plus de son rôle d'info). Chevalier (0 dégât
+// direct, mais compte dans la combinaison car son allocation a un coût
+// d'opportunité) et Princesse (dégât fixe, jamais réduit ni protégé — voir
+// computeComboDamage) sont deux façons différentes de "ne pas dépendre de
+// la posture du Boss", mais Princesse compte bien dans le dénominateur et
+// candidate à la meilleure combinaison, contrairement à l'ancien Espion.
+export const ACTION_ROLES = ["chevalier", "voleuse", "sorcier", "archeres", "princesse"];
 
 // ── Lecture de la config (statique, jamais mutée) ─────────────────
 
@@ -299,10 +302,9 @@ export function isChevalierVoteAllowed(dernierRole) {
   return dernierRole !== "chevalier";
 }
 
-// Décompte des votes sur les 4 rôles d'action uniquement — l'Espion est
-// totalement exclu (ni dégât, ni candidat de la combinaison optimale).
+// Décompte des votes sur les 5 rôles d'action.
 export function computeActionCounts(votesRaw) {
-  const counts = { chevalier: 0, voleuse: 0, sorcier: 0, archeres: 0 };
+  const counts = { chevalier: 0, voleuse: 0, sorcier: 0, archeres: 0, princesse: 0 };
   for (const roleId of Object.values(votesRaw)) {
     if (roleId in counts) counts[roleId] += 1;
   }
@@ -319,15 +321,25 @@ export function computeDefenseEffective(nbVoleuses, dayParams, config) {
   return Math.max(0, dayParams.defense - nbVoleuses * debuff);
 }
 
-// Dégâts totaux d'une combinaison (répartition de votes sur les 4 rôles
+// Dégâts totaux d'une combinaison (répartition de votes sur les 5 rôles
 // d'action), étant donné combien de Sorciers/Archères sont protégés parmi
 // eux. Fonction commune aux deux usages : clôture RÉELLE (protection
 // dérivée de l'ordre d'arrivée réel, computeProtection) et recherche de
 // MEILLEURE combinaison hypothétique (protection allouée de façon optimale,
 // voir allocateOptimalProtection) — jamais deux formules de dégâts
 // différentes.
+//
+// Princesse : dégât fixe (`config.roles.princesse.degats`), jamais réduit
+// ni protégé — insensible à la Défense/Résistance du Boss, au malus de
+// non-protection et aux multiplicateurs d'événement (`sorcierMultiplier`/
+// `archeresMultiplier`, qui ne la concernent pas). Contrairement à
+// Voleuse/Sorcier/Archères, son unique levier d'équilibrage est la valeur
+// fixe elle-même (voir CONTRIBUTING.md, section Princesse) : sans coût
+// d'investissement (pas de Chevalier nécessaire), la moindre valeur trop
+// haute la rend strictement dominante à tout N.
 export function computeComboDamage(counts, dayParams, config, { protectedSorcier, protectedArcheres }) {
   const voleuseTotal = counts.voleuse * config.roles.voleuse.degats;
+  const princesseTotal = (counts.princesse || 0) * config.roles.princesse.degats;
   const defenseEffective = computeDefenseEffective(counts.voleuse, dayParams, config);
 
   const sorcierProtUnit = Math.round(
@@ -373,8 +385,8 @@ export function computeComboDamage(counts, dayParams, config, { protectedSorcier
   const archeresTotal = archeresProtUnit * protectedArcheres + archeresUnprotUnit * archeresUnprotectedCount;
 
   return {
-    total: voleuseTotal + sorcierTotal + archeresTotal,
-    breakdown: { voleuse: voleuseTotal, sorcier: sorcierTotal, archeres: archeresTotal },
+    total: voleuseTotal + princesseTotal + sorcierTotal + archeresTotal,
+    breakdown: { voleuse: voleuseTotal, princesse: princesseTotal, sorcier: sorcierTotal, archeres: archeresTotal },
     defenseEffective,
   };
 }
@@ -444,20 +456,26 @@ function evaluateCandidateCombo(counts, dayParams, config) {
 }
 
 // Recherche EXHAUSTIVE (force brute) de la répartition des `totalVotes`
-// votants d'un jour entre les 4 rôles d'action qui maximise les dégâts —
-// le "plafond théorique" du jour, servant de référence au score. O(N³/6)
-// combinaisons : totalement négligeable même pour plusieurs dizaines de
-// votants (une poignée de ms), pas besoin d'heuristique plus fine.
+// votants d'un jour entre les 5 rôles d'action qui maximise les dégâts —
+// le "plafond théorique" du jour, servant de référence au score. O(N⁴/24)
+// combinaisons : encore négligeable pour plusieurs dizaines de votants
+// (quelques centaines de ms au pire, N=50), pas besoin d'heuristique plus
+// fine. Princesse ajoutée comme 5ᵉ variable (le reliquat après les 4
+// autres) plutôt qu'en 1ʳᵉ position : son coût nul (pas de protection à
+// dimensionner) en fait un candidat "par défaut" pour tout surplus de
+// votes que les 4 autres rôles ne rentabiliseraient pas mieux.
 export function computeBestCombo(totalVotes, dayParams, config) {
-  let best = { counts: { chevalier: 0, voleuse: 0, sorcier: 0, archeres: 0 }, total: 0, breakdown: {} };
+  let best = { counts: { chevalier: 0, voleuse: 0, sorcier: 0, archeres: 0, princesse: 0 }, total: 0, breakdown: {} };
   for (let chevalier = 0; chevalier <= totalVotes; chevalier++) {
     for (let voleuse = 0; voleuse <= totalVotes - chevalier; voleuse++) {
       for (let sorcier = 0; sorcier <= totalVotes - chevalier - voleuse; sorcier++) {
-        const archeres = totalVotes - chevalier - voleuse - sorcier;
-        const counts = { chevalier, voleuse, sorcier, archeres };
-        const result = evaluateCandidateCombo(counts, dayParams, config);
-        if (result.total > best.total) {
-          best = { counts, total: result.total, breakdown: result.breakdown };
+        for (let archeres = 0; archeres <= totalVotes - chevalier - voleuse - sorcier; archeres++) {
+          const princesse = totalVotes - chevalier - voleuse - sorcier - archeres;
+          const counts = { chevalier, voleuse, sorcier, archeres, princesse };
+          const result = evaluateCandidateCombo(counts, dayParams, config);
+          if (result.total > best.total) {
+            best = { counts, total: result.total, breakdown: result.breakdown };
+          }
         }
       }
     }
@@ -469,11 +487,11 @@ export function computeBestCombo(totalVotes, dayParams, config) {
 // plafond théorique du jour (computeBestCombo). Seuils arbitraires mais
 // tunables ici, indépendamment du reste du moteur.
 export function gradeForRatio(ratio) {
-  if (ratio >= 0.97) return "SS";
-  if (ratio >= 0.85) return "S";
-  if (ratio >= 0.7) return "A";
-  if (ratio >= 0.55) return "B";
-  if (ratio >= 0.35) return "C";
+  if (ratio >= 0.98) return "SS";
+  if (ratio >= 0.9) return "S";
+  if (ratio >= 0.8) return "A";
+  if (ratio >= 0.6) return "B";
+  if (ratio >= 0.5) return "C";
   return "D";
 }
 
@@ -538,7 +556,8 @@ export function computeCloture({ jour, votesRaw, voteAtRaw, dayParams, config, t
   const totalVotes = Object.keys(votesRaw).length;
 
   const actionCounts = computeActionCounts(votesRaw);
-  const totalVotesAction = actionCounts.chevalier + actionCounts.voleuse + actionCounts.sorcier + actionCounts.archeres;
+  const totalVotesAction =
+    actionCounts.chevalier + actionCounts.voleuse + actionCounts.sorcier + actionCounts.archeres + actionCounts.princesse;
 
   const distants = Object.entries(votesRaw)
     .filter(([, roleId]) => roleId === "sorcier" || roleId === "archeres")
@@ -590,7 +609,7 @@ export function computeCloture({ jour, votesRaw, voteAtRaw, dayParams, config, t
   };
 }
 
-// ── Wrappers I/O — appelés uniquement par postBossRaid()/handleEspion() ──
+// ── Wrappers I/O — appelés uniquement par postBossRaid()/handlePrincesse() ──
 
 async function loadCloture(jour, config) {
   const [votesRaw, voteAtRaw, usernamesRaw, state, ultimate] = await Promise.all([
@@ -617,7 +636,7 @@ async function loadCloture(jour, config) {
   return { ...result, usernamesRaw, ultimate };
 }
 
-// Lecture seule (aucune écriture Redis) — utilisée par le bouton Espion
+// Lecture seule (aucune écriture Redis) — utilisée par le bouton Princesse
 // (projection live sur le jour EN COURS de vote) ET par la branche --dry-run
 // de postBossRaid.js. Les deux appellent littéralement la même fonction.
 export async function previewCloture(jour, config) {

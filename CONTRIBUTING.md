@@ -1256,7 +1256,7 @@ Aucune nouvelle variable : Robinson réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DIS
 
 ## Boss Raid (score attack communautaire, jeu de combinaison stratégique)
 
-Mini-jeu communautaire quotidien indépendant du Clash Royale : le clan affronte un Boss Colossal invulnérable pendant 7 jours de combat (`duree_jours` dans `boss_raid.json`, précédés d'un jour d'annonce), avec pour objectif d'accumuler le maximum de dégâts cumulés. Chaque membre vote un rôle par jour (Chevalier, Voleuse, Sorcier, Archères, Espion) ; comme avant, **aucun tirage n'a lieu au clic** — le vote reste modifiable jusqu'au cron de 08:00 UTC. Pas de commande slash associée — la publication/suppression passe uniquement par `scripts/postBossRaid.js` (manuel ou cron), les boutons restent gérés par `api/discord/interactions.js`.
+Mini-jeu communautaire quotidien indépendant du Clash Royale : le clan affronte un Boss Colossal invulnérable pendant 7 jours de combat (`duree_jours` dans `boss_raid.json`, précédés d'un jour d'annonce), avec pour objectif d'accumuler le maximum de dégâts cumulés. Chaque membre vote un rôle par jour (Chevalier, Voleuse, Sorcier, Archères, Princesse) ; comme avant, **aucun tirage n'a lieu au clic** — le vote reste modifiable jusqu'au cron de 08:00 UTC. Pas de commande slash associée — la publication/suppression passe uniquement par `scripts/postBossRaid.js` (manuel ou cron), les boutons restent gérés par `api/discord/interactions.js`.
 
 ⚠️ **Refonte du 06/09** : le jeu était à l'origine un score attack avec RNG (plages de dégâts, débuff Voleuse à 25% de chance, Ultimes/All-In, régénération nocturne progressive). Retour utilisateur : trop aléatoire, pas assez stratégique — l'objectif devient de **trouver, jour après jour, la meilleure combinaison de rôles possible pour l'événement du jour**. Conséquence directe sur toute la logique (voir ci-dessous) : plus un seul tirage aléatoire nulle part dans le jeu, `computeCloture()` ne prend même plus de `rng` en paramètre.
 
@@ -1278,7 +1278,7 @@ Conséquence : le débuff Défense de la Voleuse (voir plus bas) n'a d'effet que
 
 Le vote est **modifiable jusqu'au cron** : `recordVote()` fait un simple `HSET` écrasable sur `bossraid:votes:<jour>`, **pas** de `HSETNX` ni de logique de réservation/libération de slot comme Robinson — aucune action de vote ne peut « échouer ». Toute la logique de dégâts/protection/événements est calculée **une seule fois à la clôture**, dans la fonction pure `computeCloture()` (`backend/services/bossraid.js`) — entièrement déterministe, sans I/O ni aléatoire.
 
-Le clic sur un bouton de vote (sauf Espion) répond en `type: 6` (`DEFERRED_UPDATE_MESSAGE`) et édite le message public **en place**, jamais d'éphémère. Le bouton **Espion** est la seule exception : il répond en éphémère (`type: 5`) avec une **projection live** des dégâts du jour en cours et un **indice de note de combinaison** (SS/S/A/B/C/D, voir plus bas), calculés par `previewCloture()` (écriture Redis nulle) — la même fonction qu'appelle `postBossRaid.js --dry-run`, garantissant que la projection Espion et la simulation dry-run ne divergent jamais. Le vote Espion ne compte dans **aucun** calcul (ni dégâts, ni combinaison optimale — voir plus bas), mais son compteur public est rafraîchi séparément par un `PATCH` direct (token du bot), même découplage que Tamagotchi/Robinson pour un vote confirmé en éphémère.
+Le clic sur un bouton de vote (sauf Princesse) répond en `type: 6` (`DEFERRED_UPDATE_MESSAGE`) et édite le message public **en place**, jamais d'éphémère. Le bouton **Princesse** est la seule exception : il répond en éphémère (`type: 5`) avec une **projection live** des dégâts du jour en cours et un **indice de note de combinaison** (SS/S/A/B/C/D, voir plus bas), calculés par `previewCloture()` (écriture Redis nulle) — la même fonction qu'appelle `postBossRaid.js --dry-run`, garantissant que la projection Princesse et la simulation dry-run ne divergent jamais. Le vote Princesse compte pleinement dans les calculs (dégâts fixes + candidate à la combinaison optimale, voir "Princesse" plus haut) malgré sa réponse éphémère ; son compteur public est rafraîchi séparément par un `PATCH` direct (token du bot), même découplage que Tamagotchi/Robinson pour un vote confirmé en éphémère.
 
 ### Contrainte Chevalier — pas 2 jours de suite
 
@@ -1292,13 +1292,15 @@ Contrairement à l'ancienne version (plages de dégâts, débuff Voleuse à 25% 
 - **🗡️ Voleuse** — `degats` fixes (20) + réduit la Défense effective du Boss de `debuff_defense_par_vote` (1) point **par vote Voleuse**, plafonné à 0, pour le calcul des dégâts Archères **du jour même** (voir `computeDefenseEffective()`). Jamais réduite par la protection Chevalier (elle n'est pas une unité à distance).
 - **🔮 Sorcier** — `degats` de base (140, supérieur aux 80 des Archères — sans soutien type Voleuse sur sa propre stat, il compense par un potentiel brut plus élevé), réduits par la Résistance du Boss (10%/point, `applyStatReduction()`). Non protégé : malus `malusMultiplier` (0.5 par défaut, peut être modifié par l'événement du jour — ex. 0 lors de Frappe Léthale).
 - **🏹 Archères** — `degats` de base (80), réduits par la Défense **effective** du Boss (après débuff Voleuse). Même malus de non-protection que le Sorcier.
-- **🔍 Espion** — 0 dégât, `is_info_action`, **totalement exclu** de toute combinaison (ni dénominateur, ni candidat possible dans la recherche de meilleure combinaison, voir plus bas) — un vote Espion n'a aucun coût d'opportunité pour le score du jour.
+- **👑 Princesse** — `degats` fixes (25), **jamais réduits** : insensible à la Défense, à la Résistance, au malus de non-protection et aux multiplicateurs d'événement (`sorcierMultiplier`/`archeresMultiplier`, qui ne la concernent pas) — voir "Princesse" ci-dessous pour le détail du calibrage. Contrairement à l'ancien Espion (0 dégât, totalement hors-combo), elle compte pleinement dans la combinaison et dans son dénominateur.
 
 ⚠️ **Équilibrage du 06/09** : à 100 dégâts de base, le Sorcier était totalement absent de la combinaison optimale dès qu'il y avait assez de votants pour rentabiliser l'investissement Voleuse (Défense à 0 → Archères protégées à 80 dégâts pleins, largement supérieur au Sorcier bloqué à 50 protégé, Résistance 5 jamais affaiblie par aucun mécanisme). Passé à 140 (`computeBestCombo` vérifié sur les 7 jours × plusieurs tailles de groupe) : le Sorcier redevient l'optimum sur petits/moyens groupes (où « gâcher » des votes en Voleuse pour activer les Archères n'est pas rentable), tandis que la combinaison Voleuse+Archères reprend le dessus à grand N (où le débuff Défense est vite plafonné et profite à un grand nombre d'Archères). Aucun changement de mécanique, un seul nombre modifié dans `boss_raid.json`.
 
+⚠️ **Princesse (06/09, ter)** : à l'origine un pur rôle d'info (0 dégât, hors-combo, comme l'ancien Espion). Retour utilisateur : lui donner un vrai dégât fixe, insensible à la protection/Défense/Résistance, pour la rendre utile en combat. Piège structurel découvert par simulation : contrairement à tous les autres rôles, elle n'a **aucun coût d'investissement** (pas de Chevalier à dimensionner, pas de Voleuse à sacrifier) — la moindre valeur qui dépasse le pire rôle protégé du jour la rend donc **strictement dominante à TOUT N** (`bestCombo` bascule intégralement sur elle, 0 Chevalier, quel que soit le nombre de votants), écrasant instantanément la variété entre les jours. Testé à 40 (dominante sur 4 des 6 jours à événement) puis 30 (dominante sur 1 jour, Rage du Boss) avant de converger sur **25** : reste sous la valeur protégée de tous les rôles sur leurs bons jours, mais dépasse la valeur d'un Sorcier/Archères non protégé en surplus (capacité de Chevalier déjà saturée) — un simple filler occasionnel (1-2 votes), jamais une réponse dominante, vérifié de N=5 à N=50.
+
 ### La combinaison optimale — cœur du jeu
 
-Le vote se résume à répartir N votants (les 4 rôles d'action — Chevalier/Voleuse/Sorcier/Archères, **hors Espion**) sur ces 4 rôles. À nombre de votants et événement du jour fixés, il existe toujours une répartition qui maximise les dégâts totaux : `computeBestCombo(totalVotesAction, dayParams, config)` la trouve par **recherche exhaustive** (force brute sur les 4 compteurs, O(N³/6) combinaisons — quelques milliers à quelques dizaines de milliers d'itérations pour un clan de 8 à 50 votants, négligeable, pas besoin d'heuristique plus fine).
+Le vote se résume à répartir N votants (les 5 rôles d'action — Chevalier/Voleuse/Sorcier/Archères/Princesse) sur ces 5 rôles. À nombre de votants et événement du jour fixés, il existe toujours une répartition qui maximise les dégâts totaux : `computeBestCombo(totalVotesAction, dayParams, config)` la trouve par **recherche exhaustive** (force brute sur les 5 compteurs, O(N⁴/24) combinaisons — jusqu'à quelques centaines de milliers d'itérations pour un clan de 8 à 50 votants, encore négligeable, pas besoin d'heuristique plus fine).
 
 Pour évaluer une combinaison hypothétique (juste des compteurs, aucun votant réel), la protection Chevalier est allouée de façon **optimale** entre Sorcier et Archères (`allocateOptimalProtection()`, priorité au rôle dont protéger rapporte le plus) — à distinguer de la clôture **réelle**, qui protège les votants par ordre d'arrivée (`computeProtection()`, inchangé, voir plus bas). `computeComboDamage()` reste la SEULE formule de dégâts, appelée par les deux chemins avec des comptes de protégés différents — jamais deux formules de dégâts distinctes.
 
@@ -1306,12 +1308,12 @@ Le **score de combinaison** compare les dégâts réels du jour à ce plafond th
 
 | Ratio réel/optimal | Note |
 | ------------------- | ---- |
-| ≥ 97%                | SS   |
-| ≥ 85%                | S    |
-| ≥ 70%                | A    |
-| ≥ 55%                | B    |
-| ≥ 35%                | C    |
-| < 35%                | D    |
+| ≥ 98%                | SS   |
+| ≥ 90%                | S    |
+| ≥ 80%                | A    |
+| ≥ 60%                | B    |
+| ≥ 50%                | C    |
+| < 50%                | D    |
 
 (`gradeForRatio()`, seuils arbitraires mais isolés dans une seule fonction, tunables sans toucher au reste du moteur.) Un **score cumulé** (`cumulativeScore()`) compare le cumul réel au cumul du plafond théorique jour par jour — pas une moyenne des lettres quotidiennes, qui pondérerait injustement un jour à faible participation comme un jour à forte participation.
 
@@ -1336,14 +1338,16 @@ Chaque Chevalier protège jusqu'à `protectionSlots` unités à distance (Sorcie
 
 Chaque jour de combat à partir du Jour 2 impose un événement différent (`activeEventForDay(jour, evenements)`, lookup exact, un jour donne toujours le même événement) qui force une réadaptation de la combinaison optimale — le Jour 1 reste volontairement « normal » (aucun événement), le temps de découvrir les rôles de base :
 
-- **🧱 Muraille Renforcée** (Jour 2) : Défense forcée à 9/10 (`defense_override`) — les Archères non soutenues par des Voleuses deviennent quasi inutiles, pousse soit vers le Sorcier (non affecté), soit vers un lourd investissement Voleuse pour rouvrir la brèche aux Archères.
-- **⚡ Frappe Léthale** (Jour 3) : malus de non-protection à 0 (`malus_multiplier_override: 0`, au lieu de 0.5) — un distant non protégé ne fait STRICTEMENT plus rien, impose de dimensionner suffisamment de Chevaliers pour couvrir tous les Sorciers/Archères votés.
+- **🧱 Muraille Renforcée** (Jour 2) : Défense ET Résistance forcées à 9/10 (`defense_override` + `resistance_override`) — Archères ET Sorcier deviennent tous les deux peu rentables protégés à sec, pousse vers un lourd investissement Voleuse pour rouvrir la brèche aux Archères (seule voie qui reste rentable).
+- **⚡ Frappe Léthale** (Jour 3) : malus de non-protection à 0 ET protection réduite à 1 unité/Chevalier (`malus_multiplier_override: 0` + `protection_slots_override: 1`, au lieu de 0.5/2) — un distant non protégé ne fait STRICTEMENT plus rien, ET la protection devient 2x plus rare, impose un vrai arbitrage entre sur-investir en Chevaliers ou accepter d'exposer une partie des votes.
 - **🪞 Miroir de Mana** (Jour 4) : dégâts Sorcier réduits de 50% supplémentaires (`sorcier_multiplier: 0.5`) — pousse à délaisser le Sorcier au profit des Archères (et des Voleuses qui les soutiennent).
-- **🩸 Point Faible** (Jour 5) : Résistance forcée à 1/10 (`resistance_override`) — le Sorcier devient soudain extrêmement rentable, à l'opposé du Jour 2.
-- **🌀 Bouclier Instable** (Jour 6) : chaque Chevalier ne protège plus qu'1 unité au lieu de 2 (`protection_slots_override: 1`) — change le ratio Chevalier:distants nécessaire pour éviter le malus.
-- **🔥 Rage du Boss** (Jour 7, dernier jour) : le débuff Défense de la Voleuse est neutralisé (`voleuse_debuff_disabled: true`) — elle ne conserve que son dégât fixe (20, inférieur à Sorcier/Archères), la combinaison optimale du dernier jour délaisse presque toujours la Voleuse.
+- **🩸 Point Faible** (Jour 5) : Résistance forcée à 1/10 (`resistance_override`) — le Sorcier devient soudain extrêmement rentable, journée volontairement redondante avec le Jour 1 (même famille de combinaison) mais démultipliée en valeur — un jour « récompense » plutôt qu'un nouveau casse-tête.
+- **🌀 Bouclier Instable** (Jour 6) : protection réduite à 1 unité/Chevalier ET malus de non-protection alourdi à -70% (`protection_slots_override: 1` + `malus_multiplier_override: 0.3`, au lieu de -50%) — la protection devient à la fois plus rare ET plus précieuse, change fortement le ratio Chevalier:distants qui reste rentable.
+- **🔥 Rage du Boss** (Jour 7, dernier jour) : le débuff Défense de la Voleuse est neutralisé ET la Résistance grimpe à 8/10 (`voleuse_debuff_disabled: true` + `resistance_override: 8`) — Voleuse ET Sorcier hors-jeu simultanément, ne laisse que les Archères protégées comme option rentable pour le dernier assaut.
 
-⚠️ Ces événements ne sont **jamais** listés dans l'embed `[📖 Règles & Rôles]` — volontairement, pour qu'ils restent une surprise. Seul le bouton **Espion** révèle en exclusivité, en éphémère, l'événement prévu pour le **lendemain** (`activeEventForDay(jour + 1, ...)`), jamais celui du jour même. Chaque effet est un simple champ générique dans `effects` (`defense_override`, `resistance_override`, `protection_slots_override`, `malus_multiplier_override`, `sorcier_multiplier`, `archeres_multiplier`, `voleuse_debuff_disabled`), fusionné sur la base par `resolveDayParams()` — ajouter un futur événement ne demande qu'une entrée JSON, jamais de nouveau code.
+⚠️ **Équilibrage du 06/09 (bis)** : après le passage du Sorcier à 140 dégâts, `computeBestCombo()` donnait la même combinaison (`5🛡️ 10🔮` à N=15) sur 5 des 7 jours — les 3 événements qui ne touchaient QUE la Défense/la protection des Archères (Muraille, Frappe Léthale, Rage) étaient devenus invisibles pour un optimum qui n'utilisait plus ces leviers. Chaque événement combine désormais AU MOINS un effet qui affecte réellement le Sorcier (Résistance, ou un malus qui s'applique aussi à sa propre protection) — vérifié par simulation à N=5/10/15/20/30/50 : sur les 7 jours, un seul doublon de combinaison subsiste (Jour 1 ↔ Jour 5, volontaire — Point Faible est conçu comme une redite amplifiée du Jour 1, pas un nouveau puzzle).
+
+⚠️ Ces événements ne sont **jamais** listés dans l'embed `[📖 Règles & Rôles]` — volontairement, pour qu'ils restent une surprise. Seul le bouton **Princesse** révèle en exclusivité, en éphémère, l'événement prévu pour le **lendemain** (`activeEventForDay(jour + 1, ...)`), jamais celui du jour même. Chaque effet est un simple champ générique dans `effects` (`defense_override`, `resistance_override`, `protection_slots_override`, `malus_multiplier_override`, `sorcier_multiplier`, `archeres_multiplier`, `voleuse_debuff_disabled`), fusionné sur la base par `resolveDayParams()` — ajouter un futur événement ne demande qu'une entrée JSON, jamais de nouveau code. Rien n'empêche de combiner plusieurs effets sur un même événement (voir ci-dessus) : `resolveDayParams()` les fusionne tous sans limite.
 
 ### Interface (embed)
 
@@ -1351,9 +1355,9 @@ Titre `⚔️ Boss Raid — Jour X/7` (ou `— Kiki le P.E.K.K.A. approche…` a
 
 ```
 Hier, la meilleure combinaison était :
-- 3🛡️ 5🗡️ 4🔮 2🏹 (dégâts 600pts)
+- 3🛡️ 5🗡️ 4🔮 2🏹 1👑 (dégâts 600pts)
 Votre combinaison était :
-- 1🛡️ 2🗡️ 8🔮 3🏹 (dégâts 300pts)
+- 1🛡️ 2🗡️ 8🔮 3🏹 1👑 (dégâts 300pts)
 - score : B
 ```
 
@@ -1371,7 +1375,7 @@ Boss Raid (comme Robinson et le Tamagoshi) est destiné à être rejoué plusieu
 
 ### Données (boss_raid.json)
 
-`data/bossraid/boss_raid.json` — config statique éditée à la main : `duree_jours`, `boss_stats_base` (posture de RÉFÉRENCE reprise identique chaque jour, plus une valeur "initiale" à laquelle on ne reviendrait jamais), `roles.<id>` (label, emoji, `degats` fixes, `protection_slots`/`debuff_defense_par_vote`/`is_info_action` selon le rôle) et `evenements_boss` (un événement par `jour`, jours 2 à `duree_jours`, chacun avec un objet `effects` générique — voir "Événements du Boss" plus haut). Chargée une fois et mise en cache (`loadBossRaidConfig()`), jamais mutée à l'exécution. Tous les nombres (dégâts, débuffs, seuils d'événements) sont volontairement isolés dans ce fichier : un rééquilibrage ne touche jamais au code.
+`data/bossraid/boss_raid.json` — config statique éditée à la main : `duree_jours`, `boss_stats_base` (posture de RÉFÉRENCE reprise identique chaque jour, plus une valeur "initiale" à laquelle on ne reviendrait jamais), `roles.<id>` (label, emoji, `degats` fixes, `protection_slots`/`debuff_defense_par_vote` selon le rôle) et `evenements_boss` (un événement par `jour`, jours 2 à `duree_jours`, chacun avec un objet `effects` générique — voir "Événements du Boss" plus haut). Chargée une fois et mise en cache (`loadBossRaidConfig()`), jamais mutée à l'exécution. Tous les nombres (dégâts, débuffs, seuils d'événements) sont volontairement isolés dans ce fichier : un rééquilibrage ne touche jamais au code.
 
 `frontend/public/images/boss/boss-01.webp` à `boss-10.webp` — une illustration par jour de combat, servie en asset statique (même principe que `rob-01.webp`…`rob-10.webp` de Robinson) et référencée directement par URL (`bossRaidImageUrl()`, `api/discord/_handlers/bossraid.js`) dans le champ `image` de l'embed. Affichée uniquement à partir du Jour 1 (jamais au jour d'annonce, qui n'a pas d'illustration dédiée). Avec `duree_jours: 7`, seules `boss-01.webp` à `boss-07.webp` sont actuellement utilisées (`boss-08/09/10.webp` restent en réserve, inutilisées) ; l'embed de fin de Raid réutilise systématiquement l'illustration du dernier jour joué (`bossRaidImageUrl(config.duree_jours)`).
 
