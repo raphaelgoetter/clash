@@ -853,7 +853,7 @@ function buildReglesEmbed(config) {
     `${voleuse.emoji} **${voleuse.label}** — ${voleuse.degats} dégâts, -${voleuse.debuff_defense_par_vote} Défense/vote.`,
     `${sorcier.emoji} **${sorcier.label}** — ${sorcier.degats} dégâts, réduits par la Résistance. -50% si non protégé.`,
     `${archeres.emoji} **${archeres.label}** — ${archeres.degats} dégâts, réduits par la Défense. -50% si non protégée.`,
-    `${princesse.emoji} **${princesse.label}** — ${princesse.degats} dégât, insensible à Def/Res. + projection privée & événement du lendemain.`,
+    `${princesse.emoji} **${princesse.label}** — ${princesse.degats} dégâts, insensible à Def/Res. + projection privée & événement du lendemain.`,
     "",
     "📅 Événement différent chaque jour (sauf J1).",
     "⚡ Si score d'hier S (ou mieux) = +10% dégâts (+30% si 2j de suite) ; Si score C (ou moins) = -10%.",
