@@ -36,6 +36,7 @@ import {
   isTooSoonSinceLastClosure,
   cumulativeScore,
   resolveUltimateMultiplier,
+  MAX_VOTES_PAR_ROLE,
   ACTION_ROLES,
 } from "../../../backend/services/bossraid.js";
 import {
@@ -806,47 +807,27 @@ export async function handleJournal(webhookUrl) {
 // qui révèle l'événement du lendemain en exclusivité).
 
 function buildReglesEmbed(config) {
-  const lines = [
-    `Le clan affronte Kiki, un P.E.K.K.A. colossal, pendant ${config.duree_jours} jours de combat. Objectif : accumuler le maximum de dégâts cumulés en trouvant, jour après jour, la MEILLEURE répartition des votes du clan entre les rôles.`,
-    "",
-    "🎯 **Aucun aléatoire** : tous les dégâts sont fixes. Chaque jour, une combinaison de rôles est objectivement optimale — le Journal révèle après coup quelle était cette meilleure combinaison, comparée à celle réellement votée, avec une note de **SS/S/A/B/C/D**.",
-    "",
-    `**Rôles (1 vote par membre et par jour, modifiable jusqu’à ${formatUtcTimeAsParis(8)}):**`,
-  ];
-
   const chevalier = config.roles.chevalier;
-  lines.push(
-    `${chevalier.emoji} **${chevalier.label}** — 0 dégât, protège jusqu’à ${chevalier.protection_slots} unités à distance (Sorcier/Archères) contre le malus de non-protection. Impossible de voter Chevalier 2 jours de suite.`,
-  );
-
   const voleuse = config.roles.voleuse;
-  lines.push(
-    `${voleuse.emoji} **${voleuse.label}** — ${voleuse.degats} dégâts fixes, jamais réduits ni affectés par la protection. Chaque vote Voleuse réduit aussi la Défense du Boss de **${voleuse.debuff_defense_par_vote}** point pour la journée (plancher 0) — un soutien direct aux Archères.`,
-  );
-
   const sorcier = config.roles.sorcier;
-  lines.push(
-    `${sorcier.emoji} **${sorcier.label}** — ${sorcier.degats} dégâts de base, réduits par la Résistance du Boss (10%/point). Non protégé par un Chevalier : malus -50% (peut varier selon l’événement du jour).`,
-  );
-
   const archeres = config.roles.archeres;
-  lines.push(
-    `${archeres.emoji} **${archeres.label}** — ${archeres.degats} dégâts de base, réduits par la Défense du Boss (10%/point, après débuff Voleuse éventuel). Non protégée par un Chevalier : malus -50% (peut varier selon l’événement du jour).`,
-  );
-
   const princesse = config.roles.princesse;
-  lines.push(
-    `${princesse.emoji} **${princesse.label}** — ${princesse.degats} dégâts fixes, jamais réduits : insensible à la Défense, à la Résistance, à la protection du Chevalier et à tout malus/multiplicateur d’événement. Affiche aussi en privé la projection des dégâts du jour, un indice de note, et l’événement prévu pour le lendemain.`,
-  );
 
-  lines.push(
+  const lines = [
+    "Objectif : accumuler le max de dégâts en trouvant chaque jour la MEILLEURE combinaison de rôles. Dégâts fixes, aucun aléatoire — note **SS/S/A/B/C/D** dans le Journal.",
     "",
-    `🛡️ **Chaque jour repart de la même base** : Défense et Résistance du Boss reviennent à **${config.boss_stats_base.defense}/10** et **${config.boss_stats_base.resistance}/10** — sans persistance d’un jour à l’autre.`,
+    `**Rôles** *(1 vote/jour, modifiable jusqu’à ${formatUtcTimeAsParis(8)})* :`,
+    `${chevalier.emoji} **${chevalier.label}** — 0 dégât. Protège ${chevalier.protection_slots} distants (Sorcier/Archères). Pas 2 jours de suite.`,
+    `${voleuse.emoji} **${voleuse.label}** — ${voleuse.degats} fixes + -${voleuse.debuff_defense_par_vote} Défense/vote (soutient les Archères).`,
+    `${sorcier.emoji} **${sorcier.label}** — ${sorcier.degats}, réduits par la Résistance. -50% si non protégé.`,
+    `${archeres.emoji} **${archeres.label}** — ${archeres.degats}, réduits par la Défense. -50% si non protégée.`,
+    `${princesse.emoji} **${princesse.label}** — ${princesse.degats} fixes, insensible à tout. + projection privée & événement du lendemain.`,
     "",
-    "📅 **Un événement différent chaque jour** (sauf le Jour 1) bouleverse la donne — Défense/Résistance modifiées, protection affaiblie, rôle pénalisé ou renforcé… à vous de réadapter la combinaison en conséquence. Le Boss garde ses surprises, seule la Princesse révèle l’événement du lendemain en exclusivité.",
-    "",
-    "⚡ **Ultime** : un score de **S ou plus** hier octroie +10% de dégâts aujourd’hui (+30% si atteint 2 jours de suite) ; un score de **C ou moins** hier inflige -10%. Un bonus/malus commun à toute la journée, jamais d’influence sur la note (qui compare toujours au plafond théorique DU jour).",
-  );
+    `🛡️ Défense/Résistance repartent à ${config.boss_stats_base.defense}/${config.boss_stats_base.resistance} chaque jour.`,
+    "📅 Événement différent chaque jour (sauf J1) — surprise.",
+    "⚡ Ultime : score S+ hier = +10% dégâts (+30% si 2j de suite) ; C- = -10%.",
+    `🔢 Rôles identiques limités à ${MAX_VOTES_PAR_ROLE} votes — au-delà, plus aucun effet.`,
+  ];
 
   return {
     title: "📖 Règles & Rôles — Boss Raid",

@@ -17,6 +17,7 @@ import {
   computeUltimateMultiplier,
   isChevalierVoteAllowed,
   computeCloture,
+  MAX_VOTES_PAR_ROLE,
 } from "./bossraid.js";
 
 const CONFIG = {
@@ -142,6 +143,11 @@ async function main() {
   assert.strictEqual(computeDefenseEffective(3, { defense: 5, voleuseDebuffDisabled: false }, CONFIG), 2);
   assert.strictEqual(computeDefenseEffective(10, { defense: 5, voleuseDebuffDisabled: false }, CONFIG), 0); // plancher 0
   assert.strictEqual(computeDefenseEffective(10, { defense: 5, voleuseDebuffDisabled: true }, CONFIG), 5); // Rage du Boss : débuff neutralisé
+  // "Rôles identiques limités à 10" — le 11e vote Voleuse n'a plus d'effet.
+  assert.strictEqual(
+    computeDefenseEffective(11, { defense: 5, voleuseDebuffDisabled: false }, CONFIG),
+    computeDefenseEffective(MAX_VOTES_PAR_ROLE, { defense: 5, voleuseDebuffDisabled: false }, CONFIG),
+  );
 
   // ── computeActionCounts — 5 rôles d'action, Princesse incluse (elle
   // inflige désormais un dégât fixe, elle n'est plus hors-combo) ──
@@ -182,6 +188,62 @@ async function main() {
     const rFacile = computeComboDamage(counts, dayParamsFacile, CONFIG, { protectedSorcier: 0, protectedArcheres: 0 });
     assert.strictEqual(rDur.breakdown.princesse, 75); // 3 x 25, identique quel que soit le contexte
     assert.strictEqual(rFacile.breakdown.princesse, 75);
+  }
+
+  // ── computeComboDamage — "Rôles identiques limités à 10" : le 11e vote
+  // d'un MÊME rôle n'a plus aucun effet ──
+  {
+    const dayParams = resolveDayParams(1, CONFIG);
+    // Voleuse/Princesse : 11 votes -> identique à 10 (le 11e ignoré).
+    const r11 = computeComboDamage(
+      { chevalier: 0, voleuse: 11, sorcier: 0, archeres: 0, princesse: 11 },
+      dayParams, CONFIG, { protectedSorcier: 0, protectedArcheres: 0 },
+    );
+    const r10 = computeComboDamage(
+      { chevalier: 0, voleuse: 10, sorcier: 0, archeres: 0, princesse: 10 },
+      dayParams, CONFIG, { protectedSorcier: 0, protectedArcheres: 0 },
+    );
+    assert.strictEqual(r11.total, r10.total);
+    assert.deepStrictEqual(r11.breakdown, r10.breakdown);
+
+    // Sorcier : 15 votes dont 6 "protégés" (déjà plafonnés par l'appelant,
+    // comme le fait evaluateCandidateCombo/computeCloture) -> seuls 10
+    // comptent (6 protégés + 4 non protégés), les 5 derniers sont gâchés.
+    const rSorcier = computeComboDamage(
+      { chevalier: 0, voleuse: 0, sorcier: 15, archeres: 0, princesse: 0 },
+      dayParams, CONFIG, { protectedSorcier: 6, protectedArcheres: 0 },
+    );
+    // Protégé = round(90*0.5) = 45, non protégé = round(45*0.5) = 23.
+    assert.strictEqual(rSorcier.breakdown.sorcier, 6 * 45 + 4 * 23);
+  }
+
+  // ── computeCloture — bout-en-bout, plafond appliqué à la clôture RÉELLE ──
+  // Jour 1 (sans événement) : 12 Sorciers réels (u1..u12, votés dans cet
+  // ordre) + 2 Chevaliers (capacité 4). Seuls les 10 premiers Sorciers par
+  // ordre d'arrivée comptent (u11/u12 gâchés) ; parmi eux, les 4 premiers
+  // (capacité Chevalier) sont protégés, les 6 suivants non protégés.
+  {
+    const votesRaw = { chev1: "chevalier", chev2: "chevalier" };
+    const voteAtRaw = {};
+    for (let i = 1; i <= 12; i++) {
+      const id = `u${i}`;
+      votesRaw[id] = "sorcier";
+      voteAtRaw[id] = `2020-01-01T00:00:${String(i).padStart(2, "0")}Z`;
+    }
+    const dayParams = resolveDayParams(1, CONFIG);
+    const r = computeCloture({
+      jour: 1,
+      votesRaw,
+      voteAtRaw,
+      dayParams,
+      config: CONFIG,
+      totalDegatsAvant: 0,
+      totalDegatsOptimalAvant: 0,
+    });
+    assert.strictEqual(r.actionCounts.sorcier, 12); // compte RÉEL affiché, jamais tronqué
+    assert.strictEqual(r.totalVotesAction, 14);
+    // 4 protégés x 45 + 6 non protégés x 23 = 180 + 138 = 318 (u11/u12 gâchés)
+    assert.strictEqual(r.totalDamageDuJour, 318);
   }
 
   // ── allocateOptimalProtection — priorité au rôle à plus forte plus-value ──

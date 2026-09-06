@@ -1317,6 +1317,17 @@ Le **score de combinaison** compare les dégâts réels du jour à ce plafond th
 
 (`gradeForRatio()`, seuils arbitraires mais isolés dans une seule fonction, tunables sans toucher au reste du moteur.) Un **score cumulé** (`cumulativeScore()`) compare le cumul réel au cumul du plafond théorique jour par jour — pas une moyenne des lettres quotidiennes, qui pondérerait injustement un jour à faible participation comme un jour à forte participation.
 
+### Rôles identiques limités à 10 — diversifier au-delà d'un certain N
+
+Règle complémentaire (06/09) : au-delà de `MAX_VOTES_PAR_ROLE` (10) votes pour un MÊME rôle un même jour, les votes supplémentaires (11e et suivants) **n'ont plus aucun effet** — ni dégât, ni capacité de protection (Chevalier), ni débuff Défense (Voleuse). Conséquence directe : un plafond dur sur les dégâts théoriques atteignables, **5 rôles × 10 = 50 votes utiles au maximum par jour** — au-delà, tout vote supplémentaire est strictement gâché quel que soit le rôle choisi (vérifié par simulation : `computeBestCombo` plafonne bien à N=50 quelle que soit la config, N=60/80 donnant rigoureusement le même total).
+
+Le compteur affiché sur les boutons de vote et dans le bilan (`formatCombo()`) reste le compte **RÉEL**, jamais tronqué — seul l'EFFET des votes excédentaires est neutralisé, au plus près du calcul :
+
+- `computeDefenseEffective()` plafonne `nbVoleuses` en interne (un 11e vote Voleuse ne réduit pas plus la Défense).
+- `computeComboDamage()` plafonne chaque compte (`voleuse`/`princesse`/`sorcier`/`archeres`) en interne AVANT de calculer les totaux — mais `protectedSorcier`/`protectedArcheres` doivent déjà avoir été calculés sur cette même population plafonnée par l'appelant, sous peine de décompte de non-protégés négatif.
+- `evaluateCandidateCombo()` (recherche hypothétique) plafonne Chevalier/Sorcier/Archères **avant** d'appeler `allocateOptimalProtection()`, pour la même raison.
+- `computeCloture()` (clôture RÉELLE) va plus loin : `selectEffectiveVoters()` sélectionne, PAR RÔLE, les `MAX_VOTES_PAR_ROLE` premiers votants RÉELS de Sorcier/Archères (départagés par `vote_at` croissant — même précédent que la protection Chevalier), et seuls ceux-là entrent dans la liste des `distants` soumise à `computeProtection()`. Un 11e Sorcier/Archères ne consomme donc aucun slot de protection et ne compte jamais parmi les non-protégés — il n'existe simplement plus pour le calcul, quel que soit l'ordre de répartition des slots ensuite.
+
 ### Ultime — bonus/malus de dégâts basé sur la PERFORMANCE (pas sur le vote)
 
 ⚠️ Le terme « Ultime » réapparaît (retour utilisateur du 06/09) mais désigne désormais un mécanisme totalement différent de l'ancien All-In déclenché par un rôle majoritaire : un bonus/malus de dégâts pour la journée ENTIÈRE, basé sur le **score de combinaison** des 1-2 jours précédents (`resolveUltimateMultiplier(jour)`, qui lit `bossraid:historique[jour-1]`/`[jour-2]`, déjà figés et immuables) :

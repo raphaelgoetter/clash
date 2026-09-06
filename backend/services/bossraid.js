@@ -311,14 +311,27 @@ export function computeActionCounts(votesRaw) {
   return counts;
 }
 
+// Règle "rôles identiques limités à 10" : au-delà de 10 votes pour un MÊME
+// rôle, les votes supplémentaires (11e et suivants) n'ont plus aucun effet
+// — ni dégât, ni capacité de protection (Chevalier), ni débuff Défense
+// (Voleuse). Le compteur affiché sur les boutons/le bilan reste le compte
+// RÉEL (jamais tronqué) — seul l'EFFET est plafonné, appliqué au plus près
+// du calcul de dégâts/protection (computeComboDamage, computeDefenseEffective,
+// et la capacité de protection dans evaluateCandidateCombo/computeCloture).
+// Plafond dur sur les dégâts théoriques atteignables : 5 rôles × 10 = 50
+// votes utiles au maximum par jour, au-delà tout vote supplémentaire (quel
+// que soit le rôle choisi) est strictement gâché.
+export const MAX_VOTES_PAR_ROLE = 10;
+
 // Défense effective du jour après débuff Voleuse : -1 point par vote
-// Voleuse (déterministe, aucun tirage), plancher 0. Neutralisé par
-// l'événement Rage du Boss (`voleuseDebuffDisabled`) — la Voleuse ne
-// conserve alors que son dégât fixe.
+// Voleuse (déterministe, aucun tirage, plafonné à MAX_VOTES_PAR_ROLE votes
+// effectifs), plancher 0. Neutralisé par l'événement Rage du Boss
+// (`voleuseDebuffDisabled`) — la Voleuse ne conserve alors que son dégât fixe.
 export function computeDefenseEffective(nbVoleuses, dayParams, config) {
   if (dayParams.voleuseDebuffDisabled) return dayParams.defense;
+  const effectiveVoleuses = Math.min(nbVoleuses, MAX_VOTES_PAR_ROLE);
   const debuff = config.roles.voleuse.debuff_defense_par_vote || 0;
-  return Math.max(0, dayParams.defense - nbVoleuses * debuff);
+  return Math.max(0, dayParams.defense - effectiveVoleuses * debuff);
 }
 
 // Dégâts totaux d'une combinaison (répartition de votes sur les 5 rôles
@@ -338,8 +351,19 @@ export function computeDefenseEffective(nbVoleuses, dayParams, config) {
 // d'investissement (pas de Chevalier nécessaire), la moindre valeur trop
 // haute la rend strictement dominante à tout N.
 export function computeComboDamage(counts, dayParams, config, { protectedSorcier, protectedArcheres }) {
-  const voleuseTotal = counts.voleuse * config.roles.voleuse.degats;
-  const princesseTotal = (counts.princesse || 0) * config.roles.princesse.degats;
+  // Plafond "rôles identiques limités à 10" (MAX_VOTES_PAR_ROLE) — les
+  // votes au-delà du plafond, pour un même rôle, sont ignorés ici. Pour
+  // Sorcier/Archères, `protectedSorcier`/`protectedArcheres` DOIVENT déjà
+  // avoir été calculés sur cette même population plafonnée par l'appelant
+  // (evaluateCandidateCombo / computeCloture), sous peine de décompte
+  // négatif de non-protégés.
+  const voleuseCount = Math.min(counts.voleuse, MAX_VOTES_PAR_ROLE);
+  const princesseCount = Math.min(counts.princesse || 0, MAX_VOTES_PAR_ROLE);
+  const sorcierCount = Math.min(counts.sorcier, MAX_VOTES_PAR_ROLE);
+  const archeresCount = Math.min(counts.archeres, MAX_VOTES_PAR_ROLE);
+
+  const voleuseTotal = voleuseCount * config.roles.voleuse.degats;
+  const princesseTotal = princesseCount * config.roles.princesse.degats;
   const defenseEffective = computeDefenseEffective(counts.voleuse, dayParams, config);
 
   const sorcierProtUnit = Math.round(
@@ -379,8 +403,8 @@ export function computeComboDamage(counts, dayParams, config, { protectedSorcier
     }),
   );
 
-  const sorcierUnprotectedCount = counts.sorcier - protectedSorcier;
-  const archeresUnprotectedCount = counts.archeres - protectedArcheres;
+  const sorcierUnprotectedCount = sorcierCount - protectedSorcier;
+  const archeresUnprotectedCount = archeresCount - protectedArcheres;
   const sorcierTotal = sorcierProtUnit * protectedSorcier + sorcierUnprotUnit * sorcierUnprotectedCount;
   const archeresTotal = archeresProtUnit * protectedArcheres + archeresUnprotUnit * archeresUnprotectedCount;
 
@@ -413,7 +437,15 @@ export function allocateOptimalProtection(nSorcier, nArcheres, capacite, deltaSo
 }
 
 function evaluateCandidateCombo(counts, dayParams, config) {
-  const capacite = counts.chevalier * dayParams.protectionSlots;
+  // Chevalier/Sorcier/Archères plafonnés à MAX_VOTES_PAR_ROLE AVANT
+  // l'allocation de protection — indispensable : sans ce plafond ici,
+  // `protectedSorcier`/`protectedArcheres` pourraient dépasser le compte
+  // effectif (capé) utilisé ensuite par computeComboDamage, et produire un
+  // nombre de non-protégés négatif.
+  const chevalierCount = Math.min(counts.chevalier, MAX_VOTES_PAR_ROLE);
+  const sorcierCount = Math.min(counts.sorcier, MAX_VOTES_PAR_ROLE);
+  const archeresCount = Math.min(counts.archeres, MAX_VOTES_PAR_ROLE);
+  const capacite = chevalierCount * dayParams.protectionSlots;
   const defenseEffective = computeDefenseEffective(counts.voleuse, dayParams, config);
   const sorcierProtUnit = computeSorcierDamage({
     base: config.roles.sorcier.degats,
@@ -445,8 +477,8 @@ function evaluateCandidateCombo(counts, dayParams, config) {
   });
 
   const { protectedSorcier, protectedArcheres } = allocateOptimalProtection(
-    counts.sorcier,
-    counts.archeres,
+    sorcierCount,
+    archeresCount,
     capacite,
     sorcierProtUnit - sorcierUnprotUnit,
     archeresProtUnit - archeresUnprotUnit,
@@ -546,6 +578,22 @@ export async function resolveUltimateMultiplier(jour) {
   };
 }
 
+// Les `max` premiers votants RÉELS d'un rôle donné, départagés par
+// vote_at croissant — même précédent que la protection Chevalier
+// (computeProtection). Sert à appliquer la règle "rôles identiques
+// limités à 10" à la clôture réelle : au-delà du plafond, un votant
+// n'existe simplement plus pour ce rôle (ni protection consommée, ni
+// dégât), quel que soit l'ordre dans lequel les slots de protection sont
+// ensuite répartis.
+function selectEffectiveVoters(votesRaw, voteAtRaw, roleId, max) {
+  return Object.entries(votesRaw)
+    .filter(([, r]) => r === roleId)
+    .map(([discordId]) => ({ discordId, votedAt: voteAtRaw[discordId] || "" }))
+    .sort((a, b) => (a.votedAt < b.votedAt ? -1 : a.votedAt > b.votedAt ? 1 : 0))
+    .slice(0, max)
+    .map((v) => v.discordId);
+}
+
 // ── Orchestrateur pur — cœur de la clôture (aucun I/O) ──────────────
 // protection → combinaison réelle (dégâts) → meilleure combinaison
 // possible à nombre de votants égal → score du jour.
@@ -555,14 +603,32 @@ export function computeCloture({ jour, votesRaw, voteAtRaw, dayParams, config, t
   for (const roleId of Object.values(votesRaw)) voteCounts[roleId] = (voteCounts[roleId] || 0) + 1;
   const totalVotes = Object.keys(votesRaw).length;
 
+  // `actionCounts` reste le compte RÉEL (jamais tronqué) — affiché tel
+  // quel sur les boutons et dans le bilan (formatCombo). Seul l'EFFET des
+  // votes au-delà de MAX_VOTES_PAR_ROLE est neutralisé plus bas.
   const actionCounts = computeActionCounts(votesRaw);
   const totalVotesAction =
     actionCounts.chevalier + actionCounts.voleuse + actionCounts.sorcier + actionCounts.archeres + actionCounts.princesse;
 
+  // Sorcier/Archères plafonnés à leurs MAX_VOTES_PAR_ROLE premiers votants
+  // (par ordre d'arrivée) AVANT toute allocation de protection — sinon un
+  // 11e Sorcier pourrait consommer un slot de protection pour un dégât
+  // qui ne compte plus, ou faire déborder le compte de non-protégés dans
+  // computeComboDamage (lui aussi plafonné).
+  const effectiveSorcierIds = new Set(selectEffectiveVoters(votesRaw, voteAtRaw, "sorcier", MAX_VOTES_PAR_ROLE));
+  const effectiveArcheresIds = new Set(selectEffectiveVoters(votesRaw, voteAtRaw, "archeres", MAX_VOTES_PAR_ROLE));
   const distants = Object.entries(votesRaw)
-    .filter(([, roleId]) => roleId === "sorcier" || roleId === "archeres")
+    .filter(
+      ([discordId, roleId]) =>
+        (roleId === "sorcier" && effectiveSorcierIds.has(discordId)) ||
+        (roleId === "archeres" && effectiveArcheresIds.has(discordId)),
+    )
     .map(([discordId]) => ({ discordId, votedAt: voteAtRaw[discordId] || "" }));
-  const protection = computeProtection(actionCounts.chevalier, distants, dayParams.protectionSlots);
+  const protection = computeProtection(
+    Math.min(actionCounts.chevalier, MAX_VOTES_PAR_ROLE),
+    distants,
+    dayParams.protectionSlots,
+  );
 
   let protectedSorcier = 0;
   let protectedArcheres = 0;
