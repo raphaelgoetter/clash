@@ -226,25 +226,37 @@ async function buildCombatEmbed(jour, jourClos, closure, event, config, state) {
 }
 
 function buildComponents(jour, phase, voteCounts, config) {
-  const utilityRow = {
-    type: 1,
-    components: [
-      {
-        type: 2,
-        style: 3,
-        label: "Règles",
-        emoji: { name: "📖" },
-        custom_id: "bossraid_regles",
-      },
-      {
-        type: 2,
-        style: 2,
-        label: "Journal",
-        emoji: { name: "📜" },
-        custom_id: "bossraid_journal",
-      },
-    ],
-  };
+  const utilityButtons = [
+    {
+      type: 2,
+      style: 3,
+      label: "Règles",
+      emoji: { name: "📖" },
+      custom_id: "bossraid_regles",
+    },
+    {
+      type: 2,
+      style: 2,
+      label: "Journal",
+      emoji: { name: "📜" },
+      custom_id: "bossraid_journal",
+    },
+  ];
+
+  // Tuto détaillé réservé au jour d'annonce — jamais affiché en phase de
+  // combat (Jours 1-7), pour ne pas surcharger le message quotidien une fois
+  // les règles déjà assimilées.
+  if (phase === "annonce") {
+    utilityButtons.push({
+      type: 2,
+      style: 2,
+      label: "Tuto complet",
+      emoji: { name: "📚" },
+      custom_id: "bossraid_tuto",
+    });
+  }
+
+  const utilityRow = { type: 1, components: utilityButtons };
 
   if (phase !== "combat") return [utilityRow];
 
@@ -874,5 +886,64 @@ export async function handleRegles(webhookUrl) {
     await patchOriginal(webhookUrl, { embeds: [embed], components: [] });
   } catch (err) {
     console.error("[BossRaid] Échec Règles & Rôles:", err.message);
+  }
+}
+
+// ── Bouton [📚 Tuto complet] — jour d'annonce uniquement, hors-vote ────
+// Détaille le calcul des dégâts et de la note, contrairement au bouton
+// Règles qui reste volontairement condensé. Même principe que Règles pour
+// les événements : jamais listés ici (seule la Princesse les révèle,
+// un jour à l'avance, une fois la partie commencée).
+
+function buildTutoEmbed(config) {
+  const chevalier = config.roles.chevalier;
+  const voleuse = config.roles.voleuse;
+  const sorcier = config.roles.sorcier;
+  const archeres = config.roles.archeres;
+  const princesse = config.roles.princesse;
+  const base = config.boss_stats_base;
+  const exempleVoleuses = 2;
+  const defenseApresExemple = Math.max(
+    0,
+    base.defense - exempleVoleuses * voleuse.debuff_defense_par_vote,
+  );
+
+  const lines = [
+    "**⚔️ Faire des dégâts**",
+    `${chevalier.emoji}${voleuse.emoji}${sorcier.emoji}${archeres.emoji}${princesse.emoji} Kiki a **${base.defense}/10 Défense** et **${base.resistance}/10 Résistance** de base (ces valeurs peuvent changer selon l'événement du jour).`,
+    `${archeres.emoji} **${archeres.label}** attaque la Défense, ${sorcier.emoji} **${sorcier.label}** attaque la Résistance.`,
+    "Les dégâts d'un rôle à distance sont réduits proportionnellement à la stat visée : chaque point de Défense/Résistance retire 10% des dégâts (5/10 = -50%, 9/10 = -90%…).",
+    `${voleuse.emoji} **${voleuse.label}** fait baisser la Défense de **${voleuse.debuff_defense_par_vote}** par vote (ex. ${exempleVoleuses} votes Voleuse → Défense à ${defenseApresExemple}/10, donc moins de réduction pour les Archères).`,
+    `${princesse.emoji} **${princesse.label}** inflige toujours **${princesse.degats}** dégâts fixes, quelle que soit la Défense/Résistance du Boss.`,
+    `${chevalier.emoji} **${chevalier.label}** ne fait aucun dégât, mais protège jusqu'à **${chevalier.protection_slots}** unités à distance (Sorcier/Archères) chacun : une unité protégée garde 100% de ses dégâts, une unité non protégée n'en garde qu'une partie (sauf événement contraire). Impossible de voter Chevalier 2 jours de suite.`,
+    "",
+    "**🎯 Faire le meilleur score**",
+    "Chaque jour, le jeu calcule la MEILLEURE combinaison de rôles possible avec le nombre de votants du jour, et compare vos dégâts réels à ce plafond théorique.",
+    "Le Journal révèle, pour la veille, quelle était cette meilleure combinaison et la vôtre, côte à côte.",
+    "Votre note du jour dépend du ratio dégâts réels / dégâts maximum possibles : **SS** (parfait), **S**, **A**, **B**, **C**, **D** (pitoyable).",
+    "⚡ **Ultime** — bonus/malus de dégâts basé sur vos notes des 1-2 jours précédents : score **S** (ou mieux) hier = **+10%** de dégâts aujourd'hui, **S ou mieux 2 jours de suite** = **+30%** (remplace le +10%) ; score **C** (ou moins) hier = **-10%**. Le multiplicateur s'applique à égalité sur vos dégâts et sur le plafond théorique du jour, donc il n'influence jamais votre note — seuls les totaux affichés en profitent ou en pâtissent.",
+    `${princesse.emoji} **${princesse.label}** permet en plus de connaître en direct une projection des dégâts/note du jour en cours, et de découvrir en exclusivité l'événement prévu pour le lendemain.`,
+    `Au-delà de **${MAX_VOTES_PAR_ROLE}** votes sur un même rôle dans la journée, les votes supplémentaires n'ont plus aucun effet — mieux vaut répartir.`,
+    "",
+    "**📅 Événements**",
+    "À partir du Jour 2, un événement différent frappe chaque jour et peut modifier la Défense, la Résistance, le nombre de protections par Chevalier, le malus des unités non protégées, ou d'autres réglages du Boss.",
+    `La nature exacte de chaque événement reste une surprise jusqu'à son apparition — seule ${princesse.emoji} la ${princesse.label} peut la découvrir, un jour à l'avance.`,
+    "Il faudra adapter la combinaison de rôles à l'événement du jour pour viser la meilleure note possible.",
+  ];
+
+  return {
+    title: "📚 Tuto complet — Boss Raid",
+    description: lines.join("\n"),
+    color: BOSSRAID_COLOR,
+  };
+}
+
+export async function handleTuto(webhookUrl) {
+  try {
+    const config = await loadBossRaidConfig();
+    const embed = buildTutoEmbed(config);
+    await patchOriginal(webhookUrl, { embeds: [embed], components: [] });
+  } catch (err) {
+    console.error("[BossRaid] Échec Tuto:", err.message);
   }
 }

@@ -89,6 +89,7 @@ import {
   handlePrincesse as handleBossRaidPrincesse,
   handleRegles as handleBossRaidRegles,
   handleJournal as handleBossRaidJournal,
+  handleTuto as handleBossRaidTuto,
 } from "./_handlers/bossraid.js";
 import {
   handleRegisterButton as handleGoblinHuntersRegister,
@@ -9361,6 +9362,14 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleBossRaidJournal(webhookUrl));
+    return;
+  }
+
+  // ── Boss Raid : bouton "Tuto complet" (jour d'annonce uniquement) ──
+  if (body.type === 3 && body.data?.custom_id === "bossraid_tuto") {
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleBossRaidTuto(webhookUrl));
     return;
   }
 

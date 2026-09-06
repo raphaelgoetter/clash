@@ -1264,7 +1264,7 @@ Mini-jeu communautaire quotidien indépendant du Clash Royale : le clan affronte
 
 Un seul message actif à la fois dans le salon dédié, en 3 phases :
 
-1. **Jour d'annonce** (`bossraid:state.phase === "annonce"`) : premier `postBossRaid()`, publie le lore + la posture de base du Boss, ping `@MINI-JEUX`. Seul le bouton `[📖 Règles & Rôles]` est visible — aucun vote possible.
+1. **Jour d'annonce** (`bossraid:state.phase === "annonce"`) : premier `postBossRaid()`, publie le lore + la posture de base du Boss, ping `@MINI-JEUX`. Boutons `[📖 Règles & Rôles]` + `[📚 Tuto complet]` visibles — aucun vote possible. Le Tuto (`buildTutoEmbed()`) détaille le calcul des dégâts/notes (contrairement aux Règles, condensées) ; il disparaît dès le Jour 1 (`buildComponents()` ne l'ajoute que si `phase === "annonce"`), pour ne pas surcharger le message une fois les règles assimilées. Mêmes principes que Règles pour les événements : jamais listés, seule la Princesse les révèle un jour à l'avance.
 2. **Transition vers le Jour 1/7** : deuxième `postBossRaid()`, détecte `phase === "annonce"` et publie directement le Jour 1 avec les 5 boutons de vote, sans clôture (rien n'a pu être voté avant) ni ping.
 3. **Clôture quotidienne** (jours suivants) : `postBossRaid()` clôture le jour actif (`closeDayAndAdvance()`), calcule les dégâts et compare à la meilleure combinaison possible, publie le bilan + le jour suivant (jamais de ping). Au-delà du Jour 7 (`jourSuivant > duree_jours`), publie l'embed de fin de Raid (score total, aucun composant), ping `@MINI-JEUX`, et passe `termine: true` — les runs suivants du cron deviennent des no-op silencieux, même principe que les autres jeux.
 
