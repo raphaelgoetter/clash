@@ -16,9 +16,9 @@ export const MS_PER_DAY = 1000 * 60 * 60 * 24;
  * @type {Object<string,{h:number,m:number}>}
  */
 export const CLAN_RESET_TIMES = {
-  Y8JUPC9C: { h: 9, m: 57 }, // La Resistance (Clan 1) — reset spécifique 09:57 UTC
-  LRQP20V9: { h: 9, m: 37 }, // Les Resistants (Clan 2) — reset spécifique 09:37 UTC
-  QU9UQJRL: { h: 9, m: 51 }, // Les Revoltes (Clan 3) — reset spécifique 09:51 UTC
+  Y8JUPC9C: { h: 9, m: 45 }, // La Resistance (Clan 1) — reset spécifique 09:45 UTC
+  LRQP20V9: { h: 9, m: 36 }, // Les Resistants (Clan 2) — reset spécifique 09:36 UTC
+  QU9UQJRL: { h: 9, m: 45 }, // Les Revoltes (Clan 3) — reset spécifique 09:45 UTC
 };
 
 /**
@@ -50,10 +50,7 @@ export function lastDonationResetUtcMs(now = new Date()) {
       h,
       m,
     );
-    if (
-      cursor.getUTCDay() === weekday &&
-      candidate <= now.getTime()
-    ) {
+    if (cursor.getUTCDay() === weekday && candidate <= now.getTime()) {
       return candidate;
     }
     cursor.setUTCDate(cursor.getUTCDate() - 1);
