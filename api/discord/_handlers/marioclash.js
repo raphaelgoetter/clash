@@ -72,9 +72,9 @@ function formatRankingLines(joueurs, config, limit = 10) {
   if (!ranking.length) return ["*Personne n'a encore rejoint la course.*"];
   return ranking.slice(0, limit).map((j, index) => {
     const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}.`;
-    const objetEmoji = j.objet ? ` ${config.objets[j.objet]?.emoji || ""}` : "";
     const arrivee = j.position >= config.case_arrivee ? " 🏁" : "";
-    return `${medal} **${j.username}** — case ${j.position}/${config.case_arrivee}${arrivee}${objetEmoji}`;
+    const objetLabel = j.objet ? `${config.objets[j.objet]?.emoji || ""} ${config.objets[j.objet]?.label}` : "aucun objet";
+    return `${medal} **${j.username}** — case ${j.position}/${config.case_arrivee}${arrivee} · ${j.points} pt(s) · ${objetLabel}`;
   });
 }
 
