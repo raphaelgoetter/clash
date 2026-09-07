@@ -7,25 +7,26 @@
 // Stockage : Upstash Redis (mêmes conventions que bossraid.js/robinson.js)
 // — espace de clés `marioclash:*`.
 //
-// ⚠️ Modèle de référence = Boss Raid, pas Robinson : le dé, l'activation
-// d'objet et le lancer de sort sont de simples CHOIX enregistrés pendant la
-// journée (`marioclash:actions:<jour>`, HSET écrasable) — aucun tirage
-// aléatoire au clic. Tout se résout UNE SEULE FOIS à la clôture, dans
+// ⚠️ Modèle de référence = Boss Raid, pas Robinson, pour l'objet et le
+// sort : ce sont de simples CHOIX enregistrés pendant la journée
+// (`marioclash:actions:<jour>`, HSET écrasable) — aucun tirage aléatoire au
+// clic. Ils se résolvent UNE SEULE FOIS à la clôture, dans
 // `computeCloture()`, une fonction pure (aucun I/O, `rng` injectable pour
 // des tests déterministes — convention `rollXxx(..., rng = Math.random)` de
-// robinson.js).
+// robinson.js). Raison : ils peuvent cibler un AUTRE joueur, et l'ordre par
+// rapport à l'immunité Étoile du jour doit être déterministe.
 //
 // ⚠️ Ordre de résolution à la clôture (décision explicite, voir
 // CONTRIBUTING.md) : 1) objets déjà actifs (Étoile → immunité du jour)
-// 2) objets appliqués (Accélérateur/Bombe/Banane) 3) sorts 4) dé en dernier.
-// L'Étoile protège ainsi contre TOUT le reste de la journée (objets ET
-// sorts d'autrui, y compris un sort qu'on se lancerait à soi-même), jamais
-// contre son propre dé (ce n'est pas une "attaque").
+// 2) objets appliqués (Accélérateur/Bombe/Banane) 3) sorts. L'Étoile
+// protège ainsi contre TOUT le reste de la journée (objets ET sorts
+// d'autrui, y compris un sort qu'on se lancerait à soi-même).
 //
-// ⚠️ La boutique (achat d'objet) est résolue EN DIRECT au clic, pas à la
-// clôture : c'est une action individuelle, sans interaction avec les
-// autres joueurs (contrairement au dé/objet/sort) — même principe que la
-// Pilule du Tamagoshi (ressource individuelle, effet immédiat, capée).
+// ⚠️ Le dé et la boutique sont résolus EN DIRECT au clic, PAS à la
+// clôture (voir rollDiceForPlayer()/purchaseItem()) : ce sont des actions
+// individuelles, sans aucune interaction avec les autres joueurs ni
+// dépendance à l'immunité Étoile — même principe que la Pilule du
+// Tamagoshi (ressource individuelle, effet immédiat, capée).
 //
 // ⚠️ automaticDeserialization désactivée volontairement (IDs Discord
 // corrompus sinon, voir bossraid.js) : JSON sérialisé/désérialisé nous-mêmes.
@@ -185,16 +186,8 @@ async function updateAction(jour, discordId, patch) {
   return updated;
 }
 
-export async function recordDiceRoll(jour, discordId) {
-  return updateAction(jour, discordId, { dice: true });
-}
-
 export async function recordItemUse(jour, discordId, target = null) {
   return updateAction(jour, discordId, { item: { target } });
-}
-
-export async function recordSpellCast(jour, discordId, target = null) {
-  return updateAction(jour, discordId, { spell: { target } });
 }
 
 export async function readActions(jour) {
@@ -216,8 +209,45 @@ export function rollSort(sorts, rng = Math.random) {
   return sorts.find((s) => s.id === id) || sorts[0];
 }
 
-function clampPosition(position, caseArrivee) {
+export function clampPosition(position, caseArrivee) {
   return Math.max(0, Math.min(caseArrivee, position));
+}
+
+// ── Dé — résolu EN DIRECT au clic, pas à la clôture ──────────────────
+// Contrairement à l'objet/au sort (qui peuvent cibler un adversaire et
+// dépendent de l'immunité Étoile calculée à la clôture), le dé n'affecte
+// jamais que son propre lanceur : aucune interaction avec les autres
+// joueurs, donc aucune raison d'en différer la résolution. Même principe
+// que la boutique (action individuelle, effet immédiat).
+export async function rollDiceForPlayer(jour, discordId, config, rng = Math.random) {
+  const actions = await readActions(jour);
+  if (actions[discordId]?.dice) return { status: "alreadyRolled" };
+  const joueur = await readJoueur(discordId);
+  if (!joueur) return { status: "unknownPlayer" };
+  const valeur = rollDice(rng);
+  const position = clampPosition(joueur.position + valeur, config.case_arrivee);
+  await writeJoueur(discordId, { ...joueur, position });
+  await updateAction(jour, discordId, { dice: true, diceValue: valeur });
+  return { status: "ok", valeur, positionAvant: joueur.position, position };
+}
+
+// ── Sort — cible ET effet tirés au sort DÈS LE CLIC, annoncés
+// immédiatement ; seule l'APPLICATION (déplacement, blocage éventuel par
+// l'Étoile d'un joueur devenu immunisé plus tard le même jour) reste
+// différée à la clôture, dans l'ordre de résolution documenté en tête de
+// fichier. Aucun choix du joueur : ni la cible (soi-même ou un adversaire,
+// 50/50), ni l'effet (1 à 6, voir data/marioclash/marioclash.json) —
+// "totalement aléatoire", décision explicite.
+export async function castSpellForPlayer(jour, discordId, config, rng = Math.random) {
+  const actions = await readActions(jour);
+  if (actions[discordId]?.spell) return { status: "alreadyCast" };
+  const joueurs = await readJoueurs();
+  if (!joueurs[discordId]) return { status: "unknownPlayer" };
+  const autres = Object.keys(joueurs).filter((id) => id !== discordId);
+  const target = autres.length && rng() < 0.5 ? autres[Math.floor(rng() * autres.length)] : discordId;
+  const sort = rollSort(config.sorts, rng);
+  await updateAction(jour, discordId, { spell: { target, sortId: sort.id } });
+  return { status: "ok", target, sort };
 }
 
 // `actionsRaw`/`joueursAvant` : objets { discordId: {...} }, déjà
@@ -276,7 +306,9 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
     joueur.objet = null;
   }
 
-  // 3) Sorts.
+  // 3) Sorts — cible et effet déjà tirés au clic (castSpellForPlayer), on
+  // se contente ici de les APPLIQUER (ou de les bloquer si la cible est
+  // devenue immunisée entre-temps) : jamais un second tirage.
   for (const [id, action] of Object.entries(actionsRaw)) {
     const joueur = joueurs[id];
     if (!joueur || !action.spell) continue;
@@ -287,7 +319,7 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
       lignes.push({ type: "sort", discordId: id, effet: "bloque", cibleId: targetId });
       continue;
     }
-    const sort = rollSort(config.sorts, rng);
+    const sort = config.sorts.find((s) => s.id === action.spell.sortId) || rollSort(config.sorts, rng);
     if (sort.avance) {
       cible.position = clampPosition(cible.position + sort.avance, config.case_arrivee);
     }
@@ -308,16 +340,9 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
     }
     lignes.push({ type: "sort", discordId: id, cibleId: targetId, sortId: sort.id, sortLabel: sort.label });
   }
-
-  // 4) Dé — toujours appliqué, jamais bloqué par une immunité (ce n'est
-  // pas une attaque, c'est le propre choix du joueur).
-  for (const [id, action] of Object.entries(actionsRaw)) {
-    const joueur = joueurs[id];
-    if (!joueur || !action.dice) continue;
-    const valeur = rollDice(rng);
-    joueur.position = clampPosition(joueur.position + valeur, config.case_arrivee);
-    lignes.push({ type: "de", discordId: id, valeur });
-  }
+  // Le dé n'est plus résolu ici : action individuelle sans interaction avec
+  // les autres joueurs, elle est résolue EN DIRECT au clic (voir
+  // rollDiceForPlayer()) — même principe que la boutique.
 
   return { joueursApres: joueurs, lignes, immunises: [...immunises] };
 }

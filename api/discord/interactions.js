@@ -110,7 +110,6 @@ import {
   handleItemButton as handleMarioClashItem,
   handleItemTargetSelect as handleMarioClashItemTarget,
   handleSpellButton as handleMarioClashSpell,
-  handleSpellTargetSelect as handleMarioClashSpellTarget,
   handleJournal as handleMarioClashJournal,
   handleRegles as handleMarioClashRegles,
 } from "./_handlers/marioclash.js";
@@ -9544,21 +9543,6 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleMarioClashItemTarget(webhookUrl, jour, discordId, selected));
-    return;
-  }
-
-  // ── Mario Clash : select de cible sort (custom_id: marioclash_spell_target:<jour>) ──
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id.startsWith("marioclash_spell_target:")
-  ) {
-    const [, jour] = body.data.custom_id.split(":");
-    const discordId = body.member?.user?.id;
-    const selected = body.data.values?.[0];
-    res.status(200).json({ type: 6 });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleMarioClashSpellTarget(webhookUrl, jour, discordId, selected));
     return;
   }
 

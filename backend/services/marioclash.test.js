@@ -1,5 +1,5 @@
 import assert from "assert";
-import { computeCloture, rollDice, rollSort, isTooSoonSinceLastClosure } from "./marioclash.js";
+import { computeCloture, rollDice, rollSort, clampPosition, isTooSoonSinceLastClosure } from "./marioclash.js";
 
 const CONFIG = {
   duree_jours: 7,
@@ -33,14 +33,10 @@ async function main() {
   assert.strictEqual(rollSort(CONFIG.sorts, () => 0).id, 1);
   assert.strictEqual(rollSort(CONFIG.sorts, () => 0.999999).id, 6);
 
-  // ── Dé : avance simple, jamais bloqué par une immunité ─────────────
-  {
-    const joueursAvant = { a: { username: "A", position: 10, points: 0, objet: null } };
-    const actionsRaw = { a: { dice: true } };
-    const r = computeCloture({ actionsRaw, joueursAvant, config: CONFIG, rng: rngSeq([0.5]) }); // dé -> 4
-    assert.strictEqual(r.joueursApres.a.position, 14);
-    assert.deepStrictEqual(r.lignes, [{ type: "de", discordId: "a", valeur: 4 }]);
-  }
+  // ── clampPosition : jamais sous 0, jamais au-dessus de case_arrivee ──
+  assert.strictEqual(clampPosition(-5, 49), 0);
+  assert.strictEqual(clampPosition(52, 49), 49);
+  assert.strictEqual(clampPosition(20, 49), 20);
 
   // ── Accélérateur : avance de 4, objet consommé ─────────────────────
   {
@@ -117,23 +113,26 @@ async function main() {
   }
   {
     const joueursAvant = { a: { username: "A", position: 47, points: 0, objet: null } };
-    const actionsRaw = { a: { dice: true } };
-    const r = computeCloture({ actionsRaw, joueursAvant, config: CONFIG, rng: () => 0.999999 }); // dé -> 6
+    const actionsRaw = { a: { spell: { target: "a" } } };
+    const r = computeCloture({ actionsRaw, joueursAvant, config: CONFIG, rng: rngSeq([5 / 6 + 0.001]) }); // sort id 6 (+3)
     assert.strictEqual(r.joueursApres.a.position, 49);
   }
 
-  // ── Ordre de résolution : objets actifs -> sorts -> dé, sur le même jour ──
+  // ── Ordre de résolution : objets actifs -> objets appliqués -> sorts, sur le même jour ──
+  // (le dé n'est plus résolu ici : action individuelle sans interaction
+  // avec autrui, résolue EN DIRECT au clic, voir rollDiceForPlayer())
   {
     const joueursAvant = {
       a: { username: "A", position: 0, points: 0, objet: "etoile" },
       b: { username: "B", position: 0, points: 0, objet: "bombe" },
     };
     const actionsRaw = {
-      a: { item: { target: null }, dice: true },
+      a: { item: { target: null } },
       b: { item: { target: "a" } },
     };
-    const r = computeCloture({ actionsRaw, joueursAvant, config: CONFIG, rng: rngSeq([0.5]) }); // dé -> 4
-    assert.strictEqual(r.joueursApres.a.position, 4, "la bombe est bloquée par l'Étoile, seul le dé s'applique");
+    const r = computeCloture({ actionsRaw, joueursAvant, config: CONFIG, rng: Math.random });
+    assert.strictEqual(r.joueursApres.a.position, 0, "la bombe est bloquée par l'Étoile, aucun effet");
+    assert.ok(r.immunises.includes("a"));
   }
 
   // ── isTooSoonSinceLastClosure ────────────────────────────────────────

@@ -25,9 +25,9 @@ import {
   readJoueur,
   ensureJoueur,
   purchaseItem,
-  recordDiceRoll,
+  rollDiceForPlayer,
+  castSpellForPlayer,
   recordItemUse,
-  recordSpellCast,
   readActions,
   previewCloture,
   closeDayAndAdvance,
@@ -50,8 +50,13 @@ function boardImageUrl(jour) {
   return `${TRUST_ROYALE_URL}/api/marioclash/image?jour=${jour}&v=${Date.now()}`;
 }
 
+// Cache-buster dynamique, pas une valeur fixe (?v=1) : Discord met en cache
+// l'ÉCHEC d'un premier fetch par URL exacte, ce qui aurait bloqué l'image en
+// permanence après le premier post raté (juste après déploiement) — même
+// principe que boardImageUrl() ci-dessus, voir aussi le commentaire ?v=2
+// dans bossraid.js pour l'incident équivalent.
 function illustrationUrl() {
-  return `${TRUST_ROYALE_URL}/api/marioclash/illustration?v=1`;
+  return `${TRUST_ROYALE_URL}/api/marioclash/illustration?v=${Date.now()}`;
 }
 
 // ── Classement ───────────────────────────────────────────────────────
@@ -188,15 +193,15 @@ function buildReglesEmbed(config) {
     title: "📖 Règles — Mario Clash",
     description: [
       "Chaque jour, choisis librement parmi :",
-      "🎲 **Lancer le dé** — avance de 1 à 6 cases (déterminé à la clôture).",
+      "🎲 **Lancer le dé** — avance de 1 à 6 cases, résultat immédiat.",
       "🛍️ **Boutique** — gagne 1 point/jour, achète 1 objet max/jour (1 seul objet possédé à la fois).",
-      "🎒 **Utiliser l'objet** — active l'objet possédé (soi ou un adversaire selon l'objet), effet 1 journée.",
-      "✨ **Lancer un sort** — effet aléatoire sur soi ou un adversaire, 50% de chances que ce soit négatif.",
+      "🎒 **Utiliser l'objet** — active l'objet possédé (soi ou un adversaire selon l'objet), effet appliqué à la clôture.",
+      "✨ **Lancer un sort** — cible ET effet totalement aléatoires (toi-même ou un adversaire tiré au sort, 50% de chances que l'effet soit négatif), annoncé immédiatement mais appliqué à la clôture.",
       "",
       "**Objets spéciaux**",
       ...objetsLines,
       "",
-      `Toutes les actions se résolvent une fois par jour à ${formatUtcTimeAsParis(8)}, dans l'ordre : objets actifs (Étoile) → objets utilisés → sorts → dé. L'Étoile protège de tout le reste de la journée.`,
+      `Dé et boutique sont immédiats. Objet et sort sont annoncés tout de suite mais appliqués à la clôture (${formatUtcTimeAsParis(8)}), dans l'ordre : objets actifs (Étoile) → objets utilisés → sorts. L'Étoile protège de tout le reste de la journée.`,
     ].join("\n"),
     color: MARIOCLASH_COLOR,
   };
@@ -251,12 +256,8 @@ function buildBoutiqueSelect(jour, config, joueur) {
   ];
 }
 
-function buildTargetSelectRow(customId, candidats, { includeSelf = false } = {}) {
-  const options = [];
-  if (includeSelf) options.push({ label: "Moi-même", value: "__self__", emoji: { name: "🙋" } });
-  for (const j of candidats.slice(0, includeSelf ? 24 : 25)) {
-    options.push({ label: j.username.slice(0, 100), value: j.discordId });
-  }
+function buildTargetSelectRow(customId, candidats) {
+  const options = candidats.slice(0, 25).map((j) => ({ label: j.username.slice(0, 100), value: j.discordId }));
   return [{ type: 1, components: [{ type: 3, custom_id: customId, placeholder: "Choisis une cible", options }] }];
 }
 
@@ -395,14 +396,19 @@ async function guardActiveDay(webhookUrl, jour) {
 export async function handleDiceButton(webhookUrl, jour, discordId, username) {
   try {
     if (!(await guardActiveDay(webhookUrl, jour))) return;
+    const config = await loadMarioClashConfig();
     await ensureJoueur(discordId, username);
-    const actions = await readActions(jour);
-    if (actions[discordId]?.dice) {
-      await patchOriginal(webhookUrl, { content: "🎲 Tu as déjà lancé le dé aujourd'hui — résultat à la clôture !", embeds: [], components: [] });
+    const result = await rollDiceForPlayer(Number(jour), discordId, config);
+    if (result.status === "alreadyRolled") {
+      await patchOriginal(webhookUrl, { content: "🎲 Tu as déjà lancé le dé aujourd'hui.", embeds: [], components: [] });
       return;
     }
-    await recordDiceRoll(jour, discordId);
-    await patchOriginal(webhookUrl, { content: "🎲 Dé lancé — résultat révélé à la clôture du jour !", embeds: [], components: [] });
+    const arrivee = result.position >= config.case_arrivee ? " 🏁" : "";
+    await patchOriginal(webhookUrl, {
+      content: `🎲 Tu as fait **${result.valeur}** ! Tu avances de la case ${result.positionAvant} à la case **${result.position}**/${config.case_arrivee}${arrivee}.`,
+      embeds: [],
+      components: [],
+    });
   } catch (err) {
     console.error("[MarioClash] Échec bouton dé:", err.message);
   }
@@ -515,42 +521,29 @@ export async function handleItemTargetSelect(webhookUrl, jour, discordId, target
   }
 }
 
-// ── Bouton [✨ Lancer un sort] + select de cible ─────────────────────
+// ── Bouton [✨ Lancer un sort] — cible ET effet totalement aléatoires,
+// aucun choix du joueur ; le résultat tiré est annoncé immédiatement (même
+// principe que le dé), seule l'application (déplacement, blocage éventuel
+// par l'Étoile) reste différée à la clôture — voir castSpellForPlayer().
 
 export async function handleSpellButton(webhookUrl, jour, discordId, username) {
   try {
     if (!(await guardActiveDay(webhookUrl, jour))) return;
+    const config = await loadMarioClashConfig();
     await ensureJoueur(discordId, username);
-    const actions = await readActions(jour);
-    if (actions[discordId]?.spell) {
+    const result = await castSpellForPlayer(Number(jour), discordId, config);
+    if (result.status === "alreadyCast") {
       await patchOriginal(webhookUrl, { content: "✨ Tu as déjà lancé un sort aujourd'hui.", embeds: [], components: [] });
       return;
     }
-    const joueurs = await readJoueurs();
-    const candidats = Object.entries(joueurs)
-      .filter(([id]) => id !== discordId)
-      .map(([id, j]) => ({ discordId: id, username: j.username }));
-    const components = buildTargetSelectRow(`marioclash_spell_target:${jour}`, candidats, { includeSelf: true });
-    await patchOriginal(webhookUrl, { content: "✨ Choisis la cible de ton sort (toi-même ou un adversaire) :", embeds: [], components });
+    const cibleLabel = result.target === discordId ? "toi-même" : `**${(await readJoueur(result.target))?.username || "?"}**`;
+    await patchOriginal(webhookUrl, {
+      content: `✨ Sort lancé sur ${cibleLabel} : *${result.sort.label}* — appliqué à la clôture du jour !`,
+      embeds: [],
+      components: [],
+    });
   } catch (err) {
     console.error("[MarioClash] Échec bouton sort:", err.message);
-  }
-}
-
-export async function handleSpellTargetSelect(webhookUrl, jour, discordId, selectedValue) {
-  try {
-    if (!(await guardActiveDay(webhookUrl, jour))) return;
-    const actions = await readActions(jour);
-    if (actions[discordId]?.spell) {
-      await patchOriginal(webhookUrl, { content: "✨ Tu as déjà lancé un sort aujourd'hui.", embeds: [], components: [] });
-      return;
-    }
-    const targetId = selectedValue === "__self__" ? discordId : selectedValue;
-    await recordSpellCast(jour, discordId, targetId);
-    const cibleLabel = targetId === discordId ? "toi-même" : `**${(await readJoueur(targetId))?.username || "?"}**`;
-    await patchOriginal(webhookUrl, { content: `✨ Sort lancé sur ${cibleLabel} — effet révélé à la clôture !`, embeds: [], components: [] });
-  } catch (err) {
-    console.error("[MarioClash] Échec select cible sort:", err.message);
   }
 }
 
