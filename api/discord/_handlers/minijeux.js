@@ -94,6 +94,12 @@ const SPECIAL_GAMES = [
     readState: readBossraidState,
     async detail(state) {
       const config = await loadBossRaidConfig();
+      if (state.phase === "annonce") {
+        // Jour d'annonce : aucun vote possible encore (jour = null côté
+        // état), donc ni "Jour null/7" ni "0 participant ce jour" n'ont de
+        // sens — voir le même traitement pour Goblin Hunters ci-dessous.
+        return { jour: null, dureeJours: null, participantsLabel: null, phaseLabel: "Phase de présentation du jeu" };
+      }
       const participants = await countBossraidVoters(state.jour);
       return { jour: state.jour, dureeJours: config.duree_jours, participantsLabel: formatParticipantsToday(participants) };
     },
@@ -106,14 +112,16 @@ const SPECIAL_GAMES = [
     async detail(state) {
       const config = await loadGoblinHuntersConfig();
       if (state.phase === "inscription") {
+        // Seul jeu spécial où l'on peut "participer" (s'inscrire) avant que
+        // le jour 1 ne démarre — voir formatParticipantsToday() pour les
+        // autres jeux, où ce cas de figure n'existe pas encore.
         const inscriptions = await listGoblinInscriptions();
+        const count = inscriptions.length;
         return {
           jour: null,
           dureeJours: null,
-          // Déjà exprimé par phaseLabel (X/effectif_max) : pas de ligne
-          // participants séparée, ce ne serait qu'une redite.
-          participantsLabel: null,
-          phaseLabel: `Inscriptions en cours (${inscriptions.length}/${config.effectif_max})`,
+          participantsLabel: `${count} inscrit${count > 1 ? "s" : ""} à ce jour`,
+          phaseLabel: "Phase de présentation du jeu",
         };
       }
       // Jamais lire state.joueurs[].camp/role/pv ici — seul le décompte des
