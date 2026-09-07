@@ -1,19 +1,100 @@
 // ============================================================
 // championPredictions.js — Pronostics GDC (Champion de la semaine)
 // Couche métier : lecture/écriture données, top 5, gestion des sessions
+//
+// Sessions & votes : Upstash Redis (même instance et mêmes conventions que
+// backend/services/robinson.js) — espace de clés `predictions:*`. Le vote
+// est enregistré via HSETNX (comme robinson.js recordVote) : une écriture
+// atomique par votant, jamais de lire-modifier-écrire sur un objet partagé —
+// contrairement à l'ancien stockage en blob JSON unique, où deux votes
+// concurrents (même du même clan, ou de deux clans différents puisque tout
+// tenait dans un seul fichier) pouvaient s'écraser l'un l'autre (lost
+// update) et faire disparaître silencieusement des votes déjà comptés.
+//
+// Registre des champions (historique) : reste sur Vercel Blob, inchangé —
+// écrit uniquement par le cron hebdomadaire (autoEndPredictions.js), donc
+// jamais concurrent en pratique.
 // ============================================================
 
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { Redis } from "@upstash/redis";
 import { fetchRaceLog, fetchClanMembers } from "./clashApi.js";
 import { getOrSet, invalidate } from "./cache.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.resolve(__dirname, "..", "..", "data");
 
-const PREDICTIONS_FILE = "champion-predictions.json";
 const CHAMPION_REGISTRY_FILE = "champion-registry.json";
+
+// Construction paresseuse (pas au chargement du module) — voir robinson.js
+// pour la raison exacte (ordre des imports ES vs dotenv.config()).
+let _redis = null;
+function getRedis() {
+  if (!_redis) {
+    _redis = new Redis({
+      url: process.env.KV_REST_API_URL,
+      token: process.env.KV_REST_API_TOKEN,
+      automaticDeserialization: false,
+    });
+  }
+  return _redis;
+}
+
+function toJson(value) {
+  return JSON.stringify(value);
+}
+
+function fromJson(raw) {
+  if (raw == null) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+// Avec automaticDeserialization désactivée, HGETALL renvoie un tableau plat
+// [champ1, valeur1, champ2, valeur2, ...] et non un objet.
+function pairsToObject(flat) {
+  const obj = {};
+  for (let i = 0; i < flat.length; i += 2) {
+    obj[flat[i]] = flat[i + 1];
+  }
+  return obj;
+}
+
+async function hgetallRaw(key) {
+  return pairsToObject((await getRedis().hgetall(key)) || []);
+}
+
+function sessionMetaKey(key) {
+  return `predictions:session:${key}`;
+}
+function votesKey(key) {
+  return `predictions:votes:${key}`;
+}
+function voteNamesKey(key) {
+  return `predictions:vote_names:${key}`;
+}
+function clanSessionsKey(clanTag) {
+  return `predictions:clan_sessions:${clanTag}`;
+}
+
+// Détail des votants (discordId, discordName, challengerTag) d'une session —
+// une seule lecture des deux hash, jamais mutée en place.
+async function listSessionVotes(key) {
+  const [votes, names] = await Promise.all([
+    hgetallRaw(votesKey(key)),
+    hgetallRaw(voteNamesKey(key)),
+  ]);
+  return Object.entries(votes).map(([discordId, challengerTag]) => ({
+    discordId,
+    challengerTag,
+    discordName: names[discordId] || null,
+  }));
+}
 
 export const CLAN_MAP = {
   1: { index: 0, name: "La Resistance", tag: "Y8JUPC9C" },
@@ -25,10 +106,6 @@ export const CLAN_MAP = {
 
 function resolveClan(clanVal) {
   return CLAN_MAP[String(clanVal).trim().toLowerCase()] ?? CLAN_MAP["1"];
-}
-
-function predictionsFilePath() {
-  return path.join(DATA_DIR, PREDICTIONS_FILE);
 }
 
 function championRegistryFilePath() {
@@ -108,38 +185,6 @@ async function writeToBlob(path, data) {
   } catch (err) {
     console.error(`[Blob] Écriture échouée ${path}:`, err.message);
   }
-}
-
-// ── Prédictions ───────────────────────────────────────────────
-
-async function readPredictions() {
-  const local = await readJsonSafe(tmpPath(PREDICTIONS_FILE));
-  if (local) return local;
-
-  if (useBlob()) {
-    const data = await readFromBlob(PREDICTIONS_FILE);
-    if (data) {
-      await writeJsonSafe(tmpPath(PREDICTIONS_FILE), data).catch(() => {});
-      return data;
-    }
-    return {};
-  }
-  const { value } = await getOrSet(
-    "champion:predictions",
-    () => readJsonSafe(predictionsFilePath()) || {},
-    30 * 1000,
-  );
-  return value;
-}
-
-async function writePredictions(data) {
-  await writeJsonSafe(tmpPath(PREDICTIONS_FILE), data).catch(() => {});
-  if (useBlob()) {
-    await writeToBlob(PREDICTIONS_FILE, data);
-  } else {
-    await writeJsonSafe(predictionsFilePath(), data).catch(() => {});
-  }
-  invalidate("champion:predictions");
 }
 
 // ── Registre des champions ────────────────────────────────────
@@ -294,42 +339,35 @@ export async function getTopScorers(clanTag, limit = 9) {
 // ── Gestion des sessions ─────────────────────────────────────
 
 export async function openSession(clanTag, weekId, seasonId, sectionIndex, challengers, endsAt) {
-  const predictions = await readPredictions();
+  const redis = getRedis();
+  const clean = clanTag.replace(/^#/, "").toUpperCase();
   const key = sessionKey(clanTag, weekId);
 
-  if (predictions[key]) {
-    throw new Error("Une session de vote existe déjà pour cette semaine.");
-  }
-
-  predictions[key] = {
-    clanTag: clanTag.replace(/^#/, "").toUpperCase(),
+  const session = {
+    clanTag: clean,
     weekId,
     seasonId,
     sectionIndex,
     startedAt: new Date().toISOString(),
     endsAt,
     challengers,
-    votes: [],
   };
 
-  await writePredictions(predictions);
-  return predictions[key];
+  // SETNX : garantit qu'une session concurrente ne peut pas écraser celle-ci
+  // (équivalent du check `if (predictions[key])` de l'ancienne implémentation,
+  // mais atomique).
+  const wasSet = Number(await redis.setnx(sessionMetaKey(key), toJson(session)));
+  if (!wasSet) {
+    throw new Error("Une session de vote existe déjà pour cette semaine.");
+  }
+  await redis.sadd(clanSessionsKey(clean), weekId);
+  return session;
 }
 
 export async function castVote(clanTag, weekId, discordId, discordName, challengerTag) {
-  let predictions = await readPredictions();
+  const redis = getRedis();
   const key = sessionKey(clanTag, weekId);
-  let session = predictions[key];
-
-  // Retry avec backoff si la session n'est pas trouvée (délai de purge CDN)
-  if (!session) {
-    for (const ms of [500, 1000]) {
-      await new Promise(r => setTimeout(r, ms));
-      predictions = await readPredictions();
-      session = predictions[key];
-      if (session) break;
-    }
-  }
+  const session = fromJson(await redis.get(sessionMetaKey(key)));
 
   if (!session) {
     throw new Error("Aucune session de vote ouverte pour cette semaine.");
@@ -339,50 +377,48 @@ export async function castVote(clanTag, weekId, discordId, discordName, challeng
     throw new Error("La période de vote est terminée.");
   }
 
-  const already = session.votes.find((v) => v.discordId === discordId);
-  if (already) {
-    throw new Error("Vous avez déjà voté.");
-  }
-
   const valid = session.challengers.some((c) => c.tag === challengerTag) || challengerTag === "__other__";
   if (!valid) {
     throw new Error("Challenger invalide.");
   }
 
-  session.votes.push({
-    discordId,
-    discordName,
-    challengerTag,
-    votedAt: new Date().toISOString(),
-  });
-
-  await writePredictions(predictions);
+  // HSETNX : enregistre le vote seulement si ce discordId n'a pas encore de
+  // champ dans le hash — écriture atomique, aucun risque qu'un vote
+  // concurrent écrase celui-ci (contrairement à l'ancien read-modify-write
+  // sur le blob JSON complet).
+  const wasSet = Number(await redis.hsetnx(votesKey(key), discordId, challengerTag));
+  if (!wasSet) {
+    throw new Error("Vous avez déjà voté.");
+  }
+  if (discordName) {
+    await redis.hset(voteNamesKey(key), { [discordId]: discordName });
+  }
   return true;
 }
 
 export async function getVoteCounts(clanTag, weekId) {
-  const predictions = await readPredictions();
   const key = sessionKey(clanTag, weekId);
-  const session = predictions[key];
+  const session = fromJson(await getRedis().get(sessionMetaKey(key)));
 
   if (!session) return null;
+
+  const votes = await listSessionVotes(key);
 
   const voteMap = {};
   for (const c of session.challengers) {
     voteMap[c.tag] = { name: c.name || c.tag, votes: 0 };
   }
   voteMap["__other__"] = { name: "Autre joueur", votes: 0 };
-  for (const v of session.votes) {
+  for (const v of votes) {
     if (voteMap[v.challengerTag]) {
       voteMap[v.challengerTag].votes++;
     }
   }
-  const totalVotes = session.votes.length;
 
   return {
     counts: voteMap,
-    totalVotes,
-    session,
+    totalVotes: votes.length,
+    session: { ...session, votes },
   };
 }
 
@@ -471,21 +507,25 @@ export async function backfillChampionRegistry(clanTag, raceLog) {
 }
 
 export async function closeSessionAndArchive(clanTag, weekId, realChampion) {
-  const predictions = await readPredictions();
+  const redis = getRedis();
+  const clean = clanTag.replace(/^#/, "").toUpperCase();
   const key = sessionKey(clanTag, weekId);
-  const session = predictions[key];
+  const session = fromJson(await redis.get(sessionMetaKey(key)));
 
   if (!session) {
-    console.error(`[Blob] Session introuvable — clé=${key} clans=${Object.keys(predictions).join(",")}`);
+    console.error(`[Predictions] Session introuvable — clé=${key}`);
     throw new Error("Aucune session trouvée.");
   }
+
+  const votes = await listSessionVotes(key);
+  session.votes = votes;
 
   const voteMap = {};
   for (const c of session.challengers) {
     voteMap[c.tag] = 0;
   }
   voteMap["__other__"] = 0;
-  for (const v of session.votes) {
+  for (const v of votes) {
     if (voteMap[v.challengerTag] !== undefined) {
       voteMap[v.challengerTag]++;
     }
@@ -509,38 +549,39 @@ export async function closeSessionAndArchive(clanTag, weekId, realChampion) {
     await writeChampionRegistry(registry);
   }
 
-  delete predictions[key];
-  await writePredictions(predictions);
+  await redis.del(sessionMetaKey(key), votesKey(key), voteNamesKey(key));
+  await redis.srem(clanSessionsKey(clean), weekId);
 
   return {
     session,
     voteResult: sorted,
     winnerTag,
-    totalVotes: session.votes.length,
+    totalVotes: votes.length,
   };
 }
 
 export async function getSessionData(clanTag, weekId) {
-  const predictions = await readPredictions();
   const key = sessionKey(clanTag, weekId);
-  return predictions[key] || null;
+  return fromJson(await getRedis().get(sessionMetaKey(key)));
 }
 
 export async function getActiveSessionByClan(clanTag) {
-  const predictions = await readPredictions();
+  const redis = getRedis();
   const clean = clanTag.replace(/^#/, "").toUpperCase();
+  const weekIds = await redis.smembers(clanSessionsKey(clean));
+  if (!Array.isArray(weekIds) || weekIds.length === 0) return null;
+
   const now = new Date();
-  for (const [key, session] of Object.entries(predictions)) {
-    if (session.clanTag === clean && new Date(session.endsAt) > now) {
+  let latest = null;
+  for (const weekId of weekIds) {
+    const key = sessionKey(clean, weekId);
+    const session = fromJson(await redis.get(sessionMetaKey(key)));
+    if (!session) continue; // clé orpheline (set désynchronisé) — ignorée
+    if (new Date(session.endsAt) > now) {
       return { session, key, weekId: session.weekId };
     }
-  }
-  let latest = null;
-  for (const [key, session] of Object.entries(predictions)) {
-    if (session.clanTag === clean) {
-      if (!latest || new Date(session.startedAt) > new Date(latest.session.startedAt)) {
-        latest = { session, key, weekId: session.weekId };
-      }
+    if (!latest || new Date(session.startedAt) > new Date(latest.session.startedAt)) {
+      latest = { session, key, weekId: session.weekId };
     }
   }
   return latest;
