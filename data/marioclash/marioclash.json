@@ -1,0 +1,43 @@
+{
+  "duree_jours": 7,
+  "case_arrivee": 49,
+  "points_boutique_par_jour": 1,
+  "objets": {
+    "accelerateur": {
+      "label": "Accélérateur",
+      "emoji": "🚀",
+      "cout": 2,
+      "cible": "soi",
+      "avance": 4
+    },
+    "bombe": {
+      "label": "Bombe",
+      "emoji": "💣",
+      "cout": 2,
+      "cible": "adversaire",
+      "recul": 3
+    },
+    "etoile": {
+      "label": "Étoile",
+      "emoji": "⭐",
+      "cout": 3,
+      "cible": "soi",
+      "invincible": true
+    },
+    "banane": {
+      "label": "Peau de banane",
+      "emoji": "🍌",
+      "cout": 3,
+      "cible": "adversaire",
+      "echange": true
+    }
+  },
+  "sorts": [
+    { "id": 1, "label": "Recule de 2 cases", "type": "negatif", "avance": -2 },
+    { "id": 2, "label": "Perd son objet spécial (si il en possède un)", "type": "negatif", "perdObjet": true },
+    { "id": 3, "label": "Échange sa place avec un adversaire aléatoire", "type": "neutre", "echangeAleatoire": true },
+    { "id": 4, "label": "Gagne un point de boutique supplémentaire", "type": "positif", "pointsBoutique": 1 },
+    { "id": 5, "label": "Avance de 1 case", "type": "positif", "avance": 1 },
+    { "id": 6, "label": "Avance de 3 cases", "type": "positif", "avance": 3 }
+  ]
+}

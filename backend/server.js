@@ -28,6 +28,10 @@ import {
   getEndImage as getGoblinHuntersEndImage,
   getStartImage as getGoblinHuntersStartImage,
 } from "./services/goblinhuntersImage.js";
+import {
+  getBoardImage as getMarioClashBoardImage,
+  getIllustrationImage as getMarioClashIllustrationImage,
+} from "./services/marioclashImage.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -319,6 +323,29 @@ app.get("/api/goblinhunters/end-image", async (req, res) => {
 // que end-image ci-dessus).
 app.get("/api/goblinhunters/start-image", async (req, res) => {
   const image = await getGoblinHuntersStartImage().catch(() => null);
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "no-store");
+  res.send(image.buffer);
+});
+
+// Jeu Mario Clash : sert l'image du plateau (positions publiques courantes).
+// Même principe que /api/goblinhunters/image — jour sert uniquement à
+// invalider le cache Discord, pas une clé de lookup.
+app.get("/api/marioclash/image", async (req, res) => {
+  const { jour } = req.query;
+  if (!jour) return res.status(400).end();
+  const image = await getMarioClashBoardImage(jour).catch(() => null);
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", "image/png");
+  res.setHeader("Cache-Control", "no-store");
+  res.send(image.buffer);
+});
+
+// Jeu Mario Clash : illustration statique (jour de présentation / fin de
+// course), servie telle quelle — même principe que /api/goblinhunters/end-image.
+app.get("/api/marioclash/illustration", async (req, res) => {
+  const image = await getMarioClashIllustrationImage().catch(() => null);
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "no-store");

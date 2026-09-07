@@ -104,6 +104,17 @@ import {
   buildMessagerieModal as buildGoblinHuntersMessagerieModal,
 } from "./_handlers/goblinhunters.js";
 import {
+  handleDiceButton as handleMarioClashDice,
+  handleBoutiqueButton as handleMarioClashBoutique,
+  handleBoutiqueSelect as handleMarioClashBoutiqueSelect,
+  handleItemButton as handleMarioClashItem,
+  handleItemTargetSelect as handleMarioClashItemTarget,
+  handleSpellButton as handleMarioClashSpell,
+  handleSpellTargetSelect as handleMarioClashSpellTarget,
+  handleJournal as handleMarioClashJournal,
+  handleRegles as handleMarioClashRegles,
+} from "./_handlers/marioclash.js";
+import {
   handleJouer as handleBlackjackJouer,
   handlePiocher as handleBlackjackPiocher,
   handleArreter as handleBlackjackArreter,
@@ -9479,6 +9490,91 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleGoblinHuntersMessagerieSubmit(webhookUrl, discordId, rawMessage));
+    return;
+  }
+
+  // ── Mario Clash : boutons du jour (dé / boutique / objet / sort) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    (body.data.custom_id.startsWith("marioclash_dice:") ||
+      body.data.custom_id.startsWith("marioclash_boutique:") ||
+      body.data.custom_id.startsWith("marioclash_item:") ||
+      body.data.custom_id.startsWith("marioclash_spell:"))
+  ) {
+    const [action, jour] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    if (action === "marioclash_dice") runBackground(() => handleMarioClashDice(webhookUrl, jour, discordId, username));
+    else if (action === "marioclash_boutique") runBackground(() => handleMarioClashBoutique(webhookUrl, jour, discordId, username));
+    else if (action === "marioclash_item") runBackground(() => handleMarioClashItem(webhookUrl, jour, discordId, username));
+    else if (action === "marioclash_spell") runBackground(() => handleMarioClashSpell(webhookUrl, jour, discordId, username));
+    return;
+  }
+
+  // ── Mario Clash : select d'achat boutique (custom_id: marioclash_boutique_select:<jour>) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("marioclash_boutique_select:")
+  ) {
+    const [, jour] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+    const itemId = body.data.values?.[0];
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleMarioClashBoutiqueSelect(webhookUrl, jour, discordId, username, itemId));
+    return;
+  }
+
+  // ── Mario Clash : select de cible objet (custom_id: marioclash_item_target:<jour>) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("marioclash_item_target:")
+  ) {
+    const [, jour] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const selected = body.data.values?.[0];
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleMarioClashItemTarget(webhookUrl, jour, discordId, selected));
+    return;
+  }
+
+  // ── Mario Clash : select de cible sort (custom_id: marioclash_spell_target:<jour>) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("marioclash_spell_target:")
+  ) {
+    const [, jour] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const selected = body.data.values?.[0];
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleMarioClashSpellTarget(webhookUrl, jour, discordId, selected));
+    return;
+  }
+
+  // ── Mario Clash : bouton "Journal" (classement + bilan, éphémère) ──
+  if (body.type === 3 && body.data?.custom_id === "marioclash_journal") {
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleMarioClashJournal(webhookUrl));
+    return;
+  }
+
+  // ── Mario Clash : bouton "Règles" (éphémère, statique) ──
+  if (body.type === 3 && body.data?.custom_id === "marioclash_regles") {
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleMarioClashRegles(webhookUrl));
     return;
   }
 

@@ -1,0 +1,40 @@
+name: Mario Clash — course communautaire
+
+permissions:
+  contents: read
+
+on:
+  # Jeu en phase de test : schedule volontairement commenté (seul
+  # workflow_dispatch actif) — à décommenter une fois le jeu validé, même
+  # convention que les autres jeux spéciaux au lancement (voir
+  # CONTRIBUTING.md). Créneau réservé : minute 14 (prochaine libre après
+  # bossraid=2, goblinhunters=4, quiz=6, robinson=8, tamagotchi=10,
+  # blackjack=12 — jamais la même minute que les autres crons de 8h UTC,
+  # voir CONTRIBUTING.md, incident du 27/08).
+  # schedule:
+  #   - cron: "14 8 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  post-jour:
+    runs-on: ubuntu-latest
+    env:
+      DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+      DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+      DISCORD_CHANNEL_FRAME_PUBLIC: ${{ secrets.DISCORD_CHANNEL_FRAME_PUBLIC }}
+      KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
+      KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Poste le jour de Mario Clash (salon public)
+        run: npm run marioclash:public -- ${{ github.event_name == 'schedule' && '--require-active' || '' }}
