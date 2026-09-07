@@ -287,8 +287,7 @@ const commands = [
   },
   {
     name: "stats-clan",
-    description:
-      "Statistiques GDC détaillées de tous les membres d'un clan.",
+    description: "Statistiques GDC détaillées de tous les membres d'un clan.",
     options: [
       {
         type: 3, // STRING
@@ -330,7 +329,8 @@ const commands = [
       {
         type: 3, // STRING
         name: "saison",
-        description: "Saison à récapituler (défaut : -1, la dernière terminée).",
+        description:
+          "Saison à récapituler (défaut : -1, la dernière terminée).",
         required: false,
         choices: [
           { name: "Saison -1 (dernière terminée)", value: "-1" },
@@ -449,8 +449,7 @@ const commands = [
   },
   {
     name: "champion-history",
-    description:
-      "Affiche l'historique des Champions GDC passés.",
+    description: "Affiche l'historique des Champions GDC passés.",
     options: [
       {
         type: 3, // STRING
@@ -477,22 +476,26 @@ const commands = [
   },
   {
     name: "zoom",
-    description: "Affiche vos scores au jeu Zoom carte (devine les cartes zoomées).",
+    description:
+      "Affiche vos scores au jeu Zoom carte (devine les cartes zoomées).",
     options: [],
   },
   {
     name: "justecarte",
-    description: "Affiche vos scores au jeu La Juste Carte (devine la carte par ses stats).",
+    description:
+      "Affiche vos scores au jeu La Juste Carte (devine la carte par ses stats).",
     options: [],
   },
   {
     name: "blindroyale",
-    description: "Affiche vos scores au jeu Blind Royale (devine la carte à son cri).",
+    description:
+      "Affiche vos scores au jeu Blind Royale (devine la carte à son son).",
     options: [],
   },
   {
     name: "mini-jeux",
-    description: "Affiche l'état des lieux et l'avancement des mini-jeux et du jeu spécial en cours.",
+    description:
+      "Affiche l'état des lieux et l'avancement des mini-jeux et du jeu spécial en cours.",
     options: [],
   },
 ];
