@@ -29,6 +29,7 @@ import {
   isChevalierVoteAllowed,
   activeEventForDay,
   resolveDayParams,
+  computeDefenseEffective,
   previewCloture,
   closeDayAndAdvance,
   archiveManche,
@@ -182,8 +183,10 @@ function buildAnnonceEmbed(config) {
   };
 }
 
-async function buildCombatEmbed(jour, jourClos, closure, event, config, state) {
+async function buildCombatEmbed(jour, jourClos, closure, event, config, state, voteCounts = {}) {
   const dayParams = resolveDayParams(jour, config);
+  const nbVoleuses = voteCounts.voleuse || 0;
+  const defenseEffective = computeDefenseEffective(nbVoleuses, dayParams, config);
   const narrative = await buildNarrative(jour, closure);
   const lines = [narrative, ""];
 
@@ -207,8 +210,12 @@ async function buildCombatEmbed(jour, jourClos, closure, event, config, state) {
     state.totalDegatsCumules,
     state.totalDegatsOptimalCumules,
   );
+  const defenseLine =
+    defenseEffective === dayParams.defense
+      ? `🛡️ Défense    : **${defenseEffective}/10**`
+      : `🛡️ Défense    : **${defenseEffective}/10** (base ${dayParams.defense}/10, ${nbVoleuses} vote${nbVoleuses > 1 ? "s" : ""} Voleuse)`;
   lines.push(
-    `🛡️ Défense    : **${dayParams.defense}/10**`,
+    defenseLine,
     `🔮 Résistance : **${dayParams.resistance}/10**`,
     "",
     `⚔️ Dégâts cumulés : **${state.totalDegatsCumules}** — 🏆 Score cumulé : **${formatScore(scoreCumule)}**`,
@@ -644,6 +651,7 @@ async function renderCombatPayload(state, config) {
     event,
     config,
     state,
+    voteCounts,
   );
   const components = buildComponents(
     state.jour,
