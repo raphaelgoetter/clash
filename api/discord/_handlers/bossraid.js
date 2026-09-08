@@ -211,6 +211,7 @@ async function buildCombatEmbed(jour, jourClos, closure, event, config, state, v
     state.totalDegatsOptimalCumules,
   );
   lines.push(
+    "**Stats du Boss :**",
     `🛡️ Défense    : **${defenseEffective}/10**`,
     `🔮 Résistance : **${dayParams.resistance}/10**`,
     "",
@@ -876,7 +877,7 @@ function buildReglesEmbed(config) {
     "",
     `**Rôles** :`,
     `${chevalier.emoji} **${chevalier.label}** — 0 dégât. Protège ${chevalier.protection_slots} distants (Sorcier/Archères). Pas 2 jours de suite.`,
-    `${voleuse.emoji} **${voleuse.label}** — ${voleuse.degats} dégâts, -${voleuse.debuff_defense_par_vote} Défense/vote.`,
+    `${voleuse.emoji} **${voleuse.label}** — ${voleuse.degats} dégâts, -${voleuse.debuff_defense_par_vote} Défense/vote (la Défense affichée s'actualise en direct à chaque vote Voleuse).`,
     `${sorcier.emoji} **${sorcier.label}** — ${sorcier.degats} dégâts, réduits par la Résistance. -50% si non protégé.`,
     `${archeres.emoji} **${archeres.label}** — ${archeres.degats} dégâts, réduits par la Défense. -50% si non protégée.`,
     `${princesse.emoji} **${princesse.label}** — ${princesse.degats} dégâts, insensible à Def/Res. + projection privée & événement du lendemain.`,
@@ -927,7 +928,7 @@ function buildTutoEmbed(config) {
     `• Kiki a **${base.defense}/10 Défense** et **${base.resistance}/10 Résistance** de base (ces valeurs peuvent changer selon l'événement du jour).`,
     `• ${archeres.emoji} **${archeres.label}** attaque la Défense, ${sorcier.emoji} **${sorcier.label}** attaque la Résistance.`,
     "• Chaque point de Défense/Résistance retire 10% des dégâts (5/10 = -50%, 9/10 = -90%…).",
-    `• ${voleuse.emoji} **${voleuse.label}** fait baisser la Défense de **${voleuse.debuff_defense_par_vote}** par vote (ex. ${exempleVoleuses} votes Voleuse → Défense à ${defenseApresExemple}/10, donc moins de réduction pour les Archères).`,
+    `• ${voleuse.emoji} **${voleuse.label}** fait baisser la Défense de **${voleuse.debuff_defense_par_vote}** par vote (ex. ${exempleVoleuses} votes Voleuse → Défense à ${defenseApresExemple}/10, donc moins de réduction pour les Archères). La Défense affichée dans le message du jour s'actualise en direct à chaque vote Voleuse.`,
     `• ${princesse.emoji} **${princesse.label}** inflige toujours **${princesse.degats}** dégâts fixes, quelle que soit la Défense/Résistance du Boss.`,
     `• ${chevalier.emoji} **${chevalier.label}** ne fait aucun dégât, mais protège jusqu'à **${chevalier.protection_slots}** unités à distance (Sorcier/Archères) chacun : une unité protégée inflige 100% de ses dégâts, une unité non protégée n'en inflige que 50%. Impossible de voter Chevalier 2 jours de suite.`,
     "",
