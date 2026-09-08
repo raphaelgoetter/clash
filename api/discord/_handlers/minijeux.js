@@ -2,7 +2,7 @@
 // minijeux.js — Handler Discord pour /mini-jeux : état des lieux de tous
 // les mini-jeux réguliers (Frame, Anagram, Zoom carte, La Juste Carte) et
 // du jeu spécial actuellement actif (Quiz, Tamagotchi, Robinson, Boss Raid,
-// Goblin Hunters ou Blackjack). Lecture seule, aucune écriture Redis.
+// Goblin Hunters, Blackjack ou Mario Clash). Lecture seule, aucune écriture Redis.
 //
 // ⚠️ Goblin Hunters : ne jamais lire/afficher state.joueurs[].camp/role/pv —
 // seuls le nombre d'inscrits/vivants et le jour sont publics (voir la mise
@@ -21,6 +21,7 @@ import { readState as readRobinsonState, loadRobinsonConfig, countUniqueVoters a
 import { readState as readBossraidState, loadBossRaidConfig, countUniqueVoters as countBossraidVoters } from "../../../backend/services/bossraid.js";
 import { readState as readGoblinState, loadGoblinHuntersConfig, listInscriptions as listGoblinInscriptions } from "../../../backend/services/goblinhunters.js";
 import { readState as readBlackjackState, loadBlackjackConfig, listHands as listBlackjackHands } from "../../../backend/services/blackjack.js";
+import { readState as readMarioClashState, loadMarioClashConfig, readActions as readMarioClashActions } from "../../../backend/services/marioclash.js";
 import { BLACKJACK_START_IMAGE_URL } from "./blackjack.js";
 
 import { getCurrentSeasonBounds } from "../../../backend/services/dateUtils.js";
@@ -146,6 +147,26 @@ const SPECIAL_GAMES = [
         jour: state.jour,
         dureeJours: config.duree_jours,
         participantsLabel: formatParticipantsToday(Object.keys(hands).length),
+      };
+    },
+  },
+  {
+    key: "marioclash",
+    title: "Mario Clash",
+    style: "Course de plateau",
+    readState: readMarioClashState,
+    async detail(state) {
+      const config = await loadMarioClashConfig();
+      if (state.phase === "annonce") {
+        // Jour de présentation : pas encore de jour de course ni d'action
+        // possible — même traitement que Boss Raid/Goblin Hunters ci-dessus.
+        return { jour: null, dureeJours: null, participantsLabel: null, phaseLabel: "Phase de présentation du jeu" };
+      }
+      const actions = await readMarioClashActions(state.jour);
+      return {
+        jour: state.jour,
+        dureeJours: config.duree_jours,
+        participantsLabel: formatParticipantsToday(Object.keys(actions).length),
       };
     },
   },
