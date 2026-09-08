@@ -154,7 +154,7 @@ const trustClanUrl = (tag) =>
 const FAMILY_CLAN_TAGS = new Set(["#Y8JUPC9C", "#LRQP20V9", "#QU9UQJRL"]);
 const RESISTANTS_CLAN_TAG = "#LRQP20V9";
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-const TAG_AUTOCOMPLETE_COMMANDS = new Set(["trust", "stats", "collection"]);
+const TAG_AUTOCOMPLETE_COMMANDS = new Set(["stats", "collection"]);
 const TAG_NAME_CACHE_TTL = 6 * 60 * 60 * 1000;
 const tagNameCache = new Map();
 
@@ -911,140 +911,6 @@ export default async function handler(req, res) {
     });
   }
 
-  // Commande /trust
-  if (body.type === 2 && body.data?.name === "trust") {
-    const tagOption = body.data.options?.find((o) => o.name === "tag");
-    const rawTag = tagOption?.value?.trim();
-    if (!rawTag) {
-      return res.status(200).json({
-        type: 4,
-        data: {
-          content: "Veuillez fournir un tag de joueur (ex: `#ABC123`).",
-          flags: 64,
-        },
-      });
-    }
-
-    // Réponse différée immédiate — satisfait la fenêtre de 3 s de Discord.
-    // waitUntil garantit que Vercel maintient la fonction active jusqu'à la fin de l'analyse.
-    res.status(200).json({ type: 5 });
-
-    const tag = rawTag.startsWith("#") ? rawTag : `#${rawTag}`;
-    const webhookUrl = `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${body.token}`;
-
-    runBackground(async () => {
-      try {
-        // Appel interne à notre propre endpoint d'analyse (évite de redupliquer la logique)
-        // On utilise l'URL canonique pour éviter les redirections vers une instance froide
-        const apiResp = await fetch(
-          `https://trustroyale.vercel.app/api/player/${encodeURIComponent(tag)}/analysis?fast=true`,
-          { headers: { Accept: "application/json" } },
-        );
-
-        // --- déclencher snapshots pour tous les clans autorisés ---
-        // c'est léger (3 appels à RoyaleAPI) et fait gagner un cycle aux visiteurs.
-        // Si l'un d'eux échoue, on s'en fiche.
-        const [{ ALLOWED_CLANS }, { fetchRaceLog }, { recordSnapshot }] =
-          await Promise.all([
-            import("../../backend/routes/clan.js"),
-            import("../../backend/services/clashApi.js"),
-            import("../../backend/services/snapshot.js"),
-          ]);
-        ALLOWED_CLANS.forEach((clanTag) => {
-          fetchRaceLog(clanTag)
-            .then((log) => {
-              if (Array.isArray(log) && log.length) {
-                const standing = log[0].standings.find(
-                  (s) => s.clan?.tag?.toUpperCase() === `#${clanTag}`,
-                );
-                const participants = standing?.clan?.participants || [];
-                const weekId = `S${log[0].seasonId}W${log[0].sectionIndex + 1}`;
-                recordSnapshot(clanTag, participants, weekId).catch((err) =>
-                  console.warn(
-                    "[snapshot] recordSnapshot failed for",
-                    clanTag,
-                    ":",
-                    err.message,
-                  ),
-                );
-              }
-            })
-            .catch((err) =>
-              console.warn(
-                "[snapshot] fetchRaceLog failed for",
-                clanTag,
-                ":",
-                err.message,
-              ),
-            );
-        });
-
-        if (!apiResp.ok) {
-          const msg =
-            apiResp.status === 404
-              ? `Joueur \`${tag}\` introuvable.`
-              : `Erreur API (${apiResp.status}).`;
-          await fetch(webhookUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ content: msg, flags: 64 }),
-          });
-          return;
-        }
-
-        const analysis = await apiResp.json();
-        const score = analysis.warScore ?? analysis.reliability;
-        const { total, maxScore, pct, color, verdict } = score;
-        const icon = RELIABILITY_ICON[color] ?? "⚪";
-        const embedColor = COLOR_MAP[color] ?? 0x808080;
-        const verdictFr = FR_VERDICTS[color] ?? verdict ?? "Fiabilité inconnue";
-
-        const breakdownFields = buildReliabilityFields(score);
-        const description = `${tag}`;
-
-        const discordLinks = await getDiscordLinks();
-        const otherAccountsField = await buildOtherAccountsField(
-          tag,
-          discordLinks,
-        );
-
-        const fields = [
-          {
-            name: "Fiabilité :",
-            value: `${icon} ${pct} % (${verdictFr})`,
-            inline: false,
-          },
-          ...(breakdownFields ?? []),
-          ...(otherAccountsField ? [otherAccountsField] : []),
-        ];
-
-        const embed = {
-          title: `<:interrogation:1493849417520906271> Joueur : ${analysis.overview.name}`,
-          url: trustPlayerUrl(tag),
-          color: embedColor,
-          description,
-          fields,
-        };
-
-        await fetch(webhookUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ embeds: [embed] }),
-        });
-      } catch (err) {
-        await fetch(webhookUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            content: `Erreur lors de l'analyse : ${err.message}`,
-            flags: 64,
-          }),
-        });
-      }
-    });
-    return;
-  }
-
   // Commande /help
   if (body.type === 2 && body.data?.name === "help") {
     res.status(200).json({ type: 5 });
@@ -1057,9 +923,6 @@ export default async function handler(req, res) {
             "<:interrogation:1493849417520906271> TrustRoyale — Guide des commandes",
           color: 0x5865f2,
           description:
-            "**Trust**\n" +
-            "Commande : `/trust tag:#TAG`\n" +
-            "Usage : donne le score de fiabilité d'un joueur à partir de son tag\n\n" +
             "**Stats**\n" +
             "Commande : `/stats tag:#TAG`\n" +
             "Usage : affiche les statistiques GDC détaillées d'un membre de la famille\n\n" +

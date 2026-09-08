@@ -71,7 +71,6 @@
         <h2 class="card-title">Sommaire</h2>
         <ul class="summary-grid">
           <li class="summary-group">Commandes liées au joueur</li>
-          <li class="summary-item"><a href="#trust">/trust</a></li>
           <li class="summary-item"><a href="#stats">/stats</a></li>
           <li class="summary-item"><a href="#matchup-gdc">/matchup-gdc</a></li>
           <li class="summary-item"><a href="#matchup">/matchup</a></li>
@@ -117,39 +116,6 @@
           </p>
         </div>
 
-        <!-- Trust -->
-        <div class="card">
-          <h3 id="trust" class="card-title">/trust</h3>
-          <div data-layout="duo" data-split="2-1">
-            <div>
-              <p>
-                Analyse la fiabilité d’un joueur Clash Royale à partir de son
-                tag CR.
-              </p>
-              <p>
-                Plus le pourcentage de fiabilité est élevé, plus le joueur est
-                considéré comme fiable pour la GDC. <br />Les critères d’analyse
-                incluent la régularité des combats GDC, les performances, la
-                stabilité dans un clan, l'expérience en GDC, l’activité récente,
-                etc.
-              </p>
-              <p>
-                Note : les critères sont différents entre un membre de la
-                famille et un joueur externe, car il est plus simple d'obtenir
-                des données complètes pour les membres de la famille.
-              </p>
-              <p>
-                <strong>Quand utiliser cette commande&#8239;:</strong> Pour
-                analyser la fiabilité de GDC d’un joueur avant de l’accepter
-                dans un clan compétitif.
-              </p>
-              <p><strong>Commande&#8239;:</strong> <code>/trust</code></p>
-              <p><strong>Option&#8239;:</strong> <code>tag:#TAG</code></p>
-            </div>
-            <img src="/images/bot-02.webp" alt="" width="300" />
-          </div>
-        </div>
-
         <!-- Stats -->
         <div class="card">
           <h3 id="stats" class="card-title">/stats</h3>
@@ -160,10 +126,10 @@
                 famille (ou d'un joueur externe) à partir de son tag CR.
               </p>
               <p>
-                Cette commande est une extension de <code>/trust</code> et
-                affiche beaucoup plus de détails pour le joueur, notamment son
-                historique de GDC et ses performances récentes, mais aussi sa
-                stabilité dans le clan ou dans la famille.
+                Cette commande analyse la fiabilité de GDC d'un joueur et
+                affiche de nombreux détails, notamment son historique de GDC et
+                ses performances récentes, mais aussi sa stabilité dans le clan
+                ou dans la famille.
               </p>
               <p>
                 Note : les critères sont différents entre un membre de la

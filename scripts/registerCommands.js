@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Small utility to register the `/trust` command with Discord. Run once
+// Small utility to register the bot's slash commands with Discord. Run once
 // after setting DISCORD_APP_ID and DISCORD_TOKEN in your environment.
 
 import fetch from "node-fetch";
@@ -18,19 +18,6 @@ if (!appId || !token) {
 const globalUrl = `https://discord.com/api/v10/applications/${appId}/commands`;
 
 const commands = [
-  {
-    name: "trust",
-    description: "Analyse la fiabilité d'un joueur Clash Royale",
-    options: [
-      {
-        type: 3, // STRING
-        name: "tag",
-        description: "Tag du joueur (ex : #ABC123)",
-        required: true,
-        autocomplete: true,
-      },
-    ],
-  },
   {
     name: "stats",
     description:
