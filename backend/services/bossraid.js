@@ -273,6 +273,7 @@ export function resolveDayParams(jour, config) {
     malusMultiplier: effects.malus_multiplier_override ?? 0.5,
     sorcierMultiplier: effects.sorcier_multiplier ?? 1,
     archeresMultiplier: effects.archeres_multiplier ?? 1,
+    princesseMultiplier: effects.princesse_multiplier ?? 1,
     voleuseDebuffDisabled: Boolean(effects.voleuse_debuff_disabled),
   };
 }
@@ -353,13 +354,15 @@ export function computeDefenseEffective(nbVoleuses, dayParams, config) {
 // différentes.
 //
 // Princesse : dégât fixe (`config.roles.princesse.degats`), jamais réduit
-// ni protégé — insensible à la Défense/Résistance du Boss, au malus de
-// non-protection et aux multiplicateurs d'événement (`sorcierMultiplier`/
-// `archeresMultiplier`, qui ne la concernent pas). Contrairement à
-// Voleuse/Sorcier/Archères, son unique levier d'équilibrage est la valeur
-// fixe elle-même (voir CONTRIBUTING.md, section Princesse) : sans coût
-// d'investissement (pas de Chevalier nécessaire), la moindre valeur trop
-// haute la rend strictement dominante à tout N.
+// ni protégé — insensible à la Défense/Résistance du Boss et au malus de
+// non-protection. Contrairement à Voleuse/Sorcier/Archères, son unique
+// levier d'équilibrage au quotidien est la valeur fixe elle-même (voir
+// CONTRIBUTING.md, section Princesse) : sans coût d'investissement (pas de
+// Chevalier nécessaire), la moindre valeur trop haute la rend strictement
+// dominante à tout N — raison pour laquelle `princesseMultiplier` (comme
+// `sorcierMultiplier`/`archeresMultiplier`) reste à 1 sur tous les jours
+// SAUF exception événementielle assumée (voir "Princesse" dans
+// CONTRIBUTING.md pour l'exemple du Jour 3).
 export function computeComboDamage(counts, dayParams, config, { protectedSorcier, protectedArcheres }) {
   // Plafond "rôles identiques limités à 10" (MAX_VOTES_PAR_ROLE) — les
   // votes au-delà du plafond, pour un même rôle, sont ignorés ici. Pour
@@ -373,7 +376,9 @@ export function computeComboDamage(counts, dayParams, config, { protectedSorcier
   const archeresCount = Math.min(counts.archeres, MAX_VOTES_PAR_ROLE);
 
   const voleuseTotal = voleuseCount * config.roles.voleuse.degats;
-  const princesseTotal = princesseCount * config.roles.princesse.degats;
+  const princesseTotal = Math.round(
+    princesseCount * config.roles.princesse.degats * dayParams.princesseMultiplier,
+  );
   const defenseEffective = computeDefenseEffective(counts.voleuse, dayParams, config);
 
   const sorcierProtUnit = Math.round(

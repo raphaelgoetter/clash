@@ -77,6 +77,7 @@ async function main() {
     assert.strictEqual(p.malusMultiplier, 0.5);
     assert.strictEqual(p.sorcierMultiplier, 1);
     assert.strictEqual(p.archeresMultiplier, 1);
+    assert.strictEqual(p.princesseMultiplier, 1);
     assert.strictEqual(p.voleuseDebuffDisabled, false);
   }
   assert.strictEqual(resolveDayParams(3, CONFIG).malusMultiplier, 0); // Frappe Léthale
@@ -172,22 +173,33 @@ async function main() {
     assert.strictEqual(r.total, 141);
   }
 
-  // ── computeComboDamage — Princesse : dégât fixe, insensible à TOUT
-  // (malus, protection, Défense/Résistance, multiplicateurs d'événement) ──
+  // ── computeComboDamage — Princesse : dégât fixe, insensible à TOUT SAUF
+  // son propre princesseMultiplier (malus, protection, Défense/Résistance,
+  // sorcierMultiplier/archeresMultiplier ne la concernent jamais) ──
   {
     const counts = { chevalier: 0, voleuse: 0, sorcier: 0, archeres: 0, princesse: 3 };
     const dayParamsDur = {
       defense: 10, resistance: 10, protectionSlots: 0,
-      malusMultiplier: 0, sorcierMultiplier: 0.1, archeresMultiplier: 0.1, voleuseDebuffDisabled: true,
+      malusMultiplier: 0, sorcierMultiplier: 0.1, archeresMultiplier: 0.1, princesseMultiplier: 1, voleuseDebuffDisabled: true,
     };
     const dayParamsFacile = {
       defense: 0, resistance: 0, protectionSlots: 10,
-      malusMultiplier: 1, sorcierMultiplier: 5, archeresMultiplier: 5, voleuseDebuffDisabled: false,
+      malusMultiplier: 1, sorcierMultiplier: 5, archeresMultiplier: 5, princesseMultiplier: 1, voleuseDebuffDisabled: false,
     };
     const rDur = computeComboDamage(counts, dayParamsDur, CONFIG, { protectedSorcier: 0, protectedArcheres: 0 });
     const rFacile = computeComboDamage(counts, dayParamsFacile, CONFIG, { protectedSorcier: 0, protectedArcheres: 0 });
     assert.strictEqual(rDur.breakdown.princesse, 75); // 3 x 25, identique quel que soit le contexte
     assert.strictEqual(rFacile.breakdown.princesse, 75);
+
+    // Exception assumée : princesseMultiplier (levier événementiel dédié,
+    // voir Jour 3 "Brouillard Occultant") scale bien la valeur fixe.
+    const rBoost = computeComboDamage(
+      counts,
+      { ...dayParamsFacile, princesseMultiplier: 3 },
+      CONFIG,
+      { protectedSorcier: 0, protectedArcheres: 0 },
+    );
+    assert.strictEqual(rBoost.breakdown.princesse, 225); // 3 x 25 x 3
   }
 
   // ── computeComboDamage — "Rôles identiques limités à 10" : le 11e vote

@@ -24,11 +24,15 @@
     },
     {
       "jour": 3,
-      "id": "frappe_lethale",
-      "nom": "Frappe Léthale",
-      "emoji": "⚡",
-      "description": "Kiki assène un coup d’épée si puissant que le sol tremble ET désorganise les rangs — les unités à distance non protégées ne toucheront tout simplement pas leur cible aujourd’hui (0 dégât au lieu de la moitié), et chaque Chevalier ne parvient plus à couvrir qu’une seule unité au lieu de deux.",
-      "effects": { "malus_multiplier_override": 0, "protection_slots_override": 1 }
+      "id": "brouillard_occultant",
+      "nom": "Brouillard Occultant",
+      "emoji": "🌫️",
+      "description": "Un épais brouillard magique enveloppe le campement de Kiki — les Sorciers n’arrivent plus à viser leurs sorts (aucun effet aujourd’hui) et les Archères ont un peu plus de mal aussi (dégâts réduits de 20%). Kiki ne remarque absolument rien grâce à ses nouvelles lunettes de ski super stylées.",
+      "effects": {
+        "sorcier_multiplier": 0,
+        "archeres_multiplier": 0.8,
+        "princesse_multiplier": 3
+      }
     },
     {
       "jour": 4,
@@ -52,7 +56,10 @@
       "nom": "Bouclier Instable",
       "emoji": "🌀",
       "description": "L’armure de fortune de Kiki tient à peine ET il repère instantanément les moins bien protégés — chaque Chevalier ne couvre plus qu’une seule unité au lieu de deux, et une frappe non parée ne fait plus que 30% de ses dégâts habituels (au lieu de 50%).",
-      "effects": { "protection_slots_override": 1, "malus_multiplier_override": 0.3 }
+      "effects": {
+        "protection_slots_override": 1,
+        "malus_multiplier_override": 0.3
+      }
     },
     {
       "jour": 7,
