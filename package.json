@@ -86,6 +86,8 @@
     "bossraid:reset": "node scripts/resetBossRaid.js",
     "bossraid:reset:manches": "node scripts/resetBossRaid.js --manches",
     "bossraid:status": "node scripts/bossRaidStatus.js",
+    "bossraid:refresh": "node scripts/bossraidRefresh.js",
+    "bossraid:refresh:dry": "node scripts/bossraidRefresh.js --dry-run",
     "marioclash:test": "node scripts/postMarioClash.js",
     "marioclash:test:dry": "node scripts/postMarioClash.js --dry-run",
     "marioclash:public": "node scripts/postMarioClash.js --public",

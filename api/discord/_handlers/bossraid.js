@@ -210,12 +210,8 @@ async function buildCombatEmbed(jour, jourClos, closure, event, config, state, v
     state.totalDegatsCumules,
     state.totalDegatsOptimalCumules,
   );
-  const defenseLine =
-    defenseEffective === dayParams.defense
-      ? `🛡️ Défense    : **${defenseEffective}/10**`
-      : `🛡️ Défense    : **${defenseEffective}/10** (base ${dayParams.defense}/10, ${nbVoleuses} vote${nbVoleuses > 1 ? "s" : ""} Voleuse)`;
   lines.push(
-    defenseLine,
+    `🛡️ Défense    : **${defenseEffective}/10**`,
     `🔮 Résistance : **${dayParams.resistance}/10**`,
     "",
     `⚔️ Dégâts cumulés : **${state.totalDegatsCumules}** — 🏆 Score cumulé : **${formatScore(scoreCumule)}**`,
@@ -662,6 +658,27 @@ async function renderCombatPayload(state, config) {
   return { embed, components };
 }
 
+// Réédite en place le message public déjà en ligne, à partir de l'état
+// courant — sans clôturer le jour actif, sans consommer les votes. Utile
+// pour faire apparaître un fix côté embed/texte sans attendre le prochain
+// cron ni le prochain vote (voir scripts/bossraidRefresh.js). Même
+// découplage PATCH direct (bot token) que Robinson (refreshPublicMessage
+// dans api/discord/_handlers/robinson.js).
+export async function refreshPublicMessage(state, config, botToken) {
+  const { embed, components } = await renderCombatPayload(state, config);
+  await fetch(
+    `https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bot ${botToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ embeds: [embed], components }),
+    },
+  );
+}
+
 // ── Boutons de vote (Chevalier/Voleuse/Sorcier/Archères) ────────────
 // Vote MODIFIABLE jusqu'au cron : pas de tirage au clic, juste un HSET
 // écrasable + réaffichage du message public en place (type 6, géré par le
@@ -775,18 +792,7 @@ export async function handlePrincesse(
     // Le vote Princesse fait aussi avancer le compteur "Princesse (n)" du
     // message public — rafraîchi séparément en PATCH direct (bot token),
     // même découplage que Tamagotchi/Robinson pour un vote confirmé en éphémère.
-    const { embed, components } = await renderCombatPayload(state, config);
-    await fetch(
-      `https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bot ${botToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ embeds: [embed], components }),
-      },
-    );
+    await refreshPublicMessage(state, config, botToken);
   } catch (err) {
     console.error("[BossRaid] Échec Princesse:", err.message);
   }
