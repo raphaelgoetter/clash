@@ -13,7 +13,7 @@ const CONFIG = {
   },
   sorts: [
     { id: 1, label: "Recule de 2 cases", avance: -2 },
-    { id: 2, label: "Perd son objet spécial", perdObjet: true },
+    { id: 2, label: "Perd 1 Or", perdOr: 1 },
     { id: 3, label: "Échange sa place avec un adversaire aléatoire", echangeAleatoire: true },
     { id: 4, label: "Gagne un point de boutique supplémentaire", pointsBoutique: 1 },
     { id: 5, label: "Avance de 1 case", avance: 1 },
@@ -80,12 +80,18 @@ async function main() {
     assert.strictEqual(r.joueursApres.b.position, 3);
   }
 
-  // ── Sort #2 : perte d'objet ──────────────────────────────────────────
+  // ── Sort #2 : perd 1 Or (jamais sous 0) ───────────────────────────────
   {
-    const joueursAvant = { a: { username: "A", position: 0, points: 0, objet: "etoile" } };
+    const joueursAvant = { a: { username: "A", position: 0, points: 2, objet: null } };
     const actionsRaw = { a: { spell: { target: "a" } } };
     const r = computeCloture({ actionsRaw, joueursAvant, config: CONFIG, rng: rngSeq([1 / 6 + 0.001]) }); // sort id 2
-    assert.strictEqual(r.joueursApres.a.objet, null);
+    assert.strictEqual(r.joueursApres.a.points, 1);
+  }
+  {
+    const joueursAvant = { a: { username: "A", position: 0, points: 0, objet: null } };
+    const actionsRaw = { a: { spell: { target: "a" } } };
+    const r = computeCloture({ actionsRaw, joueursAvant, config: CONFIG, rng: rngSeq([1 / 6 + 0.001]) }); // sort id 2
+    assert.strictEqual(r.joueursApres.a.points, 0, "jamais négatif");
   }
 
   // ── Sort #4 : point de boutique supplémentaire ──────────────────────

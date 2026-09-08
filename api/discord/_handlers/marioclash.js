@@ -187,6 +187,13 @@ function buildResumeLignes(
 
 // ── Bilan de clôture (lignes factuelles, pas de narratif pour l'instant) ──
 
+// Un joueur ne doit voir, dans son Journal, que les événements qui le
+// concernent DIRECTEMENT (auteur, cible, ou tiers entraîné par un échange
+// aléatoire de sort) — jamais le bilan complet de tout le monde.
+function filterLignesForPlayer(lignes, discordId) {
+  return lignes.filter((l) => l.discordId === discordId || l.cibleId === discordId || l.autreEchangeId === discordId);
+}
+
 function formatBilanLignes(lignes, joueurs) {
   if (!lignes.length) return [];
   const nomDe = (id) => joueurs[id]?.username || "?";
@@ -205,16 +212,20 @@ function formatBilanLignes(lignes, joueurs) {
           if (l.effet === "bloque")
             return `⭐ ${nomDe(l.cibleId)} est protégé(e) par son Étoile — l'objet de ${nomDe(l.discordId)} n'a aucun effet`;
           return null;
-        case "sort":
+        case "sort": {
           if (l.effet === "bloque")
             return `⭐ ${nomDe(l.cibleId)} est protégé(e) par son Étoile — le sort de ${nomDe(l.discordId)} n'a aucun effet`;
-          return `✨ ${nomDe(l.discordId)} lance un sort sur ${nomDe(l.cibleId)} : *${l.sortLabel}*`;
+          const tiers = l.autreEchangeId
+            ? ` — ${nomDe(l.cibleId)} et ${nomDe(l.autreEchangeId)} échangent leurs places au passage !`
+            : "";
+          return `✨ ${nomDe(l.discordId)} lance un sort sur ${nomDe(l.cibleId)} : *${l.sortLabel}*${tiers}`;
+        }
         default:
           return null;
       }
     })
     .filter(Boolean);
-  return texte.length ? ["", "**Bilan d'hier**", ...texte] : [];
+  return texte.length ? ["", "**Ce qui t'est arrivé hier**", ...texte] : [];
 }
 
 // ── Embeds ───────────────────────────────────────────────────────────
@@ -251,12 +262,15 @@ function buildJourEmbed(jour, config, resumeLignes) {
   };
 }
 
-// ── Bouton [📜 Journal] — éphémère : classement courant + bilan de la
-// veille (si un jour a déjà été clôturé).
-function buildJournalEmbed(jour, config, joueurs, bilanLignes) {
+// ── Bouton [📜 Journal] — éphémère : classement courant (public, pareil
+// pour tout le monde) + bilan PERSONNEL de la veille (seulement les
+// événements où le joueur qui consulte est impliqué, comme auteur, cible,
+// ou tiers entraîné par un échange aléatoire de sort).
+function buildJournalEmbed(jour, config, joueurs, bilanLignes, discordId) {
   const lines = [...formatRankingLines(joueurs, config)];
-  if (bilanLignes?.length)
-    lines.push(...formatBilanLignes(bilanLignes, joueurs));
+  const bilanPersonnel = filterLignesForPlayer(bilanLignes || [], discordId);
+  if (bilanPersonnel.length)
+    lines.push(...formatBilanLignes(bilanPersonnel, joueurs));
   return {
     title: `📜 Journal — Jour ${jour}/${config.duree_jours}`,
     description: lines.join("\n"),
@@ -913,7 +927,7 @@ export async function handleSpellButton(webhookUrl, jour, discordId, username) {
 
 // ── Bouton [📜 Journal] (éphémère) — classement courant + bilan de la veille ──
 
-export async function handleJournal(webhookUrl) {
+export async function handleJournal(webhookUrl, discordId) {
   try {
     const state = await readState();
     if (!state || state.phase !== "jour") {
@@ -933,6 +947,7 @@ export async function handleJournal(webhookUrl) {
       config,
       joueurs,
       veille?.lignes,
+      discordId,
     );
     await patchOriginal(webhookUrl, { embeds: [embed], components: [] });
   } catch (err) {

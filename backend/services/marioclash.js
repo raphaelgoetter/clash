@@ -339,8 +339,8 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
     if (sort.avance) {
       cible.position = clampPosition(cible.position + sort.avance, config.case_arrivee);
     }
-    if (sort.perdObjet && cible.objet) {
-      cible.objet = null;
+    if (sort.perdOr) {
+      cible.points = Math.max(0, cible.points - sort.perdOr);
     }
     if (sort.pointsBoutique) {
       cible.points += sort.pointsBoutique;

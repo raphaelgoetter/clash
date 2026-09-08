@@ -9547,9 +9547,10 @@ export default async function handler(req, res) {
 
   // ── Mario Clash : bouton "Journal" (classement + bilan, éphémère) ──
   if (body.type === 3 && body.data?.custom_id === "marioclash_journal") {
+    const discordId = body.member?.user?.id;
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleMarioClashJournal(webhookUrl));
+    runBackground(() => handleMarioClashJournal(webhookUrl, discordId));
     return;
   }
 
