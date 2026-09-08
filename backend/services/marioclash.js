@@ -39,6 +39,7 @@ import { Redis } from "@upstash/redis";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "marioclash", "marioclash.json");
+const NARRATIFS_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "marioclash", "narratifs.json");
 
 const STATE_KEY = "marioclash:state";
 const JOUEURS_KEY = "marioclash:joueurs";
@@ -112,6 +113,15 @@ export async function loadMarioClashConfig() {
   return _configCache;
 }
 
+let _narratifsCache = null;
+
+export async function loadNarratifs() {
+  if (_narratifsCache) return _narratifsCache;
+  const raw = await fs.readFile(NARRATIFS_JSON_PATH, "utf8");
+  _narratifsCache = JSON.parse(raw);
+  return _narratifsCache;
+}
+
 // ── État de la partie ──────────────────────────────────────────────
 
 export async function readState() {
@@ -162,10 +172,10 @@ export async function purchaseItem(discordId, username, itemId, jour, config) {
   const item = config.objets[itemId];
   if (!item) return { status: "unknownItem" };
   const joueur = await ensureJoueur(discordId, username);
-  if (joueur.objet) return { status: "alreadyHasItem", joueur };
-  // "On ne peut acheter qu'un objet par jour" — distinct du cap "un seul
-  // objet à la fois" ci-dessus : même si l'objet du jour a déjà été utilisé
-  // (et donc consommé) le même jour, un second achat reste refusé.
+  // Achat et activation ne font plus qu'un (voir handleBoutiqueSelect) :
+  // l'objet acheté est toujours mis en file pour la clôture du jour même,
+  // donc "un seul objet à la fois" n'a plus lieu d'être vérifié ici — seul
+  // le cap "un objet par jour" reste pertinent.
   if (joueur.dernierAchatJour === jour) return { status: "alreadyPurchasedToday", joueur };
   if (joueur.points < item.cout) return { status: "insufficientPoints", joueur };
   const updated = { ...joueur, points: joueur.points - item.cout, objet: itemId, dernierAchatJour: jour };
@@ -219,6 +229,11 @@ export function clampPosition(position, caseArrivee) {
 // jamais que son propre lanceur : aucune interaction avec les autres
 // joueurs, donc aucune raison d'en différer la résolution. Même principe
 // que la boutique (action individuelle, effet immédiat).
+//
+// ⚠️ Le point de boutique quotidien n'est PAS un octroi automatique
+// (décision explicite, revenue sur la conception initiale) : il faut
+// lancer le dé pour le gagner — jamais deux fois le même jour, comme le
+// reste de l'action.
 export async function rollDiceForPlayer(jour, discordId, config, rng = Math.random) {
   const actions = await readActions(jour);
   if (actions[discordId]?.dice) return { status: "alreadyRolled" };
@@ -226,9 +241,10 @@ export async function rollDiceForPlayer(jour, discordId, config, rng = Math.rand
   if (!joueur) return { status: "unknownPlayer" };
   const valeur = rollDice(rng);
   const position = clampPosition(joueur.position + valeur, config.case_arrivee);
-  await writeJoueur(discordId, { ...joueur, position });
+  const points = joueur.points + config.points_boutique_par_jour;
+  await writeJoueur(discordId, { ...joueur, position, points });
   await updateAction(jour, discordId, { dice: true, diceValue: valeur });
-  return { status: "ok", valeur, positionAvant: joueur.position, position };
+  return { status: "ok", valeur, positionAvant: joueur.position, position, pointsGagnes: config.points_boutique_par_jour, points };
 }
 
 // ── Sort — cible ET effet tirés au sort DÈS LE CLIC, annoncés
@@ -329,16 +345,17 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
     if (sort.pointsBoutique) {
       cible.points += sort.pointsBoutique;
     }
+    let autreEchangeId = null;
     if (sort.echangeAleatoire) {
       const autres = Object.keys(joueurs).filter((otherId) => otherId !== targetId);
       if (autres.length) {
-        const other = autres[Math.floor(rng() * autres.length)];
+        autreEchangeId = autres[Math.floor(rng() * autres.length)];
         const posCible = cible.position;
-        cible.position = joueurs[other].position;
-        joueurs[other].position = posCible;
+        cible.position = joueurs[autreEchangeId].position;
+        joueurs[autreEchangeId].position = posCible;
       }
     }
-    lignes.push({ type: "sort", discordId: id, cibleId: targetId, sortId: sort.id, sortLabel: sort.label });
+    lignes.push({ type: "sort", discordId: id, cibleId: targetId, sortId: sort.id, sortLabel: sort.label, autreEchangeId });
   }
   // Le dé n'est plus résolu ici : action individuelle sans interaction avec
   // les autres joueurs, elle est résolue EN DIRECT au clic (voir
@@ -347,33 +364,18 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
   return { joueursApres: joueurs, lignes, immunises: [...immunises] };
 }
 
-// Octroie le point boutique quotidien à tous les joueurs déjà connus,
-// AVANT l'ouverture des actions du nouveau jour (voir "en début de
-// journée" dans le brief). Fonction pure, réutilisée par closeDayAndAdvance()
-// ET previewCloture() pour que le dry-run affiche exactement le même état
-// "jour suivant" qu'une vraie clôture.
-export function grantDailyShopPoints(joueurs, config) {
-  const updated = {};
-  for (const [id, j] of Object.entries(joueurs)) {
-    updated[id] = { ...j, points: j.points + config.points_boutique_par_jour };
-  }
-  return updated;
-}
-
 // Lecture seule (aucune écriture Redis) — utilisée par la branche --dry-run
 // de postMarioClash.js, pour prévisualiser le bilan du jour actif ET l'état
 // du jour suivant sans clôturer réellement. Même principe que
-// previewCloture() de bossraid.js. Ne grante PAS le point quotidien quand
-// c'est le dernier jour (pas de "jour suivant" à ouvrir), cohérent avec
-// closeDayAndAdvance().
+// previewCloture() de bossraid.js.
 export async function previewCloture(jour, config) {
   const [actionsRaw, joueursAvant] = await Promise.all([readActions(jour), readJoueurs()]);
   const { joueursApres, lignes, immunises } = computeCloture({ actionsRaw, joueursAvant, config });
   const jourSuivant = jour + 1;
   if (jourSuivant > config.duree_jours) {
-    return { termine: true, joueurs: joueursApres, lignes, immunises };
+    return { termine: true, joueurs: joueursApres, joueursAvant, lignes, immunises };
   }
-  return { termine: false, jourSuivant, joueurs: grantDailyShopPoints(joueursApres, config), lignes, immunises };
+  return { termine: false, jourSuivant, joueurs: joueursApres, joueursAvant, lignes, immunises };
 }
 
 export const MIN_HOURS_BETWEEN_CLOSURES = 8;
@@ -395,18 +397,15 @@ export async function closeDayAndAdvance(jour, config) {
   await writeHistoriqueEntry(jour, { lignes, immunises, resolvedAt: new Date().toISOString() });
   await clearActions(jour);
 
-  const jourSuivant = jour + 1;
-  if (jourSuivant > config.duree_jours) {
-    for (const [id, j] of Object.entries(joueursApres)) {
-      await writeJoueur(id, j);
-    }
-    return { termine: true, joueurs: joueursApres, lignes };
-  }
-  const joueursAvecPoints = grantDailyShopPoints(joueursApres, config);
-  for (const [id, j] of Object.entries(joueursAvecPoints)) {
+  for (const [id, j] of Object.entries(joueursApres)) {
     await writeJoueur(id, j);
   }
-  return { termine: false, jourSuivant, joueurs: joueursAvecPoints, lignes };
+
+  const jourSuivant = jour + 1;
+  if (jourSuivant > config.duree_jours) {
+    return { termine: true, joueurs: joueursApres, joueursAvant, lignes };
+  }
+  return { termine: false, jourSuivant, joueurs: joueursApres, joueursAvant, lignes };
 }
 
 // ── Historique (bilans quotidiens de la manche en cours) ────────────

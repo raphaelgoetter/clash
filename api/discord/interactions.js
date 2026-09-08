@@ -107,7 +107,6 @@ import {
   handleDiceButton as handleMarioClashDice,
   handleBoutiqueButton as handleMarioClashBoutique,
   handleBoutiqueSelect as handleMarioClashBoutiqueSelect,
-  handleItemButton as handleMarioClashItem,
   handleItemTargetSelect as handleMarioClashItemTarget,
   handleSpellButton as handleMarioClashSpell,
   handleJournal as handleMarioClashJournal,
@@ -9492,13 +9491,14 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ── Mario Clash : boutons du jour (dé / boutique / objet / sort) ──
+  // ── Mario Clash : boutons du jour (dé / boutique / sort) ──
+  // Plus de bouton "Utiliser objet" séparé : la boutique achète ET active
+  // l'objet en une seule fois (voir handleBoutiqueSelect).
   if (
     body.type === 3 &&
     typeof body.data?.custom_id === "string" &&
     (body.data.custom_id.startsWith("marioclash_dice:") ||
       body.data.custom_id.startsWith("marioclash_boutique:") ||
-      body.data.custom_id.startsWith("marioclash_item:") ||
       body.data.custom_id.startsWith("marioclash_spell:"))
   ) {
     const [action, jour] = body.data.custom_id.split(":");
@@ -9509,7 +9509,6 @@ export default async function handler(req, res) {
     const webhookUrl = buildDiscordWebhookUrl(body);
     if (action === "marioclash_dice") runBackground(() => handleMarioClashDice(webhookUrl, jour, discordId, username));
     else if (action === "marioclash_boutique") runBackground(() => handleMarioClashBoutique(webhookUrl, jour, discordId, username));
-    else if (action === "marioclash_item") runBackground(() => handleMarioClashItem(webhookUrl, jour, discordId, username));
     else if (action === "marioclash_spell") runBackground(() => handleMarioClashSpell(webhookUrl, jour, discordId, username));
     return;
   }

@@ -85,20 +85,6 @@ function colorForPlayer(discordId) {
   return PAWN_COLORS[Math.abs(hash) % PAWN_COLORS.length];
 }
 
-function escapeText(value) {
-  return String(value || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-// Initiale robuste : ignore emojis/symboles/ponctuation en tête de pseudo
-// (fréquents sur Discord), prend la première vraie lettre/chiffre Unicode.
-export function initialOf(username) {
-  const match = String(username || "").match(/[\p{L}\p{N}]/u);
-  return escapeText(match ? match[0].toUpperCase() : "?");
-}
-
 let boardDataUrlCache = null;
 
 async function loadBoardDataUrl() {
@@ -128,7 +114,6 @@ function buildTokensSvg(joueurs) {
       const cy = anchor.y;
       circles.push(
         `<circle cx="${cx}" cy="${cy}" r="${TOKEN_RADIUS}" fill="${colorForPlayer(j.discordId)}" stroke="#1e293b" stroke-width="2.5"/>`,
-        `<text x="${cx}" y="${cy + 5}" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="800" text-anchor="middle" fill="#1e293b">${initialOf(j.username)}</text>`,
       );
     });
   }

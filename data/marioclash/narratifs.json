@@ -1,0 +1,39 @@
+{
+  "depart": [
+    "🏁 Les moteurs vrombissent, les pneus fument — la course est officiellement lancée !",
+    "🚦 Le drapeau s'abaisse, la première ligne droite est ouverte !",
+    "🎉 Que le meilleur pilote gagne — en piste !"
+  ],
+  "nouveau_leader": [
+    "👑 {joueur} passe en tête de la course !",
+    "🚀 Coup de théâtre : {joueur} double tout le monde et prend la tête !",
+    "🔥 {joueur} vient de piquer la première place !"
+  ],
+  "grosse_avance": [
+    "🏆 {joueur} caracole en tête avec une solide avance sur le reste du peloton.",
+    "💨 Personne ne semble pouvoir rattraper {joueur} pour l'instant.",
+    "🥇 {joueur} creuse l'écart et prend une avance confortable."
+  ],
+  "course_serree": [
+    "⚡ {joueur1} et {joueur2} se tiennent en un mouchoir de poche en tête de course !",
+    "😬 Rien ne sépare {joueur1} de {joueur2} — la bagarre pour la tête continue.",
+    "🔫 Course au coude à coude entre {joueur1} et {joueur2} !"
+  ],
+  "traine": [
+    "🐌 {joueur} est distancé, loin derrière le peloton de tête.",
+    "😅 {joueur} accumule le retard et va devoir hausser le rythme.",
+    "🆘 {joueur} traîne en fond de classement — un coup de dé bien senti serait le bienvenu."
+  ],
+  "echange": [
+    "🍌 {a} et {b} ont échangé leurs places !",
+    "🔄 Coup de théâtre : {a} et {b} intervertissent leurs positions !",
+    "🌀 {a} et {b} se retrouvent chacun à la place de l'autre !"
+  ],
+  "calme": [
+    "😴 Journée plutôt tranquille sur le circuit — même les haies de foin s'ennuient.",
+    "☕ Rien de spectaculaire à signaler hier, les pilotes ont dû faire une pause café.",
+    "🦗 Calme plat sur la piste hier — pas un seul objet utilisé, pas un sort lancé.",
+    "🐢 Une journée bien sage, presque suspecte — qui prépare un coup fourré pour demain ?",
+    "🎈 Rien à signaler hier, si ce n'est le bruit du vent dans les drapeaux de l'Arène."
+  ]
+}

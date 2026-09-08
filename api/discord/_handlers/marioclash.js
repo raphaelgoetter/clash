@@ -31,6 +31,7 @@ import {
   readActions,
   previewCloture,
   closeDayAndAdvance,
+  loadNarratifs,
   getHistoriqueEntry,
   archiveManche,
   listManches,
@@ -67,15 +68,79 @@ function sortedRanking(joueurs) {
     .sort((a, b) => b.position - a.position || a.username.localeCompare(b.username));
 }
 
-function formatRankingLines(joueurs, config, limit = 10) {
+// `detailed` : le Journal affiche points + objet possédé, le classement
+// final du message de fin reste sobre (juste la position).
+function formatRankingLines(joueurs, config, { limit = 10, detailed = true } = {}) {
   const ranking = sortedRanking(joueurs);
   if (!ranking.length) return ["*Personne n'a encore rejoint la course.*"];
   return ranking.slice(0, limit).map((j, index) => {
     const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}.`;
     const arrivee = j.position >= config.case_arrivee ? " 🏁" : "";
+    if (!detailed) return `${medal} **${j.username}** — case ${j.position}${arrivee}`;
     const objetLabel = j.objet ? `${config.objets[j.objet]?.emoji || ""} ${config.objets[j.objet]?.label}` : "aucun objet";
-    return `${medal} **${j.username}** — case ${j.position}/${config.case_arrivee}${arrivee} · ${j.points} pt(s) · ${objetLabel}`;
+    return `${medal} **${j.username}** — case ${j.position}${arrivee} · ${j.points} pt(s) · ${objetLabel}`;
   });
+}
+
+// ── Résumé narratif du jour (remplace la description statique du message
+// public) — sélection déterministe par jour (jamais Math.random(), pour
+// rester testable/reproductible), même convention que pickFlavor() de
+// bossraid.js/goblinhunters.js.
+
+function pickFlavor(pool, seed) {
+  if (!pool?.length) return "";
+  return pool[((seed % pool.length) + pool.length) % pool.length];
+}
+
+// Compare le classement avant/après clôture pour repérer les faits
+// marquants (nouveau leader, avance confortable, course serrée, traîne,
+// échanges de position) — au maximum 3 lignes, retombe sur un narratif
+// "calme" rigolo quand rien de notable ne s'est produit.
+function buildResumeLignes(jour, joueursAvant, joueursApres, closureLignes, narratifs) {
+  const nomDe = (id) => joueursApres[id]?.username || joueursAvant?.[id]?.username || "?";
+  const rankingApres = sortedRanking(joueursApres);
+  const rankingAvant = sortedRanking(joueursAvant || {});
+  const lines = [];
+
+  if (rankingApres.length) {
+    const leader = rankingApres[0];
+    if (rankingAvant.length && rankingAvant[0].discordId !== leader.discordId) {
+      lines.push(pickFlavor(narratifs.nouveau_leader, jour).replaceAll("{joueur}", leader.username));
+    } else if (rankingApres.length >= 2) {
+      const ecart = leader.position - rankingApres[1].position;
+      if (ecart >= 8) {
+        lines.push(pickFlavor(narratifs.grosse_avance, jour).replaceAll("{joueur}", leader.username));
+      } else if (ecart <= 2) {
+        lines.push(
+          pickFlavor(narratifs.course_serree, jour)
+            .replaceAll("{joueur1}", leader.username)
+            .replaceAll("{joueur2}", rankingApres[1].username),
+        );
+      }
+    }
+  }
+
+  if (rankingApres.length >= 3) {
+    const dernier = rankingApres[rankingApres.length - 1];
+    if (rankingApres[0].position - dernier.position >= 10) {
+      lines.push(pickFlavor(narratifs.traine, jour + 1).replaceAll("{joueur}", dernier.username));
+    }
+  }
+
+  for (const l of closureLignes || []) {
+    if (l.type === "objet" && l.effet === "echange") {
+      lines.push(
+        pickFlavor(narratifs.echange, jour + 2).replaceAll("{a}", nomDe(l.discordId)).replaceAll("{b}", nomDe(l.cibleId)),
+      );
+    } else if (l.type === "sort" && l.autreEchangeId) {
+      lines.push(
+        pickFlavor(narratifs.echange, jour + 5).replaceAll("{a}", nomDe(l.cibleId)).replaceAll("{b}", nomDe(l.autreEchangeId)),
+      );
+    }
+  }
+
+  if (!lines.length) lines.push(pickFlavor(narratifs.calme, jour));
+  return lines.slice(0, 3);
 }
 
 // ── Bilan de clôture (lignes factuelles, pas de narratif pour l'instant) ──
@@ -123,16 +188,17 @@ function buildAnnonceEmbed(config) {
   };
 }
 
-// Classement et bilan de clôture vivent dans le bouton [📜 Journal] (voir
-// buildJournalEmbed) — le message public reste sobre, centré sur le
-// plateau et les actions du jour.
-function buildJourEmbed(jour, config) {
+// Classement détaillé et bilan factuel vivent dans le bouton [📜 Journal]
+// (voir buildJournalEmbed) — le message public affiche à la place un
+// résumé narratif du jour (buildResumeLignes), pour rester vivant sans
+// noyer l'essentiel sous les chiffres.
+function buildJourEmbed(jour, config, resumeLignes) {
   return {
     title: `🏁 Mario Clash — Jour ${jour}/${config.duree_jours}`,
-    description: `Chaque jour : dé 🎲, boutique 🛍️, objet 🎒, sort ✨ — un point de boutique offert chaque matin. Consulte le classement et le bilan de la veille dans *Journal*.`,
+    description: resumeLignes.join("\n"),
     color: MARIOCLASH_COLOR,
     image: { url: boardImageUrl(jour) },
-    footer: { text: `Actions avant ${formatUtcTimeAsParis(8)} demain. Une seule fois chacune par jour, modifiable jusqu'à la clôture.` },
+    footer: { text: `Actions avant ${formatUtcTimeAsParis(8)} demain. Une seule fois chacune par jour.` },
   };
 }
 
@@ -175,7 +241,7 @@ function buildFinEmbed(joueurs, config, manches, currentManche) {
       `Après ${config.duree_jours} jours de course effrénée, le drapeau à damier tombe — ${titreVainqueur}`,
       "",
       "**Classement final**",
-      ...formatRankingLines(joueurs, config, 10),
+      ...formatRankingLines(joueurs, config, { limit: 10, detailed: false }),
       ...buildManchesSection(manches, currentManche),
       "",
       "Merci à tous les pilotes qui ont participé à cette course !",
@@ -193,9 +259,8 @@ function buildReglesEmbed(config) {
     title: "📖 Règles — Mario Clash",
     description: [
       "Chaque jour, choisis librement parmi :",
-      "🎲 **Lancer le dé** — avance de 1 à 6 cases, résultat immédiat.",
-      "🛍️ **Boutique** — gagne 1 point/jour, achète 1 objet max/jour (1 seul objet possédé à la fois).",
-      "🎒 **Utiliser l'objet** — active l'objet possédé (soi ou un adversaire selon l'objet), effet appliqué à la clôture.",
+      "🎲 **Lancer le dé** — avance de 1 à 6 cases et rapporte 1 point de boutique, résultat immédiat (pas de point de boutique sans lancer le dé).",
+      "🛍️ **Boutique** — gagne 1 point/jour, achète 1 objet max/jour ; l'objet est utilisé automatiquement dès l'achat (cible à choisir s'il vise un adversaire), effet appliqué à la clôture.",
       "✨ **Lancer un sort** — cible ET effet totalement aléatoires (toi-même ou un adversaire tiré au sort, 50% de chances que l'effet soit négatif), annoncé immédiatement mais appliqué à la clôture.",
       "",
       "**Objets spéciaux**",
@@ -222,7 +287,6 @@ function buildJourComponents(jour) {
     components: [
       { type: 2, style: 2, label: "Lancer le dé", emoji: { name: "🎲" }, custom_id: `marioclash_dice:${jour}` },
       { type: 2, style: 2, label: "Boutique", emoji: { name: "🛍️" }, custom_id: `marioclash_boutique:${jour}` },
-      { type: 2, style: 2, label: "Utiliser objet", emoji: { name: "🎒" }, custom_id: `marioclash_item:${jour}` },
       { type: 2, style: 2, label: "Lancer un sort", emoji: { name: "✨" }, custom_id: `marioclash_spell:${jour}` },
     ],
   };
@@ -290,10 +354,12 @@ export async function postMarioClash(channelId, { dryRun = false, noPing = false
     return publishAndWriteState(channelId, null, { phase: "annonce", jour: null, embed, components, noPing, estAnnonce: true });
   }
 
-  // 2) Transition présentation -> Jour 1 : rien à clôturer
+  // 2) Transition présentation -> Jour 1 : rien à clôturer, pas d'historique
+  // à comparer — juste un mot d'ambiance de départ.
   if (state.phase === "annonce") {
     const jour = 1;
-    const embed = buildJourEmbed(jour, config);
+    const narratifs = await loadNarratifs();
+    const embed = buildJourEmbed(jour, config, [pickFlavor(narratifs.depart, 1)]);
     const components = buildJourComponents(jour);
     if (dryRun) return { dryRun: true, phase: "jour", jour, embed, components };
     return publishAndWriteState(channelId, state, { phase: "jour", jour, embed, components, noPing: true, estAnnonce: false });
@@ -329,7 +395,9 @@ export async function postMarioClash(channelId, { dryRun = false, noPing = false
     return { ...result, final: true };
   }
 
-  const embed = buildJourEmbed(closure.jourSuivant, config);
+  const narratifs = await loadNarratifs();
+  const resumeLignes = buildResumeLignes(state.jour, closure.joueursAvant, closure.joueurs, closure.lignes, narratifs);
+  const embed = buildJourEmbed(closure.jourSuivant, config, resumeLignes);
   const components = buildJourComponents(closure.jourSuivant);
   if (dryRun) return { dryRun: true, jour: closure.jourSuivant, embed, components, closure };
   return publishAndWriteState(channelId, state, { phase: "jour", jour: closure.jourSuivant, embed, components, noPing: true, estAnnonce: false });
@@ -405,7 +473,7 @@ export async function handleDiceButton(webhookUrl, jour, discordId, username) {
     }
     const arrivee = result.position >= config.case_arrivee ? " 🏁" : "";
     await patchOriginal(webhookUrl, {
-      content: `🎲 Tu as fait **${result.valeur}** ! Tu avances de la case ${result.positionAvant} à la case **${result.position}**/${config.case_arrivee}${arrivee}.`,
+      content: `🎲 Tu as fait **${result.valeur}** ! Tu avances de la case ${result.positionAvant} à la case **${result.position}**${arrivee}. +${result.pointsGagnes} point(s) de boutique (total : ${result.points}).`,
       embeds: [],
       components: [],
     });
@@ -439,62 +507,57 @@ export async function handleBoutiqueButton(webhookUrl, jour, discordId, username
   }
 }
 
+// Achat ET activation en une seule étape — plus de bouton [🎒 Utiliser
+// objet] séparé (décision explicite, simplifie le flux). Objet "soi"
+// (Accélérateur/Étoile) : mis en file pour la clôture immédiatement après
+// l'achat, aucune cible à choisir. Objet "adversaire" (Bombe/Banane) :
+// l'achat est débité tout de suite, puis un select de cible s'affiche —
+// même mécanique de clôture qu'avant, juste sans le clic intermédiaire.
 export async function handleBoutiqueSelect(webhookUrl, jour, discordId, username, itemId) {
   try {
     if (!(await guardActiveDay(webhookUrl, jour))) return;
     const config = await loadMarioClashConfig();
     const result = await purchaseItem(discordId, username, itemId, Number(jour), config);
     const item = config.objets[itemId];
-    if (result.status === "ok") {
-      await patchOriginal(webhookUrl, { content: `🛍️ Acheté : ${item.emoji} **${item.label}** ! Utilise-le avec le bouton *Utiliser objet*.`, embeds: [], components: [] });
-    } else if (result.status === "insufficientPoints") {
+    if (result.status === "insufficientPoints") {
       await patchOriginal(webhookUrl, { content: `🛍️ Pas assez de points (tu as ${result.joueur.points}, il en faut ${item.cout}).`, embeds: [], components: [] });
-    } else if (result.status === "alreadyHasItem") {
-      await patchOriginal(webhookUrl, { content: "🛍️ Tu possèdes déjà un objet.", embeds: [], components: [] });
-    } else if (result.status === "alreadyPurchasedToday") {
+      return;
+    }
+    if (result.status === "alreadyPurchasedToday") {
       await patchOriginal(webhookUrl, { content: "🛍️ Tu as déjà acheté un objet aujourd'hui.", embeds: [], components: [] });
-    } else {
+      return;
+    }
+    if (result.status !== "ok") {
       await patchOriginal(webhookUrl, { content: "🛍️ Achat impossible.", embeds: [], components: [] });
-    }
-  } catch (err) {
-    console.error("[MarioClash] Échec select boutique:", err.message);
-  }
-}
-
-// ── Bouton [🎒 Utiliser objet] + select de cible ────────────────────
-
-export async function handleItemButton(webhookUrl, jour, discordId, username) {
-  try {
-    if (!(await guardActiveDay(webhookUrl, jour))) return;
-    const config = await loadMarioClashConfig();
-    const joueur = await ensureJoueur(discordId, username);
-    if (!joueur.objet) {
-      await patchOriginal(webhookUrl, { content: "🎒 Tu ne possèdes aucun objet spécial — achète-en un à la boutique !", embeds: [], components: [] });
       return;
     }
-    const actions = await readActions(jour);
-    if (actions[discordId]?.item) {
-      await patchOriginal(webhookUrl, { content: "🎒 Tu as déjà activé ton objet aujourd'hui.", embeds: [], components: [] });
-      return;
-    }
-    const item = config.objets[joueur.objet];
+
     if (item.cible === "soi") {
       await recordItemUse(jour, discordId, null);
-      await patchOriginal(webhookUrl, { content: `${item.emoji} ${item.label} activé pour aujourd'hui !`, embeds: [], components: [] });
+      await patchOriginal(webhookUrl, {
+        content: `🛍️ Acheté et activé : ${item.emoji} **${item.label}** ! Effet appliqué à la clôture.`,
+        embeds: [],
+        components: [],
+      });
       return;
     }
+
     const joueurs = await readJoueurs();
     const candidats = Object.entries(joueurs)
       .filter(([id]) => id !== discordId)
       .map(([id, j]) => ({ discordId: id, username: j.username }));
     if (!candidats.length) {
-      await patchOriginal(webhookUrl, { content: "🎒 Aucun autre joueur à cibler pour l'instant.", embeds: [], components: [] });
+      await patchOriginal(webhookUrl, {
+        content: `🛍️ Acheté : ${item.emoji} **${item.label}** — mais aucun autre joueur à cibler pour l'instant, l'objet ne sera pas utilisé.`,
+        embeds: [],
+        components: [],
+      });
       return;
     }
     const components = buildTargetSelectRow(`marioclash_item_target:${jour}`, candidats);
-    await patchOriginal(webhookUrl, { content: `${item.emoji} Choisis ta cible pour ${item.label} :`, embeds: [], components });
+    await patchOriginal(webhookUrl, { content: `🛍️ Acheté : ${item.emoji} **${item.label}** — choisis ta cible :`, embeds: [], components });
   } catch (err) {
-    console.error("[MarioClash] Échec bouton objet:", err.message);
+    console.error("[MarioClash] Échec select boutique:", err.message);
   }
 }
 
