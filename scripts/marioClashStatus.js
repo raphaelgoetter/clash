@@ -43,7 +43,7 @@ import { loadMarioClashConfig, readState, readJoueurs, readActions } from "../ba
     console.log("Classement :");
     ranking.forEach((j, i) => {
       const objet = j.objet ? ` [${config.objets[j.objet]?.label}]` : "";
-      console.log(`  ${i + 1}. ${j.username} — case ${j.position}/${config.case_arrivee}, ${j.points} pt(s)${objet}`);
+      console.log(`  ${i + 1}. ${j.username} — case ${j.position}/${config.case_arrivee}, ${j.points} Or${objet}`);
     });
   }
 
