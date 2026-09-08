@@ -9316,8 +9316,9 @@ export default async function handler(req, res) {
   }
 
   // ── Boss Raid : boutons de vote (Chevalier/Voleuse/Sorcier/Archères) ──
-  // Vote modifiable jusqu'au cron : type 6, édite le message public en
-  // place, jamais d'éphémère ici.
+  // Vote DÉFINITIF dès qu'il est posé : type 6, édite le message public en
+  // place au premier vote ; un revote envoie un followup éphémère (le
+  // message public ne bouge pas) — voir handleVoteButton().
   if (
     body.type === 3 &&
     typeof body.data?.custom_id === "string" &&

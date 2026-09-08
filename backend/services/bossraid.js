@@ -17,10 +17,9 @@
 // dégâts du jour (`computeBestCombo()`) ? Le score (SS/S/A/B/C/D) compare
 // les dégâts réels du jour à ce plafond théorique.
 //
-// ⚠️ Différence structurelle avec Robinson : ici le vote est MODIFIABLE
-// jusqu'au cron (HSET écrasable, pas HSETNX). Toute la logique de
-// dégâts/protection/événements est calculée UNE SEULE FOIS à la clôture,
-// dans computeCloture() — une fonction pure.
+// ⚠️ Comme Robinson : le vote est définitif (HSETNX), pas modifiable une
+// fois posé. Toute la logique de dégâts/protection/événements est calculée
+// UNE SEULE FOIS à la clôture, dans computeCloture() — une fonction pure.
 //
 // ⚠️ automaticDeserialization désactivée volontairement : le SDK convertit
 // par défaut toute valeur "numérique" en Number JS, y compris les IDs
@@ -161,19 +160,30 @@ export async function writeState(state) {
 }
 
 // ── Votes ──────────────────────────────────────────────────────────
-// HSET écrasable (PAS HSETNX comme robinson.js) : le vote est modifiable
-// jusqu'au cron, aucune notion de "slot réservé" à libérer.
-// vote_at (horodatage de la DERNIÈRE mise à jour) sert uniquement à
-// départager l'ordre de protection Chevalier quand les distants sont plus
-// nombreux que les slots disponibles (voir computeProtection).
+// HSETNX (comme robinson.js) : le vote n'est PAS modifiable une fois posé.
+// Revoter le MÊME rôle est un no-op ("already_recorded"), voter un rôle
+// différent est rejeté ("rejected") — aucune notion de "slot réservé" à
+// libérer, un vote ne peut jamais échouer techniquement, il est juste
+// définitif.
+// vote_at (horodatage du vote, posé une seule fois) sert à départager
+// l'ordre de protection Chevalier quand les distants sont plus nombreux que
+// les slots disponibles (voir computeProtection) — un vrai ordre d'arrivée
+// maintenant que le vote est verrouillé.
 
 export async function recordVote(jour, discordId, roleId, username) {
   const redis = getRedis();
-  await redis.hset(votesKey(jour), { [discordId]: roleId });
+  const wasSet = Number(await redis.hsetnx(votesKey(jour), discordId, roleId));
+  if (!wasSet) {
+    const existing = await redis.hget(votesKey(jour), discordId);
+    return existing === roleId
+      ? { status: "already_recorded" }
+      : { status: "rejected", existing };
+  }
   await redis.hset(voteAtKey(jour), { [discordId]: new Date().toISOString() });
   if (username) {
     await redis.hset(voteUsernamesKey(jour), { [discordId]: username });
   }
+  return { status: "recorded" };
 }
 
 export async function tallyVotes(jour) {
@@ -219,12 +229,12 @@ export async function readDernierRole(discordId) {
 
 // Répartit les slots de protection Chevalier entre les votants à distance
 // (Sorcier/Archères) RÉELS d'une journée. Si leur nombre dépasse la
-// capacité, les slots vont aux votants dont le vote a été fixé/mis à jour
-// le plus tôt ce jour-là (tri par vote_at croissant) — approximation la
-// plus fidèle d'un "ordre d'arrivée" alors que les votes sont modifiables
-// jusqu'au cron. Utilisée uniquement pour la clôture RÉELLE — la recherche
-// de meilleure combinaison hypothétique utilise sa propre allocation
-// optimale (voir allocateOptimalProtection).
+// capacité, les slots vont aux votants dont le vote a été posé le plus tôt
+// ce jour-là (tri par vote_at croissant) — vote_at n'étant écrit qu'une
+// seule fois (vote verrouillé, voir recordVote), c'est un vrai ordre
+// d'arrivée. Utilisée uniquement pour la clôture RÉELLE — la recherche de
+// meilleure combinaison hypothétique utilise sa propre allocation optimale
+// (voir allocateOptimalProtection).
 export function computeProtection(nbChevaliers, distantVoters, protectionSlotsParChevalier) {
   const capacite = nbChevaliers * protectionSlotsParChevalier;
   if (distantVoters.length <= capacite) {

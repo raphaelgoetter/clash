@@ -224,7 +224,7 @@ async function buildCombatEmbed(jour, jourClos, closure, event, config, state, v
     color: BOSSRAID_COLOR,
     image: { url: bossRaidImageUrl(jour) },
     footer: {
-      text: `Votez avant ${formatUtcTimeAsParis(8)} demain pour orienter la journée. Vote modifiable jusqu’à la clôture.`,
+      text: `Votez avant ${formatUtcTimeAsParis(8)} demain pour orienter la journée.`,
     },
   };
 }
@@ -681,9 +681,11 @@ export async function refreshPublicMessage(state, config, botToken) {
 }
 
 // ── Boutons de vote (Chevalier/Voleuse/Sorcier/Archères) ────────────
-// Vote MODIFIABLE jusqu'au cron : pas de tirage au clic, juste un HSET
-// écrasable + réaffichage du message public en place (type 6, géré par le
-// routeur), aucun éphémère ici.
+// Vote DÉFINITIF dès qu'il est posé (HSETNX, comme Robinson) : pas de
+// tirage au clic, juste un enregistrement verrouillé + réaffichage du
+// message public en place (type 6, géré par le routeur). Un revote (même
+// rôle ou un autre) ne touche jamais le message public — seul l'auteur du
+// clic est prévenu, en éphémère (postFollowup), que son vote est déjà fixé.
 
 export async function handleVoteButton(
   webhookUrl,
@@ -722,7 +724,22 @@ export async function handleVoteButton(
       }
     }
 
-    await recordVote(jour, discordId, roleId, username);
+    const result = await recordVote(jour, discordId, roleId, username);
+
+    if (result.status === "rejected") {
+      await postFollowup(webhookUrl, {
+        content:
+          "Tu as déjà voté aujourd’hui pour un autre rôle, ton vote est définitif jusqu’à la clôture !",
+      });
+      return;
+    }
+
+    if (result.status === "already_recorded") {
+      await postFollowup(webhookUrl, {
+        content: "Tu as déjà voté ce rôle aujourd’hui, c’est noté !",
+      });
+      return;
+    }
 
     const { embed, components } = await renderCombatPayload(state, config);
     await patchOriginal(webhookUrl, { embeds: [embed], components });
@@ -763,7 +780,17 @@ export async function handlePrincesse(
     }
 
     const config = await loadBossRaidConfig();
-    await recordVote(jour, discordId, "princesse", username);
+    const result = await recordVote(jour, discordId, "princesse", username);
+
+    if (result.status === "rejected") {
+      await patchOriginal(webhookUrl, {
+        content:
+          "Tu as déjà voté aujourd’hui pour un autre rôle, ton vote est définitif jusqu’à la clôture — vote Princesse pour avoir la projection en direct la prochaine fois !",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
 
     const projection = await previewCloture(Number(jour), config);
     const lendemain = activeEventForDay(
@@ -790,10 +817,15 @@ export async function handlePrincesse(
       components: [],
     });
 
-    // Le vote Princesse fait aussi avancer le compteur "Princesse (n)" du
-    // message public — rafraîchi séparément en PATCH direct (bot token),
-    // même découplage que Tamagotchi/Robinson pour un vote confirmé en éphémère.
-    await refreshPublicMessage(state, config, botToken);
+    // Le PREMIER vote Princesse fait aussi avancer le compteur "Princesse (n)"
+    // du message public — rafraîchi séparément en PATCH direct (bot token),
+    // même découplage que Tamagotchi/Robinson pour un vote confirmé en
+    // éphémère. Un revote "already_recorded" (juste une relecture de la
+    // projection) ne change aucun compteur, inutile de re-toucher le message
+    // public.
+    if (result.status === "recorded") {
+      await refreshPublicMessage(state, config, botToken);
+    }
   } catch (err) {
     console.error("[BossRaid] Échec Princesse:", err.message);
   }
