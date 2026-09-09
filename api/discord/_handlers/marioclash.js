@@ -334,10 +334,15 @@ const OBJET_EFFET_TEXTE = {
   banane: "échange ta place avec un adversaire choisi",
 };
 
+const SORT_TYPE_EMOJI = { negatif: "🔻", positif: "✅", neutre: "🔄" };
+
 function buildReglesEmbed(config) {
   const objetsLines = Object.entries(config.objets).map(
     ([id, o]) =>
       `${o.emoji} **${o.label}** (${o.cout} Or) : ${OBJET_EFFET_TEXTE[id] || ""}`,
+  );
+  const sortsLines = config.sorts.map(
+    (s) => `${SORT_TYPE_EMOJI[s.type] || "•"} ${s.label}`,
   );
   return {
     title: "📖 Règles — Mario Clash",
@@ -349,6 +354,9 @@ function buildReglesEmbed(config) {
       "",
       "**Objets spéciaux**",
       ...objetsLines,
+      "",
+      "**Sorts possibles** *(1 tiré au hasard)*",
+      ...sortsLines,
     ].join("\n"),
     color: MARIOCLASH_COLOR,
   };
