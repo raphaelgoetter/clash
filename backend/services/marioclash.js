@@ -247,23 +247,23 @@ export async function rollDiceForPlayer(jour, discordId, config, rng = Math.rand
   return { status: "ok", valeur, positionAvant: joueur.position, position, pointsGagnes: config.points_boutique_par_jour, points };
 }
 
-// ── Sort — cible ET effet tirés au sort DÈS LE CLIC, annoncés
-// immédiatement ; seule l'APPLICATION (déplacement, blocage éventuel par
-// l'Étoile d'un joueur devenu immunisé plus tard le même jour) reste
-// différée à la clôture, dans l'ordre de résolution documenté en tête de
-// fichier. Aucun choix du joueur : ni la cible (soi-même ou un adversaire,
-// 50/50), ni l'effet (1 à 6, voir data/marioclash/marioclash.json) —
-// "totalement aléatoire", décision explicite.
+// ── Sort — toujours sur SOI-MÊME (décision explicite : un sort ne doit
+// jamais infliger un effet négatif à un adversaire qui n'a rien demandé),
+// effet tiré au sort DÈS LE CLIC et annoncé immédiatement ; seule
+// l'APPLICATION (déplacement, blocage éventuel par l'Étoile si on est
+// devenu immunisé entre-temps) reste différée à la clôture, dans l'ordre
+// de résolution documenté en tête de fichier. Aucun choix du joueur sur
+// l'effet (1 à 6, voir data/marioclash/marioclash.json) — seul le sort #3
+// (échange aléatoire) implique un second joueur, tiré au sort à la
+// clôture parmi tous les participants (voir plus bas).
 export async function castSpellForPlayer(jour, discordId, config, rng = Math.random) {
   const actions = await readActions(jour);
   if (actions[discordId]?.spell) return { status: "alreadyCast" };
   const joueurs = await readJoueurs();
   if (!joueurs[discordId]) return { status: "unknownPlayer" };
-  const autres = Object.keys(joueurs).filter((id) => id !== discordId);
-  const target = autres.length && rng() < 0.5 ? autres[Math.floor(rng() * autres.length)] : discordId;
   const sort = rollSort(config.sorts, rng);
-  await updateAction(jour, discordId, { spell: { target, sortId: sort.id } });
-  return { status: "ok", target, sort };
+  await updateAction(jour, discordId, { spell: { target: discordId, sortId: sort.id } });
+  return { status: "ok", target: discordId, sort };
 }
 
 // `actionsRaw`/`joueursAvant` : objets { discordId: {...} }, déjà

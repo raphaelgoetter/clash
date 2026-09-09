@@ -350,7 +350,7 @@ function buildReglesEmbed(config) {
       "Chaque jour, choisis librement parmi :",
       "🎲 **Lancer le dé** — avance de 1 à 6 cases et rapporte 1 Or.",
       "🛍️ **Boutique** — achète 1 objet spécial ; l'objet est utilisé automatiquement dès l'achat (cible à choisir s'il vise un adversaire), effet appliqué à la clôture.",
-      "✨ **Lancer un sort** — cible ET effet totalement aléatoires (toi-même ou un adversaire tiré au sort, 50% de chances que l'effet soit négatif), annoncé immédiatement mais appliqué à la clôture.",
+      "✨ **Lancer un sort** — toujours sur toi-même, effet totalement aléatoire (50% de chances que ce soit négatif), annoncé immédiatement mais appliqué à la clôture.",
       "",
       "**Objets spéciaux**",
       ...objetsLines,
@@ -900,10 +900,11 @@ export async function handleItemTargetSelect(
   }
 }
 
-// ── Bouton [✨ Lancer un sort] — cible ET effet totalement aléatoires,
-// aucun choix du joueur ; le résultat tiré est annoncé immédiatement (même
-// principe que le dé), seule l'application (déplacement, blocage éventuel
-// par l'Étoile) reste différée à la clôture — voir castSpellForPlayer().
+// ── Bouton [✨ Lancer un sort] — toujours sur soi-même, effet totalement
+// aléatoire, aucun choix du joueur ; le résultat tiré est annoncé
+// immédiatement (même principe que le dé), seule l'application
+// (déplacement, blocage éventuel par l'Étoile) reste différée à la
+// clôture — voir castSpellForPlayer().
 
 export async function handleSpellButton(webhookUrl, jour, discordId, username) {
   try {
@@ -919,12 +920,8 @@ export async function handleSpellButton(webhookUrl, jour, discordId, username) {
       });
       return;
     }
-    const cibleLabel =
-      result.target === discordId
-        ? "toi-même"
-        : `**${(await readJoueur(result.target))?.username || "?"}**`;
     await patchOriginal(webhookUrl, {
-      content: `✨ Sort lancé sur ${cibleLabel} : *${result.sort.label}* — appliqué à la clôture du jour !`,
+      content: `✨ Sort lancé sur toi-même : *${result.sort.label}* — appliqué à la clôture du jour !`,
       embeds: [],
       components: [],
     });
