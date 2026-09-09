@@ -181,6 +181,9 @@ async function buildCombatEmbed(jour, jourClos, closure, event, config, state, v
     "",
     `⚔️ Dégâts cumulés : **${state.totalDegatsCumules}** — 🏆 Score cumulé : **${formatScore(scoreCumule)}**`,
   );
+  if (closure) {
+    lines.push("_(Détail du score d'hier consigné dans le 📜 Journal)_");
+  }
 
   return {
     title: `⚔️ Boss Raid — Jour ${jour}/${config.duree_jours}`,
