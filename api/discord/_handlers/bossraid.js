@@ -50,15 +50,6 @@ import { formatUtcTimeAsParis } from "../../../backend/services/dateUtils.js";
 const BOSSRAID_COLOR = 0xc0392b;
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 
-// Libellés pluriels pour la phrase "rôle dominant de la veille" (le label
-// singulier de la config, ex. "Voleuse", ne convient pas au pluriel).
-const ROLE_LABEL_PLURAL = {
-  voleuse: "Voleuses",
-  sorcier: "Sorciers",
-  archeres: "Archères",
-  princesse: "Princesses",
-};
-
 // Illustration du jour — fichiers statiques frontend/public/images/boss/
 // (boss-01.webp à boss-10.webp), servis tels quels par Vercel, même
 // principe que robinsonImageUrl() dans api/discord/_handlers/robinson.js.
@@ -92,40 +83,13 @@ function pickFlavor(pool, seed) {
   return pool[((seed % pool.length) + pool.length) % pool.length];
 }
 
-// Rôle ayant porté le plus de dégâts la veille (Chevalier/Princesse exclus,
-// toujours à 0) — remplace l'ancien "combattants les plus offensifs
-// nommément" : les dégâts étant désormais fixes par rôle, distinguer des
-// individus n'aurait plus de sens, seul le rôle choisi compte.
-function pickDominantRole(breakdown) {
-  if (!breakdown) return null;
-  const entries = Object.entries(breakdown).filter(([, v]) => v > 0);
-  if (!entries.length) return null;
-  entries.sort((a, b) => b[1] - a[1]);
-  return entries[0][0];
-}
-
-async function buildNarrative(jour, closure) {
+// Simple mot d'ambiance du jour — plus de ligne "rôle dominant de la veille"
+// (supprimée le 09/09 : la combinaison optimale change chaque jour selon
+// l'événement, donc pointer le rôle qui a le plus payé HIER n'apprend rien
+// d'utile sur AUJOURD'HUI, contrairement au bilan chiffré juste en dessous).
+async function buildNarrative(jour) {
   const narratifs = await loadNarratifs();
-  const intro = pickFlavor(narratifs.intro_cocasse, jour);
-  if (!closure) return intro; // Jour 1 : pas de bilan de la veille, juste le mot d'ambiance
-
-  const lines = [];
-  const dominantRole = pickDominantRole(closure.breakdown);
-  if (dominantRole) {
-    const template = pickFlavor(narratifs.role_dominant, jour + 3);
-    const phrase = template.replaceAll(
-      "{role}",
-      ROLE_LABEL_PLURAL[dominantRole] || dominantRole,
-    );
-    if (lines.length) {
-      lines[lines.length - 1] += ` ${phrase}`;
-    } else {
-      lines.push(phrase);
-    }
-  }
-
-  if (!lines.length) return intro;
-  return `${intro}\n\n${lines.join("\n")}`;
+  return pickFlavor(narratifs.intro_cocasse, jour);
 }
 
 // ── Bilan du jour clos (combinaison optimale vs combinaison réelle) ──
@@ -187,7 +151,7 @@ async function buildCombatEmbed(jour, jourClos, closure, event, config, state, v
   const dayParams = resolveDayParams(jour, config);
   const nbVoleuses = voteCounts.voleuse || 0;
   const defenseEffective = computeDefenseEffective(nbVoleuses, dayParams, config);
-  const narrative = await buildNarrative(jour, closure);
+  const narrative = await buildNarrative(jour);
   const lines = [narrative, ""];
 
   if (closure) {
