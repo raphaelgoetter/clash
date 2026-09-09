@@ -8907,6 +8907,20 @@ export default async function handler(req, res) {
     return;
   }
 
+  // ── /mini-jeux : bouton "Rafraîchir" ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id === "minijeux_refresh"
+  ) {
+    // type 6 = DEFERRED_UPDATE_MESSAGE : met à jour ce même message public
+    // (au lieu d'en créer un nouveau, cf. type 5 pour la commande initiale).
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleMiniJeuxCommand(webhookUrl));
+    return;
+  }
+
   // ── Jeu La Juste Carte : bouton "Cartes non incluses" sur /justecarte ──
   // Nouvelle réponse éphémère séparée (pas une mise à jour du message de
   // stats en place, contrairement au bouton "Rafraîchir" ci-dessus) — type 5

@@ -311,6 +311,22 @@ export async function buildMiniJeuxEmbed(now = new Date()) {
   };
 }
 
+function buildMiniJeuxComponents() {
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: 2,
+          label: "🔄 Rafraîchir",
+          custom_id: "minijeux_refresh",
+        },
+      ],
+    },
+  ];
+}
+
 async function patchOriginal(webhookUrl, payload) {
   if (!webhookUrl) return;
   try {
@@ -327,7 +343,10 @@ async function patchOriginal(webhookUrl, payload) {
 export async function handleMiniJeuxCommand(webhookUrl) {
   try {
     const embed = await buildMiniJeuxEmbed();
-    await patchOriginal(webhookUrl, { embeds: [embed] });
+    await patchOriginal(webhookUrl, {
+      embeds: [embed],
+      components: buildMiniJeuxComponents(),
+    });
   } catch (err) {
     console.error("[MiniJeux] Erreur /mini-jeux:", err);
     await patchOriginal(webhookUrl, {
