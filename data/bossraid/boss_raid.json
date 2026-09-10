@@ -39,8 +39,8 @@
       "id": "miroir_mana",
       "nom": "Miroir de Mana",
       "emoji": "🪞",
-      "description": "Kiki active un dispositif occulte qui renvoie une partie de la magie lancée contre lui — les Sorciers subissent une réduction supplémentaire de 50% sur leurs dégâts aujourd’hui.",
-      "effects": { "sorcier_multiplier": 0.5 }
+      "description": "Kiki active un dispositif occulte qui renvoie une partie de la magie lancée contre lui — les Sorciers subissent une réduction supplémentaire de 50% sur leurs dégâts aujourd’hui, mais le contrecoup du sortilège le déconcentre complètement : sa Résistance tombe à 0/10 pour la journée.",
+      "effects": { "sorcier_multiplier": 0.5, "resistance_override": 0 }
     },
     {
       "jour": 5,
