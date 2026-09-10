@@ -47,15 +47,15 @@
       "id": "point_faible",
       "nom": "Point Faible",
       "emoji": "🩸",
-      "description": "Une estafilade mal refermée de la veille laisse Kiki presque sans défense magique — sa Résistance tombe à 1/10 pour la journée, une aubaine pour les Sorciers.",
-      "effects": { "resistance_override": 1 }
+      "description": "Une estafilade mal refermée de la veille fragilise la défense magique de Kiki — sa Résistance tombe à 4/10 pour la journée, un avantage pour les Sorciers.",
+      "effects": { "resistance_override": 4 }
     },
     {
       "jour": 6,
       "id": "bouclier_instable",
       "nom": "Bouclier Instable",
       "emoji": "🌀",
-      "description": "L’armure de fortune de Kiki tient à peine ET il repère instantanément les moins bien protégés — chaque Chevalier ne couvre plus qu’une seule unité au lieu de deux, et une frappe non parée ne fait plus que 30% de ses dégâts habituels (au lieu de 50%).",
+      "description": "Grosse fête hier soir qui laisse des traces : aujourd'hui chaque Chevalier ne couvre plus qu’une seule unité au lieu de deux, et une frappe non parée ne fait plus que 30% de ses dégâts habituels (au lieu de 50%).",
       "effects": {
         "protection_slots_override": 1,
         "malus_multiplier_override": 0.3
