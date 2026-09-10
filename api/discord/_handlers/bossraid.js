@@ -765,11 +765,24 @@ export async function handlePrincesse(
       config.evenements_boss,
     );
 
+    // Valeur RÉELLE du vote, pas la base config.roles.princesse.degats —
+    // un événement du jour peut la multiplier (princesse_multiplier, voir
+    // Jour 3 "Brouillard Occultant"), sans jamais l'annoncer à l'avance.
+    // Ce message reste le SEUL endroit où le bonus du jour se révèle,
+    // exclusivité du vote Princesse comme la projection et l'événement de
+    // demain — jamais dans les Règles/Tuto ni la description de l'événement.
+    const dayParams = resolveDayParams(Number(jour), config);
+    const princesseDegatsDuJour = Math.round(
+      config.roles.princesse.degats * dayParams.princesseMultiplier,
+    );
+    const bonusSuffix =
+      dayParams.princesseMultiplier !== 1 ? " ✨ Bonus du jour !" : "";
+
     const lines = [
       `👑 **Projection actuelle du Jour ${jour}** (basée sur les votes en cours) :`,
-      `💥 Dégâts projetés : **${projection.totalDamageDuJour}**`,
+      `💥 Dégâts infligés : **${projection.totalDamageDuJour}**`,
       `🎯 Indice de note actuelle : **${formatScore(projection.score)}**`,
-      `⚔️ Ton vote ajoute **${config.roles.princesse.degats}** dégâts fixes — insensibles à la Défense et la Résistance.`,
+      `⚔️ Ton vote ajoute **${princesseDegatsDuJour}** dégâts fixes — insensibles à la Défense et la Résistance.${bonusSuffix}`,
     ];
     lines.push(
       "",
