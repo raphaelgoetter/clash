@@ -159,7 +159,13 @@ export async function ensureJoueur(discordId, username) {
     }
     return existing;
   }
-  const fresh = { username: username || "?", position: 0, points: 0, objet: null, dernierAchatJour: null };
+  // colorIndex figé à la création, par ordre d'arrivée (jamais un hash sur
+  // discordId — voir marioclashImage.js pour le pourquoi : un hash fait
+  // collision entre deux joueurs bien avant d'épuiser la palette).
+  // L'index reste stable toute la manche, même si d'autres joueurs
+  // rejoignent ensuite.
+  const colorIndex = Object.keys(await readJoueurs()).length;
+  const fresh = { username: username || "?", position: 0, points: 0, objet: null, dernierAchatJour: null, colorIndex };
   await writeJoueur(discordId, fresh);
   return fresh;
 }

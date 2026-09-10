@@ -72,17 +72,34 @@ function anchorForCase(position) {
   return CASE_ANCHORS[clamped];
 }
 
-const PAWN_COLORS = ["#f0b429", "#3b82f6", "#22c55e", "#e5484d", "#a855f7", "#14b8a6", "#f97316", "#ec4899"];
+// 30 couleurs choisies à la main (pas une rotation mécanique de teinte, qui
+// regroupe trop de verts/cyans proches et rendait certains joueurs
+// indiscernables — voir le retour utilisateur). Les 15 premières couvrent
+// tout le cercle chromatique avec un écart perceptuel maximal (cas normal,
+// jusqu'à 15 joueurs) ; les 15 suivantes sont des variantes assombries des
+// mêmes teintes, pour l'improbable cas où plus de 15 joueurs participent le
+// même jour (toujours distinctes entre elles, et de leur "jumelle" claire).
+const PAWN_COLORS = [
+  "#e6194b", "#f58231", "#f2c614", "#9acd32", "#3cb44b",
+  "#17a589", "#42d4f4", "#4363d8", "#1b1f8a", "#911eb4",
+  "#f032e6", "#e6007e", "#9a6324", "#800000", "#6b6b0a",
+  "#8f102f", "#98511e", "#967b0c", "#5f7f1f", "#25702f",
+  "#0e6655", "#298397", "#2a3d86", "#111356", "#5a1370",
+  "#951f8f", "#8f004e", "#5f3d16", "#4f0000", "#424206",
+];
 const TOKEN_RADIUS = 15;
 const TOKEN_SPREAD = 32; // écart horizontal entre pions partageant une case
 
-function colorForPlayer(discordId) {
-  let hash = 0;
-  const str = String(discordId || "");
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash * 31 + str.charCodeAt(i)) | 0;
-  }
-  return PAWN_COLORS[Math.abs(hash) % PAWN_COLORS.length];
+// Attribution par ORDRE D'ARRIVÉE (`joueur.colorIndex`, assigné une fois
+// pour toutes à la création du joueur — voir ensureJoueur() dans
+// marioclash.js), jamais par hash : un hash sur discordId peut faire
+// collision entre deux joueurs bien avant d'épuiser la palette (paradoxe
+// des anniversaires — même avec 30 couleurs, ~20 joueurs hashés au hasard
+// ont une probabilité de collision proche de 100%). L'index garantit zéro
+// collision tant que le nombre de joueurs ne dépasse pas la palette.
+function colorForPlayer(colorIndex) {
+  const i = Number.isInteger(colorIndex) ? colorIndex : 0;
+  return PAWN_COLORS[i % PAWN_COLORS.length];
 }
 
 let boardDataUrlCache = null;
@@ -113,7 +130,7 @@ function buildTokensSvg(joueurs) {
       const cx = anchor.x + dx;
       const cy = anchor.y;
       circles.push(
-        `<circle cx="${cx}" cy="${cy}" r="${TOKEN_RADIUS}" fill="${colorForPlayer(j.discordId)}" stroke="#1e293b" stroke-width="2.5"/>`,
+        `<circle cx="${cx}" cy="${cy}" r="${TOKEN_RADIUS}" fill="${colorForPlayer(j.colorIndex)}" stroke="#1e293b" stroke-width="2.5"/>`,
       );
     });
   }
@@ -166,6 +183,7 @@ export async function getBoardImage(jour) {
     discordId,
     username: j.username,
     position: j.position,
+    colorIndex: j.colorIndex,
   }));
   return renderBoardImage(liste);
 }
