@@ -120,6 +120,16 @@ import {
   handleJournal as handleBlackjackJournal,
 } from "./_handlers/blackjack.js";
 import {
+  handleBlackjackCommand as handleBlackjackDuelCommand,
+  handleBlackjackRoleRejected as handleBlackjackDuelRoleRejected,
+  memberHasMiniJeuxRole as blackjackDuelMemberHasMiniJeuxRole,
+  handleJouer as handleBlackjackDuelJouer,
+  handlePiocher as handleBlackjackDuelPiocher,
+  handleArreter as handleBlackjackDuelArreter,
+  handleRegles as handleBlackjackDuelRegles,
+  extractMember as extractBlackjackDuelMember,
+} from "./_handlers/blackjackDuel.js";
+import {
   summarizeWarDecks,
   summarizeWarDecksForMatchup,
   summarizeRecentBattlesForMatchup,
@@ -8918,6 +8928,68 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleMiniJeuxCommand(webhookUrl));
+    return;
+  }
+
+  // ── /blackjack : lance un duel Blackjack autonome (1-3 joueurs, N
+  // manches) — jeu développé en parallèle du jeu spécial, sans lien avec
+  // lui. Réservé au rôle MINI-JEUX : le check se fait ici en arrière-plan
+  // (getRoleIdByName fait un appel réseau, trop risqué dans la fenêtre de
+  // 3s d'accusé de réception) — d'où le defer éphémère systématique, suivi
+  // soit du rejet, soit du lancement réel.
+  if (body.type === 2 && body.data?.name === "blackjack") {
+    const joueursOpt = body.data.options?.find((o) => o.name === "joueurs");
+    const manchesOpt = body.data.options?.find((o) => o.name === "manches");
+    const maxPlayers = Number(joueursOpt?.value) || 1;
+    const totalManches = Number(manchesOpt?.value) || 5;
+
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(async () => {
+      const allowed = await blackjackDuelMemberHasMiniJeuxRole(body);
+      if (!allowed) {
+        await handleBlackjackDuelRoleRejected(webhookUrl);
+        return;
+      }
+      await handleBlackjackDuelCommand(webhookUrl, body, { maxPlayers, totalManches });
+    });
+    return;
+  }
+
+  // ── Blackjack Duel : bouton "Jouer" (inscription + main, message public) ──
+  if (body.type === 3 && body.data?.custom_id === "blackjackduel_jouer") {
+    const { discordId, username } = extractBlackjackDuelMember(body);
+    // type 5 = DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE (éphémère) : crée le
+    // message éphémère "ta main", comme blackjack_jouer: du jeu spécial.
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleBlackjackDuelJouer(webhookUrl, discordId, username));
+    return;
+  }
+
+  // ── Blackjack Duel : boutons "Piocher" / "Arrêter" (message éphémère) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    (body.data.custom_id.startsWith("blackjackduel_piocher:") ||
+      body.data.custom_id.startsWith("blackjackduel_arreter:"))
+  ) {
+    const [action] = body.data.custom_id.split(":");
+    const { discordId } = extractBlackjackDuelMember(body);
+    // type 6 = DEFERRED_UPDATE_MESSAGE : édite en place le message éphémère
+    // déjà affiché, comme blackjack_piocher:/blackjack_arreter: existants.
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    const handler = action === "blackjackduel_piocher" ? handleBlackjackDuelPiocher : handleBlackjackDuelArreter;
+    runBackground(() => handler(webhookUrl, discordId));
+    return;
+  }
+
+  // ── Blackjack Duel : bouton "Règles" (éphémère, statique) ──
+  if (body.type === 3 && body.data?.custom_id === "blackjackduel_regles") {
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleBlackjackDuelRegles(webhookUrl));
     return;
   }
 

@@ -1,0 +1,37 @@
+name: Blackjack Duel — watchdog anti-blocage
+
+permissions:
+  contents: read
+
+concurrency:
+  group: blackjack-duel-watchdog
+  cancel-in-progress: true
+
+on:
+  schedule:
+    # Toutes les 30 minutes — vérifie si une partie de Blackjack Duel est
+    # bloquée depuis plus de 24h (manche jamais terminée, joueur qui ne
+    # revient pas) et la remet à zéro le cas échéant.
+    - cron: "*/30 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    env:
+      KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
+      KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Nettoie une partie Blackjack Duel bloquée depuis plus de 24h
+        run: npm run blackjackduel:watchdog
