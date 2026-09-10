@@ -159,6 +159,30 @@ export function drawCard(rng = Math.random) {
   return { rank, suit, value: rankValue(rank) };
 }
 
+function cardSignature(card) {
+  return `${card.rank}${card.suit}`;
+}
+
+// Comme drawCard, mais exclut les cartes (rang+couleur EXACTS) déjà
+// présentes dans la main — un rang qui revient est normal (4 exemplaires
+// sur 52, voir drawCard ci-dessus), mais la carte identique (ex. deux As de
+// Pique) n'existe qu'en un seul exemplaire dans un vrai deck. Le tirage du
+// RANG reste uniforme (aucun rang n'est exclu, seule la combinaison
+// rang+couleur déjà vue est réessayée) — la distribution des rangs n'est
+// donc pas affectée par ce garde-fou. `attempts` borné : filet de sécurité
+// théorique, jamais atteint en pratique (52 combinaisons possibles pour une
+// main d'une poignée de cartes).
+export function drawUniqueCard(existingCards, rng = Math.random) {
+  const used = new Set(existingCards.map(cardSignature));
+  let card;
+  let attempts = 0;
+  do {
+    card = drawCard(rng);
+    attempts += 1;
+  } while (used.has(cardSignature(card)) && attempts < 100);
+  return card;
+}
+
 // As compté à 11 par défaut, ramené à 1 tant que le total dépasse 21 et
 // qu'il reste un As encore compté à 11 ("main dure" une fois tous les As
 // ramenés à 1, ou s'il n'y en a aucun).
@@ -198,11 +222,17 @@ export function buildHandForScore(score, rng = Math.random) {
   const maxV1 = Math.min(11, score - 2);
   const v1 = minV1 + Math.floor(rng() * (maxV1 - minV1 + 1));
   const v2 = score - v1;
-  return [v1, v2].map((value) => ({
-    rank: rankForValue(value, rng),
-    suit: SUITS[Math.floor(rng() * SUITS.length)],
-    value,
-  }));
+  const card1 = { rank: rankForValue(v1, rng), suit: SUITS[Math.floor(rng() * SUITS.length)], value: v1 };
+  // v1 et v2 peuvent tomber sur le même rang (ex. 8+8) : reroule la couleur
+  // de la 2e carte si elle est identique à la 1ʳᵉ (même rang+couleur), sans
+  // jamais toucher aux valeurs (le total doit rester exactement `score`).
+  let card2;
+  let attempts = 0;
+  do {
+    card2 = { rank: rankForValue(v2, rng), suit: SUITS[Math.floor(rng() * SUITS.length)], value: v2 };
+    attempts += 1;
+  } while (cardSignature(card2) === cardSignature(card1) && attempts < 20);
+  return [card1, card2];
 }
 
 export function dealerPlay(rng = Math.random, min = 15, max = 21) {

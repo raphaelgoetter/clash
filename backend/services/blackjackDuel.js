@@ -26,6 +26,7 @@
 import { Redis } from "@upstash/redis";
 import {
   drawCard,
+  drawUniqueCard,
   computeHandValue,
   dealerPlay,
   resolveDay,
@@ -228,7 +229,8 @@ export async function joinAndDeal(discordId, username) {
   const decision = applyJoin(state, discordId);
   if (!decision.allowed) return { rosterLocked: true, state };
 
-  const cards = [drawCard(), drawCard()];
+  const first = drawCard();
+  const cards = [first, drawUniqueCard([first])];
   const score = computeHandValue(cards);
   const status = score === 21 ? "stand" : "en_cours";
   const hand = { cards, score, status, username };
@@ -256,7 +258,7 @@ export async function drawOrStand(discordId, { draw }) {
   if (!hand) return { noHand: true, state };
   if (hand.status !== "en_cours") return { alreadyDone: true, state, hand };
 
-  const cards = draw ? [...hand.cards, drawCard()] : hand.cards;
+  const cards = draw ? [...hand.cards, drawUniqueCard(hand.cards)] : hand.cards;
   const score = computeHandValue(cards);
   const status = !draw ? "stand" : score > 21 ? "bust" : score === 21 ? "stand" : "en_cours";
   const updated = { ...hand, cards, score, status };

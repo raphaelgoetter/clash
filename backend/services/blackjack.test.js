@@ -1,6 +1,7 @@
 import assert from "assert";
 import {
   drawCard,
+  drawUniqueCard,
   computeHandValue,
   rollDealerScore,
   buildHandForScore,
@@ -25,6 +26,35 @@ async function main() {
   assert.strictEqual(drawCard(rngSequence([9 / 13 + 0.001, 0])).value, 10); // "10" = 10
   assert.strictEqual(drawCard(rngSequence([10 / 13 + 0.001, 0])).value, 10); // Valet = 10
 
+  // ── drawUniqueCard — retire une carte déjà présente (même rang+couleur) ──
+  {
+    // 1er tirage (rng: 0, 0) -> A♠️, identique à la carte déjà en main ->
+    // réessaie ; 2e tirage (rng: 0.99, 0.3) -> K♥️, distincte -> renvoyée.
+    const card = drawUniqueCard(
+      [{ rank: "A", suit: "♠️", value: 11 }],
+      rngSequence([0, 0, 0.99, 0.3]),
+    );
+    assert.strictEqual(card.rank, "K");
+    assert.strictEqual(card.suit, "♥️");
+  }
+  // Un rang qui revient reste autorisé (seule la combinaison rang+couleur
+  // identique est exclue) : rng (0, 0.3) -> A♥️, rang "A" déjà présent mais
+  // couleur différente -> acceptée du premier coup.
+  {
+    const card = drawUniqueCard(
+      [{ rank: "A", suit: "♠️", value: 11 }],
+      rngSequence([0, 0.3]),
+    );
+    assert.strictEqual(card.rank, "A");
+    assert.strictEqual(card.suit, "♥️");
+  }
+  // Jamais la carte exacte déjà présente, sur de nombreux essais aléatoires.
+  for (let i = 0; i < 200; i++) {
+    const existing = [drawCard(), drawCard(), drawCard()];
+    const card = drawUniqueCard(existing, Math.random);
+    assert.ok(!existing.some((c) => c.rank === card.rank && c.suit === card.suit));
+  }
+
   // ── computeHandValue — As 11 par défaut, ramené à 1 si besoin ──
   assert.strictEqual(computeHandValue([{ rank: "7", value: 7 }, { rank: "8", value: 8 }]), 15);
   assert.strictEqual(computeHandValue([{ rank: "A", value: 11 }, { rank: "K", value: 10 }]), 21); // blackjack naturel
@@ -46,12 +76,14 @@ async function main() {
     assert.ok(score >= 15 && score <= 21);
   }
 
-  // ── buildHandForScore — 2 cartes dont la somme vaut exactement le score ──
+  // ── buildHandForScore — 2 cartes dont la somme vaut exactement le score,
+  // jamais deux fois exactement la même carte (même rang+couleur) ──
   for (let i = 0; i < 200; i++) {
     const score = 15 + Math.floor(Math.random() * 7); // 15..21
     const cards = buildHandForScore(score, Math.random);
     assert.strictEqual(cards.length, 2);
     assert.strictEqual(computeHandValue(cards), score);
+    assert.ok(!(cards[0].rank === cards[1].rank && cards[0].suit === cards[1].suit));
   }
 
   // ── dealerPlay — jamais de saut, toujours dans [min, max] ──

@@ -172,10 +172,14 @@ async function buildTableEmbed(state, { previousResults, previousDealer } = {}) 
     );
   }
 
+  // Pas de "Manche X/Y" ici : déjà dans le titre de l'embed (buildTableEmbed
+  // est utilisé pour le body) — même principe que buildDealerTargetSection
+  // du jeu spécial (_handlers/blackjack.js), qui n'affiche pas non plus le
+  // "Jour X/Y" en double dans son propre corps de message.
   const seatsLabel = `${state.players.length}/${state.maxPlayers} joueur${state.maxPlayers > 1 ? "s" : ""} inscrit${state.players.length > 1 ? "s" : ""}`;
   lines.push(
-    `## 🎩 Score à battre — Manche ${state.manche}/${state.totalManches}`,
-    ...formatCardsBlock(state.dealer.cards, `Croupier : ${state.dealer.score}`),
+    `## 🎩 Score à battre : ${state.dealer.score}`,
+    ...formatCardsBlock(state.dealer.cards),
     "",
     seatsLabel,
   );

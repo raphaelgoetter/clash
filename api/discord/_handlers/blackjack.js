@@ -12,6 +12,7 @@ import {
   readState,
   writeState,
   drawCard,
+  drawUniqueCard,
   computeHandValue,
   dealerPlay,
   compareToDealer,
@@ -646,7 +647,8 @@ export async function handleJouer(webhookUrl, jour, discordId, username) {
       return;
     }
 
-    const cards = [drawCard(), drawCard()];
+    const first = drawCard();
+    const cards = [first, drawUniqueCard([first])];
     const score = computeHandValue(cards);
     const status = score === 21 ? "stand" : "en_cours";
     const hand = { cards, score, status, username };
@@ -699,7 +701,7 @@ async function handleDrawOrStand(webhookUrl, jour, discordId, { draw }) {
       return;
     }
 
-    const cards = draw ? [...hand.cards, drawCard()] : hand.cards;
+    const cards = draw ? [...hand.cards, drawUniqueCard(hand.cards)] : hand.cards;
     const score = computeHandValue(cards);
     const status = !draw
       ? "stand"
