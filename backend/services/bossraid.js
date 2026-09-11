@@ -537,8 +537,8 @@ export function gradeForRatio(ratio) {
   if (ratio >= 0.98) return "SS";
   if (ratio >= 0.9) return "S";
   if (ratio >= 0.8) return "A";
-  if (ratio >= 0.6) return "B";
-  if (ratio >= 0.5) return "C";
+  if (ratio >= 0.7) return "B";
+  if (ratio >= 0.6) return "C";
   return "D";
 }
 

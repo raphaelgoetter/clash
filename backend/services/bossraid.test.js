@@ -269,14 +269,14 @@ async function main() {
   assert.strictEqual(gradeForRatio(0.98), "SS");
   assert.strictEqual(gradeForRatio(0.9), "S");
   assert.strictEqual(gradeForRatio(0.8), "A");
-  assert.strictEqual(gradeForRatio(0.6), "B");
-  assert.strictEqual(gradeForRatio(0.5), "C");
+  assert.strictEqual(gradeForRatio(0.7), "B");
+  assert.strictEqual(gradeForRatio(0.6), "C");
   assert.strictEqual(gradeForRatio(0.1), "D");
 
   // ── cumulativeScore ──
   assert.strictEqual(cumulativeScore(0, 0), null); // rien à comparer avant la 1ère clôture
   assert.strictEqual(cumulativeScore(100, 100), "SS");
-  assert.strictEqual(cumulativeScore(50, 100), "C");
+  assert.strictEqual(cumulativeScore(60, 100), "C");
 
   // ── computeUltimateMultiplier — bonus/malus basé sur les 2 derniers scores ──
   assert.strictEqual(computeUltimateMultiplier(null, null), 1); // pas d'historique (jour 1/2)
