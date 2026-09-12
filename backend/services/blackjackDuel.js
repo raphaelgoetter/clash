@@ -19,8 +19,12 @@
 //   writeHistoriqueEntry) ;
 // - une seule partie à la fois sur tout le serveur (état global unique,
 //   comme le jeu spécial) ;
-// - nettoyage automatique après 24h d'inactivité (voir resetIfStale, appelé
-//   par le watchdog cron — scripts/blackjackDuelWatchdog.js).
+// - pas de nettoyage automatique (retiré le 12/09, retour utilisateur : "je
+//   ne souhaite absolument pas de cron/action pour cela") — une partie
+//   bloquée >24h (resetIfStale) ou dans n'importe quel état se nettoie
+//   désormais À LA MAIN via `npm run blackjackduel:reset` (inconditionnel)
+//   ou `npm run blackjackduel:watchdog` (respecte le seuil de 24h) ; voir
+//   `npm run blackjackduel:status` pour décider.
 // ============================================================
 
 import { Redis } from "@upstash/redis";

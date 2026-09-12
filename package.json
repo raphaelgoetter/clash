@@ -122,6 +122,8 @@
     "blackjack:status": "node scripts/blackjackStatus.js",
     "blackjack:scores": "node scripts/blackjackScores.js",
     "blackjackduel:watchdog": "node scripts/blackjackDuelWatchdog.js",
+    "blackjackduel:reset": "node scripts/resetBlackjackDuel.js",
+    "blackjackduel:status": "node scripts/blackjackDuelStatus.js",
     "rules": "node scripts/notifyRules.js",
     "rules:dry": "node scripts/notifyRules.js --dry-run",
     "rules:dry:noping": "node scripts/notifyRules.js --dry-run --no-ping",
