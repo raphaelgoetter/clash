@@ -613,6 +613,7 @@ Le décompte et la moyenne par réponse sont déjà visibles directement dans le
 
 | Question                                  | Vote affiché                                                                        |
 | ----------------------------------------- | ----------------------------------------------------------------------------------- |
+| Q2 — rôle @MINI-JEUX                      | qui a répondu "Je ne sais pas"                                                      |
 | Q3 — régularité                           | qui a mis "1" (jamais)                                                              |
 | Q4 — freins à la participation            | qui a répondu "Je n'aime pas ce type de jeu" ou "Pas assez motivant ou intéressant" |
 | Q5 — format préféré                       | qui a répondu "Aucun des deux"                                                      |

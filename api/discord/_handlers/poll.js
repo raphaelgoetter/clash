@@ -33,7 +33,7 @@ import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
 // visibles directement dans le sondage natif Discord, seul le détail
 // nominatif de certaines réponses jugées intéressantes vaut la peine d'être
 // recalculé ici (qui a mis la note la plus basse, qui n'a rien coché, qui a
-// coché plusieurs cases). Les questions absentes de cette liste (Q1, Q2)
+// coché plusieurs cases). Les questions absentes de cette liste (Q1)
 // ne sont pas traitées par pollStatus.js.
 //
 // - "note-value" : voteurs ayant choisi la valeur `value` (échelle 1-5).
@@ -44,6 +44,7 @@ import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
 //   celles de la question (nécessite de lister les voteurs de chaque
 //   réponse et de croiser — allowMultiselect uniquement).
 const EXTREME_RULES = {
+  "q2-role-minijeux": { kind: "choice-answer", text: "Je ne sais pas", label: 'Vote "Je ne sais pas"' },
   "q3-regularite": { kind: "note-value", value: "1", label: 'Vote "1"' },
   "q4-freins-participation": {
     kind: "choice-answers-any",
