@@ -1,0 +1,107 @@
+{
+  "questions": [
+    {
+      "id": "q1-clan-famille",
+      "type": "choice",
+      "question": "Fais-tu partie d'un des clans de la famille ?",
+      "answers": [
+        "Oui",
+        "Non, je suis dans un autre clan",
+        "Non, je n'en fais plus partie"
+      ],
+      "allowMultiselect": false,
+      "durationHours": 336
+    },
+    {
+      "id": "q2-role-minijeux",
+      "type": "choice",
+      "question": "As-tu le rôle @MINI-JEUX sur le serveur ?",
+      "answers": ["Oui", "Non", "Je ne sais pas"],
+      "allowMultiselect": false,
+      "durationHours": 336
+    },
+    {
+      "id": "q3-regularite",
+      "type": "note",
+      "question": "À quelle fréquence participes-tu aux mini-jeux et jeux spéciaux ? (1 = jamais, 5 = à chaque fois)",
+      "durationHours": 336
+    },
+    {
+      "id": "q4-format-prefere",
+      "type": "choice",
+      "question": "Quel format de jeu préfères-tu ?",
+      "answers": [
+        "Hebdomadaire (une action rapide, une fois par semaine)",
+        "Quotidien/collaboratif (suivi sur plusieurs jours)",
+        "Les deux",
+        "Aucun des deux"
+      ],
+      "allowMultiselect": false,
+      "durationHours": 336
+    },
+    {
+      "id": "q5-complexite",
+      "type": "note",
+      "question": "Comment trouves-tu la complexité des règles en général ? (1 = trop simple, 5 = trop compliqué)",
+      "durationHours": 336
+    },
+    {
+      "id": "q6-prefere-hebdo",
+      "type": "choice",
+      "question": "Quel est ton jeu hebdomadaire préféré ?",
+      "answers": [
+        "Frame (devine le film)",
+        "Anagram (devine la carte)",
+        "Zoom (carte zoomée)",
+        "La Juste Carte",
+        "Blind Royale",
+        "Aucun"
+      ],
+      "allowMultiselect": false,
+      "durationHours": 336
+    },
+    {
+      "id": "q7-prefere-quotidien",
+      "type": "choice",
+      "question": "Quel est ton jeu spécial préféré pour l'instant ?",
+      "answers": ["Tamagotchi", "Robinson", "Quiz", "Boss Raid", "Aucun"],
+      "allowMultiselect": false,
+      "durationHours": 336
+    },
+    {
+      "id": "q8-non-participation-hebdo",
+      "type": "choice",
+      "question": "À quel mini-jeu ne participes-tu jamais ? (plusieurs réponses possibles)",
+      "answers": [
+        "Frame",
+        "Anagram",
+        "Zoom",
+        "Juste Carte",
+        "Blind Royale",
+        "Je participe à tous"
+      ],
+      "allowMultiselect": true,
+      "durationHours": 336
+    },
+    {
+      "id": "q9-non-participation-quotidien",
+      "type": "choice",
+      "question": "À quel jeu spécial ne participes-tu jamais ? (plusieurs réponses possibles)",
+      "answers": [
+        "Tamagotchi",
+        "Robinson",
+        "Quiz",
+        "Boss Raid",
+        "Je participe à tous"
+      ],
+      "allowMultiselect": true,
+      "durationHours": 336
+    },
+    {
+      "id": "q10-satisfaction",
+      "type": "note",
+      "question": "Globalement, es-tu satisfait(e) des mini-jeux et jeux spéciaux proposés ? (1 = pas du tout, 5 = complètement)",
+      "durationHours": 336
+    }
+  ]
+}

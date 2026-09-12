@@ -583,6 +583,53 @@ Ordre chronologique de lancement **public** des jeux collaboratifs à avancée q
 
 ---
 
+## Sondage public (série de sondages natifs Discord)
+
+Contrairement aux mini-jeux ci-dessus, ce n'est pas un jeu à avancée quotidienne : c'est un sondage ponctuel (une dizaine de questions), posté d'un coup et laissé ouvert le temps que les membres répondent. Chaque question devient un **sondage natif Discord** distinct (objet `poll` de l'API v10) — Discord gère lui-même l'affichage, le vote et le décompte, aucune logique de vote ni bouton/interaction à coder côté `api/discord/interactions.js`.
+
+### Format des questions (`data/poll/poll.json`)
+
+```json
+{
+  "questions": [
+    { "id": "...", "type": "choice", "question": "...", "answers": ["...", "..."], "allowMultiselect": false, "durationHours": 168 },
+    { "id": "...", "type": "note", "question": "...", "durationHours": 168 }
+  ]
+}
+```
+
+- `type: "choice"` — réponses libres définies dans `answers` (texte, jusqu'à 10 options, décompte natif Discord).
+- `type: "note"` — note de 1 à 5 : les réponses `"1"`..`"5"` sont générées automatiquement, pas de champ `answers`. `pollStatus.js` calcule aussi la moyenne pondérée pour ce type.
+- Le sondage natif Discord ne gère qu'**une seule question par message** — pas d'échelle continue ni de suite de questions dans un même poll — d'où le choix d'un message par question plutôt qu'un unique sondage "à tiroirs".
+
+### Stockage — Upstash Redis (`poll:state`)
+
+Une seule clé (pas d'historique multi-sondages) : `{ channelId, startedAt, messages: [{ questionId, question, type, channelId, messageId }] }`. Discord garde les votes lui-même (`poll.results.answer_counts` sur le message) — Redis ne sert qu'à retrouver les messages postés pour `poll:reset`/`poll:status`.
+
+### Scripts npm
+
+| Commande                  | Effet                                                                                                                                               |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run poll:test`       | Poste les questions sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`, réutilisé — voir règle générale plus haut), aucun ping.                     |
+| `npm run poll:test:dry`   | Aperçu console des objets `poll` qui seraient postés, sans rien écrire ni poster.                                                                   |
+| `npm run poll:test:force` | Si un sondage est déjà actif sur ce salon, supprime les anciens messages puis reposte — utile pour itérer sur le salon de test.                     |
+| `npm run poll:public`     | Poste sur le salon "Général" (`DISCORD_CHANNEL_GENERAL`) — à lancer une fois le contenu de `data/poll/poll.json` finalisé et validé.                |
+| `npm run poll:public:dry` | Équivalent dry-run de `poll:public`.                                                                                                                |
+| `npm run poll:status`     | Relit chaque message posté et affiche le décompte courant par réponse (+ moyenne pour les questions de type `note`).                                |
+| `npm run poll:reset`      | Supprime les messages de sondage postés (best-effort) et efface l'état — repart de zéro pour un prochain `poll:test`/`poll:public`. **Destructif**. |
+
+### Variables d'environnement requises
+
+```text
+DISCORD_CHANNEL_FRAME_TEST=      # salon de test (réutilisé, pas de salon dédié)
+DISCORD_CHANNEL_GENERAL=         # salon public "Général"
+DISCORD_TOKEN=
+KV_REST_API_URL=                 # Upstash Redis
+KV_REST_API_TOKEN=
+```
+
+---
+
 ## Noms français des cartes (`data/cardNames.json`)
 
 Source de vérité anglais↔français des noms de cartes Clash Royale, partagée par tous les mini-jeux qui en ont besoin (Anagram, Zoom carte) — évite que chaque jeu retraduise/duplique les mêmes noms avec le risque de divergence que ça implique (constaté : plusieurs noms erronés trouvés dans `anagrams.json` avant la création de ce fichier, dont un vrai bug de `cardKey` qui cassait l'image de révélation).
