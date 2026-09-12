@@ -7,6 +7,7 @@ import {
   buildHandForScore,
   dealerPlay,
   compareToDealer,
+  pointsForResult,
   resolveDay,
   buildRanking,
   isTooSoonSinceLastClosure,
@@ -96,6 +97,11 @@ async function main() {
   assert.strictEqual(compareToDealer(20, { score: 18 }), "win");
   assert.strictEqual(compareToDealer(18, { score: 20 }), "lose");
   assert.strictEqual(compareToDealer(19, { score: 19 }), "push");
+
+  // ── pointsForResult — une égalité rapporte 1 point, pas 0 comme une défaite ──
+  assert.strictEqual(pointsForResult("win"), 2);
+  assert.strictEqual(pointsForResult("push"), 1);
+  assert.strictEqual(pointsForResult("lose"), 0);
 
   // ── resolveDay — une main "en_cours" à la clôture est figée, jamais ignorée ──
   const dealer = { score: 18 };

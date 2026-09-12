@@ -50,31 +50,35 @@ async function main() {
   }
 
   // ── computeMancheOutcome — manche intermédiaire : pas de classement final ──
+  // Barème 2/1/0 (12/09) : une victoire rapporte 2 points, une égalité 1
+  // point (pas 0 comme une défaite), une défaite 0.
   {
     const state = baseState({ manche: 1, totalManches: 5 });
     const hands = {
-      a: { cards: [], score: 20, status: "stand", username: "Alice" }, // gagne
-      b: { cards: [], score: 15, status: "stand", username: "Bob" }, // perd
+      a: { cards: [], score: 20, status: "stand", username: "Alice" }, // gagne -> 2 pts
+      b: { cards: [], score: 15, status: "stand", username: "Bob" }, // perd -> 0 pt
+      c: { cards: [], score: 18, status: "stand", username: "Chris" }, // égalité (Croupier à 18) -> 1 pt
     };
     const outcome = computeMancheOutcome(state, hands, {});
     assert.strictEqual(outcome.estFinDePartie, false);
     assert.strictEqual(outcome.mancheSuivante, 2);
     assert.strictEqual(outcome.ranking, null);
-    assert.strictEqual(outcome.pointsAfter.a, 1);
+    assert.strictEqual(outcome.pointsAfter.a, 2);
     assert.strictEqual(outcome.pointsAfter.b ?? 0, 0);
+    assert.strictEqual(outcome.pointsAfter.c, 1);
   }
 
   // ── computeMancheOutcome — dernière manche : classement final cumulé ──
   {
     const state = baseState({ manche: 5, totalManches: 5 });
     const hands = {
-      a: { cards: [], score: 20, status: "stand", username: "Alice" }, // gagne encore
-      b: { cards: [], score: 25, status: "bust", username: "Bob" },
+      a: { cards: [], score: 20, status: "stand", username: "Alice" }, // gagne encore -> +2
+      b: { cards: [], score: 25, status: "bust", username: "Bob" }, // -> +0
     };
     const currentPoints = { a: 3, b: 1 };
     const outcome = computeMancheOutcome(state, hands, currentPoints);
     assert.strictEqual(outcome.estFinDePartie, true);
-    assert.strictEqual(outcome.pointsAfter.a, 4);
+    assert.strictEqual(outcome.pointsAfter.a, 5);
     assert.strictEqual(outcome.pointsAfter.b, 1);
     assert.deepStrictEqual(outcome.ranking.map((r) => r.discordId), ["a", "b"]);
     // computeMancheOutcome ne mute jamais l'objet points fourni par l'appelant

@@ -1,6 +1,7 @@
 // ============================================================
-// blackjack.js — Handlers Discord pour Blackjack (7 jours, 1 point de
-// victoire par jour gagné contre le Croupier, classement cumulé au Jour 7).
+// blackjack.js — Handlers Discord pour Blackjack (7 jours, 2 points par
+// victoire contre le Croupier, 1 point en cas d'égalité, classement cumulé
+// au Jour 7).
 // Embed, boutons d'action (Jouer/Piocher/Arrêter), Règles, Journal.
 // La publication/suppression quotidienne passe uniquement par
 // scripts/postBlackjack.js (postBlackjack) — les boutons restent gérés par
@@ -16,11 +17,12 @@ import {
   computeHandValue,
   dealerPlay,
   compareToDealer,
+  pointsForResult,
   resolveDay,
   readHand,
   writeHand,
   listHands,
-  addPoint,
+  addPoints,
   readPoints,
   resetPoints,
   buildRanking,
@@ -139,8 +141,8 @@ function buildDealerTargetSection(dealer) {
   // joueurs avant qu'ils ne cliquent sur Jouer plutôt qu'à la clôture.
   lines.push(
     dealer.score === 21
-      ? "😱 21 pile — impossible de faire mieux aujourd'hui, seule une égalité (21 aussi) est possible !"
-      : "Fais mieux que ça sans dépasser 21 pour gagner 1 point.",
+      ? "😱 21 pile — impossible de faire mieux aujourd'hui, seule une égalité (21 aussi, 1 point) est possible !"
+      : "Fais mieux que ça sans dépasser 21 pour gagner 2 points (1 point en cas d'égalité).",
   );
   return lines;
 }
@@ -426,11 +428,11 @@ export async function postBlackjack(
   if (dryRun) {
     if (estFinDeManche) {
       const pointsActuels = await readPoints();
-      // +1 simulé pour chaque gagnant du jour, sans écrire dans Redis — pure
-      // projection pour npm run blackjack:status / --dry-run.
+      // Points simulés selon pointsForResult() (2/1/0), sans écrire dans
+      // Redis — pure projection pour npm run blackjack:status / --dry-run.
       for (const r of results) {
-        if (r.result === "win")
-          pointsActuels[r.discordId] = (pointsActuels[r.discordId] || 0) + 1;
+        const pts = pointsForResult(r.result);
+        if (pts > 0) pointsActuels[r.discordId] = (pointsActuels[r.discordId] || 0) + pts;
       }
       const ranking = buildRanking(pointsActuels);
       const embed = await buildRevealEmbed(state.dealer, results, ranking, []);
@@ -456,7 +458,7 @@ export async function postBlackjack(
   }
 
   for (const r of results) {
-    if (r.result === "win") await addPoint(r.discordId);
+    await addPoints(r.discordId, pointsForResult(r.result));
   }
   await writeHistoriqueEntry(state.jour, {
     jour: state.jour,
@@ -569,9 +571,9 @@ function handStatusMessage(hand, dealerScore) {
       : `🛑 Tu t'arrêtes à ${hand.score}.`;
     const result = compareToDealer(hand.score, { score: dealerScore });
     if (result === "win")
-      return `${intro} Le Croupier était à ${dealerScore} — tu gagnes 1 point aujourd'hui ! 🏆`;
+      return `${intro} Le Croupier était à ${dealerScore} — tu gagnes 2 points aujourd'hui ! 🏆`;
     if (result === "push")
-      return `${intro} Le Croupier était aussi à ${dealerScore} — égalité, aucun point aujourd'hui.`;
+      return `${intro} Le Croupier était aussi à ${dealerScore} — égalité, tu gagnes quand même 1 point aujourd'hui ! 🤝`;
     return `${intro} Le Croupier était à ${dealerScore} — pas de point aujourd'hui.`;
   }
   return "Pioche pour te rapprocher de 21, ou arrête-toi pour figer ton score.";
@@ -837,7 +839,7 @@ function buildReglesEmbed(config) {
       "🛑 **Arrêter** — fige ton score pour aujourd'hui.",
       "Dépasser 21 = main perdue immédiatement pour la journée.",
       "",
-      "**Résultat quotidien :** le plus proche de 21 sans le dépasser gagne **1 point**. Égalité = personne ne marque. Une main non jouée ne rapporte ni ne coûte rien.",
+      "**Résultat quotidien :** le plus proche de 21 sans le dépasser gagne **2 points**. Égalité avec le Croupier = **1 point** quand même. Une main non jouée ne rapporte ni ne coûte rien.",
       "",
       `Au Jour ${config.duree_jours}, le classement cumulé désigne le(s) vainqueur(s) de la manche.`,
       "",

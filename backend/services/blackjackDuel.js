@@ -31,6 +31,7 @@ import {
   dealerPlay,
   resolveDay,
   buildRanking,
+  pointsForResult,
 } from "./blackjack.js";
 
 let _redis = null;
@@ -142,8 +143,9 @@ export async function listHands(manche) {
 
 // ── Points cumulés sur la partie en cours ──────────────────────────
 
-async function addPoint(discordId) {
-  await getRedis().hincrby(POINTS_KEY, discordId, 1);
+async function addPoints(discordId, amount) {
+  if (amount <= 0) return;
+  await getRedis().hincrby(POINTS_KEY, discordId, amount);
 }
 
 export async function readPoints() {
@@ -309,7 +311,8 @@ export function computeMancheOutcome(state, hands, currentPoints) {
   const results = resolveDay(hands, state.dealer);
   const pointsAfter = { ...currentPoints };
   for (const r of results) {
-    if (r.result === "win") pointsAfter[r.discordId] = (pointsAfter[r.discordId] || 0) + 1;
+    const pts = pointsForResult(r.result);
+    if (pts > 0) pointsAfter[r.discordId] = (pointsAfter[r.discordId] || 0) + pts;
   }
   const mancheSuivante = state.manche + 1;
   const estFinDePartie = mancheSuivante > state.totalManches;
@@ -322,7 +325,7 @@ async function resolveManche(state, hands) {
   const outcome = computeMancheOutcome(state, hands, currentPoints);
 
   for (const r of outcome.results) {
-    if (r.result === "win") await addPoint(r.discordId);
+    await addPoints(r.discordId, pointsForResult(r.result));
   }
 
   if (outcome.estFinDePartie) {

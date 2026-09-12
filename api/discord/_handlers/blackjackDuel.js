@@ -319,8 +319,9 @@ function handStatusMessage(hand, dealerScore) {
     const intro = natural
       ? "🎉 21 sur deux cartes, la meilleure main possible !"
       : `🛑 Tu t'arrêtes à ${hand.score}.`;
-    if (hand.score > dealerScore) return `${intro} Le Croupier était à ${dealerScore} — tu gagnes 1 point !`;
-    if (hand.score === dealerScore) return `${intro} Le Croupier était aussi à ${dealerScore} — égalité.`;
+    if (hand.score > dealerScore) return `${intro} Le Croupier était à ${dealerScore} — tu gagnes 2 points !`;
+    if (hand.score === dealerScore)
+      return `${intro} Le Croupier était aussi à ${dealerScore} — égalité, tu gagnes quand même 1 point !`;
     return `${intro} Le Croupier était à ${dealerScore} — pas de point cette manche.`;
   }
   return "Pioche pour te rapprocher de 21, ou arrête-toi pour figer ton score.";
@@ -508,7 +509,7 @@ function buildReglesEmbed() {
       "🛑 **Arrêter** — fige ton score pour cette manche.",
       "Dépasser 21 = main perdue immédiatement pour la manche.",
       "",
-      "**Résultat d'une manche :** le plus proche de 21 sans le dépasser gagne **1 point**. Égalité = personne ne marque. Une manche se termine dès que tous les joueurs inscrits ont joué.",
+      "**Résultat d'une manche :** le plus proche de 21 sans le dépasser gagne **2 points**. Égalité avec le Croupier = **1 point** quand même. Une manche se termine dès que tous les joueurs inscrits ont joué.",
       "",
       "Le classement cumulé à la fin de la dernière manche désigne le(s) vainqueur(s) de la partie. Une partie inactive plus de 24h est automatiquement annulée.",
     ].join("\n"),

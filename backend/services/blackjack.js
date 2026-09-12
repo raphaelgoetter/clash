@@ -249,6 +249,15 @@ export function compareToDealer(playerScore, dealer) {
   return "lose";
 }
 
+// Barème (12/09, retour utilisateur) : une égalité ne doit pas "compter
+// comme une défaite" dans le classement — elle rapporte donc 1 point, moitié
+// moins qu'une vraie victoire (2 points), plutôt que 0 comme une défaite.
+export function pointsForResult(result) {
+  if (result === "win") return 2;
+  if (result === "push") return 1;
+  return 0;
+}
+
 // Résout toutes les mains d'un jour face à la main du Croupier de ce
 // jour-là. Une main encore "en_cours" à la clôture (joueur qui n'a jamais
 // cliqué Arrêter) est figée sur son score courant plutôt qu'ignorée — un
@@ -287,12 +296,13 @@ export async function listHands(jour) {
   return hgetallJson(handKey(jour));
 }
 
-// ── Points de victoire cumulés (manche en cours) ──────────────────────
-// +1 par jour gagné contre le Croupier — remis à zéro à chaque nouveau
-// Jour 1 (voir postBlackjack), pas seulement par un reset admin.
+// ── Points cumulés (manche en cours) ──────────────────────────────────
+// +2/+1/+0 selon pointsForResult() ci-dessus — remis à zéro à chaque
+// nouveau Jour 1 (voir postBlackjack), pas seulement par un reset admin.
 
-export async function addPoint(discordId) {
-  await getRedis().hincrby(POINTS_KEY, discordId, 1);
+export async function addPoints(discordId, amount) {
+  if (amount <= 0) return;
+  await getRedis().hincrby(POINTS_KEY, discordId, amount);
 }
 
 export async function readPoints() {
