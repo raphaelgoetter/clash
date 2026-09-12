@@ -27,7 +27,22 @@
       "durationHours": 336
     },
     {
-      "id": "q4-format-prefere",
+      "id": "q4-freins-participation",
+      "type": "choice",
+      "question": "Qu'est-ce qui t'empêche de participer plus souvent ? (plusieurs réponses possibles)",
+      "answers": [
+        "Manque de temps",
+        "Les règles ne sont pas toujours claires",
+        "Pas assez motivant ou intéressant",
+        "Je ne suis pas au courant quand ça se lance",
+        "Je n'aime pas ce type de jeux",
+        "Rien, je participe autant que je veux"
+      ],
+      "allowMultiselect": true,
+      "durationHours": 336
+    },
+    {
+      "id": "q5-format-prefere",
       "type": "choice",
       "question": "Quel format de jeu préfères-tu ?",
       "answers": [
@@ -40,15 +55,9 @@
       "durationHours": 336
     },
     {
-      "id": "q5-complexite",
-      "type": "note",
-      "question": "Comment trouves-tu la complexité des règles en général ? (1 = trop simple, 5 = trop compliqué)",
-      "durationHours": 336
-    },
-    {
       "id": "q6-prefere-hebdo",
       "type": "choice",
-      "question": "Quel est ton jeu hebdomadaire préféré ?",
+      "question": "Quel est ton mini-jeu hebdomadaire préféré ?",
       "answers": [
         "Frame (devine le film)",
         "Anagram (devine la carte)",
@@ -71,7 +80,7 @@
     {
       "id": "q8-non-participation-hebdo",
       "type": "choice",
-      "question": "À quel mini-jeu ne participes-tu jamais ? (plusieurs réponses possibles)",
+      "question": "À quel mini-jeu n'as-tu jamais participé ? (plusieurs réponses possibles)",
       "answers": [
         "Frame",
         "Anagram",
@@ -86,7 +95,7 @@
     {
       "id": "q9-non-participation-quotidien",
       "type": "choice",
-      "question": "À quel jeu spécial ne participes-tu jamais ? (plusieurs réponses possibles)",
+      "question": "À quel jeu spécial n'as-tu jamais participé ? (plusieurs réponses possibles)",
       "answers": [
         "Tamagotchi",
         "Robinson",

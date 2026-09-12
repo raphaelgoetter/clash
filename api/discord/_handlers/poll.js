@@ -33,17 +33,24 @@ import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
 // visibles directement dans le sondage natif Discord, seul le détail
 // nominatif de certaines réponses jugées intéressantes vaut la peine d'être
 // recalculé ici (qui a mis la note la plus basse, qui n'a rien coché, qui a
-// coché plusieurs cases). Les questions absentes de cette liste (Q1, Q2, Q5)
+// coché plusieurs cases). Les questions absentes de cette liste (Q1, Q2)
 // ne sont pas traitées par pollStatus.js.
 //
 // - "note-value" : voteurs ayant choisi la valeur `value` (échelle 1-5).
 // - "choice-answer" : voteurs ayant choisi la réponse `text` exacte.
+// - "choice-answers-any" : union (dédupliquée) des voteurs ayant choisi
+//   AU MOINS UNE des réponses de `texts` (allowMultiselect uniquement).
 // - "multi-count" : voteurs ayant coché au moins `min` réponses parmi TOUTES
 //   celles de la question (nécessite de lister les voteurs de chaque
 //   réponse et de croiser — allowMultiselect uniquement).
 const EXTREME_RULES = {
   "q3-regularite": { kind: "note-value", value: "1", label: 'Vote "1"' },
-  "q4-format-prefere": { kind: "choice-answer", text: "Aucun des deux", label: 'Vote "Aucun des deux"' },
+  "q4-freins-participation": {
+    kind: "choice-answers-any",
+    texts: ["Je n'aime pas ce type de jeu", "Pas assez motivant ou intéressant"],
+    label: 'Vote "Je n\'aime pas ce type de jeu" ou "Pas assez motivant ou intéressant"',
+  },
+  "q5-format-prefere": { kind: "choice-answer", text: "Aucun des deux", label: 'Vote "Aucun des deux"' },
   "q6-prefere-hebdo": { kind: "choice-answer", text: "Aucun", label: 'Vote "Aucun"' },
   "q7-prefere-quotidien": { kind: "choice-answer", text: "Aucun", label: 'Vote "Aucun"' },
   "q8-non-participation-hebdo": { kind: "multi-count", min: 2, label: "2 choix cochés ou plus" },
@@ -328,6 +335,17 @@ async function computeExtreme(token, m, poll, rule) {
     const answerId = answerIdByText.get(text);
     if (!answerId || !(countByAnswerId.get(answerId) > 0)) return [];
     return resolveVoterNames(await getAnswerVoters(token, m.channelId, m.messageId, answerId));
+  }
+
+  if (rule.kind === "choice-answers-any") {
+    const votersById = new Map();
+    for (const text of rule.texts) {
+      const answerId = answerIdByText.get(text);
+      if (!answerId || !(countByAnswerId.get(answerId) > 0)) continue;
+      const voters = await getAnswerVoters(token, m.channelId, m.messageId, answerId);
+      for (const voter of voters) votersById.set(voter.id, voter);
+    }
+    return resolveVoterNames([...votersById.values()]);
   }
 
   if (rule.kind === "multi-count") {

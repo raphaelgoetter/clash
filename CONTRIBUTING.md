@@ -611,15 +611,16 @@ Contrairement aux mini-jeux ci-dessus, ce n'est pas un jeu à avancée quotidien
 
 Le décompte et la moyenne par réponse sont déjà visibles directement dans le sondage natif Discord — `poll:status` ne sert qu'à voir **qui** se cache derrière certaines réponses jugées intéressantes, définies dans `EXTREME_RULES` (`api/discord/_handlers/poll.js`) :
 
-| Question                                  | Vote affiché                          |
-| ----------------------------------------- | ------------------------------------- |
-| Q3 — régularité                           | qui a mis "1" (jamais)                |
-| Q4 — format préféré                       | qui a répondu "Aucun des deux"        |
-| Q6 — jeu hebdo préféré                    | qui a répondu "Aucun"                 |
-| Q7 — jeu quotidien préféré                | qui a répondu "Aucun"                 |
-| Q8 — jeux hebdo boudés (multiselect)      | qui a coché 2 réponses ou plus        |
-| Q9 — jeux quotidiens boudés (multiselect) | qui a coché 2 réponses ou plus        |
-| Q10 — satisfaction globale                | qui a mis "1" (pas du tout satisfait) |
+| Question                                  | Vote affiché                                                                        |
+| ----------------------------------------- | ----------------------------------------------------------------------------------- |
+| Q3 — régularité                           | qui a mis "1" (jamais)                                                              |
+| Q4 — freins à la participation            | qui a répondu "Je n'aime pas ce type de jeu" ou "Pas assez motivant ou intéressant" |
+| Q5 — format préféré                       | qui a répondu "Aucun des deux"                                                      |
+| Q6 — jeu hebdo préféré                    | qui a répondu "Aucun"                                                               |
+| Q7 — jeu quotidien préféré                | qui a répondu "Aucun"                                                               |
+| Q8 — jeux hebdo boudés (multiselect)      | qui a coché 2 réponses ou plus                                                      |
+| Q9 — jeux quotidiens boudés (multiselect) | qui a coché 2 réponses ou plus                                                      |
+| Q10 — satisfaction globale                | qui a mis "1" (pas du tout satisfait)                                               |
 
 Utilise l'endpoint Discord "Get Answer Voters" (`GET /channels/{id}/polls/{message}/answers/{answer_id}`), absent de `answer_counts` (qui ne donne qu'un total). Les questions hors de cette liste (Q1, Q2, Q5) ne sont pas traitées. Pour ajouter/retirer une règle, éditer `EXTREME_RULES` — ce n'est pas piloté par `data/poll/poll.json` (c'est un choix d'affichage admin, pas une propriété du sondage).
 
