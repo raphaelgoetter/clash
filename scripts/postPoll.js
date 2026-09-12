@@ -41,7 +41,7 @@ if (!channelId) {
       console.log(`DRY-RUN — sondages qui seraient postés dans ${channelId} :`);
       for (const q of result.questions) {
         console.log(`\n— ${q.id} —`);
-        console.log(JSON.stringify(q.poll, null, 2));
+        console.log(JSON.stringify(q.poll ?? q.freetext, null, 2));
       }
       return;
     }

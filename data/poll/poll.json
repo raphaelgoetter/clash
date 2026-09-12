@@ -102,6 +102,11 @@
       "type": "note",
       "question": "Globalement, es-tu satisfait(e) des mini-jeux et jeux spéciaux proposés ? (1 = pas du tout, 5 = complètement)",
       "durationHours": 336
+    },
+    {
+      "id": "q11-idees",
+      "type": "freetext",
+      "question": "As-tu des idées de mini-jeu ou de jeu spécial à proposer ?"
     }
   ]
 }

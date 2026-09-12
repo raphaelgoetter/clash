@@ -78,6 +78,10 @@ import {
   handlePilule as handleTamagotchiPilule,
 } from "./_handlers/tamagotchi.js";
 import { handleQuizVote } from "./_handlers/quiz.js";
+import {
+  buildIdeaModal as buildPollIdeaModal,
+  handleIdeaModalSubmit as handlePollIdeaModalSubmit,
+} from "./_handlers/poll.js";
 import { handleMiniJeuxCommand } from "./_handlers/minijeux.js";
 import {
   handleVoteButton as handleRobinsonVote,
@@ -9495,6 +9499,30 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleMarioClashRegles(webhookUrl));
+    return;
+  }
+
+  // ── Sondage public : bouton "Proposer une idée" → ouverture de la Modal ──
+  // Réponse synchrone immédiate obligatoire : l'ouverture d'une Modal ne
+  // peut pas être différée (pas de runBackground ici).
+  if (body.type === 3 && body.data?.custom_id === "poll_idea") {
+    return res.status(200).json({ type: 9, data: buildPollIdeaModal() });
+  }
+
+  // ── Sondage public : soumission de la Modal "idée de jeu" ──
+  // body.type === 5 ici est un MODAL_SUBMIT (InteractionType), à ne pas
+  // confondre avec le type de réponse 5 (DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE)
+  // utilisé plus haut dans ce fichier — deux enums Discord distinctes qui
+  // partagent des valeurs numériques.
+  if (body.type === 5 && body.data?.custom_id === "poll_idea_modal") {
+    const rawText = body.data.components?.[0]?.components?.[0]?.value || "";
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handlePollIdeaModalSubmit(webhookUrl, discordId, username, rawText));
     return;
   }
 

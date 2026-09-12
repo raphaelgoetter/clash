@@ -29,6 +29,11 @@ function average(counts) {
 
   for (const r of status.results) {
     console.log(`— ${r.question} —`);
+    if (r.type === "freetext") {
+      console.log(`  (voir les idées soumises ci-dessous)`);
+      console.log("");
+      continue;
+    }
     if (r.error) {
       console.log(`  Erreur : ${r.error}`);
       continue;
@@ -42,5 +47,14 @@ function average(counts) {
       if (avg) console.log(`  Moyenne : ${avg}/5`);
     }
     console.log("");
+  }
+
+  if (status.ideas?.length) {
+    console.log(`💡 ${status.ideas.length} idée(s) proposée(s) :`);
+    for (const idea of status.ideas) {
+      console.log(`  - ${idea.username} : ${idea.text}`);
+    }
+  } else {
+    console.log("💡 Aucune idée proposée pour le moment.");
   }
 })();

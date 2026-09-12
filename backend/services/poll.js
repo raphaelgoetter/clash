@@ -10,10 +10,13 @@
 // les garde).
 //
 // Schéma de data/poll/poll.json : { questions: [
-//   { id, type: "choice"|"note", question, answers?: [...], allowMultiselect?,
-//     durationHours? } × N
+//   { id, type: "choice"|"note"|"freetext", question, answers?: [...],
+//     allowMultiselect?, durationHours? } × N
 // ] } — pour "note", les réponses "1".."5" sont générées automatiquement
-// (pas de champ `answers`).
+// (pas de champ `answers`). "freetext" n'est pas un sondage natif (Discord
+// ne permet pas de champ libre dans un poll) : posté comme un message avec
+// un bouton "Proposer une idée" ouvrant une Modal, réponses stockées dans
+// `poll:ideas` (voir addIdea/listIdeas).
 // ============================================================
 
 import fs from "fs/promises";
@@ -76,6 +79,23 @@ export async function writeState(state) {
 
 export async function clearState() {
   await getRedis().del(STATE_KEY);
+}
+
+// ── Idées de jeu soumises (question "freetext") ────────────────────
+
+const IDEAS_KEY = "poll:ideas";
+
+export async function addIdea(idea) {
+  await getRedis().rpush(IDEAS_KEY, toJson(idea));
+}
+
+export async function listIdeas() {
+  const raw = (await getRedis().lrange(IDEAS_KEY, 0, -1)) || [];
+  return raw.map(fromJson).filter(Boolean);
+}
+
+export async function clearIdeas() {
+  await getRedis().del(IDEAS_KEY);
 }
 
 const NOTE_ANSWERS = ["1", "2", "3", "4", "5"];
