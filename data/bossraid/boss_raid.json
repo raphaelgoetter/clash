@@ -55,7 +55,7 @@
       "id": "bouclier_instable",
       "nom": "Bouclier Instable",
       "emoji": "🌀",
-      "description": "Grosse fête hier soir qui laisse des traces : aujourd'hui chaque Chevalier ne couvre plus qu’une seule unité au lieu de deux, et une frappe non parée ne fait plus que 30% de ses dégâts habituels (au lieu de 50%).",
+      "description": "Grosse fête hier soir qui laisse des traces : aujourd'hui chaque Chevalier ne couvre plus qu’une seule unité au lieu de deux, et une unité non protégée ne fait plus que 30% de ses dégâts habituels (au lieu de 50%).",
       "effects": {
         "protection_slots_override": 1,
         "malus_multiplier_override": 0.3
