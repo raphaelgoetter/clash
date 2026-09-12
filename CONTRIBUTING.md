@@ -599,12 +599,29 @@ Contrairement aux mini-jeux ci-dessus, ce n'est pas un jeu à avancée quotidien
 ```
 
 - `type: "choice"` — réponses libres définies dans `answers` (texte, jusqu'à 10 options, décompte natif Discord).
-- `type: "note"` — note de 1 à 5 : les réponses `"1"`..`"5"` sont générées automatiquement, pas de champ `answers`. `pollStatus.js` calcule aussi la moyenne pondérée pour ce type.
+- `type: "note"` — note de 1 à 5 : les réponses `"1"`..`"5"` sont générées automatiquement, pas de champ `answers`.
+- `type: "freetext"` — pas de sondage natif (Discord ne permet pas de champ libre dans un poll) : posté comme un message avec un bouton "💡 Proposer une idée" qui ouvre une Modal Discord (`custom_id` `poll_idea`/`poll_idea_modal`, routés dans `api/discord/interactions.js`). Réponses stockées dans `poll:ideas` (liste Redis), affichées par `poll:status`.
 - Le sondage natif Discord ne gère qu'**une seule question par message** — pas d'échelle continue ni de suite de questions dans un même poll — d'où le choix d'un message par question plutôt qu'un unique sondage "à tiroirs".
 
-### Stockage — Upstash Redis (`poll:state`)
+### Stockage — Upstash Redis (`poll:state`, `poll:ideas`)
 
-Une seule clé (pas d'historique multi-sondages) : `{ channelId, startedAt, messages: [{ questionId, question, type, channelId, messageId }] }`. Discord garde les votes lui-même (`poll.results.answer_counts` sur le message) — Redis ne sert qu'à retrouver les messages postés pour `poll:reset`/`poll:status`.
+`poll:state` (pas d'historique multi-sondages) : `{ channelId, startedAt, messages: [{ questionId, question, type, channelId, messageId }] }`. Discord garde les votes lui-même (`poll.results.answer_counts` sur le message) — Redis ne sert qu'à retrouver les messages postés pour `poll:reset`/`poll:status`. `poll:ideas` : liste des idées soumises via la question `freetext` (`{ discordId, username, text, submittedAt }`).
+
+### `poll:status` — votes "extrêmes" uniquement
+
+Le décompte et la moyenne par réponse sont déjà visibles directement dans le sondage natif Discord — `poll:status` ne sert qu'à voir **qui** se cache derrière certaines réponses jugées intéressantes, définies dans `EXTREME_RULES` (`api/discord/_handlers/poll.js`) :
+
+| Question                                  | Vote affiché                          |
+| ----------------------------------------- | ------------------------------------- |
+| Q3 — régularité                           | qui a mis "1" (jamais)                |
+| Q4 — format préféré                       | qui a répondu "Aucun des deux"        |
+| Q6 — jeu hebdo préféré                    | qui a répondu "Aucun"                 |
+| Q7 — jeu quotidien préféré                | qui a répondu "Aucun"                 |
+| Q8 — jeux hebdo boudés (multiselect)      | qui a coché 2 réponses ou plus        |
+| Q9 — jeux quotidiens boudés (multiselect) | qui a coché 2 réponses ou plus        |
+| Q10 — satisfaction globale                | qui a mis "1" (pas du tout satisfait) |
+
+Utilise l'endpoint Discord "Get Answer Voters" (`GET /channels/{id}/polls/{message}/answers/{answer_id}`), absent de `answer_counts` (qui ne donne qu'un total). Les questions hors de cette liste (Q1, Q2, Q5) ne sont pas traitées. Pour ajouter/retirer une règle, éditer `EXTREME_RULES` — ce n'est pas piloté par `data/poll/poll.json` (c'est un choix d'affichage admin, pas une propriété du sondage).
 
 ### Scripts npm
 
@@ -615,7 +632,7 @@ Une seule clé (pas d'historique multi-sondages) : `{ channelId, startedAt, mess
 | `npm run poll:test:force` | Si un sondage est déjà actif sur ce salon, supprime les anciens messages puis reposte — utile pour itérer sur le salon de test.                     |
 | `npm run poll:public`     | Poste sur le salon "Général" (`DISCORD_CHANNEL_GENERAL`) — à lancer une fois le contenu de `data/poll/poll.json` finalisé et validé.                |
 | `npm run poll:public:dry` | Équivalent dry-run de `poll:public`.                                                                                                                |
-| `npm run poll:status`     | Relit chaque message posté et affiche le décompte courant par réponse (+ moyenne pour les questions de type `note`).                                |
+| `npm run poll:status`     | Affiche les votes "extrêmes" (voir section dédiée ci-dessus) + les idées soumises — pas le décompte complet, déjà visible dans Discord.             |
 | `npm run poll:reset`      | Supprime les messages de sondage postés (best-effort) et efface l'état — repart de zéro pour un prochain `poll:test`/`poll:public`. **Destructif**. |
 
 ### Variables d'environnement requises

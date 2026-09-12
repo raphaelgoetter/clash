@@ -26,6 +26,30 @@ import {
   listIdeas,
   clearIdeas,
 } from "../../../backend/services/poll.js";
+import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
+
+// Votes "extrêmes" à afficher dans pollStatus.js, par question — décidé par
+// Raphael (2026-09-12) : le décompte/la moyenne par réponse sont déjà
+// visibles directement dans le sondage natif Discord, seul le détail
+// nominatif de certaines réponses jugées intéressantes vaut la peine d'être
+// recalculé ici (qui a mis la note la plus basse, qui n'a rien coché, qui a
+// coché plusieurs cases). Les questions absentes de cette liste (Q1, Q2, Q5)
+// ne sont pas traitées par pollStatus.js.
+//
+// - "note-value" : voteurs ayant choisi la valeur `value` (échelle 1-5).
+// - "choice-answer" : voteurs ayant choisi la réponse `text` exacte.
+// - "multi-count" : voteurs ayant coché au moins `min` réponses parmi TOUTES
+//   celles de la question (nécessite de lister les voteurs de chaque
+//   réponse et de croiser — allowMultiselect uniquement).
+const EXTREME_RULES = {
+  "q3-regularite": { kind: "note-value", value: "1", label: 'Vote "1"' },
+  "q4-format-prefere": { kind: "choice-answer", text: "Aucun des deux", label: 'Vote "Aucun des deux"' },
+  "q6-prefere-hebdo": { kind: "choice-answer", text: "Aucun", label: 'Vote "Aucun"' },
+  "q7-prefere-quotidien": { kind: "choice-answer", text: "Aucun", label: 'Vote "Aucun"' },
+  "q8-non-participation-hebdo": { kind: "multi-count", min: 2, label: "2 choix cochés ou plus" },
+  "q9-non-participation-quotidien": { kind: "multi-count", min: 2, label: "2 choix cochés ou plus" },
+  "q10-satisfaction": { kind: "note-value", value: "1", label: 'Vote "1"' },
+};
 
 const IDEA_BUTTON_CUSTOM_ID = "poll_idea";
 const IDEA_MODAL_CUSTOM_ID = "poll_idea_modal";
@@ -254,9 +278,81 @@ export async function resetPoll() {
   return { hadState: !!state, messagesDeleted: deleted, totalMessages: state?.messages?.length ?? 0 };
 }
 
-// Relit chaque message de sondage tracké et renvoie son décompte courant
-// (Discord fait le tally, on ne fait que le lire) + les idées soumises pour
-// la question "freetext".
+// Liste les votants d'une réponse précise d'un sondage natif Discord
+// (GET /channels/{id}/polls/{message}/answers/{answer_id}, paginé par 100).
+// Contrairement à answer_counts (un simple total), cet endpoint renvoie les
+// utilisateurs eux-mêmes — c'est le seul moyen de savoir QUI a voté quoi.
+async function getAnswerVoters(token, channelId, messageId, answerId) {
+  const voters = [];
+  let after;
+  for (;;) {
+    const url = new URL(
+      `https://discord.com/api/v10/channels/${channelId}/polls/${messageId}/answers/${answerId}`,
+    );
+    url.searchParams.set("limit", "100");
+    if (after) url.searchParams.set("after", after);
+
+    const res = await fetch(url, { headers: { Authorization: `Bot ${token}` } });
+    await sleep(400);
+    if (!res.ok) break;
+
+    const data = await res.json();
+    const users = data.users ?? [];
+    voters.push(...users);
+    if (users.length < 100) break;
+    after = users[users.length - 1].id;
+  }
+  return voters;
+}
+
+async function resolveVoterNames(voters) {
+  return Promise.all(
+    voters.map((u) => resolveDisplayName(u.id, u.global_name || u.username)),
+  );
+}
+
+// Calcule le vote "extrême" d'une question, selon la règle EXTREME_RULES
+// correspondante — ne fait un appel "voteurs" que si answer_counts indique
+// qu'il y a effectivement au moins un vote sur la réponse concernée (évite
+// des appels Discord inutiles).
+async function computeExtreme(token, m, poll, rule) {
+  const answerIdByText = new Map(
+    (poll?.answers ?? []).map((a) => [a.poll_media?.text ?? "", a.answer_id]),
+  );
+  const countByAnswerId = new Map(
+    (poll?.results?.answer_counts ?? []).map((c) => [c.id, c.count]),
+  );
+
+  if (rule.kind === "note-value" || rule.kind === "choice-answer") {
+    const text = rule.kind === "note-value" ? rule.value : rule.text;
+    const answerId = answerIdByText.get(text);
+    if (!answerId || !(countByAnswerId.get(answerId) > 0)) return [];
+    return resolveVoterNames(await getAnswerVoters(token, m.channelId, m.messageId, answerId));
+  }
+
+  if (rule.kind === "multi-count") {
+    const countByDiscordId = new Map();
+    for (const answer of poll?.answers ?? []) {
+      if (!(countByAnswerId.get(answer.answer_id) > 0)) continue;
+      const voters = await getAnswerVoters(token, m.channelId, m.messageId, answer.answer_id);
+      for (const voter of voters) {
+        const entry = countByDiscordId.get(voter.id) ?? { count: 0, voter };
+        entry.count += 1;
+        countByDiscordId.set(voter.id, entry);
+      }
+    }
+    const matching = [...countByDiscordId.values()].filter((entry) => entry.count >= rule.min);
+    return resolveVoterNames(matching.map((entry) => entry.voter));
+  }
+
+  return [];
+}
+
+// Relit chaque message de sondage tracké et calcule uniquement les votes
+// "extrêmes" configurés dans EXTREME_RULES (voir ce commentaire pour le
+// détail) + les idées soumises pour la question "freetext". Les questions
+// sans règle ne sont pas traitées (le décompte/la moyenne restent visibles
+// directement dans le sondage natif Discord).
 export async function getPollStatus() {
   const state = await readState();
   if (!state) return null;
@@ -264,42 +360,29 @@ export async function getPollStatus() {
   const token = process.env.DISCORD_TOKEN;
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
 
-  const results = [];
+  const extremes = [];
   for (const m of state.messages) {
-    if (m.type === "freetext") {
-      results.push(m);
-      continue;
-    }
+    if (m.type === "freetext") continue;
+
+    const rule = EXTREME_RULES[m.questionId];
+    if (!rule) continue;
 
     const res = await fetch(
       `https://discord.com/api/v10/channels/${m.channelId}/messages/${m.messageId}`,
       { headers: { Authorization: `Bot ${token}` } },
     );
-    await sleep(500);
+    await sleep(400);
     if (!res.ok) {
-      results.push({ ...m, error: `HTTP ${res.status}` });
+      extremes.push({ questionId: m.questionId, question: m.question, label: rule.label, error: `HTTP ${res.status}` });
       continue;
     }
-    const message = await res.json();
-    const poll = message.poll;
-    const answerTextById = new Map(
-      (poll?.answers ?? []).map((a) => [a.answer_id, a.poll_media?.text ?? ""]),
-    );
-    const counts = (poll?.results?.answer_counts ?? []).map((c) => ({
-      text: answerTextById.get(c.id) ?? `#${c.id}`,
-      count: c.count,
-    }));
-    const totalVotes = counts.reduce((sum, c) => sum + c.count, 0);
 
-    results.push({
-      ...m,
-      isFinalized: poll?.results?.is_finalized ?? false,
-      totalVotes,
-      counts,
-    });
+    const message = await res.json();
+    const voters = await computeExtreme(token, m, message.poll, rule);
+    extremes.push({ questionId: m.questionId, question: m.question, label: rule.label, voters });
   }
 
   const ideas = await listIdeas();
 
-  return { ...state, results, ideas };
+  return { ...state, extremes, ideas };
 }
