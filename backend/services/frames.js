@@ -477,6 +477,19 @@ export async function getPlayerSeasonResults(seasonId, discordId) {
     .map(([, result]) => result);
 }
 
+// Tous les résultats archivés, toutes saisons CR confondues — les clés
+// `frame:archived:<seasonId>` ne sont jamais nettoyées automatiquement (voir
+// resetGame()), donc un SCAN suffit à retrouver l'historique complet. Utilisé
+// par /mini-jeux-history pour reconstituer les vainqueurs par saison
+// calendaire mini-jeux (indépendante du seasonId CR), en regroupant ces
+// résultats via leur `solvedAt`/`postedAt`.
+export async function getAllArchivedResults() {
+  const keys = await scanKeys("frame:archived:*");
+  if (keys.length === 0) return [];
+  const hashes = await Promise.all(keys.map((key) => hgetallJson(key)));
+  return hashes.flatMap((hash) => Object.values(hash));
+}
+
 // Tous les gameId des manches postées cette saison (résolues ou non par qui
 // que ce soit) — alimenté par startNewGame(). Permet de lister les manches
 // passées où un joueur n'a pas du tout joué, pas seulement celles où il a

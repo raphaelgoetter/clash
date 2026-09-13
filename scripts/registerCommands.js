@@ -486,6 +486,11 @@ const commands = [
     options: [],
   },
   {
+    name: "mini-jeux-history",
+    description: "Affiche l'historique des vainqueurs des saisons mini-jeux.",
+    options: [],
+  },
+  {
     name: "blackjack",
     description:
       "Lance un duel de Blackjack (1-3 joueurs) dans ce salon — réservé au rôle MINI-JEUX.",

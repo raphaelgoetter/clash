@@ -561,6 +561,16 @@ export async function getPlayerSeasonResults(seasonId, discordId) {
     .map(([, result]) => result);
 }
 
+// Tous les résultats archivés, toutes saisons CR confondues — voir
+// getAllArchivedResults() de frames.js pour le détail (même patron, utilisé
+// par /mini-jeux-history).
+export async function getAllArchivedResults() {
+  const keys = await scanKeys("lajustecarte:archived:*");
+  if (keys.length === 0) return [];
+  const hashes = await Promise.all(keys.map((key) => hgetallJson(key)));
+  return hashes.flatMap((hash) => Object.values(hash));
+}
+
 export async function getSeasonManches(seasonId) {
   const ids = await getRedis().hkeys(seasonMancheNumbersKey(seasonId));
   return ids || [];

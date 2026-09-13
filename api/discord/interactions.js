@@ -84,6 +84,10 @@ import {
 } from "./_handlers/poll.js";
 import { handleMiniJeuxCommand } from "./_handlers/minijeux.js";
 import {
+  handleMiniJeuxHistory,
+  handleMiniJeuxHistoryPage,
+} from "./_handlers/miniJeuxHistory.js";
+import {
   handleVoteButton as handleRobinsonVote,
   handleJournal as handleRobinsonJournal,
   handleRegles as handleRobinsonRegles,
@@ -8932,6 +8936,31 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleMiniJeuxCommand(webhookUrl));
+    return;
+  }
+
+  // ── /mini-jeux-history : historique des vainqueurs de saisons mini-jeux ──
+  if (body.type === 2 && body.data?.name === "mini-jeux-history") {
+    res.status(200).json({ type: 5 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleMiniJeuxHistory(webhookUrl));
+    return;
+  }
+
+  // ── /mini-jeux-history : bouton "Précédentes" ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("minijeux_history_page:")
+  ) {
+    const [, offsetStr] = body.data.custom_id.split(":");
+    const offset = parseInt(offsetStr, 10) || 0;
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    const originalWebhookUrl = webhookUrl
+      ? `${webhookUrl}/messages/@original`
+      : null;
+    runBackground(() => handleMiniJeuxHistoryPage(originalWebhookUrl, offset));
     return;
   }
 
