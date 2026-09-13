@@ -122,7 +122,15 @@ function buildHistoryPaginationRow(offset, total) {
       custom_id: `minijeux_history_page:${offset + PAGE_SIZE}`,
     });
   }
-  return buttons.length > 0 ? [{ type: 1, components: buttons }] : [];
+  // Rafraîchir relit simplement les archives à la même page (offset inchangé)
+  // — même custom_id préfixe que la pagination, géré par le même handler.
+  buttons.push({
+    type: 2,
+    style: 2,
+    label: "🔄 Rafraîchir",
+    custom_id: `minijeux_history_page:${offset}`,
+  });
+  return [{ type: 1, components: buttons }];
 }
 
 // ── Erreur ────────────────────────────────────────────────────
