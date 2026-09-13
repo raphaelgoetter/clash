@@ -332,6 +332,26 @@ export function getCurrentSeasonBounds(now = new Date()) {
   return { start, end };
 }
 
+// Ancrage empirique : la saison technique 135 (Saison publique 86, voir
+// PUBLIC_SEASON_OFFSET) démarre au 1er lundi d'août 2026 — vérifié le
+// 2026-07-29. Sert à extrapoler le numéro de Saison public affiché pour une
+// saison mini-jeux calendaire arbitraire (passée ou future), en supposant
+// que la saison CR se cale elle aussi sur le 1er lundi du mois (même rythme
+// que getCurrentSeasonBounds()) — approximation qui peut dériver si un futur
+// décalage CR ne suit plus le calendrier civil.
+const SEASON_ANCHOR_START = getFirstMondayOfMonth(2026, 7); // 1er lundi août 2026
+const SEASON_ANCHOR_PUBLIC_ID = 86;
+
+/** Numéro de "Saison" public estimé (ex. 86) pour la saison mini-jeux
+ * calendaire contenant `date` — voir SEASON_ANCHOR_START ci-dessus. */
+export function estimatePublicSeasonForDate(date) {
+  const { start } = getCurrentSeasonBounds(date);
+  const monthDiff =
+    (start.getUTCFullYear() - SEASON_ANCHOR_START.getUTCFullYear()) * 12 +
+    (start.getUTCMonth() - SEASON_ANCHOR_START.getUTCMonth());
+  return SEASON_ANCHOR_PUBLIC_ID + monthDiff;
+}
+
 /** Nombre d'occurrences du jour de semaine `weekday` (0=dimanche..6=samedi)
  * dans [start, end) (borne de fin exclue). */
 export function countWeekdayOccurrencesInRange(start, end, weekday) {

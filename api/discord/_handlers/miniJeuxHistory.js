@@ -5,6 +5,7 @@
 // ============================================================
 
 import { getSeasonWinnersHistory } from "../../../backend/services/miniJeuxHistory.js";
+import { estimatePublicSeasonForDate } from "../../../backend/services/dateUtils.js";
 
 const MINIJEUX_COLOR = 0x5865f2; // même couleur que /mini-jeux, cohérence visuelle
 const PAGE_SIZE = 6;
@@ -16,10 +17,6 @@ const MOIS = [
 
 function formatSeasonLabel(start) {
   return `${MOIS[start.getUTCMonth()]} ${start.getUTCFullYear()}`;
-}
-
-function formatDateShort(d) {
-  return `${d.getUTCDate()} ${MOIS[d.getUTCMonth()]}`;
 }
 
 // ── Commande ──────────────────────────────────────────────────
@@ -81,7 +78,7 @@ function buildHistoryEmbed(seasons, offset) {
   const blocks = page.map((season) => {
     const label =
       `**${formatSeasonLabel(season.start)}**` +
-      ` (${formatDateShort(season.start)} → ${formatDateShort(season.end)})`;
+      ` (Saison ${estimatePublicSeasonForDate(season.start)})`;
     const lines = season.games.map((g) => {
       const names = g.winners.map((w) => `**${w.name}**`).join(" / ");
       return `${g.label} — 🏆 ${names}`;
@@ -97,9 +94,7 @@ function buildHistoryEmbed(seasons, offset) {
     color: MINIJEUX_COLOR,
     description: blocks.join("\n\n") || "Aucun historique.",
     footer: {
-      text:
-        `${footerTitle}\n` +
-        "🏆 score cumulé sur la saison (nombre de manches gagnées pour Mario Clash)",
+      text: `${footerTitle}\n🏆 score cumulé sur la saison`,
     },
   };
 }
