@@ -17,6 +17,7 @@ import {
   computeHandValue,
   dealerPlay,
   compareToDealer,
+  isDealerRevealed,
   pointsForResult,
   resolveDay,
   readHand,
@@ -125,9 +126,19 @@ function formatDealerLine(dealer) {
 
 // Section "score à battre" du jour — le Croupier ne joue plus une vraie main
 // (voir dealerPlay() côté service) : un score aléatoire 15-21 est tiré à
-// l'ouverture du jour, jamais de saut, révélé immédiatement — les joueurs
-// savent exactement ce qu'ils doivent battre avant même de cliquer sur Jouer.
-function buildDealerTargetSection(dealer) {
+// l'ouverture du jour, jamais de saut. Jours impairs : révélé immédiatement,
+// les joueurs savent exactement ce qu'ils doivent battre avant même de
+// cliquer sur Jouer. Jours pairs (15/09, retour utilisateur) : le Croupier
+// "joue en dernier" — son score est déjà tiré en interne mais reste caché
+// jusqu'à la clôture, les joueurs misent à l'aveugle (voir isDealerRevealed).
+function buildDealerTargetSection(dealer, jour) {
+  if (!isDealerRevealed(jour)) {
+    return [
+      "## 🎩 Le Croupier joue caché aujourd'hui",
+      "Sa main est déjà jouée mais reste secrète — mise à l'aveugle ! Fais le meilleur score possible sans dépasser 21, le résultat sera révélé demain à la clôture.",
+      "",
+    ];
+  }
   const lines = [
     `## 🎩 Score à battre aujourd'hui : ${dealer.score}`,
     ...formatCardsBlock(dealer.cards),
@@ -194,7 +205,7 @@ async function buildDayEmbed(
       "",
     );
   }
-  lines.push(...buildDealerTargetSection(dealer));
+  lines.push(...buildDealerTargetSection(dealer, jour));
 
   return {
     title: `🃏 Blackjack — Jour ${jour}/${config.duree_jours}`,
@@ -553,25 +564,34 @@ async function patchOriginal(webhookUrl, payload) {
 // aucun compteur à y afficher — la main de chacun reste secrète jusqu'à la
 // clôture du lendemain.
 
-// Le score du Croupier est déjà public dès l'ouverture du jour (voir
-// buildDealerTargetSection) : inutile de faire attendre la clôture pour dire
-// si la main gagne ou non, le résultat est révélé immédiatement dès que la
-// main est figée (stand ou dépassement).
-function handStatusMessage(hand, dealerScore) {
+// Jours impairs : le score du Croupier est déjà public dès l'ouverture du
+// jour (voir buildDealerTargetSection) — inutile de faire attendre la
+// clôture pour dire si la main gagne ou non, le résultat est révélé
+// immédiatement dès que la main est figée (stand ou dépassement). Jours
+// pairs : le Croupier joue caché, donc même un bust (pourtant toujours
+// perdant quel que soit son score) ne doit pas laisser fuiter ${dealer.score}
+// — le résultat complet n'est révélé qu'à la clôture, demain.
+function handStatusMessage(hand, dealer, jour) {
+  const revealed = isDealerRevealed(jour);
   if (hand.status === "bust") {
-    return `💥 Tu dépasses 21 (le Croupier était à ${dealerScore}), ta main est perdue pour aujourd'hui. Rendez-vous demain pour une nouvelle chance !`;
+    return revealed
+      ? `💥 Tu dépasses 21 (le Croupier était à ${dealer.score}), ta main est perdue pour aujourd'hui. Rendez-vous demain pour une nouvelle chance !`
+      : `💥 Tu dépasses 21, ta main est perdue pour aujourd'hui. Rendez-vous demain pour une nouvelle chance !`;
   }
   if (hand.status === "stand") {
     const natural = hand.score === 21 && hand.cards.length === 2;
     const intro = natural
       ? "🎉 21 sur deux cartes, la meilleure main possible !"
       : `🛑 Tu t'arrêtes à ${hand.score}.`;
-    const result = compareToDealer(hand.score, { score: dealerScore });
+    if (!revealed) {
+      return `${intro} Le Croupier joue caché aujourd'hui — tu sauras si tu l'as battu à la clôture, demain.`;
+    }
+    const result = compareToDealer(hand.score, dealer);
     if (result === "win")
-      return `${intro} Le Croupier était à ${dealerScore} — tu gagnes 2 points aujourd'hui ! 🏆`;
+      return `${intro} Le Croupier était à ${dealer.score} — tu gagnes 2 points aujourd'hui ! 🏆`;
     if (result === "push")
-      return `${intro} Le Croupier était aussi à ${dealerScore} — égalité, tu gagnes quand même 1 point aujourd'hui ! 🤝`;
-    return `${intro} Le Croupier était à ${dealerScore} — pas de point aujourd'hui.`;
+      return `${intro} Le Croupier était aussi à ${dealer.score} — égalité, tu gagnes quand même 1 point aujourd'hui ! 🤝`;
+    return `${intro} Le Croupier était à ${dealer.score} — pas de point aujourd'hui.`;
   }
   return "Pioche pour te rapprocher de 21, ou arrête-toi pour figer ton score.";
 }
@@ -638,7 +658,7 @@ export async function handleJouer(webhookUrl, jour, discordId, username) {
           buildHandEmbed(
             jour,
             existing,
-            handStatusMessage(existing, state.dealer.score),
+            handStatusMessage(existing, state.dealer, jour),
           ),
         ],
         components: buildHandComponents(jour, existing),
@@ -655,7 +675,7 @@ export async function handleJouer(webhookUrl, jour, discordId, username) {
 
     await patchOriginal(webhookUrl, {
       embeds: [
-        buildHandEmbed(jour, hand, handStatusMessage(hand, state.dealer.score)),
+        buildHandEmbed(jour, hand, handStatusMessage(hand, state.dealer, jour)),
       ],
       components: buildHandComponents(jour, hand),
     });
@@ -717,7 +737,7 @@ async function handleDrawOrStand(webhookUrl, jour, discordId, { draw }) {
         buildHandEmbed(
           jour,
           updated,
-          handStatusMessage(updated, state.dealer.score),
+          handStatusMessage(updated, state.dealer, jour),
         ),
       ],
       components: buildHandComponents(jour, updated),
@@ -782,7 +802,7 @@ export async function handleJournal(webhookUrl, discordId) {
     const lines = [`**Jour ${state.jour}/${config.duree_jours}**`];
     if (hand) {
       lines.push(
-        `Ta main aujourd'hui : ${formatCards(hand.cards)} (**${hand.score}**) — ${handStatusMessage(hand, state.dealer.score)}`,
+        `Ta main aujourd'hui : ${formatCards(hand.cards)} (**${hand.score}**) — ${handStatusMessage(hand, state.dealer, state.jour)}`,
       );
     } else {
       lines.push(
@@ -835,6 +855,8 @@ function buildReglesEmbed(config) {
       "🎴 **Piocher** — reçois une carte de plus (autant de fois que tu veux).",
       "🛑 **Arrêter** — fige ton score pour aujourd'hui.",
       "Dépasser 21 = main perdue immédiatement pour la journée.",
+      "",
+      "**Score du Croupier :** connu à l'avance les jours impairs (1, 3, 5, 7). Les jours pairs (2, 4, 6), le Croupier joue caché — son score n'est révélé qu'à la clôture, tu joues alors à l'aveugle !",
       "",
       "**Résultat quotidien :** le plus proche de 21 sans le dépasser gagne **2 points**. Égalité avec le Croupier = **1 point** quand même. Une main non jouée ne rapporte ni ne coûte rien.",
       "",

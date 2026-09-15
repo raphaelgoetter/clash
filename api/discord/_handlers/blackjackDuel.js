@@ -19,6 +19,7 @@ import {
   drawOrStand,
   checkAndResolveManche,
   listHands,
+  isDealerRevealed,
 } from "../../../backend/services/blackjackDuel.js";
 import {
   getRoleIdByName,
@@ -177,12 +178,24 @@ async function buildTableEmbed(state, { previousResults, previousDealer } = {}) 
   // du jeu spécial (_handlers/blackjack.js), qui n'affiche pas non plus le
   // "Jour X/Y" en double dans son propre corps de message.
   const seatsLabel = `${state.players.length}/${state.maxPlayers} joueur${state.maxPlayers > 1 ? "s" : ""} inscrit${state.players.length > 1 ? "s" : ""}`;
-  lines.push(
-    `## 🎩 Score à battre : ${state.dealer.score}`,
-    ...formatCardsBlock(state.dealer.cards),
-    "",
-    seatsLabel,
-  );
+  // Manches impaires : score révélé tout de suite. Manches paires (15/09,
+  // retour utilisateur, même mécanique que le jeu spécial) : le Croupier
+  // joue caché, révélé seulement à la résolution de la manche.
+  if (isDealerRevealed(state.manche)) {
+    lines.push(
+      `## 🎩 Score à battre : ${state.dealer.score}`,
+      ...formatCardsBlock(state.dealer.cards),
+      "",
+      seatsLabel,
+    );
+  } else {
+    lines.push(
+      "## 🎩 Le Croupier joue caché cette manche",
+      "Sa main est déjà jouée mais reste secrète — mise à l'aveugle ! Résultat révélé à la fin de la manche.",
+      "",
+      seatsLabel,
+    );
+  }
 
   if (state.players.length > 0) {
     lines.push(await buildPendingLabel(state, hands));
@@ -310,19 +323,29 @@ export async function handleBlackjackRoleRejected(webhookUrl) {
 
 // ── Main du joueur — Jouer / Piocher / Arrêter ─────────────────────
 
-function handStatusMessage(hand, dealerScore) {
+// Manches impaires : résultat révélé dès que la main est figée (même
+// logique que le jeu spécial). Manches paires : le Croupier joue caché,
+// donc même un bust (toujours perdant quel que soit son score) ne doit pas
+// laisser fuiter dealer.score — résultat complet révélé à la résolution.
+function handStatusMessage(hand, dealer, manche) {
+  const revealed = isDealerRevealed(manche);
   if (hand.status === "bust") {
-    return `💥 Tu dépasses 21 (le Croupier était à ${dealerScore}), ta main est perdue pour cette manche.`;
+    return revealed
+      ? `💥 Tu dépasses 21 (le Croupier était à ${dealer.score}), ta main est perdue pour cette manche.`
+      : "💥 Tu dépasses 21, ta main est perdue pour cette manche.";
   }
   if (hand.status === "stand") {
     const natural = hand.score === 21 && hand.cards.length === 2;
     const intro = natural
       ? "🎉 21 sur deux cartes, la meilleure main possible !"
       : `🛑 Tu t'arrêtes à ${hand.score}.`;
-    if (hand.score > dealerScore) return `${intro} Le Croupier était à ${dealerScore} — tu gagnes 2 points !`;
-    if (hand.score === dealerScore)
-      return `${intro} Le Croupier était aussi à ${dealerScore} — égalité, tu gagnes quand même 1 point !`;
-    return `${intro} Le Croupier était à ${dealerScore} — pas de point cette manche.`;
+    if (!revealed) {
+      return `${intro} Le Croupier joue caché cette manche — tu sauras si tu l'as battu à la résolution.`;
+    }
+    if (hand.score > dealer.score) return `${intro} Le Croupier était à ${dealer.score} — tu gagnes 2 points !`;
+    if (hand.score === dealer.score)
+      return `${intro} Le Croupier était aussi à ${dealer.score} — égalité, tu gagnes quand même 1 point !`;
+    return `${intro} Le Croupier était à ${dealer.score} — pas de point cette manche.`;
   }
   return "Pioche pour te rapprocher de 21, ou arrête-toi pour figer ton score.";
 }
@@ -423,7 +446,7 @@ export async function handleJouer(webhookUrl, discordId, username) {
         buildHandEmbed(
           state.manche,
           result.hand,
-          handStatusMessage(result.hand, state.dealer.score),
+          handStatusMessage(result.hand, state.dealer, state.manche),
         ),
       ],
       components: buildHandComponents(state.manche, result.hand),
@@ -471,7 +494,7 @@ async function handleDrawOrStand(webhookUrl, discordId, { draw }) {
         buildHandEmbed(
           state.manche,
           result.hand,
-          handStatusMessage(result.hand, state.dealer.score),
+          handStatusMessage(result.hand, state.dealer, state.manche),
         ),
       ],
       components: buildHandComponents(state.manche, result.hand),
@@ -508,6 +531,8 @@ function buildReglesEmbed() {
       "🎴 **Piocher** — reçois une carte de plus (autant de fois que tu veux).",
       "🛑 **Arrêter** — fige ton score pour cette manche.",
       "Dépasser 21 = main perdue immédiatement pour la manche.",
+      "",
+      "**Score du Croupier :** connu à l'avance sur les manches impaires (1, 3, 5…). Sur les manches paires, le Croupier joue caché — son score n'est révélé qu'à la résolution de la manche, tu joues alors à l'aveugle !",
       "",
       "**Résultat d'une manche :** le plus proche de 21 sans le dépasser gagne **2 points**. Égalité avec le Croupier = **1 point** quand même. Une manche se termine dès que tous les joueurs inscrits ont joué.",
       "",

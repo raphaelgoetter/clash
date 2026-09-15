@@ -6,9 +6,9 @@
 // sans aucun couplage d'état : espace de clés Redis dédié
 // `blackjackduel:*`, entièrement séparé de `blackjack:*`. Seules les
 // fonctions PURES de logique de cartes (drawCard, computeHandValue,
-// dealerPlay, compareToDealer, resolveDay, buildRanking) sont réutilisées
-// par import direct — elles n'ont aucun état, les réutiliser ne crée donc
-// aucun risque d'impact sur le jeu spécial.
+// dealerPlay, compareToDealer, resolveDay, buildRanking, isDealerRevealed)
+// sont réutilisées par import direct — elles n'ont aucun état, les
+// réutiliser ne crée donc aucun risque d'impact sur le jeu spécial.
 //
 // Différences structurelles avec le jeu spécial :
 // - Lobby FERMÉ (1 à 3 joueurs inscrits au lancement via le bouton Jouer,
@@ -36,6 +36,7 @@ import {
   resolveDay,
   buildRanking,
   pointsForResult,
+  isDealerRevealed,
 } from "./blackjack.js";
 
 let _redis = null;
@@ -161,7 +162,7 @@ export async function readPoints() {
   return result;
 }
 
-export { buildRanking };
+export { buildRanking, isDealerRevealed };
 
 // ── Remise à zéro complète (nouvelle partie / watchdog) ────────────
 

@@ -7,6 +7,7 @@ import {
   buildHandForScore,
   dealerPlay,
   compareToDealer,
+  isDealerRevealed,
   pointsForResult,
   resolveDay,
   buildRanking,
@@ -97,6 +98,12 @@ async function main() {
   assert.strictEqual(compareToDealer(20, { score: 18 }), "win");
   assert.strictEqual(compareToDealer(18, { score: 20 }), "lose");
   assert.strictEqual(compareToDealer(19, { score: 19 }), "push");
+
+  // ── isDealerRevealed — impair révélé, pair caché (jour comme manche) ──
+  assert.strictEqual(isDealerRevealed(1), true);
+  assert.strictEqual(isDealerRevealed(2), false);
+  assert.strictEqual(isDealerRevealed(3), true);
+  assert.strictEqual(isDealerRevealed(7), true);
 
   // ── pointsForResult — une égalité rapporte 1 point, pas 0 comme une défaite ──
   assert.strictEqual(pointsForResult("win"), 2);

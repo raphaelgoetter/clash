@@ -249,6 +249,16 @@ export function compareToDealer(playerScore, dealer) {
   return "lose";
 }
 
+// Alternance jour/manche impair-pair (15/09, retour utilisateur) : les jours
+// impairs le Croupier joue "en premier" (son score est révélé dès
+// l'ouverture, comme aujourd'hui) ; les jours pairs il joue "en dernier" (son
+// score reste caché jusqu'à la clôture, les joueurs misent à l'aveugle).
+// Fonction pure partagée par le jeu spécial (jour) et le duel (manche) — même
+// numérotation 1-indexée dans les deux cas.
+export function isDealerRevealed(n) {
+  return n % 2 === 1;
+}
+
 // Barème (12/09, retour utilisateur) : une égalité ne doit pas "compter
 // comme une défaite" dans le classement — elle rapporte donc 1 point, moitié
 // moins qu'une vraie victoire (2 points), plutôt que 0 comme une défaite.
