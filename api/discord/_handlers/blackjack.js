@@ -100,7 +100,6 @@ async function formatResultsSection(results) {
 
   const winners = results.filter((r) => r.result === "win");
   const pushes = results.filter((r) => r.result === "push");
-  const losers = results.filter((r) => r.result === "lose");
 
   const lines = [
     `${results.length} joueur${results.length > 1 ? "s" : ""} ont joué.`,
@@ -116,8 +115,6 @@ async function formatResultsSection(results) {
     lines.push("🏆 Personne n'a battu le Croupier hier.");
   }
   if (pushes.length) lines.push(`🤝 Égalité : ${pushes.length}`);
-  if (losers.length)
-    lines.push(`❌ Perdant${losers.length > 1 ? "s" : ""} : ${losers.length}`);
 
   return lines;
 }
