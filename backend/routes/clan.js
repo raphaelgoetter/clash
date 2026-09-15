@@ -46,8 +46,8 @@ import {
 } from "../services/snapshot.js";
 import { loadClanCache, saveClanCache } from "../services/clanCache.js";
 import {
-  SUPREME_CHAMPION_LEAGUE_NUMBER,
-  ROYAL_CHAMPION_LEAGUE_NUMBER,
+  isSupremeChampionLeague,
+  isRoyalChampionLeague,
 } from "../services/rankedLeagues.js";
 import fs from "fs/promises";
 import path from "path";
@@ -2875,17 +2875,14 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         }
       : null;
 
-  const supremeChampionsCount = Object.values(membersRaw).filter(
-    (m) =>
-      m?.profile?.bestPathOfLegendLeagueNumber ===
-      SUPREME_CHAMPION_LEAGUE_NUMBER,
+  const supremeChampionsCount = Object.values(membersRaw).filter((m) =>
+    isSupremeChampionLeague(m?.profile?.bestPathOfLegendLeagueNumber),
   ).length;
-  // Correspondance stricte : un Champion Suprême (10) ne doit pas être compté
-  // une seconde fois en Champion Royal — chaque joueur n'apparaît que dans la
-  // catégorie de son meilleur palier exact.
-  const royalChampionsCount = Object.values(membersRaw).filter(
-    (m) =>
-      m?.profile?.bestPathOfLegendLeagueNumber === ROYAL_CHAMPION_LEAGUE_NUMBER,
+  // Un Champion Suprême ne doit pas être compté une seconde fois en Champion
+  // Royal — les deux listes de leagueNumber (rankedLeagues.js) sont disjointes,
+  // donc chaque joueur n'apparaît que dans une seule catégorie.
+  const royalChampionsCount = Object.values(membersRaw).filter((m) =>
+    isRoyalChampionLeague(m?.profile?.bestPathOfLegendLeagueNumber),
   ).length;
 
   return {
