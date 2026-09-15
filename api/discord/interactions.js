@@ -1986,11 +1986,11 @@ async function buildClanReportPayload(resolved) {
       return findClanLeaderValue(hasReliabilityDetails ? members : liteMembers);
     }
 
-    // Champ 6 : Fiabilité (clan famille avec GDC obligatoire) ou Chef (clan externe / sans GDC obligatoire)
+    // Champ 6 : Fiabilité GDC (clan famille avec GDC obligatoire) ou Chef (clan externe / sans GDC obligatoire)
     const sixthField =
       hasReliabilityDetails && !isNoWarClan
         ? {
-            name: "Fiabilité",
+            name: "Fiabilité GDC",
             value: `<:warn:1506174837519945800> **${avgScore}%**`,
             inline: true,
           }
@@ -2014,15 +2014,19 @@ async function buildClanReportPayload(resolved) {
         value: warLeagueLabel(clan.clanWarTrophies ?? 0, isFamilyClan),
         inline: true,
       },
-      // Rangée 2 : Statut | Requis | Fiabilité/Chef
+      // Rangée 2 : Statut | Champions Suprêmes | Fiabilité GDC/Chef
       {
         name: "Statut",
         value: clanStatusLabel(clan.type),
         inline: true,
       },
       {
-        name: "Requis",
-        value: `<:trophy:1498645869224792105> ${fmt(clan.requiredTrophies)}`,
+        name: "Champions Suprêmes",
+        value: `<:trophy:1498645869224792105> ${
+          typeof clan.supremeChampionsCount === "number"
+            ? clan.supremeChampionsCount
+            : "—"
+        }`,
         inline: true,
       },
       sixthField,
@@ -7569,6 +7573,7 @@ export default async function handler(req, res) {
               clanWarTrophies: clan.clanWarTrophies ?? 0,
               type: clan.type,
               requiredTrophies: clan.requiredTrophies,
+              supremeChampionsCount: clan.supremeChampionsCount,
               leaderValue: findClanLeaderValue(leaderMembers),
               isFamilyClan: true,
               usedLiteFallback,
@@ -7612,10 +7617,10 @@ export default async function handler(req, res) {
                 inline: true,
               },
               {
-                name: "Requis",
+                name: "Champions Suprêmes",
                 value: `<:trophy:1498645869224792105> ${
-                  typeof clanResult.requiredTrophies === "number"
-                    ? clanResult.requiredTrophies.toLocaleString("fr-FR")
+                  typeof clanResult.supremeChampionsCount === "number"
+                    ? clanResult.supremeChampionsCount
                     : "—"
                 }`,
                 inline: true,

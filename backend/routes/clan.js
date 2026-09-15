@@ -50,6 +50,10 @@ import path from "path";
 
 const router = Router();
 
+// leagueNumber du classement ranked (Path of Legends) correspondant à la
+// ligue la plus haute du jeu, "Ultimate Champion" (FR : "Champion Suprême").
+const SUPREME_CHAMPION_LEAGUE_NUMBER = 10;
+
 /**
  * Run async tasks with limited concurrency to avoid rate-limiting.
  * Returns an array of { status, value } | { status, reason } mirroring Promise.allSettled.
@@ -84,6 +88,8 @@ function slimPlayerProfile(fullPlayer) {
     cw2Progress: cw2?.progress ?? null,
     clan,
     arena: fullPlayer.arena?.name ?? null,
+    bestPathOfLegendLeagueNumber:
+      fullPlayer.bestPathOfLegendSeasonResult?.leagueNumber ?? null,
     stats: {
       battleCount: fullPlayer.battleCount ?? null,
       threeCrownWins: fullPlayer.threeCrownWins ?? null,
@@ -2862,6 +2868,12 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         }
       : null;
 
+  const supremeChampionsCount = Object.values(membersRaw).filter(
+    (m) =>
+      m?.profile?.bestPathOfLegendLeagueNumber ===
+      SUPREME_CHAMPION_LEAGUE_NUMBER,
+  ).length;
+
   return {
     lastWarSummary: computedLastWarSummary,
     clan: {
@@ -2873,6 +2885,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       members: clan.members,
       type: clan.type,
       requiredTrophies: clan.requiredTrophies,
+      supremeChampionsCount,
       badge: clan.badgeId,
       warResetUtcMinutes: warResetOffsetMs(clanTag) / 60000,
       location: clan.location ?? null,
