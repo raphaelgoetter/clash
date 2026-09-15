@@ -134,8 +134,8 @@ function formatDealerLine(dealer) {
 function buildDealerTargetSection(dealer, jour) {
   if (!isDealerRevealed(jour)) {
     return [
-      "## 🎩 Le Croupier joue caché aujourd'hui",
-      "Sa main est déjà jouée mais reste secrète — mise à l'aveugle ! Fais le meilleur score possible sans dépasser 21, le résultat sera révélé demain à la clôture.",
+      "## 🎩 Le Croupier joue en second aujourd'hui",
+      "Il n'a pas encore joué sa main — fais le meilleur score possible sans dépasser 21, le Croupier jouera après toi et le résultat sera révélé demain à la clôture.",
       "",
     ];
   }
@@ -564,13 +564,14 @@ async function patchOriginal(webhookUrl, payload) {
 // aucun compteur à y afficher — la main de chacun reste secrète jusqu'à la
 // clôture du lendemain.
 
-// Jours impairs : le score du Croupier est déjà public dès l'ouverture du
-// jour (voir buildDealerTargetSection) — inutile de faire attendre la
-// clôture pour dire si la main gagne ou non, le résultat est révélé
-// immédiatement dès que la main est figée (stand ou dépassement). Jours
-// pairs : le Croupier joue caché, donc même un bust (pourtant toujours
-// perdant quel que soit son score) ne doit pas laisser fuiter ${dealer.score}
-// — le résultat complet n'est révélé qu'à la clôture, demain.
+// Jours impairs : le Croupier joue en premier, son score est déjà public dès
+// l'ouverture du jour (voir buildDealerTargetSection) — inutile de faire
+// attendre la clôture pour dire si la main gagne ou non, le résultat est
+// révélé immédiatement dès que la main est figée (stand ou dépassement).
+// Jours pairs : le Croupier joue en second (après tous les joueurs), donc
+// même un bust (pourtant toujours perdant quel que soit son score) ne doit
+// pas laisser fuiter ${dealer.score} — le résultat complet n'est révélé
+// qu'à la clôture, demain.
 function handStatusMessage(hand, dealer, jour) {
   const revealed = isDealerRevealed(jour);
   if (hand.status === "bust") {
@@ -584,7 +585,7 @@ function handStatusMessage(hand, dealer, jour) {
       ? "🎉 21 sur deux cartes, la meilleure main possible !"
       : `🛑 Tu t'arrêtes à ${hand.score}.`;
     if (!revealed) {
-      return `${intro} Le Croupier joue caché aujourd'hui — tu sauras si tu l'as battu à la clôture, demain.`;
+      return `${intro} Le Croupier n'a pas encore joué — il jouera en second aujourd'hui, tu sauras si tu l'as battu à la clôture, demain.`;
     }
     const result = compareToDealer(hand.score, dealer);
     if (result === "win")
@@ -856,7 +857,7 @@ function buildReglesEmbed(config) {
       "🛑 **Arrêter** — fige ton score pour aujourd'hui.",
       "Dépasser 21 = main perdue immédiatement pour la journée.",
       "",
-      "**Score du Croupier :** connu à l'avance les jours impairs (1, 3, 5, 7). Les jours pairs (2, 4, 6), le Croupier joue caché — son score n'est révélé qu'à la clôture, tu joues alors à l'aveugle !",
+      "**Score du Croupier :** les jours impairs (1, 3, 5, 7), le Croupier joue en premier — son score est connu à l'avance. Les jours pairs (2, 4, 6), il joue en second — tu joues sans connaître son score, qui n'est révélé qu'à la clôture !",
       "",
       "**Résultat quotidien :** le plus proche de 21 sans le dépasser gagne **2 points**. Égalité avec le Croupier = **1 point** quand même. Une main non jouée ne rapporte ni ne coûte rien.",
       "",

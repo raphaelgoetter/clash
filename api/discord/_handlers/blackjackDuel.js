@@ -178,9 +178,10 @@ async function buildTableEmbed(state, { previousResults, previousDealer } = {}) 
   // du jeu spécial (_handlers/blackjack.js), qui n'affiche pas non plus le
   // "Jour X/Y" en double dans son propre corps de message.
   const seatsLabel = `${state.players.length}/${state.maxPlayers} joueur${state.maxPlayers > 1 ? "s" : ""} inscrit${state.players.length > 1 ? "s" : ""}`;
-  // Manches impaires : score révélé tout de suite. Manches paires (15/09,
-  // retour utilisateur, même mécanique que le jeu spécial) : le Croupier
-  // joue caché, révélé seulement à la résolution de la manche.
+  // Manches impaires : le Croupier joue en premier, score révélé tout de
+  // suite. Manches paires (15/09, retour utilisateur, même mécanique que le
+  // jeu spécial) : le Croupier joue en second, après tous les joueurs —
+  // révélé seulement à la résolution de la manche.
   if (isDealerRevealed(state.manche)) {
     lines.push(
       `## 🎩 Score à battre : ${state.dealer.score}`,
@@ -190,8 +191,8 @@ async function buildTableEmbed(state, { previousResults, previousDealer } = {}) 
     );
   } else {
     lines.push(
-      "## 🎩 Le Croupier joue caché cette manche",
-      "Sa main est déjà jouée mais reste secrète — mise à l'aveugle ! Résultat révélé à la fin de la manche.",
+      "## 🎩 Le Croupier joue en second cette manche",
+      "Il n'a pas encore joué sa main — il jouera après tous les joueurs, résultat révélé à la fin de la manche.",
       "",
       seatsLabel,
     );
@@ -324,7 +325,7 @@ export async function handleBlackjackRoleRejected(webhookUrl) {
 // ── Main du joueur — Jouer / Piocher / Arrêter ─────────────────────
 
 // Manches impaires : résultat révélé dès que la main est figée (même
-// logique que le jeu spécial). Manches paires : le Croupier joue caché,
+// logique que le jeu spécial). Manches paires : le Croupier joue en second,
 // donc même un bust (toujours perdant quel que soit son score) ne doit pas
 // laisser fuiter dealer.score — résultat complet révélé à la résolution.
 function handStatusMessage(hand, dealer, manche) {
@@ -340,7 +341,7 @@ function handStatusMessage(hand, dealer, manche) {
       ? "🎉 21 sur deux cartes, la meilleure main possible !"
       : `🛑 Tu t'arrêtes à ${hand.score}.`;
     if (!revealed) {
-      return `${intro} Le Croupier joue caché cette manche — tu sauras si tu l'as battu à la résolution.`;
+      return `${intro} Le Croupier n'a pas encore joué — il jouera en second cette manche, tu sauras si tu l'as battu à la résolution.`;
     }
     if (hand.score > dealer.score) return `${intro} Le Croupier était à ${dealer.score} — tu gagnes 2 points !`;
     if (hand.score === dealer.score)
@@ -532,7 +533,7 @@ function buildReglesEmbed() {
       "🛑 **Arrêter** — fige ton score pour cette manche.",
       "Dépasser 21 = main perdue immédiatement pour la manche.",
       "",
-      "**Score du Croupier :** connu à l'avance sur les manches impaires (1, 3, 5…). Sur les manches paires, le Croupier joue caché — son score n'est révélé qu'à la résolution de la manche, tu joues alors à l'aveugle !",
+      "**Score du Croupier :** sur les manches impaires (1, 3, 5…), le Croupier joue en premier — son score est connu à l'avance. Sur les manches paires, il joue en second — tu joues sans connaître son score, qui n'est révélé qu'à la résolution de la manche !",
       "",
       "**Résultat d'une manche :** le plus proche de 21 sans le dépasser gagne **2 points**. Égalité avec le Croupier = **1 point** quand même. Une manche se termine dès que tous les joueurs inscrits ont joué.",
       "",
