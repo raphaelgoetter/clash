@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 // blackjackStatus.js
 // Affiche l'état courant de Blackjack (jour, mains jouées aujourd'hui,
-// classement cumulé) ainsi qu'une projection de la clôture du jour actif
-// basée sur les mains actuelles, sans avoir besoin d'ouvrir Discord —
-// pratique pour suivre l'avancement avant de décider de relancer
-// manuellement `npm run blackjack:public`.
+// classement cumulé), sans avoir besoin d'ouvrir Discord — pratique pour
+// suivre l'avancement avant de décider de relancer manuellement
+// `npm run blackjack:public`.
 //
 // Usage : node scripts/blackjackStatus.js
 
@@ -17,9 +16,21 @@ import {
   listHands,
   readPoints,
   buildRanking,
+  compareToDealer,
 } from "../backend/services/blackjack.js";
-import { postBlackjack } from "../api/discord/_handlers/blackjack.js";
 import { resolveDisplayName } from "../backend/services/discordUsers.js";
+
+// Ordre d'affichage du meilleur au pire résultat plutôt que par ordre
+// d'arrivée en jeu (14/09, retour utilisateur) : bat le Croupier, égalité,
+// perdu sans sauter, encore en train de jouer, sauté.
+function handRank(hand, dealer) {
+  if (hand.status === "bust") return 4;
+  if (hand.status === "en_cours") return 3;
+  const result = compareToDealer(hand.score, dealer);
+  if (result === "win") return 0;
+  if (result === "push") return 1;
+  return 2;
+}
 
 (async () => {
   const state = await readState();
@@ -36,7 +47,9 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
   console.log(`Jour ${state.jour}/${config.duree_jours}\n`);
 
   const hands = await listHands(state.jour);
-  const entries = Object.entries(hands);
+  const entries = Object.entries(hands).sort(
+    ([, a], [, b]) => handRank(a, state.dealer) - handRank(b, state.dealer),
+  );
   if (!entries.length) {
     console.log("Personne n'a encore joué aujourd'hui.\n");
   } else {
@@ -59,19 +72,5 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
       })),
     );
     console.table(rows);
-  }
-
-  // Projection : réutilise postBlackjack() en --dry-run (lecture seule,
-  // aucune écriture Redis, aucun appel Discord) pour ne pas dupliquer la
-  // logique de résolution — canal factice, la publication n'est jamais
-  // atteinte en dry-run.
-  const projection = await postBlackjack(state.channelId, { dryRun: true, noPing: true, isPublic: false });
-  console.log(`\n🔮 Projection si la clôture avait lieu maintenant :`);
-  if (projection.skipped) {
-    console.log(`→ Projection indisponible (${projection.reason ?? "raison inconnue"}).`);
-  } else if (projection.final) {
-    console.log("→ Ce serait la révélation finale (Jour 7 clos).");
-  } else {
-    console.log(`→ Ouverture du Jour ${projection.jour}/${config.duree_jours}.`);
   }
 })();
