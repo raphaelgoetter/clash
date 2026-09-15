@@ -2882,6 +2882,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       m?.profile?.bestPathOfLegendLeagueNumber ===
       SUPREME_CHAMPION_LEAGUE_NUMBER,
   ).length;
+  // Correspondance stricte : un Champion Suprême (10) ne doit pas être compté
+  // une seconde fois en Champion Royal — chaque joueur n'apparaît que dans la
+  // catégorie de son meilleur palier exact.
   const royalChampionsCount = Object.values(membersRaw).filter(
     (m) =>
       m?.profile?.bestPathOfLegendLeagueNumber === ROYAL_CHAMPION_LEAGUE_NUMBER,
