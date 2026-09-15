@@ -15,6 +15,7 @@ import {
   formatParisDate,
 } from "../../../backend/services/championPredictions.js";
 import { fetchRaceLog } from "../../../backend/services/clashApi.js";
+import { toPublicWeekId } from "../../../backend/services/dateUtils.js";
 
 const DISCORD_APP_ID = process.env.DISCORD_APP_ID;
 const CHAMPION_COLOR = 0x9b59b6;
@@ -252,8 +253,9 @@ function buildCountEmbed(clanName, weekId, counts, totalVotes, endsAt) {
 
 function buildHistoryEmbed(clanName, history, { offset = 0 } = {}) {
   const lines = history.map((entry) => {
-    const weekLabel =
-      entry.weekId || `S${entry.seasonId}W${entry.sectionIndex + 1}`;
+    const weekLabel = toPublicWeekId(
+      entry.weekId || `S${entry.seasonId}W${entry.sectionIndex + 1}`,
+    );
     const champions =
       entry.champions || (entry.champion ? [entry.champion] : null);
     if (!champions || champions.length === 0) {
