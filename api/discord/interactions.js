@@ -2026,30 +2026,22 @@ async function buildClanReportPayload(resolved) {
             inline: true,
           }
         : { name: "​", value: "​", inline: true },
-      // Rangée 3 : Trophées | Champions Suprêmes | Champions Royaux
+      // Rangée 3 : Trophées | CS atteints | (spacer)
       {
         name: "Trophées",
         value: `<:trophy:1498645869224792105> ${fmt(clan.clanScore)}`,
         inline: true,
       },
       {
-        name: "Champions Suprêmes",
-        value: `<:trophy:1498645869224792105> ${
+        name: "CS atteints",
+        value: `<:CS:1549458633396588544> ${
           typeof clan.supremeChampionsCount === "number"
             ? clan.supremeChampionsCount
             : "—"
         }`,
         inline: true,
       },
-      {
-        name: "Champions Royaux",
-        value: `<:trophy:1498645869224792105> ${
-          typeof clan.royalChampionsCount === "number"
-            ? clan.royalChampionsCount
-            : "—"
-        }`,
-        inline: true,
-      },
+      { name: "​", value: "​", inline: true },
       // Rangée 4 : Moyenne/joueur (ou Trophées/joueur) | Points/deck (ou Discord)
       isNoWarClan
         ? {
@@ -3972,7 +3964,11 @@ export default async function handler(req, res) {
             ? [
                 {
                   name: "Meilleur Rang :",
-                  value: `<:trophy:1498645869224792105> ${bestRankedLeagueLabel}`,
+                  value: `${
+                    bestRankedLeagueLabel === "Champion Suprême"
+                      ? "<:CS:1549458633396588544>"
+                      : "<:CR:1549458634675724348>"
+                  } ${bestRankedLeagueLabel}`,
                   inline: false,
                 },
               ]
@@ -3984,7 +3980,7 @@ export default async function handler(req, res) {
             ? [
                 {
                   name: "Trophées ranked :",
-                  value: `<:trophy:1498645869224792105> ${analysis.overview.bestPathOfLegendTrophies}`,
+                  value: `<:CS:1549458633396588544> ${analysis.overview.bestPathOfLegendTrophies}`,
                   inline: false,
                 },
               ]
@@ -7620,7 +7616,6 @@ export default async function handler(req, res) {
               requiredTrophies: clan.requiredTrophies,
               clanScore: clan.clanScore,
               supremeChampionsCount: clan.supremeChampionsCount,
-              royalChampionsCount: clan.royalChampionsCount,
               leaderValue: findClanLeaderValue(leaderMembers),
               isFamilyClan: true,
               usedLiteFallback,
@@ -7671,7 +7666,7 @@ export default async function handler(req, res) {
                 inline: true,
               },
               { name: "​", value: "​", inline: true },
-              // Rangée 3 : Trophées | Champions Suprêmes | Champions Royaux
+              // Rangée 3 : Trophées | CS atteints | (spacer)
               {
                 name: "Trophées",
                 value: `<:trophy:1498645869224792105> ${
@@ -7682,23 +7677,15 @@ export default async function handler(req, res) {
                 inline: true,
               },
               {
-                name: "Champions Suprêmes",
-                value: `<:trophy:1498645869224792105> ${
+                name: "CS atteints",
+                value: `<:CS:1549458633396588544> ${
                   typeof clanResult.supremeChampionsCount === "number"
                     ? clanResult.supremeChampionsCount
                     : "—"
                 }`,
                 inline: true,
               },
-              {
-                name: "Champions Royaux",
-                value: `<:trophy:1498645869224792105> ${
-                  typeof clanResult.royalChampionsCount === "number"
-                    ? clanResult.royalChampionsCount
-                    : "—"
-                }`,
-                inline: true,
-              },
+              { name: "​", value: "​", inline: true },
             ],
           };
         });
