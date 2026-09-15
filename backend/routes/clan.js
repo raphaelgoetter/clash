@@ -53,6 +53,8 @@ const router = Router();
 // leagueNumber du classement ranked (Path of Legends) correspondant à la
 // ligue la plus haute du jeu, "Ultimate Champion" (FR : "Champion Suprême").
 const SUPREME_CHAMPION_LEAGUE_NUMBER = 10;
+// Ligue juste en dessous, "Royal Champion" (FR : "Champion Royal").
+const ROYAL_CHAMPION_LEAGUE_NUMBER = 9;
 
 /**
  * Run async tasks with limited concurrency to avoid rate-limiting.
@@ -2873,6 +2875,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       m?.profile?.bestPathOfLegendLeagueNumber ===
       SUPREME_CHAMPION_LEAGUE_NUMBER,
   ).length;
+  const royalChampionsCount = Object.values(membersRaw).filter(
+    (m) =>
+      m?.profile?.bestPathOfLegendLeagueNumber === ROYAL_CHAMPION_LEAGUE_NUMBER,
+  ).length;
 
   return {
     lastWarSummary: computedLastWarSummary,
@@ -2886,6 +2892,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       type: clan.type,
       requiredTrophies: clan.requiredTrophies,
       supremeChampionsCount,
+      royalChampionsCount,
       badge: clan.badgeId,
       warResetUtcMinutes: warResetOffsetMs(clanTag) / 60000,
       location: clan.location ?? null,

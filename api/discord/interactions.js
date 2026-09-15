@@ -1986,24 +1986,25 @@ async function buildClanReportPayload(resolved) {
       return findClanLeaderValue(hasReliabilityDetails ? members : liteMembers);
     }
 
-    // Champ 6 : Fiabilité GDC (clan famille avec GDC obligatoire) ou Chef (clan externe / sans GDC obligatoire)
-    const sixthField =
-      hasReliabilityDetails && !isNoWarClan
-        ? {
-            name: "Fiabilité GDC",
-            value: `<:warn:1506174837519945800> **${avgScore}%**`,
-            inline: true,
-          }
-        : { name: "Chef", value: findLeaderValue(), inline: true };
-
     const clanUrl = trustClanUrl(resolved.tag);
     const fields = [
-      // Rangée 1 : Membres | Trophées GDC | Ligue
+      // Rangée 1 : Membres | Statut | Chef
       {
         name: "Membres",
         value: `<:members:1506175789731811399> ${clan.members ?? "?"} / 50`,
         inline: true,
       },
+      {
+        name: "Statut",
+        value: clanStatusLabel(clan.type),
+        inline: true,
+      },
+      {
+        name: "Chef",
+        value: findLeaderValue(),
+        inline: true,
+      },
+      // Rangée 2 : Trophées GDC | Ligue | Fiabilité GDC (pas de fiabilité hors clan famille en GDC)
       {
         name: "Trophées GDC",
         value: `<:trophy2:1493677804733337621> ${fmt(clan.clanWarTrophies)}`,
@@ -2014,10 +2015,17 @@ async function buildClanReportPayload(resolved) {
         value: warLeagueLabel(clan.clanWarTrophies ?? 0, isFamilyClan),
         inline: true,
       },
-      // Rangée 2 : Statut | Champions Suprêmes | Fiabilité GDC/Chef
+      hasReliabilityDetails && !isNoWarClan
+        ? {
+            name: "Fiabilité GDC",
+            value: `<:warn:1506174837519945800> **${avgScore}%**`,
+            inline: true,
+          }
+        : { name: "​", value: "​", inline: true },
+      // Rangée 3 : Trophées | Champions Suprêmes | Champions Royaux
       {
-        name: "Statut",
-        value: clanStatusLabel(clan.type),
+        name: "Trophées",
+        value: `<:trophy:1498645869224792105> ${fmt(clan.clanScore)}`,
         inline: true,
       },
       {
@@ -2029,7 +2037,16 @@ async function buildClanReportPayload(resolved) {
         }`,
         inline: true,
       },
-      sixthField,
+      {
+        name: "Champions Royaux",
+        value: `<:trophy:1498645869224792105> ${
+          typeof clan.royalChampionsCount === "number"
+            ? clan.royalChampionsCount
+            : "—"
+        }`,
+        inline: true,
+      },
+      // Rangée 4 : Moyenne/joueur (ou Trophées/joueur) | Points/deck (ou Discord)
       isNoWarClan
         ? {
             name: "Trophées/joueur",
@@ -2052,12 +2069,10 @@ async function buildClanReportPayload(resolved) {
             value: `${fmtInt(lastWarSummary?.pointsPerDeck)} pts`,
             inline: true,
           },
-      hasReliabilityDetails && !isNoWarClan
-        ? { name: "Chef", value: findLeaderValue(), inline: true }
-        : { name: "​", value: "​", inline: true },
+      { name: "​", value: "​", inline: true },
     ];
 
-    // Rangée 3 : listes membres (uniquement pour les clans famille)
+    // Rangée 5 : listes membres (uniquement pour les clans famille)
     if (hasReliabilityDetails) {
       fields.push({ name: "​", value: "​", inline: false });
       if (!isNoWarClan) {
@@ -7573,7 +7588,9 @@ export default async function handler(req, res) {
               clanWarTrophies: clan.clanWarTrophies ?? 0,
               type: clan.type,
               requiredTrophies: clan.requiredTrophies,
+              clanScore: clan.clanScore,
               supremeChampionsCount: clan.supremeChampionsCount,
+              royalChampionsCount: clan.royalChampionsCount,
               leaderValue: findClanLeaderValue(leaderMembers),
               isFamilyClan: true,
               usedLiteFallback,
@@ -7596,11 +7613,23 @@ export default async function handler(req, res) {
             description: clanResult.description,
             color: 0x5865f2,
             fields: [
+              // Rangée 1 : Membres | Statut | Chef
               {
                 name: "Membres",
                 value: `<:members:1506175789731811399> ${clanResult.members}`,
                 inline: true,
               },
+              {
+                name: "Statut",
+                value: clanStatusLabel(clanResult.type),
+                inline: true,
+              },
+              {
+                name: "Chef",
+                value: clanResult.leaderValue,
+                inline: true,
+              },
+              // Rangée 2 : Trophées GDC | Ligue | (pas de fiabilité dans /family)
               {
                 name: "Trophées GDC",
                 value: `<:trophy2:1493677804733337621> ${clanResult.clanWarTrophies}`,
@@ -7611,9 +7640,15 @@ export default async function handler(req, res) {
                 value: warLeagueLabel(clanResult.clanWarTrophies, true),
                 inline: true,
               },
+              { name: "​", value: "​", inline: true },
+              // Rangée 3 : Trophées | Champions Suprêmes | Champions Royaux
               {
-                name: "Statut",
-                value: clanStatusLabel(clanResult.type),
+                name: "Trophées",
+                value: `<:trophy:1498645869224792105> ${
+                  typeof clanResult.clanScore === "number"
+                    ? clanResult.clanScore.toLocaleString("fr-FR")
+                    : "—"
+                }`,
                 inline: true,
               },
               {
@@ -7626,8 +7661,12 @@ export default async function handler(req, res) {
                 inline: true,
               },
               {
-                name: "Chef",
-                value: clanResult.leaderValue,
+                name: "Champions Royaux",
+                value: `<:trophy:1498645869224792105> ${
+                  typeof clanResult.royalChampionsCount === "number"
+                    ? clanResult.royalChampionsCount
+                    : "—"
+                }`,
                 inline: true,
               },
             ],
