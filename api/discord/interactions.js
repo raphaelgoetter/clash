@@ -9,7 +9,10 @@ import { waitUntil } from "@vercel/functions";
 import { createRequire } from "node:module";
 import { Resvg } from "@resvg/resvg-js";
 import { getLeagueName } from "../../backend/services/warLeagues.js";
-import { getBestRankedLeagueLabel } from "../../backend/services/rankedLeagues.js";
+import {
+  getBestRankedLeagueLabel,
+  isSupremeChampionLeague,
+} from "../../backend/services/rankedLeagues.js";
 import { roundProjectedFame } from "../../backend/services/projectionFormat.js";
 import { getDiscordLinks } from "../../backend/services/discordLinks.js";
 import { loadSnapshots } from "../../backend/services/snapshot.js";
@@ -3956,6 +3959,7 @@ export default async function handler(req, res) {
 
         const bestRankedLeagueLabel = getBestRankedLeagueLabel(
           analysis.overview.bestPathOfLegendLeagueNumber,
+          analysis.overview.bestPathOfLegendTrophies,
         );
 
         const fields = [
@@ -3969,6 +3973,18 @@ export default async function handler(req, res) {
                 {
                   name: "Meilleur Rang :",
                   value: `<:trophy:1498645869224792105> ${bestRankedLeagueLabel}`,
+                  inline: false,
+                },
+              ]
+            : []),
+          ...(isSupremeChampionLeague(
+            analysis.overview.bestPathOfLegendLeagueNumber,
+            analysis.overview.bestPathOfLegendTrophies,
+          )
+            ? [
+                {
+                  name: "Trophées ranked :",
+                  value: `<:trophy:1498645869224792105> ${analysis.overview.bestPathOfLegendTrophies}`,
                   inline: false,
                 },
               ]

@@ -16,6 +16,17 @@
 // deux valeurs par palier pour ne pas sous-compter les joueurs récents (au prix
 // d'un risque de sur-comptage pour d'anciens paliers coïncidant numériquement,
 // ex. Master III=6 sous l'ancienne échelle vs Royal Champion=6 sous la nouvelle).
+//
+// ⚠️ leagueNumber seul ne suffit PAS pour Champion Suprême : de nombreux joueurs
+// ont un bestPathOfLegendSeasonResult.leagueNumber dans SUPREME_CHAMPION_LEAGUE_NUMBERS
+// avec `trophies: 0`, alors que le jeu impose un plancher de rating de 1200 dès
+// qu'on atteint Ultimate Champion — signe que ce leagueNumber est une valeur
+// figée/obsolète, jamais un vrai résultat. Confirmé sur des cas réels (vérifiés
+// via RoyaleAPI) : `trophies > 0` sépare proprement les vrais Champions Suprêmes.
+// Ce filtre ne s'applique PAS à Champion Royal : seul Ultimate Champion bascule
+// sur un score persistant (rating) une fois atteint, donc `trophies` retombe à 0
+// en fin de saison même pour un vrai résultat Royal Champion — vérifié sur
+// plusieurs candidats réels (leagueNumber 6 et 9), tous à trophies:0.
 // ============================================================
 
 // "Ultimate Champion" (FR : "Champion Suprême") : 7 (échelle actuelle) ou 10 (héritée).
@@ -23,8 +34,12 @@ export const SUPREME_CHAMPION_LEAGUE_NUMBERS = [7, 10];
 // "Royal Champion" (FR : "Champion Royal") : 6 (échelle actuelle) ou 9 (héritée).
 export const ROYAL_CHAMPION_LEAGUE_NUMBERS = [6, 9];
 
-export function isSupremeChampionLeague(leagueNumber) {
-  return SUPREME_CHAMPION_LEAGUE_NUMBERS.includes(leagueNumber);
+/**
+ * @param {number|null|undefined} leagueNumber
+ * @param {number|null|undefined} trophies - bestPathOfLegendSeasonResult.trophies
+ */
+export function isSupremeChampionLeague(leagueNumber, trophies) {
+  return SUPREME_CHAMPION_LEAGUE_NUMBERS.includes(leagueNumber) && trophies > 0;
 }
 
 export function isRoyalChampionLeague(leagueNumber) {
@@ -34,12 +49,14 @@ export function isRoyalChampionLeague(leagueNumber) {
 /**
  * Libellé du meilleur palier ranked jamais atteint par un joueur (meilleure
  * saison), uniquement pour les deux ligues les plus hautes. Retourne null
- * pour tout autre palier (y compris jamais joué en ranked).
+ * pour tout autre palier (y compris jamais joué en ranked, ou leagueNumber
+ * figé/obsolète sans rating associé).
  * @param {number|null|undefined} leagueNumber
+ * @param {number|null|undefined} trophies - bestPathOfLegendSeasonResult.trophies
  * @returns {string|null}
  */
-export function getBestRankedLeagueLabel(leagueNumber) {
-  if (isSupremeChampionLeague(leagueNumber)) return "Champion Suprême";
+export function getBestRankedLeagueLabel(leagueNumber, trophies) {
+  if (isSupremeChampionLeague(leagueNumber, trophies)) return "Champion Suprême";
   if (isRoyalChampionLeague(leagueNumber)) return "Champion Royal";
   return null;
 }

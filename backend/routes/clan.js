@@ -90,6 +90,8 @@ function slimPlayerProfile(fullPlayer) {
     arena: fullPlayer.arena?.name ?? null,
     bestPathOfLegendLeagueNumber:
       fullPlayer.bestPathOfLegendSeasonResult?.leagueNumber ?? null,
+    bestPathOfLegendTrophies:
+      fullPlayer.bestPathOfLegendSeasonResult?.trophies ?? null,
     stats: {
       battleCount: fullPlayer.battleCount ?? null,
       threeCrownWins: fullPlayer.threeCrownWins ?? null,
@@ -2876,7 +2878,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       : null;
 
   const supremeChampionsCount = Object.values(membersRaw).filter((m) =>
-    isSupremeChampionLeague(m?.profile?.bestPathOfLegendLeagueNumber),
+    isSupremeChampionLeague(
+      m?.profile?.bestPathOfLegendLeagueNumber,
+      m?.profile?.bestPathOfLegendTrophies,
+    ),
   ).length;
   // Un Champion Suprême ne doit pas être compté une seconde fois en Champion
   // Royal — les deux listes de leagueNumber (rankedLeagues.js) sont disjointes,

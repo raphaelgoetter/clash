@@ -146,6 +146,8 @@ export async function analyzePlayer(
       collectionLevel: allCardsCol.length > 0 ? collectionLevel : null,
       bestPathOfLegendLeagueNumber:
         player.bestPathOfLegendSeasonResult?.leagueNumber ?? null,
+      bestPathOfLegendTrophies:
+        player.bestPathOfLegendSeasonResult?.trophies ?? null,
     },
     collection:
       allCardsCol.length > 0
