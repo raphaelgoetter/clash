@@ -1749,9 +1749,16 @@ export async function buildClanAnalysis(clanTag, options = {}) {
     const battleLog = memberData.battleLog || [];
 
     // Keep trimmed data as warm cache for instant UI hydration.
+    // `fullPlayer` n'est le profil brut de l'API (attendu par slimPlayerProfile)
+    // que pour les membres réellement refetchés ce cycle (membersToFetchSet) :
+    // pour les autres, memberDataByTag réutilise déjà l'ancien profil ALLÉGÉ
+    // (membersRaw[...].profile) — le repasser dans slimPlayerProfile corromprait
+    // des champs à la structure différente entre brut et allégé (arena, bestPathOfLegendLeagueNumber, stats).
     const existingRaw = membersRaw[m.tag];
+    const wasFreshlyFetched = membersToFetchSet.has(m.tag);
     membersRaw[m.tag] = {
-      profile: slimPlayerProfile(fullPlayer) ||
+      profile:
+        (wasFreshlyFetched ? slimPlayerProfile(fullPlayer) : null) ||
         existingRaw?.profile || {
           tag: m.tag,
           name: m.name,
@@ -1766,7 +1773,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           ? expandDuelRounds(filterWarBattles(battleLog)).length
           : 0,
       },
-      fetchedAt: membersToFetchSet.has(m.tag)
+      fetchedAt: wasFreshlyFetched
         ? new Date().toISOString()
         : (existingRaw?.fetchedAt ?? new Date().toISOString()),
     };
