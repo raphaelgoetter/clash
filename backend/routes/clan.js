@@ -45,16 +45,14 @@ import {
   overrideWarSnapshotDaysWithLiveCurrentDay,
 } from "../services/snapshot.js";
 import { loadClanCache, saveClanCache } from "../services/clanCache.js";
+import {
+  SUPREME_CHAMPION_LEAGUE_NUMBER,
+  ROYAL_CHAMPION_LEAGUE_NUMBER,
+} from "../services/rankedLeagues.js";
 import fs from "fs/promises";
 import path from "path";
 
 const router = Router();
-
-// leagueNumber du classement ranked (Path of Legends) correspondant à la
-// ligue la plus haute du jeu, "Ultimate Champion" (FR : "Champion Suprême").
-const SUPREME_CHAMPION_LEAGUE_NUMBER = 10;
-// Ligue juste en dessous, "Royal Champion" (FR : "Champion Royal").
-const ROYAL_CHAMPION_LEAGUE_NUMBER = 9;
 
 /**
  * Run async tasks with limited concurrency to avoid rate-limiting.

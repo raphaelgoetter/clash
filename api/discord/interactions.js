@@ -9,6 +9,7 @@ import { waitUntil } from "@vercel/functions";
 import { createRequire } from "node:module";
 import { Resvg } from "@resvg/resvg-js";
 import { getLeagueName } from "../../backend/services/warLeagues.js";
+import { getBestRankedLeagueLabel } from "../../backend/services/rankedLeagues.js";
 import { roundProjectedFame } from "../../backend/services/projectionFormat.js";
 import { getDiscordLinks } from "../../backend/services/discordLinks.js";
 import { loadSnapshots } from "../../backend/services/snapshot.js";
@@ -3953,12 +3954,25 @@ export default async function handler(req, res) {
           );
         }
 
+        const bestRankedLeagueLabel = getBestRankedLeagueLabel(
+          analysis.overview.bestPathOfLegendLeagueNumber,
+        );
+
         const fields = [
           {
             name: "Fiabilité :",
             value: `${icon} ${Math.round(pct)}% (${verdictFr})`,
             inline: false,
           },
+          ...(bestRankedLeagueLabel
+            ? [
+                {
+                  name: "Meilleur Rang :",
+                  value: `<:trophy:1498645869224792105> ${bestRankedLeagueLabel}`,
+                  inline: false,
+                },
+              ]
+            : []),
           ...(breakdownFields ?? []),
           {
             name: "Clans :",

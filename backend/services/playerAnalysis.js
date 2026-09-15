@@ -144,6 +144,8 @@ export async function analyzePlayer(
       yearsPlayed:
         player.badges?.find((b) => b.name === "YearsPlayed")?.progress ?? null,
       collectionLevel: allCardsCol.length > 0 ? collectionLevel : null,
+      bestPathOfLegendLeagueNumber:
+        player.bestPathOfLegendSeasonResult?.leagueNumber ?? null,
     },
     collection:
       allCardsCol.length > 0

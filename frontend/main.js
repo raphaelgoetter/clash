@@ -15,6 +15,7 @@ import {
 import { renderRaceGroupCard } from "./warGroup.js";
 import { getLeagueName } from "../backend/services/warLeagues.js";
 import { toPublicWeekId } from "../backend/services/dateUtils.js";
+import { getBestRankedLeagueLabel } from "../backend/services/rankedLeagues.js";
 
 // ── DOM references ───────────────────────────────────────────
 const searchInput = document.getElementById("search-input");
@@ -1216,6 +1217,12 @@ function renderPlayerResults(data) {
           : overview.trophies < 5000
             ? "warn"
             : null,
+    },
+    {
+      label: "Meilleur Rang",
+      value:
+        getBestRankedLeagueLabel(overview.bestPathOfLegendLeagueNumber) ??
+        "-",
     },
     {
       label: "Tour du Roi",
