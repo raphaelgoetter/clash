@@ -89,9 +89,9 @@ export const VERDICT_BY_KEY = Object.fromEntries(
 );
 
 function cw2Remark(cw2Score) {
-  if (cw2Score >= 6) return "forte expérience en Guerre de Clans";
-  if (cw2Score >= 4) return "bonne expérience en Guerre de Clans";
-  if (cw2Score >= 2) return "un peu d'expérience en Guerre de Clans";
+  if (cw2Score >= 15) return "forte expérience en Guerre de Clans";
+  if (cw2Score >= 10) return "bonne expérience en Guerre de Clans";
+  if (cw2Score >= 5) return "un peu d'expérience en Guerre de Clans";
   return "peu d'expérience en Guerre de Clans";
 }
 
@@ -305,15 +305,16 @@ export function estimateWinsFromFame(fame, decksUsed, boatAttacks) {
 
 /**
  * Compute the War Reliability Score from 7 weighted criteria.
+ * Barème directement sur 100 points (87,5 sans Last Seen).
  *
  * Criteria (max sans win rate / avec win rate) :
- *  1. Régularité     /12 — decks used relative to ideal 16/week
- *  2. Points / Deck  / 4 — River Race efficiency on the 3 most recent completed GDC weeks
- *  3. Stabilité      / 8 — consecutive weeks in current clan or family (cap 5 wks = 8)
- *  4. CW2 Wins       / 8 — badge progress (cap 250)
- *  5. Last Seen      / 5 — only in clan context (optional)
- *  6. Expérience     / 3 — trophies [4 000, 14 000]
- *  7. Discord        / 2 — lié au serveur Discord
+ *  1. Régularité     /25 — decks used relative to ideal 16/week
+ *  2. Points / Deck  /10 — River Race efficiency on the 3 most recent completed GDC weeks
+ *  3. Stabilité      /20 — consecutive weeks in current clan or family (cap 5 wks = 8)
+ *  4. CW2 Wins       /20 — badge progress (cap 250)
+ *  5. Last Seen      /12.5 — only in clan context (optional)
+ *  6. Expérience     / 7.5 — trophies [4 000, 14 000]
+ *  7. Discord        / 5 — lié au serveur Discord
  *
  * @param {object} player      - Player profile from Clash API
  * @param {object} warHistory  - Output of buildWarHistory()
@@ -342,59 +343,66 @@ export function computeWarScore(
     completedRegularityWeeks,
     5,
   );
-  const regularite = r(Math.min(10, regularityWindow.score));
+  const regularite = r(Math.min(25, regularityWindow.score * 2.5));
   const regularityWindowDetail = regularityWindow.windowWeeks
     .map((week) => `${Math.min(week.decksUsed || 0, 16)}/16`)
     .join(" · ");
 
-  // 2. Points / deck (0-4) — efficiency of the 3 most recent completed GDC weeks.
+  // 2. Points / deck (0-10) — efficiency of the 3 most recent completed GDC weeks.
   const efficiencyHistory = summarizePointsPerDeckWeeks(
     completedRegularityWeeks,
     3,
   );
   const efficiencyScore = r(
-    scorePointsPerDeck(efficiencyHistory.pointsPerDeck, 4),
+    scorePointsPerDeck(efficiencyHistory.pointsPerDeck, 10),
   );
 
-  // 3. Stabilité (0-8) — échelle absolue : 5 semaines consécutives dans le clan ou la famille = 8/8
-  // streak=0→0, 1→1.6, 2→3.2, 3→4.8, 4→6.4, 5+→8.0
+  // 3. Stabilité (0-20) — échelle absolue : 5 semaines consécutives dans le clan ou la famille = 20/20
+  // streak=0→0, 1→4, 2→8, 3→12, 4→16, 5+→20
   const familyStreak =
     warHistory.streakInFamily ?? warHistory.streakInCurrentClan;
-  const stabilite = r(Math.min(8, familyStreak * 1.6));
+  const stabilite = r(Math.min(20, familyStreak * 4));
 
-  // 4. Expérience trophées (0-3) — [4 000, 14 000] trophées actuels
+  // 4. Expérience trophées (0-7.5) — [4 000, 14 000] trophées actuels
   const TROPHY_MIN = 4000;
   const TROPHY_CAP = 14000;
   const experience = r(
     Math.max(
       0,
       Math.min(
-        3,
-        (((player.trophies ?? 0) - TROPHY_MIN) / (TROPHY_CAP - TROPHY_MIN)) * 3,
+        7.5,
+        (((player.trophies ?? 0) - TROPHY_MIN) / (TROPHY_CAP - TROPHY_MIN)) *
+          7.5,
       ),
     ),
   );
 
-  // 4. CW2 badge (0-8) — from ClanWarWins badge
+  // 4. CW2 badge (0-20) — from ClanWarWins badge
   const CW2_CAP = 250;
   const cw2Wins =
     player.badges?.find((b) => b.name === "ClanWarWins")?.progress ??
     player.cw2Progress ??
     0;
-  const cw2Score = r(Math.min(8, (cw2Wins / CW2_CAP) * 8));
+  const cw2Score = r(Math.min(20, (cw2Wins / CW2_CAP) * 20));
 
-  // 5. Last seen (0-5) — uniquement en contexte clan (lastSeen fourni depuis /members)
+  // 5. Last seen (0-12.5) — uniquement en contexte clan (lastSeen fourni depuis /members)
   let lastSeenScore = null;
   let lastSeenDays = null;
   if (lastSeen) {
     lastSeenDays =
       (Date.now() - parseClashDate(lastSeen).getTime()) / MS_PER_DAY;
     lastSeenScore =
-      lastSeenDays <= 1 ? 5 : lastSeenDays <= 3 ? 3 : lastSeenDays <= 7 ? 1 : 0;
+      lastSeenDays <= 1
+        ? 12.5
+        : lastSeenDays <= 3
+          ? 7.5
+          : lastSeenDays <= 7
+            ? 2.5
+            : 0;
   }
 
-  // 7. Discord (0-2) — lié au serveur Discord du clan
-  const discordScore = discordLinked ? 2 : 0;
+  // 7. Discord (0-5) — lié au serveur Discord du clan
+  const discordScore = discordLinked ? 5 : 0;
 
   const total = r(
     regularite +
@@ -405,18 +413,18 @@ export function computeWarScore(
       (lastSeenScore ?? 0) +
       discordScore,
   );
-  const maxScore = 35 + (lastSeenScore !== null ? 5 : 0);
+  const maxScore = 87.5 + (lastSeenScore !== null ? 12.5 : 0);
   const pct = Math.round((total / maxScore) * 100);
 
   const { verdict, verdictKey, color } = computeVerdict(pct);
 
   const warHistoryWeeks = warHistory?.streakInCurrentClan ?? 0;
-  const regularityQuality = scoreQuality(regularite, 10);
-  const efficiencyQuality = scoreQuality(efficiencyScore, 4);
+  const regularityQuality = scoreQuality(regularite, 25);
+  const efficiencyQuality = scoreQuality(efficiencyScore, 10);
 
   const summary =
-    `Régularité : ${regularityQuality} (${regularite}/10 sur ${regularityWindow.fullWeekCount}/5 semaines complètes : ${regularityWindowDetail}).\n` +
-    `Points / deck : ${efficiencyQuality} (${efficiencyScore}/4 à partir de ${frDecimal(efficiencyHistory.pointsPerDeck)} pts/deck sur ${efficiencyHistory.recentWeeks.length} semaine(s)).\n` +
+    `Régularité : ${regularityQuality} (${regularite}/25 sur ${regularityWindow.fullWeekCount}/5 semaines complètes : ${regularityWindowDetail}).\n` +
+    `Points / deck : ${efficiencyQuality} (${efficiencyScore}/10 à partir de ${frDecimal(efficiencyHistory.pointsPerDeck)} pts/deck sur ${efficiencyHistory.recentWeeks.length} semaine(s)).\n` +
     `CW2 : ${cw2Remark(cw2Score)}.\n` +
     `Dans le clan : ${clanDurationText(warHistoryWeeks)}.`;
 
@@ -425,14 +433,14 @@ export function computeWarScore(
       key: "cw2Badge",
       label: LABELS.cw2Badge,
       score: cw2Score,
-      max: 8,
+      max: 20,
       detail: `${frNum(cw2Wins)} victoires CW2 totales (max 250)`,
     },
     {
       key: "regularity",
       label: LABELS.regularity,
       score: regularite,
-      max: 10,
+      max: 25,
       detail: (() => {
         if (regularityWindow.recentWeeks.length === 0)
           return "Aucune semaine terminée dans ce clan pour le moment";
@@ -447,7 +455,7 @@ export function computeWarScore(
       key: "stability",
       label: LABELS.stability,
       score: stabilite,
-      max: 8,
+      max: 20,
       detail: (() => {
         const s = warHistory.streakInFamily ?? warHistory.streakInCurrentClan;
         const isApiMaxWeeks = s >= 10;
@@ -459,7 +467,7 @@ export function computeWarScore(
       key: "pointsPerDeck",
       label: LABELS.pointsPerDeck,
       score: efficiencyScore,
-      max: 4,
+      max: 10,
       detail:
         efficiencyHistory.recentWeeks.length > 0
           ? `${frNum(efficiencyHistory.totalFame)} points / ${efficiencyHistory.totalDecks} decks (${frDecimal(efficiencyHistory.pointsPerDeck)} pts/deck, plage 100–180, 3 dernières semaines terminées)`
@@ -469,7 +477,7 @@ export function computeWarScore(
       key: "experience",
       label: LABELS.experience,
       score: experience,
-      max: 3,
+      max: 7.5,
       detail: `${frNum(player.trophies ?? 0)} trophées (plage 4 000–14 000)`,
     },
     ...(lastSeenScore !== null
@@ -478,7 +486,7 @@ export function computeWarScore(
             key: "lastSeen",
             label: LABELS.lastSeen,
             score: lastSeenScore,
-            max: 5,
+            max: 12.5,
             detail: lastSeenDetail(lastSeenDays, 3),
           },
         ]
@@ -487,7 +495,7 @@ export function computeWarScore(
       key: "discord",
       label: LABELS.discord,
       score: discordScore,
-      max: 2,
+      max: 5,
       detail: discordDetail(discordLinked),
     },
   ];
@@ -498,14 +506,16 @@ export function computeWarScore(
 /**
  * Fallback reliability from battle log only (used when no race log history available).
  * Applies the same scale as computeWarScore for consistency.
+ * Barème directement sur 100 points (92,5 sans Last Seen).
  *
- * Criteria (total /34 base, 31 if no last seen data) :
- *  1. Activité GDC    /8 — decks/day (bonuses for 4-deck days, penalties for <4)
- *  2. Activité générale /8 — combats compétitifs dans le log (cap 30)
- *  3. CW2 badge       /10 — badge progress (cap 250)
- *  4. Last Seen       /3 — last seen activity after ~16 war decks
- *  5. Expérience      /3 — bestTrophies (cap 12 000)
- *  (+2 Discord toujours)
+ * Criteria (total /92.5 base, 100 avec last seen data) :
+ *  1. Activité GDC    /20 — decks/day (bonuses for 4-deck days, penalties for <4)
+ *  2. Régularité      /25 — 5 semaines fixes, semaines complètes uniquement
+ *  3. CW2 badge       /25 — badge progress (cap 250)
+ *  4. Points / Deck   /10 — River Race efficiency
+ *  5. Last Seen       /7.5 — last seen activity after ~16 war decks
+ *  6. Expérience      /7.5 — trophées (plage 4 000–14 000)
+ *  (+5 Discord toujours)
  *
  * @param {object}   player
  * @param {object[]} warLog              - Filtered war battles (expanded duels)
@@ -565,59 +575,66 @@ export function computeWarReliabilityFallback(
       },
   );
   const playedWeeksCount = completedHistoryWeeks.length;
-  const activiteGDC = r(Math.min(8, (playedWeeksCount / 5) * 8));
+  const activiteGDC = r(Math.min(20, (playedWeeksCount / 5) * 20));
   const warHistoryActivityDetail = playedWeekSlots
     .map((w) => `${w.decksUsed || 0}/16`)
     .join(" · ");
 
-  // 2. Last Seen replacement (0-3) — shown whenever a lastSeen date is available
+  // 2. Last Seen replacement (0-7.5) — shown whenever a lastSeen date is available
   let lastSeenScore = null;
   let lastSeenDays = null;
   if (lastSeen) {
     lastSeenDays =
       (Date.now() - parseClashDate(lastSeen).getTime()) / MS_PER_DAY;
     lastSeenScore =
-      lastSeenDays <= 1 ? 3 : lastSeenDays <= 3 ? 2 : lastSeenDays <= 7 ? 1 : 0;
+      lastSeenDays <= 1
+        ? 7.5
+        : lastSeenDays <= 3
+          ? 5
+          : lastSeenDays <= 7
+            ? 2.5
+            : 0;
   }
 
-  // 3. Régularité (0-12) — 5 semaines fixes, une semaine ne compte que si elle
+  // 3. Régularité (0-25) — 5 semaines fixes, une semaine ne compte que si elle
   // est complète. Les semaines partielles ou absentes valent 0.
   const regularityWindow = summarizeRegularityWeeks(warHistory?.weeks ?? [], 5);
-  const regulariteGDC = r(Math.min(10, regularityWindow.score));
+  const regulariteGDC = r(Math.min(25, regularityWindow.score * 2.5));
   const regulariteGDCDetail = regularityWindow.windowWeeks
     .map((week) => `${Math.min(week.decksUsed || 0, 16)}/16`)
     .join(" · ");
 
-  // 3c. Points / deck (0-4) — River Race efficiency on the 3 most recent completed weeks.
+  // 3c. Points / deck (0-10) — River Race efficiency on the 3 most recent completed weeks.
   const efficiencyHistory = summarizePointsPerDeckWeeks(
     warHistory?.weeks ?? [],
     3,
   );
   const efficiencyScore = r(
-    scorePointsPerDeck(efficiencyHistory.pointsPerDeck, 4),
+    scorePointsPerDeck(efficiencyHistory.pointsPerDeck, 10),
   );
 
-  // 4. Expérience (0-3) — trophées actuels, plage [4 000, 14 000]
+  // 4. Expérience (0-7.5) — trophées actuels, plage [4 000, 14 000]
   const TROPHY_MIN = 4000;
   const TROPHY_CAP = 14000;
   const experience = r(
     Math.max(
       0,
       Math.min(
-        3,
-        (((player.trophies ?? 0) - TROPHY_MIN) / (TROPHY_CAP - TROPHY_MIN)) * 3,
+        7.5,
+        (((player.trophies ?? 0) - TROPHY_MIN) / (TROPHY_CAP - TROPHY_MIN)) *
+          7.5,
       ),
     ),
   );
 
-  // 5. CW2 badge (0-10) — from ClanWarWins badge
+  // 5. CW2 badge (0-25) — from ClanWarWins badge
   const CW2_CAP = 250;
   const cw2Wins =
     player.badges?.find((b) => b.name === "ClanWarWins")?.progress ?? 0;
-  const cw2Score = r(Math.min(10, (cw2Wins / CW2_CAP) * 10));
+  const cw2Score = r(Math.min(25, (cw2Wins / CW2_CAP) * 25));
 
-  // 8. Discord (0-2) — lié au serveur Discord du clan
-  const discordScore = discordLinked ? 2 : 0;
+  // 8. Discord (0-5) — lié au serveur Discord du clan
+  const discordScore = discordLinked ? 5 : 0;
 
   const total = r(
     activiteGDC +
@@ -628,23 +645,23 @@ export function computeWarReliabilityFallback(
       experience +
       discordScore,
   );
-  const maxScore = 37 + (lastSeenScore !== null ? 3 : 0);
+  const maxScore = 92.5 + (lastSeenScore !== null ? 7.5 : 0);
   const pct = Math.round((total / maxScore) * 100);
 
   const { verdict, verdictKey, color } = computeVerdict(pct);
 
   const warHistoryWeeks = warHistory?.streakInCurrentClan ?? 0;
-  const warActivityQuality = scoreQuality(activiteGDC, 8);
-  const regularityQuality = scoreQuality(regulariteGDC, 10);
+  const warActivityQuality = scoreQuality(activiteGDC, 20);
+  const regularityQuality = scoreQuality(regulariteGDC, 25);
 
-  const warActivitySummaryLine = `Activité de guerre : ${warActivityQuality} (${activiteGDC}/8, ${playedWeeksCount}/5 semaines jouées : ${warHistoryActivityDetail}).`;
+  const warActivitySummaryLine = `Activité de guerre : ${warActivityQuality} (${activiteGDC}/20, ${playedWeeksCount}/5 semaines jouées : ${warHistoryActivityDetail}).`;
 
-  const regularitySummaryLine = `Régularité : ${regularityQuality} (${regulariteGDC}/10, ${regularityWindow.fullWeekCount}/5 semaines complètes : ${regulariteGDCDetail}).`;
+  const regularitySummaryLine = `Régularité : ${regularityQuality} (${regulariteGDC}/25, ${regularityWindow.fullWeekCount}/5 semaines complètes : ${regulariteGDCDetail}).`;
 
   const efficiencySummaryLine =
     efficiencyHistory.recentWeeks.length > 0
-      ? `Points / deck : ${scoreQuality(efficiencyScore, 4)} (${efficiencyScore}/4 à partir de ${frDecimal(efficiencyHistory.pointsPerDeck)} pts/deck sur ${efficiencyHistory.recentWeeks.length} semaine(s) terminée(s)).`
-      : `Points / deck : ${QUALITY_LABELS.bad} (0/4, aucune semaine terminée avec données GDC).`;
+      ? `Points / deck : ${scoreQuality(efficiencyScore, 10)} (${efficiencyScore}/10 à partir de ${frDecimal(efficiencyHistory.pointsPerDeck)} pts/deck sur ${efficiencyHistory.recentWeeks.length} semaine(s) terminée(s)).`
+      : `Points / deck : ${QUALITY_LABELS.bad} (0/10, aucune semaine terminée avec données GDC).`;
 
   const summary =
     `${warActivitySummaryLine}\n` +
@@ -667,14 +684,14 @@ export function computeWarReliabilityFallback(
         key: "cw2Badge",
         label: LABELS.cw2Badge,
         score: cw2Score,
-        max: 10,
+        max: 25,
         detail: `${frNum(cw2Wins)} victoires CW2 totales (max 250)`,
       },
       {
         key: "warActivity",
         label: LABELS.warActivity,
         score: activiteGDC,
-        max: 8,
+        max: 20,
         detail: warHistoryActivityDetail,
         explanation: `Basé sur ${playedWeeksCount} semaine(s) jouée(s) sur les 5 dernières semaines d'historique GDC. Dernière guerre : ${lastWarDay || "aucune"}${daysSinceLastWar !== null ? ` (il y a ${daysSinceLastWar} jour(s))` : ""}.`,
       },
@@ -682,7 +699,7 @@ export function computeWarReliabilityFallback(
         key: "regularity",
         label: LABELS.regularity,
         score: regulariteGDC,
-        max: 10,
+        max: 25,
         detail: regulariteGDCDetail,
         explanation: `Fenêtre de 5 semaines où seules les semaines complètes comptent et les semaines manquantes comptent 0 : ${regulariteGDCDetail}.`,
       },
@@ -690,7 +707,7 @@ export function computeWarReliabilityFallback(
         key: "pointsPerDeck",
         label: LABELS.pointsPerDeck,
         score: efficiencyScore,
-        max: 4,
+        max: 10,
         detail:
           efficiencyHistory.recentWeeks.length > 0
             ? `${frNum(efficiencyHistory.totalFame)} points / ${efficiencyHistory.totalDecks} decks (${frDecimal(efficiencyHistory.pointsPerDeck)} pts/deck, plage 100–180, 3 dernières semaines terminées)`
@@ -702,7 +719,7 @@ export function computeWarReliabilityFallback(
               key: "lastSeen",
               label: LABELS.lastSeen,
               score: lastSeenScore,
-              max: 3,
+              max: 7.5,
               detail: lastSeenDetail(lastSeenDays, 3),
             },
           ]
@@ -711,14 +728,14 @@ export function computeWarReliabilityFallback(
         key: "experience",
         label: LABELS.experience,
         score: experience,
-        max: 3,
+        max: 7.5,
         detail: `${frNum(player.trophies ?? 0)} trophées (plage 4 000–14 000)`,
       },
       {
         key: "discord",
         label: LABELS.discord,
         score: discordScore,
-        max: 2,
+        max: 5,
         detail: discordDetail(discordLinked),
       },
     ],

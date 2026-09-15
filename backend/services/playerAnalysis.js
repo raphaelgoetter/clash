@@ -325,8 +325,8 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
           const rr = (v) => Math.round(v * 10) / 10;
           analysis.warScore.breakdown.push({
             label: "Win Rate (War)",
-            score: rr(Math.min(3, rawRate * 3)),
-            max: 3,
+            score: rr(Math.min(7.5, rawRate * 7.5)),
+            max: 7.5,
             excluded: true,
             detail: `${Math.round(rawRate * 100)}% wins (${gdcWins}W / ${rawWarLog.length - gdcWins}L) — not counted (10 battles required)`,
           });
