@@ -20,16 +20,18 @@ import {
 } from "../backend/services/blackjack.js";
 import { resolveDisplayName } from "../backend/services/discordUsers.js";
 
-// Ordre d'affichage du meilleur au pire résultat plutôt que par ordre
-// d'arrivée en jeu (14/09, retour utilisateur) : bat le Croupier, égalité,
-// perdu sans sauter, encore en train de jouer, sauté.
-function handRank(hand, dealer) {
-  if (hand.status === "bust") return 4;
-  if (hand.status === "en_cours") return 3;
+// Étiquette + ordre d'affichage du meilleur au pire résultat plutôt que par
+// ordre d'arrivée en jeu (14/09, retour utilisateur) — hand.status seul ne
+// distingue pas une main arrêtée gagnante d'une perdante ("stand" pour les
+// deux) : win (bat le Croupier), tie (égalité), stand (arrêtée mais perdue),
+// run (encore en train de jouer), bust (a sauté).
+function classifyHand(hand, dealer) {
+  if (hand.status === "bust") return { rank: 4, label: "bust" };
+  if (hand.status === "en_cours") return { rank: 3, label: "run" };
   const result = compareToDealer(hand.score, dealer);
-  if (result === "win") return 0;
-  if (result === "push") return 1;
-  return 2;
+  if (result === "win") return { rank: 0, label: "win" };
+  if (result === "push") return { rank: 1, label: "tie" };
+  return { rank: 2, label: "stand" };
 }
 
 (async () => {
@@ -47,15 +49,15 @@ function handRank(hand, dealer) {
   console.log(`Jour ${state.jour}/${config.duree_jours}\n`);
 
   const hands = await listHands(state.jour);
-  const entries = Object.entries(hands).sort(
-    ([, a], [, b]) => handRank(a, state.dealer) - handRank(b, state.dealer),
-  );
+  const entries = Object.entries(hands)
+    .map(([discordId, hand]) => [discordId, hand, classifyHand(hand, state.dealer)])
+    .sort(([, , a], [, , b]) => a.rank - b.rank);
   if (!entries.length) {
     console.log("Personne n'a encore joué aujourd'hui.\n");
   } else {
-    for (const [discordId, hand] of entries) {
+    for (const [discordId, hand, { label }] of entries) {
       const username = await resolveDisplayName(discordId, hand.username || discordId);
-      console.log(`${username} — ${hand.cards.map((c) => `${c.rank}${c.suit}`).join(" ")} (${hand.score}) [${hand.status}]`);
+      console.log(`${username} — ${hand.cards.map((c) => `${c.rank}${c.suit}`).join(" ")} (${hand.score}) [${label}]`);
     }
     console.log(`\nTotal : ${entries.length} joueur${entries.length > 1 ? "s" : ""} aujourd'hui.\n`);
   }
