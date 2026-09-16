@@ -1587,9 +1587,11 @@ Mêmes garde-fous que Blackjack : `isTooSoonSinceLastClosure()` (copie propre da
 | Full | 3 + 2 | 40 |
 | Somme ≤ 7 | somme ≤ 7 | 45 |
 | Somme ≥ 28 | somme ≥ 28 | 45 |
-| Petite Suite | exactement 1,2,3,4,5 | 50 |
-| Grande Suite | exactement 2,3,4,5,6 | 55 |
+| Petite Suite | 4 valeurs consécutives parmi les 5 dés (1-2-3-4, 2-3-4-5 ou 3-4-5-6, doublons/5ᵉ dé libres) | 30 |
+| Grande Suite | 5 valeurs distinctes consécutives (1-2-3-4-5 ou 2-3-4-5-6) | 50 |
 | Gobelet | 5 dés identiques | 60 |
+
+⚠️ **Petite Suite révisée le 16/09** (retour utilisateur, deux passes) : à l'origine "exactement 1,2,3,4,5" (5 dés), c'est maintenant la règle classique du Yahtzee — 4 valeurs consécutives présentes parmi les 5 dés, le 5ᵉ dé étant libre (peut dupliquer une des 4 valeurs ou être toute autre valeur) — puis sa valeur est passée de 25 à 30 pts. Une Grande Suite contient toujours au moins une Petite Suite, mais la règle "on retient le maximum" fait automatiquement gagner Grande Suite (50 > 30) sans logique d'exclusion mutuelle à coder. Petite Suite (30) et Carré (30) sont désormais à égalité de points mais ne peuvent jamais matcher la même main (un Carré n'a que 2 valeurs distinctes, une Petite Suite en a au moins 4) — aucun risque de collision réelle malgré l'égalité affichée dans le barème.
 
 Doublons de combinaison autorisés sur la semaine (pas de contrainte "une catégorie = un seul usage", contrairement au Yahtzee classique — pas de choix de catégorie par le joueur non plus, la meilleure combinaison est toujours calculée automatiquement).
 

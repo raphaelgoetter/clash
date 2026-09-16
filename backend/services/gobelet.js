@@ -166,6 +166,20 @@ function sortedUniqueValues(dice) {
   return [...new Set(dice)].sort((a, b) => a - b);
 }
 
+// Petite Suite (16/09, retour utilisateur) : 4 valeurs CONSÉCUTIVES parmi
+// les 5 dés (les autres dés sont libres, doublons compris) — pas
+// nécessairement les 5 dés eux-mêmes. Seules 3 suites de 4 sont possibles
+// avec des dés à 6 faces.
+const SMALL_STRAIGHTS = [
+  [1, 2, 3, 4],
+  [2, 3, 4, 5],
+  [3, 4, 5, 6],
+];
+
+function containsRun(uniqueSet, run) {
+  return run.every((v) => uniqueSet.has(v));
+}
+
 // Ordre de priorité utilisé UNIQUEMENT pour départager l'étiquette affichée
 // en cas d'égalité de points entre deux catégories applicables au même
 // résultat (le score retenu, lui, est toujours le maximum — voir
@@ -173,12 +187,12 @@ function sortedUniqueValues(dice) {
 const CATEGORY_PRIORITY = [
   "Gobelet",
   "Grande Suite",
-  "Petite Suite",
-  "Full",
-  "Carré",
-  "Brelan",
   "Somme ≥ 28",
   "Somme ≤ 7",
+  "Full",
+  "Carré",
+  "Petite Suite",
+  "Brelan",
   "Aucune combinaison",
 ];
 
@@ -192,6 +206,7 @@ export function computeBestCombination(dice) {
   const sum = dice.reduce((total, d) => total + d, 0);
   const counts = diceCounts(dice);
   const uniqueSorted = sortedUniqueValues(dice);
+  const uniqueSet = new Set(dice);
 
   const candidates = [{ label: "Aucune combinaison", points: sum }];
   if (sameCounts(counts, [3, 1, 1])) candidates.push({ label: "Brelan", points: 20 });
@@ -199,11 +214,18 @@ export function computeBestCombination(dice) {
   if (sameCounts(counts, [3, 2])) candidates.push({ label: "Full", points: 40 });
   if (sum <= 7) candidates.push({ label: "Somme ≤ 7", points: 45 });
   if (sum >= 28) candidates.push({ label: "Somme ≥ 28", points: 45 });
-  if (uniqueSorted.length === 5 && uniqueSorted[0] === 1 && uniqueSorted[4] === 5) {
-    candidates.push({ label: "Petite Suite", points: 50 });
+  // 4 valeurs consécutives présentes parmi les dés (Grande Suite, ci-dessous,
+  // en contient toujours au moins une — la règle "on retient le maximum"
+  // fait automatiquement gagner Grande Suite dans ce cas, pas besoin de les
+  // exclure mutuellement ici).
+  if (SMALL_STRAIGHTS.some((run) => containsRun(uniqueSet, run))) {
+    candidates.push({ label: "Petite Suite", points: 30 });
   }
-  if (uniqueSorted.length === 5 && uniqueSorted[0] === 2 && uniqueSorted[4] === 6) {
-    candidates.push({ label: "Grande Suite", points: 55 });
+  // 5 valeurs distinctes consécutives (seules 1-2-3-4-5 et 2-3-4-5-6 sont
+  // possibles avec des dés à 6 faces : 5 valeurs distinctes couvrant un
+  // intervalle de 4 sont nécessairement consécutives, pas de trou possible).
+  if (uniqueSorted.length === 5 && uniqueSorted[4] - uniqueSorted[0] === 4) {
+    candidates.push({ label: "Grande Suite", points: 50 });
   }
   if (sameCounts(counts, [5])) candidates.push({ label: "Gobelet", points: 60 });
 
