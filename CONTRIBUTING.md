@@ -549,7 +549,7 @@ DISCORD_TOKEN=
 
 ## Crons GitHub Actions (jeux quotidiens)
 
-Les 6 jeux à avancée quotidienne (Robinson, Tamagoshi, Boss Raid, Quiz, Goblin Hunters, Blackjack) tournent chacun sur leur propre workflow (`.github/workflows/{robinson,tamagotchi,bossraid,quiz,goblinhunters,blackjack}.yml`), avec un `schedule` étalé sur la même tranche horaire mais **jamais à la même minute** :
+Les 7 jeux à avancée quotidienne (Robinson, Tamagoshi, Boss Raid, Quiz, Goblin Hunters, Blackjack, Jeu du Gobelet) tournent chacun sur leur propre workflow (`.github/workflows/{robinson,tamagotchi,bossraid,quiz,goblinhunters,blackjack,gobelet}.yml`), avec un `schedule` étalé sur la même tranche horaire mais **jamais à la même minute** :
 
 | Jeu            | Cron         |
 | -------------- | ------------ |
@@ -559,6 +559,7 @@ Les 6 jeux à avancée quotidienne (Robinson, Tamagoshi, Boss Raid, Quiz, Goblin
 | Robinson       | `8 8 * * *`  |
 | Tamagoshi      | `10 8 * * *` |
 | Blackjack      | `12 8 * * *` |
+| Jeu du Gobelet | `16 8 * * *` |
 
 ⚠️ **Incident du 27/08** : les 5 crons alors existants étaient initialement tous réglés sur `0 8 * * *` (pile 8h00 UTC). GitHub documente explicitement que les triggers `schedule` sont _best-effort_ et que le délai augmente aux heures rondes, justement à cause de la charge — caler plusieurs workflows du même dépôt sur exactement la même minute aggrave mécaniquement ce risque. Résultat concret : le 27/08, aucun des 5 crons ne s'était déclenché plus d'une heure après l'horaire prévu (confirmé via l'API GitHub, `GET /repos/.../actions/workflows/{id}/runs`, aucun run pour la date du jour alors que les runs de la veille existaient bien vers 08h07-08h20 UTC). Étaler les horaires par tranches de 2 minutes ne garantit pas un déclenchement pile à l'heure (toujours best-effort côté GitHub), mais réduit la contention auto-infligée. Blackjack a suivi le même principe à son activation, décalé sur la minute suivante (`12 8 * * *`).
 
@@ -1563,6 +1564,106 @@ Même instance et mêmes conventions que les autres jeux (`automaticDeserializat
 ### Variables d'environnement requises (Blackjack)
 
 Aucune nouvelle variable : Blackjack réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (même instance Upstash Redis, espace de clés `blackjack:*` totalement séparé). Le workflow `.github/workflows/blackjack.yml` réutilise les mêmes secrets GitHub Actions que les autres jeux (déjà configurés, rien à ajouter). Le jeu ayant été validé sur le salon de test, le `schedule` du cron (`12 8 * * *`) est actif.
+
+## Jeu du Gobelet — dés façon Yahtzee
+
+Mini-jeu communautaire quotidien indépendant du Clash Royale, sur le même squelette que Blackjack (7 jours, classement cumulé) mais sans adversaire : chaque jour, chaque membre lance 5 dés, peut en conserver 0 à 5 et relancer les autres deux fois de suite (3 tirages au total), puis la meilleure combinaison possible sur le résultat final lui rapporte des points. Pas de commande slash associée — la publication/suppression quotidienne passe uniquement par `scripts/postGobelet.js` (`postGobelet()`), les boutons restent gérés par `api/discord/interactions.js`.
+
+### Déroulement (Jeu du Gobelet)
+
+Même principe que Blackjack : un seul message actif à la fois dans le salon dédié, Jour 1 lancé uniquement à la main (`workflow_dispatch`), le cron quotidien (`--require-active`) ne fait qu'avancer une partie déjà en cours. `postGobelet()` clôture d'abord le jour actif (résout toutes les mains, attribue les points), puis publie le jour suivant ou, au-delà du Jour 7, l'embed de révélation finale (`termine: true`).
+
+Mêmes garde-fous que Blackjack : `isTooSoonSinceLastClosure()` (copie propre dans `gobelet.js`, pas d'import — chaque jeu à cron du dépôt a sa propre copie) et refus si une partie est déjà active sur un autre salon.
+
+### Barème — résolution par catégorie la plus valorisée
+
+`computeBestCombination(dice)` évalue TOUTES les catégories applicables au résultat final et retient la plus valorisée — pas un ordre de priorité fixe (ex. un Carré de 6 avec une somme ≥28 rapporte 40 pts, pas 30).
+
+| Résultat | Condition | Points |
+| -------- | --------- | ------ |
+| Aucune combinaison | par défaut | somme des 5 dés |
+| Brelan | 3 dés identiques | 20 |
+| Carré | 4 dés identiques | 30 |
+| Full | 3 + 2 | 40 |
+| Somme ≤ 7 | somme ≤ 7 | 40 |
+| Somme ≥ 28 | somme ≥ 28 | 40 |
+| Petite Suite | exactement 1,2,3,4,5 | 45 |
+| Grande Suite | exactement 2,3,4,5,6 | 50 |
+| Gobelet | 5 dés identiques | 60 |
+
+Doublons de combinaison autorisés sur la semaine (pas de contrainte "une catégorie = un seul usage", contrairement au Yahtzee classique — pas de choix de catégorie par le joueur non plus, la meilleure combinaison est toujours calculée automatiquement).
+
+### Main du joueur — Jouer / sélection des dés / Relancer, tout en éphémère
+
+Une main par jour, définitive. 🎲 **Jouer** lance 5 dés (1ᵉʳ tirage). Chaque dé a son propre bouton togglable (🔒 gardé / 🎲 sera relancé, ou la vraie face de dé si `diceEmojis` est configuré — voir ci-dessous) ; cliquer dessus **ne consomme pas de tirage**, juste une mise à jour du message éphémère. 🔁 **Relancer** relance tous les dés non conservés et consomme un tirage — possible 2 fois (3 tirages au total), après quoi la combinaison finale est calculée automatiquement (`computeBestCombination()`) et affichée avec les points gagnés.
+
+Une main encore `en_cours` à la clôture (joueur qui n'a pas fini ses 2 relances) est figée sur les dés courants plutôt qu'ignorée (`resolveJour()`).
+
+### Emojis personnalisés pour les faces de dé
+
+Les boutons de sélection peuvent afficher la vraie face de chaque dé (au lieu des emoji génériques 🔒/🎲) via des **emoji d'application Discord** uploadés une fois avec `npm run gobelet:emojis` (`scripts/uploadGobeletEmojis.js`, upload `data/gobelet/images/dice-1.png` à `dice-6.png`). Les 6 IDs retournés se collent dans `data/gobelet/gobelet.json` (clé `diceEmojis`) — tant que cette config n'est pas renseignée (`null`), le jeu fonctionne normalement avec les emoji génériques.
+
+### Interface (embed)
+
+Titre `🎲 Jeu du Gobelet — Jour X/7`. Dés affichés en titre Markdown avec des emoji "keycap" (`1️⃣`-`6️⃣`, ex. `# 3️⃣ 5️⃣ 6️⃣ 2️⃣ 4️⃣`) plutôt que les glyphes Unicode de dés (U+2680-2685) — même raison que le choix rang+couleur de Blackjack : les keycaps sont de vrais emoji couleur qui s'agrandissent sous un titre H1, contrairement aux glyphes texte qui resteraient minuscules. Deux illustrations statiques (`data/gobelet/images/`, dupliquées dans `frontend/public/images/gobelet/` pour être servies, suffixe `?v=`) : `gobelet.webp` pour le Jour 1 et la révélation finale, `dices.webp` pour les jours intermédiaires.
+
+Composants : `[🎲 Jouer]` (vert), `[📜 Journal]`, `[📖 Règles]`.
+
+### Manches (comparaison entre parties) — Jeu du Gobelet
+
+Même principe que Blackjack : `gobelet:manches` (HASH permanent) archive le classement final de chaque manche terminée (`archiveManche()`), jamais nettoyé sauf `--manches`. Archivage uniquement sur une vraie publication publique (`isPublic: true`).
+
+### Données (gobelet.json)
+
+`data/gobelet/gobelet.json` — config statique : `duree_jours` (7) et `diceEmojis` (map valeur 1-6 → ID d'emoji d'application, voir ci-dessus). Chargée une fois et mise en cache (`loadGobeletConfig()`).
+
+### Stockage — Upstash Redis (`gobelet:*`)
+
+| Clé Redis | Type | Contenu |
+| --------- | ---- | ------- |
+| `gobelet:state` | STRING | `{ jour, channelId, messageId, publishedAt, termine }` |
+| `gobelet:points` | HASH | `discordId → points` cumulés (`HINCRBY`), remis à zéro à chaque nouveau Jour 1 |
+| `gobelet:usernames` | HASH | `discordId → pseudo`, repli d'affichage |
+| `gobelet:hand:<jour>` | HASH | `discordId → { dice, kept, tirage, status, category, points, username }` |
+| `gobelet:historique` | HASH | `jour → { jour, results, resolvedAt }`, effacé par `resetGobelet()` |
+| `gobelet:manches` | HASH | `manche → { manche, ranking, winners, maxPoints, resolvedAt }`, jamais nettoyé |
+| `gobelet:manche_seq` | STRING (compteur) | Numéro de la prochaine manche à archiver |
+
+### Scripts npm (Jeu du Gobelet)
+
+| Commande | Effet |
+| -------- | ----- |
+| `npm run gobelet:test` | Poste manuellement le jour du Gobelet sur le salon de test. |
+| `npm run gobelet:test:dry` | Aperçu console du prochain jour (ou de la révélation finale), sans écrire ni poster. |
+| `npm run gobelet:public` | Poste sur le salon public — utilisé par le cron `gobelet.yml`. |
+| `npm run gobelet:public:dry` | Équivalent dry-run. |
+| `npm run gobelet:reset` | Remet le Gobelet à zéro (préserve `gobelet:manches`). **Destructif**. |
+| `npm run gobelet:reset:manches` | Identique, efface aussi l'archive des manches. **Destructif**. |
+| `npm run gobelet:status` | État courant sans Discord. |
+| `npm run gobelet:scores` | Classement cumulé seul. |
+| `npm run gobelet:emojis` | Upload one-shot des 6 faces de dé comme emoji d'application (voir ci-dessus). |
+
+### Variables d'environnement requises (Jeu du Gobelet)
+
+Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_URL`/`TOKEN`, `DISCORD_APP_ID`/`DISCORD_TOKEN` (upload emoji). Le `schedule` du cron (`16 8 * * *`) est actif dans `.github/workflows/gobelet.yml`, comme Blackjack.
+
+## Blackjack Duel (duel à la demande, 1-3 joueurs)
+
+Développé en parallèle du jeu spécial Blackjack, lancé à la demande via `/blackjack joueurs:<1-3> manches:<5|10>` (rôle MINI-JEUX requis pour **lancer** — vérifié en arrière-plan après un defer éphémère, car `getRoleIdByName()` fait un appel réseau trop lent pour la fenêtre de 3s d'accusé de réception Discord ; rejoindre une partie déjà lancée n'exige pas le rôle). Contrairement au jeu spécial : lobby FERMÉ (inscriptions via le bouton Jouer jusqu'à ce que tous les sièges soient pris, ou qu'une manche se résolve avec un roster incomplet — verrouillage définitif dans les deux cas), avancement piloté par les actions des joueurs (pas de cron), aucun historique persistant, message public réédité en place à chaque avancée de manche (jamais supprimé/reposté, contrairement au jeu spécial).
+
+Réutilise par import direct les fonctions PURES du jeu spécial (`drawCard`, `computeHandValue`, `dealerPlay`, `resolveDay`, `buildRanking`, `pointsForResult`, `isDealerRevealed`) mais duplique volontairement le rendu texte (`formatCard`, etc.) — pas de dépendance croisée entre les deux jeux.
+
+Une manche se résout dès que tous les joueurs inscrits ont terminé leur main (`checkAndResolveManche()`, verrou `HSETNX` sur `blackjackduel:resolving` — même idiome que `assignSeasonMancheNumber` dans anagrams.js/frames.js/zoom.js). Stockage Redis dédié `blackjackduel:*`, totalement séparé de `blackjack:*`.
+
+Nettoyage 100% manuel (retour utilisateur explicite, 12/09 : "je ne souhaite absolument pas de cron/action pour cela") — aucun workflow GitHub Actions ne les appelle : `npm run blackjackduel:status` pour décider, `npm run blackjackduel:watchdog` (respecte le seuil de 24h d'inactivité, `resetIfStale()`) ou `npm run blackjackduel:reset` (inconditionnel).
+
+## Gobelet Duel (duel à la demande, 1-3 joueurs)
+
+Équivalent du duel Blackjack pour le Jeu du Gobelet — mêmes principes structurels (lobby fermé, avancement par les actions des joueurs, pas d'historique persistant, message public réédité en place, nettoyage 100% manuel), lancé via `/gobelet joueurs:<1-3> manches:<5|10>`.
+
+Réutilise par import direct les fonctions pures du jeu spécial (`rollDice`, `rerollKept`, `computeBestCombination`, `resolveJour`, `buildRanking`) — même principe que Blackjack Duel vis-à-vis de Blackjack. Le rendu texte des dés reste dupliqué (`_handlers/gobeletDuel.js`), tout comme le mécanisme de sélection des dés (Jouer/toggle/Relancer). Les emoji personnalisés (`diceEmojis`) sont en revanche relus directement depuis `data/gobelet/gobelet.json` via `loadGobeletConfig()` — lecture de config statique sans état, aucun risque de couplage.
+
+Stockage Redis dédié `gobeletduel:*`. Scripts npm : `npm run gobeletduel:status`, `npm run gobeletduel:watchdog`, `npm run gobeletduel:reset` — mêmes garanties que Blackjack Duel (aucun workflow GitHub Actions ne les appelle).
 
 ## Jeu Goblin Hunters (identité secrète, camps cachés)
 

@@ -518,6 +518,34 @@ const commands = [
       },
     ],
   },
+  {
+    name: "gobelet",
+    description:
+      "Lance un duel du Jeu du Gobelet (1-3 joueurs) dans ce salon — réservé au rôle MINI-JEUX.",
+    options: [
+      {
+        type: 4, // INTEGER
+        name: "joueurs",
+        description: "Nombre de joueurs (1 à 3).",
+        required: true,
+        choices: [
+          { name: "1", value: 1 },
+          { name: "2", value: 2 },
+          { name: "3", value: 3 },
+        ],
+      },
+      {
+        type: 4, // INTEGER
+        name: "manches",
+        description: "Nombre de manches.",
+        required: true,
+        choices: [
+          { name: "5", value: 5 },
+          { name: "10", value: 10 },
+        ],
+      },
+    ],
+  },
 ];
 
 async function registerAtUrl(url) {

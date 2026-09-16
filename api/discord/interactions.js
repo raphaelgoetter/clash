@@ -142,6 +142,23 @@ import {
   extractMember as extractBlackjackDuelMember,
 } from "./_handlers/blackjackDuel.js";
 import {
+  handleJouer as handleGobeletJouer,
+  handleToggle as handleGobeletToggle,
+  handleRelancer as handleGobeletRelancer,
+  handleRegles as handleGobeletRegles,
+  handleJournal as handleGobeletJournal,
+} from "./_handlers/gobelet.js";
+import {
+  handleGobeletCommand as handleGobeletDuelCommand,
+  handleGobeletRoleRejected as handleGobeletDuelRoleRejected,
+  memberHasMiniJeuxRole as gobeletDuelMemberHasMiniJeuxRole,
+  handleJouer as handleGobeletDuelJouer,
+  handleToggle as handleGobeletDuelToggle,
+  handleRelancer as handleGobeletDuelRelancer,
+  handleRegles as handleGobeletDuelRegles,
+  extractMember as extractGobeletDuelMember,
+} from "./_handlers/gobeletDuel.js";
+import {
   summarizeWarDecks,
   summarizeWarDecksForMatchup,
   summarizeRecentBattlesForMatchup,
@@ -9050,6 +9067,28 @@ export default async function handler(req, res) {
     return;
   }
 
+  // ── /gobelet : lance un duel du Jeu du Gobelet autonome (1-3 joueurs, N
+  // manches) — jeu développé en parallèle du jeu spécial, sans lien avec
+  // lui. Réservé au rôle MINI-JEUX, même principe que /blackjack ci-dessus.
+  if (body.type === 2 && body.data?.name === "gobelet") {
+    const joueursOpt = body.data.options?.find((o) => o.name === "joueurs");
+    const manchesOpt = body.data.options?.find((o) => o.name === "manches");
+    const maxPlayers = Number(joueursOpt?.value) || 1;
+    const totalManches = Number(manchesOpt?.value) || 5;
+
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(async () => {
+      const allowed = await gobeletDuelMemberHasMiniJeuxRole(body);
+      if (!allowed) {
+        await handleGobeletDuelRoleRejected(webhookUrl);
+        return;
+      }
+      await handleGobeletDuelCommand(webhookUrl, body, { maxPlayers, totalManches });
+    });
+    return;
+  }
+
   // ── Blackjack Duel : bouton "Jouer" (inscription + main, message public) ──
   if (body.type === 3 && body.data?.custom_id === "blackjackduel_jouer") {
     const { discordId, username } = extractBlackjackDuelMember(body);
@@ -9084,6 +9123,54 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleBlackjackDuelRegles(webhookUrl));
+    return;
+  }
+
+  // ── Gobelet Duel : bouton "Jouer" (inscription + main, message public) ──
+  if (body.type === 3 && body.data?.custom_id === "gobeletduel_jouer") {
+    const { discordId, username } = extractGobeletDuelMember(body);
+    // type 5 = DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE (éphémère) : crée le
+    // message éphémère "ta main", comme gobelet_jouer: du jeu spécial.
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleGobeletDuelJouer(webhookUrl, discordId, username));
+    return;
+  }
+
+  // ── Gobelet Duel : boutons de sélection des dés à conserver (message éphémère) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("gobeletduel_toggle:")
+  ) {
+    const [, , index] = body.data.custom_id.split(":");
+    const { discordId } = extractGobeletDuelMember(body);
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleGobeletDuelToggle(webhookUrl, discordId, index));
+    return;
+  }
+
+  // ── Gobelet Duel : bouton "Relancer" (relance les dés non conservés) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("gobeletduel_relancer:")
+  ) {
+    const { discordId } = extractGobeletDuelMember(body);
+    // type 6 = DEFERRED_UPDATE_MESSAGE : édite en place le message éphémère
+    // déjà affiché, comme blackjackduel_piocher:/blackjackduel_arreter:.
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleGobeletDuelRelancer(webhookUrl, discordId));
+    return;
+  }
+
+  // ── Gobelet Duel : bouton "Règles" (éphémère, statique) ──
+  if (body.type === 3 && body.data?.custom_id === "gobeletduel_regles") {
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleGobeletDuelRegles(webhookUrl));
     return;
   }
 
@@ -9270,6 +9357,72 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleBlackjackRegles(webhookUrl));
+    return;
+  }
+
+  // ── Gobelet : bouton "Jouer" (1ᵉʳ tirage du jour, sur le message public) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("gobelet_jouer:")
+  ) {
+    const jour = body.data.custom_id.split(":")[1];
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    // type 5 = DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE (éphémère) : premier clic
+    // depuis le message public, crée le message éphémère "ta main".
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleGobeletJouer(webhookUrl, jour, discordId, username));
+    return;
+  }
+
+  // ── Gobelet : boutons de sélection des dés à conserver (message éphémère) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("gobelet_toggle:")
+  ) {
+    const [, jour, index] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    // type 6 = DEFERRED_UPDATE_MESSAGE : édite en place le message éphémère
+    // déjà affiché, comme blackjack_piocher:/blackjack_arreter:.
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleGobeletToggle(webhookUrl, jour, index, discordId));
+    return;
+  }
+
+  // ── Gobelet : bouton "Relancer" (relance les dés non conservés) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("gobelet_relancer:")
+  ) {
+    const jour = body.data.custom_id.split(":")[1];
+    const discordId = body.member?.user?.id;
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleGobeletRelancer(webhookUrl, jour, discordId));
+    return;
+  }
+
+  // ── Gobelet : boutons "Journal" / "Règles" (éphémères) ──
+  if (body.type === 3 && body.data?.custom_id === "gobelet_journal") {
+    const discordId = body.member?.user?.id;
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleGobeletJournal(webhookUrl, discordId));
+    return;
+  }
+  if (body.type === 3 && body.data?.custom_id === "gobelet_regles") {
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleGobeletRegles(webhookUrl));
     return;
   }
 
