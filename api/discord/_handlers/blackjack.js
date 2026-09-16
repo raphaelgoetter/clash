@@ -621,7 +621,7 @@ function buildHandComponents(jour, hand) {
           type: 2,
           style: 2,
           label: "Piocher",
-          emoji: { name: "🎴" },
+          emoji: { name: "➕" },
           custom_id: `blackjack_piocher:${jour}`,
         },
         {
@@ -853,7 +853,7 @@ function buildReglesEmbed(config) {
       "",
       "**Déroulement (1 main par jour, définitive) :**",
       "🃏 **Jouer** — reçois 2 cartes.",
-      "🎴 **Piocher** — reçois une carte de plus (autant de fois que tu veux).",
+      "➕ **Piocher** — reçois une carte de plus (autant de fois que tu veux).",
       "🛑 **Arrêter** — fige ton score pour aujourd'hui.",
       "Dépasser 21 = main perdue immédiatement pour la journée.",
       "",
