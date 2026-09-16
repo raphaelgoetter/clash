@@ -193,22 +193,29 @@ const CATEGORY_PRIORITY = [
   "Carré",
   "Petite Suite",
   "Brelan",
-  "Aucune combinaison",
 ];
 
-// Barème (voir CONTRIBUTING.md) : on évalue TOUTES les catégories
+// Barème (voir CONTRIBUTING.md) : on évalue TOUTES les VRAIES catégories
 // applicables au résultat final et on retient la plus valorisée — pas un
 // ordre de priorité fixe. Ex. un Full (1,1,1,2,2, somme=7) matche à la fois
 // Full (40 pts) et Somme ≤ 7 (45 pts) : on retient 45 (barème révisé le
 // 16/09, retour utilisateur — les seuils de somme et les suites valent
 // désormais plus qu'avant, dépassant le Full).
+//
+// ⚠️ "Aucune combinaison" (la somme brute) n'est PAS une vraie catégorie
+// concurrente : c'est un simple filet de secours utilisé UNIQUEMENT quand
+// rien d'autre ne matche. Bug corrigé le 16/09 (retour utilisateur, capture
+// d'écran) : un Brelan de 6 (6,6,6,3,1, somme=22) s'affichait comme "Aucune
+// combinaison" (22 pts) au lieu de "Brelan" (20 pts) simplement parce que la
+// somme dépassait les 20 pts du Brelan — la somme ne doit jamais faire
+// perdre son étiquette à une combinaison réellement présente dans les dés.
 export function computeBestCombination(dice) {
   const sum = dice.reduce((total, d) => total + d, 0);
   const counts = diceCounts(dice);
   const uniqueSorted = sortedUniqueValues(dice);
   const uniqueSet = new Set(dice);
 
-  const candidates = [{ label: "Aucune combinaison", points: sum }];
+  const candidates = [];
   if (sameCounts(counts, [3, 1, 1])) candidates.push({ label: "Brelan", points: 20 });
   if (sameCounts(counts, [4, 1])) candidates.push({ label: "Carré", points: 30 });
   if (sameCounts(counts, [3, 2])) candidates.push({ label: "Full", points: 40 });
@@ -228,6 +235,10 @@ export function computeBestCombination(dice) {
     candidates.push({ label: "Grande Suite", points: 50 });
   }
   if (sameCounts(counts, [5])) candidates.push({ label: "Gobelet", points: 60 });
+
+  if (candidates.length === 0) {
+    return { category: "Aucune combinaison", points: sum };
+  }
 
   let best = candidates[0];
   for (const candidate of candidates) {

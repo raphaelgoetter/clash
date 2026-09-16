@@ -58,8 +58,14 @@ async function main() {
   assert.deepStrictEqual(computeBestCombination([2, 3, 4, 5, 6]), { category: "Grande Suite", points: 50 });
   // Gobelet (60) bat toujours "Somme >= 28" (45) même si les deux matchent.
   assert.deepStrictEqual(computeBestCombination([6, 6, 6, 6, 6]).points, 60);
-  // Un tirage sans combinaison peut rapporter plus qu'un petit Brelan.
+  // "Aucune combinaison" (la somme brute) n'est retenue que si RIEN d'autre
+  // ne matche — ici pas de Brelan/Carré/Full/suite/Gobelet possible.
   assert.deepStrictEqual(computeBestCombination([6, 6, 5, 5, 4]), { category: "Aucune combinaison", points: 26 });
+  // Régression (16/09, capture d'écran) : un Brelan de 6 (somme=22, plus
+  // que les 20 pts du Brelan) doit rester étiqueté "Brelan", jamais "Aucune
+  // combinaison" seulement parce que la somme brute serait plus élevée — la
+  // somme n'est un candidat qu'en l'absence de toute vraie combinaison.
+  assert.deepStrictEqual(computeBestCombination([6, 6, 3, 1, 6]), { category: "Brelan", points: 20 });
 
   // ── resolveJour — une main "en_cours" à la clôture est figée, jamais ignorée ──
   const hands = {

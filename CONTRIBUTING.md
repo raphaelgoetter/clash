@@ -1577,7 +1577,9 @@ Mêmes garde-fous que Blackjack : `isTooSoonSinceLastClosure()` (copie propre da
 
 ### Barème — résolution par catégorie la plus valorisée
 
-`computeBestCombination(dice)` évalue TOUTES les catégories applicables au résultat final et retient la plus valorisée — pas un ordre de priorité fixe (ex. un Full 1,1,1,2,2 avec une somme ≤7 rapporte 45 pts, pas 40 ; barème révisé le 16/09, retour utilisateur sur un cas réel de ce type).
+`computeBestCombination(dice)` évalue TOUTES les VRAIES catégories applicables au résultat final et retient la plus valorisée — pas un ordre de priorité fixe (ex. un Full 1,1,1,2,2 avec une somme ≤7 rapporte 45 pts, pas 40 ; barème révisé le 16/09, retour utilisateur sur un cas réel de ce type).
+
+⚠️ **"Aucune combinaison" (la somme brute) n'est PAS une catégorie concurrente** — c'est un simple filet de secours retenu UNIQUEMENT quand rien d'autre ne matche (`candidates.length === 0`). Bug corrigé le 16/09 (retour utilisateur, capture d'écran) : un Brelan de 6 (6,6,6,3,1, somme=22) s'affichait comme "Aucune combinaison" (22 pts) au lieu de "Brelan" (20 pts), simplement parce que la somme brute dépassait numériquement les 20 pts du Brelan. La somme ne fait donc jamais perdre son étiquette à une vraie combinaison, même quand celle-ci rapporte moins de points que la somme brute l'aurait fait.
 
 | Résultat | Condition | Points |
 | -------- | --------- | ------ |
