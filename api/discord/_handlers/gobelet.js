@@ -566,18 +566,25 @@ export async function handleRelancer(webhookUrl, jour, discordId) {
     const dice = rerollKept(hand.dice, kept, Math.random);
     const tirage = hand.tirage + 1;
     let updated;
+    let nextKept;
     if (tirage >= 3) {
       const { category, points } = computeBestCombination(dice);
       updated = { ...hand, dice, tirage, status: "termine", category, points };
+      await resetKept(jour, discordId);
+      nextKept = NO_KEPT;
     } else {
       updated = { ...hand, dice, tirage };
+      // kept N'EST PAS réinitialisé (retour utilisateur, 16/09) : les dés
+      // déjà cochés "à garder" le restent au tirage suivant — seuls les dés
+      // qui viennent d'être relancés repartent "non gardés" par défaut
+      // (déjà le cas, leur position n'a jamais été cochée).
+      nextKept = kept;
     }
     await writeHand(jour, discordId, updated);
-    await resetKept(jour, discordId);
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(jour, updated, NO_KEPT)],
-      components: buildHandComponents(jour, updated, NO_KEPT, diceEmojis),
+      embeds: [buildHandEmbed(jour, updated, nextKept)],
+      components: buildHandComponents(jour, updated, nextKept, diceEmojis),
     });
   } catch (err) {
     console.error("[Gobelet] Échec Relancer:", err.message);

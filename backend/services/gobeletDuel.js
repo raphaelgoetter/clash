@@ -296,19 +296,25 @@ export async function relance(discordId) {
   const dice = rerollKept(hand.dice, kept, Math.random);
   const tirage = hand.tirage + 1;
   let updated;
+  let nextKept;
   if (tirage >= 3) {
     const { category, points } = computeBestCombination(dice);
     updated = { ...hand, dice, tirage, status: "termine", category, points };
+    await resetKept(manche, discordId);
+    nextKept = [false, false, false, false, false];
   } else {
     updated = { ...hand, dice, tirage };
+    // kept N'EST PAS réinitialisé (même retour utilisateur que le jeu
+    // spécial, 16/09) : les dés déjà cochés "à garder" le restent au tirage
+    // suivant.
+    nextKept = kept;
   }
   await writeHand(manche, discordId, updated);
-  await resetKept(manche, discordId);
 
   const newState = { ...state, lastActivityAt: new Date().toISOString() };
   await writeState(newState);
 
-  return { state: newState, hand: updated, kept: [false, false, false, false, false] };
+  return { state: newState, hand: updated, kept: nextKept };
 }
 
 // Fige la main immédiatement si les dés courants forment déjà une
