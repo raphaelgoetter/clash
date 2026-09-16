@@ -410,8 +410,31 @@ function buildDieEmoji(value, kept, diceEmojis) {
   return { name: kept ? "🔒" : "🎲" };
 }
 
+// Le bouton Valider n'apparaît que si les dés COURANTS (indépendamment de
+// ce qui est coché "à garder") forment déjà une combinaison — n'importe
+// laquelle sauf "Aucune combinaison" — dès le 1ᵉʳ tirage. Permet de figer
+// une bonne main tout de suite sans passer par les 2 relances obligatoires.
 function buildHandComponents(jour, hand, kept, diceEmojis) {
   if (hand.status !== "en_cours") return [];
+  const canValider = computeBestCombination(hand.dice).category !== "Aucune combinaison";
+  const secondRow = [
+    {
+      type: 2,
+      style: 1,
+      label: relancerLabel(kept),
+      emoji: { name: kept.every(Boolean) ? "➡️" : "🔁" },
+      custom_id: `gobelet_relancer:${jour}`,
+    },
+  ];
+  if (canValider) {
+    secondRow.push({
+      type: 2,
+      style: 3,
+      label: "Valider",
+      emoji: { name: "👍" },
+      custom_id: `gobelet_valider:${jour}`,
+    });
+  }
   return [
     {
       type: 1,
@@ -423,18 +446,7 @@ function buildHandComponents(jour, hand, kept, diceEmojis) {
         custom_id: `gobelet_toggle:${jour}:${i}`,
       })),
     },
-    {
-      type: 1,
-      components: [
-        {
-          type: 2,
-          style: 1,
-          label: relancerLabel(kept),
-          emoji: { name: kept.every(Boolean) ? "➡️" : "🔁" },
-          custom_id: `gobelet_relancer:${jour}`,
-        },
-      ],
-    },
+    { type: 1, components: secondRow },
   ];
 }
 
@@ -572,6 +584,61 @@ export async function handleRelancer(webhookUrl, jour, discordId) {
   }
 }
 
+export async function handleValider(webhookUrl, jour, discordId) {
+  try {
+    const state = await readState();
+    if (isDayInactive(state, jour)) {
+      await patchOriginal(webhookUrl, {
+        content: "La journée a changé, regarde le nouveau message !",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+
+    const hand = await readHand(jour, discordId);
+    if (!hand) {
+      await patchOriginal(webhookUrl, {
+        content: "Clique d'abord sur **Jouer** pour lancer tes 5 dés !",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    if (hand.status !== "en_cours") {
+      await patchOriginal(webhookUrl, { embeds: [buildHandEmbed(jour, hand, NO_KEPT)], components: [] });
+      return;
+    }
+
+    const { diceEmojis } = await loadGobeletConfig();
+    const { category, points } = computeBestCombination(hand.dice);
+    if (category === "Aucune combinaison") {
+      // Garde-fou : le bouton ne devrait normalement pas être cliquable
+      // dans ce cas (voir buildHandComponents), mais un client Discord qui
+      // affiche encore l'ancien message (avant un relance qui a changé les
+      // dés) pourrait renvoyer ce clic — on ignore juste et on repeint l'état
+      // réel plutôt que de figer une main sans combinaison.
+      const kept = await readKept(jour, discordId);
+      await patchOriginal(webhookUrl, {
+        embeds: [buildHandEmbed(jour, hand, kept)],
+        components: buildHandComponents(jour, hand, kept, diceEmojis),
+      });
+      return;
+    }
+
+    const updated = { ...hand, status: "termine", category, points };
+    await writeHand(jour, discordId, updated);
+    await resetKept(jour, discordId);
+
+    await patchOriginal(webhookUrl, {
+      embeds: [buildHandEmbed(jour, updated, NO_KEPT)],
+      components: buildHandComponents(jour, updated, NO_KEPT, diceEmojis),
+    });
+  } catch (err) {
+    console.error("[Gobelet] Échec Valider:", err.message);
+  }
+}
+
 // ── Bouton [📜 Journal] — lecture seule ─────────────────────────────
 
 function formatHistoriqueLine(entry, discordId) {
@@ -646,6 +713,7 @@ function buildReglesEmbed(config) {
       "🎲 **Jouer** — lance tes 5 dés.",
       "🔒 **Clique sur un dé** pour le conserver (ou le relâcher) avant la relance.",
       "🔁 **Relancer** — relance tous les dés non conservés. Possible 2 fois, donc 3 tirages au total.",
+      "👍 **Valider** — dès que tes dés forment déjà une combinaison, fige ta main immédiatement sans attendre les relances restantes (n'apparaît que si une combinaison est atteinte).",
       "Ta combinaison finale est calculée automatiquement — pas besoin de choisir toi-même la catégorie.",
       "",
       "**Barème (la catégorie applicable la plus valorisée est toujours retenue) :**",

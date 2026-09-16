@@ -1597,6 +1597,8 @@ Doublons de combinaison autorisés sur la semaine (pas de contrainte "une catég
 
 Une main par jour, définitive. 🎲 **Jouer** lance 5 dés (1ᵉʳ tirage). Chaque dé a son propre bouton togglable (🔒 gardé / 🎲 sera relancé, ou la vraie face de dé si `diceEmojis` est configuré — voir ci-dessous) ; cliquer dessus **ne consomme pas de tirage**, juste une mise à jour du message éphémère. 🔁 **Relancer** relance tous les dés non conservés et consomme un tirage — possible 2 fois (3 tirages au total), après quoi la combinaison finale est calculée automatiquement (`computeBestCombination()`) et affichée avec les points gagnés.
 
+👍 **Valider** (ajouté le 16/09, retour utilisateur) apparaît en plus de Relancer dès que les dés COURANTS forment déjà une combinaison (n'importe laquelle sauf "Aucune combinaison"), y compris dès le 1ᵉʳ tirage — permet de figer une bonne main immédiatement sans attendre les 2 relances obligatoires. Un clic sur un bouton devenu obsolète (dés changés entretemps par une relance) est ignoré silencieusement : la main n'est jamais figée sans combinaison, le message est simplement repeint avec l'état réel.
+
 Une main encore `en_cours` à la clôture (joueur qui n'a pas fini ses 2 relances) est figée sur les dés courants plutôt qu'ignorée (`resolveJour()`).
 
 ### Emojis personnalisés pour les faces de dé

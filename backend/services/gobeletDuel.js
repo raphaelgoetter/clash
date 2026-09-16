@@ -311,6 +311,34 @@ export async function relance(discordId) {
   return { state: newState, hand: updated, kept: [false, false, false, false, false] };
 }
 
+// Fige la main immédiatement si les dés courants forment déjà une
+// combinaison (n'importe laquelle sauf "Aucune combinaison"), sans attendre
+// les 2 relances — même règle que le jeu spécial (gobelet.js).
+export async function valider(discordId) {
+  const state = await readState();
+  if (!state || state.termine) return { inactive: true };
+
+  const manche = state.manche;
+  const hand = await readHand(manche, discordId);
+  if (!hand) return { noHand: true, state };
+  if (hand.status !== "en_cours") return { alreadyDone: true, state, hand };
+
+  const { category, points } = computeBestCombination(hand.dice);
+  if (category === "Aucune combinaison") {
+    const kept = await readKept(manche, discordId);
+    return { notEligible: true, state, hand, kept };
+  }
+
+  const updated = { ...hand, status: "termine", category, points };
+  await writeHand(manche, discordId, updated);
+  await resetKept(manche, discordId);
+
+  const newState = { ...state, lastActivityAt: new Date().toISOString() };
+  await writeState(newState);
+
+  return { state: newState, hand: updated, kept: [false, false, false, false, false] };
+}
+
 // ── Résolution de fin de manche (concurrence) ───────────────────────
 // Même idiome que assignSeasonMancheNumber (anagrams.js/frames.js/zoom.js) :
 // HSETNX atomique, seul le 1er appelant qui réussit exécute la résolution —

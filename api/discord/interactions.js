@@ -145,6 +145,7 @@ import {
   handleJouer as handleGobeletJouer,
   handleToggle as handleGobeletToggle,
   handleRelancer as handleGobeletRelancer,
+  handleValider as handleGobeletValider,
   handleRegles as handleGobeletRegles,
   handleJournal as handleGobeletJournal,
 } from "./_handlers/gobelet.js";
@@ -155,6 +156,7 @@ import {
   handleJouer as handleGobeletDuelJouer,
   handleToggle as handleGobeletDuelToggle,
   handleRelancer as handleGobeletDuelRelancer,
+  handleValider as handleGobeletDuelValider,
   handleRegles as handleGobeletDuelRegles,
   extractMember as extractGobeletDuelMember,
 } from "./_handlers/gobeletDuel.js";
@@ -9166,6 +9168,20 @@ export default async function handler(req, res) {
     return;
   }
 
+  // ── Gobelet Duel : bouton "Valider" (fige la main immédiatement si une
+  // combinaison est déjà atteinte, sans attendre les 2 relances) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("gobeletduel_valider:")
+  ) {
+    const { discordId } = extractGobeletDuelMember(body);
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleGobeletDuelValider(webhookUrl, discordId));
+    return;
+  }
+
   // ── Gobelet Duel : bouton "Règles" (éphémère, statique) ──
   if (body.type === 3 && body.data?.custom_id === "gobeletduel_regles") {
     res.status(200).json({ type: 5, data: { flags: 64 } });
@@ -9408,6 +9424,21 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleGobeletRelancer(webhookUrl, jour, discordId));
+    return;
+  }
+
+  // ── Gobelet : bouton "Valider" (fige la main immédiatement si une
+  // combinaison est déjà atteinte, sans attendre les 2 relances) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("gobelet_valider:")
+  ) {
+    const jour = body.data.custom_id.split(":")[1];
+    const discordId = body.member?.user?.id;
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleGobeletValider(webhookUrl, jour, discordId));
     return;
   }
 

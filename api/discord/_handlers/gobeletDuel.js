@@ -19,10 +19,11 @@ import {
   joinAndDeal,
   toggleKept,
   relance,
+  valider,
   checkAndResolveManche,
   listHands,
 } from "../../../backend/services/gobeletDuel.js";
-import { loadGobeletConfig } from "../../../backend/services/gobelet.js";
+import { loadGobeletConfig, computeBestCombination } from "../../../backend/services/gobelet.js";
 import { getRoleIdByName, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
 
@@ -282,8 +283,30 @@ function buildDieEmoji(value, kept, diceEmojis) {
   return { name: kept ? "🔒" : "🎲" };
 }
 
+// Le bouton Valider n'apparaît que si les dés COURANTS forment déjà une
+// combinaison (n'importe laquelle sauf "Aucune combinaison"), dès le 1ᵉʳ
+// tirage — même règle que le jeu spécial (_handlers/gobelet.js).
 function buildHandComponents(manche, hand, kept, diceEmojis) {
   if (hand.status !== "en_cours") return [];
+  const canValider = computeBestCombination(hand.dice).category !== "Aucune combinaison";
+  const secondRow = [
+    {
+      type: 2,
+      style: 1,
+      label: relancerLabel(kept),
+      emoji: { name: kept.every(Boolean) ? "➡️" : "🔁" },
+      custom_id: `gobeletduel_relancer:${manche}`,
+    },
+  ];
+  if (canValider) {
+    secondRow.push({
+      type: 2,
+      style: 3,
+      label: "Valider",
+      emoji: { name: "👍" },
+      custom_id: `gobeletduel_valider:${manche}`,
+    });
+  }
   return [
     {
       type: 1,
@@ -295,18 +318,7 @@ function buildHandComponents(manche, hand, kept, diceEmojis) {
         custom_id: `gobeletduel_toggle:${manche}:${i}`,
       })),
     },
-    {
-      type: 1,
-      components: [
-        {
-          type: 2,
-          style: 1,
-          label: relancerLabel(kept),
-          emoji: { name: kept.every(Boolean) ? "➡️" : "🔁" },
-          custom_id: `gobeletduel_relancer:${manche}`,
-        },
-      ],
-    },
+    { type: 1, components: secondRow },
   ];
 }
 
@@ -450,6 +462,56 @@ export async function handleRelancer(webhookUrl, discordId) {
   }
 }
 
+export async function handleValider(webhookUrl, discordId) {
+  try {
+    const result = await valider(discordId);
+
+    if (result.inactive) {
+      await patchOriginal(webhookUrl, {
+        content: "Aucune partie du Jeu du Gobelet Duel en cours pour le moment.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    if (result.noHand) {
+      await patchOriginal(webhookUrl, {
+        content: "Clique d'abord sur **Jouer** pour lancer tes 5 dés !",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    if (result.alreadyDone) {
+      await patchOriginal(webhookUrl, {
+        embeds: [buildHandEmbed(result.state.manche, result.hand, NO_KEPT)],
+        components: [],
+      });
+      return;
+    }
+
+    const { diceEmojis } = await loadGobeletConfig();
+    if (result.notEligible) {
+      // Garde-fou : le bouton ne devrait normalement pas être cliquable
+      // dans ce cas (voir buildHandComponents) — on repeint juste l'état réel.
+      await patchOriginal(webhookUrl, {
+        embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept)],
+        components: buildHandComponents(result.state.manche, result.hand, result.kept, diceEmojis),
+      });
+      return;
+    }
+
+    await patchOriginal(webhookUrl, {
+      embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept)],
+      components: buildHandComponents(result.state.manche, result.hand, result.kept, diceEmojis),
+    });
+
+    await refreshPublicMessage();
+  } catch (err) {
+    console.error("[GobeletDuel] Échec Valider:", err.message);
+  }
+}
+
 // ── Bouton [📖 Règles] — éphémère, statique ────────────────────────
 
 function buildReglesEmbed() {
@@ -464,6 +526,7 @@ function buildReglesEmbed() {
       "🎲 **Jouer** — lance tes 5 dés.",
       "🔒 **Clique sur un dé** pour le conserver (ou le relâcher) avant la relance.",
       "🔁 **Relancer** — relance tous les dés non conservés. Possible 2 fois, donc 3 tirages au total.",
+      "👍 **Valider** — dès que tes dés forment déjà une combinaison, fige ta main immédiatement sans attendre les relances restantes (n'apparaît que si une combinaison est atteinte).",
       "Ta combinaison finale est calculée automatiquement — pas besoin de choisir toi-même la catégorie.",
       "",
       "**Barème (la catégorie applicable la plus valorisée est toujours retenue) :**",
