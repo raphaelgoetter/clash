@@ -252,7 +252,7 @@ export async function handleGobeletRoleRejected(webhookUrl) {
 
 function buildHandStatusMessage(hand, kept) {
   if (hand.status === "termine") {
-    return `🎯 Combinaison retenue : **${hand.category}** — tu gagnes **${hand.points} point${hand.points > 1 ? "s" : ""}** cette manche !`;
+    return `🎯 Combinaison retenue : **${hand.category}**.\nTu gagnes **${hand.points} point${hand.points > 1 ? "s" : ""}** cette manche !`;
   }
   const toReroll = kept.filter((k) => !k).length;
   const rerollsLeft = 3 - hand.tirage;

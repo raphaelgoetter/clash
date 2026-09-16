@@ -379,7 +379,7 @@ async function patchOriginal(webhookUrl, payload) {
 
 function buildHandStatusMessage(hand, kept) {
   if (hand.status === "termine") {
-    return `🎯 Combinaison retenue : **${hand.category}** — tu gagnes **${hand.points} point${hand.points > 1 ? "s" : ""}** aujourd'hui !`;
+    return `🎯 Combinaison retenue : **${hand.category}**.\nTu gagnes **${hand.points} point${hand.points > 1 ? "s" : ""}** aujourd'hui !`;
   }
   const toReroll = kept.filter((k) => !k).length;
   const rerollsLeft = 3 - hand.tirage;
