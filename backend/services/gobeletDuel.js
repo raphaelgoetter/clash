@@ -133,6 +133,29 @@ export async function listHands(manche) {
   return hgetallJson(handKey(manche));
 }
 
+// ── Dés conservés (un champ Redis par dé, PAS un tableau dans le blob JSON
+// de la main) — même correctif que le jeu spécial (gobelet.js) pour la même
+// race condition : deux clics quasi simultanés sur des dés DIFFÉRENTS
+// écrasaient le tableau `kept` en repartant d'une lecture antérieure à
+// l'écriture de l'autre clic. Isoler chaque dé dans son propre champ de
+// hash Redis élimine ce conflit.
+function keptKey(manche, discordId) {
+  return `gobeletduel:kept:${manche}:${discordId}`;
+}
+
+export async function readKept(manche, discordId) {
+  const raw = await hgetallRaw(keptKey(manche, discordId));
+  return [0, 1, 2, 3, 4].map((i) => raw[String(i)] === "1");
+}
+
+async function setKeptField(manche, discordId, index, value) {
+  await getRedis().hset(keptKey(manche, discordId), { [String(index)]: value ? "1" : "0" });
+}
+
+async function resetKept(manche, discordId) {
+  await getRedis().del(keptKey(manche, discordId));
+}
+
 // ── Points cumulés sur la partie en cours ──────────────────────────
 
 async function addPoints(discordId, amount) {
@@ -156,6 +179,7 @@ export { buildRanking };
 export async function resetGobeletDuel() {
   await getRedis().del(STATE_KEY, POINTS_KEY, USERNAMES_KEY, RESOLVING_KEY);
   await scanDelete("gobeletduel:hand:*");
+  await scanDelete("gobeletduel:kept:*");
 }
 
 // ── Lancement d'une partie ──────────────────────────────────────────
@@ -215,23 +239,17 @@ export async function joinAndDeal(discordId, username) {
   const manche = state.manche;
   const existingHand = await readHand(manche, discordId);
   if (existingHand) {
-    return { state, hand: existingHand, isNew: false };
+    const kept = existingHand.status === "en_cours" ? await readKept(manche, discordId) : [false, false, false, false, false];
+    return { state, hand: existingHand, kept, isNew: false };
   }
 
   const decision = applyJoin(state, discordId);
   if (!decision.allowed) return { rosterLocked: true, state };
 
   const dice = rollDice(5);
-  const hand = {
-    dice,
-    kept: [false, false, false, false, false],
-    tirage: 1,
-    status: "en_cours",
-    category: null,
-    points: null,
-    username,
-  };
+  const hand = { dice, tirage: 1, status: "en_cours", category: null, points: null, username };
   await writeHand(manche, discordId, hand);
+  await resetKept(manche, discordId);
 
   const newState = {
     ...state,
@@ -241,7 +259,7 @@ export async function joinAndDeal(discordId, username) {
   };
   await writeState(newState);
 
-  return { state: newState, hand, isNew: true };
+  return { state: newState, hand, kept: [false, false, false, false, false], isNew: true };
 }
 
 // ── Sélection des dés à conserver / relance ─────────────────────────
@@ -255,14 +273,14 @@ export async function toggleKept(discordId, index) {
   if (!hand) return { noHand: true, state };
   if (hand.status !== "en_cours") return { alreadyDone: true, state, hand };
 
-  const kept = hand.kept.map((k, i) => (i === index ? !k : k));
-  const updated = { ...hand, kept };
-  await writeHand(manche, discordId, updated);
+  const kept = await readKept(manche, discordId);
+  await setKeptField(manche, discordId, index, !kept[index]);
+  const updatedKept = kept.map((k, i) => (i === index ? !k : k));
 
   const newState = { ...state, lastActivityAt: new Date().toISOString() };
   await writeState(newState);
 
-  return { state: newState, hand: updated };
+  return { state: newState, hand, kept: updatedKept };
 }
 
 export async function relance(discordId) {
@@ -274,21 +292,23 @@ export async function relance(discordId) {
   if (!hand) return { noHand: true, state };
   if (hand.status !== "en_cours") return { alreadyDone: true, state, hand };
 
-  const dice = rerollKept(hand.dice, hand.kept, Math.random);
+  const kept = await readKept(manche, discordId);
+  const dice = rerollKept(hand.dice, kept, Math.random);
   const tirage = hand.tirage + 1;
   let updated;
   if (tirage >= 3) {
     const { category, points } = computeBestCombination(dice);
     updated = { ...hand, dice, tirage, status: "termine", category, points };
   } else {
-    updated = { ...hand, dice, tirage, kept: [false, false, false, false, false] };
+    updated = { ...hand, dice, tirage };
   }
   await writeHand(manche, discordId, updated);
+  await resetKept(manche, discordId);
 
   const newState = { ...state, lastActivityAt: new Date().toISOString() };
   await writeState(newState);
 
-  return { state: newState, hand: updated };
+  return { state: newState, hand: updated, kept: [false, false, false, false, false] };
 }
 
 // ── Résolution de fin de manche (concurrence) ───────────────────────

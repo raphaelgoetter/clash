@@ -27,6 +27,7 @@ import { getRoleIdByName, MINI_JEUX_ROLE_NAME } from "../../../backend/services/
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
 
 const GOBELETDUEL_COLOR = 0x9b59b6;
+const NO_KEPT = [false, false, false, false, false];
 
 // ── Dés — rendu texte (dupliqué depuis _handlers/gobelet.js : pas de
 // dépendance croisée entre les deux variantes de rendu) ──────────────
@@ -249,19 +250,19 @@ export async function handleGobeletRoleRejected(webhookUrl) {
 
 // ── Main du joueur — Jouer / conserver un dé / Relancer ─────────────
 
-function buildHandStatusMessage(hand) {
+function buildHandStatusMessage(hand, kept) {
   if (hand.status === "termine") {
     return `🎯 Combinaison retenue : **${hand.category}** — tu gagnes **${hand.points} point${hand.points > 1 ? "s" : ""}** cette manche !`;
   }
-  const toReroll = hand.kept.filter((k) => !k).length;
+  const toReroll = kept.filter((k) => !k).length;
   const rerollsLeft = 3 - hand.tirage;
   return `Tirage ${hand.tirage}/3 — sélectionne les dés à conserver (🔒) puis clique sur **Relancer** pour relancer les ${toReroll} dé${toReroll > 1 ? "s" : ""} restant${toReroll > 1 ? "s" : ""}. Il te reste ${rerollsLeft} relance${rerollsLeft > 1 ? "s" : ""}.`;
 }
 
-function buildHandEmbed(manche, hand) {
+function buildHandEmbed(manche, hand, kept) {
   return {
     title: `🎲 Ta main — Manche ${manche}`,
-    description: [...formatDiceBlock(hand.dice), "", buildHandStatusMessage(hand)].join("\n"),
+    description: [...formatDiceBlock(hand.dice), "", buildHandStatusMessage(hand, kept)].join("\n"),
     color: GOBELETDUEL_COLOR,
   };
 }
@@ -281,16 +282,16 @@ function buildDieEmoji(value, kept, diceEmojis) {
   return { name: kept ? "🔒" : "🎲" };
 }
 
-function buildHandComponents(manche, hand, diceEmojis) {
+function buildHandComponents(manche, hand, kept, diceEmojis) {
   if (hand.status !== "en_cours") return [];
   return [
     {
       type: 1,
       components: hand.dice.map((value, i) => ({
         type: 2,
-        style: hand.kept[i] ? 3 : 2,
+        style: kept[i] ? 3 : 2,
         label: String(value),
-        emoji: buildDieEmoji(value, hand.kept[i], diceEmojis),
+        emoji: buildDieEmoji(value, kept[i], diceEmojis),
         custom_id: `gobeletduel_toggle:${manche}:${i}`,
       })),
     },
@@ -300,8 +301,8 @@ function buildHandComponents(manche, hand, diceEmojis) {
         {
           type: 2,
           style: 1,
-          label: relancerLabel(hand.kept),
-          emoji: { name: hand.kept.every(Boolean) ? "➡️" : "🔁" },
+          label: relancerLabel(kept),
+          emoji: { name: kept.every(Boolean) ? "➡️" : "🔁" },
           custom_id: `gobeletduel_relancer:${manche}`,
         },
       ],
@@ -359,8 +360,8 @@ export async function handleJouer(webhookUrl, discordId, username) {
     const { diceEmojis } = await loadGobeletConfig();
     const state = result.state;
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(state.manche, result.hand)],
-      components: buildHandComponents(state.manche, result.hand, diceEmojis),
+      embeds: [buildHandEmbed(state.manche, result.hand, result.kept)],
+      components: buildHandComponents(state.manche, result.hand, result.kept, diceEmojis),
     });
 
     if (result.isNew) {
@@ -392,14 +393,17 @@ export async function handleToggle(webhookUrl, discordId, index) {
       return;
     }
     if (result.alreadyDone) {
-      await patchOriginal(webhookUrl, { embeds: [buildHandEmbed(result.state.manche, result.hand)], components: [] });
+      await patchOriginal(webhookUrl, {
+        embeds: [buildHandEmbed(result.state.manche, result.hand, NO_KEPT)],
+        components: [],
+      });
       return;
     }
 
     const { diceEmojis } = await loadGobeletConfig();
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(result.state.manche, result.hand)],
-      components: buildHandComponents(result.state.manche, result.hand, diceEmojis),
+      embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept)],
+      components: buildHandComponents(result.state.manche, result.hand, result.kept, diceEmojis),
     });
   } catch (err) {
     console.error("[GobeletDuel] Échec sélection de dé:", err.message);
@@ -427,14 +431,17 @@ export async function handleRelancer(webhookUrl, discordId) {
       return;
     }
     if (result.alreadyDone) {
-      await patchOriginal(webhookUrl, { embeds: [buildHandEmbed(result.state.manche, result.hand)], components: [] });
+      await patchOriginal(webhookUrl, {
+        embeds: [buildHandEmbed(result.state.manche, result.hand, NO_KEPT)],
+        components: [],
+      });
       return;
     }
 
     const { diceEmojis } = await loadGobeletConfig();
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(result.state.manche, result.hand)],
-      components: buildHandComponents(result.state.manche, result.hand, diceEmojis),
+      embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept)],
+      components: buildHandComponents(result.state.manche, result.hand, result.kept, diceEmojis),
     });
 
     await refreshPublicMessage();

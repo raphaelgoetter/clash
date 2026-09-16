@@ -1624,10 +1624,13 @@ Même principe que Blackjack : `gobelet:manches` (HASH permanent) archive le cla
 | `gobelet:state` | STRING | `{ jour, channelId, messageId, publishedAt, termine }` |
 | `gobelet:points` | HASH | `discordId → points` cumulés (`HINCRBY`), remis à zéro à chaque nouveau Jour 1 |
 | `gobelet:usernames` | HASH | `discordId → pseudo`, repli d'affichage |
-| `gobelet:hand:<jour>` | HASH | `discordId → { dice, kept, tirage, status, category, points, username }` |
+| `gobelet:hand:<jour>` | HASH | `discordId → { dice, tirage, status, category, points, username }` |
+| `gobelet:kept:<jour>:<discordId>` | HASH | `"0".."4" → "1"/"0"` — dés conservés de la main en cours, un champ par dé (voir ci-dessous) |
 | `gobelet:historique` | HASH | `jour → { jour, results, resolvedAt }`, effacé par `resetGobelet()` |
 | `gobelet:manches` | HASH | `manche → { manche, ranking, winners, maxPoints, resolvedAt }`, jamais nettoyé |
 | `gobelet:manche_seq` | STRING (compteur) | Numéro de la prochaine manche à archiver |
+
+⚠️ **Dés conservés isolés du reste de la main** (bug corrigé le 16/09) : stocker `kept` comme tableau dans le même blob JSON que `dice`/`tirage`/etc. provoquait une race condition — deux clics quasi simultanés sur des dés DIFFÉRENTS (lecture-puis-écriture de LA MAIN ENTIÈRE à chaque clic) pouvaient s'écraser mutuellement, perdant silencieusement des dés cochés "à garder" avant même la relance. `gobelet:kept:<jour>:<discordId>` isole chaque dé dans son propre champ de hash (`readKept`/`setKeptField`/`resetKept`) : deux `HSET` sur des champs distincts n'entrent jamais en conflit, même simultanés. Même correctif appliqué à `gobeletduel:kept:<manche>:<discordId>` côté duel.
 
 ### Scripts npm (Jeu du Gobelet)
 

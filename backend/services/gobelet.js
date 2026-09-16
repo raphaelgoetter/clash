@@ -252,6 +252,36 @@ export async function listHands(jour) {
   return hgetallJson(handKey(jour));
 }
 
+// ── Dés conservés (un champ Redis par dé, PAS un tableau dans le blob JSON
+// de la main) ──────────────────────────────────────────────────────
+// Bug constaté le 16/09 : en stockant `kept` comme tableau dans le même
+// blob JSON que le reste de la main, deux clics quasi simultanés sur des
+// dés DIFFÉRENTS se marchaient dessus — chaque clic fait un
+// lecture-puis-écriture de LA MAIN ENTIÈRE, donc le second clic écrasait le
+// premier s'il repartait d'une lecture antérieure à l'écriture du premier
+// (plusieurs dés cochés "à garder" perdus, relancés par erreur). En
+// isolant chaque dé dans son propre champ de hash Redis, deux HSET sur des
+// champs distincts n'entrent jamais en conflit, même simultanés — seul un
+// double-clic sur EXACTEMENT le même dé reste théoriquement racy, sans
+// conséquence grave (un des deux clics est simplement perdu, l'état reste
+// cohérent).
+function keptKey(jour, discordId) {
+  return `gobelet:kept:${jour}:${discordId}`;
+}
+
+export async function readKept(jour, discordId) {
+  const raw = await hgetallRaw(keptKey(jour, discordId));
+  return [0, 1, 2, 3, 4].map((i) => raw[String(i)] === "1");
+}
+
+export async function setKeptField(jour, discordId, index, value) {
+  await getRedis().hset(keptKey(jour, discordId), { [String(index)]: value ? "1" : "0" });
+}
+
+export async function resetKept(jour, discordId) {
+  await getRedis().del(keptKey(jour, discordId));
+}
+
 // ── Points cumulés (manche en cours) ──────────────────────────────────
 // Le score gagné chaque jour est directement le nombre de points de la
 // catégorie retenue (voir computeBestCombination) — remis à zéro à chaque
@@ -330,6 +360,7 @@ export async function listManches({ limit = 10 } = {}) {
 export async function resetGobelet({ clearManches = false } = {}) {
   await getRedis().del(STATE_KEY, POINTS_KEY, USERNAMES_KEY, HISTORIQUE_KEY);
   await scanDelete("gobelet:hand:*");
+  await scanDelete("gobelet:kept:*");
   if (clearManches) {
     await getRedis().del(MANCHES_KEY, MANCHE_SEQ_KEY);
   }

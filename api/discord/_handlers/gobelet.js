@@ -21,6 +21,9 @@ import {
   readHand,
   writeHand,
   listHands,
+  readKept,
+  setKeptField,
+  resetKept,
   addPoints,
   readPoints,
   resetPoints,
@@ -374,19 +377,19 @@ async function patchOriginal(webhookUrl, payload) {
 // jour n'est jamais repatché, il n'y a aucun compteur à y afficher — la
 // main de chacun reste secrète jusqu'à la clôture du lendemain.
 
-function buildHandStatusMessage(hand) {
+function buildHandStatusMessage(hand, kept) {
   if (hand.status === "termine") {
     return `🎯 Combinaison retenue : **${hand.category}** — tu gagnes **${hand.points} point${hand.points > 1 ? "s" : ""}** aujourd'hui !`;
   }
-  const toReroll = hand.kept.filter((k) => !k).length;
+  const toReroll = kept.filter((k) => !k).length;
   const rerollsLeft = 3 - hand.tirage;
   return `Tirage ${hand.tirage}/3 — sélectionne les dés à conserver (🔒) puis clique sur **Relancer** pour relancer les ${toReroll} dé${toReroll > 1 ? "s" : ""} restant${toReroll > 1 ? "s" : ""}. Il te reste ${rerollsLeft} relance${rerollsLeft > 1 ? "s" : ""}.`;
 }
 
-function buildHandEmbed(jour, hand) {
+function buildHandEmbed(jour, hand, kept) {
   return {
     title: `🎲 Ta main — Jour ${jour}`,
-    description: [...formatDiceBlock(hand.dice), "", buildHandStatusMessage(hand)].join("\n"),
+    description: [...formatDiceBlock(hand.dice), "", buildHandStatusMessage(hand, kept)].join("\n"),
     color: GOBELET_COLOR,
   };
 }
@@ -407,16 +410,16 @@ function buildDieEmoji(value, kept, diceEmojis) {
   return { name: kept ? "🔒" : "🎲" };
 }
 
-function buildHandComponents(jour, hand, diceEmojis) {
+function buildHandComponents(jour, hand, kept, diceEmojis) {
   if (hand.status !== "en_cours") return [];
   return [
     {
       type: 1,
       components: hand.dice.map((value, i) => ({
         type: 2,
-        style: hand.kept[i] ? 3 : 2,
+        style: kept[i] ? 3 : 2,
         label: String(value),
-        emoji: buildDieEmoji(value, hand.kept[i], diceEmojis),
+        emoji: buildDieEmoji(value, kept[i], diceEmojis),
         custom_id: `gobelet_toggle:${jour}:${i}`,
       })),
     },
@@ -426,8 +429,8 @@ function buildHandComponents(jour, hand, diceEmojis) {
         {
           type: 2,
           style: 1,
-          label: relancerLabel(hand.kept),
-          emoji: { name: hand.kept.every(Boolean) ? "➡️" : "🔁" },
+          label: relancerLabel(kept),
+          emoji: { name: kept.every(Boolean) ? "➡️" : "🔁" },
           custom_id: `gobelet_relancer:${jour}`,
         },
       ],
@@ -438,6 +441,8 @@ function buildHandComponents(jour, hand, diceEmojis) {
 function isDayInactive(state, jour) {
   return !state || state.termine || String(state.jour) !== String(jour);
 }
+
+const NO_KEPT = [false, false, false, false, false];
 
 export async function handleJouer(webhookUrl, jour, discordId, username) {
   try {
@@ -455,28 +460,22 @@ export async function handleJouer(webhookUrl, jour, discordId, username) {
 
     const existing = await readHand(jour, discordId);
     if (existing) {
+      const kept = existing.status === "en_cours" ? await readKept(jour, discordId) : NO_KEPT;
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(jour, existing)],
-        components: buildHandComponents(jour, existing, diceEmojis),
+        embeds: [buildHandEmbed(jour, existing, kept)],
+        components: buildHandComponents(jour, existing, kept, diceEmojis),
       });
       return;
     }
 
     const dice = rollDice(5);
-    const hand = {
-      dice,
-      kept: [false, false, false, false, false],
-      tirage: 1,
-      status: "en_cours",
-      category: null,
-      points: null,
-      username,
-    };
+    const hand = { dice, tirage: 1, status: "en_cours", category: null, points: null, username };
     await writeHand(jour, discordId, hand);
+    await resetKept(jour, discordId);
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(jour, hand)],
-      components: buildHandComponents(jour, hand, diceEmojis),
+      embeds: [buildHandEmbed(jour, hand, NO_KEPT)],
+      components: buildHandComponents(jour, hand, NO_KEPT, diceEmojis),
     });
   } catch (err) {
     console.error("[Gobelet] Échec Jouer:", err.message);
@@ -505,19 +504,19 @@ export async function handleToggle(webhookUrl, jour, index, discordId) {
       return;
     }
     if (hand.status !== "en_cours") {
-      await patchOriginal(webhookUrl, { embeds: [buildHandEmbed(jour, hand)], components: [] });
+      await patchOriginal(webhookUrl, { embeds: [buildHandEmbed(jour, hand, NO_KEPT)], components: [] });
       return;
     }
 
     const { diceEmojis } = await loadGobeletConfig();
     const i = Number(index);
-    const kept = hand.kept.map((k, idx) => (idx === i ? !k : k));
-    const updated = { ...hand, kept };
-    await writeHand(jour, discordId, updated);
+    const kept = await readKept(jour, discordId);
+    await setKeptField(jour, discordId, i, !kept[i]);
+    const updatedKept = kept.map((k, idx) => (idx === i ? !k : k));
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(jour, updated)],
-      components: buildHandComponents(jour, updated, diceEmojis),
+      embeds: [buildHandEmbed(jour, hand, updatedKept)],
+      components: buildHandComponents(jour, hand, updatedKept, diceEmojis),
     });
   } catch (err) {
     console.error("[Gobelet] Échec sélection de dé:", err.message);
@@ -546,25 +545,27 @@ export async function handleRelancer(webhookUrl, jour, discordId) {
       return;
     }
     if (hand.status !== "en_cours") {
-      await patchOriginal(webhookUrl, { embeds: [buildHandEmbed(jour, hand)], components: [] });
+      await patchOriginal(webhookUrl, { embeds: [buildHandEmbed(jour, hand, NO_KEPT)], components: [] });
       return;
     }
 
     const { diceEmojis } = await loadGobeletConfig();
-    const dice = rerollKept(hand.dice, hand.kept, Math.random);
+    const kept = await readKept(jour, discordId);
+    const dice = rerollKept(hand.dice, kept, Math.random);
     const tirage = hand.tirage + 1;
     let updated;
     if (tirage >= 3) {
       const { category, points } = computeBestCombination(dice);
       updated = { ...hand, dice, tirage, status: "termine", category, points };
     } else {
-      updated = { ...hand, dice, tirage, kept: [false, false, false, false, false] };
+      updated = { ...hand, dice, tirage };
     }
     await writeHand(jour, discordId, updated);
+    await resetKept(jour, discordId);
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(jour, updated)],
-      components: buildHandComponents(jour, updated, diceEmojis),
+      embeds: [buildHandEmbed(jour, updated, NO_KEPT)],
+      components: buildHandComponents(jour, updated, NO_KEPT, diceEmojis),
     });
   } catch (err) {
     console.error("[Gobelet] Échec Relancer:", err.message);
