@@ -184,8 +184,10 @@ const CATEGORY_PRIORITY = [
 
 // Barème (voir CONTRIBUTING.md) : on évalue TOUTES les catégories
 // applicables au résultat final et on retient la plus valorisée — pas un
-// ordre de priorité fixe. Ex. un Carré de 6 (6,6,6,6,5, somme=29) matche à
-// la fois Carré (30 pts) et Somme ≥ 28 (40 pts) : on retient 40.
+// ordre de priorité fixe. Ex. un Full (1,1,1,2,2, somme=7) matche à la fois
+// Full (40 pts) et Somme ≤ 7 (45 pts) : on retient 45 (barème révisé le
+// 16/09, retour utilisateur — les seuils de somme et les suites valent
+// désormais plus qu'avant, dépassant le Full).
 export function computeBestCombination(dice) {
   const sum = dice.reduce((total, d) => total + d, 0);
   const counts = diceCounts(dice);
@@ -195,13 +197,13 @@ export function computeBestCombination(dice) {
   if (sameCounts(counts, [3, 1, 1])) candidates.push({ label: "Brelan", points: 20 });
   if (sameCounts(counts, [4, 1])) candidates.push({ label: "Carré", points: 30 });
   if (sameCounts(counts, [3, 2])) candidates.push({ label: "Full", points: 40 });
-  if (sum <= 7) candidates.push({ label: "Somme ≤ 7", points: 40 });
-  if (sum >= 28) candidates.push({ label: "Somme ≥ 28", points: 40 });
+  if (sum <= 7) candidates.push({ label: "Somme ≤ 7", points: 45 });
+  if (sum >= 28) candidates.push({ label: "Somme ≥ 28", points: 45 });
   if (uniqueSorted.length === 5 && uniqueSorted[0] === 1 && uniqueSorted[4] === 5) {
-    candidates.push({ label: "Petite Suite", points: 45 });
+    candidates.push({ label: "Petite Suite", points: 50 });
   }
   if (uniqueSorted.length === 5 && uniqueSorted[0] === 2 && uniqueSorted[4] === 6) {
-    candidates.push({ label: "Grande Suite", points: 50 });
+    candidates.push({ label: "Grande Suite", points: 55 });
   }
   if (sameCounts(counts, [5])) candidates.push({ label: "Gobelet", points: 60 });
 

@@ -1577,7 +1577,7 @@ Mêmes garde-fous que Blackjack : `isTooSoonSinceLastClosure()` (copie propre da
 
 ### Barème — résolution par catégorie la plus valorisée
 
-`computeBestCombination(dice)` évalue TOUTES les catégories applicables au résultat final et retient la plus valorisée — pas un ordre de priorité fixe (ex. un Carré de 6 avec une somme ≥28 rapporte 40 pts, pas 30).
+`computeBestCombination(dice)` évalue TOUTES les catégories applicables au résultat final et retient la plus valorisée — pas un ordre de priorité fixe (ex. un Full 1,1,1,2,2 avec une somme ≤7 rapporte 45 pts, pas 40 ; barème révisé le 16/09, retour utilisateur sur un cas réel de ce type).
 
 | Résultat | Condition | Points |
 | -------- | --------- | ------ |
@@ -1585,10 +1585,10 @@ Mêmes garde-fous que Blackjack : `isTooSoonSinceLastClosure()` (copie propre da
 | Brelan | 3 dés identiques | 20 |
 | Carré | 4 dés identiques | 30 |
 | Full | 3 + 2 | 40 |
-| Somme ≤ 7 | somme ≤ 7 | 40 |
-| Somme ≥ 28 | somme ≥ 28 | 40 |
-| Petite Suite | exactement 1,2,3,4,5 | 45 |
-| Grande Suite | exactement 2,3,4,5,6 | 50 |
+| Somme ≤ 7 | somme ≤ 7 | 45 |
+| Somme ≥ 28 | somme ≥ 28 | 45 |
+| Petite Suite | exactement 1,2,3,4,5 | 50 |
+| Grande Suite | exactement 2,3,4,5,6 | 55 |
 | Gobelet | 5 dés identiques | 60 |
 
 Doublons de combinaison autorisés sur la semaine (pas de contrainte "une catégorie = un seul usage", contrairement au Yahtzee classique — pas de choix de catégorie par le joueur non plus, la meilleure combinaison est toujours calculée automatiquement).

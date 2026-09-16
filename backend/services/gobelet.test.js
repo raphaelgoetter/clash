@@ -37,16 +37,19 @@ async function main() {
   assert.deepStrictEqual(computeBestCombination([2, 2, 2, 4, 6]), { category: "Brelan", points: 20 });
   assert.deepStrictEqual(computeBestCombination([3, 3, 3, 3, 6]), { category: "Carré", points: 30 });
   assert.deepStrictEqual(computeBestCombination([4, 4, 4, 2, 2]), { category: "Full", points: 40 });
-  assert.deepStrictEqual(computeBestCombination([1, 1, 1, 1, 2]), { category: "Somme ≤ 7", points: 40 }); // somme=6
-  assert.deepStrictEqual(computeBestCombination([1, 2, 3, 4, 5]), { category: "Petite Suite", points: 45 });
-  assert.deepStrictEqual(computeBestCombination([2, 3, 4, 5, 6]), { category: "Grande Suite", points: 50 });
+  assert.deepStrictEqual(computeBestCombination([1, 1, 1, 1, 2]), { category: "Somme ≤ 7", points: 45 }); // somme=6
+  assert.deepStrictEqual(computeBestCombination([1, 2, 3, 4, 5]), { category: "Petite Suite", points: 50 });
+  assert.deepStrictEqual(computeBestCombination([2, 3, 4, 5, 6]), { category: "Grande Suite", points: 55 });
   assert.deepStrictEqual(computeBestCombination([6, 6, 6, 6, 6]), { category: "Gobelet", points: 60 });
 
   // ── Chevauchement — la catégorie la plus valorisée l'emporte, pas la
   // priorité de la liste ──
-  // 6,6,6,6,5 : Carré (30) ET somme=29 >= 28 (40) -> on retient 40.
-  assert.deepStrictEqual(computeBestCombination([6, 6, 6, 6, 5]), { category: "Somme ≥ 28", points: 40 });
-  // Gobelet (60) bat toujours "Somme >= 28" (40) même si les deux matchent.
+  // 6,6,6,6,5 : Carré (30) ET somme=29 >= 28 (45) -> on retient 45.
+  assert.deepStrictEqual(computeBestCombination([6, 6, 6, 6, 5]), { category: "Somme ≥ 28", points: 45 });
+  // 1,2,1,1,2 : Full (40) ET somme=7 <= 7 (45) -> on retient 45 (cas réel
+  // signalé le 16/09, à l'origine de la révision du barème).
+  assert.deepStrictEqual(computeBestCombination([1, 2, 1, 1, 2]), { category: "Somme ≤ 7", points: 45 });
+  // Gobelet (60) bat toujours "Somme >= 28" (45) même si les deux matchent.
   assert.deepStrictEqual(computeBestCombination([6, 6, 6, 6, 6]).points, 60);
   // Un tirage sans combinaison peut rapporter plus qu'un petit Brelan.
   assert.deepStrictEqual(computeBestCombination([6, 6, 5, 5, 4]), { category: "Aucune combinaison", points: 26 });

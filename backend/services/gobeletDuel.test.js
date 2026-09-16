@@ -54,14 +54,14 @@ async function main() {
   {
     const state = baseState({ manche: 1, totalManches: 5 });
     const hands = {
-      a: { dice: [1, 2, 3, 4, 5], status: "termine", category: "Petite Suite", points: 45, username: "Alice" },
+      a: { dice: [1, 2, 3, 4, 5], status: "termine", category: "Petite Suite", points: 50, username: "Alice" },
       b: { dice: [1, 1, 2, 3, 4], status: "termine", category: "Aucune combinaison", points: 11, username: "Bob" },
     };
     const outcome = computeMancheOutcome(state, hands, {});
     assert.strictEqual(outcome.estFinDePartie, false);
     assert.strictEqual(outcome.mancheSuivante, 2);
     assert.strictEqual(outcome.ranking, null);
-    assert.strictEqual(outcome.pointsAfter.a, 45);
+    assert.strictEqual(outcome.pointsAfter.a, 50);
     assert.strictEqual(outcome.pointsAfter.b, 11);
   }
 
