@@ -73,7 +73,7 @@
       "id": "q7-prefere-quotidien",
       "type": "choice",
       "question": "Quel est ton jeu spécial préféré pour l'instant ?",
-      "answers": ["Tamagotchi", "Robinson", "Quiz", "Boss Raid", "Aucun"],
+      "answers": ["Tamagotchi", "Robinson", "Quiz", "Boss Raid", "Blackjack", "Aucun"],
       "allowMultiselect": false,
       "durationHours": 336
     },
@@ -101,6 +101,7 @@
         "Robinson",
         "Quiz",
         "Boss Raid",
+        "Blackjack",
         "Je participe à tous"
       ],
       "allowMultiselect": true,
