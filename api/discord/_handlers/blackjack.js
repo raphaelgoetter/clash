@@ -597,6 +597,26 @@ function handStatusMessage(hand, dealer, jour) {
   return "Pioche pour te rapprocher de 21, ou arrête-toi pour figer ton score.";
 }
 
+// Variante condensée pour le Journal : le score de la main et celui du
+// Croupier sont déjà visibles ailleurs (ligne "Ta main", historique des
+// jours précédents), donc seul le résultat est utile ici.
+function journalStatusMessage(hand, dealer, jour) {
+  const revealed = isDealerRevealed(jour);
+  if (hand.status === "bust") {
+    return "💥 Ta main est perdue pour aujourd'hui. Rendez-vous demain pour une nouvelle chance !";
+  }
+  if (hand.status === "stand") {
+    if (!revealed) {
+      return "Le Croupier n'a pas encore joué — tu sauras si tu l'as battu à la clôture, demain.";
+    }
+    const result = compareToDealer(hand.score, dealer);
+    if (result === "win") return "tu gagnes 2 points aujourd'hui ! 🏆";
+    if (result === "push") return "égalité, tu gagnes quand même 1 point aujourd'hui ! 🤝";
+    return "pas de point aujourd'hui.";
+  }
+  return "Pioche pour te rapprocher de 21, ou arrête-toi pour figer ton score.";
+}
+
 function buildHandEmbed(jour, hand, message) {
   const scoreLabel =
     hand.status === "bust" ? "Dépassement" : `Score : ${hand.score}`;
@@ -803,7 +823,7 @@ export async function handleJournal(webhookUrl, discordId) {
     const lines = [`**Jour ${state.jour}/${config.duree_jours}**`];
     if (hand) {
       lines.push(
-        `Ta main aujourd'hui : ${formatCards(hand.cards)} (**${hand.score}**) — ${handStatusMessage(hand, state.dealer, state.jour)}`,
+        `Ta main aujourd'hui : ${formatCards(hand.cards)} (**${hand.score}**) — ${journalStatusMessage(hand, state.dealer, state.jour)}`,
       );
     } else {
       lines.push(
@@ -811,9 +831,15 @@ export async function handleJournal(webhookUrl, discordId) {
       );
     }
 
+    const myRankIndex = ranking.findIndex((r) => r.discordId === discordId);
+    const myPoints = myRankIndex === -1 ? 0 : ranking[myRankIndex].points;
+    lines.push(
+      `Ton total : **${myPoints} pt${myPoints > 1 ? "s" : ""}**${myRankIndex === -1 ? "" : ` — ${myRankIndex + 1}${myRankIndex === 0 ? "er" : "ème"} au classement`}`,
+    );
+
     lines.push(
       "",
-      "**Classement cumulé :**",
+      "**Classement cumulé (top10) :**",
       ...(resolvedRanking.length
         ? resolvedRanking.map(
             (r, i) =>
