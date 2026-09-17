@@ -2,7 +2,8 @@
 // minijeux.js — Handler Discord pour /mini-jeux : état des lieux de tous
 // les mini-jeux réguliers (Frame, Anagram, Zoom carte, La Juste Carte) et
 // du jeu spécial actuellement actif (Quiz, Tamagotchi, Robinson, Boss Raid,
-// Goblin Hunters, Blackjack ou Mario Clash). Lecture seule, aucune écriture Redis.
+// Goblin Hunters, Blackjack, Mario Clash ou Gobelet). Lecture seule, aucune
+// écriture Redis.
 //
 // ⚠️ Goblin Hunters : ne jamais lire/afficher state.joueurs[].camp/role/pv —
 // seuls le nombre d'inscrits/vivants et le jour sont publics (voir la mise
@@ -15,13 +16,46 @@ import { readState as readZoomState } from "../../../backend/services/zoom.js";
 import { readState as readAnagramState } from "../../../backend/services/anagrams.js";
 import { readState as readJusteCarteState } from "../../../backend/services/lajustecarte.js";
 
-import { readState as readQuizState, loadQuizConfig, listVotes as listQuizVotes } from "../../../backend/services/quiz.js";
-import { readState as readTamaState, loadTamagotchiConfig, listVotes as listTamaVotes } from "../../../backend/services/tamagotchi.js";
-import { readState as readRobinsonState, loadRobinsonConfig, countUniqueVoters as countRobinsonVoters } from "../../../backend/services/robinson.js";
-import { readState as readBossraidState, loadBossRaidConfig, countUniqueVoters as countBossraidVoters } from "../../../backend/services/bossraid.js";
-import { readState as readGoblinState, loadGoblinHuntersConfig, listInscriptions as listGoblinInscriptions } from "../../../backend/services/goblinhunters.js";
-import { readState as readBlackjackState, loadBlackjackConfig, listHands as listBlackjackHands } from "../../../backend/services/blackjack.js";
-import { readState as readMarioClashState, loadMarioClashConfig, readActions as readMarioClashActions } from "../../../backend/services/marioclash.js";
+import {
+  readState as readQuizState,
+  loadQuizConfig,
+  listVotes as listQuizVotes,
+} from "../../../backend/services/quiz.js";
+import {
+  readState as readTamaState,
+  loadTamagotchiConfig,
+  listVotes as listTamaVotes,
+} from "../../../backend/services/tamagotchi.js";
+import {
+  readState as readRobinsonState,
+  loadRobinsonConfig,
+  countUniqueVoters as countRobinsonVoters,
+} from "../../../backend/services/robinson.js";
+import {
+  readState as readBossraidState,
+  loadBossRaidConfig,
+  countUniqueVoters as countBossraidVoters,
+} from "../../../backend/services/bossraid.js";
+import {
+  readState as readGoblinState,
+  loadGoblinHuntersConfig,
+  listInscriptions as listGoblinInscriptions,
+} from "../../../backend/services/goblinhunters.js";
+import {
+  readState as readBlackjackState,
+  loadBlackjackConfig,
+  listHands as listBlackjackHands,
+} from "../../../backend/services/blackjack.js";
+import {
+  readState as readMarioClashState,
+  loadMarioClashConfig,
+  readActions as readMarioClashActions,
+} from "../../../backend/services/marioclash.js";
+import {
+  readState as readGobeletState,
+  loadGobeletConfig,
+  listHands as listGobeletHands,
+} from "../../../backend/services/gobelet.js";
 import { BLACKJACK_START_IMAGE_URL } from "./blackjack.js";
 
 import { getCurrentSeasonBounds } from "../../../backend/services/dateUtils.js";
@@ -43,11 +77,31 @@ function channelLink() {
 
 // 0 = dimanche .. 6 = samedi (Date.getUTCDay())
 const REGULAR_GAMES = [
-  { key: "blindroyale", title: "🎧 Blind Royale", weekday: 1, readState: readBlindRoyaleState },
-  { key: "frame", title: "🎬 Trouve le film !", weekday: 3, readState: readFrameState },
+  {
+    key: "blindroyale",
+    title: "🎧 Blind Royale",
+    weekday: 1,
+    readState: readBlindRoyaleState,
+  },
+  {
+    key: "frame",
+    title: "🎬 Trouve le film !",
+    weekday: 3,
+    readState: readFrameState,
+  },
   { key: "zoom", title: "🔍 Zoom carte", weekday: 5, readState: readZoomState },
-  { key: "anagram", title: "🔤 Anagram", weekday: 6, readState: readAnagramState },
-  { key: "lajustecarte", title: "🃏 La Juste Carte", weekday: 0, readState: readJusteCarteState },
+  {
+    key: "anagram",
+    title: "🔤 Anagram",
+    weekday: 6,
+    readState: readAnagramState,
+  },
+  {
+    key: "lajustecarte",
+    title: "🃏 La Juste Carte",
+    weekday: 0,
+    readState: readJusteCarteState,
+  },
 ];
 
 // Un seul actif à la fois par convention (voir les gardes-fous "wrongChannel"
@@ -61,31 +115,44 @@ const SPECIAL_GAMES = [
     readState: readQuizState,
     async detail(state) {
       const config = await loadQuizConfig();
-      const dureeJours = config.manches[state.mancheIndex]?.questions.length ?? null;
+      const dureeJours =
+        config.manches[state.mancheIndex]?.questions.length ?? null;
       const votes = await listQuizVotes(state.manche, state.jour);
-      return { jour: state.jour, dureeJours, participantsLabel: formatParticipantsToday(votes.length) };
+      return {
+        jour: state.jour,
+        dureeJours,
+        participantsLabel: formatParticipantsToday(votes.length),
+      };
     },
   },
   {
     key: "tamagotchi",
     title: "Tamagotchi",
-    style: "Simulation",
+    style: "Collaboratif",
     readState: readTamaState,
     async detail(state) {
       const config = await loadTamagotchiConfig();
       const votes = await listTamaVotes(state.jour);
-      return { jour: state.jour, dureeJours: config.duree_jours, participantsLabel: formatParticipantsToday(votes.length) };
+      return {
+        jour: state.jour,
+        dureeJours: config.duree_jours,
+        participantsLabel: formatParticipantsToday(votes.length),
+      };
     },
   },
   {
     key: "robinson",
     title: "Robinson",
-    style: "Survie",
+    style: "Collaboratif",
     readState: readRobinsonState,
     async detail(state) {
       const config = await loadRobinsonConfig();
       const participants = await countRobinsonVoters(state.jour);
-      return { jour: state.jour, dureeJours: config.duree_jours, participantsLabel: formatParticipantsToday(participants) };
+      return {
+        jour: state.jour,
+        dureeJours: config.duree_jours,
+        participantsLabel: formatParticipantsToday(participants),
+      };
     },
   },
   {
@@ -99,10 +166,19 @@ const SPECIAL_GAMES = [
         // Jour d'annonce : aucun vote possible encore (jour = null côté
         // état), donc ni "Jour null/7" ni "0 participant ce jour" n'ont de
         // sens — voir le même traitement pour Goblin Hunters ci-dessous.
-        return { jour: null, dureeJours: null, participantsLabel: null, phaseLabel: "Phase de présentation du jeu" };
+        return {
+          jour: null,
+          dureeJours: null,
+          participantsLabel: null,
+          phaseLabel: "Phase de présentation du jeu",
+        };
       }
       const participants = await countBossraidVoters(state.jour);
-      return { jour: state.jour, dureeJours: config.duree_jours, participantsLabel: formatParticipantsToday(participants) };
+      return {
+        jour: state.jour,
+        dureeJours: config.duree_jours,
+        participantsLabel: formatParticipantsToday(participants),
+      };
     },
   },
   {
@@ -153,20 +229,40 @@ const SPECIAL_GAMES = [
   {
     key: "marioclash",
     title: "Mario Clash",
-    style: "Course de plateau",
+    style: "Course",
     readState: readMarioClashState,
     async detail(state) {
       const config = await loadMarioClashConfig();
       if (state.phase === "annonce") {
         // Jour de présentation : pas encore de jour de course ni d'action
         // possible — même traitement que Boss Raid/Goblin Hunters ci-dessus.
-        return { jour: null, dureeJours: null, participantsLabel: null, phaseLabel: "Phase de présentation du jeu" };
+        return {
+          jour: null,
+          dureeJours: null,
+          participantsLabel: null,
+          phaseLabel: "Phase de présentation du jeu",
+        };
       }
       const actions = await readMarioClashActions(state.jour);
       return {
         jour: state.jour,
         dureeJours: config.duree_jours,
         participantsLabel: formatParticipantsToday(Object.keys(actions).length),
+      };
+    },
+  },
+  {
+    key: "gobelet",
+    title: "Gobelet",
+    style: "Casino",
+    readState: readGobeletState,
+    async detail(state) {
+      const config = await loadGobeletConfig();
+      const hands = await listGobeletHands(state.jour);
+      return {
+        jour: state.jour,
+        dureeJours: config.duree_jours,
+        participantsLabel: formatParticipantsToday(Object.keys(hands).length),
       };
     },
   },
@@ -182,11 +278,17 @@ function formatParticipantsToday(count) {
 }
 
 function isLiveOnPublicChannel(state) {
-  return Boolean(state && !state.termine && state.channelId === PUBLIC_CHANNEL_ID);
+  return Boolean(
+    state && !state.termine && state.channelId === PUBLIC_CHANNEL_ID,
+  );
 }
 
 function daysUntilWeekday(now, weekday) {
-  const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const todayUtc = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+  );
   const todayWeekday = new Date(todayUtc).getUTCDay();
   return (weekday - todayWeekday + 7) % 7;
 }
@@ -242,7 +344,7 @@ async function buildRegularGamesBlock(now) {
   // "##" (titre markdown niveau 2) plutôt que "**gras**" : même taille de
   // rendu que le titre du jeu spécial ci-dessous, plus imposante qu'un
   // simple gras — voir buildSpecialGameBlock().
-  return `## Les Mini-jeux réguliers du serveur\n*(classés par ordre de fin la plus proche)*\n\n${lines.join("\n\n")}`;
+  return `## Les Mini-jeux hebdomadaires\n*(classés par ordre de fin la plus proche)*\n\n${lines.join("\n\n")}`;
 }
 
 async function findActiveSpecialGame() {
@@ -270,7 +372,9 @@ async function buildSpecialGameBlock() {
   if (detail.phaseLabel) {
     lines.push(`- ${detail.phaseLabel}`);
   } else {
-    lines.push(`- Jour ${detail.jour}${detail.dureeJours ? `/${detail.dureeJours}` : ""}`);
+    lines.push(
+      `- Jour ${detail.jour}${detail.dureeJours ? `/${detail.dureeJours}` : ""}`,
+    );
   }
   if (detail.participantsLabel) {
     lines.push(`- ${detail.participantsLabel}`);
@@ -296,7 +400,10 @@ export async function buildMiniJeuxEmbed(now = new Date()) {
   ];
 
   const { end } = getCurrentSeasonBounds(now);
-  const daysUntilSeasonEnd = Math.max(0, Math.ceil((end.getTime() - now.getTime()) / 86400000));
+  const daysUntilSeasonEnd = Math.max(
+    0,
+    Math.ceil((end.getTime() - now.getTime()) / 86400000),
+  );
 
   return {
     title: "🎮 État des lieux des Mini-jeux",
