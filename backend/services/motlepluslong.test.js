@@ -6,6 +6,8 @@ import {
   filterEligiblePool,
   canFormFromBag,
   buildLetterBag,
+  buildLetterBagFromSeeds,
+  pickCompatibleSecondarySeed,
   weightedRandomLetter,
   validateSubmission,
   computeScore,
@@ -67,6 +69,30 @@ async function main() {
   const bag = buildLetterBag("Bébé dragon", rng);
   assert.strictEqual(bag.length, DRAW_SIZE);
   assert.strictEqual(canFormFromBag("Bébé dragon", bag), true);
+
+  // buildLetterBagFromSeeds — UNION des lettres (pas la somme) : "as" + "sa"
+  // partagent déjà leurs lettres, donc 2 lettres suffisent, pas 4.
+  const unionBag = buildLetterBagFromSeeds(["as", "sa"], mulberry32(1), 2);
+  assert.strictEqual(unionBag.length, 2);
+  assert.strictEqual(canFormFromBag("as", unionBag), true);
+  assert.strictEqual(canFormFromBag("sa", unionBag), true);
+  // les deux mots-seed tiennent simultanément dans un tirage à taille normale
+  const twoSeedBag = buildLetterBagFromSeeds(["Gel", "Golem"], mulberry32(2));
+  assert.strictEqual(canFormFromBag("Gel", twoSeedBag), true);
+  assert.strictEqual(canFormFromBag("Golem", twoSeedBag), true);
+
+  // pickCompatibleSecondarySeed — jamais la carte principale elle-même,
+  // toujours une carte dont les lettres tiennent avec la principale
+  const miniPool = [
+    { cardKey: "A", fr: "Gel" },
+    { cardKey: "B", fr: "Golem" },
+    { cardKey: "C", fr: "Rage" },
+  ];
+  const secondary = pickCompatibleSecondarySeed(miniPool, miniPool[0], mulberry32(3));
+  assert.notStrictEqual(secondary?.cardKey, "A");
+  assert.ok(["B", "C"].includes(secondary?.cardKey));
+  // aucune carte compatible disponible (pool à une seule carte) -> null, pas d'erreur
+  assert.strictEqual(pickCompatibleSecondarySeed([miniPool[0]], miniPool[0], mulberry32(3)), null);
 
   // weightedRandomLetter — toujours une lettre valide de la table
   const seenLetters = new Set();
