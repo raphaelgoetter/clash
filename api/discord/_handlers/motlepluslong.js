@@ -37,18 +37,24 @@ import {
 } from "../../../backend/services/motlepluslong.js";
 
 const MOTLEPLUSLONG_COLOR = 0x9b59b6;
+const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 
-function buildMotLePlusLongEmbed({ seasonId, seasonManche, seasonMancheTotal, letters }) {
-  const lettersDisplay = letters ? letters.join(" ") : "? ? ? ? ? ? ? ? ? ? ? ?";
+// L'image (chevalet de tuiles, voir motlepluslongImage.js) n'existe que pour
+// une manche RÉELLEMENT démarrée (gameId != null) — en dry-run/preview,
+// aucun tirage n'a encore été généré (voir postMotLePlusLong), donc pas
+// d'image à référencer.
+function buildMotLePlusLongEmbed({ seasonId, seasonManche, seasonMancheTotal, gameId }) {
   return {
     title: "🔤 [TEST] Le Mot le Plus Long",
     description:
       `**Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
-      `Voici tes 12 lettres :\n\n# ${lettersDisplay}\n\n` +
-      "Propose le nom de carte Clash Royale **le plus long** que tu peux former avec ces lettres (espaces et ponctuation ignorés, ex. **P.E.K.K.A** s'écrit **PEKKA**). " +
+      "Voici tes 12 lettres — propose le nom de carte Clash Royale **le plus long** que tu peux former avec (espaces et ponctuation ignorés, ex. **P.E.K.K.A** s'écrit **PEKKA**). " +
       "Tu peux reproposer autant de fois que tu veux, seul ton meilleur mot compte — le score est simplement son nombre de lettres.\n\n" +
       "🚧 Jeu en test — les résultats de cette manche ne comptent pas encore pour un classement de saison officiel.",
     color: MOTLEPLUSLONG_COLOR,
+    // Cache-buster (?v=) — même pattern que frames.js/zoom.js/lajustecarte.js :
+    // Discord met en cache l'aperçu d'un embed PAR URL.
+    ...(gameId ? { image: { url: `${TRUST_ROYALE_URL}/api/motlepluslong/image?gameId=${gameId}&v=${Date.now()}` } } : {}),
     footer: { text: "Manche ouverte jusqu'à la prochaine (jour de publication pas encore fixé)." },
   };
 }
@@ -103,7 +109,7 @@ export async function postMotLePlusLong(channelId, { dryRun = false, force = fal
     const seasonId = await getCurrentSeasonId();
     const seasonManche = await previewSeasonManche(seasonId);
     const seasonMancheTotal = computeSeasonMancheTotal(seasonManche);
-    const embed = buildMotLePlusLongEmbed({ seasonId, seasonManche, seasonMancheTotal, letters: null });
+    const embed = buildMotLePlusLongEmbed({ seasonId, seasonManche, seasonMancheTotal });
     return { dryRun: true, poolSize: pool.length, embed, components: buildAnswerComponents("preview") };
   }
 

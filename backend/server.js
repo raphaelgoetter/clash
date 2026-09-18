@@ -23,6 +23,7 @@ import { clearAll } from "./services/cache.js";
 import { fetchClan, fetchPlayer } from "./services/clashApi.js";
 import { getCurrentFrameImage, getFrameImageByGameId } from "./services/frames.js";
 import { getZoomCardImage, getZoomHintImage, getZoomRevealImage } from "./services/zoomImage.js";
+import { getMotLePlusLongRackImage } from "./services/motlepluslongImage.js";
 import {
   getBoardImage as getGoblinHuntersBoardImage,
   getEndImage as getGoblinHuntersEndImage,
@@ -285,6 +286,18 @@ app.get("/api/zoom/image", async (req, res) => {
   if (!gameId) return res.status(400).end();
   const getImage = stage === "hint" ? getZoomHintImage : stage === "reveal" ? getZoomRevealImage : getZoomCardImage;
   const image = await getImage(String(gameId)).catch(() => null);
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", "image/png");
+  res.setHeader("Cache-Control", "no-store");
+  res.send(image.buffer);
+});
+
+// [TEST] Jeu Le Mot le Plus Long : sert l'image du chevalet de tuiles pour
+// la manche EN COURS (pas d'anti-spoiler ici, les lettres sont publiques dès
+// la publication — voir motlepluslongImage.js). gameId n'est qu'un
+// cache-buster d'URL, comme `jour` pour Goblin Hunters ci-dessous.
+app.get("/api/motlepluslong/image", async (req, res) => {
+  const image = await getMotLePlusLongRackImage().catch(() => null);
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", "image/png");
   res.setHeader("Cache-Control", "no-store");
