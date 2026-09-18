@@ -77,6 +77,7 @@ import {
   buildAnswerModal as buildPeleMeleAnswerModal,
   handleModalSubmit as handlePeleMeleModalSubmit,
   buildRulesEmbed as buildPeleMeleRulesEmbed,
+  handleJournalButton as handlePeleMeleJournalButton,
 } from "./_handlers/pelemele.js";
 import {
   buildAnswerModal as buildBlindRoyaleAnswerModal,
@@ -9310,6 +9311,21 @@ export default async function handler(req, res) {
     return res
       .status(200)
       .json({ type: 4, data: { embeds: [buildPeleMeleRulesEmbed()], flags: 64 } });
+  }
+
+  // ── [TEST] Jeu Pêle-mêle : bouton "Journal" ──
+  // Lecture Redis (participant + historique de saison) : différé + webhook,
+  // même mécanique que la soumission de mot ci-dessous.
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id === "pelemele_journal"
+  ) {
+    const discordId = body.member?.user?.id;
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handlePeleMeleJournalButton(webhookUrl, discordId));
+    return;
   }
 
   // ── [TEST] Jeu Pêle-mêle : soumission de la Modal ──

@@ -37,6 +37,9 @@ import {
   computeSeasonMancheTotal,
   previewSeasonManche,
   alreadyPostedThisWeek,
+  readParticipant,
+  getPlayerSeasonResults,
+  getSeasonMancheNumber,
 } from "../../../backend/services/pelemele.js";
 
 const PELEMELE_COLOR = 0x9b59b6;
@@ -87,9 +90,11 @@ export function buildRulesEmbed() {
   };
 }
 
-// custom_id du bouton "Règles" SANS gameId : les règles ne dépendent pas de
-// la manche en cours, même routing/handler quel que soit le tirage — voir
-// buildRulesEmbed (contenu 100% statique, pas de lecture d'état).
+// custom_id des boutons "Règles"/"Journal" SANS gameId : ni l'un ni l'autre
+// ne dépend de la manche affichée sur CE post précis — les règles sont
+// statiques, et le Journal lit toujours l'état COURANT (readState) plutôt
+// que la manche à laquelle le message appartenait au moment de son post
+// (sinon cliquer sur un vieux post afficherait une manche "actuelle" périmée).
 function buildAnswerComponents(gameId) {
   return [
     {
@@ -106,6 +111,12 @@ function buildAnswerComponents(gameId) {
           style: 2,
           label: "📜 Règles",
           custom_id: "pelemele_rules",
+        },
+        {
+          type: 2,
+          style: 2,
+          label: "📖 Journal",
+          custom_id: "pelemele_journal",
         },
       ],
     },
@@ -195,8 +206,84 @@ async function postEphemeral(webhookUrl, content) {
   }
 }
 
+async function postEphemeralEmbed(webhookUrl, embed) {
+  if (!webhookUrl) return;
+  try {
+    await fetch(`${webhookUrl}/messages/@original`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ embeds: [embed] }),
+    });
+  } catch (err) {
+    console.error("[Pêle-mêle] Échec PATCH réponse éphémère (embed):", err.message);
+  }
+}
+
 function formatHistoryLine(history) {
   return history.length > 0 ? `_Tes propositions valides jusqu'ici : ${history.join(", ")}_` : "";
+}
+
+// Nombre de manches précédentes affichées dans le Journal — au-delà, la
+// liste deviendrait illisible dans un embed Discord (et on approcherait la
+// limite de 4096 caractères d'une description).
+const JOURNAL_HISTORY_LIMIT = 10;
+
+// ── Bouton "Journal" (mots trouvés sur la manche en cours + historique
+// personnel des manches précédentes) ──────────────────────────────────
+export async function handleJournalButton(webhookUrl, discordId) {
+  try {
+    const state = await readState();
+
+    let currentSection;
+    if (!state) {
+      currentSection = "_Aucune manche en cours._";
+    } else {
+      const participant = await readParticipant(state.gameId, discordId);
+      if (!participant?.foundWords?.length) {
+        currentSection = "Tu n'as encore rien trouvé sur cette manche.";
+      } else {
+        const progress = state.totalValidWords != null ? ` (${participant.foundWords.length}/${state.totalValidWords})` : "";
+        currentSection =
+          `**${participant.foundWords.join(", ")}**${progress}\n` + `Score sur cette manche : **${participant.score} pts**`;
+      }
+    }
+
+    const seasonId = state?.seasonId ?? (await getCurrentSeasonId());
+    let previousSection = "_Pas encore de manche terminée._";
+    if (seasonId != null) {
+      const results = (await getPlayerSeasonResults(seasonId, discordId))
+        // La manche EN COURS n'est pas encore archivée (voir finalizeRound,
+        // déclenché seulement quand la manche suivante démarre) donc jamais
+        // dans getPlayerSeasonResults — ce filtre est un filet de sécurité,
+        // pas le cas attendu en pratique.
+        .filter((r) => r.gameId !== state?.gameId)
+        .sort((a, b) => new Date(b.postedAt) - new Date(a.postedAt));
+
+      if (results.length > 0) {
+        const shown = results.slice(0, JOURNAL_HISTORY_LIMIT);
+        const lines = await Promise.all(
+          shown.map(async (r) => {
+            const manche = await getSeasonMancheNumber(r.seasonId, r.gameId);
+            return `Manche ${manche ?? "?"} : **${r.score} pts** (${r.reponse})`;
+          }),
+        );
+        const total = results.reduce((sum, r) => sum + (Number(r.score) || 0), 0);
+        const hiddenCount = results.length - shown.length;
+        previousSection =
+          lines.join("\n") +
+          (hiddenCount > 0 ? `\n_... et ${hiddenCount} manche${hiddenCount > 1 ? "s" : ""} plus ancienne${hiddenCount > 1 ? "s" : ""}_` : "") +
+          `\n\nTotal cumulé : **${total} pts** sur ${results.length} manche${results.length > 1 ? "s" : ""}.`;
+      }
+    }
+
+    await postEphemeralEmbed(webhookUrl, {
+      title: "📖 Journal — Pêle-mêle",
+      description: `**Manche actuelle**\n${currentSection}\n\n**Manches précédentes**\n${previousSection}`,
+      color: PELEMELE_COLOR,
+    });
+  } catch (err) {
+    await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
+  }
 }
 
 // ── Soumission de la modal (réponse du joueur) ──────────────────
