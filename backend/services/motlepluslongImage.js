@@ -1,6 +1,6 @@
 // ============================================================
 // motlepluslongImage.js — Synthèse de l'image "chevalet de Scrabble" pour Le
-// Mot le Plus Long : les 12 lettres tirées, affichées en tuiles (fond
+// Mot le Plus Long : les DRAW_SIZE lettres tirées, affichées en tuiles (fond
 // crème, lettre centrée, valeur Scrabble FR en coin) plutôt qu'en texte brut
 // dans l'embed. Même technique que zoomImage.js/goblinhuntersImage.js : SVG
 // généré à la volée, rastérisé en PNG via @resvg/resvg-js — aucun asset
@@ -13,35 +13,44 @@
 // route (voir backend/server.js) : sert uniquement à invalider le cache
 // Discord entre deux manches, pas une clé de lookup.
 //
-// ⚠️ Police embarquée OBLIGATOIRE (data/fonts/Inter-Variable.ttf, licence
-// SIL OFL — voir data/fonts/OFL.txt) : constaté en production sur Vercel
-// que resvg-js n'a AUCUNE police système disponible sur le runtime
-// serverless (contrairement à une machine de dev locale, où "Inter,
-// system-ui, sans-serif" retombe silencieusement sur une police système
-// présente) — le texte ne s'affichait pas du tout (tuiles vides), sans
-// erreur levée, seule une vérification VISUELLE du PNG produit l'a révélé
-// (même piège que documenté dans goblinhuntersImage.js pour le format
-// d'image). `loadSystemFonts: false` + `fontFiles` : jamais compter sur une
-// police système ici. Police VARIABLE (un seul fichier, plusieurs graisses)
-// mais resvg n'interpole PAS l'axe de graisse via font-weight en SVG —
-// constaté empiriquement (aucune différence visuelle entre 400 et 900) —
-// donc `font-weight` n'est plus utilisé ci-dessous, la graisse rendue est
-// toujours celle de l'instance par défaut de la police.
+// ⚠️ Police embarquée OBLIGATOIRE (data/fonts/Inter-Bold.ttf, licence SIL
+// OFL — voir data/fonts/OFL.txt) : constaté en production sur Vercel que
+// resvg-js n'a AUCUNE police système disponible sur le runtime serverless
+// (contrairement à une machine de dev locale, où "Inter, system-ui,
+// sans-serif" retombe silencieusement sur une police système présente) — le
+// texte ne s'affichait pas du tout (tuiles vides), sans erreur levée, seule
+// une vérification VISUELLE du PNG produit l'a révélé (même piège que
+// documenté dans goblinhuntersImage.js pour le format d'image).
+// `loadSystemFonts: false` + `fontFiles` : jamais compter sur une police
+// système ici.
+//
+// Fichier STATIQUE (graisse 800, optical size 32, instanciés depuis
+// l'Inter variable officiel via `fonttools varLib.instancer`), PAS le
+// variable font original : constaté empiriquement que resvg n'interpole
+// PAS l'axe de graisse d'une police variable via l'attribut `font-weight`
+// en SVG (aucune différence visuelle entre 400 et 900 testés sur le même
+// fichier variable) — la seule façon fiable d'obtenir du gras est
+// d'embarquer directement une instance statique déjà figée à la bonne
+// graisse. `font-weight` n'est donc plus utilisé dans le SVG ci-dessous,
+// la graisse est celle, fixe, du fichier embarqué.
 // ============================================================
 
 import path from "path";
 import { fileURLToPath } from "url";
 import { Resvg } from "@resvg/resvg-js";
-import { readState } from "./motlepluslong.js";
+import { readState, DRAW_SIZE } from "./motlepluslong.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const FONT_PATH = path.resolve(__dirname, "..", "..", "data", "fonts", "Inter-Variable.ttf");
+const FONT_PATH = path.resolve(__dirname, "..", "..", "data", "fonts", "Inter-Bold.ttf");
 const FONT_FAMILY = "Inter";
 
 const TILE = 90;
 const GAP = 12;
-const COLS = 6;
-const ROWS = 2;
+const COLS = 7;
+// DRAW_SIZE doit rester un multiple de COLS pour une grille rectangulaire
+// propre (14 = 7×2 actuellement) — sinon la dernière ligne serait
+// incomplète, pas gérable par ce simple calcul.
+const ROWS = DRAW_SIZE / COLS;
 const PADDING = 20;
 const WIDTH = COLS * TILE + (COLS - 1) * GAP + PADDING * 2;
 const HEIGHT = ROWS * TILE + (ROWS - 1) * GAP + PADDING * 2;

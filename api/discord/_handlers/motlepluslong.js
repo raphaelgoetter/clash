@@ -1,7 +1,7 @@
 // ============================================================
-// motlepluslong.js — Handlers Discord pour le jeu "Le Mot le Plus Long" (12
-// lettres tirées, proposer le nom de carte Clash Royale le plus long qu'on
-// peut former avec). Embed, bouton, modal. Miroir structurel de
+// motlepluslong.js — Handlers Discord pour le jeu "Le Mot le Plus Long"
+// (DRAW_SIZE lettres tirées, proposer le nom de carte Clash Royale le plus
+// long qu'on peut former avec). Embed, bouton, modal. Miroir structurel de
 // api/discord/_handlers/lajustecarte.js, avec deux différences (voir
 // backend/services/motlepluslong.js pour le détail complet) :
 // - pas de "carte secrète" : n'importe quelle carte du pool qui rentre dans
@@ -21,6 +21,7 @@
 // ============================================================
 
 import {
+  DRAW_SIZE,
   loadEligiblePool,
   loadFullCardList,
   getCurrentSeasonId,
@@ -48,7 +49,7 @@ function buildMotLePlusLongEmbed({ seasonId, seasonManche, seasonMancheTotal, ga
     title: "🔤 [TEST] Le Mot le Plus Long",
     description:
       `**Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
-      "Voici tes 12 lettres — propose le nom de carte Clash Royale **le plus long** que tu peux former avec (espaces et ponctuation ignorés, ex. **P.E.K.K.A** s'écrit **PEKKA**). " +
+      `Voici tes ${DRAW_SIZE} lettres — propose le nom de carte Clash Royale **le plus long** que tu peux former avec (espaces et ponctuation ignorés, ex. **P.E.K.K.A** s'écrit **PEKKA**). ` +
       "Tu peux reproposer autant de fois que tu veux, seul ton meilleur mot compte — le score est simplement son nombre de lettres.\n\n" +
       "🚧 Jeu en test — les résultats de cette manche ne comptent pas encore pour un classement de saison officiel.",
     color: MOTLEPLUSLONG_COLOR,
@@ -187,7 +188,7 @@ export async function handleModalSubmit(webhookUrl, gameId, discordId, username,
       const history = await getGuessHistory(gameId, discordId);
       await postEphemeral(
         webhookUrl,
-        `🚫 **${result.entry.fr}** existe dans Clash Royale, mais ne fait pas partie du pool de ce jeu (apostrophe dans le nom, ou plus de 12 lettres). Cette tentative n'a pas été comptabilisée.\n${formatHistoryLine(history)}`,
+        `🚫 **${result.entry.fr}** existe dans Clash Royale, mais ne fait pas partie du pool de ce jeu (apostrophe dans le nom, ou plus de ${DRAW_SIZE} lettres). Cette tentative n'a pas été comptabilisée.\n${formatHistoryLine(history)}`,
       );
       return;
     }

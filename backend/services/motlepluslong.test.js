@@ -1,5 +1,6 @@
 import assert from "assert";
 import {
+  DRAW_SIZE,
   wordLetterCount,
   canonicalWordForm,
   filterEligiblePool,
@@ -40,13 +41,17 @@ async function main() {
   assert.strictEqual(canonicalWordForm("Mini P.E.K.K.A"), "MINIPEKKA");
   assert.strictEqual(canonicalWordForm("Bébé dragon"), "BEBEDRAGON");
 
-  // filterEligiblePool — exclut apostrophe et > 12 lettres, garde le reste
+  // filterEligiblePool — exclut apostrophe et > DRAW_SIZE lettres, garde le
+  // reste. Fixture E générée depuis DRAW_SIZE (pas figée en dur) pour tester
+  // la vraie limite actuelle sans se déphaser si DRAW_SIZE change encore.
+  const boundaryWord = "abcdefghijklmnopqrstuvwxyz".slice(0, DRAW_SIZE);
+  assert.strictEqual(boundaryWord.length, DRAW_SIZE);
   const sample = [
     { cardKey: "A", fr: "Barbares d'élite" }, // apostrophe -> exclue
-    { cardKey: "B", fr: "Reine des Archères" }, // 16 lettres -> exclue
+    { cardKey: "B", fr: "Reine des Archères" }, // 16 lettres -> exclue (toujours > DRAW_SIZE)
     { cardKey: "C", fr: "Bébé dragon" }, // 10 lettres -> incluse
     { cardKey: "D", fr: null }, // pas de nom FR -> exclue
-    { cardKey: "E", fr: "abcdefghijkl" }, // 12 lettres pile -> incluse
+    { cardKey: "E", fr: boundaryWord }, // DRAW_SIZE lettres pile -> incluse
   ];
   const eligible = filterEligiblePool(sample).map((c) => c.cardKey);
   assert.deepStrictEqual(eligible.sort(), ["C", "E"]);
@@ -57,10 +62,10 @@ async function main() {
   assert.strictEqual(canFormFromBag("aa", ["A", "A", "S"]), true);
   assert.strictEqual(canFormFromBag("bébé dragon", "BEDRAGONBE".split("")), true); // espaces/accents ignorés
 
-  // buildLetterBag — contient toujours les lettres du mot "seed", taille 12
+  // buildLetterBag — contient toujours les lettres du mot "seed", taille DRAW_SIZE
   const rng = mulberry32(42);
   const bag = buildLetterBag("Bébé dragon", rng);
-  assert.strictEqual(bag.length, 12);
+  assert.strictEqual(bag.length, DRAW_SIZE);
   assert.strictEqual(canFormFromBag("Bébé dragon", bag), true);
 
   // weightedRandomLetter — toujours une lettre valide de la table

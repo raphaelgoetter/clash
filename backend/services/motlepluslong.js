@@ -1,16 +1,16 @@
 // ============================================================
-// motlepluslong.js — Jeu "Le Mot le Plus Long" (12 lettres tirées au sort,
-// il faut proposer le nom de carte Clash Royale le plus long qu'on peut
-// former avec). Couche métier : pool éligible, tirage, validation des
+// motlepluslong.js — Jeu "Le Mot le Plus Long" (DRAW_SIZE lettres tirées au
+// sort, il faut proposer le nom de carte Clash Royale le plus long qu'on
+// peut former avec). Couche métier : pool éligible, tirage, validation des
 // propositions, scoring, classements. Miroir structurel de lajustecarte.js
 // (même stockage Upstash Redis, mêmes pièges — automaticDeserialization/
 // HGETALL, client paresseux — voir les commentaires détaillés dans
 // frames.js), avec des différences structurelles importantes :
 //
-// 1. Pas de "carte secrète" à deviner : chaque manche est un TIRAGE DE 12
-//    LETTRES ouvert. N'importe quelle carte du pool qui "rentre" dans ces
-//    lettres est une réponse valide — il n'y a donc pas de notion de
-//    résolution collective ("quelqu'un a trouvé, la manche est finie").
+// 1. Pas de "carte secrète" à deviner : chaque manche est un TIRAGE DE
+//    DRAW_SIZE LETTRES ouvert. N'importe quelle carte du pool qui "rentre"
+//    dans ces lettres est une réponse valide — il n'y a donc pas de notion
+//    de résolution collective ("quelqu'un a trouvé, la manche est finie").
 // 2. Un joueur peut proposer plusieurs mots ; seul son MEILLEUR (le plus
 //    long) compte pour son score de manche — score = nombre de lettres du
 //    mot (pas de bonus de rang/vitesse, décision produit explicite).
@@ -21,13 +21,20 @@
 //    submitWord ci-dessous), pas au moment d'un événement "solved" unique
 //    comme lajustecarte.js — puisque cet événement n'existe pas ici.
 //
-// ⚠️ Statut : moteur de jeu implémenté et testable (voir
-// motlepluslong.test.js), mais PAS ENCORE RACCORDÉ à Discord (aucun
-// handler d'interaction, aucune commande enregistrée, aucun script
-// post/reset, aucun cron). Ce jeu doit remplacer un mini-jeu existant dont
-// le choix n'est pas encore arrêté — voir PROVISIONAL_WEEKDAY ci-dessous.
-// Ne PAS considérer ce fichier comme prêt pour la production tant que ce
-// commentaire n'a pas été retiré.
+// DRAW_SIZE = 12 → 14 (2026-09) : mesuré empiriquement (simulation sur le
+// vrai pool) qu'à 12 lettres, 53% des tirages n'avaient QU'UNE seule carte
+// valide (la carte "seed"), rendant le jeu trop prévisible. À 14 lettres,
+// le pool éligible grossit de 72 à 94 cartes ET la marge de lettres de
+// complément après la carte seed augmente, ce qui fait tomber ce taux à
+// 36% (toujours mesuré par simulation, pas juste supposé) — amélioration
+// réelle mais partielle, gardé en tête si un futur ajustement est demandé.
+//
+// ⚠️ Statut : moteur de jeu connecté à Discord (voir
+// api/discord/_handlers/motlepluslong.js, scripts/postMotLePlusLong.js) mais
+// EN TEST UNIQUEMENT — poste seulement sur le salon de test, aucune commande
+// slash, aucun cron GitHub Actions. Ce jeu doit remplacer un mini-jeu
+// existant dont le choix n'est pas encore arrêté — voir PROVISIONAL_WEEKDAY
+// ci-dessous.
 // ============================================================
 
 import fs from "fs/promises";
@@ -43,7 +50,7 @@ import { normalizeAnswer } from "./textNormalize.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CARD_NAMES_PATH = path.resolve(__dirname, "..", "..", "data", "cardNames.json");
 
-const DRAW_SIZE = 12;
+export const DRAW_SIZE = 14;
 
 // ⚠️ PROVISOIRE : jour de publication pas encore décidé (ce jeu doit
 // remplacer un mini-jeu existant, lequel n'est pas encore choisi). Mercredi
@@ -157,8 +164,8 @@ async function scanDelete(pattern) {
 // aucune apostrophe (décision produit explicite — ces cartes sont
 // entièrement écartées du pool, pas de repli sur une variante sans
 // apostrophe), (3) son nombre de lettres (espaces ignorés, accents ignorés)
-// est ≤ DRAW_SIZE — sans quoi elle ne pourrait jamais rentrer dans un tirage
-// de 12 lettres.
+// est ≤ DRAW_SIZE — sans quoi elle ne pourrait jamais rentrer dans un
+// tirage.
 
 function hasApostrophe(str) {
   return /['’]/.test(String(str ?? ""));
@@ -180,7 +187,7 @@ export function wordLetterCount(str) {
 // Forme canonique affichée/archivée d'un mot trouvé : uniquement les lettres
 // (accents, espaces, points — "P.E.K.K.A", "Mini P.E.K.K.A" — retirés),
 // cohérent avec le principe du jeu : il n'existe ni tuile espace ni tuile
-// ponctuation parmi les 12 lettres tirées, donc "P.E.K.K.A" s'écrit "PEKKA"
+// ponctuation parmi les lettres tirées, donc "P.E.K.K.A" s'écrit "PEKKA"
 // et "Mini P.E.K.K.A" s'écrit "MINIPEKKA", jamais avec leur ponctuation
 // d'origine.
 export function canonicalWordForm(str) {
@@ -376,7 +383,7 @@ export async function getCurrentSeasonId() {
 // ne peut pas s'appuyer sur l'ordre physique du fichier — mélangé une fois
 // puis persisté dans Redis. Ne détermine QUE la carte utilisée pour garantir
 // qu'une solution existe dans le tirage ; n'importe quelle autre carte du
-// pool qui rentre dans les 12 lettres reste une réponse valide.
+// pool qui rentre dans le tirage reste une réponse valide.
 export async function loadSeedOrder(pool) {
   const stored = fromJson(await getRedis().get(ORDER_KEY)) || [];
   const poolKeySet = new Set(pool.map((c) => c.cardKey));
