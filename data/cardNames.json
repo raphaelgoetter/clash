@@ -905,6 +905,20 @@
     }
   },
   {
+    "cardKey": "Minion Giant",
+    "rarity": "rare",
+    "fr": "Gargouille Géante",
+    "elixir": 4,
+    "hp": 1817,
+    "damage": 189,
+    "range": {
+      "kind": "ranged",
+      "category": null,
+      "value": 4,
+      "rank": 7
+    }
+  },
+  {
     "cardKey": "Minion Horde",
     "rarity": "common",
     "fr": "Horde de gargouilles",

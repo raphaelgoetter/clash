@@ -574,6 +574,20 @@
     "fetchedAt": "2026-08-07T13:35:10.387Z"
   },
   {
+    "id": "minion-giant-base",
+    "cardKey": "Minion Giant",
+    "variant": "base",
+    "answer": "Gargouille Géante",
+    "accept": [
+      "Gargouille Géante"
+    ],
+    "image": "minion-giant-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/VRjL0yVLzrnoe-IBh2l2fDHDok0L-UoM9cG-X_8xbMk.png",
+    "fetchedAt": "2026-09-18T17:54:29.303Z"
+  },
+  {
     "id": "baby-dragon-evolution",
     "cardKey": "Baby Dragon",
     "variant": "evolution",
