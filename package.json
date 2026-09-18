@@ -56,9 +56,9 @@
     "justecarte:reset": "node scripts/resetJusteCarte.js",
     "justecarte:scores": "node scripts/justeCarteScores.js",
     "justecarte:order": "node scripts/justeCarteOrder.js",
-    "motlepluslong:test": "node scripts/postMotLePlusLong.js --force",
-    "motlepluslong:test:dry": "node scripts/postMotLePlusLong.js --dry-run",
-    "motlepluslong:reset": "node scripts/resetMotLePlusLong.js",
+    "pelemele:test": "node scripts/postPeleMele.js --force",
+    "pelemele:test:dry": "node scripts/postPeleMele.js --dry-run",
+    "pelemele:reset": "node scripts/resetPeleMele.js",
     "blindroyale:test": "node scripts/postBlindRoyale.js --force",
     "blindroyale:test:dry": "node scripts/postBlindRoyale.js --dry-run",
     "blindroyale:public": "node scripts/postBlindRoyale.js --public",
@@ -155,7 +155,7 @@
     "cache:clear": "rm -f frontend/public/clan-cache/*.json",
     "deploy": "npm run cache:clear && npm run build && vercel --prod --confirm --force",
     "build": "cd frontend && npm run build && cd .. && vercel --prod",
-    "test": "node backend/services/analysisService.test.js && node backend/services/matchupEngine.test.js && node backend/services/snapshot.test.js && node backend/services/notifyWarSummary.test.js && node backend/services/notifyLastSeen.test.js && node backend/services/notifyClanStatus.test.js && node backend/services/dateUtils.test.js && node backend/services/championPredictions.test.js && node backend/services/tamagotchi.test.js && node backend/services/robinson.test.js && node backend/services/bossraid.test.js && node backend/services/goblinhunters.test.js && node backend/services/blackjack.test.js && node backend/services/blackjackDuel.test.js && node backend/services/marioclash.test.js && node backend/services/gobelet.test.js && node backend/services/gobeletDuel.test.js && node backend/services/motlepluslong.test.js"
+    "test": "node backend/services/analysisService.test.js && node backend/services/matchupEngine.test.js && node backend/services/snapshot.test.js && node backend/services/notifyWarSummary.test.js && node backend/services/notifyLastSeen.test.js && node backend/services/notifyClanStatus.test.js && node backend/services/dateUtils.test.js && node backend/services/championPredictions.test.js && node backend/services/tamagotchi.test.js && node backend/services/robinson.test.js && node backend/services/bossraid.test.js && node backend/services/goblinhunters.test.js && node backend/services/blackjack.test.js && node backend/services/blackjackDuel.test.js && node backend/services/marioclash.test.js && node backend/services/gobelet.test.js && node backend/services/gobeletDuel.test.js && node backend/services/pelemele.test.js"
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.3.0",

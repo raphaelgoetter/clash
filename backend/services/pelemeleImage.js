@@ -1,6 +1,6 @@
 // ============================================================
-// motlepluslongImage.js — Synthèse de l'image "chevalet de Scrabble" pour Le
-// Mot le Plus Long : les DRAW_SIZE lettres tirées, affichées en tuiles (fond
+// pelemeleImage.js — Synthèse de l'image "chevalet de Scrabble" pour Le
+// Pêle-mêle : les DRAW_SIZE lettres tirées, affichées en tuiles (fond
 // crème, lettre centrée, valeur Scrabble FR en coin) plutôt qu'en texte brut
 // dans l'embed. Même technique que zoomImage.js/goblinhuntersImage.js : SVG
 // généré à la volée, rastérisé en PNG via @resvg/resvg-js — aucun asset
@@ -38,7 +38,7 @@
 import path from "path";
 import { fileURLToPath } from "url";
 import { Resvg } from "@resvg/resvg-js";
-import { readState, DRAW_SIZE } from "./motlepluslong.js";
+import { readState, DRAW_SIZE } from "./pelemele.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FONT_PATH = path.resolve(__dirname, "..", "..", "data", "fonts", "Inter-Bold.ttf");
@@ -108,7 +108,7 @@ async function rasterize(svg) {
   return { buffer: Buffer.from(pngData.asPng()), mimeType: "image/png" };
 }
 
-export async function getMotLePlusLongRackImage() {
+export async function getPeleMeleRackImage() {
   const state = await readState();
   if (!state?.letters) return null;
   return rasterize(buildRackSvg(state.letters));

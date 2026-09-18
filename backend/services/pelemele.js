@@ -1,5 +1,5 @@
 // ============================================================
-// motlepluslong.js — Jeu "Le Mot le Plus Long" (DRAW_SIZE lettres tirées au
+// pelemele.js — Jeu "Pêle-mêle" (DRAW_SIZE lettres tirées au
 // sort, il faut proposer le nom de carte Clash Royale le plus long qu'on
 // peut former avec). Couche métier : pool éligible, tirage, validation des
 // propositions, scoring, classements. Miroir structurel de lajustecarte.js
@@ -30,7 +30,7 @@
 // réelle mais partielle, gardé en tête si un futur ajustement est demandé.
 //
 // ⚠️ Statut : moteur de jeu connecté à Discord (voir
-// api/discord/_handlers/motlepluslong.js, scripts/postMotLePlusLong.js) mais
+// api/discord/_handlers/pelemele.js, scripts/postPeleMele.js) mais
 // EN TEST UNIQUEMENT — poste seulement sur le salon de test, aucune commande
 // slash, aucun cron GitHub Actions. Ce jeu doit remplacer un mini-jeu
 // existant dont le choix n'est pas encore arrêté — voir PROVISIONAL_WEEKDAY
@@ -112,33 +112,33 @@ async function hgetallJson(key) {
   return result;
 }
 
-const STATE_KEY = "motlepluslong:state";
-const ORDER_KEY = "motlepluslong:order";
-const ROUND_SEQ_KEY = "motlepluslong:round_seq";
+const STATE_KEY = "pelemele:state";
+const ORDER_KEY = "pelemele:order";
+const ROUND_SEQ_KEY = "pelemele:round_seq";
 
 function participantsKey(gameId) {
-  return `motlepluslong:participants:${gameId}`;
+  return `pelemele:participants:${gameId}`;
 }
 function usernamesKey(gameId) {
-  return `motlepluslong:usernames:${gameId}`;
+  return `pelemele:usernames:${gameId}`;
 }
 function attemptsKey(gameId, discordId) {
-  return `motlepluslong:attempts:${gameId}:${discordId}`;
+  return `pelemele:attempts:${gameId}:${discordId}`;
 }
 function seasonKey(seasonId) {
-  return `motlepluslong:season:${seasonId}`;
+  return `pelemele:season:${seasonId}`;
 }
 function seasonPseudosKey(seasonId) {
-  return `motlepluslong:season:${seasonId}:pseudos`;
+  return `pelemele:season:${seasonId}:pseudos`;
 }
 function seasonMancheSeqKey(seasonId) {
-  return `motlepluslong:season:${seasonId}:manche_seq`;
+  return `pelemele:season:${seasonId}:manche_seq`;
 }
 function seasonMancheNumbersKey(seasonId) {
-  return `motlepluslong:season:${seasonId}:manche_numbers`;
+  return `pelemele:season:${seasonId}:manche_numbers`;
 }
 function archivedKey(seasonId) {
-  return `motlepluslong:archived:${seasonId}`;
+  return `pelemele:archived:${seasonId}`;
 }
 
 // SCAN par motif — uniquement utilisé pour le nettoyage, jamais sur le
@@ -249,6 +249,19 @@ export function canFormFromBag(word, bagLetters) {
     if ((have.get(ch) || 0) < n) return false;
   }
   return true;
+}
+
+// Toutes les cartes du pool qui rentrent dans CE tirage précis, triées par
+// longueur décroissante — calculé UNE FOIS à la génération de la manche
+// (startNewGame) et stocké dans l'état (totalValidWords/maxWordLength),
+// jamais recalculé à chaque proposition. Sert à la fois à afficher "X mots
+// valides sur ce tirage" et à déterminer le bonus "mot le plus long" du
+// barème (voir computeScore).
+export function computeValidWordsForDraw(pool, bagLetters) {
+  return pool
+    .filter((c) => canFormFromBag(c.fr, bagLetters))
+    .map((c) => ({ cardKey: c.cardKey, fr: c.fr, length: wordLetterCount(c.fr) }))
+    .sort((a, b) => b.length - a.length);
 }
 
 // ── Tirage pondéré des lettres ──────────────────────────────────────
@@ -396,16 +409,16 @@ export async function writeState(state) {
 
 async function cleanupGameScratchData(gameId) {
   await getRedis().del(participantsKey(gameId), usernamesKey(gameId));
-  await scanDelete(`motlepluslong:attempts:${gameId}:*`);
+  await scanDelete(`pelemele:attempts:${gameId}:*`);
 }
 
 export async function resetGame() {
   await getRedis().del(STATE_KEY, ORDER_KEY, ROUND_SEQ_KEY);
-  await scanDelete("motlepluslong:participants:*");
-  await scanDelete("motlepluslong:usernames:*");
-  await scanDelete("motlepluslong:attempts:*");
-  await scanDelete("motlepluslong:season:*");
-  await scanDelete("motlepluslong:archived:*");
+  await scanDelete("pelemele:participants:*");
+  await scanDelete("pelemele:usernames:*");
+  await scanDelete("pelemele:attempts:*");
+  await scanDelete("pelemele:season:*");
+  await scanDelete("pelemele:archived:*");
 }
 
 // ── Saison Clash Royale en cours ────────────────────────────────
@@ -413,7 +426,7 @@ export async function resetGame() {
 // change) — fonction 100% générique.
 export async function getCurrentSeasonId() {
   const { value } = await getOrSet(
-    "motlepluslong:seasonId",
+    "pelemele:seasonId",
     async () => {
       const clanTag = FAMILY_CLAN_TAGS[0];
       for (const delay of [0, 1000, 3000]) {
@@ -485,6 +498,9 @@ export async function startNewGame(channelId) {
   const secondaryEntry = pickCompatibleSecondarySeed(pool, primaryEntry);
   const seedFrs = secondaryEntry ? [primaryEntry.fr, secondaryEntry.fr] : [primaryEntry.fr];
   const letters = buildLetterBagFromSeeds(seedFrs);
+  const validWords = computeValidWordsForDraw(pool, letters);
+  const totalValidWords = validWords.length;
+  const maxWordLength = validWords[0]?.length ?? 0;
   const seasonId = await getCurrentSeasonId();
   const gameId = String(await getRedis().incr(ROUND_SEQ_KEY));
   const now = new Date();
@@ -499,6 +515,8 @@ export async function startNewGame(channelId) {
     seasonManche,
     seasonMancheTotal,
     letters,
+    totalValidWords,
+    maxWordLength,
     startedAt: now.toISOString(),
     channelId,
     messageId: null,
@@ -543,48 +561,57 @@ export async function getGuessHistory(gameId, discordId) {
   return (await getRedis().lrange(attemptsKey(gameId, discordId), 0, -1)) || [];
 }
 
-// Score = longueur du mot (décision produit explicite, pas de bonus de
-// rang/vitesse) — fonction triviale mais nommée pour la symétrie avec les
-// autres jeux (computeScore) et pour centraliser un futur ajustement.
-export function computeScore(letterCount) {
-  return letterCount;
+// Barème (décision produit explicite, 2026-09) : le(s) mot(s) le(s) plus
+// long(s) POSSIBLE(S) sur ce tirage (maxWordLength, calculé une fois par
+// startNewGame — voir computeValidWordsForDraw) valent LONGEST_WORD_BONUS
+// chacun s'ils sont trouvés (plusieurs mots à égalité de longueur max valent
+// chacun ce bonus, pas de partage) ; tout autre mot valide trouvé vaut
+// EXTRA_WORD_POINTS. Volontairement des constantes FIXES plutôt que
+// proportionnelles à DRAW_SIZE/à la longueur du mot : un score qui ne
+// dépend pas de la taille du tirage évite de tout recalibrer si DRAW_SIZE
+// change encore (voir l'historique de ce fichier).
+const LONGEST_WORD_BONUS = 5;
+const EXTRA_WORD_POINTS = 1;
+
+export function computeScore(length, maxWordLength) {
+  return length === maxWordLength ? LONGEST_WORD_BONUS : EXTRA_WORD_POINTS;
 }
 
-// Enregistre une proposition VALIDE (status "ok" de validateSubmission) et
-// met à jour le meilleur score du joueur sur cette manche si elle
-// l'améliore. Le classement de SAISON est incrémenté par le DELTA
-// uniquement (nouveau score - ancien score), jamais par le nouveau score en
-// entier — sans quoi une simple répétition/amélioration progressive
-// compterait plusieurs fois les mêmes points déjà crédités.
-export async function submitWord(gameId, discordId, username, entry, length, seasonId) {
+// Enregistre une proposition VALIDE (status "ok" de validateSubmission).
+// Contrairement à l'ancien barème (un seul "meilleur mot" par joueur), le
+// score est désormais la somme des points de TOUS les mots DISTINCTS
+// trouvés par le joueur sur cette manche — un mot déjà trouvé ne rapporte
+// rien en re-proposition (dédoublonnage par forme canonique). Le classement
+// de SAISON est incrémenté du nombre de points de CE mot uniquement (pas
+// besoin de delta comme l'ancien barème basé sur un "meilleur score" — un
+// mot ne rapporte ses points qu'une seule fois, jamais recompté).
+export async function submitWord(gameId, discordId, username, entry, length, maxWordLength, seasonId) {
   await touchUsername(gameId, discordId, username);
-  await getRedis().rpush(attemptsKey(gameId, discordId), canonicalWordForm(entry.fr));
+  const canonical = canonicalWordForm(entry.fr);
+  await getRedis().rpush(attemptsKey(gameId, discordId), canonical);
 
   const previous = await readParticipant(gameId, discordId);
-  const previousBest = previous?.bestLength ?? 0;
-  if (length <= previousBest) {
-    return { improved: false, participant: previous, bestLength: previousBest };
+  const foundWords = previous?.foundWords ?? [];
+  if (foundWords.includes(canonical)) {
+    return { isNew: false, participant: previous, points: 0, foundCount: foundWords.length };
   }
 
-  const score = computeScore(length);
+  const points = computeScore(length, maxWordLength);
   const participant = {
     discordId,
     username,
-    bestWord: canonicalWordForm(entry.fr),
-    bestCardKey: entry.cardKey,
-    bestLength: length,
-    score,
-    bestAt: new Date().toISOString(),
+    foundWords: [...foundWords, canonical],
+    score: (previous?.score ?? 0) + points,
+    lastFoundAt: new Date().toISOString(),
   };
   await getRedis().hset(participantsKey(gameId), { [discordId]: toJson(participant) });
 
-  const delta = score - previousBest;
   if (seasonId != null) {
-    await getRedis().zincrby(seasonKey(seasonId), delta, discordId);
+    await getRedis().zincrby(seasonKey(seasonId), points, discordId);
     await getRedis().hset(seasonPseudosKey(seasonId), { [discordId]: username });
   }
 
-  return { improved: true, participant, bestLength: length };
+  return { isNew: true, participant, points, foundCount: participant.foundWords.length };
 }
 
 // ── Résultats archivés (classement de la saison) ─────────────────
@@ -598,17 +625,17 @@ async function finalizeRound(previousState) {
   const archKey = archivedKey(previousState.seasonId);
 
   for (const participant of Object.values(participants)) {
-    if (!participant?.bestWord) continue;
+    if (!participant?.foundWords?.length) continue;
     const field = `${previousState.gameId}:${participant.discordId}`;
     const result = {
       gameId: previousState.gameId,
       seasonId: previousState.seasonId,
-      reponse: participant.bestWord,
+      reponse: participant.foundWords.join(", "),
       postedAt: previousState.startedAt,
       discordId: participant.discordId,
       pseudo: participant.username,
       score: participant.score,
-      solvedAt: participant.bestAt,
+      solvedAt: participant.lastFoundAt,
     };
     await getRedis().hsetnx(archKey, field, toJson(result));
   }
@@ -622,7 +649,7 @@ export async function getPlayerSeasonResults(seasonId, discordId) {
 }
 
 export async function getAllArchivedResults() {
-  const keys = await scanKeys("motlepluslong:archived:*");
+  const keys = await scanKeys("pelemele:archived:*");
   if (keys.length === 0) return [];
   const hashes = await Promise.all(keys.map((key) => hgetallJson(key)));
   return hashes.flatMap((hash) => Object.values(hash));
@@ -650,23 +677,28 @@ export async function hasPlayerInteracted(gameId, discordId) {
 
 // ── Classements ──────────────────────────────────────────────────
 
-// Joueurs ayant déjà trouvé au moins un mot valide, triés par meilleur score
-// décroissant puis par date d'obtention de ce score croissante (premier
-// arrivé à cette longueur départagé en premier — cohérent avec l'esprit
-// "chiffres et lettres" où atteindre le meilleur score en premier a de la
-// valeur, même si ce n'est pas la métrique de score principale).
+// Joueurs ayant trouvé au moins un mot valide, triés par score total
+// décroissant puis par nombre de mots trouvés décroissant (à score égal —
+// rare mais possible si l'un a trouvé le mot bonus et l'autre plusieurs
+// petits mots — celui qui en a trouvé le plus est mis devant), puis par
+// date du dernier mot trouvé croissante.
 export async function computeGameRanking(gameId) {
   const all = await hgetallJson(participantsKey(gameId));
   return Object.values(all)
-    .filter((p) => p?.bestWord)
+    .filter((p) => p?.foundWords?.length)
     .map((p) => ({
       discordId: p.discordId,
       username: p.username,
       score: p.score,
-      bestWord: p.bestWord,
-      bestAt: p.bestAt,
+      foundWords: p.foundWords,
+      lastFoundAt: p.lastFoundAt,
     }))
-    .sort((a, b) => b.score - a.score || new Date(a.bestAt) - new Date(b.bestAt));
+    .sort(
+      (a, b) =>
+        b.score - a.score ||
+        b.foundWords.length - a.foundWords.length ||
+        new Date(a.lastFoundAt) - new Date(b.lastFoundAt),
+    );
 }
 
 export async function listGamePlayersInProgress(gameId) {
@@ -676,7 +708,7 @@ export async function listGamePlayersInProgress(gameId) {
   ]);
   const foundIds = new Set(
     Object.values(participants)
-      .filter((p) => p?.bestWord)
+      .filter((p) => p?.foundWords?.length)
       .map((p) => p.discordId),
   );
   return Object.entries(usernames)

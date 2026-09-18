@@ -9,11 +9,12 @@ import {
   buildLetterBagFromSeeds,
   pickCompatibleSecondarySeed,
   weightedRandomLetter,
+  computeValidWordsForDraw,
   validateSubmission,
   computeScore,
   pickNextIndex,
   computeSeasonMancheTotal,
-} from "./motlepluslong.js";
+} from "./pelemele.js";
 
 // PRNG déterministe (mulberry32) — seul moyen d'obtenir des tests
 // reproductibles pour tout ce qui dépend d'un tirage aléatoire ici.
@@ -112,8 +113,26 @@ async function main() {
   // "Bébé dragon" reconnue mais ce tirage précis ne contient pas assez de lettres
   assert.strictEqual(validateSubmission(pool, fullList, ["B", "E", "X"], "bebe dragon").status, "impossible");
 
-  // computeScore — trivial mais figé (pas de bonus caché)
-  assert.strictEqual(computeScore(9), 9);
+  // computeValidWordsForDraw — toutes les cartes du pool qui rentrent dans
+  // ce tirage précis, triées par longueur décroissante
+  const wordsPool = [
+    { cardKey: "C", fr: "Bébé dragon" }, // 10 lettres, rentre
+    { cardKey: "F", fr: "Gel" }, // 3 lettres, rentre (sous-ensemble)
+    { cardKey: "G", fr: "Golem" }, // ne rentre pas (pas de L/M en trop dans ce tirage)
+  ];
+  const validWords = computeValidWordsForDraw(wordsPool, "BEDRAGONBEGEL".split(""));
+  assert.deepStrictEqual(
+    validWords.map((w) => w.cardKey),
+    ["C", "F"],
+  );
+  assert.strictEqual(validWords[0].length, 10);
+
+  // computeScore — barème fixe : LONGEST_WORD_BONUS (5) si le mot égale la
+  // longueur max du tirage, EXTRA_WORD_POINTS (1) sinon — jamais proportionnel
+  // à la longueur elle-même (indépendant de DRAW_SIZE, décision explicite).
+  assert.strictEqual(computeScore(10, 10), 5); // mot le plus long du tirage
+  assert.strictEqual(computeScore(3, 10), 1); // mot valide mais pas le plus long
+  assert.strictEqual(computeScore(10, 10) === computeScore(3, 10), false);
 
   // pickNextIndex — avance simplement, boucle à la fin
   assert.strictEqual(pickNextIndex(null, ["a", "b", "c"]), 0);
@@ -123,7 +142,7 @@ async function main() {
   // computeSeasonMancheTotal — wrapper simple autour de countRemainingWeekdayOccurrences
   assert.strictEqual(typeof computeSeasonMancheTotal(1, new Date("2026-07-11T13:00:00Z")), "number");
 
-  console.log("✓ motlepluslong service tests passed");
+  console.log("✓ pelemele service tests passed");
 }
 
 main().catch((err) => {

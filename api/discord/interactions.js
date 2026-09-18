@@ -70,13 +70,14 @@ import {
   handleExcludedListButton as handleJusteCarteExcludedListButton,
   handleJusteCarteStatsCommand,
 } from "./_handlers/lajustecarte.js";
-// ⚠️ Jeu en TEST UNIQUEMENT (voir motlepluslong.js) : ce bloc ne fait que
-// router les interactions Discord, aucune commande /motlepluslong n'existe,
-// aucune publication automatique n'est câblée (voir postMotLePlusLong.js).
+// ⚠️ Jeu en TEST UNIQUEMENT (voir pelemele.js) : ce bloc ne fait que
+// router les interactions Discord, aucune commande /pelemele n'existe,
+// aucune publication automatique n'est câblée (voir postPeleMele.js).
 import {
-  buildAnswerModal as buildMotLePlusLongAnswerModal,
-  handleModalSubmit as handleMotLePlusLongModalSubmit,
-} from "./_handlers/motlepluslong.js";
+  buildAnswerModal as buildPeleMeleAnswerModal,
+  handleModalSubmit as handlePeleMeleModalSubmit,
+  buildRulesEmbed as buildPeleMeleRulesEmbed,
+} from "./_handlers/pelemele.js";
 import {
   buildAnswerModal as buildBlindRoyaleAnswerModal,
   handleHintButton as handleBlindRoyaleHintButton,
@@ -9283,26 +9284,39 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ── [TEST] Jeu Le Mot le Plus Long : bouton "Proposer un mot" → Modal ──
+  // ── [TEST] Jeu Pêle-mêle : bouton "Proposer un mot" → Modal ──
   // Même mécanique que La Juste Carte (voir juste au-dessus), sauf qu'ici le
   // MÊME bouton sert à toutes les tentatives (pas de bouton "Reproposer"
   // séparé) puisqu'il n'y a pas de notion de victoire qui change son libellé.
   if (
     body.type === 3 &&
     typeof body.data?.custom_id === "string" &&
-    body.data.custom_id.startsWith("motlepluslong_answer:")
+    body.data.custom_id.startsWith("pelemele_answer:")
   ) {
     const gameId = body.data.custom_id.split(":")[1];
     return res
       .status(200)
-      .json({ type: 9, data: buildMotLePlusLongAnswerModal(gameId) });
+      .json({ type: 9, data: buildPeleMeleAnswerModal(gameId) });
   }
 
-  // ── [TEST] Jeu Le Mot le Plus Long : soumission de la Modal ──
+  // ── [TEST] Jeu Pêle-mêle : bouton "Règles" ──
+  // Contenu 100% statique (aucune lecture d'état/Redis) : réponse synchrone
+  // directe, pas besoin du différé+webhook utilisé pour la soumission de mot.
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id === "pelemele_rules"
+  ) {
+    return res
+      .status(200)
+      .json({ type: 4, data: { embeds: [buildPeleMeleRulesEmbed()], flags: 64 } });
+  }
+
+  // ── [TEST] Jeu Pêle-mêle : soumission de la Modal ──
   if (
     body.type === 5 &&
     typeof body.data?.custom_id === "string" &&
-    body.data.custom_id.startsWith("motlepluslong_answer_modal:")
+    body.data.custom_id.startsWith("pelemele_answer_modal:")
   ) {
     const gameId = body.data.custom_id.split(":")[1];
     const rawAnswer = body.data.components?.[0]?.components?.[0]?.value || "";
@@ -9316,7 +9330,7 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() =>
-      handleMotLePlusLongModalSubmit(
+      handlePeleMeleModalSubmit(
         webhookUrl,
         gameId,
         discordId,

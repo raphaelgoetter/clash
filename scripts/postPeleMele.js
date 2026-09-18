@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// postMotLePlusLong.js
-// Poste manuellement une nouvelle manche du jeu "Le Mot le Plus Long", sur
-// le salon de TEST uniquement — voir api/discord/_handlers/motlepluslong.js
+// postPeleMele.js
+// Poste manuellement une nouvelle manche du jeu "Pêle-mêle", sur
+// le salon de TEST uniquement — voir api/discord/_handlers/pelemele.js
 // pour le détail. Pas d'option --public : ce jeu doit encore remplacer un
 // mini-jeu existant dont le choix n'est pas arrêté, et il n'y a pas de cron
 // GitHub Actions tant que cette décision n'est pas prise. Réutilise le salon
@@ -9,14 +9,14 @@
 // qu'une nouvelle variable dédiée.
 //
 // Usage :
-//   node scripts/postMotLePlusLong.js               — poste sur le salon de test
-//   node scripts/postMotLePlusLong.js --dry-run      — simulation, sans écrire ni poster
-//   node scripts/postMotLePlusLong.js --force        — ignore le garde-fou anti-double-post
+//   node scripts/postPeleMele.js               — poste sur le salon de test
+//   node scripts/postPeleMele.js --dry-run      — simulation, sans écrire ni poster
+//   node scripts/postPeleMele.js --force        — ignore le garde-fou anti-double-post
 
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { postMotLePlusLong } from "../api/discord/_handlers/motlepluslong.js";
+import { postPeleMele } from "../api/discord/_handlers/pelemele.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const FORCE = process.argv.includes("--force");
@@ -30,7 +30,7 @@ if (!channelId) {
 
 (async () => {
   try {
-    const result = await postMotLePlusLong(channelId, { dryRun: DRY_RUN, force: FORCE });
+    const result = await postPeleMele(channelId, { dryRun: DRY_RUN, force: FORCE });
 
     if (DRY_RUN) {
       console.log(`DRY-RUN — prochaine manche (salon ${channelId}) :`);
