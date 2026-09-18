@@ -12,10 +12,31 @@
 // principe que goblinhuntersImage.js pour le paramètre de cache-buster côté
 // route (voir backend/server.js) : sert uniquement à invalider le cache
 // Discord entre deux manches, pas une clé de lookup.
+//
+// ⚠️ Police embarquée OBLIGATOIRE (data/fonts/Inter-Variable.ttf, licence
+// SIL OFL — voir data/fonts/OFL.txt) : constaté en production sur Vercel
+// que resvg-js n'a AUCUNE police système disponible sur le runtime
+// serverless (contrairement à une machine de dev locale, où "Inter,
+// system-ui, sans-serif" retombe silencieusement sur une police système
+// présente) — le texte ne s'affichait pas du tout (tuiles vides), sans
+// erreur levée, seule une vérification VISUELLE du PNG produit l'a révélé
+// (même piège que documenté dans goblinhuntersImage.js pour le format
+// d'image). `loadSystemFonts: false` + `fontFiles` : jamais compter sur une
+// police système ici. Police VARIABLE (un seul fichier, plusieurs graisses)
+// mais resvg n'interpole PAS l'axe de graisse via font-weight en SVG —
+// constaté empiriquement (aucune différence visuelle entre 400 et 900) —
+// donc `font-weight` n'est plus utilisé ci-dessous, la graisse rendue est
+// toujours celle de l'instance par défaut de la police.
 // ============================================================
 
+import path from "path";
+import { fileURLToPath } from "url";
 import { Resvg } from "@resvg/resvg-js";
 import { readState } from "./motlepluslong.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const FONT_PATH = path.resolve(__dirname, "..", "..", "data", "fonts", "Inter-Variable.ttf");
+const FONT_FAMILY = "Inter";
 
 const TILE = 90;
 const GAP = 12;
@@ -45,8 +66,8 @@ function buildTileSvg(letter, x, y) {
   const points = FR_SCRABBLE_POINTS[letter] ?? "";
   return `
     <rect x="${x}" y="${y}" width="${TILE}" height="${TILE}" rx="10" ry="10" fill="${TILE_FILL}" stroke="${TILE_STROKE}" stroke-width="2"/>
-    <text x="${cx}" y="${cy + 15}" font-family="Inter, system-ui, sans-serif" font-size="44" font-weight="800" text-anchor="middle" fill="${LETTER_COLOR}">${letter}</text>
-    <text x="${x + TILE - 10}" y="${y + TILE - 8}" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" text-anchor="end" fill="${POINT_COLOR}">${points}</text>`;
+    <text x="${cx}" y="${cy + 15}" font-family="${FONT_FAMILY}" font-size="44" text-anchor="middle" fill="${LETTER_COLOR}">${letter}</text>
+    <text x="${x + TILE - 10}" y="${y + TILE - 8}" font-family="${FONT_FAMILY}" font-size="13" text-anchor="end" fill="${POINT_COLOR}">${points}</text>`;
 }
 
 function buildRackSvg(letters) {
@@ -66,7 +87,14 @@ ${tiles.join("\n")}
 async function rasterize(svg) {
   // Pas de `background` : fond transparent, les tuiles flottent sur le fond
   // sombre de l'embed Discord plutôt qu'un rectangle plein disgracieux.
-  const resvg = new Resvg(Buffer.from(svg, "utf8"), { fitTo: { mode: "width", value: WIDTH } });
+  const resvg = new Resvg(Buffer.from(svg, "utf8"), {
+    fitTo: { mode: "width", value: WIDTH },
+    font: {
+      fontFiles: [FONT_PATH],
+      loadSystemFonts: false,
+      defaultFontFamily: FONT_FAMILY,
+    },
+  });
   const pngData = resvg.render();
   return { buffer: Buffer.from(pngData.asPng()), mimeType: "image/png" };
 }
