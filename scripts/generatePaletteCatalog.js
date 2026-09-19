@@ -9,7 +9,16 @@
 // dominantColor.js) et marque la carte "playable" ou non (trop facile /
 // trop monochrome — voir ce module pour le détail des critères). Le cadre
 // décoratif de rareté (partagé par toutes les cartes, voir buildFrameMask
-// dans dominantColor.js) est détecté et exclu avant l'extraction.
+// dans dominantColor.js) est détecté et exclu avant l'extraction. Génère
+// aussi, dans data/palette/highlights/, une image "preuve" par carte (la
+// carte avec un voile de la couleur dominante posé sur les pixels qui la
+// composent) à afficher au joueur au moment du résultat, pour justifier
+// visuellement la réponse plutôt que de ne donner qu'un pourcentage.
+//
+// data/palette/manualOverrides.json : décisions manuelles de Raphael après
+// une passe de QA visuelle sur le pool "jouable" (des cartes automatiquement
+// jouables mais dont le résultat semblait faux à l'œil, et inversement) —
+// appliquées à CHAQUE régénération, en dernier, après le calcul automatique.
 //
 // Source des cartes : data/cardNames.json (les 123 cartes, source de
 // vérité partagée entre tous les mini-jeux — contrairement à Zoom qui ne
@@ -34,13 +43,15 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { PNG } from "pngjs";
 import { fetchCards } from "../backend/services/clashApi.js";
-import { extractDominantColors, buildFrameMask } from "../backend/services/dominantColor.js";
+import { extractDominantColors, buildFrameMask, buildHighlightOverlay } from "../backend/services/dominantColor.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CARD_NAMES_PATH = path.resolve(__dirname, "..", "data", "cardNames.json");
 const PALETTE_DIR = path.resolve(__dirname, "..", "data", "palette");
 const PALETTE_JSON_PATH = path.join(PALETTE_DIR, "palette.json");
 const PALETTE_IMAGES_DIR = path.join(PALETTE_DIR, "images");
+const PALETTE_HIGHLIGHTS_DIR = path.join(PALETTE_DIR, "highlights");
+const MANUAL_OVERRIDES_PATH = path.join(PALETTE_DIR, "manualOverrides.json");
 
 function slugifyCardKey(cardKey) {
   return String(cardKey)
@@ -66,6 +77,16 @@ async function loadExistingCatalog() {
   }
 }
 
+async function loadManualOverrides() {
+  try {
+    const txt = await fs.readFile(MANUAL_OVERRIDES_PATH, "utf-8");
+    const { forcePlayable = [], forceExcluded = [] } = JSON.parse(txt);
+    return { forcePlayable: new Set(forcePlayable), forceExcluded: new Set(forceExcluded) };
+  } catch {
+    return { forcePlayable: new Set(), forceExcluded: new Set() };
+  }
+}
+
 async function main() {
   const cardNames = JSON.parse(await fs.readFile(CARD_NAMES_PATH, "utf-8"));
   const catalog = await fetchCards();
@@ -73,8 +94,10 @@ async function main() {
 
   const existingCatalog = await loadExistingCatalog();
   const existingById = new Map(existingCatalog.map((e) => [e.id, e]));
+  const manualOverrides = await loadManualOverrides();
 
   await fs.mkdir(PALETTE_IMAGES_DIR, { recursive: true });
+  await fs.mkdir(PALETTE_HIGHLIGHTS_DIR, { recursive: true });
 
   // Phase 1 : résoudre et télécharger (ou réutiliser) l'image de chaque carte,
   // sans encore calculer ses couleurs — il faut d'abord regrouper les buffers
@@ -158,7 +181,28 @@ async function main() {
     }
 
     const { width, height } = PNG.sync.read(card.buffer);
-    const { colors, isTooEasy, isMonochrome } = extraction;
+    const { colors, isTooEasy, isMonochrome, pixelColorIndex } = extraction;
+
+    // Image "preuve" : la carte avec un voile semi-transparent de la couleur
+    // dominante posé sur les pixels qui la composent — affichée au joueur au
+    // moment du résultat pour justifier visuellement la bonne réponse (voir
+    // buildHighlightOverlay dans dominantColor.js).
+    const highlightFilename = `${card.id}.png`;
+    const highlightBuffer = buildHighlightOverlay(card.buffer, pixelColorIndex, 0, colors[0].hex);
+    await fs.writeFile(path.join(PALETTE_HIGHLIGHTS_DIR, highlightFilename), highlightBuffer);
+
+    // Décisions manuelles de Raphael (voir data/palette/manualOverrides.json)
+    // : appliquées APRÈS le calcul automatique, qu'elles le confirment ou le
+    // contredisent — une passe de QA visuelle sur l'image prime sur l'heuristique.
+    let playable = !isTooEasy && !isMonochrome;
+    let excludedReason = isTooEasy ? "top1>60%" : isMonochrome ? "monochrome" : null;
+    if (manualOverrides.forcePlayable.has(card.id)) {
+      playable = true;
+      excludedReason = null;
+    } else if (manualOverrides.forceExcluded.has(card.id)) {
+      playable = false;
+      excludedReason = "manual";
+    }
 
     nextCatalog.push({
       id: card.id,
@@ -166,14 +210,15 @@ async function main() {
       rarity: card.rarity,
       fr: card.fr,
       image: card.filename,
+      highlightImage: highlightFilename,
       width,
       height,
       sourceUrl: card.sourceUrl,
       fetchedAt: card.fetchedAt,
       colors,
       correctHex: colors[0].hex,
-      playable: !isTooEasy && !isMonochrome,
-      excludedReason: isTooEasy ? "top1>60%" : isMonochrome ? "monochrome" : null,
+      playable,
+      excludedReason,
     });
   }
 
@@ -182,6 +227,7 @@ async function main() {
   const pruned = existingCatalog.filter((e) => !keptIds.has(e.id));
   for (const entry of pruned) {
     await fs.rm(path.join(PALETTE_IMAGES_DIR, entry.image), { force: true });
+    if (entry.highlightImage) await fs.rm(path.join(PALETTE_HIGHLIGHTS_DIR, entry.highlightImage), { force: true });
     console.log(`  🗑️  ${entry.id} retiré (cardKey "${entry.cardKey}" plus dans cardNames.json).`);
   }
 
@@ -190,12 +236,14 @@ async function main() {
   const playableCount = nextCatalog.filter((e) => e.playable).length;
   const tooEasyCount = nextCatalog.filter((e) => e.excludedReason === "top1>60%").length;
   const monochromeCount = nextCatalog.filter((e) => e.excludedReason === "monochrome").length;
+  const manualCount = nextCatalog.filter((e) => e.excludedReason === "manual").length;
 
   console.log("");
   console.log(`Catalogue écrit : ${PALETTE_JSON_PATH}`);
   console.log(`  ${nextCatalog.length} cartes au total, dont ${playableCount} jouables.`);
-  console.log(`  Exclues : ${tooEasyCount} trop faciles, ${monochromeCount} trop monochromes.`);
+  console.log(`  Exclues : ${tooEasyCount} trop faciles, ${monochromeCount} trop monochromes, ${manualCount} manuellement.`);
   console.log(`  ${downloaded} téléchargées, ${unchanged} réutilisées, ${pruned.length} retirées, ${skipped} ignorées.`);
+  console.log(`  Overrides manuels : ${manualOverrides.forcePlayable.size} forcées jouables, ${manualOverrides.forceExcluded.size} forcées exclues.`);
 }
 
 main().catch((err) => {

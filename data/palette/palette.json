@@ -5,29 +5,30 @@
     "rarity": "champion",
     "fr": "Reine des Archères",
     "image": "archer-queen.png",
+    "highlightImage": "archer-queen.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/p7OQmOAFTery7zCzlpDdm-LOD1kINTm42AwIHchZfWk.png",
     "fetchedAt": "2026-09-19T09:41:32.461Z",
     "colors": [
       {
-        "hex": "#6942A5",
-        "share": 0.3558116883116883
+        "hex": "#A26948",
+        "share": 0.42477272727272725
       },
       {
-        "hex": "#B36B45",
-        "share": 0.31535714285714284
+        "hex": "#67469F",
+        "share": 0.4144967532467532
       },
       {
-        "hex": "#8A8185",
-        "share": 0.2786363636363636
+        "hex": "#C2BDC5",
+        "share": 0.11064935064935065
       },
       {
         "hex": "#ECC340",
-        "share": 0.050194805194805195
+        "share": 0.05008116883116883
       }
     ],
-    "correctHex": "#6942A5",
+    "correctHex": "#A26948",
     "playable": true,
     "excludedReason": null
   },
@@ -37,29 +38,30 @@
     "rarity": "common",
     "fr": "Archères",
     "image": "archers.png",
+    "highlightImage": "archers.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/W4Hmp8MTSdXANN8KdblbtHwtsbt0o749BbxNqmJYfA8.png",
     "fetchedAt": "2026-09-19T09:41:32.508Z",
     "colors": [
       {
-        "hex": "#7C3638",
-        "share": 0.3491804044272171
+        "hex": "#975448",
+        "share": 0.40350877192982454
       },
       {
-        "hex": "#C84596",
-        "share": 0.2781954887218045
+        "hex": "#BB3F8A",
+        "share": 0.3361042357446411
       },
       {
-        "hex": "#575E67",
-        "share": 0.1994115724092841
+        "hex": "#90978F",
+        "share": 0.11882189946916982
       },
       {
-        "hex": "#CEA487",
-        "share": 0.1732125344416943
+        "hex": "#48526B",
+        "share": 0.11019785488566136
       }
     ],
-    "correctHex": "#7C3638",
+    "correctHex": "#975448",
     "playable": true,
     "excludedReason": null
   },
@@ -69,29 +71,30 @@
     "rarity": "common",
     "fr": "Flèches",
     "image": "arrows.png",
+    "highlightImage": "arrows.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/Flsoci-Y6y8ZFVi5uRFTmgkPnCmMyMVrU7YmmuPvSBo.png",
     "fetchedAt": "2026-09-19T09:41:32.545Z",
     "colors": [
       {
-        "hex": "#A2C9EA",
-        "share": 0.7864827309582133
+        "hex": "#A3CBEC",
+        "share": 0.7555402753305542
       },
       {
-        "hex": "#995E5B",
-        "share": 0.08335840245247611
+        "hex": "#BD5458",
+        "share": 0.12033177188534101
       },
       {
-        "hex": "#E1425B",
-        "share": 0.06601057200567279
+        "hex": "#8E94A6",
+        "share": 0.07489220278768605
       },
       {
-        "hex": "#6C6974",
-        "share": 0.06414829458363774
+        "hex": "#574243",
+        "share": 0.035999255089031186
       }
     ],
-    "correctHex": "#A2C9EA",
+    "correctHex": "#A3CBEC",
     "playable": false,
     "excludedReason": "top1>60%"
   },
@@ -101,29 +104,30 @@
     "rarity": "epic",
     "fr": "Bébé dragon",
     "image": "baby-dragon.png",
+    "highlightImage": "baby-dragon.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/cjC9n4AvEZJ3urkVh-rwBkJ-aRSsydIMqSAV48hAih0.png",
     "fetchedAt": "2026-09-19T09:41:32.582Z",
     "colors": [
       {
-        "hex": "#70A4B6",
-        "share": 0.3656101637259107
+        "hex": "#67BF6A",
+        "share": 0.34979959475248845
       },
       {
-        "hex": "#75CD78",
-        "share": 0.3591912797834736
+        "hex": "#709EB2",
+        "share": 0.3391655450874832
       },
       {
-        "hex": "#2D6E4B",
-        "share": 0.21269578335527192
+        "hex": "#388769",
+        "share": 0.22717524736367267
       },
       {
-        "hex": "#625952",
-        "share": 0.06250277313534379
+        "hex": "#464846",
+        "share": 0.04275804948752459
       }
     ],
-    "correctHex": "#70A4B6",
+    "correctHex": "#67BF6A",
     "playable": true,
     "excludedReason": null
   },
@@ -133,29 +137,30 @@
     "rarity": "epic",
     "fr": "Ballon",
     "image": "balloon.png",
+    "highlightImage": "balloon.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/qBipxLo-3hhCnPrApp2Nn3b2NgrSrvwzWytvREev0CY.png",
     "fetchedAt": "2026-09-19T09:41:32.621Z",
     "colors": [
       {
-        "hex": "#B2CEC3",
-        "share": 0.34004098593954574
+        "hex": "#B2D0C6",
+        "share": 0.321398075937838
       },
       {
-        "hex": "#465A76",
-        "share": 0.33915864974099164
+        "hex": "#445C7C",
+        "share": 0.2967638185233677
       },
       {
-        "hex": "#865F48",
-        "share": 0.21348266636306712
+        "hex": "#866551",
+        "share": 0.29555416405760804
       },
       {
-        "hex": "#99AB7C",
-        "share": 0.10731769795639551
+        "hex": "#80A67C",
+        "share": 0.07963795753401263
       }
     ],
-    "correctHex": "#B2CEC3",
+    "correctHex": "#B2D0C6",
     "playable": true,
     "excludedReason": null
   },
@@ -165,29 +170,30 @@
     "rarity": "legendary",
     "fr": "Voleuse",
     "image": "bandit.png",
+    "highlightImage": "bandit.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/QWDdXMKJNpv0go-HYaWQWP6p8uIOHjqn-zX7G0p3DyM.png",
     "fetchedAt": "2026-09-19T09:41:32.664Z",
     "colors": [
       {
-        "hex": "#504640",
-        "share": 0.37571682815898755
+        "hex": "#C1967E",
+        "share": 0.6053874717113792
       },
       {
-        "hex": "#C4B7AD",
-        "share": 0.3693230505569837
+        "hex": "#383B3A",
+        "share": 0.21418056379495967
       },
       {
-        "hex": "#CC845E",
-        "share": 0.24520466679849715
+        "hex": "#8E8580",
+        "share": 0.1723903060663986
       },
       {
-        "hex": "#4E9170",
-        "share": 0.009755454485531606
+        "hex": "#4A9673",
+        "share": 0.00804165842726254
       }
     ],
-    "correctHex": "#504640",
+    "correctHex": "#C1967E",
     "playable": true,
     "excludedReason": null
   },
@@ -197,31 +203,32 @@
     "rarity": "epic",
     "fr": "Fût à barbare",
     "image": "barbarian-barrel.png",
+    "highlightImage": "barbarian-barrel.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/Gb0G1yNy0i5cIGUHin8uoFWxqntNtRPhY_jeMXg7HnA.png",
     "fetchedAt": "2026-09-19T09:41:32.702Z",
     "colors": [
       {
-        "hex": "#554941",
-        "share": 0.4377787138852171
+        "hex": "#98714A",
+        "share": 0.4325784756620136
       },
       {
-        "hex": "#9BB9CB",
-        "share": 0.25549438577633166
+        "hex": "#4C5154",
+        "share": 0.26695524599450926
       },
       {
-        "hex": "#C39360",
-        "share": 0.23417050390017866
+        "hex": "#9BBACF",
+        "share": 0.23677062301178042
       },
       {
-        "hex": "#FADA4B",
-        "share": 0.0725563964382726
+        "hex": "#FBDF49",
+        "share": 0.06369565533169676
       }
     ],
-    "correctHex": "#554941",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#98714A",
+    "playable": false,
+    "excludedReason": "manual"
   },
   {
     "id": "barbarian-hut",
@@ -229,29 +236,30 @@
     "rarity": "rare",
     "fr": "Cabane de barbare",
     "image": "barbarian-hut.png",
+    "highlightImage": "barbarian-hut.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/ho0nOG2y3Ch86elHHcocQs8Fv_QNe0cFJ2CijsxABZA.png",
     "fetchedAt": "2026-09-19T09:41:32.742Z",
     "colors": [
       {
-        "hex": "#9AA2B1",
-        "share": 0.37057407064388814
+        "hex": "#B47D4A",
+        "share": 0.3094909023552712
       },
       {
-        "hex": "#727F4E",
-        "share": 0.35842013023096764
+        "hex": "#769051",
+        "share": 0.2486214610375732
       },
       {
-        "hex": "#C0844E",
-        "share": 0.2631121496658735
+        "hex": "#BCC0BB",
+        "share": 0.1795734009660459
       },
       {
-        "hex": "#DC28DE",
-        "share": 0.007893649459270763
+        "hex": "#685F63",
+        "share": 0.14842625707080062
       }
     ],
-    "correctHex": "#9AA2B1",
+    "correctHex": "#B47D4A",
     "playable": true,
     "excludedReason": null
   },
@@ -261,29 +269,30 @@
     "rarity": "common",
     "fr": "Barbares",
     "image": "barbarians.png",
+    "highlightImage": "barbarians.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/TvJsuu2S4yhyk1jVYUAQwdKOnW4U77KuWWOTPOWnwfI.png",
     "fetchedAt": "2026-09-19T09:41:32.779Z",
     "colors": [
       {
-        "hex": "#944836",
-        "share": 0.3156971251180996
+        "hex": "#DEA03F",
+        "share": 0.42884779772348947
       },
       {
-        "hex": "#E2A928",
-        "share": 0.2842788800407912
+        "hex": "#A15C4A",
+        "share": 0.348974970381368
       },
       {
-        "hex": "#D6A889",
-        "share": 0.23663412366341235
+        "hex": "#ACB3C1",
+        "share": 0.10212804247086876
       },
       {
-        "hex": "#72809F",
-        "share": 0.1633898711776968
+        "hex": "#676D9E",
+        "share": 0.07925795953869919
       }
     ],
-    "correctHex": "#944836",
+    "correctHex": "#DEA03F",
     "playable": true,
     "excludedReason": null
   },
@@ -293,31 +302,32 @@
     "rarity": "common",
     "fr": "Chauves-souris",
     "image": "bats.png",
+    "highlightImage": "bats.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/EnIcvO21hxiNpoI-zO6MDjLmzwPbq8Z4JPo2OKoVUjU.png",
     "fetchedAt": "2026-09-19T09:41:32.813Z",
     "colors": [
       {
-        "hex": "#676097",
-        "share": 0.4631857147697625
+        "hex": "#5A5D86",
+        "share": 0.7902619184766035
       },
       {
-        "hex": "#3A3953",
-        "share": 0.3291261477992749
+        "hex": "#714176",
+        "share": 0.0911970995832345
       },
       {
-        "hex": "#9DA7BE",
-        "share": 0.1663504218479992
+        "hex": "#80848E",
+        "share": 0.08138786297563785
       },
       {
-        "hex": "#D66F9B",
-        "share": 0.04133771558296344
+        "hex": "#DE75A0",
+        "share": 0.037153118964524105
       }
     ],
-    "correctHex": "#676097",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#5A5D86",
+    "playable": false,
+    "excludedReason": "top1>60%"
   },
   {
     "id": "battle-healer",
@@ -325,31 +335,32 @@
     "rarity": "rare",
     "fr": "Guérisseuse armée",
     "image": "battle-healer.png",
+    "highlightImage": "battle-healer.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/KdwXcoigS2Kg-cgA7BJJIANbUJG6SNgjetRQ-MegZ08.png",
-    "fetchedAt": "2026-09-19T09:41:32.851Z",
+    "fetchedAt": "2026-09-19T10:24:44.632Z",
     "colors": [
       {
-        "hex": "#D5B99F",
-        "share": 0.39545700536792994
+        "hex": "#C9A78B",
+        "share": 0.20148020301598676
       },
       {
-        "hex": "#7E492D",
-        "share": 0.2832862847196829
+        "hex": "#E8D0B3",
+        "share": 0.18520089514253535
       },
       {
-        "hex": "#D27F4F",
-        "share": 0.21351782240489112
+        "hex": "#7B4324",
+        "share": 0.18059354385759627
       },
       {
-        "hex": "#F8DA73",
-        "share": 0.10773888750749609
+        "hex": "#AC6236",
+        "share": 0.16188623498954205
       }
     ],
-    "correctHex": "#D5B99F",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#C9A78B",
+    "playable": false,
+    "excludedReason": "monochrome"
   },
   {
     "id": "battle-ram",
@@ -357,31 +368,32 @@
     "rarity": "rare",
     "fr": "Bélier de combat",
     "image": "battle-ram.png",
+    "highlightImage": "battle-ram.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/dyc50V2cplKi4H7pq1B3I36pl_sEH5DQrNHboS_dbbM.png",
     "fetchedAt": "2026-09-19T09:41:32.890Z",
     "colors": [
       {
-        "hex": "#304F56",
-        "share": 0.3820978323084374
+        "hex": "#2B5E65",
+        "share": 0.44916858681773486
       },
       {
-        "hex": "#74A0A7",
-        "share": 0.3311710230858418
+        "hex": "#956242",
+        "share": 0.2808899716747142
       },
       {
-        "hex": "#B18262",
-        "share": 0.1793739084491539
+        "hex": "#6C8088",
+        "share": 0.13989462406621953
       },
       {
-        "hex": "#7A4121",
-        "share": 0.10735723615656692
+        "hex": "#B7C4C9",
+        "share": 0.13004681744133142
       }
     ],
-    "correctHex": "#304F56",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#2B5E65",
+    "playable": false,
+    "excludedReason": "manual"
   },
   {
     "id": "berserker",
@@ -389,31 +401,32 @@
     "rarity": "common",
     "fr": "Berserker",
     "image": "berserker.png",
+    "highlightImage": "berserker.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/NA6W8S1JBYBlOPwD3dNvJLFvVDKq-UuBs_J3i3ewLFI.png",
-    "fetchedAt": "2026-09-19T09:41:32.929Z",
+    "fetchedAt": "2026-09-19T10:24:44.659Z",
     "colors": [
       {
-        "hex": "#DE572A",
-        "share": 0.27421401998686995
+        "hex": "#F3672A",
+        "share": 0.15461375738565905
       },
       {
-        "hex": "#ECBEA1",
-        "share": 0.25173243854402216
+        "hex": "#F7C69E",
+        "share": 0.13990808957619083
       },
       {
-        "hex": "#9A5745",
-        "share": 0.24467138376249178
+        "hex": "#5A6782",
+        "share": 0.13647968487854695
       },
       {
-        "hex": "#6C768A",
-        "share": 0.2293821577066161
+        "hex": "#B9BDC3",
+        "share": 0.12727405354146912
       }
     ],
-    "correctHex": "#DE572A",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#F3672A",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "bomb-tower",
@@ -421,31 +434,32 @@
     "rarity": "rare",
     "fr": "Tour à bombes",
     "image": "bomb-tower.png",
+    "highlightImage": "bomb-tower.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/rirYRyHPc97emRjoH-c1O8uZCBzPVnToaGuNGusF3TQ.png",
-    "fetchedAt": "2026-09-19T09:41:32.966Z",
+    "fetchedAt": "2026-09-19T10:24:44.682Z",
     "colors": [
       {
-        "hex": "#615F73",
-        "share": 0.36267992450916875
+        "hex": "#475069",
+        "share": 0.21538829892115716
       },
       {
-        "hex": "#8A5037",
-        "share": 0.2501478831582209
+        "hex": "#7C5F5D",
+        "share": 0.18664262978507648
       },
       {
-        "hex": "#DE7636",
-        "share": 0.21810653221036028
+        "hex": "#914D2D",
+        "share": 0.18058646235317316
       },
       {
-        "hex": "#F3CB87",
-        "share": 0.16906566012225008
+        "hex": "#EE9951",
+        "share": 0.1267569927607673
       }
     ],
-    "correctHex": "#615F73",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#475069",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "bomber",
@@ -453,31 +467,32 @@
     "rarity": "common",
     "fr": "Bombardier",
     "image": "bomber.png",
+    "highlightImage": "bomber.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/12n1CesxKIcqVYntjxcF36EFA-ONw7Z-DoL0_rQrbdo.png",
     "fetchedAt": "2026-09-19T09:41:33.004Z",
     "colors": [
       {
-        "hex": "#4E4841",
-        "share": 0.3676530751397791
+        "hex": "#9E823F",
+        "share": 0.299119656954104
       },
       {
-        "hex": "#B0AE9F",
-        "share": 0.28543721684318984
+        "hex": "#393F45",
+        "share": 0.22940436686516053
       },
       {
-        "hex": "#507FA2",
-        "share": 0.23557131384759913
+        "hex": "#7B8287",
+        "share": 0.19840295771019895
       },
       {
-        "hex": "#DBB413",
-        "share": 0.11133839416943195
+        "hex": "#C4C7B8",
+        "share": 0.14658242041304909
       }
     ],
-    "correctHex": "#4E4841",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#9E823F",
+    "playable": false,
+    "excludedReason": "monochrome"
   },
   {
     "id": "boss-bandit",
@@ -485,29 +500,30 @@
     "rarity": "champion",
     "fr": "Cheffe des voleuses",
     "image": "boss-bandit.png",
+    "highlightImage": "boss-bandit.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/nuceG9o7rAyvyc7D3sp2QSiRYtSOEgraq0NJkDf729s.png",
     "fetchedAt": "2026-09-19T09:41:33.043Z",
     "colors": [
       {
-        "hex": "#CD4348",
-        "share": 0.2928685505687559
+        "hex": "#B94D49",
+        "share": 0.448974935627913
       },
       {
-        "hex": "#BA8053",
-        "share": 0.25932987842638766
+        "hex": "#CD9562",
+        "share": 0.19970014015188553
       },
       {
-        "hex": "#594D56",
-        "share": 0.25647795052312505
+        "hex": "#52525F",
+        "share": 0.19810306052605847
       },
       {
-        "hex": "#CCB8B9",
-        "share": 0.19132362048173138
+        "hex": "#C5BBC1",
+        "share": 0.1478113490433819
       }
     ],
-    "correctHex": "#CD4348",
+    "correctHex": "#B94D49",
     "playable": true,
     "excludedReason": null
   },
@@ -517,31 +533,32 @@
     "rarity": "epic",
     "fr": "Bouliste",
     "image": "bowler.png",
+    "highlightImage": "bowler.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/SU4qFXmbQXWjvASxVI6z9IJuTYolx4A0MKK90sTIE88.png",
     "fetchedAt": "2026-09-19T09:41:33.080Z",
     "colors": [
       {
-        "hex": "#8A7FE6",
-        "share": 0.4914358548391717
+        "hex": "#7B72D2",
+        "share": 0.6601838856586372
       },
       {
-        "hex": "#C5C3C6",
-        "share": 0.3352332941884112
+        "hex": "#C9C7C7",
+        "share": 0.3091685045684988
       },
       {
-        "hex": "#494489",
-        "share": 0.16999398504854926
+        "hex": "#57565D",
+        "share": 0.02709592415432647
       },
       {
-        "hex": "#EAC287",
-        "share": 0.0033368659238679
+        "hex": "#EDC485",
+        "share": 0.003107724916220319
       }
     ],
-    "correctHex": "#8A7FE6",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#7B72D2",
+    "playable": false,
+    "excludedReason": "top1>60%"
   },
   {
     "id": "cannon",
@@ -549,31 +566,32 @@
     "rarity": "common",
     "fr": "Canon",
     "image": "cannon.png",
+    "highlightImage": "cannon.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/nZK1y-beLxO5vnlyUhK6-2zH2NzXJwqykcosqQ1cmZ8.png",
     "fetchedAt": "2026-09-19T09:41:33.114Z",
     "colors": [
       {
-        "hex": "#CDC9B4",
-        "share": 0.3588242778979514
+        "hex": "#BFA17C",
+        "share": 0.4442518132077872
       },
       {
-        "hex": "#433E41",
-        "share": 0.2702952029520295
+        "hex": "#3D3A3E",
+        "share": 0.21686919455401452
       },
       {
-        "hex": "#84788A",
-        "share": 0.19651037027611656
+        "hex": "#786A74",
+        "share": 0.16915320015269117
       },
       {
-        "hex": "#A16F40",
-        "share": 0.17437014887390254
+        "hex": "#ADB5B8",
+        "share": 0.14020549688255504
       }
     ],
-    "correctHex": "#CDC9B4",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#BFA17C",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "cannon-cart",
@@ -581,29 +599,30 @@
     "rarity": "epic",
     "fr": "Charrette à canon",
     "image": "cannon-cart.png",
+    "highlightImage": "cannon-cart.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/aqwxRz8HXzqlMCO4WMXNA1txynjXTsLinknqsgZLbok.png",
     "fetchedAt": "2026-09-19T09:41:33.151Z",
     "colors": [
       {
-        "hex": "#B87F47",
-        "share": 0.40508637236084455
+        "hex": "#AF7B46",
+        "share": 0.48211772232885475
       },
       {
-        "hex": "#5D5045",
-        "share": 0.2955694177863084
+        "hex": "#8E8780",
+        "share": 0.17808701215611006
       },
       {
-        "hex": "#B5CDD1",
-        "share": 0.2749360204734485
+        "hex": "#B4DFEF",
+        "share": 0.17164107485604607
       },
       {
-        "hex": "#426833",
-        "share": 0.024408189379398593
+        "hex": "#4A433D",
+        "share": 0.1458253358925144
       }
     ],
-    "correctHex": "#B87F47",
+    "correctHex": "#AF7B46",
     "playable": true,
     "excludedReason": null
   },
@@ -613,31 +632,32 @@
     "rarity": "epic",
     "fr": "Clonage",
     "image": "clone.png",
+    "highlightImage": "clone.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/mHVCet-1TkwWq-pxVIU2ZWY9_2z7Z7wtP25ArEUsP_g.png",
     "fetchedAt": "2026-09-19T09:41:33.185Z",
     "colors": [
       {
-        "hex": "#275A60",
-        "share": 0.5227483751160631
+        "hex": "#388286",
+        "share": 0.8616984032756443
       },
       {
-        "hex": "#3EB8BA",
-        "share": 0.3123582507572644
+        "hex": "#788F90",
+        "share": 0.07822274989725558
       },
       {
-        "hex": "#A2BCB9",
-        "share": 0.12429791314671902
+        "hex": "#AF7446",
+        "share": 0.0355724005662359
       },
       {
-        "hex": "#AE774A",
-        "share": 0.040595460979953424
+        "hex": "#B5B69C",
+        "share": 0.024506446260864272
       }
     ],
-    "correctHex": "#275A60",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#388286",
+    "playable": false,
+    "excludedReason": "top1>60%"
   },
   {
     "id": "dark-prince",
@@ -645,31 +665,32 @@
     "rarity": "epic",
     "fr": "Prince ténébreux",
     "image": "dark-prince.png",
+    "highlightImage": "dark-prince.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/M7fXlrKXHu2IvpSGpk36kXVstslbR08Bbxcy0jQcln8.png",
     "fetchedAt": "2026-09-19T09:41:33.219Z",
     "colors": [
       {
-        "hex": "#434747",
-        "share": 0.5841836734693877
+        "hex": "#474B4B",
+        "share": 0.6763682745825603
       },
       {
-        "hex": "#747C7E",
-        "share": 0.21289424860853431
+        "hex": "#80C3DC",
+        "share": 0.11366949377153458
       },
       {
-        "hex": "#AFD2DE",
-        "share": 0.17237609329446063
+        "hex": "#888C8C",
+        "share": 0.10449244632918102
       },
       {
-        "hex": "#BD6F50",
-        "share": 0.03054598462761728
+        "hex": "#CBCFCF",
+        "share": 0.06862907500662603
       }
     ],
-    "correctHex": "#434747",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#474B4B",
+    "playable": false,
+    "excludedReason": "top1>60%"
   },
   {
     "id": "dart-goblin",
@@ -677,29 +698,30 @@
     "rarity": "rare",
     "fr": "Gobelin à sarbacane",
     "image": "dart-goblin.png",
+    "highlightImage": "dart-goblin.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/BmpK3bqEAviflqHCdxxnfm-_l3pRPJw3qxHkwS55nCY.png",
     "fetchedAt": "2026-09-19T09:41:33.257Z",
     "colors": [
       {
-        "hex": "#4E5B63",
-        "share": 0.3922299968669342
+        "hex": "#89672B",
+        "share": 0.37587837737031343
       },
       {
-        "hex": "#466D28",
-        "share": 0.2466767123696421
+        "hex": "#313A42",
+        "share": 0.22583436525579245
       },
       {
-        "hex": "#56431E",
-        "share": 0.20693153505303832
+        "hex": "#3C6725",
+        "share": 0.221791218464201
       },
       {
-        "hex": "#D08D3A",
-        "share": 0.15416175571038537
+        "hex": "#6D7571",
+        "share": 0.12110045205663389
       }
     ],
-    "correctHex": "#4E5B63",
+    "correctHex": "#89672B",
     "playable": true,
     "excludedReason": null
   },
@@ -709,31 +731,32 @@
     "rarity": "rare",
     "fr": "Séisme",
     "image": "earthquake.png",
+    "highlightImage": "earthquake.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/XeQXcrUu59C52DslyZVwCnbi4yamID-WxfVZLShgZmE.png",
     "fetchedAt": "2026-09-19T09:41:33.291Z",
     "colors": [
       {
-        "hex": "#4B3F31",
-        "share": 0.38642301357414666
+        "hex": "#685039",
+        "share": 0.6544840120406656
       },
       {
-        "hex": "#53584B",
-        "share": 0.3264468677230647
+        "hex": "#404C43",
+        "share": 0.237930936559323
       },
       {
-        "hex": "#94613F",
-        "share": 0.21004430056227635
+        "hex": "#89837B",
+        "share": 0.06771454535128074
       },
       {
-        "hex": "#AAAC9F",
-        "share": 0.0770858181405123
+        "hex": "#B6C0B3",
+        "share": 0.03987050604873062
       }
     ],
-    "correctHex": "#4B3F31",
+    "correctHex": "#685039",
     "playable": false,
-    "excludedReason": "monochrome"
+    "excludedReason": "top1>60%"
   },
   {
     "id": "electro-dragon",
@@ -741,31 +764,32 @@
     "rarity": "epic",
     "fr": "Électro-dragon",
     "image": "electro-dragon.png",
+    "highlightImage": "electro-dragon.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/tN9h6lnMNPCNsx0LMFmvpHgznbDZ1fBRkx-C7UfNmfY.png",
-    "fetchedAt": "2026-09-19T09:41:33.327Z",
+    "fetchedAt": "2026-09-19T10:24:44.710Z",
     "colors": [
       {
-        "hex": "#2A5168",
-        "share": 0.3472344526226594
+        "hex": "#25475A",
+        "share": 0.2145812218585409
       },
       {
-        "hex": "#14579B",
-        "share": 0.27489324937278814
+        "hex": "#1684AD",
+        "share": 0.1830794025287853
       },
       {
-        "hex": "#229FD5",
-        "share": 0.23510060312027514
+        "hex": "#13599C",
+        "share": 0.16305846777543323
       },
       {
-        "hex": "#99CFD8",
-        "share": 0.14277169488427732
+        "hex": "#33CEF2",
+        "share": 0.11122003090368351
       }
     ],
-    "correctHex": "#2A5168",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#25475A",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "electro-giant",
@@ -773,29 +797,30 @@
     "rarity": "epic",
     "fr": "Électro-géant",
     "image": "electro-giant.png",
+    "highlightImage": "electro-giant.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/_uChZkNHAMq6tPb3v6A49xinOe3CnhjstOhG6OZbPYc.png",
     "fetchedAt": "2026-09-19T09:41:33.364Z",
     "colors": [
       {
-        "hex": "#A75336",
-        "share": 0.42390428367739136
+        "hex": "#A55337",
+        "share": 0.44146364143574485
       },
       {
-        "hex": "#463F5A",
-        "share": 0.3302957039241213
+        "hex": "#464377",
+        "share": 0.33581303081024116
       },
       {
-        "hex": "#8DC5D9",
-        "share": 0.1819323042588804
+        "hex": "#8E94A4",
+        "share": 0.1598939929328622
       },
       {
-        "hex": "#615FE5",
-        "share": 0.06386770813960697
+        "hex": "#42EFFC",
+        "share": 0.06282933482115181
       }
     ],
-    "correctHex": "#A75336",
+    "correctHex": "#A55337",
     "playable": true,
     "excludedReason": null
   },
@@ -805,29 +830,30 @@
     "rarity": "common",
     "fr": "Électro-esprit",
     "image": "electro-spirit.png",
+    "highlightImage": "electro-spirit.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/WKd4-IAFsgPpMo7dDi9sujmYjRhOMEWiE07OUJpvD9g.png",
     "fetchedAt": "2026-09-19T09:41:33.404Z",
     "colors": [
       {
-        "hex": "#9BBCDC",
-        "share": 0.29954649861593735
+        "hex": "#673BC2",
+        "share": 0.44316508628305556
       },
       {
-        "hex": "#6A32DE",
-        "share": 0.28492549620118973
+        "hex": "#97C2E5",
+        "share": 0.25976205901407623
       },
       {
-        "hex": "#47429D",
-        "share": 0.27673891277460394
+        "hex": "#5560B0",
+        "share": 0.17262500736203545
       },
       {
-        "hex": "#BC78F2",
-        "share": 0.13878909240826903
+        "hex": "#C25BF6",
+        "share": 0.12444784734083279
       }
     ],
-    "correctHex": "#9BBCDC",
+    "correctHex": "#673BC2",
     "playable": true,
     "excludedReason": null
   },
@@ -837,29 +863,30 @@
     "rarity": "legendary",
     "fr": "Électro-sorcier",
     "image": "electro-wizard.png",
+    "highlightImage": "electro-wizard.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/RsFaHgB3w6vXsTjXdPr3x8l_GbV9TbOUCvIx07prbrQ.png",
     "fetchedAt": "2026-09-19T09:41:33.442Z",
     "colors": [
       {
-        "hex": "#434651",
-        "share": 0.39914311680443154
+        "hex": "#AA7573",
+        "share": 0.4417059765439044
       },
       {
-        "hex": "#C0857F",
-        "share": 0.3553035876574198
+        "hex": "#3A4E5A",
+        "share": 0.33792790063617084
       },
       {
-        "hex": "#92CCD1",
-        "share": 0.22376336175185008
+        "hex": "#9FD5D8",
+        "share": 0.19926861989873199
       },
       {
         "hex": "#8F6F2F",
-        "share": 0.021789933786298524
+        "share": 0.021097502921192713
       }
     ],
-    "correctHex": "#434651",
+    "correctHex": "#AA7573",
     "playable": true,
     "excludedReason": null
   },
@@ -869,31 +896,32 @@
     "rarity": "common",
     "fr": "Barbares d'élite",
     "image": "elite-barbarians.png",
+    "highlightImage": "elite-barbarians.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/C88C5JH_F3lLZj6K-tLcMo5DPjrFmvzIb1R2M6xCfTE.png",
     "fetchedAt": "2026-09-19T09:41:33.479Z",
     "colors": [
       {
-        "hex": "#4F686B",
-        "share": 0.4134507703017646
+        "hex": "#AB755C",
+        "share": 0.4641635642725264
       },
       {
-        "hex": "#8A4B36",
-        "share": 0.27410030569932503
+        "hex": "#787B77",
+        "share": 0.18416114289173402
       },
       {
-        "hex": "#C9AE99",
-        "share": 0.22228275674203216
+        "hex": "#347884",
+        "share": 0.1658797179091377
       },
       {
-        "hex": "#BF852E",
-        "share": 0.09016616725687823
+        "hex": "#42413F",
+        "share": 0.11489451859923121
       }
     ],
-    "correctHex": "#4F686B",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#AB755C",
+    "playable": false,
+    "excludedReason": "manual"
   },
   {
     "id": "elixir-collector",
@@ -901,29 +929,30 @@
     "rarity": "rare",
     "fr": "Extracteur d'élixir",
     "image": "elixir-collector.png",
+    "highlightImage": "elixir-collector.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/BGLo3Grsp81c72EpxLLk-Sofk3VY56zahnUNOv3JcT0.png",
     "fetchedAt": "2026-09-19T09:41:33.515Z",
     "colors": [
       {
-        "hex": "#756046",
-        "share": 0.35294368358242884
+        "hex": "#A2B5D8",
+        "share": 0.37574586577257485
       },
       {
-        "hex": "#C0CFDB",
-        "share": 0.2700176166391999
+        "hex": "#6F5740",
+        "share": 0.31015229868727623
       },
       {
-        "hex": "#6778AD",
-        "share": 0.23045121327499005
+        "hex": "#E95FFA",
+        "share": 0.148121838949821
       },
       {
-        "hex": "#E95EFA",
-        "share": 0.14658748650338127
+        "hex": "#70718B",
+        "share": 0.13100244359834062
       }
     ],
-    "correctHex": "#756046",
+    "correctHex": "#A2B5D8",
     "playable": true,
     "excludedReason": null
   },
@@ -933,31 +962,32 @@
     "rarity": "rare",
     "fr": "Golem élixir",
     "image": "elixir-golem.png",
+    "highlightImage": "elixir-golem.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/puhMsZjCIqy21HW3hYxjrk_xt8NIPyFqjRy-BeLKZwo.png",
     "fetchedAt": "2026-09-19T09:41:33.552Z",
     "colors": [
       {
-        "hex": "#7C2DA9",
-        "share": 0.38248874113853015
+        "hex": "#A94FC4",
+        "share": 0.7888164343860546
       },
       {
-        "hex": "#BA80DD",
-        "share": 0.2652545141996619
+        "hex": "#8C76E4",
+        "share": 0.13303214990978704
       },
       {
-        "hex": "#C740E0",
-        "share": 0.21395388483996078
+        "hex": "#C2E7FA",
+        "share": 0.05024932873034139
       },
       {
-        "hex": "#B2B6D3",
-        "share": 0.13830285982184717
+        "hex": "#605D65",
+        "share": 0.027902086973816933
       }
     ],
-    "correctHex": "#7C2DA9",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#A94FC4",
+    "playable": false,
+    "excludedReason": "top1>60%"
   },
   {
     "id": "executioner",
@@ -965,31 +995,32 @@
     "rarity": "epic",
     "fr": "Bourreau",
     "image": "executioner.png",
+    "highlightImage": "executioner.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/9XL5BP2mqzV8kza6KF8rOxrpCZTyuGLp2l413DTjEoM.png",
     "fetchedAt": "2026-09-19T09:41:33.587Z",
     "colors": [
       {
-        "hex": "#D0CFCC",
-        "share": 0.3304771146160551
+        "hex": "#2F394B",
+        "share": 0.27957502096936004
       },
       {
-        "hex": "#323645",
-        "share": 0.2977813594723945
+        "hex": "#CFD5D4",
+        "share": 0.270348502540993
       },
       {
-        "hex": "#686C72",
-        "share": 0.2292978964853708
+        "hex": "#A27A6F",
+        "share": 0.23135371609953456
       },
       {
-        "hex": "#BD756F",
-        "share": 0.14244362942617964
+        "hex": "#6C7379",
+        "share": 0.18527046362843938
       }
     ],
-    "correctHex": "#D0CFCC",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#2F394B",
+    "playable": false,
+    "excludedReason": "manual"
   },
   {
     "id": "fire-spirit",
@@ -997,31 +1028,32 @@
     "rarity": "common",
     "fr": "Esprit de feu",
     "image": "fire-spirit.png",
+    "highlightImage": "fire-spirit.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/16-BqusVvynIgYI8_Jci3LDC-r8AI_xaIYLgXqtlmS8.png",
-    "fetchedAt": "2026-09-19T09:41:33.623Z",
+    "fetchedAt": "2026-09-19T10:24:44.736Z",
     "colors": [
       {
-        "hex": "#A38578",
-        "share": 0.31265844710031965
+        "hex": "#9D8175",
+        "share": 0.2796227187554128
       },
       {
-        "hex": "#643828",
-        "share": 0.2609318657785756
+        "hex": "#523429",
+        "share": 0.16276945848489144
       },
       {
-        "hex": "#E16C2C",
-        "share": 0.2405719054592407
+        "hex": "#873E25",
+        "share": 0.12441148219881273
       },
       {
-        "hex": "#FFD578",
-        "share": 0.18583778166186404
+        "hex": "#E25921",
+        "share": 0.10868093281055631
       }
     ],
-    "correctHex": "#A38578",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#9D8175",
+    "playable": false,
+    "excludedReason": "monochrome"
   },
   {
     "id": "fireball",
@@ -1029,29 +1061,30 @@
     "rarity": "rare",
     "fr": "Boule de feu",
     "image": "fireball.png",
+    "highlightImage": "fireball.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/lZD9MILQv7O-P3XBr_xOLS5idwuz3_7Ws9G60U36yhc.png",
-    "fetchedAt": "2026-09-19T09:41:33.658Z",
+    "fetchedAt": "2026-09-19T10:24:44.758Z",
     "colors": [
       {
-        "hex": "#7F3626",
-        "share": 0.3708155987576211
+        "hex": "#76372B",
+        "share": 0.23902852870125388
       },
       {
-        "hex": "#FBDD63",
-        "share": 0.31024962613597146
+        "hex": "#94381D",
+        "share": 0.17890831703669619
       },
       {
-        "hex": "#C75717",
-        "share": 0.20819912573334867
+        "hex": "#FDF28F",
+        "share": 0.14077418612676867
       },
       {
-        "hex": "#927772",
-        "share": 0.11073564937305878
+        "hex": "#F9D33D",
+        "share": 0.13656102611296445
       }
     ],
-    "correctHex": "#7F3626",
+    "correctHex": "#76372B",
     "playable": true,
     "excludedReason": null
   },
@@ -1061,29 +1094,30 @@
     "rarity": "common",
     "fr": "Artificière",
     "image": "firecracker.png",
+    "highlightImage": "firecracker.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/c1rL3LO1U2D9-TkeFfAC18gP3AO8ztSwrcHMZplwL2Q.png",
     "fetchedAt": "2026-09-19T09:41:33.697Z",
     "colors": [
       {
-        "hex": "#BA8877",
-        "share": 0.29249624729887996
+        "hex": "#835E53",
+        "share": 0.47826732428286295
       },
       {
-        "hex": "#453634",
-        "share": 0.26085809016379924
+        "hex": "#993167",
+        "share": 0.21940517625323722
       },
       {
-        "hex": "#993166",
-        "share": 0.22704254160962012
+        "hex": "#205B99",
+        "share": 0.20841924682051366
       },
       {
-        "hex": "#255D99",
-        "share": 0.2196031209277007
+        "hex": "#656B71",
+        "share": 0.08608943800207843
       }
     ],
-    "correctHex": "#BA8877",
+    "correctHex": "#835E53",
     "playable": true,
     "excludedReason": null
   },
@@ -1093,31 +1127,32 @@
     "rarity": "legendary",
     "fr": "Pêcheur",
     "image": "fisherman.png",
+    "highlightImage": "fisherman.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/U2KZ3g0wyufcuA5P2Xrn3Z3lr1WiJmc5S0IWOZHgizQ.png",
     "fetchedAt": "2026-09-19T09:41:33.735Z",
     "colors": [
       {
-        "hex": "#495A7F",
-        "share": 0.36481391976800387
+        "hex": "#4B79A9",
+        "share": 0.43296278395360077
       },
       {
-        "hex": "#76A7CC",
-        "share": 0.2844691477364266
+        "hex": "#C37752",
+        "share": 0.20768487191880136
       },
       {
-        "hex": "#C47955",
-        "share": 0.20625100692766232
+        "hex": "#576071",
+        "share": 0.14444981472531013
       },
       {
-        "hex": "#F7CF5F",
-        "share": 0.1444659255679072
+        "hex": "#F8D05D",
+        "share": 0.13789270178830354
       }
     ],
-    "correctHex": "#495A7F",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#4B79A9",
+    "playable": false,
+    "excludedReason": "manual"
   },
   {
     "id": "flying-machine",
@@ -1125,31 +1160,32 @@
     "rarity": "rare",
     "fr": "Machine volante",
     "image": "flying-machine.png",
+    "highlightImage": "flying-machine.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/hzKNE3QwFcrSrDDRuVW3QY_OnrDPijSiIp-PsWgFevE.png",
     "fetchedAt": "2026-09-19T09:41:33.774Z",
     "colors": [
       {
-        "hex": "#664E45",
-        "share": 0.26042062217029355
+        "hex": "#956242",
+        "share": 0.626274280706879
       },
       {
-        "hex": "#904B25",
-        "share": 0.2538776106323937
+        "hex": "#81BFE0",
+        "share": 0.1505184752446327
       },
       {
-        "hex": "#90B6CC",
-        "share": 0.24857601869431867
+        "hex": "#BFB8B1",
+        "share": 0.13385424273404412
       },
       {
-        "hex": "#D4AC84",
-        "share": 0.237125748502994
+        "hex": "#6B6E75",
+        "share": 0.08935300131444428
       }
     ],
-    "correctHex": "#664E45",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#956242",
+    "playable": false,
+    "excludedReason": "top1>60%"
   },
   {
     "id": "freeze",
@@ -1157,31 +1193,32 @@
     "rarity": "epic",
     "fr": "Gel",
     "image": "freeze.png",
+    "highlightImage": "freeze.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/I1M20_Zs_p_BS1NaNIVQjuMJkYI_1-ePtwYZahn0JXQ.png",
-    "fetchedAt": "2026-09-19T09:41:33.809Z",
+    "fetchedAt": "2026-09-19T10:24:44.783Z",
     "colors": [
       {
-        "hex": "#CFE8EF",
-        "share": 0.6754707074831916
+        "hex": "#DCE9ED",
+        "share": 0.37529715460790175
       },
       {
-        "hex": "#7FB0C4",
-        "share": 0.15182230519054354
+        "hex": "#BAE6F0",
+        "share": 0.3225749996353931
       },
       {
-        "hex": "#456B7F",
-        "share": 0.11261977336036286
+        "hex": "#8FA7B3",
+        "share": 0.0731547245759622
       },
       {
-        "hex": "#49DAE4",
-        "share": 0.06008721396590196
+        "hex": "#61ADC6",
+        "share": 0.07111292604314029
       }
     ],
-    "correctHex": "#CFE8EF",
+    "correctHex": "#DCE9ED",
     "playable": false,
-    "excludedReason": "top1>60%"
+    "excludedReason": "monochrome"
   },
   {
     "id": "furnace",
@@ -1189,29 +1226,30 @@
     "rarity": "rare",
     "fr": "Fournaise",
     "image": "furnace.png",
+    "highlightImage": "furnace.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/iqbDiG7yYRIzvCPXdt9zPb3IvMt7F7Gi4wIPnh2x4aI.png",
     "fetchedAt": "2026-09-19T09:41:33.847Z",
     "colors": [
       {
-        "hex": "#594048",
-        "share": 0.41324505295324837
+        "hex": "#6D585D",
+        "share": 0.3309465674011714
       },
       {
-        "hex": "#9C8BAD",
-        "share": 0.3190227242086972
+        "hex": "#AA593C",
+        "share": 0.27964108632802553
       },
       {
-        "hex": "#BA5E3E",
-        "share": 0.20543164012762707
+        "hex": "#715F7E",
+        "share": 0.21028506373863415
       },
       {
-        "hex": "#FADD57",
-        "share": 0.06230058271042737
+        "hex": "#9E92C1",
+        "share": 0.13108737660470063
       }
     ],
-    "correctHex": "#594048",
+    "correctHex": "#6D585D",
     "playable": true,
     "excludedReason": null
   },
@@ -1221,31 +1259,32 @@
     "rarity": "rare",
     "fr": "Géant",
     "image": "giant.png",
+    "highlightImage": "giant.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/Axr4ox5_b7edmLsoHxBX3vmgijAIibuF6RImTbqLlXE.png",
     "fetchedAt": "2026-09-19T09:41:33.885Z",
     "colors": [
       {
-        "hex": "#CE8860",
-        "share": 0.3395835571036197
+        "hex": "#A5643E",
+        "share": 0.8363382486075095
       },
       {
-        "hex": "#53392A",
-        "share": 0.33418238173420695
+        "hex": "#AFB6B9",
+        "share": 0.07704347025517484
       },
       {
-        "hex": "#CF6829",
-        "share": 0.22844516732902673
+        "hex": "#756359",
+        "share": 0.066425250494852
       },
       {
-        "hex": "#B0B1B0",
-        "share": 0.09778889383314665
+        "hex": "#3C3F47",
+        "share": 0.020193030642463673
       }
     ],
-    "correctHex": "#CE8860",
+    "correctHex": "#A5643E",
     "playable": false,
-    "excludedReason": "monochrome"
+    "excludedReason": "top1>60%"
   },
   {
     "id": "giant-skeleton",
@@ -1253,29 +1292,30 @@
     "rarity": "epic",
     "fr": "Squelette géant",
     "image": "giant-skeleton.png",
+    "highlightImage": "giant-skeleton.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/0p0gd0XaVRu1Hb1iSG1hTYbz2AN6aEiZnhaAib5O8Z8.png",
     "fetchedAt": "2026-09-19T09:41:33.921Z",
     "colors": [
       {
-        "hex": "#C2C8CE",
-        "share": 0.3475813544415128
+        "hex": "#656873",
+        "share": 0.21362437035260254
       },
       {
-        "hex": "#4A454B",
-        "share": 0.32906372431438397
+        "hex": "#D0D5D8",
+        "share": 0.20398177020868313
       },
       {
-        "hex": "#838B9D",
-        "share": 0.27002478611977293
+        "hex": "#A0A5A8",
+        "share": 0.19473894619013352
       },
       {
-        "hex": "#976153",
-        "share": 0.05333013512433037
+        "hex": "#3A3A3F",
+        "share": 0.17465419365155513
       }
     ],
-    "correctHex": "#C2C8CE",
+    "correctHex": "#656873",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -1285,29 +1325,30 @@
     "rarity": "common",
     "fr": "Méga boule de neige",
     "image": "giant-snowball.png",
+    "highlightImage": "giant-snowball.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/7MaJLa6hK9WN2_VIshuh5DIDfGwm0wEv98gXtAxLDPs.png",
-    "fetchedAt": "2026-09-19T09:41:33.957Z",
+    "fetchedAt": "2026-09-19T10:24:44.807Z",
     "colors": [
       {
-        "hex": "#1C3869",
-        "share": 0.3807819515234793
+        "hex": "#C4E4F6",
+        "share": 0.2245354466582517
       },
       {
-        "hex": "#C0DEEF",
-        "share": 0.2704874814258552
+        "hex": "#162F5B",
+        "share": 0.19959416492242799
       },
       {
-        "hex": "#8AA9C5",
-        "share": 0.2407688497611325
+        "hex": "#23457D",
+        "share": 0.1749085273299567
       },
       {
-        "hex": "#576D8D",
-        "share": 0.10796171728953297
+        "hex": "#8CB3D6",
+        "share": 0.13686548324731973
       }
     ],
-    "correctHex": "#1C3869",
+    "correctHex": "#C4E4F6",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -1317,29 +1358,30 @@
     "rarity": "epic",
     "fr": "Fût à gobelins",
     "image": "goblin-barrel.png",
+    "highlightImage": "goblin-barrel.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/CoZdp5PpsTH858l212lAMeJxVJ0zxv9V-f5xC8Bvj5g.png",
     "fetchedAt": "2026-09-19T09:41:33.992Z",
     "colors": [
       {
-        "hex": "#705534",
-        "share": 0.36987332801842504
+        "hex": "#7C6238",
+        "share": 0.3960640151179614
       },
       {
-        "hex": "#CDE5DA",
-        "share": 0.29091741223019457
+        "hex": "#87A433",
+        "share": 0.28942628517435853
       },
       {
-        "hex": "#B4C446",
-        "share": 0.20394484306256827
+        "hex": "#D1EDE3",
+        "share": 0.2564295627011545
       },
       {
-        "hex": "#637F28",
-        "share": 0.13526441668881212
+        "hex": "#A1998C",
+        "share": 0.046549738683674374
       }
     ],
-    "correctHex": "#705534",
+    "correctHex": "#7C6238",
     "playable": true,
     "excludedReason": null
   },
@@ -1349,31 +1391,32 @@
     "rarity": "rare",
     "fr": "Cage gobeline",
     "image": "goblin-cage.png",
+    "highlightImage": "goblin-cage.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/vD24bBgK4rSq7wx5QEbuqChtPMRFviL_ep76GwQw1yA.png",
     "fetchedAt": "2026-09-19T09:41:34.028Z",
     "colors": [
       {
-        "hex": "#5B6175",
-        "share": 0.4223946307954855
+        "hex": "#758A31",
+        "share": 0.42010009895168576
       },
       {
-        "hex": "#627537",
-        "share": 0.3545768739871793
+        "hex": "#7A828D",
+        "share": 0.32140654802024926
       },
       {
-        "hex": "#CCD84F",
-        "share": 0.17244840888557456
+        "hex": "#353C4D",
+        "share": 0.15744790695673375
       },
       {
-        "hex": "#83332A",
-        "share": 0.05058008633176062
+        "hex": "#E6D65C",
+        "share": 0.051469217421233025
       }
     ],
-    "correctHex": "#5B6175",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#758A31",
+    "playable": false,
+    "excludedReason": "manual"
   },
   {
     "id": "goblin-curse",
@@ -1381,31 +1424,32 @@
     "rarity": "epic",
     "fr": "Malédiction gobeline",
     "image": "goblin-curse.png",
+    "highlightImage": "goblin-curse.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/OQPfGgT5mHEUvPuKKt0plZT0PNtIjCqUgQ3Rm86dQ2k.png",
-    "fetchedAt": "2026-09-19T09:41:34.067Z",
+    "fetchedAt": "2026-09-19T10:24:44.830Z",
     "colors": [
       {
-        "hex": "#3C4215",
-        "share": 0.5110988387255128
+        "hex": "#3A4512",
+        "share": 0.39090616227161856
       },
       {
-        "hex": "#B0C037",
-        "share": 0.1998404589872214
+        "hex": "#463927",
+        "share": 0.11964041910196818
       },
       {
-        "hex": "#8A6F27",
-        "share": 0.1766456502063295
+        "hex": "#A9AC37",
+        "share": 0.10994523447926734
       },
       {
-        "hex": "#828171",
-        "share": 0.11241505208093638
+        "hex": "#6C6515",
+        "share": 0.10448402288799914
       }
     ],
-    "correctHex": "#3C4215",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#3A4512",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "goblin-demolisher",
@@ -1413,29 +1457,30 @@
     "rarity": "rare",
     "fr": "Gobelin explosif",
     "image": "goblin-demolisher.png",
+    "highlightImage": "goblin-demolisher.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/KVVOgdn40xasFLYuQv8Go_U_LCV7wSG9q9eE1H7f3Qk.png",
     "fetchedAt": "2026-09-19T09:41:34.107Z",
     "colors": [
       {
-        "hex": "#736457",
-        "share": 0.3754960096303892
+        "hex": "#6D5E2F",
+        "share": 0.37279117808789214
       },
       {
-        "hex": "#69509E",
-        "share": 0.23696999420393242
+        "hex": "#694A92",
+        "share": 0.20422964317030035
       },
       {
-        "hex": "#A4A73D",
-        "share": 0.23575133383863153
+        "hex": "#A89B9D",
+        "share": 0.17680978495103067
       },
       {
-        "hex": "#A15D3E",
-        "share": 0.15178266232704682
+        "hex": "#9A5041",
+        "share": 0.11098726351301143
       }
     ],
-    "correctHex": "#736457",
+    "correctHex": "#6D5E2F",
     "playable": true,
     "excludedReason": null
   },
@@ -1445,29 +1490,30 @@
     "rarity": "epic",
     "fr": "Foreuse gobeline",
     "image": "goblin-drill.png",
+    "highlightImage": "goblin-drill.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/eN2TKUYbih-26yBi0xy5LVFOA0zDftgDqxxnVfdIg1o.png",
     "fetchedAt": "2026-09-19T09:41:34.143Z",
     "colors": [
       {
-        "hex": "#57555C",
-        "share": 0.48280585599726034
+        "hex": "#4A5E77",
+        "share": 0.3013612625210468
       },
       {
-        "hex": "#223D59",
-        "share": 0.24742444564938215
+        "hex": "#6C707C",
+        "share": 0.24351473987614508
       },
       {
-        "hex": "#ABADB8",
-        "share": 0.210496275791216
+        "hex": "#484951",
+        "share": 0.219457207271482
       },
       {
-        "hex": "#93775C",
-        "share": 0.05927342256214149
+        "hex": "#6B5340",
+        "share": 0.12291315887103678
       }
     ],
-    "correctHex": "#57555C",
+    "correctHex": "#4A5E77",
     "playable": true,
     "excludedReason": null
   },
@@ -1477,31 +1523,32 @@
     "rarity": "common",
     "fr": "Gang de gobelins",
     "image": "goblin-gang.png",
+    "highlightImage": "goblin-gang.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/NHflxzVAQT4oAz7eDfdueqpictb5vrWezn1nuqFhE4w.png",
     "fetchedAt": "2026-09-19T09:41:34.182Z",
     "colors": [
       {
-        "hex": "#555F25",
-        "share": 0.3326016744536076
+        "hex": "#819637",
+        "share": 0.3918190084976953
       },
       {
-        "hex": "#7E776A",
-        "share": 0.2865855570537142
+        "hex": "#6A6137",
+        "share": 0.2539744755573673
       },
       {
-        "hex": "#AFC153",
-        "share": 0.2511680411401336
+        "hex": "#818376",
+        "share": 0.13301558433413815
       },
       {
-        "hex": "#2F416A",
-        "share": 0.1296447273525446
+        "hex": "#39434C",
+        "share": 0.09965193941864475
       }
     ],
-    "correctHex": "#555F25",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#819637",
+    "playable": false,
+    "excludedReason": "monochrome"
   },
   {
     "id": "goblin-giant",
@@ -1509,31 +1556,32 @@
     "rarity": "epic",
     "fr": "Gobelin géant",
     "image": "goblin-giant.png",
+    "highlightImage": "goblin-giant.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/SoW16cY3jXBwaTDvb39DkqiVsoFVaDWbzf5QBYphJrY.png",
     "fetchedAt": "2026-09-19T09:41:34.220Z",
     "colors": [
       {
-        "hex": "#72A572",
-        "share": 0.37881733616486707
+        "hex": "#448E6B",
+        "share": 0.2432476894086681
       },
       {
-        "hex": "#465845",
-        "share": 0.22241497921215567
+        "hex": "#39628B",
+        "share": 0.23237519815750904
       },
       {
-        "hex": "#3A6794",
-        "share": 0.2181527233571621
+        "hex": "#4C4D38",
+        "share": 0.1522746986510334
       },
       {
-        "hex": "#A37051",
-        "share": 0.18061496126581522
+        "hex": "#A46A4A",
+        "share": 0.13957766278826308
       }
     ],
-    "correctHex": "#72A572",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#448E6B",
+    "playable": false,
+    "excludedReason": "manual"
   },
   {
     "id": "goblin-hut",
@@ -1541,29 +1589,30 @@
     "rarity": "rare",
     "fr": "Cabane de gobelin",
     "image": "goblin-hut.png",
+    "highlightImage": "goblin-hut.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/l8ZdzzNLcwB4u7ihGgxNFQOjCT_njFuAhZr7D6PRF7E.png",
     "fetchedAt": "2026-09-19T09:41:34.260Z",
     "colors": [
       {
-        "hex": "#8F572D",
-        "share": 0.28349452261997526
+        "hex": "#7C5131",
+        "share": 0.5046370567294617
       },
       {
-        "hex": "#A8AA57",
-        "share": 0.25235672487815314
+        "hex": "#B2B3B6",
+        "share": 0.20487081939160592
       },
       {
-        "hex": "#A2A5C3",
-        "share": 0.2404699699011474
+        "hex": "#527934",
+        "share": 0.13156407083161448
       },
       {
-        "hex": "#513F31",
-        "share": 0.2236787826007242
+        "hex": "#EED669",
+        "share": 0.08678247849536294
       }
     ],
-    "correctHex": "#8F572D",
+    "correctHex": "#7C5131",
     "playable": true,
     "excludedReason": null
   },
@@ -1573,31 +1622,32 @@
     "rarity": "legendary",
     "fr": "Machine gobeline",
     "image": "goblin-machine.png",
+    "highlightImage": "goblin-machine.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/-iLlotr6GCFndL_1BSBqWBb6DnsHBhLerd5EblZDNfU.png",
     "fetchedAt": "2026-09-19T09:41:34.298Z",
     "colors": [
       {
-        "hex": "#54433B",
-        "share": 0.49161183340095616
+        "hex": "#4D4146",
+        "share": 0.2918129377105862
       },
       {
-        "hex": "#AD9B9D",
-        "share": 0.29527052057791026
+        "hex": "#ADA4A7",
+        "share": 0.2226259989062748
       },
       {
-        "hex": "#A7C145",
-        "share": 0.11522924127224937
+        "hex": "#7A5432",
+        "share": 0.16896290154709193
       },
       {
-        "hex": "#A35AC9",
-        "share": 0.09788840474888423
+        "hex": "#839C39",
+        "share": 0.16294741298710463
       }
     ],
-    "correctHex": "#54433B",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#4D4146",
+    "playable": false,
+    "excludedReason": "manual"
   },
   {
     "id": "goblins",
@@ -1605,29 +1655,30 @@
     "rarity": "common",
     "fr": "Gobelins",
     "image": "goblins.png",
+    "highlightImage": "goblins.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/X_DQUye_OaS3QN6VC9CPw05Fit7wvSm3XegXIXKP--0.png",
     "fetchedAt": "2026-09-19T09:41:34.334Z",
     "colors": [
       {
-        "hex": "#595859",
-        "share": 0.3956474997820844
+        "hex": "#90A938",
+        "share": 0.4966876834122672
       },
       {
-        "hex": "#7E8C31",
-        "share": 0.30370165906383473
+        "hex": "#434347",
+        "share": 0.2357991690153122
       },
       {
-        "hex": "#BBD856",
-        "share": 0.2544817967864718
+        "hex": "#6D6C6E",
+        "share": 0.1324054972833193
       },
       {
-        "hex": "#4A65A4",
-        "share": 0.04616904436760903
+        "hex": "#CFBA6E",
+        "share": 0.047302205305517625
       }
     ],
-    "correctHex": "#595859",
+    "correctHex": "#90A938",
     "playable": true,
     "excludedReason": null
   },
@@ -1637,29 +1688,30 @@
     "rarity": "champion",
     "fr": "Gobelinstein",
     "image": "goblinstein.png",
+    "highlightImage": "goblinstein.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/mQ20B49dXdk7Nv0lMdLw175M3YvkSpN6KNnho8UKBd8.png",
     "fetchedAt": "2026-09-19T09:41:34.374Z",
     "colors": [
       {
-        "hex": "#66664A",
-        "share": 0.3163873580024744
+        "hex": "#839EB1",
+        "share": 0.4385976187798255
       },
       {
-        "hex": "#A0C5D3",
-        "share": 0.2797049986342529
+        "hex": "#809247",
+        "share": 0.33708244291980655
       },
       {
-        "hex": "#B7BC4F",
-        "share": 0.22268104182399537
+        "hex": "#A78352",
+        "share": 0.1468419107604801
       },
       {
-        "hex": "#4E65A5",
-        "share": 0.18122660153927728
+        "hex": "#3F6DD5",
+        "share": 0.07747802753988785
       }
     ],
-    "correctHex": "#66664A",
+    "correctHex": "#839EB1",
     "playable": true,
     "excludedReason": null
   },
@@ -1669,29 +1721,30 @@
     "rarity": "champion",
     "fr": "Chevalier d'or",
     "image": "golden-knight.png",
+    "highlightImage": "golden-knight.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/WJd207D0O1sN-l1FTb8P9KhYL2oF5jY26vRUfTUW3FQ.png",
-    "fetchedAt": "2026-09-19T09:41:34.412Z",
+    "fetchedAt": "2026-09-19T10:24:44.858Z",
     "colors": [
       {
-        "hex": "#965A34",
-        "share": 0.380936752777908
+        "hex": "#9A5032",
+        "share": 0.18542829012143092
       },
       {
-        "hex": "#E7A366",
-        "share": 0.2783846718864769
+        "hex": "#A87532",
+        "share": 0.15226530388985263
       },
       {
-        "hex": "#A4999D",
-        "share": 0.19152327816587744
+        "hex": "#E6CC5C",
+        "share": 0.14093487739697125
       },
       {
-        "hex": "#E6CC5D",
-        "share": 0.1491552971697376
+        "hex": "#F7BD81",
+        "share": 0.12471283229405973
       }
     ],
-    "correctHex": "#965A34",
+    "correctHex": "#9A5032",
     "playable": true,
     "excludedReason": null
   },
@@ -1701,29 +1754,30 @@
     "rarity": "epic",
     "fr": "Golem",
     "image": "golem.png",
+    "highlightImage": "golem.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/npdmCnET7jmVjJvjJQkFnNSNnDxYHDBigbvIAloFMds.png",
     "fetchedAt": "2026-09-19T09:41:34.448Z",
     "colors": [
       {
-        "hex": "#4E3A3D",
-        "share": 0.5004590552347105
+        "hex": "#4D333A",
+        "share": 0.5737598104546128
       },
       {
-        "hex": "#C7AE9D",
-        "share": 0.31455649341033615
+        "hex": "#D5BCA7",
+        "share": 0.24926699244780098
       },
       {
-        "hex": "#693949",
-        "share": 0.1693765733747964
+        "hex": "#86716A",
+        "share": 0.163097882422627
       },
       {
-        "hex": "#E34AC3",
-        "share": 0.015607877980156967
+        "hex": "#ED57CF",
+        "share": 0.013875314674959277
       }
     ],
-    "correctHex": "#4E3A3D",
+    "correctHex": "#4D333A",
     "playable": true,
     "excludedReason": null
   },
@@ -1733,31 +1787,32 @@
     "rarity": "legendary",
     "fr": "Cimetière",
     "image": "graveyard.png",
+    "highlightImage": "graveyard.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/Icp8BIyyfBTj1ncCJS7mb82SY7TPV-MAE-J2L2R48DI.png",
     "fetchedAt": "2026-09-19T09:41:34.486Z",
     "colors": [
       {
-        "hex": "#7A7183",
-        "share": 0.32473225404732253
+        "hex": "#6C5983",
+        "share": 0.6564549605645497
       },
       {
-        "hex": "#705594",
-        "share": 0.2779742631797426
+        "hex": "#7B7582",
+        "share": 0.20004981320049814
       },
       {
-        "hex": "#463B52",
-        "share": 0.2474387712743877
+        "hex": "#DEDADD",
+        "share": 0.0789041095890411
       },
       {
-        "hex": "#CCC5D1",
-        "share": 0.14985471149854712
+        "hex": "#4E4A52",
+        "share": 0.06459111664591116
       }
     ],
-    "correctHex": "#7A7183",
+    "correctHex": "#6C5983",
     "playable": false,
-    "excludedReason": "monochrome"
+    "excludedReason": "top1>60%"
   },
   {
     "id": "guards",
@@ -1765,29 +1820,30 @@
     "rarity": "epic",
     "fr": "Gardes",
     "image": "guards.png",
+    "highlightImage": "guards.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/1ArKfLJxYo6_NU_S9cAeIrfbXqWH0oULVJXedxBXQlU.png",
     "fetchedAt": "2026-09-19T09:41:34.520Z",
     "colors": [
       {
-        "hex": "#4F5259",
-        "share": 0.5923218682731173
+        "hex": "#394047",
+        "share": 0.3494184876031778
       },
       {
-        "hex": "#684526",
-        "share": 0.19740448794387747
+        "hex": "#736F6F",
+        "share": 0.23999194709863256
       },
       {
-        "hex": "#AAB3BB",
-        "share": 0.1928979604478652
+        "hex": "#694526",
+        "share": 0.18918123673981385
       },
       {
-        "hex": "#296FD1",
-        "share": 0.017375683335140075
+        "hex": "#7593BD",
+        "share": 0.12108776113855636
       }
     ],
-    "correctHex": "#4F5259",
+    "correctHex": "#394047",
     "playable": true,
     "excludedReason": null
   },
@@ -1797,29 +1853,30 @@
     "rarity": "rare",
     "fr": "Esprit de guérison",
     "image": "heal-spirit.png",
+    "highlightImage": "heal-spirit.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/GITl06sa2nGRLPvboyXbGEv5E3I-wAwn1Eqa5esggbc.png",
-    "fetchedAt": "2026-09-19T09:41:34.555Z",
+    "fetchedAt": "2026-09-19T10:24:44.881Z",
     "colors": [
       {
-        "hex": "#FDD049",
-        "share": 0.42309489092427693
+        "hex": "#FBBF3F",
+        "share": 0.26519344837837455
       },
       {
-        "hex": "#E68631",
-        "share": 0.36852163818853606
+        "hex": "#E99231",
+        "share": 0.24782344030917766
       },
       {
-        "hex": "#BA9B83",
-        "share": 0.10641430371324623
+        "hex": "#FFE954",
+        "share": 0.15901980492362575
       },
       {
-        "hex": "#8D3C1F",
-        "share": 0.10196916717394074
+        "hex": "#D7632C",
+        "share": 0.12756409348943218
       }
     ],
-    "correctHex": "#FDD049",
+    "correctHex": "#FBBF3F",
     "playable": true,
     "excludedReason": null
   },
@@ -1829,31 +1886,32 @@
     "rarity": "rare",
     "fr": "Chevaucheur de cochon",
     "image": "hog-rider.png",
+    "highlightImage": "hog-rider.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/Ubu0oUl8tZkusnkZf8Xv9Vno5IO29Y-jbZ4fhoNJ5oc.png",
     "fetchedAt": "2026-09-19T09:41:34.590Z",
     "colors": [
       {
-        "hex": "#4F2E29",
-        "share": 0.5171371288546606
+        "hex": "#73483B",
+        "share": 0.7531585144639277
       },
       {
-        "hex": "#8CA0BA",
-        "share": 0.21173980842058365
+        "hex": "#838094",
+        "share": 0.12452662062820227
       },
       {
-        "hex": "#B06647",
-        "share": 0.16745695827896764
+        "hex": "#8BBFE1",
+        "share": 0.08907488145625815
       },
       {
-        "hex": "#B8A982",
-        "share": 0.10366610444578812
+        "hex": "#768A4D",
+        "share": 0.033239983451611874
       }
     ],
-    "correctHex": "#4F2E29",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#73483B",
+    "playable": false,
+    "excludedReason": "top1>60%"
   },
   {
     "id": "hunter",
@@ -1861,29 +1919,30 @@
     "rarity": "epic",
     "fr": "Chasseur",
     "image": "hunter.png",
+    "highlightImage": "hunter.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/VNabB1WKnYtYRSG7X_FZfnZjQDHTBs9A96OGMFmecrA.png",
     "fetchedAt": "2026-09-19T09:41:34.625Z",
     "colors": [
       {
-        "hex": "#3E3839",
-        "share": 0.4115862681266647
+        "hex": "#35393D",
+        "share": 0.30828277596922166
       },
       {
-        "hex": "#3F5974",
-        "share": 0.29367046463450724
+        "hex": "#845244",
+        "share": 0.2410846404261616
       },
       {
-        "hex": "#AE6F5B",
-        "share": 0.15555637762651672
+        "hex": "#5A6772",
+        "share": 0.20705090263391535
       },
       {
-        "hex": "#8DBAD0",
-        "share": 0.13918688961231132
+        "hex": "#2475A6",
+        "share": 0.17651302160402485
       }
     ],
-    "correctHex": "#3E3839",
+    "correctHex": "#35393D",
     "playable": true,
     "excludedReason": null
   },
@@ -1893,31 +1952,32 @@
     "rarity": "rare",
     "fr": "Golem de glace",
     "image": "ice-golem.png",
+    "highlightImage": "ice-golem.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/r05cmpwV1o7i7FHodtZwW3fmjbXCW34IJCsDEV5cZC4.png",
     "fetchedAt": "2026-09-19T09:41:34.661Z",
     "colors": [
       {
-        "hex": "#A9C5E6",
-        "share": 0.38662094165568467
+        "hex": "#7590C9",
+        "share": 0.8431921648496465
       },
       {
-        "hex": "#5972C4",
-        "share": 0.3487630286330418
+        "hex": "#484E55",
+        "share": 0.103540194081706
       },
       {
-        "hex": "#464C6B",
-        "share": 0.2543728285611597
+        "hex": "#A14F8A",
+        "share": 0.032975919492033066
       },
       {
-        "hex": "#50F9FE",
-        "share": 0.010243201150113814
+        "hex": "#4FF9FE",
+        "share": 0.01019827482927998
       }
     ],
-    "correctHex": "#A9C5E6",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#7590C9",
+    "playable": false,
+    "excludedReason": "top1>60%"
   },
   {
     "id": "ice-spirit",
@@ -1925,29 +1985,30 @@
     "rarity": "common",
     "fr": "Esprit de glace",
     "image": "ice-spirit.png",
+    "highlightImage": "ice-spirit.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/lv1budiafU9XmSdrDkk0NYyqASAFYyZ06CPysXKZXlA.png",
-    "fetchedAt": "2026-09-19T09:41:34.696Z",
+    "fetchedAt": "2026-09-19T10:24:44.905Z",
     "colors": [
       {
-        "hex": "#94D4F3",
-        "share": 0.4664356795924502
+        "hex": "#BAD7F4",
+        "share": 0.18515354312022403
       },
       {
-        "hex": "#5288D2",
-        "share": 0.2557944531460123
+        "hex": "#5EBCF0",
+        "share": 0.1645545588305093
       },
       {
-        "hex": "#394B7A",
-        "share": 0.19999367158700776
+        "hex": "#416AB5",
+        "share": 0.16161184678912147
       },
       {
-        "hex": "#483079",
-        "share": 0.07777619567452972
+        "hex": "#84E5F8",
+        "share": 0.1372158147040676
       }
     ],
-    "correctHex": "#94D4F3",
+    "correctHex": "#BAD7F4",
     "playable": true,
     "excludedReason": null
   },
@@ -1957,31 +2018,32 @@
     "rarity": "legendary",
     "fr": "Sorcier de glace",
     "image": "ice-wizard.png",
+    "highlightImage": "ice-wizard.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/W3dkw0HTw9n1jB-zbknY2w3wHuyuLxSRIAV5fUT1SEY.png",
-    "fetchedAt": "2026-09-19T09:41:34.734Z",
+    "fetchedAt": "2026-09-19T10:24:44.928Z",
     "colors": [
       {
-        "hex": "#394F63",
-        "share": 0.29734284498838315
+        "hex": "#294255",
+        "share": 0.17731273929120717
       },
       {
-        "hex": "#D3BCB4",
-        "share": 0.24555777348735233
+        "hex": "#40ACCE",
+        "share": 0.15826761346902712
       },
       {
-        "hex": "#45A3C8",
-        "share": 0.2440524886285546
+        "hex": "#513634",
+        "share": 0.15000490853758303
       },
       {
-        "hex": "#68413C",
-        "share": 0.21304689289570994
+        "hex": "#DBB5A6",
+        "share": 0.1452109034981511
       }
     ],
-    "correctHex": "#394F63",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#294255",
+    "playable": false,
+    "excludedReason": "manual"
   },
   {
     "id": "inferno-dragon",
@@ -1989,29 +2051,30 @@
     "rarity": "legendary",
     "fr": "Dragon de l'enfer",
     "image": "inferno-dragon.png",
+    "highlightImage": "inferno-dragon.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/y5HDbKtTbWG6En6TGWU0xoVIGs1-iQpIP4HC-VM7u8A.png",
     "fetchedAt": "2026-09-19T09:41:34.772Z",
     "colors": [
       {
-        "hex": "#324A46",
-        "share": 0.5495902083258115
+        "hex": "#536E73",
+        "share": 0.5877531862656605
       },
       {
-        "hex": "#9BC1BD",
-        "share": 0.24212008520778425
+        "hex": "#548E5C",
+        "share": 0.29129508611040905
       },
       {
-        "hex": "#89C870",
-        "share": 0.12510380185579667
+        "hex": "#A7552B",
+        "share": 0.10481279560963282
       },
       {
-        "hex": "#C25D2A",
-        "share": 0.08318590461060765
+        "hex": "#F3D634",
+        "share": 0.01613893201429758
       }
     ],
-    "correctHex": "#324A46",
+    "correctHex": "#536E73",
     "playable": true,
     "excludedReason": null
   },
@@ -2021,31 +2084,32 @@
     "rarity": "rare",
     "fr": "Tour de l'enfer",
     "image": "inferno-tower.png",
+    "highlightImage": "inferno-tower.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/GSHY_wrooMMLET6bG_WJB8redtwx66c4i80ipi4gYOM.png",
     "fetchedAt": "2026-09-19T09:41:34.807Z",
     "colors": [
       {
-        "hex": "#644A6B",
-        "share": 0.4622942801242951
+        "hex": "#BF6E6B",
+        "share": 0.4709690413166072
       },
       {
-        "hex": "#A95B6C",
-        "share": 0.2682558407181494
+        "hex": "#593E5F",
+        "share": 0.3546869605248015
       },
       {
-        "hex": "#EB7B65",
-        "share": 0.16253308781217632
+        "hex": "#9189AF",
+        "share": 0.07844688686845437
       },
       {
-        "hex": "#FBE098",
-        "share": 0.10691679134537921
+        "hex": "#FEE87F",
+        "share": 0.06667913453792151
       }
     ],
-    "correctHex": "#644A6B",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#BF6E6B",
+    "playable": false,
+    "excludedReason": "manual"
   },
   {
     "id": "knight",
@@ -2053,31 +2117,32 @@
     "rarity": "common",
     "fr": "Chevalier",
     "image": "knight.png",
+    "highlightImage": "knight.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/jAj1Q5rclXxU9kVImGqSJxa4wEMfEhvwNQ_4jiGUuqg.png",
     "fetchedAt": "2026-09-19T09:41:34.845Z",
     "colors": [
       {
-        "hex": "#C0BCBB",
-        "share": 0.3559138684637537
+        "hex": "#C09464",
+        "share": 0.47442513193094277
       },
       {
-        "hex": "#514D60",
-        "share": 0.31692663031561097
+        "hex": "#443C43",
+        "share": 0.17670706214276316
       },
       {
-        "hex": "#925F3E",
-        "share": 0.20902831581563291
+        "hex": "#818092",
+        "share": 0.16352127706228894
       },
       {
-        "hex": "#E6BE54",
-        "share": 0.1181311854050024
+        "hex": "#B1CDDC",
+        "share": 0.14080430365313493
       }
     ],
-    "correctHex": "#C0BCBB",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#C09464",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "lava-hound",
@@ -2085,29 +2150,30 @@
     "rarity": "legendary",
     "fr": "Molosse de lave",
     "image": "lava-hound.png",
+    "highlightImage": "lava-hound.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/unicRQ975sBY2oLtfgZbAI56ZvaWz7azj-vXTLxc0r8.png",
-    "fetchedAt": "2026-09-19T09:41:34.880Z",
+    "fetchedAt": "2026-09-19T10:24:44.952Z",
     "colors": [
       {
-        "hex": "#433029",
-        "share": 0.5290917854437789
+        "hex": "#3D2B25",
+        "share": 0.42806238380499895
       },
       {
-        "hex": "#84583A",
-        "share": 0.3013323693451766
+        "hex": "#674A34",
+        "share": 0.23684844729050472
       },
       {
-        "hex": "#C4B19E",
-        "share": 0.12685051297941197
+        "hex": "#9B724F",
+        "share": 0.1350099841630517
       },
       {
-        "hex": "#EF9A34",
-        "share": 0.042725332231632586
+        "hex": "#BAB4B3",
+        "share": 0.06524134132066378
       }
     ],
-    "correctHex": "#433029",
+    "correctHex": "#3D2B25",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -2117,29 +2183,30 @@
     "rarity": "epic",
     "fr": "Foudre",
     "image": "lightning.png",
+    "highlightImage": "lightning.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/fpnESbYqe5GyZmaVVYe-SEu7tE0Kxh_HZyVigzvLjks.png",
-    "fetchedAt": "2026-09-19T09:41:34.919Z",
+    "fetchedAt": "2026-09-19T10:24:44.975Z",
     "colors": [
       {
-        "hex": "#CADEF1",
-        "share": 0.3734301117368912
+        "hex": "#D1E5F7",
+        "share": 0.28949191338132096
       },
       {
-        "hex": "#819EC7",
-        "share": 0.2717826702406409
+        "hex": "#9ABCE3",
+        "share": 0.20184923049122067
       },
       {
-        "hex": "#2C63C9",
-        "share": 0.19684968225762733
+        "hex": "#6385B6",
+        "share": 0.11396560551757372
       },
       {
-        "hex": "#304572",
-        "share": 0.15793753576484051
+        "hex": "#2659C8",
+        "share": 0.10812275999156702
       }
     ],
-    "correctHex": "#CADEF1",
+    "correctHex": "#D1E5F7",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -2149,29 +2216,30 @@
     "rarity": "champion",
     "fr": "Petit Prince",
     "image": "little-prince.png",
+    "highlightImage": "little-prince.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/dY-gSseki6KBpkIG17safHH5YlB8SErFZO9OXbJxf9w.png",
     "fetchedAt": "2026-09-19T09:41:34.957Z",
     "colors": [
       {
-        "hex": "#494450",
-        "share": 0.43779114232079536
+        "hex": "#4C4B5A",
+        "share": 0.41648126260168256
       },
       {
-        "hex": "#8C93B5",
-        "share": 0.22048599040533964
+        "hex": "#A56346",
+        "share": 0.28585830494333586
       },
       {
-        "hex": "#934E34",
-        "share": 0.1838802753250365
+        "hex": "#9DA3C5",
+        "share": 0.17967392060070916
       },
       {
-        "hex": "#EDBF8B",
-        "share": 0.15784259194882846
+        "hex": "#8E7569",
+        "share": 0.07385455051101995
       }
     ],
-    "correctHex": "#494450",
+    "correctHex": "#4C4B5A",
     "playable": true,
     "excludedReason": null
   },
@@ -2181,29 +2249,30 @@
     "rarity": "legendary",
     "fr": "Bûcheron",
     "image": "lumberjack.png",
+    "highlightImage": "lumberjack.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/E6RWrnCuk13xMX5OE1EQtLEKTZQV6B78d00y8PlXt6Q.png",
     "fetchedAt": "2026-09-19T09:41:34.995Z",
     "colors": [
       {
-        "hex": "#ADB6C4",
-        "share": 0.3878864459607447
+        "hex": "#CD8745",
+        "share": 0.4215820065706343
       },
       {
-        "hex": "#EF9744",
-        "share": 0.28649650408558675
+        "hex": "#A7B7CC",
+        "share": 0.2935894195939685
       },
       {
-        "hex": "#695346",
-        "share": 0.20682335102350266
+        "hex": "#6F757C",
+        "share": 0.15270828068401987
       },
       {
-        "hex": "#B8488C",
-        "share": 0.11879369893016595
+        "hex": "#A3378E",
+        "share": 0.08123999663044394
       }
     ],
-    "correctHex": "#ADB6C4",
+    "correctHex": "#CD8745",
     "playable": true,
     "excludedReason": null
   },
@@ -2213,29 +2282,30 @@
     "rarity": "legendary",
     "fr": "Archer magique",
     "image": "magic-archer.png",
+    "highlightImage": "magic-archer.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/Avli3W7BxU9HQ2SoLiXnBgGx25FoNXUSFm7OcAk68ek.png",
     "fetchedAt": "2026-09-19T09:41:35.031Z",
     "colors": [
       {
-        "hex": "#565155",
-        "share": 0.3754276590891812
+        "hex": "#B1826D",
+        "share": 0.5884779137839277
       },
       {
-        "hex": "#A2624B",
-        "share": 0.303599939177374
+        "hex": "#4D4C57",
+        "share": 0.21616741427811145
       },
       {
-        "hex": "#DAC8BA",
-        "share": 0.3015661826199346
+        "hex": "#9A8B84",
+        "share": 0.11814795103778605
       },
       {
-        "hex": "#373B8E",
-        "share": 0.019406219113510224
+        "hex": "#72AABC",
+        "share": 0.061715958336501175
       }
     ],
-    "correctHex": "#565155",
+    "correctHex": "#B1826D",
     "playable": true,
     "excludedReason": null
   },
@@ -2245,29 +2315,30 @@
     "rarity": "legendary",
     "fr": "Méga chevalier",
     "image": "mega-knight.png",
+    "highlightImage": "mega-knight.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/O2NycChSNhn_UK9nqBXUhhC_lILkiANzPuJjtjoz0CE.png",
     "fetchedAt": "2026-09-19T09:41:35.066Z",
     "colors": [
       {
-        "hex": "#363944",
-        "share": 0.4467741375117257
+        "hex": "#383C47",
+        "share": 0.49110586109856513
       },
       {
-        "hex": "#B4C3D8",
-        "share": 0.2699510127505819
+        "hex": "#ACBBD0",
+        "share": 0.3183650071222597
       },
       {
-        "hex": "#687284",
-        "share": 0.2596150505506723
+        "hex": "#666F81",
+        "share": 0.1639335719000799
       },
       {
-        "hex": "#D5A08A",
-        "share": 0.023659799187020117
+        "hex": "#CD9A84",
+        "share": 0.02565750616683459
       }
     ],
-    "correctHex": "#363944",
+    "correctHex": "#383C47",
     "playable": true,
     "excludedReason": null
   },
@@ -2277,29 +2348,30 @@
     "rarity": "rare",
     "fr": "Méga gargouille",
     "image": "mega-minion.png",
+    "highlightImage": "mega-minion.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/-T_e4YLbuhPBKbYnBwQfXgynNpp5eOIN_0RracYwL9c.png",
     "fetchedAt": "2026-09-19T09:41:35.101Z",
     "colors": [
       {
-        "hex": "#42434D",
-        "share": 0.531874803726578
+        "hex": "#393D43",
+        "share": 0.36533026274468755
       },
       {
-        "hex": "#959EA3",
-        "share": 0.3082975679542203
+        "hex": "#767F85",
+        "share": 0.26429742838200915
       },
       {
-        "hex": "#9382B9",
-        "share": 0.0975435290833595
+        "hex": "#6D5581",
+        "share": 0.19089989183153633
       },
       {
-        "hex": "#53549E",
-        "share": 0.06228409923584215
+        "hex": "#BBC3C6",
+        "share": 0.11594961443176663
       }
     ],
-    "correctHex": "#42434D",
+    "correctHex": "#393D43",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -2309,29 +2381,30 @@
     "rarity": "champion",
     "fr": "Maitre Mineur",
     "image": "mighty-miner.png",
+    "highlightImage": "mighty-miner.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/Cd9R56yraxTvJiD8xJ2qT2OdsHyh94FqOAarXpbyelo.png",
     "fetchedAt": "2026-09-19T09:41:35.139Z",
     "colors": [
       {
-        "hex": "#CB7252",
-        "share": 0.34465239765315153
+        "hex": "#B56749",
+        "share": 0.49978694811367136
       },
       {
-        "hex": "#594651",
-        "share": 0.3286898947851454
+        "hex": "#585469",
+        "share": 0.2361434330853191
       },
       {
-        "hex": "#BAB0B9",
-        "share": 0.17122816218165132
+        "hex": "#C3BBC4",
+        "share": 0.13520600478547315
       },
       {
-        "hex": "#EBBE4F",
-        "share": 0.1554295453800518
+        "hex": "#DEBF58",
+        "share": 0.1288636140155364
       }
     ],
-    "correctHex": "#CB7252",
+    "correctHex": "#B56749",
     "playable": true,
     "excludedReason": null
   },
@@ -2341,29 +2414,30 @@
     "rarity": "legendary",
     "fr": "Mineur",
     "image": "miner.png",
+    "highlightImage": "miner.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/Y4yWvdwBCg2FpAZgs8T09Gy34WOwpLZW-ttL52Ae8NE.png",
     "fetchedAt": "2026-09-19T09:41:35.175Z",
     "colors": [
       {
-        "hex": "#504A48",
-        "share": 0.4529920314006801
+        "hex": "#A57F6B",
+        "share": 0.4936132776151725
       },
       {
-        "hex": "#B9785E",
-        "share": 0.21122709662138156
+        "hex": "#4C5B70",
+        "share": 0.3267464090547651
       },
       {
-        "hex": "#DCCBB1",
-        "share": 0.21014431454819227
+        "hex": "#8C7668",
+        "share": 0.15175867494543793
       },
       {
-        "hex": "#6984AA",
-        "share": 0.12563655742974605
+        "hex": "#F7E194",
+        "share": 0.027881638384624496
       }
     ],
-    "correctHex": "#504A48",
+    "correctHex": "#A57F6B",
     "playable": true,
     "excludedReason": null
   },
@@ -2373,29 +2447,30 @@
     "rarity": "rare",
     "fr": "Mini P.E.K.K.A",
     "image": "mini-p-e-k-k-a.png",
+    "highlightImage": "mini-p-e-k-k-a.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/Fmltc4j3Ve9vO_xhHHPEO3PRP3SmU2oKp2zkZQHRZT4.png",
-    "fetchedAt": "2026-09-19T09:41:35.210Z",
+    "fetchedAt": "2026-09-19T10:24:45.002Z",
     "colors": [
       {
-        "hex": "#363D5A",
-        "share": 0.38628230013344655
+        "hex": "#313750",
+        "share": 0.26110032755064905
       },
       {
-        "hex": "#6D96B8",
-        "share": 0.2578551498240932
+        "hex": "#3D8BB0",
+        "share": 0.14946014800436735
       },
       {
-        "hex": "#5A71A6",
-        "share": 0.24378260342108454
+        "hex": "#404C71",
+        "share": 0.14744328521169478
       },
       {
-        "hex": "#7ACBD4",
-        "share": 0.11207994662137571
+        "hex": "#576A9F",
+        "share": 0.14014921751789397
       }
     ],
-    "correctHex": "#363D5A",
+    "correctHex": "#313750",
     "playable": true,
     "excludedReason": null
   },
@@ -2405,29 +2480,30 @@
     "rarity": "rare",
     "fr": "Gargouille Géante",
     "image": "minion-giant.png",
+    "highlightImage": "minion-giant.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/VRjL0yVLzrnoe-IBh2l2fDHDok0L-UoM9cG-X_8xbMk.png",
     "fetchedAt": "2026-09-19T09:41:35.249Z",
     "colors": [
       {
-        "hex": "#3D4573",
-        "share": 0.45378290965148266
+        "hex": "#3D4671",
+        "share": 0.4782970105492247
       },
       {
-        "hex": "#61A5DD",
-        "share": 0.2928089955566303
+        "hex": "#70AAD9",
+        "share": 0.32554484176162984
       },
       {
-        "hex": "#9D8A7E",
-        "share": 0.1467067678263761
+        "hex": "#A2C627",
+        "share": 0.10890789831635583
       },
       {
-        "hex": "#A6C825",
-        "share": 0.10670132696551099
+        "hex": "#B18563",
+        "share": 0.06158752229241604
       }
     ],
-    "correctHex": "#3D4573",
+    "correctHex": "#3D4671",
     "playable": true,
     "excludedReason": null
   },
@@ -2437,31 +2513,32 @@
     "rarity": "common",
     "fr": "Horde de gargouilles",
     "image": "minion-horde.png",
+    "highlightImage": "minion-horde.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/Wyjq5l0IXHTkX9Rmpap6HaH08MvjbxFp1xBO9a47YSI.png",
     "fetchedAt": "2026-09-19T09:41:35.285Z",
     "colors": [
       {
-        "hex": "#3B323A",
-        "share": 0.41020967795873325
+        "hex": "#7993AA",
+        "share": 0.3355014547035414
       },
       {
-        "hex": "#778490",
-        "share": 0.22414139049593687
+        "hex": "#303139",
+        "share": 0.3097013677557436
       },
       {
-        "hex": "#3F5473",
-        "share": 0.18999765909774938
+        "hex": "#7A8D9A",
+        "share": 0.18952947864762734
       },
       {
-        "hex": "#B6D4E1",
-        "share": 0.1756512724475805
+        "hex": "#4D2936",
+        "share": 0.08689763568872688
       }
     ],
-    "correctHex": "#3B323A",
+    "correctHex": "#7993AA",
     "playable": false,
-    "excludedReason": "monochrome"
+    "excludedReason": "manual"
   },
   {
     "id": "minions",
@@ -2469,31 +2546,32 @@
     "rarity": "common",
     "fr": "Gargouilles",
     "image": "minions.png",
+    "highlightImage": "minions.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/yHGpoEnmUWPGV_hBbhn-Kk-Bs838OjGzWzJJlQpQKQA.png",
     "fetchedAt": "2026-09-19T09:41:35.319Z",
     "colors": [
       {
-        "hex": "#274F8C",
-        "share": 0.387533607464811
+        "hex": "#32507F",
+        "share": 0.7430412778744266
       },
       {
-        "hex": "#343F5B",
-        "share": 0.32441088091096
+        "hex": "#98D9E9",
+        "share": 0.14289103273762455
       },
       {
-        "hex": "#86B9CF",
-        "share": 0.28625652380199273
+        "hex": "#6B7582",
+        "share": 0.11084532658548157
       },
       {
-        "hex": "#B064E5",
-        "share": 0.0017989878222362803
+        "hex": "#C291E9",
+        "share": 0.0032223628024671833
       }
     ],
-    "correctHex": "#274F8C",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#32507F",
+    "playable": false,
+    "excludedReason": "top1>60%"
   },
   {
     "id": "mirror",
@@ -2501,31 +2579,32 @@
     "rarity": "epic",
     "fr": "Miroir",
     "image": "mirror.png",
+    "highlightImage": "mirror.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/wC6Cm9rKLEOk72zTsukVwxewKIoO4ZcMJun54zCPWvA.png",
     "fetchedAt": "2026-09-19T09:41:35.351Z",
     "colors": [
       {
-        "hex": "#88B5E3",
-        "share": 0.5374852041471171
+        "hex": "#65ADE2",
+        "share": 0.37672024072674376
       },
       {
-        "hex": "#514E5E",
-        "share": 0.28790234024044153
+        "hex": "#4A4757",
+        "share": 0.2392293321544188
       },
       {
-        "hex": "#F9D176",
-        "share": 0.13044594344062407
+        "hex": "#E2BB69",
+        "share": 0.17613838935554257
       },
       {
-        "hex": "#A78449",
-        "share": 0.04416651217181729
+        "hex": "#D7D6F0",
+        "share": 0.13229988163317694
       }
     ],
-    "correctHex": "#88B5E3",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#65ADE2",
+    "playable": false,
+    "excludedReason": "manual"
   },
   {
     "id": "monk",
@@ -2533,29 +2612,30 @@
     "rarity": "champion",
     "fr": "Moine",
     "image": "monk.png",
+    "highlightImage": "monk.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/2onG4t4-CxqwFVZAn6zpWxFz3_mG2ksSj4Q7zldo1SM.png",
     "fetchedAt": "2026-09-19T09:41:35.388Z",
     "colors": [
       {
-        "hex": "#D2C2BA",
-        "share": 0.485668249660787
+        "hex": "#C99D83",
+        "share": 0.5654511533242876
       },
       {
-        "hex": "#A76444",
-        "share": 0.2558175033921303
+        "hex": "#BEB4C1",
+        "share": 0.19691316146540028
       },
       {
-        "hex": "#65868D",
-        "share": 0.25266282225237446
+        "hex": "#5CA5A2",
+        "share": 0.13722862957937584
       },
       {
-        "hex": "#D6B316",
-        "share": 0.005851424694708277
+        "hex": "#574D5A",
+        "share": 0.10040705563093623
       }
     ],
-    "correctHex": "#D2C2BA",
+    "correctHex": "#C99D83",
     "playable": true,
     "excludedReason": null
   },
@@ -2565,31 +2645,32 @@
     "rarity": "common",
     "fr": "Mortier",
     "image": "mortar.png",
+    "highlightImage": "mortar.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/lPOSw6H7YOHq2miSCrf7ZDL3ANjhJdPPDYOTujdNrVE.png",
     "fetchedAt": "2026-09-19T09:41:35.426Z",
     "colors": [
       {
-        "hex": "#9EBBD1",
-        "share": 0.4972912559569085
+        "hex": "#85A3B8",
+        "share": 0.6560748824141196
       },
       {
-        "hex": "#485657",
-        "share": 0.33166203567159774
+        "hex": "#829049",
+        "share": 0.15744865804628924
       },
       {
-        "hex": "#8D9B45",
-        "share": 0.11311528849288276
+        "hex": "#48473E",
+        "share": 0.13042330916937023
       },
       {
-        "hex": "#CA7023",
-        "share": 0.057931419878611015
+        "hex": "#CC7223",
+        "share": 0.05605315037022089
       }
     ],
-    "correctHex": "#9EBBD1",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#85A3B8",
+    "playable": false,
+    "excludedReason": "top1>60%"
   },
   {
     "id": "mother-witch",
@@ -2597,29 +2678,30 @@
     "rarity": "legendary",
     "fr": "Mamie sorcière",
     "image": "mother-witch.png",
+    "highlightImage": "mother-witch.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/fO-Xah8XZkYKaSK9SCp3wnzwxtvIhun9NVY-zzte1Ng.png",
     "fetchedAt": "2026-09-19T09:41:35.464Z",
     "colors": [
       {
-        "hex": "#573972",
-        "share": 0.3118397742930254
+        "hex": "#65368B",
+        "share": 0.3662653369201496
       },
       {
-        "hex": "#BB9691",
-        "share": 0.27813135621022245
+        "hex": "#C9918D",
+        "share": 0.2741125910373335
       },
       {
-        "hex": "#B64773",
-        "share": 0.22846269929794633
+        "hex": "#B83F7A",
+        "share": 0.17290532117315136
       },
       {
-        "hex": "#9B32B3",
-        "share": 0.18156617019880586
+        "hex": "#524750",
+        "share": 0.11118036874220852
       }
     ],
-    "correctHex": "#573972",
+    "correctHex": "#65368B",
     "playable": true,
     "excludedReason": null
   },
@@ -2629,29 +2711,30 @@
     "rarity": "rare",
     "fr": "Mousquetaire",
     "image": "musketeer.png",
+    "highlightImage": "musketeer.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/Tex1C48UTq9FKtAX-3tzG0FJmc9jzncUZG3bb5Vf-Ds.png",
     "fetchedAt": "2026-09-19T09:41:35.498Z",
     "colors": [
       {
-        "hex": "#ACC3DA",
-        "share": 0.3917147351861563
+        "hex": "#ABC6DE",
+        "share": 0.3636676904637052
       },
       {
-        "hex": "#525562",
-        "share": 0.2692486328563937
+        "hex": "#535964",
+        "share": 0.24445276799760282
       },
       {
-        "hex": "#8D5449",
-        "share": 0.19916098584163608
+        "hex": "#8F584E",
+        "share": 0.23248183384523186
       },
       {
-        "hex": "#612185",
-        "share": 0.1398756461158139
+        "hex": "#602084",
+        "share": 0.13911154393587535
       }
     ],
-    "correctHex": "#ACC3DA",
+    "correctHex": "#ABC6DE",
     "playable": true,
     "excludedReason": null
   },
@@ -2661,29 +2744,30 @@
     "rarity": "legendary",
     "fr": "Sorcière de la nuit",
     "image": "night-witch.png",
+    "highlightImage": "night-witch.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/NpCrXDEDBBJgNv9QrBAcJmmMFbS7pe3KCY8xJ5VB18A.png",
     "fetchedAt": "2026-09-19T09:41:35.534Z",
     "colors": [
       {
-        "hex": "#586B76",
-        "share": 0.409755185946552
+        "hex": "#5F8194",
+        "share": 0.382022051952906
       },
       {
-        "hex": "#483A3E",
-        "share": 0.3189497290226126
+        "hex": "#616364",
+        "share": 0.2174546813679686
       },
       {
-        "hex": "#B7C0CE",
-        "share": 0.23068585311156792
+        "hex": "#343438",
+        "share": 0.1523640441039058
       },
       {
-        "hex": "#6B47A2",
-        "share": 0.04060923191926743
+        "hex": "#E1CDD5",
+        "share": 0.10670902635021491
       }
     ],
-    "correctHex": "#586B76",
+    "correctHex": "#5F8194",
     "playable": true,
     "excludedReason": null
   },
@@ -2693,29 +2777,30 @@
     "rarity": "epic",
     "fr": "P.E.K.K.A",
     "image": "p-e-k-k-a.png",
+    "highlightImage": "p-e-k-k-a.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/MlArURKhn_zWAZY-Xj1qIRKLVKquarG25BXDjUQajNs.png",
     "fetchedAt": "2026-09-19T09:41:35.570Z",
     "colors": [
       {
-        "hex": "#444451",
-        "share": 0.4120754405513598
+        "hex": "#3C3458",
+        "share": 0.4313689075977054
       },
       {
-        "hex": "#403C6D",
-        "share": 0.27735132681276053
+        "hex": "#4B515B",
+        "share": 0.2201518715694771
       },
       {
-        "hex": "#9BA2AF",
-        "share": 0.2129709875778961
+        "hex": "#81879A",
+        "share": 0.1542858321984235
       },
       {
-        "hex": "#9F4896",
-        "share": 0.09760224505798358
+        "hex": "#A14695",
+        "share": 0.09500226981965251
       }
     ],
-    "correctHex": "#444451",
+    "correctHex": "#3C3458",
     "playable": true,
     "excludedReason": null
   },
@@ -2725,31 +2810,32 @@
     "rarity": "legendary",
     "fr": "Phénix",
     "image": "phoenix.png",
+    "highlightImage": "phoenix.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/i0RoY1fs6ay7VAxyFEfZGIPnD002nAKcne9FtJsWBHM.png",
     "fetchedAt": "2026-09-19T09:41:35.610Z",
     "colors": [
       {
-        "hex": "#CF5261",
-        "share": 0.32384306659022033
+        "hex": "#A7414F",
+        "share": 0.5193709558522401
       },
       {
-        "hex": "#74353F",
-        "share": 0.29520845278073554
+        "hex": "#7F99B6",
+        "share": 0.19223523630108935
       },
       {
-        "hex": "#7F90AB",
-        "share": 0.24239495454173152
+        "hex": "#E29D5C",
+        "share": 0.1645998853304939
       },
       {
-        "hex": "#E3A75F",
-        "share": 0.13855352608731264
+        "hex": "#725968",
+        "share": 0.12379392251617659
       }
     ],
-    "correctHex": "#CF5261",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#A7414F",
+    "playable": false,
+    "excludedReason": "manual"
   },
   {
     "id": "poison",
@@ -2757,29 +2843,30 @@
     "rarity": "epic",
     "fr": "Poison",
     "image": "poison.png",
+    "highlightImage": "poison.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/98HDkG2189yOULcVG9jz2QbJKtfuhH21DIrIjkOjxI8.png",
-    "fetchedAt": "2026-09-19T09:41:35.649Z",
+    "fetchedAt": "2026-09-19T10:24:45.029Z",
     "colors": [
       {
-        "hex": "#5F270E",
-        "share": 0.328486160688162
+        "hex": "#5C2309",
+        "share": 0.26268359763590615
       },
       {
-        "hex": "#A54713",
-        "share": 0.3059570483937036
+        "hex": "#954412",
+        "share": 0.20618526537538767
       },
       {
-        "hex": "#EF8C37",
-        "share": 0.23519515477792732
+        "hex": "#F19035",
+        "share": 0.19218503130668851
       },
       {
-        "hex": "#AE8979",
-        "share": 0.13036163614020715
+        "hex": "#BF4C13",
+        "share": 0.15840599215869858
       }
     ],
-    "correctHex": "#5F270E",
+    "correctHex": "#5C2309",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -2789,29 +2876,30 @@
     "rarity": "epic",
     "fr": "Prince",
     "image": "prince.png",
+    "highlightImage": "prince.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/3JntJV62aY0G1Qh6LIs-ek-0ayeYFY3VItpG7cb9I60.png",
-    "fetchedAt": "2026-09-19T09:41:35.686Z",
+    "fetchedAt": "2026-09-19T10:24:45.054Z",
     "colors": [
       {
-        "hex": "#5D482E",
-        "share": 0.3887855434493755
+        "hex": "#977F4F",
+        "share": 0.18156317359081112
       },
       {
-        "hex": "#C3A067",
-        "share": 0.2745297782502141
+        "hex": "#684E31",
+        "share": 0.17890571943189534
       },
       {
-        "hex": "#4F5D69",
-        "share": 0.1927835355951221
+        "hex": "#433422",
+        "share": 0.15492957746478872
       },
       {
-        "hex": "#C1B8AB",
-        "share": 0.14390114270528834
+        "hex": "#4E5457",
+        "share": 0.1509729234948475
       }
     ],
-    "correctHex": "#5D482E",
+    "correctHex": "#977F4F",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -2821,29 +2909,30 @@
     "rarity": "legendary",
     "fr": "Princesse",
     "image": "princess.png",
+    "highlightImage": "princess.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/bAwMcqp9EKVIKH3ZLm_m0MqZFSG72zG-vKxpx8aKoVs.png",
     "fetchedAt": "2026-09-19T09:41:35.724Z",
     "colors": [
       {
-        "hex": "#594942",
-        "share": 0.4347232697625974
+        "hex": "#C29786",
+        "share": 0.3500700355565133
       },
       {
-        "hex": "#8EC3D1",
-        "share": 0.2536364615881909
+        "hex": "#463A35",
+        "share": 0.26584778939051107
       },
       {
-        "hex": "#D59F85",
-        "share": 0.24451388140645763
+        "hex": "#6AC5DA",
+        "share": 0.15889092411018926
       },
       {
-        "hex": "#566BA4",
-        "share": 0.06712638724275401
+        "hex": "#7C7A7A",
+        "share": 0.1420285170419854
       }
     ],
-    "correctHex": "#594942",
+    "correctHex": "#C29786",
     "playable": true,
     "excludedReason": null
   },
@@ -2853,29 +2942,30 @@
     "rarity": "epic",
     "fr": "Rage",
     "image": "rage.png",
+    "highlightImage": "rage.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/bGP21OOmcpHMJ5ZA79bHVV2D-NzPtDkvBskCNJb7pg0.png",
-    "fetchedAt": "2026-09-19T09:41:35.759Z",
+    "fetchedAt": "2026-09-19T10:24:45.075Z",
     "colors": [
       {
-        "hex": "#712A8A",
-        "share": 0.3029922979313601
+        "hex": "#EFADF3",
+        "share": 0.21652846224215777
       },
       {
-        "hex": "#E9A6ED",
-        "share": 0.2670640658659663
+        "hex": "#EED3EF",
+        "share": 0.196048632218845
       },
       {
-        "hex": "#DABAD2",
-        "share": 0.2540207159087556
+        "hex": "#8B34A8",
+        "share": 0.18600053117714757
       },
       {
-        "hex": "#C461D7",
-        "share": 0.175922920293918
+        "hex": "#64257C",
+        "share": 0.16009089031191903
       }
     ],
-    "correctHex": "#712A8A",
+    "correctHex": "#EFADF3",
     "playable": true,
     "excludedReason": null
   },
@@ -2885,29 +2975,30 @@
     "rarity": "legendary",
     "fr": "Cavabélier",
     "image": "ram-rider.png",
+    "highlightImage": "ram-rider.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/QaJyerT7f7oMyZ3Fv1glKymtLSvx7YUXisAulxl7zRI.png",
     "fetchedAt": "2026-09-19T09:41:35.796Z",
     "colors": [
       {
-        "hex": "#CC916D",
-        "share": 0.3685280040305651
+        "hex": "#A06947",
+        "share": 0.5698211436728524
       },
       {
-        "hex": "#614A42",
-        "share": 0.3592744982786128
+        "hex": "#FBDE64",
+        "share": 0.17848685867831052
       },
       {
-        "hex": "#FAD25A",
-        "share": 0.22147955327903265
+        "hex": "#5E595C",
+        "share": 0.12524981106726005
       },
       {
-        "hex": "#6789D3",
-        "share": 0.0507179444117894
+        "hex": "#CCC3BB",
+        "share": 0.08452430934587286
       }
     ],
-    "correctHex": "#CC916D",
+    "correctHex": "#A06947",
     "playable": true,
     "excludedReason": null
   },
@@ -2917,29 +3008,30 @@
     "rarity": "common",
     "fr": "Fripons",
     "image": "rascals.png",
+    "highlightImage": "rascals.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/KV48DfwVHKx9XCjzBdk3daT_Eb52Me4VgjVO7WctRc4.png",
     "fetchedAt": "2026-09-19T09:41:35.834Z",
     "colors": [
       {
-        "hex": "#494D4E",
-        "share": 0.4623944570254503
+        "hex": "#3E3C3C",
+        "share": 0.2851122542329669
       },
       {
-        "hex": "#C28773",
-        "share": 0.24670435969345672
+        "hex": "#BA7F6B",
+        "share": 0.25190839694656486
       },
       {
-        "hex": "#79CCBE",
-        "share": 0.23949069422156902
+        "hex": "#566E73",
+        "share": 0.16265990791703536
       },
       {
-        "hex": "#FEAFFB",
-        "share": 0.05141048905952399
+        "hex": "#5BD1B3",
+        "share": 0.15325664752020876
       }
     ],
-    "correctHex": "#494D4E",
+    "correctHex": "#3E3C3C",
     "playable": true,
     "excludedReason": null
   },
@@ -2949,31 +3041,32 @@
     "rarity": "rare",
     "fr": "Roquette",
     "image": "rocket.png",
+    "highlightImage": "rocket.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/Ie07nQNK9CjhKOa4-arFAewi4EroqaA-86Xo7r5tx94.png",
     "fetchedAt": "2026-09-19T09:41:35.883Z",
     "colors": [
       {
-        "hex": "#C4D0C6",
-        "share": 0.5096130583899017
+        "hex": "#D4E6E2",
+        "share": 0.2421551466507279
       },
       {
-        "hex": "#AC8250",
-        "share": 0.19475159743272283
+        "hex": "#C39C63",
+        "share": 0.24036203731375144
       },
       {
-        "hex": "#52554B",
-        "share": 0.17387468158078243
+        "hex": "#AEC0B2",
+        "share": 0.1794105508830352
       },
       {
-        "hex": "#F2DD7A",
-        "share": 0.12176066259659309
+        "hex": "#988B7B",
+        "share": 0.13584937881569398
       }
     ],
-    "correctHex": "#C4D0C6",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#D4E6E2",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "ronin",
@@ -2981,29 +3074,30 @@
     "rarity": "legendary",
     "fr": "Ronin",
     "image": "ronin.png",
+    "highlightImage": "ronin.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/X0dTFs7OGUavreDEzOtYd_YNZ8Zly6qgAE-dd-bNfWU.png",
     "fetchedAt": "2026-09-19T09:41:35.918Z",
     "colors": [
       {
-        "hex": "#D5C3A7",
-        "share": 0.43407504143854536
+        "hex": "#B59878",
+        "share": 0.48301438210524555
       },
       {
-        "hex": "#3B4147",
-        "share": 0.24103001992398748
+        "hex": "#383D44",
+        "share": 0.21285180906457715
       },
       {
-        "hex": "#7E513E",
-        "share": 0.16659132385688213
+        "hex": "#7C7D83",
+        "share": 0.1293552329767107
       },
       {
-        "hex": "#87878A",
-        "share": 0.158303614780585
+        "hex": "#D3D1CF",
+        "share": 0.12443283607078875
       }
     ],
-    "correctHex": "#D5C3A7",
+    "correctHex": "#B59878",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -3013,31 +3107,32 @@
     "rarity": "common",
     "fr": "Colis royal",
     "image": "royal-delivery.png",
+    "highlightImage": "royal-delivery.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/LPg7AGjGI3_xmi7gLLgGC50yKM1jJ2teWkZfoHJcIZo.png",
     "fetchedAt": "2026-09-19T09:41:35.952Z",
     "colors": [
       {
-        "hex": "#C97946",
-        "share": 0.33916690994576154
+        "hex": "#9C5F38",
+        "share": 0.5670144277307438
       },
       {
-        "hex": "#583824",
-        "share": 0.24015487915431066
+        "hex": "#8FBDD4",
+        "share": 0.18278198607931412
       },
       {
-        "hex": "#555F70",
-        "share": 0.23297942627106924
+        "hex": "#6D7783",
+        "share": 0.1729791189711599
       },
       {
-        "hex": "#9CC5D4",
-        "share": 0.18769878462885853
+        "hex": "#373A3F",
+        "share": 0.07722446721878216
       }
     ],
-    "correctHex": "#C97946",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#9C5F38",
+    "playable": false,
+    "excludedReason": "manual"
   },
   {
     "id": "royal-ghost",
@@ -3045,31 +3140,32 @@
     "rarity": "legendary",
     "fr": "Fantôme royal",
     "image": "royal-ghost.png",
+    "highlightImage": "royal-ghost.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/3En2cz0ISQAaMTHY3hj3rTveFN2kJYq-H4VxvdJNvCM.png",
-    "fetchedAt": "2026-09-19T09:41:35.988Z",
+    "fetchedAt": "2026-09-19T10:24:45.102Z",
     "colors": [
       {
-        "hex": "#D0E2EC",
-        "share": 0.4535680369013702
+        "hex": "#D5E5EE",
+        "share": 0.38780355447022113
       },
       {
-        "hex": "#8CB3D9",
-        "share": 0.27231718898385565
+        "hex": "#9CC0E2",
+        "share": 0.26722968389635054
       },
       {
-        "hex": "#516680",
-        "share": 0.15711911545244878
+        "hex": "#5F85AE",
+        "share": 0.14687627187627186
       },
       {
-        "hex": "#D0C18A",
-        "share": 0.11699565866232534
+        "hex": "#495362",
+        "share": 0.07414190747524081
       }
     ],
-    "correctHex": "#D0E2EC",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#D5E5EE",
+    "playable": false,
+    "excludedReason": "monochrome"
   },
   {
     "id": "royal-giant",
@@ -3077,31 +3173,32 @@
     "rarity": "common",
     "fr": "Géant royal",
     "image": "royal-giant.png",
+    "highlightImage": "royal-giant.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/mnlRaNtmfpQx2e6mp70sLd0ND-pKPF70Cf87_agEKg4.png",
     "fetchedAt": "2026-09-19T09:41:36.026Z",
     "colors": [
       {
-        "hex": "#905529",
-        "share": 0.30074539034915654
+        "hex": "#AC763E",
+        "share": 0.6292193016869361
       },
       {
-        "hex": "#494054",
-        "share": 0.26138877991369164
+        "hex": "#3A374E",
+        "share": 0.1323028638681836
       },
       {
-        "hex": "#E5B159",
-        "share": 0.2549234994115339
+        "hex": "#888D9D",
+        "share": 0.10115339348764221
       },
       {
-        "hex": "#B2C2CD",
-        "share": 0.18294233032561788
+        "hex": "#CFE7ED",
+        "share": 0.09451549627304826
       }
     ],
-    "correctHex": "#905529",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#AC763E",
+    "playable": false,
+    "excludedReason": "top1>60%"
   },
   {
     "id": "royal-hogs",
@@ -3109,29 +3206,30 @@
     "rarity": "rare",
     "fr": "Cochons royaux",
     "image": "royal-hogs.png",
+    "highlightImage": "royal-hogs.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/ASSQJG_MoVq9e81HZzo4bynMnyLNpNJMfSLb3hqydOw.png",
     "fetchedAt": "2026-09-19T09:41:36.061Z",
     "colors": [
       {
-        "hex": "#42474D",
-        "share": 0.39631430071647555
+        "hex": "#B17C71",
+        "share": 0.3603380816070733
       },
       {
-        "hex": "#9F5E56",
-        "share": 0.2376225884584766
+        "hex": "#393E44",
+        "share": 0.2931452090990701
       },
       {
-        "hex": "#B8ABA5",
-        "share": 0.19668354816307865
+        "hex": "#747B81",
+        "share": 0.17813648605159302
       },
       {
-        "hex": "#235B84",
-        "share": 0.1693795626619692
+        "hex": "#1E5881",
+        "share": 0.1683802232422636
       }
     ],
-    "correctHex": "#42474D",
+    "correctHex": "#B17C71",
     "playable": true,
     "excludedReason": null
   },
@@ -3141,31 +3239,32 @@
     "rarity": "common",
     "fr": "Recrues royales",
     "image": "royal-recruits.png",
+    "highlightImage": "royal-recruits.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/jcNyYGUiXXNz3kuz8NBkHNKNREQKraXlb_Ts7rhCIdM.png",
     "fetchedAt": "2026-09-19T09:41:36.100Z",
     "colors": [
       {
-        "hex": "#4F4B4D",
-        "share": 0.4498912276575729
+        "hex": "#B07752",
+        "share": 0.3026075964252117
       },
       {
-        "hex": "#A4B1B3",
-        "share": 0.22992121354656633
+        "hex": "#42454B",
+        "share": 0.2899664863593603
       },
       {
-        "hex": "#CB8A5E",
-        "share": 0.22870119943555975
+        "hex": "#908D8D",
+        "share": 0.1838840545625588
       },
       {
-        "hex": "#5282B6",
-        "share": 0.09148635936030103
+        "hex": "#94BED7",
+        "share": 0.14863593603010347
       }
     ],
-    "correctHex": "#4F4B4D",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#B07752",
+    "playable": false,
+    "excludedReason": "manual"
   },
   {
     "id": "rune-giant",
@@ -3173,31 +3272,32 @@
     "rarity": "epic",
     "fr": "Géante runique",
     "image": "rune-giant.png",
+    "highlightImage": "rune-giant.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/UogMnGHQXT-TOVXRxslKdAKXUPhqUvrD_hV9x8lbzdE.png",
-    "fetchedAt": "2026-09-19T09:41:36.138Z",
+    "fetchedAt": "2026-09-19T10:24:45.127Z",
     "colors": [
       {
-        "hex": "#79483F",
-        "share": 0.31538755811900415
+        "hex": "#A86856",
+        "share": 0.21843917368018362
       },
       {
-        "hex": "#DC6F2C",
-        "share": 0.2695397563415926
+        "hex": "#563531",
+        "share": 0.15745100347242658
       },
       {
-        "hex": "#E1A780",
-        "share": 0.2202930963451239
+        "hex": "#C25329",
+        "share": 0.13568948266729444
       },
       {
-        "hex": "#97A7C0",
-        "share": 0.19477958919427932
+        "hex": "#F1832A",
+        "share": 0.12499264316402801
       }
     ],
-    "correctHex": "#79483F",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#A86856",
+    "playable": false,
+    "excludedReason": "monochrome"
   },
   {
     "id": "skeleton-army",
@@ -3205,29 +3305,30 @@
     "rarity": "epic",
     "fr": "Armée de squelettes",
     "image": "skeleton-army.png",
+    "highlightImage": "skeleton-army.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/fAOToOi1pRy7svN2xQS6mDkhQw2pj9m_17FauaNqyl4.png",
     "fetchedAt": "2026-09-19T09:41:36.173Z",
     "colors": [
       {
-        "hex": "#937E8B",
-        "share": 0.37562637803166965
+        "hex": "#694876",
+        "share": 0.3281989607906625
       },
       {
-        "hex": "#D8C5C1",
-        "share": 0.26262392648441957
+        "hex": "#7A6673",
+        "share": 0.3082782120665464
       },
       {
-        "hex": "#544154",
-        "share": 0.1933021878902817
+        "hex": "#E1CEC7",
+        "share": 0.19120526697195367
       },
       {
-        "hex": "#613576",
-        "share": 0.16844750759362906
+        "hex": "#AB999B",
+        "share": 0.17231756017083738
       }
     ],
-    "correctHex": "#937E8B",
+    "correctHex": "#694876",
     "playable": true,
     "excludedReason": null
   },
@@ -3237,29 +3338,30 @@
     "rarity": "common",
     "fr": "Fût à squelettes",
     "image": "skeleton-barrel.png",
+    "highlightImage": "skeleton-barrel.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/vCB4DWCcrGbTkarjcOiVz4aNDx6GWLm0yUepg9E1MGo.png",
     "fetchedAt": "2026-09-19T09:41:36.208Z",
     "colors": [
       {
-        "hex": "#B5DEF3",
-        "share": 0.42800239592692424
+        "hex": "#A2CEEB",
+        "share": 0.5182389937106918
       },
       {
-        "hex": "#424345",
-        "share": 0.2711440551063193
+        "hex": "#404142",
+        "share": 0.25470200658879905
       },
       {
-        "hex": "#93745C",
-        "share": 0.18915843066786464
+        "hex": "#8E8784",
+        "share": 0.12397424378556454
       },
       {
-        "hex": "#5A8CC0",
-        "share": 0.11169511829889188
+        "hex": "#956843",
+        "share": 0.10308475591494459
       }
     ],
-    "correctHex": "#B5DEF3",
+    "correctHex": "#A2CEEB",
     "playable": true,
     "excludedReason": null
   },
@@ -3269,31 +3371,32 @@
     "rarity": "common",
     "fr": "Dragons squelettes",
     "image": "skeleton-dragons.png",
+    "highlightImage": "skeleton-dragons.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/qPOtg9uONh47_NLxGhhFc_ww9PlZ6z3Ry507q1NZUXs.png",
     "fetchedAt": "2026-09-19T09:41:36.246Z",
     "colors": [
       {
-        "hex": "#76929A",
-        "share": 0.4215095704691653
+        "hex": "#4C7080",
+        "share": 0.4431984397854705
       },
       {
-        "hex": "#404F54",
-        "share": 0.28393702521193437
+        "hex": "#6A7379",
+        "share": 0.23050911435806296
       },
       {
-        "hex": "#CCCBC4",
-        "share": 0.24411380758402668
+        "hex": "#A0A09C",
+        "share": 0.16476620374011103
       },
       {
-        "hex": "#2960A4",
-        "share": 0.050439596734873623
+        "hex": "#DBD8CE",
+        "share": 0.16152624211635552
       }
     ],
-    "correctHex": "#76929A",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#4C7080",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "skeleton-king",
@@ -3301,29 +3404,30 @@
     "rarity": "champion",
     "fr": "Roi squelette",
     "image": "skeleton-king.png",
+    "highlightImage": "skeleton-king.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/dCd69_wN9f8DxwuqOGtR4QgWhHIPIaTNxZ1e23RzAAc.png",
     "fetchedAt": "2026-09-19T09:41:36.285Z",
     "colors": [
       {
-        "hex": "#464C59",
-        "share": 0.3244590635760909
+        "hex": "#BF9C72",
+        "share": 0.4606054376317007
       },
       {
-        "hex": "#5D919F",
-        "share": 0.2751708896541091
+        "hex": "#38495F",
+        "share": 0.2253687618851827
       },
       {
-        "hex": "#C68C47",
-        "share": 0.21008720083603158
+        "hex": "#738595",
+        "share": 0.19432594952973223
       },
       {
-        "hex": "#D4CDB6",
-        "share": 0.19028284593376849
+        "hex": "#2698A1",
+        "share": 0.11969985095338438
       }
     ],
-    "correctHex": "#464C59",
+    "correctHex": "#BF9C72",
     "playable": true,
     "excludedReason": null
   },
@@ -3333,29 +3437,30 @@
     "rarity": "common",
     "fr": "Squelettes",
     "image": "skeletons.png",
+    "highlightImage": "skeletons.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/oO7iKMU5m0cdxhYPZA3nWQiAUh2yoGgdThLWB1rVSec.png",
     "fetchedAt": "2026-09-19T09:41:36.321Z",
     "colors": [
       {
-        "hex": "#4E4B55",
-        "share": 0.4266043456291056
+        "hex": "#5E729A",
+        "share": 0.30826806467913087
       },
       {
-        "hex": "#BAB1A5",
-        "share": 0.3450132642748863
+        "hex": "#635F64",
+        "share": 0.23930962607377462
       },
       {
-        "hex": "#4F6999",
-        "share": 0.2088491662455786
+        "hex": "#A19489",
+        "share": 0.1759411318847903
       },
       {
-        "hex": "#915E29",
-        "share": 0.01953322385042951
+        "hex": "#3A3742",
+        "share": 0.14137506316321374
       }
     ],
-    "correctHex": "#4E4B55",
+    "correctHex": "#5E729A",
     "playable": true,
     "excludedReason": null
   },
@@ -3365,31 +3470,32 @@
     "rarity": "legendary",
     "fr": "Zappy",
     "image": "sparky.png",
+    "highlightImage": "sparky.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/2GKMkBrArZXgQxf2ygFjDs4VvGYPbx8F6Lj_68iVhIM.png",
     "fetchedAt": "2026-09-19T09:41:36.360Z",
     "colors": [
       {
-        "hex": "#605E70",
-        "share": 0.3381179130553938
+        "hex": "#B6A058",
+        "share": 0.3207324175259498
       },
       {
-        "hex": "#BBCBE1",
-        "share": 0.3063272926586962
+        "hex": "#B5C4E4",
+        "share": 0.28322085574320854
       },
       {
-        "hex": "#89673F",
-        "share": 0.21215443116028912
+        "hex": "#838297",
+        "share": 0.1852625809324792
       },
       {
-        "hex": "#E9CF69",
-        "share": 0.1434003631256209
+        "hex": "#494446",
+        "share": 0.18390942413757666
       }
     ],
-    "correctHex": "#605E70",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#B6A058",
+    "playable": false,
+    "excludedReason": "manual"
   },
   {
     "id": "spear-goblins",
@@ -3397,31 +3503,32 @@
     "rarity": "common",
     "fr": "Gobelins à lances",
     "image": "spear-goblins.png",
+    "highlightImage": "spear-goblins.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/FSDFotjaXidI4ku_WFpVCTWS1hKGnFh1sxX0lxM43_E.png",
     "fetchedAt": "2026-09-19T09:41:36.397Z",
     "colors": [
       {
-        "hex": "#4B5125",
-        "share": 0.3543445020115497
+        "hex": "#81932D",
+        "share": 0.5326227342230667
       },
       {
-        "hex": "#AAC33A",
-        "share": 0.2954677038642538
+        "hex": "#658EC7",
+        "share": 0.20828075592702008
       },
       {
-        "hex": "#5379B1",
-        "share": 0.18650257567435163
+        "hex": "#43413D",
+        "share": 0.14946333932097208
       },
       {
-        "hex": "#9CB7B9",
-        "share": 0.16368521844984488
+        "hex": "#A1B7AA",
+        "share": 0.10963317052894107
       }
     ],
-    "correctHex": "#4B5125",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#81932D",
+    "playable": false,
+    "excludedReason": "manual"
   },
   {
     "id": "spirit-empress",
@@ -3429,31 +3536,32 @@
     "rarity": "legendary",
     "fr": "Impératrice spirituelle",
     "image": "spirit-empress.png",
+    "highlightImage": "spirit-empress.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/MWWBZqiQeRBXSqEITVMj46nO_uCIUsqBidvUw9K2twY.png",
     "fetchedAt": "2026-09-19T09:41:36.437Z",
     "colors": [
       {
-        "hex": "#6FC6D9",
-        "share": 0.43204661568771496
+        "hex": "#73B7CC",
+        "share": 0.616906534878285
       },
       {
-        "hex": "#53607E",
-        "share": 0.3217684576084416
+        "hex": "#BE9371",
+        "share": 0.17799779610645475
       },
       {
-        "hex": "#DFC8B0",
-        "share": 0.14215113366948276
+        "hex": "#48505D",
+        "share": 0.15398871339366213
       },
       {
-        "hex": "#996B4F",
-        "share": 0.10403379303436071
+        "hex": "#825494",
+        "share": 0.05110695562159816
       }
     ],
-    "correctHex": "#6FC6D9",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#73B7CC",
+    "playable": false,
+    "excludedReason": "top1>60%"
   },
   {
     "id": "suspicious-bush",
@@ -3461,29 +3569,30 @@
     "rarity": "rare",
     "fr": "Buisson suspicieux",
     "image": "suspicious-bush.png",
+    "highlightImage": "suspicious-bush.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/vqTzGAjseQv9F5rf4tsFWeocvg0dyPw1j_nB1cmDZfI.png",
     "fetchedAt": "2026-09-19T09:41:36.492Z",
     "colors": [
       {
-        "hex": "#52658E",
-        "share": 0.3790067096648417
+        "hex": "#4A7C20",
+        "share": 0.2856400175458548
       },
       {
-        "hex": "#C7B495",
-        "share": 0.24430978181404645
+        "hex": "#CDB895",
+        "share": 0.2197943235910516
       },
       {
-        "hex": "#394B21",
-        "share": 0.22024921612269102
+        "hex": "#515250",
+        "share": 0.1973746202459669
       },
       {
-        "hex": "#67A832",
-        "share": 0.15643429239842088
+        "hex": "#6C9ABF",
+        "share": 0.15480967621399444
       }
     ],
-    "correctHex": "#52658E",
+    "correctHex": "#4A7C20",
     "playable": true,
     "excludedReason": null
   },
@@ -3493,29 +3602,30 @@
     "rarity": "common",
     "fr": "Tesla",
     "image": "tesla.png",
+    "highlightImage": "tesla.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/OiwnGrxFMNiHetYEerE-UZt0L_uYNzFY7qV_CA_OxR4.png",
-    "fetchedAt": "2026-09-19T09:41:36.532Z",
+    "fetchedAt": "2026-09-19T10:24:45.157Z",
     "colors": [
       {
-        "hex": "#386CAD",
-        "share": 0.44222484508704635
+        "hex": "#396DA9",
+        "share": 0.28293006786662733
       },
       {
-        "hex": "#84AEC4",
-        "share": 0.2571997639421658
+        "hex": "#633629",
+        "share": 0.18670699321333728
       },
       {
-        "hex": "#63382B",
-        "share": 0.19374446739451165
+        "hex": "#6D96AE",
+        "share": 0.16257007966951903
       },
       {
-        "hex": "#ED8949",
-        "share": 0.10683092357627619
+        "hex": "#4B9EE3",
+        "share": 0.10063440542933019
       }
     ],
-    "correctHex": "#386CAD",
+    "correctHex": "#396DA9",
     "playable": true,
     "excludedReason": null
   },
@@ -3525,29 +3635,30 @@
     "rarity": "legendary",
     "fr": "La bûche",
     "image": "the-log.png",
+    "highlightImage": "the-log.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/_iDwuDLexHPFZ_x4_a0eP-rxCS6vwWgTs6DLauwwoaY.png",
     "fetchedAt": "2026-09-19T09:41:36.573Z",
     "colors": [
       {
-        "hex": "#C7D0D5",
-        "share": 0.4848322626695218
+        "hex": "#CAD4DB",
+        "share": 0.44379014989293364
       },
       {
-        "hex": "#53402A",
-        "share": 0.269061060281617
+        "hex": "#75522C",
+        "share": 0.3351664395561612
       },
       {
-        "hex": "#B47C4A",
-        "share": 0.13062098501070663
+        "hex": "#ADAD4B",
+        "share": 0.13608785932126402
       },
       {
-        "hex": "#A6A839",
-        "share": 0.11548569203815456
+        "hex": "#626369",
+        "share": 0.08495555122964117
       }
     ],
-    "correctHex": "#C7D0D5",
+    "correctHex": "#CAD4DB",
     "playable": true,
     "excludedReason": null
   },
@@ -3557,29 +3668,30 @@
     "rarity": "rare",
     "fr": "Trois mousquetaires",
     "image": "three-musketeers.png",
+    "highlightImage": "three-musketeers.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/_J2GhbkX3vswaFk1wG-dopwiHyNc_YiPhwroiKF3Mek.png",
     "fetchedAt": "2026-09-19T09:41:36.611Z",
     "colors": [
       {
-        "hex": "#76554E",
-        "share": 0.3757465982066674
+        "hex": "#8D9FC1",
+        "share": 0.329955241531069
       },
       {
-        "hex": "#C8BDB8",
-        "share": 0.28094546652096464
+        "hex": "#B58063",
+        "share": 0.22762450788138258
       },
       {
-        "hex": "#556B9B",
-        "share": 0.25138092600631706
+        "hex": "#483940",
+        "share": 0.1839288654701136
       },
       {
-        "hex": "#BA4AB1",
-        "share": 0.09192700926605092
+        "hex": "#7E7783",
+        "share": 0.16421418199781446
       }
     ],
-    "correctHex": "#76554E",
+    "correctHex": "#8D9FC1",
     "playable": true,
     "excludedReason": null
   },
@@ -3589,31 +3701,32 @@
     "rarity": "rare",
     "fr": "Pierre tombale",
     "image": "tombstone.png",
+    "highlightImage": "tombstone.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/LjSfSbwQfkZuRJY4pVxKspZ-a0iM5KAhU8w-a_N5Z7Y.png",
     "fetchedAt": "2026-09-19T09:41:36.648Z",
     "colors": [
       {
-        "hex": "#275B68",
-        "share": 0.29883480867671597
+        "hex": "#669A8C",
+        "share": 0.6245510336830793
       },
       {
-        "hex": "#4E7F73",
-        "share": 0.2884414151983936
+        "hex": "#226071",
+        "share": 0.22548714612969825
       },
       {
-        "hex": "#7AB09E",
-        "share": 0.2732684747871829
+        "hex": "#648580",
+        "share": 0.0982069628665969
       },
       {
-        "hex": "#C0E7D6",
-        "share": 0.1394553013377075
+        "hex": "#DDEFCE",
+        "share": 0.05175485732062558
       }
     ],
-    "correctHex": "#275B68",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#669A8C",
+    "playable": false,
+    "excludedReason": "top1>60%"
   },
   {
     "id": "tornado",
@@ -3621,31 +3734,32 @@
     "rarity": "epic",
     "fr": "Tornade",
     "image": "tornado.png",
+    "highlightImage": "tornado.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/QJB-QK1QJHdw4hjpAwVSyZBozc2ZWAR9pQ-SMUyKaT0.png",
     "fetchedAt": "2026-09-19T09:41:36.686Z",
     "colors": [
       {
-        "hex": "#48535C",
-        "share": 0.3670437971708132
+        "hex": "#417792",
+        "share": 0.4996105974143668
       },
       {
-        "hex": "#3E7490",
-        "share": 0.33199756446382805
+        "hex": "#5D6265",
+        "share": 0.3410600246385636
       },
       {
-        "hex": "#B2ACA2",
-        "share": 0.20672321264213195
+        "hex": "#ACACA5",
+        "share": 0.08884042990045454
       },
       {
-        "hex": "#7CC0D7",
-        "share": 0.0942354257232268
+        "hex": "#DAD5C6",
+        "share": 0.060534401948428934
       }
     ],
-    "correctHex": "#48535C",
+    "correctHex": "#417792",
     "playable": false,
-    "excludedReason": "monochrome"
+    "excludedReason": "manual"
   },
   {
     "id": "valkyrie",
@@ -3653,31 +3767,32 @@
     "rarity": "rare",
     "fr": "Valkyrie",
     "image": "valkyrie.png",
+    "highlightImage": "valkyrie.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/0lIoYf3Y_plFTzo95zZL93JVxpfb3MMgFDDhgSDGU9A.png",
     "fetchedAt": "2026-09-19T09:41:36.721Z",
     "colors": [
       {
-        "hex": "#A3432B",
-        "share": 0.456874059977286
+        "hex": "#BB6346",
+        "share": 0.681205684643482
       },
       {
-        "hex": "#E9A27F",
-        "share": 0.22944227876853188
+        "hex": "#644F53",
+        "share": 0.11172841400902422
       },
       {
-        "hex": "#544663",
-        "share": 0.16917339390404862
+        "hex": "#AFA5A7",
+        "share": 0.10827526934528377
       },
       {
-        "hex": "#A19AA0",
-        "share": 0.14451026735013353
+        "hex": "#49335C",
+        "share": 0.06008471714908377
       }
     ],
-    "correctHex": "#A3432B",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#BB6346",
+    "playable": false,
+    "excludedReason": "top1>60%"
   },
   {
     "id": "vines",
@@ -3685,29 +3800,30 @@
     "rarity": "epic",
     "fr": "Ronces",
     "image": "vines.png",
+    "highlightImage": "vines.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/V5sJlPuo2WBRtirJ1lGEPJA4NvQ0KPwFeMrpxLX5z_8.png",
     "fetchedAt": "2026-09-19T09:41:36.756Z",
     "colors": [
       {
-        "hex": "#2E4938",
-        "share": 0.45759928336816963
+        "hex": "#2D654E",
+        "share": 0.5682624995852825
       },
       {
-        "hex": "#4E9070",
-        "share": 0.24506486181613085
+        "hex": "#918632",
+        "share": 0.20805547261205667
       },
       {
-        "hex": "#46C764",
-        "share": 0.1606283799475797
+        "hex": "#45C459",
+        "share": 0.13411963770279686
       },
       {
-        "hex": "#BEAB44",
-        "share": 0.13670747486811985
+        "hex": "#6E7B78",
+        "share": 0.08956239009986397
       }
     ],
-    "correctHex": "#2E4938",
+    "correctHex": "#2D654E",
     "playable": true,
     "excludedReason": null
   },
@@ -3717,31 +3833,32 @@
     "rarity": "epic",
     "fr": "Néant",
     "image": "void.png",
+    "highlightImage": "void.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/BykyeWDqzn4PlHSszu3NbrXT1mHxW2EA8vHbQGR5LDE.png",
     "fetchedAt": "2026-09-19T09:41:36.796Z",
     "colors": [
       {
-        "hex": "#62243E",
-        "share": 0.5396801938935359
+        "hex": "#6F283F",
+        "share": 0.6499128070227292
       },
       {
-        "hex": "#C63737",
-        "share": 0.20879023438654568
+        "hex": "#EA6436",
+        "share": 0.1687849141370851
       },
       {
-        "hex": "#947480",
-        "share": 0.1615877988945704
+        "hex": "#927985",
+        "share": 0.13049389649159104
       },
       {
-        "hex": "#FDAB39",
-        "share": 0.08994177282534803
+        "hex": "#FECF10",
+        "share": 0.029246593562498154
       }
     ],
-    "correctHex": "#62243E",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#6F283F",
+    "playable": false,
+    "excludedReason": "top1>60%"
   },
   {
     "id": "wall-breakers",
@@ -3749,29 +3866,30 @@
     "rarity": "epic",
     "fr": "Sapeurs",
     "image": "wall-breakers.png",
+    "highlightImage": "wall-breakers.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/_xPphEfC8eEwFNrfU3cMQG9-f5JaLQ31ARCA7l3XtW4.png",
     "fetchedAt": "2026-09-19T09:41:36.830Z",
     "colors": [
       {
-        "hex": "#3B484A",
-        "share": 0.3986645601693147
+        "hex": "#343D3F",
+        "share": 0.28489879870033086
       },
       {
-        "hex": "#8BA4A2",
-        "share": 0.3720153814051927
+        "hex": "#754B2F",
+        "share": 0.2266968730437893
       },
       {
-        "hex": "#73472C",
-        "share": 0.21037648672012402
+        "hex": "#40898C",
+        "share": 0.17494857960473364
       },
       {
-        "hex": "#275D9C",
-        "share": 0.018943571705368586
+        "hex": "#7A7F81",
+        "share": 0.1641577488299997
       }
     ],
-    "correctHex": "#3B484A",
+    "correctHex": "#343D3F",
     "playable": true,
     "excludedReason": null
   },
@@ -3781,29 +3899,30 @@
     "rarity": "epic",
     "fr": "Sorcière",
     "image": "witch.png",
+    "highlightImage": "witch.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/cfwk1vzehVyHC-uloEIH6NOI0hOdofCutR5PyhIgO6w.png",
     "fetchedAt": "2026-09-19T09:41:36.867Z",
     "colors": [
       {
-        "hex": "#543583",
-        "share": 0.5286107466316766
+        "hex": "#563684",
+        "share": 0.5493647390149454
       },
       {
-        "hex": "#744852",
-        "share": 0.24888789323775082
+        "hex": "#BC8174",
+        "share": 0.22475757672736582
       },
       {
-        "hex": "#D4ACA5",
-        "share": 0.1923384644925913
+        "hex": "#6E405C",
+        "share": 0.1518385765033443
       },
       {
-        "hex": "#C736A0",
-        "share": 0.030162895637981246
+        "hex": "#B5A6B5",
+        "share": 0.07403910775434441
       }
     ],
-    "correctHex": "#543583",
+    "correctHex": "#563684",
     "playable": true,
     "excludedReason": null
   },
@@ -3813,29 +3932,30 @@
     "rarity": "rare",
     "fr": "Sorcier",
     "image": "wizard.png",
+    "highlightImage": "wizard.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/Mej7vnv4H_3p_8qPs_N6_GKahy6HDr7pU7i9eTHS84U.png",
     "fetchedAt": "2026-09-19T09:41:36.902Z",
     "colors": [
       {
-        "hex": "#6B483E",
-        "share": 0.38632609721566774
+        "hex": "#734537",
+        "share": 0.28871224634261444
       },
       {
-        "hex": "#363A57",
-        "share": 0.3588957055214724
+        "hex": "#313040",
+        "share": 0.23146236432279377
       },
       {
-        "hex": "#95AAC0",
-        "share": 0.1388479235488438
+        "hex": "#4B5789",
+        "share": 0.1764983482774894
       },
       {
-        "hex": "#D6B294",
-        "share": 0.11593027371401604
+        "hex": "#7E716A",
+        "share": 0.16974398301085417
       }
     ],
-    "correctHex": "#6B483E",
+    "correctHex": "#734537",
     "playable": true,
     "excludedReason": null
   },
@@ -3845,29 +3965,30 @@
     "rarity": "epic",
     "fr": "Arc-X",
     "image": "x-bow.png",
+    "highlightImage": "x-bow.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/zVQ9Hme1hlj9Dc6e1ORl9xWwglcSrP7ejow5mAhLUJc.png",
     "fetchedAt": "2026-09-19T09:41:36.939Z",
     "colors": [
       {
-        "hex": "#A7B6C1",
-        "share": 0.49051373126570214
+        "hex": "#B0BBBA",
+        "share": 0.45438794074330763
       },
       {
-        "hex": "#9BB177",
-        "share": 0.27206965260330934
+        "hex": "#9FB76B",
+        "share": 0.14671229316468856
       },
       {
-        "hex": "#575055",
-        "share": 0.17781339339859656
+        "hex": "#575C68",
+        "share": 0.14505183516705653
       },
       {
-        "hex": "#B57947",
-        "share": 0.05960322273239193
+        "hex": "#88552E",
+        "share": 0.0899246296456727
       }
     ],
-    "correctHex": "#A7B6C1",
+    "correctHex": "#B0BBBA",
     "playable": true,
     "excludedReason": null
   },
@@ -3877,31 +3998,32 @@
     "rarity": "common",
     "fr": "Électrocution",
     "image": "zap.png",
+    "highlightImage": "zap.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/7dxh2-yCBy1x44GrBaL29vjqnEEeJXHEAlsi5g6D1eY.png",
-    "fetchedAt": "2026-09-19T09:41:36.978Z",
+    "fetchedAt": "2026-09-19T10:24:45.186Z",
     "colors": [
       {
-        "hex": "#85AEC4",
-        "share": 0.49328893071744007
+        "hex": "#5790AE",
+        "share": 0.35420256280315643
       },
       {
-        "hex": "#3B6D92",
-        "share": 0.33643669007456745
+        "hex": "#9ABCCF",
+        "share": 0.28877144718743214
       },
       {
-        "hex": "#1559A7",
-        "share": 0.13209295591109824
+        "hex": "#2A577E",
+        "share": 0.15614276406283936
       },
       {
-        "hex": "#705039",
-        "share": 0.03818142329689423
+        "hex": "#0F4A8E",
+        "share": 0.07550857887497285
       }
     ],
-    "correctHex": "#85AEC4",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#5790AE",
+    "playable": false,
+    "excludedReason": "monochrome"
   },
   {
     "id": "zappies",
@@ -3909,29 +4031,30 @@
     "rarity": "rare",
     "fr": "Électrocuteurs",
     "image": "zappies.png",
+    "highlightImage": "zappies.png",
     "width": 285,
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/QZfHRpLRmutZbCr5fpLnTpIp89vLI6NrAwzGZ8tHEc4.png",
     "fetchedAt": "2026-09-19T09:41:37.012Z",
     "colors": [
       {
-        "hex": "#3D516C",
-        "share": 0.4405949819574093
+        "hex": "#365472",
+        "share": 0.42370440645806157
       },
       {
-        "hex": "#99C3D1",
-        "share": 0.2652345536788249
+        "hex": "#5D432E",
+        "share": 0.23401155403459434
       },
       {
-        "hex": "#413A32",
-        "share": 0.20514340894844732
+        "hex": "#666A71",
+        "share": 0.1405289104985854
       },
       {
-        "hex": "#97623B",
-        "share": 0.08902705541531841
+        "hex": "#ABB5BC",
+        "share": 0.11791214190116388
       }
     ],
-    "correctHex": "#3D516C",
+    "correctHex": "#365472",
     "playable": true,
     "excludedReason": null
   }

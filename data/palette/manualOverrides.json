@@ -1,0 +1,23 @@
+{
+  "forcePlayable": ["electro-dragon", "bandit", "cannon", "rage", "skeletons"],
+  "forceExcluded": [
+    "barbarian-barrel",
+    "battle-ram",
+    "elite-barbarians",
+    "executioner",
+    "fisherman",
+    "goblin-cage",
+    "goblin-giant",
+    "goblin-machine",
+    "ice-wizard",
+    "inferno-tower",
+    "minion-horde",
+    "mirror",
+    "phoenix",
+    "royal-delivery",
+    "royal-recruits",
+    "sparky",
+    "spear-goblins",
+    "tornado"
+  ]
+}

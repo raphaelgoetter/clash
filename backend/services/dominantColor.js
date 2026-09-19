@@ -3,14 +3,16 @@
 // image de carte (PNG RGBA), pour le mini-jeu "devine la couleur
 // dominante".
 //
-// Principe : k-means (k=4) sur les pixels convertis en espace Lab, plus
-// perceptuellement fiable qu'une distance RVB brute — voir piège 2 ci-dessous
-// —, après exclusion des contours noirs/blancs (artefact de style BD des
-// cartes) qui polluent le classement. Voir aussi le garde-fou "monochrome" :
-// certaines cartes (squelettes, fantômes, armures grises) n'ont, même après
-// nettoyage, que des nuances de luminosité d'une seule teinte — ce n'est
-// plus "difficile" mais "indiscernable", donc à exclure du pool jouable
-// plutôt qu'à corriger par l'algorithme.
+// Principe : k-means fin (8 groupes) sur les pixels convertis en espace Lab,
+// plus perceptuellement fiable qu'une distance RVB brute — voir piège 2
+// ci-dessous —, après exclusion des contours noirs/blancs (artefact de style
+// BD des cartes) qui polluent le classement. Les 8 groupes sont ensuite
+// fusionnés par teinte (voir piège 3) pour ne garder que 4 couleurs finales.
+// Voir aussi le garde-fou "monochrome" : certaines cartes (squelettes,
+// fantômes, armures grises) n'ont, même après nettoyage, que des nuances de
+// luminosité d'une seule teinte — ce n'est plus "difficile" mais
+// "indiscernable", donc à exclure du pool jouable plutôt qu'à corriger par
+// l'algorithme.
 //
 // Piège découvert en QA visuelle (1) : les images iconUrls.medium ne
 // sont PAS de l'illustration détourée sur fond transparent — elles
@@ -35,6 +37,20 @@
 // teinte (a/b) de façon perceptuellement fidèle, donc deux couleurs sombres
 // de teintes différentes restent éloignées même à faible luminosité — ce
 // qu'une distance RVB brute ne garantit pas.
+//
+// Piège découvert en QA visuelle (3) : même avec le k-means Lab, imposer
+// directement k=4 est trop serré — un même matériau qui varie beaucoup en
+// éclairage (ex. le bois d'une cabane, moitié en pleine lumière moitié à
+// l'ombre) se scinde en 2 des 4 clusters, laissant les 2 places restantes à
+// des matières neutres/grises sans rapport entre elles (toit ardoise, arbre
+// flou en fond, épée grise) qui se regroupent par accident parce qu'elles
+// sont toutes peu saturées — donnant un "gris" dominant qui ne représente
+// aucune vraie zone cohérente de l'image (ex. Cabane de barbare, Barbares).
+// Fix : k-means fin à 8 clusters, PUIS fusion par teinte (pas par distance
+// RVB comme le piège 2) des clusters dont la teinte est proche (même
+// matériau à des éclairages différents) — les clusters gris/neutres, eux,
+// ne fusionnent entre eux que si leur luminosité est proche, jamais avec un
+// cluster saturé, même de luminosité similaire.
 // ============================================================
 
 import { PNG } from "pngjs";
@@ -42,9 +58,12 @@ import { PNG } from "pngjs";
 const ALPHA_THRESHOLD = 128;
 const LUMINANCE_MIN = 35; // ignore les contours quasi noirs
 const LUMINANCE_MAX = 245; // ignore les reflets quasi blancs
-const K = 4; // nombre de couleurs dominantes à extraire
+const FINE_K = 8; // clusters fins avant fusion par teinte (voir piège 3)
+const FINAL_COLORS = 4; // nombre de couleurs dominantes rendues au final
 const KMEANS_ITERATIONS = 15;
 const KMEANS_MAX_SAMPLES = 15000; // sous-échantillonnage pour le clustering (les parts finales, elles, sont recalculées sur tous les pixels)
+const HUE_MERGE_DEGREES = 22; // écart de teinte en dessous duquel deux clusters fins sont jugés "même matériau"
+const GREY_LIGHTNESS_MERGE = 0.14; // pour les clusters peu saturés, écart de luminosité (0-1) toléré pour fusionner
 
 export const MAX_TOP1_SHARE = 0.6; // au-delà, la manche est jugée trop facile
 export const MIN_HUE_DEGREES = 25; // écart de teinte (0-360°) en dessous duquel deux couleurs sont "la même"
@@ -232,14 +251,25 @@ function hueDistance(h1, h2) {
  * Extrait les 4 couleurs dominantes d'un buffer PNG RGBA.
  * @param {Buffer} pngBuffer
  * @param {{ frameMask?: Uint8Array }} [options] - frameMask issu de buildFrameMask(), pour ignorer le cadre partagé de la rareté
- * @returns {{ colors: {hex: string, share: number}[], isTooEasy: boolean, isMonochrome: boolean } | null}
- *   null si l'image n'a pas assez de pixels opaques exploitables.
+ * @returns {{
+ *   colors: {hex: string, share: number}[],
+ *   isTooEasy: boolean,
+ *   isMonochrome: boolean,
+ *   pixelColorIndex: Int8Array,
+ * } | null}
+ *   null si l'image n'a pas assez de pixels opaques exploitables. pixelColorIndex
+ *   (taille width*height, une entrée par pixel du PNG source) donne l'index dans
+ *   `colors` (0-3) du pixel, ou -1 s'il a été exclu (cadre/alpha/contour) ou
+ *   n'entre dans aucune des 4 couleurs retenues — sert à construire l'image
+ *   "preuve" qui surligne la zone gagnante pour le joueur (voir buildHighlightOverlay).
  */
 export function extractDominantColors(pngBuffer, { frameMask } = {}) {
   const { data, width, height } = PNG.sync.read(pngBuffer);
 
-  // Pixels valides (cadre/alpha/contours exclus), convertis en Lab.
+  // Pixels valides (cadre/alpha/contours exclus), convertis en Lab, en
+  // gardant leur index d'origine pour pouvoir reconstruire une image ensuite.
   const labByIndex = [];
+  const originalIndex = [];
   for (let i = 0; i < width * height; i++) {
     if (frameMask?.[i]) continue;
 
@@ -254,6 +284,7 @@ export function extractDominantColors(pngBuffer, { frameMask } = {}) {
     if (luminance < LUMINANCE_MIN || luminance > LUMINANCE_MAX) continue;
 
     labByIndex.push(rgbToLab(r, g, b));
+    originalIndex.push(i);
   }
 
   const totalPixels = labByIndex.length;
@@ -265,23 +296,66 @@ export function extractDominantColors(pngBuffer, { frameMask } = {}) {
   const sample = [];
   for (let i = 0; i < labByIndex.length; i += stride) sample.push(labByIndex[i]);
 
-  const centroids = kmeansLab(sample, Math.min(K, sample.length));
+  const fineK = Math.min(FINE_K, sample.length);
+  const centroids = kmeansLab(sample, fineK);
 
   const counts = new Array(centroids.length).fill(0);
-  for (const lab of labByIndex) {
+  const fineAssignment = new Array(labByIndex.length);
+  for (let n = 0; n < labByIndex.length; n++) {
     let best = 0, bestDist = Infinity;
     for (let c = 0; c < centroids.length; c++) {
-      const d = labDistance(lab, centroids[c]);
+      const d = labDistance(labByIndex[n], centroids[c]);
       if (d < bestDist) { bestDist = d; best = c; }
     }
     counts[best] += 1;
+    fineAssignment[n] = best;
   }
 
-  const colors = centroids
-    .map((lab, c) => ({ hex: toHex(...labToRgb(...lab)), share: counts[c] / totalPixels }))
-    .filter((c) => c.share > 0)
-    .sort((a, b) => b.share - a.share);
-  if (colors.length < K) return null;
+  const fine = centroids
+    .map((lab, c) => {
+      const [r, g, b] = labToRgb(...lab);
+      return { c, count: counts[c], lab, hsl: rgbToHsl(r, g, b) };
+    })
+    .filter((c) => c.count > 0)
+    .sort((a, b) => b.count - a.count);
+
+  // Fusion des clusters fins par matériau : même teinte (± HUE_MERGE_DEGREES)
+  // pour les couleurs saturées, même luminosité (± GREY_LIGHTNESS_MERGE) pour
+  // les couleurs neutres — jamais l'un avec l'autre. Ancrée sur le premier
+  // membre (le plus gros) de chaque groupe, pas sur une moyenne qui dérive,
+  // pour éviter le chaînage transitif du piège 2.
+  const groups = [];
+  for (const cluster of fine) {
+    const target = groups.find((g) => {
+      const anchorLowSat = g.anchor.hsl.s < MIN_SATURATION;
+      const clusterLowSat = cluster.hsl.s < MIN_SATURATION;
+      if (anchorLowSat !== clusterLowSat) return false;
+      if (anchorLowSat) return Math.abs(g.anchor.hsl.l - cluster.hsl.l) < GREY_LIGHTNESS_MERGE;
+      return hueDistance(g.anchor.hsl.h, cluster.hsl.h) < HUE_MERGE_DEGREES;
+    });
+    if (target) {
+      target.members.push(cluster);
+      target.count += cluster.count;
+    } else {
+      groups.push({ anchor: cluster, count: cluster.count, members: [cluster] });
+    }
+  }
+  groups.sort((a, b) => b.count - a.count);
+
+  // Certaines illustrations simples (sorts, effets) n'ont pas assez de
+  // matériaux distincts pour survivre à la fusion (ex. Zap, Tesla, Poison) —
+  // plutôt que d'écarter la carte, on retombe sur les clusters fins non
+  // fusionnés, qui restent une extraction valide, juste moins "regroupée".
+  const finalGroups = groups.length >= FINAL_COLORS
+    ? groups.slice(0, FINAL_COLORS)
+    : fine.slice(0, FINAL_COLORS).map((c) => ({ count: c.count, members: [c] }));
+  if (finalGroups.length < FINAL_COLORS) return null;
+
+  const colors = finalGroups.map((g) => {
+    const totalCount = g.members.reduce((sum, m) => sum + m.count, 0);
+    const lab = [0, 1, 2].map((i) => g.members.reduce((sum, m) => sum + m.lab[i] * m.count, 0) / totalCount);
+    return { hex: toHex(...labToRgb(...lab)), share: g.count / totalPixels };
+  });
 
   const isTooEasy = colors[0].share > MAX_TOP1_SHARE;
 
@@ -295,5 +369,60 @@ export function extractDominantColors(pngBuffer, { frameMask } = {}) {
   }
   const isMonochrome = saturated.length < 2 || maxHueSpread < MIN_HUE_DEGREES;
 
-  return { colors, isTooEasy, isMonochrome };
+  // Index (dans `colors`) de chaque pixel du PNG source, pour l'image "preuve".
+  const fineToColorIndex = new Map();
+  finalGroups.forEach((g, colorIndex) => {
+    for (const m of g.members) fineToColorIndex.set(m.c, colorIndex);
+  });
+  const pixelColorIndex = new Int8Array(width * height).fill(-1);
+  for (let n = 0; n < originalIndex.length; n++) {
+    pixelColorIndex[originalIndex[n]] = fineToColorIndex.get(fineAssignment[n]) ?? -1;
+  }
+
+  return { colors, isTooEasy, isMonochrome, pixelColorIndex };
+}
+
+/**
+ * Construit une image "preuve" : la carte d'origine avec un voile marqué de
+ * la couleur `colorIndex` posé sur les pixels qui la composent, et le reste
+ * de l'image assombri OU éclairci (selon la luminosité de la couleur
+ * gagnante — l'assombrir quand elle est déjà sombre tue le contraste au
+ * lieu de le renforcer) pour que ce voile ressorte nettement dans tous les
+ * cas — pour que le joueur voie directement d'où vient le résultat plutôt
+ * que de devoir croire un pourcentage sur parole.
+ * @param {Buffer} pngBuffer - la même image que celle passée à extractDominantColors
+ * @param {Int8Array} pixelColorIndex - retourné par extractDominantColors
+ * @param {number} colorIndex - quelle couleur (0-3, 0 = la dominante) surligner
+ * @param {string} hex - le hex de cette couleur (le voile posé sur les pixels)
+ * @param {number} [overlayAlpha] - opacité du voile sur la zone surlignée (0-1)
+ * @param {number} [dimAmount] - assombrissement/éclaircissement du reste de l'image (0-1)
+ * @returns {Buffer} un nouveau PNG encodé
+ */
+export function buildHighlightOverlay(pngBuffer, pixelColorIndex, colorIndex, hex, overlayAlpha = 0.8, dimAmount = 0.6) {
+  const png = PNG.sync.read(pngBuffer);
+  const [tr, tg, tb] = hexToRgb(hex);
+
+  // Couleur gagnante sombre -> éclaircir le reste de l'image (sinon voile
+  // sombre sur fond assombri = contraste écrasé) ; couleur claire -> assombrir.
+  const targetLuminance = 0.299 * tr + 0.587 * tg + 0.114 * tb;
+  const lightenRest = targetLuminance < 128;
+
+  for (let i = 0; i < png.width * png.height; i++) {
+    const offset = i * 4;
+    if (pixelColorIndex[i] === colorIndex) {
+      png.data[offset] = Math.round(png.data[offset] * (1 - overlayAlpha) + tr * overlayAlpha);
+      png.data[offset + 1] = Math.round(png.data[offset + 1] * (1 - overlayAlpha) + tg * overlayAlpha);
+      png.data[offset + 2] = Math.round(png.data[offset + 2] * (1 - overlayAlpha) + tb * overlayAlpha);
+    } else if (lightenRest) {
+      png.data[offset] = Math.round(png.data[offset] + (255 - png.data[offset]) * dimAmount);
+      png.data[offset + 1] = Math.round(png.data[offset + 1] + (255 - png.data[offset + 1]) * dimAmount);
+      png.data[offset + 2] = Math.round(png.data[offset + 2] + (255 - png.data[offset + 2]) * dimAmount);
+    } else {
+      png.data[offset] = Math.round(png.data[offset] * (1 - dimAmount));
+      png.data[offset + 1] = Math.round(png.data[offset + 1] * (1 - dimAmount));
+      png.data[offset + 2] = Math.round(png.data[offset + 2] * (1 - dimAmount));
+    }
+  }
+
+  return PNG.sync.write(png);
 }
