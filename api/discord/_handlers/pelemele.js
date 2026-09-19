@@ -55,7 +55,7 @@ function buildPeleMeleEmbed({ seasonId, seasonManche, seasonMancheTotal, gameId,
     description:
       `**Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
       `Plusieurs cartes Clash Royale se cachent derrière ces ${DRAW_SIZE} lettres. Sauras-tu toutes les retrouver ?\n\n` +
-      "🏆 **5 points** pour la carte la plus longue, **+1 point** bonus par carte supplémentaire.\n" +
+      "🏆 **1 point** par carte trouvée, **5 points** s'il s'agit du mot le plus long.\n" +
       "♾️ Tu as autant d'essais que tu veux !\n\n" +
       (totalValidWords != null ? `🎯 **${totalValidWords} carte${totalValidWords > 1 ? "s" : ""} valide${totalValidWords > 1 ? "s" : ""} sur ce tirage** — à toi de toutes les trouver !\n\n` : "") +
       "📜 Détails (orthographe, accents, ponctuation...) dans le bouton **Règles**.\n\n" +
