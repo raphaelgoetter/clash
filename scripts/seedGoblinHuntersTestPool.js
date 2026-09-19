@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // seedGoblinHuntersTestPool.js
-// TESTS UNIQUEMENT — inscrit un faux pool de joueurs (8 par défaut = tout
+// TESTS UNIQUEMENT — inscrit un faux pool de joueurs (10 par défaut = tout
 // l'effectif minimum, pour pouvoir tester entièrement seul sans avoir besoin
 // d'un second testeur) sous des IDs Discord factices. Les DM de rôle
 // échoueront proprement pour ces faux comptes au lancement (sendGoblinHuntersDM
@@ -8,7 +8,7 @@
 // incidence sur le reste du déroulement.
 //
 // Usage :
-//   node scripts/seedGoblinHuntersTestPool.js          — inscrit 8 faux joueurs
+//   node scripts/seedGoblinHuntersTestPool.js          — inscrit 10 faux joueurs
 //   node scripts/seedGoblinHuntersTestPool.js 4        — inscrit un nombre différent
 
 import dotenv from "dotenv";
@@ -16,7 +16,7 @@ dotenv.config({ path: "./.env" });
 
 import { registerPlayer, loadGoblinHuntersConfig } from "../backend/services/goblinhunters.js";
 
-const COUNT = Number(process.argv[2]) || 8;
+const COUNT = Number(process.argv[2]) || 10;
 
 (async () => {
   try {

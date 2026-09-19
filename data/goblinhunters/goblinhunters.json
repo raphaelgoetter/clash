@@ -1,7 +1,7 @@
 {
   "duree_jours": 7,
-  "effectif_min": 8,
-  "effectif_max": 16,
+  "effectif_min": 10,
+  "effectif_max": 18,
   "fenetre_inscription_jours": 3,
   "minority_table": {
     "8": 3,
@@ -12,7 +12,9 @@
     "13": 6,
     "14": 6,
     "15": 6,
-    "16": 7
+    "16": 7,
+    "17": 7,
+    "18": 8
   },
   "combat": { "pv_base": 2, "degats_base": 1, "gobelin_pv_bonus": 1 },
   "taverne_seuil_protection": 3,
