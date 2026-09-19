@@ -34,9 +34,11 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
 import { fetchRaceLog, fetchCurrentRace } from "./clashApi.js";
-import { computeCurrentSeasonId } from "./dateUtils.js";
+import { computeCurrentSeasonId, countRemainingWeekdayOccurrences } from "./dateUtils.js";
 import { FAMILY_CLAN_TAGS } from "./warHistory.js";
 import { getOrSet } from "./cache.js";
+
+const FRIDAY = 5; // même jour de référence que Zoom carte (destiné à alterner avec lui)
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PALETTE_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "palette", "palette.json");
@@ -88,13 +90,18 @@ async function scanDelete(pattern) {
 
 const STATE_KEY = "palette:state";
 const PLAY_ORDER_KEY = "palette:play_order";
-const MANCHE_SEQ_KEY = "palette:manche_seq";
 
 function orderKey(gameId) {
   return `palette:order:${gameId}`;
 }
 function participantsKey(gameId) {
   return `palette:participants:${gameId}`;
+}
+function seasonMancheSeqKey(seasonId) {
+  return `palette:season:${seasonId}:manche_seq`;
+}
+function seasonMancheNumbersKey(seasonId) {
+  return `palette:season:${seasonId}:manche_numbers`;
 }
 
 // ── Lecture du catalogue (statique, jamais muté) ──────────────────
@@ -122,14 +129,15 @@ export async function writeState(state) {
   await getRedis().set(STATE_KEY, toJson(state));
 }
 
-// Remet le jeu à zéro : plus de manche active, participants effacés.
-// palette:order:*, palette:play_order et palette:manche_seq NE SONT PAS
-// touchés — même philosophie que resetGame() de Zoom, qui ne remet jamais
-// à zéro zoom:posted_games ni l'ordre du fichier zoom.json : une nouvelle
-// manche repart simplement au tirage suivant de l'ordre courant.
+// Remet le jeu à zéro : plus de manche active, participants et numérotation
+// de saison effacés (comme resetGame() de Zoom, qui efface aussi zoom:season:*).
+// palette:order:*/palette:play_order NE SONT PAS touchés — une nouvelle
+// manche repart simplement au tirage suivant de l'ordre courant, comme Zoom
+// ne remet jamais à zéro zoom:posted_games ni l'ordre du fichier zoom.json.
 export async function resetGame() {
   await getRedis().del(STATE_KEY);
   await scanDelete("palette:participants:*");
+  await scanDelete("palette:season:*");
 }
 
 // ── Saison Clash Royale en cours ────────────────────────────────
@@ -211,15 +219,41 @@ export function isTooSoonSinceLastRound(startedAt, now = Date.now()) {
   return (now - new Date(startedAt).getTime()) / 3_600_000 < MIN_HOURS_BETWEEN_ROUNDS;
 }
 
+// ── Numérotation de manche, scopée à la saison CR ──────────────────
+// Même mécanique que Zoom (assignSeasonMancheNumber/computeSeasonMancheTotal)
+// pour un affichage "Saison X · Manche X/Y" identique aux autres jeux —
+// dupliquée plutôt qu'importée de zoom.js (convention du repo). Le total Y
+// se projette sur les vendredis restants de la saison, même si Palette n'a
+// pas encore de cron fixe : ça reste la meilleure estimation disponible, et
+// c'est le jour déjà utilisé par Zoom, avec lequel Palette est destiné à
+// alterner.
+
+async function assignSeasonMancheNumber(seasonId, gameId) {
+  const numbersKey = seasonMancheNumbersKey(seasonId);
+  const existing = await getRedis().hget(numbersKey, gameId);
+  if (existing != null) return Number(existing);
+
+  const seasonManche = Number(await getRedis().incr(seasonMancheSeqKey(seasonId)));
+  const wasSet = Number(await getRedis().hsetnx(numbersKey, gameId, String(seasonManche)));
+  if (!wasSet) {
+    return Number(await getRedis().hget(numbersKey, gameId));
+  }
+  return seasonManche;
+}
+
+function countRemainingFridays(now = new Date()) {
+  return countRemainingWeekdayOccurrences(now, FRIDAY);
+}
+export function computeSeasonMancheTotal(seasonManche, now = new Date()) {
+  return seasonManche + countRemainingFridays(now);
+}
+
+export async function previewSeasonManche(seasonId) {
+  const seq = Number(await getRedis().get(seasonMancheSeqKey(seasonId))) || 0;
+  return seq + 1;
+}
+
 // ── Sélection + démarrage d'une manche ────────────────────────────
-
-async function nextMancheNumber() {
-  return Number(await getRedis().incr(MANCHE_SEQ_KEY));
-}
-
-export async function previewMancheNumber() {
-  return (Number(await getRedis().get(MANCHE_SEQ_KEY)) || 0) + 1;
-}
 
 export async function startNewGame(channelId) {
   const catalog = await loadPaletteCatalog();
@@ -232,14 +266,16 @@ export async function startNewGame(channelId) {
   const entry = resolvePaletteEntry(catalog, gameId);
 
   const seasonId = await getCurrentSeasonId();
-  const mancheNumber = await nextMancheNumber();
-  const letterOrder = shuffle([0, 1, 2, 3]);
   const now = new Date();
+  const seasonManche = await assignSeasonMancheNumber(seasonId, gameId);
+  const seasonMancheTotal = computeSeasonMancheTotal(seasonManche, now);
+  const letterOrder = shuffle([0, 1, 2, 3]);
 
   const newState = {
     gameId,
     seasonId,
-    mancheNumber,
+    seasonManche,
+    seasonMancheTotal,
     startedAt: now.toISOString(),
     channelId,
     messageId: null,
@@ -277,15 +313,12 @@ export function getCorrectLetter(order) {
   return LETTERS[order.indexOf(0)];
 }
 
-// Bonus de rapidité avec plancher (comme Zoom/Frame, une bonne réponse doit
-// toujours bien rapporter) — pas de pénalité pour une mauvaise réponse
-// (impossible techniquement : un seul clic verrouille tout, il n'y a jamais
-// de "tentative incorrecte suivie d'une autre tentative" à pénaliser,
-// contrairement à Zoom).
-export function computeScore(correct, elapsedMs) {
-  if (!correct) return 0;
-  const penalty = Math.floor(elapsedMs / 1000 / 30); // -1 pt / 30s entamées
-  return Math.max(5, 10 - penalty);
+// Barème volontairement plat (pas de bonus de rapidité ni de pénalité de
+// tentative comme Zoom) : un seul clic verrouille tout, correct ou non — il
+// n'y a jamais de "tentative incorrecte suivie d'une autre" à pénaliser, et
+// Raphael a préféré la simplicité à un calcul de rapidité après le 1er test.
+export function computeScore(correct) {
+  return correct ? 1 : 0;
 }
 
 // ── Réponse à essai unique ─────────────────────────────────────────

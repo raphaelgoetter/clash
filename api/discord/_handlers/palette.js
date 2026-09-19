@@ -20,22 +20,27 @@ import {
   readParticipant,
   readRoundOrder,
   isTooSoonSinceLastRound,
-  previewMancheNumber,
+  getCurrentSeasonId,
+  previewSeasonManche,
+  computeSeasonMancheTotal,
   LETTERS,
 } from "../../../backend/services/palette.js";
+import { toPublicSeasonId } from "../../../backend/services/dateUtils.js";
 
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 const PALETTE_COLOR = 0x9b59b6;
 
-function buildPaletteEmbed({ gameId, mancheNumber, cacheBust }) {
+function buildPaletteEmbed({ gameId, entryFr, seasonId, seasonManche, seasonMancheTotal, cacheBust }) {
   return {
     title: "🎨 [TEST] Palette — devine la couleur dominante !",
     description: [
-      `**Manche #${mancheNumber}**`,
+      `**Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
       "",
-      "Une carte, 4 couleurs proposées (A, B, C, D). Laquelle domine le plus l'illustration ?",
+      `**${entryFr}**`,
       "",
-      "**Barème** : bonne réponse = jusqu'à 10 pts (bonus de rapidité, plancher à 5), mauvaise réponse = 0 pt.",
+      "4 couleurs proposées (A, B, C, D) : laquelle est la **dominante**, c'est-à-dire celle qui recouvre la plus grande surface de l'illustration ?",
+      "",
+      "**Barème** : bonne réponse = **1 pt**, mauvaise réponse = 0 pt.",
       "**Un seul essai** : ton premier clic est définitif !",
     ].join("\n"),
     image: { url: `${TRUST_ROYALE_URL}/api/palette/image?gameId=${gameId}&v=${cacheBust}` },
@@ -63,12 +68,14 @@ function buildPaletteComponents(gameId) {
 // (qui n'existe pas encore pour ce jeu).
 export async function postPalette(channelId, { dryRun = false, force = false } = {}) {
   if (dryRun) {
-    const mancheNumber = await previewMancheNumber();
     const gameId = "preview";
-    const embed = buildPaletteEmbed({ gameId, mancheNumber, cacheBust: Date.now() });
+    const seasonId = await getCurrentSeasonId();
+    const seasonManche = await previewSeasonManche(seasonId);
+    const seasonMancheTotal = computeSeasonMancheTotal(seasonManche);
+    const entryFr = "(aperçu, carte réelle tirée à la publication)";
+    const embed = buildPaletteEmbed({ gameId, entryFr, seasonId, seasonManche, seasonMancheTotal, cacheBust: Date.now() });
     const components = buildPaletteComponents(gameId);
-    const catalog = await loadPaletteCatalog();
-    return { dryRun: true, entry: { fr: "(aperçu, carte réelle tirée à la publication)" }, embed, components, catalog };
+    return { dryRun: true, entry: { fr: entryFr }, embed, components };
   }
 
   const state = await readState();
@@ -80,7 +87,14 @@ export async function postPalette(channelId, { dryRun = false, force = false } =
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
 
   const { state: newState, entry } = await startNewGame(channelId);
-  const embed = buildPaletteEmbed({ gameId: newState.gameId, mancheNumber: newState.mancheNumber, cacheBust: Date.now() });
+  const embed = buildPaletteEmbed({
+    gameId: newState.gameId,
+    entryFr: entry.fr,
+    seasonId: newState.seasonId,
+    seasonManche: newState.seasonManche,
+    seasonMancheTotal: newState.seasonMancheTotal,
+    cacheBust: Date.now(),
+  });
   const components = buildPaletteComponents(newState.gameId);
 
   const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
@@ -148,8 +162,7 @@ export async function handleAnswerButton(webhookUrl, gameId, letter, discordId, 
 
     const order = await readRoundOrder(gameId);
     const correct = checkAnswer(order, letter);
-    const elapsedMs = Date.now() - new Date(state.startedAt).getTime();
-    const score = computeScore(correct, elapsedMs);
+    const score = computeScore(correct);
 
     const { alreadyAnswered } = await recordAnswer(gameId, discordId, username, letter, correct, score);
     if (alreadyAnswered) {
@@ -160,12 +173,23 @@ export async function handleAnswerButton(webhookUrl, gameId, letter, discordId, 
     const catalog = await loadPaletteCatalog();
     const entry = resolvePaletteEntry(catalog, gameId);
     const correctLetter = getCorrectLetter(order);
-    const description = correct
-      ? `✅ Bonne réponse ! **${entry?.fr ?? gameId}** — **+${score} pts**`
-      : `❌ Mauvaise réponse (tu avais choisi **${letter}**, c'était **${correctLetter}**) — **${entry?.fr ?? gameId}**`;
+    const resultLine = correct
+      ? `✅ Bonne réponse ! **+${score} pt**`
+      : `❌ Mauvaise réponse (tu avais choisi **${letter}**, c'était **${correctLetter}**)`;
+
+    // Détail des 4 couleurs (comme prévu à la conception) : le visuel de
+    // l'image ne suffit pas seul à convaincre sur un petit écran mobile, le
+    // texte reprend les mêmes chiffres en clair.
+    const breakdown = entry
+      ? order.map((colorIdx, i) => {
+          const c = entry.colors[colorIdx];
+          const marker = colorIdx === 0 ? "🏆" : "";
+          return `**${LETTERS[i]}** ${c.hex} : ${Math.round(c.share * 100)}% ${marker}`;
+        })
+      : [];
 
     await postEphemeralEmbed(webhookUrl, {
-      description,
+      description: [resultLine, "", "**Répartition des 4 couleurs :**", ...breakdown].join("\n"),
       image: { url: `${TRUST_ROYALE_URL}/api/palette/image?gameId=${gameId}&stage=result&v=${Date.now()}` },
       color: PALETTE_COLOR,
     });
