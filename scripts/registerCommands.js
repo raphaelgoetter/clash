@@ -468,6 +468,12 @@ const commands = [
     options: [],
   },
   {
+    name: "palette",
+    description:
+      "Affiche vos scores au jeu Palette (devine la couleur dominante).",
+    options: [],
+  },
+  {
     name: "justecarte",
     description:
       "Affiche vos scores au jeu La Juste Carte (devine la carte par ses stats).",

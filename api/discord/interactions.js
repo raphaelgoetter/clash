@@ -91,10 +91,13 @@ import {
   handlePilule as handleTamagotchiPilule,
 } from "./_handlers/tamagotchi.js";
 import { handleQuizVote } from "./_handlers/quiz.js";
-// ⚠️ Jeu en TEST UNIQUEMENT (voir palette.js) : ce bloc ne fait que router
-// les interactions Discord, aucune commande /palette n'existe, aucune
-// publication automatique n'est câblée (voir postPalette.js).
-import { handleAnswerButton as handlePaletteAnswer } from "./_handlers/palette.js";
+// En alternance avec Zoom carte sous "Jeux visuels" (voir jeuxvisuels.js) —
+// publication via scripts/postJeuxVisuels.js (ou scripts/postPalette.js en
+// direct), jamais depuis ce fichier de routing.
+import {
+  handleAnswerButton as handlePaletteAnswer,
+  handlePaletteStatsCommand,
+} from "./_handlers/palette.js";
 import {
   buildIdeaModal as buildPollIdeaModal,
   handleIdeaModalSubmit as handlePollIdeaModalSubmit,
@@ -9407,7 +9410,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ── Jeu Palette [TEST] : boutons de réponse A/B/C/D ──
+  // ── Jeu Palette : boutons de réponse A/B/C/D ──
   if (
     body.type === 3 &&
     typeof body.data?.custom_id === "string" &&
@@ -9427,6 +9430,40 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handlePaletteAnswer(webhookUrl, gameId, letter, discordId, username));
+    return;
+  }
+
+  // ── Jeu Palette : commande /palette (scores personnels) ──
+  if (body.type === 2 && body.data?.name === "palette") {
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handlePaletteStatsCommand(webhookUrl, discordId, username));
+    return;
+  }
+
+  // ── Jeu Palette : bouton "Rafraîchir" sur /palette ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id === "palette_stats_refresh"
+  ) {
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    // type 6 = DEFERRED_UPDATE_MESSAGE : met à jour ce même message éphémère
+    // (au lieu d'en créer un nouveau, cf. type 5 pour la commande initiale).
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handlePaletteStatsCommand(webhookUrl, discordId, username));
     return;
   }
 

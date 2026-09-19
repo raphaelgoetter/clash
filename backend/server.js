@@ -278,7 +278,7 @@ app.get("/api/frames/image", async (req, res) => {
 
 // Jeu Zoom carte : sert l'image en zoom extrême de la manche en cours
 // (embed public), ou dézoomée (indice, ?stage=hint), ou la carte entière
-// (révélation, ?stage=reveal) — jamais un fichier brut de data/zoom/images
+// (révélation, ?stage=reveal) — jamais un fichier brut de data/jeux-visuels/zoom/images
 // (non exposé statiquement, seule cette route y donne accès). Anti-spoiler :
 // les trois fonctions vérifient que gameId a réellement été posté (voir
 // isGamePosted dans services/zoom.js), même garde-fou que Frame.
@@ -295,8 +295,8 @@ app.get("/api/zoom/image", async (req, res) => {
 
 // [TEST] Jeu Palette : sert l'image de la manche en cours (carte + 4
 // pastilles A/B/C/D), ou le résultat avec voile + pourcentages
-// (?stage=result) — jamais un fichier brut de data/palette/images ou
-// data/palette/highlights (non exposés statiquement). Anti-spoiler :
+// (?stage=result) — jamais un fichier brut de data/jeux-visuels/palette/images ou
+// data/jeux-visuels/palette/highlights (non exposés statiquement). Anti-spoiler :
 // isGamePosted (palette:order:<gameId>), même garde-fou que Zoom.
 app.get("/api/palette/image", async (req, res) => {
   const { gameId, stage } = req.query;

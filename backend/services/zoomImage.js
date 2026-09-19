@@ -21,7 +21,7 @@ import { Resvg } from "@resvg/resvg-js";
 import { loadZoomCatalog, resolveZoomEntry, isGamePosted } from "./zoom.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ZOOM_IMAGES_DIR = path.resolve(__dirname, "..", "..", "data", "zoom", "images");
+const ZOOM_IMAGES_DIR = path.resolve(__dirname, "..", "..", "data", "jeux-visuels", "zoom", "images");
 
 const BACKGROUND = "#0f172a";
 const CELL_SIZE = 450;

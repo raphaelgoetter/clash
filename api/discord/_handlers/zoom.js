@@ -166,7 +166,11 @@ async function getSeasonManchesPlayed(seasonId) {
   return manches.filter((m) => m.seasonManche != null && m.label != null).sort((a, b) => a.seasonManche - b.seasonManche);
 }
 
-async function postSeasonRecap(channelId, endedSeasonId, newSeasonId, { noPing = false } = {}) {
+// Exportée : appelée directement par scripts/postJeuxVisuels.js sous
+// l'alternance avec Palette (voir backend/services/jeuxvisuels.js) — le jeu
+// qui reprend la main après la saison de l'autre ne "verrait" sinon la
+// transition que 2 saisons plus tard (voir skipSeasonRecap sur postZoom).
+export async function postSeasonRecap(channelId, endedSeasonId, newSeasonId, { noPing = false } = {}) {
   const token = process.env.DISCORD_TOKEN;
   const seasonRanking = await computeSeasonRanking(endedSeasonId);
   if (seasonRanking.length === 0) return;
@@ -190,7 +194,7 @@ async function postSeasonRecap(channelId, endedSeasonId, newSeasonId, { noPing =
 
 // `force` ignore le garde-fou anti-double-post (alreadyPostedThisWeek) —
 // utile pour rattraper un créneau manqué à la main, jamais depuis le cron.
-export async function postZoom(channelId, { dryRun = false, noPing = false, force = false } = {}) {
+export async function postZoom(channelId, { dryRun = false, noPing = false, force = false, skipSeasonRecap = false } = {}) {
   if (dryRun) {
     const catalog = await loadZoomCatalog();
     const state = await readState();
@@ -226,7 +230,22 @@ export async function postZoom(channelId, { dryRun = false, noPing = false, forc
 
   const previousState = await readState();
   const newSeasonId = await getCurrentSeasonId();
-  if (previousState?.seasonId != null && newSeasonId != null && previousState.seasonId !== newSeasonId) {
+  // skipSeasonRecap : depuis l'alternance avec Palette (une saison sur deux
+  // — voir backend/services/jeuxvisuels.js), Zoom ne poste plus forcément
+  // CHAQUE saison. Si on se fiait à cette comparaison seule, une reprise
+  // après une saison Palette comparerait previousState.seasonId (vieux d'un
+  // cycle complet) au newSeasonId courant et re-déclencherait à tort un
+  // récap déjà posté en temps voulu par scripts/postJeuxVisuels.js (qui suit
+  // sa PROPRE trace de saison, partagée entre les deux jeux, et passe
+  // skipSeasonRecap:true ici pour rester la SEULE source du récap).
+  // Comportement inchangé pour un appel direct/manuel (skipSeasonRecap reste
+  // false par défaut, scripts/postZoom.js).
+  if (
+    !skipSeasonRecap &&
+    previousState?.seasonId != null &&
+    newSeasonId != null &&
+    previousState.seasonId !== newSeasonId
+  ) {
     await postSeasonRecap(channelId, previousState.seasonId, newSeasonId, { noPing });
   }
 

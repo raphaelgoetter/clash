@@ -1,4 +1,4 @@
-name: Zoom carte — devine les cartes zoomées
+name: Jeux visuels — Zoom carte / Palette (alternance)
 
 permissions:
   contents: read
@@ -10,7 +10,7 @@ on:
   workflow_dispatch: {}
 
 jobs:
-  post-zoom:
+  post-jeux-visuels:
     runs-on: ubuntu-latest
     env:
       CLASH_API_KEY: ${{ secrets.CLASH_API_KEY }}
@@ -32,5 +32,5 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Post partie Zoom carte (salon public)
-        run: npm run zoom:public
+      - name: Post manche Jeux visuels (salon public)
+        run: npm run visuels:public

@@ -842,7 +842,9 @@ Aucune nouvelle variable : Anagram réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISC
 
 ## Jeu Zoom carte (devine les cartes zoomées)
 
-Troisième mini-jeu hebdomadaire indépendant, sur le modèle de Frame (voir [Jeu Frame](#jeu-frame-devine-le-film) pour les mécanismes partagés : Modal `type:9`/`MODAL_SUBMIT type:5`, stockage Upstash Redis et ses pièges, gestion de saison CR). Une manche = une carte de `data/zoom/zoom.json` (base/évoluée/héros mélangées dans le même pool), zoomée à l'extrême sur son icône.
+Troisième mini-jeu hebdomadaire indépendant, sur le modèle de Frame (voir [Jeu Frame](#jeu-frame-devine-le-film) pour les mécanismes partagés : Modal `type:9`/`MODAL_SUBMIT type:5`, stockage Upstash Redis et ses pièges, gestion de saison CR). Une manche = une carte de `data/jeux-visuels/zoom/zoom.json` (base/évoluée/héros mélangées dans le même pool), zoomée à l'extrême sur son icône.
+
+Depuis la saison 137, Zoom carte tourne **en alternance une saison sur deux avec Palette** sous le nom collectif "Jeux visuels" — voir la section dédiée [Jeux visuels](#jeux-visuels-alternance-zoom-carte-et-palette) juste après celle de Palette pour le détail de l'orchestrateur.
 
 > Une version antérieure affichait 2 cartes par manche avec score partiel indépendant ("slots" A/B) — abandonnée après le premier test réel : le roster de 62 cartes est trop petit pour 2 cartes/manche sans épuiser le pool en quelques semaines. Toute trace de `slot`/`entryA`/`entryB` dans du code plus ancien ou des commentaires fait référence à cette version révolue.
 
@@ -860,9 +862,9 @@ Modal à 1 champ, validée par `checkAnswer()` — égalité **stricte** normali
 
 ### Sélection de la manche : progression séquentielle sur un fichier mélangé
 
-Même pattern que Frame/Anagram : `pickNextZoomIndex()` (`backend/services/zoom.js`) avance simplement d'une position dans `data/zoom/zoom.json` (`index+1 % n`) et boucle au début une fois le catalogue épuisé — pas d'état supplémentaire à maintenir en Redis. Le "hasard" ne vient pas d'un tirage effectué au moment de poster, mais du fait que **le fichier lui-même a été mélangé une fois** (un premier essai avait trié `zoom.json` alphabétiquement par `id`, ce qui rendait le jeu totalement prévisible — l'ordre se voyait clairement en test réel). `scripts/generateZoomCatalog.js` préserve cet ordre à chaque régénération (ne retrie jamais alphabétiquement) et insère les cartes nouvellement ajoutées dans un ordre aléatoire plutôt qu'en bloc à la fin. `resetGame()` ne touche pas au fichier : une nouvelle partie repart simplement au début de son ordre actuel.
+Même pattern que Frame/Anagram : `pickNextZoomIndex()` (`backend/services/zoom.js`) avance simplement d'une position dans `data/jeux-visuels/zoom/zoom.json` (`index+1 % n`) et boucle au début une fois le catalogue épuisé — pas d'état supplémentaire à maintenir en Redis. Le "hasard" ne vient pas d'un tirage effectué au moment de poster, mais du fait que **le fichier lui-même a été mélangé une fois** (un premier essai avait trié `zoom.json` alphabétiquement par `id`, ce qui rendait le jeu totalement prévisible — l'ordre se voyait clairement en test réel). `scripts/generateZoomCatalog.js` préserve cet ordre à chaque régénération (ne retrie jamais alphabétiquement) et insère les cartes nouvellement ajoutées dans un ordre aléatoire plutôt qu'en bloc à la fin. `resetGame()` ne touche pas au fichier : une nouvelle partie repart simplement au début de son ordre actuel.
 
-### Données (`data/zoom/zoom.json` + `data/zoom/images/`)
+### Données (`data/jeux-visuels/zoom/zoom.json` + `data/jeux-visuels/zoom/images/`)
 
 Contrairement à Anagram (image CDN résolue à la volée) et comme Frame (image stockée localement), les icônes sont téléchargées **une fois** via `scripts/generateZoomCatalog.js` (usage ponctuel, hors flux hebdomadaire) plutôt que requêtées à chaque manche :
 
@@ -870,13 +872,13 @@ Contrairement à Anagram (image CDN résolue à la volée) et comme Frame (image
 - Noms français : `data/cardNames.json` (source de vérité partagée, voir [Noms français des cartes](#noms-français-des-cartes-datacardnamesjson)) — **jamais** `anagrams.json` directement, pour ne pas dupliquer une donnée corrigeable à un seul endroit. Resynchronisés à chaque exécution du script, même sans retélécharger l'image.
 - Icônes de base : `fetchCards()` (catalogue générique Clash Royale, universel).
 - Icônes évoluées/héros : `fetchPlayer(tag)` d'un compte de référence — **ces variantes ne sont exposées par l'API QUE sur les cartes que CE joueur a personnellement évoluées** (`evolutionLevel > 0`/`>= 2`), ce n'est pas une métadonnée statique par carte comme l'icône de base. Le script filtre via `countEvolved`/`countHeroes` (`backend/services/collectionConstants.js`, même logique que la page Collection).
-- `data/zoom/zoom.json` — un objet par variante jouable (`id`, `cardKey`, `variant: "base"|"evolution"|"hero"`, `answer`, `accept`, `image`, `width`/`height`, `sourceUrl`, `fetchedAt`, et optionnellement `focal`/`zoomStages` pour surcharger le crop par défaut sur une carte précise, réglé à la main après une passe de QA visuelle).
-- `data/zoom/images/*.png` — octets téléchargés, jamais exposés statiquement (seule la route `/api/zoom/image` y donne accès, voir ci-dessous).
+- `data/jeux-visuels/zoom/zoom.json` — un objet par variante jouable (`id`, `cardKey`, `variant: "base"|"evolution"|"hero"`, `answer`, `accept`, `image`, `width`/`height`, `sourceUrl`, `fetchedAt`, et optionnellement `focal`/`zoomStages` pour surcharger le crop par défaut sur une carte précise, réglé à la main après une passe de QA visuelle).
+- `data/jeux-visuels/zoom/images/*.png` — octets téléchargés, jamais exposés statiquement (seule la route `/api/zoom/image` y donne accès, voir ci-dessous).
 - Idempotent et purgé : relancer le script ne re-télécharge que si l'URL source a changé ; toute entrée dont le `cardKey` n'est plus dans le pool source (carte retirée d'`anagrams.json`) est supprimée du catalogue et son image effacée — sûr tant qu'aucune manche n'a encore été postée en production.
 
 ### Synthèse d'image (`backend/services/zoomImage.js`)
 
-Aucune nouvelle dépendance : réutilise `@resvg/resvg-js` (déjà présent, utilisé par `buildWarDecksImage` dans `api/discord/interactions.js`) pour rasteriser un SVG contenant une `<image href="data:...">` en PNG. Contrairement à `buildWarDecksImage` (qui télécharge des icônes distantes à chaque appel), les octets sont lus directement dans `data/zoom/images/` — aucun réseau au moment de servir une manche.
+Aucune nouvelle dépendance : réutilise `@resvg/resvg-js` (déjà présent, utilisé par `buildWarDecksImage` dans `api/discord/interactions.js`) pour rasteriser un SVG contenant une `<image href="data:...">` en PNG. Contrairement à `buildWarDecksImage` (qui télécharge des icônes distantes à chaque appel), les octets sont lus directement dans `data/jeux-visuels/zoom/images/` — aucun réseau au moment de servir une manche.
 
 - `getZoomCardImage(gameId)` — image publique de l'embed, zoom extrême (fixe pour toute la durée de la manche : un embed Discord est partagé par tout le salon, il ne peut pas varier par joueur).
 - `getZoomHintImage(gameId)` — crop dézoomé (indice).
@@ -918,11 +920,13 @@ Miroir de `/frame` (voir [Commande `/frame`](#commande-frame--scores-personnels)
 
 Identique à Frame (voir [Récapitulatif de fin de saison](#récapitulatif-de-fin-de-saison)) : posté juste avant la manche 1 d'une nouvelle saison si `seasonId` a changé, mêmes règles de troncage (20 joueurs max, exclusion des 0 pt). Le libellé de chaque manche (`getZoomRoundLabel`) est directement `entry.answer`.
 
+`postZoom()` accepte un paramètre `skipSeasonRecap` (défaut `false`) : depuis l'alternance avec Palette, Zoom ne poste plus forcément chaque saison — sans ce flag, une reprise après une saison Palette comparerait l'état interne de Zoom (vieux d'un cycle complet) et redéclencherait à tort un récap déjà posté en temps voulu par l'orchestrateur (voir [Jeux visuels](#jeux-visuels-alternance-zoom-carte-et-palette)). `scripts/postZoom.js` (appel direct/manuel) laisse `skipSeasonRecap` à `false` — comportement inchangé.
+
 ### Scripts npm (Zoom carte)
 
 | Commande                  | Effet                                                                                                                                                         |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run zoom:catalog`    | Génère/complète `data/zoom/zoom.json` et télécharge les icônes manquantes dans `data/zoom/images/`. Usage ponctuel, jamais dans le flux hebdomadaire.         |
+| `npm run zoom:catalog`    | Génère/complète `data/jeux-visuels/zoom/zoom.json` et télécharge les icônes manquantes dans `data/jeux-visuels/zoom/images/`. Usage ponctuel, jamais dans le flux hebdomadaire.         |
 | `npm run zoom:test`       | Poste manuellement une nouvelle partie sur le salon de test, **sans ping** (le salon de test ne pingue jamais `@MINI-JEUX`, même sans `--no-ping` explicite). |
 | `npm run zoom:test:dry`   | Aperçu console de la prochaine partie (+ récap de saison éventuel), sans écrire d'état ni poster sur Discord.                                                 |
 | `npm run zoom:public`     | Poste sur le salon public (avec ping) — utilisé par le cron `zoom.yml`.                                                                                       |
@@ -937,15 +941,15 @@ Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHAN
 
 ---
 
-## Jeu Palette [TEST] (devine la couleur dominante d'une carte)
+## Jeu Palette (devine la couleur dominante d'une carte)
 
-Mini-jeu en phase de test (posté uniquement à la main sur le salon de test, `node scripts/postPalette.js` — pas de workflow GitHub Actions pour l'instant). QCM à 4 choix (A/B/C/D), une seule tentative par joueur — pas de Modal (contrairement à Frame/Anagram/Zoom/La Juste Carte) : le mécanisme d'interaction est calqué sur le bouton de vote du Quiz thématique (`quiz_vote:`, `backend/services/quiz.js`/`api/discord/_handlers/quiz.js`) — ACK éphémère immédiat, jamais d'ouverture de formulaire.
+Mini-jeu hebdomadaire QCM à 4 choix (A/B/C/D), une seule tentative par joueur — pas de Modal (contrairement à Frame/Anagram/Zoom/La Juste Carte) : le mécanisme d'interaction est calqué sur le bouton de vote du Quiz thématique (`quiz_vote:`, `backend/services/quiz.js`/`api/discord/_handlers/quiz.js`) — ACK éphémère immédiat, jamais d'ouverture de formulaire.
 
-Prévu pour tourner un jour en alternance saisonnière avec Zoom carte sous un nommage partagé "jeux-visuels" (même principe que l'unification Anagram/Pêle-mêle en "jeux-de-lettres", commit `5473d39a`) — pas encore fait : cette fusion n'aura lieu qu'une fois Palette validé après un test réel, sur le modèle exact suivi par Pêle-mêle avant ce commit. D'ici là, `backend/services/palette.js` est volontairement écrit en parité structurelle stricte avec `zoom.js` (mêmes noms de fonctions, même forme d'état) pour que cette fusion future soit mécanique.
+Validé après une phase de test : depuis la saison 137, Palette tourne **en alternance une saison sur deux avec Zoom carte** sous le nom collectif "Jeux visuels" (même principe que l'unification Anagram/Pêle-mêle en "jeux-de-lettres", commit `5473d39a`) — voir la section [Jeux visuels](#jeux-visuels-alternance-zoom-carte-et-palette) juste après pour le détail de l'orchestrateur. `backend/services/palette.js` a été écrit dès sa conception en parité structurelle stricte avec `zoom.js` (mêmes noms de fonctions, même forme d'état), ce qui a rendu cette unification mécanique.
 
 ### Extraction des couleurs et génération du catalogue
 
-`backend/services/dominantColor.js` (k-means en espace Lab, cadre décoratif de rareté exclu par comparaison inter-cartes, voir les pièges documentés en commentaire dans ce fichier) et `scripts/generatePaletteCatalog.js` (génère `data/palette/palette.json`, télécharge `data/palette/images/` et `data/palette/highlights/`, applique `data/palette/manualOverrides.json` en dernier). Usage ponctuel (`npm run palette:catalog`), jamais dans le flux de manche.
+`backend/services/dominantColor.js` (k-means en espace Lab, cadre décoratif de rareté exclu par comparaison inter-cartes, voir les pièges documentés en commentaire dans ce fichier) et `scripts/generatePaletteCatalog.js` (génère `data/jeux-visuels/palette/palette.json`, télécharge `data/jeux-visuels/palette/images/` et `data/jeux-visuels/palette/highlights/`, applique `data/jeux-visuels/palette/manualOverrides.json` en dernier). Usage ponctuel (`npm run palette:catalog`), jamais dans le flux de manche.
 
 ### Les 4 propositions : mélange par manche, pas par carte
 
@@ -961,42 +965,88 @@ Le fichier généré par `generatePaletteCatalog.js` est trié dans l'ordre de `
 
 Même technique que `zoomImage.js` : SVG rastérisé en PNG via `@resvg/resvg-js`. Contrairement à Zoom (aucun texte, juste un crop d'image), Palette affiche du texte (lettres, pourcentages) → **police embarquée obligatoire** (`data/fonts/Inter-Bold.ttf`, `loadSystemFonts: false`), même piège que documenté pour Pêle-mêle : resvg n'a aucune police système sur le runtime serverless Vercel, le texte resterait invisible sans lever d'erreur.
 
-Deux répertoires source distincts à ne jamais confondre (même nom de fichier dans les deux) : `data/palette/images/` (carte brute, question) et `data/palette/highlights/` (voile déjà posé sur la couleur dominante, résultat) — donner l'un à la place de l'autre spoilerait la réponse directement dans la question.
+Deux répertoires source distincts à ne jamais confondre (même nom de fichier dans les deux) : `data/jeux-visuels/palette/images/` (carte brute, question) et `data/jeux-visuels/palette/highlights/` (voile déjà posé sur la couleur dominante, résultat) — donner l'un à la place de l'autre spoilerait la réponse directement dans la question.
 
 ### Barème (Palette)
 
-`computeScore(correct, elapsedMs)` (`backend/services/palette.js`) : 10 pts si répondu dans les 30 premières secondes, -1 pt par tranche de 30s entamée, plancher à 5 pts pour toute bonne réponse. 0 pt si incorrect. Pas de pénalité de tentative (impossible techniquement : un seul clic verrouille la réponse, correcte ou non, contrairement à Zoom qui autorise plusieurs essais).
+`computeScore(correct)` (`backend/services/palette.js`) : **1 pt** si correct, **0** sinon — volontairement plat (pas de bonus de rapidité ni de pénalité de tentative comme Zoom), décision explicite après le 1er test réel. Pas de pénalité de tentative possible techniquement : un seul clic verrouille la réponse, correcte ou non, il n'y a jamais de "tentative incorrecte suivie d'une autre" à pénaliser.
 
 ### Réponse à essai unique
 
-`recordAnswer()` verrouille via `HSETNX` (pas une lecture-puis-écriture comme `markSolved()` de Zoom) : chaque clic est définitif, correct ou non — un double-clic quasi simultané (double-tap mobile, lag réseau) reste sûr sans race condition.
+`recordAnswer()` verrouille via `HSETNX` (pas une lecture-puis-écriture comme `markSolved()` de Zoom) : chaque clic est définitif, correct ou non — un double-clic quasi simultané (double-tap mobile, lag réseau) reste sûr sans race condition. Contrairement à Zoom (qui n'archive que les réponses correctes), `archiveAnswer()` archive **tous** les participants d'une manche — un score de 0 n'affecte pas le classement mais garde une trace de participation.
+
+### Récapitulatif de fin de saison (Palette)
+
+Identique à Zoom dans sa forme (voir [Récapitulatif de fin de saison](#récapitulatif-de-fin-de-saison)) mais **pas de `skipSeasonRecap` sur `postPalette()`** (contrairement à Zoom/Anagram) : ce jeu n'a jamais eu de logique de récap interne à suppléer — `postSeasonRecap()` n'est appelée QUE par l'orchestrateur (`scripts/postJeuxVisuels.js`), jamais depuis `postPalette()` lui-même. Même position que Pêle-mêle avant son unification avec Anagram (`5473d39a`). Le libellé de chaque manche (`getPaletteRoundLabel`) est `entry.fr` (nom français de la carte).
 
 ### Stockage — Upstash Redis (`palette:*`)
 
-| Clé Redis                       | Type          | Contenu                                                    |
-| -------------------------------- | ------------- | ----------------------------------------------------------- |
-| `palette:state`                  | STRING (JSON) | Manche active (`gameId`, `mancheNumber`, `startedAt`, ...) |
-| `palette:order:<gameId>`         | STRING (JSON) | Permutation A→D → index couleur, permanent (anti-spoiler)  |
-| `palette:play_order`             | STRING (JSON) | Ordre de tirage des cartes jouables, permanent             |
-| `palette:participants:<gameId>`  | HASH          | `discordId → { letter, correct, score, answeredAt }`       |
-| `palette:manche_seq`             | STRING        | Compteur global (affichage "Manche #N", pas de saison)     |
+| Clé Redis                            | Type          | Contenu                                                      |
+| ------------------------------------- | ------------- | -------------------------------------------------------------- |
+| `palette:state`                       | STRING (JSON) | Manche active (`gameId`, `seasonId`, `seasonManche`, ...)     |
+| `palette:order:<gameId>`              | STRING (JSON) | Permutation A→D → index couleur, permanent (anti-spoiler)    |
+| `palette:play_order`                  | STRING (JSON) | Ordre de tirage des cartes jouables, permanent                |
+| `palette:participants:<gameId>`       | HASH          | `discordId → { letter, correct, score, answeredAt }`         |
+| `palette:season:<seasonId>`           | ZSET          | Classement de saison (score cumulé)                            |
+| `palette:season:<seasonId>:pseudos`   | HASH          | Pseudos figés pour le classement                                |
+| `palette:season:<seasonId>:manche_seq`/`manche_numbers` | STRING/HASH | Numérotation des manches de la saison         |
+| `palette:archived:<seasonId>`         | HASH          | Un champ par manche répondue (`<gameId>:<discordId>`)        |
 
-### Ce qui n'est PAS construit pour l'instant (décision explicite)
+### Commande `/palette` — scores personnels
 
-Pas de commande `/palette`, pas de classement de saison, pas d'archive, pas de DM de fin de manche, pas de workflow `.github/workflows/palette.yml` (publication manuelle uniquement). À réévaluer une fois le jeu validé en conditions réelles, sur le modèle de Zoom.
+Miroir de `/zoom` (voir [Commande `/zoom`](#commande-zoom--scores-personnels)), adapté au modèle "essai unique" : pas de distinction solved/en cours ni de tentatives/indice à afficher — un joueur a répondu (correct ou non) ou n'a pas encore répondu à la manche en cours, point final. `handlePaletteStatsCommand` (`api/discord/_handlers/palette.js`), bouton "🔄 Rafraîchir" (`custom_id: palette_stats_refresh`, réponse `type: 6` pour éditer le même message éphémère).
+
+### Ce qui n'est PAS construit (décision explicite)
+
+Pas de DM de fin de manche, pas de bouton Journal. À réévaluer si l'usage le justifie, sur le modèle de Zoom (DM) ou Pêle-mêle (Journal).
 
 ### Scripts npm (Palette)
 
-| Commande                   | Effet                                                          |
-| --------------------------- | --------------------------------------------------------------- |
-| `npm run palette:catalog`  | Génère/complète `data/palette/palette.json` + images.          |
-| `npm run palette:test`     | Poste une manche sur le salon de test (`--force` implicite).   |
-| `npm run palette:test:dry` | Aperçu console, sans écrire ni poster.                          |
-| `npm run palette:reset`    | Remet le jeu à zéro (manche active + participants). Destructif. |
+| Commande                    | Effet                                                                                |
+| ---------------------------- | ---------------------------------------------------------------------------------------- |
+| `npm run palette:catalog`   | Génère/complète `data/jeux-visuels/palette/palette.json` + images. Usage ponctuel.       |
+| `npm run palette:test`      | Poste une manche sur le salon de test, **sans ping** (`--force` implicite).             |
+| `npm run palette:test:dry`  | Aperçu console, sans écrire ni poster.                                                    |
+| `npm run palette:public`    | Poste sur le salon public (avec ping) — utilisé par l'orchestrateur `visuels:public`.   |
+| `npm run palette:public:dry`| Équivalent dry-run de `palette:public`.                                                  |
+| `npm run palette:reset`     | Remet le jeu à zéro (manche active, participants, classements, archives). **Destructif**. |
 
 ### Variables d'environnement (Palette)
 
-Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST` et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (espace de clés `palette:*` séparé).
+Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (espace de clés `palette:*` séparé).
+
+---
+
+## Jeux visuels (alternance Zoom carte et Palette)
+
+Zoom carte et Palette alternent **une saison Clash Royale sur deux** sous le nom collectif "Jeux visuels" — même principe que l'unification d'Anagram et Pêle-mêle en "jeux-de-lettres" (`5473d39a`) : pas de tronc commun d'affichage ni de logique de jeu fusionnée, chaque jeu garde son propre service (`zoom.js`/`palette.js`) et son propre handler Discord (`_handlers/zoom.js`/`_handlers/palette.js`), inchangés. Contrairement à jeux-de-lettres, les **ressources** (`data/jeux-visuels/zoom/` et `data/jeux-visuels/palette/`) sont bien regroupées sous un dossier parent commun — décision explicite pour ce nommage précis.
+
+### Tronc commun (`backend/services/jeuxvisuels.js`)
+
+- `getCurrentSeasonId()` dupliquée (convention du repo, voir la remarque équivalente dans `jeuxdelettres.js`) — utilisée uniquement pour la décision d'alternance elle-même, pas pour l'état interne d'un jeu précis.
+- `ACTIVE_GAME_REFERENCE_SEASON = 136` — saison technique CR en cours au moment de la mise en place de l'alternance (Saison publique 87, vérifiée le 2026-09-19 — la même saison de référence que `jeuxdelettres.js`, coïncidence de calendrier). Zoom termine cette saison, Palette prend le relais à la 137.
+- `getActiveVisualGame(seasonId)` — fonction pure : écart pair par rapport à la référence → `"zoom"`, impair → `"palette"`.
+- `getLastKnownSeasonId()`/`setLastKnownSeasonId()` — suivi de saison PARTAGÉ (clé `jeuxvisuels:last_season_id`), indépendant de `zoom:state`/`palette:state` : le jeu qui reprend la main après la saison de l'autre ne "verrait" sinon la transition que 2 saisons plus tard.
+
+Contrairement à `jeuxdelettres.js` (Anagram/Pêle-mêle, samedi, 2 créneaux aléatoires — héritage de l'historique 7-créneaux d'Anagram), pas de planification multi-créneaux ici : Zoom a toujours eu un créneau fixe unique (vendredi 18h UTC), simple gating jour dans l'orchestrateur.
+
+### Orchestrateur (`scripts/postJeuxVisuels.js`)
+
+Seul point d'entrée en production (remplace `.github/workflows/zoom.yml`, désormais `.github/workflows/jeux-visuels.yml`, même cron `"0 18 * * 5"`) :
+
+1. Détecte un changement de saison (`getLastKnownSeasonId` vs saison courante) → poste le récap de fin de saison du jeu qui vient de se terminer (`postZoomSeasonRecap`/`postPaletteSeasonRecap`), quel qu'il soit.
+2. Gating (sauf `--force`/`--dry-run`) : vendredi uniquement, puis `alreadyPostedThisWeek()` du jeu actif.
+3. Délègue au jeu actif (`postZoom`/`postPalette`) avec `force: true, skipSeasonRecap: true` — sans effet pour Palette, qui n'a pas ce paramètre (voir la section Palette ci-dessus).
+
+`scripts/postZoom.js`/`scripts/postPalette.js` restent utilisables directement (test/rattrapage manuel d'un jeu précis, hors orchestrateur), comme `postPeleMele.js` pour jeux-de-lettres.
+
+### Historique fusionné (`backend/services/miniJeuxHistory.js`)
+
+Entrée `"visuels"` (🎨 Jeux visuels) fusionnant `getAllArchivedResults()` de `zoom.js` et `palette.js` — sûr car les deux jeux ne sont jamais actifs la même saison (résultats archivés qui ne se chevauchent jamais), même principe que l'entrée `"lettres"`.
+
+### Variables d'environnement et secrets
+
+Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN`. Le workflow `.github/workflows/jeux-visuels.yml` réutilise les mêmes secrets GitHub Actions que `zoom.yml` (déjà configurés, rien à ajouter).
 
 ---
 

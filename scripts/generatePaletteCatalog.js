@@ -47,7 +47,7 @@ import { extractDominantColors, buildFrameMask, buildHighlightOverlay } from "..
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CARD_NAMES_PATH = path.resolve(__dirname, "..", "data", "cardNames.json");
-const PALETTE_DIR = path.resolve(__dirname, "..", "data", "palette");
+const PALETTE_DIR = path.resolve(__dirname, "..", "data", "jeux-visuels", "palette");
 const PALETTE_JSON_PATH = path.join(PALETTE_DIR, "palette.json");
 const PALETTE_IMAGES_DIR = path.join(PALETTE_DIR, "images");
 const PALETTE_HIGHLIGHTS_DIR = path.join(PALETTE_DIR, "highlights");

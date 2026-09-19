@@ -14,6 +14,7 @@ import { getAllArchivedResults as getFrameResults } from "./frames.js";
 import { getAllArchivedResults as getAnagramResults } from "./anagrams.js";
 import { getAllArchivedResults as getPeleMeleResults } from "./pelemele.js";
 import { getAllArchivedResults as getZoomResults } from "./zoom.js";
+import { getAllArchivedResults as getPaletteResults } from "./palette.js";
 import { getAllArchivedResults as getBlindRoyaleResults } from "./blindroyale.js";
 import { getAllArchivedResults as getLaJusteCarteResults } from "./lajustecarte.js";
 import { listManches as listQuizManches } from "./quiz.js";
@@ -25,7 +26,7 @@ import { listManches as listMarioClashManches } from "./marioclash.js";
 const GAME_ORDER = [
   "frame",
   "lettres",
-  "zoom",
+  "visuels",
   "blindroyale",
   "lajustecarte",
   "quiz",
@@ -36,12 +37,13 @@ const GAME_ORDER = [
 // Jeux réguliers : une entrée archivée = un joueur ayant résolu une manche.
 // Le score se cumule sur toute la saison mini-jeux.
 //
-// "lettres" fusionne Anagram et Pêle-mêle : depuis leur alternance (une
-// saison Clash Royale sur deux, voir jeuxdelettres.js), les deux jeux ne
-// sont jamais actifs la même saison — leurs résultats archivés se
-// concatènent donc sans jamais se chevaucher, et apparaissent comme UNE
-// seule catégorie "Jeux de lettres" plutôt que deux entrées dont l'une
-// serait toujours vide pour une saison donnée.
+// "lettres" fusionne Anagram et Pêle-mêle (voir jeuxdelettres.js), "visuels"
+// fusionne Zoom carte et Palette (voir jeuxvisuels.js) : sous leur
+// alternance respective (une saison Clash Royale sur deux), les deux jeux
+// d'une même paire ne sont jamais actifs la même saison — leurs résultats
+// archivés se concatènent donc sans jamais se chevaucher, et apparaissent
+// comme UNE seule catégorie plutôt que deux entrées dont l'une serait
+// toujours vide pour une saison donnée.
 const SCORE_GAMES = [
   { key: "frame", label: "🖼️ Frame", fetch: getFrameResults },
   {
@@ -49,7 +51,11 @@ const SCORE_GAMES = [
     label: "🔤 Jeux de lettres",
     fetch: async () => [...(await getAnagramResults()), ...(await getPeleMeleResults())],
   },
-  { key: "zoom", label: "🔍 Zoom", fetch: getZoomResults },
+  {
+    key: "visuels",
+    label: "🎨 Jeux visuels",
+    fetch: async () => [...(await getZoomResults()), ...(await getPaletteResults())],
+  },
   { key: "blindroyale", label: "🙈 Blind Royale", fetch: getBlindRoyaleResults },
   { key: "lajustecarte", label: "🃏 La Juste Carte", fetch: getLaJusteCarteResults },
 ];

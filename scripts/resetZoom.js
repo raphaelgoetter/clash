@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // resetZoom.js
 // Remet à zéro le jeu Zoom carte : plus de partie active (la prochaine
-// partie repart au début du catalogue data/zoom/zoom.json) et
+// partie repart au début du catalogue data/jeux-visuels/zoom/zoom.json) et
 // historique/scores effacés.
 //
 // Usage : node scripts/resetZoom.js

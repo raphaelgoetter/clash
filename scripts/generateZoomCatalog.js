@@ -53,7 +53,7 @@ import { countEvolved, countHeroes } from "../backend/services/collectionConstan
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ANAGRAMS_JSON_PATH = path.resolve(__dirname, "..", "data", "anagrams", "anagrams.json");
 const CARD_NAMES_PATH = path.resolve(__dirname, "..", "data", "cardNames.json");
-const ZOOM_DIR = path.resolve(__dirname, "..", "data", "zoom");
+const ZOOM_DIR = path.resolve(__dirname, "..", "data", "jeux-visuels", "zoom");
 const ZOOM_JSON_PATH = path.join(ZOOM_DIR, "zoom.json");
 const ZOOM_IMAGES_DIR = path.join(ZOOM_DIR, "images");
 

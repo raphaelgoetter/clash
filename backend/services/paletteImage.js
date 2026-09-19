@@ -25,8 +25,8 @@ import { Resvg } from "@resvg/resvg-js";
 import { loadPaletteCatalog, resolvePaletteEntry, isGamePosted, readRoundOrder, LETTERS } from "./palette.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const IMAGES_DIR = path.resolve(__dirname, "..", "..", "data", "palette", "images");
-const HIGHLIGHTS_DIR = path.resolve(__dirname, "..", "..", "data", "palette", "highlights");
+const IMAGES_DIR = path.resolve(__dirname, "..", "..", "data", "jeux-visuels", "palette", "images");
+const HIGHLIGHTS_DIR = path.resolve(__dirname, "..", "..", "data", "jeux-visuels", "palette", "highlights");
 const FONT_PATH = path.resolve(__dirname, "..", "..", "data", "fonts", "Inter-Bold.ttf");
 const FONT_FAMILY = "Inter";
 

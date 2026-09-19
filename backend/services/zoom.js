@@ -25,7 +25,7 @@ import { getOrSet } from "./cache.js";
 import { normalizeAnswer } from "./textNormalize.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ZOOM_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "zoom", "zoom.json");
+const ZOOM_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "jeux-visuels", "zoom", "zoom.json");
 
 const FRIDAY = 5;
 
