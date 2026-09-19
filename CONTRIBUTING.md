@@ -1637,6 +1637,8 @@ Titre `🃏 Blackjack — Jour X/7`. Rang+couleur affichés en titre Markdown (`
 
 Composants : `[🃏 Jouer]` (vert), `[📜 Journal]`, `[📖 Règles]`. Le bouton **Journal** (lecture seule) affiche la main du jour du joueur, le classement cumulé et les 10 derniers jours de l'historique — accessible à tout moment, sans limite de clics.
 
+**Départage des ex-æquo au classement** (16/09, retour utilisateur — beaucoup d'ex-æquo au fil des jours, non départagés) : `buildRanking(points, usernames, cardsDrawn)` trie par points décroissants puis, à points égaux, par nombre de cartes piochées croissant (moins de cartes piochées = mieux classé). `sumCardsPerPlayer()` cumule les cartes de tous les jours déjà résolus (`blackjack:historique`) — le jour actif, pas encore clôturé, n'est pas compté, comme les points eux-mêmes. Le critère de départage n'est jamais affiché dans les embeds (juste utilisé pour l'ordre), mais apparaît dans les tableaux `blackjack:status`/`blackjack:scores` (colonne `Cartes`) pour vérification. `blackjackDuel.js` réutilise `buildRanking()` sans ce 3ᵉ argument (aucun historique dans le duel) — les ex-æquo y gardent l'ordre d'origine, non départagé.
+
 ### Manches (comparaison entre parties) — Blackjack
 
 Comme Tamagoshi/Robinson/Boss Raid, Blackjack est destiné à être rejoué plusieurs fois dans l'année — chaque partie complète de 7 jours est une **manche**. `blackjack:manches` (HASH permanent, jamais nettoyé par `resetBlackjack()`) archive le classement final de chaque manche terminée, indexé par un numéro strictement croissant (`blackjack:manche_seq`, `INCR` atomique) : `archiveManche({ ranking, winners, maxPoints, resolvedAt })`. L'embed de révélation finale liste les vainqueurs des manches précédentes.

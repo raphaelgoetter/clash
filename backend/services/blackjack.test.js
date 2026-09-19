@@ -11,6 +11,7 @@ import {
   pointsForResult,
   resolveDay,
   buildRanking,
+  addResultsCardsToTotals,
   isTooSoonSinceLastClosure,
 } from "./blackjack.js";
 
@@ -129,6 +130,23 @@ async function main() {
   // ── buildRanking — trié par points décroissants ──
   const ranking = buildRanking({ x: 1, y: 3, z: 0 });
   assert.deepStrictEqual(ranking.map((r) => r.discordId), ["y", "x", "z"]);
+
+  // ── buildRanking — à points égaux, moins de cartes piochées = mieux classé ──
+  {
+    const tied = buildRanking({ a: 4, b: 4, c: 4 }, {}, { a: 8, b: 5, c: 6 });
+    assert.deepStrictEqual(tied.map((r) => r.discordId), ["b", "c", "a"]);
+  }
+
+  // ── addResultsCardsToTotals — cumule les cartes de plusieurs jours ──
+  {
+    const totals = {};
+    addResultsCardsToTotals(totals, [
+      { discordId: "a", cards: [1, 2] },
+      { discordId: "b", cards: [1, 2, 3] },
+    ]);
+    addResultsCardsToTotals(totals, [{ discordId: "a", cards: [1, 2, 3, 4] }]);
+    assert.deepStrictEqual(totals, { a: 6, b: 3 });
+  }
 
   // ── isTooSoonSinceLastClosure — garde-fou anti-double-avancée ──
   const now = Date.now();

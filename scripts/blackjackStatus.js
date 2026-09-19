@@ -16,6 +16,7 @@ import {
   listHands,
   readPoints,
   buildRanking,
+  sumCardsPerPlayer,
   compareToDealer,
 } from "../backend/services/blackjack.js";
 import { resolveDisplayName } from "../backend/services/discordUsers.js";
@@ -62,8 +63,8 @@ function classifyHand(hand, dealer) {
     console.log(`\nTotal : ${entries.length} joueur${entries.length > 1 ? "s" : ""} aujourd'hui.\n`);
   }
 
-  const points = await readPoints();
-  const ranking = buildRanking(points);
+  const [points, cardsDrawn] = await Promise.all([readPoints(), sumCardsPerPlayer()]);
+  const ranking = buildRanking(points, {}, cardsDrawn);
   if (ranking.length) {
     console.log("Classement cumulé :");
     const rows = await Promise.all(
@@ -71,6 +72,7 @@ function classifyHand(hand, dealer) {
         "#": i + 1,
         Joueur: await resolveDisplayName(r.discordId, r.username),
         Points: r.points,
+        Cartes: r.cards,
       })),
     );
     console.table(rows);

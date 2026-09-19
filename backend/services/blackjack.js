@@ -335,10 +335,21 @@ export async function readUsername(discordId) {
 // Classement trié par points décroissants — les usernames stockés ne sont
 // qu'un repli d'affichage (voir resolveDisplayName côté handler), jamais la
 // source de vérité du pseudo actuel.
-export function buildRanking(points, usernames = {}) {
+//
+// À points égaux, départage par nombre de cartes piochées sur la manche
+// (16/09, retour utilisateur) : moins de cartes piochées = mieux classé
+// (main jugée "meilleure" — plus proche de 21 dès le départ). `cardsDrawn`
+// est optionnel (défaut : aucun départage, ordre stable) — voir
+// sumCardsPerPlayer() ci-dessous pour le calculer.
+export function buildRanking(points, usernames = {}, cardsDrawn = {}) {
   return Object.entries(points)
-    .map(([discordId, score]) => ({ discordId, username: usernames[discordId] || null, points: score }))
-    .sort((a, b) => b.points - a.points);
+    .map(([discordId, score]) => ({
+      discordId,
+      username: usernames[discordId] || null,
+      points: score,
+      cards: cardsDrawn[discordId] ?? 0,
+    }))
+    .sort((a, b) => b.points - a.points || a.cards - b.cards);
 }
 
 // ── Historique (bilans quotidiens) ────────────────────────────────
@@ -357,6 +368,30 @@ export async function listHistorique({ limit = 10 } = {}) {
   return Object.values(all)
     .sort((a, b) => b.jour - a.jour)
     .slice(0, limit);
+}
+
+// Total de cartes piochées par joueur sur tous les jours déjà résolus de la
+// manche en cours — utilisé uniquement pour départager les ex-æquo au
+// classement (voir buildRanking). Ne compte que les jours CLÔTURÉS
+// (historique) : le jour actif, pas encore résolu, n'est pas inclus, comme
+// les points eux-mêmes.
+export async function sumCardsPerPlayer() {
+  const all = await hgetallJson(HISTORIQUE_KEY);
+  const totals = {};
+  for (const entry of Object.values(all)) {
+    addResultsCardsToTotals(totals, entry.results ?? []);
+  }
+  return totals;
+}
+
+// Ajoute les cartes d'un jour aux totaux déjà lus — muté sur place,
+// réutilisé pour projeter --dry-run le jour en cours de résolution avant
+// qu'il ne soit écrit dans l'historique (voir postBlackjack).
+export function addResultsCardsToTotals(totals, results) {
+  for (const r of results) {
+    totals[r.discordId] = (totals[r.discordId] || 0) + (r.cards?.length || 0);
+  }
+  return totals;
 }
 
 // ── Manches (bilans de fin de partie) ────────────────────────────
