@@ -7,7 +7,9 @@
 //
 // Pour chaque carte, calcule ses 4 couleurs dominantes (backend/services/
 // dominantColor.js) et marque la carte "playable" ou non (trop facile /
-// trop monochrome — voir ce module pour le détail des critères).
+// trop monochrome — voir ce module pour le détail des critères). Le cadre
+// décoratif de rareté (partagé par toutes les cartes, voir buildFrameMask
+// dans dominantColor.js) est détecté et exclu avant l'extraction.
 //
 // Source des cartes : data/cardNames.json (les 123 cartes, source de
 // vérité partagée entre tous les mini-jeux — contrairement à Zoom qui ne
@@ -32,7 +34,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { PNG } from "pngjs";
 import { fetchCards } from "../backend/services/clashApi.js";
-import { extractDominantColors } from "../backend/services/dominantColor.js";
+import { extractDominantColors, buildFrameMask } from "../backend/services/dominantColor.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CARD_NAMES_PATH = path.resolve(__dirname, "..", "data", "cardNames.json");
@@ -74,7 +76,10 @@ async function main() {
 
   await fs.mkdir(PALETTE_IMAGES_DIR, { recursive: true });
 
-  const nextCatalog = [];
+  // Phase 1 : résoudre et télécharger (ou réutiliser) l'image de chaque carte,
+  // sans encore calculer ses couleurs — il faut d'abord regrouper les buffers
+  // par rareté pour construire le masque de cadre (voir phase 2).
+  const resolved = [];
   const keptIds = new Set();
   let downloaded = 0;
   let unchanged = 0;
@@ -117,26 +122,54 @@ async function main() {
       }
     }
 
-    const extraction = extractDominantColors(buffer);
-    if (!extraction) {
-      console.warn(`  ⚠️  ${id} : pas assez de pixels exploitables — carte ignorée.`);
-      skipped += 1;
-      continue;
-    }
-
-    const { width, height } = PNG.sync.read(buffer);
-    const { colors, isTooEasy, isMonochrome } = extraction;
-
-    nextCatalog.push({
+    resolved.push({
       id,
       cardKey,
       rarity,
       fr,
-      image: filename,
+      filename,
+      sourceUrl,
+      buffer,
+      fetchedAt: existing?.sourceUrl === sourceUrl ? existing.fetchedAt : new Date().toISOString(),
+    });
+  }
+
+  // Phase 2 : un cadre partagé par rareté (voir dominantColor.js) — construit
+  // par comparaison de toutes les cartes de cette rareté entre elles.
+  const buffersByRarity = new Map();
+  for (const card of resolved) {
+    const list = buffersByRarity.get(card.rarity) ?? [];
+    list.push(card.buffer);
+    buffersByRarity.set(card.rarity, list);
+  }
+  const frameMaskByRarity = new Map();
+  for (const [rarity, buffers] of buffersByRarity) {
+    frameMaskByRarity.set(rarity, buildFrameMask(buffers));
+  }
+
+  // Phase 3 : extraction des couleurs dominantes, cadre exclu.
+  const nextCatalog = [];
+  for (const card of resolved) {
+    const extraction = extractDominantColors(card.buffer, { frameMask: frameMaskByRarity.get(card.rarity) });
+    if (!extraction) {
+      console.warn(`  ⚠️  ${card.id} : pas assez de pixels exploitables — carte ignorée.`);
+      skipped += 1;
+      continue;
+    }
+
+    const { width, height } = PNG.sync.read(card.buffer);
+    const { colors, isTooEasy, isMonochrome } = extraction;
+
+    nextCatalog.push({
+      id: card.id,
+      cardKey: card.cardKey,
+      rarity: card.rarity,
+      fr: card.fr,
+      image: card.filename,
       width,
       height,
-      sourceUrl,
-      fetchedAt: existing?.sourceUrl === sourceUrl ? existing.fetchedAt : new Date().toISOString(),
+      sourceUrl: card.sourceUrl,
+      fetchedAt: card.fetchedAt,
       colors,
       correctHex: colors[0].hex,
       playable: !isTooEasy && !isMonochrome,

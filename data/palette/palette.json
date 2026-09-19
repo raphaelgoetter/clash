@@ -11,23 +11,23 @@
     "fetchedAt": "2026-09-19T09:41:32.461Z",
     "colors": [
       {
-        "hex": "#414971",
-        "share": 0.16361048840079595
+        "hex": "#6942A5",
+        "share": 0.3558116883116883
       },
       {
-        "hex": "#7885A7",
-        "share": 0.08922949044104682
+        "hex": "#B36B45",
+        "share": 0.31535714285714284
       },
       {
-        "hex": "#8755DA",
-        "share": 0.07150953376489257
+        "hex": "#8A8185",
+        "share": 0.2786363636363636
       },
       {
-        "hex": "#8B4618",
-        "share": 0.07103095639908315
+        "hex": "#ECC340",
+        "share": 0.050194805194805195
       }
     ],
-    "correctHex": "#414971",
+    "correctHex": "#6942A5",
     "playable": true,
     "excludedReason": null
   },
@@ -43,23 +43,23 @@
     "fetchedAt": "2026-09-19T09:41:32.508Z",
     "colors": [
       {
-        "hex": "#552B2A",
-        "share": 0.16578381185547889
+        "hex": "#7C3638",
+        "share": 0.3491804044272171
       },
       {
-        "hex": "#99473E",
-        "share": 0.11210030417686773
+        "hex": "#C84596",
+        "share": 0.2781954887218045
       },
       {
-        "hex": "#DE3FA1",
-        "share": 0.09985903998812969
+        "hex": "#575E67",
+        "share": 0.1994115724092841
       },
       {
-        "hex": "#626B71",
-        "share": 0.07515394317085837
+        "hex": "#CEA487",
+        "share": 0.1732125344416943
       }
     ],
-    "correctHex": "#552B2A",
+    "correctHex": "#7C3638",
     "playable": true,
     "excludedReason": null
   },
@@ -75,25 +75,25 @@
     "fetchedAt": "2026-09-19T09:41:32.545Z",
     "colors": [
       {
-        "hex": "#84C2F0",
-        "share": 0.4022449734797089
+        "hex": "#A2C9EA",
+        "share": 0.7864827309582133
       },
       {
-        "hex": "#C2D8EA",
-        "share": 0.3003577155544591
+        "hex": "#995E5B",
+        "share": 0.08335840245247611
       },
       {
-        "hex": "#8E9CB1",
-        "share": 0.047202006496443405
+        "hex": "#E1425B",
+        "share": 0.06601057200567279
       },
       {
-        "hex": "#875956",
-        "share": 0.045050230938969066
+        "hex": "#6C6974",
+        "share": 0.06414829458363774
       }
     ],
-    "correctHex": "#84C2F0",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#A2C9EA",
+    "playable": false,
+    "excludedReason": "top1>60%"
   },
   {
     "id": "baby-dragon",
@@ -107,23 +107,23 @@
     "fetchedAt": "2026-09-19T09:41:32.582Z",
     "colors": [
       {
-        "hex": "#789FB6",
-        "share": 0.2126655805057732
+        "hex": "#70A4B6",
+        "share": 0.3656101637259107
       },
       {
-        "hex": "#6EC568",
-        "share": 0.1866827229581356
+        "hex": "#75CD78",
+        "share": 0.3591912797834736
       },
       {
-        "hex": "#266F4A",
-        "share": 0.11407522844797054
+        "hex": "#2D6E4B",
+        "share": 0.21269578335527192
       },
       {
-        "hex": "#353535",
-        "share": 0.05566338457179287
+        "hex": "#625952",
+        "share": 0.06250277313534379
       }
     ],
-    "correctHex": "#789FB6",
+    "correctHex": "#70A4B6",
     "playable": true,
     "excludedReason": null
   },
@@ -139,23 +139,23 @@
     "fetchedAt": "2026-09-19T09:41:32.621Z",
     "colors": [
       {
-        "hex": "#3D506A",
-        "share": 0.22555672369301347
+        "hex": "#B2CEC3",
+        "share": 0.34004098593954574
       },
       {
-        "hex": "#A5CAC4",
-        "share": 0.2194808918501932
+        "hex": "#465A76",
+        "share": 0.33915864974099164
       },
       {
-        "hex": "#7F9D7E",
-        "share": 0.08959462596086891
+        "hex": "#865F48",
+        "share": 0.21348266636306712
       },
       {
-        "hex": "#D7E5CC",
-        "share": 0.07707431629824825
+        "hex": "#99AB7C",
+        "share": 0.10731769795639551
       }
     ],
-    "correctHex": "#3D506A",
+    "correctHex": "#B2CEC3",
     "playable": true,
     "excludedReason": null
   },
@@ -171,25 +171,25 @@
     "fetchedAt": "2026-09-19T09:41:32.664Z",
     "colors": [
       {
-        "hex": "#303338",
-        "share": 0.26390317996962126
+        "hex": "#504640",
+        "share": 0.37571682815898755
       },
       {
-        "hex": "#67605D",
-        "share": 0.17838535286719912
+        "hex": "#C4B7AD",
+        "share": 0.3693230505569837
       },
       {
-        "hex": "#D4CBC3",
-        "share": 0.10805690300031032
+        "hex": "#CC845E",
+        "share": 0.24520466679849715
       },
       {
-        "hex": "#B2755B",
-        "share": 0.08484818789096314
+        "hex": "#4E9170",
+        "share": 0.009755454485531606
       }
     ],
-    "correctHex": "#303338",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#504640",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "barbarian-barrel",
@@ -203,25 +203,25 @@
     "fetchedAt": "2026-09-19T09:41:32.702Z",
     "colors": [
       {
-        "hex": "#454240",
-        "share": 0.24788002840553072
+        "hex": "#554941",
+        "share": 0.4377787138852171
       },
       {
-        "hex": "#775030",
-        "share": 0.08531406213013631
+        "hex": "#9BB9CB",
+        "share": 0.25549438577633166
       },
       {
-        "hex": "#9F754D",
-        "share": 0.07087458401214197
+        "hex": "#C39360",
+        "share": 0.23417050390017866
       },
       {
-        "hex": "#636B6D",
-        "share": 0.0684935321720484
+        "hex": "#FADA4B",
+        "share": 0.0725563964382726
       }
     ],
-    "correctHex": "#454240",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#554941",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "barbarian-hut",
@@ -235,23 +235,23 @@
     "fetchedAt": "2026-09-19T09:41:32.742Z",
     "colors": [
       {
-        "hex": "#58753B",
-        "share": 0.11624594228108863
+        "hex": "#9AA2B1",
+        "share": 0.37057407064388814
       },
       {
-        "hex": "#EDA666",
-        "share": 0.0996452492158501
+        "hex": "#727F4E",
+        "share": 0.35842013023096764
       },
       {
-        "hex": "#92A763",
-        "share": 0.09367338273363558
+        "hex": "#C0844E",
+        "share": 0.2631121496658735
       },
       {
-        "hex": "#8C5E3A",
-        "share": 0.08838636332506951
+        "hex": "#DC28DE",
+        "share": 0.007893649459270763
       }
     ],
-    "correctHex": "#58753B",
+    "correctHex": "#9AA2B1",
     "playable": true,
     "excludedReason": null
   },
@@ -267,23 +267,23 @@
     "fetchedAt": "2026-09-19T09:41:32.779Z",
     "colors": [
       {
-        "hex": "#E5AC22",
-        "share": 0.16818923795068588
+        "hex": "#944836",
+        "share": 0.3156971251180996
       },
       {
-        "hex": "#93493C",
-        "share": 0.13356625332913313
+        "hex": "#E2A928",
+        "share": 0.2842788800407912
       },
       {
-        "hex": "#DD9872",
-        "share": 0.10316733010681864
+        "hex": "#D6A889",
+        "share": 0.23663412366341235
       },
       {
-        "hex": "#BD7056",
-        "share": 0.06940347661731436
+        "hex": "#72809F",
+        "share": 0.1633898711776968
       }
     ],
-    "correctHex": "#E5AC22",
+    "correctHex": "#944836",
     "playable": true,
     "excludedReason": null
   },
@@ -299,23 +299,23 @@
     "fetchedAt": "2026-09-19T09:41:32.813Z",
     "colors": [
       {
-        "hex": "#393956",
-        "share": 0.27551824512310835
+        "hex": "#676097",
+        "share": 0.4631857147697625
       },
       {
-        "hex": "#5B5F94",
-        "share": 0.2377735964362104
+        "hex": "#3A3953",
+        "share": 0.3291261477992749
       },
       {
-        "hex": "#7979A8",
-        "share": 0.15790997249963815
+        "hex": "#9DA7BE",
+        "share": 0.1663504218479992
       },
       {
-        "hex": "#684972",
-        "share": 0.0735433653366784
+        "hex": "#D66F9B",
+        "share": 0.04133771558296344
       }
     ],
-    "correctHex": "#393956",
+    "correctHex": "#676097",
     "playable": true,
     "excludedReason": null
   },
@@ -331,25 +331,25 @@
     "fetchedAt": "2026-09-19T09:41:32.851Z",
     "colors": [
       {
-        "hex": "#D7B696",
-        "share": 0.20258729668230469
+        "hex": "#D5B99F",
+        "share": 0.39545700536792994
       },
       {
-        "hex": "#9C5C37",
-        "share": 0.19312020675899655
+        "hex": "#7E492D",
+        "share": 0.2832862847196829
       },
       {
-        "hex": "#EDD6B5",
-        "share": 0.12197657105935894
+        "hex": "#D27F4F",
+        "share": 0.21351782240489112
       },
       {
-        "hex": "#773C19",
-        "share": 0.10148327106216816
+        "hex": "#F8DA73",
+        "share": 0.10773888750749609
       }
     ],
-    "correctHex": "#D7B696",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#D5B99F",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "battle-ram",
@@ -363,23 +363,23 @@
     "fetchedAt": "2026-09-19T09:41:32.890Z",
     "colors": [
       {
-        "hex": "#31444D",
-        "share": 0.21842368558262756
+        "hex": "#304F56",
+        "share": 0.3820978323084374
       },
       {
-        "hex": "#A57350",
-        "share": 0.12227498837422318
+        "hex": "#74A0A7",
+        "share": 0.3311710230858418
       },
       {
-        "hex": "#637F88",
-        "share": 0.10039034426391218
+        "hex": "#B18262",
+        "share": 0.1793739084491539
       },
       {
-        "hex": "#0A5C62",
-        "share": 0.08976508884911856
+        "hex": "#7A4121",
+        "share": 0.10735723615656692
       }
     ],
-    "correctHex": "#31444D",
+    "correctHex": "#304F56",
     "playable": true,
     "excludedReason": null
   },
@@ -395,23 +395,23 @@
     "fetchedAt": "2026-09-19T09:41:32.929Z",
     "colors": [
       {
-        "hex": "#F2682A",
-        "share": 0.12234265441238093
+        "hex": "#DE572A",
+        "share": 0.27421401998686995
       },
       {
-        "hex": "#915743",
-        "share": 0.09845797133838032
+        "hex": "#ECBEA1",
+        "share": 0.25173243854402216
       },
       {
-        "hex": "#FCCFA9",
-        "share": 0.09347151995977317
+        "hex": "#9A5745",
+        "share": 0.24467138376249178
       },
       {
-        "hex": "#EBA57E",
-        "share": 0.07936419253010028
+        "hex": "#6C768A",
+        "share": 0.2293821577066161
       }
     ],
-    "correctHex": "#F2682A",
+    "correctHex": "#DE572A",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -427,25 +427,25 @@
     "fetchedAt": "2026-09-19T09:41:32.966Z",
     "colors": [
       {
-        "hex": "#484F67",
-        "share": 0.21979763501158112
+        "hex": "#615F73",
+        "share": 0.36267992450916875
       },
       {
-        "hex": "#895D51",
-        "share": 0.12373521882238206
+        "hex": "#8A5037",
+        "share": 0.2501478831582209
       },
       {
-        "hex": "#F8A558",
-        "share": 0.1105693039132025
+        "hex": "#DE7636",
+        "share": 0.21810653221036028
       },
       {
-        "hex": "#F6D380",
-        "share": 0.06200983380064204
+        "hex": "#F3CB87",
+        "share": 0.16906566012225008
       }
     ],
-    "correctHex": "#484F67",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#615F73",
+    "playable": false,
+    "excludedReason": "monochrome"
   },
   {
     "id": "bomber",
@@ -459,25 +459,25 @@
     "fetchedAt": "2026-09-19T09:41:33.004Z",
     "colors": [
       {
-        "hex": "#363533",
-        "share": 0.1975590710587963
+        "hex": "#4E4841",
+        "share": 0.3676530751397791
       },
       {
-        "hex": "#615D56",
-        "share": 0.15987506145703792
+        "hex": "#B0AE9F",
+        "share": 0.28543721684318984
       },
       {
-        "hex": "#848A8F",
-        "share": 0.1566792954854383
+        "hex": "#507FA2",
+        "share": 0.23557131384759913
       },
       {
-        "hex": "#B2B5A8",
-        "share": 0.09293750180755994
+        "hex": "#DBB413",
+        "share": 0.11133839416943195
       }
     ],
-    "correctHex": "#363533",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#4E4841",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "boss-bandit",
@@ -491,23 +491,23 @@
     "fetchedAt": "2026-09-19T09:41:33.043Z",
     "colors": [
       {
-        "hex": "#424F6B",
-        "share": 0.1640518417462483
+        "hex": "#CD4348",
+        "share": 0.2928685505687559
       },
       {
-        "hex": "#707F9E",
-        "share": 0.08028902026173514
+        "hex": "#BA8053",
+        "share": 0.25932987842638766
       },
       {
-        "hex": "#9C624A",
-        "share": 0.07743418725683392
+        "hex": "#594D56",
+        "share": 0.25647795052312505
       },
       {
-        "hex": "#DD3F47",
-        "share": 0.07509726643423778
+        "hex": "#CCB8B9",
+        "share": 0.19132362048173138
       }
     ],
-    "correctHex": "#424F6B",
+    "correctHex": "#CD4348",
     "playable": true,
     "excludedReason": null
   },
@@ -523,25 +523,25 @@
     "fetchedAt": "2026-09-19T09:41:33.080Z",
     "colors": [
       {
-        "hex": "#9A8EF6",
-        "share": 0.2242414252551476
+        "hex": "#8A7FE6",
+        "share": 0.4914358548391717
       },
       {
-        "hex": "#5A5BBE",
-        "share": 0.1696679990659469
+        "hex": "#C5C3C6",
+        "share": 0.3352332941884112
       },
       {
-        "hex": "#C5C2BE",
-        "share": 0.1512479224186481
+        "hex": "#494489",
+        "share": 0.16999398504854926
       },
       {
-        "hex": "#DEE1E1",
-        "share": 0.10178431614950344
+        "hex": "#EAC287",
+        "share": 0.0033368659238679
       }
     ],
-    "correctHex": "#9A8EF6",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#8A7FE6",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "cannon",
@@ -555,23 +555,23 @@
     "fetchedAt": "2026-09-19T09:41:33.114Z",
     "colors": [
       {
-        "hex": "#383537",
-        "share": 0.21981583570606408
+        "hex": "#CDC9B4",
+        "share": 0.3588242778979514
       },
       {
-        "hex": "#E2D8BD",
-        "share": 0.16041679287574967
+        "hex": "#433E41",
+        "share": 0.2702952029520295
       },
       {
-        "hex": "#5D5760",
-        "share": 0.12479554128551523
+        "hex": "#84788A",
+        "share": 0.19651037027611656
       },
       {
-        "hex": "#AB7442",
-        "share": 0.09412673411280063
+        "hex": "#A16F40",
+        "share": 0.17437014887390254
       }
     ],
-    "correctHex": "#383537",
+    "correctHex": "#CDC9B4",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -587,23 +587,23 @@
     "fetchedAt": "2026-09-19T09:41:33.151Z",
     "colors": [
       {
-        "hex": "#9E5D2A",
-        "share": 0.17537484349711424
+        "hex": "#B87F47",
+        "share": 0.40508637236084455
       },
       {
-        "hex": "#383630",
-        "share": 0.12706507466332795
+        "hex": "#5D5045",
+        "share": 0.2955694177863084
       },
       {
-        "hex": "#96DBF5",
-        "share": 0.08950438208080129
+        "hex": "#B5CDD1",
+        "share": 0.2749360204734485
       },
       {
-        "hex": "#A3A29A",
-        "share": 0.0757473967080954
+        "hex": "#426833",
+        "share": 0.024408189379398593
       }
     ],
-    "correctHex": "#9E5D2A",
+    "correctHex": "#B87F47",
     "playable": true,
     "excludedReason": null
   },
@@ -619,25 +619,25 @@
     "fetchedAt": "2026-09-19T09:41:33.185Z",
     "colors": [
       {
-        "hex": "#28666D",
-        "share": 0.2843349983252996
+        "hex": "#275A60",
+        "share": 0.5227483751160631
       },
       {
-        "hex": "#093F46",
-        "share": 0.13997582606416287
+        "hex": "#3EB8BA",
+        "share": 0.3123582507572644
       },
       {
-        "hex": "#09918D",
-        "share": 0.08128849990534302
+        "hex": "#A2BCB9",
+        "share": 0.12429791314671902
       },
       {
-        "hex": "#3DBEC5",
-        "share": 0.071924740421442
+        "hex": "#AE774A",
+        "share": 0.040595460979953424
       }
     ],
-    "correctHex": "#28666D",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#275A60",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "dark-prince",
@@ -651,25 +651,25 @@
     "fetchedAt": "2026-09-19T09:41:33.219Z",
     "colors": [
       {
-        "hex": "#525859",
-        "share": 0.42800985128350855
+        "hex": "#434747",
+        "share": 0.5841836734693877
       },
       {
-        "hex": "#333536",
-        "share": 0.27057876290612864
+        "hex": "#747C7E",
+        "share": 0.21289424860853431
       },
       {
-        "hex": "#9AD8EE",
-        "share": 0.07833664866912948
+        "hex": "#AFD2DE",
+        "share": 0.17237609329446063
       },
       {
-        "hex": "#D3D5D3",
-        "share": 0.0458305705535032
+        "hex": "#BD6F50",
+        "share": 0.03054598462761728
       }
     ],
-    "correctHex": "#525859",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#434747",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "dart-goblin",
@@ -683,23 +683,23 @@
     "fetchedAt": "2026-09-19T09:41:33.257Z",
     "colors": [
       {
-        "hex": "#2F3439",
-        "share": 0.22849739449120998
+        "hex": "#4E5B63",
+        "share": 0.3922299968669342
       },
       {
-        "hex": "#4F4C1E",
-        "share": 0.18607913875050106
+        "hex": "#466D28",
+        "share": 0.2466767123696421
       },
       {
-        "hex": "#4B5958",
-        "share": 0.10127125923380863
+        "hex": "#56431E",
+        "share": 0.20693153505303832
       },
       {
-        "hex": "#DB8A37",
-        "share": 0.06084292504151635
+        "hex": "#D08D3A",
+        "share": 0.15416175571038537
       }
     ],
-    "correctHex": "#2F3439",
+    "correctHex": "#4E5B63",
     "playable": true,
     "excludedReason": null
   },
@@ -715,23 +715,23 @@
     "fetchedAt": "2026-09-19T09:41:33.291Z",
     "colors": [
       {
-        "hex": "#4B493C",
-        "share": 0.5888359521111763
+        "hex": "#4B3F31",
+        "share": 0.38642301357414666
       },
       {
-        "hex": "#81684F",
-        "share": 0.1833781551608808
+        "hex": "#53584B",
+        "share": 0.3264468677230647
       },
       {
-        "hex": "#322923",
-        "share": 0.06070741130056107
+        "hex": "#94613F",
+        "share": 0.21004430056227635
       },
       {
-        "hex": "#A1A59C",
-        "share": 0.03919293407778521
+        "hex": "#AAAC9F",
+        "share": 0.0770858181405123
       }
     ],
-    "correctHex": "#4B493C",
+    "correctHex": "#4B3F31",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -747,23 +747,23 @@
     "fetchedAt": "2026-09-19T09:41:33.327Z",
     "colors": [
       {
-        "hex": "#125E92",
-        "share": 0.31807171693184516
+        "hex": "#2A5168",
+        "share": 0.3472344526226594
       },
       {
-        "hex": "#173955",
-        "share": 0.18139792606665084
+        "hex": "#14579B",
+        "share": 0.27489324937278814
       },
       {
-        "hex": "#148CC9",
-        "share": 0.1273806696746616
+        "hex": "#229FD5",
+        "share": 0.23510060312027514
       },
       {
-        "hex": "#15B6F3",
-        "share": 0.08900498693896937
+        "hex": "#99CFD8",
+        "share": 0.14277169488427732
       }
     ],
-    "correctHex": "#125E92",
+    "correctHex": "#2A5168",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -779,23 +779,23 @@
     "fetchedAt": "2026-09-19T09:41:33.364Z",
     "colors": [
       {
-        "hex": "#312C43",
-        "share": 0.2057455256607799
+        "hex": "#A75336",
+        "share": 0.42390428367739136
       },
       {
-        "hex": "#6E2F1A",
-        "share": 0.12560744340405358
+        "hex": "#463F5A",
+        "share": 0.3302957039241213
       },
       {
-        "hex": "#C15429",
-        "share": 0.11129548417684011
+        "hex": "#8DC5D9",
+        "share": 0.1819323042588804
       },
       {
-        "hex": "#8B4F40",
-        "share": 0.07760459879103947
+        "hex": "#615FE5",
+        "share": 0.06386770813960697
       }
     ],
-    "correctHex": "#312C43",
+    "correctHex": "#A75336",
     "playable": true,
     "excludedReason": null
   },
@@ -811,23 +811,23 @@
     "fetchedAt": "2026-09-19T09:41:33.404Z",
     "colors": [
       {
-        "hex": "#2D1EA0",
-        "share": 0.10475440052904841
+        "hex": "#9BBCDC",
+        "share": 0.29954649861593735
       },
       {
-        "hex": "#6339F3",
-        "share": 0.10239056717929958
+        "hex": "#6A32DE",
+        "share": 0.28492549620118973
       },
       {
-        "hex": "#DAEDF6",
-        "share": 0.10196845408113014
+        "hex": "#47429D",
+        "share": 0.27673891277460394
       },
       {
-        "hex": "#9961F7",
-        "share": 0.08581559285784637
+        "hex": "#BC78F2",
+        "share": 0.13878909240826903
       }
     ],
-    "correctHex": "#2D1EA0",
+    "correctHex": "#9BBCDC",
     "playable": true,
     "excludedReason": null
   },
@@ -843,23 +843,23 @@
     "fetchedAt": "2026-09-19T09:41:33.442Z",
     "colors": [
       {
-        "hex": "#2B333D",
-        "share": 0.26623282251683433
+        "hex": "#434651",
+        "share": 0.39914311680443154
       },
       {
-        "hex": "#675D63",
-        "share": 0.1560062654415683
+        "hex": "#C0857F",
+        "share": 0.3553035876574198
       },
       {
-        "hex": "#D69991",
-        "share": 0.11534548742874676
+        "hex": "#92CCD1",
+        "share": 0.22376336175185008
       },
       {
-        "hex": "#50434D",
-        "share": 0.07168117299400907
+        "hex": "#8F6F2F",
+        "share": 0.021789933786298524
       }
     ],
-    "correctHex": "#2B333D",
+    "correctHex": "#434651",
     "playable": true,
     "excludedReason": null
   },
@@ -875,23 +875,23 @@
     "fetchedAt": "2026-09-19T09:41:33.479Z",
     "colors": [
       {
-        "hex": "#7F432E",
-        "share": 0.1659035431080554
+        "hex": "#4F686B",
+        "share": 0.4134507703017646
       },
       {
-        "hex": "#66716F",
-        "share": 0.12940360810596102
+        "hex": "#8A4B36",
+        "share": 0.27410030569932503
       },
       {
-        "hex": "#373434",
-        "share": 0.10720321234093567
+        "hex": "#C9AE99",
+        "share": 0.22228275674203216
       },
       {
-        "hex": "#287380",
-        "share": 0.09413141132119077
+        "hex": "#BF852E",
+        "share": 0.09016616725687823
       }
     ],
-    "correctHex": "#7F432E",
+    "correctHex": "#4F686B",
     "playable": true,
     "excludedReason": null
   },
@@ -907,23 +907,23 @@
     "fetchedAt": "2026-09-19T09:41:33.515Z",
     "colors": [
       {
-        "hex": "#504338",
-        "share": 0.15595164925220242
+        "hex": "#756046",
+        "share": 0.35294368358242884
       },
       {
-        "hex": "#B9D4E6",
-        "share": 0.14647271733934303
+        "hex": "#C0CFDB",
+        "share": 0.2700176166391999
       },
       {
-        "hex": "#947050",
-        "share": 0.11762616950078536
+        "hex": "#6778AD",
+        "share": 0.23045121327499005
       },
       {
-        "hex": "#F66AFE",
-        "share": 0.07572218807621389
+        "hex": "#E95EFA",
+        "share": 0.14658748650338127
       }
     ],
-    "correctHex": "#504338",
+    "correctHex": "#756046",
     "playable": true,
     "excludedReason": null
   },
@@ -939,25 +939,25 @@
     "fetchedAt": "2026-09-19T09:41:33.552Z",
     "colors": [
       {
-        "hex": "#923CB3",
-        "share": 0.18885732237003852
+        "hex": "#7C2DA9",
+        "share": 0.38248874113853015
       },
       {
-        "hex": "#6F1396",
-        "share": 0.16095282323052967
+        "hex": "#BA80DD",
+        "share": 0.2652545141996619
       },
       {
-        "hex": "#C73DDE",
-        "share": 0.12052339716447674
+        "hex": "#C740E0",
+        "share": 0.21395388483996078
       },
       {
-        "hex": "#AA79DA",
-        "share": 0.09690769524954243
+        "hex": "#B2B6D3",
+        "share": 0.13830285982184717
       }
     ],
-    "correctHex": "#923CB3",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#7C2DA9",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "executioner",
@@ -971,25 +971,25 @@
     "fetchedAt": "2026-09-19T09:41:33.587Z",
     "colors": [
       {
-        "hex": "#2D313E",
-        "share": 0.25795374362994905
+        "hex": "#D0CFCC",
+        "share": 0.3304771146160551
       },
       {
-        "hex": "#D9DDDC",
-        "share": 0.1976950215601725
+        "hex": "#323645",
+        "share": 0.2977813594723945
       },
       {
-        "hex": "#525A63",
-        "share": 0.15774206193649548
+        "hex": "#686C72",
+        "share": 0.2292978964853708
       },
       {
-        "hex": "#99A4AA",
-        "share": 0.0804704037632301
+        "hex": "#BD756F",
+        "share": 0.14244362942617964
       }
     ],
-    "correctHex": "#2D313E",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#D0CFCC",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "fire-spirit",
@@ -1003,25 +1003,25 @@
     "fetchedAt": "2026-09-19T09:41:33.623Z",
     "colors": [
       {
-        "hex": "#9F8275",
-        "share": 0.17840481226467456
+        "hex": "#A38578",
+        "share": 0.31265844710031965
       },
       {
-        "hex": "#432D26",
-        "share": 0.14460795343743907
+        "hex": "#643828",
+        "share": 0.2609318657785756
       },
       {
-        "hex": "#7B4029",
-        "share": 0.10302566641165264
+        "hex": "#E16C2C",
+        "share": 0.2405719054592407
       },
       {
-        "hex": "#FDB04B",
-        "share": 0.07095390246463555
+        "hex": "#FFD578",
+        "share": 0.18583778166186404
       }
     ],
-    "correctHex": "#9F8275",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#A38578",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "fireball",
@@ -1035,23 +1035,23 @@
     "fetchedAt": "2026-09-19T09:41:33.658Z",
     "colors": [
       {
-        "hex": "#813B2A",
-        "share": 0.3017037681880363
+        "hex": "#7F3626",
+        "share": 0.3708155987576211
       },
       {
-        "hex": "#FEF596",
-        "share": 0.10798822700327489
+        "hex": "#FBDD63",
+        "share": 0.31024962613597146
       },
       {
-        "hex": "#F8CD2F",
-        "share": 0.08405532755737954
+        "hex": "#C75717",
+        "share": 0.20819912573334867
       },
       {
-        "hex": "#BD541D",
-        "share": 0.07552957758156116
+        "hex": "#927772",
+        "share": 0.11073564937305878
       }
     ],
-    "correctHex": "#813B2A",
+    "correctHex": "#7F3626",
     "playable": true,
     "excludedReason": null
   },
@@ -1067,23 +1067,23 @@
     "fetchedAt": "2026-09-19T09:41:33.697Z",
     "colors": [
       {
-        "hex": "#392B2A",
-        "share": 0.2204173787610342
+        "hex": "#BA8877",
+        "share": 0.29249624729887996
       },
       {
-        "hex": "#A63272",
-        "share": 0.1246021417708023
+        "hex": "#453634",
+        "share": 0.26085809016379924
       },
       {
-        "hex": "#B27666",
-        "share": 0.10258862635036611
+        "hex": "#993166",
+        "share": 0.22704254160962012
       },
       {
-        "hex": "#195D9F",
-        "share": 0.09943711880085922
+        "hex": "#255D99",
+        "share": 0.2196031209277007
       }
     ],
-    "correctHex": "#392B2A",
+    "correctHex": "#BA8877",
     "playable": true,
     "excludedReason": null
   },
@@ -1099,25 +1099,25 @@
     "fetchedAt": "2026-09-19T09:41:33.735Z",
     "colors": [
       {
-        "hex": "#30343F",
-        "share": 0.14374975893855826
+        "hex": "#495A7F",
+        "share": 0.36481391976800387
       },
       {
-        "hex": "#3C5D8B",
-        "share": 0.1309445751533151
+        "hex": "#76A7CC",
+        "share": 0.2844691477364266
       },
       {
-        "hex": "#5D6272",
-        "share": 0.1195664751031743
+        "hex": "#C47955",
+        "share": 0.20625100692766232
       },
       {
-        "hex": "#3D8EBF",
-        "share": 0.08392795155629267
+        "hex": "#F7CF5F",
+        "share": 0.1444659255679072
       }
     ],
-    "correctHex": "#30343F",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#495A7F",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "flying-machine",
@@ -1131,23 +1131,23 @@
     "fetchedAt": "2026-09-19T09:41:33.774Z",
     "colors": [
       {
-        "hex": "#6E361C",
-        "share": 0.16752692998204669
+        "hex": "#664E45",
+        "share": 0.26042062217029355
       },
       {
-        "hex": "#7DBFE1",
-        "share": 0.1281839093357271
+        "hex": "#904B25",
+        "share": 0.2538776106323937
       },
       {
-        "hex": "#977B6A",
-        "share": 0.11840776481149012
+        "hex": "#90B6CC",
+        "share": 0.24857601869431867
       },
       {
-        "hex": "#3C312E",
-        "share": 0.10354017055655296
+        "hex": "#D4AC84",
+        "share": 0.237125748502994
       }
     ],
-    "correctHex": "#6E361C",
+    "correctHex": "#664E45",
     "playable": true,
     "excludedReason": null
   },
@@ -1163,25 +1163,25 @@
     "fetchedAt": "2026-09-19T09:41:33.809Z",
     "colors": [
       {
-        "hex": "#D1EAF1",
-        "share": 0.593846971010036
+        "hex": "#CFE8EF",
+        "share": 0.6754707074831916
       },
       {
-        "hex": "#A5CEDE",
-        "share": 0.11004724497497974
+        "hex": "#7FB0C4",
+        "share": 0.15182230519054354
       },
       {
-        "hex": "#3F748C",
-        "share": 0.056428391713958234
+        "hex": "#456B7F",
+        "share": 0.11261977336036286
       },
       {
-        "hex": "#779EAE",
-        "share": 0.045050459869726875
+        "hex": "#49DAE4",
+        "share": 0.06008721396590196
       }
     ],
-    "correctHex": "#D1EAF1",
+    "correctHex": "#CFE8EF",
     "playable": false,
-    "excludedReason": "monochrome"
+    "excludedReason": "top1>60%"
   },
   {
     "id": "furnace",
@@ -1195,23 +1195,23 @@
     "fetchedAt": "2026-09-19T09:41:33.847Z",
     "colors": [
       {
-        "hex": "#433236",
-        "share": 0.2302771548502099
+        "hex": "#594048",
+        "share": 0.41324505295324837
       },
       {
-        "hex": "#6F5C74",
-        "share": 0.1818038065666149
+        "hex": "#9C8BAD",
+        "share": 0.3190227242086972
       },
       {
-        "hex": "#A699BF",
-        "share": 0.10554309700419758
+        "hex": "#BA5E3E",
+        "share": 0.20543164012762707
       },
       {
-        "hex": "#704640",
-        "share": 0.09717670059226037
+        "hex": "#FADD57",
+        "share": 0.06230058271042737
       }
     ],
-    "correctHex": "#433236",
+    "correctHex": "#594048",
     "playable": true,
     "excludedReason": null
   },
@@ -1227,23 +1227,23 @@
     "fetchedAt": "2026-09-19T09:41:33.885Z",
     "colors": [
       {
-        "hex": "#3D2D22",
-        "share": 0.22323043663691045
+        "hex": "#CE8860",
+        "share": 0.3395835571036197
       },
       {
-        "hex": "#DA8E66",
-        "share": 0.1584040472373781
+        "hex": "#53392A",
+        "share": 0.33418238173420695
       },
       {
-        "hex": "#9F603E",
-        "share": 0.1324323131902878
+        "hex": "#CF6829",
+        "share": 0.22844516732902673
       },
       {
-        "hex": "#7E3B1A",
-        "share": 0.0943718105210524
+        "hex": "#B0B1B0",
+        "share": 0.09778889383314665
       }
     ],
-    "correctHex": "#3D2D22",
+    "correctHex": "#CE8860",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -1259,23 +1259,23 @@
     "fetchedAt": "2026-09-19T09:41:33.921Z",
     "colors": [
       {
-        "hex": "#3A353B",
-        "share": 0.21815656103071382
+        "hex": "#C2C8CE",
+        "share": 0.3475813544415128
       },
       {
-        "hex": "#B2BCC5",
-        "share": 0.21601941747572814
+        "hex": "#4A454B",
+        "share": 0.32906372431438397
       },
       {
-        "hex": "#5A5C64",
-        "share": 0.15437809122549917
+        "hex": "#838B9D",
+        "share": 0.27002478611977293
       },
       {
-        "hex": "#9095A1",
-        "share": 0.12615253098858153
+        "hex": "#976153",
+        "share": 0.05333013512433037
       }
     ],
-    "correctHex": "#3A353B",
+    "correctHex": "#C2C8CE",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -1291,23 +1291,23 @@
     "fetchedAt": "2026-09-19T09:41:33.957Z",
     "colors": [
       {
-        "hex": "#193566",
-        "share": 0.3154452252745581
+        "hex": "#1C3869",
+        "share": 0.3807819515234793
       },
       {
-        "hex": "#C5E5F7",
-        "share": 0.20737123908612454
+        "hex": "#C0DEEF",
+        "share": 0.2704874814258552
       },
       {
-        "hex": "#89A8C3",
-        "share": 0.202305983998053
+        "hex": "#8AA9C5",
+        "share": 0.2407688497611325
       },
       {
-        "hex": "#ABC4D1",
-        "share": 0.05847099266830945
+        "hex": "#576D8D",
+        "share": 0.10796171728953297
       }
     ],
-    "correctHex": "#193566",
+    "correctHex": "#1C3869",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -1323,23 +1323,23 @@
     "fetchedAt": "2026-09-19T09:41:33.992Z",
     "colors": [
       {
-        "hex": "#D1EDE5",
-        "share": 0.23866834490658898
+        "hex": "#705534",
+        "share": 0.36987332801842504
       },
       {
-        "hex": "#443A1E",
-        "share": 0.17231186977612467
+        "hex": "#CDE5DA",
+        "share": 0.29091741223019457
       },
       {
-        "hex": "#7E6038",
-        "share": 0.13278366261720573
+        "hex": "#B4C446",
+        "share": 0.20394484306256827
       },
       {
-        "hex": "#75972B",
-        "share": 0.109816289298392
+        "hex": "#637F28",
+        "share": 0.13526441668881212
       }
     ],
-    "correctHex": "#D1EDE5",
+    "correctHex": "#705534",
     "playable": true,
     "excludedReason": null
   },
@@ -1355,23 +1355,23 @@
     "fetchedAt": "2026-09-19T09:41:34.028Z",
     "colors": [
       {
-        "hex": "#5D616D",
-        "share": 0.1748856056011908
+        "hex": "#5B6175",
+        "share": 0.4223946307954855
       },
       {
-        "hex": "#293343",
-        "share": 0.13906499807045591
+        "hex": "#627537",
+        "share": 0.3545768739871793
       },
       {
-        "hex": "#3E5013",
-        "share": 0.13881691383207453
+        "hex": "#CCD84F",
+        "share": 0.17244840888557456
       },
       {
-        "hex": "#6E7EA7",
-        "share": 0.07135178345002481
+        "hex": "#83332A",
+        "share": 0.05058008633176062
       }
     ],
-    "correctHex": "#5D616D",
+    "correctHex": "#5B6175",
     "playable": true,
     "excludedReason": null
   },
@@ -1387,23 +1387,23 @@
     "fetchedAt": "2026-09-19T09:41:34.067Z",
     "colors": [
       {
-        "hex": "#3C4212",
-        "share": 0.46202485219253847
+        "hex": "#3C4215",
+        "share": 0.5110988387255128
       },
       {
-        "hex": "#756415",
-        "share": 0.10002494021683318
+        "hex": "#B0C037",
+        "share": 0.1998404589872214
       },
       {
-        "hex": "#A3A819",
-        "share": 0.06595953816586711
+        "hex": "#8A6F27",
+        "share": 0.1766456502063295
       },
       {
-        "hex": "#333335",
-        "share": 0.054575062717309976
+        "hex": "#828171",
+        "share": 0.11241505208093638
       }
     ],
-    "correctHex": "#3C4212",
+    "correctHex": "#3C4215",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -1419,23 +1419,23 @@
     "fetchedAt": "2026-09-19T09:41:34.107Z",
     "colors": [
       {
-        "hex": "#3D3017",
-        "share": 0.12566856360446707
+        "hex": "#736457",
+        "share": 0.3754960096303892
       },
       {
-        "hex": "#6C6062",
-        "share": 0.08959822001625947
+        "hex": "#69509E",
+        "share": 0.23696999420393242
       },
       {
-        "hex": "#5D4496",
-        "share": 0.06465277480638398
+        "hex": "#A4A73D",
+        "share": 0.23575133383863153
       },
       {
-        "hex": "#403467",
-        "share": 0.06262747279391839
+        "hex": "#A15D3E",
+        "share": 0.15178266232704682
       }
     ],
-    "correctHex": "#3D3017",
+    "correctHex": "#736457",
     "playable": true,
     "excludedReason": null
   },
@@ -1451,25 +1451,25 @@
     "fetchedAt": "2026-09-19T09:41:34.143Z",
     "colors": [
       {
-        "hex": "#273F57",
-        "share": 0.2850025322000027
+        "hex": "#57555C",
+        "share": 0.48280585599726034
       },
       {
-        "hex": "#646772",
-        "share": 0.22988269754581914
+        "hex": "#223D59",
+        "share": 0.24742444564938215
       },
       {
-        "hex": "#3B3231",
-        "share": 0.12580243364951615
+        "hex": "#ABADB8",
+        "share": 0.210496275791216
       },
       {
-        "hex": "#544E4E",
-        "share": 0.09217208009964549
+        "hex": "#93775C",
+        "share": 0.05927342256214149
       }
     ],
-    "correctHex": "#273F57",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#57555C",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "goblin-gang",
@@ -1483,25 +1483,25 @@
     "fetchedAt": "2026-09-19T09:41:34.182Z",
     "colors": [
       {
-        "hex": "#5A6826",
-        "share": 0.1909528220144014
+        "hex": "#555F25",
+        "share": 0.3326016744536076
       },
       {
-        "hex": "#353525",
-        "share": 0.17696973318593326
+        "hex": "#7E776A",
+        "share": 0.2865855570537142
       },
       {
-        "hex": "#899F35",
-        "share": 0.10109354925453405
+        "hex": "#AFC153",
+        "share": 0.2511680411401336
       },
       {
-        "hex": "#9E9E88",
-        "share": 0.08059697033075383
+        "hex": "#2F416A",
+        "share": 0.1296447273525446
       }
     ],
-    "correctHex": "#5A6826",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#555F25",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "goblin-giant",
@@ -1515,25 +1515,25 @@
     "fetchedAt": "2026-09-19T09:41:34.220Z",
     "colors": [
       {
-        "hex": "#3F8E6C",
-        "share": 0.13083322594040409
+        "hex": "#72A572",
+        "share": 0.37881733616486707
       },
       {
-        "hex": "#2D3C33",
-        "share": 0.1167289545656314
+        "hex": "#465845",
+        "share": 0.22241497921215567
       },
       {
-        "hex": "#58636C",
-        "share": 0.08323667969700875
+        "hex": "#3A6794",
+        "share": 0.2181527233571621
       },
       {
-        "hex": "#65B786",
-        "share": 0.07506049801681057
+        "hex": "#A37051",
+        "share": 0.18061496126581522
       }
     ],
-    "correctHex": "#3F8E6C",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#72A572",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "goblin-hut",
@@ -1547,23 +1547,23 @@
     "fetchedAt": "2026-09-19T09:41:34.260Z",
     "colors": [
       {
-        "hex": "#724324",
-        "share": 0.21067127662691554
+        "hex": "#8F572D",
+        "share": 0.28349452261997526
       },
       {
-        "hex": "#3A2B23",
-        "share": 0.12032289255471885
+        "hex": "#A8AA57",
+        "share": 0.25235672487815314
       },
       {
-        "hex": "#A3682E",
-        "share": 0.08253977555744382
+        "hex": "#A2A5C3",
+        "share": 0.2404699699011474
       },
       {
-        "hex": "#456F2D",
-        "share": 0.06636584722669871
+        "hex": "#513F31",
+        "share": 0.2236787826007242
       }
     ],
-    "correctHex": "#724324",
+    "correctHex": "#8F572D",
     "playable": true,
     "excludedReason": null
   },
@@ -1579,25 +1579,25 @@
     "fetchedAt": "2026-09-19T09:41:34.298Z",
     "colors": [
       {
-        "hex": "#383333",
-        "share": 0.28764606757092737
+        "hex": "#54433B",
+        "share": 0.49161183340095616
       },
       {
-        "hex": "#5E575E",
-        "share": 0.20401116052929638
+        "hex": "#AD9B9D",
+        "share": 0.29527052057791026
       },
       {
-        "hex": "#887F82",
-        "share": 0.10026520069615183
+        "hex": "#A7C145",
+        "share": 0.11522924127224937
       },
       {
-        "hex": "#5E5525",
-        "share": 0.057225337716511504
+        "hex": "#A35AC9",
+        "share": 0.09788840474888423
       }
     ],
-    "correctHex": "#383333",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#54433B",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "goblins",
@@ -1611,25 +1611,25 @@
     "fetchedAt": "2026-09-19T09:41:34.334Z",
     "colors": [
       {
-        "hex": "#46484D",
-        "share": 0.2630262956840628
+        "hex": "#595859",
+        "share": 0.3956474997820844
       },
       {
-        "hex": "#89A32E",
-        "share": 0.15441247968439623
+        "hex": "#7E8C31",
+        "share": 0.30370165906383473
       },
       {
-        "hex": "#BFE157",
-        "share": 0.13111725402492047
+        "hex": "#BBD856",
+        "share": 0.2544817967864718
       },
       {
-        "hex": "#5C6E0F",
-        "share": 0.08692994763088806
+        "hex": "#4A65A4",
+        "share": 0.04616904436760903
       }
     ],
-    "correctHex": "#46484D",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#595859",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "goblinstein",
@@ -1643,25 +1643,25 @@
     "fetchedAt": "2026-09-19T09:41:34.374Z",
     "colors": [
       {
-        "hex": "#40506A",
-        "share": 0.16875523182448557
+        "hex": "#66664A",
+        "share": 0.3163873580024744
       },
       {
-        "hex": "#72829B",
-        "share": 0.11142068241732156
+        "hex": "#A0C5D3",
+        "share": 0.2797049986342529
       },
       {
-        "hex": "#CCDAE7",
-        "share": 0.06886642761653694
+        "hex": "#B7BC4F",
+        "share": 0.22268104182399537
       },
       {
-        "hex": "#8D9FB6",
-        "share": 0.05391121828108797
+        "hex": "#4E65A5",
+        "share": 0.18122660153927728
       }
     ],
-    "correctHex": "#40506A",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#66664A",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "golden-knight",
@@ -1675,23 +1675,23 @@
     "fetchedAt": "2026-09-19T09:41:34.412Z",
     "colors": [
       {
-        "hex": "#9A592F",
-        "share": 0.19958674149335484
+        "hex": "#965A34",
+        "share": 0.380936752777908
       },
       {
-        "hex": "#404D6D",
-        "share": 0.12633728251965423
+        "hex": "#E7A366",
+        "share": 0.2783846718864769
       },
       {
-        "hex": "#FAB674",
-        "share": 0.11911137194488257
+        "hex": "#A4999D",
+        "share": 0.19152327816587744
       },
       {
-        "hex": "#7787A7",
-        "share": 0.07805450610717822
+        "hex": "#E6CC5D",
+        "share": 0.1491552971697376
       }
     ],
-    "correctHex": "#9A592F",
+    "correctHex": "#965A34",
     "playable": true,
     "excludedReason": null
   },
@@ -1707,23 +1707,23 @@
     "fetchedAt": "2026-09-19T09:41:34.448Z",
     "colors": [
       {
-        "hex": "#463036",
-        "share": 0.5033826428581559
+        "hex": "#4E3A3D",
+        "share": 0.5004590552347105
       },
       {
-        "hex": "#6F5454",
-        "share": 0.145886224062859
+        "hex": "#C7AE9D",
+        "share": 0.31455649341033615
       },
       {
-        "hex": "#EDD4BC",
-        "share": 0.10206078829052434
+        "hex": "#693949",
+        "share": 0.1693765733747964
       },
       {
-        "hex": "#C6AA95",
-        "share": 0.09292694342405719
+        "hex": "#E34AC3",
+        "share": 0.015607877980156967
       }
     ],
-    "correctHex": "#463036",
+    "correctHex": "#4E3A3D",
     "playable": true,
     "excludedReason": null
   },
@@ -1739,23 +1739,23 @@
     "fetchedAt": "2026-09-19T09:41:34.486Z",
     "colors": [
       {
-        "hex": "#706280",
-        "share": 0.4178485363252084
+        "hex": "#7A7183",
+        "share": 0.32473225404732253
       },
       {
-        "hex": "#373545",
-        "share": 0.26782022412726003
+        "hex": "#705594",
+        "share": 0.2779742631797426
       },
       {
-        "hex": "#907FA8",
-        "share": 0.09901368203426435
+        "hex": "#463B52",
+        "share": 0.2474387712743877
       },
       {
-        "hex": "#54456C",
-        "share": 0.08728058046590026
+        "hex": "#CCC5D1",
+        "share": 0.14985471149854712
       }
     ],
-    "correctHex": "#706280",
+    "correctHex": "#7A7183",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -1771,25 +1771,25 @@
     "fetchedAt": "2026-09-19T09:41:34.520Z",
     "colors": [
       {
-        "hex": "#3E454E",
-        "share": 0.3053667925086979
+        "hex": "#4F5259",
+        "share": 0.5923218682731173
       },
       {
-        "hex": "#706E71",
-        "share": 0.23662743356281
+        "hex": "#684526",
+        "share": 0.19740448794387747
       },
       {
-        "hex": "#6C4727",
-        "share": 0.1667777037530535
+        "hex": "#AAB3BB",
+        "share": 0.1928979604478652
       },
       {
-        "hex": "#2A2A2A",
-        "share": 0.09327115256495669
+        "hex": "#296FD1",
+        "share": 0.017375683335140075
       }
     ],
-    "correctHex": "#3E454E",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#4F5259",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "heal-spirit",
@@ -1803,23 +1803,23 @@
     "fetchedAt": "2026-09-19T09:41:34.555Z",
     "colors": [
       {
-        "hex": "#FBC33E",
-        "share": 0.288672002613525
+        "hex": "#FDD049",
+        "share": 0.42309489092427693
       },
       {
-        "hex": "#E99131",
-        "share": 0.2371910051181531
+        "hex": "#E68631",
+        "share": 0.36852163818853606
       },
       {
-        "hex": "#FFED55",
-        "share": 0.10381955787868888
+        "hex": "#BA9B83",
+        "share": 0.10641430371324623
       },
       {
-        "hex": "#CB6126",
-        "share": 0.08854677120766634
+        "hex": "#8D3C1F",
+        "share": 0.10196916717394074
       }
     ],
-    "correctHex": "#FBC33E",
+    "correctHex": "#FDD049",
     "playable": true,
     "excludedReason": null
   },
@@ -1835,25 +1835,25 @@
     "fetchedAt": "2026-09-19T09:41:34.590Z",
     "colors": [
       {
-        "hex": "#432822",
-        "share": 0.3882628822024607
+        "hex": "#4F2E29",
+        "share": 0.5171371288546606
       },
       {
-        "hex": "#6F3E3B",
-        "share": 0.140897186015349
+        "hex": "#8CA0BA",
+        "share": 0.21173980842058365
       },
       {
-        "hex": "#AE6346",
-        "share": 0.0861402119624802
+        "hex": "#B06647",
+        "share": 0.16745695827896764
       },
       {
-        "hex": "#9792A3",
-        "share": 0.06489828237300524
+        "hex": "#B8A982",
+        "share": 0.10366610444578812
       }
     ],
-    "correctHex": "#432822",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#4F2E29",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "hunter",
@@ -1867,23 +1867,23 @@
     "fetchedAt": "2026-09-19T09:41:34.625Z",
     "colors": [
       {
-        "hex": "#353335",
-        "share": 0.36258130116933435
+        "hex": "#3E3839",
+        "share": 0.4115862681266647
       },
       {
-        "hex": "#4B555E",
-        "share": 0.16365421363580582
+        "hex": "#3F5974",
+        "share": 0.29367046463450724
       },
       {
-        "hex": "#08426F",
-        "share": 0.08109955996563875
+        "hex": "#AE6F5B",
+        "share": 0.15555637762651672
       },
       {
-        "hex": "#764639",
-        "share": 0.053926123314808644
+        "hex": "#8DBAD0",
+        "share": 0.13918688961231132
       }
     ],
-    "correctHex": "#353335",
+    "correctHex": "#3E3839",
     "playable": true,
     "excludedReason": null
   },
@@ -1899,25 +1899,25 @@
     "fetchedAt": "2026-09-19T09:41:34.661Z",
     "colors": [
       {
-        "hex": "#516FB6",
-        "share": 0.16746885820606025
+        "hex": "#A9C5E6",
+        "share": 0.38662094165568467
       },
       {
-        "hex": "#CBE2F9",
-        "share": 0.15143460582462895
+        "hex": "#5972C4",
+        "share": 0.3487630286330418
       },
       {
-        "hex": "#97BAE7",
-        "share": 0.14578813522794212
+        "hex": "#464C6B",
+        "share": 0.2543728285611597
       },
       {
-        "hex": "#749ACC",
-        "share": 0.09978304909412221
+        "hex": "#50F9FE",
+        "share": 0.010243201150113814
       }
     ],
-    "correctHex": "#516FB6",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#A9C5E6",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "ice-spirit",
@@ -1931,23 +1931,23 @@
     "fetchedAt": "2026-09-19T09:41:34.696Z",
     "colors": [
       {
-        "hex": "#ADD6F9",
-        "share": 0.16854525180072932
+        "hex": "#94D4F3",
+        "share": 0.4664356795924502
       },
       {
-        "hex": "#406EB8",
-        "share": 0.14886531448720652
+        "hex": "#5288D2",
+        "share": 0.2557944531460123
       },
       {
-        "hex": "#6DD5F7",
-        "share": 0.13578553991742262
+        "hex": "#394B7A",
+        "share": 0.19999367158700776
       },
       {
-        "hex": "#2A3164",
-        "share": 0.12068653747626654
+        "hex": "#483079",
+        "share": 0.07777619567452972
       }
     ],
-    "correctHex": "#ADD6F9",
+    "correctHex": "#94D4F3",
     "playable": true,
     "excludedReason": null
   },
@@ -1963,25 +1963,25 @@
     "fetchedAt": "2026-09-19T09:41:34.734Z",
     "colors": [
       {
-        "hex": "#36353D",
-        "share": 0.2577802652644184
+        "hex": "#394F63",
+        "share": 0.29734284498838315
       },
       {
-        "hex": "#606268",
-        "share": 0.1281417173202827
+        "hex": "#D3BCB4",
+        "share": 0.24555777348735233
       },
       {
-        "hex": "#1F99C1",
-        "share": 0.1058064012287027
+        "hex": "#45A3C8",
+        "share": 0.2440524886285546
       },
       {
-        "hex": "#0C435F",
-        "share": 0.060745291491494095
+        "hex": "#68413C",
+        "share": 0.21304689289570994
       }
     ],
-    "correctHex": "#36353D",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#394F63",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "inferno-dragon",
@@ -1995,25 +1995,25 @@
     "fetchedAt": "2026-09-19T09:41:34.772Z",
     "colors": [
       {
-        "hex": "#273A3B",
-        "share": 0.3938400956332185
+        "hex": "#324A46",
+        "share": 0.5495902083258115
       },
       {
-        "hex": "#5F696A",
-        "share": 0.11495675409605513
+        "hex": "#9BC1BD",
+        "share": 0.24212008520778425
       },
       {
-        "hex": "#849A9C",
-        "share": 0.06442584909640672
+        "hex": "#89C870",
+        "share": 0.12510380185579667
       },
       {
-        "hex": "#405354",
-        "share": 0.05200759440264398
+        "hex": "#C25D2A",
+        "share": 0.08318590461060765
       }
     ],
-    "correctHex": "#273A3B",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#324A46",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "inferno-tower",
@@ -2027,23 +2027,23 @@
     "fetchedAt": "2026-09-19T09:41:34.807Z",
     "colors": [
       {
-        "hex": "#674665",
-        "share": 0.29997096921354216
+        "hex": "#644A6B",
+        "share": 0.4622942801242951
       },
       {
-        "hex": "#AA5D6B",
-        "share": 0.11787881720281461
+        "hex": "#A95B6C",
+        "share": 0.2682558407181494
       },
       {
-        "hex": "#3E2F46",
-        "share": 0.10547852413011322
+        "hex": "#EB7B65",
+        "share": 0.16253308781217632
       },
       {
-        "hex": "#F78E6E",
-        "share": 0.06345300468639839
+        "hex": "#FBE098",
+        "share": 0.10691679134537921
       }
     ],
-    "correctHex": "#674665",
+    "correctHex": "#644A6B",
     "playable": true,
     "excludedReason": null
   },
@@ -2059,23 +2059,23 @@
     "fetchedAt": "2026-09-19T09:41:34.845Z",
     "colors": [
       {
-        "hex": "#3C363B",
-        "share": 0.17615248103070022
+        "hex": "#C0BCBB",
+        "share": 0.3559138684637537
       },
       {
-        "hex": "#945E34",
-        "share": 0.10097396699411706
+        "hex": "#514D60",
+        "share": 0.31692663031561097
       },
       {
-        "hex": "#ECCCB0",
-        "share": 0.09275743051576932
+        "hex": "#925F3E",
+        "share": 0.20902831581563291
       },
       {
-        "hex": "#5B5863",
-        "share": 0.07336193284239062
+        "hex": "#E6BE54",
+        "share": 0.1181311854050024
       }
     ],
-    "correctHex": "#3C363B",
+    "correctHex": "#C0BCBB",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -2091,23 +2091,23 @@
     "fetchedAt": "2026-09-19T09:41:34.880Z",
     "colors": [
       {
-        "hex": "#3B2D28",
-        "share": 0.4732056962454101
+        "hex": "#433029",
+        "share": 0.5290917854437789
       },
       {
-        "hex": "#704C2F",
-        "share": 0.14708074197525847
+        "hex": "#84583A",
+        "share": 0.3013323693451766
       },
       {
-        "hex": "#696260",
-        "share": 0.11381651152392179
+        "hex": "#C4B19E",
+        "share": 0.12685051297941197
       },
       {
-        "hex": "#A37855",
-        "share": 0.06621682045445307
+        "hex": "#EF9A34",
+        "share": 0.042725332231632586
       }
     ],
-    "correctHex": "#3B2D28",
+    "correctHex": "#433029",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -2123,23 +2123,23 @@
     "fetchedAt": "2026-09-19T09:41:34.919Z",
     "colors": [
       {
-        "hex": "#D2E7F9",
-        "share": 0.2534809305543544
+        "hex": "#CADEF1",
+        "share": 0.3734301117368912
       },
       {
-        "hex": "#A8C8EC",
-        "share": 0.13710398108910607
+        "hex": "#819EC7",
+        "share": 0.2717826702406409
       },
       {
-        "hex": "#2963CC",
-        "share": 0.10563867508432068
+        "hex": "#2C63C9",
+        "share": 0.19684968225762733
       },
       {
-        "hex": "#87A9D2",
-        "share": 0.09654357289054168
+        "hex": "#304572",
+        "share": 0.15793753576484051
       }
     ],
-    "correctHex": "#D2E7F9",
+    "correctHex": "#CADEF1",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -2155,23 +2155,23 @@
     "fetchedAt": "2026-09-19T09:41:34.957Z",
     "colors": [
       {
-        "hex": "#484D63",
-        "share": 0.2980460349908408
+        "hex": "#494450",
+        "share": 0.43779114232079536
       },
       {
-        "hex": "#3E2C2D",
-        "share": 0.1277643560676454
+        "hex": "#8C93B5",
+        "share": 0.22048599040533964
       },
       {
-        "hex": "#7783A3",
-        "share": 0.1241006716754719
+        "hex": "#934E34",
+        "share": 0.1838802753250365
       },
       {
-        "hex": "#D5D8E1",
-        "share": 0.06130034247484536
+        "hex": "#EDBF8B",
+        "share": 0.15784259194882846
       }
     ],
-    "correctHex": "#484D63",
+    "correctHex": "#494450",
     "playable": true,
     "excludedReason": null
   },
@@ -2187,23 +2187,23 @@
     "fetchedAt": "2026-09-19T09:41:34.995Z",
     "colors": [
       {
-        "hex": "#30343E",
-        "share": 0.1351362152800906
+        "hex": "#ADB6C4",
+        "share": 0.3878864459607447
       },
       {
-        "hex": "#FD9F40",
-        "share": 0.11966961966295876
+        "hex": "#EF9744",
+        "share": 0.28649650408558675
       },
       {
-        "hex": "#C6D4DF",
-        "share": 0.11841737161127024
+        "hex": "#695346",
+        "share": 0.20682335102350266
       },
       {
-        "hex": "#646566",
-        "share": 0.09437154466129355
+        "hex": "#B8488C",
+        "share": 0.11879369893016595
       }
     ],
-    "correctHex": "#30343E",
+    "correctHex": "#ADB6C4",
     "playable": true,
     "excludedReason": null
   },
@@ -2219,25 +2219,25 @@
     "fetchedAt": "2026-09-19T09:41:35.031Z",
     "colors": [
       {
-        "hex": "#5C575E",
-        "share": 0.22368748444886788
+        "hex": "#565155",
+        "share": 0.3754276590891812
       },
       {
-        "hex": "#32343B",
-        "share": 0.20672394362074265
+        "hex": "#A2624B",
+        "share": 0.303599939177374
       },
       {
-        "hex": "#884933",
-        "share": 0.10185442676697452
+        "hex": "#DAC8BA",
+        "share": 0.3015661826199346
       },
       {
-        "hex": "#E4AD90",
-        "share": 0.09289697466446145
+        "hex": "#373B8E",
+        "share": 0.019406219113510224
       }
     ],
-    "correctHex": "#5C575E",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#565155",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "mega-knight",
@@ -2251,25 +2251,25 @@
     "fetchedAt": "2026-09-19T09:41:35.066Z",
     "colors": [
       {
-        "hex": "#333741",
-        "share": 0.4563840821005513
+        "hex": "#363944",
+        "share": 0.4467741375117257
       },
       {
-        "hex": "#5A606B",
-        "share": 0.21174736612260495
+        "hex": "#B4C3D8",
+        "share": 0.2699510127505819
       },
       {
-        "hex": "#7E8A9F",
-        "share": 0.1084802663900868
+        "hex": "#687284",
+        "share": 0.2596150505506723
       },
       {
-        "hex": "#A1AFC5",
-        "share": 0.10261204214203833
+        "hex": "#D5A08A",
+        "share": 0.023659799187020117
       }
     ],
-    "correctHex": "#333741",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#363944",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "mega-minion",
@@ -2283,23 +2283,23 @@
     "fetchedAt": "2026-09-19T09:41:35.101Z",
     "colors": [
       {
-        "hex": "#33363E",
-        "share": 0.3437250598563448
+        "hex": "#42434D",
+        "share": 0.531874803726578
       },
       {
-        "hex": "#544F5F",
-        "share": 0.17833865389731313
+        "hex": "#959EA3",
+        "share": 0.3082975679542203
       },
       {
-        "hex": "#717580",
-        "share": 0.17062383612662943
+        "hex": "#9382B9",
+        "share": 0.0975435290833595
       },
       {
-        "hex": "#959BA5",
-        "share": 0.1221900771481777
+        "hex": "#53549E",
+        "share": 0.06228409923584215
       }
     ],
-    "correctHex": "#33363E",
+    "correctHex": "#42434D",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -2315,23 +2315,23 @@
     "fetchedAt": "2026-09-19T09:41:35.139Z",
     "colors": [
       {
-        "hex": "#424B68",
-        "share": 0.1840649581324537
+        "hex": "#CB7252",
+        "share": 0.34465239765315153
       },
       {
-        "hex": "#7D86A2",
-        "share": 0.11294087794975895
+        "hex": "#594651",
+        "share": 0.3286898947851454
       },
       {
-        "hex": "#EC9C7A",
-        "share": 0.08047449885815783
+        "hex": "#BAB0B9",
+        "share": 0.17122816218165132
       },
       {
-        "hex": "#4C2925",
-        "share": 0.06549099213397615
+        "hex": "#EBBE4F",
+        "share": 0.1554295453800518
       }
     ],
-    "correctHex": "#424B68",
+    "correctHex": "#CB7252",
     "playable": true,
     "excludedReason": null
   },
@@ -2347,25 +2347,25 @@
     "fetchedAt": "2026-09-19T09:41:35.175Z",
     "colors": [
       {
-        "hex": "#34353B",
-        "share": 0.26540404715442806
+        "hex": "#504A48",
+        "share": 0.4529920314006801
       },
       {
-        "hex": "#5B5F64",
-        "share": 0.1754524312331257
+        "hex": "#B9785E",
+        "share": 0.21122709662138156
       },
       {
-        "hex": "#4C4B4B",
-        "share": 0.06879360581678205
+        "hex": "#DCCBB1",
+        "share": 0.21014431454819227
       },
       {
-        "hex": "#7B5742",
-        "share": 0.06837926702130503
+        "hex": "#6984AA",
+        "share": 0.12563655742974605
       }
     ],
-    "correctHex": "#34353B",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#504A48",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "mini-p-e-k-k-a",
@@ -2379,23 +2379,23 @@
     "fetchedAt": "2026-09-19T09:41:35.210Z",
     "colors": [
       {
-        "hex": "#343C57",
-        "share": 0.3594352106326979
+        "hex": "#363D5A",
+        "share": 0.38628230013344655
       },
       {
-        "hex": "#506391",
-        "share": 0.16319853422326921
+        "hex": "#6D96B8",
+        "share": 0.2578551498240932
       },
       {
-        "hex": "#3589AC",
-        "share": 0.13990315403742964
+        "hex": "#5A71A6",
+        "share": 0.24378260342108454
       },
       {
-        "hex": "#8C9EC3",
-        "share": 0.11252163038578429
+        "hex": "#7ACBD4",
+        "share": 0.11207994662137571
       }
     ],
-    "correctHex": "#343C57",
+    "correctHex": "#363D5A",
     "playable": true,
     "excludedReason": null
   },
@@ -2411,23 +2411,23 @@
     "fetchedAt": "2026-09-19T09:41:35.249Z",
     "colors": [
       {
-        "hex": "#292E45",
-        "share": 0.19841385120413677
+        "hex": "#3D4573",
+        "share": 0.45378290965148266
       },
       {
-        "hex": "#4075B9",
-        "share": 0.12493100543241438
+        "hex": "#61A5DD",
+        "share": 0.2928089955566303
       },
       {
-        "hex": "#63C2F3",
-        "share": 0.10574325305754873
+        "hex": "#9D8A7E",
+        "share": 0.1467067678263761
       },
       {
-        "hex": "#2C4F94",
-        "share": 0.09744937977515034
+        "hex": "#A6C825",
+        "share": 0.10670132696551099
       }
     ],
-    "correctHex": "#292E45",
+    "correctHex": "#3D4573",
     "playable": true,
     "excludedReason": null
   },
@@ -2443,23 +2443,23 @@
     "fetchedAt": "2026-09-19T09:41:35.285Z",
     "colors": [
       {
-        "hex": "#322F39",
-        "share": 0.410889280665809
+        "hex": "#3B323A",
+        "share": 0.41020967795873325
       },
       {
-        "hex": "#435469",
-        "share": 0.1392131637045155
+        "hex": "#778490",
+        "share": 0.22414139049593687
       },
       {
-        "hex": "#BCDEEB",
-        "share": 0.11038579438064834
+        "hex": "#3F5473",
+        "share": 0.18999765909774938
       },
       {
-        "hex": "#6C8396",
-        "share": 0.10735217039119455
+        "hex": "#B6D4E1",
+        "share": 0.1756512724475805
       }
     ],
-    "correctHex": "#322F39",
+    "correctHex": "#3B323A",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -2475,23 +2475,23 @@
     "fetchedAt": "2026-09-19T09:41:35.319Z",
     "colors": [
       {
-        "hex": "#22487D",
-        "share": 0.3255549973017734
+        "hex": "#274F8C",
+        "share": 0.387533607464811
       },
       {
-        "hex": "#222C46",
-        "share": 0.20134353076908762
+        "hex": "#343F5B",
+        "share": 0.32441088091096
       },
       {
-        "hex": "#3A6CA6",
-        "share": 0.09668955507173561
+        "hex": "#86B9CF",
+        "share": 0.28625652380199273
       },
       {
-        "hex": "#82CBE5",
-        "share": 0.0840916280541134
+        "hex": "#B064E5",
+        "share": 0.0017989878222362803
       }
     ],
-    "correctHex": "#22487D",
+    "correctHex": "#274F8C",
     "playable": true,
     "excludedReason": null
   },
@@ -2507,23 +2507,23 @@
     "fetchedAt": "2026-09-19T09:41:35.351Z",
     "colors": [
       {
-        "hex": "#64ADE3",
-        "share": 0.3547663346831564
+        "hex": "#88B5E3",
+        "share": 0.5374852041471171
       },
       {
-        "hex": "#4E4A5B",
-        "share": 0.19442924373426726
+        "hex": "#514E5E",
+        "share": 0.28790234024044153
       },
       {
-        "hex": "#DAD9F3",
-        "share": 0.11623071029878516
+        "hex": "#F9D176",
+        "share": 0.13044594344062407
       },
       {
-        "hex": "#FAD271",
-        "share": 0.09114041808033271
+        "hex": "#A78449",
+        "share": 0.04416651217181729
       }
     ],
-    "correctHex": "#64ADE3",
+    "correctHex": "#88B5E3",
     "playable": true,
     "excludedReason": null
   },
@@ -2539,23 +2539,23 @@
     "fetchedAt": "2026-09-19T09:41:35.388Z",
     "colors": [
       {
-        "hex": "#D2BDB4",
-        "share": 0.16057424246371904
+        "hex": "#D2C2BA",
+        "share": 0.485668249660787
       },
       {
-        "hex": "#3F4F6C",
-        "share": 0.15378703004090566
+        "hex": "#A76444",
+        "share": 0.2558175033921303
       },
       {
-        "hex": "#7789A3",
-        "share": 0.10614627028998723
+        "hex": "#65868D",
+        "share": 0.25266282225237446
       },
       {
-        "hex": "#EEE7D9",
-        "share": 0.0917511268596441
+        "hex": "#D6B316",
+        "share": 0.005851424694708277
       }
     ],
-    "correctHex": "#D2BDB4",
+    "correctHex": "#D2C2BA",
     "playable": true,
     "excludedReason": null
   },
@@ -2571,25 +2571,25 @@
     "fetchedAt": "2026-09-19T09:41:35.426Z",
     "colors": [
       {
-        "hex": "#B0CFE0",
-        "share": 0.291371324563091
+        "hex": "#9EBBD1",
+        "share": 0.4972912559569085
       },
       {
-        "hex": "#303933",
-        "share": 0.11506873640439795
+        "hex": "#485657",
+        "share": 0.33166203567159774
       },
       {
-        "hex": "#839195",
-        "share": 0.11409207274664457
+        "hex": "#8D9B45",
+        "share": 0.11311528849288276
       },
       {
-        "hex": "#244E62",
-        "share": 0.08414105390887432
+        "hex": "#CA7023",
+        "share": 0.057931419878611015
       }
     ],
-    "correctHex": "#B0CFE0",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#9EBBD1",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "mother-witch",
@@ -2603,23 +2603,23 @@
     "fetchedAt": "2026-09-19T09:41:35.464Z",
     "colors": [
       {
-        "hex": "#353344",
-        "share": 0.20630966664927747
+        "hex": "#573972",
+        "share": 0.3118397742930254
       },
       {
-        "hex": "#5D3382",
-        "share": 0.14777766184986177
+        "hex": "#BB9691",
+        "share": 0.27813135621022245
       },
       {
-        "hex": "#B23770",
-        "share": 0.09186707705148939
+        "hex": "#B64773",
+        "share": 0.22846269929794633
       },
       {
-        "hex": "#636266",
-        "share": 0.07945119724555272
+        "hex": "#9B32B3",
+        "share": 0.18156617019880586
       }
     ],
-    "correctHex": "#353344",
+    "correctHex": "#573972",
     "playable": true,
     "excludedReason": null
   },
@@ -2635,25 +2635,25 @@
     "fetchedAt": "2026-09-19T09:41:35.498Z",
     "colors": [
       {
-        "hex": "#35323B",
-        "share": 0.13557567917205693
+        "hex": "#ACC3DA",
+        "share": 0.3917147351861563
       },
       {
-        "hex": "#89C3F4",
-        "share": 0.13229840448469168
+        "hex": "#525562",
+        "share": 0.2692486328563937
       },
       {
-        "hex": "#D6E1E6",
-        "share": 0.11703320396722726
+        "hex": "#8D5449",
+        "share": 0.19916098584163608
       },
       {
-        "hex": "#545863",
-        "share": 0.09552968233433952
+        "hex": "#612185",
+        "share": 0.1398756461158139
       }
     ],
-    "correctHex": "#35323B",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#ACC3DA",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "night-witch",
@@ -2667,25 +2667,25 @@
     "fetchedAt": "2026-09-19T09:41:35.534Z",
     "colors": [
       {
-        "hex": "#5C5D62",
-        "share": 0.27875933603964115
+        "hex": "#586B76",
+        "share": 0.409755185946552
       },
       {
-        "hex": "#32333B",
-        "share": 0.27692463269816964
+        "hex": "#483A3E",
+        "share": 0.3189497290226126
       },
       {
-        "hex": "#7F8B99",
-        "share": 0.10948989468513891
+        "hex": "#B7C0CE",
+        "share": 0.23068585311156792
       },
       {
-        "hex": "#175163",
-        "share": 0.06258216437208361
+        "hex": "#6B47A2",
+        "share": 0.04060923191926743
       }
     ],
-    "correctHex": "#5C5D62",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#586B76",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "p-e-k-k-a",
@@ -2699,25 +2699,25 @@
     "fetchedAt": "2026-09-19T09:41:35.570Z",
     "colors": [
       {
-        "hex": "#3E3E57",
-        "share": 0.49585877046311777
+        "hex": "#444451",
+        "share": 0.4120754405513598
       },
       {
-        "hex": "#5E647F",
-        "share": 0.10292802426410545
+        "hex": "#403C6D",
+        "share": 0.27735132681276053
       },
       {
-        "hex": "#8A92A3",
-        "share": 0.09361511840416845
+        "hex": "#9BA2AF",
+        "share": 0.2129709875778961
       },
       {
-        "hex": "#2C2430",
-        "share": 0.08239685810942178
+        "hex": "#9F4896",
+        "share": 0.09760224505798358
       }
     ],
-    "correctHex": "#3E3E57",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#444451",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "phoenix",
@@ -2731,25 +2731,25 @@
     "fetchedAt": "2026-09-19T09:41:35.610Z",
     "colors": [
       {
-        "hex": "#7C2C35",
-        "share": 0.1667491792172599
+        "hex": "#CF5261",
+        "share": 0.32384306659022033
       },
       {
-        "hex": "#32343E",
-        "share": 0.13789150033873573
+        "hex": "#74353F",
+        "share": 0.29520845278073554
       },
       {
-        "hex": "#B43E50",
-        "share": 0.10537286987336494
+        "hex": "#7F90AB",
+        "share": 0.24239495454173152
       },
       {
-        "hex": "#636367",
-        "share": 0.07970712387305227
+        "hex": "#E3A75F",
+        "share": 0.13855352608731264
       }
     ],
-    "correctHex": "#7C2C35",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#CF5261",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "poison",
@@ -2763,23 +2763,23 @@
     "fetchedAt": "2026-09-19T09:41:35.649Z",
     "colors": [
       {
-        "hex": "#5D2409",
-        "share": 0.28127628553804745
+        "hex": "#5F270E",
+        "share": 0.328486160688162
       },
       {
-        "hex": "#96410E",
-        "share": 0.21255537486681994
+        "hex": "#A54713",
+        "share": 0.3059570483937036
       },
       {
-        "hex": "#F79639",
-        "share": 0.15363371277967813
+        "hex": "#EF8C37",
+        "share": 0.23519515477792732
       },
       {
-        "hex": "#D06721",
-        "share": 0.10331968821847137
+        "hex": "#AE8979",
+        "share": 0.13036163614020715
       }
     ],
-    "correctHex": "#5D2409",
+    "correctHex": "#5F270E",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -2795,23 +2795,23 @@
     "fetchedAt": "2026-09-19T09:41:35.686Z",
     "colors": [
       {
-        "hex": "#473928",
-        "share": 0.28629819251548666
+        "hex": "#5D482E",
+        "share": 0.3887855434493755
       },
       {
-        "hex": "#5F5344",
-        "share": 0.14734251690097022
+        "hex": "#C3A067",
+        "share": 0.2745297782502141
       },
       {
-        "hex": "#8A7043",
-        "share": 0.10785506180522163
+        "hex": "#4F5D69",
+        "share": 0.1927835355951221
       },
       {
-        "hex": "#A3885C",
-        "share": 0.07822532741210081
+        "hex": "#C1B8AB",
+        "share": 0.14390114270528834
       }
     ],
-    "correctHex": "#473928",
+    "correctHex": "#5D482E",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -2827,25 +2827,25 @@
     "fetchedAt": "2026-09-19T09:41:35.724Z",
     "colors": [
       {
-        "hex": "#3A3536",
-        "share": 0.29704329313556593
+        "hex": "#594942",
+        "share": 0.4347232697625974
       },
       {
-        "hex": "#635C59",
-        "share": 0.19906998893510933
+        "hex": "#8EC3D1",
+        "share": 0.2536364615881909
       },
       {
-        "hex": "#61CDE1",
-        "share": 0.06963878034091069
+        "hex": "#D59F85",
+        "share": 0.24451388140645763
       },
       {
-        "hex": "#888B8F",
-        "share": 0.05438603862907405
+        "hex": "#566BA4",
+        "share": 0.06712638724275401
       }
     ],
-    "correctHex": "#3A3536",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#594942",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "rage",
@@ -2859,25 +2859,25 @@
     "fetchedAt": "2026-09-19T09:41:35.759Z",
     "colors": [
       {
-        "hex": "#F3C8F5",
-        "share": 0.3090916800949877
+        "hex": "#712A8A",
+        "share": 0.3029922979313601
       },
       {
-        "hex": "#8837A4",
-        "share": 0.1528991038362593
+        "hex": "#E9A6ED",
+        "share": 0.2670640658659663
       },
       {
-        "hex": "#631C7E",
-        "share": 0.1425098238769683
+        "hex": "#DABAD2",
+        "share": 0.2540207159087556
       },
       {
-        "hex": "#F094F7",
-        "share": 0.09515732338224069
+        "hex": "#C461D7",
+        "share": 0.175922920293918
       }
     ],
-    "correctHex": "#F3C8F5",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#712A8A",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "ram-rider",
@@ -2891,23 +2891,23 @@
     "fetchedAt": "2026-09-19T09:41:35.796Z",
     "colors": [
       {
-        "hex": "#383336",
-        "share": 0.22521792282342937
+        "hex": "#CC916D",
+        "share": 0.3685280040305651
       },
       {
-        "hex": "#666163",
-        "share": 0.11532635271606251
+        "hex": "#614A42",
+        "share": 0.3592744982786128
       },
       {
-        "hex": "#FCE86D",
-        "share": 0.10545338577654938
+        "hex": "#FAD25A",
+        "share": 0.22147955327903265
       },
       {
-        "hex": "#B48868",
-        "share": 0.07030668651004571
+        "hex": "#6789D3",
+        "share": 0.0507179444117894
       }
     ],
-    "correctHex": "#383336",
+    "correctHex": "#CC916D",
     "playable": true,
     "excludedReason": null
   },
@@ -2923,23 +2923,23 @@
     "fetchedAt": "2026-09-19T09:41:35.834Z",
     "colors": [
       {
-        "hex": "#383637",
-        "share": 0.24999284016381706
+        "hex": "#494D4E",
+        "share": 0.4623944570254503
       },
       {
-        "hex": "#4A5357",
-        "share": 0.1070681902798064
+        "hex": "#C28773",
+        "share": 0.24670435969345672
       },
       {
-        "hex": "#5BDDBB",
-        "share": 0.08627602600452501
+        "hex": "#79CCBE",
+        "share": 0.23949069422156902
       },
       {
-        "hex": "#BE826F",
-        "share": 0.08256723086175788
+        "hex": "#FEAFFB",
+        "share": 0.05141048905952399
       }
     ],
-    "correctHex": "#383637",
+    "correctHex": "#494D4E",
     "playable": true,
     "excludedReason": null
   },
@@ -2955,25 +2955,25 @@
     "fetchedAt": "2026-09-19T09:41:35.883Z",
     "colors": [
       {
-        "hex": "#D5E5E2",
-        "share": 0.23784116560640262
+        "hex": "#C4D0C6",
+        "share": 0.5096130583899017
       },
       {
-        "hex": "#AFC0B2",
-        "share": 0.17548395923113755
+        "hex": "#AC8250",
+        "share": 0.19475159743272283
       },
       {
-        "hex": "#363D36",
-        "share": 0.11955674122717012
+        "hex": "#52554B",
+        "share": 0.17387468158078243
       },
       {
-        "hex": "#A5713A",
-        "share": 0.08750256515493536
+        "hex": "#F2DD7A",
+        "share": 0.12176066259659309
       }
     ],
-    "correctHex": "#D5E5E2",
-    "playable": true,
-    "excludedReason": null
+    "correctHex": "#C4D0C6",
+    "playable": false,
+    "excludedReason": "monochrome"
   },
   {
     "id": "ronin",
@@ -2987,23 +2987,23 @@
     "fetchedAt": "2026-09-19T09:41:35.918Z",
     "colors": [
       {
-        "hex": "#32383F",
-        "share": 0.27333819338591026
+        "hex": "#D5C3A7",
+        "share": 0.43407504143854536
       },
       {
-        "hex": "#D9C8A8",
-        "share": 0.1749221287030287
+        "hex": "#3B4147",
+        "share": 0.24103001992398748
       },
       {
-        "hex": "#5F5F62",
-        "share": 0.13458811054410497
+        "hex": "#7E513E",
+        "share": 0.16659132385688213
       },
       {
-        "hex": "#C2A783",
-        "share": 0.09327324541056399
+        "hex": "#87878A",
+        "share": 0.158303614780585
       }
     ],
-    "correctHex": "#32383F",
+    "correctHex": "#D5C3A7",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -3019,25 +3019,25 @@
     "fetchedAt": "2026-09-19T09:41:35.952Z",
     "colors": [
       {
-        "hex": "#443125",
-        "share": 0.1859521087956857
+        "hex": "#C97946",
+        "share": 0.33916690994576154
       },
       {
-        "hex": "#AA653C",
-        "share": 0.17732055452973416
+        "hex": "#583824",
+        "share": 0.24015487915431066
       },
       {
-        "hex": "#64707E",
-        "share": 0.1335765995486386
+        "hex": "#555F70",
+        "share": 0.23297942627106924
       },
       {
-        "hex": "#F09251",
-        "share": 0.13318092558398545
+        "hex": "#9CC5D4",
+        "share": 0.18769878462885853
       }
     ],
-    "correctHex": "#443125",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#C97946",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "royal-ghost",
@@ -3051,25 +3051,25 @@
     "fetchedAt": "2026-09-19T09:41:35.988Z",
     "colors": [
       {
-        "hex": "#B3D0E8",
-        "share": 0.24071023982645723
+        "hex": "#D0E2EC",
+        "share": 0.4535680369013702
       },
       {
-        "hex": "#DEECF4",
-        "share": 0.19903855166780487
+        "hex": "#8CB3D9",
+        "share": 0.27231718898385565
       },
       {
-        "hex": "#30343F",
-        "share": 0.13626320652392238
+        "hex": "#516680",
+        "share": 0.15711911545244878
       },
       {
-        "hex": "#88AFD3",
-        "share": 0.07929940143815531
+        "hex": "#D0C18A",
+        "share": 0.11699565866232534
       }
     ],
-    "correctHex": "#B3D0E8",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#D0E2EC",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "royal-giant",
@@ -3083,23 +3083,23 @@
     "fetchedAt": "2026-09-19T09:41:36.026Z",
     "colors": [
       {
-        "hex": "#8A5219",
-        "share": 0.1476525119617225
+        "hex": "#905529",
+        "share": 0.30074539034915654
       },
       {
-        "hex": "#3E2C2B",
-        "share": 0.14253887559808612
+        "hex": "#494054",
+        "share": 0.26138877991369164
       },
       {
-        "hex": "#BF7D21",
-        "share": 0.07274222488038277
+        "hex": "#E5B159",
+        "share": 0.2549234994115339
       },
       {
-        "hex": "#303656",
-        "share": 0.06979665071770334
+        "hex": "#B2C2CD",
+        "share": 0.18294233032561788
       }
     ],
-    "correctHex": "#8A5219",
+    "correctHex": "#905529",
     "playable": true,
     "excludedReason": null
   },
@@ -3115,23 +3115,23 @@
     "fetchedAt": "2026-09-19T09:41:36.061Z",
     "colors": [
       {
-        "hex": "#35393E",
-        "share": 0.24946253940030713
+        "hex": "#42474D",
+        "share": 0.39631430071647555
       },
       {
-        "hex": "#595F65",
-        "share": 0.14926048654327972
+        "hex": "#9F5E56",
+        "share": 0.2376225884584766
       },
       {
-        "hex": "#895048",
-        "share": 0.11951830598884668
+        "hex": "#B8ABA5",
+        "share": 0.19668354816307865
       },
       {
-        "hex": "#15537C",
-        "share": 0.10951264850884991
+        "hex": "#235B84",
+        "share": 0.1693795626619692
       }
     ],
-    "correctHex": "#35393E",
+    "correctHex": "#42474D",
     "playable": true,
     "excludedReason": null
   },
@@ -3147,25 +3147,25 @@
     "fetchedAt": "2026-09-19T09:41:36.100Z",
     "colors": [
       {
-        "hex": "#4B4F56",
-        "share": 0.20517791169736047
+        "hex": "#4F4B4D",
+        "share": 0.4498912276575729
       },
       {
-        "hex": "#313035",
-        "share": 0.14133198477250059
+        "hex": "#A4B1B3",
+        "share": 0.22992121354656633
       },
       {
-        "hex": "#A9A7A6",
-        "share": 0.08199530813210278
+        "hex": "#CB8A5E",
+        "share": 0.22870119943555975
       },
       {
-        "hex": "#F1A46D",
-        "share": 0.08050627221262309
+        "hex": "#5282B6",
+        "share": 0.09148635936030103
       }
     ],
-    "correctHex": "#4B4F56",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#4F4B4D",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "rune-giant",
@@ -3179,25 +3179,25 @@
     "fetchedAt": "2026-09-19T09:41:36.138Z",
     "colors": [
       {
-        "hex": "#A96753",
-        "share": 0.1604936528332792
+        "hex": "#79483F",
+        "share": 0.31538755811900415
       },
       {
-        "hex": "#EE7D27",
-        "share": 0.11460201358392522
+        "hex": "#DC6F2C",
+        "share": 0.2695397563415926
       },
       {
-        "hex": "#402D2C",
-        "share": 0.11004109066775865
+        "hex": "#E1A780",
+        "share": 0.2202930963451239
       },
       {
-        "hex": "#C35021",
-        "share": 0.08513252093364775
+        "hex": "#97A7C0",
+        "share": 0.19477958919427932
       }
     ],
-    "correctHex": "#A96753",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#79483F",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "skeleton-army",
@@ -3211,23 +3211,23 @@
     "fetchedAt": "2026-09-19T09:41:36.173Z",
     "colors": [
       {
-        "hex": "#64446B",
-        "share": 0.2531513069630984
+        "hex": "#937E8B",
+        "share": 0.37562637803166965
       },
       {
-        "hex": "#8E7985",
-        "share": 0.2391897271078742
+        "hex": "#D8C5C1",
+        "share": 0.26262392648441957
       },
       {
-        "hex": "#E6D4CC",
-        "share": 0.14315410812484336
+        "hex": "#544154",
+        "share": 0.1933021878902817
       },
       {
-        "hex": "#AF9DA7",
-        "share": 0.13909979507290393
+        "hex": "#613576",
+        "share": 0.16844750759362906
       }
     ],
-    "correctHex": "#64446B",
+    "correctHex": "#937E8B",
     "playable": true,
     "excludedReason": null
   },
@@ -3243,25 +3243,25 @@
     "fetchedAt": "2026-09-19T09:41:36.208Z",
     "colors": [
       {
-        "hex": "#99DBFA",
-        "share": 0.22910291972890273
+        "hex": "#B5DEF3",
+        "share": 0.42800239592692424
       },
       {
-        "hex": "#36383A",
-        "share": 0.2154336698218422
+        "hex": "#424345",
+        "share": 0.2711440551063193
       },
       {
-        "hex": "#DCEFF8",
-        "share": 0.13702136177757443
+        "hex": "#93745C",
+        "share": 0.18915843066786464
       },
       {
-        "hex": "#585654",
-        "share": 0.08285910377763162
+        "hex": "#5A8CC0",
+        "share": 0.11169511829889188
       }
     ],
-    "correctHex": "#99DBFA",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#B5DEF3",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "skeleton-dragons",
@@ -3275,23 +3275,23 @@
     "fetchedAt": "2026-09-19T09:41:36.246Z",
     "colors": [
       {
-        "hex": "#657075",
-        "share": 0.15990110137109462
+        "hex": "#76929A",
+        "share": 0.4215095704691653
       },
       {
-        "hex": "#7F8B93",
-        "share": 0.13742414025623736
+        "hex": "#404F54",
+        "share": 0.28393702521193437
       },
       {
-        "hex": "#42484C",
-        "share": 0.1361804150745486
+        "hex": "#CCCBC4",
+        "share": 0.24411380758402668
       },
       {
-        "hex": "#99A2A6",
-        "share": 0.11960740241252715
+        "hex": "#2960A4",
+        "share": 0.050439596734873623
       }
     ],
-    "correctHex": "#657075",
+    "correctHex": "#76929A",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -3307,25 +3307,25 @@
     "fetchedAt": "2026-09-19T09:41:36.285Z",
     "colors": [
       {
-        "hex": "#41516C",
-        "share": 0.2154963044648366
+        "hex": "#464C59",
+        "share": 0.3244590635760909
       },
       {
-        "hex": "#5C7287",
-        "share": 0.09337954393288961
+        "hex": "#5D919F",
+        "share": 0.2751708896541091
       },
       {
-        "hex": "#7487A0",
-        "share": 0.08227324642589894
+        "hex": "#C68C47",
+        "share": 0.21008720083603158
       },
       {
-        "hex": "#27343F",
-        "share": 0.07330681475063343
+        "hex": "#D4CDB6",
+        "share": 0.19028284593376849
       }
     ],
-    "correctHex": "#41516C",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#464C59",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "skeletons",
@@ -3339,23 +3339,23 @@
     "fetchedAt": "2026-09-19T09:41:36.321Z",
     "colors": [
       {
-        "hex": "#51505A",
-        "share": 0.23896334401275515
+        "hex": "#4E4B55",
+        "share": 0.4266043456291056
       },
       {
-        "hex": "#2C2F3F",
-        "share": 0.16562128664470616
+        "hex": "#BAB1A5",
+        "share": 0.3450132642748863
       },
       {
-        "hex": "#767276",
-        "share": 0.12816810312410692
+        "hex": "#4F6999",
+        "share": 0.2088491662455786
       },
       {
-        "hex": "#BEB2A3",
-        "share": 0.11574387437390009
+        "hex": "#915E29",
+        "share": 0.01953322385042951
       }
     ],
-    "correctHex": "#51505A",
+    "correctHex": "#4E4B55",
     "playable": true,
     "excludedReason": null
   },
@@ -3371,25 +3371,25 @@
     "fetchedAt": "2026-09-19T09:41:36.360Z",
     "colors": [
       {
-        "hex": "#33343C",
-        "share": 0.1939319503866762
+        "hex": "#605E70",
+        "share": 0.3381179130553938
       },
       {
-        "hex": "#838297",
-        "share": 0.1271510129161999
+        "hex": "#BBCBE1",
+        "share": 0.3063272926586962
       },
       {
-        "hex": "#5D6065",
-        "share": 0.12319652328829984
+        "hex": "#89673F",
+        "share": 0.21215443116028912
       },
       {
-        "hex": "#BCD5F4",
-        "share": 0.11597586816568367
+        "hex": "#E9CF69",
+        "share": 0.1434003631256209
       }
     ],
-    "correctHex": "#33343C",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#605E70",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "spear-goblins",
@@ -3403,23 +3403,23 @@
     "fetchedAt": "2026-09-19T09:41:36.397Z",
     "colors": [
       {
-        "hex": "#3C4A12",
-        "share": 0.1556504105393026
+        "hex": "#4B5125",
+        "share": 0.3543445020115497
       },
       {
-        "hex": "#ACC625",
-        "share": 0.086801764113618
+        "hex": "#AAC33A",
+        "share": 0.2954677038642538
       },
       {
-        "hex": "#2E2C29",
-        "share": 0.08083157252861012
+        "hex": "#5379B1",
+        "share": 0.18650257567435163
       },
       {
-        "hex": "#87B5E2",
-        "share": 0.07900222641348895
+        "hex": "#9CB7B9",
+        "share": 0.16368521844984488
       }
     ],
-    "correctHex": "#3C4A12",
+    "correctHex": "#4B5125",
     "playable": true,
     "excludedReason": null
   },
@@ -3435,25 +3435,25 @@
     "fetchedAt": "2026-09-19T09:41:36.437Z",
     "colors": [
       {
-        "hex": "#31333F",
-        "share": 0.16357816488763674
+        "hex": "#6FC6D9",
+        "share": 0.43204661568771496
       },
       {
-        "hex": "#3AC6E2",
-        "share": 0.10892424903773659
+        "hex": "#53607E",
+        "share": 0.3217684576084416
       },
       {
-        "hex": "#626268",
-        "share": 0.09265505337089798
+        "hex": "#DFC8B0",
+        "share": 0.14215113366948276
       },
       {
-        "hex": "#AFE7EB",
-        "share": 0.08663677367300239
+        "hex": "#996B4F",
+        "share": 0.10403379303436071
       }
     ],
-    "correctHex": "#31333F",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#6FC6D9",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "suspicious-bush",
@@ -3467,23 +3467,23 @@
     "fetchedAt": "2026-09-19T09:41:36.492Z",
     "colors": [
       {
-        "hex": "#30323E",
-        "share": 0.128273633850073
+        "hex": "#52658E",
+        "share": 0.3790067096648417
       },
       {
-        "hex": "#254508",
-        "share": 0.11940414427288826
+        "hex": "#C7B495",
+        "share": 0.24430978181404645
       },
       {
-        "hex": "#3F4577",
-        "share": 0.10710180496442884
+        "hex": "#394B21",
+        "share": 0.22024921612269102
       },
       {
-        "hex": "#6BA4CD",
-        "share": 0.09108701730404797
+        "hex": "#67A832",
+        "share": 0.15643429239842088
       }
     ],
-    "correctHex": "#30323E",
+    "correctHex": "#52658E",
     "playable": true,
     "excludedReason": null
   },
@@ -3499,23 +3499,23 @@
     "fetchedAt": "2026-09-19T09:41:36.532Z",
     "colors": [
       {
-        "hex": "#386FAC",
-        "share": 0.283245224501304
+        "hex": "#386CAD",
+        "share": 0.44222484508704635
       },
       {
-        "hex": "#699BBB",
-        "share": 0.13685768661450623
+        "hex": "#84AEC4",
+        "share": 0.2571997639421658
       },
       {
-        "hex": "#673424",
-        "share": 0.1364206668076408
+        "hex": "#63382B",
+        "share": 0.19374446739451165
       },
       {
-        "hex": "#F68942",
-        "share": 0.07399732149150631
+        "hex": "#ED8949",
+        "share": 0.10683092357627619
       }
     ],
-    "correctHex": "#386FAC",
+    "correctHex": "#386CAD",
     "playable": true,
     "excludedReason": null
   },
@@ -3531,23 +3531,23 @@
     "fetchedAt": "2026-09-19T09:41:36.573Z",
     "colors": [
       {
-        "hex": "#DBE0E1",
-        "share": 0.2218602546700278
+        "hex": "#C7D0D5",
+        "share": 0.4848322626695218
       },
       {
-        "hex": "#31343E",
-        "share": 0.13210522913838796
+        "hex": "#53402A",
+        "share": 0.269061060281617
       },
       {
-        "hex": "#452D10",
-        "share": 0.11138258677525693
+        "hex": "#B47C4A",
+        "share": 0.13062098501070663
       },
       {
-        "hex": "#ACC4D9",
-        "share": 0.10955982160170642
+        "hex": "#A6A839",
+        "share": 0.11548569203815456
       }
     ],
-    "correctHex": "#DBE0E1",
+    "correctHex": "#C7D0D5",
     "playable": true,
     "excludedReason": null
   },
@@ -3563,25 +3563,25 @@
     "fetchedAt": "2026-09-19T09:41:36.611Z",
     "colors": [
       {
-        "hex": "#3A3238",
-        "share": 0.15002513826043237
+        "hex": "#76554E",
+        "share": 0.3757465982066674
       },
       {
-        "hex": "#625155",
-        "share": 0.09214968038497451
+        "hex": "#C8BDB8",
+        "share": 0.28094546652096464
       },
       {
-        "hex": "#77707C",
-        "share": 0.08062917474682181
+        "hex": "#556B9B",
+        "share": 0.25138092600631706
       },
       {
-        "hex": "#9791A1",
-        "share": 0.0670257846728435
+        "hex": "#BA4AB1",
+        "share": 0.09192700926605092
       }
     ],
-    "correctHex": "#3A3238",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#76554E",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "tombstone",
@@ -3595,23 +3595,23 @@
     "fetchedAt": "2026-09-19T09:41:36.648Z",
     "colors": [
       {
-        "hex": "#27616A",
-        "share": 0.321005112585663
+        "hex": "#275B68",
+        "share": 0.29883480867671597
       },
       {
-        "hex": "#79AD9C",
-        "share": 0.22765963232894593
+        "hex": "#4E7F73",
+        "share": 0.2884414151983936
       },
       {
-        "hex": "#548779",
-        "share": 0.20926248232350703
+        "hex": "#7AB09E",
+        "share": 0.2732684747871829
       },
       {
-        "hex": "#2B393A",
-        "share": 0.06385293157837485
+        "hex": "#C0E7D6",
+        "share": 0.1394553013377075
       }
     ],
-    "correctHex": "#27616A",
+    "correctHex": "#275B68",
     "playable": true,
     "excludedReason": null
   },
@@ -3627,23 +3627,23 @@
     "fetchedAt": "2026-09-19T09:41:36.686Z",
     "colors": [
       {
-        "hex": "#556974",
-        "share": 0.22339081162610575
+        "hex": "#48535C",
+        "share": 0.3670437971708132
       },
       {
-        "hex": "#2A7495",
-        "share": 0.15324827089532972
+        "hex": "#3E7490",
+        "share": 0.33199756446382805
       },
       {
-        "hex": "#464B4F",
-        "share": 0.13171089641677877
+        "hex": "#B2ACA2",
+        "share": 0.20672321264213195
       },
       {
-        "hex": "#19455E",
-        "share": 0.09839251015721603
+        "hex": "#7CC0D7",
+        "share": 0.0942354257232268
       }
     ],
-    "correctHex": "#556974",
+    "correctHex": "#48535C",
     "playable": false,
     "excludedReason": "monochrome"
   },
@@ -3659,23 +3659,23 @@
     "fetchedAt": "2026-09-19T09:41:36.721Z",
     "colors": [
       {
-        "hex": "#A14531",
-        "share": 0.15387670447023521
+        "hex": "#A3432B",
+        "share": 0.456874059977286
       },
       {
-        "hex": "#CA7862",
-        "share": 0.12991483164908874
+        "hex": "#E9A27F",
+        "share": 0.22944227876853188
       },
       {
-        "hex": "#6D2111",
-        "share": 0.12222173190356413
+        "hex": "#544663",
+        "share": 0.16917339390404862
       },
       {
-        "hex": "#3A2F40",
-        "share": 0.10551167203565598
+        "hex": "#A19AA0",
+        "share": 0.14451026735013353
       }
     ],
-    "correctHex": "#A14531",
+    "correctHex": "#A3432B",
     "playable": true,
     "excludedReason": null
   },
@@ -3691,25 +3691,25 @@
     "fetchedAt": "2026-09-19T09:41:36.756Z",
     "colors": [
       {
-        "hex": "#1C4034",
-        "share": 0.32288009615080493
+        "hex": "#2E4938",
+        "share": 0.45759928336816963
       },
       {
-        "hex": "#1B7351",
-        "share": 0.14232849416453175
+        "hex": "#4E9070",
+        "share": 0.24506486181613085
       },
       {
-        "hex": "#546461",
-        "share": 0.0644431793022741
+        "hex": "#46C764",
+        "share": 0.1606283799475797
       },
       {
-        "hex": "#14B058",
-        "share": 0.06406363665116868
+        "hex": "#BEAB44",
+        "share": 0.13670747486811985
       }
     ],
-    "correctHex": "#1C4034",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#2E4938",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "void",
@@ -3723,23 +3723,23 @@
     "fetchedAt": "2026-09-19T09:41:36.796Z",
     "colors": [
       {
-        "hex": "#57223C",
-        "share": 0.4178250898898672
+        "hex": "#62243E",
+        "share": 0.5396801938935359
       },
       {
-        "hex": "#96253D",
-        "share": 0.16681294414087935
+        "hex": "#C63737",
+        "share": 0.20879023438654568
       },
       {
-        "hex": "#7A586B",
-        "share": 0.07563489142436511
+        "hex": "#947480",
+        "share": 0.1615877988945704
       },
       {
-        "hex": "#D83938",
-        "share": 0.06453667789700178
+        "hex": "#FDAB39",
+        "share": 0.08994177282534803
       }
     ],
-    "correctHex": "#57223C",
+    "correctHex": "#62243E",
     "playable": true,
     "excludedReason": null
   },
@@ -3755,23 +3755,23 @@
     "fetchedAt": "2026-09-19T09:41:36.830Z",
     "colors": [
       {
-        "hex": "#2F3232",
-        "share": 0.2510168838397534
+        "hex": "#3B484A",
+        "share": 0.3986645601693147
       },
       {
-        "hex": "#6D4125",
-        "share": 0.1282914924286754
+        "hex": "#8BA4A2",
+        "share": 0.3720153814051927
       },
       {
-        "hex": "#40898B",
-        "share": 0.1046569711847232
+        "hex": "#73472C",
+        "share": 0.21037648672012402
       },
       {
-        "hex": "#999E9E",
-        "share": 0.08267800819215894
+        "hex": "#275D9C",
+        "share": 0.018943571705368586
       }
     ],
-    "correctHex": "#2F3232",
+    "correctHex": "#3B484A",
     "playable": true,
     "excludedReason": null
   },
@@ -3787,23 +3787,23 @@
     "fetchedAt": "2026-09-19T09:41:36.867Z",
     "colors": [
       {
-        "hex": "#3B235C",
-        "share": 0.23611896069775612
+        "hex": "#543583",
+        "share": 0.5286107466316766
       },
       {
-        "hex": "#5E41A3",
-        "share": 0.19620572196679242
+        "hex": "#744852",
+        "share": 0.24888789323775082
       },
       {
-        "hex": "#3E2C2F",
-        "share": 0.07341103151205951
+        "hex": "#D4ACA5",
+        "share": 0.1923384644925913
       },
       {
-        "hex": "#7B4242",
-        "share": 0.06736218247361266
+        "hex": "#C736A0",
+        "share": 0.030162895637981246
       }
     ],
-    "correctHex": "#3B235C",
+    "correctHex": "#543583",
     "playable": true,
     "excludedReason": null
   },
@@ -3819,23 +3819,23 @@
     "fetchedAt": "2026-09-19T09:41:36.902Z",
     "colors": [
       {
-        "hex": "#302E3C",
-        "share": 0.2888976979924682
+        "hex": "#6B483E",
+        "share": 0.38632609721566774
       },
       {
-        "hex": "#7C6760",
-        "share": 0.13926720842653678
+        "hex": "#363A57",
+        "share": 0.3588957055214724
       },
       {
-        "hex": "#5D3228",
-        "share": 0.12842257269870033
+        "hex": "#95AAC0",
+        "share": 0.1388479235488438
       },
       {
-        "hex": "#384172",
-        "share": 0.07735651386018065
+        "hex": "#D6B294",
+        "share": 0.11593027371401604
       }
     ],
-    "correctHex": "#302E3C",
+    "correctHex": "#6B483E",
     "playable": true,
     "excludedReason": null
   },
@@ -3851,25 +3851,25 @@
     "fetchedAt": "2026-09-19T09:41:36.939Z",
     "colors": [
       {
-        "hex": "#A5B5B3",
-        "share": 0.226810831764315
+        "hex": "#A7B6C1",
+        "share": 0.49051373126570214
       },
       {
-        "hex": "#9DB46F",
-        "share": 0.15518052940524976
+        "hex": "#9BB177",
+        "share": 0.27206965260330934
       },
       {
-        "hex": "#C5CECB",
-        "share": 0.14669398604496622
+        "hex": "#575055",
+        "share": 0.17781339339859656
       },
       {
-        "hex": "#627377",
-        "share": 0.08960017720677815
+        "hex": "#B57947",
+        "share": 0.05960322273239193
       }
     ],
-    "correctHex": "#A5B5B3",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#A7B6C1",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "zap",
@@ -3883,25 +3883,25 @@
     "fetchedAt": "2026-09-19T09:41:36.978Z",
     "colors": [
       {
-        "hex": "#659AB5",
-        "share": 0.314261977291609
+        "hex": "#85AEC4",
+        "share": 0.49328893071744007
       },
       {
-        "hex": "#38729A",
-        "share": 0.1855857103295486
+        "hex": "#3B6D92",
+        "share": 0.33643669007456745
       },
       {
-        "hex": "#8DB3C9",
-        "share": 0.12083910274162282
+        "hex": "#1559A7",
+        "share": 0.13209295591109824
       },
       {
-        "hex": "#194673",
-        "share": 0.10098310717252838
+        "hex": "#705039",
+        "share": 0.03818142329689423
       }
     ],
-    "correctHex": "#659AB5",
-    "playable": false,
-    "excludedReason": "monochrome"
+    "correctHex": "#85AEC4",
+    "playable": true,
+    "excludedReason": null
   },
   {
     "id": "zappies",
@@ -3915,23 +3915,23 @@
     "fetchedAt": "2026-09-19T09:41:37.012Z",
     "colors": [
       {
-        "hex": "#2F3948",
-        "share": 0.2607149208607505
+        "hex": "#3D516C",
+        "share": 0.4405949819574093
       },
       {
-        "hex": "#41586D",
-        "share": 0.17121239066819718
+        "hex": "#99C3D1",
+        "share": 0.2652345536788249
       },
       {
-        "hex": "#31291F",
-        "share": 0.0899228816710588
+        "hex": "#413A32",
+        "share": 0.20514340894844732
       },
       {
-        "hex": "#A9B3BC",
-        "share": 0.05893004381355795
+        "hex": "#97623B",
+        "share": 0.08902705541531841
       }
     ],
-    "correctHex": "#2F3948",
+    "correctHex": "#3D516C",
     "playable": true,
     "excludedReason": null
   }
