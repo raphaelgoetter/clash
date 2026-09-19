@@ -23,6 +23,14 @@
 // neutre unique + initiale du pseudo, quel que soit le camp réel. Seuls les
 // joueurs éliminés (camp déjà révélé publiquement) affichent une couleur de
 // camp, dans la bande grisée en bas de l'image.
+//
+// ⚠️ Police embarquée OBLIGATOIRE (data/fonts/Inter-Bold.ttf), même piège
+// que documenté dans pelemeleImage.js : resvg-js n'a aucune police système
+// disponible sur le runtime serverless Vercel (contrairement à une machine
+// de dev locale, où "Inter, system-ui, sans-serif" retombe silencieusement
+// sur une police système présente) — les initiales des pions ne
+// s'afficheraient pas du tout en production, sans erreur levée. `font:
+// { fontFiles, loadSystemFonts: false }` dans rasterize() ci-dessous.
 // ============================================================
 
 import fs from "fs/promises";
@@ -35,6 +43,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BOARD_IMAGE_PATH = path.resolve(__dirname, "..", "..", "data", "goblinhunters", "images", "board.jpg");
 const END_IMAGE_PATH = path.resolve(__dirname, "..", "..", "data", "goblinhunters", "images", "end.webp");
 const START_IMAGE_PATH = path.resolve(__dirname, "..", "..", "data", "goblinhunters", "images", "start.webp");
+const FONT_PATH = path.resolve(__dirname, "..", "..", "data", "fonts", "Inter-Bold.ttf");
+const FONT_FAMILY = "Inter";
 
 // Dimensions natives de board.jpg (voir data/goblinhunters/images/board.jpg)
 // — à ajuster si l'asset est remplacé par une image de résolution différente.
@@ -109,7 +119,7 @@ function buildTokensSvg(joueursVivants) {
       const cy = cy0 + row * TOKEN_SPACING;
       circles.push(
         `<circle cx="${cx}" cy="${cy}" r="${TOKEN_RADIUS}" fill="${PION_VIVANT_COLOR}" stroke="#1e293b" stroke-width="2"/>`,
-        `<text x="${cx}" y="${cy + 6}" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" text-anchor="middle" fill="#1e293b">${initialOf(j.username)}</text>`,
+        `<text x="${cx}" y="${cy + 6}" font-family="${FONT_FAMILY}" font-size="18" text-anchor="middle" fill="#1e293b">${initialOf(j.username)}</text>`,
       );
     });
   }
@@ -129,7 +139,7 @@ function buildEliminatedStripSvg(joueursElimines) {
       const color = CAMP_COLORS[j.camp] || "#64748b";
       return [
         `<circle cx="${cx}" cy="${y}" r="${TOKEN_RADIUS - 4}" fill="${color}" fill-opacity="0.45" stroke="#1e293b" stroke-width="2"/>`,
-        `<text x="${cx}" y="${y + 5}" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" text-anchor="middle" fill="#f8fafc">${initialOf(j.username)}</text>`,
+        `<text x="${cx}" y="${y + 5}" font-family="${FONT_FAMILY}" font-size="15" text-anchor="middle" fill="#f8fafc">${initialOf(j.username)}</text>`,
         `<line x1="${cx - TOKEN_RADIUS + 4}" y1="${y - TOKEN_RADIUS + 4}" x2="${cx + TOKEN_RADIUS - 4}" y2="${y + TOKEN_RADIUS - 4}" stroke="#f8fafc" stroke-width="2"/>`,
       ].join("\n");
     })
@@ -154,6 +164,11 @@ async function rasterize(svg) {
   const resvg = new Resvg(Buffer.from(svg, "utf8"), {
     fitTo: { mode: "width", value: BOARD_WIDTH },
     background: BACKGROUND,
+    font: {
+      fontFiles: [FONT_PATH],
+      loadSystemFonts: false,
+      defaultFontFamily: FONT_FAMILY,
+    },
   });
   const pngData = resvg.render();
   return { buffer: Buffer.from(pngData.asPng()), mimeType: "image/png" };
