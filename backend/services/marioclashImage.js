@@ -21,6 +21,16 @@
 // détection par pixels (piste tan vs herbe verte, par rangée) sur l'image
 // source, pas d'une estimation à l'œil — voir le calibrage réel avant de
 // modifier `mario-clash-board.jpg` sous peine de désynchroniser CASE_ANCHORS.
+//
+// ⚠️ Police embarquée OBLIGATOIRE (data/fonts/Inter-Bold.ttf) : l'initiale
+// du pseudo avait été retirée des pions (commit 0cae4114) au lieu d'être
+// corrigée — la cause réelle était le même piège que documenté dans
+// pelemeleImage.js/goblinhuntersImage.js : resvg-js n'a aucune police
+// système disponible sur le runtime serverless Vercel (contrairement à une
+// machine de dev locale, où "Inter, system-ui, sans-serif" retombe
+// silencieusement sur une police système présente) — le texte ne
+// s'affichait pas du tout en production, sans erreur levée. Réintroduite
+// ici avec `font: { fontFiles, loadSystemFonts: false }` dans rasterize().
 // ============================================================
 
 import fs from "fs/promises";
@@ -32,6 +42,8 @@ import { readJoueurs } from "./marioclash.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BOARD_IMAGE_PATH = path.resolve(__dirname, "..", "..", "data", "marioclash", "images", "mario-clash-board.jpg");
 const ILLUSTRATION_IMAGE_PATH = path.resolve(__dirname, "..", "..", "data", "marioclash", "images", "mario-clash.webp");
+const FONT_PATH = path.resolve(__dirname, "..", "..", "data", "fonts", "Inter-Bold.ttf");
+const FONT_FAMILY = "Inter";
 
 // Dimensions natives de mario-clash-board.jpg — à ajuster si l'asset est
 // remplacé par une image de résolution différente (et à recalibrer les
@@ -102,6 +114,20 @@ function colorForPlayer(colorIndex) {
   return PAWN_COLORS[i % PAWN_COLORS.length];
 }
 
+function escapeText(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+// Initiale robuste : ignore emojis/symboles/ponctuation en tête de pseudo
+// (fréquents sur Discord), prend la première vraie lettre/chiffre Unicode.
+function initialOf(username) {
+  const match = String(username || "").match(/[\p{L}\p{N}]/u);
+  return escapeText(match ? match[0].toUpperCase() : "?");
+}
+
 let boardDataUrlCache = null;
 
 async function loadBoardDataUrl() {
@@ -131,6 +157,7 @@ function buildTokensSvg(joueurs) {
       const cy = anchor.y;
       circles.push(
         `<circle cx="${cx}" cy="${cy}" r="${TOKEN_RADIUS}" fill="${colorForPlayer(j.colorIndex)}" stroke="#1e293b" stroke-width="2.5"/>`,
+        `<text x="${cx}" y="${cy + 5}" font-family="${FONT_FAMILY}" font-size="15" text-anchor="middle" fill="#1e293b">${initialOf(j.username)}</text>`,
       );
     });
   }
@@ -151,6 +178,11 @@ async function rasterize(svg) {
   const resvg = new Resvg(Buffer.from(svg, "utf8"), {
     fitTo: { mode: "width", value: BOARD_WIDTH },
     background: BACKGROUND,
+    font: {
+      fontFiles: [FONT_PATH],
+      loadSystemFonts: false,
+      defaultFontFamily: FONT_FAMILY,
+    },
   });
   const pngData = resvg.render();
   return { buffer: Buffer.from(pngData.asPng()), mimeType: "image/png" };
