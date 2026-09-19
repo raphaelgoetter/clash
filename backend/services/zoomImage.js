@@ -12,16 +12,25 @@
 //
 // Séparé de zoom.js (état/scoring) comme buildWarDecksImage est séparé de la
 // logique de guerre — cette couche ne connaît que la synthèse d'image.
+//
+// ⚠️ Le commentaire ci-dessus ("aucun réseau au moment de servir une
+// manche") n'est plus tout à fait exact : les images sont maintenant servies
+// depuis Vercel Blob (private — voir blobAssets.js) et non plus depuis
+// data/, car le nom de fichier lu dépend du catalogue (donnée dynamique),
+// ce qui forçait le traceur de build Vercel (@vercel/nft) à embarquer le
+// RÉPERTOIRE ENTIER dans le bundle de fonction à chaque déploiement — cause
+// principale du dépassement de Functions Storage (voir mémoire projet,
+// sept. 2026). Compromis assumé : requête réseau au premier appel par
+// instance de fonction, atténuée par le cache mémoire ci-dessous. Les
+// fichiers restent versionnés dans data/jeux-visuels/zoom/ (régénérables
+// via scripts/generateZoomCatalog.js), mais data/ n'est plus lu au runtime.
 // ============================================================
 
-import fs from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
 import { Resvg } from "@resvg/resvg-js";
 import { loadZoomCatalog, resolveZoomEntry, isGamePosted } from "./zoom.js";
+import { readBlobAsset } from "./blobAssets.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ZOOM_IMAGES_DIR = path.resolve(__dirname, "..", "..", "data", "jeux-visuels", "zoom", "images");
+const ZOOM_IMAGES_DIR = "jeux-visuels/zoom/images";
 
 const BACKGROUND = "#0f172a";
 const CELL_SIZE = 450;
@@ -50,7 +59,7 @@ const LOCAL_ICON_CACHE = new Map();
 
 async function readLocalImageDataUrl(filename) {
   if (LOCAL_ICON_CACHE.has(filename)) return LOCAL_ICON_CACHE.get(filename);
-  const buffer = await fs.readFile(path.join(ZOOM_IMAGES_DIR, filename));
+  const buffer = await readBlobAsset(`${ZOOM_IMAGES_DIR}/${filename}`);
   const dataUrl = `data:image/png;base64,${buffer.toString("base64")}`;
   LOCAL_ICON_CACHE.set(filename, dataUrl);
   return dataUrl;
@@ -139,6 +148,6 @@ export async function getZoomRevealImage(gameId) {
   const entry = await loadEntry(gameId);
   if (!entry) return null;
 
-  const buffer = await fs.readFile(path.join(ZOOM_IMAGES_DIR, entry.image));
+  const buffer = await readBlobAsset(`${ZOOM_IMAGES_DIR}/${entry.image}`);
   return { buffer, mimeType: "image/png" };
 }

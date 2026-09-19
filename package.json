@@ -6,6 +6,7 @@
   "scripts": {
     "predev": "lsof -ti:3000 | xargs kill -9 2>/dev/null; true",
     "dev": "concurrently --names \"backend,frontend\" --prefix-colors \"cyan,magenta\" \"cd backend && npx nodemon server.js\" \"cd frontend && npx vite\"",
+    "assets:upload-blob": "node scripts/uploadImageAssetsToBlob.js",
     "snapshot": "node scripts/collectSnapshots.js",
     "pre-reset-snapshot": "node scripts/preResetSnapshot.js",
     "notify-members": "node scripts/notifyMemberChanges.js",

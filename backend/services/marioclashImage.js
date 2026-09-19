@@ -31,18 +31,21 @@
 // silencieusement sur une police système présente) — le texte ne
 // s'affichait pas du tout en production, sans erreur levée. Réintroduite
 // ici avec `font: { fontFiles, loadSystemFonts: false }` dans rasterize().
+//
+// mario-clash-board.jpg/mario-clash.webp et la police sont servis depuis
+// Vercel Blob (voir blobAssets.js) et non plus depuis data/ — évite qu'ils
+// soient réembarqués dans le bundle de fonction à chaque déploiement. Les
+// fichiers sources restent dans data/marioclash/images/, mais data/ n'est
+// plus lu au runtime.
 // ============================================================
 
-import fs from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
 import { Resvg } from "@resvg/resvg-js";
 import { readJoueurs } from "./marioclash.js";
+import { readBlobAsset, readBlobFontPath } from "./blobAssets.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const BOARD_IMAGE_PATH = path.resolve(__dirname, "..", "..", "data", "marioclash", "images", "mario-clash-board.jpg");
-const ILLUSTRATION_IMAGE_PATH = path.resolve(__dirname, "..", "..", "data", "marioclash", "images", "mario-clash.webp");
-const FONT_PATH = path.resolve(__dirname, "..", "..", "data", "fonts", "Inter-Bold.ttf");
+const BOARD_IMAGE_PATH = "marioclash/images/mario-clash-board.jpg";
+const ILLUSTRATION_IMAGE_PATH = "marioclash/images/mario-clash.webp";
+const FONT_PATH = "fonts/Inter-Bold.ttf";
 const FONT_FAMILY = "Inter";
 
 // Dimensions natives de mario-clash-board.jpg — à ajuster si l'asset est
@@ -132,7 +135,7 @@ let boardDataUrlCache = null;
 
 async function loadBoardDataUrl() {
   if (boardDataUrlCache) return boardDataUrlCache;
-  const buffer = await fs.readFile(BOARD_IMAGE_PATH);
+  const buffer = await readBlobAsset(BOARD_IMAGE_PATH);
   boardDataUrlCache = `data:image/jpeg;base64,${buffer.toString("base64")}`;
   return boardDataUrlCache;
 }
@@ -175,11 +178,12 @@ async function buildBoardSvg(joueurs) {
 }
 
 async function rasterize(svg) {
+  const fontPath = await readBlobFontPath(FONT_PATH);
   const resvg = new Resvg(Buffer.from(svg, "utf8"), {
     fitTo: { mode: "width", value: BOARD_WIDTH },
     background: BACKGROUND,
     font: {
-      fontFiles: [FONT_PATH],
+      fontFiles: [fontPath],
       loadSystemFonts: false,
       defaultFontFamily: FONT_FAMILY,
     },
@@ -231,7 +235,7 @@ let illustrationCache = null;
 
 export async function getIllustrationImage() {
   if (!illustrationCache) {
-    illustrationCache = { buffer: await fs.readFile(ILLUSTRATION_IMAGE_PATH), mimeType: "image/webp" };
+    illustrationCache = { buffer: await readBlobAsset(ILLUSTRATION_IMAGE_PATH), mimeType: "image/webp" };
   }
   return illustrationCache;
 }

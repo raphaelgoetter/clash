@@ -11,23 +11,30 @@
 // serverless Vercel, le texte des lettres/pourcentages resterait invisible
 // sans lever d'erreur si on comptait sur une police système.
 //
-// Deux répertoires source distincts, à ne JAMAIS confondre : data/palette/
-// images/ (carte brute, pour la question) et data/palette/highlights/
-// (carte avec le voile déjà posé sur la couleur dominante, pour le
-// résultat) — le même nom de fichier existe dans les deux, donner l'un à la
-// place de l'autre spoilerait la réponse directement dans la question.
+// Deux répertoires source distincts, à ne JAMAIS confondre : palette/
+// images/ (carte brute, pour la question) et palette/highlights/ (carte
+// avec le voile déjà posé sur la couleur dominante, pour le résultat) — le
+// même nom de fichier existe dans les deux, donner l'un à la place de
+// l'autre spoilerait la réponse directement dans la question.
+//
+// Ces deux répertoires (123 fichiers chacun, ~38 Mo au total avec Zoom) sont
+// servis depuis Vercel Blob (private — voir blobAssets.js) et non plus
+// depuis data/ : le nom de fichier lu dépend du catalogue (donnée
+// dynamique), ce qui forçait le traceur de build Vercel (@vercel/nft) à
+// embarquer les DEUX RÉPERTOIRES ENTIERS dans le bundle de fonction, à
+// chaque déploiement — cause principale du dépassement de Functions
+// Storage (voir mémoire projet, sept. 2026). Les fichiers restent
+// versionnés dans data/jeux-visuels/palette/ (régénérables via
+// scripts/generatePaletteCatalog.js), mais data/ n'est plus lu au runtime.
 // ============================================================
 
-import fs from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
 import { Resvg } from "@resvg/resvg-js";
 import { loadPaletteCatalog, resolvePaletteEntry, isGamePosted, readRoundOrder, LETTERS } from "./palette.js";
+import { readBlobAsset, readBlobFontPath } from "./blobAssets.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const IMAGES_DIR = path.resolve(__dirname, "..", "..", "data", "jeux-visuels", "palette", "images");
-const HIGHLIGHTS_DIR = path.resolve(__dirname, "..", "..", "data", "jeux-visuels", "palette", "highlights");
-const FONT_PATH = path.resolve(__dirname, "..", "..", "data", "fonts", "Inter-Bold.ttf");
+const IMAGES_DIR = "jeux-visuels/palette/images";
+const HIGHLIGHTS_DIR = "jeux-visuels/palette/highlights";
+const FONT_PATH = "fonts/Inter-Bold.ttf";
 const FONT_FAMILY = "Inter";
 
 const BACKGROUND = "#0f172a";
@@ -43,7 +50,7 @@ const highlightCache = new Map();
 
 async function readDataUrl(dir, cache, filename) {
   if (cache.has(filename)) return cache.get(filename);
-  const buffer = await fs.readFile(path.join(dir, filename));
+  const buffer = await readBlobAsset(`${dir}/${filename}`);
   const dataUrl = `data:image/png;base64,${buffer.toString("base64")}`;
   cache.set(filename, dataUrl);
   return dataUrl;
@@ -106,11 +113,12 @@ function buildPaletteSvg({ dataUrl, cardWidth, cardHeight, swatches }) {
 }
 
 async function rasterize(svg, width) {
+  const fontPath = await readBlobFontPath(FONT_PATH);
   const resvg = new Resvg(Buffer.from(svg, "utf8"), {
     fitTo: { mode: "width", value: width },
     background: BACKGROUND,
     font: {
-      fontFiles: [FONT_PATH],
+      fontFiles: [fontPath],
       loadSystemFonts: false,
       defaultFontFamily: FONT_FAMILY,
     },

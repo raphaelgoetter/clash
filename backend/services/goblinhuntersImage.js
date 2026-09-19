@@ -24,26 +24,29 @@
 // joueurs éliminés (camp déjà révélé publiquement) affichent une couleur de
 // camp, dans la bande grisée en bas de l'image.
 //
-// ⚠️ Police embarquée OBLIGATOIRE (data/fonts/Inter-Bold.ttf), même piège
-// que documenté dans pelemeleImage.js : resvg-js n'a aucune police système
+// ⚠️ Police embarquée OBLIGATOIRE (fonts/Inter-Bold.ttf), même piège que
+// documenté dans pelemeleImage.js : resvg-js n'a aucune police système
 // disponible sur le runtime serverless Vercel (contrairement à une machine
 // de dev locale, où "Inter, system-ui, sans-serif" retombe silencieusement
 // sur une police système présente) — les initiales des pions ne
 // s'afficheraient pas du tout en production, sans erreur levée. `font:
 // { fontFiles, loadSystemFonts: false }` dans rasterize() ci-dessous.
+//
+// board.jpg/end.webp/start.webp et la police sont servis depuis Vercel Blob
+// (voir blobAssets.js) et non plus depuis data/ — évite qu'ils soient
+// réembarqués dans le bundle de fonction à chaque déploiement. Les fichiers
+// sources restent dans data/goblinhunters/images/ (régénérables/éditables),
+// mais data/ n'est plus lu au runtime.
 // ============================================================
 
-import fs from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
 import { Resvg } from "@resvg/resvg-js";
 import { readState } from "./goblinhunters.js";
+import { readBlobAsset, readBlobFontPath } from "./blobAssets.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const BOARD_IMAGE_PATH = path.resolve(__dirname, "..", "..", "data", "goblinhunters", "images", "board.jpg");
-const END_IMAGE_PATH = path.resolve(__dirname, "..", "..", "data", "goblinhunters", "images", "end.webp");
-const START_IMAGE_PATH = path.resolve(__dirname, "..", "..", "data", "goblinhunters", "images", "start.webp");
-const FONT_PATH = path.resolve(__dirname, "..", "..", "data", "fonts", "Inter-Bold.ttf");
+const BOARD_IMAGE_PATH = "goblinhunters/images/board.jpg";
+const END_IMAGE_PATH = "goblinhunters/images/end.webp";
+const START_IMAGE_PATH = "goblinhunters/images/start.webp";
+const FONT_PATH = "fonts/Inter-Bold.ttf";
 const FONT_FAMILY = "Inter";
 
 // Dimensions natives de board.jpg (voir data/goblinhunters/images/board.jpg)
@@ -79,7 +82,7 @@ let boardDataUrlCache = null;
 
 async function loadBoardDataUrl() {
   if (boardDataUrlCache) return boardDataUrlCache;
-  const buffer = await fs.readFile(BOARD_IMAGE_PATH);
+  const buffer = await readBlobAsset(BOARD_IMAGE_PATH);
   boardDataUrlCache = `data:image/jpeg;base64,${buffer.toString("base64")}`;
   return boardDataUrlCache;
 }
@@ -161,11 +164,12 @@ async function buildBoardSvg(joueurs) {
 }
 
 async function rasterize(svg) {
+  const fontPath = await readBlobFontPath(FONT_PATH);
   const resvg = new Resvg(Buffer.from(svg, "utf8"), {
     fitTo: { mode: "width", value: BOARD_WIDTH },
     background: BACKGROUND,
     font: {
-      fontFiles: [FONT_PATH],
+      fontFiles: [fontPath],
       loadSystemFonts: false,
       defaultFontFamily: FONT_FAMILY,
     },
@@ -197,7 +201,7 @@ let endImageCache = null;
 
 export async function getEndImage() {
   if (!endImageCache) {
-    endImageCache = { buffer: await fs.readFile(END_IMAGE_PATH), mimeType: "image/webp" };
+    endImageCache = { buffer: await readBlobAsset(END_IMAGE_PATH), mimeType: "image/webp" };
   }
   return endImageCache;
 }
@@ -209,7 +213,7 @@ let startImageCache = null;
 
 export async function getStartImage() {
   if (!startImageCache) {
-    startImageCache = { buffer: await fs.readFile(START_IMAGE_PATH), mimeType: "image/webp" };
+    startImageCache = { buffer: await readBlobAsset(START_IMAGE_PATH), mimeType: "image/webp" };
   }
   return startImageCache;
 }
