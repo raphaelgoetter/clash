@@ -60,7 +60,13 @@ const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 // une manche RÉELLEMENT démarrée (gameId != null) — en dry-run/preview,
 // aucun tirage n'a encore été généré (voir postPeleMele), donc pas
 // d'image à référencer.
-function buildPeleMeleEmbed({ seasonId, seasonManche, seasonMancheTotal, gameId, totalValidWords }) {
+function buildPeleMeleEmbed({
+  seasonId,
+  seasonManche,
+  seasonMancheTotal,
+  gameId,
+  totalValidWords,
+}) {
   return {
     title: "🔤 Le jeu du samedi : Pêle-mêle !",
     description:
@@ -68,14 +74,24 @@ function buildPeleMeleEmbed({ seasonId, seasonManche, seasonMancheTotal, gameId,
       `Plusieurs cartes Clash Royale se cachent derrière ces ${DRAW_SIZE} lettres. Sauras-tu toutes les retrouver ?\n\n` +
       "🏆 **1 point** par carte trouvée, **5 points** s'il s'agit du mot le plus long.\n" +
       "♾️ Tu as autant d'essais que tu veux !\n\n" +
-      (totalValidWords != null ? `🎯 **${totalValidWords} carte${totalValidWords > 1 ? "s" : ""} valide${totalValidWords > 1 ? "s" : ""} sur ce tirage** — à toi de toutes les trouver !\n\n` : "") +
+      (totalValidWords != null
+        ? `🎯 **${totalValidWords} carte${totalValidWords > 1 ? "s" : ""} valide${totalValidWords > 1 ? "s" : ""} sur ce tirage** — à toi de toutes les trouver !\n\n`
+        : "") +
       "📜 Détails (orthographe, accents, ponctuation...) dans le bouton **Règles**.\n\n" +
       "**Merci de ne pas spoiler ni tricher, sinon c'est pas drôle !**",
     color: PELEMELE_COLOR,
     // Cache-buster (?v=) — même pattern que frames.js/zoom.js/lajustecarte.js :
     // Discord met en cache l'aperçu d'un embed PAR URL.
-    ...(gameId ? { image: { url: `${TRUST_ROYALE_URL}/api/pelemele/image?gameId=${gameId}&v=${Date.now()}` } } : {}),
-    footer: { text: "Nouvelle manche : samedi prochain, à une heure surprise ! (en alternance avec Anagram, une saison sur deux)" },
+    ...(gameId
+      ? {
+          image: {
+            url: `${TRUST_ROYALE_URL}/api/pelemele/image?gameId=${gameId}&v=${Date.now()}`,
+          },
+        }
+      : {}),
+    footer: {
+      text: "Nouvelle manche : samedi prochain, à une heure surprise !",
+    },
   };
 }
 
@@ -92,7 +108,7 @@ export function buildRulesEmbed() {
       "✨ **+1 point** pour chaque autre carte valide trouvée.\n" +
       "Reproposer une carte déjà trouvée ne rapporte rien — seules les cartes **distinctes** comptent.\n\n" +
       "**Orthographe**\n" +
-      "• Les accents ne sont pas obligatoires (é/e, à/a... acceptés indifféremment).\n" +
+      "• Les accents ne sont pas obligatoires (é/e, à/a… acceptés indifféremment).\n" +
       "• La casse n'a pas d'importance (majuscules/minuscules).\n" +
       "• Les points et autre ponctuation dans un nom de carte sont ignorés : **P.E.K.K.A** s'écrit simplement **PEKKA**.\n" +
       "• Les espaces entre les mots d'un nom sont optionnels.\n" +
@@ -118,7 +134,12 @@ export function buildRulesEmbed() {
 const SEASON_RECAP_MAX_PLAYERS = 20;
 const SEASON_RECAP_MEDALS = ["🥇", "🥈", "🥉"];
 
-function buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId, manchesPlayed) {
+function buildSeasonRecapEmbed(
+  seasonRanking,
+  endedSeasonId,
+  newSeasonId,
+  manchesPlayed,
+) {
   const nonZero = seasonRanking.filter((r) => r.totalScore > 0);
   const shown = nonZero.slice(0, SEASON_RECAP_MAX_PLAYERS);
   const hiddenCount = nonZero.length - shown.length;
@@ -127,18 +148,32 @@ function buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId, manche
     "**Classement final :**",
     ...shown.map((entry) => {
       const rank = findTiedRank(shown, entry.discordId, "totalScore");
-      const tiedCount = shown.filter((e) => e.totalScore === entry.totalScore).length;
-      const label = tiedCount === 1 && rank <= 3 ? SEASON_RECAP_MEDALS[rank - 1] : `${rank}.`;
+      const tiedCount = shown.filter(
+        (e) => e.totalScore === entry.totalScore,
+      ).length;
+      const label =
+        tiedCount === 1 && rank <= 3
+          ? SEASON_RECAP_MEDALS[rank - 1]
+          : `${rank}.`;
       return `${label} ${entry.pseudo} — ${entry.totalScore} pts`;
     }),
   ];
   if (hiddenCount > 0) {
-    lines.push(`... et ${hiddenCount} autre${hiddenCount > 1 ? "s" : ""} joueur${hiddenCount > 1 ? "s" : ""}`);
+    lines.push(
+      `... et ${hiddenCount} autre${hiddenCount > 1 ? "s" : ""} joueur${hiddenCount > 1 ? "s" : ""}`,
+    );
   }
   if (manchesPlayed?.length > 0) {
-    lines.push("", "**Manches de la saison :**", ...manchesPlayed.map((m) => `Manche ${m.seasonManche} : ${m.label}`));
+    lines.push(
+      "",
+      "**Manches de la saison :**",
+      ...manchesPlayed.map((m) => `Manche ${m.seasonManche} : ${m.label}`),
+    );
   }
-  lines.push("", `Bravo à tous ! Rendez-vous juste après pour le lancement de la Saison ${toPublicSeasonId(newSeasonId)}.`);
+  lines.push(
+    "",
+    `Bravo à tous ! Rendez-vous juste après pour le lancement de la Saison ${toPublicSeasonId(newSeasonId)}.`,
+  );
 
   return {
     title: `🏆 Fin de la Saison ${toPublicSeasonId(endedSeasonId)} « Pêle-mêle » !`,
@@ -172,7 +207,8 @@ async function getSeasonManchesPlayed(seasonId) {
   const seasonResults = allResults.filter((r) => r.seasonId === seasonId);
   const lettersByGameId = new Map();
   for (const r of seasonResults) {
-    if (!lettersByGameId.has(r.gameId)) lettersByGameId.set(r.gameId, r.letters);
+    if (!lettersByGameId.has(r.gameId))
+      lettersByGameId.set(r.gameId, r.letters);
   }
   const gameIds = [...lettersByGameId.keys()];
   const manches = await Promise.all(
@@ -181,24 +217,42 @@ async function getSeasonManchesPlayed(seasonId) {
       label: lettersByGameId.get(gameId),
     })),
   );
-  return manches.filter((m) => m.seasonManche != null && m.label != null).sort((a, b) => a.seasonManche - b.seasonManche);
+  return manches
+    .filter((m) => m.seasonManche != null && m.label != null)
+    .sort((a, b) => a.seasonManche - b.seasonManche);
 }
 
 // Exportée : appelée directement par scripts/postJeuxDeLettres.js.
-export async function postSeasonRecap(channelId, endedSeasonId, newSeasonId, { noPing = false } = {}) {
+export async function postSeasonRecap(
+  channelId,
+  endedSeasonId,
+  newSeasonId,
+  { noPing = false } = {},
+) {
   const token = process.env.DISCORD_TOKEN;
   const seasonRanking = await computeSeasonRanking(endedSeasonId);
   if (seasonRanking.length === 0) return; // rien à récapituler
 
   const resolvedRanking = await resolveRankingPseudos(seasonRanking);
   const manchesPlayed = await getSeasonManchesPlayed(endedSeasonId);
-  const embed = buildSeasonRecapEmbed(resolvedRanking, endedSeasonId, newSeasonId, manchesPlayed);
+  const embed = buildSeasonRecapEmbed(
+    resolvedRanking,
+    endedSeasonId,
+    newSeasonId,
+    manchesPlayed,
+  );
   const roleId = noPing ? null : await getRoleIdByName(MINI_JEUX_ROLE_NAME);
-  const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
-    method: "POST",
-    headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ embeds: [embed], ...buildRolePingFields(roleId) }),
-  });
+  const res = await fetch(
+    `https://discord.com/api/v10/channels/${channelId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bot ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ embeds: [embed], ...buildRolePingFields(roleId) }),
+    },
+  );
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
     throw new Error(`Erreur envoi récap de saison (${res.status}): ${errText}`);
@@ -268,15 +322,30 @@ export function buildAnswerModal(gameId) {
 // (test/rattrapage manuel direct de ce jeu précis). skipSeasonRecap n'existe
 // PAS ici (contrairement à postAnagram) : ce jeu n'a aucune logique de récap
 // interne, seul l'orchestrateur en décide (voir postSeasonRecap ci-dessus).
-export async function postPeleMele(channelId, { dryRun = false, force = false, noPing = false } = {}) {
+export async function postPeleMele(
+  channelId,
+  { dryRun = false, force = false, noPing = false } = {},
+) {
   if (dryRun) {
     const pool = await loadEligiblePool();
     const seasonId = await getCurrentSeasonId();
     const seasonManche = await previewSeasonManche(seasonId);
     const seasonMancheTotal = computeSeasonMancheTotal(seasonManche);
-    const embed = buildPeleMeleEmbed({ seasonId, seasonManche, seasonMancheTotal });
-    const pingRoleId = noPing ? null : await getRoleIdByName(MINI_JEUX_ROLE_NAME);
-    return { dryRun: true, poolSize: pool.length, embed, components: buildAnswerComponents("preview"), pingRoleId };
+    const embed = buildPeleMeleEmbed({
+      seasonId,
+      seasonManche,
+      seasonMancheTotal,
+    });
+    const pingRoleId = noPing
+      ? null
+      : await getRoleIdByName(MINI_JEUX_ROLE_NAME);
+    return {
+      dryRun: true,
+      poolSize: pool.length,
+      embed,
+      components: buildAnswerComponents("preview"),
+      pingRoleId,
+    };
   }
 
   if (!force && (await alreadyPostedThisWeek())) {
@@ -291,11 +360,21 @@ export async function postPeleMele(channelId, { dryRun = false, force = false, n
   const components = buildAnswerComponents(state.gameId);
   const roleId = noPing ? null : await getRoleIdByName(MINI_JEUX_ROLE_NAME);
 
-  const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
-    method: "POST",
-    headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ embeds: [embed], components, ...buildRolePingFields(roleId) }),
-  });
+  const res = await fetch(
+    `https://discord.com/api/v10/channels/${channelId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bot ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        embeds: [embed],
+        components,
+        ...buildRolePingFields(roleId),
+      }),
+    },
+  );
 
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
@@ -334,12 +413,17 @@ async function postEphemeralEmbed(webhookUrl, embed) {
       body: JSON.stringify({ embeds: [embed] }),
     });
   } catch (err) {
-    console.error("[Pêle-mêle] Échec PATCH réponse éphémère (embed):", err.message);
+    console.error(
+      "[Pêle-mêle] Échec PATCH réponse éphémère (embed):",
+      err.message,
+    );
   }
 }
 
 function formatHistoryLine(history) {
-  return history.length > 0 ? `_Tes propositions valides jusqu'ici : ${history.join(", ")}_` : "";
+  return history.length > 0
+    ? `_Tes propositions valides jusqu'ici : ${history.join(", ")}_`
+    : "";
 }
 
 // Nombre de manches précédentes affichées dans le Journal — au-delà, la
@@ -361,9 +445,13 @@ export async function handleJournalButton(webhookUrl, discordId) {
       if (!participant?.foundWords?.length) {
         currentSection = "Tu n'as encore rien trouvé sur cette manche.";
       } else {
-        const progress = state.totalValidWords != null ? ` (${participant.foundWords.length}/${state.totalValidWords})` : "";
+        const progress =
+          state.totalValidWords != null
+            ? ` (${participant.foundWords.length}/${state.totalValidWords})`
+            : "";
         currentSection =
-          `**${participant.foundWords.join(", ")}**${progress}\n` + `Score sur cette manche : **${participant.score} pts**`;
+          `**${participant.foundWords.join(", ")}**${progress}\n` +
+          `Score sur cette manche : **${participant.score} pts**`;
       }
     }
 
@@ -386,11 +474,16 @@ export async function handleJournalButton(webhookUrl, discordId) {
             return `Manche ${manche ?? "?"} : **${r.score} pts** (${r.reponse})`;
           }),
         );
-        const total = results.reduce((sum, r) => sum + (Number(r.score) || 0), 0);
+        const total = results.reduce(
+          (sum, r) => sum + (Number(r.score) || 0),
+          0,
+        );
         const hiddenCount = results.length - shown.length;
         previousSection =
           lines.join("\n") +
-          (hiddenCount > 0 ? `\n_... et ${hiddenCount} manche${hiddenCount > 1 ? "s" : ""} plus ancienne${hiddenCount > 1 ? "s" : ""}_` : "") +
+          (hiddenCount > 0
+            ? `\n_... et ${hiddenCount} manche${hiddenCount > 1 ? "s" : ""} plus ancienne${hiddenCount > 1 ? "s" : ""}_`
+            : "") +
           `\n\nTotal cumulé : **${total} pts** sur ${results.length} manche${results.length > 1 ? "s" : ""}.`;
       }
     }
@@ -406,7 +499,13 @@ export async function handleJournalButton(webhookUrl, discordId) {
 }
 
 // ── Soumission de la modal (réponse du joueur) ──────────────────
-export async function handleModalSubmit(webhookUrl, gameId, discordId, username, rawAnswer) {
+export async function handleModalSubmit(
+  webhookUrl,
+  gameId,
+  discordId,
+  username,
+  rawAnswer,
+) {
   try {
     const state = await readState();
     if (!state || state.gameId !== gameId) {
@@ -414,7 +513,10 @@ export async function handleModalSubmit(webhookUrl, gameId, discordId, username,
       return;
     }
 
-    const [pool, fullList] = await Promise.all([loadEligiblePool(), loadFullCardList()]);
+    const [pool, fullList] = await Promise.all([
+      loadEligiblePool(),
+      loadFullCardList(),
+    ]);
     const result = validateSubmission(pool, fullList, state.letters, rawAnswer);
 
     if (result.status === "invalid") {
@@ -457,19 +559,28 @@ export async function handleModalSubmit(webhookUrl, gameId, discordId, username,
     const word = canonicalWordForm(result.entry.fr);
 
     if (!isNew) {
-      await postEphemeral(webhookUrl, `✅ Tu avais déjà trouvé **${word}**. Il en reste peut-être d'autres à chercher !`);
+      await postEphemeral(
+        webhookUrl,
+        `✅ Tu avais déjà trouvé **${word}**. Il en reste peut-être d'autres à chercher !`,
+      );
       return;
     }
 
     const isLongest = result.length === state.maxWordLength;
-    const foundAll = state.totalValidWords != null && foundCount === state.totalValidWords;
-    const progress = state.totalValidWords != null ? ` (${foundCount}/${state.totalValidWords} mots trouvés)` : "";
+    const foundAll =
+      state.totalValidWords != null && foundCount === state.totalValidWords;
+    const progress =
+      state.totalValidWords != null
+        ? ` (${foundCount}/${state.totalValidWords} mots trouvés)`
+        : "";
 
     await postEphemeral(
       webhookUrl,
       `${isLongest ? "🏆" : "🎉"} **${word}** (${result.length} lettre${result.length > 1 ? "s" : ""}) — +${points} pt${points > 1 ? "s" : ""} ! ` +
         `Score total sur cette manche : **${participant.score} pts**${progress}.` +
-        (foundAll ? "\n\n🎊 Tu as trouvé TOUS les mots de cette manche, bravo !" : ""),
+        (foundAll
+          ? "\n\n🎊 Tu as trouvé TOUS les mots de cette manche, bravo !"
+          : ""),
     );
   } catch (err) {
     await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
