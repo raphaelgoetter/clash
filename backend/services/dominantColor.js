@@ -62,7 +62,7 @@ const FINE_K = 8; // clusters fins avant fusion par teinte (voir piège 3)
 const FINAL_COLORS = 4; // nombre de couleurs dominantes rendues au final
 const KMEANS_ITERATIONS = 15;
 const KMEANS_MAX_SAMPLES = 15000; // sous-échantillonnage pour le clustering (les parts finales, elles, sont recalculées sur tous les pixels)
-const HUE_MERGE_DEGREES = 22; // écart de teinte en dessous duquel deux clusters fins sont jugés "même matériau"
+export const HUE_MERGE_DEGREES = 22; // écart de teinte en dessous duquel deux clusters fins sont jugés "même matériau"
 const GREY_LIGHTNESS_MERGE = 0.14; // pour les clusters peu saturés, écart de luminosité (0-1) toléré pour fusionner
 
 export const MAX_TOP1_SHARE = 0.6; // au-delà, la manche est jugée trop facile

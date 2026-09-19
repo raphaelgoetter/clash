@@ -26,6 +26,7 @@ import {
   LETTERS,
 } from "../../../backend/services/palette.js";
 import { toPublicSeasonId } from "../../../backend/services/dateUtils.js";
+import { HUE_MERGE_DEGREES } from "../../../backend/services/dominantColor.js";
 
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 const PALETTE_COLOR = 0x9b59b6;
@@ -192,6 +193,9 @@ export async function handleAnswerButton(webhookUrl, gameId, letter, discordId, 
       description: [resultLine, "", "**Répartition des 4 couleurs :**", ...breakdown].join("\n"),
       image: { url: `${TRUST_ROYALE_URL}/api/palette/image?gameId=${gameId}&stage=result&v=${Date.now()}` },
       color: PALETTE_COLOR,
+      footer: {
+        text: `ℹ️ Méthode : les teintes à moins de ${HUE_MERGE_DEGREES}° d'écart (même matériau sous des éclairages différents) sont regroupées en une seule couleur, pour n'avoir que 4 propositions vraiment distinctes.`,
+      },
     });
   } catch (err) {
     console.error("[Palette] Échec traitement de la réponse:", err.message);
