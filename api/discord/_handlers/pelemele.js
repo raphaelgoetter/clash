@@ -320,7 +320,7 @@ export async function handleModalSubmit(webhookUrl, gameId, discordId, username,
       const history = await getGuessHistory(gameId, discordId);
       await postEphemeral(
         webhookUrl,
-        `❌ **${result.entry.fr}** (${canonicalWordForm(result.entry.fr)}) est une carte valide pour ce jeu, mais ne rentre pas dans le tirage de cette manche (pas assez de certaines lettres). Cette tentative n'a pas été comptabilisée.\n${formatHistoryLine(history)}`,
+        `❌ **${result.entry.fr}** (${canonicalWordForm(result.entry.fr)}) n'est pas valide : certaines lettres ne sont pas dans ce tirage. Cette tentative n'a pas été comptabilisée.\n${formatHistoryLine(history)}`,
       );
       return;
     }
