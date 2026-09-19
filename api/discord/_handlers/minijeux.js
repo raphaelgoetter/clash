@@ -1,7 +1,8 @@
 // ============================================================
 // minijeux.js — Handler Discord pour /mini-jeux : état des lieux de tous
-// les mini-jeux réguliers (Frame, Anagram, Zoom carte, La Juste Carte) et
-// du jeu spécial actuellement actif (Quiz, Tamagotchi, Robinson, Boss Raid,
+// les mini-jeux réguliers (Frame, Jeux de lettres [Anagram/Pêle-mêle en
+// alternance], Jeux visuels [Zoom carte/Palette en alternance], La Juste
+// Carte) et du jeu spécial actuellement actif (Quiz, Tamagotchi, Robinson, Boss Raid,
 // Goblin Hunters, Blackjack, Mario Clash ou Gobelet). Lecture seule, aucune
 // écriture Redis.
 //
@@ -13,8 +14,18 @@
 import { readState as readBlindRoyaleState } from "../../../backend/services/blindroyale.js";
 import { readState as readFrameState } from "../../../backend/services/frames.js";
 import { readState as readZoomState } from "../../../backend/services/zoom.js";
+import { readState as readPaletteState } from "../../../backend/services/palette.js";
 import { readState as readAnagramState } from "../../../backend/services/anagrams.js";
+import { readState as readPeleMeleState } from "../../../backend/services/pelemele.js";
 import { readState as readJusteCarteState } from "../../../backend/services/lajustecarte.js";
+import {
+  getCurrentSeasonId as getLettresSeasonId,
+  getActiveLetterGame,
+} from "../../../backend/services/jeuxdelettres.js";
+import {
+  getCurrentSeasonId as getVisuelsSeasonId,
+  getActiveVisualGame,
+} from "../../../backend/services/jeuxvisuels.js";
 
 import {
   readState as readQuizState,
@@ -76,7 +87,7 @@ function channelLink() {
 }
 
 // 0 = dimanche .. 6 = samedi (Date.getUTCDay())
-const REGULAR_GAMES = [
+const STATIC_REGULAR_GAMES = [
   {
     key: "blindroyale",
     title: "🎧 Blind Royale",
@@ -89,13 +100,6 @@ const REGULAR_GAMES = [
     weekday: 3,
     readState: readFrameState,
   },
-  { key: "zoom", title: "🔍 Zoom carte", weekday: 5, readState: readZoomState },
-  {
-    key: "anagram",
-    title: "🔤 Anagram",
-    weekday: 6,
-    readState: readAnagramState,
-  },
   {
     key: "lajustecarte",
     title: "🃏 La Juste Carte",
@@ -103,6 +107,35 @@ const REGULAR_GAMES = [
     readState: readJusteCarteState,
   },
 ];
+
+// "Jeux visuels" (vendredi) et "Jeux de lettres" (samedi) alternent chacun
+// entre deux jeux une saison Clash Royale sur deux (voir jeuxvisuels.js /
+// jeuxdelettres.js, mêmes fonctions utilisées par scripts/postJeuxVisuels.js
+// et postJeuxDeLettres.js pour la publication) — /mini-jeux doit donc
+// résoudre le jeu réellement actif plutôt que d'en référencer un seul en dur.
+const VISUELS_GAMES = {
+  zoom: { title: "🔍 Zoom carte", readState: readZoomState },
+  palette: { title: "🎨 Palette", readState: readPaletteState },
+};
+const LETTRES_GAMES = {
+  anagram: { title: "🔤 Anagram", readState: readAnagramState },
+  pelemele: { title: "🔤 Pêle-mêle", readState: readPeleMeleState },
+};
+
+// getCurrentSeasonId() peut renvoyer null (API Clash Royale indisponible) :
+// on retombe alors sur le jeu "historique" de la paire plutôt que de planter
+// l'embed /mini-jeux.
+async function resolveActiveVisuelsGame() {
+  const seasonId = await getVisuelsSeasonId();
+  const key = seasonId == null ? "zoom" : getActiveVisualGame(seasonId);
+  return VISUELS_GAMES[key];
+}
+
+async function resolveActiveLettresGame() {
+  const seasonId = await getLettresSeasonId();
+  const key = seasonId == null ? "anagram" : getActiveLetterGame(seasonId);
+  return LETTRES_GAMES[key];
+}
 
 // Un seul actif à la fois par convention (voir les gardes-fous "wrongChannel"
 // dans chaque handler *_handlers/*.js) — le premier trouvé (avec un état non
@@ -319,8 +352,18 @@ function buildCountdownBar(daysUntil) {
 }
 
 async function buildRegularGamesBlock(now) {
+  const [visuelsGame, lettresGame] = await Promise.all([
+    resolveActiveVisuelsGame(),
+    resolveActiveLettresGame(),
+  ]);
+  const games = [
+    ...STATIC_REGULAR_GAMES,
+    { key: "visuels", weekday: 5, ...visuelsGame },
+    { key: "lettres", weekday: 6, ...lettresGame },
+  ];
+
   const entries = await Promise.all(
-    REGULAR_GAMES.map(async (game) => ({
+    games.map(async (game) => ({
       ...game,
       daysUntil: daysUntilWeekday(now, game.weekday),
       // null seulement si aucune manche n'a jamais été postée pour ce jeu
