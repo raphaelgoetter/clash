@@ -1,0 +1,377 @@
+[
+  {
+    "question": "Quel était le nom de code secret utilisé pour le prototype de Clash Royale avant son développement officiel ?",
+    "choices": [
+      "Project Laser √",
+      "Battle Clash",
+      "Royal Strike",
+      "Clash Mini Alpha"
+    ],
+    "source": "Archives des concepts originaux de Supercell / Bêta interne"
+  },
+  {
+    "question": "Lors de leur toute première apparition dans le jeu, avec quoi payait-on les emotes ?",
+    "choices": [
+      "De l'or direct √",
+      "Des gemmes",
+      "Des couronnes de tournoi",
+      "Des points stellaires"
+    ],
+    "source": "Notes de mise à jour initiales de Clash Royale (2016)"
+  },
+  {
+    "question": "Dans le lore original des bêtas, que représentaient le Roi Bleu et le Roi Rouge ?",
+    "choices": [
+      "Deux frères jumeaux brouillés pour un gisement d'Élixir √",
+      "Deux sorciers rivaux ayant maudit l'arène principale",
+      "Deux généraux d'une armée de gobelins mutés",
+      "Les deux créateurs du jeu dans une version satirique"
+    ],
+    "source": "Anciens documents de design de Supercell"
+  },
+  {
+    "question": "Quel était le nom de code interne hilarant du Géant Squelette dans la phase alpha du jeu ?",
+    "choices": [
+      "The Bomber's Grandfather √",
+      "Big Bones McGee",
+      "Undead Tank v1",
+      "Exploding Uncle"
+    ],
+    "source": "Fichiers de données internes (Data-mining de la alpha)"
+  },
+  {
+    "question": "Quelle animation rare le Chevalier effectue-t-il toutes les 15 secondes s'il reste immobile en jeu ?",
+    "choices": [
+      "Il cligne des yeux de manière unique √",
+      "Il ajuste sa moustache avec son épée",
+      "Il baille d'ennui",
+      "Il fait un signe de la main"
+    ],
+    "source": "Détails de modélisation 3D et animations idle du jeu"
+  },
+  {
+    "question": "Dans le code physique du jeu, le poids du Golem est exactement égal à celui de combien d'Archers combinées ?",
+    "choices": ["10 Archers √", "5 Archers", "20 Archers", "50 Archers"],
+    "source": "Moteur physique interne et paramètres de masse (Mass data)"
+  },
+  {
+    "question": "À sa sortie en 2016, que faisait en plus le sort de Poison que Supercell a dû retirer car c'était trop fort ?",
+    "choices": [
+      "Il ralentissait la vitesse de production des bâtiments √",
+      "Il réduisait les points de vie max des tours de 10%",
+      "Il doublait les dégâts subis par les troupes de type squelette",
+      "Il transformait les troupes ennemies en élixir pour le joueur"
+    ],
+    "source": "Patch notes de l'équilibrage historique de 2016"
+  },
+  {
+    "question": "D'où vient l'illustration officielle iconique du P.E.K.K.A regardant un papillon ?",
+    "choices": [
+      "D'un bug graphique de Clash of Clans impliquant un papillon 3D √",
+      "D'une suggestion d'un joueur fan sur le forum Reddit officiel",
+      "D'un clin d'œil direct au film d'animation Le Géant de Fer",
+      "D'un easter egg caché dans les fichiers sons du jeu"
+    ],
+    "source": "Anecdotes de l'équipe de design de Supercell"
+  },
+  {
+    "question": "Combien de temps faut-il exactement au rayon du Dragon de l'Enfer pour atteindre sa puissance maximale ?",
+    "choices": [
+      "4 secondes exactes √",
+      "2,5 secondes",
+      "6 secondes",
+      "1 seconde"
+    ],
+    "source": "Wiki officiel Clash Royale - Statistiques du Dragon de l'Enfer"
+  },
+  {
+    "question": "Qu'avaient de particulier les squelettes invoqués par le Cimetière dans la toute première arène d'hiver du jeu ?",
+    "choices": [
+      "Ils avaient de minuscules bonnets de Noël dans le code √",
+      "Ils étaient de couleur bleue au lieu d'os blanc",
+      "Ils dansaient une valse avant chaque attaque",
+      "Ils gelaient les ennemis touchés à leur mort"
+    ],
+    "source": "Datamining des assets graphiques saisonniers (Bêta/Hiver 2016)"
+  },
+  {
+    "question": "Quelle est la portée maximale officielle de la Princesse, lui permettant de tirer sur une tour depuis l'autre côté de la rivière ?",
+    "choices": ["9 cases √", "6 cases", "12 cases", "7,5 cases"],
+    "source": "Fichiers de portée (Range data) de la carte Princesse"
+  },
+  {
+    "question": "Selon quelle logique la Foudre choisit-elle ses cibles prioritaires dans sa zone d'effet ?",
+    "choices": [
+      "Elle vise en priorité les 3 cibles ayant le plus de points de vie √",
+      "Elle cible les unités les plus proches du centre du cercle",
+      "Elle cible aléatoirement les unités dans sa zone",
+      "Elle frappe d'abord les bâtiments puis les troupes"
+    ],
+    "source": "Description officielle de la mécanique du sort de Foudre"
+  },
+  {
+    "question": "À son lancement en mars 2016, combien de trophées fallait-il pour atteindre l'Arène Légendaire originale (Palais Légendaire) ?",
+    "choices": [
+      "3000 trophées √",
+      "4000 trophées",
+      "5000 trophées",
+      "2000 trophées"
+    ],
+    "source": "Historique des arènes et progression de Clash Royale (2016)"
+  },
+  {
+    "question": "Quel cheat code interne le célèbre entraîneur Sylvain (Trainer Cheddar) utilisait-il à l'époque pour terrifier les débutants ?",
+    "choices": [
+      "Il générait de l'élixir 4 fois plus vite que le joueur normal √",
+      "Il faisait apparaître des P.E.K.K.A toutes les 5 secondes",
+      "Ses tours avaient deux fois plus de points de vie",
+      "Il pouvait jouer 8 cartes à la fois dans sa main"
+    ],
+    "source": "Historique du mode Entraîneur des premières versions du jeu"
+  },
+  {
+    "question": "Quel nom a failli porter le Coffre Légendaire avant qu'un sondage interne ne choisisse son nom définitif ?",
+    "choices": [
+      "Le 'Coffre Mythique' √",
+      "Le 'Coffre Suprême'",
+      "Le 'Coffre du Destin'",
+      "Le 'Coffre Ancestral'"
+    ],
+    "source": "Archives des concepts de design de Supercell"
+  },
+  {
+    "question": "Que peut-on apercevoir en zoomant à l'extrême sur le casque du Prince dans son illustration officielle ?",
+    "choices": [
+      "Le reflet minuscule d'un Gobelin écrasé √",
+      "Le logo secret et discret de Clash of Clans",
+      "Le visage souriant d'un roi caché",
+      "La date de sortie cachée en chiffres romains"
+    ],
+    "source": "Analyse artistique et détails des artworks officiels"
+  },
+  {
+    "question": "Quelle particularité unique possède La Bûche en dehors du jeu mobile ?",
+    "choices": [
+      "Elle a un compte Twitter/X parodique reconnu par Supercell √",
+      "Elle a été vendue sous forme de vraie peluche en bois massif",
+      "C'est la seule carte qui possède sa propre bande originale musicale sur Spotify",
+      "Elle a inspiré un jeu indépendant entier sur Steam"
+    ],
+    "source": "Historique de la communauté anglophone et réseaux sociaux officiels"
+  },
+  {
+    "question": "À la suite de quel événement communautaire les Chauves-souris ont-elles été ajoutées au jeu ?",
+    "choices": [
+      "Un concours pour imaginer la troupe la moins chère du jeu √",
+      "Une pétition massive pour remplacer les Gargouilles",
+      "Un sondage sur Twitter/X pour fêter Halloween",
+      "Un tournoi spécial réservé aux créateurs de contenu"
+    ],
+    "source": "Annonces de développement et historiques des ajouts de cartes (2017)"
+  },
+  {
+    "question": "Quel bug majeur le Bouliste/Bourreau a-t-il connu à sa sortie, provoquant une maintenance d'urgence en pleine nuit ?",
+    "choices": [
+      "Sa hache pouvait boucler à l'infini sur un bâtiment √",
+      "Il pouvait traverser la rivière à pied sans pont",
+      "Ses attaques infligeaient des dégâts infinis aux tours",
+      "Il pouvait se cloner lui-même à chaque lancer de hache"
+    ],
+    "source": "Rapports de bugs et notes de correctifs d'urgence de l'époque"
+  },
+  {
+    "question": "Comment le son de rire narquois du Roi (la célèbre emote 'Hee-hee-hee-haw') a-t-il été enregistré à l'origine ?",
+    "choices": [
+      "Par un employé riant dans un carton à chaussures √",
+      "Par un doubleur professionnel de dessins animés",
+      "En mixant le rire de trois développeurs différents",
+      "À partir d'un bruitage libre de droits trouvé en ligne"
+    ],
+    "source": "Making-of et interviews des sound designers de Supercell"
+  },
+  {
+    "question": "Dans les tout premiers concepts de design, qu'était censé faire le Miroir en plus de coûter plus cher ?",
+    "choices": [
+      "Copier la carte avec ses points de vie réduits de moitié √",
+      "Copier la carte avec un niveau supérieur fixe",
+      "Faire apparaître deux exemplaires de la carte",
+      "Rendre la carte copiée invisible pendant 3 secondes"
+    ],
+    "source": "Notes préliminaires de conception de cartes des développeurs"
+  },
+  {
+    "question": "À l'introduction des tournois mondiaux, quelle limite de niveau fixe a donné naissance à l'expression 'Standard Tournoi' ?",
+    "choices": ["Le niveau 9 √", "Le niveau 11", "Le niveau 10", "Le niveau 7"],
+    "source": "Historique des tournois mondiaux et modes compétitifs (2016-2018)"
+  },
+  {
+    "question": "Quelle est la particularité des gemmes vertes de Clash Royale comparées à celles de Clash of Clans dans leur modélisation 3D ?",
+    "choices": [
+      "Leur texture 3D a deux facettes de plus pour le moteur du jeu √",
+      "Elles ont une teinte légèrement plus bleue dans le code couleur",
+      "Elles sont plus grandes de 5% pour être plus visibles sur mobile",
+      "Elles partagent exactement le même modèle 3D sans aucune modification"
+    ],
+    "source": "Comparaison technique des assets graphiques des jeux Supercell"
+  },
+  {
+    "question": "Exactement à quelle date Clash Royale est-il sorti mondialement sur iOS et Android ?",
+    "choices": [
+      "Le 2 mars 2016 √",
+      "Le 14 janvier 2017",
+      "Le 4 juillet 2014",
+      "Le 31 décembre 2015"
+    ],
+    "source": "Wiki officiel Clash Royale - Historique de sortie mondiale"
+  },
+  {
+    "question": "Combien d'élixir coûtait La Bûche lors de son introduction initiale en septembre 2016 ?",
+    "choices": ["3 d'élixir √", "4 d'élixir", "1 d'élixir", "2 d'élixir"],
+    "source": "Notes de mise à jour officielles (Changelog septembre 2016)"
+  },
+  {
+    "question": "En quelle année le Pass Royale et son système de récompenses saisonnières ont-ils été introduits pour la toute première fois ?",
+    "choices": ["Juillet 2019 √", "Juillet 2017", "Mars 2018", "Décembre 2020"],
+    "source": "Notes de mise à jour officielles - Saison 1 (2019)"
+  },
+  {
+    "question": "Lors de leur introduction majeure en octobre 2021, quelle autre nouveauté accompagnait l'arrivée des cartes Champions ?",
+    "choices": [
+      "L'extension du niveau maximum des rois au niveau 14 √",
+      "La suppression définitive de l'or de clan",
+      "L'ajout du mode de jeu 3 contre 3",
+      "La création des premiers sorts légendaires"
+    ],
+    "source": "Mise à jour majeure d'octobre 2021 - Patch Notes"
+  },
+  {
+    "question": "Quel joueur a été couronné vainqueur du tout premier tournoi mondial officiel (Crown Championship Global Series) à Londres fin 2017 ?",
+    "choices": ["Sergioramos √", "Morten", "ColtonW83", "Noah"],
+    "source": "Esports Clash Royale - Historique des championnats du monde"
+  },
+  {
+    "question": "Quels types de coffres emblématiques ont été définitivement supprimés du cycle des coffres en 2023 ?",
+    "choices": [
+      "Le Coffre Magique, Géant et Super Magique √",
+      "Le Coffre en Bois et le Coffre en Argent de base",
+      "Le Coffre de Clan légendaire",
+      "Le Coffre de Tournoi épique"
+    ],
+    "source": "Notes de mise à jour et refonte de la progression 2023"
+  },
+  {
+    "question": "Combien de cartes légendaires existaient au tout début du jeu lors de sa sortie mondiale en mars 2016 ?",
+    "choices": [
+      "Seulement deux (Princesse et Sorcier de Glace) √",
+      "Une seule (La Princesse)",
+      "Quatre (Le Squelette Géant, le Prince, la Princesse et le Sorcier de Glace)",
+      "Aucune, les légendaires sont arrivées un an plus tard"
+    ],
+    "source": "Wiki officiel Clash Royale - Cartes de lancement 2016"
+  },
+  {
+    "question": "Quel système de progression a remplacé les anciens niveaux d'expérience (XP) et le parcours classique du Roi lors de la mise à jour majeure de 2026 ?",
+    "choices": [
+      "Les Niveaux de Collection √",
+      "Les Badges de Maîtrise d'Arène",
+      "Le Rang Élite Global",
+      "Les Points de Prestige du Clan"
+    ],
+    "source": "Notes de mise à jour officielles de Supercell"
+  },
+  {
+    "question": "Dans le mode de jeu original 'Princess Gambit' introduit en 2026, quelle règle spécifique s'applique au deck ?",
+    "choices": [
+      "Pas de deck fixe : cartes aléatoires en mort subite √",
+      "Il est interdit d'utiliser des cartes de type sort",
+      "Tous les bâtiments coûtent 0 élixir",
+      "Le joueur commence directement avec 10 gouttes d'élixir"
+    ],
+    "source": "Détails du mode de jeu Princess Gambit - Supercell"
+  },
+  {
+    "question": "Quel effet subissent les cibles touchées par l'Évolution du Chasseur (Hunter Evolution) ?",
+    "choices": [
+      "Elles sont immobilisées 4 secondes par un filet (Net Gun) √",
+      "Elles sont repoussées de l'autre côté de l'arène",
+      "Leurs points de vie fondent de moitié par un effet de saignement",
+      "Elles changent de camp pendant 2 secondes"
+    ],
+    "source": "Royale API / Notes d'équilibrage des Évolutions de cartes"
+  },
+  {
+    "question": "Dans le mode tactique saisonnier 'Merge Tactics', quel rôle joue la Goblin Queen lorsqu'elle est active ?",
+    "choices": [
+      "Elle devient une dirigeante secondaire qui modifie les règles √",
+      "Elle remplace définitivement le Roi dans la tour principale",
+      "Elle génère de l'or à chaque tour gagné",
+      "Elle permet de fusionner deux troupes légendaires en une seule"
+    ],
+    "source": "Mise à jour des notes de version Merge Tactics"
+  },
+  {
+    "question": "Quel nom de code portait le Golem d'Élixir en interne chez Supercell, avant que son nom définitif ne soit choisi lors de sa sortie en 2018 ?",
+    "choices": [
+      "Baby Golem √",
+      "Elixir Junior",
+      "Le Golem Radioactif",
+      "Mini-Tank"
+    ],
+    "source": "Notes de développement internes - Sortie du Golem d'Élixir (2018)"
+  },
+  {
+    "question": "Sous quel nom de code le mode Guerre de Clans a-t-il été développé en interne, avant son annonce publique en 2018 ?",
+    "choices": [
+      "Operation Riverside √",
+      "Clan Siege",
+      "Project Banner",
+      "Alliance Protocol"
+    ],
+    "source": "Documents de planification produit de Supercell (2017-2018)"
+  },
+  {
+    "question": "D'après les données de masse internes du moteur physique, le poids du Chevalier Méga (Mega Knight) équivaut à celui de combien de Gobelins ?",
+    "choices": ["16 Gobelins √", "8 Gobelins", "24 Gobelins", "12 Gobelins"],
+    "source": "Moteur physique interne et paramètres de masse (Mass data)"
+  },
+  {
+    "question": "Quelle animation cachée la Sorcière déclenche-t-elle si elle reste immobile plus de 20 secondes sans lancer de sort ?",
+    "choices": [
+      "Elle feuillette un grimoire puis relève les yeux √",
+      "Elle fait léviter son chapeau un instant",
+      "Elle invoque brièvement un squelette qui disparaît aussitôt",
+      "Elle éternue, provoquant un petit nuage violet"
+    ],
+    "source": "Détails de modélisation 3D et animations idle du jeu"
+  },
+  {
+    "question": "Avant d'être rebaptisé 'Élixir', comment ce système de ressource s'appelait-il dans les tout premiers documents de conception du jeu ?",
+    "choices": ["Mana √", "Energy", "Fuel", "Essence"],
+    "source": "Documents de conception originaux de Supercell (pré-2016)"
+  },
+  {
+    "question": "Quel élément minuscule, visible seulement en zoomant à l'extrême, change de couleur selon la saison dans le décor de fond de l'arène du Bûcheron ?",
+    "choices": [
+      "Un drapeau accroché à une cabane, en arrière-plan √",
+      "Le feuillage d'un arbre isolé au loin",
+      "La fumée d'une cheminée au loin dans le village",
+      "Un oiseau perché sur un rocher voisin"
+    ],
+    "source": "Analyse artistique des décors d'arène (assets graphiques)"
+  },
+  {
+    "question": "Lors de la toute première finale mondiale retransmise en 2017 à Londres, une coupure du flux vidéo en plein match a été causée par quoi, selon le débrief interne des organisateurs ?",
+    "choices": [
+      "Une surchauffe du serveur de diffusion sur place √",
+      "Une panne de courant dans la salle",
+      "Un bug du client de jeu en plein match officiel",
+      "Une erreur humaine de l'opérateur régie"
+    ],
+    "source": "Débrief post-événement des organisateurs esport (décembre 2017)"
+  },
+  {
+    "question": "Quel surnom les développeurs employaient-ils en interne pour désigner l'équipe chargée de l'équilibrage des cartes, en clin d'œil à sa réputation de 'briseuse de méta' ?",
+    "choices": ["Les Fossoyeurs √", "Les Régulateurs", "Les Chirurgiens", "Les Bourreaux"],
+    "source": "Anecdotes internes de l'équipe de design de Supercell"
+  }
+]
