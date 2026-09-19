@@ -14,12 +14,13 @@
 //   "Proposer un mot" reste donc identique après chaque tentative (pas de
 //   bouton "Reproposer" séparé comme La Juste Carte).
 //
-// ⚠️ Statut : phase de TEST UNIQUEMENT. scripts/postPeleMele.js ne
-// poste QUE sur le salon de test (DISCORD_CHANNEL_FRAME_TEST, réutilisé —
-// voir CONTRIBUTING.md, pas de nouveau salon dédié) et n'expose
-// volontairement PAS d'option --public : ce jeu doit remplacer un mini-jeu
-// existant dont le choix n'est pas encore arrêté. Ne pas ajouter de cron
-// GitHub Actions tant que cette décision n'est pas prise.
+// Production (2026-09) : alterne avec Anagram, une saison Clash Royale sur
+// deux, sous le nom collectif "Jeux de lettres" — voir
+// backend/services/jeuxdelettres.js. En production, la publication passe
+// UNIQUEMENT par scripts/postJeuxDeLettres.js (qui décide quel jeu est actif
+// et gère le récap de fin de saison du jeu qui vient de se terminer, quel
+// qu'il soit) ; scripts/postPeleMele.js reste utilisable pour forcer un post
+// direct de CE jeu précis (test, rattrapage manuel).
 // ============================================================
 
 import {
@@ -40,7 +41,17 @@ import {
   readParticipant,
   getPlayerSeasonResults,
   getSeasonMancheNumber,
+  computeSeasonRanking,
+  getAllArchivedResults,
+  findTiedRank,
 } from "../../../backend/services/pelemele.js";
+import { toPublicSeasonId } from "../../../backend/services/dateUtils.js";
+import {
+  getRoleIdByName,
+  buildRolePingFields,
+  MINI_JEUX_ROLE_NAME,
+} from "../../../backend/services/discordRoles.js";
+import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
 
 const PELEMELE_COLOR = 0x9b59b6;
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
@@ -51,20 +62,20 @@ const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 // d'image à référencer.
 function buildPeleMeleEmbed({ seasonId, seasonManche, seasonMancheTotal, gameId, totalValidWords }) {
   return {
-    title: "🔤 [TEST] Pêle-mêle",
+    title: "🔤 Le jeu du samedi : Pêle-mêle !",
     description:
-      `**Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
+      `**Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
       `Plusieurs cartes Clash Royale se cachent derrière ces ${DRAW_SIZE} lettres. Sauras-tu toutes les retrouver ?\n\n` +
       "🏆 **1 point** par carte trouvée, **5 points** s'il s'agit du mot le plus long.\n" +
       "♾️ Tu as autant d'essais que tu veux !\n\n" +
       (totalValidWords != null ? `🎯 **${totalValidWords} carte${totalValidWords > 1 ? "s" : ""} valide${totalValidWords > 1 ? "s" : ""} sur ce tirage** — à toi de toutes les trouver !\n\n` : "") +
       "📜 Détails (orthographe, accents, ponctuation...) dans le bouton **Règles**.\n\n" +
-      "🚧 Jeu en test — les résultats de cette manche ne comptent pas encore pour un classement de saison officiel.",
+      "**Merci de ne pas spoiler ni tricher, sinon c'est pas drôle !**",
     color: PELEMELE_COLOR,
     // Cache-buster (?v=) — même pattern que frames.js/zoom.js/lajustecarte.js :
     // Discord met en cache l'aperçu d'un embed PAR URL.
     ...(gameId ? { image: { url: `${TRUST_ROYALE_URL}/api/pelemele/image?gameId=${gameId}&v=${Date.now()}` } } : {}),
-    footer: { text: "Manche ouverte jusqu'à la prochaine (jour de publication pas encore fixé)." },
+    footer: { text: "Nouvelle manche : samedi prochain, à une heure surprise ! (en alternance avec Anagram, une saison sur deux)" },
   };
 }
 
@@ -88,6 +99,110 @@ export function buildRulesEmbed() {
       "• Les cartes dont le nom contient une **apostrophe** (ex. Barbares d'élite) ne font pas partie de ce jeu.",
     color: PELEMELE_COLOR,
   };
+}
+
+// ── Récapitulatif de fin de saison ──────────────────────────────
+// Copie quasi identique de buildSeasonRecapEmbed dans anagrams.js (mêmes
+// règles : troncage à 20 joueurs, exclusion des 0 pt, gestion des ex-aequo
+// pour les médailles), libellé adapté au jeu Pêle-mêle. Différence : pas
+// d'illustration dédiée de fin de saison (aucun asset créé pour ce jeu),
+// `image` simplement omise plutôt que de pointer vers un fichier inexistant.
+//
+// Contrairement à Anagram, ce récap n'est PAS déclenché par postPeleMele()
+// lui-même mais uniquement par scripts/postJeuxDeLettres.js (voir
+// postSeasonRecap ci-dessous) : sous l'alternance, ce n'est pas forcément
+// Pêle-mêle qui reprend la main juste après SA propre saison — seul
+// l'orchestrateur partagé sait quand recaper la bonne saison au bon moment
+// (voir backend/services/jeuxdelettres.js).
+
+const SEASON_RECAP_MAX_PLAYERS = 20;
+const SEASON_RECAP_MEDALS = ["🥇", "🥈", "🥉"];
+
+function buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId, manchesPlayed) {
+  const nonZero = seasonRanking.filter((r) => r.totalScore > 0);
+  const shown = nonZero.slice(0, SEASON_RECAP_MAX_PLAYERS);
+  const hiddenCount = nonZero.length - shown.length;
+
+  const lines = [
+    "**Classement final :**",
+    ...shown.map((entry) => {
+      const rank = findTiedRank(shown, entry.discordId, "totalScore");
+      const tiedCount = shown.filter((e) => e.totalScore === entry.totalScore).length;
+      const label = tiedCount === 1 && rank <= 3 ? SEASON_RECAP_MEDALS[rank - 1] : `${rank}.`;
+      return `${label} ${entry.pseudo} — ${entry.totalScore} pts`;
+    }),
+  ];
+  if (hiddenCount > 0) {
+    lines.push(`... et ${hiddenCount} autre${hiddenCount > 1 ? "s" : ""} joueur${hiddenCount > 1 ? "s" : ""}`);
+  }
+  if (manchesPlayed?.length > 0) {
+    lines.push("", "**Manches de la saison :**", ...manchesPlayed.map((m) => `Manche ${m.seasonManche} : ${m.label}`));
+  }
+  lines.push("", `Bravo à tous ! Rendez-vous juste après pour le lancement de la Saison ${toPublicSeasonId(newSeasonId)}.`);
+
+  return {
+    title: `🏆 Fin de la Saison ${toPublicSeasonId(endedSeasonId)} « Pêle-mêle » !`,
+    description:
+      `Merci aux ${seasonRanking.length} joueur${seasonRanking.length > 1 ? "s" : ""} qui ont participé à ce mini-jeu cette saison.\n\n` +
+      lines.join("\n"),
+    color: PELEMELE_COLOR,
+  };
+}
+
+// Remplace le pseudo figé de chaque entrée par le pseudo Discord actuel
+// (résolution live, repli sur le pseudo stocké en cas d'échec).
+async function resolveRankingPseudos(ranking) {
+  return Promise.all(
+    ranking.map(async (entry) => ({
+      ...entry,
+      pseudo: await resolveDisplayName(entry.discordId, entry.pseudo),
+    })),
+  );
+}
+
+// Liste triée (Manche 1, 2, 3...) des tirages de la saison écoulée, pour le
+// récap de fin de saison. Contrairement à Anagram (une réponse unique par
+// manche, `getAnagramAnswer(gameId)`), Pêle-mêle n'a pas de "réponse" unique
+// — le libellé affiché est donc le TIRAGE (les lettres) de la manche,
+// identique pour tous les joueurs, lu depuis n'importe quel enregistrement
+// archivé de ce gameId (voir le champ `letters` ajouté dans finalizeRound,
+// backend/services/pelemele.js).
+async function getSeasonManchesPlayed(seasonId) {
+  const allResults = await getAllArchivedResults();
+  const seasonResults = allResults.filter((r) => r.seasonId === seasonId);
+  const lettersByGameId = new Map();
+  for (const r of seasonResults) {
+    if (!lettersByGameId.has(r.gameId)) lettersByGameId.set(r.gameId, r.letters);
+  }
+  const gameIds = [...lettersByGameId.keys()];
+  const manches = await Promise.all(
+    gameIds.map(async (gameId) => ({
+      seasonManche: await getSeasonMancheNumber(seasonId, gameId),
+      label: lettersByGameId.get(gameId),
+    })),
+  );
+  return manches.filter((m) => m.seasonManche != null && m.label != null).sort((a, b) => a.seasonManche - b.seasonManche);
+}
+
+// Exportée : appelée directement par scripts/postJeuxDeLettres.js.
+export async function postSeasonRecap(channelId, endedSeasonId, newSeasonId, { noPing = false } = {}) {
+  const token = process.env.DISCORD_TOKEN;
+  const seasonRanking = await computeSeasonRanking(endedSeasonId);
+  if (seasonRanking.length === 0) return; // rien à récapituler
+
+  const resolvedRanking = await resolveRankingPseudos(seasonRanking);
+  const manchesPlayed = await getSeasonManchesPlayed(endedSeasonId);
+  const embed = buildSeasonRecapEmbed(resolvedRanking, endedSeasonId, newSeasonId, manchesPlayed);
+  const roleId = noPing ? null : await getRoleIdByName(MINI_JEUX_ROLE_NAME);
+  const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+    method: "POST",
+    headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ embeds: [embed], ...buildRolePingFields(roleId) }),
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    throw new Error(`Erreur envoi récap de saison (${res.status}): ${errText}`);
+  }
 }
 
 // custom_id des boutons "Règles"/"Journal" SANS gameId : ni l'un ni l'autre
@@ -146,19 +261,22 @@ export function buildAnswerModal(gameId) {
   };
 }
 
-// ── Publication (appelée uniquement par scripts/postPeleMele.js) ──
-// Volontairement plus simple que lajustecarte.js : pas de récap de fin de
-// saison (le jeu n'est pas encore rattaché à un vrai classement de saison
-// tant qu'il est en test), pas de ping de rôle (jamais utile sur le salon
-// de test).
-export async function postPeleMele(channelId, { dryRun = false, force = false } = {}) {
+// ── Publication ────────────────────────────────────────────────
+// Appelée par scripts/postJeuxDeLettres.js (production, avec force:true —
+// le gating jour/créneau est déjà fait par l'orchestrateur, voir
+// backend/services/jeuxdelettres.js) ou par scripts/postPeleMele.js
+// (test/rattrapage manuel direct de ce jeu précis). skipSeasonRecap n'existe
+// PAS ici (contrairement à postAnagram) : ce jeu n'a aucune logique de récap
+// interne, seul l'orchestrateur en décide (voir postSeasonRecap ci-dessus).
+export async function postPeleMele(channelId, { dryRun = false, force = false, noPing = false } = {}) {
   if (dryRun) {
     const pool = await loadEligiblePool();
     const seasonId = await getCurrentSeasonId();
     const seasonManche = await previewSeasonManche(seasonId);
     const seasonMancheTotal = computeSeasonMancheTotal(seasonManche);
     const embed = buildPeleMeleEmbed({ seasonId, seasonManche, seasonMancheTotal });
-    return { dryRun: true, poolSize: pool.length, embed, components: buildAnswerComponents("preview") };
+    const pingRoleId = noPing ? null : await getRoleIdByName(MINI_JEUX_ROLE_NAME);
+    return { dryRun: true, poolSize: pool.length, embed, components: buildAnswerComponents("preview"), pingRoleId };
   }
 
   if (!force && (await alreadyPostedThisWeek())) {
@@ -171,11 +289,12 @@ export async function postPeleMele(channelId, { dryRun = false, force = false } 
   const { state } = await startNewGame(channelId);
   const embed = buildPeleMeleEmbed(state);
   const components = buildAnswerComponents(state.gameId);
+  const roleId = noPing ? null : await getRoleIdByName(MINI_JEUX_ROLE_NAME);
 
   const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
     method: "POST",
     headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ embeds: [embed], components }),
+    body: JSON.stringify({ embeds: [embed], components, ...buildRolePingFields(roleId) }),
   });
 
   if (!res.ok) {

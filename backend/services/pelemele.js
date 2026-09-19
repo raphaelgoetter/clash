@@ -29,12 +29,12 @@
 // 36% (toujours mesuré par simulation, pas juste supposé) — amélioration
 // réelle mais partielle, gardé en tête si un futur ajustement est demandé.
 //
-// ⚠️ Statut : moteur de jeu connecté à Discord (voir
-// api/discord/_handlers/pelemele.js, scripts/postPeleMele.js) mais
-// EN TEST UNIQUEMENT — poste seulement sur le salon de test, aucune commande
-// slash, aucun cron GitHub Actions. Ce jeu doit remplacer un mini-jeu
-// existant dont le choix n'est pas encore arrêté — voir PROVISIONAL_WEEKDAY
-// ci-dessous.
+// Production (2026-09) : Pêle-mêle alterne avec Anagram, une saison Clash
+// Royale sur deux, sous le nom collectif "Jeux de lettres" — voir
+// backend/services/jeuxdelettres.js pour l'alternance et
+// scripts/postJeuxDeLettres.js pour l'orchestration (seul point d'entrée en
+// production ; scripts/postPeleMele.js reste utilisable pour forcer un post
+// direct de CE jeu précis, test comme rattrapage manuel).
 // ============================================================
 
 import fs from "fs/promises";
@@ -52,13 +52,10 @@ const CARD_NAMES_PATH = path.resolve(__dirname, "..", "..", "data", "cardNames.j
 
 export const DRAW_SIZE = 14;
 
-// ⚠️ PROVISOIRE : jour de publication pas encore décidé (ce jeu doit
-// remplacer un mini-jeu existant, lequel n'est pas encore choisi). Mercredi
-// retenu comme simple valeur par défaut pour que computeSeasonMancheTotal
-// soit calculable dès maintenant — À CORRIGER pour refléter le vrai jour
-// retenu (probablement le même jour que le jeu remplacé) avant toute mise
-// en production.
-const PROVISIONAL_WEEKDAY = 3;
+// Samedi (comme Anagram, avec qui ce jeu alterne — même jour, même
+// mécanique de créneau matin/soir, voir jeuxdelettres.js) — décision
+// produit actée le 2026-09-19.
+const SATURDAY = 6;
 
 const CARD_DEF_CACHE_TTL = 24 * 60 * 60 * 1000; // non utilisé pour l'instant (pas d'image de carte dans ce jeu), gardé pour cohérence si besoin plus tard
 
@@ -480,7 +477,7 @@ async function assignSeasonMancheNumber(seasonId, gameId) {
 }
 
 export function computeSeasonMancheTotal(seasonManche, now = new Date()) {
-  return seasonManche + countRemainingWeekdayOccurrences(now, PROVISIONAL_WEEKDAY);
+  return seasonManche + countRemainingWeekdayOccurrences(now, SATURDAY);
 }
 
 // ── Cycle de vie d'une manche ────────────────────────────────────
@@ -631,6 +628,12 @@ async function finalizeRound(previousState) {
       gameId: previousState.gameId,
       seasonId: previousState.seasonId,
       reponse: participant.foundWords.join(", "),
+      // Lettres du tirage de CETTE manche — redondant entre les enregistrements
+      // de plusieurs joueurs d'une même manche (même gameId), mais c'est le
+      // seul endroit où cette donnée survit après remplacement de la manche
+      // (state.letters n'existe que tant que la manche est active) ; sert au
+      // récap de fin de saison (voir getSeasonManchesPlayed, handler Discord).
+      letters: previousState.letters.join(""),
       postedAt: previousState.startedAt,
       discordId: participant.discordId,
       pseudo: participant.username,

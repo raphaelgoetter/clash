@@ -212,7 +212,11 @@ async function getSeasonManchesPlayed(seasonId) {
     .sort((a, b) => a.seasonManche - b.seasonManche);
 }
 
-async function postSeasonRecap(
+// Exportée : appelée directement par scripts/postJeuxDeLettres.js pour
+// recaper la saison écoulée d'Anagram même quand ce n'est pas Anagram qui
+// reprend la main juste après (cas d'alternance avec Pêle-mêle — voir
+// skipSeasonRecap sur postAnagram ci-dessous).
+export async function postSeasonRecap(
   channelId,
   endedSeasonId,
   newSeasonId,
@@ -256,7 +260,7 @@ async function postSeasonRecap(
 
 export async function postAnagram(
   channelId,
-  { dryRun = false, force = false, noPing = false } = {},
+  { dryRun = false, force = false, noPing = false, skipSeasonRecap = false } = {},
 ) {
   if (dryRun) {
     const anagrams = await loadAnagrams();
@@ -326,7 +330,18 @@ export async function postAnagram(
 
   const previousState = await readState();
   const newSeasonId = await getCurrentSeasonId();
+  // skipSeasonRecap : depuis l'alternance avec Pêle-mêle (une saison sur
+  // deux — voir backend/services/jeuxdelettres.js), Anagram ne poste plus
+  // forcément CHAQUE saison. Si on se fiait à cette comparaison seule, une
+  // reprise après une saison Pêle-mêle comparerait previousState.seasonId
+  // (vieux d'un cycle complet) au newSeasonId courant et re-déclencherait à
+  // tort un récap déjà posté en temps voulu par scripts/postJeuxDeLettres.js
+  // (qui suit sa PROPRE trace de saison, partagée entre les deux jeux, et
+  // passe skipSeasonRecap:true ici pour rester la SEULE source du récap).
+  // Comportement inchangé pour un appel direct/manuel (skipSeasonRecap
+  // reste false par défaut).
   if (
+    !skipSeasonRecap &&
     previousState?.seasonId != null &&
     newSeasonId != null &&
     previousState.seasonId !== newSeasonId

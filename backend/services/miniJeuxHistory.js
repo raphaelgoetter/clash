@@ -12,6 +12,7 @@
 import { getCurrentSeasonBounds } from "./dateUtils.js";
 import { getAllArchivedResults as getFrameResults } from "./frames.js";
 import { getAllArchivedResults as getAnagramResults } from "./anagrams.js";
+import { getAllArchivedResults as getPeleMeleResults } from "./pelemele.js";
 import { getAllArchivedResults as getZoomResults } from "./zoom.js";
 import { getAllArchivedResults as getBlindRoyaleResults } from "./blindroyale.js";
 import { getAllArchivedResults as getLaJusteCarteResults } from "./lajustecarte.js";
@@ -23,7 +24,7 @@ import { listManches as listMarioClashManches } from "./marioclash.js";
 // données (les trois groupes ci-dessous tournent en parallèle).
 const GAME_ORDER = [
   "frame",
-  "anagram",
+  "lettres",
   "zoom",
   "blindroyale",
   "lajustecarte",
@@ -34,9 +35,20 @@ const GAME_ORDER = [
 
 // Jeux réguliers : une entrée archivée = un joueur ayant résolu une manche.
 // Le score se cumule sur toute la saison mini-jeux.
+//
+// "lettres" fusionne Anagram et Pêle-mêle : depuis leur alternance (une
+// saison Clash Royale sur deux, voir jeuxdelettres.js), les deux jeux ne
+// sont jamais actifs la même saison — leurs résultats archivés se
+// concatènent donc sans jamais se chevaucher, et apparaissent comme UNE
+// seule catégorie "Jeux de lettres" plutôt que deux entrées dont l'une
+// serait toujours vide pour une saison donnée.
 const SCORE_GAMES = [
   { key: "frame", label: "🖼️ Frame", fetch: getFrameResults },
-  { key: "anagram", label: "🔤 Anagram", fetch: getAnagramResults },
+  {
+    key: "lettres",
+    label: "🔤 Jeux de lettres",
+    fetch: async () => [...(await getAnagramResults()), ...(await getPeleMeleResults())],
+  },
   { key: "zoom", label: "🔍 Zoom", fetch: getZoomResults },
   { key: "blindroyale", label: "🙈 Blind Royale", fetch: getBlindRoyaleResults },
   { key: "lajustecarte", label: "🃏 La Juste Carte", fetch: getLaJusteCarteResults },
