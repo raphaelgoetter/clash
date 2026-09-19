@@ -91,6 +91,10 @@ import {
   handlePilule as handleTamagotchiPilule,
 } from "./_handlers/tamagotchi.js";
 import { handleQuizVote } from "./_handlers/quiz.js";
+// ⚠️ Jeu en TEST UNIQUEMENT (voir palette.js) : ce bloc ne fait que router
+// les interactions Discord, aucune commande /palette n'existe, aucune
+// publication automatique n'est câblée (voir postPalette.js).
+import { handleAnswerButton as handlePaletteAnswer } from "./_handlers/palette.js";
 import {
   buildIdeaModal as buildPollIdeaModal,
   handleIdeaModalSubmit as handlePollIdeaModalSubmit,
@@ -9400,6 +9404,29 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleQuizVote(webhookUrl, manche, jour, choiceIndex, discordId, username));
+    return;
+  }
+
+  // ── Jeu Palette [TEST] : boutons de réponse A/B/C/D ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("palette_answer:")
+  ) {
+    const [, gameId, letter] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    // type 5 = DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE (éphémère) : réponse
+    // définitive au premier clic, un simple QCM ne nécessite pas de Modal
+    // (contrairement au bouton "Répondre" de Zoom) — même principe d'ACK
+    // que quiz_vote ci-dessus.
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handlePaletteAnswer(webhookUrl, gameId, letter, discordId, username));
     return;
   }
 

@@ -23,6 +23,7 @@ import { clearAll } from "./services/cache.js";
 import { fetchClan, fetchPlayer } from "./services/clashApi.js";
 import { getCurrentFrameImage, getFrameImageByGameId } from "./services/frames.js";
 import { getZoomCardImage, getZoomHintImage, getZoomRevealImage } from "./services/zoomImage.js";
+import { getPaletteQuestionImage, getPaletteResultImage } from "./services/paletteImage.js";
 import { getPeleMeleRackImage } from "./services/pelemeleImage.js";
 import {
   getBoardImage as getGoblinHuntersBoardImage,
@@ -285,6 +286,22 @@ app.get("/api/zoom/image", async (req, res) => {
   const { gameId, stage } = req.query;
   if (!gameId) return res.status(400).end();
   const getImage = stage === "hint" ? getZoomHintImage : stage === "reveal" ? getZoomRevealImage : getZoomCardImage;
+  const image = await getImage(String(gameId)).catch(() => null);
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", "image/png");
+  res.setHeader("Cache-Control", "no-store");
+  res.send(image.buffer);
+});
+
+// [TEST] Jeu Palette : sert l'image de la manche en cours (carte + 4
+// pastilles A/B/C/D), ou le résultat avec voile + pourcentages
+// (?stage=result) — jamais un fichier brut de data/palette/images ou
+// data/palette/highlights (non exposés statiquement). Anti-spoiler :
+// isGamePosted (palette:order:<gameId>), même garde-fou que Zoom.
+app.get("/api/palette/image", async (req, res) => {
+  const { gameId, stage } = req.query;
+  if (!gameId) return res.status(400).end();
+  const getImage = stage === "result" ? getPaletteResultImage : getPaletteQuestionImage;
   const image = await getImage(String(gameId)).catch(() => null);
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", "image/png");

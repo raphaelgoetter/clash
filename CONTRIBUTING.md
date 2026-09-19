@@ -937,6 +937,69 @@ Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHAN
 
 ---
 
+## Jeu Palette [TEST] (devine la couleur dominante d'une carte)
+
+Mini-jeu en phase de test (posté uniquement à la main sur le salon de test, `node scripts/postPalette.js` — pas de workflow GitHub Actions pour l'instant). QCM à 4 choix (A/B/C/D), une seule tentative par joueur — pas de Modal (contrairement à Frame/Anagram/Zoom/La Juste Carte) : le mécanisme d'interaction est calqué sur le bouton de vote du Quiz thématique (`quiz_vote:`, `backend/services/quiz.js`/`api/discord/_handlers/quiz.js`) — ACK éphémère immédiat, jamais d'ouverture de formulaire.
+
+Prévu pour tourner un jour en alternance saisonnière avec Zoom carte sous un nommage partagé "jeux-visuels" (même principe que l'unification Anagram/Pêle-mêle en "jeux-de-lettres", commit `5473d39a`) — pas encore fait : cette fusion n'aura lieu qu'une fois Palette validé après un test réel, sur le modèle exact suivi par Pêle-mêle avant ce commit. D'ici là, `backend/services/palette.js` est volontairement écrit en parité structurelle stricte avec `zoom.js` (mêmes noms de fonctions, même forme d'état) pour que cette fusion future soit mécanique.
+
+### Extraction des couleurs et génération du catalogue
+
+`backend/services/dominantColor.js` (k-means en espace Lab, cadre décoratif de rareté exclu par comparaison inter-cartes, voir les pièges documentés en commentaire dans ce fichier) et `scripts/generatePaletteCatalog.js` (génère `data/palette/palette.json`, télécharge `data/palette/images/` et `data/palette/highlights/`, applique `data/palette/manualOverrides.json` en dernier). Usage ponctuel (`npm run palette:catalog`), jamais dans le flux de manche.
+
+### Les 4 propositions : mélange par manche, pas par carte
+
+Contrairement au reste du jeu (une image = un contenu fixe), Palette doit afficher les 4 couleurs de `entry.colors` dans un ordre mélangé différent à chaque manche (sinon la couleur dominante serait toujours "A"). Discord ne permet aucune couleur personnalisée sur un bouton (5 styles fixes) : les 4 pastilles colorées sont donc dessinées **dans l'image** (voir `backend/services/paletteImage.js`), les boutons Discord ne portent que les lettres A/B/C/D.
+
+Le mélange est calculé une seule fois à `startNewGame()` (Fisher-Yates) et persisté dans `palette:order:<gameId>` — jamais recalculé, pour rester stable si Discord re-fetch l'URL d'embed ou si un ancien message reste visible après qu'une nouvelle manche a démarré. Cette clé sert aussi de registre anti-spoiler (remplace le SET `posted_games` des autres jeux) : son existence suffit à garantir que la manche a bien été postée.
+
+### Sélection de la carte suivante : `palette.json` n'est PAS mélangé (contrairement à `zoom.json`)
+
+Le fichier généré par `generatePaletteCatalog.js` est trié dans l'ordre de `data/cardNames.json` (quasi alphabétique) — le reproduire tel quel aurait recréé le piège déjà documenté pour Zoom (voir plus haut : "l'ordre se voyait clairement en test réel"). `palette.js` maintient donc son propre ordre de tirage, mélangé au runtime et persisté dans `palette:play_order` (Redis, pas le fichier), limité au sous-ensemble `playable: true`. Les cartes nouvellement rendues jouables (regénération du catalogue) sont insérées une par une à une position aléatoire, jamais en bloc en fin de liste.
+
+### Synthèse d'image (`backend/services/paletteImage.js`)
+
+Même technique que `zoomImage.js` : SVG rastérisé en PNG via `@resvg/resvg-js`. Contrairement à Zoom (aucun texte, juste un crop d'image), Palette affiche du texte (lettres, pourcentages) → **police embarquée obligatoire** (`data/fonts/Inter-Bold.ttf`, `loadSystemFonts: false`), même piège que documenté pour Pêle-mêle : resvg n'a aucune police système sur le runtime serverless Vercel, le texte resterait invisible sans lever d'erreur.
+
+Deux répertoires source distincts à ne jamais confondre (même nom de fichier dans les deux) : `data/palette/images/` (carte brute, question) et `data/palette/highlights/` (voile déjà posé sur la couleur dominante, résultat) — donner l'un à la place de l'autre spoilerait la réponse directement dans la question.
+
+### Barème (Palette)
+
+`computeScore(correct, elapsedMs)` (`backend/services/palette.js`) : 10 pts si répondu dans les 30 premières secondes, -1 pt par tranche de 30s entamée, plancher à 5 pts pour toute bonne réponse. 0 pt si incorrect. Pas de pénalité de tentative (impossible techniquement : un seul clic verrouille la réponse, correcte ou non, contrairement à Zoom qui autorise plusieurs essais).
+
+### Réponse à essai unique
+
+`recordAnswer()` verrouille via `HSETNX` (pas une lecture-puis-écriture comme `markSolved()` de Zoom) : chaque clic est définitif, correct ou non — un double-clic quasi simultané (double-tap mobile, lag réseau) reste sûr sans race condition.
+
+### Stockage — Upstash Redis (`palette:*`)
+
+| Clé Redis                       | Type          | Contenu                                                    |
+| -------------------------------- | ------------- | ----------------------------------------------------------- |
+| `palette:state`                  | STRING (JSON) | Manche active (`gameId`, `mancheNumber`, `startedAt`, ...) |
+| `palette:order:<gameId>`         | STRING (JSON) | Permutation A→D → index couleur, permanent (anti-spoiler)  |
+| `palette:play_order`             | STRING (JSON) | Ordre de tirage des cartes jouables, permanent             |
+| `palette:participants:<gameId>`  | HASH          | `discordId → { letter, correct, score, answeredAt }`       |
+| `palette:manche_seq`             | STRING        | Compteur global (affichage "Manche #N", pas de saison)     |
+
+### Ce qui n'est PAS construit pour l'instant (décision explicite)
+
+Pas de commande `/palette`, pas de classement de saison, pas d'archive, pas de DM de fin de manche, pas de workflow `.github/workflows/palette.yml` (publication manuelle uniquement). À réévaluer une fois le jeu validé en conditions réelles, sur le modèle de Zoom.
+
+### Scripts npm (Palette)
+
+| Commande                   | Effet                                                          |
+| --------------------------- | --------------------------------------------------------------- |
+| `npm run palette:catalog`  | Génère/complète `data/palette/palette.json` + images.          |
+| `npm run palette:test`     | Poste une manche sur le salon de test (`--force` implicite).   |
+| `npm run palette:test:dry` | Aperçu console, sans écrire ni poster.                          |
+| `npm run palette:reset`    | Remet le jeu à zéro (manche active + participants). Destructif. |
+
+### Variables d'environnement (Palette)
+
+Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST` et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (espace de clés `palette:*` séparé).
+
+---
+
 ## Jeu La Juste Carte (devine la carte par ses stats)
 
 Quatrième mini-jeu hebdomadaire indépendant, sur le modèle de Frame/Anagram (voir [Jeu Frame](#jeu-frame-devine-le-film) pour les mécanismes partagés : Modal `type:9`/`MODAL_SUBMIT type:5`, stockage Upstash Redis et ses pièges, gestion de saison CR). Différence structurelle majeure : contrairement aux 3 autres jeux (une seule tentative résout la manche), ici chaque joueur soumet **plusieurs propositions successives** contre une carte secrète — ce n'est pas une course entre joueurs, chacun joue sa propre partie à son rythme.
