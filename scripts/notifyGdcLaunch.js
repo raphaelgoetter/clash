@@ -13,7 +13,7 @@
 //   QU9UQJRL — Les Revoltes
 //
 // Fonctionnement :
-//   1. Vérifie le log de déduplication (data/gdc-launch-log.json)
+//   1. Vérifie le log de déduplication (Upstash Redis, clé "dedup:gdclaunch")
 //      pour ne pas poster deux fois la même semaine.
 //   2. Appelle l'API Clash Royale (currentriverrace) pour
 //      détecter si la semaine est un Colisée.
@@ -33,25 +33,34 @@
 //   DISCORD_CHANNEL_MEMBERS_Y8JUPC9C, DISCORD_CHANNEL_MEMBERS_LRQP20V9, DISCORD_CHANNEL_MEMBERS_QU9UQJRL
 //   CLASH_API_KEY
 //
-// Log de déduplication : data/gdc-launch-log.json
-//   Clé : tag du clan, Valeur : date du jeudi de la semaine (YYYY-MM-DD)
+// Log de déduplication : Upstash Redis, clé "dedup:gdclaunch"
+//   Valeur (JSON) : tag du clan → date du jeudi de la semaine (YYYY-MM-DD)
 // ============================================================
 
-import fs from "fs/promises";
-import path from "path";
 import { fileURLToPath } from "url";
+import { Redis } from "@upstash/redis";
 
 import { fetchCurrentRace } from "../backend/services/clashApi.js";
 import { formatResetTimeParis } from "../backend/services/dateUtils.js";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ── Constants ──────────────────────────────────────────────────
 
 const DISCORD_API = "https://discord.com/api/v10";
 // QU9UQJRL (Les Revoltes, Clan 3) exclu : GDC non obligatoire dans ce clan.
 const CLAN_TAGS = ["Y8JUPC9C", "LRQP20V9"];
-const LOG_FILE = path.resolve(__dirname, "..", "data", "gdc-launch-log.json");
+const LOG_KEY = "dedup:gdclaunch";
+
+let _redis = null;
+function getRedis() {
+  if (!_redis) {
+    _redis = new Redis({
+      url: process.env.KV_REST_API_URL,
+      token: process.env.KV_REST_API_TOKEN,
+      automaticDeserialization: false,
+    });
+  }
+  return _redis;
+}
 
 // ── Message templates ──────────────────────────────────────────
 
@@ -133,7 +142,8 @@ const FORCE = process.argv.includes("--force");
 
 async function loadLog() {
   try {
-    return JSON.parse(await fs.readFile(LOG_FILE, "utf-8"));
+    const raw = await getRedis().get(LOG_KEY);
+    return raw ? JSON.parse(raw) : {};
   } catch {
     return {};
   }
@@ -141,8 +151,7 @@ async function loadLog() {
 
 async function saveLog(log) {
   if (DRY_RUN) return;
-  await fs.mkdir(path.dirname(LOG_FILE), { recursive: true });
-  await fs.writeFile(LOG_FILE, JSON.stringify(log, null, 2) + "\n");
+  await getRedis().set(LOG_KEY, JSON.stringify(log));
 }
 
 // ── Week dedup key ─────────────────────────────────────────────

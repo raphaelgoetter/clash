@@ -2,25 +2,29 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { existsSync } from "fs";
-import { readFile, writeFile } from "fs/promises";
-import path from "path";
 import { fileURLToPath } from "url";
 import fetch from "node-fetch";
+import { Redis } from "@upstash/redis";
 import { MS_PER_DAY, parseClashDate } from "../backend/services/dateUtils.js";
 import { computeMemberReliability } from "../backend/services/playerAnalysis.js";
 import { fetchClanWarRankings } from "../backend/services/clashApi.js";
 import { getRoleIdByName } from "../backend/services/discordRoles.js";
 import { loadClanCache } from "../backend/services/clanCache.js";
+import { getDiscordLinks } from "../backend/services/discordLinks.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const LOG_FILE = path.join(__dirname, "..", "data", "pre-gdc-weekly-log.json");
-const DISCORD_LINKS_FILE = path.join(
-  __dirname,
-  "..",
-  "data",
-  "discord-links.json",
-);
+const LOG_KEY = "dedup:pregdcweekly";
+
+let _redis = null;
+function getRedis() {
+  if (!_redis) {
+    _redis = new Redis({
+      url: process.env.KV_REST_API_URL,
+      token: process.env.KV_REST_API_TOKEN,
+      automaticDeserialization: false,
+    });
+  }
+  return _redis;
+}
 const DISCORD_API = "https://discord.com/api/v10";
 const DRY_RUN = process.argv.includes("--dry-run");
 // --clan=TAG : limite l'envoi à un seul clan (utile pour un renvoi ciblé
@@ -49,17 +53,18 @@ function normalizeTag(tag) {
   return String(tag).replace(/^#/, "").trim().toUpperCase();
 }
 
-async function readJson(filePath, fallback = {}) {
-  if (!existsSync(filePath)) return fallback;
-  return JSON.parse(await readFile(filePath, "utf8"));
+async function readDedupLog() {
+  try {
+    const raw = await getRedis().get(LOG_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
 }
 
-async function writeJson(filePath, data) {
-  if (DRY_RUN) {
-    console.log("[dry-run] Écriture simulée de", filePath);
-    return;
-  }
-  await writeFile(filePath, JSON.stringify(data, null, 2));
+async function saveDedupLog(log) {
+  if (DRY_RUN) return;
+  await getRedis().set(LOG_KEY, JSON.stringify(log));
 }
 
 async function readClanCache(clanTag) {
@@ -348,7 +353,7 @@ async function main() {
   }
 
   const now = new Date();
-  const previousRawLog = await readJson(LOG_FILE, {});
+  const previousRawLog = await readDedupLog();
   const previousLog = migrateLog(previousRawLog);
   const clans = [];
 
@@ -363,7 +368,7 @@ async function main() {
     clans.push({ clanTag, cache });
   }
 
-  const discordLinks = await readJson(DISCORD_LINKS_FILE, {});
+  const discordLinks = await getDiscordLinks();
   const guildId = process.env.DISCORD_GUILD_ID;
   const [guildMemberById, activityRoleIds] = await Promise.all([
     fetchGuildMemberById(token, guildId),
@@ -496,7 +501,7 @@ async function main() {
     };
   }
 
-  await writeJson(LOG_FILE, newLog);
+  await saveDedupLog(newLog);
   console.log(
     `notifyPreWarSummary: ${sentCount} message${sentCount > 1 ? "s" : ""} posté${sentCount > 1 ? "s" : ""}.`,
   );

@@ -1130,7 +1130,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
   });
   const membersToFetchSet = new Set(membersToFetch.map((m) => m.tag));
 
-  // Chargement des liens Discord (tag → discord_user_id) — cache 5 min
+  // Chargement des liens Discord (tag → discord_user_id) — Redis
   const discordLinks = await getDiscordLinks().catch(() => ({}));
 
   // Fetch race log once and compute war-based scores for every member.

@@ -8,17 +8,26 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { existsSync } from "fs";
-import { readFile, writeFile } from "fs/promises";
 import { fileURLToPath } from "url";
-import path from "path";
 import fetch from "node-fetch";
+import { Redis } from "@upstash/redis";
 import { parseClashDate, MS_PER_DAY } from "../backend/services/dateUtils.js";
 import { resolveMembersChannelId } from "../backend/services/discordChannels.js";
 import { loadClanCache } from "../backend/services/clanCache.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const LOG_FILE = path.join(__dirname, "..", "data", "last-seen-log.json");
+const LOG_KEY = "dedup:lastseen";
+
+let _redis = null;
+function getRedis() {
+  if (!_redis) {
+    _redis = new Redis({
+      url: process.env.KV_REST_API_URL,
+      token: process.env.KV_REST_API_TOKEN,
+      automaticDeserialization: false,
+    });
+  }
+  return _redis;
+}
 
 const DISCORD_API = "https://discord.com/api/v10";
 const DRY_RUN = process.argv.includes("--dry-run");
@@ -208,9 +217,9 @@ async function readClanCache(tag) {
 }
 
 async function readLog() {
-  if (!existsSync(LOG_FILE)) return {};
   try {
-    return JSON.parse(await readFile(LOG_FILE, "utf-8"));
+    const raw = await getRedis().get(LOG_KEY);
+    return raw ? JSON.parse(raw) : {};
   } catch {
     return {};
   }
@@ -218,7 +227,7 @@ async function readLog() {
 
 async function saveLog(log) {
   if (DRY_RUN) return;
-  await writeFile(LOG_FILE, JSON.stringify(log, null, 2));
+  await getRedis().set(LOG_KEY, JSON.stringify(log));
 }
 
 async function sendDiscordEmbed(channelId, token, embed) {

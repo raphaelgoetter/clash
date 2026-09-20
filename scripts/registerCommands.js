@@ -417,41 +417,6 @@ const commands = [
     ],
   },
   {
-    name: "champion-count",
-    description:
-      "Affiche le décompte des votes pour les pronostics GDC en cours.",
-    options: [
-      {
-        type: 3, // STRING
-        name: "clan",
-        description: "Choisir le clan",
-        required: true,
-        choices: [
-          { name: "La Resistance", value: "1" },
-          { name: "Les Resistants", value: "2" },
-          { name: "Les Revoltes", value: "3" },
-        ],
-      },
-    ],
-  },
-  {
-    name: "champion-history",
-    description: "Affiche l'historique des Champions GDC passés.",
-    options: [
-      {
-        type: 3, // STRING
-        name: "clan",
-        description: "Choisir le clan",
-        required: true,
-        choices: [
-          { name: "La Resistance", value: "1" },
-          { name: "Les Resistants", value: "2" },
-          { name: "Les Revoltes", value: "3" },
-        ],
-      },
-    ],
-  },
-  {
     name: "frame",
     description: "Affiche vos scores au jeu Frame (devine le film).",
     options: [],

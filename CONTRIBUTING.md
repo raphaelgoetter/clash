@@ -37,6 +37,14 @@ La documentation orientée utilisateur final reste dans README.md.
 - Les snapshots sont stockés dans Upstash Redis (une clé `snapshots:<TAG>` par clan), lus/écrits via `loadSnapshots()`/`recordSnapshot()` dans `backend/services/snapshot.js`.
 - Source unique et partagée entre toutes les fonctions/scripts : plus besoin de redéployer pour que les données restent fraîches, et plus de logique de fusion tmp/disque (l'ancien double stockage /tmp + data/snapshots forçait un redéploiement Vercel à chaque cron horaire, ce qui gonflait le Function Storage du projet — cf. incident du 05/09).
 
+### Logs anti-doublon des scripts de notification
+
+`notifyLastSeen.js`, `notifyWarSummary.js`, `notifyClanStatus.js`, `notifyGdcLaunch.js` et `notifyPreWarSummary.js` stockent chacun leur log anti-doublon (« ai-je déjà posté aujourd'hui/cette semaine ? ») dans Upstash Redis plutôt que dans `data/*.json` (clés `dedup:lastseen`, `dedup:warsummary`, `dedup:clanstatus`, `dedup:gdclaunch`, `dedup:pregdcweekly`). Ces workflows ne font donc plus de `git commit`/`git push` — jusqu'ici, chacun de ces posts quotidiens/hebdo déclenchait un commit sur `main`, donc un redéploiement Vercel complet, ce qui gonflait le Function Storage du projet (même cause que l'incident snapshots du 05/09, cf. ci-dessus).
+
+### Liens Discord (`/discord-link`)
+
+Le mapping tag Clash → Discord user ID (`backend/services/discordLinks.js`, `getDiscordLinks()`/`setDiscordLinks()`) est stocké dans Upstash Redis (hash `discordlinks`), et non plus dans `data/discord-links.json` via l'API GitHub Contents. L'ancien mécanisme lisait avec un cache de 5 min et écrivait par `sha` (non atomique, deux `/discord-link` concurrents pouvaient se marcher dessus) — la commande `/discord-link` déclenchait en plus un commit sur `main` à chaque lien, donc un redéploiement Vercel complet. L'écriture Redis (`HSET`) est désormais atomique par tag, sans lecture préalable ni commit. Tous les consommateurs (route `/api/player`, `/api/clan`, commandes `/late`, `/late-ping`, `/discord-check`, script `notifyMemberChanges.js`, `notifyWarSummary.js`, `notifyPreWarSummary.js`) passent par ce même service.
+
 ### Thread Discord dédié aux notifications automatiques (test clan 2)
 
 Pour éviter que les posts automatiques parasitent les discussions manuelles du salon d'un clan, certains scripts peuvent poster dans un thread dédié plutôt que dans le salon principal.
@@ -45,10 +53,6 @@ Chaque script concerné résout son channel cible via `resolveMembersChannelId(c
 
 Scripts concernés : `notifyWarSummary.js` (résumé quotidien/hebdo), `notifyMemberChanges.js` (arrivées/départs/promotions/rétrogradations), `notifyLastSeen.js` (joueurs inactifs).
 
-Postent toujours dans le salon principal (appellent `resolveMembersChannelId(clanTag, { thread: false })`), quel que soit le clan — choix volontaire pour ne pas noyer les votes dans le thread de test :
-
-- `autoStartPredictions.js` / `autoEndPredictions.js` (cron `predictions.yml`)
-
 Scripts **non concernés** (restent dans le salon principal ou le salon staff) : `notifyPreWarSummary.js`, `notifyGdcLaunch.js`, `notifyRules.js`, `notifyClanStatus.js`.
 
 Le test mené sur le clan 2 (`LRQP20V9`, thread `1523295989044088964`) n'a finalement pas été retenu : ses scripts postent de nouveau dans le salon membres principal. Aucun clan n'a donc actuellement de `DISCORD_THREAD_MEMBERS_<TAG>` renseignée. Pour activer ce mécanisme sur un clan :
@@ -56,7 +60,7 @@ Le test mené sur le clan 2 (`LRQP20V9`, thread `1523295989044088964`) n'a final
 1. Renseigner `DISCORD_THREAD_MEMBERS_<TAG>` dans `.env` (local).
 2. Ajouter le secret GitHub Actions du même nom dans les workflows concernés (`snapshot.yml`, `last-seen.yml`, `war-summary.yml`).
 
-Aucun changement de code n'est nécessaire pour étendre le test à un autre clan (sauf pour les pronostics, qui ignorent volontairement le thread — voir plus haut).
+Aucun changement de code n'est nécessaire pour étendre le test à un autre clan.
 
 ### Planification des scripts automatiques (GitHub Actions)
 
@@ -74,8 +78,6 @@ Tous les horaires ci-dessous sont définis en UTC dans les workflows (`.github/w
 | `notifyGdcLaunch.js`                                    | `gdc-launch.yml`         | Jeudi                                         | 10:30                        | 12:30 / 11:30             | Salon membres principal               |
 | `notifyPreWarSummary.js` (`npm run pre-war-summary`)    | `pre-war-summary.yml`    | Mercredi                                      | 14:00                        | 16:00 / 15:00             | Salon membres principal               |
 | `notifyRules.js`                                        | `rules.yml`              | Mardi (le script ne poste que le 1er du mois) | 14:00                        | 16:00 / 15:00             | Salon membres principal               |
-| `autoStartPredictions.js` (`npm run predictions:start`) | `predictions.yml`        | Mardi                                         | 08:00                        | 10:00 / 09:00             | Salon membres principal               |
-| `autoEndPredictions.js` (`npm run predictions:end`)     | `predictions.yml`        | Lundi                                         | 12:00                        | 14:00 / 13:00             | Salon membres principal               |
 | `postFrame.js` (`npm run frame:public`)                 | `frames.yml`             | Mercredi                                      | 08:00                        | 10:00 / 09:00             | Salon "Général"                       |
 | `postAnagram.js` (`npm run anagram:public`)             | `anagrams.yml`           | Samedi                                        | 10:00 ou 18:00 (aléatoire)\* | 12:00-20:00 / 11:00-19:00 | Salon "Général"                       |
 
@@ -760,7 +762,7 @@ KV_REST_API_URL=                 # Upstash Redis (voir "Stockage — Upstash Red
 KV_REST_API_TOKEN=
 ```
 
-⚠️ Le workflow `.github/workflows/frames.yml` (cron `npm run frame:public`) a besoin de `KV_REST_API_URL`/`KV_REST_API_TOKEN` en plus des secrets Discord habituels — ce ne sont **pas** les mêmes que `BLOB_READ_WRITE_TOKEN` (utilisé par `predictions.yml`, pas par Frame). À ajouter dans Settings → Secrets and variables → Actions du dépôt GitHub, avec les mêmes valeurs que dans `.env` local, sinon le post hebdomadaire échoue avec `[Upstash Redis] The 'url'/'token' property is missing`.
+⚠️ Le workflow `.github/workflows/frames.yml` (cron `npm run frame:public`) a besoin de `KV_REST_API_URL`/`KV_REST_API_TOKEN` en plus des secrets Discord habituels — ce ne sont **pas** les mêmes que `BLOB_READ_WRITE_TOKEN` (utilisé pour les assets image, pas par Frame). À ajouter dans Settings → Secrets and variables → Actions du dépôt GitHub, avec les mêmes valeurs que dans `.env` local, sinon le post hebdomadaire échoue avec `[Upstash Redis] The 'url'/'token' property is missing`.
 
 ---
 
@@ -2197,7 +2199,7 @@ Où trouver les données utiles :
 - `members[].reliability` et `members[].verdict` sont des `calculs fiables` par membre ;
 - `membersRaw` contient des données plus brutes, utiles pour le debug ;
 - il n’existe pas de champ canonique `scoreClan` calculé une seule fois et stocké comme vérité métier.
-- pour le résumé pré-GDC hebdo, le script stocke néanmoins un champ `scoreClan` dans `data/pre-gdc-weekly-log.json` afin de suivre l’évolution semaine après semaine.
+- pour le résumé pré-GDC hebdo, le script stocke néanmoins un champ `scoreClan` dans le log anti-doublon (Upstash Redis, clé `dedup:pregdcweekly`) afin de suivre l’évolution semaine après semaine.
 
 Comment l’interpréter :
 

@@ -14,7 +14,10 @@ import {
   isSupremeChampionLeague,
 } from "../../backend/services/rankedLeagues.js";
 import { roundProjectedFame } from "../../backend/services/projectionFormat.js";
-import { getDiscordLinks } from "../../backend/services/discordLinks.js";
+import {
+  getDiscordLinks,
+  setDiscordLinks,
+} from "../../backend/services/discordLinks.js";
 import { loadSnapshots } from "../../backend/services/snapshot.js";
 import {
   toPublicSeasonId,
@@ -40,12 +43,6 @@ import {
   computeTourLevel,
 } from "../../backend/services/collectionConstants.js";
 import { getOrSet } from "../../backend/services/cache.js";
-import {
-  handleCount as handleChampionCount,
-  handleHistory as handleChampionHistory,
-  handleHistoryPage as handleChampionHistoryPage,
-  handleSelectInteraction as handleChampionSelect,
-} from "./_handlers/championPredictions.js";
 import {
   buildAnswerModal as buildFrameAnswerModal,
   handleHintButton as handleFrameHintButton,
@@ -1488,11 +1485,11 @@ async function buildLateReportPayload(resolved, clanVal) {
       await import("../../backend/services/clashApi.js");
     console.log("[/late] import OK");
 
-    const [race, currentMembers, { links }] = await withTimeout(
+    const [race, currentMembers, links] = await withTimeout(
       Promise.all([
         fetchCurrentRace(`#${resolved.tag}`),
         fetchClanMembers(`#${resolved.tag}`),
-        readDiscordLinks(),
+        getDiscordLinks(),
       ]),
       20000,
       "fetch initial",
@@ -1975,7 +1972,7 @@ async function buildClanReportPayload(resolved) {
 
     let discordLinkedCount = 0;
     if (isNoWarClan) {
-      const { links } = await readDiscordLinks();
+      const links = await getDiscordLinks();
       discordLinkedCount = rosterForNoWarStats.filter((m) => {
         const tag = m.tag?.startsWith("#") ? m.tag : `#${m.tag}`;
         return Boolean(links[tag]);
@@ -3113,35 +3110,6 @@ function padEndDisplay(str, width) {
   return str + " ".repeat(Math.max(0, width - dw));
 }
 
-// ── Discord Links — stockage GitHub ─────────────────────────────────────────
-// Les liens Clash tag → Discord user ID sont persistés dans data/discord-links.json
-// via l'API GitHub Contents pour survivre aux redéploiements Vercel.
-
-async function readDiscordLinks() {
-  const repo = process.env.GITHUB_REPO;
-  const token = process.env.GITHUB_TOKEN;
-  if (!repo || !token) return { links: {}, sha: null };
-  try {
-    const res = await fetch(
-      `https://api.github.com/repos/${repo}/contents/data/discord-links.json`,
-      {
-        headers: {
-          Authorization: `token ${token}`,
-          Accept: "application/vnd.github+json",
-        },
-      },
-    );
-    if (!res.ok) return { links: {}, sha: null };
-    const data = await res.json();
-    const links = JSON.parse(
-      Buffer.from(data.content, "base64").toString("utf8"),
-    );
-    return { links, sha: data.sha };
-  } catch {
-    return { links: {}, sha: null };
-  }
-}
-
 function normalizeClashTag(tag) {
   if (!tag) return "";
   const raw = String(tag).trim().toUpperCase();
@@ -3216,35 +3184,6 @@ async function buildTagAutocompleteChoices(body, links) {
     name: name ? `${name} (${tag})` : tag,
     value: tag,
   }));
-}
-
-async function writeDiscordLinks(links, sha, message) {
-  const repo = process.env.GITHUB_REPO;
-  const token = process.env.GITHUB_TOKEN;
-  if (!repo || !token || !sha) return false;
-  try {
-    const res = await fetch(
-      `https://api.github.com/repos/${repo}/contents/data/discord-links.json`,
-      {
-        method: "PUT",
-        headers: {
-          Authorization: `token ${token}`,
-          Accept: "application/vnd.github+json",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message,
-          content: Buffer.from(JSON.stringify(links, null, 2) + "\n").toString(
-            "base64",
-          ),
-          sha,
-        }),
-      },
-    );
-    return res.ok;
-  } catch {
-    return false;
-  }
 }
 
 async function fetchWarDecksForTagUncached(tag) {
@@ -6025,18 +5964,13 @@ export default async function handler(req, res) {
           return;
         }
 
-        const { links, sha } = await readDiscordLinks();
-        // Ajouter les nouveaux liens (sans supprimer les liens existants de cet utilisateur)
+        // HSET atomique : n'écrase pas les liens des autres joueurs, pas
+        // besoin de lire l'état existant au préalable.
+        const newLinks = {};
         for (const { tag } of success) {
-          links[tag] = discordUserId;
+          newLinks[tag] = discordUserId;
         }
-
-        const tagList = success.map((r) => r.tag).join(", ");
-        const ok = await writeDiscordLinks(
-          links,
-          sha,
-          `discord: lien Discord ${discordUserId} → Clash ${tagList}`,
-        );
+        const ok = await setDiscordLinks(newLinks);
 
         const lines = [];
         for (const { tag, player } of success) {
@@ -6046,7 +5980,7 @@ export default async function handler(req, res) {
           lines.push(`❌ Tag \`${tag}\` introuvable — ignoré.`);
         }
         if (!ok)
-          lines.push("⚠️ Sauvegarde GitHub échouée — contacte un admin.");
+          lines.push("⚠️ Sauvegarde échouée — contacte un admin.");
 
         await fetch(webhookUrl, {
           method: "POST",
@@ -6085,9 +6019,9 @@ export default async function handler(req, res) {
       try {
         const { fetchClanMembers } =
           await import("../../backend/services/clashApi.js");
-        const [clanMembers, { links }] = await Promise.all([
+        const [clanMembers, links] = await Promise.all([
           fetchClanMembers(`#${resolved.tag}`),
-          readDiscordLinks(),
+          getDiscordLinks(),
         ]);
 
         // Récupère tous les membres du serveur Discord (max 1 000)
@@ -6763,11 +6697,11 @@ export default async function handler(req, res) {
           await import("../../backend/services/clashApi.js");
         console.log("[/late-ping] import OK");
 
-        const [race, currentMembers, { links }] = await withTimeout(
+        const [race, currentMembers, links] = await withTimeout(
           Promise.all([
             fetchCurrentRace(`#${resolved.tag}`),
             fetchClanMembers(`#${resolved.tag}`),
-            readDiscordLinks(),
+            getDiscordLinks(),
           ]),
           20000,
           "fetch initial",
@@ -8017,60 +7951,6 @@ export default async function handler(req, res) {
         });
       }
     });
-    return;
-  }
-
-  // ── Pronostics GDC ──
-  if (body.type === 2) {
-    const cmd = body.data?.name;
-
-    if (cmd === "champion-count") {
-      const clanOpt = body.data.options?.find((o) => o.name === "clan");
-      const clanVal = clanOpt?.value || "1";
-      res.status(200).json({ type: 5 });
-      const webhookUrl = buildDiscordWebhookUrl(body);
-      runBackground(() => handleChampionCount(webhookUrl, clanVal));
-      return;
-    }
-
-    if (cmd === "champion-history") {
-      const clanOpt = body.data.options?.find((o) => o.name === "clan");
-      const clanVal = clanOpt?.value || "1";
-      res.status(200).json({ type: 5 });
-      const webhookUrl = buildDiscordWebhookUrl(body);
-      runBackground(() => handleChampionHistory(webhookUrl, clanVal));
-      return;
-    }
-  }
-
-  // ── MessageComponent : select menu pronostics GDC ──
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id.startsWith("champion_vote:")
-  ) {
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleChampionSelect(webhookUrl, body));
-    return;
-  }
-
-  // ── MessageComponent : bouton "Précédents" du registre des champions ──
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id.startsWith("champion_history_page:")
-  ) {
-    const [, clanVal, offsetStr] = body.data.custom_id.split(":");
-    const offset = parseInt(offsetStr, 10) || 0;
-    res.status(200).json({ type: 6 });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    const originalWebhookUrl = webhookUrl
-      ? `${webhookUrl}/messages/@original`
-      : null;
-    runBackground(() =>
-      handleChampionHistoryPage(originalWebhookUrl, clanVal, offset),
-    );
     return;
   }
 

@@ -1,54 +1,66 @@
 // ============================================================
-// services/discordLinks.js — Récupération des liens Discord
-// En production : lit data/discord-links.json depuis GitHub (cache 5 min).
-// En dev local  : lit directement le fichier local.
+// services/discordLinks.js — Liens Clash tag → Discord user ID
+// Stockage : Upstash Redis (hash `discordlinks`, même instance que
+// clanCache.js/snapshot.js). Remplace l'ancien stockage via l'API GitHub
+// Contents (lecture avec cache 5 min + écriture par sha, non atomique et
+// déclenchant un commit sur main à chaque /discord-link, donc un
+// redéploiement Vercel complet — cf. incident Function Storage du 05/09).
+// Chaque lien est maintenant un HSET atomique, chaque lecture un HGETALL
+// direct, sans commit ni redéploiement.
 // ============================================================
 
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { Redis } from "@upstash/redis";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const LOCAL_PATH = path.resolve(__dirname, '../../data/discord-links.json');
+const LINKS_KEY = "discordlinks";
 
-let _cache = null;
-let _cacheTime = 0;
-const TTL = 5 * 60 * 1000; // 5 minutes
+let _redis = null;
+function getRedis() {
+  if (!_redis) {
+    _redis = new Redis({
+      url: process.env.KV_REST_API_URL,
+      token: process.env.KV_REST_API_TOKEN,
+      automaticDeserialization: false,
+    });
+  }
+  return _redis;
+}
+
+// automaticDeserialization: false → hgetall renvoie un tableau plat
+// [field1, value1, field2, value2, ...] et non un objet (même convention
+// que backend/services/blackjack.js).
+function pairsToObject(flat) {
+  const obj = {};
+  for (let i = 0; i < flat.length; i += 2) {
+    obj[flat[i]] = flat[i + 1];
+  }
+  return obj;
+}
 
 /**
  * Retourne le mapping { "#TAG": "discord_user_id" }.
- * Utilise GitHub Contents API en production, le fichier local en dev.
  * En cas d'erreur, retourne {}.
  */
 export async function getDiscordLinks() {
-  if (_cache !== null && Date.now() - _cacheTime < TTL) return _cache;
-
-  const repo  = process.env.GITHUB_REPO;
-  const token = process.env.GITHUB_TOKEN;
-
-  // Fallback local : utilisé quand les variables GitHub ne sont pas définies
-  if (!repo || !token) {
-    try {
-      const raw = await fs.readFile(LOCAL_PATH, 'utf8');
-      _cache = JSON.parse(raw);
-      _cacheTime = Date.now();
-      return _cache;
-    } catch {
-      return {};
-    }
-  }
-
   try {
-    const res = await fetch(
-      `https://api.github.com/repos/${repo}/contents/data/discord-links.json`,
-      { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github+json' } },
-    );
-    if (!res.ok) return {};
-    const json = await res.json();
-    _cache = JSON.parse(Buffer.from(json.content, 'base64').toString('utf8'));
-    _cacheTime = Date.now();
-    return _cache;
+    const flat = (await getRedis().hgetall(LINKS_KEY)) || [];
+    return pairsToObject(flat);
   } catch {
     return {};
+  }
+}
+
+/**
+ * Lie un ou plusieurs tags Clash à un utilisateur Discord.
+ * `tagToUserId` : { "#TAG": "discord_user_id", ... }.
+ * Écriture atomique (HSET) — n'écrase jamais les liens des autres joueurs.
+ */
+export async function setDiscordLinks(tagToUserId) {
+  const entries = Object.entries(tagToUserId ?? {});
+  if (entries.length === 0) return true;
+  try {
+    await getRedis().hset(LINKS_KEY, Object.fromEntries(entries));
+    return true;
+  } catch {
+    return false;
   }
 }

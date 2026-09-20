@@ -18,6 +18,7 @@ import { existsSync } from "fs";
 import { fileURLToPath } from "url";
 import path from "path";
 import fetch from "node-fetch";
+import { Redis } from "@upstash/redis";
 import { ALLOWED_CLANS } from "../backend/routes/clan.js";
 import {
   computeCurrentWeekId,
@@ -40,20 +41,27 @@ import { resolveMembersChannelId } from "../backend/services/discordChannels.js"
 import { isJoinedThisWar } from "../backend/services/arrivalUtils.js";
 import { getRoleIdByName } from "../backend/services/discordRoles.js";
 import { loadClanCache } from "../backend/services/clanCache.js";
+import { getDiscordLinks } from "../backend/services/discordLinks.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const LOG_FILE = path.join(__dirname, "..", "data", "war-summary-log.json");
+const LOG_KEY = "dedup:warsummary";
+
+let _redis = null;
+function getRedis() {
+  if (!_redis) {
+    _redis = new Redis({
+      url: process.env.KV_REST_API_URL,
+      token: process.env.KV_REST_API_TOKEN,
+      automaticDeserialization: false,
+    });
+  }
+  return _redis;
+}
 const CLINCH_LOG_FILE = path.join(
   __dirname,
   "..",
   "data",
   "war-clinch-log.json",
-);
-const DISCORD_LINKS_FILE = path.join(
-  __dirname,
-  "..",
-  "data",
-  "discord-links.json",
 );
 
 const DISCORD_API = "https://discord.com/api/v10";
@@ -80,9 +88,9 @@ const CLAN_FILTER = (() => {
 // Format : { "LRQP20V9": "saturday:2026-04-04", ... }
 
 async function loadLog() {
-  if (!existsSync(LOG_FILE)) return {};
   try {
-    return JSON.parse(await readFile(LOG_FILE, "utf-8"));
+    const raw = await getRedis().get(LOG_KEY);
+    return raw ? JSON.parse(raw) : {};
   } catch {
     return {};
   }
@@ -104,7 +112,7 @@ async function saveClinchLog(clinchLog) {
 
 async function markPosted(log, tag, warDay, realDay) {
   log[tag] = `${warDay}:${realDay}`;
-  if (!DRY_RUN) await writeFile(LOG_FILE, JSON.stringify(log, null, 2));
+  if (!DRY_RUN) await getRedis().set(LOG_KEY, JSON.stringify(log));
 }
 
 function alreadyPosted(log, tag, warDay, realDay) {
@@ -414,17 +422,7 @@ async function readClanMemberNames(tag) {
 let discordLinksCache = null;
 async function loadDiscordLinks() {
   if (discordLinksCache) return discordLinksCache;
-  if (!existsSync(DISCORD_LINKS_FILE)) {
-    discordLinksCache = {};
-    return discordLinksCache;
-  }
-  try {
-    discordLinksCache = JSON.parse(
-      await readFile(DISCORD_LINKS_FILE, "utf-8"),
-    );
-  } catch {
-    discordLinksCache = {};
-  }
+  discordLinksCache = await getDiscordLinks();
   return discordLinksCache;
 }
 
