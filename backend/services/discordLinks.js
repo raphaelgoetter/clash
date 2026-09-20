@@ -64,3 +64,18 @@ export async function setDiscordLinks(tagToUserId) {
     return false;
   }
 }
+
+/**
+ * Supprime le lien d'un ou plusieurs tags Clash.
+ * `tags` : ["#TAG", ...].
+ */
+export async function deleteDiscordLinks(tags) {
+  const list = (tags ?? []).filter(Boolean);
+  if (list.length === 0) return true;
+  try {
+    await getRedis().hdel(LINKS_KEY, ...list);
+    return true;
+  } catch {
+    return false;
+  }
+}

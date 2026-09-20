@@ -43,7 +43,15 @@ La documentation orientée utilisateur final reste dans README.md.
 
 ### Liens Discord (`/discord-link`)
 
-Le mapping tag Clash → Discord user ID (`backend/services/discordLinks.js`, `getDiscordLinks()`/`setDiscordLinks()`) est stocké dans Upstash Redis (hash `discordlinks`), et non plus dans `data/discord-links.json` via l'API GitHub Contents. L'ancien mécanisme lisait avec un cache de 5 min et écrivait par `sha` (non atomique, deux `/discord-link` concurrents pouvaient se marcher dessus) — la commande `/discord-link` déclenchait en plus un commit sur `main` à chaque lien, donc un redéploiement Vercel complet. L'écriture Redis (`HSET`) est désormais atomique par tag, sans lecture préalable ni commit. Tous les consommateurs (route `/api/player`, `/api/clan`, commandes `/late`, `/late-ping`, `/discord-check`, script `notifyMemberChanges.js`, `notifyWarSummary.js`, `notifyPreWarSummary.js`) passent par ce même service.
+Le mapping tag Clash → Discord user ID (`backend/services/discordLinks.js`, `getDiscordLinks()`/`setDiscordLinks()`/`deleteDiscordLinks()`) est stocké dans Upstash Redis (hash `discordlinks`), et non plus dans `data/discord-links.json` via l'API GitHub Contents. L'ancien mécanisme lisait avec un cache de 5 min et écrivait par `sha` (non atomique, deux `/discord-link` concurrents pouvaient se marcher dessus) — la commande `/discord-link` déclenchait en plus un commit sur `main` à chaque lien, donc un redéploiement Vercel complet. L'écriture Redis (`HSET`) est désormais atomique par tag, sans lecture préalable ni commit. Tous les consommateurs (route `/api/player`, `/api/clan`, commandes `/late`, `/late-ping`, `/discord-check`, script `notifyMemberChanges.js`, `notifyWarSummary.js`, `notifyPreWarSummary.js`) passent par ce même service.
+
+Administration manuelle (remplace l'ancienne édition de `data/discord-links.json` + push sur `main`) :
+
+```bash
+npm run discord-links:list
+npm run discord-links:set -- "#TAG" discordUserId ["#TAG2" discordUserId2 ...]
+npm run discord-links:remove -- "#TAG" [...]
+```
 
 ### Thread Discord dédié aux notifications automatiques (test clan 2)
 
