@@ -34,6 +34,15 @@ const GAME_ORDER = [
   "marioclash",
 ];
 
+// Tague chaque résultat avec le nom du jeu précis qui l'a produit — permet à
+// bucketScoreGames() de savoir, POUR CHAQUE SAISON, lequel des jeux d'un
+// groupe en alternance a réellement tourné (voir subGames plus bas), sans
+// dépendre de la logique de parité de jeuxdelettres.js/jeuxvisuels.js (qui
+// raisonne en saison technique CR, non en saison calendaire mini-jeux).
+function tagSubGame(fetchFn, subGame) {
+  return async () => (await fetchFn()).map((r) => ({ ...r, subGame }));
+}
+
 // Jeux réguliers : une entrée archivée = un joueur ayant résolu une manche.
 // Le score se cumule sur toute la saison mini-jeux.
 //
@@ -43,18 +52,27 @@ const GAME_ORDER = [
 // d'une même paire ne sont jamais actifs la même saison — leurs résultats
 // archivés se concatènent donc sans jamais se chevaucher, et apparaissent
 // comme UNE seule catégorie plutôt que deux entrées dont l'une serait
-// toujours vide pour une saison donnée.
+// toujours vide pour une saison donnée. Le nom du jeu réellement actif cette
+// saison-là est précisé dans le label (voir subGames dans
+// getSeasonWinnersHistory) — pour ajouter un futur groupe en alternance, il
+// suffit de lister ici chaque jeu via tagSubGame(), rien d'autre à changer.
 const SCORE_GAMES = [
   { key: "frame", label: "🖼️ Frame", fetch: getFrameResults },
   {
     key: "lettres",
     label: "🔤 Jeux de lettres",
-    fetch: async () => [...(await getAnagramResults()), ...(await getPeleMeleResults())],
+    fetch: async () => [
+      ...(await tagSubGame(getAnagramResults, "Anagram")()),
+      ...(await tagSubGame(getPeleMeleResults, "Pêle-mêle")()),
+    ],
   },
   {
     key: "visuels",
     label: "🎨 Jeux visuels",
-    fetch: async () => [...(await getZoomResults()), ...(await getPaletteResults())],
+    fetch: async () => [
+      ...(await tagSubGame(getZoomResults, "Zoom carte")()),
+      ...(await tagSubGame(getPaletteResults, "Palette")()),
+    ],
   },
   { key: "blindroyale", label: "🙈 Blind Royale", fetch: getBlindRoyaleResults },
   { key: "lajustecarte", label: "🃏 La Juste Carte", fetch: getLaJusteCarteResults },
@@ -105,7 +123,9 @@ function getOrCreateSeason(seasonMap, dateStr) {
 function getOrCreateGameEntry(season, game) {
   let entry = season.games.get(game.key);
   if (!entry) {
-    entry = { label: game.label, totals: new Map() };
+    // subGames : ensemble (ordonné par insertion) des jeux précis vus cette
+    // saison pour ce groupe — vide pour les jeux qui n'alternent pas.
+    entry = { label: game.label, totals: new Map(), subGames: new Set() };
     season.games.set(game.key, entry);
   }
   return entry;
@@ -126,6 +146,7 @@ async function bucketScoreGames(seasonMap) {
       const dateStr = r.solvedAt || r.postedAt;
       if (!dateStr) continue;
       const entry = getOrCreateGameEntry(getOrCreateSeason(seasonMap, dateStr), game);
+      if (r.subGame) entry.subGames.add(r.subGame);
       addToTotal(entry, r.discordId, r.pseudo, Number(r.score) || 0);
     }
   }
@@ -187,7 +208,10 @@ export async function getSeasonWinnersHistory() {
       games: [...season.games.entries()]
         .map(([key, entry]) => ({
           key,
-          label: entry.label,
+          label:
+            entry.subGames.size > 0
+              ? `${entry.label} (${[...entry.subGames].join(", ")})`
+              : entry.label,
           winners: pickWinners(entry),
         }))
         .filter((g) => g.winners.length > 0)
