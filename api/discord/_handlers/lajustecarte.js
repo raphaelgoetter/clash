@@ -48,10 +48,7 @@ import {
   findTiedRank,
   alreadyPostedThisWeek,
 } from "../../../backend/services/lajustecarte.js";
-import {
-  toPublicSeasonId,
-  formatUtcTimeAsParis,
-} from "../../../backend/services/dateUtils.js";
+import { toPublicSeasonId } from "../../../backend/services/dateUtils.js";
 import {
   getRoleIdByName,
   buildRolePingFields,
@@ -91,14 +88,9 @@ async function resolveRankingPseudos(ranking) {
 
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 
-// Doit rester synchronisé avec le cron de .github/workflows/lajustecarte.yml
-// ("0 16 * * 0") — jamais figé en dur dans le texte affiché, sous peine de
-// devenir faux à chaque bascule CET/CEST (voir formatUtcTimeAsParis).
-const JUSTECARTE_CRON_UTC_HOUR = 16;
-
 function buildJusteCarteEmbed({ seasonId, seasonManche, seasonMancheTotal }) {
   return {
-    title: "🃏 Le jeu du dimanche : La Juste Carte !",
+    title: "🃏 Le jeu du lundi : La Juste Carte !",
     description:
       `**Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
       "Une carte Clash Royale secrète est en jeu ! Propose le nom d'une carte : le jeu te dira, stat par stat, si la carte secrète est plus forte, plus faible ou identique à ta proposition. À chaque proposition, tu as droit à un indice supplémentaire.\n\n" +
@@ -115,7 +107,7 @@ function buildJusteCarteEmbed({ seasonId, seasonManche, seasonMancheTotal }) {
       url: `${TRUST_ROYALE_URL}/images/justecarte/images/justecarte-game.webp?v=${Date.now()}`,
     },
     footer: {
-      text: `Nouvelle manche : dimanche prochain, ${formatUtcTimeAsParis(JUSTECARTE_CRON_UTC_HOUR)} !`,
+      text: "Nouvelle manche : lundi prochain !",
     },
   };
 }

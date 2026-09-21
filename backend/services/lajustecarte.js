@@ -36,7 +36,7 @@ import { normalizeAnswer } from "./textNormalize.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CARD_NAMES_PATH = path.resolve(__dirname, "..", "..", "data", "cardNames.json");
 
-const SUNDAY = 0;
+const MONDAY = 1;
 const CARD_DEF_CACHE_TTL = 24 * 60 * 60 * 1000;
 
 // Construction paresseuse (pas au chargement du module) — voir frames.js
@@ -274,11 +274,11 @@ async function assignSeasonMancheNumber(seasonId, gameId) {
   return seasonManche;
 }
 
-// X = manche déjà attribuée + dimanches restants avant la fin de la saison
+// X = manche déjà attribuée + lundis restants avant la fin de la saison
 // calendaire (countRemainingWeekdayOccurrences, dateUtils.js) — même
 // principe que Frame (mercredis) / Anagram (samedis).
 export function computeSeasonMancheTotal(seasonManche, now = new Date()) {
-  return seasonManche + countRemainingWeekdayOccurrences(now, SUNDAY);
+  return seasonManche + countRemainingWeekdayOccurrences(now, MONDAY);
 }
 
 export async function startNewGame(channelId) {
