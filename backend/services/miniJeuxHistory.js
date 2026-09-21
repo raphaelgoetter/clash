@@ -11,6 +11,7 @@
 
 import { getCurrentSeasonBounds } from "./dateUtils.js";
 import { getAllArchivedResults as getFrameResults } from "./frames.js";
+import { getAllArchivedResults as getTriviaResults } from "./trivia.js";
 import { getAllArchivedResults as getAnagramResults } from "./anagrams.js";
 import { getAllArchivedResults as getPeleMeleResults } from "./pelemele.js";
 import { getAllArchivedResults as getZoomResults } from "./zoom.js";
@@ -24,7 +25,7 @@ import { listManches as listMarioClashManches } from "./marioclash.js";
 // Ordre d'affichage canonique — indépendant de l'ordre de découverte des
 // données (les trois groupes ci-dessous tournent en parallèle).
 const GAME_ORDER = [
-  "frame",
+  "culture",
   "lettres",
   "visuels",
   "blindroyale",
@@ -47,17 +48,25 @@ function tagSubGame(fetchFn, subGame) {
 // Le score se cumule sur toute la saison mini-jeux.
 //
 // "lettres" fusionne Anagram et Pêle-mêle (voir jeuxdelettres.js), "visuels"
-// fusionne Zoom carte et Palette (voir jeuxvisuels.js) : sous leur
-// alternance respective (une saison Clash Royale sur deux), les deux jeux
-// d'une même paire ne sont jamais actifs la même saison — leurs résultats
-// archivés se concatènent donc sans jamais se chevaucher, et apparaissent
-// comme UNE seule catégorie plutôt que deux entrées dont l'une serait
-// toujours vide pour une saison donnée. Le nom du jeu réellement actif cette
-// saison-là est précisé dans le label (voir subGames dans
-// getSeasonWinnersHistory) — pour ajouter un futur groupe en alternance, il
-// suffit de lister ici chaque jeu via tagSubGame(), rien d'autre à changer.
+// fusionne Zoom carte et Palette (voir jeuxvisuels.js), "culture" fusionne
+// Frame et Trivia (voir jeuxculture.js) : sous leur alternance respective
+// (une saison Clash Royale sur deux), les deux jeux d'une même paire ne sont
+// jamais actifs la même saison — leurs résultats archivés se concatènent
+// donc sans jamais se chevaucher, et apparaissent comme UNE seule catégorie
+// plutôt que deux entrées dont l'une serait toujours vide pour une saison
+// donnée. Le nom du jeu réellement actif cette saison-là est précisé dans le
+// label (voir subGames dans getSeasonWinnersHistory) — pour ajouter un futur
+// groupe en alternance, il suffit de lister ici chaque jeu via
+// tagSubGame(), rien d'autre à changer.
 const SCORE_GAMES = [
-  { key: "frame", label: "🖼️ Frame", fetch: getFrameResults },
+  {
+    key: "culture",
+    label: "🎬 Jeux de culture",
+    fetch: async () => [
+      ...(await tagSubGame(getFrameResults, "Trouve le film")()),
+      ...(await tagSubGame(getTriviaResults, "Trivia")()),
+    ],
+  },
   {
     key: "lettres",
     label: "🔤 Jeux de lettres",

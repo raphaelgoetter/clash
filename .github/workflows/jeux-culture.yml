@@ -1,4 +1,4 @@
-name: Frame — devine le film
+name: Mini-jeux de Culture — Frame / Trivia (alternance)
 
 permissions:
   contents: read
@@ -10,7 +10,7 @@ on:
   workflow_dispatch: {}
 
 jobs:
-  post-frame:
+  post-jeux-culture:
     runs-on: ubuntu-latest
     env:
       CLASH_API_KEY: ${{ secrets.CLASH_API_KEY }}
@@ -32,5 +32,5 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Post partie Frame (salon public)
-        run: npm run frame:public
+      - name: Post manche Jeux de culture (salon public)
+        run: npm run culture:public

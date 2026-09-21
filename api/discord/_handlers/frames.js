@@ -1,8 +1,12 @@
 // ============================================================
-// frames.js — Handlers Discord pour le jeu "Frame" (devine le film)
-// Embed, boutons, modal, DM. La publication d'une partie passe uniquement
-// par scripts/postFrame.js — seule la commande /frame (scores personnels
-// du joueur qui l'exécute) est une vraie commande slash.
+// frames.js — Handlers Discord pour le jeu "Frame" (devine le film), en
+// alternance une saison Clash Royale sur deux avec Trivia sous le nom
+// collectif "Mini-jeux de Culture" (voir backend/services/jeuxculture.js).
+// Embed, boutons, modal, DM. En production, la publication passe par
+// scripts/postJeuxCulture.js (orchestrateur de l'alternance, skipSeasonRecap
+// true) ; scripts/postFrame.js reste utile pour tester Frame seul. Seule la
+// commande /frame (scores personnels du joueur qui l'exécute) est une vraie
+// commande slash.
 // ============================================================
 
 import {
@@ -219,7 +223,11 @@ async function getSeasonManchesPlayed(seasonId) {
     .sort((a, b) => a.seasonManche - b.seasonManche);
 }
 
-async function postSeasonRecap(channelId, endedSeasonId, newSeasonId, { noPing = false } = {}) {
+// Exportée : appelée directement par scripts/postJeuxCulture.js, sous
+// l'alternance avec Trivia (voir backend/services/jeuxculture.js) — le jeu
+// qui reprend la main après une saison Trivia ne "verrait" sinon la
+// transition que 2 saisons plus tard (voir skipSeasonRecap sur postFrame).
+export async function postSeasonRecap(channelId, endedSeasonId, newSeasonId, { noPing = false } = {}) {
   const token = process.env.DISCORD_TOKEN;
   const seasonRanking = await computeSeasonRanking(endedSeasonId);
   if (seasonRanking.length === 0) return; // rien à récapituler (saison sans le moindre point marqué)
@@ -256,7 +264,7 @@ async function postSeasonRecap(channelId, endedSeasonId, newSeasonId, { noPing =
 
 // `force` ignore le garde-fou anti-double-post (alreadyPostedThisWeek) —
 // utile pour rattraper un créneau manqué à la main, jamais depuis le cron.
-export async function postFrame(channelId, { dryRun = false, noPing = false, force = false } = {}) {
+export async function postFrame(channelId, { dryRun = false, noPing = false, force = false, skipSeasonRecap = false } = {}) {
   if (dryRun) {
     const frames = await loadFrames();
     const state = await readState();
@@ -307,7 +315,18 @@ export async function postFrame(channelId, { dryRun = false, noPing = false, for
 
   const previousState = await readState();
   const newSeasonId = await getCurrentSeasonId();
+  // skipSeasonRecap : depuis l'alternance avec Trivia (une saison sur deux
+  // — voir backend/services/jeuxculture.js), Frame ne poste plus forcément
+  // CHAQUE saison. Si on se fiait à cette comparaison seule, une reprise
+  // après une saison Trivia comparerait previousState.seasonId (vieux d'un
+  // cycle complet) au newSeasonId courant et re-déclencherait à tort un
+  // récap déjà posté en temps voulu par scripts/postJeuxCulture.js (qui suit
+  // sa PROPRE trace de saison, partagée entre les deux jeux, et passe
+  // skipSeasonRecap:true ici pour rester la SEULE source du récap).
+  // Comportement inchangé pour un appel direct/manuel (skipSeasonRecap reste
+  // false par défaut, scripts/postFrame.js).
   if (
+    !skipSeasonRecap &&
     previousState?.seasonId != null &&
     newSeasonId != null &&
     previousState.seasonId !== newSeasonId

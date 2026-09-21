@@ -26,6 +26,11 @@ import {
   getCurrentSeasonId as getVisuelsSeasonId,
   getActiveVisualGame,
 } from "../../../backend/services/jeuxvisuels.js";
+import {
+  getCurrentSeasonId as getCultureSeasonId,
+  getActiveCultureGame,
+} from "../../../backend/services/jeuxculture.js";
+import { readState as readTriviaState } from "../../../backend/services/trivia.js";
 
 import {
   readState as readQuizState,
@@ -95,12 +100,6 @@ const STATIC_REGULAR_GAMES = [
     readState: readBlindRoyaleState,
   },
   {
-    key: "frame",
-    title: "🎬 Trouve le film !",
-    weekday: 3,
-    readState: readFrameState,
-  },
-  {
     key: "lajustecarte",
     title: "🃏 La Juste Carte",
     weekday: 0,
@@ -121,6 +120,13 @@ const LETTRES_GAMES = {
   anagram: { title: "🔤 Anagram", readState: readAnagramState },
   pelemele: { title: "🔤 Pêle-mêle", readState: readPeleMeleState },
 };
+// "Mini-jeux de Culture" (mercredi) : Frame et Trivia alternent une saison
+// Clash Royale sur deux (voir jeuxculture.js), même mécanisme que
+// VISUELS_GAMES/LETTRES_GAMES ci-dessus.
+const CULTURE_GAMES = {
+  frame: { title: "🎬 Trouve le film !", readState: readFrameState },
+  trivia: { title: "🧠 Trivia", readState: readTriviaState },
+};
 
 // getCurrentSeasonId() peut renvoyer null (API Clash Royale indisponible) :
 // on retombe alors sur le jeu "historique" de la paire plutôt que de planter
@@ -135,6 +141,12 @@ async function resolveActiveLettresGame() {
   const seasonId = await getLettresSeasonId();
   const key = seasonId == null ? "anagram" : getActiveLetterGame(seasonId);
   return LETTRES_GAMES[key];
+}
+
+async function resolveActiveCultureGame() {
+  const seasonId = await getCultureSeasonId();
+  const key = seasonId == null ? "frame" : getActiveCultureGame(seasonId);
+  return CULTURE_GAMES[key];
 }
 
 // Un seul actif à la fois par convention (voir les gardes-fous "wrongChannel"
@@ -352,14 +364,16 @@ function buildCountdownBar(daysUntil) {
 }
 
 async function buildRegularGamesBlock(now) {
-  const [visuelsGame, lettresGame] = await Promise.all([
+  const [visuelsGame, lettresGame, cultureGame] = await Promise.all([
     resolveActiveVisuelsGame(),
     resolveActiveLettresGame(),
+    resolveActiveCultureGame(),
   ]);
   const games = [
     ...STATIC_REGULAR_GAMES,
     { key: "visuels", weekday: 5, ...visuelsGame },
     { key: "lettres", weekday: 6, ...lettresGame },
+    { key: "culture", weekday: 3, ...cultureGame },
   ];
 
   const entries = await Promise.all(

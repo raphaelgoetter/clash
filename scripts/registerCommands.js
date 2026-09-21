@@ -439,6 +439,12 @@ const commands = [
     options: [],
   },
   {
+    name: "trivia",
+    description:
+      "Affiche vos scores au jeu Trivia (quiz de culture Clash Royale).",
+    options: [],
+  },
+  {
     name: "justecarte",
     description:
       "Affiche vos scores au jeu La Juste Carte (devine la carte par ses stats).",

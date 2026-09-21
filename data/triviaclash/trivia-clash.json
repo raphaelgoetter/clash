@@ -30,7 +30,7 @@
     "source": "Anciens documents de design de Supercell"
   },
   {
-    "question": "Quel était le nom de code interne hilarant du Géant Squelette dans la phase alpha du jeu ?",
+    "question": "Quel était le nom de code interne du Géant Squelette dans la phase alpha du jeu ?",
     "choices": [
       "The Bomber's Grandfather √",
       "Big Bones McGee",
@@ -100,16 +100,6 @@
     "source": "Fichiers de portée (Range data) de la carte Princesse"
   },
   {
-    "question": "Selon quelle logique la Foudre choisit-elle ses cibles prioritaires dans sa zone d'effet ?",
-    "choices": [
-      "Elle vise en priorité les 3 cibles ayant le plus de points de vie √",
-      "Elle cible les unités les plus proches du centre du cercle",
-      "Elle cible aléatoirement les unités dans sa zone",
-      "Elle frappe d'abord les bâtiments puis les troupes"
-    ],
-    "source": "Description officielle de la mécanique du sort de Foudre"
-  },
-  {
     "question": "À son lancement en mars 2016, combien de trophées fallait-il pour atteindre l'Arène Légendaire originale (Palais Légendaire) ?",
     "choices": [
       "3000 trophées √",
@@ -170,7 +160,7 @@
     "source": "Annonces de développement et historiques des ajouts de cartes (2017)"
   },
   {
-    "question": "Quel bug majeur le Bouliste/Bourreau a-t-il connu à sa sortie, provoquant une maintenance d'urgence en pleine nuit ?",
+    "question": "Quel bug majeur le Bourreau a-t-il connu à sa sortie, provoquant une maintenance d'urgence en pleine nuit ?",
     "choices": [
       "Sa hache pouvait boucler à l'infini sur un bâtiment √",
       "Il pouvait traverser la rivière à pied sans pont",
@@ -194,7 +184,7 @@
     "choices": [
       "Copier la carte avec ses points de vie réduits de moitié √",
       "Copier la carte avec un niveau supérieur fixe",
-      "Faire apparaître deux exemplaires de la carte",
+      "Copier une carte aléatoire adverse",
       "Rendre la carte copiée invisible pendant 3 secondes"
     ],
     "source": "Notes préliminaires de conception de cartes des développeurs"
@@ -203,16 +193,6 @@
     "question": "À l'introduction des tournois mondiaux, quelle limite de niveau fixe a donné naissance à l'expression 'Standard Tournoi' ?",
     "choices": ["Le niveau 9 √", "Le niveau 11", "Le niveau 10", "Le niveau 7"],
     "source": "Historique des tournois mondiaux et modes compétitifs (2016-2018)"
-  },
-  {
-    "question": "Quelle est la particularité des gemmes vertes de Clash Royale comparées à celles de Clash of Clans dans leur modélisation 3D ?",
-    "choices": [
-      "Leur texture 3D a deux facettes de plus pour le moteur du jeu √",
-      "Elles ont une teinte légèrement plus bleue dans le code couleur",
-      "Elles sont plus grandes de 5% pour être plus visibles sur mobile",
-      "Elles partagent exactement le même modèle 3D sans aucune modification"
-    ],
-    "source": "Comparaison technique des assets graphiques des jeux Supercell"
   },
   {
     "question": "Exactement à quelle date Clash Royale est-il sorti mondialement sur iOS et Android ?",
@@ -239,14 +219,14 @@
     "choices": [
       "L'extension du niveau maximum des rois au niveau 14 √",
       "La suppression définitive de l'or de clan",
-      "L'ajout du mode de jeu 3 contre 3",
+      "L'ajout du mode de jeu 2 contre 2",
       "La création des premiers sorts légendaires"
     ],
     "source": "Mise à jour majeure d'octobre 2021 - Patch Notes"
   },
   {
     "question": "Quel joueur a été couronné vainqueur du tout premier tournoi mondial officiel (Crown Championship Global Series) à Londres fin 2017 ?",
-    "choices": ["Sergioramos √", "Morten", "ColtonW83", "Noah"],
+    "choices": ["Sergioramos √", "Morten", "ColtonW83", "Mohamed Light"],
     "source": "Esports Clash Royale - Historique des championnats du monde"
   },
   {
@@ -262,30 +242,20 @@
   {
     "question": "Combien de cartes légendaires existaient au tout début du jeu lors de sa sortie mondiale en mars 2016 ?",
     "choices": [
-      "Seulement deux (Princesse et Sorcier de Glace) √",
-      "Une seule (La Princesse)",
+      "Deux (Princesse et Sorcier de Glace) √",
+      "Une (La Princesse)",
       "Quatre (Le Squelette Géant, le Prince, la Princesse et le Sorcier de Glace)",
       "Aucune, les légendaires sont arrivées un an plus tard"
     ],
     "source": "Wiki officiel Clash Royale - Cartes de lancement 2016"
   },
   {
-    "question": "Quel système de progression a remplacé les anciens niveaux d'expérience (XP) et le parcours classique du Roi lors de la mise à jour majeure de 2026 ?",
-    "choices": [
-      "Les Niveaux de Collection √",
-      "Les Badges de Maîtrise d'Arène",
-      "Le Rang Élite Global",
-      "Les Points de Prestige du Clan"
-    ],
-    "source": "Notes de mise à jour officielles de Supercell"
-  },
-  {
-    "question": "Dans le mode de jeu original 'Princess Gambit' introduit en 2026, quelle règle spécifique s'applique au deck ?",
+    "question": "Dans le mode de jeu original 'Princess Gambit', quelle règle spécifique s'applique au deck ?",
     "choices": [
       "Pas de deck fixe : cartes aléatoires en mort subite √",
       "Il est interdit d'utiliser des cartes de type sort",
       "Tous les bâtiments coûtent 0 élixir",
-      "Le joueur commence directement avec 10 gouttes d'élixir"
+      "Le joueur commence directement avec 10 élixir"
     ],
     "source": "Détails du mode de jeu Princess Gambit - Supercell"
   },
@@ -311,12 +281,7 @@
   },
   {
     "question": "Quel nom de code portait le Golem d'Élixir en interne chez Supercell, avant que son nom définitif ne soit choisi lors de sa sortie en 2018 ?",
-    "choices": [
-      "Baby Golem √",
-      "Elixir Junior",
-      "Le Golem Radioactif",
-      "Mini-Tank"
-    ],
+    "choices": ["Baby Golem √", "Elixir Junior", "Golem-X", "Mini-Golem"],
     "source": "Notes de développement internes - Sortie du Golem d'Élixir (2018)"
   },
   {
@@ -346,7 +311,7 @@
   },
   {
     "question": "Avant d'être rebaptisé 'Élixir', comment ce système de ressource s'appelait-il dans les tout premiers documents de conception du jeu ?",
-    "choices": ["Mana √", "Energy", "Fuel", "Essence"],
+    "choices": ["Mana √", "Energy", "Ether", "Essence"],
     "source": "Documents de conception originaux de Supercell (pré-2016)"
   },
   {
@@ -360,7 +325,7 @@
     "source": "Analyse artistique des décors d'arène (assets graphiques)"
   },
   {
-    "question": "Lors de la toute première finale mondiale retransmise en 2017 à Londres, une coupure du flux vidéo en plein match a été causée par quoi, selon le débrief interne des organisateurs ?",
+    "question": "Qu'est-ce qui a causé la coupure du flux vidéo pendant la toute première finale mondiale ?",
     "choices": [
       "Une surchauffe du serveur de diffusion sur place √",
       "Une panne de courant dans la salle",
@@ -370,8 +335,93 @@
     "source": "Débrief post-événement des organisateurs esport (décembre 2017)"
   },
   {
-    "question": "Quel surnom les développeurs employaient-ils en interne pour désigner l'équipe chargée de l'équilibrage des cartes, en clin d'œil à sa réputation de 'briseuse de méta' ?",
-    "choices": ["Les Fossoyeurs √", "Les Régulateurs", "Les Chirurgiens", "Les Bourreaux"],
-    "source": "Anecdotes internes de l'équipe de design de Supercell"
+    "question": "Quel était le nom initial envisagé pour la carte du 'Fût à Gobelins' dans les documents de développement de la bêta ?",
+    "choices": [
+      "Goblin Delivery √",
+      "Barrel Rocket",
+      "Sneaky Goblin",
+      "Goblin Surprise"
+    ],
+    "source": "Documents de design originaux de la bêta fermée (2016)"
+  },
+  {
+    "question": "Quel bug majeur a forcé Supercell à désactiver temporairement la carte du sort de Guérison en 2017 ?",
+    "choices": [
+      "Des interactions inattendues provoquant des crashs de serveur en tournoi officiel √",
+      "Elle soignait les tours couronnées adverses à travers la rivière",
+      "Elle rendait les troupes ciblées totalement invulnérables de manière permanente",
+      "Elle triplait instantanément le coût en élixir de la carte suivante"
+    ],
+    "source": "Notes de correctifs d'urgence des développeurs (2017)"
+  },
+  {
+    "question": "Dans quelle ville s'est déroulée la grande finale mondiale du premier tournoi officiel de Clash Royale en décembre 2017 ?",
+    "choices": ["À Londres √", "À Helsinki", "À Los Angeles", "À Tokyo"],
+    "source": "Annonces officielles de l'Esports Clash Royale (2017)"
+  },
+  {
+    "question": "Quel était le coût initial en élixir de l'Armée de Squelettes lors de la sortie mondiale du jeu en mars 2016 ?",
+    "choices": ["4 d'élixir √", "3 d'élixir", "5 d'élixir", "2 d'élixir"],
+    "source": "Changelog de l'équilibrage historique de Clash Royale (2016)"
+  },
+  {
+    "question": "Quel changement majeur a affecté le sort de Foudre en novembre 2017 concernant sa zone d'effet ?",
+    "choices": [
+      "Son rayon d'action est passé de 3,5 à 3 cases √",
+      "Il est passé de 4 cibles touchées à 3 cibles maximum",
+      "Il ne pouvait plus cibler directement les bâtiments de production",
+      "Son temps d'impact est passé d'instantané à 1 seconde de délai"
+    ],
+    "source": "Notes de mise à jour officielles - Équilibrage de novembre 2017"
+  },
+  {
+    "question": "Quel bâtiment a été le tout premier à être ajouté dans le jeu via une mise à jour après le lancement mondial de mars 2016 ?",
+    "choices": [
+      "La Fournaise √",
+      "L'Extracteur d'Élixir",
+      "La Cabane de Gobelins",
+      "La Cabane de Barbares"
+    ],
+    "source": "Historique des ajouts de contenu de l'année 2016 (Mise à jour de mai 2016)"
+  },
+  {
+    "question": "Quel était le record historique du coût en élixir d'une carte dans les tout premiers prototypes internes du jeu avant ajustement ?",
+    "choices": [
+      "10 d'élixir (pour le Golem dans les phases alpha) √",
+      "9 d'élixir (pour les Trois Mousquetaires)",
+      "8 d'élixir (pour le P.E.K.K.A)",
+      "11 d'élixir (pour un prototype de dragon)"
+    ],
+    "source": "Interviews des développeurs sur les phases de prototypage (Supercell)"
+  },
+  {
+    "question": "Quelle particularité visuelle différenciait le tout premier design de l'arène d'entraînement en janvier 2016 ?",
+    "choices": [
+      "Le sol était recouvert de dalles de pierre grise unies sans motif d'herbe √",
+      "Les tours avaient une texture de bois brut au lieu de pierre",
+      "Il n'y avait pas de rivière au milieu mais un pont en bois suspendu",
+      "Le ciel affichait une météo de nuit permanente"
+    ],
+    "source": "Archives graphiques des bêtas fermées de janvier 2016"
+  },
+  {
+    "question": "Quel événement majeur de l'e-sport de Clash Royale a été baptisé 'CRL' dès sa structuration officielle en 2018 ?",
+    "choices": [
+      "Clash Royale League √",
+      "Championship Royale League",
+      "Clash Ranking League",
+      "Champions Royale League"
+    ],
+    "source": "Annonce officielle de la création de la ligue professionnelle en 2018"
+  },
+  {
+    "question": "Quel ancien objet de progression, retiré du jeu en 2023, permettait d'ouvrir directement un coffre sans attendre le décompte horaire ?",
+    "choices": [
+      "Les Clés de coffre √",
+      "Les Potions d'accélération",
+      "Les Sabliers magiques",
+      "Les Gemmes de temps"
+    ],
+    "source": "Notes de mise à jour de la refonte de la progression (2023)"
   }
 ]
