@@ -1174,7 +1174,7 @@ Contrairement à Anagram (DM à chaque manche, puisqu'une seule tentative la ré
 | `npm run justecarte:stats`      | Ajoute les stats (elixir/hp/damage/range) aux cartes éligibles de `data/cardNames.json`. Usage ponctuel, jamais dans le flux hebdomadaire.                                       |
 | `npm run justecarte:test`       | Poste manuellement une nouvelle partie sur le salon de test, **sans ping** (le salon de test ne pingue jamais `@MINI-JEUX`, même sans `--no-ping` explicite, comme `zoom:test`). |
 | `npm run justecarte:test:dry`   | Aperçu console de la prochaine partie (+ récap de saison éventuel), sans écrire d'état ni poster sur Discord.                                                                    |
-| `npm run justecarte:public`     | Poste sur le salon public (avec ping) — utilisé par le cron `lajustecarte.yml`.                                                                                                  |
+| `npm run justecarte:public`     | Poste sur le salon public (avec ping) — appelé par l'orchestrateur `postJeuxAveugle.js` quand La Juste Carte est le jeu actif de la saison (voir [Jeux à l'aveugle](#jeux-à-laveugle-alternance-la-juste-carte-et-blind-royale)), utilisable aussi en direct pour un rattrapage manuel. |
 | `npm run justecarte:public:dry` | Équivalent dry-run de `justecarte:public`.                                                                                                                                       |
 | `npm run justecarte:scores`     | Classement de la partie en cours (tentatives, score partie, score saison) + joueurs n'ayant pas encore joué.                                                                     |
 | `npm run justecarte:order`      | Affiche l'ordre de rotation complet des cartes secrètes à venir. **Outil admin** — révèle toutes les cartes futures, jamais à exposer aux joueurs.                               |
@@ -1182,7 +1182,44 @@ Contrairement à Anagram (DM à chaque manche, puisqu'une seule tentative la ré
 
 ### Variables d'environnement requises (La Juste Carte)
 
-Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (espace de clés `lajustecarte:*` totalement séparé). Le workflow `.github/workflows/lajustecarte.yml` réutilise les mêmes secrets GitHub Actions que `frames.yml`/`anagrams.yml`/`zoom.yml` (déjà configurés, rien à ajouter).
+Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (espace de clés `lajustecarte:*` totalement séparé). Le workflow `.github/workflows/jeux-aveugle.yml` réutilise les mêmes secrets GitHub Actions que `frames.yml`/`anagrams.yml`/`zoom.yml` (déjà configurés, rien à ajouter).
+
+---
+
+## Jeux à l'aveugle (alternance La Juste Carte et Blind Royale)
+
+La Juste Carte et Blind Royale alternent **une saison Clash Royale sur deux** sous le nom collectif "Jeux à l'aveugle" — même principe que les unifications Anagram/Pêle-mêle ("jeux-de-lettres") et Zoom carte/Palette ("Jeux visuels") : pas de tronc commun d'affichage ni de logique de jeu fusionnée, chaque jeu garde son propre service (`lajustecarte.js`/`blindroyale.js`) et son propre handler Discord (`_handlers/lajustecarte.js`/`_handlers/blindroyale.js`), inchangés.
+
+Blind Royale (créé le 2026-09-04, non détaillé ailleurs dans ce document) est le pendant sonore de La Juste Carte : chaque semaine, un extrait audio de la carte secrète est posté (fichier joint, pas de lien externe) et les joueurs proposent le nom français de la carte via Modal. Barème : 10 pts pour une réponse exacte au 1er coup sans indice, -2 pts par tentative incorrecte, -3 pts pour l'indice "Rareté" (bouton, une seule fois par manche) — mêmes mécanismes de fond (Redis, gestion de saison, récap) que La Juste Carte.
+
+Cas particulier par rapport aux deux alternances précédentes : Palette et Pêle-mêle avaient été conçus dès leur création pour partager le jour du jeu déjà en place (vendredi pour Zoom/Palette, samedi pour Anagram/Pêle-mêle) — ici, La Juste Carte (dimanche 16h UTC) et Blind Royale (lundi 18h UTC) tournaient déjà chacun en prod avec leur propre jour et leur saison en cours au moment de la mise en place. Décision produit explicite (2026-09-21) : jour commun retenu = **lundi 18h UTC** (créneau de Blind Royale).
+
+### Tronc commun (`backend/services/jeuxaveugle.js`)
+
+- `getCurrentSeasonId()` dupliquée (convention du repo, voir la remarque équivalente dans `jeuxdelettres.js`) — utilisée uniquement pour la décision d'alternance elle-même, pas pour l'état interne d'un jeu précis.
+- `ACTIVE_GAME_REFERENCE_SEASON = 136` — même saison de référence que `jeuxvisuels.js`/`jeuxdelettres.js` (vérifiée le 2026-09-19, simple coïncidence de calendrier). La Juste Carte (le plus ancien des deux, créé le 2026-08-16) termine cette saison, Blind Royale prend le relais à la 137 — déjà sur le bon jour (lundi), donc aucune bascule de jour à ce moment-là. La Juste Carte migrera de dimanche à lundi seulement à la saison 138, quand elle reprendra la main.
+- `getActiveBlindGame(seasonId)` — fonction pure : écart pair par rapport à la référence → `"lajustecarte"`, impair → `"blindroyale"`.
+- `getLastKnownSeasonId()`/`setLastKnownSeasonId()` — suivi de saison PARTAGÉ (clé `jeuxaveugle:last_season_id`), indépendant de `lajustecarte:state`/`blindroyale:state` : le jeu qui reprend la main après la saison de l'autre ne "verrait" sinon la transition que 2 saisons plus tard.
+
+Pas de planification multi-créneaux (contrairement à `jeuxdelettres.js`) : un seul créneau fixe, simple gating jour dans l'orchestrateur — même principe que `jeuxvisuels.js`.
+
+### Orchestrateur (`scripts/postJeuxAveugle.js`)
+
+Seul point d'entrée en production (remplace `.github/workflows/lajustecarte.yml` et `blindroyale.yml`, supprimés, désormais `.github/workflows/jeux-aveugle.yml`, cron `"0 18 * * 1"`) :
+
+1. Détecte un changement de saison (`getLastKnownSeasonId` vs saison courante) → poste le récap de fin de saison du jeu qui vient de se terminer (`postJusteCarteSeasonRecap`/`postBlindRoyaleSeasonRecap`), quel qu'il soit.
+2. Gating (sauf `--force`/`--dry-run`) : lundi uniquement, puis `alreadyPostedThisWeek()` du jeu actif.
+3. Délègue au jeu actif (`postJusteCarte`/`postBlindRoyale`) avec `force: true, skipSeasonRecap: true` — les deux jeux ont ce paramètre (contrairement à Palette/Pêle-mêle, ils avaient chacun leur propre logique de récap interne avant l'alternance, sur le modèle de Zoom/Anagram).
+
+`scripts/postJusteCarte.js`/`scripts/postBlindRoyale.js` restent utilisables directement (test/rattrapage manuel d'un jeu précis, hors orchestrateur).
+
+### Historique fusionné (`backend/services/miniJeuxHistory.js`)
+
+Pas encore d'entrée fusionnée pour "Jeux à l'aveugle" (contrairement à `"visuels"`/`"lettres"`) — à ajouter si l'usage le justifie, même principe (les deux jeux ne sont jamais actifs la même saison, résultats archivés qui ne se chevauchent jamais).
+
+### Variables d'environnement et secrets
+
+Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN`. Le workflow `.github/workflows/jeux-aveugle.yml` réutilise les mêmes secrets GitHub Actions que `lajustecarte.yml`/`blindroyale.yml` (déjà configurés, rien à ajouter).
 
 ---
 

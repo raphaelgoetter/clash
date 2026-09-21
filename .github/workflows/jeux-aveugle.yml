@@ -1,0 +1,43 @@
+name: Jeux à l'aveugle — La Juste Carte / Blind Royale (alternance saisonnière)
+
+permissions:
+  contents: read
+
+on:
+  # Lundi 18:00 UTC — créneau déjà utilisé par Blind Royale (voir
+  # backend/services/jeuxaveugle.js pour le détail de l'alternance et le
+  # choix de ce jour commun). Remplace les deux crons dédiés
+  # (.github/workflows/lajustecarte.yml et blindroyale.yml, supprimés) : le
+  # script décide lui-même, à chaque déclenchement, quel jeu est actif cette
+  # saison Clash Royale (La Juste Carte / Blind Royale en alternance, une
+  # saison sur deux) et poste le récap de fin de saison du jeu qui vient de
+  # se terminer, le cas échéant.
+  schedule:
+    - cron: "0 18 * * 1"
+  workflow_dispatch: {}
+
+jobs:
+  post-jeux-aveugle:
+    runs-on: ubuntu-latest
+    env:
+      CLASH_API_KEY: ${{ secrets.CLASH_API_KEY }}
+      DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+      DISCORD_APP_ID: ${{ secrets.DISCORD_APP_ID }}
+      DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+      DISCORD_CHANNEL_FRAME_PUBLIC: ${{ secrets.DISCORD_CHANNEL_FRAME_PUBLIC }}
+      KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
+      KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Post Jeux à l'aveugle (salon public, jeu actif décidé par le script)
+        run: npm run aveugle:public

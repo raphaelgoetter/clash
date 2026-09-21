@@ -189,7 +189,7 @@ async function getSeasonManchesPlayed(seasonId) {
   return manches.filter((m) => m.seasonManche != null && m.label != null).sort((a, b) => a.seasonManche - b.seasonManche);
 }
 
-async function postSeasonRecap(channelId, endedSeasonId, newSeasonId, { noPing = false } = {}) {
+export async function postSeasonRecap(channelId, endedSeasonId, newSeasonId, { noPing = false } = {}) {
   const token = process.env.DISCORD_TOKEN;
   const seasonRanking = await computeSeasonRanking(endedSeasonId);
   if (seasonRanking.length === 0) return;
@@ -234,11 +234,12 @@ async function postChannelMessageWithFiles(channelId, token, payload, files) {
   });
 }
 
-// ── Publication (appelée uniquement par scripts/postBlindRoyale.js) ──
+// ── Publication (appelée par scripts/postBlindRoyale.js et, en production,
+// par l'orchestrateur scripts/postJeuxAveugle.js) ──
 // Un seul créneau hebdomadaire (comme Zoom) : pas de logique de tirage par
 // créneau (réservée à Anagram, qui en a 2 par semaine).
 
-export async function postBlindRoyale(channelId, { dryRun = false, noPing = false, force = false } = {}) {
+export async function postBlindRoyale(channelId, { dryRun = false, noPing = false, force = false, skipSeasonRecap = false } = {}) {
   if (dryRun) {
     const cards = await loadBlindRoyaleCards();
     const state = await readState();
@@ -277,7 +278,17 @@ export async function postBlindRoyale(channelId, { dryRun = false, noPing = fals
 
   const previousState = await readState();
   const newSeasonId = await getCurrentSeasonId();
-  if (previousState?.seasonId != null && newSeasonId != null && previousState.seasonId !== newSeasonId) {
+  // skipSeasonRecap : depuis l'alternance avec La Juste Carte (une saison
+  // sur deux — voir backend/services/jeuxaveugle.js), Blind Royale ne poste
+  // plus forcément CHAQUE saison. Si on se fiait à cette comparaison seule,
+  // une reprise après une saison La Juste Carte comparerait
+  // previousState.seasonId (vieux d'un cycle complet) au newSeasonId courant
+  // et re-déclencherait à tort un récap déjà posté en temps voulu par
+  // scripts/postJeuxAveugle.js (qui suit sa PROPRE trace de saison, partagée
+  // entre les deux jeux, et passe skipSeasonRecap:true ici pour rester la
+  // SEULE source du récap). Comportement inchangé pour un appel
+  // direct/manuel (skipSeasonRecap reste false par défaut, scripts/postBlindRoyale.js).
+  if (!skipSeasonRecap && previousState?.seasonId != null && newSeasonId != null && previousState.seasonId !== newSeasonId) {
     await postSeasonRecap(channelId, previousState.seasonId, newSeasonId, { noPing });
   }
 

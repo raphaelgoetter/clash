@@ -263,7 +263,7 @@ async function getSeasonManchesPlayed(seasonId) {
     .sort((a, b) => a.seasonManche - b.seasonManche);
 }
 
-async function postSeasonRecap(
+export async function postSeasonRecap(
   channelId,
   endedSeasonId,
   newSeasonId,
@@ -299,18 +299,20 @@ async function postSeasonRecap(
   }
 }
 
-// ── Publication (appelée uniquement par scripts/postJusteCarte.js) ──
+// ── Publication (appelée par scripts/postJusteCarte.js et, en production,
+// par l'orchestrateur scripts/postJeuxAveugle.js) ──
 // En dry-run, aucune écriture d'état ni appel Discord — la prochaine carte
 // est seulement prévisualisée, sans faire avancer la partie. Contrairement
 // à Anagram, pas de tirage aléatoire de créneau : comme Frame et Zoom, le
-// seul déclencheur est le cron GitHub Actions (dimanche 16h UTC) — voir
-// .github/workflows/lajustecarte.yml. `force` ignore le garde-fou
+// seul déclencheur est le cron GitHub Actions (lundi 18h UTC depuis
+// l'alternance avec Blind Royale — voir backend/services/jeuxaveugle.js et
+// .github/workflows/jeux-aveugle.yml). `force` ignore le garde-fou
 // anti-double-post (alreadyPostedThisWeek) — utile pour rattraper un
 // créneau manqué à la main, jamais depuis le cron.
 
 export async function postJusteCarte(
   channelId,
-  { dryRun = false, noPing = false, force = false } = {},
+  { dryRun = false, noPing = false, force = false, skipSeasonRecap = false } = {},
 ) {
   if (dryRun) {
     const catalog = await loadCatalog();
@@ -372,7 +374,18 @@ export async function postJusteCarte(
 
   const previousState = await readState();
   const newSeasonId = await getCurrentSeasonId();
+  // skipSeasonRecap : depuis l'alternance avec Blind Royale (une saison sur
+  // deux — voir backend/services/jeuxaveugle.js), La Juste Carte ne poste
+  // plus forcément CHAQUE saison. Si on se fiait à cette comparaison seule,
+  // une reprise après une saison Blind Royale comparerait
+  // previousState.seasonId (vieux d'un cycle complet) au newSeasonId courant
+  // et re-déclencherait à tort un récap déjà posté en temps voulu par
+  // scripts/postJeuxAveugle.js (qui suit sa PROPRE trace de saison, partagée
+  // entre les deux jeux, et passe skipSeasonRecap:true ici pour rester la
+  // SEULE source du récap). Comportement inchangé pour un appel
+  // direct/manuel (skipSeasonRecap reste false par défaut, scripts/postJusteCarte.js).
   if (
+    !skipSeasonRecap &&
     previousState?.seasonId != null &&
     newSeasonId != null &&
     previousState.seasonId !== newSeasonId
