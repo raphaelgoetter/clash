@@ -67,14 +67,12 @@ import {
   handleExcludedListButton as handleJusteCarteExcludedListButton,
   handleJusteCarteStatsCommand,
 } from "./_handlers/lajustecarte.js";
-// ⚠️ Jeu en TEST UNIQUEMENT (voir pelemele.js) : ce bloc ne fait que
-// router les interactions Discord, aucune commande /pelemele n'existe,
-// aucune publication automatique n'est câblée (voir postPeleMele.js).
 import {
   buildAnswerModal as buildPeleMeleAnswerModal,
   handleModalSubmit as handlePeleMeleModalSubmit,
   buildRulesEmbed as buildPeleMeleRulesEmbed,
   handleJournalButton as handlePeleMeleJournalButton,
+  handlePeleMeleStatsCommand,
 } from "./_handlers/pelemele.js";
 import {
   buildAnswerModal as buildBlindRoyaleAnswerModal,
@@ -9179,7 +9177,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ── [TEST] Jeu Pêle-mêle : bouton "Proposer un mot" → Modal ──
+  // ── Jeu Pêle-mêle : bouton "Proposer un mot" → Modal ──
   // Même mécanique que La Juste Carte (voir juste au-dessus), sauf qu'ici le
   // MÊME bouton sert à toutes les tentatives (pas de bouton "Reproposer"
   // séparé) puisqu'il n'y a pas de notion de victoire qui change son libellé.
@@ -9194,7 +9192,7 @@ export default async function handler(req, res) {
       .json({ type: 9, data: buildPeleMeleAnswerModal(gameId) });
   }
 
-  // ── [TEST] Jeu Pêle-mêle : bouton "Règles" ──
+  // ── Jeu Pêle-mêle : bouton "Règles" ──
   // Contenu 100% statique (aucune lecture d'état/Redis) : réponse synchrone
   // directe, pas besoin du différé+webhook utilisé pour la soumission de mot.
   if (
@@ -9207,7 +9205,7 @@ export default async function handler(req, res) {
       .json({ type: 4, data: { embeds: [buildPeleMeleRulesEmbed()], flags: 64 } });
   }
 
-  // ── [TEST] Jeu Pêle-mêle : bouton "Journal" ──
+  // ── Jeu Pêle-mêle : bouton "Journal" ──
   // Lecture Redis (participant + historique de saison) : différé + webhook,
   // même mécanique que la soumission de mot ci-dessous.
   if (
@@ -9222,7 +9220,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ── [TEST] Jeu Pêle-mêle : soumission de la Modal ──
+  // ── Jeu Pêle-mêle : soumission de la Modal ──
   if (
     body.type === 5 &&
     typeof body.data?.custom_id === "string" &&
@@ -9247,6 +9245,42 @@ export default async function handler(req, res) {
         username,
         rawAnswer,
       ),
+    );
+    return;
+  }
+
+  // ── Jeu Pêle-mêle : commande /pelemele (scores personnels) ──
+  if (body.type === 2 && body.data?.name === "pelemele") {
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() =>
+      handlePeleMeleStatsCommand(webhookUrl, discordId, username),
+    );
+    return;
+  }
+
+  // ── Jeu Pêle-mêle : bouton "Rafraîchir" sur /pelemele ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id === "pelemele_stats_refresh"
+  ) {
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() =>
+      handlePeleMeleStatsCommand(webhookUrl, discordId, username),
     );
     return;
   }

@@ -11,15 +11,18 @@
 //    DRAW_SIZE LETTRES ouvert. N'importe quelle carte du pool qui "rentre"
 //    dans ces lettres est une réponse valide — il n'y a donc pas de notion
 //    de résolution collective ("quelqu'un a trouvé, la manche est finie").
-// 2. Un joueur peut proposer plusieurs mots ; seul son MEILLEUR (le plus
-//    long) compte pour son score de manche — score = nombre de lettres du
-//    mot (pas de bonus de rang/vitesse, décision produit explicite).
+// 2. Un joueur peut reproposer autant de fois qu'il veut ; TOUS ses mots
+//    DISTINCTS trouvés comptent pour son score de manche (dédoublonnage par
+//    forme canonique) — barème : LONGEST_WORD_BONUS pour le(s) mot(s) le(s)
+//    plus long(s) possible(s) du tirage, EXTRA_WORD_POINTS pour chaque autre
+//    (voir computeScore/submitWord ci-dessous ; pas juste le meilleur mot,
+//    contrairement à une version antérieure de ce fichier).
 // 3. La manche reste OUVERTE jusqu'à la manche suivante (comme Zoom/Blind
 //    Royale/La Juste Carte) : elle n'est jamais "résolue" à proprement
-//    parler, elle est simplement remplacée. Le classement de saison est mis
-//    à jour EN CONTINU (delta à chaque amélioration d'un joueur, voir
-//    submitWord ci-dessous), pas au moment d'un événement "solved" unique
-//    comme lajustecarte.js — puisque cet événement n'existe pas ici.
+//    parler, elle est simplement remplacée. Le classement de saison est
+//    incrémenté EN CONTINU (à chaque mot NOUVEAU trouvé, voir submitWord
+//    ci-dessous), pas au moment d'un événement "solved" unique comme
+//    lajustecarte.js — puisque cet événement n'existe pas ici.
 //
 // DRAW_SIZE = 12 → 14 (2026-09) : mesuré empiriquement (simulation sur le
 // vrai pool) qu'à 12 lettres, 53% des tirages n'avaient QU'UNE seule carte

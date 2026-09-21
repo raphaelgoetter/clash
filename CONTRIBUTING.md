@@ -848,6 +848,88 @@ Identique à Frame (voir [Récapitulatif de fin de saison](#récapitulatif-de-fi
 
 Aucune nouvelle variable : Anagram réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` (mêmes salons que Frame, décision explicite pour ne pas multiplier les salons) et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (même instance Upstash Redis, espace de clés `anagram:*` totalement séparé de `frame:*`). Le workflow `.github/workflows/anagrams.yml` réutilise aussi les mêmes secrets GitHub Actions que `frames.yml` (déjà configurés, rien à ajouter).
 
+## Jeu Pêle-mêle (retrouve les cartes cachées dans les lettres)
+
+Mini-jeu hebdomadaire alterné avec Anagram sous le nom collectif "Jeux de lettres" (voir [Alternance avec Anagram](#alternance-avec-anagram--jeux-de-lettres) ci-dessous). Structurellement, c'est un miroir de `lajustecarte.js` plutôt que d'Anagram : une manche est un TIRAGE ouvert de `DRAW_SIZE` (14) lettres, sans "carte secrète" ni notion de résolution collective — n'importe quelle carte du pool qui rentre dans le tirage est une réponse valide, et la manche reste ouverte jusqu'à la suivante (jamais "résolue", simplement remplacée) plutôt que de se terminer sur le premier joueur qui trouve (comme Anagram/Frame). Un joueur peut reproposer autant de fois qu'il veut ; tous ses mots **distincts** trouvés comptent pour son score (`backend/services/pelemele.js`).
+
+### Tirage des lettres
+
+`DRAW_SIZE` est passé de 12 à 14 en 2026-09 : mesuré par simulation sur le vrai pool qu'à 12 lettres, 53% des tirages n'avaient qu'une seule carte trouvable (la carte "seed"), rendant le jeu trop prévisible ; à 14, ce taux tombe à 36% et le pool éligible grossit de 72 à 94 cartes.
+
+Le tirage garantit **deux** solutions plutôt qu'une : une carte "seed" principale suit une rotation équitable persistée (`loadSeedOrder`/`pickNextIndex`, même principe que La Juste Carte), et une seconde carte compatible est tirée au hasard (`pickCompatibleSecondarySeed`) parmi celles dont les lettres combinées à la première tiennent dans `DRAW_SIZE`. Passer d'1 à 2 solutions garanties fait chuter le taux de tirages "une seule carte trouvable" de 38% à 0% (mesuré par simulation, moyenne de mots trouvables : 2.4 → 3.9). Les lettres des deux mots seed (union, pas somme — une lettre partagée par les deux ne compte qu'une fois) sont complétées jusqu'à 14 par un tirage pondéré aux fréquences du Scrabble français (`FR_LETTER_WEIGHTS`, `weightedRandomLetter`), puis l'ensemble est mélangé (`buildLetterBagFromSeeds`) pour qu'aucun mot seed ne soit devinable par sa position.
+
+`computeValidWordsForDraw()` calcule UNE FOIS à la génération de la manche (`startNewGame`) la liste complète des cartes du pool qui rentrent dans ce tirage précis, et la stocke dans l'état (`totalValidWords`/`maxWordLength`) — jamais recalculée à chaque proposition. Sert à afficher "X cartes valides sur ce tirage" et à déterminer le bonus du mot le plus long.
+
+### Barème (Pêle-mêle)
+
+- **5 points** (`LONGEST_WORD_BONUS`) pour la (ou les, à égalité) carte(s) la (les) plus longue(s) possible sur CE tirage.
+- **+1 point** (`EXTRA_WORD_POINTS`) pour chaque autre carte valide trouvée.
+- Reproposer une carte déjà trouvée (dédoublonnage par forme canonique, `canonicalWordForm`) ne rapporte rien.
+
+Constantes fixes plutôt que proportionnelles à `DRAW_SIZE`/à la longueur du mot — décision explicite pour ne pas avoir à tout recalibrer si `DRAW_SIZE` change à nouveau.
+
+### Pool éligible et validation d'une proposition
+
+Une carte est éligible (`filterEligiblePool`) si son nom FR est connu, qu'il ne contient **aucune apostrophe** (ex. Barbares d'élite — exclues entièrement, pas de repli sur une variante sans apostrophe) et que son nombre de lettres (espaces/accents ignorés) est ≤ `DRAW_SIZE`.
+
+`validateSubmission()` (fonction pure, testable sans I/O) résout une proposition texte en l'une de 4 issues, même stratégie à 3 échecs que `resolveAnyCard` de La Juste Carte :
+
+| Statut         | Signification                                                            |
+| -------------- | ------------------------------------------------------------------------ |
+| `invalid`      | Aucune carte connue ne correspond (vraie faute de frappe)                |
+| `not-eligible` | Carte connue mais hors pool (apostrophe dans le nom, ou trop de lettres) |
+| `impossible`   | Carte du pool, mais ne rentre pas dans CE tirage précis                  |
+| `ok`           | Proposition valide — `length` = score potentiel (voir Barème)            |
+
+### Stockage — Upstash Redis (`pelemele:*`)
+
+Même stockage que La Juste Carte (mêmes pièges `automaticDeserialization`/`HGETALL`, client paresseux — voir `frames.js`), préfixe `pelemele:` dédié, aucun partage avec `anagram:*` malgré l'alternance.
+
+| Clé Redis                                   | Type | Contenu                                                                  |
+| ------------------------------------------- | ---- | ------------------------------------------------------------------------ |
+| `pelemele:participants:<gameId>`            | HASH | `discordId → {foundWords[], score, lastFoundAt}` de la manche en cours   |
+| `pelemele:attempts:<gameId>:<discordId>`    | LIST | Historique des propositions valides (forme canonique), pour le Journal   |
+| `pelemele:season:<seasonId>`                | ZSET | Score cumulé de saison par joueur, incrémenté en continu (`zincrby`)     |
+| `pelemele:archived:<seasonId>`              | HASH | Résultats figés par manche terminée (`finalizeRound`), pour l'historique |
+| `pelemele:season:<seasonId>:manche_numbers` | HASH | `gameId → n° de manche dans la saison`, assigné une seule fois           |
+
+Contrairement à La Juste Carte (archivage au moment du "solved"), les résultats de TOUS les participants d'une manche sont figés en une fois (`finalizeRound`), au moment où `startNewGame()` la remplace.
+
+### Alternance avec Anagram ("Jeux de lettres")
+
+Depuis la saison technique 137, Pêle-mêle alterne **une saison Clash Royale sur deux** avec Anagram sous le nom collectif "Jeux de lettres" (même principe que l'alternance [Zoom carte/Palette](#jeux-visuels-alternance-zoom-carte-et-palette)) — chaque jeu garde son propre service (`pelemele.js`/`anagrams.js`) et son propre handler Discord, inchangés ; pas de tronc commun de logique de jeu.
+
+`backend/services/jeuxdelettres.js` porte la décision partagée : `getActiveLetterGame(seasonId)` compare l'écart à `ACTIVE_GAME_REFERENCE_SEASON` (136, la saison qu'Anagram gérait encore au moment de la mise en place de l'alternance, confirmée le 2026-09-19) — écart PAIR → Anagram, écart IMPAIR → Pêle-mêle (donc 136 = Anagram, 137 = Pêle-mêle, 138 = Anagram...). `scripts/postJeuxDeLettres.js` est le seul point d'entrée en production (cron unique `.github/workflows/jeux-de-lettres.yml`, samedi 10h/18h UTC, même mécanisme de créneau aléatoire qu'Anagram avant l'unification) : à chaque déclenchement il détermine le jeu actif, gère le gating hebdomadaire, délègue à `postPeleMele()`/`postAnagram()`, et déclenche le récap de fin de saison du jeu qui vient de se terminer — quel qu'il soit — via un suivi de saison partagé (`getLastKnownSeasonId`/`setLastKnownSeasonId`), car l'état interne d'un jeu individuel ne "voit" la transition de saison suivante que deux saisons plus tard (trop tard pour un récap posté à temps).
+
+`scripts/postPeleMele.js` reste utilisable pour forcer un post direct de CE jeu précis (test, rattrapage manuel), en dehors de l'orchestrateur — mais ne déclenche aucun récap de fin de saison lui-même (`postSeasonRecap` n'est appelé QUE par `postJeuxDeLettres.js`, jamais par `postPeleMele()`).
+
+### Bouton "Journal"
+
+Spécifique à Pêle-mêle (pas d'équivalent chez Anagram) : affiche en réponse éphémère les mots trouvés sur la manche EN COURS (avec progression `X/totalValidWords`) et l'historique des `JOURNAL_HISTORY_LIMIT` (10) dernières manches de la saison. Nécessaire ici puisque, contrairement à Anagram, il n'y a pas de DM de fin de manche pour se souvenir de ce qu'on a trouvé — la manche restant ouverte indéfiniment jusqu'à son remplacement.
+
+### Commande `/pelemele` — scores personnels
+
+Miroir structurel de [`/anagram`](#commande-anagram--scores-personnels) (réponse éphémère, bouton "🔄 Rafraîchir", manche en cours + historique de saison + score total + rang), adapté à l'absence de notion de "solved" : la section "manche en cours" liste les mots trouvés au lieu d'un booléen, et le nombre de joueurs "en tête" compte ceux ayant trouvé **au moins un** mot (`computeGameRanking`, trié par score puis nombre de mots trouvés) plutôt qu'un rang d'arrivée unique.
+
+### Récapitulatif de fin de saison (Pêle-mêle)
+
+Même règles de troncage qu'Anagram (20 joueurs max, exclusion des 0 pt, médailles sur ex-aequo via `findTiedRank`) — voir [Alternance avec Anagram](#alternance-avec-anagram--jeux-de-lettres) ci-dessus pour qui le déclenche. Différence d'affichage : la liste des manches de la saison montre le **tirage** (les lettres) de chaque manche plutôt qu'une réponse unique, puisque Pêle-mêle n'a justement pas de réponse unique par manche.
+
+### Scripts npm (Pêle-mêle)
+
+| Commande                                       | Effet                                                                                                                                                            |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run pelemele:test`                        | Poste manuellement une nouvelle manche sur le salon de test, en ignorant le gating hebdomadaire (`--force`).                                                     |
+| `npm run pelemele:test:dry`                    | Aperçu console de la prochaine manche, sans écrire d'état ni poster sur Discord.                                                                                 |
+| `npm run pelemele:public`                      | Poste sur le salon public si le gating hebdomadaire le permet — usage manuel, l'orchestrateur passe par `npm run lettres:public`.                                |
+| `npm run pelemele:public:dry`                  | Équivalent dry-run de `pelemele:public`.                                                                                                                         |
+| `npm run pelemele:reset`                       | Remet le jeu à zéro : plus de manche active, ordre de rotation des cartes seed remélangé, historique et scores effacés. **Destructif**.                          |
+| `npm run lettres:test`/`:public` (`:dry` idem) | Point d'entrée de l'orchestrateur (voir [Alternance avec Anagram](#alternance-avec-anagram--jeux-de-lettres)) — décide lui-même s'il poste Anagram ou Pêle-mêle. |
+
+### Variables d'environnement requises (Pêle-mêle)
+
+Aucune nouvelle variable : comme Anagram, Pêle-mêle réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (espace de clés `pelemele:*` totalement séparé). Le workflow `.github/workflows/jeux-de-lettres.yml` réutilise les mêmes secrets GitHub Actions que `frames.yml`/`anagrams.yml` (déjà configurés, rien à ajouter).
+
 ---
 
 ## Jeu Zoom carte (devine les cartes zoomées)

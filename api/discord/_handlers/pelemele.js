@@ -40,7 +40,10 @@ import {
   alreadyPostedThisWeek,
   readParticipant,
   getPlayerSeasonResults,
+  getSeasonManches,
   getSeasonMancheNumber,
+  computeGameRanking,
+  listGamePlayersInProgress,
   computeSeasonRanking,
   getAllArchivedResults,
   findTiedRank,
@@ -78,7 +81,8 @@ function buildPeleMeleEmbed({
         ? `🎯 **${totalValidWords} carte${totalValidWords > 1 ? "s" : ""} valide${totalValidWords > 1 ? "s" : ""} sur ce tirage** — à toi de toutes les trouver !\n\n`
         : "") +
       "📜 Détails (orthographe, accents, ponctuation...) dans le bouton **Règles**.\n\n" +
-      "**Merci de ne pas spoiler ni tricher, sinon c'est pas drôle !**",
+      "**Merci de ne pas spoiler ni tricher, sinon c'est pas drôle !**\n\n" +
+      "🤖 Vérifie tes scores avec la commande `/pelemele`",
     color: PELEMELE_COLOR,
     // Cache-buster (?v=) — même pattern que frames.js/zoom.js/lajustecarte.js :
     // Discord met en cache l'aperçu d'un embed PAR URL.
@@ -404,13 +408,13 @@ async function postEphemeral(webhookUrl, content) {
   }
 }
 
-async function postEphemeralEmbed(webhookUrl, embed) {
+async function postEphemeralEmbed(webhookUrl, embed, components = []) {
   if (!webhookUrl) return;
   try {
     await fetch(`${webhookUrl}/messages/@original`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ embeds: [embed] }),
+      body: JSON.stringify({ embeds: [embed], components }),
     });
   } catch (err) {
     console.error(
@@ -581,6 +585,178 @@ export async function handleModalSubmit(
         (foundAll
           ? "\n\n🎊 Tu as trouvé TOUS les mots de cette manche, bravo !"
           : ""),
+    );
+  } catch (err) {
+    await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
+  }
+}
+
+// ── Commande /pelemele : scores personnels du joueur ────────────────
+// Miroir structurel de handleAnagramStatsCommand (anagrams.js) — même forme
+// (manche en cours + historique de saison + score total + rang), adapté à
+// l'absence de notion de "solved" : la section "manche en cours" liste les
+// mots trouvés au lieu d'un booléen, et le classement de manche compte les
+// joueurs ayant trouvé AU MOINS un mot (pas de "premier arrivé").
+function buildPeleMeleStatsEmbed({
+  pseudo,
+  seasonId,
+  currentSeasonManche,
+  seasonMancheTotal,
+  currentFoundWords,
+  currentScore,
+  totalValidWords,
+  foundPlayersCount,
+  totalParticipants,
+  pastManches,
+  seasonTotal,
+  seasonRank,
+  seasonRankTotal,
+}) {
+  const lines = [];
+
+  lines.push(
+    `**Saison ${toPublicSeasonId(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`,
+  );
+  if (currentFoundWords.length > 0) {
+    const progress =
+      totalValidWords != null
+        ? ` (${currentFoundWords.length}/${totalValidWords})`
+        : "";
+    lines.push(`- Tu as trouvé : ${currentFoundWords.join(", ")}${progress}`);
+    lines.push(`- Tu as marqué ${currentScore} points`);
+  } else {
+    lines.push("- Tu n'as pas encore trouvé de carte sur cette manche");
+  }
+  lines.push(
+    `- ${foundPlayersCount} joueur${foundPlayersCount > 1 ? "s" : ""} (sur ${totalParticipants}) ${foundPlayersCount > 1 ? "ont" : "a"} trouvé au moins une carte pour le moment`,
+  );
+
+  for (const m of pastManches) {
+    lines.push("");
+    lines.push(
+      `**Saison ${toPublicSeasonId(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`,
+    );
+    if (m.played) {
+      lines.push(`- Tu as trouvé : ${m.reponse}`);
+      lines.push(`- Tu as marqué ${m.score} points`);
+    } else {
+      lines.push("- Tu n'as pas joué cette manche");
+    }
+  }
+
+  lines.push("");
+  lines.push(`**Score de la saison (S${toPublicSeasonId(seasonId)}) :**`);
+  lines.push(`- Tu as accumulé ${seasonTotal} points cette saison`);
+  if (seasonRank != null) {
+    lines.push(`- Ton classement : ${seasonRank} / ${seasonRankTotal}`);
+  }
+
+  return {
+    title: `🔤 Scores de ${pseudo}`,
+    description: lines.join("\n"),
+    color: PELEMELE_COLOR,
+  };
+}
+
+function buildPeleMeleStatsComponents() {
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: 2,
+          label: "🔄 Rafraîchir",
+          custom_id: "pelemele_stats_refresh",
+        },
+      ],
+    },
+  ];
+}
+
+export async function handlePeleMeleStatsCommand(
+  webhookUrl,
+  discordId,
+  username,
+) {
+  try {
+    const state = await readState();
+    if (!state) {
+      await postEphemeral(
+        webhookUrl,
+        "⚠️ Aucune partie Pêle-mêle n'a encore été lancée.",
+      );
+      return;
+    }
+
+    const [
+      participant,
+      seasonResults,
+      seasonManches,
+      gameRanking,
+      inProgress,
+      seasonRanking,
+    ] = await Promise.all([
+      readParticipant(state.gameId, discordId),
+      getPlayerSeasonResults(state.seasonId, discordId),
+      getSeasonManches(state.seasonId),
+      computeGameRanking(state.gameId),
+      listGamePlayersInProgress(state.gameId),
+      computeSeasonRanking(state.seasonId),
+    ]);
+
+    const currentFoundWords = participant?.foundWords ?? [];
+    const currentScore = participant?.score ?? 0;
+    const foundPlayersCount = gameRanking.length;
+    const totalParticipants = foundPlayersCount + inProgress.length;
+
+    const hasSeasonRank = seasonResults.length > 0;
+    const seasonRank = hasSeasonRank
+      ? findTiedRank(seasonRanking, discordId, "totalScore")
+      : null;
+    const seasonRankTotal = seasonRanking.length;
+
+    const pastGameIds = seasonManches.filter(
+      (gameId) => gameId !== state.gameId,
+    );
+    const pastManches = (
+      await Promise.all(
+        pastGameIds.map(async (gameId) => {
+          const result = seasonResults.find((r) => r.gameId === gameId);
+          return {
+            seasonManche: await getSeasonMancheNumber(state.seasonId, gameId),
+            played: !!result,
+            score: result?.score ?? 0,
+            reponse: result?.reponse ?? null,
+          };
+        }),
+      )
+    )
+      .filter((m) => m.seasonManche != null)
+      .sort((a, b) => b.seasonManche - a.seasonManche);
+
+    const seasonTotal = seasonResults.reduce((sum, r) => sum + r.score, 0);
+
+    const embed = buildPeleMeleStatsEmbed({
+      pseudo: username,
+      seasonId: state.seasonId,
+      currentSeasonManche: state.seasonManche,
+      seasonMancheTotal: state.seasonMancheTotal,
+      currentFoundWords,
+      currentScore,
+      totalValidWords: state.totalValidWords,
+      foundPlayersCount,
+      totalParticipants,
+      pastManches,
+      seasonTotal,
+      seasonRank,
+      seasonRankTotal,
+    });
+
+    await postEphemeralEmbed(
+      webhookUrl,
+      embed,
+      buildPeleMeleStatsComponents(),
     );
   } catch (err) {
     await postEphemeral(webhookUrl, `⚠️ ${err.message}`);

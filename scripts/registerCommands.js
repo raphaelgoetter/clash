@@ -427,6 +427,12 @@ const commands = [
     options: [],
   },
   {
+    name: "pelemele",
+    description:
+      "Affiche vos scores au jeu Pêle-mêle (retrouvez les cartes cachées dans les lettres).",
+    options: [],
+  },
+  {
     name: "zoom",
     description:
       "Affiche vos scores au jeu Zoom carte (devine les cartes zoomées).",
