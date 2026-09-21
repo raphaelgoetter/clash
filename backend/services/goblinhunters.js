@@ -417,7 +417,7 @@ export function computeTavernOccupants(actionsRaw) {
 // protège plus personne ce jour-là) — garde-fou contre le camping massif de
 // la Taverne, décidé avec l'utilisateur.
 export function computeTavernProtection(occupants, seuil) {
-  if (occupants.size === 0 || occupants.size >= seuil) return new Set();
+  if (occupants.size === 0 || occupants.size > seuil) return new Set();
   return new Set(occupants);
 }
 

@@ -19,10 +19,11 @@
 // utilisé au rendu.
 //
 // ⚠️ Les pastilles des joueurs VIVANTS ne doivent JAMAIS être colorées par
-// camp (ça fuiterait le secret que le jeu entier repose sur) — couleur
-// neutre unique + initiale du pseudo, quel que soit le camp réel. Seuls les
+// camp NI porter d'initiale (ça fuiterait le secret du camp, et l'identité
+// donnerait publiquement l'info que Arène/Tour de Guet/Clairière ne livrent
+// qu'en privé à celui qui agit) — couleur neutre unique, anonyme. Seuls les
 // joueurs éliminés (camp déjà révélé publiquement) affichent une couleur de
-// camp, dans la bande grisée en bas de l'image.
+// camp et leur initiale, dans la bande grisée en bas de l'image.
 //
 // ⚠️ Police embarquée OBLIGATOIRE (fonts/Inter-Bold.ttf), même piège que
 // documenté dans pelemeleImage.js : resvg-js n'a aucune police système
@@ -122,7 +123,6 @@ function buildTokensSvg(joueursVivants) {
       const cy = cy0 + row * TOKEN_SPACING;
       circles.push(
         `<circle cx="${cx}" cy="${cy}" r="${TOKEN_RADIUS}" fill="${PION_VIVANT_COLOR}" stroke="#1e293b" stroke-width="2"/>`,
-        `<text x="${cx}" y="${cy + 6}" font-family="${FONT_FAMILY}" font-size="18" text-anchor="middle" fill="#1e293b">${initialOf(j.username)}</text>`,
       );
     });
   }

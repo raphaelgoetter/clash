@@ -160,8 +160,9 @@ async function main() {
   };
   const occupants = computeTavernOccupants(actionsTaverne);
   assert.deepStrictEqual(occupants, new Set(["a", "b"]));
-  assert.deepStrictEqual(computeTavernProtection(occupants, 3), new Set(["a", "b"])); // 2 < seuil 3 -> protégés
-  assert.deepStrictEqual(computeTavernProtection(new Set(["a", "b", "c"]), 3), new Set()); // 3 >= seuil -> plus personne protégé
+  assert.deepStrictEqual(computeTavernProtection(occupants, 3), new Set(["a", "b"])); // 2 <= seuil 3 -> protégés
+  assert.deepStrictEqual(computeTavernProtection(new Set(["a", "b", "c"]), 3), new Set(["a", "b", "c"])); // 3 <= seuil -> protégés
+  assert.deepStrictEqual(computeTavernProtection(new Set(["a", "b", "c", "d"]), 3), new Set()); // 4 > seuil -> plus personne protégé
 
   // ── Ciblage restreint au dernier lieu connu + dégâts Bûcheron ──
   {

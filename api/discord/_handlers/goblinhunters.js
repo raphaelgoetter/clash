@@ -463,7 +463,7 @@ function buildReglesEmbed(config) {
     `${config.lieux.chateau.emoji} **${config.lieux.chateau.label}** — vote d'accusation public. En cas d'égalité, personne n'est éliminé.`,
     `${config.lieux.camp_entrainement.emoji} **${config.lieux.camp_entrainement.label}** — attaque (1 dégât) un joueur vu ici la veille; si personne n'y était, tu frappes un joueur tiré au hasard.`,
     `${config.lieux.tour_de_guet.emoji} **${config.lieux.tour_de_guet.label}** — révèle le camp d'un joueur vu ici la veille; si personne n'y était, révèle un joueur tiré au hasard. Inefficace si plus de ${Math.round((config.tour_de_guet_seuil_ratio ?? 0.5) * 100)}% des vivants s'y trouvent le même jour.`,
-    `${config.lieux.taverne.emoji} **${config.lieux.taverne.label}** — protection des attaques tant que moins de ${config.taverne_seuil_protection} joueurs s'y trouvent le même jour.`,
+    `${config.lieux.taverne.emoji} **${config.lieux.taverne.label}** — protection des attaques tant que ${config.taverne_seuil_protection} joueurs maximum s'y trouvent le même jour.`,
     `${config.lieux.clairiere_mystique.emoji} **${config.lieux.clairiere_mystique.label}** — révèle la position actuelle de 2 joueurs tirés au hasard.`,
     "",
     "**Rôles spéciaux** (1 exemplaire de chacun) :",
