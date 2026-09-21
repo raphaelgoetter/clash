@@ -19,6 +19,10 @@ import { readState as readAnagramState } from "../../../backend/services/anagram
 import { readState as readPeleMeleState } from "../../../backend/services/pelemele.js";
 import { readState as readJusteCarteState } from "../../../backend/services/lajustecarte.js";
 import {
+  getCurrentSeasonId as getAveugleSeasonId,
+  getActiveBlindGame,
+} from "../../../backend/services/jeuxaveugle.js";
+import {
   getCurrentSeasonId as getLettresSeasonId,
   getActiveLetterGame,
 } from "../../../backend/services/jeuxdelettres.js";
@@ -91,21 +95,15 @@ function channelLink() {
   return `https://discord.com/channels/${guildId}/${PUBLIC_CHANNEL_ID}`;
 }
 
-// 0 = dimanche .. 6 = samedi (Date.getUTCDay())
-const STATIC_REGULAR_GAMES = [
-  {
-    key: "blindroyale",
-    title: "🎧 Blind Royale",
-    weekday: 1,
-    readState: readBlindRoyaleState,
-  },
-  {
-    key: "lajustecarte",
-    title: "🃏 La Juste Carte",
-    weekday: 0,
-    readState: readJusteCarteState,
-  },
-];
+// "Jeux à l'aveugle" (lundi) : Blind Royale et La Juste Carte alternent une
+// saison Clash Royale sur deux (voir jeuxaveugle.js, même fonction utilisée
+// par scripts/postJeuxAveugle.js pour la publication) — un seul des deux est
+// actif à la fois, jamais les deux en même temps (même mécanisme que
+// VISUELS_GAMES/LETTRES_GAMES/CULTURE_GAMES ci-dessous).
+const AVEUGLE_GAMES = {
+  blindroyale: { title: "🎧 Blind Royale", readState: readBlindRoyaleState },
+  lajustecarte: { title: "🃏 La Juste Carte", readState: readJusteCarteState },
+};
 
 // "Jeux visuels" (vendredi) et "Jeux de lettres" (samedi) alternent chacun
 // entre deux jeux une saison Clash Royale sur deux (voir jeuxvisuels.js /
@@ -131,6 +129,12 @@ const CULTURE_GAMES = {
 // getCurrentSeasonId() peut renvoyer null (API Clash Royale indisponible) :
 // on retombe alors sur le jeu "historique" de la paire plutôt que de planter
 // l'embed /mini-jeux.
+async function resolveActiveAveugleGame() {
+  const seasonId = await getAveugleSeasonId();
+  const key = seasonId == null ? "lajustecarte" : getActiveBlindGame(seasonId);
+  return AVEUGLE_GAMES[key];
+}
+
 async function resolveActiveVisuelsGame() {
   const seasonId = await getVisuelsSeasonId();
   const key = seasonId == null ? "zoom" : getActiveVisualGame(seasonId);
@@ -364,13 +368,14 @@ function buildCountdownBar(daysUntil) {
 }
 
 async function buildRegularGamesBlock(now) {
-  const [visuelsGame, lettresGame, cultureGame] = await Promise.all([
+  const [aveugleGame, visuelsGame, lettresGame, cultureGame] = await Promise.all([
+    resolveActiveAveugleGame(),
     resolveActiveVisuelsGame(),
     resolveActiveLettresGame(),
     resolveActiveCultureGame(),
   ]);
   const games = [
-    ...STATIC_REGULAR_GAMES,
+    { key: "aveugle", weekday: 1, ...aveugleGame },
     { key: "visuels", weekday: 5, ...visuelsGame },
     { key: "lettres", weekday: 6, ...lettresGame },
     { key: "culture", weekday: 3, ...cultureGame },
