@@ -713,7 +713,11 @@ export async function postGoblinHunters(
     // --force-close (tests uniquement, jamais câblé dans le workflow GitHub
     // Actions) : ignore l'échéance réelle de closingAt pour ce run, sans la
     // réécrire — évite d'attendre 3 jours pour tester le lancement.
-    if (!forceClose && new Date(state.closingAt) > now) {
+    // Effectif max atteint : lancement anticipé sans attendre closingAt (pris
+    // en compte seulement au prochain passage du cron, pas au clic
+    // d'inscription — voir countInscriptions()).
+    const effectifMaxAtteint = count >= config.effectif_max;
+    if (!forceClose && !effectifMaxAtteint && new Date(state.closingAt) > now) {
       const embed = buildInscriptionRappelEmbed(config, count, state.closingAt);
       const components = buildInscriptionComponents(count);
       if (dryRun)
