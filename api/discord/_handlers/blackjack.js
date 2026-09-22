@@ -26,6 +26,7 @@ import {
   addPoints,
   readPoints,
   resetPoints,
+  readUsernames,
   buildRanking,
   writeHistoriqueEntry,
   listHistorique,
@@ -447,7 +448,7 @@ export async function postBlackjack(
       // Cartes du jour projeté ajoutées aux totaux déjà résolus, pour un
       // départage des ex-æquo cohérent avec la vraie clôture.
       const cardsDrawn = addResultsCardsToTotals(await sumCardsPerPlayer(), results);
-      const ranking = buildRanking(pointsActuels, {}, cardsDrawn);
+      const ranking = buildRanking(pointsActuels, await readUsernames(), cardsDrawn);
       const embed = await buildRevealEmbed(state.dealer, results, ranking, []);
       return { dryRun: true, final: true, embed };
     }
@@ -483,7 +484,7 @@ export async function postBlackjack(
   if (estFinDeManche) {
     const points = await readPoints();
     const cardsDrawn = await sumCardsPerPlayer();
-    const ranking = buildRanking(points, {}, cardsDrawn);
+    const ranking = buildRanking(points, await readUsernames(), cardsDrawn);
     // Jamais archivé en dry-run NI sur le salon de test (isPublic) — seule
     // une vraie publication publique compte comme une manche réelle (même
     // principe que les autres jeux, voir CONTRIBUTING.md).
@@ -811,15 +812,16 @@ export async function handleJournal(webhookUrl, discordId) {
       return;
     }
 
-    const [config, hand, points, { entries }, cardsDrawn] = await Promise.all([
+    const [config, hand, points, usernames, { entries }, cardsDrawn] = await Promise.all([
       loadBlackjackConfig(),
       readHand(state.jour, discordId),
       readPoints(),
+      readUsernames(),
       listHistorique({ limit: 10 }),
       sumCardsPerPlayer(),
     ]);
 
-    const ranking = buildRanking(points, {}, cardsDrawn);
+    const ranking = buildRanking(points, usernames, cardsDrawn);
     const resolvedRanking = await Promise.all(
       ranking.slice(0, 10).map(async (r) => ({
         ...r,

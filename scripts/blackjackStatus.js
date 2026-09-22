@@ -15,6 +15,7 @@ import {
   readState,
   listHands,
   readPoints,
+  readUsernames,
   buildRanking,
   sumCardsPerPlayer,
   compareToDealer,
@@ -63,8 +64,8 @@ function classifyHand(hand, dealer) {
     console.log(`\nTotal : ${entries.length} joueur${entries.length > 1 ? "s" : ""} aujourd'hui.\n`);
   }
 
-  const [points, cardsDrawn] = await Promise.all([readPoints(), sumCardsPerPlayer()]);
-  const ranking = buildRanking(points, {}, cardsDrawn);
+  const [points, usernames, cardsDrawn] = await Promise.all([readPoints(), readUsernames(), sumCardsPerPlayer()]);
+  const ranking = buildRanking(points, usernames, cardsDrawn);
   if (ranking.length) {
     console.log("Classement cumulé :");
     const rows = await Promise.all(

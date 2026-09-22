@@ -9,7 +9,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { loadBlackjackConfig, readState, readPoints, buildRanking, sumCardsPerPlayer } from "../backend/services/blackjack.js";
+import { loadBlackjackConfig, readState, readPoints, readUsernames, buildRanking, sumCardsPerPlayer } from "../backend/services/blackjack.js";
 import { resolveDisplayName } from "../backend/services/discordUsers.js";
 
 (async () => {
@@ -22,8 +22,8 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
   const config = await loadBlackjackConfig();
   console.log(`Blackjack — Jour ${state.jour}/${config.duree_jours}${state.termine ? " (terminée)" : ""}\n`);
 
-  const [points, cardsDrawn] = await Promise.all([readPoints(), sumCardsPerPlayer()]);
-  const ranking = buildRanking(points, {}, cardsDrawn);
+  const [points, usernames, cardsDrawn] = await Promise.all([readPoints(), readUsernames(), sumCardsPerPlayer()]);
+  const ranking = buildRanking(points, usernames, cardsDrawn);
   if (!ranking.length) {
     console.log("Personne n'a encore marqué de point.");
     return;

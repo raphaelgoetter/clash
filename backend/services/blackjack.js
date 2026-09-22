@@ -332,6 +332,10 @@ export async function readUsername(discordId) {
   return getRedis().hget(USERNAMES_KEY, discordId);
 }
 
+export async function readUsernames() {
+  return hgetallRaw(USERNAMES_KEY);
+}
+
 // Classement trié par points décroissants — les usernames stockés ne sont
 // qu'un repli d'affichage (voir resolveDisplayName côté handler), jamais la
 // source de vérité du pseudo actuel.
