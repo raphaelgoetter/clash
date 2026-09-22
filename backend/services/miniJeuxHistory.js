@@ -28,8 +28,7 @@ const GAME_ORDER = [
   "culture",
   "lettres",
   "visuels",
-  "blindroyale",
-  "lajustecarte",
+  "aveugle",
   "quiz",
   "blackjack",
   "marioclash",
@@ -49,7 +48,8 @@ function tagSubGame(fetchFn, subGame) {
 //
 // "lettres" fusionne Anagram et Pêle-mêle (voir jeuxdelettres.js), "visuels"
 // fusionne Zoom carte et Palette (voir jeuxvisuels.js), "culture" fusionne
-// Frame et Trivia (voir jeuxculture.js) : sous leur alternance respective
+// Frame et Trivia (voir jeuxculture.js), "aveugle" fusionne Blind Royale et
+// La Juste Carte (voir jeuxaveugle.js) : sous leur alternance respective
 // (une saison Clash Royale sur deux), les deux jeux d'une même paire ne sont
 // jamais actifs la même saison — leurs résultats archivés se concatènent
 // donc sans jamais se chevaucher, et apparaissent comme UNE seule catégorie
@@ -58,6 +58,14 @@ function tagSubGame(fetchFn, subGame) {
 // label (voir subGames dans getSeasonWinnersHistory) — pour ajouter un futur
 // groupe en alternance, il suffit de lister ici chaque jeu via
 // tagSubGame(), rien d'autre à changer.
+//
+// Exception assumée pour "aveugle" : Blind Royale et La Juste Carte ont
+// tourné en parallèle (hebdomadaires indépendants, pas d'alternance) du
+// 2026-09-04 (création de Blind Royale) au 2026-09-21 (bascule vers
+// l'alternance saisonnière, voir jeuxaveugle.js) — seule la saison 87
+// (septembre 2026) peut donc afficher un total fusionnant les deux jeux
+// pour cette période de transition, contrairement aux saisons suivantes où
+// un seul des deux aura tourné.
 const SCORE_GAMES = [
   {
     key: "culture",
@@ -83,8 +91,14 @@ const SCORE_GAMES = [
       ...(await tagSubGame(getPaletteResults, "Palette")()),
     ],
   },
-  { key: "blindroyale", label: "🙈 Blind Royale", fetch: getBlindRoyaleResults },
-  { key: "lajustecarte", label: "🃏 La Juste Carte", fetch: getLaJusteCarteResults },
+  {
+    key: "aveugle",
+    label: "🙈 Jeux à l'aveugle",
+    fetch: async () => [
+      ...(await tagSubGame(getBlindRoyaleResults, "Blind Royale")()),
+      ...(await tagSubGame(getLaJusteCarteResults, "La Juste Carte")()),
+    ],
+  },
 ];
 
 // Jeux spéciaux à manches : une entrée = une partie complète, avec un
