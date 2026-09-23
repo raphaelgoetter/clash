@@ -162,7 +162,7 @@ export async function readPoints() {
   return result;
 }
 
-export { buildRanking, isDealerRevealed };
+export { buildRanking, isDealerRevealed, pointsForResult };
 
 // ── Remise à zéro complète (nouvelle partie / watchdog) ────────────
 
@@ -198,6 +198,9 @@ export async function startGame(channelId, { maxPlayers, totalManches }) {
     dealer,
     players: [],
     rosterLocked: false,
+    // Historique des manches résolues (mains, scores, points) — affiché en
+    // intégralité dans le récapitulatif final (voir buildFinalEmbed).
+    history: [],
     lastActivityAt: new Date().toISOString(),
     termine: false,
   };
@@ -361,8 +364,19 @@ async function resolveManche(state, hands) {
     await addPoints(r.discordId, pointsForResult(r.result));
   }
 
+  // Historique complet (mains, scores, points) de la manche qui vient de se
+  // résoudre — affiché en intégralité dans le récapitulatif final, voir
+  // buildFinalEmbed côté handler. Le Croupier n'y figure que pour les
+  // manches solo (null en duel 2-3 joueurs, voir resolvePvP).
+  const mancheRecord = {
+    manche: state.manche,
+    dealer: state.maxPlayers === 1 ? state.dealer : null,
+    results: outcome.results,
+  };
+  const history = [...(state.history || []), mancheRecord];
+
   if (outcome.estFinDePartie) {
-    const newState = { ...state, lastActivityAt: new Date().toISOString(), termine: true };
+    const newState = { ...state, history, lastActivityAt: new Date().toISOString(), termine: true };
     await writeState(newState);
     return {
       final: true,
@@ -378,6 +392,7 @@ async function resolveManche(state, hands) {
     ...state,
     manche: outcome.mancheSuivante,
     dealer: nextDealer,
+    history,
     // Verrou définitif dès qu'une manche est résolue, même si le roster
     // était incomplet (moins de joueurs que maxPlayers) — confirmé : un
     // nouveau joueur ne peut plus jamais rejoindre après ce point.

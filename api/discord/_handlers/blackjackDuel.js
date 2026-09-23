@@ -20,6 +20,7 @@ import {
   checkAndResolveManche,
   listHands,
   isDealerRevealed,
+  pointsForResult,
 } from "../../../backend/services/blackjackDuel.js";
 import {
   getRoleIdByName,
@@ -240,8 +241,30 @@ async function buildTableEmbed(state, { previousResults, previousDealer } = {}) 
   };
 }
 
-async function buildFinalEmbed(state, results, dealer, ranking) {
-  const isSolo = state.maxPlayers === 1;
+// Une ligne par manche : main + score de chaque joueur, et points gagnés —
+// le Croupier n'apparaît que sur les manches solo (mancheRecord.dealer est
+// null en duel 2-3 joueurs, voir resolveManche côté service).
+async function buildMancheHistoryBlocks(history) {
+  const blocks = [];
+  for (const entry of history) {
+    const header = entry.dealer
+      ? `**Manche ${entry.manche}** — ${formatDealerLine(entry.dealer)}`
+      : `**Manche ${entry.manche}**`;
+    const playerParts = await Promise.all(
+      entry.results.map(async (r) => {
+        const name = await resolveDisplayName(r.discordId, r.username);
+        const pts = pointsForResult(r.result);
+        const scoreLabel = r.status === "bust" ? "💥" : `${r.score}`;
+        const badge = pts === 2 ? " 🏆" : pts === 1 ? " 🤝" : "";
+        return `${name} ${formatCards(r.cards)} (${scoreLabel})${badge} +${pts} pt${pts > 1 ? "s" : ""}`;
+      }),
+    );
+    blocks.push(`${header}\n${playerParts.join(" · ")}`);
+  }
+  return blocks;
+}
+
+async function buildFinalEmbed(state, ranking) {
   const resolvedRanking = await Promise.all(
     ranking.map(async (r) => ({
       ...r,
@@ -252,18 +275,11 @@ async function buildFinalEmbed(state, results, dealer, ranking) {
   const winners =
     maxPoints > 0 ? resolvedRanking.filter((r) => r.points === maxPoints) : [];
 
-  const winnersLine = results.filter((r) =>
-    isSolo ? r.result === "win" : r.result === "win" || r.result === "push",
-  );
-  const winnerLineNames = await Promise.all(
-    winnersLine.map((w) => resolveDisplayName(w.discordId, w.username)),
-  );
+  const historyBlocks = await buildMancheHistoryBlocks(state.history || []);
+
   const lines = [
-    `**📊 Bilan de la dernière manche**`,
-    ...(isSolo ? [formatDealerLine(dealer)] : []),
-    winnerLineNames.length
-      ? `🏆 ${isSolo ? "Gagnant" : "Vainqueur"}${winnerLineNames.length > 1 ? "s" : ""} : ${winnerLineNames.join(", ")}`
-      : `🏆 Personne n'a ${isSolo ? "battu le Croupier" : "de main valide"} sur cette manche.`,
+    "**📊 Détail des manches**",
+    ...historyBlocks,
     "",
     "**Classement final :**",
     ...(resolvedRanking.length
@@ -446,7 +462,7 @@ async function refreshPublicMessage() {
   }
 
   if (outcome.final) {
-    const embed = await buildFinalEmbed(outcome.state, outcome.results, outcome.dealer, outcome.ranking);
+    const embed = await buildFinalEmbed(outcome.state, outcome.ranking);
     await patchPublicMessage(outcome.state, { embeds: [embed], components: [] });
     return;
   }
