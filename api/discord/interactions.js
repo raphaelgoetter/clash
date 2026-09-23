@@ -44,6 +44,10 @@ import {
 } from "../../backend/services/collectionConstants.js";
 import { getOrSet } from "../../backend/services/cache.js";
 import {
+  handleHistory as handleChampionHistory,
+  handleHistoryPage as handleChampionHistoryPage,
+} from "./_handlers/championHistory.js";
+import {
   buildAnswerModal as buildFrameAnswerModal,
   handleHintButton as handleFrameHintButton,
   handleModalSubmit as handleFrameModalSubmit,
@@ -5909,6 +5913,17 @@ export default async function handler(req, res) {
     return;
   }
 
+  // Commande /champion-history — registre des vrais champions GDC passés
+  // d'un clan (pas de pronostics/votes, voir backend/services/championHistory.js)
+  if (body.type === 2 && body.data?.name === "champion-history") {
+    const clanOpt = body.data.options?.find((o) => o.name === "clan");
+    const clanVal = clanOpt?.value || "1";
+    res.status(200).json({ type: 5 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleChampionHistory(webhookUrl, clanVal));
+    return;
+  }
+
   // Commande /discord-link
   if (body.type === 2 && body.data?.name === "discord-link") {
     const opts = body.data.options ?? [];
@@ -7956,6 +7971,25 @@ export default async function handler(req, res) {
         });
       }
     });
+    return;
+  }
+
+  // ── MessageComponent : bouton "Précédents" du registre des champions ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("champion_history_page:")
+  ) {
+    const [, clanVal, offsetStr] = body.data.custom_id.split(":");
+    const offset = parseInt(offsetStr, 10) || 0;
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    const originalWebhookUrl = webhookUrl
+      ? `${webhookUrl}/messages/@original`
+      : null;
+    runBackground(() =>
+      handleChampionHistoryPage(originalWebhookUrl, clanVal, offset),
+    );
     return;
   }
 
