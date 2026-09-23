@@ -185,7 +185,10 @@ export async function startGame(channelId, { maxPlayers, totalManches }) {
   // (points/mains/verrous de résolution) avant de repartir à zéro.
   await resetBlackjackDuel();
 
-  const dealer = dealerPlay(Math.random, DEALER_MIN, DEALER_MAX);
+  // Croupier uniquement en solo (1 joueur) — à 2 ou 3 joueurs, pas de
+  // Croupier : les joueurs s'affrontent directement (voir resolvePvP), le
+  // jeu redevient un vrai "duel" plutôt qu'un multi-solo côte à côte.
+  const dealer = maxPlayers === 1 ? dealerPlay(Math.random, DEALER_MIN, DEALER_MAX) : null;
   const state = {
     channelId,
     messageId: null,
@@ -308,12 +311,37 @@ export async function checkAndResolveManche() {
   return { resolved: true, ...outcome };
 }
 
-// Pure : calcule les résultats de la manche face au Croupier et le
-// classement mis à jour, sans écrire dans Redis (le tirage du prochain
-// Croupier, lui, reste dans le caller I/O ci-dessous — pas besoin de le
-// prédire pour décider si la partie est finie).
+// Pure : résout une manche à 2-3 joueurs SANS Croupier — la meilleure main
+// non bust l'emporte (2 points, comme une victoire face au Croupier) ; en
+// cas d'égalité au sommet, tous les joueurs à égalité se partagent 1 point
+// chacun (même barème qu'une égalité face au Croupier — voir
+// pointsForResult) ; si tout le monde bust, personne ne gagne la manche.
+export function resolvePvP(hands) {
+  const entries = Object.entries(hands).map(([discordId, hand]) => {
+    const finalStatus = hand.status === "en_cours" ? "stand" : hand.status;
+    return {
+      discordId,
+      username: hand.username,
+      cards: hand.cards,
+      score: hand.score,
+      status: finalStatus,
+    };
+  });
+  const valid = entries.filter((e) => e.status !== "bust");
+  const maxScore = valid.length ? Math.max(...valid.map((e) => e.score)) : null;
+  const topCount = valid.filter((e) => e.score === maxScore).length;
+  return entries.map((e) => {
+    if (e.status === "bust" || e.score !== maxScore) return { ...e, result: "lose" };
+    return { ...e, result: topCount > 1 ? "push" : "win" };
+  });
+}
+
+// Pure : calcule les résultats de la manche (face au Croupier en solo,
+// entre joueurs à 2-3) et le classement mis à jour, sans écrire dans Redis
+// (le tirage du prochain Croupier, lui, reste dans le caller I/O
+// ci-dessous — pas besoin de le prédire pour décider si la partie est finie).
 export function computeMancheOutcome(state, hands, currentPoints) {
-  const results = resolveDay(hands, state.dealer);
+  const results = state.maxPlayers === 1 ? resolveDay(hands, state.dealer) : resolvePvP(hands);
   const pointsAfter = { ...currentPoints };
   for (const r of results) {
     const pts = pointsForResult(r.result);
@@ -345,7 +373,7 @@ async function resolveManche(state, hands) {
     };
   }
 
-  const nextDealer = dealerPlay(Math.random, DEALER_MIN, DEALER_MAX);
+  const nextDealer = state.maxPlayers === 1 ? dealerPlay(Math.random, DEALER_MIN, DEALER_MAX) : null;
   const newState = {
     ...state,
     manche: outcome.mancheSuivante,

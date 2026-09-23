@@ -1,5 +1,5 @@
 import assert from "assert";
-import { applyJoin, computeMancheOutcome, buildRanking } from "./blackjackDuel.js";
+import { applyJoin, computeMancheOutcome, buildRanking, resolvePvP } from "./blackjackDuel.js";
 
 function baseState(overrides = {}) {
   return {
@@ -49,11 +49,11 @@ async function main() {
     assert.strictEqual(decision.allowed, false);
   }
 
-  // ── computeMancheOutcome — manche intermédiaire : pas de classement final ──
-  // Barème 2/1/0 (12/09) : une victoire rapporte 2 points, une égalité 1
-  // point (pas 0 comme une défaite), une défaite 0.
+  // ── computeMancheOutcome — solo (1 joueur), manche intermédiaire : pas de
+  // classement final. Barème 2/1/0 (12/09) : une victoire rapporte 2 points,
+  // une égalité 1 point (pas 0 comme une défaite), une défaite 0.
   {
-    const state = baseState({ manche: 1, totalManches: 5 });
+    const state = baseState({ maxPlayers: 1, manche: 1, totalManches: 5 });
     const hands = {
       a: { cards: [], score: 20, status: "stand", username: "Alice" }, // gagne -> 2 pts
       b: { cards: [], score: 15, status: "stand", username: "Bob" }, // perd -> 0 pt
@@ -68,9 +68,9 @@ async function main() {
     assert.strictEqual(outcome.pointsAfter.c, 1);
   }
 
-  // ── computeMancheOutcome — dernière manche : classement final cumulé ──
+  // ── computeMancheOutcome — solo, dernière manche : classement final cumulé ──
   {
-    const state = baseState({ manche: 5, totalManches: 5 });
+    const state = baseState({ maxPlayers: 1, manche: 5, totalManches: 5 });
     const hands = {
       a: { cards: [], score: 20, status: "stand", username: "Alice" }, // gagne encore -> +2
       b: { cards: [], score: 25, status: "bust", username: "Bob" }, // -> +0
@@ -83,6 +83,60 @@ async function main() {
     assert.deepStrictEqual(outcome.ranking.map((r) => r.discordId), ["a", "b"]);
     // computeMancheOutcome ne mute jamais l'objet points fourni par l'appelant
     assert.deepStrictEqual(currentPoints, { a: 3, b: 1 });
+  }
+
+  // ── resolvePvP — 2-3 joueurs, pas de Croupier : la meilleure main non
+  // bust l'emporte (2 pts), les autres perdent (0 pt) ──
+  {
+    const hands = {
+      a: { cards: [], score: 20, status: "stand", username: "Alice" },
+      b: { cards: [], score: 15, status: "stand", username: "Bob" },
+      c: { cards: [], score: 25, status: "bust", username: "Chris" },
+    };
+    const results = resolvePvP(hands);
+    const byId = Object.fromEntries(results.map((r) => [r.discordId, r]));
+    assert.strictEqual(byId.a.result, "win");
+    assert.strictEqual(byId.b.result, "lose");
+    assert.strictEqual(byId.c.result, "lose");
+  }
+
+  // ── resolvePvP — égalité au sommet entre 2 joueurs : les 2 se partagent
+  // 1 point chacun (push), le 3e perd ──
+  {
+    const hands = {
+      a: { cards: [], score: 20, status: "stand", username: "Alice" },
+      b: { cards: [], score: 20, status: "stand", username: "Bob" },
+      c: { cards: [], score: 18, status: "stand", username: "Chris" },
+    };
+    const results = resolvePvP(hands);
+    const byId = Object.fromEntries(results.map((r) => [r.discordId, r]));
+    assert.strictEqual(byId.a.result, "push");
+    assert.strictEqual(byId.b.result, "push");
+    assert.strictEqual(byId.c.result, "lose");
+  }
+
+  // ── resolvePvP — tout le monde bust : personne ne gagne la manche ──
+  {
+    const hands = {
+      a: { cards: [], score: 22, status: "bust", username: "Alice" },
+      b: { cards: [], score: 24, status: "bust", username: "Bob" },
+    };
+    const results = resolvePvP(hands);
+    assert.ok(results.every((r) => r.result === "lose"));
+  }
+
+  // ── computeMancheOutcome — 2-3 joueurs (maxPlayers > 1) : résolution PvP,
+  // pas face au Croupier (state.dealer ignoré, même s'il vaut { score: 18 }
+  // dans baseState) ──
+  {
+    const state = baseState({ maxPlayers: 3, manche: 1, totalManches: 5 });
+    const hands = {
+      a: { cards: [], score: 20, status: "stand", username: "Alice" }, // meilleure main -> 2 pts
+      b: { cards: [], score: 18, status: "stand", username: "Bob" }, // perd contre Alice, PAS d'égalité avec un Croupier -> 0 pt
+    };
+    const outcome = computeMancheOutcome(state, hands, {});
+    assert.strictEqual(outcome.pointsAfter.a, 2);
+    assert.strictEqual(outcome.pointsAfter.b ?? 0, 0);
   }
 
   console.log("✓ blackjackDuel service tests passed");

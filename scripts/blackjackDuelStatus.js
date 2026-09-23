@@ -37,9 +37,13 @@ const STALE_HOURS = 24;
   );
   console.log(`Dernière activité il y a ${hoursSince.toFixed(1)}h${staleWarning}\n`);
 
-  console.log(
-    `🎩 Croupier (manche ${state.manche}) : ${state.dealer.cards.map((c) => `${c.rank}${c.suit}`).join(" ")} (${state.dealer.score})\n`,
-  );
+  if (state.dealer) {
+    console.log(
+      `🎩 Croupier (manche ${state.manche}) : ${state.dealer.cards.map((c) => `${c.rank}${c.suit}`).join(" ")} (${state.dealer.score})\n`,
+    );
+  } else {
+    console.log(`🃏 Duel entre joueurs (manche ${state.manche}) — pas de Croupier.\n`);
+  }
 
   const playerNames = await Promise.all(state.players.map((id) => resolveDisplayName(id, id)));
   console.log(`Joueurs inscrits : ${playerNames.join(", ") || "aucun"}\n`);
