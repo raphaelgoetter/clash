@@ -259,7 +259,7 @@ async function buildMancheHistoryBlocks(history) {
         return `${name} ${formatCards(r.cards)} (${scoreLabel})${badge} +${pts} pt${pts > 1 ? "s" : ""}`;
       }),
     );
-    blocks.push(`${header}\n${playerParts.join(" · ")}`);
+    blocks.push(`${header}\n${playerParts.join("\n")}`);
   }
   return blocks;
 }
@@ -271,10 +271,6 @@ async function buildFinalEmbed(state, ranking) {
       username: await resolveDisplayName(r.discordId, r.username),
     })),
   );
-  const maxPoints = resolvedRanking[0]?.points ?? 0;
-  const winners =
-    maxPoints > 0 ? resolvedRanking.filter((r) => r.points === maxPoints) : [];
-
   const historyBlocks = await buildMancheHistoryBlocks(state.history || []);
 
   const lines = [
@@ -289,13 +285,6 @@ async function buildFinalEmbed(state, ranking) {
         )
       : ["Personne n'a marqué de point."]),
   ];
-
-  if (winners.length) {
-    lines.push(
-      "",
-      `🏆 Vainqueur${winners.length > 1 ? "s" : ""} (${maxPoints} pt${maxPoints > 1 ? "s" : ""}) : ${winners.map((w) => w.username).join(", ")}`,
-    );
-  }
 
   return {
     title: "🏁 Blackjack Duel — Partie terminée",
