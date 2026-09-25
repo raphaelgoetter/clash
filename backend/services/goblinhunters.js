@@ -290,12 +290,12 @@ export async function recordAction(
   jour,
   discordId,
   slot,
-  { lieu, cibleId = null },
+  { lieu, cibleId = null, pending = false },
   username,
 ) {
   const existingRaw = await getRedis().hget(actionsKey(jour), discordId);
   const existing = fromJson(existingRaw) || {};
-  existing[slot] = { lieu, cibleId };
+  existing[slot] = pending ? { lieu, cibleId, pending: true } : { lieu, cibleId };
   await getRedis().hset(actionsKey(jour), { [discordId]: toJson(existing) });
   if (username) {
     await getRedis().hset(actionUsernamesKey(jour), { [discordId]: username });
@@ -323,14 +323,18 @@ export async function readPlayerAction(jour, discordId) {
 // engagement, pas un brouillon qu'on peut retirer sans conséquence. Vérifié
 // au clic dans le handler (handleLieuButton/handleTargetSelect), même esprit
 // que isLieuRepeatAllowed — recordAction() lui-même reste "bête" (écrit
-// toujours ce qu'on lui donne, sans jamais vérifier s'il écrase quelque
-// chose), la garde vit entièrement côté appelant. Comme recordAction()
-// n'écrit JAMAIS d'état "partiel" (le clic initial sur un lieu à cible ne
-// persiste rien tant que la cible n'est pas choisie), la présence de
-// `existingAction[slot]` suffit à elle seule à détecter un choix déjà
-// finalisé — pas besoin de vérifier le lieu ni la cible comme avant.
-export function isActionLocked(existingAction, slot) {
-  return existingAction?.[slot] != null;
+// toujours ce qu'on lui donne), la garde vit entièrement côté appelant.
+// Exception `pending` : Arène/Tour de Guet enregistrent le lieu DÈS
+// l'ouverture du select de cible (cibleId: null, pending: true) — sans ça,
+// ouvrir le menu puis choisir un autre lieu révélait gratuitement les noms
+// des joueurs présents à ce lieu la veille (fuite repérée en revue, rendait
+// la Clairière inutile). Seul le choix de la cible reste alors ouvert, et
+// uniquement pour CE lieu ; faute de cible choisie avant la clôture, le
+// filet de sécurité (fallbackActorsFor) tire une cible au hasard.
+export function isActionLocked(existingAction, slot, lieu = null) {
+  const current = existingAction?.[slot];
+  if (current == null) return false;
+  return !(current.pending && lieu != null && current.lieu === lieu);
 }
 
 // Anti-camping : impossible de choisir le même lieu que celui occupé la

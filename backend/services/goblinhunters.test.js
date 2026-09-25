@@ -449,6 +449,11 @@ async function main() {
   // Le verrou est spécifique au slot : le primary verrouillé n'empêche pas
   // l'Éclaireur de soumettre un secondary différent.
   assert.strictEqual(isActionLocked({ primary: { lieu: "chateau", cibleId: "x" } }, "secondary"), false);
+  // Lieu à cible verrouillé dès l'ouverture du select (pending) : seul le choix de cible sur CE lieu reste ouvert
+  assert.strictEqual(isActionLocked({ primary: { lieu: "tour_de_guet", cibleId: null, pending: true } }, "primary", "tour_de_guet"), false);
+  assert.strictEqual(isActionLocked({ primary: { lieu: "tour_de_guet", cibleId: null, pending: true } }, "primary", "clairiere_mystique"), true);
+  assert.strictEqual(isActionLocked({ primary: { lieu: "tour_de_guet", cibleId: null, pending: true } }, "primary"), true);
+  assert.strictEqual(isActionLocked({ primary: { lieu: "camp_entrainement", cibleId: null } }, "primary", "camp_entrainement"), true); // validé (non pending) -> définitif
 
   // ── resolveGuetApensReveal : mort au combat -> révèle le camp de(s)
   // attaquant(s), jamais au vote (pas d'attaquant identifiable) ──

@@ -1111,7 +1111,7 @@ export async function handleLieuButton(
       return;
     }
     const existingAction = await readPlayerAction(jour, discordId);
-    if (isActionLocked(existingAction, slot)) {
+    if (isActionLocked(existingAction, slot, lieu)) {
       await patchOriginal(webhookUrl, {
         content:
           "🔒 Tu as déjà choisi ton lieu aujourd'hui — définitif dès validation, impossible d'en changer ou de choisir un autre lieu.",
@@ -1204,9 +1204,25 @@ export async function handleLieuButton(
       return;
     }
 
+    // Lieu verrouillé AVANT d'afficher les noms (voir isActionLocked) :
+    // le Château n'est pas concerné, sa liste couvre tous les vivants et ne
+    // révèle donc aucune position.
+    if (lieu !== "chateau") {
+      await recordAction(
+        jour,
+        discordId,
+        slot,
+        { lieu, cibleId: null, pending: true },
+        username,
+      );
+    }
+
     const components = buildTargetSelectRow(candidats, jour, lieu, slot);
     await patchOriginal(webhookUrl, {
-      content: `${config.lieux[lieu].emoji} Choisis ta cible à ${config.lieux[lieu].label} :`,
+      content:
+        lieu === "chateau"
+          ? `${config.lieux[lieu].emoji} Choisis ta cible à ${config.lieux[lieu].label} :`
+          : `${config.lieux[lieu].emoji} Tu te rends à ${config.lieux[lieu].label} (**lieu définitif**) — choisis ta cible, sinon elle sera tirée au hasard à la clôture :`,
       embeds: [],
       components,
     });
@@ -1285,7 +1301,7 @@ export async function handleTargetSelect(
     // éphémère aurait été ouvert avant qu'une action ne soit déjà validée
     // entre-temps (ex. via l'autre slot, ou un double-clic).
     const existingAction = await readPlayerAction(jour, discordId);
-    if (isActionLocked(existingAction, slot)) {
+    if (isActionLocked(existingAction, slot, lieu)) {
       await patchOriginal(webhookUrl, {
         content:
           "🔒 Tu as déjà choisi ton lieu aujourd'hui — définitif dès validation, impossible d'en changer.",
