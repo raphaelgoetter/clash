@@ -790,8 +790,10 @@ export async function postGoblinHunters(
     }
     const embed = await buildJourEmbed(1, joueurs, config, null);
     const components = buildJourComponents(1, config);
-    const freshState = await readState();
-    return publishAndWriteState(channelId, freshState, {
+    // `state` (lu AVANT launchGame) et non un état relu : launchGame()
+    // réécrit l'état sans messageId, le post d'inscription n'était donc
+    // jamais supprimé au lancement.
+    return publishAndWriteState(channelId, state, {
       embed,
       components,
       noPing: true,
