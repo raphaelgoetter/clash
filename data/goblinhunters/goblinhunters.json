@@ -33,19 +33,19 @@
     }
   },
   "lieux": {
-    "chateau": { "label": "Château", "emoji": "🏰", "action": "vote" },
-    "camp_entrainement": {
+    "chateau": { "numero": 1, "label": "Château", "emoji": "🏰", "action": "vote" },
+    "camp_entrainement": { "numero": 2,
       "label": "Arène",
       "emoji": "⚔️",
       "action": "combat"
     },
-    "tour_de_guet": {
+    "tour_de_guet": { "numero": 3,
       "label": "Tour de Guet",
       "emoji": "🔭",
       "action": "enquete"
     },
-    "taverne": { "label": "Taverne", "emoji": "🍺", "action": "protection" },
-    "clairiere_mystique": {
+    "taverne": { "numero": 4, "label": "Taverne", "emoji": "🍺", "action": "protection" },
+    "clairiere_mystique": { "numero": 5,
       "label": "Clairière",
       "emoji": "🌫️",
       "action": "vision"

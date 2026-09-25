@@ -41,7 +41,7 @@
 // ============================================================
 
 import { Resvg } from "@resvg/resvg-js";
-import { readState } from "./goblinhunters.js";
+import { readState, loadGoblinHuntersConfig } from "./goblinhunters.js";
 import { readBlobAsset, readBlobFontPath } from "./blobAssets.js";
 
 const BOARD_IMAGE_PATH = "goblinhunters/images/board.jpg";
@@ -129,6 +129,28 @@ function buildTokensSvg(joueursVivants) {
   return circles.join("\n");
 }
 
+// Pastille numérotée de chaque lieu (même numéro que les boutons, voir
+// `numero` dans goblinhunters.json) — toujours affichée, même lieu vide.
+// Placée AU-DESSUS de l'ancre : les pions partent de l'ancre et descendent
+// par lignes de 3, la pastille ne les chevauche donc jamais.
+const BADGE_RADIUS = 20;
+const BADGE_OFFSET_Y = 58;
+
+function buildLieuBadgesSvg(lieux) {
+  return Object.entries(lieux)
+    .map(([lieuId, lieu]) => {
+      const anchor = LIEU_ANCHORS[lieuId];
+      if (!anchor || lieu.numero == null) return "";
+      const cx = anchor.x * BOARD_WIDTH;
+      const cy = anchor.y * BOARD_HEIGHT - BADGE_OFFSET_Y;
+      return [
+        `<circle cx="${cx}" cy="${cy}" r="${BADGE_RADIUS}" fill="#0f172a" fill-opacity="0.85" stroke="#f8fafc" stroke-width="2"/>`,
+        `<text x="${cx}" y="${cy + 8}" font-family="${FONT_FAMILY}" font-size="22" text-anchor="middle" fill="#f8fafc">${escapeText(lieu.numero)}</text>`,
+      ].join("\n");
+    })
+    .join("\n");
+}
+
 // Bande de pastilles grisées pour les joueurs déjà éliminés — couleur de
 // camp visible (camp révélé publiquement à l'élimination), jamais le rôle
 // précis.
@@ -151,6 +173,7 @@ function buildEliminatedStripSvg(joueursElimines) {
 
 async function buildBoardSvg(joueurs) {
   const dataUrl = await loadBoardDataUrl();
+  const config = await loadGoblinHuntersConfig();
   const vivants = joueurs.filter((j) => j.alive);
   const elimines = joueurs.filter((j) => !j.alive);
 
@@ -158,6 +181,7 @@ async function buildBoardSvg(joueurs) {
 <svg width="${BOARD_WIDTH}" height="${BOARD_HEIGHT}" viewBox="0 0 ${BOARD_WIDTH} ${BOARD_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
   <rect width="100%" height="100%" fill="${BACKGROUND}"/>
   <image x="0" y="0" width="${BOARD_WIDTH}" height="${BOARD_HEIGHT}" href="${dataUrl}"/>
+  ${buildLieuBadgesSvg(config.lieux)}
   ${buildTokensSvg(vivants)}
   ${buildEliminatedStripSvg(elimines)}
 </svg>`;
