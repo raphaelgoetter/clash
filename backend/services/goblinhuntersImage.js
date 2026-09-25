@@ -133,8 +133,8 @@ function buildTokensSvg(joueursVivants) {
 // `numero` dans goblinhunters.json) — toujours affichée, même lieu vide.
 // Placée AU-DESSUS de l'ancre : les pions partent de l'ancre et descendent
 // par lignes de 3, la pastille ne les chevauche donc jamais.
-const BADGE_RADIUS = 20;
-const BADGE_OFFSET_Y = 58;
+const BADGE_RADIUS = 28;
+const BADGE_OFFSET_Y = 72;
 
 function buildLieuBadgesSvg(lieux) {
   return Object.entries(lieux)
@@ -144,8 +144,8 @@ function buildLieuBadgesSvg(lieux) {
       const cx = anchor.x * BOARD_WIDTH;
       const cy = anchor.y * BOARD_HEIGHT - BADGE_OFFSET_Y;
       return [
-        `<circle cx="${cx}" cy="${cy}" r="${BADGE_RADIUS}" fill="#0f172a" fill-opacity="0.85" stroke="#f8fafc" stroke-width="2"/>`,
-        `<text x="${cx}" y="${cy + 8}" font-family="${FONT_FAMILY}" font-size="22" text-anchor="middle" fill="#f8fafc">${escapeText(lieu.numero)}</text>`,
+        `<circle cx="${cx}" cy="${cy}" r="${BADGE_RADIUS}" fill="#0f172a" fill-opacity="0.85" stroke="#f8fafc" stroke-width="3"/>`,
+        `<text x="${cx}" y="${cy + 11}" font-family="${FONT_FAMILY}" font-size="32" text-anchor="middle" fill="#f8fafc">${escapeText(lieu.numero)}</text>`,
       ].join("\n");
     })
     .join("\n");
